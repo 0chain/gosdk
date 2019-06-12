@@ -9,8 +9,8 @@ import (
 	"os"
 	"runtime/trace"
 
-	"0chain.net/clientsdk/util"
-	"0chain.net/clientsdk/zcn"
+	"github.com/0chain/gosdk/util"
+	"github.com/0chain/clientsdk/zcn"
 	"github.com/gosuri/uiprogress"
 )
 

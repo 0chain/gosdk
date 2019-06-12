@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"0chain.net/clientsdk/util"
+	"0chain/gosdk/util"
 )
 
 type listDirData struct {

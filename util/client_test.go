@@ -1,7 +1,7 @@
 package util_test
 
 import (
-	"0chain.net/clientsdk/util"
+	"github.com/0chain/gosdk/util"
 	// "0chain.net/zcn"
 	// "fmt"
 	// "io/ioutil"

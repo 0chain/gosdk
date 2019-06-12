@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"0chain.net/clientsdk/encryption"
+	"github.com/0chain/gosdk/encryption"
 )
 
 type OperationStatus struct {

@@ -3,7 +3,7 @@ package util_test
 import (
 	"testing"
 
-	"0chain.net/clientsdk/util"
+	"0chain/gosdk/util"
 )
 
 func TestGetFileConfig(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"syscall/js"
 
-	"0chain.net/clientsdk/zcn"
+	"0chain/gosdk/zcn"
 	// "time"
 )
 

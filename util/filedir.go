@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	"0chain.net/clientsdk/encryption"
+	"github.com/0chain/gosdk/encryption"
 )
 
 type FileDirInfo struct {

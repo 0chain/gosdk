@@ -19,8 +19,8 @@ import (
 	"sync"
 	"time"
 
-	"0chain.net/clientsdk/encryption"
-	"0chain.net/clientsdk/util"
+	"0chain/gosdk/encryption"
+	"0chain/gosdk/util"
 	"golang.org/x/crypto/sha3"
 )
 

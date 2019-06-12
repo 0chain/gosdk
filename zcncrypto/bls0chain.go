@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"0chain.net/clientsdk/encryption"
+	"0chain/gosdk/encryption"
 	"github.com/herumi/bls/ffi/go/bls"
 	"github.com/tyler-smith/go-bip39"
 )

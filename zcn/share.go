@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"path"
 
-	"0chain.net/clientsdk/encryption"
-	"0chain.net/clientsdk/util"
+	"0chain/gosdk/encryption"
+	"0chain/gosdk/util"
 )
 
 type authTicket struct {

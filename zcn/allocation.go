@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"0chain.net/clientsdk/logger"
-	"0chain.net/clientsdk/util"
+	"0chain/gosdk/logger"
+	"0chain/gosdk/util"
 )
 
 var defaultLogLevel = logger.NONE
