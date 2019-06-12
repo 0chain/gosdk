@@ -1,0 +1,81 @@
+package zcn
+
+import (
+	// "0chain.net/clientsdk/util"
+	"bufio"
+	"bytes"
+	"errors"
+
+	"github.com/klauspost/reedsolomon"
+)
+
+type codec interface {
+	Encode(in []byte) ([][]byte, error)
+	Decode(in [][]byte) ([]byte, error)
+}
+
+type streamEncoder struct {
+	iDataShards   int
+	iParityShards int
+	erasureCode   reedsolomon.Encoder
+	data          [][]byte
+}
+
+// Creates New encoder instance and return index for further access
+func newEncoder(iDataShards, iParityShards int) (*streamEncoder, error) {
+	e := &streamEncoder{}
+	var err error
+	e.erasureCode, err = reedsolomon.New(iDataShards, iParityShards, reedsolomon.WithAutoGoroutines(64*1024))
+	if err != nil {
+		return nil, err
+	}
+	e.iDataShards = iDataShards
+	e.iParityShards = iParityShards
+	return e, nil
+}
+
+// Encodes and returns the shards on success and error on fails
+func (e *streamEncoder) encode(in []byte) ([][]byte, error) {
+	var err error
+	e.data, err = e.erasureCode.Split(in)
+	if err != nil {
+		Logger.Error("Split failed", err.Error())
+		return [][]byte{}, err
+	}
+	err = e.erasureCode.Encode(e.data)
+	if err != nil {
+		Logger.Error("Encode failed", err.Error())
+		return [][]byte{}, err
+	}
+	return e.data, nil
+}
+
+func (e *streamEncoder) decode(in [][]byte, shardSize int) ([]byte, error) {
+	// Verify the input
+	if (len(in) < e.iDataShards+e.iParityShards) || (shardSize <= 0) {
+		return []byte{}, errors.New("Invalid input length")
+	}
+
+	err := e.erasureCode.Reconstruct(in)
+	if err != nil {
+		Logger.Error("Reconstruct failed -", err)
+		return []byte{}, err
+	}
+	_, err = e.erasureCode.Verify(in)
+	if err != nil {
+		Logger.Error("Verification failed after reconstruction, data likely corrupted.", err.Error())
+		return []byte{}, err
+	}
+
+	var bytesBuf bytes.Buffer
+	bufWriter := bufio.NewWriter(&bytesBuf)
+	bufWriter = bufio.NewWriterSize(bufWriter, (shardSize * e.iDataShards))
+	err = e.erasureCode.Join(bufWriter, in, (shardSize * e.iDataShards))
+	if err != nil {
+		Logger.Error("join failed", err.Error())
+		return []byte{}, err
+	}
+	bufWriter.Flush()
+	outBuf := bytesBuf.Bytes()
+	return outBuf, nil
+}

@@ -1,0 +1,15 @@
+{
+  "name": "0ChainElectronSample1",
+  "version": "1.0.0",
+  "description": "Electron sample for erasure coding using 0chain SDK",
+  "repository": "blobber/websdk/electron",
+  "main": "app.js",
+  "scripts": {
+    "start": "electron app.js"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^3.0.2"
+  }
+}
+
