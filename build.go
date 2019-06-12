@@ -1,4 +1,4 @@
-package clientsdk
+package gosdk
 
 func init() {
 
