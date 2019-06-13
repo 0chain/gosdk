@@ -4,7 +4,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"0chain.net/clientsdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
 type NewFileChange struct {

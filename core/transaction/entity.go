@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"sync"
 
-	"0chain.net/clientsdk/core/common"
-	"0chain.net/clientsdk/core/encryption"
-	"0chain.net/clientsdk/core/util"
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/util"
 )
 
 const TXN_SUBMIT_URL = "v1/transaction/put"

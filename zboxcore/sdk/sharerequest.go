@@ -5,12 +5,12 @@ import (
 	b64 "encoding/base64"
 	"encoding/json"
 
-	"0chain.net/clientsdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/client"
 
-	"0chain.net/clientsdk/core/common"
+	"github.com/0chain/gosdk/core/common"
 
-	"0chain.net/clientsdk/zboxcore/blockchain"
-	"0chain.net/clientsdk/zboxcore/marker"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/marker"
 )
 
 type ShareRequest struct {

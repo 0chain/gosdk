@@ -12,10 +12,10 @@ import (
 	"sync"
 	"time"
 
-	"0chain.net/clientsdk/zboxcore/blockchain"
-	"0chain.net/clientsdk/zboxcore/fileref"
-	. "0chain.net/clientsdk/zboxcore/logger"
-	"0chain.net/clientsdk/zboxcore/zboxutil"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/fileref"
+	. "github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type FileStats struct {

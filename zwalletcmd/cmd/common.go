@@ -3,7 +3,7 @@ package cmd
 import (
 	"sync"
 
-	"0chain.net/clientsdk/zcncore"
+	"github.com/0chain/gosdk/zcncore"
 	"gopkg.in/cheggaaa/pb.v1"
 )
 

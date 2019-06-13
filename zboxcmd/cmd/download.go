@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sync"
 
-	"0chain.net/clientsdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/spf13/cobra"
 )
 

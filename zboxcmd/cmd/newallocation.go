@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"0chain.net/clientsdk/core/common"
-	"0chain.net/clientsdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/spf13/cobra"
 )
 

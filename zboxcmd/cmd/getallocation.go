@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	. "0chain.net/clientsdk/zboxcore/logger"
-	"0chain.net/clientsdk/zboxcore/sdk"
+	. "github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/spf13/cobra"
 )
 

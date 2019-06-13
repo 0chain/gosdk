@@ -1,6 +1,6 @@
 package logger
 
-import "0chain.net/clientsdk/core/logger"
+import "github.com/0chain/gosdk/core/logger"
 
 var defaultLogLevel = logger.DEBUG
 var Logger logger.Logger

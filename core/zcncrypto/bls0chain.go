@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-	"0chain.net/clientsdk/core/encryption"
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/herumi/bls/ffi/go/bls"
 	"github.com/tyler-smith/go-bip39"
 )

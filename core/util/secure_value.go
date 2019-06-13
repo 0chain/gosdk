@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"strings"
 
-	"0chain.net/clientsdk/core/encryption"
+	"github.com/0chain/gosdk/core/encryption"
 )
 
 /*Hashable - anything that can provide it's hash */

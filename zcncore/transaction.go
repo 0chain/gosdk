@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
-	"0chain.net/clientsdk/core/transaction"
-	"0chain.net/clientsdk/core/util"
-	"0chain.net/clientsdk/core/zcncrypto"
+	"github.com/0chain/gosdk/core/transaction"
+	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
 // TransactionCallback needs to be implemented by the caller for transaction related APIs

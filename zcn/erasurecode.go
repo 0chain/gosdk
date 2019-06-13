@@ -1,7 +1,6 @@
 package zcn
 
 import (
-	// "0chain.net/clientsdk/util"
 	"bufio"
 	"bytes"
 	"errors"

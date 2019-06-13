@@ -3,8 +3,8 @@ package marker
 import (
 	"fmt"
 
-	"0chain.net/clientsdk/core/encryption"
-	"0chain.net/clientsdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/zboxcore/client"
 )
 
 type AuthTicket struct {

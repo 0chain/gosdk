@@ -12,15 +12,15 @@ import (
 	"sync"
 	"time"
 
-	"0chain.net/clientsdk/core/common"
-	"0chain.net/clientsdk/core/encryption"
-	"0chain.net/clientsdk/zboxcore/allocationchange"
-	"0chain.net/clientsdk/zboxcore/blockchain"
-	"0chain.net/clientsdk/zboxcore/client"
-	"0chain.net/clientsdk/zboxcore/fileref"
-	. "0chain.net/clientsdk/zboxcore/logger"
-	"0chain.net/clientsdk/zboxcore/marker"
-	"0chain.net/clientsdk/zboxcore/zboxutil"
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/zboxcore/allocationchange"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/fileref"
+	. "github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/0chain/gosdk/zboxcore/marker"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type ReferencePathResult struct {

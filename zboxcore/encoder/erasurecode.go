@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"errors"
 
-	. "0chain.net/clientsdk/zboxcore/logger"
+	. "github.com/0chain/gosdk/zboxcore/logger"
 
 	"github.com/klauspost/reedsolomon"
 )

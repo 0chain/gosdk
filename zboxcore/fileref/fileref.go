@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"0chain.net/clientsdk/core/encryption"
+	"github.com/0chain/gosdk/core/encryption"
 )
 
 const CHUNK_SIZE = 64 * 1024

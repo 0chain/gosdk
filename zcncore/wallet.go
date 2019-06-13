@@ -8,10 +8,10 @@ import (
 	"strconv"
 	"time"
 
-	"0chain.net/clientsdk/core/logger"
-	"0chain.net/clientsdk/core/util"
-	"0chain.net/clientsdk/core/version"
-	"0chain.net/clientsdk/core/zcncrypto"
+	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk/core/version"
+	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
 type ChainConfig struct {

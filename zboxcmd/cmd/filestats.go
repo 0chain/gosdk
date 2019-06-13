@@ -5,8 +5,8 @@ import (
 	"os"
 	"strconv"
 
-	"0chain.net/clientsdk/zboxcmd/util"
-	"0chain.net/clientsdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zboxcmd/util"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/spf13/cobra"
 )
 

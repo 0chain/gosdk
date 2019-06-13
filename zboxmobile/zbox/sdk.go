@@ -3,9 +3,9 @@ package zbox
 import (
 	"encoding/json"
 
-	"0chain.net/clientsdk/zboxcore/client"
-	"0chain.net/clientsdk/zboxcore/sdk"
-	"0chain.net/clientsdk/zcncore"
+	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zcncore"
 )
 
 type ChainConfig struct {

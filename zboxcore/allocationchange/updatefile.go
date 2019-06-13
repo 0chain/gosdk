@@ -3,8 +3,8 @@ package allocationchange
 import (
 	"path/filepath"
 
-	"0chain.net/clientsdk/core/common"
-	"0chain.net/clientsdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
 type UpdateFileChange struct {

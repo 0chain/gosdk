@@ -3,8 +3,8 @@ package zbox
 import (
 	"encoding/json"
 
-	"0chain.net/clientsdk/zboxcore/blockchain"
-	"0chain.net/clientsdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
 // type allocationImpl interface {

@@ -1,7 +1,7 @@
 package fileref
 
 import (
-	"0chain.net/clientsdk/core/common"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/mitchellh/mapstructure"
 )
 

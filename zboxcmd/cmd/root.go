@@ -7,13 +7,13 @@ import (
 	"os"
 	"sync"
 
-	"0chain.net/clientsdk/core/zcncrypto"
+	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"0chain.net/clientsdk/zboxcore/sdk"
-	"0chain.net/clientsdk/zcncore"
+	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zcncore"
 )
 
 var cfgFile string

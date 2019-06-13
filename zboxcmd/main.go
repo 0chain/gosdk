@@ -1,7 +1,7 @@
 package main
 
 import (
-	"0chain.net/clientsdk/zboxcmd/cmd"
+	"github.com/0chain/gosdk/zboxcmd/cmd"
 )
 
 func main() {

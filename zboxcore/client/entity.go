@@ -3,7 +3,7 @@ package client
 import (
 	"encoding/json"
 
-	"0chain.net/clientsdk/core/zcncrypto"
+	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
 type Client struct {

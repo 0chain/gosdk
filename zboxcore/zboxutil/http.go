@@ -13,9 +13,9 @@ import (
 	"net/url"
 	"time"
 
-	"0chain.net/clientsdk/core/common"
-	"0chain.net/clientsdk/zboxcore/blockchain"
-	"0chain.net/clientsdk/zboxcore/client"
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/client"
 )
 
 const SC_REST_API_URL = "v1/screst/"
