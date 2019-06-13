@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"0chain.net/clientsdk/zcncore"
+	"github.com/0chain/gosdk/zcncore"
 )
 
 type StatusUI struct {

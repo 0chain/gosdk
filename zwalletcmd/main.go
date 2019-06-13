@@ -1,7 +1,7 @@
 package main
 
 import (
-	"0chain.net/clientsdk/zwalletcmd/cmd"
+	"github.com/0chain/gosdk/zwalletcmd/cmd"
 )
 func main() {
 	cmd.Execute()
