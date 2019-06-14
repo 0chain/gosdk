@@ -5,6 +5,7 @@
       <module fileurl="file://$USER_HOME$/.zcn/.zcn.iml" filepath="$USER_HOME$/.zcn/.zcn.iml" />
       <module fileurl="file://$PROJECT_DIR$/../clientsdk/clientsdk.iml" filepath="$PROJECT_DIR$/../clientsdk/clientsdk.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/gosdk.iml" filepath="$PROJECT_DIR$/.idea/gosdk.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../zboxcmd/zboxcmd.iml" filepath="$PROJECT_DIR$/../zboxcmd/zboxcmd.iml" />
       <module fileurl="file://$PROJECT_DIR$/../zwalletcmd/zwalletcmd.iml" filepath="$PROJECT_DIR$/../zwalletcmd/zwalletcmd.iml" />
     </modules>
   </component>

@@ -22,4 +22,4 @@ require (
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 )
 
-replace github.com/0chain/gosdk => /Volumes/work/0CHAIN/codebox/work/gosdk
+replace github.com/0chain/gosdk => ../gosdk
