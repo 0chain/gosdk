@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"0chain/gosdk/encryption"
+	"github.com/0chain/gosdk/encryption"
 	"github.com/tyler-smith/go-bip39"
 	"golang.org/x/crypto/ed25519"
 )

@@ -5,10 +5,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-
-	"0chain/gosdk/encryption"
-	"github.com/herumi/bls/ffi/go/bls"
 	"github.com/tyler-smith/go-bip39"
+	"github.com/0chain/gosdk/encryption"
+	"github.com/herumi/bls/ffi/go/bls"
 )
 
 const numSplitKeys = 2

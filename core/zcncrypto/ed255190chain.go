@@ -6,9 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"time"
-
-	"github.com/0chain/gosdk/core/encryption"
 	"github.com/tyler-smith/go-bip39"
+	"github.com/0chain/gosdk/core/encryption"
 	"golang.org/x/crypto/ed25519"
 )
 

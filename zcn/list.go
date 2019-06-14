@@ -12,7 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"0chain/gosdk/util"
+	"github.com/0chain/gosdk/util"
 )
 
 type listDirData struct {

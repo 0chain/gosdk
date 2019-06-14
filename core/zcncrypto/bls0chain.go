@@ -6,10 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"time"
-
+	"github.com/tyler-smith/go-bip39"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/herumi/bls/ffi/go/bls"
-	"github.com/tyler-smith/go-bip39"
 )
 
 func init() {

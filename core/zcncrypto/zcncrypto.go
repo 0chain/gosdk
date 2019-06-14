@@ -3,9 +3,8 @@ package zcncrypto
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/0chain/gosdk/core/encryption"
 	"github.com/tyler-smith/go-bip39"
+	"github.com/0chain/gosdk/core/encryption"
 )
 
 const cryptoVersion = "1.0"

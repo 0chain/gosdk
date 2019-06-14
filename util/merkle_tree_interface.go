@@ -1,6 +1,6 @@
 package util
 
-import "0chain/gosdk/encryption"
+import "github.com/0chain/gosdk/encryption"
 
 /*MerkleTreeI - a merkle tree interface required for constructing and providing verification */
 type MerkleTreeI interface {

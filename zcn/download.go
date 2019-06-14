@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"0chain/gosdk/util"
+	"github.com/0chain/gosdk/util"
 )
 
 type downloadBlockResponse struct {
