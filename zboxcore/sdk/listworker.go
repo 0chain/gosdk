@@ -68,7 +68,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 	formWriter.Close()
 	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationID, req.remotefilepath)
 	if err != nil {
-		Logger.Error("List info request error: %s", err.Error())
+		Logger.Error("List info request error: ", err.Error())
 		return
 	}
 

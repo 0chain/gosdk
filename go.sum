@@ -53,6 +53,8 @@ github.com/herumi/bls v0.0.0-20190401053048-f0d19299b7e9 h1:aMT879WUz9XKRgCJPuCE
 github.com/herumi/bls v0.0.0-20190401053048-f0d19299b7e9/go.mod h1:i4wRNUUFF1nNmYFHM9UDl13MGoxEQkMVCLAd82qZz4s=
 github.com/herumi/bls v0.0.0-20190518020128-e46678b769cc h1:oKSLbFkxFi7Vuf21z/cLS+sQmzOr5UEg8Whg3s5CWNc=
 github.com/herumi/bls v0.0.0-20190518020128-e46678b769cc/go.mod h1:i4wRNUUFF1nNmYFHM9UDl13MGoxEQkMVCLAd82qZz4s=
+github.com/herumi/bls v0.0.0-20190523064038-b1733a744a2e h1:WAWMJj+fYW44c4Ial5IAwHYmh6+shMv/vqFbILtZVWk=
+github.com/herumi/bls v0.0.0-20190523064038-b1733a744a2e/go.mod h1:i4wRNUUFF1nNmYFHM9UDl13MGoxEQkMVCLAd82qZz4s=
 github.com/herumi/bls v0.0.0-20190607023536-90ce041aecd9 h1:qc/53giNU6qHXoYhYzG96reucL5igubRcuucUS9yJwU=
 github.com/herumi/bls v0.0.0-20190607023536-90ce041aecd9/go.mod h1:i4wRNUUFF1nNmYFHM9UDl13MGoxEQkMVCLAd82qZz4s=
 github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
