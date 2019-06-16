@@ -35,6 +35,7 @@ type RefEntity interface {
 	CalculateHash() string
 	GetType() string
 	GetPathHash() string
+	GetLookupHash() string
 	GetPath() string
 	GetName() string
 }
@@ -47,6 +48,7 @@ type Ref struct {
 	Hash         string      `json:"hash"`
 	NumBlocks    int64       `json:"num_of_blocks"`
 	PathHash     string      `json:"path_hash"`
+	LookupHash   string      `json:"lookup_hash"`
 	Children     []RefEntity `json:"-"`
 }
 
@@ -93,6 +95,10 @@ func (r *Ref) GetNumBlocks() int64 {
 
 func (r *Ref) GetPathHash() string {
 	return r.PathHash
+}
+
+func (r *Ref) GetLookupHash() string {
+	return r.LookupHash
 }
 
 func (r *Ref) GetPath() string {
@@ -162,6 +168,10 @@ func (fr *FileRef) GetNumBlocks() int64 {
 
 func (fr *FileRef) GetPathHash() string {
 	return fr.PathHash
+}
+
+func (fr *FileRef) GetLookupHash() string {
+	return fr.LookupHash
 }
 
 func (fr *FileRef) GetPath() string {

@@ -11,6 +11,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/0chain/gosdk/zboxcore/fileref"
+
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	. "github.com/0chain/gosdk/zboxcore/logger"
@@ -196,6 +198,38 @@ func (a *Allocation) DownloadFile(localPath string, remotePath string, status St
 	return nil
 }
 
+func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string) (*ListResult, error) {
+	if !a.isInitialized() {
+		return nil, notInitialized
+	}
+	sEnc, err := base64.StdEncoding.DecodeString(authTicket)
+	if err != nil {
+		return nil, common.NewError("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
+	}
+	at := &marker.AuthTicket{}
+	err = json.Unmarshal(sEnc, at)
+	if err != nil {
+		return nil, common.NewError("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
+	}
+	if len(at.FilePathHash) == 0 || len(lookupHash) == 0 {
+		return nil, common.NewError("invalid_path", "Invalid path for the list")
+	}
+
+	listReq := &ListRequest{}
+	listReq.allocationID = a.ID
+	listReq.blobbers = a.Blobbers
+	listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
+	listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+	listReq.ctx = a.ctx
+	listReq.remotefilepathhash = lookupHash
+	listReq.authToken = at
+	ref := listReq.GetListFromBlobbers()
+	if ref != nil {
+		return ref, nil
+	}
+	return nil, common.NewError("list_request_failed", "Failed to get list response from the blobbers")
+}
+
 func (a *Allocation) ListDir(path string) (*ListResult, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
@@ -275,7 +309,7 @@ func (a *Allocation) DeleteFile(path string) error {
 	return err
 }
 
-func (a *Allocation) GetAuthTicketForShare(path string, refereeClientID string) (string, error) {
+func (a *Allocation) GetAuthTicketForShare(path string, filename string, referenceType string, refereeClientID string) (string, error) {
 	if !a.isInitialized() {
 		return "", notInitialized
 	}
@@ -293,6 +327,12 @@ func (a *Allocation) GetAuthTicketForShare(path string, refereeClientID string) 
 	shareReq.blobbers = a.Blobbers
 	shareReq.ctx = a.ctx
 	shareReq.remotefilepath = path
+	shareReq.remotefilename = filename
+	if referenceType == fileref.DIRECTORY {
+		shareReq.refType = fileref.DIRECTORY
+	} else {
+		shareReq.refType = fileref.FILE
+	}
 	authTicket, err := shareReq.GetAuthTicket(refereeClientID)
 	if err != nil {
 		return "", err
@@ -309,7 +349,7 @@ func (a *Allocation) CancelDownload(remotepath string) error {
 	return common.NewError("remote_path_not_found", "Invalid path. Do download in progress for the path "+remotepath)
 }
 
-func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string, status StatusCallback) error {
+func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string, remoteLookupHash string, remoteFilename string, status StatusCallback) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
@@ -327,7 +367,7 @@ func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
 			return fmt.Errorf("Local path is not a directory '%s'", localPath)
 		}
 		localPath = strings.TrimRight(localPath, "/")
-		_, rFile := filepath.Split(at.FileName)
+		_, rFile := filepath.Split(remoteFilename)
 		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
 		if _, err := os.Stat(localPath); err == nil {
 			return fmt.Errorf("Local file already exists '%s'", localPath)
@@ -341,7 +381,7 @@ func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.allocationID = a.ID
 	downloadReq.ctx, _ = context.WithCancel(a.ctx)
 	downloadReq.localpath = localPath
-	downloadReq.remotefilepathhash = at.FilePathHash
+	downloadReq.remotefilepathhash = remoteLookupHash
 	downloadReq.authTicket = at
 	downloadReq.statusCallback = status
 	downloadReq.downloadMask = ((1 << uint32(len(a.Blobbers))) - 1)

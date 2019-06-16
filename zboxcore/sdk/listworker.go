@@ -1,12 +1,10 @@
 package sdk
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"mime/multipart"
 	"net/http"
 	"strings"
 	"sync"
@@ -39,21 +37,22 @@ type listResponse struct {
 }
 
 type ListResult struct {
-	Name      string        `json:"name"`
-	Path      string        `json:"path"`
-	Type      string        `json:"type"`
-	Size      int64         `json:"size"`
-	Hash      string        `json:"hash"`
-	MimeType  string        `json:"mimetype"`
-	NumBlocks int64         `json:"num_blocks"`
-	Children  []*ListResult `json:"list"`
-	Consensus `json:"-"`
+	Name       string        `json:"name"`
+	Path       string        `json:"path,omitempty"`
+	Type       string        `json:"type"`
+	Size       int64         `json:"size"`
+	Hash       string        `json:"hash,omitempty"`
+	MimeType   string        `json:"mimetype,omitempty"`
+	NumBlocks  int64         `json:"num_blocks"`
+	LookupHash string        `json:"lookup_hash"`
+	Children   []*ListResult `json:"list"`
+	Consensus  `json:"-"`
 }
 
 func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *listResponse) {
 	defer req.wg.Done()
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
+	//body := new(bytes.Buffer)
+	//formWriter := multipart.NewWriter(body)
 
 	ref := &fileref.Ref{}
 	var s strings.Builder
@@ -63,16 +62,30 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 	}
 	defer listRetFn()
 
-	formWriter.WriteField("path", req.remotefilepath)
+	if len(req.remotefilepath) > 0 {
+		req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
+	}
+	//formWriter.WriteField("path_hash", req.remotefilepathhash)
+	//Logger.Info("Path hash for list dir: ", req.remotefilepathhash)
 
-	formWriter.Close()
-	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationID, req.remotefilepath)
+	authTokenBytes := make([]byte, 0)
+	if req.authToken != nil {
+		authTokenBytes, err = json.Marshal(req.authToken)
+		if err != nil {
+			Logger.Error(blobber.Baseurl, " creating auth token bytes", err)
+			return
+		}
+		//formWriter.WriteField("auth_token", string(authTokenBytes))
+	}
+
+	//formWriter.Close()
+	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationID, req.remotefilepathhash, string(authTokenBytes))
 	if err != nil {
 		Logger.Error("List info request error: %s", err.Error())
 		return
 	}
 
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+	//httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
@@ -85,6 +98,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 			return fmt.Errorf("Error: Resp : %s", err.Error())
 		}
 		s.WriteString(string(resp_body))
+		Logger.Info("List result:", string(resp_body))
 		if resp.StatusCode == http.StatusOK {
 			listResult := &fileref.ListResult{}
 			err = json.Unmarshal(resp_body, listResult)
@@ -135,18 +149,20 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 		result.Name = ti.ref.Name
 		result.Path = ti.ref.Path
 		result.Type = ti.ref.Type
+		result.LookupHash = ti.ref.LookupHash
 		if result.Type == fileref.DIRECTORY {
 			result.Size = -1
 		}
 
 		for _, child := range lR[i].ref.Children {
-			actualHash := encryption.Hash(child.GetPath())
+			actualHash := encryption.Hash(child.GetLookupHash())
 			if child.GetType() == fileref.FILE {
-				actualHash = encryption.Hash(child.GetPath() + ":" + (child.(*fileref.FileRef)).ActualFileHash)
+				actualHash = encryption.Hash(child.GetLookupHash() + ":" + (child.(*fileref.FileRef)).ActualFileHash)
 			}
 			var childResult *ListResult
 			if _, ok := childResultMap[actualHash]; !ok {
 				childResult = &ListResult{Name: child.GetName(), Path: child.GetPath(), Type: child.GetType()}
+				childResult.LookupHash = child.GetLookupHash()
 				childResult.consensus = 0
 				childResult.consensusThresh = req.consensusThresh
 				childResult.fullconsensus = req.fullconsensus
@@ -161,9 +177,9 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 			}
 			childResult.NumBlocks += child.GetNumBlocks()
 			if childResult.isConsensusMin() {
-				if _, ok := selected[child.GetPath()]; !ok {
+				if _, ok := selected[child.GetLookupHash()]; !ok {
 					result.Children = append(result.Children, childResult)
-					selected[child.GetPath()] = childResult
+					selected[child.GetLookupHash()] = childResult
 				}
 			}
 		}

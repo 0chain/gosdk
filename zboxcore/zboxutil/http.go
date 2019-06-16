@@ -98,14 +98,15 @@ func NewFileStatsRequest(baseUrl string, allocation string, body io.Reader) (*ht
 	return setClientInfo(req, err)
 }
 
-func NewListRequest(baseUrl, allocation string, path string) (*http.Request, error) {
+func NewListRequest(baseUrl, allocation string, path string, auth_token string) (*http.Request, error) {
 	nurl, err := url.Parse(baseUrl)
 	if err != nil {
 		return nil, err
 	}
 	nurl.Path += LIST_ENDPOINT + allocation
 	params := url.Values{}
-	params.Add("path", path)
+	params.Add("path_hash", path)
+	params.Add("auth_token", auth_token)
 	//url := fmt.Sprintf("%s%s%s?path=%s", baseUrl, LIST_ENDPOINT, allocation, path)
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)

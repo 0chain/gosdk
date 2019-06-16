@@ -188,7 +188,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context, a *Allocation) 
 	wrFile.Seek(0, 0)
 	mimetype, _ := zboxutil.GetFileContentType(wrFile)
 	if req.statusCallback != nil {
-		req.statusCallback.Completed(req.allocationID, remotePathCallback, fileRef.Name, mimetype, int(size), OpDownload)
+		req.statusCallback.Completed(req.allocationID, remotePathCallback, fileRef.Name, mimetype, int(fileRef.ActualFileSize), OpDownload)
 	}
 	return
 }
