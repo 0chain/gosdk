@@ -62,7 +62,7 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 	formWriter.Close()
 	httpreq, err := zboxutil.NewFileStatsRequest(blobber.Baseurl, req.allocationID, body)
 	if err != nil {
-		Logger.Error("File meta info request error: %s", err.Error())
+		Logger.Error("File meta info request error: ", err.Error())
 		return
 	}
 

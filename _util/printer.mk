@@ -1,0 +1,14 @@
+COL_RED := "\033[1;31m"
+COL_GRN := "\033[1;32m"
+COL_YEL := "\033[1;33m"
+COL_BLU := "\033[1;34m"
+COL_MAG := "\033[1;35m"
+COL_CYN := "\033[1;36m"
+COL_NON := "\033[0m"
+PRINT_RED := printf $(COL_RED)
+PRINT_GRN := printf $(COL_GRN)
+PRINT_YEL := printf $(COL_YEL)
+PRINT_BLU := printf $(COL_BLU)
+PRINT_MAG := printf $(COL_MAG)
+PRINT_CYN := printf $(COL_CYN)
+PRINT_NON := printf $(COL_NON)
