@@ -30,3 +30,5 @@ upgrade-gmp:
 	brew upgrade gmp
 	$(shell sudo ln -sf /usr/local/Cellar/gmp/*/lib /usr/local/lib)
 
+ldload-herumi:
+	@echo "Loading herumi library - darwin"

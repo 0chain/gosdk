@@ -26,3 +26,7 @@ upgrade-gmp:
 	@echo "Upgrading gmp ..."
 	sudo apt-get -y upgrade libgmp3-dev
 
+ldload-herumi:
+	@echo "Loading herumi library - linux"
+	@sudo ldconfig
+	@sudo ldconfig -p | egrep "bls|mcl"

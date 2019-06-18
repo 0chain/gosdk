@@ -64,4 +64,4 @@ install-herumi: install-herumi-deps | clone-herumi checkout-herumi build-herumi 
 	@echo "Installing BLS: branch=$(bls_branch)"
 	@$(PRINT_NON)
 	@sudo $(MAKE) -C $(BLS_DIR) install
-
+	@sudo $(MAKE) ldload-herumi
