@@ -4,7 +4,7 @@ GOMODCORE           := $(GOMODBASE)/zcncore
 VERSION_FILE        := $(ROOT_DIR)/core/version/version.go
 MAJOR_VERSION       := "1.0"
 
-PLATFORMOS := $(shell uname | tr "[:upper:]" "[:lower:]")
+PLATFORM:=$(shell uname -s | tr "[:upper:]" "[:lower:]")
 
 include _util/printer.mk
 include _util/herumi.mk
@@ -50,10 +50,11 @@ clean: clean-gosdk clean-herumi
 
 help:
 	@echo "Environment: "
-	@echo "\tGOPATH=$(GOPATH)"
-	@echo "\tGOROOT=$(GOROOT)"
-	@echo "\tBLS git branch=$(bls_branch)"
-	@echo "\tMCL git branch=$(mcl_branch)"
+	@echo "\tPLATFORM.......:$(PLATFORM)"
+	@echo "\tGOPATH.........:$(GOPATH)"
+	@echo "\tGOROOT.........:$(GOROOT)"
+	@echo "\tBLS branch.....:$(bls_branch)"
+	@echo "\tMCL branch.....:$(mcl_branch)"
 	@echo ""
 	@echo "Supported commands:"
 	@echo "\tmake help              - display environment and make targets"
