@@ -9,7 +9,7 @@ PLATFORMOS := $(shell uname | tr "[:upper:]" "[:lower:]")
 include _util/printer.mk
 include _util/herumi.mk
 
-.PHONY: install-all herumi-all gosdk-all show
+.PHONY: show install-all herumi-all gosdk-all sdkver
 
 default: help show
 
@@ -18,18 +18,20 @@ gomod-download:
 	go mod download -json
 
 gomod-clean:
-	go clean --modcache
-
-gosdk-clean:
 	go clean -i -r -x -modcache  ./...
+
+clean-gosdk:
 
 gosdk-build: gomod-download
 	go build -x -v -tags bn256 ./...
 
+sdkver:
+	cd _sdkver; go build -o sdkver sdkver.go; ./sdkver
+
 gosdk-test:
 	go test -tags bn256 ./...
 
-gosdk-all: | gosdk-build gosdk-test
+install-gosdk: | gosdk-build gosdk-test
 
 getrev:
 	$(eval VERSION_STR=$(MAJOR_VERSION).$(shell git rev-list --count HEAD))
@@ -41,21 +43,21 @@ getrev:
 	@echo const VERSIONSTR = \"$(VERSION_STR)\" >> $(VERSION_FILE)
 	@echo "" >> $(VERSION_FILE)
 
-install-all: herumi-all gosdk-all
+install: install-herumi install-gosdk sdkver
 
-clean:
+clean: clean-gosdk clean-herumi
 	@rm -rf $(OUTDIR)
 
-show:
-	@echo "GOPATH=$(GOPATH)"
-	@echo "GOROOT=$(GOROOT)"
-	@echo "BLS git branch=$(bls_branch)"
-	@echo "MCL git branch=$(mcl_branch)"
-
 help:
+	@echo "Environment: "
+	@echo "\tGOPATH=$(GOPATH)"
+	@echo "\tGOROOT=$(GOROOT)"
+	@echo "\tBLS git branch=$(bls_branch)"
+	@echo "\tMCL git branch=$(mcl_branch)"
+	@echo ""
 	@echo "Supported commands:"
-	@ecgo "\tmake show              - Display environment and make variables"
-	@echo "\tmake install-all       - Install all build and project dependencies"
-	@echo "\tmake gosdk-all         - Install GO modules and packages"
-	@echo "\tmake herumi-all        - Download, build and install HERUMI packages"
-	@echo "\tmake clean             - Deletes all the built output files"
+	@echo "\tmake help              - display environment and make targets"
+	@echo "\tmake install           - installs herumi and gosdk"
+	@echo "\tmake install-herumi    - install herumi library"
+	@echo "\tmake install-gosdk     - install gosdk. Prerequiste is install-herumi"
+	@echo "\tmake clean             - deletes all build output files"
