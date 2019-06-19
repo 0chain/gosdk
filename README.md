@@ -18,7 +18,7 @@ These steps have been tested out thoroughly on OSX Mojave 10.14.5 and Vanilla Ub
 0chain/gosdk has heavy dependency on [BLS](https://github.com/herumi/bls) and [MCL](https://github.com/herumi/mcl) 
 provided by [MITSUNARI Shigeo](https://github.com/herumi). Developers should refer to those links when they encounter any errors. 
 
-Please send email to [partners@chain.net](mailto:partners@0chain.net) if you encounter any problems.
+Please send email to [alphanet@chain.net](mailto:alphanet@0chain.net) if you encounter any problems.
 
 |TARGET       |Description   |
 |:----        |:----------   |
