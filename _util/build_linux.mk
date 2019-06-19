@@ -11,9 +11,9 @@ build-tools:
 	sudo apt update
 	@echo ">>> Install jq"
 	sudo apt-get install jq
-   	@echo ">>> Installing build-essentials tools"
-   	sudo apt-get -y install build-essential
-   	@echo ">>> Install go tools"
-   	sudo snap install go --classic
-   	@echo ">>> Display go version"
-   	go version
+	@echo ">>> Installing build-essentials tools"
+	sudo apt-get -y install build-essential
+	@echo ">>> Install go tools"
+	sudo snap install go --classic
+	@echo ">>> Display go version"
+	go version
