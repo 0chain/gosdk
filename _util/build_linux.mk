@@ -7,8 +7,9 @@ $(error PLATFORM doesn't match linux)
 endif
 
 build-tools:
-	@echo "Installing build-essentials tools"
+	@echo ">>> Installing build-essentials tools"
 	sudo apt-get -y install build-essential
-	@echo "Install go tools"
+	@echo ">>> Install go tools"
 	sudo snap install go --classic
+	@echo ">>> Display go version"
 	go version
