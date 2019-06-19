@@ -10,4 +10,4 @@ build-tools:
 	@echo "Installing build-essentials tools"
 	sudo apt-get -y install build-essential
 	@echo "Install go tools"
-	sudo snap -y install go --classic
+	sudo snap install go --classic
