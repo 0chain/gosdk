@@ -7,9 +7,10 @@ MAJOR_VERSION       := "1.0"
 PLATFORM:=$(shell uname -s | tr "[:upper:]" "[:lower:]")
 
 include _util/printer.mk
+include _util/build_$(PLATFORM).mk
 include _util/herumi.mk
 
-.PHONY: show install-all herumi-all gosdk-all sdkver
+.PHONY: build-tools install-all herumi-all gosdk-all sdkver
 
 default: help show
 

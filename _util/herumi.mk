@@ -23,7 +23,7 @@ include _util/herumi_$(PLATFORM).mk
 
 install-herumi-deps: install-openssl install-gmp
 
-.PHONY: herumi-clone herumi-build herumi-install
+.PHONY: build-tools herumi-clone herumi-build herumi-install
 
 clone-herumi:
 	@echo Deleting directories: [$(BLS_DIR) $(MCL_DIR)]
