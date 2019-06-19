@@ -8,6 +8,6 @@ endif
 
 build-tools:
 	@echo "Installing build-essentials tools"
-	sudo apt-get install build-essentials
+	sudo apt-get -y install build-essential
 	@echo "Install go tools"
-	sudo snap install go --classic
+	sudo snap -y install go --classic
