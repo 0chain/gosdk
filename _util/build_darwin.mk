@@ -8,3 +8,5 @@ endif
 
 build-tools:
 	brew install go
+	brew install jq
+
