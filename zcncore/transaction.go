@@ -3,11 +3,11 @@ package zcncore
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"time"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"net/http"
+	"time"
 )
 
 // TransactionCallback needs to be implemented by the caller for transaction related APIs
@@ -270,16 +270,64 @@ func (t *Transaction) Verify() error {
 		defer close(result)
 		for _, sharder := range _config.chain.Sharders {
 			go func(sharderurl string) {
-				Logger.Info("Verify transaction hash", t.txnHash, "from", sharderurl)
+				Logger.Info("Verify transaction hash: ", t.txnHash, " from", sharderurl)
 				url := fmt.Sprintf("%v%v%v", sharderurl, TXN_VERIFY_URL, t.txnHash)
-				req, err := util.NewHTTPGetRequest(url)
-				if err != nil {
-					Logger.Error(sharderurl, "new get request failed. ", err.Error())
-					return
-				}
-				res, err := req.Get()
-				if err != nil {
-					Logger.Error(sharderurl, "get error. ", err.Error())
+				ticker := time.NewTicker(time.Second)
+				defer ticker.Stop()
+				var res *util.GetResponse
+				done := make(chan bool)
+				go func() {
+					lburl := fmt.Sprintf("%v%v", sharderurl, LATEST_FINALIZED_BLOCK)
+					ticker := time.NewTicker(time.Second)
+					for true {
+						select {
+						case <-ticker.C:
+							req, err := util.NewHTTPGetRequest(lburl)
+							if err != nil {
+								Logger.Error(sharderurl, "new get request failed. ", err.Error())
+							}
+							res, err = req.Get()
+							if err != nil {
+								Logger.Error(sharderurl, "get error. ", err.Error())
+							}
+							var objmap map[string]json.RawMessage
+							err = json.Unmarshal([]byte(res.Body), &objmap)
+							if err != nil {
+								Logger.Debug("error getting latest finalized block: ", err)
+								break
+							}
+							if date, ok := objmap["creation_date"]; ok {
+								var dateTimeStamp int64
+								err = json.Unmarshal(date, &dateTimeStamp)
+								if dateTimeStamp-t.txn.CreationDate > 10 {
+									done <- true
+									return
+								}
+							}
+						}
+					}
+				}()
+				accepted := false
+				for !accepted {
+					select {
+					case <-done:
+						accepted = true
+					case <-ticker.C:
+						req, err := util.NewHTTPGetRequest(url)
+						if err != nil {
+							Logger.Error(sharderurl, "new get request failed. ", err.Error())
+						}
+						res, err = req.Get()
+						if err != nil {
+							Logger.Error(sharderurl, "get error. ", err.Error())
+						}
+						var objmap map[string]json.RawMessage
+						err = json.Unmarshal([]byte(res.Body), &objmap)
+						if err != nil {
+							continue
+						}
+						_, accepted = objmap["version"]
+					}
 				}
 				result <- res
 				return

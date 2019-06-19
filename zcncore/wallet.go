@@ -24,6 +24,7 @@ type ChainConfig struct {
 var defaultLogLevel = logger.DEBUG
 var Logger logger.Logger
 
+var LATEST_FINALIZED_BLOCK = `/v1/block/get/latest_finalized`
 var REGISTER_CLIENT = `/v1/client/put`
 var PUT_TRANSACTION = `/v1/transaction/put`
 var TXN_VERIFY_URL = `/v1/transaction/get/confirmation?hash=`

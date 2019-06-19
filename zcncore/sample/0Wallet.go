@@ -10,8 +10,8 @@ import (
 )
 
 type StatusUI struct {
-	i  int
-	wg sync.WaitGroup
+	i      int
+	wg     sync.WaitGroup
 	txnout map[string]json.RawMessage
 }
 
@@ -29,36 +29,28 @@ type StatusUI struct {
 
 const ChainConfig = `{
 	"miners": [
-		"http://m000.ruby.alphanet-0chain.net:7071",
-		"http://m001.ruby.alphanet-0chain.net:7071",
-		"http://m002.ruby.alphanet-0chain.net:7071",
-		"http://m003.ruby.alphanet-0chain.net:7071",
-		"http://m004.ruby.alphanet-0chain.net:7071",
-		"http://m005.ruby.alphanet-0chain.net:7071",
-		"http://m006.ruby.alphanet-0chain.net:7071",
-		"http://m007.ruby.alphanet-0chain.net:7071",
-		"http://m008.ruby.alphanet-0chain.net:7071",
-		"http://m009.ruby.alphanet-0chain.net:7071"
+		"http://ohio.devi.testnet-0chain.net:7071",
+   		"http://ohio.devi.testnet-0chain.net:7072",
+    	"http://ohio.devi.testnet-0chain.net:7073",
+    	"http://ohio.devi.testnet-0chain.net:7074"
 	],
 	"sharders": [
-		"http://s000.ruby.alphanet-0chain.net:7171",
-		"http://s001.ruby.alphanet-0chain.net:7171",
-		"http://s002.ruby.alphanet-0chain.net:7171",
-		"http://s003.ruby.alphanet-0chain.net:7171"
+		"http://ohio.devi.testnet-0chain.net:7171"
 	],
-	"signaturescheme": "ed25519"
+	"signaturescheme": "bls0chain"
 }`
+
 var wallet = `
-{"client_id":"fdb9fef8c6c2e74bce76ed345ad413280ccb32f3f2a6de6894d019ac82fbfb07",
-"client_key":"2221f1db1dd4c1d6f754f6681318db97cad11a15a2bc80256998926a19bcc7c5",
+{"client_id":"0bc96a0980170045863d826f9eb579d8144013210602e88426408e9f83c236f6",
+"client_key":"a4e58c66b072d27288b650db9a476fe66a1a4f69e0f8fb11499f9ec3a579e21e5dc0298b8c5ae5baa205730d06bc04b07a31943ab3bd620e8427c15d5c413b9e",
 "keys":[
 	{
-		"public_key":"2221f1db1dd4c1d6f754f6681318db97cad11a15a2bc80256998926a19bcc7c5",
-		"private_key":"63c1fae5d79529c2ed4e0c476bea054bc6108af47012cc8916a788810522bbbb2221f1db1dd4c1d6f754f6681318db97cad11a15a2bc80256998926a19bcc7c5"
+		"public_key":"a4e58c66b072d27288b650db9a476fe66a1a4f69e0f8fb11499f9ec3a579e21e5dc0298b8c5ae5baa205730d06bc04b07a31943ab3bd620e8427c15d5c413b9e",
+		"private_key":"c0f3a3100241888ea9c2cc5c7300e3e510a8e7190c2c20b03f80e3937a91530d"
 	}],
-"mnemonics":"zebra title path glory work nest admit invite tornado actress actor consider squeeze season wet elbow loop educate moment number crunch brick buzz umbrella",
+"mnemonics":"snake mixed bird cream cotton trouble small fee finger catalog measure spoon private second canal pact unable close predict dream mask delay path inflict",
 "version":"1.0",
-"date_created":"2019-05-13 22:56:35.317831 -0700 PDT m=+0.005299071"}`
+"date_created":"2019-06-19 13:37:50.466889 -0700 PDT m=+0.023873276"}`
 
 func (s *StatusUI) OnWalletCreateComplete(status int, w string, err string) {
 	defer s.wg.Done()
@@ -83,9 +75,9 @@ func (s *StatusUI) OnVerifyComplete(t *zcncore.Transaction, status int) {
 
 func (s *StatusUI) OnBalanceAvailable(status int, value int64) {
 	defer s.wg.Done()
-	fmt.Println("=========== Balance Status:", status, "Value:", value, 
-				"Token:", zcncore.ConvertToToken(value),
-				"Value:", zcncore.ConvertToValue(zcncore.ConvertToToken(value)))
+	fmt.Println("=========== Balance Status:", status, "Value:", value,
+		"Token:", zcncore.ConvertToToken(value),
+		"Value:", zcncore.ConvertToValue(zcncore.ConvertToToken(value)))
 }
 
 func main() {
@@ -100,7 +92,7 @@ func main() {
 
 	var txnhash string
 	flag.StringVar(&txnhash, "txnhash", "", "Transaction hash to verify.\nMandatory for -cmd verify")
-	
+
 	var txndata string
 	flag.StringVar(&txndata, "txndata", "", "Data to store.\nMandatory for -cmd store")
 
