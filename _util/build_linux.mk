@@ -10,7 +10,7 @@ build-tools:
 	@echo ">>> Update apt"
 	sudo apt update
 	@echo ">>> Install jq"
-   	sudo apt-get install jq
+	sudo apt-get install jq
    	@echo ">>> Installing build-essentials tools"
    	sudo apt-get -y install build-essential
    	@echo ">>> Install go tools"
