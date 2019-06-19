@@ -6,16 +6,6 @@ This repository currently supports the following platforms:
 
 It is possible to support the sdk for other variations of Linux as well. 
 
-0chain/gosdk has heavy dependency on BLS and MCL provided by MITSUNARI Shigeo. 
-
-Developers are strongly encouraged to familiarize themselves to the following links and repositories
-before building the 0chain/gosdk.
-
-- [MITSUNARI Shigeo](https://github.com/herumi)
-- [BLS](https://github.com/herumi/bls)
-- [MCL](https://github.com/herumi/mcl)
-
-
 ## Build and Installation 
 0chain/gosdk is build and installed using [GNU Make](https://www.gnu.org/software/make/). 
 The Makefile has following targets to ease installation of build tools and the 0chain/gosdk. 
@@ -25,7 +15,10 @@ packages on the developer system.**
 
 These steps have been tested out thoroughly on OSX Mojave 10.14.5 and Vanilla Ubuntu BIONIC. 
 
-Please send email to [partners](mailto:partners@0chain.net) if you encounter any problems.
+0chain/gosdk has heavy dependency on [BLS](https://github.com/herumi/bls) and [MCL](https://github.com/herumi/mcl) 
+provided by [MITSUNARI Shigeo](https://github.com/herumi). Developers should refer to those links when they encounter any errors. 
+
+Please send email to [partners@chain.net](mailto:partners@0chain.net) if you encounter any problems.
 
 |TARGET       |Description   |
 |:----        |:----------   |
