@@ -11,3 +11,4 @@ build-tools:
 	sudo apt-get -y install build-essential
 	@echo "Install go tools"
 	sudo snap install go --classic
+	go version
