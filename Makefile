@@ -10,9 +10,9 @@ include _util/printer.mk
 include _util/build_$(PLATFORM).mk
 include _util/herumi.mk
 
-.PHONY: build-tools install-all herumi-all gosdk-all sdkver
+.PHONY: build-tools install-all herumi-all gosdk-all sdkver help
 
-default: help show
+default: help
 
 #GO BUILD SDK
 gomod-download:
@@ -58,8 +58,9 @@ help:
 	@echo "\tMCL branch.....:$(mcl_branch)"
 	@echo ""
 	@echo "Supported commands:"
-	@echo "\tmake help              - display environment and make targets"
-	@echo "\tmake install           - installs herumi and gosdk"
-	@echo "\tmake install-herumi    - install herumi library"
-	@echo "\tmake install-gosdk     - install gosdk. Prerequiste is install-herumi"
-	@echo "\tmake clean             - deletes all build output files"
+	@echo "\tmake help              - Display environment and make targets"
+	@echo "\tmake build-tools       - Install go, jq and supporting tools required for build"
+	@echo "\tmake install           - Install herumi and gosdk"
+	@echo "\tmake install-herumi    - Install herumi library"
+	@echo "\tmake install-gosdk     - Install gosdk. Prerequiste is install-herumi"
+	@echo "\tmake clean             - Deletes all build output files"
