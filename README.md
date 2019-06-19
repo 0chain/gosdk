@@ -48,9 +48,16 @@ Please send email to [partners](mailto:partners@0chain.net) if you encounter any
 - [What are the tools installed by build-tools on darwin](./_util/build_darwin.mk)
 - [What are the tools installed by build-tools on linux](./_util/build_linux.mk)
 
+- [What is snap ?](https://docs.snapcraft.io/getting-started)
+
+- Will sudo apt-get install still work ?
+  Ubuntu bionic has moved several packages to use snap. Some packages can still be downloaded
+  the apt-get method. 
+
 - How to install GO on ubuntu using snap
 ```.env
         sudo snap install go --classic
 ```
-- [How to: Install Go 1.11.2 on Ubuntu](https://medium.com/@patdhlk/how-to-install-go-1-9-1-on-ubuntu-16-04-ee64c073cd79)
+- [What are GO modules](https://github.com/golang/go/wiki/Modules)
+- [How to: Install Go 1.11.2 on Ubuntu using snap](https://medium.com/@patdhlk/how-to-install-go-1-9-1-on-ubuntu-16-04-ee64c073cd79)
 
