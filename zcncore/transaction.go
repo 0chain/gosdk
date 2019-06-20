@@ -278,15 +278,16 @@ func (t *Transaction) Verify() error {
 				done := make(chan bool)
 				go func() {
 					lburl := fmt.Sprintf("%v%v", sharderurl, LATEST_FINALIZED_BLOCK)
-					ticker := time.NewTicker(time.Second)
+					lbticker := time.NewTicker(time.Second)
+					defer lbticker.Stop()
 					for true {
 						select {
-						case <-ticker.C:
+						case <-lbticker.C:
 							req, err := util.NewHTTPGetRequest(lburl)
 							if err != nil {
 								Logger.Error(sharderurl, "new get request failed. ", err.Error())
 							}
-							res, err = req.Get()
+							res, err := req.Get()
 							if err != nil {
 								Logger.Error(sharderurl, "get error. ", err.Error())
 							}
