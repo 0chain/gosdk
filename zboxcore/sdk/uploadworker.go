@@ -267,6 +267,7 @@ func (req *UploadRequest) setupUpload(a *Allocation) {
 	req.file = make([]*fileref.FileRef, numUploads)
 	for i := range req.uploadDataCh {
 		req.uploadDataCh[i] = make(chan []byte)
+		req.uploadThumbCh[i] = make(chan []byte)
 		req.file[i] = &fileref.FileRef{}
 		req.file[i].Name = req.filemeta.Name
 		req.file[i].Path = req.remotefilepath
