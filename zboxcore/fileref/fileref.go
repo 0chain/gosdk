@@ -22,9 +22,11 @@ type FileRef struct {
 	ContentHash         string `json:"content_hash"`
 	Size                int64  `json:"size"`
 	MerkleRoot          string `json:"merkle_root"`
+	ThumbnailSize       int64  `json:"thumbnail_size"`
+	ThumbnailHash       string `json:"thumbnail_hash"`
 	ActualFileSize      int64  `json:"actual_file_size"`
 	ActualFileHash      string `json:"actual_file_hash"`
-	ActualThubnailSize  int64  `json:"actual_thumnail_size"`
+	ActualThumbnailSize int64  `json:"actual_thumbnail_size"`
 	ActualThumbnailHash string `json:"actual_thumbnail_hash"`
 	MimeType            string `json:"mimetype"`
 }

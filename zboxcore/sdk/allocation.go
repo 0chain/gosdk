@@ -107,14 +107,25 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 }
 
 func (a *Allocation) UpdateFile(localpath string, remotepath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, true)
+	return a.uploadOrUpdateFile(localpath, remotepath, status, true, "")
 }
 
 func (a *Allocation) UploadFile(localpath string, remotepath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, false)
+	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "")
 }
 
-func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, status StatusCallback, isUpdate bool) error {
+/*
+TODO: enable on blobbers
+func (a *Allocation) UpdateFileWithThumbnail(localpath string, remotepath string, thumbnailpath string, status StatusCallback) error {
+	return a.uploadOrUpdateFile(localpath, remotepath, status, true, thumbnailpath)
+}
+
+func (a *Allocation) UploadFileWithThumbnail(localpath string, remotepath string, thumbnailpath string, status StatusCallback) error {
+	return a.uploadOrUpdateFile(localpath, remotepath, status, false, thumbnailpath)
+}
+*/
+
+func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, status StatusCallback, isUpdate bool, thumbnailpath string) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
@@ -122,6 +133,18 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	if err != nil {
 		return fmt.Errorf("Local file error: %s", err.Error())
 	}
+	thumbnailSize := int64(0)
+	if len(thumbnailpath) > 0 {
+		fileInfo, err := os.Stat(thumbnailpath)
+		if err != nil {
+			thumbnailSize = 0
+			thumbnailpath = ""
+		} else {
+			thumbnailSize = fileInfo.Size()
+		}
+
+	}
+
 	remotepath = filepath.Clean(remotepath)
 	isabs := filepath.IsAbs(remotepath)
 	if !isabs {
@@ -132,11 +155,13 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	_, fileName = filepath.Split(remotepath)
 	uploadReq := &UploadRequest{}
 	uploadReq.remotefilepath = remotepath
+	uploadReq.thumbnailpath = thumbnailpath
 	uploadReq.filepath = localpath
 	uploadReq.filemeta = &FileMeta{}
 	uploadReq.filemeta.Name = fileName
 	uploadReq.filemeta.Size = fileInfo.Size()
 	uploadReq.filemeta.Path = remotepath
+	uploadReq.filemeta.ThumbnailSize = thumbnailSize
 	uploadReq.remaining = uploadReq.filemeta.Size
 	uploadReq.isRepair = false
 	uploadReq.isUpdate = isUpdate

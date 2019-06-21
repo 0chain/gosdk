@@ -122,6 +122,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context, a *Allocation) 
 	perShard := (size + int64(req.datashards) - 1) / int64(req.datashards)
 	chunksPerShard := (perShard + int64(fileref.CHUNK_SIZE) - 1) / fileref.CHUNK_SIZE
 	wrFile, err := os.OpenFile(req.localpath, os.O_CREATE|os.O_WRONLY, 0644)
+	Logger.Info("req.localpath=",req.localpath)
 	if err != nil {
 		if req.statusCallback != nil {
 			Logger.Error(err.Error())

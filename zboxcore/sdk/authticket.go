@@ -25,7 +25,7 @@ func (at *AuthTicket) IsDir() (bool, error) {
 		return false, common.NewError("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
 	}
 	authTicket := &marker.AuthTicket{}
-	err = json.Unmarshal(sEnc, at)
+	err = json.Unmarshal(sEnc, authTicket)
 	if err != nil {
 		return false, common.NewError("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
 	}
@@ -38,9 +38,22 @@ func (at *AuthTicket) GetFileName() (string, error) {
 		return "", common.NewError("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
 	}
 	authTicket := &marker.AuthTicket{}
-	err = json.Unmarshal(sEnc, at)
+	err = json.Unmarshal(sEnc, authTicket)
 	if err != nil {
 		return "", common.NewError("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
 	}
 	return authTicket.FileName, nil
+}
+
+func (at *AuthTicket) GetLookupHash() (string, error) {
+	sEnc, err := base64.StdEncoding.DecodeString(at.b64Ticket)
+	if err != nil {
+		return "", common.NewError("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
+	}
+	authTicket := &marker.AuthTicket{}
+	err = json.Unmarshal(sEnc, authTicket)
+	if err != nil {
+		return "", common.NewError("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
+	}
+	return authTicket.FilePathHash, nil
 }

@@ -32,23 +32,28 @@ import (
 const additionalSuccessRate = (10)
 
 type FileMeta struct {
-	Name     string
-	Path     string
-	Hash     string
-	MimeType string
-	Size     int64
+	Name          string
+	Path          string
+	Hash          string
+	MimeType      string
+	Size          int64
+	ThumbnailSize int64
+	ThumbnailHash string
 }
 
 type uploadFormData struct {
-	ConnectionID string `json:"connection_id"`
-	Filename     string `json:"filename"`
-	Path         string `json:"filepath"`
-	Hash         string `json:"content_hash,omitempty"`
-	MerkleRoot   string `json:"merkle_root,omitempty"`
-	ActualHash   string `json:"actual_hash"`
-	ActualSize   int64  `json:"actual_size"`
-	MimeType     string `json:"mimetype"`
-	CustomMeta   string `json:"custom_meta,omitempty"`
+	ConnectionID        string `json:"connection_id"`
+	Filename            string `json:"filename"`
+	Path                string `json:"filepath"`
+	Hash                string `json:"content_hash,omitempty"`
+	ThumbnailHash       string `json:"thumbnail_content_hash,omitempty"`
+	MerkleRoot          string `json:"merkle_root,omitempty"`
+	ActualHash          string `json:"actual_hash"`
+	ActualSize          int64  `json:"actual_size"`
+	ActualThumbnailSize int64  `json:"actual_thumb_size"`
+	ActualThumbnailHash string `json:"actual_thumb_hash"`
+	MimeType            string `json:"mimetype"`
+	CustomMeta          string `json:"custom_meta,omitempty"`
 }
 
 type uploadResult struct {
@@ -59,26 +64,31 @@ type uploadResult struct {
 }
 
 type UploadRequest struct {
-	filepath       string
-	remotefilepath string
-	statusCallback StatusCallback
-	fileHash       hash.Hash
-	fileHashWr     io.Writer
-	file           []*fileref.FileRef
-	filemeta       *FileMeta
-	remaining      int64
-	wg             *sync.WaitGroup
-	uploadDataCh   []chan []byte
-	isRepair       bool
-	isUpdate       bool
-	connectionID   string
-	datashards     int
-	parityshards   int
-	uploadMask     uint32
+	filepath        string
+	thumbnailpath   string
+	remotefilepath  string
+	statusCallback  StatusCallback
+	fileHash        hash.Hash
+	fileHashWr      io.Writer
+	thumbnailHash   hash.Hash
+	thumbnailHashWr io.Writer
+	file            []*fileref.FileRef
+	filemeta        *FileMeta
+	remaining       int64
+	thumbRemaining  int64
+	wg              *sync.WaitGroup
+	uploadDataCh    []chan []byte
+	uploadThumbCh   []chan []byte
+	isRepair        bool
+	isUpdate        bool
+	connectionID    string
+	datashards      int
+	parityshards    int
+	uploadMask      uint32
 	Consensus
 }
 
-func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.StorageNode, file *fileref.FileRef, uploadCh chan []byte, wg *sync.WaitGroup) {
+func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.StorageNode, file *fileref.FileRef, uploadCh chan []byte, uploadThumbCh chan []byte, wg *sync.WaitGroup) {
 	bodyReader, bodyWriter := io.Pipe()
 	formWriter := multipart.NewWriter(bodyWriter)
 	httpreq, _ := zboxutil.NewUploadRequest(blobber.Baseurl, a.ID, bodyReader, req.isUpdate)
@@ -88,56 +98,111 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	var formData uploadFormData
 	shardSize := (req.filemeta.Size + int64(a.DataShards) - 1) / int64(a.DataShards)
+	thumbnailSize := int64(0)
 	remaining := shardSize
 	go func() {
-		fileField, err := formWriter.CreateFormFile("uploadFile", file.Name)
-		if err != nil {
-			Logger.Error("Create form failed: ", err)
-			bodyWriter.CloseWithError(err)
-			// Just read the data to unblock
+		fileMerkleRoot := ""
+		fileContentHash := ""
+		thumbContentHash := ""
+		internalWG := &sync.WaitGroup{}
+		internalWG.Add(2)
+		go func() {
+			defer internalWG.Done()
+			fileField, err := formWriter.CreateFormFile("uploadFile", file.Name)
+			if err != nil {
+				Logger.Error("Create form failed: ", err)
+				bodyWriter.CloseWithError(err)
+				// Just read the data to unblock
+				for remaining > 0 {
+					dataBytes := <-uploadCh
+					remaining = remaining - int64(len(dataBytes))
+				}
+				_ = <-uploadCh
+				return
+			}
+			// Setup file hash compute
+			h := sha1.New()
+			merkleHash := sha3.New256()
+			hWr := io.MultiWriter(h, merkleHash)
+			merkleLeaves := make([]util.Hashable, 0)
+			// Read the data
 			for remaining > 0 {
-				dataBytes := <-uploadCh
+				dataBytes, ok := <-uploadCh
+				if !ok {
+					return
+				}
+				fileField.Write(dataBytes)
+				hWr.Write(dataBytes)
+				merkleLeaves = append(merkleLeaves, util.NewStringHashable(hex.EncodeToString(merkleHash.Sum(nil))))
+				merkleHash.Reset()
 				remaining = remaining - int64(len(dataBytes))
 			}
-			_ = <-uploadCh
-			return
-		}
-		// Setup file hash compute
-		h := sha1.New()
-		merkleHash := sha3.New256()
-		hWr := io.MultiWriter(h, merkleHash)
-		merkleLeaves := make([]util.Hashable, 0)
-		// Read the data
-		for remaining > 0 {
-			dataBytes := <-uploadCh
-			fileField.Write(dataBytes)
-			hWr.Write(dataBytes)
-			merkleLeaves = append(merkleLeaves, util.NewStringHashable(hex.EncodeToString(merkleHash.Sum(nil))))
-			merkleHash.Reset()
-			remaining = remaining - int64(len(dataBytes))
-		}
-		var mt util.MerkleTreeI = &util.MerkleTree{}
-		mt.ComputeTree(merkleLeaves)
-		if !req.isRepair {
-			// Wait for file hash to be ready
-			// Logger.Debug("Waiting for file hash....")
-			_ = <-uploadCh
-			// Logger.Debug("File Hash ready", obj.file.Hash)
-		}
+			var mt util.MerkleTreeI = &util.MerkleTree{}
+			mt.ComputeTree(merkleLeaves)
+			if !req.isRepair {
+				// Wait for file hash to be ready
+				// Logger.Debug("Waiting for file hash....")
+				_ = <-uploadCh
+				// Logger.Debug("File Hash ready", obj.file.Hash)
+			}
+			fileContentHash = hex.EncodeToString(h.Sum(nil))
+			fileMerkleRoot = mt.GetRoot()
+		}()
+
+		go func() {
+			defer internalWG.Done()
+			if len(req.thumbnailpath) == 0 {
+				return
+			}
+
+			thumbnailSize = (req.filemeta.ThumbnailSize + int64(a.DataShards) - 1) / int64(a.DataShards)
+			remaining := thumbnailSize
+
+			fileField, err := formWriter.CreateFormFile("uploadThumbnailFile", file.Name+".thumb")
+			if err != nil {
+				Logger.Error("Create form failed: ", err)
+				return
+			}
+			// Setup file hash compute
+			h := sha1.New()
+			hWr := io.MultiWriter(h)
+			// Read the data
+			for remaining > 0 {
+				dataBytes, ok := <-uploadThumbCh
+				if !ok {
+					return
+				}
+				fileField.Write(dataBytes)
+				hWr.Write(dataBytes)
+				remaining = remaining - int64(len(dataBytes))
+			}
+			if !req.isRepair {
+				// Wait for file hash to be ready
+				// Logger.Debug("Waiting for file hash....")
+				_ = <-uploadThumbCh
+				// Logger.Debug("File Hash ready", obj.file.Hash)
+			}
+			thumbContentHash = hex.EncodeToString(h.Sum(nil))
+		}()
+		internalWG.Wait()
+
 		formData = uploadFormData{
-			ConnectionID: req.connectionID,
-			Filename:     file.Name,
-			Path:         file.Path,
-			ActualHash:   req.filemeta.Hash,
-			ActualSize:   req.filemeta.Size,
-			MimeType:     req.filemeta.MimeType,
-			Hash:         hex.EncodeToString(h.Sum(nil)),
-			MerkleRoot:   mt.GetRoot(),
+			ConnectionID:        req.connectionID,
+			Filename:            file.Name,
+			Path:                file.Path,
+			ActualHash:          req.filemeta.Hash,
+			ActualSize:          req.filemeta.Size,
+			ActualThumbnailHash: req.filemeta.ThumbnailHash,
+			ActualThumbnailSize: req.filemeta.ThumbnailSize,
+			MimeType:            req.filemeta.MimeType,
+			Hash:                fileContentHash,
+			ThumbnailHash:       thumbContentHash,
+			MerkleRoot:          fileMerkleRoot,
 		}
 		_ = formWriter.WriteField("connection_id", req.connectionID)
 		// Logger.Debug("FileFormData:", formData)
 		var metaData []byte
-		metaData, err = json.Marshal(formData)
+		metaData, err := json.Marshal(formData)
 		// Logger.Debug("Upload with",string(metaData))
 		if err == nil {
 			if req.isUpdate {
@@ -181,10 +246,14 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 		Logger.Info(blobber.Baseurl, formData.Path, " uploaded")
 		file.MerkleRoot = formData.MerkleRoot
 		file.ContentHash = formData.Hash
+		file.ThumbnailHash = formData.ThumbnailHash
+		file.ThumbnailSize = thumbnailSize
 		file.Size = shardSize
 		file.Path = formData.Path
 		file.ActualFileHash = formData.ActualHash
 		file.ActualFileSize = formData.ActualSize
+		file.ActualThumbnailHash = formData.ActualThumbnailHash
+		file.ActualThumbnailSize = formData.ActualThumbnailSize
 		file.CalculateHash()
 		return nil
 	})
@@ -194,6 +263,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 func (req *UploadRequest) setupUpload(a *Allocation) {
 	numUploads := bits.OnesCount32(req.uploadMask)
 	req.uploadDataCh = make([]chan []byte, numUploads)
+	req.uploadThumbCh = make([]chan []byte, numUploads)
 	req.file = make([]*fileref.FileRef, numUploads)
 	for i := range req.uploadDataCh {
 		req.uploadDataCh[i] = make(chan []byte)
@@ -202,12 +272,13 @@ func (req *UploadRequest) setupUpload(a *Allocation) {
 		req.file[i].Path = req.remotefilepath
 		req.file[i].Type = fileref.FILE
 		req.file[i].AllocationID = a.ID
-
 	}
 
 	if !req.isRepair {
 		req.fileHash = sha1.New()
 		req.fileHashWr = io.MultiWriter(req.fileHash)
+		req.thumbnailHash = sha1.New()
+		req.thumbnailHashWr = io.MultiWriter(req.thumbnailHash)
 	}
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numUploads)
@@ -217,7 +288,7 @@ func (req *UploadRequest) setupUpload(a *Allocation) {
 	c, pos := 0, 0
 	for i := req.uploadMask; i != 0; i &= ^(1 << uint32(pos)) {
 		pos = bits.TrailingZeros32(i)
-		go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.wg)
+		go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.uploadThumbCh[c], req.wg)
 		c++
 	}
 }
@@ -279,46 +350,64 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 	}
 	req.filemeta.MimeType = mimetype
 	req.setupUpload(a)
-
 	size := req.filemeta.Size
 	// Calculate number of bytes per shard.
 	perShard := (size + int64(a.DataShards) - 1) / int64(a.DataShards)
-	// Pad data to Shards*perShard.
-	padding := make([]byte, (int64(a.DataShards)*perShard)-size)
-	dataReader := io.MultiReader(inFile, bytes.NewBuffer(padding))
-	chunksPerShard := (perShard + int64(fileref.CHUNK_SIZE) - 1) / fileref.CHUNK_SIZE
-	Logger.Debug("Size:", size, " perShard:", perShard, " chunks/shard:", chunksPerShard)
-	if req.statusCallback != nil {
-		req.statusCallback.Started(a.ID, req.remotefilepath, OpUpload, int(perShard)*(a.DataShards+a.ParityShards))
-	}
-
-	sent := int(0)
-	for ctr := int64(0); ctr < chunksPerShard; ctr++ {
-		remaining := int64(math.Min(float64(perShard-(ctr*fileref.CHUNK_SIZE)), fileref.CHUNK_SIZE))
-		b1 := make([]byte, remaining*int64(a.DataShards))
-		_, err = dataReader.Read(b1)
-		if err != nil && req.statusCallback != nil {
-			req.statusCallback.Error(a.ID, req.filepath, OpUpload, fmt.Errorf("Read failed: %s", err.Error()))
-			return
-		}
-		err = req.pushData(b1)
-		if err != nil {
-			req.statusCallback.Error(a.ID, req.filepath, OpUpload, fmt.Errorf("Push error: %s", err.Error()))
-			return
-		}
-		sent = sent + int(remaining*int64(a.DataShards+a.ParityShards))
-		if req.statusCallback != nil {
-			req.statusCallback.InProgress(a.ID, req.remotefilepath, OpUpload, sent)
-		}
-
-	}
-	err = req.completePush()
-	if err != nil && req.statusCallback != nil {
-		req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, fmt.Errorf("Upload failed: %s", err.Error()))
-		return
-	}
-	req.consensus = 0
 	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	if len(req.thumbnailpath) > 0 {
+		wg.Add(1)
+		go req.processThumbnail(a, wg)
+	}
+	go func() {
+		defer wg.Done()
+		// Pad data to Shards*perShard.
+		padding := make([]byte, (int64(a.DataShards)*perShard)-size)
+		dataReader := io.MultiReader(inFile, bytes.NewBuffer(padding))
+		chunksPerShard := (perShard + int64(fileref.CHUNK_SIZE) - 1) / fileref.CHUNK_SIZE
+		Logger.Debug("Size:", size, " perShard:", perShard, " chunks/shard:", chunksPerShard)
+		if req.statusCallback != nil {
+			req.statusCallback.Started(a.ID, req.remotefilepath, OpUpload, int(perShard)*(a.DataShards+a.ParityShards))
+		}
+
+		sent := int(0)
+		for ctr := int64(0); ctr < chunksPerShard; ctr++ {
+			remaining := int64(math.Min(float64(perShard-(ctr*fileref.CHUNK_SIZE)), fileref.CHUNK_SIZE))
+			b1 := make([]byte, remaining*int64(a.DataShards))
+			_, err = dataReader.Read(b1)
+			if err != nil && req.statusCallback != nil {
+				req.statusCallback.Error(a.ID, req.filepath, OpUpload, fmt.Errorf("Read failed: %s", err.Error()))
+				return
+			}
+			err = req.pushData(b1)
+			if err != nil {
+				req.statusCallback.Error(a.ID, req.filepath, OpUpload, fmt.Errorf("Push error: %s", err.Error()))
+				return
+			}
+			sent = sent + int(remaining*int64(a.DataShards+a.ParityShards))
+			if req.statusCallback != nil {
+				req.statusCallback.InProgress(a.ID, req.remotefilepath, OpUpload, sent)
+			}
+
+		}
+		err = req.completePush()
+		if err != nil && req.statusCallback != nil {
+			req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, fmt.Errorf("Upload failed: %s", err.Error()))
+			return
+		}
+	}()
+	wg.Wait()
+
+	for _, ch := range req.uploadDataCh {
+		close(ch)
+	}
+
+	for _, ch := range req.uploadThumbCh {
+		close(ch)
+	}
+
+	req.consensus = 0
+	wg = &sync.WaitGroup{}
 	wg.Add(bits.OnesCount32(req.uploadMask))
 	commitReqs := make([]*CommitRequest, bits.OnesCount32(req.uploadMask))
 	c, pos := 0, 0
