@@ -150,14 +150,14 @@ func main() {
 		s.wg.Add(1)
 		err = zcncore.CreateWallet(1, s)
 		if err != nil {
-			fmt.Println("Error create wallet: %v", err)
+			fmt.Printf("Error create wallet: %v\n", err)
 		}
 		s.wg.Wait()
 	case "recover":
 		s.wg.Add(1)
 		err = zcncore.RecoverWallet(mnemonic, 1, s)
 		if err != nil {
-			fmt.Println("Error recover wallet %v", err)
+			fmt.Printf("Error recover wallet %v\n", err)
 		}
 		s.wg.Wait()
 	case "validate":
@@ -166,7 +166,7 @@ func main() {
 			fmt.Println("Validate mnemonic failed")
 			return
 		}
-		fmt.Println("\n**** Mnemonic is Valid ****\n")
+		fmt.Println("**** Mnemonic is Valid ****")
 	case "send":
 		txn, err := zcncore.NewTransaction(s)
 		if err != nil {
@@ -192,7 +192,7 @@ func main() {
 		s.wg.Add(1)
 		err = txn.StoreData(txndata)
 		if err != nil {
-			fmt.Println("store data failed: ", err)
+			fmt.Printf("store data failed: %v\n", err)
 			return
 		}
 		s.wg.Wait()
@@ -208,7 +208,7 @@ func main() {
 		s.wg.Add(1)
 		err = txn.ExecuteFaucetSC("pour", []byte{})
 		if err != nil {
-			fmt.Println("execute faucet smart contract failed: ", err)
+			fmt.Printf("execute faucet smart contract failed: %v\n", err)
 			return
 		}
 		s.wg.Wait()
