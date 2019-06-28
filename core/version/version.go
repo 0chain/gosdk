@@ -2,4 +2,4 @@
 
 package version
 
-const VERSIONSTR = "1.0.6"
+const VERSIONSTR = "1.0.7"
