@@ -53,7 +53,7 @@ func (req *UploadRequest) processThumbnail(a *Allocation, wg *sync.WaitGroup) {
 	padding := make([]byte, (int64(a.DataShards)*perShard)-size)
 	dataReader := io.MultiReader(inFile, bytes.NewBuffer(padding))
 	chunksPerShard := (perShard + int64(fileref.CHUNK_SIZE) - 1) / fileref.CHUNK_SIZE
-	Logger.Debug("Thumbnail Size:", size, " perShard:", perShard, " chunks/shard:", chunksPerShard)
+	Logger.Info("Thumbnail Size:", size, " perShard:", perShard, " chunks/shard:", chunksPerShard)
 
 	sent := int(0)
 	for ctr := int64(0); ctr < chunksPerShard; ctr++ {

@@ -59,7 +59,7 @@ func (n *DeleteFileChange) GetAffectedPath() string {
 
 func (n *DeleteFileChange) GetSize() int64 {
 	if n.File != nil {
-		return 0 - n.File.Size
+		return 0 - (n.File.Size + n.File.ThumbnailSize)
 	}
 	return int64(0)
 }

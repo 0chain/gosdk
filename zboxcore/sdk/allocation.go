@@ -114,8 +114,6 @@ func (a *Allocation) UploadFile(localpath string, remotepath string, status Stat
 	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "")
 }
 
-/*
-TODO: enable on blobbers
 func (a *Allocation) UpdateFileWithThumbnail(localpath string, remotepath string, thumbnailpath string, status StatusCallback) error {
 	return a.uploadOrUpdateFile(localpath, remotepath, status, true, thumbnailpath)
 }
@@ -123,7 +121,6 @@ func (a *Allocation) UpdateFileWithThumbnail(localpath string, remotepath string
 func (a *Allocation) UploadFileWithThumbnail(localpath string, remotepath string, thumbnailpath string, status StatusCallback) error {
 	return a.uploadOrUpdateFile(localpath, remotepath, status, false, thumbnailpath)
 }
-*/
 
 func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, status StatusCallback, isUpdate bool, thumbnailpath string) error {
 	if !a.isInitialized() {
@@ -163,6 +160,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	uploadReq.filemeta.Path = remotepath
 	uploadReq.filemeta.ThumbnailSize = thumbnailSize
 	uploadReq.remaining = uploadReq.filemeta.Size
+	uploadReq.thumbRemaining = uploadReq.filemeta.ThumbnailSize
 	uploadReq.isRepair = false
 	uploadReq.isUpdate = isUpdate
 	uploadReq.connectionID = zboxutil.NewConnectionId()
@@ -177,8 +175,15 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	}()
 	return nil
 }
-
 func (a *Allocation) DownloadFile(localPath string, remotePath string, status StatusCallback) error {
+	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_FULL, status)
+}
+
+func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, status StatusCallback) error {
+	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_THUMB, status)
+}
+
+func (a *Allocation) downloadFile(localPath string, remotePath string, contentMode string, status StatusCallback) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
@@ -214,6 +219,7 @@ func (a *Allocation) DownloadFile(localPath string, remotePath string, status St
 		defer a.mutex.Unlock()
 		delete(a.downloadProgressMap, remotepath)
 	}
+	downloadReq.contentMode = contentMode
 	go func() {
 		a.downloadChan <- downloadReq
 		a.mutex.Lock()
@@ -374,7 +380,15 @@ func (a *Allocation) CancelDownload(remotepath string) error {
 	return common.NewError("remote_path_not_found", "Invalid path. Do download in progress for the path "+remotepath)
 }
 
+func (a *Allocation) DownloadThumbnailFromAuthTicket(localPath string, authTicket string, remoteLookupHash string, remoteFilename string, status StatusCallback) error {
+	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, DOWNLOAD_CONTENT_THUMB, status)
+}
+
 func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string, remoteLookupHash string, remoteFilename string, status StatusCallback) error {
+	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, DOWNLOAD_CONTENT_FULL, status)
+}
+
+func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string, remoteLookupHash string, remoteFilename string, contentMode string, status StatusCallback) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
@@ -413,6 +427,7 @@ func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.blobbers = a.Blobbers
 	downloadReq.datashards = a.DataShards
 	downloadReq.parityshards = a.ParityShards
+	downloadReq.contentMode = contentMode
 	downloadReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	downloadReq.fullconsensus = float32(a.DataShards + a.ParityShards)
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {

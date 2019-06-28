@@ -27,6 +27,7 @@ type BlockDownloadRequest struct {
 	remotefilepath     string
 	remotefilepathhash string
 	blockNum           int64
+	contentMode        string
 	authTicket         *marker.AuthTicket
 	wg                 *sync.WaitGroup
 	ctx                context.Context
@@ -131,6 +132,10 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			authTicketBytes, _ := json.Marshal(req.authTicket)
 			formWriter.WriteField("auth_token", string(authTicketBytes))
 		}
+		if len(req.contentMode) > 0 {
+			formWriter.WriteField("content", req.contentMode)
+		}
+
 		formWriter.Close()
 		httpreq, err := zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationID, body)
 		if err != nil {

@@ -19,6 +19,11 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
+const (
+	DOWNLOAD_CONTENT_FULL  = "full"
+	DOWNLOAD_CONTENT_THUMB = "thumbnail"
+)
+
 type DownloadRequest struct {
 	allocationID       string
 	blobbers           []*blockchain.StorageNode
@@ -34,6 +39,7 @@ type DownloadRequest struct {
 	downloadMask       uint32
 	isDownloadCanceled bool
 	completedCallback  func(remotepath string, remotepathhash string)
+	contentMode        string
 	Consensus
 }
 
@@ -53,6 +59,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockSize int64) ([]by
 		blockDownloadReq.blobber = req.blobbers[pos]
 		blockDownloadReq.blobberIdx = pos
 		blockDownloadReq.blockNum = blockNum
+		blockDownloadReq.contentMode = req.contentMode
 		blockDownloadReq.result = rspCh
 		blockDownloadReq.wg = req.wg
 		blockDownloadReq.ctx = req.ctx
@@ -117,12 +124,15 @@ func (req *DownloadRequest) processDownload(ctx context.Context, a *Allocation) 
 		}
 		return
 	}
+
 	size := fileRef.ActualFileSize
+	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
+		size = fileRef.ActualThumbnailSize
+	}
 	// Calculate number of bytes per shard.
 	perShard := (size + int64(req.datashards) - 1) / int64(req.datashards)
 	chunksPerShard := (perShard + int64(fileref.CHUNK_SIZE) - 1) / fileref.CHUNK_SIZE
 	wrFile, err := os.OpenFile(req.localpath, os.O_CREATE|os.O_WRONLY, 0644)
-	Logger.Info("req.localpath=",req.localpath)
 	if err != nil {
 		if req.statusCallback != nil {
 			Logger.Error(err.Error())
@@ -175,7 +185,11 @@ func (req *DownloadRequest) processDownload(ctx context.Context, a *Allocation) 
 
 	}
 	calcHash := hex.EncodeToString(fH.Sum(nil))
-	if calcHash != fileRef.ActualFileHash {
+	expectedHash := fileRef.ActualFileHash
+	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
+		expectedHash = fileRef.ActualThumbnailHash
+	}
+	if calcHash != expectedHash {
 		os.Remove(req.localpath)
 		if req.statusCallback != nil {
 			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, fmt.Errorf("File content didn't match with uploaded file"))

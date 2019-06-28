@@ -73,8 +73,8 @@ func (r *Ref) CalculateHash() string {
 		childPathHashes[index] = childRef.GetPathHash()
 		refNumBlocks += childRef.GetNumBlocks()
 	}
-	//fmt.Println("ref name and path, hash :" + r.Name + " " + r.Path + " " + r.Hash)
-	//fmt.Println("ref hash data: " + strings.Join(childHashes, ":"))
+	// fmt.Println("ref name and path, hash :" + r.Name + " " + r.Path + " " + r.Hash)
+	// fmt.Println("ref hash data: " + strings.Join(childHashes, ":"))
 	r.Hash = encryption.Hash(strings.Join(childHashes, ":"))
 	//fmt.Println("ref hash : " + r.Hash)
 	r.NumBlocks = refNumBlocks
@@ -151,8 +151,8 @@ func (fr *FileRef) GetHash() string {
 }
 
 func (fr *FileRef) CalculateHash() string {
-	//fmt.Println("fileref name , path, hash", fr.Name, fr.Path, fr.Hash)
-	//fmt.Println("Fileref hash data: " + fr.GetHashData())
+	// fmt.Println("fileref name , path, hash", fr.Name, fr.Path, fr.Hash)
+	// fmt.Println("Fileref hash data: " + fr.GetHashData())
 	fr.Hash = encryption.Hash(fr.GetHashData())
 	//fmt.Println("Fileref hash : " + fr.Hash)
 	fr.NumBlocks = int64(math.Ceil(float64(fr.Size*1.0) / CHUNK_SIZE))

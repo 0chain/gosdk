@@ -127,7 +127,7 @@ func (commitreq *CommitRequest) processCommit() {
 		if resp.StatusCode != http.StatusOK {
 			return fmt.Errorf("List error response: Status: %d - %s ", resp.StatusCode, string(resp_body))
 		} else {
-			Logger.Info("Reference path:", string(resp_body))
+			//Logger.Info("Reference path:", string(resp_body))
 			err = json.Unmarshal(resp_body, &lR)
 			if err != nil {
 				Logger.Error("List json decode error: ", err)
