@@ -31,7 +31,7 @@ import (
 // Additional success percentage on top of expected success rate
 const additionalSuccessRate = (10)
 
-type FileMeta struct {
+type UploadFileMeta struct {
 	Name          string
 	Path          string
 	Hash          string
@@ -73,7 +73,7 @@ type UploadRequest struct {
 	thumbnailHash   hash.Hash
 	thumbnailHashWr io.Writer
 	file            []*fileref.FileRef
-	filemeta        *FileMeta
+	filemeta        *UploadFileMeta
 	remaining       int64
 	thumbRemaining  int64
 	wg              *sync.WaitGroup

@@ -25,6 +25,19 @@ var (
 	notInitialized = common.NewError("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 )
 
+type ConsolidatedFileMeta struct {
+	Name          string
+	Type 		  string
+	Path          string
+	PathHash 	  string
+	LookupHash    string
+	Hash          string
+	MimeType      string
+	Size          int64
+	ThumbnailSize int64
+	ThumbnailHash string
+}
+
 type AllocationStats struct {
 	UsedSize                  int64  `json:"used_size"`
 	NumWrites                 int64  `json:"num_of_writes"`
@@ -154,7 +167,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	uploadReq.remotefilepath = remotepath
 	uploadReq.thumbnailpath = thumbnailpath
 	uploadReq.filepath = localpath
-	uploadReq.filemeta = &FileMeta{}
+	uploadReq.filemeta = &UploadFileMeta{}
 	uploadReq.filemeta.Name = fileName
 	uploadReq.filemeta.Size = fileInfo.Size()
 	uploadReq.filemeta.Path = remotepath
@@ -285,6 +298,73 @@ func (a *Allocation) ListDir(path string) (*ListResult, error) {
 		return ref, nil
 	}
 	return nil, common.NewError("list_request_failed", "Failed to get list response from the blobbers")
+}
+
+
+func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
+	result := &ConsolidatedFileMeta{}
+	listReq := &ListRequest{}
+	listReq.allocationID = a.ID
+	listReq.blobbers = a.Blobbers
+	listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
+	listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+	listReq.ctx = a.ctx
+	listReq.remotefilepath = path
+	_, ref, _ := listReq.getFileConsensusFromBlobbers()
+	if ref != nil {
+		result.Type = ref.Type
+		result.Name = ref.Name
+		result.Hash = ref.ActualFileHash
+		result.LookupHash = ref.LookupHash
+		result.MimeType = ref.MimeType
+		result.Path = ref.Path
+		result.PathHash = ref.PathHash
+		result.Size = ref.ActualFileSize
+		result.ThumbnailHash = ref.ActualThumbnailHash
+		result.ThumbnailSize = ref.ActualThumbnailSize
+		return result, nil
+	}
+	return nil, common.NewError("file_meta_error", "Error getting the file meta data from blobbers")
+}
+
+func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash string) (*ConsolidatedFileMeta, error) {
+	result := &ConsolidatedFileMeta{}
+	sEnc, err := base64.StdEncoding.DecodeString(authTicket)
+	if err != nil {
+		return nil, common.NewError("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
+	}
+	at := &marker.AuthTicket{}
+	err = json.Unmarshal(sEnc, at)
+	if err != nil {
+		return nil, common.NewError("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
+	}
+	if len(at.FilePathHash) == 0 || len(lookupHash) == 0 {
+		return nil, common.NewError("invalid_path", "Invalid path for the list")
+	}
+
+	listReq := &ListRequest{}
+	listReq.allocationID = a.ID
+	listReq.blobbers = a.Blobbers
+	listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
+	listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+	listReq.ctx = a.ctx
+	listReq.remotefilepathhash = lookupHash
+	listReq.authToken = at
+	_, ref, _ := listReq.getFileConsensusFromBlobbers()
+	if ref != nil {
+		result.Type = ref.Type
+		result.Name = ref.Name
+		result.Hash = ref.ActualFileHash
+		result.LookupHash = ref.LookupHash
+		result.MimeType = ref.MimeType
+		result.Path = ref.Path
+		result.PathHash = ref.PathHash
+		result.Size = ref.ActualFileSize
+		result.ThumbnailHash = ref.ActualThumbnailHash
+		result.ThumbnailSize = ref.ActualThumbnailSize
+		return result, nil
+	}
+	return nil, common.NewError("file_meta_error", "Error getting the file meta data from blobbers")
 }
 
 func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error) {
