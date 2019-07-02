@@ -56,7 +56,7 @@ func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blo
 	dt.FilePathHash = listResponse.fileref.PathHash
 	dt.FileRefHash = listResponse.fileref.Hash
 	dt.AllocationID = req.allocationID
-	dt.Size = listResponse.fileref.Size
+	dt.Size = listResponse.fileref.Size + listResponse.fileref.ThumbnailSize
 	dt.BlobberID = blobber.ID
 	dt.Timestamp = common.Now()
 	dt.ClientID = client.GetClientID()

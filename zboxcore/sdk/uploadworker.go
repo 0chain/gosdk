@@ -387,7 +387,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 		}
 	}()
 	wg.Wait()
-
+	Logger.Info("Completed the upload. Submitting for commit")
 	for _, ch := range req.uploadDataCh {
 		close(ch)
 	}
@@ -395,7 +395,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 	for _, ch := range req.uploadThumbCh {
 		close(ch)
 	}
-
+	Logger.Info("Closed all the channels. Submitting for commit")
 	req.consensus = 0
 	wg = &sync.WaitGroup{}
 	wg.Add(bits.OnesCount32(req.uploadMask))

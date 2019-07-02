@@ -3,6 +3,7 @@ package sdk
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"io"
 	"math"
 	"math/bits"
@@ -78,6 +79,7 @@ func (req *UploadRequest) processThumbnail(a *Allocation, wg *sync.WaitGroup) {
 func (req *UploadRequest) completeThumbnailPush() error {
 	if !req.isRepair {
 		req.filemeta.ThumbnailHash = hex.EncodeToString(req.thumbnailHash.Sum(nil))
+		fmt.Println("req.filemeta.ThumbnailHash=" + req.filemeta.ThumbnailHash)
 		c, pos := 0, 0
 		for i := req.uploadMask; i != 0; i &= ^(1 << uint32(pos)) {
 			pos = bits.TrailingZeros32(i)
