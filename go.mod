@@ -16,6 +16,7 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.4.0
 	github.com/tyler-smith/go-bip39 v1.0.0
+	go.uber.org/zap v1.10.0
 	golang.org/dl v0.0.0-20190611220544-2b5f78e3db26 // indirect
 	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
 	golang.org/x/mobile v0.0.0-20190327163128-167ebed0ec6d

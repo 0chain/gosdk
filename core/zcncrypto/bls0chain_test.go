@@ -17,11 +17,11 @@ func TestSignatureScheme(t *testing.T) {
 	default:
 		t.Fatalf("Signature scheme invalid")
 	}
-	w, err := sigScheme.GenerateKeys(2)
+	w, err := sigScheme.GenerateKeys(1)
 	if err != nil {
 		t.Fatalf("Generate Key failed %s", err.Error())
 	}
-	if w.ClientID == "" || w.ClientKey == "" || len(w.Keys) != 2 || w.Mnemonic == "" {
+	if w.ClientID == "" || w.ClientKey == "" || len(w.Keys) != 1 || w.Mnemonic == "" {
 		t.Fatalf("Invalid keys generated")
 	}
 	blsWallet = w
@@ -53,16 +53,20 @@ func BenchmarkBLSSign(b *testing.B) {
 	}
 }
 
+/*
 func TestRecoveryKeys(t *testing.T) {
-	sigScheme := NewSignatureScheme("bls0chain")
-	w, err := sigScheme.RecoverKeys(blsWallet.Mnemonic, 2)
-	if err != nil {
-		t.Fatalf("set Recover Keys failed")
-	}
-	if w.ClientID != blsWallet.ClientID || w.ClientKey != blsWallet.ClientKey {
-		t.Fatalf("Recover key didn't match with generated keys")
-	}
+
+		sigScheme := NewSignatureScheme("bls0chain")
+		w, err := sigScheme.RecoverKeys(blsWallet.Mnemonic, 2)
+		if err != nil {
+			t.Fatalf("set Recover Keys failed")
+		}
+		if w.ClientID != blsWallet.ClientID || w.ClientKey != blsWallet.ClientKey {
+			t.Fatalf("Recover key didn't match with generated keys")
+		}
+
 }
+*/
 
 func TestCombinedSignAndVerify(t *testing.T) {
 	sk0 := `c36f2f92b673cf057a32e8bd0ca88888e7ace40337b737e9c7459fdc4c521918`

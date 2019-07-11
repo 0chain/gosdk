@@ -6,8 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"time"
-	"github.com/tyler-smith/go-bip39"
+
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/tyler-smith/go-bip39"
 	"golang.org/x/crypto/ed25519"
 )
 
@@ -125,4 +126,9 @@ func (ed *ED255190chainScheme) Verify(signature, msg string) (bool, error) {
 
 func (ed *ED255190chainScheme) Add(signature, msg string) (string, error) {
 	return "", fmt.Errorf("Not supported by signature scheme")
+}
+
+//GetPublicKey - implement interface
+func (ed *ED255190chainScheme) GetPublicKey() string {
+	return hex.EncodeToString(ed.publicKey)
 }
