@@ -64,15 +64,18 @@ func (b0 *BLS0ChainScheme) GenerateKeys(numKey int) (*Wallet, error) {
 		w.Keys[i].PrivateKey = sk.SerializeToHexStr()
 		pub := sk.GetPublicKey()
 		w.Keys[i].PublicKey = pub.SerializeToHexStr()
+		fmt.Printf("\nw.keys[%d].PublicKey = %v\n", i, w.Keys[i].PublicKey)
 		pk.Add(pub)
 		//Note: modifiedcode
 		b0.PrivateKey = sk.SerializeToHexStr()
 		b0.PublicKey = sk.GetPublicKey().SerializeToHexStr()
 	}
 	w.ClientKey = pk.SerializeToHexStr()
+	fmt.Printf("\nw.ClientKey = %v\n", w.ClientKey)
+
 	w.ClientID = encryption.Hash(pk.Serialize())
 	w.Mnemonic = b0.Mnemonic
-	w.Version = cryptoVersion
+	w.Version = CryptoVersion
 	w.DateCreated = time.Now().String()
 
 	// Revert the Random function to default
@@ -119,6 +122,10 @@ func (b0 *BLS0ChainScheme) SetPublicKey(publicKey string) error {
 //GetPublicKey - implement interface
 func (b0 *BLS0ChainScheme) GetPublicKey() string {
 	return b0.PublicKey
+}
+
+func (b0 *BLS0ChainScheme) GetPrivateKey() string {
+	return b0.PrivateKey
 }
 
 func (b0 *BLS0ChainScheme) rawSign(hash string) (*bls.Sign, error) {
@@ -252,7 +259,6 @@ func BLS0GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]Th
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("len of b0PrivateKeyBytes %d\n\n", len(b0PrivateKeyBytes))
 
 	err = b0original.SetLittleEndian(b0PrivateKeyBytes)
 	if err != nil {
@@ -260,8 +266,6 @@ func BLS0GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]Th
 	}
 
 	polynomial := b0original.GetMasterSecretKey(t)
-
-	fmt.Printf("len of polynomial %d\n\n", len(polynomial))
 
 	var shares []ThresholdSignatureScheme
 	for i := 1; i <= n; i++ {

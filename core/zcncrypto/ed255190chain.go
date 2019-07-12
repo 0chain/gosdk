@@ -55,7 +55,7 @@ func (ed *ED255190chainScheme) GenerateKeys(numKeys int) (*Wallet, error) {
 	w.ClientKey = w.Keys[0].PublicKey
 	w.ClientID = encryption.Hash([]byte(public))
 	w.Mnemonic = ed.mnemonic
-	w.Version = cryptoVersion
+	w.Version = CryptoVersion
 	w.DateCreated = time.Now().String()
 	return w, nil
 }
@@ -131,4 +131,9 @@ func (ed *ED255190chainScheme) Add(signature, msg string) (string, error) {
 //GetPublicKey - implement interface
 func (ed *ED255190chainScheme) GetPublicKey() string {
 	return hex.EncodeToString(ed.publicKey)
+}
+
+//GetPrivateKey - implement interface
+func (ed *ED255190chainScheme) GetPrivateKey() string {
+	return hex.EncodeToString(ed.privateKey)
 }

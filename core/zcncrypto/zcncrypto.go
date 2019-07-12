@@ -8,7 +8,7 @@ import (
 	"github.com/tyler-smith/go-bip39"
 )
 
-const cryptoVersion = "1.0"
+const CryptoVersion = "1.0"
 
 // KeyPair private and publickey
 type KeyPair struct {
@@ -40,6 +40,7 @@ type SignatureScheme interface {
 	// Signature verification - Set public key to verify
 	SetPublicKey(publicKey string) error
 	GetPublicKey() string
+	GetPrivateKey() string
 	Verify(signature string, msg string) (bool, error)
 
 	// Combine signature for schemes BLS
