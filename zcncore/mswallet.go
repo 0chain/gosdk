@@ -3,7 +3,6 @@ package zcncore
 import (
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -11,14 +10,26 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
+// MultisigSCWallet --this should mimic MultisigWallet definition in MultiSig SC
+type MultisigSCWallet struct {
+	ClientID        string `json:"client_id"`
+	SignatureScheme string `json:"signature_scheme"`
+	PublicKey       string `json:"public_key"`
+
+	SignerThresholdIDs []string `json:"signer_threshold_ids"`
+	SignerPublicKeys   []string `json:"signer_public_keys"`
+
+	NumRequired int `json:"num_required"`
+}
+
 // MSWallet Client data necessary for a multi-sig wallet.
 type MSWallet struct {
 	Id              int                                  `json:"id"`
 	SignatureScheme string                               `json:"signature_scheme"`
 	GroupClientID   string                               `json:"group_client_id"`
-	GroupKey        zcncrypto.SignatureScheme            `json:"group_key"`
+	GroupKey        *zcncrypto.BLS0ChainScheme           `json:"group_key"`
 	SignerClientIDs []string                             `json:"sig_client_ids"`
-	SignerKeys      []zcncrypto.ThresholdSignatureScheme `json:"signer_keys"`
+	SignerKeys      []zcncrypto.BLS0ChainThresholdScheme `json:"signer_keys"`
 	T               int                                  `json:"threshold"`
 	N               int                                  `json:"num_subkeys"`
 }
@@ -47,7 +58,8 @@ func CreateMSWallet(cb MSWalletCallback) error {
 		cb.OnMultiSigWalletCreated(StatusError, "", nil, "Encryption scheme for this blockchain is not bls0chain.")
 		return nil
 	}
-	groupKey := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+
+	groupKey := zcncrypto.NewBLS0ChainScheme()
 	wallet, err := groupKey.GenerateKeys(1)
 	if err != nil {
 		cb.OnMultiSigWalletCreated(StatusError, "", nil, fmt.Sprintf("%s", err.Error()))
@@ -57,7 +69,8 @@ func CreateMSWallet(cb MSWalletCallback) error {
 	Logger.Info(fmt.Sprintf("Wallet id: %s", wallet.ClientKey))
 
 	groupClientID := GetClientID(groupKey.GetPublicKey())
-	signerKeys, err := zcncrypto.GenerateThresholdKeyShares(_config.chain.SignatureScheme, t, n, groupKey)
+	//Code modified to directly use BLS0ChainThresholdScheme
+	signerKeys, err := zcncrypto.BLS0GenerateThresholdKeyShares(t, n, groupKey)
 
 	if err != nil {
 		cb.OnMultiSigWalletCreated(StatusError, "", nil, fmt.Sprintf("Err in generateThresholdKeyShares %s", err.Error()))
@@ -78,7 +91,6 @@ func CreateMSWallet(cb MSWalletCallback) error {
 		T:               t,
 		N:               n,
 	}
-	//registerMSWallets(msw, cb)
 
 	wallets, errw := getWallets(msw)
 
@@ -96,6 +108,7 @@ func CreateMSWallet(cb MSWalletCallback) error {
 	return nil
 }
 
+//RegisterWallet registers multisig related wallets
 func RegisterWallet(walletString string, cb WalletCallback) {
 	var w zcncrypto.Wallet
 	err := json.Unmarshal([]byte(walletString), &w)
@@ -116,10 +129,7 @@ func getWallets(msw MSWallet) ([]string, error) {
 
 	wallets := make([]string, 0, (msw.N + 1))
 
-	b0ss, ok := msw.GroupKey.(*zcncrypto.BLS0ChainScheme)
-	if !ok {
-		return nil, errors.New("Err in making groupWallet")
-	}
+	b0ss := msw.GroupKey
 
 	grw, err := makeWallet(b0ss.PrivateKey, b0ss.PublicKey, b0ss.Mnemonic)
 
@@ -162,4 +172,40 @@ func GetClientID(pkey string) string {
 	}
 
 	return encryption.Hash(publicKeyBytes)
+}
+
+//GetMultisigPayload given a multisig wallet as a string, makes a multisig wallet payload to register
+func GetMultisigPayload(mswstr string) ([]byte, error) {
+	var msw MSWallet
+	err := json.Unmarshal([]byte(mswstr), &msw)
+
+	if err != nil {
+		fmt.Printf("Error while creating multisig wallet from input:\n%v", mswstr)
+		return nil, err
+	}
+	var signerThresholdIDs []string
+	var signerPublicKeys []string
+
+	for _, scheme := range msw.SignerKeys {
+		signerThresholdIDs = append(signerThresholdIDs, scheme.GetID())
+		signerPublicKeys = append(signerPublicKeys, scheme.GetPublicKey())
+	}
+
+	msscw := MultisigSCWallet{
+		ClientID:        msw.GroupClientID,
+		SignatureScheme: msw.SignatureScheme,
+		PublicKey:       msw.GroupKey.GetPublicKey(),
+
+		SignerThresholdIDs: signerThresholdIDs,
+		SignerPublicKeys:   signerPublicKeys,
+
+		NumRequired: msw.T,
+	}
+
+	msscwBytes, err := json.Marshal(msscw)
+	if err != nil {
+		fmt.Printf("\nerror in converting msscw to bytes:%v\n", err)
+	}
+	return msscwBytes, nil
+
 }

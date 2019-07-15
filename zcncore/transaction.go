@@ -3,11 +3,12 @@ package zcncore
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"time"
+
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"net/http"
-	"time"
 )
 
 // TransactionCallback needs to be implemented by the caller for transaction related APIs
@@ -48,6 +49,8 @@ type TransactionScheme interface {
 	LockTokens(val int64, durationHr int64, durationMin int) error
 	// UnlockTokens implements unlocking of earlier locked tokens.
 	UnlockTokens(poolID string) error
+	//RegisterMultiSig registers a group wallet and subwallets with MultisigSC
+	RegisterMultiSig(walletstr, mswallet string) error
 	// SetTransactionHash implements verify a previous transation status
 	SetTransactionHash(hash string) error
 	// Verify implements verify the transaction
@@ -64,6 +67,19 @@ func signFn(hash string) (string, error) {
 	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 	sigScheme.SetPrivateKey(_config.wallet.Keys[0].PrivateKey)
 	return sigScheme.Sign(hash)
+}
+
+func signWithWallet(hash string, wi interface{}) (string, error) {
+	w, ok := wi.(*zcncrypto.Wallet)
+
+	if !ok {
+		fmt.Printf("Error in casting to wallet")
+		return "", fmt.Errorf("error in casting to wallet")
+	}
+	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	sigScheme.SetPrivateKey(w.Keys[0].PrivateKey)
+	return sigScheme.Sign(hash)
+
 }
 
 func txnTypeString(t int) string {
@@ -423,6 +439,52 @@ func (t *Transaction) UnlockTokens(poolID string) error {
 		t.txn.ToClientID = InterestPoolSmartContractAddress
 		t.txn.TransactionData = string(snBytes)
 		t.txn.Value = 0
+		t.submitTxn()
+	}()
+	return nil
+}
+
+// NewMSTransaction new transaction object for multisig operation
+func NewMSTransaction(walletstr string, cb TransactionCallback) (*Transaction, error) {
+
+	w, err := GetWallet(walletstr)
+	if err != nil {
+		fmt.Printf("Error while parsing the wallet. %v", err)
+		return nil, err
+	}
+	t := &Transaction{}
+	t.txn = transaction.NewTransactionEntity(w.ClientID, _config.chain.ChainID, w.ClientKey)
+	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
+	t.txnCb = cb
+	return t, nil
+}
+
+//RegisterMultiSig register a multisig wallet with the SC.
+func (t *Transaction) RegisterMultiSig(walletstr string, mswallet string) error {
+
+	w, err := GetWallet(walletstr)
+	if err != nil {
+		fmt.Printf("Error while parsing the wallet. %v", err)
+		return err
+	}
+
+	mswBytes, err := GetMultisigPayload(mswallet)
+
+	if err != nil {
+		fmt.Printf("/nError in registering. %v\n", err)
+		return err
+	}
+	sn := transaction.SmartContractTxnData{Name: MultiSigSmartContractAddress, InputArgs: mswBytes}
+	snBytes, err := json.Marshal(sn)
+	if err != nil {
+		return fmt.Errorf("execute faucet failed due to invalid data. %s", err.Error())
+	}
+	go func() {
+		t.txn.TransactionType = transaction.TxnTypeSmartContract
+		t.txn.ToClientID = MultiSigSmartContractAddress
+		t.txn.TransactionData = string(snBytes)
+		t.txn.Value = 0
+		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
 		t.submitTxn()
 	}()
 	return nil

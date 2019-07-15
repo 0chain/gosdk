@@ -35,6 +35,9 @@ var GET_LOCKED_TOKENS = `/v1/screst/` + InterestPoolSmartContractAddress + `/get
 const StorageSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7`
 const FaucetSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3`
 const InterestPoolSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9`
+const MultiSigSmartContractAddress = `27b5ef7120252b79f9dd9c05505dd28f328c80f6863ee446daede08a84d651a7`
+const MultiSigRegisterFuncName = "register"
+const MultiSigVoteFuncName = "vote"
 
 // In percentage
 const consensusThresh = float32(25.0)
@@ -422,4 +425,20 @@ func GetLockedTokens(cb GetInfoCallback) error {
 		getInfoFromSharders(urlSuffix, OpGetLockedTokens, cb)
 	}()
 	return nil
+}
+
+//GetWallet get a wallet object from a wallet string
+func GetWallet(walletStr string) (*zcncrypto.Wallet, error) {
+
+	var w zcncrypto.Wallet
+
+	err := json.Unmarshal([]byte(walletStr), &w)
+
+	if err != nil {
+		fmt.Printf("error while parsing wallet string.\n%v\n", err)
+		return nil, err
+	}
+
+	return &w, nil
+
 }

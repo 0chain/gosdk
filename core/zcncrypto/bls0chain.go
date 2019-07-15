@@ -219,18 +219,6 @@ func (tss *BLS0ChainThresholdScheme) GetID() string {
 	return tss.Id.GetHexString()
 }
 
-//GenerateThresholdKeyShares - generate T-of-N secret key shares for a key
-func GenerateThresholdKeyShares(sigScheme string, t, n int, originalKey SignatureScheme) ([]ThresholdSignatureScheme, error) {
-	switch sigScheme {
-	case "ed25519":
-		return nil, nil
-	case "bls0chain":
-		return BLS0GenerateThresholdKeyShares(t, n, originalKey)
-	default:
-		panic(fmt.Sprintf("unknown threshold signature scheme: %v", sigScheme))
-	}
-}
-
 // GetPrivateKeyAsByteArray - converts private key into byte array
 func (b0 *BLS0ChainScheme) GetPrivateKeyAsByteArray() ([]byte, error) {
 	if len(b0.PrivateKey) == 0 {
@@ -245,7 +233,7 @@ func (b0 *BLS0ChainScheme) GetPrivateKeyAsByteArray() ([]byte, error) {
 }
 
 //BLS0GenerateThresholdKeyShares given a signature scheme will generate threshold sig keys
-func BLS0GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]ThresholdSignatureScheme, error) {
+func BLS0GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]BLS0ChainThresholdScheme, error) {
 
 	b0ss, ok := originalKey.(*BLS0ChainScheme)
 	if !ok {
@@ -267,7 +255,7 @@ func BLS0GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]Th
 
 	polynomial := b0original.GetMasterSecretKey(t)
 
-	var shares []ThresholdSignatureScheme
+	var shares []BLS0ChainThresholdScheme
 	for i := 1; i <= n; i++ {
 		var id bls.ID
 		err = id.SetDecString(fmt.Sprint(i))
@@ -281,7 +269,7 @@ func BLS0GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]Th
 			return nil, err
 		}
 
-		share := &BLS0ChainThresholdScheme{}
+		share := BLS0ChainThresholdScheme{}
 		//Note: modifiedcode
 		//share.privateKey = sk.GetLittleEndian()
 		share.PrivateKey = hex.EncodeToString(sk.GetLittleEndian())

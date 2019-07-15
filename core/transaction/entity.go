@@ -43,6 +43,8 @@ const UNLOCK_TOKEN = "unlock"
 
 type SignFunc = func(msg string) (string, error)
 
+type SignWithWallet = func(msg string, wallet interface{}) (string, error)
+
 func NewTransactionEntity(clientID string, chainID string, publicKey string) *Transaction {
 	txn := &Transaction{}
 	txn.Version = "1.0"
@@ -53,16 +55,30 @@ func NewTransactionEntity(clientID string, chainID string, publicKey string) *Tr
 	return txn
 }
 
+func (t *Transaction) ComputeHashAndSignWithWallet(signHandler SignWithWallet, signingWallet interface{}) error {
+	t.ComputeHashData()
+	var err error
+	t.Signature, err = signHandler(t.Hash, signingWallet)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (t *Transaction) ComputeHashAndSign(signHandler SignFunc) error {
-	hashdata := fmt.Sprintf("%v:%v:%v:%v:%v", t.CreationDate, t.ClientID,
-		t.ToClientID, t.Value, encryption.Hash(t.TransactionData))
-	t.Hash = encryption.Hash(hashdata)
+	t.ComputeHashData()
 	var err error
 	t.Signature, err = signHandler(t.Hash)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (t *Transaction) ComputeHashData() {
+	hashdata := fmt.Sprintf("%v:%v:%v:%v:%v", t.CreationDate, t.ClientID,
+		t.ToClientID, t.Value, encryption.Hash(t.TransactionData))
+	t.Hash = encryption.Hash(hashdata)
 }
 
 func SendTransactionSync(txn *Transaction, miners []string) {
