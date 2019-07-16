@@ -505,7 +505,7 @@ func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error 
 		fmt.Printf("\nError in voting. %v\n", err)
 		return err
 	}
-	sn := transaction.SmartContractTxnData{Name: MultiSigVoteFuncName, InputArgs: msvBytes}
+	sn := transaction.SmartContractTxnData{Name: MultiSigVoteFuncName, InputArgs: msv}
 	snBytes, err := json.Marshal(sn)
 	if err != nil {
 		return fmt.Errorf("execute multisig vote failed due to invalid data. %s", err.Error())
