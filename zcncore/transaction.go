@@ -464,20 +464,51 @@ func (t *Transaction) RegisterMultiSig(walletstr string, mswallet string) error 
 
 	w, err := GetWallet(walletstr)
 	if err != nil {
+		fmt.Printf("Error while parsing the wallet. %v\n", err)
+		return err
+	}
+
+	msw, err := GetMultisigPayload(mswallet)
+
+	if err != nil {
+		fmt.Printf("\nError in registering. %v\n", err)
+		return err
+	}
+	sn := transaction.SmartContractTxnData{Name: MultiSigRegisterFuncName, InputArgs: msw}
+	snBytes, err := json.Marshal(sn)
+	if err != nil {
+		return fmt.Errorf("execute multisig register failed due to invalid data. %s", err.Error())
+	}
+	go func() {
+		t.txn.TransactionType = transaction.TxnTypeSmartContract
+		t.txn.ToClientID = MultiSigSmartContractAddress
+		t.txn.TransactionData = string(snBytes)
+		t.txn.Value = 0
+		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
+		t.submitTxn()
+	}()
+	return nil
+}
+
+//RegisterVote register a multisig wallet with the SC.
+func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error {
+
+	w, err := GetWallet(signerwalletstr)
+	if err != nil {
 		fmt.Printf("Error while parsing the wallet. %v", err)
 		return err
 	}
 
-	mswBytes, err := GetMultisigPayload(mswallet)
+	msv, err := GetMultisigVotePayload(msvstr)
 
 	if err != nil {
-		fmt.Printf("/nError in registering. %v\n", err)
+		fmt.Printf("\nError in voting. %v\n", err)
 		return err
 	}
-	sn := transaction.SmartContractTxnData{Name: MultiSigSmartContractAddress, InputArgs: mswBytes}
+	sn := transaction.SmartContractTxnData{Name: MultiSigVoteFuncName, InputArgs: msvBytes}
 	snBytes, err := json.Marshal(sn)
 	if err != nil {
-		return fmt.Errorf("execute faucet failed due to invalid data. %s", err.Error())
+		return fmt.Errorf("execute multisig vote failed due to invalid data. %s", err.Error())
 	}
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeSmartContract

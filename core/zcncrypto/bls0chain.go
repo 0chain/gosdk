@@ -201,7 +201,8 @@ type ThresholdSignatureScheme interface {
 //BLS0ChainThresholdScheme - a scheme that can create threshold signature shares for BLS0Chain signature scheme
 type BLS0ChainThresholdScheme struct {
 	BLS0ChainScheme
-	Id bls.ID `json:"threshold_scheme_id"`
+	id  bls.ID
+	Ids string `json:"threshold_scheme_id"`
 }
 
 //NewBLS0ChainThresholdScheme - create a new instance
@@ -211,12 +212,13 @@ func NewBLS0ChainThresholdScheme() *BLS0ChainThresholdScheme {
 
 //SetID sets ID in HexString format
 func (tss *BLS0ChainThresholdScheme) SetID(id string) error {
-	return tss.Id.SetHexString(id)
+	tss.Ids = id
+	return tss.id.SetHexString(id)
 }
 
 //GetID gets ID in hex string format
 func (tss *BLS0ChainThresholdScheme) GetID() string {
-	return tss.Id.GetHexString()
+	return tss.id.GetHexString()
 }
 
 // GetPrivateKeyAsByteArray - converts private key into byte array
@@ -275,7 +277,8 @@ func BLS0GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]BL
 		share.PrivateKey = hex.EncodeToString(sk.GetLittleEndian())
 		share.PublicKey = sk.GetPublicKey().SerializeToHexStr()
 
-		share.Id = id
+		share.id = id
+		share.Ids = share.GetID()
 
 		shares = append(shares, share)
 	}
