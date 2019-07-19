@@ -519,7 +519,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 		a.downloadChan <- downloadReq
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
-		a.downloadProgressMap[at.FilePathHash] = downloadReq
+		a.downloadProgressMap[remoteLookupHash] = downloadReq
 	}()
 	return nil
 }
