@@ -23,12 +23,13 @@ type Transaction struct {
 	PublicKey         string `json:"public_key,omitempty"`
 	ToClientID        string `json:"to_client_id,omitempty"`
 	ChainID           string `json:"chain_id,omitempty"`
-	TransactionData   string `json:"transaction_data,omitempty"`
-	Value             int64  `json:"transaction_value,omitempty"`
+	TransactionData   string `json:"transaction_data"`
+	Value             int64  `json:"transaction_value"`
 	Signature         string `json:"signature,omitempty"`
 	CreationDate      int64  `json:"creation_date,omitempty"`
-	TransactionType   int    `json:"transaction_type,omitempty"`
+	TransactionType   int    `json:"transaction_type"`
 	TransactionOutput string `json:"transaction_output,omitempty"`
+	TransactionFee    int64  `json:"transaction_fee"`
 	OutputHash        string `json:"txn_output_hash"`
 }
 
@@ -37,11 +38,41 @@ type SmartContractTxnData struct {
 	InputArgs interface{} `json:"input"`
 }
 
+type StorageAllocation struct {
+	ID             string `json:"id"`
+	DataShards     int    `json:"data_shards"`
+	ParityShards   int    `json:"parity_shards"`
+	Size           int64  `json:"size"`
+	Expiration     int64  `json:"expiration_date"`
+	Owner          string `json:"owner_id"`
+	OwnerPublicKey string `json:"owner_public_key"`
+	ReadRatio      *Ratio `json:"read_ratio"`
+	WriteRatio     *Ratio `json:"write_ratio"`
+}
+type Ratio struct {
+	ZCN  int64 `json:"zcn"`
+	Size int64 `json:"size"`
+}
+type RoundBlockHeader struct {
+	Version               string `json:"version"`
+	CreationData          int64  `json:"creation_date"`
+	Hash                  string `json:"hash"`
+	MinerID               string `json:"miner_id"`
+	Round                 int64  `json:"round"`
+	RoundRandomSeed       int64  `json:"round_random_seed"`
+	MerkleTreeRoot        string `json:"merkle_tree_root"`
+	StateHash             string `json:"state_hash"`
+	ReceiptMerkleTreeRoot string `json:"receipt_merkle_tree_root"`
+	NumberOfTxns          int64  `json:"num_txns"`
+}
 const NEW_ALLOCATION_REQUEST = "new_allocation_request"
 const LOCK_TOKEN = "lock"
 const UNLOCK_TOKEN = "unlock"
+const STAKE = "addToDelegatePool"
+const DELETE_STAKE = "deleteFromDelegatePool"
 
 type SignFunc = func(msg string) (string, error)
+type VerifyFunc = func(signature, msgHash, publicKey string) (bool, error)
 
 func NewTransactionEntity(clientID string, chainID string, publicKey string) *Transaction {
 	txn := &Transaction{}
@@ -53,16 +84,28 @@ func NewTransactionEntity(clientID string, chainID string, publicKey string) *Tr
 	return txn
 }
 
-func (t *Transaction) ComputeHashAndSign(signHandler SignFunc) error {
+func (t *Transaction) ComputeHash() {
 	hashdata := fmt.Sprintf("%v:%v:%v:%v:%v", t.CreationDate, t.ClientID,
 		t.ToClientID, t.Value, encryption.Hash(t.TransactionData))
 	t.Hash = encryption.Hash(hashdata)
+}
+func (t *Transaction) ComputeHashAndSign(signHandler SignFunc) error {
+	t.ComputeHash()
 	var err error
 	t.Signature, err = signHandler(t.Hash)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+func (t *Transaction) VerifyTransaction(verifyHandler VerifyFunc) (bool, error) {
+	// Store the hash
+	hash := t.Hash
+	t.ComputeHash()
+	if t.Hash != hash {
+		return false, fmt.Errorf(`{"error":"hash_mismatch", "expected":"%v", "actual":%v"}`, t.Hash, hash)
+	}
+	return verifyHandler(t.Signature, t.Hash, t.PublicKey)
 }
 
 func SendTransactionSync(txn *Transaction, miners []string) {

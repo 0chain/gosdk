@@ -2,18 +2,40 @@ package zcncore
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"net/http"
+	"strconv"
 	"time"
 )
 
+var (
+	errNetwork          = errors.New("network error. host not reachable")
+	errUserRejected     = errors.New("rejected by user")
+	errAuthVerifyFailed = errors.New("verfication failed for auth response")
+	errAuthTimeout      = errors.New("auth timed out")
+	errAddSignature     = errors.New("error adding signature")
+)
 // TransactionCallback needs to be implemented by the caller for transaction related APIs
 type TransactionCallback interface {
 	OnTransactionComplete(t *Transaction, status int)
 	OnVerifyComplete(t *Transaction, status int)
+	OnAuthComplete(t *Transaction, status int)
+}
+type blockHeader struct {
+	Version               string `json:"version,omitempty"`
+	CreationDate          int64  `json:"creation_date,omitempty"`
+	Hash                  string `json:"hash,omitempty"`
+	MinerId               string `json:"miner_id,omitempty"`
+	Round                 int64  `json:"round,omitempty"`
+	RoundRandomSeed       int64  `json:"round_random_seed,omitempy"`
+	MerkleTreeRoot        string `json:"merkle_tree_root,omitempty"`
+	StateHash             string `json:"state_hash,omitempty"`
+	ReceiptMerkleTreeRoot string `json:"receipt_merkle_tree_root,omitempty"`
+	NumTxns               int64  `json:"num_txns,omitempty"`
 }
 
 type Transaction struct {
@@ -35,21 +57,24 @@ type TransactionScheme interface {
 	SetTransactionCallback(cb TransactionCallback) error
 	// Send implements sending token to a given clientid
 	Send(toClientID string, val int64, desc string) error
-	// SendWithSignature implements sending token.
-	// signature will be passed by application where multi signature is involved.
-	SendWithSignature(toClientID string, val int64, desc string, sig string) error
 	// StoreData implements store the data to blockchain
 	StoreData(data string) error
-	// ExecuteFaucetSC impements the Faucet Smart contract
-	ExecuteFaucetSC(methodName string, input []byte) error
+	// ExecuteSmartContract impements the Faucet Smart contract
+	ExecuteSmartContract(address, methodName, input string, val int64) error
 	// GetTransactionHash implements retrieval of hash of the submitted transaction
 	GetTransactionHash() string
 	// LockTokens implements the lock token.
 	LockTokens(val int64, durationHr int64, durationMin int) error
 	// UnlockTokens implements unlocking of earlier locked tokens.
 	UnlockTokens(poolID string) error
+	// Stake implementes token to be stake on clientID
+	Stake(clientID string, val int64) error
+	// DeleteStake implements deleteing staked tokens
+	DeleteStake(clientID, poolID string) error
 	// SetTransactionHash implements verify a previous transation status
 	SetTransactionHash(hash string) error
+	// SetTransactionFee implements method to set the transaction fee
+	SetTransactionFee(txnFee int64) error
 	// Verify implements verify the transaction
 	Verify() error
 	// GetVerifyOutput implements the verifcation output from sharders
@@ -119,7 +144,8 @@ func (t *Transaction) submitTxn() {
 	defer close(result)
 	var tSuccessRsp string
 	var tFailureRsp string
-	for _, miner := range _config.chain.Miners {
+	randomMiners := util.GetRandom(_config.chain.Miners, getMinMinersSubmit())
+	for _, miner := range randomMiners {
 		go func(minerurl string) {
 			url := minerurl + PUT_TRANSACTION
 			Logger.Info("Submitting", txnTypeString(t.txn.TransactionType), "transaction to", minerurl)
@@ -137,7 +163,7 @@ func (t *Transaction) submitTxn() {
 		}(miner)
 	}
 	consensus := float32(0)
-	for range _config.chain.Miners {
+	for range randomMiners {
 		select {
 		case rsp := <-result:
 			Logger.Debug(rsp.Url, rsp.Status)
@@ -150,7 +176,7 @@ func (t *Transaction) submitTxn() {
 			}
 		}
 	}
-	rate := consensus * 100 / float32(len(_config.chain.Miners))
+	rate := consensus * 100 / float32(len(randomMiners))
 	if rate < consensusThresh {
 		t.completeTxn(StatusError, "", fmt.Errorf("submit transaction failed. %s", tFailureRsp))
 		return
@@ -159,23 +185,43 @@ func (t *Transaction) submitTxn() {
 	t.completeTxn(StatusSuccess, tSuccessRsp, nil)
 }
 
-// NewTransaction allocation new generic transaction object for any operation
-func NewTransaction(cb TransactionCallback) (*Transaction, error) {
-	if _config.wallet.ClientID == "" {
-		return nil, fmt.Errorf("wallet info not found. set wallet info.")
-	}
+func newTransaction(cb TransactionCallback, txnFee int64) (*Transaction, error) {
 	t := &Transaction{}
 	t.txn = transaction.NewTransactionEntity(_config.wallet.ClientID, _config.chain.ChainID, _config.wallet.ClientKey)
 	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
 	t.txnCb = cb
+	t.txn.TransactionFee = txnFee
 	return t, nil
 }
 
+// NewTransaction allocation new generic transaction object for any operation
+func NewTransaction(cb TransactionCallback, txnFee int64) (TransactionScheme, error) {
+	err := checkConfig()
+	if err != nil {
+		return nil, err
+	}
+	if _config.isSplitWallet {
+		if _config.authUrl == "" {
+			return nil, fmt.Errorf("auth url not set")
+		}
+		Logger.Info("New transaction interface with auth")
+		return newTransactionWithAuth(cb, txnFee)
+	}
+	Logger.Info("New transaction interface")
+	return newTransaction(cb, txnFee)
+}
 func (t *Transaction) SetTransactionCallback(cb TransactionCallback) error {
 	if t.txnStatus != StatusUnknown {
 		return fmt.Errorf("transaction already exists. cannot set transaction hash.")
 	}
 	t.txnCb = cb
+	return nil
+}
+func (t *Transaction) SetTransactionFee(txnFee int64) error {
+	if t.txnStatus != StatusUnknown {
+		return fmt.Errorf("transaction already exists. cannot set transaction fee.")
+	}
+	t.txn.TransactionFee = txnFee
 	return nil
 }
 
@@ -190,9 +236,17 @@ func (t *Transaction) Send(toClientID string, val int64, desc string) error {
 	return nil
 }
 
-func (t *Transaction) SendWithSignature(toClientID string, val int64, desc string, sig string) error {
+func (t *Transaction) SendWithSignatureHash(toClientID string, val int64, desc string, sig string, CreationDate int64, hash string) error {
+	go func() {
+		t.txn.TransactionType = transaction.TxnTypeSend
+		t.txn.ToClientID = toClientID
+		t.txn.Value = val
+		t.txn.Hash = hash
+		t.txn.TransactionData = desc
 	t.txn.Signature = sig
-	t.Send(toClientID, val, desc)
+		t.txn.CreationDate = CreationDate
+		t.submitTxn()
+	}()
 	return nil
 }
 
@@ -205,17 +259,24 @@ func (t *Transaction) StoreData(data string) error {
 	return nil
 }
 
-func (t *Transaction) ExecuteFaucetSC(methodName string, input []byte) error {
+func (t *Transaction) createSmartContractTxn(address, methodName string, input interface{}, value int64) error {
 	sn := transaction.SmartContractTxnData{Name: methodName, InputArgs: input}
 	snBytes, err := json.Marshal(sn)
 	if err != nil {
-		return fmt.Errorf("execute faucet failed due to invalid data. %s", err.Error())
+		return fmt.Errorf("create smart contract failed due to invalid data. %s", err.Error())
+	}
+		t.txn.TransactionType = transaction.TxnTypeSmartContract
+	t.txn.ToClientID = address
+		t.txn.TransactionData = string(snBytes)
+	t.txn.Value = value
+	return nil
+}
+func (t *Transaction) ExecuteSmartContract(address, methodName, input string, val int64) error {
+	err := t.createSmartContractTxn(address, methodName, input, val)
+	if err != nil {
+		return err
 	}
 	go func() {
-		t.txn.TransactionType = transaction.TxnTypeSmartContract
-		t.txn.ToClientID = FaucetSmartContractAddress
-		t.txn.TransactionData = string(snBytes)
-		t.txn.Value = 0
 		t.submitTxn()
 	}()
 	return nil
@@ -253,6 +314,197 @@ func (t *Transaction) GetTransactionHash() string {
 	return t.txnHash
 }
 
+func queryFromSharders(numSharders int, query string, result chan *util.GetResponse) {
+	randomShaders := util.GetRandom(_config.chain.Sharders, numSharders)
+	for _, sharder := range randomShaders {
+		go func(sharderurl string) {
+			Logger.Info("Query from", sharderurl+query)
+			url := fmt.Sprintf("%v%v", sharderurl, query)
+			req, err := util.NewHTTPGetRequest(url)
+			if err != nil {
+				Logger.Error(sharderurl, "new get request failed. ", err.Error())
+				return
+			}
+			res, err := req.Get()
+			if err != nil {
+				Logger.Error(sharderurl, "get error. ", err.Error())
+			}
+			result <- res
+			return
+		}(sharder)
+	}
+}
+func getTransactionConfirmation(numSharders int, txnHash string) (map[string]json.RawMessage, string, *blockHeader, error) {
+	result := make(chan *util.GetResponse)
+	defer close(result)
+	queryFromSharders(numSharders, fmt.Sprintf("%v%v&content=lfb", TXN_VERIFY_URL, txnHash), result)
+	maxConfirmation := int(0)
+	txnConfirmations := make(map[string]int)
+	var confirmedTxn map[string]json.RawMessage
+	var blockHash string
+	var lfb blockHeader
+	for i := 0; i < numSharders; i++ {
+		select {
+		case rsp := <-result:
+			Logger.Debug(rsp.Url, rsp.Status)
+			Logger.Error(rsp.Body)
+			if rsp.StatusCode == http.StatusOK {
+				var cfmLfb map[string]json.RawMessage
+				err := json.Unmarshal([]byte(rsp.Body), &cfmLfb)
+				if err != nil {
+					Logger.Error("txn confirmation parse error", err)
+					continue
+				}
+				if cfm, ok := cfmLfb["confirmation"]; ok {
+					var objmap map[string]json.RawMessage
+					err := json.Unmarshal([]byte(cfm), &objmap)
+					if err != nil {
+						Logger.Error("txn confirmation parse error", err)
+						continue
+					}
+					if _, ok := objmap["txn"]; ok {
+						h := encryption.FastHash([]byte(objmap["txn"]))
+						txnConfirmations[h]++
+						if txnConfirmations[h] > maxConfirmation {
+							maxConfirmation = txnConfirmations[h]
+							confirmedTxn = objmap
+							if bh, ok := objmap["block_hash"]; ok {
+								blockHash, _ = strconv.Unquote(string(bh))
+							}
+						}
+					} else {
+						Logger.Debug(rsp.Url, "No transaction confirmation")
+					}
+				} else if lfbRaw, ok := cfmLfb["latest_finalized_block"]; ok {
+					err := json.Unmarshal([]byte(lfbRaw), &lfb)
+					if err != nil {
+						Logger.Error("round info parse error", err)
+						continue
+					}
+				}
+			} else {
+				Logger.Error(rsp.Body)
+			}
+		}
+	}
+	if confirmedTxn == nil {
+		return nil, "", &lfb, fmt.Errorf("transaction not found")
+	}
+	return confirmedTxn, blockHash, &lfb, nil
+}
+func parseBlockRound(txn map[string]json.RawMessage) int64 {
+	if r, ok := txn["round"]; ok {
+		round, err := strconv.ParseInt(string(r), 10, 64)
+		if err != nil {
+			Logger.Error("invalid round number")
+			return 0
+		}
+		return round
+	}
+	return 0
+}
+func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHeader, error) {
+	result := make(chan *util.GetResponse)
+	defer close(result)
+	queryFromSharders(numSharders, fmt.Sprintf("%vround=%v&content=%v", GET_BLOCK_INFO, round, content), result)
+	maxConsensus := int(0)
+	roundConsensus := make(map[string]int)
+	var blkHdr blockHeader
+	for i := 0; i < numSharders; i++ {
+		select {
+		case rsp := <-result:
+			Logger.Debug(rsp.Url, rsp.Status)
+			if rsp.StatusCode == http.StatusOK {
+				var objmap map[string]json.RawMessage
+				err := json.Unmarshal([]byte(rsp.Body), &objmap)
+				if err != nil {
+					Logger.Error("round info parse error", err)
+					continue
+				}
+				if header, ok := objmap["header"]; ok {
+					err := json.Unmarshal([]byte(header), &objmap)
+					if err != nil {
+						Logger.Error("round info parse error", err)
+						continue
+					}
+					if hash, ok := objmap["hash"]; ok {
+						h := encryption.FastHash([]byte(hash))
+						roundConsensus[h]++
+						if roundConsensus[h] > maxConsensus {
+							maxConsensus = roundConsensus[h]
+							err := json.Unmarshal([]byte(header), &blkHdr)
+							if err != nil {
+								Logger.Error("round info parse error", err)
+								continue
+							}
+						}
+					}
+				} else {
+					Logger.Debug(rsp.Url, "no round confirmation. Resp:", rsp.Body)
+				}
+			} else {
+				Logger.Error(rsp.Body)
+			}
+		}
+	}
+	if maxConsensus == 0 {
+		return nil, fmt.Errorf("round info not found")
+	}
+	return &blkHdr, nil
+}
+func isBlockExtends(prevHash string, block *blockHeader) bool {
+	data := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v", block.MinerId, prevHash, block.CreationDate, block.Round,
+		block.RoundRandomSeed, block.MerkleTreeRoot, block.ReceiptMerkleTreeRoot)
+	h := encryption.Hash(data)
+	if block.Hash == h {
+		return true
+	}
+	return false
+}
+func validateChain(conf map[string]json.RawMessage, confirmBlockhash string) bool {
+	confirmRound := parseBlockRound(conf)
+	Logger.Debug("Confirmation round: ", confirmRound)
+	currentBlockHash := confirmBlockhash
+	round := confirmRound + 1
+	for {
+		nextBlock, err := getBlockInfoByRound(1, round, "header")
+		if err != nil {
+			Logger.Info(err, "after a second falling thru to ", getMinShardersVerify(), "of ", len(_config.chain.Sharders), "Sharders")
+			time.Sleep(1 * time.Second)
+			nextBlock, err = getBlockInfoByRound(getMinShardersVerify(), round, "header")
+			if err != nil {
+				Logger.Error("err", "block chain stalled. waiting", defaultWaitSeconds, "...")
+				time.Sleep(defaultWaitSeconds)
+				continue
+			}
+		}
+		if isBlockExtends(currentBlockHash, nextBlock) {
+			currentBlockHash = nextBlock.Hash
+			round++
+		}
+		if (round > confirmRound) && (round-confirmRound < getMinRequiredChainLength()) {
+			continue
+		}
+		if round < confirmRound {
+			return false
+		}
+		// Validation success
+		break
+	}
+	return true
+}
+func (t *Transaction) isTransactionExpired(lfbCreationTime, currentTime int64) bool {
+	// latest finalized block zero implies no response. use currentTime as lfb
+	if lfbCreationTime == 0 {
+		lfbCreationTime = currentTime
+	}
+	if util.MinInt64(lfbCreationTime, currentTime) > (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
+		return true
+	}
+	// Wait for next retry
+	time.Sleep(defaultWaitSeconds)
+	return false
+}
 func (t *Transaction) Verify() error {
 	if t.txnHash == "" && t.txnStatus == StatusUnknown {
 		return fmt.Errorf("invalid transaction. cannot be verified")
@@ -263,109 +515,46 @@ func (t *Transaction) Verify() error {
 			return fmt.Errorf("invalid transaction. cannot be verified")
 		}
 	}
-	go func() {
-		result := make(chan *util.GetResponse)
-		var tSuccessRsp string
-		var tFailureRsp string
-		defer close(result)
-		for _, sharder := range _config.chain.Sharders {
-			go func(sharderurl string) {
-				Logger.Info("Verify transaction hash: ", t.txnHash, " from", sharderurl)
-				url := fmt.Sprintf("%v%v%v", sharderurl, TXN_VERIFY_URL, t.txnHash)
-				ticker := time.NewTicker(time.Second)
-				defer ticker.Stop()
-				var res *util.GetResponse
-				done := make(chan bool)
+	// If transaction is verify only start from current time
+	if t.txn.CreationDate == 0 {
+		t.txn.CreationDate = common.Now()
+	}
+
 				go func() {
-					lburl := fmt.Sprintf("%v%v", sharderurl, LATEST_FINALIZED_BLOCK)
-					lbticker := time.NewTicker(time.Second)
-					defer lbticker.Stop()
-					for true {
-						select {
-						case <-lbticker.C:
-							req, err := util.NewHTTPGetRequest(lburl)
+		for {
+			// Get transaction confirmation from random sharder
+			confirmation, blockHash, lfb, err := getTransactionConfirmation(1, t.txnHash)
 							if err != nil {
-								Logger.Error(sharderurl, "new get request failed. ", err.Error())
-							}
-							res, err := req.Get()
+				tn := common.Now()
+				Logger.Info(err, "now:", tn, "LFB creation time:", lfb.CreationDate)
+				if util.MaxInt64(lfb.CreationDate, tn) < (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
+					Logger.Info("falling back to", getMinShardersVerify(), "of ", len(_config.chain.Sharders), "Sharders")
+					confirmation, blockHash, lfb, err = getTransactionConfirmation(getMinShardersVerify(), t.txnHash)
 							if err != nil {
-								Logger.Error(sharderurl, "get error. ", err.Error())
-							}
-							var objmap map[string]json.RawMessage
-							err = json.Unmarshal([]byte(res.Body), &objmap)
-							if err != nil {
-								Logger.Debug("error getting latest finalized block: ", err)
-								break
-							}
-							if date, ok := objmap["creation_date"]; ok {
-								var dateTimeStamp int64
-								err = json.Unmarshal(date, &dateTimeStamp)
-								if dateTimeStamp-t.txn.CreationDate > 10 {
-									done <- true
+						if t.isTransactionExpired(lfb.CreationDate, tn) {
+							t.completeVerify(StatusError, "", fmt.Errorf(`{"error": "verify transaction failed"`))
 									return
-								}
-							}
 						}
-					}
-				}()
-				accepted := false
-				for !accepted {
-					select {
-					case <-done:
-						accepted = true
-					case <-ticker.C:
-						req, err := util.NewHTTPGetRequest(url)
-						if err != nil {
-							Logger.Error(sharderurl, "new get request failed. ", err.Error())
-						}
-						res, err = req.Get()
-						if err != nil {
-							Logger.Error(sharderurl, "get error. ", err.Error())
-						}
-						var objmap map[string]json.RawMessage
-						err = json.Unmarshal([]byte(res.Body), &objmap)
-						if err != nil {
 							continue
-						}
-						_, accepted = objmap["version"]
 					}
-				}
-				result <- res
-				return
-			}(sharder)
-		}
-		consensus := float32(0)
-		for range _config.chain.Sharders {
-			select {
-			case rsp := <-result:
-				Logger.Debug(rsp.Url, rsp.Status)
-				if rsp.StatusCode == http.StatusOK {
-					var objmap map[string]json.RawMessage
-					err := json.Unmarshal([]byte(rsp.Body), &objmap)
-					if err != nil {
-						continue
-					}
-					if _, ok := objmap["txn"]; !ok {
-						Logger.Debug("no transaction information. only block summary.", rsp.Url, rsp.Body)
-						if _, ok := objmap["block_hash"]; ok {
-							consensus++
-							continue
-						}
-						Logger.Debug("sharder does not have the block summary", rsp.Url, rsp.Body)
-						continue
-					}
-					tSuccessRsp = rsp.Body
-					consensus++
 				} else {
-					Logger.Error(rsp.Body)
-				}
-			}
+					if t.isTransactionExpired(lfb.CreationDate, tn) {
+						t.completeVerify(StatusError, "", fmt.Errorf(`{"error": "verify transaction failed"`))
+				return
 		}
-		rate := consensus * 100 / float32(len(_config.chain.Sharders))
-		if rate < consensusThresh {
-			t.completeVerify(StatusError, "", fmt.Errorf("verify transaction failed. %s", tFailureRsp))
-		} else {
-			t.completeVerify(StatusSuccess, tSuccessRsp, nil)
+						continue
+					}
+						}
+			valid := validateChain(confirmation, blockHash)
+			if valid {
+				output, err := json.Marshal(confirmation)
+				if err != nil {
+					t.completeVerify(StatusError, "", fmt.Errorf(`{"error": "transaction confirmation json marshal error"`))
+					return
+					}
+				t.completeVerify(StatusSuccess, string(output), nil)
+				return
+			}
 		}
 	}()
 	return nil
@@ -392,37 +581,72 @@ func (t *Transaction) GetVerifyError() string {
 	return ""
 }
 
-func (t *Transaction) LockTokens(val int64, durationHr int64, durationMin int) error {
+func (t *Transaction) createLockTokensTxn(val int64, durationHr int64, durationMin int) error {
 	lockInput := make(map[string]interface{})
 	lockInput["duration"] = fmt.Sprintf("%dh%dm", durationHr, durationMin)
-	sn := transaction.SmartContractTxnData{Name: transaction.LOCK_TOKEN, InputArgs: lockInput}
-	snBytes, err := json.Marshal(sn)
+	err := t.createSmartContractTxn(InterestPoolSmartContractAddress, transaction.LOCK_TOKEN, lockInput, val)
+	return err
+}
+
+func (t *Transaction) LockTokens(val int64, durationHr int64, durationMin int) error {
+	err := t.createLockTokensTxn(val, durationHr, durationMin)
 	if err != nil {
-		return fmt.Errorf("lock token failed due to invalid data. %s", err.Error())
+		Logger.Error(err)
+		return err
 	}
 	go func() {
-		t.txn.TransactionType = transaction.TxnTypeSmartContract
-		t.txn.ToClientID = InterestPoolSmartContractAddress
-		t.txn.TransactionData = string(snBytes)
-		t.txn.Value = val
 		t.submitTxn()
 	}()
 	return nil
 }
 
-func (t *Transaction) UnlockTokens(poolID string) error {
+func (t *Transaction) createUnlockTokensTxn(poolID string) error {
 	unlockInput := make(map[string]interface{})
 	unlockInput["pool_id"] = poolID
-	sn := transaction.SmartContractTxnData{Name: transaction.UNLOCK_TOKEN, InputArgs: unlockInput}
-	snBytes, err := json.Marshal(sn)
+	return t.createSmartContractTxn(InterestPoolSmartContractAddress, transaction.UNLOCK_TOKEN, unlockInput, 0)
+}
+
+func (t *Transaction) UnlockTokens(poolID string) error {
+	err := t.createUnlockTokensTxn(poolID)
 	if err != nil {
-		return fmt.Errorf("unlock token failed due to invalid data. %s", err.Error())
+		Logger.Error(err)
+		return err
 	}
 	go func() {
-		t.txn.TransactionType = transaction.TxnTypeSmartContract
-		t.txn.ToClientID = InterestPoolSmartContractAddress
-		t.txn.TransactionData = string(snBytes)
-		t.txn.Value = 0
+		t.submitTxn()
+	}()
+	return nil
+}
+func (t *Transaction) createStakeTxn(clientID string, val int64) error {
+	input := make(map[string]interface{})
+	input["id"] = clientID
+	return t.createSmartContractTxn(StakeSmartContractAddress, transaction.STAKE, input, val)
+}
+
+func (t *Transaction) Stake(clientID string, val int64) error {
+	err := t.createStakeTxn(clientID, val)
+	if err != nil {
+		return err
+	}
+	go func() {
+		t.submitTxn()
+	}()
+	return nil
+}
+
+func (t *Transaction) createDeleteStakeTxn(clientID, poolID string) error {
+	input := make(map[string]interface{})
+	input["id"] = clientID
+	input["pool_id"] = poolID
+	return t.createSmartContractTxn(StakeSmartContractAddress, transaction.DELETE_STAKE, input, 0)
+}
+
+func (t *Transaction) DeleteStake(clientID, poolID string) error {
+	err := t.createDeleteStakeTxn(clientID, poolID)
+	if err != nil {
+		return err
+	}
+	go func() {
 		t.submitTxn()
 	}()
 	return nil

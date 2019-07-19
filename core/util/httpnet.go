@@ -73,7 +73,7 @@ func NewHTTPGetRequest(url string) (*GetRequest, error) {
 	pr.PostRequest = &PostRequest{}
 	pr.url = url
 	pr.req = req
-	pr.ctx, pr.cncl = context.WithTimeout(context.Background(), time.Second*10)
+	pr.ctx, pr.cncl = context.WithTimeout(context.Background(), time.Second*60)
 	return pr, nil
 }
 
@@ -91,7 +91,7 @@ func NewHTTPPostRequest(url string, data interface{}) (*PostRequest, error) {
 	req.Header.Set("Access-Control-Allow-Origin", "*")
 	pr.url = url
 	pr.req = req
-	pr.ctx, pr.cncl = context.WithTimeout(context.Background(), time.Second*10)
+	pr.ctx, pr.cncl = context.WithTimeout(context.Background(), time.Second*60)
 	return pr, nil
 }
 

@@ -28,9 +28,9 @@ type Wallet struct {
 //SignatureScheme - an encryption scheme for signing and verifying messages
 type SignatureScheme interface {
 	// Generate fresh keys
-	GenerateKeys(numKeys int) (*Wallet, error)
+	GenerateKeys() (*Wallet, error)
 	// Generate keys from mnemonic for recovery
-	RecoverKeys(mnemonic string, numKeys int) (*Wallet, error)
+	RecoverKeys(mnemonic string) (*Wallet, error)
 
 	// Signing  - Set private key to sign
 	SetPrivateKey(privateKey string) error
@@ -42,6 +42,11 @@ type SignatureScheme interface {
 
 	// Combine signature for schemes BLS
 	Add(signature, msg string) (string, error)
+}
+// SplitSignatureScheme splits the primary key into number of parts.
+type SplitSignatureScheme interface {
+	SignatureScheme
+	SplitKeys(numSplits int) (*Wallet, error)
 }
 
 // NewSignatureScheme creates an instance for using signature functions

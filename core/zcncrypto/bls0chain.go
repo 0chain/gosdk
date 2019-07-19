@@ -31,7 +31,7 @@ func NewBLS0ChainScheme() *BLS0ChainScheme {
 }
 
 //GenerateKeys - implement interface
-func (b0 *BLS0ChainScheme) GenerateKeys(numKeys int) (*Wallet, error) {
+func (b0 *BLS0ChainScheme) GenerateKeys() (*Wallet, error) {
 	// Check for recovery
 	if len(b0.mnemonic) == 0 {
 		entropy, err := bip39.NewEntropy(256)
@@ -43,9 +43,6 @@ func (b0 *BLS0ChainScheme) GenerateKeys(numKeys int) (*Wallet, error) {
 			return nil, fmt.Errorf("Generating mnemonic failed")
 		}
 	}
-	if numKeys < 1 {
-		return nil, fmt.Errorf("Invalid number of keys")
-	}
 
 	// Generate a Bip32 HD wallet for the mnemonic and a user supplied password
 	seed := bip39.NewSeed(b0.mnemonic, "0chain-client-split-key")
@@ -54,18 +51,18 @@ func (b0 *BLS0ChainScheme) GenerateKeys(numKeys int) (*Wallet, error) {
 
 	// New Wallet
 	w := &Wallet{}
-	w.Keys = make([]KeyPair, numKeys)
-	var pk bls.PublicKey
-	for i := 0; i < numKeys; i++ {
+	w.Keys = make([]KeyPair, 1)
+
+	// Generate pair
 		var sk bls.SecretKey
 		sk.SetByCSPRNG()
-		w.Keys[i].PrivateKey = sk.SerializeToHexStr()
+	w.Keys[0].PrivateKey = sk.SerializeToHexStr()
 		pub := sk.GetPublicKey()
-		w.Keys[i].PublicKey = pub.SerializeToHexStr()
-		pk.Add(pub)
-	}
-	w.ClientKey = pk.SerializeToHexStr()
-	w.ClientID = encryption.Hash(pk.Serialize())
+	w.Keys[0].PublicKey = pub.SerializeToHexStr()
+
+	// Generate client ID and public
+	w.ClientKey = w.Keys[0].PublicKey
+	w.ClientID = encryption.Hash(pub.Serialize())
 	w.Mnemonic = b0.mnemonic
 	w.Version = cryptoVersion
 	w.DateCreated = time.Now().String()
@@ -75,7 +72,7 @@ func (b0 *BLS0ChainScheme) GenerateKeys(numKeys int) (*Wallet, error) {
 	return w, nil
 }
 
-func (b0 *BLS0ChainScheme) RecoverKeys(mnemonic string, numKeys int) (*Wallet, error) {
+func (b0 *BLS0ChainScheme) RecoverKeys(mnemonic string) (*Wallet, error) {
 	if mnemonic == "" {
 		return nil, fmt.Errorf("Set mnemonic key failed")
 	}
@@ -83,7 +80,7 @@ func (b0 *BLS0ChainScheme) RecoverKeys(mnemonic string, numKeys int) (*Wallet, e
 		return nil, errors.New("Cannot recover when there are keys")
 	}
 	b0.mnemonic = mnemonic
-	return b0.GenerateKeys(numKeys)
+	return b0.GenerateKeys()
 }
 
 //SetPrivateKey - implement interface
@@ -171,4 +168,42 @@ func (b0 *BLS0ChainScheme) Add(signature, msg string) (string, error) {
 	}
 	sign.Add(signature1)
 	return sign.SerializeToHexStr(), nil
+}
+func (b0 *BLS0ChainScheme) SplitKeys(numSplits int) (*Wallet, error) {
+	if b0.privateKey == "" {
+		return nil, errors.New("primary private key not found")
+	}
+	var primaryFr bls.Fr
+	var primarySk bls.SecretKey
+	primarySk.DeserializeHexStr(b0.privateKey)
+	primaryFr.SetLittleEndian(primarySk.GetLittleEndian())
+	// New Wallet
+	w := &Wallet{}
+	w.Keys = make([]KeyPair, numSplits)
+	var sk bls.SecretKey
+	for i := 0; i < numSplits-1; i++ {
+		var tmpSk bls.SecretKey
+		tmpSk.SetByCSPRNG()
+		w.Keys[i].PrivateKey = tmpSk.SerializeToHexStr()
+		pub := tmpSk.GetPublicKey()
+		w.Keys[i].PublicKey = pub.SerializeToHexStr()
+		sk.Add(&tmpSk)
+	}
+	var aggregateSk bls.Fr
+	aggregateSk.SetLittleEndian(sk.GetLittleEndian())
+	//Subtract the aggregated private key from the primary private key to derive the last split private key
+	var lastSk bls.Fr
+	bls.FrSub(&lastSk, &primaryFr, &aggregateSk)
+	// Last key
+	var lastSecretKey bls.SecretKey
+	lastSecretKey.SetLittleEndian(lastSk.Serialize())
+	w.Keys[numSplits-1].PrivateKey = lastSecretKey.SerializeToHexStr()
+	w.Keys[numSplits-1].PublicKey = lastSecretKey.GetPublicKey().SerializeToHexStr()
+	// Generate client ID and public
+	w.ClientKey = primarySk.GetPublicKey().SerializeToHexStr()
+	w.ClientID = encryption.Hash(primarySk.GetPublicKey().Serialize())
+	w.Mnemonic = b0.mnemonic
+	w.Version = cryptoVersion
+	w.DateCreated = time.Now().String()
+	return w, nil
 }

@@ -17,11 +17,11 @@ func TestSignatureScheme(t *testing.T) {
 	default:
 		t.Fatalf("Signature scheme invalid")
 	}
-	w, err := sigScheme.GenerateKeys(2)
+	w, err := sigScheme.GenerateKeys()
 	if err != nil {
 		t.Fatalf("Generate Key failed %s", err.Error())
 	}
-	if w.ClientID == "" || w.ClientKey == "" || len(w.Keys) != 2 || w.Mnemonic == "" {
+	if w.ClientID == "" || w.ClientKey == "" || len(w.Keys) != 1 || w.Mnemonic == "" {
 		t.Fatalf("Invalid keys generated")
 	}
 	blsWallet = w
@@ -55,7 +55,7 @@ func BenchmarkBLSSign(b *testing.B) {
 
 func TestRecoveryKeys(t *testing.T) {
 	sigScheme := NewSignatureScheme("bls0chain")
-	w, err := sigScheme.RecoverKeys(blsWallet.Mnemonic, 2)
+	w, err := sigScheme.RecoverKeys(blsWallet.Mnemonic)
 	if err != nil {
 		t.Fatalf("set Recover Keys failed")
 	}
@@ -95,5 +95,35 @@ func TestCombinedSignAndVerify(t *testing.T) {
 	}
 	if ok, err := verifyScheme.Verify(addSig, hash); err != nil || !ok {
 		t.Fatalf("Verification failed\n")
+	}
+}
+func TestSplitKey(t *testing.T) {
+	primaryKeyStr := `c36f2f92b673cf057a32e8bd0ca88888e7ace40337b737e9c7459fdc4c521918`
+	sig0 := NewBLS0ChainScheme()
+	err := sig0.SetPrivateKey(primaryKeyStr)
+	if err != nil {
+		t.Fatalf("Set private key failed - %s", err.Error())
+	}
+	hash := Sha3Sum256(data)
+	signature, err := sig0.Sign(hash)
+	if err != nil {
+		t.Fatalf("BLS signing failed")
+	}
+	numSplitKeys := int(2)
+	w, err := sig0.SplitKeys(numSplitKeys)
+	if err != nil {
+		t.Fatalf("Splitkeys key failed - %s", err.Error())
+	}
+	sigAggScheme := make([]BLS0ChainScheme, numSplitKeys)
+	for i := 0; i < numSplitKeys; i++ {
+		sigAggScheme[i].SetPrivateKey(w.Keys[i].PrivateKey)
+	}
+	var aggrSig string
+	for i := 1; i < numSplitKeys; i++ {
+		tmpSig, _ := sigAggScheme[i].Sign(hash)
+		aggrSig, _ = sigAggScheme[0].Add(tmpSig, hash)
+	}
+	if aggrSig != signature {
+		t.Fatalf("split key signature failed")
 	}
 }

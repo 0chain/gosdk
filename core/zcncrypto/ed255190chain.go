@@ -24,7 +24,7 @@ func NewED255190chainScheme() *ED255190chainScheme {
 }
 
 //GenerateKeys - implement interface
-func (ed *ED255190chainScheme) GenerateKeys(numKeys int) (*Wallet, error) {
+func (ed *ED255190chainScheme) GenerateKeys() (*Wallet, error) {
 	// Check for recovery
 	if len(ed.mnemonic) == 0 {
 		entropy, err := bip39.NewEntropy(256)
@@ -36,9 +36,6 @@ func (ed *ED255190chainScheme) GenerateKeys(numKeys int) (*Wallet, error) {
 			return nil, fmt.Errorf("Getting mnemonic failed")
 		}
 	}
-	if numKeys != 1 {
-		return nil, fmt.Errorf("Invalid number of keys")
-	}
 
 	seed := bip39.NewSeed(ed.mnemonic, "0chain-client-ed25519-key")
 	r := bytes.NewReader(seed)
@@ -48,7 +45,7 @@ func (ed *ED255190chainScheme) GenerateKeys(numKeys int) (*Wallet, error) {
 	}
 	// New Wallet
 	w := &Wallet{}
-	w.Keys = make([]KeyPair, numKeys)
+	w.Keys = make([]KeyPair, 1)
 	w.Keys[0].PublicKey = hex.EncodeToString(public)
 	w.Keys[0].PrivateKey = hex.EncodeToString(private)
 	w.ClientKey = w.Keys[0].PublicKey
@@ -59,7 +56,7 @@ func (ed *ED255190chainScheme) GenerateKeys(numKeys int) (*Wallet, error) {
 	return w, nil
 }
 
-func (ed *ED255190chainScheme) RecoverKeys(mnemonic string, numKeys int) (*Wallet, error) {
+func (ed *ED255190chainScheme) RecoverKeys(mnemonic string) (*Wallet, error) {
 	if mnemonic == "" {
 		return nil, errors.New("Set mnemonic key failed")
 	}
@@ -67,7 +64,7 @@ func (ed *ED255190chainScheme) RecoverKeys(mnemonic string, numKeys int) (*Walle
 		return nil, errors.New("Cannot recover when there are keys")
 	}
 	ed.mnemonic = mnemonic
-	return ed.GenerateKeys(numKeys)
+	return ed.GenerateKeys()
 }
 
 func (ed *ED255190chainScheme) SetPrivateKey(privateKey string) error {
