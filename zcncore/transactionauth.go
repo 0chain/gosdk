@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"0chain.net/clientsdk/core/transaction"
-	"0chain.net/clientsdk/core/util"
-	"0chain.net/clientsdk/core/zcncrypto"
+	"github.com/0chain/gosdk/core/transaction"
+	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk/core/zcncrypto"
+
 )
 
 type TransactionWithAuth struct {
