@@ -43,6 +43,8 @@ type TransactionScheme interface {
 	StoreData(data string) error
 	// ExecuteFaucetSC impements the Faucet Smart contract
 	ExecuteFaucetSC(methodName string, input []byte) error
+	// ExecuteFaucetSCWallet impements the Faucet Smart contract for a given wallet
+	ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error
 	// GetTransactionHash implements retrieval of hash of the submitted transaction
 	GetTransactionHash() string
 	// LockTokens implements the lock token.
@@ -216,6 +218,31 @@ func (t *Transaction) StoreData(data string) error {
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeData
 		t.txn.TransactionData = data
+		t.submitTxn()
+	}()
+	return nil
+}
+
+// ExecuteFaucetSCWallet impements the Faucet Smart contract for a given wallet
+func (t *Transaction) ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error {
+	w, err := GetWallet(walletStr)
+	if err != nil {
+		fmt.Printf("Error while parsing the wallet. %v\n", err)
+		return err
+	}
+	sn := transaction.SmartContractTxnData{Name: methodName, InputArgs: input}
+	snBytes, err := json.Marshal(sn)
+	if err != nil {
+		fmt.Printf("error in marshalling\n%v\n", err)
+		return fmt.Errorf("execute faucet failed due to invalid data. %s", err.Error())
+	}
+	go func() {
+		t.txn.TransactionType = transaction.TxnTypeSmartContract
+		t.txn.ToClientID = FaucetSmartContractAddress
+		t.txn.TransactionData = string(snBytes)
+		t.txn.Value = 0
+		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
+		fmt.Printf("submitted transaction\n")
 		t.submitTxn()
 	}()
 	return nil

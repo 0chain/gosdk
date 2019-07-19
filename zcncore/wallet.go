@@ -282,6 +282,27 @@ func GetBalance(cb GetBalanceCallback) error {
 	return nil
 }
 
+// GetBalance retreives wallet balance from sharders
+func GetBalanceWallet(walletStr string, cb GetBalanceCallback) error {
+
+	w, err := GetWallet(walletStr)
+	if err != nil {
+		fmt.Printf("Error while parsing the wallet. %v\n", err)
+		return err
+	}
+
+	go func() {
+		value, err := getBalanceFromSharders(w.ClientID)
+		if err != nil {
+			Logger.Error(err)
+			cb.OnBalanceAvailable(StatusError, 0)
+			return
+		}
+		cb.OnBalanceAvailable(StatusSuccess, value)
+	}()
+	return nil
+}
+
 func getBalanceFromSharders(clientID string) (int64, error) {
 	result := make(chan *util.GetResponse)
 	defer close(result)
@@ -441,4 +462,13 @@ func GetWallet(walletStr string) (*zcncrypto.Wallet, error) {
 
 	return &w, nil
 
+}
+
+//GetWalletClientID -- given a walletstr return ClientID
+func GetWalletClientID(walletStr string) (string, error) {
+	w, err := GetWallet(walletStr)
+	if err != nil {
+		return "", err
+	}
+	return w.ClientID, nil
 }
