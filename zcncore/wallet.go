@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/0chain/gosdk/core/logger"
@@ -19,31 +20,45 @@ type ChainConfig struct {
 	Miners          []string `json:"miners"`
 	Sharders        []string `json:"sharders"`
 	SignatureScheme string   `json:"signaturescheme"`
+	MinConfirmation         int      `json:"min_confirmation"`
+	ConfirmationChainLength int      `json:"confirmation_chain_length"`
 }
 
 var defaultLogLevel = logger.DEBUG
 var Logger logger.Logger
 
-var LATEST_FINALIZED_BLOCK = `/v1/block/get/latest_finalized`
 var REGISTER_CLIENT = `/v1/client/put`
 var PUT_TRANSACTION = `/v1/transaction/put`
 var TXN_VERIFY_URL = `/v1/transaction/get/confirmation?hash=`
 var GET_BALANCE = `/v1/client/get/balance?client_id=`
 var GET_LOCK_CONFIG = `/v1/scstate/get?sc_address=`
 var GET_LOCKED_TOKENS = `/v1/screst/` + InterestPoolSmartContractAddress + `/getPoolsStats?client_id=`
+var GET_BLOCK_INFO = `/v1/block/get?`
+var GET_USER_POOLS = `/v1/screst/` + StakeSmartContractAddress + `/getUserPools?client_id=`
+var GET_USER_POOL_DETAIL = `/v1/screst/` + StakeSmartContractAddress + `/getPoolsStats?`
 
 const StorageSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7`
 const FaucetSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3`
 const InterestPoolSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9`
+const StakeSmartContractAddress = `CF9C03CD22C9C7B116EED04E4A909F95ABEC17E98FE631D6AC94D5D8420C5B20`
 
 // In percentage
 const consensusThresh = float32(25.0)
 
+const defaultMinConfirmation = int(25)
+const defaultConfirmationChainLength = int(5)
+const defaultTxnExpirationSeconds = 15
+const defaultWaitSeconds = (3 * time.Second)
 const (
 	StatusSuccess      int = 0
 	StatusNetworkError int = 1
 	// TODO: Change to specific error
 	StatusError   int = 2
+	StatusRejectedByUser   int = 3
+	StatusInvalidSignature int = 4
+	StatusAuthError        int = 5
+	StatusAuthVerifyFailed int = 6
+	StatusAuthTimeout      int = 7
 	StatusUnknown int = -1
 )
 
@@ -52,6 +67,8 @@ const TOKEN_UNIT = int64(10000000000)
 const (
 	OpGetTokenLockConfig int = 0
 	OpGetLockedTokens    int = 1
+	OpGetUserPools       int = 2
+	OpGetUserPoolDetail  int = 3
 )
 
 // WalletCallback needs to be implmented for wallet creation.
@@ -61,7 +78,7 @@ type WalletCallback interface {
 
 // GetBalanceCallback needs to be implemented by the caller of GetBalance() to get the status
 type GetBalanceCallback interface {
-	OnBalanceAvailable(status int, value int64)
+	OnBalanceAvailable(status int, value int64, info string)
 }
 
 // GetInfoCallback needs to be implemented by the caller of GetLockTokenConfig() and GetLockedTokens()
@@ -70,6 +87,18 @@ type GetInfoCallback interface {
 	// if status == StatusSuccess then info is valid
 	// is status != StatusSuccess then err will give the reason
 	OnInfoAvailable(op int, status int, info string, err string)
+}
+// GetUSDInfoCallback needs to be implemented by the caller of GetZcnUSDInfo()
+type GetUSDInfoCallback interface {
+	// This will be called when GetZcnUSDInfo completes.
+	// if status == StatusSuccess then info is valid
+	// is status != StatusSuccess then err will give the reason
+	OnUSDInfoAvailable(status int, info string, err string)
+}
+// AuthCallback needs to be implemented by the caller SetupAuth()
+type AuthCallback interface {
+	// This call back gives the status of the Two factor authenticator(zauth) setup.
+	OnSetupComplete(status int, err string)
 }
 
 type regInfo struct {
@@ -86,8 +115,10 @@ type httpResponse struct {
 type localConfig struct {
 	chain         ChainConfig
 	wallet        zcncrypto.Wallet
+	authUrl       string
 	isConfigured  bool
 	isValidWallet bool
+	isSplitWallet bool
 }
 
 // Singleton
@@ -95,6 +126,47 @@ var _config localConfig
 
 func init() {
 	Logger.Init(defaultLogLevel, "0chain-core-sdk")
+}
+func checkSdkInit() error {
+	if !_config.isConfigured || len(_config.chain.Miners) < 1 || len(_config.chain.Sharders) < 1 {
+		return fmt.Errorf("SDK not initialized")
+	}
+	return nil
+}
+func checkWalletConfig() error {
+	if !_config.isValidWallet || _config.wallet.ClientID == "" {
+		Logger.Error("wallet info not found. returning error.")
+		return fmt.Errorf("wallet info not found. set wallet info.")
+	}
+	return nil
+}
+func checkConfig() error {
+	err := checkSdkInit()
+	if err != nil {
+		return err
+	}
+	err = checkWalletConfig()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+func assertConfig() {
+	if _config.chain.MinConfirmation <= 0 {
+		_config.chain.MinConfirmation = defaultMinConfirmation
+	}
+	if _config.chain.ConfirmationChainLength <= 0 {
+		_config.chain.ConfirmationChainLength = defaultConfirmationChainLength
+	}
+}
+func getMinMinersSubmit() int {
+	return util.MaxInt((_config.chain.MinConfirmation * len(_config.chain.Miners) / 100), 1)
+}
+func getMinShardersVerify() int {
+	return util.MaxInt((_config.chain.MinConfirmation * len(_config.chain.Sharders) / 100), 1)
+}
+func getMinRequiredChainLength() int64 {
+	return int64(_config.chain.ConfirmationChainLength)
 }
 
 // SetLogLevel set the log level.
@@ -128,6 +200,7 @@ func Init(c string) error {
 		if _config.chain.SignatureScheme != "ed25519" && _config.chain.SignatureScheme != "bls0chain" {
 			return fmt.Errorf("invalid/unsupported signature scheme")
 		}
+		assertConfig()
 		_config.isConfigured = true
 	}
 	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
@@ -139,19 +212,21 @@ func InitZCNSDK(miners []string, sharders []string, signscheme string) error {
 	_config.chain.Miners = miners
 	_config.chain.Sharders = sharders
 	_config.chain.SignatureScheme = signscheme
+	assertConfig()
+	_config.isConfigured = true
 	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
 	return nil
 }
 
 // CreateWallet creates the a wallet for the configure signature scheme.
 // It also registers the wallet again to block chain.
-func CreateWallet(numKeys int, statusCb WalletCallback) error {
+func CreateWallet(statusCb WalletCallback) error {
 	if len(_config.chain.Miners) < 1 || len(_config.chain.Sharders) < 1 {
 		return fmt.Errorf("SDK not initialized")
 	}
 	go func() {
 		sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
-		wallet, err := sigScheme.GenerateKeys(numKeys)
+		wallet, err := sigScheme.GenerateKeys()
 		if err != nil {
 			statusCb.OnWalletCreateComplete(StatusError, "", fmt.Sprintf("%s", err.Error()))
 			return
@@ -167,16 +242,13 @@ func CreateWallet(numKeys int, statusCb WalletCallback) error {
 
 // RecoverWallet recovers the previously generated wallet using the mnemonic.
 // It also registers the wallet again to block chain.
-func RecoverWallet(mnemonic string, numKeys int, statusCb WalletCallback) error {
-	if numKeys < 1 {
-		return fmt.Errorf("Invalid number of keys")
-	}
+func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
 	if zcncrypto.IsMnemonicValid(mnemonic) != true {
 		return fmt.Errorf("Invalid mnemonic")
 	}
 	go func() {
 		sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
-		wallet, err := sigScheme.RecoverKeys(mnemonic, numKeys)
+		wallet, err := sigScheme.RecoverKeys(mnemonic)
 		if err != nil {
 			statusCb.OnWalletCreateComplete(StatusError, "", fmt.Sprintf("%s", err.Error()))
 			return
@@ -188,6 +260,26 @@ func RecoverWallet(mnemonic string, numKeys int, statusCb WalletCallback) error 
 		}
 	}()
 	return nil
+}
+// Split keys from the primary master key
+func SplitKeys(privateKey string, numSplits int) (string, error) {
+	if _config.chain.SignatureScheme != "bls0chain" {
+		return "", fmt.Errorf("signature key doesn't support split key")
+	}
+	sigScheme := zcncrypto.NewBLS0ChainScheme()
+	err := sigScheme.SetPrivateKey(privateKey)
+	if err != nil {
+		return "", fmt.Errorf("set private key failed - %s", err.Error())
+	}
+	w, err := sigScheme.SplitKeys(numSplits)
+	if err != nil {
+		return "", fmt.Errorf("split key failed. %s", err.Error())
+	}
+	wStr, err := w.Marshal()
+	if err != nil {
+		return "", fmt.Errorf("wallet encoding failed. %s", err.Error())
+	}
+	return wStr, nil
 }
 
 // RegisterToMiners can be used to register the wallet.
@@ -217,9 +309,11 @@ func RegisterToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 		select {
 		case rsp := <-result:
 			Logger.Debug(rsp.Url, rsp.Status)
-			// Logger.Debug(rsp.Body)
+
 			if rsp.StatusCode == http.StatusOK {
 				consensus++
+			} else {
+				Logger.Debug(rsp.Body)
 			}
 		}
 	}
@@ -241,73 +335,65 @@ func IsMnemonicValid(mnemonic string) bool {
 	return zcncrypto.IsMnemonicValid(mnemonic)
 }
 
-// SetWalletInfo should be set before any transaction or GetBalance APIs
-func SetWalletInfo(w string) error {
+// SetWalletInfo should be set before any transaction or client specific APIs
+// splitKeyWallet parameter is valid only if SignatureScheme is "BLS0Chain"
+func SetWalletInfo(w string, splitKeyWallet bool) error {
 	err := json.Unmarshal([]byte(w), &_config.wallet)
 	if err == nil {
+		if _config.chain.SignatureScheme == "bls0chain" {
+			_config.isSplitWallet = splitKeyWallet
+		}
 		_config.isValidWallet = true
 	}
 	return err
 }
 
-func checkWalletConfig() error {
-	if len(_config.chain.Miners) < 1 || len(_config.chain.Sharders) < 1 {
-		return fmt.Errorf("SDK not initialized")
+// SetAuthUrl will be called by app to set zauth URL to SDK.
+func SetAuthUrl(url string) error {
+	if !_config.isSplitWallet {
+		return fmt.Errorf("wallet type is not split key")
 	}
-	if _config.wallet.ClientID == "" {
-		Logger.Error("wallet info not found. returning error.")
-		return fmt.Errorf("wallet info not found. set wallet info.")
+	if url == "" {
+		return fmt.Errorf("invalid auth url")
 	}
+	_config.authUrl = strings.TrimRight(url, "/")
 	return nil
 }
 
 // GetBalance retreives wallet balance from sharders
 func GetBalance(cb GetBalanceCallback) error {
-	err := checkWalletConfig()
+	err := checkConfig()
 	if err != nil {
 		return err
 	}
 	go func() {
-		value, err := getBalanceFromSharders(_config.wallet.ClientID)
+		value, info, err := getBalanceFromSharders(_config.wallet.ClientID)
 		if err != nil {
 			Logger.Error(err)
-			cb.OnBalanceAvailable(StatusError, 0)
+			cb.OnBalanceAvailable(StatusError, 0, info)
 			return
 		}
-		cb.OnBalanceAvailable(StatusSuccess, value)
+		cb.OnBalanceAvailable(StatusSuccess, value, info)
 	}()
 	return nil
 }
 
-func getBalanceFromSharders(clientID string) (int64, error) {
+func getBalanceFromSharders(clientID string) (int64, string, error) {
 	result := make(chan *util.GetResponse)
 	defer close(result)
-	for _, sharder := range _config.chain.Sharders {
-		go func(sharderurl string) {
-			Logger.Debug("Getting balance from sharder:", sharderurl)
-			url := fmt.Sprintf("%v%v%v", sharder, GET_BALANCE, clientID)
-			req, err := util.NewHTTPGetRequest(url)
-			if err != nil {
-				Logger.Error(sharder, "new get request failed. ", err.Error())
-				return
-			}
-			res, err := req.Get()
-			if err != nil {
-				Logger.Error(sharder, "get error. ", err.Error())
-			}
-			result <- res
-			return
-		}(sharder)
-	}
+	queryFromSharders(getMinShardersVerify(), fmt.Sprintf("%v%v", GET_BALANCE, clientID), result)
 	consensus := float32(0)
 	balMap := make(map[int64]float32)
 	winBalance := int64(0)
-	for range _config.chain.Sharders {
+	var winInfo string
+	var winError string
+	for i := 0; i < getMinShardersVerify(); i++ {
 		select {
 		case rsp := <-result:
 			Logger.Debug(rsp.Url, rsp.Status)
 			if rsp.StatusCode != http.StatusOK {
 				Logger.Error(rsp.Body)
+				winError = rsp.Body
 				continue
 			}
 			Logger.Debug(rsp.Body)
@@ -325,15 +411,16 @@ func getBalanceFromSharders(clientID string) (int64, error) {
 				if balMap[bal] > consensus {
 					consensus = balMap[bal]
 					winBalance = bal
+					winInfo = rsp.Body
 				}
 			}
 		}
 	}
 	rate := consensus * 100 / float32(len(_config.chain.Sharders))
 	if rate < consensusThresh {
-		return 0, fmt.Errorf("get balance failed. consensus not reached")
+		return 0, winError, fmt.Errorf("get balance failed. consensus not reached")
 	}
-	return winBalance, nil
+	return winBalance, winInfo, nil
 }
 
 // ConvertToToken converts the value to ZCN tokens
@@ -349,54 +436,37 @@ func ConvertToValue(token float64) int64 {
 func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 	result := make(chan *util.GetResponse)
 	defer close(result)
-	for _, sharder := range _config.chain.Sharders {
-		go func(sharderurl string) {
-			Logger.Debug("Getting info from sharder:", sharderurl)
-			url := fmt.Sprintf("%v%v", sharder, urlSuffix)
-			req, err := util.NewHTTPGetRequest(url)
-			if err != nil {
-				Logger.Error(sharder, "new get request failed. ", err.Error())
-				return
-			}
-			res, err := req.Get()
-			if err != nil {
-				Logger.Error(sharder, "get error. ", err.Error())
-			}
-			result <- res
-			return
-		}(sharder)
-	}
+	queryFromSharders(getMinShardersVerify(), urlSuffix, result)
 	consensus := float32(0)
-	var tSuccessRsp string
-	var tFailureRsp string
-	for range _config.chain.Sharders {
+	resultMap := make(map[int]float32)
+	var winresult *util.GetResponse
+	for i := 0; i < getMinShardersVerify(); i++ {
 		select {
 		case rsp := <-result:
 			Logger.Debug(rsp.Url, rsp.Status)
-			if rsp.StatusCode != http.StatusOK {
-				Logger.Error(rsp.Body)
-				tFailureRsp = rsp.Body
-				continue
+			resultMap[rsp.StatusCode]++
+			if resultMap[rsp.StatusCode] > consensus {
+				consensus = resultMap[rsp.StatusCode]
+				winresult = rsp
 			}
-			// TODO: Any other validation for consensus
-			consensus++
-			tSuccessRsp = rsp.Body
 		}
 	}
 	rate := consensus * 100 / float32(len(_config.chain.Sharders))
 	if rate < consensusThresh {
-		cb.OnInfoAvailable(op, StatusError, "", fmt.Sprintf("consensus not reached. %v", tFailureRsp))
+		newerr := fmt.Sprintf(`{"code": "consensus_failed", "error": "consensus failed on sharders.", "server_error": "%v"}`, winresult.Body)
+		cb.OnInfoAvailable(op, StatusError, "", newerr)
 		return
 	}
-	cb.OnInfoAvailable(op, StatusSuccess, tSuccessRsp, "")
+	if winresult.StatusCode != http.StatusOK {
+		cb.OnInfoAvailable(op, StatusError, "", winresult.Body)
+	} else {
+		cb.OnInfoAvailable(op, StatusSuccess, winresult.Body, "")
+	}
 }
 
 // GetLockConfig returns the lock token configuration information such as interest rate from blockchain
 func GetLockConfig(cb GetInfoCallback) error {
-	if len(_config.chain.Miners) < 1 || len(_config.chain.Sharders) < 1 {
-		return fmt.Errorf("SDK not initialized")
-	}
-	err := checkWalletConfig()
+	err := checkSdkInit()
 	if err != nil {
 		return err
 	}
@@ -410,16 +480,100 @@ func GetLockConfig(cb GetInfoCallback) error {
 
 // GetLockedTokens returns the ealier locked token pool stats
 func GetLockedTokens(cb GetInfoCallback) error {
-	if len(_config.chain.Miners) < 1 || len(_config.chain.Sharders) < 1 {
-		return fmt.Errorf("SDK not initialized")
-	}
-	err := checkWalletConfig()
+	err := checkConfig()
 	if err != nil {
 		return err
 	}
 	go func() {
 		urlSuffix := fmt.Sprintf("%v%v", GET_LOCKED_TOKENS, _config.wallet.ClientID)
 		getInfoFromSharders(urlSuffix, OpGetLockedTokens, cb)
+	}()
+	return nil
+}
+// GetZcnUSDInfo returns USD value for ZCN token from coinmarketcap.com
+func GetZcnUSDInfo(cb GetUSDInfoCallback) error {
+	go func() {
+		req, err := util.NewHTTPGetRequest("https://api.coinmarketcap.com/v2/ticker/2882/")
+		if err != nil {
+			Logger.Error("new get request failed." + err.Error())
+			cb.OnUSDInfoAvailable(StatusError, "", "new get request failed."+err.Error())
+			return
+		}
+		res, err := req.Get()
+		if err != nil {
+			Logger.Error("get error. ", err.Error())
+			cb.OnUSDInfoAvailable(StatusError, "", "get error"+err.Error())
+			return
+		}
+		if res.StatusCode != http.StatusOK {
+			cb.OnUSDInfoAvailable(StatusError, "", fmt.Sprintf("%s: %s", res.Status, res.Body))
+			return
+		}
+		cb.OnUSDInfoAvailable(StatusSuccess, res.Body, "")
+	}()
+	return nil
+}
+// SetupAuth prepare auth app with clientid, key and a set of public, private key and local publickey
+// which is running on PC/Mac.
+func SetupAuth(authHost, clientID, clientKey, publicKey, privateKey, localPublicKey string, cb AuthCallback) error {
+	go func() {
+		authHost = strings.TrimRight(authHost, "/")
+		data := map[string]string{"client_id": clientID, "client_key": clientKey, "public_key": publicKey, "private_key": privateKey, "peer_public_key": localPublicKey}
+		req, err := util.NewHTTPPostRequest(authHost+"/setup", data)
+		if err != nil {
+			Logger.Error("new post request failed. ", err.Error())
+			return
+		}
+		res, err := req.Post()
+		if err != nil {
+			Logger.Error(authHost+"send error. ", err.Error())
+		}
+		if res.StatusCode != http.StatusOK {
+			cb.OnSetupComplete(StatusError, res.Body)
+			return
+		}
+		cb.OnSetupComplete(StatusSuccess, "")
+	}()
+	return nil
+}
+func GetIdForUrl(url string) string {
+	url = strings.TrimRight(url, "/")
+	url = fmt.Sprintf("%v/_nh/whoami", url)
+	req, err := util.NewHTTPGetRequest(url)
+	if err != nil {
+		Logger.Error(url, "new get request failed. ", err.Error())
+		return ""
+	}
+	res, err := req.Get()
+	if err != nil {
+		Logger.Error(url, "get error. ", err.Error())
+		return ""
+	}
+	s := strings.Split(res.Body, ",")
+	if len(s) >= 3 {
+		return s[3]
+	}
+	return ""
+}
+func GetUserPools(cb GetInfoCallback) error {
+	err := checkConfig()
+	if err != nil {
+		return err
+	}
+	go func() {
+		urlSuffix := fmt.Sprintf("%v%v", GET_USER_POOLS, _config.wallet.ClientID)
+		getInfoFromSharders(urlSuffix, OpGetUserPools, cb)
+	}()
+	return nil
+}
+func GetUserPoolDetails(clientID, poolID string, cb GetInfoCallback) error {
+	err := checkConfig()
+	if err != nil {
+		return err
+	}
+	go func() {
+		urlSuffix := fmt.Sprintf("%vminer_id=%v&pool_id=%v", GET_USER_POOL_DETAIL, clientID, poolID)
+		getInfoFromSharders(urlSuffix, OpGetUserPoolDetail, cb)
 	}()
 	return nil
 }

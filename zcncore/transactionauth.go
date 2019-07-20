@@ -26,11 +26,11 @@ func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) 
 	ta.t.txn.PublicKey = _config.wallet.Keys[0].PublicKey
 	err := ta.t.txn.ComputeHashAndSign(signFn)
 	if err != nil {
-		return nil, fmt.Errorf("signing error.", err.Error())
+		return nil, fmt.Errorf("signing error. %v", err.Error())
 	}
 	req, err := util.NewHTTPPostRequest(_config.authUrl+"/transaction", ta.t.txn)
 	if err != nil {
-		return nil, fmt.Errorf("new post request failed for auth", err.Error())
+		return nil, fmt.Errorf("new post request failed for auth %v", err.Error())
 	}
 	res, err := req.Post()
 	if err != nil {

@@ -30,7 +30,7 @@ sdkver:
 	cd _sdkver; go build -o sdkver sdkver.go; ./sdkver
 
 gosdk-test:
-	go test -tags bn256 ./...
+	go test -v -tags bn256 ./...
 
 install-gosdk: | gosdk-build gosdk-test
 
