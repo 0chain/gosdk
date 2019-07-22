@@ -2,6 +2,8 @@ package zcncrypto
 
 import (
 	"testing"
+
+	"github.com/0chain/gosdk/core/encryption"
 )
 
 var verifyPublickey = `e8a6cfa7b3076ae7e04764ffdfe341632a136b52953dfafa6926361dd9a466196faecca6f696774bbd64b938ff765dbc837e8766a5e2d8996745b2b94e1beb9e`
@@ -46,27 +48,26 @@ func BenchmarkBLSSign(b *testing.B) {
 	sigScheme := NewSignatureScheme("bls0chain")
 	sigScheme.SetPrivateKey(signPrivatekey)
 	for i := 0; i < b.N; i++ {
-		_, err := sigScheme.Sign(data)
+		_, err := sigScheme.Sign(encryption.Hash(data))
 		if err != nil {
 			b.Fatalf("BLS signing failed")
 		}
 	}
 }
 
-/*
 func TestRecoveryKeys(t *testing.T) {
 
-		sigScheme := NewSignatureScheme("bls0chain")
-		w, err := sigScheme.RecoverKeys(blsWallet.Mnemonic, 2)
-		if err != nil {
-			t.Fatalf("set Recover Keys failed")
-		}
-		if w.ClientID != blsWallet.ClientID || w.ClientKey != blsWallet.ClientKey {
-			t.Fatalf("Recover key didn't match with generated keys")
-		}
+	sigScheme := NewSignatureScheme("bls0chain")
+	TestSignatureScheme(t)
+	w, err := sigScheme.RecoverKeys(blsWallet.Mnemonic, 2)
+	if err != nil {
+		t.Fatalf("set Recover Keys failed")
+	}
+	if w.ClientID != blsWallet.ClientID || w.ClientKey != blsWallet.ClientKey {
+		t.Fatalf("Recover key didn't match with generated keys")
+	}
 
 }
-*/
 
 func TestCombinedSignAndVerify(t *testing.T) {
 	sk0 := `c36f2f92b673cf057a32e8bd0ca88888e7ace40337b737e9c7459fdc4c521918`
