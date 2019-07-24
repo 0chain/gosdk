@@ -112,25 +112,25 @@ func (commitreq *CommitRequest) processCommit() {
 	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
 	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("List:", err)
+			Logger.Error("Ref path error:", err)
 			return err
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
-			Logger.Error("List response : ", resp.StatusCode)
+			Logger.Error("Ref path response : ", resp.StatusCode)
 		}
 		resp_body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			Logger.Error("List: Resp", err)
+			Logger.Error("Ref path: Resp", err)
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("List error response: Status: %d - %s ", resp.StatusCode, string(resp_body))
+			return fmt.Errorf("Reference path error response: Status: %d - %s ", resp.StatusCode, string(resp_body))
 		} else {
 			//Logger.Info("Reference path:", string(resp_body))
 			err = json.Unmarshal(resp_body, &lR)
 			if err != nil {
-				Logger.Error("List json decode error: ", err)
+				Logger.Error("Reference path json decode error: ", err)
 				return err
 			}
 		}
@@ -154,7 +154,7 @@ func (commitreq *CommitRequest) processCommit() {
 		rootRef.CalculateHash()
 		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
-			commitreq.result = ErrorCommitResult("Allocation root from latest writemarker mismatch")
+			commitreq.result = ErrorCommitResult("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
 			commitreq.wg.Done()
 			return
 		}
@@ -225,6 +225,7 @@ func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.W
 	}
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 60))
+	Logger.Info("Committing to blobber." + req.blobber.Baseurl)
 	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
 			Logger.Error("Commit: ", err)

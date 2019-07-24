@@ -10,6 +10,31 @@ type ReferencePath struct {
 	List []*ReferencePath       `json:"list,omitempty"`
 }
 
+func (rp *ReferencePath) GetRefFromObjectTree(allocationID string) (RefEntity, error) {
+	reftype := rp.Meta["type"].(string)
+	if reftype == FILE {
+		rootRef := &FileRef{}
+		rootRef.Type = FILE
+		rootRef.AllocationID = allocationID
+		var md mapstructure.Metadata
+		config := &mapstructure.DecoderConfig{
+			Metadata: &md,
+			Result:   rootRef,
+			TagName:  "json",
+		}
+		decoder, err := mapstructure.NewDecoder(config)
+		if err != nil {
+			return nil, err
+		}
+		err = decoder.Decode(rp.Meta)
+		if err != nil {
+			return nil, err
+		}
+		return rootRef, nil
+	}
+	return rp.GetDirTree(allocationID)
+}
+
 func (rp *ReferencePath) GetDirTree(allocationID string) (*Ref, error) {
 	reftype := rp.Meta["type"].(string)
 	if reftype == DIRECTORY {

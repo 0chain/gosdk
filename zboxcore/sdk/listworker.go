@@ -171,10 +171,10 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 			childResult = childResultMap[actualHash]
 			childResult.consensus++
 			if child.GetType() == fileref.FILE {
-				childResult.Size += (child.(*fileref.FileRef)).Size
 				childResult.Hash = (child.(*fileref.FileRef)).ActualFileHash
 				childResult.MimeType = (child.(*fileref.FileRef)).MimeType
 			}
+			childResult.Size += child.GetSize()
 			childResult.NumBlocks += child.GetNumBlocks()
 			if childResult.isConsensusMin() {
 				if _, ok := selected[child.GetLookupHash()]; !ok {
@@ -186,6 +186,7 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 
 		for _, child := range result.Children {
 			result.NumBlocks += child.NumBlocks
+			result.Size += child.Size
 		}
 	}
 	return result

@@ -20,7 +20,6 @@ type FileRef struct {
 	Ref                 `json:",squash"`
 	CustomMeta          string `json:"custom_meta"`
 	ContentHash         string `json:"content_hash"`
-	Size                int64  `json:"size"`
 	MerkleRoot          string `json:"merkle_root"`
 	ThumbnailSize       int64  `json:"thumbnail_size"`
 	ThumbnailHash       string `json:"thumbnail_hash"`
@@ -33,6 +32,7 @@ type FileRef struct {
 
 type RefEntity interface {
 	GetNumBlocks() int64
+	GetSize() int64
 	GetHash() string
 	CalculateHash() string
 	GetType() string
@@ -43,15 +43,17 @@ type RefEntity interface {
 }
 
 type Ref struct {
-	Type         string      `json:"type"`
-	AllocationID string      `json:"allocation_id"`
-	Name         string      `json:"name"`
-	Path         string      `json:"path"`
-	Hash         string      `json:"hash"`
-	NumBlocks    int64       `json:"num_of_blocks"`
-	PathHash     string      `json:"path_hash"`
-	LookupHash   string      `json:"lookup_hash"`
-	Children     []RefEntity `json:"-"`
+	Type           string `json:"type"`
+	AllocationID   string `json:"allocation_id"`
+	Name           string `json:"name"`
+	Path           string `json:"path"`
+	Size           int64  `json:"size"`
+	Hash           string `json:"hash"`
+	NumBlocks      int64  `json:"num_of_blocks"`
+	PathHash       string `json:"path_hash"`
+	LookupHash     string `json:"lookup_hash"`
+	childrenLoaded bool
+	Children       []RefEntity `json:"-"`
 }
 
 func GetReferenceLookup(allocationID string, path string) string {
@@ -59,27 +61,34 @@ func GetReferenceLookup(allocationID string, path string) string {
 }
 
 func (r *Ref) CalculateHash() string {
-	if len(r.Children) == 0 {
+	if len(r.Children) == 0 && !r.childrenLoaded {
 		return r.Hash
 	}
+	sort.SliceStable(r.Children, func(i, j int) bool {
+		return strings.Compare(GetReferenceLookup(r.AllocationID, r.Children[i].GetPath()), GetReferenceLookup(r.AllocationID, r.Children[j].GetPath())) == -1
+	})
 	for _, childRef := range r.Children {
 		childRef.CalculateHash()
 	}
 	childHashes := make([]string, len(r.Children))
 	childPathHashes := make([]string, len(r.Children))
 	var refNumBlocks int64
+	var size int64
 	for index, childRef := range r.Children {
 		childHashes[index] = childRef.GetHash()
 		childPathHashes[index] = childRef.GetPathHash()
 		refNumBlocks += childRef.GetNumBlocks()
+		size += childRef.GetSize()
 	}
 	// fmt.Println("ref name and path, hash :" + r.Name + " " + r.Path + " " + r.Hash)
 	// fmt.Println("ref hash data: " + strings.Join(childHashes, ":"))
 	r.Hash = encryption.Hash(strings.Join(childHashes, ":"))
-	//fmt.Println("ref hash : " + r.Hash)
+	// fmt.Println("ref hash : " + r.Hash)
 	r.NumBlocks = refNumBlocks
+	r.Size = size
 	//fmt.Println("Ref Path hash: " + strings.Join(childPathHashes, ":"))
 	r.PathHash = encryption.Hash(strings.Join(childPathHashes, ":"))
+
 	return r.Hash
 }
 
@@ -93,6 +102,10 @@ func (r *Ref) GetType() string {
 
 func (r *Ref) GetNumBlocks() int64 {
 	return r.NumBlocks
+}
+
+func (r *Ref) GetSize() int64 {
+	return r.Size
 }
 
 func (r *Ref) GetPathHash() string {
@@ -119,7 +132,7 @@ func (r *Ref) AddChild(child RefEntity) {
 	sort.SliceStable(r.Children, func(i, j int) bool {
 		return strings.Compare(GetReferenceLookup(r.AllocationID, r.Children[i].GetPath()), GetReferenceLookup(r.AllocationID, r.Children[j].GetPath())) == -1
 	})
-
+	r.childrenLoaded = true
 }
 
 func (r *Ref) RemoveChild(idx int) {
@@ -154,7 +167,7 @@ func (fr *FileRef) CalculateHash() string {
 	// fmt.Println("fileref name , path, hash", fr.Name, fr.Path, fr.Hash)
 	// fmt.Println("Fileref hash data: " + fr.GetHashData())
 	fr.Hash = encryption.Hash(fr.GetHashData())
-	//fmt.Println("Fileref hash : " + fr.Hash)
+	// fmt.Println("Fileref hash : " + fr.Hash)
 	fr.NumBlocks = int64(math.Ceil(float64(fr.Size*1.0) / CHUNK_SIZE))
 	fr.PathHash = GetReferenceLookup(fr.AllocationID, fr.Path)
 	return fr.Hash
@@ -166,6 +179,10 @@ func (fr *FileRef) GetType() string {
 
 func (fr *FileRef) GetNumBlocks() int64 {
 	return fr.NumBlocks
+}
+
+func (fr *FileRef) GetSize() int64 {
+	return fr.Size
 }
 
 func (fr *FileRef) GetPathHash() string {

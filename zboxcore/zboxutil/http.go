@@ -27,6 +27,7 @@ const SLEEP_BETWEEN_RETRIES = 5
 type SCRestAPIHandler func(response map[string][]byte, numSharders int, err error)
 
 const UPLOAD_ENDPOINT = "/v1/file/upload/"
+const RENAME_ENDPOINT = "/v1/file/rename/"
 const LIST_ENDPOINT = "/v1/file/list/"
 const REFERENCE_ENDPOINT = "/v1/file/referencepath/"
 const CONNECTION_ENDPOINT = "/v1/connection/details/"
@@ -35,6 +36,7 @@ const DOWNLOAD_ENDPOINT = "/v1/file/download/"
 const LATEST_READ_MARKER = "/v1/readmarker/latest"
 const FILE_META_ENDPOINT = "/v1/file/meta/"
 const FILE_STATS_ENDPOINT = "/v1/file/stats/"
+const OBJECT_TREE_ENDPOINT = "/v1/file/objecttree/"
 
 var transport = &http.Transport{
 	Proxy: http.ProxyFromEnvironment,
@@ -86,6 +88,20 @@ func NewReferencePathRequest(baseUrl, allocation string, path string) (*http.Req
 	return setClientInfo(req, err)
 }
 
+func NewObjectTreeRequest(baseUrl, allocation string, path string) (*http.Request, error) {
+	nurl, err := url.Parse(baseUrl)
+	if err != nil {
+		return nil, err
+	}
+	nurl.Path += OBJECT_TREE_ENDPOINT + allocation
+	params := url.Values{}
+	params.Add("path", path)
+	//url := fmt.Sprintf("%s%s%s?path=%s", baseUrl, LIST_ENDPOINT, allocation, path)
+	nurl.RawQuery = params.Encode() // Escape Query Parameters
+	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)
+	return setClientInfo(req, err)
+}
+
 func NewFileMetaRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, FILE_META_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodPost, url, body)
@@ -122,6 +138,12 @@ func NewUploadRequest(baseUrl, allocation string, body io.Reader, update bool) (
 	} else {
 		req, err = http.NewRequest(http.MethodPost, url, body)
 	}
+	return setClientInfo(req, err)
+}
+
+func NewRenameRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s", baseUrl, RENAME_ENDPOINT, allocation)
+	req, err := http.NewRequest(http.MethodPost, url, body)
 	return setClientInfo(req, err)
 }
 

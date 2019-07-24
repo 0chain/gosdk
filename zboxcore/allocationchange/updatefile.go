@@ -60,7 +60,7 @@ func (n *UpdateFileChange) GetAffectedPath() string {
 
 func (n *UpdateFileChange) GetSize() int64 {
 	if n.NewFile != nil && n.OldFile != nil {
-		return (n.NewFile.Size + n.NewFile.ThumbnailSize) - (n.OldFile.ThumbnailSize + n.OldFile.Size)
+		return n.NewFile.Size - n.OldFile.Size
 	}
 	return int64(0)
 }

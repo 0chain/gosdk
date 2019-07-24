@@ -9,11 +9,12 @@ import (
 
 type DeleteFileChange struct {
 	change
-	File *fileref.FileRef
+	//File *fileref.FileRef
+	ObjectTree fileref.RefEntity
 }
 
 func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref) error {
-	path, _ := filepath.Split(ch.File.Path)
+	path, _ := filepath.Split(ch.ObjectTree.GetPath())
 	tSubDirs := getSubDirs(path)
 	dirRef := rootRef
 	treelevel := 0
@@ -36,7 +37,7 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	}
 	idx := -1
 	for i, child := range dirRef.Children {
-		if child.GetType() == fileref.FILE && child.GetHash() == ch.File.Hash {
+		if child.GetName() == ch.ObjectTree.GetName() && child.GetHash() == ch.ObjectTree.GetHash() {
 			idx = i
 			break
 		}
@@ -51,15 +52,15 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref) error {
 }
 
 func (n *DeleteFileChange) GetAffectedPath() string {
-	if n.File != nil {
-		return n.File.Path
+	if n.ObjectTree != nil {
+		return n.ObjectTree.GetPath()
 	}
 	return ""
 }
 
 func (n *DeleteFileChange) GetSize() int64 {
-	if n.File != nil {
-		return 0 - (n.File.Size + n.File.ThumbnailSize)
+	if n.ObjectTree != nil {
+		return 0 - n.ObjectTree.GetSize()
 	}
 	return int64(0)
 }
