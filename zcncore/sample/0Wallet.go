@@ -1,3 +1,5 @@
+// +build ignore
+
 package main
 
 import (
@@ -80,6 +82,10 @@ func (s *StatusUI) OnBalanceAvailable(status int, value int64) {
 		"Value:", zcncore.ConvertToValue(zcncore.ConvertToToken(value)))
 }
 
+func (zcn *StatusUI) OnAuthComplete(t *zcncore.Transaction, status int) {
+	fmt.Println("Authorization complete on zauth.", status)
+}
+
 func main() {
 	var cmd string
 	flag.StringVar(&cmd, "cmd", "", "create|recover|validate|send|store|faucet|getbalance|verify")
@@ -138,7 +144,7 @@ func main() {
 		fmt.Println("Init failed")
 		return
 	}
-	err = zcncore.SetWalletInfo(wallet)
+	err = zcncore.SetWalletInfo(wallet, false)
 	if err != nil {
 		fmt.Println("set wallet info failed: ", err)
 		return
@@ -148,14 +154,14 @@ func main() {
 	switch cmd {
 	case "create":
 		s.wg.Add(1)
-		err = zcncore.CreateWallet(1, s)
+		err = zcncore.CreateWallet(s)
 		if err != nil {
 			fmt.Printf("Error create wallet: %v\n", err)
 		}
 		s.wg.Wait()
 	case "recover":
 		s.wg.Add(1)
-		err = zcncore.RecoverWallet(mnemonic, 1, s)
+		err = zcncore.RecoverWallet(mnemonic, s)
 		if err != nil {
 			fmt.Printf("Error recover wallet %v\n", err)
 		}
@@ -168,7 +174,7 @@ func main() {
 		}
 		fmt.Println("**** Mnemonic is Valid ****")
 	case "send":
-		txn, err := zcncore.NewTransaction(s)
+		txn, err := zcncore.NewTransaction(s, 0)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -184,7 +190,7 @@ func main() {
 		txn.Verify()
 		s.wg.Wait()
 	case "store":
-		txn, err := zcncore.NewTransaction(s)
+		txn, err := zcncore.NewTransaction(s, 0)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -200,7 +206,7 @@ func main() {
 		txn.Verify()
 		s.wg.Wait()
 	case "faucet":
-		txn, err := zcncore.NewTransaction(s)
+		txn, err := zcncore.NewTransaction(s, 0)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -224,7 +230,7 @@ func main() {
 		}
 		s.wg.Wait()
 	case "verify":
-		txn, err := zcncore.NewTransaction(s)
+		txn, err := zcncore.NewTransaction(s, 0)
 		if err != nil {
 			fmt.Println(err)
 			return

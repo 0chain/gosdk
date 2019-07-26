@@ -19,7 +19,7 @@ func TestEd25519GenerateKeys(t *testing.T) {
 	default:
 		t.Fatalf("Signature scheme invalid")
 	}
-	w, err := sigScheme.GenerateKeys(1)
+	w, err := sigScheme.GenerateKeys()
 	if err != nil {
 		t.Fatalf("Generate keys failed %s", err.Error())
 	}
@@ -51,7 +51,7 @@ func TestEd25519SignAndVerify(t *testing.T) {
 
 func TestEd25519RecoveryKeys(t *testing.T) {
 	sigScheme := NewSignatureScheme("ed25519")
-	w, err := sigScheme.RecoverKeys(edWallet.Mnemonic, 1)
+	w, err := sigScheme.RecoverKeys(edWallet.Mnemonic)
 	if err != nil {
 		t.Fatalf("set Recover Keys failed")
 	}

@@ -74,7 +74,7 @@ func CreateMSWallet(t, n int) (string, string, []string, error) {
 	}
 
 	groupKey := zcncrypto.NewBLS0ChainScheme()
-	wallet, err := groupKey.GenerateKeys(1)
+	wallet, err := groupKey.GenerateKeys()
 	if err != nil {
 		return "", "", nil, fmt.Errorf("%s", err.Error())
 	}
