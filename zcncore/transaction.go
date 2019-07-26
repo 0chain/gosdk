@@ -622,7 +622,7 @@ func (t *Transaction) UnlockTokens(poolID string) error {
 func (t *Transaction) createStakeTxn(clientID string, val int64) error {
 	input := make(map[string]interface{})
 	input["id"] = clientID
-	return t.createSmartContractTxn(StakeSmartContractAddress, transaction.STAKE, input, val)
+	return t.createSmartContractTxn(MinerSmartContractAddress, transaction.STAKE, input, val)
 }
 
 func (t *Transaction) Stake(clientID string, val int64) error {
@@ -640,7 +640,7 @@ func (t *Transaction) createDeleteStakeTxn(clientID, poolID string) error {
 	input := make(map[string]interface{})
 	input["id"] = clientID
 	input["pool_id"] = poolID
-	return t.createSmartContractTxn(StakeSmartContractAddress, transaction.DELETE_STAKE, input, 0)
+	return t.createSmartContractTxn(MinerSmartContractAddress, transaction.DELETE_STAKE, input, 0)
 }
 
 func (t *Transaction) DeleteStake(clientID, poolID string) error {

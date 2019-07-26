@@ -16,10 +16,10 @@ import (
 )
 
 type ChainConfig struct {
-	ChainID         string   `json:"chain_id,omitempty"`
-	Miners          []string `json:"miners"`
-	Sharders        []string `json:"sharders"`
-	SignatureScheme string   `json:"signaturescheme"`
+	ChainID                 string   `json:"chain_id,omitempty"`
+	Miners                  []string `json:"miners"`
+	Sharders                []string `json:"sharders"`
+	SignatureScheme         string   `json:"signaturescheme"`
 	MinConfirmation         int      `json:"min_confirmation"`
 	ConfirmationChainLength int      `json:"confirmation_chain_length"`
 }
@@ -31,16 +31,16 @@ var REGISTER_CLIENT = `/v1/client/put`
 var PUT_TRANSACTION = `/v1/transaction/put`
 var TXN_VERIFY_URL = `/v1/transaction/get/confirmation?hash=`
 var GET_BALANCE = `/v1/client/get/balance?client_id=`
-var GET_LOCK_CONFIG = `/v1/scstate/get?sc_address=`
+var GET_LOCK_CONFIG = `/v1/screst/` + InterestPoolSmartContractAddress + `/getLockConfig`
 var GET_LOCKED_TOKENS = `/v1/screst/` + InterestPoolSmartContractAddress + `/getPoolsStats?client_id=`
 var GET_BLOCK_INFO = `/v1/block/get?`
-var GET_USER_POOLS = `/v1/screst/` + StakeSmartContractAddress + `/getUserPools?client_id=`
-var GET_USER_POOL_DETAIL = `/v1/screst/` + StakeSmartContractAddress + `/getPoolsStats?`
+var GET_USER_POOLS = `/v1/screst/` + MinerSmartContractAddress + `/getUserPools?client_id=`
+var GET_USER_POOL_DETAIL = `/v1/screst/` + MinerSmartContractAddress + `/getPoolsStats?`
 
 const StorageSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7`
 const FaucetSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3`
 const InterestPoolSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9`
-const StakeSmartContractAddress = `CF9C03CD22C9C7B116EED04E4A909F95ABEC17E98FE631D6AC94D5D8420C5B20`
+const MinerSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d1`
 
 // In percentage
 const consensusThresh = float32(25.0)
@@ -49,17 +49,18 @@ const defaultMinConfirmation = int(25)
 const defaultConfirmationChainLength = int(5)
 const defaultTxnExpirationSeconds = 15
 const defaultWaitSeconds = (3 * time.Second)
+
 const (
 	StatusSuccess      int = 0
 	StatusNetworkError int = 1
 	// TODO: Change to specific error
-	StatusError   int = 2
+	StatusError            int = 2
 	StatusRejectedByUser   int = 3
 	StatusInvalidSignature int = 4
 	StatusAuthError        int = 5
 	StatusAuthVerifyFailed int = 6
 	StatusAuthTimeout      int = 7
-	StatusUnknown int = -1
+	StatusUnknown          int = -1
 )
 
 const TOKEN_UNIT = int64(10000000000)
@@ -88,6 +89,7 @@ type GetInfoCallback interface {
 	// is status != StatusSuccess then err will give the reason
 	OnInfoAvailable(op int, status int, info string, err string)
 }
+
 // GetUSDInfoCallback needs to be implemented by the caller of GetZcnUSDInfo()
 type GetUSDInfoCallback interface {
 	// This will be called when GetZcnUSDInfo completes.
@@ -95,6 +97,7 @@ type GetUSDInfoCallback interface {
 	// is status != StatusSuccess then err will give the reason
 	OnUSDInfoAvailable(status int, info string, err string)
 }
+
 // AuthCallback needs to be implemented by the caller SetupAuth()
 type AuthCallback interface {
 	// This call back gives the status of the Two factor authenticator(zauth) setup.
@@ -471,8 +474,9 @@ func GetLockConfig(cb GetInfoCallback) error {
 		return err
 	}
 	go func() {
-		urlSuffix := fmt.Sprintf("%v%v&key=%v", GET_LOCK_CONFIG,
-			InterestPoolSmartContractAddress, InterestPoolSmartContractAddress)
+		// urlSuffix := fmt.Sprintf("%v%v&key=%v", GET_LOCK_CONFIG,
+		// 	InterestPoolSmartContractAddress, InterestPoolSmartContractAddress)
+		urlSuffix := GET_LOCK_CONFIG
 		getInfoFromSharders(urlSuffix, OpGetTokenLockConfig, cb)
 	}()
 	return nil
