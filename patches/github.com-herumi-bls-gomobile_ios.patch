@@ -1,0 +1,124 @@
+diff --git a/Makefile b/Makefile
+index 60a84c9..87bb1fc 100644
+--- a/Makefile
++++ b/Makefile
+@@ -169,13 +169,14 @@ CURVE_BIT?=256
+ IOS_OBJS=$(IOS_OUTDIR)/fp.o $(IOS_OUTDIR)/base64.o $(IOS_OUTDIR)/bls_c$(CURVE_BIT).o
+ IOS_LIB=libbls$(CURVE_BIT)
+ 
+-GOMOBILE_ARCHS=armv7 arm64 i386 x86_64
+ 
+ ../mcl/src/base64.ll:
+ 	$(MAKE) -C ../mcl src/base64.ll
+ 
+ ios: ../mcl/src/base64.ll
+-	@echo "Building iOS $(ARCH)..."
++	@echo "========================================================================================"
++	@echo "                       Building iOS $(ARCH)...                                          "
++	@echo "----------------------------------------------------------------------------------------"
+ 	$(eval IOS_OUTDIR=ios/$(ARCH))
+ 	$(eval IOS_SDK_PATH=$(XCODEPATH)/Platforms/$(PLATFORM).platform/Developer/SDKs/$(PLATFORM).sdk)
+ 	$(eval IOS_COMMON=-arch $(ARCH) -isysroot $(IOS_SDK_PATH) -mios-version-min=$(IOS_MIN_VERSION))
+@@ -187,19 +188,69 @@ ios: ../mcl/src/base64.ll
+ 	ar cru $(IOS_OUTDIR)/$(IOS_LIB).a $(IOS_OBJS)
+ 	ranlib $(IOS_OUTDIR)/$(IOS_LIB).a
+ 
+-gomobile: ../mcl/src/base64.ll
+-	@for target in $(GOMOBILE_ARCHS); do \
++
++# Android NDK build
++android:
++	@echo "========================================================================="
++	@echo "       Building Android ARCH=$(ARCH) ABI=$(ABI)...                       "
++	@echo "-------------------------------------------------------------------------"
++	$(eval ANDROID_NDK=$(ANDROID_HOME)/ndk-bundle)
++	$(eval ANDROID_TOOLCHAINS=$(ANDROID_NDK)/toolchains)
++	$(eval ANDROID_LLVM_BASE=$(ANDROID_TOOLCHAINS)/llvm/prebuilt/darwin-x86_64)
++	$(eval ANDROID_API_LEVEL?=21)
++	$(eval ANDROID_LDFLAGS=-shared -fPIC -Wl,-flat_namespace -Wl,-undefined -Wl,suppress)
++	$(shell mkdir -p $(ANDROID_OUTDIR))
++	$(eval ANDROID_CLANG=$(ANDROID_LLVM_BASE)/bin/$(ABI)$(ANDROID_API_LEVEL)-clang++)
++	$(eval ANDROID_AR=$(ANDROID_LLVM_BASE)/bin/$(ANDROID_SUFFIX)-ar)
++	$(eval ANDROID_RANLIB=$(ANDROID_LLVM_BASE)/$(ANDROID_SUFFIX)/bin/ranlib)
++	$(eval ANDROID_SYSROOT=$(ANDROID_LLVM_BASE)/sysroot)
++	$(eval ANDROID_CFLAGS+=-Dmcl_EXPORTS)
++	$(eval ANDROID_CFLAGS+=-DMCL_USE_VINT -DMCL_VINT_FIXED_BUFFER -DMCL_DONT_USE_OPENSSL  -DMCL_DONT_USE_XBYAK -DMCL_LLVM_BMI2=0 -DMCL_USE_LLVM=1 -DMCL_SIZEOF_UNIT=8)
++	$(eval ANDROID_CFLAGS+=-fPIC -I$(ANDROID_SYSROOT)/usr/include  -I$(ANDROID_SYSROOT)/usr/include/$(ABI))
++	$(eval ANDROID_CFLAGS+=-I./include -I../mcl/include -I/usr/local/include)
++	$(eval ANDROID_CFLAGS+=-Wall -Wextra -Wformat=2 -Wcast-qual -Wcast-align -Wwrite-strings -Wfloat-equal -Wpointer-arith -O3 -DNDEBUG)
++	$(eval ANDROID_OBJS=$(ANDROID_OUTDIR)/fp.o $(ANDROID_OUTDIR)/base64.o $(ANDROID_OUTDIR)/bls_c$(CURVE_BIT).o)
++	$(eval ANDROID_LIB_BASE_NAME=libbls$(CURVE_BIT))
++	$(ANDROID_CLANG) $(ANDROID_CFLAGS) -c ../mcl/src/fp.cpp -o $(ANDROID_OUTDIR)/fp.o
++	$(ANDROID_CLANG) -c ../mcl/src/base64.ll -o $(ANDROID_OUTDIR)/base64.o
++	$(ANDROID_CLANG) $(ANDROID_CFLAGS)  -c src/bls_c$(CURVE_BIT).cpp -o $(ANDROID_OUTDIR)/bls_c$(CURVE_BIT).o
++	$(ANDROID_AR) cru $(ANDROID_OUTDIR)/$(ANDROID_LIB_BASE_NAME).a $(ANDROID_OBJS)
++	$(ANDROID_CLANG) $(ANDROID_CFLAGS) $(ANDROID_LDFLAGS) -o $(ANDROID_OUTDIR)/$(ANDROID_LIB_BASE_NAME).so $(ANDROID_OBJS)
++	$(ANDROID_RANLIB) $(ANDROID_OUTDIR)/$(ANDROID_LIB_BASE_NAME).a
++
++IOS_ARCHS=x86_64 armv7 arm64 i386
++gomobile_ios:
++# Build iOS targets
++	@for target in $(IOS_ARCHS); do \
+ 		if [ "$$target" == "i386" ] || [ "$$target" == "x86_64" ] ; then \
+-			$(MAKE) ios ARCH=$$target PLATFORM="iPhoneSimulator"; \
++			$(MAKE) ios ARCH=$$target PLATFORM="iPhoneSimulator" || exit 1; \
+ 		else \
+-			$(MAKE) ios ARCH=$$target PLATFORM="iPhoneOS"; \
++			$(MAKE) ios ARCH=$$target PLATFORM="iPhoneOS" || exit 1; \
+ 		fi \
+ 	done
+ 	@lipo "ios/armv7/libbls$(CURVE_BIT).a"  "ios/arm64/libbls$(CURVE_BIT).a" "ios/i386/libbls$(CURVE_BIT).a" "ios/x86_64/libbls$(CURVE_BIT).a" -create -output ios/libbls$(CURVE_BIT).a
+-	@lipo "ios/armv7/libbls$(CURVE_BIT).dylib"  "ios/arm64/libbls$(CURVE_BIT).dylib" "ios/i386/libbls$(CURVE_BIT).dylib" "ios/x86_64/libbls$(CURVE_BIT).dylib" -create -output lib/libbls$(CURVE_BIT).dylib
++	@lipo "ios/armv7/libbls$(CURVE_BIT).dylib"  "ios/arm64/libbls$(CURVE_BIT).dylib" "ios/i386/libbls$(CURVE_BIT).dylib" "ios/x86_64/libbls$(CURVE_BIT).dylib" -create -output ios/libbls$(CURVE_BIT).dylib
++
++
++ANDROID_ARCHS=aarch64 arm x86 x86_64
++# Android NDK build
++gomobile_android:
++	@[ "${ANDROID_HOME}" ] || ( echo "\nERROR: ANDROID_HOME is not set.\n\tPlease install Android studio with NDK and set ANDROID_HOME env variable\n"; exit 1 )
++	@for target in $(ANDROID_ARCHS); do \
++		if [ "$$target" == "x86" ] ; then \
++			$(MAKE) android ARCH=$$target ABI=i686-linux-android ANDROID_SUFFIX=i686-linux-android ANDROID_OUTDIR=android/x86 || exit 1; \
++		elif [ "$$target" == "x86_64" ]; then \
++			$(MAKE) android ARCH=$$target ABI=x86_64-linux-android ANDROID_SUFFIX=x86_64-linux-android ANDROID_OUTDIR=android/x86_64 || exit 1; \
++		elif [ "$$target" == "aarch64" ]; then \
++			$(MAKE) android ARCH=$$target ABI=aarch64-linux-android ANDROID_SUFFIX=aarch64-linux-android ANDROID_OUTDIR=android/arm64-v8a || exit 1; \
++		elif [ "$$target" == "arm" ]; then \
++			$(MAKE) android ARCH=$$target ABI=armv7a-linux-androideabi ANDROID_SUFFIX=arm-linux-androideabi ANDROID_OUTDIR=android/armeabi-v7a || exit 1; \
++		fi \
++	done
+ 
+ clean:
+ 	$(RM) $(OBJ_DIR)/*.d $(OBJ_DIR)/*.o $(EXE_DIR)/*.exe $(GEN_EXE) $(ASM_SRC) $(ASM_OBJ) $(LLVM_SRC) $(BLS256_LIB) $(BLS256_SLIB) $(BLS384_LIB) $(BLS384_SLIB) $(BLS384_256_LIB) $(BLS384_256_SLIB) $(BLS512_LIB) $(BLS512_SLIB)
++	$(RM) ios android
+ 
+ ALL_SRC=$(SRC_SRC) $(TEST_SRC) $(SAMPLE_SRC)
+ DEPEND_FILE=$(addprefix $(OBJ_DIR)/, $(ALL_SRC:.cpp=.d))
+@@ -212,7 +263,7 @@ install: lib/libbls256.a lib/libbls256.$(LIB_SUF) lib/libbls384.a lib/libbls384.
+ 	$(MKDIR) $(PREFIX)/lib
+ 	cp -a lib/libbls256.a lib/libbls256.$(LIB_SUF) lib/libbls384.a lib/libbls384.$(LIB_SUF) lib/libbls384_256.a lib/libbls384_256.$(LIB_SUF) $(PREFIX)/lib/
+ 
+-.PHONY: test bls-wasm ios
++.PHONY: test bls-wasm ios android
+ 
+ # don't remove these files automatically
+ .SECONDARY: $(addprefix $(OBJ_DIR)/, $(ALL_SRC:.cpp=.o))
+diff --git a/ffi/go/bls/bls.go b/ffi/go/bls/bls.go
+index 891870c..76edb0d 100644
+--- a/ffi/go/bls/bls.go
++++ b/ffi/go/bls/bls.go
+@@ -7,11 +7,12 @@ package bls
+ #cgo bn384 LDFLAGS:-lbls384
+ #cgo bn384_256 CFLAGS:-DMCLBN_FP_UNIT_SIZE=6 -DMCLBN_FR_UNIT_SIZE=4
+ #cgo bn384_256 LDFLAGS:-lbls384_256
+-#cgo LDFLAGS:-lbls384
+-#cgo LDFLAGS:-lcrypto -lgmp -lgmpxx -lstdc++
++#cgo LDFLAGS:"-L${SRCDIR}/../../../ios" -lbls384
++// #cgo LDFLAGS:-lcrypto -lgmp -lgmpxx -lstdc++
+ #include "config.h"
+ typedef unsigned int (*ReadRandFunc)(void *, void *, unsigned int);
+ int wrapReadRandCgo(void *self, void *buf, unsigned int n);
++#cgo CFLAGS: -I${SRCDIR}/../../../include -I${SRCDIR}/../../../../mcl/include
+ #include <bls/bls.h>
+ */
+ import "C"

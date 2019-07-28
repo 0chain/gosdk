@@ -9,6 +9,7 @@ PLATFORM:=$(shell uname -s | tr "[:upper:]" "[:lower:]")
 include _util/printer.mk
 include _util/build_$(PLATFORM).mk
 include _util/herumi.mk
+include _util/build_mobile.mk
 
 .PHONY: build-tools install-all herumi-all gosdk-all sdkver help
 
