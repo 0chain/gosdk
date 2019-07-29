@@ -447,6 +447,33 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	return err
 }
 
+func (a *Allocation) CopyObject(path string, destPath string) error {
+	if !a.isInitialized() {
+		return notInitialized
+	}
+	if len(path) == 0 || len(destPath) == 0 {
+		return common.NewError("invalid_path", "Invalid path for copy")
+	}
+	path = filepath.Clean(path)
+	isabs := filepath.IsAbs(path)
+	if !isabs {
+		return common.NewError("invalid_path", "Path should be valid and absolute")
+	}
+
+	req := &CopyRequest{}
+	req.blobbers = a.Blobbers
+	req.allocationID = a.ID
+	req.destPath = destPath 
+	req.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
+	req.fullconsensus = float32(a.DataShards + a.ParityShards)
+	req.ctx = a.ctx
+	req.remotefilepath = path
+	req.copyMask = 0
+	req.connectionID = zboxutil.NewConnectionId()
+	err := req.ProcessCopy()
+	return err
+}
+
 func (a *Allocation) GetAuthTicketForShare(path string, filename string, referenceType string, refereeClientID string) (string, error) {
 	if !a.isInitialized() {
 		return "", notInitialized

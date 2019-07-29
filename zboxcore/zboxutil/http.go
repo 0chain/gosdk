@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -28,6 +29,7 @@ type SCRestAPIHandler func(response map[string][]byte, numSharders int, err erro
 
 const UPLOAD_ENDPOINT = "/v1/file/upload/"
 const RENAME_ENDPOINT = "/v1/file/rename/"
+const COPY_ENDPOINT = "/v1/file/copy/"
 const LIST_ENDPOINT = "/v1/file/list/"
 const REFERENCE_ENDPOINT = "/v1/file/referencepath/"
 const CONNECTION_ENDPOINT = "/v1/connection/details/"
@@ -74,14 +76,18 @@ func NewCommitRequest(baseUrl, allocation string, body io.Reader) (*http.Request
 	return setClientInfo(req, err)
 }
 
-func NewReferencePathRequest(baseUrl, allocation string, path string) (*http.Request, error) {
+func NewReferencePathRequest(baseUrl, allocation string, paths []string) (*http.Request, error) {
 	nurl, err := url.Parse(baseUrl)
 	if err != nil {
 		return nil, err
 	}
 	nurl.Path += REFERENCE_ENDPOINT + allocation
+	pathBytes, err := json.Marshal(paths)
+	if err != nil {
+		return nil, err
+	}
 	params := url.Values{}
-	params.Add("path", path)
+	params.Add("paths", string(pathBytes))
 	//url := fmt.Sprintf("%s%s%s?path=%s", baseUrl, LIST_ENDPOINT, allocation, path)
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)
@@ -143,6 +149,12 @@ func NewUploadRequest(baseUrl, allocation string, body io.Reader, update bool) (
 
 func NewRenameRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, RENAME_ENDPOINT, allocation)
+	req, err := http.NewRequest(http.MethodPost, url, body)
+	return setClientInfo(req, err)
+}
+
+func NewCopyRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s", baseUrl, COPY_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodPost, url, body)
 	return setClientInfo(req, err)
 }

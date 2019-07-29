@@ -7,14 +7,14 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
-type RenameFileChange struct {
+type CopyFileChange struct {
 	change
 	ObjectTree fileref.RefEntity
-	NewName    string
+	DestPath   string
 }
 
-func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
-	path, _ := filepath.Split(ch.ObjectTree.GetPath())
+func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
+	path, _ := filepath.Split(ch.DestPath)
 	tSubDirs := getSubDirs(path)
 	dirRef := rootRef
 	treelevel := 0
@@ -35,18 +35,22 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
 			return common.NewError("invalid_reference_path", "Invalid reference path from the blobber")
 		}
 	}
-	idx := -1
-	for i, child := range dirRef.Children {
-		if child.GetPath() == ch.ObjectTree.GetPath() && child.GetHash() == ch.ObjectTree.GetHash() {
-			idx = i
-			break
+	var foundRef fileref.RefEntity
+	if dirRef.GetPath() == ch.DestPath && dirRef.GetType() == fileref.DIRECTORY {
+		foundRef = dirRef
+	} else {
+		for i, child := range dirRef.Children {
+			if child.GetPath() == ch.DestPath && child.GetType() == fileref.DIRECTORY {
+				foundRef = dirRef.Children[i]
+				break
+			}
 		}
 	}
-	if idx < 0 {
-		return common.NewError("file_not_found", "Object to rename not found in blobber")
+
+	if foundRef == nil {
+		return common.NewError("file_not_found", "Object to copy not found in blobber")
 	}
-	dirRef.Children[idx] = ch.ObjectTree
-	// Logger.Info("Old name: " + dirRef.Children[idx].GetName())
+
 	var affectedRef *fileref.Ref
 	if ch.ObjectTree.GetType() == fileref.FILE {
 		affectedRef = &(ch.ObjectTree.(*fileref.FileRef)).Ref
@@ -54,20 +58,17 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		affectedRef = ch.ObjectTree.(*fileref.Ref)
 	}
 
-	path, _ = filepath.Split(affectedRef.Path)
-	path = filepath.Clean(path)
-	affectedRef.Name = ch.NewName
-	affectedRef.Path = filepath.Join(path, ch.NewName)
-
-	// Logger.Info("Changed name: " + dirRef.Children[idx].GetName())
-
+	affectedRef.Path = filepath.Join(foundRef.GetPath(), affectedRef.Name)
 	ch.processChildren(affectedRef)
-	// Logger.Info("Process hash for renaming")
+
+	destRef := foundRef.(*fileref.Ref)
+	destRef.AddChild(ch.ObjectTree)
+
 	rootRef.CalculateHash()
 	return nil
 }
 
-func (ch *RenameFileChange) processChildren(curRef *fileref.Ref) {
+func (ch *CopyFileChange) processChildren(curRef *fileref.Ref) {
 	for _, childRefEntity := range curRef.Children {
 		var childRef *fileref.Ref
 		if childRefEntity.GetType() == fileref.FILE {
@@ -82,13 +83,10 @@ func (ch *RenameFileChange) processChildren(curRef *fileref.Ref) {
 	}
 }
 
-func (n *RenameFileChange) GetAffectedPath() string {
-	if n.ObjectTree != nil {
-		return n.ObjectTree.GetPath()
-	}
-	return ""
+func (n *CopyFileChange) GetAffectedPath() string {
+	return n.DestPath
 }
 
-func (n *RenameFileChange) GetSize() int64 {
-	return int64(0)
+func (n *CopyFileChange) GetSize() int64 {
+	return n.ObjectTree.GetSize()
 }

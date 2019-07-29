@@ -98,14 +98,14 @@ func startCommitWorker(blobberChan chan *CommitRequest, blobberID string) {
 
 func (commitreq *CommitRequest) processCommit() {
 	Logger.Info("received a commit request")
-	path := ""
+	paths := make([]string, 0)
 	for _, change := range commitreq.changes {
-		path = change.GetAffectedPath()
+		paths = append(paths, change.GetAffectedPath())
 	}
 	var req *http.Request
 	var lR ReferencePathResult
-	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationID, path)
-	if err != nil || len(path) == 0 {
+	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationID, paths)
+	if err != nil || len(paths) == 0 {
 		Logger.Error("Creating ref path req", err)
 		return
 	}

@@ -9,7 +9,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
-	"encoding/json"
 	"strings"
 	"sync"
 	"time"
@@ -80,44 +79,7 @@ func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blo
 }
 
 func (req *DeleteRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	httpreq, err := zboxutil.NewObjectTreeRequest(blobber.Baseurl, req.allocationID, req.remotefilepath)
-	if err != nil {
-		Logger.Error(blobber.Baseurl, "Error creating object tree request", err)
-		return nil, err
-	}
-	var lR ReferencePathResult
-	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("Object tree:", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			Logger.Error("Object tree response : ", resp.StatusCode)
-		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			Logger.Error("Object tree: Resp", err)
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("Object tree error response: Status: %d - %s ", resp.StatusCode, string(resp_body))
-		} else {
-			Logger.Info("Object tree:", string(resp_body))
-			err = json.Unmarshal(resp_body, &lR)
-			if err != nil {
-				Logger.Error("Object tree json decode error: ", err)
-				return err
-			}
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return lR.GetRefFromObjectTree(req.allocationID)
+	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.remotefilepath, blobber)
 }
 
 func (req *DeleteRequest) ProcessDelete() error {
@@ -154,9 +116,10 @@ func (req *DeleteRequest) ProcessDelete() error {
 		c++
 	}
 	req.wg.Wait()
-	// if !req.isConsensusOk() {
-	// 	return fmt.Errorf("Delete failed: Success_rate:%2f, expected:%2f", req.getConsensusRate(), req.getConsensusRequiredForOk())
-	// }
+	
+	if !req.isConsensusOk() {
+		return fmt.Errorf("Delete failed: Success_rate:%2f, expected:%2f", req.getConsensusRate(), req.getConsensusRequiredForOk())
+	}
 
 	req.consensus = 0
 	wg := &sync.WaitGroup{}

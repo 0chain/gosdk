@@ -11,6 +11,7 @@ const (
 	DELETE_OPERATION = "delete"
 	UPDATE_OPERATION = "update"
 	RENAME_OPERATION = "rename"
+	COPY_OPERATION   = "copy"
 )
 
 type change struct {

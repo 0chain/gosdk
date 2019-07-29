@@ -18,23 +18,23 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
-type RenameRequest struct {
+type CopyRequest struct {
 	allocationID   string
 	blobbers       []*blockchain.StorageNode
 	remotefilepath string
-	newName string
+	destPath  string
 	ctx            context.Context
 	wg             *sync.WaitGroup
-	renameMask       uint32
+	copyMask       uint32
 	connectionID   string
 	Consensus
 }
 
-func (req *RenameRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
+func (req *CopyRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
 	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.remotefilepath, blobber)
 }
 
-func (req *RenameRequest) renameBlobberObject(blobber *blockchain.StorageNode, blobberIdx int) (fileref.RefEntity, error) {
+func (req *CopyRequest) copyBlobberObject(blobber *blockchain.StorageNode, blobberIdx int) (fileref.RefEntity, error) {
 	refEntity, err := req.getObjectTreeFromBlobber(req.blobbers[blobberIdx])
 	if err != nil {
 		return nil, err
@@ -45,26 +45,29 @@ func (req *RenameRequest) renameBlobberObject(blobber *blockchain.StorageNode, b
 	
 	_ = formWriter.WriteField("connection_id", req.connectionID)
 	formWriter.WriteField("path", req.remotefilepath)
-	formWriter.WriteField("new_name", req.newName)
+	formWriter.WriteField("dest", req.destPath)
 	
 	formWriter.Close()
-	httpreq, err := zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationID, body)
+	httpreq, err := zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationID, body)
 	if err != nil {
 		Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 		return nil, err
 	}
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+	Logger.Info(httpreq.URL.Path)
 	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("Rename : ", err)
+			Logger.Error("Copy : ", err)
 			return err
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusOK {
+			resp_body, _ := ioutil.ReadAll(resp.Body)
+			Logger.Info("copy resp:", string(resp_body))
 			req.consensus++
-			req.renameMask |= (1 << uint32(blobberIdx))
-			Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " renamed.")
+			req.copyMask |= (1 << uint32(blobberIdx))
+			Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " copied.")
 		} else {
 			resp_body, err := ioutil.ReadAll(resp.Body)
 			if err == nil {
@@ -79,7 +82,7 @@ func (req *RenameRequest) renameBlobberObject(blobber *blockchain.StorageNode, b
 	return refEntity, nil
 }
 
-func (req *RenameRequest) ProcessRename() error {
+func (req *CopyRequest) ProcessCopy() error {
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity,numList)
 	req.wg = &sync.WaitGroup{}
@@ -87,7 +90,7 @@ func (req *RenameRequest) ProcessRename() error {
 	for i := 0; i < numList; i++ {
 		go func(blobberIdx int) {
 			defer req.wg.Done()
-			refEntity, err := req.renameBlobberObject(req.blobbers[blobberIdx], blobberIdx)
+			refEntity, err := req.copyBlobberObject(req.blobbers[blobberIdx], blobberIdx)
 			if err != nil {
 				Logger.Error(err.Error())
 				return
@@ -98,25 +101,25 @@ func (req *RenameRequest) ProcessRename() error {
 	req.wg.Wait()
 
 	if !req.isConsensusOk() {
-		return fmt.Errorf("Rename failed: Rename request failed. Operation failed.")
+		return fmt.Errorf("Copy failed: Copy request failed. Operation failed.")
 	}
 
 	req.consensus = 0
 	wg := &sync.WaitGroup{}
-	wg.Add(bits.OnesCount32(req.renameMask))
-	commitReqs := make([]*CommitRequest, bits.OnesCount32(req.renameMask))
+	wg.Add(bits.OnesCount32(req.copyMask))
+	commitReqs := make([]*CommitRequest, bits.OnesCount32(req.copyMask))
 	c, pos := 0, 0
-	for i := req.renameMask; i != 0; i &= ^(1 << uint32(pos)) {
+	for i := req.copyMask; i != 0; i &= ^(1 << uint32(pos)) {
 		pos = bits.TrailingZeros32(i)
 		//go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.wg)
 		commitReq := &CommitRequest{}
 		commitReq.allocationID = req.allocationID
 		commitReq.blobber = req.blobbers[pos]
-		newChange := &allocationchange.RenameFileChange{}
-		newChange.NewName = req.newName
+		newChange := &allocationchange.CopyFileChange{}
+		newChange.DestPath = req.destPath
 		newChange.ObjectTree = objectTreeRefs[pos]
 		newChange.NumBlocks = 0
-		newChange.Operation = allocationchange.RENAME_OPERATION
+		newChange.Operation = allocationchange.COPY_OPERATION
 		newChange.Size = 0
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReq.connectionID = req.connectionID
@@ -141,7 +144,7 @@ func (req *RenameRequest) ProcessRename() error {
 	}
 
 	if !req.isConsensusOk() {
-		return fmt.Errorf("Delete failed: Commit consensus failed")
+		return fmt.Errorf("Copy failed: Commit consensus failed")
 	}
 	return nil
 }
