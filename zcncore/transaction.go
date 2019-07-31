@@ -169,15 +169,15 @@ func (t *Transaction) submitTxn() {
 	for _, miner := range randomMiners {
 		go func(minerurl string) {
 			url := minerurl + PUT_TRANSACTION
-			Logger.Info("Submitting", txnTypeString(t.txn.TransactionType), "transaction to", minerurl)
+			Logger.Info("Submitting ", txnTypeString(t.txn.TransactionType), " transaction to ", minerurl)
 			req, err := util.NewHTTPPostRequest(url, t.txn)
 			if err != nil {
-				Logger.Error(minerurl, "new post request failed. ", err.Error())
+				Logger.Error(minerurl, " new post request failed. ", err.Error())
 				return
 			}
 			res, err := req.Post()
 			if err != nil {
-				Logger.Error(minerurl, "submit transaction error. ", err.Error())
+				Logger.Error(minerurl, " submit transaction error. ", err.Error())
 			}
 			result <- res
 			return
@@ -369,16 +369,16 @@ func queryFromSharders(numSharders int, query string, result chan *util.GetRespo
 	randomShaders := util.GetRandom(_config.chain.Sharders, numSharders)
 	for _, sharder := range randomShaders {
 		go func(sharderurl string) {
-			Logger.Info("Query from", sharderurl+query)
+			Logger.Info("Query from ", sharderurl+query)
 			url := fmt.Sprintf("%v%v", sharderurl, query)
 			req, err := util.NewHTTPGetRequest(url)
 			if err != nil {
-				Logger.Error(sharderurl, "new get request failed. ", err.Error())
+				Logger.Error(sharderurl, " new get request failed. ", err.Error())
 				return
 			}
 			res, err := req.Get()
 			if err != nil {
-				Logger.Error(sharderurl, "get error. ", err.Error())
+				Logger.Error(sharderurl, " get error. ", err.Error())
 			}
 			result <- res
 			return
@@ -398,16 +398,16 @@ func getTransactionConfirmation(numSharders int, txnHash string) (map[string]jso
 		select {
 		case rsp := <-result:
 			Logger.Debug(rsp.Url, rsp.Status)
-			Logger.Error(rsp.Body)
+			Logger.Debug(rsp.Body)
 			if rsp.StatusCode == http.StatusOK {
 				var cfmLfb map[string]json.RawMessage
+				var objmap map[string]json.RawMessage
 				err := json.Unmarshal([]byte(rsp.Body), &cfmLfb)
 				if err != nil {
 					Logger.Error("txn confirmation parse error", err)
 					continue
 				}
 				if cfm, ok := cfmLfb["confirmation"]; ok {
-					var objmap map[string]json.RawMessage
 					err := json.Unmarshal([]byte(cfm), &objmap)
 					if err != nil {
 						Logger.Error("txn confirmation parse error", err)
@@ -424,12 +424,12 @@ func getTransactionConfirmation(numSharders int, txnHash string) (map[string]jso
 							}
 						}
 					} else {
-						Logger.Debug(rsp.Url, "No transaction confirmation")
+						Logger.Debug(rsp.Url, ". No transaction confirmation")
 					}
 				} else if lfbRaw, ok := cfmLfb["latest_finalized_block"]; ok {
 					err := json.Unmarshal([]byte(lfbRaw), &lfb)
 					if err != nil {
-						Logger.Error("round info parse error", err)
+						Logger.Error("round info parse error.", err)
 						continue
 					}
 				}
@@ -469,13 +469,13 @@ func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHe
 				var objmap map[string]json.RawMessage
 				err := json.Unmarshal([]byte(rsp.Body), &objmap)
 				if err != nil {
-					Logger.Error("round info parse error", err)
+					Logger.Error("round info parse error. ", err)
 					continue
 				}
 				if header, ok := objmap["header"]; ok {
 					err := json.Unmarshal([]byte(header), &objmap)
 					if err != nil {
-						Logger.Error("round info parse error", err)
+						Logger.Error("round info parse error. ", err)
 						continue
 					}
 					if hash, ok := objmap["hash"]; ok {
@@ -485,7 +485,7 @@ func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHe
 							maxConsensus = roundConsensus[h]
 							err := json.Unmarshal([]byte(header), &blkHdr)
 							if err != nil {
-								Logger.Error("round info parse error", err)
+								Logger.Error("round info parse error. ", err)
 								continue
 							}
 						}
@@ -577,9 +577,9 @@ func (t *Transaction) Verify() error {
 			confirmation, blockHash, lfb, err := getTransactionConfirmation(1, t.txnHash)
 			if err != nil {
 				tn := common.Now()
-				Logger.Info(err, "now:", tn, "LFB creation time:", lfb.CreationDate)
+				Logger.Info(err, " now: ", tn, ", LFB creation time:", lfb.CreationDate)
 				if util.MaxInt64(lfb.CreationDate, tn) < (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
-					Logger.Info("falling back to", getMinShardersVerify(), "of ", len(_config.chain.Sharders), "Sharders")
+					Logger.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders")
 					confirmation, blockHash, lfb, err = getTransactionConfirmation(getMinShardersVerify(), t.txnHash)
 					if err != nil {
 						if t.isTransactionExpired(lfb.CreationDate, tn) {
