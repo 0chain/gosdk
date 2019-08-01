@@ -102,10 +102,16 @@ func GetAllocations() ([]*Allocation, error) {
 }
 
 func CreateAllocation(datashards int, parityshards int, size int64, expiry int64) (string, error) {
+	return CreateAllocationForOwner(client.GetClientID(), client.GetClientPublicKey(), datashards, parityshards, size, expiry)
+}
+
+func CreateAllocationForOwner(owner string, ownerpublickey string, datashards int, parityshards int, size int64, expiry int64) (string, error) {
 	allocationRequest := make(map[string]interface{})
 	allocationRequest["data_shards"] = datashards
 	allocationRequest["parity_shards"] = parityshards
 	allocationRequest["size"] = size
+	allocationRequest["owner_id"] = owner
+	allocationRequest["owner_public_key"] = ownerpublickey
 	allocationRequest["expiration_date"] = expiry
 
 	sn := transaction.SmartContractTxnData{Name: transaction.NEW_ALLOCATION_REQUEST, InputArgs: allocationRequest}
