@@ -27,9 +27,9 @@ var (
 
 type ConsolidatedFileMeta struct {
 	Name          string
-	Type 		  string
+	Type          string
 	Path          string
-	PathHash 	  string
+	PathHash      string
 	LookupHash    string
 	Hash          string
 	MimeType      string
@@ -50,13 +50,16 @@ type AllocationStats struct {
 }
 
 type Allocation struct {
-	ID           string                    `json:"id"`
-	DataShards   int                       `json:"data_shards"`
-	ParityShards int                       `json:"parity_shards"`
-	Size         int64                     `json:"size"`
-	Expiration   int64                     `json:"expiration_date"`
-	Blobbers     []*blockchain.StorageNode `json:"blobbers"`
-	Stats        *AllocationStats          `json:"stats"`
+	ID             string                    `json:"id"`
+	DataShards     int                       `json:"data_shards"`
+	ParityShards   int                       `json:"parity_shards"`
+	Size           int64                     `json:"size"`
+	Expiration     int64                     `json:"expiration_date"`
+	Owner          string                    `json:"owner_id"`
+	OwnerPublicKey string                    `json:"owner_public_key"`
+	Payer          string                    `json:"payer_id"`
+	Blobbers       []*blockchain.StorageNode `json:"blobbers"`
+	Stats          *AllocationStats          `json:"stats"`
 
 	uploadChan          chan *UploadRequest
 	downloadChan        chan *DownloadRequest
@@ -300,7 +303,6 @@ func (a *Allocation) ListDir(path string) (*ListResult, error) {
 	return nil, common.NewError("list_request_failed", "Failed to get list response from the blobbers")
 }
 
-
 func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	result := &ConsolidatedFileMeta{}
 	listReq := &ListRequest{}
@@ -463,7 +465,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	req := &CopyRequest{}
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
-	req.destPath = destPath 
+	req.destPath = destPath
 	req.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	req.fullconsensus = float32(a.DataShards + a.ParityShards)
 	req.ctx = a.ctx

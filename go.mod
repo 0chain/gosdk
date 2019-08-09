@@ -4,10 +4,10 @@ require (
 	github.com/fatih/color v1.7.0 // indirect
 	github.com/gosuri/uilive v0.0.0-20170323041506-ac356e6e42cd // indirect
 	github.com/gosuri/uiprogress v0.0.0-20170224063937-d0567a9d84a1
-	github.com/h2non/filetype v1.0.8
+	github.com/h2non/filetype v1.0.9
 	github.com/herumi/bls v0.0.0-20190618074831-058f18ee12f6
 	github.com/klauspost/cpuid v1.2.0 // indirect
-	github.com/klauspost/reedsolomon v1.9.1
+	github.com/klauspost/reedsolomon v1.9.2
 	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mattn/go-runewidth v0.0.4 // indirect
 	github.com/mitchellh/go-homedir v1.1.0

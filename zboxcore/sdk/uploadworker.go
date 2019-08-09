@@ -118,9 +118,13 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 		}
 		// Setup file hash compute
 		h := sha1.New()
-		merkleHash := sha3.New256()
-		hWr := io.MultiWriter(h, merkleHash)
-		merkleLeaves := make([]util.Hashable, 0)
+		//merkleHash := sha3.New256()
+		hWr := io.MultiWriter(h)
+		merkleHashes := make([]hash.Hash, 1024)
+		merkleLeaves := make([]util.Hashable, 1024)
+		for idx := range merkleHashes {
+			merkleHashes[idx] = sha3.New256()
+		}
 		// Read the data
 		for remaining > 0 {
 			dataBytes, ok := <-uploadCh
@@ -129,9 +133,19 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 			}
 			fileField.Write(dataBytes)
 			hWr.Write(dataBytes)
-			merkleLeaves = append(merkleLeaves, util.NewStringHashable(hex.EncodeToString(merkleHash.Sum(nil))))
-			merkleHash.Reset()
+			merkleChunkSize := 64
+			for i := 0; i < len(dataBytes); i += merkleChunkSize {
+				end := i + merkleChunkSize
+				if end > len(dataBytes) {
+					end = len(dataBytes)
+				}
+				offset := i / merkleChunkSize
+				merkleHashes[offset].Write(dataBytes[i:end])
+			}
 			remaining = remaining - int64(len(dataBytes))
+		}
+		for idx := range merkleHashes {
+			merkleLeaves[idx] = util.NewStringHashable(hex.EncodeToString(merkleHashes[idx].Sum(nil)))
 		}
 		var mt util.MerkleTreeI = &util.MerkleTree{}
 		mt.ComputeTree(merkleLeaves)
@@ -310,7 +324,7 @@ func (req *UploadRequest) pushData(data []byte) error {
 func (req *UploadRequest) completePush() error {
 	if !req.isRepair {
 		req.filemeta.Hash = hex.EncodeToString(req.fileHash.Sum(nil))
-		fmt.Println("req.filemeta.Hash=" + req.filemeta.Hash)
+		//fmt.Println("req.filemeta.Hash=" + req.filemeta.Hash)
 		c, pos := 0, 0
 		for i := req.uploadMask; i != 0; i &= ^(1 << uint32(pos)) {
 			pos = bits.TrailingZeros32(i)
