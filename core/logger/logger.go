@@ -85,7 +85,7 @@ func (l *Logger) SetLogFile(logFile io.Writer, verbose bool) {
 
 func (l *Logger) Debug(v ...interface{}) {
 	if l.lvl >= DEBUG {
-		// l.logDebug.Output(2, fmt.Sprint(v...))
+		l.logDebug.Output(2, fmt.Sprint(v...))
 	}
 }
 
