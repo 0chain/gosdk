@@ -2,14 +2,10 @@ package sdk
 
 import (
 	"context"
-	"crypto/sha1"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -69,25 +65,6 @@ type Allocation struct {
 	mutex               *sync.Mutex
 	downloadProgressMap map[string]*DownloadRequest
 	initialized         bool
-}
-
-// For sync app
-const (
-	Upload   = "Upload"
-	Download = "Download"
-	Update   = "Update"
-	Delete   = "Delete"
-)
-
-type FileList struct {
-	Path string
-	Size int64
-	Hash string
-}
-
-type FileDiff struct {
-	Op   string `json:"operation"`
-	Path string `json:"path"`
 }
 
 func (a *Allocation) GetStats() *AllocationStats {
@@ -601,140 +578,4 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 		a.downloadProgressMap[remoteLookupHash] = downloadReq
 	}()
 	return nil
-}
-
-func (a *Allocation) getRemoteFileDir(dirList []string, fileList *[]FileList) ([]string, error) {
-	childDirList := make([]string, 0)
-	for _, dir := range dirList {
-		ref, err := a.ListDir(dir)
-		if err != nil {
-			return []string{}, err
-		}
-		for _, child := range ref.Children {
-			if child.Type == fileref.FILE {
-				*fileList = append(*fileList, FileList{Path: child.Path, Size: child.Size, Hash: child.Hash})
-			} else {
-				childDirList = append(childDirList, child.Path)
-			}
-		}
-	}
-	return childDirList, nil
-}
-
-func (a *Allocation) getRemoteFileList() ([]FileList, error) {
-	var remoteList []FileList
-	dirs := []string{"/"}
-	var err error
-	for {
-		dirs, err = a.getRemoteFileDir(dirs, &remoteList)
-		if err != nil {
-			fmt.Println(err.Error())
-			break
-		}
-		if len(dirs) == 0 {
-			break
-		}
-	}
-	return remoteList, err
-}
-
-func calcFileHash(filePath string) string {
-	fp, err := os.Open(filePath)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer fp.Close()
-
-	h := sha1.New()
-	if _, err := io.Copy(h, fp); err != nil {
-		log.Fatal(err)
-	}
-	return hex.EncodeToString(h.Sum(nil))
-}
-
-func addLocalFileList(root string, fileList *[]FileList, filter map[string]bool) filepath.WalkFunc {
-	return func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			log.Fatal(err)
-		}
-		// Filter out
-		if _, ok := filter[info.Name()]; ok {
-			return nil
-		}
-		if !info.IsDir() {
-			*fileList = append(*fileList, FileList{Path: "/" + strings.TrimLeft(path, root), Size: info.Size(), Hash: calcFileHash(path)})
-		}
-		return nil
-	}
-}
-
-func getLocalFileList(rootPath string, filters []string) ([]FileList, error) {
-	var localList []FileList
-	filterMap := make(map[string]bool)
-	for _, f := range filters {
-		filterMap[f] = true
-	}
-	err := filepath.Walk(rootPath, addLocalFileList(rootPath, &localList, filterMap))
-	return localList, err
-}
-
-func findDelta(remote []FileList, local []FileList) []FileDiff {
-	fMap := make(map[string]string)
-	// Create a remote hash map
-	for _, rFile := range remote {
-		fMap[rFile.Path] = rFile.Hash
-	}
-	uMap := make(map[string]string)
-	// Compare it with local hash map and get union
-	for _, lFile := range local {
-		if hash, ok := fMap[lFile.Path]; ok {
-			uMap[lFile.Path] = hash
-		}
-	}
-
-	var lFDiff []FileDiff
-	// Find files to be download or update
-	for _, rFile := range remote {
-		op := Download
-		if hash, ok := uMap[rFile.Path]; ok {
-			if hash == rFile.Hash {
-				continue
-			}
-			op = Update
-		}
-		lFDiff = append(lFDiff, FileDiff{Path: rFile.Path, Op: op})
-	}
-
-	for _, lFile := range local {
-		op := Upload
-		if hash, ok := uMap[lFile.Path]; ok {
-			if hash == lFile.Hash {
-				continue
-			}
-			op = Update
-		}
-		// TODO: Delete
-		lFDiff = append(lFDiff, FileDiff{Path: lFile.Path, Op: op})
-	}
-	return lFDiff
-}
-
-func (a *Allocation) GetAllocationDiff(lastKnownAllocationRoot string, localRootPath string, localFileFilters []string) ([]FileDiff, error) {
-	var lFdiff []FileDiff
-	// Get flat file list from remote
-	remoteFileList, err := a.getRemoteFileList()
-	if err != nil {
-		return lFdiff, fmt.Errorf("error getting list dir from remote. %v", err)
-	}
-
-	// Get flat file list on the local filesystem
-	localFileList, err := getLocalFileList(localRootPath, localFileFilters)
-	if err != nil {
-		return lFdiff, fmt.Errorf("error getting list dir from local. %v", err)
-	}
-
-	// Get the file diff with operation
-	lFdiff = findDelta(remoteFileList, localFileList)
-
-	return lFdiff, nil
 }
