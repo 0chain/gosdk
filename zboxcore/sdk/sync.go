@@ -109,7 +109,11 @@ func addLocalFileList(root string, fileList *[]fileInfo, filter map[string]bool,
 		if _, ok := filter[info.Name()]; ok {
 			return nil
 		}
-		rPath := "/" + strings.TrimLeft(path, root)
+		rPath, err := filepath.Rel(root, path)
+		if err != nil {
+			Logger.Error("getting relative path failed", err)
+		}
+		rPath = "/" + rPath
 		// Exclude
 		if _, ok := exclMap[rPath]; ok {
 			return nil
