@@ -120,7 +120,7 @@ Set up paths, this needs to be done each session. Alternatively, append paths in
         cd gosdk/_sdkver
         go build -o sdkver sdkver.go
         cd ../..
-        godsk/_sdkver/sdkver
+        gosdk/_sdkver/sdkver
 
 (Should output SDK version if successful)
 
