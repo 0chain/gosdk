@@ -87,8 +87,12 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 }
 
 func GetAllocations() ([]*Allocation, error) {
+	return GetAllocationsForClient(client.GetClientID())
+}
+
+func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 	params := make(map[string]string)
-	params["client"] = client.GetClientID()
+	params["client"] = clientID
 	allocationsBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocations", params, nil)
 	if err != nil {
 		return nil, common.NewError("allocations_fetch_error", "Error fetching the allocations."+err.Error())

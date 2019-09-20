@@ -157,8 +157,10 @@ func (ta *TransactionWithAuth) ExecuteFaucetSCWallet(walletStr string, methodNam
 	return nil
 }
 
-func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName, input string, val int64) error {
-	err := ta.t.createSmartContractTxn(address, methodName, input, val)
+func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName, jsoninput string, val int64) error {
+	scData := make(map[string]interface{})
+	json.Unmarshal([]byte(jsoninput), &scData)
+	err := ta.t.createSmartContractTxn(address, methodName, scData, val)
 	if err != nil {
 		return err
 	}

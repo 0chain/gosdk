@@ -64,7 +64,7 @@ type TransactionScheme interface {
 	// StoreData implements store the data to blockchain
 	StoreData(data string) error
 	// ExecuteSmartContract impements the Faucet Smart contract
-	ExecuteSmartContract(address, methodName, input string, val int64) error
+	ExecuteSmartContract(address, methodName, jsoninput string, val int64) error
 	// ExecuteFaucetSCWallet impements the Faucet Smart contract for a given wallet
 	ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error
 	// GetTransactionHash implements retrieval of hash of the submitted transaction
@@ -322,8 +322,10 @@ func (t *Transaction) ExecuteFaucetSCWallet(walletStr string, methodName string,
 	return nil
 }
 
-func (t *Transaction) ExecuteSmartContract(address, methodName, input string, val int64) error {
-	err := t.createSmartContractTxn(address, methodName, input, val)
+func (t *Transaction) ExecuteSmartContract(address, methodName, jsoninput string, val int64) error {
+	scData := make(map[string]interface{})
+	json.Unmarshal([]byte(jsoninput), &scData)
+	err := t.createSmartContractTxn(address, methodName, scData, val)
 	if err != nil {
 		return err
 	}
