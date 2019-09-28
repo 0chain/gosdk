@@ -77,7 +77,7 @@ Install Essential Tools (Note some of these will already be installed depending 
 
         yum update -y
         yum install -y openssl-devel
-        yum groupinstall -y "Developer Tools"
+        yum groupinstall -y "Development Tools"
         yum install -y git
         yum install -y wget
         yum install -y make
