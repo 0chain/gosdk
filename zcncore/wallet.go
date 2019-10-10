@@ -36,6 +36,7 @@ var GET_LOCKED_TOKENS = `/v1/screst/` + InterestPoolSmartContractAddress + `/get
 var GET_BLOCK_INFO = `/v1/block/get?`
 var GET_USER_POOLS = `/v1/screst/` + MinerSmartContractAddress + `/getUserPools?client_id=`
 var GET_USER_POOL_DETAIL = `/v1/screst/` + MinerSmartContractAddress + `/getPoolsStats?`
+var GET_BLOBBERS = `/v1/screst/` + StorageSmartContractAddress + `/getblobbers`
 
 const StorageSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7`
 const FaucetSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3`
@@ -73,6 +74,7 @@ const (
 	OpGetLockedTokens    int = 1
 	OpGetUserPools       int = 2
 	OpGetUserPoolDetail  int = 3
+	OpGetBlobbers        int = 4
 )
 
 // WalletCallback needs to be implmented for wallet creation.
@@ -636,3 +638,16 @@ func GetUserPoolDetails(clientID, poolID string, cb GetInfoCallback) error {
 	}()
 	return nil
 }
+
+func GetBlobbers(cb GetInfoCallback) error {
+	err := checkSdkInit()
+	if err != nil {
+		return err
+	}
+	go func() {
+		urlSuffix := GET_BLOBBERS
+		getInfoFromSharders(urlSuffix, OpGetBlobbers, cb)
+	}()
+	return nil
+}
+
