@@ -50,13 +50,16 @@ type AllocationStats struct {
 }
 
 type Allocation struct {
-	ID           string                    `json:"id"`
-	DataShards   int                       `json:"data_shards"`
-	ParityShards int                       `json:"parity_shards"`
-	Size         int64                     `json:"size"`
-	Expiration   int64                     `json:"expiration_date"`
-	Blobbers     []*blockchain.StorageNode `json:"blobbers"`
-	Stats        *AllocationStats          `json:"stats"`
+	ID             string                    `json:"id"`
+	DataShards     int                       `json:"data_shards"`
+	ParityShards   int                       `json:"parity_shards"`
+	Size           int64                     `json:"size"`
+	Expiration     int64                     `json:"expiration_date"`
+	Owner          string                    `json:"owner_id"`
+	OwnerPublicKey string                    `json:"owner_public_key"`
+	Payer          string                    `json:"payer_id"`
+	Blobbers       []*blockchain.StorageNode `json:"blobbers"`
+	Stats          *AllocationStats          `json:"stats"`
 
 	uploadChan          chan *UploadRequest
 	downloadChan        chan *DownloadRequest

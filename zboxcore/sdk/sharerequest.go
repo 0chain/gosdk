@@ -5,13 +5,10 @@ import (
 	b64 "encoding/base64"
 	"encoding/json"
 
-	"github.com/0chain/gosdk/zboxcore/fileref"
-
-	"github.com/0chain/gosdk/zboxcore/client"
-
 	"github.com/0chain/gosdk/core/common"
-
 	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/marker"
 )
 
