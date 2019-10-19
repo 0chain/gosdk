@@ -177,6 +177,11 @@ func getMinRequiredChainLength() int64 {
 	return int64(_config.chain.ConfirmationChainLength)
 }
 
+// GetVersion - returns version string
+func GetVersion() string {
+	return version.VERSIONSTR
+}
+
 // SetLogLevel set the log level.
 // lvl - 0 disabled; higher number (upto 4) more verbosity
 func SetLogLevel(lvl int) {
@@ -650,4 +655,3 @@ func GetBlobbers(cb GetInfoCallback) error {
 	}()
 	return nil
 }
-
