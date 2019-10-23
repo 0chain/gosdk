@@ -97,7 +97,6 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockSize int64) ([]by
 				headerString := string(headerBytes)
 				encMsg := &encryption.EncryptedMessage{}
 				encMsg.EncryptedData = result.Data[(2 * 1024):]
-				fmt.Println("headerString = ", headerString)
 				headerChecksums := strings.Split(headerString, ",")
 				if len(headerChecksums) != 2 {
 					Logger.Error("Block has invalid header", req.blobbers[result.idx].Baseurl)
