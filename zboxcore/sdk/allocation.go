@@ -36,6 +36,7 @@ type ConsolidatedFileMeta struct {
 	Size          int64
 	ThumbnailSize int64
 	ThumbnailHash string
+	EncryptedKey string
 }
 
 type AllocationStats struct {
@@ -123,22 +124,38 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 }
 
 func (a *Allocation) UpdateFile(localpath string, remotepath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, true, "")
+	return a.uploadOrUpdateFile(localpath, remotepath, status, true, "", false)
 }
 
 func (a *Allocation) UploadFile(localpath string, remotepath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "")
+	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "", false)
 }
 
 func (a *Allocation) UpdateFileWithThumbnail(localpath string, remotepath string, thumbnailpath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, true, thumbnailpath)
+	return a.uploadOrUpdateFile(localpath, remotepath, status, true, thumbnailpath, false)
 }
 
 func (a *Allocation) UploadFileWithThumbnail(localpath string, remotepath string, thumbnailpath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, false, thumbnailpath)
+	return a.uploadOrUpdateFile(localpath, remotepath, status, false, thumbnailpath, false)
 }
 
-func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, status StatusCallback, isUpdate bool, thumbnailpath string) error {
+func (a *Allocation) EncryptAndUpdateFile(localpath string, remotepath string, status StatusCallback) error {
+	return a.uploadOrUpdateFile(localpath, remotepath, status, true, "", true)
+}
+
+func (a *Allocation) EncryptAndUploadFile(localpath string, remotepath string, status StatusCallback) error {
+	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "", true)
+}
+
+func (a *Allocation) EncryptAndUpdateFileWithThumbnail(localpath string, remotepath string, thumbnailpath string, status StatusCallback) error {
+	return a.uploadOrUpdateFile(localpath, remotepath, status, true, thumbnailpath, true)
+}
+
+func (a *Allocation) EncryptAndUploadFileWithThumbnail(localpath string, remotepath string, thumbnailpath string, status StatusCallback) error {
+	return a.uploadOrUpdateFile(localpath, remotepath, status, false, thumbnailpath, true)
+}
+
+func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, status StatusCallback, isUpdate bool, thumbnailpath string, encryption bool) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
@@ -186,6 +203,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	uploadReq.uploadMask = ((1 << uint32(len(a.Blobbers))) - 1)
 	uploadReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	uploadReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+	uploadReq.isEncrypted = encryption
 	go func() {
 		a.uploadChan <- uploadReq
 	}()
@@ -327,6 +345,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.Size = ref.ActualFileSize
 		result.ThumbnailHash = ref.ActualThumbnailHash
 		result.ThumbnailSize = ref.ActualThumbnailSize
+		result.EncryptedKey = ref.EncryptedKey
 		return result, nil
 	}
 	return nil, common.NewError("file_meta_error", "Error getting the file meta data from blobbers")

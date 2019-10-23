@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"strings"
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
@@ -9,6 +10,7 @@ import (
 	"math"
 	"math/bits"
 	"os"
+	"bytes"
 	"sync"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -17,6 +19,8 @@ import (
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/encryption"
 )
 
 const (
@@ -37,6 +41,7 @@ type DownloadRequest struct {
 	authTicket         *marker.AuthTicket
 	wg                 *sync.WaitGroup
 	downloadMask       uint32
+	encryptedKey 	   string
 	isDownloadCanceled bool
 	completedCallback  func(remotepath string, remotepathhash string)
 	contentMode        string
@@ -73,12 +78,41 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockSize int64) ([]by
 	shards := make([][]byte, len(req.blobbers))
 	var decodeLen int
 	success := 0
+	var encscheme encryption.EncryptionScheme
+	if len(req.encryptedKey) > 0 {
+		encscheme = encryption.NewEncryptionScheme()
+		encscheme.Initialize(client.GetClient().Mnemonic)
+		encscheme.InitForDecryption("filetype:audio", req.encryptedKey)
+	}
+	
+
 	for i := 0; i < numDownloads; i++ {
 		result := <-rspCh
 		if !result.Success {
 			Logger.Error("Download block : ", req.blobbers[result.idx].Baseurl, result.err)
 		} else {
-			shards[result.idx] = result.Data
+			if len(req.encryptedKey) > 0 {
+				headerBytes := result.Data[:(2 * 1024)]
+				headerBytes = bytes.Trim(headerBytes, "\x00")
+				headerString := string(headerBytes)
+				encMsg := &encryption.EncryptedMessage{}
+				encMsg.EncryptedData = result.Data[(2 * 1024):]
+				headerChecksums := strings.Split(headerString, ",")
+				if len(headerChecksums) != 2 {
+					Logger.Error("Block has invalid header", req.blobbers[result.idx].Baseurl)
+					continue
+				}
+				encMsg.MessageChecksum, encMsg.OverallChecksum = headerChecksums[0], headerChecksums[1]
+				encMsg.EncryptedKey = encscheme.GetEncryptedKey()
+				decryptedBytes, err := encscheme.Decrypt(encMsg)
+				if err != nil {
+					Logger.Error("Block decryption failed", req.blobbers[result.idx].Baseurl, err)
+					continue
+				}
+				shards[result.idx] = decryptedBytes
+			} else {
+				shards[result.idx] = result.Data
+			}
 			// All share should have equal length
 			decodeLen = len(shards[result.idx])
 			// fmt.Printf("[%d]:%s Size:%d\n", i, req.blobbers[result.idx].Baseurl, len(shards[result.idx]))
@@ -129,9 +163,19 @@ func (req *DownloadRequest) processDownload(ctx context.Context, a *Allocation) 
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
 		size = fileRef.ActualThumbnailSize
 	}
+	req.encryptedKey = fileRef.EncryptedKey
 	// Calculate number of bytes per shard.
 	perShard := (size + int64(req.datashards) - 1) / int64(req.datashards)
-	chunksPerShard := (perShard + int64(fileref.CHUNK_SIZE) - 1) / fileref.CHUNK_SIZE
+	chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
+	if len(fileRef.EncryptedKey) > 0 {
+		chunkSizeWithHeader -= 16
+		chunkSizeWithHeader -= 2 * 1024
+	}
+	chunksPerShard := (perShard + chunkSizeWithHeader - 1) / chunkSizeWithHeader
+	if len(fileRef.EncryptedKey) > 0 {
+		perShard += chunksPerShard * (16 + (2 *1024))
+	}
+
 	wrFile, err := os.OpenFile(req.localpath, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		if req.statusCallback != nil {
