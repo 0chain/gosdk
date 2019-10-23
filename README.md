@@ -2,7 +2,13 @@
 The 0chain client SDK is written in GO. 
 This repository currently supports the following platforms:
 - OSX Mojave 10.14.5 
-- LINUX (Ubuntu/bionic). 
+- LINUX (Ubuntu/bionic).
+- - This includes all Ubuntu 18+ platforms, so Ubuntu 19, Linux Mint 19 etc. (apt based package installer)
+- ADDED
+- LINUX (RHEL/CENTOS 7+)
+- - All Releases based on RHEL 7+, Centos 7+, Fedora 30 etc. (yum based package installer)
+
+See Step-by-Step Installation guide plus Deployment Guide at bottom
 
 It is possible to support the sdk for other variations of Linux as well. 
 
@@ -54,3 +60,127 @@ Please send email to [alphanet@0chain.net](mailto:alphanet@0chain.net) if you en
 - [What are GO modules](https://github.com/golang/go/wiki/Modules)
 - [How to: Install Go 1.11.2 on Ubuntu using snap](https://medium.com/@patdhlk/how-to-install-go-1-9-1-on-ubuntu-16-04-ee64c073cd79)
 
+# STEP BY STEP INSTALLATION GUIDE
+## Update System and Install Essential Tools
+### Ubuntu/Debian Based e.g. Ubuntu, Mint, debian (using apt package manager)
+        sudo apt update
+        sudo apt-get install build-essential
+        sudo apt install git
+
+### RHEL Based e.g. Centos, RedHat, Fedora (using yum package manager)
+Assume superuser privilege (alternatively, prefix necessary commands with sudo e.g. sudo yum update -y)
+
+        su
+        
+Install Essential Tools (Note some of these will already be installed depending on distribution)
+
+        yum update -y
+        yum install -y openssl-devel
+        yum groupinstall -y "Developer Tools"
+        yum install -y git
+        yum install -y wget
+        yum install -y make
+        yum install -t g++
+        
+Install go platform
+
+        wget https://dl.google.com/go/go1.13.linux-amd64.tar.gz
+        tar -C /usr/local -xzf go1.13.linux-amd64.tar.gz
+        rm go1.13.linux-amd64.tar.gz
+        
+Set up paths, this needs to be done each session. Alternatively, append paths in $HOME/.bash_profile
+
+        export PATH=$PATH:/usr/local/go/bin
+        export LD_LIBRARY_PATH=/usr/local/lib
+                
+## Set Up directories and clone gosdk
+### (Common) starting in $HOME folder
+        mkdir go
+        cd go
+        mkdir github.com
+        cd github.com
+        mkdir 0chain
+        cd 0chain
+        git clone https://github.com/0chain/gosdk.git
+
+## Build SDK/Tools
+### (Common) starting in 0chain folder
+        cd gosdk
+        make build-tools
+        make install
+        make install-herumi
+        make install-gosdk
+        make clean
+        cd ..
+        
+## Build CLI Tools
+### (Common) starting in 0chain folder
+
+ZBox:-
+
+        git clone https://github.com/0chain/zboxcli.git
+        cd zboxcli
+        go build -tags bn256 -o zbox
+
+To test:-
+        
+        ./zbox
+        
+Then back to 0chain folder:-
+
+        cd ..
+
+Zwallet
+
+        git clone https://github.com/0chain/zwalletcli.git
+        cd zwalletcli
+        go build -tags bn256 -o zwallet
+
+You will at least require $HOME/.zcn folder with nodes.yaml file present to test wallet (change this as required)
+
+        mkdir $HOME/.zcn
+        cp sample/config/devb.yml $HOME/.zcn/nodes.yaml
+
+To test:-
+
+        ./zwallet
+        
+Then back to 0chain folder:-
+
+        cd ..
+
+## DEPLOYMENT GUIDE
+### (Based on having already built CLI Tools as above)
+
+- Target Machine must be recent kernel as distributions mentioned, (specifically libc6 version >= 2.27?)
+
+NOTE: Do not attempt to install libc version into older Linux installation (unless you know what you are doing) as it can mess up your system
+
+Supported platforms all of the above e.g.
+- RHEL7+, Centos7+, Ubuntu18+, Mint19+, Fedora30+ (and derivatives)
+
+PLUS
+- Debian 10+
+
+### Copy files and configure
+
+Copy these files From/To /usr/local/lib
+
+        libmcl.so
+        libbls256.so
+
+Perform this command on target machine for each session required or add path in $HOME/.bash_profile
+
+        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+
+Adjust permissions for user as needed.
+
+Copy other files as required, e.g.
+
+        zbox
+        zwallet
+        nodes.yaml
+
+into folder
+
+        $HOME/.zcn

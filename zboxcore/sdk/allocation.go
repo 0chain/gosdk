@@ -232,6 +232,9 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 			return fmt.Errorf("Local file already exists '%s'", localPath)
 		}
 	}
+	lPath, _ := filepath.Split(localPath)
+	os.MkdirAll(lPath, os.ModePerm)
+
 	if len(a.Blobbers) <= 1 {
 		return noBLOBBERS
 	}
