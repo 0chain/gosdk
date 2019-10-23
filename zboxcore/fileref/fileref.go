@@ -28,6 +28,7 @@ type FileRef struct {
 	ActualThumbnailSize int64  `json:"actual_thumbnail_size"`
 	ActualThumbnailHash string `json:"actual_thumbnail_hash"`
 	MimeType            string `json:"mimetype"`
+	EncryptedKey        string `json:"encrypted_key"`
 }
 
 type RefEntity interface {

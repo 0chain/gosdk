@@ -27,6 +27,7 @@ type BlockDownloadRequest struct {
 	remotefilepath     string
 	remotefilepathhash string
 	blockNum           int64
+	encryptedKey 	   string
 	contentMode        string
 	authTicket         *marker.AuthTicket
 	wg                 *sync.WaitGroup

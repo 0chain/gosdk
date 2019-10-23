@@ -24,6 +24,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/encryption"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -54,6 +56,7 @@ type uploadFormData struct {
 	ActualThumbnailHash string `json:"actual_thumb_hash"`
 	MimeType            string `json:"mimetype"`
 	CustomMeta          string `json:"custom_meta,omitempty"`
+	EncryptedKey        string `json:"encrypted_key,omitempty"`
 }
 
 type uploadResult struct {
@@ -85,6 +88,8 @@ type UploadRequest struct {
 	datashards      int
 	parityshards    int
 	uploadMask      uint32
+	isEncrypted 	bool
+	encscheme 		encryption.EncryptionScheme
 	Consensus
 }
 
@@ -98,6 +103,15 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	var formData uploadFormData
 	shardSize := (req.filemeta.Size + int64(a.DataShards) - 1) / int64(a.DataShards)
+	chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
+	if req.isEncrypted {
+		chunkSizeWithHeader -= 16
+		chunkSizeWithHeader -= 2 * 1024
+	}
+	chunksPerShard := (shardSize + chunkSizeWithHeader - 1) / chunkSizeWithHeader
+	if req.isEncrypted {
+		shardSize += chunksPerShard * (16 + (2 *1024))
+	}
 	thumbnailSize := int64(0)
 	remaining := shardSize
 	go func() {
@@ -160,6 +174,15 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 
 		if len(req.thumbnailpath) > 0 {
 			thumbnailSize = (req.filemeta.ThumbnailSize + int64(a.DataShards) - 1) / int64(a.DataShards)
+			chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
+			if req.isEncrypted {
+				chunkSizeWithHeader -= 16
+				chunkSizeWithHeader -= 2 * 1024
+			}
+			chunksPerShard := (thumbnailSize + chunkSizeWithHeader - 1) / chunkSizeWithHeader
+			if req.isEncrypted {
+				thumbnailSize += chunksPerShard * (16 + (2 *1024))
+			}
 			remaining := thumbnailSize
 
 			fileField, err := formWriter.CreateFormFile("uploadThumbnailFile", file.Name+".thumb")
@@ -201,6 +224,9 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 			Hash:                fileContentHash,
 			ThumbnailHash:       thumbContentHash,
 			MerkleRoot:          fileMerkleRoot,
+		}
+		if req.isEncrypted {
+			formData.EncryptedKey = req.encscheme.GetEncryptedKey()
 		}
 		_ = formWriter.WriteField("connection_id", req.connectionID)
 		var metaData []byte
@@ -256,13 +282,14 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 		file.ActualFileSize = formData.ActualSize
 		file.ActualThumbnailHash = formData.ActualThumbnailHash
 		file.ActualThumbnailSize = formData.ActualThumbnailSize
+		file.EncryptedKey = formData.EncryptedKey
 		file.CalculateHash()
 		return nil
 	})
 	wg.Done()
 }
 
-func (req *UploadRequest) setupUpload(a *Allocation) {
+func (req *UploadRequest) setupUpload(a *Allocation) error {
 	numUploads := bits.OnesCount32(req.uploadMask)
 	req.uploadDataCh = make([]chan []byte, numUploads)
 	req.uploadThumbCh = make([]chan []byte, numUploads)
@@ -283,6 +310,15 @@ func (req *UploadRequest) setupUpload(a *Allocation) {
 		req.thumbnailHash = sha1.New()
 		req.thumbnailHashWr = io.MultiWriter(req.thumbnailHash)
 	}
+	if req.isEncrypted {
+		req.encscheme = encryption.NewEncryptionScheme()
+		err := req.encscheme.Initialize(client.GetClient().Mnemonic)
+		if err != nil {
+			return err
+		}
+		req.encscheme.InitForEncryption("filetype:audio")
+	}
+	
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numUploads)
 	req.consensus = 0
@@ -294,6 +330,7 @@ func (req *UploadRequest) setupUpload(a *Allocation) {
 		go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.uploadThumbCh[c], req.wg)
 		c++
 	}
+	return nil
 }
 
 func (req *UploadRequest) pushData(data []byte) error {
@@ -313,6 +350,21 @@ func (req *UploadRequest) pushData(data []byte) error {
 		return err
 	}
 	c, pos := 0, 0
+	if req.isEncrypted {
+		for i := req.uploadMask; i != 0; i &= ^(1 << uint32(pos)) {
+			pos = bits.TrailingZeros32(i)
+			encMsg, err := req.encscheme.Encrypt(shards[pos])
+			if err != nil {
+				Logger.Error("Encryption failed.", err.Error())
+				return err
+			}
+			header := make([]byte, 2 * 1024)
+			copy(header[:], encMsg.MessageChecksum + "," + encMsg.OverallChecksum)
+			shards[pos] = append(header, encMsg.EncryptedData...)
+			c++
+		}
+		c, pos = 0, 0
+	}
 	for i := req.uploadMask; i != 0; i &= ^(1 << uint32(pos)) {
 		pos = bits.TrailingZeros32(i)
 		req.uploadDataCh[c] <- shards[pos]
@@ -353,7 +405,11 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 		return
 	}
 	req.filemeta.MimeType = mimetype
-	req.setupUpload(a)
+	err = req.setupUpload(a)
+	if err != nil && req.statusCallback != nil {
+		req.statusCallback.Error(a.ID, req.filepath, OpUpload, fmt.Errorf("setting up of upload failed : %s", err.Error()))
+		return
+	}
 	size := req.filemeta.Size
 	// Calculate number of bytes per shard.
 	perShard := (size + int64(a.DataShards) - 1) / int64(a.DataShards)
@@ -368,7 +424,12 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 		// Pad data to Shards*perShard.
 		padding := make([]byte, (int64(a.DataShards)*perShard)-size)
 		dataReader := io.MultiReader(inFile, bytes.NewBuffer(padding))
-		chunksPerShard := (perShard + int64(fileref.CHUNK_SIZE) - 1) / fileref.CHUNK_SIZE
+		chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
+		if req.isEncrypted {
+			chunkSizeWithHeader -= 16 
+			chunkSizeWithHeader -= 2 * 1024
+		}
+		chunksPerShard := (perShard + chunkSizeWithHeader - 1) / chunkSizeWithHeader
 		Logger.Info("Size:", size, " perShard:", perShard, " chunks/shard:", chunksPerShard)
 		if req.statusCallback != nil {
 			req.statusCallback.Started(a.ID, req.remotefilepath, OpUpload, int(perShard)*(a.DataShards+a.ParityShards))
@@ -376,7 +437,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 
 		sent := int(0)
 		for ctr := int64(0); ctr < chunksPerShard; ctr++ {
-			remaining := int64(math.Min(float64(perShard-(ctr*fileref.CHUNK_SIZE)), fileref.CHUNK_SIZE))
+			remaining := int64(math.Min(float64(perShard-(ctr*chunkSizeWithHeader)), float64(chunkSizeWithHeader)))
 			b1 := make([]byte, remaining*int64(a.DataShards))
 			_, err = dataReader.Read(b1)
 			if err != nil && req.statusCallback != nil {

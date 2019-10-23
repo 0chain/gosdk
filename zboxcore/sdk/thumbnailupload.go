@@ -31,6 +31,21 @@ func (req *UploadRequest) pushThumbnailData(data []byte) error {
 		return err
 	}
 	c, pos := 0, 0
+	if req.isEncrypted {
+		for i := req.uploadMask; i != 0; i &= ^(1 << uint32(pos)) {
+			pos = bits.TrailingZeros32(i)
+			encMsg, err := req.encscheme.Encrypt(shards[pos])
+			if err != nil {
+				Logger.Error("Encryption failed.", err.Error())
+				return err
+			}
+			header := make([]byte, 2 * 1024)
+			copy(header[:], encMsg.MessageChecksum + "," + encMsg.OverallChecksum)
+			shards[pos] = append(header, encMsg.EncryptedData...)
+			c++
+		}
+		c, pos = 0, 0
+	}
 	for i := req.uploadMask; i != 0; i &= ^(1 << uint32(pos)) {
 		pos = bits.TrailingZeros32(i)
 		req.uploadThumbCh[c] <- shards[pos]
@@ -52,12 +67,17 @@ func (req *UploadRequest) processThumbnail(a *Allocation, wg *sync.WaitGroup) {
 	// Pad data to Shards*perShard.
 	padding := make([]byte, (int64(a.DataShards)*perShard)-size)
 	dataReader := io.MultiReader(inFile, bytes.NewBuffer(padding))
-	chunksPerShard := (perShard + int64(fileref.CHUNK_SIZE) - 1) / fileref.CHUNK_SIZE
+	chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
+	if req.isEncrypted {
+		chunkSizeWithHeader -= 16
+		chunkSizeWithHeader -= 2 * 1024
+	}
+	chunksPerShard := (perShard + chunkSizeWithHeader - 1) / chunkSizeWithHeader
 	Logger.Info("Thumbnail Size:", size, " perShard:", perShard, " chunks/shard:", chunksPerShard)
 
-	sent := int(0)
+	//sent := int(0)
 	for ctr := int64(0); ctr < chunksPerShard; ctr++ {
-		remaining := int64(math.Min(float64(perShard-(ctr*fileref.CHUNK_SIZE)), fileref.CHUNK_SIZE))
+		remaining := int64(math.Min(float64(perShard-(ctr*chunkSizeWithHeader)), float64(chunkSizeWithHeader)))
 		b1 := make([]byte, remaining*int64(a.DataShards))
 		_, err = dataReader.Read(b1)
 		if err != nil {
@@ -67,7 +87,7 @@ func (req *UploadRequest) processThumbnail(a *Allocation, wg *sync.WaitGroup) {
 		if err != nil {
 			return
 		}
-		sent = sent + int(remaining*int64(a.DataShards+a.ParityShards))
+		//sent = sent + int(remaining*int64(a.DataShards+a.ParityShards))
 	}
 	err = req.completeThumbnailPush()
 	if err != nil {
