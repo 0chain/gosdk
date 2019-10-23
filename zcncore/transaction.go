@@ -387,6 +387,7 @@ func queryFromSharders(numSharders int, query string, result chan *util.GetRespo
 		}(sharder)
 	}
 }
+
 func getTransactionConfirmation(numSharders int, txnHash string) (map[string]json.RawMessage, string, *blockHeader, error) {
 	result := make(chan *util.GetResponse)
 	defer close(result)
@@ -415,7 +416,38 @@ func getTransactionConfirmation(numSharders int, txnHash string) (map[string]jso
 						Logger.Error("txn confirmation parse error", err)
 						continue
 					}
-					if _, ok := objmap["txn"]; ok {
+					if txnBytes, ok := objmap["txn"]; ok {
+						var txn transaction.Transaction
+						err = json.Unmarshal(txnBytes, &txn)
+						if err != nil {
+							Logger.Error("Unmarshal txn error.", err)
+							continue
+						}
+						if txnHash != txn.Hash {
+							Logger.Error("invalid transaction hash. Expected: ", txnHash, "Received: ", txn.Hash)
+							continue
+						}
+						if mtPathBytes, ok := objmap["merkle_tree_path"]; ok {
+							var mtPath util.MTPath
+							err = json.Unmarshal(mtPathBytes, &mtPath)
+							if err != nil {
+								Logger.Error("Unmarshal merkle_tree_path error.", err)
+								continue
+							}
+							if mtRootBytes, ok := objmap["merkle_tree_root"]; ok {
+								mtRoot := string(mtRootBytes)
+								if util.VerifyMerklePath(txn.Hash, &mtPath, mtRoot) {
+									Logger.Error("txn merkle validation failed")
+									continue
+								}
+							} else {
+								Logger.Error("merkle_tree_root not found in confirmation")
+								continue
+							}
+						} else {
+							Logger.Error("merkle_tree_path not found in confirmation")
+							continue
+						}
 						h := encryption.FastHash([]byte(objmap["txn"]))
 						txnConfirmations[h]++
 						if txnConfirmations[h] > maxConfirmation {
@@ -445,6 +477,7 @@ func getTransactionConfirmation(numSharders int, txnHash string) (map[string]jso
 	}
 	return confirmedTxn, blockHash, &lfb, nil
 }
+
 func parseBlockRound(txn map[string]json.RawMessage) int64 {
 	if r, ok := txn["round"]; ok {
 		round, err := strconv.ParseInt(string(r), 10, 64)
@@ -456,6 +489,7 @@ func parseBlockRound(txn map[string]json.RawMessage) int64 {
 	}
 	return 0
 }
+
 func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHeader, error) {
 	result := make(chan *util.GetResponse)
 	defer close(result)
@@ -505,6 +539,7 @@ func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHe
 	}
 	return &blkHdr, nil
 }
+
 func isBlockExtends(prevHash string, block *blockHeader) bool {
 	data := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v", block.MinerId, prevHash, block.CreationDate, block.Round,
 		block.RoundRandomSeed, block.MerkleTreeRoot, block.ReceiptMerkleTreeRoot)
@@ -514,6 +549,7 @@ func isBlockExtends(prevHash string, block *blockHeader) bool {
 	}
 	return false
 }
+
 func validateChain(conf map[string]json.RawMessage, confirmBlockhash string) bool {
 	confirmRound := parseBlockRound(conf)
 	Logger.Debug("Confirmation round: ", confirmRound)

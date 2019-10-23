@@ -61,6 +61,7 @@ Please send email to [alphanet@0chain.net](mailto:alphanet@0chain.net) if you en
 - [How to: Install Go 1.11.2 on Ubuntu using snap](https://medium.com/@patdhlk/how-to-install-go-1-9-1-on-ubuntu-16-04-ee64c073cd79)
 
 # STEP BY STEP INSTALLATION GUIDE
+Note: The following guide accommodates many different Linux distros/installations. You may see error messages, primarily with yum based installation. In particular, the default method tries to use snap to install go platform but we install it directly with yum method.
 ## Update System and Install Essential Tools
 ### Ubuntu/Debian Based e.g. Ubuntu, Mint, debian (using apt package manager)
         sudo apt update
@@ -76,7 +77,7 @@ Install Essential Tools (Note some of these will already be installed depending 
 
         yum update -y
         yum install -y openssl-devel
-        yum groupinstall -y "Developer Tools"
+        yum groupinstall -y "Development Tools"
         yum install -y git
         yum install -y wget
         yum install -y make
@@ -112,7 +113,17 @@ Set up paths, this needs to be done each session. Alternatively, append paths in
         make install-gosdk
         make clean
         cd ..
-        
+
+## Test SDK (Optional)
+
+### (Common) starting in 0chain folder
+        cd gosdk/_sdkver
+        go build -o sdkver sdkver.go
+        cd ../..
+        gosdk/_sdkver/sdkver
+
+(Should output SDK version if successful)
+
 ## Build CLI Tools
 ### (Common) starting in 0chain folder
 

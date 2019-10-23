@@ -34,6 +34,11 @@ type StatusCallback interface {
 
 var sdkInitialized = false
 
+// GetVersion - returns version string
+func GetVersion() string {
+	return version.VERSIONSTR
+}
+
 // logFile - Log file
 // verbose - true - console output; false - no console output
 func SetLogFile(logFile string, verbose bool) {

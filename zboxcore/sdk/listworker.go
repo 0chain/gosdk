@@ -98,7 +98,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 			return fmt.Errorf("Error: Resp : %s", err.Error())
 		}
 		s.WriteString(string(resp_body))
-		Logger.Info("List result:", string(resp_body))
+		Logger.Debug("List result:", string(resp_body))
 		if resp.StatusCode == http.StatusOK {
 			listResult := &fileref.ListResult{}
 			err = json.Unmarshal(resp_body, listResult)
