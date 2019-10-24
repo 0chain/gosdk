@@ -412,10 +412,10 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 		var cfm confirmation
 		err := json.Unmarshal(cfmBytes, &cfm)
 		if err != nil {
-			return nil, fmt.Errorf("txn confirmation parse error.", err)
+			return nil, fmt.Errorf("txn confirmation parse error. %s", err)
 		}
 		if txnHash != cfm.Transaction.Hash {
-			return nil, fmt.Errorf("invalid transaction hash. Expected: ", txnHash, "Received: ", cfm.Transaction.Hash)
+			return nil, fmt.Errorf("invalid transaction hash. Expected: %s. Received: %s", txnHash, cfm.Transaction.Hash)
 		}
 		if !util.VerifyMerklePath(cfm.Transaction.Hash, cfm.MerkleTreePath, cfm.MerkleTreeRoot) {
 			return nil, fmt.Errorf("txn merkle validation failed.")
