@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
@@ -29,6 +28,25 @@ type TransactionCallback interface {
 	OnVerifyComplete(t *Transaction, status int)
 	OnAuthComplete(t *Transaction, status int)
 }
+
+/*Confirmation - a data structure that provides the confirmation that a transaction is included into the block chain */
+type confirmation struct {
+	Version               string                   `json:"version"`
+	Hash                  string                   `json:"hash"`
+	BlockHash             string                   `json:"block_hash"`
+	PreviousBlockHash     string                   `json:"previous_block_hash"`
+	Transaction           *transaction.Transaction `json:"txn,omitempty"`
+	CreationDate          int64                    `json:"creation_date,omitempty"`
+	MinerID               string                   `json:"miner_id"`
+	Round                 int64                    `json:"round"`
+	Status                int                      `json:"transaction_status" msgpack:"sot"`
+	RoundRandomSeed       int64                    `json:"round_random_seed"`
+	MerkleTreeRoot        string                   `json:"merkle_tree_root"`
+	MerkleTreePath        *util.MTPath             `json:"merkle_tree_path"`
+	ReceiptMerkleTreeRoot string                   `json:"receipt_merkle_tree_root"`
+	ReceiptMerkleTreePath *util.MTPath             `json:"receipt_merkle_tree_path"`
+}
+
 type blockHeader struct {
 	Version               string `json:"version,omitempty"`
 	CreationDate          int64  `json:"creation_date,omitempty"`
@@ -388,77 +406,73 @@ func queryFromSharders(numSharders int, query string, result chan *util.GetRespo
 	}
 }
 
-func getTransactionConfirmation(numSharders int, txnHash string) (map[string]json.RawMessage, string, *blockHeader, error) {
+func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[string]json.RawMessage) (*blockHeader, error) {
+	block := &blockHeader{}
+	if cfmBytes, ok := cfmBlock["confirmation"]; ok {
+		var cfm confirmation
+		err := json.Unmarshal(cfmBytes, &cfm)
+		if err != nil {
+			return nil, fmt.Errorf("txn confirmation parse error.", err)
+		}
+		if txnHash != cfm.Transaction.Hash {
+			return nil, fmt.Errorf("invalid transaction hash. Expected: ", txnHash, "Received: ", cfm.Transaction.Hash)
+		}
+		if !util.VerifyMerklePath(cfm.Transaction.Hash, cfm.MerkleTreePath, cfm.MerkleTreeRoot) {
+			return nil, fmt.Errorf("txn merkle validation failed.")
+		}
+		txnRcpt := transaction.NewTransactionReceipt(cfm.Transaction)
+		if !util.VerifyMerklePath(txnRcpt.GetHash(), cfm.ReceiptMerkleTreePath, cfm.ReceiptMerkleTreeRoot) {
+			return nil, fmt.Errorf("txn receipt cmerkle validation failed.")
+		}
+		prevBlockHash := cfm.PreviousBlockHash
+		block.MinerId = cfm.MinerID
+		block.Hash = cfm.BlockHash
+		block.CreationDate = cfm.CreationDate
+		block.Round = cfm.Round
+		block.RoundRandomSeed = cfm.RoundRandomSeed
+		block.MerkleTreeRoot = cfm.MerkleTreeRoot
+		block.ReceiptMerkleTreeRoot = cfm.ReceiptMerkleTreeRoot
+		// Verify the block
+		if isBlockExtends(prevBlockHash, block) {
+			return block, nil
+		} else {
+			return nil, fmt.Errorf("block hash verification failed in confirmation")
+		}
+	}
+	return nil, fmt.Errorf("txn confirmation not found.")
+}
+
+func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
 	result := make(chan *util.GetResponse)
 	defer close(result)
 	queryFromSharders(numSharders, fmt.Sprintf("%v%v&content=lfb", TXN_VERIFY_URL, txnHash), result)
 	maxConfirmation := int(0)
 	txnConfirmations := make(map[string]int)
-	var confirmedTxn map[string]json.RawMessage
-	var blockHash string
+	var blockHdr *blockHeader
 	var lfb blockHeader
+	var confirmation map[string]json.RawMessage
 	for i := 0; i < numSharders; i++ {
 		select {
 		case rsp := <-result:
-			Logger.Debug(rsp.Url, rsp.Status)
+			Logger.Debug(rsp.Url + " " + rsp.Status)
 			Logger.Debug(rsp.Body)
 			if rsp.StatusCode == http.StatusOK {
 				var cfmLfb map[string]json.RawMessage
-				var objmap map[string]json.RawMessage
 				err := json.Unmarshal([]byte(rsp.Body), &cfmLfb)
 				if err != nil {
 					Logger.Error("txn confirmation parse error", err)
 					continue
 				}
-				if cfm, ok := cfmLfb["confirmation"]; ok {
-					err := json.Unmarshal([]byte(cfm), &objmap)
-					if err != nil {
-						Logger.Error("txn confirmation parse error", err)
-						continue
-					}
-					if txnBytes, ok := objmap["txn"]; ok {
-						var txn transaction.Transaction
-						err = json.Unmarshal(txnBytes, &txn)
-						if err != nil {
-							Logger.Error("Unmarshal txn error.", err)
-							continue
-						}
-						if txnHash != txn.Hash {
-							Logger.Error("invalid transaction hash. Expected: ", txnHash, "Received: ", txn.Hash)
-							continue
-						}
-						if mtPathBytes, ok := objmap["merkle_tree_path"]; ok {
-							var mtPath util.MTPath
-							err = json.Unmarshal(mtPathBytes, &mtPath)
-							if err != nil {
-								Logger.Error("Unmarshal merkle_tree_path error.", err)
-								continue
-							}
-							if mtRootBytes, ok := objmap["merkle_tree_root"]; ok {
-								mtRoot := string(mtRootBytes)
-								if util.VerifyMerklePath(txn.Hash, &mtPath, mtRoot) {
-									Logger.Error("txn merkle validation failed")
-									continue
-								}
-							} else {
-								Logger.Error("merkle_tree_root not found in confirmation")
-								continue
-							}
-						} else {
-							Logger.Error("merkle_tree_path not found in confirmation")
-							continue
-						}
-						h := encryption.FastHash([]byte(objmap["txn"]))
-						txnConfirmations[h]++
-						if txnConfirmations[h] > maxConfirmation {
-							maxConfirmation = txnConfirmations[h]
-							confirmedTxn = objmap
-							if bh, ok := objmap["block_hash"]; ok {
-								blockHash, _ = strconv.Unquote(string(bh))
-							}
-						}
-					} else {
-						Logger.Debug(rsp.Url, ". No transaction confirmation")
+				bH, err := getBlockHeaderFromTransactionConfirmation(txnHash, cfmLfb)
+				if err != nil {
+					Logger.Error(err)
+				}
+				if err == nil {
+					txnConfirmations[bH.Hash]++
+					if txnConfirmations[bH.Hash] > maxConfirmation {
+						maxConfirmation = txnConfirmations[bH.Hash]
+						blockHdr = bH
+						confirmation = cfmLfb
 					}
 				} else if lfbRaw, ok := cfmLfb["latest_finalized_block"]; ok {
 					err := json.Unmarshal([]byte(lfbRaw), &lfb)
@@ -467,27 +481,13 @@ func getTransactionConfirmation(numSharders int, txnHash string) (map[string]jso
 						continue
 					}
 				}
-			} else {
-				Logger.Error(rsp.Body)
 			}
 		}
 	}
-	if confirmedTxn == nil {
-		return nil, "", &lfb, fmt.Errorf("transaction not found")
+	if maxConfirmation == 0 {
+		return nil, confirmation, &lfb, fmt.Errorf("transaction not found")
 	}
-	return confirmedTxn, blockHash, &lfb, nil
-}
-
-func parseBlockRound(txn map[string]json.RawMessage) int64 {
-	if r, ok := txn["round"]; ok {
-		round, err := strconv.ParseInt(string(r), 10, 64)
-		if err != nil {
-			Logger.Error("invalid round number")
-			return 0
-		}
-		return round
-	}
-	return 0
+	return blockHdr, confirmation, &lfb, nil
 }
 
 func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHeader, error) {
@@ -535,7 +535,7 @@ func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHe
 		}
 	}
 	if maxConsensus == 0 {
-		return nil, fmt.Errorf("round info not found")
+		return nil, fmt.Errorf("round info not found.")
 	}
 	return &blkHdr, nil
 }
@@ -550,19 +550,19 @@ func isBlockExtends(prevHash string, block *blockHeader) bool {
 	return false
 }
 
-func validateChain(conf map[string]json.RawMessage, confirmBlockhash string) bool {
-	confirmRound := parseBlockRound(conf)
+func validateChain(confirmBlock *blockHeader) bool {
+	confirmRound := confirmBlock.Round
 	Logger.Debug("Confirmation round: ", confirmRound)
-	currentBlockHash := confirmBlockhash
+	currentBlockHash := confirmBlock.Hash
 	round := confirmRound + 1
 	for {
 		nextBlock, err := getBlockInfoByRound(1, round, "header")
 		if err != nil {
-			Logger.Info(err, "after a second falling thru to ", getMinShardersVerify(), "of ", len(_config.chain.Sharders), "Sharders")
+			Logger.Info(err, " after a second falling thru to ", getMinShardersVerify(), "of ", len(_config.chain.Sharders), "Sharders")
 			time.Sleep(1 * time.Second)
 			nextBlock, err = getBlockInfoByRound(getMinShardersVerify(), round, "header")
 			if err != nil {
-				Logger.Error("err", "block chain stalled. waiting", defaultWaitSeconds, "...")
+				Logger.Error(err, " block chain stalled. waiting", defaultWaitSeconds, "...")
 				time.Sleep(defaultWaitSeconds)
 				continue
 			}
@@ -596,12 +596,12 @@ func (t *Transaction) isTransactionExpired(lfbCreationTime, currentTime int64) b
 }
 func (t *Transaction) Verify() error {
 	if t.txnHash == "" && t.txnStatus == StatusUnknown {
-		return fmt.Errorf("invalid transaction. cannot be verified")
+		return fmt.Errorf("invalid transaction. cannot be verified.")
 	}
 	if t.txnHash == "" && t.txnStatus == StatusSuccess {
 		h := t.GetTransactionHash()
 		if h == "" {
-			return fmt.Errorf("invalid transaction. cannot be verified")
+			return fmt.Errorf("invalid transaction. cannot be verified.")
 		}
 	}
 	// If transaction is verify only start from current time
@@ -612,13 +612,13 @@ func (t *Transaction) Verify() error {
 	go func() {
 		for {
 			// Get transaction confirmation from random sharder
-			confirmation, blockHash, lfb, err := getTransactionConfirmation(1, t.txnHash)
+			confirmBlock, confirmation, lfb, err := getTransactionConfirmation(1, t.txnHash)
 			if err != nil {
 				tn := common.Now()
 				Logger.Info(err, " now: ", tn, ", LFB creation time:", lfb.CreationDate)
 				if util.MaxInt64(lfb.CreationDate, tn) < (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
 					Logger.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders")
-					confirmation, blockHash, lfb, err = getTransactionConfirmation(getMinShardersVerify(), t.txnHash)
+					confirmBlock, confirmation, lfb, err = getTransactionConfirmation(getMinShardersVerify(), t.txnHash)
 					if err != nil {
 						if t.isTransactionExpired(lfb.CreationDate, tn) {
 							t.completeVerify(StatusError, "", fmt.Errorf(`{"error": "verify transaction failed"}`))
@@ -634,7 +634,7 @@ func (t *Transaction) Verify() error {
 					continue
 				}
 			}
-			valid := validateChain(confirmation, blockHash)
+			valid := validateChain(confirmBlock)
 			if valid {
 				output, err := json.Marshal(confirmation)
 				if err != nil {
