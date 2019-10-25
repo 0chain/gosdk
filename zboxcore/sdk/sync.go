@@ -28,6 +28,11 @@ const (
 	LocalDelete = "LocalDelete"
 )
 
+type fileMap struct {
+	Type string `json:"type"`
+	Hash string `json:"hash"`
+}
+
 type fileInfo struct {
 	Path string `json:"path"`
 	Size int64  `json:"size"`
@@ -164,35 +169,35 @@ func isParentFolderExists(lFDiff []FileDiff, path string) bool {
 func findDelta(remote []fileInfo, local []fileInfo, prevRemote []fileInfo, localRootPath string) []FileDiff {
 	var lFDiff []FileDiff
 	// Create previous remote list as map
-	prevMap := make(map[string]string)
+	prevMap := make(map[string]fileMap)
 	for _, f := range prevRemote {
-		prevMap[f.Path] = f.Hash
+		prevMap[f.Path] = fileMap{Type: f.Type, Hash: f.Hash}
 	}
 
 	// Create a remote hash map and find modifications
-	rMap := make(map[string]string)
-	rMod := make(map[string]string)
+	rMap := make(map[string]fileMap)
+	rMod := make(map[string]fileMap)
 	for _, rFile := range remote {
-		rMap[rFile.Path] = rFile.Hash
-		if hash, ok := prevMap[rFile.Path]; ok {
+		rMap[rFile.Path] = fileMap{Type: rFile.Type, Hash: rFile.Hash}
+		if pm, ok := prevMap[rFile.Path]; ok {
 			// Remote file existed in previous sync also
-			if hash != rFile.Hash {
+			if pm.Hash != rFile.Hash {
 				// File modified in remote
-				rMod[rFile.Path] = rFile.Hash
+				rMod[rFile.Path] = fileMap{Type: rFile.Type, Hash: rFile.Hash}
 			}
 		}
 	}
 
 	// Create a local hash map and find modification
-	lMap := make(map[string]string)
-	lMod := make(map[string]string)
+	lMap := make(map[string]fileMap)
+	lMod := make(map[string]fileMap)
 	for _, lFile := range local {
-		lMap[lFile.Path] = lFile.Hash
-		if hash, ok := prevMap[lFile.Path]; ok {
+		lMap[lFile.Path] = fileMap{Type: lFile.Type, Hash: lFile.Hash}
+		if pm, ok := prevMap[lFile.Path]; ok {
 			// Local file existed in previous sync also
-			if hash != lFile.Hash {
+			if pm.Hash != lFile.Hash {
 				// File modified in local
-				lMod[lFile.Path] = lFile.Hash
+				lMod[lFile.Path] = fileMap{Type: lFile.Type, Hash: lFile.Hash}
 			}
 		}
 	}
@@ -228,7 +233,7 @@ func findDelta(remote []fileInfo, local []fileInfo, prevRemote []fileInfo, local
 				continue
 			}
 		}
-		lFDiff = append(lFDiff, FileDiff{Path: rPath, Op: op})
+		lFDiff = append(lFDiff, FileDiff{Path: rPath, Op: op, Type: rMap[rPath].Type})
 	}
 
 	// Upload all local files
@@ -250,7 +255,7 @@ func findDelta(remote []fileInfo, local []fileInfo, prevRemote []fileInfo, local
 				continue
 			}
 		}
-		lFDiff = append(lFDiff, FileDiff{Path: lPath, Op: op})
+		lFDiff = append(lFDiff, FileDiff{Path: lPath, Op: op, Type: lMap[lPath].Type})
 	}
 
 	// If there are differences, remove childs if the parent folder is deleted
@@ -258,15 +263,16 @@ func findDelta(remote []fileInfo, local []fileInfo, prevRemote []fileInfo, local
 		sort.SliceStable(lFDiff, func(i, j int) bool { return lFDiff[i].Path < lFDiff[j].Path })
 		Logger.Debug("Sorted diff: ", lFDiff)
 		var newlFDiff []FileDiff
-		newlFDiff = append(newlFDiff, lFDiff[0])
-		lFDiff = lFDiff[1:]
 		for _, f := range lFDiff {
 			if f.Op == LocalDelete || f.Op == Delete {
 				if isParentFolderExists(newlFDiff, f.Path) == false {
 					newlFDiff = append(newlFDiff, f)
 				}
 			} else {
-				newlFDiff = append(newlFDiff, f)
+				// Add only files for other Op
+				if f.Type == fileref.FILE {
+					newlFDiff = append(newlFDiff, f)
+				}
 			}
 		}
 		return newlFDiff
