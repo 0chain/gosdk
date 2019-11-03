@@ -8,7 +8,6 @@ PLATFORM:=$(shell uname -s | tr "[:upper:]" "[:lower:]")
 
 include _util/printer.mk
 include _util/build_$(PLATFORM).mk
-include _util/herumi.mk
 include _util/build_mobile.mk
 
 .PHONY: build-tools install-all herumi-all gosdk-all sdkver help
@@ -44,23 +43,19 @@ getrev:
 	@echo const VERSIONSTR = \"$(VERSION_STR)\" >> $(VERSION_FILE)
 	@echo "" >> $(VERSION_FILE)
 
-install: install-herumi install-gosdk sdkver
+install: install-gosdk sdkver
 
 clean: clean-gosdk clean-herumi
 	@rm -rf $(OUTDIR)
 
 help:
 	@echo "Environment: "
-	@echo "\tPLATFORM.......:$(PLATFORM)"
-	@echo "\tGOPATH.........:$(GOPATH)"
-	@echo "\tGOROOT.........:$(GOROOT)"
-	@echo "\tBLS branch.....:$(bls_branch)"
-	@echo "\tMCL branch.....:$(mcl_branch)"
+	@echo "\tPLATFORM.......: $(PLATFORM)"
+	@echo "\tGOPATH.........: $(GOPATH)"
+	@echo "\tGOROOT.........: $(GOROOT)"
 	@echo ""
 	@echo "Supported commands:"
 	@echo "\tmake help              - Display environment and make targets"
 	@echo "\tmake build-tools       - Install go, jq and supporting tools required for build"
-	@echo "\tmake install           - Install herumi and gosdk"
-	@echo "\tmake install-herumi    - Install herumi library"
-	@echo "\tmake install-gosdk     - Install gosdk. Prerequiste is install-herumi"
+	@echo "\tmake install           - Install gosdk"
 	@echo "\tmake clean             - Deletes all build output files"
