@@ -36,6 +36,7 @@ type DownloadRequest struct {
 	remotefilepath     string
 	remotefilepathhash string
 	localpath          string
+	numBlocks int64
 	statusCallback     StatusCallback
 	ctx                context.Context
 	authTicket         *marker.AuthTicket
@@ -48,7 +49,7 @@ type DownloadRequest struct {
 	Consensus
 }
 
-func (req *DownloadRequest) downloadBlock(blockNum int64, blockSize int64) ([]byte, error) {
+func (req *DownloadRequest) downloadBlock(blockNum int64) ([]byte, error) {
 	req.consensus = 0
 	numDownloads := bits.OnesCount32(req.downloadMask)
 	req.wg = &sync.WaitGroup{}
@@ -70,72 +71,86 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockSize int64) ([]by
 		blockDownloadReq.ctx = req.ctx
 		blockDownloadReq.remotefilepath = req.remotefilepath
 		blockDownloadReq.remotefilepathhash = req.remotefilepathhash
+		blockDownloadReq.numBlocks = req.numBlocks
 		go AddBlockDownloadReq(blockDownloadReq)
 		//go obj.downloadBlobberBlock(&obj.blobbers[pos], pos, path, blockNum, rspCh, isPathHash, authTicket)
 		c++
 	}
 	//req.wg.Wait()
-	shards := make([][]byte, len(req.blobbers))
-	var decodeLen int
-	success := 0
+	shards := make([][][]byte, req.numBlocks)
+	for i:=int64(0); i< req.numBlocks; i++ {
+		shards[i] = make([][]byte, len(req.blobbers))
+	}
+	//shards := make([][]byte, len(req.blobbers))
+	decodeLen := make([]int, req.numBlocks)
+	var decodeNumBlocks int
 	var encscheme encryption.EncryptionScheme
 	if len(req.encryptedKey) > 0 {
 		encscheme = encryption.NewEncryptionScheme()
 		encscheme.Initialize(client.GetClient().Mnemonic)
 		encscheme.InitForDecryption("filetype:audio", req.encryptedKey)
 	}
-	
 
+	retData := make([]byte, 0)
+	success := 0
 	for i := 0; i < numDownloads; i++ {
 		result := <-rspCh
 		if !result.Success {
 			Logger.Error("Download block : ", req.blobbers[result.idx].Baseurl, result.err)
 		} else {
-			if len(req.encryptedKey) > 0 {
-				headerBytes := result.Data[:(2 * 1024)]
-				headerBytes = bytes.Trim(headerBytes, "\x00")
-				headerString := string(headerBytes)
-				encMsg := &encryption.EncryptedMessage{}
-				encMsg.EncryptedData = result.Data[(2 * 1024):]
-				headerChecksums := strings.Split(headerString, ",")
-				if len(headerChecksums) != 2 {
-					Logger.Error("Block has invalid header", req.blobbers[result.idx].Baseurl)
-					continue
+			blockSuccess := false
+			for blockNum := 0; blockNum < len(result.BlockChunks); blockNum++ {
+				if len(req.encryptedKey) > 0 {
+					headerBytes := result.BlockChunks[blockNum][:(2 * 1024)]
+					headerBytes = bytes.Trim(headerBytes, "\x00")
+					headerString := string(headerBytes)
+					encMsg := &encryption.EncryptedMessage{}
+					encMsg.EncryptedData = result.BlockChunks[blockNum][(2 * 1024):]
+					headerChecksums := strings.Split(headerString, ",")
+					if len(headerChecksums) != 2 {
+						Logger.Error("Block has invalid header", req.blobbers[result.idx].Baseurl)
+						break
+					}
+					encMsg.MessageChecksum, encMsg.OverallChecksum = headerChecksums[0], headerChecksums[1]
+					encMsg.EncryptedKey = encscheme.GetEncryptedKey()
+					decryptedBytes, err := encscheme.Decrypt(encMsg)
+					if err != nil {
+						Logger.Error("Block decryption failed", req.blobbers[result.idx].Baseurl, err)
+						break
+					}
+					shards[blockNum][result.idx] = decryptedBytes
+				} else {
+					shards[blockNum][result.idx] = result.BlockChunks[blockNum]
 				}
-				encMsg.MessageChecksum, encMsg.OverallChecksum = headerChecksums[0], headerChecksums[1]
-				encMsg.EncryptedKey = encscheme.GetEncryptedKey()
-				decryptedBytes, err := encscheme.Decrypt(encMsg)
-				if err != nil {
-					Logger.Error("Block decryption failed", req.blobbers[result.idx].Baseurl, err)
-					continue
-				}
-				shards[result.idx] = decryptedBytes
-			} else {
-				shards[result.idx] = result.Data
+				
+				// All share should have equal length
+				decodeLen[blockNum] = len(shards[blockNum][result.idx])
+				blockSuccess = true
 			}
-			// All share should have equal length
-			decodeLen = len(shards[result.idx])
-			// fmt.Printf("[%d]:%s Size:%d\n", i, req.blobbers[result.idx].Baseurl, len(shards[result.idx]))
+
+			if !blockSuccess {
+				continue
+			}
+			
+			//fmt.Printf("[%d]:%s Size:%d\n", i, req.blobbers[result.idx].Baseurl, len(shards[result.idx]))
 			success++
 			if success >= req.datashards {
-				go func(respChan chan *downloadBlock, num int) {
-					for num > 0 {
-						<-rspCh
-						num--
-					}
-					return
-				}(rspCh, numDownloads-success)
+				decodeNumBlocks = len(result.BlockChunks)
 				break
 			}
 		}
 	}
-
-	erasureencoder, err := encoder.NewEncoder(req.datashards, req.parityshards)
-	data, err := erasureencoder.Decode(shards, decodeLen)
-	if err != nil {
-		return []byte{}, fmt.Errorf("Block decode error %s", err.Error())
+	for blockNum := 0; blockNum < decodeNumBlocks; blockNum++ {
+		erasureencoder, err := encoder.NewEncoder(req.datashards, req.parityshards)
+		data, err := erasureencoder.Decode(shards[blockNum], decodeLen[blockNum])
+		if err != nil {
+			return []byte{}, fmt.Errorf("Block decode error %s", err.Error())
+		}
+		retData = append(retData, data...)
 	}
-	return data, nil
+	
+	
+	return retData, nil
 }
 
 func (req *DownloadRequest) processDownload(ctx context.Context, a *Allocation) {
@@ -194,9 +209,10 @@ func (req *DownloadRequest) processDownload(ctx context.Context, a *Allocation) 
 	downloaded := int(0)
 	fH := sha1.New()
 	mW := io.MultiWriter(fH, wrFile)
-	for cnt := int64(0); cnt < chunksPerShard; cnt++ {
-		blockSize := int64(math.Min(float64(perShard-(cnt*fileref.CHUNK_SIZE)), fileref.CHUNK_SIZE))
-		data, err := req.downloadBlock(cnt+1, blockSize)
+	//batchCount := (chunksPerShard + req.numBlocks - 1) / req.numBlocks
+	for cnt := int64(0); cnt < chunksPerShard; cnt+=req.numBlocks {
+		//blockSize := int64(math.Min(float64(perShard-(cnt*fileref.CHUNK_SIZE)), fileref.CHUNK_SIZE))
+		data, err := req.downloadBlock(cnt+1)
 		if err != nil {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
@@ -212,6 +228,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context, a *Allocation) 
 			}
 			return
 		}
+		//fmt.Println("Length of decoded data:", len(data))
 		n := int64(math.Min(float64(size), float64(len(data))))
 		_, err = mW.Write(data[:n])
 		if err != nil {

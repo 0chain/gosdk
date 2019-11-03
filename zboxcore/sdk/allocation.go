@@ -62,6 +62,7 @@ type Allocation struct {
 	Blobbers       []*blockchain.StorageNode `json:"blobbers"`
 	Stats          *AllocationStats          `json:"stats"`
 
+	numBlockDownloads int
 	uploadChan          chan *UploadRequest
 	downloadChan        chan *DownloadRequest
 	ctx                 context.Context
@@ -249,6 +250,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	downloadReq.blobbers = a.Blobbers
 	downloadReq.datashards = a.DataShards
 	downloadReq.parityshards = a.ParityShards
+	downloadReq.numBlocks = int64(numBlockDownloads)
 	downloadReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	downloadReq.fullconsensus = float32(a.DataShards + a.ParityShards)
 	downloadReq.completedCallback = func(remotepath string, remotepathhash string) {
@@ -586,6 +588,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.datashards = a.DataShards
 	downloadReq.parityshards = a.ParityShards
 	downloadReq.contentMode = contentMode
+	downloadReq.numBlocks = int64(numBlockDownloads)
 	downloadReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	downloadReq.fullconsensus = float32(a.DataShards + a.ParityShards)
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {

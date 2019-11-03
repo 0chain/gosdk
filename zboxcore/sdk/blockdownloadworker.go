@@ -29,6 +29,7 @@ type BlockDownloadRequest struct {
 	blockNum           int64
 	encryptedKey 	   string
 	contentMode        string
+	numBlocks int64
 	authTicket         *marker.AuthTicket
 	wg                 *sync.WaitGroup
 	ctx                context.Context
@@ -36,11 +37,13 @@ type BlockDownloadRequest struct {
 }
 
 type downloadBlock struct {
-	Data     []byte             `json:"data"`
+	RawData     []byte             `json:"data"`
+	BlockChunks [][]byte `json:"data_chunks"`
 	Success  bool               `json:"success"`
 	LatestRM *marker.ReadMarker `json:"latest_rm"`
 	idx      int
 	err      error
+	NumBlocks int64 `json:"num_of_blocks"`
 }
 
 var blobberReadCounter *sync.Map
@@ -98,8 +101,25 @@ func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest) {
 	}
 }
 
+func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
+	var chunk []byte
+	chunks := make([][]byte, 0, len(buf)/lim+1)
+	for len(buf) >= lim {
+		chunk, buf = buf[:lim], buf[lim:]
+		chunks = append(chunks, chunk)
+	}
+	if len(buf) > 0 {
+		chunks = append(chunks, buf[:len(buf)])
+	}
+	return chunks
+}
+
 func (req *BlockDownloadRequest) downloadBlobberBlock() {
 	defer req.wg.Done()
+	if req.numBlocks <= 0 {
+		req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: common.NewError("invalid_request", "Invalid number of blocks for download")}
+		return
+	}
 	retry := 0
 	for retry < 3 {
 		rm := &marker.ReadMarker{}
@@ -109,7 +129,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		rm.AllocationID = req.allocationID
 		rm.OwnerID = client.GetClientID()
 		rm.Timestamp = common.Now()
-		rm.ReadCounter = getBlobberReadCtr(req.blobber) + 1
+		rm.ReadCounter = getBlobberReadCtr(req.blobber) + req.numBlocks
 		err := rm.Sign()
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: fmt.Errorf("Error: Signing readmarker failed: %s", err.Error())}
@@ -128,6 +148,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		formWriter.WriteField("path_hash", req.remotefilepathhash)
 
 		formWriter.WriteField("block_num", fmt.Sprintf("%d", req.blockNum))
+		formWriter.WriteField("num_blocks", fmt.Sprintf("%d", req.numBlocks))
 		formWriter.WriteField("read_marker", string(rmData))
 		if req.authTicket != nil {
 			authTicketBytes, _ := json.Marshal(req.authTicket)
@@ -156,17 +177,23 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			}
 			if resp.StatusCode == http.StatusOK {
 				//req.consensus++
-				response, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					return fmt.Errorf("[%d] Read error:%s\n", req.blobberIdx, err.Error())
-				}
+				
+				// response, err := ioutil.ReadAll(resp.Body)
+				// if err != nil {
+				// 	return fmt.Errorf("[%d] Read error:%s\n", req.blobberIdx, err.Error())
+				// }
 				var rspData downloadBlock
 				rspData.idx = req.blobberIdx
-				err = json.Unmarshal(response, &rspData)
+				dec := json.NewDecoder(resp.Body)
+				err := dec.Decode(&rspData)
+				//err = json.Unmarshal(response, &rspData)
 				if err != nil {
 					return fmt.Errorf("[%d] Json decode error:%s\n", req.blobberIdx, err.Error())
 				}
 				if rspData.Success {
+					chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
+					rspData.BlockChunks = chunks
+					rspData.RawData = []byte{}
 					incBlobberReadCtr(req.blobber)
 					req.result <- &rspData
 					return nil

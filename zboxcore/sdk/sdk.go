@@ -32,6 +32,7 @@ type StatusCallback interface {
 	Completed(allocationId, filePath string, filename string, mimetype string, size int, op int)
 }
 
+var numBlockDownloads = 10
 var sdkInitialized = false
 
 // GetVersion - returns version string
@@ -87,8 +88,16 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	if err != nil {
 		return nil, common.NewError("allocation_decode_error", "Error decoding the allocation."+err.Error())
 	}
+	allocationObj.numBlockDownloads = numBlockDownloads
 	allocationObj.InitAllocation()
 	return allocationObj, nil
+}
+
+func SetNumBlockDownloads(num int) {
+	if num > 0 && num <= 100 {
+		numBlockDownloads = num
+	}
+	return
 }
 
 func GetAllocations() ([]*Allocation, error) {
