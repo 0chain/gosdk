@@ -140,16 +140,17 @@ func (req *DownloadRequest) downloadBlock(blockNum int64) ([]byte, error) {
 			}
 		}
 	}
+	erasureencoder, err := encoder.NewEncoder(req.datashards, req.parityshards)
+	if err != nil {
+		return []byte{}, fmt.Errorf("encoder init error %s", err.Error())
+	}
 	for blockNum := 0; blockNum < decodeNumBlocks; blockNum++ {
-		erasureencoder, err := encoder.NewEncoder(req.datashards, req.parityshards)
 		data, err := erasureencoder.Decode(shards[blockNum], decodeLen[blockNum])
 		if err != nil {
 			return []byte{}, fmt.Errorf("Block decode error %s", err.Error())
 		}
 		retData = append(retData, data...)
 	}
-	
-	
 	return retData, nil
 }
 

@@ -38,7 +38,7 @@ type BlockDownloadRequest struct {
 
 type downloadBlock struct {
 	RawData     []byte             `json:"data"`
-	BlockChunks [][]byte `json:"data_chunks"`
+	BlockChunks [][]byte
 	Success  bool               `json:"success"`
 	LatestRM *marker.ReadMarker `json:"latest_rm"`
 	idx      int
@@ -56,12 +56,12 @@ func getBlobberReadCtr(blobber *blockchain.StorageNode) int64 {
 	return int64(0)
 }
 
-func incBlobberReadCtr(blobber *blockchain.StorageNode) {
+func incBlobberReadCtr(blobber *blockchain.StorageNode, numBlocks int64) {
 	rctr, ok := blobberReadCounter.Load(blobber.ID)
 	if !ok {
 		rctr = int64(0)
 	}
-	blobberReadCounter.Store(blobber.ID, (rctr.(int64))+1)
+	blobberReadCounter.Store(blobber.ID, (rctr.(int64))+numBlocks)
 }
 
 func setBlobberReadCtr(blobber *blockchain.StorageNode, ctr int64) {
@@ -178,27 +178,39 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			if resp.StatusCode == http.StatusOK {
 				//req.consensus++
 				
-				// response, err := ioutil.ReadAll(resp.Body)
+				response, err := ioutil.ReadAll(resp.Body)
 				// if err != nil {
 				// 	return fmt.Errorf("[%d] Read error:%s\n", req.blobberIdx, err.Error())
 				// }
 				var rspData downloadBlock
 				rspData.idx = req.blobberIdx
-				dec := json.NewDecoder(resp.Body)
-				err := dec.Decode(&rspData)
-				//err = json.Unmarshal(response, &rspData)
+				// dec := json.NewDecoder(resp.Body)
+				// err := dec.Decode(&rspData)
+				err = json.Unmarshal(response, &rspData)
 				if err != nil {
-					return fmt.Errorf("[%d] Json decode error:%s\n", req.blobberIdx, err.Error())
-				}
-				if rspData.Success {
+					rspData.Success = true
+					//rawData := make([]byte,0)
+					//json.Unmarshal(response, &rawData) 
+					rspData.RawData = response
 					chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
 					rspData.BlockChunks = chunks
 					rspData.RawData = []byte{}
-					incBlobberReadCtr(req.blobber)
+					incBlobberReadCtr(req.blobber, req.numBlocks)
 					req.result <- &rspData
 					return nil
+					//return fmt.Errorf("[%d] Json decode error:%s\n", req.blobberIdx, err.Error())
 				}
-				if rspData.LatestRM != nil && rspData.LatestRM.ReadCounter >= getBlobberReadCtr(req.blobber) {
+				// if rspData.Success {
+				// 	elapsed := time.Since(start)
+				// 	fmt.Println("Received block", req.blockNum, elapsed)
+				// 	chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
+				// 	rspData.BlockChunks = chunks
+				// 	rspData.RawData = []byte{}
+				// 	incBlobberReadCtr(req.blobber, req.numBlocks)
+				// 	req.result <- &rspData
+				// 	return nil
+				// }
+				if !rspData.Success && rspData.LatestRM != nil && rspData.LatestRM.ReadCounter >= getBlobberReadCtr(req.blobber) {
 					Logger.Info("Will be retrying download")
 					setBlobberReadCtr(req.blobber, rspData.LatestRM.ReadCounter)
 					shouldRetry = true
