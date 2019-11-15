@@ -13,6 +13,7 @@ import (
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/encryption"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
@@ -61,6 +62,18 @@ func InitStorageSDK(clientJson string, miners []string, sharders []string, chain
 	blockchain.SetChainID(chainID)
 	sdkInitialized = true
 	return nil
+}
+
+func GetClientEncryptedPublicKey() (string, error) {
+	if !sdkInitialized {
+		return "", common.NewError("sdk_not_initialized", "SDK is not initialised")
+	}
+	encScheme := encryption.NewEncryptionScheme()
+	err := encScheme.Initialize(client.GetClient().Mnemonic)
+	if err != nil {
+		return "", err
+	}
+	return encScheme.GetPublicKey()
 }
 
 func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error) {

@@ -36,7 +36,7 @@ type ConsolidatedFileMeta struct {
 	Size          int64
 	ThumbnailSize int64
 	ThumbnailHash string
-	EncryptedKey string
+	EncryptedKey  string
 }
 
 type AllocationStats struct {
@@ -62,7 +62,7 @@ type Allocation struct {
 	Blobbers       []*blockchain.StorageNode `json:"blobbers"`
 	Stats          *AllocationStats          `json:"stats"`
 
-	numBlockDownloads int
+	numBlockDownloads   int
 	uploadChan          chan *UploadRequest
 	downloadChan        chan *DownloadRequest
 	ctx                 context.Context
@@ -501,6 +501,10 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 }
 
 func (a *Allocation) GetAuthTicketForShare(path string, filename string, referenceType string, refereeClientID string) (string, error) {
+	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "")
+}
+
+func (a *Allocation) GetAuthTicket(path string, filename string, referenceType string, refereeClientID string, refereeEncryptionPublicKey string) (string, error) {
 	if !a.isInitialized() {
 		return "", notInitialized
 	}
@@ -524,11 +528,18 @@ func (a *Allocation) GetAuthTicketForShare(path string, filename string, referen
 	} else {
 		shareReq.refType = fileref.FILE
 	}
+	if len(refereeEncryptionPublicKey) > 0 {
+		authTicket, err := shareReq.GetAuthTicketForEncryptedFile(refereeClientID, refereeEncryptionPublicKey)
+		if err != nil {
+			return "", err
+		}	
+		return authTicket, nil
+
+	}
 	authTicket, err := shareReq.GetAuthTicket(refereeClientID)
 	if err != nil {
 		return "", err
 	}
-
 	return authTicket, nil
 }
 

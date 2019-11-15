@@ -7,6 +7,8 @@ type EncryptionScheme interface {
 	Encrypt(data []byte) (*EncryptedMessage, error)
 	Decrypt(*EncryptedMessage) ([]byte, error)
 	GetEncryptedKey() string
+	GetReGenKey(encPublicKey string, tag string) (string, error)
+	GetPublicKey() (string, error)
 }
 
 func NewEncryptionScheme() EncryptionScheme {
@@ -16,6 +18,7 @@ func NewEncryptionScheme() EncryptionScheme {
 type EncryptedMessage struct {
 	EncryptedKey    string
 	EncryptedData   []byte
+	ReEncryptionKey string
 	MessageChecksum string
 	OverallChecksum string
 }

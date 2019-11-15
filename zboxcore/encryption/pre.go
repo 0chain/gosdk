@@ -39,6 +39,67 @@ type PREEncryptedMessage struct {
 	TagA            []byte
 }
 
+type ReKey struct {
+	R1 kyber.Point
+	R2 kyber.Point
+	R3 kyber.Scalar
+}
+
+type ReKeyBytes struct {
+	R1Bytes []byte `json:"r1"`
+	R2Bytes []byte `json:"r2"`
+	R3Bytes []byte `json:"r3"`
+}
+
+type reEncryptedMessage struct {
+	D1 kyber.Point
+	D2 []byte
+	D3 []byte
+	D4 kyber.Point
+	D5 kyber.Point
+}
+
+func (u *ReKey) MarshalJSON() ([]byte, error) {
+	r1Bytes, err := u.R1.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	r2Bytes, err := u.R2.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	r3Bytes, err := u.R3.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(&ReKeyBytes{
+		R1Bytes: r1Bytes,
+		R2Bytes: r2Bytes,
+		R3Bytes: r3Bytes,
+	})
+}
+
+func (u *ReKey) UnmarshalJSON(data []byte) error {
+	rbytes := &ReKeyBytes{}
+	err := json.Unmarshal(data, rbytes)
+	if err != nil {
+		return err
+	}
+	err = u.R1.UnmarshalBinary(rbytes.R1Bytes)
+	if err != nil {
+		return err
+	}
+	err = u.R2.UnmarshalBinary(rbytes.R2Bytes)
+	if err != nil {
+		return err
+	}
+	err = u.R3.UnmarshalBinary(rbytes.R3Bytes)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (u *PREEncryptedMessage) MarshalJSON() ([]byte, error) {
 	type Alias PREEncryptedMessage
 	c1Bytes, err := u.EncryptedKey.MarshalBinary()
@@ -300,7 +361,91 @@ func (pre *PREEncryptionScheme) decrypt(encMsg *EncryptedMessage) ([]byte, error
 	return nil, err2
 }
 
+//-----------------------------------------------ReEncryption-------------------------------------------------
+func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey string) (*reEncryptedMessage, error) {
+	var g kyber.Group = pre.SuiteObj
+	s := pre.SuiteObj
+	C := &PREEncryptedMessage{}
+	C.EncryptedKey = pre.EncryptedKey
+	C.EncryptedData = encMsg.EncryptedData
+	decodedChecksum, err := hex.DecodeString(encMsg.MessageChecksum)
+	if err != nil {
+		return nil, err
+	}
+	C.MessageChecksum = decodedChecksum
+
+	decodedChecksum, err = hex.DecodeString(encMsg.OverallChecksum)
+	if err != nil {
+		return nil, err
+	}
+	C.OverallChecksum = decodedChecksum
+	C.TagA = pre.Tag
+
+	rk := new(ReKey)
+	rk.R1 = g.Point()
+	rk.R2 = g.Point()
+	rk.R3 = g.Scalar()
+	err = rk.UnmarshalJSON([]byte(reGenKey))
+	if err != nil {
+		return nil, err
+	}
+
+	var reEncMsg = new(reEncryptedMessage)
+
+	chk1 := pre.hash5(g, C.EncryptedKey, C.EncryptedData, C.MessageChecksum, rk.R3)
+	if !bytes.Equal(chk1, C.OverallChecksum) { // Check if C4 = H5(C1,C2,C3,alp)
+		return nil, fmt.Errorf("Invalid Ciphertext")
+	}
+	t := s.Scalar().Pick(s.RandomStream()) // Pick a random integer t
+	reEncMsg.D5 = s.Point().Mul(t, nil)    // D5    = tP
+	tXj := s.Point().Mul(t, pre.PublicKey) // tXj   = t.pkB
+	reEncMsg.D1 = g.Point().Add(C.EncryptedKey, rk.R1)
+	reEncMsg.D2 = C.EncryptedData                                                // D2    = C2
+	reEncMsg.D3 = C.MessageChecksum                                              // D3    = C3
+	reEncMsg.D4 = rk.R2                                                          // D4    = R2
+	bet := pre.hash7(g, tXj, reEncMsg.D2, reEncMsg.D3, reEncMsg.D4, reEncMsg.D5) // bet   = H7(tXj,D2,D3,D4,D5)
+	reEncMsg.D1 = s.Point().Mul(bet, reEncMsg.D1)                                // D1    = bet.(C1 + R1)
+	return reEncMsg, nil                                                         // Return D = (D1,D2,D3,D4,D5)
+}
+
+//-----------------------------------------------ReDecryption-------------------------------------------------
+func (pre *PREEncryptionScheme) reDecrypt(D *reEncryptedMessage) ([]byte, error) {
+	s := pre.SuiteObj
+	tXj := s.Point().Mul(pre.PrivateKey, D.D5) // tXj   = skB.D5
+	var g kyber.Group = s
+	bet := pre.hash7(g, tXj, D.D2, D.D3, D.D4, D.D5) // bet   = H7(tXj,D2,D3,D4,D5)
+	binv := s.Scalar().Inv(bet)
+	xinv := s.Scalar().Inv(pre.PrivateKey)
+
+	T1 := s.Point().Mul(binv, D.D1)
+	T2 := s.Point().Mul(xinv, D.D4)
+	T := g.Point().Sub(T1, T2) // T     = bet^(-1).D1 - skB^(-1).D4
+	key := pre.hash2(g, T)     // key   = H2(T)
+
+	recmsg, err2 := pre.SymDec(g, D.D2, key) // recover message using Sym.Decrypt(D2,key)
+	if err2 == nil {
+		chk2 := pre.hash3(g, recmsg, T)
+		if !bytes.Equal(chk2, D.D3) { // Check if D3 = H3(m,T)
+			return nil, fmt.Errorf("Invalid Ciphertext")
+		} else {
+			return recmsg, nil
+		}
+	}
+	return nil, err2
+}
+
 func (pre *PREEncryptionScheme) Decrypt(encMsg *EncryptedMessage) ([]byte, error) {
+	if len(encMsg.ReEncryptionKey) > 0 {
+		reEncMsg, err := pre.reEncrypt(encMsg, encMsg.ReEncryptionKey)
+		if err != nil {
+			return nil, err
+		}
+		decryptedMessage, err := pre.reDecrypt(reEncMsg)
+		if err != nil {
+			return nil, err
+		}
+		return decryptedMessage, nil
+	}
 	decryptedMessage, err := pre.decrypt(encMsg)
 	if err != nil {
 		return nil, err
@@ -312,4 +457,41 @@ func (pre *PREEncryptionScheme) GetEncryptedKey() string {
 	keyBytes, _ := pre.EncryptedKey.MarshalBinary()
 	keyString := base64.StdEncoding.EncodeToString(keyBytes)
 	return keyString
+}
+
+func (pre *PREEncryptionScheme) GetPublicKey() (string, error) {
+	keyBytes, err := pre.PublicKey.MarshalBinary()
+	if err != nil {
+		return "", err
+	}
+	keyString := base64.StdEncoding.EncodeToString(keyBytes)
+	return keyString, nil
+}
+
+func (pre *PREEncryptionScheme) GetReGenKey(encPublicKey string, tag string) (string, error) {
+	condA := []byte(tag)
+	var RK = new(ReKey)
+	var g kyber.Group = pre.SuiteObj
+	r := pre.SuiteObj.Scalar().Pick(pre.SuiteObj.RandomStream()) // Pick a random integer r
+	Hc := pre.hash1(pre.SuiteObj, condA, pre.PrivateKey)         // Hc   = H1(condA,skA)
+	RK.R1 = pre.SuiteObj.Point().Mul(r, nil)
+	RK.R1 = g.Point().Sub(RK.R1, Hc) // R1   = rP - Hc
+
+	keyBytes, err := base64.StdEncoding.DecodeString(encPublicKey)
+	if err != nil {
+		return "", err
+	}
+	p := g.Point()
+	err = p.UnmarshalBinary(keyBytes)
+	if err != nil {
+		return "", err
+	}
+
+	RK.R2 = pre.SuiteObj.Point().Mul(r, p)      // R2   = r.pkB
+	RK.R3 = pre.hash6(g, condA, pre.PrivateKey) // R3   = H6(condA,skA)
+	rkBytes, err := RK.MarshalJSON()
+	if err != nil {
+		return "", err
+	}
+	return string(rkBytes), nil
 }

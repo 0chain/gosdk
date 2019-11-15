@@ -37,16 +37,17 @@ type listResponse struct {
 }
 
 type ListResult struct {
-	Name       string        `json:"name"`
-	Path       string        `json:"path,omitempty"`
-	Type       string        `json:"type"`
-	Size       int64         `json:"size"`
-	Hash       string        `json:"hash,omitempty"`
-	MimeType   string        `json:"mimetype,omitempty"`
-	NumBlocks  int64         `json:"num_blocks"`
-	LookupHash string        `json:"lookup_hash"`
-	Children   []*ListResult `json:"list"`
-	Consensus  `json:"-"`
+	Name          string        `json:"name"`
+	Path          string        `json:"path,omitempty"`
+	Type          string        `json:"type"`
+	Size          int64         `json:"size"`
+	Hash          string        `json:"hash,omitempty"`
+	MimeType      string        `json:"mimetype,omitempty"`
+	NumBlocks     int64         `json:"num_blocks"`
+	LookupHash    string        `json:"lookup_hash"`
+	EncryptionKey string        `json:"encryption_key"`
+	Children      []*ListResult `json:"list"`
+	Consensus     `json:"-"`
 }
 
 func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *listResponse) {
@@ -173,6 +174,7 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 			if child.GetType() == fileref.FILE {
 				childResult.Hash = (child.(*fileref.FileRef)).ActualFileHash
 				childResult.MimeType = (child.(*fileref.FileRef)).MimeType
+				childResult.EncryptionKey = (child.(*fileref.FileRef)).EncryptedKey
 			}
 			childResult.Size += child.GetSize()
 			childResult.NumBlocks += child.GetNumBlocks()

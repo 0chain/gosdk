@@ -1,7 +1,7 @@
 package sdk
 
 import (
-	"strings"
+	"bytes"
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
@@ -10,17 +10,17 @@ import (
 	"math"
 	"math/bits"
 	"os"
-	"bytes"
+	"strings"
 	"sync"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encoder"
+	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"github.com/0chain/gosdk/zboxcore/client"
-	"github.com/0chain/gosdk/zboxcore/encryption"
 )
 
 const (
@@ -36,13 +36,13 @@ type DownloadRequest struct {
 	remotefilepath     string
 	remotefilepathhash string
 	localpath          string
-	numBlocks int64
+	numBlocks          int64
 	statusCallback     StatusCallback
 	ctx                context.Context
 	authTicket         *marker.AuthTicket
 	wg                 *sync.WaitGroup
 	downloadMask       uint32
-	encryptedKey 	   string
+	encryptedKey       string
 	isDownloadCanceled bool
 	completedCallback  func(remotepath string, remotepathhash string)
 	contentMode        string
@@ -78,7 +78,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64) ([]byte, error) {
 	}
 	//req.wg.Wait()
 	shards := make([][][]byte, req.numBlocks)
-	for i:=int64(0); i< req.numBlocks; i++ {
+	for i := int64(0); i < req.numBlocks; i++ {
 		shards[i] = make([][]byte, len(req.blobbers))
 	}
 	//shards := make([][]byte, len(req.blobbers))
@@ -113,6 +113,9 @@ func (req *DownloadRequest) downloadBlock(blockNum int64) ([]byte, error) {
 					}
 					encMsg.MessageChecksum, encMsg.OverallChecksum = headerChecksums[0], headerChecksums[1]
 					encMsg.EncryptedKey = encscheme.GetEncryptedKey()
+					if req.authTicket != nil {
+						encMsg.ReEncryptionKey = req.authTicket.ReEncryptionKey
+					}
 					decryptedBytes, err := encscheme.Decrypt(encMsg)
 					if err != nil {
 						Logger.Error("Block decryption failed", req.blobbers[result.idx].Baseurl, err)
@@ -122,7 +125,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64) ([]byte, error) {
 				} else {
 					shards[blockNum][result.idx] = result.BlockChunks[blockNum]
 				}
-				
+
 				// All share should have equal length
 				decodeLen[blockNum] = len(shards[blockNum][result.idx])
 				blockSuccess = true
@@ -131,7 +134,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64) ([]byte, error) {
 			if !blockSuccess {
 				continue
 			}
-			
+
 			//fmt.Printf("[%d]:%s Size:%d\n", i, req.blobbers[result.idx].Baseurl, len(shards[result.idx]))
 			success++
 			if success >= req.datashards {
@@ -189,7 +192,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context, a *Allocation) 
 	}
 	chunksPerShard := (perShard + chunkSizeWithHeader - 1) / chunkSizeWithHeader
 	if len(fileRef.EncryptedKey) > 0 {
-		perShard += chunksPerShard * (16 + (2 *1024))
+		perShard += chunksPerShard * (16 + (2 * 1024))
 	}
 
 	wrFile, err := os.OpenFile(req.localpath, os.O_CREATE|os.O_WRONLY, 0644)
@@ -211,9 +214,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context, a *Allocation) 
 	fH := sha1.New()
 	mW := io.MultiWriter(fH, wrFile)
 	//batchCount := (chunksPerShard + req.numBlocks - 1) / req.numBlocks
-	for cnt := int64(0); cnt < chunksPerShard; cnt+=req.numBlocks {
+	for cnt := int64(0); cnt < chunksPerShard; cnt += req.numBlocks {
 		//blockSize := int64(math.Min(float64(perShard-(cnt*fileref.CHUNK_SIZE)), fileref.CHUNK_SIZE))
-		data, err := req.downloadBlock(cnt+1)
+		data, err := req.downloadBlock(cnt + 1)
 		if err != nil {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
