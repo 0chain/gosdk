@@ -2,6 +2,7 @@ package zcncrypto
 
 import (
 	"bytes"
+	"crypto/ed25519"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -9,7 +10,6 @@ import (
 
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/tyler-smith/go-bip39"
-	"golang.org/x/crypto/ed25519"
 )
 
 //ED255190chainScheme - a signature scheme based on ED25519

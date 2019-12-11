@@ -20,6 +20,7 @@ type ChainConfig struct {
 	Miners                  []string `json:"miners"`
 	Sharders                []string `json:"sharders"`
 	SignatureScheme         string   `json:"signaturescheme"`
+	MinSubmit               int      `json:"min_submit"`
 	MinConfirmation         int      `json:"min_confirmation"`
 	ConfirmationChainLength int      `json:"confirmation_chain_length"`
 }
@@ -49,6 +50,7 @@ const MultiSigVoteFuncName = "vote"
 // In percentage
 const consensusThresh = float32(25.0)
 
+const defaultMinSubmit = int(25)
 const defaultMinConfirmation = int(25)
 const defaultConfirmationChainLength = int(5)
 const defaultTxnExpirationSeconds = 15
@@ -160,6 +162,9 @@ func checkConfig() error {
 	return nil
 }
 func assertConfig() {
+	if _config.chain.MinSubmit <= 0 {
+		_config.chain.MinSubmit = defaultMinSubmit
+	}
 	if _config.chain.MinConfirmation <= 0 {
 		_config.chain.MinConfirmation = defaultMinConfirmation
 	}
@@ -168,7 +173,7 @@ func assertConfig() {
 	}
 }
 func getMinMinersSubmit() int {
-	return util.MaxInt((_config.chain.MinConfirmation * len(_config.chain.Miners) / 100), 1)
+	return util.MaxInt((_config.chain.MinSubmit * len(_config.chain.Miners) / 100), 1)
 }
 func getMinShardersVerify() int {
 	return util.MaxInt((_config.chain.MinConfirmation * len(_config.chain.Sharders) / 100), 1)
@@ -220,11 +225,48 @@ func Init(c string) error {
 	return err
 }
 
+func WithChainID(id string) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.ChainID = id
+		return nil
+	}
+}
+
+func WithMinSubmit(m int) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.MinSubmit = m
+		return nil
+	}
+}
+
+func WithMinConfirmation(m int) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.MinConfirmation = m
+		return nil
+	}
+}
+
+func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.ConfirmationChainLength = m
+		return nil
+	}
+}
+
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
-func InitZCNSDK(miners []string, sharders []string, signscheme string) error {
+func InitZCNSDK(miners []string, sharders []string, signscheme string, configs ...func(*ChainConfig) error) error {
+	if signscheme != "ed25519" && signscheme != "bls0chain" {
+		return fmt.Errorf("invalid/unsupported signature scheme")
+	}
 	_config.chain.Miners = miners
 	_config.chain.Sharders = sharders
 	_config.chain.SignatureScheme = signscheme
+	for _, conf := range configs {
+		err := conf(&_config.chain)
+		if err != nil {
+			return fmt.Errorf("invalid/unsupported options. %s", err)
+		}
+	}
 	assertConfig()
 	_config.isConfigured = true
 	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
