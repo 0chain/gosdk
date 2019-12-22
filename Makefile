@@ -34,6 +34,13 @@ gosdk-test:
 
 install-gosdk: | gosdk-build gosdk-test
 
+$(GOPATH)/bin/modvendor:
+	@go get -u github.com/goware/modvendor
+
+vendor: $(GOPATH)/bin/modvendor
+	@GO111MODULE=on go mod vendor -v
+	@modvendor -copy="**/*.c **/*.h **/*.a" -v
+
 getrev:
 	$(eval VERSION_STR=$(shell git describe --tags --dirty --always))
 	@echo "" > $(VERSION_FILE)
