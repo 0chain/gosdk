@@ -18,12 +18,39 @@ import (
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/0chain/gosdk/zcncore"
 )
 
 var (
 	noBLOBBERS     = errors.New("No Blobbers set in this allocation")
 	notInitialized = common.NewError("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 )
+
+type TransactionCallback struct {
+	wg *sync.WaitGroup
+}
+
+func (t *TransactionCallback) OnTransactionComplete(zcntxn *zcncore.Transaction, status int) {
+	t.wg.Done()
+}
+
+func (t *TransactionCallback) OnVerifyComplete(zcntxn *zcncore.Transaction, status int) {
+	t.wg.Done()
+}
+
+func (t *TransactionCallback) OnAuthComplete(zcntxn *zcncore.Transaction, status int) {
+
+}
+
+type MetaOperation struct {
+	CrudType string
+	MetaData *ConsolidatedFileMeta
+}
+
+type MetaTransactionData struct {
+	TxnID    string
+	MetaData *ConsolidatedFileMeta
+}
 
 type ConsolidatedFileMeta struct {
 	Name          string
@@ -122,6 +149,93 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 			go downloadReq.processDownload(ctx, a)
 		}
 	}
+}
+
+func (a *Allocation) UpdateFileAndCommit(localpath string, remotepath string, status StatusCallback) (*MetaTransactionData, error) {
+	return a.uploadOrUpdateFileAndCommit(localpath, remotepath, status, true, "", false)
+}
+
+func (a *Allocation) UploadFileAndCommit(localpath string, remotepath string, status StatusCallback) (*MetaTransactionData, error) {
+	return a.uploadOrUpdateFileAndCommit(localpath, remotepath, status, false, "", false)
+}
+
+func (a *Allocation) UpdateFileWithThumbnailAndCommit(localpath string, remotepath string, thumbnailpath string, status StatusCallback) (*MetaTransactionData, error) {
+	return a.uploadOrUpdateFileAndCommit(localpath, remotepath, status, true, thumbnailpath, false)
+}
+
+func (a *Allocation) UploadFileWithThumbnailAndCommit(localpath string, remotepath string, thumbnailpath string, status StatusCallback) (*MetaTransactionData, error) {
+	return a.uploadOrUpdateFileAndCommit(localpath, remotepath, status, false, thumbnailpath, false)
+}
+
+func (a *Allocation) EncryptAndUpdateFileAndCommit(localpath string, remotepath string, status StatusCallback) (*MetaTransactionData, error) {
+	return a.uploadOrUpdateFileAndCommit(localpath, remotepath, status, true, "", true)
+}
+
+func (a *Allocation) EncryptAndUploadFileAndCommit(localpath string, remotepath string, status StatusCallback) (*MetaTransactionData, error) {
+	return a.uploadOrUpdateFileAndCommit(localpath, remotepath, status, false, "", true)
+}
+
+func (a *Allocation) EncryptAndUpdateFileWithThumbnailAndCommit(localpath string, remotepath string, thumbnailpath string, status StatusCallback) (*MetaTransactionData, error) {
+	return a.uploadOrUpdateFileAndCommit(localpath, remotepath, status, true, thumbnailpath, true)
+}
+
+func (a *Allocation) EncryptAndUploadFileWithThumbnailAndCommit(localpath string, remotepath string, thumbnailpath string, status StatusCallback) (*MetaTransactionData, error) {
+	return a.uploadOrUpdateFileAndCommit(localpath, remotepath, status, false, thumbnailpath, true)
+}
+
+func (a *Allocation) uploadOrUpdateFileAndCommit(localpath string, remotepath string, status StatusCallback, isUpdate bool, thumbnailpath string, encryption bool) (*MetaTransactionData, error) {
+	err := a.uploadOrUpdateFile(localpath, remotepath, status, isUpdate, thumbnailpath, encryption)
+	if err != nil {
+		return nil, err
+	}
+
+	fileMeta, err := a.GetFileMeta(remotepath)
+	if err != nil {
+		return nil, err
+	}
+	var crudOperation string
+	if isUpdate {
+		crudOperation = "Update"
+	} else {
+		crudOperation = "Upload"
+	}
+
+	metaOperationData := &MetaOperation{
+		CrudType: crudOperation,
+		MetaData: fileMeta,
+	}
+
+	metaOperationBytes, err := json.Marshal(metaOperationData)
+	if err != nil {
+		return nil, err
+	}
+
+	tcb := &TransactionCallback{}
+	tcb.wg = &sync.WaitGroup{}
+	tcb.wg.Add(1)
+	txn, err := zcncore.NewTransaction(tcb, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	tcb.wg.Add(1)
+	err = txn.StoreData(string(metaOperationBytes))
+	if err != nil {
+		return nil, err
+	}
+	tcb.wg.Wait()
+
+	tcb.wg.Add(1)
+	txn.Verify()
+	tcb.wg.Wait()
+
+	txnHash := txn.GetTransactionHash()
+	metaTransactionData := &MetaTransactionData{
+		TxnID:    txnHash,
+		MetaData: fileMeta,
+	}
+
+	return metaTransactionData, nil
 }
 
 func (a *Allocation) UpdateFile(localpath string, remotepath string, status StatusCallback) error {
@@ -532,7 +646,7 @@ func (a *Allocation) GetAuthTicket(path string, filename string, referenceType s
 		authTicket, err := shareReq.GetAuthTicketForEncryptedFile(refereeClientID, refereeEncryptionPublicKey)
 		if err != nil {
 			return "", err
-		}	
+		}
 		return authTicket, nil
 
 	}
