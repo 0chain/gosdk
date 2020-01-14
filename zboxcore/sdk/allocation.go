@@ -205,37 +205,7 @@ func (a *Allocation) uploadOrUpdateFileAndCommit(localpath string, remotepath st
 		MetaData: fileMeta,
 	}
 
-	metaOperationBytes, err := json.Marshal(metaOperationData)
-	if err != nil {
-		return nil, err
-	}
-
-	tcb := &TransactionCallback{}
-	tcb.wg = &sync.WaitGroup{}
-	tcb.wg.Add(1)
-	txn, err := zcncore.NewTransaction(tcb, 0)
-	if err != nil {
-		return nil, err
-	}
-
-	tcb.wg.Add(1)
-	err = txn.StoreData(string(metaOperationBytes))
-	if err != nil {
-		return nil, err
-	}
-	tcb.wg.Wait()
-
-	tcb.wg.Add(1)
-	txn.Verify()
-	tcb.wg.Wait()
-
-	txnHash := txn.GetTransactionHash()
-	metaTransactionData := &MetaTransactionData{
-		TxnID:    txnHash,
-		MetaData: fileMeta,
-	}
-
-	return metaTransactionData, nil
+	return commitMetaTransaction(metaOperationData)
 }
 
 func (a *Allocation) UpdateFile(localpath string, remotepath string, status StatusCallback) error {
@@ -324,6 +294,34 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	}()
 	return nil
 }
+
+func (a *Allocation) DownloadFileAndCommit(localPath string, remotePath string, status StatusCallback) (*MetaTransactionData, error) {
+	return a.downloadFileAndCommit(localPath, remotePath, DOWNLOAD_CONTENT_FULL, status)
+}
+
+func (a *Allocation) DownloadThumbnailAndCommit(localPath string, remotePath string, status StatusCallback) (*MetaTransactionData, error) {
+	return a.downloadFileAndCommit(localPath, remotePath, DOWNLOAD_CONTENT_THUMB, status)
+}
+
+func (a *Allocation) downloadFileAndCommit(localpath string, remotepath string, contentMode string, status StatusCallback) (*MetaTransactionData, error) {
+	err := a.downloadFile(localpath, remotepath, contentMode, status)
+	if err != nil {
+		return nil, err
+	}
+
+	fileMeta, err := a.GetFileMeta(remotepath)
+	if err != nil {
+		return nil, err
+	}
+	crudOperation := "Download"
+	metaOperationData := &MetaOperation{
+		CrudType: crudOperation,
+		MetaData: fileMeta,
+	}
+
+	return commitMetaTransaction(metaOperationData)
+}
+
 func (a *Allocation) DownloadFile(localPath string, remotePath string, status StatusCallback) error {
 	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_FULL, status)
 }
@@ -728,4 +726,38 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 		a.downloadProgressMap[remoteLookupHash] = downloadReq
 	}()
 	return nil
+}
+
+func commitMetaTransaction(metaOperationData *MetaOperation) (*MetaTransactionData, error) {
+	metaOperationBytes, err := json.Marshal(metaOperationData)
+	if err != nil {
+		return nil, err
+	}
+
+	tcb := &TransactionCallback{}
+	tcb.wg = &sync.WaitGroup{}
+	tcb.wg.Add(1)
+	txn, err := zcncore.NewTransaction(tcb, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	tcb.wg.Add(1)
+	err = txn.StoreData(string(metaOperationBytes))
+	if err != nil {
+		return nil, err
+	}
+	tcb.wg.Wait()
+
+	tcb.wg.Add(1)
+	txn.Verify()
+	tcb.wg.Wait()
+
+	txnHash := txn.GetTransactionHash()
+	metaTransactionData := &MetaTransactionData{
+		TxnID:    txnHash,
+		MetaData: metaOperationData.MetaData,
+	}
+
+	return metaTransactionData, nil
 }
