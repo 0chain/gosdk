@@ -151,63 +151,6 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 	}
 }
 
-func (a *Allocation) UpdateFileAndCommit(localpath string, remotepath string, status StatusCallback) (*MetaTransactionData, error) {
-	return a.uploadOrUpdateFileAndCommit(localpath, remotepath, status, true, "", false)
-}
-
-func (a *Allocation) UploadFileAndCommit(localpath string, remotepath string, status StatusCallback) (*MetaTransactionData, error) {
-	return a.uploadOrUpdateFileAndCommit(localpath, remotepath, status, false, "", false)
-}
-
-func (a *Allocation) UpdateFileWithThumbnailAndCommit(localpath string, remotepath string, thumbnailpath string, status StatusCallback) (*MetaTransactionData, error) {
-	return a.uploadOrUpdateFileAndCommit(localpath, remotepath, status, true, thumbnailpath, false)
-}
-
-func (a *Allocation) UploadFileWithThumbnailAndCommit(localpath string, remotepath string, thumbnailpath string, status StatusCallback) (*MetaTransactionData, error) {
-	return a.uploadOrUpdateFileAndCommit(localpath, remotepath, status, false, thumbnailpath, false)
-}
-
-func (a *Allocation) EncryptAndUpdateFileAndCommit(localpath string, remotepath string, status StatusCallback) (*MetaTransactionData, error) {
-	return a.uploadOrUpdateFileAndCommit(localpath, remotepath, status, true, "", true)
-}
-
-func (a *Allocation) EncryptAndUploadFileAndCommit(localpath string, remotepath string, status StatusCallback) (*MetaTransactionData, error) {
-	return a.uploadOrUpdateFileAndCommit(localpath, remotepath, status, false, "", true)
-}
-
-func (a *Allocation) EncryptAndUpdateFileWithThumbnailAndCommit(localpath string, remotepath string, thumbnailpath string, status StatusCallback) (*MetaTransactionData, error) {
-	return a.uploadOrUpdateFileAndCommit(localpath, remotepath, status, true, thumbnailpath, true)
-}
-
-func (a *Allocation) EncryptAndUploadFileWithThumbnailAndCommit(localpath string, remotepath string, thumbnailpath string, status StatusCallback) (*MetaTransactionData, error) {
-	return a.uploadOrUpdateFileAndCommit(localpath, remotepath, status, false, thumbnailpath, true)
-}
-
-func (a *Allocation) uploadOrUpdateFileAndCommit(localpath string, remotepath string, status StatusCallback, isUpdate bool, thumbnailpath string, encryption bool) (*MetaTransactionData, error) {
-	err := a.uploadOrUpdateFile(localpath, remotepath, status, isUpdate, thumbnailpath, encryption)
-	if err != nil {
-		return nil, err
-	}
-
-	fileMeta, err := a.GetFileMeta(remotepath)
-	if err != nil {
-		return nil, err
-	}
-	var crudOperation string
-	if isUpdate {
-		crudOperation = "Update"
-	} else {
-		crudOperation = "Upload"
-	}
-
-	metaOperationData := &MetaOperation{
-		CrudType: crudOperation,
-		MetaData: fileMeta,
-	}
-
-	return commitMetaTransaction(metaOperationData)
-}
-
 func (a *Allocation) UpdateFile(localpath string, remotepath string, status StatusCallback) error {
 	return a.uploadOrUpdateFile(localpath, remotepath, status, true, "", false)
 }
@@ -293,33 +236,6 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 		a.uploadChan <- uploadReq
 	}()
 	return nil
-}
-
-func (a *Allocation) DownloadFileAndCommit(localPath string, remotePath string, status StatusCallback) (*MetaTransactionData, error) {
-	return a.downloadFileAndCommit(localPath, remotePath, DOWNLOAD_CONTENT_FULL, status)
-}
-
-func (a *Allocation) DownloadThumbnailAndCommit(localPath string, remotePath string, status StatusCallback) (*MetaTransactionData, error) {
-	return a.downloadFileAndCommit(localPath, remotePath, DOWNLOAD_CONTENT_THUMB, status)
-}
-
-func (a *Allocation) downloadFileAndCommit(localpath string, remotepath string, contentMode string, status StatusCallback) (*MetaTransactionData, error) {
-	err := a.downloadFile(localpath, remotepath, contentMode, status)
-	if err != nil {
-		return nil, err
-	}
-
-	fileMeta, err := a.GetFileMeta(remotepath)
-	if err != nil {
-		return nil, err
-	}
-	crudOperation := "Download"
-	metaOperationData := &MetaOperation{
-		CrudType: crudOperation,
-		MetaData: fileMeta,
-	}
-
-	return commitMetaTransaction(metaOperationData)
 }
 
 func (a *Allocation) DownloadFile(localPath string, remotePath string, status StatusCallback) error {
@@ -728,7 +644,16 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	return nil
 }
 
-func commitMetaTransaction(metaOperationData *MetaOperation) (*MetaTransactionData, error) {
+func (a *Allocation) CommitMetaTransaction(path, crudOperation string) (*MetaTransactionData, error) {
+	fileMeta, err := a.GetFileMeta(path)
+	if err != nil {
+		return nil, err
+	}
+
+	metaOperationData := &MetaOperation{
+		CrudType: crudOperation,
+		MetaData: fileMeta,
+	}
 	metaOperationBytes, err := json.Marshal(metaOperationData)
 	if err != nil {
 		return nil, err
@@ -741,6 +666,7 @@ func commitMetaTransaction(metaOperationData *MetaOperation) (*MetaTransactionDa
 	if err != nil {
 		return nil, err
 	}
+	tcb.wg.Wait()
 
 	tcb.wg.Add(1)
 	err = txn.StoreData(string(metaOperationBytes))
