@@ -3,6 +3,7 @@ package zcncore
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"net/http"
 	"os"
 	"strconv"
@@ -173,13 +174,17 @@ func assertConfig() {
 	}
 }
 func getMinMinersSubmit() int {
-	return util.MaxInt((_config.chain.MinSubmit * len(_config.chain.Miners) / 100), 1)
+	return util.MaxInt(calculateMinRequired(float64(_config.chain.MinSubmit), float64(len(_config.chain.Miners))/100), 1)
 }
 func getMinShardersVerify() int {
-	return util.MaxInt((_config.chain.MinConfirmation * len(_config.chain.Sharders) / 100), 1)
+	return util.MaxInt(calculateMinRequired(float64(_config.chain.MinConfirmation), float64(len(_config.chain.Sharders))/100), 1)
 }
 func getMinRequiredChainLength() int64 {
 	return int64(_config.chain.ConfirmationChainLength)
+}
+
+func calculateMinRequired(minRequired, percent float64) int {
+	return int(math.Round(minRequired * percent))
 }
 
 // GetVersion - returns version string
