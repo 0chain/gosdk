@@ -10,10 +10,13 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -659,29 +662,36 @@ func (a *Allocation) CommitMetaTransaction(path, crudOperation string) (*MetaTra
 		return nil, err
 	}
 
-	tcb := &TransactionCallback{}
-	tcb.wg = &sync.WaitGroup{}
-	tcb.wg.Add(1)
-	txn, err := zcncore.NewTransaction(tcb, 0)
+	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey())
+	txn.TransactionData = string(metaOperationBytes)
+	txn.TransactionType = transaction.TxnTypeData
+	err = txn.ComputeHashAndSign(client.Sign)
 	if err != nil {
 		return nil, err
 	}
-	tcb.wg.Wait()
+	transaction.SendTransactionSync(txn, blockchain.GetMiners())
+	time.Sleep(5 * time.Second)
+	retries := 0
+	var t *transaction.Transaction
+	for retries < 5 {
+		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders())
+		if err == nil {
+			break
+		}
+		retries++
+		time.Sleep(5 * time.Second)
+	}
 
-	tcb.wg.Add(1)
-	err = txn.StoreData(string(metaOperationBytes))
 	if err != nil {
+		Logger.Error("Error verifying the commit transaction", err.Error(), txn.Hash)
 		return nil, err
 	}
-	tcb.wg.Wait()
+	if t == nil {
+		return nil, common.NewError("transaction_validation_failed", "Failed to get the transaction confirmation")
+	}
 
-	tcb.wg.Add(1)
-	txn.Verify()
-	tcb.wg.Wait()
-
-	txnHash := txn.GetTransactionHash()
 	metaTransactionData := &MetaTransactionData{
-		TxnID:    txnHash,
+		TxnID:    t.Hash,
 		MetaData: metaOperationData.MetaData,
 	}
 
