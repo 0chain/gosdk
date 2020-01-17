@@ -21,29 +21,12 @@ import (
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"github.com/0chain/gosdk/zcncore"
 )
 
 var (
 	noBLOBBERS     = errors.New("No Blobbers set in this allocation")
 	notInitialized = common.NewError("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 )
-
-type TransactionCallback struct {
-	wg *sync.WaitGroup
-}
-
-func (t *TransactionCallback) OnTransactionComplete(zcntxn *zcncore.Transaction, status int) {
-	t.wg.Done()
-}
-
-func (t *TransactionCallback) OnVerifyComplete(zcntxn *zcncore.Transaction, status int) {
-	t.wg.Done()
-}
-
-func (t *TransactionCallback) OnAuthComplete(zcntxn *zcncore.Transaction, status int) {
-
-}
 
 type MetaOperation struct {
 	CrudType string
