@@ -4,12 +4,13 @@ import (
 	"strings"
 )
 
-func (a *Allocation) BatchUploader(lastSyncCachePath string, localRootPath string, localFileFilters []string, remoteExcludePath []string, status StatusCallback) error {
+func (a *Allocation) BatchUploader(lastSyncCachePath string, localRootPath string, localFileFilters []string, remoteExcludePath []string, status StatusCallback) ([]FileDiff, error) {
 	lDiff, err := a.GetAllocationDiff(lastSyncCachePath, localRootPath, localFileFilters, remoteExcludePath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	lDiff = filterOperations(lDiff)
 	for _, f := range lDiff {
 		localpath := strings.TrimRight(localRootPath, "/")
 		lPath := localpath + f.Path
@@ -19,16 +20,18 @@ func (a *Allocation) BatchUploader(lastSyncCachePath string, localRootPath strin
 		case Update:
 			err = a.UpdateFile(lPath, f.Path, status)
 		}
-	}
-	return a.saveCache(lastSyncCachePath, remoteExcludePath)
-}
-
-func (a *Allocation) saveCache(path string, exclPath []string) error {
-	if len(path) > 0 {
-		err := a.SaveRemoteSnapshot(path, exclPath)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return lDiff, nil
+}
+
+func filterOperations(lDiff []FileDiff) (filterDiff []FileDiff) {
+	for _, f := range lDiff {
+		if f.Op == Update || f.Op == Upload {
+			filterDiff = append(filterDiff, f)
+		}
+	}
+	return
 }
