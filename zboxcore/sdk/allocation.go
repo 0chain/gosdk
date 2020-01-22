@@ -10,10 +10,13 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -24,6 +27,16 @@ var (
 	noBLOBBERS     = errors.New("No Blobbers set in this allocation")
 	notInitialized = common.NewError("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 )
+
+type MetaOperation struct {
+	CrudType string
+	MetaData *ConsolidatedFileMeta
+}
+
+type MetaTransactionData struct {
+	TxnID    string
+	MetaData *ConsolidatedFileMeta
+}
 
 type ConsolidatedFileMeta struct {
 	Name          string
@@ -210,6 +223,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	}()
 	return nil
 }
+
 func (a *Allocation) DownloadFile(localPath string, remotePath string, status StatusCallback) error {
 	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_FULL, status)
 }
@@ -532,7 +546,7 @@ func (a *Allocation) GetAuthTicket(path string, filename string, referenceType s
 		authTicket, err := shareReq.GetAuthTicketForEncryptedFile(refereeClientID, refereeEncryptionPublicKey)
 		if err != nil {
 			return "", err
-		}	
+		}
 		return authTicket, nil
 
 	}
@@ -614,4 +628,55 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 		a.downloadProgressMap[remoteLookupHash] = downloadReq
 	}()
 	return nil
+}
+
+func (a *Allocation) CommitMetaTransaction(path, crudOperation string) (*MetaTransactionData, error) {
+	fileMeta, err := a.GetFileMeta(path)
+	if err != nil {
+		return nil, err
+	}
+
+	metaOperationData := &MetaOperation{
+		CrudType: crudOperation,
+		MetaData: fileMeta,
+	}
+	metaOperationBytes, err := json.Marshal(metaOperationData)
+	if err != nil {
+		return nil, err
+	}
+
+	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey())
+	txn.TransactionData = string(metaOperationBytes)
+	txn.TransactionType = transaction.TxnTypeData
+	err = txn.ComputeHashAndSign(client.Sign)
+	if err != nil {
+		return nil, err
+	}
+	transaction.SendTransactionSync(txn, blockchain.GetMiners())
+	time.Sleep(5 * time.Second)
+	retries := 0
+	var t *transaction.Transaction
+	for retries < 5 {
+		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders())
+		if err == nil {
+			break
+		}
+		retries++
+		time.Sleep(5 * time.Second)
+	}
+
+	if err != nil {
+		Logger.Error("Error verifying the commit transaction", err.Error(), txn.Hash)
+		return nil, err
+	}
+	if t == nil {
+		return nil, common.NewError("transaction_validation_failed", "Failed to get the transaction confirmation")
+	}
+
+	metaTransactionData := &MetaTransactionData{
+		TxnID:    t.Hash,
+		MetaData: metaOperationData.MetaData,
+	}
+
+	return metaTransactionData, nil
 }
