@@ -26,6 +26,7 @@ import (
 var (
 	noBLOBBERS     = errors.New("No Blobbers set in this allocation")
 	notInitialized = common.NewError("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
+	underRepair    = common.NewError("allocaton_under_repair", "Allocation is under repair, Please try again later")
 )
 
 type MetaOperation struct {
@@ -83,10 +84,19 @@ type Allocation struct {
 	mutex               *sync.Mutex
 	downloadProgressMap map[string]*DownloadRequest
 	initialized         bool
+	underRepair         bool
+}
+
+func (a *Allocation) UnderRepair() bool {
+	return a.underRepair
 }
 
 func (a *Allocation) GetStats() *AllocationStats {
 	return a.Stats
+}
+
+func (a *Allocation) UpdateRepairStatus(value bool) {
+	a.underRepair = value
 }
 
 func (a *Allocation) InitAllocation() {
@@ -173,6 +183,9 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	if !a.isInitialized() {
 		return notInitialized
 	}
+	if a.UnderRepair() {
+		return underRepair
+	}
 	fileInfo, err := os.Stat(localpath)
 	if err != nil {
 		return fmt.Errorf("Local file error: %s", err.Error())
@@ -235,6 +248,9 @@ func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, stat
 func (a *Allocation) downloadFile(localPath string, remotePath string, contentMode string, status StatusCallback) error {
 	if !a.isInitialized() {
 		return notInitialized
+	}
+	if a.UnderRepair() {
+		return underRepair
 	}
 	if stat, err := os.Stat(localPath); err == nil {
 		if !stat.IsDir() {
@@ -437,6 +453,9 @@ func (a *Allocation) DeleteFile(path string) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
+	if a.UnderRepair() {
+		return underRepair
+	}
 	if len(path) == 0 {
 		return common.NewError("invalid_path", "Invalid path for the list")
 	}
@@ -576,6 +595,9 @@ func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
 func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string, remoteLookupHash string, remoteFilename string, contentMode string, status StatusCallback) error {
 	if !a.isInitialized() {
 		return notInitialized
+	}
+	if a.UnderRepair() {
+		return underRepair
 	}
 	sEnc, err := base64.StdEncoding.DecodeString(authTicket)
 	if err != nil {
