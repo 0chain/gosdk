@@ -203,7 +203,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	}
 
 	remotepath = filepath.Clean(remotepath)
-	isabs := filepath.IsAbs(remotepath)
+	isabs := zboxutil.IsRemoteAbs(remotepath)
 	if !isabs {
 		return common.NewError("invalid_path", "Path should be valid and absolute")
 	}
@@ -338,7 +338,7 @@ func (a *Allocation) ListDir(path string) (*ListResult, error) {
 		return nil, common.NewError("invalid_path", "Invalid path for the list")
 	}
 	path = filepath.Clean(path)
-	isabs := filepath.IsAbs(path)
+	isabs := zboxutil.IsRemoteAbs(path)
 	if !isabs {
 		return nil, common.NewError("invalid_path", "Path should be valid and absolute")
 	}
@@ -431,7 +431,7 @@ func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error) {
 		return nil, common.NewError("invalid_path", "Invalid path for the list")
 	}
 	path = filepath.Clean(path)
-	isabs := filepath.IsAbs(path)
+	isabs := zboxutil.IsRemoteAbs(path)
 	if !isabs {
 		return nil, common.NewError("invalid_path", "Path should be valid and absolute")
 	}
@@ -460,7 +460,7 @@ func (a *Allocation) DeleteFile(path string) error {
 		return common.NewError("invalid_path", "Invalid path for the list")
 	}
 	path = filepath.Clean(path)
-	isabs := filepath.IsAbs(path)
+	isabs := zboxutil.IsRemoteAbs(path)
 	if !isabs {
 		return common.NewError("invalid_path", "Path should be valid and absolute")
 	}
@@ -487,7 +487,7 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 		return common.NewError("invalid_path", "Invalid path for the list")
 	}
 	path = filepath.Clean(path)
-	isabs := filepath.IsAbs(path)
+	isabs := zboxutil.IsRemoteAbs(path)
 	if !isabs {
 		return common.NewError("invalid_path", "Path should be valid and absolute")
 	}
@@ -514,7 +514,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 		return common.NewError("invalid_path", "Invalid path for copy")
 	}
 	path = filepath.Clean(path)
-	isabs := filepath.IsAbs(path)
+	isabs := zboxutil.IsRemoteAbs(path)
 	if !isabs {
 		return common.NewError("invalid_path", "Path should be valid and absolute")
 	}
@@ -545,7 +545,7 @@ func (a *Allocation) GetAuthTicket(path string, filename string, referenceType s
 		return "", common.NewError("invalid_path", "Invalid path for the list")
 	}
 	path = filepath.Clean(path)
-	isabs := filepath.IsAbs(path)
+	isabs := zboxutil.IsRemoteAbs(path)
 	if !isabs {
 		return "", common.NewError("invalid_path", "Path should be valid and absolute")
 	}

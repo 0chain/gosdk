@@ -44,3 +44,7 @@ func NewConnectionId() string {
 	}
 	return fmt.Sprintf("%d", nBig.Int64())
 }
+
+func IsRemoteAbs(path string) bool {
+	return strings.HasPrefix(path, "/")
+}
