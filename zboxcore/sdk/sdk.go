@@ -146,12 +146,25 @@ func CreateAllocationForOwner(owner string, ownerpublickey string, datashards in
 	allocationRequest["expiration_date"] = expiry
 
 	sn := transaction.SmartContractTxnData{Name: transaction.NEW_ALLOCATION_REQUEST, InputArgs: allocationRequest}
-	allocationRequestBytes, err := json.Marshal(sn)
+	return smartContractTxn(sn)
+}
+
+func UpdateAllocation(size int64, expiry int64) (string, error) {
+	updateAllocationRequest := make(map[string]interface{})
+	updateAllocationRequest["size"] = size
+	updateAllocationRequest["expiration_date"] = expiry
+
+	sn := transaction.SmartContractTxnData{Name: transaction.UPDATE_ALLOCATION_REQUEST, InputArgs: updateAllocationRequest}
+	return smartContractTxn(sn)
+}
+
+func smartContractTxn(sn transaction.SmartContractTxnData) (string, error) {
+	requestBytes, err := json.Marshal(sn)
 	if err != nil {
 		return "", err
 	}
 	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey())
-	txn.TransactionData = string(allocationRequestBytes)
+	txn.TransactionData = string(requestBytes)
 	txn.ToClientID = STORAGE_SCADDRESS
 	txn.Value = 0
 	txn.TransactionType = transaction.TxnTypeSmartContract
@@ -173,7 +186,7 @@ func CreateAllocationForOwner(owner string, ownerpublickey string, datashards in
 	}
 
 	if err != nil {
-		Logger.Error("Error verifying the allocation transaction", err.Error(), txn.Hash)
+		Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
 		return "", err
 	}
 	if t == nil {
