@@ -72,6 +72,7 @@ type RoundBlockHeader struct {
 }
 
 const NEW_ALLOCATION_REQUEST = "new_allocation_request"
+const UPDATE_ALLOCATION_REQUEST = "update_allocation_request"
 const LOCK_TOKEN = "lock"
 const UNLOCK_TOKEN = "unlock"
 const STAKE = "addToDelegatePool"
