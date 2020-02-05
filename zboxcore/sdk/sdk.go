@@ -52,13 +52,14 @@ func SetLogFile(logFile string, verbose bool) {
 	Logger.Info("******* Storage SDK Version: ", version.VERSIONSTR, " *******")
 }
 
-func InitStorageSDK(clientJson string, miners []string, sharders []string, chainID string, signatureScheme string) error {
+func InitStorageSDK(clientJson string, miners []string, sharders []string, chainID string, signatureScheme string, preferredBlobbers []string) error {
 	err := client.PopulateClient(clientJson, signatureScheme)
 	if err != nil {
 		return err
 	}
 	blockchain.SetMiners(miners)
 	blockchain.SetSharders(sharders)
+	blockchain.SetPreferredBlobbers(preferredBlobbers)
 	blockchain.SetChainID(chainID)
 	sdkInitialized = true
 	return nil
@@ -133,10 +134,10 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 }
 
 func CreateAllocation(datashards int, parityshards int, size int64, expiry int64) (string, error) {
-	return CreateAllocationForOwner(client.GetClientID(), client.GetClientPublicKey(), datashards, parityshards, size, expiry)
+	return CreateAllocationForOwner(client.GetClientID(), client.GetClientPublicKey(), datashards, parityshards, size, expiry, blockchain.GetPreferredBlobbers())
 }
 
-func CreateAllocationForOwner(owner string, ownerpublickey string, datashards int, parityshards int, size int64, expiry int64) (string, error) {
+func CreateAllocationForOwner(owner string, ownerpublickey string, datashards int, parityshards int, size int64, expiry int64, preferredBlobbers []string) (string, error) {
 	allocationRequest := make(map[string]interface{})
 	allocationRequest["data_shards"] = datashards
 	allocationRequest["parity_shards"] = parityshards
@@ -144,6 +145,7 @@ func CreateAllocationForOwner(owner string, ownerpublickey string, datashards in
 	allocationRequest["owner_id"] = owner
 	allocationRequest["owner_public_key"] = ownerpublickey
 	allocationRequest["expiration_date"] = expiry
+	allocationRequest["preferred_blobbers"] = preferredBlobbers
 
 	sn := transaction.SmartContractTxnData{Name: transaction.NEW_ALLOCATION_REQUEST, InputArgs: allocationRequest}
 	return smartContractTxn(sn)

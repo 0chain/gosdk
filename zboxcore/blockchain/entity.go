@@ -3,9 +3,10 @@ package blockchain
 import "encoding/json"
 
 type ChainConfig struct {
-	Sharders []string
-	Miners   []string
-	ChainID  string
+	Sharders          []string
+	Miners            []string
+	PreferredBlobbers []string
+	ChainID           string
 }
 
 type StorageNode struct {
@@ -50,12 +51,20 @@ func GetMiners() []string {
 	return chain.Miners
 }
 
+func GetPreferredBlobbers() []string {
+	return chain.PreferredBlobbers
+}
+
 func SetSharders(sharderArray []string) {
 	chain.Sharders = sharderArray
 }
 
 func SetMiners(minerArray []string) {
 	chain.Miners = minerArray
+}
+
+func SetPreferredBlobbers(preferredBlobberArray []string) {
+	chain.PreferredBlobbers = preferredBlobberArray
 }
 
 func SetChainID(id string) {
