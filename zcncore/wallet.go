@@ -174,17 +174,21 @@ func assertConfig() {
 	}
 }
 func getMinMinersSubmit() int {
-	return util.MaxInt(calculateMinRequired(float64(_config.chain.MinSubmit), float64(len(_config.chain.Miners))/100), 1)
+	minMiners := util.MaxInt(calculateMinRequired(float64(_config.chain.MinSubmit), float64(len(_config.chain.Miners))/100), 1)
+	Logger.Info("Minimum miners used for submit :", minMiners)
+	return minMiners
 }
 func getMinShardersVerify() int {
-	return util.MaxInt(calculateMinRequired(float64(_config.chain.MinConfirmation), float64(len(_config.chain.Sharders))/100), 1)
+	minSharders := util.MaxInt(calculateMinRequired(float64(_config.chain.MinConfirmation), float64(len(_config.chain.Sharders))/100), 1)
+	Logger.Info("Minimum sharders used for verify :", minSharders)
+	return minSharders
 }
 func getMinRequiredChainLength() int64 {
 	return int64(_config.chain.ConfirmationChainLength)
 }
 
 func calculateMinRequired(minRequired, percent float64) int {
-	return int(math.Round(minRequired * percent))
+	return int(math.Ceil(minRequired * percent))
 }
 
 // GetVersion - returns version string
