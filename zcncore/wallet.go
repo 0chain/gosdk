@@ -51,9 +51,9 @@ const MultiSigVoteFuncName = "vote"
 // In percentage
 const consensusThresh = float32(25.0)
 
-const defaultMinSubmit = int(25)
-const defaultMinConfirmation = int(25)
-const defaultConfirmationChainLength = int(5)
+const defaultMinSubmit = int(50)
+const defaultMinConfirmation = int(50)
+const defaultConfirmationChainLength = int(3)
 const defaultTxnExpirationSeconds = 15
 const defaultWaitSeconds = (3 * time.Second)
 
