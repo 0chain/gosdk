@@ -24,7 +24,7 @@ It is possible to support the sdk for other variations of Linux as well.
             fmt.Println("gosdk version: ", zcncore.GetVersion())
         }
 
-- Run below command:
+- Run below command: (if you don't have gosdk already in your GOPATH)
 
         go get github.com/0chain/gosdk
 - Build the sample application sdkversion
@@ -32,7 +32,7 @@ It is possible to support the sdk for other variations of Linux as well.
         go build -o sdkversion sdkversion.go
 - Run the executable
 
-        ./sdkver
+        ./sdkversion
 - If it prints the gosdk version installed then setup is complete.
 
 
