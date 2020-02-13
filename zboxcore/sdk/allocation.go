@@ -652,10 +652,19 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	return nil
 }
 
-func (a *Allocation) CommitMetaTransaction(path, crudOperation string) (*MetaTransactionData, error) {
-	fileMeta, err := a.GetFileMeta(path)
-	if err != nil {
-		return nil, err
+func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, lookupHash string) (*MetaTransactionData, error) {
+	fileMeta := &ConsolidatedFileMeta{}
+	var err error
+	if len(path) > 0 {
+		fileMeta, err = a.GetFileMeta(path)
+		if err != nil {
+			return nil, err
+		}
+	} else if len(authTicket) > 0 {
+		fileMeta, err = a.GetFileMetaFromAuthTicket(authTicket, lookupHash)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	metaOperationData := &MetaOperation{
