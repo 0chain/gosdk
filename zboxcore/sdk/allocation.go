@@ -40,17 +40,14 @@ type MetaTransactionData struct {
 }
 
 type ConsolidatedFileMeta struct {
-	Name          string
-	Type          string
-	Path          string
-	PathHash      string
-	LookupHash    string
-	Hash          string
-	MimeType      string
-	Size          int64
-	ThumbnailSize int64
-	ThumbnailHash string
-	EncryptedKey  string
+	Name         string
+	Type         string
+	Path         string
+	LookupHash   string
+	Hash         string
+	MimeType     string
+	Size         int64
+	EncryptedKey string
 }
 
 type AllocationStats struct {
@@ -373,10 +370,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.LookupHash = ref.LookupHash
 		result.MimeType = ref.MimeType
 		result.Path = ref.Path
-		result.PathHash = ref.PathHash
 		result.Size = ref.ActualFileSize
-		result.ThumbnailHash = ref.ActualThumbnailHash
-		result.ThumbnailSize = ref.ActualThumbnailSize
 		result.EncryptedKey = ref.EncryptedKey
 		return result, nil
 	}
@@ -414,10 +408,7 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 		result.LookupHash = ref.LookupHash
 		result.MimeType = ref.MimeType
 		result.Path = ref.Path
-		result.PathHash = ref.PathHash
 		result.Size = ref.ActualFileSize
-		result.ThumbnailHash = ref.ActualThumbnailHash
-		result.ThumbnailSize = ref.ActualThumbnailSize
 		return result, nil
 	}
 	return nil, common.NewError("file_meta_error", "Error getting the file meta data from blobbers")
