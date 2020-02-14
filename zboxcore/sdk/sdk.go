@@ -151,8 +151,9 @@ func CreateAllocationForOwner(owner string, ownerpublickey string, datashards in
 	return smartContractTxn(sn)
 }
 
-func UpdateAllocation(size int64, expiry int64) (string, error) {
+func UpdateAllocation(size int64, expiry int64, allocationID string) (string, error) {
 	updateAllocationRequest := make(map[string]interface{})
+	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
 	updateAllocationRequest["expiration_date"] = expiry
 
