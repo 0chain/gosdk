@@ -502,6 +502,14 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	return err
 }
 
+func (a *Allocation) MoveObject(path string, destPath string) error {
+	err := a.CopyObject(path, destPath)
+	if err != nil {
+		return err
+	}
+	return a.DeleteFile(path)
+}
+
 func (a *Allocation) CopyObject(path string, destPath string) error {
 	if !a.isInitialized() {
 		return notInitialized
