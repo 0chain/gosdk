@@ -11,6 +11,8 @@ import (
 	"github.com/h2non/filetype"
 )
 
+const EncryptedFolderName = "encrypted"
+
 type lazybuf struct {
 	path       string
 	buf        []byte
@@ -84,6 +86,10 @@ func IsRemoteAbs(path string) bool {
 	return strings.HasPrefix(path, "/")
 }
 
+func IsEncryptedFolder(path string) bool {
+	return (path == "/"+EncryptedFolderName) || path == "/"+EncryptedFolderName+"/"
+}
+
 func RemoteClean(path string) string {
 	originalPath := path
 	volLen := 0 //volumeNameLen(path)
@@ -113,17 +119,17 @@ func RemoteClean(path string) string {
 		case path[r] == '/': //os.IsPathSeparator(path[r]):
 			// empty path element
 			r++
-		case path[r] == '.' && (r+1 == n || path[r+1]=='/'): //os.IsPathSeparator(path[r+1])):
+		case path[r] == '.' && (r+1 == n || path[r+1] == '/'): //os.IsPathSeparator(path[r+1])):
 			// . element
 			r++
-		case path[r] == '.' && path[r+1] == '.' && (r+2 == n || path[r+2]=='/'): //os.IsPathSeparator(path[r+2])):
+		case path[r] == '.' && path[r+1] == '.' && (r+2 == n || path[r+2] == '/'): //os.IsPathSeparator(path[r+2])):
 			// .. element: remove to last separator
 			r += 2
 			switch {
 			case out.w > dotdot:
 				// can backtrack
 				out.w--
-				for out.w > dotdot && !((out.index(out.w))=='/') { //!os.IsPathSeparator(out.index(out.w)) {
+				for out.w > dotdot && !((out.index(out.w)) == '/') { //!os.IsPathSeparator(out.index(out.w)) {
 					out.w--
 				}
 			case !rooted:
@@ -142,7 +148,7 @@ func RemoteClean(path string) string {
 				out.append('/') //(Separator)
 			}
 			// copy element
-			for ; r < n && !(path[r]=='/'); r++ { //!os.IsPathSeparator(path[r]); r++ {
+			for ; r < n && !(path[r] == '/'); r++ { //!os.IsPathSeparator(path[r]); r++ {
 				out.append(path[r])
 			}
 		}
