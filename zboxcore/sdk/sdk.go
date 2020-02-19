@@ -24,6 +24,7 @@ const (
 	OpUpload   int = 0
 	OpDownload int = 1
 	OpRepair   int = 2
+	OpUpdate   int = 3
 )
 
 type StatusCallback interface {

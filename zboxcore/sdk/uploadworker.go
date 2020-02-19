@@ -20,12 +20,12 @@ import (
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encoder"
+	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"github.com/0chain/gosdk/zboxcore/client"
-	"github.com/0chain/gosdk/zboxcore/encryption"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -88,8 +88,8 @@ type UploadRequest struct {
 	datashards      int
 	parityshards    int
 	uploadMask      uint32
-	isEncrypted 	bool
-	encscheme 		encryption.EncryptionScheme
+	isEncrypted     bool
+	encscheme       encryption.EncryptionScheme
 	Consensus
 }
 
@@ -110,7 +110,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 	}
 	chunksPerShard := (shardSize + chunkSizeWithHeader - 1) / chunkSizeWithHeader
 	if req.isEncrypted {
-		shardSize += chunksPerShard * (16 + (2 *1024))
+		shardSize += chunksPerShard * (16 + (2 * 1024))
 	}
 	thumbnailSize := int64(0)
 	remaining := shardSize
@@ -181,7 +181,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 			}
 			chunksPerShard := (thumbnailSize + chunkSizeWithHeader - 1) / chunkSizeWithHeader
 			if req.isEncrypted {
-				thumbnailSize += chunksPerShard * (16 + (2 *1024))
+				thumbnailSize += chunksPerShard * (16 + (2 * 1024))
 			}
 			remaining := thumbnailSize
 
@@ -318,7 +318,7 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 		}
 		req.encscheme.InitForEncryption("filetype:audio")
 	}
-	
+
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numUploads)
 	req.consensus = 0
@@ -358,8 +358,8 @@ func (req *UploadRequest) pushData(data []byte) error {
 				Logger.Error("Encryption failed.", err.Error())
 				return err
 			}
-			header := make([]byte, 2 * 1024)
-			copy(header[:], encMsg.MessageChecksum + "," + encMsg.OverallChecksum)
+			header := make([]byte, 2*1024)
+			copy(header[:], encMsg.MessageChecksum+","+encMsg.OverallChecksum)
 			shards[pos] = append(header, encMsg.EncryptedData...)
 			c++
 		}
@@ -426,7 +426,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 		dataReader := io.MultiReader(inFile, bytes.NewBuffer(padding))
 		chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
 		if req.isEncrypted {
-			chunkSizeWithHeader -= 16 
+			chunkSizeWithHeader -= 16
 			chunkSizeWithHeader -= 2 * 1024
 		}
 		chunksPerShard := (perShard + chunkSizeWithHeader - 1) / chunkSizeWithHeader
@@ -558,7 +558,11 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 
 	if req.statusCallback != nil {
 		sizeInCallback := int64(float32(perShard) * req.consensus)
-		req.statusCallback.Completed(a.ID, req.remotefilepath, req.filemeta.Name, req.filemeta.MimeType, int(sizeInCallback), OpUpload)
+		OpID := OpUpload
+		if req.isUpdate {
+			OpID = OpUpdate
+		}
+		req.statusCallback.Completed(a.ID, req.remotefilepath, req.filemeta.Name, req.filemeta.MimeType, int(sizeInCallback), OpID)
 	}
 	return
 }
