@@ -456,11 +456,6 @@ func (a *Allocation) DeleteFile(path string) error {
 		return common.NewError("invalid_path", "Path should be valid and absolute")
 	}
 
-	isEncryptedFolder := zboxutil.IsEncryptedFolder(path)
-	if isEncryptedFolder {
-		return common.NewError("invalid_path", "Cannot delete encrypted folder")
-	}
-
 	req := &DeleteRequest{}
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID

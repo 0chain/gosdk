@@ -86,10 +86,6 @@ func IsRemoteAbs(path string) bool {
 	return strings.HasPrefix(path, "/")
 }
 
-func IsEncryptedFolder(path string) bool {
-	return (path == "/"+EncryptedFolderName) || path == "/"+EncryptedFolderName+"/"
-}
-
 func RemoteClean(path string) string {
 	originalPath := path
 	volLen := 0 //volumeNameLen(path)
