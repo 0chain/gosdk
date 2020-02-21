@@ -3,6 +3,9 @@ package sdk
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"time"
 
@@ -198,4 +201,64 @@ func smartContractTxn(sn transaction.SmartContractTxnData) (string, error) {
 	}
 
 	return t.Hash, nil
+}
+
+func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
+	var fabricConfig struct {
+		URL  string `json:"url"`
+		Body struct {
+			Channel          string   `json:"channel"`
+			ChaincodeName    string   `json:"chaincode_name"`
+			ChaincodeVersion string   `json:"chaincode_version"`
+			Method           string   `json:"method"`
+			Args             []string `json:"args"`
+		} `json:"body"`
+		Auth struct {
+			Username string `json:"username"`
+			Password string `json:"password"`
+		} `json:"auth"`
+	}
+
+	err := json.Unmarshal([]byte(fabricConfigJSON), &fabricConfig)
+	if err != nil {
+		return "", common.NewError("fabric_config_decode_error", "Unable to decode fabric config json")
+	}
+
+	// Clear if any existing args passed
+	fabricConfig.Body.Args = fabricConfig.Body.Args[:0]
+
+	fabricConfig.Body.Args = append(fabricConfig.Body.Args, metaTxnData)
+
+	fabricData, err := json.Marshal(fabricConfig.Body)
+	if err != nil {
+		return "", common.NewError("fabric_config_encode_error", "Unable to encode fabric config body")
+	}
+
+	req, ctx, cncl, err := zboxutil.NewHTTPRequest(http.MethodPost, fabricConfig.URL, fabricData)
+	if err != nil {
+		return "", common.NewError("fabric_commit_error", "Unable to create new http request with error "+err.Error())
+	}
+
+	// Set basic auth
+	req.SetBasicAuth(fabricConfig.Auth.Username, fabricConfig.Auth.Password)
+
+	var fabricResponse string
+	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
+		if err != nil {
+			Logger.Error("Fabric commit error : ", err)
+			return err
+		}
+		defer resp.Body.Close()
+		respBody, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return fmt.Errorf("Error reading response : %s", err.Error())
+		}
+		Logger.Debug("Fabric commit result:", string(respBody))
+		if resp.StatusCode == http.StatusOK {
+			fabricResponse = string(respBody)
+			return nil
+		}
+		return fmt.Errorf("Fabric commit status not OK, Status : %v", resp.StatusCode)
+	})
+	return fabricResponse, err
 }
