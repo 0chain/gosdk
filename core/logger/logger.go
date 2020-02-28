@@ -74,8 +74,8 @@ func (l *Logger) SetLogFile(logFile io.Writer, verbose bool) {
 	if verbose {
 		dLogs = append(dLogs, os.Stderr)
 		iLogs = append(iLogs, os.Stderr)
-		eLogs = append(iLogs, os.Stderr)
-		fLogs = append(iLogs, os.Stderr)
+		eLogs = append(eLogs, os.Stderr)
+		fLogs = append(fLogs, os.Stderr)
 	}
 	l.logDebug = log.New(io.MultiWriter(dLogs...), l.prefix+" "+strDEBUG, log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
 	l.logInfo = log.New(io.MultiWriter(iLogs...), l.prefix+" "+strINFO, log.Ldate|log.Ltime|log.Lmicroseconds|log.Lshortfile)
