@@ -41,6 +41,7 @@ const (
 	GET_USER_POOL_DETAIL = `/v1/screst/` + MinerSmartContractAddress + `/getPoolsStats?`
 	GET_BLOBBERS         = `/v1/screst/` + StorageSmartContractAddress + `/getblobbers`
 	GET_READ_POOL_STATS  = `/v1/screst/` + StorageSmartContractAddress + `/getReadPoolsStats?client_id=`
+	GET_READ_POOL_CONFIG = `/v1/screst/` + StorageSmartContractAddress + `/getReadPoolsConfig`
 )
 
 const (
@@ -597,6 +598,17 @@ func GetReadPoolsStats(cb GetInfoCallback) (err error) {
 		var url = fmt.Sprintf("%v%v", GET_READ_POOL_STATS,
 			_config.wallet.ClientID)
 		getInfoFromSharders(url, OpGetReadPoolsStats, cb)
+	}()
+	return
+}
+
+// GetReadPoolsConfig returns current configurations of read pools.
+func GetReadPoolsConfig(cb GetInfoCallback) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	go func() {
+		getInfoFromSharders(GET_READ_POOL_CONFIG, OpGetReadPoolsStats, cb)
 	}()
 	return
 }
