@@ -29,33 +29,40 @@ type ChainConfig struct {
 var defaultLogLevel = logger.DEBUG
 var Logger logger.Logger
 
-var REGISTER_CLIENT = `/v1/client/put`
-var PUT_TRANSACTION = `/v1/transaction/put`
-var TXN_VERIFY_URL = `/v1/transaction/get/confirmation?hash=`
-var GET_BALANCE = `/v1/client/get/balance?client_id=`
-var GET_LOCK_CONFIG = `/v1/screst/` + InterestPoolSmartContractAddress + `/getLockConfig`
-var GET_LOCKED_TOKENS = `/v1/screst/` + InterestPoolSmartContractAddress + `/getPoolsStats?client_id=`
-var GET_BLOCK_INFO = `/v1/block/get?`
-var GET_USER_POOLS = `/v1/screst/` + MinerSmartContractAddress + `/getUserPools?client_id=`
-var GET_USER_POOL_DETAIL = `/v1/screst/` + MinerSmartContractAddress + `/getPoolsStats?`
-var GET_BLOBBERS = `/v1/screst/` + StorageSmartContractAddress + `/getblobbers`
+const (
+	REGISTER_CLIENT      = `/v1/client/put`
+	PUT_TRANSACTION      = `/v1/transaction/put`
+	TXN_VERIFY_URL       = `/v1/transaction/get/confirmation?hash=`
+	GET_BALANCE          = `/v1/client/get/balance?client_id=`
+	GET_LOCK_CONFIG      = `/v1/screst/` + InterestPoolSmartContractAddress + `/getLockConfig`
+	GET_LOCKED_TOKENS    = `/v1/screst/` + InterestPoolSmartContractAddress + `/getPoolsStats?client_id=`
+	GET_BLOCK_INFO       = `/v1/block/get?`
+	GET_USER_POOLS       = `/v1/screst/` + MinerSmartContractAddress + `/getUserPools?client_id=`
+	GET_USER_POOL_DETAIL = `/v1/screst/` + MinerSmartContractAddress + `/getPoolsStats?`
+	GET_BLOBBERS         = `/v1/screst/` + StorageSmartContractAddress + `/getblobbers`
+	GET_READ_POOL_STATS  = `/v1/screst/` + StorageSmartContractAddress + `/getReadPoolsStats?client_id=`
+)
 
-const StorageSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7`
-const FaucetSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3`
-const InterestPoolSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9`
-const MultiSigSmartContractAddress = `27b5ef7120252b79f9dd9c05505dd28f328c80f6863ee446daede08a84d651a7`
-const MinerSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d1`
-const MultiSigRegisterFuncName = "register"
-const MultiSigVoteFuncName = "vote"
+const (
+	StorageSmartContractAddress      = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7`
+	FaucetSmartContractAddress       = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3`
+	InterestPoolSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9`
+	MultiSigSmartContractAddress     = `27b5ef7120252b79f9dd9c05505dd28f328c80f6863ee446daede08a84d651a7`
+	MinerSmartContractAddress        = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d1`
+	MultiSigRegisterFuncName         = "register"
+	MultiSigVoteFuncName             = "vote"
+)
 
 // In percentage
 const consensusThresh = float32(25.0)
 
-const defaultMinSubmit = int(50)
-const defaultMinConfirmation = int(50)
-const defaultConfirmationChainLength = int(3)
-const defaultTxnExpirationSeconds = 60
-const defaultWaitSeconds = (3 * time.Second)
+const (
+	defaultMinSubmit               = int(50)
+	defaultMinConfirmation         = int(50)
+	defaultConfirmationChainLength = int(3)
+	defaultTxnExpirationSeconds    = 60
+	defaultWaitSeconds             = (3 * time.Second)
+)
 
 const (
 	StatusSuccess      int = 0
@@ -78,6 +85,7 @@ const (
 	OpGetUserPools       int = 2
 	OpGetUserPoolDetail  int = 3
 	OpGetBlobbers        int = 4
+	OpGetReadPoolsStats  int = 5
 )
 
 // WalletCallback needs to be implmented for wallet creation.
@@ -576,6 +584,21 @@ func GetLockedTokens(cb GetInfoCallback) error {
 		getInfoFromSharders(urlSuffix, OpGetLockedTokens, cb)
 	}()
 	return nil
+}
+
+// read pool stats
+
+// GetReadPoolsStats returns statistic of locked tokens in read pool.
+func GetReadPoolsStats(cb GetInfoCallback) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	go func() {
+		var url = fmt.Sprintf("%v%v", GET_READ_POOL_STATS,
+			_config.wallet.ClientID)
+		getInfoFromSharders(url, OpGetReadPoolsStats, cb)
+	}()
+	return
 }
 
 //GetWallet get a wallet object from a wallet string

@@ -111,6 +111,15 @@ type TransactionScheme interface {
 	GetTransactionError() string
 	// GetVerifyError implements error string incase of verify failure error
 	GetVerifyError() string
+
+	//  read pool
+
+	// CreateReadPool if missing or when wallet created.
+	CreateReadPool() (err error)
+	// ReadPoolLock lock token for the read pool.
+	ReadPoolLock(val int64, dur time.Duration) (err error)
+	// ReadPoolUnlock unlock expired tokens of the read pool.
+	ReadPoolUnlock(poolID string) (err error)
 }
 
 func signFn(hash string) (string, error) {
@@ -671,6 +680,72 @@ func (t *Transaction) GetVerifyError() string {
 	}
 	return ""
 }
+
+//
+// read pool
+//
+
+// create read pool if missing
+
+func (t *Transaction) createReadPoolTxn() error {
+	return t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.NEW_READ_POOL, nil, 0)
+}
+
+func (t *Transaction) CreateReadPool() (err error) {
+	if err = t.createReadPoolTxn(); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+// lock read pool tokens
+
+func (t *Transaction) readPoolLockTxn(val int64, dur time.Duration) error {
+	type readLockRequest struct {
+		Duration time.Duration `json:"duration"`
+	}
+	var req readLockRequest
+	req.Duration = dur
+	return t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.READ_POOL_LOCK, &req, val)
+}
+
+func (t *Transaction) ReadPoolLock(val int64, dur time.Duration) (err error) {
+	if err = t.readPoolLockTxn(val, dur); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+// unlock read pool tokens
+
+func (t *Transaction) readPoolUnlockTxn(poolID string) error {
+	type readUnlockRequest struct {
+		PoolID string `json:"pool_id"`
+	}
+	var req readUnlockRequest
+	req.PoolID = poolID
+	return t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.READ_POOL_UNLOCK, &req, 0)
+}
+
+func (t *Transaction) ReadPoolUnlock(poolID string) (err error) {
+	if err = t.readPoolUnlockTxn(poolID); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+//
+// interest pool
+//
 
 func (t *Transaction) createLockTokensTxn(val int64, durationHr int64, durationMin int) error {
 	lockInput := make(map[string]interface{})
