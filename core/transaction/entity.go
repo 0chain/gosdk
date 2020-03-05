@@ -81,6 +81,8 @@ const (
 	NEW_READ_POOL             = "new_read_pool"
 	READ_POOL_LOCK            = "read_pool_lock"
 	READ_POOL_UNLOCK          = "read_pool_unlock"
+	WRITE_POOL_LOCK           = "write_pool_lock"
+	WRITE_POOL_UNLOCK         = "write_pool_unlock"
 )
 
 type SignFunc = func(msg string) (string, error)

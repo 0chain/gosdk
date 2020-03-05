@@ -30,18 +30,20 @@ var defaultLogLevel = logger.DEBUG
 var Logger logger.Logger
 
 const (
-	REGISTER_CLIENT      = `/v1/client/put`
-	PUT_TRANSACTION      = `/v1/transaction/put`
-	TXN_VERIFY_URL       = `/v1/transaction/get/confirmation?hash=`
-	GET_BALANCE          = `/v1/client/get/balance?client_id=`
-	GET_LOCK_CONFIG      = `/v1/screst/` + InterestPoolSmartContractAddress + `/getLockConfig`
-	GET_LOCKED_TOKENS    = `/v1/screst/` + InterestPoolSmartContractAddress + `/getPoolsStats?client_id=`
-	GET_BLOCK_INFO       = `/v1/block/get?`
-	GET_USER_POOLS       = `/v1/screst/` + MinerSmartContractAddress + `/getUserPools?client_id=`
-	GET_USER_POOL_DETAIL = `/v1/screst/` + MinerSmartContractAddress + `/getPoolsStats?`
-	GET_BLOBBERS         = `/v1/screst/` + StorageSmartContractAddress + `/getblobbers`
-	GET_READ_POOL_STATS  = `/v1/screst/` + StorageSmartContractAddress + `/getReadPoolsStats?client_id=`
-	GET_READ_POOL_CONFIG = `/v1/screst/` + StorageSmartContractAddress + `/getReadPoolsConfig`
+	REGISTER_CLIENT       = `/v1/client/put`
+	PUT_TRANSACTION       = `/v1/transaction/put`
+	TXN_VERIFY_URL        = `/v1/transaction/get/confirmation?hash=`
+	GET_BALANCE           = `/v1/client/get/balance?client_id=`
+	GET_LOCK_CONFIG       = `/v1/screst/` + InterestPoolSmartContractAddress + `/getLockConfig`
+	GET_LOCKED_TOKENS     = `/v1/screst/` + InterestPoolSmartContractAddress + `/getPoolsStats?client_id=`
+	GET_BLOCK_INFO        = `/v1/block/get?`
+	GET_USER_POOLS        = `/v1/screst/` + MinerSmartContractAddress + `/getUserPools?client_id=`
+	GET_USER_POOL_DETAIL  = `/v1/screst/` + MinerSmartContractAddress + `/getPoolsStats?`
+	GET_BLOBBERS          = `/v1/screst/` + StorageSmartContractAddress + `/getblobbers`
+	GET_READ_POOL_STATS   = `/v1/screst/` + StorageSmartContractAddress + `/getReadPoolsStats?client_id=`
+	GET_READ_POOL_CONFIG  = `/v1/screst/` + StorageSmartContractAddress + `/getReadPoolsConfig`
+	GET_WRITE_POOL_STAT   = `/v1/screst/` + StorageSmartContractAddress + `/getWritePoolStat?allocation_id=`
+	GET_WRITE_POOL_CONFIG = `/v1/screst/` + StorageSmartContractAddress + `/getWritePoolConfig`
 )
 
 const (
@@ -81,12 +83,15 @@ const (
 const TOKEN_UNIT = int64(10000000000)
 
 const (
-	OpGetTokenLockConfig int = 0
-	OpGetLockedTokens    int = 1
-	OpGetUserPools       int = 2
-	OpGetUserPoolDetail  int = 3
-	OpGetBlobbers        int = 4
-	OpGetReadPoolsStats  int = 5
+	OpGetTokenLockConfig int = iota
+	OpGetLockedTokens
+	OpGetUserPools
+	OpGetUserPoolDetail
+	OpGetBlobbers
+	OpGetReadPoolsStats
+	OpGetReadPoolsConfig
+	OpGetWritePoolStat
+	OpGetWritePoolConfig
 )
 
 // WalletCallback needs to be implmented for wallet creation.
@@ -587,7 +592,7 @@ func GetLockedTokens(cb GetInfoCallback) error {
 	return nil
 }
 
-// read pool stats
+// read pool stats and configurations
 
 // GetReadPoolsStats returns statistic of locked tokens in read pool.
 func GetReadPoolsStats(cb GetInfoCallback) (err error) {
@@ -608,7 +613,32 @@ func GetReadPoolsConfig(cb GetInfoCallback) (err error) {
 		return
 	}
 	go func() {
-		getInfoFromSharders(GET_READ_POOL_CONFIG, OpGetReadPoolsStats, cb)
+		getInfoFromSharders(GET_READ_POOL_CONFIG, OpGetReadPoolsConfig, cb)
+	}()
+	return
+}
+
+// write pool stat and configuration
+
+// GetWritePoolStat returns statistic of locked tokens in a write pool.
+func GetWritePoolStat(cb GetInfoCallback, allocID string) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	go func() {
+		var url = fmt.Sprintf("%v%v", GET_WRITE_POOL_STAT, allocID)
+		getInfoFromSharders(url, OpGetWritePoolStat, cb)
+	}()
+	return
+}
+
+// GetWritePoolConfig returns current configurations of read pools.
+func GetWritePoolConfig(cb GetInfoCallback) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	go func() {
+		getInfoFromSharders(GET_WRITE_POOL_CONFIG, OpGetWritePoolConfig, cb)
 	}()
 	return
 }

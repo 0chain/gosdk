@@ -120,6 +120,13 @@ type TransactionScheme interface {
 	ReadPoolLock(val int64, dur time.Duration) (err error)
 	// ReadPoolUnlock unlock expired tokens of the read pool.
 	ReadPoolUnlock(poolID string) (err error)
+
+	// write pool
+
+	// WritePoolLock lock token for the write pool.
+	WritePoolLock(allocID string, val int64) (err error)
+	// WritePoolUnlock unlock expired tokens of the write pool.
+	WritePoolUnlock(allocID string) (err error)
 }
 
 func signFn(hash string) (string, error) {
@@ -736,6 +743,54 @@ func (t *Transaction) readPoolUnlockTxn(poolID string) error {
 
 func (t *Transaction) ReadPoolUnlock(poolID string) (err error) {
 	if err = t.readPoolUnlockTxn(poolID); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+//
+// write pool
+//
+
+type writeLockRequest struct {
+	AllocationID string `json:"allocation_id"`
+}
+
+// lock write pool tokens
+
+func (t *Transaction) writePoolLockTxn(allocID string, val int64) error {
+
+	var req writeLockRequest
+	req.AllocationID = allocID
+	return t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.WRITE_POOL_LOCK, &req, val)
+}
+
+// WritePoolLock lock token for the write pool.
+func (t *Transaction) WritePoolLock(allocID string, val int64) (err error) {
+
+	if err = t.writePoolLockTxn(allocID, val); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+// unlock write pool tokens
+
+func (t *Transaction) writePoolUnlockTxn(allocID string) error {
+	var req writeLockRequest
+	req.AllocationID = allocID
+	return t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.WRITE_POOL_UNLOCK, &req, 0)
+}
+
+// WritePoolUnlock unlock expired tokens of the write pool.
+func (t *Transaction) WritePoolUnlock(allocID string) (err error) {
+	if err = t.writePoolUnlockTxn(allocID); err != nil {
 		Logger.Error(err)
 		return
 	}

@@ -235,6 +235,32 @@ func (ta *TransactionWithAuth) ReadPoolUnlock(poolID string) (err error) {
 }
 
 //
+// write pool
+//
+
+// WritePoolLock lock token for the write pool.
+func (ta *TransactionWithAuth) WritePoolLock(allocID string, val int64) (
+	err error) {
+
+	if err = ta.t.writePoolLockTxn(allocID, val); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+// WritePoolUnlock unlock expired tokens of the write pool.
+func (ta *TransactionWithAuth) WritePoolUnlock(allocID string) (err error) {
+	if err = ta.t.writePoolUnlockTxn(allocID); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+//
 // interest pool
 //
 
