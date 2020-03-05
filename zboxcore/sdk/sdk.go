@@ -161,17 +161,20 @@ func WritePoolLock(allocID string, val int64) (resp string, err error) {
 	return smartContractTxnValue(sn, val)
 }
 
-func CreateAllocation(datashards, parityshards int, size, expiry, fill int64) (
+func CreateAllocation(datashards, parityshards int, size, expiry int64,
+	readPrice, writePrice PriceRange, fill int64) (
 	string, error) {
 
 	return CreateAllocationForOwner(client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
-		size, expiry, fill, blockchain.GetPreferredBlobbers())
+		size, expiry, readPrice, writePrice, fill,
+		blockchain.GetPreferredBlobbers())
 }
 
 func CreateAllocationForOwner(owner, ownerpublickey string,
 	datashards, parityshards int,
-	size, expiry, fill int64, preferredBlobbers []string) (string, error) {
+	size, expiry int64, readPrice, writePrice PriceRange, fill int64,
+	preferredBlobbers []string) (string, error) {
 
 	var allocationRequest = map[string]interface{}{
 		"data_shards":        datashards,
@@ -181,6 +184,8 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 		"owner_public_key":   ownerpublickey,
 		"expiration_date":    expiry,
 		"preferred_blobbers": preferredBlobbers,
+		"read_price_range":   readPrice,
+		"write_price_range":  writePrice,
 	}
 
 	var sn = transaction.SmartContractTxnData{
