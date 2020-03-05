@@ -69,6 +69,13 @@ func InitStorageSDK(clientJson string, miners []string, sharders []string, chain
 	return nil
 }
 
+func CreateReadPool() (err error) {
+	_, err = smartContractTxn(transaction.SmartContractTxnData{
+		Name: transaction.NEW_READ_POOL,
+	})
+	return
+}
+
 func GetClientEncryptedPublicKey() (string, error) {
 	if !sdkInitialized {
 		return "", common.NewError("sdk_not_initialized", "SDK is not initialised")
