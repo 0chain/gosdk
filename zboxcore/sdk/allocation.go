@@ -61,6 +61,12 @@ type AllocationStats struct {
 	LastestClosedChallengeTxn string `json:"latest_closed_challenge"`
 }
 
+// PriceRange represents a price range allowed by user to filter blobbers.
+type PriceRange struct {
+	Min int64 `json:"min"`
+	Max int64 `json:"max"`
+}
+
 type Allocation struct {
 	ID             string                    `json:"id"`
 	DataShards     int                       `json:"data_shards"`
@@ -72,6 +78,17 @@ type Allocation struct {
 	Payer          string                    `json:"payer_id"`
 	Blobbers       []*blockchain.StorageNode `json:"blobbers"`
 	Stats          *AllocationStats          `json:"stats"`
+
+	// ReadPriceRange is requested reading prices range.
+	ReadPriceRange PriceRange `json:"read_price_range"`
+	// WritePriceRange is requested writing prices range.
+	WritePriceRange PriceRange `json:"write_price_range"`
+	// MinLockDemand represents number of tokens required by
+	// blobbers to create physical allocation.
+	MinLockDemand int64 `json:"min_lock_demand"`
+	// ChallengeCompletionTime is max challenge completion time of
+	// all blobbers of the allocation.
+	ChallengeCompletionTime time.Duration `json:"challenge_completion_time"`
 
 	numBlockDownloads   int
 	uploadChan          chan *UploadRequest

@@ -71,12 +71,19 @@ type RoundBlockHeader struct {
 	NumberOfTxns          int64  `json:"num_txns"`
 }
 
-const NEW_ALLOCATION_REQUEST = "new_allocation_request"
-const UPDATE_ALLOCATION_REQUEST = "update_allocation_request"
-const LOCK_TOKEN = "lock"
-const UNLOCK_TOKEN = "unlock"
-const STAKE = "addToDelegatePool"
-const DELETE_STAKE = "deleteFromDelegatePool"
+const (
+	NEW_ALLOCATION_REQUEST    = "new_allocation_request"
+	UPDATE_ALLOCATION_REQUEST = "update_allocation_request"
+	LOCK_TOKEN                = "lock"
+	UNLOCK_TOKEN              = "unlock"
+	STAKE                     = "addToDelegatePool"
+	DELETE_STAKE              = "deleteFromDelegatePool"
+	NEW_READ_POOL             = "new_read_pool"
+	READ_POOL_LOCK            = "read_pool_lock"
+	READ_POOL_UNLOCK          = "read_pool_unlock"
+	WRITE_POOL_LOCK           = "write_pool_lock"
+	WRITE_POOL_UNLOCK         = "write_pool_unlock"
+)
 
 type SignFunc = func(msg string) (string, error)
 type VerifyFunc = func(signature, msgHash, publicKey string) (bool, error)

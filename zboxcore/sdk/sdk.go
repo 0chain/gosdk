@@ -69,6 +69,13 @@ func InitStorageSDK(clientJson string, miners []string, sharders []string, chain
 	return nil
 }
 
+func CreateReadPool() (err error) {
+	_, err = smartContractTxn(transaction.SmartContractTxnData{
+		Name: transaction.NEW_READ_POOL,
+	})
+	return
+}
+
 func GetClientEncryptedPublicKey() (string, error) {
 	if !sdkInitialized {
 		return "", common.NewError("sdk_not_initialized", "SDK is not initialised")
@@ -137,22 +144,55 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 	return allocations, nil
 }
 
-func CreateAllocation(datashards int, parityshards int, size int64, expiry int64) (string, error) {
-	return CreateAllocationForOwner(client.GetClientID(), client.GetClientPublicKey(), datashards, parityshards, size, expiry, blockchain.GetPreferredBlobbers())
+// WritePoolLock lock token for the write pool.
+func WritePoolLock(allocID string, val int64) (resp string, err error) {
+
+	type writeLockRequest struct {
+		AllocationID string `json:"allocation_id"`
+	}
+
+	var req writeLockRequest
+	req.AllocationID = allocID
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.WRITE_POOL_LOCK,
+		InputArgs: &req,
+	}
+	return smartContractTxnValue(sn, val)
 }
 
-func CreateAllocationForOwner(owner string, ownerpublickey string, datashards int, parityshards int, size int64, expiry int64, preferredBlobbers []string) (string, error) {
-	allocationRequest := make(map[string]interface{})
-	allocationRequest["data_shards"] = datashards
-	allocationRequest["parity_shards"] = parityshards
-	allocationRequest["size"] = size
-	allocationRequest["owner_id"] = owner
-	allocationRequest["owner_public_key"] = ownerpublickey
-	allocationRequest["expiration_date"] = expiry
-	allocationRequest["preferred_blobbers"] = preferredBlobbers
+func CreateAllocation(datashards, parityshards int, size, expiry int64,
+	readPrice, writePrice PriceRange, lock int64) (
+	string, error) {
 
-	sn := transaction.SmartContractTxnData{Name: transaction.NEW_ALLOCATION_REQUEST, InputArgs: allocationRequest}
-	return smartContractTxn(sn)
+	return CreateAllocationForOwner(client.GetClientID(),
+		client.GetClientPublicKey(), datashards, parityshards,
+		size, expiry, readPrice, writePrice, lock,
+		blockchain.GetPreferredBlobbers())
+}
+
+func CreateAllocationForOwner(owner, ownerpublickey string,
+	datashards, parityshards int,
+	size, expiry int64, readPrice, writePrice PriceRange, lock int64,
+	preferredBlobbers []string) (string, error) {
+
+	var allocationRequest = map[string]interface{}{
+		"data_shards":        datashards,
+		"parity_shards":      parityshards,
+		"size":               size,
+		"owner_id":           owner,
+		"owner_public_key":   ownerpublickey,
+		"expiration_date":    expiry,
+		"preferred_blobbers": preferredBlobbers,
+		"read_price_range":   readPrice,
+		"write_price_range":  writePrice,
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.NEW_ALLOCATION_REQUEST,
+		InputArgs: allocationRequest,
+	}
+	return smartContractTxnValue(sn, lock)
 }
 
 func UpdateAllocation(size int64, expiry int64, allocationID string) (string, error) {
@@ -166,6 +206,10 @@ func UpdateAllocation(size int64, expiry int64, allocationID string) (string, er
 }
 
 func smartContractTxn(sn transaction.SmartContractTxnData) (string, error) {
+	return smartContractTxnValue(sn, 0)
+}
+
+func smartContractTxnValue(sn transaction.SmartContractTxnData, value int64) (string, error) {
 	requestBytes, err := json.Marshal(sn)
 	if err != nil {
 		return "", err
@@ -173,7 +217,7 @@ func smartContractTxn(sn transaction.SmartContractTxnData) (string, error) {
 	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey())
 	txn.TransactionData = string(requestBytes)
 	txn.ToClientID = STORAGE_SCADDRESS
-	txn.Value = 0
+	txn.Value = value
 	txn.TransactionType = transaction.TxnTypeSmartContract
 	err = txn.ComputeHashAndSign(client.Sign)
 	if err != nil {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
@@ -193,6 +194,75 @@ func (ta *TransactionWithAuth) GetTransactionError() string {
 func (ta *TransactionWithAuth) GetVerifyError() string {
 	return ta.t.GetVerifyError()
 }
+
+//
+// read pool
+//
+
+// create read pool if missing
+
+func (ta *TransactionWithAuth) CreateReadPool() (err error) {
+	if err = ta.t.createReadPoolTxn(); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+// lock read pool tokens
+
+func (ta *TransactionWithAuth) ReadPoolLock(val int64, dur time.Duration) (
+	err error) {
+
+	if err = ta.t.readPoolLockTxn(val, dur); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+// unlock read pool tokens
+
+func (ta *TransactionWithAuth) ReadPoolUnlock(poolID string) (err error) {
+	if err = ta.t.readPoolUnlockTxn(poolID); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+//
+// write pool
+//
+
+// WritePoolLock lock token for the write pool.
+func (ta *TransactionWithAuth) WritePoolLock(allocID string, val int64) (
+	err error) {
+
+	if err = ta.t.writePoolLockTxn(allocID, val); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+// WritePoolUnlock unlock expired tokens of the write pool.
+func (ta *TransactionWithAuth) WritePoolUnlock(allocID string) (err error) {
+	if err = ta.t.writePoolUnlockTxn(allocID); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+//
+// interest pool
+//
 
 func (ta *TransactionWithAuth) LockTokens(val int64, durationHr int64, durationMin int) error {
 	err := ta.t.createLockTokensTxn(val, durationHr, durationMin)
