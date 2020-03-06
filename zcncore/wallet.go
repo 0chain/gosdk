@@ -41,9 +41,8 @@ const (
 	GET_USER_POOL_DETAIL  = `/v1/screst/` + MinerSmartContractAddress + `/getPoolsStats?`
 	GET_BLOBBERS          = `/v1/screst/` + StorageSmartContractAddress + `/getblobbers`
 	GET_READ_POOL_STATS   = `/v1/screst/` + StorageSmartContractAddress + `/getReadPoolsStats?client_id=`
-	GET_READ_POOL_CONFIG  = `/v1/screst/` + StorageSmartContractAddress + `/getReadPoolsConfig`
 	GET_WRITE_POOL_STAT   = `/v1/screst/` + StorageSmartContractAddress + `/getWritePoolStat?allocation_id=`
-	GET_WRITE_POOL_CONFIG = `/v1/screst/` + StorageSmartContractAddress + `/getWritePoolConfig`
+	GET_STORAGE_SC_CONFIG = `/v1/screst/` + StorageSmartContractAddress + `/getConfig`
 )
 
 const (
@@ -89,9 +88,8 @@ const (
 	OpGetUserPoolDetail
 	OpGetBlobbers
 	OpGetReadPoolsStats
-	OpGetReadPoolsConfig
 	OpGetWritePoolStat
-	OpGetWritePoolConfig
+	OpGetStorageSCConfig
 )
 
 // WalletCallback needs to be implmented for wallet creation.
@@ -607,17 +605,6 @@ func GetReadPoolsStats(cb GetInfoCallback) (err error) {
 	return
 }
 
-// GetReadPoolsConfig returns current configurations of read pools.
-func GetReadPoolsConfig(cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
-		return
-	}
-	go func() {
-		getInfoFromSharders(GET_READ_POOL_CONFIG, OpGetReadPoolsConfig, cb)
-	}()
-	return
-}
-
 // write pool stat and configuration
 
 // GetWritePoolStat returns statistic of locked tokens in a write pool.
@@ -632,13 +619,15 @@ func GetWritePoolStat(cb GetInfoCallback, allocID string) (err error) {
 	return
 }
 
-// GetWritePoolConfig returns current configurations of read pools.
-func GetWritePoolConfig(cb GetInfoCallback) (err error) {
+// storage SC configurations
+
+// GetStorageSCConfig returns current configurations of storage SC.
+func GetStorageSCConfig(cb GetInfoCallback) (err error) {
 	if err = checkConfig(); err != nil {
 		return
 	}
 	go func() {
-		getInfoFromSharders(GET_WRITE_POOL_CONFIG, OpGetWritePoolConfig, cb)
+		getInfoFromSharders(GET_STORAGE_SC_CONFIG, OpGetStorageSCConfig, cb)
 	}()
 	return
 }
