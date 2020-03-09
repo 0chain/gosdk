@@ -162,44 +162,49 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 }
 
 func (a *Allocation) UpdateFile(localpath string, remotepath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, true, "", false)
+	return a.uploadOrUpdateFile(localpath, remotepath, status, true, "", false, false)
 }
 
 func (a *Allocation) UploadFile(localpath string, remotepath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "", false)
+	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "", false, false)
+}
+
+func (a *Allocation) RepairFile(localpath string, remotepath string, status StatusCallback) error {
+	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "", false, true)
 }
 
 func (a *Allocation) UpdateFileWithThumbnail(localpath string, remotepath string, thumbnailpath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, true, thumbnailpath, false)
+	return a.uploadOrUpdateFile(localpath, remotepath, status, true, thumbnailpath, false, false)
 }
 
 func (a *Allocation) UploadFileWithThumbnail(localpath string, remotepath string, thumbnailpath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, false, thumbnailpath, false)
+	return a.uploadOrUpdateFile(localpath, remotepath, status, false, thumbnailpath, false, false)
 }
 
 func (a *Allocation) EncryptAndUpdateFile(localpath string, remotepath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, true, "", true)
+	return a.uploadOrUpdateFile(localpath, remotepath, status, true, "", true, false)
 }
 
 func (a *Allocation) EncryptAndUploadFile(localpath string, remotepath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "", true)
+	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "", true, false)
 }
 
 func (a *Allocation) EncryptAndUpdateFileWithThumbnail(localpath string, remotepath string, thumbnailpath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, true, thumbnailpath, true)
+	return a.uploadOrUpdateFile(localpath, remotepath, status, true, thumbnailpath, true, false)
 }
 
 func (a *Allocation) EncryptAndUploadFileWithThumbnail(localpath string, remotepath string, thumbnailpath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, false, thumbnailpath, true)
+	return a.uploadOrUpdateFile(localpath, remotepath, status, false, thumbnailpath, true, false)
 }
 
-func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, status StatusCallback, isUpdate bool, thumbnailpath string, encryption bool) error {
+func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, status StatusCallback, isUpdate bool, thumbnailpath string, encryption bool, isRepair bool) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
 	if a.UnderRepair() {
 		return underRepair
 	}
+
 	fileInfo, err := os.Stat(localpath)
 	if err != nil {
 		return fmt.Errorf("Local file error: %s", err.Error())
@@ -222,6 +227,27 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 		return common.NewError("invalid_path", "Path should be valid and absolute")
 	}
 	remotepath = zboxutil.GetFullRemotePath(localpath, remotepath)
+
+	uploadMask := uint32((1 << uint32(len(a.Blobbers))) - 1)
+	if isRepair {
+		listReq := &ListRequest{}
+		listReq.allocationID = a.ID
+		listReq.blobbers = a.Blobbers
+		listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
+		listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+		listReq.ctx = a.ctx
+		listReq.remotefilepath = remotepath
+		found, fileRef, _ := listReq.getFileConsensusFromBlobbers()
+		if fileRef == nil {
+			return fmt.Errorf("File not found for the given remotepath")
+		}
+		if found == uploadMask {
+			return fmt.Errorf("No repair required")
+		}
+		uploadMask = (^found & uploadMask)
+		a.UpdateRepairStatus(true)
+	}
+
 	var fileName string
 	_, fileName = filepath.Split(remotepath)
 	uploadReq := &UploadRequest{}
@@ -237,11 +263,12 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	uploadReq.thumbRemaining = uploadReq.filemeta.ThumbnailSize
 	uploadReq.isRepair = false
 	uploadReq.isUpdate = isUpdate
+	uploadReq.isRepair = isRepair
 	uploadReq.connectionID = zboxutil.NewConnectionId()
 	uploadReq.statusCallback = status
 	uploadReq.datashards = a.DataShards
 	uploadReq.parityshards = a.ParityShards
-	uploadReq.uploadMask = ((1 << uint32(len(a.Blobbers))) - 1)
+	uploadReq.uploadMask = uploadMask
 	uploadReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	uploadReq.fullconsensus = float32(a.DataShards + a.ParityShards)
 	uploadReq.isEncrypted = encryption

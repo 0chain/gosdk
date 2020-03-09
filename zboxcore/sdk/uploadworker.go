@@ -392,6 +392,10 @@ func (req *UploadRequest) completePush() error {
 }
 
 func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
+	if req.isRepair {
+		defer a.UpdateRepairStatus(false)
+	}
+
 	var inFile *os.File
 	inFile, err := os.Open(req.filepath)
 	if err != nil && req.statusCallback != nil {
