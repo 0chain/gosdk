@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/bits"
 	"os"
 	"path/filepath"
 	"strings"
@@ -228,26 +229,6 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	}
 	remotepath = zboxutil.GetFullRemotePath(localpath, remotepath)
 
-	uploadMask := uint32((1 << uint32(len(a.Blobbers))) - 1)
-	if isRepair {
-		listReq := &ListRequest{}
-		listReq.allocationID = a.ID
-		listReq.blobbers = a.Blobbers
-		listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
-		listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
-		listReq.ctx = a.ctx
-		listReq.remotefilepath = remotepath
-		found, fileRef, _ := listReq.getFileConsensusFromBlobbers()
-		if fileRef == nil {
-			return fmt.Errorf("File not found for the given remotepath")
-		}
-		if found == uploadMask {
-			return fmt.Errorf("No repair required")
-		}
-		uploadMask = (^found & uploadMask)
-		a.UpdateRepairStatus(true)
-	}
-
 	var fileName string
 	_, fileName = filepath.Split(remotepath)
 	uploadReq := &UploadRequest{}
@@ -268,10 +249,32 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	uploadReq.statusCallback = status
 	uploadReq.datashards = a.DataShards
 	uploadReq.parityshards = a.ParityShards
-	uploadReq.uploadMask = uploadMask
+	uploadReq.uploadMask = uint32((1 << uint32(len(a.Blobbers))) - 1)
 	uploadReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	uploadReq.fullconsensus = float32(a.DataShards + a.ParityShards)
 	uploadReq.isEncrypted = encryption
+
+	if uploadReq.isRepair {
+		listReq := &ListRequest{}
+		listReq.allocationID = a.ID
+		listReq.blobbers = a.Blobbers
+		listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
+		listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+		listReq.ctx = a.ctx
+		listReq.remotefilepath = remotepath
+		found, fileRef, _ := listReq.getFileConsensusFromBlobbers()
+		if fileRef == nil {
+			return fmt.Errorf("File not found for the given remotepath")
+		}
+		if found == uploadReq.uploadMask {
+			return fmt.Errorf("No repair required")
+		}
+
+		uploadReq.uploadMask = (^found & uploadReq.uploadMask)
+		uploadReq.fullconsensus = uploadReq.fullconsensus - float32(bits.TrailingZeros32(uploadReq.uploadMask))
+		a.UpdateRepairStatus(true)
+	}
+
 	go func() {
 		a.uploadChan <- uploadReq
 	}()
