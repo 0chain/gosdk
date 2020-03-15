@@ -42,6 +42,7 @@ const (
 	GET_BLOBBERS          = `/v1/screst/` + StorageSmartContractAddress + `/getblobbers`
 	GET_READ_POOL_STATS   = `/v1/screst/` + StorageSmartContractAddress + `/getReadPoolsStats?client_id=`
 	GET_WRITE_POOL_STAT   = `/v1/screst/` + StorageSmartContractAddress + `/getWritePoolStat?allocation_id=`
+	GET_STAKE_POOL_STAT   = `/v1/screst/` + StorageSmartContractAddress + `/getStakePoolStat?blobber_id=`
 	GET_STORAGE_SC_CONFIG = `/v1/screst/` + StorageSmartContractAddress + `/getConfig`
 )
 
@@ -89,6 +90,7 @@ const (
 	OpGetBlobbers
 	OpGetReadPoolsStats
 	OpGetWritePoolStat
+	OpGetStakePoolStat
 	OpGetStorageSCConfig
 )
 
@@ -590,7 +592,7 @@ func GetLockedTokens(cb GetInfoCallback) error {
 	return nil
 }
 
-// read pool stats and configurations
+// read pool stats
 
 // GetReadPoolsStats returns statistic of locked tokens in read pool.
 func GetReadPoolsStats(cb GetInfoCallback) (err error) {
@@ -605,7 +607,7 @@ func GetReadPoolsStats(cb GetInfoCallback) (err error) {
 	return
 }
 
-// write pool stat and configuration
+// write pool stat
 
 // GetWritePoolStat returns statistic of locked tokens in a write pool.
 func GetWritePoolStat(cb GetInfoCallback, allocID string) (err error) {
@@ -615,6 +617,20 @@ func GetWritePoolStat(cb GetInfoCallback, allocID string) (err error) {
 	go func() {
 		var url = fmt.Sprintf("%v%v", GET_WRITE_POOL_STAT, allocID)
 		getInfoFromSharders(url, OpGetWritePoolStat, cb)
+	}()
+	return
+}
+
+// stake pool stat
+
+// GetStakePoolStat returns statistic of locked tokens in a stake pool.
+func GetStakePoolStat(cb GetInfoCallback, blobberID string) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	go func() {
+		var url = fmt.Sprintf("%v%v", GET_STAKE_POOL_STAT, blobberID)
+		getInfoFromSharders(url, OpGetStakePoolStat, cb)
 	}()
 	return
 }

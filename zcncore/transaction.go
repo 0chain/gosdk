@@ -127,6 +127,11 @@ type TransactionScheme interface {
 	WritePoolLock(allocID string, val int64) (err error)
 	// WritePoolUnlock unlock expired tokens of the write pool.
 	WritePoolUnlock(allocID string) (err error)
+
+	// stake pool
+
+	// StakePoolUnlock unlock expired tokens of stake pool by owner.
+	StakePoolUnlock() (err error)
 }
 
 func signFn(hash string) (string, error) {
@@ -791,6 +796,25 @@ func (t *Transaction) writePoolUnlockTxn(allocID string) error {
 // WritePoolUnlock unlock expired tokens of the write pool.
 func (t *Transaction) WritePoolUnlock(allocID string) (err error) {
 	if err = t.writePoolUnlockTxn(allocID); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+//
+// stake pool (blobber owner)
+//
+
+func (t *Transaction) stakePoolUnlockTxn() error {
+	return t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STAKE_POOL_UNLOCK, nil, 0)
+}
+
+// StakePoolUnlock unlock expired tokens of the write pool.
+func (t *Transaction) StakePoolUnlock() (err error) {
+	if err = t.stakePoolUnlockTxn(); err != nil {
 		Logger.Error(err)
 		return
 	}

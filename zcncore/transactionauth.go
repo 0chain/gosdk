@@ -260,6 +260,16 @@ func (ta *TransactionWithAuth) WritePoolUnlock(allocID string) (err error) {
 	return
 }
 
+// StakePoolUnlock unlock expired tokens of stake pool by owner.
+func (ta *TransactionWithAuth) StakePoolUnlock() (err error) {
+	if err = ta.t.stakePoolUnlockTxn(); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
 //
 // interest pool
 //
