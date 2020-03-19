@@ -676,7 +676,7 @@ func GetWalletClientID(walletStr string) (string, error) {
 // GetZcnUSDInfo returns USD value for ZCN token from coinmarketcap.com
 func GetZcnUSDInfo(cb GetUSDInfoCallback) error {
 	go func() {
-		req, err := util.NewHTTPGetRequest("https://api.coinmarketcap.com/v2/ticker/2882/")
+		req, err := util.NewHTTPGetRequest("https://api.coingecko.com/api/v3/coins/0chain?localization=false")
 		if err != nil {
 			Logger.Error("new get request failed." + err.Error())
 			cb.OnUSDInfoAvailable(StatusError, "", "new get request failed."+err.Error())
