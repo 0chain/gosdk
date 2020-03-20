@@ -731,16 +731,17 @@ func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, look
 		return nil, err
 	}
 	transaction.SendTransactionSync(txn, blockchain.GetMiners())
-	time.Sleep(5 * time.Second)
+	querySleepTime := time.Duration(blockchain.GetQuerySleepTime()) * time.Second
+	time.Sleep(querySleepTime)
 	retries := 0
 	var t *transaction.Transaction
-	for retries < 5 {
+	for retries < blockchain.GetMaxTxnQuery() {
 		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders())
 		if err == nil {
 			break
 		}
 		retries++
-		time.Sleep(5 * time.Second)
+		time.Sleep(querySleepTime)
 	}
 
 	if err != nil {

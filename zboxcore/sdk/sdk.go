@@ -69,6 +69,14 @@ func InitStorageSDK(clientJson string, miners []string, sharders []string, chain
 	return nil
 }
 
+func SetMaxTxnQuery(num int) {
+	blockchain.SetMaxTxnQuery(num)
+}
+
+func SetQuerySleepTime(time int) {
+	blockchain.SetQuerySleepTime(time)
+}
+
 func CreateReadPool() (err error) {
 	_, err = smartContractTxn(transaction.SmartContractTxnData{
 		Name: transaction.NEW_READ_POOL,
@@ -225,16 +233,17 @@ func smartContractTxnValue(sn transaction.SmartContractTxnData, value int64) (st
 		return "", err
 	}
 	transaction.SendTransactionSync(txn, blockchain.GetMiners())
-	time.Sleep(5 * time.Second)
+	querySleepTime := time.Duration(blockchain.GetQuerySleepTime()) * time.Second
+	time.Sleep(querySleepTime)
 	retries := 0
 	var t *transaction.Transaction
-	for retries < 5 {
+	for retries < blockchain.GetMaxTxnQuery() {
 		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders())
 		if err == nil {
 			break
 		}
 		retries++
-		time.Sleep(5 * time.Second)
+		time.Sleep(querySleepTime)
 	}
 
 	if err != nil {

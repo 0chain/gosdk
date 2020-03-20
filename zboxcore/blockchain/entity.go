@@ -7,6 +7,8 @@ type ChainConfig struct {
 	Miners            []string
 	PreferredBlobbers []string
 	ChainID           string
+	MaxTxnQuery       int
+	QuerySleepTime    int
 }
 
 type StorageNode struct {
@@ -23,7 +25,10 @@ func PopulateNodes(nodesjson string) ([]string, error) {
 var chain *ChainConfig
 
 func init() {
-	chain = &ChainConfig{}
+	chain = &ChainConfig{
+		MaxTxnQuery:    5,
+		QuerySleepTime: 5,
+	}
 }
 
 func GetChainID() string {
@@ -51,6 +56,14 @@ func GetMiners() []string {
 	return chain.Miners
 }
 
+func GetMaxTxnQuery() int {
+	return chain.MaxTxnQuery
+}
+
+func GetQuerySleepTime() int {
+	return chain.QuerySleepTime
+}
+
 func GetPreferredBlobbers() []string {
 	return chain.PreferredBlobbers
 }
@@ -69,4 +82,12 @@ func SetPreferredBlobbers(preferredBlobberArray []string) {
 
 func SetChainID(id string) {
 	chain.ChainID = id
+}
+
+func SetMaxTxnQuery(num int) {
+	chain.MaxTxnQuery = num
+}
+
+func SetQuerySleepTime(time int) {
+	chain.QuerySleepTime = time
 }
