@@ -250,9 +250,9 @@ func (ta *TransactionWithAuth) WritePoolLock(allocID string, val int64) (
 	return
 }
 
-// WritePoolUnlock unlock expired tokens of the write pool.
-func (ta *TransactionWithAuth) WritePoolUnlock(allocID string) (err error) {
-	if err = ta.t.writePoolUnlockTxn(allocID); err != nil {
+// FinalizeAllocation performs all required where allocation expired.
+func (ta *TransactionWithAuth) FinalizeAllocation(allocID string) (err error) {
+	if err = ta.t.finalizeAllocationTxn(allocID); err != nil {
 		Logger.Error(err)
 		return
 	}

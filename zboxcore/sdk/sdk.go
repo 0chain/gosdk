@@ -210,7 +210,21 @@ func UpdateAllocation(size int64, expiry int64, allocationID string) (string, er
 	updateAllocationRequest["size"] = size
 	updateAllocationRequest["expiration_date"] = expiry
 
-	sn := transaction.SmartContractTxnData{Name: transaction.UPDATE_ALLOCATION_REQUEST, InputArgs: updateAllocationRequest}
+	sn := transaction.SmartContractTxnData{
+		Name:      transaction.UPDATE_ALLOCATION_REQUEST,
+		InputArgs: updateAllocationRequest,
+	}
+	return smartContractTxn(sn)
+}
+
+func FinalizeAllocation(allocationID string) (string, error) {
+	var req = make(map[string]interface{})
+	req["allocation_id"] = allocationID
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.FINALIZE_ALLOCATION,
+		InputArgs: req,
+	}
 	return smartContractTxn(sn)
 }
 
