@@ -43,7 +43,7 @@ const (
 	GET_READ_POOL_STATS     = `/v1/screst/` + StorageSmartContractAddress + `/getReadPoolsStats?client_id=`
 	GET_WRITE_POOL_STAT     = `/v1/screst/` + StorageSmartContractAddress + `/getWritePoolStat?allocation_id=`
 	GET_STAKE_POOL_STAT     = `/v1/screst/` + StorageSmartContractAddress + `/getStakePoolStat?blobber_id=`
-	GET_CHALLENGE_POOL_STAT = `/v1/screst/` + StorageSmartContractAddress + `getChallengePoolStat&allocation_id=`
+	GET_CHALLENGE_POOL_STAT = `/v1/screst/` + StorageSmartContractAddress + `/getChallengePoolStat?allocation_id=`
 	GET_STORAGE_SC_CONFIG   = `/v1/screst/` + StorageSmartContractAddress + `/getConfig`
 )
 
