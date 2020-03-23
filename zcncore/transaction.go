@@ -125,13 +125,16 @@ type TransactionScheme interface {
 
 	// WritePoolLock lock token for the write pool.
 	WritePoolLock(allocID string, val int64) (err error)
-	// WritePoolUnlock unlock expired tokens of the write pool.
-	WritePoolUnlock(allocID string) (err error)
 
 	// stake pool
 
 	// StakePoolUnlock unlock expired tokens of stake pool by owner.
 	StakePoolUnlock() (err error)
+
+	// allocation ending
+
+	// FinalizeAllocation performs all required on allocation expires.
+	FinalizeAllocation(allocID string) (err error)
 }
 
 func signFn(hash string) (string, error) {
@@ -784,18 +787,18 @@ func (t *Transaction) WritePoolLock(allocID string, val int64) (err error) {
 	return
 }
 
-// unlock write pool tokens
+// finalize an expired allocation
 
-func (t *Transaction) writePoolUnlockTxn(allocID string) error {
+func (t *Transaction) finalizeAllocationTxn(allocID string) error {
 	var req writeLockRequest
 	req.AllocationID = allocID
 	return t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.WRITE_POOL_UNLOCK, &req, 0)
+		transaction.FINALIZE_ALLOCATION, &req, 0)
 }
 
-// WritePoolUnlock unlock expired tokens of the write pool.
-func (t *Transaction) WritePoolUnlock(allocID string) (err error) {
-	if err = t.writePoolUnlockTxn(allocID); err != nil {
+// FinalizeAllocation performs all required to finalize an expired allocation.
+func (t *Transaction) FinalizeAllocation(allocID string) (err error) {
+	if err = t.finalizeAllocationTxn(allocID); err != nil {
 		Logger.Error(err)
 		return
 	}
