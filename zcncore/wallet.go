@@ -30,20 +30,21 @@ var defaultLogLevel = logger.DEBUG
 var Logger logger.Logger
 
 const (
-	REGISTER_CLIENT       = `/v1/client/put`
-	PUT_TRANSACTION       = `/v1/transaction/put`
-	TXN_VERIFY_URL        = `/v1/transaction/get/confirmation?hash=`
-	GET_BALANCE           = `/v1/client/get/balance?client_id=`
-	GET_LOCK_CONFIG       = `/v1/screst/` + InterestPoolSmartContractAddress + `/getLockConfig`
-	GET_LOCKED_TOKENS     = `/v1/screst/` + InterestPoolSmartContractAddress + `/getPoolsStats?client_id=`
-	GET_BLOCK_INFO        = `/v1/block/get?`
-	GET_USER_POOLS        = `/v1/screst/` + MinerSmartContractAddress + `/getUserPools?client_id=`
-	GET_USER_POOL_DETAIL  = `/v1/screst/` + MinerSmartContractAddress + `/getPoolsStats?`
-	GET_BLOBBERS          = `/v1/screst/` + StorageSmartContractAddress + `/getblobbers`
-	GET_READ_POOL_STATS   = `/v1/screst/` + StorageSmartContractAddress + `/getReadPoolsStats?client_id=`
-	GET_WRITE_POOL_STAT   = `/v1/screst/` + StorageSmartContractAddress + `/getWritePoolStat?allocation_id=`
-	GET_STAKE_POOL_STAT   = `/v1/screst/` + StorageSmartContractAddress + `/getStakePoolStat?blobber_id=`
-	GET_STORAGE_SC_CONFIG = `/v1/screst/` + StorageSmartContractAddress + `/getConfig`
+	REGISTER_CLIENT         = `/v1/client/put`
+	PUT_TRANSACTION         = `/v1/transaction/put`
+	TXN_VERIFY_URL          = `/v1/transaction/get/confirmation?hash=`
+	GET_BALANCE             = `/v1/client/get/balance?client_id=`
+	GET_LOCK_CONFIG         = `/v1/screst/` + InterestPoolSmartContractAddress + `/getLockConfig`
+	GET_LOCKED_TOKENS       = `/v1/screst/` + InterestPoolSmartContractAddress + `/getPoolsStats?client_id=`
+	GET_BLOCK_INFO          = `/v1/block/get?`
+	GET_USER_POOLS          = `/v1/screst/` + MinerSmartContractAddress + `/getUserPools?client_id=`
+	GET_USER_POOL_DETAIL    = `/v1/screst/` + MinerSmartContractAddress + `/getPoolsStats?`
+	GET_BLOBBERS            = `/v1/screst/` + StorageSmartContractAddress + `/getblobbers`
+	GET_READ_POOL_STATS     = `/v1/screst/` + StorageSmartContractAddress + `/getReadPoolsStats?client_id=`
+	GET_WRITE_POOL_STAT     = `/v1/screst/` + StorageSmartContractAddress + `/getWritePoolStat?allocation_id=`
+	GET_STAKE_POOL_STAT     = `/v1/screst/` + StorageSmartContractAddress + `/getStakePoolStat?blobber_id=`
+	GET_CHALLENGE_POOL_STAT = `/v1/screst/` + StorageSmartContractAddress + `getChallengePoolStat&allocation_id=`
+	GET_STORAGE_SC_CONFIG   = `/v1/screst/` + StorageSmartContractAddress + `/getConfig`
 )
 
 const (
@@ -91,6 +92,7 @@ const (
 	OpGetReadPoolsStats
 	OpGetWritePoolStat
 	OpGetStakePoolStat
+	OpGetChallengePoolStat
 	OpGetStorageSCConfig
 )
 
@@ -631,6 +633,18 @@ func GetStakePoolStat(cb GetInfoCallback, blobberID string) (err error) {
 	go func() {
 		var url = fmt.Sprintf("%v%v", GET_STAKE_POOL_STAT, blobberID)
 		getInfoFromSharders(url, OpGetStakePoolStat, cb)
+	}()
+	return
+}
+
+// GetChallengePoolStat returns statistic of tokens in a challenge pool.
+func GetChallengePoolStat(cb GetInfoCallback, allocID string) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	go func() {
+		var url = fmt.Sprintf("%v%v", GET_CHALLENGE_POOL_STAT, allocID)
+		getInfoFromSharders(url, OpGetChallengePoolStat, cb)
 	}()
 	return
 }
