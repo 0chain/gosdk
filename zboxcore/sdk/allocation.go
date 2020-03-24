@@ -80,13 +80,12 @@ type Allocation struct {
 	Blobbers       []*blockchain.StorageNode `json:"blobbers"`
 	Stats          *AllocationStats          `json:"stats"`
 
+	// TODO (sfxdx): terms, min lock demand, etc
+
 	// ReadPriceRange is requested reading prices range.
 	ReadPriceRange PriceRange `json:"read_price_range"`
 	// WritePriceRange is requested writing prices range.
 	WritePriceRange PriceRange `json:"write_price_range"`
-	// MinLockDemand represents number of tokens required by
-	// blobbers to create physical allocation.
-	MinLockDemand int64 `json:"min_lock_demand"`
 	// ChallengeCompletionTime is max challenge completion time of
 	// all blobbers of the allocation.
 	ChallengeCompletionTime time.Duration `json:"challenge_completion_time"`

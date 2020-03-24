@@ -3,6 +3,7 @@ package sdk
 import (
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -77,12 +78,313 @@ func SetQuerySleepTime(time int) {
 	blockchain.SetQuerySleepTime(time)
 }
 
+//
+// read pool
+//
+
 func CreateReadPool() (err error) {
 	_, err = smartContractTxn(transaction.SmartContractTxnData{
 		Name: transaction.NEW_READ_POOL,
 	})
 	return
 }
+
+// ReadPoolStat is number of tokens and locking status for the tokens.
+type ReadPoolStat struct {
+	ID        string        `json:"pool_id"`
+	StartTime int64         `json:"start_time"`
+	Duration  time.Duration `json:"duration"`
+	TimeLeft  time.Duration `json:"time_left"`
+	Locked    bool          `json:"locked"`
+	Balance   int64         `json:"balance"`
+}
+
+// ReadPoolInfo is set of read pool locks statistic.
+type ReadPoolInfo struct {
+	Stats []*ReadPoolStat `json:"stats"`
+}
+
+// GetReadPoolInfo for given client, or, if the given clientID is empty,
+// for current client of the sdk.
+func GetReadPoolInfo(clientID string) (info *ReadPoolInfo, err error) {
+
+	if clientID == "" {
+		clientID = client.GetClientID()
+	}
+
+	var b []byte
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getReadPoolsStats",
+		map[string]string{"client_id": clientID}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error requesting read pool info: %v", err)
+	}
+
+	info = new(ReadPoolInfo)
+	if err = json.Unmarshal(b, info); err != nil {
+		return nil, fmt.Errorf("error decoding response: %v", err)
+	}
+
+	return
+}
+
+// ReadPoolLock locks given number of tokes for given duration in read pool.
+func ReadPoolLock(dur time.Duration, tokens, fee int64) (err error) {
+
+	type lockRequest struct {
+		Duration time.Duration `json:"duration"`
+	}
+
+	var req lockRequest
+	req.Duration = dur
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.READ_POOL_LOCK,
+		InputArgs: &req,
+	}
+	_, err = smartContractTxnValueFee(sn, tokens, fee)
+	return
+}
+
+// ReadPoolUnlock unlocks tokens in expired read pool
+func ReadPoolUnlock(poolID string, fee int64) (err error) {
+
+	type unlockRequest struct {
+		PoolID string `json:"pool_id"`
+	}
+
+	var req unlockRequest
+	req.PoolID = poolID
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.READ_POOL_UNLOCK,
+		InputArgs: &req,
+	}
+	_, err = smartContractTxnValueFee(sn, 0, fee)
+	return
+}
+
+//
+// stake pool
+//
+
+type StakePoolOfferStat struct {
+	Lock         int64  `json:"lock"`   // balance
+	Expire       int64  `json:"expire"` // time, seconds
+	AllocationID string `json:"allocation_id"`
+	IsExpired    bool   `json:"is_expired"`
+}
+
+type StakePoolInfo struct {
+	ID            string                `json:"pool_id"`  // id
+	Locked        int64                 `json:"locked"`   // balance
+	Unlocked      int64                 `json:"unlocked"` // balance
+	Offers        []*StakePoolOfferStat `json:"offers"`
+	OffersTotal   int64                 `json:"offers_total"`   // balance
+	RequiredStake int64                 `json:"required_stake"` // balance
+}
+
+// GetStakePoolInfo for given client, or, if the given clientID is empty,
+// for current client of the sdk.
+func GetStakePoolInfo(blobberID string) (info *StakePoolInfo, err error) {
+
+	if blobberID == "" {
+		blobberID = client.GetClientID()
+	}
+
+	var b []byte
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getStakePoolStat",
+		map[string]string{"blobber_id": blobberID}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error requesting stake pool info: %v", err)
+	}
+
+	info = new(StakePoolInfo)
+	if err = json.Unmarshal(b, info); err != nil {
+		return nil, fmt.Errorf("error decoding response: %v", err)
+	}
+
+	return
+}
+
+// StakePoolUnlock unlocks tokens in stake pool
+func StakePoolUnlock(fee int64) (err error) {
+	var sn = transaction.SmartContractTxnData{
+		Name: transaction.STAKE_POOL_UNLOCK,
+	}
+	_, err = smartContractTxnValueFee(sn, 0, fee)
+	return
+}
+
+//
+// write pool
+//
+
+type WritePoolInfo struct {
+	ID        string        `json:"pool_id"`    //
+	StartTime int64         `json:"start_time"` // time, seconds
+	Duration  time.Duration `json:"duration"`   //
+	TimeLeft  time.Duration `json:"time_left"`  //
+	Locked    bool          `json:"locked"`     //
+	Balance   int64         `json:"balance"`    // balance
+}
+
+// GetWritePoolInfo for given client, or, if the given clientID is empty,
+// for current client of the sdk.
+func GetWritePoolInfo(allocID string) (info *WritePoolInfo, err error) {
+	var b []byte
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getWritePoolStat",
+		map[string]string{"allocation_id": allocID}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error requesting write pool info: %v", err)
+	}
+
+	info = new(WritePoolInfo)
+	if err = json.Unmarshal(b, info); err != nil {
+		return nil, fmt.Errorf("error decoding response: %v", err)
+	}
+
+	return
+}
+
+// WritePoolLock unlocks tokens in expired write pool
+func WritePoolLock(allocID string, tokens, fee int64) (err error) {
+
+	type unlockRequest struct {
+		AllocationID string `json:"allocation_id"`
+	}
+	var req unlockRequest
+	req.AllocationID = allocID
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.WRITE_POOL_LOCK,
+		InputArgs: &req,
+	}
+	_, err = smartContractTxnValueFee(sn, tokens, fee)
+	return
+}
+
+//
+// challenge pool
+//
+
+type ChallengePoolInfo struct {
+	ID        string        `json:"pool_id"`    //
+	StartTime int64         `json:"start_time"` // time, seconds
+	Duration  time.Duration `json:"duration"`   //
+	TimeLeft  time.Duration `json:"time_left"`  //
+	Locked    bool          `json:"locked"`     //
+	Balance   int64         `json:"balance"`    // balance
+}
+
+// GetChallengePoolInfo for given allocation.
+func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
+	var b []byte
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
+		"/getChallengePoolStat", map[string]string{"allocation_id": allocID},
+		nil)
+	if err != nil {
+		return nil, fmt.Errorf("error requesting challenge pool info: %v", err)
+	}
+
+	info = new(ChallengePoolInfo)
+	if err = json.Unmarshal(b, info); err != nil {
+		return nil, fmt.Errorf("error decoding response: %v", err)
+	}
+
+	return
+}
+
+//
+// storage SC configurations and blobbers
+//
+
+type StorageSCReadPoolConfig struct {
+	MinLock       int64         `json:"min_lock"`        // balance, tokens
+	MinLockPeriod time.Duration `json:"min_lock_period"` //
+	MaxLockPeriod time.Duration `json:"max_lock_period"` //
+}
+
+type StorageSCWritePoolConfig struct {
+	MinLock int64 `json:"min_lock"` // balance, tokens
+}
+
+type StorageSCConfig struct {
+	ChallengeEnabled           bool                      `json:"challenge_enabled"`
+	ChallengeRatePerMBMin      time.Duration             `json:"challenge_rate_per_mb_min"`
+	MinAllocSize               int64                     `json:"min_alloc_size"` // size, bytes
+	MinAllocDuration           time.Duration             `json:"min_alloc_duration"`
+	MaxChallengeCompletionTime time.Duration             `json:"max_challenge_completion_time"`
+	MinOfferDuration           time.Duration             `json:"min_offer_duration"`
+	MinBlobberCapacity         int64                     `json:"min_blobber_capacity"`
+	ReadPool                   *StorageSCReadPoolConfig  `json:"readpool"`
+	WritePool                  *StorageSCWritePoolConfig `json:"writepool"`
+	ValidatorReward            float64                   `json:"validator_reward"`
+	BlobberSlash               float64                   `json:"blobber_slash"`
+}
+
+func GetStorageSCConfig() (conf *StorageSCConfig, err error) {
+	var b []byte
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getConfig", nil,
+		nil)
+	if err != nil {
+		return nil, fmt.Errorf("error requesting storage SC configs: %v", err)
+	}
+
+	conf = new(StorageSCConfig)
+	if err = json.Unmarshal(b, conf); err != nil {
+		return nil, fmt.Errorf("error decoding response: %v", err)
+	}
+
+	if conf.ReadPool == nil || conf.WritePool == nil {
+		return nil, errors.New("invalid confg: missing read/write pool configs")
+	}
+	return
+}
+
+// Terms represents Blobber terms. A Blobber can update its terms,
+// but any existing offer will use terms of offer signing time.
+type Terms struct {
+	ReadPrice               int64         `json:"read_price"`                // tokens / read
+	WritePrice              int64         `json:"write_price"`               // tokens / GB
+	MinLockDemand           float64       `json:"min_lock_demand"`           //
+	MaxOfferDuration        time.Duration `json:"max_offer_duration"`        //
+	ChallengeCompletionTime time.Duration `json:"challenge_completion_time"` //
+}
+
+type Blobber struct {
+	ID              string `json:"id"`
+	BaseURL         string `json:"url"`
+	Terms           Terms  `json:"terms"`             // terms
+	Capacity        int64  `json:"capacity"`          // total blobber capacity
+	Used            int64  `json:"used"`              // allocated capacity
+	LastHealthCheck int64  `json:"last_health_check"` // time, seconds
+	PublicKey       string `json:"-"`
+}
+
+func GetBlobbers() (bs []*Blobber, err error) {
+	var b []byte
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getblobbers", nil,
+		nil)
+	if err != nil {
+		return nil, fmt.Errorf("error requesting blobbers: %v", err)
+	}
+
+	type nodes struct {
+		Nodes []*Blobber
+	}
+
+	var wrap nodes
+
+	if err = json.Unmarshal(b, &wrap); err != nil {
+		return nil, fmt.Errorf("error decoding response: %v", err)
+	}
+
+	return wrap.Nodes, nil
+}
+
+//
+// ---
+//
 
 func GetClientEncryptedPublicKey() (string, error) {
 	if !sdkInitialized {
@@ -152,23 +454,6 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 	return allocations, nil
 }
 
-// WritePoolLock lock token for the write pool.
-func WritePoolLock(allocID string, val int64) (resp string, err error) {
-
-	type writeLockRequest struct {
-		AllocationID string `json:"allocation_id"`
-	}
-
-	var req writeLockRequest
-	req.AllocationID = allocID
-
-	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.WRITE_POOL_LOCK,
-		InputArgs: &req,
-	}
-	return smartContractTxnValue(sn, val)
-}
-
 func CreateAllocation(datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, lock int64) (
 	string, error) {
@@ -233,6 +518,10 @@ func smartContractTxn(sn transaction.SmartContractTxnData) (string, error) {
 }
 
 func smartContractTxnValue(sn transaction.SmartContractTxnData, value int64) (string, error) {
+	return smartContractTxnValueFee(sn, value, 0)
+}
+
+func smartContractTxnValueFee(sn transaction.SmartContractTxnData, value, fee int64) (string, error) {
 	requestBytes, err := json.Marshal(sn)
 	if err != nil {
 		return "", err
@@ -241,6 +530,7 @@ func smartContractTxnValue(sn transaction.SmartContractTxnData, value int64) (st
 	txn.TransactionData = string(requestBytes)
 	txn.ToClientID = STORAGE_SCADDRESS
 	txn.Value = value
+	txn.TransactionFee = fee
 	txn.TransactionType = transaction.TxnTypeSmartContract
 	err = txn.ComputeHashAndSign(client.Sign)
 	if err != nil {
