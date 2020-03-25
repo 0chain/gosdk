@@ -43,8 +43,8 @@ const OBJECT_TREE_ENDPOINT = "/v1/file/objecttree/"
 var transport = &http.Transport{
 	Proxy: http.ProxyFromEnvironment,
 	DialContext: (&net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
+		Timeout:   45 * time.Second,
+		KeepAlive: 45 * time.Second,
 		DualStack: true,
 	}).DialContext,
 	MaxIdleConns:          100,
