@@ -632,7 +632,7 @@ func (t *Transaction) Verify() error {
 	}
 	// If transaction is verify only start from current time
 	if t.txn.CreationDate == 0 {
-		t.txn.CreationDate = common.Now()
+		t.txn.CreationDate = int64(common.Now())
 	}
 
 	go func() {
@@ -640,7 +640,7 @@ func (t *Transaction) Verify() error {
 			// Get transaction confirmation from random sharder
 			confirmBlock, confirmation, lfb, err := getTransactionConfirmation(1, t.txnHash)
 			if err != nil {
-				tn := common.Now()
+				tn := int64(common.Now())
 				Logger.Info(err, " now: ", tn, ", LFB creation time:", lfb.CreationDate)
 				if util.MaxInt64(lfb.CreationDate, tn) < (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
 					Logger.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders")

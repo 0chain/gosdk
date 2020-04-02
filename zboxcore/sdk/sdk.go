@@ -91,12 +91,12 @@ func CreateReadPool() (err error) {
 
 // ReadPoolStat is number of tokens and locking status for the tokens.
 type ReadPoolStat struct {
-	ID        string        `json:"pool_id"`
-	StartTime int64         `json:"start_time"`
-	Duration  time.Duration `json:"duration"`
-	TimeLeft  time.Duration `json:"time_left"`
-	Locked    bool          `json:"locked"`
-	Balance   int64         `json:"balance"`
+	ID        common.Key       `json:"pool_id"`
+	StartTime common.Timestamp `json:"start_time"`
+	Duration  time.Duration    `json:"duration"`
+	TimeLeft  time.Duration    `json:"time_left"`
+	Locked    bool             `json:"locked"`
+	Balance   common.Balance   `json:"balance"`
 }
 
 // ReadPoolInfo is set of read pool locks statistic.
@@ -168,19 +168,21 @@ func ReadPoolUnlock(poolID string, fee int64) (err error) {
 //
 
 type StakePoolOfferStat struct {
-	Lock         int64  `json:"lock"`   // balance
-	Expire       int64  `json:"expire"` // time, seconds
-	AllocationID string `json:"allocation_id"`
-	IsExpired    bool   `json:"is_expired"`
+	Lock         common.Balance   `json:"lock"`
+	Expire       common.Timestamp `json:"expire"`
+	AllocationID common.Key       `json:"allocation_id"`
+	IsExpired    bool             `json:"is_expired"`
 }
 
 type StakePoolInfo struct {
-	ID            string                `json:"pool_id"`  // id
-	Locked        int64                 `json:"locked"`   // balance
-	Unlocked      int64                 `json:"unlocked"` // balance
-	Offers        []*StakePoolOfferStat `json:"offers"`
-	OffersTotal   int64                 `json:"offers_total"`   // balance
-	RequiredStake int64                 `json:"required_stake"` // balance
+	ID            common.Key     `json:"pool_id"`
+	Locked        common.Balance `json:"locked"`
+	OffersTotal   common.Balance `json:"offers_total"`
+	CapacityStake common.Balance `json:"capacity_stake"`
+	Lack          common.Balance `json:"lack"`
+	Overfill      common.Balance `json:"overfill"`
+
+	Offers []*StakePoolOfferStat `json:"offers"`
 }
 
 // GetStakePoolInfo for given client, or, if the given clientID is empty,
@@ -206,7 +208,16 @@ func GetStakePoolInfo(blobberID string) (info *StakePoolInfo, err error) {
 	return
 }
 
-// StakePoolUnlock unlocks tokens in stake pool
+// StakePoolLock locks tokens lack in stake pool
+func StakePoolLock(value, fee int64) (err error) {
+	var sn = transaction.SmartContractTxnData{
+		Name: transaction.STAKE_POOL_LOCK,
+	}
+	_, err = smartContractTxnValueFee(sn, value, fee)
+	return
+}
+
+// StakePoolUnlock unlocks a stake pool overfill.
 func StakePoolUnlock(fee int64) (err error) {
 	var sn = transaction.SmartContractTxnData{
 		Name: transaction.STAKE_POOL_UNLOCK,
@@ -220,12 +231,11 @@ func StakePoolUnlock(fee int64) (err error) {
 //
 
 type WritePoolInfo struct {
-	ID        string        `json:"pool_id"`    //
-	StartTime int64         `json:"start_time"` // time, seconds
-	Duration  time.Duration `json:"duration"`   //
-	TimeLeft  time.Duration `json:"time_left"`  //
-	Locked    bool          `json:"locked"`     //
-	Balance   int64         `json:"balance"`    // balance
+	ID         common.Key       `json:"pool_id"`
+	Balance    common.Balance   `json:"balance"`
+	StartTime  common.Timestamp `json:"start_time"`
+	Expiration common.Timestamp `json:"expiration"`
+	Finalized  bool             `json:"finalized"`
 }
 
 // GetWritePoolInfo for given client, or, if the given clientID is empty,
@@ -267,14 +277,8 @@ func WritePoolLock(allocID string, tokens, fee int64) (err error) {
 // challenge pool
 //
 
-type ChallengePoolInfo struct {
-	ID        string        `json:"pool_id"`    //
-	StartTime int64         `json:"start_time"` // time, seconds
-	Duration  time.Duration `json:"duration"`   //
-	TimeLeft  time.Duration `json:"time_left"`  //
-	Locked    bool          `json:"locked"`     //
-	Balance   int64         `json:"balance"`    // balance
-}
+// ChallengePoolInfo is alias for WritePoolInfo
+type ChallengePoolInfo = WritePoolInfo
 
 // GetChallengePoolInfo for given allocation.
 func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
@@ -299,23 +303,23 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 //
 
 type StorageSCReadPoolConfig struct {
-	MinLock       int64         `json:"min_lock"`        // balance, tokens
-	MinLockPeriod time.Duration `json:"min_lock_period"` //
-	MaxLockPeriod time.Duration `json:"max_lock_period"` //
+	MinLock       common.Balance `json:"min_lock"`
+	MinLockPeriod time.Duration  `json:"min_lock_period"`
+	MaxLockPeriod time.Duration  `json:"max_lock_period"`
 }
 
 type StorageSCWritePoolConfig struct {
-	MinLock int64 `json:"min_lock"` // balance, tokens
+	MinLock common.Balance `json:"min_lock"`
 }
 
 type StorageSCConfig struct {
 	ChallengeEnabled           bool                      `json:"challenge_enabled"`
 	ChallengeRatePerMBMin      time.Duration             `json:"challenge_rate_per_mb_min"`
-	MinAllocSize               int64                     `json:"min_alloc_size"` // size, bytes
+	MinAllocSize               common.Size               `json:"min_alloc_size"` // size, bytes
 	MinAllocDuration           time.Duration             `json:"min_alloc_duration"`
 	MaxChallengeCompletionTime time.Duration             `json:"max_challenge_completion_time"`
 	MinOfferDuration           time.Duration             `json:"min_offer_duration"`
-	MinBlobberCapacity         int64                     `json:"min_blobber_capacity"`
+	MinBlobberCapacity         common.Size               `json:"min_blobber_capacity"`
 	ReadPool                   *StorageSCReadPoolConfig  `json:"readpool"`
 	WritePool                  *StorageSCWritePoolConfig `json:"writepool"`
 	ValidatorReward            float64                   `json:"validator_reward"`
@@ -344,21 +348,21 @@ func GetStorageSCConfig() (conf *StorageSCConfig, err error) {
 // Terms represents Blobber terms. A Blobber can update its terms,
 // but any existing offer will use terms of offer signing time.
 type Terms struct {
-	ReadPrice               int64         `json:"read_price"`                // tokens / read
-	WritePrice              int64         `json:"write_price"`               // tokens / GB
-	MinLockDemand           float64       `json:"min_lock_demand"`           //
-	MaxOfferDuration        time.Duration `json:"max_offer_duration"`        //
-	ChallengeCompletionTime time.Duration `json:"challenge_completion_time"` //
+	ReadPrice               common.Balance `json:"read_price"`  // tokens / read
+	WritePrice              common.Balance `json:"write_price"` // tokens / GB
+	MinLockDemand           float64        `json:"min_lock_demand"`
+	MaxOfferDuration        time.Duration  `json:"max_offer_duration"`
+	ChallengeCompletionTime time.Duration  `json:"challenge_completion_time"`
 }
 
 type Blobber struct {
-	ID              string `json:"id"`
-	BaseURL         string `json:"url"`
-	Terms           Terms  `json:"terms"`             // terms
-	Capacity        int64  `json:"capacity"`          // total blobber capacity
-	Used            int64  `json:"used"`              // allocated capacity
-	LastHealthCheck int64  `json:"last_health_check"` // time, seconds
-	PublicKey       string `json:"-"`
+	ID              common.Key       `json:"id"`
+	BaseURL         string           `json:"url"`
+	Terms           Terms            `json:"terms"`
+	Capacity        common.Size      `json:"capacity"`
+	Used            common.Size      `json:"used"`
+	LastHealthCheck common.Timestamp `json:"last_health_check"`
+	PublicKey       string           `json:"-"`
 }
 
 func GetBlobbers() (bs []*Blobber, err error) {
