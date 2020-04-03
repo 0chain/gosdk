@@ -13,11 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -29,16 +27,6 @@ var (
 	notInitialized = common.NewError("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 	underRepair    = common.NewError("allocaton_under_repair", "Allocation is under repair, Please try again later")
 )
-
-type MetaOperation struct {
-	CrudType string
-	MetaData *ConsolidatedFileMeta
-}
-
-type MetaTransactionData struct {
-	TxnID    string
-	MetaData *ConsolidatedFileMeta
-}
 
 type ConsolidatedFileMeta struct {
 	Name         string
@@ -699,64 +687,28 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	return nil
 }
 
-func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, lookupHash string, fileMeta *ConsolidatedFileMeta) (*MetaTransactionData, error) {
-	var err error
+func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, lookupHash string, fileMeta *ConsolidatedFileMeta, status StatusCallback) (err error) {
 	if fileMeta == nil {
 		if len(path) > 0 {
 			fileMeta, err = a.GetFileMeta(path)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		} else if len(authTicket) > 0 {
 			fileMeta, err = a.GetFileMetaFromAuthTicket(authTicket, lookupHash)
 			if err != nil {
-				return nil, err
+				return err
 			}
 		}
 	}
 
-	metaOperationData := &MetaOperation{
-		CrudType: crudOperation,
-		MetaData: fileMeta,
+	req := &CommitMetaRequest{
+		CommitMetaData: CommitMetaData{
+			CrudType: crudOperation,
+			MetaData: fileMeta,
+		},
+		status: status,
 	}
-	metaOperationBytes, err := json.Marshal(metaOperationData)
-	if err != nil {
-		return nil, err
-	}
-
-	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey())
-	txn.TransactionData = string(metaOperationBytes)
-	txn.TransactionType = transaction.TxnTypeData
-	err = txn.ComputeHashAndSign(client.Sign)
-	if err != nil {
-		return nil, err
-	}
-	transaction.SendTransactionSync(txn, blockchain.GetMiners())
-	querySleepTime := time.Duration(blockchain.GetQuerySleepTime()) * time.Second
-	time.Sleep(querySleepTime)
-	retries := 0
-	var t *transaction.Transaction
-	for retries < blockchain.GetMaxTxnQuery() {
-		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders())
-		if err == nil {
-			break
-		}
-		retries++
-		time.Sleep(querySleepTime)
-	}
-
-	if err != nil {
-		Logger.Error("Error verifying the commit transaction", err.Error(), txn.Hash)
-		return nil, err
-	}
-	if t == nil {
-		return nil, common.NewError("transaction_validation_failed", "Failed to get the transaction confirmation")
-	}
-
-	metaTransactionData := &MetaTransactionData{
-		TxnID:    t.Hash,
-		MetaData: metaOperationData.MetaData,
-	}
-
-	return metaTransactionData, nil
+	go req.processCommitMetaRequest()
+	return nil
 }
