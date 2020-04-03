@@ -333,6 +333,8 @@ func GetStorageSCConfig() (conf *StorageSCConfig, err error) {
 	if err != nil {
 		return nil, fmt.Errorf("error requesting storage SC configs: %v", err)
 	}
+	println("STORAGE SC RAW CONFIG ===========================================")
+	println(string(b))
 
 	conf = new(StorageSCConfig)
 	if err = json.Unmarshal(b, conf); err != nil {
@@ -506,13 +508,18 @@ func UpdateAllocation(size int64, expiry int64, allocationID string) (string, er
 	return smartContractTxn(sn)
 }
 
-func FinalizeAllocation(allocationID string) (string, error) {
-	var req = make(map[string]interface{})
-	req["allocation_id"] = allocationID
-
+func FinalizeAllocation(allocID string) (string, error) {
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.FINALIZE_ALLOCATION,
-		InputArgs: req,
+		InputArgs: map[string]interface{}{"allocation_id": allocID},
+	}
+	return smartContractTxn(sn)
+}
+
+func CancelAlloctioan(allocID string) (string, error) {
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.CANCEL_ALLOCATION,
+		InputArgs: map[string]interface{}{"allocation_id": allocID},
 	}
 	return smartContractTxn(sn)
 }

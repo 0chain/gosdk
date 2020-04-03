@@ -85,6 +85,7 @@ const (
 	STAKE_POOL_LOCK           = "stake_pool_lock"
 	STAKE_POOL_UNLOCK         = "stake_pool_unlock"
 	FINALIZE_ALLOCATION       = "finalize_allocation"
+	CANCEL_ALLOCATION         = "cancel_allocation"
 )
 
 type SignFunc = func(msg string) (string, error)
