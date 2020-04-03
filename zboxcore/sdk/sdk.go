@@ -101,7 +101,7 @@ type ReadPoolStat struct {
 
 // ReadPoolInfo is set of read pool locks statistic.
 type ReadPoolInfo struct {
-	Stats []*ReadPoolStat `json:"stats"`
+	Stats map[string][]*ReadPoolStat `json:"stats"`
 }
 
 // GetReadPoolInfo for given client, or, if the given clientID is empty,
@@ -128,14 +128,17 @@ func GetReadPoolInfo(clientID string) (info *ReadPoolInfo, err error) {
 }
 
 // ReadPoolLock locks given number of tokes for given duration in read pool.
-func ReadPoolLock(dur time.Duration, tokens, fee int64) (err error) {
+func ReadPoolLock(allocID string, dur time.Duration,
+	tokens, fee int64) (err error) {
 
 	type lockRequest struct {
-		Duration time.Duration `json:"duration"`
+		Duration     time.Duration `json:"duration"`
+		AllocationID string        `json:"allocation_id"`
 	}
 
 	var req lockRequest
 	req.Duration = dur
+	req.AllocationID = allocID
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.READ_POOL_LOCK,
@@ -146,14 +149,16 @@ func ReadPoolLock(dur time.Duration, tokens, fee int64) (err error) {
 }
 
 // ReadPoolUnlock unlocks tokens in expired read pool
-func ReadPoolUnlock(poolID string, fee int64) (err error) {
+func ReadPoolUnlock(allocID, poolID string, fee int64) (err error) {
 
 	type unlockRequest struct {
-		PoolID string `json:"pool_id"`
+		PoolID       string `json:"pool_id"`
+		AllocationID string `json:"allocation_id"`
 	}
 
 	var req unlockRequest
 	req.PoolID = poolID
+	req.AllocationID = allocID
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.READ_POOL_UNLOCK,
