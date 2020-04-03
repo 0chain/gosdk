@@ -31,7 +31,7 @@ func (req *ShareRequest) GetAuthTicketForEncryptedFile(clientID string, encPubli
 	at.FileName = req.remotefilename
 	at.FilePathHash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 	at.RefType = req.refType
-	timestamp := common.Now()
+	timestamp := int64(common.Now())
 	at.Expiration = timestamp + 7776000
 	at.Timestamp = timestamp
 	err := at.Sign()
@@ -77,7 +77,7 @@ func (req *ShareRequest) GetAuthTicket(clientID string) (string, error) {
 	at.FileName = req.remotefilename
 	at.FilePathHash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 	at.RefType = req.refType
-	timestamp := common.Now()
+	timestamp := int64(common.Now())
 	at.Expiration = timestamp + 7776000
 	at.Timestamp = timestamp
 	err := at.Sign()

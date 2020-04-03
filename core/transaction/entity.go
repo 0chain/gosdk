@@ -82,8 +82,10 @@ const (
 	READ_POOL_LOCK            = "read_pool_lock"
 	READ_POOL_UNLOCK          = "read_pool_unlock"
 	WRITE_POOL_LOCK           = "write_pool_lock"
+	STAKE_POOL_LOCK           = "stake_pool_lock"
 	STAKE_POOL_UNLOCK         = "stake_pool_unlock"
 	FINALIZE_ALLOCATION       = "finalize_allocation"
+	CANCEL_ALLOCATION         = "cancel_allocation"
 )
 
 type SignFunc = func(msg string) (string, error)
@@ -94,7 +96,7 @@ func NewTransactionEntity(clientID string, chainID string, publicKey string) *Tr
 	txn := &Transaction{}
 	txn.Version = "1.0"
 	txn.ClientID = clientID
-	txn.CreationDate = common.Now()
+	txn.CreationDate = int64(common.Now())
 	txn.ChainID = chainID
 	txn.PublicKey = publicKey
 	return txn
