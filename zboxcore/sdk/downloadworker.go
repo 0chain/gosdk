@@ -62,6 +62,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64) ([]byte, error) {
 		pos = bits.TrailingZeros32(i)
 		blockDownloadReq := &BlockDownloadRequest{}
 		blockDownloadReq.allocationID = req.allocationID
+		blockDownloadReq.allocationTx = req.allocationTx
 		blockDownloadReq.authTicket = req.authTicket
 		blockDownloadReq.blobber = req.blobbers[pos]
 		blockDownloadReq.blobberIdx = pos
