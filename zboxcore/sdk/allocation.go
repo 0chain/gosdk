@@ -424,7 +424,6 @@ func (a *Allocation) ListDir(path string) (*ListResult, error) {
 	listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
-	println("GET LSIT FROM BLOBERS")
 	ref := listReq.GetListFromBlobbers()
 	if ref != nil {
 		return ref, nil
@@ -606,7 +605,6 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
-	println("ALLOC TX:", a.Tx)
 	req.destPath = destPath
 	req.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	req.fullconsensus = float32(a.DataShards + a.ParityShards)

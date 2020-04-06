@@ -142,7 +142,6 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 	selected := make(map[string]*ListResult)
 	childResultMap := make(map[string]*ListResult)
 	for i := 0; i < len(lR); i++ {
-		println("LOOP OVER", lR[i].responseStr)
 		req.consensus = 0
 		ti := lR[i]
 		if ti.err != nil || ti.ref == nil {

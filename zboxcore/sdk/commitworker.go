@@ -105,7 +105,6 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 	var req *http.Request
 	var lR ReferencePathResult
-	println("COMMIT TXN:", commitreq.allocationTx)
 	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
 	if err != nil || len(paths) == 0 {
 		Logger.Error("Creating ref path req", err)
