@@ -23,13 +23,14 @@ import (
 type BlockDownloadRequest struct {
 	blobber            *blockchain.StorageNode
 	allocationID       string
+	allocationTx       string
 	blobberIdx         int
 	remotefilepath     string
 	remotefilepathhash string
 	blockNum           int64
-	encryptedKey 	   string
+	encryptedKey       string
 	contentMode        string
-	numBlocks int64
+	numBlocks          int64
 	authTicket         *marker.AuthTicket
 	wg                 *sync.WaitGroup
 	ctx                context.Context
@@ -37,13 +38,13 @@ type BlockDownloadRequest struct {
 }
 
 type downloadBlock struct {
-	RawData     []byte             `json:"data"`
+	RawData     []byte `json:"data"`
 	BlockChunks [][]byte
-	Success  bool               `json:"success"`
-	LatestRM *marker.ReadMarker `json:"latest_rm"`
-	idx      int
-	err      error
-	NumBlocks int64 `json:"num_of_blocks"`
+	Success     bool               `json:"success"`
+	LatestRM    *marker.ReadMarker `json:"latest_rm"`
+	idx         int
+	err         error
+	NumBlocks   int64 `json:"num_of_blocks"`
 }
 
 var blobberReadCounter *sync.Map
@@ -159,7 +160,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		}
 
 		formWriter.Close()
-		httpreq, err := zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationID, body)
+		httpreq, err := zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationTx, body)
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: fmt.Errorf("Error creating download request: %s", err.Error())}
 			return
@@ -177,7 +178,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			}
 			if resp.StatusCode == http.StatusOK {
 				//req.consensus++
-				
+
 				response, err := ioutil.ReadAll(resp.Body)
 				// if err != nil {
 				// 	return fmt.Errorf("[%d] Read error:%s\n", req.blobberIdx, err.Error())
@@ -190,7 +191,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				if err != nil {
 					rspData.Success = true
 					//rawData := make([]byte,0)
-					//json.Unmarshal(response, &rawData) 
+					//json.Unmarshal(response, &rawData)
 					rspData.RawData = response
 					chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
 					rspData.BlockChunks = chunks

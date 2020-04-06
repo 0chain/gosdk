@@ -284,6 +284,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	if uploadReq.isRepair {
 		listReq := &ListRequest{}
 		listReq.allocationID = a.ID
+		listReq.allocationTx = a.Tx
 		listReq.blobbers = a.Blobbers
 		listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 		listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
@@ -343,6 +344,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 
 	downloadReq := &DownloadRequest{}
 	downloadReq.allocationID = a.ID
+	downloadReq.allocationTx = a.Tx
 	downloadReq.ctx, _ = context.WithCancel(a.ctx)
 	downloadReq.localpath = localPath
 	downloadReq.remotefilepath = remotePath
@@ -388,6 +390,7 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string)
 
 	listReq := &ListRequest{}
 	listReq.allocationID = a.ID
+	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
 	listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
@@ -415,11 +418,13 @@ func (a *Allocation) ListDir(path string) (*ListResult, error) {
 	}
 	listReq := &ListRequest{}
 	listReq.allocationID = a.ID
+	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
 	listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
+	println("GET LSIT FROM BLOBERS")
 	ref := listReq.GetListFromBlobbers()
 	if ref != nil {
 		return ref, nil
@@ -431,6 +436,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	result := &ConsolidatedFileMeta{}
 	listReq := &ListRequest{}
 	listReq.allocationID = a.ID
+	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
 	listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
@@ -468,6 +474,7 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 
 	listReq := &ListRequest{}
 	listReq.allocationID = a.ID
+	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
 	listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
@@ -502,6 +509,7 @@ func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error) {
 	}
 	listReq := &ListRequest{}
 	listReq.allocationID = a.ID
+	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
 	listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
@@ -533,6 +541,7 @@ func (a *Allocation) DeleteFile(path string) error {
 	req := &DeleteRequest{}
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
+	req.allocationTx = a.Tx
 	req.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	req.fullconsensus = float32(a.DataShards + a.ParityShards)
 	req.ctx = a.ctx
@@ -560,6 +569,7 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	req := &RenameRequest{}
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
+	req.allocationTx = a.Tx
 	req.newName = destName
 	req.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	req.fullconsensus = float32(a.DataShards + a.ParityShards)
@@ -595,6 +605,8 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	req := &CopyRequest{}
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
+	req.allocationTx = a.Tx
+	println("ALLOC TX:", a.Tx)
 	req.destPath = destPath
 	req.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	req.fullconsensus = float32(a.DataShards + a.ParityShards)
@@ -698,6 +710,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 
 	downloadReq := &DownloadRequest{}
 	downloadReq.allocationID = a.ID
+	downloadReq.allocationTx = a.Tx
 	downloadReq.ctx, _ = context.WithCancel(a.ctx)
 	downloadReq.localpath = localPath
 	downloadReq.remotefilepathhash = remoteLookupHash

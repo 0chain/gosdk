@@ -96,7 +96,7 @@ type UploadRequest struct {
 func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.StorageNode, file *fileref.FileRef, uploadCh chan []byte, uploadThumbCh chan []byte, wg *sync.WaitGroup) {
 	bodyReader, bodyWriter := io.Pipe()
 	formWriter := multipart.NewWriter(bodyWriter)
-	httpreq, _ := zboxutil.NewUploadRequest(blobber.Baseurl, a.ID, bodyReader, req.isUpdate)
+	httpreq, _ := zboxutil.NewUploadRequest(blobber.Baseurl, a.Tx, bodyReader, req.isUpdate)
 	//timeout := time.Duration(int64(math.Max(10, float64(obj.file.Size)/(CHUNK_SIZE*float64(len(obj.blobbers)/2)))))
 	//ctx, cncl := context.WithTimeout(context.Background(), (time.Second * timeout))
 
@@ -485,6 +485,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 		//go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.wg)
 		commitReq := &CommitRequest{}
 		commitReq.allocationID = a.ID
+		commitReq.allocationTx = a.Tx
 		commitReq.blobber = a.Blobbers[pos]
 		if req.isUpdate {
 			newChange := &allocationchange.UpdateFileChange{}

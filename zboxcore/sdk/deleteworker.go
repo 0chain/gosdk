@@ -22,6 +22,7 @@ import (
 
 type DeleteRequest struct {
 	allocationID   string
+	allocationTx   string
 	blobbers       []*blockchain.StorageNode
 	remotefilepath string
 	ctx            context.Context
@@ -44,14 +45,14 @@ func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blo
 	if path != "/" {
 		path = strings.TrimRight(path, "/")
 	}
-	
+
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
 
 	_ = formWriter.WriteField("connection_id", req.connectionID)
 	_ = formWriter.WriteField("path", req.remotefilepath)
 	formWriter.Close()
-	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationID, body)
+	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationTx, body)
 	if err != nil {
 		Logger.Error(blobber.Baseurl, "Error creating delete request", err)
 		return
@@ -79,12 +80,12 @@ func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blo
 }
 
 func (req *DeleteRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.remotefilepath, blobber)
+	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.remotefilepath, blobber)
 }
 
 func (req *DeleteRequest) ProcessDelete() error {
 	numList := len(req.blobbers)
-	objectTreeRefs := make([]fileref.RefEntity,numList)
+	objectTreeRefs := make([]fileref.RefEntity, numList)
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numList)
 	for i := 0; i < numList; i++ {
@@ -116,7 +117,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 		c++
 	}
 	req.wg.Wait()
-	
+
 	if !req.isConsensusOk() {
 		return fmt.Errorf("Delete failed: Success_rate:%2f, expected:%2f", req.getConsensusRate(), req.getConsensusRequiredForOk())
 	}
@@ -131,6 +132,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 		//go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.wg)
 		commitReq := &CommitRequest{}
 		commitReq.allocationID = req.allocationID
+		commitReq.allocationID = req.allocationTx
 		commitReq.blobber = req.blobbers[pos]
 		newChange := &allocationchange.DeleteFileChange{}
 		newChange.ObjectTree = objectTreeRefs[pos]

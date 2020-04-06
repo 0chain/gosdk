@@ -2,10 +2,10 @@ package sdk
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"encoding/json"
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -14,9 +14,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
-
-func getObjectTreeFromBlobber(ctx context.Context, allocationID string, remotefilepath string, blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	httpreq, err := zboxutil.NewObjectTreeRequest(blobber.Baseurl, allocationID, remotefilepath)
+func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx string, remotefilepath string, blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
+	httpreq, err := zboxutil.NewObjectTreeRequest(blobber.Baseurl, allocationTx, remotefilepath)
 	if err != nil {
 		Logger.Error(blobber.Baseurl, "Error creating object tree request", err)
 		return nil, err

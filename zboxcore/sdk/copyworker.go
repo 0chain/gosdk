@@ -1,10 +1,10 @@
 package sdk
 
 import (
-	"github.com/0chain/gosdk/zboxcore/fileref"
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/0chain/gosdk/zboxcore/fileref"
 	"io/ioutil"
 	"math/bits"
 	"mime/multipart"
@@ -20,9 +20,10 @@ import (
 
 type CopyRequest struct {
 	allocationID   string
+	allocationTx   string
 	blobbers       []*blockchain.StorageNode
 	remotefilepath string
-	destPath  string
+	destPath       string
 	ctx            context.Context
 	wg             *sync.WaitGroup
 	copyMask       uint32
@@ -31,7 +32,7 @@ type CopyRequest struct {
 }
 
 func (req *CopyRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.remotefilepath, blobber)
+	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.remotefilepath, blobber)
 }
 
 func (req *CopyRequest) copyBlobberObject(blobber *blockchain.StorageNode, blobberIdx int) (fileref.RefEntity, error) {
@@ -39,16 +40,16 @@ func (req *CopyRequest) copyBlobberObject(blobber *blockchain.StorageNode, blobb
 	if err != nil {
 		return nil, err
 	}
-	
+
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
-	
+
 	_ = formWriter.WriteField("connection_id", req.connectionID)
 	formWriter.WriteField("path", req.remotefilepath)
 	formWriter.WriteField("dest", req.destPath)
-	
+
 	formWriter.Close()
-	httpreq, err := zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationID, body)
+	httpreq, err := zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationTx, body)
 	if err != nil {
 		Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 		return nil, err
@@ -84,7 +85,7 @@ func (req *CopyRequest) copyBlobberObject(blobber *blockchain.StorageNode, blobb
 
 func (req *CopyRequest) ProcessCopy() error {
 	numList := len(req.blobbers)
-	objectTreeRefs := make([]fileref.RefEntity,numList)
+	objectTreeRefs := make([]fileref.RefEntity, numList)
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numList)
 	for i := 0; i < numList; i++ {
@@ -114,6 +115,7 @@ func (req *CopyRequest) ProcessCopy() error {
 		//go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.wg)
 		commitReq := &CommitRequest{}
 		commitReq.allocationID = req.allocationID
+		commitReq.allocationTx = req.allocationTx
 		commitReq.blobber = req.blobbers[pos]
 		newChange := &allocationchange.CopyFileChange{}
 		newChange.DestPath = req.destPath

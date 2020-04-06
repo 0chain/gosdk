@@ -47,6 +47,7 @@ type CommitRequest struct {
 	changes      []allocationchange.AllocationChange
 	blobber      *blockchain.StorageNode
 	allocationID string
+	allocationTx string
 	connectionID string
 	wg           *sync.WaitGroup
 	result       *CommitResult
@@ -104,7 +105,8 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 	var req *http.Request
 	var lR ReferencePathResult
-	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationID, paths)
+	println("COMMIT TXN:", commitreq.allocationTx)
+	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
 	if err != nil || len(paths) == 0 {
 		Logger.Error("Creating ref path req", err)
 		return
@@ -218,7 +220,7 @@ func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.W
 	formWriter.WriteField("write_marker", string(wmData))
 	formWriter.Close()
 
-	httpreq, err := zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationID, body)
+	httpreq, err := zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationTx, body)
 	if err != nil {
 		Logger.Error("Error creating commit req: ", err)
 		return err

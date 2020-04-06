@@ -30,6 +30,7 @@ const (
 
 type DownloadRequest struct {
 	allocationID       string
+	allocationTx       string
 	blobbers           []*blockchain.StorageNode
 	datashards         int
 	parityshards       int
@@ -168,7 +169,14 @@ func (req *DownloadRequest) processDownload(ctx context.Context, a *Allocation) 
 
 	// Only download from the Blobbers passes the consensus
 	var fileRef *fileref.FileRef
-	listReq := &ListRequest{remotefilepath: req.remotefilepath, remotefilepathhash: req.remotefilepathhash, allocationID: req.allocationID, blobbers: req.blobbers, ctx: req.ctx}
+	listReq := &ListRequest{
+		remotefilepath:     req.remotefilepath,
+		remotefilepathhash: req.remotefilepathhash,
+		allocationID:       req.allocationID,
+		allocationTx:       req.allocationTx,
+		blobbers:           req.blobbers,
+		ctx:                req.ctx,
+	}
 	listReq.authToken = req.authTicket
 	req.downloadMask, fileRef, _ = listReq.getFileConsensusFromBlobbers()
 	if req.downloadMask == 0 || fileRef == nil {
