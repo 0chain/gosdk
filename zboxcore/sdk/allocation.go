@@ -68,8 +68,29 @@ type PriceRange struct {
 	Max int64 `json:"max"`
 }
 
+// Terms represents Blobber terms. A Blobber can update its terms,
+// but any existing offer will use terms of offer signing time.
+type Terms struct {
+	ReadPrice               common.Balance `json:"read_price"`  // tokens / GB
+	WritePrice              common.Balance `json:"write_price"` // tokens / GB
+	MinLockDemand           float64        `json:"min_lock_demand"`
+	MaxOfferDuration        time.Duration  `json:"max_offer_duration"`
+	ChallengeCompletionTime time.Duration  `json:"challenge_completion_time"`
+}
+
+type BlobberAllocation struct {
+	BlobberID     string         `json:"blobber_id"`
+	Size          int64          `json:"size"`
+	Terms         Terms          `json:"terms"`
+	MinLockDemand common.Balance `json:"min_lock_demand"`
+	Spent         common.Balance `json:"spent"`
+
+	// Stats         *StorageAllocationStats `json:"stats"`
+}
+
 type Allocation struct {
 	ID             string                    `json:"id"`
+	Tx             string                    `json:"tx"`
 	DataShards     int                       `json:"data_shards"`
 	ParityShards   int                       `json:"parity_shards"`
 	Size           int64                     `json:"size"`
@@ -79,6 +100,11 @@ type Allocation struct {
 	Payer          string                    `json:"payer_id"`
 	Blobbers       []*blockchain.StorageNode `json:"blobbers"`
 	Stats          *AllocationStats          `json:"stats"`
+
+	// BlobberDetails contains real terms used for the allocation.
+	// If the allocation has updated, then terms calculated using
+	// weighted average values.
+	BlobberDetails []*BlobberAllocation `json:"blobber_details"`
 
 	// ReadPriceRange is requested reading prices range.
 	ReadPriceRange PriceRange `json:"read_price_range"`

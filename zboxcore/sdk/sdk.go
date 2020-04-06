@@ -101,7 +101,7 @@ type ReadPoolStat struct {
 
 // ReadPoolInfo is set of read pool locks statistic.
 type ReadPoolInfo struct {
-	Stats map[string][]*ReadPoolStat `json:"stats"`
+	Stats []*ReadPoolStat `json:"stats"`
 }
 
 // GetReadPoolInfo for given client, or, if the given clientID is empty,
@@ -128,17 +128,14 @@ func GetReadPoolInfo(clientID string) (info *ReadPoolInfo, err error) {
 }
 
 // ReadPoolLock locks given number of tokes for given duration in read pool.
-func ReadPoolLock(allocID string, dur time.Duration,
-	tokens, fee int64) (err error) {
+func ReadPoolLock(dur time.Duration, tokens, fee int64) (err error) {
 
 	type lockRequest struct {
-		Duration     time.Duration `json:"duration"`
-		AllocationID string        `json:"allocation_id"`
+		Duration time.Duration `json:"duration"`
 	}
 
 	var req lockRequest
 	req.Duration = dur
-	req.AllocationID = allocID
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.READ_POOL_LOCK,
@@ -149,16 +146,14 @@ func ReadPoolLock(allocID string, dur time.Duration,
 }
 
 // ReadPoolUnlock unlocks tokens in expired read pool
-func ReadPoolUnlock(allocID, poolID string, fee int64) (err error) {
+func ReadPoolUnlock(poolID string, fee int64) (err error) {
 
 	type unlockRequest struct {
-		PoolID       string `json:"pool_id"`
-		AllocationID string `json:"allocation_id"`
+		PoolID string `json:"pool_id"`
 	}
 
 	var req unlockRequest
 	req.PoolID = poolID
-	req.AllocationID = allocID
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.READ_POOL_UNLOCK,
@@ -350,16 +345,6 @@ func GetStorageSCConfig() (conf *StorageSCConfig, err error) {
 		return nil, errors.New("invalid confg: missing read/write pool configs")
 	}
 	return
-}
-
-// Terms represents Blobber terms. A Blobber can update its terms,
-// but any existing offer will use terms of offer signing time.
-type Terms struct {
-	ReadPrice               common.Balance `json:"read_price"`  // tokens / GB
-	WritePrice              common.Balance `json:"write_price"` // tokens / GB
-	MinLockDemand           float64        `json:"min_lock_demand"`
-	MaxOfferDuration        time.Duration  `json:"max_offer_duration"`
-	ChallengeCompletionTime time.Duration  `json:"challenge_completion_time"`
 }
 
 type Blobber struct {
