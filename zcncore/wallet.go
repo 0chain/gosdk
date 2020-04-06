@@ -372,6 +372,7 @@ func RegisterToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 			url := minerurl + REGISTER_CLIENT
 			Logger.Info(url)
 			regData := map[string]string{"id": wallet.ClientID, "public_key": wallet.ClientKey}
+			println("CLIENT ID:", wallet.ClientID, "CLIENT KEY:", wallet.ClientKey)
 			req, err := util.NewHTTPPostRequest(url, regData)
 			if err != nil {
 				Logger.Error(minerurl, "new post request failed. ", err.Error())
