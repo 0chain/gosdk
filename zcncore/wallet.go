@@ -305,6 +305,7 @@ func CreateWallet(statusCb WalletCallback) error {
 		return fmt.Errorf("SDK not initialized")
 	}
 	go func() {
+		println("SUCK SCHEME:", _config.chain.SignatureScheme)
 		sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 		wallet, err := sigScheme.GenerateKeys()
 		if err != nil {
