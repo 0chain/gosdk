@@ -132,7 +132,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 		//go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.wg)
 		commitReq := &CommitRequest{}
 		commitReq.allocationID = req.allocationID
-		commitReq.allocationID = req.allocationTx
+		commitReq.allocationTx = req.allocationTx
 		commitReq.blobber = req.blobbers[pos]
 		newChange := &allocationchange.DeleteFileChange{}
 		newChange.ObjectTree = objectTreeRefs[pos]
