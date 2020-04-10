@@ -56,6 +56,11 @@ type PriceRange struct {
 	Max int64 `json:"max"`
 }
 
+// IsValid price range.
+func (pr *PriceRange) IsValid() bool {
+	return 0 <= pr.Min && pr.Min <= pr.Max
+}
+
 // Terms represents Blobber terms. A Blobber can update its terms,
 // but any existing offer will use terms of offer signing time.
 type Terms struct {
