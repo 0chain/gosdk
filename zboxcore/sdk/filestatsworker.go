@@ -19,20 +19,21 @@ import (
 )
 
 type FileStats struct {
-	Name                     string `json:"name"`
-	Size                     int64  `json:"size"`
-	PathHash                 string `json:"path_hash"`
-	Path                     string `json:"path"`
-	NumBlocks                int64  `json:"num_of_blocks"`
-	NumUpdates               int64  `json:"num_of_updates"`
-	NumBlockDownloads        int64  `json:"num_of_block_downloads"`
-	SuccessChallenges        int64  `json:"num_of_challenges"`
-	FailedChallenges         int64  `json:"num_of_failed_challenges"`
-	LastChallengeResponseTxn string `json:"last_challenge_txn"`
-	WriteMarkerRedeemTxn     string `json:"write_marker_txn"`
-	BlobberID                string `json:"blobber_id"`
-	BlobberURL               string `json:"blobber_url"`
-	BlockchainAware          bool   `json:"blockchain_aware"`
+	Name                     string    `json:"name"`
+	Size                     int64     `json:"size"`
+	PathHash                 string    `json:"path_hash"`
+	Path                     string    `json:"path"`
+	NumBlocks                int64     `json:"num_of_blocks"`
+	NumUpdates               int64     `json:"num_of_updates"`
+	NumBlockDownloads        int64     `json:"num_of_block_downloads"`
+	SuccessChallenges        int64     `json:"num_of_challenges"`
+	FailedChallenges         int64     `json:"num_of_failed_challenges"`
+	LastChallengeResponseTxn string    `json:"last_challenge_txn"`
+	WriteMarkerRedeemTxn     string    `json:"write_marker_txn"`
+	BlobberID                string    `json:"blobber_id"`
+	BlobberURL               string    `json:"blobber_url"`
+	BlockchainAware          bool      `json:"blockchain_aware"`
+	CreatedAt                time.Time `json:"CreatedAt"`
 }
 
 type fileStatsResponse struct {
