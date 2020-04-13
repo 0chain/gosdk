@@ -875,10 +875,12 @@ func GetVestingPoolInfo(poolID common.Key) (vpi *VestingPoolInfo, err error) {
 	return
 }
 
-type VestingClientList []common.Key
+type VestingClientList struct {
+	Pools []common.Key `json:"pools"`
+}
 
 func GetVestingClientList(clientID common.Key) (
-	vcl VestingClientList, err error) {
+	vcl *VestingClientList, err error) {
 
 	if err = checkSdkInit(); err != nil {
 		return
@@ -887,7 +889,8 @@ func GetVestingClientList(clientID common.Key) (
 		clientID = common.Key(_config.wallet.ClientID) // if not blank
 	}
 
-	var cb = NewJSONInfoCB(&vcl)
+	vcl = new(VestingClientList)
+	var cb = NewJSONInfoCB(vcl)
 	go getInfoFromSharders(withParams(GET_VESTING_CLIENT_POOLS, url.Values{
 		"client_id": []string{string(clientID)},
 	}), 0, cb)
