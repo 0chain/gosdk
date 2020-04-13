@@ -112,7 +112,15 @@ type TransactionScheme interface {
 	// GetVerifyError implements error string incase of verify failure error
 	GetVerifyError() string
 
-	//  read pool
+	// vesting SC
+	VestingTrigger(poolID common.Key) error
+	VestingLock(poolID common.Key, value common.Balance) error
+	VestingUnlock(poolID common.Key) error
+	VestingAdd(ar *VestingAddRequest, value common.Balance) error
+	VestingDelete(poolID common.Key) error
+	VestingUpdateConfig(vscc *VestingSCConfig) error
+
+	//  TO REMOVE (sfxdx): remove storage SC related transactions
 
 	// CreateReadPool if missing or when wallet created.
 	CreateReadPool() (err error)
@@ -120,19 +128,10 @@ type TransactionScheme interface {
 	ReadPoolLock(val int64, dur time.Duration) (err error)
 	// ReadPoolUnlock unlock expired tokens of the read pool.
 	ReadPoolUnlock(poolID string) (err error)
-
-	// write pool
-
 	// WritePoolLock lock token for the write pool.
 	WritePoolLock(allocID string, val int64) (err error)
-
-	// stake pool
-
 	// StakePoolUnlock unlock expired tokens of stake pool by owner.
 	StakePoolUnlock() (err error)
-
-	// allocation ending
-
 	// FinalizeAllocation performs all required on allocation expires.
 	FinalizeAllocation(allocID string) (err error)
 }
@@ -818,6 +817,100 @@ func (t *Transaction) stakePoolUnlockTxn() error {
 // StakePoolUnlock unlock expired tokens of the write pool.
 func (t *Transaction) StakePoolUnlock() (err error) {
 	if err = t.stakePoolUnlockTxn(); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+// ========================================================================== //
+//                               vesting pool                                 //
+// ========================================================================== //
+
+type vestingRequest struct {
+	PoolID common.Key `json:"pool_id"`
+}
+
+func (t *Transaction) vestingPoolTxn(function string, poolID common.Key,
+	value common.Balance) error {
+
+	return t.createSmartContractTxn(VestingSmartContractAddress,
+		function, vestingRequest{PoolID: poolID}, int64(value))
+}
+
+func (t *Transaction) VestingTrigger(poolID common.Key) (err error) {
+
+	err = t.vestingPoolTxn(transaction.VESTING_TRIGGER, poolID, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+func (t *Transaction) VestingLock(poolID common.Key, value common.Balance) (
+	err error) {
+
+	err = t.vestingPoolTxn(transaction.VESTING_LOCK, poolID, value)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+func (t *Transaction) VestingUnlock(poolID common.Key) (err error) {
+
+	err = t.vestingPoolTxn(transaction.VESTING_UNLOCK, poolID, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+type VestingAddRequest struct {
+	Description  string           `json:"description"`  // allow empty
+	StartTime    common.Timestamp `json:"start_time"`   //
+	Duration     time.Duration    `json:"duration"`     //
+	Friquency    time.Duration    `json:"friquency"`    //
+	Destinations []common.Key     `json:"destinations"` //
+	Amount       common.Balance   `json:"amount"`       //
+}
+
+func (t *Transaction) VestingAdd(ar *VestingAddRequest,
+	value common.Balance) (err error) {
+
+	err = t.createSmartContractTxn(VestingSmartContractAddress,
+		transaction.VESTING_ADD, ar, int64(value))
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+func (t *Transaction) VestingDelete(poolID common.Key) (err error) {
+
+	err = t.vestingPoolTxn(transaction.VESTING_DELETE, poolID, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+func (t *Transaction) VestingUpdateConfig(vscc *VestingSCConfig) (err error) {
+
+	err = t.createSmartContractTxn(VestingSmartContractAddress,
+		transaction.VESTING_UPDATE_CONFIG, vscc, 0)
+	if err != nil {
 		Logger.Error(err)
 		return
 	}

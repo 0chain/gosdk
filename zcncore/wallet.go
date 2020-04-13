@@ -2,14 +2,17 @@ package zcncore
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
@@ -30,15 +33,20 @@ var defaultLogLevel = logger.DEBUG
 var Logger logger.Logger
 
 const (
-	REGISTER_CLIENT         = `/v1/client/put`
-	PUT_TRANSACTION         = `/v1/transaction/put`
-	TXN_VERIFY_URL          = `/v1/transaction/get/confirmation?hash=`
-	GET_BALANCE             = `/v1/client/get/balance?client_id=`
-	GET_LOCK_CONFIG         = `/v1/screst/` + InterestPoolSmartContractAddress + `/getLockConfig`
-	GET_LOCKED_TOKENS       = `/v1/screst/` + InterestPoolSmartContractAddress + `/getPoolsStats?client_id=`
-	GET_BLOCK_INFO          = `/v1/block/get?`
-	GET_USER_POOLS          = `/v1/screst/` + MinerSmartContractAddress + `/getUserPools?client_id=`
-	GET_USER_POOL_DETAIL    = `/v1/screst/` + MinerSmartContractAddress + `/getPoolsStats?`
+	REGISTER_CLIENT          = `/v1/client/put`
+	PUT_TRANSACTION          = `/v1/transaction/put`
+	TXN_VERIFY_URL           = `/v1/transaction/get/confirmation?hash=`
+	GET_BALANCE              = `/v1/client/get/balance?client_id=`
+	GET_LOCK_CONFIG          = `/v1/screst/` + InterestPoolSmartContractAddress + `/getLockConfig`
+	GET_LOCKED_TOKENS        = `/v1/screst/` + InterestPoolSmartContractAddress + `/getPoolsStats?client_id=`
+	GET_BLOCK_INFO           = `/v1/block/get?`
+	GET_USER_POOLS           = `/v1/screst/` + MinerSmartContractAddress + `/getUserPools?client_id=`
+	GET_USER_POOL_DETAIL     = `/v1/screst/` + MinerSmartContractAddress + `/getPoolsStats?`
+	GET_VESTING_CONFIG       = `/v1/screst/` + VestingSmartContractAddress + `/getConfig`
+	GET_VESTING_POOL_INFO    = `/v1/screst/` + VestingSmartContractAddress + `/getPoolInfo`
+	GET_VESTING_CLIENT_POOLS = `/v1/screst/` + VestingSmartContractAddress + `/getClientPools`
+
+	// TORM (sfxdx): remove from zwallet
 	GET_BLOBBERS            = `/v1/screst/` + StorageSmartContractAddress + `/getblobbers`
 	GET_READ_POOL_STATS     = `/v1/screst/` + StorageSmartContractAddress + `/getReadPoolsStats?client_id=`
 	GET_WRITE_POOL_STAT     = `/v1/screst/` + StorageSmartContractAddress + `/getWritePoolStat?allocation_id=`
@@ -48,7 +56,10 @@ const (
 )
 
 const (
-	StorageSmartContractAddress      = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7`
+	// TORM (sfxdx) remove from zwallet
+	StorageSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7`
+
+	VestingSmartContractAddress      = `2bba5b05949ea59c80aed3ac3474d7379d3be737e8eb5a968c52295e48333ead`
 	FaucetSmartContractAddress       = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3`
 	InterestPoolSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9`
 	MultiSigSmartContractAddress     = `27b5ef7120252b79f9dd9c05505dd28f328c80f6863ee446daede08a84d651a7`
@@ -792,4 +803,117 @@ func GetBlobbers(cb GetInfoCallback) error {
 		getInfoFromSharders(urlSuffix, OpGetBlobbers, cb)
 	}()
 	return nil
+}
+
+// on json info available
+
+type OnJSONInfoCb struct {
+	value interface{}
+	err   error
+	got   chan struct{}
+}
+
+func (ojsonic *OnJSONInfoCb) OnInfoAvailable(op int, status int,
+	info string, errMsg string) {
+
+	defer close(ojsonic.got)
+
+	if status != StatusSuccess {
+		ojsonic.err = errors.New(errMsg)
+		return
+	}
+	var err error
+	if err = json.Unmarshal([]byte(info), ojsonic.value); err != nil {
+		ojsonic.err = fmt.Errorf("decoding response: %v", err)
+	}
+}
+
+// Wait for info.
+func (ojsonic *OnJSONInfoCb) Wait() (err error) {
+	<-ojsonic.got
+	return ojsonic.err
+}
+
+func NewJSONInfoCB(val interface{}) (cb *OnJSONInfoCb) {
+	cb = new(OnJSONInfoCb)
+	cb.value = val
+	cb.got = make(chan struct{})
+	return
+}
+
+//
+// vesting pool
+//
+
+type VestingPoolInfo struct {
+	ID           common.Key       `json:"pool_id"`
+	Balance      common.Balance   `json:"balance"`
+	Description  string           `json:"description"`
+	StartTime    common.Timestamp `json:"start_time"`
+	ExpireAt     common.Timestamp `json:"expire_at"`
+	Friquency    time.Duration    `json:"friquency"`
+	Destinations []common.Key     `json:"destinations"`
+	Amount       common.Balance   `json:"amount"`
+	ClientID     common.Key       `json:"client_id"`
+	Last         common.Timestamp `json:"last"`
+}
+
+func withParams(uri string, params url.Values) string {
+	return uri + "?" + params.Encode()
+}
+
+func GetVestingPoolInfo(poolID common.Key) (vpi *VestingPoolInfo, err error) {
+	if err = checkSdkInit(); err != nil {
+		return
+	}
+	vpi = new(VestingPoolInfo)
+	var cb = NewJSONInfoCB(vpi)
+	go getInfoFromSharders(withParams(GET_VESTING_POOL_INFO, url.Values{
+		"pool_id": []string{string(poolID)},
+	}), 0, cb)
+	err = cb.Wait()
+	return
+}
+
+type VestingClientList []common.Key
+
+func GetVestingClientList(clientID common.Key) (
+	vcl VestingClientList, err error) {
+
+	if err = checkSdkInit(); err != nil {
+		return
+	}
+	if clientID == "" {
+		clientID = common.Key(_config.wallet.ClientID) // if not blank
+	}
+
+	var cb = NewJSONInfoCB(&vcl)
+	go getInfoFromSharders(withParams(GET_VESTING_CLIENT_POOLS, url.Values{
+		"client_id": []string{string(clientID)},
+	}), 0, cb)
+	err = cb.Wait()
+	return
+}
+
+type VestingSCConfig struct {
+	Triggers             []common.Key   `json:"triggers"`
+	MinLock              common.Balance `json:"min_lock"`
+	MinDuration          time.Duration  `json:"min_duration"`
+	MaxDuration          time.Duration  `json:"max_duration"`
+	MinFriquency         time.Duration  `json:"min_friquency"`
+	MaxFriquency         time.Duration  `json:"max_friquency"`
+	MaxDestinations      int            `json:"max_destinations"`
+	MaxDescriptionLength int            `json:"max_description_length"`
+}
+
+func GetVestingSCConfig() (vscc *VestingSCConfig, err error) {
+
+	if err = checkSdkInit(); err != nil {
+		return
+	}
+	vscc = new(VestingSCConfig)
+	var cb = NewJSONInfoCB(vscc)
+	go getInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
+	err = cb.Wait()
+	return
 }
