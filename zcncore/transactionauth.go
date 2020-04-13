@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -263,6 +264,79 @@ func (ta *TransactionWithAuth) FinalizeAllocation(allocID string) (err error) {
 // StakePoolUnlock unlock expired tokens of stake pool by owner.
 func (ta *TransactionWithAuth) StakePoolUnlock() (err error) {
 	if err = ta.t.stakePoolUnlockTxn(); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+// ========================================================================== //
+//                                vesting pool                                //
+// ========================================================================== //
+
+func (ta *TransactionWithAuth) VestingTrigger(poolID common.Key) (err error) {
+	err = ta.t.vestingPoolTxn(transaction.VESTING_TRIGGER, poolID, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) VestingLock(poolID common.Key,
+	value common.Balance) (err error) {
+
+	err = ta.t.vestingPoolTxn(transaction.VESTING_LOCK, poolID, value)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) VestingUnlock(poolID common.Key) (err error) {
+
+	err = ta.t.vestingPoolTxn(transaction.VESTING_UNLOCK, poolID, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) VestingAdd(ar *VestingAddRequest,
+	value common.Balance) (err error) {
+
+	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
+		transaction.VESTING_ADD, ar, int64(value))
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) VestingDelete(poolID common.Key) (err error) {
+	err = ta.t.vestingPoolTxn(transaction.VESTING_DELETE, poolID, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) VestingUpdateConfig(
+	vscc *VestingSCConfig) (err error) {
+
+	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
+		transaction.VESTING_UPDATE_CONFIG, vscc, 0)
+	if err != nil {
 		Logger.Error(err)
 		return
 	}

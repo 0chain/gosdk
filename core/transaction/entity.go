@@ -78,14 +78,24 @@ const (
 	UNLOCK_TOKEN              = "unlock"
 	STAKE                     = "addToDelegatePool"
 	DELETE_STAKE              = "deleteFromDelegatePool"
-	NEW_READ_POOL             = "new_read_pool"
-	READ_POOL_LOCK            = "read_pool_lock"
-	READ_POOL_UNLOCK          = "read_pool_unlock"
-	WRITE_POOL_LOCK           = "write_pool_lock"
-	STAKE_POOL_LOCK           = "stake_pool_lock"
-	STAKE_POOL_UNLOCK         = "stake_pool_unlock"
-	FINALIZE_ALLOCATION       = "finalize_allocation"
-	CANCEL_ALLOCATION         = "cancel_allocation"
+
+	// Vesting SC
+	VESTING_TRIGGER       = "trigger"
+	VESTING_LOCK          = "lock"
+	VESTING_UNLOCK        = "unlock"
+	VESTING_ADD           = "add"
+	VESTING_DELETE        = "delete"
+	VESTING_UPDATE_CONFIG = "update_config"
+
+	// Storage SC
+	NEW_READ_POOL       = "new_read_pool"
+	READ_POOL_LOCK      = "read_pool_lock"
+	READ_POOL_UNLOCK    = "read_pool_unlock"
+	WRITE_POOL_LOCK     = "write_pool_lock"
+	STAKE_POOL_LOCK     = "stake_pool_lock"
+	STAKE_POOL_UNLOCK   = "stake_pool_unlock"
+	FINALIZE_ALLOCATION = "finalize_allocation"
+	CANCEL_ALLOCATION   = "cancel_allocation"
 )
 
 type SignFunc = func(msg string) (string, error)
