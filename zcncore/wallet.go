@@ -1,6 +1,7 @@
 package zcncore
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -552,9 +553,15 @@ func ConvertToValue(token float64) int64 {
 }
 
 func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
+	getInfoFromShardersContext(context.Background(), urlSuffix, op, cb)
+}
+
+func getInfoFromShardersContext(ctx context.Context, urlSuffix string, op int,
+	cb GetInfoCallback) {
+
 	result := make(chan *util.GetResponse)
 	defer close(result)
-	queryFromSharders(getMinShardersVerify(), urlSuffix, result)
+	queryFromShardersContext(ctx, getMinShardersVerify(), urlSuffix, result)
 	consensus := float32(0)
 	resultMap := make(map[int]float32)
 	var winresult *util.GetResponse
@@ -924,13 +931,13 @@ func GetVestingSCConfig() (vscc *VestingSCConfig, err error) {
 	return
 }
 
-func GetVestingLastPart() (last int64, err error) {
+func GetVestingLastPart(ctx context.Context) (last int64, err error) {
 
 	if err = checkSdkInit(); err != nil {
 		return
 	}
 	var cb = NewJSONInfoCB(&last)
-	go getInfoFromSharders(GET_VESTING_LAST_PART, 0, cb)
+	go getInfoFromShardersContext(ctx, GET_VESTING_LAST_PART, 0, cb)
 	err = cb.Wait()
 	return
 }
@@ -940,14 +947,15 @@ type VestingPart struct {
 	Txns []string `json:"txns"`
 }
 
-func GetVestingPart(part int64) (vp *VestingPart, err error) {
+func GetVestingPart(ctx context.Context, part int64) (
+	vp *VestingPart, err error) {
 
 	if err = checkSdkInit(); err != nil {
 		return
 	}
 	vp = new(VestingPart)
 	var cb = NewJSONInfoCB(vp)
-	go getInfoFromSharders(withParams(GET_VESTING_PART, url.Values{
+	go getInfoFromShardersContext(ctx, withParams(GET_VESTING_PART, url.Values{
 		"part": []string{strconv.FormatInt(part, 10)},
 	}), 0, cb)
 	err = cb.Wait()

@@ -63,18 +63,27 @@ func httpDo(req *http.Request, ctx context.Context, cncl context.CancelFunc, f f
 }
 
 func NewHTTPGetRequest(url string) (*GetRequest, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
+	var ctx, _ = context.WithTimeout(context.Background(), 60*time.Second)
+	return NewHTTPGetRequestContext(ctx, url)
+}
+
+func NewHTTPGetRequestContext(ctx context.Context, url string) (
+	gr *GetRequest, err error) {
+
+	var req *http.Request
+	if req, err = http.NewRequest(http.MethodGet, url, nil); err != nil {
+		return
 	}
+
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	req.Header.Set("Access-Control-Allow-Origin", "*")
-	pr := &GetRequest{}
-	pr.PostRequest = &PostRequest{}
-	pr.url = url
-	pr.req = req
-	pr.ctx, pr.cncl = context.WithTimeout(context.Background(), time.Second*60)
-	return pr, nil
+
+	gr = new(GetRequest)
+	gr.PostRequest = &PostRequest{}
+	gr.url = url
+	gr.req = req
+	gr.ctx, gr.cncl = context.WithCancel(ctx)
+	return
 }
 
 func NewHTTPPostRequest(url string, data interface{}) (*PostRequest, error) {

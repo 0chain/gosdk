@@ -1,6 +1,7 @@
 package zcncore
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -410,13 +411,21 @@ func (t *Transaction) GetTransactionHash() string {
 	return t.txnHash
 }
 
-func queryFromSharders(numSharders int, query string, result chan *util.GetResponse) {
+func queryFromSharders(numSharders int, query string,
+	result chan *util.GetResponse) {
+
+	queryFromShardersContext(context.Background(), numSharders, query, result)
+}
+
+func queryFromShardersContext(ctx context.Context, numSharders int,
+	query string, result chan *util.GetResponse) {
+
 	randomShaders := util.GetRandom(_config.chain.Sharders, numSharders)
 	for _, sharder := range randomShaders {
 		go func(sharderurl string) {
 			Logger.Info("Query from ", sharderurl+query)
 			url := fmt.Sprintf("%v%v", sharderurl, query)
-			req, err := util.NewHTTPGetRequest(url)
+			req, err := util.NewHTTPGetRequestContext(ctx, url)
 			if err != nil {
 				Logger.Error(sharderurl, " new get request failed. ", err.Error())
 				return
