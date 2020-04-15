@@ -45,6 +45,8 @@ const (
 	GET_VESTING_CONFIG       = `/v1/screst/` + VestingSmartContractAddress + `/getConfig`
 	GET_VESTING_POOL_INFO    = `/v1/screst/` + VestingSmartContractAddress + `/getPoolInfo`
 	GET_VESTING_CLIENT_POOLS = `/v1/screst/` + VestingSmartContractAddress + `/getClientPools`
+	GET_VESTING_LAST_PART    = `/v1/screst/` + VestingSmartContractAddress + `/getLastPart`
+	GET_VESTING_PART         = `/v1/screst/` + VestingSmartContractAddress + `/getPart`
 
 	// TORM (sfxdx): remove from zwallet
 	GET_BLOBBERS            = `/v1/screst/` + StorageSmartContractAddress + `/getblobbers`
@@ -899,6 +901,7 @@ func GetVestingClientList(clientID common.Key) (
 }
 
 type VestingSCConfig struct {
+	AllowAny             bool           `json:"allow_any"`
 	Triggers             []common.Key   `json:"triggers"`
 	MinLock              common.Balance `json:"min_lock"`
 	MinDuration          time.Duration  `json:"min_duration"`
@@ -917,6 +920,36 @@ func GetVestingSCConfig() (vscc *VestingSCConfig, err error) {
 	vscc = new(VestingSCConfig)
 	var cb = NewJSONInfoCB(vscc)
 	go getInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
+	err = cb.Wait()
+	return
+}
+
+func GetVestingLastPart() (last int64, err error) {
+
+	if err = checkSdkInit(); err != nil {
+		return
+	}
+	var cb = NewJSONInfoCB(&last)
+	go getInfoFromSharders(GET_VESTING_LAST_PART, 0, cb)
+	err = cb.Wait()
+	return
+}
+
+type VestingPart struct {
+	Part int64    `json:"part"`
+	Txns []string `json:"txns"`
+}
+
+func GetVestingPart(part int64) (vp *VestingPart, err error) {
+
+	if err = checkSdkInit(); err != nil {
+		return
+	}
+	vp = new(VestingPart)
+	var cb = NewJSONInfoCB(vp)
+	go getInfoFromSharders(withParams(GET_VESTING_PART, url.Values{
+		"part": []string{strconv.FormatInt(part, 10)},
+	}), 0, cb)
 	err = cb.Wait()
 	return
 }
