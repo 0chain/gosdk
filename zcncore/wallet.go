@@ -850,17 +850,22 @@ func NewJSONInfoCB(val interface{}) (cb *OnJSONInfoCb) {
 // vesting pool
 //
 
+type VestingDestInfo struct {
+	ID     common.Key       `json:"id"`     // identifier
+	Wanted common.Balance   `json:"wanted"` // wanted amount for entire period
+	Earned common.Balance   `json:"earned"` // can unlock
+	Last   common.Timestamp `json:"last"`   // last time unlocked
+}
+
 type VestingPoolInfo struct {
-	ID           common.Key       `json:"pool_id"`
-	Balance      common.Balance   `json:"balance"`
-	Description  string           `json:"description"`
-	StartTime    common.Timestamp `json:"start_time"`
-	ExpireAt     common.Timestamp `json:"expire_at"`
-	Friquency    time.Duration    `json:"friquency"`
-	Destinations []common.Key     `json:"destinations"`
-	Amount       common.Balance   `json:"amount"`
-	ClientID     common.Key       `json:"client_id"`
-	Last         common.Timestamp `json:"last"`
+	ID           common.Key         `json:"pool_id"`      // pool ID
+	Balance      common.Balance     `json:"balance"`      // real pool balance
+	Left         common.Balance     `json:"left"`         // owner can unlock
+	Description  string             `json:"description"`  // description
+	StartTime    common.Timestamp   `json:"start_time"`   // from
+	ExpireAt     common.Timestamp   `json:"expire_at"`    // until
+	Destinations []*VestingDestInfo `json:"destinations"` // receivers
+	ClientID     common.Key         `json:"client_id"`    // owner
 }
 
 func withParams(uri string, params url.Values) string {
@@ -904,16 +909,11 @@ func GetVestingClientList(clientID common.Key) (
 }
 
 type VestingSCConfig struct {
-	AllowAny             bool           `json:"allow_any"`
-	Triggers             []common.Key   `json:"triggers"`
 	MinLock              common.Balance `json:"min_lock"`
 	MinDuration          time.Duration  `json:"min_duration"`
 	MaxDuration          time.Duration  `json:"max_duration"`
-	MinFriquency         time.Duration  `json:"min_friquency"`
-	MaxFriquency         time.Duration  `json:"max_friquency"`
 	MaxDestinations      int            `json:"max_destinations"`
 	MaxDescriptionLength int            `json:"max_description_length"`
-	Expiration           time.Duration  `json:"expiration"`
 }
 
 func GetVestingSCConfig() (vscc *VestingSCConfig, err error) {

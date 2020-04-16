@@ -951,13 +951,16 @@ func (t *Transaction) VestingUnlock(poolID common.Key) (err error) {
 	return
 }
 
+type VestingDest struct {
+	ID     common.Key     `json:"id"`     // destination ID
+	Amount common.Balance `json:"amount"` // amount to vest for the destination
+}
+
 type VestingAddRequest struct {
 	Description  string           `json:"description"`  // allow empty
 	StartTime    common.Timestamp `json:"start_time"`   //
 	Duration     time.Duration    `json:"duration"`     //
-	Friquency    time.Duration    `json:"friquency"`    //
-	Destinations []common.Key     `json:"destinations"` //
-	Amount       common.Balance   `json:"amount"`       //
+	Destinations []*VestingDest   `json:"destinations"` //
 }
 
 func (t *Transaction) VestingAdd(ar *VestingAddRequest,
