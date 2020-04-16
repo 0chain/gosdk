@@ -205,6 +205,11 @@ func getMinMinersSubmit() int {
 	Logger.Info("Minimum miners used for submit :", minMiners)
 	return minMiners
 }
+
+func GetMinShardersVerify() int {
+	return getMinShardersVerify()
+}
+
 func getMinShardersVerify() int {
 	minSharders := util.MaxInt(calculateMinRequired(float64(_config.chain.MinConfirmation), float64(len(_config.chain.Sharders))/100), 1)
 	Logger.Info("Minimum sharders used for verify :", minSharders)

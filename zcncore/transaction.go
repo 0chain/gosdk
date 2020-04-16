@@ -532,7 +532,8 @@ func GetBlockByRound(ctx context.Context, numSharders int, round int64) (
 	defer close(result)
 
 	queryFromShardersContext(ctx, numSharders,
-		fmt.Sprintf("%sround=%d&content=full", GET_BLOCK_INFO, round), result)
+		fmt.Sprintf("%sround=%d&content=full,header", GET_BLOCK_INFO, round),
+		result)
 
 	var (
 		maxConsensus   int
@@ -540,7 +541,8 @@ func GetBlockByRound(ctx context.Context, numSharders int, round int64) (
 	)
 
 	type respObj struct {
-		Block *block.Block `json:"block"`
+		Block  *block.Block  `json:"block"`
+		Header *block.Header `json:"header"`
 	}
 
 	for i := 0; i < numSharders; i++ {
@@ -565,7 +567,18 @@ func GetBlockByRound(ctx context.Context, numSharders int, round int64) (
 			continue
 		}
 
+		if respo.Header == nil {
+			Logger.Debug(rsp.Url, "no block header in response:", rsp.Body)
+			continue
+		}
+
+		if respo.Header.Hash != string(respo.Block.Hash) {
+			Logger.Debug(rsp.Url, "header and block hash mismatch:", rsp.Body)
+			continue
+		}
+
 		b = respo.Block
+		b.Header = respo.Header
 
 		var h = encryption.FastHash([]byte(b.Hash))
 		if roundConsensus[h]++; roundConsensus[h] > maxConsensus {

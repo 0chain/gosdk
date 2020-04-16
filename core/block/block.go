@@ -1,14 +1,39 @@
 package block
 
 import (
+	"fmt"
+
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
 )
 
 type Key []byte
 
+type Header struct {
+	Version               string `json:"version,omitempty"`
+	CreationDate          int64  `json:"creation_date,omitempty"`
+	Hash                  string `json:"hash,omitempty"`
+	MinerID               string `json:"miner_id,omitempty"`
+	Round                 int64  `json:"round,omitempty"`
+	RoundRandomSeed       int64  `json:"round_random_seed,omitempy"`
+	MerkleTreeRoot        string `json:"merkle_tree_root,omitempty"`
+	StateHash             string `json:"state_hash,omitempty"`
+	ReceiptMerkleTreeRoot string `json:"receipt_merkle_tree_root,omitempty"`
+	NumTxns               int64  `json:"num_txns,omitempty"`
+}
+
+func (h *Header) IsBlockExtends(prevHash string) bool {
+	var data = fmt.Sprintf("%s:%s:%d:%d:%d:%s:%s", h.MinerID, prevHash,
+		h.CreationDate, h.Round, h.RoundRandomSeed, h.MerkleTreeRoot,
+		h.ReceiptMerkleTreeRoot)
+	return encryption.Hash(data) == h.Hash
+}
+
 /*Block - data structure that holds the block data */
 type Block struct {
+	Header *Header `json:"-"`
+
 	MinerID           common.Key `json:"miner_id"`
 	Round             int64      `json:"round"`
 	RoundRandomSeed   int64      `json:"round_random_seed"`
