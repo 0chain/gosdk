@@ -908,6 +908,7 @@ type VestingSCConfig struct {
 	MaxFriquency         time.Duration  `json:"max_friquency"`
 	MaxDestinations      int            `json:"max_destinations"`
 	MaxDescriptionLength int            `json:"max_description_length"`
+	Expiration           time.Duration  `json:"expiration"`
 }
 
 func GetVestingSCConfig() (vscc *VestingSCConfig, err error) {
