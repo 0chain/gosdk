@@ -1,7 +1,6 @@
 package zcncore
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -46,8 +45,6 @@ const (
 	GET_VESTING_CONFIG       = `/v1/screst/` + VestingSmartContractAddress + `/getConfig`
 	GET_VESTING_POOL_INFO    = `/v1/screst/` + VestingSmartContractAddress + `/getPoolInfo`
 	GET_VESTING_CLIENT_POOLS = `/v1/screst/` + VestingSmartContractAddress + `/getClientPools`
-	GET_VESTING_LAST_PART    = `/v1/screst/` + VestingSmartContractAddress + `/getLastPart`
-	GET_VESTING_PART         = `/v1/screst/` + VestingSmartContractAddress + `/getPart`
 
 	// TORM (sfxdx): remove from zwallet
 	GET_BLOBBERS            = `/v1/screst/` + StorageSmartContractAddress + `/getblobbers`
@@ -553,15 +550,9 @@ func ConvertToValue(token float64) int64 {
 }
 
 func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
-	getInfoFromShardersContext(context.Background(), urlSuffix, op, cb)
-}
-
-func getInfoFromShardersContext(ctx context.Context, urlSuffix string, op int,
-	cb GetInfoCallback) {
-
 	result := make(chan *util.GetResponse)
 	defer close(result)
-	queryFromShardersContext(ctx, getMinShardersVerify(), urlSuffix, result)
+	queryFromSharders(getMinShardersVerify(), urlSuffix, result)
 	consensus := float32(0)
 	resultMap := make(map[int]float32)
 	var winresult *util.GetResponse
@@ -927,37 +918,6 @@ func GetVestingSCConfig() (vscc *VestingSCConfig, err error) {
 	vscc = new(VestingSCConfig)
 	var cb = NewJSONInfoCB(vscc)
 	go getInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
-	err = cb.Wait()
-	return
-}
-
-func GetVestingLastPart(ctx context.Context) (last int64, err error) {
-
-	if err = checkSdkInit(); err != nil {
-		return
-	}
-	var cb = NewJSONInfoCB(&last)
-	go getInfoFromShardersContext(ctx, GET_VESTING_LAST_PART, 0, cb)
-	err = cb.Wait()
-	return
-}
-
-type VestingPart struct {
-	Part int64    `json:"part"`
-	Txns []string `json:"txns"`
-}
-
-func GetVestingPart(ctx context.Context, part int64) (
-	vp *VestingPart, err error) {
-
-	if err = checkSdkInit(); err != nil {
-		return
-	}
-	vp = new(VestingPart)
-	var cb = NewJSONInfoCB(vp)
-	go getInfoFromShardersContext(ctx, withParams(GET_VESTING_PART, url.Values{
-		"part": []string{strconv.FormatInt(part, 10)},
-	}), 0, cb)
 	err = cb.Wait()
 	return
 }
