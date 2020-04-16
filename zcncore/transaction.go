@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
@@ -522,6 +523,61 @@ func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, 
 		return nil, confirmation, &lfb, fmt.Errorf("transaction not found")
 	}
 	return blockHdr, confirmation, &lfb, nil
+}
+
+func GetBlockByRound(ctx context.Context, numSharders int, round int64) (
+	b *block.Block, err error) {
+
+	var result = make(chan *util.GetResponse, numSharders)
+	defer close(result)
+
+	queryFromShardersContext(ctx, numSharders,
+		fmt.Sprintf("%sround=%d&content=full", GET_BLOCK_INFO, round), result)
+
+	var (
+		maxConsensus   int
+		roundConsensus = make(map[string]int)
+	)
+
+	type respObj struct {
+		Block *block.Block `json:"block"`
+	}
+
+	for i := 0; i < numSharders; i++ {
+		var rsp = <-result
+
+		Logger.Debug(rsp.Url, rsp.Status)
+
+		if rsp.StatusCode != http.StatusOK {
+			Logger.Error(rsp.Body)
+			continue
+		}
+
+		var respo respObj
+		if err = json.Unmarshal([]byte(rsp.Body), &respo); err != nil {
+			Logger.Error("block parse error: ", err)
+			err = nil
+			continue
+		}
+
+		if respo.Block == nil {
+			Logger.Debug(rsp.Url, "no block in response:", rsp.Body)
+			continue
+		}
+
+		b = respo.Block
+
+		var h = encryption.FastHash([]byte(b.Hash))
+		if roundConsensus[h]++; roundConsensus[h] > maxConsensus {
+			maxConsensus = roundConsensus[h]
+		}
+	}
+
+	if maxConsensus == 0 {
+		return nil, fmt.Errorf("round info not found")
+	}
+
+	return
 }
 
 func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHeader, error) {
