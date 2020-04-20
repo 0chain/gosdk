@@ -173,10 +173,12 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 			Logger.Info("Upload cancelled by the parent")
 			return
 		case uploadReq := <-a.uploadChan:
-			fmt.Printf("received a upload request for %v %v\n", uploadReq.filepath, uploadReq.remotefilepath)
+
+			Logger.Info(fmt.Sprintf("received a upload request for %v %v\n", uploadReq.filepath, uploadReq.remotefilepath))
 			go uploadReq.processUpload(ctx, a)
 		case downloadReq := <-a.downloadChan:
-			fmt.Printf("received a download request for %v\n", downloadReq.remotefilepath)
+
+			Logger.Info(fmt.Sprintf("received a download request for %v\n", downloadReq.remotefilepath))
 			go downloadReq.processDownload(ctx, a)
 		}
 	}

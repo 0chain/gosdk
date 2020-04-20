@@ -916,6 +916,10 @@ type VestingSCConfig struct {
 	MaxDescriptionLength int            `json:"max_description_length"`
 }
 
+func (vscc *VestingSCConfig) IsZero() bool {
+	return (*vscc) == (VestingSCConfig{})
+}
+
 func GetVestingSCConfig() (vscc *VestingSCConfig, err error) {
 
 	if err = checkSdkInit(); err != nil {
@@ -924,6 +928,11 @@ func GetVestingSCConfig() (vscc *VestingSCConfig, err error) {
 	vscc = new(VestingSCConfig)
 	var cb = NewJSONInfoCB(vscc)
 	go getInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
-	err = cb.Wait()
+	if err = cb.Wait(); err != nil {
+		return
+	}
+	if vscc.IsZero() {
+		return nil, errors.New("empty response from sharders")
+	}
 	return
 }
