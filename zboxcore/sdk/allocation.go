@@ -117,6 +117,7 @@ type Allocation struct {
 	ctx                 context.Context
 	ctxCancelF          context.CancelFunc
 	mutex               *sync.Mutex
+	uploadProgressMap   map[string]*UploadRequest
 	downloadProgressMap map[string]*DownloadRequest
 	initialized         bool
 	underRepair         bool
@@ -150,6 +151,7 @@ func (a *Allocation) InitAllocation() {
 	a.uploadChan = make(chan *UploadRequest, 10)
 	a.downloadChan = make(chan *DownloadRequest, 10)
 	a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
+	a.uploadProgressMap = make(map[string]*UploadRequest)
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
 	a.mutex = &sync.Mutex{}
 	a.startWorker(a.ctx)
@@ -275,6 +277,11 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	uploadReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	uploadReq.fullconsensus = float32(a.DataShards + a.ParityShards)
 	uploadReq.isEncrypted = encryption
+	uploadReq.completedCallback = func(filepath string) {
+		a.mutex.Lock()
+		defer a.mutex.Unlock()
+		delete(a.uploadProgressMap, filepath)
+	}
 
 	if uploadReq.isRepair {
 		listReq := &ListRequest{}
@@ -300,6 +307,9 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 
 	go func() {
 		a.uploadChan <- uploadReq
+		a.mutex.Lock()
+		defer a.mutex.Unlock()
+		a.uploadProgressMap[localpath] = uploadReq
 	}()
 	return nil
 }
@@ -652,6 +662,14 @@ func (a *Allocation) GetAuthTicket(path string, filename string, referenceType s
 		return "", err
 	}
 	return authTicket, nil
+}
+
+func (a *Allocation) CancelUpload(localpath string) error {
+	if uploadReq, ok := a.uploadProgressMap[localpath]; ok {
+		uploadReq.isUploadCanceled = true
+		return nil
+	}
+	return common.NewError("local_path_not_found", "Invalid path. Do upload in progress for the path "+localpath)
 }
 
 func (a *Allocation) CancelDownload(remotepath string) error {
