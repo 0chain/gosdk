@@ -196,6 +196,10 @@ func (ta *TransactionWithAuth) GetVerifyError() string {
 	return ta.t.GetVerifyError()
 }
 
+func (ta *TransactionWithAuth) Output() []byte {
+	return []byte(ta.t.txnOut)
+}
+
 //
 // read pool
 //
@@ -285,10 +289,9 @@ func (ta *TransactionWithAuth) VestingTrigger(poolID common.Key) (err error) {
 	return
 }
 
-func (ta *TransactionWithAuth) VestingLock(poolID common.Key,
-	value common.Balance) (err error) {
-
-	err = ta.t.vestingPoolTxn(transaction.VESTING_LOCK, poolID, value)
+func (ta *TransactionWithAuth) VestingStop(sr *VestingStopRequest) (err error) {
+	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
+		transaction.VESTING_STOP, sr, 0)
 	if err != nil {
 		Logger.Error(err)
 		return

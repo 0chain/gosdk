@@ -114,9 +114,12 @@ type TransactionScheme interface {
 	// GetVerifyError implements error string incase of verify failure error
 	GetVerifyError() string
 
+	// Output of transaction.
+	Output() []byte
+
 	// vesting SC
 	VestingTrigger(poolID common.Key) error
-	VestingLock(poolID common.Key, value common.Balance) error
+	VestingStop(sr *VestingStopRequest) error
 	VestingUnlock(poolID common.Key) error
 	VestingAdd(ar *VestingAddRequest, value common.Balance) error
 	VestingDelete(poolID common.Key) error
@@ -171,6 +174,10 @@ func txnTypeString(t int) string {
 		return "unknown"
 	}
 	return ""
+}
+
+func (t *Transaction) Output() []byte {
+	return []byte(t.txnOut)
 }
 
 func (t *Transaction) completeTxn(status int, out string, err error) {
@@ -928,10 +935,15 @@ func (t *Transaction) VestingTrigger(poolID common.Key) (err error) {
 	return
 }
 
-func (t *Transaction) VestingLock(poolID common.Key, value common.Balance) (
-	err error) {
+type VestingStopRequest struct {
+	PoolID      common.Key `json:"pool_id"`
+	Destination common.Key `json:"destination"`
+}
 
-	err = t.vestingPoolTxn(transaction.VESTING_LOCK, poolID, value)
+func (t *Transaction) VestingStop(sr *VestingStopRequest) (err error) {
+
+	err = t.createSmartContractTxn(VestingSmartContractAddress,
+		transaction.VESTING_STOP, sr, 0)
 	if err != nil {
 		Logger.Error(err)
 		return

@@ -81,7 +81,7 @@ const (
 
 	// Vesting SC
 	VESTING_TRIGGER       = "trigger"
-	VESTING_LOCK          = "lock"
+	VESTING_STOP          = "stop"
 	VESTING_UNLOCK        = "unlock"
 	VESTING_ADD           = "add"
 	VESTING_DELETE        = "delete"
