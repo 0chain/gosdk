@@ -67,29 +67,31 @@ type uploadResult struct {
 }
 
 type UploadRequest struct {
-	filepath        string
-	thumbnailpath   string
-	remotefilepath  string
-	statusCallback  StatusCallback
-	fileHash        hash.Hash
-	fileHashWr      io.Writer
-	thumbnailHash   hash.Hash
-	thumbnailHashWr io.Writer
-	file            []*fileref.FileRef
-	filemeta        *UploadFileMeta
-	remaining       int64
-	thumbRemaining  int64
-	wg              *sync.WaitGroup
-	uploadDataCh    []chan []byte
-	uploadThumbCh   []chan []byte
-	isRepair        bool
-	isUpdate        bool
-	connectionID    string
-	datashards      int
-	parityshards    int
-	uploadMask      uint32
-	isEncrypted     bool
-	encscheme       encryption.EncryptionScheme
+	filepath          string
+	thumbnailpath     string
+	remotefilepath    string
+	statusCallback    StatusCallback
+	fileHash          hash.Hash
+	fileHashWr        io.Writer
+	thumbnailHash     hash.Hash
+	thumbnailHashWr   io.Writer
+	file              []*fileref.FileRef
+	filemeta          *UploadFileMeta
+	remaining         int64
+	thumbRemaining    int64
+	wg                *sync.WaitGroup
+	uploadDataCh      []chan []byte
+	uploadThumbCh     []chan []byte
+	isRepair          bool
+	isUpdate          bool
+	connectionID      string
+	datashards        int
+	parityshards      int
+	uploadMask        uint32
+	isEncrypted       bool
+	encscheme         encryption.EncryptionScheme
+	isUploadCanceled  bool
+	completedCallback func(filepath string)
 	Consensus
 }
 
@@ -396,6 +398,10 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 		defer a.UpdateRepairStatus(false)
 	}
 
+	if req.completedCallback != nil {
+		defer req.completedCallback(req.filepath)
+	}
+
 	var inFile *os.File
 	inFile, err := os.Open(req.filepath)
 	if err != nil && req.statusCallback != nil {
@@ -435,6 +441,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 		}
 		chunksPerShard := (perShard + chunkSizeWithHeader - 1) / chunkSizeWithHeader
 		Logger.Info("Size:", size, " perShard:", perShard, " chunks/shard:", chunksPerShard)
+		req.isUploadCanceled = false
 		if req.statusCallback != nil {
 			req.statusCallback.Started(a.ID, req.remotefilepath, OpUpload, int(perShard)*(a.DataShards+a.ParityShards))
 		}
@@ -446,6 +453,16 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			_, err = dataReader.Read(b1)
 			if err != nil && req.statusCallback != nil {
 				req.statusCallback.Error(a.ID, req.filepath, OpUpload, fmt.Errorf("Read failed: %s", err.Error()))
+				return
+			}
+			if req.isUploadCanceled {
+				req.isUploadCanceled = false
+				if !req.isUpdate && !req.isRepair {
+					go a.DeleteFile(req.remotefilepath)
+				}
+				if req.statusCallback != nil {
+					req.statusCallback.Error(a.ID, req.filepath, OpUpload, fmt.Errorf("Upload aborted by user"))
+				}
 				return
 			}
 			err = req.pushData(b1)
