@@ -40,6 +40,7 @@ const (
 	GET_LOCK_CONFIG          = `/v1/screst/` + InterestPoolSmartContractAddress + `/getLockConfig`
 	GET_LOCKED_TOKENS        = `/v1/screst/` + InterestPoolSmartContractAddress + `/getPoolsStats?client_id=`
 	GET_BLOCK_INFO           = `/v1/block/get?`
+	GET_LATEST_FINALIZED     = `/v1/block/get/latest_finalized`
 	GET_USER_POOLS           = `/v1/screst/` + MinerSmartContractAddress + `/getUserPools?client_id=`
 	GET_USER_POOL_DETAIL     = `/v1/screst/` + MinerSmartContractAddress + `/getPoolsStats?`
 	GET_VESTING_CONFIG       = `/v1/screst/` + VestingSmartContractAddress + `/getConfig`
