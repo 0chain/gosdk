@@ -572,6 +572,22 @@ func GetLatestFinalized(ctx context.Context, numSharders int) (b *block.Header, 
 	return
 }
 
+func GetChainStats(ctx context.Context) (b *block.ChainStats, err error) {
+	var result = make(chan *util.GetResponse, 1)
+	defer close(result)
+
+	queryFromShardersContext(ctx, 1, GET_CHAIN_STATS, result)
+	var rsp = <-result
+	if rsp.StatusCode != http.StatusOK {
+		return nil, common.NewError("http_request_failed", "Request failed with status not 200")
+	}
+
+	if err = json.Unmarshal([]byte(rsp.Body), &b); err != nil {
+		return nil, err
+	}
+	return
+}
+
 func GetBlockByRound(ctx context.Context, numSharders int, round int64) (b *block.Block, err error) {
 
 	var result = make(chan *util.GetResponse, numSharders)
