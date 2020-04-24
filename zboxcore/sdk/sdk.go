@@ -214,9 +214,9 @@ type StakePoolInfo struct {
 	CapacityStake common.Balance `json:"capacity_stake"`
 	Lack          common.Balance `json:"lack"`
 	Overfill      common.Balance `json:"overfill"`
-	Reward        common.Balance `json:"reward"`
 
-	// TODO: blobber reward, validator reward, blobber penalty
+	BlobberReward   common.Balance `json:"blobber_reward"`
+	ValidatorReward common.Balance `json:"validator_reward"`
 
 	Offers []*StakePoolOfferStat `json:"offers"`
 }
@@ -527,30 +527,32 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 }
 
 func CreateAllocation(datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, lock int64) (
+	readPrice, writePrice PriceRange, mcct time.Duration, lock int64) (
 	string, error) {
 
 	return CreateAllocationForOwner(client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
-		size, expiry, readPrice, writePrice, lock,
+		size, expiry, readPrice, writePrice, mcct, lock,
 		blockchain.GetPreferredBlobbers())
 }
 
 func CreateAllocationForOwner(owner, ownerpublickey string,
 	datashards, parityshards int,
-	size, expiry int64, readPrice, writePrice PriceRange, lock int64,
-	preferredBlobbers []string) (string, error) {
+	size, expiry int64, readPrice, writePrice PriceRange,
+	mcct time.Duration,
+	lock int64, preferredBlobbers []string) (string, error) {
 
 	var allocationRequest = map[string]interface{}{
-		"data_shards":        datashards,
-		"parity_shards":      parityshards,
-		"size":               size,
-		"owner_id":           owner,
-		"owner_public_key":   ownerpublickey,
-		"expiration_date":    expiry,
-		"preferred_blobbers": preferredBlobbers,
-		"read_price_range":   readPrice,
-		"write_price_range":  writePrice,
+		"data_shards":                   datashards,
+		"parity_shards":                 parityshards,
+		"size":                          size,
+		"owner_id":                      owner,
+		"owner_public_key":              ownerpublickey,
+		"expiration_date":               expiry,
+		"preferred_blobbers":            preferredBlobbers,
+		"read_price_range":              readPrice,
+		"write_price_range":             writePrice,
+		"max_challenge_completion_time": mcct,
 	}
 
 	var sn = transaction.SmartContractTxnData{

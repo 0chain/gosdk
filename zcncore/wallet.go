@@ -856,6 +856,7 @@ type VestingDestInfo struct {
 	ID     common.Key       `json:"id"`     // identifier
 	Wanted common.Balance   `json:"wanted"` // wanted amount for entire period
 	Earned common.Balance   `json:"earned"` // can unlock
+	Vested common.Balance   `json:"vested"` // already vested
 	Last   common.Timestamp `json:"last"`   // last time unlocked
 }
 
