@@ -90,37 +90,64 @@ func CreateReadPool() (err error) {
 	return
 }
 
-// ReadPoolStat is number of tokens and locking status for the tokens.
-type ReadPoolStat struct {
-	ID        common.Key       `json:"pool_id"`
-	StartTime common.Timestamp `json:"start_time"`
-	Duration  time.Duration    `json:"duration"`
-	TimeLeft  time.Duration    `json:"time_left"`
-	Locked    bool             `json:"locked"`
-	Balance   common.Balance   `json:"balance"`
+type BlobberPoolStat struct {
+	BlobberID common.Key     `json:"blobber_id"`
+	Balance   common.Balance `json:"balance"`
 }
 
-// ReadPoolInfo is set of read pool locks statistic.
-type ReadPoolInfo struct {
-	Stats []*ReadPoolStat `json:"stats"`
+type AllocationPoolStat struct {
+	ID           string             `json:"id"`
+	Balance      common.Balance     `json:"balance"`
+	ExpireAt     common.Timestamp   `json:"expire_at"`
+	AllocationID common.Key         `json:"allocation_id"`
+	Blobbers     []*BlobberPoolStat `json:"blobbers"`
+	Locked       bool               `json:"locked"`
+}
+
+type BackPool struct {
+	ID      string         `json:"id"`
+	Balance common.Balance `json:"balance"`
+}
+
+// AllocationPoolsStat represents read or write pool statistic.
+type AllocationPoolStats struct {
+	Pools []*AllocationPoolStat `json:"pools"`
+	Back  *BackPool             `json:"back,omitempty"`
+}
+
+func (aps *AllocationPoolStats) AllocFilter(allocID string) {
+	if allocID == "" {
+		return
+	}
+	var i int
+	for _, pi := range aps.Pools {
+		if pi.AllocationID != common.Key(allocID) {
+			continue
+		}
+		aps.Pools[i], i = pi, i+1
+	}
+	aps.Pools = aps.Pools[:i]
 }
 
 // GetReadPoolInfo for given client, or, if the given clientID is empty,
 // for current client of the sdk.
-func GetReadPoolInfo(clientID string) (info *ReadPoolInfo, err error) {
+func GetReadPoolInfo(clientID string) (info *AllocationPoolStats, err error) {
 
 	if clientID == "" {
 		clientID = client.GetClientID()
 	}
 
 	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getReadPoolsStats",
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getReadPoolStat",
 		map[string]string{"client_id": clientID}, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error requesting read pool info: %v", err)
 	}
+	if len(b) == 0 {
+		return nil, errors.New("empty response")
+	}
 
-	info = new(ReadPoolInfo)
+	info = new(AllocationPoolStats)
 	if err = json.Unmarshal(b, info); err != nil {
 		return nil, fmt.Errorf("error decoding response: %v", err)
 	}
@@ -129,14 +156,19 @@ func GetReadPoolInfo(clientID string) (info *ReadPoolInfo, err error) {
 }
 
 // ReadPoolLock locks given number of tokes for given duration in read pool.
-func ReadPoolLock(dur time.Duration, tokens, fee int64) (err error) {
+func ReadPoolLock(dur time.Duration, allocID, blobberID string,
+	tokens, fee int64) (err error) {
 
 	type lockRequest struct {
-		Duration time.Duration `json:"duration"`
+		Duration     time.Duration `json:"duration"`
+		AllocationID string        `json:"allocation_id"`
+		BlobberID    string        `json:"blobber_id,omitempty"`
 	}
 
 	var req lockRequest
 	req.Duration = dur
+	req.AllocationID = allocID
+	req.BlobberID = blobberID
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.READ_POOL_LOCK,
@@ -182,6 +214,9 @@ type StakePoolInfo struct {
 	CapacityStake common.Balance `json:"capacity_stake"`
 	Lack          common.Balance `json:"lack"`
 	Overfill      common.Balance `json:"overfill"`
+	Reward        common.Balance `json:"reward"`
+
+	// TODO: blobber reward, validator reward, blobber penalty
 
 	Offers []*StakePoolOfferStat `json:"offers"`
 }
@@ -199,6 +234,9 @@ func GetStakePoolInfo(blobberID string) (info *StakePoolInfo, err error) {
 		map[string]string{"blobber_id": blobberID}, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error requesting stake pool info: %v", err)
+	}
+	if len(b) == 0 {
+		return nil, errors.New("empty response")
 	}
 
 	info = new(StakePoolInfo)
@@ -231,25 +269,25 @@ func StakePoolUnlock(fee int64) (err error) {
 // write pool
 //
 
-type WritePoolInfo struct {
-	ID         common.Key       `json:"pool_id"`
-	Balance    common.Balance   `json:"balance"`
-	StartTime  common.Timestamp `json:"start_time"`
-	Expiration common.Timestamp `json:"expiration"`
-	Finalized  bool             `json:"finalized"`
-}
-
 // GetWritePoolInfo for given client, or, if the given clientID is empty,
 // for current client of the sdk.
-func GetWritePoolInfo(allocID string) (info *WritePoolInfo, err error) {
-	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getWritePoolStat",
-		map[string]string{"allocation_id": allocID}, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error requesting write pool info: %v", err)
+func GetWritePoolInfo(clientID string) (info *AllocationPoolStats, err error) {
+
+	if clientID == "" {
+		clientID = client.GetClientID()
 	}
 
-	info = new(WritePoolInfo)
+	var b []byte
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getWritePoolStat",
+		map[string]string{"client_id": clientID}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error requesting read pool info: %v", err)
+	}
+	if len(b) == 0 {
+		return nil, errors.New("empty response")
+	}
+
+	info = new(AllocationPoolStats)
 	if err = json.Unmarshal(b, info); err != nil {
 		return nil, fmt.Errorf("error decoding response: %v", err)
 	}
@@ -257,14 +295,20 @@ func GetWritePoolInfo(allocID string) (info *WritePoolInfo, err error) {
 	return
 }
 
-// WritePoolLock unlocks tokens in expired write pool
-func WritePoolLock(allocID string, tokens, fee int64) (err error) {
+// WritePoolLock locks given number of tokes for given duration in read pool.
+func WritePoolLock(dur time.Duration, allocID, blobberID string,
+	tokens, fee int64) (err error) {
 
-	type unlockRequest struct {
-		AllocationID string `json:"allocation_id"`
+	type lockRequest struct {
+		Duration     time.Duration `json:"duration"`
+		AllocationID string        `json:"allocation_id"`
+		BlobberID    string        `json:"blobber_id,omitempty"`
 	}
-	var req unlockRequest
+
+	var req lockRequest
+	req.Duration = dur
 	req.AllocationID = allocID
+	req.BlobberID = blobberID
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.WRITE_POOL_LOCK,
@@ -274,12 +318,36 @@ func WritePoolLock(allocID string, tokens, fee int64) (err error) {
 	return
 }
 
+// WritePoolUnlock unlocks tokens in expired read pool
+func WritePoolUnlock(poolID string, fee int64) (err error) {
+
+	type unlockRequest struct {
+		PoolID string `json:"pool_id"`
+	}
+
+	var req unlockRequest
+	req.PoolID = poolID
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.WRITE_POOL_UNLOCK,
+		InputArgs: &req,
+	}
+	_, err = smartContractTxnValueFee(sn, 0, fee)
+	return
+}
+
 //
 // challenge pool
 //
 
-// ChallengePoolInfo is alias for WritePoolInfo
-type ChallengePoolInfo = WritePoolInfo
+// ChallengePoolInfo represents a challenge pool stat.
+type ChallengePoolInfo struct {
+	ID         string           `json:"id"`
+	Balance    common.Balance   `json:"balance"`
+	StartTime  common.Timestamp `json:"start_time"`
+	Expiration common.Timestamp `json:"expiration"`
+	Finalized  bool             `json:"finalized"`
+}
 
 // GetChallengePoolInfo for given allocation.
 func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
@@ -289,6 +357,9 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 		nil)
 	if err != nil {
 		return nil, fmt.Errorf("error requesting challenge pool info: %v", err)
+	}
+	if len(b) == 0 {
+		return nil, errors.New("empty response")
 	}
 
 	info = new(ChallengePoolInfo)
@@ -334,6 +405,10 @@ func GetStorageSCConfig() (conf *StorageSCConfig, err error) {
 	if err != nil {
 		return nil, fmt.Errorf("error requesting storage SC configs: %v", err)
 	}
+	if len(b) == 0 {
+		return nil, errors.New("empty response")
+	}
+
 	conf = new(StorageSCConfig)
 	if err = json.Unmarshal(b, conf); err != nil {
 		return nil, fmt.Errorf("error decoding response: %v", err)
@@ -361,6 +436,9 @@ func GetBlobbers() (bs []*Blobber, err error) {
 		nil)
 	if err != nil {
 		return nil, fmt.Errorf("error requesting blobbers: %v", err)
+	}
+	if len(b) == 0 {
+		return nil, errors.New("empty response")
 	}
 
 	type nodes struct {

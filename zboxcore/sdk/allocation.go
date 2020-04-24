@@ -72,13 +72,16 @@ type Terms struct {
 }
 
 type BlobberAllocation struct {
-	BlobberID     string         `json:"blobber_id"`
-	Size          int64          `json:"size"`
-	Terms         Terms          `json:"terms"`
-	MinLockDemand common.Balance `json:"min_lock_demand"`
-	Spent         common.Balance `json:"spent"`
-
-	// Stats         *StorageAllocationStats `json:"stats"`
+	BlobberID       string         `json:"blobber_id"`
+	Size            int64          `json:"size"`
+	Terms           Terms          `json:"terms"`
+	MinLockDemand   common.Balance `json:"min_lock_demand"`
+	Spent           common.Balance `json:"spent"`
+	Penalty         common.Balance `json:"penalty"`
+	ReadReward      common.Balance `json:"read_reward"`
+	Returned        common.Balance `json:"returned"`
+	ChallengeReward common.Balance `json:"challenge_reward"`
+	FinalReward     common.Balance `json:"final_reward"`
 }
 
 type Allocation struct {
@@ -103,13 +106,14 @@ type Allocation struct {
 	ReadPriceRange PriceRange `json:"read_price_range"`
 	// WritePriceRange is requested writing prices range.
 	WritePriceRange PriceRange `json:"write_price_range"`
-	// ChallengeCompletionTime is max challenge completion time of
-	// all blobbers of the allocation.
-	ChallengeCompletionTime time.Duration `json:"challenge_completion_time"`
-	// Finalized allocation.
-	Finalized bool `json:"finalized,omitempty"`
-	// Canceled allocation.
-	Canceled bool `json:"canceled,omitempty"`
+
+	ChallengeCompletionTime time.Duration    `json:"challenge_completion_time"`
+	StartTime               common.Timestamp `json:"start_time"`
+	Finalized               bool             `json:"finalized,omitempty"`
+	Canceled                bool             `json:"canceled,omitempty"`
+	MovedToChallenge        common.Balance   `json:"moved_to_challenge,omitempty"`
+	MovedBack               common.Balance   `json:"moved_back,omitempty"`
+	MovedToValidators       common.Balance   `json:"moved_to_validators,omitempty"`
 
 	numBlockDownloads   int
 	uploadChan          chan *UploadRequest
