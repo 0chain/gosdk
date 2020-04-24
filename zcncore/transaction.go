@@ -532,8 +532,63 @@ func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, 
 	return blockHdr, confirmation, &lfb, nil
 }
 
-func GetBlockByRound(ctx context.Context, numSharders int, round int64) (
-	b *block.Block, err error) {
+func GetLatestFinalized(ctx context.Context, numSharders int) (b *block.Header, err error) {
+	var result = make(chan *util.GetResponse, numSharders)
+	defer close(result)
+
+	queryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED, result)
+
+	var (
+		maxConsensus   int
+		roundConsensus = make(map[string]int)
+	)
+
+	for i := 0; i < numSharders; i++ {
+		var rsp = <-result
+
+		Logger.Debug(rsp.Url, rsp.Status)
+
+		if rsp.StatusCode != http.StatusOK {
+			Logger.Error(rsp.Body)
+			continue
+		}
+
+		if err = json.Unmarshal([]byte(rsp.Body), &b); err != nil {
+			Logger.Error("block parse error: ", err)
+			err = nil
+			continue
+		}
+
+		var h = encryption.FastHash([]byte(b.Hash))
+		if roundConsensus[h]++; roundConsensus[h] > maxConsensus {
+			maxConsensus = roundConsensus[h]
+		}
+	}
+
+	if maxConsensus == 0 {
+		return nil, fmt.Errorf("block info not found")
+	}
+
+	return
+}
+
+func GetChainStats(ctx context.Context) (b *block.ChainStats, err error) {
+	var result = make(chan *util.GetResponse, 1)
+	defer close(result)
+
+	queryFromShardersContext(ctx, 1, GET_CHAIN_STATS, result)
+	var rsp = <-result
+	if rsp.StatusCode != http.StatusOK {
+		return nil, common.NewError("http_request_failed", "Request failed with status not 200")
+	}
+
+	if err = json.Unmarshal([]byte(rsp.Body), &b); err != nil {
+		return nil, err
+	}
+	return
+}
+
+func GetBlockByRound(ctx context.Context, numSharders int, round int64) (b *block.Block, err error) {
 
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)

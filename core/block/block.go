@@ -59,3 +59,24 @@ type Block struct {
 	// VerificationTickets []*VerificationTicket `json:"verification_tickets,omitempty"`
 	// PrevBlockVerificationTickets []*VerificationTicket `json:"prev_verification_tickets,omitempty"`
 }
+
+type ChainStats struct {
+	BlockSize            int     `json:"block_size"`
+	Count                int     `json:"count"`
+	CurrentRound         int     `json:"current_round"`
+	Delta                int     `json:"delta"`
+	LatestFinalizedRound int     `json:"latest_finalized_round"`
+	Max                  float64 `json:"max"`
+	Mean                 float64 `json:"mean"`
+	Min                  float64 `json:"min"`
+	Percentile50         float64 `json:"percentile_50"`
+	Percentile90         float64 `json:"percentile_90"`
+	Percentile95         float64 `json:"percentile_95"`
+	Percentile99         float64 `json:"percentile_99"`
+	Rate15Min            float64 `json:"rate_15_min"`
+	Rate1Min             float64 `json:"rate_1_min"`
+	Rate5Min             float64 `json:"rate_5_min"`
+	RateMean             float64 `json:"rate_mean"`
+	StdDev               float64 `json:"std_dev"`
+	TotalTxns            int     `json:"total_txns"`
+}
