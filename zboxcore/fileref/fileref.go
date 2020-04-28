@@ -16,19 +16,25 @@ const (
 	DIRECTORY = "d"
 )
 
+type CommitMetaTxn struct {
+	RefID int64  `json:"ref_id"`
+	TxnID string `json:"txn_id"`
+}
+
 type FileRef struct {
 	Ref                 `json:",squash"`
-	CustomMeta          string `json:"custom_meta"`
-	ContentHash         string `json:"content_hash"`
-	MerkleRoot          string `json:"merkle_root"`
-	ThumbnailSize       int64  `json:"thumbnail_size"`
-	ThumbnailHash       string `json:"thumbnail_hash"`
-	ActualFileSize      int64  `json:"actual_file_size"`
-	ActualFileHash      string `json:"actual_file_hash"`
-	ActualThumbnailSize int64  `json:"actual_thumbnail_size"`
-	ActualThumbnailHash string `json:"actual_thumbnail_hash"`
-	MimeType            string `json:"mimetype"`
-	EncryptedKey        string `json:"encrypted_key"`
+	CustomMeta          string          `json:"custom_meta"`
+	ContentHash         string          `json:"content_hash"`
+	MerkleRoot          string          `json:"merkle_root"`
+	ThumbnailSize       int64           `json:"thumbnail_size"`
+	ThumbnailHash       string          `json:"thumbnail_hash"`
+	ActualFileSize      int64           `json:"actual_file_size"`
+	ActualFileHash      string          `json:"actual_file_hash"`
+	ActualThumbnailSize int64           `json:"actual_thumbnail_size"`
+	ActualThumbnailHash string          `json:"actual_thumbnail_hash"`
+	MimeType            string          `json:"mimetype"`
+	EncryptedKey        string          `json:"encrypted_key"`
+	CommitMetaTxns      []CommitMetaTxn `json:"commit_meta_txns"`
 }
 
 type RefEntity interface {
