@@ -484,6 +484,15 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 	}()
 	wg.Wait()
 	Logger.Info("Completed the upload. Submitting for commit")
+	if req.statusCallback != nil {
+		sizeInCallback := int64(float32(perShard) * req.consensus)
+		OpID := OpUpload
+		if req.isUpdate {
+			OpID = OpUpdate
+		}
+		req.statusCallback.Completed(a.ID, req.remotefilepath, req.filemeta.Name, req.filemeta.MimeType, int(sizeInCallback), OpID)
+	}
+
 	for _, ch := range req.uploadDataCh {
 		close(ch)
 	}
@@ -570,21 +579,5 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 	// 		Logger.Info("Commit result not set", commitReq.blobber.Baseurl, "Retries ", retries)
 	// 	}
 	// }
-
-	if !req.isConsensusOk() {
-		if req.statusCallback != nil {
-			req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, fmt.Errorf("Upload failed: Commit consensus failed"))
-			return
-		}
-	}
-
-	if req.statusCallback != nil {
-		sizeInCallback := int64(float32(perShard) * req.consensus)
-		OpID := OpUpload
-		if req.isUpdate {
-			OpID = OpUpdate
-		}
-		req.statusCallback.Completed(a.ID, req.remotefilepath, req.filemeta.Name, req.filemeta.MimeType, int(sizeInCallback), OpID)
-	}
 	return
 }
