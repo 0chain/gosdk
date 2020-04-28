@@ -773,7 +773,9 @@ func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, look
 			CrudType: crudOperation,
 			MetaData: fileMeta,
 		},
-		status: status,
+		status:    status,
+		a:         a,
+		authToken: authTicket,
 	}
 	go req.processCommitMetaRequest()
 	return nil

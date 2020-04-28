@@ -39,6 +39,7 @@ const LATEST_READ_MARKER = "/v1/readmarker/latest"
 const FILE_META_ENDPOINT = "/v1/file/meta/"
 const FILE_STATS_ENDPOINT = "/v1/file/stats/"
 const OBJECT_TREE_ENDPOINT = "/v1/file/objecttree/"
+const COMMIT_META_TXN_ENDPOINT = "/v1/file/commitmetatxn/"
 
 var transport = &http.Transport{
 	Proxy: http.ProxyFromEnvironment,
@@ -105,6 +106,12 @@ func NewObjectTreeRequest(baseUrl, allocation string, path string) (*http.Reques
 	//url := fmt.Sprintf("%s%s%s?path=%s", baseUrl, LIST_ENDPOINT, allocation, path)
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)
+	return setClientInfo(req, err)
+}
+
+func NewCommitMetaTxnRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s", baseUrl, COMMIT_META_TXN_ENDPOINT, allocation)
+	req, err := http.NewRequest(http.MethodPost, url, body)
 	return setClientInfo(req, err)
 }
 
