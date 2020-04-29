@@ -215,6 +215,8 @@ type StakePoolInfo struct {
 	Lack          common.Balance `json:"lack"`
 	Overfill      common.Balance `json:"overfill"`
 
+	Rewards         common.Balance `json:"rewards"`
+	InterestReward  common.Balance `json:"interest_reward"`
 	BlobberReward   common.Balance `json:"blobber_reward"`
 	ValidatorReward common.Balance `json:"validator_reward"`
 
@@ -233,6 +235,7 @@ func GetStakePoolInfo(blobberID string) (info *StakePoolInfo, err error) {
 	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getStakePoolStat",
 		map[string]string{"blobber_id": blobberID}, nil)
 	if err != nil {
+		println("SPI ERROR:", err.Error())
 		return nil, fmt.Errorf("error requesting stake pool info: %v", err)
 	}
 	if len(b) == 0 {
@@ -256,12 +259,30 @@ func StakePoolLock(value, fee int64) (err error) {
 	return
 }
 
-// StakePoolUnlock unlocks a stake pool overfill.
-func StakePoolUnlock(fee int64) (err error) {
+// StakePoolUnlock unlocks a stake pool excess tokens.
+func StakePoolUnlock(tokens, fee int64) (err error) {
+
+	type unlockRequest struct {
+		Amount int64 `json:"amount`
+	}
+
+	var req unlockRequest
+	req.Amount = tokens
+
 	var sn = transaction.SmartContractTxnData{
-		Name: transaction.STAKE_POOL_UNLOCK,
+		Name:      transaction.STAKE_POOL_UNLOCK,
+		InputArgs: &req,
 	}
 	_, err = smartContractTxnValueFee(sn, 0, fee)
+	return
+}
+
+// StakePoolUnlockRewards unlocks a stake pool rewards.
+func StakePoolUnlockRewards() (err error) {
+	var sn = transaction.SmartContractTxnData{
+		Name: transaction.STAKE_POOL_UNLOCK_REWARDS,
+	}
+	_, err = smartContractTxnValueFee(sn, 0, 0)
 	return
 }
 
