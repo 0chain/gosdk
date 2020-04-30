@@ -98,6 +98,7 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 }
 
 func (req *CommitMetaRequest) updateCommitMetaTxnToBlobbers(txnHash string) bool {
+
 	numList := len(req.a.Blobbers)
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numList)
@@ -117,6 +118,7 @@ func (req *CommitMetaRequest) updateCommitMetaTxnToBlobbers(txnHash string) bool
 }
 
 func (req *CommitMetaRequest) updatCommitMetaTxnToBlobber(blobber *blockchain.StorageNode, blobberIdx int, txnHash string, rspCh chan<- bool) {
+
 	defer req.wg.Done()
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
@@ -150,6 +152,7 @@ func (req *CommitMetaRequest) updatCommitMetaTxnToBlobber(blobber *blockchain.St
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusOK {
 			rspCh <- true
+			return err
 		}
 		rspCh <- false
 		return err
