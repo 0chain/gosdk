@@ -47,6 +47,12 @@ func GetVersion() string {
 	return version.VERSIONSTR
 }
 
+// SetLogLevel set the log level.
+// lvl - 0 disabled; higher number (upto 4) more verbosity
+func SetLogLevel(lvl int) {
+	Logger.SetLevel(lvl)
+}
+
 // logFile - Log file
 // verbose - true - console output; false - no console output
 func SetLogFile(logFile string, verbose bool) {
