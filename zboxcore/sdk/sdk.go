@@ -235,7 +235,6 @@ func GetStakePoolInfo(blobberID string) (info *StakePoolInfo, err error) {
 	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getStakePoolStat",
 		map[string]string{"blobber_id": blobberID}, nil)
 	if err != nil {
-		println("SPI ERROR:", err.Error())
 		return nil, fmt.Errorf("error requesting stake pool info: %v", err)
 	}
 	if len(b) == 0 {
