@@ -568,6 +568,11 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
+
+	if a.UnderRepair() {
+		return underRepair
+	}
+
 	if len(path) == 0 {
 		return common.NewError("invalid_path", "Invalid path for the list")
 	}
@@ -604,6 +609,11 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
+
+	if a.UnderRepair() {
+		return underRepair
+	}
+
 	if len(path) == 0 || len(destPath) == 0 {
 		return common.NewError("invalid_path", "Invalid path for copy")
 	}
@@ -757,6 +767,14 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 }
 
 func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, lookupHash string, fileMeta *ConsolidatedFileMeta, status StatusCallback) (err error) {
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	if a.UnderRepair() {
+		return underRepair
+	}
+
 	if fileMeta == nil {
 		if len(path) > 0 {
 			fileMeta, err = a.GetFileMeta(path)

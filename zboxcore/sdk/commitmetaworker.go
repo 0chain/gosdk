@@ -98,7 +98,6 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 }
 
 func (req *CommitMetaRequest) updateCommitMetaTxnToBlobbers(txnHash string) bool {
-
 	numList := len(req.a.Blobbers)
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numList)
