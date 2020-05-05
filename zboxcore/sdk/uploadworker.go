@@ -394,10 +394,6 @@ func (req *UploadRequest) completePush() error {
 }
 
 func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
-	if req.isRepair {
-		defer a.UpdateRepairStatus(false)
-	}
-
 	if req.completedCallback != nil {
 		defer req.completedCallback(req.filepath)
 	}

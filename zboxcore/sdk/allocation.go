@@ -25,7 +25,7 @@ import (
 var (
 	noBLOBBERS     = errors.New("No Blobbers set in this allocation")
 	notInitialized = common.NewError("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
-	underRepair    = common.NewError("allocaton_under_repair", "Allocation is under repair, Please try again later")
+	underRepairErr = common.NewError("allocaton_under_repair", "Allocation is under repair, Please try again later")
 )
 
 type ConsolidatedFileMeta struct {
@@ -116,16 +116,18 @@ type Allocation struct {
 	MovedBack               common.Balance   `json:"moved_back,omitempty"`
 	MovedToValidators       common.Balance   `json:"moved_to_validators,omitempty"`
 
-	numBlockDownloads   int
-	uploadChan          chan *UploadRequest
-	downloadChan        chan *DownloadRequest
-	ctx                 context.Context
-	ctxCancelF          context.CancelFunc
-	mutex               *sync.Mutex
-	uploadProgressMap   map[string]*UploadRequest
-	downloadProgressMap map[string]*DownloadRequest
-	initialized         bool
-	underRepair         bool
+	numBlockDownloads       int
+	uploadChan              chan *UploadRequest
+	downloadChan            chan *DownloadRequest
+	repairChan              chan *RepairRequest
+	ctx                     context.Context
+	ctxCancelF              context.CancelFunc
+	mutex                   *sync.Mutex
+	uploadProgressMap       map[string]*UploadRequest
+	downloadProgressMap     map[string]*DownloadRequest
+	repairRequestInProgress *RepairRequest
+	initialized             bool
+	underRepair             bool
 }
 
 func (a *Allocation) UnderRepair() bool {
@@ -155,6 +157,7 @@ func (a *Allocation) InitAllocation() {
 	// }
 	a.uploadChan = make(chan *UploadRequest, 10)
 	a.downloadChan = make(chan *DownloadRequest, 10)
+	a.repairChan = make(chan *RepairRequest, 1)
 	a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
 	a.uploadProgressMap = make(map[string]*UploadRequest)
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
@@ -187,6 +190,10 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 
 			Logger.Info(fmt.Sprintf("received a download request for %v\n", downloadReq.remotefilepath))
 			go downloadReq.processDownload(ctx, a)
+		case repairReq := <-a.repairChan:
+
+			Logger.Info(fmt.Sprintf("received a repair request for %v\n", repairReq.listDir.Path))
+			go repairReq.processRepair(ctx, a)
 		}
 	}
 }
@@ -232,7 +239,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 		return notInitialized
 	}
 	if a.UnderRepair() {
-		return underRepair
+		return underRepairErr
 	}
 
 	fileInfo, err := os.Stat(localpath)
@@ -289,25 +296,16 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	}
 
 	if uploadReq.isRepair {
-		listReq := &ListRequest{}
-		listReq.allocationID = a.ID
-		listReq.allocationTx = a.Tx
-		listReq.blobbers = a.Blobbers
-		listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
-		listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
-		listReq.ctx = a.ctx
-		listReq.remotefilepath = remotepath
-		found, fileRef, _ := listReq.getFileConsensusFromBlobbers()
-		if fileRef == nil {
-			return fmt.Errorf("File not found for the given remotepath")
-		}
-		if found == uploadReq.uploadMask {
-			return fmt.Errorf("No repair required")
+		found, repairRequired, err := a.RepairRequired(remotepath)
+		if err != nil {
+			return err
 		}
 
+		if !repairRequired {
+			return fmt.Errorf("Repair not required")
+		}
 		uploadReq.uploadMask = (^found & uploadReq.uploadMask)
 		uploadReq.fullconsensus = uploadReq.fullconsensus - float32(bits.TrailingZeros32(uploadReq.uploadMask))
-		a.UpdateRepairStatus(true)
 	}
 
 	go func() {
@@ -317,6 +315,24 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 		a.uploadProgressMap[localpath] = uploadReq
 	}()
 	return nil
+}
+
+func (a *Allocation) RepairRequired(remotepath string) (uint32, bool, error) {
+	listReq := &ListRequest{}
+	listReq.allocationID = a.ID
+	listReq.allocationTx = a.Tx
+	listReq.blobbers = a.Blobbers
+	listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
+	listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+	listReq.ctx = a.ctx
+	listReq.remotefilepath = remotepath
+	found, fileRef, _ := listReq.getFileConsensusFromBlobbers()
+	if fileRef == nil {
+		return found, false, fmt.Errorf("File not found for the given remotepath")
+	}
+
+	uploadMask := uint32((1 << uint32(len(a.Blobbers))) - 1)
+	return found, found != uploadMask, nil
 }
 
 func (a *Allocation) DownloadFile(localPath string, remotePath string, status StatusCallback) error {
@@ -330,9 +346,6 @@ func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, stat
 func (a *Allocation) downloadFile(localPath string, remotePath string, contentMode string, status StatusCallback) error {
 	if !a.isInitialized() {
 		return notInitialized
-	}
-	if a.UnderRepair() {
-		return underRepair
 	}
 	if stat, err := os.Stat(localPath); err == nil {
 		if !stat.IsDir() {
@@ -538,7 +551,7 @@ func (a *Allocation) DeleteFile(path string) error {
 		return notInitialized
 	}
 	if a.UnderRepair() {
-		return underRepair
+		return underRepairErr
 	}
 	if len(path) == 0 {
 		return common.NewError("invalid_path", "Invalid path for the list")
@@ -570,7 +583,7 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	}
 
 	if a.UnderRepair() {
-		return underRepair
+		return underRepairErr
 	}
 
 	if len(path) == 0 {
@@ -611,7 +624,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	}
 
 	if a.UnderRepair() {
-		return underRepair
+		return underRepairErr
 	}
 
 	if len(path) == 0 || len(destPath) == 0 {
@@ -709,9 +722,6 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	if !a.isInitialized() {
 		return notInitialized
 	}
-	if a.UnderRepair() {
-		return underRepair
-	}
 	sEnc, err := base64.StdEncoding.DecodeString(authTicket)
 	if err != nil {
 		return common.NewError("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
@@ -772,7 +782,7 @@ func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, look
 	}
 
 	if a.UnderRepair() {
-		return underRepair
+		return underRepairErr
 	}
 
 	if fileMeta == nil {
@@ -800,4 +810,39 @@ func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, look
 	}
 	go req.processCommitMetaRequest()
 	return nil
+}
+
+func (a *Allocation) StartRepair(localImagePath, localFilePath, pathToRepair string) error {
+	listDir, err := a.ListDir(pathToRepair)
+	if err != nil {
+		return err
+	}
+
+	repairReq := &RepairRequest{
+		listDir:        listDir,
+		localFilePath:  localFilePath,
+		localImagePath: localImagePath,
+	}
+
+	repairReq.completedCallback = func() {
+		a.mutex.Lock()
+		defer a.mutex.Unlock()
+		a.repairRequestInProgress = nil
+	}
+
+	go func() {
+		a.repairChan <- repairReq
+		a.mutex.Lock()
+		defer a.mutex.Unlock()
+		a.repairRequestInProgress = repairReq
+	}()
+	return nil
+}
+
+func (a *Allocation) CancelRepair(remotepath string) error {
+	if a.repairRequestInProgress != nil {
+		a.repairRequestInProgress.isRepairCanceled = true
+		return nil
+	}
+	return common.NewError("invalid_cancel_repair_request", "No repair in progress for the allocation")
 }
