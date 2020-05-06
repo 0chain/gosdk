@@ -238,7 +238,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	if !a.isInitialized() {
 		return notInitialized
 	}
-	if a.UnderRepair() {
+	if a.UnderRepair() && !isRepair {
 		return underRepairErr
 	}
 
@@ -296,7 +296,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	}
 
 	if uploadReq.isRepair {
-		found, repairRequired, err := a.RepairRequired(remotepath)
+		found, repairRequired, fileRef, err := a.RepairRequired(remotepath)
 		if err != nil {
 			return err
 		}
@@ -304,8 +304,9 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 		if !repairRequired {
 			return fmt.Errorf("Repair not required")
 		}
+		uploadReq.filemeta.Hash = fileRef.ActualFileHash
 		uploadReq.uploadMask = (^found & uploadReq.uploadMask)
-		uploadReq.fullconsensus = uploadReq.fullconsensus - float32(bits.TrailingZeros32(uploadReq.uploadMask))
+		uploadReq.fullconsensus = float32(bits.TrailingZeros32(uploadReq.uploadMask + 1))
 	}
 
 	go func() {
@@ -317,7 +318,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	return nil
 }
 
-func (a *Allocation) RepairRequired(remotepath string) (uint32, bool, error) {
+func (a *Allocation) RepairRequired(remotepath string) (uint32, bool, *fileref.FileRef, error) {
 	listReq := &ListRequest{}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
@@ -328,11 +329,12 @@ func (a *Allocation) RepairRequired(remotepath string) (uint32, bool, error) {
 	listReq.remotefilepath = remotepath
 	found, fileRef, _ := listReq.getFileConsensusFromBlobbers()
 	if fileRef == nil {
-		return found, false, fmt.Errorf("File not found for the given remotepath")
+		return found, false, fileRef, fmt.Errorf("File not found for the given remotepath")
 	}
 
 	uploadMask := uint32((1 << uint32(len(a.Blobbers))) - 1)
-	return found, found != uploadMask, nil
+
+	return found, found != uploadMask, fileRef, nil
 }
 
 func (a *Allocation) DownloadFile(localPath string, remotePath string, status StatusCallback) error {
@@ -812,7 +814,7 @@ func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, look
 	return nil
 }
 
-func (a *Allocation) StartRepair(localImagePath, localFilePath, pathToRepair string) error {
+func (a *Allocation) StartRepair(localImagePath, localFilePath, pathToRepair string, statusCB StatusCallback) error {
 	listDir, err := a.ListDir(pathToRepair)
 	if err != nil {
 		return err
@@ -822,11 +824,13 @@ func (a *Allocation) StartRepair(localImagePath, localFilePath, pathToRepair str
 		listDir:        listDir,
 		localFilePath:  localFilePath,
 		localImagePath: localImagePath,
+		statusCB:       statusCB,
 	}
 
 	repairReq.completedCallback = func() {
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
+		a.UpdateRepairStatus(false)
 		a.repairRequestInProgress = nil
 	}
 
@@ -835,14 +839,15 @@ func (a *Allocation) StartRepair(localImagePath, localFilePath, pathToRepair str
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
 		a.repairRequestInProgress = repairReq
+		a.UpdateRepairStatus(true)
 	}()
 	return nil
 }
 
-func (a *Allocation) CancelRepair(remotepath string) error {
+func (a *Allocation) CancelRepair() {
 	if a.repairRequestInProgress != nil {
 		a.repairRequestInProgress.isRepairCanceled = true
-		return nil
+		a.repairRequestInProgress.statusCB.RepairCancelled(nil)
 	}
-	return common.NewError("invalid_cancel_repair_request", "No repair in progress for the allocation")
+	a.repairRequestInProgress.statusCB.RepairCancelled(common.NewError("invalid_cancel_repair_request", "No repair in progress for the allocation"))
 }

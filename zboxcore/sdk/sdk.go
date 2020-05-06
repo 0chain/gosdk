@@ -38,6 +38,8 @@ type StatusCallback interface {
 	Error(allocationID string, filePath string, op int, err error)
 	Completed(allocationId, filePath string, filename string, mimetype string, size int, op int)
 	CommitMetaCompleted(request, response string, err error)
+	RepairCompleted(filesRepaired int)
+	RepairCancelled(err error)
 }
 
 var numBlockDownloads = 10
