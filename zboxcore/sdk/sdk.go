@@ -207,27 +207,48 @@ func ReadPoolUnlock(poolID string, fee int64) (err error) {
 // stake pool
 //
 
-type StakePoolOfferStat struct {
+// StakePoolOfferInfo represents stake pool offer information.
+type StakePoolOfferInfo struct {
 	Lock         common.Balance   `json:"lock"`
 	Expire       common.Timestamp `json:"expire"`
 	AllocationID common.Key       `json:"allocation_id"`
 	IsExpired    bool             `json:"is_expired"`
 }
 
+// StakePoolRewardsInfo represents stake pool rewards.
+type StakePoolRewardsInfo struct {
+	Balance   common.Balance `json:"balance"`
+	Blobber   common.Balance `json:"blobber"`   // total for all time
+	Validator common.Balance `json:"validator"` // total for all time
+}
+
+// StakePoolDelegatePoolInfo represents delegate pool of a stake pool info.
+type StakePoolDelegatePoolInfo struct {
+	ID         common.Key     `json:"id"`          // pool ID
+	Balance    common.Balance `json:"balance"`     // current balance
+	DelegateID common.Key     `json:"delegate_id"` // wallet
+	Earnings   common.Balance `json:"earnings"`    // total for all time
+	Penalty    common.Balance `json:"penalty"`     // total for all time
+	Interests  common.Balance `json:"interests"`   // not payed yet
+}
+
+// StakePool full info.
 type StakePoolInfo struct {
-	ID            common.Key     `json:"pool_id"`
-	Locked        common.Balance `json:"locked"`
-	OffersTotal   common.Balance `json:"offers_total"`
-	CapacityStake common.Balance `json:"capacity_stake"`
-	Lack          common.Balance `json:"lack"`
-	Overfill      common.Balance `json:"overfill"`
+	ID      common.Key     `json:"pool_id"` // pool ID
+	Balance common.Balance `json:"balance"` //
 
-	Rewards         common.Balance `json:"rewards"`
-	InterestReward  common.Balance `json:"interest_reward"`
-	BlobberReward   common.Balance `json:"blobber_reward"`
-	ValidatorReward common.Balance `json:"validator_reward"`
+	Free       common.Size    `json:"free"`        // free staked space
+	Capacity   common.Size    `json:"capacity"`    // blobber bid
+	WritePrice common.Balance `json:"write_price"` // its write price
 
-	Offers []*StakePoolOfferStat `json:"offers"`
+	Offers      []*StakePoolOfferInfo `json:"offers"`       //
+	OffersTotal common.Balance        `json:"offers_total"` //
+	// delegate pools
+	Delegate []*StakePoolDelegatePoolInfo `json:"delegate"`
+	Earnings common.Balance               `json:"earnings"` // total for all
+	Penalty  common.Balance               `json:"penalty"`  // total for all
+	// rewards
+	Rewards StakePoolRewardsInfo `json:"rewards"`
 }
 
 // GetStakePoolInfo for given client, or, if the given clientID is empty,
@@ -253,40 +274,84 @@ func GetStakePoolInfo(blobberID string) (info *StakePoolInfo, err error) {
 		return nil, fmt.Errorf("error decoding response: %v", err)
 	}
 
+	println("SP INFO:", string(b))
+
 	return
 }
 
+type stakePoolRequest struct {
+	BlobberID string `json:"blobber_id,omitempty"`
+	PoolID    string `json:"pool_id,omitempty"`
+}
+
 // StakePoolLock locks tokens lack in stake pool
-func StakePoolLock(value, fee int64) (err error) {
-	var sn = transaction.SmartContractTxnData{
-		Name: transaction.STAKE_POOL_LOCK,
+func StakePoolLock(blobberID string, value, fee int64) (poolID string,
+	err error) {
+
+	if blobberID == "" {
+		blobberID = client.GetClientID()
 	}
-	_, err = smartContractTxnValueFee(sn, value, fee)
+
+	var spr stakePoolRequest
+	spr.BlobberID = blobberID
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STAKE_POOL_LOCK,
+		InputArgs: &spr,
+	}
+	poolID, err = smartContractTxnValueFee(sn, value, fee)
 	return
 }
 
 // StakePoolUnlock unlocks a stake pool excess tokens.
-func StakePoolUnlock(tokens, fee int64) (err error) {
+func StakePoolUnlock(blobberID, poolID string, fee int64) (err error) {
 
-	type unlockRequest struct {
-		Amount int64 `json:"amount`
+	if blobberID == "" {
+		blobberID = client.GetClientID()
 	}
 
-	var req unlockRequest
-	req.Amount = tokens
+	var spr stakePoolRequest
+	spr.BlobberID = blobberID
+	spr.PoolID = poolID
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STAKE_POOL_UNLOCK,
-		InputArgs: &req,
+		InputArgs: &spr,
 	}
 	_, err = smartContractTxnValueFee(sn, 0, fee)
 	return
 }
 
-// StakePoolUnlockRewards unlocks a stake pool rewards.
-func StakePoolUnlockRewards() (err error) {
+// StakePoolTakeRewards unlocks a stake pool rewards.
+func StakePoolTakeRewards(bloberID string) (err error) {
+
+	if bloberID == "" {
+		bloberID = client.GetClientID()
+	}
+
+	var spr stakePoolRequest
+	spr.BlobberID = bloberID
+
 	var sn = transaction.SmartContractTxnData{
-		Name: transaction.STAKE_POOL_UNLOCK_REWARDS,
+		Name:      transaction.STAKE_POOL_TAKE_REWARDS,
+		InputArgs: &spr,
+	}
+	_, err = smartContractTxnValueFee(sn, 0, 0)
+	return
+}
+
+// StakePoolPayInterests unlocks a stake pool rewards.
+func StakePoolPayInterests(bloberID string) (err error) {
+
+	if bloberID == "" {
+		bloberID = client.GetClientID()
+	}
+
+	var spr stakePoolRequest
+	spr.BlobberID = bloberID
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STAKE_POOL_PAY_INTERESTS,
+		InputArgs: &spr,
 	}
 	_, err = smartContractTxnValueFee(sn, 0, 0)
 	return
@@ -401,28 +466,46 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 // storage SC configurations and blobbers
 //
 
-type StorageSCReadPoolConfig struct {
+type StorageStakePoolConfig struct {
+	MinLock          common.Balance `json:"min_lock"`
+	InterestRate     float64        `json:"interest_rate"`
+	InterestInterval time.Duration  `json:"interest_interval"`
+}
+
+// read pool configs
+
+type StorageReadPoolConfig struct {
 	MinLock       common.Balance `json:"min_lock"`
 	MinLockPeriod time.Duration  `json:"min_lock_period"`
 	MaxLockPeriod time.Duration  `json:"max_lock_period"`
 }
 
-type StorageSCWritePoolConfig struct {
-	MinLock common.Balance `json:"min_lock"`
+// write pool configurations
+
+type StorageWritePoolConfig struct {
+	MinLock       common.Balance `json:"min_lock"`
+	MinLockPeriod time.Duration  `json:"min_lock_period"`
+	MaxLockPeriod time.Duration  `json:"max_lock_period"`
 }
 
 type StorageSCConfig struct {
-	ChallengeEnabled           bool                      `json:"challenge_enabled"`
-	ChallengeRatePerMBMin      time.Duration             `json:"challenge_rate_per_mb_min"`
-	MinAllocSize               common.Size               `json:"min_alloc_size"` // size, bytes
-	MinAllocDuration           time.Duration             `json:"min_alloc_duration"`
-	MaxChallengeCompletionTime time.Duration             `json:"max_challenge_completion_time"`
-	MinOfferDuration           time.Duration             `json:"min_offer_duration"`
-	MinBlobberCapacity         common.Size               `json:"min_blobber_capacity"`
-	ReadPool                   *StorageSCReadPoolConfig  `json:"readpool"`
-	WritePool                  *StorageSCWritePoolConfig `json:"writepool"`
-	ValidatorReward            float64                   `json:"validator_reward"`
-	BlobberSlash               float64                   `json:"blobber_slash"`
+	MinAllocSize                    common.Size             `json:"min_alloc_size"`
+	MinAllocDuration                time.Duration           `json:"min_alloc_duration"`
+	MaxChallengeCompletionTime      time.Duration           `json:"max_challenge_completion_time"`
+	MinOfferDuration                time.Duration           `json:"min_offer_duration"`
+	MinBlobberCapacity              common.Size             `json:"min_blobber_capacity"`
+	ReadPool                        *StorageReadPoolConfig  `json:"readpool"`
+	WritePool                       *StorageWritePoolConfig `json:"writepool"`
+	StakePool                       *StorageStakePoolConfig `json:"stakepool"`
+	ValidatorReward                 float64                 `json:"validator_reward"`
+	BlobberSlash                    float64                 `json:"blobber_slash"`
+	MaxReadPrice                    common.Balance          `json:"max_read_price"`
+	MaxWritePrice                   common.Balance          `json:"max_write_price"`
+	FailedChallengesToCancel        int                     `json:"failed_challenges_to_cancel"`
+	FailedChallengesToRevokeMinLock int                     `json:"failed_challenges_to_revoke_min_lock"`
+	ChallengeEnabled                bool                    `json:"challenge_enabled"`
+	MaxChallengesPerGeneration      int                     `json:"max_challenges_per_generation"`
+	ChallengeGenerationRate         float64                 `json:"challenge_rate_per_mb_min"`
 }
 
 func GetStorageSCConfig() (conf *StorageSCConfig, err error) {
@@ -441,8 +524,8 @@ func GetStorageSCConfig() (conf *StorageSCConfig, err error) {
 		return nil, fmt.Errorf("error decoding response: %v", err)
 	}
 
-	if conf.ReadPool == nil || conf.WritePool == nil {
-		return nil, errors.New("invalid confg: missing read/write pool configs")
+	if conf.ReadPool == nil || conf.WritePool == nil || conf.StakePool == nil {
+		return nil, errors.New("invalid confg: missing read/write/stake pool configs")
 	}
 	return
 }
