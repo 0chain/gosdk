@@ -17,8 +17,9 @@ const (
 )
 
 type CommitMetaTxn struct {
-	RefID int64  `json:"ref_id"`
-	TxnID string `json:"txn_id"`
+	RefID     int64  `json:"ref_id"`
+	TxnID     string `json:"txn_id"`
+	CreatedAt string `json:"created_at"`
 }
 
 type FileRef struct {
