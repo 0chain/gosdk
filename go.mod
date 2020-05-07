@@ -13,6 +13,7 @@ require (
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/tyler-smith/go-bip39 v1.0.0
 	go.dedis.ch/kyber/v3 v3.0.5
+	go.uber.org/zap v1.15.0
 	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6 // indirect
 )
