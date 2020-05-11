@@ -674,7 +674,7 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 	return smartContractTxnValue(sn, lock)
 }
 
-func UpdateAllocation(size int64, expiry int64, allocationID string) (string, error) {
+func UpdateAllocation(size int64, expiry int64, allocationID string, lock int64) (string, error) {
 	updateAllocationRequest := make(map[string]interface{})
 	updateAllocationRequest["owner_id"] = client.GetClientID()
 	updateAllocationRequest["id"] = allocationID
@@ -685,7 +685,7 @@ func UpdateAllocation(size int64, expiry int64, allocationID string) (string, er
 		Name:      transaction.UPDATE_ALLOCATION_REQUEST,
 		InputArgs: updateAllocationRequest,
 	}
-	return smartContractTxn(sn)
+	return smartContractTxnValue(sn, lock)
 }
 
 func FinalizeAllocation(allocID string) (string, error) {
