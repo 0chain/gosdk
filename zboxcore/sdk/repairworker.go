@@ -82,6 +82,14 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
 	switch dir.Type {
 	case fileref.DIRECTORY:
+		if len(dir.Children) == 0 {
+			var err error
+			dir, err = a.ListDir(dir.Path)
+			if err != nil {
+				Logger.Error("Failed to get listDir for path ", zap.Any("path", dir.Path), zap.Error(err))
+				return
+			}
+		}
 		for _, childDir := range dir.Children {
 			if r.checkForCancel() {
 				return
