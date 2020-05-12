@@ -814,17 +814,16 @@ func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, look
 	return nil
 }
 
-func (a *Allocation) StartRepair(localImagePath, localFilePath, pathToRepair string, statusCB StatusCallback) error {
+func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB StatusCallback) error {
 	listDir, err := a.ListDir(pathToRepair)
 	if err != nil {
 		return err
 	}
 
 	repairReq := &RepairRequest{
-		listDir:        listDir,
-		localFilePath:  localFilePath,
-		localImagePath: localImagePath,
-		statusCB:       statusCB,
+		listDir:       listDir,
+		localRootPath: localRootPath,
+		statusCB:      statusCB,
 	}
 
 	repairReq.completedCallback = func() {

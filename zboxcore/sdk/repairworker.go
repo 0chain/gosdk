@@ -3,7 +3,6 @@ package sdk
 import (
 	"context"
 	"os"
-	"strings"
 	"sync"
 
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -14,8 +13,7 @@ import (
 type RepairRequest struct {
 	listDir           *ListResult
 	isRepairCanceled  bool
-	localImagePath    string
-	localFilePath     string
+	localRootPath     string
 	statusCB          StatusCallback
 	completedCallback func()
 	filesRepaired     int
@@ -68,11 +66,7 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 		defer r.completedCallback()
 	}
 
-	if r.isRepairCanceled {
-		Logger.Info("Repair Cancelled by the user")
-		if r.statusCB != nil {
-			r.statusCB.RepairCompleted(r.filesRepaired)
-		}
+	if r.checkForCancel() {
 		return
 	}
 
@@ -86,35 +80,31 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 }
 
 func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
-	if dir.Type == fileref.DIRECTORY && len(dir.Children) > 0 {
+	switch dir.Type {
+	case fileref.DIRECTORY:
 		for _, childDir := range dir.Children {
-			if r.isRepairCanceled {
-				Logger.Info("Repair Cancelled by the user")
-				if r.statusCB != nil {
-					r.statusCB.RepairCompleted(r.filesRepaired)
-				}
+			if r.checkForCancel() {
 				return
 			}
 			r.iterateDir(a, childDir)
 		}
-	} else if dir.Type == fileref.FILE {
+
+	case fileref.FILE:
 		r.repairFile(a, dir)
-	} else {
-		Logger.Info("Invalid directory type, No file in the given repair path")
+
+	default:
+		Logger.Info("Invalid directory type", zap.Any("type", dir.Type))
 	}
+
 	return
 }
 
 func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
-	if r.isRepairCanceled {
-		Logger.Info("Repair Cancelled by the user")
-		if r.statusCB != nil {
-			r.statusCB.RepairCompleted(r.filesRepaired)
-		}
+	if r.checkForCancel() {
 		return
 	}
 
-	Logger.Info("Repairing file for the path :", zap.Any("path", file.Path))
+	Logger.Info("Checking file for the path :", zap.Any("path", file.Path))
 	_, repairRequired, _, err := a.RepairRequired(file.Path)
 	if err != nil {
 		Logger.Error("repair_required_failed", zap.Error(err))
@@ -122,6 +112,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 	}
 
 	if repairRequired {
+		Logger.Info("Repair required for the path :", zap.Any("path", file.Path))
 		var wg sync.WaitGroup
 		statusCB := &RepairStatusCB{
 			wg:       &wg,
@@ -131,6 +122,10 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 		localPath := r.getLocalPath(file)
 
 		if !checkFileExists(localPath) {
+			if r.checkForCancel() {
+				return
+			}
+			Logger.Info("Downloading file for the path :", zap.Any("path", file.Path))
 			wg.Add(1)
 			err = a.DownloadFile(localPath, file.Path, statusCB)
 			if err != nil {
@@ -147,6 +142,11 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 			statusCB.success = false
 		}
 
+		if r.checkForCancel() {
+			return
+		}
+
+		Logger.Info("Repairing file for the path :", zap.Any("path", file.Path))
 		wg.Add(1)
 		err = a.RepairFile(localPath, file.Path, statusCB)
 		if err != nil {
@@ -167,10 +167,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 }
 
 func (r *RepairRequest) getLocalPath(file *ListResult) string {
-	if strings.Contains(file.MimeType, "image") {
-		return r.localImagePath + file.Name
-	}
-	return r.localFilePath + file.Name
+	return r.localRootPath + file.Path
 }
 
 func checkFileExists(localPath string) bool {
@@ -179,4 +176,15 @@ func checkFileExists(localPath string) bool {
 		return false
 	}
 	return !info.IsDir()
+}
+
+func (r *RepairRequest) checkForCancel() bool {
+	if r.isRepairCanceled {
+		Logger.Info("Repair Cancelled by the user")
+		if r.statusCB != nil {
+			r.statusCB.RepairCompleted(r.filesRepaired)
+		}
+		return true
+	}
+	return false
 }
