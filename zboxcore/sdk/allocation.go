@@ -846,7 +846,6 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 func (a *Allocation) CancelRepair() error {
 	if a.repairRequestInProgress != nil {
 		a.repairRequestInProgress.isRepairCanceled = true
-		defer a.repairRequestInProgress.statusCB.RepairCancelled()
 		return nil
 	}
 	return common.NewError("invalid_cancel_repair_request", "No repair in progress for the allocation")

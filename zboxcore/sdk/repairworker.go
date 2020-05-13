@@ -42,10 +42,6 @@ func (cb *RepairStatusCB) RepairCompleted(filesRepaired int) {
 	cb.statusCB.RepairCompleted(filesRepaired)
 }
 
-func (cb *RepairStatusCB) RepairCancelled() {
-	cb.statusCB.RepairCancelled()
-}
-
 func (cb *RepairStatusCB) Completed(allocationId, filePath string, filename string, mimetype string, size int, op int) {
 	cb.success = true
 	cb.statusCB.Completed(allocationId, filePath, filename, mimetype, size, op)
