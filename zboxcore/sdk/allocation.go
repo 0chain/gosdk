@@ -701,7 +701,7 @@ func (a *Allocation) CancelUpload(localpath string) error {
 		uploadReq.isUploadCanceled = true
 		return nil
 	}
-	return common.NewError("local_path_not_found", "Invalid path. Do upload in progress for the path "+localpath)
+	return common.NewError("local_path_not_found", "Invalid path. No upload in progress for the path "+localpath)
 }
 
 func (a *Allocation) CancelDownload(remotepath string) error {
@@ -709,7 +709,7 @@ func (a *Allocation) CancelDownload(remotepath string) error {
 		downloadReq.isDownloadCanceled = true
 		return nil
 	}
-	return common.NewError("remote_path_not_found", "Invalid path. Do download in progress for the path "+remotepath)
+	return common.NewError("remote_path_not_found", "Invalid path. No download in progress for the path "+remotepath)
 }
 
 func (a *Allocation) DownloadThumbnailFromAuthTicket(localPath string, authTicket string, remoteLookupHash string, remoteFilename string, status StatusCallback) error {
@@ -843,10 +843,10 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 	return nil
 }
 
-func (a *Allocation) CancelRepair() {
+func (a *Allocation) CancelRepair() error {
 	if a.repairRequestInProgress != nil {
 		a.repairRequestInProgress.isRepairCanceled = true
-		a.repairRequestInProgress.statusCB.RepairCancelled(nil)
+		a.repairRequestInProgress.statusCB.RepairCancelled()
 	}
-	a.repairRequestInProgress.statusCB.RepairCancelled(common.NewError("invalid_cancel_repair_request", "No repair in progress for the allocation"))
+	return common.NewError("invalid_cancel_repair_request", "No repair in progress for the allocation")
 }
