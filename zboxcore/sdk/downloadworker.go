@@ -89,7 +89,10 @@ func (req *DownloadRequest) downloadBlock(blockNum int64) ([]byte, error) {
 	var encscheme encryption.EncryptionScheme
 	if len(req.encryptedKey) > 0 {
 		encscheme = encryption.NewEncryptionScheme()
+		// TODO: Remove after testing
+		Logger.Info("Initializing encryption scheme with mnemonic", client.GetClient().Mnemonic)
 		encscheme.Initialize(client.GetClient().Mnemonic)
+		Logger.Info("Encrypted key used for InitForDecryption", req.encryptedKey)
 		encscheme.InitForDecryption("filetype:audio", req.encryptedKey)
 	}
 
@@ -114,7 +117,10 @@ func (req *DownloadRequest) downloadBlock(blockNum int64) ([]byte, error) {
 						break
 					}
 					encMsg.MessageChecksum, encMsg.OverallChecksum = headerChecksums[0], headerChecksums[1]
+					Logger.Info("Inside decrypt flow")
+					Logger.Info("Encryption key from download req ", req.encryptedKey)
 					encMsg.EncryptedKey = encscheme.GetEncryptedKey()
+					Logger.Info("Encryption key from encsheme ", encMsg.EncryptedKey)
 					if req.authTicket != nil {
 						encMsg.ReEncryptionKey = req.authTicket.ReEncryptionKey
 					}
@@ -192,6 +198,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context, a *Allocation) 
 		size = fileRef.ActualThumbnailSize
 	}
 	req.encryptedKey = fileRef.EncryptedKey
+	Logger.Info("Encrypted key from fileref", req.encryptedKey)
 	// Calculate number of bytes per shard.
 	perShard := (size + int64(req.datashards) - 1) / int64(req.datashards)
 	chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)

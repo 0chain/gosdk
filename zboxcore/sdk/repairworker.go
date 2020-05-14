@@ -43,17 +43,17 @@ func (cb *RepairStatusCB) RepairCompleted(filesRepaired int) {
 }
 
 func (cb *RepairStatusCB) Completed(allocationId, filePath string, filename string, mimetype string, size int, op int) {
-	cb.success = true
 	cb.statusCB.Completed(allocationId, filePath, filename, mimetype, size, op)
 	if op == OpDownload || op == OpCommit {
-		defer cb.wg.Done()
+		cb.success = true
+		cb.wg.Done()
 	}
 }
 
 func (cb *RepairStatusCB) Error(allocationID string, filePath string, op int, err error) {
+	cb.statusCB.Error(allocationID, filePath, op, err)
 	cb.success = false
 	cb.err = err
-	cb.statusCB.Error(allocationID, filePath, op, err)
 	cb.wg.Done()
 }
 
