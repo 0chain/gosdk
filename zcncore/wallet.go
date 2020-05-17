@@ -54,6 +54,13 @@ const (
 	GET_STAKE_POOL_STAT     = `/v1/screst/` + StorageSmartContractAddress + `/getStakePoolStat?blobber_id=`
 	GET_CHALLENGE_POOL_STAT = `/v1/screst/` + StorageSmartContractAddress + `/getChallengePoolStat?allocation_id=`
 	GET_STORAGE_SC_CONFIG   = `/v1/screst/` + StorageSmartContractAddress + `/getConfig`
+
+	// miner SC
+	GET_MINERSC_MINER        = `/v1/screst/` + MinerSmartContractAddress + "/minerStat"
+	GET_MINERSC_SHARDER      = `/v1/screst/` + MinerSmartContractAddress + "/sharderStat"
+	GET_MINERSC_MINER_POOL   = `/v1/screst/` + MinerSmartContractAddress + "/minerPoolStat"
+	GET_MINERSC_SHARDER_POOL = `/v1/screst/` + MinerSmartContractAddress + "/sharderPoolStat"
+	GET_MINERSC_CONFIG       = `/v1/screst/` + MinerSmartContractAddress + "/configs"
 )
 
 const (
@@ -884,6 +891,65 @@ func GetVestingSCConfig(cb GetInfoCallback) (err error) {
 	}
 	go func() {
 		getInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
+	}()
+	return
+}
+
+//
+// miner SC
+//
+
+func GetMinerSCNodeInfo(id string, cb GetInfoCallback) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	go func() {
+		getInfoFromSharders(withParams(GET_MINERSC_MINER, url.Values{
+			"id": []string{string(id)},
+		}), 0, cb)
+	}()
+	return
+}
+
+func GetMinerSCNodePool(id, poolID string, cb GetInfoCallback) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	go func() {
+		getInfoFromSharders(withParams(GET_MINERSC_MINER_POOL, url.Values{
+			"id":      []string{string(id)},
+			"pool_id": []string{string(poolID)},
+		}), 0, cb)
+	}()
+	return
+}
+
+type MinerSCConfig struct {
+	ID        common.Key `json:"id"`
+	LastRound int64      `json:"last_round"`
+
+	RewardRate   float64 `json:"reward_rate"`   //
+	InterestRate float64 `json:"interest_rate"` //
+	ViewChange   int64   `json:"view_change"`   //
+	FreezeBefore int64   `json:"freeze_before"` //
+
+	ShareRatio          float64 `json:"share_ratio"`           // ratio
+	MaxCharge           float64 `json:"max_charge"`            // ratio
+	Epoch               int64   `json:"epoch"`                 // rounds
+	RewardDeclineRate   float64 `json:"reward_decline_rate"`   // ratio
+	InterestDeclineRate float64 `json:"interest_decline_rate"` // ratio
+
+	// total minted tokens for all
+	MaxMint     common.Balance `json:"max_mint"`
+	TotalMinted common.Balance `json:"total_minted"`
+}
+
+func GetMinerSCConfig(cb GetInfoCallback) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	go func() {
+		getInfoFromSharders(withParams(GET_MINERSC_CONFIG, url.Values{}), 0, cb)
 	}()
 	return
 }

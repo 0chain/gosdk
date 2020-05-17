@@ -348,6 +348,52 @@ func (ta *TransactionWithAuth) VestingUpdateConfig(
 }
 
 //
+// miner sc
+//
+
+func (ta *TransactionWithAuth) MinerSCSettings(info *MinerSCMinerInfo) (err error) {
+	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_SETTINGS, info, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) MinerSCLock(minerID string,
+	lock common.Balance) (err error) {
+
+	var mscl MinerSCLock
+	mscl.ID = minerID
+
+	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_LOCK, &mscl, int64(lock))
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) MienrSCUnlock(nodeID, poolID string) (err error) {
+	var mscul MinerSCUnlock
+	mscul.ID = nodeID
+	mscul.PoolID = poolID
+
+	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_UNLOCK, &mscul, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+//
 // interest pool
 //
 

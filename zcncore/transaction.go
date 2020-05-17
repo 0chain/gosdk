@@ -125,6 +125,13 @@ type TransactionScheme interface {
 	VestingDelete(poolID common.Key) error
 	VestingUpdateConfig(vscc *VestingSCConfig) error
 
+	// Miner SC
+
+	MinerSCSettings(*MinerSCMinerInfo) error
+	MinerSCLock(minerID string, lock common.Balance) error
+	MienrSCUnlock(minerID, poolID string) error
+	//
+
 	//  TO REMOVE (sfxdx): remove storage SC related transactions
 
 	// CreateReadPool if missing or when wallet created.
@@ -1058,6 +1065,107 @@ func (t *Transaction) VestingUpdateConfig(vscc *VestingSCConfig) (err error) {
 
 	err = t.createSmartContractTxn(VestingSmartContractAddress,
 		transaction.VESTING_UPDATE_CONFIG, vscc, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+//
+// miner SC
+//
+
+type MinerSCPoolStats struct {
+	DelegateID   string         `json:"delegate_id"`
+	High         common.Balance `json:"high"`
+	Low          common.Balance `json:"low"`
+	InterestRate float64        `json:"interest_rate"`
+	TotalPaid    common.Balance `json:"total_paid"`
+	NumRounds    int64          `json:"number_rounds"`
+}
+
+type MinerSCPool struct {
+	ID      string         `json:"id"`
+	Balance common.Balance `json:"balance"`
+}
+
+type MinerSCDelegatePool struct {
+	MinerSCPoolStats `json:"stats"`
+	MinerSCPool      `json:"pool"`
+}
+
+type MinerSCMinerStat struct {
+	// for miner (totals)
+	BlockReward      common.Balance `json:"block_reward,omitempty"`
+	ServiceCharge    common.Balance `json:"service_charge,omitempty"`
+	UsersFee         common.Balance `json:"users_fee,omitempty"`
+	BlockShardersFee common.Balance `json:"block_sharders_fee,omitempty"`
+	// for sharder (total)
+	SharderRewards common.Balance `json:"sharder_rewards,omitempty"`
+}
+
+type MinerSCMinerInfo struct {
+	ID      string `json:"id"`
+	BaseURL string `json:"url"`
+
+	DelegateWallet    string         `json:"delegate_wallet"`     //
+	ServiceCharge     float64        `json:"service_charge"`      // %
+	NumberOfDelegates int            `json:"number_of_delegates"` //
+	MinStake          common.Balance `json:"min_stake"`           //
+	MaxStake          common.Balance `json:"max_stake"`           //
+
+	Stat MinerSCMinerStat `json:"stat"`
+
+	Pending  map[string]MinerSCDelegatePool `json:"pending"`
+	Active   map[string]MinerSCDelegatePool `json:"active"`
+	Deleting map[string]MinerSCDelegatePool `json:"deleting"`
+}
+
+func (t *Transaction) MinerSCSettings(info *MinerSCMinerInfo) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_SETTINGS, info, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+type MinerSCLock struct {
+	ID string `json:"id"`
+}
+
+func (t *Transaction) MinerSCLock(nodeID string,
+	lock common.Balance) (err error) {
+
+	var mscl MinerSCLock
+	mscl.ID = nodeID
+
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_LOCK, &mscl, int64(lock))
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+type MinerSCUnlock struct {
+	ID     string `json:"id"`
+	PoolID string `json:"pool_id"`
+}
+
+func (t *Transaction) MienrSCUnlock(nodeID, poolID string) (err error) {
+	var mscul MinerSCUnlock
+	mscul.ID = nodeID
+	mscul.PoolID = poolID
+
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_UNLOCK, &mscul, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
