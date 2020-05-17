@@ -99,6 +99,11 @@ const (
 	STAKE_POOL_TAKE_REWARDS  = "stake_pool_take_rewards"
 	FINALIZE_ALLOCATION      = "finalize_allocation"
 	CANCEL_ALLOCATION        = "cancel_allocation"
+
+	// Miner SC
+	MINERSC_LOCK     = "addToDelegatePool"
+	MINERSC_UNLOCK   = "deleteFromDelegatePool"
+	MINERSC_SETTINGS = "update_settings"
 )
 
 type SignFunc = func(msg string) (string, error)
