@@ -56,11 +56,9 @@ const (
 	GET_STORAGE_SC_CONFIG   = `/v1/screst/` + StorageSmartContractAddress + `/getConfig`
 
 	// miner SC
-	GET_MINERSC_MINER        = `/v1/screst/` + MinerSmartContractAddress + "/minerStat"
-	GET_MINERSC_SHARDER      = `/v1/screst/` + MinerSmartContractAddress + "/sharderStat"
-	GET_MINERSC_MINER_POOL   = `/v1/screst/` + MinerSmartContractAddress + "/minerPoolStat"
-	GET_MINERSC_SHARDER_POOL = `/v1/screst/` + MinerSmartContractAddress + "/sharderPoolStat"
-	GET_MINERSC_CONFIG       = `/v1/screst/` + MinerSmartContractAddress + "/configs"
+	GET_MINERSC_NODE   = `/v1/screst/` + MinerSmartContractAddress + "/nodeStat"
+	GET_MINERSC_POOL   = `/v1/screst/` + MinerSmartContractAddress + "/nodePoolStat"
+	GET_MINERSC_CONFIG = `/v1/screst/` + MinerSmartContractAddress + "/configs"
 )
 
 const (
@@ -71,7 +69,7 @@ const (
 	FaucetSmartContractAddress       = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3`
 	InterestPoolSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9`
 	MultiSigSmartContractAddress     = `27b5ef7120252b79f9dd9c05505dd28f328c80f6863ee446daede08a84d651a7`
-	MinerSmartContractAddress        = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d1`
+	MinerSmartContractAddress        = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9`
 	MultiSigRegisterFuncName         = "register"
 	MultiSigVoteFuncName             = "vote"
 )
@@ -904,7 +902,7 @@ func GetMinerSCNodeInfo(id string, cb GetInfoCallback) (err error) {
 		return
 	}
 	go func() {
-		getInfoFromSharders(withParams(GET_MINERSC_MINER, url.Values{
+		getInfoFromSharders(withParams(GET_MINERSC_NODE, url.Values{
 			"id": []string{string(id)},
 		}), 0, cb)
 	}()
@@ -916,7 +914,7 @@ func GetMinerSCNodePool(id, poolID string, cb GetInfoCallback) (err error) {
 		return
 	}
 	go func() {
-		getInfoFromSharders(withParams(GET_MINERSC_MINER_POOL, url.Values{
+		getInfoFromSharders(withParams(GET_MINERSC_POOL, url.Values{
 			"id":      []string{string(id)},
 			"pool_id": []string{string(poolID)},
 		}), 0, cb)
