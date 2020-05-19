@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/0chain/gosdk/zboxcore/fileref"
 	"io/ioutil"
 	"math/bits"
 	"mime/multipart"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/0chain/gosdk/zboxcore/fileref"
 
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"

@@ -98,6 +98,9 @@ type UploadRequest struct {
 func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.StorageNode, file *fileref.FileRef, uploadCh chan []byte, uploadThumbCh chan []byte, wg *sync.WaitGroup) {
 	bodyReader, bodyWriter := io.Pipe()
 	formWriter := multipart.NewWriter(bodyWriter)
+	if a.UnderRepair() {
+		formWriter.WriteField("repair_request", "true")
+	}
 	httpreq, _ := zboxutil.NewUploadRequest(blobber.Baseurl, a.Tx, bodyReader, req.isUpdate)
 	//timeout := time.Duration(int64(math.Max(10, float64(obj.file.Size)/(CHUNK_SIZE*float64(len(obj.blobbers)/2)))))
 	//ctx, cncl := context.WithTimeout(context.Background(), (time.Second * timeout))

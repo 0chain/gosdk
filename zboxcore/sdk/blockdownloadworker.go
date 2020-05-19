@@ -21,20 +21,21 @@ import (
 )
 
 type BlockDownloadRequest struct {
-	blobber            *blockchain.StorageNode
-	allocationID       string
-	allocationTx       string
-	blobberIdx         int
-	remotefilepath     string
-	remotefilepathhash string
-	blockNum           int64
-	encryptedKey       string
-	contentMode        string
-	numBlocks          int64
-	authTicket         *marker.AuthTicket
-	wg                 *sync.WaitGroup
-	ctx                context.Context
-	result             chan *downloadBlock
+	blobber               *blockchain.StorageNode
+	allocationID          string
+	allocationTx          string
+	allocationUnderRepair bool
+	blobberIdx            int
+	remotefilepath        string
+	remotefilepathhash    string
+	blockNum              int64
+	encryptedKey          string
+	contentMode           string
+	numBlocks             int64
+	authTicket            *marker.AuthTicket
+	wg                    *sync.WaitGroup
+	ctx                   context.Context
+	result                chan *downloadBlock
 }
 
 type downloadBlock struct {
@@ -157,6 +158,10 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		}
 		if len(req.contentMode) > 0 {
 			formWriter.WriteField("content", req.contentMode)
+		}
+
+		if req.allocationUnderRepair {
+			formWriter.WriteField("repair_request", "true")
 		}
 
 		formWriter.Close()
