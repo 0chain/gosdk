@@ -50,7 +50,7 @@ type DownloadRequest struct {
 	Consensus
 }
 
-func (req *DownloadRequest) downloadBlock(blockNum int64) ([]byte, error) {
+func (req *DownloadRequest) downloadBlock(blockNum int64, isRepair bool) ([]byte, error) {
 	req.consensus = 0
 	numDownloads := bits.OnesCount32(req.downloadMask)
 	req.wg = &sync.WaitGroup{}
@@ -74,6 +74,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64) ([]byte, error) {
 		blockDownloadReq.remotefilepath = req.remotefilepath
 		blockDownloadReq.remotefilepathhash = req.remotefilepathhash
 		blockDownloadReq.numBlocks = req.numBlocks
+		blockDownloadReq.allocationUnderRepair = isRepair
 		go AddBlockDownloadReq(blockDownloadReq)
 		//go obj.downloadBlobberBlock(&obj.blobbers[pos], pos, path, blockNum, rspCh, isPathHash, authTicket)
 		c++
@@ -232,7 +233,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context, a *Allocation) 
 	//batchCount := (chunksPerShard + req.numBlocks - 1) / req.numBlocks
 	for cnt := int64(0); cnt < chunksPerShard; cnt += req.numBlocks {
 		//blockSize := int64(math.Min(float64(perShard-(cnt*fileref.CHUNK_SIZE)), fileref.CHUNK_SIZE))
-		data, err := req.downloadBlock(cnt + 1)
+		data, err := req.downloadBlock(cnt+1, a.UnderRepair())
 		if err != nil {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
