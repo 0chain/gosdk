@@ -514,6 +514,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 		commitReq := &CommitRequest{}
 		commitReq.allocationID = a.ID
 		commitReq.allocationTx = a.Tx
+		commitReq.allocationUnderRepair = a.UnderRepair()
 		commitReq.blobber = a.Blobbers[pos]
 		if req.isUpdate {
 			newChange := &allocationchange.UpdateFileChange{}
