@@ -2,6 +2,7 @@ package zcncore
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"math"
 	"net/http"
@@ -812,6 +813,48 @@ func GetBlobbers(cb GetInfoCallback) error {
 }
 
 //
+// on JSON info available
+//
+
+type OnJSONInfoCb struct {
+	value interface{}
+	err   error
+	got   chan struct{}
+}
+
+func (ojsonic *OnJSONInfoCb) OnInfoAvailable(op int, status int,
+	info string, errMsg string) {
+
+	defer close(ojsonic.got)
+
+	if status != StatusSuccess {
+		ojsonic.err = errors.New(errMsg)
+		return
+	}
+	if info == "" || info == "{}" {
+		ojsonic.err = errors.New("empty response from sharders")
+		return
+	}
+	var err error
+	if err = json.Unmarshal([]byte(info), ojsonic.value); err != nil {
+		ojsonic.err = fmt.Errorf("decoding response: %v", err)
+	}
+}
+
+// Wait for info.
+func (ojsonic *OnJSONInfoCb) Wait() (err error) {
+	<-ojsonic.got
+	return ojsonic.err
+}
+
+func NewJSONInfoCB(val interface{}) (cb *OnJSONInfoCb) {
+	cb = new(OnJSONInfoCb)
+	cb.value = val
+	cb.got = make(chan struct{})
+	return
+}
+
+//
 // vesting pool
 //
 
@@ -838,13 +881,20 @@ func withParams(uri string, params url.Values) string {
 	return uri + "?" + params.Encode()
 }
 
-func GetVestingPoolInfo(poolID common.Key, cb GetInfoCallback) (err error) {
+func GetVestingPoolInfo(poolID common.Key) (info *VestingPoolInfo, err error) {
+
 	if err = checkConfig(); err != nil {
 		return
 	}
-	go func() {
-		getInfoFromSharders(withParams(GET_VESTING_POOL_INFO, url.Values{"pool_id": []string{string(poolID)}}), 0, cb)
-	}()
+
+	info = new(VestingPoolInfo)
+	var cb = NewJSONInfoCB(info)
+
+	getInfoFromSharders(withParams(GET_VESTING_POOL_INFO, url.Values{
+		"pool_id": []string{string(poolID)},
+	}), 0, cb)
+
+	err = cb.Wait()
 	return
 }
 
@@ -852,7 +902,8 @@ type VestingClientList struct {
 	Pools []common.Key `json:"pools"`
 }
 
-func GetVestingClientList(clientID common.Key, cb GetInfoCallback) (err error) {
+func GetVestingClientList(clientID common.Key) (list []common.Key, err error) {
+
 	if err = checkConfig(); err != nil {
 		return
 	}
@@ -860,10 +911,21 @@ func GetVestingClientList(clientID common.Key, cb GetInfoCallback) (err error) {
 	if clientID == "" {
 		clientID = common.Key(_config.wallet.ClientID) // if not blank
 	}
-	go func() {
-		getInfoFromSharders(withParams(GET_VESTING_CLIENT_POOLS, url.Values{"client_id": []string{string(clientID)}}), 0, cb)
-	}()
-	return
+
+	var (
+		vcl VestingClientList
+		cb  = NewJSONInfoCB(&vcl)
+	)
+
+	go getInfoFromSharders(withParams(GET_VESTING_CLIENT_POOLS, url.Values{
+		"client_id": []string{string(clientID)},
+	}), 0, cb)
+
+	if err = cb.Wait(); err != nil {
+		return
+	}
+
+	return vcl.Pools, nil
 }
 
 type VestingSCConfig struct {
@@ -874,17 +936,18 @@ type VestingSCConfig struct {
 	MaxDescriptionLength int            `json:"max_description_length"`
 }
 
-func (vscc *VestingSCConfig) IsZero() bool {
-	return (*vscc) == (VestingSCConfig{})
-}
+func GetVestingSCConfig() (conf *VestingSCConfig, err error) {
 
-func GetVestingSCConfig(cb GetInfoCallback) (err error) {
 	if err = checkConfig(); err != nil {
 		return
 	}
-	go func() {
-		getInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
-	}()
+
+	conf = new(VestingSCConfig)
+	var cb = NewJSONInfoCB(conf)
+
+	go getInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
+
+	err = cb.Wait()
 	return
 }
 
@@ -893,14 +956,14 @@ func GetVestingSCConfig(cb GetInfoCallback) (err error) {
 //
 
 func GetMinerSCNodeInfo(id string, cb GetInfoCallback) (err error) {
+
 	if err = checkConfig(); err != nil {
 		return
 	}
-	go func() {
-		getInfoFromSharders(withParams(GET_MINERSC_NODE, url.Values{
-			"id": []string{string(id)},
-		}), 0, cb)
-	}()
+
+	go getInfoFromSharders(withParams(GET_MINERSC_NODE, url.Values{
+		"id": []string{string(id)},
+	}), 0, cb)
 	return
 }
 
@@ -908,12 +971,11 @@ func GetMinerSCNodePool(id, poolID string, cb GetInfoCallback) (err error) {
 	if err = checkConfig(); err != nil {
 		return
 	}
-	go func() {
-		getInfoFromSharders(withParams(GET_MINERSC_POOL, url.Values{
-			"id":      []string{string(id)},
-			"pool_id": []string{string(poolID)},
-		}), 0, cb)
-	}()
+	go getInfoFromSharders(withParams(GET_MINERSC_POOL, url.Values{
+		"id":      []string{string(id)},
+		"pool_id": []string{string(poolID)},
+	}), 0, cb)
+
 	return
 }
 
@@ -937,12 +999,14 @@ type MinerSCConfig struct {
 	TotalMinted common.Balance `json:"total_minted"`
 }
 
-func GetMinerSCConfig(cb GetInfoCallback) (err error) {
+func GetMinerSCConfig() (conf *MinerSCConfig, err error) {
 	if err = checkConfig(); err != nil {
 		return
 	}
-	go func() {
-		getInfoFromSharders(withParams(GET_MINERSC_CONFIG, url.Values{}), 0, cb)
-	}()
+	conf = new(MinerSCConfig)
+	var cb = NewJSONInfoCB(conf)
+	go getInfoFromSharders(GET_MINERSC_CONFIG, 0, cb)
+
+	err = cb.Wait()
 	return
 }
