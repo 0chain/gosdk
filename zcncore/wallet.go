@@ -67,7 +67,7 @@ const (
 
 	VestingSmartContractAddress      = `2bba5b05949ea59c80aed3ac3474d7379d3be737e8eb5a968c52295e48333ead`
 	FaucetSmartContractAddress       = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3`
-	InterestPoolSmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9`
+	InterestPoolSmartContractAddress = `cf8d0df9bd8cc637a4ff4e792ffe3686da6220c45f0e1103baa609f3f1751ef4`
 	MultiSigSmartContractAddress     = `27b5ef7120252b79f9dd9c05505dd28f328c80f6863ee446daede08a84d651a7`
 	MinerSmartContractAddress        = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9`
 	MultiSigRegisterFuncName         = "register"
@@ -597,12 +597,7 @@ func GetLockConfig(cb GetInfoCallback) error {
 	if err != nil {
 		return err
 	}
-	go func() {
-		// urlSuffix := fmt.Sprintf("%v%v&key=%v", GET_LOCK_CONFIG,
-		// 	InterestPoolSmartContractAddress, InterestPoolSmartContractAddress)
-		urlSuffix := GET_LOCK_CONFIG
-		getInfoFromSharders(urlSuffix, OpGetTokenLockConfig, cb)
-	}()
+	go getInfoFromSharders(GET_LOCK_CONFIG, OpGetTokenLockConfig, cb)
 	return nil
 }
 
