@@ -842,7 +842,7 @@ func (ojsonic *OnJSONInfoCb) OnInfoAvailable(op int, status int,
 }
 
 // Wait for info.
-func (ojsonic *OnJSONInfoCb) Wait() (err error) {
+func (ojsonic *OnJSONInfoCb) Waiting() (err error) {
 	<-ojsonic.got
 	return ojsonic.err
 }
@@ -894,7 +894,7 @@ func GetVestingPoolInfo(poolID common.Key) (info *VestingPoolInfo, err error) {
 		"pool_id": []string{string(poolID)},
 	}), 0, cb)
 
-	err = cb.Wait()
+	err = cb.Waiting()
 	return
 }
 
@@ -921,7 +921,7 @@ func GetVestingClientList(clientID common.Key) (list []common.Key, err error) {
 		"client_id": []string{string(clientID)},
 	}), 0, cb)
 
-	if err = cb.Wait(); err != nil {
+	if err = cb.Waiting(); err != nil {
 		return
 	}
 
@@ -947,7 +947,7 @@ func GetVestingSCConfig() (conf *VestingSCConfig, err error) {
 
 	go getInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
 
-	err = cb.Wait()
+	err = cb.Waiting()
 	return
 }
 
@@ -1007,6 +1007,6 @@ func GetMinerSCConfig() (conf *MinerSCConfig, err error) {
 	var cb = NewJSONInfoCB(conf)
 	go getInfoFromSharders(GET_MINERSC_CONFIG, 0, cb)
 
-	err = cb.Wait()
+	err = cb.Waiting()
 	return
 }
