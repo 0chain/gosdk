@@ -51,10 +51,8 @@ func (cb *RepairStatusCB) RepairCompleted(filesRepaired int) {
 
 func (cb *RepairStatusCB) Completed(allocationId, filePath string, filename string, mimetype string, size int, op int) {
 	cb.statusCB.Completed(allocationId, filePath, filename, mimetype, size, op)
-	if op == OpDownload || op == OpCommit {
-		cb.success = true
-		cb.wg.Done()
-	}
+	cb.success = true
+	cb.wg.Done()
 }
 
 func (cb *RepairStatusCB) Error(allocationID string, filePath string, op int, err error) {
