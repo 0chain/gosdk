@@ -88,12 +88,21 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 		TxnID:    t.Hash,
 		MetaData: req.CommitMetaData.MetaData,
 	}
+
+	Logger.Info("Marshaling commitMetaResponse to bytes")
 	commitMetaReponseBytes, err := json.Marshal(commitMetaResponse)
 	if err != nil {
+		Logger.Error("Failed to marshal commitMetaResponse to bytes")
 		req.status.CommitMetaCompleted(commitMetaDataString, "", err)
 	}
+
+	Logger.Info("Converting commitMetaResponse bytes to string")
 	commitMetaResponseString := string(commitMetaReponseBytes)
+
+	Logger.Info("Commit complete, Calling CommitMetaCompleted callback")
 	req.status.CommitMetaCompleted(commitMetaDataString, commitMetaResponseString, nil)
+
+	Logger.Info("All process done, Calling return")
 	return
 }
 
