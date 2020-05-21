@@ -64,19 +64,19 @@ func (cb *RepairStatusCB) Error(allocationID string, filePath string, op int, er
 
 func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 	r.updateRepairStatusToBlobbers(a, "true")
-	defer r.updateRepairStatusToBlobbers(a, "false")
 
 	if r.completedCallback != nil {
 		defer r.completedCallback()
 	}
 
-	if r.checkForCancel() {
+	if r.checkForCancel(a) {
 		return
 	}
 
 	r.iterateDir(a, r.listDir)
 
 	if r.statusCB != nil {
+		r.updateRepairStatusToBlobbers(a, "false")
 		r.statusCB.RepairCompleted(r.filesRepaired)
 	}
 
@@ -95,7 +95,7 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
 			}
 		}
 		for _, childDir := range dir.Children {
-			if r.checkForCancel() {
+			if r.checkForCancel(a) {
 				return
 			}
 			r.iterateDir(a, childDir)
@@ -112,7 +112,7 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
 }
 
 func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
-	if r.checkForCancel() {
+	if r.checkForCancel(a) {
 		return
 	}
 
@@ -134,7 +134,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 		localPath := r.getLocalPath(file)
 
 		if !checkFileExists(localPath) {
-			if r.checkForCancel() {
+			if r.checkForCancel(a) {
 				return
 			}
 			Logger.Info("Downloading file for the path :", zap.Any("path", file.Path))
@@ -154,7 +154,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 			statusCB.success = false
 		}
 
-		if r.checkForCancel() {
+		if r.checkForCancel(a) {
 			return
 		}
 
@@ -190,10 +190,11 @@ func checkFileExists(localPath string) bool {
 	return !info.IsDir()
 }
 
-func (r *RepairRequest) checkForCancel() bool {
+func (r *RepairRequest) checkForCancel(a *Allocation) bool {
 	if r.isRepairCanceled {
 		Logger.Info("Repair Cancelled by the user")
 		if r.statusCB != nil {
+			r.updateRepairStatusToBlobbers(a, "false")
 			r.statusCB.RepairCompleted(r.filesRepaired)
 		}
 		return true
