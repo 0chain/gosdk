@@ -579,6 +579,52 @@ func GetLatestFinalized(ctx context.Context, numSharders int) (b *block.Header, 
 	return
 }
 
+func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *block.MagicBlock, err error) {
+	var result = make(chan *util.GetResponse, numSharders)
+	defer close(result)
+
+	queryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED_MAGIC_BLOCK, result)
+
+	var (
+		maxConsensus   int
+		roundConsensus = make(map[string]int)
+	)
+
+	type respObj struct {
+		MagicBlock *block.MagicBlock `json:"magic_block"`
+	}
+
+	for i := 0; i < numSharders; i++ {
+		var rsp = <-result
+
+		Logger.Debug(rsp.Url, rsp.Status)
+
+		if rsp.StatusCode != http.StatusOK {
+			Logger.Error(rsp.Body)
+			continue
+		}
+
+		var respo respObj
+		if err = json.Unmarshal([]byte(rsp.Body), &respo); err != nil {
+			Logger.Error(" magic block parse error: ", err)
+			err = nil
+			continue
+		}
+
+		m = respo.MagicBlock
+		var h = encryption.FastHash([]byte(respo.MagicBlock.Hash))
+		if roundConsensus[h]++; roundConsensus[h] > maxConsensus {
+			maxConsensus = roundConsensus[h]
+		}
+	}
+
+	if maxConsensus == 0 {
+		return nil, fmt.Errorf("magic block info not found")
+	}
+
+	return
+}
+
 func GetChainStats(ctx context.Context) (b *block.ChainStats, err error) {
 	var result = make(chan *util.GetResponse, 1)
 	defer close(result)

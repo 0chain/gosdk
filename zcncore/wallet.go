@@ -33,20 +33,21 @@ var defaultLogLevel = logger.DEBUG
 var Logger logger.Logger
 
 const (
-	REGISTER_CLIENT          = `/v1/client/put`
-	PUT_TRANSACTION          = `/v1/transaction/put`
-	TXN_VERIFY_URL           = `/v1/transaction/get/confirmation?hash=`
-	GET_BALANCE              = `/v1/client/get/balance?client_id=`
-	GET_LOCK_CONFIG          = `/v1/screst/` + InterestPoolSmartContractAddress + `/getLockConfig`
-	GET_LOCKED_TOKENS        = `/v1/screst/` + InterestPoolSmartContractAddress + `/getPoolsStats?client_id=`
-	GET_BLOCK_INFO           = `/v1/block/get?`
-	GET_LATEST_FINALIZED     = `/v1/block/get/latest_finalized`
-	GET_CHAIN_STATS          = `/v1/chain/get/stats`
-	GET_USER_POOLS           = `/v1/screst/` + MinerSmartContractAddress + `/getUserPools?client_id=`
-	GET_USER_POOL_DETAIL     = `/v1/screst/` + MinerSmartContractAddress + `/getPoolsStats?`
-	GET_VESTING_CONFIG       = `/v1/screst/` + VestingSmartContractAddress + `/getConfig`
-	GET_VESTING_POOL_INFO    = `/v1/screst/` + VestingSmartContractAddress + `/getPoolInfo`
-	GET_VESTING_CLIENT_POOLS = `/v1/screst/` + VestingSmartContractAddress + `/getClientPools`
+	REGISTER_CLIENT                  = `/v1/client/put`
+	PUT_TRANSACTION                  = `/v1/transaction/put`
+	TXN_VERIFY_URL                   = `/v1/transaction/get/confirmation?hash=`
+	GET_BALANCE                      = `/v1/client/get/balance?client_id=`
+	GET_LOCK_CONFIG                  = `/v1/screst/` + InterestPoolSmartContractAddress + `/getLockConfig`
+	GET_LOCKED_TOKENS                = `/v1/screst/` + InterestPoolSmartContractAddress + `/getPoolsStats?client_id=`
+	GET_BLOCK_INFO                   = `/v1/block/get?`
+	GET_LATEST_FINALIZED             = `/v1/block/get/latest_finalized`
+	GET_LATEST_FINALIZED_MAGIC_BLOCK = `/v1/block/get/latest_finalized_magic_block`
+	GET_CHAIN_STATS                  = `/v1/chain/get/stats`
+	GET_USER_POOLS                   = `/v1/screst/` + MinerSmartContractAddress + `/getUserPools?client_id=`
+	GET_USER_POOL_DETAIL             = `/v1/screst/` + MinerSmartContractAddress + `/getPoolsStats?`
+	GET_VESTING_CONFIG               = `/v1/screst/` + VestingSmartContractAddress + `/getConfig`
+	GET_VESTING_POOL_INFO            = `/v1/screst/` + VestingSmartContractAddress + `/getPoolInfo`
+	GET_VESTING_CLIENT_POOLS         = `/v1/screst/` + VestingSmartContractAddress + `/getClientPools`
 
 	// TORM (sfxdx): remove from zwallet
 	GET_BLOBBERS            = `/v1/screst/` + StorageSmartContractAddress + `/getblobbers`
