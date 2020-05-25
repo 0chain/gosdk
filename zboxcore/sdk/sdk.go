@@ -217,25 +217,37 @@ type StakePoolOfferInfo struct {
 
 // StakePoolRewardsInfo represents stake pool rewards.
 type StakePoolRewardsInfo struct {
-	Balance   common.Balance `json:"balance"`
 	Blobber   common.Balance `json:"blobber"`   // total for all time
 	Validator common.Balance `json:"validator"` // total for all time
 }
 
 // StakePoolDelegatePoolInfo represents delegate pool of a stake pool info.
 type StakePoolDelegatePoolInfo struct {
-	ID         common.Key     `json:"id"`          // pool ID
-	Balance    common.Balance `json:"balance"`     // current balance
-	DelegateID common.Key     `json:"delegate_id"` // wallet
-	Earnings   common.Balance `json:"earnings"`    // total for all time
-	Penalty    common.Balance `json:"penalty"`     // total for all time
-	Interests  common.Balance `json:"interests"`   // not payed yet
+	ID               common.Key     `json:"id"`                // pool ID
+	Balance          common.Balance `json:"balance"`           // current balance
+	DelegateID       common.Key     `json:"delegate_id"`       // wallet
+	Rewards          common.Balance `json:"rewards"`           // total for all time
+	Interests        common.Balance `json:"interests"`         // total for all time
+	Penalty          common.Balance `json:"penalty"`           // total for all time
+	PendingInterests common.Balance `json:"pending_interests"` // total for all time
+}
+
+// StakePoolSettings information.
+type StakePoolSettings struct {
+	// DelegateWallet for pool owner.
+	DelegateWallet string `json:"delegate_wallet"`
+	// MinStake allowed.
+	MinStake common.Balance `json:"min_stake"`
+	// MaxStake allowed.
+	MaxStake common.Balance `json:"max_stake"`
+	// NumDelegates maximum allowed.
+	NumDelegates int `json:"num_delegates"`
 }
 
 // StakePool full info.
 type StakePoolInfo struct {
-	ID      common.Key     `json:"pool_id"` // pool ID
-	Balance common.Balance `json:"balance"` //
+	ID      common.Key     `json:"pool_id"` // blobber ID
+	Balance common.Balance `json:"balance"` // total stake
 
 	Free       common.Size    `json:"free"`        // free staked space
 	Capacity   common.Size    `json:"capacity"`    // blobber bid
@@ -249,6 +261,8 @@ type StakePoolInfo struct {
 	Penalty  common.Balance               `json:"penalty"`  // total for all
 	// rewards
 	Rewards StakePoolRewardsInfo `json:"rewards"`
+	// settings
+	Settings StakePoolSettings `json:"stake_pool_settings"`
 }
 
 // GetStakePoolInfo for given client, or, if the given clientID is empty,
@@ -318,24 +332,6 @@ func StakePoolUnlock(blobberID, poolID string, fee int64) (err error) {
 		InputArgs: &spr,
 	}
 	_, err = smartContractTxnValueFee(sn, 0, fee)
-	return
-}
-
-// StakePoolTakeRewards unlocks a stake pool rewards.
-func StakePoolTakeRewards(bloberID string) (err error) {
-
-	if bloberID == "" {
-		bloberID = client.GetClientID()
-	}
-
-	var spr stakePoolRequest
-	spr.BlobberID = bloberID
-
-	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STAKE_POOL_TAKE_REWARDS,
-		InputArgs: &spr,
-	}
-	_, err = smartContractTxnValueFee(sn, 0, 0)
 	return
 }
 

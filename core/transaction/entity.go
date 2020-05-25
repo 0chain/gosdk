@@ -96,7 +96,6 @@ const (
 	STAKE_POOL_LOCK          = "stake_pool_lock"
 	STAKE_POOL_UNLOCK        = "stake_pool_unlock"
 	STAKE_POOL_PAY_INTERESTS = "stake_pool_pay_interests"
-	STAKE_POOL_TAKE_REWARDS  = "stake_pool_take_rewards"
 	FINALIZE_ALLOCATION      = "finalize_allocation"
 	CANCEL_ALLOCATION        = "cancel_allocation"
 
