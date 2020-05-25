@@ -262,7 +262,7 @@ type StakePoolInfo struct {
 	// rewards
 	Rewards StakePoolRewardsInfo `json:"rewards"`
 	// settings
-	Settings StakePoolSettings `json:"stake_pool_settings"`
+	Settings StakePoolSettings `json:"settings"`
 }
 
 // GetStakePoolInfo for given client, or, if the given clientID is empty,
