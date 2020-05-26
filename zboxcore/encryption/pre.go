@@ -11,8 +11,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	. "github.com/0chain/gosdk/zboxcore/logger"
-
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 )
