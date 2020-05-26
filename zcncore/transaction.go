@@ -708,6 +708,55 @@ func GetBlockByRound(ctx context.Context, numSharders int, round int64) (b *bloc
 	return
 }
 
+func GetMagicBlockByNumber(ctx context.Context, numSharders int, number int64) (m *block.MagicBlock, err error) {
+
+	var result = make(chan *util.GetResponse, numSharders)
+	defer close(result)
+
+	queryFromShardersContext(ctx, numSharders,
+		fmt.Sprintf("%smagic_block_number=%d", GET_MAGIC_BLOCK_INFO, number),
+		result)
+
+	var (
+		maxConsensus   int
+		roundConsensus = make(map[string]int)
+	)
+
+	type respObj struct {
+		MagicBlock *block.MagicBlock `json:"magic_block"`
+	}
+
+	for i := 0; i < numSharders; i++ {
+		var rsp = <-result
+
+		Logger.Debug(rsp.Url, rsp.Status)
+
+		if rsp.StatusCode != http.StatusOK {
+			Logger.Error(rsp.Body)
+			continue
+		}
+
+		var respo respObj
+		if err = json.Unmarshal([]byte(rsp.Body), &respo); err != nil {
+			Logger.Error(" magic block parse error: ", err)
+			err = nil
+			continue
+		}
+
+		m = respo.MagicBlock
+		var h = encryption.FastHash([]byte(respo.MagicBlock.Hash))
+		if roundConsensus[h]++; roundConsensus[h] > maxConsensus {
+			maxConsensus = roundConsensus[h]
+		}
+	}
+
+	if maxConsensus == 0 {
+		return nil, fmt.Errorf("magic block info not found")
+	}
+
+	return
+}
+
 func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHeader, error) {
 	result := make(chan *util.GetResponse)
 	defer close(result)
