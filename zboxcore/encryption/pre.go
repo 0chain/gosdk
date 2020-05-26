@@ -263,12 +263,7 @@ func (pre *PREEncryptionScheme) encrypt(msg []byte) (*PREEncryptedMessage, error
 	C.MessageChecksum = pre.hash3(g, msg, T)                                                  // C3  = H3(msg,T)
 	alp := pre.hash6(g, pre.Tag, pre.PrivateKey)                                              // alp = H6(tagA,skA)
 	C.OverallChecksum = pre.hash5(g, C.EncryptedKey, C.EncryptedData, C.MessageChecksum, alp) // C4  = H5(C1,C2,C3,alp)
-	Logger.Info("encrypt EncryptedData : ", string(C.EncryptedData))
-	Logger.Info("encrypt MessageChecksum : ", string(C.MessageChecksum))
-	Logger.Info("encrypt OverallChecksum : ", string(C.OverallChecksum))
-	Logger.Info("encrypt Tag : ", string(C.TagA))
-
-	return C, nil // return C = (C1,C2,C3,C4,tagA)
+	return C, nil                                                                             // return C = (C1,C2,C3,C4,tagA)
 }
 
 //---------------------------------Symmetric Encryption using AES with GCM mode---------------------------------
@@ -346,10 +341,6 @@ func (pre *PREEncryptionScheme) decrypt(encMsg *EncryptedMessage) ([]byte, error
 	// if err != nil {
 	// 	return nil, err
 	// }
-	Logger.Info("decrypt EncryptedData : ", string(C.EncryptedData))
-	Logger.Info("decrypt MessageChecksum : ", string(C.MessageChecksum))
-	Logger.Info("decrypt OverallChecksum : ", string(C.OverallChecksum))
-	Logger.Info("decrypt Tag : ", string(C.TagA))
 	alp := pre.hash6(g, C.TagA, pre.PrivateKey) // alp = H6(tagA,skA)
 	chk1 := pre.hash5(g, C.EncryptedKey, C.EncryptedData, C.MessageChecksum, alp)
 	if !bytes.Equal(chk1, C.OverallChecksum) { // Check if C4 = H5(C1,C2,C3,alp)
