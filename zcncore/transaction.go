@@ -95,10 +95,6 @@ type TransactionScheme interface {
 	LockTokens(val int64, durationHr int64, durationMin int) error
 	// UnlockTokens implements unlocking of earlier locked tokens.
 	UnlockTokens(poolID string) error
-	// Stake implementes token to be stake on clientID
-	Stake(clientID string, val int64) error
-	// DeleteStake implements deleteing staked tokens
-	DeleteStake(clientID, poolID string) error
 	//RegisterMultiSig registers a group wallet and subwallets with MultisigSC
 	RegisterMultiSig(walletstr, mswallet string) error
 	// SetTransactionHash implements verify a previous transation status
@@ -1253,41 +1249,6 @@ func (t *Transaction) UnlockTokens(poolID string) error {
 	err := t.createUnlockTokensTxn(poolID)
 	if err != nil {
 		Logger.Error(err)
-		return err
-	}
-	go func() {
-		t.submitTxn()
-	}()
-	return nil
-}
-
-func (t *Transaction) createStakeTxn(clientID string, val int64) error {
-	input := make(map[string]interface{})
-	input["id"] = clientID
-	return t.createSmartContractTxn(MinerSmartContractAddress, transaction.STAKE, input, val)
-}
-
-func (t *Transaction) Stake(clientID string, val int64) error {
-	err := t.createStakeTxn(clientID, val)
-	if err != nil {
-		return err
-	}
-	go func() {
-		t.submitTxn()
-	}()
-	return nil
-}
-
-func (t *Transaction) createDeleteStakeTxn(clientID, poolID string) error {
-	input := make(map[string]interface{})
-	input["id"] = clientID
-	input["pool_id"] = poolID
-	return t.createSmartContractTxn(MinerSmartContractAddress, transaction.DELETE_STAKE, input, 0)
-}
-
-func (t *Transaction) DeleteStake(clientID, poolID string) error {
-	err := t.createDeleteStakeTxn(clientID, poolID)
-	if err != nil {
 		return err
 	}
 	go func() {

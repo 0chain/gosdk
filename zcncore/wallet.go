@@ -42,11 +42,11 @@ const (
 	GET_LATEST_FINALIZED             = `/v1/block/get/latest_finalized`
 	GET_LATEST_FINALIZED_MAGIC_BLOCK = `/v1/block/get/latest_finalized_magic_block`
 	GET_CHAIN_STATS                  = `/v1/chain/get/stats`
-	GET_USER_POOLS                   = `/v1/screst/` + MinerSmartContractAddress + `/getUserPools?client_id=`
-	GET_USER_POOL_DETAIL             = `/v1/screst/` + MinerSmartContractAddress + `/getPoolsStats?`
-	GET_VESTING_CONFIG               = `/v1/screst/` + VestingSmartContractAddress + `/getConfig`
-	GET_VESTING_POOL_INFO            = `/v1/screst/` + VestingSmartContractAddress + `/getPoolInfo`
-	GET_VESTING_CLIENT_POOLS         = `/v1/screst/` + VestingSmartContractAddress + `/getClientPools`
+
+	// vesting SC
+	GET_VESTING_CONFIG       = `/v1/screst/` + VestingSmartContractAddress + `/getConfig`
+	GET_VESTING_POOL_INFO    = `/v1/screst/` + VestingSmartContractAddress + `/getPoolInfo`
+	GET_VESTING_CLIENT_POOLS = `/v1/screst/` + VestingSmartContractAddress + `/getClientPools`
 
 	// TORM (sfxdx): remove from zwallet
 	GET_BLOBBERS            = `/v1/screst/` + StorageSmartContractAddress + `/getblobbers`
@@ -60,6 +60,7 @@ const (
 	GET_MINERSC_NODE   = `/v1/screst/` + MinerSmartContractAddress + "/nodeStat"
 	GET_MINERSC_POOL   = `/v1/screst/` + MinerSmartContractAddress + "/nodePoolStat"
 	GET_MINERSC_CONFIG = `/v1/screst/` + MinerSmartContractAddress + "/configs"
+	GET_MINERSC_USER   = `/v1/screst/` + MinerSmartContractAddress + "/getUserPools"
 )
 
 const (
@@ -776,30 +777,6 @@ func GetIdForUrl(url string) string {
 	return ""
 }
 
-func GetUserPools(cb GetInfoCallback) error {
-	err := checkConfig()
-	if err != nil {
-		return err
-	}
-	go func() {
-		urlSuffix := fmt.Sprintf("%v%v", GET_USER_POOLS, _config.wallet.ClientID)
-		getInfoFromSharders(urlSuffix, OpGetUserPools, cb)
-	}()
-	return nil
-}
-
-func GetUserPoolDetails(clientID, poolID string, cb GetInfoCallback) error {
-	err := checkConfig()
-	if err != nil {
-		return err
-	}
-	go func() {
-		urlSuffix := fmt.Sprintf("%vminer_id=%v&pool_id=%v", GET_USER_POOL_DETAIL, clientID, poolID)
-		getInfoFromSharders(urlSuffix, OpGetUserPoolDetail, cb)
-	}()
-	return nil
-}
-
 func GetBlobbers(cb GetInfoCallback) error {
 	err := checkSdkInit()
 	if err != nil {
@@ -905,6 +882,31 @@ func GetMinerSCNodePool(id, poolID string, cb GetInfoCallback) (err error) {
 	go getInfoFromSharders(withParams(GET_MINERSC_POOL, url.Values{
 		"id":      []string{string(id)},
 		"pool_id": []string{string(poolID)},
+	}), 0, cb)
+
+	return
+}
+
+type MinerSCUserPool struct {
+	MinerID        common.Key     `json:"miner_id"`
+	Balance        common.Balance `json:"balance"`
+	StakeDiversity float64        `json:"stake_diversity"`
+	PoolID         common.Key     `json:"pool_id"`
+}
+
+type MinerSCUserInfo struct {
+	Pools []MinerSCUserPool `json:"pools"`
+}
+
+func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	if clientID == "" {
+		clientID = _config.wallet.ClientID
+	}
+	go getInfoFromSharders(withParams(GET_MINERSC_USER, url.Values{
+		"client_id": []string{clientID},
 	}), 0, cb)
 
 	return

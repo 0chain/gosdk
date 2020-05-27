@@ -421,28 +421,6 @@ func (ta *TransactionWithAuth) UnlockTokens(poolID string) error {
 	return nil
 }
 
-func (ta *TransactionWithAuth) Stake(clientID string, val int64) error {
-	err := ta.t.createStakeTxn(clientID, val)
-	if err != nil {
-		return err
-	}
-	go func() {
-		ta.submitTxn()
-	}()
-	return nil
-}
-
-func (ta *TransactionWithAuth) DeleteStake(clientID, poolID string) error {
-	err := ta.t.createDeleteStakeTxn(clientID, poolID)
-	if err != nil {
-		return err
-	}
-	go func() {
-		ta.submitTxn()
-	}()
-	return nil
-}
-
 //RegisterMultiSig register a multisig wallet with the SC.
 func (ta *TransactionWithAuth) RegisterMultiSig(walletstr string, mswallet string) error {
 	return fmt.Errorf("not implemented")

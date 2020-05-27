@@ -76,8 +76,6 @@ const (
 	UPDATE_ALLOCATION_REQUEST = "update_allocation_request"
 	LOCK_TOKEN                = "lock"
 	UNLOCK_TOKEN              = "unlock"
-	STAKE                     = "addToDelegatePool"
-	DELETE_STAKE              = "deleteFromDelegatePool"
 
 	// Vesting SC
 	VESTING_TRIGGER       = "trigger"
