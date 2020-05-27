@@ -319,6 +319,10 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 }
 
 func (a *Allocation) RepairRequired(remotepath string) (uint32, bool, *fileref.FileRef, error) {
+	if !a.isInitialized() {
+		return 0, false, nil, notInitialized
+	}
+
 	listReq := &ListRequest{}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
@@ -457,6 +461,10 @@ func (a *Allocation) ListDir(path string) (*ListResult, error) {
 }
 
 func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
+	if !a.isInitialized() {
+		return nil, notInitialized
+	}
+
 	result := &ConsolidatedFileMeta{}
 	listReq := &ListRequest{}
 	listReq.allocationID = a.ID
@@ -483,6 +491,10 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 }
 
 func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash string) (*ConsolidatedFileMeta, error) {
+	if !a.isInitialized() {
+		return nil, notInitialized
+	}
+
 	result := &ConsolidatedFileMeta{}
 	sEnc, err := base64.StdEncoding.DecodeString(authTicket)
 	if err != nil {
@@ -815,6 +827,10 @@ func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, look
 }
 
 func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB StatusCallback) error {
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
 	listDir, err := a.ListDir(pathToRepair)
 	if err != nil {
 		return err
