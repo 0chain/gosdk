@@ -3,6 +3,7 @@ package blockchain
 import "encoding/json"
 
 type ChainConfig struct {
+	BlockWorker       string
 	Sharders          []string
 	Miners            []string
 	PreferredBlobbers []string
@@ -48,6 +49,10 @@ func PopulateChain(minerjson string, sharderjson string) error {
 	return nil
 }
 
+func GetBlockWorker() string {
+	return chain.BlockWorker
+}
+
 func GetSharders() []string {
 	return chain.Sharders
 }
@@ -66,6 +71,10 @@ func GetQuerySleepTime() int {
 
 func GetPreferredBlobbers() []string {
 	return chain.PreferredBlobbers
+}
+
+func SetBlockWorker(blockWorker string) {
+	chain.BlockWorker = blockWorker
 }
 
 func SetSharders(sharderArray []string) {

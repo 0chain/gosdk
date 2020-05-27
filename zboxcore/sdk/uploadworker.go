@@ -369,6 +369,8 @@ func (req *UploadRequest) pushData(data []byte) error {
 			header := make([]byte, 2*1024)
 			copy(header[:], encMsg.MessageChecksum+","+encMsg.OverallChecksum)
 			shards[pos] = append(header, encMsg.EncryptedData...)
+			Logger.Info(" Upload header string : ", string(header))
+			Logger.Info(" Upload encrypted data : ", string(encMsg.EncryptedData))
 			c++
 		}
 		c, pos = 0, 0
