@@ -1,6 +1,7 @@
 package zcncore
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -20,6 +21,7 @@ import (
 
 type ChainConfig struct {
 	ChainID                 string   `json:"chain_id,omitempty"`
+	BlockWorker             string   `json:"block_worker"`
 	Miners                  []string `json:"miners"`
 	Sharders                []string `json:"sharders"`
 	SignatureScheme         string   `json:"signaturescheme"`
@@ -304,13 +306,20 @@ func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 }
 
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
-func InitZCNSDK(miners []string, sharders []string, signscheme string, configs ...func(*ChainConfig) error) error {
+func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
 	if signscheme != "ed25519" && signscheme != "bls0chain" {
 		return fmt.Errorf("invalid/unsupported signature scheme")
 	}
-	_config.chain.Miners = miners
-	_config.chain.Sharders = sharders
+	_config.chain.BlockWorker = blockWorker
 	_config.chain.SignatureScheme = signscheme
+
+	err := UpdateNetworkDetails()
+	if err != nil {
+		return err
+	}
+
+	go UpdateNetworkDetailsWorker(context.Background())
+
 	for _, conf := range configs {
 		err := conf(&_config.chain)
 		if err != nil {
@@ -321,6 +330,13 @@ func InitZCNSDK(miners []string, sharders []string, signscheme string, configs .
 	_config.isConfigured = true
 	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
 	return nil
+}
+
+func GetNetwork() *Network {
+	return &Network{
+		Miners:   _config.chain.Miners,
+		Sharders: _config.chain.Sharders,
+	}
 }
 
 // CreateWallet creates the a wallet for the configure signature scheme.
