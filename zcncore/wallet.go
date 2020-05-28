@@ -332,6 +332,13 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 	return nil
 }
 
+func GetNetwork() *Network {
+	return &Network{
+		Miners:   _config.chain.Miners,
+		Sharders: _config.chain.Sharders,
+	}
+}
+
 // CreateWallet creates the a wallet for the configure signature scheme.
 // It also registers the wallet again to block chain.
 func CreateWallet(statusCb WalletCallback) error {
