@@ -930,22 +930,24 @@ func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error) {
 }
 
 type MinerSCConfig struct {
-	ID        common.Key `json:"id"`
-	LastRound int64      `json:"last_round"`
-
-	RewardRate   float64 `json:"reward_rate"`   //
-	InterestRate float64 `json:"interest_rate"` //
-	ViewChange   int64   `json:"view_change"`   //
-
-	ShareRatio          float64 `json:"share_ratio"`           // ratio
-	MaxCharge           float64 `json:"max_charge"`            // ratio
-	Epoch               int64   `json:"epoch"`                 // rounds
-	RewardDeclineRate   float64 `json:"reward_decline_rate"`   // ratio
-	InterestDeclineRate float64 `json:"interest_decline_rate"` // ratio
-
-	// total minted tokens for all
-	MaxMint     common.Balance `json:"max_mint"`
-	TotalMinted common.Balance `json:"total_minted"`
+	ViewChange          int64          `json:"view_change"`
+	MaxN                int            `json:"max_n"`
+	MinN                int            `json:"min_n"`
+	TPercent            float64        `json:"t_percent"`
+	KPercent            float64        `json:"k_percent"`
+	LastRound           int64          `json:"last_round"`
+	MaxStake            common.Balance `json:"max_stake"`
+	MinStake            common.Balance `json:"min_stake"`
+	InterestRate        float64        `json:"interest_rate"`
+	RewardRate          float64        `json:"reward_rate"`
+	ShareRatio          float64        `json:"share_ratio"`
+	BlockReward         common.Balance `json:"block_reward"`
+	MaxCharge           float64        `json:"max_charge"`
+	Epoch               int64          `json:"epoch"`
+	RewardDeclineRate   float64        `json:"reward_decline_rate"`
+	InterestDeclineRate float64        `json:"interest_decline_rate"`
+	MaxMint             common.Balance `json:"max_mint"`
+	Minted              common.Balance `json:"minted"`
 }
 
 func GetMinerSCConfig(cb GetInfoCallback) (err error) {
