@@ -920,7 +920,6 @@ type MinerSCConfig struct {
 	RewardRate   float64 `json:"reward_rate"`   //
 	InterestRate float64 `json:"interest_rate"` //
 	ViewChange   int64   `json:"view_change"`   //
-	FreezeBefore int64   `json:"freeze_before"` //
 
 	ShareRatio          float64 `json:"share_ratio"`           // ratio
 	MaxCharge           float64 `json:"max_charge"`            // ratio
