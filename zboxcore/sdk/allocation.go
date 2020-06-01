@@ -778,6 +778,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.datashards = a.DataShards
 	downloadReq.parityshards = a.ParityShards
 	downloadReq.contentMode = contentMode
+	downloadReq.startBlock = 0
 	downloadReq.numBlocks = int64(numBlockDownloads)
 	downloadReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	downloadReq.fullconsensus = float32(a.DataShards + a.ParityShards)
