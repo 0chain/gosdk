@@ -37,6 +37,7 @@ type DownloadRequest struct {
 	remotefilepath     string
 	remotefilepathhash string
 	localpath          string
+	startBlock         int64
 	numBlocks          int64
 	statusCallback     StatusCallback
 	ctx                context.Context
@@ -233,7 +234,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context, a *Allocation) 
 	fH := sha1.New()
 	mW := io.MultiWriter(fH, wrFile)
 	//batchCount := (chunksPerShard + req.numBlocks - 1) / req.numBlocks
-	for cnt := int64(0); cnt < chunksPerShard; cnt += req.numBlocks {
+	for cnt := req.startBlock; cnt < chunksPerShard; cnt += req.numBlocks {
 		//blockSize := int64(math.Min(float64(perShard-(cnt*fileref.CHUNK_SIZE)), fileref.CHUNK_SIZE))
 		data, err := req.downloadBlock(cnt+1, a.UnderRepair())
 		if err != nil {
