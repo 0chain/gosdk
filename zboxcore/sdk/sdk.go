@@ -578,13 +578,14 @@ func GetStorageSCConfig() (conf *StorageSCConfig, err error) {
 }
 
 type Blobber struct {
-	ID              common.Key       `json:"id"`
-	BaseURL         string           `json:"url"`
-	Terms           Terms            `json:"terms"`
-	Capacity        common.Size      `json:"capacity"`
-	Used            common.Size      `json:"used"`
-	LastHealthCheck common.Timestamp `json:"last_health_check"`
-	PublicKey       string           `json:"-"`
+	ID                common.Key        `json:"id"`
+	BaseURL           string            `json:"url"`
+	Terms             Terms             `json:"terms"`
+	Capacity          common.Size       `json:"capacity"`
+	Used              common.Size       `json:"used"`
+	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
+	PublicKey         string            `json:"-"`
+	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
 func GetBlobbers() (bs []*Blobber, err error) {
@@ -613,6 +614,30 @@ func GetBlobbers() (bs []*Blobber, err error) {
 	}
 
 	return wrap.Nodes, nil
+}
+
+// GetBlobber instance.
+func GetBlobber(blobberID string) (blob *Blobber, err error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+	var b []byte
+	b, err = zboxutil.MakeSCRestAPICall(
+		STORAGE_SCADDRESS,
+		"/getBlobber",
+		map[string]string{"blobber_id": blobberID},
+		nil)
+	if err != nil {
+		return nil, fmt.Errorf("requesting blobber: %v", err)
+	}
+	if len(b) == 0 {
+		return nil, errors.New("empty response from sharders")
+	}
+	blob = new(Blobber)
+	if err = json.Unmarshal(b, blob); err != nil {
+		return nil, fmt.Errorf("decoding response: %v", err)
+	}
+	return
 }
 
 //
@@ -772,6 +797,17 @@ func CancelAlloctioan(allocID string) (string, error) {
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.CANCEL_ALLOCATION,
 		InputArgs: map[string]interface{}{"allocation_id": allocID},
+	}
+	return smartContractTxn(sn)
+}
+
+func UpdateBlobberSettings(blob *Blobber) (resp string, err error) {
+	if !sdkInitialized {
+		return "", sdkNotInitialized
+	}
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.UPDATE_BLOBBER_SETTINGS,
+		InputArgs: blob,
 	}
 	return smartContractTxn(sn)
 }

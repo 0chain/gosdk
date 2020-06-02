@@ -96,6 +96,7 @@ const (
 	STAKE_POOL_PAY_INTERESTS = "stake_pool_pay_interests"
 	FINALIZE_ALLOCATION      = "finalize_allocation"
 	CANCEL_ALLOCATION        = "cancel_allocation"
+	UPDATE_BLOBBER_SETTINGS  = "update_blobber_settings"
 
 	// Miner SC
 	MINERSC_LOCK     = "addToDelegatePool"
