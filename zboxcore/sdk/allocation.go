@@ -13,9 +13,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -871,4 +873,82 @@ func (a *Allocation) CancelRepair() error {
 		return nil
 	}
 	return common.NewError("invalid_cancel_repair_request", "No repair in progress for the allocation")
+}
+
+type CommitFolderData struct {
+	opType    string
+	preValue  string
+	currValue string
+}
+
+type CommitFolderResponse struct {
+	TxnID string
+	Data  *CommitFolderData
+}
+
+func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (string, error) {
+	if !a.isInitialized() {
+		return "", notInitialized
+	}
+
+	if a.UnderRepair() {
+		return "", underRepairErr
+	}
+
+	data := &CommitFolderData{
+		opType:    operation,
+		preValue:  preValue,
+		currValue: currValue,
+	}
+
+	commitFolderDataBytes, err := json.Marshal(data)
+	if err != nil {
+		return "", err
+	}
+	commitFolderDataString := string(commitFolderDataBytes)
+
+	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey())
+	txn.TransactionData = commitFolderDataString
+	txn.TransactionType = transaction.TxnTypeData
+	err = txn.ComputeHashAndSign(client.Sign)
+	if err != nil {
+		return "", err
+	}
+
+	transaction.SendTransactionSync(txn, blockchain.GetMiners())
+	querySleepTime := time.Duration(blockchain.GetQuerySleepTime()) * time.Second
+	time.Sleep(querySleepTime)
+	retries := 0
+	var t *transaction.Transaction
+	for retries < blockchain.GetMaxTxnQuery() {
+		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders())
+		if err == nil {
+			break
+		}
+		retries++
+		time.Sleep(querySleepTime)
+	}
+
+	if err != nil {
+		Logger.Error("Error verifying the commit transaction", err.Error(), txn.Hash)
+		return "", err
+	}
+	if t == nil {
+		err = common.NewError("transaction_validation_failed", "Failed to get the transaction confirmation")
+		return "", err
+	}
+
+	commitFolderResponse := &CommitFolderResponse{
+		TxnID: t.Hash,
+		Data:  data,
+	}
+
+	commitFolderReponseBytes, err := json.Marshal(commitFolderResponse)
+	if err != nil {
+		Logger.Error("Failed to marshal commitFolderResponse to bytes")
+		return "", err
+	}
+
+	commitFolderResponseString := string(commitFolderReponseBytes)
+	return commitFolderResponseString, nil
 }
