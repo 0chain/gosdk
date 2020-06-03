@@ -111,7 +111,7 @@ func CreateReadPool() (err error) {
 		return sdkNotInitialized
 	}
 	_, err = smartContractTxn(transaction.SmartContractTxnData{
-		Name: transaction.NEW_READ_POOL,
+		Name: transaction.STORAGESC_CREATE_READ_POOL,
 	})
 	return
 }
@@ -203,7 +203,7 @@ func ReadPoolLock(dur time.Duration, allocID, blobberID string,
 	req.BlobberID = blobberID
 
 	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.READ_POOL_LOCK,
+		Name:      transaction.STORAGESC_READ_POOL_LOCK,
 		InputArgs: &req,
 	}
 	_, err = smartContractTxnValueFee(sn, tokens, fee)
@@ -224,7 +224,7 @@ func ReadPoolUnlock(poolID string, fee int64) (err error) {
 	req.PoolID = poolID
 
 	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.READ_POOL_UNLOCK,
+		Name:      transaction.STORAGESC_READ_POOL_UNLOCK,
 		InputArgs: &req,
 	}
 	_, err = smartContractTxnValueFee(sn, 0, fee)
@@ -340,7 +340,7 @@ func StakePoolLock(blobberID string, value, fee int64) (poolID string, err error
 	var spr stakePoolRequest
 	spr.BlobberID = blobberID
 	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STAKE_POOL_LOCK,
+		Name:      transaction.STORAGESC_STAKE_POOL_LOCK,
 		InputArgs: &spr,
 	}
 	poolID, err = smartContractTxnValueFee(sn, value, fee)
@@ -361,7 +361,7 @@ func StakePoolUnlock(blobberID, poolID string, fee int64) (err error) {
 	spr.PoolID = poolID
 
 	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STAKE_POOL_UNLOCK,
+		Name:      transaction.STORAGESC_STAKE_POOL_UNLOCK,
 		InputArgs: &spr,
 	}
 	_, err = smartContractTxnValueFee(sn, 0, fee)
@@ -381,7 +381,7 @@ func StakePoolPayInterests(bloberID string) (err error) {
 	spr.BlobberID = bloberID
 
 	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STAKE_POOL_PAY_INTERESTS,
+		Name:      transaction.STORAGESC_STAKE_POOL_PAY_INTERESTS,
 		InputArgs: &spr,
 	}
 	_, err = smartContractTxnValueFee(sn, 0, 0)
@@ -439,7 +439,7 @@ func WritePoolLock(dur time.Duration, allocID, blobberID string,
 	req.BlobberID = blobberID
 
 	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.WRITE_POOL_LOCK,
+		Name:      transaction.STORAGESC_WRITE_POOL_LOCK,
 		InputArgs: &req,
 	}
 	_, err = smartContractTxnValueFee(sn, tokens, fee)
@@ -460,7 +460,7 @@ func WritePoolUnlock(poolID string, fee int64) (err error) {
 	req.PoolID = poolID
 
 	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.WRITE_POOL_UNLOCK,
+		Name:      transaction.STORAGESC_WRITE_POOL_UNLOCK,
 		InputArgs: &req,
 	}
 	_, err = smartContractTxnValueFee(sn, 0, fee)
@@ -773,7 +773,7 @@ func UpdateAllocation(size int64, expiry int64, allocationID string, lock int64)
 	updateAllocationRequest["expiration_date"] = expiry
 
 	sn := transaction.SmartContractTxnData{
-		Name:      transaction.UPDATE_ALLOCATION_REQUEST,
+		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
 		InputArgs: updateAllocationRequest,
 	}
 	return smartContractTxnValue(sn, lock)
@@ -784,7 +784,7 @@ func FinalizeAllocation(allocID string) (string, error) {
 		return "", sdkNotInitialized
 	}
 	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.FINALIZE_ALLOCATION,
+		Name:      transaction.STORAGESC_FINALIZE_ALLOCATION,
 		InputArgs: map[string]interface{}{"allocation_id": allocID},
 	}
 	return smartContractTxn(sn)
@@ -795,7 +795,7 @@ func CancelAlloctioan(allocID string) (string, error) {
 		return "", sdkNotInitialized
 	}
 	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.CANCEL_ALLOCATION,
+		Name:      transaction.STORAGESC_FINALIZE_ALLOCATION,
 		InputArgs: map[string]interface{}{"allocation_id": allocID},
 	}
 	return smartContractTxn(sn)
@@ -806,7 +806,7 @@ func UpdateBlobberSettings(blob *Blobber) (resp string, err error) {
 		return "", sdkNotInitialized
 	}
 	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.UPDATE_BLOBBER_SETTINGS,
+		Name:      transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS,
 		InputArgs: blob,
 	}
 	return smartContractTxn(sn)
