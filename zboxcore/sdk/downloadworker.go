@@ -38,6 +38,7 @@ type DownloadRequest struct {
 	remotefilepathhash string
 	localpath          string
 	startBlock         int64
+	endBlock           int64
 	numBlocks          int64
 	statusCallback     StatusCallback
 	ctx                context.Context
@@ -229,12 +230,18 @@ func (req *DownloadRequest) processDownload(ctx context.Context, a *Allocation) 
 		req.statusCallback.Started(req.allocationID, remotePathCallback, OpDownload, int(size))
 	}
 
+	if req.endBlock == 0 {
+		req.endBlock = chunksPerShard
+	}
+
 	Logger.Info("Download Size:", size, " Shard:", perShard, " chunks/shard:", chunksPerShard)
+	Logger.Info("Start block: ", req.startBlock+1, " End block: ", req.endBlock, " Num blocks: ", req.numBlocks)
+
 	downloaded := int(0)
 	fH := sha1.New()
 	mW := io.MultiWriter(fH, wrFile)
 	//batchCount := (chunksPerShard + req.numBlocks - 1) / req.numBlocks
-	for cnt := req.startBlock; cnt < chunksPerShard; cnt += req.numBlocks {
+	for cnt := req.startBlock; cnt < req.endBlock; cnt += req.numBlocks {
 		//blockSize := int64(math.Min(float64(perShard-(cnt*fileref.CHUNK_SIZE)), fileref.CHUNK_SIZE))
 		data, err := req.downloadBlock(cnt+1, a.UnderRepair())
 		if err != nil {
@@ -269,18 +276,23 @@ func (req *DownloadRequest) processDownload(ctx context.Context, a *Allocation) 
 		}
 
 	}
-	calcHash := hex.EncodeToString(fH.Sum(nil))
-	expectedHash := fileRef.ActualFileHash
-	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
-		expectedHash = fileRef.ActualThumbnailHash
-	}
-	if calcHash != expectedHash {
-		os.Remove(req.localpath)
-		if req.statusCallback != nil {
-			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, fmt.Errorf("File content didn't match with uploaded file"))
+
+	// Only check hash when the download reques is not by block/partial.
+	if req.endBlock == chunksPerShard {
+		calcHash := hex.EncodeToString(fH.Sum(nil))
+		expectedHash := fileRef.ActualFileHash
+		if req.contentMode == DOWNLOAD_CONTENT_THUMB {
+			expectedHash = fileRef.ActualThumbnailHash
 		}
-		return
+		if calcHash != expectedHash {
+			os.Remove(req.localpath)
+			if req.statusCallback != nil {
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, fmt.Errorf("File content didn't match with uploaded file"))
+			}
+			return
+		}
 	}
+
 	wrFile.Sync()
 	wrFile.Close()
 	wrFile, _ = os.Open(req.localpath)
