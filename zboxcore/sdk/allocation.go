@@ -879,9 +879,9 @@ func (a *Allocation) CancelRepair() error {
 }
 
 type CommitFolderData struct {
-	opType    string
-	preValue  string
-	currValue string
+	OpType    string
+	PreValue  string
+	CurrValue string
 }
 
 type CommitFolderResponse struct {
@@ -899,9 +899,9 @@ func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (
 	}
 
 	data := &CommitFolderData{
-		opType:    operation,
-		preValue:  preValue,
-		currValue: currValue,
+		OpType:    operation,
+		PreValue:  preValue,
+		CurrValue: currValue,
 	}
 
 	commitFolderDataBytes, err := json.Marshal(data)
