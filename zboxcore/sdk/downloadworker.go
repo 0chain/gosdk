@@ -93,9 +93,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, isRepair bool) ([]byte
 	if len(req.encryptedKey) > 0 {
 		encscheme = encryption.NewEncryptionScheme()
 		// TODO: Remove after testing
-		Logger.Info("Initializing encryption scheme with mnemonic", client.GetClient().Mnemonic)
 		encscheme.Initialize(client.GetClient().Mnemonic)
-		Logger.Info("Encrypted key used for InitForDecryption", req.encryptedKey)
 		encscheme.InitForDecryption("filetype:audio", req.encryptedKey)
 	}
 
@@ -114,18 +112,13 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, isRepair bool) ([]byte
 					headerString := string(headerBytes)
 					encMsg := &encryption.EncryptedMessage{}
 					encMsg.EncryptedData = result.BlockChunks[blockNum][(2 * 1024):]
-					Logger.Info(" Download header string : ", headerString)
-					Logger.Info(" Download encrypted data : ", string(encMsg.EncryptedData))
 					headerChecksums := strings.Split(headerString, ",")
 					if len(headerChecksums) != 2 {
 						Logger.Error("Block has invalid header", req.blobbers[result.idx].Baseurl)
 						break
 					}
 					encMsg.MessageChecksum, encMsg.OverallChecksum = headerChecksums[0], headerChecksums[1]
-					Logger.Info("Inside decrypt flow")
-					Logger.Info("Encryption key from download req ", req.encryptedKey)
 					encMsg.EncryptedKey = encscheme.GetEncryptedKey()
-					Logger.Info("Encryption key from encsheme ", encMsg.EncryptedKey)
 					if req.authTicket != nil {
 						encMsg.ReEncryptionKey = req.authTicket.ReEncryptionKey
 					}
