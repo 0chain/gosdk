@@ -232,7 +232,6 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 		}
 		if req.isEncrypted {
 			formData.EncryptedKey = req.encscheme.GetEncryptedKey()
-			Logger.Info("EncryptedKey used ", formData.EncryptedKey)
 		}
 		_ = formWriter.WriteField("connection_id", req.connectionID)
 		var metaData []byte
@@ -318,8 +317,6 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 	}
 	if req.isEncrypted {
 		req.encscheme = encryption.NewEncryptionScheme()
-		// TODO: Remove after testing
-		Logger.Info("Initializing encryption scheme with mnemonic", client.GetClient().Mnemonic)
 		err := req.encscheme.Initialize(client.GetClient().Mnemonic)
 		if err != nil {
 			return err
@@ -369,8 +366,6 @@ func (req *UploadRequest) pushData(data []byte) error {
 			header := make([]byte, 2*1024)
 			copy(header[:], encMsg.MessageChecksum+","+encMsg.OverallChecksum)
 			shards[pos] = append(header, encMsg.EncryptedData...)
-			Logger.Info(" Upload header string : ", string(header))
-			Logger.Info(" Upload encrypted data : ", string(encMsg.EncryptedData))
 			c++
 		}
 		c, pos = 0, 0
