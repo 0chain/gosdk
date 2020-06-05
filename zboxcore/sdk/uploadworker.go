@@ -119,6 +119,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 	}
 	thumbnailSize := int64(0)
 	remaining := shardSize
+	sent := 0
 	go func() {
 		fileMerkleRoot := ""
 		fileContentHash := ""
@@ -162,6 +163,11 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 				merkleHashes[offset].Write(dataBytes[i:end])
 			}
 			remaining = remaining - int64(len(dataBytes))
+
+			sent = sent + len(dataBytes)
+			if req.statusCallback != nil {
+				req.statusCallback.InProgress(a.ID, req.remotefilepath, OpUpload, sent)
+			}
 		}
 		for idx := range merkleHashes {
 			merkleLeaves[idx] = util.NewStringHashable(hex.EncodeToString(merkleHashes[idx].Sum(nil)))
@@ -445,7 +451,6 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			req.statusCallback.Started(a.ID, req.remotefilepath, OpUpload, int(perShard)*(a.DataShards+a.ParityShards))
 		}
 
-		sent := int(0)
 		for ctr := int64(0); ctr < chunksPerShard; ctr++ {
 			remaining := int64(math.Min(float64(perShard-(ctr*chunkSizeWithHeader)), float64(chunkSizeWithHeader)))
 			b1 := make([]byte, remaining*int64(a.DataShards))
@@ -468,10 +473,6 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			if err != nil {
 				req.statusCallback.Error(a.ID, req.filepath, OpUpload, fmt.Errorf("Push error: %s", err.Error()))
 				return
-			}
-			sent = sent + int(remaining*int64(a.DataShards+a.ParityShards))
-			if req.statusCallback != nil {
-				req.statusCallback.InProgress(a.ID, req.remotefilepath, OpUpload, sent)
 			}
 
 		}
