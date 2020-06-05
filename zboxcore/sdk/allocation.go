@@ -344,18 +344,20 @@ func (a *Allocation) RepairRequired(remotepath string) (uint32, bool, *fileref.F
 }
 
 func (a *Allocation) DownloadFile(localPath string, remotePath string, status StatusCallback) error {
-	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, numBlockDownloads, status)
+	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, status)
 }
 
-func (a *Allocation) DownloadFileByBlock(localPath string, remotePath string, startBlock int, numBlocks int, status StatusCallback) error {
-	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_FULL, startBlock, numBlocks, status)
+func (a *Allocation) DownloadFileByBlock(localPath string, remotePath string, startBlock int64, endBlock int64, numBlocks int, status StatusCallback) error {
+	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_FULL, startBlock, endBlock, numBlocks, status)
 }
 
 func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, status StatusCallback) error {
-	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_THUMB, 1, numBlockDownloads, status)
+	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_THUMB, 1, 0, numBlockDownloads, status)
 }
 
-func (a *Allocation) downloadFile(localPath string, remotePath string, contentMode string, startBlock int, numBlocks int, status StatusCallback) error {
+func (a *Allocation) downloadFile(localPath string, remotePath string, contentMode string,
+	startBlock int64, endBlock int64, numBlocks int,
+	status StatusCallback) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
@@ -388,7 +390,8 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	downloadReq.blobbers = a.Blobbers
 	downloadReq.datashards = a.DataShards
 	downloadReq.parityshards = a.ParityShards
-	downloadReq.startBlock = int64(startBlock - 1)
+	downloadReq.startBlock = startBlock - 1
+	downloadReq.endBlock = endBlock
 	downloadReq.numBlocks = int64(numBlocks)
 	downloadReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	downloadReq.fullconsensus = float32(a.DataShards + a.ParityShards)
@@ -876,9 +879,9 @@ func (a *Allocation) CancelRepair() error {
 }
 
 type CommitFolderData struct {
-	opType    string
-	preValue  string
-	currValue string
+	OpType    string
+	PreValue  string
+	CurrValue string
 }
 
 type CommitFolderResponse struct {
@@ -896,9 +899,9 @@ func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (
 	}
 
 	data := &CommitFolderData{
-		opType:    operation,
-		preValue:  preValue,
-		currValue: currValue,
+		OpType:    operation,
+		PreValue:  preValue,
+		CurrValue: currValue,
 	}
 
 	commitFolderDataBytes, err := json.Marshal(data)
