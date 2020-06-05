@@ -136,7 +136,7 @@ type TransactionScheme interface {
 	// Storage SC
 
 	FinalizeAllocation(common.Key, int64) error
-	CancelAllocation(string, int64) error
+	CancelAllocation(common.Key, int64) error
 	CreateAllocation(string, int64) error
 	CreateReadPool(int64) error
 	ReadPoolLock(common.Key, common.Key, time.Duration, int64) error
