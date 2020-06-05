@@ -396,8 +396,13 @@ func (ta *TransactionWithAuth) CancelAllocation(allocID common.Key, fee int64) (
 }
 
 // CreateAllocation transaction.
-func (ta *TransactionWithAuth) CreateAllocation(car *CreateAllocationRequest,
+func (ta *TransactionWithAuth) CreateAllocation(carJSON string,
 	fee int64) (err error) {
+
+	var car = new(CreateAllocationRequest)
+	if err = json.Unmarshal([]byte(carJSON), car); err != nil {
+		return fmt.Errorf("decoding JSON-string argument passed: %v", err)
+	}
 
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_CREATE_ALLOCATION, car, 0)
@@ -539,8 +544,13 @@ func (ta *TransactionWithAuth) StakePoolPayInterests(blobberID common.Key, fee i
 }
 
 // UpdateBlobberSettings update settings of a blobber.
-func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber, fee int64) (
-	err error) {
+func (ta *TransactionWithAuth) UpdateBlobberSettings(blobJSONString string,
+	fee int64) (err error) {
+
+	var blob = new(Blobber)
+	if err = json.Unmarshal([]byte(blobJSONString), blob); err != nil {
+		return fmt.Errorf("decoding JSON-string argument passed: %v", err)
+	}
 
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, blob, 0)

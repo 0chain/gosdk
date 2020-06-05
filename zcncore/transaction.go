@@ -137,14 +137,14 @@ type TransactionScheme interface {
 
 	FinalizeAllocation(common.Key, int64) error
 	CancelAllocation(common.Key, int64) error
-	CreateAllocation(*CreateAllocationRequest, int64) error
+	CreateAllocation(string, int64) error
 	CreateReadPool(int64) error
 	ReadPoolLock(common.Key, common.Key, time.Duration, int64) error
 	ReadPoolUnlock(common.Key, int64) error
 	StakePoolLock(common.Key, int64) error
 	StakePoolUnlock(common.Key, common.Key, int64) error
 	StakePoolPayInterests(common.Key, int64) error
-	UpdateBlobberSettings(*Blobber, int64) error
+	UpdateBlobberSettings(string, int64) error
 	UpdateAllocation(common.Key, common.Size, common.Timestamp, int64) error
 	WritePoolLock(common.Key, common.Key, time.Duration, int64) error
 	WritePoolUnlock(common.Key, int64) error
@@ -1343,9 +1343,22 @@ type CreateAllocationRequest struct {
 	MaxChallengeCompletionTime time.Duration    `json:"max_challenge_completion_time"`
 }
 
+func (car *CreateAllocationRequest) JSONString() string {
+	var b, err = json.Marshal(car)
+	if err != nil {
+		panic(err) // must never happen
+	}
+	return string(b)
+}
+
 // CreateAllocation transaction.
-func (t *Transaction) CreateAllocation(car *CreateAllocationRequest,
+func (t *Transaction) CreateAllocation(createAllocReqJSONString string,
 	fee int64) (err error) {
+
+	var car = new(CreateAllocationRequest)
+	if err = json.Unmarshal([]byte(createAllocReqJSONString), car); err != nil {
+		return fmt.Errorf("decoding JSON-string argument passed: %v", err)
+	}
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_CREATE_ALLOCATION, car, 0)
@@ -1511,12 +1524,25 @@ type Blobber struct {
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
+func (b *Blobber) JSONString() string {
+	var p, err = json.Marshal(b)
+	if err != nil {
+		panic(err) // must never happen
+	}
+	return string(p)
+}
+
 // UpdateBlobberSettings update settings of a blobber.
-func (t *Transaction) UpdateBlobberSettings(blob *Blobber, fee int64) (
+func (t *Transaction) UpdateBlobberSettings(blobJSONString string, fee int64) (
 	err error) {
 
+	var b = new(Blobber)
+	if err = json.Unmarshal([]byte(blobJSONString), b); err != nil {
+		return fmt.Errorf("decoding 'blobJSONString' argument passed: %v", err)
+	}
+
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, blob, 0)
+		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, b, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
