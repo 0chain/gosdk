@@ -135,19 +135,19 @@ type TransactionScheme interface {
 
 	// Storage SC
 
-	//	FinalizeAllocation(string /*Key*/, int64) error
-	//	CancelAllocation(string /*Key*/, int64) error
-	//	CreateAllocation(*CreateAllocationRequest, int64) error
+	// FinalizeAllocation(string, int64) error
+	// CancelAllocation(string, int64) error
+	// CreateAllocation(*CreateAllocationRequest, int64) error
 	CreateReadPool(int64) error
-	//	ReadPoolLock(string /*Key*/, string /*Key*/, int64 /*Duration*/, int64) error
-	//	ReadPoolUnlock(string /*Key*/, int64) error
-	//	StakePoolLock(string /*Key*/, int64) error
-	//	StakePoolUnlock(string /*Key*/, string /*Key*/, int64) error
-	//	StakePoolPayInterests(string /*Key*/, int64) error
-	//	UpdateBlobberSettings(*Blobber, int64) error
-	//	UpdateAllocation(string /*Key*/, int64 /*Size*/, int64 /*Timestamp*/, int64) error
-	//	WritePoolLock(string /*Key*/, string /*Key*/, int64 /*Duration*/, int64) error
-	//	WritePoolUnlock(string /*Key*/, int64) error
+	// ReadPoolLock(string, string, int64, int64) error
+	// ReadPoolUnlock(string, int64) error
+	// StakePoolLock(string, int64) error
+	// StakePoolUnlock(string, string, int64) error
+	// StakePoolPayInterests(string, int64) error
+	// UpdateBlobberSettings(*Blobber, int64) error
+	// UpdateAllocation(string, int64, int64, int64) error
+	// WritePoolLock(string, string, int64, int64) error
+	// WritePoolUnlock(string, int64) error
 }
 
 func signFn(hash string) (string, error) {
