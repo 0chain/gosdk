@@ -18,6 +18,12 @@ import (
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
+// compiler time check
+var (
+	_ TransactionScheme = (*Transaction)(nil)
+	_ TransactionScheme = (*TransactionWithAuth)(nil)
+)
+
 var (
 	errNetwork          = errors.New("network error. host not reachable")
 	errUserRejected     = errors.New("rejected by user")
