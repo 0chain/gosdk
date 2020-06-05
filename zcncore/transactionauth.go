@@ -431,7 +431,7 @@ func (ta *TransactionWithAuth) CreateReadPool(fee int64) (err error) {
 // duration. If blobberID is not empty, then tokens will be locked for given
 // allocation->blobber only.
 func (ta *TransactionWithAuth) ReadPoolLock(allocID, blobberID string,
-	duration int64 /* time.Duration*/, fee int64) (err error) {
+	duration int64, fee int64) (err error) {
 
 	type lockRequest struct {
 		Duration     time.Duration `json:"duration"`
@@ -560,7 +560,7 @@ func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber, fee int64) (
 
 // UpdateAllocation transaction.
 func (ta *TransactionWithAuth) UpdateAllocation(allocID string, sizeDiff int64,
-	expirationDiff int64 /*common.Timestamp*/, fee int64) (err error) {
+	expirationDiff int64, fee int64) (err error) {
 
 	type updateAllocationRequest struct {
 		ID         string `json:"id"`              // allocation id
@@ -588,7 +588,7 @@ func (ta *TransactionWithAuth) UpdateAllocation(allocID string, sizeDiff int64,
 // duration. If blobberID is not empty, then tokens will be locked for given
 // allocation->blobber only.
 func (ta *TransactionWithAuth) WritePoolLock(allocID, blobberID string,
-	duration int64 /*time.Duration*/, fee int64) (err error) {
+	duration int64, fee int64) (err error) {
 
 	type lockRequest struct {
 		Duration     time.Duration `json:"duration"`

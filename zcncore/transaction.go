@@ -122,32 +122,32 @@ type TransactionScheme interface {
 	// vesting SC
 	VestingTrigger(poolID string) error
 	VestingStop(sr *VestingStopRequest) error
-	VestingUnlock(poolID string /*Key*/) error
-	VestingAdd(ar *VestingAddRequest, value int64 /*Balance*/) error
-	VestingDelete(poolID string /*Key*/) error
+	VestingUnlock(poolID string) error
+	VestingAdd(ar *VestingAddRequest, value int64) error
+	VestingDelete(poolID string) error
 	VestingUpdateConfig(vscc *VestingSCConfig) error
 
 	// Miner SC
 
 	MinerSCSettings(*MinerSCMinerInfo) error
-	MinerSCLock(minerID string, lock int64 /*Balance*/) error
+	MinerSCLock(minerID string, lock int64) error
 	MienrSCUnlock(minerID, poolID string) error
 
 	// Storage SC
 
-	// FinalizeAllocation(string, int64) error
-	// CancelAllocation(string, int64) error
-	// CreateAllocation(*CreateAllocationRequest, int64) error
+	FinalizeAllocation(string, int64) error
+	CancelAllocation(string, int64) error
+	CreateAllocation(*CreateAllocationRequest, int64) error
 	CreateReadPool(int64) error
-	// ReadPoolLock(string, string, int64, int64) error
-	// ReadPoolUnlock(string, int64) error
-	// StakePoolLock(string, int64) error
-	// StakePoolUnlock(string, string, int64) error
-	// StakePoolPayInterests(string, int64) error
-	// UpdateBlobberSettings(*Blobber, int64) error
-	// UpdateAllocation(string, int64, int64, int64) error
-	// WritePoolLock(string, string, int64, int64) error
-	// WritePoolUnlock(string, int64) error
+	ReadPoolLock(string, string, int64, int64) error
+	ReadPoolUnlock(string, int64) error
+	StakePoolLock(string, int64) error
+	StakePoolUnlock(string, string, int64) error
+	StakePoolPayInterests(string, int64) error
+	UpdateBlobberSettings(*Blobber, int64) error
+	UpdateAllocation(string, int64, int64, int64) error
+	WritePoolLock(string, string, int64, int64) error
+	WritePoolUnlock(string, int64) error
 }
 
 func signFn(hash string) (string, error) {
@@ -947,7 +947,7 @@ type vestingRequest struct {
 }
 
 func (t *Transaction) vestingPoolTxn(function string, poolID string,
-	value int64 /*balance*/) error {
+	value int64) error {
 
 	return t.createSmartContractTxn(VestingSmartContractAddress,
 		function, vestingRequest{PoolID: common.Key(poolID)}, int64(value))
@@ -1004,8 +1004,8 @@ type VestingAddRequest struct {
 	Destinations []*VestingDest   `json:"destinations"` //
 }
 
-func (t *Transaction) VestingAdd(ar *VestingAddRequest,
-	value int64 /*Balance*/) (err error) {
+func (t *Transaction) VestingAdd(ar *VestingAddRequest, value int64) (
+	err error) {
 
 	err = t.createSmartContractTxn(VestingSmartContractAddress,
 		transaction.VESTING_ADD, ar, value)
@@ -1105,8 +1105,7 @@ type MinerSCLock struct {
 	ID string `json:"id"`
 }
 
-func (t *Transaction) MinerSCLock(nodeID string,
-	lock int64 /*Balance*/) (err error) {
+func (t *Transaction) MinerSCLock(nodeID string, lock int64) (err error) {
 
 	var mscl MinerSCLock
 	mscl.ID = nodeID
@@ -1553,8 +1552,8 @@ func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
 // WritePoolLock locks tokens for current user and given allocation, using given
 // duration. If blobberID is not empty, then tokens will be locked for given
 // allocation->blobber only.
-func (t *Transaction) WritePoolLock(allocID, blobberID string,
-	duration int64 /*time.Duration*/, fee int64) (err error) {
+func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64,
+	fee int64) (err error) {
 
 	type lockRequest struct {
 		Duration     time.Duration `json:"duration"`
