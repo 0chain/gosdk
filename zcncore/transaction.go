@@ -135,19 +135,19 @@ type TransactionScheme interface {
 
 	// Storage SC
 
-	FinalizeAllocation(string, int64) error
-	CancelAllocation(string, int64) error
+	FinalizeAllocation(allocID string, fee int64) error
+	CancelAllocation(allocID string, fee int64) error
 	CreateAllocation(*CreateAllocationRequest, int64) error
-	CreateReadPool(int64) error
-	ReadPoolLock(string, string, int64, int64) error
-	ReadPoolUnlock(string, int64) error
-	StakePoolLock(string, int64) error
-	StakePoolUnlock(string, string, int64) error
-	StakePoolPayInterests(string, int64) error
-	UpdateBlobberSettings(*Blobber, int64) error
-	UpdateAllocation(string, int64, int64, int64) error
-	WritePoolLock(string, string, int64, int64) error
-	WritePoolUnlock(string, int64) error
+	CreateReadPool(fee int64) error
+	ReadPoolLock(allocID string, blobberID string, duration int64, fee int64) error
+	ReadPoolUnlock(poolID string, fee int64) error
+	StakePoolLock(blobberID string, fee int64) error
+	StakePoolUnlock(blobberID string, poolID string, fee int64) error
+	StakePoolPayInterests(blobberID string, fee int64) error
+	UpdateBlobberSettings(blobber *Blobber, fee int64) error
+	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, fee int64) error
+	WritePoolLock(allocID string, blobberID string, duration int64, fee int64) error
+	WritePoolUnlock(poolID string, fee int64) error
 }
 
 func signFn(hash string) (string, error) {
