@@ -137,7 +137,7 @@ type TransactionScheme interface {
 
 	FinalizeAllocation(allocID string, fee int64) error
 	CancelAllocation(allocID string, fee int64) error
-	CreateAllocation(*CreateAllocationRequest, int64) error
+	CreateAllocation(car *CreateAllocationRequest, fee int64) error
 	CreateReadPool(fee int64) error
 	ReadPoolLock(allocID string, blobberID string, duration int64, fee int64) error
 	ReadPoolUnlock(poolID string, fee int64) error
