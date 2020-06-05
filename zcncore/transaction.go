@@ -82,7 +82,9 @@ type Transaction struct {
 	verifyError  error
 }
 
-// TransactionScheme implements few methods for block chain
+// TransactionScheme implements few methods for block chain.
+//
+// Note: to be buildable on MacOSX all arguments should have names.
 type TransactionScheme interface {
 	// SetTransactionCallback implements storing the callback
 	// used to call after the transaction or verification is completed
