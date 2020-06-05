@@ -780,12 +780,12 @@ func withParams(uri string, params Params) string {
 	return uri + params.Query()
 }
 
-func GetVestingPoolInfo(poolID common.Key, cb GetInfoCallback) (err error) {
+func GetVestingPoolInfo(poolID string, cb GetInfoCallback) (err error) {
 	if err = checkConfig(); err != nil {
 		return
 	}
 	getInfoFromSharders(withParams(GET_VESTING_POOL_INFO, Params{
-		"pool_id": string(poolID),
+		"pool_id": poolID,
 	}), 0, cb)
 	return
 }
@@ -794,15 +794,15 @@ type VestingClientList struct {
 	Pools []common.Key `json:"pools"`
 }
 
-func GetVestingClientList(clientID common.Key, cb GetInfoCallback) (err error) {
+func GetVestingClientList(clientID string, cb GetInfoCallback) (err error) {
 	if err = checkConfig(); err != nil {
 		return
 	}
 	if clientID == "" {
-		clientID = common.Key(_config.wallet.ClientID) // if not blank
+		clientID = _config.wallet.ClientID // if not blank
 	}
 	go getInfoFromSharders(withParams(GET_VESTING_CLIENT_POOLS, Params{
-		"client_id": string(clientID),
+		"client_id": clientID,
 	}), 0, cb)
 	return
 }
