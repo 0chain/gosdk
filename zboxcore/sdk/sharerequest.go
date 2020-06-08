@@ -15,6 +15,7 @@ import (
 
 type ShareRequest struct {
 	allocationID   string
+	allocationTx   string
 	blobbers       []*blockchain.StorageNode
 	remotefilepath string
 	remotefilename string
@@ -39,7 +40,13 @@ func (req *ShareRequest) GetAuthTicketForEncryptedFile(clientID string, encPubli
 		return "", err
 	}
 	var fileRef *fileref.FileRef
-	listReq := &ListRequest{remotefilepathhash: at.FilePathHash, allocationID: req.allocationID, blobbers: req.blobbers, ctx: req.ctx}
+	listReq := &ListRequest{
+		remotefilepathhash: at.FilePathHash,
+		allocationID:       req.allocationID,
+		allocationTx:       req.allocationTx,
+		blobbers:           req.blobbers,
+		ctx:                req.ctx,
+	}
 	//listReq.authToken = at
 	_, fileRef, _ = listReq.getFileConsensusFromBlobbers()
 	if fileRef == nil {

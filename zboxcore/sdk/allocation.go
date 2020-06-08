@@ -694,6 +694,7 @@ func (a *Allocation) GetAuthTicket(path string, filename string, referenceType s
 
 	shareReq := &ShareRequest{}
 	shareReq.allocationID = a.ID
+	shareReq.allocationTx = a.Tx
 	shareReq.blobbers = a.Blobbers
 	shareReq.ctx = a.ctx
 	shareReq.remotefilepath = path
