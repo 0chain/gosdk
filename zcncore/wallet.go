@@ -24,7 +24,7 @@ type ChainConfig struct {
 	BlockWorker             string   `json:"block_worker"`
 	Miners                  []string `json:"miners"`
 	Sharders                []string `json:"sharders"`
-	SignatureScheme         string   `json:"signaturescheme"`
+	SignatureScheme         string   `json:"signature_scheme"`
 	MinSubmit               int      `json:"min_submit"`
 	MinConfirmation         int      `json:"min_confirmation"`
 	ConfirmationChainLength int      `json:"confirmation_chain_length"`
@@ -284,6 +284,14 @@ func Init(c string) error {
 		if _config.chain.SignatureScheme != "ed25519" && _config.chain.SignatureScheme != "bls0chain" {
 			return fmt.Errorf("invalid/unsupported signature scheme")
 		}
+
+		err := UpdateNetworkDetails()
+		if err != nil {
+			return err
+		}
+
+		go UpdateNetworkDetailsWorker(context.Background())
+
 		assertConfig()
 		_config.isConfigured = true
 	}
