@@ -318,8 +318,6 @@ func GetStakePoolInfo(blobberID string) (info *StakePoolInfo, err error) {
 		return nil, fmt.Errorf("error decoding response: %v", err)
 	}
 
-	println("SP INFO:", string(b))
-
 	return
 }
 
