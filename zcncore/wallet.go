@@ -361,6 +361,12 @@ func GetNetwork() *Network {
 	}
 }
 
+func GetNetworkJSON() string {
+	network := GetNetwork()
+	networkBytes, _ := json.Marshal(network)
+	return string(networkBytes)
+}
+
 // CreateWallet creates the a wallet for the configure signature scheme.
 // It also registers the wallet again to block chain.
 func CreateWallet(statusCb WalletCallback) error {
