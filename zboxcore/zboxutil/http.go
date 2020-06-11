@@ -40,7 +40,6 @@ const FILE_META_ENDPOINT = "/v1/file/meta/"
 const FILE_STATS_ENDPOINT = "/v1/file/stats/"
 const OBJECT_TREE_ENDPOINT = "/v1/file/objecttree/"
 const COMMIT_META_TXN_ENDPOINT = "/v1/file/commitmetatxn/"
-const UPDATE_REPAIR_STATUS_ENDPOINT = "/allocation/repair/"
 
 var transport = &http.Transport{
 	Proxy: http.ProxyFromEnvironment,
@@ -112,12 +111,6 @@ func NewObjectTreeRequest(baseUrl, allocation string, path string) (*http.Reques
 
 func NewCommitMetaTxnRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, COMMIT_META_TXN_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodPost, url, body)
-	return setClientInfo(req, err)
-}
-
-func NewUpdateRepairStatusRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, UPDATE_REPAIR_STATUS_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodPost, url, body)
 	return setClientInfo(req, err)
 }

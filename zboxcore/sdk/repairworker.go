@@ -1,18 +1,12 @@
 package sdk
 
 import (
-	"bytes"
 	"context"
-	"mime/multipart"
-	"net/http"
 	"os"
 	"sync"
-	"time"
 
-	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"go.uber.org/zap"
 )
 
@@ -63,8 +57,6 @@ func (cb *RepairStatusCB) Error(allocationID string, filePath string, op int, er
 }
 
 func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
-	r.updateRepairStatusToBlobbers(a, "true")
-
 	if r.completedCallback != nil {
 		defer r.completedCallback()
 	}
@@ -76,7 +68,6 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 	r.iterateDir(a, r.listDir)
 
 	if r.statusCB != nil {
-		r.updateRepairStatusToBlobbers(a, "false")
 		r.statusCB.RepairCompleted(r.filesRepaired)
 	}
 
@@ -194,67 +185,9 @@ func (r *RepairRequest) checkForCancel(a *Allocation) bool {
 	if r.isRepairCanceled {
 		Logger.Info("Repair Cancelled by the user")
 		if r.statusCB != nil {
-			r.updateRepairStatusToBlobbers(a, "false")
 			r.statusCB.RepairCompleted(r.filesRepaired)
 		}
 		return true
 	}
 	return false
-}
-
-func (r *RepairRequest) updateRepairStatusToBlobbers(a *Allocation, status string) {
-	numList := len(a.Blobbers)
-	r.wg = &sync.WaitGroup{}
-	r.wg.Add(numList)
-	rspCh := make(chan bool, numList)
-	for i := 0; i < numList; i++ {
-		go r.updateRepairStatusToBlobber(a.Blobbers[i], i, status, rspCh, a)
-	}
-	r.wg.Wait()
-	count := 0
-	for i := 0; i < numList; i++ {
-		resp := <-rspCh
-		if resp {
-			count++
-		}
-	}
-	if count == numList {
-		Logger.Info("Repair status updated to all blobbers : ", status)
-	} else {
-		Logger.Error("Failed to update repair status to all blobber : ", status)
-	}
-	return
-}
-
-func (r *RepairRequest) updateRepairStatusToBlobber(blobber *blockchain.StorageNode, blobberIdx int,
-	status string, rspCh chan<- bool, a *Allocation) {
-
-	defer r.wg.Done()
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
-
-	formWriter.WriteField("repair", status)
-
-	formWriter.Close()
-	httpreq, err := zboxutil.NewUpdateRepairStatusRequest(blobber.Baseurl, a.Tx, body)
-	if err != nil {
-		Logger.Error("Update repair status request error: ", err.Error())
-		return
-	}
-
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	ctx, cncl := context.WithTimeout(a.ctx, (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("Update repair status : ", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == http.StatusOK {
-			rspCh <- true
-			return nil
-		}
-		rspCh <- false
-		return err
-	})
 }
