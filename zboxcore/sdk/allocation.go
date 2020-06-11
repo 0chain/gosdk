@@ -191,7 +191,7 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 		case downloadReq := <-a.downloadChan:
 
 			Logger.Info(fmt.Sprintf("received a download request for %v\n", downloadReq.remotefilepath))
-			go downloadReq.processDownload(ctx, a)
+			go downloadReq.processDownload(ctx)
 		case repairReq := <-a.repairChan:
 
 			Logger.Info(fmt.Sprintf("received a repair request for %v\n", repairReq.listDir.Path))
