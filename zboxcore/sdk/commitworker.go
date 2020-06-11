@@ -44,14 +44,13 @@ func SuccessCommitResult() *CommitResult {
 }
 
 type CommitRequest struct {
-	changes               []allocationchange.AllocationChange
-	blobber               *blockchain.StorageNode
-	allocationID          string
-	allocationTx          string
-	allocationUnderRepair bool
-	connectionID          string
-	wg                    *sync.WaitGroup
-	result                *CommitResult
+	changes      []allocationchange.AllocationChange
+	blobber      *blockchain.StorageNode
+	allocationID string
+	allocationTx string
+	connectionID string
+	wg           *sync.WaitGroup
+	result       *CommitResult
 }
 
 var commitChan map[string]chan *CommitRequest
@@ -218,10 +217,6 @@ func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.W
 	}
 	formWriter.WriteField("connection_id", req.connectionID)
 	formWriter.WriteField("write_marker", string(wmData))
-
-	if req.allocationUnderRepair {
-		formWriter.WriteField("repair_request", "true")
-	}
 
 	formWriter.Close()
 
