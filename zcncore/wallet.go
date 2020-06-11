@@ -58,10 +58,12 @@ const (
 
 	MINERSC_PFX = `/v1/screst/` + MinerSmartContractAddress
 
-	GET_MINERSC_NODE   = MINERSC_PFX + "/nodeStat"
-	GET_MINERSC_POOL   = MINERSC_PFX + "/nodePoolStat"
-	GET_MINERSC_CONFIG = MINERSC_PFX + "/configs"
-	GET_MINERSC_USER   = MINERSC_PFX + "/getUserPools"
+	GET_MINERSC_NODE     = MINERSC_PFX + "/nodeStat"
+	GET_MINERSC_POOL     = MINERSC_PFX + "/nodePoolStat"
+	GET_MINERSC_CONFIG   = MINERSC_PFX + "/configs"
+	GET_MINERSC_USER     = MINERSC_PFX + "/getUserPools"
+	GET_MINERSC_MINERS   = MINERSC_PFX + "/getMinerList"
+	GET_MINERSC_SHARDERS = MINERSC_PFX + "/getSharderList"
 
 	// storage SC
 
@@ -840,6 +842,51 @@ func GetVestingSCConfig(cb GetInfoCallback) (err error) {
 //
 // miner SC
 //
+
+type Miner struct {
+	ID                string      `json:"id"`
+	N2NHost           string      `json:"n2n_host"`
+	Host              string      `json:"host"`
+	Port              int         `json:"port"`
+	PublicKey         string      `json:"public_key"`
+	ShortName         string      `json:"short_name"`
+	BuildTag          string      `json:"build_tag"`
+	TotalStake        int         `json:"total_stake"`
+	DelegateWallet    string      `json:"delegate_wallet"`
+	ServiceCharge     float64     `json:"service_charge"`
+	NumberOfDelegates int         `json:"number_of_delegates"`
+	MinStake          int64       `json:"min_stake"`
+	MaxStake          int64       `json:"max_stake"`
+	Stat              interface{} `json:"stat"`
+}
+
+type Node struct {
+	Miner Miner `json:"simple_miner"`
+}
+
+type MinerSCNodes struct {
+	Nodes []Node `json:"Nodes"`
+}
+
+// GetMiners obtains list of all active miners.
+func GetMiners(cb GetInfoCallback) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	var url = GET_MINERSC_MINERS
+	go getInfoFromSharders(url, 0, cb)
+	return
+}
+
+// GetSharders obtains list of all active sharders.
+func GetSharders(cb GetInfoCallback) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	var url = GET_MINERSC_SHARDERS
+	go getInfoFromSharders(url, 0, cb)
+	return
+}
 
 func GetMinerSCNodeInfo(id string, cb GetInfoCallback) (err error) {
 
