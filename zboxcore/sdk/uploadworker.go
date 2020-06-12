@@ -527,7 +527,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 
 	retries := 0
 	req.consensus = 0
-	for retries < 1 && !req.isConsensusOk() {
+	for retries < 3 && !req.isConsensusOk() {
 		req.consensus = 0
 		failedCommits := make([]*CommitRequest, 0)
 		for _, commitReq := range commitReqs {
@@ -569,6 +569,10 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 	// }
 
 	if !req.isConsensusOk() {
+		if req.consensus != 0 {
+			Logger.Info("Commit consensus failed, Deleting remote file....")
+			a.deleteFile(req.remotefilepath, req.consensus, req.consensus)
+		}
 		if req.statusCallback != nil {
 			req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, fmt.Errorf("Upload failed: Commit consensus failed"))
 			return

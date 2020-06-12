@@ -571,6 +571,12 @@ func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error) {
 }
 
 func (a *Allocation) DeleteFile(path string) error {
+	consensusThresh := (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
+	fullconsensus := float32(a.DataShards + a.ParityShards)
+	return a.deleteFile(path, consensusThresh, fullconsensus)
+}
+
+func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus float32) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
@@ -590,8 +596,8 @@ func (a *Allocation) DeleteFile(path string) error {
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
-	req.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
-	req.fullconsensus = float32(a.DataShards + a.ParityShards)
+	req.consensusThresh = threshConsensus
+	req.fullconsensus = fullConsensus
 	req.ctx = a.ctx
 	req.remotefilepath = path
 	req.deleteMask = 0
