@@ -27,7 +27,6 @@ import (
 var (
 	noBLOBBERS     = errors.New("No Blobbers set in this allocation")
 	notInitialized = common.NewError("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
-	underRepairErr = common.NewError("allocaton_under_repair", "Allocation is under repair, Please try again later")
 )
 
 type ConsolidatedFileMeta struct {
@@ -129,19 +128,10 @@ type Allocation struct {
 	downloadProgressMap     map[string]*DownloadRequest
 	repairRequestInProgress *RepairRequest
 	initialized             bool
-	underRepair             bool
-}
-
-func (a *Allocation) UnderRepair() bool {
-	return a.underRepair
 }
 
 func (a *Allocation) GetStats() *AllocationStats {
 	return a.Stats
-}
-
-func (a *Allocation) UpdateRepairStatus(value bool) {
-	a.underRepair = value
 }
 
 func (a *Allocation) InitAllocation() {
@@ -239,9 +229,6 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(localpath string, remotep
 func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, status StatusCallback, isUpdate bool, thumbnailpath string, encryption bool, isRepair bool) error {
 	if !a.isInitialized() {
 		return notInitialized
-	}
-	if a.UnderRepair() && !isRepair {
-		return underRepairErr
 	}
 
 	fileInfo, err := os.Stat(localpath)
@@ -580,9 +567,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus floa
 	if !a.isInitialized() {
 		return notInitialized
 	}
-	if a.UnderRepair() {
-		return underRepairErr
-	}
+
 	if len(path) == 0 {
 		return common.NewError("invalid_path", "Invalid path for the list")
 	}
@@ -610,10 +595,6 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus floa
 func (a *Allocation) RenameObject(path string, destName string) error {
 	if !a.isInitialized() {
 		return notInitialized
-	}
-
-	if a.UnderRepair() {
-		return underRepairErr
 	}
 
 	if len(path) == 0 {
@@ -651,10 +632,6 @@ func (a *Allocation) MoveObject(path string, destPath string) error {
 func (a *Allocation) CopyObject(path string, destPath string) error {
 	if !a.isInitialized() {
 		return notInitialized
-	}
-
-	if a.UnderRepair() {
-		return underRepairErr
 	}
 
 	if len(path) == 0 || len(destPath) == 0 {
@@ -813,10 +790,6 @@ func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, look
 		return notInitialized
 	}
 
-	if a.UnderRepair() {
-		return underRepairErr
-	}
-
 	if fileMeta == nil {
 		if len(path) > 0 {
 			fileMeta, err = a.GetFileMeta(path)
@@ -863,7 +836,6 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 	repairReq.completedCallback = func() {
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
-		a.UpdateRepairStatus(false)
 		a.repairRequestInProgress = nil
 	}
 
@@ -872,7 +844,6 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
 		a.repairRequestInProgress = repairReq
-		a.UpdateRepairStatus(true)
 	}()
 	return nil
 }
@@ -899,10 +870,6 @@ type CommitFolderResponse struct {
 func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (string, error) {
 	if !a.isInitialized() {
 		return "", notInitialized
-	}
-
-	if a.UnderRepair() {
-		return "", underRepairErr
 	}
 
 	data := &CommitFolderData{
