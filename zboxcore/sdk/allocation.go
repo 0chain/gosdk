@@ -2,10 +2,13 @@ package sdk
 
 import (
 	"context"
+	"crypto/sha1"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"math/bits"
 	"os"
 	"path/filepath"
@@ -293,6 +296,15 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 		if !repairRequired {
 			return fmt.Errorf("Repair not required")
 		}
+
+		file, _ := ioutil.ReadFile(localpath)
+		hash := sha1.New()
+		hash.Write(file)
+		contentHash := hex.EncodeToString(hash.Sum(nil))
+		if contentHash != fileRef.ActualFileHash {
+			return fmt.Errorf("Content hash doesn't match")
+		}
+
 		uploadReq.filemeta.Hash = fileRef.ActualFileHash
 		uploadReq.uploadMask = (^found & uploadReq.uploadMask)
 		uploadReq.fullconsensus = float32(bits.TrailingZeros32(uploadReq.uploadMask + 1))
