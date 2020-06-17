@@ -47,6 +47,8 @@ type ListResult struct {
 	NumBlocks     int64         `json:"num_blocks"`
 	LookupHash    string        `json:"lookup_hash"`
 	EncryptionKey string        `json:"encryption_key"`
+	CreatedAt     time.Time     `json:"created_at"`
+	UpdatedAt     time.Time     `json:"updated_at"`
 	Children      []*ListResult `json:"list"`
 	Consensus     `json:"-"`
 }
@@ -151,6 +153,8 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 		result.Name = ti.ref.Name
 		result.Path = ti.ref.Path
 		result.Type = ti.ref.Type
+		result.CreatedAt = ti.ref.CreatedAt
+		result.UpdatedAt = ti.ref.UpdatedAt
 		result.LookupHash = ti.ref.LookupHash
 		if result.Type == fileref.DIRECTORY {
 			result.Size = -1
@@ -163,7 +167,13 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 			}
 			var childResult *ListResult
 			if _, ok := childResultMap[actualHash]; !ok {
-				childResult = &ListResult{Name: child.GetName(), Path: child.GetPath(), Type: child.GetType()}
+				childResult = &ListResult{
+					Name:      child.GetName(),
+					Path:      child.GetPath(),
+					Type:      child.GetType(),
+					CreatedAt: child.GetCreatedAt(),
+					UpdatedAt: child.GetUpdatedAt(),
+				}
 				childResult.LookupHash = child.GetLookupHash()
 				childResult.consensus = 0
 				childResult.consensusThresh = req.consensusThresh

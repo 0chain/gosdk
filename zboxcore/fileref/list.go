@@ -1,6 +1,8 @@
 package fileref
 
 import (
+	"time"
+
 	"github.com/0chain/gosdk/core/common"
 	"github.com/mitchellh/mapstructure"
 )
@@ -16,6 +18,12 @@ func (lr *ListResult) GetDirTree(allocationID string) (*Ref, error) {
 	if reftype == DIRECTORY {
 		rootRef := &Ref{Type: DIRECTORY}
 		rootRef.AllocationID = allocationID
+
+		rootRef.CreatedAt = parseTime(lr.Meta["created_at"].(string))
+		rootRef.UpdatedAt = parseTime(lr.Meta["updated_at"].(string))
+		delete(lr.Meta, "created_at")
+		delete(lr.Meta, "updated_at")
+
 		var md mapstructure.Metadata
 		config := &mapstructure.DecoderConfig{
 			Metadata: &md,
@@ -46,13 +54,19 @@ func (lr *ListResult) populateChildren(ref *Ref) error {
 		if reftype == DIRECTORY {
 			dref := &Ref{Type: DIRECTORY}
 			dref.AllocationID = ref.AllocationID
+			dref.CreatedAt = parseTime(rpc["created_at"].(string))
+			dref.UpdatedAt = parseTime(rpc["updated_at"].(string))
 			childEntity = dref
 		} else {
 			fref := &FileRef{}
 			fref.Type = FILE
 			fref.AllocationID = ref.AllocationID
+			fref.CreatedAt = parseTime(rpc["created_at"].(string))
+			fref.UpdatedAt = parseTime(rpc["updated_at"].(string))
 			childEntity = fref
 		}
+		delete(rpc, "created_at")
+		delete(rpc, "updated_at")
 		var md mapstructure.Metadata
 		config := &mapstructure.DecoderConfig{
 			Metadata: &md,
@@ -70,4 +84,10 @@ func (lr *ListResult) populateChildren(ref *Ref) error {
 		ref.Children = append(ref.Children, childEntity)
 	}
 	return nil
+}
+
+func parseTime(timeString string) time.Time {
+	layout := "2006-01-02T15:04:05.000000Z"
+	t, _ := time.Parse(layout, timeString)
+	return t
 }

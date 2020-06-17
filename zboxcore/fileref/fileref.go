@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/0chain/gosdk/core/encryption"
 )
@@ -48,18 +49,22 @@ type RefEntity interface {
 	GetLookupHash() string
 	GetPath() string
 	GetName() string
+	GetCreatedAt() time.Time
+	GetUpdatedAt() time.Time
 }
 
 type Ref struct {
-	Type           string `json:"type"`
-	AllocationID   string `json:"allocation_id"`
-	Name           string `json:"name"`
-	Path           string `json:"path"`
-	Size           int64  `json:"size"`
-	Hash           string `json:"hash"`
-	NumBlocks      int64  `json:"num_of_blocks"`
-	PathHash       string `json:"path_hash"`
-	LookupHash     string `json:"lookup_hash"`
+	Type           string    `json:"type"`
+	AllocationID   string    `json:"allocation_id"`
+	Name           string    `json:"name"`
+	Path           string    `json:"path"`
+	Size           int64     `json:"size"`
+	Hash           string    `json:"hash"`
+	NumBlocks      int64     `json:"num_of_blocks"`
+	PathHash       string    `json:"path_hash"`
+	LookupHash     string    `json:"lookup_hash"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
 	childrenLoaded bool
 	Children       []RefEntity `json:"-"`
 }
@@ -130,6 +135,14 @@ func (r *Ref) GetPath() string {
 
 func (r *Ref) GetName() string {
 	return r.Name
+}
+
+func (r *Ref) GetCreatedAt() time.Time {
+	return r.CreatedAt
+}
+
+func (r *Ref) GetUpdatedAt() time.Time {
+	return r.UpdatedAt
 }
 
 func (r *Ref) AddChild(child RefEntity) {
@@ -206,4 +219,12 @@ func (fr *FileRef) GetPath() string {
 }
 func (fr *FileRef) GetName() string {
 	return fr.Name
+}
+
+func (fr *FileRef) GetCreatedAt() time.Time {
+	return fr.CreatedAt
+}
+
+func (fr *FileRef) GetUpdatedAt() time.Time {
+	return fr.UpdatedAt
 }
