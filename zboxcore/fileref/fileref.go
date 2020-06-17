@@ -5,7 +5,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/0chain/gosdk/core/encryption"
 )
@@ -49,24 +48,24 @@ type RefEntity interface {
 	GetLookupHash() string
 	GetPath() string
 	GetName() string
-	GetCreatedAt() time.Time
-	GetUpdatedAt() time.Time
+	GetCreatedAt() string
+	GetUpdatedAt() string
 }
 
 type Ref struct {
-	Type           string    `json:"type"`
-	AllocationID   string    `json:"allocation_id"`
-	Name           string    `json:"name"`
-	Path           string    `json:"path"`
-	Size           int64     `json:"size"`
-	Hash           string    `json:"hash"`
-	NumBlocks      int64     `json:"num_of_blocks"`
-	PathHash       string    `json:"path_hash"`
-	LookupHash     string    `json:"lookup_hash"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	Type           string `json:"type"`
+	AllocationID   string `json:"allocation_id"`
+	Name           string `json:"name"`
+	Path           string `json:"path"`
+	Size           int64  `json:"size"`
+	Hash           string `json:"hash"`
+	NumBlocks      int64  `json:"num_of_blocks"`
+	PathHash       string `json:"path_hash"`
+	LookupHash     string `json:"lookup_hash"`
 	childrenLoaded bool
 	Children       []RefEntity `json:"-"`
+	CreatedAt      string      `json:"created_at"`
+	UpdatedAt      string      `json:"updated_at"`
 }
 
 func GetReferenceLookup(allocationID string, path string) string {
@@ -137,11 +136,11 @@ func (r *Ref) GetName() string {
 	return r.Name
 }
 
-func (r *Ref) GetCreatedAt() time.Time {
+func (r *Ref) GetCreatedAt() string {
 	return r.CreatedAt
 }
 
-func (r *Ref) GetUpdatedAt() time.Time {
+func (r *Ref) GetUpdatedAt() string {
 	return r.UpdatedAt
 }
 
@@ -221,10 +220,10 @@ func (fr *FileRef) GetName() string {
 	return fr.Name
 }
 
-func (fr *FileRef) GetCreatedAt() time.Time {
+func (fr *FileRef) GetCreatedAt() string {
 	return fr.CreatedAt
 }
 
-func (fr *FileRef) GetUpdatedAt() time.Time {
+func (fr *FileRef) GetUpdatedAt() string {
 	return fr.UpdatedAt
 }

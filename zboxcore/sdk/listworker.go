@@ -47,8 +47,8 @@ type ListResult struct {
 	NumBlocks     int64         `json:"num_blocks"`
 	LookupHash    string        `json:"lookup_hash"`
 	EncryptionKey string        `json:"encryption_key"`
-	CreatedAt     time.Time     `json:"created_at"`
-	UpdatedAt     time.Time     `json:"updated_at"`
+	CreatedAt     string        `json:"created_at"`
+	UpdatedAt     string        `json:"updated_at"`
 	Children      []*ListResult `json:"list"`
 	Consensus     `json:"-"`
 }
