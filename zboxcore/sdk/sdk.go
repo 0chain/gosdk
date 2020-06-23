@@ -102,6 +102,11 @@ func SetQuerySleepTime(time int) {
 	blockchain.SetQuerySleepTime(time)
 }
 
+func SetNetwork(miners []string, sharders []string) {
+	blockchain.SetMiners(miners)
+	blockchain.SetSharders(sharders)
+}
+
 //
 // read pool
 //

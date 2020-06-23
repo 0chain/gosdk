@@ -363,6 +363,11 @@ func GetNetwork() *Network {
 	}
 }
 
+func SetNetwork(miners []string, sharders []string) {
+	_config.chain.Miners = miners
+	_config.chain.Sharders = sharders
+}
+
 func GetNetworkJSON() string {
 	network := GetNetwork()
 	networkBytes, _ := json.Marshal(network)
