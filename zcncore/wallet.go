@@ -946,6 +946,8 @@ type MinerSCConfig struct {
 	ViewChange          int64          `json:"view_change"`
 	MaxN                int            `json:"max_n"`
 	MinN                int            `json:"min_n"`
+	MinS                int            `json:"min_s"`
+	MaxS                int            `json:"max_s"`
 	TPercent            float64        `json:"t_percent"`
 	KPercent            float64        `json:"k_percent"`
 	LastRound           int64          `json:"last_round"`
@@ -961,6 +963,7 @@ type MinerSCConfig struct {
 	InterestDeclineRate float64        `json:"interest_decline_rate"`
 	MaxMint             common.Balance `json:"max_mint"`
 	Minted              common.Balance `json:"minted"`
+	MaxDelegates        int            `json:"max_delegates"`
 }
 
 func GetMinerSCConfig(cb GetInfoCallback) (err error) {
