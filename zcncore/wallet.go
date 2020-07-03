@@ -69,15 +69,16 @@ const (
 
 	STORAGESC_PFX = "/v1/screst/" + StorageSmartContractAddress
 
-	STORAGESC_GET_SC_CONFIG           = STORAGESC_PFX + "/getConfig"
-	STORAGESC_GET_CHALLENGE_POOL_INFO = STORAGESC_PFX + "/getChallengePoolStat"
-	STORAGESC_GET_ALLOCATION          = STORAGESC_PFX + "/allocation"
-	STORAGESC_GET_ALLOCATIONS         = STORAGESC_PFX + "/allocations"
-	STORAGESC_GET_READ_POOL_INFO      = STORAGESC_PFX + "/getReadPoolStat"
-	STORAGESC_GET_STAKE_POOL_INFO     = STORAGESC_PFX + "/getStakePoolStat"
-	STORAGESC_GET_BLOBBERS            = STORAGESC_PFX + "/getblobbers"
-	STORAGESC_GET_BLOBBER             = STORAGESC_PFX + "/getBlobber"
-	STORAGESC_GET_WRITE_POOL_INFO     = STORAGESC_PFX + "/getWritePoolStat"
+	STORAGESC_GET_SC_CONFIG            = STORAGESC_PFX + "/getConfig"
+	STORAGESC_GET_CHALLENGE_POOL_INFO  = STORAGESC_PFX + "/getChallengePoolStat"
+	STORAGESC_GET_ALLOCATION           = STORAGESC_PFX + "/allocation"
+	STORAGESC_GET_ALLOCATIONS          = STORAGESC_PFX + "/allocations"
+	STORAGESC_GET_READ_POOL_INFO       = STORAGESC_PFX + "/getReadPoolStat"
+	STORAGESC_GET_STAKE_POOL_INFO      = STORAGESC_PFX + "/getStakePoolStat"
+	STORAGESC_GET_STAKE_POOL_USER_INFO = STORAGESC_PFX + "/getUserStakePoolStat"
+	STORAGESC_GET_BLOBBERS             = STORAGESC_PFX + "/getblobbers"
+	STORAGESC_GET_BLOBBER              = STORAGESC_PFX + "/getBlobber"
+	STORAGESC_GET_WRITE_POOL_INFO      = STORAGESC_PFX + "/getWritePoolStat"
 )
 
 const (
@@ -1050,6 +1051,21 @@ func GetStakePoolInfo(blobberID string, cb GetInfoCallback) (err error) {
 	}
 	var url = withParams(STORAGESC_GET_STAKE_POOL_INFO, Params{
 		"blobber_id": blobberID,
+	})
+	go getInfoFromSharders(url, OpStorageSCGetStakePoolInfo, cb)
+	return
+}
+
+// GetStakePoolUserInfo for a user.
+func GetStakePoolUserInfo(clientID string, cb GetInfoCallback) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	if clientID == "" {
+		clientID = _config.wallet.ClientID
+	}
+	var url = withParams(STORAGESC_GET_STAKE_POOL_USER_INFO, Params{
+		"client_id": clientID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetStakePoolInfo, cb)
 	return

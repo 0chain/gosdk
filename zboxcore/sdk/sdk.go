@@ -326,6 +326,39 @@ func GetStakePoolInfo(blobberID string) (info *StakePoolInfo, err error) {
 	return
 }
 
+// StakePoolUserInfo represents user stake pools statistic.
+type StakePoolUserInfo struct {
+	Pools map[common.Key][]*StakePoolDelegatePoolInfo `json:"pools"`
+}
+
+// GetStakePoolUserInfo obtains blobbers/validators delegate pools statistic
+// for a user. If given clientID is empty string, then current client used.
+func GetStakePoolUserInfo(clientID string) (info *StakePoolUserInfo, err error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+	if clientID == "" {
+		clientID = client.GetClientID()
+	}
+
+	var b []byte
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
+		"/getUserStakePoolStat", map[string]string{"client_id": clientID}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error requesting stake pool user info: %v", err)
+	}
+	if len(b) == 0 {
+		return nil, errors.New("empty response")
+	}
+
+	info = new(StakePoolUserInfo)
+	if err = json.Unmarshal(b, info); err != nil {
+		return nil, fmt.Errorf("error decoding response: %v", err)
+	}
+
+	return
+}
+
 type stakePoolRequest struct {
 	BlobberID string `json:"blobber_id,omitempty"`
 	PoolID    string `json:"pool_id,omitempty"`
