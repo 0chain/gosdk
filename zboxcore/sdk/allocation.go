@@ -328,8 +328,8 @@ func (a *Allocation) RepairRequired(remotepath string) (uint32, bool, *fileref.F
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
-	listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+	listReq.consensusThresh = 100 / listReq.fullconsensus
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = remotepath
 	found, fileRef, _ := listReq.getFileConsensusFromBlobbers()
@@ -443,6 +443,12 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string)
 }
 
 func (a *Allocation) ListDir(path string) (*ListResult, error) {
+	consensusThresh := (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
+	fullconsensus := float32(a.DataShards + a.ParityShards)
+	return a.listDir(path, consensusThresh, fullconsensus)
+}
+
+func (a *Allocation) listDir(path string, consensusThresh, fullconsensus float32) (*ListResult, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
@@ -458,8 +464,8 @@ func (a *Allocation) ListDir(path string) (*ListResult, error) {
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
-	listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
-	listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+	listReq.consensusThresh = consensusThresh
+	listReq.fullconsensus = fullconsensus
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
 	ref := listReq.GetListFromBlobbers()
@@ -834,7 +840,9 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 		return notInitialized
 	}
 
-	listDir, err := a.ListDir(pathToRepair)
+	fullconsensus := float32(a.DataShards + a.ParityShards)
+	consensusThresh := 100 / fullconsensus
+	listDir, err := a.listDir(pathToRepair, consensusThresh, fullconsensus)
 	if err != nil {
 		return err
 	}

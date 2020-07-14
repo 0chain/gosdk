@@ -189,7 +189,7 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 			}
 			childResult.Size += child.GetSize()
 			childResult.NumBlocks += child.GetNumBlocks()
-			if childResult.isConsensusMin() {
+			if childResult.isConsensusOk() {
 				if _, ok := selected[child.GetLookupHash()]; !ok {
 					result.Children = append(result.Children, childResult)
 					selected[child.GetLookupHash()] = childResult

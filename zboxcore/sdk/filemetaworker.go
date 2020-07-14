@@ -117,7 +117,7 @@ func (req *ListRequest) getFileConsensusFromBlobbers() (uint32, *fileref.FileRef
 			req.consensus = retMap[actualHash]
 			selected = ti
 		}
-		if req.isConsensusMin() {
+		if req.isConsensusOk() {
 			selected = ti
 			break
 		} else {

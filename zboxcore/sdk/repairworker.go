@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"context"
+	"math/bits"
 	"os"
 	"sync"
 
@@ -79,7 +80,9 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
 	case fileref.DIRECTORY:
 		if len(dir.Children) == 0 {
 			var err error
-			dir, err = a.ListDir(dir.Path)
+			fullconsensus := float32(a.DataShards + a.ParityShards)
+			consensusThresh := 100 / fullconsensus
+			dir, err = a.listDir(dir.Path, consensusThresh, fullconsensus)
 			if err != nil {
 				Logger.Error("Failed to get listDir for path ", zap.Any("path", dir.Path), zap.Error(err))
 				return
@@ -106,9 +109,8 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 	if r.checkForCancel(a) {
 		return
 	}
-
 	Logger.Info("Checking file for the path :", zap.Any("path", file.Path))
-	_, repairRequired, _, err := a.RepairRequired(file.Path)
+	found, repairRequired, _, err := a.RepairRequired(file.Path)
 	if err != nil {
 		Logger.Error("repair_required_failed", zap.Error(err))
 		return
@@ -116,53 +118,64 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 
 	if repairRequired {
 		Logger.Info("Repair required for the path :", zap.Any("path", file.Path))
-		var wg sync.WaitGroup
-		statusCB := &RepairStatusCB{
-			wg:       &wg,
-			statusCB: r.statusCB,
-		}
+		if bits.OnesCount32(found) >= a.DataShards {
+			Logger.Info("Repair by upload", zap.Any("path", file.Path))
+			var wg sync.WaitGroup
+			statusCB := &RepairStatusCB{
+				wg:       &wg,
+				statusCB: r.statusCB,
+			}
 
-		localPath := r.getLocalPath(file)
+			localPath := r.getLocalPath(file)
 
-		if !checkFileExists(localPath) {
+			if !checkFileExists(localPath) {
+				if r.checkForCancel(a) {
+					return
+				}
+				Logger.Info("Downloading file for the path :", zap.Any("path", file.Path))
+				wg.Add(1)
+				err = a.DownloadFile(localPath, file.Path, statusCB)
+				if err != nil {
+					Logger.Error("download_file_failed", zap.Error(err))
+					return
+				}
+				wg.Wait()
+				if !statusCB.success {
+					Logger.Error("Failed to download file for repair, Status call back success failed",
+						zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
+					return
+				}
+				Logger.Info("Download file success for repair", zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
+				statusCB.success = false
+			}
+
 			if r.checkForCancel(a) {
 				return
 			}
-			Logger.Info("Downloading file for the path :", zap.Any("path", file.Path))
+
+			Logger.Info("Repairing file for the path :", zap.Any("path", file.Path))
 			wg.Add(1)
-			err = a.DownloadFile(localPath, file.Path, statusCB)
+			err = a.RepairFile(localPath, file.Path, statusCB)
 			if err != nil {
-				Logger.Error("download_file_failed", zap.Error(err))
+				Logger.Error("repair_file_failed", zap.Error(err))
 				return
 			}
 			wg.Wait()
 			if !statusCB.success {
-				Logger.Error("Failed to download file for repair, Status call back success failed",
+				Logger.Error("Failed to repair file, Status call back success failed",
 					zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
 				return
 			}
-			Logger.Info("Download file success for repair", zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
-			statusCB.success = false
+		} else {
+			Logger.Info("Repair by delete", zap.Any("path", file.Path))
+			consensus := float32(bits.OnesCount32(found))
+			err := a.deleteFile(file.Path, consensus, consensus)
+			if err != nil {
+				Logger.Error("repair_file_failed", zap.Error(err))
+				return
+			}
 		}
-
-		if r.checkForCancel(a) {
-			return
-		}
-
-		Logger.Info("Repairing file for the path :", zap.Any("path", file.Path))
-		wg.Add(1)
-		err = a.RepairFile(localPath, file.Path, statusCB)
-		if err != nil {
-			Logger.Error("repair_file_failed", zap.Error(err))
-			return
-		}
-		wg.Wait()
-		if !statusCB.success {
-			Logger.Error("Failed to repair file, Status call back success failed",
-				zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
-			return
-		}
-		Logger.Info("Repair file success", zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
+		Logger.Info("Repair file success", zap.Any("remotepath", file.Path))
 		r.filesRepaired++
 	}
 
