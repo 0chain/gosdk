@@ -250,6 +250,7 @@ type StakePoolOfferInfo struct {
 
 // StakePoolRewardsInfo represents stake pool rewards.
 type StakePoolRewardsInfo struct {
+	Charge    common.Balance `json:"charge"`    // total for all time
 	Blobber   common.Balance `json:"blobber"`   // total for all time
 	Validator common.Balance `json:"validator"` // total for all time
 }
@@ -275,6 +276,8 @@ type StakePoolSettings struct {
 	MaxStake common.Balance `json:"max_stake"`
 	// NumDelegates maximum allowed.
 	NumDelegates int `json:"num_delegates"`
+	// ServiceCharge is blobber service charge.
+	ServiceCharge float64 `json:"service_charge"`
 }
 
 // StakePool full info.
@@ -586,6 +589,7 @@ type StorageSCConfig struct {
 	MaxChallengesPerGeneration      int                     `json:"max_challenges_per_generation"`
 	ChallengeGenerationRate         float64                 `json:"challenge_rate_per_mb_min"`
 	MaxDelegates                    int                     `json:"max_delegates"`
+	MaxCharge                       float64                 `json:"max_charge"`
 }
 
 func GetStorageSCConfig() (conf *StorageSCConfig, err error) {
