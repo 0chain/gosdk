@@ -3,8 +3,6 @@ package zboxutil
 import (
 	"bytes"
 	"context"
-	"crypto/sha1"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,6 +13,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 )
@@ -24,6 +23,9 @@ const REGISTER_CLIENT = "v1/client/put"
 
 const MAX_RETRIES = 5
 const SLEEP_BETWEEN_RETRIES = 5
+
+// In percentage
+const consensusThresh = float32(25.0)
 
 type SCRestAPIHandler func(response map[string][]byte, numSharders int, err error)
 
@@ -181,11 +183,11 @@ func NewDeleteRequest(baseUrl, allocation string, body io.Reader) (*http.Request
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, handler SCRestAPIHandler) ([]byte, error) {
 	numSharders := len(blockchain.GetSharders())
 	sharders := blockchain.GetSharders()
-	responses := make(map[string]int)
+	responses := make(map[int]float32)
 	entityResult := make(map[string][]byte)
 	var retObj []byte
-	maxCount := 0
-	for _, sharder := range sharders {
+	maxCount := float32(0)
+	for _, sharder := range util.GetRandom(sharders, getMinShardersVerify()) {
 		urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
 		urlObj, _ := url.Parse(urlString)
 		q := urlObj.Query()
@@ -193,41 +195,40 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			q.Add(k, v)
 		}
 		urlObj.RawQuery = q.Encode()
-		h := sha1.New()
 		client := &http.Client{Transport: transport}
 
 		response, err := client.Get(urlObj.String())
 		if err != nil {
-			numSharders--
+			continue
 		} else {
 			if response.StatusCode != 200 {
 				continue
 			}
 			defer response.Body.Close()
-			tReader := io.TeeReader(response.Body, h)
-			entityBytes, err := ioutil.ReadAll(tReader)
+			entityBytes, err := ioutil.ReadAll(response.Body)
 			if err != nil {
 				continue
 			}
-			hashBytes := h.Sum(nil)
-			hash := hex.EncodeToString(hashBytes)
-			responses[hash]++
-			if responses[hash] > maxCount {
-				maxCount = responses[hash]
+			responses[response.StatusCode]++
+			if responses[response.StatusCode] > maxCount {
+				maxCount = responses[response.StatusCode]
 				retObj = entityBytes
 			}
 			entityResult[sharder] = retObj
 		}
 	}
-	var err error
 
-	if maxCount <= (numSharders / 2) {
-		err = common.NewError("invalid_response", "Sharder responses were invalid. Hash mismatch")
+	var err error
+	rate := maxCount * 100 / float32(numSharders)
+	if rate < consensusThresh {
+		err = common.NewError("consensus_failed", "consensus failed on sharders")
 	}
+
 	if handler != nil {
 		handler(entityResult, numSharders, err)
 	}
-	if maxCount > (numSharders / 2) {
+
+	if rate > consensusThresh {
 		return retObj, nil
 	}
 	return nil, err

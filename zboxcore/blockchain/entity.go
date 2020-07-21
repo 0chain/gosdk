@@ -7,6 +7,8 @@ type ChainConfig struct {
 	Sharders          []string
 	Miners            []string
 	PreferredBlobbers []string
+	MinSubmit         int
+	MinConfirmation   int
 	ChainID           string
 	MaxTxnQuery       int
 	QuerySleepTime    int
@@ -27,8 +29,10 @@ var chain *ChainConfig
 
 func init() {
 	chain = &ChainConfig{
-		MaxTxnQuery:    5,
-		QuerySleepTime: 5,
+		MaxTxnQuery:     5,
+		QuerySleepTime:  5,
+		MinSubmit:       50,
+		MinConfirmation: 50,
 	}
 }
 
@@ -73,6 +77,14 @@ func GetPreferredBlobbers() []string {
 	return chain.PreferredBlobbers
 }
 
+func GetMinSubmit() int {
+	return chain.MinSubmit
+}
+
+func GetMinConfirmation() int {
+	return chain.MinConfirmation
+}
+
 func SetBlockWorker(blockWorker string) {
 	chain.BlockWorker = blockWorker
 }
@@ -99,4 +111,12 @@ func SetMaxTxnQuery(num int) {
 
 func SetQuerySleepTime(time int) {
 	chain.QuerySleepTime = time
+}
+
+func SetMinSubmit(minSubmit int) {
+	chain.MinSubmit = minSubmit
+}
+
+func SetMinConfirmation(minConfirmation int) {
+	chain.MinConfirmation = minConfirmation
 }

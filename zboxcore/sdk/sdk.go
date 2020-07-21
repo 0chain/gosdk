@@ -102,6 +102,13 @@ func SetQuerySleepTime(time int) {
 	blockchain.SetQuerySleepTime(time)
 }
 
+func SetMinSubmit(num int) {
+	blockchain.SetMinSubmit(num)
+}
+func SetMinConfirmation(num int) {
+	blockchain.SetMinConfirmation(num)
+}
+
 func SetNetwork(miners []string, sharders []string) {
 	blockchain.SetMiners(miners)
 	blockchain.SetSharders(sharders)

@@ -8,11 +8,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"math/big"
 	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/h2non/filetype"
 )
 
@@ -194,4 +197,13 @@ func Decrypt(key, text []byte) ([]byte, error) {
 		return nil, err
 	}
 	return data, nil
+}
+
+func getMinShardersVerify() int {
+	minSharders := util.MaxInt(calculateMinRequired(float64(blockchain.GetMinConfirmation()), float64(len(blockchain.GetSharders()))/100), 1)
+	return minSharders
+}
+
+func calculateMinRequired(minRequired, percent float64) int {
+	return int(math.Ceil(minRequired * percent))
 }
