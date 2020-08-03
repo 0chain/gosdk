@@ -563,13 +563,15 @@ func GetBalanceWallet(walletStr string, cb GetBalanceCallback) error {
 func getBalanceFromSharders(clientID string) (int64, string, error) {
 	result := make(chan *util.GetResponse)
 	defer close(result)
-	queryFromSharders(getMinShardersVerify(), fmt.Sprintf("%v%v", GET_BALANCE, clientID), result)
+	// getMinShardersVerify
+	var numSharders = len(_config.chain.Sharders) // overwrite, use all
+	queryFromSharders(numSharders, fmt.Sprintf("%v%v", GET_BALANCE, clientID), result)
 	consensus := float32(0)
 	balMap := make(map[int64]float32)
 	winBalance := int64(0)
 	var winInfo string
 	var winError string
-	for i := 0; i < getMinShardersVerify(); i++ {
+	for i := 0; i < numSharders; i++ {
 		select {
 		case rsp := <-result:
 			Logger.Debug(rsp.Url, rsp.Status)
@@ -618,11 +620,13 @@ func ConvertToValue(token float64) int64 {
 func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 	result := make(chan *util.GetResponse)
 	defer close(result)
-	queryFromSharders(getMinShardersVerify(), urlSuffix, result)
+	// getMinShardersVerify()
+	var numSharders = len(_config.chain.Sharders) // overwrite, use all
+	queryFromSharders(numSharders, urlSuffix, result)
 	consensus := float32(0)
 	resultMap := make(map[int]float32)
 	var winresult *util.GetResponse
-	for i := 0; i < getMinShardersVerify(); i++ {
+	for i := 0; i < numSharders; i++ {
 		select {
 		case rsp := <-result:
 			Logger.Debug(rsp.Url, rsp.Status)

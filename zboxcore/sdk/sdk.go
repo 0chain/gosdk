@@ -300,8 +300,8 @@ type StakePoolInfo struct {
 	OffersTotal common.Balance        `json:"offers_total"` //
 	// delegate pools
 	Delegate []*StakePoolDelegatePoolInfo `json:"delegate"`
-	Earnings common.Balance               `json:"earnings"` // total for all
-	Penalty  common.Balance               `json:"penalty"`  // total for all
+	Earnings common.Balance               `json:"interests"` // total for all
+	Penalty  common.Balance               `json:"penalty"`   // total for all
 	// rewards
 	Rewards StakePoolRewardsInfo `json:"rewards"`
 	// settings

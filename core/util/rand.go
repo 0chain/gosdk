@@ -42,6 +42,16 @@ func checkExists(c string, sl []string) bool {
 	return false
 }
 
+func Shuffle(in []string) (shuffle []string) {
+	shuffle = make([]string, len(in))
+	copy(shuffle, in)
+	var rnd = rand.New(rand.NewSource(time.Now().UnixNano()))
+	rnd.Shuffle(len(in), func(i, j int) {
+		shuffle[i], shuffle[j] = shuffle[j], shuffle[i]
+	})
+	return
+}
+
 //GetRandom returns n random slice from in
 func GetRandom(in []string, n int) []string {
 	out := make([]string, 0)

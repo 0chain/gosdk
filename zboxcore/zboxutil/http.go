@@ -251,7 +251,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	entityResult := make(map[string][]byte)
 	var retObj []byte
 	maxCount := float32(0)
-	for _, sharder := range util.GetRandom(sharders, getMinShardersVerify()) {
+	for _, sharder := range util.Shuffle(sharders) {
 		urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
 		urlObj, _ := url.Parse(urlString)
 		q := urlObj.Query()
@@ -279,6 +279,11 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 				retObj = entityBytes
 			}
 			entityResult[sharder] = retObj
+		}
+
+		var rate = maxCount * 100 / float32(numSharders)
+		if rate >= consensusThresh {
+			break // got it
 		}
 	}
 

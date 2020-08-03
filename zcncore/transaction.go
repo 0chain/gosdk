@@ -438,8 +438,7 @@ func queryFromSharders(numSharders int, query string,
 func queryFromShardersContext(ctx context.Context, numSharders int,
 	query string, result chan *util.GetResponse) {
 
-	randomShaders := util.GetRandom(_config.chain.Sharders, numSharders)
-	for _, sharder := range randomShaders {
+	for _, sharder := range util.Shuffle(_config.chain.Sharders) {
 		go func(sharderurl string) {
 			Logger.Info("Query from ", sharderurl+query)
 			url := fmt.Sprintf("%v%v", sharderurl, query)
@@ -497,6 +496,8 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
 	result := make(chan *util.GetResponse)
 	defer close(result)
+
+	numSharders = len(_config.chain.Sharders) // overwrite, use all
 	queryFromSharders(numSharders, fmt.Sprintf("%v%v&content=lfb", TXN_VERIFY_URL, txnHash), result)
 	maxConfirmation := int(0)
 	txnConfirmations := make(map[string]int)
@@ -546,6 +547,7 @@ func GetLatestFinalized(ctx context.Context, numSharders int) (b *block.Header, 
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
+	numSharders = len(_config.chain.Sharders) // overwrite, use all
 	queryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED, result)
 
 	var (
@@ -586,6 +588,7 @@ func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *bloc
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
+	numSharders = len(_config.chain.Sharders) // overwrite, use all
 	queryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED_MAGIC_BLOCK, result)
 
 	var (
@@ -632,9 +635,18 @@ func GetChainStats(ctx context.Context) (b *block.ChainStats, err error) {
 	var result = make(chan *util.GetResponse, 1)
 	defer close(result)
 
-	queryFromShardersContext(ctx, 1, GET_CHAIN_STATS, result)
-	var rsp = <-result
-	if rsp.StatusCode != http.StatusOK {
+	var numSharders = len(_config.chain.Sharders) // overwrite, use all
+	queryFromShardersContext(ctx, numSharders, GET_CHAIN_STATS, result)
+	var rsp *util.GetResponse
+	for i := 0; i < numSharders; i++ {
+		var x = <-result
+		if x.StatusCode != http.StatusOK {
+			continue
+		}
+		rsp = x
+	}
+
+	if rsp == nil {
 		return nil, common.NewError("http_request_failed", "Request failed with status not 200")
 	}
 
@@ -649,6 +661,7 @@ func GetBlockByRound(ctx context.Context, numSharders int, round int64) (b *bloc
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
+	numSharders = len(_config.chain.Sharders) // overwrite, use all
 	queryFromShardersContext(ctx, numSharders,
 		fmt.Sprintf("%sround=%d&content=full,header", GET_BLOCK_INFO, round),
 		result)
@@ -716,6 +729,7 @@ func GetMagicBlockByNumber(ctx context.Context, numSharders int, number int64) (
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
+	numSharders = len(_config.chain.Sharders) // overwrite, use all
 	queryFromShardersContext(ctx, numSharders,
 		fmt.Sprintf("%smagic_block_number=%d", GET_MAGIC_BLOCK_INFO, number),
 		result)
@@ -763,6 +777,7 @@ func GetMagicBlockByNumber(ctx context.Context, numSharders int, number int64) (
 func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHeader, error) {
 	result := make(chan *util.GetResponse)
 	defer close(result)
+	numSharders = len(_config.chain.Sharders) // overwrite, use all
 	queryFromSharders(numSharders, fmt.Sprintf("%vround=%v&content=%v", GET_BLOCK_INFO, round, content), result)
 	maxConsensus := int(0)
 	roundConsensus := make(map[string]int)
