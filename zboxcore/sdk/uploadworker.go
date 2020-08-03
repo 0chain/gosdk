@@ -30,6 +30,10 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
+func isSetTestEnv(name string) bool {
+	return os.Getenv("INTEGRATION_TESTS_"+name) != ""
+}
+
 // Expected success rate is calculated (NumDataShards)*100/(NumDataShards+NumParityShards)
 // Additional success percentage on top of expected success rate
 const additionalSuccessRate = (10)
@@ -123,7 +127,11 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 		fileMerkleRoot := ""
 		fileContentHash := ""
 		thumbContentHash := ""
-		fileField, err := formWriter.CreateFormFile("uploadFile", file.Name)
+		var (
+			fileField io.Writer
+			err       error
+		)
+		fileField, err = formWriter.CreateFormFile("uploadFile", file.Name)
 		if err != nil {
 			Logger.Error("Create form failed: ", err)
 			bodyWriter.CloseWithError(err)

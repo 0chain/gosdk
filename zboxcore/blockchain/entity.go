@@ -1,6 +1,9 @@
 package blockchain
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"sync/atomic"
+)
 
 type ChainConfig struct {
 	BlockWorker       string
@@ -17,6 +20,20 @@ type ChainConfig struct {
 type StorageNode struct {
 	ID      string `json:"id"`
 	Baseurl string `json:"url"`
+
+	skip uint64 `json:"-"` // skip on error
+}
+
+func (sn *StorageNode) SetSkip(t bool) {
+	var val uint64
+	if t {
+		val = 1
+	}
+	atomic.StoreUint64(&sn.skip, val)
+}
+
+func (sn *StorageNode) IsSkip() bool {
+	return atomic.LoadUint64(&sn.skip) > 0
 }
 
 func PopulateNodes(nodesjson string) ([]string, error) {

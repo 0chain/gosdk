@@ -101,7 +101,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64) ([]byte, error) {
 	for i := 0; i < numDownloads; i++ {
 		result := <-rspCh
 		if !result.Success {
-			Logger.Error("Download block : ", req.blobbers[result.idx].Baseurl, result.err)
+			Logger.Error("Download block : ", req.blobbers[result.idx].Baseurl, " ", result.err)
 		} else {
 			blockSuccess := false
 			for blockNum := 0; blockNum < len(result.BlockChunks); blockNum++ {

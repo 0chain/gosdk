@@ -10,6 +10,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
@@ -29,22 +30,85 @@ const consensusThresh = float32(25.0)
 
 type SCRestAPIHandler func(response map[string][]byte, numSharders int, err error)
 
-const UPLOAD_ENDPOINT = "/v1/file/upload/"
-const RENAME_ENDPOINT = "/v1/file/rename/"
-const COPY_ENDPOINT = "/v1/file/copy/"
-const LIST_ENDPOINT = "/v1/file/list/"
-const REFERENCE_ENDPOINT = "/v1/file/referencepath/"
-const CONNECTION_ENDPOINT = "/v1/connection/details/"
-const COMMIT_ENDPOINT = "/v1/connection/commit/"
-const DOWNLOAD_ENDPOINT = "/v1/file/download/"
-const LATEST_READ_MARKER = "/v1/readmarker/latest"
-const FILE_META_ENDPOINT = "/v1/file/meta/"
-const FILE_STATS_ENDPOINT = "/v1/file/stats/"
-const OBJECT_TREE_ENDPOINT = "/v1/file/objecttree/"
-const COMMIT_META_TXN_ENDPOINT = "/v1/file/commitmetatxn/"
+const (
+	UPLOAD_ENDPOINT          = "/v1/file/upload/"
+	RENAME_ENDPOINT          = "/v1/file/rename/"
+	COPY_ENDPOINT            = "/v1/file/copy/"
+	LIST_ENDPOINT            = "/v1/file/list/"
+	REFERENCE_ENDPOINT       = "/v1/file/referencepath/"
+	CONNECTION_ENDPOINT      = "/v1/connection/details/"
+	COMMIT_ENDPOINT          = "/v1/connection/commit/"
+	DOWNLOAD_ENDPOINT        = "/v1/file/download/"
+	LATEST_READ_MARKER       = "/v1/readmarker/latest"
+	FILE_META_ENDPOINT       = "/v1/file/meta/"
+	FILE_STATS_ENDPOINT      = "/v1/file/stats/"
+	OBJECT_TREE_ENDPOINT     = "/v1/file/objecttree/"
+	COMMIT_META_TXN_ENDPOINT = "/v1/file/commitmetatxn/"
+)
+
+func getEnvAny(names ...string) string {
+	for _, n := range names {
+		if val := os.Getenv(n); val != "" {
+			return val
+		}
+	}
+	return ""
+}
+
+type proxyFromEnv struct {
+	HTTPProxy  string
+	HTTPSProxy string
+	NoProxy    string
+
+	http, https *url.URL
+}
+
+func (pfe *proxyFromEnv) initialize() {
+	pfe.HTTPProxy = getEnvAny("HTTP_PROXY", "http_proxy")
+	pfe.HTTPSProxy = getEnvAny("HTTPS_PROXY", "https_proxy")
+	pfe.NoProxy = getEnvAny("NO_PROXY", "no_proxy")
+
+	if pfe.NoProxy != "" {
+		return
+	}
+
+	if pfe.HTTPProxy != "" {
+		pfe.http, _ = url.Parse(pfe.HTTPProxy)
+	}
+	if pfe.HTTPSProxy != "" {
+		pfe.https, _ = url.Parse(pfe.HTTPSProxy)
+	}
+}
+
+func (pfe *proxyFromEnv) isLoopback(host string) (ok bool) {
+	host, _, _ = net.SplitHostPort(host)
+	if host == "localhost" {
+		return true
+	}
+	return net.ParseIP(host).IsLoopback()
+}
+
+func (pfe *proxyFromEnv) Proxy(req *http.Request) (proxy *url.URL, err error) {
+	if pfe.isLoopback(req.URL.Host) {
+		switch req.URL.Scheme {
+		case "http":
+			return pfe.http, nil
+		case "https":
+			return pfe.https, nil
+		default:
+		}
+	}
+	return http.ProxyFromEnvironment(req)
+}
+
+var envProxy proxyFromEnv
+
+func init() {
+	envProxy.initialize()
+}
 
 var transport = &http.Transport{
-	Proxy: http.ProxyFromEnvironment,
+	Proxy: envProxy.Proxy,
 	DialContext: (&net.Dialer{
 		Timeout:   45 * time.Second,
 		KeepAlive: 45 * time.Second,

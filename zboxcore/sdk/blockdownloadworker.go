@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -123,6 +124,13 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 	}
 	retry := 0
 	for retry < 3 {
+
+		if req.blobber.IsSkip() {
+			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx,
+				err: fmt.Errorf("skip blobber by previous errors")}
+			return
+		}
+
 		rm := &marker.ReadMarker{}
 		rm.ClientID = client.GetClientID()
 		rm.ClientPublicKey = client.GetClientPublicKey()
@@ -224,6 +232,10 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					return err
 				}
 				err = fmt.Errorf("Response Error: %s", string(resp_body))
+				if strings.Contains(err.Error(), "not_enough_tokens") {
+					shouldRetry, retry = false, 3 // don't repeat
+					req.blobber.SetSkip(true)
+				}
 				return err
 			}
 			return nil
