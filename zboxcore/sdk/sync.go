@@ -60,7 +60,7 @@ func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]fil
 	return childDirList, nil
 }
 
-func (a *Allocation) getRemoteFileMap(exclMap map[string]int) (map[string]fileInfo, error) {
+func (a *Allocation) GetRemoteFileMap(exclMap map[string]int) (map[string]fileInfo, error) {
 	// 1. Iteratively get dir and files seperately till no more dirs left
 	remoteList := make(map[string]fileInfo)
 	dirs := []string{"/"}
@@ -291,7 +291,7 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath s
 	exclMap := getRemoteExcludeMap(remoteExcludePath)
 
 	// 3. Get flat file list from remote
-	remoteFileMap, err := a.getRemoteFileMap(exclMap)
+	remoteFileMap, err := a.GetRemoteFileMap(exclMap)
 	if err != nil {
 		return lFdiff, fmt.Errorf("error getting list dir from remote. %v", err)
 	}
@@ -324,7 +324,7 @@ func (a *Allocation) SaveRemoteSnapshot(pathToSave string, remoteExcludePath []s
 
 	// Get flat file list from remote
 	exclMap := getRemoteExcludeMap(remoteExcludePath)
-	remoteFileList, err := a.getRemoteFileMap(exclMap)
+	remoteFileList, err := a.GetRemoteFileMap(exclMap)
 	if err != nil {
 		return fmt.Errorf("error getting list dir from remote. %v", err)
 	}
