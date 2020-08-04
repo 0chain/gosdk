@@ -2,6 +2,7 @@ package zcncore
 
 import (
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math"
@@ -17,6 +18,7 @@ import (
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type ChainConfig struct {
@@ -1114,4 +1116,24 @@ func GetWritePoolInfo(clientID string, cb GetInfoCallback) (err error) {
 	})
 	go getInfoFromSharders(url, OpStorageSCGetWritePoolInfo, cb)
 	return
+}
+
+func Encrypt(key, text string) (string, error) {
+	keyBytes := []byte(key)
+	textBytes := []byte(text)
+	response, err := zboxutil.Encrypt(keyBytes, textBytes)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(response), nil
+}
+
+func Decrypt(key, text string) (string, error) {
+	keyBytes := []byte(key)
+	textBytes, _ := hex.DecodeString(text)
+	response, err := zboxutil.Decrypt(keyBytes, textBytes)
+	if err != nil {
+		return "", err
+	}
+	return string(response), nil
 }
