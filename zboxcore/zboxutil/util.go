@@ -120,7 +120,7 @@ func RemoteClean(path string) string {
 	}
 	for r < n {
 		switch {
-		case path[r] == '/': //os.IsPathSeparator(path[r]):
+		case path[r] == '/' || path[r] == '\\': //os.IsPathSeparator(path[r]):
 			// empty path element
 			r++
 		case path[r] == '.' && (r+1 == n || path[r+1] == '/'): //os.IsPathSeparator(path[r+1])):
@@ -152,7 +152,7 @@ func RemoteClean(path string) string {
 				out.append('/') //(Separator)
 			}
 			// copy element
-			for ; r < n && !(path[r] == '/'); r++ { //!os.IsPathSeparator(path[r]); r++ {
+			for ; r < n && !(path[r] == '/' || path[r] == '\\'); r++ { //!os.IsPathSeparator(path[r]); r++ {
 				out.append(path[r])
 			}
 		}
