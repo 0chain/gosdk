@@ -935,7 +935,7 @@ type MinerSCDelegatePoolInfo struct {
 }
 
 type MinerSCUserPoolsInfo struct {
-	Pools map[string][]*MinerSCDelegatePoolInfo `json:"pools"`
+	Pools map[string]map[string][]*MinerSCDelegatePoolInfo `json:"pools"`
 }
 
 func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error) {
