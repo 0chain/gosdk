@@ -155,6 +155,13 @@ func (commitreq *CommitRequest) processCommit() {
 		rootRef.CalculateHash()
 		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
+			err = commitreq.calculateHashRequest(ctx, paths)
+			if err != nil {
+				commitreq.result = ErrorCommitResult("Failed to call blobber to recalculate the hash. URL: " + commitreq.blobber.Baseurl + ", Err : " + err.Error())
+				commitreq.wg.Done()
+				return
+			}
+			Logger.Info("Recalculate hash call to blobber successfull")
 			commitreq.result = ErrorCommitResult("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
 			commitreq.wg.Done()
 			return
@@ -256,4 +263,34 @@ func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.W
 
 func AddCommitRequest(req *CommitRequest) {
 	commitChan[req.blobber.ID] <- req
+}
+
+func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths []string) error {
+	var req *http.Request
+	req, err := zboxutil.NewCalculateHashRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
+	if err != nil || len(paths) == 0 {
+		Logger.Error("Creating calculate hash req", err)
+		return err
+	}
+	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
+	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
+		if err != nil {
+			Logger.Error("Calculate hash error:", err)
+			return err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			Logger.Error("Calculate hash response : ", resp.StatusCode)
+		}
+		resp_body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			Logger.Error("Calculate hash: Resp", err)
+			return err
+		}
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("Calculate hash error response: Status: %d - %s ", resp.StatusCode, string(resp_body))
+		}
+		return nil
+	})
+	return err
 }

@@ -44,6 +44,7 @@ const (
 	FILE_STATS_ENDPOINT      = "/v1/file/stats/"
 	OBJECT_TREE_ENDPOINT     = "/v1/file/objecttree/"
 	COMMIT_META_TXN_ENDPOINT = "/v1/file/commitmetatxn/"
+	CALCULATE_HASH_ENDPOINT  = "/v1/file/calculatehash/"
 )
 
 func getEnvAny(names ...string) string {
@@ -158,6 +159,23 @@ func NewReferencePathRequest(baseUrl, allocation string, paths []string) (*http.
 	//url := fmt.Sprintf("%s%s%s?path=%s", baseUrl, LIST_ENDPOINT, allocation, path)
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)
+	return setClientInfo(req, err)
+}
+
+func NewCalculateHashRequest(baseUrl, allocation string, paths []string) (*http.Request, error) {
+	nurl, err := url.Parse(baseUrl)
+	if err != nil {
+		return nil, err
+	}
+	nurl.Path += CALCULATE_HASH_ENDPOINT + allocation
+	pathBytes, err := json.Marshal(paths)
+	if err != nil {
+		return nil, err
+	}
+	params := url.Values{}
+	params.Add("paths", string(pathBytes))
+	nurl.RawQuery = params.Encode() // Escape Query Parameters
+	req, err := http.NewRequest(http.MethodPost, nurl.String(), nil)
 	return setClientInfo(req, err)
 }
 
