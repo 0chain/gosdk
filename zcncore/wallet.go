@@ -37,6 +37,7 @@ var Logger logger.Logger
 
 const (
 	REGISTER_CLIENT                  = `/v1/client/put`
+	GET_CLIENT                       = `/v1/client/get`
 	PUT_TRANSACTION                  = `/v1/transaction/put`
 	TXN_VERIFY_URL                   = `/v1/transaction/get/confirmation?hash=`
 	GET_BALANCE                      = `/v1/client/get/balance?client_id=`
@@ -488,9 +489,39 @@ func RegisterToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 	if err != nil {
 		return fmt.Errorf("wallet encoding failed - %s", err.Error())
 	}
-	time.Sleep(3 * time.Second)
 	statusCb.OnWalletCreateComplete(StatusSuccess, w, "")
 	return nil
+}
+
+type GetClientResponse struct {
+	ID           string `json:"id"`
+	Version      string `json:"version"`
+	CreationDate int    `json:"creation_date"`
+	PublicKey    string `json:"public_key"`
+}
+
+func GetClientDetails(clientID string) (*GetClientResponse, error) {
+	minerurl := util.GetRandom(_config.chain.Miners, 1)[0]
+	url := minerurl + GET_CLIENT
+	url = fmt.Sprintf("%v?id=%v", url, clientID)
+	req, err := util.NewHTTPGetRequest(url)
+	if err != nil {
+		Logger.Error(minerurl, "new get request failed. ", err.Error())
+		return nil, err
+	}
+	res, err := req.Get()
+	if err != nil {
+		Logger.Error(minerurl, "send error. ", err.Error())
+		return nil, err
+	}
+
+	var clientDetails GetClientResponse
+	err = json.Unmarshal([]byte(res.Body), &clientDetails)
+	if err != nil {
+		return nil, err
+	}
+
+	return &clientDetails, nil
 }
 
 // IsMnemonicValid is an utility function to check the mnemonic valid

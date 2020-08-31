@@ -155,16 +155,18 @@ func (commitreq *CommitRequest) processCommit() {
 		rootRef.CalculateHash()
 		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
-			err = commitreq.calculateHashRequest(ctx, paths)
-			if err != nil {
-				commitreq.result = ErrorCommitResult("Failed to call blobber to recalculate the hash. URL: " + commitreq.blobber.Baseurl + ", Err : " + err.Error())
-				commitreq.wg.Done()
-				return
-			}
-			Logger.Info("Recalculate hash call to blobber successfull")
-			commitreq.result = ErrorCommitResult("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
-			commitreq.wg.Done()
-			return
+			// Removing this check for testing purpose as per the convo with Saswata
+			Logger.Info("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
+			// err = commitreq.calculateHashRequest(ctx, paths)
+			// if err != nil {
+			// 	commitreq.result = ErrorCommitResult("Failed to call blobber to recalculate the hash. URL: " + commitreq.blobber.Baseurl + ", Err : " + err.Error())
+			// 	commitreq.wg.Done()
+			// 	return
+			// }
+			// Logger.Info("Recalculate hash call to blobber successfull")
+			// commitreq.result = ErrorCommitResult("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
+			// commitreq.wg.Done()
+			// return
 		}
 	}
 	if err != nil {
