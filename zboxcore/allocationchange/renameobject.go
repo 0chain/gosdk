@@ -5,6 +5,7 @@ import (
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type RenameFileChange struct {
@@ -55,9 +56,9 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	}
 
 	path, _ = filepath.Split(affectedRef.Path)
-	path = filepath.Clean(path)
+	path = zboxutil.RemoteClean(path)
 	affectedRef.Name = ch.NewName
-	affectedRef.Path = filepath.Join(path, ch.NewName)
+	affectedRef.Path = zboxutil.Join(path, ch.NewName)
 
 	// Logger.Info("Changed name: " + dirRef.Children[idx].GetName())
 

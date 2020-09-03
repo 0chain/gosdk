@@ -5,6 +5,7 @@ import (
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type CopyFileChange struct {
@@ -58,7 +59,7 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		affectedRef = ch.ObjectTree.(*fileref.Ref)
 	}
 
-	affectedRef.Path = filepath.Join(foundRef.GetPath(), affectedRef.Name)
+	affectedRef.Path = zboxutil.Join(foundRef.GetPath(), affectedRef.Name)
 	ch.processChildren(affectedRef)
 
 	destRef := foundRef.(*fileref.Ref)
@@ -76,7 +77,7 @@ func (ch *CopyFileChange) processChildren(curRef *fileref.Ref) {
 		} else {
 			childRef = childRefEntity.(*fileref.Ref)
 		}
-		childRef.Path = filepath.Join(curRef.Path, childRef.Name)
+		childRef.Path = zboxutil.Join(curRef.Path, childRef.Name)
 		if childRefEntity.GetType() == fileref.DIRECTORY {
 			ch.processChildren(childRef)
 		}
