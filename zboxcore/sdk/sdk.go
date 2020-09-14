@@ -122,7 +122,7 @@ func CreateReadPool() (err error) {
 	if !sdkInitialized {
 		return sdkNotInitialized
 	}
-	_, err = smartContractTxn(transaction.SmartContractTxnData{
+	_, _, err = smartContractTxn(transaction.SmartContractTxnData{
 		Name: transaction.STORAGESC_CREATE_READ_POOL,
 	})
 	return
@@ -218,7 +218,7 @@ func ReadPoolLock(dur time.Duration, allocID, blobberID string,
 		Name:      transaction.STORAGESC_READ_POOL_LOCK,
 		InputArgs: &req,
 	}
-	_, err = smartContractTxnValueFee(sn, tokens, fee)
+	_, _, err = smartContractTxnValueFee(sn, tokens, fee)
 	return
 }
 
@@ -239,7 +239,7 @@ func ReadPoolUnlock(poolID string, fee int64) (err error) {
 		Name:      transaction.STORAGESC_READ_POOL_UNLOCK,
 		InputArgs: &req,
 	}
-	_, err = smartContractTxnValueFee(sn, 0, fee)
+	_, _, err = smartContractTxnValueFee(sn, 0, fee)
 	return
 }
 
@@ -271,6 +271,9 @@ type StakePoolDelegatePoolInfo struct {
 	Interests        common.Balance `json:"interests"`         // total for all time
 	Penalty          common.Balance `json:"penalty"`           // total for all time
 	PendingInterests common.Balance `json:"pending_interests"` // total for all time
+	// Unstake > 0, then the pool wants to unstake. And the Unstake is maximal
+	// time it can't be unstaked.
+	Unstake common.Timestamp `json:"unstake"`
 }
 
 // StakePoolSettings information.
@@ -291,6 +294,7 @@ type StakePoolSettings struct {
 type StakePoolInfo struct {
 	ID      common.Key     `json:"pool_id"` // blobber ID
 	Balance common.Balance `json:"balance"` // total stake
+	Unstake common.Balance `json:"unstake"` // total unstake amount
 
 	Free       common.Size    `json:"free"`        // free staked space
 	Capacity   common.Size    `json:"capacity"`    // blobber bid
@@ -389,14 +393,29 @@ func StakePoolLock(blobberID string, value, fee int64) (poolID string, err error
 		Name:      transaction.STORAGESC_STAKE_POOL_LOCK,
 		InputArgs: &spr,
 	}
-	poolID, err = smartContractTxnValueFee(sn, value, fee)
+	poolID, _, err = smartContractTxnValueFee(sn, value, fee)
 	return
 }
 
-// StakePoolUnlock unlocks a stake pool excess tokens.
-func StakePoolUnlock(blobberID, poolID string, fee int64) (err error) {
+// StakePoolUnlockUnstake is stake pool unlock response in case where tokens
+// can't be unlocked due to opened offers. In this case it returns the maximal
+// time to wait to be able to unlock the tokens. The real time can be lesser if
+// someone cancels an allocation, or someone else stake more tokens, etc.
+type StakePoolUnlockUnstake struct {
+	Unstake common.Timestamp `json:"unstake"`
+}
+
+// StakePoolUnlock unlocks a stake pool tokens. If tokens can't be unlocked due
+// to opened offers, then it returns time where the tokens can be unlocked,
+// marking the pool as 'want to unlock' to avoid its usage in offers in the
+// future. The time is maximal time that can be lesser in some cases. To
+// unlock tokens can't be unlocked now, wait the time and unlock them (call
+// this function again).
+func StakePoolUnlock(blobberID, poolID string, fee int64) (
+	unstake common.Timestamp, err error) {
+
 	if !sdkInitialized {
-		return sdkNotInitialized
+		return 0, sdkNotInitialized
 	}
 	if blobberID == "" {
 		blobberID = client.GetClientID()
@@ -410,8 +429,18 @@ func StakePoolUnlock(blobberID, poolID string, fee int64) (err error) {
 		Name:      transaction.STORAGESC_STAKE_POOL_UNLOCK,
 		InputArgs: &spr,
 	}
-	_, err = smartContractTxnValueFee(sn, 0, fee)
-	return
+
+	var out string
+	if _, out, err = smartContractTxnValueFee(sn, 0, fee); err != nil {
+		return // an error
+	}
+
+	var spuu StakePoolUnlockUnstake
+	if err = json.Unmarshal([]byte(out), &spuu); err != nil {
+		return
+	}
+
+	return spuu.Unstake, nil
 }
 
 // StakePoolPayInterests unlocks a stake pool rewards.
@@ -430,7 +459,7 @@ func StakePoolPayInterests(bloberID string) (err error) {
 		Name:      transaction.STORAGESC_STAKE_POOL_PAY_INTERESTS,
 		InputArgs: &spr,
 	}
-	_, err = smartContractTxnValueFee(sn, 0, 0)
+	_, _, err = smartContractTxnValueFee(sn, 0, 0)
 	return
 }
 
@@ -488,7 +517,7 @@ func WritePoolLock(dur time.Duration, allocID, blobberID string,
 		Name:      transaction.STORAGESC_WRITE_POOL_LOCK,
 		InputArgs: &req,
 	}
-	_, err = smartContractTxnValueFee(sn, tokens, fee)
+	_, _, err = smartContractTxnValueFee(sn, tokens, fee)
 	return
 }
 
@@ -509,7 +538,7 @@ func WritePoolUnlock(poolID string, fee int64) (err error) {
 		Name:      transaction.STORAGESC_WRITE_POOL_UNLOCK,
 		InputArgs: &req,
 	}
-	_, err = smartContractTxnValueFee(sn, 0, fee)
+	_, _, err = smartContractTxnValueFee(sn, 0, fee)
 	return
 }
 
@@ -780,10 +809,9 @@ func CreateAllocation(datashards, parityshards int, size, expiry int64,
 }
 
 func CreateAllocationForOwner(owner, ownerpublickey string,
-	datashards, parityshards int,
-	size, expiry int64, readPrice, writePrice PriceRange,
-	mcct time.Duration,
-	lock int64, preferredBlobbers []string) (string, error) {
+	datashards, parityshards int, size, expiry int64,
+	readPrice, writePrice PriceRange, mcct time.Duration,
+	lock int64, preferredBlobbers []string) (hash string, err error) {
 
 	if !sdkInitialized {
 		return "", sdkNotInitialized
@@ -806,10 +834,13 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 		Name:      transaction.NEW_ALLOCATION_REQUEST,
 		InputArgs: allocationRequest,
 	}
-	return smartContractTxnValue(sn, lock)
+	hash, _, err = smartContractTxnValue(sn, lock)
+	return
 }
 
-func UpdateAllocation(size int64, expiry int64, allocationID string, lock int64) (string, error) {
+func UpdateAllocation(size int64, expiry int64, allocationID string,
+	lock int64) (hash string, err error) {
+
 	if !sdkInitialized {
 		return "", sdkNotInitialized
 	}
@@ -824,10 +855,11 @@ func UpdateAllocation(size int64, expiry int64, allocationID string, lock int64)
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
 		InputArgs: updateAllocationRequest,
 	}
-	return smartContractTxnValue(sn, lock)
+	hash, _, err = smartContractTxnValue(sn, lock)
+	return
 }
 
-func FinalizeAllocation(allocID string) (string, error) {
+func FinalizeAllocation(allocID string) (hash string, err error) {
 	if !sdkInitialized {
 		return "", sdkNotInitialized
 	}
@@ -835,10 +867,11 @@ func FinalizeAllocation(allocID string) (string, error) {
 		Name:      transaction.STORAGESC_FINALIZE_ALLOCATION,
 		InputArgs: map[string]interface{}{"allocation_id": allocID},
 	}
-	return smartContractTxn(sn)
+	hash, _, err = smartContractTxn(sn)
+	return
 }
 
-func CancelAlloctioan(allocID string) (string, error) {
+func CancelAlloctioan(allocID string) (hash string, err error) {
 	if !sdkInitialized {
 		return "", sdkNotInitialized
 	}
@@ -846,7 +879,8 @@ func CancelAlloctioan(allocID string) (string, error) {
 		Name:      transaction.STORAGESC_FINALIZE_ALLOCATION,
 		InputArgs: map[string]interface{}{"allocation_id": allocID},
 	}
-	return smartContractTxn(sn)
+	hash, _, err = smartContractTxn(sn)
+	return
 }
 
 func UpdateBlobberSettings(blob *Blobber) (resp string, err error) {
@@ -857,37 +891,52 @@ func UpdateBlobberSettings(blob *Blobber) (resp string, err error) {
 		Name:      transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS,
 		InputArgs: blob,
 	}
-	return smartContractTxn(sn)
+	resp, _, err = smartContractTxn(sn)
+	return
 }
 
-func smartContractTxn(sn transaction.SmartContractTxnData) (string, error) {
+func smartContractTxn(sn transaction.SmartContractTxnData) (
+	hash, out string, err error) {
+
 	return smartContractTxnValue(sn, 0)
 }
 
-func smartContractTxnValue(sn transaction.SmartContractTxnData, value int64) (string, error) {
+func smartContractTxnValue(sn transaction.SmartContractTxnData, value int64) (
+	hash, out string, err error) {
+
 	return smartContractTxnValueFee(sn, value, 0)
 }
 
-func smartContractTxnValueFee(sn transaction.SmartContractTxnData, value, fee int64) (string, error) {
-	requestBytes, err := json.Marshal(sn)
-	if err != nil {
-		return "", err
+func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
+	value, fee int64) (hash, out string, err error) {
+
+	var requestBytes []byte
+	if requestBytes, err = json.Marshal(sn); err != nil {
+		return
 	}
-	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey())
+
+	var txn = transaction.NewTransactionEntity(client.GetClientID(),
+		blockchain.GetChainID(), client.GetClientPublicKey())
+
 	txn.TransactionData = string(requestBytes)
 	txn.ToClientID = STORAGE_SCADDRESS
 	txn.Value = value
 	txn.TransactionFee = fee
 	txn.TransactionType = transaction.TxnTypeSmartContract
-	err = txn.ComputeHashAndSign(client.Sign)
-	if err != nil {
-		return "", err
+
+	if err = txn.ComputeHashAndSign(client.Sign); err != nil {
+		return
 	}
+
 	transaction.SendTransactionSync(txn, blockchain.GetMiners())
-	querySleepTime := time.Duration(blockchain.GetQuerySleepTime()) * time.Second
+
+	var (
+		querySleepTime = time.Duration(blockchain.GetQuerySleepTime()) * time.Second
+		retries        = 0
+		t              *transaction.Transaction
+	)
 	time.Sleep(querySleepTime)
-	retries := 0
-	var t *transaction.Transaction
+
 	for retries < blockchain.GetMaxTxnQuery() {
 		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders())
 		if err == nil {
@@ -899,13 +948,15 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData, value, fee in
 
 	if err != nil {
 		Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
-		return "", err
-	}
-	if t == nil {
-		return "", common.NewError("transaction_validation_failed", "Failed to get the transaction confirmation")
+		return
 	}
 
-	return t.Hash, nil
+	if t == nil {
+		return "", "", common.NewError("transaction_validation_failed",
+			"Failed to get the transaction confirmation")
+	}
+
+	return t.Hash, t.TransactionOutput, nil
 }
 
 func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
