@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -53,4 +54,46 @@ func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx st
 	}
 
 	return lR.GetRefFromObjectTree(allocationID)
+}
+
+func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationTx string, respCh chan<- *BlobberAllocationStats, wg *sync.WaitGroup) {
+	defer wg.Done()
+	httpreq, err := zboxutil.NewAllocationRequest(blobber.Baseurl, allocationTx)
+	if err != nil {
+		Logger.Error(blobber.Baseurl, "Error creating allocation request", err)
+		return
+	}
+
+	var result BlobberAllocationStats
+	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
+	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
+		if err != nil {
+			Logger.Error("Get allocation :", err)
+			return err
+		}
+		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			Logger.Error("Get allocation response : ", resp.StatusCode)
+		}
+		resp_body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			Logger.Error("Get allocation: Resp", err)
+			return err
+		}
+
+		err = json.Unmarshal(resp_body, &result)
+		if err != nil {
+			Logger.Error("Object tree json decode error: ", err)
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return
+	}
+
+	result.BlobberID = blobber.ID
+	result.BlobberURL = blobber.Baseurl
+	respCh <- &result
+	return
 }

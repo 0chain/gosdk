@@ -32,6 +32,33 @@ var (
 	notInitialized = common.NewError("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 )
 
+type BlobberAllocationStats struct {
+	BlobberID        string
+	BlobberURL       string
+	ID               string `json:"ID"`
+	Tx               string `json:"Tx"`
+	TotalSize        int64  `json:"TotalSize"`
+	UsedSize         int    `json:"UsedSize"`
+	OwnerID          string `json:"OwnerID"`
+	OwnerPublicKey   string `json:"OwnerPublicKey"`
+	Expiration       int    `json:"Expiration"`
+	AllocationRoot   string `json:"AllocationRoot"`
+	BlobberSize      int    `json:"BlobberSize"`
+	BlobberSizeUsed  int    `json:"BlobberSizeUsed"`
+	LatestRedeemedWM string `json:"LatestRedeemedWM"`
+	IsRedeemRequired bool   `json:"IsRedeemRequired"`
+	CleanedUp        bool   `json:"CleanedUp"`
+	Finalized        bool   `json:"Finalized"`
+	Terms            []struct {
+		ID           int    `json:"ID"`
+		BlobberID    string `json:"BlobberID"`
+		AllocationID string `json:"AllocationID"`
+		ReadPrice    int    `json:"ReadPrice"`
+		WritePrice   int    `json:"WritePrice"`
+	} `json:"Terms"`
+	PayerID string `json:"PayerID"`
+}
+
 type ConsolidatedFileMeta struct {
 	Name           string
 	Type           string
@@ -135,6 +162,23 @@ type Allocation struct {
 
 func (a *Allocation) GetStats() *AllocationStats {
 	return a.Stats
+}
+
+func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
+	numList := len(a.Blobbers)
+	wg := &sync.WaitGroup{}
+	wg.Add(numList)
+	rspCh := make(chan *BlobberAllocationStats, numList)
+	for _, blobber := range a.Blobbers {
+		go getAllocationDataFromBlobber(blobber, a.Tx, rspCh, wg)
+	}
+	wg.Wait()
+	result := make(map[string]*BlobberAllocationStats, len(a.Blobbers))
+	for i := 0; i < numList; i++ {
+		resp := <-rspCh
+		result[resp.BlobberURL] = resp
+	}
+	return result
 }
 
 func (a *Allocation) InitAllocation() {

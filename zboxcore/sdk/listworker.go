@@ -117,7 +117,6 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 		} else {
 			return fmt.Errorf("error from server list response: %s", s.String())
 		}
-		return err
 	})
 }
 

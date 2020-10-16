@@ -31,6 +31,7 @@ const consensusThresh = float32(25.0)
 type SCRestAPIHandler func(response map[string][]byte, numSharders int, err error)
 
 const (
+	ALLOCATION_ENDPOINT      = "/allocation"
 	UPLOAD_ENDPOINT          = "/v1/file/upload/"
 	RENAME_ENDPOINT          = "/v1/file/rename/"
 	COPY_ENDPOINT            = "/v1/file/copy/"
@@ -188,6 +189,19 @@ func NewObjectTreeRequest(baseUrl, allocation string, path string) (*http.Reques
 	params := url.Values{}
 	params.Add("path", path)
 	//url := fmt.Sprintf("%s%s%s?path=%s", baseUrl, LIST_ENDPOINT, allocation, path)
+	nurl.RawQuery = params.Encode() // Escape Query Parameters
+	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)
+	return setClientInfo(req, err)
+}
+
+func NewAllocationRequest(baseUrl, allocation string) (*http.Request, error) {
+	nurl, err := url.Parse(baseUrl)
+	if err != nil {
+		return nil, err
+	}
+	nurl.Path += ALLOCATION_ENDPOINT
+	params := url.Values{}
+	params.Add("id", allocation)
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)
 	return setClientInfo(req, err)
