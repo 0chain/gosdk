@@ -269,8 +269,8 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	}
 
-	// Only check hash when the download reques is not by block/partial.
-	if req.endBlock == chunksPerShard {
+	// Only check hash when the download request is not by block/partial.
+	if req.endBlock == chunksPerShard && req.startBlock == 0 {
 		calcHash := hex.EncodeToString(fH.Sum(nil))
 		expectedHash := fileRef.ActualFileHash
 		if req.contentMode == DOWNLOAD_CONTENT_THUMB {
