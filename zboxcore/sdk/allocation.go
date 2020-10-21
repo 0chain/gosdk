@@ -128,6 +128,7 @@ type Allocation struct {
 	Payer          string                    `json:"payer_id"`
 	Blobbers       []*blockchain.StorageNode `json:"blobbers"`
 	Stats          *AllocationStats          `json:"stats"`
+	TimeUnit       time.Duration             `json:"time_unit"`
 
 	// BlobberDetails contains real terms used for the allocation.
 	// If the allocation has updated, then terms calculated using

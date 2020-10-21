@@ -626,6 +626,7 @@ type StorageSCConfig struct {
 	ChallengeGenerationRate         float64                 `json:"challenge_rate_per_mb_min"`
 	MaxDelegates                    int                     `json:"max_delegates"`
 	MaxCharge                       float64                 `json:"max_charge"`
+	TimeUnit                        time.Duration           `json:"time_unit"`
 }
 
 func GetStorageSCConfig() (conf *StorageSCConfig, err error) {
