@@ -782,14 +782,19 @@ func (a *Allocation) CancelDownload(remotepath string) error {
 }
 
 func (a *Allocation) DownloadThumbnailFromAuthTicket(localPath string, authTicket string, remoteLookupHash string, remoteFilename string, status StatusCallback) error {
-	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, DOWNLOAD_CONTENT_THUMB, status)
+	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash, 1, 0, numBlockDownloads, remoteFilename, DOWNLOAD_CONTENT_THUMB, status)
 }
 
 func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string, remoteLookupHash string, remoteFilename string, status StatusCallback) error {
-	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, DOWNLOAD_CONTENT_FULL, status)
+	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash, 1, 0, numBlockDownloads, remoteFilename, DOWNLOAD_CONTENT_FULL, status)
 }
 
-func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string, remoteLookupHash string, remoteFilename string, contentMode string, status StatusCallback) error {
+func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string, authTicket string, startBlock int64, endBlock int64, numBlocks int, remoteLookupHash string, remoteFilename string, status StatusCallback) error {
+	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash, startBlock, endBlock, numBlocks, remoteFilename, DOWNLOAD_CONTENT_FULL, status)
+}
+
+func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string, remoteLookupHash string,
+	startBlock int64, endBlock int64, numBlocks int, remoteFilename string, contentMode string, status StatusCallback) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
@@ -830,8 +835,9 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.datashards = a.DataShards
 	downloadReq.parityshards = a.ParityShards
 	downloadReq.contentMode = contentMode
-	downloadReq.startBlock = 0
-	downloadReq.numBlocks = int64(numBlockDownloads)
+	downloadReq.startBlock = startBlock - 1
+	downloadReq.endBlock = endBlock
+	downloadReq.numBlocks = int64(numBlocks)
 	downloadReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	downloadReq.fullconsensus = float32(a.DataShards + a.ParityShards)
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {
