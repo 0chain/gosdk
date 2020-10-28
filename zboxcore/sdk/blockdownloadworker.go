@@ -32,6 +32,7 @@ type BlockDownloadRequest struct {
 	encryptedKey       string
 	contentMode        string
 	numBlocks          int64
+	rxPay              bool
 	authTicket         *marker.AuthTicket
 	wg                 *sync.WaitGroup
 	ctx                context.Context
@@ -155,6 +156,10 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 		}
 		formWriter.WriteField("path_hash", req.remotefilepathhash)
+
+		if req.rxPay {
+			formWriter.WriteField("rx_pay", "true") // pay oneself
+		}
 
 		formWriter.WriteField("block_num", fmt.Sprintf("%d", req.blockNum))
 		formWriter.WriteField("num_blocks", fmt.Sprintf("%d", req.numBlocks))

@@ -40,6 +40,7 @@ type DownloadRequest struct {
 	startBlock         int64
 	endBlock           int64
 	numBlocks          int64
+	rxPay              bool
 	statusCallback     StatusCallback
 	ctx                context.Context
 	authTicket         *marker.AuthTicket
@@ -76,6 +77,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64) ([]byte, error) {
 		blockDownloadReq.remotefilepath = req.remotefilepath
 		blockDownloadReq.remotefilepathhash = req.remotefilepathhash
 		blockDownloadReq.numBlocks = req.numBlocks
+		blockDownloadReq.rxPay = req.rxPay
 		go AddBlockDownloadReq(blockDownloadReq)
 		//go obj.downloadBlobberBlock(&obj.blobbers[pos], pos, path, blockNum, rspCh, isPathHash, authTicket)
 		c++
