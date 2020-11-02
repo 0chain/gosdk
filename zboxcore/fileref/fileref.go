@@ -1,11 +1,14 @@
 package fileref
 
 import (
+	"encoding/json"
+	"fmt"
 	"math"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 )
 
@@ -20,6 +23,31 @@ type CommitMetaTxn struct {
 	RefID     int64  `json:"ref_id"`
 	TxnID     string `json:"txn_id"`
 	CreatedAt string `json:"created_at"`
+}
+
+// The Attributes represents file attributes.
+type Attributes struct {
+	// The WhoPaysForReads represents reading payer. It can be allocation owner
+	// or a 3rd party user. It affects read operations only. It requires
+	// blobbers to be trusted.
+	WhoPaysForReads common.WhoPays `json:"who_pays_for_reads,omitempty"`
+
+	// add more file / directory attributes by needs with
+	// 'omitempty' json tag to avoid hash difference for
+	// equal values
+}
+
+// IsZero returns true, if the Attributes is zero.
+func (a *Attributes) IsZero() bool {
+	return (*a) == (Attributes{})
+}
+
+// Validate the Attributes.
+func (a *Attributes) Validate() (err error) {
+	if err = a.WhoPaysForReads.Validate(); err != nil {
+		return fmt.Errorf("invalid who_pays_for_reads field: %v", err)
+	}
+	return
 }
 
 type FileRef struct {
@@ -48,20 +76,22 @@ type RefEntity interface {
 	GetLookupHash() string
 	GetPath() string
 	GetName() string
+	GetAttributes() Attributes
 	GetCreatedAt() string
 	GetUpdatedAt() string
 }
 
 type Ref struct {
-	Type           string `json:"type"`
-	AllocationID   string `json:"allocation_id"`
-	Name           string `json:"name"`
-	Path           string `json:"path"`
-	Size           int64  `json:"size"`
-	Hash           string `json:"hash"`
-	NumBlocks      int64  `json:"num_of_blocks"`
-	PathHash       string `json:"path_hash"`
-	LookupHash     string `json:"lookup_hash"`
+	Type           string     `json:"type"`
+	AllocationID   string     `json:"allocation_id"`
+	Name           string     `json:"name"`
+	Path           string     `json:"path"`
+	Size           int64      `json:"size"`
+	Hash           string     `json:"hash"`
+	NumBlocks      int64      `json:"num_of_blocks"`
+	PathHash       string     `json:"path_hash"`
+	LookupHash     string     `json:"lookup_hash"`
+	Attributes     Attributes `json:"attributes"`
 	childrenLoaded bool
 	Children       []RefEntity `json:"-"`
 	CreatedAt      string      `json:"created_at"`
@@ -136,6 +166,10 @@ func (r *Ref) GetName() string {
 	return r.Name
 }
 
+func (r *Ref) GetAttributes() Attributes {
+	return r.Attributes
+}
+
 func (r *Ref) GetCreatedAt() string {
 	return r.CreatedAt
 }
@@ -176,6 +210,8 @@ func (fr *FileRef) GetHashData() string {
 	hashArray = append(hashArray, fr.MerkleRoot)
 	hashArray = append(hashArray, strconv.FormatInt(fr.ActualFileSize, 10))
 	hashArray = append(hashArray, fr.ActualFileHash)
+	var attrs, _ = json.Marshal(&fr.Attributes)
+	hashArray = append(hashArray, string(attrs))
 	return strings.Join(hashArray, ":")
 }
 
@@ -218,6 +254,10 @@ func (fr *FileRef) GetPath() string {
 }
 func (fr *FileRef) GetName() string {
 	return fr.Name
+}
+
+func (fr *FileRef) GetAttributes() Attributes {
+	return fr.Attributes
 }
 
 func (fr *FileRef) GetCreatedAt() string {

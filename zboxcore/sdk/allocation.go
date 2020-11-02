@@ -238,43 +238,75 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 	}
 }
 
-func (a *Allocation) UpdateFile(localpath string, remotepath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, true, "", false, false)
+func (a *Allocation) UpdateFile(localpath string, remotepath string,
+	attrs fileref.Attributes, status StatusCallback) error {
+
+	return a.uploadOrUpdateFile(localpath, remotepath, status, true, "", false,
+		false, attrs)
 }
 
-func (a *Allocation) UploadFile(localpath string, remotepath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "", false, false)
+func (a *Allocation) UploadFile(localpath string, remotepath string,
+	attrs fileref.Attributes, status StatusCallback) error {
+
+	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "", false,
+		false, attrs)
 }
 
-func (a *Allocation) RepairFile(localpath string, remotepath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "", false, true)
+func (a *Allocation) RepairFile(localpath string, remotepath string,
+	status StatusCallback) error {
+
+	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "",
+		false, true, fileref.Attributes{})
 }
 
-func (a *Allocation) UpdateFileWithThumbnail(localpath string, remotepath string, thumbnailpath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, true, thumbnailpath, false, false)
+func (a *Allocation) UpdateFileWithThumbnail(localpath string, remotepath string,
+	thumbnailpath string, attrs fileref.Attributes, status StatusCallback) error {
+
+	return a.uploadOrUpdateFile(localpath, remotepath, status, true,
+		thumbnailpath, false, false, attrs)
 }
 
-func (a *Allocation) UploadFileWithThumbnail(localpath string, remotepath string, thumbnailpath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, false, thumbnailpath, false, false)
+func (a *Allocation) UploadFileWithThumbnail(localpath string,
+	remotepath string, thumbnailpath string, attrs fileref.Attributes,
+	status StatusCallback) error {
+
+	return a.uploadOrUpdateFile(localpath, remotepath, status, false,
+		thumbnailpath, false, false, attrs)
 }
 
-func (a *Allocation) EncryptAndUpdateFile(localpath string, remotepath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, true, "", true, false)
+func (a *Allocation) EncryptAndUpdateFile(localpath string, remotepath string,
+	attrs fileref.Attributes, status StatusCallback) error {
+
+	return a.uploadOrUpdateFile(localpath, remotepath, status, true, "", true,
+		false, attrs)
 }
 
-func (a *Allocation) EncryptAndUploadFile(localpath string, remotepath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "", true, false)
+func (a *Allocation) EncryptAndUploadFile(localpath string, remotepath string,
+	attrs fileref.Attributes, status StatusCallback) error {
+
+	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "", true,
+		false, attrs)
 }
 
-func (a *Allocation) EncryptAndUpdateFileWithThumbnail(localpath string, remotepath string, thumbnailpath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, true, thumbnailpath, true, false)
+func (a *Allocation) EncryptAndUpdateFileWithThumbnail(localpath string,
+	remotepath string, thumbnailpath string, attrs fileref.Attributes, status StatusCallback) error {
+
+	return a.uploadOrUpdateFile(localpath, remotepath, status, true,
+		thumbnailpath, true, false, attrs)
 }
 
-func (a *Allocation) EncryptAndUploadFileWithThumbnail(localpath string, remotepath string, thumbnailpath string, status StatusCallback) error {
-	return a.uploadOrUpdateFile(localpath, remotepath, status, false, thumbnailpath, true, false)
+func (a *Allocation) EncryptAndUploadFileWithThumbnail(localpath string,
+	remotepath string, thumbnailpath string, attrs fileref.Attributes,
+	status StatusCallback) error {
+
+	return a.uploadOrUpdateFile(localpath, remotepath, status, false,
+		thumbnailpath, true, false, attrs)
 }
 
-func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, status StatusCallback, isUpdate bool, thumbnailpath string, encryption bool, isRepair bool) error {
+func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
+	status StatusCallback, isUpdate bool, thumbnailpath string, encryption bool,
+	isRepair bool, attrs fileref.Attributes) error {
+
 	if !a.isInitialized() {
 		return notInitialized
 	}
@@ -313,6 +345,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string, sta
 	uploadReq.filemeta.Size = fileInfo.Size()
 	uploadReq.filemeta.Path = remotepath
 	uploadReq.filemeta.ThumbnailSize = thumbnailSize
+	uploadReq.filemeta.Attributes = attrs
 	uploadReq.remaining = uploadReq.filemeta.Size
 	uploadReq.thumbRemaining = uploadReq.filemeta.ThumbnailSize
 	uploadReq.isRepair = false
@@ -682,6 +715,46 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	req.connectionID = zboxutil.NewConnectionId()
 	err := req.ProcessRename()
 	return err
+}
+
+func (a *Allocation) UpdateObjectAttributes(path string,
+	attrs fileref.Attributes) (err error) {
+
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	if len(path) == 0 {
+		return common.NewError("update_attrs", "Invalid path for the list")
+	}
+
+	path = zboxutil.RemoteClean(path)
+	var isabs = zboxutil.IsRemoteAbs(path)
+	if !isabs {
+		return common.NewError("update_attrs",
+			"Path should be valid and absolute")
+	}
+
+	var attrsb []byte
+	if attrsb, err = json.Marshal(attrs); err != nil {
+		panic(err)
+	}
+
+	var ar AttributesRequest
+
+	ar.blobbers = a.Blobbers
+	ar.allocationID = a.ID
+	ar.allocationTx = a.Tx
+	ar.Attributes = attrs
+	ar.attributes = string(attrsb)
+	ar.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
+	ar.fullconsensus = float32(a.DataShards + a.ParityShards)
+	ar.ctx = a.ctx
+	ar.remotefilepath = path
+	ar.attributesMask = 0
+	ar.connectionID = zboxutil.NewConnectionId()
+
+	return ar.ProcessAttributes()
 }
 
 func (a *Allocation) MoveObject(path string, destPath string) error {

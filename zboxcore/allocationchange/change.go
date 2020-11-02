@@ -7,11 +7,12 @@ import (
 )
 
 const (
-	INSERT_OPERATION = "insert"
-	DELETE_OPERATION = "delete"
-	UPDATE_OPERATION = "update"
-	RENAME_OPERATION = "rename"
-	COPY_OPERATION   = "copy"
+	INSERT_OPERATION       = "insert"
+	DELETE_OPERATION       = "delete"
+	UPDATE_OPERATION       = "update"
+	RENAME_OPERATION       = "rename"
+	COPY_OPERATION         = "copy"
+	UPDATE_ATTRS_OPERATION = "update_attrs"
 )
 
 type change struct {

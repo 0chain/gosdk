@@ -46,22 +46,24 @@ type UploadFileMeta struct {
 	Size          int64
 	ThumbnailSize int64
 	ThumbnailHash string
+	Attributes    fileref.Attributes
 }
 
 type uploadFormData struct {
-	ConnectionID        string `json:"connection_id"`
-	Filename            string `json:"filename"`
-	Path                string `json:"filepath"`
-	Hash                string `json:"content_hash,omitempty"`
-	ThumbnailHash       string `json:"thumbnail_content_hash,omitempty"`
-	MerkleRoot          string `json:"merkle_root,omitempty"`
-	ActualHash          string `json:"actual_hash"`
-	ActualSize          int64  `json:"actual_size"`
-	ActualThumbnailSize int64  `json:"actual_thumb_size"`
-	ActualThumbnailHash string `json:"actual_thumb_hash"`
-	MimeType            string `json:"mimetype"`
-	CustomMeta          string `json:"custom_meta,omitempty"`
-	EncryptedKey        string `json:"encrypted_key,omitempty"`
+	ConnectionID        string             `json:"connection_id"`
+	Filename            string             `json:"filename"`
+	Path                string             `json:"filepath"`
+	Hash                string             `json:"content_hash,omitempty"`
+	ThumbnailHash       string             `json:"thumbnail_content_hash,omitempty"`
+	MerkleRoot          string             `json:"merkle_root,omitempty"`
+	ActualHash          string             `json:"actual_hash"`
+	ActualSize          int64              `json:"actual_size"`
+	ActualThumbnailSize int64              `json:"actual_thumb_size"`
+	ActualThumbnailHash string             `json:"actual_thumb_hash"`
+	MimeType            string             `json:"mimetype"`
+	CustomMeta          string             `json:"custom_meta,omitempty"`
+	EncryptedKey        string             `json:"encrypted_key,omitempty"`
+	Attributes          fileref.Attributes `json:"attributes,omitempty"`
 }
 
 type uploadResult struct {
@@ -238,6 +240,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 			ActualThumbnailHash: req.filemeta.ThumbnailHash,
 			ActualThumbnailSize: req.filemeta.ThumbnailSize,
 			MimeType:            req.filemeta.MimeType,
+			Attributes:          req.filemeta.Attributes,
 			Hash:                fileContentHash,
 			ThumbnailHash:       thumbContentHash,
 			MerkleRoot:          fileMerkleRoot,
@@ -324,6 +327,7 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 		req.file[i].Path = req.remotefilepath
 		req.file[i].Type = fileref.FILE
 		req.file[i].AllocationID = a.ID
+		req.file[i].Attributes = req.filemeta.Attributes
 	}
 
 	if !req.isRepair {
@@ -522,6 +526,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			newChange.NumBlocks = req.file[c].NumBlocks
 			newChange.Operation = allocationchange.UPDATE_OPERATION
 			newChange.Size = req.file[c].Size
+			newChange.NewFile.Attributes = req.file[c].Attributes
 			commitReq.changes = append(commitReq.changes, newChange)
 		} else {
 			newChange := &allocationchange.NewFileChange{}
@@ -529,6 +534,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			newChange.NumBlocks = req.file[c].NumBlocks
 			newChange.Operation = allocationchange.INSERT_OPERATION
 			newChange.Size = req.file[c].Size
+			newChange.File.Attributes = req.file[c].Attributes
 			commitReq.changes = append(commitReq.changes, newChange)
 		}
 

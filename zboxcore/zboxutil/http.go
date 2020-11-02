@@ -33,6 +33,7 @@ type SCRestAPIHandler func(response map[string][]byte, numSharders int, err erro
 const (
 	ALLOCATION_ENDPOINT      = "/allocation"
 	UPLOAD_ENDPOINT          = "/v1/file/upload/"
+	ATTRS_ENDPOINT           = "/v1/file/attributes/"
 	RENAME_ENDPOINT          = "/v1/file/rename/"
 	COPY_ENDPOINT            = "/v1/file/copy/"
 	LIST_ENDPOINT            = "/v1/file/list/"
@@ -249,6 +250,15 @@ func NewUploadRequest(baseUrl, allocation string, body io.Reader, update bool) (
 	} else {
 		req, err = http.NewRequest(http.MethodPost, url, body)
 	}
+	return setClientInfo(req, err)
+}
+
+func NewAttributesRequest(baseUrl, allocation string, body io.Reader) (
+	req *http.Request, err error) {
+
+	var url = fmt.Sprintf("%s%s%s", baseUrl, ATTRS_ENDPOINT, allocation)
+	req, err = http.NewRequest(http.MethodPost, url, body)
+
 	return setClientInfo(req, err)
 }
 
