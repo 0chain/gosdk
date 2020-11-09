@@ -56,8 +56,8 @@ type WhoPays int
 
 // possible variants
 const (
-	WhoPays3rdParty WhoPays = iota // 0, 3rd party user pays
-	WhoPaysOwner                   // 1, file owner pays
+	WhoPaysOwner    WhoPays = iota // 0, file owner pays
+	WhoPays3rdParty                // 1, 3rd party user pays
 )
 
 // String implements fmt.Stringer interface.
