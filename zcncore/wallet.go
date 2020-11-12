@@ -650,6 +650,41 @@ func ConvertToValue(token float64) int64 {
 	return int64(token * float64(TOKEN_UNIT))
 }
 
+func ConvertTokenToUSD(token float64) (float64, error) {
+	var CoinGeckoResponse struct {
+		ID         string `json:"id"`
+		Symbol     string `json:"symbol"`
+		MarketData struct {
+			CurrentPrice map[string]float64 `json:"current_price"`
+		} `json:"market_data"`
+	}
+
+	req, err := util.NewHTTPGetRequest("https://api.coingecko.com/api/v3/coins/0chain?localization=false")
+	if err != nil {
+		Logger.Error("new get request failed." + err.Error())
+		return 0, err
+	}
+
+	res, err := req.Get()
+	if err != nil {
+		Logger.Error("get error. ", err.Error())
+		return 0, err
+	}
+
+	if res.StatusCode != http.StatusOK {
+		Logger.Error("Response status not OK. ", res.StatusCode)
+		return 0, common.NewError("invalid_res_status_code", "Response status code is not OK")
+	}
+
+	err = json.Unmarshal([]byte(res.Body), &CoinGeckoResponse)
+	if err != nil {
+		return 0, err
+	}
+
+	zcnRate := CoinGeckoResponse.MarketData.CurrentPrice["usd"]
+	return token * zcnRate, nil
+}
+
 func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 	result := make(chan *util.GetResponse)
 	defer close(result)
