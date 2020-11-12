@@ -651,6 +651,22 @@ func ConvertToValue(token float64) int64 {
 }
 
 func ConvertTokenToUSD(token float64) (float64, error) {
+	zcnRate, err := getTokenUSDRate()
+	if err != nil {
+		return 0, err
+	}
+	return token * zcnRate, nil
+}
+
+func ConvertUSDToToken(usd float64) (float64, error) {
+	zcnRate, err := getTokenUSDRate()
+	if err != nil {
+		return 0, err
+	}
+	return usd * (1 / zcnRate), nil
+}
+
+func getTokenUSDRate() (float64, error) {
 	var CoinGeckoResponse struct {
 		ID         string `json:"id"`
 		Symbol     string `json:"symbol"`
@@ -681,8 +697,7 @@ func ConvertTokenToUSD(token float64) (float64, error) {
 		return 0, err
 	}
 
-	zcnRate := CoinGeckoResponse.MarketData.CurrentPrice["usd"]
-	return token * zcnRate, nil
+	return CoinGeckoResponse.MarketData.CurrentPrice["usd"], nil
 }
 
 func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
