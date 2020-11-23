@@ -465,6 +465,9 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 		if err != nil {
 			return nil, fmt.Errorf("txn confirmation parse error. %s", err)
 		}
+		if cfm.Transaction == nil {
+			return nil, fmt.Errorf("missing transaction %s in block confirmation", txnHash)
+		}
 		if txnHash != cfm.Transaction.Hash {
 			return nil, fmt.Errorf("invalid transaction hash. Expected: %s. Received: %s", txnHash, cfm.Transaction.Hash)
 		}
