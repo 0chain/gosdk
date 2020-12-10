@@ -11,6 +11,7 @@ type Node struct {
 	N2NHost      string `yaml:"n2n_ip" json:"n2n_host"`
 	Host         string `yaml:"public_ip" json:"host"`
 	Port         int    `yaml:"port" json:"port"`
+	Path         string `yaml:"path" json:"path"`
 	Type         int    `json:"type"`
 	Description  string `yaml:"description" json:"description"`
 	SetIndex     int    `yaml:"set_index" json:"set_index"`
