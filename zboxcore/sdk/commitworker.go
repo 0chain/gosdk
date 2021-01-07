@@ -145,13 +145,15 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 	rootRef, err := lR.GetDirTree(commitreq.allocationID)
 	if lR.LatestWM != nil {
-		//TODO: Verify the writemarker
-		err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
-		if err != nil {
-			commitreq.result = ErrorCommitResult(err.Error())
-			commitreq.wg.Done()
-			return
-		}
+		//Can not verify signature due to collaborator flow
+		// //TODO: Verify the writemarker
+		// err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
+		// if err != nil {
+		// 	commitreq.result = ErrorCommitResult(err.Error())
+		// 	commitreq.wg.Done()
+		// 	return
+		// }
+
 		rootRef.CalculateHash()
 		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
