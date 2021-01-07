@@ -69,6 +69,8 @@ type ConsolidatedFileMeta struct {
 	Size           int64
 	EncryptedKey   string
 	CommitMetaTxns []fileref.CommitMetaTxn
+	Collaborators  []fileref.Collaborator
+	Attributes     fileref.Attributes
 }
 
 type AllocationStats struct {
@@ -578,6 +580,8 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.Size = ref.ActualFileSize
 		result.EncryptedKey = ref.EncryptedKey
 		result.CommitMetaTxns = ref.CommitMetaTxns
+		result.Collaborators = ref.Collaborators
+		result.Attributes = ref.Attributes
 		return result, nil
 	}
 	return nil, common.NewError("file_meta_error", "Error getting the file meta data from blobbers")
@@ -1092,4 +1096,38 @@ func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (
 
 	commitFolderResponseString := string(commitFolderReponseBytes)
 	return commitFolderResponseString, nil
+}
+
+func (a *Allocation) AddCollaborator(filePath, collaboratorID string) error {
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	req := &CollaboratorRequest{
+		path:           filePath,
+		collaboratorID: collaboratorID,
+		a:              a,
+	}
+
+	if req.UpdateCollaboratorToBlobbers() {
+		return nil
+	}
+	return common.NewError("add_collaborator_failed", "Failed to add collaborator on all blobbers.")
+}
+
+func (a *Allocation) RemoveCollaborator(filePath, collaboratorID string) error {
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	req := &CollaboratorRequest{
+		path:           filePath,
+		collaboratorID: collaboratorID,
+		a:              a,
+	}
+
+	if req.RemoveCollaboratorFromBlobbers() {
+		return nil
+	}
+	return common.NewError("remove_collaborator_failed", "Failed to remove collaborator on all blobbers.")
 }
