@@ -25,6 +25,12 @@ type CommitMetaTxn struct {
 	CreatedAt string `json:"created_at"`
 }
 
+type Collaborator struct {
+	RefID     int64  `json:"ref_id"`
+	ClientID  string `json:"client_id"`
+	CreatedAt string `json:"created_at"`
+}
+
 // The Attributes represents file attributes.
 type Attributes struct {
 	// The WhoPaysForReads represents reading payer. It can be allocation owner
@@ -64,6 +70,8 @@ type FileRef struct {
 	MimeType            string          `json:"mimetype"`
 	EncryptedKey        string          `json:"encrypted_key"`
 	CommitMetaTxns      []CommitMetaTxn `json:"commit_meta_txns"`
+	Collaborators       []Collaborator  `json:"collaborators"`
+	Attributes          Attributes      `json:"attributes"`
 }
 
 type RefEntity interface {
