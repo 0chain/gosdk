@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+  bls2 "github.com/0chain/gosdk/bls"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/herumi/bls-go-binary/bls"
 	"github.com/tyler-smith/go-bip39"
@@ -17,6 +18,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+  bls2.Init()
 }
 
 //BLS0ChainScheme - a signature scheme for BLS0Chain Signature
