@@ -153,9 +153,18 @@ func (b0 *BLS0ChainScheme) Verify(signature, msg string) (bool, error) {
 	if b0.PublicKey == "" {
 		return false, errors.New("public key does not exists for verification")
 	}
+
+  // My port.
+  var sig2 bls2.Sign
+	err := sig2.DeserializeHexStr(signature)
+	if err != nil {
+		return false, err
+	}
+
+  // Old code that I'm trying to port over.
 	var sig bls.Sign
 	var pk bls.PublicKey
-	err := sig.DeserializeHexStr(signature)
+	err = sig.DeserializeHexStr(signature)
 	if err != nil {
 		return false, err
 	}
