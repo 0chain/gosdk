@@ -18,6 +18,60 @@ blsInit / bls.Init
 var sk bls.SecretKey
 sk.Set(polynomial, &id)
 
+## bls.PublicKey.DeserializeHexStr ##
+
+This is the maze of deserialized. Lets start from the beginning...
+
+  <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L382>
+  // DeserializeHexStr --
+  func (pub PublicKey) DeserializeHexStr(s string) error {
+    a, err := hex2byte(s)
+    if err != nil {
+      return err
+    }
+    return pub.Deserialize(a)
+  }
+
+  <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L367>
+  // Deserialize --
+  func (pub PublicKey) Deserialize(buf []byte) error {
+    // #nosec
+    err := C.blsPublicKeyDeserialize(&pub.v, unsafe.Pointer(&buf[0]), C.mclSize(len(buf)))
+    if err == 0 {
+      return fmt.Errorf("err blsPublicKeyDeserialize %x", buf)
+    }
+    return nil
+  }
+
+  <https://github.com/herumi/bls/blob/3005a32a97ebdcb426d59caaa9868a074fe7b35a/src/bls_c_impl.hpp#L493>
+  mclSize blsPublicKeyDeserialize(blsPublicKey *pub, const void *buf, mclSize bufSize)
+  {
+    return cast(&pub->v)->deserialize(buf, bufSize);
+  }
+
+## bls.PublicKey ##
+
+Lets start from the beginning, what is the PublicKey struct? It's basically
+just an alias for G1/G2 again...
+
+  <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L334>
+  // PublicKey --
+  type PublicKey struct {
+    v C.blsPublicKey
+  }
+
+  // PublicKeys ..
+  type PublicKeys []PublicKey
+
+  <https://github.com/herumi/bls/blob/1b48de51f4f76deb204d108f6126c1507623f739/include/bls/bls.h#L60>
+  typedef struct {
+  #ifdef BLS_ETH
+    mclBnG1 v;
+  #else
+    mclBnG2 v;
+  #endif
+  } blsPublicKey;
+
 ## bls.Sign.DeserializeHexStr ##
 
   <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L480>
@@ -161,7 +215,7 @@ func (sec *SecretKey) GetMasterSecretKey(k int) (msk []SecretKey) {
 Function defined here:
 
   <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L519-L524>
-  func (sec *SecretKey) GetPublicKey() (pub *PublicKey)
+  func (sec SecretKey) GetPublicKey() (pub PublicKey)
 
   <https://github.com/herumi/bls/blob/3005a32a97ebdcb426d59caaa9868a074fe7b35a/src/bls_c_impl.hpp#L175>
   // Remember, this returns public key (0th arg as pub).
@@ -299,13 +353,13 @@ Defined here:
 
   // https://github.com/herumi/bls-go-binary/blob/master/bls/bls.go#L180
   // GetLittleEndian -- alias of Serialize
-  func (sec *SecretKey) GetLittleEndian() []byte { // k*
+  func (sec SecretKey) GetLittleEndian() []byte { // k
     return sec.Serialize()
   }
 
   // https://github.com/herumi/bls-go-binary/blob/master/bls/bls.go#L186
   // SetLittleEndian --
-  func (sec *SecretKey) SetLittleEndian(buf []byte) error {
+  func (sec SecretKey) SetLittleEndian(buf []byte) error {
     // #nosec
     err := C.blsSecretKeySetLittleEndian(&sec.v, unsafe.Pointer(&buf[0]), C.mclSize(len(buf)))
     if err != 0 {
