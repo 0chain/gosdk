@@ -178,6 +178,17 @@ blsInit precomputes with precomputeG2 function. You can find it defined here:
 https://github.com/miracl/core/blob/fda3416694d153f900b617d7bc42038df34a2da6/go/BLS.go#L123
 `func Core_Verify(SIG []byte, M []byte, W []byte) int { ... }`
 
+  <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L553>
+  // Verify --
+  func (sig Sign) Verify(pub PublicKey, m string) bool {
+    if sig == nil || pub == nil {
+      return false
+    }
+    buf := []byte(m)
+    // #nosec
+    return C.blsVerify(&sig.v, &pub.v, unsafe.Pointer(&buf[0]), C.mclSize(len(buf))) == 1
+  }
+
 ## sign.Add
 Convert string to ECP, then perform Add.
 
