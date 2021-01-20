@@ -156,7 +156,7 @@ func (b0 *BLS0ChainScheme) Verify(signature, msg string) (bool, error) {
 
   // My port.
   var sig2 bls2.Sign
-	//var pk bls.PublicKey
+	var pk2 bls.PublicKey
 	err := sig2.DeserializeHexStr(signature)
 	if err != nil {
 		return false, err
@@ -168,26 +168,25 @@ func (b0 *BLS0ChainScheme) Verify(signature, msg string) (bool, error) {
 	if rawHash == nil {
 		return false, errors.New("failed hash while signing")
 	}
-
-	// pk.DeserializeHexStr(b0.PublicKey)
+	pk2.DeserializeHexStr(b0.PublicKey)
 	// return sig.Verify(&pk, string(rawHash)), nil
 
-  // // Old code that I'm trying to port over.
-	// var sig bls.Sign
-	// var pk bls.PublicKey
-	// err = sig.DeserializeHexStr(signature)
-	// if err != nil {
-	// 	return false, err
-	// }
-	// rawHash, err := hex.DecodeString(msg)
-	// if err != nil {
-	// 	return false, err
-	// }
-	// if rawHash == nil {
-	// 	return false, errors.New("failed hash while signing")
-	// }
-	// pk.DeserializeHexStr(b0.PublicKey)
-	// return sig.Verify(&pk, string(rawHash)), nil
+  // Old code that I'm trying to port over.
+	var sig bls.Sign
+	var pk bls.PublicKey
+	err = sig.DeserializeHexStr(signature)
+	if err != nil {
+		return false, err
+	}
+	rawHash, err = hex.DecodeString(msg)
+	if err != nil {
+		return false, err
+	}
+	if rawHash == nil {
+		return false, errors.New("failed hash while signing")
+	}
+	pk.DeserializeHexStr(b0.PublicKey)
+	return sig.Verify(&pk, string(rawHash)), nil
 
 }
 
