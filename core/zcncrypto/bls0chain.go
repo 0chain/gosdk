@@ -121,8 +121,7 @@ func (b0 *BLS0ChainScheme) GetPrivateKey() string {
 	return b0.PrivateKey
 }
 
-func (b0 *BLS0ChainScheme) rawSign(hash string) (*bls.Sign, error) {
-	var sk bls.SecretKey
+func (b0 *BLS0ChainScheme) rawSign(hash string) (*bls2.Sign, error) {
 	if b0.PrivateKey == "" {
 		return nil, errors.New("private key does not exists for signing")
 	}
@@ -133,10 +132,21 @@ func (b0 *BLS0ChainScheme) rawSign(hash string) (*bls.Sign, error) {
 	if rawHash == nil {
 		return nil, errors.New("failed hash while signing")
 	}
-	sk.SetByCSPRNG()
-	sk.DeserializeHexStr(b0.PrivateKey)
-	sig := sk.Sign(string(rawHash))
-	return sig, nil
+
+  // My port.
+	var sk2 bls2.SecretKey
+  sk2.SetByCSPRNG()
+	sk2.DeserializeHexStr(b0.PrivateKey)
+	sig2 := sk2.Sign(rawHash)
+	return sig2, nil
+
+  // // Old code.
+	// var sk bls.SecretKey
+	// sk.SetByCSPRNG()
+	// sk.DeserializeHexStr(b0.PrivateKey)
+	// sig := sk.Sign(string(rawHash))
+	// return sig, nil
+
 }
 
 //Sign - implement interface
@@ -191,17 +201,35 @@ func (b0 *BLS0ChainScheme) Verify(signature, msg string) (bool, error) {
 }
 
 func (b0 *BLS0ChainScheme) Add(signature, msg string) (string, error) {
-	var sign bls.Sign
-	err := sign.DeserializeHexStr(signature)
+
+	// var sign bls.Sign
+	// err := sign.DeserializeHexStr(signature)
+	// if err != nil {
+	// 	return "", err
+	// }
+	// signature1, err := b0.rawSign(msg)
+	// if err != nil {
+	// 	return "", fmt.Errorf("BLS signing failed - %s", err.Error())
+	// }
+	// sign.Add(signature1)
+	// return sign.SerializeToHexStr(), nil
+
+  var sign2 bls2.Sign
+	err := sign2.DeserializeHexStr(signature)
 	if err != nil {
 		return "", err
 	}
-	signature1, err := b0.rawSign(msg)
+	_, err = b0.rawSign(msg)
 	if err != nil {
 		return "", fmt.Errorf("BLS signing failed - %s", err.Error())
 	}
-	sign.Add(signature1)
-	return sign.SerializeToHexStr(), nil
+
+  // sign2.Add(signature1) // TODO
+	return "", nil
+
+  // sign2.Add(signature1)
+	// return sign2.SerializeToHexStr(), nil
+
 }
 
 type ThresholdSignatureScheme interface {

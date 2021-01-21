@@ -1,10 +1,46 @@
 package bls
 
 import (
+  "io"
+  "bytes"
+  "encoding/binary"
+  "math/rand"
+  "unsafe"
   "fmt"
   "encoding/hex"
   "github.com/0chain/gosdk/miracl"
 )
+
+func Init() {
+  fmt.Println("hello world")
+}
+
+// https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L711
+var sRandReader io.Reader
+
+// Basically entirely from
+// <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L729>
+func SetRandFunc(randReader io.Reader) {
+	// if nil, uses default random generator. See getRandomValue.
+	sRandReader = randReader
+}
+
+// TODO: remove when done porting.
+// // Reads a random value from the function set in `SetRandFunc`.
+// func getRandomValue() (byte, error) {
+//   var b [1]byte
+//   var n int
+//   var err error
+//   if sRandReader == nil {
+//     n, err = rand.Read(b[:])
+//   } else {
+//     n, err = sRandReader.Read(b[:])
+//   }
+//   if n > 0 {
+//     return b[0], nil
+//   }
+//   return 0, errors.New("getRandomValue(): End of stream")
+// }
 
 // Taken directly from herumi's library:
 // <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L29>
@@ -24,10 +60,9 @@ func DeserializeHexStr(s string) (*BN254.ECP, error) {
 }
 
 func ToBytes(E *BN254.ECP) []byte {
-  var t [int(BN254.MODBYTES)]byte
-  var R = t[:]
-  E.ToBytes(R, false /*compress*/)
-  return R
+  t := make([]byte, int(BN254.MODBYTES))
+  E.ToBytes(t, false /*compress*/)
+  return t
 }
 
 //-----------------------------------------------------------------------------
@@ -53,6 +88,19 @@ func (sig *Sign) DeserializeHexStr(s string) error {
   return nil
 }
 
+// Starting from herumi's library:
+// <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L454>
+func (sig *Sign) Serialize() []byte {
+  return ToBytes(sig.v)
+}
+
+// Starting from herumi's library:
+// <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L475>
+func (sig *Sign) SerializeToHexStr() string {
+	return hex.EncodeToString(sig.Serialize())
+}
+
+// Porting over <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L553>
 func (sig *Sign) Verify(pub *PublicKey, m []byte) bool {
   b := BN254.Core_Verify(ToBytes(sig.v), m, ToBytes(pub.v))
   return b == BN254.BLS_OK
@@ -81,6 +129,53 @@ func (pk *PublicKey) DeserializeHexStr(s string) error {
   return nil
 }
 
-func Init() {
-  fmt.Println("hello world")
+//-----------------------------------------------------------------------------
+// SecretKey.
+//-----------------------------------------------------------------------------
+
+// Copied directly from herumi's source code.
+// SecretKey: <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L154>
+// blsSecretKey: <https://github.com/herumi/bls/blob/1b48de51f4f76deb204d108f6126c1507623f739/include/bls/bls.h#L56>
+// FP: <https://github.com/miracl/core/blob/master/go/FP.go#L26>
+type SecretKey struct {
+  v *BN254.FP
+}
+
+func (sk *SecretKey) SetByCSPRNG() error {
+  var w [BN254.NLEN]BN254.Chunk
+  if sRandReader == nil {
+    b := make([]byte, BN254.NLEN*int(unsafe.Sizeof(w[0])))
+    rand.Read(b)
+    buf := bytes.NewBuffer(b)
+    binary.Read(buf, binary.LittleEndian, w)
+  } else {
+    binary.Read(sRandReader, binary.LittleEndian, w)
+  }
+  sk.v = BN254.NewFPbig(BN254.NewBIGints(w))
+  return nil
+}
+
+func (sk *SecretKey) DeserializeHexStr(s string) error {
+  b, err := hex2byte(s)
+  if err != nil {
+    return err
+  }
+  sk.v = BN254.FP_fromBytes(b)
+  return nil
+}
+
+func (sk *SecretKey) Sign(m []byte) *Sign {
+  // We're just using this miracl/core function to port over the Sign function.
+  // func Core_Sign(SIG []byte, M []byte, S []byte) int {...}
+
+  var _a BN254.Chunk
+
+  b1 := make([]byte, int(BN254.MODBYTES))
+  b3 := make([]byte, BN254.NLEN*int(unsafe.Sizeof(_a)))
+  sk.v.ToBytes(b3)
+  BN254.Core_Sign(b1, m, b3)
+
+  sig := new(Sign)
+  sig.v = BN254.ECP_fromBytes(b1)
+  return sig
 }
