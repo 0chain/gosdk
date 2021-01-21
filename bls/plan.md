@@ -49,6 +49,29 @@ This is the maze of deserialized. Lets start from the beginning...
     return cast(&pub->v)->deserialize(buf, bufSize);
   }
 
+## bls.SecretKey ##
+
+  <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L154>
+  // SecretKey --
+  type SecretKey struct {
+    v C.blsSecretKey
+  }
+
+  <https://github.com/herumi/bls/blob/1b48de51f4f76deb204d108f6126c1507623f739/include/bls/bls.h#L56>
+  typedef struct {
+    mclBnFr v;
+  } blsSecretKey;
+
+And this is Fr, which is just FP with a modulo.
+
+  <https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/include/mcl/bn.h#L89>
+  /*
+    G1 and G2 are isomorphism to Fr
+  */
+  typedef struct {
+    uint64_t d[MCLBN_FR_UNIT_SIZE];
+  } mclBnFr;
+
 ## bls.PublicKey ##
 
 Lets start from the beginning, what is the PublicKey struct? It's basically
@@ -336,8 +359,6 @@ Luckily, MIRACL *does* have FP class (FP.go), so FrSub is just:
 The original FrSub takes 3 args. The 0th arg is the return variable. The 1th
 and 2nd args are where the subtraction should take place.
 
-## SerializeToHexStr
-
 ## var sk bls.SecretKey; sk.Set(polynomial, &id)
 
 sk.Set is defined here:
@@ -381,5 +402,3 @@ Defined here:
 
 Herumi:
 The class of Secret Key is Fr, then https://github.com/herumi/mcl/blob/master/include/mcl/fp.hpp#L308-L322
-
-
