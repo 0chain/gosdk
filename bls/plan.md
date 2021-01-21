@@ -252,6 +252,40 @@ Perform add on 'sign'.
 https://github.com/miracl/core/blob/f9de005e0168f59a56afe177498b19f4d43f054f/go/ECP.go#L678
 `func (E *ECP) Add(Q *ECP) { ... }`
 
+## SetByCSPRNG ##
+
+Well the following is how it's done in the javascript library.
+It's just setting every byte to a random value.
+
+  exports.SecretKey = class extends Common {
+    setByCSPRNG () {
+      const a = new Uint8Array(BLS_SECRETKEY_SIZE)
+      exports.getRandomValues(a)
+      this.setLittleEndian(a)
+    }
+  }
+
+  setLittleEndian (s) {
+    this._setter(exports.mclBnFr_setLittleEndian, s)
+  }
+
+And this is the default RNG function.
+
+  <https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/include/mcl/randgen.hpp#L141>
+	static RandGen& getDefaultRandGen()
+	{
+    #ifdef MCL_DONT_USE_CSPRNG
+		static RandGen wrg;
+    #elif defined(MCL_USE_WEB_CRYPTO_API)
+		static mcl::RandomGeneratorJS rg;
+		static RandGen wrg(rg);
+    #else
+		static cybozu::RandomGenerator rg;
+		static RandGen wrg(rg);
+    #endif
+		return wrg;
+	}
+
 ## GetMasterSecretKey
 
 For loop around `SetByCSPRNG`. It's just this function we're trying to duplicate.
