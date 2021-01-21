@@ -18,6 +18,28 @@ blsInit / bls.Init
 var sk bls.SecretKey
 sk.Set(polynomial, &id)
 
+## bls.Sign Serialize ##
+
+Seems like this is a good old serialize to byte array.
+
+  <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L454>
+  // Serialize --
+  func (sig Sign) Serialize() []byte {
+    buf := make([]byte, 2048)
+    // #nosec
+    n := C.blsSignatureSerialize(unsafe.Pointer(&buf[0]), C.mclSize(len(buf)), &sig.v)
+    if n == 0 {
+      panic("err blsSignatureSerialize")
+    }
+    return buf[:n]
+  }
+
+  <https://github.com/herumi/bls/blob/3005a32a97ebdcb426d59caaa9868a074fe7b35a/src/bls_c_impl.hpp#L478>
+  mclSize blsSignatureSerialize(void buf, mclSize maxBufSize, const blsSignature sig)
+  {
+    return cast(&sig->v)->serialize(buf, maxBufSize);
+  }
+
 ## bls.PublicKey.DeserializeHexStr ##
 
 This is the maze of deserialized. Lets start from the beginning...
