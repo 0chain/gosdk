@@ -219,6 +219,31 @@ blsInit precomputes with precomputeG2 function. You can find it defined here:
   <https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/include/mcl/bn.hpp#L1689>
   ;
 
+## SecretKey.Sign ##
+
+  <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L526>
+  // Sign -- Constant Time version
+  func (sec SecretKey) Sign(m string) (sig Sign) {
+    sig = new(Sign)
+    buf := []byte(m)
+    // #nosec
+    C.blsSign(&sig.v, &sec.v, unsafe.Pointer(&buf[0]), C.mclSize(len(buf)))
+    return sig
+  }
+
+  <https://github.com/herumi/bls/blob/3005a32a97ebdcb426d59caaa9868a074fe7b35a/src/bls_c_impl.hpp#L186>
+  void blsSign(blsSignature sig, const blsSecretKey sec, const void m, mclSize size)
+  {
+    blsHashToSignature(sig, m, size);
+    Fr s = *cast(&sec->v);
+    GmulCT(*cast(&sig->v), *cast(&sig->v), s);
+  }
+
+LOL how lucky I am to find Core_Sign! It fits perfectly!
+
+  // BLS.go
+  func Core_Sign(SIG []byte, M []byte, S []byte) int {}
+
 ## sig.Verify
 https://github.com/miracl/core/blob/fda3416694d153f900b617d7bc42038df34a2da6/go/BLS.go#L123
 `func Core_Verify(SIG []byte, M []byte, W []byte) int { ... }`
