@@ -201,19 +201,7 @@ func (b0 *BLS0ChainScheme) Verify(signature, msg string) (bool, error) {
 }
 
 func (b0 *BLS0ChainScheme) Add(signature, msg string) (string, error) {
-
-	// var sign bls.Sign
-	// err := sign.DeserializeHexStr(signature)
-	// if err != nil {
-	// 	return "", err
-	// }
-	// signature1, err := b0.rawSign(msg)
-	// if err != nil {
-	// 	return "", fmt.Errorf("BLS signing failed - %s", err.Error())
-	// }
-	// sign.Add(signature1)
-	// return sign.SerializeToHexStr(), nil
-
+  /// New code I'm trying to port over.
   var sign2 bls2.Sign
 	err := sign2.DeserializeHexStr(signature)
 	if err != nil {
@@ -225,9 +213,20 @@ func (b0 *BLS0ChainScheme) Add(signature, msg string) (string, error) {
 	}
 
   sign2.Add(signature1)
-	return "", nil
-	// return sign2.SerializeToHexStr(), nil
+	return sign2.SerializeToHexStr(), nil
 
+  /// Old code I'm trying to port over.
+	// var sign bls.Sign
+	// err := sign.DeserializeHexStr(signature)
+	// if err != nil {
+	// 	return "", err
+	// }
+	// signature1, err := b0.rawSign(msg)
+	// if err != nil {
+	// 	return "", fmt.Errorf("BLS signing failed - %s", err.Error())
+	// }
+	// sign.Add(signature1)
+	// return sign.SerializeToHexStr(), nil
 }
 
 type ThresholdSignatureScheme interface {
