@@ -252,6 +252,11 @@ func (F *FP) copy(b *FP) {
 	F.XES = b.XES
 }
 
+// 0chain: export copy. Sorry, we need it!
+func (F *FP) Copy(b *FP) {
+  F.copy(b)
+}
+
 /* set this=0 */
 func (F *FP) zero() {
 	F.x.zero()
@@ -377,7 +382,7 @@ func (F *FP) add(b *FP) {
 	}
 }
 
-// We need to export add. No way around it.
+// 0chain: We need to export add. No way around it.
 func (F *FP) Add(b *FP) {
   F.add(b)
 }
