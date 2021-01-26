@@ -440,6 +440,25 @@ with a modulo, see the definition here:
     XES int32
   }
 
+## SecretKey SerializeToHexStr
+
+  <https://github.com/herumi/bls-go-binary/blob/master/bls/bls.go#L205>
+  func (sec SecretKey) SerializeToHexStr() string {
+    return hex.EncodeToString(sec.Serialize())
+  }
+
+  <https://github.com/herumi/bls-go-binary/blob/master/bls/bls.go#L159>
+  // Serialize --
+  func (sec SecretKey) Serialize() []byte {
+    buf := make([]byte, 2048)
+    // #nosec
+    n := C.blsSecretKeySerialize(unsafe.Pointer(&buf[0]), C.mclSize(len(buf)), &sec.v)
+    if n == 0 {
+      panic("err blsSecretKeySerialize")
+    }
+    return buf[:n]
+  }
+
 ## FrSub
 
 From Shigeo:
