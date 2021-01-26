@@ -219,15 +219,13 @@ func (b0 *BLS0ChainScheme) Add(signature, msg string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	_, err = b0.rawSign(msg)
+  signature1, err := b0.rawSign(msg)
 	if err != nil {
 		return "", fmt.Errorf("BLS signing failed - %s", err.Error())
 	}
 
-  // sign2.Add(signature1) // TODO
+  sign2.Add(signature1)
 	return "", nil
-
-  // sign2.Add(signature1)
 	// return sign2.SerializeToHexStr(), nil
 
 }
