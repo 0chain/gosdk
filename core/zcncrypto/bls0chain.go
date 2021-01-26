@@ -50,14 +50,14 @@ func (b0 *BLS0ChainScheme) GenerateKeys() (*Wallet, error) {
 	// Generate a Bip32 HD wallet for the mnemonic and a user supplied password
 	seed := bip39.NewSeed(b0.Mnemonic, "0chain-client-split-key")
 	r := bytes.NewReader(seed)
-	bls.SetRandFunc(r)
+	bls2.SetRandFunc(r)
 
 	// New Wallet
 	w := &Wallet{}
 	w.Keys = make([]KeyPair, 1)
 
 	// Generate pair
-	var sk bls.SecretKey
+	var sk bls2.SecretKey
 	sk.SetByCSPRNG()
 	w.Keys[0].PrivateKey = sk.SerializeToHexStr()
 	pub := sk.GetPublicKey()
@@ -72,7 +72,7 @@ func (b0 *BLS0ChainScheme) GenerateKeys() (*Wallet, error) {
 	w.DateCreated = time.Now().String()
 
 	// Revert the Random function to default
-	bls.SetRandFunc(nil)
+	bls2.SetRandFunc(nil)
 	return w, nil
 }
 
@@ -197,7 +197,6 @@ func (b0 *BLS0ChainScheme) Verify(signature, msg string) (bool, error) {
 	// }
 	// pk.DeserializeHexStr(b0.PublicKey)
 	// return sig.Verify(&pk, string(rawHash)), nil
-
 }
 
 func (b0 *BLS0ChainScheme) Add(signature, msg string) (string, error) {

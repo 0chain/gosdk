@@ -168,6 +168,17 @@ func (sk *SecretKey) DeserializeHexStr(s string) error {
   return nil
 }
 
+func (sk *SecretKey) SerializeToHexStr() string {
+  return hex.EncodeToString(sk.Serialize())
+}
+
+func (sk *SecretKey) Serialize() []byte {
+  var _a BN254.Chunk
+  b := make([]byte, BN254.NLEN*int(unsafe.Sizeof(_a)))
+  sk.v.ToBytes(b)
+  return b
+}
+
 func (sk *SecretKey) Sign(m []byte) *Sign {
   // We're just using this miracl/core function to port over the Sign function.
   // func Core_Sign(SIG []byte, M []byte, S []byte) int {...}
