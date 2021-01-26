@@ -377,6 +377,11 @@ func (F *FP) add(b *FP) {
 	}
 }
 
+// We need to export add. No way around it.
+func (F *FP) Add(b *FP) {
+  F.add(b)
+}
+
 /* this-=b */
 func (F *FP) sub(b *FP) {
 	n := NewFPcopy(b)
