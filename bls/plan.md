@@ -566,7 +566,12 @@ From Shigeo:
 
 Luckily, MIRACL *does* have FP class (FP.go), so FrSub is just:
 
-  https://github.com/miracl/core/blob/master/go/FP.go#L381-L385
+  <https://github.com/miracl/core/blob/master/go/FP.go#L381-L385>
+  func (F FP) sub(b FP) {
+    n := NewFPcopy(b)
+    n.neg()
+    F.add(n)
+  }
 
 The original FrSub takes 3 args. The 0th arg is the return variable. The 1th
 and 2nd args are where the subtraction should take place.

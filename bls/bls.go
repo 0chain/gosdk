@@ -69,6 +69,12 @@ func ToBytes(E *BN254.ECP) []byte {
   return t
 }
 
+func CloneFP(fp *BN254.FP) *BN254.FP {
+  result := BN254.NewFP()
+  result.Copy(fp)
+  return result
+}
+
 //-----------------------------------------------------------------------------
 // Signature.
 //-----------------------------------------------------------------------------
@@ -157,11 +163,17 @@ type SecretKey struct {
   v *BN254.FP
 }
 
+func SecretKey_fromFP(fp *BN254.FP) *SecretKey {
+  sk := new(SecretKey)
+  sk.v = fp
+  return sk
+}
+
 func (sk *SecretKey) GetFP() *BN254.FP {
   return sk.v
 }
 
-func (sk *SecretKey) Clone() *BN254.FP {
+func (sk *SecretKey) Clone() *SecretKey {
   result := new(SecretKey)
   result.v = sk.CloneFP()
   return result
@@ -241,5 +253,9 @@ func (sk *SecretKey) GetPublicKey() *PublicKey {
 }
 
 func (sk *SecretKey) Add(rhs *SecretKey) {
-  sk.v.add(rhs.v)
+  sk.v.Add(rhs.v)
+}
+
+func (sk *SecretKey) SubFP(fp *BN254.FP) {
+  sk.v.Sub(fp)
 }

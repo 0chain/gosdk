@@ -322,33 +322,31 @@ func (b0 *BLS0ChainScheme) SplitKeys(numSplits int) (*Wallet, error) {
 	if b0.PrivateKey == "" {
 		return nil, errors.New("primary private key not found")
 	}
-	var primaryFr bls.Fr
-	var primarySk bls.SecretKey
+	var primarySk bls2.SecretKey
 	primarySk.DeserializeHexStr(b0.PrivateKey)
-	primaryFr.SetLittleEndian(primarySk.GetLittleEndian())
+  primaryFr := primarySk.CloneFP() // Fr is just FP without modulo.
 
 	// New Wallet
 	w := &Wallet{}
 	w.Keys = make([]KeyPair, numSplits)
-	var sk bls.SecretKey
+	var sk bls2.SecretKey
 	for i := 0; i < numSplits-1; i++ {
-		var tmpSk bls.SecretKey
+		var tmpSk bls2.SecretKey
 		tmpSk.SetByCSPRNG()
 		w.Keys[i].PrivateKey = tmpSk.SerializeToHexStr()
 		pub := tmpSk.GetPublicKey()
 		w.Keys[i].PublicKey = pub.SerializeToHexStr()
 		sk.Add(&tmpSk)
 	}
-	var aggregateSk bls.Fr
-	aggregateSk.SetLittleEndian(sk.GetLittleEndian())
+  aggregateSk := sk.CloneFP()
 
 	//Subtract the aggregated private key from the primary private key to derive the last split private key
-	var lastSk bls.Fr
-	bls.FrSub(&lastSk, &primaryFr, &aggregateSk)
+  lastSk := bls2.CloneFP(primaryFr)
+  lastSk.Sub(aggregateSk)
 
 	// Last key
-	var lastSecretKey bls.SecretKey
-	lastSecretKey.SetLittleEndian(lastSk.Serialize())
+  lastSecretKey := bls2.SecretKey_fromFP(lastSk)
+
 	w.Keys[numSplits-1].PrivateKey = lastSecretKey.SerializeToHexStr()
 	w.Keys[numSplits-1].PublicKey = lastSecretKey.GetPublicKey().SerializeToHexStr()
 
