@@ -77,6 +77,10 @@ type Sign struct {
   v *BN254.ECP
 }
 
+func (sig *Sign) Add(rhs *Sign) {
+  sig.v.Add(rhs.v)
+}
+
 // Starting from herumi's library:
 // <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L480>
 func (sig *Sign) DeserializeHexStr(s string) error {
