@@ -5,14 +5,18 @@ import (
   "bytes"
   "encoding/binary"
   "math/rand"
+  "errors"
   "unsafe"
   "fmt"
   "encoding/hex"
   "github.com/0chain/gosdk/miracl"
 )
 
-func Init() {
-  fmt.Println("hello world")
+func Init() error {
+  if BN254.Init() == BN254.BLS_FAIL {
+    return errors.New("Couldn't initialize BLS")
+  }
+  return nil
 }
 
 // https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L711
@@ -148,7 +152,7 @@ func (pk *PublicKey) Serialize() []byte {
 // Copied directly from herumi's source code.
 // SecretKey: <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L154>
 // blsSecretKey: <https://github.com/herumi/bls/blob/1b48de51f4f76deb204d108f6126c1507623f739/include/bls/bls.h#L56>
-// FP: <https://github.com/miracl/core/blob/master/go/FP.go#L26>
+// FP as Fr: <https://github.com/miracl/core/blob/master/go/FP.go#L26>
 type SecretKey struct {
   v *BN254.FP
 }
@@ -203,6 +207,7 @@ func (sk *SecretKey) Sign(m []byte) *Sign {
   return sig
 }
 
+// TODO: NYI.
 func (sk *SecretKey) GetPublicKey() *PublicKey {
   // TODO
   return nil

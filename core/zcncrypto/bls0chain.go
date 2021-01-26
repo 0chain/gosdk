@@ -14,11 +14,10 @@ import (
 )
 
 func init() {
-	err := bls.Init(bls.CurveFp254BNb)
+	err := bls2.Init()
 	if err != nil {
 		panic(err)
 	}
-  bls2.Init()
 }
 
 //BLS0ChainScheme - a signature scheme for BLS0Chain Signature
