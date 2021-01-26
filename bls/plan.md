@@ -98,6 +98,22 @@ And this is Fr, which is just FP with a modulo.
     uint64_t d[MCLBN_FR_UNIT_SIZE];
   } mclBnFr;
 
+## SecretKey.Add
+
+really just Fr.add
+
+  <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L279>
+  // Add --
+  func (sec SecretKey) Add(rhs SecretKey) {
+    C.blsSecretKeyAdd(&sec.v, &rhs.v)
+  }
+
+  <https://github.com/herumi/bls/blob/3005a32a97ebdcb426d59caaa9868a074fe7b35a/src/bls_c_impl.hpp#L578>
+  void blsSecretKeyAdd(blsSecretKey sec, const blsSecretKey rhs)
+  {
+    *cast(&sec->v) += *cast(&rhs->v);
+  }
+
 ## bls.PublicKey ##
 
 Lets start from the beginning, what is the PublicKey struct? It's basically
