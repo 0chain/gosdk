@@ -157,8 +157,18 @@ type SecretKey struct {
   v *BN254.FP
 }
 
-func (sk *SecretKey) GetFP() *FP {
+func (sk *SecretKey) GetFP() *BN254.FP {
   return sk.v
+}
+
+func (sk *SecretKey) Clone() *BN254.FP {
+  result := new(SecretKey)
+  result.v = sk.CloneFP()
+  return result
+}
+
+func (sk *SecretKey) CloneFP() *BN254.FP {
+  return BN254.NewFPcopy(sk.v)
 }
 
 func (sk *SecretKey) SetByCSPRNG() error {
@@ -188,6 +198,7 @@ func (sk *SecretKey) SerializeToHexStr() string {
   return hex.EncodeToString(sk.Serialize())
 }
 
+// Note: herumi's SecretKey.GetLittleEndian is just aliased to Serialize().
 func (sk *SecretKey) Serialize() []byte {
   var _a BN254.Chunk
   b := make([]byte, BN254.NLEN*int(unsafe.Sizeof(_a)))
