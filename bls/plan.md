@@ -260,7 +260,21 @@ https://github.com/miracl/core/blob/fda3416694d153f900b617d7bc42038df34a2da6/go/
   }
 
 ## sign.Add
-Convert string to ECP, then perform Add.
+
+As can be seen from the following snippets, just need to convert string to ECP,
+then perform Add.
+
+  <https://github.com/herumi/bls-go-binary/blob/master/bls/bls.go#L535>
+  // Add --
+  func (sig Sign) Add(rhs Sign) {
+    C.blsSignatureAdd(&sig.v, &rhs.v)
+  }
+
+  <https://github.com/herumi/bls/blob/3005a32a97ebdcb426d59caaa9868a074fe7b35a/src/bls_c_impl.hpp#L588>
+  void blsSignatureAdd(blsSignature *sig, const blsSignature *rhs)
+  {
+    *cast(&sig->v) += *cast(&rhs->v);
+  }
 
 ### Step 1.
 // Example: https://github.com/miracl/core/blob/fda3416694d153f900b617d7bc42038df34a2da6/go/BLS.go#L126
