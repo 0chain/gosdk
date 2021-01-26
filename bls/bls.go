@@ -157,6 +157,10 @@ type SecretKey struct {
   v *BN254.FP
 }
 
+func (sk *SecretKey) GetFP() *FP {
+  return sk.v
+}
+
 func (sk *SecretKey) SetByCSPRNG() error {
   var w [BN254.NLEN]BN254.Chunk
   if sRandReader == nil {
@@ -223,4 +227,8 @@ func (sk *SecretKey) GetPublicKey() *PublicKey {
   result := new(PublicKey)
   result.v = BN254.ECP_fromBytes(SST[:])
   return result
+}
+
+func (sk *SecretKey) Add(rhs *SecretKey) {
+  sk.v.add(rhs.v)
 }
