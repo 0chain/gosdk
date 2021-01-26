@@ -133,6 +133,14 @@ func (pk *PublicKey) DeserializeHexStr(s string) error {
   return nil
 }
 
+func (pk *PublicKey) SerializeToHexStr() string {
+  return hex.EncodeToString(pk.Serialize())
+}
+
+func (pk *PublicKey) Serialize() []byte {
+  return ToBytes(pk.v)
+}
+
 //-----------------------------------------------------------------------------
 // SecretKey.
 //-----------------------------------------------------------------------------
@@ -193,4 +201,9 @@ func (sk *SecretKey) Sign(m []byte) *Sign {
   sig := new(Sign)
   sig.v = BN254.ECP_fromBytes(b1)
   return sig
+}
+
+func (sk *SecretKey) GetPublicKey() *PublicKey {
+  // TODO
+  return nil
 }

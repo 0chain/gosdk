@@ -344,7 +344,12 @@ func (sec *SecretKey) GetMasterSecretKey(k int) (msk []SecretKey) {
 Function defined here:
 
   <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L519-L524>
-  func (sec SecretKey) GetPublicKey() (pub PublicKey)
+  // GetPublicKey --
+  func (sec SecretKey) GetPublicKey() (pub PublicKey) {
+    pub = new(PublicKey)
+    C.blsGetPublicKey(&pub.v, &sec.v)
+    return pub
+  }
 
   <https://github.com/herumi/bls/blob/3005a32a97ebdcb426d59caaa9868a074fe7b35a/src/bls_c_impl.hpp#L175>
   // Remember, this returns public key (0th arg as pub).
