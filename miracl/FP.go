@@ -394,6 +394,11 @@ func (F *FP) sub(b *FP) {
 	F.add(n)
 }
 
+// 0chain: export sub. We need it.
+func (F *FP) Sub(b *FP) {
+  F.sub(b)
+}
+
 func (F *FP) rsub(b *FP) {
 	F.neg()
 	F.add(b)
