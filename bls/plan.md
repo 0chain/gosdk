@@ -18,6 +18,10 @@ blsInit / bls.Init
 var sk bls.SecretKey
 sk.Set(polynomial, &id)
 
+## getBasePoint ##
+
+Eureka! getBasePoint is just the same thing as ECP2_generator!
+
 ## bls.Sign Serialize ##
 
 Seems like this is a good old serialize to byte array.
@@ -217,7 +221,64 @@ This is easy to miss: look for g_Q or g_P, as these are corresponding to getBase
 blsInit precomputes with precomputeG2 function. You can find it defined here:
 
   <https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/include/mcl/bn.hpp#L1689>
-  ;
+  inline void precomputeG2(Fp6 Qcoeff, const G2& Q_)
+
+But interestingly enough, that's a CONST on the Q_, so that doesn't actually do anything to the BasePoint.
+
+BN254.Init initializes a global:
+
+  // BLS.go
+  var G2_TAB []FP4
+
+And FP4 is just:
+
+  // FP4.go
+  type FP4 struct {
+    a FP2
+    b FP2
+  }
+  // FP2.go
+  type FP2 struct {
+    a FP
+    b FP
+  }
+
+The original source precomputes a G2 as g_Q
+
+  <https://github.com/herumi/bls/blob/master/ffi/go/bls/mcl.go#L569>
+  // G2 --
+  type G2 struct {
+    X Fp2
+    Y Fp2
+    Z Fp2
+  }
+  <https://github.com/herumi/bls/blob/master/ffi/go/bls/mcl.go#L476>
+  // Fp2 -- x = D[0] + D[1] i where i^2 = -1
+  type Fp2 struct {
+    D [2]Fp
+  }
+
+Oh snaps correlates to!
+
+  type ECP2 struct {
+    x FP2
+    y FP2
+    z FP2
+  }
+
+The code we want to port is:
+
+  <https://github.com/herumi/bls/blob/3005a32a97ebdcb426d59caaa9868a074fe7b35a/src/bls_c_impl.hpp#L104>
+	if (curve == MCL_BN254) {
+		const char *Qx_BN254 = "11ccb44e77ac2c5dc32a6009594dbe331ec85a61290d6bbac8cc7ebb2dceb128 f204a14bbdac4a05be9a25176de827f2e60085668becdd4fc5fa914c9ee0d9a";
+		const char *Qy_BN254 = "7c13d8487903ee3c1c5ea327a3a52b6cc74796b1760d5ba20ed802624ed19c8 8f9642bbaacb73d8c89492528f58932f2de9ac3e80c7b0e41f1a84f1c40182";
+		g_Q.x.setStr(&b, Qx_BN254, 16);
+		g_Q.y.setStr(&b, Qy_BN254, 16);
+		g_Q.z = 1;
+	} else {
+
+And if I'm not mistaken, that's just the same as ECP_generator? This is pretty
+damn good!
 
 ## SecretKey.Sign ##
 
@@ -360,6 +421,21 @@ Function defined here:
   }
   ```
 
+Now if I'm not mistaken, that just looks a lot like MPIN_GET_SERVER_SECRET,
+which is just horribly named because it doesn't have the word 'public' in it?
+
+  MPIN.go-153-func MPIN_GET_SERVER_SECRET(S []byte, SST []byte) int {
+  MPIN.go:154:    Q := ECP2_generator()
+  MPIN.go-155-    s := FromBytes(S) // S rly just FR, see: <https://github.com/herumi/bls/blob/1b48de51f4f76deb204d108f6126c1507623f739/include/bls/bls.h#L56>
+  MPIN.go-156-    Q = G2mul(Q, s)
+  MPIN.go-157-    Q.ToBytes(SST,false)
+  MPIN.go-158-    return 0
+  MPIN.go-159-}
+
+The reason why I think it could possibly work:
++ turns out ECP2_generator is just the same thing as getBasePoint
++ It does G2mul, which is the same thing as Gmul! Because getBasePoint is a G2
+
 Gmul is just a multimethod. There are 2 Gmul defined. C++ chooses the right function
 based on the types passed to the function. See them defined here:
   <https://github.com/herumi/bls/blob/3005a32a97ebdcb426d59caaa9868a074fe7b35a/src/bls_c_impl.hpp#L16>
@@ -369,7 +445,7 @@ based on the types passed to the function. See them defined here:
 
 Gmul is either G1mul or G2mul. The diff between G1 and G2 is a #ifdef on BLS_ETH <https://github.com/herumi/bls/blob/3005a32a97ebdcb426d59caaa9868a074fe7b35a/src/bls_c_impl.hpp#L50>
 
-getBasePoint returns a static G1/G2. The G1 structure is:
+getBasePoint returns a static G1/G2. The G2 structure is:
 
   <https://github.com/herumi/bls/blob/master/ffi/go/bls/mcl.go#L569>
   // G2 --
@@ -420,6 +496,7 @@ in PAIR.go
   typedef struct {
     uint64_t d[MCLBN_FR_UNIT_SIZE];
   } mclBnFr;
+  // And MCLBN_FR_UNIT_SIZE is 4 or 6. It's 6 if it's bls384.
 
 I believe the exactly corollary is in BIG64.go, see this:
 
