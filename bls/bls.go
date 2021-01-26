@@ -207,8 +207,20 @@ func (sk *SecretKey) Sign(m []byte) *Sign {
   return sig
 }
 
-// TODO: NYI.
+// Turns out this is just MPIN_GET_SERVER_SECRET
 func (sk *SecretKey) GetPublicKey() *PublicKey {
-  // TODO
-  return nil
+  // Taken from:
+  // https://github.com/miracl/core/blob/fda3416694d153f900b617d7bc42038df34a2da6/go/TestMPIN.go#L41
+  // https://github.com/miracl/core/blob/fda3416694d153f900b617d7bc42038df34a2da6/go/TestMPIN.go#L79
+	const MGS = BN254.MGS
+	const MFS = BN254.MFS
+	const G1S = 2*MFS + 1 /* Group 1 Size */
+	const G2S = 4*MFS + 1  /* Group 2 Size */
+	var S [MGS]byte
+	var SST [G2S]byte
+  sk.v.ToBytes(S[:])
+  BN254.MPIN_GET_SERVER_SECRET(S[:], SST[:])
+  result := new(PublicKey)
+  result.v = BN254.ECP_fromBytes(SST[:])
+  return result
 }
