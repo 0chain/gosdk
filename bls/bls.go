@@ -163,6 +163,36 @@ type ID struct {
   v *BN254.FP
 }
 
+func (id *ID) SetDecString(s string) error {
+  // TODO: this is wrong, needs to be dec2byte.
+  b, err := hex2byte(s)
+	if err != nil {
+		return nil
+	}
+  id.v = BN254.FP_fromBytes(b)
+  return nil
+}
+
+func (id *ID) SetHexString(s string) error {
+  b, err := hex2byte(s)
+	if err != nil {
+		return nil
+	}
+  id.v = BN254.FP_fromBytes(b)
+  return nil
+}
+
+func (id *ID) GetHexString() string {
+  return hex.EncodeToString(id.Serialize())
+}
+
+func (id *ID) Serialize() []byte {
+  var _a BN254.Chunk
+  b := make([]byte, BN254.NLEN*int(unsafe.Sizeof(_a)))
+  id.v.ToBytes(b)
+  return b
+}
+
 //-----------------------------------------------------------------------------
 // SecretKey.
 //-----------------------------------------------------------------------------

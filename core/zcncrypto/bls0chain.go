@@ -9,7 +9,7 @@ import (
 
   bls2 "github.com/0chain/gosdk/bls"
 	"github.com/0chain/gosdk/core/encryption"
-	"github.com/herumi/bls-go-binary/bls"
+	// "github.com/herumi/bls-go-binary/bls"
 	"github.com/tyler-smith/go-bip39"
 )
 
@@ -237,7 +237,7 @@ type ThresholdSignatureScheme interface {
 //BLS0ChainThresholdScheme - a scheme that can create threshold signature shares for BLS0Chain signature scheme
 type BLS0ChainThresholdScheme struct {
 	BLS0ChainScheme
-	id  bls.ID
+	id  bls2.ID
 	Ids string `json:"threshold_scheme_id"`
 }
 
@@ -278,35 +278,30 @@ func BLS0GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]BL
 		return nil, errors.New("Invalid encryption scheme")
 	}
 
-	var b0original bls.SecretKey
 	b0PrivateKeyBytes, err := b0ss.GetPrivateKeyAsByteArray()
 	if err != nil {
 		return nil, err
 	}
 
-	err = b0original.SetLittleEndian(b0PrivateKeyBytes)
-	if err != nil {
-		return nil, err
-	}
-
+  b0original := bls2.SecretKey_fromBytes(b0PrivateKeyBytes)
 	polynomial := b0original.GetMasterSecretKey(t)
 
 	var shares []BLS0ChainThresholdScheme
 	for i := 1; i <= n; i++ {
-		var id bls.ID
+		var id bls2.ID
 		err = id.SetDecString(fmt.Sprint(i))
 		if err != nil {
 			return nil, err
 		}
 
-		var sk bls.SecretKey
+		var sk bls2.SecretKey
 		err = sk.Set(polynomial, &id)
 		if err != nil {
 			return nil, err
 		}
 
 		share := BLS0ChainThresholdScheme{}
-		share.PrivateKey = hex.EncodeToString(sk.GetLittleEndian())
+		share.PrivateKey = sk.SerializeToHexStr()
 		share.PublicKey = sk.GetPublicKey().SerializeToHexStr()
 
 		share.id = id
