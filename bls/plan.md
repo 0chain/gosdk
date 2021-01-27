@@ -597,21 +597,117 @@ and 2nd args are where the subtraction should take place.
 
 sk.Set is defined here:
 
-  https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L305-L312
-  Calls into C.blsSecretKeyShare
+  <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L305-L312>
+  // Calls into C.blsSecretKeyShare
+  ```
+  // Set --
+  func (sec *SecretKey) Set(msk []SecretKey, id *ID) error {
+    // #nosec
+    ret := C.blsSecretKeyShare(&sec.v, &msk[0].v, (C.mclSize)(len(msk)), &id.v)
+    if ret != 0 {
+      return fmt.Errorf("err blsSecretKeyShare")
+    }
+    return nil
+  }
+  ```
 
-  https://github.com/herumi/bls/blob/3005a32a97ebdcb426d59caaa9868a074fe7b35a/src/bls_c_impl.hpp#L543
-  Calls into mcl::evaluatePolynomial
+  <https://github.com/herumi/bls/blob/3005a32a97ebdcb426d59caaa9868a074fe7b35a/src/bls_c_impl.hpp#L543>
+  // Calls into mcl::evaluatePolynomial
+  ```
+  int blsSecretKeyShare(blsSecretKey *sec, const blsSecretKey* msk, mclSize k, const blsId *id)
+  {
+    bool b;
+    mcl::evaluatePolynomial(&b, *cast(&sec->v), cast(&msk->v), k, *cast(&id->v));
+    return b ? 0 : -1;
+  }
+  ```
 
-  evaluatePolynomial uses mul and add, see Herumi's email.
+  <https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/include/mcl/lagrange.hpp#L64>
+  ```
+  /*
+    out = f(x) = c[0] + c[1] * x + c[2] * x^2 + ... + c[cSize - 1] * x^(cSize - 1)
+    @retval 0 if succeed else -1 (if cSize == 0)
+  */
+  template<class G, class T>
+  void evaluatePolynomial(bool *pb, G& out, const G *c, size_t cSize, const T& x)
+  {
+    if (cSize == 0) {
+      *pb = false;
+      return;
+    }
+    if (cSize == 1) {
+      out = c[0];
+      *pb = true;
+      return;
+    }
+    G y = c[cSize - 1];
+    for (int i = (int)cSize - 2; i >= 0; i--) {
+      G::mul(y, y, x);
+      G::add(y, y, c[i]);
+    }
+    out = y;
+    *pb = true;
+  }
+  ```
 
 Herumi's email:
 
-  Secret Key "mul" and "add" is defined...
+  // Secret Key "mul" and "add" is defined...
+  <https://github.com/herumi/mcl/blob/master/include/mcl/fp.hpp#L499>
+	`static inline void add(FpT& z, const FpT& x, const FpT& y) { op_.fp_add(z.v_, x.v_, y.v_, op_.p); }`
 
-  https://github.com/herumi/mcl/blob/master/include/mcl/fp.hpp#L499
-  https://github.com/herumi/mcl/blob/master/include/mcl/fp.hpp#L502
   The naive algorithm is (x + y) % r and (x * y) % r.
+
+Notice how out is 'z', while 'x' and 'y' are const.
+
+Remember that SecretKey and bls.ID are both just Fr
+
+Notice how these are all consts except for the first two vars.
+
+  <https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/include/mcl/impl/bn_c_impl.hpp#L669>
+  `int mclBn_FrEvaluatePolynomial(mclBnFr *out, const mclBnFr *cVec, mclSize cSize, const mclBnFr *x)`
+
+  evaluatePolynomial uses mul and add, see Herumi's email.
+
+Now if I'm not mistaken, is this just BIG.go "func smul"?
+
+  // BIG.go
+  ```
+  func smul(a *BIG, b *BIG) *BIG {
+    carry := Chunk(0)
+    c := NewBIG()
+    for i := 0; i < NLEN; i++ {
+      carry = 0
+      for j := 0; j < NLEN; j++ {
+        if i+j < NLEN {
+          carry, c.w[i+j] = muladd(a.w[i], b.w[j], carry, c.w[i+j])
+        }
+      }
+    }
+    return c
+  }
+  ```
+
+Nah, muladd doesn't look promising:
+
+  ```
+  /* set this[i]+=x*y+c, and return high part */
+  func muladd(a Chunk, b Chunk, c Chunk, r Chunk) (Chunk, Chunk) {
+
+    tp,bt := bits.Mul64(uint64(a),uint64(b))  // use math/bits intrinsic
+    bot := Chunk(bt&uint64(BMASK))
+    top := Chunk((tp << (64-BASEBITS)) | (bt >> BASEBITS))
+    bot += c; bot += r
+    carry := bot>>BASEBITS
+    bot &= BMASK
+    top+=carry
+    return top, bot
+
+  }
+  ```
+
+Modmul and Modadd look more promising!
+
 
 ## GetLittleEndian, Serialize.
 
