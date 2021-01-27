@@ -152,6 +152,18 @@ func (pk *PublicKey) Serialize() []byte {
 }
 
 //-----------------------------------------------------------------------------
+// ID.
+//-----------------------------------------------------------------------------
+
+// Copied directly from herumi's source code.
+// ID: <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#47>
+// blsId: <https://github.com/herumi/bls/blob/1b48de51f4f76deb204d108f6126c1507623f739/include/bls/bls.h#L52>
+// FP as Fr: <https://github.com/miracl/core/blob/master/go/FP.go#L26>
+type ID struct {
+  v *BN254.FP
+}
+
+//-----------------------------------------------------------------------------
 // SecretKey.
 //-----------------------------------------------------------------------------
 
@@ -161,6 +173,12 @@ func (pk *PublicKey) Serialize() []byte {
 // FP as Fr: <https://github.com/miracl/core/blob/master/go/FP.go#L26>
 type SecretKey struct {
   v *BN254.FP
+}
+
+func SecretKey_fromBytes(b []byte) *SecretKey {
+  sk := new(SecretKey)
+  sk.v = BN254.FP_fromBytes(b)
+  return sk
 }
 
 func SecretKey_fromFP(fp *BN254.FP) *SecretKey {
@@ -258,4 +276,32 @@ func (sk *SecretKey) Add(rhs *SecretKey) {
 
 func (sk *SecretKey) SubFP(fp *BN254.FP) {
   sk.v.Sub(fp)
+}
+
+func (sk *SecretKey) GetMasterSecretKey(k int) (msk []SecretKey) {
+  msk = make([]SecretKey, k)
+  msk[0] = *sk
+  for i := 1; i < k; i++ {
+    msk[i].SetByCSPRNG()
+  }
+  return msk
+}
+
+// Porting over:
+// blsSecretKeyShare: <https://github.com/herumi/bls/blob/3005a32a97ebdcb426d59caaa9868a074fe7b35a/src/bls_c_impl.hpp#L543>
+// evaluatePolynomial: <https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/include/mcl/lagrange.hpp#L64>
+func (sk *SecretKey) Set(msk []SecretKey, id *ID) error {
+  if len(msk) == 0 {
+    return errors.New("No secret keys given.")
+  }
+  if len(msk) == 1 {
+    sk.v = msk[0].CloneFP()
+    return nil
+  }
+  sk.v = msk[ len(msk)-1 ].CloneFP()
+  for i := len(msk)-2; i >= 0; i-- {
+    sk.v.Mul(id.v)
+    sk.v.Add(msk[i].v)
+  }
+  return nil
 }
