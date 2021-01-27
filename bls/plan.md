@@ -33,6 +33,32 @@ bls.ID is just Fr
     mclBnFr v;
   } blsId;
 
+## bls.ID.SetDecString
+
+So this is just FP.serialize.
+
+  <https://github.com/herumi/bls-go-binary/blob/master/bls/bls.go#L135>
+  ```
+  // SetDecString --
+  func (id *ID) SetDecString(s string) error {
+    buf := []byte(s)
+    // #nosec
+    err := C.blsIdSetDecStr(&id.v, (*C.char)(unsafe.Pointer(&buf[0])), C.mclSize(len(buf)))
+    if err != 0 {
+      return fmt.Errorf("err blsIdSetDecStr %s", s)
+    }
+    return nil
+  }
+  ```
+
+  <https://github.com/herumi/bls/blob/3005a32a97ebdcb426d59caaa9868a074fe7b35a/src/bls_c_impl.hpp#L896>
+  ```
+  int blsIdSetDecStr(blsId *id, const char *buf, mclSize bufSize)
+  {
+    return cast(&id->v)->deserialize(buf, bufSize, 10) > 0 ? 0 : -1;
+  }
+  ```
+
 ## getBasePoint ##
 
 Eureka! getBasePoint is just the same thing as ECP2_generator!
