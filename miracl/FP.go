@@ -321,6 +321,11 @@ func (F *FP) mul(b *FP) {
 	F.XES = 2
 }
 
+// 0chain: we need to export Mul.
+func (F *FP) Mul(b *FP) {
+  F.mul(b)
+}
+
 /* this = -this mod Modulus */
 func (F *FP) neg() {
 	m := NewBIGints(Modulus)
