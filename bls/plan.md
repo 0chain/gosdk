@@ -18,6 +18,21 @@ blsInit / bls.Init
 var sk bls.SecretKey
 sk.Set(polynomial, &id)
 
+## bls.ID
+
+bls.ID is just Fr
+
+  <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L47>
+  // ID --
+  type ID struct {
+    v C.blsId
+  }
+
+  <https://github.com/herumi/bls/blob/1b48de51f4f76deb204d108f6126c1507623f739/include/bls/bls.h#L52>
+  typedef struct {
+    mclBnFr v;
+  } blsId;
+
 ## getBasePoint ##
 
 Eureka! getBasePoint is just the same thing as ECP2_generator!
@@ -405,16 +420,18 @@ And this is the default RNG function.
 ## GetMasterSecretKey
 
 For loop around `SetByCSPRNG`. It's just this function we're trying to duplicate.
-```
-func (sec *SecretKey) GetMasterSecretKey(k int) (msk []SecretKey) {
-	msk = make([]SecretKey, k)
-	msk[0] = *sec
-	for i := 1; i < k; i++ {
-		msk[i].SetByCSPRNG()
-	}
-	return msk
-}
-```
+
+  https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L284
+  ```
+  func (sec *SecretKey) GetMasterSecretKey(k int) (msk []SecretKey) {
+    msk = make([]SecretKey, k)
+    msk[0] = *sec
+    for i := 1; i < k; i++ {
+      msk[i].SetByCSPRNG()
+    }
+    return msk
+  }
+  ```
 
 ## GetPublicKey
 
