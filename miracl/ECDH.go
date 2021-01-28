@@ -22,7 +22,7 @@
 package BN254
 
 //import "fmt"
-import "github.com/miracl/core/go/core"
+import "github.com/0chain/gosdk/miracl/core"
 
 const INVALID_PUBLIC_KEY int = -2
 const ERROR int = -3

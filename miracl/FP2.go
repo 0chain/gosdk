@@ -22,7 +22,7 @@
 /* FP2 elements are of the form a+ib, where i is sqrt(-1) */
 
 package BN254
-import "github.com/miracl/core/go/core"
+import "github.com/0chain/gosdk/miracl/core"
 //import "fmt"
 
 type FP2 struct {
