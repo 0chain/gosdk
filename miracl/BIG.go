@@ -23,7 +23,7 @@ package BN254
 
 import "strconv"
 import "math/bits"
-import "github.com/miracl/core/go/core"
+import "github.com/0chain/gosdk/miracl/core"
 
 //import "fmt"
 
