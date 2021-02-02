@@ -1022,3 +1022,38 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 	})
 	return fabricResponse, err
 }
+
+func GetAllocationMinLock(datashards, parityshards int, size, expiry int64,
+	readPrice, writePrice PriceRange, mcct time.Duration) (int64, error) {
+	if !sdkInitialized {
+		return 0, sdkNotInitialized
+	}
+
+	var allocationRequestData = map[string]interface{}{
+		"data_shards":                   datashards,
+		"parity_shards":                 parityshards,
+		"size":                          size,
+		"owner_id":                      client.GetClientID(),
+		"owner_public_key":              client.GetClientPublicKey(),
+		"expiration_date":               expiry,
+		"preferred_blobbers":            blockchain.GetPreferredBlobbers(),
+		"read_price_range":              readPrice,
+		"write_price_range":             writePrice,
+		"max_challenge_completion_time": mcct,
+	}
+	allocationData, _ := json.Marshal(allocationRequestData)
+
+	params := make(map[string]string)
+	params["allocation_data"] = string(allocationData)
+	allocationsBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation_min_lock", params, nil)
+	if err != nil {
+		return 0, common.NewError("allocation_min_lock_fetch_error", "Error fetching the allocation min lock."+err.Error())
+	}
+
+	var response = make(map[string]int64)
+	err = json.Unmarshal(allocationsBytes, &response)
+	if err != nil {
+		return 0, common.NewError("allocation_min_lock_decode_error", "Error decoding the response."+err.Error())
+	}
+	return response["min_lock_demand"], nil
+}
