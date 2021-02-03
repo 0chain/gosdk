@@ -46,6 +46,7 @@ const (
 	FILE_STATS_ENDPOINT      = "/v1/file/stats/"
 	OBJECT_TREE_ENDPOINT     = "/v1/file/objecttree/"
 	COMMIT_META_TXN_ENDPOINT = "/v1/file/commitmetatxn/"
+	COLLABORATOR_ENDPOINT    = "/v1/file/collaborator/"
 	CALCULATE_HASH_ENDPOINT  = "/v1/file/calculatehash/"
 )
 
@@ -211,6 +212,24 @@ func NewAllocationRequest(baseUrl, allocation string) (*http.Request, error) {
 func NewCommitMetaTxnRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, COMMIT_META_TXN_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodPost, url, body)
+	return setClientInfo(req, err)
+}
+
+func NewCollaboratorRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s", baseUrl, COLLABORATOR_ENDPOINT, allocation)
+	req, err := http.NewRequest(http.MethodPost, url, body)
+	return setClientInfo(req, err)
+}
+
+func GetCollaboratorsRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s", baseUrl, COLLABORATOR_ENDPOINT, allocation)
+	req, err := http.NewRequest(http.MethodGet, url, body)
+	return setClientInfo(req, err)
+}
+
+func DeleteCollaboratorRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s", baseUrl, COLLABORATOR_ENDPOINT, allocation)
+	req, err := http.NewRequest(http.MethodDelete, url, body)
 	return setClientInfo(req, err)
 }
 
