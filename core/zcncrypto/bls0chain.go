@@ -9,7 +9,6 @@ import (
 
   bls2 "github.com/0chain/gosdk/bls"
 	"github.com/0chain/gosdk/core/encryption"
-	// "github.com/herumi/bls-go-binary/bls"
 	"github.com/tyler-smith/go-bip39"
 )
 
@@ -289,7 +288,7 @@ func BLS0GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]BL
 	var shares []BLS0ChainThresholdScheme
 	for i := 1; i <= n; i++ {
 		var id bls2.ID
-		err = id.SetDecString(fmt.Sprint(i))
+		err = id.SetHexString(fmt.Sprintf("%x", i))
 		if err != nil {
 			return nil, err
 		}

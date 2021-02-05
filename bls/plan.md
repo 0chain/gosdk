@@ -35,6 +35,10 @@ bls.ID is just Fr
 
 ## bls.ID.SetDecString
 
+Overall plan for SecDecString is to just ditch it and use SetHexString instead.
+Where it is used in the library is simple enough anyway to just use hexstring
+instead...
+
 So this is just FP.serialize.
 
   <https://github.com/herumi/bls-go-binary/blob/master/bls/bls.go#L135>
