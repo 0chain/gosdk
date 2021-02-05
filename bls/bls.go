@@ -163,15 +163,15 @@ type ID struct {
   v *BN254.FP
 }
 
-func (id *ID) SetDecString(s string) error {
-  // TODO: this is wrong, needs to be dec2byte.
-  b, err := hex2byte(s)
-	if err != nil {
-		return nil
-	}
-  id.v = BN254.FP_fromBytes(b)
-  return nil
-}
+/// TODO: hex2byte is wrong, needs to be dec2byte.
+// func (id *ID) SetDecString(s string) error {
+//   b, err := hex2byte(s)
+// 	if err != nil {
+// 		return nil
+// 	}
+//   id.v = BN254.FP_fromBytes(b)
+//   return nil
+// }
 
 func (id *ID) SetHexString(s string) error {
   b, err := hex2byte(s)
