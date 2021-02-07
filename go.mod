@@ -9,8 +9,9 @@ require (
 	github.com/idubinskiy/schematyper v0.0.0-20190118213059-f71b40dac30d // indirect
 	github.com/klauspost/cpuid v1.2.0 // indirect
 	github.com/klauspost/reedsolomon v1.9.2
-	github.com/miracl/core v0.0.0-20210113000858-6c7e3be46ca9
+	github.com/mattn/go-shellwords v1.0.11 // indirect
 	github.com/mitchellh/mapstructure v1.1.2
+	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/tyler-smith/go-bip39 v1.0.0
 	go.dedis.ch/kyber/v3 v3.0.5
 	go.uber.org/zap v1.15.0
