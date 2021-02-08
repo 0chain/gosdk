@@ -2,7 +2,6 @@ package bls
 
 import (
   "io"
-  "bytes"
   "encoding/binary"
   "math/rand"
   "errors"
@@ -232,16 +231,22 @@ func (sk *SecretKey) CloneFP() *BN254.FP {
 }
 
 func (sk *SecretKey) SetByCSPRNG() error {
-  var w [BN254.NLEN]BN254.Chunk
+  var w *BN254.BIG
+  var _a BN254.Chunk
+  b := make([]byte, BN254.NLEN*int(unsafe.Sizeof(_a)))
   if sRandReader == nil {
-    b := make([]byte, BN254.NLEN*int(unsafe.Sizeof(w[0])))
     rand.Read(b)
-    buf := bytes.NewBuffer(b)
-    binary.Read(buf, binary.LittleEndian, w)
   } else {
-    binary.Read(sRandReader, binary.LittleEndian, w)
+    err := binary.Read(sRandReader, binary.LittleEndian, b)
+    /// Debug info to find out more about the given rand func.
+    // fmt.Println("debug given sRandReader: ", len(b), b, err)
+    if (err != nil) {
+      fmt.Println("Couldn't read from sRandReader. Got error:", err)
+      panic("Couldn't read from sRandReader. Got an error (printed out on previous lines.")
+    }
   }
-  sk.v = BN254.NewFPbig(BN254.NewBIGints(w))
+  w = BN254.FromBytes(b)
+  sk.v = BN254.NewFPbig(w)
   return nil
 }
 
