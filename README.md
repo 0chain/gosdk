@@ -36,7 +36,7 @@ It is possible to support the sdk for other variations of Linux as well.
 - If it prints the gosdk version installed then setup is complete.
 
 
-### Mobile Builds (iOS and Android) ###
+## Mobile Builds (iOS and Android) ##
 - gosdk can be build to use on Mobile platforms iOS and Android using gomobile.
 - Xcode Command Line Tools is required to build SDK for iOS.
 - Android studio with NDK is required to build SDK for Android
@@ -53,7 +53,13 @@ It is possible to support the sdk for other variations of Linux as well.
         For Android only:
                 make build-mobilesdk ANDROID=1
 
-### FAQ ###
+## How to run BLS unit tests ##
+
+To run all the unit tests in `bls0chain_test.go`, run this command from $TOP: `go test github.com/0chain/gosdk/core/zcncrypto -v`
+
+To run a specific unit test in `bls0chain_test.go` such as `TestSignatureScheme`, run this: `go test github.com/0chain/gosdk/core/zcncrypto -v -run TestSignatureScheme`
+
+## FAQ ##
 
 - [How to install GO on any platform](https://golang.org/doc/install)
 - [How to install different version of GO](https://golang.org/doc/install#extra_versions)
