@@ -1,8 +1,11 @@
 package zcncrypto
 
 import (
+	"bytes"
+	"fmt"
 	"testing"
 
+	"github.com/0chain/gosdk/bls"
 	"github.com/0chain/gosdk/core/encryption"
 )
 
@@ -10,6 +13,36 @@ var verifyPublickey = `e8a6cfa7b3076ae7e04764ffdfe341632a136b52953dfafa6926361dd
 var signPrivatekey = `5e1fc9c03d53a8b9a63030acc2864f0c33dffddb3c276bf2b3c8d739269cc018`
 var data = `TEST`
 var blsWallet *Wallet
+
+// Test the following code we ported from herumi.
+// ```
+// var sk bls.SecretKey
+// sk.SetByCSPRNG()
+// pk := sk.SerializeToHexStr()
+// ```
+func TestSetByCSPRNG(t *testing.T) {
+	testSetByCSPRNGCase(t, []byte{178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178}, "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b212")
+	testSetByCSPRNGCase(t, []byte{5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5}, "0505050505050505050505050505050505050505050505050505050505050505")
+}
+
+// Test the following code we ported from herumi.
+// ```
+// var sk bls.SecretKey
+// sk.SetByCSPRNG()
+// pk := sk.SerializeToHexStr()
+// ```
+func testSetByCSPRNGCase(t *testing.T, seed []byte, expected_pk string) {
+	var sk bls.SecretKey
+	r := bytes.NewReader(seed)
+	bls.SetRandFunc(r)
+	sk.SetByCSPRNG()
+	pk := sk.SerializeToHexStr()
+	if pk != expected_pk {
+		fmt.Println("pk:", pk)
+		fmt.Println("expected_pk:", expected_pk)
+		t.Fatalf("Did not get right secret key.")
+	}
+}
 
 func TestSignatureScheme(t *testing.T) {
 	sigScheme := NewSignatureScheme("bls0chain")
@@ -58,7 +91,7 @@ func BenchmarkBLSSign(b *testing.B) {
 func TestRecoveryKeys(t *testing.T) {
 
 	sigScheme := NewSignatureScheme("bls0chain")
-    TestSignatureScheme(t)
+	TestSignatureScheme(t)
 	w, err := sigScheme.RecoverKeys(blsWallet.Mnemonic)
 	if err != nil {
 		t.Fatalf("set Recover Keys failed")
