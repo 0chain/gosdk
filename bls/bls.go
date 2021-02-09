@@ -266,16 +266,7 @@ func (sk *SecretKey) SerializeToHexStr() string {
 
 // Note: herumi's SecretKey.GetLittleEndian is just aliased to Serialize().
 func (sk *SecretKey) Serialize() []byte {
-	var _a BN254.Chunk
-	b := make([]byte, BN254.NLEN*int(unsafe.Sizeof(_a)))
-	sk.v.GetBIG().ToBytes(b)
-
-	// For some reason, the last 3 bits get chopped down to 0 every time.
-	// TODO: find out how the herumi/bls library is doing this. Maybe email
-	// herumi.
-	b[31] = b[31] & 0x1f
-
-	return b[0:32]
+	return sk.v.Serialize()
 }
 
 func (sk *SecretKey) Sign(m []byte) *Sign {
