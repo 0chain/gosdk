@@ -84,6 +84,21 @@ func (F *FP) ToString() string {
 	return F.redc().ToString()
 }
 
+func (F *FP) Serialize() []byte {
+	// var _a BN254.Chunk
+	// b := make([]byte, BN254.NLEN*int(unsafe.Sizeof(_a)))
+	b := make([]byte, MODBYTES)
+	F.x.ToBytes(b)
+
+	// For some reason, the last 3 bits get chopped down to 0 every time.
+	// TODO: find out how the herumi/bls library is doing this. Maybe email
+	// herumi.
+	z := MODBYTES
+	b[z-1] = b[z-1] & 0x1f
+
+	return b[0:z]
+}
+
 /* convert to Montgomery n-residue form */
 func (F *FP) nres() {
 	if MODTYPE != PSEUDO_MERSENNE && MODTYPE != GENERALISED_MERSENNE {
