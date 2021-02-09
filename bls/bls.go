@@ -1,21 +1,21 @@
 package bls
 
 import (
-  "io"
-  "encoding/binary"
-  "math/rand"
-  "errors"
-  "unsafe"
-  "fmt"
-  "encoding/hex"
-  "github.com/0chain/gosdk/miracl"
+	"encoding/binary"
+	"encoding/hex"
+	"errors"
+	"fmt"
+	"github.com/0chain/gosdk/miracl"
+	"io"
+	"math/rand"
+	"unsafe"
 )
 
 func Init() error {
-  if BN254.Init() == BN254.BLS_FAIL {
-    return errors.New("Couldn't initialize BLS")
-  }
-  return nil
+	if BN254.Init() == BN254.BLS_FAIL {
+		return errors.New("Couldn't initialize BLS")
+	}
+	return nil
 }
 
 // https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L711
@@ -55,23 +55,23 @@ func hex2byte(s string) ([]byte, error) {
 }
 
 func DeserializeHexStr(s string) (*BN254.ECP, error) {
-  b, err := hex2byte(s)
+	b, err := hex2byte(s)
 	if err != nil {
 		return nil, err
 	}
-  return BN254.ECP_fromBytes(b), nil
+	return BN254.ECP_fromBytes(b), nil
 }
 
 func ToBytes(E *BN254.ECP) []byte {
-  t := make([]byte, int(BN254.MODBYTES))
-  E.ToBytes(t, false /*compress*/)
-  return t
+	t := make([]byte, int(BN254.MODBYTES))
+	E.ToBytes(t, false /*compress*/)
+	return t
 }
 
 func CloneFP(fp *BN254.FP) *BN254.FP {
-  result := BN254.NewFP()
-  result.Copy(fp)
-  return result
+	result := BN254.NewFP()
+	result.Copy(fp)
+	return result
 }
 
 //-----------------------------------------------------------------------------
@@ -83,28 +83,28 @@ func CloneFP(fp *BN254.FP) *BN254.FP {
 // blsSignature: <https://github.com/herumi/bls/blob/1b48de51f4f76deb204d108f6126c1507623f739/include/bls/bls.h#L68>
 // mclBnG1: <https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/include/mcl/bn.h#L96>
 type Sign struct {
-  v *BN254.ECP
+	v *BN254.ECP
 }
 
 func (sig *Sign) Add(rhs *Sign) {
-  sig.v.Add(rhs.v)
+	sig.v.Add(rhs.v)
 }
 
 // Starting from herumi's library:
 // <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L480>
 func (sig *Sign) DeserializeHexStr(s string) error {
-  var err error
-  sig.v, err = DeserializeHexStr(s);
-  if err != nil {
-    return err
-  }
-  return nil
+	var err error
+	sig.v, err = DeserializeHexStr(s)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Starting from herumi's library:
 // <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L454>
 func (sig *Sign) Serialize() []byte {
-  return ToBytes(sig.v)
+	return ToBytes(sig.v)
 }
 
 // Starting from herumi's library:
@@ -115,8 +115,8 @@ func (sig *Sign) SerializeToHexStr() string {
 
 // Porting over <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L553>
 func (sig *Sign) Verify(pub *PublicKey, m []byte) bool {
-  b := BN254.Core_Verify(ToBytes(sig.v), m, ToBytes(pub.v))
-  return b == BN254.BLS_OK
+	b := BN254.Core_Verify(ToBytes(sig.v), m, ToBytes(pub.v))
+	return b == BN254.BLS_OK
 }
 
 //-----------------------------------------------------------------------------
@@ -128,26 +128,26 @@ func (sig *Sign) Verify(pub *PublicKey, m []byte) bool {
 // blsPublicKey: <https://github.com/herumi/bls/blob/1b48de51f4f76deb204d108f6126c1507623f739/include/bls/bls.h#L60>
 // mclBnG1: <https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/include/mcl/bn.h#L96>
 type PublicKey struct {
-  v *BN254.ECP
+	v *BN254.ECP
 }
 
 // Starting from herumi's library:
 // <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L480>
 func (pk *PublicKey) DeserializeHexStr(s string) error {
-  var err error
-  pk.v, err = DeserializeHexStr(s);
-  if err != nil {
-    return err
-  }
-  return nil
+	var err error
+	pk.v, err = DeserializeHexStr(s)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (pk *PublicKey) SerializeToHexStr() string {
-  return hex.EncodeToString(pk.Serialize())
+	return hex.EncodeToString(pk.Serialize())
 }
 
 func (pk *PublicKey) Serialize() []byte {
-  return ToBytes(pk.v)
+	return ToBytes(pk.v)
 }
 
 //-----------------------------------------------------------------------------
@@ -159,7 +159,7 @@ func (pk *PublicKey) Serialize() []byte {
 // blsId: <https://github.com/herumi/bls/blob/1b48de51f4f76deb204d108f6126c1507623f739/include/bls/bls.h#L52>
 // FP as Fr: <https://github.com/miracl/core/blob/master/go/FP.go#L26>
 type ID struct {
-  v *BN254.FP
+	v *BN254.FP
 }
 
 /// TODO: hex2byte is wrong, needs to be dec2byte.
@@ -173,23 +173,23 @@ type ID struct {
 // }
 
 func (id *ID) SetHexString(s string) error {
-  b, err := hex2byte(s)
+	b, err := hex2byte(s)
 	if err != nil {
 		return nil
 	}
-  id.v = BN254.FP_fromBytes(b)
-  return nil
+	id.v = BN254.FP_fromBytes(b)
+	return nil
 }
 
 func (id *ID) GetHexString() string {
-  return hex.EncodeToString(id.Serialize())
+	return hex.EncodeToString(id.Serialize())
 }
 
 func (id *ID) Serialize() []byte {
-  var _a BN254.Chunk
-  b := make([]byte, BN254.NLEN*int(unsafe.Sizeof(_a)))
-  id.v.ToBytes(b)
-  return b
+	var _a BN254.Chunk
+	b := make([]byte, BN254.NLEN*int(unsafe.Sizeof(_a)))
+	id.v.ToBytes(b)
+	return b
 }
 
 //-----------------------------------------------------------------------------
@@ -201,142 +201,149 @@ func (id *ID) Serialize() []byte {
 // blsSecretKey: <https://github.com/herumi/bls/blob/1b48de51f4f76deb204d108f6126c1507623f739/include/bls/bls.h#L56>
 // FP as Fr: <https://github.com/miracl/core/blob/master/go/FP.go#L26>
 type SecretKey struct {
-  v *BN254.FP
+	v *BN254.FP
 }
 
 func SecretKey_fromBytes(b []byte) *SecretKey {
-  sk := new(SecretKey)
-  sk.v = BN254.FP_fromBytes(b)
-  return sk
+	sk := new(SecretKey)
+	sk.v = BN254.FP_fromBytes(b)
+	return sk
 }
 
 func SecretKey_fromFP(fp *BN254.FP) *SecretKey {
-  sk := new(SecretKey)
-  sk.v = fp
-  return sk
+	sk := new(SecretKey)
+	sk.v = fp
+	return sk
 }
 
 func (sk *SecretKey) GetFP() *BN254.FP {
-  return sk.v
+	return sk.v
 }
 
 func (sk *SecretKey) Clone() *SecretKey {
-  result := new(SecretKey)
-  result.v = sk.CloneFP()
-  return result
+	result := new(SecretKey)
+	result.v = sk.CloneFP()
+	return result
 }
 
 func (sk *SecretKey) CloneFP() *BN254.FP {
-  return BN254.NewFPcopy(sk.v)
+	return BN254.NewFPcopy(sk.v)
 }
 
 func (sk *SecretKey) SetByCSPRNG() error {
-  var w *BN254.BIG
-  var _a BN254.Chunk
-  b := make([]byte, BN254.NLEN*int(unsafe.Sizeof(_a)))
-  if sRandReader == nil {
-    rand.Read(b)
-  } else {
-    err := binary.Read(sRandReader, binary.LittleEndian, b)
-    /// Debug info to find out more about the given rand func.
-    // fmt.Println("debug given sRandReader: ", len(b), b, err)
-    if (err != nil) {
-      fmt.Println("Couldn't read from sRandReader. Got error:", err)
-      panic("Couldn't read from sRandReader. Got an error (printed out on previous lines.")
-    }
-  }
-  w = BN254.FromBytes(b)
-  sk.v = BN254.NewFPbig(w)
-  return nil
+	var w *BN254.BIG
+	var _a BN254.Chunk
+	b := make([]byte, BN254.NLEN*int(unsafe.Sizeof(_a)))
+	if sRandReader == nil {
+		rand.Read(b)
+	} else {
+		err := binary.Read(sRandReader, binary.LittleEndian, b)
+		/// Debug info to find out more about the given rand func.
+		// fmt.Println("debug given sRandReader: ", len(b), b, err)
+		if err != nil {
+			fmt.Println("Couldn't read from sRandReader. Got error:", err)
+			panic("Couldn't read from sRandReader. Got an error (printed out on previous lines.")
+		}
+	}
+	w = BN254.FromBytes(b)
+	w.ToBytes(b)
+	sk.v = BN254.NewFPbigcopy(w)
+	return nil
 }
 
 func (sk *SecretKey) DeserializeHexStr(s string) error {
-  b, err := hex2byte(s)
-  if err != nil {
-    return err
-  }
-  sk.v = BN254.FP_fromBytes(b)
-  return nil
+	b, err := hex2byte(s)
+	if err != nil {
+		return err
+	}
+	sk.v = BN254.FP_fromBytes(b)
+	return nil
 }
 
 func (sk *SecretKey) SerializeToHexStr() string {
-  return hex.EncodeToString(sk.Serialize())
+	return hex.EncodeToString(sk.Serialize())
 }
 
 // Note: herumi's SecretKey.GetLittleEndian is just aliased to Serialize().
 func (sk *SecretKey) Serialize() []byte {
-  var _a BN254.Chunk
-  b := make([]byte, BN254.NLEN*int(unsafe.Sizeof(_a)))
-  sk.v.ToBytes(b)
-  return b
+	var _a BN254.Chunk
+	b := make([]byte, BN254.NLEN*int(unsafe.Sizeof(_a)))
+	sk.v.GetBIG().ToBytes(b)
+
+	// For some reason, the last 3 bits get chopped down to 0 every time.
+	// TODO: find out how the herumi/bls library is doing this. Maybe email
+	// herumi.
+	b[31] = b[31] & 0x1f
+
+	return b[0:32]
 }
 
 func (sk *SecretKey) Sign(m []byte) *Sign {
-  // We're just using this miracl/core function to port over the Sign function.
-  // func Core_Sign(SIG []byte, M []byte, S []byte) int {...}
+	// We're just using this miracl/core function to port over the Sign function.
+	// func Core_Sign(SIG []byte, M []byte, S []byte) int {...}
 
-  var _a BN254.Chunk
+	var _a BN254.Chunk
 
-  b1 := make([]byte, int(BN254.MODBYTES))
-  b3 := make([]byte, BN254.NLEN*int(unsafe.Sizeof(_a)))
-  sk.v.ToBytes(b3)
-  BN254.Core_Sign(b1, m, b3)
+	b1 := make([]byte, int(BN254.MODBYTES))
+	b3 := make([]byte, BN254.NLEN*int(unsafe.Sizeof(_a)))
+	sk.v.ToBytes(b3)
+	BN254.Core_Sign(b1, m, b3)
 
-  sig := new(Sign)
-  sig.v = BN254.ECP_fromBytes(b1)
-  return sig
+	sig := new(Sign)
+	sig.v = BN254.ECP_fromBytes(b1)
+	return sig
 }
 
 // Turns out this is just MPIN_GET_SERVER_SECRET
 func (sk *SecretKey) GetPublicKey() *PublicKey {
-  // Taken from:
-  // https://github.com/miracl/core/blob/fda3416694d153f900b617d7bc42038df34a2da6/go/TestMPIN.go#L41
-  // https://github.com/miracl/core/blob/fda3416694d153f900b617d7bc42038df34a2da6/go/TestMPIN.go#L79
+	// Taken from:
+	// https://github.com/miracl/core/blob/fda3416694d153f900b617d7bc42038df34a2da6/go/TestMPIN.go#L41
+	// https://github.com/miracl/core/blob/fda3416694d153f900b617d7bc42038df34a2da6/go/TestMPIN.go#L79
 	const MGS = BN254.MGS
 	const MFS = BN254.MFS
 	const G1S = 2*MFS + 1 /* Group 1 Size */
-	const G2S = 4*MFS + 1  /* Group 2 Size */
+	const G2S = 4*MFS + 1 /* Group 2 Size */
 	var S [MGS]byte
 	var SST [G2S]byte
-  sk.v.ToBytes(S[:])
-  BN254.MPIN_GET_SERVER_SECRET(S[:], SST[:])
-  result := new(PublicKey)
-  result.v = BN254.ECP_fromBytes(SST[:])
-  return result
+	sk.v.ToBytes(S[:])
+	BN254.MPIN_GET_SERVER_SECRET(S[:], SST[:])
+	result := new(PublicKey)
+	result.v = BN254.ECP_fromBytes(SST[:])
+	return result
 }
 
 func (sk *SecretKey) Add(rhs *SecretKey) {
-  sk.v.Add(rhs.v)
+	sk.v.Add(rhs.v)
 }
 
 func (sk *SecretKey) SubFP(fp *BN254.FP) {
-  sk.v.Sub(fp)
+	sk.v.Sub(fp)
 }
 
 func (sk *SecretKey) GetMasterSecretKey(k int) (msk []SecretKey) {
-  msk = make([]SecretKey, k)
-  msk[0] = *sk
-  for i := 1; i < k; i++ {
-    msk[i].SetByCSPRNG()
-  }
-  return msk
+	msk = make([]SecretKey, k)
+	msk[0] = *sk
+	for i := 1; i < k; i++ {
+		msk[i].SetByCSPRNG()
+	}
+	return msk
 }
 
 // Porting over:
 // blsSecretKeyShare: <https://github.com/herumi/bls/blob/3005a32a97ebdcb426d59caaa9868a074fe7b35a/src/bls_c_impl.hpp#L543>
 // evaluatePolynomial: <https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/include/mcl/lagrange.hpp#L64>
 func (sk *SecretKey) Set(msk []SecretKey, id *ID) error {
-  if len(msk) == 0 {
-    return errors.New("No secret keys given.")
-  }
-  if len(msk) == 1 {
-    sk.v = msk[0].CloneFP()
-    return nil
-  }
-  sk.v = msk[ len(msk)-1 ].CloneFP()
-  for i := len(msk)-2; i >= 0; i-- {
-    sk.v.Mul(id.v)
-    sk.v.Add(msk[i].v)
-  }
-  return nil
+	if len(msk) == 0 {
+		return errors.New("No secret keys given.")
+	}
+	if len(msk) == 1 {
+		sk.v = msk[0].CloneFP()
+		return nil
+	}
+	sk.v = msk[len(msk)-1].CloneFP()
+	for i := len(msk) - 2; i >= 0; i-- {
+		sk.v.Mul(id.v)
+		sk.v.Add(msk[i].v)
+	}
+	return nil
 }
