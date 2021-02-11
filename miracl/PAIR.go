@@ -670,16 +670,17 @@ func Fexp(m *FP12) *FP12 {
 		r.reduce()
 	} else {
 
-// See https://eprint.iacr.org/2020/875.pdf
-		y1:=NewFP12copy(r)
+		// See https://eprint.iacr.org/2020/875.pdf
+		y1 := NewFP12copy(r)
 		y1.usqr()
 		y1.Mul(r) // y1=r^3
 
-		y0:=NewFP12copy(r.Pow(x))
+		y0 := NewFP12copy(r.Pow(x))
 		if SIGN_OF_X == NEGATIVEX {
 			y0.conj()
 		}
-		t0:=NewFP12copy(r); t0.conj()
+		t0 := NewFP12copy(r)
+		t0.conj()
 		r.Copy(y0)
 		r.Mul(t0)
 
@@ -687,92 +688,95 @@ func Fexp(m *FP12) *FP12 {
 		if SIGN_OF_X == NEGATIVEX {
 			y0.conj()
 		}
-		t0.Copy(r); t0.conj()
+		t0.Copy(r)
+		t0.conj()
 		r.Copy(y0)
 		r.Mul(t0)
 
-// ^(x+p)
-		y0.Copy(r.Pow(x));
+		// ^(x+p)
+		y0.Copy(r.Pow(x))
 		if SIGN_OF_X == NEGATIVEX {
 			y0.conj()
 		}
 		t0.Copy(r)
 		t0.frob(f)
 		r.Copy(y0)
-		r.Mul(t0);
+		r.Mul(t0)
 
-// ^(x^2+p^2-1)
+		// ^(x^2+p^2-1)
 		y0.Copy(r.Pow(x))
 		y0.Copy(y0.Pow(x))
 		t0.Copy(r)
-		t0.frob(f); t0.frob(f)
+		t0.frob(f)
+		t0.frob(f)
 		y0.Mul(t0)
-		t0.Copy(r); t0.conj()
+		t0.Copy(r)
+		t0.conj()
 		r.Copy(y0)
 		r.Mul(t0)
 
 		r.Mul(y1)
-		r.reduce();
-
-/*
-		// Ghamman & Fouotsa Method
-		y0 := NewFP12copy(r)
-		y0.usqr()
-		y1 := y0.Pow(x)
-		if SIGN_OF_X == NEGATIVEX {
-			y1.conj()
-		}
-
-		x.fshr(1)
-		y2 := y1.Pow(x)
-		if SIGN_OF_X == NEGATIVEX {
-			y2.conj()
-		}
-
-		x.fshl(1)
-		y3 := NewFP12copy(r)
-		y3.conj()
-		y1.Mul(y3)
-
-		y1.conj()
-		y1.Mul(y2)
-
-		y2 = y1.Pow(x)
-		if SIGN_OF_X == NEGATIVEX {
-			y2.conj()
-		}
-
-		y3 = y2.Pow(x)
-		if SIGN_OF_X == NEGATIVEX {
-			y3.conj()
-		}
-
-		y1.conj()
-		y3.Mul(y1)
-
-		y1.conj()
-		y1.frob(f)
-		y1.frob(f)
-		y1.frob(f)
-		y2.frob(f)
-		y2.frob(f)
-		y1.Mul(y2)
-
-		y2 = y3.Pow(x)
-		if SIGN_OF_X == NEGATIVEX {
-			y2.conj()
-		}
-
-		y2.Mul(y0)
-		y2.Mul(r)
-
-		y1.Mul(y2)
-		y2.Copy(y3)
-		y2.frob(f)
-		y1.Mul(y2)
-		r.Copy(y1)
 		r.reduce()
-*/
+
+		/*
+			// Ghamman & Fouotsa Method
+			y0 := NewFP12copy(r)
+			y0.usqr()
+			y1 := y0.Pow(x)
+			if SIGN_OF_X == NEGATIVEX {
+				y1.conj()
+			}
+
+			x.fshr(1)
+			y2 := y1.Pow(x)
+			if SIGN_OF_X == NEGATIVEX {
+				y2.conj()
+			}
+
+			x.fshl(1)
+			y3 := NewFP12copy(r)
+			y3.conj()
+			y1.Mul(y3)
+
+			y1.conj()
+			y1.Mul(y2)
+
+			y2 = y1.Pow(x)
+			if SIGN_OF_X == NEGATIVEX {
+				y2.conj()
+			}
+
+			y3 = y2.Pow(x)
+			if SIGN_OF_X == NEGATIVEX {
+				y3.conj()
+			}
+
+			y1.conj()
+			y3.Mul(y1)
+
+			y1.conj()
+			y1.frob(f)
+			y1.frob(f)
+			y1.frob(f)
+			y2.frob(f)
+			y2.frob(f)
+			y1.Mul(y2)
+
+			y2 = y3.Pow(x)
+			if SIGN_OF_X == NEGATIVEX {
+				y2.conj()
+			}
+
+			y2.Mul(y0)
+			y2.Mul(r)
+
+			y1.Mul(y2)
+			y2.Copy(y3)
+			y2.frob(f)
+			y1.Mul(y2)
+			r.Copy(y1)
+			r.reduce()
+		*/
 	}
 	return r
 }
@@ -781,7 +785,7 @@ func Fexp(m *FP12) *FP12 {
 func glv(e *BIG) []*BIG {
 	var u []*BIG
 	if CURVE_PAIRING_TYPE == BN {
-/* */
+		/* */
 		t := NewBIGint(0)
 		q := NewBIGints(CURVE_Order)
 		var v []*BIG
@@ -802,7 +806,7 @@ func glv(e *BIG) []*BIG {
 				u[i].Mod(q)
 			}
 		}
-/* */
+		/* */
 	} else {
 		q := NewBIGints(CURVE_Order)
 		x := NewBIGints(CURVE_Bnx)
@@ -820,7 +824,7 @@ func glv(e *BIG) []*BIG {
 func gs(e *BIG) []*BIG {
 	var u []*BIG
 	if CURVE_PAIRING_TYPE == BN {
-/* */
+		/* */
 		t := NewBIGint(0)
 		q := NewBIGints(CURVE_Order)
 
@@ -841,7 +845,7 @@ func gs(e *BIG) []*BIG {
 				u[i].Mod(q)
 			}
 		}
-/* */
+		/* */
 	} else {
 		q := NewBIGints(CURVE_Order)
 		x := NewBIGints(CURVE_Bnx)
@@ -978,44 +982,63 @@ func GTpow(d *FP12, e *BIG) *FP12 {
 }
 
 /* test G1 group membership */
-	func G1member(P *ECP) bool {
-		q := NewBIGints(CURVE_Order)
-		if P.Is_infinity() {return false}
-		W:=G1mul(P,q)
-		if !W.Is_infinity() {return false}
-		return true
+func G1member(P *ECP) bool {
+	q := NewBIGints(CURVE_Order)
+	if P.Is_infinity() {
+		return false
 	}
+	W := G1mul(P, q)
+	if !W.Is_infinity() {
+		return false
+	}
+	return true
+}
 
 /* test G2 group membership */
-	func G2member(P *ECP2) bool {
-		q := NewBIGints(CURVE_Order)
-		if P.Is_infinity() {return false}
-		W:=G2mul(P,q)
-		if !W.Is_infinity() {return false}
-		return true
+func G2member(P *ECP2) bool {
+	q := NewBIGints(CURVE_Order)
+	if P.Is_infinity() {
+		return false
 	}
+	W := G2mul(P, q)
+	if !W.Is_infinity() {
+		return false
+	}
+	return true
+}
 
 /* test group membership - no longer needed*/
 /* Check that m!=1, conj(m)*m==1, and m.m^{p^4}=m^{p^2} */
 
 func GTmember(m *FP12) bool {
-	if m.Isunity() {return false}
-	r:=NewFP12copy(m)
+	if m.Isunity() {
+		return false
+	}
+	r := NewFP12copy(m)
 	r.conj()
 	r.Mul(m)
-	if !r.Isunity() {return false}
+	if !r.Isunity() {
+		return false
+	}
 
-	f:=NewFP2bigs(NewBIGints(Fra),NewBIGints(Frb))
+	f := NewFP2bigs(NewBIGints(Fra), NewBIGints(Frb))
 
-	r.Copy(m); r.frob(f); r.frob(f)
-	w:=NewFP12copy(r); w.frob(f); w.frob(f)
+	r.Copy(m)
+	r.frob(f)
+	r.frob(f)
+	w := NewFP12copy(r)
+	w.frob(f)
+	w.frob(f)
 	w.Mul(m)
-	if !w.Equals(r) {return false}
+	if !w.Equals(r) {
+		return false
+	}
 
 	q := NewBIGints(CURVE_Order)
 	w.Copy(m)
-	r.Copy(GTpow(w,q))
-	if !r.Isunity() {return false}
+	r.Copy(GTpow(w, q))
+	if !r.Isunity() {
+		return false
+	}
 	return true
 }
-
