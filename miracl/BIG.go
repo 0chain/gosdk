@@ -64,15 +64,15 @@ func sqr(a *BIG) *DBIG {
 	for i := 0; i < NLEN; i++ {
 		carry = 0
 		for j := i + 1; j < NLEN; j++ {
-//if a.w[i]<0 {fmt.Printf("Negative m i in sqr\n")}
-//if a.w[j]<0 {fmt.Printf("Negative m j in sqr\n")}
+			//if a.w[i]<0 {fmt.Printf("Negative m i in sqr\n")}
+			//if a.w[j]<0 {fmt.Printf("Negative m j in sqr\n")}
 			carry, c.w[i+j] = muladd(2*a.w[i], a.w[j], carry, c.w[i+j])
 		}
 		c.w[NLEN+i] = carry
 	}
 
 	for i := 0; i < NLEN; i++ {
-//if a.w[i]<0 {fmt.Printf("Negative m s in sqr\n")}
+		//if a.w[i]<0 {fmt.Printf("Negative m s in sqr\n")}
 		top, bot := muladd(a.w[i], a.w[i], 0, c.w[2*i])
 
 		c.w[2*i] = bot
@@ -99,8 +99,8 @@ func monty(md *BIG, mc Chunk, d *DBIG) *BIG {
 		carry = 0
 		for j := 0; j < NLEN; j++ {
 			carry, d.w[i+j] = muladd(m, md.w[j], carry, d.w[i+j])
-//if m<0 {fmt.Printf("Negative m in monty\n")}
-//if md.w[j]<0 {fmt.Printf("Negative m in monty\n")}
+			//if m<0 {fmt.Printf("Negative m in monty\n")}
+			//if md.w[j]<0 {fmt.Printf("Negative m in monty\n")}
 		}
 		d.w[NLEN+i] += carry
 	}
@@ -116,13 +116,14 @@ func monty(md *BIG, mc Chunk, d *DBIG) *BIG {
 /* set this[i]+=x*y+c, and return high part */
 func muladd(a Chunk, b Chunk, c Chunk, r Chunk) (Chunk, Chunk) {
 
-	tp,bt := bits.Mul64(uint64(a),uint64(b))  // use math/bits intrinsic
-	bot := Chunk(bt&uint64(BMASK))
-	top := Chunk((tp << (64-BASEBITS)) | (bt >> BASEBITS))
-	bot += c; bot += r
-	carry := bot>>BASEBITS
+	tp, bt := bits.Mul64(uint64(a), uint64(b)) // use math/bits intrinsic
+	bot := Chunk(bt & uint64(BMASK))
+	top := Chunk((tp << (64 - BASEBITS)) | (bt >> BASEBITS))
+	bot += c
+	bot += r
+	carry := bot >> BASEBITS
 	bot &= BMASK
-	top+=carry
+	top += carry
 	return top, bot
 
 }
@@ -216,11 +217,11 @@ func NewBIGdcopy(x *DBIG) *BIG {
 
 /* test for zero */
 func (r *BIG) iszilch() bool {
-	d:=Chunk(0)
+	d := Chunk(0)
 	for i := 0; i < NLEN; i++ {
-		d|=r.w[i]
+		d |= r.w[i]
 	}
-	return (1 & ((d-1)>>BASEBITS)) != 0
+	return (1 & ((d - 1) >> BASEBITS)) != 0
 }
 
 /* set to zero */
@@ -232,11 +233,11 @@ func (r *BIG) zero() {
 
 /* Test for equal to one */
 func (r *BIG) isunity() bool {
-	d:=Chunk(0)
+	d := Chunk(0)
 	for i := 1; i < NLEN; i++ {
-		d|=r.w[i]
+		d |= r.w[i]
 	}
-	return (1 & ((d-1)>>BASEBITS) & (((r.w[0]^1)-1)>>BASEBITS)) != 0
+	return (1 & ((d - 1) >> BASEBITS) & (((r.w[0] ^ 1) - 1) >> BASEBITS)) != 0
 }
 
 /* set to one */
@@ -395,8 +396,8 @@ func (r *BIG) pxmul(c int) *DBIG {
 	carry := Chunk(0)
 	for j := 0; j < NLEN; j++ {
 		carry, m.w[j] = muladd(r.w[j], Chunk(c), carry, m.w[j])
-//if c<0 {fmt.Printf("Negative c in pxmul\n")}
-//if r.w[j]<0 {fmt.Printf("Negative c in pxmul\n")}
+		//if c<0 {fmt.Printf("Negative c in pxmul\n")}
+		//if r.w[j]<0 {fmt.Printf("Negative c in pxmul\n")}
 	}
 	m.w[NLEN] = carry
 	return m
@@ -446,8 +447,8 @@ func (r *BIG) pmul(c int) Chunk {
 		ak := r.w[i]
 		r.w[i] = 0
 		carry, r.w[i] = muladd(ak, Chunk(c), carry, r.w[i])
-//if c<0 {fmt.Printf("Negative c in pmul\n")}
-//if ak<0 {fmt.Printf("Negative c in pmul\n")}
+		//if c<0 {fmt.Printf("Negative c in pmul\n")}
+		//if ak<0 {fmt.Printf("Negative c in pmul\n")}
 	}
 	return carry
 }
@@ -517,13 +518,13 @@ func smul(a *BIG, b *BIG) *BIG {
 
 /* Compare a and b, return 0 if a==b, -1 if a<b, +1 if a>b. Inputs must be normalised */
 func Comp(a *BIG, b *BIG) int {
-	gt:=Chunk(0)
-	eq:=Chunk(1)
+	gt := Chunk(0)
+	eq := Chunk(1)
 	for i := NLEN - 1; i >= 0; i-- {
-		gt |= ((b.w[i]-a.w[i]) >> BASEBITS) & eq
-		eq &= ((b.w[i]^a.w[i])-1) >> BASEBITS
+		gt |= ((b.w[i] - a.w[i]) >> BASEBITS) & eq
+		eq &= ((b.w[i] ^ a.w[i]) - 1) >> BASEBITS
 	}
-	return int(gt+gt+eq-1)
+	return int(gt + gt + eq - 1)
 }
 
 /* return parity */
@@ -744,7 +745,8 @@ func Modadd(a1, b1, m *BIG) *BIG {
 	b := NewBIGcopy(b1)
 	a.Mod(m)
 	b.Mod(m)
-	a.add(b); a.norm()
+	a.add(b)
+	a.norm()
 	a.Mod(m)
 	return a
 }
@@ -809,7 +811,7 @@ func (r *BIG) Invmodp(p *BIG) {
 			u.fshr(1)
 			t.copy(x1)
 			t.add(p)
-			x1.cmove(t,x1.parity())
+			x1.cmove(t, x1.parity())
 			x1.norm()
 			x1.fshr(1)
 		}
@@ -817,7 +819,7 @@ func (r *BIG) Invmodp(p *BIG) {
 			v.fshr(1)
 			t.copy(x2)
 			t.add(p)
-			x2.cmove(t,x2.parity())
+			x2.cmove(t, x2.parity())
 			x2.norm()
 			x2.fshr(1)
 		}
@@ -826,7 +828,7 @@ func (r *BIG) Invmodp(p *BIG) {
 			u.norm()
 			t.copy(x1)
 			t.add(p)
-			x1.cmove(t,(Comp(x1,x2)>>1)&1)
+			x1.cmove(t, (Comp(x1, x2)>>1)&1)
 			x1.sub(x2)
 			x1.norm()
 		} else {
@@ -834,13 +836,13 @@ func (r *BIG) Invmodp(p *BIG) {
 			v.norm()
 			t.copy(x2)
 			t.add(p)
-			x2.cmove(t,(Comp(x2,x1)>>1)&1)
+			x2.cmove(t, (Comp(x2, x1)>>1)&1)
 			x2.sub(x1)
 			x2.norm()
 		}
 	}
 	r.copy(x1)
-	r.cmove(x2,Comp(u,one)&1)
+	r.cmove(x2, Comp(u, one)&1)
 }
 
 /* return this^e mod m */

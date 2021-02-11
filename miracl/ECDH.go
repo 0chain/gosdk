@@ -26,6 +26,7 @@ import "github.com/0chain/gosdk/miracl/core"
 
 const INVALID_PUBLIC_KEY int = -2
 const ERROR int = -3
+
 //const INVALID int = -4
 const EFS int = int(MODBYTES)
 const EGS int = int(MODBYTES)
@@ -37,7 +38,7 @@ func ECDH_IN_RANGE(S []byte) bool {
 	if s.iszilch() {
 		return false
 	}
-    if Comp(s,r)>=0 {
+	if Comp(s, r) >= 0 {
 		return false
 	}
 	return true
@@ -112,7 +113,7 @@ func ECDH_PUBLIC_KEY_VALIDATE(W []byte) int {
 // type = 0 is just x coordinate output
 // type = 1 for standard compressed output
 // type = 2 for standard uncompress output 04|x|y
-func ECDH_ECPSVDP_DH(S []byte, WD []byte, Z []byte,typ int) int {
+func ECDH_ECPSVDP_DH(S []byte, WD []byte, Z []byte, typ int) int {
 	res := 0
 
 	s := FromBytes(S)
@@ -130,16 +131,16 @@ func ECDH_ECPSVDP_DH(S []byte, WD []byte, Z []byte,typ int) int {
 			res = ERROR
 		} else {
 			if CURVETYPE != MONTGOMERY {
-				if typ>0 {
-					if typ==1 {
-						W.ToBytes(Z,true)
+				if typ > 0 {
+					if typ == 1 {
+						W.ToBytes(Z, true)
 					} else {
-						W.ToBytes(Z,false)
+						W.ToBytes(Z, false)
 					}
 				} else {
 					W.GetX().ToBytes(Z)
 				}
-				return res;
+				return res
 			} else {
 				W.GetX().ToBytes(Z)
 			}
@@ -152,7 +153,7 @@ func ECDH_ECPSVDP_DH(S []byte, WD []byte, Z []byte,typ int) int {
 func ECDH_ECPSP_DSA(sha int, RNG *core.RAND, S []byte, F []byte, C []byte, D []byte) int {
 	var T [EFS]byte
 
-	B := core.GPhashit(core.MC_SHA2, sha, int(MODBYTES), 0, F, -1, nil )
+	B := core.GPhashit(core.MC_SHA2, sha, int(MODBYTES), 0, F, -1, nil)
 	G := ECP_generator()
 
 	r := NewBIGints(CURVE_Order)
@@ -198,7 +199,7 @@ func ECDH_ECPSP_DSA(sha int, RNG *core.RAND, S []byte, F []byte, C []byte, D []b
 func ECDH_ECPVP_DSA(sha int, W []byte, F []byte, C []byte, D []byte) int {
 	res := 0
 
-	B := core.GPhashit(core.MC_SHA2, sha, int(MODBYTES), 0, F, -1, nil )
+	B := core.GPhashit(core.MC_SHA2, sha, int(MODBYTES), 0, F, -1, nil)
 
 	G := ECP_generator()
 	r := NewBIGints(CURVE_Order)
@@ -350,7 +351,7 @@ func ECDH_ECIES_DECRYPT(sha int, P1 []byte, P2 []byte, V []byte, C []byte, T []b
 		AC = append(AC, L2[i])
 	}
 
-	core.HMAC(core.MC_SHA2, sha, TAG, len(TAG), K2[:],AC)
+	core.HMAC(core.MC_SHA2, sha, TAG, len(TAG), K2[:], AC)
 
 	if !ncomp(T, TAG, len(T)) {
 		return nil

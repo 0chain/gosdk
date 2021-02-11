@@ -68,9 +68,9 @@ const HASH_TYPE int = 32
 const AESKEY int = 16
 
 const ALLOW_ALT_COMPRESS bool = false
+
 // These are manually decided policy decisions. To block any potential patent issues set to false.
 
 const USE_GLV bool = true
 const USE_GS_G2 bool = true
 const USE_GS_GT bool = true
-
