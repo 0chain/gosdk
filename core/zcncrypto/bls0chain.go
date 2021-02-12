@@ -46,8 +46,7 @@ func (b0 *BLS0ChainScheme) GenerateKeys() (*Wallet, error) {
 	}
 
 	// Generate a Bip2 HD wallet for the mnemonic and a user supplied password
-	// seed := bip39.NewSeed(b0.Mnemonic, "0chain-client-split-key")
-	seed := []byte{178, 142, 53, 87, 253, 237, 81, 125, 18, 40, 184, 108, 97, 22, 79, 188, 1, 60, 15, 232, 34, 140, 53, 40, 129, 44, 46, 145, 205, 179, 32, 19, 141, 78, 26, 224, 203, 59, 13, 215, 2, 99, 232, 220, 113, 153, 99, 33, 165, 249, 5, 82, 71, 109, 198, 236, 230, 240, 86, 74, 17, 101, 213, 169}
+	seed := bip39.NewSeed(b0.Mnemonic, "0chain-client-split-key")
 	r := bytes.NewReader(seed)
 	bls2.SetRandFunc(r)
 
@@ -61,9 +60,6 @@ func (b0 *BLS0ChainScheme) GenerateKeys() (*Wallet, error) {
 	w.Keys[0].PrivateKey = sk.SerializeToHexStr()
 	pub := sk.GetPublicKey()
 	w.Keys[0].PublicKey = pub.SerializeToHexStr()
-
-	fmt.Println("privkey: ", len(w.Keys[0].PrivateKey), w.Keys[0].PrivateKey)
-	fmt.Println("pubkey: ", len(w.Keys[0].PublicKey), w.Keys[0].PublicKey)
 
 	b0.PrivateKey = w.Keys[0].PrivateKey
 	b0.PublicKey = w.Keys[0].PublicKey
