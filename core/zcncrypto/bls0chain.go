@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"time"
 
-  bls2 "github.com/0chain/gosdk/bls"
+	bls2 "github.com/0chain/gosdk/bls"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/tyler-smith/go-bip39"
 )
@@ -45,8 +45,9 @@ func (b0 *BLS0ChainScheme) GenerateKeys() (*Wallet, error) {
 		}
 	}
 
-	// Generate a Bip32 HD wallet for the mnemonic and a user supplied password
-	seed := bip39.NewSeed(b0.Mnemonic, "0chain-client-split-key")
+	// Generate a Bip2 HD wallet for the mnemonic and a user supplied password
+	// seed := bip39.NewSeed(b0.Mnemonic, "0chain-client-split-key")
+	seed := []byte{178, 142, 53, 87, 253, 237, 81, 125, 18, 40, 184, 108, 97, 22, 79, 188, 1, 60, 15, 232, 34, 140, 53, 40, 129, 44, 46, 145, 205, 179, 32, 19, 141, 78, 26, 224, 203, 59, 13, 215, 2, 99, 232, 220, 113, 153, 99, 33, 165, 249, 5, 82, 71, 109, 198, 236, 230, 240, 86, 74, 17, 101, 213, 169}
 	r := bytes.NewReader(seed)
 	bls2.SetRandFunc(r)
 
@@ -60,6 +61,9 @@ func (b0 *BLS0ChainScheme) GenerateKeys() (*Wallet, error) {
 	w.Keys[0].PrivateKey = sk.SerializeToHexStr()
 	pub := sk.GetPublicKey()
 	w.Keys[0].PublicKey = pub.SerializeToHexStr()
+
+	fmt.Println("privkey: ", len(w.Keys[0].PrivateKey), w.Keys[0].PrivateKey)
+	fmt.Println("pubkey: ", len(w.Keys[0].PublicKey), w.Keys[0].PublicKey)
 
 	b0.PrivateKey = w.Keys[0].PrivateKey
 	b0.PublicKey = w.Keys[0].PublicKey
@@ -131,14 +135,14 @@ func (b0 *BLS0ChainScheme) rawSign(hash string) (*bls2.Sign, error) {
 		return nil, errors.New("failed hash while signing")
 	}
 
-  // My port.
+	// My port.
 	var sk2 bls2.SecretKey
-  sk2.SetByCSPRNG()
+	sk2.SetByCSPRNG()
 	sk2.DeserializeHexStr(b0.PrivateKey)
 	sig2 := sk2.Sign(rawHash)
 	return sig2, nil
 
-  // // Old code.
+	// // Old code.
 	// var sk bls.SecretKey
 	// sk.SetByCSPRNG()
 	// sk.DeserializeHexStr(b0.PrivateKey)
@@ -162,8 +166,8 @@ func (b0 *BLS0ChainScheme) Verify(signature, msg string) (bool, error) {
 		return false, errors.New("public key does not exists for verification")
 	}
 
-  // My port.
-  var sig2 bls2.Sign
+	// My port.
+	var sig2 bls2.Sign
 	var pk2 bls2.PublicKey
 	err := sig2.DeserializeHexStr(signature)
 	if err != nil {
@@ -179,7 +183,7 @@ func (b0 *BLS0ChainScheme) Verify(signature, msg string) (bool, error) {
 	pk2.DeserializeHexStr(b0.PublicKey)
 	return sig2.Verify(&pk2, rawHash), nil
 
-  // // Old code that I'm trying to port over.
+	// // Old code that I'm trying to port over.
 	// var sig bls.Sign
 	// var pk bls.PublicKey
 	// err = sig.DeserializeHexStr(signature)
@@ -198,21 +202,21 @@ func (b0 *BLS0ChainScheme) Verify(signature, msg string) (bool, error) {
 }
 
 func (b0 *BLS0ChainScheme) Add(signature, msg string) (string, error) {
-  /// New code I'm trying to port over.
-  var sign2 bls2.Sign
+	/// New code I'm trying to port over.
+	var sign2 bls2.Sign
 	err := sign2.DeserializeHexStr(signature)
 	if err != nil {
 		return "", err
 	}
-  signature1, err := b0.rawSign(msg)
+	signature1, err := b0.rawSign(msg)
 	if err != nil {
 		return "", fmt.Errorf("BLS signing failed - %s", err.Error())
 	}
 
-  sign2.Add(signature1)
+	sign2.Add(signature1)
 	return sign2.SerializeToHexStr(), nil
 
-  /// Old code I'm trying to port over.
+	/// Old code I'm trying to port over.
 	// var sign bls.Sign
 	// err := sign.DeserializeHexStr(signature)
 	// if err != nil {
@@ -282,7 +286,7 @@ func BLS0GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]BL
 		return nil, err
 	}
 
-  b0original := bls2.SecretKey_fromBytes(b0PrivateKeyBytes)
+	b0original := bls2.SecretKey_fromBytes(b0PrivateKeyBytes)
 	polynomial := b0original.GetMasterSecretKey(t)
 
 	var shares []BLS0ChainThresholdScheme
@@ -318,7 +322,7 @@ func (b0 *BLS0ChainScheme) SplitKeys(numSplits int) (*Wallet, error) {
 	}
 	var primarySk bls2.SecretKey
 	primarySk.DeserializeHexStr(b0.PrivateKey)
-  primaryFr := primarySk.CloneFP() // Fr is just FP without modulo.
+	primaryFr := primarySk.CloneFP() // Fr is just FP without modulo.
 
 	// New Wallet
 	w := &Wallet{}
@@ -332,14 +336,14 @@ func (b0 *BLS0ChainScheme) SplitKeys(numSplits int) (*Wallet, error) {
 		w.Keys[i].PublicKey = pub.SerializeToHexStr()
 		sk.Add(&tmpSk)
 	}
-  aggregateSk := sk.CloneFP()
+	aggregateSk := sk.CloneFP()
 
 	//Subtract the aggregated private key from the primary private key to derive the last split private key
-  lastSk := bls2.CloneFP(primaryFr)
-  lastSk.Sub(aggregateSk)
+	lastSk := bls2.CloneFP(primaryFr)
+	lastSk.Sub(aggregateSk)
 
 	// Last key
-  lastSecretKey := bls2.SecretKey_fromFP(lastSk)
+	lastSecretKey := bls2.SecretKey_fromFP(lastSk)
 
 	w.Keys[numSplits-1].PrivateKey = lastSecretKey.SerializeToHexStr()
 	w.Keys[numSplits-1].PublicKey = lastSecretKey.GetPublicKey().SerializeToHexStr()
