@@ -120,6 +120,33 @@ This is the maze of deserialized. Lets start from the beginning...
     return cast(&pub->v)->deserialize(buf, bufSize);
   }
 
+OK, by luck, found the deserialization here: https://github.com/herumi/mcl/blob/b32aecd583af99ee6a63c12e14224140fde442d9/include/mcl/ec.hpp#L1076
+
+  ```
+  cybozu::MemoryOutputStream mos(buf + adj, n);
+  P.x.save(pb, mos, IoSerialize); if (!*pb) return;
+  if (adj) {
+    buf[0] = P.y.isOdd() ? 3 : 2;
+  } else {
+    if (P.y.isOdd()) {
+      buf[n - 1] |= 0x80;
+    }
+  }
+  ```
+
+and pseudocode documented here: https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/api.md#serialization-format
+
+  size = mclBn_getG1ByteSize() # resp. mclBn_getG1ByteSize() * 2
+  if P is zero:
+    return [0] * size
+  else:
+    P = P.normalize()
+    s = P.x.serialize()
+    # x in Fp2 is odd <=> x.a is odd
+    if P.y is odd: # resp. P.y.d[0] is odd
+      s[byte-length(s) - 1] |= 0x80
+    return s
+
 ## bls.SecretKey ##
 
   <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L154>
@@ -181,6 +208,42 @@ just an alias for G1/G2 again...
     mclBnG2 v;
   #endif
   } blsPublicKey;
+
+And see this following analysis from other place in the document about ECP2:
+
+  <https://github.com/herumi/bls/blob/master/ffi/go/bls/mcl.go#L569>
+  // G2 --
+  type G2 struct {
+    X Fp2
+    Y Fp2
+    Z Fp2
+  }
+  <https://github.com/herumi/bls/blob/master/ffi/go/bls/mcl.go#L476>
+  // Fp2 -- x = D[0] + D[1] i where i^2 = -1
+  type Fp2 struct {
+    D [2]Fp
+  }
+
+Oh snaps correlates to!
+
+  type ECP2 struct {
+    x FP2
+    y FP2
+    z FP2
+  }
+
+Also see this in mcl lib:
+
+  <https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/include/mcl/bn.h#L96>
+  typedef struct {
+    mclBnFp x, y, z;
+  } mclBnG1;
+
+  typedef struct {
+    mclBnFp2 x, y, z;
+  } mclBnG2;
+
+Oh snaps, found a bunch of MCL docs here: <https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/api.md#mclbnfp>
 
 ## bls.Sign.DeserializeHexStr ##
 
@@ -603,6 +666,8 @@ with a modulo, see the definition here:
     }
     return buf[:n]
   }
+
+## PublicKey SerializeToHexStr
 
 ## FrSub
 

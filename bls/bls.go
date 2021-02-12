@@ -62,10 +62,34 @@ func DeserializeHexStr(s string) (*BN254.ECP, error) {
 	return BN254.ECP_fromBytes(b), nil
 }
 
+func DeserializeHexStr2(s string) (*BN254.ECP2, error) {
+	b, err := hex2byte(s)
+	if err != nil {
+		return nil, err
+	}
+	return BN254.ECP2_fromBytes(b), nil
+}
+
 func ToBytes(E *BN254.ECP) []byte {
-	t := make([]byte, int(BN254.MODBYTES))
+	// TODO: this way of deserialization probably doesn't work.
+	panic("NYI")
+	t := make([]byte, 3*int(BN254.MODBYTES))
 	E.ToBytes(t, false /*compress*/)
 	return t
+}
+
+func ToBytes2(E *BN254.ECP2) []byte {
+	const MFS = BN254.MFS
+	const G1S = 2*MFS + 1 /* Group 1 Size */
+	const G2S = 4*MFS + 1 /* Group 2 Size */
+	var SST [G2S]byte
+
+	E.ToBytes(SST[:], false /*compress*/)
+
+	// 0307c04a2d3a151769008b6ec95381e139cfc114e69f31144d124454b9783a9cb7100369cf36c6b070199371099f9e0ef70a1f57be09c3a9dfe559d6a45a0bd5df
+	// 869936aed51768f7e86945d381e139a5db6fe69f31144cb00154b9783a9cb6b10369cf36c6b070199371099f9e0ef70a1f57be09c3a9dfe559d6a45a0bd5df03
+
+	return SST[:]
 }
 
 func CloneFP(fp *BN254.FP) *BN254.FP {
@@ -115,7 +139,7 @@ func (sig *Sign) SerializeToHexStr() string {
 
 // Porting over <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L553>
 func (sig *Sign) Verify(pub *PublicKey, m []byte) bool {
-	b := BN254.Core_Verify(ToBytes(sig.v), m, ToBytes(pub.v))
+	b := BN254.Core_Verify(ToBytes(sig.v), m, ToBytes2(pub.v))
 	return b == BN254.BLS_OK
 }
 
@@ -128,14 +152,14 @@ func (sig *Sign) Verify(pub *PublicKey, m []byte) bool {
 // blsPublicKey: <https://github.com/herumi/bls/blob/1b48de51f4f76deb204d108f6126c1507623f739/include/bls/bls.h#L60>
 // mclBnG1: <https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/include/mcl/bn.h#L96>
 type PublicKey struct {
-	v *BN254.ECP
+	v *BN254.ECP2
 }
 
 // Starting from herumi's library:
 // <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L480>
 func (pk *PublicKey) DeserializeHexStr(s string) error {
 	var err error
-	pk.v, err = DeserializeHexStr(s)
+	pk.v, err = DeserializeHexStr2(s)
 	if err != nil {
 		return err
 	}
@@ -147,7 +171,7 @@ func (pk *PublicKey) SerializeToHexStr() string {
 }
 
 func (pk *PublicKey) Serialize() []byte {
-	return ToBytes(pk.v)
+	return ToBytes2(pk.v)
 }
 
 //-----------------------------------------------------------------------------
@@ -299,7 +323,8 @@ func (sk *SecretKey) GetPublicKey() *PublicKey {
 	sk.v.ToBytes(S[:])
 	BN254.MPIN_GET_SERVER_SECRET(S[:], SST[:])
 	result := new(PublicKey)
-	result.v = BN254.ECP_fromBytes(SST[:])
+	fmt.Println("SST", hex.EncodeToString(SST[:]))
+	result.v = BN254.ECP2_fromBytes(SST[:])
 	return result
 }
 
