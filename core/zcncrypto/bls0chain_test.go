@@ -9,8 +9,9 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 )
 
-var verifyPublickey = `e8a6cfa7b3076ae7e04764ffdfe341632a136b52953dfafa6926361dd9a466196faecca6f696774bbd64b938ff765dbc837e8766a5e2d8996745b2b94e1beb9e`
+var verifyPublickey = `04057d813061098c41c8fce1da3056d9df895a751741578c9f346397aad8fef8c60f215df8a8a42dcb640df445b8d6bad0654e4f816602b5d425e7413b9f2667981f73beb85348a176e228d7276d1a9c9c0025aca5c673169abc1b3e0d0642e8c20700be5a33bda67198fbc59e50c90c0df076c797adaa9ff4c856e842fd7308e6`
 var signPrivatekey = `5e1fc9c03d53a8b9a63030acc2864f0c33dffddb3c276bf2b3c8d739269cc018`
+
 var data = `TEST`
 var blsWallet *Wallet
 

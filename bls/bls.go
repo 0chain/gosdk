@@ -71,11 +71,12 @@ func DeserializeHexStr2(s string) (*BN254.ECP2, error) {
 }
 
 func ToBytes(E *BN254.ECP) []byte {
-	// TODO: this way of deserialization probably doesn't work.
-	panic("NYI")
-	t := make([]byte, 3*int(BN254.MODBYTES))
-	E.ToBytes(t, false /*compress*/)
-	return t
+	const BFS = BN254.BFS
+	const G1S = BFS + 1 /* Group 1 Size */
+	var ecp [G1S]byte
+	fmt.Println("aa2", G1S)
+	E.ToBytes(ecp[:], true /*compress*/)
+	return ecp[:]
 }
 
 func ToBytes2(E *BN254.ECP2) []byte {
@@ -83,12 +84,7 @@ func ToBytes2(E *BN254.ECP2) []byte {
 	const G1S = 2*MFS + 1 /* Group 1 Size */
 	const G2S = 4*MFS + 1 /* Group 2 Size */
 	var SST [G2S]byte
-
 	E.ToBytes(SST[:], false /*compress*/)
-
-	// 0307c04a2d3a151769008b6ec95381e139cfc114e69f31144d124454b9783a9cb7100369cf36c6b070199371099f9e0ef70a1f57be09c3a9dfe559d6a45a0bd5df
-	// 869936aed51768f7e86945d381e139a5db6fe69f31144cb00154b9783a9cb6b10369cf36c6b070199371099f9e0ef70a1f57be09c3a9dfe559d6a45a0bd5df03
-
 	return SST[:]
 }
 
@@ -298,15 +294,17 @@ func (sk *SecretKey) Sign(m []byte) *Sign {
 	// We're just using this miracl/core function to port over the Sign function.
 	// func Core_Sign(SIG []byte, M []byte, S []byte) int {...}
 
-	var _a BN254.Chunk
+	const BFS = BN254.BFS
+	const G1S = BFS + 1 /* Group 1 Size */
+	var SIG [G1S]byte
 
-	b1 := make([]byte, int(BN254.MODBYTES))
-	b3 := make([]byte, BN254.NLEN*int(unsafe.Sizeof(_a)))
+	b3 := make([]byte, int(BN254.MODBYTES))
 	sk.v.ToBytes(b3)
-	BN254.Core_Sign(b1, m, b3)
+	BN254.Core_Sign(SIG[:], m, b3)
 
 	sig := new(Sign)
-	sig.v = BN254.ECP_fromBytes(b1)
+	sig.v = BN254.ECP_fromBytes(SIG[:])
+
 	return sig
 }
 
