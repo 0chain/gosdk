@@ -256,8 +256,7 @@ func (sk *SecretKey) CloneFP() *BN254.FP {
 
 func (sk *SecretKey) SetByCSPRNG() error {
 	var w *BN254.BIG
-	var _a BN254.Chunk
-	b := make([]byte, BN254.NLEN*int(unsafe.Sizeof(_a)))
+	b := make([]byte, BN254.MODBYTES)
 	if sRandReader == nil {
 		rand.Read(b)
 	} else {
@@ -269,6 +268,8 @@ func (sk *SecretKey) SetByCSPRNG() error {
 			panic("Couldn't read from sRandReader. Got an error (printed out on previous lines.")
 		}
 	}
+	z := len(b)
+	b[z-1] = b[z-1] & 0x1f
 	w = BN254.FromBytes(b)
 	w.ToBytes(b)
 	sk.v = BN254.NewFPbigcopy(w)
@@ -323,7 +324,6 @@ func (sk *SecretKey) GetPublicKey() *PublicKey {
 	sk.v.ToBytes(S[:])
 	BN254.MPIN_GET_SERVER_SECRET(S[:], SST[:])
 	result := new(PublicKey)
-	fmt.Println("SST", hex.EncodeToString(SST[:]))
 	result.v = BN254.ECP2_fromBytes(SST[:])
 	return result
 }
