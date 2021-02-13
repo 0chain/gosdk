@@ -268,9 +268,7 @@ func (sk *SecretKey) SetByCSPRNG() error {
 			panic("Couldn't read from sRandReader. Got an error (printed out on previous lines.")
 		}
 	}
-	w := BN254.FromBytes(b)
-	sk.v = BN254.NewFPbigcopy(w)
-	// sk.v = BN254.FP_fromBytes(b) // Method 2. Not sure.
+	sk.v = BN254.FP_fromBytes(b)
 	return nil
 }
 
@@ -280,19 +278,12 @@ func (sk *SecretKey) DeserializeHexStr(s string) error {
 	if err != nil {
 		return err
 	}
-	w := BN254.FromBytes(b)
-	sk.v = BN254.NewFPbigcopy(w)
-	// sk.v = BN254.FP_fromBytes(b) // Method 2. Not sure.
+	sk.v = BN254.FP_fromBytes(b) // Method 2. Not sure.
 	return nil
 }
 
 func (sk *SecretKey) SerializeToHexStr() string {
-	return hex.EncodeToString(sk.Serialize())
-}
-
-// Note: herumi's SecretKey.GetLittleEndian is just aliased to Serialize().
-func (sk *SecretKey) Serialize() []byte {
-	return sk.v.Serialize()
+	return sk.v.ToString()
 }
 
 func (sk *SecretKey) Sign(m []byte) *Sign {

@@ -19,7 +19,8 @@ var blsWallet *Wallet
 // It's simple, but necessary because did a big port replacing herumi/bls with
 // miracl/core, and it's easy to make simple mistakes like this (we did).
 func TestSerialization(t *testing.T) {
-	privateKey := `c36f2f92b673cf057a32e8bd0ca88888e7ace40337b737e9c7459fdc4c521918`
+	// privateKey := `c36f2f92b673cf057a32e8bd0ca88888e7ace40337b737e9c7459fdc4c521918`
+	privateKey := `00c0f5cdaf57439fbc2599ff886faa30737b18e346fc8d2a99b820f969f98331`
 	var primarySk bls.SecretKey
 	primarySk.DeserializeHexStr(privateKey)
 	d := primarySk.SerializeToHexStr()
@@ -37,8 +38,8 @@ func TestSerialization(t *testing.T) {
 // pk := sk.SerializeToHexStr()
 // ```
 func TestSetByCSPRNG(t *testing.T) {
-	testSetByCSPRNGCase(t, []byte{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255}, "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff1f")
-	testSetByCSPRNGCase(t, []byte{178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178}, "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b212")
+	testSetByCSPRNGCase(t, []byte{255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255}, "212ba4f27ffffff5a2c62effffffffcdb939ffffffffff8a15ffffffffffff8d")
+	testSetByCSPRNGCase(t, []byte{178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178, 178}, "1e2520a9b2b2b2abc9e17cb2b2b2b2912e2eb2b2b2b2b26416b2b2b2b2b2b266")
 	testSetByCSPRNGCase(t, []byte{5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5}, "0505050505050505050505050505050505050505050505050505050505050505")
 }
 
@@ -58,6 +59,16 @@ func testSetByCSPRNGCase(t *testing.T, seed []byte, expected_pk string) {
 		fmt.Println("pk:", pk)
 		fmt.Println("expected_pk:", expected_pk)
 		t.Fatalf("Did not get right secret key.")
+	}
+
+	// Do a basic sanity test that Serialize/Deserialize is working.
+	sk.DeserializeHexStr(pk)
+	pk2 := sk.SerializeToHexStr()
+
+	if pk != pk2 {
+		fmt.Println("before ser :", pk)
+		fmt.Println("after deser:", pk2)
+		t.Fatalf("Basic de/serialization test failed.")
 	}
 }
 
