@@ -59,12 +59,6 @@ func NewFPbig(a *BIG) *FP {
 	return F
 }
 
-func NewFPbigcopy(a *BIG) *FP {
-	F := new(FP)
-	F.x = NewBIGcopy(a)
-	return F
-}
-
 func NewFPcopy(a *FP) *FP {
 	F := new(FP)
 	F.x = NewBIGcopy(a.x)
@@ -82,12 +76,6 @@ func NewFPrand(rng *core.RAND) *FP {
 func (F *FP) ToString() string {
 	F.reduce()
 	return F.redc().ToString()
-}
-
-func (F *FP) Serialize() []byte {
-	b := make([]byte, MODBYTES)
-	F.x.ToBytes(b)
-	return b[0:MODBYTES]
 }
 
 /* convert to Montgomery n-residue form */
