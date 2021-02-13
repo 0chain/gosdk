@@ -20,12 +20,12 @@ var blsWallet *Wallet
 // miracl/core, and it's easy to make simple mistakes like this (we did).
 func TestSerialization(t *testing.T) {
 	privateKey := `c36f2f92b673cf057a32e8bd0ca88888e7ace40337b737e9c7459fdc4c521918`
-  var primarySk bls.SecretKey
-  primarySk.DeserializeHexStr(privateKey)
-  d := primarySk.SerializeToHexStr()
+	var primarySk bls.SecretKey
+	primarySk.DeserializeHexStr(privateKey)
+	d := primarySk.SerializeToHexStr()
 	if privateKey != d {
-    fmt.Println("before:", privateKey)
-    fmt.Println("after:", d)
+		fmt.Println("before:", privateKey)
+		fmt.Println("after:", d)
 		t.Fatalf("Basic serialization/deserialization test failed.")
 	}
 }
