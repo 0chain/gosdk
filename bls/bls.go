@@ -74,7 +74,6 @@ func ToBytes(E *BN254.ECP) []byte {
 	const BFS = BN254.BFS
 	const G1S = BFS + 1 /* Group 1 Size */
 	var ecp [G1S]byte
-	fmt.Println("aa2", G1S)
 	E.ToBytes(ecp[:], true /*compress*/)
 	return ecp[:]
 }
@@ -224,6 +223,12 @@ type SecretKey struct {
 	v *BN254.FP
 }
 
+func NewSecretKey() *SecretKey {
+	sk := new(SecretKey)
+	sk.v = BN254.NewFP()
+	return sk
+}
+
 func SecretKey_fromBytes(b []byte) *SecretKey {
 	sk := new(SecretKey)
 	sk.v = BN254.FP_fromBytes(b)
@@ -251,7 +256,6 @@ func (sk *SecretKey) CloneFP() *BN254.FP {
 }
 
 func (sk *SecretKey) SetByCSPRNG() error {
-	var w *BN254.BIG
 	b := make([]byte, BN254.MODBYTES)
 	if sRandReader == nil {
 		rand.Read(b)
@@ -264,20 +268,21 @@ func (sk *SecretKey) SetByCSPRNG() error {
 			panic("Couldn't read from sRandReader. Got an error (printed out on previous lines.")
 		}
 	}
-	z := len(b)
-	b[z-1] = b[z-1] & 0x1f
-	w = BN254.FromBytes(b)
-	w.ToBytes(b)
+	w := BN254.FromBytes(b)
 	sk.v = BN254.NewFPbigcopy(w)
+	// sk.v = BN254.FP_fromBytes(b) // Method 2. Not sure.
 	return nil
 }
 
+// TODO: I'm pretty sure we need to work on serialization the XES too.
 func (sk *SecretKey) DeserializeHexStr(s string) error {
 	b, err := hex2byte(s)
 	if err != nil {
 		return err
 	}
-	sk.v = BN254.FP_fromBytes(b)
+	w := BN254.FromBytes(b)
+	sk.v = BN254.NewFPbigcopy(w)
+	// sk.v = BN254.FP_fromBytes(b) // Method 2. Not sure.
 	return nil
 }
 
