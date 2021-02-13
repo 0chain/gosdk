@@ -19,8 +19,7 @@ var blsWallet *Wallet
 // It's simple, but necessary because did a big port replacing herumi/bls with
 // miracl/core, and it's easy to make simple mistakes like this (we did).
 func TestSerialization(t *testing.T) {
-	// privateKey := `c36f2f92b673cf057a32e8bd0ca88888e7ace40337b737e9c7459fdc4c521918`
-	privateKey := `00c0f5cdaf57439fbc2599ff886faa30737b18e346fc8d2a99b820f969f98331`
+	privateKey := `212ba4f27ffffff5a2c62effffffffcdb939ffffffffff8a15ffffffffffff8d`
 	var primarySk bls.SecretKey
 	primarySk.DeserializeHexStr(privateKey)
 	d := primarySk.SerializeToHexStr()
@@ -64,7 +63,6 @@ func testSetByCSPRNGCase(t *testing.T, seed []byte, expected_pk string) {
 	// Do a basic sanity test that Serialize/Deserialize is working.
 	sk.DeserializeHexStr(pk)
 	pk2 := sk.SerializeToHexStr()
-
 	if pk != pk2 {
 		fmt.Println("before ser :", pk)
 		fmt.Println("after deser:", pk2)
@@ -133,33 +131,35 @@ func TestRecoveryKeys(t *testing.T) {
 func TestCombinedSignAndVerify(t *testing.T) {
 	sk0 := `c36f2f92b673cf057a32e8bd0ca88888e7ace40337b737e9c7459fdc4c521918`
 	sk1 := `704b6f489583bf1118432fcfb38e63fc2d4b61e524fb196cbd95413f8eb91c12`
-	primaryKey := `f72fd53ee85e84157d3106053754594f697e0bfca1f73f91a41f7bb0797d901acefd80fcc2da98aae690af0ee9c795d6590c1808f26490306433b4e9c42f7b1f`
-
+	primaryKey := `0406761b633611736b8724f08859c9ccd1f600c7c7993b80c241253759a40ae8c61d5cd3a2bc019b6bf2af4be52532710890db2beb6679fb3670d2523928621e180db2d6bd8ecce6d9211a1140580ddbd4ccc1f4cc3938d26d17f5d123b475fc5419bc270ab8f3c32f34b72cf91f839d9f2739d3a24fb09c2c578bd263a582563a`
 	hash := Sha3Sum256(data)
-	// Create signatue for 1
-	sig0 := NewSignatureScheme("bls0chain")
-	err := sig0.SetPrivateKey(sk0)
+
+	// Create signature for 1st.
+	scheme0 := NewSignatureScheme("bls0chain")
+	err := scheme0.SetPrivateKey(sk0)
 	if err != nil {
 		t.Fatalf("Set private key failed - %s", err.Error())
 	}
-	signature, err := sig0.Sign(hash)
+	sig0, err := scheme0.Sign(hash)
 	if err != nil {
 		t.Fatalf("BLS signing failed")
 	}
-	// Create signature for second
-	sig1 := NewSignatureScheme("bls0chain")
-	err = sig1.SetPrivateKey(sk1)
+
+	// Create signature for 2nd.
+	scheme1 := NewSignatureScheme("bls0chain")
+	err = scheme1.SetPrivateKey(sk1)
 	if err != nil {
 		t.Fatalf("Set private key failed - %s", err.Error())
 	}
-	addSig, err := sig1.Add(signature, hash)
+	sig1, err := scheme1.Add(sig0, hash)
 
 	verifyScheme := NewSignatureScheme("bls0chain")
 	err = verifyScheme.SetPublicKey(primaryKey)
 	if err != nil {
 		t.Fatalf("Set public key failed")
 	}
-	if ok, err := verifyScheme.Verify(addSig, hash); err != nil || !ok {
+	if ok, err := verifyScheme.Verify(sig1, hash); err != nil || !ok {
+		fmt.Println("err", err)
 		t.Fatalf("Verification failed\n")
 	}
 }
@@ -187,8 +187,17 @@ func TestSplitKey(t *testing.T) {
 	}
 	var aggrSig string
 	for i := 1; i < numSplitKeys; i++ {
-		tmpSig, _ := sigAggScheme[i].Sign(hash)
-		aggrSig, _ = sigAggScheme[0].Add(tmpSig, hash)
+		tmpSig, err := sigAggScheme[i].Sign(hash)
+		if err != nil {
+			fmt.Println("err", err)
+			t.Fatalf("Shouldn't have gotten error with Sign()")
+		}
+
+		aggrSig, err = sigAggScheme[0].Add(tmpSig, hash)
+		if err != nil {
+			fmt.Println("err", err)
+			t.Fatalf("Shouldn't have gotten error with Add()")
+		}
 	}
 	if aggrSig != signature {
 		t.Fatalf("split key signature failed")
