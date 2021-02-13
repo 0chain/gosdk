@@ -15,19 +15,6 @@ var signPrivatekey = `5e1fc9c03d53a8b9a63030acc2864f0c33dffddb3c276bf2b3c8d73926
 var data = `TEST`
 var blsWallet *Wallet
 
-// A simple unit test to test serialization and deserialization of a private key.
-// It's simple, but necessary because did a big port replacing herumi/bls with
-// miracl/core, and it's easy to make simple mistakes like this (we did).
-func TestSerialization(t *testing.T) {
-	privateKey := `c36f2f92b673cf057a32e8bd0ca88888e7ace40337b737e9c7459fdc4c521918`
-  var primarySk bls.SecretKey
-  primarySk.DeserializeHexStr(privateKey)
-  d := primarySk.SerializeToHexStr()
-	if privateKey != d {
-		t.Fatalf("Basic serialization/deserialization test failed.")
-	}
-}
-
 // Test the following code we ported from herumi.
 // ```
 // var sk bls.SecretKey
