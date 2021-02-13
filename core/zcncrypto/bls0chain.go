@@ -318,75 +318,31 @@ func (b0 *BLS0ChainScheme) SplitKeys(numSplits int) (*Wallet, error) {
 	}
 	var primarySk bls2.SecretKey
 	primarySk.DeserializeHexStr(b0.PrivateKey)
-
-  d := primarySk.SerializeToHexStr()
-  fmt.Println("aa2", b0.PrivateKey, d)
-
 	primaryFr := primarySk.CloneFP() // Fr is just FP without modulo.
 
 	// New Wallet
 	w := &Wallet{}
 	w.Keys = make([]KeyPair, numSplits)
-  sk := bls2.NewSecretKey()
+	var sk bls2.SecretKey
 	for i := 0; i < numSplits-1; i++ {
 		var tmpSk bls2.SecretKey
 		tmpSk.SetByCSPRNG()
 		w.Keys[i].PrivateKey = tmpSk.SerializeToHexStr()
 		pub := tmpSk.GetPublicKey()
 		w.Keys[i].PublicKey = pub.SerializeToHexStr()
-    fmt.Println("privkey:", w.Keys[i].PrivateKey)
-    fmt.Println(" pubkey:", w.Keys[i].PublicKey)
-    // fmt.Println("sk-before:", sk.GetFP())
-    fmt.Println("sk-before:", sk.SerializeToHexStr())
 		sk.Add(&tmpSk)
-    // fmt.Println("sk-after :", sk.GetFP())
-    fmt.Println(" sk-after:", sk.SerializeToHexStr())
 	}
 	aggregateSk := sk.CloneFP()
 
 	//Subtract the aggregated private key from the primary private key to derive the last split private key
 	lastSk := bls2.CloneFP(primaryFr)
-
-	b := bls2.SecretKey_fromFP(lastSk)
-  bprivk := b.SerializeToHexStr()
-  bpubk := b.GetPublicKey().SerializeToHexStr()
-  fmt.Println("b privkey:", bprivk)
-  fmt.Println("b pubkey:", bpubk)
-  fmt.Println("sk:", sk.SerializeToHexStr())
-
 	lastSk.Sub(aggregateSk)
-
-  fmt.Println("sk:", sk.SerializeToHexStr())
-  fmt.Println("aa1", lastSk, aggregateSk)
-
-  // TODO: Remove this when done.
-	lastSk.Add(aggregateSk)
-	a := bls2.SecretKey_fromFP(lastSk)
-  aprivk := a.SerializeToHexStr()
-  apubk := a.GetPublicKey().SerializeToHexStr()
-  fmt.Println("a privkey:", aprivk)
-  fmt.Println("a pubkey:", apubk)
-  fmt.Println("sk:", sk.SerializeToHexStr())
-
-  lastSk.Sub(aggregateSk)
 
 	// Last key
 	lastSecretKey := bls2.SecretKey_fromFP(lastSk)
+
 	w.Keys[numSplits-1].PrivateKey = lastSecretKey.SerializeToHexStr()
 	w.Keys[numSplits-1].PublicKey = lastSecretKey.GetPublicKey().SerializeToHexStr()
-
-  fmt.Println("lastSecretKey privkey:", w.Keys[numSplits-1].PrivateKey)
-  fmt.Println("lastSecretKey pubkey:", w.Keys[numSplits-1].PublicKey)
-
-	// lastSk.Add(aggregateSk)
-	// a := bls2.SecretKey_fromFP(lastSk)
-  // aprivk := a.SerializeToHexStr()
-  // apubk := a.GetPublicKey().SerializeToHexStr()
-  // fmt.Println("a privkey:", aprivk)
-  // fmt.Println("a pubkey:", apubk)
-
-  // 041dbb03e89a20c1125e55fdc741a40163d4a02dd48955e67fa80eb5b2e26613c32185e498ccb4af9e243585fdaf43d5d9babc5d77561d178e78b27a3c1afcdc7f10a5e8bd13eb5410f304a42e8d8aec7280a0e7656022366393dae75a4b8c15e806f346de999569aaeac9c4c932755e12a4db962080b822e11d9e8ccc87989b4d
-  // 041dbb03e89a20c1125e55fdc741a40163d4a02dd48955e67fa80eb5b2e26613c32185e498ccb4af9e243585fdaf43d5d9babc5d77561d178e78b27a3c1afcdc7f10a5e8bd13eb5410f304a42e8d8aec7280a0e7656022366393dae75a4b8c15e806f346de999569aaeac9c4c932755e12a4db962080b822e11d9e8ccc87989b4d
 
 	// Generate client ID and public
 	w.ClientKey = primarySk.GetPublicKey().SerializeToHexStr()
