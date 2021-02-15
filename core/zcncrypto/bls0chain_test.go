@@ -115,7 +115,6 @@ func BenchmarkBLSSign(b *testing.B) {
 }
 
 func TestRecoveryKeys(t *testing.T) {
-
 	sigScheme := NewSignatureScheme("bls0chain")
 	TestSignatureScheme(t)
 	w, err := sigScheme.RecoverKeys(blsWallet.Mnemonic)
@@ -125,7 +124,6 @@ func TestRecoveryKeys(t *testing.T) {
 	if w.ClientID != blsWallet.ClientID || w.ClientKey != blsWallet.ClientKey {
 		t.Fatalf("Recover key didn't match with generated keys")
 	}
-
 }
 
 func TestCombinedSignAndVerify(t *testing.T) {
@@ -179,6 +177,11 @@ func TestSplitKey(t *testing.T) {
 	// So you can see that if primaryKey is "too small", and the random key is
 	// likely larger than the primaryKey, then k_1 key is going to be negative,
 	// and will break the library.
+	//
+	// In fact this is directly from MIRACL_Core.pdf: `MIRACL Core has no support
+	// for negative numbers. It is the programmers responsibility to make sure
+	// that a negative result can never happen. MIRACL Core does not support a
+	// general purpose big number library.` (page 5, bottom paragraph)
 
 	// `704...` reduces to `00e...`. These primary keys fail.
 	// primaryKeyStr := `704b6f489583bf1118432fcfb38e63fc2d4b61e524fb196cbd95413f8eb91c12`
