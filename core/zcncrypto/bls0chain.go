@@ -94,6 +94,10 @@ func (b0 *BLS0ChainScheme) SetPrivateKey(privateKey string) error {
 		return errors.New("private key already exists")
 	}
 	b0.PrivateKey = privateKey
+
+	var primarySk bls2.SecretKey
+	primarySk.DeserializeHexStr(b0.PrivateKey)
+	b0.PrivateKey = primarySk.SerializeToHexStr()
 	//ToDo: b0.publicKey should be set here?
 	return nil
 }
@@ -132,11 +136,11 @@ func (b0 *BLS0ChainScheme) rawSign(hash string) (*bls2.Sign, error) {
 	}
 
 	// My port.
-	var sk2 bls2.SecretKey
-	sk2.SetByCSPRNG()
-	sk2.DeserializeHexStr(b0.PrivateKey)
-	sig2 := sk2.Sign(rawHash)
-	return sig2, nil
+	var sk bls2.SecretKey
+	sk.SetByCSPRNG()
+	sk.DeserializeHexStr(b0.PrivateKey)
+	sig := sk.Sign(rawHash)
+	return sig, nil
 
 	// // Old code.
 	// var sk bls.SecretKey
@@ -199,8 +203,8 @@ func (b0 *BLS0ChainScheme) Verify(signature, msg string) (bool, error) {
 
 func (b0 *BLS0ChainScheme) Add(signature, msg string) (string, error) {
 	/// New code I'm trying to port over.
-	var sign2 bls2.Sign
-	err := sign2.DeserializeHexStr(signature)
+	var sign bls2.Sign
+	err := sign.DeserializeHexStr(signature)
 	if err != nil {
 		return "", err
 	}
@@ -208,9 +212,8 @@ func (b0 *BLS0ChainScheme) Add(signature, msg string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("BLS signing failed - %s", err.Error())
 	}
-
-	sign2.Add(signature1)
-	return sign2.SerializeToHexStr(), nil
+	sign.Add(signature1)
+	return sign.SerializeToHexStr(), nil
 
 	/// Old code I'm trying to port over.
 	// var sign bls.Sign
@@ -316,31 +319,28 @@ func (b0 *BLS0ChainScheme) SplitKeys(numSplits int) (*Wallet, error) {
 	if b0.PrivateKey == "" {
 		return nil, errors.New("primary private key not found")
 	}
-	var primarySk bls2.SecretKey
-	primarySk.DeserializeHexStr(b0.PrivateKey)
-	primaryFr := primarySk.CloneFP() // Fr is just FP without modulo.
 
 	// New Wallet
 	w := &Wallet{}
 	w.Keys = make([]KeyPair, numSplits)
-	var sk bls2.SecretKey
+	aggregateSk := bls2.NewSecretKey()
 	for i := 0; i < numSplits-1; i++ {
 		var tmpSk bls2.SecretKey
 		tmpSk.SetByCSPRNG()
 		w.Keys[i].PrivateKey = tmpSk.SerializeToHexStr()
-		pub := tmpSk.GetPublicKey()
-		w.Keys[i].PublicKey = pub.SerializeToHexStr()
-		sk.Add(&tmpSk)
+		w.Keys[i].PublicKey = tmpSk.GetPublicKey().SerializeToHexStr()
+		aggregateSk.Add(&tmpSk)
 	}
-	aggregateSk := sk.CloneFP()
+
+	var primarySk bls2.SecretKey
+	primarySk.DeserializeHexStr(b0.PrivateKey)
 
 	//Subtract the aggregated private key from the primary private key to derive the last split private key
-	lastSk := bls2.CloneFP(primaryFr)
-	lastSk.Sub(aggregateSk)
+	lastSk := primarySk.GetFP()
+	lastSk.Sub(aggregateSk.GetFP())
 
 	// Last key
 	lastSecretKey := bls2.SecretKey_fromFP(lastSk)
-
 	w.Keys[numSplits-1].PrivateKey = lastSecretKey.SerializeToHexStr()
 	w.Keys[numSplits-1].PublicKey = lastSecretKey.GetPublicKey().SerializeToHexStr()
 
