@@ -4,7 +4,6 @@ require (
 	github.com/h2non/filetype v1.0.9
 	github.com/klauspost/cpuid v1.2.0 // indirect
 	github.com/klauspost/reedsolomon v1.9.2
-	github.com/mattn/go-shellwords v1.0.11 // indirect
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/tyler-smith/go-bip39 v1.0.0
 	go.dedis.ch/kyber/v3 v3.0.5
