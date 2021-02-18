@@ -55,6 +55,8 @@ It is possible to support the sdk for other variations of Linux as well.
 
 ## How to run BLS unit tests ##
 
+It's advisable to put GOPATH as $TOP/../go, to avoid conflicts with this command: `go build ./...`
+
 To run all the unit tests in `bls0chain_test.go`, run this command from $TOP: `go test github.com/0chain/gosdk/core/zcncrypto -v`
 
 To run a specific unit test in `bls0chain_test.go` such as `TestSignatureScheme`, run this: `go test github.com/0chain/gosdk/core/zcncrypto -v -run TestSignatureScheme`
