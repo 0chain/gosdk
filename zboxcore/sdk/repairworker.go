@@ -36,8 +36,8 @@ func (cb *RepairStatusCB) Started(allocationId, filePath string, op int, totalBy
 	cb.statusCB.Started(allocationId, filePath, op, totalBytes)
 }
 
-func (cb *RepairStatusCB) InProgress(allocationId, filePath string, op int, completedBytes int) {
-	cb.statusCB.InProgress(allocationId, filePath, op, completedBytes)
+func (cb *RepairStatusCB) InProgress(allocationId, filePath string, op int, completedBytes int, data []byte) {
+	cb.statusCB.InProgress(allocationId, filePath, op, completedBytes, data)
 }
 
 func (cb *RepairStatusCB) RepairCompleted(filesRepaired int) {

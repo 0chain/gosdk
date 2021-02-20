@@ -266,7 +266,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		downloaded = downloaded + int(n)
 		size = size - n
 		if req.statusCallback != nil {
-			req.statusCallback.InProgress(req.allocationID, remotePathCallback, OpDownload, downloaded)
+			req.statusCallback.InProgress(req.allocationID, remotePathCallback, OpDownload, downloaded, data)
 		}
 
 	}
