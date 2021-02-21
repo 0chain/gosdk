@@ -174,7 +174,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 			remaining = remaining - int64(len(dataBytes))
 			sent = sent + len(dataBytes)
 			if req.statusCallback != nil {
-				req.statusCallback.InProgress(a.ID, req.remotefilepath, OpUpload, sent*(a.DataShards+a.ParityShards))
+				req.statusCallback.InProgress(a.ID, req.remotefilepath, OpUpload, sent*(a.DataShards+a.ParityShards), nil)
 			}
 		}
 		for idx := range merkleHashes {
