@@ -28,6 +28,13 @@ func TestSerialization(t *testing.T) {
 		fmt.Println("after:", d)
 		t.Fatalf("Basic de/serialization test failed.")
 	}
+
+	var pk bls.PublicKey
+	err := pk.DeserializeHexStr(`04106806dfd2410c9072daed4892280a944dce4c81da48f854c59a6c1e4d4e2725206048b53a71242dcf370baf15cce63532dbb50e6646c803fb6609063140e134097635737e1c9dd8c6caaa7f375a72dddbfd6c2a21557f37d73938aed76cbb2416082a343a30f0621b308b01cd019bcb8795652e018d61d4afa1159b76df0aac`)
+	if err != nil {
+		fmt.Println("Got err:", err)
+		t.Fatalf("Couldn't deserialize public key.")
+	}
 }
 
 // Test the following code we ported from herumi.
