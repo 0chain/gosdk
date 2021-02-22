@@ -18,6 +18,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
+const CHUNK_SIZE = 64 * 1024
+
 type ListRequest struct {
 	allocationID       string
 	allocationTx       string
@@ -38,20 +40,22 @@ type listResponse struct {
 }
 
 type ListResult struct {
-	Name          string             `json:"name"`
-	Path          string             `json:"path,omitempty"`
-	Type          string             `json:"type"`
-	Size          int64              `json:"size"`
-	Hash          string             `json:"hash,omitempty"`
-	MimeType      string             `json:"mimetype,omitempty"`
-	NumBlocks     int64              `json:"num_blocks"`
-	LookupHash    string             `json:"lookup_hash"`
-	EncryptionKey string             `json:"encryption_key"`
-	Attributes    fileref.Attributes `json:"attributes"`
-	CreatedAt     string             `json:"created_at"`
-	UpdatedAt     string             `json:"updated_at"`
-	Children      []*ListResult      `json:"list"`
-	Consensus     `json:"-"`
+	Name            string             `json:"name"`
+	Path            string             `json:"path,omitempty"`
+	Type            string             `json:"type"`
+	Size            int64              `json:"size"`
+	Hash            string             `json:"hash,omitempty"`
+	MimeType        string             `json:"mimetype,omitempty"`
+	NumBlocks       int64              `json:"num_blocks"`
+	LookupHash      string             `json:"lookup_hash"`
+	EncryptionKey   string             `json:"encryption_key"`
+	Attributes      fileref.Attributes `json:"attributes"`
+	ActualSize      int64              `json:"actual_size"`
+	ActualNumBlocks int64              `json:"actual_num_blocks"`
+	CreatedAt       string             `json:"created_at"`
+	UpdatedAt       string             `json:"updated_at"`
+	Children        []*ListResult      `json:"list"`
+	Consensus       `json:"-"`
 }
 
 func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *listResponse) {
@@ -157,8 +161,13 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 		result.UpdatedAt = ti.ref.UpdatedAt
 		result.LookupHash = ti.ref.LookupHash
 		result.Attributes = ti.ref.Attributes
+		result.ActualSize = ti.ref.ActualSize
+		result.ActualNumBlocks = 0
 		if result.Type == fileref.DIRECTORY {
 			result.Size = -1
+		}
+		if ti.ref.ActualSize > 0 {
+			result.ActualNumBlocks = ti.ref.ActualSize / CHUNK_SIZE
 		}
 
 		for _, child := range lR[i].ref.Children {
@@ -188,6 +197,10 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 				childResult.Hash = (child.(*fileref.FileRef)).ActualFileHash
 				childResult.MimeType = (child.(*fileref.FileRef)).MimeType
 				childResult.EncryptionKey = (child.(*fileref.FileRef)).EncryptedKey
+				childResult.ActualSize = (child.(*fileref.FileRef)).ActualFileSize
+				if childResult.ActualSize > 0 {
+					childResult.ActualNumBlocks = childResult.ActualSize / CHUNK_SIZE
+				}
 			}
 			childResult.Size += child.GetSize()
 			childResult.NumBlocks += child.GetNumBlocks()
