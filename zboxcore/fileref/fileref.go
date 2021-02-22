@@ -87,6 +87,7 @@ type Ref struct {
 	Name           string     `json:"name"`
 	Path           string     `json:"path"`
 	Size           int64      `json:"size"`
+	ActualSize     int64      `json:"actual_file_size"`
 	Hash           string     `json:"hash"`
 	NumBlocks      int64      `json:"num_of_blocks"`
 	PathHash       string     `json:"path_hash"`
