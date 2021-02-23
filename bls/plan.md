@@ -18,6 +18,10 @@ blsInit / bls.Init
 var sk bls.SecretKey
 sk.Set(polynomial, &id)
 
+// New ones from 0chain repo.
+bls.GetMasterPublicKey
+`(*bls.Sign) Recover`
+
 ## bls.ID
 
 bls.ID is just Fr

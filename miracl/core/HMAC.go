@@ -532,7 +532,7 @@ func RSA_PSS_ENCODE(sha int, m []byte, rng *RAND, RFS int) []byte {
 	for i := 0; i < hlen; i++ {
 		SALT[i] = rng.GetByte()
 	}
-	mask:=byte(0xff>>(8*emlen-embits))
+	mask:=byte(0xff>>uint(8*emlen-embits))
 
 	H := SPhashit(MC_SHA2,sha,m)
 	if emlen < hlen+hlen+2 {
