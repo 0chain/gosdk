@@ -573,7 +573,7 @@ func RSA_PSS_VERIFY(sha int, m []byte, f []byte) bool {
 	embits:=8*emlen-1
 	hlen:=sha
 	SALT := make([]byte,hlen)
-	mask:=byte(0xff>>(8*emlen-embits))
+	mask:=byte(0xff>>uint(8*emlen-embits))
 
 	HMASK := SPhashit(MC_SHA2,sha,m)
     if emlen < hlen + hlen +  2 {
