@@ -22,6 +22,24 @@ sk.Set(polynomial, &id)
 bls.GetMasterPublicKey
 `(*bls.Sign) Recover`
 
+## bls.PublicKey -> Add
+
+  <https://github.com/herumi/bls-go-binary/blob/master/bls/bls.go#L452>
+  ```
+  // Add --
+  func (pub *PublicKey) Add(rhs *PublicKey) {
+    C.blsPublicKeyAdd(&pub.v, &rhs.v)
+  }
+  ```
+
+  <https://github.com/herumi/bls/blob/4ae022a6bb71dc518d81f22141d71d2a1f767ab3/src/bls_c_impl.hpp#L600>
+  ```
+  void blsPublicKeyAdd(blsPublicKey *pub, const blsPublicKey *rhs)
+  {
+    *cast(&pub->v) += *cast(&rhs->v);
+  }
+  ```
+
 ## bls.GetMasterPublicKey
 
 We already have GetPublicKey method of SecretKey, so this is a simple port.
