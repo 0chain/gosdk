@@ -93,6 +93,16 @@ func CloneFP(fp *BN254.FP) *BN254.FP {
 	return result
 }
 
+func GetMasterPublicKey(msk []SecretKey) []PublicKey {
+	// GetMasterPublicKey --
+	n := len(msk)
+	mpk := make([]PublicKey, n)
+	for i := 0; i < n; i++ {
+		mpk[i] = *msk[i].GetPublicKey()
+	}
+	return mpk
+}
+
 //-----------------------------------------------------------------------------
 // Signature.
 //-----------------------------------------------------------------------------
