@@ -22,6 +22,93 @@ sk.Set(polynomial, &id)
 bls.GetMasterPublicKey
 `(*bls.Sign) Recover`
 
+## bls.Sign -> Recover
+
+  <https://github.com/herumi/bls-go-binary/blob/master/bls/bls.go#L586>
+  ```
+  // Recover --
+  func (sig *Sign) Recover(sigVec []Sign, idVec []ID) error {
+    if len(sigVec) != len(idVec) {
+      return fmt.Errorf("err Sign.Recover bad size")
+    }
+    // #nosec
+    ret := C.blsSignatureRecover(&sig.v, &sigVec[0].v, (*C.blsId)(&idVec[0].v), (C.mclSize)(len(idVec)))
+    if ret != 0 {
+      return fmt.Errorf("err blsSignatureRecover")
+    }
+    return nil
+  }
+  ```
+
+  <https://github.com/herumi/bls/blob/4ae022a6bb71dc518d81f22141d71d2a1f767ab3/src/bls_c_impl.hpp#L588>
+  ```
+  int blsSignatureRecover(blsSignature *sig, const blsSignature *sigVec, const blsId *idVec, mclSize n)
+  {
+    bool b;
+    mcl::LagrangeInterpolation(&b, *cast(&sig->v), cast(&idVec->v), cast(&sigVec->v), n);
+    return b ? 0 : -1;
+  }
+  ```
+
+Very luckily, this just looks the exact same as SHARE.go -> Recover
+
+  <https://github.com/miracl/core/blob/master/go/SHARE.go#L140>
+
+Where the singular argument []SHARE corresponds to `sigVec []Sign, idVec []ID`.
+Especially since sigVec and idVec need to be of the same length.
+
+  <https://github.com/miracl/core/blob/master/go/SHARE.go#L64>
+  ```
+  type SHARE struct {
+    ID   byte       // Unique Share ID
+    NSR   byte		// Number of Shares required for recovery
+    B    []byte		// Share
+  }
+  ```
+
+probably NSR is just len(sigVec).
+To get ID, just convert bls.ID back to a number (originally it's just an int).
+Once you have ID and the signature, create a bunch of NewSHARE as shown in
+the miracl/core unit test TestMPIN.go
+
+  <https://github.com/miracl/core/blob/master/go/TestMPIN.go#L107>
+  ```
+  Sh1:=core.NewSHARE(1,3,TOKEN[:],R)  // indicate 3 shares required for recovery
+  Sh2:=core.NewSHARE(2,3,TOKEN[:],R)
+  // Sh3:=core.NewSHARE(3,3,TOKEN[:],R)	// must comment out or Go throws an error (Grrr..)
+  Sh4:=core.NewSHARE(4,3,TOKEN[:],R)
+
+  var Shares [3]*core.SHARE
+  ```
+
+## bls.PublicKey -> Recover
+
+  <https://github.com/herumi/bls-go-binary/blob/master/bls/bls.go#L467>
+  ```
+  // Recover --
+  func (pub *PublicKey) Recover(pubVec []PublicKey, idVec []ID) error {
+    if len(pubVec) != len(idVec) {
+      return fmt.Errorf("err PublicKey.Recover bad size")
+    }
+    // #nosec
+    ret := C.blsPublicKeyRecover(&pub.v, &pubVec[0].v, (*C.blsId)(&idVec[0].v), (C.mclSize)(len(idVec)))
+    if ret != 0 {
+      return fmt.Errorf("err blsPublicKeyRecover")
+    }
+    return nil
+  }
+  ```
+
+  <https://github.com/herumi/bls/blob/4ae022a6bb71dc518d81f22141d71d2a1f767ab3/src/bls_c_impl.hpp#L581>
+  ```
+  int blsPublicKeyRecover(blsPublicKey *pub, const blsPublicKey *pubVec, const blsId *idVec, mclSize n)
+  {
+    bool b;
+    mcl::LagrangeInterpolation(&b, *cast(&pub->v), cast(&idVec->v), cast(&pubVec->v), n);
+    return b ? 0 : -1;
+  }
+  ```
+
 ## bls.PublicKey -> Add
 
   <https://github.com/herumi/bls-go-binary/blob/master/bls/bls.go#L452>
