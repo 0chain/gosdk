@@ -222,6 +222,10 @@ func (pk *PublicKey) Set(pks []PublicKey, id *ID) error {
 	return nil
 }
 
+func (pk *PublicKey) IsEqual(rhs *PublicKey) bool {
+	return pk.v.Equals(rhs.v)
+}
+
 //-----------------------------------------------------------------------------
 // ID.
 //-----------------------------------------------------------------------------
