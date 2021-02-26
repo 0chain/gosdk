@@ -394,3 +394,7 @@ func (sk *SecretKey) Set(msk []SecretKey, id *ID) error {
 	}
 	return nil
 }
+
+func (sk *SecretKey) IsEqual(rhs *SecretKey) bool {
+	return sk.v.Equals(rhs.v)
+}
