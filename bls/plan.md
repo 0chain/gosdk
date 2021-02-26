@@ -81,6 +81,9 @@ the miracl/core unit test TestMPIN.go
   var Shares [3]*core.SHARE
   ```
 
+Or actually create a new share with `sh := new(core.SHARE)` and then set the
+fields.
+
 ## bls.PublicKey -> Recover
 
   <https://github.com/herumi/bls-go-binary/blob/master/bls/bls.go#L467>
