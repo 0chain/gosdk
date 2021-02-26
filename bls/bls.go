@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/0chain/gosdk/miracl"
+	"github.com/0chain/gosdk/miracl/core"
 	"io"
 	"math/rand"
+	"strconv"
 	"unsafe"
 )
 
@@ -146,6 +148,27 @@ func (sig *Sign) SerializeToHexStr() string {
 func (sig *Sign) Verify(pub *PublicKey, m []byte) bool {
 	b := BN254.Core_Verify(ToBytes(sig.v), m, ToBytes2(pub.v))
 	return b == BN254.BLS_OK
+}
+
+func (sig *Sign) Recover(shares []Sign, from []ID) error {
+	N := len(shares)
+	shs := make([]*core.SHARE, N)
+	for i := 0; i < N; i++ {
+		sh := new(core.SHARE)
+		// TODO: GetHexString should do a better job of restoring the original int.
+		// TODO: Write a unit test to sanity check the above.
+		id, err := strconv.Atoi(from[i].GetHexString())
+		if err != nil {
+			return err
+		}
+		sh.B = ToBytes(shares[i].v)
+		sh.ID = byte(id)
+		sh.NSR = byte(N)
+		shs[i] = sh
+	}
+	b := core.Recover(shs)
+	sig.v = BN254.ECP_fromBytes(b)
+	return nil
 }
 
 //-----------------------------------------------------------------------------
