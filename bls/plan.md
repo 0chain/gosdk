@@ -22,6 +22,36 @@ sk.Set(polynomial, &id)
 bls.GetMasterPublicKey
 `(*bls.Sign) Recover`
 
+## bls.PublicKey -> Set
+
+  <https://github.com/herumi/bls-go-binary/blob/master/bls/bls.go#L457>
+  ```
+  // Set --
+  func (pub *PublicKey) Set(mpk []PublicKey, id *ID) error {
+    // #nosec
+    ret := C.blsPublicKeyShare(&pub.v, &mpk[0].v, (C.mclSize)(len(mpk)), &id.v)
+    if ret != 0 {
+      return fmt.Errorf("err blsPublicKeyShare")
+    }
+    return nil
+  }
+  ```
+
+  <https://github.com/herumi/bls/blob/4ae022a6bb71dc518d81f22141d71d2a1f767ab3/src/bls_c_impl.hpp#L567>
+  ```
+  int blsPublicKeyShare(blsPublicKey *pub, const blsPublicKey *mpk, mclSize k, const blsId *id)
+  {
+    bool b;
+    mcl::evaluatePolynomial(&b, *cast(&pub->v), cast(&mpk->v), k, *cast(&id->v));
+    return b ? 0 : -1;
+  }
+  ```
+
+Well PublicKey is of type ECP2.
+
+I think this is just the exact same that I did for SecretKey.Set()! More or
+less the same thing anyway.
+
 ## bls.Sign -> Recover
 
   <https://github.com/herumi/bls-go-binary/blob/master/bls/bls.go#L586>

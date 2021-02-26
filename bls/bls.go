@@ -206,6 +206,22 @@ func (pk *PublicKey) Add(rhs *PublicKey) {
 	pk.v.Add(rhs.v)
 }
 
+func (pk *PublicKey) Set(pks []PublicKey, id *ID) error {
+	pk.v = new(BN254.ECP2)
+	if len(pks) == 0 {
+		return errors.New("No secret keys given.")
+	}
+	pk.v.Copy(pks[len(pks)-1].v)
+	if len(pks) == 1 {
+		return nil
+	}
+	for i := len(pks) - 2; i >= 0; i-- {
+		pk.v.Mul(id.v.GetBIG())
+		pk.v.Add(pks[i].v)
+	}
+	return nil
+}
+
 //-----------------------------------------------------------------------------
 // ID.
 //-----------------------------------------------------------------------------
