@@ -192,6 +192,30 @@ bls.ID is just Fr
     mclBnFr v;
   } blsId;
 
+## bls.SecretKey.SetHexString
+
+  <https://github.com/herumi/bls-go-binary/blob/master/bls/bls.go#L259>
+  ```
+  // SetHexString --
+  func (sec *SecretKey) SetHexString(s string) error {
+    buf := []byte(s)
+    // #nosec
+    err := C.blsSecretKeySetHexStr(&sec.v, (*C.char)(unsafe.Pointer(&buf[0])), C.mclSize(len(buf)))
+    if err != 0 {
+      return fmt.Errorf("err blsSecretKeySetHexStr %s", s)
+    }
+    return nil
+  }
+  ```
+
+  <https://github.com/herumi/bls/blob/4ae022a6bb71dc518d81f22141d71d2a1f767ab3/src/bls_c_impl.hpp#L986>
+  ```
+  int blsSecretKeySetHexStr(blsSecretKey *sec, const char *buf, mclSize bufSize)
+  {
+    return cast(&sec->v)->deserialize(buf, bufSize, 16) > 0 ? 0 : -1;
+  }
+  ```
+
 ## bls.ID.SetDecString
 
 Overall plan for SecDecString is to just ditch it and use SetHexString instead.
