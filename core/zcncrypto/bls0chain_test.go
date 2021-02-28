@@ -15,6 +15,21 @@ var signPrivatekey = `5e1fc9c03d53a8b9a63030acc2864f0c33dffddb3c276bf2b3c8d73926
 var data = `TEST`
 var blsWallet *Wallet
 
+func TestSetHexString(t *testing.T) {
+	testSetHexStringCase("11")
+	testSetHexStringCase("1e5f0362da9a74615cb5e3013bab322f")
+}
+
+func testSetHexStringCase(n string) {
+	var id bls.ID
+	err := id.SetHexString(n)
+	if err != nil {
+		panic(err)
+	}
+	a := id.GetHexString()
+	fmt.Println("Got", a)
+}
+
 // A simple unit test to test serialization and deserialization of a private key.
 // It's simple, but necessary because did a big port replacing herumi/bls with
 // miracl/core, and it's easy to make simple mistakes like this (we did).

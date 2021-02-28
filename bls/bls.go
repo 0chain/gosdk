@@ -252,7 +252,7 @@ type ID struct {
 func (id *ID) SetHexString(s string) error {
 	b, err := hex2byte(s)
 	if err != nil {
-		return nil
+		return err
 	}
 	id.v = BN254.FP_fromBytes(b)
 	return nil
