@@ -207,10 +207,11 @@ func (pk *PublicKey) Add(rhs *PublicKey) {
 }
 
 func (pk *PublicKey) Set(pks []PublicKey, id *ID) error {
-	pk.v = new(BN254.ECP2)
+	pk.v = BN254.NewECP2()
 	if len(pks) == 0 {
 		return errors.New("No secret keys given.")
 	}
+	fmt.Println("aa1", len(pks), pks[len(pks)-1], pks[len(pks)-1].v)
 	pk.v.Copy(pks[len(pks)-1].v)
 	if len(pks) == 1 {
 		return nil
