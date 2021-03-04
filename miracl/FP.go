@@ -239,7 +239,7 @@ func (F *FP) ToBytes(b []byte) {
 }
 
 func (F *FP) GetBIG() *BIG {
-	return F.x
+	return F.redc()
 }
 
 func FP_fromBytes(b []byte) *FP {
@@ -373,6 +373,11 @@ func (F *FP) imul(c int) {
 		F.neg()
 		F.norm()
 	}
+}
+
+// 0chain: we need to export imul.
+func (F *FP) Imul(c int) {
+	F.imul(c)
 }
 
 /* this*=this mod Modulus */
