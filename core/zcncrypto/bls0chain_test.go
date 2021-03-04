@@ -32,31 +32,30 @@ func testSetHexStringCase(n string) {
 
 // Basic unit test to test that secret key Set works.
 func TestSecretKeySet(t *testing.T) {
-	var dsk bls.SecretKey
-	dsk.SetByCSPRNG()
-	Msk := dsk.GetMasterSecretKey(2)
+	var sk bls.SecretKey
+	sk.SetByCSPRNG()
+	Msk := sk.GetMasterSecretKey(2)
 	mpk := bls.GetMasterPublicKey(Msk)
+
+	// Verify the mpk are generated correctly.
+	for i, s := range Msk {
+		pk := s.GetPublicKey()
+		v := mpk[i].IsEqual( pk )
+		fmt.Println("result", v, pk.ToString())
+	}
 
 	var id bls.ID
 	id.SetHexString("0000000000000000000000000000000000000000000000001e5f0362da9a74615cb5e3013bab322f")
 
 	var sij bls.SecretKey
-	if err := sij.Set(Msk, &id); err != nil {
-		panic(err)
-	}
+	sij.Set(Msk, &id)
 
 	var expectedSijPK bls.PublicKey
-	if err := expectedSijPK.Set(mpk, &id); err != nil {
-		panic(err)
-	}
-	sijPK := sij.GetPublicKey()
-	v := expectedSijPK.IsEqual(sijPK)
+	expectedSijPK.Set(mpk, &id)
 
-	if !v {
-		t.Fatal("Should have been a valid share.")
+	if !expectedSijPK.IsEqual( sij.GetPublicKey() ) {
+		t.Fatalf("Should've been a valid share.")
 	}
-
-	fmt.Println("result", v)
 }
 
 // A simple unit test to test serialization and deserialization of a private key.

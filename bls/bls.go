@@ -198,6 +198,10 @@ func (pk *PublicKey) SerializeToHexStr() string {
 	return hex.EncodeToString(pk.Serialize())
 }
 
+func (pk *PublicKey) ToString() string {
+	return pk.v.ToString()
+}
+
 func (pk *PublicKey) Serialize() []byte {
 	return ToBytes2(pk.v)
 }
