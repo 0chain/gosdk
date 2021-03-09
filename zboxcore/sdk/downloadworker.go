@@ -53,7 +53,7 @@ type DownloadRequest struct {
 	Consensus
 }
 
-func (req *DownloadRequest) downloadBlock(blockNum int64) ([]byte, error) {
+func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([]byte, error) {
 	req.consensus = 0
 	numDownloads := bits.OnesCount32(req.downloadMask)
 	req.wg = &sync.WaitGroup{}
@@ -100,13 +100,21 @@ func (req *DownloadRequest) downloadBlock(blockNum int64) ([]byte, error) {
 
 	retData := make([]byte, 0)
 	success := 0
+	Logger.Info("downloadBlock ", blockNum, " numDownloads ", numDownloads)
+
 	for i := 0; i < numDownloads; i++ {
 		result := <-rspCh
+
+		downloadChunks := len(result.BlockChunks)
 		if !result.Success {
 			Logger.Error("Download block : ", req.blobbers[result.idx].Baseurl, " ", result.err)
 		} else {
 			blockSuccess := false
-			for blockNum := 0; blockNum < len(result.BlockChunks); blockNum++ {
+			if(blockChunksMax < len(result.BlockChunks)){
+				downloadChunks = blockChunksMax
+			}
+			//for blockNum := 0; blockNum < len(result.BlockChunks); blockNum++ {
+			for blockNum := 0; blockNum < downloadChunks; blockNum++ {
 				if len(req.encryptedKey) > 0 {
 					headerBytes := result.BlockChunks[blockNum][:(2 * 1024)]
 					headerBytes = bytes.Trim(headerBytes, "\x00")
@@ -141,11 +149,10 @@ func (req *DownloadRequest) downloadBlock(blockNum int64) ([]byte, error) {
 			if !blockSuccess {
 				continue
 			}
-
 			//fmt.Printf("[%d]:%s Size:%d\n", i, req.blobbers[result.idx].Baseurl, len(shards[result.idx]))
 			success++
 			if success >= req.datashards {
-				decodeNumBlocks = len(result.BlockChunks)
+				decodeNumBlocks = downloadChunks
 				break
 			}
 		}
@@ -234,10 +241,22 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	downloaded := int(0)
 	fH := sha1.New()
 	mW := io.MultiWriter(fH, wrFile)
+
+	startBlock := req.startBlock
+	endBlock := req.endBlock
+	numBlocks := req.numBlocks
 	//batchCount := (chunksPerShard + req.numBlocks - 1) / req.numBlocks
-	for cnt := req.startBlock; cnt < req.endBlock; cnt += req.numBlocks {
+	//for cnt := req.startBlock; cnt < req.endBlock; cnt += req.numBlocks {
+	for(startBlock < endBlock){
 		//blockSize := int64(math.Min(float64(perShard-(cnt*fileref.CHUNK_SIZE)), fileref.CHUNK_SIZE))
-		data, err := req.downloadBlock(cnt + 1)
+
+		cnt:= startBlock
+		Logger.Info("Downloading block ", cnt + 1)
+		if((startBlock + numBlocks) > endBlock){
+			numBlocks = endBlock - startBlock
+		}
+
+		data, err := req.downloadBlock(cnt + 1, int(numBlocks))
 		if err != nil {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
@@ -265,10 +284,16 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		}
 		downloaded = downloaded + int(n)
 		size = size - n
+
 		if req.statusCallback != nil {
 			req.statusCallback.InProgress(req.allocationID, remotePathCallback, OpDownload, downloaded, data)
 		}
 
+		if((startBlock + numBlocks) > endBlock){
+			startBlock += endBlock - startBlock
+		}else{
+			startBlock += numBlocks
+		}
 	}
 
 	// Only check hash when the download request is not by block/partial.
