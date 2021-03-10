@@ -9,13 +9,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
-	"sync"
 	"time"
 
-	"gopkg.in/cheggaaa/pb.v1"
-
-	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/marker"
 
 	"github.com/0chain/gosdk/core/common"
@@ -41,7 +36,7 @@ const (
 
 type StatusCallback interface {
 	Started(allocationId, filePath string, op int, totalBytes int)
-	InProgress(allocationId, filePath string, op int, completedBytes int)
+	InProgress(allocationId, filePath string, op int, completedBytes int, data []byte)
 	Error(allocationID string, filePath string, op int, err error)
 	Completed(allocationId, filePath string, filename string, mimetype string, size int, op int)
 	CommitMetaCompleted(request, response string, err error)
@@ -814,61 +809,6 @@ func CreateAllocation(datashards, parityshards int, size, expiry int64,
 		blockchain.GetPreferredBlobbers())
 }
 
-type StatusBar struct {
-	b       *pb.ProgressBar
-	wg      *sync.WaitGroup
-	success bool
-}
-
-var allocUnderRepair bool
-
-func (s *StatusBar) Started(allocationId, filePath string, op int, totalBytes int) {
-	s.b = pb.StartNew(totalBytes)
-	s.b.Set(0)
-}
-func (s *StatusBar) InProgress(allocationId, filePath string, op int, completedBytes int) {
-	s.b.Set(completedBytes)
-}
-
-func (s *StatusBar) Completed(allocationId, filePath string, filename string, mimetype string, size int, op int) {
-	if s.b != nil {
-		s.b.Finish()
-	}
-	s.success = true
-	if !allocUnderRepair {
-		defer s.wg.Done()
-	}
-	fmt.Println("Status completed callback. Type = " + mimetype + ". Name = " + filename)
-}
-
-func (s *StatusBar) Error(allocationID string, filePath string, op int, err error) {
-	if s.b != nil {
-		s.b.Finish()
-	}
-	s.success = false
-	if !allocUnderRepair {
-		defer s.wg.Done()
-	}
-	fmt.Println("Error in file operation." + err.Error())
-}
-
-func (s *StatusBar) CommitMetaCompleted(request, response string, err error) {
-	defer s.wg.Done()
-	if err != nil {
-		s.success = false
-		fmt.Println("Error in commitMetaTransaction." + err.Error())
-	} else {
-		s.success = true
-		fmt.Println("Commit Metadata successful, Response :", response)
-	}
-}
-
-func (s *StatusBar) RepairCompleted(filesRepaired int) {
-	defer s.wg.Done()
-	allocUnderRepair = false
-	fmt.Println("Repair file completed, Total files repaired: ", filesRepaired)
-}
-
 func CreateAllocationForOwner(owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, mcct time.Duration,
@@ -896,32 +836,6 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 		InputArgs: allocationRequest,
 	}
 	hash, _, err = smartContractTxnValue(sn, lock)
-	allocationObj, err := GetAllocation(hash)
-	if err != nil {
-		fmt.Println("Error fetching the allocation.", err)
-		os.Exit(1)
-	}
-	localpath, _ := filepath.Abs("../gosdk/Encrypted/test.txt") // path from the working directory
-
-	remotepath := "/Encrypted/test.txt"
-	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg}
-	wg.Add(1)
-	var attrs fileref.Attributes
-	err = allocationObj.EncryptAndUploadFile(localpath, remotepath, attrs, statusBar)
-	if err != nil {
-		fmt.Println("Upload failed.", err)
-		os.Exit(1)
-	}
-	wg.Wait()
-	if !statusBar.success {
-		os.Exit(1)
-	}
-	err = allocationObj.DeleteFile(remotepath)
-	if err != nil {
-		fmt.Println("Delete failed.", err.Error())
-		os.Exit(1)
-	}
 	return
 }
 

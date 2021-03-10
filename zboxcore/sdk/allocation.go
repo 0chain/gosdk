@@ -676,10 +676,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus floa
 	if !isabs {
 		return common.NewError("invalid_path", "Path should be valid and absolute")
 	}
-	if path == "/Encrypted" || path == "/Encrypted/" {
-		fmt.Println("Error: Can not delete Encrypted Folder")
-		os.Exit(1)
-	}
+
 	req := &DeleteRequest{}
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
@@ -702,10 +699,6 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 
 	if len(path) == 0 {
 		return common.NewError("invalid_path", "Invalid path for the list")
-	}
-	if strings.HasPrefix(path, "/Encrypted")  {
-		fmt.Println("Error: Can not rename Encrypted Folder")
-		os.Exit(1)
 	}
 	path = zboxutil.RemoteClean(path)
 	isabs := zboxutil.IsRemoteAbs(path)
@@ -831,14 +824,6 @@ func (a *Allocation) GetAuthTicket(path string, filename string, referenceType s
 	shareReq.remotefilename = filename
 	if referenceType == fileref.DIRECTORY {
 		shareReq.refType = fileref.DIRECTORY
-		if path == "/Encrypted" || path == "/Encrypted/" {
-			fmt.Println("Error: Can not share folder Encrypted Folder")
-			os.Exit(1)
-		}
-		if strings.HasPrefix(path, "/Encrypted") {
-			fmt.Println("Error: Can not share folder (inside) Encrypted Folder")
-			os.Exit(1)
-		}
 	} else {
 		shareReq.refType = fileref.FILE
 	}
