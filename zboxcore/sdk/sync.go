@@ -105,7 +105,7 @@ func addLocalFileList(root string, fMap map[string]fileInfo, dirList *[]string, 
 	return func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			Logger.Error("Local file list error for path", path, err.Error())
-			return nil
+			return err
 		}
 		// Filter out
 		if _, ok := filter[info.Name()]; ok {
@@ -114,6 +114,7 @@ func addLocalFileList(root string, fMap map[string]fileInfo, dirList *[]string, 
 		lPath, err := filepath.Rel(root, path)
 		if err != nil {
 			Logger.Error("getting relative path failed", err)
+			return err
 		}
 		lPath = "/" + lPath
 		// Exclude
@@ -138,7 +139,10 @@ func getLocalFileMap(rootPath string, filters []string, exclMap map[string]int) 
 		filterMap[f] = true
 	}
 	err := filepath.Walk(rootPath, addLocalFileList(rootPath, localMap, &dirList, filterMap, exclMap))
-	// Add the dirs at the end of the list for dir deletiion after all file deletion
+	if err != nil {
+		return nil, err
+	}
+	// Add the dirs at the end of the list for dir deletion after all file deletion
 	for _, d := range dirList {
 		localMap[d] = fileInfo{Type: fileref.DIRECTORY}
 	}
@@ -204,6 +208,9 @@ func findDelta(rMap map[string]fileInfo, lMap map[string]fileInfo, prevMap map[s
 			op = Conflict
 		} else if bLocalModified {
 			op = Update
+		} else if bRemoteModified {
+			// Remote modified, local not change
+			op = Download
 		} else if _, ok := lMap[rPath]; ok {
 			// No conflicts and file exists locally
 			delete(lMap, rPath)
@@ -224,7 +231,7 @@ func findDelta(rMap map[string]fileInfo, lMap map[string]fileInfo, prevMap map[s
 	// Upload all local files
 	for lPath, _ := range lMap {
 		op := Upload
-		if _, ok := lMod[lPath]; ok {
+		if _, ok := lMod[lPath]; ok { // duplicate check for local modified
 			op = Update
 		} else if _, ok := prevMap[lPath]; ok {
 			op = LocalDelete

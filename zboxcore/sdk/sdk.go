@@ -11,8 +11,6 @@ import (
 	"os"
 	"time"
 
-	"github.com/0chain/gosdk/zboxcore/marker"
-
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/version"
@@ -20,6 +18,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	. "github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 

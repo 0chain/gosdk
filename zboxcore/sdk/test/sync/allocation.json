@@ -1,0 +1,34 @@
+{
+  "id": "7827c760363c4836b0acd3967a023c9061deef50e0c44db3e3aca8e14f8ef6f8",
+  "tx": "7827c760363c4836b0acd3967a023c9061deef50e0c44db3e3aca8e14f8ef6f8",
+  "data_shards": 2,
+  "parity_shards": 2,
+  "size": 2147483648,
+  "expiration_date": 1617861962,
+  "owner_id": "0e0f19582afed145d3ad3ba9b6ef9ea4615ef33f67f839424cfc6d63d877412c",
+  "owner_public_key": "3269176c572297cd0adc34706e5795fc4d9a23af966b2f6c16ab11b129e07f06de0283c74e90a1dfae89edcbe494584d993371e2ea2c2a39c26a4a4cd0444c1c",
+  "payer_id": "",
+  "blobbers": [],
+  "stats": {
+    "used_size": 0,
+    "num_of_writes": 0,
+    "num_of_reads": 0,
+    "total_challenges": 0,
+    "num_open_challenges": 0,
+    "num_success_challenges": 0,
+    "num_failed_challenges": 0,
+    "latest_closed_challenge": ""
+  },
+  "time_unit": 2592000000000000,
+  "blobber_details": [],
+  "read_price_range": {
+    "min": 0,
+    "max": 9223372036854775807
+  },
+  "write_price_range": {
+    "min": 0,
+    "max": 9223372036854775807
+  },
+  "challenge_completion_time": 120000000000,
+  "start_time": 1615269962
+}
