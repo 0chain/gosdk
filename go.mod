@@ -4,7 +4,6 @@ require (
 	github.com/h2non/filetype v1.0.9
 	github.com/klauspost/cpuid v1.2.0 // indirect
 	github.com/klauspost/reedsolomon v1.9.2
-	github.com/mattn/go-runewidth v0.0.10 // indirect
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/stretchr/testify v1.4.0
 	github.com/tyler-smith/go-bip39 v1.0.0
@@ -14,7 +13,6 @@ require (
 	golang.org/x/mobile v0.0.0-20200329125638-4c31acba0007 // indirect
 	golang.org/x/tools v0.0.0-20200117012304-6edc0a871e69 // indirect
 	gopkg.in/alecthomas/kingpin.v2 v2.2.6 // indirect
-	gopkg.in/cheggaaa/pb.v1 v1.0.28
 )
 
 go 1.13
