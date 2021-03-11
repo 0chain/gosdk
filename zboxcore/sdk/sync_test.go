@@ -42,7 +42,7 @@ func writeFileContent(t *testing.T, fileName string, fileContentBytes []byte) {
 	assert.NoErrorf(t, err, "Error fs.Write() cannot write file content to %v: %v", fileName, err)
 }
 
-func T_SetupActions(t *testing.T, configDir string, minerHTTPMockURLs, sharderHTTPMockURLs, blobberHTTPMockURLs []string) {
+func SetupMockInitStorageSDK(t *testing.T, configDir string, minerHTTPMockURLs, sharderHTTPMockURLs, blobberHTTPMockURLs []string) {
 	nodeConfig := viper.New()
 	nodeConfig.SetConfigFile(configDir + "/" + "config.yaml")
 
@@ -70,7 +70,7 @@ func T_SetupActions(t *testing.T, configDir string, minerHTTPMockURLs, sharderHT
 	assert.NoErrorf(t, err, "Error InitStorageSDK(): %v", err)
 }
 
-func T_SetupMockAllocation(t *testing.T, blobberMocks []*mock.Blobber) *Allocation {
+func SetupMockAllocation(t *testing.T, blobberMocks []*mock.Blobber) *Allocation {
 	blobbers := []*blockchain.StorageNode{}
 	for _, blobberMock := range blobberMocks {
 		blobbers = append(blobbers, &blockchain.StorageNode{
@@ -85,7 +85,7 @@ func T_SetupMockAllocation(t *testing.T, blobberMocks []*mock.Blobber) *Allocati
 	return allocation
 }
 
-func T_SetupBlobberMockResponses(t *testing.T, blobbers []*mock.Blobber, allocation, syncTestDir, testCaseName string) {
+func SetupBlobberMockResponses(t *testing.T, blobbers []*mock.Blobber, allocation, syncTestDir, testCaseName string) {
 	var blobberMockPathHashResponses map[string][]interface{}
 	parseFileContent(t, fmt.Sprintf("%v/blobbers_response__%v.json", syncTestDir, testCaseName), &blobberMockPathHashResponses)
 	for idx, blobber := range blobbers {
@@ -104,7 +104,7 @@ func T_SetupBlobberMockResponses(t *testing.T, blobbers []*mock.Blobber, allocat
 	}
 }
 
-func T_SetupExpectedResult(t *testing.T, syncTestDir, testCaseName string) []FileDiff {
+func SetupExpectedResult(t *testing.T, syncTestDir, testCaseName string) []FileDiff {
 	var expectedResult []FileDiff
 	parseFileContent(t, fmt.Sprintf("%v/expected_result__%v.json", syncTestDir, testCaseName), &expectedResult)
 	return expectedResult
@@ -132,9 +132,9 @@ func TestAllocation_GetAllocationDiff(t *testing.T) {
 	}()
 
 	// mock init sdk
-	T_SetupActions(t, configDir, []string{miner}, []string{sharder}, []string{})
+	SetupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
 	// mock allocation
-	a := T_SetupMockAllocation(t, blobbers)
+	a := SetupMockAllocation(t, blobbers)
 	type args struct {
 		lastSyncCachePath func(t *testing.T, testcaseName string) string
 		localRootPath     string
@@ -338,12 +338,12 @@ func TestAllocation_GetAllocationDiff(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			T_SetupBlobberMockResponses(t, blobbers, a.ID, syncTestDir+"/"+"GetAllocationDiff", tt.name)
+			SetupBlobberMockResponses(t, blobbers, a.ID, syncTestDir+"/"+"GetAllocationDiff", tt.name)
 			if tt.additionalMock != nil {
 				teardownAdditionalMock := tt.additionalMock(t)
 				defer teardownAdditionalMock(t)
 			}
-			want := T_SetupExpectedResult(t, syncTestDir+"/"+"GetAllocationDiff", tt.name)
+			want := SetupExpectedResult(t, syncTestDir+"/"+"GetAllocationDiff", tt.name)
 			got, err := a.GetAllocationDiff(tt.args.lastSyncCachePath(t, tt.name), tt.args.localRootPath, tt.args.localFileFilters, tt.args.remoteExcludePath)
 			if tt.wantErr {
 				assert.Error(t, err, "expected error != nil")
@@ -377,9 +377,9 @@ func TestAllocation_SaveRemoteSnapshot(t *testing.T) {
 	}()
 
 	// mock init sdk
-	T_SetupActions(t, configDir, []string{miner}, []string{sharder}, []string{})
+	SetupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
 	// mock allocation
-	a := T_SetupMockAllocation(t, blobbers)
+	a := SetupMockAllocation(t, blobbers)
 
 	var additionalMockLocalFile = func(t *testing.T, fullFileName string) (teardown func(t *testing.T)) {
 		teardown = func(t *testing.T) {}
@@ -431,7 +431,7 @@ func TestAllocation_SaveRemoteSnapshot(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			T_SetupBlobberMockResponses(t, blobbers, a.ID, syncTestDir+"/"+"SaveRemoteSnapshot", tt.name)
+			SetupBlobberMockResponses(t, blobbers, a.ID, syncTestDir+"/"+"SaveRemoteSnapshot", tt.name)
 			var pathToSave string
 			if tt.args.pathToSavePrefix == "" {
 				pathToSave = fmt.Sprintf("%v/%v/localcache__%v.json", syncTestDir, "SaveRemoteSnapshot", tt.name)

@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	NETWORK_PATH = "/network"
+	networkPath = "/network"
 )
 
 type blockWorker struct {
@@ -21,7 +21,7 @@ var bw *blockWorker
 func (bw *blockWorker) getMapHandler() map[string]http.Handler {
 	if bw.mapHandler == nil {
 		bw.mapHandler = map[string]http.Handler{
-			NETWORK_PATH: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			networkPath: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				miners := bw.Miners
 				if miners == nil {
 					miners = []string{}
