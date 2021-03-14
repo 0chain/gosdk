@@ -22,6 +22,49 @@ sk.Set(polynomial, &id)
 bls.GetMasterPublicKey
 `(*bls.Sign) Recover`
 
+## bls.PublicKey -> Equals
+
+This is how Equals is implemented for projected and affine.
+
+  <include/mcl/ec.hpp>
+
+  ```
+	bool operator==(const EcT& rhs) const
+	{
+		switch (mode_) {
+		case ec::Jacobi:
+			return ec::isEqualJacobi(*this, rhs);
+		case ec::Proj:
+			return ec::isEqualProj(*this, rhs);
+		case ec::Affine:
+		default:
+			return x == rhs.x && y == rhs.y && z == rhs.z;
+		}
+	}
+  ```
+
+  ```
+  // (x/z, y/z)
+  template<class E>
+  bool isEqualProj(const E& P1, const E& P2)
+  {
+    typedef typename E::Fp F;
+    bool zero1 = P1.isZero();
+    bool zero2 = P2.isZero();
+    if (zero1) {
+      return zero2;
+    }
+    if (zero2) return false;
+    F t1, t2;
+    F::mul(t1, P1.x, P2.z);
+    F::mul(t2, P2.x, P1.z);
+    if (t1 != t2) return false;
+    F::mul(t1, P1.y, P2.z);
+    F::mul(t2, P2.y, P1.z);
+    return t1 == t2;
+  }
+  ```
+
 ## bls.PublicKey -> Set
 
   <https://github.com/herumi/bls-go-binary/blob/master/bls/bls.go#L457>
@@ -45,6 +88,94 @@ bls.GetMasterPublicKey
     mcl::evaluatePolynomial(&b, *cast(&pub->v), cast(&mpk->v), k, *cast(&id->v));
     return b ? 0 : -1;
   }
+  ```
+
+  <https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/include/mcl/lagrange.hpp#L64>
+  ```
+  /*
+    out = f(x) = c[0] + c[1] * x + c[2] * x^2 + ... + c[cSize - 1] * x^(cSize - 1)
+    @retval 0 if succeed else -1 (if cSize == 0)
+  */
+  template<class G, class T>
+  void evaluatePolynomial(bool *pb, G& out, const G *c, size_t cSize, const T& x)
+  {
+    if (cSize == 0) {
+      *pb = false;
+      return;
+    }
+    if (cSize == 1) {
+      out = c[0];
+      *pb = true;
+      return;
+    }
+    G y = c[cSize - 1];
+    for (int i = (int)cSize - 2; i >= 0; i--) {
+      G::mul(y, y, x);
+      G::add(y, y, c[i]);
+    }
+    out = y;
+    *pb = true;
+  }
+  ```
+
+By luck, found the ECP * FP mul code in herumi:
+
+  <https://github.com/herumi/mcl/blob/7bfe60c5373767d674b9aefea5fbf737897397eb/include/mcl/ec.hpp#L933>
+  ```
+  template<class tag, size_t maxBitSize, template<class _tag, size_t _maxBitSize>class FpT>
+  static inline void mul(EcT& z, const EcT& x, const FpT<tag, maxBitSize>& y)
+  {
+    fp::Block b;
+    y.getBlock(b);
+    mulArray(z, x, b.p, b.n, false);
+  }
+  ```
+
+  <https://github.com/herumi/mcl/blob/7bfe60c5373767d674b9aefea5fbf737897397eb/include/mcl/fp.hpp#L379>
+  ```
+  void getBlock(fp::Block& b) const
+  {
+    b.n = op_.N;
+    if (isMont()) {
+      op_.fromMont(b.v_, v_);
+      b.p = &b.v_[0];
+    } else {
+      b.p = &v_[0];
+    }
+  }
+  ```
+
+  <https://github.com/herumi/mcl/blob/7bfe60c5373767d674b9aefea5fbf737897397eb/include/mcl/ec.hpp#L1320>
+  ```
+	static inline void mulArray(EcT& z, const EcT& x, const fp::Unit *y, size_t yn, bool isNegative, bool constTime = false, bool useGLV = true)
+	{
+		if (!constTime) {
+			if (yn == 0) {
+				z.clear();
+				return;
+			}
+			yn = fp::getNonZeroArraySize(y, yn);
+			if (yn <= 1 && mulSmallInt(z, x, *y, isNegative)) return;
+		}
+		if (useGLV && mulArrayGLV && (yn * sizeof(fp::Unit) > 8)) {
+			mulArrayGLV(z, x, y, yn, isNegative, constTime);
+			return;
+		}
+		mulArrayBase(z, x, y, yn, isNegative, constTime);
+	}
+  ```
+
+  <https://github.com/herumi/mcl/blob/7bfe60c5373767d674b9aefea5fbf737897397eb/include/mcl/ec.hpp#L1685>
+  ```
+	static void mulArrayGLV(Ec& z, const Ec& x, const mcl::fp::Unit *y, size_t yn, bool isNegative, bool constTime)
+	{
+		mpz_class s;
+		bool b;
+		mcl::gmp::setArray(&b, s, y, yn);
+		assert(b);
+		if (isNegative) s = -s;
+		mul(z, x, s, constTime);
+	}
   ```
 
 Well PublicKey is of type ECP2.
@@ -418,6 +549,7 @@ Oh snaps correlates to!
 Also see this in mcl lib:
 
   <https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/include/mcl/bn.h#L96>
+  ```
   typedef struct {
     mclBnFp x, y, z;
   } mclBnG1;
@@ -425,6 +557,7 @@ Also see this in mcl lib:
   typedef struct {
     mclBnFp2 x, y, z;
   } mclBnG2;
+  ```
 
 Oh snaps, found a bunch of MCL docs here: <https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/api.md#mclbnfp>
 
