@@ -8,8 +8,8 @@ import (
 )
 
 type Blobber struct {
-	ID string
-	URL string
+	ID         string
+	URL        string
 	mapHandler map[string]http.Handler
 }
 
@@ -22,7 +22,7 @@ func (b *Blobber) getMapHandler() map[string]http.Handler {
 	return b.mapHandler
 }
 
-func (b *Blobber) SetBlobberHandler(t *testing.T, path string, handler http.HandlerFunc) {
+func (b *Blobber) SetHandler(t *testing.T, path string, handler http.HandlerFunc) {
 	b.mapHandler[path] = handler
 }
 
@@ -31,7 +31,7 @@ func NewBlobberHTTPServer(t *testing.T) (blobber *Blobber, close func()) {
 	rand.Read(bytes)
 	id := hex.EncodeToString(bytes)
 	b := &Blobber{
-		ID:         id,
+		ID: id,
 	}
 	url, close := NewHTTPServer(t, b.getMapHandler())
 	b.URL = url
