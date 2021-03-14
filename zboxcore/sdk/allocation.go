@@ -60,17 +60,19 @@ type BlobberAllocationStats struct {
 }
 
 type ConsolidatedFileMeta struct {
-	Name           string
-	Type           string
-	Path           string
-	LookupHash     string
-	Hash           string
-	MimeType       string
-	Size           int64
-	EncryptedKey   string
-	CommitMetaTxns []fileref.CommitMetaTxn
-	Collaborators  []fileref.Collaborator
-	Attributes     fileref.Attributes
+	Name           	string
+	Type           	string
+	Path           	string
+	LookupHash     	string
+	Hash           	string
+	MimeType       	string
+	Size           	int64
+	ActualFileSize 	int64
+	ActualNumBlocks int64
+	EncryptedKey   	string
+	CommitMetaTxns 	[]fileref.CommitMetaTxn
+	Collaborators  	[]fileref.Collaborator
+	Attributes     	fileref.Attributes
 }
 
 type AllocationStats struct {
@@ -582,6 +584,8 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.CommitMetaTxns = ref.CommitMetaTxns
 		result.Collaborators = ref.Collaborators
 		result.Attributes = ref.Attributes
+		result.ActualFileSize = ref.Size
+		result.ActualNumBlocks = ref.NumBlocks
 		return result, nil
 	}
 	return nil, common.NewError("file_meta_error", "Error getting the file meta data from blobbers")
@@ -625,6 +629,8 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 		result.Path = ref.Path
 		result.Size = ref.ActualFileSize
 		result.CommitMetaTxns = ref.CommitMetaTxns
+		result.ActualFileSize = ref.Size
+		result.ActualNumBlocks = ref.NumBlocks
 		return result, nil
 	}
 	return nil, common.NewError("file_meta_error", "Error getting the file meta data from blobbers")
