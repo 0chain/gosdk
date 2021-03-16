@@ -215,13 +215,18 @@ func (pk *PublicKey) Set(pks []PublicKey, id *ID) error {
 	if len(pks) == 0 {
 		return errors.New("No secret keys given.")
 	}
-	fmt.Println("aa1", len(pks), pks[len(pks)-1], pks[len(pks)-1].v)
 	pk.v.Copy(pks[len(pks)-1].v)
 	if len(pks) == 1 {
 		return nil
 	}
 	for i := len(pks) - 2; i >= 0; i-- {
-		pk.v.Mul(id.v.GetBIG())
+		// Please note: this 'Mul' function is not the right one to use. It just
+		// multiplies, it doesn't do any modulus on the CURVE_Order. The right
+		// multiply, G2mul, does operations modulus CURVE_Order.
+		//
+		// pk.v = pk.v.Mul(id.v.GetBIG())
+
+		pk.v = BN254.G2mul(pk.v, id.v.GetBIG())
 		pk.v.Add(pks[i].v)
 	}
 	return nil
@@ -413,10 +418,36 @@ func (sk *SecretKey) Set(msk []SecretKey, id *ID) error {
 		return nil
 	}
 	sk.v = msk[len(msk)-1].CloneFP()
+
+	m := BN254.NewBIGints(BN254.CURVE_Order)
+	sk0 := sk.v.GetBIG()
+	id0 := id.v.GetBIG()
+
 	for i := len(msk) - 2; i >= 0; i-- {
-		sk.v.Mul(id.v)
-		sk.v.Add(msk[i].v)
+		sk0 = BN254.Modmul(sk0, id0, m)
+		sk0 = BN254.Modadd(sk0, msk[i].v.GetBIG(), m)
+
+		// Sorry in advance for this long comment. It is necessary so that future
+		// maintainers can understand the math behind what is going on here. And
+		// I also spent a lot of time on this. I'd really rather not forget what
+		// I learned. So this is a way for me to keep notes.
+		//
+		// Please note: the following Mul/Add functions are not the right ones to
+		// use. This is an easy mistake to make because they are named 'Mul' and
+		// 'Add'.
+		//
+		// What needs to happen are operations on the FP types in G1 or G2 group.
+		// These two operations are modulo "Modulus" (ROM.go), the wrong constant.
+		// Instead, we need to perform these operations modulo "CURVE_Order".
+		// To do that, we call Modmul and Modadd with the correct BIGint, created
+		// from "CURVE_Order".
+		//
+		// sk.v.Mul(id.v)
+		// sk.v.Add(msk[i].v)
 	}
+
+	sk.v = BN254.NewFPbig(sk0)
+
 	return nil
 }
 

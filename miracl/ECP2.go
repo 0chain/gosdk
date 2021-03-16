@@ -583,11 +583,6 @@ func (E *ECP2) mul(e *BIG) *ECP2 {
 	return P
 }
 
-/* Public version */
-func (E *ECP2) Mul(e *BIG) *ECP2 {
-	return E.mul(e)
-}
-
 /* clear cofactor */
 func (E *ECP2) Cfp() {
 	var T, K, xQ, x2Q *ECP2
@@ -648,7 +643,7 @@ func (E *ECP2) Cfp() {
 	}
 }
 
-/* P=u0.Q0+u1*Q1+u2*Q2+u3*Q3 */
+/* P = u0.Q0 + u1*Q1 + u2*Q2 + u3*Q3 */
 // Bos & Costello https://eprint.iacr.org/2013/458.pdf
 // Faz-Hernandez & Longa & Sanchez  https://eprint.iacr.org/2013/158.pdf
 // Side channel attack secure

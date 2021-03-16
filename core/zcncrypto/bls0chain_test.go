@@ -33,19 +33,23 @@ func testSetHexStringCase(n string) {
 // Basic unit test to test that secret key Set works.
 func TestSecretKeySet(t *testing.T) {
 	var sk bls.SecretKey
+	var id bls.ID
+
 	sk.SetByCSPRNG()
 	Msk := sk.GetMasterSecretKey(2)
 	mpk := bls.GetMasterPublicKey(Msk)
 
-	// Verify the mpk are generated correctly.
-	for i, s := range Msk {
-		pk := s.GetPublicKey()
-		v := mpk[i].IsEqual( pk )
-		fmt.Println("result", v, pk.ToString())
+	// These other SetHexString calls are additional cases that can be used to test.
+	// err := id.SetHexString("000000000" + "000000000" + "00000000" + "00000000" + "00000000000" + "0001e5f0362da" + "9a74615cb5e3013bab322f")
+	// err := id.SetHexString("00")
+	// err := id.SetHexString("01")
+	//
+	// The ideal unit test should be testing way more 'id' than just these few.
+	// Perhaps a for-loop or random sampling would be a good approach.
+	err := id.SetHexString("0000000000000000000000000000000000000000000000000000000000000005")
+	if err != nil {
+		panic(err)
 	}
-
-	var id bls.ID
-	id.SetHexString("0000000000000000000000000000000000000000000000001e5f0362da9a74615cb5e3013bab322f")
 
 	var sij bls.SecretKey
 	sij.Set(Msk, &id)
