@@ -183,6 +183,12 @@ type PublicKey struct {
 	v *BN254.ECP2
 }
 
+func NewPublicKey() *PublicKey {
+	pk := new(PublicKey)
+	pk.v = BN254.NewECP2()
+	return pk
+}
+
 // Starting from herumi's library:
 // <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L480>
 func (pk *PublicKey) DeserializeHexStr(s string) error {
