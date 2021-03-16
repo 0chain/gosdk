@@ -15,12 +15,18 @@ import (
 )
 
 const (
-	configDir               = "test"
-	syncTestDir             = configDir + "/" + "sync"
-	syncDir                 = syncTestDir + "/" + "sync_alloc"
-	allocationPathMask      = "$allocation"
-	blobberListFilePathMask = "/v1/file/list/" + allocationPathMask
+	configDir   = "test"
+	syncTestDir = configDir + "/" + "sync"
+	syncDir     = syncTestDir + "/" + "sync_alloc"
 )
+
+func blobberIDMask(idx int) string {
+	return fmt.Sprintf("${blobber_id_%v}", idx)
+}
+
+func blobberURLMask(idx int) string {
+	return fmt.Sprintf("${blobber_url_%v}", idx)
+}
 
 func parseFileContent(t *testing.T, fileName string, jsonUnmarshalerInterface interface{}) (fileContentBytes []byte) {
 	fs, err := os.OpenFile(fileName, os.O_RDONLY, 0644)
@@ -60,20 +66,20 @@ func setupMockInitStorageSDK(t *testing.T, configDir string, minerHTTPMockURLs, 
 	signScheme := nodeConfig.GetString("signature_scheme")
 	chainID := nodeConfig.GetString("chain_id")
 
-	//if minerHTTPMockURLs != nil && len(minerHTTPMockURLs) > 0 && sharderHTTPMockURLs != nil && len(sharderHTTPMockURLs) > 0 {
-	//	var close func()
-	//	blockWorker, close = mock.NewBlockWorkerHTTPServer(t, minerHTTPMockURLs, sharderHTTPMockURLs)
-	//	defer close()
-	//	if blobberHTTPMockURLs != nil {
-	//		preferredBlobbers = blobberHTTPMockURLs
-	//	}
-	//}
+	if minerHTTPMockURLs != nil && len(minerHTTPMockURLs) > 0 && sharderHTTPMockURLs != nil && len(sharderHTTPMockURLs) > 0 {
+		var close func()
+		blockWorker, close = mock.NewBlockWorkerHTTPServer(t, minerHTTPMockURLs, sharderHTTPMockURLs)
+		defer close()
+		if blobberHTTPMockURLs != nil {
+			preferredBlobbers = blobberHTTPMockURLs
+		}
+	}
 
 	err = InitStorageSDK(clientConfig, blockWorker, chainID, signScheme, preferredBlobbers)
 	assert.NoErrorf(t, err, "Error InitStorageSDK(): %v", err)
 }
 
-func setupMockAllocation(t *testing.T, blobberMocks []*mock.Blobber) *Allocation {
+func setupMockAllocation(t *testing.T, dirPath string, blobberMocks []*mock.Blobber) *Allocation {
 	blobbers := []*blockchain.StorageNode{}
 	for _, blobberMock := range blobberMocks {
 		blobbers = append(blobbers, &blockchain.StorageNode{
@@ -82,16 +88,22 @@ func setupMockAllocation(t *testing.T, blobberMocks []*mock.Blobber) *Allocation
 		})
 	}
 	var allocation *Allocation
-	parseFileContent(t, syncTestDir+"/"+"allocation.json", &allocation)
+	contentBytes := parseFileContent(t, dirPath+"/"+"allocation.json", nil)
+	for idx, blobber := range blobbers {
+		contentBytes = []byte(strings.ReplaceAll(string(contentBytes), blobberIDMask(idx), blobber.ID))
+		contentBytes = []byte(strings.ReplaceAll(string(contentBytes), blobberURLMask(idx), blobber.Baseurl))
+	}
+	err := json.Unmarshal(contentBytes, &allocation)
+	assert.NoErrorf(t, err, "Error json.Unmarshal() cannot parse file content to %T object: %v", allocation, err)
 	allocation.Blobbers = blobbers // inject mock blobbers
 	allocation.InitAllocation()
 	return allocation
 }
 
 type httpMockDefinition struct {
-	Method   string              `json:"method"`
-	Path     string              `json:"path"`
-	Params   []map[string]string `json:"params"`
+	Method    string              `json:"method"`
+	Path      string              `json:"path"`
+	Params    []map[string]string `json:"params"`
 	Responses [][]interface{}     `json:"responses"`
 }
 
@@ -101,24 +113,36 @@ func setupBlobberMockResponses(t *testing.T, blobbers []*mock.Blobber, dirPath, 
 	for _, blobberHTTPMock := range blobberHTTPMocks {
 		blobberMockHandler := func(blobberIdx int) http.HandlerFunc {
 			return func(w http.ResponseWriter, r *http.Request) {
-			if strings.ToLower(r.Method) == strings.ToLower(blobberHTTPMock.Method) {
-				for idx, param := range blobberHTTPMock.Params {
-					for key, val := range param {
-						if r.URL.Query().Get(key) == val {
+				if strings.ToLower(r.Method) == strings.ToLower(blobberHTTPMock.Method) {
+					for paramIdx, param := range blobberHTTPMock.Params {
+						var matchesParam = true
+						for key, val := range param {
+							if r.URL.Query().Get(key) != val {
+								matchesParam = false
+								break
+							}
+						}
+						if matchesParam {
+							respBytes, err := json.Marshal(blobberHTTPMock.Responses[paramIdx][blobberIdx])
+							assert.NoErrorf(t, err, "Error json.Marshal() cannot marshal blobber's response: %v", err)
+							respStr := string(respBytes)
+							for replacingIdx, replacingBlobber := range blobbers {
+								respStr = strings.ReplaceAll(respStr, blobberIDMask(replacingIdx + 1), replacingBlobber.ID)
+								respStr = strings.ReplaceAll(respStr, blobberURLMask(replacingIdx + 1), replacingBlobber.URL)
+							}
+
 							w.WriteHeader(200)
-							bytes, err := json.Marshal(blobberHTTPMock.Responses[idx][blobberIdx])
-							assert.NoErrorf(t, err, "Error %v invalid blobber json response: %v", r.URL.RawPath, err)
-							w.Write(bytes)
+							w.Write([]byte(respStr))
 							return
 						}
 					}
 				}
-			}
 
-			t.Logf("Warning blobber response is not initialized for %v", r.URL.String())
-			w.WriteHeader(500)
-			w.Write([]byte("Internal Server Error."))
-		}}
+				t.Logf("Warning blobber response is not initialized for %v", r.URL.String())
+				w.WriteHeader(500)
+				w.Write([]byte("Internal Server Error."))
+			}
+		}
 		for idx, blobber := range blobbers {
 			blobber.SetHandler(t, blobberHTTPMock.Path, blobberMockHandler(idx))
 		}
@@ -141,8 +165,8 @@ func TestAllocation_GetAllocationDiff(t *testing.T) {
 	var closeBlobbers = []func(){}
 	var blobberNums = 4
 	for i := 0; i < blobberNums; i++ {
-		blobberIdx, closeIdx := mock.NewBlobberHTTPServer(t)
-		blobbers = append(blobbers, blobberIdx)
+		blobber, closeIdx := mock.NewBlobberHTTPServer(t)
+		blobbers = append(blobbers, blobber)
 		closeBlobbers = append(closeBlobbers, closeIdx)
 	}
 
@@ -155,7 +179,7 @@ func TestAllocation_GetAllocationDiff(t *testing.T) {
 	// mock init sdk
 	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
 	// mock allocation
-	a := setupMockAllocation(t, blobbers)
+	a := setupMockAllocation(t, syncTestDir, blobbers)
 	type args struct {
 		lastSyncCachePath func(t *testing.T, testcaseName string) string
 		localRootPath     string
@@ -359,7 +383,7 @@ func TestAllocation_GetAllocationDiff(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setupBlobberMockResponses(t, blobbers,syncTestDir+"/"+"GetAllocationDiff", tt.name)
+			setupBlobberMockResponses(t, blobbers, syncTestDir+"/"+"GetAllocationDiff", tt.name)
 			if tt.additionalMock != nil {
 				teardownAdditionalMock := tt.additionalMock(t)
 				defer teardownAdditionalMock(t)
@@ -400,7 +424,7 @@ func TestAllocation_SaveRemoteSnapshot(t *testing.T) {
 	// mock init sdk
 	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
 	// mock allocation
-	a := setupMockAllocation(t, blobbers)
+	a := setupMockAllocation(t, syncTestDir, blobbers)
 
 	var additionalMockLocalFile = func(t *testing.T, fullFileName string) (teardown func(t *testing.T)) {
 		teardown = func(t *testing.T) {}
