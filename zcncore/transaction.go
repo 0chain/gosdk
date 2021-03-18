@@ -1094,6 +1094,13 @@ type MinerSCMinerStat struct {
 }
 
 type MinerSCMinerInfo struct {
+	*SimpleMienrSCMinerInfo `json:"simple_miner"`
+	Pending                 map[string]MinerSCDelegatePool `json:"pending"`
+	Active                  map[string]MinerSCDelegatePool `json:"active"`
+	Deleting                map[string]MinerSCDelegatePool `json:"deleting"`
+}
+
+type SimpleMienrSCMinerInfo struct {
 	ID      string `json:"id"`
 	BaseURL string `json:"url"`
 
@@ -1104,10 +1111,6 @@ type MinerSCMinerInfo struct {
 	MaxStake          common.Balance `json:"max_stake"`           //
 
 	Stat MinerSCMinerStat `json:"stat"`
-
-	Pending  map[string]MinerSCDelegatePool `json:"pending"`
-	Active   map[string]MinerSCDelegatePool `json:"active"`
-	Deleting map[string]MinerSCDelegatePool `json:"deleting"`
 }
 
 func (t *Transaction) MinerSCSettings(info *MinerSCMinerInfo) (err error) {
