@@ -29,5 +29,6 @@ func SetMinerHandler(t *testing.T, path string, handler http.HandlerFunc) {
 
 func NewMinerHTTPServer(t *testing.T) (url string, close func()) {
 	m = &miner{}
-	return NewHTTPServer(t, m.getMapHandler())
+	url, close, _ = NewHTTPServer(t, m.getMapHandler())
+	return url, close
 }

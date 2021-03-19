@@ -29,5 +29,6 @@ func SetSharderHandler(t *testing.T, path string, handler http.HandlerFunc) {
 
 func NewSharderHTTPServer(t * testing.T) (url string, close func()) {
 	s = &sharder{}
-	return NewHTTPServer(t, s.getMapHandler())
+	url, close, _ = NewHTTPServer(t, s.getMapHandler())
+	return url, close
 }

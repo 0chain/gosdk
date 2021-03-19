@@ -57,5 +57,6 @@ func SetBlockWorkerHandler(t *testing.T, path string, handler http.HandlerFunc) 
 
 func NewBlockWorkerHTTPServer(t *testing.T,miners, sharders []string) (url string, close func()) {
 	bw = &blockWorker{Miners: miners, Sharders: sharders}
-	return NewHTTPServer(t, bw.getMapHandler())
+	url, close, _ = NewHTTPServer(t, bw.getMapHandler())
+	return url, close
 }
