@@ -211,6 +211,62 @@ less the same thing anyway.
   }
   ```
 
+  <https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/include/mcl/lagrange.hpp#L11>
+  ```
+  /*
+    recover out = f(0) by { (x, y) | x = S[i], y = f(x) = vec[i] }
+    @retval 0 if succeed else -1
+  */
+  template<class G, class F>
+  void LagrangeInterpolation(bool *pb, G& out, const F *S, const G *vec, size_t k)
+  {
+    if (k == 0) {
+      *pb = false;
+      return;
+    }
+    if (k == 1) {
+      out = vec[0];
+      *pb = true;
+      return;
+    }
+    /*
+      delta_{i,S}(0) = prod_{j != i} S[j] / (S[j] - S[i]) = a / b
+      where a = prod S[j], b = S[i] * prod_{j != i} (S[j] - S[i])
+    */
+    F a = S[0];
+    for (size_t i = 1; i < k; i++) {
+      a *= S[i];
+    }
+    if (a.isZero()) {
+      *pb = false;
+      return;
+    }
+    /*
+      f(0) = sum_i f(S[i]) delta_{i,S}(0)
+    */
+    G r;
+    r.clear();
+    for (size_t i = 0; i < k; i++) {
+      F b = S[i];
+      for (size_t j = 0; j < k; j++) {
+        if (j != i) {
+          F v = S[j] - S[i];
+          if (v.isZero()) {
+            *pb = false;
+            return;
+          }
+          b *= v;
+        }
+      }
+      G t;
+      G::mul(t, vec[i], a / b);
+      r += t;
+    }
+    out = r;
+    *pb = true;
+  }
+  ```
+
 Very luckily, this just looks the exact same as SHARE.go -> Recover
 
   <https://github.com/miracl/core/blob/master/go/SHARE.go#L140>
