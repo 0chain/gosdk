@@ -419,6 +419,11 @@ func (r *BIG) sub(x *BIG) {
 	}
 }
 
+// 0chain: we need this public.
+func (r *BIG) Sub(x *BIG) {
+	r.sub(x)
+}
+
 /* reverse subtract this=x-this */
 func (r *BIG) rsub(x *BIG) {
 	for i := 0; i < NLEN; i++ {
@@ -658,6 +663,11 @@ func (r *BIG) div(m1 *BIG) {
 
 		k--
 	}
+}
+
+// 0chain: we need 'div' function public.
+func (r *BIG) Div(m1 *BIG) {
+	r.div(m1)
 }
 
 /* get 8*MODBYTES size random number */
