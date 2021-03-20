@@ -6,10 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/0chain/gosdk/miracl"
-	"github.com/0chain/gosdk/miracl/core"
 	"io"
 	"math/rand"
-	"strconv"
 	"unsafe"
 )
 
@@ -28,6 +26,20 @@ var sRandReader io.Reader
 func SetRandFunc(randReader io.Reader) {
 	// if nil, uses default random generator. See getRandomValue.
 	sRandReader = randReader
+}
+
+func Modadd(b0, b1 *BN254.BIG) *BN254.BIG {
+	// TODO: this 'm' is basically a constant and should be cached instead of
+	// recalculated every time.
+	m := BN254.NewBIGints(BN254.CURVE_Order)
+	return BN254.Modadd(b0, b1, m)
+}
+
+func Modmul(b0, b1 *BN254.BIG) *BN254.BIG {
+	// TODO: this 'm' is basically a constant and should be cached instead of
+	// recalculated every time.
+	m := BN254.NewBIGints(BN254.CURVE_Order)
+	return BN254.Modmul(b0, b1, m)
 }
 
 // TODO: remove when done porting.
@@ -150,24 +162,65 @@ func (sig *Sign) Verify(pub *PublicKey, m []byte) bool {
 	return b == BN254.BLS_OK
 }
 
+// Needs to port over this source:
+// https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/include/mcl/lagrange.hpp#L11
 func (sig *Sign) Recover(shares []Sign, from []ID) error {
-	N := len(shares)
-	shs := make([]*core.SHARE, N)
-	for i := 0; i < N; i++ {
-		sh := new(core.SHARE)
-		// TODO: GetHexString should do a better job of restoring the original int.
-		// TODO: Write a unit test to sanity check the above.
-		id, err := strconv.Atoi(from[i].GetHexString())
-		if err != nil {
-			return err
-		}
-		sh.B = ToBytes(shares[i].v)
-		sh.ID = byte(id)
-		sh.NSR = byte(N)
-		shs[i] = sh
+	if len(shares) == 0 {
+		return errors.New("Need at least one share.")
 	}
-	b := core.Recover(shs)
-	sig.v = BN254.ECP_fromBytes(b)
+
+	if len(shares) == 1 {
+		sig.v.Copy(shares[0].v)
+		return nil
+	}
+
+	a := from[0]
+	for i := 1; i < len(from); i++ {
+		a.Modmul(&from[i])
+	}
+
+	// TODO: Return error if 'id' is 0.
+
+	r := BN254.NewECP() // 'r' is the ECP to recover.
+	for i := 0; i < len(shares); i++ {
+		b := from[i].v.GetBIG()
+		for j := 0; j < len(from); j++ {
+			if i != j {
+				sj := from[j].v.GetBIG()
+				si := from[i].v.GetBIG()
+
+				var x, y *BN254.BIG
+				c := BN254.Comp(sj, si)
+				if c > 0 {
+					x = sj
+					y = si
+				} else if c < 0 {
+					x = si
+					y = sj
+				} else if c == 0 {
+					return errors.New("Can't recover signature.")
+				}
+
+				// IMPORTANT NOTE: this Sub operation MUST return a positive BIG, or
+				// else in the "Modmul", miracl/core gets stuck in an infinite loop.
+				// That is why we did the earlier "Comp" to make sure x > y
+				//
+				// Generally, miracl/core makes the assumption that results are
+				// positive.
+				x.Sub(y)
+
+				b = Modmul(b, x)
+			}
+		}
+
+		_a := a.v.GetBIG()
+		_a.Div(b)
+		t := BN254.G1mul(shares[i].v, _a) // G::mul(shares[i], a/b)
+		r.Add(t) // G::add(r, t) // r += t
+	}
+
+	sig.v = r
+
 	return nil
 }
 
@@ -284,6 +337,14 @@ func (id *ID) Serialize() []byte {
 	return b
 }
 
+func (id *ID) Modmul(rhs *ID) {
+	id.v = BN254.NewFPbig(Modmul(id.v.GetBIG(), rhs.v.GetBIG()))
+}
+
+func (id *ID) Sub(rhs *ID) {
+	id.v.Sub(rhs.v)
+}
+
 //-----------------------------------------------------------------------------
 // SecretKey.
 //-----------------------------------------------------------------------------
@@ -393,6 +454,14 @@ func (sk *SecretKey) GetPublicKey() *PublicKey {
 	result := new(PublicKey)
 	result.v = BN254.ECP2_fromBytes(SST[:])
 	return result
+}
+
+func (sk *SecretKey) Modadd(rhs *SecretKey) {
+	sk.v = BN254.NewFPbig(Modadd(sk.v.GetBIG(), rhs.v.GetBIG()))
+}
+
+func (sk *SecretKey) Modmul(rhs *SecretKey) {
+	sk.v = BN254.NewFPbig(Modmul(sk.v.GetBIG(), rhs.v.GetBIG()))
 }
 
 func (sk *SecretKey) Add(rhs *SecretKey) {

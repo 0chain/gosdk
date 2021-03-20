@@ -238,6 +238,7 @@ func (F *FP) ToBytes(b []byte) {
 	F.redc().ToBytes(b)
 }
 
+// Returns deep clone of F.x (BIG). Does not return reference to F.x
 func (F *FP) GetBIG() *BIG {
 	F.reduce()
 	return F.redc()
