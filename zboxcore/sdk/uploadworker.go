@@ -493,7 +493,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 		}
 		err = req.completePush()
 		if err != nil && req.statusCallback != nil {
-			req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, req.err)
+			req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, err)
 			return
 		}
 	}()
