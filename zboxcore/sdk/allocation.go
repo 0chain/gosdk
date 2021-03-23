@@ -60,19 +60,19 @@ type BlobberAllocationStats struct {
 }
 
 type ConsolidatedFileMeta struct {
-	Name           	string
-	Type           	string
-	Path           	string
-	LookupHash     	string
-	Hash           	string
-	MimeType       	string
-	Size           	int64
-	ActualFileSize 	int64
+	Name            string
+	Type            string
+	Path            string
+	LookupHash      string
+	Hash            string
+	MimeType        string
+	Size            int64
+	ActualFileSize  int64
 	ActualNumBlocks int64
-	EncryptedKey   	string
-	CommitMetaTxns 	[]fileref.CommitMetaTxn
-	Collaborators  	[]fileref.Collaborator
-	Attributes     	fileref.Attributes
+	EncryptedKey    string
+	CommitMetaTxns  []fileref.CommitMetaTxn
+	Collaborators   []fileref.Collaborator
+	Attributes      fileref.Attributes
 }
 
 type AllocationStats struct {
@@ -352,7 +352,6 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 	uploadReq.filemeta.Attributes = attrs
 	uploadReq.remaining = uploadReq.filemeta.Size
 	uploadReq.thumbRemaining = uploadReq.filemeta.ThumbnailSize
-	uploadReq.isRepair = false
 	uploadReq.isUpdate = isUpdate
 	uploadReq.isRepair = isRepair
 	uploadReq.connectionID = zboxutil.NewConnectionId()
@@ -390,6 +389,10 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 		uploadReq.filemeta.Hash = fileRef.ActualFileHash
 		uploadReq.uploadMask = (^found & uploadReq.uploadMask)
 		uploadReq.fullconsensus = float32(bits.TrailingZeros32(uploadReq.uploadMask + 1))
+	}
+
+	if !uploadReq.IsFullConsensusSupported() {
+		return fmt.Errorf("allocation requires a greater number of blobbers than is supported. reduce number of data or parity shards and try again")
 	}
 
 	go func() {
