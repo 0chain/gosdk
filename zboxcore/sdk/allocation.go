@@ -32,6 +32,10 @@ var (
 	notInitialized = common.NewError("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 )
 
+var GetFileInfo = func(localpath string) (os.FileInfo, error) {
+	return os.Stat(localpath)
+}
+
 type BlobberAllocationStats struct {
 	BlobberID        string
 	BlobberURL       string
@@ -315,7 +319,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 		return notInitialized
 	}
 
-	fileInfo, err := os.Stat(localpath)
+	fileInfo, err := GetFileInfo(localpath)
 	if err != nil {
 		return fmt.Errorf("Local file error: %s", err.Error())
 	}
@@ -358,7 +362,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 	uploadReq.statusCallback = status
 	uploadReq.datashards = a.DataShards
 	uploadReq.parityshards = a.ParityShards
-	uploadReq.uploadMask = uint32((1 << uint32(len(a.Blobbers))) - 1)
+	uploadReq.setUploadMask(len(a.Blobbers))
 	uploadReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	uploadReq.fullconsensus = float32(a.DataShards + a.ParityShards)
 	uploadReq.isEncrypted = encryption

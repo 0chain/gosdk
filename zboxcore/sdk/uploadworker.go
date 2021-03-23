@@ -617,3 +617,7 @@ func (req *UploadRequest) IsFullConsensusSupported() bool {
 
 	return maxBlobbers >= uint32(req.fullconsensus)
 }
+
+func (req *UploadRequest) setUploadMask(numBlobbers int) {
+	req.uploadMask = uint32((1 << uint32(numBlobbers)) - 1)
+}
