@@ -22,6 +22,17 @@ sk.Set(polynomial, &id)
 bls.GetMasterPublicKey
 `(*bls.Sign) Recover`
 
+## GT
+
+So GT is just FP12.
+
+  <https://github.com/herumi/mcl/blob/0114a3029f74829e79dc51de6dfb28f5da580632/include/mcl/bn.h#L107>
+  ```
+  typedef struct {
+    mclBnFp d[12];
+  } mclBnGT;
+  ```
+
 ## bls.PublicKey -> Equals
 
 This is how Equals is implemented for projected and affine.
