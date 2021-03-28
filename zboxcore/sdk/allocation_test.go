@@ -23,7 +23,7 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit32(t *testing.T) 
 	var file fileref.Attributes
 	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false, file)
 
-	var expectedErr = "allocation requires a greater number of blobbers than is supported. reduce number of data or parity shards and try again"
+	var expectedErr = "allocation requires [33] blobbers, which is greater than the maximum permitted number of [32]. reduce number of data or parity shards and try again"
 	if err == nil {
 		t.Errorf("uploadOrUpdateFile() = expected error  but was %v", nil)
 	} else if err.Error() != expectedErr {
@@ -31,7 +31,7 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit32(t *testing.T) 
 	}
 }
 
-func TestThrowErrorWhenBlobbersRequiredGreaterThanLimit(t *testing.T) {
+func TestThrowErrorWhenBlobbersRequiredGreaterThanExplicitLimit(t *testing.T) {
 	setupMocks()
 
 	var maxNumOfBlobbers = 10
@@ -47,7 +47,7 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanLimit(t *testing.T) {
 	var file fileref.Attributes
 	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false, file)
 
-	var expectedErr = "allocation requires a greater number of blobbers than is supported. reduce number of data or parity shards and try again"
+	var expectedErr = "allocation requires [11] blobbers, which is greater than the maximum permitted number of [10]. reduce number of data or parity shards and try again"
 	if err == nil {
 		t.Errorf("uploadOrUpdateFile() = expected error  but was %v", nil)
 	} else if err.Error() != expectedErr {

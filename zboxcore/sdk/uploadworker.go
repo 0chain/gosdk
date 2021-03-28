@@ -617,7 +617,11 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 }
 
 func (req *UploadRequest) IsFullConsensusSupported() bool {
-	var maxBlobbers = uint32(bits.OnesCount32(req.uploadMask))
+	var maxBlobbers = req.GetMaxBlobbersSupported()
 
 	return maxBlobbers >= uint32(req.fullconsensus)
+}
+
+func (req *UploadRequest) GetMaxBlobbersSupported() uint32 {
+	return uint32(bits.OnesCount32(req.uploadMask))
 }

@@ -396,7 +396,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 	}
 
 	if !uploadReq.IsFullConsensusSupported() {
-		return fmt.Errorf("allocation requires a greater number of blobbers than is supported. reduce number of data or parity shards and try again")
+		return fmt.Errorf("allocation requires [%v] blobbers, which is greater than the maximum permitted number of [%v]. reduce number of data or parity shards and try again", uploadReq.fullconsensus, uploadReq.GetMaxBlobbersSupported())
 	}
 
 	go func() {
