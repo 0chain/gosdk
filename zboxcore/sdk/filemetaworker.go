@@ -44,6 +44,7 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 	formWriter.WriteField("path_hash", req.remotefilepathhash)
 
 	var authToken = ""
+	var path = ""
 	if req.authToken != nil {
 		authTokenBytes, err := json.Marshal(req.authToken)
 		if err != nil {
@@ -54,7 +55,7 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 		formWriter.WriteField("auth_token", authToken)
 	}
 
-	var hashData = strings.Join([]string{authToken, req.remotefilepathhash}, ":")
+	var hashData = strings.Join([]string{authToken, path, req.remotefilepathhash}, ":")
 	signature, err := client.Sign(hashData)
 
 	if err != nil {
