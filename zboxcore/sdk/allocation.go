@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"sort"
 	"io/ioutil"
 	"math/bits"
 	"os"
@@ -1136,4 +1137,66 @@ func (a *Allocation) RemoveCollaborator(filePath, collaboratorID string) error {
 		return nil
 	}
 	return common.NewError("remove_collaborator_failed", "Failed to remove collaborator on all blobbers.")
+}
+
+func (a *Allocation) GetMaxWriteRead() (maxW float64, maxR float64, err error) {
+	if !a.isInitialized(){
+		return 0,0, notInitialized
+	}
+
+	blobbersCopy := a.BlobberDetails
+	if len(blobbersCopy) == 0 {
+		return 0,0, noBLOBBERS
+	}
+
+	sort.Slice(blobbersCopy, func(i, j int) bool {
+		return blobbersCopy[i].Terms.WritePrice.ToToken() > blobbersCopy[j].Terms.WritePrice.ToToken()
+	})
+	maxWritePrice := blobbersCopy[0].Terms.WritePrice.ToToken()
+
+	sort.Slice(blobbersCopy, func(i, j int) bool {
+		return blobbersCopy[i].Terms.ReadPrice.ToToken() > blobbersCopy[j].Terms.ReadPrice.ToToken()
+	})
+	maxReadPrice := blobbersCopy[0].Terms.ReadPrice.ToToken()
+
+	return maxWritePrice, maxReadPrice, nil
+}
+
+func (a *Allocation) GetMinWriteRead() (minW float64, minR float64, err error) {
+	if !a.isInitialized(){
+		return 0,0, notInitialized
+	}
+
+	blobbersCopy := a.BlobberDetails
+	if len(blobbersCopy) == 0 {
+		return 0,0, noBLOBBERS
+	}
+
+	sort.Slice(blobbersCopy, func(i, j int) bool {
+		return blobbersCopy[i].Terms.WritePrice.ToToken() < blobbersCopy[j].Terms.WritePrice.ToToken()
+	})
+	minWritePrice := blobbersCopy[0].Terms.WritePrice.ToToken()
+
+	sort.Slice(blobbersCopy, func(i, j int) bool {
+		return blobbersCopy[i].Terms.ReadPrice.ToToken() < blobbersCopy[j].Terms.ReadPrice.ToToken()
+	})
+	minReadPrice := blobbersCopy[0].Terms.ReadPrice.ToToken()
+
+	return minWritePrice, minReadPrice, nil
+}
+
+func (a *Allocation) GetMaxStorageCost(size int64) (float64, error) {
+	maxW, _, err := a.GetMaxWriteRead()
+	if err != nil{
+		return 0, err
+	}
+	return float64(maxW) * float64(size), nil
+}
+
+func (a *Allocation) GetMinStorageCost(size int64) (float64, error) {
+	minW, _, err := a.GetMinWriteRead()
+	if err != nil{
+		return 0, err
+	}
+	return float64(minW) * float64(size), nil
 }
