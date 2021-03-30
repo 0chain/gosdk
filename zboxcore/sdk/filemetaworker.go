@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -42,14 +43,26 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 	}
 	formWriter.WriteField("path_hash", req.remotefilepathhash)
 
+	var authToken = ""
 	if req.authToken != nil {
 		authTokenBytes, err := json.Marshal(req.authToken)
 		if err != nil {
 			Logger.Error(blobber.Baseurl, " creating auth token bytes", err)
 			return
 		}
-		formWriter.WriteField("auth_token", string(authTokenBytes))
+		authToken = string(authTokenBytes)
+		formWriter.WriteField("auth_token", authToken)
 	}
+
+	var hashData = strings.Join([]string{authToken, req.remotefilepathhash}, ":")
+	signature, err := client.Sign(hashData)
+
+	if err != nil {
+		Logger.Error(blobber.Baseurl, " signing transaction", err)
+		return
+	}
+
+	formWriter.WriteField("signature", signature)
 
 	formWriter.Close()
 	httpreq, err := zboxutil.NewFileMetaRequest(blobber.Baseurl, req.allocationTx, body)
