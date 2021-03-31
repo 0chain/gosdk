@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"io/ioutil"
 	"mime/multipart"
@@ -55,7 +56,7 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 		formWriter.WriteField("auth_token", authToken)
 	}
 
-	var hashData = strings.Join([]string{authToken, path, req.remotefilepathhash}, ":")
+	var hashData = encryption.Hash(strings.Join([]string{authToken, path, req.remotefilepathhash}, ":"))
 	signature, err := client.Sign(hashData)
 
 	if err != nil {

@@ -5,12 +5,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/core/encryption"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
@@ -153,12 +155,23 @@ func NewReferencePathRequest(baseUrl, allocation string, paths []string) (*http.
 		return nil, err
 	}
 	nurl.Path += REFERENCE_ENDPOINT + allocation
+	var path = ""
 	pathBytes, err := json.Marshal(paths)
+	pathString := string(pathBytes)
 	if err != nil {
 		return nil, err
 	}
 	params := url.Values{}
-	params.Add("paths", string(pathBytes))
+	params.Add("paths", pathString)
+
+	var hashData = encryption.Hash(strings.Join([]string{path, pathString}, ":"))
+	signature, err := client.Sign(hashData)
+
+	if err != nil {
+		return nil, err
+	}
+	params.Add("signature", signature)
+
 	//url := fmt.Sprintf("%s%s%s?path=%s", baseUrl, LIST_ENDPOINT, allocation, path)
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)
