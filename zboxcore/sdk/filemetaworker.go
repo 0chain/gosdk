@@ -100,10 +100,10 @@ func (req *ListRequest) getFileMetaFromBlobbers() []*fileMetaResponse {
 	return fileInfos
 }
 
-func (req *ListRequest) getFileConsensusFromBlobbers() (uint32, *fileref.FileRef, []*fileMetaResponse) {
+func (req *ListRequest) getFileConsensusFromBlobbers() (zboxutil.Uint128, *fileref.FileRef, []*fileMetaResponse) {
 	lR := req.getFileMetaFromBlobbers()
 	var selected *fileMetaResponse
-	foundMask := uint32(0)
+	foundMask := zboxutil.NewUint128(0)
 	req.consensus = 0
 	retMap := make(map[string]float32)
 	for i := 0; i < len(lR); i++ {
@@ -131,7 +131,8 @@ func (req *ListRequest) getFileConsensusFromBlobbers() (uint32, *fileref.FileRef
 
 	for i := 0; i < len(lR); i++ {
 		if lR[i].fileref != nil && selected.fileref.ActualFileHash == lR[i].fileref.ActualFileHash {
-			foundMask |= (1 << uint32(lR[i].blobberIdx))
+			shift := zboxutil.NewUint128(1).Lsh(uint64(lR[i].blobberIdx))
+			foundMask = foundMask.Or(shift)
 		}
 	}
 	return foundMask, selected.fileref, lR
