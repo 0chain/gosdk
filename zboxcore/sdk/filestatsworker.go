@@ -108,9 +108,15 @@ func (req *ListRequest) getFileStatsFromBlobbers() map[string]*FileStats {
 		go req.getFileStatsInfoFromBlobber(req.blobbers[i], i, rspCh)
 	}
 	req.wg.Wait()
-	fileInfos := make(map[string]*FileStats)
+	var fileInfos map[string]*FileStats
 	for i := 0; i < numList; i++ {
 		ch := <-rspCh
+		if ch.filestats == nil {
+			continue
+		}
+		if fileInfos == nil {
+			fileInfos = make(map[string]*FileStats)
+		}
 		fileInfos[req.blobbers[i].ID] = ch.filestats
 	}
 	return fileInfos

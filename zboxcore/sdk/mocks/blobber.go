@@ -1,4 +1,4 @@
-package mock
+package mocks
 
 import (
 	"crypto/rand"
@@ -19,7 +19,7 @@ type Blobber struct {
 }
 
 func (b *Blobber) Close(t *testing.T) {
-	if b.server != nil && b.server.Close != nil {
+	if b.server != nil {
 		b.server.Close()
 	}
 }
@@ -27,7 +27,7 @@ func (b *Blobber) Close(t *testing.T) {
 func (b *Blobber) getMapHandler(t *testing.T) map[string]http.Handler {
 	if b.mapHandler == nil {
 		b.mapHandler = map[string]http.Handler{
-			"/": http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {w.WriteHeader(500)}),
+			"/": http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(500) }),
 		}
 	}
 	return b.mapHandler
@@ -40,7 +40,7 @@ func (b *Blobber) SetHandler(t *testing.T, path string, handler http.HandlerFunc
 func (b *Blobber) ResetHandler(t *testing.T) {
 	b.Close(t)
 	b.mapHandler = map[string]http.Handler{
-		"/": http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {w.WriteHeader(500)}),
+		"/": http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(500) }),
 	}
 	_, _, nServer := NewHTTPServer(t, b.mapHandler, true)
 	nServer.Listener.Close()

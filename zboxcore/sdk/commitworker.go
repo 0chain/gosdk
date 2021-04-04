@@ -81,7 +81,6 @@ func InitCommitWorker(blobbers []*blockchain.StorageNode) {
 			go startCommitWorker(blobberChan, blobber.ID)
 		}
 	}
-
 }
 
 func startCommitWorker(blobberChan chan *CommitRequest, blobberID string) {
@@ -98,6 +97,7 @@ func startCommitWorker(blobberChan chan *CommitRequest, blobberID string) {
 }
 
 func (commitreq *CommitRequest) processCommit() {
+	defer commitreq.wg.Done()
 	Logger.Info("received a commit request")
 	paths := make([]string, 0)
 	for _, change := range commitreq.changes {
@@ -117,18 +117,14 @@ func (commitreq *CommitRequest) processCommit() {
 			return err
 		}
 		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			Logger.Error("Ref path response : ", resp.StatusCode)
-		}
 		resp_body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			Logger.Error("Ref path: Resp", err)
+			Logger.Error("Ref path response: ", err)
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("Reference path error response: Status: %d - %s ", resp.StatusCode, string(resp_body))
+			return fmt.Errorf("Reference path error response: Status: %d - %s", resp.StatusCode, string(resp_body))
 		} else {
-			//Logger.Info("Reference path:", string(resp_body))
 			err = json.Unmarshal(resp_body, &lR)
 			if err != nil {
 				Logger.Error("Reference path json decode error: ", err)
@@ -140,42 +136,38 @@ func (commitreq *CommitRequest) processCommit() {
 	//process the commit request for the blobber here
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
-		commitreq.wg.Done()
 		return
 	}
 	rootRef, err := lR.GetDirTree(commitreq.allocationID)
+	if err != nil {
+		commitreq.result = ErrorCommitResult(err.Error())
+		return
+	}
 	if lR.LatestWM != nil {
 		//Can not verify signature due to collaborator flow
-		// //TODO: Verify the writemarker
-		// err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
-		// if err != nil {
-		// 	commitreq.result = ErrorCommitResult(err.Error())
-		// 	commitreq.wg.Done()
-		// 	return
-		// }
+		//TODO: Verify the writemarker
+		//err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
+		//if err != nil {
+		//	commitreq.result = ErrorCommitResult(err.Error())
+		//	return
+		//}
 
 		rootRef.CalculateHash()
 		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
-			// Removing this check for testing purpose as per the convo with Saswata
+			//Removing this check for testing purpose as per the convo with Saswata
 			Logger.Info("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
-			// err = commitreq.calculateHashRequest(ctx, paths)
-			// if err != nil {
-			// 	commitreq.result = ErrorCommitResult("Failed to call blobber to recalculate the hash. URL: " + commitreq.blobber.Baseurl + ", Err : " + err.Error())
-			// 	commitreq.wg.Done()
-			// 	return
-			// }
-			// Logger.Info("Recalculate hash call to blobber successfull")
-			// commitreq.result = ErrorCommitResult("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
-			// commitreq.wg.Done()
-			// return
+			//err = commitreq.calculateHashRequest(ctx, paths)
+			//if err != nil {
+			//	commitreq.result = ErrorCommitResult("Failed to call blobber to recalculate the hash. URL: " + commitreq.blobber.Baseurl + ", Err : " + err.Error())
+			//	return
+			//}
+			//Logger.Info("Recalculate hash call to blobber successfull")
+			//commitreq.result = ErrorCommitResult("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
+			//return
 		}
 	}
-	if err != nil {
-		commitreq.result = ErrorCommitResult(err.Error())
-		commitreq.wg.Done()
-		return
-	}
+
 	size := int64(0)
 	for _, change := range commitreq.changes {
 		err = change.ProcessChange(rootRef)
@@ -186,17 +178,14 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
-		commitreq.wg.Done()
 		return
 	}
 	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
-		commitreq.wg.Done()
 		return
 	}
 	commitreq.result = SuccessCommitResult()
-	commitreq.wg.Done()
 }
 
 func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.WriteMarker, size int64) error {
@@ -256,6 +245,7 @@ func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.W
 			Logger.Error("Response read: ", err)
 			return err
 		}
+		Logger.Debug(httpreq.Method, " ", httpreq.URL.Port(), " commit result: ", string(resp_body))
 		if resp.StatusCode != http.StatusOK {
 			Logger.Error(req.blobber.Baseurl, " Commit response:", string(resp_body))
 			return common.NewError("commit_error", string(resp_body))
@@ -270,9 +260,12 @@ func AddCommitRequest(req *CommitRequest) {
 }
 
 func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths []string) error {
+	if len(paths) == 0 {
+		return nil
+	}
 	var req *http.Request
 	req, err := zboxutil.NewCalculateHashRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
-	if err != nil || len(paths) == 0 {
+	if err != nil {
 		Logger.Error("Creating calculate hash req", err)
 		return err
 	}
@@ -283,15 +276,13 @@ func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths 
 			return err
 		}
 		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			Logger.Error("Calculate hash response : ", resp.StatusCode)
-		}
 		resp_body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			Logger.Error("Calculate hash: Resp", err)
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
+			Logger.Error("Calculate hash response : ", resp.StatusCode)
 			return fmt.Errorf("Calculate hash error response: Status: %d - %s ", resp.StatusCode, string(resp_body))
 		}
 		return nil

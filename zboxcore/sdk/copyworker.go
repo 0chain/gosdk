@@ -55,7 +55,6 @@ func (req *CopyRequest) copyBlobberObject(blobber *blockchain.StorageNode, blobb
 		return nil, err
 	}
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	Logger.Info(httpreq.URL.Path)
 	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
@@ -64,8 +63,6 @@ func (req *CopyRequest) copyBlobberObject(blobber *blockchain.StorageNode, blobb
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusOK {
-			resp_body, _ := ioutil.ReadAll(resp.Body)
-			Logger.Info("copy resp:", string(resp_body))
 			req.consensus++
 			req.copyMask |= (1 << uint32(blobberIdx))
 			Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " copied.")

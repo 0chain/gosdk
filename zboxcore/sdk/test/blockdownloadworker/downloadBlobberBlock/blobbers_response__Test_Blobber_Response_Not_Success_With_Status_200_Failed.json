@@ -1,0 +1,33 @@
+[
+  {
+    "path": "/v1/file/download/69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+    "method": "POST",
+    "params": [
+      {}
+    ],
+    "responses": [
+      [
+        {
+          "status": 200,
+          "body": {
+            "success": false,
+            "data": null,
+            "latest_rm": {
+              "client_id": "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+              "client_public_key": "eeb0c33325cbee0fb58bc09962f69a44d0b22ac2824a063eb1002273347e601a4612e6fea7e1a1ae62e0e3b7f1301c4de8a855bae86ebfa6e9dbbb41c3e39c24",
+              "blobber_id": "2967524ebb22e37c42ebb0c97c2a24ffa8de74a87b040b40b1392b04d1d8ba11",
+              "allocation_id": "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+              "owner_id": "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+              "timestamp": 1617446557,
+              "counter": 90,
+              "signature": "b6d501d29f5f4b4ddfec44f08ba0f7b2bfe48d16b791d8bd4b96c596f361f01c",
+              "suspend": 0,
+              "payer_id": "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+              "auth_ticket": null
+            }
+          }
+        }
+      ]
+    ]
+  }
+]

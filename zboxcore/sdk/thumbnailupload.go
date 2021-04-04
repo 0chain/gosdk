@@ -39,8 +39,8 @@ func (req *UploadRequest) pushThumbnailData(data []byte) error {
 				Logger.Error("Encryption failed.", err.Error())
 				return err
 			}
-			header := make([]byte, 2 * 1024)
-			copy(header[:], encMsg.MessageChecksum + "," + encMsg.OverallChecksum)
+			header := make([]byte, 2*1024)
+			copy(header[:], encMsg.MessageChecksum+","+encMsg.OverallChecksum)
 			shards[pos] = append(header, encMsg.EncryptedData...)
 			c++
 		}

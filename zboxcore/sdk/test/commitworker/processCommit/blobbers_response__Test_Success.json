@@ -1,0 +1,28 @@
+[
+  {
+    "path": "/v1/file/referencepath/69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+    "method": "GET",
+    "params": [{}],
+    "responses": [
+      [
+        {
+          "status": 200,
+          "body": {"meta_data":{"created_at":"2021-03-15T15:09:02.766776Z","hash":"e1deaa241bfb0ea70d29910d6cfec3bf4d9ab35b3a8ed9f4c2e7409c4740953d","lookup_hash":"a95ae3e28d1265fd979175fa5ffd152b5289820ca96a0389d912f1ffb97a7763","name":"/","num_of_blocks":4,"path":"/","path_hash":"1f445c5d23267d0435061170db4e9c4282623595fdaf09260c58b69be0d8642c","size":84591,"type":"d","updated_at":"2021-03-26T06:13:24.385817Z"},"list":[{"meta_data":{"actual_file_hash":"03cfd743661f07975fa2f1220c5194cbaff48451","actual_file_size":4,"actual_thumbnail_hash":"","actual_thumbnail_size":0,"attributes":{},"commit_meta_txns":null,"content_hash":"e9d71f5ee7c92d6dc9e92ffdad17b8bd49418f98","created_at":"2021-03-23T18:56:28.451191Z","custom_meta":"","encrypted_key":"","hash":"1b6a3278482aaa29524b083ad164f2b24f2f3f328eb75ba4d33b1311c4f03edf","lookup_hash":"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697","merkle_root":"4bc8627e4bc449f3aef95a9c137a46a3f67976501bc1a47454cde9b1d60b9caf","mimetype":"application/octet-stream","name":"1.txt","num_of_blocks":1,"on_cloud":false,"path":"/1.txt","path_hash":"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697","size":1,"thumbnail_hash":"","thumbnail_size":0,"type":"f","updated_at":"2021-03-26T06:13:24.385817Z"}},{"meta_data":{"created_at":"2021-03-25T07:47:51.94798Z","hash":"d8d269882b652a8698f9ff3e631d4fa60631b884d770f6bf0fb432826f810ed4","lookup_hash":"e51118748f9f2fbb810ea6be6fe68589e6aa977108150d4a7e83f878299236c0","name":"d","num_of_blocks":1,"path":"/d","path_hash":"a49a32ba7093e022d20a150738565e050c1dcb7b7597ddce8d7ec243fd9b9aa7","size":2,"type":"d","updated_at":"2021-03-26T06:13:24.385817Z"},"list":[{"meta_data":{"actual_file_hash":"8493fa18fc18f170a38e7f5fdda468c9d7fa4627","actual_file_size":7,"actual_thumbnail_hash":"","actual_thumbnail_size":0,"attributes":{},"commit_meta_txns":null,"content_hash":"229e7ea14601b784bd2474fda52b2885be426f18","created_at":"2021-03-25T07:47:51.947568Z","custom_meta":"","encrypted_key":"","hash":"31bd4e6a30a38e793f85f5d864290cd6e5caa78221410824472597f55609f99d","lookup_hash":"08f9d7594b1255ae03ccfecb115272d349ba750d29bc2f3372d5a7b0f405de4e","merkle_root":"a222a8f5eb379fd96c7be6ba95215fc8f03934e9d4fa0fb5a3b7cdaa57f9c16a","mimetype":"application/octet-stream","name":"d2.txt","num_of_blocks":1,"on_cloud":false,"path":"/d/d2.txt","path_hash":"08f9d7594b1255ae03ccfecb115272d349ba750d29bc2f3372d5a7b0f405de4e","size":2,"thumbnail_hash":"","thumbnail_size":0,"type":"f","updated_at":"2021-03-26T06:13:24.385817Z"}}]},{"meta_data":{"actual_file_hash":"b542fd47ca8c8f0b9ed24c1a213088500aee064f","actual_file_size":338349,"actual_thumbnail_hash":"","actual_thumbnail_size":0,"attributes":{},"commit_meta_txns":null,"content_hash":"d8434013274c4de333e5f7aef438ed914f4b6f4d","created_at":"2021-03-15T15:09:02.766356Z","custom_meta":"","encrypted_key":"","hash":"0f59e33bca73e8dab78daf1e35c11884ae6cf0768104440803a8eacb75f7f309","lookup_hash":"ea01025c342606ff688dd0ed5362e5b9be919a775dfe5e018974c73d6cd7ded8","merkle_root":"a76a34a55c5f4913efa47f0fd9bb4aab29102374ee556e3f283aaa1deec13001","mimetype":"application/octet-stream","name":"log.html","num_of_blocks":2,"on_cloud":false,"path":"/log.html","path_hash":"ea01025c342606ff688dd0ed5362e5b9be919a775dfe5e018974c73d6cd7ded8","size":84588,"thumbnail_hash":"","thumbnail_size":0,"type":"f","updated_at":"2021-03-26T06:13:24.385817Z"}}],"latest_write_marker":{"allocation_root":"bf634d1d05e0ed35088d91a96fa1b11549449356247f46b22949497852f85510","prev_allocation_root":"5543fa7cb26a1eb671af1458e46af991583f5e81f31446801c59fd87ecfbee5f","allocation_id":"69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f","size":-1,"blobber_id":"4a0ffbd42c64f44ec1cca858c7e5b5fd408911ed03df3b7009049cdb76e03ac2","timestamp":1616739204,"client_id":"9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468","signature":"f363788f59eda4240bff990b553b69778d4918bd7a4a201596a07ee618a4ea8b"}}
+        }
+      ]
+    ]
+  },
+  {
+    "path": "/v1/connection/commit/69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+    "method": "POST",
+    "params": [{}],
+    "responses": [
+      [
+        {
+          "status": 200,
+          "body": {"allocation_root":"61ceddf4360308d370ea4f4b407ccf02f2c0f014063da354aa25fe813a4da5bc","write_marker":{"allocation_root":"61ceddf4360308d370ea4f4b407ccf02f2c0f014063da354aa25fe813a4da5bc","prev_allocation_root":"2b3f72c15cfb77e201ff5a7dc5421861f1705a2c062eb66682a5498058383f7f","allocation_id":"69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f","size":1,"blobber_id":"8eeb4d4d6621ea87ecf4d3ba61bb69d30db435c8ed7cbaccccd56b93ea050c42","timestamp":1616740196,"client_id":"9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468","signature":"cebbe5258be4d84947f10acf3cf178aaa6974f52d82bd5272c566b85ccc4ec98"},"success":true}
+        }
+      ]
+    ]
+  }
+]

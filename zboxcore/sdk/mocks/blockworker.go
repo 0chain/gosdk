@@ -1,4 +1,4 @@
-package mock
+package mocks
 
 import (
 	"encoding/json"
@@ -11,8 +11,8 @@ const (
 )
 
 type blockWorker struct {
-	Miners   []string
-	Sharders []string
+	Miners     []string
+	Sharders   []string
 	mapHandler map[string]http.Handler
 }
 
@@ -55,7 +55,7 @@ func SetBlockWorkerHandler(t *testing.T, path string, handler http.HandlerFunc) 
 	bw.mapHandler[path] = handler
 }
 
-func NewBlockWorkerHTTPServer(t *testing.T,miners, sharders []string) (url string, close func()) {
+func NewBlockWorkerHTTPServer(t *testing.T, miners, sharders []string) (url string, close func()) {
 	bw = &blockWorker{Miners: miners, Sharders: sharders}
 	url, close, _ = NewHTTPServer(t, bw.getMapHandler())
 	return url, close

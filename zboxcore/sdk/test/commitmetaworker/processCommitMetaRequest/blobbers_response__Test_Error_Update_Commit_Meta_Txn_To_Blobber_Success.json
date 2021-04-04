@@ -1,0 +1,15 @@
+[
+  {
+    "path": "/v1/file/commitmetatxn/69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+    "method": "POST",
+    "params": [{}],
+    "responses": [
+      [
+        {
+          "status": 400,
+          "body": {}
+        }
+      ]
+    ]
+  }
+]

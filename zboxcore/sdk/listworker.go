@@ -107,8 +107,6 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 			return fmt.Errorf("Error: Resp : %s", err.Error())
 		}
 		s.WriteString(string(resp_body))
-		Logger.Debug("List request:", resp.Request.URL)
-		Logger.Debug("List result:", string(resp_body))
 		if resp.StatusCode == http.StatusOK {
 			listResult := &fileref.ListResult{}
 			err = json.Unmarshal(resp_body, listResult)
@@ -145,7 +143,6 @@ func (req *ListRequest) getlistFromBlobbers() []*listResponse {
 func (req *ListRequest) GetListFromBlobbers() *ListResult {
 	lR := req.getlistFromBlobbers()
 	var result *ListResult
-	result = &ListResult{}
 	selected := make(map[string]*ListResult)
 	childResultMap := make(map[string]*ListResult)
 	for i := 0; i < len(lR); i++ {
@@ -154,7 +151,9 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 		if ti.err != nil || ti.ref == nil {
 			continue
 		}
-
+		if result == nil {
+			result = &ListResult{}
+		}
 		result.Name = ti.ref.Name
 		result.Path = ti.ref.Path
 		result.Type = ti.ref.Type

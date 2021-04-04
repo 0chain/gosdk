@@ -29,9 +29,6 @@ func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx st
 			return err
 		}
 		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			Logger.Error("Object tree response : ", resp.StatusCode)
-		}
 		resp_body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			Logger.Error("Object tree: Resp", err)
@@ -40,7 +37,6 @@ func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx st
 		if resp.StatusCode != http.StatusOK {
 			return fmt.Errorf("Object tree error response: Status: %d - %s ", resp.StatusCode, string(resp_body))
 		} else {
-			Logger.Info("Object tree:", string(resp_body))
 			err = json.Unmarshal(resp_body, &lR)
 			if err != nil {
 				Logger.Error("Object tree json decode error: ", err)

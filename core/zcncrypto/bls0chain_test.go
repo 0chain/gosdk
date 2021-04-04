@@ -58,7 +58,7 @@ func BenchmarkBLSSign(b *testing.B) {
 func TestRecoveryKeys(t *testing.T) {
 
 	sigScheme := NewSignatureScheme("bls0chain")
-    TestSignatureScheme(t)
+	TestSignatureScheme(t)
 	w, err := sigScheme.RecoverKeys(blsWallet.Mnemonic)
 	if err != nil {
 		t.Fatalf("set Recover Keys failed")

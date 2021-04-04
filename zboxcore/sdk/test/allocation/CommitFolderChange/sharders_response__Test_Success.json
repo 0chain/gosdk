@@ -1,0 +1,32 @@
+[
+  {
+    "path": "/v1/transaction/get/confirmation",
+    "method": "GET",
+    "params": [
+      {}
+    ],
+    "responses": [
+      [
+        {
+          "status": 200,
+          "body": {
+            "txn": {
+              "hash": "1309ee2ab8d21b213e959ab0e26201d734bd2752945d9897cb9d98a3c11a6a23",
+              "version": "1.0",
+              "client_id": "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+              "public_key": "eeb0c33325cbee0fb58bc09962f69a44d0b22ac2824a063eb1002273347e601a4612e6fea7e1a1ae62e0e3b7f1301c4de8a855bae86ebfa6e9dbbb41c3e39c24",
+              "transaction_data": "{\"OpType\":\"Move\",\"PreValue\":\"/1.txt\",\"CurrValue\":\"/d/1.txt\"}",
+              "transaction_value": 0,
+              "signature": "98427e25b635b8d88881ddc9a1f84db0951f145ffa90462c0290ed84563bdc92",
+              "creation_date": 1617159987,
+              "transaction_type": 10,
+              "transaction_fee": 0,
+              "txn_output_hash": ""
+            },
+            "block_hash": "4dd9de1f3724a688686a5b54879cf424a9f8e6cb56ab77bfd19586dfcc804ba8"
+          }
+        }
+      ]
+    ]
+  }
+]

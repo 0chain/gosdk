@@ -275,7 +275,5 @@ func GetMultisigVotePayload(msvstr string) (interface{}, error) {
 	}
 
 	//Marshalling and unmarshalling validates the string. Do any additional veirfication here.
-
 	return msv, nil
-
 }

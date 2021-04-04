@@ -5,5 +5,5 @@ signature_scheme: bls0chain
 min_submit: 50
 min_confirmation: 50
 confirmation_chain_length: 3
-max_txn_query: 5
-query_sleep_time: 5
+max_txn_query: 1
+query_sleep_time: 0.1

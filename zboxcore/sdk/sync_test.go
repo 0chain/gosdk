@@ -1,24 +1,27 @@
 package sdk
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/sdk/mock"
+	"github.com/0chain/gosdk/zboxcore/sdk/mocks"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v2"
 )
 
 const (
-	configDir   = "test"
-	syncTestDir = configDir + "/" + "sync"
-	syncDir     = syncTestDir + "/" + "sync_alloc"
+	configDir            = "test"
+	syncTestDir          = configDir + "/" + "sync"
+	syncDir              = syncTestDir + "/" + "sync_alloc"
+	textPlainContentType = "text/plain"
 )
 
 func blobberIDMask(idx int) string {
@@ -76,9 +79,9 @@ func setupMockInitStorageSDK(t *testing.T, configDir string, minerHTTPMockURLs, 
 
 	if minerHTTPMockURLs != nil && len(minerHTTPMockURLs) > 0 && sharderHTTPMockURLs != nil && len(sharderHTTPMockURLs) > 0 {
 		var close func()
-		blockWorker, close = mock.NewBlockWorkerHTTPServer(t, minerHTTPMockURLs, sharderHTTPMockURLs)
+		blockWorker, close = mocks.NewBlockWorkerHTTPServer(t, minerHTTPMockURLs, sharderHTTPMockURLs)
 		defer close()
-		if blobberHTTPMockURLs != nil {
+		if blobberHTTPMockURLs != nil && len(blobberHTTPMockURLs) > 0 {
 			preferredBlobbers = blobberHTTPMockURLs
 		}
 	}
@@ -87,14 +90,22 @@ func setupMockInitStorageSDK(t *testing.T, configDir string, minerHTTPMockURLs, 
 	assert.NoErrorf(t, err, "Error InitStorageSDK(): %v", err)
 }
 
-func setupMockAllocation(t *testing.T, dirPath string, blobberMocks []*mock.Blobber) *Allocation {
+var commitResultChan chan *CommitResult
+
+func willReturnCommitResult(c *CommitResult) {
+	commitResultChan <- c
+}
+
+func setupMockAllocation(t *testing.T, dirPath string, blobberMocks []*mocks.Blobber) *Allocation {
 	blobbers := []*blockchain.StorageNode{}
-	for _, blobberMock := range blobberMocks {
-		if blobberMock != nil {
-			blobbers = append(blobbers, &blockchain.StorageNode{
-				ID:      blobberMock.ID,
-				Baseurl: blobberMock.URL,
-			})
+	if blobberMocks != nil {
+		for _, blobberMock := range blobberMocks {
+			if blobberMock != nil {
+				blobbers = append(blobbers, &blockchain.StorageNode{
+					ID:      blobberMock.ID,
+					Baseurl: blobberMock.URL,
+				})
+			}
 		}
 	}
 	var allocation *Allocation
@@ -106,23 +117,90 @@ func setupMockAllocation(t *testing.T, dirPath string, blobberMocks []*mock.Blob
 	err := json.Unmarshal(contentBytes, &allocation)
 	assert.NoErrorf(t, err, "Error json.Unmarshal() cannot parse file content to %T object: %v", allocation, err)
 	allocation.Blobbers = blobbers // inject mock blobbers
-	allocation.InitAllocation()
+	allocation.uploadChan = make(chan *UploadRequest, 10)
+	allocation.downloadChan = make(chan *DownloadRequest, 10)
+	allocation.repairChan = make(chan *RepairRequest, 1)
+	allocation.ctx, allocation.ctxCancelF = context.WithCancel(context.Background())
+	allocation.uploadProgressMap = make(map[string]*UploadRequest)
+	allocation.downloadProgressMap = make(map[string]*DownloadRequest)
+	allocation.mutex = &sync.Mutex{}
+
+	// init mock test commit worker
+	commitChan = make(map[string]chan *CommitRequest)
+	commitResultChan = make(chan *CommitResult)
+	var commitResult *CommitResult
+	for _, blobber := range blobbers {
+		if _, ok := commitChan[blobber.ID]; !ok {
+			commitChan[blobber.ID] = make(chan *CommitRequest, 1)
+			blobberChan := commitChan[blobber.ID]
+			go func(c <-chan *CommitRequest, blID string){
+				for true {
+					cm := <- c
+					cm.result = commitResult
+					cm.wg.Done()
+				}
+			}(blobberChan, blobber.ID)
+		}
+	}
+	// mock commit result
+	go func(){
+		for true {
+			commitResult = <- commitResultChan
+		}
+	}()
+
+	// init mock test dispatcher
+	go func() {
+		for true {
+			select {
+			case <-allocation.ctx.Done():
+				t.Log("Upload cancelled by the parent")
+				return
+			case uploadReq := <-allocation.uploadChan:
+				if uploadReq.completedCallback != nil {
+					uploadReq.completedCallback(uploadReq.filepath)
+				}
+				if uploadReq.wg != nil {
+					uploadReq.wg.Done()
+				}
+				t.Logf("received a upload request for %v %v\n", uploadReq.filepath, uploadReq.remotefilepath)
+			case downloadReq := <-allocation.downloadChan:
+				if downloadReq.completedCallback != nil {
+					downloadReq.completedCallback(downloadReq.remotefilepath, downloadReq.remotefilepathhash)
+				}
+				if downloadReq.wg != nil {
+					downloadReq.wg.Done()
+				}
+				t.Logf("received a download request for %v\n", downloadReq.remotefilepath)
+			case repairReq := <-allocation.repairChan:
+				if repairReq.completedCallback != nil {
+					repairReq.completedCallback()
+				}
+				if repairReq.wg != nil {
+					repairReq.wg.Done()
+				}
+				t.Logf("received a repair request for %v\n", repairReq.listDir.Path)
+			}
+		}
+	}()
+	allocation.initialized = true
 	return allocation
 }
 
 type httpMockResponseDefinition struct {
-	StatusCode int         `json:"status"`
-	Body       interface{} `json:"body"`
+	StatusCode  int         `json:"status"`
+	Body        interface{} `json:"body"`
+	ContentType string      `json:"content_type,omitempty"`
 }
 
 type httpMockDefinition struct {
-	Method    string                     `json:"method"`
-	Path      string                     `json:"path"`
-	Params    []map[string]string        `json:"params"`
+	Method    string                          `json:"method"`
+	Path      string                          `json:"path"`
+	Params    []map[string]string             `json:"params"`
 	Responses [][]*httpMockResponseDefinition `json:"responses"`
 }
 
-func blobberResponseParamCheck(param map[string]string, r *http.Request) bool {
+func responseParamTypeCheck(param map[string]string, r *http.Request) bool {
 	for key, val := range param {
 		if r.URL.Query().Get(key) != val {
 			return false
@@ -131,55 +209,119 @@ func blobberResponseParamCheck(param map[string]string, r *http.Request) bool {
 	return true
 }
 
-func blobberResponseFormBodyCheck(param map[string]string, r *http.Request) bool {
+func responseFormBodyTypeCheck(param map[string]string, r *http.Request) bool {
 	for key, val := range param {
-		if r.PostForm.Get(key) != val {
+		r.ParseForm()
+		if r.FormValue(key) != val {
 			return false
 		}
 	}
 	return true
 }
 
-func setupBlobberMockResponses(t *testing.T, blobbers []*mock.Blobber, dirPath, testCaseName string, checks ...func(params map[string]string, r *http.Request) bool) {
-	var blobberHTTPMocks []*httpMockDefinition
-	parseFileContent(t, fmt.Sprintf("%v/blobbers_response__%v.json", dirPath, testCaseName), &blobberHTTPMocks)
-	for _, blobberHTTPMock := range blobberHTTPMocks {
-		blobberMockHandler := func(blobberIdx int) http.HandlerFunc {
-			return func(w http.ResponseWriter, r *http.Request) {
-				if strings.ToLower(r.Method) == strings.ToLower(blobberHTTPMock.Method) {
-					for paramIdx, param := range blobberHTTPMock.Params {
-						var matchesParam = true
-						for _, check := range checks {
-							if !check(param, r) {
-								matchesParam = false
-								break
-							}
-						}
+//func responseBodyTypeCheck(param map[string]interface{}, r *http.Request) bool {
+//	var bodyReq map[string]interface{}
+//	json.NewDecoder(r.Body).Decode(&bodyReq)
+//	return reflect.DeepEqual(body, bodyReq)
+//}
 
-						if matchesParam {
-							respBytes, err := json.Marshal(blobberHTTPMock.Responses[paramIdx][blobberIdx].Body)
-							assert.NoErrorf(t, err, "Error json.Marshal() cannot marshal blobber's response: %v", err)
-							respStr := string(respBytes)
-							for replacingIdx, replacingBlobber := range blobbers {
-								respStr = strings.ReplaceAll(respStr, blobberIDMask(replacingIdx+1), replacingBlobber.ID)
-								respStr = strings.ReplaceAll(respStr, blobberURLMask(replacingIdx+1), replacingBlobber.URL)
-							}
+func blobberMockMaskReplacing(blobbers []*mocks.Blobber) func(input string) (output string) {
+	return func(input string) (output string) {
+		for replacingIdx, replacingBlobber := range blobbers {
+			input = strings.ReplaceAll(input, blobberIDMask(replacingIdx+1), replacingBlobber.ID)
+			input = strings.ReplaceAll(input, blobberURLMask(replacingIdx+1), replacingBlobber.URL)
+		}
+		output = input
+		return
+	}
+}
 
-							w.WriteHeader(blobberHTTPMock.Responses[paramIdx][blobberIdx].StatusCode)
-							w.Write([]byte(respStr))
-							return
-						}
+func mockResponseParser(t *testing.T, indx int, mapHttpMock map[string]*httpMockDefinition, replacingResponseFn func(respInput string) (respOutput string), checks ...func(params map[string]string, r *http.Request) bool) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if httpMock := mapHttpMock[r.Method+" "+r.URL.Path]; httpMock != nil {
+			for paramIdx, param := range httpMock.Params {
+				var matchesParam = true
+				for _, check := range checks {
+					if !check(param, r) {
+						matchesParam = false
+						break
 					}
 				}
 
-				t.Logf("Warning blobber response is not initialized for %v", r.URL.String())
-				w.WriteHeader(500)
-				w.Write([]byte("Internal Server Error."))
-				return
+				if matchesParam {
+					if httpMock.Responses[paramIdx][indx].ContentType == textPlainContentType {
+						w.WriteHeader(httpMock.Responses[paramIdx][indx].StatusCode)
+						body := fmt.Sprintf("%v", httpMock.Responses[paramIdx][indx].Body)
+						if body == "" {
+							w.Write([]byte("."))
+							return
+						}
+						w.Write([]byte(body))
+						return
+					}
+					respBytes, err := json.Marshal(httpMock.Responses[paramIdx][indx].Body)
+					assert.NoErrorf(t, err, "Error json.Marshal() cannot marshal blobber's response: %v", err)
+					respStr := string(respBytes)
+					if replacingResponseFn != nil {
+						respStr = replacingResponseFn(respStr)
+					}
+
+					w.WriteHeader(httpMock.Responses[paramIdx][indx].StatusCode)
+					w.Write([]byte(respStr))
+					return
+				}
 			}
 		}
-		for idx, blobber := range blobbers {
-			blobber.SetHandler(t, blobberHTTPMock.Path, blobberMockHandler(idx))
+
+		t.Logf("Warning response is not initialized for %v", r.URL.String())
+		w.WriteHeader(500)
+		w.Write([]byte("Internal Server Error."))
+		return
+	}
+}
+
+func setupBlobberMockResponses(t *testing.T, blobbers []*mocks.Blobber, dirPath, testCaseName string, checks ...func(params map[string]string, r *http.Request) bool) {
+	var blobberHTTPMocks []*httpMockDefinition
+	parseFileContent(t, fmt.Sprintf("%v/blobbers_response__%v.json", dirPath, testCaseName), &blobberHTTPMocks)
+	var mapBlobberHTTPMocks = make(map[string]*httpMockDefinition, len(blobberHTTPMocks))
+	for _, blobberHTTPMock := range blobberHTTPMocks {
+		mapBlobberHTTPMocks[blobberHTTPMock.Method+" "+blobberHTTPMock.Path] = blobberHTTPMock
+	}
+
+	for idx, blobber := range blobbers {
+		for _, blobberMock := range blobberHTTPMocks {
+			blobber.SetHandler(t, blobberMock.Path, mockResponseParser(t, idx, mapBlobberHTTPMocks, blobberMockMaskReplacing(blobbers), checks...))
+		}
+	}
+}
+
+
+func setupMinerMockResponses(t *testing.T, miners []string, dirPath, testCaseName string, checks ...func(params map[string]string, r *http.Request) bool) {
+	var minerHTTPMocks []*httpMockDefinition
+	parseFileContent(t, fmt.Sprintf("%v/miners_response__%v.json", dirPath, testCaseName), &minerHTTPMocks)
+	var mapMinerHTTPMocks = make(map[string]*httpMockDefinition, len(minerHTTPMocks))
+	for _, minerHTTPMock := range minerHTTPMocks {
+		mapMinerHTTPMocks[minerHTTPMock.Method+" "+minerHTTPMock.Path] = minerHTTPMock
+	}
+
+	for idx, _ := range miners {
+		for _, minerMock := range minerHTTPMocks {
+			mocks.SetMinerHandler(t, minerMock.Path, mockResponseParser(t, idx, mapMinerHTTPMocks, nil, checks...))
+		}
+	}
+}
+
+func setupSharderMockResponses(t *testing.T, sharders []string, dirPath, testCaseName string, checks ...func(params map[string]string, r *http.Request) bool) {
+	var sharderHTTPMocks []*httpMockDefinition
+	parseFileContent(t, fmt.Sprintf("%v/sharders_response__%v.json", dirPath, testCaseName), &sharderHTTPMocks)
+	var mapSharderHTTPMocks = make(map[string]*httpMockDefinition, len(sharderHTTPMocks))
+	for _, sharderHTTPMock := range sharderHTTPMocks {
+		mapSharderHTTPMocks[sharderHTTPMock.Method+" "+sharderHTTPMock.Path] = sharderHTTPMock
+	}
+
+	for idx, _ := range sharders {
+		for _, sharderMock := range sharderHTTPMocks {
+			mocks.SetSharderHandler(t, sharderMock.Path, mockResponseParser(t, idx, mapSharderHTTPMocks, nil, checks...))
 		}
 	}
 }
@@ -192,14 +334,14 @@ func setupExpectedResult(t *testing.T, syncTestDir, testCaseName string) []FileD
 
 func TestAllocation_GetAllocationDiff(t *testing.T) {
 	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mock.NewMinerHTTPServer(t)
+	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
 	defer closeMinerServer()
-	sharder, closeSharderServer := mock.NewSharderHTTPServer(t)
+	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
 	defer closeSharderServer()
-	var blobbers = []*mock.Blobber{}
+	var blobbers = []*mocks.Blobber{}
 	var blobberNums = 4
 	for i := 0; i < blobberNums; i++ {
-		blobber := mock.NewBlobberHTTPServer(t)
+		blobber := mocks.NewBlobberHTTPServer(t)
 		blobbers = append(blobbers, blobber)
 	}
 
@@ -422,7 +564,7 @@ func TestAllocation_GetAllocationDiff(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setupBlobberMockResponses(t, blobbers, syncTestDir+"/"+"GetAllocationDiff", tt.name, blobberResponseParamCheck)
+			setupBlobberMockResponses(t, blobbers, syncTestDir+"/"+"GetAllocationDiff", tt.name, responseParamTypeCheck)
 			defer resetBlobberMock(t)
 			if tt.additionalMock != nil {
 				teardownAdditionalMock := tt.additionalMock(t)
@@ -442,14 +584,14 @@ func TestAllocation_GetAllocationDiff(t *testing.T) {
 
 func TestAllocation_SaveRemoteSnapshot(t *testing.T) {
 	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mock.NewMinerHTTPServer(t)
+	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
 	defer closeMinerServer()
-	sharder, closeSharderServer := mock.NewSharderHTTPServer(t)
+	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
 	defer closeSharderServer()
-	var blobbers = []*mock.Blobber{}
+	var blobbers = []*mocks.Blobber{}
 	var blobberNums = 4
 	for i := 0; i < blobberNums; i++ {
-		blobberIdx := mock.NewBlobberHTTPServer(t)
+		blobberIdx := mocks.NewBlobberHTTPServer(t)
 		blobbers = append(blobbers, blobberIdx)
 	}
 
@@ -514,7 +656,7 @@ func TestAllocation_SaveRemoteSnapshot(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			setupBlobberMockResponses(t, blobbers, syncTestDir+"/"+"SaveRemoteSnapshot", tt.name, blobberResponseParamCheck)
+			setupBlobberMockResponses(t, blobbers, syncTestDir+"/"+"SaveRemoteSnapshot", tt.name, responseParamTypeCheck)
 
 			var pathToSave string
 			if tt.args.pathToSavePrefix == "" {
@@ -533,8 +675,8 @@ func TestAllocation_SaveRemoteSnapshot(t *testing.T) {
 			} else {
 				assert.NoError(t, err, "expected no error")
 				expectedFileContentBytes := parseFileContent(t, fmt.Sprintf("%v/%v/expected_result__%v.json", syncTestDir, "SaveRemoteSnapshot", tt.name), nil)
-				savedDileContentBytes := parseFileContent(t, pathToSave, nil)
-				assert.EqualValues(t, expectedFileContentBytes, savedDileContentBytes)
+				savedFileContentBytes := parseFileContent(t, pathToSave, nil)
+				assert.EqualValues(t, expectedFileContentBytes, savedFileContentBytes)
 			}
 		})
 	}

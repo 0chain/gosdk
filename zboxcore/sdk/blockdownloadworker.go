@@ -193,9 +193,9 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				//req.consensus++
 
 				response, err := ioutil.ReadAll(resp.Body)
-				// if err != nil {
-				// 	return fmt.Errorf("[%d] Read error:%s\n", req.blobberIdx, err.Error())
-				// }
+				if err != nil {
+					return fmt.Errorf("[%d] Read error:%s\n", req.blobberIdx, err.Error())
+				}
 				var rspData downloadBlock
 				rspData.idx = req.blobberIdx
 				// dec := json.NewDecoder(resp.Body)

@@ -1,0 +1,650 @@
+[
+  {
+    "method": "GET",
+    "path": "/v1/file/objecttree/69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+    "params": [
+      {}
+    ],
+    "responses": [
+      [
+        {
+          "status": 200,
+          "body": {
+            "meta_data": {
+              "actual_file_hash": "03cfd743661f07975fa2f1220c5194cbaff48451",
+              "actual_file_size": 4,
+              "actual_thumbnail_hash": "",
+              "actual_thumbnail_size": 0,
+              "attributes": {
+                "who_pays_for_reads": 1
+              },
+              "commit_meta_txns": null,
+              "content_hash": "adc83b19e793491b1c6ea0fd8b46cd9f32e592fc",
+              "created_at": "2021-03-17T08:15:36.018029Z",
+              "custom_meta": "",
+              "encrypted_key": "",
+              "hash": "4fea25c7390d0d8374fd84c77345eee7037224c2b162e98950a9ea6d882e91e5",
+              "lookup_hash": "c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697",
+              "merkle_root": "6ed726c5aaf50067479a105ad9c4330bfa341f1fd889e3552af67303712ee0f0",
+              "mimetype": "application/octet-stream",
+              "name": "1.txt",
+              "num_of_blocks": 1,
+              "on_cloud": false,
+              "path": "/1.txt",
+              "path_hash": "c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697",
+              "size": 1,
+              "thumbnail_hash": "",
+              "thumbnail_size": 0,
+              "type": "f",
+              "updated_at": "2021-03-19T08:34:35.387704Z"
+            },
+            "latest_write_marker": {
+              "allocation_root": "d069d04ba45c4f14764c699b69f07897d0973afaab5aa2cf9c302c849ccad955",
+              "prev_allocation_root": "fe2f7f060dd34adbfdcf2f142acd33f50401207f7363359dd35460be7a2bec2d",
+              "allocation_id": "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+              "size": 0,
+              "blobber_id": "8eeb4d4d6621ea87ecf4d3ba61bb69d30db435c8ed7cbaccccd56b93ea050c42",
+              "timestamp": 1616142875,
+              "client_id": "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+              "signature": "ebea73ea057d334c7600ce65f323843d02ea4bd822c858ab004aa0f30043e11f"
+            }
+          }
+        },
+        {
+          "status": 200,
+          "body": {
+            "meta_data": {
+              "actual_file_hash": "03cfd743661f07975fa2f1220c5194cbaff48451",
+              "actual_file_size": 4,
+              "actual_thumbnail_hash": "",
+              "actual_thumbnail_size": 0,
+              "attributes": {
+                "who_pays_for_reads": 1
+              },
+              "commit_meta_txns": null,
+              "content_hash": "3a52ce780950d4d969792a2559cd519d7ee8c727",
+              "created_at": "2021-03-17T08:15:36.137135Z",
+              "custom_meta": "",
+              "encrypted_key": "",
+              "hash": "49f57d8a02ebcc96df36ef676201d7f96d79365a83a6c239432e7b63a03d5d36",
+              "lookup_hash": "c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697",
+              "merkle_root": "ea13052ab648c94a2fc001ce4f6f5f2d8bb699d4b69264b361c45324c88da744",
+              "mimetype": "application/octet-stream",
+              "name": "1.txt",
+              "num_of_blocks": 1,
+              "on_cloud": false,
+              "path": "/1.txt",
+              "path_hash": "c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697",
+              "size": 1,
+              "thumbnail_hash": "",
+              "thumbnail_size": 0,
+              "type": "f",
+              "updated_at": "2021-03-19T08:34:35.765008Z"
+            },
+            "latest_write_marker": {
+              "allocation_root": "418132ae676240069a77e3785e046c45aa022fc771a33ab74da3b19f3b44d5f9",
+              "prev_allocation_root": "3e89fba8c0e47c24f6bd06bbef9b4eef466a7bdbd0da72ae9e511c5768d86f5c",
+              "allocation_id": "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+              "size": 0,
+              "blobber_id": "9cb4a21362291d2d2ca8ebca1877bd60d63d51d8f12ecec1e55964df452d0e4a",
+              "timestamp": 1616142875,
+              "client_id": "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+              "signature": "15deae584c0f8ea3809e383c61c30e51c09b3af732878e8f2da7c08a21b4b19f"
+            }
+          }
+        },
+        {
+          "status": 200,
+          "body": {
+            "meta_data": {
+              "actual_file_hash": "03cfd743661f07975fa2f1220c5194cbaff48451",
+              "actual_file_size": 4,
+              "actual_thumbnail_hash": "",
+              "actual_thumbnail_size": 0,
+              "attributes": {
+                "who_pays_for_reads": 1
+              },
+              "commit_meta_txns": null,
+              "content_hash": "84a516841ba77a5b4648de2cd0dfcb30ea46dbb4",
+              "created_at": "2021-03-17T08:15:36.153373Z",
+              "custom_meta": "",
+              "encrypted_key": "",
+              "hash": "54820e378459392264aa05f0078760e5a763cf68717832db0cc8d527b5162b72",
+              "lookup_hash": "c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697",
+              "merkle_root": "ecb9335b1a7ceb97d9b2514e5320446cda5758140929a82b02fc22fdd3f24933",
+              "mimetype": "application/octet-stream",
+              "name": "1.txt",
+              "num_of_blocks": 1,
+              "on_cloud": false,
+              "path": "/1.txt",
+              "path_hash": "c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697",
+              "size": 1,
+              "thumbnail_hash": "",
+              "thumbnail_size": 0,
+              "type": "f",
+              "updated_at": "2021-03-19T08:34:35.549979Z"
+            },
+            "latest_write_marker": {
+              "allocation_root": "8a7aa3a1cc84ed80c37e975c7a2a50813e2ee3cc2d66e9d3c1a16245b4ded23e",
+              "prev_allocation_root": "b511342875735f6f9ce3c8e8743af6473a8f8615b2dc0e046442369bb85c01a0",
+              "allocation_id": "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+              "size": 0,
+              "blobber_id": "7b4e50c713d3795a7f3fdad7ff9a21c8b70dee1fa6d6feafd742992c23c096e8",
+              "timestamp": 1616142875,
+              "client_id": "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+              "signature": "9ea981bfcb756a8b27ac5045e3410b18dae89cb9c738c28e6d2753e30e1cac23"
+            }
+          }
+        },
+        {
+          "status": 200,
+          "body": {
+            "meta_data": {
+              "actual_file_hash": "03cfd743661f07975fa2f1220c5194cbaff48451",
+              "actual_file_size": 4,
+              "actual_thumbnail_hash": "",
+              "actual_thumbnail_size": 0,
+              "attributes": {
+                "who_pays_for_reads": 1
+              },
+              "commit_meta_txns": null,
+              "content_hash": "e9d71f5ee7c92d6dc9e92ffdad17b8bd49418f98",
+              "created_at": "2021-03-17T08:15:36.151047Z",
+              "custom_meta": "",
+              "encrypted_key": "",
+              "hash": "87bad4bb69bbf725f033fd98bec6e98a5bf8c0056493342f70aab913707511f1",
+              "lookup_hash": "c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697",
+              "merkle_root": "4bc8627e4bc449f3aef95a9c137a46a3f67976501bc1a47454cde9b1d60b9caf",
+              "mimetype": "application/octet-stream",
+              "name": "1.txt",
+              "num_of_blocks": 1,
+              "on_cloud": false,
+              "path": "/1.txt",
+              "path_hash": "c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697",
+              "size": 1,
+              "thumbnail_hash": "",
+              "thumbnail_size": 0,
+              "type": "f",
+              "updated_at": "2021-03-19T08:34:35.572355Z"
+            },
+            "latest_write_marker": {
+              "allocation_root": "6c058b6ac672ba26b1d757c0a80c7a4f44ea9192c3de1c8b5ed5de4463ad6d19",
+              "prev_allocation_root": "9f7572e82dcfcfcd29ad6b82cea9e954365e1910c73692ada31bcd7dcf0e9b46",
+              "allocation_id": "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+              "size": 0,
+              "blobber_id": "4a0ffbd42c64f44ec1cca858c7e5b5fd408911ed03df3b7009049cdb76e03ac2",
+              "timestamp": 1616142875,
+              "client_id": "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+              "signature": "de08eaaca20b000e610a59be9a96231549e9e26094567d70074fbc9e3709e013"
+            }
+          }
+        }
+      ]
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/file/attributes/69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+    "params": [
+      {}
+    ],
+    "responses": [
+      [
+        {
+          "status": 200,
+          "body": {}
+        },
+        {
+          "status": 200,
+          "body": {}
+        },
+        {
+          "status": 200,
+          "body": {}
+        },
+        {
+          "status": 200,
+          "body": {}
+        }
+      ]
+    ]
+  },
+  {
+    "method": "GET",
+    "path": "/v1/file/referencepath/69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+    "params": [
+      {}
+    ],
+    "responses": [
+      [
+        {
+          "status": 200,
+          "body": {
+            "meta_data": {
+              "created_at": "2021-03-15T15:09:02.001678Z",
+              "hash": "0936c698f359f78afc07db1ed4b21c406f2a2113e199e28c97c2da81cf42453f",
+              "lookup_hash": "a95ae3e28d1265fd979175fa5ffd152b5289820ca96a0389d912f1ffb97a7763",
+              "name": "/",
+              "num_of_blocks": 3,
+              "path": "/",
+              "path_hash": "3f65e3f933f04fbece2001409efeaefaf338c223f5e0ce02f42b19df549887a5",
+              "size": 84589,
+              "type": "d",
+              "updated_at": "2021-03-19T09:24:38.605791Z"
+            },
+            "list": [
+              {
+                "meta_data": {
+                  "actual_file_hash": "03cfd743661f07975fa2f1220c5194cbaff48451",
+                  "actual_file_size": 4,
+                  "actual_thumbnail_hash": "",
+                  "actual_thumbnail_size": 0,
+                  "attributes": {
+                    "who_pays_for_reads": 1
+                  },
+                  "commit_meta_txns": null,
+                  "content_hash": "adc83b19e793491b1c6ea0fd8b46cd9f32e592fc",
+                  "created_at": "2021-03-17T08:15:36.018029Z",
+                  "custom_meta": "",
+                  "encrypted_key": "",
+                  "hash": "4fea25c7390d0d8374fd84c77345eee7037224c2b162e98950a9ea6d882e91e5",
+                  "lookup_hash": "c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697",
+                  "merkle_root": "6ed726c5aaf50067479a105ad9c4330bfa341f1fd889e3552af67303712ee0f0",
+                  "mimetype": "application/octet-stream",
+                  "name": "1.txt",
+                  "num_of_blocks": 1,
+                  "on_cloud": false,
+                  "path": "/1.txt",
+                  "path_hash": "c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697",
+                  "size": 1,
+                  "thumbnail_hash": "",
+                  "thumbnail_size": 0,
+                  "type": "f",
+                  "updated_at": "2021-03-19T09:24:38.605791Z"
+                }
+              },
+              {
+                "meta_data": {
+                  "actual_file_hash": "b542fd47ca8c8f0b9ed24c1a213088500aee064f",
+                  "actual_file_size": 338349,
+                  "actual_thumbnail_hash": "",
+                  "actual_thumbnail_size": 0,
+                  "attributes": {},
+                  "commit_meta_txns": null,
+                  "content_hash": "c362145e0d97f9d28e2ada4dfa74172404abd54b",
+                  "created_at": "2021-03-15T15:09:02.000182Z",
+                  "custom_meta": "",
+                  "encrypted_key": "",
+                  "hash": "f7a9c4f7bf9cc6286c059a7623e82a43da285c39d2f5bc1e7cedddea9f6ad053",
+                  "lookup_hash": "ea01025c342606ff688dd0ed5362e5b9be919a775dfe5e018974c73d6cd7ded8",
+                  "merkle_root": "99e7a95afbfb1fda7872bca9b504f70f2557e213d1d42b60995f21eb2cd162ae",
+                  "mimetype": "application/octet-stream",
+                  "name": "log.html",
+                  "num_of_blocks": 2,
+                  "on_cloud": false,
+                  "path": "/log.html",
+                  "path_hash": "ea01025c342606ff688dd0ed5362e5b9be919a775dfe5e018974c73d6cd7ded8",
+                  "size": 84588,
+                  "thumbnail_hash": "",
+                  "thumbnail_size": 0,
+                  "type": "f",
+                  "updated_at": "2021-03-19T09:24:38.605791Z"
+                }
+              }
+            ],
+            "latest_write_marker": {
+              "allocation_root": "c713abdeec01c1f05ee2781656dfc16a0ee7fae2f2d9bcfc11db3b15da4835fe",
+              "prev_allocation_root": "98a09d8d36278cd4945bab101cb7c64863784cc0f6bd79ba5a3e8085e1e12dd9",
+              "allocation_id": "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+              "size": 0,
+              "blobber_id": "8eeb4d4d6621ea87ecf4d3ba61bb69d30db435c8ed7cbaccccd56b93ea050c42",
+              "timestamp": 1616145878,
+              "client_id": "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+              "signature": "6446498480563ac222923e776d5c2f74ed38b250cb0b056029e8fd6818b77e23"
+            }
+          }
+        },
+        {
+          "status": 200,
+          "body": {
+            "meta_data": {
+              "created_at": "2021-03-15T15:09:02.924302Z",
+              "hash": "1e970c0e2d5078fbe5fcefe845044974672ad73afa2c5f55c13c283be6ed6a31",
+              "lookup_hash": "a95ae3e28d1265fd979175fa5ffd152b5289820ca96a0389d912f1ffb97a7763",
+              "name": "/",
+              "num_of_blocks": 3,
+              "path": "/",
+              "path_hash": "3f65e3f933f04fbece2001409efeaefaf338c223f5e0ce02f42b19df549887a5",
+              "size": 84589,
+              "type": "d",
+              "updated_at": "2021-03-19T09:24:38.673624Z"
+            },
+            "list": [
+              {
+                "meta_data": {
+                  "actual_file_hash": "03cfd743661f07975fa2f1220c5194cbaff48451",
+                  "actual_file_size": 4,
+                  "actual_thumbnail_hash": "",
+                  "actual_thumbnail_size": 0,
+                  "attributes": {
+                    "who_pays_for_reads": 1
+                  },
+                  "commit_meta_txns": null,
+                  "content_hash": "84a516841ba77a5b4648de2cd0dfcb30ea46dbb4",
+                  "created_at": "2021-03-17T08:15:36.153373Z",
+                  "custom_meta": "",
+                  "encrypted_key": "",
+                  "hash": "54820e378459392264aa05f0078760e5a763cf68717832db0cc8d527b5162b72",
+                  "lookup_hash": "c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697",
+                  "merkle_root": "ecb9335b1a7ceb97d9b2514e5320446cda5758140929a82b02fc22fdd3f24933",
+                  "mimetype": "application/octet-stream",
+                  "name": "1.txt",
+                  "num_of_blocks": 1,
+                  "on_cloud": false,
+                  "path": "/1.txt",
+                  "path_hash": "c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697",
+                  "size": 1,
+                  "thumbnail_hash": "",
+                  "thumbnail_size": 0,
+                  "type": "f",
+                  "updated_at": "2021-03-19T09:24:38.673624Z"
+                }
+              },
+              {
+                "meta_data": {
+                  "actual_file_hash": "b542fd47ca8c8f0b9ed24c1a213088500aee064f",
+                  "actual_file_size": 338349,
+                  "actual_thumbnail_hash": "",
+                  "actual_thumbnail_size": 0,
+                  "attributes": {},
+                  "commit_meta_txns": null,
+                  "content_hash": "be8cac3704c1a1cd1bc99b1f3dd6186265dbb2e9",
+                  "created_at": "2021-03-15T15:09:02.923788Z",
+                  "custom_meta": "",
+                  "encrypted_key": "",
+                  "hash": "fd97e9dfc05afb8fd7ce289f178bc2db9790485640064f55ed3c55468a2a294b",
+                  "lookup_hash": "ea01025c342606ff688dd0ed5362e5b9be919a775dfe5e018974c73d6cd7ded8",
+                  "merkle_root": "04c62219e537ea6bdf9be78aeba50dd3a64c27ded43bf66e7622784d63d4677e",
+                  "mimetype": "application/octet-stream",
+                  "name": "log.html",
+                  "num_of_blocks": 2,
+                  "on_cloud": false,
+                  "path": "/log.html",
+                  "path_hash": "ea01025c342606ff688dd0ed5362e5b9be919a775dfe5e018974c73d6cd7ded8",
+                  "size": 84588,
+                  "thumbnail_hash": "",
+                  "thumbnail_size": 0,
+                  "type": "f",
+                  "updated_at": "2021-03-19T09:24:38.673624Z"
+                }
+              }
+            ],
+            "latest_write_marker": {
+              "allocation_root": "aaeefb47bd10447b50173516bab4c6d1a460b1838d10e07f2d9459def5646dc3",
+              "prev_allocation_root": "0e2655ef5b88c9ddf28a1bd3ceba11b0727cfb308fef91608fa0fdbf17242e72",
+              "allocation_id": "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+              "size": 0,
+              "blobber_id": "7b4e50c713d3795a7f3fdad7ff9a21c8b70dee1fa6d6feafd742992c23c096e8",
+              "timestamp": 1616145878,
+              "client_id": "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+              "signature": "afc2a18a3b33ed4d6a70915f910639a1fa3e8451c8afa76cb7656a06129a3e1c"
+            }
+          }
+        },
+        {
+          "status": 200,
+          "body": {
+            "meta_data": {
+              "created_at": "2021-03-15T15:09:02.766776Z",
+              "hash": "34ae10f92decd0073997d3c7387e549426d124260cb40963445e52eba0f5907b",
+              "lookup_hash": "a95ae3e28d1265fd979175fa5ffd152b5289820ca96a0389d912f1ffb97a7763",
+              "name": "/",
+              "num_of_blocks": 3,
+              "path": "/",
+              "path_hash": "3f65e3f933f04fbece2001409efeaefaf338c223f5e0ce02f42b19df549887a5",
+              "size": 84589,
+              "type": "d",
+              "updated_at": "2021-03-19T09:24:38.653892Z"
+            },
+            "list": [
+              {
+                "meta_data": {
+                  "actual_file_hash": "03cfd743661f07975fa2f1220c5194cbaff48451",
+                  "actual_file_size": 4,
+                  "actual_thumbnail_hash": "",
+                  "actual_thumbnail_size": 0,
+                  "attributes": {
+                    "who_pays_for_reads": 1
+                  },
+                  "commit_meta_txns": null,
+                  "content_hash": "e9d71f5ee7c92d6dc9e92ffdad17b8bd49418f98",
+                  "created_at": "2021-03-17T08:15:36.151047Z",
+                  "custom_meta": "",
+                  "encrypted_key": "",
+                  "hash": "87bad4bb69bbf725f033fd98bec6e98a5bf8c0056493342f70aab913707511f1",
+                  "lookup_hash": "c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697",
+                  "merkle_root": "4bc8627e4bc449f3aef95a9c137a46a3f67976501bc1a47454cde9b1d60b9caf",
+                  "mimetype": "application/octet-stream",
+                  "name": "1.txt",
+                  "num_of_blocks": 1,
+                  "on_cloud": false,
+                  "path": "/1.txt",
+                  "path_hash": "c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697",
+                  "size": 1,
+                  "thumbnail_hash": "",
+                  "thumbnail_size": 0,
+                  "type": "f",
+                  "updated_at": "2021-03-19T09:24:38.653892Z"
+                }
+              },
+              {
+                "meta_data": {
+                  "actual_file_hash": "b542fd47ca8c8f0b9ed24c1a213088500aee064f",
+                  "actual_file_size": 338349,
+                  "actual_thumbnail_hash": "",
+                  "actual_thumbnail_size": 0,
+                  "attributes": {},
+                  "commit_meta_txns": null,
+                  "content_hash": "d8434013274c4de333e5f7aef438ed914f4b6f4d",
+                  "created_at": "2021-03-15T15:09:02.766356Z",
+                  "custom_meta": "",
+                  "encrypted_key": "",
+                  "hash": "0f59e33bca73e8dab78daf1e35c11884ae6cf0768104440803a8eacb75f7f309",
+                  "lookup_hash": "ea01025c342606ff688dd0ed5362e5b9be919a775dfe5e018974c73d6cd7ded8",
+                  "merkle_root": "a76a34a55c5f4913efa47f0fd9bb4aab29102374ee556e3f283aaa1deec13001",
+                  "mimetype": "application/octet-stream",
+                  "name": "log.html",
+                  "num_of_blocks": 2,
+                  "on_cloud": false,
+                  "path": "/log.html",
+                  "path_hash": "ea01025c342606ff688dd0ed5362e5b9be919a775dfe5e018974c73d6cd7ded8",
+                  "size": 84588,
+                  "thumbnail_hash": "",
+                  "thumbnail_size": 0,
+                  "type": "f",
+                  "updated_at": "2021-03-19T09:24:38.653892Z"
+                }
+              }
+            ],
+            "latest_write_marker": {
+              "allocation_root": "73a52c6514e45a9f2bfffb4276cd57f61db2e1ca118682bd4a5b2fa0448972b1",
+              "prev_allocation_root": "8e95fb78033369443240a7bc9241ed82824c122d5f2a07cfe0ad5742d81121ba",
+              "allocation_id": "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+              "size": 0,
+              "blobber_id": "4a0ffbd42c64f44ec1cca858c7e5b5fd408911ed03df3b7009049cdb76e03ac2",
+              "timestamp": 1616145878,
+              "client_id": "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+              "signature": "7d241724e1884f5b7d64c0a9d9d8adf5d03953dbfd58d29c590a49ce1d1a0690"
+            }
+          }
+        },
+        {
+          "status": 200,
+          "body": {
+            "meta_data": {
+              "created_at": "2021-03-15T15:09:02.922062Z",
+              "hash": "c60b6d652160032e505a654af834f761e64ff64422400160f9dcfcc0df55494f",
+              "lookup_hash": "a95ae3e28d1265fd979175fa5ffd152b5289820ca96a0389d912f1ffb97a7763",
+              "name": "/",
+              "num_of_blocks": 3,
+              "path": "/",
+              "path_hash": "3f65e3f933f04fbece2001409efeaefaf338c223f5e0ce02f42b19df549887a5",
+              "size": 84589,
+              "type": "d",
+              "updated_at": "2021-03-19T09:24:38.663693Z"
+            },
+            "list": [
+              {
+                "meta_data": {
+                  "actual_file_hash": "03cfd743661f07975fa2f1220c5194cbaff48451",
+                  "actual_file_size": 4,
+                  "actual_thumbnail_hash": "",
+                  "actual_thumbnail_size": 0,
+                  "attributes": {
+                    "who_pays_for_reads": 1
+                  },
+                  "commit_meta_txns": null,
+                  "content_hash": "86f7e437faa5a7fce15d1ddcb9eaeaea377667b8",
+                  "created_at": "2021-03-17T08:15:36.153013Z",
+                  "custom_meta": "",
+                  "encrypted_key": "",
+                  "hash": "e3802d9d6fd15697bafab747e8ab5bea3d55938bb7bfa2b034390db70866186b",
+                  "lookup_hash": "c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697",
+                  "merkle_root": "8451c4d960bf78a4d020ca7edc76fa99f141851fbbab5206c35c0918d4990518",
+                  "mimetype": "application/octet-stream",
+                  "name": "1.txt",
+                  "num_of_blocks": 1,
+                  "on_cloud": false,
+                  "path": "/1.txt",
+                  "path_hash": "c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697",
+                  "size": 1,
+                  "thumbnail_hash": "",
+                  "thumbnail_size": 0,
+                  "type": "f",
+                  "updated_at": "2021-03-19T09:24:38.663693Z"
+                }
+              },
+              {
+                "meta_data": {
+                  "actual_file_hash": "b542fd47ca8c8f0b9ed24c1a213088500aee064f",
+                  "actual_file_size": 338349,
+                  "actual_thumbnail_hash": "",
+                  "actual_thumbnail_size": 0,
+                  "attributes": {},
+                  "commit_meta_txns": null,
+                  "content_hash": "0903e4ba36eb959c4ecff7e1a144b5ba2b8a787f",
+                  "created_at": "2021-03-15T15:09:02.921644Z",
+                  "custom_meta": "",
+                  "encrypted_key": "",
+                  "hash": "f8b4bbbf91e785a81e55e7134d221c766e0bc55b2dc8f5874b1d810f308f8adf",
+                  "lookup_hash": "ea01025c342606ff688dd0ed5362e5b9be919a775dfe5e018974c73d6cd7ded8",
+                  "merkle_root": "d1e3b877d003ade93377756f4ff871aabf3796593430cc7074056db7d87157ed",
+                  "mimetype": "application/octet-stream",
+                  "name": "log.html",
+                  "num_of_blocks": 2,
+                  "on_cloud": false,
+                  "path": "/log.html",
+                  "path_hash": "ea01025c342606ff688dd0ed5362e5b9be919a775dfe5e018974c73d6cd7ded8",
+                  "size": 84588,
+                  "thumbnail_hash": "",
+                  "thumbnail_size": 0,
+                  "type": "f",
+                  "updated_at": "2021-03-19T09:24:38.663693Z"
+                }
+              }
+            ],
+            "latest_write_marker": {
+              "allocation_root": "9f17e264e80d31b7f09283f82e44219042192318afe6f833eb01c8651077e807",
+              "prev_allocation_root": "a627ea92dd49ea8b63b939207862c8913209409d01bf97b196c0b613b2c026cc",
+              "allocation_id": "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+              "size": 0,
+              "blobber_id": "2967524ebb22e37c42ebb0c97c2a24ffa8de74a87b040b40b1392b04d1d8ba11",
+              "timestamp": 1616145878,
+              "client_id": "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+              "signature": "c7c71ae33539f892796c5ee26523eeb58c745bcb135995a431d88a3b6b3c4b98"
+            }
+          }
+        }
+      ]
+    ]
+  },
+  {
+    "method": "POST",
+    "path": "/v1/connection/commit/69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+    "params": [
+      {}
+    ],
+    "responses": [
+      [
+        {
+          "status": 200,
+          "body": {
+            "allocation_root": "98a09d8d36278cd4945bab101cb7c64863784cc0f6bd79ba5a3e8085e1e12dd9",
+            "write_marker": {
+              "allocation_root": "98a09d8d36278cd4945bab101cb7c64863784cc0f6bd79ba5a3e8085e1e12dd9",
+              "prev_allocation_root": "376819b4db85ae645d2dd3d492918911e2fa72679c65753004d1570cbeeeca0d",
+              "allocation_id": "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+              "size": 0,
+              "blobber_id": "8eeb4d4d6621ea87ecf4d3ba61bb69d30db435c8ed7cbaccccd56b93ea050c42",
+              "timestamp": 1616143784,
+              "client_id": "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+              "signature": "0a7c36b2b65ba9acbb443288c634cb4ad5c41f6254bdeee7f101a71c875fbb17"
+            },
+            "success": true
+          }
+        },
+        {
+          "status": 200,
+          "body": {
+            "allocation_root": "fd03683fd39c2dc9e80c3d197308bed1d8e49dc16b11c4e6e4be3cf7bd7da7a2",
+            "write_marker": {
+              "allocation_root": "fd03683fd39c2dc9e80c3d197308bed1d8e49dc16b11c4e6e4be3cf7bd7da7a2",
+              "prev_allocation_root": "b121e4502cb3836cceeff5f90e7e9aff6538bf1248cc5262b099f2cfd3b179e3",
+              "allocation_id": "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+              "size": 0,
+              "blobber_id": "9cb4a21362291d2d2ca8ebca1877bd60d63d51d8f12ecec1e55964df452d0e4a",
+              "timestamp": 1616143784,
+              "client_id": "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+              "signature": "071623a6c95565454681120b07eca45bf92725a6f659f4b6d49ae8301a642f21"
+            },
+            "success": true
+          }
+        },
+        {
+          "status": 200,
+          "body": {
+            "allocation_root": "0e2655ef5b88c9ddf28a1bd3ceba11b0727cfb308fef91608fa0fdbf17242e72",
+            "write_marker": {
+              "allocation_root": "0e2655ef5b88c9ddf28a1bd3ceba11b0727cfb308fef91608fa0fdbf17242e72",
+              "prev_allocation_root": "0c124c6de7e1abdaac56b400d50a10ac167066cbfe9fc480a4b92144da7a7b38",
+              "allocation_id": "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+              "size": 0,
+              "blobber_id": "7b4e50c713d3795a7f3fdad7ff9a21c8b70dee1fa6d6feafd742992c23c096e8",
+              "timestamp": 1616143784,
+              "client_id": "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+              "signature": "107f3743ee669c3168c79fced0a7700e27b3e572a898b77c44c7898114ecd483"
+            },
+            "success": true
+          }
+        },
+        {
+          "status": 200,
+          "body": {
+            "allocation_root": "8e95fb78033369443240a7bc9241ed82824c122d5f2a07cfe0ad5742d81121ba",
+            "write_marker": {
+              "allocation_root": "8e95fb78033369443240a7bc9241ed82824c122d5f2a07cfe0ad5742d81121ba",
+              "prev_allocation_root": "650825b1fb0716b17ff215a6f0f3fa305fce59feed2b323e4da59b91c7004edc",
+              "allocation_id": "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+              "size": 0,
+              "blobber_id": "4a0ffbd42c64f44ec1cca858c7e5b5fd408911ed03df3b7009049cdb76e03ac2",
+              "timestamp": 1616143784,
+              "client_id": "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+              "signature": "0c79d50516dda9816f1d1503cee9051b628a1a5f3f3696eec4b895b540020600"
+            },
+            "success": true
+          }
+        }
+      ]
+    ]
+  }
+]

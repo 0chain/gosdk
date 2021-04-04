@@ -46,6 +46,7 @@ type SignatureScheme interface {
 	// Combine signature for schemes BLS
 	Add(signature, msg string) (string, error)
 }
+
 // SplitSignatureScheme splits the primary key into number of parts.
 type SplitSignatureScheme interface {
 	SignatureScheme

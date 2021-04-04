@@ -126,7 +126,6 @@ func (req *CommitMetaRequest) updateCommitMetaTxnToBlobbers(txnHash string) bool
 }
 
 func (req *CommitMetaRequest) updatCommitMetaTxnToBlobber(blobber *blockchain.StorageNode, blobberIdx int, txnHash string, rspCh chan<- bool) {
-
 	defer req.wg.Done()
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)

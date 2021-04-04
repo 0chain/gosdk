@@ -50,7 +50,7 @@ type Logger struct {
 	fWriter  io.Writer
 }
 
-// Init - Initialize loggind
+// Init - Initialize logging
 func (l *Logger) Init(lvl int, prefix string) {
 	l.SetLevel(lvl)
 	l.prefix = prefix

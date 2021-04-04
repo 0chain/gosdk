@@ -1,0 +1,30 @@
+[
+  {
+    "path": "/v1/connection/commit/69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+    "method": "POST",
+    "params": [
+      {}
+    ],
+    "responses": [
+      [
+        {
+          "status": 200,
+          "body": {
+            "allocation_root": "61ceddf4360308d370ea4f4b407ccf02f2c0f014063da354aa25fe813a4da5bc",
+            "write_marker": {
+              "allocation_root": "61ceddf4360308d370ea4f4b407ccf02f2c0f014063da354aa25fe813a4da5bc",
+              "prev_allocation_root": "2b3f72c15cfb77e201ff5a7dc5421861f1705a2c062eb66682a5498058383f7f",
+              "allocation_id": "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+              "size": 1,
+              "blobber_id": "8eeb4d4d6621ea87ecf4d3ba61bb69d30db435c8ed7cbaccccd56b93ea050c42",
+              "timestamp": 1616740196,
+              "client_id": "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+              "signature": "cebbe5258be4d84947f10acf3cf178aaa6974f52d82bd5272c566b85ccc4ec98"
+            },
+            "success": true
+          }
+        }
+      ]
+    ]
+  }
+]
