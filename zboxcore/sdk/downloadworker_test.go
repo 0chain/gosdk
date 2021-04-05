@@ -6,7 +6,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/marker"
-	"github.com/0chain/gosdk/zboxcore/sdk/mocks"
 	"github.com/stretchr/testify/assert"
 	"math/bits"
 	"sync"
@@ -16,26 +15,9 @@ import (
 const downloadWorkerTestDir = configDir + "/downloadworker"
 
 func TestDownloadRequest_downloadBlock(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 
 	var blobbers = make([]*blockchain.StorageNode, 0)
 	for _, bl := range blobberMocks {

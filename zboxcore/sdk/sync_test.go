@@ -62,7 +62,7 @@ type nodeConfig struct {
 	ChainID           string   `yaml:"chain_id"`
 }
 
-func setupMockInitStorageSDK(t *testing.T, configDir string, minerHTTPMockURLs, sharderHTTPMockURLs, blobberHTTPMockURLs []string) {
+func setupMockInitStorageSDK(t *testing.T, configDir string, blobberNums int) (miners, sharders []string, blobbers []*mocks.Blobber, close func()) {
 	var nodeConfig *nodeConfig
 
 	nodeConfigBytes := parseFileContent(t, configDir+"/"+"config.yaml", nil)
@@ -77,17 +77,27 @@ func setupMockInitStorageSDK(t *testing.T, configDir string, minerHTTPMockURLs, 
 	signScheme := nodeConfig.SignScheme
 	chainID := nodeConfig.ChainID
 
-	if minerHTTPMockURLs != nil && len(minerHTTPMockURLs) > 0 && sharderHTTPMockURLs != nil && len(sharderHTTPMockURLs) > 0 {
-		var close func()
-		blockWorker, close = mocks.NewBlockWorkerHTTPServer(t, minerHTTPMockURLs, sharderHTTPMockURLs)
-		defer close()
-		if blobberHTTPMockURLs != nil && len(blobberHTTPMockURLs) > 0 {
-			preferredBlobbers = blobberHTTPMockURLs
-		}
+	// setup mock miner, sharder and blobber http server
+	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
+	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
+	var closeBlockWorkerServer func()
+	blockWorker, closeBlockWorkerServer = mocks.NewBlockWorkerHTTPServer(t, []string{miner}, []string{sharder})
+	blobbers = make([]*mocks.Blobber, 0)
+	for i := 0; i < blobberNums; i++ {
+		blobber := mocks.NewBlobberHTTPServer(t)
+		blobbers = append(blobbers, blobber)
 	}
 
 	err = InitStorageSDK(clientConfig, blockWorker, chainID, signScheme, preferredBlobbers)
 	assert.NoErrorf(t, err, "Error InitStorageSDK(): %v", err)
+	return []string{miner}, []string{sharder}, blobbers, func(){
+		closeBlockWorkerServer()
+		closeMinerServer()
+		closeSharderServer()
+		for _, bl := range blobbers {
+			bl.Close()
+		}
+	}
 }
 
 var commitResultChan chan *CommitResult
@@ -333,26 +343,9 @@ func setupExpectedResult(t *testing.T, syncTestDir, testCaseName string) []FileD
 }
 
 func TestAllocation_GetAllocationDiff(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-	var blobbers = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobbers = append(blobbers, blobber)
-	}
-
-	defer func() {
-		for _, blobber := range blobbers {
-			blobber.Close(t)
-		}
-	}()
-
 	// mock init sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobbers, close := setupMockInitStorageSDK(t, configDir, 4)
+	defer close()
 	// mock allocation
 	a := setupMockAllocation(t, syncTestDir, blobbers)
 	type args struct {
@@ -583,26 +576,9 @@ func TestAllocation_GetAllocationDiff(t *testing.T) {
 }
 
 func TestAllocation_SaveRemoteSnapshot(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-	var blobbers = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobberIdx := mocks.NewBlobberHTTPServer(t)
-		blobbers = append(blobbers, blobberIdx)
-	}
-
-	defer func() {
-		for _, blobber := range blobbers {
-			blobber.Close(t)
-		}
-	}()
-
 	// mock init sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_,_,blobbers, close := setupMockInitStorageSDK(t, configDir, 4)
+	defer close()
 	// mock allocation
 	a := setupMockAllocation(t, syncTestDir, blobbers)
 

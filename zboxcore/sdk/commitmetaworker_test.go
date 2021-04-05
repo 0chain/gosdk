@@ -16,25 +16,21 @@ import (
 const commitMetaWorkerTestDir = configDir + "/commitmetaworker"
 
 func TestCommitMetaRequest_processCommitMetaRequest(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-	blobberMock := mocks.NewBlobberHTTPServer(t)
-	defer blobberMock.Close(t)
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
-	a := setupMockAllocation(t, commitMetaWorkerTestDir, []*mocks.Blobber{blobberMock})
+	miners, sharders, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 1)
+	defer closeFn()
+	// setup mock allocation
+	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+
 	var minerResponseMocks = func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
-		setupMinerMockResponses(t, []string{miner}, commitMetaWorkerTestDir+"/processCommitMetaRequest", testCaseName)
+		setupMinerMockResponses(t, miners, commitMetaWorkerTestDir+"/processCommitMetaRequest", testCaseName)
 		return nil
 	}
 	var sharderResponseMocks = func(t *testing.T, testCaseName string) {
-		setupSharderMockResponses(t, []string{sharder}, commitMetaWorkerTestDir+"/processCommitMetaRequest", testCaseName)
+		setupSharderMockResponses(t, sharders, commitMetaWorkerTestDir+"/processCommitMetaRequest", testCaseName)
 	}
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
-		setupBlobberMockResponses(t, []*mocks.Blobber{blobberMock}, commitMetaWorkerTestDir+"/processCommitMetaRequest", testcaseName)
+		setupBlobberMockResponses(t, blobberMocks, commitMetaWorkerTestDir+"/processCommitMetaRequest", testcaseName)
 		return nil
 	}
 	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, client.GetClientID(), "")
@@ -211,7 +207,7 @@ func TestCommitMetaRequest_processCommitMetaRequest(t *testing.T) {
 
 func TestCommitMetaRequest_updatCommitMetaTxnToBlobber(t *testing.T) {
 	blobberMock := mocks.NewBlobberHTTPServer(t)
-	defer blobberMock.Close(t)
+	defer blobberMock.Close()
 	var blobber = &blockchain.StorageNode{
 		ID:      blobberMock.ID,
 		Baseurl: blobberMock.URL,

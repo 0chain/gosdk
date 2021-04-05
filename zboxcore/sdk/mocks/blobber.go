@@ -18,7 +18,7 @@ type Blobber struct {
 	mapHandler map[string]http.Handler
 }
 
-func (b *Blobber) Close(t *testing.T) {
+func (b *Blobber) Close() {
 	if b.server != nil {
 		b.server.Close()
 	}
@@ -38,7 +38,7 @@ func (b *Blobber) SetHandler(t *testing.T, path string, handler http.HandlerFunc
 }
 
 func (b *Blobber) ResetHandler(t *testing.T) {
-	b.Close(t)
+	b.Close()
 	b.mapHandler = map[string]http.Handler{
 		"/": http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(500) }),
 	}

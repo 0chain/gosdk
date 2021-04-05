@@ -31,7 +31,7 @@ func TestSuccessCommitResult(t *testing.T) {
 
 func TestInitCommitWorker(t *testing.T) {
 	blobberMock := mocks.NewBlobberHTTPServer(t)
-	defer blobberMock.Close(t)
+	defer blobberMock.Close()
 	InitCommitWorker([]*blockchain.StorageNode{{ID: blobberMock.ID, Baseurl: blobberMock.URL}})
 	defer close(commitChan[blobberMock.ID])
 	assert.NotNil(t, commitChan[blobberMock.ID])
@@ -58,18 +58,12 @@ func Test_startCommitWorker(t *testing.T) {
 }
 
 func TestCommitRequest_processCommit(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 1)
+	defer closeFn()
 
-	blobber := mocks.NewBlobberHTTPServer(t)
-	defer blobber.Close(t)
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
-		setupBlobberMockResponses(t, []*mocks.Blobber{blobber}, commitWorkerTestDir+"/processCommit", testcaseName)
+		setupBlobberMockResponses(t, blobberMocks, commitWorkerTestDir+"/processCommit", testcaseName)
 		return nil
 	}
 	var wg = &sync.WaitGroup{}
@@ -97,7 +91,7 @@ func TestCommitRequest_processCommit(t *testing.T) {
 					return []allocationchange.AllocationChange{acmock}
 				}(),
 				blobber: &blockchain.StorageNode{
-					ID:      blobber.ID,
+					ID:      blobberMocks[0].ID,
 					Baseurl: string([]byte{0x7f, 0, 0}),
 				},
 				allocationID: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
@@ -117,8 +111,8 @@ func TestCommitRequest_processCommit(t *testing.T) {
 					return []allocationchange.AllocationChange{acmock}
 				}(),
 				blobber: &blockchain.StorageNode{
-					ID:      blobber.ID,
-					Baseurl: blobber.URL,
+					ID:      blobberMocks[0].ID,
+					Baseurl: blobberMocks[0].URL,
 				},
 				allocationID: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
@@ -137,8 +131,8 @@ func TestCommitRequest_processCommit(t *testing.T) {
 					return []allocationchange.AllocationChange{acmock}
 				}(),
 				blobber: &blockchain.StorageNode{
-					ID:      blobber.ID,
-					Baseurl: blobber.URL,
+					ID:      blobberMocks[0].ID,
+					Baseurl: blobberMocks[0].URL,
 				},
 				allocationID: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
@@ -157,8 +151,8 @@ func TestCommitRequest_processCommit(t *testing.T) {
 					return []allocationchange.AllocationChange{acmock}
 				}(),
 				blobber: &blockchain.StorageNode{
-					ID:      blobber.ID,
-					Baseurl: blobber.URL,
+					ID:      blobberMocks[0].ID,
+					Baseurl: blobberMocks[0].URL,
 				},
 				allocationID: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
@@ -178,8 +172,8 @@ func TestCommitRequest_processCommit(t *testing.T) {
 					return []allocationchange.AllocationChange{acmock}
 				}(),
 				blobber: &blockchain.StorageNode{
-					ID:      blobber.ID,
-					Baseurl: blobber.URL,
+					ID:      blobberMocks[0].ID,
+					Baseurl: blobberMocks[0].URL,
 				},
 				allocationID: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
@@ -200,8 +194,8 @@ func TestCommitRequest_processCommit(t *testing.T) {
 					return []allocationchange.AllocationChange{acmock}
 				}(),
 				blobber: &blockchain.StorageNode{
-					ID:      blobber.ID,
-					Baseurl: blobber.URL,
+					ID:      blobberMocks[0].ID,
+					Baseurl: blobberMocks[0].URL,
 				},
 				allocationID: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
@@ -222,8 +216,8 @@ func TestCommitRequest_processCommit(t *testing.T) {
 					return []allocationchange.AllocationChange{acmock}
 				}(),
 				blobber: &blockchain.StorageNode{
-					ID:      blobber.ID,
-					Baseurl: blobber.URL,
+					ID:      blobberMocks[0].ID,
+					Baseurl: blobberMocks[0].URL,
 				},
 				allocationID: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
@@ -258,18 +252,12 @@ func TestCommitRequest_processCommit(t *testing.T) {
 }
 
 func TestCommitRequest_commitBlobber(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 1)
+	defer closeFn()
 
-	blobber := mocks.NewBlobberHTTPServer(t)
-	defer blobber.Close(t)
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
-		setupBlobberMockResponses(t, []*mocks.Blobber{blobber}, commitWorkerTestDir+"/commitBlobber", testcaseName)
+		setupBlobberMockResponses(t, blobberMocks, commitWorkerTestDir+"/commitBlobber", testcaseName)
 		return nil
 	}
 
@@ -294,7 +282,7 @@ func TestCommitRequest_commitBlobber(t *testing.T) {
 		{
 			"Test_Error_Sign_Write_Marker_Failed",
 			fields{
-				blobber:      &blockchain.StorageNode{ID: blobber.ID, Baseurl: blobber.URL},
+				blobber:      &blockchain.StorageNode{ID: blobberMocks[0].ID, Baseurl: blobberMocks[0].URL},
 				allocationID: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				connectionID: zboxutil.NewConnectionId(),
@@ -314,7 +302,7 @@ func TestCommitRequest_commitBlobber(t *testing.T) {
 		{
 			"Test_Error_New_Commit_HTTP_Request_Failed",
 			fields{
-				blobber:      &blockchain.StorageNode{ID: blobber.ID, Baseurl: string([]byte{0x7f, 0, 0})},
+				blobber:      &blockchain.StorageNode{ID: blobberMocks[0].ID, Baseurl: string([]byte{0x7f, 0, 0})},
 				allocationID: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				connectionID: zboxutil.NewConnectionId(),
@@ -334,7 +322,7 @@ func TestCommitRequest_commitBlobber(t *testing.T) {
 		{
 			"Test_Not_Existed_Latest_Write_Marker_Success",
 			fields{
-				blobber:      &blockchain.StorageNode{ID: blobber.ID, Baseurl: blobber.URL},
+				blobber:      &blockchain.StorageNode{ID: blobberMocks[0].ID, Baseurl: blobberMocks[0].URL},
 				allocationID: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				connectionID: zboxutil.NewConnectionId(),
@@ -377,18 +365,12 @@ func TestCommitRequest_commitBlobber(t *testing.T) {
 }
 
 func TestCommitRequest_calculateHashRequest(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 1)
+	defer closeFn()
 
-	blobber := mocks.NewBlobberHTTPServer(t)
-	defer blobber.Close(t)
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
-		setupBlobberMockResponses(t, []*mocks.Blobber{blobber}, commitWorkerTestDir+"/calculateHashRequest", testcaseName)
+		setupBlobberMockResponses(t, blobberMocks, commitWorkerTestDir+"/calculateHashRequest", testcaseName)
 		return nil
 	}
 	type fields struct {
@@ -416,7 +398,7 @@ func TestCommitRequest_calculateHashRequest(t *testing.T) {
 		{
 			"Test_Error_New_Calculate_Hash_HTTP_Request_Failed",
 			fields{
-				blobber:      &blockchain.StorageNode{ID: blobber.ID, Baseurl: string([]byte{0x7f,0,0})},
+				blobber:      &blockchain.StorageNode{ID: blobberMocks[0].ID, Baseurl: string([]byte{0x7f,0,0})},
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 			},
 			args{paths: []string{"/1.txt"}},
@@ -426,7 +408,7 @@ func TestCommitRequest_calculateHashRequest(t *testing.T) {
 		{
 			"Test_Error_Calculate_Hash_Response_Failed",
 			fields{
-				blobber:      &blockchain.StorageNode{ID: blobber.ID, Baseurl: blobber.URL},
+				blobber:      &blockchain.StorageNode{ID: blobberMocks[0].ID, Baseurl: blobberMocks[0].URL},
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 			},
 			args{paths: []string{"/1.txt"}},
@@ -436,7 +418,7 @@ func TestCommitRequest_calculateHashRequest(t *testing.T) {
 		{
 			"Test_Success",
 			fields{
-				blobber:      &blockchain.StorageNode{ID: blobber.ID, Baseurl: blobber.URL},
+				blobber:      &blockchain.StorageNode{ID: blobberMocks[0].ID, Baseurl: blobberMocks[0].URL},
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 			},
 			args{paths: []string{"/1.txt"}},

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/sdk/mocks"
 	"github.com/stretchr/testify/assert"
 	"sync"
 	"testing"
@@ -13,18 +12,12 @@ import (
 const commonTestDir = configDir + "/common"
 
 func Test_getObjectTreeFromBlobber(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 1)
+	defer closeFn()
 
-	blobber := mocks.NewBlobberHTTPServer(t)
-	defer blobber.Close(t)
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
-		setupBlobberMockResponses(t, []*mocks.Blobber{blobber}, commonTestDir+"/getObjectTreeFromBlobber", testcaseName)
+		setupBlobberMockResponses(t, blobberMocks, commonTestDir+"/getObjectTreeFromBlobber", testcaseName)
 		return nil
 	}
 	type args struct {
@@ -46,7 +39,7 @@ func Test_getObjectTreeFromBlobber(t *testing.T) {
 				allocationID:   "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				allocationTx:   "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				remotefilepath: "/1.txt",
-				blobber:        &blockchain.StorageNode{ID: blobber.ID, Baseurl: string([]byte{0x7f, 0, 0})},
+				blobber:        &blockchain.StorageNode{ID: blobberMocks[0].ID, Baseurl: string([]byte{0x7f, 0, 0})},
 			},
 			nil,
 			false,
@@ -58,7 +51,7 @@ func Test_getObjectTreeFromBlobber(t *testing.T) {
 				allocationID:   "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				allocationTx:   "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				remotefilepath: "/1.txt",
-				blobber:        &blockchain.StorageNode{ID: blobber.ID, Baseurl: blobber.URL},
+				blobber:        &blockchain.StorageNode{ID: blobberMocks[0].ID, Baseurl: blobberMocks[0].URL},
 			},
 			nil,
 			false,
@@ -70,7 +63,7 @@ func Test_getObjectTreeFromBlobber(t *testing.T) {
 				allocationID:   "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				allocationTx:   "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				remotefilepath: "/1.txt",
-				blobber:        &blockchain.StorageNode{ID: blobber.ID, Baseurl: blobber.URL},
+				blobber:        &blockchain.StorageNode{ID: blobberMocks[0].ID, Baseurl: blobberMocks[0].URL},
 			},
 			blobbersResponseMock,
 			false,
@@ -82,7 +75,7 @@ func Test_getObjectTreeFromBlobber(t *testing.T) {
 				allocationID:   "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				allocationTx:   "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				remotefilepath: "/1.txt",
-				blobber:        &blockchain.StorageNode{ID: blobber.ID, Baseurl: blobber.URL},
+				blobber:        &blockchain.StorageNode{ID: blobberMocks[0].ID, Baseurl: blobberMocks[0].URL},
 			},
 			blobbersResponseMock,
 			true,
@@ -113,18 +106,12 @@ func Test_getObjectTreeFromBlobber(t *testing.T) {
 }
 
 func Test_getAllocationDataFromBlobber(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 1)
+	defer closeFn()
 
-	blobber := mocks.NewBlobberHTTPServer(t)
-	defer blobber.Close(t)
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
-		setupBlobberMockResponses(t, []*mocks.Blobber{blobber}, commonTestDir+"/getAllocationDataFromBlobber", testcaseName)
+		setupBlobberMockResponses(t, blobberMocks, commonTestDir+"/getAllocationDataFromBlobber", testcaseName)
 		return nil
 	}
 	type args struct {
@@ -142,7 +129,7 @@ func Test_getAllocationDataFromBlobber(t *testing.T) {
 		{
 			"Test_Error_Create_Get_Allocation_HTTP_Request_Failed",
 			args{
-				blobber:      &blockchain.StorageNode{ID: blobber.ID, Baseurl: string([]byte{0x7f, 0, 0})},
+				blobber:      &blockchain.StorageNode{ID: blobberMocks[0].ID, Baseurl: string([]byte{0x7f, 0, 0})},
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				respCh:       func() chan *BlobberAllocationStats { var ch = make(chan *BlobberAllocationStats); return ch }(),
 				wg:           func() *sync.WaitGroup {var wg = &sync.WaitGroup{}; wg.Add(1); return wg}(),
@@ -153,7 +140,7 @@ func Test_getAllocationDataFromBlobber(t *testing.T) {
 		{
 			"Test_Error_Get_Allocation_HTTP_Response_Failed",
 			args{
-				blobber:      &blockchain.StorageNode{ID: blobber.ID, Baseurl: blobber.URL},
+				blobber:      &blockchain.StorageNode{ID: blobberMocks[0].ID, Baseurl: blobberMocks[0].URL},
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				respCh:       func() chan *BlobberAllocationStats { var ch = make(chan *BlobberAllocationStats); return ch }(),
 				wg:           func() *sync.WaitGroup {var wg = &sync.WaitGroup{}; wg.Add(1); return wg}(),
@@ -164,7 +151,7 @@ func Test_getAllocationDataFromBlobber(t *testing.T) {
 		{
 			"Test_Error_JSON_Unmarshal_Get_Allocation_HTTP_Response_Failed",
 			args{
-				blobber:      &blockchain.StorageNode{ID: blobber.ID, Baseurl: blobber.URL},
+				blobber:      &blockchain.StorageNode{ID: blobberMocks[0].ID, Baseurl: blobberMocks[0].URL},
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				respCh:       func() chan *BlobberAllocationStats { var ch = make(chan *BlobberAllocationStats); return ch }(),
 				wg:           func() *sync.WaitGroup {var wg = &sync.WaitGroup{}; wg.Add(1); return wg}(),
@@ -175,7 +162,7 @@ func Test_getAllocationDataFromBlobber(t *testing.T) {
 		{
 			"Test_Success",
 			args{
-				blobber:      &blockchain.StorageNode{ID: "4a0ffbd42c64f44ec1cca858c7e5b5fd408911ed03df3b7009049cdb76e03ac2", Baseurl: blobber.URL},
+				blobber:      &blockchain.StorageNode{ID: "4a0ffbd42c64f44ec1cca858c7e5b5fd408911ed03df3b7009049cdb76e03ac2", Baseurl: blobberMocks[0].URL},
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				respCh:       func() chan *BlobberAllocationStats { var ch = make(chan *BlobberAllocationStats); return ch }(),
 				wg:           func() *sync.WaitGroup {var wg = &sync.WaitGroup{}; wg.Add(1); return wg}(),
@@ -184,7 +171,7 @@ func Test_getAllocationDataFromBlobber(t *testing.T) {
 			func(t *testing.T, testCaseName string) *BlobberAllocationStats {
 				var b *BlobberAllocationStats
 				parseFileContent(t, fmt.Sprintf("%v/%v/expected_result__%v.json", commonTestDir, "getAllocationDataFromBlobber", testCaseName), &b)
-				b.BlobberURL = blobber.URL
+				b.BlobberURL = blobberMocks[0].URL
 				b.BlobberID = "4a0ffbd42c64f44ec1cca858c7e5b5fd408911ed03df3b7009049cdb76e03ac2"
 				return b
 			},

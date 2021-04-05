@@ -172,7 +172,7 @@ func Test_setBlobberReadCtr(t *testing.T) {
 
 func TestInitBlockDownloader(t *testing.T) {
 	var bl = mocks.NewBlobberHTTPServer(t)
-	defer bl.Close(t)
+	defer bl.Close()
 	var dbc = downloadBlockChan
 	downloadBlockChan = nil
 	defer func() { downloadBlockChan = dbc }()
@@ -249,16 +249,11 @@ func TestBlockDownloadRequest_splitData(t *testing.T) {
 }
 
 func TestBlockDownloadRequest_downloadBlobberBlock(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-	blobberMock := mocks.NewBlobberHTTPServer(t)
-	defer blobberMock.Close(t)
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
-	a := setupMockAllocation(t, allocationTestDir, []*mocks.Blobber{blobberMock})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 1)
+	defer closeFn()
+	// setup mock allocation
+	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 	req := &BlockDownloadRequest{
 		blobber:            a.Blobbers[0],
 		allocationID:       a.ID,
@@ -303,7 +298,7 @@ func TestBlockDownloadRequest_downloadBlobberBlock(t *testing.T) {
 		assert.NotNil(t, rs.err)
 	}
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
-		setupBlobberMockResponses(t, []*mocks.Blobber{blobberMock}, blockDownloadWorkerTestDir+"/downloadBlobberBlock", testcaseName)
+		setupBlobberMockResponses(t, blobberMocks, blockDownloadWorkerTestDir+"/downloadBlobberBlock", testcaseName)
 		return nil
 	}
 

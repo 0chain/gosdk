@@ -117,37 +117,13 @@ func TestAllocation_GetStats(t *testing.T) {
 }
 
 func TestAllocation_GetBlobberStats(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobberMock := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobberMock)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
-
-	blobbers := []*blockchain.StorageNode{}
-	for _, blobberMock := range blobberMocks {
-		blobbers = append(blobbers, &blockchain.StorageNode{
-			ID:      blobberMock.ID,
-			Baseurl: blobberMock.URL,
-		})
-	}
-
-	// mock init sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
-	// mock allocation
+	// setup mock sdk
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
+	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+
+	blobbers := a.Blobbers
 
 	tests := []struct {
 		name     string
@@ -230,26 +206,9 @@ func TestAllocation_isInitialized(t *testing.T) {
 }
 
 func TestAllocation_UpdateFile(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -260,26 +219,9 @@ func TestAllocation_UpdateFile(t *testing.T) {
 }
 
 func TestAllocation_UploadFile(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -290,26 +232,9 @@ func TestAllocation_UploadFile(t *testing.T) {
 }
 
 func TestAllocation_RepairFile(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -357,26 +282,9 @@ func TestAllocation_RepairFile(t *testing.T) {
 }
 
 func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -416,26 +324,9 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 }
 
 func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -448,26 +339,9 @@ func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 }
 
 func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -478,26 +352,9 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 }
 
 func TestAllocation_EncryptAndUploadFile(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -508,29 +365,11 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 }
 
 func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
-
 	var localPath = allocationTestDir + "/alloc/1.txt"
 	var thumbnailPath = allocationTestDir + "/thumbnail_alloc"
 	assertion := assert.New(t)
@@ -539,26 +378,9 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 }
 
 func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -570,26 +392,10 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 }
 
 func TestAllocation_uploadOrUpdateFile(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
+	var blockNums = 4
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, blockNums)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -740,26 +546,9 @@ func TestAllocation_uploadOrUpdateFile(t *testing.T) {
 }
 
 func TestAllocation_RepairRequired(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -840,26 +629,9 @@ func TestAllocation_RepairRequired(t *testing.T) {
 }
 
 func TestAllocation_DownloadFile(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -870,26 +642,9 @@ func TestAllocation_DownloadFile(t *testing.T) {
 }
 
 func TestAllocation_DownloadFileByBlock(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -900,26 +655,9 @@ func TestAllocation_DownloadFileByBlock(t *testing.T) {
 }
 
 func TestAllocation_DownloadThumbnail(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -931,26 +669,9 @@ func TestAllocation_DownloadThumbnail(t *testing.T) {
 }
 
 func TestAllocation_downloadFile(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -968,7 +689,6 @@ func TestAllocation_downloadFile(t *testing.T) {
 		numBlocks             int
 		statusCallback        StatusCallback
 	}
-
 	tests := []struct {
 		name           string
 		args           args
@@ -1078,28 +798,12 @@ func TestAllocation_downloadFile(t *testing.T) {
 }
 
 func TestAllocation_DeleteFile(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+
 	willReturnCommitResult(&CommitResult{Success: true})
 	setupBlobberMockResponses(t, blobberMocks, allocationTestDir+"/DeleteFile", "TestAllocation_DeleteFile")
 	assertion := assert.New(t)
@@ -1108,26 +812,9 @@ func TestAllocation_DeleteFile(t *testing.T) {
 }
 
 func TestAllocation_deleteFile(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -1202,25 +889,12 @@ func TestAllocation_deleteFile(t *testing.T) {
 }
 
 func TestAllocation_UpdateObjectAttributes(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
+	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+
 	type args struct {
 		path  string
 		attrs fileref.Attributes
@@ -1330,26 +1004,9 @@ func TestAllocation_UpdateObjectAttributes(t *testing.T) {
 // Let's say the CopyObject Method and DeleteFile method are all tested and will returns all expected result, so that we
 // just need to test the statement coverage rate in this case.
 func TestAllocation_MoveObject(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -1420,26 +1077,9 @@ func TestAllocation_MoveObject(t *testing.T) {
 }
 
 func TestAllocation_CopyObject(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -1525,26 +1165,9 @@ func TestAllocation_CopyObject(t *testing.T) {
 }
 
 func TestAllocation_RenameObject(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -1630,26 +1253,9 @@ func TestAllocation_RenameObject(t *testing.T) {
 }
 
 func TestAllocation_AddCollaborator(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -1718,26 +1324,9 @@ func TestAllocation_AddCollaborator(t *testing.T) {
 }
 
 func TestAllocation_RemoveCollaborator(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -1806,26 +1395,10 @@ func TestAllocation_RemoveCollaborator(t *testing.T) {
 }
 
 func TestAllocation_GetFileStats(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
 	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, blobberNums)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -1914,28 +1487,12 @@ func TestAllocation_GetFileStats(t *testing.T) {
 }
 
 func TestAllocation_GetFileMeta(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+
 	type args struct {
 		path string
 	}
@@ -1999,26 +1556,9 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 }
 
 func TestAllocation_GetAuthTicketForShare(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -2029,26 +1569,9 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 }
 
 func TestAllocation_GetAuthTicket(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -2152,23 +1675,12 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 }
 
 func TestAllocation_CancelUpload(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+
 	var localPath = allocationTestDir + "/alloc/1.txt"
 	type args struct {
 		localpath string
@@ -2217,23 +1729,12 @@ func TestAllocation_CancelUpload(t *testing.T) {
 }
 
 func TestAllocation_CancelDownload(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+
 	var remotePath = "/1.txt"
 	type args struct {
 		remotepath string
@@ -2282,35 +1783,21 @@ func TestAllocation_CancelDownload(t *testing.T) {
 }
 
 func TestAllocation_CommitFolderChange(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	miners, sharders, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 0)
+	defer closeFn()
+	// setup mock allocation
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+
 	var minerResponseMocks = func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
-		setupMinerMockResponses(t, []string{miner}, allocationTestDir+"/CommitFolderChange", testCaseName)
+		setupMinerMockResponses(t, miners, allocationTestDir+"/CommitFolderChange", testCaseName)
 		return nil
 	}
 	var sharderResponseMocks = func(t *testing.T, testCaseName string) {
-		setupSharderMockResponses(t, []string{sharder}, allocationTestDir+"/CommitFolderChange", testCaseName)
+		setupSharderMockResponses(t, sharders, allocationTestDir+"/CommitFolderChange", testCaseName)
 	}
+
 	type args struct {
 		operation, preValue, currValue string
 	}
@@ -2387,29 +1874,12 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 }
 
 func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
-
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+
 	var lookupHash = fileref.GetReferenceLookup(a.ID, "/1.txt")
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
 		setupBlobberMockResponses(t, blobberMocks, allocationTestDir+"/ListDirFromAuthTicket", testcaseName)
@@ -2506,26 +1976,9 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 }
 
 func TestAllocation_downloadFromAuthTicket(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -2661,27 +2114,9 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 }
 
 func TestAllocation_listDir(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
-
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 	var path = "/1.txt"
@@ -2769,26 +2204,9 @@ func TestAllocation_listDir(t *testing.T) {
 }
 
 func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -2889,26 +2307,9 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 }
 
 func TestAllocation_DownloadThumbnailFromAuthTicket(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 	setupBlobberMockResponses(t, blobberMocks, allocationTestDir+"/DownloadThumbnailFromAuthTicket", "TestAllocation_DownloadThumbnailFromAuthTicket")
@@ -2923,26 +2324,9 @@ func TestAllocation_DownloadThumbnailFromAuthTicket(t *testing.T) {
 }
 
 func TestAllocation_DownloadFromAuthTicket(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 	setupBlobberMockResponses(t, blobberMocks, allocationTestDir+"/DownloadFromAuthTicket", "TestAllocation_DownloadFromAuthTicket")
@@ -2957,26 +2341,9 @@ func TestAllocation_DownloadFromAuthTicket(t *testing.T) {
 }
 
 func TestAllocation_DownloadFromAuthTicketByBlocks(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 	setupBlobberMockResponses(t, blobberMocks, allocationTestDir+"/DownloadFromAuthTicketByBlocks", "TestAllocation_DownloadFromAuthTicketByBlocks")
@@ -2993,26 +2360,9 @@ func TestAllocation_DownloadFromAuthTicketByBlocks(t *testing.T) {
 // TestAllocation_CommitMetaTransaction	- calling 3 dependence method: GetFileMeta, GetFileMetaFromAuthTicket and processCommitMetaRequest
 // Let's says both that method are all tested itself. So we can ignore the test on these method, just need to make sure the statement are able to covered
 func TestAllocation_CommitMetaTransaction(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -3119,26 +2469,9 @@ func TestAllocation_CommitMetaTransaction(t *testing.T) {
 }
 
 func TestAllocation_StartRepair(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
-	defer func() {
-		for _, blobberMock := range blobberMocks {
-			blobberMock.Close(t)
-		}
-	}()
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
@@ -3215,21 +2548,9 @@ func TestAllocation_StartRepair(t *testing.T) {
 }
 
 func TestAllocation_CancelRepair(t *testing.T) {
-	// setup mock miner, sharder and blobber http server
-	miner, closeMinerServer := mocks.NewMinerHTTPServer(t)
-	defer closeMinerServer()
-	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
-	defer closeSharderServer()
-
-	var blobberMocks = []*mocks.Blobber{}
-	var blobberNums = 4
-	for i := 0; i < blobberNums; i++ {
-		blobber := mocks.NewBlobberHTTPServer(t)
-		blobberMocks = append(blobberMocks, blobber)
-	}
-
 	// setup mock sdk
-	setupMockInitStorageSDK(t, configDir, []string{miner}, []string{sharder}, []string{})
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 	tests := []struct {
