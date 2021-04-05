@@ -103,6 +103,10 @@ type UploadRequest struct {
 	Consensus
 }
 
+func (req *UploadRequest) setUploadMask(numBlobbers int) {
+	req.uploadMask = uint32((1 << uint32(numBlobbers)) - 1)
+}
+
 func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.StorageNode, file *fileref.FileRef, uploadCh chan []byte, uploadThumbCh chan []byte, wg *sync.WaitGroup) {
 	bodyReader, bodyWriter := io.Pipe()
 	formWriter := multipart.NewWriter(bodyWriter)
@@ -610,4 +614,14 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 	}
 
 	return
+}
+
+func (req *UploadRequest) IsFullConsensusSupported() bool {
+	var maxBlobbers = req.GetMaxBlobbersSupported()
+
+	return maxBlobbers >= uint32(req.fullconsensus)
+}
+
+func (req *UploadRequest) GetMaxBlobbersSupported() uint32 {
+	return uint32(bits.OnesCount32(req.uploadMask))
 }
