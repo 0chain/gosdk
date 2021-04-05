@@ -31,6 +31,10 @@ var (
 	notInitialized = common.NewError("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 )
 
+var GetFileInfo = func(localpath string) (os.FileInfo, error) {
+	return os.Stat(localpath)
+}
+
 type BlobberAllocationStats struct {
 	BlobberID        string
 	BlobberURL       string
@@ -314,7 +318,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 		return notInitialized
 	}
 
-	fileInfo, err := os.Stat(localpath)
+	fileInfo, err := GetFileInfo(localpath)
 	if err != nil {
 		return fmt.Errorf("Local file error: %s", err.Error())
 	}
@@ -351,14 +355,13 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 	uploadReq.filemeta.Attributes = attrs
 	uploadReq.remaining = uploadReq.filemeta.Size
 	uploadReq.thumbRemaining = uploadReq.filemeta.ThumbnailSize
-	uploadReq.isRepair = false
 	uploadReq.isUpdate = isUpdate
 	uploadReq.isRepair = isRepair
 	uploadReq.connectionID = zboxutil.NewConnectionId()
 	uploadReq.statusCallback = status
 	uploadReq.datashards = a.DataShards
 	uploadReq.parityshards = a.ParityShards
-	uploadReq.uploadMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	uploadReq.setUploadMask(zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
 	uploadReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	uploadReq.fullconsensus = float32(a.DataShards + a.ParityShards)
 	uploadReq.isEncrypted = encryption
@@ -389,6 +392,10 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 		uploadReq.filemeta.Hash = fileRef.ActualFileHash
 		uploadReq.uploadMask = found.Not().And(uploadReq.uploadMask)
 		uploadReq.fullconsensus = float32(uploadReq.uploadMask.Add64(1).TrailingZeros())
+	}
+
+	if !uploadReq.IsFullConsensusSupported() {
+		return fmt.Errorf("allocation requires [%v] blobbers, which is greater than the maximum permitted number of [%v]. reduce number of data or parity shards and try again", uploadReq.fullconsensus, uploadReq.GetMaxBlobbersSupported())
 	}
 
 	go func() {
