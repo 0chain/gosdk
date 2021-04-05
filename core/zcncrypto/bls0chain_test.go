@@ -6,14 +6,33 @@ import (
 	"testing"
 
 	"github.com/0chain/gosdk/bls"
+	"github.com/0chain/gosdk/miracl"
 	"github.com/0chain/gosdk/core/encryption"
 )
 
-var verifyPublickey = `04057d813061098c41c8fce1da3056d9df895a751741578c9f346397aad8fef8c60f215df8a8a42dcb640df445b8d6bad0654e4f816602b5d425e7413b9f2667981f73beb85348a176e228d7276d1a9c9c0025aca5c673169abc1b3e0d0642e8c20700be5a33bda67198fbc59e50c90c0df076c797adaa9ff4c856e842fd7308e6`
+var verifyPublickey = `041b21191e8789cd70398507d0f4e9aa8775f83580197ee91942daf4fb348a501e07cc86745a7ebd1629cae7d202aa71285caa6efb64866fe76233cd88f7b4c4c11f9a443c88a27a10679bc73aa8940a3466942cfd20a9f7f3dc4b6f331b8fb0ba006b0c50d6fb6025252d6152ae9a32ff5991f6ebb62d9365680604aa64b5c784`
 var signPrivatekey = `5e1fc9c03d53a8b9a63030acc2864f0c33dffddb3c276bf2b3c8d739269cc018`
 
 var data = `TEST`
 var blsWallet *Wallet
+
+// This is a basic unit test to print out the generator of MIRACL. We used this
+// to compare against generator of herumi/bls, to make library compatible.
+func TestGenerator(t *testing.T) {
+	base := BN254.ECP2_generator()
+	fmt.Println("base?", base.ToString())
+}
+
+// This is a basic unit test to check that MIRACL generates correct public key.
+func TestHerumiPKcompatibility(t *testing.T) {
+	var sk bls.SecretKey
+	sk.DeserializeHexStr("057f6332231ed63c0eba947da0054b74367cc19a7c213b651beb7b9f659e703a")
+	pk := sk.GetPublicKey()
+	fmt.Println("sk", sk.SerializeToHexStr())
+
+	// Expect 'pk' to be: ([1bdfed3a85690775ee35c61678957aaba7b1a1899438829f1dc94248d87ed368,18a02c6bd223ae0dfda1d2f9a3c81726ab436ce5e9d17c531ff0a385a13a0b49],[039ac7dfc3364e851ebd2631ea6f1685609fc66d50223cc696cb59ff2fee47ac,17f6dfafec19bfa87bf791a4d694f43fec227ae6f5a867490e30328cac05eaff])
+	fmt.Println("pk", pk.ToString())
+}
 
 func TestSetHexString(t *testing.T) {
 	testSetHexStringCase("11")
@@ -183,7 +202,10 @@ func TestRecoveryKeys(t *testing.T) {
 func TestCombinedSignAndVerify(t *testing.T) {
 	sk0 := `c36f2f92b673cf057a32e8bd0ca88888e7ace40337b737e9c7459fdc4c521918`
 	sk1 := `704b6f489583bf1118432fcfb38e63fc2d4b61e524fb196cbd95413f8eb91c12`
-	primaryKey := `0406761b633611736b8724f08859c9ccd1f600c7c7993b80c241253759a40ae8c61d5cd3a2bc019b6bf2af4be52532710890db2beb6679fb3670d2523928621e180db2d6bd8ecce6d9211a1140580ddbd4ccc1f4cc3938d26d17f5d123b475fc5419bc270ab8f3c32f34b72cf91f839d9f2739d3a24fb09c2c578bd263a582563a`
+
+	// Public key comes from sk0.add(sk1), then sk0.GetPublicKey().SerializeToHexStr()
+	pk := `04039b5e64e3a88f2282c404978ef4d5f6a2fc0ee343f4bb673587b3b77181a96619ad785b8d6a26787116602a916c701b931ec467127bbf44d05d090a163af3e30ff306356487692a2b2652f631b9ee9742df261d4a25525fe9b6da9e60d25cf21ffc3ad8af10210610cef274d8f0a1af80664c39c43bdf30a1819a6258c878fe`
+
 	hash := Sha3Sum256(data)
 
 	// Create signature for 1st.
@@ -206,7 +228,7 @@ func TestCombinedSignAndVerify(t *testing.T) {
 	sig1, err := scheme1.Add(sig0, hash)
 
 	verifyScheme := NewSignatureScheme("bls0chain")
-	err = verifyScheme.SetPublicKey(primaryKey)
+	err = verifyScheme.SetPublicKey(pk)
 	if err != nil {
 		t.Fatalf("Set public key failed")
 	}

@@ -95,9 +95,10 @@ func (b0 *BLS0ChainScheme) SetPrivateKey(privateKey string) error {
 	}
 	b0.PrivateKey = privateKey
 
-	var primarySk bls.SecretKey
-	primarySk.DeserializeHexStr(b0.PrivateKey)
-	b0.PrivateKey = primarySk.SerializeToHexStr()
+	var sk bls.SecretKey
+	sk.DeserializeHexStr(b0.PrivateKey)
+
+	b0.PrivateKey = sk.SerializeToHexStr()
 	//ToDo: b0.publicKey should be set here?
 	return nil
 }
