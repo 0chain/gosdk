@@ -35,19 +35,13 @@ func (x Uint128) Add64(y uint64) Uint128 {
 func (x Uint128) Sub(y Uint128) Uint128 {
 	low, borrow := bits.Sub64(x.low, y.low, 0)
 	high, borrow := bits.Sub64(x.high, y.high, borrow)
-	if borrow != 0 {
-		panic("underflow")
-	}
 	return Uint128{high, low}
 }
 
 // Sub64 returns x-y.
 func (x Uint128) Sub64(y uint64) Uint128 {
 	low, borrow := bits.Sub64(x.low, y, 0)
-	high, borrow := bits.Sub64(x.high, 0, borrow)
-	if borrow != 0 {
-		panic("underflow")
-	}
+	high, _ := bits.Sub64(x.high, 0, borrow)
 	return Uint128{high, low}
 }
 

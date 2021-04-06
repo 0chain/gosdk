@@ -103,7 +103,7 @@ type UploadRequest struct {
 }
 
 func (req *UploadRequest) setUploadMask(numBlobbers int) {
-	req.uploadMask = uint32((1 << uint32(numBlobbers)) - 1)
+	req.uploadMask = zboxutil.NewUint128(1).Lsh(uint64(numBlobbers)).Sub64(1)
 }
 
 func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.StorageNode, file *fileref.FileRef, uploadCh chan []byte, uploadThumbCh chan []byte, wg *sync.WaitGroup) {
@@ -621,9 +621,9 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 func (req *UploadRequest) IsFullConsensusSupported() bool {
 	var maxBlobbers = req.GetMaxBlobbersSupported()
 
-	return maxBlobbers >= uint32(req.fullconsensus)
+	return maxBlobbers >= int(req.fullconsensus)
 }
 
-func (req *UploadRequest) GetMaxBlobbersSupported() uint32 {
-	return uint32(bits.OnesCount32(req.uploadMask))
+func (req *UploadRequest) GetMaxBlobbersSupported() int {
+	return req.uploadMask.CountOnes()
 }

@@ -4,8 +4,8 @@ import (
 	"testing"
 )
 
-func TestMaxBlobbersRequiredGreaterThanImplicitLimit32(t *testing.T) {
-	var maxNumOfBlobbers = 33
+func TestMaxBlobbersRequiredGreaterThanImplicitLimit128(t *testing.T) {
+	var maxNumOfBlobbers = 129
 
 	var req = &UploadRequest{}
 	req.setUploadMask(maxNumOfBlobbers)

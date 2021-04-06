@@ -177,61 +177,46 @@ func TestUint128_Xor(t *testing.T) {
 
 func TestUint128_Sub(t *testing.T) {
 	testData := []struct {
-		num       Uint128
-		expected  Uint128
-		sub       Uint128
-		wantPanic bool
+		num      Uint128
+		expected Uint128
+		sub      Uint128
 	}{
-		{Uint128{0, 1}, Uint128{0, 0}, NewUint128(1), false},
-		{Uint128{18446744073709551615, 18446744073709551615}, Uint128{18446744073709551615, 18446744073709551614}, NewUint128(1), false},
-		{Uint128{0, 18446744073709551615}, Uint128{0, 18446744073709551614}, NewUint128(1), false},
-		{Uint128{18446744073709551615, 0}, Uint128{18446744073709551614, 18446744073709551615}, NewUint128(1), false},
-		{Uint128{18446744073709551615, 0}, Uint128{18446744073709551614, 18446744073709551591}, NewUint128(25), false},
-		{Uint128{0, 0}, Uint128{}, Uint128{0, 1}, true},
+		{Uint128{0, 1}, Uint128{0, 0}, NewUint128(1)},
+		{Uint128{18446744073709551615, 18446744073709551615}, Uint128{18446744073709551615, 18446744073709551614}, NewUint128(1)},
+		{Uint128{0, 18446744073709551615}, Uint128{0, 18446744073709551614}, NewUint128(1)},
+		{Uint128{18446744073709551615, 0}, Uint128{18446744073709551614, 18446744073709551615}, NewUint128(1)},
+		{Uint128{18446744073709551615, 0}, Uint128{18446744073709551614, 18446744073709551591}, NewUint128(25)},
+		{Uint128{0, 0}, Uint128{18446744073709551615, 18446744073709551615}, Uint128{0, 1}},
 	}
 
 	for _, test := range testData {
-		func() {
-			defer func() {
-				pan := recover()
-				assert.True(t, test.wantPanic != (pan == nil))
-			}()
 
-			res := test.num.Sub(test.sub)
-			if res != test.expected {
-				t.Errorf("expected: %v - %d = %v but got %v", test.num, test.sub, test.expected, res)
-			}
-		}()
+		res := test.num.Sub(test.sub)
+		if res != test.expected {
+			t.Errorf("expected: %v - %d = %v but got %v", test.num, test.sub, test.expected, res)
+		}
 	}
 }
 
 func TestUint128_Sub64(t *testing.T) {
 	testData := []struct {
-		num       Uint128
-		expected  Uint128
-		sub       uint64
-		wantPanic bool
+		num      Uint128
+		expected Uint128
+		sub      uint64
 	}{
-		{Uint128{0, 1}, Uint128{0, 0}, 1, false},
-		{Uint128{18446744073709551615, 18446744073709551615}, Uint128{18446744073709551615, 18446744073709551614}, 1, false},
-		{Uint128{0, 18446744073709551615}, Uint128{0, 18446744073709551614}, 1, false},
-		{Uint128{18446744073709551615, 0}, Uint128{18446744073709551614, 18446744073709551615}, 1, false},
-		{Uint128{18446744073709551615, 0}, Uint128{18446744073709551614, 18446744073709551591}, 25, false},
-		{Uint128{0, 0}, Uint128{}, 1, true},
+		{Uint128{0, 1}, Uint128{0, 0}, 1},
+		{Uint128{18446744073709551615, 18446744073709551615}, Uint128{18446744073709551615, 18446744073709551614}, 1},
+		{Uint128{0, 18446744073709551615}, Uint128{0, 18446744073709551614}, 1},
+		{Uint128{18446744073709551615, 0}, Uint128{18446744073709551614, 18446744073709551615}, 1},
+		{Uint128{18446744073709551615, 0}, Uint128{18446744073709551614, 18446744073709551591}, 25},
+		{Uint128{0, 0}, Uint128{18446744073709551615, 18446744073709551615}, 1},
 	}
 
 	for _, test := range testData {
-		func() {
-			defer func() {
-				pan := recover()
-				assert.True(t, test.wantPanic != (pan == nil))
-			}()
-
-			res := test.num.Sub64(test.sub)
-			if res != test.expected {
-				t.Errorf("expected: %v - %d = %v but got %v", test.num, test.sub, test.expected, res)
-			}
-		}()
+		res := test.num.Sub64(test.sub)
+		if res != test.expected {
+			t.Errorf("expected: %v - %d = %v but got %v", test.num, test.sub, test.expected, res)
+		}
 	}
 }
 

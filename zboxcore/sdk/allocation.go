@@ -361,7 +361,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 	uploadReq.statusCallback = status
 	uploadReq.datashards = a.DataShards
 	uploadReq.parityshards = a.ParityShards
-	uploadReq.setUploadMask(zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1))
+	uploadReq.setUploadMask(len(a.Blobbers))
 	uploadReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	uploadReq.fullconsensus = float32(a.DataShards + a.ParityShards)
 	uploadReq.isEncrypted = encryption

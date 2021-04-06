@@ -7,23 +7,23 @@ import (
 	"testing"
 )
 
-func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit32(t *testing.T) {
+func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit128(t *testing.T) {
 	setupMocks()
 
-	var maxNumOfBlobbers = 33
+	var maxNumOfBlobbers = 129
 
 	var allocation = &Allocation{}
 	var blobbers = make([]*blockchain.StorageNode, maxNumOfBlobbers)
 	allocation.initialized = true
 	sdkInitialized = true
 	allocation.Blobbers = blobbers
-	allocation.DataShards = 16
-	allocation.ParityShards = 17
+	allocation.DataShards = 64
+	allocation.ParityShards = 65
 
 	var file fileref.Attributes
 	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false, file)
 
-	var expectedErr = "allocation requires [33] blobbers, which is greater than the maximum permitted number of [32]. reduce number of data or parity shards and try again"
+	var expectedErr = "allocation requires [129] blobbers, which is greater than the maximum permitted number of [128]. reduce number of data or parity shards and try again"
 	if err == nil {
 		t.Errorf("uploadOrUpdateFile() = expected error  but was %v", nil)
 	} else if err.Error() != expectedErr {
