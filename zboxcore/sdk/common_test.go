@@ -132,7 +132,7 @@ func Test_getAllocationDataFromBlobber(t *testing.T) {
 				blobber:      &blockchain.StorageNode{ID: blobberMocks[0].ID, Baseurl: string([]byte{0x7f, 0, 0})},
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				respCh:       func() chan *BlobberAllocationStats { var ch = make(chan *BlobberAllocationStats); return ch }(),
-				wg:           func() *sync.WaitGroup {var wg = &sync.WaitGroup{}; wg.Add(1); return wg}(),
+				wg:           func() *sync.WaitGroup { var wg = &sync.WaitGroup{}; wg.Add(1); return wg }(),
 			},
 			nil,
 			nil,
@@ -143,7 +143,7 @@ func Test_getAllocationDataFromBlobber(t *testing.T) {
 				blobber:      &blockchain.StorageNode{ID: blobberMocks[0].ID, Baseurl: blobberMocks[0].URL},
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				respCh:       func() chan *BlobberAllocationStats { var ch = make(chan *BlobberAllocationStats); return ch }(),
-				wg:           func() *sync.WaitGroup {var wg = &sync.WaitGroup{}; wg.Add(1); return wg}(),
+				wg:           func() *sync.WaitGroup { var wg = &sync.WaitGroup{}; wg.Add(1); return wg }(),
 			},
 			nil,
 			nil,
@@ -154,7 +154,7 @@ func Test_getAllocationDataFromBlobber(t *testing.T) {
 				blobber:      &blockchain.StorageNode{ID: blobberMocks[0].ID, Baseurl: blobberMocks[0].URL},
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				respCh:       func() chan *BlobberAllocationStats { var ch = make(chan *BlobberAllocationStats); return ch }(),
-				wg:           func() *sync.WaitGroup {var wg = &sync.WaitGroup{}; wg.Add(1); return wg}(),
+				wg:           func() *sync.WaitGroup { var wg = &sync.WaitGroup{}; wg.Add(1); return wg }(),
 			},
 			blobbersResponseMock,
 			nil,
@@ -165,7 +165,7 @@ func Test_getAllocationDataFromBlobber(t *testing.T) {
 				blobber:      &blockchain.StorageNode{ID: "4a0ffbd42c64f44ec1cca858c7e5b5fd408911ed03df3b7009049cdb76e03ac2", Baseurl: blobberMocks[0].URL},
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 				respCh:       func() chan *BlobberAllocationStats { var ch = make(chan *BlobberAllocationStats); return ch }(),
-				wg:           func() *sync.WaitGroup {var wg = &sync.WaitGroup{}; wg.Add(1); return wg}(),
+				wg:           func() *sync.WaitGroup { var wg = &sync.WaitGroup{}; wg.Add(1); return wg }(),
 			},
 			blobbersResponseMock,
 			func(t *testing.T, testCaseName string) *BlobberAllocationStats {
@@ -190,7 +190,7 @@ func Test_getAllocationDataFromBlobber(t *testing.T) {
 			}
 			wg := &sync.WaitGroup{}
 			wg.Add(1)
-			go func(){
+			go func() {
 				defer wg.Done()
 				if tt.want != nil {
 					assertion.EqualValues(tt.want(t, tt.name), <-tt.args.respCh)

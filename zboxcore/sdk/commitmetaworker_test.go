@@ -114,8 +114,8 @@ func TestCommitMetaRequest_processCommitMetaRequest(t *testing.T) {
 					scm := &mocks.StatusCallback{}
 					scm.On(
 						"CommitMetaCompleted",
-						"{\"CrudType\":\"\",\"MetaData\":{\"Name\":\"\",\"Type\":\"\",\"Path\":\"\",\"LookupHash\":\"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697\",\"Hash\":\"\",\"MimeType\":\"\",\"Size\":0,\"EncryptedKey\":\"\",\"CommitMetaTxns\":null,\"Collaborators\":null,\"Attributes\":{}}}",
-						"{\"TxnID\":\"1309ee2ab8d21b213e959ab0e26201d734bd2752945d9897cb9d98a3c11a6a23\",\"MetaData\":{\"Name\":\"\",\"Type\":\"\",\"Path\":\"\",\"LookupHash\":\"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697\",\"Hash\":\"\",\"MimeType\":\"\",\"Size\":0,\"EncryptedKey\":\"\",\"CommitMetaTxns\":null,\"Collaborators\":null,\"Attributes\":{}}}",
+						"{\"CrudType\":\"\",\"MetaData\":{\"Name\":\"\",\"Type\":\"\",\"Path\":\"\",\"LookupHash\":\"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697\",\"Hash\":\"\",\"MimeType\":\"\",\"Size\":0,\"ActualFileSize\":0,\"ActualNumBlocks\":0,\"EncryptedKey\":\"\",\"CommitMetaTxns\":null,\"Collaborators\":null,\"Attributes\":{}}}",
+						"{\"TxnID\":\"1309ee2ab8d21b213e959ab0e26201d734bd2752945d9897cb9d98a3c11a6a23\",\"MetaData\":{\"Name\":\"\",\"Type\":\"\",\"Path\":\"\",\"LookupHash\":\"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697\",\"Hash\":\"\",\"MimeType\":\"\",\"Size\":0,\"ActualFileSize\":0,\"ActualNumBlocks\":0,\"EncryptedKey\":\"\",\"CommitMetaTxns\":null,\"Collaborators\":null,\"Attributes\":{}}}",
 						nil,
 					).Once()
 					return scm
@@ -138,8 +138,9 @@ func TestCommitMetaRequest_processCommitMetaRequest(t *testing.T) {
 				}},
 				status: func(t *testing.T) StatusCallback {
 					scm := &mocks.StatusCallback{}
-					scm.On("CommitMetaCompleted", "{\"CrudType\":\"\",\"MetaData\":{\"Name\":\"\",\"Type\":\"\",\"Path\":\"\",\"LookupHash\":\"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697\",\"Hash\":\"\",\"MimeType\":\"\",\"Size\":0,\"EncryptedKey\":\"\",\"CommitMetaTxns\":null,\"Collaborators\":null,\"Attributes\":{}}}",
-						"{\"TxnID\":\"1309ee2ab8d21b213e959ab0e26201d734bd2752945d9897cb9d98a3c11a6a23\",\"MetaData\":{\"Name\":\"\",\"Type\":\"\",\"Path\":\"\",\"LookupHash\":\"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697\",\"Hash\":\"\",\"MimeType\":\"\",\"Size\":0,\"EncryptedKey\":\"\",\"CommitMetaTxns\":null,\"Collaborators\":null,\"Attributes\":{}}}",
+					scm.On("CommitMetaCompleted",
+						"{\"CrudType\":\"\",\"MetaData\":{\"Name\":\"\",\"Type\":\"\",\"Path\":\"\",\"LookupHash\":\"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697\",\"Hash\":\"\",\"MimeType\":\"\",\"Size\":0,\"ActualFileSize\":0,\"ActualNumBlocks\":0,\"EncryptedKey\":\"\",\"CommitMetaTxns\":null,\"Collaborators\":null,\"Attributes\":{}}}",
+						"{\"TxnID\":\"1309ee2ab8d21b213e959ab0e26201d734bd2752945d9897cb9d98a3c11a6a23\",\"MetaData\":{\"Name\":\"\",\"Type\":\"\",\"Path\":\"\",\"LookupHash\":\"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697\",\"Hash\":\"\",\"MimeType\":\"\",\"Size\":0,\"ActualFileSize\":0,\"ActualNumBlocks\":0,\"EncryptedKey\":\"\",\"CommitMetaTxns\":null,\"Collaborators\":null,\"Attributes\":{}}}",
 						nil).
 						Once()
 					return scm
@@ -162,8 +163,9 @@ func TestCommitMetaRequest_processCommitMetaRequest(t *testing.T) {
 				}},
 				status: func(t *testing.T) StatusCallback {
 					scm := &mocks.StatusCallback{}
-					scm.On("CommitMetaCompleted", "{\"CrudType\":\"\",\"MetaData\":{\"Name\":\"\",\"Type\":\"\",\"Path\":\"\",\"LookupHash\":\"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697\",\"Hash\":\"\",\"MimeType\":\"\",\"Size\":0,\"EncryptedKey\":\"\",\"CommitMetaTxns\":null,\"Collaborators\":null,\"Attributes\":{}}}",
-						"{\"TxnID\":\"1309ee2ab8d21b213e959ab0e26201d734bd2752945d9897cb9d98a3c11a6a23\",\"MetaData\":{\"Name\":\"\",\"Type\":\"\",\"Path\":\"\",\"LookupHash\":\"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697\",\"Hash\":\"\",\"MimeType\":\"\",\"Size\":0,\"EncryptedKey\":\"\",\"CommitMetaTxns\":null,\"Collaborators\":null,\"Attributes\":{}}}",
+					scm.On("CommitMetaCompleted",
+						"{\"CrudType\":\"\",\"MetaData\":{\"Name\":\"\",\"Type\":\"\",\"Path\":\"\",\"LookupHash\":\"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697\",\"Hash\":\"\",\"MimeType\":\"\",\"Size\":0,\"ActualFileSize\":0,\"ActualNumBlocks\":0,\"EncryptedKey\":\"\",\"CommitMetaTxns\":null,\"Collaborators\":null,\"Attributes\":{}}}",
+						"{\"TxnID\":\"1309ee2ab8d21b213e959ab0e26201d734bd2752945d9897cb9d98a3c11a6a23\",\"MetaData\":{\"Name\":\"\",\"Type\":\"\",\"Path\":\"\",\"LookupHash\":\"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697\",\"Hash\":\"\",\"MimeType\":\"\",\"Size\":0,\"ActualFileSize\":0,\"ActualNumBlocks\":0,\"EncryptedKey\":\"\",\"CommitMetaTxns\":null,\"Collaborators\":null,\"Attributes\":{}}}",
 						nil).
 						Once()
 					return scm
@@ -239,7 +241,7 @@ func TestCommitMetaRequest_updatCommitMetaTxnToBlobber(t *testing.T) {
 					},
 				},
 				authToken: "some wrong auth ticket to decode",
-				wg:        func() *sync.WaitGroup {wg.Add(1); return &wg}(),
+				wg:        func() *sync.WaitGroup { wg.Add(1); return &wg }(),
 			},
 			args{},
 			nil,
@@ -256,7 +258,7 @@ func TestCommitMetaRequest_updatCommitMetaTxnToBlobber(t *testing.T) {
 					Tx:  "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 					ctx: context.Background(),
 				},
-				wg: func() *sync.WaitGroup {wg.Add(1); return &wg}(),
+				wg: func() *sync.WaitGroup { wg.Add(1); return &wg }(),
 			},
 			args{},
 			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {

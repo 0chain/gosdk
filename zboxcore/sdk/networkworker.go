@@ -95,7 +95,6 @@ func GetNetworkDetails() (*Network, error) {
 			return fmt.Errorf("Error reading response : %s", err.Error())
 		}
 
-		Logger.Debug("Get network result:", string(respBody))
 		if resp.StatusCode == http.StatusOK {
 			err = json.Unmarshal(respBody, &networkResponse)
 			if err != nil {

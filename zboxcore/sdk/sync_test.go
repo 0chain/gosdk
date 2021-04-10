@@ -90,7 +90,7 @@ func setupMockInitStorageSDK(t *testing.T, configDir string, blobberNums int) (m
 
 	err = InitStorageSDK(clientConfig, blockWorker, chainID, signScheme, preferredBlobbers)
 	assert.NoErrorf(t, err, "Error InitStorageSDK(): %v", err)
-	return []string{miner}, []string{sharder}, blobbers, func(){
+	return []string{miner}, []string{sharder}, blobbers, func() {
 		closeBlockWorkerServer()
 		closeMinerServer()
 		closeSharderServer()
@@ -143,9 +143,9 @@ func setupMockAllocation(t *testing.T, dirPath string, blobberMocks []*mocks.Blo
 		if _, ok := commitChan[blobber.ID]; !ok {
 			commitChan[blobber.ID] = make(chan *CommitRequest, 1)
 			blobberChan := commitChan[blobber.ID]
-			go func(c <-chan *CommitRequest, blID string){
+			go func(c <-chan *CommitRequest, blID string) {
 				for true {
-					cm := <- c
+					cm := <-c
 					cm.result = commitResult
 					cm.wg.Done()
 				}
@@ -153,9 +153,9 @@ func setupMockAllocation(t *testing.T, dirPath string, blobberMocks []*mocks.Blo
 		}
 	}
 	// mock commit result
-	go func(){
+	go func() {
 		for true {
-			commitResult = <- commitResultChan
+			commitResult = <-commitResultChan
 		}
 	}()
 
@@ -304,7 +304,6 @@ func setupBlobberMockResponses(t *testing.T, blobbers []*mocks.Blobber, dirPath,
 		}
 	}
 }
-
 
 func setupMinerMockResponses(t *testing.T, miners []string, dirPath, testCaseName string, checks ...func(params map[string]string, r *http.Request) bool) {
 	var minerHTTPMocks []*httpMockDefinition
@@ -577,7 +576,7 @@ func TestAllocation_GetAllocationDiff(t *testing.T) {
 
 func TestAllocation_SaveRemoteSnapshot(t *testing.T) {
 	// mock init sdk
-	_,_,blobbers, close := setupMockInitStorageSDK(t, configDir, 4)
+	_, _, blobbers, close := setupMockInitStorageSDK(t, configDir, 4)
 	defer close()
 	// mock allocation
 	a := setupMockAllocation(t, syncTestDir, blobbers)

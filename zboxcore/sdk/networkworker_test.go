@@ -128,10 +128,10 @@ func TestUpdateRequired(t *testing.T) {
 func TestGetNetworkDetails(t *testing.T) {
 	var curBlockWorker = blockchain.GetBlockWorker()
 	tests := []struct {
-		name    string
+		name           string
 		additionalMock func(t *testing.T) (teardown func())
-		want    *Network
-		wantErr bool
+		want           *Network
+		wantErr        bool
 	}{
 		{
 			"Test_Error_New_HTTP_Request_Failed",
@@ -148,7 +148,7 @@ func TestGetNetworkDetails(t *testing.T) {
 			"Test_Error_JSON_Unmarshal_Reaponse_Body_Failed",
 			func(t *testing.T) (teardown func()) {
 				url, cl, _ := mocks.NewHTTPServer(t, map[string]http.Handler{
-					"/network": http.HandlerFunc(func(w http.ResponseWriter, t*http.Request) {
+					"/network": http.HandlerFunc(func(w http.ResponseWriter, t *http.Request) {
 						w.WriteHeader(200)
 						w.Write([]byte("this is not json format"))
 					}),
@@ -166,7 +166,7 @@ func TestGetNetworkDetails(t *testing.T) {
 			"Test_Error_Response_Status_Failed",
 			func(t *testing.T) (teardown func()) {
 				url, cl, _ := mocks.NewHTTPServer(t, map[string]http.Handler{
-					"/network": http.HandlerFunc(func(w http.ResponseWriter, t*http.Request) {
+					"/network": http.HandlerFunc(func(w http.ResponseWriter, t *http.Request) {
 						w.WriteHeader(400)
 					}),
 				})

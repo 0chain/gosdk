@@ -32,6 +32,10 @@ var (
 	notInitialized = common.NewError("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 )
 
+var GetFileInfo = func(localpath string) (os.FileInfo, error) {
+	return os.Stat(localpath)
+}
+
 type BlobberAllocationStats struct {
 	BlobberID        string
 	BlobberURL       string
@@ -60,17 +64,19 @@ type BlobberAllocationStats struct {
 }
 
 type ConsolidatedFileMeta struct {
-	Name           string
-	Type           string
-	Path           string
-	LookupHash     string
-	Hash           string
-	MimeType       string
-	Size           int64
-	EncryptedKey   string
-	CommitMetaTxns []fileref.CommitMetaTxn
-	Collaborators  []fileref.Collaborator
-	Attributes     fileref.Attributes
+	Name            string
+	Type            string
+	Path            string
+	LookupHash      string
+	Hash            string
+	MimeType        string
+	Size            int64
+	ActualFileSize  int64
+	ActualNumBlocks int64
+	EncryptedKey    string
+	CommitMetaTxns  []fileref.CommitMetaTxn
+	Collaborators   []fileref.Collaborator
+	Attributes      fileref.Attributes
 }
 
 type AllocationStats struct {
@@ -310,7 +316,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 		return notInitialized
 	}
 
-	fileInfo, err := os.Stat(localpath)
+	fileInfo, err := GetFileInfo(localpath)
 	if err != nil {
 		return fmt.Errorf("Local file error: %s", err.Error())
 	}
@@ -353,7 +359,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 	uploadReq.statusCallback = status
 	uploadReq.datashards = a.DataShards
 	uploadReq.parityshards = a.ParityShards
-	uploadReq.uploadMask = uint32((1 << uint32(len(a.Blobbers))) - 1)
+	uploadReq.setUploadMask(len(a.Blobbers))
 	uploadReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	uploadReq.fullconsensus = float32(a.DataShards + a.ParityShards)
 	uploadReq.isEncrypted = encryption
@@ -384,6 +390,10 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 		uploadReq.filemeta.Hash = fileRef.ActualFileHash
 		uploadReq.uploadMask = ^found & uploadReq.uploadMask
 		uploadReq.fullconsensus = float32(bits.TrailingZeros32(uploadReq.uploadMask + 1))
+	}
+
+	if !uploadReq.IsFullConsensusSupported() {
+		return fmt.Errorf("allocation requires [%v] blobbers, which is greater than the maximum permitted number of [%v]. reduce number of data or parity shards and try again", uploadReq.fullconsensus, uploadReq.GetMaxBlobbersSupported())
 	}
 
 	go func() {
@@ -578,6 +588,8 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.CommitMetaTxns = ref.CommitMetaTxns
 		result.Collaborators = ref.Collaborators
 		result.Attributes = ref.Attributes
+		result.ActualFileSize = ref.Size
+		result.ActualNumBlocks = ref.NumBlocks
 		return result, nil
 	}
 	return nil, common.NewError("file_meta_error", "Error getting the file meta data from blobbers")
@@ -621,6 +633,8 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 		result.Path = ref.Path
 		result.Size = ref.ActualFileSize
 		result.CommitMetaTxns = ref.CommitMetaTxns
+		result.ActualFileSize = ref.Size
+		result.ActualNumBlocks = ref.NumBlocks
 		return result, nil
 	}
 	return nil, common.NewError("file_meta_error", "Error getting the file meta data from blobbers")

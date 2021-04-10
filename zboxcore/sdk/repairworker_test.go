@@ -16,16 +16,16 @@ func TestRepairRequest_getLocalPath(t *testing.T) {
 		filePath = "/1.txt"
 	)
 	r := &RepairRequest{localRootPath: rootPath}
-	assert.Equal(t, rootPath + filePath, r.getLocalPath(&ListResult{Path: filePath}))
+	assert.Equal(t, rootPath+filePath, r.getLocalPath(&ListResult{Path: filePath}))
 }
 
 func Test_checkFileExists(t *testing.T) {
 	var rootPath = repairWorkerTestDir + "/alloc"
 	t.Run("Test_File_Not_Exists", func(t *testing.T) {
-		assert.False(t, checkFileExists(rootPath + "/x.txt"))
+		assert.False(t, checkFileExists(rootPath+"/x.txt"))
 	})
 	t.Run("Test_Is_File_Exists", func(t *testing.T) {
-		assert.True(t, checkFileExists(rootPath + "/1.txt"))
+		assert.True(t, checkFileExists(rootPath+"/1.txt"))
 	})
 	t.Run("Test_Is_Dir", func(t *testing.T) {
 		assert.False(t, checkFileExists(rootPath))
@@ -41,7 +41,6 @@ func TestRepairRequest_repairFile(t *testing.T) {
 			setupBlobberMockResponses(t, blobberMocks, repairWorkerTestDir+"/repairFile", testcaseName)
 			return nil
 		}
-
 	)
 	type fields struct {
 		listDir           *ListResult
@@ -53,11 +52,11 @@ func TestRepairRequest_repairFile(t *testing.T) {
 		wg                *sync.WaitGroup
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		file *ListResult
+		name           string
+		fields         fields
+		file           *ListResult
 		additionalMock func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
-		wantFn func(assertion *assert.Assertions)
+		wantFn         func(assertion *assert.Assertions)
 	}{
 		{
 			"Test_Cancel_Repair_Process",

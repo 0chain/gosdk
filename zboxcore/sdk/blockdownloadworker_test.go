@@ -196,8 +196,8 @@ func Test_startBlockDownloadWorker(t *testing.T) {
 	}(wg)
 	rsCh := make(chan *downloadBlock, 1)
 	defer close(rsCh)
-	ch <- &BlockDownloadRequest{wg: func()*sync.WaitGroup{wg := &sync.WaitGroup{}; wg.Add(1); return wg}(), result: rsCh}
-	result := <- rsCh
+	ch <- &BlockDownloadRequest{wg: func() *sync.WaitGroup { wg := &sync.WaitGroup{}; wg.Add(1); return wg }(), result: rsCh}
+	result := <-rsCh
 	assert.False(t, result.Success)
 	assert.Error(t, result.err)
 	close(ch)
@@ -352,7 +352,7 @@ func TestBlockDownloadRequest_downloadBlobberBlock(t *testing.T) {
 			"Test_Error_Create_Http_Request_Failed",
 			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
 				url := req.blobber.Baseurl
-				req.blobber.Baseurl = string([]byte{0x7f,0,0})
+				req.blobber.Baseurl = string([]byte{0x7f, 0, 0})
 				td1 := prepairAndResetTestCasesData(t)
 				td2 := prepairAndResetBlobberReadCounterTestCaseData(t)
 				return func(t *testing.T) {
@@ -485,7 +485,7 @@ func TestAddBlockDownloadReq(t *testing.T) {
 	defer delete(downloadBlockChan, blobberID)
 	in := &BlockDownloadRequest{blobber: &blockchain.StorageNode{ID: blobberID}}
 	go func() {
-		out := <- downloadBlockChan[blobberID]
+		out := <-downloadBlockChan[blobberID]
 		assert.Equal(t, in, out)
 	}()
 	AddBlockDownloadReq(in)

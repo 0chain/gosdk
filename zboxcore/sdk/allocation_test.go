@@ -4,16 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strings"
+	"testing"
+
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk/mocks"
 	"github.com/stretchr/testify/assert"
-	tm "github.com/stretchr/testify/mock"
-	"os"
-	"strings"
-	"testing"
+	"github.com/stretchr/testify/mock"
 )
 
 const (
@@ -21,7 +22,8 @@ const (
 )
 
 func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit32(t *testing.T) {
-	setupMocks()
+	teardown := setupMocks()
+	defer teardown()
 
 	var maxNumOfBlobbers = 33
 
@@ -45,7 +47,8 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit32(t *testing.T) 
 }
 
 func TestThrowErrorWhenBlobbersRequiredGreaterThanExplicitLimit(t *testing.T) {
-	setupMocks()
+	teardown := setupMocks()
+	defer teardown()
 
 	var maxNumOfBlobbers = 10
 
@@ -69,7 +72,8 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanExplicitLimit(t *testing.T) {
 }
 
 func TestDoNotThrowErrorWhenBlobbersRequiredLessThanLimit(t *testing.T) {
-	setupMocks()
+	teardown := setupMocks()
+	defer teardown()
 
 	var maxNumOfBlobbers = 10
 
@@ -89,9 +93,13 @@ func TestDoNotThrowErrorWhenBlobbersRequiredLessThanLimit(t *testing.T) {
 	}
 }
 
-func setupMocks() {
+func setupMocks() (teardown func()) {
+	fn := GetFileInfo
 	GetFileInfo = func(localpath string) (os.FileInfo, error) {
 		return new(MockFile), nil
+	}
+	return func() {
+		GetFileInfo = fn
 	}
 }
 
@@ -517,7 +525,7 @@ func TestAllocation_uploadOrUpdateFile(t *testing.T) {
 			true,
 		},
 		{
-			"Test_Local_File_Error_Failed",
+			"Test_Error_Local_File_Failed",
 			nil,
 			args{
 				localPath:     "local_file_error",
@@ -636,12 +644,12 @@ func TestAllocation_RepairRequired(t *testing.T) {
 
 	var (
 		blobberMockFn = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
-		setupBlobberMockResponses(t, blobberMocks, fmt.Sprintf("%v/%v", allocationTestDir, "RepairRequired"), testcaseName, responseFormBodyTypeCheck)
-		return func(t *testing.T) {
-			for _, blobberMock := range blobberMocks {
-				blobberMock.ResetHandler(t)
+			setupBlobberMockResponses(t, blobberMocks, fmt.Sprintf("%v/%v", allocationTestDir, "RepairRequired"), testcaseName, responseFormBodyTypeCheck)
+			return func(t *testing.T) {
+				for _, blobberMock := range blobberMocks {
+					blobberMock.ResetHandler(t)
+				}
 			}
-		}
 		}
 		expectedFn = func(assertion *assert.Assertions, testcaseName string) *fileref.FileRef {
 			var wantFileRef *fileref.FileRef
@@ -654,7 +662,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 		additionalSetupFn             func(t *testing.T, testcaseName string) (teardown func(t *testing.T))
 		remotePath                    string
 		wantFound                     uint32
-		wantFileRef func(assertion *assert.Assertions, testcaseName string) *fileref.FileRef
+		wantFileRef                   func(assertion *assert.Assertions, testcaseName string) *fileref.FileRef
 		wantMatchesConsensus, wantErr bool
 	}{
 		{
@@ -2521,7 +2529,7 @@ func TestAllocation_CommitMetaTransaction(t *testing.T) {
 				fileMeta:      nil,
 				status: func(t *testing.T) StatusCallback {
 					scm := &mocks.StatusCallback{}
-					scm.On("CommitMetaCompleted", tm.Anything, tm.Anything, tm.Anything).Maybe()
+					scm.On("CommitMetaCompleted", mock.Anything, mock.Anything, mock.Anything).Maybe()
 					return scm
 				},
 			},

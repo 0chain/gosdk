@@ -382,11 +382,11 @@ func TestCommitRequest_calculateHashRequest(t *testing.T) {
 		paths []string
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		args    args
+		name           string
+		fields         fields
+		args           args
 		additionalMock func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
-		wantErr bool
+		wantErr        bool
 	}{
 		{
 			"Test_No_Path_Coverage",
@@ -398,7 +398,7 @@ func TestCommitRequest_calculateHashRequest(t *testing.T) {
 		{
 			"Test_Error_New_Calculate_Hash_HTTP_Request_Failed",
 			fields{
-				blobber:      &blockchain.StorageNode{ID: blobberMocks[0].ID, Baseurl: string([]byte{0x7f,0,0})},
+				blobber:      &blockchain.StorageNode{ID: blobberMocks[0].ID, Baseurl: string([]byte{0x7f, 0, 0})},
 				allocationTx: "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
 			},
 			args{paths: []string{"/1.txt"}},

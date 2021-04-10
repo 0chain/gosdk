@@ -158,7 +158,7 @@ func TestDownloadRequest_downloadBlock(t *testing.T) {
 				}
 			}()
 
-			got, err := req.downloadBlock(1)
+			got, err := req.downloadBlock(1, 10)
 			wg.Wait()
 			if tt.wantErr {
 				assertion.Error(err, "expected error != nil")
