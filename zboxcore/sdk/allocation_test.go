@@ -20,6 +20,88 @@ const (
 	allocationTestDir = configDir + "/allocation"
 )
 
+func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit32(t *testing.T) {
+	setupMocks()
+
+	var maxNumOfBlobbers = 33
+
+	var allocation = &Allocation{}
+	var blobbers = make([]*blockchain.StorageNode, maxNumOfBlobbers)
+	allocation.initialized = true
+	sdkInitialized = true
+	allocation.Blobbers = blobbers
+	allocation.DataShards = 16
+	allocation.ParityShards = 17
+
+	var file fileref.Attributes
+	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false, file)
+
+	var expectedErr = "allocation requires [33] blobbers, which is greater than the maximum permitted number of [32]. reduce number of data or parity shards and try again"
+	if err == nil {
+		t.Errorf("uploadOrUpdateFile() = expected error  but was %v", nil)
+	} else if err.Error() != expectedErr {
+		t.Errorf("uploadOrUpdateFile() = expected error message to be %v  but was %v", expectedErr, err.Error())
+	}
+}
+
+func TestThrowErrorWhenBlobbersRequiredGreaterThanExplicitLimit(t *testing.T) {
+	setupMocks()
+
+	var maxNumOfBlobbers = 10
+
+	var allocation = &Allocation{}
+	var blobbers = make([]*blockchain.StorageNode, maxNumOfBlobbers)
+	allocation.initialized = true
+	sdkInitialized = true
+	allocation.Blobbers = blobbers
+	allocation.DataShards = 5
+	allocation.ParityShards = 6
+
+	var file fileref.Attributes
+	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false, file)
+
+	var expectedErr = "allocation requires [11] blobbers, which is greater than the maximum permitted number of [10]. reduce number of data or parity shards and try again"
+	if err == nil {
+		t.Errorf("uploadOrUpdateFile() = expected error  but was %v", nil)
+	} else if err.Error() != expectedErr {
+		t.Errorf("uploadOrUpdateFile() = expected error message to be %v  but was %v", expectedErr, err.Error())
+	}
+}
+
+func TestDoNotThrowErrorWhenBlobbersRequiredLessThanLimit(t *testing.T) {
+	setupMocks()
+
+	var maxNumOfBlobbers = 10
+
+	var allocation = &Allocation{}
+	var blobbers = make([]*blockchain.StorageNode, maxNumOfBlobbers)
+	allocation.initialized = true
+	sdkInitialized = true
+	allocation.Blobbers = blobbers
+	allocation.DataShards = 5
+	allocation.ParityShards = 4
+
+	var file fileref.Attributes
+	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false, file)
+
+	if err != nil {
+		t.Errorf("uploadOrUpdateFile() = expected no error but was %v", err)
+	}
+}
+
+func setupMocks() {
+	GetFileInfo = func(localpath string) (os.FileInfo, error) {
+		return new(MockFile), nil
+	}
+}
+
+type MockFile struct {
+	os.FileInfo
+	size int64
+}
+
+func (m MockFile) Size() int64 { return 10 }
+
 func TestPriceRange_IsValid(t *testing.T) {
 	type fields struct {
 		Min int64
@@ -552,19 +634,27 @@ func TestAllocation_RepairRequired(t *testing.T) {
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
 
-	var blobberMockFn = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
+	var (
+		blobberMockFn = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
 		setupBlobberMockResponses(t, blobberMocks, fmt.Sprintf("%v/%v", allocationTestDir, "RepairRequired"), testcaseName, responseFormBodyTypeCheck)
 		return func(t *testing.T) {
 			for _, blobberMock := range blobberMocks {
 				blobberMock.ResetHandler(t)
 			}
 		}
-	}
+		}
+		expectedFn = func(assertion *assert.Assertions, testcaseName string) *fileref.FileRef {
+			var wantFileRef *fileref.FileRef
+			parseFileContent(t, fmt.Sprintf("%v/%v/expected_result__%v.json", allocationTestDir, "RepairRequired", testcaseName), &wantFileRef)
+			return wantFileRef
+		}
+	)
 	tests := []struct {
 		name                          string
 		additionalSetupFn             func(t *testing.T, testcaseName string) (teardown func(t *testing.T))
 		remotePath                    string
 		wantFound                     uint32
+		wantFileRef func(assertion *assert.Assertions, testcaseName string) *fileref.FileRef
 		wantMatchesConsensus, wantErr bool
 	}{
 		{
@@ -572,6 +662,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 			blobberMockFn,
 			"/x.txt",
 			0xf,
+			expectedFn,
 			false, false,
 		},
 		{
@@ -582,6 +673,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 			},
 			"/",
 			0,
+			nil,
 			false, true,
 		},
 		{
@@ -589,6 +681,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 			blobberMockFn,
 			"/",
 			0x7,
+			expectedFn,
 			true, false,
 		},
 		{
@@ -596,6 +689,9 @@ func TestAllocation_RepairRequired(t *testing.T) {
 			blobberMockFn,
 			"/x.txt",
 			0x0,
+			func(assertion *assert.Assertions, testcaseName string) *fileref.FileRef {
+				return nil
+			},
 			false, true,
 		},
 	}
@@ -608,8 +704,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 					defer teardown(t)
 				}
 			}
-			var wantFileRef *fileref.FileRef
-			parseFileContent(t, fmt.Sprintf("%v/%v/expected_result__%v.json", allocationTestDir, "RepairRequired", tt.name), &wantFileRef)
+
 			found, matchesConsensus, fileRef, err := a.RepairRequired(tt.remotePath)
 			assertion.Equal(tt.wantFound, found, "found value must be same")
 			if tt.wantMatchesConsensus {
@@ -619,11 +714,10 @@ func TestAllocation_RepairRequired(t *testing.T) {
 			}
 			if tt.wantErr {
 				assertion.Errorf(err, "Expected error != nil")
-			} else {
-				assertion.NoErrorf(err, "Unexpected error %v", err)
+				return
 			}
-
-			assertion.EqualValues(wantFileRef, fileRef)
+			assertion.NoErrorf(err, "Unexpected error %v", err)
+			assertion.EqualValues(tt.wantFileRef(assertion, tt.name), fileRef)
 		})
 	}
 }
@@ -674,7 +768,6 @@ func TestAllocation_downloadFile(t *testing.T) {
 	defer closeFn()
 	// setup mock allocation
 	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
-
 	var localPath = allocationTestDir + "/downloadFile/alloc"
 	var remotePath = "/1.txt"
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {

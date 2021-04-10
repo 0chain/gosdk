@@ -461,7 +461,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	downloadReq.localpath = localPath
 	downloadReq.remotefilepath = remotePath
 	downloadReq.statusCallback = status
-	downloadReq.downloadMask = ((1 << uint32(len(a.Blobbers))) - 1)
+	downloadReq.downloadMask = (1 << uint32(len(a.Blobbers))) - 1
 	downloadReq.blobbers = a.Blobbers
 	downloadReq.datashards = a.DataShards
 	downloadReq.parityshards = a.ParityShards

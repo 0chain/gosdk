@@ -125,11 +125,13 @@ var transport = &http.Transport{
 	MaxIdleConnsPerHost:   100,
 }
 
-func NewHTTPRequest(method string, url string, data []byte) (*http.Request, context.Context, context.CancelFunc, error) {
-	req, err := http.NewRequest(method, url, bytes.NewBuffer(data))
-	req.Header.Set("Content-Type", "application/json; charset=utf-8")
-	req.Header.Set("Access-Control-Allow-Origin", "*")
-	ctx, cncl := context.WithTimeout(context.Background(), time.Second*10)
+func NewHTTPRequest(method string, url string, data []byte) (req *http.Request, ctx context.Context, cncl context.CancelFunc, err error) {
+	req, err = http.NewRequest(method, url, bytes.NewBuffer(data))
+	if req != nil {
+		req.Header.Set("Content-Type", "application/json; charset=utf-8")
+		req.Header.Set("Access-Control-Allow-Origin", "*")
+		ctx, cncl = context.WithTimeout(context.Background(), time.Second*10)
+	}
 	return req, ctx, cncl, err
 }
 

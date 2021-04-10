@@ -82,10 +82,10 @@ func setupMockInitStorageSDK(t *testing.T, configDir string, blobberNums int) (m
 	sharder, closeSharderServer := mocks.NewSharderHTTPServer(t)
 	var closeBlockWorkerServer func()
 	blockWorker, closeBlockWorkerServer = mocks.NewBlockWorkerHTTPServer(t, []string{miner}, []string{sharder})
-	blobbers = make([]*mocks.Blobber, 0)
+	blobbers = make([]*mocks.Blobber, blobberNums)
 	for i := 0; i < blobberNums; i++ {
 		blobber := mocks.NewBlobberHTTPServer(t)
-		blobbers = append(blobbers, blobber)
+		blobbers[i] = blobber
 	}
 
 	err = InitStorageSDK(clientConfig, blockWorker, chainID, signScheme, preferredBlobbers)
