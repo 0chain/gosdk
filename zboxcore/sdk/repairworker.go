@@ -82,11 +82,12 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
 			var err error
 			fullconsensus := float32(a.DataShards + a.ParityShards)
 			consensusThresh := 100 / fullconsensus
-			dir, err = a.listDir(dir.Path, consensusThresh, fullconsensus)
+			outDir, err := a.listDir(dir.Path, consensusThresh, fullconsensus)
 			if err != nil {
 				Logger.Error("Failed to get listDir for path ", zap.Any("path", dir.Path), zap.Error(err))
 				return
 			}
+			dir = outDir
 		}
 		for _, childDir := range dir.Children {
 			if r.checkForCancel(a) {

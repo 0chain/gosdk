@@ -39,7 +39,7 @@ func TestDownloadRequest_downloadBlock(t *testing.T) {
 		allocationID       string
 		allocationTx       string
 		blobbers           []*blockchain.StorageNode
-		datashard          int
+		datashards          int
 		localpath          string
 		statusCallback     StatusCallback
 		authTicket         *marker.AuthTicket
@@ -62,7 +62,7 @@ func TestDownloadRequest_downloadBlock(t *testing.T) {
 			fields{
 				blobbers:          blobbers,
 				localpath:         localPath,
-				datashard:         0,
+				datashards:         0,
 				downloadMask:      1,
 				encryptedKey:      "F01uReOJTdgFOMxhleNYqpOpyFbFSltEcwv8G8kwHJo=",
 				completedCallback: func(remotepath string, remotepathhash string) {},
@@ -83,7 +83,7 @@ func TestDownloadRequest_downloadBlock(t *testing.T) {
 				blobbers:          blobbers,
 				localpath:         localPath,
 				downloadMask:      3,
-				datashard:         2,
+				datashards:         2,
 				encryptedKey:      "",
 				completedCallback: func(remotepath string, remotepathhash string) {},
 				contentMode:       DOWNLOAD_CONTENT_FULL,
@@ -116,7 +116,7 @@ func TestDownloadRequest_downloadBlock(t *testing.T) {
 				allocationID:       allocationID,
 				allocationTx:       allocationTx,
 				blobbers:           tt.fields.blobbers,
-				datashards:         tt.fields.datashard,
+				datashards:         tt.fields.datashards,
 				parityshards:       2,
 				remotefilepath:     remoteFilePath,
 				remotefilepathhash: remoteFilePathHash,
@@ -233,7 +233,7 @@ func TestDownloadRequest_processDownload(t *testing.T) {
 			},
 		},
 		{
-			"Test_",
+			"Test_Success",
 			fields{
 				blobbers:           blobbers,
 				remotefilepath:     remoteFilePath,
@@ -275,7 +275,7 @@ func TestDownloadRequest_processDownload(t *testing.T) {
 				}
 				return func(t *testing.T) {
 					blockRespData = nil
-					os.Remove(localPath)
+					_ = os.Remove(localPath)
 				}
 			},
 			func(blobber *blockchain.StorageNode, wg *sync.WaitGroup) {

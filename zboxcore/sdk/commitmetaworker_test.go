@@ -20,7 +20,8 @@ func TestCommitMetaRequest_processCommitMetaRequest(t *testing.T) {
 	miners, sharders, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 1)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var minerResponseMocks = func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
 		setupMinerMockResponses(t, miners, commitMetaWorkerTestDir+"/processCommitMetaRequest", testCaseName)

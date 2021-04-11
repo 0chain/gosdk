@@ -871,7 +871,7 @@ func FinalizeAllocation(allocID string) (hash string, err error) {
 	return
 }
 
-func CancelAlloctioan(allocID string) (hash string, err error) {
+func CancelAllocation(allocID string) (hash string, err error) {
 	if !sdkInitialized {
 		return "", sdkNotInitialized
 	}

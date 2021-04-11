@@ -253,7 +253,9 @@ func TestBlockDownloadRequest_downloadBlobberBlock(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 1)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
+
 	req := &BlockDownloadRequest{
 		blobber:            a.Blobbers[0],
 		allocationID:       a.ID,

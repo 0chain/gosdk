@@ -211,7 +211,8 @@ func TestAllocation_GetBlobberStats(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	blobbers := a.Blobbers
 
@@ -300,7 +301,8 @@ func TestAllocation_UpdateFile(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var localPath = allocationTestDir + "/alloc/1.txt"
 	assertion := assert.New(t)
@@ -313,7 +315,8 @@ func TestAllocation_UploadFile(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var localPath = allocationTestDir + "/alloc/1.txt"
 	assertion := assert.New(t)
@@ -326,7 +329,8 @@ func TestAllocation_RepairFile(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var localPath = allocationTestDir + "/alloc/1.txt"
 	type args struct {
@@ -376,7 +380,8 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var localPath = allocationTestDir + "/alloc/1.txt"
 	var thumbnailPath = allocationTestDir + "/thumbnail_alloc"
@@ -418,7 +423,8 @@ func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var localPath = allocationTestDir + "/alloc/1.txt"
 	var thumbnailPath = allocationTestDir + "/thumbnail_alloc"
@@ -433,7 +439,8 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var localPath = allocationTestDir + "/alloc/1.txt"
 	assertion := assert.New(t)
@@ -446,7 +453,8 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var localPath = allocationTestDir + "/alloc/1.txt"
 	assertion := assert.New(t)
@@ -459,7 +467,9 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
+
 	var localPath = allocationTestDir + "/alloc/1.txt"
 	var thumbnailPath = allocationTestDir + "/thumbnail_alloc"
 	assertion := assert.New(t)
@@ -472,7 +482,8 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var localPath = allocationTestDir + "/alloc/1.txt"
 	var thumbnailPath = allocationTestDir + "/thumbnail_alloc"
@@ -487,7 +498,8 @@ func TestAllocation_uploadOrUpdateFile(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, blockNums)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var localPath = allocationTestDir + "/alloc/1.txt"
 
@@ -640,7 +652,8 @@ func TestAllocation_RepairRequired(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var (
 		blobberMockFn = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
@@ -735,7 +748,8 @@ func TestAllocation_DownloadFile(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var localPath = allocationTestDir + "/DownloadFile"
 	assertion := assert.New(t)
@@ -748,7 +762,8 @@ func TestAllocation_DownloadFileByBlock(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var localPath = allocationTestDir + "/DownloadFileByBlock"
 	assertion := assert.New(t)
@@ -761,7 +776,8 @@ func TestAllocation_DownloadThumbnail(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var localPath = allocationTestDir + "/DownloadThumbnail"
 
@@ -775,7 +791,9 @@ func TestAllocation_downloadFile(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
+
 	var localPath = allocationTestDir + "/downloadFile/alloc"
 	var remotePath = "/1.txt"
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
@@ -903,7 +921,8 @@ func TestAllocation_DeleteFile(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	willReturnCommitResult(&CommitResult{Success: true})
 	setupBlobberMockResponses(t, blobberMocks, allocationTestDir+"/DeleteFile", "TestAllocation_DeleteFile")
@@ -917,7 +936,8 @@ func TestAllocation_deleteFile(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
 		setupBlobberMockResponses(t, blobberMocks, allocationTestDir+"/deleteFile", testcaseName)
@@ -994,7 +1014,8 @@ func TestAllocation_UpdateObjectAttributes(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	type args struct {
 		path  string
@@ -1109,7 +1130,8 @@ func TestAllocation_MoveObject(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
 		setupBlobberMockResponses(t, blobberMocks, allocationTestDir+"/MoveObject", testcaseName)
@@ -1182,7 +1204,8 @@ func TestAllocation_CopyObject(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
 		setupBlobberMockResponses(t, blobberMocks, allocationTestDir+"/CopyObject", testcaseName)
@@ -1270,7 +1293,8 @@ func TestAllocation_RenameObject(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
 		setupBlobberMockResponses(t, blobberMocks, allocationTestDir+"/RenameObject", testcaseName)
@@ -1358,7 +1382,8 @@ func TestAllocation_AddCollaborator(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
 		setupBlobberMockResponses(t, blobberMocks, allocationTestDir+"/AddCollaborator", testcaseName)
@@ -1429,7 +1454,8 @@ func TestAllocation_RemoveCollaborator(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
 		setupBlobberMockResponses(t, blobberMocks, allocationTestDir+"/RemoveCollaborator", testcaseName)
@@ -1501,7 +1527,8 @@ func TestAllocation_GetFileStats(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, blobberNums)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
 		setupBlobberMockResponses(t, blobberMocks, allocationTestDir+"/GetFileStats", testcaseName)
@@ -1592,7 +1619,8 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	type args struct {
 		path string
@@ -1661,7 +1689,8 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	assertion := assert.New(t)
 	at, err := a.GetAuthTicketForShare("/1.txt", "1.txt", fileref.FILE, client.GetClientID())
@@ -1674,7 +1703,8 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	type args struct {
 		path                       string
@@ -1780,7 +1810,8 @@ func TestAllocation_CancelUpload(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var localPath = allocationTestDir + "/alloc/1.txt"
 	type args struct {
@@ -1834,7 +1865,8 @@ func TestAllocation_CancelDownload(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var remotePath = "/1.txt"
 	type args struct {
@@ -1889,7 +1921,8 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 	defer closeFn()
 	// setup mock allocation
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var minerResponseMocks = func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
 		setupMinerMockResponses(t, miners, allocationTestDir+"/CommitFolderChange", testCaseName)
@@ -1979,7 +2012,8 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var lookupHash = fileref.GetReferenceLookup(a.ID, "/1.txt")
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
@@ -2081,7 +2115,8 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var localPath = allocationTestDir + "/downloadFromAuthTicket/alloc"
 	var remoteFileName = "1.txt"
@@ -2219,7 +2254,8 @@ func TestAllocation_listDir(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 	var path = "/1.txt"
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
 		setupBlobberMockResponses(t, blobberMocks, allocationTestDir+"/ListDirFromAuthTicket", testcaseName)
@@ -2309,7 +2345,8 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var lookupHash = fileref.GetReferenceLookup(a.ID, "/1.txt")
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
@@ -2412,7 +2449,9 @@ func TestAllocation_DownloadThumbnailFromAuthTicket(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
+
 	setupBlobberMockResponses(t, blobberMocks, allocationTestDir+"/DownloadThumbnailFromAuthTicket", "TestAllocation_DownloadThumbnailFromAuthTicket")
 	assertion := assert.New(t)
 	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, client.GetClientID(), "")
@@ -2429,7 +2468,9 @@ func TestAllocation_DownloadFromAuthTicket(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
+
 	setupBlobberMockResponses(t, blobberMocks, allocationTestDir+"/DownloadFromAuthTicket", "TestAllocation_DownloadFromAuthTicket")
 	assertion := assert.New(t)
 	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, client.GetClientID(), "")
@@ -2446,7 +2487,9 @@ func TestAllocation_DownloadFromAuthTicketByBlocks(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
+
 	setupBlobberMockResponses(t, blobberMocks, allocationTestDir+"/DownloadFromAuthTicketByBlocks", "TestAllocation_DownloadFromAuthTicketByBlocks")
 	assertion := assert.New(t)
 	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, client.GetClientID(), "")
@@ -2465,7 +2508,8 @@ func TestAllocation_CommitMetaTransaction(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, client.GetClientID(), "")
 	assert.NoErrorf(t, err, "unexpected get auth ticket error: %v", err)
@@ -2574,7 +2618,8 @@ func TestAllocation_StartRepair(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
 
 	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
 		setupBlobberMockResponses(t, blobberMocks, allocationTestDir+"/StartRepair", testcaseName)
@@ -2653,7 +2698,9 @@ func TestAllocation_CancelRepair(t *testing.T) {
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
-	a := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	a , cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
+	defer cncl()
+
 	tests := []struct {
 		name           string
 		additionalMock func(t *testing.T) (teardown func(t *testing.T))

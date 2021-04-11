@@ -100,13 +100,50 @@ func setupMockInitStorageSDK(t *testing.T, configDir string, blobberNums int) (m
 	}
 }
 
-var commitResultChan chan *CommitResult
+type writeFile struct {
+	FileName string
+	IsDir    bool
+	Content  []byte
+	Child    []*writeFile
+}
+
+var (
+	downloadSuccessFileChan chan []*writeFile
+	commitResultChan        chan *CommitResult
+)
+
+func willDownloadSuccessFiles(wf ...*writeFile) {
+	downloadSuccessFileChan <- wf
+}
+
+func deleteFiles(wfs ...*writeFile) {
+	for _, wf := range wfs {
+		os.Remove(wf.FileName)
+	}
+}
 
 func willReturnCommitResult(c *CommitResult) {
 	commitResultChan <- c
 }
 
-func setupMockAllocation(t *testing.T, dirPath string, blobberMocks []*mocks.Blobber) *Allocation {
+func writeFiles(wfs ...*writeFile) {
+	for _, wf := range wfs {
+		var err error
+		if wf.IsDir {
+			err = os.MkdirAll(wf.FileName, 0755)
+			if len(wf.Child) > 0 {
+				writeFiles(wf.Child...)
+			}
+		} else {
+			err = ioutil.WriteFile(wf.FileName, wf.Content, 0644)
+		}
+		if err != nil {
+			break
+		}
+	}
+}
+
+func setupMockAllocation(t *testing.T, dirPath string, blobberMocks []*mocks.Blobber) (allocation *Allocation, cncl func()) {
 	blobbers := []*blockchain.StorageNode{}
 	if blobberMocks != nil {
 		for _, blobberMock := range blobberMocks {
@@ -118,7 +155,6 @@ func setupMockAllocation(t *testing.T, dirPath string, blobberMocks []*mocks.Blo
 			}
 		}
 	}
-	var allocation *Allocation
 	contentBytes := parseFileContent(t, dirPath+"/"+"allocation.json", nil)
 	for idx, blobber := range blobbers {
 		contentBytes = []byte(strings.ReplaceAll(string(contentBytes), blobberIDMask(idx), blobber.ID))
@@ -138,6 +174,7 @@ func setupMockAllocation(t *testing.T, dirPath string, blobberMocks []*mocks.Blo
 	// init mock test commit worker
 	commitChan = make(map[string]chan *CommitRequest)
 	commitResultChan = make(chan *CommitResult)
+
 	var commitResult *CommitResult
 	for _, blobber := range blobbers {
 		if _, ok := commitChan[blobber.ID]; !ok {
@@ -146,37 +183,50 @@ func setupMockAllocation(t *testing.T, dirPath string, blobberMocks []*mocks.Blo
 			go func(c <-chan *CommitRequest, blID string) {
 				for true {
 					cm := <-c
-					cm.result = commitResult
-					cm.wg.Done()
+					if cm != nil {
+						cm.result = commitResult
+						if cm.wg != nil {
+							cm.wg.Done()
+						}
+					}
 				}
 			}(blobberChan, blobber.ID)
 		}
 	}
-	// mock commit result
-	go func() {
-		for true {
-			commitResult = <-commitResultChan
-		}
-	}()
 
-	// init mock test dispatcher
+	downloadSuccessFileChan = make(chan []*writeFile, 5)
+	var downloadWriteFiles []*writeFile
+
+	// init mock test dispatcher, commit result, download success
 	go func() {
 		for true {
 			select {
 			case <-allocation.ctx.Done():
 				t.Log("Upload cancelled by the parent")
 				return
+			case commitResult = <-commitResultChan:
+			case wfs := <-downloadSuccessFileChan:
+				downloadWriteFiles = wfs
 			case uploadReq := <-allocation.uploadChan:
 				if uploadReq.completedCallback != nil {
 					uploadReq.completedCallback(uploadReq.filepath)
+				}
+				if uploadReq.statusCallback != nil {
+					uploadReq.statusCallback.Completed(allocation.ID, uploadReq.filepath, uploadReq.filemeta.Name, uploadReq.filemeta.MimeType, int(uploadReq.filemeta.Size), OpUpload)
 				}
 				if uploadReq.wg != nil {
 					uploadReq.wg.Done()
 				}
 				t.Logf("received a upload request for %v %v\n", uploadReq.filepath, uploadReq.remotefilepath)
 			case downloadReq := <-allocation.downloadChan:
+				if len(downloadWriteFiles) > 0 {
+					writeFiles(downloadWriteFiles...)
+				}
 				if downloadReq.completedCallback != nil {
 					downloadReq.completedCallback(downloadReq.remotefilepath, downloadReq.remotefilepathhash)
+				}
+				if downloadReq.statusCallback != nil {
+					downloadReq.statusCallback.Completed(allocation.ID, downloadReq.localpath, "1.txt", "application/octet-stream", 3, OpDownload)
 				}
 				if downloadReq.wg != nil {
 					downloadReq.wg.Done()
@@ -194,7 +244,7 @@ func setupMockAllocation(t *testing.T, dirPath string, blobberMocks []*mocks.Blo
 		}
 	}()
 	allocation.initialized = true
-	return allocation
+	return allocation, func() {}
 }
 
 type httpMockResponseDefinition struct {
@@ -346,7 +396,9 @@ func TestAllocation_GetAllocationDiff(t *testing.T) {
 	_, _, blobbers, close := setupMockInitStorageSDK(t, configDir, 4)
 	defer close()
 	// mock allocation
-	a := setupMockAllocation(t, syncTestDir, blobbers)
+	a , cncl := setupMockAllocation(t, syncTestDir, blobbers)
+	defer cncl()
+
 	type args struct {
 		lastSyncCachePath func(t *testing.T, testcaseName string) string
 		localRootPath     string
@@ -579,7 +631,8 @@ func TestAllocation_SaveRemoteSnapshot(t *testing.T) {
 	_, _, blobbers, close := setupMockInitStorageSDK(t, configDir, 4)
 	defer close()
 	// mock allocation
-	a := setupMockAllocation(t, syncTestDir, blobbers)
+	a , cncl := setupMockAllocation(t, syncTestDir, blobbers)
+	defer cncl()
 
 	var additionalMockLocalFile = func(t *testing.T, fullFileName string) (teardown func(t *testing.T)) {
 		teardown = func(t *testing.T) {}
