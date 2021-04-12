@@ -32,7 +32,7 @@ func TestSetLogLevel(t *testing.T) {
 
 func TestSetLogFile(t *testing.T) {
 	var logFile = "test.log"
-	defer os.Remove(logFile)
+	defer func() { _ = os.Remove(logFile) }()
 
 	SetLogFile(logFile, true)
 
@@ -191,7 +191,7 @@ func TestReadPoolLock(t *testing.T) {
 	blockchain.SetQuerySleepTime(1)
 	blockchain.SetMaxTxnQuery(3)
 
-	err := ReadPoolLock(time.Hour * 720, "a324ee3369adfeedbd767ae9932970c67d52bf2018cd7b8ebcfe550dea6c6961", "", 500000000, 0)
+	err := ReadPoolLock(time.Hour*720, "a324ee3369adfeedbd767ae9932970c67d52bf2018cd7b8ebcfe550dea6c6961", "", 500000000, 0)
 
 	assert.NoErrorf(t, err, "unexpected error but got: %v", err)
 }
@@ -291,7 +291,7 @@ func TestStakePoolUnlock(t *testing.T) {
 	blockchain.SetQuerySleepTime(1)
 	blockchain.SetMaxTxnQuery(3)
 
- 	unstake, err := StakePoolUnlock("", "03fa3602ca5e4be845e08adb6f35a7708d835e4a7c4f772e8e5c66ea9ae455b9", 0)
+	unstake, err := StakePoolUnlock("", "03fa3602ca5e4be845e08adb6f35a7708d835e4a7c4f772e8e5c66ea9ae455b9", 0)
 	assert.NoErrorf(t, err, "unexpected error but got: %v", err)
 	assert.Equal(t, unstake, common.Timestamp(1618160720))
 }
@@ -350,7 +350,7 @@ func TestWritePoolLock(t *testing.T) {
 	blockchain.SetQuerySleepTime(1)
 	blockchain.SetMaxTxnQuery(3)
 
-	err := WritePoolLock(time.Hour * 720, "a324ee3369adfeedbd767ae9932970c67d52bf2018cd7b8ebcfe550dea6c6961", "", 500000000, 0)
+	err := WritePoolLock(time.Hour*720, "a324ee3369adfeedbd767ae9932970c67d52bf2018cd7b8ebcfe550dea6c6961", "", 500000000, 0)
 
 	assert.NoErrorf(t, err, "unexpected error but got: %v", err)
 }
@@ -414,7 +414,7 @@ func TestGetStorageSCConfig(t *testing.T) {
 
 func TestGetBlobbers(t *testing.T) {
 	blobbersStr := `{"Nodes": [{"id":"0de4fd069f1304f11ce5794ae4216f92326044392e74320932f5cba67bdeff09","url":"http://prod-node-201.fra.zcn.zeroservices.eu:5056","terms":{"read_price":127388535,"write_price":63694267,"min_lock_demand":0.1,"max_offer_duration":2678400000000000,"challenge_completion_time":120000000000},"capacity":3543348019200,"used":0,"last_health_check":1617955541,"stake_pool_settings":{"delegate_wallet":"e73d88ba1133b8bc8e1683b8c11f30b9c172b4a067463f5657f82c0f2b77561a","min_stake":10000000000,"max_stake":1000000000000,"num_delegates":50,"service_charge":0.3}},{"id":"2b2ed3816062f47dce1b92c30ee060e833816a1e378cffca6dd18fc413baf7b6","url":"http://prod-node-201.fra.zcn.zeroservices.eu:5051","terms":{"read_price":127388535,"write_price":63694267,"min_lock_demand":0.1,"max_offer_duration":2678400000000000,"challenge_completion_time":120000000000},"capacity":3543348019200,"used":0,"last_health_check":1617954789,"stake_pool_settings":{"delegate_wallet":"e73d88ba1133b8bc8e1683b8c11f30b9c172b4a067463f5657f82c0f2b77561a","min_stake":10000000000,"max_stake":1000000000000,"num_delegates":50,"service_charge":0.3}},{"id":"4e729c0ef0b8177df1c130dde2988d4cb7456afa183bf93cbf3bd74120eeebaf","url":"http://one.devnet-0chain.net:31306","terms":{"read_price":100000000,"write_price":100000000,"min_lock_demand":0.1,"max_offer_duration":2678400000000000,"challenge_completion_time":120000000000},"capacity":107374182400,"used":39191576611,"last_health_check":1618161842,"stake_pool_settings":{"delegate_wallet":"63873aca9102193fc8c6aedb79d2f57f7468ab768bbc270ee2f0fc97b21345c6","min_stake":10000000000,"max_stake":1000000000000,"num_delegates":50,"service_charge":0.3}},{"id":"63230aeda3360ae6540e8604db40333638d963edac8d92fb9b576915155d5dc6","url":"http://one.devnet-0chain.net:31302","terms":{"read_price":100000000,"write_price":100000000,"min_lock_demand":0.1,"max_offer_duration":2678400000000000,"challenge_completion_time":120000000000},"capacity":107374182400,"used":40265318435,"last_health_check":1618161842,"stake_pool_settings":{"delegate_wallet":"63873aca9102193fc8c6aedb79d2f57f7468ab768bbc270ee2f0fc97b21345c6","min_stake":10000000000,"max_stake":1000000000000,"num_delegates":50,"service_charge":0.3}}]}`
-	var nodes struct{Nodes []*Blobber}
+	var nodes struct{ Nodes []*Blobber }
 	_ = json.Unmarshal([]byte(blobbersStr), &nodes)
 	expectedBlobbers := nodes.Nodes
 
@@ -489,28 +489,28 @@ func TestGetAllocationFromAuthTicket(t *testing.T) {
 func TestSetNumBlockDownloads(t *testing.T) {
 	t.Run("Test_Set_Num_Block_Download_0", func(t *testing.T) {
 		nbd := numBlockDownloads
-		defer func() {numBlockDownloads = nbd}()
+		defer func() { numBlockDownloads = nbd }()
 
 		SetNumBlockDownloads(0)
 		assert.Equal(t, nbd, numBlockDownloads)
 	})
 	t.Run("Test_Set_Num_Block_Download_100", func(t *testing.T) {
 		nbd := numBlockDownloads
-		defer func() {numBlockDownloads = nbd}()
+		defer func() { numBlockDownloads = nbd }()
 
 		SetNumBlockDownloads(100)
 		assert.Equal(t, 100, numBlockDownloads)
 	})
 	t.Run("Test_Set_Num_Block_Download_101", func(t *testing.T) {
 		nbd := numBlockDownloads
-		defer func() {numBlockDownloads = nbd}()
+		defer func() { numBlockDownloads = nbd }()
 
 		SetNumBlockDownloads(101)
 		assert.Equal(t, nbd, numBlockDownloads)
 	})
 	t.Run("Test_Set_Num_Block_Download_50", func(t *testing.T) {
 		nbd := numBlockDownloads
-		defer func() {numBlockDownloads = nbd}()
+		defer func() { numBlockDownloads = nbd }()
 
 		SetNumBlockDownloads(50)
 		assert.Equal(t, 50, numBlockDownloads)
@@ -564,7 +564,7 @@ func TestCreateAllocation(t *testing.T) {
 	blockchain.SetQuerySleepTime(1)
 	blockchain.SetMaxTxnQuery(3)
 
-	hash, err := CreateAllocation(2, 3, 2*1024*1024*1024, time.Now().Add(720 * time.Hour).Unix(), PriceRange{Min: 100000000, Max: 3000000000}, PriceRange{Min: 100000000, Max: 3000000000}, 7 * 24 * time.Hour, 10000000000)
+	hash, err := CreateAllocation(2, 3, 2*1024*1024*1024, time.Now().Add(720*time.Hour).Unix(), PriceRange{Min: 100000000, Max: 3000000000}, PriceRange{Min: 100000000, Max: 3000000000}, 7*24*time.Hour, 10000000000)
 
 	assert.NoErrorf(t, err, "unexpected error but got: %v", err)
 	assert.Equal(t, "1309ee2ab8d21b213e959ab0e26201d734bd2752945d9897cb9d98a3c11a6a23", hash)
@@ -586,7 +586,7 @@ func TestUpdateAllocation(t *testing.T) {
 	blockchain.SetQuerySleepTime(1)
 	blockchain.SetMaxTxnQuery(3)
 
-	hash, err := UpdateAllocation(2*1024*1024*1024, time.Now().Add(720 * time.Hour).Unix(), "a324ee3369adfeedbd767ae9932970c67d52bf2018cd7b8ebcfe550dea6c6961", 10000000000)
+	hash, err := UpdateAllocation(2*1024*1024*1024, time.Now().Add(720*time.Hour).Unix(), "a324ee3369adfeedbd767ae9932970c67d52bf2018cd7b8ebcfe550dea6c6961", 10000000000)
 
 	assert.NoErrorf(t, err, "unexpected error but got: %v", err)
 	assert.Equal(t, "1309ee2ab8d21b213e959ab0e26201d734bd2752945d9897cb9d98a3c11a6a23", hash)
@@ -658,3 +658,29 @@ func TestUpdateBlobberSettings(t *testing.T) {
 	assert.Equal(t, "1309ee2ab8d21b213e959ab0e26201d734bd2752945d9897cb9d98a3c11a6a23", resp)
 }
 
+func TestCommitToFabric(t *testing.T) {
+	type args struct {
+		metaTxnData      string
+		fabricConfigJSON string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := CommitToFabric(tt.args.metaTxnData, tt.args.fabricConfigJSON)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CommitToFabric() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("CommitToFabric() got = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

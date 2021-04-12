@@ -58,7 +58,7 @@ func (ac *AttributesChange) ProcessChange(root *fileref.Ref) (err error) {
 
 	if idx < 0 || file == nil {
 		return common.NewError("attributes_change_process",
-			"File, to update attributes for, not found in blobber")
+			"File -to update attributes for- not found in blobber")
 	}
 
 	file.Attributes = ac.Attributes // change attributes to new

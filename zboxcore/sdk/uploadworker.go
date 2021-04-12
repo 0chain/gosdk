@@ -414,7 +414,6 @@ func (req *UploadRequest) completePush() error {
 			c++
 		}
 	}
-	req.wg.Wait()
 	if !req.isConsensusOk() {
 		return fmt.Errorf("Upload failed: Consensus_rate:%f, expected:%f", req.getConsensusRate(), req.getConsensusRequiredForOk())
 	}

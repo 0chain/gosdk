@@ -32,7 +32,8 @@ func RawHash(data interface{}) []byte {
 	hash := sha3.New256()
 	hash.Write(databuf)
 	var buf []byte
-	return hash.Sum(buf)
+	b := hash.Sum(buf)
+	return b
 }
 
 /*FastHash - sha1 hash the given data and return the hash as hex string */
