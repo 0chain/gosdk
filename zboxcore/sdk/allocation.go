@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"math/bits"
 	"os"
 	"path/filepath"
 	"strings"
@@ -391,8 +390,8 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 		}
 
 		uploadReq.filemeta.Hash = fileRef.ActualFileHash
-		uploadReq.uploadMask = (^found & uploadReq.uploadMask)
-		uploadReq.fullconsensus = float32(bits.TrailingZeros32(uploadReq.uploadMask + 1))
+		uploadReq.uploadMask = found.Not().And(uploadReq.uploadMask)
+		uploadReq.fullconsensus = float32(uploadReq.uploadMask.Add64(1).TrailingZeros())
 	}
 
 	if !uploadReq.IsFullConsensusSupported() {
@@ -408,9 +407,9 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 	return nil
 }
 
-func (a *Allocation) RepairRequired(remotepath string) (uint32, bool, *fileref.FileRef, error) {
+func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, *fileref.FileRef, error) {
 	if !a.isInitialized() {
-		return 0, false, nil, notInitialized
+		return zboxutil.Uint128{}, false, nil, notInitialized
 	}
 
 	listReq := &ListRequest{}
@@ -426,9 +425,9 @@ func (a *Allocation) RepairRequired(remotepath string) (uint32, bool, *fileref.F
 		return found, false, fileRef, fmt.Errorf("File not found for the given remotepath")
 	}
 
-	uploadMask := uint32((1 << uint32(len(a.Blobbers))) - 1)
+	uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 
-	return found, found != uploadMask, fileRef, nil
+	return found, !found.Equals(uploadMask), fileRef, nil
 }
 
 func (a *Allocation) DownloadFile(localPath string, remotePath string, status StatusCallback) error {
@@ -474,7 +473,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	downloadReq.localpath = localPath
 	downloadReq.remotefilepath = remotePath
 	downloadReq.statusCallback = status
-	downloadReq.downloadMask = ((1 << uint32(len(a.Blobbers))) - 1)
+	downloadReq.downloadMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	downloadReq.blobbers = a.Blobbers
 	downloadReq.datashards = a.DataShards
 	downloadReq.parityshards = a.ParityShards
@@ -939,7 +938,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.remotefilepathhash = remoteLookupHash
 	downloadReq.authTicket = at
 	downloadReq.statusCallback = status
-	downloadReq.downloadMask = ((1 << uint32(len(a.Blobbers))) - 1)
+	downloadReq.downloadMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	downloadReq.blobbers = a.Blobbers
 	downloadReq.datashards = a.DataShards
 	downloadReq.parityshards = a.ParityShards
