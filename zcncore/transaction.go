@@ -183,7 +183,6 @@ func txnTypeString(t int) string {
 	default:
 		return "unknown"
 	}
-	return ""
 }
 
 func (t *Transaction) Output() []byte {

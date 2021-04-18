@@ -3,8 +3,11 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"errors"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/sdk/mocks"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	tm "github.com/stretchr/testify/mock"
 	"sync"
 	"testing"
@@ -31,8 +34,8 @@ func TestPushDataIsEncrypted(t *testing.T) {
 	req.fileHashWr = wr
 	req.datashards = 1
 	req.parityshards = 2
-	req.isEncrypted =true
-	req.uploadMask = 2
+	req.isEncrypted = true
+	req.uploadMask = zboxutil.NewUint128(2)
 	req.encscheme = mec
 	req.uploadDataCh = make([]chan []byte, 5)
 	req.uploadDataCh[0] = make(chan []byte, 5)
@@ -45,10 +48,11 @@ func TestPushDataIsEncrypted(t *testing.T) {
 func TestPushData(t *testing.T) {
 	assertion := assert.New(t)
 
+	var b = []byte{}
+	var wr = bytes.NewBuffer(b)
 	var req = &UploadRequest{}
 	req.remaining = 6
-	test := &TestStructImplIOWrite{}
-	req.fileHashWr = test
+	req.fileHashWr = wr
 	req.datashards = 1
 	req.parityshards = 2
 
@@ -61,9 +65,11 @@ func TestPushData(t *testing.T) {
 func TestPushDataEncodeFail(t *testing.T) {
 	assertion := assert.New(t)
 
+	var b = []byte{}
+	var wr = bytes.NewBuffer(b)
 	var req = &UploadRequest{}
 	req.remaining = 6
-	test := &TestStructImplIOWrite{}
+	test := wr
 	req.fileHashWr = test
 
 	err := req.pushData([]byte("test"))
@@ -79,27 +85,21 @@ func TestPrepareUpload(t *testing.T) {
 	// setup mock allocation
 	a, cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
 	defer cncl()
+
+	var b = []byte{}
+	var wr = bytes.NewBuffer(b)
 	var req = &UploadRequest{}
 	req.remaining = 6
-	test := &TestStructImplIOWrite{}
-	req.fileHashWr = test
+	req.fileHashWr = wr
 	s := &sync.WaitGroup{}
 	s.Add(1)
 	req.filemeta = &UploadFileMeta{}
-	req.filemeta.Size=2
-	req.prepareUpload(a, &blockchain.StorageNode{}, &fileref.FileRef{}, make(chan []byte, 1),  make(chan []byte, 1), s)
-
+	req.filemeta.Size = 2
+	req.prepareUpload(a, &blockchain.StorageNode{}, &fileref.FileRef{}, make(chan []byte, 1), make(chan []byte, 1), s)
 }
 
-type TestStructImplIOWrite struct {
-}
-
-func (t TestStructImplIOWrite) Write(p []byte) (n int, err error) {
-	return 1, nil
-}
-
-func TestMaxBlobbersRequiredGreaterThanImplicitLimit32(t *testing.T) {
-	var maxNumOfBlobbers = 33
+func TestMaxBlobbersRequiredGreaterThanImplicitLimit128(t *testing.T) {
+	var maxNumOfBlobbers = 129
 
 	var req = &UploadRequest{}
 	req.setUploadMask(maxNumOfBlobbers)
@@ -110,7 +110,7 @@ func TestMaxBlobbersRequiredGreaterThanImplicitLimit32(t *testing.T) {
 	}
 }
 
-func TestNaxBlobbersRequiredEqualToImplicitLimit32(t *testing.T) {
+func TestMaxBlobbersRequiredEqualToImplicitLimit32(t *testing.T) {
 	var maxNumOfBlobbers = 32
 
 	var req = &UploadRequest{}
@@ -241,34 +241,57 @@ func TestProcessUploadThumbnailPath(t *testing.T) {
 	req.thumbnailpath = "thumbnail path"
 	req.processUpload(ctx, a)
 }
-func TestProcessUploadIsEncrypted(t *testing.T) {
+
+func TestProcessUploadIsEncryptedWithConsensusFailed(t *testing.T) {
 	// setup mock sdk
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
 	a, cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
 	defer cncl()
+	var filePath = uploadWorkerTestDir + "/alloc/1.txt"
+	var remotePath = "/1.txt"
+	scm := &mocks.StatusCallback{}
+	scm.On("Started", "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f", remotePath, OpUpload, 0).Once()
+	scm.On("Error", "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f", remotePath, OpUpload, errors.New("Upload failed: Consensus_rate:NaN, expected:10.000000")).Once()
+	scm.On("Error", "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f", remotePath, OpUpload, common.NewError("commit_consensus_failed", "Upload failed as there was no commit consensus")).Once()
+
 	ctx := context.Background()
 	var req = &UploadRequest{}
 	req.filemeta = &UploadFileMeta{}
-	req.filemeta.MimeType = "mime type"
+	req.filemeta.MimeType = "application/octet-stream"
 	req.isEncrypted = true
+	req.filepath = filePath
+	req.remotefilepath = remotePath
+	req.statusCallback = scm
 	req.processUpload(ctx, a)
+	scm.Test(t)
+	scm.AssertExpectations(t)
 }
-func TestProcessUploadUploadMask(t *testing.T) {
+
+func TestProcessUploadOpenFileFailed(t *testing.T) {
 	// setup mock sdk
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
 	defer closeFn()
 	// setup mock allocation
 	a, cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
 	defer cncl()
+	var filePath = "x"
+	scm := &mocks.StatusCallback{}
+	scm.On("Error", "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f", filePath, OpUpload, &common.Error{Code: "open_file_failed", Msg: "open x: no such file or directory"}).Once()
+
 	ctx := context.Background()
 	var req = &UploadRequest{}
 	req.filemeta = &UploadFileMeta{}
-	req.filemeta.MimeType = "mime type"
-	req.uploadMask = 2
+	req.filemeta.MimeType = "plain/text"
+	req.uploadMask = zboxutil.NewUint128(0xf)
+	req.statusCallback = scm
+	req.filepath = filePath
 	req.processUpload(ctx, a)
+	scm.Test(t)
+	scm.AssertExpectations(t)
 }
+
 func TestProcessUploadChunksPerShard(t *testing.T) {
 	// setup mock sdk
 	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
@@ -276,12 +299,15 @@ func TestProcessUploadChunksPerShard(t *testing.T) {
 	// setup mock allocation
 	a, cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
 	defer cncl()
+	var filePath = uploadWorkerTestDir + "/alloc/1.txt"
+	var remotePath = "/1.txt"
 	scm := &mocks.StatusCallback{}
-	scm.On("Started", "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f", "", OpUpload, 18000).Once()
-	scm.On("Completed", "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f", "", "", "application/octet-stream", 18000, 0).Once()
-	scm.On("InProgress", "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f", "", OpUpload, 18000, []byte(nil)).Maybe()
-	scm.On("Error", "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f", "", OpUpload, tm.AnythingOfType("*errors.errorString")).Maybe()
+	scm.On("Started", "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f", remotePath, OpUpload, 18000).Once()
+	scm.On("Completed", "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f", remotePath, "", "application/octet-stream", 18000, 0).Once()
+	scm.On("InProgress", "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f", remotePath, OpUpload, 18000, []byte(nil)).Maybe()
+	scm.On("Error", "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f", remotePath, OpUpload, tm.AnythingOfType("*errors.errorString")).Maybe()
 	willReturnCommitResult(&CommitResult{Success: true})
+
 	defer willReturnCommitResult(nil)
 	ctx := context.Background()
 	var req = &UploadRequest{}
@@ -289,14 +315,14 @@ func TestProcessUploadChunksPerShard(t *testing.T) {
 	req.filemeta.MimeType = "plain/text"
 	req.datashards = 2
 	req.parityshards = 2
-	req.uploadMask = 2
+	req.uploadMask = zboxutil.NewUint128(0xf)
 	req.filemeta.Size = 9000
-	req.uploadMask = 0xf
 	req.Consensus = Consensus{
 		consensusThresh: 50,
 		fullconsensus:   4,
 	}
-	req.filepath = uploadWorkerTestDir + "/alloc/1.txt"
+	req.remotefilepath = remotePath
+	req.filepath = filePath
 	req.statusCallback = scm
 	req.processUpload(ctx, a)
 	scm.Test(t)
@@ -314,7 +340,7 @@ func TestProcessUploadIsUpdate(t *testing.T) {
 	var req = &UploadRequest{}
 	req.filemeta = &UploadFileMeta{}
 	req.filemeta.MimeType = "mime type"
-	req.uploadMask = 2
+	req.uploadMask = zboxutil.NewUint128(2)
 	req.isUpdate = true
 	req.processUpload(ctx, a)
 }

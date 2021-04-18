@@ -63,7 +63,6 @@ func NewSignatureScheme(sigScheme string) SignatureScheme {
 	default:
 		panic(fmt.Sprintf("unknown signature scheme: %v", sigScheme))
 	}
-	return nil
 }
 
 // Marshal returns json string

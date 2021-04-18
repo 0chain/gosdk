@@ -1,8 +1,10 @@
 package sdk
 
 import (
+	"bytes"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	encMocks "github.com/0chain/gosdk/zboxcore/encryption/mocks"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"sync"
 	"testing"
 
@@ -11,9 +13,10 @@ import (
 
 func TestPushThumbnailData(t *testing.T) {
 
+	var b = []byte{}
+	var wr = bytes.NewBuffer(b)
 	var req = &UploadRequest{}
-	test := &TestStructImplIOWrite{}
-	req.thumbnailHashWr = test
+	req.thumbnailHashWr = wr
 	req.datashards = 2
 	req.parityshards = 2
 	err := req.pushThumbnailData([]byte("test"))
@@ -27,13 +30,14 @@ func TestPushThumbnailDataIsEncrypted(t *testing.T) {
 	mec := &encMocks.EncryptionScheme{}
 	mec.On("Encrypt", []byte{0x65}).Return(&encryption.EncryptedMessage{}, nil).Once()
 
+	var b = []byte{}
+	var wr = bytes.NewBuffer(b)
 	var req = &UploadRequest{}
-	test := &TestStructImplIOWrite{}
-	req.thumbnailHashWr = test
+	req.thumbnailHashWr = wr
 	req.datashards = 200
 	req.parityshards = 20
 	req.isEncrypted = true
-	req.uploadMask = 2
+	req.uploadMask = zboxutil.NewUint128(2)
 	req.encscheme = mec
 	req.uploadThumbCh = make([]chan []byte, 5)
 	req.uploadThumbCh[0] = make(chan []byte, 5)
@@ -46,9 +50,10 @@ func TestPushThumbnailDataIsEncrypted(t *testing.T) {
 func TestPushThumbnailDataEncodeFail(t *testing.T) {
 	assertion := assert.New(t)
 
+	var b = []byte{}
+	var wr = bytes.NewBuffer(b)
 	var req = &UploadRequest{}
-	test := &TestStructImplIOWrite{}
-	req.thumbnailHashWr = test
+	req.thumbnailHashWr = wr
 	err := req.pushThumbnailData([]byte("test"))
 	if err != nil {
 		assertion.Errorf(err, "expected error != nil")
@@ -58,14 +63,11 @@ func TestPushThumbnailDataEncodeFail(t *testing.T) {
 func TestCompleteThumbnailPush(t *testing.T) {
 	assertion := assert.New(t)
 	var req = &UploadRequest{}
-	test := &mocklHash{}
-	req.thumbnailHash = test
-	req.uploadMask = 0
+	req.thumbnailHash = &mocklHash{}
+	req.uploadMask = zboxutil.NewUint128(0)
 	req.filemeta = &UploadFileMeta{}
 	err := req.completeThumbnailPush()
-	if err != nil {
-		assertion.Errorf(err, "expected error != nil")
-	}
+	assertion.NoErrorf(err, "expected error != nil")
 }
 
 func TestProcessThumbnail(t *testing.T) {
@@ -76,9 +78,10 @@ func TestProcessThumbnail(t *testing.T) {
 	a, cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
 	defer cncl()
 
+	var b = []byte{}
+	var wr = bytes.NewBuffer(b)
 	var req = &UploadRequest{}
-	test := &TestStructImplIOWrite{}
-	req.thumbnailHashWr = test
+	req.thumbnailHashWr = wr
 	req.datashards = 2
 	req.parityshards = 2
 	req.thumbnailpath = "./allocation.go"
@@ -98,9 +101,10 @@ func TestProcessThumbnailChunksPerShard(t *testing.T) {
 
 	defer cncl()
 
+	var b = []byte{}
+	var wr = bytes.NewBuffer(b)
 	var req = &UploadRequest{}
-	test := &TestStructImplIOWrite{}
-	req.thumbnailHashWr = test
+	req.thumbnailHashWr = wr
 	req.datashards = 2
 	req.parityshards = 2
 	req.thumbnailpath = "./allocation.go"
@@ -119,9 +123,10 @@ func TestProcessThumbnailFail(t *testing.T) {
 	a, cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
 	defer cncl()
 
+	var b = []byte{}
+	var wr = bytes.NewBuffer(b)
 	var req = &UploadRequest{}
-	test := &TestStructImplIOWrite{}
-	req.thumbnailHashWr = test
+	req.thumbnailHashWr = wr
 	req.datashards = 2
 	req.parityshards = 2
 	req.thumbnailpath = "./failpath"
@@ -140,9 +145,10 @@ func TestProcessThumbnailIsEncrypted(t *testing.T) {
 	a, cncl := setupMockAllocation(t, allocationTestDir, blobberMocks)
 	defer cncl()
 
+	var b = []byte{}
+	var wr = bytes.NewBuffer(b)
 	var req = &UploadRequest{}
-	test := &TestStructImplIOWrite{}
-	req.thumbnailHashWr = test
+	req.thumbnailHashWr = wr
 	req.datashards = 2
 	req.parityshards = 2
 	req.thumbnailpath = "./allocation.go"

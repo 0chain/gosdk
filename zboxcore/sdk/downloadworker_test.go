@@ -7,9 +7,9 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/sdk/mocks"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"math/bits"
 	"os"
 	"sync"
 	"testing"
@@ -43,7 +43,7 @@ func TestDownloadRequest_downloadBlock(t *testing.T) {
 		localpath          string
 		statusCallback     StatusCallback
 		authTicket         *marker.AuthTicket
-		downloadMask       uint32
+		downloadMask       uint64
 		encryptedKey       string
 		isDownloadCanceled bool
 		completedCallback  func(remotepath string, remotepathhash string)
@@ -124,7 +124,7 @@ func TestDownloadRequest_downloadBlock(t *testing.T) {
 				startBlock:         0,
 				endBlock:           1,
 				numBlocks:          int64(numBlockDownloads),
-				downloadMask:       tt.fields.downloadMask,
+				downloadMask:       zboxutil.NewUint128(tt.fields.downloadMask),
 				encryptedKey:       tt.fields.encryptedKey,
 				completedCallback:  tt.fields.completedCallback,
 				contentMode:        tt.fields.contentMode,
@@ -146,8 +146,8 @@ func TestDownloadRequest_downloadBlock(t *testing.T) {
 				defer wg.Done()
 				pos := 0
 				counter := 0
-				for i := req.downloadMask; i != 0; i &= ^(1 << uint32(pos)) {
-					pos = bits.TrailingZeros32(i)
+				for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(uint64(pos)).Not()) {
+					pos = i.TrailingZeros()
 					d := <-downloadBlockChan[tt.fields.blobbers[pos].ID]
 					if tt.resultChData != nil {
 						if len(tt.resultChData) > counter {

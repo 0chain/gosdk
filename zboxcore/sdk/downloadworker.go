@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"math/bits"
 	"os"
 	"strings"
 	"sync"
@@ -45,7 +44,7 @@ type DownloadRequest struct {
 	ctx                context.Context
 	authTicket         *marker.AuthTicket
 	wg                 *sync.WaitGroup
-	downloadMask       uint32
+	downloadMask       zboxutil.Uint128
 	encryptedKey       string
 	isDownloadCanceled bool
 	completedCallback  func(remotepath string, remotepathhash string)
@@ -55,14 +54,14 @@ type DownloadRequest struct {
 
 func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([]byte, error) {
 	req.consensus = 0
-	numDownloads := bits.OnesCount32(req.downloadMask)
+	numDownloads := req.downloadMask.CountOnes()
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numDownloads)
 	rspCh := make(chan *downloadBlock, numDownloads)
 	// Download from only specific blobbers
-	c, pos := 0, 0
-	for i := req.downloadMask; i != 0; i &= ^(1 << uint32(pos)) {
-		pos = bits.TrailingZeros32(i)
+	var c, pos int = 0, 0
+	for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(uint64(pos)).Not()) {
+		pos = i.TrailingZeros()
 		blockDownloadReq := &BlockDownloadRequest{}
 		blockDownloadReq.allocationID = req.allocationID
 		blockDownloadReq.allocationTx = req.allocationTx
@@ -192,7 +191,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 	listReq.authToken = req.authTicket
 	req.downloadMask, fileRef, _ = listReq.getFileConsensusFromBlobbers()
-	if req.downloadMask == 0 || fileRef == nil {
+	if req.downloadMask.Equals64(0) || fileRef == nil {
 		if req.statusCallback != nil {
 			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, fmt.Errorf("No minimum consensus for file meta data of file"))
 		}

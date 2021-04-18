@@ -21,7 +21,7 @@ type StorageNode struct {
 	ID      string `json:"id"`
 	Baseurl string `json:"url"`
 
-	skip uint64 `json:"-"` // skip on error
+	skip uint64 // skip on error
 }
 
 func (sn *StorageNode) SetSkip(t bool) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"os"
 	"strings"
 	"testing"
@@ -20,25 +21,24 @@ import (
 const (
 	allocationTestDir = configDir + "/allocation"
 )
-
-func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit32(t *testing.T) {
+func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit128(t *testing.T) {
 	teardown := setupMocks()
 	defer teardown()
 
-	var maxNumOfBlobbers = 33
+	var maxNumOfBlobbers = 129
 
 	var allocation = &Allocation{}
 	var blobbers = make([]*blockchain.StorageNode, maxNumOfBlobbers)
 	allocation.initialized = true
 	sdkInitialized = true
 	allocation.Blobbers = blobbers
-	allocation.DataShards = 16
-	allocation.ParityShards = 17
+	allocation.DataShards = 64
+	allocation.ParityShards = 65
 
 	var file fileref.Attributes
 	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false, file)
 
-	var expectedErr = "allocation requires [33] blobbers, which is greater than the maximum permitted number of [32]. reduce number of data or parity shards and try again"
+	var expectedErr = "allocation requires [129] blobbers, which is greater than the maximum permitted number of [128]. reduce number of data or parity shards and try again"
 	if err == nil {
 		t.Errorf("uploadOrUpdateFile() = expected error  but was %v", nil)
 	} else if err.Error() != expectedErr {
@@ -674,7 +674,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 		name                          string
 		additionalSetupFn             func(t *testing.T, testcaseName string) (teardown func(t *testing.T))
 		remotePath                    string
-		wantFound                     uint32
+		wantFound                     uint64
 		wantFileRef                   func(assertion *assert.Assertions, testcaseName string) *fileref.FileRef
 		wantMatchesConsensus, wantErr bool
 	}{
@@ -727,7 +727,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 			}
 
 			found, matchesConsensus, fileRef, err := a.RepairRequired(tt.remotePath)
-			assertion.Equal(tt.wantFound, found, "found value must be same")
+			assertion.Equal(zboxutil.NewUint128(tt.wantFound), found, "found value must be same")
 			if tt.wantMatchesConsensus {
 				assertion.True(tt.wantMatchesConsensus, matchesConsensus)
 			} else {

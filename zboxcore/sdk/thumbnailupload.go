@@ -3,9 +3,9 @@ package sdk
 import (
 	"bytes"
 	"encoding/hex"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"io"
 	"math"
-	"math/bits"
 	"os"
 	"sync"
 
@@ -30,10 +30,11 @@ func (req *UploadRequest) pushThumbnailData(data []byte) error {
 		Logger.Error("Erasure coding failed.", err.Error())
 		return err
 	}
-	c, pos := 0, 0
+
+	var c, pos uint64 = 0, 0
 	if req.isEncrypted {
-		for i := req.uploadMask; i != 0; i &= ^(1 << uint32(pos)) {
-			pos = bits.TrailingZeros32(i)
+		for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+			pos = uint64(i.TrailingZeros())
 			encMsg, err := req.encscheme.Encrypt(shards[pos])
 			if err != nil {
 				Logger.Error("Encryption failed.", err.Error())
@@ -44,10 +45,11 @@ func (req *UploadRequest) pushThumbnailData(data []byte) error {
 			shards[pos] = append(header, encMsg.EncryptedData...)
 			c++
 		}
+
 		c, pos = 0, 0
 	}
-	for i := req.uploadMask; i != 0; i &= ^(1 << uint32(pos)) {
-		pos = bits.TrailingZeros32(i)
+	for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
 		req.uploadThumbCh[c] <- shards[pos]
 		c++
 	}
@@ -99,9 +101,9 @@ func (req *UploadRequest) completeThumbnailPush() error {
 	if !req.isRepair {
 		req.filemeta.ThumbnailHash = hex.EncodeToString(req.thumbnailHash.Sum(nil))
 		//fmt.Println("req.filemeta.ThumbnailHash=" + req.filemeta.ThumbnailHash)
-		c, pos := 0, 0
-		for i := req.uploadMask; i != 0; i &= ^(1 << uint32(pos)) {
-			pos = bits.TrailingZeros32(i)
+		var c, pos uint64 = 0, 0
+		for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+			pos = uint64(i.TrailingZeros())
 			req.uploadThumbCh[c] <- []byte("done")
 			c++
 		}
