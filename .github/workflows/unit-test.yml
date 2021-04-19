@@ -7,10 +7,10 @@ on:
     branches: [ master ]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
-      - name: Build Base
+      - name: Run Unit Test
         run: make gosdk-test
