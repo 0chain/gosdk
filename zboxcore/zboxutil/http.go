@@ -141,6 +141,18 @@ func setClientInfo(req *http.Request) {
 	req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
 }
 
+func setClientInfoWithSign(req *http.Request, allocation string) error {
+	setClientInfo(req)
+
+	sign, err := client.Sign(allocation)
+	if err != nil {
+		return err
+	}
+	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
+
+	return nil
+}
+
 func NewCommitRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, COMMIT_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodPost, url, body)
@@ -170,13 +182,9 @@ func NewReferencePathRequest(baseUrl, allocation string, paths []string) (*http.
 		return nil, err
 	}
 
-	setClientInfo(req)
-
-	sign, err := client.Sign(allocation)
-	if err != nil {
+	if err := setClientInfoWithSign(req, allocation); err != nil {
 		return nil, err
 	}
-	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
 
 	return req, nil
 }
@@ -217,13 +225,9 @@ func NewObjectTreeRequest(baseUrl, allocation string, path string) (*http.Reques
 		return nil, err
 	}
 
-	setClientInfo(req)
-
-	sign, err := client.Sign(allocation)
-	if err != nil {
+	if err := setClientInfoWithSign(req, allocation); err != nil {
 		return nil, err
 	}
-	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
 
 	return req, nil
 }
@@ -262,13 +266,9 @@ func NewCollaboratorRequest(baseUrl string, allocation string, body io.Reader) (
 		return nil, err
 	}
 
-	setClientInfo(req)
-
-	sign, err := client.Sign(allocation)
-	if err != nil {
+	if err := setClientInfoWithSign(req, allocation); err != nil {
 		return nil, err
 	}
-	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
 
 	return req, nil
 }
@@ -280,13 +280,9 @@ func GetCollaboratorsRequest(baseUrl string, allocation string, body io.Reader) 
 		return nil, err
 	}
 
-	setClientInfo(req)
-
-	sign, err := client.Sign(allocation)
-	if err != nil {
+	if err := setClientInfoWithSign(req, allocation); err != nil {
 		return nil, err
 	}
-	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
 
 	return req, nil
 }
@@ -298,13 +294,9 @@ func DeleteCollaboratorRequest(baseUrl string, allocation string, body io.Reader
 		return nil, err
 	}
 
-	setClientInfo(req)
-
-	sign, err := client.Sign(allocation)
-	if err != nil {
+	if err := setClientInfoWithSign(req, allocation); err != nil {
 		return nil, err
 	}
-	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
 
 	return req, nil
 }
@@ -326,13 +318,10 @@ func NewFileStatsRequest(baseUrl string, allocation string, body io.Reader) (*ht
 		return nil, err
 	}
 
-	setClientInfo(req)
-
-	sign, err := client.Sign(allocation)
-	if err != nil {
+	if err := setClientInfoWithSign(req, allocation); err != nil {
 		return nil, err
 	}
-	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
+
 	return req, nil
 }
 
@@ -368,13 +357,9 @@ func NewUploadRequest(baseUrl, allocation string, body io.Reader, update bool) (
 		return nil, err
 	}
 
-	setClientInfo(req)
-
-	sign, err := client.Sign(allocation)
-	if err != nil {
+	if err := setClientInfoWithSign(req, allocation); err != nil {
 		return nil, err
 	}
-	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
 
 	return req, nil
 }
@@ -388,13 +373,9 @@ func NewAttributesRequest(baseUrl, allocation string, body io.Reader) (
 		return nil, err
 	}
 
-	setClientInfo(req)
-
-	sign, err := client.Sign(allocation)
-	if err != nil {
+	if err := setClientInfoWithSign(req, allocation); err != nil {
 		return nil, err
 	}
-	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
 
 	return req, nil
 }
@@ -406,13 +387,9 @@ func NewRenameRequest(baseUrl, allocation string, body io.Reader) (*http.Request
 		return nil, err
 	}
 
-	setClientInfo(req)
-
-	sign, err := client.Sign(allocation)
-	if err != nil {
+	if err := setClientInfoWithSign(req, allocation); err != nil {
 		return nil, err
 	}
-	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
 
 	return req, nil
 }
@@ -424,13 +401,9 @@ func NewCopyRequest(baseUrl, allocation string, body io.Reader) (*http.Request, 
 		return nil, err
 	}
 
-	setClientInfo(req)
-
-	sign, err := client.Sign(allocation)
-	if err != nil {
+	if err := setClientInfoWithSign(req, allocation); err != nil {
 		return nil, err
 	}
-	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
 
 	return req, nil
 }
@@ -452,13 +425,9 @@ func NewDeleteRequest(baseUrl, allocation string, body io.Reader) (*http.Request
 		return nil, err
 	}
 
-	setClientInfo(req)
-
-	sign, err := client.Sign(allocation)
-	if err != nil {
+	if err := setClientInfoWithSign(req, allocation); err != nil {
 		return nil, err
 	}
-	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
 
 	return req, nil
 }
