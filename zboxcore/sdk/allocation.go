@@ -8,9 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"sort"
 	"io/ioutil"
-	"math/bits"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,6 +29,12 @@ import (
 var (
 	noBLOBBERS     = errors.New("No Blobbers set in this allocation")
 	notInitialized = common.NewError("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
+)
+
+const (
+	KB = 1024
+	MB = 1024 * KB
+	GB = 1024 * MB
 )
 
 var GetFileInfo = func(localpath string) (os.FileInfo, error) {
@@ -392,8 +396,8 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 		}
 
 		uploadReq.filemeta.Hash = fileRef.ActualFileHash
-		uploadReq.uploadMask = (^found & uploadReq.uploadMask)
-		uploadReq.fullconsensus = float32(bits.TrailingZeros32(uploadReq.uploadMask + 1))
+		uploadReq.uploadMask = found.Not().And(uploadReq.uploadMask)
+		uploadReq.fullconsensus = float32(uploadReq.uploadMask.Add64(1).TrailingZeros())
 	}
 
 	if !uploadReq.IsFullConsensusSupported() {
@@ -409,9 +413,9 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 	return nil
 }
 
-func (a *Allocation) RepairRequired(remotepath string) (uint32, bool, *fileref.FileRef, error) {
+func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, *fileref.FileRef, error) {
 	if !a.isInitialized() {
-		return 0, false, nil, notInitialized
+		return zboxutil.Uint128{}, false, nil, notInitialized
 	}
 
 	listReq := &ListRequest{}
@@ -427,9 +431,9 @@ func (a *Allocation) RepairRequired(remotepath string) (uint32, bool, *fileref.F
 		return found, false, fileRef, fmt.Errorf("File not found for the given remotepath")
 	}
 
-	uploadMask := uint32((1 << uint32(len(a.Blobbers))) - 1)
+	uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 
-	return found, found != uploadMask, fileRef, nil
+	return found, !found.Equals(uploadMask), fileRef, nil
 }
 
 func (a *Allocation) DownloadFile(localPath string, remotePath string, status StatusCallback) error {
@@ -475,7 +479,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	downloadReq.localpath = localPath
 	downloadReq.remotefilepath = remotePath
 	downloadReq.statusCallback = status
-	downloadReq.downloadMask = ((1 << uint32(len(a.Blobbers))) - 1)
+	downloadReq.downloadMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	downloadReq.blobbers = a.Blobbers
 	downloadReq.datashards = a.DataShards
 	downloadReq.parityshards = a.ParityShards
@@ -940,7 +944,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.remotefilepathhash = remoteLookupHash
 	downloadReq.authTicket = at
 	downloadReq.statusCallback = status
-	downloadReq.downloadMask = ((1 << uint32(len(a.Blobbers))) - 1)
+	downloadReq.downloadMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	downloadReq.blobbers = a.Blobbers
 	downloadReq.datashards = a.DataShards
 	downloadReq.parityshards = a.ParityShards
@@ -1147,63 +1151,82 @@ func (a *Allocation) RemoveCollaborator(filePath, collaboratorID string) error {
 }
 
 func (a *Allocation) GetMaxWriteRead() (maxW float64, maxR float64, err error) {
-	if !a.isInitialized(){
-		return 0,0, notInitialized
+	if !a.isInitialized() {
+		return 0, 0, notInitialized
 	}
 
 	blobbersCopy := a.BlobberDetails
 	if len(blobbersCopy) == 0 {
-		return 0,0, noBLOBBERS
+		return 0, 0, noBLOBBERS
 	}
 
-	sort.Slice(blobbersCopy, func(i, j int) bool {
-		return blobbersCopy[i].Terms.WritePrice.ToToken() > blobbersCopy[j].Terms.WritePrice.ToToken()
-	})
-	maxWritePrice := blobbersCopy[0].Terms.WritePrice.ToToken()
-
-	sort.Slice(blobbersCopy, func(i, j int) bool {
-		return blobbersCopy[i].Terms.ReadPrice.ToToken() > blobbersCopy[j].Terms.ReadPrice.ToToken()
-	})
-	maxReadPrice := blobbersCopy[0].Terms.ReadPrice.ToToken()
+	maxWritePrice, maxReadPrice := 0.0, 0.0
+	for _, v := range blobbersCopy {
+		if v.Terms.WritePrice.ToToken() > maxWritePrice {
+			maxWritePrice = v.Terms.WritePrice.ToToken()
+		}
+		if v.Terms.ReadPrice.ToToken() > maxReadPrice {
+			maxReadPrice = v.Terms.ReadPrice.ToToken()
+		}
+	}
 
 	return maxWritePrice, maxReadPrice, nil
 }
 
 func (a *Allocation) GetMinWriteRead() (minW float64, minR float64, err error) {
-	if !a.isInitialized(){
-		return 0,0, notInitialized
+	if !a.isInitialized() {
+		return 0, 0, notInitialized
 	}
 
 	blobbersCopy := a.BlobberDetails
 	if len(blobbersCopy) == 0 {
-		return 0,0, noBLOBBERS
+		return 0, 0, noBLOBBERS
 	}
 
-	sort.Slice(blobbersCopy, func(i, j int) bool {
-		return blobbersCopy[i].Terms.WritePrice.ToToken() < blobbersCopy[j].Terms.WritePrice.ToToken()
-	})
-	minWritePrice := blobbersCopy[0].Terms.WritePrice.ToToken()
-
-	sort.Slice(blobbersCopy, func(i, j int) bool {
-		return blobbersCopy[i].Terms.ReadPrice.ToToken() < blobbersCopy[j].Terms.ReadPrice.ToToken()
-	})
-	minReadPrice := blobbersCopy[0].Terms.ReadPrice.ToToken()
+	minWritePrice, minReadPrice := -1.0, -1.0
+	for _, v := range blobbersCopy {
+		if v.Terms.WritePrice.ToToken() < minWritePrice || minWritePrice < 0 {
+			minWritePrice = v.Terms.WritePrice.ToToken()
+		}
+		if v.Terms.ReadPrice.ToToken() < minReadPrice || minReadPrice < 0 {
+			minReadPrice = v.Terms.ReadPrice.ToToken()
+		}
+	}
 
 	return minWritePrice, minReadPrice, nil
 }
 
 func (a *Allocation) GetMaxStorageCost(size int64) (float64, error) {
 	maxW, _, err := a.GetMaxWriteRead()
-	if err != nil{
-		return 0, err
+	if err != nil {
+		return -1, err
 	}
-	return float64(maxW) * float64(size), nil
+
+	return a.uploadCostForBlobber(maxW, size, a.DataShards, a.ParityShards), nil
 }
 
 func (a *Allocation) GetMinStorageCost(size int64) (float64, error) {
 	minW, _, err := a.GetMinWriteRead()
-	if err != nil{
-		return 0, err
+	if err != nil {
+		return -1, err
 	}
-	return float64(minW) * float64(size), nil
+
+	return a.uploadCostForBlobber(minW, size, a.DataShards, a.ParityShards), nil
+}
+
+func (a *Allocation) uploadCostForBlobber(price float64, size int64, data, parity int) (
+	cost float64) {
+
+	if data == 0 || parity == 0 {
+		return -1.0
+	}
+
+	var ps = (size + int64(data) - 1) / int64(data)
+	ps = ps * int64(data+parity)
+
+	return price * a.sizeInGB(ps)
+}
+
+func (a *Allocation) sizeInGB(size int64) float64 {
+	return float64(size) / GB
 }

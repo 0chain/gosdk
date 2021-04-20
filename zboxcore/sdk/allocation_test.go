@@ -11,82 +11,75 @@ import (
 
 const tokenUnit = 10000000000.0
 
-func Test_getMinWriteRead_success(t *testing.T) {
-	var (
-		ssc = newTestAllocation()
-		err error
-	)
+func TestGetMinMaxWriteReadSuccess(t *testing.T) {
+	var ssc = newTestAllocation()
+	ssc.DataShards = 5
+	ssc.ParityShards = 4
 
 	ssc.initialized = true
 	sdkInitialized = true
 	require.NotNil(t, ssc.BlobberDetails)
 
-	minW, minR, err := ssc.GetMinWriteRead()
-	require.NoError(t, err)
-	require.Equal(t, 800000/tokenUnit, minW)
-	require.Equal(t, 600000/tokenUnit, minR)
+	t.Run("Success minR, minW", func(t *testing.T) {
+		minW, minR, err := ssc.GetMinWriteRead()
+		require.NoError(t, err)
+		require.Equal(t, 800000/tokenUnit, minW)
+		require.Equal(t, 600000/tokenUnit, minR)
+	})
+
+	t.Run("Success maxR, maxW", func(t *testing.T) {
+		maxW, maxR, err := ssc.GetMaxWriteRead()
+		require.NoError(t, err)
+		require.Equal(t, 900000/tokenUnit, maxW)
+		require.Equal(t, 700000/tokenUnit, maxR)
+	})
+
+	t.Run("Error / No Blobbers", func(t *testing.T) {
+		var (
+			ssc = newTestAllocationEmptyBlobbers()
+			err error
+		)
+		ssc.initialized = true
+		_, _, err = ssc.GetMinWriteRead()
+		require.Error(t, err)
+	})
+
+	t.Run("Error / Empty Blobbers", func(t *testing.T) {
+		var err error
+		ssc.initialized = false
+		_, _, err = ssc.GetMinWriteRead()
+		require.Error(t, err)
+	})
+
+	t.Run("Error / Not Initialized", func(t *testing.T) {
+		var err error
+		ssc.initialized = false
+		_, _, err = ssc.GetMinWriteRead()
+		require.Error(t, err)
+	})
+
 }
 
-func Test_GetMaxWriteRead_success(t *testing.T) {
-	var (
-		ssc = newTestAllocation()
-		err error
-	)
+func TestGetMaxMinStorageCostSuccess(t *testing.T) {
+	var ssc = newTestAllocation()
+	ssc.DataShards = 5
+	ssc.ParityShards = 4
 
 	ssc.initialized = true
 	sdkInitialized = true
-	require.NotNil(t, ssc.BlobberDetails)
 
-	maxW, maxR, err := ssc.GetMaxWriteRead()
-	require.NoError(t, err)
-	require.Equal(t, 900000/tokenUnit, maxW)
-	require.Equal(t, 700000/tokenUnit, maxR)
-}
+	t.Run("Success max storage cost", func(t *testing.T) {
+		cost, err := ssc.GetMaxStorageCost(107374182400)
+		require.NoError(t, err)
+		require.Equal(t, 0.016200000000000003, cost)
+	})
 
-func Test_GetMaxStorageCost_success(t *testing.T) {
-	var (
-		ssc = newTestAllocation()
-		err error
-	)
-
-	ssc.initialized = true
-	sdkInitialized = true
-	cost, err := ssc.GetMaxStorageCost(100)
-	require.NoError(t, err)
-	require.Equal(t, 0.009000000000000001, cost)
-}
-
-func Test_GetMinStorageCost_success(t *testing.T) {
-	var (
-		ssc = newTestAllocation()
-		err error
-	)
-
-	ssc.initialized = true
-	sdkInitialized = true
-	cost, err := ssc.GetMinStorageCost(100)
-	require.NoError(t, err)
-	require.Equal(t, 0.008, cost)
-}
-
-func Test_getMinWriteRead_noblobbers(t *testing.T) {
-	var (
-		ssc = newTestAllocationEmptyBlobbers()
-		err error
-	)
-	ssc.initialized = true
-	_, _, err = ssc.GetMinWriteRead()
-	require.Error(t, err)
-}
-
-func Test_getMinWriteRead_notinitialized(t *testing.T) {
-	var (
-		ssc = newTestAllocation()
-		err error
-	)
-	ssc.initialized = false
-	_, _, err = ssc.GetMinWriteRead()
-	require.Error(t, err)
+	t.Run("Success min storage cost", func(t *testing.T) {
+		cost, err := ssc.GetMinStorageCost(107374182400)
+		require.NoError(t, err)
+		print(cost)
+		require.Equal(t, 0.014400000000000001, cost)
+	})
 }
 
 func newTestAllocationEmptyBlobbers() (ssc *Allocation) {
@@ -121,23 +114,23 @@ func newBlobbersDetails() (blobbers []*BlobberAllocation) {
 	return append(append(blobberDetails, &balloc), &balloc2)
 }
 
-func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit32(t *testing.T) {
+func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit128(t *testing.T) {
 	setupMocks()
 
-	var maxNumOfBlobbers = 33
+	var maxNumOfBlobbers = 129
 
 	var allocation = &Allocation{}
 	var blobbers = make([]*blockchain.StorageNode, maxNumOfBlobbers)
 	allocation.initialized = true
 	sdkInitialized = true
 	allocation.Blobbers = blobbers
-	allocation.DataShards = 16
-	allocation.ParityShards = 17
+	allocation.DataShards = 64
+	allocation.ParityShards = 65
 
 	var file fileref.Attributes
 	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false, file)
 
-	var expectedErr = "allocation requires [33] blobbers, which is greater than the maximum permitted number of [32]. reduce number of data or parity shards and try again"
+	var expectedErr = "allocation requires [129] blobbers, which is greater than the maximum permitted number of [128]. reduce number of data or parity shards and try again"
 	if err == nil {
 		t.Errorf("uploadOrUpdateFile() = expected error  but was %v", nil)
 	} else if err.Error() != expectedErr {
