@@ -297,11 +297,11 @@ func (b0 *BLS0ChainScheme) SplitKeys(numSplits int) (*Wallet, error) {
 
 	// Subtract the aggregated private key from the primary private key to derive
 	// the last split private key
-	lastSk := primarySk.GetFP()
-	lastSk.Sub(aggregateSk.GetFP())
+	lastSk := primarySk.GetBIG()
+	lastSk.Sub(aggregateSk.GetBIG())
 
 	// Last key
-	lastSecretKey := bls.SecretKey_fromFP(lastSk)
+	lastSecretKey := bls.SecretKey_fromBIG(lastSk)
 	w.Keys[numSplits-1].PrivateKey = lastSecretKey.SerializeToHexStr()
 	w.Keys[numSplits-1].PublicKey = lastSecretKey.GetPublicKey().SerializeToHexStr()
 

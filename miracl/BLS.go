@@ -70,6 +70,12 @@ func bls_hash_to_point(M []byte) *ECP {
 	return P
 }
 
+func bls_hash_to_point2(M []byte) *ECP {
+	H := NewHashAndMap();
+	P := H.SetHashOf(M)
+	return P
+}
+
 func Init() int {
 	G := ECP2_generator()
 	if G.Is_infinity() {
@@ -110,7 +116,7 @@ func KeyPairGenerate(IKM []byte, S []byte, W []byte) int {
 /* Sign message M using private key S to produce signature SIG */
 
 func Core_Sign(SIG []byte, M []byte, S []byte) int {
-	D := bls_hash_to_point(M)
+	D := bls_hash_to_point2(M)
 	s := FromBytes(S)
 	D = G1mul(D, s)
 	D.ToBytes(SIG, true)
@@ -120,7 +126,7 @@ func Core_Sign(SIG []byte, M []byte, S []byte) int {
 /* Verify signature given message m, the signature SIG, and the public key W */
 
 func Core_Verify(SIG []byte, M []byte, W []byte) int {
-	HM := bls_hash_to_point(M)
+	HM := bls_hash_to_point2(M)
 
 	D := ECP_fromBytes(SIG)
 	if !G1member(D) {
