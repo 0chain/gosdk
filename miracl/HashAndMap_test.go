@@ -75,7 +75,7 @@ func TestMain(t *testing.T) {
 		str1 = Q1.ToString()
 		str2 = G1ToStr(&Q2)
 		if str1 != str2 {
-			t.Errorf("bad sig i=%v s=%s\nsig1=%s\nsig2=%s\n", i, sec1.ToString(), str1, str2)
+			t.Errorf("bad sig i=%v s=%s P=%s\nsig1=%s\nsig2=%s\n", i, sec1.ToString(), P1.ToString(), str1, str2)
 		}
 	}
 
