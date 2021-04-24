@@ -27,7 +27,7 @@ package BN254
 
 import "github.com/0chain/gosdk/miracl/core"
 
-//import "fmt"
+import "fmt"
 
 const BFS int = int(MODBYTES)
 const BGS int = int(MODBYTES)
@@ -119,6 +119,9 @@ func Core_Sign(SIG []byte, M []byte, S []byte) int {
 	D := bls_hash_to_point2(M)
 	s := FromBytes(S)
 	D = G1mul(D, s)
+	fmt.Println("Core_Sign sk", s.ToString())
+	fmt.Println("Core_Sign sig", D.ToString())
+	fmt.Println("Core_Sign bytes", SIG)
 	D.ToBytes(SIG, true)
 	return BLS_OK
 }
