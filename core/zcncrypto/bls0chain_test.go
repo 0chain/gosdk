@@ -183,6 +183,9 @@ func TestSSSignAndVerify(t *testing.T) {
 	fmt.Println("pubkey", pk.ToString())
 
 	signature, err := signScheme.Sign(hash)
+
+	fmt.Println("signature", signature)
+
 	if err != nil {
 		t.Fatalf("BLS signing failed")
 	}
