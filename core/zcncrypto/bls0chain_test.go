@@ -173,6 +173,15 @@ func TestSSSignAndVerify(t *testing.T) {
 	signScheme := NewSignatureScheme("bls0chain")
 	signScheme.SetPrivateKey(signPrivatekey)
 	hash := Sha3Sum256(data)
+
+	fmt.Println("hash", hash)
+	fmt.Println("privkey", signScheme.GetPrivateKey())
+
+	var sk bls.SecretKey
+	sk.DeserializeHexStr(signScheme.GetPrivateKey())
+	pk := sk.GetPublicKey()
+	fmt.Println("pubkey", pk.ToString())
+
 	signature, err := signScheme.Sign(hash)
 	if err != nil {
 		t.Fatalf("BLS signing failed")
