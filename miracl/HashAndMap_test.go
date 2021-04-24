@@ -12,10 +12,14 @@ func SecretKeyToStr(sec *herumi.SecretKey) string {
 	return fmt.Sprintf("%064s", s)
 }
 
-func SignToStr(sig *herumi.Sign) string {
-	P := herumi.CastFromSign(sig)
+func G1ToStr(P *herumi.G1) string {
 	herumi.G1Normalize(P, P)
 	return fmt.Sprintf("(%064s,%064s)", P.X.GetString(16), P.Y.GetString(16))
+}
+
+func SignToStr(sig *herumi.Sign) string {
+	P := herumi.CastFromSign(sig)
+	return G1ToStr(P)
 }
 
 func TestMain(t *testing.T) {
@@ -31,41 +35,48 @@ func TestMain(t *testing.T) {
 
 	var oneSec herumi.SecretKey
 	oneSec.SetHexString("1")
+	var P2, Q2 herumi.G1
 
-	const N = 1000
+	const N = 10
 	for i := 0; i < N; i++ {
 		key := fmt.Sprintf("sec%v\n", i)
 		hash := core.NewHASH256()
 		hash.Process_array([]byte(key))
 		md := hash.Hash()
 
-		sec1 := H.copyAndMask(md)
 		var sec2 herumi.SecretKey
+
+		// check secret key
+		sec1 := H.copyAndMask(md)
 		sec2.SetLittleEndian(md)
-		s1 := sec1.ToString()
-		s2 := SecretKeyToStr(&sec2)
-		if s1 != s2 {
-			t.Errorf("bad str i=%v\ns1=%v\ns2=%v\n", i, s1, s2)
+
+		str1 := sec1.ToString()
+		str2 := SecretKeyToStr(&sec2)
+		if str1 != str2 {
+			t.Errorf("bad str i=%v\ns1=%v\ns2=%v\n", i, str1, str2)
 		}
 
 		msg := []byte(fmt.Sprintf("msg%v\n", i))
 
-		P := H.SetHashOf(msg)
-		sig1str := P.ToString()
-		sig2 := oneSec.SignByte(msg)
-		sig2str := SignToStr(sig2)
-		if sig1str != sig2str {
-			t.Errorf("bad map i=%v\nsig1=%s\nsig2=%s\n", i, sig1str, sig2str)
+		// check hash-and-map function
+		P1 := H.SetHashOf(msg)
+		P2.HashAndMapTo(msg)
+
+		str1 = P1.ToString()
+		str2 = G1ToStr(&P2)
+		if str1 != str2 {
+			t.Errorf("bad map i=%v\nsig1=%s\nsig2=%s\n", i, str1, str2)
 		}
-		/*
-			P = P.Mul(sec1.GetBIG())
-			sig1str = P.ToString()
-			sig2 = sec2.SignByte(msg)
-			sig2str = SignToStr(sig2)
-			if sig1str != sig2str {
-				t.Errorf("bad sig i=%v s=%s\nsig1=%s\nsig2=%s\n", i, s1, sig1str, sig2str)
-			}
-		*/
+
+		// check mul
+		Q1 := P1.Mul(sec1.GetBIG())
+		herumi.G1Mul(&Q2, &P2, herumi.CastFromSecretKey(&sec2))
+
+		str1 = Q1.ToString()
+		str2 = G1ToStr(&Q2)
+		if str1 != str2 {
+			t.Errorf("bad sig i=%v s=%s\nsig1=%s\nsig2=%s\n", i, sec1.ToString(), str1, str2)
+		}
 	}
 
 	for i := 0; i < N; i++ {
