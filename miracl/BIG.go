@@ -369,6 +369,11 @@ func (r *BIG) add(x *BIG) {
 	}
 }
 
+// 0chain: need exported.
+func (r *BIG) Add(x *BIG) {
+	r.add(x)
+}
+
 func (r *BIG) or(x *BIG) {
 	for i := 0; i < NLEN; i++ {
 		r.w[i] = r.w[i] | x.w[i]

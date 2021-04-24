@@ -11,10 +11,13 @@ import (
 	"unsafe"
 )
 
+var r *BN254.BIG
+
 func Init() error {
 	if BN254.Init() == BN254.BLS_FAIL {
 		return errors.New("Couldn't initialize BLS")
 	}
+	r = BN254.NewBIGints(BN254.CURVE_Order)
 	return nil
 }
 
@@ -136,11 +139,7 @@ func (sig *Sign) Add(rhs *Sign) {
 // Starting from herumi's library:
 // <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L480>
 func (sig *Sign) DeserializeHexStr(s string) error {
-	var err error
-	sig.v, err = DeserializeHexStr(s)
-	if err != nil {
-		return err
-	}
+	sig.v = BN254.ECP_fromString(s)
 	return nil
 }
 
@@ -153,7 +152,7 @@ func (sig *Sign) Serialize() []byte {
 // Starting from herumi's library:
 // <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L475>
 func (sig *Sign) SerializeToHexStr() string {
-	return hex.EncodeToString(sig.Serialize())
+	return sig.v.ToString()
 }
 
 // Porting over <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L553>
@@ -354,39 +353,37 @@ func (id *ID) Sub(rhs *ID) {
 // blsSecretKey: <https://github.com/herumi/bls/blob/1b48de51f4f76deb204d108f6126c1507623f739/include/bls/bls.h#L56>
 // FP as Fr: <https://github.com/miracl/core/blob/master/go/FP.go#L26>
 type SecretKey struct {
-	v *BN254.FP
+	v *BN254.BIG
 }
 
 func NewSecretKey() *SecretKey {
 	sk := new(SecretKey)
-	sk.v = BN254.NewFP()
+	sk.v = BN254.NewBIG()
 	return sk
 }
 
 func SecretKey_fromBytes(b []byte) *SecretKey {
 	sk := new(SecretKey)
-	sk.v = BN254.FP_fromBytes(b)
+	sk.v = BN254.FromBytes(b)
+	sk.v.Mod(r)
 	return sk
 }
 
-func SecretKey_fromFP(fp *BN254.FP) *SecretKey {
+func SecretKey_fromBIG(big *BN254.BIG) *SecretKey {
 	sk := new(SecretKey)
-	sk.v = fp
+	sk.v = big
+	sk.v.Mod(r)
 	return sk
 }
 
-func (sk *SecretKey) GetFP() *BN254.FP {
+func (sk *SecretKey) GetBIG() *BN254.BIG {
 	return sk.v
 }
 
 func (sk *SecretKey) Clone() *SecretKey {
 	result := new(SecretKey)
-	result.v = sk.CloneFP()
+	result.v = BN254.NewBIGcopy(sk.v)
 	return result
-}
-
-func (sk *SecretKey) CloneFP() *BN254.FP {
-	return BN254.NewFPcopy(sk.v)
 }
 
 func (sk *SecretKey) SetByCSPRNG() error {
@@ -402,17 +399,17 @@ func (sk *SecretKey) SetByCSPRNG() error {
 			panic("Couldn't read from sRandReader. Got an error (printed out on previous lines.")
 		}
 	}
-	sk.v = BN254.FP_fromBytes(b)
+	sk.v = BN254.FromBytes(b)
+	sk.v.Mod(r)
 	return nil
 }
 
-// TODO: I'm pretty sure we need to work on serialization the XES too.
 func (sk *SecretKey) DeserializeHexStr(s string) error {
 	b, err := hex2byte(s)
 	if err != nil {
 		return err
 	}
-	sk.v = BN254.FP_fromBytes(b) // Method 2. Not sure.
+	sk.v = BN254.FromBytes(b)
 	return nil
 }
 
@@ -428,9 +425,9 @@ func (sk *SecretKey) Sign(m []byte) *Sign {
 	const G1S = BFS + 1 /* Group 1 Size */
 	var SIG [G1S]byte
 
-	b3 := make([]byte, int(BN254.MODBYTES))
-	sk.v.ToBytes(b3)
-	BN254.Core_Sign(SIG[:], m, b3)
+	b_sk := make([]byte, int(BN254.MODBYTES))
+	sk.v.ToBytes(b_sk)
+	BN254.Core_Sign(SIG[:], m, b_sk)
 
 	sig := new(Sign)
 	sig.v = BN254.ECP_fromBytes(SIG[:])
@@ -456,20 +453,8 @@ func (sk *SecretKey) GetPublicKey() *PublicKey {
 	return result
 }
 
-func (sk *SecretKey) Modadd(rhs *SecretKey) {
-	sk.v = BN254.NewFPbig(Modadd(sk.v.GetBIG(), rhs.v.GetBIG()))
-}
-
-func (sk *SecretKey) Modmul(rhs *SecretKey) {
-	sk.v = BN254.NewFPbig(Modmul(sk.v.GetBIG(), rhs.v.GetBIG()))
-}
-
 func (sk *SecretKey) Add(rhs *SecretKey) {
 	sk.v.Add(rhs.v)
-}
-
-func (sk *SecretKey) SubFP(fp *BN254.FP) {
-	sk.v.Sub(fp)
 }
 
 func (sk *SecretKey) GetMasterSecretKey(k int) (msk []SecretKey) {
@@ -489,18 +474,18 @@ func (sk *SecretKey) Set(msk []SecretKey, id *ID) error {
 		return errors.New("No secret keys given.")
 	}
 	if len(msk) == 1 {
-		sk.v = msk[0].CloneFP()
+		sk.v = BN254.NewBIGcopy(msk[0].v)
 		return nil
 	}
-	sk.v = msk[len(msk)-1].CloneFP()
+	sk.v = BN254.NewBIGcopy(msk[len(msk)-1].v)
 
 	m := BN254.NewBIGints(BN254.CURVE_Order)
-	sk0 := sk.v.GetBIG()
+	sk0 := sk.v
 	id0 := id.v.GetBIG()
 
 	for i := len(msk) - 2; i >= 0; i-- {
 		sk0 = BN254.Modmul(sk0, id0, m)
-		sk0 = BN254.Modadd(sk0, msk[i].v.GetBIG(), m)
+		sk0 = BN254.Modadd(sk0, msk[i].v, m)
 
 		// Sorry in advance for this long comment. It is necessary so that future
 		// maintainers can understand the math behind what is going on here. And
@@ -521,11 +506,10 @@ func (sk *SecretKey) Set(msk []SecretKey, id *ID) error {
 		// sk.v.Add(msk[i].v)
 	}
 
-	sk.v = BN254.NewFPbig(sk0)
-
+	sk.v = sk0
 	return nil
 }
 
 func (sk *SecretKey) IsEqual(rhs *SecretKey) bool {
-	return sk.v.Equals(rhs.v)
+	return BN254.Comp(sk.v, rhs.v) == 0
 }
