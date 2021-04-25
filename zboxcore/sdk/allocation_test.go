@@ -23,15 +23,15 @@ func TestGetMinMaxWriteReadSuccess(t *testing.T) {
 	t.Run("Success minR, minW", func(t *testing.T) {
 		minW, minR, err := ssc.GetMinWriteRead()
 		require.NoError(t, err)
-		require.Equal(t, 800000/tokenUnit, minW)
-		require.Equal(t, 600000/tokenUnit, minR)
+		require.Equal(t, 0.01, minW)
+		require.Equal(t, 0.01, minR)
 	})
 
 	t.Run("Success maxR, maxW", func(t *testing.T) {
 		maxW, maxR, err := ssc.GetMaxWriteRead()
 		require.NoError(t, err)
-		require.Equal(t, 900000/tokenUnit, maxW)
-		require.Equal(t, 700000/tokenUnit, maxR)
+		require.Equal(t, 0.01, maxW)
+		require.Equal(t,0.01, maxR)
 	})
 
 	t.Run("Error / No Blobbers", func(t *testing.T) {
@@ -62,23 +62,16 @@ func TestGetMinMaxWriteReadSuccess(t *testing.T) {
 
 func TestGetMaxMinStorageCostSuccess(t *testing.T) {
 	var ssc = newTestAllocation()
-	ssc.DataShards = 5
-	ssc.ParityShards = 4
+	ssc.DataShards = 4
+	ssc.ParityShards = 2
 
 	ssc.initialized = true
 	sdkInitialized = true
 
-	t.Run("Success max storage cost", func(t *testing.T) {
-		cost, err := ssc.GetMaxStorageCost(107374182400)
+	t.Run("Storage cost", func(t *testing.T) {
+		cost, err := ssc.GetMaxStorageCost(100 * GB)
 		require.NoError(t, err)
-		require.Equal(t, 0.016200000000000003, cost)
-	})
-
-	t.Run("Success min storage cost", func(t *testing.T) {
-		cost, err := ssc.GetMinStorageCost(107374182400)
-		require.NoError(t, err)
-		print(cost)
-		require.Equal(t, 0.014400000000000001, cost)
+		require.Equal(t, 1.5, cost)
 	})
 }
 
@@ -101,17 +94,15 @@ func newTestAllocation() (ssc *Allocation) {
 func newBlobbersDetails() (blobbers []*BlobberAllocation) {
 	blobberDetails := make([]*BlobberAllocation, 0)
 
-	var balloc BlobberAllocation
-	balloc.BlobberID = "ID1"
-	balloc.Size = 1000
-	balloc.Terms = Terms{ReadPrice: common.Balance(700000), WritePrice: common.Balance(800000)}
+	for i := 1; i <= 1; i++ {
+		var balloc BlobberAllocation
+		balloc.Size = 1000
 
-	var balloc2 BlobberAllocation
-	balloc2.BlobberID = "ID2"
-	balloc2.Size = 2000
-	balloc2.Terms = Terms{ReadPrice: common.Balance(600000), WritePrice: common.Balance(900000)}
+		balloc.Terms = Terms{ReadPrice: common.Balance(100000000), WritePrice: common.Balance(100000000)}
+		blobberDetails = append(blobberDetails, &balloc)
+	}
 
-	return append(append(blobberDetails, &balloc), &balloc2)
+	return blobberDetails
 }
 
 func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit128(t *testing.T) {
