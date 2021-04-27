@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/0chain/gosdk/miracl/core"
 	herumi "github.com/herumi/bls-go-binary/bls"
-	"testing"
 	"math/big"
+	"testing"
 )
 
 func SecretKeyToStr(sec *herumi.SecretKey) string {
@@ -39,11 +39,11 @@ func TestMul(t *testing.T) {
 		return
 	}
 	s := HexStrToBIG("0f535b6c36d87d91a4e13aa9810fb95e9ae79df5d64581345ec86503be613af7")
-	fmt.Printf("s=%v\n", s.ToString())
 	x := HexStrToBIG("1b45dadc6bfb5ee1ed1ccc95ab154f4acc8d6ffca954fac1297f4ab33d89f311")
 	y := HexStrToBIG("0b79d0f08ebc1e07f1df0d3d1a23c7438147976534cc21317d7cdef2dcc6ed37")
 	P := NewECPbigs(x, y)
 	fmt.Printf("P=%v\n", P.ToString())
+	fmt.Printf("s=%v\n", s.ToString())
 	sP := P.Mul(s)
 	fmt.Printf("sP=%v\n", sP.ToString())
 }
@@ -95,13 +95,16 @@ func TestMain(t *testing.T) {
 		}
 
 		// check mul
-		Q1 := P1.Mul(sec1.GetBIG())
+		fmt.Printf("P1=%v\n", P1.ToString())
+		fmt.Printf("sec1=%v\n", sec1.ToString())
+		Q1 := P1.Mul(sec1)
+		fmt.Printf("Q1=%v\n", Q1.ToString())
 		herumi.G1Mul(&Q2, &P2, herumi.CastFromSecretKey(&sec2))
 
 		str1 = Q1.ToString()
 		str2 = G1ToStr(&Q2)
 		if str1 != str2 {
-			t.Errorf("bad sig i=%v s=%s P=%s\nsig1=%s\nsig2=%s\n", i, sec1.ToString(), P1.ToString(), str1, str2)
+			t.Errorf("bad sig i=%v s=%s\nP=%s\nsig1=%s\nsig2=%s\n", i, sec1.ToString(), P1.ToString(), str1, str2)
 		}
 	}
 
