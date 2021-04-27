@@ -142,13 +142,21 @@ func (H *HashAndMap) MapToG1(t *FP) *ECP {
 	return nil
 }
 
+func BigIntToBIG(x *big.Int) *BIG {
+	buf := make([]byte, 32)
+	b := x.Bytes()
+	n := len(b)
+	copy(buf[32-n:], b)
+	return FromBytes(buf)
+}
+
 /*
 	use b as little endian
 	1. b &= (1 << bitLen) - 1
 	2. b &= (1 << (bitLen - 1)) - 1 if b >= p
 	big.Int.SetBytes accepts big endian
 */
-func (H *HashAndMap) copyAndMask(b []byte) *FP {
+func (H *HashAndMap) copyAndMask(b []byte) *BIG {
 	n := len(b)
 	rb := make([]byte, n)
 	for i := 0; i < n; i++ {
@@ -162,7 +170,8 @@ func (H *HashAndMap) copyAndMask(b []byte) *FP {
 	if xb.Cmp(H.sq.p) >= 0 {
 		xb.SetBit(xb, bitLen-1, 0)
 	}
-	x := bigIntToFP(xb)
+	//	x := bigIntToFP(xb)
+	x := BigIntToBIG(xb)
 	return x
 }
 
@@ -171,5 +180,6 @@ func (H *HashAndMap) SetHashOf(msg []byte) *ECP {
 	hash.Process_array(msg)
 	md := hash.Hash()
 	x := H.copyAndMask(md)
-	return H.MapToG1(x)
+	b := NewFPbig(x)
+	return H.MapToG1(b)
 }
