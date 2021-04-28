@@ -13,7 +13,7 @@ func FPtoBigInt(x *FP) *big.Int {
 	return t
 }
 
-func bigIntToFP(x *big.Int) *FP {
+func BigIntToFP(x *big.Int) *FP {
 	buf := make([]byte, 32)
 	xb := x.Bytes()
 	n := len(xb)
@@ -59,7 +59,7 @@ func (sq *SquareRoot) Get(a *FP) *FP {
 	if c == nil {
 		return nil
 	}
-	return bigIntToFP(c)
+	return BigIntToFP(c)
 }
 
 type HashAndMap struct {
@@ -94,16 +94,6 @@ func (H *HashAndMap) getWeierstrass(x *FP) *FP {
 	yy.mul(x)
 	yy.add(H.b)
 	return yy
-}
-
-func HexStrToBIG(s string) *BIG {
-	a := new(big.Int)
-	a.SetString(s, 16)
-	buf := make([]byte, 32)
-	b := a.Bytes()
-	n := len(b)
-	copy(buf[32-n:], b)
-	return FromBytes(buf)
 }
 
 func (H *HashAndMap) MapToG1(t *FP) *ECP {
@@ -142,21 +132,10 @@ func (H *HashAndMap) MapToG1(t *FP) *ECP {
 			if negative {
 				y.neg()
 			}
-			xb := HexStrToBIG(x.ToString())
-			yb := HexStrToBIG(y.ToString())
-			P := NewECPbigs(xb, yb)
-			return P
+			return NewECPbigs(x.redc(), y.redc())
 		}
 	}
 	return nil
-}
-
-func BigIntToBIG(x *big.Int) *BIG {
-	buf := make([]byte, 32)
-	b := x.Bytes()
-	n := len(b)
-	copy(buf[32-n:], b)
-	return FromBytes(buf)
 }
 
 /*
@@ -179,9 +158,8 @@ func (H *HashAndMap) copyAndMask(b []byte) *BIG {
 	if xb.Cmp(H.sq.p) >= 0 {
 		xb.SetBit(xb, bitLen-1, 0)
 	}
-	//	x := bigIntToFP(xb)
-	x := BigIntToBIG(xb)
-	return x
+	x := BigIntToFP(xb)
+	return x.redc()
 }
 
 func (H *HashAndMap) SetHashOf(msg []byte) *ECP {
