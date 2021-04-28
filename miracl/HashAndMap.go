@@ -96,6 +96,16 @@ func (H *HashAndMap) getWeierstrass(x *FP) *FP {
 	return yy
 }
 
+func HexStrToBIG(s string) *BIG {
+	a := new(big.Int)
+	a.SetString(s, 16)
+	buf := make([]byte, 32)
+	b := a.Bytes()
+	n := len(b)
+	copy(buf[32-n:], b)
+	return FromBytes(buf)
+}
+
 func (H *HashAndMap) MapToG1(t *FP) *ECP {
 	negative := t.jacobi() < 0
 	w := NewFPcopy(t)
@@ -132,10 +142,9 @@ func (H *HashAndMap) MapToG1(t *FP) *ECP {
 			if negative {
 				y.neg()
 			}
-			P := NewECP()
-			P.x = &x
-			P.y = y
-			P.z = NewFPint(1)
+			xb := HexStrToBIG(x.ToString())
+			yb := HexStrToBIG(y.ToString())
+			P := NewECPbigs(xb, yb)
 			return P
 		}
 	}
