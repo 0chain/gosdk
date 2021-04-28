@@ -27,7 +27,7 @@ package BN254
 
 import "github.com/0chain/gosdk/miracl/core"
 
-//import "fmt"
+import "fmt"
 
 const BFS int = int(MODBYTES)
 const BGS int = int(MODBYTES)
@@ -67,6 +67,12 @@ func bls_hash_to_point(M []byte) *ECP {
 	P.Add(P1)
 	P.Cfp()
 	P.Affine()
+	return P
+}
+
+func bls_hash_to_point2(M []byte) *ECP {
+	H := NewHashAndMap();
+	P := H.SetHashOf(M)
 	return P
 }
 
@@ -110,9 +116,12 @@ func KeyPairGenerate(IKM []byte, S []byte, W []byte) int {
 /* Sign message M using private key S to produce signature SIG */
 
 func Core_Sign(SIG []byte, M []byte, S []byte) int {
-	D := bls_hash_to_point(M)
+	D := bls_hash_to_point2(M)
 	s := FromBytes(S)
 	D = G1mul(D, s)
+	fmt.Println("Core_Sign sk", s.ToString())
+	fmt.Println("Core_Sign sig", D.ToString())
+	fmt.Println("Core_Sign bytes", SIG)
 	D.ToBytes(SIG, true)
 	return BLS_OK
 }
@@ -120,7 +129,7 @@ func Core_Sign(SIG []byte, M []byte, S []byte) int {
 /* Verify signature given message m, the signature SIG, and the public key W */
 
 func Core_Verify(SIG []byte, M []byte, W []byte) int {
-	HM := bls_hash_to_point(M)
+	HM := bls_hash_to_point2(M)
 
 	D := ECP_fromBytes(SIG)
 	if !G1member(D) {

@@ -19,6 +19,9 @@
 
 package BN254
 
+import "strings"
+import "encoding/hex"
+
 //import "fmt"
 /* Elliptic Curve Point Structure */
 
@@ -458,6 +461,31 @@ func ECP_fromBytes(b []byte) *ECP {
 		}
 	}
 	return NewECP()
+}
+
+func ECP_fromString(s string) *ECP {
+	s1 := s[1: (len(s)-1) ]
+	i := strings.Index(s1, ",")
+	s_x := s1[0:i]
+	s_y := s1[ (i+1) : len(s1)]
+
+	b_x, err := hex.DecodeString(s_x)
+	if err != nil {
+		panic(err)
+	}
+	b_y, err := hex.DecodeString(s_y)
+	if err != nil {
+		panic(err)
+	}
+
+	x := FromBytes(b_x)
+	y := FromBytes(b_y)
+
+	W := NewECP()
+	W.x = NewFPbig(x)
+	W.y = NewFPbig(y)
+	W.z = NewFPint(1)
+	return W
 }
 
 /* convert to hex string */
