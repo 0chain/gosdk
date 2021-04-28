@@ -13,7 +13,7 @@ func FPtoBigInt(x *FP) *big.Int {
 	return t
 }
 
-func bigIntToFP(x *big.Int) *FP {
+func BigIntToFP(x *big.Int) *FP {
 	buf := make([]byte, 32)
 	xb := x.Bytes()
 	n := len(xb)
@@ -59,7 +59,7 @@ func (sq *SquareRoot) Get(a *FP) *FP {
 	if c == nil {
 		return nil
 	}
-	return bigIntToFP(c)
+	return BigIntToFP(c)
 }
 
 type HashAndMap struct {
@@ -132,23 +132,19 @@ func (H *HashAndMap) MapToG1(t *FP) *ECP {
 			if negative {
 				y.neg()
 			}
-			P := NewECP()
-			P.x = &x
-			P.y = y
-			P.z = NewFPint(1)
-			return P
+			return NewECPbigs(x.redc(), y.redc())
 		}
 	}
 	return nil
 }
 
 /*
-use b as little endian
-1. b &= (1 << bitLen) - 1
-2. b &= (1 << (bitLen - 1)) - 1 if b >= p
-big.Int.SetBytes accepts big endian
+	use b as little endian
+	1. b &= (1 << bitLen) - 1
+	2. b &= (1 << (bitLen - 1)) - 1 if b >= p
+	big.Int.SetBytes accepts big endian
 */
-func (H *HashAndMap) copyAndMask(b []byte) *FP {
+func (H *HashAndMap) copyAndMask(b []byte) *BIG {
 	n := len(b)
 	rb := make([]byte, n)
 	for i := 0; i < n; i++ {
@@ -162,8 +158,8 @@ func (H *HashAndMap) copyAndMask(b []byte) *FP {
 	if xb.Cmp(H.sq.p) >= 0 {
 		xb.SetBit(xb, bitLen-1, 0)
 	}
-	x := bigIntToFP(xb)
-	return x
+	x := BigIntToFP(xb)
+	return x.redc()
 }
 
 func (H *HashAndMap) SetHashOf(msg []byte) *ECP {
@@ -171,5 +167,6 @@ func (H *HashAndMap) SetHashOf(msg []byte) *ECP {
 	hash.Process_array(msg)
 	md := hash.Hash()
 	x := H.copyAndMask(md)
-	return H.MapToG1(x)
+	b := NewFPbig(x)
+	return H.MapToG1(b)
 }
