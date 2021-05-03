@@ -481,10 +481,8 @@ func ECP_fromString(s string) *ECP {
 	x := FromBytes(b_x)
 	y := FromBytes(b_y)
 
-	W := NewECP()
-	W.x = NewFPbig(x)
-	W.y = NewFPbig(y)
-	W.z = NewFPint(1)
+	W := NewECPbigs(x, y)
+
 	return W
 }
 
