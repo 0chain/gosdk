@@ -31,6 +31,12 @@ var (
 	notInitialized = common.NewError("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 )
 
+const (
+	KB = 1024
+	MB = 1024 * KB
+	GB = 1024 * MB
+)
+
 var GetFileInfo = func(localpath string) (os.FileInfo, error) {
 	return os.Stat(localpath)
 }
@@ -1142,4 +1148,92 @@ func (a *Allocation) RemoveCollaborator(filePath, collaboratorID string) error {
 		return nil
 	}
 	return common.NewError("remove_collaborator_failed", "Failed to remove collaborator on all blobbers.")
+}
+
+func (a *Allocation) GetMaxWriteRead() (maxW float64, maxR float64, err error) {
+	if !a.isInitialized() {
+		return 0, 0, notInitialized
+	}
+
+	blobbersCopy := a.BlobberDetails
+	if len(blobbersCopy) == 0 {
+		return 0, 0, noBLOBBERS
+	}
+
+	maxWritePrice, maxReadPrice := 0.0, 0.0
+	for _, v := range blobbersCopy {
+		if v.Terms.WritePrice.ToToken() > maxWritePrice {
+			maxWritePrice = v.Terms.WritePrice.ToToken()
+		}
+		if v.Terms.ReadPrice.ToToken() > maxReadPrice {
+			maxReadPrice = v.Terms.ReadPrice.ToToken()
+		}
+	}
+
+	return maxWritePrice, maxReadPrice, nil
+}
+
+func (a *Allocation) GetMinWriteRead() (minW float64, minR float64, err error) {
+	if !a.isInitialized() {
+		return 0, 0, notInitialized
+	}
+
+	blobbersCopy := a.BlobberDetails
+	if len(blobbersCopy) == 0 {
+		return 0, 0, noBLOBBERS
+	}
+
+	minWritePrice, minReadPrice := -1.0, -1.0
+	for _, v := range blobbersCopy {
+		if v.Terms.WritePrice.ToToken() < minWritePrice || minWritePrice < 0 {
+			minWritePrice = v.Terms.WritePrice.ToToken()
+		}
+		if v.Terms.ReadPrice.ToToken() < minReadPrice || minReadPrice < 0 {
+			minReadPrice = v.Terms.ReadPrice.ToToken()
+		}
+	}
+
+	return minWritePrice, minReadPrice, nil
+}
+
+func (a *Allocation) GetMaxStorageCost(size int64) (float64, error) {
+	var cost common.Balance // total price for size / duration
+
+	for _, d := range a.BlobberDetails {
+		fmt.Printf("write price for blobber %f datashards %d parity %d\n",
+			float64(d.Terms.WritePrice), a.DataShards, a.ParityShards)
+
+		cost += a.uploadCostForBlobber(float64(d.Terms.WritePrice), size,
+			a.DataShards, a.ParityShards)
+
+		fmt.Printf("Total cost %d\n", cost)
+	}
+
+	return cost.ToToken(), nil
+}
+
+func (a *Allocation) GetMinStorageCost(size int64) (common.Balance, error) {
+	minW, _, err := a.GetMinWriteRead()
+	if err != nil {
+		return -1, err
+	}
+
+	return a.uploadCostForBlobber(minW, size, a.DataShards, a.ParityShards), nil
+}
+
+func (a *Allocation) uploadCostForBlobber(price float64, size int64, data, parity int) (
+	cost common.Balance) {
+
+	if data == 0 || parity == 0 {
+		return -1.0
+	}
+
+	var ps = (size + int64(data) - 1) / int64(data)
+	ps = ps * int64(data+parity)
+
+	return common.Balance(price * a.sizeInGB(ps))
+}
+
+func (a *Allocation) sizeInGB(size int64) float64 {
+	return float64(size) / GB
 }
