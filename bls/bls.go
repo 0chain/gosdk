@@ -455,6 +455,7 @@ func (sk *SecretKey) GetPublicKey() *PublicKey {
 
 func (sk *SecretKey) Add(rhs *SecretKey) {
 	sk.v.Add(rhs.v)
+	// sk.v = Modadd(sk.v, rhs.v)
 }
 
 func (sk *SecretKey) GetMasterSecretKey(k int) (msk []SecretKey) {
