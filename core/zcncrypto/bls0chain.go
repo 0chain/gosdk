@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/bls"
+	"github.com/0chain/gosdk/miracl"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/tyler-smith/go-bip39"
 )
@@ -280,25 +281,34 @@ func (b0 *BLS0ChainScheme) SplitKeys(numSplits int) (*Wallet, error) {
 		return nil, errors.New("primary private key not found")
 	}
 
+	var primarySk bls.SecretKey
+	primarySk.DeserializeHexStr(b0.PrivateKey)
+	limit := BN254.NewBIGcopy(primarySk.GetBIG())
+	limit.Div( BN254.NewBIGint(numSplits) )
+
 	// New Wallet
 	w := &Wallet{}
 	w.Keys = make([]KeyPair, numSplits)
-	aggregateSk := bls.NewSecretKey()
+	aggregateSk := BN254.NewBIG()
 	for i := 0; i < numSplits-1; i++ {
 		var tmpSk bls.SecretKey
 		tmpSk.SetByCSPRNG()
+
+		// It is extremely important that aggregateSk < lastSk.
+		// We can ensure this by capping every tmpSk to lastSk/n
+		for BN254.Comp(limit, tmpSk.GetBIG()) < 0 {
+			tmpSk.SetByCSPRNG()
+		}
+
 		w.Keys[i].PrivateKey = tmpSk.SerializeToHexStr()
 		w.Keys[i].PublicKey = tmpSk.GetPublicKey().SerializeToHexStr()
-		aggregateSk.Add(&tmpSk)
+		aggregateSk.Add(tmpSk.GetBIG())
 	}
-
-	var primarySk bls.SecretKey
-	primarySk.DeserializeHexStr(b0.PrivateKey)
 
 	// Subtract the aggregated private key from the primary private key to derive
 	// the last split private key
 	lastSk := primarySk.GetBIG()
-	lastSk.Sub(aggregateSk.GetBIG())
+	lastSk.Sub(aggregateSk)
 
 	// Last key
 	lastSecretKey := bls.SecretKey_fromBIG(lastSk)

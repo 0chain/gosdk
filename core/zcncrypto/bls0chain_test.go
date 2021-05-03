@@ -260,36 +260,7 @@ func TestCombinedSignAndVerify(t *testing.T) {
 
 func TestSplitKey(t *testing.T) {
 	// Generate 0th signature based on this primaryKey.
-
-	// TODO: we need to investigate this. Running the unit test with these primary
-	// keys fail.
-	//
-	// My current hypothesis is that this primaryKey is "too small",
-	// and could lead to a negative Fr/Fp value (which should NEVER happen).
-	// How can a negative value happen? What the SplitKeys operation does, for
-	// "splitKeys=2", is essentially the following in pseudocode:
-	// 1) generate a random key for i=0, call this k_0
-	// 2) for i=1, get the key by doing: primaryKey - k_0
-	// So you can see that if primaryKey is "too small", and the random key is
-	// likely larger than the primaryKey, then k_1 key is going to be negative,
-	// and will break the library.
-	//
-	// In fact this is directly from MIRACL_Core.pdf: `MIRACL Core has no support
-	// for negative numbers. It is the programmers responsibility to make sure
-	// that a negative result can never happen. MIRACL Core does not support a
-	// general purpose big number library.` (page 5, bottom paragraph)
-
-	// `704...` reduces to `00e...`. These primary keys fail.
-	// primaryKeyStr := `704b6f489583bf1118432fcfb38e63fc2d4b61e524fb196cbd95413f8eb91c12`
-	// primaryKeyStr := `00e141c1d583bf0be9a6474fb38e63e309e861e524fb1931c895413f8eb91bd9`
-
-	// `c36...` reduces to `09b...`. These primary keys fail.
-	// primaryKeyStr := `c36f2f92b673cf057a32e8bd0ca88888e7ace40337b737e9c7459fdc4c521918`
-	// primaryKeyStr := `09be39077673cefcd72d653d0ca8885f0207e40337b7378784459fdc4c5218b9`
-
-	// Both of these primary keys pass.
 	primaryKeyStr := `212ba4f27ffffff5a2c62effffffffcdb939ffffffffff8a15ffffffffffff8d`
-	// primaryKeyStr := `5e1fc9c03d53a8b9a63030acc2864f0c33dffddb3c276bf2b3c8d739269cc018`
 
 	scheme0 := NewBLS0ChainScheme()
 	err := scheme0.SetPrivateKey(primaryKeyStr)
