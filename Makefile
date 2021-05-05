@@ -32,7 +32,7 @@ sdkver:
 gosdk-test:
 	go test -tags bn256 ./...
 
-install-gosdk: | gosdk-build gosdk-test
+install-gosdk: | gosdk-build
 
 $(GOPATH)/bin/modvendor:
 	@go get -u github.com/goware/modvendor
@@ -51,6 +51,8 @@ getrev:
 	@echo "" >> $(VERSION_FILE)
 
 install: install-gosdk sdkver
+
+test: gosdk-test
 
 clean: clean-gosdk clean-herumi
 	@rm -rf $(OUTDIR)
