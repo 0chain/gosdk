@@ -32,7 +32,8 @@ import (
 	// "0proxy.io/core/common"
 	// "0proxy.io/zproxycore/handler"
 
-
+	/// delete.go imports
+	// All already imported or not needed.
 )
 
 var verifyPublickey = `041eeb1b4eb9b2456799d8e2a566877e83bc5d76ff38b964bd4b7796f6a6ccae6f1966a4d91d362669fafa3d95526b132a6341e3dfff6447e0e76a07b3a7cfa6e8034574266b382b8e5174477ab8a32a49a57eda74895578031cd2d41fd0aef446046d6e633f5eb68a93013dfac1420bf7a1e1bf7a87476024478e97a1cc115de9`
@@ -271,6 +272,43 @@ func Download(this js.Value, p []js.Value) interface{} {
 	}
 
 	return js.ValueOf(localFilePath)
+}
+
+//-----------------------------------------------------------------------------
+// Ported over from `code/go/0proxy.io/zproxycore/handler/delete.go`
+//-----------------------------------------------------------------------------
+
+// Delete is to delete a file in dStorage
+func Delete(this js.Value, p []js.Value) interface{} {
+	allocation := p[0].String()
+	clientJSON := p[1].String()
+	remotePath := p[2].String()
+
+	err := validateClientDetails(allocation, clientJSON)
+	if err != nil {
+		return js.ValueOf("error: " + err.Error())
+	}
+
+	if len(remotePath) == 0 {
+		return js.ValueOf("error: " + NewError("invalid_param", "Please provide remote_path for delete").Error())
+	}
+
+	err = initSDK(clientJSON)
+	if err != nil {
+		return js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error())
+	}
+
+	allocationObj, err := sdk.GetAllocation(allocation)
+	if err != nil {
+		return js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error())
+	}
+
+	err = allocationObj.DeleteFile(remotePath)
+	if err != nil {
+		return js.ValueOf("error: " + NewError("delete_object_failed", err.Error()).Error())
+	}
+
+	return js.ValueOf("Delete done successfully")
 }
 
 //-----------------------------------------------------------------------------
