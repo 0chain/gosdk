@@ -393,6 +393,43 @@ func createDirIfNotExists(allocation string) {
 }
 
 //-----------------------------------------------------------------------------
+// Ported over from `code/go/0proxy.io/zproxycore/handler/rename.go`
+//-----------------------------------------------------------------------------
+
+// Rename is to rename file in dStorage
+func Rename(this js.Value, p []js.Value) interface{} {
+	allocation := p[0].String()
+	clientJSON := p[1].String()
+	err := validateClientDetails(allocation, clientJSON)
+	if err != nil {
+		return js.ValueOf("error: " + err.Error())
+	}
+
+	remotePath := p[2].String()
+	newName := p[3].String()
+	if len(remotePath) == 0 || len(newName) == 0 {
+		return js.ValueOf("error: " + NewError("invalid_param", "Please provide remote_path and new_name for rename").Error())
+	}
+
+	err = initSDK(clientJSON)
+	if err != nil {
+		return js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error())
+	}
+
+	allocationObj, err := sdk.GetAllocation(allocation)
+	if err != nil {
+		return js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error())
+	}
+
+	err = allocationObj.RenameObject(remotePath, newName)
+	if err != nil {
+		return js.ValueOf("error: " + NewError("rename_object_failed", err.Error()).Error())
+	}
+
+	return "Rename done successfully"
+}
+
+//-----------------------------------------------------------------------------
 
 func main() {
 	// Ported over a basic unit test to make sure it runs in the browser.
@@ -405,5 +442,6 @@ func main() {
 	js.Global().Set("GetClientEncryptedPublicKey", js.FuncOf(GetClientEncryptedPublicKey))
 	js.Global().Set("initializeConfig", js.FuncOf(initializeConfig))
 	js.Global().Set("Download", js.FuncOf(Download))
+	js.Global().Set("Rename", js.FuncOf(Rename))
 	<-c
 }
