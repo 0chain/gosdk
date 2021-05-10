@@ -430,6 +430,43 @@ func Rename(this js.Value, p []js.Value) interface{} {
 }
 
 //-----------------------------------------------------------------------------
+// Ported over from `code/go/0proxy.io/zproxycore/handler/rename.go`
+//-----------------------------------------------------------------------------
+
+// Copy is to copy a file from remotePath to destPath in dStorage
+func Copy(this js.Value, p []js.Value) interface{} {
+	allocation := p[0].String()
+	clientJSON := p[1].String()
+	err := validateClientDetails(allocation, clientJSON)
+	if err != nil {
+		return js.ValueOf("error: " + err.Error())
+	}
+
+	remotePath := p[2].String()
+	destPath := p[3].String()
+	if len(remotePath) == 0 || len(destPath) == 0 {
+		return js.ValueOf("error: " + NewError("invalid_param", "Please provide remote_path and dest_path for copy").Error())
+	}
+
+	err = initSDK(clientJSON)
+	if err != nil {
+		return js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error())
+	}
+
+	allocationObj, err := sdk.GetAllocation(allocation)
+	if err != nil {
+		return js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error())
+	}
+
+	err = allocationObj.CopyObject(remotePath, destPath)
+	if err != nil {
+		return js.ValueOf("error: " + NewError("copy_object_failed", err.Error()).Error())
+	}
+
+	return "Copy done successfully"
+}
+
+//-----------------------------------------------------------------------------
 
 func main() {
 	// Ported over a basic unit test to make sure it runs in the browser.
@@ -443,5 +480,6 @@ func main() {
 	js.Global().Set("initializeConfig", js.FuncOf(initializeConfig))
 	js.Global().Set("Download", js.FuncOf(Download))
 	js.Global().Set("Rename", js.FuncOf(Rename))
+	js.Global().Set("Copy", js.FuncOf(Copy))
 	<-c
 }
