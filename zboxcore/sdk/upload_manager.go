@@ -261,8 +261,8 @@ func (um *UploadManager) Create(blobber *blockchain.StorageNode, connectionID st
 	return progress
 }
 
-//Remove remove UploadProgress
-func (um *UploadManager) Remove(blobber blockchain.StorageNode) {
+//Done remove UploadProgress
+func (um *UploadManager) Done(blobber blockchain.StorageNode) {
 	um.Lock()
 	defer um.Unlock()
 
@@ -278,7 +278,7 @@ func (um *UploadManager) Start(up *UploadProgress, req *UploadRequest, a *Alloca
 	//first requse, upload first chunk and thunmbnail if it has
 	max := int64(len(um.fileBytes))
 
-	isLastChunk := false
+	isFinal := false
 	sent := 0
 	for up.UploadOffset < max {
 
@@ -286,17 +286,17 @@ func (um *UploadManager) Start(up *UploadProgress, req *UploadRequest, a *Alloca
 
 		if offset > max {
 			offset = max
-			isLastChunk = true
+			isFinal = true
 		}
 
 		fileBytes := um.fileBytes[up.UploadOffset:offset]
 
 		if up.UploadOffset == 0 {
-			if err := up.UploadChunk(um, isLastChunk, up.UploadOffset, fileBytes, um.thumbnailBytes, req, a, file); err != nil {
+			if err := up.UploadChunk(um, isFinal, up.UploadOffset, fileBytes, um.thumbnailBytes, req, a, file); err != nil {
 				return
 			}
 		} else {
-			if err := up.UploadChunk(um, isLastChunk, up.UploadOffset, fileBytes, nil, req, a, file); err != nil {
+			if err := up.UploadChunk(um, isFinal, up.UploadOffset, fileBytes, nil, req, a, file); err != nil {
 				return
 			}
 		}
@@ -311,7 +311,7 @@ func (um *UploadManager) Start(up *UploadProgress, req *UploadRequest, a *Alloca
 
 	req.consensus++
 
-	um.Remove(up.Blobber)
+	um.Done(up.Blobber)
 
 	// if up.UploadOffset < um.size {
 
@@ -321,10 +321,10 @@ func (um *UploadManager) Start(up *UploadProgress, req *UploadRequest, a *Alloca
 
 }
 
-//Cancel cancel a upload.
-func (um *UploadManager) Cancel() {
+// //Cancel cancel a upload.
+// func (um *UploadManager) Cancel() {
 
-}
+// }
 
 //UploadProgress upload stats for blobber
 type UploadProgress struct {
@@ -337,7 +337,7 @@ type UploadProgress struct {
 }
 
 //UploadChunk upload a chunk
-func (up *UploadProgress) UploadChunk(um *UploadManager, isLastChunk bool, offset int64, fileBytes, thumbnailBytes []byte, req *UploadRequest, a *Allocation, file *fileref.FileRef) error {
+func (up *UploadProgress) UploadChunk(um *UploadManager, isFinal bool, offset int64, fileBytes, thumbnailBytes []byte, req *UploadRequest, a *Allocation, file *fileref.FileRef) error {
 	bodyReader, bodyWriter := io.Pipe()
 	formWriter := multipart.NewWriter(bodyWriter)
 	httpreq, _ := zboxutil.NewUploadRequest(up.Blobber.Baseurl, a.Tx, bodyReader, req.isUpdate)
@@ -404,7 +404,7 @@ func (up *UploadProgress) UploadChunk(um *UploadManager, isLastChunk bool, offse
 			MerkleRoot:          um.MerkleRoot,
 		}
 
-		if isLastChunk { //last chunk, use hash of whole file instead
+		if isFinal { //last chunk, use hash of whole file instead
 			formData.Hash = um.Hash
 			formData.IsFinal = true
 		}
