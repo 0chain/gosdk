@@ -211,7 +211,7 @@ func (um *UploadManager) Load(req *UploadRequest, a *Allocation, file *fileref.F
 	}
 
 	um.Lock()
-	//TODO: bytes are repeated too many times, it is not bad. Almost of channels should be removed
+	//TODO: bytes are repeated too many times, it is too bad for memory usage. Almost of channels should be removed
 	if !um.isLoaded {
 		um.fileBytes = fileBytes
 		um.thumbnailBytes = thumbnailBytes
