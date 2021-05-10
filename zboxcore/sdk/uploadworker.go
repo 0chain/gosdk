@@ -398,6 +398,7 @@ func (req *UploadRequest) pushData(data []byte) error {
 
 		c, pos = 0, 0
 	}
+
 	for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		req.uploadDataCh[c] <- shards[pos]

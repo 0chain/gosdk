@@ -54,7 +54,8 @@ func GetOrCreateUploadManager(req *UploadRequest) *UploadManager {
 type UploadManager struct {
 	sync.RWMutex
 
-	isLoaded bool //content is full-loaded
+	isLoading bool
+	isLoaded  bool //content is full-loaded
 
 	localPath string //local file
 	size      int64  //size of local file
@@ -88,8 +89,9 @@ type UploadManager struct {
 //Load load local files into memory first.
 //TODO: it can be updated with lazy load/stream mode for memory performance
 func (um *UploadManager) Load(req *UploadRequest, a *Allocation, file *fileref.FileRef, uploadCh chan []byte, uploadThumbCh chan []byte) {
-	um.Lock()
-	defer um.Unlock()
+
+	fileBytes := make([]byte, 0, len(um.fileBytes))
+	thumbnailBytes := make([]byte, 0, len(um.thumbnailBytes))
 
 	shardSize := (req.filemeta.Size + int64(a.DataShards) - 1) / int64(a.DataShards)
 	chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
@@ -135,7 +137,7 @@ func (um *UploadManager) Load(req *UploadRequest, a *Allocation, file *fileref.F
 		if !ok {
 			return
 		}
-		um.fileBytes = append(um.fileBytes, dataBytes...)
+		fileBytes = append(fileBytes, dataBytes...)
 
 		hWr.Write(dataBytes)
 		merkleChunkSize := 64
@@ -191,7 +193,7 @@ func (um *UploadManager) Load(req *UploadRequest, a *Allocation, file *fileref.F
 			if !ok {
 				return
 			}
-			um.thumbnailBytes = append(um.thumbnailBytes, dataBytes...)
+			thumbnailBytes = append(thumbnailBytes, dataBytes...)
 			hWr.Write(dataBytes)
 			remaining = remaining - int64(len(dataBytes))
 		}
@@ -204,26 +206,34 @@ func (um *UploadManager) Load(req *UploadRequest, a *Allocation, file *fileref.F
 		thumbContentHash = hex.EncodeToString(h.Sum(nil))
 	}
 
-	um.Filename = file.Name
-	um.Path = file.Path
-	um.ActualHash = req.filemeta.Hash
-	um.ActualSize = req.filemeta.Size
-	um.ActualThumbnailHash = req.filemeta.ThumbnailHash
-	um.ActualThumbnailSize = req.filemeta.ThumbnailSize
-	um.MimeType = req.filemeta.MimeType
-	um.Attributes = req.filemeta.Attributes
-	um.Hash = fileContentHash
-	um.ThumbnailHash = thumbContentHash
-	um.ThumbnailSize = thumbnailSize
-	um.MerkleRoot = fileMerkleRoot
-	um.ShardSize = shardSize
+	um.Lock()
 
-	if req.isEncrypted {
-		um.EncryptedKey = req.encscheme.GetEncryptedKey()
+	if !um.isLoaded {
+		um.fileBytes = fileBytes
+		um.thumbnailBytes = thumbnailBytes
+
+		um.Filename = file.Name
+		um.Path = file.Path
+		um.ActualHash = req.filemeta.Hash
+		um.ActualSize = req.filemeta.Size
+		um.ActualThumbnailHash = req.filemeta.ThumbnailHash
+		um.ActualThumbnailSize = req.filemeta.ThumbnailSize
+		um.MimeType = req.filemeta.MimeType
+		um.Attributes = req.filemeta.Attributes
+		um.Hash = fileContentHash
+		um.ThumbnailHash = thumbContentHash
+		um.ThumbnailSize = thumbnailSize
+		um.MerkleRoot = fileMerkleRoot
+		um.ShardSize = shardSize
+
+		if req.isEncrypted {
+			um.EncryptedKey = req.encscheme.GetEncryptedKey()
+		}
+
+		um.isLoaded = true
 	}
 
-	um.isLoaded = true
-
+	um.Unlock()
 }
 
 //Create get or create a UploadProgress for a blobber
