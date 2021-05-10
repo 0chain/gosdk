@@ -190,18 +190,7 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 }
 
 func (a *Allocation) InitAllocation() {
-	// if a.uploadChan != nil {
-	// 	close(a.uploadChan)
-	// }
-	// if a.downloadChan != nil {
-	// 	close(a.downloadChan)
-	// }
-	// if a.ctx != nil {
-	// 	a.ctx.Done()
-	// }
-	// for _, v := range a.downloadProgressMap {
-	// 	v.isDownloadCanceled = true
-	// }
+
 	a.uploadChan = make(chan *UploadRequest, 10)
 	a.downloadChan = make(chan *DownloadRequest, 10)
 	a.repairChan = make(chan *RepairRequest, 1)

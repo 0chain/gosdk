@@ -5,19 +5,14 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"hash"
 	"io"
-	"io/ioutil"
 	"math"
-	"mime/multipart"
-	"net/http"
 	"os"
 	"sync"
 
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -26,7 +21,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"golang.org/x/crypto/sha3"
 )
 
 func isSetTestEnv(name string) bool {
@@ -107,214 +101,223 @@ func (req *UploadRequest) setUploadMask(numBlobbers int) {
 }
 
 func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.StorageNode, file *fileref.FileRef, uploadCh chan []byte, uploadThumbCh chan []byte, wg *sync.WaitGroup) {
-	bodyReader, bodyWriter := io.Pipe()
-	formWriter := multipart.NewWriter(bodyWriter)
-	httpreq, _ := zboxutil.NewUploadRequest(blobber.Baseurl, a.Tx, bodyReader, req.isUpdate)
-	//timeout := time.Duration(int64(math.Max(10, float64(obj.file.Size)/(CHUNK_SIZE*float64(len(obj.blobbers)/2)))))
-	//ctx, cncl := context.WithTimeout(context.Background(), (time.Second * timeout))
 
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	var formData uploadFormData
-	shardSize := (req.filemeta.Size + int64(a.DataShards) - 1) / int64(a.DataShards)
-	chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
-	if req.isEncrypted {
-		chunkSizeWithHeader -= 16
-		chunkSizeWithHeader -= 2 * 1024
-	}
-	chunksPerShard := (shardSize + chunkSizeWithHeader - 1) / chunkSizeWithHeader
-	if req.isEncrypted {
-		shardSize += chunksPerShard * (16 + (2 * 1024))
-	}
-	thumbnailSize := int64(0)
-	remaining := shardSize
-	sent := 0
-	go func() {
-		fileMerkleRoot := ""
-		fileContentHash := ""
-		thumbContentHash := ""
-		var (
-			fileField io.Writer
-			err       error
-		)
-		fileField, err = formWriter.CreateFormFile("uploadFile", file.Name)
-		if err != nil {
-			Logger.Error("Create form failed: ", err)
-			bodyWriter.CloseWithError(err)
-			// Just read the data to unblock
-			for remaining > 0 {
-				dataBytes := <-uploadCh
-				remaining = remaining - int64(len(dataBytes))
-			}
-			_ = <-uploadCh
-			return
-		}
-		// Setup file hash compute
-		h := sha1.New()
-		//merkleHash := sha3.New256()
-		hWr := io.MultiWriter(h)
-		merkleHashes := make([]hash.Hash, 1024)
-		merkleLeaves := make([]util.Hashable, 1024)
-		for idx := range merkleHashes {
-			merkleHashes[idx] = sha3.New256()
-		}
-		// Read the data
-		for remaining > 0 {
-			dataBytes, ok := <-uploadCh
-			if !ok {
-				return
-			}
-			fileField.Write(dataBytes)
-			hWr.Write(dataBytes)
-			merkleChunkSize := 64
-			for i := 0; i < len(dataBytes); i += merkleChunkSize {
-				end := i + merkleChunkSize
-				if end > len(dataBytes) {
-					end = len(dataBytes)
-				}
-				offset := i / merkleChunkSize
-				merkleHashes[offset].Write(dataBytes[i:end])
-			}
-			remaining = remaining - int64(len(dataBytes))
-			sent = sent + len(dataBytes)
-			if req.statusCallback != nil {
-				req.statusCallback.InProgress(a.ID, req.remotefilepath, OpUpload, sent*(a.DataShards+a.ParityShards), nil)
-			}
-		}
-		for idx := range merkleHashes {
-			merkleLeaves[idx] = util.NewStringHashable(hex.EncodeToString(merkleHashes[idx].Sum(nil)))
-		}
-		var mt util.MerkleTreeI = &util.MerkleTree{}
-		mt.ComputeTree(merkleLeaves)
-		if !req.isRepair {
-			// Wait for file hash to be ready
-			// Logger.Debug("Waiting for file hash....")
-			_ = <-uploadCh
-			// Logger.Debug("File Hash ready", obj.file.Hash)
-		}
-		fileContentHash = hex.EncodeToString(h.Sum(nil))
-		fileMerkleRoot = mt.GetRoot()
+	uploadManager := GetOrCreateUploadManager(req)
 
-		if len(req.thumbnailpath) > 0 {
-			thumbnailSize = (req.filemeta.ThumbnailSize + int64(a.DataShards) - 1) / int64(a.DataShards)
-			chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
-			if req.isEncrypted {
-				chunkSizeWithHeader -= 16
-				chunkSizeWithHeader -= 2 * 1024
-			}
-			chunksPerShard := (thumbnailSize + chunkSizeWithHeader - 1) / chunkSizeWithHeader
-			if req.isEncrypted {
-				thumbnailSize += chunksPerShard * (16 + (2 * 1024))
-			}
-			remaining := thumbnailSize
+	uploadManager.Load(req, a, file, uploadCh, uploadThumbCh)
 
-			fileField, err := formWriter.CreateFormFile("uploadThumbnailFile", file.Name+".thumb")
-			if err != nil {
-				Logger.Error("Create form failed: ", err)
-				return
-			}
-			// Setup file hash compute
-			h := sha1.New()
-			hWr := io.MultiWriter(h)
-			// Read the data
-			for remaining > 0 {
-				dataBytes, ok := <-uploadThumbCh
-				if !ok {
-					return
-				}
-				fileField.Write(dataBytes)
-				hWr.Write(dataBytes)
-				remaining = remaining - int64(len(dataBytes))
-			}
-			if !req.isRepair {
-				// Wait for file hash to be ready
-				// Logger.Debug("Waiting for file hash....")
-				_ = <-uploadThumbCh
-				// Logger.Debug("File Hash ready", obj.file.Hash)
-			}
-			thumbContentHash = hex.EncodeToString(h.Sum(nil))
-		}
+	uploadManager.Start(uploadManager.Create(blobber), req, a, file)
 
-		formData = uploadFormData{
-			ConnectionID:        req.connectionID,
-			Filename:            file.Name,
-			Path:                file.Path,
-			ActualHash:          req.filemeta.Hash,
-			ActualSize:          req.filemeta.Size,
-			ActualThumbnailHash: req.filemeta.ThumbnailHash,
-			ActualThumbnailSize: req.filemeta.ThumbnailSize,
-			MimeType:            req.filemeta.MimeType,
-			Attributes:          req.filemeta.Attributes,
-			Hash:                fileContentHash,
-			ThumbnailHash:       thumbContentHash,
-			MerkleRoot:          fileMerkleRoot,
-		}
-		if req.isEncrypted {
-			formData.EncryptedKey = req.encscheme.GetEncryptedKey()
-		}
-		_ = formWriter.WriteField("connection_id", req.connectionID)
-		var metaData []byte
-		metaData, err = json.Marshal(formData)
-		// Logger.Debug("Upload with",string(metaData))
-		if err == nil {
-			if req.isUpdate {
-				_ = formWriter.WriteField("updateMeta", string(metaData))
-			} else {
-				_ = formWriter.WriteField("uploadMeta", string(metaData))
-			}
-
-			bodyWriter.CloseWithError(formWriter.Close())
-		}
-	}()
-	_ = zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("Upload : ", err)
-			req.err = err
-			return err
-		}
-		defer resp.Body.Close()
-
-		respbody, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			Logger.Error("Error: Resp ", err)
-			req.err = err
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			Logger.Error(blobber.Baseurl, " Upload error response: ", resp.StatusCode, string(respbody))
-			req.err = fmt.Errorf(string(respbody))
-			return err
-		}
-		var r uploadResult
-		err = json.Unmarshal(respbody, &r)
-		if err != nil {
-			Logger.Error(blobber.Baseurl, " Upload response parse error: ", err)
-			req.err = err
-			return err
-		}
-		if r.Filename != formData.Filename || r.ShardSize != shardSize ||
-			r.Hash != formData.Hash || r.MerkleRoot != formData.MerkleRoot {
-			err = fmt.Errorf(blobber.Baseurl, "Unexpected upload response data", string(respbody))
-			Logger.Error(err)
-			req.err = err
-			return err
-		}
-		req.consensus++
-		Logger.Info(blobber.Baseurl, formData.Path, " uploaded")
-		file.MerkleRoot = formData.MerkleRoot
-		file.ContentHash = formData.Hash
-		file.ThumbnailHash = formData.ThumbnailHash
-		file.ThumbnailSize = thumbnailSize
-		file.Size = shardSize
-		file.Path = formData.Path
-		file.ActualFileHash = formData.ActualHash
-		file.ActualFileSize = formData.ActualSize
-		file.ActualThumbnailHash = formData.ActualThumbnailHash
-		file.ActualThumbnailSize = formData.ActualThumbnailSize
-		file.EncryptedKey = formData.EncryptedKey
-		file.CalculateHash()
-		return nil
-	})
 	wg.Done()
+
+	// bodyReader, bodyWriter := io.Pipe()
+	// formWriter := multipart.NewWriter(bodyWriter)
+	// httpreq, _ := zboxutil.NewUploadRequest(blobber.Baseurl, a.Tx, bodyReader, req.isUpdate)
+	// //timeout := time.Duration(int64(math.Max(10, float64(obj.file.Size)/(CHUNK_SIZE*float64(len(obj.blobbers)/2)))))
+	// //ctx, cncl := context.WithTimeout(context.Background(), (time.Second * timeout))
+
+	// httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+	// var formData uploadFormData
+	// shardSize := (req.filemeta.Size + int64(a.DataShards) - 1) / int64(a.DataShards)
+	// chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
+	// if req.isEncrypted {
+	// 	chunkSizeWithHeader -= 16
+	// 	chunkSizeWithHeader -= 2 * 1024
+	// }
+	// chunksPerShard := (shardSize + chunkSizeWithHeader - 1) / chunkSizeWithHeader
+	// if req.isEncrypted {
+	// 	shardSize += chunksPerShard * (16 + (2 * 1024))
+	// }
+	// thumbnailSize := int64(0)
+	// remaining := shardSize
+	// sent := 0
+	// go func() {
+	// 	fileMerkleRoot := ""
+	// 	fileContentHash := ""
+	// 	thumbContentHash := ""
+	// 	var (
+	// 		fileField io.Writer
+	// 		err       error
+	// 	)
+	// 	fileField, err = formWriter.CreateFormFile("uploadFile", file.Name)
+	// 	if err != nil {
+	// 		Logger.Error("Create form failed: ", err)
+	// 		bodyWriter.CloseWithError(err)
+	// 		// Just read the data to unblock
+	// 		for remaining > 0 {
+	// 			dataBytes := <-uploadCh
+	// 			remaining = remaining - int64(len(dataBytes))
+	// 		}
+	// 		_ = <-uploadCh
+	// 		return
+	// 	}
+	// 	// Setup file hash compute
+	// 	h := sha1.New()
+	// 	//merkleHash := sha3.New256()
+	// 	hWr := io.MultiWriter(h)
+	// 	merkleHashes := make([]hash.Hash, 1024)
+	// 	merkleLeaves := make([]util.Hashable, 1024)
+	// 	for idx := range merkleHashes {
+	// 		merkleHashes[idx] = sha3.New256()
+	// 	}
+	// 	// Read the data
+	// 	for remaining > 0 {
+	// 		dataBytes, ok := <-uploadCh
+	// 		if !ok {
+	// 			return
+	// 		}
+	// 		fileField.Write(dataBytes)
+	// 		hWr.Write(dataBytes)
+	// 		merkleChunkSize := 64
+	// 		for i := 0; i < len(dataBytes); i += merkleChunkSize {
+	// 			end := i + merkleChunkSize
+	// 			if end > len(dataBytes) {
+	// 				end = len(dataBytes)
+	// 			}
+	// 			offset := i / merkleChunkSize
+	// 			merkleHashes[offset].Write(dataBytes[i:end])
+	// 		}
+	// 		remaining = remaining - int64(len(dataBytes))
+	// 		sent = sent + len(dataBytes)
+	// 		if req.statusCallback != nil {
+	// 			req.statusCallback.InProgress(a.ID, req.remotefilepath, OpUpload, sent*(a.DataShards+a.ParityShards), nil)
+	// 		}
+	// 	}
+	// 	for idx := range merkleHashes {
+	// 		merkleLeaves[idx] = util.NewStringHashable(hex.EncodeToString(merkleHashes[idx].Sum(nil)))
+	// 	}
+	// 	var mt util.MerkleTreeI = &util.MerkleTree{}
+	// 	mt.ComputeTree(merkleLeaves)
+	// 	if !req.isRepair {
+	// 		// Wait for file hash to be ready
+	// 		// Logger.Debug("Waiting for file hash....")
+	// 		_ = <-uploadCh
+	// 		// Logger.Debug("File Hash ready", obj.file.Hash)
+	// 	}
+	// 	fileContentHash = hex.EncodeToString(h.Sum(nil))
+	// 	fileMerkleRoot = mt.GetRoot()
+
+	// 	if len(req.thumbnailpath) > 0 {
+	// 		thumbnailSize = (req.filemeta.ThumbnailSize + int64(a.DataShards) - 1) / int64(a.DataShards)
+	// 		chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
+	// 		if req.isEncrypted {
+	// 			chunkSizeWithHeader -= 16
+	// 			chunkSizeWithHeader -= 2 * 1024
+	// 		}
+	// 		chunksPerShard := (thumbnailSize + chunkSizeWithHeader - 1) / chunkSizeWithHeader
+	// 		if req.isEncrypted {
+	// 			thumbnailSize += chunksPerShard * (16 + (2 * 1024))
+	// 		}
+	// 		remaining := thumbnailSize
+
+	// 		fileField, err := formWriter.CreateFormFile("uploadThumbnailFile", file.Name+".thumb")
+	// 		if err != nil {
+	// 			Logger.Error("Create form failed: ", err)
+	// 			return
+	// 		}
+	// 		// Setup file hash compute
+	// 		h := sha1.New()
+	// 		hWr := io.MultiWriter(h)
+	// 		// Read the data
+	// 		for remaining > 0 {
+	// 			dataBytes, ok := <-uploadThumbCh
+	// 			if !ok {
+	// 				return
+	// 			}
+	// 			fileField.Write(dataBytes)
+	// 			hWr.Write(dataBytes)
+	// 			remaining = remaining - int64(len(dataBytes))
+	// 		}
+	// 		if !req.isRepair {
+	// 			// Wait for file hash to be ready
+	// 			// Logger.Debug("Waiting for file hash....")
+	// 			_ = <-uploadThumbCh
+	// 			// Logger.Debug("File Hash ready", obj.file.Hash)
+	// 		}
+	// 		thumbContentHash = hex.EncodeToString(h.Sum(nil))
+	// 	}
+
+	// 	formData = uploadFormData{
+	// 		ConnectionID:        req.connectionID,
+	// 		Filename:            file.Name,
+	// 		Path:                file.Path,
+	// 		ActualHash:          req.filemeta.Hash,
+	// 		ActualSize:          req.filemeta.Size,
+	// 		ActualThumbnailHash: req.filemeta.ThumbnailHash,
+	// 		ActualThumbnailSize: req.filemeta.ThumbnailSize,
+	// 		MimeType:            req.filemeta.MimeType,
+	// 		Attributes:          req.filemeta.Attributes,
+	// 		Hash:                fileContentHash,
+	// 		ThumbnailHash:       thumbContentHash,
+	// 		MerkleRoot:          fileMerkleRoot,
+	// 	}
+	// 	if req.isEncrypted {
+	// 		formData.EncryptedKey = req.encscheme.GetEncryptedKey()
+	// 	}
+	// 	_ = formWriter.WriteField("connection_id", req.connectionID)
+	// 	var metaData []byte
+	// 	metaData, err = json.Marshal(formData)
+	// 	// Logger.Debug("Upload with",string(metaData))
+	// 	if err == nil {
+	// 		if req.isUpdate {
+	// 			_ = formWriter.WriteField("updateMeta", string(metaData))
+	// 		} else {
+	// 			_ = formWriter.WriteField("uploadMeta", string(metaData))
+	// 		}
+
+	// 		bodyWriter.CloseWithError(formWriter.Close())
+	// 	}
+	// }()
+	// _ = zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
+	// 	if err != nil {
+	// 		Logger.Error("Upload : ", err)
+	// 		req.err = err
+	// 		return err
+	// 	}
+	// 	defer resp.Body.Close()
+
+	// 	respbody, err := ioutil.ReadAll(resp.Body)
+	// 	if err != nil {
+	// 		Logger.Error("Error: Resp ", err)
+	// 		req.err = err
+	// 		return err
+	// 	}
+	// 	if resp.StatusCode != http.StatusOK {
+	// 		Logger.Error(blobber.Baseurl, " Upload error response: ", resp.StatusCode, string(respbody))
+	// 		req.err = fmt.Errorf(string(respbody))
+	// 		return err
+	// 	}
+	// 	var r uploadResult
+	// 	err = json.Unmarshal(respbody, &r)
+	// 	if err != nil {
+	// 		Logger.Error(blobber.Baseurl, " Upload response parse error: ", err)
+	// 		req.err = err
+	// 		return err
+	// 	}
+	// 	if r.Filename != formData.Filename || r.ShardSize != shardSize ||
+	// 		r.Hash != formData.Hash || r.MerkleRoot != formData.MerkleRoot {
+	// 		err = fmt.Errorf(blobber.Baseurl, "Unexpected upload response data", string(respbody))
+	// 		Logger.Error(err)
+	// 		req.err = err
+	// 		return err
+	// 	}
+	// 	req.consensus++
+	// 	Logger.Info(blobber.Baseurl, formData.Path, " uploaded")
+	// 	file.MerkleRoot = formData.MerkleRoot
+	// 	file.ContentHash = formData.Hash
+	// 	file.ThumbnailHash = formData.ThumbnailHash
+	// 	file.ThumbnailSize = thumbnailSize
+	// 	file.Size = shardSize
+	// 	file.Path = formData.Path
+	// 	file.ActualFileHash = formData.ActualHash
+	// 	file.ActualFileSize = formData.ActualSize
+	// 	file.ActualThumbnailHash = formData.ActualThumbnailHash
+	// 	file.ActualThumbnailSize = formData.ActualThumbnailSize
+	// 	file.EncryptedKey = formData.EncryptedKey
+	// 	file.CalculateHash()
+	// 	return nil
+	// })
+	// wg.Done()
 }
 
 func (req *UploadRequest) setupUpload(a *Allocation) error {
