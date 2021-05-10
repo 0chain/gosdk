@@ -57,6 +57,15 @@ type uploadFormData struct {
 	CustomMeta          string             `json:"custom_meta,omitempty"`
 	EncryptedKey        string             `json:"encrypted_key,omitempty"`
 	Attributes          fileref.Attributes `json:"attributes,omitempty"`
+
+	//IsResumable the request is resumable upload
+	IsResumable bool `json:"is_resumable,omitempty"`
+	//UploadLength indicates the size of the entire upload in bytes. The value MUST be a non-negative integer.
+	UploadLength int64 `json:"upload_length,omitempty"`
+	//Upload-Offset indicates a byte offset within a resource. The value MUST be a non-negative integer.
+	UploadOffset int64 `json:"upload_offset,omitempty"`
+	//IsFinal  the request is final chunk
+	IsFinal bool `json:"is_final,omitempty"`
 }
 
 type uploadResult struct {
@@ -106,7 +115,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 
 	uploadManager.Load(req, a, file, uploadCh, uploadThumbCh)
 
-	uploadManager.Start(uploadManager.Create(blobber), req, a, file)
+	uploadManager.Start(uploadManager.Create(blobber, req.connectionID), req, a, file)
 
 	wg.Done()
 

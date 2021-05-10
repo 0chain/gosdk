@@ -105,7 +105,6 @@ func (um *UploadManager) Load(req *UploadRequest, a *Allocation, file *fileref.F
 	}
 	thumbnailSize := int64(0)
 	remaining := shardSize
-	sent := 0
 
 	fileMerkleRoot := ""
 	fileContentHash := ""
@@ -149,12 +148,9 @@ func (um *UploadManager) Load(req *UploadRequest, a *Allocation, file *fileref.F
 			offset := i / merkleChunkSize
 			merkleHashes[offset].Write(dataBytes[i:end])
 		}
-		fmt.Println(remaining, remaining-int64(len(dataBytes)))
+
 		remaining = remaining - int64(len(dataBytes))
-		sent = sent + len(dataBytes)
-		if req.statusCallback != nil {
-			req.statusCallback.InProgress(a.ID, req.remotefilepath, OpUpload, sent*(a.DataShards+a.ParityShards), nil)
-		}
+
 	}
 	for idx := range merkleHashes {
 		merkleLeaves[idx] = util.NewStringHashable(hex.EncodeToString(merkleHashes[idx].Sum(nil)))
@@ -207,7 +203,7 @@ func (um *UploadManager) Load(req *UploadRequest, a *Allocation, file *fileref.F
 	}
 
 	um.Lock()
-
+	//TODO: bytes are repeated too many times, it is not bad. Almost of channels should be removed
 	if !um.isLoaded {
 		um.fileBytes = fileBytes
 		um.thumbnailBytes = thumbnailBytes
@@ -237,7 +233,7 @@ func (um *UploadManager) Load(req *UploadRequest, a *Allocation, file *fileref.F
 }
 
 //Create get or create a UploadProgress for a blobber
-func (um *UploadManager) Create(blobber *blockchain.StorageNode) *UploadProgress {
+func (um *UploadManager) Create(blobber *blockchain.StorageNode, connectionID string) *UploadProgress {
 	um.Lock()
 	defer um.Unlock()
 
@@ -248,6 +244,7 @@ func (um *UploadManager) Create(blobber *blockchain.StorageNode) *UploadProgress
 			UploadOffset: 0,
 			UploadLenght: um.size,
 			Blobber:      *blobber,
+			ConnectionID: connectionID,
 		}
 
 		um.blobbers[blobber.ID] = progress
@@ -262,6 +259,67 @@ func (um *UploadManager) Start(up *UploadProgress, req *UploadRequest, a *Alloca
 	up.Lock()
 	defer up.Unlock()
 
+	//first requse, upload first chunk and thunmbnail if it has
+	max := int64(len(um.fileBytes))
+
+	isLastChunk := false
+	sent := 0
+	for up.UploadOffset < max {
+
+		offset := up.UploadOffset + CHUNK_SIZE
+
+		if offset > max {
+			offset = max
+			isLastChunk = true
+		}
+
+		fileBytes := um.fileBytes[up.UploadOffset:offset]
+
+		if up.UploadOffset == 0 {
+			if err := up.UploadChunk(um, isLastChunk, up.UploadOffset, fileBytes, um.thumbnailBytes, req, a, file); err != nil {
+				return
+			}
+		} else {
+			if err := up.UploadChunk(um, isLastChunk, up.UploadOffset, fileBytes, nil, req, a, file); err != nil {
+				return
+			}
+		}
+		sent = sent + len(fileBytes)
+		if req.statusCallback != nil {
+			req.statusCallback.InProgress(a.ID, req.remotefilepath, OpUpload, sent*(a.DataShards+a.ParityShards), nil)
+		}
+
+		up.UploadOffset = offset
+
+	}
+
+	req.consensus++
+
+	// if up.UploadOffset < um.size {
+
+	// }
+
+	// up.UploadOffset
+
+}
+
+//Cancel cancel a upload.
+func (um *UploadManager) Cancel() {
+
+}
+
+//UploadProgress upload stats for blobber
+type UploadProgress struct {
+	sync.Mutex
+	Blobber blockchain.StorageNode
+
+	UploadOffset int64
+	UploadLenght int64
+	ConnectionID string
+}
+
+//UploadChunk upload a chunk
+func (up *UploadProgress) UploadChunk(um *UploadManager, isLastChunk bool, offset int64, fileBytes, thumbnailBytes []byte, req *UploadRequest, a *Allocation, file *fileref.FileRef) error {
 	bodyReader, bodyWriter := io.Pipe()
 	formWriter := multipart.NewWriter(bodyWriter)
 	httpreq, _ := zboxutil.NewUploadRequest(up.Blobber.Baseurl, a.Tx, bodyReader, req.isUpdate)
@@ -275,20 +333,24 @@ func (um *UploadManager) Start(up *UploadProgress, req *UploadRequest, a *Alloca
 		if err != nil {
 			Logger.Error("Create form failed: ", err)
 			bodyWriter.CloseWithError(err)
-			// Just read the data to unblock
 
 			return
 		}
 
-		dataBytes := um.fileBytes
+		h1 := sha1.New()
+		hWr1 := io.MultiWriter(h1)
 
-		fileField.Write(dataBytes)
+		fileField.Write(fileBytes)
+		hWr1.Write(fileBytes)
+
+		fileContentHash := hex.EncodeToString(h1.Sum(nil))
 
 		if req.statusCallback != nil {
-			req.statusCallback.InProgress(a.ID, req.remotefilepath, OpUpload, len(dataBytes)*(a.DataShards+a.ParityShards), nil)
+			req.statusCallback.InProgress(a.ID, req.remotefilepath, OpUpload, len(fileBytes)*(a.DataShards+a.ParityShards), nil)
 		}
 
-		if len(req.thumbnailpath) > 0 {
+		var thumbContentHash string
+		if len(thumbnailBytes) > 0 {
 
 			fileField, err := formWriter.CreateFormFile("uploadThumbnailFile", file.Name+".thumb")
 			if err != nil {
@@ -296,14 +358,21 @@ func (um *UploadManager) Start(up *UploadProgress, req *UploadRequest, a *Alloca
 				return
 			}
 
-			dataBytes := um.thumbnailBytes
+			h2 := sha1.New()
+			hWr2 := io.MultiWriter(h2)
 
-			fileField.Write(dataBytes)
+			fileField.Write(thumbnailBytes)
+			hWr2.Write(thumbnailBytes)
 
+			thumbContentHash = hex.EncodeToString(h2.Sum(nil))
 		}
 
 		formData = uploadFormData{
-			ConnectionID:        req.connectionID,
+			IsResumable:  true,
+			UploadOffset: offset,
+			UploadLength: um.ActualSize,
+
+			ConnectionID:        up.ConnectionID,        //use old connectionid to resume upload
 			Filename:            um.Filename,            //  file.Name,
 			Path:                um.Path,                //  file.Path,
 			ActualHash:          um.ActualHash,          //  req.filemeta.Hash,
@@ -312,10 +381,16 @@ func (um *UploadManager) Start(up *UploadProgress, req *UploadRequest, a *Alloca
 			ActualThumbnailSize: um.ActualThumbnailSize, // req.filemeta.ThumbnailSize,
 			MimeType:            um.MimeType,            // req.filemeta.MimeType,
 			Attributes:          um.Attributes,          //  req.filemeta.Attributes,
-			Hash:                um.Hash,
-			ThumbnailHash:       um.ThumbnailHash,
+			Hash:                fileContentHash,
+			ThumbnailHash:       thumbContentHash,
 			MerkleRoot:          um.MerkleRoot,
 		}
+
+		if isLastChunk { //last chunk, use hash of whole file instead
+			formData.Hash = um.Hash
+			formData.IsFinal = true
+		}
+
 		if req.isEncrypted {
 			formData.EncryptedKey = um.EncryptedKey
 		}
@@ -334,7 +409,7 @@ func (um *UploadManager) Start(up *UploadProgress, req *UploadRequest, a *Alloca
 		}
 	}()
 
-	_ = zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
+	return zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
 			Logger.Error("Upload : ", err)
 			req.err = err
@@ -367,7 +442,7 @@ func (um *UploadManager) Start(up *UploadProgress, req *UploadRequest, a *Alloca
 			req.err = err
 			return err
 		}
-		req.consensus++
+
 		Logger.Info(up.Blobber.Baseurl, formData.Path, " uploaded")
 		file.MerkleRoot = formData.MerkleRoot
 		file.ContentHash = formData.Hash
@@ -383,18 +458,4 @@ func (um *UploadManager) Start(up *UploadProgress, req *UploadRequest, a *Alloca
 		file.CalculateHash()
 		return nil
 	})
-
-}
-
-//Cancel cancel a upload.
-func (um *UploadManager) Cancel() {
-
-}
-
-//UploadProgress upload stats for blobber
-type UploadProgress struct {
-	sync.Mutex
-	Blobber      blockchain.StorageNode
-	UploadOffset int64
-	UploadLenght int64
 }
