@@ -50,6 +50,14 @@ func GetOrCreateUploadManager(req *UploadRequest) *UploadManager {
 	return um
 }
 
+//RemoveUploadManager remove UploadManager for filepath
+func RemoveUploadManager(filepath string) {
+	uploadManagersMutex.Lock()
+	defer uploadManagersMutex.Unlock()
+
+	delete(uploadManagers, filepath)
+}
+
 //UploadManager a upload manager for retry and resum uploading
 type UploadManager struct {
 	sync.RWMutex
@@ -253,6 +261,14 @@ func (um *UploadManager) Create(blobber *blockchain.StorageNode, connectionID st
 	return progress
 }
 
+//Remove remove UploadProgress
+func (um *UploadManager) Remove(blobber blockchain.StorageNode) {
+	um.Lock()
+	defer um.Unlock()
+
+	delete(um.blobbers, blobber.ID)
+}
+
 //Start start or resume upload
 func (um *UploadManager) Start(up *UploadProgress, req *UploadRequest, a *Allocation, file *fileref.FileRef) {
 	//UploadProgress must be multi-thread safe.
@@ -294,6 +310,8 @@ func (um *UploadManager) Start(up *UploadProgress, req *UploadRequest, a *Alloca
 	}
 
 	req.consensus++
+
+	um.Remove(up.Blobber)
 
 	// if up.UploadOffset < um.size {
 

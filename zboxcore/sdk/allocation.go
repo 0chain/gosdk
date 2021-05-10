@@ -358,6 +358,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
 		delete(a.uploadProgressMap, filepath)
+		RemoveUploadManager(filepath)
 	}
 
 	if uploadReq.isRepair {
