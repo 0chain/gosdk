@@ -324,6 +324,8 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 	req.uploadDataCh = make([]chan []byte, numUploads)
 	req.uploadThumbCh = make([]chan []byte, numUploads)
 	req.file = make([]*fileref.FileRef, numUploads)
+	req.clientID = client.GetClientID()
+
 	for i := range req.uploadDataCh {
 		req.uploadDataCh[i] = make(chan []byte)
 		req.uploadThumbCh[i] = make(chan []byte)
