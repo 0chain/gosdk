@@ -317,6 +317,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 	wg.Done()
 }
 
+// setups upload for each blobber with same file
 func (req *UploadRequest) setupUpload(a *Allocation) error {
 	numUploads := req.uploadMask.CountOnes()
 	req.uploadDataCh = make([]chan []byte, numUploads)
@@ -362,6 +363,7 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 	return nil
 }
 
+// this will push the data to the blobber, encrypt if the using the encrypted upload mode
 func (req *UploadRequest) pushData(data []byte) error {
 	//TODO: Check for optimization
 	n := int64(math.Min(float64(req.remaining), float64(len(data))))
