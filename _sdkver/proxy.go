@@ -32,6 +32,9 @@ import (
 	// "0proxy.io/core/common"
 	// "0proxy.io/zproxycore/handler"
 
+	/// share.go imports
+	"github.com/0chain/gosdk/zboxcore/fileref"
+
 	/// delete.go imports
 	// All already imported or not needed.
 )
@@ -80,7 +83,7 @@ func GetClientEncryptedPublicKey(this js.Value, p []js.Value) interface{} {
 	clientJSON := p[0].String()
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
-		// reject := args[1]
+		reject := args[1]
 
 		go func() {
 			initSDK(clientJSON)
@@ -88,7 +91,7 @@ func GetClientEncryptedPublicKey(this js.Value, p []js.Value) interface{} {
 
 			if err != nil {
 				// fmt.Println("get_public_encryption_key_failed: " + err.Error())
-				return js.ValueOf("get_public_encryption_key_failed: " + err.Error())
+				reject.Invoke(js.ValueOf("get_public_encryption_key_failed: " + err.Error()))
 			}
 
 			responseConstructor := js.Global().Get("Response")
@@ -490,6 +493,70 @@ func Copy(this js.Value, p []js.Value) interface{} {
 }
 
 //-----------------------------------------------------------------------------
+// Ported over from `code/go/0proxy.io/zproxycore/handler/share.go`
+//-----------------------------------------------------------------------------
+
+// Share is to share file in dStorage
+func Share(this js.Value, p []js.Value) interface{} {
+	allocation := p[0].String()
+	clientJSON := p[1].String()
+	err := validateClientDetails(allocation, clientJSON)
+	if err != nil {
+		return js.ValueOf("error: " + err.Error())
+	}
+
+	remotePath := p[2].String()
+	if len(remotePath) == 0 {
+		return js.ValueOf("error: " + NewError("invalid_param", "Please provide remote_path for share").Error())
+	}
+
+	refereeClientID := p[3].String()
+	encryptionpublickey := p[4].String()
+
+	err = initSDK(clientJSON)
+	if err != nil {
+		return js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error())
+	}
+
+	allocationObj, err := sdk.GetAllocation(allocation)
+	if err != nil {
+		return js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error())
+
+	}
+
+	refType := fileref.FILE
+	statsMap, err := allocationObj.GetFileStats(remotePath)
+	if err != nil {
+		return js.ValueOf("error: " + NewError("get_file_stats_failed", err.Error()).Error())
+	}
+
+	isFile := false
+	for _, v := range statsMap {
+		if v != nil {
+			isFile = true
+			break
+		}
+	}
+	if !isFile {
+		refType = fileref.DIRECTORY
+	}
+
+	var fileName string
+	_, fileName = filepath.Split(remotePath)
+
+	at, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, refereeClientID, encryptionpublickey)
+	if err != nil {
+		return js.ValueOf("error: " + NewError("get_auth_ticket_failed", err.Error()).Error())
+	}
+
+	// var response struct {
+	// 	AuthTicket string `json:"auth_ticket"`
+	// }
+	// response.AuthTicket = at
+	return js.ValueOf(at)
+}
+
+//-----------------------------------------------------------------------------
 
 func main() {
 	// Ported over a basic unit test to make sure it runs in the browser.
@@ -504,5 +571,6 @@ func main() {
 	js.Global().Set("Download", js.FuncOf(Download))
 	js.Global().Set("Rename", js.FuncOf(Rename))
 	js.Global().Set("Copy", js.FuncOf(Copy))
+	js.Global().Set("Share", js.FuncOf(Share))
 	<-c
 }
