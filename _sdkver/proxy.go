@@ -35,6 +35,9 @@ import (
 	/// share.go imports
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
+	/// upload.go imports
+	"encoding/json"
+
 	/// delete.go imports
 	// All already imported or not needed.
 )
@@ -395,6 +398,19 @@ func writeFile(file multipart.File, filePath string) (string, error) {
 	return f.Name(), err
 }
 
+// Same as writeFile, but takes a string
+func writeFile2(file string, filePath string) (string, error) {
+	f, err := os.OpenFile(filePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	_, err = f.Write([]byte(file))
+	// _, err = io.Copy(f, file)
+	return f.Name(), err
+}
+
 func deleletFile(filePath string) error {
 	return os.RemoveAll(filePath)
 }
@@ -593,7 +609,97 @@ func Move(this js.Value, p []js.Value) interface{} {
 	// resp := response{
 	// 	Message: "Move done successfully",
 	// }
-	return "Move done successfully"
+	return js.ValueOf("Move done successfully")
+}
+
+//-----------------------------------------------------------------------------
+// Ported over from `code/go/0proxy.io/zproxycore/handler/upload.go`
+//-----------------------------------------------------------------------------
+
+// Upload is to upload file to dStorage
+func Upload(this js.Value, p []js.Value) interface{} {
+	method := p[0].String() // POST or PUT
+	allocation := p[1].String()
+	clientJSON := p[2].String()
+	err := validateClientDetails(allocation, clientJSON)
+	if err != nil {
+		return js.ValueOf("error: " + err.Error())
+	}
+
+	remotePath := p[3].String()
+	if len(remotePath) == 0 {
+		return js.ValueOf("error: " + NewError("invalid_param", "Please provide remote_path for upload").Error())
+	}
+
+	Filename := p[4].String()
+	file := p[5].String()
+	// file, fileHeader, err := r.FormFile("file")
+	// if err != nil {
+	// 	js.ValueOf("error: " + NewError("invalid_params", "Unable to get file for upload :"+err.Error()).Error())
+	// }
+	// defer file.Close()
+	encrypt := p[6].String()
+
+	createDirIfNotExists(allocation)
+
+	// localFilePath, err := writeFile(file, getPath(allocation, fileHeader.Filename))
+	localFilePath, err := writeFile2(file, getPath(allocation, Filename))
+	if err != nil {
+		return js.ValueOf("error: " + NewError("write_local_temp_file_failed", err.Error()).Error())
+	}
+	defer deleletFile(localFilePath)
+
+	err = initSDK(clientJSON)
+	if err != nil {
+		return js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error())
+	}
+
+	allocationObj, err := sdk.GetAllocation(allocation)
+	if err != nil {
+		return js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error())
+	}
+
+	fileAttrs := p[7].String()
+	var attrs fileref.Attributes
+	if len(fileAttrs) > 0 {
+		err := json.Unmarshal([]byte(fileAttrs), &attrs)
+		if err != nil {
+			return js.ValueOf("error: " + NewError("failed_to_parse_file_attrs", err.Error()).Error())
+		}
+	}
+
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	wg.Add(1)
+	if method == "POST" {
+		encryptBool, _ := strconv.ParseBool(encrypt)
+		if encryptBool {
+			// Logger.Info("Doing encrypted file upload with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
+			fmt.Println("Doing encrypted file upload with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
+			err = allocationObj.EncryptAndUploadFile(localFilePath, remotePath, attrs, statusBar)
+		} else {
+			// Logger.Info("Doing file upload with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
+			fmt.Println("Doing file upload with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
+			err = allocationObj.UploadFile(localFilePath, remotePath, attrs, statusBar)
+		}
+	} else {
+		// Logger.Info("Doing file update with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
+		fmt.Println("Doing file update with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
+		err = allocationObj.UpdateFile(localFilePath, remotePath, attrs, statusBar)
+	}
+	if err != nil {
+		return js.ValueOf("error: " + NewError("upload_file_failed", err.Error()).Error())
+	}
+
+	wg.Wait()
+	if !statusBar.success {
+		return js.ValueOf("error: " + statusBar.err.Error())
+	}
+
+	// resp := response{
+	// 	Message: "Upload done successfully",
+	// }
+	return js.ValueOf("Upload done successfully")
 }
 
 //-----------------------------------------------------------------------------
@@ -606,13 +712,14 @@ func main() {
 
 	c := make(chan struct{}, 0)
 	js.Global().Set("add", js.FuncOf(addFunction))
-	js.Global().Set("GetClientEncryptedPublicKey", js.FuncOf(GetClientEncryptedPublicKey))
 	js.Global().Set("initializeConfig", js.FuncOf(initializeConfig))
+	js.Global().Set("Upload", js.FuncOf(Upload))
 	js.Global().Set("Download", js.FuncOf(Download))
 	js.Global().Set("Share", js.FuncOf(Share))
 	js.Global().Set("Rename", js.FuncOf(Rename))
 	js.Global().Set("Copy", js.FuncOf(Copy))
 	js.Global().Set("Delete", js.FuncOf(Delete))
 	js.Global().Set("Move", js.FuncOf(Move))
+	js.Global().Set("GetClientEncryptedPublicKey", js.FuncOf(GetClientEncryptedPublicKey))
 	<-c
 }
