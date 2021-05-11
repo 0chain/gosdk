@@ -74,13 +74,36 @@ func addFunction(this js.Value, p []js.Value) interface{} {
 }
 
 // Ported from `code/go/0proxy.io/zproxycore/handler/wallet.go`
+// Promise code taken from:
+// https://withblue.ink/2020/10/03/go-webassembly-http-requests-and-promises.html
 func GetClientEncryptedPublicKey(this js.Value, p []js.Value) interface{} {
-	initSDK(p[0].String())
-	key, err := sdk.GetClientEncryptedPublicKey()
-	if err != nil {
-		return js.ValueOf("get_public_encryption_key_failed: " + err.Error())
-	}
-	return js.ValueOf(key)
+	clientJSON := p[0].String()
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		// reject := args[1]
+
+		go func() {
+			initSDK(clientJSON)
+			key, err := sdk.GetClientEncryptedPublicKey()
+
+			if err != nil {
+				// fmt.Println("get_public_encryption_key_failed: " + err.Error())
+				return js.ValueOf("get_public_encryption_key_failed: " + err.Error())
+			}
+
+			responseConstructor := js.Global().Get("Response")
+			response := responseConstructor.New(js.ValueOf(key))
+
+			// Resolve the Promise
+			resolve.Invoke(response)
+		}()
+
+		return nil
+	})
+
+	// Create and return the Promise object
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 // Ported from `code/go/0proxy.io/zproxycore/zproxy/main.go`
