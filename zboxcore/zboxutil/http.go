@@ -48,6 +48,9 @@ const (
 	COMMIT_META_TXN_ENDPOINT = "/v1/file/commitmetatxn/"
 	COLLABORATOR_ENDPOINT    = "/v1/file/collaborator/"
 	CALCULATE_HASH_ENDPOINT  = "/v1/file/calculatehash/"
+
+	// CLIENT_SIGNATURE_HEADER represents http request header contains signature.
+	CLIENT_SIGNATURE_HEADER = "X-App-Client-Signature"
 )
 
 func getEnvAny(names ...string) string {
@@ -135,18 +138,31 @@ func NewHTTPRequest(method string, url string, data []byte) (req *http.Request, 
 	return req, ctx, cncl, err
 }
 
-func setClientInfo(req *http.Request, err error) (*http.Request, error) {
-	if err == nil {
-		req.Header.Set("X-App-Client-ID", client.GetClientID())
-		req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
+func setClientInfo(req *http.Request) {
+	req.Header.Set("X-App-Client-ID", client.GetClientID())
+	req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
+}
+
+func setClientInfoWithSign(req *http.Request, allocation string) error {
+	setClientInfo(req)
+
+	sign, err := client.Sign(allocation)
+	if err != nil {
+		return err
 	}
-	return req, err
+	req.Header.Set(CLIENT_SIGNATURE_HEADER, sign)
+
+	return nil
 }
 
 func NewCommitRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, COMMIT_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodPost, url, body)
-	return setClientInfo(req, err)
+	if err != nil {
+		return nil, err
+	}
+	setClientInfo(req)
+	return req, nil
 }
 
 func NewReferencePathRequest(baseUrl, allocation string, paths []string) (*http.Request, error) {
@@ -164,7 +180,15 @@ func NewReferencePathRequest(baseUrl, allocation string, paths []string) (*http.
 	//url := fmt.Sprintf("%s%s%s?path=%s", baseUrl, LIST_ENDPOINT, allocation, path)
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)
-	return setClientInfo(req, err)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 func NewCalculateHashRequest(baseUrl, allocation string, paths []string) (*http.Request, error) {
@@ -181,7 +205,11 @@ func NewCalculateHashRequest(baseUrl, allocation string, paths []string) (*http.
 	params.Add("paths", string(pathBytes))
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 	req, err := http.NewRequest(http.MethodPost, nurl.String(), nil)
-	return setClientInfo(req, err)
+	if err != nil {
+		return nil, err
+	}
+	setClientInfo(req)
+	return req, nil
 }
 
 func NewObjectTreeRequest(baseUrl, allocation string, path string) (*http.Request, error) {
@@ -195,7 +223,15 @@ func NewObjectTreeRequest(baseUrl, allocation string, path string) (*http.Reques
 	//url := fmt.Sprintf("%s%s%s?path=%s", baseUrl, LIST_ENDPOINT, allocation, path)
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)
-	return setClientInfo(req, err)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 func NewAllocationRequest(baseUrl, allocation string) (*http.Request, error) {
@@ -208,43 +244,87 @@ func NewAllocationRequest(baseUrl, allocation string) (*http.Request, error) {
 	params.Add("id", allocation)
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)
-	return setClientInfo(req, err)
+	if err != nil {
+		return nil, err
+	}
+	setClientInfo(req)
+	return req, nil
 }
 
 func NewCommitMetaTxnRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, COMMIT_META_TXN_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodPost, url, body)
-	return setClientInfo(req, err)
+	if err != nil {
+		return nil, err
+	}
+	setClientInfo(req)
+	return req, nil
 }
 
 func NewCollaboratorRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, COLLABORATOR_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodPost, url, body)
-	return setClientInfo(req, err)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 func GetCollaboratorsRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, COLLABORATOR_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodGet, url, body)
-	return setClientInfo(req, err)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 func DeleteCollaboratorRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, COLLABORATOR_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodDelete, url, body)
-	return setClientInfo(req, err)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 func NewFileMetaRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, FILE_META_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodPost, url, body)
-	return setClientInfo(req, err)
+	if err != nil {
+		return nil, err
+	}
+	setClientInfo(req)
+	return req, nil
 }
 
 func NewFileStatsRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, FILE_STATS_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodPost, url, body)
-	return setClientInfo(req, err)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 func NewListRequest(baseUrl, allocation string, path string, auth_token string) (*http.Request, error) {
@@ -259,7 +339,11 @@ func NewListRequest(baseUrl, allocation string, path string, auth_token string) 
 	//url := fmt.Sprintf("%s%s%s?path=%s", baseUrl, LIST_ENDPOINT, allocation, path)
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)
-	return setClientInfo(req, err)
+	if err != nil {
+		return nil, err
+	}
+	setClientInfo(req)
+	return req, nil
 }
 
 func NewUploadRequest(baseUrl, allocation string, body io.Reader, update bool) (*http.Request, error) {
@@ -271,7 +355,15 @@ func NewUploadRequest(baseUrl, allocation string, body io.Reader, update bool) (
 	} else {
 		req, err = http.NewRequest(http.MethodPost, url, body)
 	}
-	return setClientInfo(req, err)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 func NewAttributesRequest(baseUrl, allocation string, body io.Reader) (
@@ -279,32 +371,67 @@ func NewAttributesRequest(baseUrl, allocation string, body io.Reader) (
 
 	var url = fmt.Sprintf("%s%s%s", baseUrl, ATTRS_ENDPOINT, allocation)
 	req, err = http.NewRequest(http.MethodPost, url, body)
+	if err != nil {
+		return nil, err
+	}
 
-	return setClientInfo(req, err)
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 func NewRenameRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, RENAME_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodPost, url, body)
-	return setClientInfo(req, err)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 func NewCopyRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, COPY_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodPost, url, body)
-	return setClientInfo(req, err)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 func NewDownloadRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, DOWNLOAD_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodPost, url, body)
-	return setClientInfo(req, err)
+	if err != nil {
+		return nil, err
+	}
+	setClientInfo(req)
+	return req, nil
 }
 
 func NewDeleteRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, UPLOAD_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodDelete, url, body)
-	return setClientInfo(req, err)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
 }
 
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, handler SCRestAPIHandler) ([]byte, error) {
