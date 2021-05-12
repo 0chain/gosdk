@@ -53,6 +53,7 @@ type uploadFormData struct {
 	Filename            string             `json:"filename"`
 	Path                string             `json:"filepath"`
 	Hash                string             `json:"content_hash,omitempty"`
+	ClientId 			string             `json:"client_id,omitempty"`
 	ThumbnailHash       string             `json:"thumbnail_content_hash,omitempty"`
 	MerkleRoot          string             `json:"merkle_root,omitempty"`
 	ActualHash          string             `json:"actual_hash"`
@@ -248,6 +249,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 			Hash:                fileContentHash,
 			ThumbnailHash:       thumbContentHash,
 			MerkleRoot:          fileMerkleRoot,
+			ClientId:            req.clientID,
 		}
 		if req.isEncrypted {
 			formData.EncryptedKey = req.encscheme.GetEncryptedKey()
