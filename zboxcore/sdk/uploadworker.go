@@ -63,6 +63,7 @@ type uploadFormData struct {
 	MimeType            string             `json:"mimetype"`
 	CustomMeta          string             `json:"custom_meta,omitempty"`
 	EncryptedKey        string             `json:"encrypted_key,omitempty"`
+	ClientPrivateKey    string             `json:"client_private_key,omitempty"`
 	Attributes          fileref.Attributes `json:"attributes,omitempty"`
 }
 
@@ -253,6 +254,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 		}
 		if req.isEncrypted {
 			formData.EncryptedKey = req.encscheme.GetEncryptedKey()
+			formData.ClientPrivateKey = req.encscheme.GetPrivateKey()
 		}
 		_ = formWriter.WriteField("connection_id", req.connectionID)
 		var metaData []byte
