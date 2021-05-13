@@ -332,22 +332,39 @@ func Delete(this js.Value, p []js.Value) interface{} {
 		return js.ValueOf("error: " + NewError("invalid_param", "Please provide remote_path for delete").Error())
 	}
 
-	err = initSDK(clientJSON)
-	if err != nil {
-		return js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error())
-	}
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
 
-	allocationObj, err := sdk.GetAllocation(allocation)
-	if err != nil {
-		return js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error())
-	}
+		go func() {
+			err = initSDK(clientJSON)
+			if err != nil {
+				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
+			}
 
-	err = allocationObj.DeleteFile(remotePath)
-	if err != nil {
-		return js.ValueOf("error: " + NewError("delete_object_failed", err.Error()).Error())
-	}
+			allocationObj, err := sdk.GetAllocation(allocation)
+			if err != nil {
+				reject.Invoke(js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error()))
+			}
 
-	return js.ValueOf("Delete done successfully")
+			err = allocationObj.DeleteFile(remotePath)
+			if err != nil {
+				reject.Invoke(js.ValueOf("error: " + NewError("delete_object_failed", err.Error()).Error()))
+			}
+
+			responseConstructor := js.Global().Get("Response")
+			response := responseConstructor.New(js.ValueOf("Delete done successfully"))
+
+			// Resolve the Promise
+			resolve.Invoke(response)
+		}()
+
+		return nil
+	})
+
+	// Create and return the Promise object
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 //-----------------------------------------------------------------------------
