@@ -9,6 +9,7 @@ type EncryptionScheme interface {
 	GetEncryptedKey() string
 	GetReGenKey(encPublicKey string, tag string) (string, error)
 	GetPublicKey() (string, error)
+	GetPrivateKey() (string, error)
 }
 
 func NewEncryptionScheme() EncryptionScheme {
