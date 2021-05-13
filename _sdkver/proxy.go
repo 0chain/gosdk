@@ -634,25 +634,6 @@ func Upload(this js.Value, p []js.Value) interface{} {
 	// defer file.Close()
 	encrypt := p[6].String()
 
-	createDirIfNotExists(allocation)
-
-	// localFilePath, err := writeFile(file, getPath(allocation, fileHeader.Filename))
-	localFilePath, err := writeFile2(file, getPath(allocation, Filename))
-	if err != nil {
-		return js.ValueOf("error: " + NewError("write_local_temp_file_failed", err.Error()).Error())
-	}
-	defer deleletFile(localFilePath)
-
-	err = initSDK(clientJSON)
-	if err != nil {
-		return js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error())
-	}
-
-	allocationObj, err := sdk.GetAllocation(allocation)
-	if err != nil {
-		return js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error())
-	}
-
 	fileAttrs := p[7].String()
 	var attrs fileref.Attributes
 	if len(fileAttrs) > 0 {
@@ -662,38 +643,73 @@ func Upload(this js.Value, p []js.Value) interface{} {
 		}
 	}
 
-	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg}
-	wg.Add(1)
-	if method == "POST" {
-		encryptBool, _ := strconv.ParseBool(encrypt)
-		if encryptBool {
-			// Logger.Info("Doing encrypted file upload with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
-			fmt.Println("Doing encrypted file upload with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
-			err = allocationObj.EncryptAndUploadFile(localFilePath, remotePath, attrs, statusBar)
-		} else {
-			// Logger.Info("Doing file upload with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
-			fmt.Println("Doing file upload with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
-			err = allocationObj.UploadFile(localFilePath, remotePath, attrs, statusBar)
-		}
-	} else {
-		// Logger.Info("Doing file update with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
-		fmt.Println("Doing file update with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
-		err = allocationObj.UpdateFile(localFilePath, remotePath, attrs, statusBar)
-	}
-	if err != nil {
-		return js.ValueOf("error: " + NewError("upload_file_failed", err.Error()).Error())
-	}
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
 
-	wg.Wait()
-	if !statusBar.success {
-		return js.ValueOf("error: " + statusBar.err.Error())
-	}
+		go func() {
+			createDirIfNotExists(allocation)
 
-	// resp := response{
-	// 	Message: "Upload done successfully",
-	// }
-	return js.ValueOf("Upload done successfully")
+			// localFilePath, err := writeFile(file, getPath(allocation, fileHeader.Filename))
+			localFilePath, err := writeFile2(file, getPath(allocation, Filename))
+			if err != nil {
+				reject.Invoke(js.ValueOf("error: " + NewError("write_local_temp_file_failed", err.Error()).Error()))
+			}
+			defer deleletFile(localFilePath)
+
+			err = initSDK(clientJSON)
+			if err != nil {
+				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
+			}
+
+			allocationObj, err := sdk.GetAllocation(allocation)
+			if err != nil {
+				reject.Invoke(js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error()))
+			}
+
+			wg := &sync.WaitGroup{}
+			statusBar := &StatusBar{wg: wg}
+			wg.Add(1)
+			if method == "POST" {
+				encryptBool, _ := strconv.ParseBool(encrypt)
+				if encryptBool {
+					// Logger.Info("Doing encrypted file upload with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
+					fmt.Println("Doing encrypted file upload with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
+					err = allocationObj.EncryptAndUploadFile(localFilePath, remotePath, attrs, statusBar)
+				} else {
+					// Logger.Info("Doing file upload with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
+					fmt.Println("Doing file upload with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
+					err = allocationObj.UploadFile(localFilePath, remotePath, attrs, statusBar)
+				}
+			} else {
+				// Logger.Info("Doing file update with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
+				fmt.Println("Doing file update with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
+				err = allocationObj.UpdateFile(localFilePath, remotePath, attrs, statusBar)
+			}
+			if err != nil {
+				reject.Invoke(js.ValueOf("error: " + NewError("upload_file_failed", err.Error()).Error()))
+			}
+
+			wg.Wait()
+			if !statusBar.success {
+				reject.Invoke(js.ValueOf("error: " + statusBar.err.Error()))
+			}
+
+			responseConstructor := js.Global().Get("Response")
+			response := responseConstructor.New(js.ValueOf("Upload done successfully"))
+
+			// resp := response{
+			// 	Message: "Upload done successfully",
+			// }
+			resolve.Invoke(response)
+		}()
+
+		return nil
+	})
+
+	// Create and return the Promise object
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 //-----------------------------------------------------------------------------
