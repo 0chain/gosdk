@@ -17,6 +17,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
+	zenc "github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -215,14 +216,14 @@ func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.W
 	wm.Timestamp = timestamp
 	wm.ClientID = client.GetClientID()
 
-	encscheme = encryption.NewEncryptionScheme()
+	encscheme := zenc.NewEncryptionScheme()
 	err := encscheme.Initialize(client.GetClient().Mnemonic)
 	if err != nil {
 		return err
 	}
-	wm.ClientPrivateKey = encscheme.GetPrivateKey()
+	wm.ClientPrivateKey, err = encscheme.GetPrivateKey()
 
-	err := wm.Sign()
+	err = wm.Sign()
 	if err != nil {
 		Logger.Error("Signing writemarker failed: ", err)
 		return err

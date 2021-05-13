@@ -254,7 +254,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 		}
 		if req.isEncrypted {
 			formData.EncryptedKey = req.encscheme.GetEncryptedKey()
-			formData.ClientPrivateKey = req.encscheme.GetPrivateKey()
+			formData.ClientPrivateKey, _ = req.encscheme.GetPrivateKey()
 		}
 		_ = formWriter.WriteField("connection_id", req.connectionID)
 		var metaData []byte
