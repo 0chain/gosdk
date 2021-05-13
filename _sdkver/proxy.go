@@ -224,77 +224,93 @@ func Download(this js.Value, p []js.Value) interface{} {
 		numBlocksInt = 10
 	}
 
-	err = initSDK(clientJSON)
-	if err != nil {
-		return js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error())
-	}
-	sdk.SetNumBlockDownloads(numBlocksInt)
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
 
-	var at *sdk.AuthTicket
-	downloadUsingAT := false
-	if len(authTicket) > 0 {
-		downloadUsingAT = true
-		at = sdk.InitAuthTicket(authTicket)
-	}
-
-	var localFilePath, fileName string
-	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg}
-	wg.Add(1)
-	if downloadUsingAT {
-		rxPay, _ := strconv.ParseBool(rx_pay)
-		allocationObj, err := sdk.GetAllocationFromAuthTicket(authTicket)
-		if err != nil {
-			return js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error())
-		}
-		fileName := file_name
-		if len(fileName) == 0 {
-			fileName, err = at.GetFileName()
+		go func() {
+			err = initSDK(clientJSON)
 			if err != nil {
-				return js.ValueOf("error: " + NewError("get_file_name_failed", err.Error()).Error())
+				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
 			}
-		}
+			sdk.SetNumBlockDownloads(numBlocksInt)
 
-		createDirIfNotExists(allocationObj.ID)
-		localFilePath = getPath(allocationObj.ID, fileName)
-		deleletFile(localFilePath)
-		if len(lookuphash) == 0 {
-			lookuphash, err = at.GetLookupHash()
-			if err != nil {
-				return js.ValueOf("error: " + NewError("get_lookuphash_failed", err.Error()).Error())
+			var at *sdk.AuthTicket
+			downloadUsingAT := false
+			if len(authTicket) > 0 {
+				downloadUsingAT = true
+				at = sdk.InitAuthTicket(authTicket)
 			}
-		}
 
-		// Logger.Info("Doing file download using authTicket", zap.Any("filename", fileName), zap.Any("allocation", allocationObj.ID), zap.Any("lookuphash", lookuphash))
-		fmt.Println("Doing file download using authTicket", zap.Any("filename", fileName), zap.Any("allocation", allocationObj.ID), zap.Any("lookuphash", lookuphash))
-		err = allocationObj.DownloadFromAuthTicket(localFilePath, authTicket, lookuphash, fileName, rxPay, statusBar)
-		if err != nil {
-			return js.ValueOf("error: " + NewError("download_from_auth_ticket_failed", err.Error()).Error())
-		}
-	} else {
-		createDirIfNotExists(allocation)
-		fileName = filepath.Base(remotePath)
-		localFilePath = getPath(allocation, fileName)
-		deleletFile(localFilePath)
+			var localFilePath, fileName string
+			wg := &sync.WaitGroup{}
+			statusBar := &StatusBar{wg: wg}
+			wg.Add(1)
+			if downloadUsingAT {
+				rxPay, _ := strconv.ParseBool(rx_pay)
+				allocationObj, err := sdk.GetAllocationFromAuthTicket(authTicket)
+				if err != nil {
+					reject.Invoke(js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error()))
+				}
+				fileName := file_name
+				if len(fileName) == 0 {
+					fileName, err = at.GetFileName()
+					if err != nil {
+						reject.Invoke(js.ValueOf("error: " + NewError("get_file_name_failed", err.Error()).Error()))
+					}
+				}
 
-		allocationObj, err := sdk.GetAllocation(allocation)
-		if err != nil {
-			return js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error())
-		}
+				createDirIfNotExists(allocationObj.ID)
+				localFilePath = getPath(allocationObj.ID, fileName)
+				deleletFile(localFilePath)
+				if len(lookuphash) == 0 {
+					lookuphash, err = at.GetLookupHash()
+					if err != nil {
+						reject.Invoke(js.ValueOf("error: " + NewError("get_lookuphash_failed", err.Error()).Error()))
+					}
+				}
 
-		// Logger.Info("Doing file download", zap.Any("remotepath", remotePath), zap.Any("allocation", allocation))
-		fmt.Println("Doing file download", zap.Any("remotepath", remotePath), zap.Any("allocation", allocation))
-		err = allocationObj.DownloadFile(localFilePath, remotePath, statusBar)
-		if err != nil {
-			return js.ValueOf("error: " + NewError("download_file_failed", err.Error()).Error())
-		}
-	}
-	wg.Wait()
-	if !statusBar.success {
-		return js.ValueOf("error: " + statusBar.err.Error())
-	}
+				// Logger.Info("Doing file download using authTicket", zap.Any("filename", fileName), zap.Any("allocation", allocationObj.ID), zap.Any("lookuphash", lookuphash))
+				fmt.Println("Doing file download using authTicket", zap.Any("filename", fileName), zap.Any("allocation", allocationObj.ID), zap.Any("lookuphash", lookuphash))
+				err = allocationObj.DownloadFromAuthTicket(localFilePath, authTicket, lookuphash, fileName, rxPay, statusBar)
+				if err != nil {
+					reject.Invoke(js.ValueOf("error: " + NewError("download_from_auth_ticket_failed", err.Error()).Error()))
+				}
+			} else {
+				createDirIfNotExists(allocation)
+				fileName = filepath.Base(remotePath)
+				localFilePath = getPath(allocation, fileName)
+				deleletFile(localFilePath)
 
-	return js.ValueOf(localFilePath)
+				allocationObj, err := sdk.GetAllocation(allocation)
+				if err != nil {
+					reject.Invoke(js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error()))
+				}
+
+				// Logger.Info("Doing file download", zap.Any("remotepath", remotePath), zap.Any("allocation", allocation))
+				fmt.Println("Doing file download", zap.Any("remotepath", remotePath), zap.Any("allocation", allocation))
+				err = allocationObj.DownloadFile(localFilePath, remotePath, statusBar)
+				if err != nil {
+					reject.Invoke(js.ValueOf("error: " + NewError("download_file_failed", err.Error()).Error()))
+				}
+			}
+			wg.Wait()
+			if !statusBar.success {
+				reject.Invoke(js.ValueOf("error: " + statusBar.err.Error()))
+			}
+
+			responseConstructor := js.Global().Get("Response")
+			response := responseConstructor.New(js.ValueOf(localFilePath))
+
+			resolve.Invoke(response)
+		}()
+
+		return nil
+	})
+
+	// Create and return the Promise object
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 //-----------------------------------------------------------------------------
