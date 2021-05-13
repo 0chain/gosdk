@@ -539,47 +539,63 @@ func Share(this js.Value, p []js.Value) interface{} {
 	refereeClientID := p[3].String()
 	encryptionpublickey := p[4].String()
 
-	err = initSDK(clientJSON)
-	if err != nil {
-		return js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error())
-	}
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
 
-	allocationObj, err := sdk.GetAllocation(allocation)
-	if err != nil {
-		return js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error())
+		go func() {
+			err = initSDK(clientJSON)
+			if err != nil {
+				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
+			}
 
-	}
+			allocationObj, err := sdk.GetAllocation(allocation)
+			if err != nil {
+				reject.Invoke(js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error()))
 
-	refType := fileref.FILE
-	statsMap, err := allocationObj.GetFileStats(remotePath)
-	if err != nil {
-		return js.ValueOf("error: " + NewError("get_file_stats_failed", err.Error()).Error())
-	}
+			}
 
-	isFile := false
-	for _, v := range statsMap {
-		if v != nil {
-			isFile = true
-			break
-		}
-	}
-	if !isFile {
-		refType = fileref.DIRECTORY
-	}
+			refType := fileref.FILE
+			statsMap, err := allocationObj.GetFileStats(remotePath)
+			if err != nil {
+				reject.Invoke(js.ValueOf("error: " + NewError("get_file_stats_failed", err.Error()).Error()))
+			}
 
-	var fileName string
-	_, fileName = filepath.Split(remotePath)
+			isFile := false
+			for _, v := range statsMap {
+				if v != nil {
+					isFile = true
+					break
+				}
+			}
+			if !isFile {
+				refType = fileref.DIRECTORY
+			}
 
-	at, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, refereeClientID, encryptionpublickey)
-	if err != nil {
-		return js.ValueOf("error: " + NewError("get_auth_ticket_failed", err.Error()).Error())
-	}
+			var fileName string
+			_, fileName = filepath.Split(remotePath)
 
-	// var response struct {
-	// 	AuthTicket string `json:"auth_ticket"`
-	// }
-	// response.AuthTicket = at
-	return js.ValueOf(at)
+			at, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, refereeClientID, encryptionpublickey)
+			if err != nil {
+				reject.Invoke(js.ValueOf("error: " + NewError("get_auth_ticket_failed", err.Error()).Error()))
+			}
+
+			responseConstructor := js.Global().Get("Response")
+			response := responseConstructor.New(js.ValueOf(at))
+
+			// var response struct {
+			// 	AuthTicket string `json:"auth_ticket"`
+			// }
+			// response.AuthTicket = at
+			resolve.Invoke(response)
+		}()
+
+		return nil
+	})
+
+	// Create and return the Promise object
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 //-----------------------------------------------------------------------------
