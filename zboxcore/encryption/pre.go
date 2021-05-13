@@ -467,6 +467,15 @@ func (pre *PREEncryptionScheme) GetPublicKey() (string, error) {
 	return keyString, nil
 }
 
+func (pre *PREEncryptionScheme) GetPrivateKey() (string, error) {
+	keyBytes, err := pre.PrivateKey.MarshalBinary()
+	if err != nil {
+		return "", err
+	}
+	keyString := base64.StdEncoding.EncodeToString(keyBytes)
+	return keyString, nil
+}
+
 func (pre *PREEncryptionScheme) GetReGenKey(encPublicKey string, tag string) (string, error) {
 	condA := []byte(tag)
 	var RK = new(ReKey)

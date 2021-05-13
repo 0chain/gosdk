@@ -16,6 +16,7 @@ type WriteMarker struct {
 	BlobberID              string `json:"blobber_id"`
 	Timestamp              int64  `json:"timestamp"`
 	ClientID               string `json:"client_id"`
+	ClientPrivateKey       string `json:"client_private_key"`
 	Signature              string `json:"signature"`
 }
 
