@@ -73,12 +73,6 @@ func TestSSSignAndVerify(t *testing.T) {
 	}
 }
 
-// Basic wasm function.
-func addFunction(this js.Value, p []js.Value) interface{} {
-	sum := p[0].Int() + p[1].Int()
-	return js.ValueOf(sum)
-}
-
 // Ported from `code/go/0proxy.io/zproxycore/handler/wallet.go`
 // Promise code taken from:
 // https://withblue.ink/2020/10/03/go-webassembly-http-requests-and-promises.html
@@ -711,7 +705,6 @@ func main() {
 	fmt.Printf("0CHAIN - GOSDK (version=%v)\n", version.VERSIONSTR)
 
 	c := make(chan struct{}, 0)
-	js.Global().Set("add", js.FuncOf(addFunction))
 	js.Global().Set("initializeConfig", js.FuncOf(initializeConfig))
 	js.Global().Set("Upload", js.FuncOf(Upload))
 	js.Global().Set("Download", js.FuncOf(Download))
