@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"math/bits"
 	"os"
 	"path/filepath"
 	"strings"
@@ -31,6 +30,16 @@ var (
 	noBLOBBERS     = errors.New("No Blobbers set in this allocation")
 	notInitialized = common.NewError("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 )
+
+const (
+	KB = 1024
+	MB = 1024 * KB
+	GB = 1024 * MB
+)
+
+var GetFileInfo = func(localpath string) (os.FileInfo, error) {
+	return os.Stat(localpath)
+}
 
 type BlobberAllocationStats struct {
 	BlobberID        string
@@ -60,17 +69,19 @@ type BlobberAllocationStats struct {
 }
 
 type ConsolidatedFileMeta struct {
-	Name           string
-	Type           string
-	Path           string
-	LookupHash     string
-	Hash           string
-	MimeType       string
-	Size           int64
-	EncryptedKey   string
-	CommitMetaTxns []fileref.CommitMetaTxn
-	Collaborators  []fileref.Collaborator
-	Attributes     fileref.Attributes
+	Name            string
+	Type            string
+	Path            string
+	LookupHash      string
+	Hash            string
+	MimeType        string
+	Size            int64
+	ActualFileSize  int64
+	ActualNumBlocks int64
+	EncryptedKey    string
+	CommitMetaTxns  []fileref.CommitMetaTxn
+	Collaborators   []fileref.Collaborator
+	Attributes      fileref.Attributes
 }
 
 type AllocationStats struct {
@@ -313,7 +324,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 		return notInitialized
 	}
 
-	fileInfo, err := os.Stat(localpath)
+	fileInfo, err := GetFileInfo(localpath)
 	if err != nil {
 		return fmt.Errorf("Local file error: %s", err.Error())
 	}
@@ -350,14 +361,13 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 	uploadReq.filemeta.Attributes = attrs
 	uploadReq.remaining = uploadReq.filemeta.Size
 	uploadReq.thumbRemaining = uploadReq.filemeta.ThumbnailSize
-	uploadReq.isRepair = false
 	uploadReq.isUpdate = isUpdate
 	uploadReq.isRepair = isRepair
 	uploadReq.connectionID = zboxutil.NewConnectionId()
 	uploadReq.statusCallback = status
 	uploadReq.datashards = a.DataShards
 	uploadReq.parityshards = a.ParityShards
-	uploadReq.uploadMask = uint32((1 << uint32(len(a.Blobbers))) - 1)
+	uploadReq.setUploadMask(len(a.Blobbers))
 	uploadReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	uploadReq.fullconsensus = float32(a.DataShards + a.ParityShards)
 	uploadReq.isEncrypted = encryption
@@ -386,8 +396,12 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 		}
 
 		uploadReq.filemeta.Hash = fileRef.ActualFileHash
-		uploadReq.uploadMask = (^found & uploadReq.uploadMask)
-		uploadReq.fullconsensus = float32(bits.TrailingZeros32(uploadReq.uploadMask + 1))
+		uploadReq.uploadMask = found.Not().And(uploadReq.uploadMask)
+		uploadReq.fullconsensus = float32(uploadReq.uploadMask.Add64(1).TrailingZeros())
+	}
+
+	if !uploadReq.IsFullConsensusSupported() {
+		return fmt.Errorf("allocation requires [%v] blobbers, which is greater than the maximum permitted number of [%v]. reduce number of data or parity shards and try again", uploadReq.fullconsensus, uploadReq.GetMaxBlobbersSupported())
 	}
 
 	go func() {
@@ -399,9 +413,9 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 	return nil
 }
 
-func (a *Allocation) RepairRequired(remotepath string) (uint32, bool, *fileref.FileRef, error) {
+func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, *fileref.FileRef, error) {
 	if !a.isInitialized() {
-		return 0, false, nil, notInitialized
+		return zboxutil.Uint128{}, false, nil, notInitialized
 	}
 
 	listReq := &ListRequest{}
@@ -417,9 +431,9 @@ func (a *Allocation) RepairRequired(remotepath string) (uint32, bool, *fileref.F
 		return found, false, fileRef, fmt.Errorf("File not found for the given remotepath")
 	}
 
-	uploadMask := uint32((1 << uint32(len(a.Blobbers))) - 1)
+	uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 
-	return found, found != uploadMask, fileRef, nil
+	return found, !found.Equals(uploadMask), fileRef, nil
 }
 
 func (a *Allocation) DownloadFile(localPath string, remotePath string, status StatusCallback) error {
@@ -465,7 +479,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	downloadReq.localpath = localPath
 	downloadReq.remotefilepath = remotePath
 	downloadReq.statusCallback = status
-	downloadReq.downloadMask = ((1 << uint32(len(a.Blobbers))) - 1)
+	downloadReq.downloadMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	downloadReq.blobbers = a.Blobbers
 	downloadReq.datashards = a.DataShards
 	downloadReq.parityshards = a.ParityShards
@@ -582,6 +596,8 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.CommitMetaTxns = ref.CommitMetaTxns
 		result.Collaborators = ref.Collaborators
 		result.Attributes = ref.Attributes
+		result.ActualFileSize = ref.Size
+		result.ActualNumBlocks = ref.NumBlocks
 		return result, nil
 	}
 	return nil, common.NewError("file_meta_error", "Error getting the file meta data from blobbers")
@@ -625,6 +641,8 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 		result.Path = ref.Path
 		result.Size = ref.ActualFileSize
 		result.CommitMetaTxns = ref.CommitMetaTxns
+		result.ActualFileSize = ref.Size
+		result.ActualNumBlocks = ref.NumBlocks
 		return result, nil
 	}
 	return nil, common.NewError("file_meta_error", "Error getting the file meta data from blobbers")
@@ -926,7 +944,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.remotefilepathhash = remoteLookupHash
 	downloadReq.authTicket = at
 	downloadReq.statusCallback = status
-	downloadReq.downloadMask = ((1 << uint32(len(a.Blobbers))) - 1)
+	downloadReq.downloadMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	downloadReq.blobbers = a.Blobbers
 	downloadReq.datashards = a.DataShards
 	downloadReq.parityshards = a.ParityShards
@@ -1130,4 +1148,92 @@ func (a *Allocation) RemoveCollaborator(filePath, collaboratorID string) error {
 		return nil
 	}
 	return common.NewError("remove_collaborator_failed", "Failed to remove collaborator on all blobbers.")
+}
+
+func (a *Allocation) GetMaxWriteRead() (maxW float64, maxR float64, err error) {
+	if !a.isInitialized() {
+		return 0, 0, notInitialized
+	}
+
+	blobbersCopy := a.BlobberDetails
+	if len(blobbersCopy) == 0 {
+		return 0, 0, noBLOBBERS
+	}
+
+	maxWritePrice, maxReadPrice := 0.0, 0.0
+	for _, v := range blobbersCopy {
+		if v.Terms.WritePrice.ToToken() > maxWritePrice {
+			maxWritePrice = v.Terms.WritePrice.ToToken()
+		}
+		if v.Terms.ReadPrice.ToToken() > maxReadPrice {
+			maxReadPrice = v.Terms.ReadPrice.ToToken()
+		}
+	}
+
+	return maxWritePrice, maxReadPrice, nil
+}
+
+func (a *Allocation) GetMinWriteRead() (minW float64, minR float64, err error) {
+	if !a.isInitialized() {
+		return 0, 0, notInitialized
+	}
+
+	blobbersCopy := a.BlobberDetails
+	if len(blobbersCopy) == 0 {
+		return 0, 0, noBLOBBERS
+	}
+
+	minWritePrice, minReadPrice := -1.0, -1.0
+	for _, v := range blobbersCopy {
+		if v.Terms.WritePrice.ToToken() < minWritePrice || minWritePrice < 0 {
+			minWritePrice = v.Terms.WritePrice.ToToken()
+		}
+		if v.Terms.ReadPrice.ToToken() < minReadPrice || minReadPrice < 0 {
+			minReadPrice = v.Terms.ReadPrice.ToToken()
+		}
+	}
+
+	return minWritePrice, minReadPrice, nil
+}
+
+func (a *Allocation) GetMaxStorageCost(size int64) (float64, error) {
+	var cost common.Balance // total price for size / duration
+
+	for _, d := range a.BlobberDetails {
+		fmt.Printf("write price for blobber %f datashards %d parity %d\n",
+			float64(d.Terms.WritePrice), a.DataShards, a.ParityShards)
+
+		cost += a.uploadCostForBlobber(float64(d.Terms.WritePrice), size,
+			a.DataShards, a.ParityShards)
+
+		fmt.Printf("Total cost %d\n", cost)
+	}
+
+	return cost.ToToken(), nil
+}
+
+func (a *Allocation) GetMinStorageCost(size int64) (common.Balance, error) {
+	minW, _, err := a.GetMinWriteRead()
+	if err != nil {
+		return -1, err
+	}
+
+	return a.uploadCostForBlobber(minW, size, a.DataShards, a.ParityShards), nil
+}
+
+func (a *Allocation) uploadCostForBlobber(price float64, size int64, data, parity int) (
+	cost common.Balance) {
+
+	if data == 0 || parity == 0 {
+		return -1.0
+	}
+
+	var ps = (size + int64(data) - 1) / int64(data)
+	ps = ps * int64(data+parity)
+
+	return common.Balance(price * a.sizeInGB(ps))
+}
+
+func (a *Allocation) sizeInGB(size int64) float64 {
+	return float64(size) / GB
 }
