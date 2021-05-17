@@ -1,23 +1,26 @@
 package encryption
 
 import (
-	"fmt"
 	"testing"
-
-	"go.dedis.ch/kyber/v3/group/edwards25519"
+	"github.com/0chain/gosdk/zboxcore/encryption"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMnemonic(t *testing.T) {
-	suite := edwards25519.NewBlakeSHA256Ed25519()
+	mnemonic := "travel twenty hen negative fresh sentence hen flat swift embody increase juice eternal satisfy want vessel matter honey video begin dutch trigger romance assault"
 
-	rand := suite.XOF([]byte("travel twenty hen negative fresh sentence hen flat swift embody increase juice eternal satisfy want vessel matter honey video begin dutch trigger romance assault"))
-	key := suite.Scalar().Pick(rand)
+	encscheme := encryption.NewEncryptionScheme()
 
-	Tag = []byte("filetype:audio")
+	err := encscheme.Initialize(mnemonic)
+	require.NoError(t, err)
 
-	pre.T = pre.SuiteObj.Point().Pick(suite.RandomStream()) // Pick a random point T from the curve
-	pre.Ht = pre.hash1(suite, Tag, "abcd")      // Ht  = H1(tagA,skA)
-	var g kyber.Group = pre.SuiteObj
-	pre.EncryptedKey = g.Point().Add(pre.Ht, pre.T) // C1  = T + Ht
+
+	encscheme.InitForEncryption("filetype:audio")
+	pvk, _ := encscheme.GetPrivateKey()
+	expectedPvk := "XsQLPaRBOFS+3KfXq2/uyAPE+/qq3VW0OkW0T9q93wQ="
+	require.Equal(t, expectedPvk, pvk)
+	pubk, _ := encscheme.GetPublicKey()
+	expectedPubk := "PwpVIXgXbnt8NJmy+R4aSwG8HwJbsbT2JVQqa0bayZQ="
+	require.Equal(t, expectedPubk, pubk)
 
 }
