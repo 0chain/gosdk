@@ -3,19 +3,18 @@ package sdk
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"strings"
 	"sync"
-	"time"
+
+	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/handler"
+
+	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
 
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 const CHUNK_SIZE = 64 * 1024
@@ -60,8 +59,6 @@ type ListResult struct {
 
 func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *listResponse) {
 	defer req.wg.Done()
-	//body := new(bytes.Buffer)
-	//formWriter := multipart.NewWriter(body)
 
 	ref := &fileref.Ref{}
 	var s strings.Builder
@@ -74,8 +71,6 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 	if len(req.remotefilepath) > 0 {
 		req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 	}
-	//formWriter.WriteField("path_hash", req.remotefilepathhash)
-	//Logger.Info("Path hash for list dir: ", req.remotefilepathhash)
 
 	authTokenBytes := make([]byte, 0)
 	if req.authToken != nil {
@@ -84,45 +79,44 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 			Logger.Error(blobber.Baseurl, " creating auth token bytes", err)
 			return
 		}
-		//formWriter.WriteField("auth_token", string(authTokenBytes))
 	}
 
-	//formWriter.Close()
-	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationTx, req.remotefilepathhash, string(authTokenBytes))
+	blobberClient, err := NewBlobberGRPCClient(blobber.Baseurl)
 	if err != nil {
-		Logger.Error("List info request error: ", err.Error())
 		return
 	}
 
-	//httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("List : ", err)
-			return err
-		}
-		defer resp.Body.Close()
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("Error: Resp : %s", err.Error())
-		}
-		s.WriteString(string(resp_body))
-		Logger.Debug("List result:", string(resp_body))
-		if resp.StatusCode == http.StatusOK {
-			listResult := &fileref.ListResult{}
-			err = json.Unmarshal(resp_body, listResult)
-			if err != nil {
-				return fmt.Errorf("list entities response parse error: %s", err.Error())
-			}
-			ref, err = listResult.GetDirTree(req.allocationID)
-			if err != nil {
-				return fmt.Errorf("error getting the dir tree from list response: %s", err.Error())
-			}
-			return nil
-		} else {
-			return fmt.Errorf("error from server list response: %s", s.String())
-		}
+	listEntitiesResp, err := blobberClient.ListEntities(context.Background(), &blobbergrpc.ListEntitiesRequest{
+		Context: &blobbergrpc.RequestContext{
+			Client:          "",
+			ClientKey:       "",
+			Allocation:      req.allocationTx,
+			ClientSignature: "",
+		},
+		Path:       "",
+		PathHash:   req.remotefilepathhash,
+		AuthToken:  string(authTokenBytes),
+		Allocation: req.allocationTx,
 	})
+	if err != nil {
+		return
+	}
+	respRaw, err := json.Marshal(handler.ListEntitesResponseHandler(listEntitiesResp))
+	if err != nil {
+		return
+	}
+	s.WriteString(string(respRaw))
+
+	listResult := &fileref.ListResult{}
+	err = json.Unmarshal(respRaw, listResult)
+	if err != nil {
+		return
+	}
+
+	ref, err = listResult.GetDirTree(req.allocationID)
+	if err != nil {
+		return
+	}
 }
 
 func (req *ListRequest) getlistFromBlobbers() []*listResponse {

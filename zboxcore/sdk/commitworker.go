@@ -12,6 +12,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/handler"
+
+	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
+
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -103,39 +107,28 @@ func (commitreq *CommitRequest) processCommit() {
 	for _, change := range commitreq.changes {
 		paths = append(paths, change.GetAffectedPath())
 	}
-	var req *http.Request
 	var lR ReferencePathResult
-	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
-	if err != nil || len(paths) == 0 {
-		Logger.Error("Creating ref path req", err)
+
+	blobberClient, err := NewBlobberGRPCClient(commitreq.blobber.Baseurl)
+	if err != nil {
 		return
 	}
-	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("Ref path error:", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			Logger.Error("Ref path response : ", resp.StatusCode)
-		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			Logger.Error("Ref path: Resp", err)
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("Reference path error response: Status: %d - %s ", resp.StatusCode, string(resp_body))
-		} else {
-			//Logger.Info("Reference path:", string(resp_body))
-			err = json.Unmarshal(resp_body, &lR)
-			if err != nil {
-				Logger.Error("Reference path json decode error: ", err)
-				return err
-			}
-		}
-		return nil
+
+	pathsRaw, err := json.Marshal(paths)
+	if err != nil {
+		return
+	}
+
+	getReferencePathResp, err := blobberClient.GetReferencePath(context.Background(), &blobbergrpc.GetReferencePathRequest{
+		Context: &blobbergrpc.RequestContext{
+			Client:          "",
+			ClientKey:       "",
+			Allocation:      commitreq.allocationTx,
+			ClientSignature: "",
+		},
+		Paths:      string(pathsRaw),
+		Path:       "",
+		Allocation: commitreq.allocationTx,
 	})
 	//process the commit request for the blobber here
 	if err != nil {
@@ -143,6 +136,17 @@ func (commitreq *CommitRequest) processCommit() {
 		commitreq.wg.Done()
 		return
 	}
+
+	respRaw, err := json.Marshal(handler.GetReferencePathResponseHandler(getReferencePathResp))
+	if err != nil {
+		return
+	}
+
+	err = json.Unmarshal(respRaw, &lR)
+	if err != nil {
+		return
+	}
+
 	rootRef, err := lR.GetDirTree(commitreq.allocationID)
 	if lR.LatestWM != nil {
 		//Can not verify signature due to collaborator flow
