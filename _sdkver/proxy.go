@@ -89,6 +89,7 @@ func GetClientEncryptedPublicKey(this js.Value, p []js.Value) interface{} {
 			if err != nil {
 				// fmt.Println("get_public_encryption_key_failed: " + err.Error())
 				reject.Invoke(js.ValueOf("get_public_encryption_key_failed: " + err.Error()))
+				return;
 			}
 
 			responseConstructor := js.Global().Get("Response")
@@ -232,6 +233,7 @@ func Download(this js.Value, p []js.Value) interface{} {
 			err = initSDK(clientJSON)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
+				return;
 			}
 			sdk.SetNumBlockDownloads(numBlocksInt)
 
@@ -251,12 +253,14 @@ func Download(this js.Value, p []js.Value) interface{} {
 				allocationObj, err := sdk.GetAllocationFromAuthTicket(authTicket)
 				if err != nil {
 					reject.Invoke(js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error()))
+					return;
 				}
 				fileName := file_name
 				if len(fileName) == 0 {
 					fileName, err = at.GetFileName()
 					if err != nil {
 						reject.Invoke(js.ValueOf("error: " + NewError("get_file_name_failed", err.Error()).Error()))
+						return;
 					}
 				}
 
@@ -267,6 +271,7 @@ func Download(this js.Value, p []js.Value) interface{} {
 					lookuphash, err = at.GetLookupHash()
 					if err != nil {
 						reject.Invoke(js.ValueOf("error: " + NewError("get_lookuphash_failed", err.Error()).Error()))
+						return;
 					}
 				}
 
@@ -275,6 +280,7 @@ func Download(this js.Value, p []js.Value) interface{} {
 				err = allocationObj.DownloadFromAuthTicket(localFilePath, authTicket, lookuphash, fileName, rxPay, statusBar)
 				if err != nil {
 					reject.Invoke(js.ValueOf("error: " + NewError("download_from_auth_ticket_failed", err.Error()).Error()))
+					return;
 				}
 			} else {
 				createDirIfNotExists(allocation)
@@ -285,6 +291,7 @@ func Download(this js.Value, p []js.Value) interface{} {
 				allocationObj, err := sdk.GetAllocation(allocation)
 				if err != nil {
 					reject.Invoke(js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error()))
+					return;
 				}
 
 				// Logger.Info("Doing file download", zap.Any("remotepath", remotePath), zap.Any("allocation", allocation))
@@ -292,11 +299,13 @@ func Download(this js.Value, p []js.Value) interface{} {
 				err = allocationObj.DownloadFile(localFilePath, remotePath, statusBar)
 				if err != nil {
 					reject.Invoke(js.ValueOf("error: " + NewError("download_file_failed", err.Error()).Error()))
+					return;
 				}
 			}
 			wg.Wait()
 			if !statusBar.success {
 				reject.Invoke(js.ValueOf("error: " + statusBar.err.Error()))
+				return;
 			}
 
 			responseConstructor := js.Global().Get("Response")
@@ -340,16 +349,19 @@ func Delete(this js.Value, p []js.Value) interface{} {
 			err = initSDK(clientJSON)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
+				return;
 			}
 
 			allocationObj, err := sdk.GetAllocation(allocation)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error()))
+				return;
 			}
 
 			err = allocationObj.DeleteFile(remotePath)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("delete_object_failed", err.Error()).Error()))
+				return;
 			}
 
 			responseConstructor := js.Global().Get("Response")
@@ -488,16 +500,19 @@ func Rename(this js.Value, p []js.Value) interface{} {
 			err = initSDK(clientJSON)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
+				return;
 			}
 
 			allocationObj, err := sdk.GetAllocation(allocation)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error()))
+				return;
 			}
 
 			err = allocationObj.RenameObject(remotePath, newName)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("rename_object_failed", err.Error()).Error()))
+				return;
 			}
 
 			responseConstructor := js.Global().Get("Response")
@@ -542,16 +557,19 @@ func Copy(this js.Value, p []js.Value) interface{} {
 			err = initSDK(clientJSON)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
+				return;
 			}
 
 			allocationObj, err := sdk.GetAllocation(allocation)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error()))
+				return;
 			}
 
 			err = allocationObj.CopyObject(remotePath, destPath)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("copy_object_failed", err.Error()).Error()))
+				return;
 			}
 
 			responseConstructor := js.Global().Get("Response")
@@ -598,11 +616,13 @@ func Share(this js.Value, p []js.Value) interface{} {
 			err = initSDK(clientJSON)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
+				return;
 			}
 
 			allocationObj, err := sdk.GetAllocation(allocation)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error()))
+				return;
 
 			}
 
@@ -610,6 +630,7 @@ func Share(this js.Value, p []js.Value) interface{} {
 			statsMap, err := allocationObj.GetFileStats(remotePath)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("get_file_stats_failed", err.Error()).Error()))
+				return;
 			}
 
 			isFile := false
@@ -629,6 +650,7 @@ func Share(this js.Value, p []js.Value) interface{} {
 			at, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, refereeClientID, encryptionpublickey)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("get_auth_ticket_failed", err.Error()).Error()))
+				return;
 			}
 
 			responseConstructor := js.Global().Get("Response")
@@ -676,16 +698,19 @@ func Move(this js.Value, p []js.Value) interface{} {
 			err = initSDK(clientJSON)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
+				return;
 			}
 
 			allocationObj, err := sdk.GetAllocation(allocation)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error()))
+				return;
 			}
 
 			err = allocationObj.MoveObject(remotePath, destPath)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("move_object_failed", err.Error()).Error()))
+				return;
 			}
 
 			responseConstructor := js.Global().Get("Response")
@@ -753,17 +778,20 @@ func Upload(this js.Value, p []js.Value) interface{} {
 			localFilePath, err := writeFile2(file, getPath(allocation, Filename))
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("write_local_temp_file_failed", err.Error()).Error()))
+				return;
 			}
 			defer deleletFile(localFilePath)
 
 			err = initSDK(clientJSON)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
+				return;
 			}
 
 			allocationObj, err := sdk.GetAllocation(allocation)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error()))
+				return;
 			}
 
 			wg := &sync.WaitGroup{}
@@ -787,11 +815,13 @@ func Upload(this js.Value, p []js.Value) interface{} {
 			}
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("upload_file_failed", err.Error()).Error()))
+				return;
 			}
 
 			wg.Wait()
 			if !statusBar.success {
 				reject.Invoke(js.ValueOf("error: " + statusBar.err.Error()))
+				return;
 			}
 
 			responseConstructor := js.Global().Get("Response")
