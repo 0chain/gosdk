@@ -110,25 +110,21 @@ func TestListRequest_getFileConsensusFromBlobbers(t *testing.T) {
 		name           string
 		additionalMock func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
 		wantFound      uint64
-		wantErr        bool
 	}{
 		{
 			"Test_All_Success",
 			blobbersResponseMock,
 			0xf,
-			false,
 		},
 		{
 			"Test_Index_3_Error",
 			blobbersResponseMock,
 			0x7,
-			false,
 		},
 		{
 			"Test_File_Consensus_Not_Found",
 			blobbersResponseMock,
 			0x0,
-			true,
 		},
 	}
 	for _, tt := range tests {
