@@ -8,7 +8,7 @@
     "responses": [
       [
         {
-          "status": 200,
+          "status": 400,
           "body": {
             "actual_file_hash": "03cfd743661f07975fa2f1220c5194cbaff48451",
             "actual_file_size": 4,
