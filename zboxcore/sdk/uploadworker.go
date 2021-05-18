@@ -91,7 +91,6 @@ type UploadRequest struct {
 	isRepair          bool
 	isUpdate          bool
 	connectionID      string
-	clientID          string
 	datashards        int
 	parityshards      int
 	uploadMask        zboxutil.Uint128
