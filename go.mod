@@ -15,6 +15,9 @@ require (
 	golang.org/x/sys v0.0.0-20190624142023-c5567b49c5d0 // indirect
 	golang.org/x/tools v0.0.0-20191112195655-aa38f8e97acc // indirect
 	gopkg.in/yaml.v2 v2.2.4
+	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
+	golang.org/x/tools v0.0.0-20200117012304-6edc0a871e69 // indirect
+	gopkg.in/yaml.v2 v2.2.2
 )
 
 go 1.13
