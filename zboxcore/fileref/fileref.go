@@ -69,6 +69,7 @@ type FileRef struct {
 	ActualThumbnailHash string          `json:"actual_thumbnail_hash"`
 	MimeType            string          `json:"mimetype"`
 	EncryptedKey        string          `json:"encrypted_key"`
+	ForMarketplace      bool            `json:"for_marketplace"`
 	CommitMetaTxns      []CommitMetaTxn `json:"commit_meta_txns"`
 	Collaborators       []Collaborator  `json:"collaborators"`
 	Attributes          Attributes      `json:"attributes"`

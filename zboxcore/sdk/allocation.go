@@ -308,17 +308,35 @@ func (a *Allocation) EncryptAndUpdateFileWithThumbnail(localpath string,
 		thumbnailpath, true, false, attrs)
 }
 
-func (a *Allocation) EncryptAndUploadFileWithThumbnail(localpath string,
-	remotepath string, thumbnailpath string, attrs fileref.Attributes,
-	status StatusCallback) error {
+func (a *Allocation) EncryptAndUploadFileWithThumbnail(
+	localpath string,
+	remotepath string,
+	thumbnailpath string,
+	attrs fileref.Attributes,
+	status StatusCallback,
+) error {
 
-	return a.uploadOrUpdateFile(localpath, remotepath, status, false,
-		thumbnailpath, true, false, attrs)
+	return a.uploadOrUpdateFile(
+		localpath,
+		remotepath,
+		status,
+		false,
+		thumbnailpath,
+		true,
+		false,
+		attrs,
+	)
 }
 
-func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
-	status StatusCallback, isUpdate bool, thumbnailpath string, encryption bool,
-	isRepair bool, attrs fileref.Attributes) error {
+func (a *Allocation) uploadOrUpdateFile(localpath string,
+	remotepath string,
+	status StatusCallback,
+	isUpdate bool,
+	thumbnailpath string,
+	encryption bool,
+	isRepair bool,
+	attrs fileref.Attributes,
+) error {
 
 	if !a.isInitialized() {
 		return notInitialized
