@@ -53,7 +53,6 @@ type uploadFormData struct {
 	Filename            string             `json:"filename"`
 	Path                string             `json:"filepath"`
 	Hash                string             `json:"content_hash,omitempty"`
-	ClientId 			string             `json:"client_id,omitempty"`
 	ThumbnailHash       string             `json:"thumbnail_content_hash,omitempty"`
 	MerkleRoot          string             `json:"merkle_root,omitempty"`
 	ActualHash          string             `json:"actual_hash"`
@@ -63,7 +62,6 @@ type uploadFormData struct {
 	MimeType            string             `json:"mimetype"`
 	CustomMeta          string             `json:"custom_meta,omitempty"`
 	EncryptedKey        string             `json:"encrypted_key,omitempty"`
-	ClientPrivateKey    string             `json:"client_private_key,omitempty"`
 	Attributes          fileref.Attributes `json:"attributes,omitempty"`
 }
 
@@ -250,11 +248,9 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 			Hash:                fileContentHash,
 			ThumbnailHash:       thumbContentHash,
 			MerkleRoot:          fileMerkleRoot,
-			ClientId:            req.clientID,
 		}
 		if req.isEncrypted {
 			formData.EncryptedKey = req.encscheme.GetEncryptedKey()
-			formData.ClientPrivateKey, _ = req.encscheme.GetPrivateKey()
 		}
 		_ = formWriter.WriteField("connection_id", req.connectionID)
 		var metaData []byte
@@ -328,7 +324,6 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 	req.uploadDataCh = make([]chan []byte, numUploads)
 	req.uploadThumbCh = make([]chan []byte, numUploads)
 	req.file = make([]*fileref.FileRef, numUploads)
-	req.clientID = client.GetClientID()
 
 	for i := range req.uploadDataCh {
 		req.uploadDataCh[i] = make(chan []byte)
