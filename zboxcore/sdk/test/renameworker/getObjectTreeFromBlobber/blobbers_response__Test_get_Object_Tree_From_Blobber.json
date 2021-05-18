@@ -1,0 +1,74 @@
+[
+  {
+    "method": "GET",
+    "path": "/v1/file/objecttree/69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+    "params": [
+      {}
+    ],
+    "responses": [
+      [
+        {
+          "status": 200,
+          "body": {
+            "meta_data": {
+              "actual_file_hash": "03cfd743661f07975fa2f1220c5194cbaff48451",
+              "actual_file_size": 4,
+              "actual_thumbnail_hash": "",
+              "actual_thumbnail_size": 0,
+              "attributes": {},
+              "commit_meta_txns": null,
+              "content_hash": "adc83b19e793491b1c6ea0fd8b46cd9f32e592fc",
+              "created_at": "2021-03-26T06:29:23.944841Z",
+              "custom_meta": "",
+              "encrypted_key": "",
+              "hash": "d5d79ad504adb181010fb0d170bbe3380f642c6b182576b0c97ea24f5d75ff98",
+              "lookup_hash": "c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697",
+              "merkle_root": "6ed726c5aaf50067479a105ad9c4330bfa341f1fd889e3552af67303712ee0f0",
+              "mimetype": "application/octet-stream",
+              "name": "/1.txt",
+              "num_of_blocks": 1,
+              "on_cloud": false,
+              "path": "/1.txt",
+              "path_hash": "c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697",
+              "size": 1,
+              "thumbnail_hash": "",
+              "thumbnail_size": 0,
+              "type": "f",
+              "updated_at": "2021-03-26T06:57:58.749195Z"
+            },
+            "latest_write_marker": {
+              "allocation_root": "091fec85174f5f0a1d6252541a6cd30230266faae6e0c0ac3de5d85b5b7d5055",
+              "prev_allocation_root": "e88c36c57b8c75615f5724d1b83f924230c3f223f062ae27b6133cf775315139",
+              "allocation_id": "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+              "size": 0,
+              "blobber_id": "8eeb4d4d6621ea87ecf4d3ba61bb69d30db435c8ed7cbaccccd56b93ea050c42",
+              "timestamp": 1616741878,
+              "client_id": "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+              "signature": "3c26ae95c766834e694d43b0a6f1d21ff73b4a6c69ccd3b14045f812a799df0f"
+            }
+          }
+        }
+      ]
+    ]
+  },
+  {
+    "path": "/v1/file/rename/69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+    "method": "POST",
+    "params": [
+      {}
+    ],
+    "responses": [
+      [
+        {
+          "status": 200,
+          "body": {
+            "filename": "/2.txt",
+            "size": 1,
+            "content_hash": "d5d79ad504adb181010fb0d170bbe3380f642c6b182576b0c97ea24f5d75ff98",
+            "merkle_root": "6ed726c5aaf50067479a105ad9c4330bfa341f1fd889e3552af67303712ee0f0"
+          }
+        }
+      ]
+    ]
+  }
+]

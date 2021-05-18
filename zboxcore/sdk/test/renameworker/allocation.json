@@ -1,0 +1,124 @@
+{
+  "id": "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+  "tx": "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+  "data_shards": 2,
+  "parity_shards": 2,
+  "size": 2147483648,
+  "expiration_date": 1617542537,
+  "owner_id": "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+  "owner_public_key": "eeb0c33325cbee0fb58bc09962f69a44d0b22ac2824a063eb1002273347e601a4612e6fea7e1a1ae62e0e3b7f1301c4de8a855bae86ebfa6e9dbbb41c3e39c24",
+  "payer_id": "",
+  "blobbers": [
+    {
+      "id": "${blobber_id_1}",
+      "url": "${blobber_url_1}"
+    },
+    {
+      "id": "${blobber_id_2}",
+      "url": "${blobber_url_2}"
+    },
+    {
+      "id": "${blobber_id_3}",
+      "url": "${blobber_url_3}"
+    },
+    {
+      "id": "${blobber_id_4}",
+      "url": "${blobber_url_4}"
+    }
+  ],
+  "stats": {
+    "used_size": 0,
+    "num_of_writes": 0,
+    "num_of_reads": 0,
+    "total_challenges": 0,
+    "num_open_challenges": 0,
+    "num_success_challenges": 0,
+    "num_failed_challenges": 0,
+    "latest_closed_challenge": ""
+  },
+  "time_unit": 172800000000000,
+  "blobber_details": [
+    {
+      "blobber_id": "${blobber_id_1}",
+      "size": 357913942,
+      "terms": {
+        "read_price": 344362696,
+        "write_price": 172181348,
+        "min_lock_demand": 0.1,
+        "max_offer_duration": 2678400000000000,
+        "challenge_completion_time": 120000000000
+      },
+      "min_lock_demand": 86090674,
+      "spent": 0,
+      "penalty": 0,
+      "read_reward": 0,
+      "returned": 0,
+      "challenge_reward": 0,
+      "final_reward": 0
+    },
+    {
+      "blobber_id": "${blobber_id_2}",
+      "size": 357913942,
+      "terms": {
+        "read_price": 344362696,
+        "write_price": 172181348,
+        "min_lock_demand": 0.1,
+        "max_offer_duration": 2678400000000000,
+        "challenge_completion_time": 120000000000
+      },
+      "min_lock_demand": 86090674,
+      "spent": 0,
+      "penalty": 0,
+      "read_reward": 0,
+      "returned": 0,
+      "challenge_reward": 0,
+      "final_reward": 0
+    },
+    {
+      "blobber_id": "${blobber_id_3}",
+      "size": 357913942,
+      "terms": {
+        "read_price": 100000000,
+        "write_price": 100000000,
+        "min_lock_demand": 0.1,
+        "max_offer_duration": 2678400000000000,
+        "challenge_completion_time": 120000000000
+      },
+      "min_lock_demand": 50000000,
+      "spent": 0,
+      "penalty": 0,
+      "read_reward": 0,
+      "returned": 0,
+      "challenge_reward": 0,
+      "final_reward": 0
+    },
+    {
+      "blobber_id": "${blobber_id_4}",
+      "size": 357913942,
+      "terms": {
+        "read_price": 312180015,
+        "write_price": 156090007,
+        "min_lock_demand": 0.1,
+        "max_offer_duration": 2678400000000000,
+        "challenge_completion_time": 120000000000
+      },
+      "min_lock_demand": 78045003,
+      "spent": 0,
+      "penalty": 0,
+      "read_reward": 0,
+      "returned": 0,
+      "challenge_reward": 0,
+      "final_reward": 0
+    }
+  ],
+  "read_price_range": {
+    "min": 0,
+    "max": 10000000000
+  },
+  "write_price_range": {
+    "min": 0,
+    "max": 10000000000
+  },
+  "challenge_completion_time": 120000000000,
+  "start_time": 1614950537
+}
