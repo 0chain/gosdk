@@ -37,6 +37,7 @@ type Attributes struct {
 	// or a 3rd party user. It affects read operations only. It requires
 	// blobbers to be trusted.
 	WhoPaysForReads common.WhoPays `json:"who_pays_for_reads,omitempty"`
+	ForMarketplace  bool           `json:"for_marketplace,omitempty"`
 
 	// add more file / directory attributes by needs with
 	// 'omitempty' json tag to avoid hash difference for
@@ -69,7 +70,6 @@ type FileRef struct {
 	ActualThumbnailHash string          `json:"actual_thumbnail_hash"`
 	MimeType            string          `json:"mimetype"`
 	EncryptedKey        string          `json:"encrypted_key"`
-	ForMarketplace      bool            `json:"for_marketplace"`
 	CommitMetaTxns      []CommitMetaTxn `json:"commit_meta_txns"`
 	Collaborators       []Collaborator  `json:"collaborators"`
 	Attributes          Attributes      `json:"attributes"`

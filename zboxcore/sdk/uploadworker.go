@@ -106,7 +106,14 @@ func (req *UploadRequest) setUploadMask(numBlobbers int) {
 	req.uploadMask = zboxutil.NewUint128(1).Lsh(uint64(numBlobbers)).Sub64(1)
 }
 
-func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.StorageNode, file *fileref.FileRef, uploadCh chan []byte, uploadThumbCh chan []byte, wg *sync.WaitGroup) {
+func (req *UploadRequest) prepareUpload(
+	a *Allocation,
+	blobber *blockchain.StorageNode,
+	file *fileref.FileRef,
+	uploadCh chan []byte,
+	uploadThumbCh chan []byte,
+	wg *sync.WaitGroup,
+) {
 	bodyReader, bodyWriter := io.Pipe()
 	formWriter := multipart.NewWriter(bodyWriter)
 	httpreq, _ := zboxutil.NewUploadRequest(blobber.Baseurl, a.Tx, bodyReader, req.isUpdate)
