@@ -215,15 +215,7 @@ func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.W
 	wm.BlobberID = req.blobber.ID
 	wm.Timestamp = timestamp
 	wm.ClientID = client.GetClientID()
-
-	encscheme := zenc.NewEncryptionScheme()
-	err := encscheme.Initialize(client.GetClient().Mnemonic)
-	if err != nil {
-		return err
-	}
-	wm.ClientPrivateKey, err = encscheme.GetPrivateKey()
-
-	err = wm.Sign()
+	err := wm.Sign()
 	if err != nil {
 		Logger.Error("Signing writemarker failed: ", err)
 		return err
