@@ -1,0 +1,17 @@
+[
+  {
+    "method": "GET",
+    "path": "/v1/file/objecttree/69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f",
+    "params": [
+      {}
+    ],
+    "responses": [
+      [
+        {
+          "status": 200,
+          "body": "This is not JSON format"
+        }
+      ]
+    ]
+  }
+]
