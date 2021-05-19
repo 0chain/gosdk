@@ -87,7 +87,7 @@ func TestAttributesRequest_ProcessAttributes(t *testing.T) {
 	attrsb, _ = json.Marshal(attrs)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			requireion := require.New(t)
+			require := require.New(t)
 			if additionalMock := tt.additionalMock; additionalMock != nil {
 				if teardown := additionalMock(t, tt.name); teardown != nil {
 					defer teardown(t)
@@ -109,13 +109,13 @@ func TestAttributesRequest_ProcessAttributes(t *testing.T) {
 			}
 			err := ar.ProcessAttributes()
 			if tt.wantErr {
-				requireion.Error(err, "expected error != nil")
-				requireion.Contains(err.Error(), tt.wantErrContains, "expected error contains '%s'", tt.wantErrContains)
+				require.Error(err, "expected error != nil")
+				require.Contains(err.Error(), tt.wantErrContains, "expected error contains '%s'", tt.wantErrContains)
 				return
 			}
-			requireion.NoErrorf(err, "expected no error but got %v", err)
+			require.NoErrorf(err, "expected no error but got %v", err)
 			if tt.wantFunc != nil {
-				tt.wantFunc(requireion, ar)
+				tt.wantFunc(require, ar)
 			}
 		})
 	}
@@ -123,7 +123,7 @@ func TestAttributesRequest_ProcessAttributes(t *testing.T) {
 
 func TestAttributesRequest_updateBlobberObjectAttributes(t *testing.T) {
 	// setup mock sdk
-	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 1)
 	defer closeFn()
 	// setup mock allocation
 	a, cncl := setupMockAllocation(t, attributeWorkerTestDir, blobberMocks)
@@ -133,49 +133,46 @@ func TestAttributesRequest_updateBlobberObjectAttributes(t *testing.T) {
 	}
 	defer cncl()
 	tests := []struct {
-		name            string
-		additionalMock  func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
-		wantErr         bool
-		wantErrContains string
-		wantFunc        func(require *require.Assertions, ar *AttributesRequest)
+		name           string
+		additionalMock func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
+		wantErr        bool
+		wantFunc       func(require *require.Assertions, ar *AttributesRequest)
 	}{
 		{
-			name: "Test_All_Blobber_Object_Attributes_Update_Success",
-			additionalMock: func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
-				blobbersResponseMock(t, testCaseName)
-				willReturnCommitResult(&CommitResult{Success: true})
-				return nil
+			"Test_Error_New_HTTP_Failed",
+			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
+				url := a.Blobbers[0].Baseurl
+				a.Blobbers[0].Baseurl = string([]byte{0x7f, 0, 0})
+				return func(t *testing.T) {
+					a.Blobbers[0].Baseurl = url
+				}
 			},
-			wantErr: false,
-			wantFunc: func(require *require.Assertions, ar *AttributesRequest) {
-				require.NotNil(ar)
-				require.Equal(uint32(4), ar.attributesMask)
-				require.Equal(float32(1), ar.consensus)
-			},
+			true,
+			nil,
 		},
 		{
-			name: "Test_All_Blobber_Index_0_Error_On_Attributes_Update_Failure",
-			additionalMock: func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
-				blobbersResponseMock(t, testCaseName)
-				willReturnCommitResult(&CommitResult{Success: true})
-				return nil
-			},
-			wantErr: false,
-			wantFunc: func(require *require.Assertions, ar *AttributesRequest) {
+			"Test_Update_Blobber_Object_Attributes_Failure",
+			nil,
+			true,
+			func(require *require.Assertions, ar *AttributesRequest) {
 				require.NotNil(ar)
 				require.Equal(uint32(0), ar.attributesMask)
 				require.Equal(float32(0), ar.consensus)
 			},
 		},
 		{
-			name: "Test_All_Blobber_Index_0_2_Error_On_Attributes_Update_Failure",
-			additionalMock: func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
+			"Test_Update_Blobber_Object_Attributes_Success",
+			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
 				blobbersResponseMock(t, testCaseName)
 				willReturnCommitResult(&CommitResult{Success: true})
 				return nil
 			},
-			wantErr:         false,
-			wantErrContains: "Update attributes failed",
+			false,
+			func(require *require.Assertions, ar *AttributesRequest) {
+				require.NotNil(ar)
+				require.Equal(uint32(1), ar.attributesMask)
+				require.Equal(float32(1), ar.consensus)
+			},
 		},
 	}
 	attrs := fileref.Attributes{WhoPaysForReads: common.WhoPays3rdParty}
@@ -183,7 +180,7 @@ func TestAttributesRequest_updateBlobberObjectAttributes(t *testing.T) {
 	attrsb, _ = json.Marshal(attrs)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			requireion := require.New(t)
+			require := require.New(t)
 			if additionalMock := tt.additionalMock; additionalMock != nil {
 				if teardown := additionalMock(t, tt.name); teardown != nil {
 					defer teardown(t)
@@ -203,15 +200,14 @@ func TestAttributesRequest_updateBlobberObjectAttributes(t *testing.T) {
 				attributesMask: 0,
 				connectionID:   zboxutil.NewConnectionId(),
 			}
-			_, err := ar.updateBlobberObjectAttributes(a.Blobbers[0], 2)
+			_, err := ar.updateBlobberObjectAttributes(a.Blobbers[0], 0)
 			if tt.wantErr {
-				requireion.Error(err, "expected error != nil")
-				requireion.Contains(err.Error(), tt.wantErrContains, "expected error contains '%s'", tt.wantErrContains)
+				require.Error(err, "expected error != nil")
 				return
 			}
-			requireion.NoErrorf(err, "expected no error but got %v", err)
+			require.NoErrorf(err, "expected no error but got %v", err)
 			if tt.wantFunc != nil {
-				tt.wantFunc(requireion, ar)
+				tt.wantFunc(require, ar)
 			}
 		})
 	}
@@ -219,7 +215,7 @@ func TestAttributesRequest_updateBlobberObjectAttributes(t *testing.T) {
 
 func TestAttributesRequest_getObjectTreeFromBlobber(t *testing.T) {
 	// setup mock sdk
-	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
+	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 1)
 	defer closeFn()
 	// setup mock allocation
 	a, cncl := setupMockAllocation(t, attributeWorkerTestDir, blobberMocks)
@@ -229,24 +225,15 @@ func TestAttributesRequest_getObjectTreeFromBlobber(t *testing.T) {
 	}
 	defer cncl()
 	tests := []struct {
-		name            string
-		additionalMock  func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
-		wantErr         bool
-		wantErrContains string
-		wantFunc        func(require *require.Assertions, ar *AttributesRequest)
+		name           string
+		additionalMock func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
 	}{
 		{
-			name: "Test_Get_Object_Tree_From_Blobber",
-			additionalMock: func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
+			"Test_Get_Object_Tree_From_Blobber",
+			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
 				blobbersResponseMock(t, testCaseName)
 				willReturnCommitResult(&CommitResult{Success: true})
 				return nil
-			},
-			wantErr: false,
-			wantFunc: func(require *require.Assertions, ar *AttributesRequest) {
-				require.NotNil(ar)
-				require.Equal(uint32(0), ar.attributesMask)
-				require.Equal(float32(0), ar.consensus)
 			},
 		},
 	}
@@ -255,7 +242,7 @@ func TestAttributesRequest_getObjectTreeFromBlobber(t *testing.T) {
 	attrsb, _ = json.Marshal(attrs)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			requireion := require.New(t)
+			require := require.New(t)
 			if additionalMock := tt.additionalMock; additionalMock != nil {
 				if teardown := additionalMock(t, tt.name); teardown != nil {
 					defer teardown(t)
@@ -276,15 +263,7 @@ func TestAttributesRequest_getObjectTreeFromBlobber(t *testing.T) {
 				connectionID:   zboxutil.NewConnectionId(),
 			}
 			_, err := ar.getObjectTreeFromBlobber(a.Blobbers[0])
-			if tt.wantErr {
-				requireion.Error(err, "expected error != nil")
-				requireion.Contains(err.Error(), tt.wantErrContains, "expected error contains '%s'", tt.wantErrContains)
-				return
-			}
-			requireion.NoErrorf(err, "expected no error but got %v", err)
-			if tt.wantFunc != nil {
-				tt.wantFunc(requireion, ar)
-			}
+			require.NoErrorf(err, "expected no error but got %v", err)
 		})
 	}
 }
