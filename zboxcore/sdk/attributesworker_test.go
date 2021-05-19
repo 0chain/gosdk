@@ -151,9 +151,15 @@ func TestAttributesRequest_updateBlobberObjectAttributes(t *testing.T) {
 			nil,
 		},
 		{
-			"Test_Update_Blobber_Object_Attributes_Failure",
+			"Test_Error_Get_Object_Tree_From_Blobber_Failed",
 			nil,
 			true,
+			nil,
+		},
+		{
+			"Test_Update_Blobber_Object_Attributes_Failed",
+			blobbersResponseMock,
+			false,
 			func(require *require.Assertions, ar *AttributesRequest) {
 				require.NotNil(ar)
 				require.Equal(uint32(0), ar.attributesMask)
@@ -227,14 +233,17 @@ func TestAttributesRequest_getObjectTreeFromBlobber(t *testing.T) {
 	tests := []struct {
 		name           string
 		additionalMock func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
+		wantErr        bool
 	}{
 		{
-			"Test_Get_Object_Tree_From_Blobber",
-			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
-				blobbersResponseMock(t, testCaseName)
-				willReturnCommitResult(&CommitResult{Success: true})
-				return nil
-			},
+			"Test_Get_Object_Tree_From_Blobber_Failed",
+			nil,
+			true,
+		},
+		{
+			"Test_Get_Object_Tree_From_Blobber_Success",
+			blobbersResponseMock,
+			false,
 		},
 	}
 	attrs := fileref.Attributes{WhoPaysForReads: common.WhoPays3rdParty}
@@ -263,6 +272,10 @@ func TestAttributesRequest_getObjectTreeFromBlobber(t *testing.T) {
 				connectionID:   zboxutil.NewConnectionId(),
 			}
 			_, err := ar.getObjectTreeFromBlobber(a.Blobbers[0])
+			if tt.wantErr {
+				require.Error(err, "expected error != nil")
+				return
+			}
 			require.NoErrorf(err, "expected no error but got %v", err)
 		})
 	}
