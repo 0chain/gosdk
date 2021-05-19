@@ -37,7 +37,7 @@ type Attributes struct {
 	// or a 3rd party user. It affects read operations only. It requires
 	// blobbers to be trusted.
 	WhoPaysForReads common.WhoPays `json:"who_pays_for_reads,omitempty"`
-	ForMarketplace  bool           `json:"for_marketplace,omitempty"`
+	PreAtBlobber    bool           `json:"pre_at_blobber,omitempty"`
 
 	// add more file / directory attributes by needs with
 	// 'omitempty' json tag to avoid hash difference for
