@@ -1,15 +1,14 @@
 package encryption
 
 import (
-	"testing"
-	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 func TestMnemonic(t *testing.T) {
 	mnemonic := "travel twenty hen negative fresh sentence hen flat swift embody increase juice eternal satisfy want vessel matter honey video begin dutch trigger romance assault"
 
-	encscheme := encryption.NewEncryptionScheme()
+	encscheme := NewEncryptionScheme()
 
 	err := encscheme.Initialize(mnemonic)
 	require.NoError(t, err)

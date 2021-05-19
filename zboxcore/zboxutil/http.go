@@ -508,7 +508,7 @@ func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f f
 	}
 }
 
-func GetMarketplacePublicKeyRequest(url string) (*http.Request, error) {
+func GetMarketplaceSecretsRequest(url string) (*http.Request, error) {
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
@@ -517,8 +517,8 @@ func GetMarketplacePublicKeyRequest(url string) (*http.Request, error) {
 	return req, nil
 }
 
-func GetMarketplacePublicKey(blobberBaseUrl string) (string, error) {
-	req, err := GetMarketplacePublicKeyRequest(blobberBaseUrl + "/v1/marketplace/public_key")
+func GetMarketplaceMnemonic(blobberBaseUrl string) (string, error) {
+	req, err := GetMarketplaceSecretsRequest(blobberBaseUrl + "/v1/marketplace/secret")
 	if err != nil {
 		return "", err
 	}
@@ -531,6 +531,6 @@ func GetMarketplacePublicKey(blobberBaseUrl string) (string, error) {
 	body, err := io.ReadAll(res.Body)
 	pubKeyResp := map[string]string {}
 	json.Unmarshal(body, &pubKeyResp)
-	return pubKeyResp["public_key"], nil
+	return pubKeyResp["mnemonic"], nil
 }
 

@@ -68,11 +68,11 @@ func TestNumBlobbersRequiredZero(t *testing.T) {
 }
 
 func TestMarketplaceApi(t *testing.T) {
-	pub_key, err := zboxutil.GetMarketplacePublicKey("http://localhost:5051")
+	mnemonic, err := zboxutil.GetMarketplaceMnemonic("http://localhost:5051")
 	if err != nil {
 		fmt.Println("Got error", err)
 		return
 		// handle error
 	}
-	assert.NotEmpty(t, pub_key)
+	assert.NotEmpty(t, mnemonic)
 }
