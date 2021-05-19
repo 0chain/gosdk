@@ -144,13 +144,13 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 			nil,
 		},
 		{
-			"Test_Error_Get_Object_Tree_From_Blobber_Failure",
+			"Test_Error_Get_Object_Tree_From_Blobber_Failed",
 			nil,
 			true,
 			nil,
 		},
 		{
-			"Test_Copy_Blobber_Object_Failure",
+			"Test_Copy_Blobber_Object_Failed",
 			blobbersResponseMock,
 			false,
 			func(require *require.Assertions, ar *CopyRequest) {
@@ -225,7 +225,7 @@ func TestCopyRequest_getObjectTreeFromBlobber(t *testing.T) {
 		wantErr        bool
 	}{
 		{
-			"Test_Get_Object_Tree_From_Blobber_Failure",
+			"Test_Get_Object_Tree_From_Blobber_Failed",
 			nil,
 			true,
 		},
