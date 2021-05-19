@@ -1,6 +1,9 @@
 package sdk
 
 import (
+	"fmt"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
@@ -62,4 +65,14 @@ func TestNumBlobbersRequiredZero(t *testing.T) {
 	if !req.IsFullConsensusSupported() {
 		t.Errorf("IsFullConsensusSupported() = %v, want %v", false, true)
 	}
+}
+
+func TestMarketplaceApi(t *testing.T) {
+	pub_key, err := zboxutil.GetMarketplacePublicKey("http://localhost:5051")
+	if err != nil {
+		fmt.Println("Got error", err)
+		return
+		// handle error
+	}
+	assert.NotEmpty(t, pub_key)
 }

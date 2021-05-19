@@ -507,3 +507,30 @@ func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f f
 		return err
 	}
 }
+
+func GetMarketplacePublicKeyRequest(url string) (*http.Request, error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+func GetMarketplacePublicKey(blobberBaseUrl string) (string, error) {
+	req, err := GetMarketplacePublicKeyRequest(blobberBaseUrl + "/v1/marketplace/public_key")
+	if err != nil {
+		return "", err
+	}
+	client := &http.Client{Transport: transport}
+	res, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer res.Body.Close()
+	body, err := io.ReadAll(res.Body)
+	pubKeyResp := map[string]string {}
+	json.Unmarshal(body, &pubKeyResp)
+	return pubKeyResp["public_key"], nil
+}
+
