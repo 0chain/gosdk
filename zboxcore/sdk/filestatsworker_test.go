@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -23,6 +23,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 		return nil
 	}
 	defer cncl()
+	var wg sync.WaitGroup
 	tests := []struct {
 		name           string
 		additionalMock func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
@@ -42,10 +43,16 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 			true,
 		},
 		{
-			"Test_Failed",
+			"Test_HTTP_Response_Failed",
+			nil,
+			false,
+			false,
+		},
+		{
+			"Test_Error_HTTP_Response_Not_JSON_Format",
 			blobbersResponseMock,
 			false,
-			false,
+			true,
 		},
 		{
 			"Test_Success",
@@ -56,7 +63,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assertion := assert.New(t)
+			require := require.New(t)
 			if additionalMock := tt.additionalMock; additionalMock != nil {
 				if teardown := additionalMock(t, tt.name); teardown != nil {
 					defer teardown(t)
@@ -72,22 +79,20 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 					consensusThresh: (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards),
 					fullconsensus:   float32(a.DataShards + a.ParityShards),
 				},
+				wg: func() *sync.WaitGroup { wg.Add(1); return &wg }(),
 			}
 			rspCh := make(chan *fileStatsResponse, 1)
-			req.wg = &sync.WaitGroup{}
-			req.wg.Add(1)
 			go req.getFileStatsInfoFromBlobber(req.blobbers[0], 0, rspCh)
-			req.wg.Wait()
 			resp := <-rspCh
 			if tt.wantErr {
-				assertion.Error(resp.err, "expected error != nil")
+				require.Error(resp.err, "expected error != nil")
 				return
 			}
 			if !tt.want {
-				assertion.Nil(resp.filestats, "expected nullable file stats result")
+				require.Nil(resp.filestats, "expected nullable file stats result")
 				return
 			}
-			assertion.NotNil(resp.filestats, "unexpected nullable file stats result")
+			require.NotNil(resp.filestats, "unexpected nullable file stats result")
 		})
 	}
 }
@@ -121,7 +126,7 @@ func TestListRequest_getFileStatsFromBlobbers(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assertion := assert.New(t)
+			require := require.New(t)
 			if tt.additionalMock != nil {
 				if teardown := tt.additionalMock(t, tt.name); teardown != nil {
 					defer teardown(t)
@@ -141,14 +146,14 @@ func TestListRequest_getFileStatsFromBlobbers(t *testing.T) {
 			got := req.getFileStatsFromBlobbers()
 			if !tt.want {
 				for _, blobberMock := range blobberMocks {
-					assertion.Emptyf(got[blobberMock.ID], "expected empty value of file stats related to blobber %v", blobberMock.ID)
+					require.Emptyf(got[blobberMock.ID], "expected empty value of file stats related to blobber %v", blobberMock.ID)
 				}
 				return
 			}
-			assertion.NotNil(got, "unexpected nullable file stats result")
-			assertion.Equalf(4, len(got), "expected length of file stats result is %d, but got %v", 4, len(got))
+			require.NotNil(got, "unexpected nullable file stats result")
+			require.Equalf(4, len(got), "expected length of file stats result is %d, but got %v", 4, len(got))
 			for _, blobberMock := range blobberMocks {
-				assertion.NotEmptyf(got[blobberMock.ID], "unexpected empty value of file stats related to blobber %v", blobberMock.ID)
+				require.NotEmptyf(got[blobberMock.ID], "unexpected empty value of file stats related to blobber %v", blobberMock.ID)
 			}
 		})
 	}
