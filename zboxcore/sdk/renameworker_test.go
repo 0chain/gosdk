@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -26,19 +26,22 @@ func TestRenameRequest_getObjectTreeFromBlobber(t *testing.T) {
 	tests := []struct {
 		name           string
 		additionalMock func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
+		wantErr        bool
 	}{
 		{
-			name: "Test_get_Object_Tree_From_Blobber",
-			additionalMock: func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
-				blobbersResponseMock(t, testCaseName)
-				willReturnCommitResult(&CommitResult{Success: true})
-				return nil
-			},
+			"Test_Get_Object_Tree_From_Blobber_Failed",
+			nil,
+			true,
+		},
+		{
+			"Test_Get_Object_Tree_From_Blobber_Success",
+			blobbersResponseMock,
+			false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assertion := assert.New(t)
+			require := require.New(t)
 			if additionalMock := tt.additionalMock; additionalMock != nil {
 				if teardown := additionalMock(t, tt.name); teardown != nil {
 					defer teardown(t)
@@ -58,7 +61,11 @@ func TestRenameRequest_getObjectTreeFromBlobber(t *testing.T) {
 				connectionID: zboxutil.NewConnectionId(),
 			}
 			_, err := ar.getObjectTreeFromBlobber(a.Blobbers[0])
-			assertion.NoErrorf(err, "expected no error but got %v", err)
+			if tt.wantErr {
+				require.Error(err, "expected error != nil")
+				return
+			}
+			require.NoErrorf(err, "expected no error but got %v", err)
 		})
 	}
 }
@@ -77,38 +84,55 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 	tests := []struct {
 		name           string
 		additionalMock func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
-		wantFunc       func(assertions *assert.Assertions, ar *RenameRequest)
+		wantErr        bool
+		wantFunc       func(require *require.Assertions, ar *RenameRequest)
 	}{
 		{
-			name: "Test_rename_Blobber_Object_Success",
-			additionalMock: func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
-				blobbersResponseMock(t, testCaseName)
-				willReturnCommitResult(&CommitResult{Success: true})
-				return nil
+			"Test_Error_New_HTTP_Failed",
+			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
+				url := a.Blobbers[0].Baseurl
+				a.Blobbers[0].Baseurl = string([]byte{0x7f, 0, 0})
+				return func(t *testing.T) {
+					a.Blobbers[0].Baseurl = url
+				}
 			},
-			wantFunc: func(assertions *assert.Assertions, ar *RenameRequest) {
-				assertions.NotNil(ar)
-				assertions.Equal(uint32(1), ar.renameMask)
-				assertions.Equal(float32(1), ar.consensus)
+			true,
+			nil,
+		},
+		{
+			"Test_Error_Get_Object_Tree_From_Blobber_Failed",
+			nil,
+			true,
+			nil,
+		},
+		{
+			"Test_Rename_Blobber_Object_Failed",
+			blobbersResponseMock,
+			false,
+			func(require *require.Assertions, ar *RenameRequest) {
+				require.NotNil(ar)
+				require.Equal(uint32(0), ar.renameMask)
+				require.Equal(float32(0), ar.consensus)
 			},
 		},
 		{
-			name: "Test_rename_Blobber_Object_Failure",
-			additionalMock: func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
+			"Test_Rename_Blobber_Object_Success",
+			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
 				blobbersResponseMock(t, testCaseName)
 				willReturnCommitResult(&CommitResult{Success: true})
 				return nil
 			},
-			wantFunc: func(assertions *assert.Assertions, ar *RenameRequest) {
-				assertions.NotNil(ar)
-				assertions.Equal(uint32(0), ar.renameMask)
-				assertions.Equal(float32(0), ar.consensus)
+			false,
+			func(require *require.Assertions, ar *RenameRequest) {
+				require.NotNil(ar)
+				require.Equal(uint32(1), ar.renameMask)
+				require.Equal(float32(1), ar.consensus)
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assertion := assert.New(t)
+			require := require.New(t)
 			if additionalMock := tt.additionalMock; additionalMock != nil {
 				if teardown := additionalMock(t, tt.name); teardown != nil {
 					defer teardown(t)
@@ -128,9 +152,13 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 				connectionID: zboxutil.NewConnectionId(),
 			}
 			_, err := ar.renameBlobberObject(a.Blobbers[0], 0)
-			assertion.NoErrorf(err, "expected no error but got %v", err)
+			if tt.wantErr {
+				require.Error(err, "expected error != nil")
+				return
+			}
+			require.NoErrorf(err, "expected no error but got %v", err)
 			if tt.wantFunc != nil {
-				tt.wantFunc(assertion, ar)
+				tt.wantFunc(require, ar)
 			}
 		})
 	}
@@ -152,7 +180,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 		additionalMock  func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
 		wantErr         bool
 		wantErrContains string
-		wantFunc        func(assertions *assert.Assertions, ar *RenameRequest)
+		wantFunc        func(require *require.Assertions, ar *RenameRequest)
 	}{
 		{
 			name: "Test_All_Blobber_Rename_Success",
@@ -162,10 +190,10 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 				return nil
 			},
 			wantErr: false,
-			wantFunc: func(assertions *assert.Assertions, ar *RenameRequest) {
-				assertions.NotNil(ar)
-				assertions.Equal(uint32(15), ar.renameMask)
-				assertions.Equal(float32(4), ar.consensus)
+			wantFunc: func(require *require.Assertions, ar *RenameRequest) {
+				require.NotNil(ar)
+				require.Equal(uint32(15), ar.renameMask)
+				require.Equal(float32(4), ar.consensus)
 			},
 		},
 		{
@@ -176,10 +204,10 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 				return nil
 			},
 			wantErr: false,
-			wantFunc: func(assertions *assert.Assertions, ar *RenameRequest) {
-				assertions.NotNil(ar)
-				assertions.Equal(uint32(14), ar.renameMask)
-				assertions.Equal(float32(3), ar.consensus)
+			wantFunc: func(require *require.Assertions, ar *RenameRequest) {
+				require.NotNil(ar)
+				require.Equal(uint32(14), ar.renameMask)
+				require.Equal(float32(3), ar.consensus)
 			},
 		},
 		{
@@ -205,7 +233,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assertion := assert.New(t)
+			require := require.New(t)
 			if additionalMock := tt.additionalMock; additionalMock != nil {
 				if teardown := additionalMock(t, tt.name); teardown != nil {
 					defer teardown(t)
@@ -226,13 +254,13 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			}
 			err := ar.ProcessRename()
 			if tt.wantErr {
-				assertion.Error(err, "expected error != nil")
-				assertion.Contains(err.Error(), tt.wantErrContains, "expected error contains '%s'", tt.wantErrContains)
+				require.Error(err, "expected error != nil")
+				require.Contains(err.Error(), tt.wantErrContains, "expected error contains '%s'", tt.wantErrContains)
 				return
 			}
-			assertion.NoErrorf(err, "expected no error but got %v", err)
+			require.NoErrorf(err, "expected no error but got %v", err)
 			if tt.wantFunc != nil {
-				tt.wantFunc(assertion, ar)
+				tt.wantFunc(require, ar)
 			}
 		})
 	}
