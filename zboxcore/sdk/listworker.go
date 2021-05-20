@@ -6,6 +6,10 @@ import (
 	"strings"
 	"sync"
 
+	blobbercommon "github.com/0chain/blobber/code/go/0chain.net/core/common"
+	"github.com/0chain/gosdk/zboxcore/client"
+	"google.golang.org/grpc/metadata"
+
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/handler"
 
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
@@ -86,13 +90,13 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 		return
 	}
 
-	listEntitiesResp, err := blobberClient.ListEntities(context.Background(), &blobbergrpc.ListEntitiesRequest{
-		Context: &blobbergrpc.RequestContext{
-			Client:          "",
-			ClientKey:       "",
-			Allocation:      req.allocationTx,
-			ClientSignature: "",
-		},
+	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
+		blobbercommon.ClientHeader:          client.GetClientID(),
+		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
+		blobbercommon.ClientSignatureHeader: "",
+	}))
+
+	listEntitiesResp, err := blobberClient.ListEntities(grpcCtx, &blobbergrpc.ListEntitiesRequest{
 		Path:       "",
 		PathHash:   req.remotefilepathhash,
 		AuthToken:  string(authTokenBytes),

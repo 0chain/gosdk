@@ -8,6 +8,10 @@ import (
 	"net/url"
 	"sync"
 
+	blobbercommon "github.com/0chain/blobber/code/go/0chain.net/core/common"
+	"github.com/0chain/gosdk/zboxcore/client"
+	"google.golang.org/grpc/metadata"
+
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/handler"
 
 	"google.golang.org/grpc"
@@ -24,13 +28,18 @@ func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx st
 		return nil, err
 	}
 
-	getObjectTreeResp, err := blobberClient.GetObjectTree(context.Background(), &blobbergrpc.GetObjectTreeRequest{
-		Context: &blobbergrpc.RequestContext{
-			Client:          "",
-			ClientKey:       "",
-			Allocation:      allocationTx,
-			ClientSignature: "",
-		},
+	clientSignature, err := client.Sign(allocationTx)
+	if err != nil {
+		return nil, err
+	}
+
+	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
+		blobbercommon.ClientHeader:          client.GetClientID(),
+		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
+		blobbercommon.ClientSignatureHeader: clientSignature,
+	}))
+
+	getObjectTreeResp, err := blobberClient.GetObjectTree(grpcCtx, &blobbergrpc.GetObjectTreeRequest{
 		Path:       remotefilepath,
 		Allocation: allocationTx,
 	})
@@ -70,18 +79,19 @@ func NewBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberClient, error) {
 
 func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationTx string, respCh chan<- *BlobberAllocationStats, wg *sync.WaitGroup) {
 	defer wg.Done()
+
+	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
+		blobbercommon.ClientHeader:          client.GetClientID(),
+		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
+		blobbercommon.ClientSignatureHeader: "",
+	}))
+
 	blobberClient, err := NewBlobberGRPCClient(blobber.Baseurl)
 	if err != nil {
 		return
 	}
 
-	getAllocationResp, err := blobberClient.GetAllocation(context.Background(), &blobbergrpc.GetAllocationRequest{
-		Context: &blobbergrpc.RequestContext{
-			Client:          "",
-			ClientKey:       "",
-			Allocation:      allocationTx,
-			ClientSignature: "",
-		},
+	getAllocationResp, err := blobberClient.GetAllocation(grpcCtx, &blobbergrpc.GetAllocationRequest{
 		Id: allocationTx,
 	})
 	if err != nil {

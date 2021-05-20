@@ -1,7 +1,7 @@
 module github.com/0chain/gosdk
 
 require (
-	github.com/0chain/blobber v0.3.3-0.20210517184515-89ff67519405 // indirect
+	github.com/0chain/blobber v0.3.3-0.20210520172504-0ca897574552 // indirect
 	github.com/h2non/filetype v1.0.9
 	github.com/herumi/bls-go-binary v0.0.0-20191119080710-898950e1a520
 	github.com/klauspost/cpuid v1.2.0 // indirect

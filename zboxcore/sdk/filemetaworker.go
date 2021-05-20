@@ -6,6 +6,10 @@ import (
 	"strings"
 	"sync"
 
+	blobbercommon "github.com/0chain/blobber/code/go/0chain.net/core/common"
+	"github.com/0chain/gosdk/zboxcore/client"
+	"google.golang.org/grpc/metadata"
+
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/handler"
 
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
@@ -30,9 +34,6 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 	var s strings.Builder
 	var err error
 	grpcReq := &blobbergrpc.GetFileMetaDataRequest{
-		Context: &blobbergrpc.RequestContext{
-			Allocation: req.allocationTx,
-		},
 		Allocation: req.allocationTx,
 	}
 
@@ -58,7 +59,13 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 		return
 	}
 
-	getFileMetaDataResp, err := blobberClient.GetFileMetaData(context.Background(), grpcReq)
+	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
+		blobbercommon.ClientHeader:          client.GetClientID(),
+		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
+		blobbercommon.ClientSignatureHeader: "",
+	}))
+
+	getFileMetaDataResp, err := blobberClient.GetFileMetaData(grpcCtx, grpcReq)
 	if err != nil {
 		return
 	}

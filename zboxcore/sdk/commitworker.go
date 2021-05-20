@@ -12,7 +12,10 @@ import (
 	"sync"
 	"time"
 
+	"google.golang.org/grpc/metadata"
+
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/handler"
+	blobbercommon "github.com/0chain/blobber/code/go/0chain.net/core/common"
 
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
 
@@ -119,13 +122,18 @@ func (commitreq *CommitRequest) processCommit() {
 		return
 	}
 
-	getReferencePathResp, err := blobberClient.GetReferencePath(context.Background(), &blobbergrpc.GetReferencePathRequest{
-		Context: &blobbergrpc.RequestContext{
-			Client:          "",
-			ClientKey:       "",
-			Allocation:      commitreq.allocationTx,
-			ClientSignature: "",
-		},
+	clientSignature, err := client.Sign(commitreq.allocationTx)
+	if err != nil {
+		return
+	}
+
+	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
+		blobbercommon.ClientHeader:          client.GetClientID(),
+		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
+		blobbercommon.ClientSignatureHeader: clientSignature,
+	}))
+
+	getReferencePathResp, err := blobberClient.GetReferencePath(grpcCtx, &blobbergrpc.GetReferencePathRequest{
 		Paths:      string(pathsRaw),
 		Path:       "",
 		Allocation: commitreq.allocationTx,
