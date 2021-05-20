@@ -1,16 +1,11 @@
 package sdk
 
 import (
-	"context"
 	"encoding/json"
 	"strings"
 	"sync"
 
-	blobbercommon "github.com/0chain/blobber/code/go/0chain.net/core/common"
-	"github.com/0chain/gosdk/zboxcore/client"
-	"google.golang.org/grpc/metadata"
-
-	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/handler"
+	"github.com/0chain/gosdk/core/clients/blobberClient"
 
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
 
@@ -54,23 +49,7 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 		grpcReq.AuthToken = string(authTokenBytes)
 	}
 
-	blobberClient, err := NewBlobberGRPCClient(blobber.Baseurl)
-	if err != nil {
-		return
-	}
-
-	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
-		blobbercommon.ClientHeader:          client.GetClientID(),
-		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
-		blobbercommon.ClientSignatureHeader: "",
-	}))
-
-	getFileMetaDataResp, err := blobberClient.GetFileMetaData(grpcCtx, grpcReq)
-	if err != nil {
-		return
-	}
-
-	respRaw, err := json.Marshal(handler.GetFileMetaDataResponseHandler(getFileMetaDataResp))
+	respRaw, err := blobberClient.GetFileMetaData(blobber.Baseurl, grpcReq)
 	if err != nil {
 		return
 	}

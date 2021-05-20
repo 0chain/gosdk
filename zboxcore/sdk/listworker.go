@@ -6,13 +6,8 @@ import (
 	"strings"
 	"sync"
 
-	blobbercommon "github.com/0chain/blobber/code/go/0chain.net/core/common"
-	"github.com/0chain/gosdk/zboxcore/client"
-	"google.golang.org/grpc/metadata"
-
-	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/handler"
-
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
+	"github.com/0chain/gosdk/core/clients/blobberClient"
 
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -85,27 +80,12 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 		}
 	}
 
-	blobberClient, err := NewBlobberGRPCClient(blobber.Baseurl)
-	if err != nil {
-		return
-	}
-
-	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
-		blobbercommon.ClientHeader:          client.GetClientID(),
-		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
-		blobbercommon.ClientSignatureHeader: "",
-	}))
-
-	listEntitiesResp, err := blobberClient.ListEntities(grpcCtx, &blobbergrpc.ListEntitiesRequest{
+	respRaw, err := blobberClient.ListEntities(blobber.Baseurl, &blobbergrpc.ListEntitiesRequest{
 		Path:       "",
 		PathHash:   req.remotefilepathhash,
 		AuthToken:  string(authTokenBytes),
 		Allocation: req.allocationTx,
 	})
-	if err != nil {
-		return
-	}
-	respRaw, err := json.Marshal(handler.ListEntitesResponseHandler(listEntitiesResp))
 	if err != nil {
 		return
 	}

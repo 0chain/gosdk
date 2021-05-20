@@ -12,10 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"google.golang.org/grpc/metadata"
-
-	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/handler"
-	blobbercommon "github.com/0chain/blobber/code/go/0chain.net/core/common"
+	"github.com/0chain/gosdk/core/clients/blobberClient"
 
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
 
@@ -112,28 +109,12 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 	var lR ReferencePathResult
 
-	blobberClient, err := NewBlobberGRPCClient(commitreq.blobber.Baseurl)
-	if err != nil {
-		return
-	}
-
 	pathsRaw, err := json.Marshal(paths)
 	if err != nil {
 		return
 	}
 
-	clientSignature, err := client.Sign(commitreq.allocationTx)
-	if err != nil {
-		return
-	}
-
-	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
-		blobbercommon.ClientHeader:          client.GetClientID(),
-		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
-		blobbercommon.ClientSignatureHeader: clientSignature,
-	}))
-
-	getReferencePathResp, err := blobberClient.GetReferencePath(grpcCtx, &blobbergrpc.GetReferencePathRequest{
+	respRaw, err := blobberClient.GetReferencePath(commitreq.blobber.Baseurl, &blobbergrpc.GetReferencePathRequest{
 		Paths:      string(pathsRaw),
 		Path:       "",
 		Allocation: commitreq.allocationTx,
@@ -144,12 +125,6 @@ func (commitreq *CommitRequest) processCommit() {
 		commitreq.wg.Done()
 		return
 	}
-
-	respRaw, err := json.Marshal(handler.GetReferencePathResponseHandler(getReferencePathResp))
-	if err != nil {
-		return
-	}
-
 	err = json.Unmarshal(respRaw, &lR)
 	if err != nil {
 		return
