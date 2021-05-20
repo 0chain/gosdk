@@ -2,7 +2,7 @@
   "name": "",
   "path": "/1.txt",
   "type": "d",
-  "size": -1,
+  "size": 0,
   "num_blocks": 0,
   "lookup_hash": "",
   "encryption_key": "",
@@ -11,5 +11,6 @@
   "actual_num_blocks": 0,
   "created_at": "0001-01-01T00:00:00Z",
   "updated_at": "0001-01-01T00:00:00Z",
-  "list": null
+  "list": null,
+  "allocation_id": "69fe503551eea5559c92712dffc932d8cfecd8ae641b2f242db29887e9ce618f"
 }

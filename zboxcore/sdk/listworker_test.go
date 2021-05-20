@@ -87,7 +87,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 			req.getListInfoFromBlobber(req.blobbers[0], 0, rspCh)
 			resp := <-rspCh
 			var expectedResult *fileref.Ref
-			parseFileContent(t, fmt.Sprintf("%v/%v/expected_result__Test_Success.json", listWorkerTestDir, "GetListFromBlobbers"), &expectedResult)
+			parseFileContent(t, fmt.Sprintf("%v/%v/expected_result__Test_Success.json", listWorkerTestDir, "getListInfoFromBlobber"), &expectedResult)
 			if tt.wantErr {
 				require.Error(resp.err, "expected error != nil")
 				return
