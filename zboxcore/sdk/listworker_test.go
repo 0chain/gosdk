@@ -6,7 +6,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -24,6 +25,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 		return nil
 	}
 	defer cncl()
+	var wg sync.WaitGroup
 	tests := []struct {
 		name           string
 		additionalMock func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
@@ -43,7 +45,13 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 			true,
 		},
 		{
-			"Test_Failed",
+			"Test_HTTP_Response_Failed",
+			nil,
+			false,
+			false,
+		},
+		{
+			"Test_Error_HTTP_Response_Not_JSON_Format",
 			blobbersResponseMock,
 			false,
 			false,
@@ -57,7 +65,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assertion := assert.New(t)
+			require := require.New(t)
 			if additionalMock := tt.additionalMock; additionalMock != nil {
 				if teardown := additionalMock(t, tt.name); teardown != nil {
 					defer teardown(t)
@@ -73,22 +81,22 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 					consensusThresh: (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards),
 					fullconsensus:   float32(a.DataShards + a.ParityShards),
 				},
+				wg: func() *sync.WaitGroup { wg.Add(1); return &wg }(),
 			}
 			rspCh := make(chan *listResponse, 1)
-			req.wg = &sync.WaitGroup{}
-			req.wg.Add(1)
 			req.getListInfoFromBlobber(req.blobbers[0], 0, rspCh)
-			req.wg.Wait()
 			resp := <-rspCh
+			var expectedResult *fileref.Ref
+			parseFileContent(t, fmt.Sprintf("%v/%v/expected_result__Test_Success.json", listWorkerTestDir, "GetListFromBlobbers"), &expectedResult)
 			if tt.wantErr {
-				assertion.Error(resp.err, "expected error != nil")
+				require.Error(resp.err, "expected error != nil")
 				return
 			}
 			if !tt.want {
-				assertion.Empty(resp.ref.Type, "expected nullable type result")
+				require.NotEqual(expectedResult, resp.ref)
 				return
 			}
-			assertion.NotEmpty(resp.ref.Type, "unexpected nullable type result")
+			require.EqualValues(expectedResult, resp.ref)
 		})
 	}
 }
@@ -108,21 +116,30 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 		name           string
 		additionalMock func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
 		want           bool
+		wantFunc       func(require *require.Assertions, req *ListRequest)
 	}{
-		// {
-		// 	"Test_Error_Get_List_File_From_Blobbers_Failed",
-		// 	nil,
-		// 	false,
-		// },
+		{
+			"Test_Error_Get_List_File_From_Blobbers_Failed",
+			nil,
+			false,
+			func(require *require.Assertions, req *ListRequest) {
+				require.NotNil(req)
+				require.Equal(float32(0), req.consensus)
+			},
+		},
 		{
 			"Test_Success",
 			blobbersResponseMock,
 			true,
+			func(require *require.Assertions, req *ListRequest) {
+				require.NotNil(req)
+				require.Equal(float32(4), req.consensus)
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assertion := assert.New(t)
+			require := require.New(t)
 			if additionalMock := tt.additionalMock; additionalMock != nil {
 				if teardown := additionalMock(t, tt.name); teardown != nil {
 					defer teardown(t)
@@ -143,10 +160,10 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 			var expectedResult *ListResult
 			parseFileContent(t, fmt.Sprintf("%v/%v/expected_result__Test_Success.json", listWorkerTestDir, "GetListFromBlobbers"), &expectedResult)
 			if tt.want {
-				assertion.EqualValues(expectedResult, got)
+				require.EqualValues(expectedResult, got)
 				return
 			}
-			assertion.NotEqual(expectedResult, got)
+			tt.wantFunc(require, req)
 		})
 	}
 }
