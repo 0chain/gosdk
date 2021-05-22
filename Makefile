@@ -32,6 +32,12 @@ sdkver:
 gosdk-test:
 	go test -tags bn256 ./...
 
+gosdk-test:
+	go test -tags bn256 ./...
+
+gosdk-integration-test:
+	go test -tags bn256 ./... -args integration;
+
 install-gosdk: | gosdk-build gosdk-test
 
 $(GOPATH)/bin/modvendor:

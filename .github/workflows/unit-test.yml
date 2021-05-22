@@ -1,10 +1,11 @@
-name: Unit tests
+name: CI
+
 
 on:
   push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+  release:
+    types:
+      - published
 
 jobs:
   test:
@@ -14,3 +15,30 @@ jobs:
 
       - name: Run Unit Test
         run: make gosdk-test
+  integration-tests:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.14.x
+      - uses: actions/checkout@v2
+      # In this step, this action saves a list of existing images,
+      # the cache is created without them in the post run.
+      # It also restores the cache if it exists.
+      - uses: satackey/action-docker-layer-caching@v0.0.11
+        # Ignore the failure of a step and avoid terminating the job.
+        continue-on-error: true
+      - name: Build test environment and run tests
+        run: |
+          git clone https://github.com/0chain/blobber.git
+          cd blobber
+          git checkout grpc
+          ./docker.local/bin/blobber.init.setup.sh
+          docker network create --driver=bridge --subnet=198.18.0.0/15 --gateway=198.18.0.255 testnet0
+          ./docker.local/bin/build.blobber.sh
+          cd docker.local/blobber1
+          ../bin/blobber.start_bls.sh </dev/null &>/dev/null &
+          cd ../..
+          cd ..
+          make gosdk-integration-test

@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/gosdk/zboxcore/commitmeta"
+
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
@@ -973,7 +975,7 @@ func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, look
 	}
 
 	req := &CommitMetaRequest{
-		CommitMetaData: CommitMetaData{
+		CommitMetaData: commitmeta.CommitMetaData{
 			CrudType: crudOperation,
 			MetaData: fileMeta,
 		},
