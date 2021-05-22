@@ -7,7 +7,10 @@ import (
 	"net"
 	"net/url"
 
-	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/handler"
+	"github.com/0chain/gosdk/core/encryption"
+
+	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/convert"
+
 	blobbercommon "github.com/0chain/blobber/code/go/0chain.net/core/common"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"google.golang.org/grpc/metadata"
@@ -16,7 +19,7 @@ import (
 	"google.golang.org/grpc"
 )
 
-const GRPCPort = 7777
+const GRPCPort = 7031
 
 func newBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberClient, error) {
 	u, err := url.Parse(urlRaw)
@@ -49,7 +52,7 @@ func GetAllocation(url string, req *blobbergrpc.GetAllocationRequest) ([]byte, e
 		return nil, err
 	}
 
-	return json.Marshal(handler.GetAllocationResponseHandler(getAllocationResp))
+	return json.Marshal(convert.GetAllocationResponseHandler(getAllocationResp))
 }
 
 func GetObjectTree(url string, req *blobbergrpc.GetObjectTreeRequest) ([]byte, error) {
@@ -59,7 +62,7 @@ func GetObjectTree(url string, req *blobbergrpc.GetObjectTreeRequest) ([]byte, e
 		return nil, err
 	}
 
-	clientSignature, err := client.Sign(req.Allocation)
+	clientSignature, err := client.Sign(encryption.Hash(req.Allocation))
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +78,7 @@ func GetObjectTree(url string, req *blobbergrpc.GetObjectTreeRequest) ([]byte, e
 		return nil, err
 	}
 
-	return json.Marshal(handler.GetObjectTreeResponseHandler(getObjectTreeResp))
+	return json.Marshal(convert.GetObjectTreeResponseHandler(getObjectTreeResp))
 }
 
 func GetReferencePath(url string, req *blobbergrpc.GetReferencePathRequest) ([]byte, error) {
@@ -85,7 +88,7 @@ func GetReferencePath(url string, req *blobbergrpc.GetReferencePathRequest) ([]b
 		return nil, err
 	}
 
-	clientSignature, err := client.Sign(req.Allocation)
+	clientSignature, err := client.Sign(encryption.Hash(req.Allocation))
 	if err != nil {
 		return nil, err
 	}
@@ -101,7 +104,7 @@ func GetReferencePath(url string, req *blobbergrpc.GetReferencePathRequest) ([]b
 		return nil, err
 	}
 
-	return json.Marshal(handler.GetReferencePathResponseHandler(getReferencePathResp))
+	return json.Marshal(convert.GetReferencePathResponseHandler(getReferencePathResp))
 }
 
 func ListEntities(url string, req *blobbergrpc.ListEntitiesRequest) ([]byte, error) {
@@ -121,7 +124,7 @@ func ListEntities(url string, req *blobbergrpc.ListEntitiesRequest) ([]byte, err
 		return nil, err
 	}
 
-	return json.Marshal(handler.ListEntitesResponseHandler(listEntitiesResp))
+	return json.Marshal(convert.ListEntitesResponseHandler(listEntitiesResp))
 }
 
 func GetFileStats(url string, req *blobbergrpc.GetFileStatsRequest) ([]byte, error) {
@@ -130,7 +133,7 @@ func GetFileStats(url string, req *blobbergrpc.GetFileStatsRequest) ([]byte, err
 		return nil, err
 	}
 
-	clientSignature, err := client.Sign(req.Allocation)
+	clientSignature, err := client.Sign(encryption.Hash(req.Allocation))
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +149,7 @@ func GetFileStats(url string, req *blobbergrpc.GetFileStatsRequest) ([]byte, err
 		return nil, err
 	}
 
-	return json.Marshal(handler.GetFileStatsResponseHandler(getFileStatsResp))
+	return json.Marshal(convert.GetFileStatsResponseHandler(getFileStatsResp))
 }
 
 func GetFileMetaData(url string, req *blobbergrpc.GetFileMetaDataRequest) ([]byte, error) {
@@ -166,5 +169,5 @@ func GetFileMetaData(url string, req *blobbergrpc.GetFileMetaDataRequest) ([]byt
 		return nil, err
 	}
 
-	return json.Marshal(handler.GetFileMetaDataResponseHandler(getFileMetaDataResp))
+	return json.Marshal(convert.GetFileMetaDataResponseHandler(getFileMetaDataResp))
 }

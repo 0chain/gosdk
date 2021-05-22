@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/0chain/gosdk/zboxcore/commitmeta"
+
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
@@ -15,7 +17,6 @@ import (
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
 // compiler time check
@@ -1279,7 +1280,7 @@ func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error 
 }
 
 func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
-	var metaTxnData sdk.CommitMetaResponse
+	var metaTxnData commitmeta.CommitMetaResponse
 	err := json.Unmarshal([]byte(metaTxnDataJSON), &metaTxnData)
 	if err != nil {
 		return false, common.NewError("metaTxnData_decode_error", "Unable to decode metaTxnData json")
@@ -1290,7 +1291,7 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 		return false, common.NewError("fetch_txm_details", "Unable to fetch txn details")
 	}
 
-	var metaOperation sdk.CommitMetaData
+	var metaOperation commitmeta.CommitMetaData
 	err = json.Unmarshal([]byte(t.TransactionData), &metaOperation)
 	if err != nil {
 		Logger.Error("Unmarshal of transaction data to fileMeta failed, Maybe not a commit meta txn :", t.Hash)

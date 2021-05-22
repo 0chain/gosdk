@@ -1,0 +1,445 @@
+package blobberClient
+
+import (
+	"context"
+	"database/sql"
+	"fmt"
+	"log"
+	"math/rand"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/0chain/gosdk/core/zcncrypto"
+
+	"gorm.io/gorm"
+)
+
+type TestDataController struct {
+	db *gorm.DB
+}
+
+func NewTestDataController(db *gorm.DB) *TestDataController {
+	return &TestDataController{db: db}
+}
+
+// ClearDatabase deletes all data from all tables
+func (c *TestDataController) ClearDatabase() error {
+	var err error
+	var tx *sql.Tx
+	defer func() {
+		if err != nil {
+			if tx != nil {
+				errRollback := tx.Rollback()
+				if errRollback != nil {
+					log.Println(errRollback)
+				}
+			}
+		}
+	}()
+
+	db, err := c.db.DB()
+	if err != nil {
+		return err
+	}
+
+	tx, err = db.BeginTx(context.Background(), &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("truncate allocations cascade")
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("truncate reference_objects cascade")
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("truncate commit_meta_txns cascade")
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("truncate collaborators cascade")
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *TestDataController) AddGetAllocationTestData() error {
+	var err error
+	var tx *sql.Tx
+	defer func() {
+		if err != nil {
+			if tx != nil {
+				errRollback := tx.Rollback()
+				if errRollback != nil {
+					log.Println(errRollback)
+				}
+			}
+		}
+	}()
+
+	db, err := c.db.DB()
+	if err != nil {
+		return err
+	}
+
+	tx, err = db.BeginTx(context.Background(), &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	expTime := time.Now().Add(time.Hour * 100000).UnixNano()
+
+	_, err = tx.Exec(`
+INSERT INTO allocations (id, tx, owner_id, owner_public_key, expiration_date, payer_id)
+VALUES ('exampleId' ,'exampleTransaction','exampleOwnerId','exampleOwnerPublicKey',` + fmt.Sprint(expTime) + `,'examplePayerId');
+`)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *TestDataController) AddGetFileMetaDataTestData() error {
+	var err error
+	var tx *sql.Tx
+	defer func() {
+		if err != nil {
+			if tx != nil {
+				errRollback := tx.Rollback()
+				if errRollback != nil {
+					log.Println(errRollback)
+				}
+			}
+		}
+	}()
+
+	db, err := c.db.DB()
+	if err != nil {
+		return err
+	}
+
+	tx, err = db.BeginTx(context.Background(), &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	expTime := time.Now().Add(time.Hour * 100000).UnixNano()
+
+	_, err = tx.Exec(`
+INSERT INTO allocations (id, tx, owner_id, owner_public_key, expiration_date, payer_id)
+VALUES ('exampleId' ,'exampleTransaction','exampleOwnerId','exampleOwnerPublicKey',` + fmt.Sprint(expTime) + `,'examplePayerId');
+`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`
+INSERT INTO reference_objects (id, allocation_id, path_hash,lookup_hash,type,name,path,hash,custom_meta,content_hash,merkle_root,actual_file_hash,mimetype,write_marker,thumbnail_hash, actual_thumbnail_hash)
+VALUES (1234,'exampleId','exampleId:examplePath','exampleId:examplePath','f','filename','examplePath','someHash','customMeta','contentHash','merkleRoot','actualFileHash','mimetype','writeMarker','thumbnailHash','actualThumbnailHash');
+`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`
+INSERT INTO commit_meta_txns (ref_id,txn_id)
+VALUES (1234,'someTxn');
+`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`
+INSERT INTO collaborators (ref_id, client_id)
+VALUES (1234, 'someClient');
+`)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *TestDataController) AddGetFileStatsTestData(allocationTx, pubKey string) error {
+	var err error
+	var tx *sql.Tx
+	defer func() {
+		if err != nil {
+			if tx != nil {
+				errRollback := tx.Rollback()
+				if errRollback != nil {
+					log.Println(errRollback)
+				}
+			}
+		}
+	}()
+
+	db, err := c.db.DB()
+	if err != nil {
+		return err
+	}
+
+	tx, err = db.BeginTx(context.Background(), &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	expTime := time.Now().Add(time.Hour * 100000).UnixNano()
+
+	_, err = tx.Exec(`
+INSERT INTO allocations (id, tx, owner_id, owner_public_key, expiration_date, payer_id)
+VALUES ('exampleId' ,'` + allocationTx + `','exampleOwnerId','` + pubKey + `',` + fmt.Sprint(expTime) + `,'examplePayerId');
+`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`
+INSERT INTO reference_objects (id, allocation_id, path_hash,lookup_hash,type,name,path,hash,custom_meta,content_hash,merkle_root,actual_file_hash,mimetype,write_marker,thumbnail_hash, actual_thumbnail_hash)
+VALUES (1234,'exampleId','exampleId:examplePath','exampleId:examplePath','f','filename','examplePath','someHash','customMeta','contentHash','merkleRoot','actualFileHash','mimetype','writeMarker','thumbnailHash','actualThumbnailHash');
+`)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *TestDataController) AddListEntitiesTestData(allocationTx, pubkey string) error {
+	var err error
+	var tx *sql.Tx
+	defer func() {
+		if err != nil {
+			if tx != nil {
+				errRollback := tx.Rollback()
+				if errRollback != nil {
+					log.Println(errRollback)
+				}
+			}
+		}
+	}()
+
+	db, err := c.db.DB()
+	if err != nil {
+		return err
+	}
+
+	tx, err = db.BeginTx(context.Background(), &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	expTime := time.Now().Add(time.Hour * 100000).UnixNano()
+
+	_, err = tx.Exec(`
+INSERT INTO allocations (id, tx, owner_id, owner_public_key, expiration_date, payer_id)
+VALUES ('exampleId' ,'` + allocationTx + `','exampleOwnerId','` + pubkey + `',` + fmt.Sprint(expTime) + `,'examplePayerId');
+`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`
+INSERT INTO reference_objects (id, allocation_id, path_hash,lookup_hash,type,name,path,hash,custom_meta,content_hash,merkle_root,actual_file_hash,mimetype,write_marker,thumbnail_hash, actual_thumbnail_hash)
+VALUES (1234,'exampleId','exampleId:examplePath','exampleId:examplePath','f','filename','examplePath','someHash','customMeta','contentHash','merkleRoot','actualFileHash','mimetype','writeMarker','thumbnailHash','actualThumbnailHash');
+`)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *TestDataController) AddGetObjectPathTestData(allocationTx, pubKey string) error {
+	var err error
+	var tx *sql.Tx
+	defer func() {
+		if err != nil {
+			if tx != nil {
+				errRollback := tx.Rollback()
+				if errRollback != nil {
+					log.Println(errRollback)
+				}
+			}
+		}
+	}()
+
+	db, err := c.db.DB()
+	if err != nil {
+		return err
+	}
+
+	tx, err = db.BeginTx(context.Background(), &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	expTime := time.Now().Add(time.Hour * 100000).UnixNano()
+
+	_, err = tx.Exec(`
+INSERT INTO allocations (id, tx, owner_id, owner_public_key, expiration_date, payer_id)
+VALUES ('exampleId' ,'` + allocationTx + `','exampleOwnerId','` + pubKey + `',` + fmt.Sprint(expTime) + `,'examplePayerId');
+`)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *TestDataController) AddGetReferencePathTestData(allocationTx, pubkey string) error {
+	var err error
+	var tx *sql.Tx
+	defer func() {
+		if err != nil {
+			if tx != nil {
+				errRollback := tx.Rollback()
+				if errRollback != nil {
+					log.Println(errRollback)
+				}
+			}
+		}
+	}()
+
+	db, err := c.db.DB()
+	if err != nil {
+		return err
+	}
+
+	tx, err = db.BeginTx(context.Background(), &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	expTime := time.Now().Add(time.Hour * 100000).UnixNano()
+
+	_, err = tx.Exec(`
+INSERT INTO allocations (id, tx, owner_id, owner_public_key, expiration_date, payer_id)
+VALUES ('exampleId' ,'` + allocationTx + `','exampleOwnerId','` + pubkey + `',` + fmt.Sprint(expTime) + `,'examplePayerId');
+`)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *TestDataController) AddGetObjectTreeTestData(allocationTx, pubkey string) error {
+	var err error
+	var tx *sql.Tx
+	defer func() {
+		if err != nil {
+			if tx != nil {
+				errRollback := tx.Rollback()
+				if errRollback != nil {
+					log.Println(errRollback)
+				}
+			}
+		}
+	}()
+
+	db, err := c.db.DB()
+	if err != nil {
+		return err
+	}
+
+	tx, err = db.BeginTx(context.Background(), &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	expTime := time.Now().Add(time.Hour * 100000).UnixNano()
+
+	_, err = tx.Exec(`
+INSERT INTO allocations (id, tx, owner_id, owner_public_key, expiration_date, payer_id)
+VALUES ('exampleId' ,'` + allocationTx + `','exampleOwnerId','` + pubkey + `',` + fmt.Sprint(expTime) + `,'examplePayerId');
+`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`
+INSERT INTO reference_objects (id, allocation_id, path_hash,lookup_hash,type,name,path,hash,custom_meta,content_hash,merkle_root,actual_file_hash,mimetype,write_marker,thumbnail_hash, actual_thumbnail_hash)
+VALUES (1234,'exampleId','exampleId:examplePath','exampleId:examplePath','d','root','/','someHash','customMeta','contentHash','merkleRoot','actualFileHash','mimetype','writeMarker','thumbnailHash','actualThumbnailHash');
+`)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func GeneratePubPrivateKey(t *testing.T) (string, string, zcncrypto.SignatureScheme) {
+
+	signScheme := zcncrypto.NewSignatureScheme(signScheme)
+	wallet, err := signScheme.GenerateKeys()
+	if err != nil {
+		t.Fatal(err)
+	}
+	keyPair := wallet.Keys[0]
+
+	_ = signScheme.SetPrivateKey(keyPair.PrivateKey)
+	_ = signScheme.SetPublicKey(keyPair.PublicKey)
+
+	return keyPair.PublicKey, keyPair.PrivateKey, signScheme
+}
+
+func randString(n int) string {
+
+	const hexLetters = "abcdef0123456789"
+
+	var sb strings.Builder
+	for i := 0; i < n; i++ {
+		sb.WriteByte(hexLetters[rand.Intn(len(hexLetters))])
+	}
+	return sb.String()
+}
