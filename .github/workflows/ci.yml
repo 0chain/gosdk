@@ -38,7 +38,7 @@ jobs:
           docker network create --driver=bridge --subnet=198.18.0.0/15 --gateway=198.18.0.255 testnet0
           ./docker.local/bin/build.blobber.sh
           cd docker.local/blobber1
-          ../bin/blobber.start_bls.sh </dev/null &>/dev/null &
-          cd ../..
-          cd ..
-          make gosdk-integration-test
+          ../bin/blobber.start_bls.sh
+#          cd ../..
+#          cd ..
+#          make gosdk-integration-test
