@@ -5,6 +5,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/0chain/gosdk/core/logger"
+
 	"github.com/0chain/gosdk/core/clients/blobberClient"
 
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
@@ -51,6 +53,7 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 
 	respRaw, err := blobberClient.GetFileMetaData(blobber.Baseurl, grpcReq)
 	if err != nil {
+		logger.Logger.Error("could not get file data from blobber -" + blobber.Baseurl + " - " + err.Error())
 		return
 	}
 	s.WriteString(string(respRaw))

@@ -123,6 +123,7 @@ func (commitreq *CommitRequest) processCommit() {
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
 		commitreq.wg.Done()
+		Logger.Error("could not get reference path from blobber -" + commitreq.blobber.Baseurl + " - " + err.Error())
 		return
 	}
 	err = json.Unmarshal(respRaw, &lR)

@@ -8,6 +8,7 @@ import (
 
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
 	"github.com/0chain/gosdk/core/clients/blobberClient"
+	"github.com/0chain/gosdk/zboxcore/logger"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -57,6 +58,7 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 		Allocation: req.allocationTx,
 	})
 	if err != nil {
+		logger.Logger.Error("could not get file stats from blobber -" + blobber.Baseurl + " - " + err.Error())
 		return
 	}
 	s.WriteString(string(respRaw))

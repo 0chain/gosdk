@@ -9,6 +9,8 @@ import (
 
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
 
+	"github.com/0chain/gosdk/zboxcore/logger"
+
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
@@ -37,6 +39,7 @@ func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationTx 
 
 	respRaw, err := blobberClient.GetAllocation(blobber.Baseurl, &blobbergrpc.GetAllocationRequest{Id: allocationTx})
 	if err != nil {
+		logger.Logger.Error("could not get allocation from blobber -" + blobber.Baseurl + " - " + err.Error())
 		return
 	}
 

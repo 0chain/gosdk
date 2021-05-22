@@ -87,6 +87,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 		Allocation: req.allocationTx,
 	})
 	if err != nil {
+		Logger.Error("could not list entities from blobber -" + blobber.Baseurl + " - " + err.Error())
 		return
 	}
 	s.WriteString(string(respRaw))
