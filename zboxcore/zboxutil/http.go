@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/core/encryption"
 	"io"
 	"io/ioutil"
 	"net"
@@ -144,7 +145,7 @@ func setClientInfo(req *http.Request) {
 func setClientInfoWithSign(req *http.Request, allocation string) error {
 	setClientInfo(req)
 
-	sign, err := client.Sign(allocation)
+	sign, err := client.Sign(encryption.Hash(allocation))
 	if err != nil {
 		return err
 	}
@@ -528,7 +529,7 @@ func GetMarketplaceMnemonic(blobberBaseUrl string) (string, error) {
 		return "", err
 	}
 	defer res.Body.Close()
-	body, err := io.ReadAll(res.Body)
+	body, err := ioutil.ReadAll(res.Body)
 	pubKeyResp := map[string]string {}
 	json.Unmarshal(body, &pubKeyResp)
 	return pubKeyResp["mnemonic"], nil
