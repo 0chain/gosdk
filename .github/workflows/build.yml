@@ -60,7 +60,7 @@ jobs:
       uses: actions/checkout@v2
     - name: Create sdkfile
       run: |
-        cat <<EOF >>sdkversion.go
+        cat <<EOF > sdkversion.go
           package main
             import (
                 "fmt"
@@ -69,7 +69,7 @@ jobs:
             func main() {
                 fmt.Println("gosdk version: ", zcncore.GetVersion())
             }
-        <<EOF>>
+        EOF
     - name: Get Dependencies SDK
       run: go get github.com/0chain/gosdk
     - name: Create SDK
