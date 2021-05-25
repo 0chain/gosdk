@@ -70,10 +70,10 @@ jobs:
                 fmt.Println("gosdk version: ", zcncore.GetVersion())
             }
         EOF
-    - name: Get Dependencies SDK
-      run: go get github.com/0chain/gosdk
-    - name: Create SDK
-      run: go build -o sdkversion sdkversion.go
+#     - name: Get Dependencies SDK
+#       run: go get github.com/0chain/gosdk
+#     - name: Create SDK
+#       run: go build -o sdkversion sdkversion.go
 
   #  - name: Push Build
   #    run: |
