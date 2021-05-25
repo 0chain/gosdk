@@ -72,8 +72,6 @@ jobs:
         EOF
     - name: Create SDK
       run: go build -o sdkversion sdkversion.go
-    - name: Test Executable
-      run: bash ./sdkversion
       
   #  - name: Push Build
   #    run: |
