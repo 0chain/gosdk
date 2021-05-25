@@ -69,7 +69,7 @@ jobs:
             func main() {
                 fmt.Println("gosdk version: ", zcncore.GetVersion())
             }
-        EOF
+        <<EOF>>
     - name: Get Dependencies SDK
       run: go get github.com/0chain/gosdk
     - name: Create SDK
