@@ -1,4 +1,4 @@
-name: gosdk
+name: GOSDK
 
 # on:
 #   workflow_dispatch:
@@ -26,13 +26,13 @@ jobs:
       with:
         go-version: ^1.13
 
-    # - name: Get the version
-    #   id: get_version
-    #   run: |
-    #       BRANCH=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')
-    #       SHORT_SHA=$(echo $GITHUB_SHA | head -c 8)
-    #       echo ::set-output name=BRANCH::${BRANCH}
-    #       echo ::set-output name=VERSION::${BRANCH}-${SHORT_SHA}
+    - name: Get the version
+      id: get_version
+      run: |
+          BRANCH=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')
+          SHORT_SHA=$(echo $GITHUB_SHA | head -c 8)
+          echo ::set-output name=BRANCH::${BRANCH}
+          echo ::set-output name=VERSION::${BRANCH}-${SHORT_SHA}
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
@@ -73,7 +73,7 @@ jobs:
     - name: Create SDK
       run: go build -o sdkversion sdkversion.go
       
-    - name: Build project
+    - name: Creating zip for Artifacts
       run: |
         zip -r test.zip .  
       
@@ -82,10 +82,11 @@ jobs:
       uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
+        TAG: ${{ steps.get_version.outputs.VERSION }}
       with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: false
+          tag_name: $TAG
+          release_name: Release-$TAG
+          draft: true
           prerelease: false
           
     - name: Upload Release Asset
@@ -94,7 +95,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
       with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
         asset_path: ./test.zip
         asset_name: test.zip
         asset_content_type: application/zip
