@@ -75,7 +75,7 @@ jobs:
       
     - name: Creating zip for Artifacts
       run: |
-        zip -r test.zip .  
+        zip -r artifact.zip .  
       
     - name: Create Release
       id: create_release
