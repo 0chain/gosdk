@@ -59,7 +59,7 @@ type ReEncryptedMessageBytes struct {
 	D5Bytes []byte `json:"d5Bytes"`
 }
 
-type reEncryptedMessage struct {
+type ReEncryptedMessage struct {
 	D1 kyber.Point
 	D2 []byte
 	D3 []byte
@@ -123,7 +123,7 @@ func (u *PREEncryptedMessage) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (reEncMsg *reEncryptedMessage) MarshalJSON() ([]byte, error) {
+func (reEncMsg *ReEncryptedMessage) MarshalJSON() ([]byte, error) {
 	D1Bytes, err := reEncMsg.D1.MarshalBinary()
 	if err != nil {
 		return nil, err
@@ -146,6 +146,31 @@ func (reEncMsg *reEncryptedMessage) MarshalJSON() ([]byte, error) {
 		D4Bytes: D4Bytes,
 		D5Bytes: D5Bytes,
 	})
+}
+
+func (reEncMsg *ReEncryptedMessage) UnmarshalJSON(data []byte) error {
+	reEncMsgBytes := &ReEncryptedMessageBytes{}
+	err := json.Unmarshal(data, reEncMsgBytes)
+	if err != nil {
+		return err
+	}
+
+	err = reEncMsg.D1.UnmarshalBinary(reEncMsgBytes.D1Bytes)
+	if err != nil {
+		return err
+	}
+
+	err = reEncMsg.D4.UnmarshalBinary(reEncMsgBytes.D4Bytes)
+	if err != nil {
+		return err
+	}
+
+	err = reEncMsg.D5.UnmarshalBinary(reEncMsgBytes.D5Bytes)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (pre *PREEncryptionScheme) Initialize(mnemonic string) error {
@@ -393,12 +418,12 @@ func (pre *PREEncryptionScheme) decrypt(encMsg *EncryptedMessage) ([]byte, error
 	return nil, err2
 }
 
-func (pre *PREEncryptionScheme) ReEncrypt(encMsg *EncryptedMessage, reGenKey string) (*reEncryptedMessage, error) {
+func (pre *PREEncryptionScheme) ReEncrypt(encMsg *EncryptedMessage, reGenKey string) (*ReEncryptedMessage, error) {
 	return pre.reEncrypt(encMsg, reGenKey)
 }
 
 //-----------------------------------------------ReEncryption-------------------------------------------------
-func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey string) (*reEncryptedMessage, error) {
+func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey string) (*ReEncryptedMessage, error) {
 	var g kyber.Group = pre.SuiteObj
 	s := pre.SuiteObj
 	C := &PREEncryptedMessage{}
@@ -426,7 +451,7 @@ func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey str
 		return nil, err
 	}
 
-	var reEncMsg = new(reEncryptedMessage)
+	var reEncMsg = new(ReEncryptedMessage)
 
 	chk1 := pre.hash5(g, C.EncryptedKey, C.EncryptedData, C.MessageChecksum, rk.R3)
 	if !bytes.Equal(chk1, C.OverallChecksum) { // Check if C4 = H5(C1,C2,C3,alp)
@@ -445,7 +470,7 @@ func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey str
 }
 
 //-----------------------------------------------ReDecryption-------------------------------------------------
-func (pre *PREEncryptionScheme) reDecrypt(D *reEncryptedMessage) ([]byte, error) {
+func (pre *PREEncryptionScheme) ReDecrypt(D *ReEncryptedMessage) ([]byte, error) {
 	s := pre.SuiteObj
 	tXj := s.Point().Mul(pre.PrivateKey, D.D5) // tXj   = skB.D5
 	var g kyber.Group = s
@@ -476,7 +501,7 @@ func (pre *PREEncryptionScheme) Decrypt(encMsg *EncryptedMessage) ([]byte, error
 		if err != nil {
 			return nil, err
 		}
-		decryptedMessage, err := pre.reDecrypt(reEncMsg)
+		decryptedMessage, err := pre.ReDecrypt(reEncMsg)
 		if err != nil {
 			return nil, err
 		}

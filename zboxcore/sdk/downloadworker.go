@@ -115,7 +115,21 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 			}
 			//for blockNum := 0; blockNum < len(result.BlockChunks); blockNum++ {
 			for blockNum := 0; blockNum < downloadChunks; blockNum++ {
-				if len(req.encryptedKey) > 0 {
+				if req.preAtBlobber {
+					reEncMessage := &encryption.ReEncryptedMessage{}
+					err := reEncMessage.UnmarshalJSON(result.BlockChunks[blockNum])
+					if err != nil {
+						Logger.Error("ReEncrypted Block unmarshall failed", req.blobbers[result.idx].Baseurl, err)
+						break
+					}
+					decrypted, err := encscheme.ReDecrypt(reEncMessage)
+					if err != nil {
+						Logger.Error("Block redecryption failed", req.blobbers[result.idx].Baseurl, err)
+						break
+					}
+
+					shards[blockNum][result.idx] = decrypted
+				} else if len(req.encryptedKey) > 0 {
 					headerBytes := result.BlockChunks[blockNum][:(2 * 1024)]
 					headerBytes = bytes.Trim(headerBytes, "\x00")
 					headerString := string(headerBytes)

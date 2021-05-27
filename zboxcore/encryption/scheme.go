@@ -6,9 +6,10 @@ type EncryptionScheme interface {
 	InitForDecryption(tag string, encryptedKey string) error
 	Encrypt(data []byte) (*EncryptedMessage, error)
 	Decrypt(*EncryptedMessage) ([]byte, error)
+	ReDecrypt(D *ReEncryptedMessage) ([]byte, error)
 	GetEncryptedKey() string
 	GetReGenKey(encPublicKey string, tag string) (string, error)
-	ReEncrypt(encMsg *EncryptedMessage, reGenKey string) (*reEncryptedMessage, error)
+	ReEncrypt(encMsg *EncryptedMessage, reGenKey string) (*ReEncryptedMessage, error)
 	GetPublicKey() (string, error)
 	GetPrivateKey() (string, error)
 }
