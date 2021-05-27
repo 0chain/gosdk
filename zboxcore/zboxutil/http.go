@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -144,7 +145,7 @@ func setClientInfo(req *http.Request) {
 func setClientInfoWithSign(req *http.Request, allocation string) error {
 	setClientInfo(req)
 
-	sign, err := client.Sign(allocation)
+	sign, err := client.Sign(encryption.Hash(allocation))
 	if err != nil {
 		return err
 	}
