@@ -49,6 +49,7 @@ type DownloadRequest struct {
 	isDownloadCanceled bool
 	completedCallback  func(remotepath string, remotepathhash string)
 	contentMode        string
+	preAtBlobber	   bool
 	Consensus
 }
 
@@ -203,6 +204,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		size = fileRef.ActualThumbnailSize
 	}
 	req.encryptedKey = fileRef.EncryptedKey
+	req.preAtBlobber = fileRef.Attributes.PreAtBlobber
 	Logger.Info("Encrypted key from fileref", req.encryptedKey)
 	// Calculate number of bytes per shard.
 	perShard := (size + int64(req.datashards) - 1) / int64(req.datashards)

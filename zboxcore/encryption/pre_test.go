@@ -1,7 +1,9 @@
 package encryption
 
 import (
+	"fmt"
 	"github.com/stretchr/testify/require"
+	"go.dedis.ch/kyber/v3/group/edwards25519"
 	"testing"
 )
 
@@ -22,4 +24,9 @@ func TestMnemonic(t *testing.T) {
 	expectedPubk := "PwpVIXgXbnt8NJmy+R4aSwG8HwJbsbT2JVQqa0bayZQ="
 	require.Equal(t, expectedPubk, pubk)
 
+}
+
+func TestKyberPointMarshal(t *testing.T) {
+	suite := edwards25519.NewBlakeSHA256Ed25519()
+	fmt.Println(suite.Point())
 }

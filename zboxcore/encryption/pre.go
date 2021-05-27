@@ -51,6 +51,14 @@ type ReKeyBytes struct {
 	R3Bytes []byte `json:"r3"`
 }
 
+type ReEncryptedMessageBytes struct {
+	D1Bytes []byte `json:"d1Bytes"`
+	D2Bytes []byte `json:"d2Bytes"`
+	D3Bytes []byte `json:"d3Bytes"`
+	D4Bytes []byte `json:"d4Bytes"`
+	D5Bytes []byte `json:"d5Bytes"`
+}
+
 type reEncryptedMessage struct {
 	D1 kyber.Point
 	D2 []byte
@@ -112,6 +120,31 @@ func (u *PREEncryptedMessage) MarshalJSON() ([]byte, error) {
 	}{
 		EncryptedKeyBytes: c1Bytes,
 		Alias:             (*Alias)(u),
+	})
+}
+
+func (reEncMsg *reEncryptedMessage) MarshalJSON() ([]byte, error) {
+	D1Bytes, err := reEncMsg.D1.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	D4Bytes, err := reEncMsg.D4.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	D5Bytes, err := reEncMsg.D5.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(&ReEncryptedMessageBytes{
+		D1Bytes: D1Bytes,
+		D2Bytes: reEncMsg.D2,
+		D3Bytes: reEncMsg.D3,
+		D4Bytes: D4Bytes,
+		D5Bytes: D5Bytes,
 	})
 }
 
@@ -358,6 +391,10 @@ func (pre *PREEncryptionScheme) decrypt(encMsg *EncryptedMessage) ([]byte, error
 		}
 	}
 	return nil, err2
+}
+
+func (pre *PREEncryptionScheme) ReEncrypt(encMsg *EncryptedMessage, reGenKey string) (*reEncryptedMessage, error) {
+	return pre.reEncrypt(encMsg, reGenKey)
 }
 
 //-----------------------------------------------ReEncryption-------------------------------------------------
