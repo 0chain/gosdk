@@ -1,0 +1,122 @@
+"use strict";
+
+const crypto = require('crypto');
+const EventEmitter = require('events');
+
+// Utility function to hash a chunk of data.
+// Using sha256/hex for no particular reason.
+function hash(data) {
+  // Comment the next line to actually hash the data.  This version
+  // concatenates the data in order to more easily see the structure
+  // of the hashes being performed.
+  return data;
+  return crypto.createHash('sha256').update(data).digest('hex');
+};
+
+function hashHashes(h1, h2) {
+  // There are better ways to combine the hashes,
+  // but this was expedient for a proof-of-concept.
+  return hash(`(${h1}|${h2})`);
+}
+
+
+/**
+ * Class that takes incoming chunks and builds up the Merkle root
+ * as it goes.  Unneeded nodes are discarded.
+ */
+class MerkleHasher extends EventEmitter {
+  constructor() {
+    super();
+    this.hashNodes = [];
+
+    // Listener for handling incoming data.
+    this.on('data', (chunk) => this.receiveChunk(chunk));
+
+    // Get the Merkle root, sending it back through the response object.
+    this.on('getMerkleRoot', (response) => {
+      response.merkleRoot = this.finalize();
+    });
+  }
+
+  // Hash the incoming chunk and update the the Merkle tree.
+  receiveChunk(chunk) {
+    let h = hash(chunk);
+    let i = 0;
+    while (i < this.hashNodes.length) {
+      if (this.hashNodes[i] === null) {
+        // If we find an empty spot in the nodes, we put the hash there and quit.
+        this.hashNodes[i] = h;
+        return;
+      } else {
+        // Otherwise, hash the old hash with the new hash.
+        let leftHash = this.hashNodes[i];
+        h = hashHashes(leftHash, h);
+        // We no longer need to keep the old hash at this level in memory.
+        this.hashNodes[i] = null;
+      }
+      i++;
+    }
+
+    // If we made it here, we have a new top-level root.
+    this.hashNodes.push(h);
+  }
+
+  // When all data has been received, we calculate the Merkle root.
+  // For the last, lowest-level hash, we hash it with itself.
+  // From there, the nodes are hashed to the top level
+  // to calculate the Merkle root.
+  finalize() {
+    let rightHash = null;
+
+    // Fill in missing nodes.
+    for (let i=0; i<this.hashNodes.length; i++) {
+      let leftHash = this.hashNodes[i];
+      if (i === this.hashNodes.length-1 && rightHash === null) {
+        // Perfectly balanced Merkle tree.
+        return leftHash;
+      }
+      if (leftHash === null && rightHash === null) {
+        // Both leaves are null (subsumed by a higher node hash)
+        continue;
+      } else if (rightHash === null) {
+        // If there is no right hash (at this level or lower in the tree),
+        // Hash the left hash with itself.
+        rightHash = hashHashes(leftHash, leftHash);
+      } else if (leftHash === null) {
+        // Similarly, if there is no left half,
+        // hash the right with itself.
+        rightHash = hashHashes(rightHash, rightHash);
+      } else {
+        // Otherwise, the hash at this level will be the right hash
+        // for higher levels in the tree.
+        rightHash = hashHashes(leftHash, rightHash);
+      }
+    }
+    
+   return rightHash;
+  }
+}
+
+
+
+
+// *** TEST CODE ***
+
+let test = (size) => {
+  let merkHasher = new MerkleHasher();
+
+  for (let i=0; i<size; i++) {
+    merkHasher.emit('data', `Chunk ${i}`);
+  }
+
+  let response = {};
+  merkHasher.emit('getMerkleRoot', response);
+
+  console.log(`Final Merkle root is ${response.merkleRoot}.`);
+}
+
+for (let i=1; i<12; i++) {
+  test(i);
+  console.log();
+}
+//test(5);
