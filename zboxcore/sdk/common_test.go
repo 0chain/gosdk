@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	configDir            = "test"
+	configDir            = "testdata"
 	syncTestDir          = configDir + "/" + "sync"
 	syncDir              = syncTestDir + "/" + "sync_alloc"
 	textPlainContentType = "text/plain"
