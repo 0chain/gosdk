@@ -125,8 +125,7 @@ jobs:
         repo: 0proxy
         github_token: ${{ secrets.GOSDK }}
         workflow_file_name: build.yml
-        wait_interval: 10
-        propagate_failure: false
+        propagate_failure: true
         trigger_workflow: true
         wait_workflow: true
 
