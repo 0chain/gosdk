@@ -130,13 +130,38 @@ jobs:
         trigger_workflow: true
         wait_workflow: true
 
-  #  - name: Push Build
-  #    run: |
-  #      if [[ "$FIXED_PUSH" == "yes" ]]; then
-  #        push $GOSDK_REGISTRY:v0.0.0
-  #      else
-  #        push $GOSDK_REGISTRY:$TAG
-  #      fi
-  #    env:
-  #      FIXED_PUSH: ${{ github.event.inputs.fixed_tag }}
-  #      TAG: ${{ steps.get_version.outputs.VERSION }}
+    - name: Triggering zboxmobile build
+      uses: convictional/trigger-workflow-and-wait@v1.3.0
+      with:
+        owner: 0chain
+        repo: zboxmobile
+        github_token: ${{ secrets.GOSDK }}
+        workflow_file_name: build.yml
+        ref: master
+        propagate_failure: true
+        trigger_workflow: true
+        wait_workflow: true
+
+    - name: Triggering zboxcli build
+      uses: convictional/trigger-workflow-and-wait@v1.3.0
+      with:
+        owner: 0chain
+        repo: zboxcli
+        github_token: ${{ secrets.GOSDK }}
+        workflow_file_name: build-linux.yaml
+        ref: master
+        propagate_failure: true
+        trigger_workflow: true
+        wait_workflow: true
+
+    - name: Triggering zwalletcli build
+      uses: convictional/trigger-workflow-and-wait@v1.3.0
+      with:
+        owner: 0chain
+        repo: zwalletcli
+        github_token: ${{ secrets.GOSDK }}
+        workflow_file_name: build.yaml
+        ref: master
+        propagate_failure: true
+        trigger_workflow: true
+        wait_workflow: true
