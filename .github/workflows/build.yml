@@ -10,7 +10,6 @@ name: GOSDK
 
 env:
   GITHUB_TOKEN: ${{ secrets.GIT_TOKEN }}
-  GITTRG_TOKEN: ${{ secrets.GOSDK }}
 
 on:
    push:
@@ -124,9 +123,20 @@ jobs:
       with:
         owner: m-s-a-c
         repo: 0proxy
-        github_token: ${{ secrets.GITTRG_TOKEN }}
+        github_token: ${{ secrets.GOSDK }}
         workflow_file_name: build.yml
         wait_interval: 10
         propagate_failure: false
         trigger_workflow: true
         wait_workflow: true
+
+  #  - name: Push Build
+  #    run: |
+  #      if [[ "$FIXED_PUSH" == "yes" ]]; then
+  #        push $GOSDK_REGISTRY:v0.0.0
+  #      else
+  #        push $GOSDK_REGISTRY:$TAG
+  #      fi
+  #    env:
+  #      FIXED_PUSH: ${{ github.event.inputs.fixed_tag }}
+  #      TAG: ${{ steps.get_version.outputs.VERSION }}
