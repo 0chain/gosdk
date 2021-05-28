@@ -118,17 +118,6 @@ jobs:
         asset_name: artifact.zip
         asset_content_type: application/zip
       
-    - name: Triggering Oproxy build
-      uses: convictional/trigger-workflow-and-wait@v1.3.0
-      with:
-        owner: m-s-a-c
-        repo: 0proxy
-        github_token: ${{ secrets.GOSDK }}
-        workflow_file_name: build.yml
-        wait_interval: 10
-        propagate_failure: false
-        trigger_workflow: true
-        wait_workflow: true
 
   #  - name: Push Build
   #    run: |
