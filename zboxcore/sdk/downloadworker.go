@@ -6,6 +6,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
+	"go.dedis.ch/kyber/v3/group/edwards25519"
 	"io"
 	"math"
 	"os"
@@ -116,7 +117,12 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 			//for blockNum := 0; blockNum < len(result.BlockChunks); blockNum++ {
 			for blockNum := 0; blockNum < downloadChunks; blockNum++ {
 				if req.preAtBlobber {
-					reEncMessage := &encryption.ReEncryptedMessage{}
+					suite := edwards25519.NewBlakeSHA256Ed25519()
+					reEncMessage := &encryption.ReEncryptedMessage{
+						D1: suite.Point(),
+						D4: suite.Point(),
+						D5: suite.Point(),
+					}
 					err := reEncMessage.UnmarshalJSON(result.BlockChunks[blockNum])
 					if err != nil {
 						Logger.Error("ReEncrypted Block unmarshall failed", req.blobbers[result.idx].Baseurl, err)

@@ -160,6 +160,9 @@ func (reEncMsg *ReEncryptedMessage) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
+	reEncMsg.D2 = reEncMsgBytes.D2Bytes
+	reEncMsg.D3 = reEncMsgBytes.D3Bytes
+
 	err = reEncMsg.D4.UnmarshalBinary(reEncMsgBytes.D4Bytes)
 	if err != nil {
 		return err
