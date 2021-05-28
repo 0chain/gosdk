@@ -28,7 +28,7 @@ func TestStreamMerkleHasherWithEvenLeaves(t *testing.T) {
 
 	*/
 
-	hasher := StreamingMerkleHasher{Hash: func(left, right string) string {
+	hasher := StreamMerkleHasher{Hash: func(left, right string) string {
 		return "[" + left + "+" + right + "]"
 	}}
 
@@ -61,7 +61,7 @@ func TestStreamMerkleHasherWithOddLeaves(t *testing.T) {
 
 	*/
 
-	hasher := StreamingMerkleHasher{Hash: func(left, right string) string {
+	hasher := StreamMerkleHasher{Hash: func(left, right string) string {
 		return "[" + left + "+" + right + "]"
 	}}
 
@@ -93,7 +93,7 @@ func TestStreamMerkleHasherWithStateful(t *testing.T) {
 
 	*/
 
-	hasher := StreamingMerkleHasher{Hash: func(left, right string) string {
+	hasher := StreamMerkleHasher{Hash: func(left, right string) string {
 		return "[" + left + "+" + right + "]"
 	}}
 
@@ -128,7 +128,7 @@ func TestStreamMerkleHasherWithNoSequenced(t *testing.T) {
 
 	*/
 
-	hasher := StreamingMerkleHasher{Hash: func(left, right string) string {
+	hasher := StreamMerkleHasher{Hash: func(left, right string) string {
 		return "[" + left + "+" + right + "]"
 	}}
 

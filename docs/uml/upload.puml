@@ -51,3 +51,24 @@ cache <- gosdk: clean status
 CLI <- gosdk: exit cmd
 
 @enduml
+
+
+
+@startuml stream upload flow
+
+loop till done
+FileInput -> reedsolomon.Encoder : read bytes with datashards * 64KB or datashards *(64KB - 16 - 2KB)
+reedsolomon.Encoder --> encryption.EncryptionScheme : encrypt data, and added header (2KB)
+encryption.EncryptionScheme --> APIClient: send client data
+reedsolomon.Encoder -> APIClient: send client data
+
+note over APIClient,blobber
+WHEN:
+1. receive all chunks data
+2. recevie $batch * chunks data
+end note
+APIClient -> blobber : upload to blobber
+
+end
+
+@enduml
