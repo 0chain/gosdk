@@ -82,6 +82,10 @@ func GetFullRemotePath(localPath, remotePath string) string {
 	return remotePath
 }
 
+func GetFullRemotePathForStreamUpload(remotePath string) string {
+	return GetFullRemotePath(remotePath, remotePath)
+}
+
 func NewConnectionId() string {
 	nBig, err := rand.Int(rand.Reader, big.NewInt(0xffffffff))
 	if err != nil {

@@ -31,7 +31,7 @@ func TestGetMinMaxWriteReadSuccess(t *testing.T) {
 		maxW, maxR, err := ssc.GetMaxWriteRead()
 		require.NoError(t, err)
 		require.Equal(t, 0.01, maxW)
-		require.Equal(t,0.01, maxR)
+		require.Equal(t, 0.01, maxR)
 	})
 
 	t.Run("Error / No Blobbers", func(t *testing.T) {
