@@ -347,6 +347,20 @@ func (pre *PREEncryptionScheme) SymEnc(group kyber.Group, message []byte, keyhas
 	return ctx.Bytes(), nil
 }
 
+func UnmarshallPublicKey(publicKey string) (kyber.Point, error) {
+	suite := edwards25519.NewBlakeSHA256Ed25519()
+	point := suite.Point()
+	decoded, err := base64.StdEncoding.DecodeString(publicKey)
+	if err != nil {
+		return nil, err
+	}
+	err = point.UnmarshalBinary([]byte(decoded))
+	if err != nil {
+		return nil, err
+	}
+	return point, nil
+}
+
 //---------------------------------Symmetric Decryption using AES with GCM mode---------------------------------
 func (pre *PREEncryptionScheme) SymDec(group kyber.Group, ctx []byte, keyhash []byte) ([]byte, error) {
 	len := 32 + 12
@@ -421,12 +435,18 @@ func (pre *PREEncryptionScheme) decrypt(encMsg *EncryptedMessage) ([]byte, error
 	return nil, err2
 }
 
-func (pre *PREEncryptionScheme) ReEncrypt(encMsg *EncryptedMessage, reGenKey string) (*ReEncryptedMessage, error) {
-	return pre.reEncrypt(encMsg, reGenKey)
+func (pre *PREEncryptionScheme) ReEncrypt(encMsg *EncryptedMessage, reGenKey string, clientPublicKey string) (*ReEncryptedMessage, error) {
+	key, err := UnmarshallPublicKey(clientPublicKey)
+	fmt.Println(key)
+	if err != nil {
+		return nil, err
+	}
+	return pre.reEncrypt(encMsg, reGenKey, key)
 }
 
 //-----------------------------------------------ReEncryption-------------------------------------------------
-func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey string) (*ReEncryptedMessage, error) {
+//reencrypt the data, cancelling the previous encryption by using the new regenkey
+func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey string, clientPublicKey kyber.Point) (*ReEncryptedMessage, error) {
 	var g kyber.Group = pre.SuiteObj
 	s := pre.SuiteObj
 	C := &PREEncryptedMessage{}
@@ -462,7 +482,7 @@ func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey str
 	}
 	t := s.Scalar().Pick(s.RandomStream()) // Pick a random integer t
 	reEncMsg.D5 = s.Point().Mul(t, nil)    // D5    = tP
-	tXj := s.Point().Mul(t, pre.PublicKey) // tXj   = t.pkB
+	tXj := s.Point().Mul(t, clientPublicKey) // tXj   = t.pkB
 	reEncMsg.D1 = g.Point().Add(C.EncryptedKey, rk.R1)
 	reEncMsg.D2 = C.EncryptedData                                                // D2    = C2
 	reEncMsg.D3 = C.MessageChecksum                                              // D3    = C3
@@ -500,7 +520,7 @@ func (pre *PREEncryptionScheme) ReDecrypt(D *ReEncryptedMessage) ([]byte, error)
 
 func (pre *PREEncryptionScheme) Decrypt(encMsg *EncryptedMessage) ([]byte, error) {
 	if len(encMsg.ReEncryptionKey) > 0 {
-		reEncMsg, err := pre.reEncrypt(encMsg, encMsg.ReEncryptionKey)
+		reEncMsg, err := pre.reEncrypt(encMsg, encMsg.ReEncryptionKey, pre.PublicKey)
 		if err != nil {
 			return nil, err
 		}

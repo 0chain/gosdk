@@ -9,7 +9,7 @@ type EncryptionScheme interface {
 	ReDecrypt(D *ReEncryptedMessage) ([]byte, error)
 	GetEncryptedKey() string
 	GetReGenKey(encPublicKey string, tag string) (string, error)
-	ReEncrypt(encMsg *EncryptedMessage, reGenKey string) (*ReEncryptedMessage, error)
+	ReEncrypt(encMsg *EncryptedMessage, reGenKey string, clientPublicKey string) (*ReEncryptedMessage, error)
 	GetPublicKey() (string, error)
 	GetPrivateKey() (string, error)
 }
