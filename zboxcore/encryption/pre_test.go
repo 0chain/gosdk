@@ -62,13 +62,18 @@ func TestReEncryptionAndDecryptionForMarketplaceShare(t *testing.T) {
 	client_enc_pub_key, err := client_encscheme.GetPublicKey()
 	assert.Nil(t, err)
 
+	// seller uploads and blobber encrypts the data
 	blobber_mnemonic := "inside february piece turkey offer merry select combine tissue wave wet shift room afraid december gown mean brick speak grant gain become toy clown"
 	blobber_encscheme := NewEncryptionScheme()
 	blobber_encscheme.Initialize(blobber_mnemonic)
 	blobber_encscheme.InitForEncryption("filetype:audio")
-
 	enc_msg, err := blobber_encscheme.Encrypt([]byte("encrypted_data_uttam"))
 	assert.Nil(t, err)
+
+	// buyer requests data from blobber, blobber reencrypts the data with regen key using buyer public key
+	blobber_encscheme = NewEncryptionScheme()
+	blobber_encscheme.Initialize(blobber_mnemonic)
+	blobber_encscheme.InitForDecryption("filetype:audio", enc_msg.EncryptedKey)
 	regenkey, err := blobber_encscheme.GetReGenKey(client_enc_pub_key, "filetype:audio")
 	assert.Nil(t, err)
 	reenc_msg, err := blobber_encscheme.ReEncrypt(enc_msg, regenkey, client_enc_pub_key)
