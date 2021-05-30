@@ -26,6 +26,34 @@ func TestMnemonic(t *testing.T) {
 
 }
 
+func TestReEncryptionAndDecryptionForShareData(t *testing.T) {
+	client_mnemonic := "travel twenty hen negative fresh sentence hen flat swift embody increase juice eternal satisfy want vessel matter honey video begin dutch trigger romance assault"
+	client_encscheme := NewEncryptionScheme()
+	client_encscheme.Initialize(client_mnemonic)
+	client_encscheme.InitForEncryption("filetype:audio")
+	client_enc_pub_key, err := client_encscheme.GetPublicKey()
+	assert.Nil(t, err)
+
+	shared_client_mnemonic := "inside february piece turkey offer merry select combine tissue wave wet shift room afraid december gown mean brick speak grant gain become toy clown"
+	shared_client_encscheme := NewEncryptionScheme()
+	shared_client_encscheme.Initialize(shared_client_mnemonic)
+	shared_client_encscheme.InitForEncryption("filetype:audio")
+
+	enc_msg, err := shared_client_encscheme.Encrypt([]byte("encrypted_data_uttam"))
+	assert.Nil(t, err)
+	regenkey, err := shared_client_encscheme.GetReGenKey(client_enc_pub_key, "filetype:audio")
+	assert.Nil(t, err)
+	enc_msg.ReEncryptionKey = regenkey
+
+	client_decryption_scheme := NewEncryptionScheme()
+	client_decryption_scheme.Initialize(client_mnemonic)
+	client_decryption_scheme.InitForDecryption("filetype:audio", enc_msg.EncryptedKey)
+
+	result, err := client_decryption_scheme.Decrypt(enc_msg)
+	assert.Nil(t, err)
+	assert.Equal(t, string(result), "encrypted_data_uttam")
+}
+
 func TestKyberPointMarshal(t *testing.T) {
 	suite := edwards25519.NewBlakeSHA256Ed25519()
 	reenc := ReEncryptedMessage {

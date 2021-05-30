@@ -37,6 +37,7 @@ type BlockDownloadRequest struct {
 	wg                 *sync.WaitGroup
 	ctx                context.Context
 	result             chan *downloadBlock
+	preAtBlobber       bool
 }
 
 type downloadBlock struct {
@@ -201,13 +202,19 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				// dec := json.NewDecoder(resp.Body)
 				// err := dec.Decode(&rspData)
 				err = json.Unmarshal(response, &rspData)
+				// After getting start of stream JSON message, other message chunks should not be in JSON
 				if err != nil {
 					rspData.Success = true
 					//rawData := make([]byte,0)
 					//json.Unmarshal(response, &rawData)
 					rspData.RawData = response
-					chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
-					rspData.BlockChunks = chunks
+					if req.preAtBlobber {
+						bodyBytes := response[len("PRE_AT_BLOBBER"):]
+						rspData.BlockChunks = [][]byte { bodyBytes }
+					} else {
+						chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
+						rspData.BlockChunks = chunks
+					}
 					rspData.RawData = []byte{}
 					incBlobberReadCtr(req.blobber, req.numBlocks)
 					req.result <- &rspData
