@@ -1,6 +1,7 @@
 package encryption
 
 import (
+	"encoding/base64"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
@@ -67,7 +68,8 @@ func TestReEncryptionAndDecryptionForMarketplaceShare(t *testing.T) {
 	blobber_encscheme := NewEncryptionScheme()
 	blobber_encscheme.Initialize(blobber_mnemonic)
 	blobber_encscheme.InitForEncryption("filetype:audio")
-	enc_msg, err := blobber_encscheme.Encrypt([]byte("encrypted_data_uttam"))
+	data_to_encrypt := "encrypted_data_uttaencrypted_data_uttaencrypted_data_uttaencrypted_data_uttaencrypted_data_uttaencrypted_data_uttaencrypted_data_uttaencrypted_data_uttaencrypted_data_uttammmmmmmmmencrypted_data_uttam"
+	enc_msg, err := blobber_encscheme.Encrypt([]byte(data_to_encrypt))
 	assert.Nil(t, err)
 
 	// buyer requests data from blobber, blobber reencrypts the data with regen key using buyer public key
@@ -78,6 +80,14 @@ func TestReEncryptionAndDecryptionForMarketplaceShare(t *testing.T) {
 	assert.Nil(t, err)
 	reenc_msg, err := blobber_encscheme.ReEncrypt(enc_msg, regenkey, client_enc_pub_key)
 	assert.Nil(t, err)
+	// verify encrypted message size
+	d1, _ := reenc_msg.D1.MarshalBinary()
+	d4, _ := reenc_msg.D4.MarshalBinary()
+	d5, _ := reenc_msg.D5.MarshalBinary()
+	assert.Equal(t, 44, len(base64.StdEncoding.EncodeToString(d1)))
+	assert.Equal(t, 88, len(base64.StdEncoding.EncodeToString(reenc_msg.D3)))
+	assert.Equal(t, 44, len(base64.StdEncoding.EncodeToString(d4)))
+	assert.Equal(t, 44, len(base64.StdEncoding.EncodeToString(d5)))
 
 	client_decryption_scheme := NewEncryptionScheme()
 	client_decryption_scheme.Initialize(client_mnemonic)
@@ -85,7 +95,7 @@ func TestReEncryptionAndDecryptionForMarketplaceShare(t *testing.T) {
 
 	result, err := client_decryption_scheme.ReDecrypt(reenc_msg)
 	assert.Nil(t, err)
-	assert.Equal(t, string(result), "encrypted_data_uttam")
+	assert.Equal(t, string(result), data_to_encrypt)
 }
 
 func TestKyberPointMarshal(t *testing.T) {
@@ -97,19 +107,27 @@ func TestKyberPointMarshal(t *testing.T) {
 		D4: suite.Point(),
 		D5: suite.Point(),
 	}
-	marshalled, err := reenc.MarshalJSON()
+	marshalled, err := reenc.Marshal()
 	assert.Nil(t, err)
-	expected := "{\"d1Bytes\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"d2Bytes\":\"ZDI=\",\"d3Bytes\":\"ZDM=\",\"d4Bytes\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\",\"d5Bytes\":\"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=\"}"
-	assert.Equal(t, expected, string(marshalled))
 	newmsg := &ReEncryptedMessage{
 		D1: suite.Point(),
 		D4: suite.Point(),
 		D5: suite.Point(),
 	}
-	err = newmsg.UnmarshalJSON(marshalled)
+	err = newmsg.Unmarshal(marshalled)
 	assert.Equal(t, newmsg.D2, reenc.D2)
 	assert.Equal(t, newmsg.D3, reenc.D3)
 	assert.Equal(t, newmsg.D1.String(), reenc.D1.String())
 	assert.Equal(t, newmsg.D4.String(), reenc.D4.String())
 	assert.Equal(t, newmsg.D5.String(), reenc.D5.String())
+}
+
+func TestMarshal(t *testing.T) {
+	suite := edwards25519.NewBlakeSHA256Ed25519()
+	for i := 0; i < 1000; i++ {
+		point := suite.Point().Pick(suite.RandomStream())
+		data, err := point.MarshalBinary()
+		assert.Nil(t, err)
+		assert.Equal(t, 44, len(base64.StdEncoding.EncodeToString(data)))
+	}
 }

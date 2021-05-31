@@ -9,7 +9,9 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"strings"
 
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
@@ -123,7 +125,7 @@ func (u *PREEncryptedMessage) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func (reEncMsg *ReEncryptedMessage) MarshalJSON() ([]byte, error) {
+func (reEncMsg *ReEncryptedMessage) Marshal() ([]byte, error) {
 	D1Bytes, err := reEncMsg.D1.MarshalBinary()
 	if err != nil {
 		return nil, err
@@ -139,36 +141,63 @@ func (reEncMsg *ReEncryptedMessage) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 
-	return json.Marshal(&ReEncryptedMessageBytes{
-		D1Bytes: D1Bytes,
-		D2Bytes: reEncMsg.D2,
-		D3Bytes: reEncMsg.D3,
-		D4Bytes: D4Bytes,
-		D5Bytes: D5Bytes,
-	})
+	headerBytes := make([]byte, 256)
+	// 44 + 88 + 44 + 44 => 220, so rest of the 36 bytes minus the commas are padding
+	header := base64.StdEncoding.EncodeToString(D1Bytes) + ","+ base64.StdEncoding.EncodeToString(reEncMsg.D3)
+	header += "," + base64.StdEncoding.EncodeToString(D4Bytes) + ","+ base64.StdEncoding.EncodeToString(D5Bytes)
+	copy(headerBytes, header)
+
+	return append(headerBytes, reEncMsg.D2...), nil
 }
 
-func (reEncMsg *ReEncryptedMessage) UnmarshalJSON(data []byte) error {
-	reEncMsgBytes := &ReEncryptedMessageBytes{}
-	err := json.Unmarshal(data, reEncMsgBytes)
+func (reEncMsg *ReEncryptedMessage) Unmarshal(data []byte) error {
+	headerBytes := data[:256]
+	headerBytes = bytes.Trim(headerBytes, "\x00")
+	encryptedData := data[256:]
+
+	headerString := string(headerBytes)
+	headerBytes = bytes.Trim(headerBytes, "\x00")
+	headerChecksums := strings.Split(headerString, ",")
+	if len(headerChecksums) != 4 {
+		return errors.New("Invalid data received for unmarsalling of reEncrypted data")
+	}
+
+	d1, d3, d4, d5 := headerChecksums[0], headerChecksums[1], headerChecksums[2], headerChecksums[3]
+
+	d1Bytes, err := base64.StdEncoding.DecodeString(d1)
 	if err != nil {
 		return err
 	}
 
-	err = reEncMsg.D1.UnmarshalBinary(reEncMsgBytes.D1Bytes)
+	d3Bytes, err := base64.StdEncoding.DecodeString(d3)
 	if err != nil {
 		return err
 	}
 
-	reEncMsg.D2 = reEncMsgBytes.D2Bytes
-	reEncMsg.D3 = reEncMsgBytes.D3Bytes
-
-	err = reEncMsg.D4.UnmarshalBinary(reEncMsgBytes.D4Bytes)
+	d4Bytes, err := base64.StdEncoding.DecodeString(d4)
 	if err != nil {
 		return err
 	}
 
-	err = reEncMsg.D5.UnmarshalBinary(reEncMsgBytes.D5Bytes)
+	d5Bytes, err := base64.StdEncoding.DecodeString(d5)
+	if err != nil {
+		return err
+	}
+
+	err = reEncMsg.D1.UnmarshalBinary(d1Bytes)
+	if err != nil {
+		return err
+	}
+
+	reEncMsg.D2 = encryptedData
+	reEncMsg.D3 = d3Bytes
+
+	err = reEncMsg.D4.UnmarshalBinary(d4Bytes)
+	if err != nil {
+		return err
+	}
+
+	err = reEncMsg.D5.UnmarshalBinary(d5Bytes)
 	if err != nil {
 		return err
 	}
