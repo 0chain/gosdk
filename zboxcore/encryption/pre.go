@@ -156,7 +156,6 @@ func (reEncMsg *ReEncryptedMessage) Unmarshal(data []byte) error {
 	encryptedData := data[256:]
 
 	headerString := string(headerBytes)
-	headerBytes = bytes.Trim(headerBytes, "\x00")
 	headerChecksums := strings.Split(headerString, ",")
 	if len(headerChecksums) != 4 {
 		return errors.New("Invalid data received for unmarsalling of reEncrypted data")

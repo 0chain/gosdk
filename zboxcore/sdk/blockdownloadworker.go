@@ -209,8 +209,9 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					//json.Unmarshal(response, &rawData)
 					rspData.RawData = response
 					if req.preAtBlobber {
-						bodyBytes := response[len("PRE_AT_BLOBBER"):]
-						rspData.BlockChunks = [][]byte { bodyBytes }
+						// 256 for the additional header bytes,  where chunk_size - 2 * 1024 is the encrypted data size
+						chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE - 2 * 1024 + 256)
+						rspData.BlockChunks = chunks
 					} else {
 						chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
 						rspData.BlockChunks = chunks
