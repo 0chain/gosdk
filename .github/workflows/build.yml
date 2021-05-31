@@ -13,8 +13,8 @@ env:
 
 on:
    push: 
-     tags:
-       - 'v*'
+    #  tags:
+    #    - 'v*'
      branches: [ gitactionsfix ]
 
 jobs:
@@ -48,12 +48,18 @@ jobs:
   make:
     name: make-file
     runs-on: ubuntu-20.04
+    outputs:
+      Version: ${{ steps.gitversion.outputs.nuGetVersionV2 }}
+      CommitsSinceVersionSource: ${{ steps.gitversion.outputs.CommitsSinceVersionSource }}
+
     needs: 
     - build
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
       
     - name: Create sdkfile
       run: |
@@ -74,26 +80,48 @@ jobs:
     - name: Creating zip for Artifacts
       run: |
         zip -r artifact.zip .
-    - name: Get the version
-      id: get_version
-      run: |
-          BRANCH=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')
-          SHORT_SHA=$(echo $GITHUB_SHA | head -c 8)
-          echo ::set-output name=BRANCH::${BRANCH}
-          echo ::set-output name=VERSION::0.0.1     
 
+    -  name: Install GitVersion
+       run: |
+         echo "MajorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch}}"
+         echo "NuGetVersionV2: ${{ steps.gitversion.outputs.nuGetVersionV2}}"
+         echo "CommitsSinceVersionSource: ${{ steps.gitversion.outputs.CommitsSinceVersionSource}}"
+
+  deploy:
+    runs-on: ubuntu-20.04
+    needs: [build, make]
+    if: github.ref == 'refs/heads/gitactionsfix'
+
+    steps:
     - name: Create Release
       id: create_release
-      uses: zendesk/action-create-release@v1 # This token is provided by Actions, you do not need to create your own token
-      with:
-        tag_name: v${{ steps.get_version.outputs.VERSION }}
-        release_name: v${{ steps.get_version.outputs.VERSION }}
-        body: |
-          Changes in this Release
-          - First Change
-          - Second Change
-        draft: false
-        prerelease: false    
+      uses: actions/create-release@v1
+      if: needs.make.outputs.CommitsSinceVersionSource > 0
+      with: 
+        tag_name: ${{ needs.make.outputs.Version }}
+        release_name: Release ${{ needs.make.outputs.Version }}
+
+
+    # - name: Get the version
+    #   id: get_version
+    #   run: |
+    #       BRANCH=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')
+    #       SHORT_SHA=$(echo $GITHUB_SHA | head -c 8)
+    #       echo ::set-output name=BRANCH::${BRANCH}
+    #       echo ::set-output name=VERSION::0.0.1 
+
+    # - name: Create Release
+    #   id: create_release
+    #   uses: zendesk/action-create-release@v1 # This token is provided by Actions, you do not need to create your own token
+    #   with:
+    #     tag_name: v${{ steps.get_version.outputs.VERSION }}
+    #     release_name: v${{ steps.get_version.outputs.VERSION }}
+    #     body: |
+    #       Changes in this Release
+    #       - First Change
+    #       - Second Change
+    #     draft: false
+    #     prerelease: false    
 
     # - name: Create Release
     #   id: create_release
@@ -105,34 +133,34 @@ jobs:
     #     prerelease: false
     #     patch: true
           
-    - name: Create Release for Fixed v0.0.0
-      id: create_release_fixed
-      if: github.event.inputs.fixed_tag == 'yes'
-      uses: actions/create-release@v1
-      with:
-        tag_name: v0.0.0
-        release_name: v0.0.0
-        draft: false
-        prerelease: false      
+    # - name: Create Release for Fixed v0.0.0
+    #   id: create_release_fixed
+    #   if: github.event.inputs.fixed_tag == 'yes'
+    #   uses: actions/create-release@v1
+    #   with:
+    #     tag_name: v0.0.0
+    #     release_name: v0.0.0
+    #     draft: false
+    #     prerelease: false      
 
-    - name: Upload Release Asset
-      id: upload-release-asset 
-      uses: actions/upload-release-asset@v1
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./artifact.zip
-        asset_name: artifact.zip
-        asset_content_type: application/zip
+    # - name: Upload Release Asset
+    #   id: upload-release-asset 
+    #   uses: actions/upload-release-asset@v1
+    #   with:
+    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
+    #     asset_path: ./artifact.zip
+    #     asset_name: artifact.zip
+    #     asset_content_type: application/zip
 
-    - name: Upload Release Asset For v0.0.0
-      if: github.event.inputs.fixed_tag == 'yes'
-      id: upload-release-asset_fixed
-      uses: actions/upload-release-asset@v1
-      with:
-        upload_url: ${{ steps.create_release_fixed.outputs.upload_url }}
-        asset_path: ./artifact.zip
-        asset_name: artifact.zip
-        asset_content_type: application/zip
+    # - name: Upload Release Asset For v0.0.0
+    #   if: github.event.inputs.fixed_tag == 'yes'
+    #   id: upload-release-asset_fixed
+    #   uses: actions/upload-release-asset@v1
+    #   with:
+    #     upload_url: ${{ steps.create_release_fixed.outputs.upload_url }}
+    #     asset_path: ./artifact.zip
+    #     asset_name: artifact.zip
+    #     asset_content_type: application/zip
       
 #     - name: Triggering 0proxy build
 #       uses: convictional/trigger-workflow-and-wait@v1.3.0
