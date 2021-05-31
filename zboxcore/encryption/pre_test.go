@@ -2,7 +2,6 @@ package encryption
 
 import (
 	"encoding/base64"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 	"testing"
@@ -33,7 +32,7 @@ func TestReEncryptionAndDecryptionForShareData(t *testing.T) {
 	client_encscheme.Initialize(client_mnemonic)
 	client_encscheme.InitForEncryption("filetype:audio")
 	client_enc_pub_key, err := client_encscheme.GetPublicKey()
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	shared_client_mnemonic := "inside february piece turkey offer merry select combine tissue wave wet shift room afraid december gown mean brick speak grant gain become toy clown"
 	shared_client_encscheme := NewEncryptionScheme()
@@ -41,9 +40,9 @@ func TestReEncryptionAndDecryptionForShareData(t *testing.T) {
 	shared_client_encscheme.InitForEncryption("filetype:audio")
 
 	enc_msg, err := shared_client_encscheme.Encrypt([]byte("encrypted_data_uttam"))
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	regenkey, err := shared_client_encscheme.GetReGenKey(client_enc_pub_key, "filetype:audio")
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	enc_msg.ReEncryptionKey = regenkey
 
 	client_decryption_scheme := NewEncryptionScheme()
@@ -51,8 +50,8 @@ func TestReEncryptionAndDecryptionForShareData(t *testing.T) {
 	client_decryption_scheme.InitForDecryption("filetype:audio", enc_msg.EncryptedKey)
 
 	result, err := client_decryption_scheme.Decrypt(enc_msg)
-	assert.Nil(t, err)
-	assert.Equal(t, string(result), "encrypted_data_uttam")
+	require.Nil(t, err)
+	require.Equal(t, string(result), "encrypted_data_uttam")
 }
 
 func TestReEncryptionAndDecryptionForMarketplaceShare(t *testing.T) {
@@ -61,7 +60,7 @@ func TestReEncryptionAndDecryptionForMarketplaceShare(t *testing.T) {
 	client_encscheme.Initialize(client_mnemonic)
 	client_encscheme.InitForEncryption("filetype:audio")
 	client_enc_pub_key, err := client_encscheme.GetPublicKey()
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	// seller uploads and blobber encrypts the data
 	blobber_mnemonic := "inside february piece turkey offer merry select combine tissue wave wet shift room afraid december gown mean brick speak grant gain become toy clown"
@@ -70,32 +69,32 @@ func TestReEncryptionAndDecryptionForMarketplaceShare(t *testing.T) {
 	blobber_encscheme.InitForEncryption("filetype:audio")
 	data_to_encrypt := "encrypted_data_uttaencrypted_data_uttaencrypted_data_uttaencrypted_data_uttaencrypted_data_uttaencrypted_data_uttaencrypted_data_uttaencrypted_data_uttaencrypted_data_uttammmmmmmmmencrypted_data_uttam"
 	enc_msg, err := blobber_encscheme.Encrypt([]byte(data_to_encrypt))
-	assert.Nil(t, err)
+	require.Nil(t, err)
 
 	// buyer requests data from blobber, blobber reencrypts the data with regen key using buyer public key
 	blobber_encscheme = NewEncryptionScheme()
 	blobber_encscheme.Initialize(blobber_mnemonic)
 	blobber_encscheme.InitForDecryption("filetype:audio", enc_msg.EncryptedKey)
 	regenkey, err := blobber_encscheme.GetReGenKey(client_enc_pub_key, "filetype:audio")
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	reenc_msg, err := blobber_encscheme.ReEncrypt(enc_msg, regenkey, client_enc_pub_key)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	// verify encrypted message size
 	d1, _ := reenc_msg.D1.MarshalBinary()
 	d4, _ := reenc_msg.D4.MarshalBinary()
 	d5, _ := reenc_msg.D5.MarshalBinary()
-	assert.Equal(t, 44, len(base64.StdEncoding.EncodeToString(d1)))
-	assert.Equal(t, 88, len(base64.StdEncoding.EncodeToString(reenc_msg.D3)))
-	assert.Equal(t, 44, len(base64.StdEncoding.EncodeToString(d4)))
-	assert.Equal(t, 44, len(base64.StdEncoding.EncodeToString(d5)))
+	require.Equal(t, 44, len(base64.StdEncoding.EncodeToString(d1)))
+	require.Equal(t, 88, len(base64.StdEncoding.EncodeToString(reenc_msg.D3)))
+	require.Equal(t, 44, len(base64.StdEncoding.EncodeToString(d4)))
+	require.Equal(t, 44, len(base64.StdEncoding.EncodeToString(d5)))
 
 	client_decryption_scheme := NewEncryptionScheme()
 	client_decryption_scheme.Initialize(client_mnemonic)
 	client_decryption_scheme.InitForDecryption("filetype:audio", enc_msg.EncryptedKey)
 
 	result, err := client_decryption_scheme.ReDecrypt(reenc_msg)
-	assert.Nil(t, err)
-	assert.Equal(t, string(result), data_to_encrypt)
+	require.Nil(t, err)
+	require.Equal(t, string(result), data_to_encrypt)
 }
 
 func TestKyberPointMarshal(t *testing.T) {
@@ -108,18 +107,18 @@ func TestKyberPointMarshal(t *testing.T) {
 		D5: suite.Point(),
 	}
 	marshalled, err := reenc.Marshal()
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	newmsg := &ReEncryptedMessage{
 		D1: suite.Point(),
 		D4: suite.Point(),
 		D5: suite.Point(),
 	}
 	err = newmsg.Unmarshal(marshalled)
-	assert.Equal(t, newmsg.D2, reenc.D2)
-	assert.Equal(t, newmsg.D3, reenc.D3)
-	assert.Equal(t, newmsg.D1.String(), reenc.D1.String())
-	assert.Equal(t, newmsg.D4.String(), reenc.D4.String())
-	assert.Equal(t, newmsg.D5.String(), reenc.D5.String())
+	require.Equal(t, newmsg.D2, reenc.D2)
+	require.Equal(t, newmsg.D3, reenc.D3)
+	require.Equal(t, newmsg.D1.String(), reenc.D1.String())
+	require.Equal(t, newmsg.D4.String(), reenc.D4.String())
+	require.Equal(t, newmsg.D5.String(), reenc.D5.String())
 }
 
 func TestMarshal(t *testing.T) {
@@ -127,7 +126,7 @@ func TestMarshal(t *testing.T) {
 	for i := 0; i < 1000; i++ {
 		point := suite.Point().Pick(suite.RandomStream())
 		data, err := point.MarshalBinary()
-		assert.Nil(t, err)
-		assert.Equal(t, 44, len(base64.StdEncoding.EncodeToString(data)))
+		require.Nil(t, err)
+		require.Equal(t, 44, len(base64.StdEncoding.EncodeToString(data)))
 	}
 }
