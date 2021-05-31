@@ -79,16 +79,29 @@ jobs:
           SHORT_SHA=$(echo $GITHUB_SHA | head -c 8)
           echo ::set-output name=BRANCH::${BRANCH}
           echo ::set-output name=VERSION::${BRANCH}-${SHORT_SHA}      
-      
+
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
+      uses: zendesk/action-create-release@v1 # This token is provided by Actions, you do not need to create your own token
       with:
-#        tag_name: ${{ steps.get_version.outputs.VERSION }}
-#        release_name: v-${{ steps.get_version.outputs.VERSION }}
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        body: |
+          Changes in this Release
+          - First Change
+          - Second Change
         draft: false
-        prerelease: false
-        patch: true
+        prerelease: false    
+
+    # - name: Create Release
+    #   id: create_release
+    #   uses: actions/create-release@v1
+    #   with:
+    #     tag_name: ${{ steps.get_version.outputs.VERSION }}
+    #     release_name: v-${{ steps.get_version.outputs.VERSION }}
+    #     draft: false
+    #     prerelease: false
+    #     patch: true
           
     - name: Create Release for Fixed v0.0.0
       id: create_release_fixed
