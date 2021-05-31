@@ -118,50 +118,50 @@ jobs:
         asset_name: artifact.zip
         asset_content_type: application/zip
       
-    - name: Triggering 0proxy build
-      uses: convictional/trigger-workflow-and-wait@v1.3.0
-      with:
-        owner: 0chain
-        repo: 0proxy
-        github_token: ${{ secrets.GOSDK }}
-        workflow_file_name: build.yml
-        ref: master
-        propagate_failure: true
-        trigger_workflow: true
-        wait_workflow: true
+#     - name: Triggering 0proxy build
+#       uses: convictional/trigger-workflow-and-wait@v1.3.0
+#       with:
+#         owner: 0chain
+#         repo: 0proxy
+#         github_token: ${{ secrets.GOSDK }}
+#         workflow_file_name: build.yml
+#         ref: master
+#         propagate_failure: true
+#         trigger_workflow: true
+#         wait_workflow: true
 
-    - name: Triggering zboxmobile build
-      uses: convictional/trigger-workflow-and-wait@v1.3.0
-      with:
-        owner: 0chain
-        repo: zboxmobile
-        github_token: ${{ secrets.GOSDK }}
-        workflow_file_name: build.yml
-        ref: master
-        propagate_failure: true
-        trigger_workflow: true
-        wait_workflow: true
+#     - name: Triggering zboxmobile build
+#       uses: convictional/trigger-workflow-and-wait@v1.3.0
+#       with:
+#         owner: 0chain
+#         repo: zboxmobile
+#         github_token: ${{ secrets.GOSDK }}
+#         workflow_file_name: build.yml
+#         ref: master
+#         propagate_failure: true
+#         trigger_workflow: true
+#         wait_workflow: true
 
-    - name: Triggering zboxcli build
-      uses: convictional/trigger-workflow-and-wait@v1.3.0
-      with:
-        owner: 0chain
-        repo: zboxcli
-        github_token: ${{ secrets.GOSDK }}
-        workflow_file_name: build-linux.yaml
-        ref: master
-        propagate_failure: true
-        trigger_workflow: true
-        wait_workflow: true
+#     - name: Triggering zboxcli build
+#       uses: convictional/trigger-workflow-and-wait@v1.3.0
+#       with:
+#         owner: 0chain
+#         repo: zboxcli
+#         github_token: ${{ secrets.GOSDK }}
+#         workflow_file_name: build-linux.yaml
+#         ref: master
+#         propagate_failure: true
+#         trigger_workflow: true
+#         wait_workflow: true
 
-    - name: Triggering zwalletcli build
-      uses: convictional/trigger-workflow-and-wait@v1.3.0
-      with:
-        owner: 0chain
-        repo: zwalletcli
-        github_token: ${{ secrets.GOSDK }}
-        workflow_file_name: build.yaml
-        ref: master
-        propagate_failure: true
-        trigger_workflow: true
-        wait_workflow: true
+#     - name: Triggering zwalletcli build
+#       uses: convictional/trigger-workflow-and-wait@v1.3.0
+#       with:
+#         owner: 0chain
+#         repo: zwalletcli
+#         github_token: ${{ secrets.GOSDK }}
+#         workflow_file_name: build.yaml
+#         ref: master
+#         propagate_failure: true
+#         trigger_workflow: true
+#         wait_workflow: true
