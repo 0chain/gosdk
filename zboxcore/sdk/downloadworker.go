@@ -124,7 +124,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 						D4: suite.Point(),
 						D5: suite.Point(),
 					}
-					err := reEncMessage.UnmarshalJSON(result.BlockChunks[blockNum])
+					err := reEncMessage.Unmarshal(result.BlockChunks[blockNum])
 					if err != nil {
 						Logger.Error("ReEncrypted Block unmarshall failed", req.blobbers[result.idx].Baseurl, err)
 						break
