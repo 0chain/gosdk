@@ -84,10 +84,11 @@ jobs:
       id: create_release
       uses: actions/create-release@v1
       with:
-        tag_name: ${{ steps.get_version.outputs.VERSION }}
-        release_name: v-${{ steps.get_version.outputs.VERSION }}
-        draft: true
+#        tag_name: ${{ steps.get_version.outputs.VERSION }}
+#        release_name: v-${{ steps.get_version.outputs.VERSION }}
+        draft: false
         prerelease: false
+        patch: true
           
     - name: Create Release for Fixed v0.0.0
       id: create_release_fixed
