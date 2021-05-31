@@ -12,7 +12,9 @@ env:
   GITHUB_TOKEN: ${{ secrets.GOSDK }}
 
 on:
-   push:
+   push: 
+     tags:
+       - 'v*'
      branches: [ gitactionsfix ]
 
 jobs:
@@ -78,14 +80,14 @@ jobs:
           BRANCH=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')
           SHORT_SHA=$(echo $GITHUB_SHA | head -c 8)
           echo ::set-output name=BRANCH::${BRANCH}
-          echo ::set-output name=VERSION::${BRANCH}-${SHORT_SHA}      
+          echo ::set-output name=VERSION::0.0.1     
 
     - name: Create Release
       id: create_release
       uses: zendesk/action-create-release@v1 # This token is provided by Actions, you do not need to create your own token
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        tag_name: v${{ steps.get_version.outputs.VERSION }}
+        release_name: v${{ steps.get_version.outputs.VERSION }}
         body: |
           Changes in this Release
           - First Change
