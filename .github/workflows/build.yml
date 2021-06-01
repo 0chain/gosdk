@@ -10,14 +10,12 @@ on:
       version_tag:
         description: 'Input tag Example - v1.2.2'
         required: true
+    push: 
+     tags:
+       - 'v*.*.*'
 
 env:
   GITHUB_TOKEN: ${{ secrets.GOSDK }}
-
-on:
-   push: 
-     tags:
-       - 'v*.*.*'
 
 jobs:
   build:
@@ -88,8 +86,8 @@ jobs:
       id: create_release
       uses: zendesk/action-create-release@v1 
       with:
-        tag_name: ${{ steps.get_version.outputs.TAG }}
-        release_name: ${{ steps.get_version.outputs.TAG }}
+        tag_name: ${{ steps.get_version.outputs.TAG }} || ${{ github.event.inputs.version_tag }}
+        release_name: ${{ steps.get_version.outputs.TAG }} || ${{ github.event.inputs.version_tag }}
         draft: false
         prerelease: false  
           
@@ -102,11 +100,6 @@ jobs:
         release_name: v0.0.0
         draft: false
         prerelease: false
-      with:
-        tag_name: ${{ github.event.inputs.version_tag }}
-        release_name: ${{ github.event.inputs.version_tag }}
-        draft: false
-        prerelease: false 
 
     - name: Upload Release Asset
       id: upload-release-asset 
