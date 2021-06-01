@@ -13,8 +13,8 @@ env:
 
 on:
    push: 
-    #  tags:
-    #    - 'v*'
+     tags:
+       - 'v*'
      branches: [ gitactionsfix ]
 
 jobs:
@@ -80,7 +80,6 @@ jobs:
     - name: Creating zip for Artifacts
       run: |
         zip -r artifact.zip .
-
     - name: Install GitVersion
       uses: gittools/actions/gitversion/execute@v0.9.7
       with:
@@ -95,20 +94,28 @@ jobs:
         echo "MajorMinorPatch: ${{ steps.gitversion.outputs.majorMinorPatch }}"
         echo "NuGetVersionV2: ${{ steps.gitversion.outputs.nuGetVersionV2 }}"
         echo "CommitsSinceVersionSource: ${{ steps.gitversion.outputs.CommitsSinceVersionSource }}"
-
+        
   deploy:
     runs-on: ubuntu-20.04
     needs: [build, make]
     if: github.ref == 'refs/heads/gitactionsfix'
 
     steps:
-    - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      if: needs.make.outputs.CommitsSinceVersionSource > 0
-      with: 
-        tag_name: ${{ needs.make.outputs.Version }}
-        release_name: Release ${{ needs.make.outputs.Version }}
+    - name: get tag commit hash
+      id: tag-commit-hash
+      run: |
+        hash=${{ GITHUB.SHA }}
+        echo "::set-output name=tag-hash::${hash}"
+        echo $hash
+
+
+  #   - name: Create Release
+  #     id: create_release
+  #     uses: actions/create-release@v1
+  #     if: needs.make.outputs.CommitsSinceVersionSource > 0
+  #     with: 
+  #       tag_name: ${{ needs.make.outputs.Version }}
+  #       release_name: Release ${{ needs.make.outputs.Version }}
 
 
     # - name: Get the version
