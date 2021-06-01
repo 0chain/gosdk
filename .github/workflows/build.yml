@@ -98,7 +98,7 @@ jobs:
   deploy:
     runs-on: ubuntu-20.04
     needs: [build, make]
-    if: github.ref == 'refs/heads/gitactionsfix'
+#     if: github.ref == 'refs/heads/gitactionsfix'
 
     steps:
     - name: get tag commit hash
