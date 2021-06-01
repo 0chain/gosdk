@@ -14,7 +14,7 @@ env:
 on:
    push: 
      tags:
-       - 'v*'
+       - 'v*.*.*'
      branches: [ gitactionsfix ]
 
 jobs:
@@ -98,15 +98,19 @@ jobs:
   deploy:
     runs-on: ubuntu-20.04
     needs: [build, make]
-#     if: github.ref == 'refs/heads/gitactionsfix'
+    if: github.ref == 'refs/heads/gitactionsfix'
 
     steps:
-    - name: get tag commit hash
-      id: tag-commit-hash
+    - uses: actions/checkout@v2
+    - name: Set output
+      id: vars
+      run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+    - name: Check output
+      env:
+        RELEASE_VERSION: ${{ steps.vars.outputs.tag }}
       run: |
-        hash=${{ GITHUB.SHA }}
-        echo "::set-output name=tag-hash::${hash}"
-        echo $hash
+        echo $RELEASE_VERSION
+        echo ${{ steps.vars.outputs.tag }
 
 
   #   - name: Create Release
