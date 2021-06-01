@@ -15,7 +15,7 @@ on:
    push: 
      tags:
        - 'v*.*.*'
-#      branches: [ gitactionsfix ]
+     branches: [ gitactionsfix ]
 
 jobs:
   build:
@@ -72,9 +72,9 @@ jobs:
     - name: Create SDK
       run: go build -o sdkversion sdkversion.go
       
-    - name: Creating zip for Artifacts
-      run: |
-        zip -r artifact.zip .
+    # - name: Creating zip for Artifacts
+    #   run: |
+    #     zip -r artifact.zip .
 
   deploy:
     runs-on: ubuntu-20.04
@@ -93,8 +93,8 @@ jobs:
       id: create_release
       uses: zendesk/action-create-release@v1 
       with:
-        tag_name: v${{ steps.get_version.outputs.TAG }}
-        release_name: v${{ steps.get_version.outputs.TAG }}
+        tag_name: ${{ steps.get_version.outputs.TAG }}
+        release_name: ${{ steps.get_version.outputs.TAG }}
         draft: false
         prerelease: false  
           
@@ -113,9 +113,9 @@ jobs:
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./artifact.zip
-        asset_name: artifact.zip
-        asset_content_type: application/zip
+        # asset_path: ./artifact.zip
+        # asset_name: artifact.zip
+        # asset_content_type: application/zip
 
     - name: Upload Release Asset For v0.0.0
       if: github.event.inputs.fixed_tag == 'yes'
@@ -123,9 +123,9 @@ jobs:
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ steps.create_release_fixed.outputs.upload_url }}
-        asset_path: ./artifact.zip
-        asset_name: artifact.zip
-        asset_content_type: application/zip
+        # asset_path: ./artifact.zip
+        # asset_name: artifact.zip
+        # asset_content_type: application/zip
       
 #     - name: Triggering 0proxy build
 #       uses: convictional/trigger-workflow-and-wait@v1.3.0
