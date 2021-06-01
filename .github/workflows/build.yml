@@ -131,16 +131,6 @@ jobs:
         asset_path: ./artifact.zip
         asset_name: artifact.zip
         asset_content_type: application/zip
-        
-    - name: Upload Release Asset For v0.0.0
-      if: github.event.inputs.fixed_tag == 'yes' && github.event.inputs.version_tag != ''
-      id: upload-release-asset_fix
-      uses: actions/upload-release-asset@v1
-      with:
-        upload_url: ${{ steps.create_release_fixed.outputs.upload_url }}
-        asset_path: ./artifact.zip
-        asset_name: artifact.zip
-        asset_content_type: application/zip
       
 #     - name: Triggering 0proxy build
 #       uses: convictional/trigger-workflow-and-wait@v1.3.0
