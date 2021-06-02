@@ -53,14 +53,6 @@ type ReKeyBytes struct {
 	R3Bytes []byte `json:"r3"`
 }
 
-type ReEncryptedMessageBytes struct {
-	D1Bytes []byte `json:"d1Bytes"`
-	D2Bytes []byte `json:"d2Bytes"`
-	D3Bytes []byte `json:"d3Bytes"`
-	D4Bytes []byte `json:"d4Bytes"`
-	D5Bytes []byte `json:"d5Bytes"`
-}
-
 type ReEncryptedMessage struct {
 	D1 kyber.Point
 	D2 []byte

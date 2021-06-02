@@ -350,19 +350,7 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 	}
 	if req.isEncrypted {
 		req.encscheme = encryption.NewEncryptionScheme()
-		var mnemonic string
-		if req.filemeta.Attributes.PreAtBlobber {
-			Logger.Debug("Downloading mnemonic from blobber " + a.Blobbers[0].Baseurl)
-			// current assumption is that all blobbers use the same secrets hence we create same encrryption scheme for each request
-			response, error := zboxutil.GetMarketplaceMnemonic(a.Blobbers[0].Baseurl)
-			if error != nil {
-				Logger.Error("Error downloading mnemonic " + a.Blobbers[0].Baseurl)
-				return error
-			}
-			mnemonic = response
-		} else {
-			mnemonic = client.GetClient().Mnemonic
-		}
+		mnemonic := client.GetClient().Mnemonic
 		err := req.encscheme.Initialize(mnemonic)
 		if err != nil {
 			return err

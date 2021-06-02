@@ -516,30 +516,3 @@ func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f f
 		return err
 	}
 }
-
-func GetMarketplaceSecretsRequest(url string) (*http.Request, error) {
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-func GetMarketplaceMnemonic(blobberBaseUrl string) (string, error) {
-	req, err := GetMarketplaceSecretsRequest(blobberBaseUrl + "/v1/marketplace/secret")
-	if err != nil {
-		return "", err
-	}
-	client := &http.Client{Transport: transport}
-	res, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	pubKeyResp := map[string]string {}
-	json.Unmarshal(body, &pubKeyResp)
-	return pubKeyResp["mnemonic"], nil
-}
-
