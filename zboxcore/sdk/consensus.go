@@ -1,9 +1,19 @@
 package sdk
 
+import "sync"
+
 type Consensus struct {
+	sync.Mutex
 	consensus       float32
 	consensusThresh float32
 	fullconsensus   float32
+}
+
+// Done increase 1
+func (req *Consensus) Done() {
+	req.Lock()
+	req.consensus++
+	req.Unlock()
 }
 
 func (req *Consensus) getConsensusRate() float32 {

@@ -28,7 +28,7 @@ func NewEncoder(iDataShards, iParityShards int) (*StreamEncoder, error) {
 	var err error
 
 	//TODO: [dayi] it maybe better for performance
-	//reedsolomon.NewStream(dataShards int, parityShards int, o ...reedsolomon.Option)
+	//reedsolomon.NewStream(dataShards int, parityShards int, o ...reedsolomon.Option)–––
 	e.erasureCode, err = reedsolomon.New(iDataShards, iParityShards, reedsolomon.WithAutoGoroutines(64*1024))
 	if err != nil {
 		return nil, err

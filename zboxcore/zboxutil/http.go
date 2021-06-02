@@ -344,6 +344,25 @@ func NewListRequest(baseUrl, allocation string, path string, auth_token string) 
 	return req, nil
 }
 
+// NewUploadRequestWithMethod create a http reqeust of upload
+func NewUploadRequestWithMethod(baseURL, allocation string, body io.Reader, method string) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s", baseURL, UPLOAD_ENDPOINT, allocation)
+	var req *http.Request
+	var err error
+
+	req, err = http.NewRequest(method, url, body)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func NewUploadRequest(baseUrl, allocation string, body io.Reader, update bool) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, UPLOAD_ENDPOINT, allocation)
 	var req *http.Request

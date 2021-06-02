@@ -38,26 +38,48 @@ func isSetTestEnv(name string) bool {
 const additionalSuccessRate = (10)
 
 type UploadFileMeta struct {
-	Name          string
-	Path          string
-	Hash          string
-	MimeType      string
-	Size          int64
+	// Name remote file name
+	Name string
+	// Path remote path
+	Path string
+	// Hash hash of entire source file
+	Hash     string
+	MimeType string
+	// Size total bytes of entire source file
+	Size int64
+
+	// ThumbnailSize total bytes of entire thumbnail
 	ThumbnailSize int64
+	// ThumbnailHash hash code of entire thumbnail
 	ThumbnailHash string
-	Attributes    fileref.Attributes
+
+	// Attributes file attributes in blockchain
+	Attributes fileref.Attributes
 }
 
 type uploadFormData struct {
-	ConnectionID        string             `json:"connection_id"`
-	Filename            string             `json:"filename"`
-	Path                string             `json:"filepath"`
-	Hash                string             `json:"content_hash,omitempty"`
-	ThumbnailHash       string             `json:"thumbnail_content_hash,omitempty"`
-	MerkleRoot          string             `json:"merkle_root,omitempty"`
-	ActualHash          string             `json:"actual_hash"`
-	ActualSize          int64              `json:"actual_size"`
-	ActualThumbnailSize int64              `json:"actual_thumb_size"`
+	ConnectionID string `json:"connection_id"`
+	// Filename remote file name
+	Filename string `json:"filename"`
+	// Path remote path
+	Path string `json:"filepath"`
+	// Hash hash of uploadFormFile
+	Hash string `json:"content_hash,omitempty"`
+	// Hash hash of uploadThumbnail
+	ThumbnailHash string `json:"thumbnail_content_hash,omitempty"`
+
+	// MerkleRoot merkle's root hash of uploadFormFile
+	//  TODO: [dayi]it is unnecessary for current upload. It is similar as uploadFormData.Hash.
+	//		It is designed for stream reader, but it doesn't work porperly.
+	MerkleRoot string `json:"merkle_root,omitempty"`
+
+	// ActualHash hash of entire source file
+	ActualHash string `json:"actual_hash"`
+	// ActualSize total bytes of entire source file
+	ActualSize int64 `json:"actual_size"`
+	// ActualThumbnailSize total bytes of source thumbnail
+	ActualThumbnailSize int64 `json:"actual_thumb_size"`
+	// ActualThumbnailHash hash of source thumbnail
 	ActualThumbnailHash string             `json:"actual_thumb_hash"`
 	MimeType            string             `json:"mimetype"`
 	CustomMeta          string             `json:"custom_meta,omitempty"`
@@ -341,7 +363,7 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 	}
 	if req.isEncrypted {
 		req.encscheme = encryption.NewEncryptionScheme()
-		err := req.encscheme.Initialize(client.GetClient().Mnemonic)
+		_, err := req.encscheme.Initialize(client.GetClient().Mnemonic)
 		if err != nil {
 			return err
 		}
