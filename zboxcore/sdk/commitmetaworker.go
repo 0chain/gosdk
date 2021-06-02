@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/gosdk/zboxcore/commitmeta"
+
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -18,22 +20,12 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
-type CommitMetaData struct {
-	CrudType string
-	MetaData *ConsolidatedFileMeta
-}
-
 type CommitMetaRequest struct {
-	CommitMetaData
+	commitmeta.CommitMetaData
 	status    StatusCallback
 	a         *Allocation
 	authToken string
 	wg        *sync.WaitGroup
-}
-
-type CommitMetaResponse struct {
-	TxnID    string
-	MetaData *ConsolidatedFileMeta
 }
 
 func (req *CommitMetaRequest) processCommitMetaRequest() {
@@ -84,7 +76,7 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 		Logger.Info("Failed to update commitMetaTxnID to all blobbers")
 	}
 
-	commitMetaResponse := &CommitMetaResponse{
+	commitMetaResponse := &commitmeta.CommitMetaResponse{
 		TxnID:    t.Hash,
 		MetaData: req.CommitMetaData.MetaData,
 	}

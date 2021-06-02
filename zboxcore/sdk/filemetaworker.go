@@ -1,16 +1,13 @@
 package sdk
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"mime/multipart"
-	"net/http"
 	"strings"
 	"sync"
-	"time"
+
+	"github.com/0chain/gosdk/core/clients/blobberClient"
+
+	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -27,12 +24,14 @@ type fileMetaResponse struct {
 
 func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *fileMetaResponse) {
 	defer req.wg.Done()
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
 
 	var fileRef *fileref.FileRef
 	var s strings.Builder
 	var err error
+	grpcReq := &blobbergrpc.GetFileMetaDataRequest{
+		Allocation: req.allocationTx,
+	}
+
 	fileMetaRetFn := func() {
 		rspCh <- &fileMetaResponse{fileref: fileRef, responseStr: s.String(), blobberIdx: blobberIdx, err: err}
 	}
@@ -40,47 +39,27 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 	if len(req.remotefilepath) > 0 {
 		req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 	}
-	formWriter.WriteField("path_hash", req.remotefilepathhash)
-
+	grpcReq.PathHash = req.remotefilepathhash
 	if req.authToken != nil {
 		authTokenBytes, err := json.Marshal(req.authToken)
 		if err != nil {
 			Logger.Error(blobber.Baseurl, " creating auth token bytes", err)
 			return
 		}
-		formWriter.WriteField("auth_token", string(authTokenBytes))
+		grpcReq.AuthToken = string(authTokenBytes)
 	}
 
-	formWriter.Close()
-	httpreq, err := zboxutil.NewFileMetaRequest(blobber.Baseurl, req.allocationTx, body)
+	respRaw, err := blobberClient.GetFileMetaData(blobber.Baseurl, grpcReq)
 	if err != nil {
-		Logger.Error("File meta info request error: ", err.Error())
+		Logger.Error("could not get file data from blobber -" + blobber.Baseurl + " - " + err.Error())
 		return
 	}
+	s.WriteString(string(respRaw))
 
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("GetFileMeta : ", err)
-			return err
-		}
-		defer resp.Body.Close()
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return fmt.Errorf("Error: Resp : %s", err.Error())
-		}
-		Logger.Info("File Meta result:", string(resp_body))
-		s.WriteString(string(resp_body))
-		if resp.StatusCode == http.StatusOK {
-			err = json.Unmarshal(resp_body, &fileRef)
-			if err != nil {
-				return fmt.Errorf("file meta data response parse error: %s", err.Error())
-			}
-			return nil
-		}
-		return err
-	})
+	err = json.Unmarshal(respRaw, &fileRef)
+	if err != nil {
+		return
+	}
 }
 
 func (req *ListRequest) getFileMetaFromBlobbers() []*fileMetaResponse {

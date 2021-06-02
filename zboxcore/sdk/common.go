@@ -3,52 +3,30 @@ package sdk
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"sync"
-	"time"
+
+	"github.com/0chain/gosdk/core/clients/blobberClient"
+
+	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
+
+	"github.com/0chain/gosdk/zboxcore/logger"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	. "github.com/0chain/gosdk/zboxcore/logger"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx string, remotefilepath string, blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	httpreq, err := zboxutil.NewObjectTreeRequest(blobber.Baseurl, allocationTx, remotefilepath)
+
+	respRaw, err := blobberClient.GetObjectTree(blobber.Baseurl, &blobbergrpc.GetObjectTreeRequest{
+		Path:       remotefilepath,
+		Allocation: allocationTx,
+	})
 	if err != nil {
-		Logger.Error(blobber.Baseurl, "Error creating object tree request", err)
 		return nil, err
 	}
+
 	var lR ReferencePathResult
-	ctx, cncl := context.WithTimeout(ctx, (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("Object tree:", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			Logger.Error("Object tree response : ", resp.StatusCode)
-		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			Logger.Error("Object tree: Resp", err)
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("Object tree error response: Status: %d - %s ", resp.StatusCode, string(resp_body))
-		} else {
-			Logger.Info("Object tree:", string(resp_body))
-			err = json.Unmarshal(resp_body, &lR)
-			if err != nil {
-				Logger.Error("Object tree json decode error: ", err)
-				return err
-			}
-		}
-		return nil
-	})
+	err = json.Unmarshal(respRaw, &lR)
 	if err != nil {
 		return nil, err
 	}
@@ -58,36 +36,15 @@ func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx st
 
 func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationTx string, respCh chan<- *BlobberAllocationStats, wg *sync.WaitGroup) {
 	defer wg.Done()
-	httpreq, err := zboxutil.NewAllocationRequest(blobber.Baseurl, allocationTx)
+
+	respRaw, err := blobberClient.GetAllocation(blobber.Baseurl, &blobbergrpc.GetAllocationRequest{Id: allocationTx})
 	if err != nil {
-		Logger.Error(blobber.Baseurl, "Error creating allocation request", err)
+		logger.Logger.Error("could not get allocation from blobber -" + blobber.Baseurl + " - " + err.Error())
 		return
 	}
 
 	var result BlobberAllocationStats
-	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("Get allocation :", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			Logger.Error("Get allocation response : ", resp.StatusCode)
-		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			Logger.Error("Get allocation: Resp", err)
-			return err
-		}
-
-		err = json.Unmarshal(resp_body, &result)
-		if err != nil {
-			Logger.Error("Object tree json decode error: ", err)
-			return err
-		}
-		return nil
-	})
+	err = json.Unmarshal(respRaw, &result)
 	if err != nil {
 		return
 	}
