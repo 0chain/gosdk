@@ -872,12 +872,12 @@ func FinalizeAllocation(allocID string) (hash string, err error) {
 	return
 }
 
-func CancelAlloctioan(allocID string) (hash string, err error) {
+func CancelAllocation(allocID string) (hash string, err error) {
 	if !sdkInitialized {
 		return "", sdkNotInitialized
 	}
 	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_FINALIZE_ALLOCATION,
+		Name:      transaction.STORAGESC_CANCEL_ALLOCATION,
 		InputArgs: map[string]interface{}{"allocation_id": allocID},
 	}
 	hash, _, err = smartContractTxn(sn)
