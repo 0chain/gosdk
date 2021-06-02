@@ -27,8 +27,6 @@ func NewEncoder(iDataShards, iParityShards int) (*StreamEncoder, error) {
 	e := &StreamEncoder{}
 	var err error
 
-	//TODO: [dayi] it maybe better for performance
-	//reedsolomon.NewStream(dataShards int, parityShards int, o ...reedsolomon.Option)–––
 	e.erasureCode, err = reedsolomon.New(iDataShards, iParityShards, reedsolomon.WithAutoGoroutines(64*1024))
 	if err != nil {
 		return nil, err
@@ -60,8 +58,7 @@ func (e *StreamEncoder) Decode(in [][]byte, shardSize int) ([]byte, error) {
 	if (len(in) < e.iDataShards+e.iParityShards) || (shardSize <= 0) {
 		return []byte{}, errors.New("Invalid input length")
 	}
-	//TODO: [dayi]it maybe better for performance
-	//e.erasureCode.ReconstructData(shards [][]byte)
+
 	err := e.erasureCode.Reconstruct(in)
 	if err != nil {
 		Logger.Error("Reconstruct failed -", err)
