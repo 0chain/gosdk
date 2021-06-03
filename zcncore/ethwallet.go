@@ -15,7 +15,7 @@ import (
 
 func TokensToEth(tokens int64) float64 {
 	fbalance := new(big.Float)
-	fbalance.SetString(string(tokens))
+	fbalance.SetString(fmt.Sprint(tokens))
 	ethValue, _ := new(big.Float).Quo(fbalance, big.NewFloat(math.Pow10(18))).Float64()
 	return ethValue
 }
