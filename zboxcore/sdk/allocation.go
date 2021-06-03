@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha1"
 	"encoding/base64"
@@ -9,6 +10,8 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"mime/multipart"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -868,6 +871,10 @@ func (a *Allocation) GetAuthTicket(path string, filename string, referenceType s
 		if err != nil {
 			return "", err
 		}
+		err = a.UploadAuthTicketToBlobber(*shareReq.authToken, refereeEncryptionPublicKey)
+		if err != nil {
+			return "", err
+		}
 		return authTicket, nil
 
 	}
@@ -876,6 +883,61 @@ func (a *Allocation) GetAuthTicket(path string, filename string, referenceType s
 		return "", err
 	}
 	return authTicket, nil
+}
+func (a *Allocation) UploadAuthTicketToBlobber(authticket marker.AuthTicket, clientEncPubKey string) error {
+	atBytes, err := json.Marshal(authticket)
+	if err != nil {
+		return err
+	}
+	body := bytes.NewBuffer(nil)
+	formWriter := multipart.NewWriter(body)
+	formWriter.WriteField("auth_ticket", string(atBytes))
+	formWriter.WriteField("client_encryption_public_key", clientEncPubKey)
+	defer formWriter.Close()
+	success := make(chan int, len(a.Blobbers))
+	wg := &sync.WaitGroup{}
+	for idx := range a.Blobbers {
+		wg.Add(1)
+		url := a.Blobbers[idx].Baseurl
+		httpreq, err := zboxutil.NewShareRequest(url, a.Tx, body)
+		if err != nil {
+			return err
+		}
+		go func() {
+			defer wg.Done()
+			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
+				if err != nil {
+					Logger.Error("Insert share info : ", err)
+					return err
+				}
+				defer resp.Body.Close()
+
+				respbody, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					Logger.Error("Error: Resp ", err)
+					return err
+				}
+				if resp.StatusCode != http.StatusOK {
+					Logger.Error(url, " Insert share info error response: ", resp.StatusCode, string(respbody))
+					return fmt.Errorf(string(respbody))
+				}
+				return nil
+			})
+			if err == nil {
+				success <- 1
+			}
+		}()
+	}
+	wg.Wait()
+	consensus := Consensus{
+		consensus: float32(len(success)),
+		consensusThresh: (float32(a.DataShards) * 100) / float32(a.DataShards + a.ParityShards),
+		fullconsensus: float32(a.DataShards + a.ParityShards),
+	}
+	if !consensus.isConsensusOk() {
+		return errors.New("consensus not reached")
+	}
+	return nil
 }
 
 func (a *Allocation) CancelUpload(localpath string) error {
