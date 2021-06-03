@@ -871,7 +871,7 @@ func (a *Allocation) GetAuthTicket(path string, filename string, referenceType s
 		if err != nil {
 			return "", err
 		}
-		err = a.UploadAuthTicketToBlobber(*shareReq.authToken, refereeEncryptionPublicKey)
+		err = a.UploadAuthTicketToBlobber(authTicket, refereeEncryptionPublicKey)
 		if err != nil {
 			return "", err
 		}
@@ -884,25 +884,30 @@ func (a *Allocation) GetAuthTicket(path string, filename string, referenceType s
 	}
 	return authTicket, nil
 }
-func (a *Allocation) UploadAuthTicketToBlobber(authticket marker.AuthTicket, clientEncPubKey string) error {
-	atBytes, err := json.Marshal(authticket)
+func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPubKey string) error {
+	decodedAuthTicket, err := base64.StdEncoding.DecodeString(authticketB64)
 	if err != nil {
 		return err
 	}
-	body := bytes.NewBuffer(nil)
-	formWriter := multipart.NewWriter(body)
-	formWriter.WriteField("auth_ticket", string(atBytes))
-	formWriter.WriteField("client_encryption_public_key", clientEncPubKey)
-	defer formWriter.Close()
+
 	success := make(chan int, len(a.Blobbers))
 	wg := &sync.WaitGroup{}
 	for idx := range a.Blobbers {
-		wg.Add(1)
 		url := a.Blobbers[idx].Baseurl
+		body := new(bytes.Buffer)
+		formWriter := multipart.NewWriter(body)
+		formWriter.WriteField("encryption_public_key", clientEncPubKey)
+		formWriter.WriteField("auth_ticket", string(decodedAuthTicket))
+		formWriter.Close()
 		httpreq, err := zboxutil.NewShareRequest(url, a.Tx, body)
 		if err != nil {
 			return err
 		}
+		httpreq.Header.Set("Content-Type", formWriter.FormDataContentType())
+		if err := formWriter.Close(); err != nil {
+			return err
+		}
+		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
