@@ -29,6 +29,9 @@ gosdk-build: gomod-download
 sdkver:
 	cd _sdkver; go build -o sdkver sdkver.go; ./sdkver
 
+gosdk-mocks:
+	./generate_mocks.sh
+
 gosdk-test:
 	go test -tags bn256 ./...
 

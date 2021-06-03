@@ -212,7 +212,11 @@ func main() {
 			return
 		}
 		s.wg.Add(1)
-		err = txn.ExecuteFaucetSC("pour", []byte{})
+		faucetAddress := "faucet smart contract address"
+		methodName := "pour"
+		jsonInput := "{}"
+		value := int64(0)
+		err = txn.ExecuteSmartContract(faucetAddress, methodName, jsonInput, value)
 		if err != nil {
 			fmt.Printf("execute faucet smart contract failed: %v\n", err)
 			return
@@ -223,7 +227,7 @@ func main() {
 		s.wg.Wait()
 	case "getbalance":
 		s.wg.Add(1)
-		err = zcncore.GetBalance(s)
+		err = zcncore.GetBalance(nil)
 		if err != nil {
 			fmt.Println("get balance failed: ", err)
 			return
