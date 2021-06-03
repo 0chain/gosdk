@@ -30,6 +30,7 @@ type ChainConfig struct {
 	MinSubmit               int      `json:"min_submit"`
 	MinConfirmation         int      `json:"min_confirmation"`
 	ConfirmationChainLength int      `json:"confirmation_chain_length"`
+	EthNode                 string   `json:"eth_node"`
 }
 
 var defaultLogLevel = logger.DEBUG
