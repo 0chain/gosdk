@@ -53,6 +53,8 @@ type UploadFormData struct {
 	// ActualSize total bytes of a shard includes all chunks with encryption.
 	ActualSize int64 `json:"actual_size,omitempty"`
 
+	// AllocationID id of allocation
+	AllocationID string `json:"allocation_id,omitempty"`
 	// ConnectionID the connection_is used in resumable upload
 	ConnectionID string `json:"connection_id,omitempty"`
 	// CustomMeta custom meta in blockchain

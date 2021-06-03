@@ -42,6 +42,7 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 	body := new(bytes.Buffer)
 
 	formData := UploadFormData{
+		AllocationID: su.allocationObj.ID,
 		ConnectionID: su.progress.ConnectionID,
 		Name:         su.fileMeta.RemoteName,
 		Path:         su.fileMeta.Path,
