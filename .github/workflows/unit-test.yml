@@ -1,3 +1,4 @@
+
 name: Unit tests
 
 on:
@@ -13,7 +14,4 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Run Unit Test
-        run: |
-         go get github.com/vektra/mockery/v2/.../
-         make gosdk-mocks
-         make gosdk-test
+        run: make gosdk-test
