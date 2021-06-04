@@ -875,6 +875,11 @@ func (a *Allocation) GetAuthTicket(path string, filename string, referenceType s
 		if err != nil {
 			return "", err
 		}
+		// generate another auth ticket without reencryption key
+		authTicket, err = shareReq.GetAuthTicket(refereeClientID)
+		if err != nil {
+			return "", err
+		}
 		return authTicket, nil
 
 	}
