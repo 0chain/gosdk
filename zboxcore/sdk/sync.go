@@ -29,9 +29,10 @@ const (
 )
 
 type fileInfo struct {
-	Size int64  `json:"size"`
-	Hash string `json:"hash"`
-	Type string `json:"type"`
+	Size       int64  `json:"size"`
+	ActualSize int64  `json:"actual_size"`
+	Hash       string `json:"hash"`
+	Type       string `json:"type"`
 }
 
 type FileDiff struct {
@@ -51,7 +52,7 @@ func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]fil
 			if _, ok := exclMap[child.Path]; ok {
 				continue
 			}
-			fMap[child.Path] = fileInfo{Size: child.Size, Hash: child.Hash, Type: child.Type}
+			fMap[child.Path] = fileInfo{Size: child.Size, ActualSize: child.ActualSize, Hash: child.Hash, Type: child.Type}
 			if child.Type == fileref.DIRECTORY {
 				childDirList = append(childDirList, child.Path)
 			}
@@ -61,7 +62,7 @@ func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]fil
 }
 
 func (a *Allocation) GetRemoteFileMap(exclMap map[string]int) (map[string]fileInfo, error) {
-	// 1. Iteratively get dir and files seperately till no more dirs left
+	// 1. Iteratively get dir and files separately till no more dirs left
 	remoteList := make(map[string]fileInfo)
 	dirs := []string{"/"}
 	var err error
