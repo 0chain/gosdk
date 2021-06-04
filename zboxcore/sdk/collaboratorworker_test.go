@@ -1,9 +1,15 @@
 package sdk
 
 import (
+	"io/ioutil"
+	"net/http"
+	"strings"
 	"sync"
 	"testing"
 
+	"github.com/0chain/gosdk/zboxcore/mocks"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,10 +23,6 @@ func TestCollaboratorRequest_UpdateCollaboratorToBlobbers(t *testing.T) {
 	defer closeFn()
 	// setup mock allocation
 	a, cncl := setupMockAllocation(t, collaboratorWorkerTestDir, blobberMocks)
-	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
-		setupBlobberMockResponses(t, blobberMocks, collaboratorWorkerTestDir+"/UpdateCollaboratorToBlobbers", testcaseName)
-		return nil
-	}
 	defer cncl()
 	tests := []struct {
 		name           string
@@ -34,7 +36,16 @@ func TestCollaboratorRequest_UpdateCollaboratorToBlobbers(t *testing.T) {
 		},
 		{
 			"Test_Update_Collaborator_To_Blobbers_Success",
-			blobbersResponseMock,
+			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
+				m := &mocks.HttpClient{}
+				zboxutil.Client = m
+				m.On("Do", mock.AnythingOfType("*http.Request")).Run(func(args mock.Arguments) {
+				}).Return(&http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(strings.NewReader(`{}`)),
+				}, nil)
+				return nil
+			},
 			true,
 		},
 	}
@@ -67,10 +78,6 @@ func TestCollaboratorRequest_updateCollaboratorToBlobber(t *testing.T) {
 	defer closeFn()
 	// setup mock allocation
 	a, cncl := setupMockAllocation(t, collaboratorWorkerTestDir, blobberMocks)
-	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
-		setupBlobberMockResponses(t, blobberMocks, collaboratorWorkerTestDir+"/updateCollaboratorToBlobber", testcaseName)
-		return nil
-	}
 	defer cncl()
 	var wg sync.WaitGroup
 	tests := []struct {
@@ -84,8 +91,17 @@ func TestCollaboratorRequest_updateCollaboratorToBlobber(t *testing.T) {
 			false,
 		},
 		{
-			"Test_update_Collaborator_To_Blobber_Success",
-			blobbersResponseMock,
+			"Test_Update_Collaborator_To_Blobbers_Success",
+			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
+				m := &mocks.HttpClient{}
+				zboxutil.Client = m
+				m.On("Do", mock.AnythingOfType("*http.Request")).Run(func(args mock.Arguments) {
+				}).Return(&http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(strings.NewReader(`{}`)),
+				}, nil)
+				return nil
+			},
 			true,
 		},
 	}
@@ -121,10 +137,6 @@ func TestCollaboratorRequest_RemoveCollaboratorFromBlobbers(t *testing.T) {
 	defer closeFn()
 	// setup mock allocation
 	a, cncl := setupMockAllocation(t, collaboratorWorkerTestDir, blobberMocks)
-	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
-		setupBlobberMockResponses(t, blobberMocks, collaboratorWorkerTestDir+"/RemoveCollaboratorFromBlobbers", testcaseName)
-		return nil
-	}
 	defer cncl()
 	tests := []struct {
 		name           string
@@ -137,8 +149,17 @@ func TestCollaboratorRequest_RemoveCollaboratorFromBlobbers(t *testing.T) {
 			false,
 		},
 		{
-			"Test_Remove_Collaborator_From_Blobbers_Success",
-			blobbersResponseMock,
+			"Test_Update_Collaborator_To_Blobbers_Success",
+			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
+				m := &mocks.HttpClient{}
+				zboxutil.Client = m
+				m.On("Do", mock.AnythingOfType("*http.Request")).Run(func(args mock.Arguments) {
+				}).Return(&http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(strings.NewReader(`{}`)),
+				}, nil)
+				return nil
+			},
 			true,
 		},
 	}
@@ -171,10 +192,6 @@ func TestCollaboratorRequest_removeCollaboratorFromBlobber(t *testing.T) {
 	defer closeFn()
 	// setup mock allocation
 	a, cncl := setupMockAllocation(t, collaboratorWorkerTestDir, blobberMocks)
-	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
-		setupBlobberMockResponses(t, blobberMocks, collaboratorWorkerTestDir+"/removeCollaboratorFromBlobber", testcaseName)
-		return nil
-	}
 	defer cncl()
 	var wg sync.WaitGroup
 	tests := []struct {
@@ -188,8 +205,17 @@ func TestCollaboratorRequest_removeCollaboratorFromBlobber(t *testing.T) {
 			false,
 		},
 		{
-			"Test_remove_Collaborator_From_Blobber_Success",
-			blobbersResponseMock,
+			"Test_Update_Collaborator_To_Blobbers_Success",
+			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
+				m := &mocks.HttpClient{}
+				zboxutil.Client = m
+				m.On("Do", mock.AnythingOfType("*http.Request")).Run(func(args mock.Arguments) {
+				}).Return(&http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(strings.NewReader(`{}`)),
+				}, nil)
+				return nil
+			},
 			true,
 		},
 	}
