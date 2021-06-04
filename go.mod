@@ -12,6 +12,7 @@ require (
 	go.uber.org/zap v1.15.0
 	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550
 	golang.org/x/tools v0.0.0-20200117012304-6edc0a871e69 // indirect
+	github.com/spf13/viper v1.4.0
 )
 
 go 1.13

@@ -476,9 +476,8 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			q.Add(k, v)
 		}
 		urlObj.RawQuery = q.Encode()
-		client := &http.Client{Transport: transport}
 
-		response, err := client.Get(urlObj.String())
+		response, err := util.NewHTTPNetContext().Get(urlObj.String(), &http.Client{Transport: transport})
 		if err != nil {
 			continue
 		} else {
@@ -523,7 +522,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f func(*http.Response, error) error) error {
 	// Run the HTTP request in a goroutine and pass the response to f.
 	c := make(chan error, 1)
-	go func() { c <- f(Client.Do(req.WithContext(ctx))) }()
+	go func() { c <- f(util.NewHTTPNetContext().Do(req.WithContext(ctx), Client.Do)) }()
 	// TODO: Check cncl context required in any case
 	// defer cncl()
 	select {
