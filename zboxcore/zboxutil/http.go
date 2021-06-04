@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -29,6 +30,12 @@ const SLEEP_BETWEEN_RETRIES = 5
 const consensusThresh = float32(25.0)
 
 type SCRestAPIHandler func(response map[string][]byte, numSharders int, err error)
+
+type HttpClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+var Client HttpClient
 
 const (
 	ALLOCATION_ENDPOINT      = "/allocation"
@@ -111,6 +118,9 @@ func (pfe *proxyFromEnv) Proxy(req *http.Request) (proxy *url.URL, err error) {
 var envProxy proxyFromEnv
 
 func init() {
+	Client = &http.Client{
+		Transport: transport,
+	}
 	envProxy.initialize()
 }
 
@@ -144,7 +154,7 @@ func setClientInfo(req *http.Request) {
 func setClientInfoWithSign(req *http.Request, allocation string) error {
 	setClientInfo(req)
 
-	sign, err := client.Sign(allocation)
+	sign, err := client.Sign(encryption.Hash(allocation))
 	if err != nil {
 		return err
 	}
@@ -493,9 +503,8 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 
 func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f func(*http.Response, error) error) error {
 	// Run the HTTP request in a goroutine and pass the response to f.
-	client := &http.Client{Transport: transport}
 	c := make(chan error, 1)
-	go func() { c <- f(client.Do(req.WithContext(ctx))) }()
+	go func() { c <- f(Client.Do(req.WithContext(ctx))) }()
 	// TODO: Check cncl context required in any case
 	// defer cncl()
 	select {

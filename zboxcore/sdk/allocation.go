@@ -65,7 +65,6 @@ type BlobberAllocationStats struct {
 		ReadPrice    int    `json:"ReadPrice"`
 		WritePrice   int    `json:"WritePrice"`
 	} `json:"Terms"`
-	PayerID string `json:"PayerID"`
 }
 
 type ConsolidatedFileMeta struct {
