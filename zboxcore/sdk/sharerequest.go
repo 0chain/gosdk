@@ -51,6 +51,7 @@ func (req *ShareRequest) GetAuthTicketForEncryptedFile(clientID string, encPubli
 	if fileRef == nil {
 		return "", common.NewError("file_meta_error", "Error getting object meta data from blobbers")
 	}
+	at.ContentHash = fileRef.ContentHash
 	if fileRef.Type == fileref.DIRECTORY || len(fileRef.EncryptedKey) == 0 {
 		return req.GetAuthTicket(clientID)
 	}

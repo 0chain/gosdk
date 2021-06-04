@@ -876,12 +876,20 @@ func (a *Allocation) GetAuthTicket(path string, filename string, referenceType s
 			return "", err
 		}
 		// generate another auth ticket without reencryption key
-		authTicket, err = shareReq.GetAuthTicket(refereeClientID)
+		at := &marker.AuthTicket{}
+		decoded, err := base64.StdEncoding.DecodeString(authTicket)
+		err = json.Unmarshal(decoded, at)
+		at.ReEncryptionKey = ""
+		err = at.Sign()
 		if err != nil {
 			return "", err
 		}
-		return authTicket, nil
-
+		atBytes, err := json.Marshal(at)
+		if err != nil {
+			return "", err
+		}
+		sEnc := base64.StdEncoding.EncodeToString(atBytes)
+		return sEnc, nil
 	}
 	authTicket, err := shareReq.GetAuthTicket(refereeClientID)
 	if err != nil {
