@@ -3,10 +3,16 @@ package sdk
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
 	"sync"
 	"testing"
 
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/mocks"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,21 +26,17 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 	defer closeFn()
 	// setup mock allocation
 	a, cncl := setupMockAllocation(t, listWorkerTestDir, blobberMocks)
-	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
-		setupBlobberMockResponses(t, blobberMocks, listWorkerTestDir+"/getListInfoFromBlobber", testcaseName)
-		return nil
-	}
 	defer cncl()
 	var wg sync.WaitGroup
 	tests := []struct {
 		name           string
-		additionalMock func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
+		additionalMock func(t *testing.T) (teardown func(t *testing.T))
 		want           bool
 		wantErr        bool
 	}{
 		{
 			"Test_Error_New_HTTP_Failed",
-			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
+			func(t *testing.T) (teardown func(t *testing.T)) {
 				url := a.Blobbers[0].Baseurl
 				a.Blobbers[0].Baseurl = string([]byte{0x7f, 0, 0})
 				return func(t *testing.T) {
@@ -52,13 +54,30 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 		},
 		{
 			"Test_Error_HTTP_Response_Not_JSON_Format",
-			blobbersResponseMock,
+			func(t *testing.T) (teardown func(t *testing.T)) {
+				m := &mocks.HttpClient{}
+				zboxutil.Client = m
+				m.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(strings.NewReader("This is not JSON format")),
+				}, nil)
+				return nil
+			},
 			false,
 			false,
 		},
 		{
 			"Test_Success",
-			blobbersResponseMock,
+			func(t *testing.T) (teardown func(t *testing.T)) {
+				m := &mocks.HttpClient{}
+				zboxutil.Client = m
+				bodyString := `{"allocation_root":"47786ba91e51589e67bc3c8de7d8aff0dfddb399f826f6332c8f2b23e0e26420","meta_data":{"created_at":"0001-01-01T00:00:00Z","hash":"","lookup_hash":"","name":"","num_of_blocks":0,"path":"/1.txt","path_hash":"","size":0,"type":"d","updated_at":"0001-01-01T00:00:00Z"},"list":[]}`
+				m.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(strings.NewReader(bodyString)),
+				}, nil)
+				return nil
+			},
 			true,
 			false,
 		},
@@ -67,7 +86,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			if additionalMock := tt.additionalMock; additionalMock != nil {
-				if teardown := additionalMock(t, tt.name); teardown != nil {
+				if teardown := additionalMock(t); teardown != nil {
 					defer teardown(t)
 				}
 			}
@@ -107,14 +126,10 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 	defer closeFn()
 	// setup mock allocation
 	a, cncl := setupMockAllocation(t, listWorkerTestDir, blobberMocks)
-	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
-		setupBlobberMockResponses(t, blobberMocks, listWorkerTestDir+"/GetListFromBlobbers", testcaseName)
-		return nil
-	}
 	defer cncl()
 	tests := []struct {
 		name           string
-		additionalMock func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
+		additionalMock func(t *testing.T) (teardown func(t *testing.T))
 		want           bool
 		wantFunc       func(require *require.Assertions, req *ListRequest)
 	}{
@@ -129,7 +144,30 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 		},
 		{
 			"Test_Success",
-			blobbersResponseMock,
+			func(t *testing.T) (teardown func(t *testing.T)) {
+				m := &mocks.HttpClient{}
+				zboxutil.Client = m
+				bodyString := `{"allocation_root":"1c6870fa9d3c371d9e219c73c4a52cf04b8ab6036460879fee598b68a02febf2","meta_data":{"created_at":"0001-01-01T00:00:00Z","hash":"","lookup_hash":"","name":"","num_of_blocks":0,"path":"/1.txt","path_hash":"","size":0,"type":"d","updated_at":"0001-01-01T00:00:00Z"},"list":[]}`
+				statusCode := http.StatusOK
+				mockCall := m.On("Do", mock.MatchedBy(func(req *http.Request) bool { return req.Method == "GET" }))
+				mockCall.RunFn = func(args mock.Arguments) {
+					req := args[0].(*http.Request)
+					url := req.URL.Host
+					switch url {
+					case strings.ReplaceAll(a.Blobbers[2].Baseurl, "http://", ""):
+						statusCode = http.StatusBadRequest
+					case strings.ReplaceAll(a.Blobbers[3].Baseurl, "http://", ""):
+						statusCode = http.StatusBadRequest
+					default:
+						statusCode = http.StatusOK
+					}
+					mockCall.ReturnArguments = mock.Arguments{&http.Response{
+						StatusCode: statusCode,
+						Body:       ioutil.NopCloser(strings.NewReader(bodyString)),
+					}, nil}
+				}
+				return nil
+			},
 			true,
 			func(require *require.Assertions, req *ListRequest) {
 				require.NotNil(req)
@@ -141,7 +179,7 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			if additionalMock := tt.additionalMock; additionalMock != nil {
-				if teardown := additionalMock(t, tt.name); teardown != nil {
+				if teardown := additionalMock(t); teardown != nil {
 					defer teardown(t)
 				}
 			}
