@@ -81,9 +81,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 				mockCall := m.On("Do", mock.MatchedBy(func(req *http.Request) bool { return req.Method == "POST" }))
 				mockCall.RunFn = func(args mock.Arguments) {
 					req := args[0].(*http.Request)
-					//check path
 					url := req.URL.Host
-					//check path
 					switch url {
 					case strings.ReplaceAll(a.Blobbers[0].Baseurl, "http://", ""):
 						statusCode = http.StatusBadRequest
@@ -123,9 +121,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 				mockCall := m.On("Do", mock.MatchedBy(func(req *http.Request) bool { return req.Method == "POST" }))
 				mockCall.RunFn = func(args mock.Arguments) {
 					req := args[0].(*http.Request)
-					//check path
 					url := req.URL.Host
-					//check path
 					switch url {
 					case strings.ReplaceAll(a.Blobbers[0].Baseurl, "http://", ""):
 						statusCode = http.StatusBadRequest
