@@ -1,198 +1,275 @@
 package sdk
 
 import (
+	"bytes"
 	"context"
-	"io/ioutil"
-	"net/http"
-	"strings"
-	"sync"
-	"testing"
-
+	"encoding/json"
+	"fmt"
+	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
+	zclient "github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-)
-
-const (
-	filestatsWorkerTestDir = configDir + "/filestatsworker"
+	"io"
+	"io/ioutil"
+	"mime"
+	"mime/multipart"
+	"net/http"
+	"strconv"
+	"strings"
+	"sync"
+	"testing"
 )
 
 func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
-	// setup mock sdk
-	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 1)
-	defer closeFn()
-	// setup mock allocation
-	a, cncl := setupMockAllocation(t, filestatsWorkerTestDir, blobberMocks)
-	defer cncl()
-	var wg sync.WaitGroup
+	const (
+		mockFileStatsName  = "mock fileStats name"
+		mockAllocationTxId = "mock transaction id"
+		mockClientId       = "mock client id"
+		mockClientKey      = "mock client key"
+		mockRemoteFilePath = "mock/remote/file/path"
+		mockAllocationId   = "mock allocation id"
+		mockErrorMessage   = "mock error message"
+		mockBlobberId      = "mock blobber Id"
+		mockBlobberIndex   = 87
+	)
+
+	var mockClient = mocks.HttpClient{}
+	zboxutil.Client = &mockClient
+
+	var client = zclient.GetClient()
+	client.Wallet = &zcncrypto.Wallet{
+		ClientID:  mockClientId,
+		ClientKey: mockClientKey,
+	}
+
+	type parameters struct {
+		fileStatsHttpResp FileStats
+		fileStatsFinal    FileStats
+		respStatusCode    int
+		requestFields     map[string]string
+		blobberIdx        int
+	}
+
 	tests := []struct {
-		name           string
-		additionalMock func(t *testing.T) (teardown func(t *testing.T))
-		want           bool
-		wantErr        bool
+		name       string
+		parameters parameters
+		setup      func(*testing.T, string, parameters, string)
+		wantErr    bool
+		errMsg     string
 	}{
 		{
-			"Test_Error_New_HTTP_Failed",
-			func(t *testing.T) (teardown func(t *testing.T)) {
-				url := a.Blobbers[0].Baseurl
-				a.Blobbers[0].Baseurl = string([]byte{0x7f, 0, 0})
-				return func(t *testing.T) {
-					a.Blobbers[0].Baseurl = url
-				}
+			name: "Test_Http_Error",
+			parameters: parameters{
+				respStatusCode: 0,
 			},
-			false,
-			true,
+			setup: func(t *testing.T, name string, p parameters, errMsg string) {
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return strings.HasPrefix(req.URL.Path, "Test_Http_Error")
+				})).Return(&http.Response{
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					StatusCode: p.respStatusCode,
+				}, fmt.Errorf(mockErrorMessage))
+			},
+			wantErr: true,
+			errMsg:  mockErrorMessage,
 		},
 		{
-			"Test_HTTP_Response_Failed",
-			nil,
-			false,
-			false,
-		},
-		{
-			"Test_Error_HTTP_Response_Not_JSON_Format",
-			func(t *testing.T) (teardown func(t *testing.T)) {
-				m := &mocks.HttpClient{}
-				zboxutil.Client = m
-				m.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(strings.NewReader("This is not JSON format")),
+			name: "Test_Badly_Formatted",
+			parameters: parameters{
+				respStatusCode: 200,
+			},
+			setup: func(t *testing.T, name string, p parameters, errMsg string) {
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return strings.HasPrefix(req.URL.Path, "Test_Badly_Formatted")
+				})).Return(&http.Response{
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					StatusCode: p.respStatusCode,
 				}, nil)
-				return nil
 			},
-			false,
-			true,
+			wantErr: true,
+			errMsg:  "file stats response parse error: unexpected end of JSON input",
 		},
 		{
-			"Test_Success",
-			func(t *testing.T) (teardown func(t *testing.T)) {
-				m := &mocks.HttpClient{}
-				zboxutil.Client = m
-				bodyString := `{"ID":294,"actual_file_hash":"03cfd743661f07975fa2f1220c5194cbaff48451","actual_file_size":4,"actual_thumbnail_hash":"","actual_thumbnail_size":0,"attributes":{},"commit_meta_txns":null,"content_hash":"adc83b19e793491b1c6ea0fd8b46cd9f32e592fc","created_at":"2021-03-23T18:56:28.318478Z","custom_meta":"","encrypted_key":"","hash":"b1fba32dfc8025a7390b05c5eb3aea2ec3a84ed5b3ce60b49093bc001cfc9710","last_challenge_txn":"","lookup_hash":"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697","merkle_root":"6ed726c5aaf50067479a105ad9c4330bfa341f1fd889e3552af67303712ee0f0","mimetype":"application/octet-stream","name":"1.txt","num_of_block_downloads":0,"num_of_blocks":1,"num_of_challenges":0,"num_of_failed_challenges":0,"num_of_updates":1,"on_cloud":false,"path":"/1.txt","path_hash":"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697","size":1,"thumbnail_hash":"","thumbnail_size":0,"type":"f","updated_at":"2021-03-23T18:56:28.318478Z","write_marker_txn":"e3eaaa98d374931b8fd3f52096e7e47f68eedc4267d387a4a8b999a52b0f603b"}`
-				m.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(strings.NewReader(bodyString)),
-				}, nil)
-				return nil
+			name: "Test_Success",
+			parameters: parameters{
+				fileStatsHttpResp: FileStats{
+					Name: mockFileStatsName,
+				},
+				fileStatsFinal: FileStats{
+					Name:       mockFileStatsName,
+					BlobberID:  mockBlobberId,
+					BlobberURL: "Test_Success",
+				},
+				blobberIdx:     mockBlobberIndex,
+				respStatusCode: 200,
+				requestFields: map[string]string{
+					"path_hash": fileref.GetReferenceLookup(mockAllocationId, mockRemoteFilePath),
+				},
 			},
-			true,
-			false,
+			setup: func(t *testing.T, testName string, p parameters, _ string) {
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					mediaType, params, err := mime.ParseMediaType(req.Header.Get("Content-Type"))
+					require.NoError(t, err)
+					require.True(t, strings.HasPrefix(mediaType, "multipart/"))
+					reader := multipart.NewReader(req.Body, params["boundary"])
+					var part *multipart.Part
+					part, err = reader.NextPart()
+					require.NoError(t, err)
+					expected, ok := p.requestFields[part.FormName()]
+					require.True(t, ok)
+					actual, err := io.ReadAll(part)
+					require.NoError(t, err)
+					require.EqualValues(t, expected, string(actual))
+
+					sign, err := zclient.Sign(encryption.Hash(mockAllocationTxId))
+					return req.URL.Path == "Test_Success"+zboxutil.FILE_STATS_ENDPOINT+mockAllocationTxId &&
+						req.URL.RawPath == "Test_Success"+zboxutil.FILE_STATS_ENDPOINT+mockAllocationTxId &&
+						req.Method == "POST" &&
+						req.Header.Get("X-App-Client-ID") == mockClientId &&
+						req.Header.Get("X-App-Client-Key") == mockClientKey &&
+						req.Header.Get(zboxutil.CLIENT_SIGNATURE_HEADER) == sign &&
+						testName == "Test_Success"
+				})).Return(&http.Response{
+					StatusCode: p.respStatusCode,
+					Body: func(p parameters) io.ReadCloser {
+						jsonFR, err := json.Marshal(p.fileStatsHttpResp)
+						require.NoError(t, err)
+						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					}(p),
+				}, nil).Once()
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require := require.New(t)
-			if additionalMock := tt.additionalMock; additionalMock != nil {
-				if teardown := additionalMock(t); teardown != nil {
-					defer teardown(t)
-				}
+			tt.setup(t, tt.name, tt.parameters, tt.errMsg)
+			blobber := blockchain.StorageNode{
+				ID:      mockBlobberId,
+				Baseurl: tt.name,
 			}
 			req := &ListRequest{
-				allocationID:   a.ID,
-				allocationTx:   a.Tx,
-				blobbers:       a.Blobbers,
-				remotefilepath: "/1.txt",
+				allocationID:   mockAllocationId,
+				allocationTx:   mockAllocationTxId,
+				remotefilepath: mockRemoteFilePath,
 				ctx:            context.Background(),
-				Consensus: Consensus{
-					consensusThresh: (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards),
-					fullconsensus:   float32(a.DataShards + a.ParityShards),
-				},
-				wg: func() *sync.WaitGroup { wg.Add(1); return &wg }(),
+				wg:             &sync.WaitGroup{},
 			}
 			rspCh := make(chan *fileStatsResponse, 1)
-			go req.getFileStatsInfoFromBlobber(req.blobbers[0], 0, rspCh)
+			req.wg.Add(1)
+			go req.getFileStatsInfoFromBlobber(&blobber, mockBlobberIndex, rspCh)
+			req.wg.Wait()
 			resp := <-rspCh
-			if tt.wantErr {
-				require.Error(resp.err, "expected error != nil")
+			require.EqualValues(t, tt.wantErr, resp.err != nil)
+			if resp.err != nil {
+				require.EqualValues(t, tt.errMsg, resp.err.Error())
 				return
 			}
-			if !tt.want {
-				require.Nil(resp.filestats, "expected nullable file stats result")
-				return
-			}
-			require.NotNil(resp.filestats, "unexpected nullable file stats result")
+			require.EqualValues(t, tt.parameters.fileStatsFinal, *resp.filestats)
+			require.EqualValues(t, tt.parameters.blobberIdx, resp.blobberIdx)
 		})
 	}
 }
 
-func TestListRequest_getFileStatsFromBlobbers(t *testing.T) {
-	// setup mock sdk
-	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
-	defer closeFn()
-	// setup mock allocation
-	a, cncl := setupMockAllocation(t, filestatsWorkerTestDir, blobberMocks)
-	defer cncl()
+func TestListRequest_getFileConsensusFromBlobbers(t *testing.T) {
+	const (
+		mockAllocationTxId = "mock transaction id"
+		mockAllocationId   = "mock allocation id"
+		mockFileRefName    = "mock file ref name"
+		mockBlobberUrl     = "mockBlobberUrl"
+		mockClientId       = "mock client id"
+		mockClientKey      = "mock client key"
+	)
+
+	var mockClient = mocks.HttpClient{}
+	zboxutil.Client = &mockClient
+
+	client := zclient.GetClient()
+	client.Wallet = &zcncrypto.Wallet{
+		ClientID:  mockClientId,
+		ClientKey: mockClientKey,
+	}
+
+	setupHttpResponses := func(t *testing.T, name string, numBlobbers, numCorrect int) {
+		for i := 0; i < numBlobbers; i++ {
+			frName := mockFileRefName + strconv.Itoa(i)
+			url := name + mockBlobberUrl + strconv.Itoa(i)
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.HasPrefix(req.URL.Path, url)
+			})).Return(&http.Response{
+				StatusCode: http.StatusOK,
+				Body: func(fileStatsName string) io.ReadCloser {
+					jsonFR, err := json.Marshal(&FileStats{
+						Name: fileStatsName,
+					})
+					require.NoError(t, err)
+					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+				}(frName),
+			}, nil)
+		}
+	}
+
 	tests := []struct {
-		name           string
-		additionalMock func(t *testing.T) (teardown func(t *testing.T))
-		want           bool
+		name        string
+		numBlobbers int
+		numCorrect  int
+
+		setup             func(*testing.T, string, int, int)
+		httpRespFileStats []FileStats
+		wantFileStats     []FileStats
+		wantErr           bool
 	}{
 		{
-			"Test_Error_Getting_File_Stats_From_Blobbers_Failed",
-			nil,
-			false,
-		},
-		{
-			"Test_Success",
-			func(t *testing.T) (teardown func(t *testing.T)) {
-				m := &mocks.HttpClient{}
-				zboxutil.Client = m
-				bodyString := `{"ID":${ID},"actual_file_hash":"03cfd743661f07975fa2f1220c5194cbaff48451","actual_file_size":4,"actual_thumbnail_hash":"","actual_thumbnail_size":0,"attributes":{},"commit_meta_txns":null,"content_hash":"adc83b19e793491b1c6ea0fd8b46cd9f32e592fc","created_at":"2021-03-23T18:56:28.318478Z","custom_meta":"","encrypted_key":"","hash":"b1fba32dfc8025a7390b05c5eb3aea2ec3a84ed5b3ce60b49093bc001cfc9710","last_challenge_txn":"","lookup_hash":"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697","merkle_root":"6ed726c5aaf50067479a105ad9c4330bfa341f1fd889e3552af67303712ee0f0","mimetype":"application/octet-stream","name":"1.txt","num_of_block_downloads":0,"num_of_blocks":1,"num_of_challenges":0,"num_of_failed_challenges":0,"num_of_updates":1,"on_cloud":false,"path":"/1.txt","path_hash":"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697","size":1,"thumbnail_hash":"","thumbnail_size":0,"type":"f","updated_at":"2021-03-23T18:56:28.318478Z","write_marker_txn":"e3eaaa98d374931b8fd3f52096e7e47f68eedc4267d387a4a8b999a52b0f603b"}`
-				mockCall := m.On("Do", mock.AnythingOfType("*http.Request"))
-				mockCall.RunFn = func(args mock.Arguments) {
-					req := args[0].(*http.Request)
-					url := req.URL.Host
-					switch url {
-					case strings.ReplaceAll(a.Blobbers[0].Baseurl, "http://", ""):
-						bodyString = strings.ReplaceAll(bodyString, "${ID}", "294")
-					case strings.ReplaceAll(a.Blobbers[1].Baseurl, "http://", ""):
-						bodyString = strings.ReplaceAll(bodyString, "${ID}", "257")
-					case strings.ReplaceAll(a.Blobbers[2].Baseurl, "http://", ""):
-						bodyString = strings.ReplaceAll(bodyString, "${ID}", "53")
-					case strings.ReplaceAll(a.Blobbers[3].Baseurl, "http://", ""):
-						bodyString = strings.ReplaceAll(bodyString, "${ID}", "86")
-					}
-					mockCall.ReturnArguments = mock.Arguments{&http.Response{
-						StatusCode: http.StatusOK,
-						Body:       ioutil.NopCloser(strings.NewReader(bodyString)),
-					}, nil}
+			name:        "Test_Success",
+			numBlobbers: 10,
+			setup:       setupHttpResponses,
+			httpRespFileStats: func(number int) []FileStats {
+				var fileStats []FileStats
+				for i := 0; i < number; i++ {
+					fileStats = append(fileStats, FileStats{
+						Name: mockFileRefName + strconv.Itoa(i),
+					})
 				}
-				return nil
-			},
-			true,
+				return fileStats
+			}(10),
+			wantFileStats: func(number int) []FileStats {
+				var fileStats []FileStats
+				for i := 0; i < number; i++ {
+					fileStats = append(fileStats, FileStats{
+						Name:       mockFileRefName + strconv.Itoa(i),
+						BlobberID:  strconv.Itoa(i),
+						BlobberURL: "Test_Success" + mockBlobberUrl + strconv.Itoa(i),
+					})
+				}
+				return fileStats
+			}(10),
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require := require.New(t)
-			if tt.additionalMock != nil {
-				if teardown := tt.additionalMock(t); teardown != nil {
-					defer teardown(t)
-				}
-			}
+			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect)
 			req := &ListRequest{
-				allocationID:   a.ID,
-				allocationTx:   a.Tx,
-				blobbers:       a.Blobbers,
-				remotefilepath: "/1.txt",
-				ctx:            context.Background(),
-				Consensus: Consensus{
-					consensusThresh: (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards),
-					fullconsensus:   float32(a.DataShards + a.ParityShards),
-				},
+				allocationID: mockAllocationId,
+				allocationTx: mockAllocationTxId,
+				ctx:          context.TODO(),
+				blobbers:     []*blockchain.StorageNode{},
+				wg:           &sync.WaitGroup{},
 			}
-			got := req.getFileStatsFromBlobbers()
-			if !tt.want {
-				for _, blobberMock := range blobberMocks {
-					require.Emptyf(got[blobberMock.ID], "expected empty value of file stats related to blobber %v", blobberMock.ID)
-				}
-				return
+			for i := 0; i < tt.numBlobbers; i++ {
+				req.blobbers = append(req.blobbers, &blockchain.StorageNode{
+					ID:      strconv.Itoa(i),
+					Baseurl: tt.name + mockBlobberUrl + strconv.Itoa(i),
+				})
 			}
-			require.NotNil(got, "unexpected nullable file stats result")
-			require.Equalf(4, len(got), "expected length of file stats result is %d, but got %v", 4, len(got))
-			for _, blobberMock := range blobberMocks {
-				require.NotEmptyf(got[blobberMock.ID], "unexpected empty value of file stats related to blobber %v", blobberMock.ID)
+			mapResp := req.getFileStatsFromBlobbers()
+			for _, fs := range mapResp {
+				index, err := strconv.Atoi(fs.BlobberID)
+				require.NoError(t, err)
+				require.EqualValues(t, tt.wantFileStats[index], *fs)
 			}
 		})
 	}
