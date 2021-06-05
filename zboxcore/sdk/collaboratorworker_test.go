@@ -39,8 +39,7 @@ func TestCollaboratorRequest_UpdateCollaboratorToBlobbers(t *testing.T) {
 			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
 				m := &mocks.HttpClient{}
 				zboxutil.Client = m
-				m.On("Do", mock.AnythingOfType("*http.Request")).Run(func(args mock.Arguments) {
-				}).Return(&http.Response{
+				m.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
 					StatusCode: http.StatusOK,
 					Body:       ioutil.NopCloser(strings.NewReader(`{}`)),
 				}, nil)
@@ -95,8 +94,7 @@ func TestCollaboratorRequest_updateCollaboratorToBlobber(t *testing.T) {
 			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
 				m := &mocks.HttpClient{}
 				zboxutil.Client = m
-				m.On("Do", mock.AnythingOfType("*http.Request")).Run(func(args mock.Arguments) {
-				}).Return(&http.Response{
+				m.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
 					StatusCode: http.StatusOK,
 					Body:       ioutil.NopCloser(strings.NewReader(`{}`)),
 				}, nil)
@@ -153,8 +151,7 @@ func TestCollaboratorRequest_RemoveCollaboratorFromBlobbers(t *testing.T) {
 			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
 				m := &mocks.HttpClient{}
 				zboxutil.Client = m
-				m.On("Do", mock.AnythingOfType("*http.Request")).Run(func(args mock.Arguments) {
-				}).Return(&http.Response{
+				m.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
 					StatusCode: http.StatusOK,
 					Body:       ioutil.NopCloser(strings.NewReader(`{}`)),
 				}, nil)
@@ -209,8 +206,7 @@ func TestCollaboratorRequest_removeCollaboratorFromBlobber(t *testing.T) {
 			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
 				m := &mocks.HttpClient{}
 				zboxutil.Client = m
-				m.On("Do", mock.AnythingOfType("*http.Request")).Run(func(args mock.Arguments) {
-				}).Return(&http.Response{
+				m.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
 					StatusCode: http.StatusOK,
 					Body:       ioutil.NopCloser(strings.NewReader(`{}`)),
 				}, nil)
