@@ -2,9 +2,15 @@ package sdk
 
 import (
 	"context"
+	"io/ioutil"
+	"net/http"
+	"strings"
 	"sync"
 	"testing"
 
+	"github.com/0chain/gosdk/zboxcore/mocks"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,21 +24,17 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 	defer closeFn()
 	// setup mock allocation
 	a, cncl := setupMockAllocation(t, filestatsWorkerTestDir, blobberMocks)
-	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
-		setupBlobberMockResponses(t, blobberMocks, filestatsWorkerTestDir+"/getFileStatsInfoFromBlobber", testcaseName)
-		return nil
-	}
 	defer cncl()
 	var wg sync.WaitGroup
 	tests := []struct {
 		name           string
-		additionalMock func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
+		additionalMock func(t *testing.T) (teardown func(t *testing.T))
 		want           bool
 		wantErr        bool
 	}{
 		{
 			"Test_Error_New_HTTP_Failed",
-			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
+			func(t *testing.T) (teardown func(t *testing.T)) {
 				url := a.Blobbers[0].Baseurl
 				a.Blobbers[0].Baseurl = string([]byte{0x7f, 0, 0})
 				return func(t *testing.T) {
@@ -50,13 +52,30 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 		},
 		{
 			"Test_Error_HTTP_Response_Not_JSON_Format",
-			blobbersResponseMock,
+			func(t *testing.T) (teardown func(t *testing.T)) {
+				m := &mocks.HttpClient{}
+				zboxutil.Client = m
+				m.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(strings.NewReader("This is not JSON format")),
+				}, nil)
+				return nil
+			},
 			false,
 			true,
 		},
 		{
 			"Test_Success",
-			blobbersResponseMock,
+			func(t *testing.T) (teardown func(t *testing.T)) {
+				m := &mocks.HttpClient{}
+				zboxutil.Client = m
+				bodyString := `{"ID":294,"actual_file_hash":"03cfd743661f07975fa2f1220c5194cbaff48451","actual_file_size":4,"actual_thumbnail_hash":"","actual_thumbnail_size":0,"attributes":{},"commit_meta_txns":null,"content_hash":"adc83b19e793491b1c6ea0fd8b46cd9f32e592fc","created_at":"2021-03-23T18:56:28.318478Z","custom_meta":"","encrypted_key":"","hash":"b1fba32dfc8025a7390b05c5eb3aea2ec3a84ed5b3ce60b49093bc001cfc9710","last_challenge_txn":"","lookup_hash":"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697","merkle_root":"6ed726c5aaf50067479a105ad9c4330bfa341f1fd889e3552af67303712ee0f0","mimetype":"application/octet-stream","name":"1.txt","num_of_block_downloads":0,"num_of_blocks":1,"num_of_challenges":0,"num_of_failed_challenges":0,"num_of_updates":1,"on_cloud":false,"path":"/1.txt","path_hash":"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697","size":1,"thumbnail_hash":"","thumbnail_size":0,"type":"f","updated_at":"2021-03-23T18:56:28.318478Z","write_marker_txn":"e3eaaa98d374931b8fd3f52096e7e47f68eedc4267d387a4a8b999a52b0f603b"}`
+				m.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
+					StatusCode: http.StatusOK,
+					Body:       ioutil.NopCloser(strings.NewReader(bodyString)),
+				}, nil)
+				return nil
+			},
 			true,
 			false,
 		},
@@ -65,7 +84,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			if additionalMock := tt.additionalMock; additionalMock != nil {
-				if teardown := additionalMock(t, tt.name); teardown != nil {
+				if teardown := additionalMock(t); teardown != nil {
 					defer teardown(t)
 				}
 			}
@@ -103,14 +122,10 @@ func TestListRequest_getFileStatsFromBlobbers(t *testing.T) {
 	defer closeFn()
 	// setup mock allocation
 	a, cncl := setupMockAllocation(t, filestatsWorkerTestDir, blobberMocks)
-	var blobbersResponseMock = func(t *testing.T, testcaseName string) (teardown func(t *testing.T)) {
-		setupBlobberMockResponses(t, blobberMocks, filestatsWorkerTestDir+"/getFileStatsFromBlobbers", testcaseName)
-		return nil
-	}
 	defer cncl()
 	tests := []struct {
 		name           string
-		additionalMock func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
+		additionalMock func(t *testing.T) (teardown func(t *testing.T))
 		want           bool
 	}{
 		{
@@ -120,7 +135,31 @@ func TestListRequest_getFileStatsFromBlobbers(t *testing.T) {
 		},
 		{
 			"Test_Success",
-			blobbersResponseMock,
+			func(t *testing.T) (teardown func(t *testing.T)) {
+				m := &mocks.HttpClient{}
+				zboxutil.Client = m
+				bodyString := `{"ID":${ID},"actual_file_hash":"03cfd743661f07975fa2f1220c5194cbaff48451","actual_file_size":4,"actual_thumbnail_hash":"","actual_thumbnail_size":0,"attributes":{},"commit_meta_txns":null,"content_hash":"adc83b19e793491b1c6ea0fd8b46cd9f32e592fc","created_at":"2021-03-23T18:56:28.318478Z","custom_meta":"","encrypted_key":"","hash":"b1fba32dfc8025a7390b05c5eb3aea2ec3a84ed5b3ce60b49093bc001cfc9710","last_challenge_txn":"","lookup_hash":"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697","merkle_root":"6ed726c5aaf50067479a105ad9c4330bfa341f1fd889e3552af67303712ee0f0","mimetype":"application/octet-stream","name":"1.txt","num_of_block_downloads":0,"num_of_blocks":1,"num_of_challenges":0,"num_of_failed_challenges":0,"num_of_updates":1,"on_cloud":false,"path":"/1.txt","path_hash":"c884abb32aa0357e2541b683f6e52bfab9143d33b968977cf6ba31b43e832697","size":1,"thumbnail_hash":"","thumbnail_size":0,"type":"f","updated_at":"2021-03-23T18:56:28.318478Z","write_marker_txn":"e3eaaa98d374931b8fd3f52096e7e47f68eedc4267d387a4a8b999a52b0f603b"}`
+				mockCall := m.On("Do", mock.AnythingOfType("*http.Request"))
+				mockCall.RunFn = func(args mock.Arguments) {
+					req := args[0].(*http.Request)
+					url := req.URL.Host
+					switch url {
+					case strings.ReplaceAll(a.Blobbers[0].Baseurl, "http://", ""):
+						bodyString = strings.ReplaceAll(bodyString, "${ID}", "294")
+					case strings.ReplaceAll(a.Blobbers[1].Baseurl, "http://", ""):
+						bodyString = strings.ReplaceAll(bodyString, "${ID}", "257")
+					case strings.ReplaceAll(a.Blobbers[2].Baseurl, "http://", ""):
+						bodyString = strings.ReplaceAll(bodyString, "${ID}", "53")
+					case strings.ReplaceAll(a.Blobbers[3].Baseurl, "http://", ""):
+						bodyString = strings.ReplaceAll(bodyString, "${ID}", "86")
+					}
+					mockCall.ReturnArguments = mock.Arguments{&http.Response{
+						StatusCode: http.StatusOK,
+						Body:       ioutil.NopCloser(strings.NewReader(bodyString)),
+					}, nil}
+				}
+				return nil
+			},
 			true,
 		},
 	}
@@ -128,7 +167,7 @@ func TestListRequest_getFileStatsFromBlobbers(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			if tt.additionalMock != nil {
-				if teardown := tt.additionalMock(t, tt.name); teardown != nil {
+				if teardown := tt.additionalMock(t); teardown != nil {
 					defer teardown(t)
 				}
 			}
