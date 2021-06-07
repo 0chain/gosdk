@@ -14,8 +14,7 @@ import (
 
 const GRPCPort = 7031
 
-// TODO have only one miner service
-func newMinerNodeGRPCClient(urlRaw string) (minerGRPC.MinerNodeClient, error) {
+func newMinerGRPCClient(urlRaw string) (minerGRPC.MinerClient, error) {
 	u, err := url.Parse(urlRaw)
 	if err != nil {
 		return nil, err
@@ -26,25 +25,11 @@ func newMinerNodeGRPCClient(urlRaw string) (minerGRPC.MinerNodeClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	return minerGRPC.NewMinerNodeClient(cc), nil
-}
-
-func newMinerChainGRPCClient(urlRaw string) (minerGRPC.MinerChainClient, error) {
-	u, err := url.Parse(urlRaw)
-	if err != nil {
-		return nil, err
-	}
-	host, _, _ := net.SplitHostPort(u.Host)
-
-	cc, err := grpc.Dial(host+":"+fmt.Sprint(GRPCPort), grpc.WithInsecure())
-	if err != nil {
-		return nil, err
-	}
-	return minerGRPC.NewMinerChainClient(cc), nil
+	return minerGRPC.NewMinerClient(cc), nil
 }
 
 func WhoAmI(url string, req *minerGRPC.WhoAmIRequest) ([]byte, error) {
-	minerClient, err := newMinerNodeGRPCClient(url)
+	minerClient, err := newMinerGRPCClient(url)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +43,7 @@ func WhoAmI(url string, req *minerGRPC.WhoAmIRequest) ([]byte, error) {
 }
 
 func GetLatestFinalizedBlockSummary(url string, req *minerGRPC.GetLatestFinalizedBlockSummaryRequest) ([]byte, error) {
-	minerClient, err := newMinerChainGRPCClient(url)
+	minerClient, err := newMinerGRPCClient(url)
 	if err != nil {
 		return nil, err
 	}

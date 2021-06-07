@@ -1,7 +1,7 @@
 module github.com/0chain/gosdk
 
 require (
-	github.com/0chain/0chain v0.0.0-20210602203755-1e48f378f34b // indirect
+	github.com/0chain/0chain v0.0.0-20210607163907-f4f9681e2f79
 	github.com/h2non/filetype v1.0.9
 	github.com/herumi/bls-go-binary v0.0.0-20191119080710-898950e1a520
 	github.com/klauspost/cpuid v1.2.0 // indirect
