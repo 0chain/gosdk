@@ -457,7 +457,6 @@ func (pre *PREEncryptionScheme) decrypt(encMsg *EncryptedMessage) ([]byte, error
 
 func (pre *PREEncryptionScheme) ReEncrypt(encMsg *EncryptedMessage, reGenKey string, clientPublicKey string) (*ReEncryptedMessage, error) {
 	key, err := UnmarshallPublicKey(clientPublicKey)
-	fmt.Println(key)
 	if err != nil {
 		return nil, err
 	}
