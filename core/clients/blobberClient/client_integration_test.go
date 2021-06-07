@@ -1,12 +1,19 @@
 package blobberClient
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"testing"
 	"time"
+
+	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/reference"
+	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/writemarker"
+	"github.com/0chain/blobber/code/go/0chain.net/core/common"
+	"github.com/0chain/gosdk/core/encryption"
 
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobberHTTP"
 
@@ -508,4 +515,117 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 
 	})
 
+	t.Run("TestCommit", func(t *testing.T) {
+		allocationTx := randString(32)
+
+		pubKey, privKey, ss := GeneratePubPrivateKey(t)
+		pubKeyBytes, _ := hex.DecodeString(pubKey)
+		clientId := encryption.Hash(pubKeyBytes)
+		now := common.Timestamp(time.Now().UnixNano())
+
+		blobberPubKey := "de52c0a51872d5d2ec04dbc15a6f0696cba22657b80520e1d070e72de64c9b04e19ce3223cae3c743a20184158457582ffe9c369ca9218c04bfe83a26a62d88d"
+		blobberPubKeyBytes, _ := hex.DecodeString(blobberPubKey)
+
+		fr := reference.Ref{
+			AllocationID:   "exampleId",
+			Type:           "f",
+			Name:           "new_name",
+			Path:           "/new_name",
+			ContentHash:    "contentHash",
+			MerkleRoot:     "merkleRoot",
+			ActualFileHash: "actualFileHash",
+		}
+
+		rootRefHash := encryption.Hash(encryption.Hash(fr.GetFileHashData()))
+
+		wm := writemarker.WriteMarker{
+			AllocationRoot:         encryption.Hash(rootRefHash + ":" + strconv.FormatInt(int64(now), 10)),
+			PreviousAllocationRoot: "/",
+			AllocationID:           "exampleId",
+			Size:                   1337,
+			BlobberID:              encryption.Hash(blobberPubKeyBytes),
+			Timestamp:              now,
+			ClientID:               clientId,
+		}
+
+		wmSig, err := ss.Sign(encryption.Hash(wm.GetHashData()))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		wm.Signature = wmSig
+
+		wmRaw, err := json.Marshal(wm)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = tdController.ClearDatabase()
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = tdController.AddCommitTestData(allocationTx, pubKey, clientId, wmSig, now)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		testCases := []struct {
+			name               string
+			input              *blobbergrpc.CommitRequest
+			expectedAllocation string
+			expectingError     bool
+		}{
+			{
+				name: "Success",
+				input: &blobbergrpc.CommitRequest{
+					Allocation:   allocationTx,
+					ConnectionId: "connection_id",
+					WriteMarker:  string(wmRaw),
+				},
+				expectedAllocation: "exampleId",
+				expectingError:     false,
+			},
+			{
+				name: "invalid write_marker",
+				input: &blobbergrpc.CommitRequest{
+					Allocation:   allocationTx,
+					ConnectionId: "invalid",
+					WriteMarker:  "invalid",
+				},
+				expectedAllocation: "",
+				expectingError:     true,
+			},
+		}
+
+		for _, tc := range testCases {
+			clientRaw, _ := json.Marshal(client.Client{Wallet: &zcncrypto.Wallet{
+				ClientID:  clientId,
+				ClientKey: pubKey,
+				Keys:      []zcncrypto.KeyPair{{PublicKey: pubKey, PrivateKey: privKey}},
+			}})
+
+			err := client.PopulateClient(string(clientRaw), signScheme)
+			if err != nil {
+				t.Fatal(err)
+			}
+			respRaw, err := Commit(BlobberAddr, tc.input)
+			if err != nil {
+				if !tc.expectingError {
+					t.Fatal(err)
+				}
+				continue
+			}
+
+			if tc.expectingError {
+				t.Fatal("expected error")
+			}
+
+			var commiteResp blobberHTTP.CommitResult
+			json.Unmarshal(respRaw, &commiteResp)
+
+			if commiteResp.WriteMarker.AllocationID != tc.expectedAllocation {
+				t.Fatal("unexpected allocationId")
+			}
+		}
+	})
 }

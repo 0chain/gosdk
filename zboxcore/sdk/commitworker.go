@@ -1,12 +1,10 @@
 package sdk
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"mime/multipart"
 	"net/http"
 	"strconv"
 	"sync"
@@ -207,50 +205,24 @@ func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.W
 		Logger.Error("Signing writemarker failed: ", err)
 		return err
 	}
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
 	wmData, err := json.Marshal(wm)
 	if err != nil {
 		Logger.Error("Creating writemarker failed: ", err)
 		return err
 	}
-	formWriter.WriteField("connection_id", req.connectionID)
-	formWriter.WriteField("write_marker", string(wmData))
 
-	formWriter.Close()
-
-	httpreq, err := zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationTx, body)
+	Logger.Info("Committing to blobber." + req.blobber.Baseurl)
+	commitResp, err := blobberClient.Commit(req.blobber.Baseurl, &blobbergrpc.CommitRequest{
+		Allocation:   req.allocationTx,
+		ConnectionId: req.connectionID,
+		WriteMarker:  string(wmData),
+	})
 	if err != nil {
-		Logger.Error("Error creating commit req: ", err)
+		Logger.Error("Commit response - " + string(commitResp))
 		return err
 	}
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 60))
-	Logger.Info("Committing to blobber." + req.blobber.Baseurl)
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("Commit: ", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == http.StatusOK {
-			Logger.Info(req.blobber.Baseurl, req.connectionID, " committed")
-		} else {
-			Logger.Error("Commit response: ", resp.StatusCode)
-		}
 
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			Logger.Error("Response read: ", err)
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			Logger.Error(req.blobber.Baseurl, " Commit response:", string(resp_body))
-			return common.NewError("commit_error", string(resp_body))
-		}
-		return nil
-	})
-	return err
+	return nil
 }
 
 func AddCommitRequest(req *CommitRequest) {
