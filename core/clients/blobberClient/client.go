@@ -171,3 +171,28 @@ func GetFileMetaData(url string, req *blobbergrpc.GetFileMetaDataRequest) ([]byt
 
 	return json.Marshal(convert.GetFileMetaDataResponseHandler(getFileMetaDataResp))
 }
+
+func UpdateObjectAttributes(url string, req *blobbergrpc.UpdateObjectAttributesRequest) ([]byte, error) {
+	blobberClient, err := newBlobberGRPCClient(url)
+	if err != nil {
+		return nil, err
+	}
+
+	clientSignature, err := client.Sign(encryption.Hash(req.Allocation))
+	if err != nil {
+		return nil, err
+	}
+
+	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
+		blobbercommon.ClientHeader:          client.GetClientID(),
+		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
+		blobbercommon.ClientSignatureHeader: clientSignature,
+	}))
+
+	updateAttributesResp, err := blobberClient.UpdateObjectAttributes(grpcCtx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(convert.UpdateObjectAttributesResponseHandler(updateAttributesResp))
+}
