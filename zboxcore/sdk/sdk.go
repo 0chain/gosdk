@@ -829,6 +829,7 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
 		"max_challenge_completion_time": mcct,
+		"diversify_blobbers":            true,
 	}
 
 	var sn = transaction.SmartContractTxnData{
