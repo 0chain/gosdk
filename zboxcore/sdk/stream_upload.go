@@ -19,6 +19,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
+	"github.com/mitchellh/go-homedir"
 )
 
 var (
@@ -43,6 +44,13 @@ func CreateStreamUpload(allocationObj *Allocation, fileMeta FileMeta, fileReader
 		chunkSize:       DefaultChunkSize,
 		encryptOnUpload: false,
 	}
+
+	home, _ := homedir.Dir()
+
+	su.configDir = home + string(os.PathSeparator) + ".zcn"
+
+	//create upload folder to save progress
+	os.MkdirAll(su.configDir+"/upload", os.ModePerm)
 
 	su.loadProgress()
 
@@ -94,6 +102,8 @@ func CreateStreamUpload(allocationObj *Allocation, fileMeta FileMeta, fileReader
 type StreamUpload struct {
 	Consensus
 
+	configDir string
+
 	allocationObj *Allocation
 
 	progress   UploadProgress
@@ -120,7 +130,8 @@ type StreamUpload struct {
 
 // progressID build local progress id with [allocationid]_[encodeURI(localpath)]_[encodeURI(remotepath)] format
 func (su *StreamUpload) progressID() string {
-	return "~/.zcn/upload/" + su.allocationObj.ID + "_" + su.fileMeta.FileID()
+
+	return su.configDir + "/upload/" + su.allocationObj.ID + "_" + su.fileMeta.FileID()
 }
 
 // loadProgress load progress from ~/.zcn/upload/[progressID]
@@ -164,6 +175,12 @@ func (su *StreamUpload) saveProgress() {
 	}
 
 	logger.Logger.Info("[upload] save progress: ", progressID)
+}
+
+// removeProgress remove progress info once it is done
+func (su *StreamUpload) removeProgress() {
+
+	os.Remove(su.progressID())
 }
 
 // createUploadProgress create a new UploadProgress
@@ -230,7 +247,7 @@ func (su *StreamUpload) Start() error {
 		}
 
 		// upload entire thumbnail in first reqeust only
-		if i == 0 {
+		if i == 0 && len(su.thumbnailBytes) > 0 {
 			thumbnailShards, err := su.readThumbnailShards()
 			if err != nil {
 				return err
@@ -252,6 +269,7 @@ func (su *StreamUpload) Start() error {
 		}
 
 		if isFinal {
+			su.removeProgress()
 			break
 		}
 	}
@@ -321,13 +339,13 @@ func (su *StreamUpload) readNextShards(uploaded bool) ([][]byte, int, bool, erro
 		isFinal = true
 	}
 
-	shards, err := su.thumbailErasureEncoder.Split(su.thumbnailBytes)
+	shards, err := su.fileErasureEncoder.Split(chunkBytes)
 	if err != nil {
 		logger.Logger.Error("[upload] Erasure coding on thumbnail failed:", err.Error())
 		return nil, readLen, isFinal, err
 	}
 
-	err = su.thumbailErasureEncoder.Encode(shards)
+	err = su.fileErasureEncoder.Encode(shards)
 	if err != nil {
 		logger.Logger.Error("[upload] Erasure coding on thumbnail failed:", err.Error())
 		return nil, readLen, isFinal, err
@@ -366,9 +384,9 @@ func (su *StreamUpload) processUpload(chunkIndex int, fileShards [][]byte, thumb
 		blobber := su.blobbers[pos]
 
 		if len(thumbnailShards) > 0 {
-			go blobber.processUpload(su, chunkIndex, fileShards[pos], thumbnailShards[pos], isFinal, wg)
+			blobber.processUpload(su, chunkIndex, fileShards[pos], thumbnailShards[pos], isFinal, wg)
 		} else {
-			go blobber.processUpload(su, chunkIndex, fileShards[pos], nil, isFinal, wg)
+			blobber.processUpload(su, chunkIndex, fileShards[pos], nil, isFinal, wg)
 		}
 	}
 
@@ -378,7 +396,7 @@ func (su *StreamUpload) processUpload(chunkIndex int, fileShards [][]byte, thumb
 
 // processCommit commit shard upload on its blobber
 func (su *StreamUpload) processCommit() error {
-	logger.Logger.Info("Closed all the channels. Submitting for commit")
+	logger.Logger.Info("Submitting for commit")
 	su.consensus = 0
 	wg := &sync.WaitGroup{}
 	ones := su.uploadMask.CountOnes()
@@ -398,7 +416,7 @@ func (su *StreamUpload) processCommit() error {
 		newChange.File.Attributes = blobber.fileRef.Attributes
 		blobber.commitChanges = append(blobber.commitChanges, newChange)
 
-		go blobber.processCommit(su, wg)
+		blobber.processCommit(su, wg)
 	}
 	wg.Wait()
 
@@ -412,6 +430,8 @@ func (su *StreamUpload) processCommit() error {
 			return nil
 		}
 	}
+
+	su.removeProgress()
 
 	if su.statusCallback != nil {
 		su.statusCallback.Completed(su.allocationObj.ID, su.fileMeta.RemotePath, su.fileMeta.RemoteName, su.fileMeta.MimeType, int(su.progress.UploadLength), OpUpload)

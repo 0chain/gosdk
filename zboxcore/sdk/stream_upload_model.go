@@ -1,8 +1,7 @@
 package sdk
 
 import (
-	"net/url"
-
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
@@ -27,6 +26,11 @@ type FileMeta struct {
 	RemotePath string
 	// Attributes file attributes in blockchain
 	Attributes fileref.Attributes
+}
+
+// FileID generante id of progress on local cache
+func (meta *FileMeta) FileID() string {
+	return encryption.Hash(meta.Path+"_"+meta.RemotePath) + "_" + meta.RemoteName
 }
 
 // UploadFormData form data of upload
@@ -67,11 +71,6 @@ type UploadFormData struct {
 	ChunkIndex   int   `json:"chunk_index,omitempty"`   // the seq of current chunk. all chunks MUST be uploaded one by one because of streaming merkle hash
 	UploadOffset int64 `json:"upload_offset,omitempty"` // It is next position that new incoming chunk should be append to
 
-}
-
-// FileID generante id of progress on local cache
-func (meta *FileMeta) FileID() string {
-	return url.PathEscape(meta.Path) + "_" + url.PathEscape(meta.RemotePath)
 }
 
 // UploadProgress progress of upload

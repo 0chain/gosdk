@@ -36,7 +36,12 @@ func StartDevServer(config string) MiddlewareFunc {
 				c.Abort()
 			} else {
 				c.Next()
-				logger.Logger.Info("[httpnet] PASS ", c.req.Method, " ", c.req.URL.String(), " ", c.resp.StatusCode)
+				if c.resp == nil {
+					logger.Logger.Info("[httpnet] PASS ", c.req.Method, " ", c.req.URL.String(), " NO RESPONSE")
+				} else {
+					logger.Logger.Info("[httpnet] PASS ", c.req.Method, " ", c.req.URL.String(), " ", c.resp.StatusCode)
+				}
+
 			}
 
 		}

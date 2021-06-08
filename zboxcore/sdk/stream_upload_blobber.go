@@ -45,7 +45,7 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 		AllocationID: su.allocationObj.ID,
 		ConnectionID: su.progress.ConnectionID,
 		Name:         su.fileMeta.RemoteName,
-		Path:         su.fileMeta.Path,
+		Path:         su.fileMeta.RemotePath,
 		MimeType:     su.fileMeta.MimeType,
 		Attributes:   su.fileMeta.Attributes,
 		CustomMeta:   "",
