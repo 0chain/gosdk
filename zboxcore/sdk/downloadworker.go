@@ -1,7 +1,6 @@
 package sdk
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
@@ -10,7 +9,6 @@ import (
 	"io"
 	"math"
 	"os"
-	"strings"
 	"sync"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -50,7 +48,6 @@ type DownloadRequest struct {
 	isDownloadCanceled bool
 	completedCallback  func(remotepath string, remotepathhash string)
 	contentMode        string
-	preAtBlobber	   bool
 	Consensus
 }
 
@@ -79,7 +76,6 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 		blockDownloadReq.remotefilepathhash = req.remotefilepathhash
 		blockDownloadReq.numBlocks = req.numBlocks
 		blockDownloadReq.rxPay = req.rxPay
-		blockDownloadReq.preAtBlobber = req.preAtBlobber
 		go AddBlockDownloadReq(blockDownloadReq)
 		//go obj.downloadBlobberBlock(&obj.blobbers[pos], pos, path, blockNum, rspCh, isPathHash, authTicket)
 		c++
@@ -117,7 +113,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 			}
 			//for blockNum := 0; blockNum < len(result.BlockChunks); blockNum++ {
 			for blockNum := 0; blockNum < downloadChunks; blockNum++ {
-				if req.preAtBlobber {
+				if len(req.encryptedKey) > 0 {
 					suite := edwards25519.NewBlakeSHA256Ed25519()
 					reEncMessage := &encryption.ReEncryptedMessage{
 						D1: suite.Point(),
@@ -136,28 +132,6 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 					}
 
 					shards[blockNum][result.idx] = decrypted
-				} else if len(req.encryptedKey) > 0 {
-					headerBytes := result.BlockChunks[blockNum][:(2 * 1024)]
-					headerBytes = bytes.Trim(headerBytes, "\x00")
-					headerString := string(headerBytes)
-					encMsg := &encryption.EncryptedMessage{}
-					encMsg.EncryptedData = result.BlockChunks[blockNum][(2 * 1024):]
-					headerChecksums := strings.Split(headerString, ",")
-					if len(headerChecksums) != 2 {
-						Logger.Error("Block has invalid header", req.blobbers[result.idx].Baseurl)
-						break
-					}
-					encMsg.MessageChecksum, encMsg.OverallChecksum = headerChecksums[0], headerChecksums[1]
-					encMsg.EncryptedKey = encscheme.GetEncryptedKey()
-					if req.authTicket != nil {
-						encMsg.ReEncryptionKey = req.authTicket.ReEncryptionKey
-					}
-					decryptedBytes, err := encscheme.Decrypt(encMsg)
-					if err != nil {
-						Logger.Error("Block decryption failed", req.blobbers[result.idx].Baseurl, err)
-						break
-					}
-					shards[blockNum][result.idx] = decryptedBytes
 				} else {
 					shards[blockNum][result.idx] = result.BlockChunks[blockNum]
 				}
@@ -225,7 +199,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		size = fileRef.ActualThumbnailSize
 	}
 	req.encryptedKey = fileRef.EncryptedKey
-	req.preAtBlobber = fileRef.Attributes.PreAtBlobber
 	Logger.Info("Encrypted key from fileref", req.encryptedKey)
 	// Calculate number of bytes per shard.
 	perShard := (size + int64(req.datashards) - 1) / int64(req.datashards)
