@@ -37,7 +37,6 @@ type BlockDownloadRequest struct {
 	wg                 *sync.WaitGroup
 	ctx                context.Context
 	result             chan *downloadBlock
-	preAtBlobber       bool
 }
 
 type downloadBlock struct {
@@ -208,7 +207,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					//rawData := make([]byte,0)
 					//json.Unmarshal(response, &rawData)
 					rspData.RawData = response
-					if req.preAtBlobber {
+					if len(req.encryptedKey) > 0 {
 						// 256 for the additional header bytes,  where chunk_size - 2 * 1024 is the encrypted data size
 						chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE - 2 * 1024 + 256)
 						rspData.BlockChunks = chunks
