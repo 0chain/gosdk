@@ -470,6 +470,8 @@ func createDirIfNotExists(allocation string) {
 	allocationDir := FilesRepo + allocation
 	if _, err := os.Stat(allocationDir); os.IsNotExist(err) {
 		os.Mkdir(allocationDir, 0777)
+	} else {
+		fmt.Println("WARN: error in createDirIfNotExists: ", err.Error())
 	}
 }
 
