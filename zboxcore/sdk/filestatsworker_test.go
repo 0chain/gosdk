@@ -122,7 +122,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 					require.NoError(t, err)
 					expected, ok := p.requestFields[part.FormName()]
 					require.True(t, ok)
-					actual, err := io.ReadAll(part)
+					actual, err := ioutil.ReadAll(part)
 					require.NoError(t, err)
 					require.EqualValues(t, expected, string(actual))
 
