@@ -175,7 +175,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 	}
 }
 
-func TestListRequest_getFileConsensusFromBlobbers(t *testing.T) {
+func TestListRequest_getFileStatsFromBlobbers(t *testing.T) {
 	const (
 		mockAllocationTxId = "mock transaction id"
 		mockAllocationId   = "mock allocation id"
