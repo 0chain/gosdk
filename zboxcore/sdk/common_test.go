@@ -7,9 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"sync"
-	"testing"
 
-	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -25,29 +23,6 @@ func blobberIDMask(idx int) string {
 
 func blobberURLMask(idx int) string {
 	return fmt.Sprintf("${blobber_url_%v}", idx)
-}
-
-func parseFileContent(t *testing.T, fileName string, jsonUnmarshalerInterface interface{}) (fileContentBytes []byte) {
-	fs, err := os.OpenFile(fileName, os.O_RDONLY, 0644)
-	assert.NoErrorf(t, err, "Error os.OpenFile() %v: %v", fileName, err)
-
-	defer fs.Close()
-	bytes, err := ioutil.ReadAll(fs)
-	assert.NoErrorf(t, err, "Error ioutil.ReadAll() cannot read file content of %v: %v", fileName, err)
-	if jsonUnmarshalerInterface != nil {
-		err = json.Unmarshal(bytes, jsonUnmarshalerInterface)
-		assert.NoErrorf(t, err, "Error json.Unmarshal() cannot parse file content to %T object: %v", jsonUnmarshalerInterface, err)
-	}
-
-	return bytes
-}
-
-func writeFileContent(t *testing.T, fileName string, fileContentBytes []byte) {
-	fs, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE, 0644)
-	assert.NoErrorf(t, err, "Error os.OpenFile() %v: %v", fileName, err)
-	defer fs.Close()
-	_, err = fs.Write(fileContentBytes)
-	assert.NoErrorf(t, err, "Error fs.Write() cannot write file content to %v: %v", fileName, err)
 }
 
 type nodeConfig struct {
