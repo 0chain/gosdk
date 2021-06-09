@@ -1,175 +1,257 @@
 package sdk
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
 
+	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
+	zclient "github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	listWorkerTestDir = configDir + "/listworker"
-)
-
 func TestListRequest_getListInfoFromBlobber(t *testing.T) {
-	// setup mock sdk
-	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 1)
-	defer closeFn()
-	// setup mock allocation
-	a, cncl := setupMockAllocation(t, listWorkerTestDir, blobberMocks)
-	defer cncl()
-	var wg sync.WaitGroup
+	const (
+		mockAllocationTxId = "mock transaction id"
+		mockClientId       = "mock client id"
+		mockClientKey      = "mock client key"
+		mockRemoteFilePath = "mock/remote/file/path"
+		mockSignature      = "mock signature"
+		mockAllocationId   = "mock allocation id"
+		mockErrorMessage   = "mock error message"
+		mockBlobberId      = "mock blobber Id"
+		mockAllocationRoot = "mock allocation root"
+		mockType           = "d"
+	)
+	var mockClient = mocks.HttpClient{}
+	zboxutil.Client = &mockClient
+	client := zclient.GetClient()
+	client.Wallet = &zcncrypto.Wallet{
+		ClientID:  mockClientId,
+		ClientKey: mockClientKey,
+	}
+	type parameters struct {
+		listHttpResp   listResponse
+		ListResult     fileref.ListResult
+		respStatusCode int
+		blobberIdx     int
+		requestFields  map[string]string
+	}
 	tests := []struct {
-		name           string
-		additionalMock func(t *testing.T) (teardown func(t *testing.T))
-		want           bool
-		wantErr        bool
+		name       string
+		parameters parameters
+		setup      func(t *testing.T, name string, p parameters, errMsg string)
+		wantErr    bool
+		errMsg     string
 	}{
 		{
-			"Test_Error_New_HTTP_Failed",
-			func(t *testing.T) (teardown func(t *testing.T)) {
-				url := a.Blobbers[0].Baseurl
-				a.Blobbers[0].Baseurl = string([]byte{0x7f, 0, 0})
-				return func(t *testing.T) {
-					a.Blobbers[0].Baseurl = url
-				}
+			name: "Test_Error_New_HTTP_Failed_By_Containing_" + string([]byte{0x7f, 0, 0}),
+			parameters: parameters{
+				blobberIdx:     41,
+				respStatusCode: 0,
 			},
-			false,
-			true,
+			setup:   func(t *testing.T, name string, p parameters, errMsg string) {},
+			wantErr: true,
+			errMsg:  "parse Test_Error_New_HTTP_Failed_By_Containing_\u007f\x00\x00: net/url: invalid control character in URL",
 		},
 		{
-			"Test_HTTP_Response_Failed",
-			nil,
-			false,
-			false,
+			name: "Test_HTTP_Error",
+			parameters: parameters{
+				blobberIdx:     41,
+				respStatusCode: 0,
+			},
+			setup: func(t *testing.T, name string, p parameters, errMsg string) {
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return strings.HasPrefix(req.URL.Path, name)
+				})).Return(&http.Response{
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+					StatusCode: p.respStatusCode,
+				}, fmt.Errorf(mockErrorMessage))
+			},
+			wantErr: true,
+			errMsg:  mockErrorMessage,
 		},
 		{
-			"Test_Error_HTTP_Response_Not_JSON_Format",
-			func(t *testing.T) (teardown func(t *testing.T)) {
-				m := &mocks.HttpClient{}
-				zboxutil.Client = m
-				m.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(strings.NewReader("This is not JSON format")),
+			name: "Test_HTTP_Response_Failed",
+			parameters: parameters{
+				blobberIdx:     41,
+				respStatusCode: http.StatusInternalServerError,
+			},
+			setup: func(t *testing.T, name string, p parameters, errMsg string) {
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return strings.HasPrefix(req.URL.Path, name)
+				})).Return(&http.Response{
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(mockErrorMessage))),
+					StatusCode: p.respStatusCode,
 				}, nil)
-				return nil
 			},
-			false,
-			false,
+			wantErr: true,
+			errMsg:  "error from server list response: " + mockErrorMessage,
 		},
 		{
-			"Test_Success",
-			func(t *testing.T) (teardown func(t *testing.T)) {
-				m := &mocks.HttpClient{}
-				zboxutil.Client = m
-				bodyString := `{"allocation_root":"47786ba91e51589e67bc3c8de7d8aff0dfddb399f826f6332c8f2b23e0e26420","meta_data":{"created_at":"0001-01-01T00:00:00Z","hash":"","lookup_hash":"","name":"","num_of_blocks":0,"path":"/1.txt","path_hash":"","size":0,"type":"d","updated_at":"0001-01-01T00:00:00Z"},"list":[]}`
-				m.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
-					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(strings.NewReader(bodyString)),
-				}, nil)
-				return nil
+			name: "Test_Error_HTTP_Response_Not_JSON_Format",
+			parameters: parameters{
+				blobberIdx:     41,
+				respStatusCode: http.StatusOK,
 			},
-			true,
-			false,
+			setup: func(t *testing.T, name string, p parameters, errMsg string) {
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return strings.HasPrefix(req.URL.Path, name)
+				})).Return(&http.Response{
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte("this is not json format"))),
+					StatusCode: p.respStatusCode,
+				}, nil)
+			},
+			wantErr: true,
+			errMsg:  "list entities response parse error: invalid character 'h' in literal true (expecting 'r')",
+		},
+		{
+			name: "Test_Success",
+			parameters: parameters{
+				listHttpResp: listResponse{
+					ref: &fileref.Ref{
+						AllocationID: mockAllocationId,
+						Type:         mockType,
+					},
+				},
+				ListResult: fileref.ListResult{
+					AllocationRoot: mockAllocationRoot,
+					Meta: map[string]interface{}{
+						"type": mockType,
+					},
+				},
+				blobberIdx:     41,
+				respStatusCode: http.StatusOK,
+			},
+			setup: func(t *testing.T, testName string, p parameters, _ string) {
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return req.URL.Path == "Test_Success"+zboxutil.LIST_ENDPOINT+mockAllocationTxId &&
+						req.Method == "GET" &&
+						req.Header.Get("X-App-Client-ID") == mockClientId &&
+						req.Header.Get("X-App-Client-Key") == mockClientKey &&
+						testName == "Test_Success"
+				})).Return(&http.Response{
+					StatusCode: p.respStatusCode,
+					Body: func(p parameters) io.ReadCloser {
+						jsonFR, err := json.Marshal(p.ListResult)
+						require.NoError(t, err)
+						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					}(p),
+				}, nil).Once()
+			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			if additionalMock := tt.additionalMock; additionalMock != nil {
-				if teardown := additionalMock(t); teardown != nil {
-					defer teardown(t)
-				}
+			tt.setup(t, tt.name, tt.parameters, tt.errMsg)
+			blobber := &blockchain.StorageNode{
+				ID:      mockBlobberId,
+				Baseurl: tt.name,
 			}
 			req := &ListRequest{
-				allocationID:   a.ID,
-				allocationTx:   a.Tx,
-				blobbers:       a.Blobbers,
-				remotefilepath: "/1.txt",
-				ctx:            context.Background(),
-				Consensus: Consensus{
-					consensusThresh: (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards),
-					fullconsensus:   float32(a.DataShards + a.ParityShards),
+				allocationID:   mockAllocationId,
+				allocationTx:   mockAllocationTxId,
+				ctx:            context.TODO(),
+				remotefilepath: mockRemoteFilePath,
+				authToken: &marker.AuthTicket{
+					Signature: mockSignature,
 				},
-				wg: func() *sync.WaitGroup { wg.Add(1); return &wg }(),
+				wg: &sync.WaitGroup{},
 			}
 			rspCh := make(chan *listResponse, 1)
-			req.getListInfoFromBlobber(req.blobbers[0], 0, rspCh)
+			req.wg.Add(1)
+			go req.getListInfoFromBlobber(blobber, 41, rspCh)
+			req.wg.Wait()
 			resp := <-rspCh
-			var expectedResult *fileref.Ref
-			parseFileContent(t, fmt.Sprintf("%v/%v/expected_result__Test_Success.json", listWorkerTestDir, "getListInfoFromBlobber"), &expectedResult)
-			if tt.wantErr {
-				require.Error(resp.err, "expected error != nil")
+			require.EqualValues(tt.wantErr, resp.err != nil)
+			if resp.err != nil {
+				require.EqualValues(tt.errMsg, resp.err.Error())
 				return
 			}
-			if !tt.want {
-				require.NotEqual(expectedResult, resp.ref)
-				return
-			}
-			require.EqualValues(expectedResult, resp.ref)
+			require.EqualValues(tt.parameters.listHttpResp.ref, resp.ref)
+			require.EqualValues(tt.parameters.blobberIdx, resp.blobberIdx)
 		})
 	}
 }
 
 func TestListRequest_GetListFromBlobbers(t *testing.T) {
-	// setup mock sdk
-	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
-	defer closeFn()
-	// setup mock allocation
-	a, cncl := setupMockAllocation(t, listWorkerTestDir, blobberMocks)
-	defer cncl()
+	const (
+		mockAllocationTxId = "mock transaction id"
+		mockAllocationId   = "mock allocation id"
+		mockBlobberUrl     = "mockBlobberUrl"
+		mockClientId       = "mock client id"
+		mockClientKey      = "mock client key"
+		mockAllocationRoot = "mock allocation root"
+		mockType           = "d"
+	)
+
+	var mockClient = mocks.HttpClient{}
+	zboxutil.Client = &mockClient
+
+	client := zclient.GetClient()
+	client.Wallet = &zcncrypto.Wallet{
+		ClientID:  mockClientId,
+		ClientKey: mockClientKey,
+	}
+
+	setupHttpResponses := func(t *testing.T, name string, numBlobbers int) {
+		for i := 0; i < numBlobbers; i++ {
+			url := mockBlobberUrl + strconv.Itoa(i)
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.HasPrefix(req.URL.Path, name+url)
+			})).Return(&http.Response{
+				StatusCode: http.StatusOK,
+				Body: func() io.ReadCloser {
+					jsonFR, err := json.Marshal(&fileref.ListResult{
+						AllocationRoot: mockAllocationRoot,
+						Meta: map[string]interface{}{
+							"type": mockType,
+						},
+					})
+					require.NoError(t, err)
+					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+				}(),
+			}, nil)
+		}
+	}
+
 	tests := []struct {
-		name           string
-		additionalMock func(t *testing.T) (teardown func(t *testing.T))
-		want           bool
-		wantFunc       func(require *require.Assertions, req *ListRequest)
+		name        string
+		numBlobbers int
+
+		setup    func(*testing.T, string, int)
+		wantFunc func(require *require.Assertions, req *ListRequest)
+		wantErr  bool
 	}{
 		{
-			"Test_Error_Get_List_File_From_Blobbers_Failed",
-			nil,
-			false,
-			func(require *require.Assertions, req *ListRequest) {
+			name:  "Test_Failed",
+			setup: nil,
+			wantFunc: func(require *require.Assertions, req *ListRequest) {
 				require.NotNil(req)
 				require.Equal(float32(0), req.consensus)
 			},
+			wantErr: true,
 		},
 		{
-			"Test_Success",
-			func(t *testing.T) (teardown func(t *testing.T)) {
-				m := &mocks.HttpClient{}
-				zboxutil.Client = m
-				bodyString := `{"allocation_root":"1c6870fa9d3c371d9e219c73c4a52cf04b8ab6036460879fee598b68a02febf2","meta_data":{"created_at":"0001-01-01T00:00:00Z","hash":"","lookup_hash":"","name":"","num_of_blocks":0,"path":"/1.txt","path_hash":"","size":0,"type":"d","updated_at":"0001-01-01T00:00:00Z"},"list":[]}`
-				statusCode := http.StatusOK
-				mockCall := m.On("Do", mock.MatchedBy(func(req *http.Request) bool { return req.Method == "GET" }))
-				mockCall.RunFn = func(args mock.Arguments) {
-					req := args[0].(*http.Request)
-					url := req.URL.Host
-					switch url {
-					case strings.ReplaceAll(a.Blobbers[2].Baseurl, "http://", ""):
-						statusCode = http.StatusBadRequest
-					case strings.ReplaceAll(a.Blobbers[3].Baseurl, "http://", ""):
-						statusCode = http.StatusBadRequest
-					default:
-						statusCode = http.StatusOK
-					}
-					mockCall.ReturnArguments = mock.Arguments{&http.Response{
-						StatusCode: statusCode,
-						Body:       ioutil.NopCloser(strings.NewReader(bodyString)),
-					}, nil}
-				}
-				return nil
-			},
-			true,
-			func(require *require.Assertions, req *ListRequest) {
+			name:        "Test_Success",
+			numBlobbers: 4,
+			setup:       setupHttpResponses,
+			wantFunc: func(require *require.Assertions, req *ListRequest) {
 				require.NotNil(req)
 				require.Equal(float32(4), req.consensus)
 			},
@@ -178,26 +260,31 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			if additionalMock := tt.additionalMock; additionalMock != nil {
-				if teardown := additionalMock(t); teardown != nil {
-					defer teardown(t)
-				}
+			if setup := tt.setup; setup != nil {
+				tt.setup(t, tt.name, tt.numBlobbers)
 			}
 			req := &ListRequest{
-				allocationID:   a.ID,
-				allocationTx:   a.Tx,
-				blobbers:       a.Blobbers,
-				remotefilepath: "/1.txt",
-				ctx:            context.Background(),
+				allocationID: mockAllocationId,
+				allocationTx: mockAllocationTxId,
+				ctx:          context.TODO(),
+				blobbers:     []*blockchain.StorageNode{},
+				wg:           &sync.WaitGroup{},
 				Consensus: Consensus{
-					consensusThresh: (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards),
-					fullconsensus:   float32(a.DataShards + a.ParityShards),
+					consensusThresh: 50,
+					fullconsensus:   4,
 				},
 			}
+			for i := 0; i < tt.numBlobbers; i++ {
+				req.blobbers = append(req.blobbers, &blockchain.StorageNode{
+					Baseurl: tt.name + mockBlobberUrl + strconv.Itoa(i),
+				})
+			}
 			got := req.GetListFromBlobbers()
-			var expectedResult *ListResult
-			parseFileContent(t, fmt.Sprintf("%v/%v/expected_result__Test_Success.json", listWorkerTestDir, "GetListFromBlobbers"), &expectedResult)
-			if tt.want {
+			expectedResult := &ListResult{
+				Type: mockType,
+				Size: -1,
+			}
+			if !tt.wantErr {
 				require.EqualValues(expectedResult, got)
 				return
 			}
