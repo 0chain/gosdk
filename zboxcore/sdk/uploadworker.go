@@ -69,13 +69,11 @@ type uploadFormData struct {
 	ThumbnailHash string `json:"thumbnail_content_hash,omitempty"`
 
 	// MerkleRoot merkle's root hash of uploadFormFile
-	//  TODO: [dayi]it is unnecessary for current upload. It is similar as uploadFormData.Hash.
-	//		It is designed for stream reader, but it doesn't work porperly.
 	MerkleRoot string `json:"merkle_root,omitempty"`
 
-	// ActualHash hash of entire source file
+	// ActualHash hash of source data
 	ActualHash string `json:"actual_hash"`
-	// ActualSize total bytes of entire source file
+	// ActualSize total bytes of source data
 	ActualSize int64 `json:"actual_size"`
 	// ActualThumbnailSize total bytes of source thumbnail
 	ActualThumbnailSize int64 `json:"actual_thumb_size"`
@@ -236,6 +234,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 			}
 			// Setup file hash compute
 			h := sha1.New()
+
 			hWr := io.MultiWriter(h)
 			// Read the data
 			for remaining > 0 {

@@ -1,6 +1,8 @@
 package sdk
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
 	"io/ioutil"
 	"math"
 
@@ -23,7 +25,13 @@ func WithThumbnail(buf []byte) StreamUploadOption {
 
 			//padding data to make that shard has equally sized data
 			su.thumbnailBytes = append(buf, paddingBytes...)
-			su.fileMeta.ThumbnailSize = len(buf)
+			su.fileMeta.ActualThumbnailSize = int64(len(buf))
+
+			thumbnailHasher := sha1.New()
+			thumbnailHasher.Write(buf)
+
+			su.fileMeta.ActualThumbnailHash = hex.EncodeToString(thumbnailHasher.Sum(nil))
+
 			su.thumbailErasureEncoder, _ = reedsolomon.New(su.allocationObj.DataShards, su.allocationObj.ParityShards, reedsolomon.WithAutoGoroutines(chunkSize))
 
 		}

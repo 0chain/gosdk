@@ -8,17 +8,22 @@ import (
 
 // FileMeta metadata of stream input/local
 type FileMeta struct {
-	// Path local path of source file
-	Path string
-	// Size total bytes of source file. it is 0 if input is live stream.
-	Size int64
 	// Mimetype mime type of source file
 	MimeType string
 
+	// Path local path of source file
+	Path string
 	// ThumbnailPath local path of source thumbnail
 	ThumbnailPath string
-	// Size total bytes of source thumbnail
-	ThumbnailSize int
+
+	// ActualHash hash of orignial file (unencoded, unencrypted)
+	ActualHash string
+	// ActualSize total bytes of  orignial file (unencoded, unencrypted).  it is 0 if input is live stream.
+	ActualSize int64
+	// ActualThumbnailSize total bytes of orignial thumbnail (unencoded, unencrypted)
+	ActualThumbnailSize int64
+	// ActualThumbnailHash hash of orignial thumbnail (unencoded, unencrypted)
+	ActualThumbnailHash string
 
 	//RemoteName remote file name
 	RemoteName string
@@ -35,35 +40,30 @@ func (meta *FileMeta) FileID() string {
 
 // UploadFormData form data of upload
 type UploadFormData struct {
-
-	// Name remote file name
-	Name string `json:"name,omitempty"`
+	ConnectionID string `json:"connection_id"`
+	// Filename remote file name
+	Filename string `json:"filename"`
 	// Path remote path
-	Path string `json:"path,omitempty"`
-	// MimeType the mime type of source file
-	MimeType string `json:"mime_type,omitempty"`
+	Path string `json:"filepath"`
+	// Hash hash of uploadFormFile
+	Hash string `json:"content_hash,omitempty"`
+	// Hash hash of uploadThumbnail
+	ThumbnailHash string `json:"thumbnail_content_hash,omitempty"`
 
-	// Hash hash of current uploadFormFile
-	Hash string `json:"hash,omitempty"`
-	// Size total bytes of current uploadFormFile
-	Size int64 `json:"size,omitempty"`
-	// Hash hash of current uploadThumbnail
-	ThumbnailHash string `json:"thumbnail_hash,omitempty"`
-	// ThumbnailSize total bytes of current uploadThumbnail
-	ThumbnailSize int `json:"thumbnail_size,omitempty"`
+	// MerkleRoot merkle's root hash of uploadFormFile
+	MerkleRoot string `json:"merkle_root,omitempty"`
 
-	// ActualHash merkle's root hash of a shard includes all chunks with encryption. it is only set in last chunk
-	ActualHash string `json:"actual_hash,omitempty"`
-	// ActualSize total bytes of a shard includes all chunks with encryption.
-	ActualSize int64 `json:"actual_size,omitempty"`
+	// ActualHash hash of source shard (unencoded, unencrypted)
+	ActualHash string `json:"actual_hash"`
+	// ActualSize total bytes of  source shard (unencoded, unencrypted)
+	ActualSize int64 `json:"actual_size"`
+	// ActualThumbnailSize total bytes of source thumbnail (unencoded, unencrypted)
+	ActualThumbnailSize int64 `json:"actual_thumb_size"`
+	// ActualThumbnailHash hash of source thumbnail (unencoded, unencrypted)
+	ActualThumbnailHash string `json:"actual_thumb_hash"`
 
-	// AllocationID id of allocation
-	AllocationID string `json:"allocation_id,omitempty"`
-	// ConnectionID the connection_is used in resumable upload
-	ConnectionID string `json:"connection_id,omitempty"`
-	// CustomMeta custom meta in blockchain
-	CustomMeta string `json:"custom_meta,omitempty"`
-	//
+	MimeType     string             `json:"mimetype"`
+	CustomMeta   string             `json:"custom_meta,omitempty"`
 	EncryptedKey string             `json:"encrypted_key,omitempty"`
 	Attributes   fileref.Attributes `json:"attributes,omitempty"`
 
@@ -94,9 +94,8 @@ type UploadProgress struct {
 
 // UploadBlobberStatus the status of blobber's upload progress
 type UploadBlobberStatus struct {
-	// ActualSize total bytes of shard includes all chunks with encryption.
-	ActualSize int64 `json:"actual_size,omitempty"`
-
+	// UploadLength total bytes that has been uploaded to blobbers
+	UploadLength int64 `json:"upload_length,omitempty"`
 	// MerkleHasher a stateful stream merkle tree for uploaded chunks
-	MerkleHasher util.StreamMerkleHasher
+	MerkleHasher util.StreamMerkleHasher `json:"merkle_hasher,omitempty"`
 }

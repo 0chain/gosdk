@@ -41,17 +41,36 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 
 	body := new(bytes.Buffer)
 
-	formData := UploadFormData{
-		AllocationID: su.allocationObj.ID,
-		ConnectionID: su.progress.ConnectionID,
-		Name:         su.fileMeta.RemoteName,
-		Path:         su.fileMeta.RemotePath,
-		MimeType:     su.fileMeta.MimeType,
-		Attributes:   su.fileMeta.Attributes,
-		CustomMeta:   "",
+	// formData = uploadFormData{
+	// 	ConnectionID:        req.connectionID,
+	// 	Filename:            file.Name,
+	// 	Path:                file.Path,
 
-		Size:       int64(len(fileBytes)),
-		ActualSize: sb.progress.ActualSize,
+	// 	ActualHash:          req.filemeta.Hash,
+	// 	ActualSize:          req.filemeta.Size,
+	// 	ActualThumbnailHash: req.filemeta.ThumbnailHash,
+	// 	ActualThumbnailSize: req.filemeta.ThumbnailSize,
+	// 	MimeType:            req.filemeta.MimeType,
+	// 	Attributes:          req.filemeta.Attributes,
+
+	// 	Hash:                fileContentHash,
+	// 	ThumbnailHash:       thumbContentHash,
+	// 	MerkleRoot:          fileMerkleRoot,
+	// }
+
+	formData := UploadFormData{
+		ConnectionID: su.progress.ConnectionID,
+		Filename:     su.fileMeta.RemoteName,
+		Path:         su.fileMeta.RemotePath,
+
+		//		ActualHash:          req.filemeta.Hash,
+		ActualSize: su.fileMeta.ActualSize,
+
+		ActualThumbnailHash: su.fileMeta.ActualThumbnailHash,
+		ActualThumbnailSize: su.fileMeta.ActualThumbnailSize,
+
+		MimeType:   su.fileMeta.MimeType,
+		Attributes: su.fileMeta.Attributes,
 
 		IsFinal:      isFinal,
 		ChunkIndex:   chunkIndex,
@@ -60,7 +79,7 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 
 	formWriter := multipart.NewWriter(body)
 
-	uploadFile, err := formWriter.CreateFormFile("uploadFile", formData.Name)
+	uploadFile, err := formWriter.CreateFormFile("uploadFile", formData.Filename)
 	if err != nil {
 		logger.Logger.Error("[upload] Create form on field [uploadFile] failed: ", err)
 		return
@@ -76,9 +95,13 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 	sb.progress.MerkleHasher.Push(formData.Hash, chunkIndex)
 
 	if isFinal {
-		formData.ActualHash = sb.progress.MerkleHasher.GetMerkleRoot()
-		sb.fileRef.MerkleRoot = formData.ActualHash
-		sb.fileRef.ActualFileHash = formData.ActualHash
+
+		merkleRoot := sb.progress.MerkleHasher.GetMerkleRoot()
+
+		formData.MerkleRoot = merkleRoot
+		sb.fileRef.MerkleRoot = merkleRoot
+
+		sb.fileRef.ActualFileHash = su.fileMeta.ActualHash
 	}
 
 	thumbnailSize := len(thumbnailBytes)
@@ -95,13 +118,13 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 
 		thumbnailWriters.Write(thumbnailBytes)
 
-		formData.ThumbnailSize = thumbnailSize
+		formData.ActualThumbnailSize = su.fileMeta.ActualThumbnailSize
 		formData.ThumbnailHash = hex.EncodeToString(thumbnailHash.Sum(nil))
 
-		sb.fileRef.ThumbnailSize = int64(formData.ThumbnailSize)
+		sb.fileRef.ThumbnailSize = int64(len(thumbnailBytes))
 		sb.fileRef.ThumbnailHash = formData.ThumbnailHash
 
-		sb.fileRef.ActualThumbnailSize = int64(formData.ThumbnailSize)
+		sb.fileRef.ActualThumbnailSize = su.fileMeta.ActualThumbnailSize
 		sb.fileRef.ActualThumbnailHash = formData.ThumbnailHash
 
 	}
@@ -150,7 +173,7 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 			//req.err = err
 			return err
 		}
-		if r.Filename != formData.Name || r.Hash != formData.Hash {
+		if r.Filename != formData.Filename || r.Hash != formData.Hash {
 			err = fmt.Errorf(sb.blobber.Baseurl, "Unexpected upload response data", string(respbody))
 			logger.Logger.Error(err)
 			//req.err = err
@@ -159,13 +182,13 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 		//req.consensus++
 		logger.Logger.Info(sb.blobber.Baseurl, formData.Path, " uploaded")
 
-		su.consensus++
-		sb.progress.ActualSize += formData.Size
+		su.Done()
+		//sb.progress.UploadLength += formData.
 
 		sb.fileRef.ContentHash = formData.Hash
 
-		sb.fileRef.Size = sb.progress.ActualSize
-		sb.fileRef.ActualFileSize = sb.progress.ActualSize
+		sb.fileRef.Size = sb.progress.UploadLength
+		sb.fileRef.ActualFileSize = su.fileMeta.ActualSize
 
 		sb.fileRef.Path = formData.Path
 

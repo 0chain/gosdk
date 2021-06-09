@@ -1,9 +1,11 @@
 package sdk
 
 import (
+	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"hash"
 	"io"
 	"io/ioutil"
 	"os"
@@ -39,6 +41,7 @@ func CreateStreamUpload(allocationObj *Allocation, fileMeta FileMeta, fileReader
 		allocationObj: allocationObj,
 		fileMeta:      fileMeta,
 		fileReader:    fileReader,
+		fileHasher:    sha1.New(),
 
 		uploadMask:      zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1),
 		chunkSize:       DefaultChunkSize,
@@ -91,7 +94,6 @@ func CreateStreamUpload(allocationObj *Allocation, fileMeta FileMeta, fileReader
 				Attributes: su.fileMeta.Attributes,
 			},
 		}
-
 	}
 
 	return su
@@ -113,6 +115,7 @@ type StreamUpload struct {
 	fileReader         io.Reader
 	fileErasureEncoder reedsolomon.Encoder
 	fileEncscheme      encryption.EncryptionScheme
+	fileHasher         hash.Hash
 
 	thumbnailBytes         []byte
 	thumbailErasureEncoder reedsolomon.Encoder
@@ -232,7 +235,7 @@ func (su *StreamUpload) createEncscheme() encryption.EncryptionScheme {
 func (su *StreamUpload) Start() error {
 
 	if su.statusCallback != nil {
-		su.statusCallback.Started(su.allocationObj.ID, su.fileMeta.RemotePath, OpUpload, int(su.fileMeta.Size)+su.fileMeta.ThumbnailSize)
+		su.statusCallback.Started(su.allocationObj.ID, su.fileMeta.RemotePath, OpUpload, int(su.fileMeta.ActualSize)+int(su.fileMeta.ActualThumbnailSize))
 	}
 
 	for i := 0; ; i++ {
@@ -255,7 +258,7 @@ func (su *StreamUpload) Start() error {
 
 			su.processUpload(i, fileShards, thumbnailShards, isFinal)
 
-			su.progress.UploadLength += int64(su.fileMeta.ThumbnailSize)
+			su.progress.UploadLength += int64(su.fileMeta.ActualThumbnailSize)
 		} else {
 			su.processUpload(i, fileShards, nil, isFinal)
 		}
@@ -269,6 +272,7 @@ func (su *StreamUpload) Start() error {
 		}
 
 		if isFinal {
+			su.fileMeta.ActualHash = hex.EncodeToString(su.fileHasher.Sum(nil))
 			su.removeProgress()
 			break
 		}
@@ -322,9 +326,15 @@ func (su *StreamUpload) readNextShards(uploaded bool) ([][]byte, int, bool, erro
 		chunkSize -= 2 * 1024
 	}
 
+	shardNums := su.allocationObj.DataShards + su.allocationObj.ParityShards
+
 	isFinal := false
-	chunkBytes := make([]byte, chunkSize*(su.allocationObj.DataShards+su.allocationObj.ParityShards))
+	chunkBytes := make([]byte, chunkSize*shardNums)
 	readLen, err := su.fileReader.Read(chunkBytes)
+
+	if readLen > 0 {
+		su.fileHasher.Write(chunkBytes[:readLen])
+	}
 
 	if err != nil {
 		// all bytes are read
@@ -335,7 +345,7 @@ func (su *StreamUpload) readNextShards(uploaded bool) ([][]byte, int, bool, erro
 		}
 	}
 
-	if su.progress.UploadLength+int64(readLen) == su.fileMeta.Size {
+	if su.fileMeta.ActualSize > 0 && su.progress.UploadLength+int64(readLen) >= su.fileMeta.ActualSize {
 		isFinal = true
 	}
 
@@ -384,9 +394,9 @@ func (su *StreamUpload) processUpload(chunkIndex int, fileShards [][]byte, thumb
 		blobber := su.blobbers[pos]
 
 		if len(thumbnailShards) > 0 {
-			blobber.processUpload(su, chunkIndex, fileShards[pos], thumbnailShards[pos], isFinal, wg)
+			go blobber.processUpload(su, chunkIndex, fileShards[pos], thumbnailShards[pos], isFinal, wg)
 		} else {
-			blobber.processUpload(su, chunkIndex, fileShards[pos], nil, isFinal, wg)
+			go blobber.processUpload(su, chunkIndex, fileShards[pos], nil, isFinal, wg)
 		}
 	}
 
@@ -410,7 +420,9 @@ func (su *StreamUpload) processCommit() error {
 
 		newChange := &allocationchange.NewFileChange{}
 		newChange.File = blobber.fileRef
-		newChange.NumBlocks = int64(su.progress.ChunkIndex)
+		blobber.fileRef.NumBlocks = int64(su.progress.ChunkIndex + 1)
+		newChange.NumBlocks = int64(su.progress.ChunkIndex + 1)
+
 		newChange.Operation = allocationchange.INSERT_OPERATION
 		newChange.Size = blobber.fileRef.Size
 		newChange.File.Attributes = blobber.fileRef.Attributes
