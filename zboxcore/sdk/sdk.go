@@ -1041,6 +1041,7 @@ func GetAllocationMinLock(datashards, parityshards int, size, expiry int64,
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
 		"max_challenge_completion_time": mcct,
+		"diversify_blobbers":            true,
 	}
 	allocationData, _ := json.Marshal(allocationRequestData)
 
