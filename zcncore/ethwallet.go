@@ -166,19 +166,19 @@ func ConvertZcnTokenToETH(token float64) (float64, error) {
 }
 
 // SuggestEthGasPrice - return back suggested price for gas
-func SuggestEthGasPrice() (string, error) {
+func SuggestEthGasPrice() (int64, error) {
 	var client *ethclient.Client
 	var err error
 	if client, err = getEthClient(); err != nil {
-		return  "-1", err
+		return  0, err
 	}
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
 	if err != nil{
-		return "-1", err
+		return 0, err
 	}
 
-	return fmt.Sprintln(gasPrice.Int64()), nil
+	return gasPrice.Int64(), nil
 }
 
 // TransferEthTokens - transfer ETH tokens to multisign wallet
