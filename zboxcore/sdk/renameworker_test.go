@@ -21,10 +21,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	renameWorkerTestDir = configDir + "/renameworker"
-)
-
 func TestRenameRequest_getObjectTreeFromBlobber(t *testing.T) {
 	const (
 		mockAllocationTxId = "mock transaction id"
