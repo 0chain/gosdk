@@ -1,65 +1,92 @@
 package sdk
 
 import (
+	"bytes"
+	"context"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
 
+	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
+	zclient "github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	collaboratorWorkerTestDir = configDir + "/collaboratorworker"
-)
-
 func TestCollaboratorRequest_UpdateCollaboratorToBlobbers(t *testing.T) {
-	// setup mock sdk
-	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
-	defer closeFn()
-	// setup mock allocation
-	a, cncl := setupMockAllocation(t, collaboratorWorkerTestDir, blobberMocks)
-	defer cncl()
+	const (
+		mockAllocationTxId = "mock transaction id"
+		mockClientId       = "mock client id"
+		mockClientKey      = "mock client key"
+		mockRemoteFilePath = "mock/remote/file/path"
+		mockBlobberUrl     = "mockblobberurl"
+		mockCollaboratorID = "mock collaborator id"
+	)
+
+	var mockClient = mocks.HttpClient{}
+	zboxutil.Client = &mockClient
+
+	client := zclient.GetClient()
+	client.Wallet = &zcncrypto.Wallet{
+		ClientID:  mockClientId,
+		ClientKey: mockClientKey,
+	}
+
 	tests := []struct {
-		name           string
-		additionalMock func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
-		want           bool
+		name        string
+		numBlobbers int
+		setup       func(*testing.T, string)
+		want        bool
 	}{
 		{
-			"Test_Update_Collaborator_To_Blobbers_Failure",
-			nil,
-			false,
+			name:        "Test_Update_Collaborator_To_Blobbers_Failure",
+			numBlobbers: 4,
+			setup: func(t *testing.T, testName string) {
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return strings.HasPrefix(req.URL.Path, testName)
+				})).Return(&http.Response{
+					StatusCode: http.StatusBadRequest,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				}, nil)
+			},
+			want: false,
 		},
 		{
-			"Test_Update_Collaborator_To_Blobbers_Success",
-			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
-				m := &mocks.HttpClient{}
-				zboxutil.Client = m
-				m.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
+			name:        "Test_Update_Collaborator_To_Blobbers_Success",
+			numBlobbers: 4,
+			setup: func(t *testing.T, testName string) {
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return strings.HasPrefix(req.URL.Path, testName)
+				})).Return(&http.Response{
 					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(strings.NewReader(`{}`)),
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 				}, nil)
-				return nil
 			},
-			true,
+			want: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			if additionalMock := tt.additionalMock; additionalMock != nil {
-				if teardown := additionalMock(t, tt.name); teardown != nil {
-					defer teardown(t)
-				}
-			}
+			tt.setup(t, tt.name)
 			req := &CollaboratorRequest{
-				a:              a,
-				path:           "/1.txt",
-				collaboratorID: "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+				a: &Allocation{
+					Tx:  mockAllocationTxId,
+					ctx: context.TODO(),
+				},
+				path:           mockRemoteFilePath,
+				collaboratorID: mockCollaboratorID,
+			}
+			for i := 0; i < tt.numBlobbers; i++ {
+				req.a.Blobbers = append(req.a.Blobbers, &blockchain.StorageNode{
+					Baseurl: tt.name + mockBlobberUrl + strconv.Itoa(i),
+				})
 			}
 			got := req.UpdateCollaboratorToBlobbers()
 			var check = require.False
@@ -72,51 +99,72 @@ func TestCollaboratorRequest_UpdateCollaboratorToBlobbers(t *testing.T) {
 }
 
 func TestCollaboratorRequest_updateCollaboratorToBlobber(t *testing.T) {
-	// setup mock sdk
-	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 1)
-	defer closeFn()
-	// setup mock allocation
-	a, cncl := setupMockAllocation(t, collaboratorWorkerTestDir, blobberMocks)
-	defer cncl()
+	const (
+		mockAllocationTxId = "mock transaction id"
+		mockClientId       = "mock client id"
+		mockClientKey      = "mock client key"
+		mockRemoteFilePath = "mock/remote/file/path"
+		mockBlobberUrl     = "mockblobberurl"
+		mockCollaboratorID = "mock collaborator id"
+	)
+
+	var mockClient = mocks.HttpClient{}
+	zboxutil.Client = &mockClient
+
+	client := zclient.GetClient()
+	client.Wallet = &zcncrypto.Wallet{
+		ClientID:  mockClientId,
+		ClientKey: mockClientKey,
+	}
+
 	var wg sync.WaitGroup
+
 	tests := []struct {
-		name           string
-		additionalMock func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
-		want           bool
+		name  string
+		setup func(*testing.T, string)
+		want  bool
 	}{
 		{
-			"Test_update_Collaborator_To_Blobber_Failure",
-			nil,
-			false,
+			name: "Test_update_Collaborator_To_Blobber_Failure",
+			setup: func(t *testing.T, testName string) {
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return strings.HasPrefix(req.URL.Path, testName)
+				})).Return(&http.Response{
+					StatusCode: http.StatusBadRequest,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				}, nil)
+			},
+			want: false,
 		},
 		{
-			"Test_Update_Collaborator_To_Blobbers_Success",
-			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
-				m := &mocks.HttpClient{}
-				zboxutil.Client = m
-				m.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
+			name: "Test_Update_Collaborator_To_Blobbers_Success",
+			setup: func(t *testing.T, testName string) {
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return strings.HasPrefix(req.URL.Path, testName)
+				})).Return(&http.Response{
 					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(strings.NewReader(`{}`)),
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 				}, nil)
-				return nil
 			},
-			true,
+			want: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			if additionalMock := tt.additionalMock; additionalMock != nil {
-				if teardown := additionalMock(t, tt.name); teardown != nil {
-					defer teardown(t)
-				}
-			}
+			tt.setup(t, tt.name)
 			req := &CollaboratorRequest{
-				a:              a,
-				path:           "/1.txt",
-				collaboratorID: "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+				a: &Allocation{
+					Tx:  mockAllocationTxId,
+					ctx: context.TODO(),
+				},
+				path:           mockRemoteFilePath,
+				collaboratorID: mockCollaboratorID,
 				wg:             func() *sync.WaitGroup { wg.Add(1); return &wg }(),
 			}
+			req.a.Blobbers = append(req.a.Blobbers, &blockchain.StorageNode{
+				Baseurl: tt.name + mockBlobberUrl,
+			})
 			rspCh := make(chan bool, 1)
 			go req.updateCollaboratorToBlobber(req.a.Blobbers[0], 0, rspCh)
 			resp := <-rspCh
@@ -130,48 +178,73 @@ func TestCollaboratorRequest_updateCollaboratorToBlobber(t *testing.T) {
 }
 
 func TestCollaboratorRequest_RemoveCollaboratorFromBlobbers(t *testing.T) {
-	// setup mock sdk
-	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
-	defer closeFn()
-	// setup mock allocation
-	a, cncl := setupMockAllocation(t, collaboratorWorkerTestDir, blobberMocks)
-	defer cncl()
+	const (
+		mockAllocationTxId = "mock transaction id"
+		mockClientId       = "mock client id"
+		mockClientKey      = "mock client key"
+		mockRemoteFilePath = "mock/remote/file/path"
+		mockBlobberUrl     = "mockblobberurl"
+		mockCollaboratorID = "mock collaborator id"
+	)
+
+	var mockClient = mocks.HttpClient{}
+	zboxutil.Client = &mockClient
+
+	client := zclient.GetClient()
+	client.Wallet = &zcncrypto.Wallet{
+		ClientID:  mockClientId,
+		ClientKey: mockClientKey,
+	}
+
 	tests := []struct {
-		name           string
-		additionalMock func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
-		want           bool
+		name        string
+		numBlobbers int
+		setup       func(*testing.T, string)
+		want        bool
 	}{
 		{
-			"Test_Remove_Collaborator_From_Blobbers_Failure",
-			nil,
-			false,
+			name:        "Test_Remove_Collaborator_From_Blobbers_Failure",
+			numBlobbers: 4,
+			setup: func(t *testing.T, testName string) {
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return strings.HasPrefix(req.URL.Path, testName)
+				})).Return(&http.Response{
+					StatusCode: http.StatusBadRequest,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				}, nil)
+			},
+			want: false,
 		},
 		{
-			"Test_Update_Collaborator_To_Blobbers_Success",
-			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
-				m := &mocks.HttpClient{}
-				zboxutil.Client = m
-				m.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
+			name:        "Test_Update_Collaborator_To_Blobbers_Success",
+			numBlobbers: 4,
+			setup: func(t *testing.T, testName string) {
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return strings.HasPrefix(req.URL.Path, testName)
+				})).Return(&http.Response{
 					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(strings.NewReader(`{}`)),
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 				}, nil)
-				return nil
 			},
-			true,
+			want: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			if additionalMock := tt.additionalMock; additionalMock != nil {
-				if teardown := additionalMock(t, tt.name); teardown != nil {
-					defer teardown(t)
-				}
-			}
+			tt.setup(t, tt.name)
 			req := &CollaboratorRequest{
-				a:              a,
-				path:           "/1.txt",
-				collaboratorID: "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+				a: &Allocation{
+					Tx:  mockAllocationTxId,
+					ctx: context.TODO(),
+				},
+				path:           mockRemoteFilePath,
+				collaboratorID: mockCollaboratorID,
+			}
+			for i := 0; i < tt.numBlobbers; i++ {
+				req.a.Blobbers = append(req.a.Blobbers, &blockchain.StorageNode{
+					Baseurl: tt.name + mockBlobberUrl + strconv.Itoa(i),
+				})
 			}
 			got := req.RemoveCollaboratorFromBlobbers()
 			var check = require.False
@@ -184,51 +257,72 @@ func TestCollaboratorRequest_RemoveCollaboratorFromBlobbers(t *testing.T) {
 }
 
 func TestCollaboratorRequest_removeCollaboratorFromBlobber(t *testing.T) {
-	// setup mock sdk
-	_, _, blobberMocks, closeFn := setupMockInitStorageSDK(t, configDir, 4)
-	defer closeFn()
-	// setup mock allocation
-	a, cncl := setupMockAllocation(t, collaboratorWorkerTestDir, blobberMocks)
-	defer cncl()
+	const (
+		mockAllocationTxId = "mock transaction id"
+		mockClientId       = "mock client id"
+		mockClientKey      = "mock client key"
+		mockRemoteFilePath = "mock/remote/file/path"
+		mockBlobberUrl     = "mockblobberurl"
+		mockCollaboratorID = "mock collaborator id"
+	)
+
+	var mockClient = mocks.HttpClient{}
+	zboxutil.Client = &mockClient
+
+	client := zclient.GetClient()
+	client.Wallet = &zcncrypto.Wallet{
+		ClientID:  mockClientId,
+		ClientKey: mockClientKey,
+	}
+
 	var wg sync.WaitGroup
+
 	tests := []struct {
-		name           string
-		additionalMock func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
-		want           bool
+		name  string
+		setup func(*testing.T, string)
+		want  bool
 	}{
 		{
-			"Test_remove_Collaborator_From_Blobber_Failure",
-			nil,
-			false,
+			name: "Test_remove_Collaborator_From_Blobber_Failure",
+			setup: func(t *testing.T, testName string) {
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return strings.HasPrefix(req.URL.Path, testName)
+				})).Return(&http.Response{
+					StatusCode: http.StatusBadRequest,
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				}, nil)
+			},
+			want: false,
 		},
 		{
-			"Test_Update_Collaborator_To_Blobbers_Success",
-			func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
-				m := &mocks.HttpClient{}
-				zboxutil.Client = m
-				m.On("Do", mock.AnythingOfType("*http.Request")).Return(&http.Response{
+			name: "Test_Update_Collaborator_To_Blobbers_Success",
+			setup: func(t *testing.T, testName string) {
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return strings.HasPrefix(req.URL.Path, testName)
+				})).Return(&http.Response{
 					StatusCode: http.StatusOK,
-					Body:       ioutil.NopCloser(strings.NewReader(`{}`)),
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 				}, nil)
-				return nil
 			},
-			true,
+			want: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			if additionalMock := tt.additionalMock; additionalMock != nil {
-				if teardown := additionalMock(t, tt.name); teardown != nil {
-					defer teardown(t)
-				}
-			}
+			tt.setup(t, tt.name)
 			req := &CollaboratorRequest{
-				a:              a,
-				path:           "/1.txt",
-				collaboratorID: "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
+				a: &Allocation{
+					Tx:  mockAllocationTxId,
+					ctx: context.TODO(),
+				},
+				path:           mockRemoteFilePath,
+				collaboratorID: mockCollaboratorID,
 				wg:             func() *sync.WaitGroup { wg.Add(1); return &wg }(),
 			}
+			req.a.Blobbers = append(req.a.Blobbers, &blockchain.StorageNode{
+				Baseurl: tt.name + mockBlobberUrl,
+			})
 			rspCh := make(chan bool, 1)
 			go req.removeCollaboratorFromBlobber(req.a.Blobbers[0], 0, rspCh)
 			resp := <-rspCh
