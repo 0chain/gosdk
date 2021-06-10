@@ -34,6 +34,7 @@ func (req *ShareRequest) GetAuthTicketForEncryptedFile(clientID string, encPubli
 	timestamp := int64(common.Now())
 	at.Expiration = timestamp + 7776000
 	at.Timestamp = timestamp
+	at.Encrypted = true
 	err := at.Sign()
 	if err != nil {
 		return "", err
