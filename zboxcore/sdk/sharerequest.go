@@ -38,20 +38,10 @@ func (req *ShareRequest) GetAuthTicketForEncryptedFile(clientID string, encPubli
 	if err != nil {
 		return "", err
 	}
-	var fileRef *fileref.FileRef
-	listReq := &ListRequest{
-		remotefilepathhash: at.FilePathHash,
-		allocationID:       req.allocationID,
-		allocationTx:       req.allocationTx,
-		blobbers:           req.blobbers,
-		ctx:                req.ctx,
+	fileRef, err := req.GetFileRef()
+	if err != nil {
+		return "", err
 	}
-	//listReq.authToken = at
-	_, fileRef, _ = listReq.getFileConsensusFromBlobbers()
-	if fileRef == nil {
-		return "", common.NewError("file_meta_error", "Error getting object meta data from blobbers")
-	}
-	at.ContentHash = fileRef.ContentHash
 	if fileRef.Type == fileref.DIRECTORY || len(fileRef.EncryptedKey) == 0 {
 		return req.GetAuthTicket(clientID)
 	}
@@ -75,6 +65,24 @@ func (req *ShareRequest) GetAuthTicketForEncryptedFile(clientID string, encPubli
 	return sEnc, nil
 }
 
+func (req *ShareRequest) GetFileRef() (*fileref.FileRef, error) {
+	filePathHash := fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
+
+	var fileRef *fileref.FileRef
+	listReq := &ListRequest{
+		remotefilepathhash: filePathHash,
+		allocationID:       req.allocationID,
+		allocationTx:       req.allocationTx,
+		blobbers:           req.blobbers,
+		ctx:                req.ctx,
+	}
+	_, fileRef, _ = listReq.getFileConsensusFromBlobbers()
+	if fileRef == nil {
+		return nil, common.NewError("file_meta_error", "Error getting object meta data from blobbers")
+	}
+	return fileRef, nil
+}
+
 func (req *ShareRequest) GetAuthTicket(clientID string) (string, error) {
 
 	at := &marker.AuthTicket{}
@@ -84,10 +92,17 @@ func (req *ShareRequest) GetAuthTicket(clientID string) (string, error) {
 	at.FileName = req.remotefilename
 	at.FilePathHash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 	at.RefType = req.refType
+
+	fileRef, err := req.GetFileRef()
+	if err != nil {
+		return "", err
+	}
+	at.ContentHash = fileRef.ContentHash
+
 	timestamp := int64(common.Now())
 	at.Expiration = timestamp + 7776000
 	at.Timestamp = timestamp
-	err := at.Sign()
+	err = at.Sign()
 	if err != nil {
 		return "", err
 	}
