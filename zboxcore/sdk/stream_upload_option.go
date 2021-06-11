@@ -19,12 +19,9 @@ func WithThumbnail(buf []byte) StreamUploadOption {
 		size := len(buf)
 
 		if size > 0 {
-			chunkSize := int(math.Ceil(float64(size) / float64(su.allocationObj.DataShards)))
+			su.shardThumbnailSize = int64(math.Ceil(float64(size) / float64(su.allocationObj.DataShards)))
 
-			paddingBytes := make([]byte, size-chunkSize*su.allocationObj.DataShards)
-
-			//padding data to make that shard has equally sized data
-			su.thumbnailBytes = append(buf, paddingBytes...)
+			su.thumbnailBytes = buf
 			su.fileMeta.ActualThumbnailSize = int64(len(buf))
 
 			thumbnailHasher := sha1.New()
@@ -32,7 +29,7 @@ func WithThumbnail(buf []byte) StreamUploadOption {
 
 			su.fileMeta.ActualThumbnailHash = hex.EncodeToString(thumbnailHasher.Sum(nil))
 
-			su.thumbailErasureEncoder, _ = reedsolomon.New(su.allocationObj.DataShards, su.allocationObj.ParityShards, reedsolomon.WithAutoGoroutines(chunkSize))
+			su.thumbailErasureEncoder, _ = reedsolomon.New(su.allocationObj.DataShards, su.allocationObj.ParityShards)
 
 		}
 	}

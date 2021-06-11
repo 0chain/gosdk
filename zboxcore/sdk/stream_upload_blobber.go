@@ -36,38 +36,35 @@ type StreamUploadBobbler struct {
 	commitResult  *CommitResult
 }
 
+func (sb *StreamUploadBobbler) processHash(fileBytes []byte) {
+	merkleChunkSize := 64
+	for i := 0; i < len(fileBytes); i += merkleChunkSize {
+		end := i + merkleChunkSize
+		if end > len(fileBytes) {
+			end = len(fileBytes)
+		}
+		offset := i / merkleChunkSize
+		sb.progress.MerkleHashes[offset].Write(fileBytes[i:end])
+	}
+
+	sb.progress.ShardHasher.Write(fileBytes)
+
+}
+
 func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, fileBytes, thumbnailBytes []byte, isFinal bool, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	body := new(bytes.Buffer)
-
-	// formData = uploadFormData{
-	// 	ConnectionID:        req.connectionID,
-	// 	Filename:            file.Name,
-	// 	Path:                file.Path,
-
-	// 	ActualHash:          req.filemeta.Hash,
-	// 	ActualSize:          req.filemeta.Size,
-	// 	ActualThumbnailHash: req.filemeta.ThumbnailHash,
-	// 	ActualThumbnailSize: req.filemeta.ThumbnailSize,
-	// 	MimeType:            req.filemeta.MimeType,
-	// 	Attributes:          req.filemeta.Attributes,
-
-	// 	Hash:                fileContentHash,
-	// 	ThumbnailHash:       thumbContentHash,
-	// 	MerkleRoot:          fileMerkleRoot,
-	// }
 
 	formData := UploadFormData{
 		ConnectionID: su.progress.ConnectionID,
 		Filename:     su.fileMeta.RemoteName,
 		Path:         su.fileMeta.RemotePath,
 
-		//		ActualHash:          req.filemeta.Hash,
 		ActualSize: su.fileMeta.ActualSize,
 
-		ActualThumbnailHash: su.fileMeta.ActualThumbnailHash,
-		ActualThumbnailSize: su.fileMeta.ActualThumbnailSize,
+		ActualThumbHash: su.fileMeta.ActualThumbnailHash,
+		ActualThumbSize: su.fileMeta.ActualThumbnailSize,
 
 		MimeType:   su.fileMeta.MimeType,
 		Attributes: su.fileMeta.Attributes,
@@ -85,23 +82,25 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 		return
 	}
 
-	fileHash := sha1.New()
-	fileWriters := io.MultiWriter(uploadFile, fileHash)
+	sb.processHash(fileBytes)
 
-	fileWriters.Write(fileBytes)
+	chunkHashWriter := sha1.New()
+	chunkWriters := io.MultiWriter(uploadFile, chunkHashWriter)
 
-	formData.Hash = hex.EncodeToString(fileHash.Sum(nil))
+	chunkWriters.Write(fileBytes)
 
-	sb.progress.MerkleHasher.Push(formData.Hash, chunkIndex)
+	formData.ContentHash = hex.EncodeToString(chunkHashWriter.Sum(nil))
 
 	if isFinal {
 
-		merkleRoot := sb.progress.MerkleHasher.GetMerkleRoot()
+		//fixed shard data's info in last chunk for stream
+		formData.ShardHash = sb.progress.getShardHash()
+		formData.MerkleRoot = sb.progress.getMerkelRoot()
 
-		formData.MerkleRoot = merkleRoot
-		sb.fileRef.MerkleRoot = merkleRoot
+		//fixed original file's info in last chunk for stream
+		formData.ActualHash = su.fileMeta.ActualHash
+		formData.ActualSize = su.fileMeta.ActualSize
 
-		sb.fileRef.ActualFileHash = su.fileMeta.ActualHash
 	}
 
 	thumbnailSize := len(thumbnailBytes)
@@ -115,17 +114,10 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 
 		thumbnailHash := sha1.New()
 		thumbnailWriters := io.MultiWriter(uploadThumbnailFile, thumbnailHash)
-
 		thumbnailWriters.Write(thumbnailBytes)
 
-		formData.ActualThumbnailSize = su.fileMeta.ActualThumbnailSize
-		formData.ThumbnailHash = hex.EncodeToString(thumbnailHash.Sum(nil))
-
-		sb.fileRef.ThumbnailSize = int64(len(thumbnailBytes))
-		sb.fileRef.ThumbnailHash = formData.ThumbnailHash
-
-		sb.fileRef.ActualThumbnailSize = su.fileMeta.ActualThumbnailSize
-		sb.fileRef.ActualThumbnailHash = formData.ThumbnailHash
+		formData.ActualThumbSize = su.fileMeta.ActualThumbnailSize
+		formData.ThumbnailContentHash = hex.EncodeToString(thumbnailHash.Sum(nil))
 
 	}
 
@@ -146,8 +138,7 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 
 	//TODO: retry http
-
-	_ = zboxutil.HttpDo(su.allocationObj.ctx, su.allocationObj.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
+	err = zboxutil.HttpDo(su.allocationObj.ctx, su.allocationObj.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
 			logger.Logger.Error("Upload : ", err)
 			//req.err = err
@@ -173,7 +164,7 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 			//req.err = err
 			return err
 		}
-		if r.Filename != formData.Filename || r.Hash != formData.Hash {
+		if r.Filename != formData.Filename || r.Hash != formData.ContentHash {
 			err = fmt.Errorf(sb.blobber.Baseurl, "Unexpected upload response data", string(respbody))
 			logger.Logger.Error(err)
 			//req.err = err
@@ -183,19 +174,37 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 		logger.Logger.Info(sb.blobber.Baseurl, formData.Path, " uploaded")
 
 		su.Done()
-		//sb.progress.UploadLength += formData.
-
-		sb.fileRef.ContentHash = formData.Hash
-
-		sb.fileRef.Size = sb.progress.UploadLength
-		sb.fileRef.ActualFileSize = su.fileMeta.ActualSize
-
-		sb.fileRef.Path = formData.Path
-
-		sb.fileRef.CalculateHash()
 
 		return nil
 	})
+
+	//fixed fileRef
+	if err == nil {
+
+		//fixed thumbnail info in first chunk if it has thumbnail
+		if len(thumbnailBytes) > 0 {
+
+			sb.fileRef.ThumbnailSize = int64(len(thumbnailBytes))
+			sb.fileRef.ThumbnailHash = formData.ThumbnailContentHash
+
+			sb.fileRef.ActualThumbnailSize = su.fileMeta.ActualThumbnailSize
+			sb.fileRef.ActualThumbnailHash = su.fileMeta.ActualThumbnailHash
+		}
+
+		//fixed fileRef in last chunk on stream
+		if isFinal {
+			sb.fileRef.MerkleRoot = formData.MerkleRoot
+			sb.fileRef.ContentHash = formData.ContentHash
+
+			sb.fileRef.Size = su.shardSize
+			sb.fileRef.Path = formData.Path
+			sb.fileRef.ActualFileHash = formData.ActualHash
+			sb.fileRef.ActualFileSize = formData.ActualSize
+
+			sb.fileRef.EncryptedKey = formData.EncryptedKey
+			sb.fileRef.CalculateHash()
+		}
+	}
 
 }
 
@@ -209,7 +218,9 @@ func (sb *StreamUploadBobbler) processCommit(su *StreamUpload, wg *sync.WaitGrou
 
 	wm := &marker.WriteMarker{}
 	timestamp := int64(common.Now())
+	fmt.Println(rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10))
 	wm.AllocationRoot = encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10))
+	//wm.AllocationRoot = rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10)
 	if latestWM != nil {
 		wm.PreviousAllocationRoot = latestWM.AllocationRoot
 	} else {
@@ -219,6 +230,7 @@ func (sb *StreamUploadBobbler) processCommit(su *StreamUpload, wg *sync.WaitGrou
 	wm.AllocationID = su.allocationObj.ID
 	wm.Size = size
 	wm.BlobberID = sb.blobber.ID
+
 	wm.Timestamp = timestamp
 	wm.ClientID = client.GetClientID()
 	err = wm.Sign()
@@ -247,37 +259,37 @@ func (sb *StreamUploadBobbler) processCommit(su *StreamUpload, wg *sync.WaitGrou
 
 	logger.Logger.Info("Committing to blobber." + sb.blobber.Baseurl)
 
-	for retries := 0; retries < 3; retries++ {
-		ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 60))
-		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-			if err != nil {
-				logger.Logger.Error("Commit: ", err)
-				return err
-			}
-			defer resp.Body.Close()
-			if resp.StatusCode == http.StatusOK {
-				logger.Logger.Info(sb.blobber.Baseurl, su.progress.ConnectionID, " committed")
-			} else {
-				logger.Logger.Error("Commit response: ", resp.StatusCode)
-			}
-
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				logger.Logger.Error("Response read: ", err)
-				return err
-			}
-			if resp.StatusCode != http.StatusOK {
-				logger.Logger.Error(sb.blobber.Baseurl, " Commit response:", string(body))
-				return common.NewError("commit_error", string(body))
-			}
-			return nil
-		})
-
-		if err == nil {
-			su.Done()
-			return nil
+	//for retries := 0; retries < 3; retries++ {
+	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 60))
+	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
+		if err != nil {
+			logger.Logger.Error("Commit: ", err)
+			return err
 		}
+		defer resp.Body.Close()
+		if resp.StatusCode == http.StatusOK {
+			logger.Logger.Info(sb.blobber.Baseurl, su.progress.ConnectionID, " committed")
+		} else {
+			logger.Logger.Error("Commit response: ", resp.StatusCode)
+		}
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			logger.Logger.Error("Response read: ", err)
+			return err
+		}
+		if resp.StatusCode != http.StatusOK {
+			logger.Logger.Error(sb.blobber.Baseurl, " Commit response:", string(body))
+			return common.NewError("commit_error", string(body))
+		}
+		return nil
+	})
+
+	if err == nil {
+		su.Done()
+		return nil
 	}
+	//}
 
 	return nil
 }

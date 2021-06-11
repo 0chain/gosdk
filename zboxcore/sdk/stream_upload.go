@@ -5,15 +5,16 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"hash"
 	"io"
 	"io/ioutil"
+	"math"
 	"os"
 	"sync"
 
 	"github.com/0chain/gosdk/core/common"
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
@@ -22,6 +23,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
 	"github.com/mitchellh/go-homedir"
+	"golang.org/x/crypto/sha3"
 )
 
 var (
@@ -125,13 +127,18 @@ type StreamUpload struct {
 	// chunkSize how much bytes a chunk has. 64KB is default value.
 	chunkSize int
 
+	// shardSize how much bytes a shard has. it is original size
+	shardSize int64
+	// shardSize how much thumbnail bytes a shard has. it is original size
+	shardThumbnailSize int64
+
 	// statusCallback trigger progress on StatusCallback
 	statusCallback StatusCallback
 
 	blobbers []*StreamUploadBobbler
 }
 
-// progressID build local progress id with [allocationid]_[encodeURI(localpath)]_[encodeURI(remotepath)] format
+// progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
 func (su *StreamUpload) progressID() string {
 
 	return su.configDir + "/upload/" + su.allocationObj.ID + "_" + su.fileMeta.FileID()
@@ -157,7 +164,12 @@ func (su *StreamUpload) loadProgress() {
 	}
 
 	for _, b := range progress.Blobbers {
-		b.MerkleHasher.Hash = DefaultHashFunc
+		//b.MerkleHasher.Hash = DefaultHashFunc
+		b.MerkleHashes = make([]hash.Hash, 1024)
+		for idx := range b.MerkleHashes {
+			b.MerkleHashes[idx] = sha3.New256()
+		}
+		b.ShardHasher = sha1.New()
 	}
 
 	su.progress = progress
@@ -197,9 +209,12 @@ func (su *StreamUpload) createUploadProgress() UploadProgress {
 
 	for i := 0; i < len(progress.Blobbers); i++ {
 		progress.Blobbers[i] = &UploadBlobberStatus{
-			MerkleHasher: util.StreamMerkleHasher{
-				Hash: DefaultHashFunc,
-			},
+			MerkleHashes: make([]hash.Hash, 1024),
+			ShardHasher:  sha1.New(),
+		}
+
+		for idx := range progress.Blobbers[i].MerkleHashes {
+			progress.Blobbers[i].MerkleHashes[idx] = sha3.New256()
 		}
 	}
 
@@ -239,28 +254,35 @@ func (su *StreamUpload) Start() error {
 	}
 
 	for i := 0; ; i++ {
-		fileShards, readLen, isFinal, err := su.readNextShards(i < su.progress.ChunkIndex)
+		fileShards, readLen, chunkSize, isFinal, err := su.readNextChunks(i < su.progress.ChunkIndex)
 		if err != nil {
 			return err
 		}
+
+		su.shardSize += chunkSize
 
 		//skip chunk if it has been uploaded
 		if i < su.progress.ChunkIndex {
 			continue
 		}
 
+		if isFinal {
+			su.fileMeta.ActualHash = hex.EncodeToString(su.fileHasher.Sum(nil))
+		}
+
 		// upload entire thumbnail in first reqeust only
 		if i == 0 && len(su.thumbnailBytes) > 0 {
+
 			thumbnailShards, err := su.readThumbnailShards()
 			if err != nil {
 				return err
 			}
 
-			su.processUpload(i, fileShards, thumbnailShards, isFinal)
+			su.processUpload(i, fileShards, thumbnailShards, isFinal, readLen)
 
-			su.progress.UploadLength += int64(su.fileMeta.ActualThumbnailSize)
+			su.progress.UploadLength += int64(su.fileMeta.ActualThumbnailSize) + readLen
 		} else {
-			su.processUpload(i, fileShards, nil, isFinal)
+			su.processUpload(i, fileShards, nil, isFinal, readLen)
 		}
 
 		su.progress.ChunkIndex = i
@@ -272,13 +294,23 @@ func (su *StreamUpload) Start() error {
 		}
 
 		if isFinal {
-			su.fileMeta.ActualHash = hex.EncodeToString(su.fileHasher.Sum(nil))
 			su.removeProgress()
 			break
 		}
 	}
 
-	return su.processCommit()
+	if su.isConsensusOk() {
+		logger.Logger.Info("Completed the upload. Submitting for commit")
+		return su.processCommit()
+	}
+
+	err := fmt.Errorf("Upload failed: Consensus_rate:%f, expected:%f", su.getConsensusRate(), su.getConsensusRequiredForOk())
+	if su.statusCallback != nil {
+		su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+	}
+
+	return err
+
 }
 
 // readThumbnailShards encode and encrypt thumbnail
@@ -317,7 +349,7 @@ func (su *StreamUpload) readThumbnailShards() ([][]byte, error) {
 	return shards, nil
 }
 
-func (su *StreamUpload) readNextShards(uploaded bool) ([][]byte, int, bool, error) {
+func (su *StreamUpload) readNextChunks(uploaded bool) ([][]byte, int64, int64, bool, error) {
 
 	chunkSize := su.chunkSize
 
@@ -326,14 +358,19 @@ func (su *StreamUpload) readNextShards(uploaded bool) ([][]byte, int, bool, erro
 		chunkSize -= 2 * 1024
 	}
 
-	shardNums := su.allocationObj.DataShards + su.allocationObj.ParityShards
+	shardSize := int64(chunkSize * su.allocationObj.DataShards)
 
 	isFinal := false
-	chunkBytes := make([]byte, chunkSize*shardNums)
+	chunkBytes := make([]byte, shardSize)
 	readLen, err := su.fileReader.Read(chunkBytes)
 
 	if readLen > 0 {
 		su.fileHasher.Write(chunkBytes[:readLen])
+	}
+
+	if readLen < int(su.shardSize) {
+		chunkSize = int(math.Ceil(float64(readLen / su.allocationObj.DataShards)))
+		chunkBytes = chunkBytes[:readLen]
 	}
 
 	if err != nil {
@@ -341,7 +378,7 @@ func (su *StreamUpload) readNextShards(uploaded bool) ([][]byte, int, bool, erro
 		if errors.Is(err, io.EOF) {
 			isFinal = true
 		} else {
-			return nil, readLen, isFinal, err
+			return nil, int64(readLen), int64(chunkSize), isFinal, err
 		}
 	}
 
@@ -352,13 +389,13 @@ func (su *StreamUpload) readNextShards(uploaded bool) ([][]byte, int, bool, erro
 	shards, err := su.fileErasureEncoder.Split(chunkBytes)
 	if err != nil {
 		logger.Logger.Error("[upload] Erasure coding on thumbnail failed:", err.Error())
-		return nil, readLen, isFinal, err
+		return nil, int64(readLen), int64(chunkSize), isFinal, err
 	}
 
 	err = su.fileErasureEncoder.Encode(shards)
 	if err != nil {
 		logger.Logger.Error("[upload] Erasure coding on thumbnail failed:", err.Error())
-		return nil, readLen, isFinal, err
+		return nil, int64(readLen), int64(chunkSize), isFinal, err
 	}
 
 	var pos uint64
@@ -368,7 +405,7 @@ func (su *StreamUpload) readNextShards(uploaded bool) ([][]byte, int, bool, erro
 			encMsg, err := su.fileEncscheme.Encrypt(shards[pos])
 			if err != nil {
 				logger.Logger.Error("[upload] Encryption on thumbnail failed:", err.Error())
-				return nil, readLen, isFinal, err
+				return nil, int64(readLen), int64(chunkSize), isFinal, err
 			}
 			header := make([]byte, 2*1024)
 			copy(header[:], encMsg.MessageChecksum+","+encMsg.OverallChecksum)
@@ -376,12 +413,12 @@ func (su *StreamUpload) readNextShards(uploaded bool) ([][]byte, int, bool, erro
 		}
 	}
 
-	return shards, readLen, isFinal, nil
+	return shards, int64(readLen), int64(chunkSize), isFinal, nil
 
 }
 
 //processUpload process upload shard to its blobber
-func (su *StreamUpload) processUpload(chunkIndex int, fileShards [][]byte, thumbnailShards [][]byte, isFinal bool) {
+func (su *StreamUpload) processUpload(chunkIndex int, fileShards [][]byte, thumbnailShards [][]byte, isFinal bool, uploadLenght int64) {
 	threads := su.allocationObj.DataShards + su.allocationObj.ParityShards
 
 	wg := &sync.WaitGroup{}
@@ -392,6 +429,7 @@ func (su *StreamUpload) processUpload(chunkIndex int, fileShards [][]byte, thumb
 		pos = uint64(i.TrailingZeros())
 
 		blobber := su.blobbers[pos]
+		blobber.progress.UploadLength += uploadLenght
 
 		if len(thumbnailShards) > 0 {
 			go blobber.processUpload(su, chunkIndex, fileShards[pos], thumbnailShards[pos], isFinal, wg)
@@ -418,17 +456,20 @@ func (su *StreamUpload) processCommit() error {
 
 		blobber := su.blobbers[pos]
 
+		//fixed numBlocks
+		blobber.fileRef.NumBlocks = int64(su.progress.ChunkIndex + 1)
+
 		newChange := &allocationchange.NewFileChange{}
 		newChange.File = blobber.fileRef
-		blobber.fileRef.NumBlocks = int64(su.progress.ChunkIndex + 1)
-		newChange.NumBlocks = int64(su.progress.ChunkIndex + 1)
 
+		newChange.NumBlocks = blobber.fileRef.NumBlocks
 		newChange.Operation = allocationchange.INSERT_OPERATION
 		newChange.Size = blobber.fileRef.Size
 		newChange.File.Attributes = blobber.fileRef.Attributes
+
 		blobber.commitChanges = append(blobber.commitChanges, newChange)
 
-		blobber.processCommit(su, wg)
+		go blobber.processCommit(su, wg)
 	}
 	wg.Wait()
 
