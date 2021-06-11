@@ -5,8 +5,9 @@ require (
 	github.com/herumi/bls-go-binary v0.0.0-20191119080710-898950e1a520
 	github.com/klauspost/cpuid v1.2.0 // indirect
 	github.com/klauspost/reedsolomon v1.9.2
+	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.1.2
-	github.com/spf13/viper v1.4.0
+	github.com/stretchr/objx v0.1.1 // indirect
 	github.com/stretchr/testify v1.4.0
 	github.com/tyler-smith/go-bip39 v1.0.0
 	go.dedis.ch/kyber/v3 v3.0.5
