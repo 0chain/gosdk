@@ -208,10 +208,10 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 					}(),
 				}, nil)
 			},
-			wantFunc: func(require *require.Assertions, ar *CopyRequest) {
-				require.NotNil(ar)
-				require.Equal(uint32(1), ar.copyMask)
-				require.Equal(float32(1), ar.consensus)
+			wantFunc: func(require *require.Assertions, req *CopyRequest) {
+				require.NotNil(req)
+				require.Equal(uint32(1), req.copyMask)
+				require.Equal(float32(1), req.consensus)
 			},
 		},
 	}
