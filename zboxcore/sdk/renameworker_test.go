@@ -88,7 +88,7 @@ func TestRenameRequest_getObjectTreeFromBlobber(t *testing.T) {
 				ID:      mockBlobberId,
 				Baseurl: tt.name,
 			}
-			ar := &RenameRequest{
+			req := &RenameRequest{
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
@@ -100,7 +100,7 @@ func TestRenameRequest_getObjectTreeFromBlobber(t *testing.T) {
 				renameMask:   0,
 				connectionID: zboxutil.NewConnectionId(),
 			}
-			_, err := ar.getObjectTreeFromBlobber(blobber)
+			_, err := req.getObjectTreeFromBlobber(blobber)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.EqualValues(tt.errMsg, err.Error())
@@ -218,7 +218,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			tt.setup(t, tt.name)
-			ar := &RenameRequest{
+			req := &RenameRequest{
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
@@ -230,10 +230,10 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 				renameMask:   0,
 				connectionID: zboxutil.NewConnectionId(),
 			}
-			ar.blobbers = append(ar.blobbers, &blockchain.StorageNode{
+			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name,
 			})
-			_, err := ar.renameBlobberObject(ar.blobbers[0], 0)
+			_, err := req.renameBlobberObject(req.blobbers[0], 0)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.EqualValues(tt.errMsg, err.Error())
@@ -241,7 +241,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			}
 			require.NoErrorf(err, "expected no error but got %v", err)
 			if tt.wantFunc != nil {
-				tt.wantFunc(require, ar)
+				tt.wantFunc(require, req)
 			}
 		})
 	}
