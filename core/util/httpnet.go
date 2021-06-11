@@ -48,12 +48,10 @@ var transport = &http.Transport{
 }
 
 func httpDo(req *http.Request, ctx context.Context, cncl context.CancelFunc, f func(*http.Response, error) error) error {
-
 	client := &http.Client{Transport: transport}
 	c := make(chan error, 1)
-	go func() { c <- f(NewHTTPNetContext().Do(req.WithContext(ctx), client.Do)) }()
+	go func() { c <- f(client.Do(req.WithContext(ctx))) }()
 	defer cncl()
-
 	select {
 	case <-ctx.Done():
 		transport.CancelRequest(req)
