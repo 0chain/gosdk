@@ -141,7 +141,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 	tests := []struct {
 		name     string
 		setup    func(t *testing.T, name string)
-		wantFunc func(require *require.Assertions, ar *DeleteRequest)
+		wantFunc func(require *require.Assertions, req *DeleteRequest)
 	}{
 		{
 			name: "Test_Delete_Blobber_File_Failed",
@@ -177,10 +177,10 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 					}
 				})
 			},
-			wantFunc: func(require *require.Assertions, ar *DeleteRequest) {
-				require.NotNil(ar)
-				require.Equal(uint32(0), ar.deleteMask)
-				require.Equal(float32(0), ar.consensus)
+			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
+				require.NotNil(req)
+				require.Equal(uint32(0), req.deleteMask)
+				require.Equal(float32(0), req.consensus)
 			},
 		},
 		{
@@ -203,10 +203,10 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 					}
 				})
 			},
-			wantFunc: func(require *require.Assertions, ar *DeleteRequest) {
-				require.NotNil(ar)
-				require.Equal(uint32(1), ar.deleteMask)
-				require.Equal(float32(1), ar.consensus)
+			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
+				require.NotNil(req)
+				require.Equal(uint32(1), req.deleteMask)
+				require.Equal(float32(1), req.consensus)
 			},
 		},
 	}
@@ -349,7 +349,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 		setup       func(*testing.T, string, int, int, DeleteRequest)
 		wantErr     bool
 		errMsg      string
-		wantFunc    func(require *require.Assertions, ar *DeleteRequest)
+		wantFunc    func(require *require.Assertions, req *DeleteRequest)
 	}{
 		{
 			name:        "Test_All_Blobber_Delete_Attribute_Success",
@@ -357,10 +357,10 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			numCorrect:  4,
 			setup:       setupHttpResponses,
 			wantErr:     false,
-			wantFunc: func(require *require.Assertions, ar *DeleteRequest) {
-				require.NotNil(ar)
-				require.Equal(uint32(15), ar.deleteMask)
-				require.Equal(float32(4), ar.consensus)
+			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
+				require.NotNil(req)
+				require.Equal(uint32(15), req.deleteMask)
+				require.Equal(float32(4), req.consensus)
 			},
 		},
 		{
@@ -369,10 +369,10 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			numCorrect:  3,
 			setup:       setupHttpResponses,
 			wantErr:     false,
-			wantFunc: func(require *require.Assertions, ar *DeleteRequest) {
-				require.NotNil(ar)
-				require.Equal(uint32(7), ar.deleteMask)
-				require.Equal(float32(3), ar.consensus)
+			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
+				require.NotNil(req)
+				require.Equal(uint32(7), req.deleteMask)
+				require.Equal(float32(3), req.consensus)
 			},
 		},
 		{
