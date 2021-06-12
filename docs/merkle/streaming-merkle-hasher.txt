@@ -1,0 +1,86 @@
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+These are the steps to calculate the Merkle root for a large, streaming file.  By design, it will keep at most log N hashes in memory, where N is the number of nodes in the Merkle tree.
+
+An array will hold the needed nodes to calculate the final Merkle root, where the index of the array indicates the height of the node in the tree.  We never need to store two nodes at the same height in memory.
+
+Once all data is received, the tree is balanced by hashing unbalanced nodes with themselves.
+
+
+INITIALIZE:
+
+Set HashNodes to an empty array.
+
+
+
+WHEN CHUNK RECEIVED:
+
+Let H = hash(chunk)
+
+Starting at index=0, loop through the HashNodes array:
+
+1) If HashNodes[index] is empty:
+  1.a) set HashNodes[index] to H
+  1.b) TERMINATE
+
+2) Otherwise:
+  2.a) set H to hash(HashNodes[index], H)
+  2.b) delete HashNodes[index] (i.e. set this position to empty)
+  2.c) increment the index value
+
+After looping through the array, push H on to the end of the array.  (This corresponds to a new root of the Merkle tree).
+
+
+
+
+FINALIZATION:
+
+The MerkleRoot is the return value.
+
+Initialize RightHash to null.
+
+Starting at index=0, loop through the HashNodes array:
+
+1) Set LeftHash to HashNodes[index]
+
+2) If we are at the last element of the array and RightHash is null:
+  2.a) Set MerkleRoot to LeftHash  (Note: This case is where the Merkle tree is perfectly balanced already).
+  2.b) Terminate
+
+3) Otherwise, if LeftHash and RightHash are null, do nothing
+
+4) Otherwise, if either LeftHash or RightHash is null:
+  4.a) Set H to the non-null hash value.
+  4.b) Set RightHash to hash(H,H).
+
+5) Otherwise, Set RightHash to hash(LeftHash,RightHash)
+
+6) Increment the index value.
+
+
+After looping through the array:
+
+1) Set MerkleRoot to RightHash.
+
+2) Terminate
+
+
+
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+Here is a brief note on the intermediary updates for streaming data.
+
+In short, any time that we get a power of two worth (1, 2, 4, 8, etc.)
+of chunks, we can commit a write marker.
+
+To minimize the number of commits, we could set a minimum threshold for
+the number of chunks to commit.
+
+When we have a power of two's work of chunks, we know that we have a
+full tree that the blobber will need to store.  So they could safely
+commit to that point and easily roll back if there is an interruption in
+the upload.
+
+In the code that I had sent previously, this would be at line 61 where
+we push a new top-level node to the Merkle tree.
+

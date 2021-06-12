@@ -26,6 +26,7 @@ type StreamEncoder struct {
 func NewEncoder(iDataShards, iParityShards int) (*StreamEncoder, error) {
 	e := &StreamEncoder{}
 	var err error
+
 	e.erasureCode, err = reedsolomon.New(iDataShards, iParityShards, reedsolomon.WithAutoGoroutines(64*1024))
 	if err != nil {
 		return nil, err
@@ -43,6 +44,7 @@ func (e *StreamEncoder) Encode(in []byte) ([][]byte, error) {
 		Logger.Error("Split failed", err.Error())
 		return [][]byte{}, err
 	}
+
 	err = e.erasureCode.Encode(e.data)
 	if err != nil {
 		Logger.Error("Encode failed", err.Error())

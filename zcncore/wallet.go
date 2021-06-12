@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math"
 	"net/http"
 	"net/url"
@@ -343,6 +344,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 
 	err := UpdateNetworkDetails()
 	if err != nil {
+		log.Println("UpdateNetworkDetails:", err)
 		return err
 	}
 

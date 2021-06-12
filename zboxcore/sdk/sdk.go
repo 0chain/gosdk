@@ -727,7 +727,7 @@ func GetClientEncryptedPublicKey() (string, error) {
 		return "", sdkNotInitialized
 	}
 	encScheme := encryption.NewEncryptionScheme()
-	err := encScheme.Initialize(client.GetClient().Mnemonic)
+	_, err := encScheme.Initialize(client.GetClient().Mnemonic)
 	if err != nil {
 		return "", err
 	}
