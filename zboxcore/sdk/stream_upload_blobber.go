@@ -218,9 +218,7 @@ func (sb *StreamUploadBobbler) processCommit(su *StreamUpload, wg *sync.WaitGrou
 
 	wm := &marker.WriteMarker{}
 	timestamp := int64(common.Now())
-	fmt.Println(rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10))
 	wm.AllocationRoot = encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10))
-	//wm.AllocationRoot = rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10)
 	if latestWM != nil {
 		wm.PreviousAllocationRoot = latestWM.AllocationRoot
 	} else {
