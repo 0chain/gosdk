@@ -302,6 +302,24 @@ func DeleteCollaboratorRequest(baseUrl string, allocation string, body io.Reader
 	return req, nil
 }
 
+func NewCollaboratorRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s", baseUrl, COLLABORATOR_ENDPOINT, allocation)
+	req, err := http.NewRequest(http.MethodPost, url, body)
+	return setClientInfo(req, err)
+}
+
+func GetCollaboratorsRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s", baseUrl, COLLABORATOR_ENDPOINT, allocation)
+	req, err := http.NewRequest(http.MethodGet, url, body)
+	return setClientInfo(req, err)
+}
+
+func DeleteCollaboratorRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s", baseUrl, COLLABORATOR_ENDPOINT, allocation)
+	req, err := http.NewRequest(http.MethodDelete, url, body)
+	return setClientInfo(req, err)
+}
+
 func NewFileMetaRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, FILE_META_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodPost, url, body)

@@ -10,7 +10,7 @@ include _util/printer.mk
 include _util/build_$(PLATFORM).mk
 include _util/build_mobile.mk
 
-.PHONY: build-tools install-all herumi-all gosdk-all sdkver help
+.PHONY: build-tools install-all herumi-all gosdk-all sdkver help lint
 
 default: help
 
@@ -57,6 +57,9 @@ test: gosdk-test
 clean: clean-gosdk clean-herumi
 	@rm -rf $(OUTDIR)
 
+lint:
+	@golangci-lint run
+
 help:
 	@echo "Environment: "
 	@echo "\tPLATFORM.......: $(PLATFORM)"
@@ -68,3 +71,4 @@ help:
 	@echo "\tmake build-tools       - Install go, jq and supporting tools required for build"
 	@echo "\tmake install           - Install gosdk"
 	@echo "\tmake clean             - Deletes all build output files"
+	@echo "\tmake lint              - Runs the golangci-lint
