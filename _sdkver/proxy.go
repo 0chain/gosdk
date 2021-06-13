@@ -244,7 +244,8 @@ func Download(this js.Value, p []js.Value) interface{} {
 				at = sdk.InitAuthTicket(authTicket)
 			}
 
-			var localFilePath, fileName string
+			// var localFilePath, fileName string
+			var localFilePath string
 			wg := &sync.WaitGroup{}
 			statusBar := &StatusBar{wg: wg}
 			wg.Add(1)
@@ -264,9 +265,10 @@ func Download(this js.Value, p []js.Value) interface{} {
 					}
 				}
 
-				createDirIfNotExists(allocationObj.ID)
-				localFilePath = getPath(allocationObj.ID, fileName)
-				deleletFile(localFilePath)
+				// In wasm running in browser, we cannot assume the file system exists.
+				// createDirIfNotExists(allocationObj.ID)
+				// localFilePath = getPath(allocationObj.ID, fileName)
+				// deleletFile(localFilePath)
 				if len(lookuphash) == 0 {
 					lookuphash, err = at.GetLookupHash()
 					if err != nil {
@@ -277,16 +279,19 @@ func Download(this js.Value, p []js.Value) interface{} {
 
 				// Logger.Info("Doing file download using authTicket", zap.Any("filename", fileName), zap.Any("allocation", allocationObj.ID), zap.Any("lookuphash", lookuphash))
 				fmt.Println("Doing file download using authTicket", zap.Any("filename", fileName), zap.Any("allocation", allocationObj.ID), zap.Any("lookuphash", lookuphash))
+				localFilePath = "b.txt"
 				err = allocationObj.DownloadFromAuthTicket(localFilePath, authTicket, lookuphash, fileName, rxPay, statusBar)
 				if err != nil {
 					reject.Invoke(js.ValueOf("error: " + NewError("download_from_auth_ticket_failed", err.Error()).Error()))
 					return;
 				}
 			} else {
-				createDirIfNotExists(allocation)
-				fileName = filepath.Base(remotePath)
-				localFilePath = getPath(allocation, fileName)
-				deleletFile(localFilePath)
+
+				// In wasm running in browser, we cannot assume the file system exists.
+				// createDirIfNotExists(allocation)
+				// fileName = filepath.Base(remotePath)
+				// localFilePath = getPath(allocation, fileName)
+				// deleletFile(localFilePath)
 
 				allocationObj, err := sdk.GetAllocation(allocation)
 				if err != nil {
@@ -296,6 +301,10 @@ func Download(this js.Value, p []js.Value) interface{} {
 
 				// Logger.Info("Doing file download", zap.Any("remotepath", remotePath), zap.Any("allocation", allocation))
 				fmt.Println("Doing file download", zap.Any("remotepath", remotePath), zap.Any("allocation", allocation))
+				// localFilePath = "asdf"
+				fmt.Println("dl debug", remotePath)
+				// remotePath += "b.txt"
+				localFilePath = "b.txt"
 				err = allocationObj.DownloadFile(localFilePath, remotePath, statusBar)
 				if err != nil {
 					reject.Invoke(js.ValueOf("error: " + NewError("download_file_failed", err.Error()).Error()))
