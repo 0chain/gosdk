@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"io/ioutil"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 	"strings"
@@ -119,14 +121,19 @@ func TestCollaboratorRequest_updateCollaboratorToBlobber(t *testing.T) {
 
 	var wg sync.WaitGroup
 
+	type parameters struct {
+		requestFields map[string]string
+	}
+
 	tests := []struct {
-		name  string
-		setup func(*testing.T, string)
-		want  bool
+		name       string
+		parameters parameters
+		setup      func(*testing.T, string, parameters)
+		want       bool
 	}{
 		{
 			name: "Test_update_Collaborator_To_Blobber_Failure",
-			setup: func(t *testing.T, testName string) {
+			setup: func(t *testing.T, testName string, p parameters) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, testName)
 				})).Return(&http.Response{
@@ -137,9 +144,36 @@ func TestCollaboratorRequest_updateCollaboratorToBlobber(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "Test_Update_Collaborator_To_Blobbers_Success",
-			setup: func(t *testing.T, testName string) {
+			name: "Test_update_Collaborator_To_Blobber_Success",
+			parameters: parameters{
+				requestFields: map[string]string{
+					"path":      mockRemoteFilePath,
+					"collab_id": mockCollaboratorID,
+				},
+			},
+			setup: func(t *testing.T, testName string, p parameters) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					mediaType, params, err := mime.ParseMediaType(req.Header.Get("Content-Type"))
+					require.NoError(t, err)
+					require.True(t, strings.HasPrefix(mediaType, "multipart/"))
+					reader := multipart.NewReader(req.Body, params["boundary"])
+
+					err = nil
+					for {
+						var part *multipart.Part
+						part, err = reader.NextPart()
+						if err != nil {
+							break
+						}
+						expected, ok := p.requestFields[part.FormName()]
+						require.True(t, ok)
+						actual, err := ioutil.ReadAll(part)
+						require.NoError(t, err)
+						require.EqualValues(t, expected, string(actual))
+					}
+					require.Error(t, err)
+					require.EqualValues(t, "EOF", err.Error())
+
 					return strings.HasPrefix(req.URL.Path, testName)
 				})).Return(&http.Response{
 					StatusCode: http.StatusOK,
@@ -152,7 +186,7 @@ func TestCollaboratorRequest_updateCollaboratorToBlobber(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			tt.setup(t, tt.name)
+			tt.setup(t, tt.name, tt.parameters)
 			req := &CollaboratorRequest{
 				a: &Allocation{
 					Tx:  mockAllocationTxId,
@@ -216,7 +250,7 @@ func TestCollaboratorRequest_RemoveCollaboratorFromBlobbers(t *testing.T) {
 			want: false,
 		},
 		{
-			name:        "Test_Update_Collaborator_To_Blobbers_Success",
+			name:        "Test_Remove_Collaborator_From_Blobbers_Success",
 			numBlobbers: 4,
 			setup: func(t *testing.T, testName string) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -277,14 +311,19 @@ func TestCollaboratorRequest_removeCollaboratorFromBlobber(t *testing.T) {
 
 	var wg sync.WaitGroup
 
+	type parameters struct {
+		requestFields map[string]string
+	}
+
 	tests := []struct {
-		name  string
-		setup func(*testing.T, string)
-		want  bool
+		name       string
+		parameters parameters
+		setup      func(*testing.T, string, parameters)
+		want       bool
 	}{
 		{
 			name: "Test_remove_Collaborator_From_Blobber_Failure",
-			setup: func(t *testing.T, testName string) {
+			setup: func(t *testing.T, testName string, p parameters) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, testName)
 				})).Return(&http.Response{
@@ -295,9 +334,36 @@ func TestCollaboratorRequest_removeCollaboratorFromBlobber(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "Test_Update_Collaborator_To_Blobbers_Success",
-			setup: func(t *testing.T, testName string) {
+			name: "Test_remove_Collaborator_From_Blobber_Success",
+			parameters: parameters{
+				requestFields: map[string]string{
+					"path":      mockRemoteFilePath,
+					"collab_id": mockCollaboratorID,
+				},
+			},
+			setup: func(t *testing.T, testName string, p parameters) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					mediaType, params, err := mime.ParseMediaType(req.Header.Get("Content-Type"))
+					require.NoError(t, err)
+					require.True(t, strings.HasPrefix(mediaType, "multipart/"))
+					reader := multipart.NewReader(req.Body, params["boundary"])
+
+					err = nil
+					for {
+						var part *multipart.Part
+						part, err = reader.NextPart()
+						if err != nil {
+							break
+						}
+						expected, ok := p.requestFields[part.FormName()]
+						require.True(t, ok)
+						actual, err := ioutil.ReadAll(part)
+						require.NoError(t, err)
+						require.EqualValues(t, expected, string(actual))
+					}
+					require.Error(t, err)
+					require.EqualValues(t, "EOF", err.Error())
+
 					return strings.HasPrefix(req.URL.Path, testName)
 				})).Return(&http.Response{
 					StatusCode: http.StatusOK,
@@ -310,7 +376,7 @@ func TestCollaboratorRequest_removeCollaboratorFromBlobber(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			tt.setup(t, tt.name)
+			tt.setup(t, tt.name, tt.parameters)
 			req := &CollaboratorRequest{
 				a: &Allocation{
 					Tx:  mockAllocationTxId,
