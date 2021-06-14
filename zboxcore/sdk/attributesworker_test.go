@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"mime"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 	"strings"
@@ -22,102 +24,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAttributesRequest_getObjectTreeFromBlobber(t *testing.T) {
-	const (
-		mockAllocationTxId = "mock transaction id"
-		mockClientId       = "mock client id"
-		mockClientKey      = "mock client key"
-		mockRemoteFilePath = "mock/remote/file/path"
-		mockAllocationId   = "mock allocation id"
-		mockBlobberId      = "mock blobber id"
-		mockType           = "f"
-	)
-
-	var mockClient = mocks.HttpClient{}
-	zboxutil.Client = &mockClient
-
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
-
-	tests := []struct {
-		name    string
-		setup   func(*testing.T, string)
-		wantErr bool
-		errMsg  string
-	}{
-		{
-			name: "Test_Get_Object_Tree_From_Blobber_Failed",
-			setup: func(t *testing.T, testName string) {
-				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-					return strings.HasPrefix(req.URL.Path, testName)
-				})).Return(&http.Response{
-					StatusCode: http.StatusBadRequest,
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
-				}, nil)
-			},
-			wantErr: true,
-			errMsg:  "Object tree error response: Status: 400 -  ",
-		},
-		{
-			name: "Test_Get_Object_Tree_From_Blobber_Success",
-			setup: func(t *testing.T, testName string) {
-				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-					return strings.HasPrefix(req.URL.Path, testName) &&
-						req.Header.Get("X-App-Client-ID") == mockClientId &&
-						req.Header.Get("X-App-Client-Key") == mockClientKey
-				})).Return(&http.Response{
-					Body: func() io.ReadCloser {
-						jsonFR, err := json.Marshal(fileref.ReferencePath{
-							Meta: map[string]interface{}{
-								"type": mockType,
-							},
-						})
-						require.NoError(t, err)
-						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
-					}(),
-					StatusCode: http.StatusOK,
-				}, nil)
-			},
-		},
-	}
-	attrs := fileref.Attributes{WhoPaysForReads: common.WhoPays3rdParty}
-	var attrsb []byte
-	attrsb, _ = json.Marshal(attrs)
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require := require.New(t)
-			tt.setup(t, tt.name)
-			blobber := &blockchain.StorageNode{
-				ID:      mockBlobberId,
-				Baseurl: tt.name,
-			}
-			req := &AttributesRequest{
-				allocationID:   mockAllocationId,
-				allocationTx:   mockAllocationTxId,
-				remotefilepath: mockRemoteFilePath,
-				attributes:     string(attrsb),
-				Consensus: Consensus{
-					consensusThresh: 50,
-					fullconsensus:   4,
-				},
-				ctx:            context.TODO(),
-				attributesMask: 0,
-				connectionID:   zboxutil.NewConnectionId(),
-			}
-			_, err := req.getObjectTreeFromBlobber(blobber)
-			require.EqualValues(tt.wantErr, err != nil)
-			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
-				return
-			}
-			require.NoErrorf(err, "expected no error but got %v", err)
-		})
-	}
-}
-
 func TestAttributesRequest_updateBlobberObjectAttributes(t *testing.T) {
 	const (
 		mockAllocationTxId = "mock transaction id"
@@ -127,6 +33,7 @@ func TestAttributesRequest_updateBlobberObjectAttributes(t *testing.T) {
 		mockAllocationId   = "mock allocation id"
 		mockAllocationRoot = "mock allocation root"
 		mockType           = "f"
+		mockConnectionId   = "1234567890"
 	)
 
 	var mockClient = mocks.HttpClient{}
@@ -138,22 +45,28 @@ func TestAttributesRequest_updateBlobberObjectAttributes(t *testing.T) {
 		ClientKey: mockClientKey,
 	}
 
+	type parameters struct {
+		referencePathToRetrieve fileref.ReferencePath
+		requestFields           map[string]string
+	}
+
 	tests := []struct {
-		name     string
-		setup    func(t *testing.T, name string)
-		wantErr  bool
-		errMsg   string
-		wantFunc func(require *require.Assertions, ar *AttributesRequest)
+		name       string
+		parameters parameters
+		setup      func(*testing.T, string, parameters)
+		wantErr    bool
+		errMsg     string
+		wantFunc   func(require *require.Assertions, ar *AttributesRequest)
 	}{
 		{
 			name:    "Test_Error_New_HTTP_Failed_By_Containing_" + string([]byte{0x7f, 0, 0}),
-			setup:   func(t *testing.T, testName string) {},
+			setup:   func(t *testing.T, testName string, p parameters) {},
 			wantErr: true,
 			errMsg:  `parse "Test_Error_New_HTTP_Failed_By_Containing_\u007f\x00\x00": net/url: invalid control character in URL`,
 		},
 		{
 			name: "Test_Error_Get_Object_Tree_From_Blobber_Failed",
-			setup: func(t *testing.T, testName string) {
+			setup: func(t *testing.T, testName string, p parameters) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, testName)
 				})).Return(&http.Response{
@@ -166,27 +79,31 @@ func TestAttributesRequest_updateBlobberObjectAttributes(t *testing.T) {
 		},
 		{
 			name: "Test_Update_Blobber_Object_Attributes_Failed",
-			setup: func(t *testing.T, testName string) {
+			parameters: parameters{
+				referencePathToRetrieve: fileref.ReferencePath{
+					Meta: map[string]interface{}{
+						"type": mockType,
+					},
+				},
+			},
+			setup: func(t *testing.T, testName string, p parameters) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-					return req.Method == "GET" &&
-						strings.HasPrefix(req.URL.Path, testName) &&
+					return strings.HasPrefix(req.URL.Path, testName) &&
+						req.Method == "GET" &&
 						req.Header.Get("X-App-Client-ID") == mockClientId &&
 						req.Header.Get("X-App-Client-Key") == mockClientKey
 				})).Return(&http.Response{
 					StatusCode: http.StatusOK,
 					Body: func() io.ReadCloser {
-						jsonFR, err := json.Marshal(fileref.ReferencePath{
-							Meta: map[string]interface{}{
-								"type": mockType,
-							},
-						})
+						jsonFR, err := json.Marshal(p.referencePathToRetrieve)
 						require.NoError(t, err)
 						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
 				}, nil)
+
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-					return req.Method == "POST" &&
-						strings.HasPrefix(req.URL.Path, testName) &&
+					return strings.HasPrefix(req.URL.Path, testName) &&
+						req.Method == "POST" &&
 						req.Header.Get("X-App-Client-ID") == mockClientId &&
 						req.Header.Get("X-App-Client-Key") == mockClientKey
 				})).Return(&http.Response{
@@ -202,19 +119,68 @@ func TestAttributesRequest_updateBlobberObjectAttributes(t *testing.T) {
 		},
 		{
 			name: "Test_Update_Blobber_Object_Attributes_Success",
-			setup: func(t *testing.T, testName string) {
+			parameters: parameters{
+				referencePathToRetrieve: fileref.ReferencePath{
+					Meta: map[string]interface{}{
+						"type": mockType,
+					},
+				},
+				requestFields: map[string]string{
+					"connection_id": mockConnectionId,
+					"path":          mockRemoteFilePath,
+					"attributes": func() string {
+						attrs := fileref.Attributes{WhoPaysForReads: common.WhoPays3rdParty}
+						var attrsb []byte
+						attrsb, _ = json.Marshal(attrs)
+						return string(attrsb)
+					}(),
+				},
+			},
+			setup: func(t *testing.T, testName string, p parameters) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, testName) &&
+						req.Method == "GET" &&
 						req.Header.Get("X-App-Client-ID") == mockClientId &&
 						req.Header.Get("X-App-Client-Key") == mockClientKey
 				})).Return(&http.Response{
 					StatusCode: http.StatusOK,
 					Body: func() io.ReadCloser {
-						jsonFR, err := json.Marshal(fileref.ReferencePath{
-							Meta: map[string]interface{}{
-								"type": mockType,
-							},
-						})
+						jsonFR, err := json.Marshal(p.referencePathToRetrieve)
+						require.NoError(t, err)
+						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					}(),
+				}, nil)
+
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					mediaType, params, err := mime.ParseMediaType(req.Header.Get("Content-Type"))
+					require.NoError(t, err)
+					require.True(t, strings.HasPrefix(mediaType, "multipart/"))
+					reader := multipart.NewReader(req.Body, params["boundary"])
+
+					err = nil
+					for {
+						var part *multipart.Part
+						part, err = reader.NextPart()
+						if err != nil {
+							break
+						}
+						expected, ok := p.requestFields[part.FormName()]
+						require.True(t, ok)
+						actual, err := ioutil.ReadAll(part)
+						require.NoError(t, err)
+						require.EqualValues(t, expected, string(actual))
+					}
+					require.Error(t, err)
+					require.EqualValues(t, "EOF", err.Error())
+
+					return strings.HasPrefix(req.URL.Path, testName) &&
+						req.Method == "POST" &&
+						req.Header.Get("X-App-Client-ID") == mockClientId &&
+						req.Header.Get("X-App-Client-Key") == mockClientKey
+				})).Return(&http.Response{
+					StatusCode: http.StatusOK,
+					Body: func() io.ReadCloser {
+						jsonFR, err := json.Marshal(p.referencePathToRetrieve)
 						require.NoError(t, err)
 						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
 					}(),
@@ -233,7 +199,7 @@ func TestAttributesRequest_updateBlobberObjectAttributes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			tt.setup(t, tt.name)
+			tt.setup(t, tt.name, tt.parameters)
 			req := &AttributesRequest{
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
@@ -245,7 +211,7 @@ func TestAttributesRequest_updateBlobberObjectAttributes(t *testing.T) {
 				},
 				ctx:            context.TODO(),
 				attributesMask: 0,
-				connectionID:   zboxutil.NewConnectionId(),
+				connectionID:   mockConnectionId,
 			}
 			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name,
@@ -274,6 +240,7 @@ func TestAttributesRequest_ProcessAttributes(t *testing.T) {
 		mockBlobberId      = "mock blobber id"
 		mockBlobberUrl     = "mockblobberurl"
 		mockType           = "f"
+		mockConnectionId   = "1234567890"
 	)
 
 	var mockClient = mocks.HttpClient{}
@@ -433,7 +400,7 @@ func TestAttributesRequest_ProcessAttributes(t *testing.T) {
 				},
 				ctx:            context.TODO(),
 				attributesMask: 0,
-				connectionID:   zboxutil.NewConnectionId(),
+				connectionID:   mockConnectionId,
 			}
 			for i := 0; i < tt.numBlobbers; i++ {
 				req.blobbers = append(req.blobbers, &blockchain.StorageNode{
