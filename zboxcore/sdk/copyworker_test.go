@@ -231,6 +231,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 		mockBlobberId      = "mock blobber id"
 		mockBlobberUrl     = "mockblobberurl"
 		mockType           = "f"
+		mockConnectionId   = "1234567890"
 	)
 
 	var mockClient = mocks.HttpClient{}
@@ -386,7 +387,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 					fullconsensus:   4,
 				},
 				ctx:          context.TODO(),
-				connectionID: zboxutil.NewConnectionId(),
+				connectionID: mockConnectionId,
 			}
 			for i := 0; i < tt.numBlobbers; i++ {
 				req.blobbers = append(req.blobbers, &blockchain.StorageNode{
