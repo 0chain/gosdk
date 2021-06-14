@@ -17,7 +17,6 @@ func TestConsensus_isConsensusMin(t *testing.T) {
 		fields fields
 		want   bool
 	}{
-		// TODO: Add test cases.
 		{
 			"Test_Is_Consensus_Min_True",
 			fields{
@@ -66,7 +65,6 @@ func TestConsensus_isConsensusOk(t *testing.T) {
 		fields fields
 		want   bool
 	}{
-		// TODO: Add test cases.
 		{
 			"Test_Is_Consensus_OK_True",
 			fields{
