@@ -841,6 +841,64 @@ func (a *Allocation) GetAuthTicketForShare(path string, filename string, referen
 	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "")
 }
 
+func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
+	success := make(chan int, len(a.Blobbers))
+	not_found := make(chan int, len(a.Blobbers))
+	wg := &sync.WaitGroup{}
+	for idx := range a.Blobbers {
+		url := a.Blobbers[idx].Baseurl
+		body := new(bytes.Buffer)
+		formWriter := multipart.NewWriter(body)
+		formWriter.WriteField("path", path)
+		formWriter.WriteField("refereeClientID", refereeClientID)
+		formWriter.Close()
+		httpreq, err := zboxutil.NewRevokeShareRequest(url, a.Tx, body)
+		if err != nil {
+			return err
+		}
+		httpreq.Header.Set("Content-Type", formWriter.FormDataContentType())
+		if err := formWriter.Close(); err != nil {
+			return err
+		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
+				if err != nil {
+					Logger.Error("Revoke share : ", err)
+					return err
+				}
+				defer resp.Body.Close()
+
+				respbody, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					Logger.Error("Error: Resp ", err)
+					return err
+				}
+				if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
+					Logger.Error(url, " Revoke share error response: ", resp.StatusCode, string(respbody))
+					return fmt.Errorf(string(respbody))
+				}
+				if resp.StatusCode == http.StatusNotFound {
+					not_found <- 1
+				}
+				return nil
+			})
+			if err == nil {
+				success <- 1
+			}
+		}()
+	}
+	wg.Wait()
+	if len(success) == len(a.Blobbers) {
+		if len(not_found) == len(a.Blobbers) {
+			return errors.New("share not found")
+		}
+		return nil
+	}
+	return errors.New("consensus not reached")
+}
+
 func (a *Allocation) GetAuthTicket(path string, filename string, referenceType string, refereeClientID string, refereeEncryptionPublicKey string) (string, error) {
 	if !a.isInitialized() {
 		return "", notInitialized
@@ -897,6 +955,7 @@ func (a *Allocation) GetAuthTicket(path string, filename string, referenceType s
 	}
 	return authTicket, nil
 }
+
 func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPubKey string) error {
 	decodedAuthTicket, err := base64.StdEncoding.DecodeString(authticketB64)
 	if err != nil {

@@ -457,6 +457,20 @@ func NewShareRequest(baseUrl, allocation string, body io.Reader) (*http.Request,
 	return req, nil
 }
 
+func NewRevokeShareRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s", baseUrl, SHARE_ENDPOINT, allocation)
+	req, err := http.NewRequest(http.MethodDelete, url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, handler SCRestAPIHandler) ([]byte, error) {
 	numSharders := len(blockchain.GetSharders())
 	sharders := blockchain.GetSharders()
