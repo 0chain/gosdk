@@ -35,6 +35,31 @@ func newBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberClient, error) {
 	return blobbergrpc.NewBlobberClient(cc), nil
 }
 
+func Commit(url string, req *blobbergrpc.CommitRequest) ([]byte, error) {
+	clientSignature, err := client.Sign(encryption.Hash(req.Allocation))
+	if err != nil {
+		return nil, err
+	}
+
+	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
+		blobbercommon.ClientHeader:          client.GetClientID(),
+		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
+		blobbercommon.ClientSignatureHeader: clientSignature,
+	}))
+
+	blobberClient, err := newBlobberGRPCClient(url)
+	if err != nil {
+		return nil, err
+	}
+
+	commitResp, err := blobberClient.Commit(grpcCtx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(convert.CommitWriteResponseHandler(commitResp))
+}
+
 func GetAllocation(url string, req *blobbergrpc.GetAllocationRequest) ([]byte, error) {
 	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
 		blobbercommon.ClientHeader:          client.GetClientID(),
