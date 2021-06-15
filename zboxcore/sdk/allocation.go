@@ -875,11 +875,17 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 					Logger.Error("Error: Resp ", err)
 					return err
 				}
-				if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusNotFound {
+				if resp.StatusCode != http.StatusOK {
 					Logger.Error(url, " Revoke share error response: ", resp.StatusCode, string(respbody))
 					return fmt.Errorf(string(respbody))
 				}
-				if resp.StatusCode == http.StatusNotFound {
+				data := map[string]interface{} {
+				}
+				err = json.Unmarshal(respbody, &data)
+				if err != nil {
+					return err
+				}
+				if data["status"] == http.StatusNotFound {
 					not_found <- 1
 				}
 				return nil

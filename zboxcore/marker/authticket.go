@@ -23,7 +23,7 @@ type AuthTicket struct {
 }
 
 func (rm *AuthTicket) GetHashData() string {
-	hashData := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v:%v:%v:%v", rm.AllocationID, rm.ClientID, rm.OwnerID, rm.FilePathHash, rm.FileName, rm.RefType, rm.ReEncryptionKey, rm.Expiration, rm.Timestamp, rm.Encrypted)
+	hashData := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v:%v:%v:%v:%v", rm.AllocationID, rm.ClientID, rm.OwnerID, rm.FilePathHash, rm.FileName, rm.RefType, rm.ReEncryptionKey, rm.Expiration, rm.Timestamp, rm.ContentHash, rm.Encrypted)
 	return hashData
 }
 
