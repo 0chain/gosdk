@@ -39,7 +39,7 @@ const ChainConfig = `{
 	"sharders": [
 		"http://ohio.devi.testnet-0chain.net:7171"
 	],
-	"signaturescheme": "bls0chain"
+	"signature_scheme": "bls0chain"
 }`
 
 var wallet = `
@@ -106,6 +106,7 @@ func main() {
 	flag.StringVar(&toclientID, "toclientID", "", "Receipient client ID.\nMandatory for -cmd send")
 
 	flag.Parse()
+	fmt.Println("=========1",cmd)
 
 	switch cmd {
 	case "create":
@@ -151,6 +152,7 @@ func main() {
 	}
 
 	s := &StatusUI{i: 1}
+	fmt.Println("=========1",cmd)
 	switch cmd {
 	case "create":
 		s.wg.Add(1)

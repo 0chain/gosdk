@@ -10,6 +10,6 @@ type WalletCallback struct {
 }
 
 // OnWalletCreateComplete provides a mock function with given fields: status, wallet, err
-func (_m *WalletCallback) OnWalletCreateComplete(status int, wallet string, err string) {
+func (_m WalletCallback) OnWalletCreateComplete(status int, wallet string, err string) {
 	_m.Called(status, wallet, err)
 }

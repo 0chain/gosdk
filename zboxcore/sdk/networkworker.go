@@ -17,7 +17,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
-const NETWORK_ENDPOINT = "/network"
+const NETWORK_ENDPOINT = "https://nine.devnet-0chain.net/dns/network"
 
 type Network struct {
 	Miners   []string `json:"miners"`
