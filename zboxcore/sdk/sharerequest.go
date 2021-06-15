@@ -21,6 +21,7 @@ type ShareRequest struct {
 	authToken      *marker.AuthTicket
 	refType        string
 	ctx            context.Context
+	expirationSeconds int64
 }
 
 func (req *ShareRequest) GetAuthTicketForEncryptedFile(clientID string, encPublicKey string) (string, error) {
@@ -32,7 +33,12 @@ func (req *ShareRequest) GetAuthTicketForEncryptedFile(clientID string, encPubli
 	at.FilePathHash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 	at.RefType = req.refType
 	timestamp := int64(common.Now())
-	at.Expiration = timestamp + 7776000
+	if req.expirationSeconds == 0 {
+		// default expiration after 90 days
+		at.Expiration = timestamp + 90 * 86400
+	} else {
+		at.Expiration = timestamp + req.expirationSeconds
+	}
 	at.Timestamp = timestamp
 	at.Encrypted = true
 	err := at.Sign()
@@ -101,7 +107,12 @@ func (req *ShareRequest) GetAuthTicket(clientID string) (string, error) {
 	at.ContentHash = fileRef.ContentHash
 
 	timestamp := int64(common.Now())
-	at.Expiration = timestamp + 7776000
+	if req.expirationSeconds == 0 {
+		// default expiration after 90 days
+		at.Expiration = timestamp + 90 * 86400
+	} else {
+		at.Expiration = timestamp + req.expirationSeconds
+	}
 	at.Timestamp = timestamp
 	err = at.Sign()
 	if err != nil {

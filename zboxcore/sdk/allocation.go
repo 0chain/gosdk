@@ -838,7 +838,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 }
 
 func (a *Allocation) GetAuthTicketForShare(path string, filename string, referenceType string, refereeClientID string) (string, error) {
-	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "")
+	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "", 0)
 }
 
 func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
@@ -905,7 +905,14 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 	return errors.New("consensus not reached")
 }
 
-func (a *Allocation) GetAuthTicket(path string, filename string, referenceType string, refereeClientID string, refereeEncryptionPublicKey string) (string, error) {
+func (a *Allocation) GetAuthTicket(
+	path string,
+	filename string,
+	referenceType string,
+	refereeClientID string,
+	refereeEncryptionPublicKey string,
+	expiration int64,
+) (string, error) {
 	if !a.isInitialized() {
 		return "", notInitialized
 	}
@@ -918,7 +925,9 @@ func (a *Allocation) GetAuthTicket(path string, filename string, referenceType s
 		return "", common.NewError("invalid_path", "Path should be valid and absolute")
 	}
 
-	shareReq := &ShareRequest{}
+	shareReq := &ShareRequest{
+		expirationSeconds: expiration,
+	}
 	shareReq.allocationID = a.ID
 	shareReq.allocationTx = a.Tx
 	shareReq.blobbers = a.Blobbers
