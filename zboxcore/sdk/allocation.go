@@ -843,7 +843,7 @@ func (a *Allocation) GetAuthTicketForShare(path string, filename string, referen
 
 func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 	success := make(chan int, len(a.Blobbers))
-	not_found := make(chan int, len(a.Blobbers))
+	notFound := make(chan int, len(a.Blobbers))
 	wg := &sync.WaitGroup{}
 	for idx := range a.Blobbers {
 		url := a.Blobbers[idx].Baseurl
@@ -885,8 +885,8 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 				if err != nil {
 					return err
 				}
-				if data["status"] == http.StatusNotFound {
-					not_found <- 1
+				if data["status"].(float64) == http.StatusNotFound {
+					notFound <- 1
 				}
 				return nil
 			})
@@ -897,7 +897,7 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 	}
 	wg.Wait()
 	if len(success) == len(a.Blobbers) {
-		if len(not_found) == len(a.Blobbers) {
+		if len(notFound) == len(a.Blobbers) {
 			return errors.New("share not found")
 		}
 		return nil
