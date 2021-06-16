@@ -106,7 +106,6 @@ func main() {
 	flag.StringVar(&toclientID, "toclientID", "", "Receipient client ID.\nMandatory for -cmd send")
 
 	flag.Parse()
-	fmt.Println("=========1",cmd)
 
 	switch cmd {
 	case "create":
@@ -152,7 +151,6 @@ func main() {
 	}
 
 	s := &StatusUI{i: 1}
-	fmt.Println("=========1",cmd)
 	switch cmd {
 	case "create":
 		s.wg.Add(1)
