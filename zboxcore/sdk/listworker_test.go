@@ -136,9 +136,22 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 				},
 				blobberIdx:     41,
 				respStatusCode: http.StatusOK,
+				requestFields: map[string]string{
+					"auth_token": func() string {
+						authBytes, err := json.Marshal(&marker.AuthTicket{
+							Signature: mockSignature,
+						})
+						require.NoError(t, err)
+						return string(authBytes)
+					}(),
+					"path_hash": fileref.GetReferenceLookup(mockAllocationId, mockRemoteFilePath),
+				},
 			},
 			setup: func(t *testing.T, testName string, p parameters, _ string) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					query := req.URL.Query()
+					require.EqualValues(t, query.Get("auth_token"), p.requestFields["auth_token"])
+					require.EqualValues(t, query.Get("path_hash"), p.requestFields["path_hash"])
 					return req.URL.Path == "Test_Success"+zboxutil.LIST_ENDPOINT+mockAllocationTxId &&
 						req.Method == "GET" &&
 						req.Header.Get("X-App-Client-ID") == mockClientId &&
