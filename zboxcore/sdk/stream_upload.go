@@ -172,7 +172,6 @@ func (su *StreamUpload) loadProgress() {
 		for idx := range b.MerkleHashes {
 			b.MerkleHashes[idx] = sha3.New256()
 		}
-		b.ShardHasher = sha1.New()
 	}
 
 	su.progress = progress
@@ -213,7 +212,6 @@ func (su *StreamUpload) createUploadProgress() UploadProgress {
 	for i := 0; i < len(progress.Blobbers); i++ {
 		progress.Blobbers[i] = &UploadBlobberStatus{
 			MerkleHashes: make([]hash.Hash, 1024),
-			ShardHasher:  sha1.New(),
 		}
 
 		for idx := range progress.Blobbers[i].MerkleHashes {

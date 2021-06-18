@@ -46,9 +46,6 @@ func (sb *StreamUploadBobbler) processHash(fileBytes []byte) {
 		offset := i / merkleChunkSize
 		sb.progress.MerkleHashes[offset].Write(fileBytes[i:end])
 	}
-
-	sb.progress.ShardHasher.Write(fileBytes)
-
 }
 
 func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, fileBytes, thumbnailBytes []byte, isFinal bool, wg *sync.WaitGroup) {
@@ -94,7 +91,7 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 	if isFinal {
 
 		//fixed shard data's info in last chunk for stream
-		formData.ShardHash = sb.progress.getShardHash()
+		// formData.ShardHash = sb.progress.getShardHash()
 		formData.MerkleRoot = sb.progress.getMerkelRoot()
 
 		//fixed original file's info in last chunk for stream

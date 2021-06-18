@@ -102,7 +102,7 @@ type UploadProgress struct {
 type UploadBlobberStatus struct {
 	MerkleHashes []hash.Hash `json:"-"`
 
-	ShardHasher hash.Hash `json:"-"`
+	// ShardHasher hash.Hash `json:"-"`
 
 	// UploadLength total bytes that has been uploaded to blobbers
 	UploadLength int64 `json:"upload_length,omitempty"`
@@ -125,9 +125,9 @@ func (status *UploadBlobberStatus) getMerkelRoot() string {
 	return mt.GetRoot()
 }
 
-// getShardHash hash all chunks in shard
-func (status *UploadBlobberStatus) getShardHash() string {
+// // getShardHash hash all chunks in shard
+// func (status *UploadBlobberStatus) getShardHash() string {
 
-	return hex.EncodeToString(status.ShardHasher.Sum(nil))
+// 	return hex.EncodeToString(status.ShardHasher.Sum(nil))
 
-}
+// }
