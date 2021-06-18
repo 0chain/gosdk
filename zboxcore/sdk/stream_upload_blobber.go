@@ -196,7 +196,7 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 			sb.fileRef.MerkleRoot = formData.MerkleRoot
 			sb.fileRef.ContentHash = formData.ContentHash
 
-			sb.fileRef.Size = su.shardSize
+			sb.fileRef.Size = su.shardUploadedSize
 			sb.fileRef.Path = formData.Path
 			sb.fileRef.ActualFileHash = formData.ActualHash
 			sb.fileRef.ActualFileSize = formData.ActualSize

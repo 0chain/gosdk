@@ -3,8 +3,6 @@ package sdk
 import (
 	"bytes"
 	"context"
-	"crypto/sha1"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"math"
@@ -238,8 +236,8 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	Logger.Info("Start block: ", req.startBlock+1, " End block: ", req.endBlock, " Num blocks: ", req.numBlocks)
 
 	downloaded := int(0)
-	fH := sha1.New()
-	mW := io.MultiWriter(fH, wrFile)
+	fileHasher := createDownloadHasher(fileref.CHUNK_SIZE, req.datashards, len(fileRef.EncryptedKey) > 0)
+	mW := io.MultiWriter(fileHasher, wrFile)
 
 	startBlock := req.startBlock
 	endBlock := req.endBlock
@@ -274,6 +272,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		//fmt.Println("Length of decoded data:", len(data))
 		n := int64(math.Min(float64(size), float64(len(data))))
 		_, err = mW.Write(data[:n])
+
 		if err != nil {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
@@ -297,12 +296,15 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	// Only check hash when the download request is not by block/partial.
 	if req.endBlock == chunksPerShard && req.startBlock == 0 {
-		calcHash := hex.EncodeToString(fH.Sum(nil))
+		calcHash := fileHasher.GetHash()
+		merkleRoot := fileHasher.GetMerkleRoot()
+
 		expectedHash := fileRef.ActualFileHash
 		if req.contentMode == DOWNLOAD_CONTENT_THUMB {
 			expectedHash = fileRef.ActualThumbnailHash
 		}
-		if calcHash != expectedHash {
+
+		if calcHash != expectedHash && expectedHash != merkleRoot {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
 				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, fmt.Errorf("File content didn't match with uploaded file"))

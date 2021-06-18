@@ -1,6 +1,10 @@
 package util
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/0chain/gosdk/core/encryption"
+)
 
 var (
 	// ErrLeafExists leaf has been computed, it can be skipped now
@@ -15,6 +19,22 @@ type StreamMerkleHasher struct {
 	Tree  []string                        `json:"tree"`  //node tree with computed as many parent hashes as it can
 	Hash  func(left, right string) string `json:"-"`     //it should be set once hasher is created
 	Count int                             `json:"count"` //how many leaves has been pushed
+}
+
+// NewStreamMerkleHasher create a StreamMerkleHasher with specify hash method
+func NewStreamMerkleHasher(hash func(left, right string) string) *StreamMerkleHasher {
+
+	if hash == nil {
+		hash = func(left, right string) string {
+			return encryption.Hash(left + right)
+		}
+	}
+
+	return &StreamMerkleHasher{
+		Tree: make([]string, 0, 10),
+		Hash: hash,
+	}
+
 }
 
 // Push add leaf hash and update the the Merkle tree.

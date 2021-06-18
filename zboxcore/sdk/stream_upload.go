@@ -15,6 +15,7 @@ import (
 
 	"github.com/0chain/gosdk/core/common"
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
@@ -43,7 +44,9 @@ func CreateStreamUpload(allocationObj *Allocation, fileMeta FileMeta, fileReader
 		allocationObj: allocationObj,
 		fileMeta:      fileMeta,
 		fileReader:    fileReader,
-		fileHasher:    sha1.New(),
+		fileHasher: util.NewStreamMerkleHasher(func(left, right string) string {
+			return coreEncryption.Hash(left + right)
+		}),
 
 		uploadMask:      zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1),
 		chunkSize:       DefaultChunkSize,
@@ -117,7 +120,7 @@ type StreamUpload struct {
 	fileReader         io.Reader
 	fileErasureEncoder reedsolomon.Encoder
 	fileEncscheme      encryption.EncryptionScheme
-	fileHasher         hash.Hash
+	fileHasher         *util.StreamMerkleHasher
 
 	thumbnailBytes         []byte
 	thumbailErasureEncoder reedsolomon.Encoder
@@ -127,10 +130,10 @@ type StreamUpload struct {
 	// chunkSize how much bytes a chunk has. 64KB is default value.
 	chunkSize int
 
-	// shardSize how much bytes a shard has. it is original size
-	shardSize int64
-	// shardSize how much thumbnail bytes a shard has. it is original size
-	shardThumbnailSize int64
+	// shardUploadedSize how much bytes a shard has. it is original size
+	shardUploadedSize int64
+	// shardUploadedThumbnailSize how much thumbnail bytes a shard has. it is original size
+	shardUploadedThumbnailSize int64
 
 	// statusCallback trigger progress on StatusCallback
 	statusCallback StatusCallback
@@ -254,12 +257,12 @@ func (su *StreamUpload) Start() error {
 	}
 
 	for i := 0; ; i++ {
-		fileShards, readLen, chunkSize, isFinal, err := su.readNextChunks(i < su.progress.ChunkIndex)
+		fileShards, readLen, chunkSize, isFinal, err := su.readNextChunks(i)
 		if err != nil {
 			return err
 		}
 
-		su.shardSize += chunkSize
+		su.shardUploadedSize += chunkSize
 
 		//skip chunk if it has been uploaded
 		if i < su.progress.ChunkIndex {
@@ -267,7 +270,7 @@ func (su *StreamUpload) Start() error {
 		}
 
 		if isFinal {
-			su.fileMeta.ActualHash = hex.EncodeToString(su.fileHasher.Sum(nil))
+			su.fileMeta.ActualHash = su.fileHasher.GetMerkleRoot()
 		}
 
 		// upload entire thumbnail in first reqeust only
@@ -349,7 +352,7 @@ func (su *StreamUpload) readThumbnailShards() ([][]byte, error) {
 	return shards, nil
 }
 
-func (su *StreamUpload) readNextChunks(uploaded bool) ([][]byte, int64, int64, bool, error) {
+func (su *StreamUpload) readNextChunks(chunkIndex int) ([][]byte, int64, int64, bool, error) {
 
 	chunkSize := su.chunkSize
 
@@ -358,17 +361,20 @@ func (su *StreamUpload) readNextChunks(uploaded bool) ([][]byte, int64, int64, b
 		chunkSize -= 2 * 1024
 	}
 
-	shardSize := int64(chunkSize * su.allocationObj.DataShards)
+	shardSize := chunkSize * su.allocationObj.DataShards
 
 	isFinal := false
 	chunkBytes := make([]byte, shardSize)
 	readLen, err := su.fileReader.Read(chunkBytes)
 
 	if readLen > 0 {
-		su.fileHasher.Write(chunkBytes[:readLen])
+		hash := sha1.New()
+		hash.Write(chunkBytes[:readLen])
+		leafHash := hex.EncodeToString(hash.Sum(nil))
+		su.fileHasher.Push(leafHash, chunkIndex)
 	}
 
-	if readLen < int(su.shardSize) {
+	if readLen < shardSize {
 		chunkSize = int(math.Ceil(float64(readLen / su.allocationObj.DataShards)))
 		chunkBytes = chunkBytes[:readLen]
 	}
