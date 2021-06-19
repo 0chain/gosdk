@@ -7,16 +7,13 @@ import (
 	"net"
 	"net/url"
 
-	"github.com/0chain/gosdk/core/encryption"
-
-	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/convert"
-
-	blobbercommon "github.com/0chain/blobber/code/go/0chain.net/core/common"
-	"github.com/0chain/gosdk/zboxcore/client"
-	"google.golang.org/grpc/metadata"
-
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
+	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/convert"
+	blobbercommon "github.com/0chain/blobber/code/go/0chain.net/core/common"
+	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/metadata"
 )
 
 const GRPCPort = 7031
@@ -195,4 +192,29 @@ func GetFileMetaData(url string, req *blobbergrpc.GetFileMetaDataRequest) ([]byt
 	}
 
 	return json.Marshal(convert.GetFileMetaDataResponseHandler(getFileMetaDataResp))
+}
+
+func CommitMetaTxn(url string, req *blobbergrpc.CommitMetaTxnRequest) ([]byte, error) {
+	blobberClient, err := newBlobberGRPCClient(url)
+	if err != nil {
+		return nil, err
+	}
+
+	clientSignature, err := client.Sign(encryption.Hash(req.Allocation))
+	if err != nil {
+		return nil, err
+	}
+
+	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
+		blobbercommon.ClientHeader:          client.GetClientID(),
+		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
+		blobbercommon.ClientSignatureHeader: clientSignature,
+	}))
+
+	commitMetaResp, err := blobberClient.CommitMetaTxn(grpcCtx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(convert.GetCommitMetaTxnHandlerResponse(commitMetaResp))
 }
