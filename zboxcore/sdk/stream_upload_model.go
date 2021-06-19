@@ -1,9 +1,6 @@
 package sdk
 
 import (
-	"encoding/hex"
-	"hash"
-
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -54,8 +51,6 @@ type UploadFormData struct {
 	// Hash hash of shard thumbnail  (encoded,encrypted)
 	ThumbnailContentHash string `json:"thumbnail_content_hash,omitempty"`
 
-	// ShardHask hash of shard data (encoded,encrypted)
-	ShardHash string `json:"shard_hash,omitempty"`
 	// MerkleRoot merkle's root hash of shard data (encoded, encrypted)
 	MerkleRoot string `json:"merkle_root,omitempty"`
 
@@ -93,14 +88,14 @@ type UploadProgress struct {
 	// ChunkIndex index of last updated chunk
 	ChunkIndex int `json:"chunk_index,omitempty"`
 	// UploadLength total bytes that has been uploaded to blobbers
-	UploadLength int64 `json:"upload_length,omitempty"`
+	UploadLength int64 `json:"-"`
 
 	Blobbers []*UploadBlobberStatus `json:"merkle_hashers,omitempty"`
 }
 
 // UploadBlobberStatus the status of blobber's upload progress
 type UploadBlobberStatus struct {
-	MerkleHashes []hash.Hash `json:"-"`
+	TrustedConentHasher *util.TrustedConentHasher `json:"trusted_content_hasher"`
 
 	// ShardHasher hash.Hash `json:"-"`
 
@@ -110,24 +105,7 @@ type UploadBlobberStatus struct {
 	//MerkleHasher util.StreamMerkleHasher `json:"merkle_hasher,omitempty"`
 }
 
-// getMerkelRoot see section 1.4 on Whitepaper
+// getMerkelRoot see section 1.8 Oursourcing Attack Protection on Whitepaper
 func (status *UploadBlobberStatus) getMerkelRoot() string {
-	merkleLeaves := make([]util.Hashable, 1024)
-
-	for idx := range status.MerkleHashes {
-
-		merkleLeaves[idx] = util.NewStringHashable(hex.EncodeToString(status.MerkleHashes[idx].Sum(nil)))
-	}
-	var mt util.MerkleTreeI = &util.MerkleTree{}
-
-	mt.ComputeTree(merkleLeaves)
-
-	return mt.GetRoot()
+	return status.TrustedConentHasher.GetMerkleRoot()
 }
-
-// // getShardHash hash all chunks in shard
-// func (status *UploadBlobberStatus) getShardHash() string {
-
-// 	return hex.EncodeToString(status.ShardHasher.Sum(nil))
-
-// }

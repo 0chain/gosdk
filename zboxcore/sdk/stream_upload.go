@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"hash"
 	"io"
 	"io/ioutil"
 	"math"
@@ -24,7 +23,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
 	"github.com/mitchellh/go-homedir"
-	"golang.org/x/crypto/sha3"
 )
 
 var (
@@ -166,14 +164,6 @@ func (su *StreamUpload) loadProgress() {
 		return
 	}
 
-	for _, b := range progress.Blobbers {
-		//b.MerkleHasher.Hash = DefaultHashFunc
-		b.MerkleHashes = make([]hash.Hash, 1024)
-		for idx := range b.MerkleHashes {
-			b.MerkleHashes[idx] = sha3.New256()
-		}
-	}
-
 	su.progress = progress
 }
 
@@ -211,11 +201,7 @@ func (su *StreamUpload) createUploadProgress() UploadProgress {
 
 	for i := 0; i < len(progress.Blobbers); i++ {
 		progress.Blobbers[i] = &UploadBlobberStatus{
-			MerkleHashes: make([]hash.Hash, 1024),
-		}
-
-		for idx := range progress.Blobbers[i].MerkleHashes {
-			progress.Blobbers[i].MerkleHashes[idx] = sha3.New256()
+			TrustedConentHasher: &util.TrustedConentHasher{},
 		}
 	}
 
@@ -261,6 +247,11 @@ func (su *StreamUpload) Start() error {
 		}
 
 		su.shardUploadedSize += chunkSize
+		su.progress.UploadLength += int64(readLen)
+
+		if i == 0 && len(su.thumbnailBytes) > 0 {
+			su.progress.UploadLength += int64(su.fileMeta.ActualThumbnailSize)
+		}
 
 		//skip chunk if it has been uploaded
 		if i < su.progress.ChunkIndex {
@@ -271,27 +262,26 @@ func (su *StreamUpload) Start() error {
 			su.fileMeta.ActualHash = su.fileHasher.GetMerkleRoot()
 		}
 
-		// upload entire thumbnail in first reqeust only
-		if i == 0 && len(su.thumbnailBytes) > 0 {
+		if readLen > 0 {
+			// upload entire thumbnail in first reqeust only
+			if i == 0 && len(su.thumbnailBytes) > 0 {
 
-			thumbnailShards, err := su.readThumbnailShards()
-			if err != nil {
-				return err
+				thumbnailShards, err := su.readThumbnailShards()
+				if err != nil {
+					return err
+				}
+
+				su.processUpload(i, fileShards, thumbnailShards, isFinal, readLen)
+
+			} else {
+				su.processUpload(i, fileShards, nil, isFinal, readLen)
 			}
 
-			su.processUpload(i, fileShards, thumbnailShards, isFinal, readLen)
-
-			su.progress.UploadLength += int64(su.fileMeta.ActualThumbnailSize) + readLen
-		} else {
-			su.processUpload(i, fileShards, nil, isFinal, readLen)
-		}
-
-		su.progress.ChunkIndex = i
-		su.progress.UploadLength += int64(readLen)
-		su.saveProgress()
-
-		if su.statusCallback != nil {
-			su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, OpUpload, int(su.progress.UploadLength), nil)
+			su.progress.ChunkIndex = i
+			su.saveProgress()
+			if su.statusCallback != nil {
+				su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, OpUpload, int(su.progress.UploadLength), nil)
+			}
 		}
 
 		if isFinal {
@@ -365,6 +355,15 @@ func (su *StreamUpload) readNextChunks(chunkIndex int) ([][]byte, int64, int64, 
 	chunkBytes := make([]byte, shardSize)
 	readLen, err := su.fileReader.Read(chunkBytes)
 
+	if err != nil {
+		//all bytes are read
+		if errors.Is(err, io.EOF) {
+			return nil, 0, 0, true, nil
+		}
+
+		return nil, 0, 0, false, err
+	}
+
 	if readLen > 0 {
 		hash := sha1.New()
 		hash.Write(chunkBytes[:readLen])
@@ -373,20 +372,8 @@ func (su *StreamUpload) readNextChunks(chunkIndex int) ([][]byte, int64, int64, 
 	}
 
 	if readLen < shardSize {
-		chunkSize = int(math.Ceil(float64(readLen / su.allocationObj.DataShards)))
+		chunkSize = int(math.Ceil(float64(readLen) / float64(su.allocationObj.DataShards)))
 		chunkBytes = chunkBytes[:readLen]
-	}
-
-	if err != nil {
-		// all bytes are read
-		if errors.Is(err, io.EOF) {
-			isFinal = true
-		} else {
-			return nil, int64(readLen), int64(chunkSize), isFinal, err
-		}
-	}
-
-	if su.fileMeta.ActualSize > 0 && su.progress.UploadLength+int64(readLen) >= su.fileMeta.ActualSize {
 		isFinal = true
 	}
 

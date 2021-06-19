@@ -24,12 +24,6 @@ type StreamMerkleHasher struct {
 // NewStreamMerkleHasher create a StreamMerkleHasher with specify hash method
 func NewStreamMerkleHasher(hash func(left, right string) string) *StreamMerkleHasher {
 
-	if hash == nil {
-		hash = func(left, right string) string {
-			return encryption.Hash(left + right)
-		}
-	}
-
 	return &StreamMerkleHasher{
 		Tree: make([]string, 0, 10),
 		Hash: hash,
@@ -46,6 +40,12 @@ func (hasher *StreamMerkleHasher) Push(leaf string, index int) error {
 
 	if index > hasher.Count {
 		return ErrLeafNoSequenced
+	}
+
+	if hasher.Hash == nil {
+		hasher.Hash = func(left, right string) string {
+			return encryption.Hash(left + right)
+		}
 	}
 
 	rightHash := leaf
@@ -79,6 +79,11 @@ func (hasher *StreamMerkleHasher) Push(leaf string, index int) error {
 // From there, the nodes are hashed to the top level
 // to calculate the Merkle root.
 func (hasher *StreamMerkleHasher) GetMerkleRoot() string {
+	if hasher.Hash == nil {
+		hasher.Hash = func(left, right string) string {
+			return encryption.Hash(left + right)
+		}
+	}
 
 	rightHash := ""
 

@@ -36,16 +36,8 @@ type StreamUploadBobbler struct {
 	commitResult  *CommitResult
 }
 
-func (sb *StreamUploadBobbler) processHash(fileBytes []byte) {
-	merkleChunkSize := 64
-	for i := 0; i < len(fileBytes); i += merkleChunkSize {
-		end := i + merkleChunkSize
-		if end > len(fileBytes) {
-			end = len(fileBytes)
-		}
-		offset := i / merkleChunkSize
-		sb.progress.MerkleHashes[offset].Write(fileBytes[i:end])
-	}
+func (sb *StreamUploadBobbler) processHash(fileBytes []byte, chunkIndex int) {
+	sb.progress.TrustedConentHasher.Write(fileBytes, chunkIndex)
 }
 
 func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, fileBytes, thumbnailBytes []byte, isFinal bool, wg *sync.WaitGroup) {
@@ -79,7 +71,7 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 		return
 	}
 
-	sb.processHash(fileBytes)
+	sb.processHash(fileBytes, chunkIndex)
 
 	chunkHashWriter := sha1.New()
 	chunkWriters := io.MultiWriter(uploadFile, chunkHashWriter)
@@ -91,7 +83,6 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 	if isFinal {
 
 		//fixed shard data's info in last chunk for stream
-		// formData.ShardHash = sb.progress.getShardHash()
 		formData.MerkleRoot = sb.progress.getMerkelRoot()
 
 		//fixed original file's info in last chunk for stream
@@ -162,7 +153,7 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 			return err
 		}
 		if r.Filename != formData.Filename || r.Hash != formData.ContentHash {
-			err = fmt.Errorf(sb.blobber.Baseurl, "Unexpected upload response data", string(respbody))
+			err = fmt.Errorf("%s Unexpected upload response data %s %s %s", sb.blobber.Baseurl, formData.Filename, formData.ContentHash, string(respbody))
 			logger.Logger.Error(err)
 			//req.err = err
 			return err
