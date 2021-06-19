@@ -852,7 +852,7 @@ func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit 
 	}
 
 	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.NEW_FREE_ALLOCATION,
+		Name:      transaction.ADD_FREE_ALLOCATION_ASSIGNER,
 		InputArgs: input,
 	}
 	_, _, err := smartContractTxn(sn)
