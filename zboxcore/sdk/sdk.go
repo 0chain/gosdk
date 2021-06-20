@@ -866,7 +866,8 @@ func CreateFreeAllocation(marker string, value int64) (string, error) {
 	}
 
 	var input = map[string]interface{}{
-		"marker": marker,
+		"recipient_public_key": client.GetClientPublicKey(),
+		"marker":               marker,
 	}
 
 	var sn = transaction.SmartContractTxnData{
