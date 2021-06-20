@@ -74,8 +74,8 @@ type RoundBlockHeader struct {
 const (
 	NEW_ALLOCATION_REQUEST    = "new_allocation_request"
 	NEW_FREE_ALLOCATION       = "free_allocation_request"
-	UPDATE_ALLOCATION_REQUEST = "free_update_allocation"
-	FREE_UPDATE_ALLOCATION    = "update_free_"
+	UPDATE_ALLOCATION_REQUEST = "update_allocation_request"
+	FREE_UPDATE_ALLOCATION    = "free_update_allocation"
 	LOCK_TOKEN                = "lock"
 	UNLOCK_TOKEN              = "unlock"
 
