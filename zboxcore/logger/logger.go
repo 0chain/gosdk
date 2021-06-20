@@ -6,5 +6,5 @@ var defaultLogLevel = logger.DEBUG
 var Logger logger.Logger
 
 func init() {
-	Logger.Init(defaultLogLevel, "0box-sdk")
+	Logger.Init(defaultLogLevel, "0box-sdk       ")
 }
