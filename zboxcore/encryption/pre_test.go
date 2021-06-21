@@ -2,8 +2,10 @@ package encryption
 
 import (
 	"encoding/base64"
+	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
+	"math/rand"
 	"testing"
 )
 
@@ -121,12 +123,58 @@ func TestKyberPointMarshal(t *testing.T) {
 	require.Equal(t, newmsg.D5.String(), reenc.D5.String())
 }
 
-func TestMarshal(t *testing.T) {
+func BenchmarkMarshal(t *testing.B) {
 	suite := edwards25519.NewBlakeSHA256Ed25519()
 	for i := 0; i < 1000; i++ {
 		point := suite.Point().Pick(suite.RandomStream())
 		data, err := point.MarshalBinary()
 		require.Nil(t, err)
 		require.Equal(t, 44, len(base64.StdEncoding.EncodeToString(data)))
+	}
+}
+
+func BenchmarkEncrypt(t *testing.B) {
+	mnemonic := "inside february piece turkey offer merry select combine tissue wave wet shift room afraid december gown mean brick speak grant gain become toy clown"
+	encscheme := NewEncryptionScheme()
+	encscheme.Initialize(mnemonic)
+	encscheme.InitForEncryption("filetype:audio")
+	for i := 0; i < 10000; i++ {
+		dataToEncrypt := make([]byte, fileref.CHUNK_SIZE)
+		rand.Read(dataToEncrypt)
+		_, err := encscheme.Encrypt(dataToEncrypt)
+		require.Nil(t, err)
+		require.Equal(t, len(dataToEncrypt), fileref.CHUNK_SIZE)
+	}
+}
+
+func BenchmarkReEncryptAndReDecrypt(t *testing.B) {
+	client_mnemonic := "travel twenty hen negative fresh sentence hen flat swift embody increase juice eternal satisfy want vessel matter honey video begin dutch trigger romance assault"
+	client_encscheme := NewEncryptionScheme()
+	client_encscheme.Initialize(client_mnemonic)
+	client_encscheme.InitForEncryption("filetype:audio")
+	client_enc_pub_key, err := client_encscheme.GetPublicKey()
+	require.Nil(t, err)
+
+	// seller uploads and blobber encrypts the data
+	blobber_mnemonic := "inside february piece turkey offer merry select combine tissue wave wet shift room afraid december gown mean brick speak grant gain become toy clown"
+	blobber_encscheme := NewEncryptionScheme()
+	blobber_encscheme.Initialize(blobber_mnemonic)
+	blobber_encscheme.InitForEncryption("filetype:audio")
+	// buyer requests data from blobber, blobber reencrypts the data with regen key using buyer public key
+	regenkey, err := blobber_encscheme.GetReGenKey(client_enc_pub_key, "filetype:audio")
+	for i := 0; i < 10000; i++ {
+		dataToEncrypt := make([]byte, fileref.CHUNK_SIZE)
+		rand.Read(dataToEncrypt)
+		enc_msg, err := blobber_encscheme.Encrypt(dataToEncrypt)
+		require.Nil(t, err)
+		reenc_msg, err := blobber_encscheme.ReEncrypt(enc_msg, regenkey, client_enc_pub_key)
+		require.Nil(t, err)
+
+		client_decryption_scheme := NewEncryptionScheme()
+		client_decryption_scheme.Initialize(client_mnemonic)
+		client_decryption_scheme.InitForDecryption("filetype:audio", enc_msg.EncryptedKey)
+
+		_, err = client_decryption_scheme.ReDecrypt(reenc_msg)
+		require.Nil(t, err)
 	}
 }
