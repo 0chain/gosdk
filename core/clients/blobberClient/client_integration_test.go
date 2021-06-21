@@ -624,6 +624,77 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 		}
 	})
 
+	t.Run("CommitMetaTxn", func(t *testing.T) {
+		pubKey, privKey, _ := GeneratePubPrivateKey(t)
+		allocationTx := randString(32)
+
+		err := tdController.ClearDatabase()
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = tdController.AddListEntitiesTestData(allocationTx, pubKey)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		testCases := []struct {
+			name           string
+			clientHeader   string
+			input          *blobbergrpc.CommitMetaTxnRequest
+			expectedPath   string
+			expectingError bool
+		}{
+			{
+				name:         "Success",
+				clientHeader: "exampleOwnerId",
+				input: &blobbergrpc.CommitMetaTxnRequest{
+					Path:       "examplePath",
+					PathHash:   "exampleId:examplePath",
+					AuthToken:  "",
+					Allocation: allocationTx,
+					TxnId:      "8",
+				},
+				expectedPath:   "examplePath",
+				expectingError: false,
+			},
+			{
+				name:         "bad path",
+				clientHeader: "exampleOwnerId",
+				input: &blobbergrpc.CommitMetaTxnRequest{
+					Path:       "examplePath",
+					PathHash:   "exampleId:examplePath123",
+					AuthToken:  "",
+					Allocation: allocationTx,
+				},
+				expectedPath:   "",
+				expectingError: true,
+			},
+		}
+
+		for _, tc := range testCases {
+			clientRaw, _ := json.Marshal(client.Client{Wallet: &zcncrypto.Wallet{
+				ClientID: tc.clientHeader,
+				Keys:     []zcncrypto.KeyPair{{PublicKey: pubKey, PrivateKey: privKey}},
+			}})
+
+			err := client.PopulateClient(string(clientRaw), signScheme)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, err = CommitMetaTxn(BlobberAddr, tc.input)
+			if err != nil {
+				if !tc.expectingError {
+					t.Fatal(err)
+				}
+				continue
+			}
+
+			if tc.expectingError {
+				t.Fatal("expected error")
+			}
+		}
+	})
+
 	t.Run("TestCollaborator", func(t *testing.T) {
 		allocationTx := randString(32)
 

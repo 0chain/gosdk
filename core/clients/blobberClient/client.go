@@ -194,6 +194,31 @@ func GetFileMetaData(url string, req *blobbergrpc.GetFileMetaDataRequest) ([]byt
 	return json.Marshal(convert.GetFileMetaDataResponseHandler(getFileMetaDataResp))
 }
 
+func CommitMetaTxn(url string, req *blobbergrpc.CommitMetaTxnRequest) ([]byte, error) {
+	blobberClient, err := newBlobberGRPCClient(url)
+	if err != nil {
+		return nil, err
+	}
+
+	clientSignature, err := client.Sign(encryption.Hash(req.Allocation))
+	if err != nil {
+		return nil, err
+	}
+
+	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
+		blobbercommon.ClientHeader:          client.GetClientID(),
+		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
+		blobbercommon.ClientSignatureHeader: clientSignature,
+	}))
+
+	commitMetaResp, err := blobberClient.CommitMetaTxn(grpcCtx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(convert.GetCommitMetaTxnHandlerResponse(commitMetaResp))
+}
+
 func Collaborator(url string, req *blobbergrpc.CollaboratorRequest) ([]byte, error) {
 	blobberClient, err := newBlobberGRPCClient(url)
 	if err != nil {
