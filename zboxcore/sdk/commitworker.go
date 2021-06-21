@@ -3,17 +3,11 @@ package sdk
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"net/http"
 	"strconv"
 	"sync"
-	"time"
-
-	"github.com/0chain/gosdk/core/clients/blobberClient"
 
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
-
+	"github.com/0chain/gosdk/core/clients/blobberClient"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -22,7 +16,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type ReferencePathResult struct {
@@ -230,31 +223,22 @@ func AddCommitRequest(req *CommitRequest) {
 }
 
 func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths []string) error {
-	var req *http.Request
-	req, err := zboxutil.NewCalculateHashRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
-	if err != nil || len(paths) == 0 {
-		Logger.Error("Creating calculate hash req", err)
+	pathsRaw, err := json.Marshal(paths)
+	if err != nil {
 		return err
 	}
-	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("Calculate hash error:", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			Logger.Error("Calculate hash response : ", resp.StatusCode)
-		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			Logger.Error("Calculate hash: Resp", err)
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("Calculate hash error response: Status: %d - %s ", resp.StatusCode, string(resp_body))
-		}
-		return nil
+
+	Logger.Info("Calculating Hash " + commitreq.blobber.Baseurl)
+	resp, err := blobberClient.CalculateHash(commitreq.blobber.Baseurl, &blobbergrpc.CalculateHashRequest{
+		Allocation: commitreq.allocationTx,
+		Path:       "",
+		Paths:      string(pathsRaw),
 	})
-	return err
+
+	if err != nil {
+		Logger.Error("Commit response - " + string(resp))
+		return err
+	}
+
+	return nil
 }
