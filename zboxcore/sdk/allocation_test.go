@@ -22,7 +22,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -40,6 +39,50 @@ const (
 	mockFileRefName    = "mock file ref name"
 	numBlobbers        = 4
 )
+
+func setupMockHttpResponse(t *testing.T, mockClient *mocks.HttpClient, funcName string, testCaseName string, a *Allocation, httpMethod string, statusCode int, body []byte) {
+	for i := 0; i < numBlobbers; i++ {
+		url := funcName + testCaseName + mockBlobberUrl + strconv.Itoa(i)
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return req.Method == httpMethod &&
+				strings.HasPrefix(req.URL.Path, url)
+		})).Return(&http.Response{
+			StatusCode: statusCode,
+			Body:       ioutil.NopCloser(bytes.NewReader(body)),
+		}, nil).Once()
+	}
+}
+
+func setupMockCommitRequest(a *Allocation) {
+	commitChan = make(map[string]chan *CommitRequest)
+	for _, blobber := range a.Blobbers {
+		if _, ok := commitChan[blobber.ID]; !ok {
+			commitChan[blobber.ID] = make(chan *CommitRequest, 1)
+			blobberChan := commitChan[blobber.ID]
+			go func(c <-chan *CommitRequest, blID string) {
+				for true {
+					cm := <-c
+					if cm != nil {
+						cm.result = &CommitResult{
+							Success: true,
+						}
+						if cm.wg != nil {
+							cm.wg.Done()
+						}
+					}
+				}
+			}(blobberChan, blobber.ID)
+		}
+	}
+}
+
+func setupMockFile(t *testing.T, path string) (teardown func(t *testing.T)) {
+	os.Create(path)
+	ioutil.WriteFile(path, []byte("mockActualHash"), os.ModePerm)
+	return func(t *testing.T) {
+		os.Remove(path)
+	}
+}
 
 func TestGetMinMaxWriteReadSuccess(t *testing.T) {
 	var ssc = newTestAllocation()
@@ -3295,8 +3338,8 @@ func TestAllocation_CommitMetaTransaction(t *testing.T) {
 	sdkInitialized = true
 
 	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, mockClientId, "")
-	assert.NoErrorf(t, err, "unexpected get auth ticket error: %v", err)
-	assert.NotEmptyf(t, authTicket, "unexpected empty auth ticket")
+	require.NoErrorf(t, err, "unexpected get auth ticket error: %v", err)
+	require.NotEmptyf(t, authTicket, "unexpected empty auth ticket")
 
 	type parameters struct {
 		path          string
@@ -3573,48 +3616,4 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 			}
 		}
 	}()
-}
-
-func setupMockHttpResponse(t *testing.T, mockClient *mocks.HttpClient, funcName string, testCaseName string, a *Allocation, httpMethod string, statusCode int, body []byte) {
-	for i := 0; i < numBlobbers; i++ {
-		url := funcName + testCaseName + mockBlobberUrl + strconv.Itoa(i)
-		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-			return req.Method == httpMethod &&
-				strings.HasPrefix(req.URL.Path, url)
-		})).Return(&http.Response{
-			StatusCode: statusCode,
-			Body:       ioutil.NopCloser(bytes.NewReader(body)),
-		}, nil).Once()
-	}
-}
-
-func setupMockCommitRequest(a *Allocation) {
-	commitChan = make(map[string]chan *CommitRequest)
-	for _, blobber := range a.Blobbers {
-		if _, ok := commitChan[blobber.ID]; !ok {
-			commitChan[blobber.ID] = make(chan *CommitRequest, 1)
-			blobberChan := commitChan[blobber.ID]
-			go func(c <-chan *CommitRequest, blID string) {
-				for true {
-					cm := <-c
-					if cm != nil {
-						cm.result = &CommitResult{
-							Success: true,
-						}
-						if cm.wg != nil {
-							cm.wg.Done()
-						}
-					}
-				}
-			}(blobberChan, blobber.ID)
-		}
-	}
-}
-
-func setupMockFile(t *testing.T, path string) (teardown func(t *testing.T)) {
-	os.Create(path)
-	ioutil.WriteFile(path, []byte("mockActualHash"), os.ModePerm)
-	return func(t *testing.T) {
-		os.Remove(path)
-	}
 }
