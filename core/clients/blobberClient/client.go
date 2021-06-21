@@ -218,3 +218,53 @@ func CommitMetaTxn(url string, req *blobbergrpc.CommitMetaTxnRequest) ([]byte, e
 
 	return json.Marshal(convert.GetCommitMetaTxnHandlerResponse(commitMetaResp))
 }
+
+func Collaborator(url string, req *blobbergrpc.CollaboratorRequest) ([]byte, error) {
+	blobberClient, err := newBlobberGRPCClient(url)
+	if err != nil {
+		return nil, err
+	}
+
+	clientSignature, err := client.Sign(encryption.Hash(req.Allocation))
+	if err != nil {
+		return nil, err
+	}
+
+	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
+		blobbercommon.ClientHeader:          client.GetClientID(),
+		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
+		blobbercommon.ClientSignatureHeader: clientSignature,
+	}))
+
+	collaboratorResp, err := blobberClient.Collaborator(grpcCtx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(convert.CollaboratorResponse(collaboratorResp))
+}
+
+func CalculateHash(url string, req *blobbergrpc.CalculateHashRequest) ([]byte, error) {
+	blobberClient, err := newBlobberGRPCClient(url)
+	if err != nil {
+		return nil, err
+	}
+
+	clientSignature, err := client.Sign(encryption.Hash(req.Allocation))
+	if err != nil {
+		return nil, err
+	}
+
+	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
+		blobbercommon.ClientHeader:          client.GetClientID(),
+		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
+		blobbercommon.ClientSignatureHeader: clientSignature,
+	}))
+
+	calculateHashResp, err := blobberClient.CalculateHash(grpcCtx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(convert.GetCalculateHashResponseHandler(calculateHashResp))
+}
