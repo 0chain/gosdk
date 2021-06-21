@@ -1,16 +1,13 @@
 package sdk
 
 import (
-	"bytes"
-	"context"
-	"mime/multipart"
 	"net/http"
 	"sync"
-	"time"
 
+	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
+	"github.com/0chain/gosdk/core/clients/blobberClient"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	. "github.com/0chain/gosdk/zboxcore/logger"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type CollaboratorRequest struct {
@@ -20,13 +17,32 @@ type CollaboratorRequest struct {
 	wg             *sync.WaitGroup
 }
 
+func (req *CollaboratorRequest) CollaboratorHandler(blobber *blockchain.StorageNode, blobberIdx int, method string, rspCh chan<- bool) {
+	defer req.wg.Done()
+
+	_, err := blobberClient.Collaborator(blobber.Baseurl, &blobbergrpc.CollaboratorRequest{
+		Allocation: req.a.Tx,
+		CollabId:   req.collaboratorID,
+		Method:     method,
+		Path:       req.path,
+	})
+	if err != nil {
+		Logger.Error("CollaboratorHandler Error: ", err)
+		rspCh <- false
+		return
+	}
+
+	rspCh <- true
+	return
+}
+
 func (req *CollaboratorRequest) UpdateCollaboratorToBlobbers() bool {
 	numList := len(req.a.Blobbers)
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numList)
 	rspCh := make(chan bool, numList)
 	for i := 0; i < numList; i++ {
-		go req.updateCollaboratorToBlobber(req.a.Blobbers[i], i, rspCh)
+		go req.CollaboratorHandler(req.a.Blobbers[i], i, http.MethodPost, rspCh)
 	}
 	req.wg.Wait()
 	count := 0
@@ -37,39 +53,6 @@ func (req *CollaboratorRequest) UpdateCollaboratorToBlobbers() bool {
 		}
 	}
 	return count == numList
-}
-
-func (req *CollaboratorRequest) updateCollaboratorToBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- bool) {
-
-	defer req.wg.Done()
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
-
-	formWriter.WriteField("path", req.path)
-	formWriter.WriteField("collab_id", req.collaboratorID)
-
-	formWriter.Close()
-	httpreq, err := zboxutil.NewCollaboratorRequest(blobber.Baseurl, req.a.Tx, body)
-	if err != nil {
-		Logger.Error("Update collaborator request error: ", err.Error())
-		return
-	}
-
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	ctx, cncl := context.WithTimeout(req.a.ctx, (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("Update Collaborator : ", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == http.StatusOK {
-			rspCh <- true
-			return err
-		}
-		rspCh <- false
-		return err
-	})
 }
 
 func (req *CollaboratorRequest) RemoveCollaboratorFromBlobbers() bool {
@@ -78,7 +61,7 @@ func (req *CollaboratorRequest) RemoveCollaboratorFromBlobbers() bool {
 	req.wg.Add(numList)
 	rspCh := make(chan bool, numList)
 	for i := 0; i < numList; i++ {
-		go req.removeCollaboratorFromBlobber(req.a.Blobbers[i], i, rspCh)
+		go req.CollaboratorHandler(req.a.Blobbers[i], i, http.MethodDelete, rspCh)
 	}
 	req.wg.Wait()
 	count := 0
@@ -89,37 +72,4 @@ func (req *CollaboratorRequest) RemoveCollaboratorFromBlobbers() bool {
 		}
 	}
 	return count == numList
-}
-
-func (req *CollaboratorRequest) removeCollaboratorFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- bool) {
-
-	defer req.wg.Done()
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
-
-	formWriter.WriteField("path", req.path)
-	formWriter.WriteField("collab_id", req.collaboratorID)
-
-	formWriter.Close()
-	httpreq, err := zboxutil.DeleteCollaboratorRequest(blobber.Baseurl, req.a.Tx, body)
-	if err != nil {
-		Logger.Error("Delete collaborator request error: ", err.Error())
-		return
-	}
-
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	ctx, cncl := context.WithTimeout(req.a.ctx, (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("Delete Collaborator : ", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == http.StatusOK {
-			rspCh <- true
-			return err
-		}
-		rspCh <- false
-		return err
-	})
 }
