@@ -672,15 +672,15 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.LookupHash = ref.LookupHash
 		result.MimeType = ref.MimeType
 		result.Path = ref.Path
-		result.Size = ref.ActualFileSize
+		result.Size = ref.Size
 		result.EncryptedKey = ref.EncryptedKey
 		result.CommitMetaTxns = ref.CommitMetaTxns
 		result.Collaborators = ref.Collaborators
 		result.Attributes = ref.Attributes
-		result.ActualFileSize = ref.Size
+		result.ActualFileSize = ref.ActualFileSize
 		result.ActualNumBlocks = ref.NumBlocks
-		result.CreatedAt = ref.CreatedAt
 		result.UpdatedAt = ref.UpdatedAt
+		result.CreatedAt = ref.CreatedAt
 		return result, nil
 	}
 	return nil, common.NewError("file_meta_error", "Error getting the file meta data from blobbers")
