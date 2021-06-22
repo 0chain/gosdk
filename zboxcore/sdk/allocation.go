@@ -88,6 +88,8 @@ type ConsolidatedFileMeta struct {
 	CommitMetaTxns  []fileref.CommitMetaTxn
 	Collaborators   []fileref.Collaborator
 	Attributes      fileref.Attributes
+	CreatedAt string
+	UpdatedAt string
 }
 
 type AllocationStats struct {
@@ -677,6 +679,8 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.Attributes = ref.Attributes
 		result.ActualFileSize = ref.Size
 		result.ActualNumBlocks = ref.NumBlocks
+		result.CreatedAt = ref.CreatedAt
+		result.UpdatedAt = ref.UpdatedAt
 		return result, nil
 	}
 	return nil, common.NewError("file_meta_error", "Error getting the file meta data from blobbers")
