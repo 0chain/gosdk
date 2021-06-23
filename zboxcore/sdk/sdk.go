@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/0chain/gosdk/core/logger"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -58,6 +59,7 @@ func SetLogLevel(lvl int) {
 	Logger.SetLevel(lvl)
 }
 
+// SetLogFile
 // logFile - Log file
 // verbose - true - console output; false - no console output
 func SetLogFile(logFile string, verbose bool) {
@@ -67,6 +69,10 @@ func SetLogFile(logFile string, verbose bool) {
 	}
 	Logger.SetLogFile(f, verbose)
 	Logger.Info("******* Storage SDK Version: ", version.VERSIONSTR, " *******")
+}
+
+func GetLogger() *logger.Logger {
+	return &Logger
 }
 
 func InitStorageSDK(clientJson string, blockWorker string, chainID string, signatureScheme string, preferredBlobbers []string) error {
