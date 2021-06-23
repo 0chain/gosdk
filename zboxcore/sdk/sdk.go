@@ -841,7 +841,7 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 }
 
 func UpdateAllocation(size int64, expiry int64, allocationID string,
-	lock int64) (hash string, err error) {
+	lock int64, setImmutable bool) (hash string, err error) {
 
 	if !sdkInitialized {
 		return "", sdkNotInitialized
@@ -852,6 +852,7 @@ func UpdateAllocation(size int64, expiry int64, allocationID string,
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
 	updateAllocationRequest["expiration_date"] = expiry
+	updateAllocationRequest["set_immutable"] = setImmutable
 
 	sn := transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
