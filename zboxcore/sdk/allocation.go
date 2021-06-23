@@ -1150,12 +1150,12 @@ func (a *Allocation) RemoveCollaborator(filePath, collaboratorID string) error {
 	return common.NewError("remove_collaborator_failed", "Failed to remove collaborator on all blobbers.")
 }
 
-func (a *Allocation) GetMaxWriteRead() (maxW float64, maxR float64, err error) {
+func (a *Allocation) GetMaxWriteReadFromBlobbers(blobbers []*BlobberAllocation) (maxW float64, maxR float64, err error) {
 	if !a.isInitialized() {
 		return 0, 0, notInitialized
 	}
 
-	blobbersCopy := a.BlobberDetails
+	blobbersCopy := blobbers
 	if len(blobbersCopy) == 0 {
 		return 0, 0, noBLOBBERS
 	}
@@ -1171,6 +1171,10 @@ func (a *Allocation) GetMaxWriteRead() (maxW float64, maxR float64, err error) {
 	}
 
 	return maxWritePrice, maxReadPrice, nil
+}
+
+func (a *Allocation) GetMaxWriteRead() (maxW float64, maxR float64, err error) {
+	return a.GetMaxWriteReadFromBlobbers(a.BlobberDetails)
 }
 
 func (a *Allocation) GetMinWriteRead() (minW float64, minR float64, err error) {
@@ -1194,6 +1198,22 @@ func (a *Allocation) GetMinWriteRead() (minW float64, minR float64, err error) {
 	}
 
 	return minWritePrice, minReadPrice, nil
+}
+
+func (a *Allocation) GetMaxStorageCostFromBlobbers(size int64, blobbers []*BlobberAllocation) (float64, error) {
+	var cost common.Balance // total price for size / duration
+
+	for _, d := range blobbers {
+		fmt.Printf("write price for blobber %f datashards %d parity %d\n",
+			float64(d.Terms.WritePrice), a.DataShards, a.ParityShards)
+
+		cost += a.uploadCostForBlobber(float64(d.Terms.WritePrice), size,
+			a.DataShards, a.ParityShards)
+
+		fmt.Printf("Total cost %d\n", cost)
+	}
+
+	return cost.ToToken(), nil
 }
 
 func (a *Allocation) GetMaxStorageCost(size int64) (float64, error) {
