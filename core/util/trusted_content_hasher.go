@@ -8,12 +8,14 @@ import (
 
 // TrustedConentHasher A trusted mekerl tree for outsourcing attack protection. see section 1.8 on whitepager
 type TrustedConentHasher struct {
-	leaves []*StreamMerkleHasher
+	ChunkSize int
+	leaves    []*StreamMerkleHasher
 }
 
 func (tch *TrustedConentHasher) Write(buf []byte, chunkIndex int) {
-	merkleChunkSize := 64
-	for i := 0; i < len(buf); i += merkleChunkSize {
+	merkleChunkSize := tch.ChunkSize / 1024
+	total := len(buf)
+	for i := 0; i < total; i += merkleChunkSize {
 		end := i + merkleChunkSize
 		if end > len(buf) {
 			end = len(buf)

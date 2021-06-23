@@ -32,6 +32,8 @@ type StreamUploadBobbler struct {
 	fileRef  *fileref.FileRef
 	progress *UploadBlobberStatus
 
+	err error
+
 	commitChanges []allocationchange.AllocationChange
 	commitResult  *CommitResult
 }
@@ -59,6 +61,7 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 		Attributes: su.fileMeta.Attributes,
 
 		IsFinal:      isFinal,
+		ChunkSize:    int64(su.chunkSize),
 		ChunkIndex:   chunkIndex,
 		UploadOffset: int64(su.chunkSize * chunkIndex),
 	}
@@ -184,6 +187,7 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 			sb.fileRef.MerkleRoot = formData.MerkleRoot
 			sb.fileRef.ContentHash = formData.ContentHash
 
+			sb.fileRef.ChunkSize = su.chunkSize
 			sb.fileRef.Size = su.shardUploadedSize
 			sb.fileRef.Path = formData.Path
 			sb.fileRef.ActualFileHash = formData.ActualHash

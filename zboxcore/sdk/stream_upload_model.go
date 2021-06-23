@@ -70,12 +70,14 @@ type UploadFormData struct {
 
 	IsFinal      bool  `json:"is_final,omitempty"`      // current chunk is last or not
 	ChunkIndex   int   `json:"chunk_index,omitempty"`   // the seq of current chunk. all chunks MUST be uploaded one by one because of streaming merkle hash
+	ChunkSize    int64 `json:"chunk_size,omitempty"`    // the size of achunk. 64*1024 is default
 	UploadOffset int64 `json:"upload_offset,omitempty"` // It is next position that new incoming chunk should be append to
 
 }
 
 // UploadProgress progress of upload
 type UploadProgress struct {
+	ID string `json:"id"`
 
 	// ChunkSize size of chunk
 	ChunkSize int `json:"chunk_size,omitempty"`

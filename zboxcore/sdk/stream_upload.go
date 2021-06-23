@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"context"
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
@@ -11,6 +12,7 @@ import (
 	"math"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/0chain/gosdk/core/common"
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
@@ -45,6 +47,8 @@ func CreateStreamUpload(allocationObj *Allocation, fileMeta FileMeta, fileReader
 		fileHasher: util.NewStreamMerkleHasher(func(left, right string) string {
 			return coreEncryption.Hash(left + right)
 		}),
+		progressSaveChan:   make(chan UploadProgress, 10),
+		progressRemoveChan: make(chan UploadProgress, 10),
 
 		uploadMask:      zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1),
 		chunkSize:       DefaultChunkSize,
@@ -111,8 +115,10 @@ type StreamUpload struct {
 
 	allocationObj *Allocation
 
-	progress   UploadProgress
-	uploadMask zboxutil.Uint128
+	progress           UploadProgress
+	progressSaveChan   chan UploadProgress
+	progressRemoveChan chan UploadProgress
+	uploadMask         zboxutil.Uint128
 
 	fileMeta           FileMeta
 	fileReader         io.Reader
@@ -150,10 +156,14 @@ func (su *StreamUpload) loadProgress() {
 	progressID := su.progressID()
 
 	buf, err := ioutil.ReadFile(progressID)
+	defer func() {
+		go su.autoSaveProgress()
+	}()
 
 	if errors.Is(err, os.ErrNotExist) {
 		logger.Logger.Info("[upload] init progress: ", progressID)
 		su.progress = su.createUploadProgress()
+		su.progress.ID = progressID
 		return
 	}
 
@@ -161,33 +171,64 @@ func (su *StreamUpload) loadProgress() {
 	if err := json.Unmarshal(buf, &progress); err != nil {
 		logger.Logger.Info("[upload] init progress failed: ", err, ", upload it from scratch")
 		su.progress = su.createUploadProgress()
+		su.progress.ID = progressID
 		return
 	}
 
 	su.progress = progress
+	su.progress.ID = progressID
+}
+
+func (su *StreamUpload) autoSaveProgress() {
+
+	var progress *UploadProgress
+	delay, cancel := context.WithTimeout(context.TODO(), 1*time.Second)
+
+	defer cancel()
+
+	for {
+
+		select {
+		case it := <-su.progressSaveChan:
+
+			progress = &it
+		case it := <-su.progressRemoveChan:
+
+			os.Remove(it.ID)
+			break
+		case <-delay.Done():
+
+			if progress != nil {
+				buf, err := json.Marshal(progress)
+				if err != nil {
+					logger.Logger.Error("[upload] save progress: ", err)
+				}
+				progressID := progress.ID
+				err = ioutil.WriteFile(progressID, buf, 0644)
+				if err != nil {
+					logger.Logger.Error("[upload] save progress: ", progressID, err)
+				}
+
+				logger.Logger.Info("[upload] save progress: ", progress.ID)
+
+				progress = nil
+			}
+
+			delay, cancel = context.WithTimeout(context.TODO(), 1*time.Second)
+
+		}
+
+	}
 }
 
 // saveProgress save progress to ~/.zcn/upload/[progressID]
 func (su *StreamUpload) saveProgress() {
-	buf, err := json.Marshal(su.progress)
-	if err != nil {
-		logger.Logger.Error("[upload] save progress: ", err)
-	}
-
-	progressID := su.progressID()
-	err = ioutil.WriteFile(progressID, buf, 0644)
-	if err != nil {
-		logger.Logger.Error("[upload] save progress: ", err)
-		return
-	}
-
-	logger.Logger.Info("[upload] save progress: ", progressID)
+	go func() { su.progressSaveChan <- su.progress }()
 }
 
 // removeProgress remove progress info once it is done
 func (su *StreamUpload) removeProgress() {
-
-	os.Remove(su.progressID())
+	go func() { su.progressRemoveChan <- su.progress }()
 }
 
 // createUploadProgress create a new UploadProgress
@@ -201,7 +242,7 @@ func (su *StreamUpload) createUploadProgress() UploadProgress {
 
 	for i := 0; i < len(progress.Blobbers); i++ {
 		progress.Blobbers[i] = &UploadBlobberStatus{
-			TrustedConentHasher: &util.TrustedConentHasher{},
+			TrustedConentHasher: &util.TrustedConentHasher{ChunkSize: su.chunkSize},
 		}
 	}
 
@@ -241,6 +282,8 @@ func (su *StreamUpload) Start() error {
 	}
 
 	for i := 0; ; i++ {
+
+		// start := time.Now()
 		fileShards, readLen, chunkSize, isFinal, err := su.readNextChunks(i)
 		if err != nil {
 			return err
@@ -262,6 +305,9 @@ func (su *StreamUpload) Start() error {
 			su.fileMeta.ActualHash = su.fileHasher.GetMerkleRoot()
 		}
 
+		// readElapsed := time.Since(start)
+		// fmt.Println("read: ", readElapsed)
+
 		if readLen > 0 {
 			// upload entire thumbnail in first reqeust only
 			if i == 0 && len(su.thumbnailBytes) > 0 {
@@ -277,8 +323,14 @@ func (su *StreamUpload) Start() error {
 				su.processUpload(i, fileShards, nil, isFinal, readLen)
 			}
 
+			// uploadElapsed := time.Since(start)
+			// fmt.Println("upload: ", uploadElapsed-readElapsed)
+
 			su.progress.ChunkIndex = i
 			su.saveProgress()
+
+			// saveElapsed := time.Since(start)
+			// fmt.Println("save: ", saveElapsed-uploadElapsed)
 			if su.statusCallback != nil {
 				su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, OpUpload, int(su.progress.UploadLength), nil)
 			}
@@ -448,11 +500,11 @@ func (su *StreamUpload) processCommit() error {
 		blobber := su.blobbers[pos]
 
 		//fixed numBlocks
+		blobber.fileRef.ChunkSize = su.chunkSize
 		blobber.fileRef.NumBlocks = int64(su.progress.ChunkIndex + 1)
 
 		newChange := &allocationchange.NewFileChange{}
 		newChange.File = blobber.fileRef
-
 		newChange.NumBlocks = blobber.fileRef.NumBlocks
 		newChange.Operation = allocationchange.INSERT_OPERATION
 		newChange.Size = blobber.fileRef.Size

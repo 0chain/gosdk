@@ -36,6 +36,7 @@ type DownloadRequest struct {
 	localpath          string
 	startBlock         int64
 	endBlock           int64
+	chunkSize          int
 	numBlocks          int64
 	rxPay              bool
 	statusCallback     StatusCallback
@@ -66,6 +67,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 		blockDownloadReq.authTicket = req.authTicket
 		blockDownloadReq.blobber = req.blobbers[pos]
 		blockDownloadReq.blobberIdx = pos
+		blockDownloadReq.chunkSize = req.chunkSize
 		blockDownloadReq.blockNum = blockNum
 		blockDownloadReq.contentMode = req.contentMode
 		blockDownloadReq.result = rspCh
@@ -201,10 +203,11 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		size = fileRef.ActualThumbnailSize
 	}
 	req.encryptedKey = fileRef.EncryptedKey
+	req.chunkSize = fileRef.ChunkSize
 	Logger.Info("Encrypted key from fileref", req.encryptedKey)
 	// Calculate number of bytes per shard.
 	perShard := (size + int64(req.datashards) - 1) / int64(req.datashards)
-	chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
+	chunkSizeWithHeader := int64(fileRef.ChunkSize)
 	if len(fileRef.EncryptedKey) > 0 {
 		chunkSizeWithHeader -= 16
 		chunkSizeWithHeader -= 2 * 1024
@@ -236,7 +239,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	Logger.Info("Start block: ", req.startBlock+1, " End block: ", req.endBlock, " Num blocks: ", req.numBlocks)
 
 	downloaded := int(0)
-	fileHasher := createDownloadHasher(fileref.CHUNK_SIZE, req.datashards, len(fileRef.EncryptedKey) > 0)
+	fileHasher := createDownloadHasher(req.chunkSize, req.datashards, len(fileRef.EncryptedKey) > 0)
 	mW := io.MultiWriter(fileHasher, wrFile)
 
 	startBlock := req.startBlock
@@ -296,7 +299,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	// Only check hash when the download request is not by block/partial.
 	if req.endBlock == chunksPerShard && req.startBlock == 0 {
-		calcHash := fileHasher.GetHash()
+		//calcHash := fileHasher.GetHash()
 		merkleRoot := fileHasher.GetMerkleRoot()
 
 		expectedHash := fileRef.ActualFileHash
@@ -304,7 +307,8 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			expectedHash = fileRef.ActualThumbnailHash
 		}
 
-		if calcHash != expectedHash && expectedHash != merkleRoot {
+		//if calcHash != expectedHash && expectedHash != merkleRoot {
+		if expectedHash != merkleRoot {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
 				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, fmt.Errorf("File content didn't match with uploaded file"))
