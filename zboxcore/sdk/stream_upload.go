@@ -174,6 +174,7 @@ func (su *StreamUpload) loadProgress() {
 	su.progress.ID = progressID
 }
 
+// autoSaveProgress a background save worker is running in a single thread for higher perfornamce. Because `json.Marshal` hits performance issue.
 func (su *StreamUpload) autoSaveProgress() {
 
 	var progress *UploadProgress

@@ -3,13 +3,14 @@ package util
 import (
 	"crypto/sha1"
 	"encoding/hex"
-	"encoding/json"
 )
 
 // TrustedConentHasher A trusted mekerl tree for outsourcing attack protection. see section 1.8 on whitepager
 type TrustedConentHasher struct {
-	ChunkSize int
-	leaves    []*StreamMerkleHasher
+	// ChunkSize size of chunk
+	ChunkSize int `json:"chunk_size,omitempty"`
+	// Leaves a leaf is a StreamMerkleHash of 1/1024 shard
+	Leaves []*StreamMerkleHasher `json:"leaves,omitempty"`
 }
 
 func (tch *TrustedConentHasher) Write(buf []byte, chunkIndex int) {
@@ -25,14 +26,14 @@ func (tch *TrustedConentHasher) Write(buf []byte, chunkIndex int) {
 		h := sha1.New()
 		h.Write(buf[i:end])
 
-		if len(tch.leaves) == 0 {
-			tch.leaves = make([]*StreamMerkleHasher, 1024)
+		if len(tch.Leaves) != 1024 {
+			tch.Leaves = make([]*StreamMerkleHasher, 1024)
 			for n := 0; n < 1024; n++ {
-				tch.leaves[n] = NewStreamMerkleHasher(nil)
+				tch.Leaves[n] = NewStreamMerkleHasher(nil)
 			}
 		}
 
-		tch.leaves[offset].Push(hex.EncodeToString(h.Sum(nil)), chunkIndex)
+		tch.Leaves[offset].Push(hex.EncodeToString(h.Sum(nil)), chunkIndex)
 	}
 }
 
@@ -40,7 +41,7 @@ func (tch *TrustedConentHasher) Write(buf []byte, chunkIndex int) {
 func (tch *TrustedConentHasher) GetMerkleRoot() string {
 	merkleLeaves := make([]Hashable, 1024)
 
-	for idx, leaf := range tch.leaves {
+	for idx, leaf := range tch.Leaves {
 
 		merkleLeaves[idx] = NewStringHashable(leaf.GetMerkleRoot())
 	}
@@ -49,30 +50,4 @@ func (tch *TrustedConentHasher) GetMerkleRoot() string {
 	mt.ComputeTree(merkleLeaves)
 
 	return mt.GetRoot()
-}
-
-// UnmarshalJSON  implments json.Unmarshaler
-func (tch *TrustedConentHasher) UnmarshalJSON(b []byte) error {
-	var leaves []*StreamMerkleHasher
-
-	err := json.Unmarshal(b, &leaves)
-	if err != nil {
-		return err
-	}
-
-	tch.leaves = leaves
-
-	return nil
-}
-
-// MarshalJSON implements json.Marshaler
-func (tch TrustedConentHasher) MarshalJSON() ([]byte, error) {
-	if len(tch.leaves) == 0 {
-		tch.leaves = make([]*StreamMerkleHasher, 1024)
-		for n := 0; n < 1024; n++ {
-			tch.leaves[n] = NewStreamMerkleHasher(nil)
-		}
-	}
-
-	return json.Marshal(tch.leaves)
 }
