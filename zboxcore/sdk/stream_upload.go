@@ -103,6 +103,7 @@ func CreateStreamUpload(allocationObj *Allocation, fileMeta FileMeta, fileReader
 		}
 	}
 
+	go su.autoSaveProgress()
 	return su
 
 }
@@ -154,16 +155,11 @@ func (su *StreamUpload) progressID() string {
 // loadProgress load progress from ~/.zcn/upload/[progressID]
 func (su *StreamUpload) loadProgress() {
 	progressID := su.progressID()
-
 	buf, err := ioutil.ReadFile(progressID)
-	defer func() {
-		go su.autoSaveProgress()
-	}()
 
 	if errors.Is(err, os.ErrNotExist) {
 		logger.Logger.Info("[upload] init progress: ", progressID)
 		su.progress = su.createUploadProgress()
-		su.progress.ID = progressID
 		return
 	}
 
@@ -171,7 +167,6 @@ func (su *StreamUpload) loadProgress() {
 	if err := json.Unmarshal(buf, &progress); err != nil {
 		logger.Logger.Info("[upload] init progress failed: ", err, ", upload it from scratch")
 		su.progress = su.createUploadProgress()
-		su.progress.ID = progressID
 		return
 	}
 
@@ -246,6 +241,7 @@ func (su *StreamUpload) createUploadProgress() UploadProgress {
 		}
 	}
 
+	progress.ID = su.progressID()
 	return progress
 }
 
