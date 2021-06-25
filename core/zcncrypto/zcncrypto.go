@@ -30,6 +30,9 @@ type Wallet struct {
 type SignatureScheme interface {
 	// Generate fresh keys
 	GenerateKeys() (*Wallet, error)
+	// Generate fresh keys based on eth wallet
+	GenerateKeysWithEth(mnemonic, password string) (*Wallet, error)
+
 	// Generate keys from mnemonic for recovery
 	RecoverKeys(mnemonic string) (*Wallet, error)
 
