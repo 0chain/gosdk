@@ -10,6 +10,6 @@ type AuthCallback struct {
 }
 
 // OnSetupComplete provides a mock function with given fields: status, err
-func (_m *AuthCallback) OnSetupComplete(status int, err string) {
+func (_m AuthCallback) OnSetupComplete(status int, err string) {
 	_m.Called(status, err)
 }

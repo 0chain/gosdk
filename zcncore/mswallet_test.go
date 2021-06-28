@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zcncore/mocks"
+	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -45,6 +45,7 @@ const (
 		"signature": ""
 	}`
 	msvFail = ""
+	hash    = "127e6fbfe24a750e72930c220a8e138275656b8e5d8f48a98c3c92df2caba935"
 )
 
 func TestCreateMSWallet(t *testing.T) {

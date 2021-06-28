@@ -135,6 +135,7 @@ func (t *Transaction) ComputeHashAndSign(signHandler SignFunc) error {
 	var err error
 	t.Signature, err = signHandler(t.Hash)
 	if err != nil {
+		fmt.Println("eeeeeeeeeee",err)
 		return err
 	}
 	return nil

@@ -10,6 +10,6 @@ type GetUSDInfoCallback struct {
 }
 
 // OnUSDInfoAvailable provides a mock function with given fields: status, info, err
-func (_m *GetUSDInfoCallback) OnUSDInfoAvailable(status int, info string, err string) {
+func (_m GetUSDInfoCallback) OnUSDInfoAvailable(status int, info string, err string) {
 	_m.Called(status, info, err)
 }
