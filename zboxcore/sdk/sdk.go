@@ -885,6 +885,41 @@ func CancelAllocation(allocID string) (hash string, err error) {
 	return
 }
 
+func AddCurator(curatorId, allocationId string) (string, error) {
+	if !sdkInitialized {
+		return "", sdkNotInitialized
+	}
+
+	var allocationRequest = map[string]interface{}{
+		"curator_id":    curatorId,
+		"allocation_id": allocationId,
+	}
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_ADD_CURATOR,
+		InputArgs: allocationRequest,
+	}
+	hash, _, err := smartContractTxn(sn)
+	return hash, err
+}
+
+func CuratorTransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (string, error) {
+	if !sdkInitialized {
+		return "", sdkNotInitialized
+	}
+
+	var allocationRequest = map[string]interface{}{
+		"allocation_id":        allocationId,
+		"new_owner_id":         newOwner,
+		"new_owner_public_key": newOwnerPublicKey,
+	}
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_CURATOR_TRANSFER,
+		InputArgs: allocationRequest,
+	}
+	hash, _, err := smartContractTxn(sn)
+	return hash, err
+}
+
 func UpdateBlobberSettings(blob *Blobber) (resp string, err error) {
 	if !sdkInitialized {
 		return "", sdkNotInitialized
