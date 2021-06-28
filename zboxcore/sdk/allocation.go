@@ -160,6 +160,7 @@ type Allocation struct {
 	MovedToChallenge        common.Balance   `json:"moved_to_challenge,omitempty"`
 	MovedBack               common.Balance   `json:"moved_back,omitempty"`
 	MovedToValidators       common.Balance   `json:"moved_to_validators,omitempty"`
+	Curators                []string         `json:"curators"`
 
 	numBlockDownloads       int
 	uploadChan              chan *UploadRequest

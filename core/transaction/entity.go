@@ -73,9 +73,13 @@ type RoundBlockHeader struct {
 
 const (
 	NEW_ALLOCATION_REQUEST    = "new_allocation_request"
+	NEW_FREE_ALLOCATION       = "free_allocation_request"
 	UPDATE_ALLOCATION_REQUEST = "update_allocation_request"
+	FREE_UPDATE_ALLOCATION    = "free_update_allocation"
 	LOCK_TOKEN                = "lock"
 	UNLOCK_TOKEN              = "unlock"
+
+	ADD_FREE_ALLOCATION_ASSIGNER = "add_free_storage_assigner"
 
 	// Vesting SC
 	VESTING_TRIGGER       = "trigger"
@@ -99,6 +103,8 @@ const (
 	STORAGESC_UPDATE_ALLOCATION        = "update_allocation_request"
 	STORAGESC_WRITE_POOL_LOCK          = "write_pool_lock"
 	STORAGESC_WRITE_POOL_UNLOCK        = "write_pool_unlock"
+	STORAGESC_ADD_CURATOR              = "add_curator"
+	STORAGESC_CURATOR_TRANSFER         = "curator_transfer_allocation"
 
 	// Miner SC
 	MINERSC_LOCK     = "addToDelegatePool"
