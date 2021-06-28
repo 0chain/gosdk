@@ -1,0 +1,20 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox add-collab" as cli
+collections gosdk
+collections blobber
+
+cli -> gosdk: GetAllocation(allocationID)
+cli -> gosdk: AddCollaborator(remotepath, collabID)
+
+gosdk -> gosdk: check initialized allocation
+gosdk -> gosdk: create collaborator request
+
+group for each blobber (blobber, bidx)
+gosdk -> blobber: call http request to update collaborator
+alt successful status code
+gosdk -> gosdk: return successful status 
+end
+end
+
+gosdk -> gosdk: check the number of successful status equal to the number of blobbers
+@enduml

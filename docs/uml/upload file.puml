@@ -1,0 +1,61 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox upload" as cli
+collections gosdk
+collections blobber
+
+cli -> gosdk: uploadOrUpdateFile()
+
+gosdk -> gosdk: check initialized allocation
+gosdk -> gosdk: get file info
+gosdk -> gosdk: check valid path
+gosdk -> gosdk: get full remote path
+gosdk -> gosdk: create upload request
+
+alt need repair
+gosdk -> gosdk: create list request
+gosdk -> blobber: get file consensus from blobber
+end
+
+gosdk -> gosdk: check fullconsensus of upload request has supported
+gosdk -> gosdk: process upload
+gosdk -> gosdk: get file info from file path
+gosdk -> gosdk: setup upload file
+
+alt length of thumbnailpath > 0
+group for count from 0 to chunksPerShard
+gosdk -> gosdk: push thumbnail data
+end
+gosdk -> gosdk: complete thumbnail push
+
+group for count from 0 to chunksPerShard
+alt is upload canceled
+alt not update and not repair
+gosdk -> blobber: delete file
+end
+gosdk --> cli: return
+end
+gosdk -> gosdk: push data
+end
+gosdk -> gosdk: complete push
+
+
+group for each bit 1 in the uploadMask
+gosdk -> gosdk: create commit request
+gosdk -> blobber: add commit request
+end
+
+alt retries < 3 && check threshold consensus is true
+group for each successful commit
+gosdk -> gosdk: increase consensus
+end
+gosdk -> gosdk: check threshold consensus
+gosdk -> gosdk: increase retries
+end
+
+alt check threshold consensus is true && consensus != 0
+gosdk -> blobber: delete file
+end
+
+gosdk --> cli: upload completed and return
+end
+@enduml

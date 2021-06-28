@@ -1,0 +1,16 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox sp-user-info" as cli
+collections gosdk
+
+cli -> gosdk: GetStakePoolUserInfo(clientID)
+
+gosdk -> gosdk: check initialized sdk
+alt empty client id
+gosdk -> gosdk: get client id
+end
+gosdk -> gosdk: make SC rest api call
+gosdk -> gosdk: check response result 
+gosdk -> gosdk: create new stake pool user info
+gosdk -> gosdk: return response result for stake pool user info
+gosdk --> cli: return stake pool user info
+@enduml

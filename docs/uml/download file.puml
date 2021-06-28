@@ -1,0 +1,50 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox download" as cli
+collections gosdk
+collections blobber
+
+alt not empty remotepath
+cli -> gosdk: GetAllocation(allocationID)
+cli -> gosdk: downloadFile()
+
+gosdk -> gosdk: check initialized allocation
+gosdk -> gosdk: check valid path
+gosdk -> gosdk: check number of blobbers
+gosdk -> gosdk: create download request
+gosdk -> gosdk: process download
+gosdk -> gosdk: create list request
+gosdk -> blobber: get file consensus from blobber
+gosdk -> gosdk: calculate number of bytes per shard
+
+group for startBlock < endBlock
+gosdk -> gosdk: download block
+gosdk -> gosdk: calculate startBlock
+end
+
+gosdk -> gosdk: check hash when the download request is not by block/partial
+gosdk -> cli: download completed and return
+
+else not empty authticket
+cli -> gosdk: GetAllocationFromAuthTicket(authticket)
+cli -> gosdk: InitAuthTicket(authticket)
+cli -> gosdk: downloadFile()
+
+gosdk -> gosdk: check initialized allocation
+gosdk -> gosdk: get auth ticket from authticket
+gosdk -> gosdk: check valid path
+gosdk -> gosdk: check number of blobbers
+gosdk -> gosdk: create download request
+gosdk -> gosdk: process download
+gosdk -> gosdk: create list request
+gosdk -> blobber: get file consensus from blobber
+gosdk -> gosdk: calculate number of bytes per shard
+
+group for startBlock < endBlock
+gosdk -> gosdk: download block
+gosdk -> gosdk: calculate startBlock
+end
+
+gosdk -> gosdk: check hash when the download request is not by block/partial
+gosdk -> cli: download completed and return
+end
+@enduml

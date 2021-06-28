@@ -1,0 +1,13 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox ls-blobbers" as cli
+collections gosdk
+
+cli -> gosdk: GetBlobbers()
+
+gosdk -> gosdk: check initialized sdk
+gosdk -> gosdk: make SC rest api call
+gosdk -> gosdk: check response result 
+gosdk -> gosdk: create a new nodes struct
+gosdk -> gosdk: return response result for nodes struct
+gosdk --> cli: return list of blobbers
+@enduml
