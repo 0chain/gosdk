@@ -861,6 +861,8 @@ func main() {
 	fmt.Printf("0CHAIN - GOSDK (version=%v)\n", version.VERSIONSTR)
 
 	c := make(chan struct{}, 0)
+
+	// Just functions for 0proxy.
 	js.Global().Set("initializeConfig", js.FuncOf(initializeConfig))
 	js.Global().Set("Upload", js.FuncOf(Upload))
 	js.Global().Set("Download", js.FuncOf(Download))
@@ -870,5 +872,10 @@ func main() {
 	js.Global().Set("Delete", js.FuncOf(Delete))
 	js.Global().Set("Move", js.FuncOf(Move))
 	js.Global().Set("GetClientEncryptedPublicKey", js.FuncOf(GetClientEncryptedPublicKey))
+
+	// ethwallet.go
+	js.Global().Set("IsValidEthAddress", js.FuncOf(IsValidEthAddress))
+	js.Global().Set("CheckEthHashStatus", js.FuncOf(CheckEthHashStatus))
+
 	<-c
 }
