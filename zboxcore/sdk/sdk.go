@@ -840,6 +840,45 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 	return
 }
 
+func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit float64) error {
+	if !sdkInitialized {
+		return sdkNotInitialized
+	}
+
+	var input = map[string]interface{}{
+		"name":             name,
+		"public_key":       publicKey,
+		"individual_limit": individualLimit,
+		"total_limit":      totalLimit,
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.ADD_FREE_ALLOCATION_ASSIGNER,
+		InputArgs: input,
+	}
+	_, _, err := smartContractTxn(sn)
+
+	return err
+}
+
+func CreateFreeAllocation(marker string, value int64) (string, error) {
+	if !sdkInitialized {
+		return "", sdkNotInitialized
+	}
+
+	var input = map[string]interface{}{
+		"recipient_public_key": client.GetClientPublicKey(),
+		"marker":               marker,
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.NEW_FREE_ALLOCATION,
+		InputArgs: input,
+	}
+	hash, _, err := smartContractTxnValue(sn, value)
+	return hash, err
+}
+
 func UpdateAllocation(size int64, expiry int64, allocationID string,
 	lock int64) (hash string, err error) {
 
@@ -859,6 +898,24 @@ func UpdateAllocation(size int64, expiry int64, allocationID string,
 	}
 	hash, _, err = smartContractTxnValue(sn, lock)
 	return
+}
+
+func CreateFreeUpdateAllocation(marker, allocationId string, value int64) (string, error) {
+	if !sdkInitialized {
+		return "", sdkNotInitialized
+	}
+
+	var input = map[string]interface{}{
+		"allocation_id": allocationId,
+		"marker":        marker,
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.FREE_UPDATE_ALLOCATION,
+		InputArgs: input,
+	}
+	hash, _, err := smartContractTxnValue(sn, value)
+	return hash, err
 }
 
 func FinalizeAllocation(allocID string) (hash string, err error) {
