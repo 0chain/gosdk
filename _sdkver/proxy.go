@@ -876,6 +876,7 @@ func main() {
 	// ethwallet.go
 	js.Global().Set("IsValidEthAddress", js.FuncOf(IsValidEthAddress))
 	js.Global().Set("CheckEthHashStatus", js.FuncOf(CheckEthHashStatus))
+	js.Global().Set("CreateWalletFromEthMnemonic", js.FuncOf(CreateWalletFromEthMnemonic))
 
 	<-c
 }
