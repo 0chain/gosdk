@@ -2,9 +2,21 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"syscall/js"
 	"github.com/0chain/gosdk/zcncore"
 )
+
+func TokensToEth(this js.Value, p []js.Value) interface{} {
+	tokensStr := p[0].String()
+	tokens, err := strconv.ParseInt(tokensStr, 10, 64)
+	if err != nil {
+		fmt.Println("error:", err)
+		return nil
+	}
+	result := zcncore.TokensToEth(tokens)
+	return result
+}
 
 func GetWalletAddrFromEthMnemonic(this js.Value, p []js.Value) interface{} {
 	mnemonic := p[0].String()
@@ -30,10 +42,6 @@ func CheckEthHashStatus(this js.Value, p []js.Value) interface{} {
 	status := zcncore.CheckEthHashStatus(hash)
 	return status
 }
-
-// func TokensToEth(this js.Value, p []js.Value) interface{} {
-// 	;
-// }
 
 func CreateWalletFromEthMnemonic(this js.Value, p []js.Value) interface{} {
 	mnemonic := p[0].String()

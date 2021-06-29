@@ -874,6 +874,7 @@ func main() {
 	js.Global().Set("GetClientEncryptedPublicKey", js.FuncOf(GetClientEncryptedPublicKey))
 
 	// ethwallet.go
+	js.Global().Set("TokensToEth", js.FuncOf(TokensToEth))
 	js.Global().Set("GetWalletAddrFromEthMnemonic", js.FuncOf(GetWalletAddrFromEthMnemonic))
 	js.Global().Set("IsValidEthAddress", js.FuncOf(IsValidEthAddress))
 	js.Global().Set("CheckEthHashStatus", js.FuncOf(CheckEthHashStatus))
