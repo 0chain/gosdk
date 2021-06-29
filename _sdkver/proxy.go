@@ -875,6 +875,13 @@ func main() {
 
 	// ethwallet.go
 	js.Global().Set("TokensToEth", js.FuncOf(TokensToEth))
+	js.Global().Set("EthToTokens", js.FuncOf(EthToTokens))
+	js.Global().Set("GTokensToEth", js.FuncOf(GTokensToEth))
+	js.Global().Set("GEthToTokens", js.FuncOf(GEthToTokens))
+	js.Global().Set("ConvertZcnTokenToETH", js.FuncOf(ConvertZcnTokenToETH))
+	js.Global().Set("SuggestEthGasPrice", js.FuncOf(SuggestEthGasPrice))
+	js.Global().Set("TransferEthTokens", js.FuncOf(TransferEthTokens))
+
 	js.Global().Set("GetWalletAddrFromEthMnemonic", js.FuncOf(GetWalletAddrFromEthMnemonic))
 	js.Global().Set("IsValidEthAddress", js.FuncOf(IsValidEthAddress))
 	js.Global().Set("CheckEthHashStatus", js.FuncOf(CheckEthHashStatus))
