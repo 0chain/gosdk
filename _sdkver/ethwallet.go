@@ -107,10 +107,18 @@ func CreateWalletFromEthMnemonic(this js.Value, p []js.Value) interface{} {
 
 	// @Artem you probably want to replace 'nil' with an actual status callback
 	// function.
-	err := zcncore.CreateWalletFromEthMnemonic(mnemonic, password, nil)
+	err := zcncore.CreateWalletFromEthMnemonic(mnemonic, password, new(Callback))
 	if err != nil {
 		fmt.Println("error:", err)
 	}
 
 	return nil
+}
+
+type Callback struct {
+	i int
+}
+
+func (s *Callback) OnWalletCreateComplete(status int, w string, err string) {
+	fmt.Println("callback [status, w, err]:", status, w, err)
 }
