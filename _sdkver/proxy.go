@@ -887,5 +887,8 @@ func main() {
 	js.Global().Set("CheckEthHashStatus", js.FuncOf(CheckEthHashStatus))
 	js.Global().Set("CreateWalletFromEthMnemonic", js.FuncOf(CreateWalletFromEthMnemonic))
 
+	// wallet.go
+	js.Global().Set("InitZCNSDK", js.FuncOf(InitZCNSDK))
+
 	<-c
 }
