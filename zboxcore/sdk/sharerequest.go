@@ -45,12 +45,9 @@ func (req *ShareRequest) GetAuthTicketForEncryptedFile(clientID string, encPubli
 	if err != nil {
 		return "", err
 	}
-	fileRef, err := req.GetFileRef()
+	_, err = req.GetFileRef()
 	if err != nil {
 		return "", err
-	}
-	if fileRef.Type == fileref.DIRECTORY || len(fileRef.EncryptedKey) == 0 {
-		return req.GetAuthTicket(clientID)
 	}
 	var encscheme encryption.EncryptionScheme
 	encscheme = encryption.NewEncryptionScheme()
