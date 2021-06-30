@@ -68,7 +68,9 @@ Examples:
 * `_sdkver/wallet.go` which exports one function in `zcncore/wallet.go`.
 
 Steps:
+
 1a. If you are exporting a new function from `zcncore/wallet.go`, you should add to `_sdkver/wallet.go`
+
 1b. If you are exporrting a function from a new file, you should create a new .go file for it, in the same style as `_sdkver/wallet.go` or `_sdkver/ethwallet.go`
 
 2. In func main(), `https://github.com/0chain/gosdk/blob/jssdk/_sdkver/proxy.go`, you need to add this line:
@@ -78,12 +80,17 @@ Steps:
 ```
 
 3. Now you need to compile a new `proxy.wasm`. The command is currently: `GOOS=js GOARCH=wasm go build -o proxy.wasm proxy.go ethwallet.go wallet.go;`
+
 3a. Please note that if you added a new golang file, then you need to add a new golang file to that compile command.
 
 4. Now you need to test that `proxy.wasm`. We currently have a test page going at the js-client-sdk repo: `https://github.com/0chain/js-client-sdk/blob/gosdk/test/index.html`
+
 4a. You can replace the proxy.wasm at `https://github.com/0chain/js-client-sdk/blob/gosdk/test/proxy.wasm`
+
 4b. You need to startup a special test server in order to stream WASM files. Use this command from js-client-sdk $TOP: `sudo php -S localhost:82 test/server.php`
+
 4c. See "testethwallet" function in index.html for how the testing for ethwallet.go is done
+
 4d. To test the function you exported, it's probably as simple as calling "HelloWorld()". It should be a 1-liner.
 
 ## FAQ ##
