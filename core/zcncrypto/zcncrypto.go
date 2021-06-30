@@ -53,7 +53,7 @@ type SplitSignatureScheme interface {
 }
 
 // NewSignatureScheme creates an instance for using signature functions
-func NewSignatureScheme(sigScheme string) SignatureScheme {
+var NewSignatureScheme = func(sigScheme string) SignatureScheme {
 	switch sigScheme {
 	case "ed25519":
 		return NewED255190chainScheme()
