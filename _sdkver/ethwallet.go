@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"strconv"
+	"sync"
 	"syscall/js"
+
 	"github.com/0chain/gosdk/zcncore"
 )
 
@@ -53,10 +55,6 @@ func GetWalletAddrFromEthMnemonic(this js.Value, p []js.Value) interface{} {
 	return result
 }
 
-// func GetEthBalance(this js.Value, p []js.Value) interface{} {
-// 	;
-// }
-
 func ConvertZcnTokenToETH(this js.Value, p []js.Value) interface{} {
 	token := p[0].Float()
 	result, err := zcncore.ConvertZcnTokenToETH(token)
@@ -95,30 +93,100 @@ func IsValidEthAddress(this js.Value, p []js.Value) interface{} {
 	return success
 }
 
-func CheckEthHashStatus(this js.Value, p []js.Value) interface{} {
-	hash := p[0].String()
-	status := zcncore.CheckEthHashStatus(hash)
-	return status
+func GetEthBalance(this js.Value, p []js.Value) interface{} {
+	ethAddress := p[0].String()
+
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
+
+		go func() {
+			tcb := &BalanceCallback{}
+			tcb.wg = &sync.WaitGroup{}
+			tcb.wg.Add(1)
+
+			err := zcncore.GetEthBalance(ethAddress, tcb)
+			if err != nil {
+				tcb.wg.Done()
+				return reject.Invoke(err.Error())
+			}
+			tcb.wg.Wait()
+
+			resolve.Invoke(map[string]interface{}{
+				"info":   tcb.info,
+				"status": tcb.status,
+				"value":  tcb.value,
+			})
+		}()
+
+		return nil
+	})
+
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 func CreateWalletFromEthMnemonic(this js.Value, p []js.Value) interface{} {
 	mnemonic := p[0].String()
 	password := p[1].String()
 
-	// @Artem you probably want to replace 'nil' with an actual status callback
-	// function.
-	err := zcncore.CreateWalletFromEthMnemonic(mnemonic, password, new(Callback))
-	if err != nil {
-		fmt.Println("error:", err)
-	}
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
+
+		go func() {
+			tcb := &WalletCallback{}
+			tcb.wg = &sync.WaitGroup{}
+			tcb.wg.Add(1)
+
+			err := zcncore.CreateWalletFromEthMnemonic(mnemonic, password, tcb)
+			if err != nil {
+				tcb.wg.Done()
+				return reject.Invoke(err.Error())
+			}
+			tcb.wg.Wait()
+
+			resolve.Invoke(map[string]interface{}{
+				"status": tcb.status,
+				"err":    tcb.err,
+				"wallet": tcb.wallet,
+			})
+		}()
+
+		return nil
+	})
 
 	return nil
 }
 
-type Callback struct {
-	i int
+type WalletCallback struct {
+	wg     *sync.WaitGroup
+	status int
+	wallet string
+	err    string
 }
 
-func (s *Callback) OnWalletCreateComplete(status int, w string, err string) {
+type BalanceCallback struct {
+	wg     *sync.WaitGroup
+	status int
+	value  int64
+	info   string
+}
+
+func (balCall *BalanceCallback) OnBalanceAvailable(status int, value int64, info string) {
+	defer balCall.wg.Done()
 	fmt.Println("callback [status, w, err]:", status, w, err)
+
+	balCall.status = status
+	balCall.value = value
+	balCall.info = info
+}
+
+func (wallCall *WalletCallback) OnWalletCreateComplete(status int, w string, err string) {
+	defer wallCall.wg.Done()
+	fmt.Println("callback [status, w, err]:", status, w, err)
+
+	wallCall.status = status
+	wallCall.wallet = w
+	wallCall.err = err
 }

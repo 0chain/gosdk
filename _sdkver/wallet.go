@@ -1,8 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"syscall/js"
+
 	"github.com/0chain/gosdk/zcncore"
 )
 
@@ -12,12 +12,12 @@ func InitZCNSDK(this js.Value, p []js.Value) interface{} {
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
-		// reject := args[1]
+		reject := args[1]
 
 		go func() {
 			err := zcncore.InitZCNSDK(blockWorker, signscheme)
 			if err != nil {
-				fmt.Println("error:", err)
+				reject.Invoke(err.Error())
 			}
 			resolve.Invoke()
 		}()
