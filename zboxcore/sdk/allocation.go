@@ -65,7 +65,6 @@ type BlobberAllocationStats struct {
 		ReadPrice    int    `json:"ReadPrice"`
 		WritePrice   int    `json:"WritePrice"`
 	} `json:"Terms"`
-	PayerID string `json:"PayerID"`
 }
 
 type ConsolidatedFileMeta struct {
@@ -142,6 +141,7 @@ type Allocation struct {
 	Blobbers       []*blockchain.StorageNode `json:"blobbers"`
 	Stats          *AllocationStats          `json:"stats"`
 	TimeUnit       time.Duration             `json:"time_unit"`
+	IsImmutable    bool                      `json:"is_immutable"`
 
 	// BlobberDetails contains real terms used for the allocation.
 	// If the allocation has updated, then terms calculated using
@@ -160,6 +160,7 @@ type Allocation struct {
 	MovedToChallenge        common.Balance   `json:"moved_to_challenge,omitempty"`
 	MovedBack               common.Balance   `json:"moved_back,omitempty"`
 	MovedToValidators       common.Balance   `json:"moved_to_validators,omitempty"`
+	Curators                []string         `json:"curators"`
 
 	numBlockDownloads       int
 	uploadChan              chan *UploadRequest

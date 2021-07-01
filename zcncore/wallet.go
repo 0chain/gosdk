@@ -206,7 +206,7 @@ func checkSdkInit() error {
 func checkWalletConfig() error {
 	if !_config.isValidWallet || _config.wallet.ClientID == "" {
 		Logger.Error("wallet info not found. returning error.")
-		return fmt.Errorf("wallet info not found. set wallet info.")
+		return fmt.Errorf("wallet info not found. set wallet info")
 	}
 	return nil
 }
@@ -275,6 +275,10 @@ func SetLogFile(logFile string, verbose bool) {
 	}
 	Logger.SetLogFile(f, verbose)
 	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " *******")
+}
+
+func GetLogger() *logger.Logger {
+	return &Logger
 }
 
 // CloseLog closes log file

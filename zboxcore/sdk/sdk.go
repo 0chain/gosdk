@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/0chain/gosdk/core/logger"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -58,6 +59,7 @@ func SetLogLevel(lvl int) {
 	Logger.SetLevel(lvl)
 }
 
+// SetLogFile
 // logFile - Log file
 // verbose - true - console output; false - no console output
 func SetLogFile(logFile string, verbose bool) {
@@ -67,6 +69,10 @@ func SetLogFile(logFile string, verbose bool) {
 	}
 	Logger.SetLogFile(f, verbose)
 	Logger.Info("******* Storage SDK Version: ", version.VERSIONSTR, " *******")
+}
+
+func GetLogger() *logger.Logger {
+	return &Logger
 }
 
 func InitStorageSDK(clientJson string, blockWorker string, chainID string, signatureScheme string, preferredBlobbers []string) error {
@@ -829,6 +835,7 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
 		"max_challenge_completion_time": mcct,
+		"diversify_blobbers":            true,
 	}
 
 	var sn = transaction.SmartContractTxnData{
@@ -839,8 +846,47 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 	return
 }
 
+func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit float64) error {
+	if !sdkInitialized {
+		return sdkNotInitialized
+	}
+
+	var input = map[string]interface{}{
+		"name":             name,
+		"public_key":       publicKey,
+		"individual_limit": individualLimit,
+		"total_limit":      totalLimit,
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.ADD_FREE_ALLOCATION_ASSIGNER,
+		InputArgs: input,
+	}
+	_, _, err := smartContractTxn(sn)
+
+	return err
+}
+
+func CreateFreeAllocation(marker string, value int64) (string, error) {
+	if !sdkInitialized {
+		return "", sdkNotInitialized
+	}
+
+	var input = map[string]interface{}{
+		"recipient_public_key": client.GetClientPublicKey(),
+		"marker":               marker,
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.NEW_FREE_ALLOCATION,
+		InputArgs: input,
+	}
+	hash, _, err := smartContractTxnValue(sn, value)
+	return hash, err
+}
+
 func UpdateAllocation(size int64, expiry int64, allocationID string,
-	lock int64) (hash string, err error) {
+	lock int64, setImmutable bool) (hash string, err error) {
 
 	if !sdkInitialized {
 		return "", sdkNotInitialized
@@ -851,6 +897,7 @@ func UpdateAllocation(size int64, expiry int64, allocationID string,
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
 	updateAllocationRequest["expiration_date"] = expiry
+	updateAllocationRequest["set_immutable"] = setImmutable
 
 	sn := transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
@@ -858,6 +905,24 @@ func UpdateAllocation(size int64, expiry int64, allocationID string,
 	}
 	hash, _, err = smartContractTxnValue(sn, lock)
 	return
+}
+
+func CreateFreeUpdateAllocation(marker, allocationId string, value int64) (string, error) {
+	if !sdkInitialized {
+		return "", sdkNotInitialized
+	}
+
+	var input = map[string]interface{}{
+		"allocation_id": allocationId,
+		"marker":        marker,
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.FREE_UPDATE_ALLOCATION,
+		InputArgs: input,
+	}
+	hash, _, err := smartContractTxnValue(sn, value)
+	return hash, err
 }
 
 func FinalizeAllocation(allocID string) (hash string, err error) {
@@ -882,6 +947,41 @@ func CancelAllocation(allocID string) (hash string, err error) {
 	}
 	hash, _, err = smartContractTxn(sn)
 	return
+}
+
+func AddCurator(curatorId, allocationId string) (string, error) {
+	if !sdkInitialized {
+		return "", sdkNotInitialized
+	}
+
+	var allocationRequest = map[string]interface{}{
+		"curator_id":    curatorId,
+		"allocation_id": allocationId,
+	}
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_ADD_CURATOR,
+		InputArgs: allocationRequest,
+	}
+	hash, _, err := smartContractTxn(sn)
+	return hash, err
+}
+
+func CuratorTransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (string, error) {
+	if !sdkInitialized {
+		return "", sdkNotInitialized
+	}
+
+	var allocationRequest = map[string]interface{}{
+		"allocation_id":        allocationId,
+		"new_owner_id":         newOwner,
+		"new_owner_public_key": newOwnerPublicKey,
+	}
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_CURATOR_TRANSFER,
+		InputArgs: allocationRequest,
+	}
+	hash, _, err := smartContractTxn(sn)
+	return hash, err
 }
 
 func UpdateBlobberSettings(blob *Blobber) (resp string, err error) {
@@ -1040,6 +1140,7 @@ func GetAllocationMinLock(datashards, parityshards int, size, expiry int64,
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
 		"max_challenge_completion_time": mcct,
+		"diversify_blobbers":            true,
 	}
 	allocationData, _ := json.Marshal(allocationRequestData)
 
