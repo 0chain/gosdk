@@ -33,6 +33,13 @@ func (req *ShareRequest) GetAuthTicketForEncryptedFile(clientID string, encPubli
 	at.FilePathHash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 	at.RefType = req.refType
 	timestamp := int64(common.Now())
+
+	fileRef, err := req.GetFileRef()
+	if err != nil {
+		return "", err
+	}
+	at.ContentHash = fileRef.ContentHash
+
 	if req.expirationSeconds == 0 {
 		// default expiration after 90 days
 		at.Expiration = timestamp + 90 * 86400
@@ -41,7 +48,7 @@ func (req *ShareRequest) GetAuthTicketForEncryptedFile(clientID string, encPubli
 	}
 	at.Timestamp = timestamp
 	at.Encrypted = true
-	err := at.Sign()
+	err = at.Sign()
 	if err != nil {
 		return "", err
 	}
