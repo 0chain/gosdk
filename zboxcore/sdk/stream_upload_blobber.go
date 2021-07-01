@@ -45,6 +45,22 @@ func (sb *StreamUploadBobbler) processHash(fileBytes []byte, chunkIndex int) {
 func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, fileBytes, thumbnailBytes []byte, isFinal bool, wg *sync.WaitGroup) {
 	defer wg.Done()
 
+	if len(fileBytes) == 0 {
+		//fixed fileRef in last chunk on stream. io.EOF with nil bytes
+		if isFinal {
+			sb.fileRef.ChunkSize = su.chunkSize
+			sb.fileRef.Size = su.shardUploadedSize
+			sb.fileRef.Path = su.fileMeta.RemotePath
+			sb.fileRef.ActualFileHash = su.fileMeta.ActualHash
+			sb.fileRef.ActualFileSize = su.fileMeta.ActualSize
+
+			sb.fileRef.EncryptedKey = su.fileEncscheme.GetEncryptedKey()
+			sb.fileRef.CalculateHash()
+		}
+
+		return
+	}
+
 	body := new(bytes.Buffer)
 
 	formData := UploadFormData{

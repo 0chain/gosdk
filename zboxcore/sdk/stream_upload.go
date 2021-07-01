@@ -60,7 +60,7 @@ func CreateStreamUpload(allocationObj *Allocation, fileMeta FileMeta, fileReader
 	su.configDir = home + string(os.PathSeparator) + ".zcn"
 
 	//create upload folder to save progress
-	os.MkdirAll(su.configDir+"/upload", os.ModePerm)
+	os.MkdirAll(su.configDir+"/upload", 0744)
 
 	su.loadProgress()
 
@@ -205,8 +205,6 @@ func (su *StreamUpload) autoSaveProgress() {
 					logger.Logger.Error("[upload] save progress: ", progressID, err)
 				}
 
-				logger.Logger.Info("[upload] save progress: ", progress.ID)
-
 				progress = nil
 			}
 
@@ -300,34 +298,33 @@ func (su *StreamUpload) Start() error {
 
 		if isFinal {
 			su.fileMeta.ActualHash = su.fileHasher.GetMerkleRoot()
-		}
 
-		// readElapsed := time.Since(start)
-		// fmt.Println("read: ", readElapsed)
-
-		if readLen > 0 {
-			// upload entire thumbnail in first reqeust only
-			if i == 0 && len(su.thumbnailBytes) > 0 {
-
-				thumbnailShards, err := su.readThumbnailShards()
-				if err != nil {
-					return err
-				}
-
-				su.processUpload(i, fileShards, thumbnailShards, isFinal, readLen)
-
-			} else {
-				su.processUpload(i, fileShards, nil, isFinal, readLen)
+			if su.fileMeta.ActualSize == 0 {
+				su.fileMeta.ActualSize = su.progress.UploadLength
 			}
 
-			// uploadElapsed := time.Since(start)
-			// fmt.Println("upload: ", uploadElapsed-readElapsed)
+		}
 
+		// upload entire thumbnail in first reqeust only
+		if i == 0 && len(su.thumbnailBytes) > 0 {
+
+			thumbnailShards, err := su.readThumbnailShards()
+			if err != nil {
+				return err
+			}
+
+			su.processUpload(i, fileShards, thumbnailShards, isFinal, readLen)
+
+		} else {
+			su.processUpload(i, fileShards, nil, isFinal, readLen)
+		}
+
+		// last chunk might 0 with io.EOF
+		// https://stackoverflow.com/questions/41208359/how-to-test-eof-on-io-reader-in-go
+		if readLen > 0 {
 			su.progress.ChunkIndex = i
 			su.saveProgress()
 
-			// saveElapsed := time.Since(start)
-			// fmt.Println("save: ", saveElapsed-uploadElapsed)
 			if su.statusCallback != nil {
 				su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, OpUpload, int(su.progress.UploadLength), nil)
 			}
@@ -405,12 +402,14 @@ func (su *StreamUpload) readNextChunks(chunkIndex int) ([][]byte, int64, int64, 
 	readLen, err := su.fileReader.Read(chunkBytes)
 
 	if err != nil {
-		//all bytes are read
-		if errors.Is(err, io.EOF) {
-			return nil, 0, 0, true, nil
+
+		if !errors.Is(err, io.EOF) {
+			return nil, 0, 0, false, err
+
 		}
 
-		return nil, 0, 0, false, err
+		//all bytes are read
+		isFinal = true
 	}
 
 	if readLen > 0 {
@@ -488,6 +487,7 @@ func (su *StreamUpload) processCommit() error {
 	su.consensus = 0
 	wg := &sync.WaitGroup{}
 	ones := su.uploadMask.CountOnes()
+
 	wg.Add(ones)
 
 	var pos uint64
