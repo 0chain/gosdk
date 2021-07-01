@@ -17,3 +17,4 @@ zbox
 out
 vendor
 .DS_Store
+_sdkver/*.wasm
