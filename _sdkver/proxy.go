@@ -871,7 +871,7 @@ func main() {
 
 	// Just functions for 0proxy.
 	js.Global().Set("initializeConfig", js.FuncOf(initializeConfig))
-	js.Global().Set("InitSDK", js.FuncOf(initSDK()))
+	js.Global().Set("InitSDK", js.FuncOf(initSDK))
 	js.Global().Set("Upload", js.FuncOf(Upload))
 	js.Global().Set("Download", js.FuncOf(Download))
 	js.Global().Set("Share", js.FuncOf(Share))
