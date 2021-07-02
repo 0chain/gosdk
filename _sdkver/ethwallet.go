@@ -67,26 +67,49 @@ func ConvertZcnTokenToETH(this js.Value, p []js.Value) interface{} {
 }
 
 func SuggestEthGasPrice(this js.Value, p []js.Value) interface{} {
-	result, err := zcncore.SuggestEthGasPrice()
-	if err != nil {
-		return map[string]interface{}{
-			"err": err.Error(),
-		}
-	}
-	return int64ToStr(result)
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
+
+		go func() {
+			result, err := zcncore.SuggestEthGasPrice()
+			if err != nil {
+				reject.Invoke(err.Error())
+			}
+
+			resolve.Invoke(int64ToStr(result))
+		}()
+
+		return nil
+	})
+
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 func TransferEthTokens(this js.Value, p []js.Value) interface{} {
 	fromPrivKey := p[0].String()
 	amountTokens := strToInt64(p[1].String())
 	gasPrice := strToInt64(p[2].String())
-	result, err := zcncore.TransferEthTokens(fromPrivKey, amountTokens, gasPrice)
-	if err != nil {
-		return map[string]interface{}{
-			"err": err.Error(),
-		}
-	}
-	return result
+
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
+
+		go func() {
+			result, err := zcncore.TransferEthTokens(fromPrivKey, amountTokens, gasPrice)
+			if err != nil {
+				reject.Invoke(err.Error())
+			}
+
+			resolve.Invoke(result)
+		}()
+
+		return nil
+	})
+
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 // Exports public functions in github.com/0chain/gosdk/zcncore/ethwallet.go
