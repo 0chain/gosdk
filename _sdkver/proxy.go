@@ -142,11 +142,14 @@ func initSDK(clientJSON string) error {
 		return NewError("invalid_param", "Configuration is empty")
 	}
 
-	sdk.InitStorageSDK(clientJSON,
+	err := sdk.InitStorageSDK(clientJSON,
 		Configuration.BlockWorker,
 		Configuration.ChainID,
 		Configuration.SignatureScheme,
 		nil)
+	if err != nil {
+		return err
+	}
 
 	return zcncore.Init(clientJSON)
 }
