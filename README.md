@@ -79,7 +79,7 @@ Steps:
 	js.Global().Set("YOURFUNC", js.FuncOf(YOURFUNC))
 ```
 
-3. Now you need to compile a new `proxy.wasm`. The command is currently: `GOOS=js GOARCH=wasm go build -o proxy.wasm proxy.go ethwallet.go wallet.go;`
+3. Now you need to compile a new `proxy.wasm`. The command is currently: `GOOS=js CGO_ENABLED=0 GOARCH=wasm go build -o proxy.wasm proxy.go ethwallet.go wallet.go;`
 
 3a. Please note that if you added a new golang file, then you need to add a new golang file to that compile command.
 

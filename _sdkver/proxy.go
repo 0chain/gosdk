@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/0chain/gosdk/core/version"
+	"github.com/0chain/gosdk/zcncore"
 
 	"github.com/0chain/gosdk/bls"
 	// "github.com/0chain/gosdk/miracl"
@@ -140,11 +141,14 @@ func initSDK(clientJSON string) error {
 		len(Configuration.SignatureScheme) == 0 {
 		return NewError("invalid_param", "Configuration is empty")
 	}
-	return sdk.InitStorageSDK(clientJSON,
+
+	sdk.InitStorageSDK(clientJSON,
 		Configuration.BlockWorker,
 		Configuration.ChainID,
 		Configuration.SignatureScheme,
 		nil)
+
+	return zcncore.Init(clientJSON)
 }
 
 func validateClientDetails(allocation, clientJSON string) error {
