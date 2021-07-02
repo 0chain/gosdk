@@ -77,7 +77,7 @@ func (wp WhoPays) Validate() (err error) {
 	case WhoPays3rdParty, WhoPaysOwner:
 		return // ok
 	}
-	return fmt.Errorf("unknown WhoPays value: %d", int(wp))
+	return NewError("validate_error", fmt.Sprintf("unknown WhoPays value: %d", int(wp)))
 }
 
 // Parse given string and set the WhoPays by it. Or return parsing error.
@@ -89,7 +89,7 @@ func (wp *WhoPays) Parse(val string) (err error) {
 	case "3rd_party":
 		(*wp) = WhoPays3rdParty
 	default:
-		err = fmt.Errorf("empty or unknown 'who_pays' value: %q", val)
+		err = NewError("parse_error", fmt.Sprintf("empty or unknown 'who_pays' value: %q", val))
 	}
 	return
 }
