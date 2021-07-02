@@ -3,6 +3,7 @@ package common
 import (
 	"fmt"
 	"runtime"
+	"strings"
 )
 
 /*Error type for a new application error */
@@ -17,6 +18,12 @@ func (err *Error) Error() string {
 		return fmt.Sprintf("%s %s", err.Location, err.Msg)
 	}
 	return fmt.Sprintf("%s %s: %s", err.Location, err.Code, err.Msg)
+}
+
+// TopLevelError since errors can be wrapped and stacked,
+// it's necessary to get the top level error for tests and validations
+func TopLevelError(err error) string {
+	return strings.SplitN(strings.Split(err.Error(), "\n")[0], " ", 2)[1]
 }
 
 type withError struct {
