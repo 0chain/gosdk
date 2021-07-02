@@ -125,6 +125,15 @@ func InitZCNSDK(this js.Value, p []js.Value) interface{} {
 }
 ```
 
+## How to run unit test ##
+
+To run all the unit tests in `sdk`, run this command from $TOP: `go test github.com/0chain/gosdk/zboxcore/sdk -v`
+
+To run a specific unit test in `sdk` such as `TestGetMinMaxWriteReadSuccess`, run this: `go test github.com/0chain/gosdk/zboxcore/sdk -v -run TestGetMinMaxWriteReadSuccess`
+
+To run the coverage test in `sdk`, run this command: `go test github.com/0chain/gosdk/zboxcore/sdk -coverprofile=coverage.out`
+
+To view the results from coverage test, run this: `go tool cover -html=coverage.out`
 
 ## FAQ ##
 
