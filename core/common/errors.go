@@ -67,6 +67,11 @@ func NewError(code string, msg string) *Error {
 	}
 }
 
+// NewErrorMessage - creates a new error with just message
+func NewErrorMessage(msg string) *Error {
+	return NewError("", msg)
+}
+
 func getErrorLocation() string {
 	_, file, line, _ := runtime.Caller(2)
 	return fmt.Sprintf("%s:%d", file, line)
