@@ -3,7 +3,6 @@ package zcncrypto
 import (
 	"bytes"
 	"encoding/hex"
-	"errors"
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
@@ -86,7 +85,7 @@ func (ed *ED255190chainScheme) SetPublicKey(publicKey string) error {
 		return common.NewError("set_public_key", "cannot set public key when there is a private key")
 	}
 	if len(ed.publicKey) > 0 {
-		return errors.New("public key already exists")
+		common.NewError("set_public_key", "public key already exists")
 	}
 	var err error
 	ed.publicKey, err = hex.DecodeString(publicKey)
