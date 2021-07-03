@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -130,7 +130,7 @@ func (ar *AttributesRequest) ProcessAttributes() (err error) {
 	ar.wg.Wait()
 
 	if !ar.isConsensusOk() {
-		return common.NewError("Update attributes failed: request failed, operation failed")
+		return errors.NewError("Update attributes failed: request failed, operation failed")
 	}
 
 	ar.consensus = 0
@@ -181,7 +181,7 @@ func (ar *AttributesRequest) ProcessAttributes() (err error) {
 	}
 
 	if !ar.isConsensusOk() {
-		return common.NewError("Delete failed: Commit consensus failed")
+		return errors.NewError("Delete failed: Commit consensus failed")
 	}
 
 	return nil

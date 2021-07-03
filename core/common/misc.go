@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/0chain/gosdk/core/common/errors"
 )
 
 const tokenUnit = 10000000000.0
@@ -77,7 +79,7 @@ func (wp WhoPays) Validate() (err error) {
 	case WhoPays3rdParty, WhoPaysOwner:
 		return // ok
 	}
-	return NewError("validate_error", fmt.Sprintf("unknown WhoPays value: %d", int(wp)))
+	return errors.NewError("validate_error", fmt.Sprintf("unknown WhoPays value: %d", int(wp)))
 }
 
 // Parse given string and set the WhoPays by it. Or return parsing error.
@@ -89,7 +91,7 @@ func (wp *WhoPays) Parse(val string) (err error) {
 	case "3rd_party":
 		(*wp) = WhoPays3rdParty
 	default:
-		err = NewError("parse_error", fmt.Sprintf("empty or unknown 'who_pays' value: %q", val))
+		err = errors.NewError("parse_error", fmt.Sprintf("empty or unknown 'who_pays' value: %q", val))
 	}
 	return
 }

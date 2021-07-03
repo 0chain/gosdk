@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -103,7 +103,7 @@ func (req *CopyRequest) ProcessCopy() error {
 	req.wg.Wait()
 
 	if !req.isConsensusOk() {
-		return common.NewError("Copy failed: Copy request failed. Operation failed.")
+		return errors.NewError("Copy failed: Copy request failed. Operation failed.")
 	}
 
 	req.consensus = 0
@@ -147,7 +147,7 @@ func (req *CopyRequest) ProcessCopy() error {
 	}
 
 	if !req.isConsensusOk() {
-		return common.NewError("Copy failed: Commit consensus failed")
+		return errors.NewError("Copy failed: Commit consensus failed")
 	}
 	return nil
 }

@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -100,7 +100,7 @@ func (req *RenameRequest) ProcessRename() error {
 	req.wg.Wait()
 
 	if !req.isConsensusOk() {
-		return common.NewError("Rename failed: Rename request failed. Operation failed.")
+		return errors.NewError("Rename failed: Rename request failed. Operation failed.")
 	}
 
 	req.consensus = 0
@@ -144,7 +144,7 @@ func (req *RenameRequest) ProcessRename() error {
 	}
 
 	if !req.isConsensusOk() {
-		return common.NewError("Delete failed: Commit consensus failed")
+		return errors.NewError("Delete failed: Commit consensus failed")
 	}
 	return nil
 }

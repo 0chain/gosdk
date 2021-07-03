@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 )
@@ -275,15 +275,15 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath s
 		fileInfo, err := os.Stat(lastSyncCachePath)
 		if err == nil {
 			if fileInfo.IsDir() {
-				return lFdiff, common.WrapError(err, "invalid file cache.")
+				return lFdiff, errors.WrapError(err, "invalid file cache.")
 			}
 			content, err := ioutil.ReadFile(lastSyncCachePath)
 			if err != nil {
-				return lFdiff, common.NewError("can't read cache file.")
+				return lFdiff, errors.NewError("can't read cache file.")
 			}
 			err = json.Unmarshal(content, &prevRemoteFileMap)
 			if err != nil {
-				return lFdiff, common.NewError("invalid cache content.")
+				return lFdiff, errors.NewError("invalid cache content.")
 			}
 		}
 	}
@@ -294,14 +294,14 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath s
 	// 3. Get flat file list from remote
 	remoteFileMap, err := a.GetRemoteFileMap(exclMap)
 	if err != nil {
-		return lFdiff, common.WrapError(err, "error getting list dir from remote.")
+		return lFdiff, errors.WrapError(err, "error getting list dir from remote.")
 	}
 
 	// 4. Get flat file list on the local filesystem
 	localRootPath = strings.TrimRight(localRootPath, "/")
 	localFileList, err := getLocalFileMap(localRootPath, localFileFilters, exclMap)
 	if err != nil {
-		return lFdiff, common.WrapError(err, "error getting list dir from local.")
+		return lFdiff, errors.WrapError(err, "error getting list dir from local.")
 	}
 
 	// 5. Get the file diff with operation
@@ -318,7 +318,7 @@ func (a *Allocation) SaveRemoteSnapshot(pathToSave string, remoteExcludePath []s
 	fileInfo, err := os.Stat(pathToSave)
 	if err == nil {
 		if fileInfo.IsDir() {
-			return common.WrapError(err, "invalid file path to save.")
+			return errors.WrapError(err, "invalid file path to save.")
 		}
 		bIsFileExists = true
 	}
@@ -327,23 +327,23 @@ func (a *Allocation) SaveRemoteSnapshot(pathToSave string, remoteExcludePath []s
 	exclMap := getRemoteExcludeMap(remoteExcludePath)
 	remoteFileList, err := a.GetRemoteFileMap(exclMap)
 	if err != nil {
-		return common.WrapError(err, "error getting list dir from remote.")
+		return errors.WrapError(err, "error getting list dir from remote.")
 	}
 
 	// Now we got the list from remote, delete the file if exists
 	if bIsFileExists {
 		err = os.Remove(pathToSave)
 		if err != nil {
-			return common.WrapError(err, "error deleting previous cache.")
+			return errors.WrapError(err, "error deleting previous cache.")
 		}
 	}
 	by, err := json.Marshal(remoteFileList)
 	if err != nil {
-		return common.WrapError(err, "failed to convert JSON.")
+		return errors.WrapError(err, "failed to convert JSON.")
 	}
 	err = ioutil.WriteFile(pathToSave, by, 0644)
 	if err != nil {
-		return common.WrapError(err, "error saving file.")
+		return errors.WrapError(err, "error saving file.")
 	}
 	// Successfully saved
 	return nil

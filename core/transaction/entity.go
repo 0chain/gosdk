@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
 )
@@ -13,7 +14,7 @@ import (
 const TXN_SUBMIT_URL = "v1/transaction/put"
 const TXN_VERIFY_URL = "v1/transaction/get/confirmation?hash="
 
-var ErrNoTxnDetail = common.NewError("missing_transaction_detail", "No transaction detail was found on any of the sharders")
+var ErrNoTxnDetail = errors.NewError("missing_transaction_detail", "No transaction detail was found on any of the sharders")
 
 //Transaction entity that encapsulates the transaction related data and meta data
 type Transaction struct {
@@ -172,7 +173,7 @@ func (t *Transaction) VerifyTransaction(verifyHandler VerifyFunc) (bool, error) 
 	hash := t.Hash
 	t.ComputeHashData()
 	if t.Hash != hash {
-		return false, common.NewError("verify_transaction", fmt.Sprintf(`{"error":"hash_mismatch", "expected":"%v", "actual":%v"}`, t.Hash, hash))
+		return false, errors.NewError("verify_transaction", fmt.Sprintf(`{"error":"hash_mismatch", "expected":"%v", "actual":%v"}`, t.Hash, hash))
 	}
 	return verifyHandler(t.Signature, t.Hash, t.PublicKey)
 }
@@ -200,7 +201,7 @@ func sendTransactionToURL(url string, txn *Transaction, wg *sync.WaitGroup) ([]b
 	if postResponse.StatusCode >= 200 && postResponse.StatusCode <= 299 {
 		return []byte(postResponse.Body), nil
 	}
-	return nil, common.WrapError(err, common.NewError("transaction_send_error", postResponse.Body))
+	return nil, errors.WrapError(err, errors.NewError("transaction_send_error", postResponse.Body))
 }
 
 func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) {
@@ -212,39 +213,39 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 		url := fmt.Sprintf("%v/%v%v", sharder, TXN_VERIFY_URL, txnHash)
 		req, err := util.NewHTTPGetRequest(url)
 		if err != nil {
-			customError = common.WrapError(customError, err)
+			customError = errors.WrapError(customError, err)
 			numSharders--
 			continue
 		}
 		response, err := req.Get()
 		if err != nil {
-			customError = common.WrapError(customError, err)
+			customError = errors.WrapError(customError, err)
 			numSharders--
 			continue
 		} else {
 			if response.StatusCode != 200 {
-				customError = common.WrapError(customError, err)
+				customError = errors.WrapError(customError, err)
 				continue
 			}
 			contents := response.Body
 			var objmap map[string]json.RawMessage
 			err = json.Unmarshal([]byte(contents), &objmap)
 			if err != nil {
-				customError = common.WrapError(customError, err)
+				customError = errors.WrapError(customError, err)
 				continue
 			}
 			if _, ok := objmap["txn"]; !ok {
 				if _, ok := objmap["block_hash"]; ok {
 					numSuccess++
 				} else {
-					customError = common.WrapError(customError, fmt.Sprintf("Sharder does not have the block summary with url: %s, contents: %s", url, contents))
+					customError = errors.WrapError(customError, fmt.Sprintf("Sharder does not have the block summary with url: %s, contents: %s", url, contents))
 				}
 				continue
 			}
 			txn := &Transaction{}
 			err = json.Unmarshal(objmap["txn"], txn)
 			if err != nil {
-				customError = common.WrapError(customError, err)
+				customError = errors.WrapError(customError, err)
 				continue
 			}
 			if len(txn.Signature) > 0 {
@@ -257,7 +258,7 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 		if retTxn != nil {
 			return retTxn, nil
 		}
-		return nil, common.WrapError(customError, ErrNoTxnDetail)
+		return nil, errors.WrapError(customError, ErrNoTxnDetail)
 	}
-	return nil, common.WrapError(customError, common.NewError("transaction_not_found", "Transaction was not found on any of the sharders"))
+	return nil, errors.WrapError(customError, errors.NewError("transaction_not_found", "Transaction was not found on any of the sharders"))
 }

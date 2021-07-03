@@ -12,7 +12,7 @@ import (
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"go.uber.org/zap"
 
-	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
@@ -79,7 +79,7 @@ func UpdateRequired(networkDetails *Network) bool {
 func GetNetworkDetails() (*Network, error) {
 	req, ctx, cncl, err := zboxutil.NewHTTPRequest(http.MethodGet, blockchain.GetBlockWorker()+NETWORK_ENDPOINT, nil)
 	if err != nil {
-		return nil, common.NewError("get_network_details_error", "Unable to create new http request with error "+err.Error())
+		return nil, errors.NewError("get_network_details_error", "Unable to create new http request with error "+err.Error())
 	}
 
 	var networkResponse Network
@@ -92,18 +92,18 @@ func GetNetworkDetails() (*Network, error) {
 		defer resp.Body.Close()
 		respBody, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return common.WrapError(err, "Error reading response : ")
+			return errors.WrapError(err, "Error reading response : ")
 		}
 
 		Logger.Debug("Get network result:", string(respBody))
 		if resp.StatusCode == http.StatusOK {
 			err = json.Unmarshal(respBody, &networkResponse)
 			if err != nil {
-				return common.WrapError(err, "Error unmarshaling response :")
+				return errors.WrapError(err, "Error unmarshaling response :")
 			}
 			return nil
 		}
-		return common.NewError(strconv.Itoa(resp.StatusCode), "Get network details status not OK")
+		return errors.NewError(strconv.Itoa(resp.StatusCode), "Get network details status not OK")
 
 	})
 	return &networkResponse, err

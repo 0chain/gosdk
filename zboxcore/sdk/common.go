@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
@@ -40,7 +40,7 @@ func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx st
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
-			return common.NewError(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Object tree error response: Body: %s ", string(resp_body)))
+			return errors.NewError(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Object tree error response: Body: %s ", string(resp_body)))
 		} else {
 			Logger.Info("Object tree:", string(resp_body))
 			err = json.Unmarshal(resp_body, &lR)

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/encryption"
 )
 
@@ -50,7 +51,7 @@ func (a *Attributes) IsZero() bool {
 // Validate the Attributes.
 func (a *Attributes) Validate() (err error) {
 	if err = a.WhoPaysForReads.Validate(); err != nil {
-		return common.WrapError(err, "invalid who_pays_for_reads field")
+		return errors.WrapError(err, "invalid who_pays_for_reads field")
 	}
 	return
 }

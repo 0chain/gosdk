@@ -13,8 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/0chain/gosdk/core/common"
-
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/h2non/filetype"
@@ -187,7 +186,7 @@ func Decrypt(key, text []byte) ([]byte, error) {
 		return nil, err
 	}
 	if len(text) < aes.BlockSize {
-		return nil, common.NewError("ciphertext too short")
+		return nil, errors.NewError("ciphertext too short")
 	}
 	iv := text[:aes.BlockSize]
 	text = text[aes.BlockSize:]

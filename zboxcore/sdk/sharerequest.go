@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
@@ -50,7 +51,7 @@ func (req *ShareRequest) GetAuthTicketForEncryptedFile(clientID string, encPubli
 	//listReq.authToken = at
 	_, fileRef, _ = listReq.getFileConsensusFromBlobbers()
 	if fileRef == nil {
-		return "", common.NewError("file_meta_error", "Error getting object meta data from blobbers")
+		return "", errors.NewError("file_meta_error", "Error getting object meta data from blobbers")
 	}
 	if fileRef.Type == fileref.DIRECTORY || len(fileRef.EncryptedKey) == 0 {
 		return req.GetAuthTicket(clientID)
