@@ -130,7 +130,7 @@ func (ar *AttributesRequest) ProcessAttributes() (err error) {
 	ar.wg.Wait()
 
 	if !ar.isConsensusOk() {
-		return common.NewErrorMessage("Update attributes failed: request failed, operation failed")
+		return common.NewError("Update attributes failed: request failed, operation failed")
 	}
 
 	ar.consensus = 0
@@ -181,7 +181,7 @@ func (ar *AttributesRequest) ProcessAttributes() (err error) {
 	}
 
 	if !ar.isConsensusOk() {
-		return common.NewErrorMessage("Delete failed: Commit consensus failed")
+		return common.NewError("Delete failed: Commit consensus failed")
 	}
 
 	return nil

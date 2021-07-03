@@ -120,7 +120,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 	req.wg.Wait()
 
 	if !req.isConsensusOk() {
-		return common.NewErrorMessage(fmt.Sprintf("Delete failed: Success_rate:%2f, expected:%2f", req.getConsensusRate(), req.getConsensusRequiredForOk()))
+		return common.NewError(fmt.Sprintf("Delete failed: Success_rate:%2f, expected:%2f", req.getConsensusRate(), req.getConsensusRequiredForOk()))
 	}
 
 	req.consensus = 0
@@ -163,7 +163,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 	}
 
 	if !req.isConsensusOk() {
-		return common.NewErrorMessage("Delete failed: Commit consensus failed")
+		return common.NewError("Delete failed: Commit consensus failed")
 	}
 	return nil
 }

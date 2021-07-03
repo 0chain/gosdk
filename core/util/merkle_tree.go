@@ -82,7 +82,7 @@ func (mt *MerkleTree) GetTree() []string {
 func (mt *MerkleTree) SetTree(leavesCount int, tree []string) error {
 	size, levels := mt.computeSize(leavesCount)
 	if size != len(tree) {
-		return common.NewErrorMessage(fmt.Sprintf("Merkle tree with leaves %v should have size %v but only %v is given", leavesCount, size, len(tree)))
+		return common.NewError(fmt.Sprintf("Merkle tree with leaves %v should have size %v but only %v is given", leavesCount, size, len(tree)))
 	}
 	mt.levels = levels
 	mt.tree = tree

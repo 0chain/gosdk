@@ -6,8 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"reflect"
-	"time"
 	"strconv"
+	"time"
 
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"go.uber.org/zap"
@@ -92,14 +92,14 @@ func GetNetworkDetails() (*Network, error) {
 		defer resp.Body.Close()
 		respBody, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return common.WrapWithMessage(err, "Error reading response : ")
+			return common.WrapError(err, "Error reading response : ")
 		}
 
 		Logger.Debug("Get network result:", string(respBody))
 		if resp.StatusCode == http.StatusOK {
 			err = json.Unmarshal(respBody, &networkResponse)
 			if err != nil {
-				return common.WrapWithMessage(err, "Error unmarshaling response :")
+				return common.WrapError(err, "Error unmarshaling response :")
 			}
 			return nil
 		}

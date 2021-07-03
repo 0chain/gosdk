@@ -200,7 +200,7 @@ func sendTransactionToURL(url string, txn *Transaction, wg *sync.WaitGroup) ([]b
 	if postResponse.StatusCode >= 200 && postResponse.StatusCode <= 299 {
 		return []byte(postResponse.Body), nil
 	}
-	return nil, common.WrapWithError(err, common.NewError("transaction_send_error", postResponse.Body))
+	return nil, common.WrapError(err, common.NewError("transaction_send_error", postResponse.Body))
 }
 
 func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) {
@@ -212,39 +212,39 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 		url := fmt.Sprintf("%v/%v%v", sharder, TXN_VERIFY_URL, txnHash)
 		req, err := util.NewHTTPGetRequest(url)
 		if err != nil {
-			customError = common.WrapWithError(customError, err)
+			customError = common.WrapError(customError, err)
 			numSharders--
 			continue
 		}
 		response, err := req.Get()
 		if err != nil {
-			customError = common.WrapWithError(customError, err)
+			customError = common.WrapError(customError, err)
 			numSharders--
 			continue
 		} else {
 			if response.StatusCode != 200 {
-				customError = common.WrapWithError(customError, err)
+				customError = common.WrapError(customError, err)
 				continue
 			}
 			contents := response.Body
 			var objmap map[string]json.RawMessage
 			err = json.Unmarshal([]byte(contents), &objmap)
 			if err != nil {
-				customError = common.WrapWithError(customError, err)
+				customError = common.WrapError(customError, err)
 				continue
 			}
 			if _, ok := objmap["txn"]; !ok {
 				if _, ok := objmap["block_hash"]; ok {
 					numSuccess++
 				} else {
-					customError = common.WrapWithMessage(customError, fmt.Sprintf("Sharder does not have the block summary with url: %s, contents: %s", url, contents))
+					customError = common.WrapError(customError, fmt.Sprintf("Sharder does not have the block summary with url: %s, contents: %s", url, contents))
 				}
 				continue
 			}
 			txn := &Transaction{}
 			err = json.Unmarshal(objmap["txn"], txn)
 			if err != nil {
-				customError = common.WrapWithError(customError, err)
+				customError = common.WrapError(customError, err)
 				continue
 			}
 			if len(txn.Signature) > 0 {
@@ -257,7 +257,7 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 		if retTxn != nil {
 			return retTxn, nil
 		}
-		return nil, common.WrapWithError(customError, ErrNoTxnDetail)
+		return nil, common.WrapError(customError, ErrNoTxnDetail)
 	}
-	return nil, common.WrapWithError(customError, common.NewError("transaction_not_found", "Transaction was not found on any of the sharders"))
+	return nil, common.WrapError(customError, common.NewError("transaction_not_found", "Transaction was not found on any of the sharders"))
 }

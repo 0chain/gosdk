@@ -42,7 +42,7 @@ func (ed *ED255190chainScheme) GenerateKeys() (*Wallet, error) {
 	r := bytes.NewReader(seed)
 	public, private, err := ed25519.GenerateKey(r)
 	if err != nil {
-		return nil, common.WrapWithMessage(err, "Generate keys failed")
+		return nil, common.WrapError(err, "Generate keys failed")
 	}
 	// New Wallet
 	w := &Wallet{}

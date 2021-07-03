@@ -56,7 +56,7 @@ type MSTransfer struct {
 func (msw *MSWallet) Marshal() (string, error) {
 	msws, err := json.Marshal(msw)
 	if err != nil {
-		return "", common.NewErrorMessage("Invalid Wallet")
+		return "", common.NewError("Invalid Wallet")
 	}
 	return string(msws), nil
 }
@@ -70,7 +70,7 @@ type MSVoteCallback interface {
 func CreateMSWallet(t, n int) (string, string, []string, error) {
 	id := 0
 	if _config.chain.SignatureScheme != "bls0chain" {
-		return "", "", nil, common.NewErrorMessage("encryption scheme for this blockchain is not bls0chain")
+		return "", "", nil, common.NewError("encryption scheme for this blockchain is not bls0chain")
 
 	}
 
@@ -87,7 +87,7 @@ func CreateMSWallet(t, n int) (string, string, []string, error) {
 	signerKeys, err := zcncrypto.BLS0GenerateThresholdKeyShares(t, n, groupKey)
 
 	if err != nil {
-		return "", "", nil, common.WrapWithMessage(err, "Err in generateThresholdKeyShares")
+		return "", "", nil, common.WrapError(err, "Err in generateThresholdKeyShares")
 	}
 	var signerClientIDs []string
 	for _, key := range signerKeys {
@@ -141,11 +141,11 @@ func RegisterWallet(walletString string, cb WalletCallback) {
 func CreateMSVote(proposal, grpClientID, signerWalletstr, toClientID string, token int64) (string, error) {
 
 	if proposal == "" || grpClientID == "" || toClientID == "" || signerWalletstr == "" {
-		return "", common.NewErrorMessage("proposal or groupClient or signer wallet or toClientID cannot be empty")
+		return "", common.NewError("proposal or groupClient or signer wallet or toClientID cannot be empty")
 	}
 
 	if token < 1 {
-		return "", common.NewErrorMessage("Token cannot be less than 1")
+		return "", common.NewError("Token cannot be less than 1")
 	}
 
 	signerWallet, err := GetWallet(signerWalletstr)

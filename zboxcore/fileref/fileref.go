@@ -50,7 +50,7 @@ func (a *Attributes) IsZero() bool {
 // Validate the Attributes.
 func (a *Attributes) Validate() (err error) {
 	if err = a.WhoPaysForReads.Validate(); err != nil {
-		return common.WrapWithMessage(err, "invalid who_pays_for_reads field")
+		return common.WrapError(err, "invalid who_pays_for_reads field")
 	}
 	return
 }

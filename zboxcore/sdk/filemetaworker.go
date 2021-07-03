@@ -68,14 +68,14 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 		defer resp.Body.Close()
 		resp_body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return common.WrapWithMessage(err, "Error: Resp")
+			return common.WrapError(err, "Error: Resp")
 		}
 		Logger.Info("File Meta result:", string(resp_body))
 		s.WriteString(string(resp_body))
 		if resp.StatusCode == http.StatusOK {
 			err = json.Unmarshal(resp_body, &fileRef)
 			if err != nil {
-				return common.WrapWithMessage(err, "file meta data response parse error")
+				return common.WrapError(err, "file meta data response parse error")
 			}
 			return nil
 		}

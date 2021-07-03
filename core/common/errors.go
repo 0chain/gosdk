@@ -61,45 +61,59 @@ func (w *withError) Error() string {
 	return retError
 }
 
-// WrapWithError wrap the previous error with current error
-func WrapWithError(previous error, current error) error {
+// WrapError wrap the previous error with current error/ message
+func WrapError(previous error, current interface{}) error {
 	if current == nil {
 		return previous
 	}
 
-	return &withError{
-		previous: previous,
-		current:  current,
+	switch c := current.(type) {
+	case error:
+		return &withError{
+			previous: previous,
+			current:  c,
+		}
+	case string:
+		return &withError{
+			previous: previous,
+			current: &Error{
+				Msg:      c,
+				Location: getErrorLocation(2),
+			},
+		}
+	default:
+		fmt.Println("unsupported type")
+		return previous
 	}
 }
 
-// WrapWithError wrap the previous error with current error message
-func WrapWithMessage(previous error, msg string) error {
-	return &withError{
-		previous: previous,
-		current: &Error{
-			Msg:      msg,
-			Location: getErrorLocation(),
-		},
-	}
-}
 
 /*NewError - create a new error */
-func NewError(code string, msg string) *Error {
-	return &Error{
-		Code:     code,
-		Msg:      msg,
-		Location: getErrorLocation(),
+func NewError(args ...string) *Error {
+	switch len(args) {
+	case 1:
+		return &Error{
+			Code:     "",
+			Msg:      args[0],
+			Location: getErrorLocation(2),
+		}
+	case 2:
+		return &Error{
+			Code:     args[0],
+			Msg:      args[1],
+			Location: getErrorLocation(2),
+		}
+	default:
+		return &Error{
+			Code:     "incorrect_usage",
+			Msg:      "you should at least pass message to create a proper error!",
+			Location: getErrorLocation(1),
+		}
 	}
 }
 
-// NewErrorMessage - creates a new error with just message
-func NewErrorMessage(msg string) *Error {
-	return NewError("", msg)
-}
-
-func getErrorLocation() string {
-	_, file, line, _ := runtime.Caller(2)
+func getErrorLocation(level int) string {
+	_, file, line, _ := runtime.Caller(level)
 	return fmt.Sprintf("%s:%d", file, line)
 }
 

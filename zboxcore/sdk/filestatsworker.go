@@ -77,13 +77,13 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 		defer resp.Body.Close()
 		resp_body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return common.WrapWithMessage(err, "Error: Resp")
+			return common.WrapError(err, "Error: Resp")
 		}
 		s.WriteString(string(resp_body))
 		if resp.StatusCode == http.StatusOK {
 			err = json.Unmarshal(resp_body, &fileStats)
 			if err != nil {
-				return common.WrapWithMessage(err, "file stats response parse error")
+				return common.WrapError(err, "file stats response parse error")
 			}
 			if len(fileStats.WriteMarkerRedeemTxn) > 0 {
 				fileStats.BlockchainAware = true

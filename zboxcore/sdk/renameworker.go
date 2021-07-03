@@ -100,7 +100,7 @@ func (req *RenameRequest) ProcessRename() error {
 	req.wg.Wait()
 
 	if !req.isConsensusOk() {
-		return common.NewErrorMessage("Rename failed: Rename request failed. Operation failed.")
+		return common.NewError("Rename failed: Rename request failed. Operation failed.")
 	}
 
 	req.consensus = 0
@@ -144,7 +144,7 @@ func (req *RenameRequest) ProcessRename() error {
 	}
 
 	if !req.isConsensusOk() {
-		return common.NewErrorMessage("Delete failed: Commit consensus failed")
+		return common.NewError("Delete failed: Commit consensus failed")
 	}
 	return nil
 }

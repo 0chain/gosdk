@@ -70,7 +70,7 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 				})).Return(&http.Response{
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 					StatusCode: p.respStatusCode,
-				}, common.NewErrorMessage(mockErrorMessage))
+				}, common.NewError(mockErrorMessage))
 			},
 			wantErr: true,
 			errMsg:  mockErrorMessage,
