@@ -59,7 +59,7 @@ func (ed *ED255190chainScheme) GenerateKeys() (*Wallet, error) {
 
 //GenerateKeysWithEth - not implemented
 func (ed *ED255190chainScheme) GenerateKeysWithEth(mnemonic, password string) (*Wallet, error) {
-	return nil, nil
+	return nil, errors.New("Not supported for this scheme")
 }
 
 func (ed *ED255190chainScheme) RecoverKeys(mnemonic string) (*Wallet, error) {
