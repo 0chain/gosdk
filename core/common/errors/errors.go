@@ -19,24 +19,23 @@ func (err *Error) Error() string {
 	return fmt.Sprintf("%s %s: %s", err.Location, err.Code, err.Msg)
 }
 
+func (err *Error) topLevelError() string {
+	if err.Code == "" {
+		return err.Msg
+	}
+	return fmt.Sprintf("%s: %s", err.Code, err.Msg)
+}
+
 // TopLevelError since errors can be wrapped and stacked,
 // it's necessary to get the top level error for tests and validations
 func TopLevelError(err error) string {
 	switch t := err.(type) {
 	case *Error:
-		// if type is an integer
-		t1 := t
-		if t1.Code == "" {
-			return t1.Msg
-		}
-		return fmt.Sprintf("%s: %s", t1.Code, t1.Msg)
+		return t.topLevelError()
 	case *withError:
-		switch t1 := t.current.(type) {
+		switch ct := t.current.(type) {
 		case *Error:
-			if t1.Code == "" {
-				return t1.Msg
-			}
-			return fmt.Sprintf("%s: %s", t1.Code, t1.Msg)
+			return ct.topLevelError()
 		default:
 			return err.Error()
 		}
@@ -82,13 +81,27 @@ func WrapError(previous error, current interface{}) error {
 			},
 		}
 	default:
-		fmt.Println("unsupported type")
-		return previous
+		return &withError{
+			previous: previous,
+			current: &Error{
+				Code:     "incorrect_usage",
+				Msg:      "you should at least pass message to properly wrap the current error!",
+				Location: getErrorLocation(1),
+			},
+		}
 	}
 }
 
-
-/*NewError - create a new error */
+/*
+NewError - create a new error 
+two arguments can be passed! 
+1. code 
+2. message
+if only one argument is passed its considered as message
+if two arguments are passed then 
+	first argument is considered for code and 
+	second argument is considered for message
+*/
 func NewError(args ...string) *Error {
 	switch len(args) {
 	case 1:
