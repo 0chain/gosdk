@@ -3,7 +3,6 @@ package zcncore
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -25,11 +24,11 @@ var (
 )
 
 var (
-	errNetwork          = errors.New("network error. host not reachable")
-	errUserRejected     = errors.New("rejected by user")
-	errAuthVerifyFailed = errors.New("verfication failed for auth response")
-	errAuthTimeout      = errors.New("auth timed out")
-	errAddSignature     = errors.New("error adding signature")
+	errNetwork          = common.NewErrorMessage("network error. host not reachable")
+	errUserRejected     = common.NewErrorMessage("rejected by user")
+	errAuthVerifyFailed = common.NewErrorMessage("verfication failed for auth response")
+	errAuthTimeout      = common.NewErrorMessage("auth timed out")
+	errAddSignature     = common.NewErrorMessage("error adding signature")
 )
 
 // TransactionCallback needs to be implemented by the caller for transaction related APIs
@@ -163,7 +162,7 @@ func signWithWallet(hash string, wi interface{}) (string, error) {
 
 	if !ok {
 		fmt.Printf("Error in casting to wallet")
-		return "", fmt.Errorf("error in casting to wallet")
+		return "", common.NewErrorMessage("error in casting to wallet")
 	}
 	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 	sigScheme.SetPrivateKey(w.Keys[0].PrivateKey)
@@ -183,7 +182,6 @@ func txnTypeString(t int) string {
 	default:
 		return "unknown"
 	}
-	return ""
 }
 
 func (t *Transaction) Output() []byte {
@@ -261,7 +259,7 @@ func (t *Transaction) submitTxn() {
 	}
 	rate := consensus * 100 / float32(len(randomMiners))
 	if rate < consensusThresh {
-		t.completeTxn(StatusError, "", fmt.Errorf("submit transaction failed. %s", tFailureRsp))
+		t.completeTxn(StatusError, "", common.NewErrorMessage(fmt.Sprintf("submit transaction failed. %s", tFailureRsp)))
 		return
 	}
 	time.Sleep(3 * time.Second)
@@ -285,7 +283,7 @@ func NewTransaction(cb TransactionCallback, txnFee int64) (TransactionScheme, er
 	}
 	if _config.isSplitWallet {
 		if _config.authUrl == "" {
-			return nil, fmt.Errorf("auth url not set")
+			return nil, common.NewErrorMessage("auth url not set")
 		}
 		Logger.Info("New transaction interface with auth")
 		return newTransactionWithAuth(cb, txnFee)
@@ -296,7 +294,7 @@ func NewTransaction(cb TransactionCallback, txnFee int64) (TransactionScheme, er
 
 func (t *Transaction) SetTransactionCallback(cb TransactionCallback) error {
 	if t.txnStatus != StatusUnknown {
-		return fmt.Errorf("transaction already exists. cannot set transaction hash.")
+		return common.NewErrorMessage("transaction already exists. cannot set transaction hash.")
 	}
 	t.txnCb = cb
 	return nil
@@ -304,7 +302,7 @@ func (t *Transaction) SetTransactionCallback(cb TransactionCallback) error {
 
 func (t *Transaction) SetTransactionFee(txnFee int64) error {
 	if t.txnStatus != StatusUnknown {
-		return fmt.Errorf("transaction already exists. cannot set transaction fee.")
+		return common.NewErrorMessage("transaction already exists. cannot set transaction fee.")
 	}
 	t.txn.TransactionFee = txnFee
 	return nil
@@ -348,7 +346,7 @@ func (t *Transaction) createSmartContractTxn(address, methodName string, input i
 	sn := transaction.SmartContractTxnData{Name: methodName, InputArgs: input}
 	snBytes, err := json.Marshal(sn)
 	if err != nil {
-		return fmt.Errorf("create smart contract failed due to invalid data. %s", err.Error())
+		return common.WrapWithMessage(err, "create smart contract failed due to invalid data.")
 	}
 	t.txn.TransactionType = transaction.TxnTypeSmartContract
 	t.txn.ToClientID = address
@@ -399,7 +397,7 @@ func (t *Transaction) ExecuteSmartContract(address, methodName, jsoninput string
 
 func (t *Transaction) SetTransactionHash(hash string) error {
 	if t.txnStatus != StatusUnknown {
-		return fmt.Errorf("transaction already exists. cannot set transaction hash.")
+		return common.NewErrorMessage("transaction already exists. cannot set transaction hash.")
 	}
 	t.txnHash = hash
 	return nil
@@ -463,20 +461,20 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 		var cfm confirmation
 		err := json.Unmarshal(cfmBytes, &cfm)
 		if err != nil {
-			return nil, fmt.Errorf("txn confirmation parse error. %s", err)
+			return nil, common.WrapWithMessage(err, "txn confirmation parse error.")
 		}
 		if cfm.Transaction == nil {
-			return nil, fmt.Errorf("missing transaction %s in block confirmation", txnHash)
+			return nil, common.NewErrorMessage(fmt.Sprintf("missing transaction %s in block confirmation", txnHash))
 		}
 		if txnHash != cfm.Transaction.Hash {
-			return nil, fmt.Errorf("invalid transaction hash. Expected: %s. Received: %s", txnHash, cfm.Transaction.Hash)
+			return nil, common.NewErrorMessage(fmt.Sprintf("invalid transaction hash. Expected: %s. Received: %s", txnHash, cfm.Transaction.Hash))
 		}
 		if !util.VerifyMerklePath(cfm.Transaction.Hash, cfm.MerkleTreePath, cfm.MerkleTreeRoot) {
-			return nil, fmt.Errorf("txn merkle validation failed.")
+			return nil, common.NewErrorMessage("txn merkle validation failed.")
 		}
 		txnRcpt := transaction.NewTransactionReceipt(cfm.Transaction)
 		if !util.VerifyMerklePath(txnRcpt.GetHash(), cfm.ReceiptMerkleTreePath, cfm.ReceiptMerkleTreeRoot) {
-			return nil, fmt.Errorf("txn receipt cmerkle validation failed.")
+			return nil, common.NewErrorMessage("txn receipt cmerkle validation failed.")
 		}
 		prevBlockHash := cfm.PreviousBlockHash
 		block.MinerId = cfm.MinerID
@@ -490,10 +488,10 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 		if isBlockExtends(prevBlockHash, block) {
 			return block, nil
 		} else {
-			return nil, fmt.Errorf("block hash verification failed in confirmation")
+			return nil, common.NewErrorMessage("block hash verification failed in confirmation")
 		}
 	}
-	return nil, fmt.Errorf("txn confirmation not found.")
+	return nil, common.NewErrorMessage("txn confirmation not found.")
 }
 
 func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
@@ -541,7 +539,7 @@ func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, 
 		}
 	}
 	if maxConfirmation == 0 {
-		return nil, confirmation, &lfb, fmt.Errorf("transaction not found")
+		return nil, confirmation, &lfb, common.NewErrorMessage("transaction not found")
 	}
 	return blockHdr, confirmation, &lfb, nil
 }
@@ -581,7 +579,7 @@ func GetLatestFinalized(ctx context.Context, numSharders int) (b *block.Header, 
 	}
 
 	if maxConsensus == 0 {
-		return nil, fmt.Errorf("block info not found")
+		return nil, common.NewErrorMessage("block info not found")
 	}
 
 	return
@@ -628,7 +626,7 @@ func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *bloc
 	}
 
 	if maxConsensus == 0 {
-		return nil, fmt.Errorf("magic block info not found")
+		return nil, common.NewErrorMessage("magic block info not found")
 	}
 
 	return
@@ -721,7 +719,7 @@ func GetBlockByRound(ctx context.Context, numSharders int, round int64) (b *bloc
 	}
 
 	if maxConsensus == 0 {
-		return nil, fmt.Errorf("round info not found")
+		return nil, common.NewErrorMessage("round info not found")
 	}
 
 	return
@@ -771,7 +769,7 @@ func GetMagicBlockByNumber(ctx context.Context, numSharders int, number int64) (
 	}
 
 	if maxConsensus == 0 {
-		return nil, fmt.Errorf("magic block info not found")
+		return nil, common.NewErrorMessage("magic block info not found")
 	}
 
 	return
@@ -823,7 +821,7 @@ func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHe
 		}
 	}
 	if maxConsensus == 0 {
-		return nil, fmt.Errorf("round info not found.")
+		return nil, common.NewErrorMessage("round info not found.")
 	}
 	return &blkHdr, nil
 }
@@ -884,12 +882,12 @@ func (t *Transaction) isTransactionExpired(lfbCreationTime, currentTime int64) b
 }
 func (t *Transaction) Verify() error {
 	if t.txnHash == "" && t.txnStatus == StatusUnknown {
-		return fmt.Errorf("invalid transaction. cannot be verified.")
+		return common.NewErrorMessage("invalid transaction. cannot be verified.")
 	}
 	if t.txnHash == "" && t.txnStatus == StatusSuccess {
 		h := t.GetTransactionHash()
 		if h == "" {
-			return fmt.Errorf("invalid transaction. cannot be verified.")
+			return common.NewErrorMessage("invalid transaction. cannot be verified.")
 		}
 	}
 	// If transaction is verify only start from current time
@@ -909,14 +907,14 @@ func (t *Transaction) Verify() error {
 					confirmBlock, confirmation, lfb, err = getTransactionConfirmation(getMinShardersVerify(), t.txnHash)
 					if err != nil {
 						if t.isTransactionExpired(lfb.CreationDate, tn) {
-							t.completeVerify(StatusError, "", fmt.Errorf(`{"error": "verify transaction failed"}`))
+							t.completeVerify(StatusError, "", common.NewErrorMessage(`{"error": "verify transaction failed"}`))
 							return
 						}
 						continue
 					}
 				} else {
 					if t.isTransactionExpired(lfb.CreationDate, tn) {
-						t.completeVerify(StatusError, "", fmt.Errorf(`{"error": "verify transaction failed"}`))
+						t.completeVerify(StatusError, "", common.NewErrorMessage(`{"error": "verify transaction failed"}`))
 						return
 					}
 					continue
@@ -926,7 +924,7 @@ func (t *Transaction) Verify() error {
 			if valid {
 				output, err := json.Marshal(confirmation)
 				if err != nil {
-					t.completeVerify(StatusError, "", fmt.Errorf(`{"error": "transaction confirmation json marshal error"`))
+					t.completeVerify(StatusError, "", common.NewErrorMessage(`{"error": "transaction confirmation json marshal error"`))
 					return
 				}
 				t.completeVerify(StatusSuccess, string(output), nil)
@@ -1220,7 +1218,7 @@ func (t *Transaction) RegisterMultiSig(walletstr string, mswallet string) error 
 	sn := transaction.SmartContractTxnData{Name: MultiSigRegisterFuncName, InputArgs: msw}
 	snBytes, err := json.Marshal(sn)
 	if err != nil {
-		return fmt.Errorf("execute multisig register failed due to invalid data. %s", err.Error())
+		return common.WrapWithMessage(err, "execute multisig register failed due to invalid data.")
 	}
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeSmartContract
@@ -1265,7 +1263,7 @@ func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error 
 	sn := transaction.SmartContractTxnData{Name: MultiSigVoteFuncName, InputArgs: msv}
 	snBytes, err := json.Marshal(sn)
 	if err != nil {
-		return fmt.Errorf("execute multisig vote failed due to invalid data. %s", err.Error())
+		return common.WrapWithMessage(err, "execute multisig vote failed due to invalid data.")
 	}
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeSmartContract

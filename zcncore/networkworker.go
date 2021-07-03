@@ -3,7 +3,6 @@ package zcncore
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"time"
 
@@ -87,7 +86,7 @@ func GetNetworkDetails() (*Network, error) {
 	var networkResponse Network
 	err = json.Unmarshal([]byte(res.Body), &networkResponse)
 	if err != nil {
-		return nil, fmt.Errorf("Error unmarshaling response : %s", err.Error())
+		return nil, common.WrapWithMessage(err, "Error unmarshaling response :")
 	}
 	return &networkResponse, nil
 
