@@ -93,7 +93,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 				}, nil)
 			},
 			wantErr: true,
-			errMsg:  "file stats response parse error: unexpected end of JSON input",
+			errMsg:  "file stats response parse error",
 		},
 		{
 			name: "Test_Success",
@@ -167,7 +167,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 			resp := <-rspCh
 			require.EqualValues(t, tt.wantErr, resp.err != nil)
 			if resp.err != nil {
-				require.EqualValues(t, tt.errMsg, resp.err.Error())
+				require.EqualValues(t, tt.errMsg, common.TopLevelError(resp.err))
 				return
 			}
 			require.EqualValues(t, tt.parameters.fileStatsFinal, *resp.filestats)

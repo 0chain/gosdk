@@ -75,7 +75,7 @@ func TestAttributesRequest_updateBlobberObjectAttributes(t *testing.T) {
 				}, nil)
 			},
 			wantErr: true,
-			errMsg:  "Object tree error response: Status: 400 -  ",
+			errMsg:  "400: Object tree error response: Body:  ",
 		},
 		{
 			name: "Test_Update_Blobber_Object_Attributes_Failed",
@@ -171,7 +171,7 @@ func TestAttributesRequest_updateBlobberObjectAttributes(t *testing.T) {
 						require.EqualValues(t, expected, string(actual))
 					}
 					require.Error(t, err)
-					require.EqualValues(t, "EOF", err.Error())
+					require.EqualValues(t, "EOF", common.TopLevelError(err))
 
 					return strings.HasPrefix(req.URL.Path, testName) &&
 						req.Method == "POST" &&
@@ -219,7 +219,7 @@ func TestAttributesRequest_updateBlobberObjectAttributes(t *testing.T) {
 			_, err := req.updateBlobberObjectAttributes(req.blobbers[0], 0)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
+				require.EqualValues(tt.errMsg, common.TopLevelError(err))
 				return
 			}
 			require.NoErrorf(err, "expected no error but got %v", err)
@@ -412,7 +412,7 @@ func TestAttributesRequest_ProcessAttributes(t *testing.T) {
 			err := req.ProcessAttributes()
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
+				require.EqualValues(tt.errMsg, common.TopLevelError(err))
 				return
 			}
 			if tt.wantFunc != nil {

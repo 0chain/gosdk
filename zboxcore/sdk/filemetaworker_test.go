@@ -89,7 +89,7 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 				}, nil)
 			},
 			wantErr: true,
-			errMsg:  "file meta data response parse error: unexpected end of JSON input",
+			errMsg:  "file meta data response parse error",
 		},
 		{
 			name: "Test_Success",
@@ -133,7 +133,7 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 						require.EqualValues(t, expected, string(actual))
 					}
 					require.Error(t, err)
-					require.EqualValues(t, "EOF", err.Error())
+					require.EqualValues(t, "EOF", common.TopLevelError(err))
 
 					return req.URL.Path == "Test_Success"+zboxutil.FILE_META_ENDPOINT+mockAllocationTxId &&
 						req.URL.RawPath == "Test_Success"+zboxutil.FILE_META_ENDPOINT+mockAllocationTxId &&
@@ -177,7 +177,7 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 			resp := <-rspCh
 			require.EqualValues(t, tt.wantErr, resp.err != nil)
 			if resp.err != nil {
-				require.EqualValues(t, tt.errMsg, resp.err.Error())
+				require.EqualValues(t, tt.errMsg, common.TopLevelError(resp.err))
 				return
 			}
 			require.EqualValues(t, tt.parameters.fileRefToRetrieve, *resp.fileref)

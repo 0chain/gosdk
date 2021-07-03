@@ -3,9 +3,10 @@ package zcncrypto
 import (
 	"testing"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
-	"github.com/stretchr/testify/require"
 	"github.com/herumi/bls-go-binary/bls"
+	"github.com/stretchr/testify/require"
 )
 
 var verifyPublickey = `e8a6cfa7b3076ae7e04764ffdfe341632a136b52953dfafa6926361dd9a466196faecca6f696774bbd64b938ff765dbc837e8766a5e2d8996745b2b94e1beb9e`
@@ -23,7 +24,7 @@ func TestSignatureScheme(t *testing.T) {
 	}
 	w, err := sigScheme.GenerateKeys()
 	if err != nil {
-		t.Fatalf("Generate Key failed %s", err.Error())
+		t.Fatalf("Generate Key failed %s", common.TopLevelError(err))
 	}
 	if w.ClientID == "" || w.ClientKey == "" || len(w.Keys) != 1 || w.Mnemonic == "" {
 		t.Fatalf("Invalid keys generated")
@@ -60,7 +61,7 @@ func BenchmarkBLSSign(b *testing.B) {
 func TestRecoveryKeys(t *testing.T) {
 
 	sigScheme := NewSignatureScheme("bls0chain")
-    TestSignatureScheme(t)
+	TestSignatureScheme(t)
 	w, err := sigScheme.RecoverKeys(blsWallet.Mnemonic)
 	if err != nil {
 		t.Fatalf("set Recover Keys failed")
@@ -81,7 +82,7 @@ func TestCombinedSignAndVerify(t *testing.T) {
 	sig0 := NewSignatureScheme("bls0chain")
 	err := sig0.SetPrivateKey(sk0)
 	if err != nil {
-		t.Fatalf("Set private key failed - %s", err.Error())
+		t.Fatalf("Set private key failed - %s", common.TopLevelError(err))
 	}
 	signature, err := sig0.Sign(hash)
 	if err != nil {
@@ -91,7 +92,7 @@ func TestCombinedSignAndVerify(t *testing.T) {
 	sig1 := NewSignatureScheme("bls0chain")
 	err = sig1.SetPrivateKey(sk1)
 	if err != nil {
-		t.Fatalf("Set private key failed - %s", err.Error())
+		t.Fatalf("Set private key failed - %s", common.TopLevelError(err))
 	}
 	addSig, err := sig1.Add(signature, hash)
 
@@ -110,7 +111,7 @@ func TestSplitKey(t *testing.T) {
 	sig0 := NewBLS0ChainScheme()
 	err := sig0.SetPrivateKey(primaryKeyStr)
 	if err != nil {
-		t.Fatalf("Set private key failed - %s", err.Error())
+		t.Fatalf("Set private key failed - %s", common.TopLevelError(err))
 	}
 	hash := Sha3Sum256(data)
 	signature, err := sig0.Sign(hash)
@@ -120,7 +121,7 @@ func TestSplitKey(t *testing.T) {
 	numSplitKeys := int(2)
 	w, err := sig0.SplitKeys(numSplitKeys)
 	if err != nil {
-		t.Fatalf("Splitkeys key failed - %s", err.Error())
+		t.Fatalf("Splitkeys key failed - %s", common.TopLevelError(err))
 	}
 	sigAggScheme := make([]BLS0ChainScheme, numSplitKeys)
 	for i := 0; i < numSplitKeys; i++ {

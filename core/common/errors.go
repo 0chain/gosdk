@@ -3,7 +3,6 @@ package common
 import (
 	"fmt"
 	"runtime"
-	"strings"
 )
 
 /*Error type for a new application error */
@@ -23,7 +22,27 @@ func (err *Error) Error() string {
 // TopLevelError since errors can be wrapped and stacked,
 // it's necessary to get the top level error for tests and validations
 func TopLevelError(err error) string {
-	return strings.SplitN(strings.Split(err.Error(), "\n")[0], " ", 2)[1]
+	switch t := err.(type) {
+	case *Error:
+		// if type is an integer
+		t1 := t
+		if t1.Code == "" {
+			return t1.Msg
+		}
+		return fmt.Sprintf("%s: %s", t1.Code, t1.Msg)
+	case *withError:
+		switch t1 := t.current.(type) {
+		case *Error:
+			if t1.Code == "" {
+				return t1.Msg
+			}
+			return fmt.Sprintf("%s: %s", t1.Code, t1.Msg)
+		default:
+			return err.Error()
+		}
+	default:
+		return err.Error()
+	}
 }
 
 type withError struct {
@@ -32,7 +51,14 @@ type withError struct {
 }
 
 func (w *withError) Error() string {
-	return w.current.Error() + "\n" + w.previous.Error()
+	var retError string
+	if w.current != nil {
+		retError = w.current.Error()
+	}
+	if w.previous != nil {
+		retError += "\n" + w.previous.Error()
+	}
+	return retError
 }
 
 // WrapWithError wrap the previous error with current error

@@ -117,7 +117,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 				}, nil)
 			},
 			wantErr: true,
-			errMsg:  "list entities response parse error: invalid character 'h' in literal true (expecting 'r')",
+			errMsg:  "list entities response parse error:",
 		},
 		{
 			name: "Test_Success",
@@ -193,7 +193,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 			resp := <-rspCh
 			require.EqualValues(tt.wantErr, resp.err != nil)
 			if resp.err != nil {
-				require.EqualValues(tt.errMsg, resp.err.Error())
+				require.EqualValues(tt.errMsg, common.TopLevelError(resp.err))
 				return
 			}
 			require.EqualValues(tt.parameters.listHttpResp.ref, resp.ref)

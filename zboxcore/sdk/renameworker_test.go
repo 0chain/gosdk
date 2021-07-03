@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"github.com/0chain/gosdk/core/common"
 	"io"
 	"io/ioutil"
 	"mime"
@@ -75,7 +76,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 				}, nil)
 			},
 			wantErr: true,
-			errMsg:  "Object tree error response: Status: 400 -  ",
+			errMsg:  "400: Object tree error response: Body:  ",
 		},
 		{
 			name: "Test_Rename_Blobber_Object_Failed",
@@ -166,7 +167,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 						require.EqualValues(t, expected, string(actual))
 					}
 					require.Error(t, err)
-					require.EqualValues(t, "EOF", err.Error())
+					require.EqualValues(t, "EOF", common.TopLevelError(err))
 
 					return strings.HasPrefix(req.URL.Path, testName) &&
 						req.Method == "POST" &&
@@ -211,7 +212,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			_, err := req.renameBlobberObject(req.blobbers[0], 0)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
+				require.EqualValues(tt.errMsg, common.TopLevelError(err))
 				return
 			}
 			require.NoErrorf(err, "expected no error but got %v", err)
@@ -402,7 +403,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			err := req.ProcessRename()
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
+				require.EqualValues(tt.errMsg, common.TopLevelError(err))
 				return
 			}
 			if tt.wantFunc != nil {

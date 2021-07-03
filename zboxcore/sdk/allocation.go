@@ -26,7 +26,7 @@ import (
 )
 
 var (
-	noBLOBBERS     = common.NewError("no_blobbers", "No Blobbers set in this allocation")
+	noBLOBBERS     = common.NewErrorMessage("No Blobbers set in this allocation")
 	notInitialized = common.NewError("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 )
 
