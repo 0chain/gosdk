@@ -4,16 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
-	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
-	zclient "github.com/0chain/gosdk/zboxcore/client"
-	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/marker"
-	"github.com/0chain/gosdk/zboxcore/mocks"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 	"io"
 	"io/ioutil"
 	"mime"
@@ -23,6 +13,17 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
+	zclient "github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/marker"
+	"github.com/0chain/gosdk/zboxcore/mocks"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
@@ -69,7 +70,7 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 				})).Return(&http.Response{
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 					StatusCode: p.respStatusCode,
-				}, fmt.Errorf(mockErrorMessage))
+				}, common.NewErrorMessage(mockErrorMessage))
 			},
 			wantErr: true,
 			errMsg:  mockErrorMessage,

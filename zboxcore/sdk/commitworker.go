@@ -126,7 +126,8 @@ func (commitreq *CommitRequest) processCommit() {
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("Reference path error response: Status: %d - %s ", resp.StatusCode, string(resp_body))
+			return common.NewError(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Reference path error response: Status: %d - %s ", resp.StatusCode, string(resp_body)))
+			
 		} else {
 			//Logger.Info("Reference path:", string(resp_body))
 			err = json.Unmarshal(resp_body, &lR)
@@ -292,7 +293,7 @@ func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths 
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("Calculate hash error response: Status: %d - %s ", resp.StatusCode, string(resp_body))
+			return common.NewError(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Calculate hash error response: Body: %s ", string(resp_body)))
 		}
 		return nil
 	})

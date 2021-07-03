@@ -2,7 +2,6 @@ package fileref
 
 import (
 	"encoding/json"
-	"fmt"
 	"math"
 	"sort"
 	"strconv"
@@ -51,7 +50,7 @@ func (a *Attributes) IsZero() bool {
 // Validate the Attributes.
 func (a *Attributes) Validate() (err error) {
 	if err = a.WhoPaysForReads.Validate(); err != nil {
-		return fmt.Errorf("invalid who_pays_for_reads field: %v", err)
+		return common.WrapWithMessage(err, "invalid who_pays_for_reads field")
 	}
 	return
 }

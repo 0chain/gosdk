@@ -9,8 +9,8 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 
+	"github.com/0chain/gosdk/core/common"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 )
@@ -342,7 +342,7 @@ func (pre *PREEncryptionScheme) decrypt(encMsg *EncryptedMessage) ([]byte, error
 	alp := pre.hash6(g, C.TagA, pre.PrivateKey) // alp = H6(tagA,skA)
 	chk1 := pre.hash5(g, C.EncryptedKey, C.EncryptedData, C.MessageChecksum, alp)
 	if !bytes.Equal(chk1, C.OverallChecksum) { // Check if C4 = H5(C1,C2,C3,alp)
-		return nil, fmt.Errorf("Invalid Ciphertext in decrypt, C4 != H5")
+		return nil, common.NewErrorMessage("Invalid Ciphertext in decrypt, C4 != H5")
 	}
 	Ht := pre.hash1(pre.SuiteObj, pre.Tag, pre.PrivateKey) // Ht  = H1(tagA,skA)
 	T := g.Point().Sub(C.EncryptedKey, Ht)                 // T   = C1 - Ht
@@ -351,7 +351,7 @@ func (pre *PREEncryptionScheme) decrypt(encMsg *EncryptedMessage) ([]byte, error
 	if err2 == nil {
 		chk2 := pre.hash3(g, recmsg, T)
 		if !bytes.Equal(chk2, C.MessageChecksum) { // Check if C3 = H3(m,T)
-			return nil, fmt.Errorf("Invalid Ciphertext in decrypt, C3 != H3")
+			return nil, common.NewErrorMessage("Invalid Ciphertext in decrypt, C3 != H3")
 		} else {
 			//fmt.Println("First level ciphertext decrypted successfully")
 			return recmsg, nil
@@ -393,7 +393,7 @@ func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey str
 
 	chk1 := pre.hash5(g, C.EncryptedKey, C.EncryptedData, C.MessageChecksum, rk.R3)
 	if !bytes.Equal(chk1, C.OverallChecksum) { // Check if C4 = H5(C1,C2,C3,alp)
-		return nil, fmt.Errorf("Invalid Ciphertext in reEncrypt, C4 != H5")
+		return nil, common.NewErrorMessage("Invalid Ciphertext in reEncrypt, C4 != H5")
 	}
 	t := s.Scalar().Pick(s.RandomStream()) // Pick a random integer t
 	reEncMsg.D5 = s.Point().Mul(t, nil)    // D5    = tP
@@ -425,7 +425,7 @@ func (pre *PREEncryptionScheme) reDecrypt(D *reEncryptedMessage) ([]byte, error)
 	if err2 == nil {
 		chk2 := pre.hash3(g, recmsg, T)
 		if !bytes.Equal(chk2, D.D3) { // Check if D3 = H3(m,T)
-			return nil, fmt.Errorf("Invalid Ciphertext in reDecrypt, D3 != H3")
+			return nil, common.NewErrorMessage("Invalid Ciphertext in reDecrypt, D3 != H3")
 		} else {
 			return recmsg, nil
 		}

@@ -3,11 +3,11 @@ package sdk
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"reflect"
 	"time"
+	"strconv"
 
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"go.uber.org/zap"
@@ -92,18 +92,19 @@ func GetNetworkDetails() (*Network, error) {
 		defer resp.Body.Close()
 		respBody, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("Error reading response : %s", err.Error())
+			return common.WrapWithMessage(err, "Error reading response : ")
 		}
 
 		Logger.Debug("Get network result:", string(respBody))
 		if resp.StatusCode == http.StatusOK {
 			err = json.Unmarshal(respBody, &networkResponse)
 			if err != nil {
-				return fmt.Errorf("Error unmarshaling response : %s", err.Error())
+				return common.WrapWithMessage(err, "Error unmarshaling response :")
 			}
 			return nil
 		}
-		return fmt.Errorf("Get network details status not OK, Status : %v", resp.StatusCode)
+		return common.NewError(strconv.Itoa(resp.StatusCode), "Get network details status not OK")
+
 	})
 	return &networkResponse, err
 }

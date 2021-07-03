@@ -281,7 +281,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 		}
 		if resp.StatusCode != http.StatusOK {
 			Logger.Error(blobber.Baseurl, " Upload error response: ", resp.StatusCode, string(respbody))
-			req.err = fmt.Errorf(string(respbody))
+			req.err = common.NewErrorMessage(string(respbody))
 			return err
 		}
 		var r uploadResult
@@ -293,7 +293,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 		}
 		if r.Filename != formData.Filename || r.ShardSize != shardSize ||
 			r.Hash != formData.Hash || r.MerkleRoot != formData.MerkleRoot {
-			err = fmt.Errorf(blobber.Baseurl, "Unexpected upload response data", string(respbody))
+			err = common.NewErrorMessage(fmt.Sprintf(blobber.Baseurl, "Unexpected upload response data", string(respbody)))
 			Logger.Error(err)
 			req.err = err
 			return err
@@ -417,7 +417,7 @@ func (req *UploadRequest) completePush() error {
 	}
 	req.wg.Wait()
 	if !req.isConsensusOk() {
-		return fmt.Errorf("Upload failed: Consensus_rate:%f, expected:%f", req.getConsensusRate(), req.getConsensusRequiredForOk())
+		return common.NewErrorMessage(fmt.Sprintf("Upload failed: Consensus_rate:%f, expected:%f", req.getConsensusRate(), req.getConsensusRequiredForOk()))
 	}
 	return nil
 }

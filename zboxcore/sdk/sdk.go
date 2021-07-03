@@ -4,13 +4,13 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
-	"fmt"
-	"github.com/0chain/gosdk/core/logger"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
+
+	"github.com/0chain/gosdk/core/logger"
 
 	"github.com/0chain/gosdk/zboxcore/marker"
 
@@ -188,15 +188,15 @@ func GetReadPoolInfo(clientID string) (info *AllocationPoolStats, err error) {
 	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getReadPoolStat",
 		map[string]string{"client_id": clientID}, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error requesting read pool info: %v", err)
+		return nil, common.WrapWithMessage(err, "error requesting read pool info")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, common.NewErrorMessage("empty response")
 	}
 
 	info = new(AllocationPoolStats)
 	if err = json.Unmarshal(b, info); err != nil {
-		return nil, fmt.Errorf("error decoding response: %v", err)
+		return nil, common.WrapWithMessage(err, "error decoding response:")
 	}
 
 	return
@@ -332,15 +332,15 @@ func GetStakePoolInfo(blobberID string) (info *StakePoolInfo, err error) {
 	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getStakePoolStat",
 		map[string]string{"blobber_id": blobberID}, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error requesting stake pool info: %v", err)
+		return nil, common.WrapWithMessage(err, "error requesting stake pool info:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, common.NewErrorMessage("empty response")
 	}
 
 	info = new(StakePoolInfo)
 	if err = json.Unmarshal(b, info); err != nil {
-		return nil, fmt.Errorf("error decoding response: %v", err)
+		return nil, common.WrapWithMessage(err, "error decoding response:")
 	}
 
 	return
@@ -365,15 +365,15 @@ func GetStakePoolUserInfo(clientID string) (info *StakePoolUserInfo, err error) 
 	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
 		"/getUserStakePoolStat", map[string]string{"client_id": clientID}, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error requesting stake pool user info: %v", err)
+		return nil, common.WrapWithMessage(err, "error requesting stake pool user info:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, common.NewErrorMessage("empty response")
 	}
 
 	info = new(StakePoolUserInfo)
 	if err = json.Unmarshal(b, info); err != nil {
-		return nil, fmt.Errorf("error decoding response: %v", err)
+		return nil, common.WrapWithMessage(err, "error decoding response:")
 	}
 
 	return
@@ -487,15 +487,15 @@ func GetWritePoolInfo(clientID string) (info *AllocationPoolStats, err error) {
 	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getWritePoolStat",
 		map[string]string{"client_id": clientID}, nil)
 	if err != nil {
-		return nil, fmt.Errorf("error requesting read pool info: %v", err)
+		return nil, common.WrapWithMessage(err, "error requesting read pool info:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, common.NewErrorMessage("empty response")
 	}
 
 	info = new(AllocationPoolStats)
 	if err = json.Unmarshal(b, info); err != nil {
-		return nil, fmt.Errorf("error decoding response: %v", err)
+		return nil, common.WrapWithMessage(err, "error decoding response:")
 	}
 
 	return
@@ -572,15 +572,15 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 		"/getChallengePoolStat", map[string]string{"allocation_id": allocID},
 		nil)
 	if err != nil {
-		return nil, fmt.Errorf("error requesting challenge pool info: %v", err)
+		return nil, common.WrapWithMessage(err, "error requesting challenge pool info:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, common.NewErrorMessage("empty response")
 	}
 
 	info = new(ChallengePoolInfo)
 	if err = json.Unmarshal(b, info); err != nil {
-		return nil, fmt.Errorf("error decoding response: %v", err)
+		return nil, common.WrapWithMessage(err, "error decoding response:")
 	}
 
 	return
@@ -644,19 +644,19 @@ func GetStorageSCConfig() (conf *StorageSCConfig, err error) {
 	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getConfig", nil,
 		nil)
 	if err != nil {
-		return nil, fmt.Errorf("error requesting storage SC configs: %v", err)
+		return nil, common.WrapWithMessage(err, "error requesting storage SC configs:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, common.NewErrorMessage("empty response")
 	}
 
 	conf = new(StorageSCConfig)
 	if err = json.Unmarshal(b, conf); err != nil {
-		return nil, fmt.Errorf("error decoding response: %v", err)
+		return nil, common.WrapWithMessage(err, "rror decoding response:")
 	}
 
 	if conf.ReadPool == nil || conf.WritePool == nil || conf.StakePool == nil {
-		return nil, errors.New("invalid confg: missing read/write/stake pool configs")
+		return nil, common.NewErrorMessage("invalid confg: missing read/write/stake pool configs")
 	}
 	return
 }
@@ -681,10 +681,10 @@ func GetBlobbers() (bs []*Blobber, err error) {
 	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getblobbers", nil,
 		nil)
 	if err != nil {
-		return nil, fmt.Errorf("error requesting blobbers: %v", err)
+		return nil, common.WrapWithMessage(err, "error requesting blobbers:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, common.NewErrorMessage("empty response")
 	}
 
 	type nodes struct {
@@ -694,7 +694,7 @@ func GetBlobbers() (bs []*Blobber, err error) {
 	var wrap nodes
 
 	if err = json.Unmarshal(b, &wrap); err != nil {
-		return nil, fmt.Errorf("error decoding response: %v", err)
+		return nil, common.WrapWithMessage(err, "error decoding response:")
 	}
 
 	return wrap.Nodes, nil
@@ -712,14 +712,14 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 		map[string]string{"blobber_id": blobberID},
 		nil)
 	if err != nil {
-		return nil, fmt.Errorf("requesting blobber: %v", err)
+		return nil, common.WrapWithMessage(err, "requesting blobber:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response from sharders")
+		return nil, common.NewErrorMessage("empty response from sharders")
 	}
 	blob = new(Blobber)
 	if err = json.Unmarshal(b, blob); err != nil {
-		return nil, fmt.Errorf("decoding response: %v", err)
+		return nil, common.WrapWithMessage(err, "decoding response:")
 	}
 	return
 }
@@ -1111,14 +1111,14 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 		defer resp.Body.Close()
 		respBody, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("Error reading response : %s", err.Error())
+			return common.WrapWithMessage(err, "Error reading response :")
 		}
 		Logger.Debug("Fabric commit result:", string(respBody))
 		if resp.StatusCode == http.StatusOK {
 			fabricResponse = string(respBody)
 			return nil
 		}
-		return fmt.Errorf("Fabric commit status not OK, Status : %v", resp.StatusCode)
+		return common.NewError(strconv.Itoa(resp.StatusCode), "Fabric commit status not OK!")
 	})
 	return fabricResponse, err
 }

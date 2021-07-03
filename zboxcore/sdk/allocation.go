@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -27,7 +26,7 @@ import (
 )
 
 var (
-	noBLOBBERS     = errors.New("No Blobbers set in this allocation")
+	noBLOBBERS     = common.NewError("no_blobbers", "No Blobbers set in this allocation")
 	notInitialized = common.NewError("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 )
 
@@ -327,7 +326,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 
 	fileInfo, err := GetFileInfo(localpath)
 	if err != nil {
-		return fmt.Errorf("Local file error: %s", err.Error())
+		return common.WrapWithMessage(err, "Local file error")
 	}
 	thumbnailSize := int64(0)
 	if len(thumbnailpath) > 0 {
@@ -385,7 +384,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 		}
 
 		if !repairRequired {
-			return fmt.Errorf("Repair not required")
+			return common.NewErrorMessage("Repair not required")
 		}
 
 		file, _ := ioutil.ReadFile(localpath)
@@ -393,7 +392,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 		hash.Write(file)
 		contentHash := hex.EncodeToString(hash.Sum(nil))
 		if contentHash != fileRef.ActualFileHash {
-			return fmt.Errorf("Content hash doesn't match")
+			return common.NewErrorMessage("Content hash doesn't match")
 		}
 
 		uploadReq.filemeta.Hash = fileRef.ActualFileHash
@@ -402,7 +401,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 	}
 
 	if !uploadReq.IsFullConsensusSupported() {
-		return fmt.Errorf("allocation requires [%v] blobbers, which is greater than the maximum permitted number of [%v]. reduce number of data or parity shards and try again", uploadReq.fullconsensus, uploadReq.GetMaxBlobbersSupported())
+		return common.NewErrorMessage(fmt.Sprintf("allocation requires [%v] blobbers, which is greater than the maximum permitted number of [%v]. reduce number of data or parity shards and try again", uploadReq.fullconsensus, uploadReq.GetMaxBlobbersSupported()))
 	}
 
 	go func() {
@@ -429,7 +428,7 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, 
 	listReq.remotefilepath = remotepath
 	found, fileRef, _ := listReq.getFileConsensusFromBlobbers()
 	if fileRef == nil {
-		return found, false, fileRef, fmt.Errorf("File not found for the given remotepath")
+		return found, false, fileRef, common.NewErrorMessage("File not found for the given remotepath")
 	}
 
 	uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
@@ -457,13 +456,13 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	}
 	if stat, err := os.Stat(localPath); err == nil {
 		if !stat.IsDir() {
-			return fmt.Errorf("Local path is not a directory '%s'", localPath)
+			return common.NewErrorMessage(fmt.Sprintf("Local path is not a directory '%s'", localPath))
 		}
 		localPath = strings.TrimRight(localPath, "/")
 		_, rFile := filepath.Split(remotePath)
 		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
 		if _, err := os.Stat(localPath); err == nil {
-			return fmt.Errorf("Local file already exists '%s'", localPath)
+			return common.NewErrorMessage(fmt.Sprintf("Local file already exists '%s'", localPath))
 		}
 	}
 	lPath, _ := filepath.Split(localPath)
@@ -924,13 +923,13 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	}
 	if stat, err := os.Stat(localPath); err == nil {
 		if !stat.IsDir() {
-			return fmt.Errorf("Local path is not a directory '%s'", localPath)
+			return common.NewErrorMessage(fmt.Sprintf("Local path is not a directory '%s'", localPath))
 		}
 		localPath = strings.TrimRight(localPath, "/")
 		_, rFile := filepath.Split(remoteFilename)
 		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
 		if _, err := os.Stat(localPath); err == nil {
-			return fmt.Errorf("Local file already exists '%s'", localPath)
+			return common.NewErrorMessage(fmt.Sprintf("Local file already exists '%s'", localPath))
 		}
 	}
 	if len(a.Blobbers) <= 1 {

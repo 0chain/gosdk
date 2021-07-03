@@ -128,7 +128,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 		if req.blobber.IsSkip() {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx,
-				err: fmt.Errorf("skip blobber by previous errors")}
+				err: common.NewErrorMessage("skip blobber by previous errors")}
 			return
 		}
 
@@ -142,14 +142,14 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		rm.ReadCounter = getBlobberReadCtr(req.blobber) + req.numBlocks
 		err := rm.Sign()
 		if err != nil {
-			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: fmt.Errorf("Error: Signing readmarker failed: %s", err.Error())}
+			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: common.WrapWithMessage(err, "Error: Signing readmarker failed")}
 			return
 		}
 		body := new(bytes.Buffer)
 		formWriter := multipart.NewWriter(body)
 		rmData, err := json.Marshal(rm)
 		if err != nil {
-			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: fmt.Errorf("Error creating readmarker: %s", err.Error())}
+			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: common.WrapWithMessage(err, "Error creating readmarker")}
 			return
 		}
 		if len(req.remotefilepath) > 0 {
@@ -175,7 +175,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		formWriter.Close()
 		httpreq, err := zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationTx, body)
 		if err != nil {
-			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: fmt.Errorf("Error creating download request: %s", err.Error())}
+			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: common.WrapWithMessage(err, "Error creating download request")}
 			return
 		}
 		httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
@@ -194,7 +194,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 				response, err := ioutil.ReadAll(resp.Body)
 				// if err != nil {
-				// 	return fmt.Errorf("[%d] Read error:%s\n", req.blobberIdx, err.Error())
+					// return common.WrapWithMessage(err, fmt.Sprintf("[%d] Read error:\n", req.blobberIdx))
 				// }
 				var rspData downloadBlock
 				rspData.idx = req.blobberIdx
@@ -212,7 +212,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					incBlobberReadCtr(req.blobber, req.numBlocks)
 					req.result <- &rspData
 					return nil
-					//return fmt.Errorf("[%d] Json decode error:%s\n", req.blobberIdx, err.Error())
+					// return common.WrapWithMessage(err, fmt.Sprintf("[%d] Json decode error:\n", req.blobberIdx))
 				}
 				// if rspData.Success {
 				// 	elapsed := time.Since(start)
@@ -228,7 +228,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					Logger.Info("Will be retrying download")
 					setBlobberReadCtr(req.blobber, rspData.LatestRM.ReadCounter)
 					shouldRetry = true
-					return fmt.Errorf("Need to retry the download")
+					return common.NewErrorMessage("Need to retry the download")
 				}
 
 			} else {
@@ -236,7 +236,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				if err != nil {
 					return err
 				}
-				err = fmt.Errorf("Response Error: %s", string(resp_body))
+				err = common.NewErrorMessage(fmt.Sprintf("Response Error: %s", string(resp_body)))
 				if strings.Contains(err.Error(), "not_enough_tokens") {
 					shouldRetry, retry = false, 3 // don't repeat
 					req.blobber.SetSkip(true)

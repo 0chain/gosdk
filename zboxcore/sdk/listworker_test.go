@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -13,6 +12,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	zclient "github.com/0chain/gosdk/zboxcore/client"
@@ -80,7 +80,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 				})).Return(&http.Response{
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 					StatusCode: p.respStatusCode,
-				}, fmt.Errorf(mockErrorMessage))
+				}, common.NewErrorMessage(mockErrorMessage))
 			},
 			wantErr: true,
 			errMsg:  mockErrorMessage,
