@@ -74,7 +74,6 @@ func (u *ReKey) MarshalJSON() ([]byte, error) {
 		return nil, err
 	}
 	r3Bytes, err := u.R3.MarshalBinary()
-	fmt.Println(r3Bytes)
 	if err != nil {
 		return nil, err
 	}
@@ -88,23 +87,18 @@ func (u *ReKey) MarshalJSON() ([]byte, error) {
 func (u *ReKey) UnmarshalJSON(data []byte) error {
 	rbytes := &ReKeyBytes{}
 	err := json.Unmarshal(data, rbytes)
-	fmt.Println("unm", err)
 	if err != nil {
 		return err
 	}
-	fmt.Println("unm 2", err)
 	err = u.R1.UnmarshalBinary(rbytes.R1Bytes)
 	if err != nil {
 		return err
 	}
-	fmt.Println("unm 3", err)
 	err = u.R2.UnmarshalBinary(rbytes.R2Bytes)
 	if err != nil {
 		return err
 	}
-	fmt.Println("unm 4", err, len(rbytes.R3Bytes))
 	err = u.R3.UnmarshalBinary(rbytes.R3Bytes)
-	fmt.Println("unm 5", err)
 	if err != nil {
 		return err
 	}
@@ -208,13 +202,13 @@ func (reEncMsg *ReEncryptedMessage) Unmarshal(data []byte) error {
 func (pre *PREEncryptionScheme) Initialize(mnemonic string) error {
 	suite := edwards25519.NewBlakeSHA256Ed25519()
 	// Create a public/private keypair (X,x)
-
-	key, err := scalar.New().SetRandom(crand.Reader)
+	rand := suite.XOF([]byte(mnemonic))
+	key, err := scalar.New().SetRandom(rand)
 	if err != nil {
 		return err
 	}
 	pre.PrivateKey = key
-	pre.PublicKey = curve.NewEdwardsPoint().Mul(curve.NewEdwardsPoint().Identity(), pre.PrivateKey)
+	pre.PublicKey = curve.NewEdwardsPoint().MulBasepoint(curve.ED25519_BASEPOINT_TABLE, pre.PrivateKey)
 	pre.SuiteObj = suite
 
 	return nil
@@ -227,7 +221,6 @@ func (pre *PREEncryptionScheme) InitForEncryption(tag string) {
 	s, _ := scalar.New().SetRandom(crand.Reader)
 	pre.T = p.MulBasepoint(curve.ED25519_BASEPOINT_TABLE, s)
 	pre.Ht = pre.hash1(pre.SuiteObj, pre.Tag, pre.PrivateKey)      // Ht  = H1(tagA,skA)
-	fmt.Println("OK", pre.Ht, pre.T)
 	pre.EncryptedKey = curve.NewEdwardsPoint().Add(pre.Ht, pre.T) // C1  = T + Ht
 }
 
@@ -259,11 +252,11 @@ func (pre *PREEncryptionScheme) hash1(s Suite, tagA []byte, skA *scalar.Scalar) 
 	}
 	h.Write(bytes)
 	h1, err := scalar.NewFromBytesModOrder(h.Sum(nil)[:32])
-	fmt.Println("i am here 2", err)
 	if err != nil {
 		return nil
 	}
-	p1 := curve.NewEdwardsPoint().Mul(curve.NewEdwardsPoint().Identity(), h1)
+
+	p1 := curve.NewEdwardsPoint().MulBasepoint(curve.ED25519_BASEPOINT_TABLE, h1)
 	return p1
 }
 
@@ -329,10 +322,8 @@ func (pre *PREEncryptionScheme) hash6(g kyber.Group, tagA []byte, skA *scalar.Sc
 	if _, err := h.Write(tagA); err != nil {
 		return nil
 	}
-	fmt.Println(len(h.Sum(nil)))
 	res, err := scalar.NewFromBytesModOrder(h.Sum(nil)[:32])
 	if err != nil {
-		fmt.Println(err)
 		return nil
 	}
 	return res
@@ -363,7 +354,6 @@ func (pre *PREEncryptionScheme) hash7(g kyber.Group, X *curve.EdwardsPoint, D2 [
 		return nil
 	}
 	result, err := scalar.NewFromBytesModOrder(h.Sum(nil)[:32])
-	fmt.Println("from bits error", err)
 	if err != nil {
 		return nil
 	}
@@ -376,23 +366,17 @@ func (pre *PREEncryptionScheme) encrypt(msg []byte) (*PREEncryptedMessage, error
 	T := pre.T
 	var g kyber.Group = pre.SuiteObj
 	C.EncryptedKey = pre.EncryptedKey
-	fmt.Println(1)
 
 	key := pre.hash2(g, T)             // key = H2(T)
-	fmt.Println(2)
 	C2, err := pre.SymEnc(g, msg, key) // C2  = Sym.Encrypt(msg,key)
-	fmt.Println(3)
 	C.EncryptedData = C2
 	if err != nil {
 		return nil, err
 	}
 
 	C.MessageChecksum = pre.hash3(g, msg, T)                                                  // C3  = H3(msg,T)
-	fmt.Println(4)
 	alp := pre.hash6(g, pre.Tag, pre.PrivateKey)                                              // alp = H6(tagA,skA)
-	fmt.Println(5, alp)
 	C.OverallChecksum = pre.hash5(g, C.EncryptedKey, C.EncryptedData, C.MessageChecksum, alp) // C4  = H5(C1,C2,C3,alp)
-	fmt.Println(6)
 	return C, nil                                                                             // return C = (C1,C2,C3,C4,tagA)
 }
 
@@ -538,39 +522,29 @@ func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey str
 	rk.R2 = curve.NewEdwardsPoint()
 	rk.R3 = scalar.New()
 	err = rk.UnmarshalJSON([]byte(reGenKey))
-	fmt.Println(888, err)
 	if err != nil {
 		return nil, err
 	}
 
 	var reEncMsg = new(ReEncryptedMessage)
 
-	fmt.Println(889)
 	chk1 := pre.hash5(g, C.EncryptedKey, C.EncryptedData, C.MessageChecksum, rk.R3)
-	fmt.Println(890)
 	if !bytes.Equal(chk1, C.OverallChecksum) { // Check if C4 = H5(C1,C2,C3,alp)
 		return nil, fmt.Errorf("Invalid Ciphertext in reEncrypt, C4 != H5")
 	}
-	fmt.Println(891)
 	t, err := scalar.New().SetRandom(crand.Reader)
-	fmt.Println(892, err)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(893)
-	reEncMsg.D5 = curve.NewEdwardsPoint().Mul(curve.NewEdwardsPoint().Identity(), t)    // D5    = tP
-	fmt.Println(894)
+
+	reEncMsg.D5 = curve.NewEdwardsPoint().MulBasepoint(curve.ED25519_BASEPOINT_TABLE, t)    // D5    = tP
 	tXj := curve.NewEdwardsPoint().Mul(clientPublicKey, t)
-	fmt.Println(895)
 	reEncMsg.D1 = curve.NewEdwardsPoint().Add(C.EncryptedKey, rk.R1)
-	fmt.Println(896)
 	reEncMsg.D2 = C.EncryptedData                                                // D2    = C2
 	reEncMsg.D3 = C.MessageChecksum                                              // D3    = C3
 	reEncMsg.D4 = rk.R2                                                          // D4    = R2
 	bet := pre.hash7(g, tXj, reEncMsg.D2, reEncMsg.D3, reEncMsg.D4, reEncMsg.D5) // bet   = H7(tXj,D2,D3,D4,D5)
-	fmt.Println(897, bet)
 	reEncMsg.D1 = curve.NewEdwardsPoint().Mul(reEncMsg.D1, bet)                    // D1    = bet.(C1 + R1)
-	fmt.Println(898)
 	return reEncMsg, nil                                                         // Return D = (D1,D2,D3,D4,D5)
 }
 
@@ -602,9 +576,7 @@ func (pre *PREEncryptionScheme) ReDecrypt(D *ReEncryptedMessage) ([]byte, error)
 
 func (pre *PREEncryptionScheme) Decrypt(encMsg *EncryptedMessage) ([]byte, error) {
 	if len(encMsg.ReEncryptionKey) > 0 {
-		fmt.Println("OK")
 		reEncMsg, err := pre.reEncrypt(encMsg, encMsg.ReEncryptionKey, pre.PublicKey)
-		fmt.Println("Done")
 		if err != nil {
 			return nil, err
 		}
@@ -629,6 +601,7 @@ func (pre *PREEncryptionScheme) GetEncryptedKey() string {
 
 func (pre *PREEncryptionScheme) GetPublicKey() (string, error) {
 	keyBytes, err := pre.PublicKey.MarshalBinary()
+	fmt.Println(keyBytes)
 	if err != nil {
 		return "", err
 	}
@@ -654,7 +627,7 @@ func (pre *PREEncryptionScheme) GetReGenKey(encPublicKey string, tag string) (st
 		return "", err
 	}
 	Hc := pre.hash1(pre.SuiteObj, condA, pre.PrivateKey)         // Hc   = H1(condA,skA)
-	RK.R1 = curve.NewEdwardsPoint().Mul(curve.NewEdwardsPoint().Identity(), r)
+	RK.R1 = curve.NewEdwardsPoint().MulBasepoint(curve.ED25519_BASEPOINT_TABLE, r)
 	RK.R1 = curve.NewEdwardsPoint().Sub(RK.R1, Hc) // R1   = rP - Hc
 
 	keyBytes, err := base64.StdEncoding.DecodeString(encPublicKey)

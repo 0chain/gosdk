@@ -24,12 +24,30 @@ func TestMnemonic(t *testing.T) {
 
 	encscheme.InitForEncryption("filetype:audio")
 	pvk, _ := encscheme.GetPrivateKey()
-	expectedPvk := "XsQLPaRBOFS+3KfXq2/uyAPE+/qq3VW0OkW0T9q93wQ="
+	expectedPvk := "m4T5WQJaD4IL2VUd4v2IzrP9SgZ4VJa+htzu5z/+nQo="
 	require.Equal(t, expectedPvk, pvk)
 	pubk, _ := encscheme.GetPublicKey()
-	expectedPubk := "PwpVIXgXbnt8NJmy+R4aSwG8HwJbsbT2JVQqa0bayZQ="
+	expectedPubk := "O9VWL4gNKMwkYLayaFqkonYJMa48le9LNGNggNBJBVk="
 	require.Equal(t, expectedPubk, pubk)
+}
 
+func TestEncryptionAndDecryption(t *testing.T) {
+	client_mnemonic := "travel twenty hen negative fresh sentence hen flat swift embody increase juice eternal satisfy want vessel matter honey video begin dutch trigger romance assault"
+	client_encscheme := NewEncryptionScheme()
+	client_encscheme.Initialize(client_mnemonic)
+	client_encscheme.InitForEncryption("filetype:audio")
+
+	enc_msg, err := client_encscheme.Encrypt([]byte("encrypted_data_uttam"))
+	require.Nil(t, err)
+
+	client_decryption_scheme := NewEncryptionScheme()
+	client_decryption_scheme.Initialize(client_mnemonic)
+	client_decryption_scheme.InitForDecryption("filetype:audio", enc_msg.EncryptedKey)
+
+	t.Log("decrypting")
+	result, err := client_decryption_scheme.Decrypt(enc_msg)
+	require.Nil(t, err)
+	require.Equal(t, string(result), "encrypted_data_uttam")
 }
 
 func TestReEncryptionAndDecryptionForShareData(t *testing.T) {
