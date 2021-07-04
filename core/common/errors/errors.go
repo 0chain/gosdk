@@ -60,35 +60,41 @@ func (w *withError) Error() string {
 	return retError
 }
 
+func invalidWrap() error {
+	return &Error{
+		Code:     "incorrect_usage",
+		Msg:      "you should at least pass message to properly wrap the current error!",
+		Location: getErrorLocation(3),
+	}
+}
+
 // Wrap wrap the previous error with current error/ message
 func Wrap(previous error, current interface{}) error {
-	if current == nil {
-		return previous
-	}
 
+	var currentError error
 	switch c := current.(type) {
 	case error:
-		return &withError{
-			previous: previous,
-			current:  c,
+		if c == nil {
+			currentError = invalidWrap()
+		} else {
+			currentError = c
 		}
 	case string:
-		return &withError{
-			previous: previous,
-			current: &Error{
+		if c == "" {
+			currentError = invalidWrap()
+		} else {
+			currentError = &Error{
 				Msg:      c,
 				Location: getErrorLocation(2),
-			},
+			}
 		}
 	default:
-		return &withError{
-			previous: previous,
-			current: &Error{
-				Code:     "incorrect_usage",
-				Msg:      "you should at least pass message to properly wrap the current error!",
-				Location: getErrorLocation(1),
-			},
-		}
+		currentError = invalidWrap()
+	}
+
+	return &withError{
+		previous: previous,
+		current:  currentError,
 	}
 }
 
@@ -103,26 +109,22 @@ if two arguments are passed then
 	second argument is considered for message
 */
 func New(args ...string) *Error {
+	currentError := Error{
+		Location: getErrorLocation(2),
+	}
+
 	switch len(args) {
 	case 1:
-		return &Error{
-			Code:     "",
-			Msg:      args[0],
-			Location: getErrorLocation(2),
-		}
+		currentError.Msg = args[0]
 	case 2:
-		return &Error{
-			Code:     args[0],
-			Msg:      args[1],
-			Location: getErrorLocation(2),
-		}
+		currentError.Code = args[0]
+		currentError.Msg = args[1]
 	default:
-		return &Error{
-			Code:     "incorrect_usage",
-			Msg:      "you should at least pass message to create a proper error!",
-			Location: getErrorLocation(1),
-		}
+		currentError.Code = "incorrect_usage"
+		currentError.Msg = "you should at least pass message to create a proper error!"
 	}
+
+	return &currentError
 }
 
 func getErrorLocation(level int) string {
