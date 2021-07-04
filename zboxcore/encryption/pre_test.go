@@ -3,7 +3,6 @@ package encryption
 import (
 	crand "crypto/rand"
 	"encoding/base64"
-	"fmt"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/oasisprotocol/curve25519-voi/curve"
 	"github.com/oasisprotocol/curve25519-voi/curve/scalar"
@@ -44,7 +43,6 @@ func TestEncryptionAndDecryption(t *testing.T) {
 	client_decryption_scheme.Initialize(client_mnemonic)
 	client_decryption_scheme.InitForDecryption("filetype:audio", enc_msg.EncryptedKey)
 
-	t.Log("decrypting")
 	result, err := client_decryption_scheme.Decrypt(enc_msg)
 	require.Nil(t, err)
 	require.Equal(t, string(result), "encrypted_data_uttam")
@@ -74,7 +72,6 @@ func TestReEncryptionAndDecryptionForShareData(t *testing.T) {
 	client_decryption_scheme.Initialize(client_mnemonic)
 	client_decryption_scheme.InitForDecryption("filetype:audio", enc_msg.EncryptedKey)
 
-	t.Log("decrypting")
 	result, err := client_decryption_scheme.Decrypt(enc_msg)
 	require.Nil(t, err)
 	require.Equal(t, string(result), "encrypted_data_uttam")
@@ -123,27 +120,27 @@ func TestReEncryptionAndDecryptionForMarketplaceShare(t *testing.T) {
 	require.Equal(t, string(result), data_to_encrypt)
 }
 
-func TestKyberPointMarshal(t *testing.T) {
+func TestEdwardsPointMarshal(t *testing.T) {
 	reenc := ReEncryptedMessage {
-		D1: curve.NewEdwardsPoint(),
+		D1: curve.NewEdwardsPoint().Identity(),
 		D2: []byte("d2"),
 		D3: []byte("d3"),
-		D4: curve.NewEdwardsPoint(),
-		D5: curve.NewEdwardsPoint(),
+		D4: curve.NewEdwardsPoint().Identity(),
+		D5: curve.NewEdwardsPoint().Identity(),
 	}
 	marshalled, err := reenc.Marshal()
 	require.Nil(t, err)
 	newmsg := &ReEncryptedMessage{
-		D1: curve.NewEdwardsPoint(),
-		D4: curve.NewEdwardsPoint(),
-		D5: curve.NewEdwardsPoint(),
+		D1: curve.NewEdwardsPoint().Identity(),
+		D4: curve.NewEdwardsPoint().Identity(),
+		D5: curve.NewEdwardsPoint().Identity(),
 	}
 	err = newmsg.Unmarshal(marshalled)
 	require.Equal(t, newmsg.D2, reenc.D2)
 	require.Equal(t, newmsg.D3, reenc.D3)
-	require.Equal(t, newmsg.D1, reenc.D1)
-	require.Equal(t, newmsg.D4, reenc.D4)
-	require.Equal(t, newmsg.D5, reenc.D5)
+	require.Equal(t, newmsg.D1.Equal(reenc.D1), 1)
+	require.Equal(t, newmsg.D4.Equal(reenc.D4), 1)
+	require.Equal(t, newmsg.D5.Equal(reenc.D5), 1)
 }
 
 func BenchmarkMarshal(t *testing.B) {
@@ -220,5 +217,5 @@ func TestNic(t *testing.T) {
 	key := suite.Scalar().Pick(rand)
 	t.Log(d, key)
 	e := scalar.New().UnmarshalBinary([]byte("e8yBVeFVqnMrXJ4wyP3S/NcPLumwaszdmUOjmfoTz3A="))
-	fmt.Println(e)
+	t.Log(e)
 }
