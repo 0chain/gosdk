@@ -1,8 +1,12 @@
 package encryption
 
 import (
+	crand "crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/oasisprotocol/curve25519-voi/curve"
+	"github.com/oasisprotocol/curve25519-voi/curve/scalar"
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 	"math/rand"
@@ -44,6 +48,7 @@ func TestReEncryptionAndDecryptionForShareData(t *testing.T) {
 	enc_msg, err := shared_client_encscheme.Encrypt([]byte("encrypted_data_uttam"))
 	require.Nil(t, err)
 	regenkey, err := shared_client_encscheme.GetReGenKey(client_enc_pub_key, "filetype:audio")
+	t.Log("regen", regenkey)
 	require.Nil(t, err)
 	enc_msg.ReEncryptionKey = regenkey
 
@@ -51,6 +56,7 @@ func TestReEncryptionAndDecryptionForShareData(t *testing.T) {
 	client_decryption_scheme.Initialize(client_mnemonic)
 	client_decryption_scheme.InitForDecryption("filetype:audio", enc_msg.EncryptedKey)
 
+	t.Log("decrypting")
 	result, err := client_decryption_scheme.Decrypt(enc_msg)
 	require.Nil(t, err)
 	require.Equal(t, string(result), "encrypted_data_uttam")
@@ -100,27 +106,26 @@ func TestReEncryptionAndDecryptionForMarketplaceShare(t *testing.T) {
 }
 
 func TestKyberPointMarshal(t *testing.T) {
-	suite := edwards25519.NewBlakeSHA256Ed25519()
 	reenc := ReEncryptedMessage {
-		D1: suite.Point(),
+		D1: curve.NewEdwardsPoint(),
 		D2: []byte("d2"),
 		D3: []byte("d3"),
-		D4: suite.Point(),
-		D5: suite.Point(),
+		D4: curve.NewEdwardsPoint(),
+		D5: curve.NewEdwardsPoint(),
 	}
 	marshalled, err := reenc.Marshal()
 	require.Nil(t, err)
 	newmsg := &ReEncryptedMessage{
-		D1: suite.Point(),
-		D4: suite.Point(),
-		D5: suite.Point(),
+		D1: curve.NewEdwardsPoint(),
+		D4: curve.NewEdwardsPoint(),
+		D5: curve.NewEdwardsPoint(),
 	}
 	err = newmsg.Unmarshal(marshalled)
 	require.Equal(t, newmsg.D2, reenc.D2)
 	require.Equal(t, newmsg.D3, reenc.D3)
-	require.Equal(t, newmsg.D1.String(), reenc.D1.String())
-	require.Equal(t, newmsg.D4.String(), reenc.D4.String())
-	require.Equal(t, newmsg.D5.String(), reenc.D5.String())
+	require.Equal(t, newmsg.D1, reenc.D1)
+	require.Equal(t, newmsg.D4, reenc.D4)
+	require.Equal(t, newmsg.D5, reenc.D5)
 }
 
 func BenchmarkMarshal(t *testing.B) {
@@ -177,4 +182,25 @@ func BenchmarkReEncryptAndReDecrypt(t *testing.B) {
 		_, err = client_decryption_scheme.ReDecrypt(reenc_msg)
 		require.Nil(t, err)
 	}
+}
+
+func TestNic(t *testing.T) {
+	s, err := scalar.New().SetRandom(crand.Reader)
+	marsh, err := s.MarshalBinary()
+	t.Log(err)
+	t.Log(base64.StdEncoding.EncodeToString(marsh))
+	t.Log(len(marsh))
+
+
+	suite := edwards25519.NewBlakeSHA256Ed25519()
+	mnemonic := "expose culture dignity plastic digital couple promote best pool error brush upgrade correct art become lobster nature moment obtain trial multiply arch miss toe"
+	rand := suite.XOF([]byte(mnemonic))
+
+	d := curve.EdwardsPoint{}
+
+	// Create a public/private keypair (X,x)
+	key := suite.Scalar().Pick(rand)
+	t.Log(d, key)
+	e := scalar.New().UnmarshalBinary([]byte("e8yBVeFVqnMrXJ4wyP3S/NcPLumwaszdmUOjmfoTz3A="))
+	fmt.Println(e)
 }
