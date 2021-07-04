@@ -159,12 +159,12 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 	}
 	erasureencoder, err := encoder.NewEncoder(req.datashards, req.parityshards)
 	if err != nil {
-		return []byte{}, errors.WrapError(err, "encoder init error")
+		return []byte{}, errors.Wrap(err, "encoder init error")
 	}
 	for blockNum := 0; blockNum < decodeNumBlocks; blockNum++ {
 		data, err := erasureencoder.Decode(shards[blockNum], decodeLen[blockNum])
 		if err != nil {
-			return []byte{}, errors.WrapError(err, "Block decode error")
+			return []byte{}, errors.Wrap(err, "Block decode error")
 		}
 		retData = append(retData, data...)
 	}
@@ -194,7 +194,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	req.downloadMask, fileRef, _ = listReq.getFileConsensusFromBlobbers()
 	if req.downloadMask.Equals64(0) || fileRef == nil {
 		if req.statusCallback != nil {
-			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.NewError("No minimum consensus for file meta data of file"))
+			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("No minimum consensus for file meta data of file"))
 		}
 		return
 	}
@@ -221,7 +221,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if err != nil {
 		if req.statusCallback != nil {
 			Logger.Error(err.Error())
-			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.WrapError(err, "Can't create local file"))
+			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.Wrap(err, "Can't create local file"))
 		}
 		return
 	}
@@ -260,7 +260,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		if err != nil {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.WrapError(err, fmt.Sprintf("Download failed for block %d. ", cnt+1)))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", cnt+1)))
 			}
 			return
 		}
@@ -268,7 +268,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			req.isDownloadCanceled = false
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.NewError("Download aborted by user"))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("Download aborted by user"))
 			}
 			return
 		}
@@ -278,7 +278,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		if err != nil {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.WrapError(err, "Write file failed"))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.Wrap(err, "Write file failed"))
 			}
 			return
 		}
@@ -306,7 +306,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		if calcHash != expectedHash {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.NewError("File content didn't match with uploaded file"))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("File content didn't match with uploaded file"))
 			}
 			return
 		}

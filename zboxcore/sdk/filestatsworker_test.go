@@ -74,7 +74,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 				})).Return(&http.Response{
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 					StatusCode: p.respStatusCode,
-				}, errors.NewError(mockErrorMessage))
+				}, errors.New(mockErrorMessage))
 			},
 			wantErr: true,
 			errMsg:  mockErrorMessage,
@@ -167,7 +167,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 			resp := <-rspCh
 			require.EqualValues(t, tt.wantErr, resp.err != nil)
 			if resp.err != nil {
-				require.EqualValues(t, tt.errMsg, errors.TopLevelError(resp.err))
+				require.EqualValues(t, tt.errMsg, errors.Top(resp.err))
 				return
 			}
 			require.EqualValues(t, tt.parameters.fileStatsFinal, *resp.filestats)

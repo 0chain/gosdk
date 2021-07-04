@@ -79,7 +79,7 @@ func UpdateRequired(networkDetails *Network) bool {
 func GetNetworkDetails() (*Network, error) {
 	req, ctx, cncl, err := zboxutil.NewHTTPRequest(http.MethodGet, blockchain.GetBlockWorker()+NETWORK_ENDPOINT, nil)
 	if err != nil {
-		return nil, errors.NewError("get_network_details_error", "Unable to create new http request with error "+err.Error())
+		return nil, errors.New("get_network_details_error", "Unable to create new http request with error "+err.Error())
 	}
 
 	var networkResponse Network
@@ -92,18 +92,18 @@ func GetNetworkDetails() (*Network, error) {
 		defer resp.Body.Close()
 		respBody, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return errors.WrapError(err, "Error reading response : ")
+			return errors.Wrap(err, "Error reading response : ")
 		}
 
 		Logger.Debug("Get network result:", string(respBody))
 		if resp.StatusCode == http.StatusOK {
 			err = json.Unmarshal(respBody, &networkResponse)
 			if err != nil {
-				return errors.WrapError(err, "Error unmarshaling response :")
+				return errors.Wrap(err, "Error unmarshaling response :")
 			}
 			return nil
 		}
-		return errors.NewError(strconv.Itoa(resp.StatusCode), "Get network details status not OK")
+		return errors.New(strconv.Itoa(resp.StatusCode), "Get network details status not OK")
 
 	})
 	return &networkResponse, err

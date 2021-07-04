@@ -28,11 +28,11 @@ func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) 
 	ta.t.txn.PublicKey = _config.wallet.Keys[0].PublicKey
 	err := ta.t.txn.ComputeHashAndSign(signFn)
 	if err != nil {
-		return nil, errors.WrapError(err, "signing error.")
+		return nil, errors.Wrap(err, "signing error.")
 	}
 	req, err := util.NewHTTPPostRequest(_config.authUrl+"/transaction", ta.t.txn)
 	if err != nil {
-		return nil, errors.WrapError(err, "new post request failed for auth")
+		return nil, errors.Wrap(err, "new post request failed for auth")
 	}
 	res, err := req.Post()
 	if err != nil {
@@ -42,12 +42,12 @@ func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) 
 		if res.StatusCode == http.StatusUnauthorized {
 			return nil, errUserRejected
 		}
-		return nil, errors.NewError(strconv.Itoa(res.StatusCode), fmt.Sprintf("auth error: %v. %v", res.Status, res.Body))
+		return nil, errors.New(strconv.Itoa(res.StatusCode), fmt.Sprintf("auth error: %v. %v", res.Status, res.Body))
 	}
 	var txnResp transaction.Transaction
 	err = json.Unmarshal([]byte(res.Body), &txnResp)
 	if err != nil {
-		return nil, errors.WrapError(err, "invalid json on auth response.")
+		return nil, errors.Wrap(err, "invalid json on auth response.")
 	}
 	Logger.Debug(txnResp)
 	// Verify the signature on the result
@@ -93,7 +93,7 @@ func verifyFn(signature, msgHash, publicKey string) (bool, error) {
 	v.SetPublicKey(publicKey)
 	ok, err := v.Verify(signature, msgHash)
 	if err != nil || ok == false {
-		return false, errors.NewError(`{"error": "signature_mismatch"}`)
+		return false, errors.New(`{"error": "signature_mismatch"}`)
 	}
 	return true, nil
 }
@@ -353,7 +353,7 @@ func (ta *TransactionWithAuth) UnlockTokens(poolID string) error {
 
 //RegisterMultiSig register a multisig wallet with the SC.
 func (ta *TransactionWithAuth) RegisterMultiSig(walletstr string, mswallet string) error {
-	return errors.NewError("not implemented")
+	return errors.New("not implemented")
 }
 
 //

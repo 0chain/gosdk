@@ -39,7 +39,7 @@ func (ac *AttributesChange) ProcessChange(root *fileref.Ref) (err error) {
 		if found {
 			treelevel++
 		} else {
-			return errors.NewError("attributes_change_process",
+			return errors.New("attributes_change_process",
 				"Invalid reference path from the blobber")
 		}
 	}
@@ -57,7 +57,7 @@ func (ac *AttributesChange) ProcessChange(root *fileref.Ref) (err error) {
 	}
 
 	if idx < 0 || file == nil {
-		return errors.NewError("attributes_change_process",
+		return errors.New("attributes_change_process",
 			"File, to update attributes for, not found in blobber")
 	}
 

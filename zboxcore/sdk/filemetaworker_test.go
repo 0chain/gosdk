@@ -70,7 +70,7 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 				})).Return(&http.Response{
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 					StatusCode: p.respStatusCode,
-				}, errors.NewError(mockErrorMessage))
+				}, errors.New(mockErrorMessage))
 			},
 			wantErr: true,
 			errMsg:  mockErrorMessage,
@@ -133,7 +133,7 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 						require.EqualValues(t, expected, string(actual))
 					}
 					require.Error(t, err)
-					require.EqualValues(t, "EOF", errors.TopLevelError(err))
+					require.EqualValues(t, "EOF", errors.Top(err))
 
 					return req.URL.Path == "Test_Success"+zboxutil.FILE_META_ENDPOINT+mockAllocationTxId &&
 						req.URL.RawPath == "Test_Success"+zboxutil.FILE_META_ENDPOINT+mockAllocationTxId &&
@@ -177,7 +177,7 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 			resp := <-rspCh
 			require.EqualValues(t, tt.wantErr, resp.err != nil)
 			if resp.err != nil {
-				require.EqualValues(t, tt.errMsg, errors.TopLevelError(resp.err))
+				require.EqualValues(t, tt.errMsg, errors.Top(resp.err))
 				return
 			}
 			require.EqualValues(t, tt.parameters.fileRefToRetrieve, *resp.fileref)

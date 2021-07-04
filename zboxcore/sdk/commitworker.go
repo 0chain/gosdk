@@ -127,8 +127,8 @@ func (commitreq *CommitRequest) processCommit() {
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
-			return errors.NewError(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Reference path error response: Status: %d - %s ", resp.StatusCode, string(resp_body)))
-			
+			return errors.New(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Reference path error response: Status: %d - %s ", resp.StatusCode, string(resp_body)))
+
 		} else {
 			//Logger.Info("Reference path:", string(resp_body))
 			err = json.Unmarshal(resp_body, &lR)
@@ -260,7 +260,7 @@ func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.W
 		}
 		if resp.StatusCode != http.StatusOK {
 			Logger.Error(req.blobber.Baseurl, " Commit response:", string(resp_body))
-			return errors.NewError("commit_error", string(resp_body))
+			return errors.New("commit_error", string(resp_body))
 		}
 		return nil
 	})
@@ -294,7 +294,7 @@ func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths 
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
-			return errors.NewError(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Calculate hash error response: Body: %s ", string(resp_body)))
+			return errors.New(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Calculate hash error response: Body: %s ", string(resp_body)))
 		}
 		return nil
 	})

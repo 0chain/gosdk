@@ -73,7 +73,7 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 		return
 	}
 	if t == nil {
-		err = errors.NewError("transaction_validation_failed", "Failed to get the transaction confirmation")
+		err = errors.New("transaction_validation_failed", "Failed to get the transaction confirmation")
 		req.status.CommitMetaCompleted(commitMetaDataString, "", err)
 		return
 	}

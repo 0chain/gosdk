@@ -155,7 +155,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 						require.EqualValues(t, expected, string(actual))
 					}
 					require.Error(t, err)
-					require.EqualValues(t, "EOF", errors.TopLevelError(err))
+					require.EqualValues(t, "EOF", errors.Top(err))
 
 					return strings.HasPrefix(req.URL.Path, testName) &&
 						req.Method == "DELETE" &&
@@ -384,7 +384,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			err := req.ProcessDelete()
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.Contains(errors.TopLevelError(err), tt.errMsg, "expected error contains '%s'", tt.errMsg)
+				require.Contains(errors.Top(err), tt.errMsg, "expected error contains '%s'", tt.errMsg)
 				return
 			}
 			if tt.wantFunc != nil {

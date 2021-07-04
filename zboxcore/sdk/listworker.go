@@ -105,7 +105,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 		defer resp.Body.Close()
 		resp_body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return errors.WrapError(err, "Error: Resp")
+			return errors.Wrap(err, "Error: Resp")
 		}
 		s.WriteString(string(resp_body))
 		Logger.Debug("List result:", string(resp_body))
@@ -113,15 +113,15 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 			listResult := &fileref.ListResult{}
 			err = json.Unmarshal(resp_body, listResult)
 			if err != nil {
-				return errors.WrapError(err, "list entities response parse error:")
+				return errors.Wrap(err, "list entities response parse error:")
 			}
 			ref, err = listResult.GetDirTree(req.allocationID)
 			if err != nil {
-				return errors.WrapError(err, "error getting the dir tree from list response:")
+				return errors.Wrap(err, "error getting the dir tree from list response:")
 			}
 			return nil
 		} else {
-			return errors.NewError(fmt.Sprintf("error from server list response: %s", s.String()))
+			return errors.New(fmt.Sprintf("error from server list response: %s", s.String()))
 		}
 	})
 }

@@ -40,10 +40,10 @@ func (wm *WriteMarker) VerifySignature(clientPublicKey string) error {
 	signatureHash := encryption.Hash(hashData)
 	sigOK, err := client.VerifySignature(wm.Signature, signatureHash)
 	if err != nil {
-		return errors.NewError("write_marker_validation_failed", "Error during verifying signature. "+err.Error())
+		return errors.New("write_marker_validation_failed", "Error during verifying signature. "+err.Error())
 	}
 	if !sigOK {
-		return errors.NewError("write_marker_validation_failed", "Write marker signature is not valid")
+		return errors.New("write_marker_validation_failed", "Write marker signature is not valid")
 	}
 	return nil
 }

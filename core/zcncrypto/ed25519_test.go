@@ -23,7 +23,7 @@ func TestEd25519GenerateKeys(t *testing.T) {
 	}
 	w, err := sigScheme.GenerateKeys()
 	if err != nil {
-		t.Fatalf("Generate keys failed %s", errors.TopLevelError(err))
+		t.Fatalf("Generate keys failed %s", errors.Top(err))
 	}
 	if w.ClientID == "" || w.ClientKey == "" || len(w.Keys) != 1 || w.Mnemonic == "" {
 		t.Fatalf("Invalid keys generated")

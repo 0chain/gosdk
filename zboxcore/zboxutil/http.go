@@ -488,7 +488,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	var err error
 	rate := maxCount * 100 / float32(numSharders)
 	if rate < consensusThresh {
-		err = errors.NewError("consensus_failed", "consensus failed on sharders")
+		err = errors.New("consensus_failed", "consensus failed on sharders")
 	}
 
 	if handler != nil {

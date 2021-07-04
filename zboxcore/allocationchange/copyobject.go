@@ -33,7 +33,7 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		if found {
 			treelevel++
 		} else {
-			return errors.NewError("invalid_reference_path", "Invalid reference path from the blobber")
+			return errors.New("invalid_reference_path", "Invalid reference path from the blobber")
 		}
 	}
 	var foundRef fileref.RefEntity
@@ -49,7 +49,7 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	}
 
 	if foundRef == nil {
-		return errors.NewError("file_not_found", "Object to copy not found in blobber")
+		return errors.New("file_not_found", "Object to copy not found in blobber")
 	}
 
 	var affectedRef *fileref.Ref

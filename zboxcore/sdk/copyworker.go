@@ -103,7 +103,7 @@ func (req *CopyRequest) ProcessCopy() error {
 	req.wg.Wait()
 
 	if !req.isConsensusOk() {
-		return errors.NewError("Copy failed: Copy request failed. Operation failed.")
+		return errors.New("Copy failed: Copy request failed. Operation failed.")
 	}
 
 	req.consensus = 0
@@ -147,7 +147,7 @@ func (req *CopyRequest) ProcessCopy() error {
 	}
 
 	if !req.isConsensusOk() {
-		return errors.NewError("Copy failed: Commit consensus failed")
+		return errors.New("Copy failed: Commit consensus failed")
 	}
 	return nil
 }

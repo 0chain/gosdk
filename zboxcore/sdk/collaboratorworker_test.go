@@ -173,7 +173,7 @@ func TestCollaboratorRequest_updateCollaboratorToBlobber(t *testing.T) {
 						require.EqualValues(t, expected, string(actual))
 					}
 					require.Error(t, err)
-					require.EqualValues(t, "EOF", errors.TopLevelError(err))
+					require.EqualValues(t, "EOF", errors.Top(err))
 
 					return strings.HasPrefix(req.URL.Path, testName)
 				})).Return(&http.Response{
@@ -363,7 +363,7 @@ func TestCollaboratorRequest_removeCollaboratorFromBlobber(t *testing.T) {
 						require.EqualValues(t, expected, string(actual))
 					}
 					require.Error(t, err)
-					require.EqualValues(t, "EOF", errors.TopLevelError(err))
+					require.EqualValues(t, "EOF", errors.Top(err))
 
 					return strings.HasPrefix(req.URL.Path, testName)
 				})).Return(&http.Response{

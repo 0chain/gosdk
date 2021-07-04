@@ -36,7 +36,7 @@ func (lr *ListResult) GetDirTree(allocationID string) (*Ref, error) {
 		}
 		return rootRef, nil
 	}
-	return nil, errors.NewError("invalid_list_path", "Invalid list path. list was not for a directory")
+	return nil, errors.New("invalid_list_path", "Invalid list path. list was not for a directory")
 }
 
 func (lr *ListResult) populateChildren(ref *Ref) error {

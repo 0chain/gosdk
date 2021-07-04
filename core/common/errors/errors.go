@@ -19,23 +19,23 @@ func (err *Error) Error() string {
 	return fmt.Sprintf("%s %s: %s", err.Location, err.Code, err.Msg)
 }
 
-func (err *Error) topLevelError() string {
+func (err *Error) top() string {
 	if err.Code == "" {
 		return err.Msg
 	}
 	return fmt.Sprintf("%s: %s", err.Code, err.Msg)
 }
 
-// TopLevelError since errors can be wrapped and stacked,
+// Top since errors can be wrapped and stacked,
 // it's necessary to get the top level error for tests and validations
-func TopLevelError(err error) string {
+func Top(err error) string {
 	switch t := err.(type) {
 	case *Error:
-		return t.topLevelError()
+		return t.top()
 	case *withError:
 		switch ct := t.current.(type) {
 		case *Error:
-			return ct.topLevelError()
+			return ct.top()
 		default:
 			return err.Error()
 		}
@@ -60,8 +60,8 @@ func (w *withError) Error() string {
 	return retError
 }
 
-// WrapError wrap the previous error with current error/ message
-func WrapError(previous error, current interface{}) error {
+// Wrap wrap the previous error with current error/ message
+func Wrap(previous error, current interface{}) error {
 	if current == nil {
 		return previous
 	}
@@ -93,16 +93,16 @@ func WrapError(previous error, current interface{}) error {
 }
 
 /*
-NewError - create a new error 
-two arguments can be passed! 
-1. code 
+New - create a new error
+two arguments can be passed!
+1. code
 2. message
 if only one argument is passed its considered as message
-if two arguments are passed then 
-	first argument is considered for code and 
+if two arguments are passed then
+	first argument is considered for code and
 	second argument is considered for message
 */
-func NewError(args ...string) *Error {
+func New(args ...string) *Error {
 	switch len(args) {
 	case 1:
 		return &Error{
@@ -130,7 +130,7 @@ func getErrorLocation(level int) string {
 	return fmt.Sprintf("%s:%d", file, line)
 }
 
-/*InvalidRequest - create error messages that are needed when validating request input */
-func InvalidRequest(msg string) error {
-	return NewError("invalid_request", fmt.Sprintf("Invalid request (%v)", msg))
-}
+// /*InvalidRequest - create error messages that are needed when validating request input */
+// func InvalidRequest(msg string) error {
+// 	return New("invalid_request", fmt.Sprintf("Invalid request (%v)", msg))
+// }

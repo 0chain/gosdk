@@ -70,7 +70,7 @@ func NewSignatureScheme(sigScheme string) SignatureScheme {
 func (w *Wallet) Marshal() (string, error) {
 	ws, err := json.Marshal(w)
 	if err != nil {
-		return "", errors.NewError("wallet_marshal", "Invalid Wallet")
+		return "", errors.New("wallet_marshal", "Invalid Wallet")
 	}
 	return string(ws), nil
 }
