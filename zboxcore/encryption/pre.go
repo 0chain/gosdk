@@ -227,7 +227,8 @@ func (pre *PREEncryptionScheme) InitForEncryption(tag string) {
 	s, _ := scalar.New().SetRandom(crand.Reader)
 	pre.T = p.MulBasepoint(curve.ED25519_BASEPOINT_TABLE, s)
 	pre.Ht = pre.hash1(pre.SuiteObj, pre.Tag, pre.PrivateKey)      // Ht  = H1(tagA,skA)
-	pre.EncryptedKey = (&curve.EdwardsPoint{}).Add(pre.Ht, pre.T) // C1  = T + Ht
+	fmt.Println("OK", pre.Ht, pre.T)
+	pre.EncryptedKey = curve.NewEdwardsPoint().Add(pre.Ht, pre.T) // C1  = T + Ht
 }
 
 func (pre *PREEncryptionScheme) InitForDecryption(tag string, encryptedKey string) error {
@@ -257,7 +258,8 @@ func (pre *PREEncryptionScheme) hash1(s Suite, tagA []byte, skA *scalar.Scalar) 
 		return nil
 	}
 	h.Write(bytes)
-	h1, err := scalar.NewFromBits(h.Sum(nil))
+	h1, err := scalar.NewFromBytesModOrder(h.Sum(nil)[:32])
+	fmt.Println("i am here 2", err)
 	if err != nil {
 		return nil
 	}
@@ -328,7 +330,7 @@ func (pre *PREEncryptionScheme) hash6(g kyber.Group, tagA []byte, skA *scalar.Sc
 		return nil
 	}
 	fmt.Println(len(h.Sum(nil)))
-	res, err := scalar.NewFromBits(h.Sum(nil)[:32])
+	res, err := scalar.NewFromBytesModOrder(h.Sum(nil)[:32])
 	if err != nil {
 		fmt.Println(err)
 		return nil
@@ -360,7 +362,7 @@ func (pre *PREEncryptionScheme) hash7(g kyber.Group, X *curve.EdwardsPoint, D2 [
 	if err != nil {
 		return nil
 	}
-	result, err := scalar.NewFromBits(h.Sum(nil))
+	result, err := scalar.NewFromBytesModOrder(h.Sum(nil)[:32])
 	fmt.Println("from bits error", err)
 	if err != nil {
 		return nil
