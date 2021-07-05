@@ -1,8 +1,11 @@
 package encryption
 
 import (
+	crand "crypto/rand"
 	"encoding/base64"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/oasisprotocol/curve25519-voi/curve"
+	"github.com/oasisprotocol/curve25519-voi/curve/scalar"
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 	"math/rand"
@@ -20,12 +23,29 @@ func TestMnemonic(t *testing.T) {
 
 	encscheme.InitForEncryption("filetype:audio")
 	pvk, _ := encscheme.GetPrivateKey()
-	expectedPvk := "XsQLPaRBOFS+3KfXq2/uyAPE+/qq3VW0OkW0T9q93wQ="
+	expectedPvk := "m4T5WQJaD4IL2VUd4v2IzrP9SgZ4VJa+htzu5z/+nQo="
 	require.Equal(t, expectedPvk, pvk)
 	pubk, _ := encscheme.GetPublicKey()
-	expectedPubk := "PwpVIXgXbnt8NJmy+R4aSwG8HwJbsbT2JVQqa0bayZQ="
+	expectedPubk := "O9VWL4gNKMwkYLayaFqkonYJMa48le9LNGNggNBJBVk="
 	require.Equal(t, expectedPubk, pubk)
+}
 
+func TestEncryptionAndDecryption(t *testing.T) {
+	client_mnemonic := "travel twenty hen negative fresh sentence hen flat swift embody increase juice eternal satisfy want vessel matter honey video begin dutch trigger romance assault"
+	client_encscheme := NewEncryptionScheme()
+	client_encscheme.Initialize(client_mnemonic)
+	client_encscheme.InitForEncryption("filetype:audio")
+
+	enc_msg, err := client_encscheme.Encrypt([]byte("encrypted_data_uttam"))
+	require.Nil(t, err)
+
+	client_decryption_scheme := NewEncryptionScheme()
+	client_decryption_scheme.Initialize(client_mnemonic)
+	client_decryption_scheme.InitForDecryption("filetype:audio", enc_msg.EncryptedKey)
+
+	result, err := client_decryption_scheme.Decrypt(enc_msg)
+	require.Nil(t, err)
+	require.Equal(t, string(result), "encrypted_data_uttam")
 }
 
 func TestReEncryptionAndDecryptionForShareData(t *testing.T) {
@@ -44,6 +64,7 @@ func TestReEncryptionAndDecryptionForShareData(t *testing.T) {
 	enc_msg, err := shared_client_encscheme.Encrypt([]byte("encrypted_data_uttam"))
 	require.Nil(t, err)
 	regenkey, err := shared_client_encscheme.GetReGenKey(client_enc_pub_key, "filetype:audio")
+	t.Log("regen", regenkey)
 	require.Nil(t, err)
 	enc_msg.ReEncryptionKey = regenkey
 
@@ -99,28 +120,27 @@ func TestReEncryptionAndDecryptionForMarketplaceShare(t *testing.T) {
 	require.Equal(t, string(result), data_to_encrypt)
 }
 
-func TestKyberPointMarshal(t *testing.T) {
-	suite := edwards25519.NewBlakeSHA256Ed25519()
+func TestEdwardsPointMarshal(t *testing.T) {
 	reenc := ReEncryptedMessage {
-		D1: suite.Point(),
+		D1: curve.NewEdwardsPoint().Identity(),
 		D2: []byte("d2"),
 		D3: []byte("d3"),
-		D4: suite.Point(),
-		D5: suite.Point(),
+		D4: curve.NewEdwardsPoint().Identity(),
+		D5: curve.NewEdwardsPoint().Identity(),
 	}
 	marshalled, err := reenc.Marshal()
 	require.Nil(t, err)
 	newmsg := &ReEncryptedMessage{
-		D1: suite.Point(),
-		D4: suite.Point(),
-		D5: suite.Point(),
+		D1: curve.NewEdwardsPoint().Identity(),
+		D4: curve.NewEdwardsPoint().Identity(),
+		D5: curve.NewEdwardsPoint().Identity(),
 	}
 	err = newmsg.Unmarshal(marshalled)
 	require.Equal(t, newmsg.D2, reenc.D2)
 	require.Equal(t, newmsg.D3, reenc.D3)
-	require.Equal(t, newmsg.D1.String(), reenc.D1.String())
-	require.Equal(t, newmsg.D4.String(), reenc.D4.String())
-	require.Equal(t, newmsg.D5.String(), reenc.D5.String())
+	require.Equal(t, newmsg.D1.Equal(reenc.D1), 1)
+	require.Equal(t, newmsg.D4.Equal(reenc.D4), 1)
+	require.Equal(t, newmsg.D5.Equal(reenc.D5), 1)
 }
 
 func BenchmarkMarshal(t *testing.B) {
@@ -177,4 +197,25 @@ func BenchmarkReEncryptAndReDecrypt(t *testing.B) {
 		_, err = client_decryption_scheme.ReDecrypt(reenc_msg)
 		require.Nil(t, err)
 	}
+}
+
+func TestNic(t *testing.T) {
+	s, err := scalar.New().SetRandom(crand.Reader)
+	marsh, err := s.MarshalBinary()
+	t.Log(err)
+	t.Log(base64.StdEncoding.EncodeToString(marsh))
+	t.Log(len(marsh))
+
+
+	suite := edwards25519.NewBlakeSHA256Ed25519()
+	mnemonic := "expose culture dignity plastic digital couple promote best pool error brush upgrade correct art become lobster nature moment obtain trial multiply arch miss toe"
+	rand := suite.XOF([]byte(mnemonic))
+
+	d := curve.EdwardsPoint{}
+
+	// Create a public/private keypair (X,x)
+	key := suite.Scalar().Pick(rand)
+	t.Log(d, key)
+	e := scalar.New().UnmarshalBinary([]byte("e8yBVeFVqnMrXJ4wyP3S/NcPLumwaszdmUOjmfoTz3A="))
+	t.Log(e)
 }

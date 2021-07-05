@@ -5,7 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
-	"go.dedis.ch/kyber/v3/group/edwards25519"
+	"github.com/oasisprotocol/curve25519-voi/curve"
 	"io"
 	"math"
 	"os"
@@ -115,11 +115,10 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 			//for blockNum := 0; blockNum < len(result.BlockChunks); blockNum++ {
 			for blockNum := 0; blockNum < downloadChunks; blockNum++ {
 				if len(req.encryptedKey) > 0 {
-					suite := edwards25519.NewBlakeSHA256Ed25519()
 					reEncMessage := &encryption.ReEncryptedMessage{
-						D1: suite.Point(),
-						D4: suite.Point(),
-						D5: suite.Point(),
+						D1: curve.NewEdwardsPoint(),
+						D4: curve.NewEdwardsPoint(),
+						D5: curve.NewEdwardsPoint(),
 					}
 					err := reEncMessage.Unmarshal(result.BlockChunks[blockNum])
 					if err != nil {

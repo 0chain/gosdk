@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	crand "crypto/rand"
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/base64"
@@ -11,30 +12,24 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/oasisprotocol/curve25519-voi/curve"
+	"github.com/oasisprotocol/curve25519-voi/curve/scalar"
 	"strings"
 
-	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 )
 
-// Suite represents the set of functionalities needed by the package schnorr.
-type Suite interface {
-	kyber.Group
-	kyber.Random
-}
-
 type PREEncryptionScheme struct {
-	PublicKey    kyber.Point
-	PrivateKey   kyber.Scalar
-	SuiteObj     Suite
+	PublicKey    *curve.EdwardsPoint
+	PrivateKey   *scalar.Scalar
 	Tag          []byte
-	T            kyber.Point
-	Ht           kyber.Point
-	EncryptedKey kyber.Point
+	T            *curve.EdwardsPoint
+	Ht           *curve.EdwardsPoint
+	EncryptedKey *curve.EdwardsPoint
 }
 
 type PREEncryptedMessage struct {
-	EncryptedKey    kyber.Point `json:"-"`
+	EncryptedKey    *curve.EdwardsPoint `json:"-"`
 	EncryptedData   []byte
 	MessageChecksum []byte
 	OverallChecksum []byte
@@ -42,9 +37,9 @@ type PREEncryptedMessage struct {
 }
 
 type ReKey struct {
-	R1 kyber.Point
-	R2 kyber.Point
-	R3 kyber.Scalar
+	R1 *curve.EdwardsPoint
+	R2 *curve.EdwardsPoint
+	R3 *scalar.Scalar
 }
 
 type ReKeyBytes struct {
@@ -54,11 +49,11 @@ type ReKeyBytes struct {
 }
 
 type ReEncryptedMessage struct {
-	D1 kyber.Point
+	D1 *curve.EdwardsPoint
 	D2 []byte
 	D3 []byte
-	D4 kyber.Point
-	D5 kyber.Point
+	D4 *curve.EdwardsPoint
+	D5 *curve.EdwardsPoint
 }
 
 func (u *ReKey) MarshalJSON() ([]byte, error) {
@@ -198,12 +193,14 @@ func (reEncMsg *ReEncryptedMessage) Unmarshal(data []byte) error {
 
 func (pre *PREEncryptionScheme) Initialize(mnemonic string) error {
 	suite := edwards25519.NewBlakeSHA256Ed25519()
-	rand := suite.XOF([]byte(mnemonic))
-
 	// Create a public/private keypair (X,x)
-	pre.PrivateKey = suite.Scalar().Pick(rand)
-	pre.PublicKey = suite.Point().Mul(pre.PrivateKey, nil)
-	pre.SuiteObj = suite
+	rand := suite.XOF([]byte(mnemonic))
+	key, err := scalar.New().SetRandom(rand)
+	if err != nil {
+		return err
+	}
+	pre.PrivateKey = key
+	pre.PublicKey = curve.NewEdwardsPoint().MulBasepoint(curve.ED25519_BASEPOINT_TABLE, pre.PrivateKey)
 
 	return nil
 }
@@ -211,21 +208,21 @@ func (pre *PREEncryptionScheme) Initialize(mnemonic string) error {
 func (pre *PREEncryptionScheme) InitForEncryption(tag string) {
 	pre.Tag = []byte(tag)
 
-	pre.T = pre.SuiteObj.Point().Pick(pre.SuiteObj.RandomStream()) // Pick a random point T from the curve
-	pre.Ht = pre.hash1(pre.SuiteObj, pre.Tag, pre.PrivateKey)      // Ht  = H1(tagA,skA)
-	var g kyber.Group = pre.SuiteObj
-	pre.EncryptedKey = g.Point().Add(pre.Ht, pre.T) // C1  = T + Ht
+	var p curve.EdwardsPoint
+	s, _ := scalar.New().SetRandom(crand.Reader)
+	pre.T = p.MulBasepoint(curve.ED25519_BASEPOINT_TABLE, s)
+	pre.Ht = pre.hash1(pre.Tag, pre.PrivateKey)      // Ht  = H1(tagA,skA)
+	pre.EncryptedKey = curve.NewEdwardsPoint().Add(pre.Ht, pre.T) // C1  = T + Ht
 }
 
 func (pre *PREEncryptionScheme) InitForDecryption(tag string, encryptedKey string) error {
 	pre.Tag = []byte(tag)
 
-	var g kyber.Group = pre.SuiteObj
 	keyBytes, err := base64.StdEncoding.DecodeString(encryptedKey)
 	if err != nil {
 		return err
 	}
-	p := g.Point()
+	p := curve.NewEdwardsPoint()
 	err = p.UnmarshalBinary(keyBytes)
 	if err != nil {
 		return err
@@ -235,36 +232,45 @@ func (pre *PREEncryptionScheme) InitForDecryption(tag string, encryptedKey strin
 }
 
 //--------------------------------H1: Maps to Point on Elliptic Curve---------------------------------------
-func (pre *PREEncryptionScheme) hash1(s Suite, tagA []byte, skA kyber.Scalar) kyber.Point {
-	var g kyber.Group = s
+func (pre *PREEncryptionScheme) hash1(tagA []byte, skA *scalar.Scalar) *curve.EdwardsPoint {
 	h := sha256.New()
 	if _, err := h.Write(tagA); err != nil {
 		return nil
 	}
-	if _, err := skA.MarshalTo(h); err != nil {
+	bytes, err := skA.MarshalBinary()
+	if err != nil {
 		return nil
 	}
-	h1 := g.Scalar().SetBytes(h.Sum(nil))
-	p1 := g.Point().Mul(h1, nil)
+	h.Write(bytes)
+	h1, err := scalar.NewFromBytesModOrder(h.Sum(nil)[:32])
+	if err != nil {
+		return nil
+	}
+
+	p1 := curve.NewEdwardsPoint().MulBasepoint(curve.ED25519_BASEPOINT_TABLE, h1)
 	return p1
 }
 
 //------------------------------------------H2: Maps to string-----------------------------------------------
-func (pre *PREEncryptionScheme) hash2(g kyber.Group, T kyber.Point) []byte {
+func (pre *PREEncryptionScheme) hash2(T *curve.EdwardsPoint) []byte {
 	h := sha512.New()
-	if _, err := T.MarshalTo(h); err != nil {
+	bytes, err := T.MarshalBinary()
+	if err != nil {
 		return nil
 	}
+	h.Write(bytes)
 	h1 := h.Sum(nil)
 	return h1
 }
 
 //------------------------------------------H3: Maps to string-----------------------------------------------
-func (pre *PREEncryptionScheme) hash3(g kyber.Group, msg []byte, T kyber.Point) []byte {
+func (pre *PREEncryptionScheme) hash3(msg []byte, T *curve.EdwardsPoint) []byte {
 	h := sha512.New()
-	if _, err := T.MarshalTo(h); err != nil {
+	bytes, err := T.MarshalBinary()
+	if err != nil {
 		return nil
 	}
+	h.Write(bytes)
 	if _, err := h.Write(msg); err != nil {
 		return nil
 	}
@@ -273,41 +279,53 @@ func (pre *PREEncryptionScheme) hash3(g kyber.Group, msg []byte, T kyber.Point) 
 }
 
 //------------------------------------------H4: Maps to string-----------------------------------------------
-func (pre *PREEncryptionScheme) hash5(g kyber.Group, C1 kyber.Point, C2 []byte, C3 []byte, alp kyber.Scalar) []byte {
+func (pre *PREEncryptionScheme) hash5(C1 *curve.EdwardsPoint, C2 []byte, C3 []byte, alp *scalar.Scalar) []byte {
 	h := sha512.New()
-	if _, err := C1.MarshalTo(h); err != nil {
+	bytes, err := C1.MarshalBinary()
+	if err != nil {
 		return nil
 	}
+	h.Write(bytes)
 	if _, err := h.Write(C2); err != nil {
 		return nil
 	}
 	if _, err := h.Write(C3); err != nil {
 		return nil
 	}
-	if _, err := alp.MarshalTo(h); err != nil {
+	bytes, err = alp.MarshalBinary()
+	if err != nil {
 		return nil
 	}
+	h.Write(bytes)
 	h1 := h.Sum(nil)
 	return h1
 
 }
 
 //------------------------------------------H6: Maps to Scalar-----------------------------------------------
-func (pre *PREEncryptionScheme) hash6(g kyber.Group, tagA []byte, skA kyber.Scalar) kyber.Scalar {
+func (pre *PREEncryptionScheme) hash6(tagA []byte, skA *scalar.Scalar) *scalar.Scalar {
 	h := sha512.New()
-	if _, err := skA.MarshalTo(h); err != nil {
+	bytes, err := skA.MarshalBinary()
+	if err != nil {
 		return nil
 	}
+	h.Write(bytes)
 	if _, err := h.Write(tagA); err != nil {
 		return nil
 	}
-	return g.Scalar().SetBytes(h.Sum(nil))
+	res, err := scalar.NewFromBytesModOrder(h.Sum(nil)[:32])
+	if err != nil {
+		return nil
+	}
+	return res
 }
 
 //------------------------------------------H7: Maps to Scalar-----------------------------------------------
-func (pre *PREEncryptionScheme) hash7(g kyber.Group, X kyber.Point, D2 []byte, D3 []byte, D4 kyber.Point, D5 kyber.Point) kyber.Scalar {
+func (pre *PREEncryptionScheme) hash7(X *curve.EdwardsPoint, D2 []byte, D3 []byte, D4 *curve.EdwardsPoint, D5 *curve.EdwardsPoint) *scalar.Scalar {
 	h := sha512.New()
-	if _, err := X.MarshalTo(h); err != nil {
+	bytes, err := X.MarshalBinary()
+	h.Write(bytes)
+	if err != nil {
 		return nil
 	}
 	if _, err := h.Write(D2); err != nil {
@@ -316,37 +334,44 @@ func (pre *PREEncryptionScheme) hash7(g kyber.Group, X kyber.Point, D2 []byte, D
 	if _, err := h.Write(D3); err != nil {
 		return nil
 	}
-	if _, err := D4.MarshalTo(h); err != nil {
+	bytes, err = D4.MarshalBinary()
+	h.Write(bytes)
+	if err != nil {
 		return nil
 	}
-	if _, err := D5.MarshalTo(h); err != nil {
+	bytes, err = D5.MarshalBinary()
+	h.Write(bytes)
+	if err != nil {
 		return nil
 	}
-	return g.Scalar().SetBytes(h.Sum(nil))
+	result, err := scalar.NewFromBytesModOrder(h.Sum(nil)[:32])
+	if err != nil {
+		return nil
+	}
+	return result
 }
 
 func (pre *PREEncryptionScheme) encrypt(msg []byte) (*PREEncryptedMessage, error) {
 	var C = new(PREEncryptedMessage)
 	C.TagA = pre.Tag
 	T := pre.T
-	var g kyber.Group = pre.SuiteObj
 	C.EncryptedKey = pre.EncryptedKey
 
-	key := pre.hash2(g, T)             // key = H2(T)
-	C2, err := pre.SymEnc(g, msg, key) // C2  = Sym.Encrypt(msg,key)
+	key := pre.hash2(T)             // key = H2(T)
+	C2, err := pre.SymEnc(msg, key) // C2  = Sym.Encrypt(msg,key)
 	C.EncryptedData = C2
 	if err != nil {
 		return nil, err
 	}
 
-	C.MessageChecksum = pre.hash3(g, msg, T)                                                  // C3  = H3(msg,T)
-	alp := pre.hash6(g, pre.Tag, pre.PrivateKey)                                              // alp = H6(tagA,skA)
-	C.OverallChecksum = pre.hash5(g, C.EncryptedKey, C.EncryptedData, C.MessageChecksum, alp) // C4  = H5(C1,C2,C3,alp)
+	C.MessageChecksum = pre.hash3(msg, T)                                                  // C3  = H3(msg,T)
+	alp := pre.hash6(pre.Tag, pre.PrivateKey)                                              // alp = H6(tagA,skA)
+	C.OverallChecksum = pre.hash5(C.EncryptedKey, C.EncryptedData, C.MessageChecksum, alp) // C4  = H5(C1,C2,C3,alp)
 	return C, nil                                                                             // return C = (C1,C2,C3,C4,tagA)
 }
 
 //---------------------------------Symmetric Encryption using AES with GCM mode---------------------------------
-func (pre *PREEncryptionScheme) SymEnc(group kyber.Group, message []byte, keyhash []byte) ([]byte, error) {
+func (pre *PREEncryptionScheme) SymEnc(message []byte, keyhash []byte) ([]byte, error) {
 	len := 32 + 12
 	key := keyhash[:32]
 	nonce := keyhash[32:len]
@@ -367,14 +392,13 @@ func (pre *PREEncryptionScheme) SymEnc(group kyber.Group, message []byte, keyhas
 	return ctx.Bytes(), nil
 }
 
-func UnmarshallPublicKey(publicKey string) (kyber.Point, error) {
-	suite := edwards25519.NewBlakeSHA256Ed25519()
-	point := suite.Point()
+func UnmarshallPublicKey(publicKey string) (*curve.EdwardsPoint, error) {
+	point := curve.NewEdwardsPoint()
 	decoded, err := base64.StdEncoding.DecodeString(publicKey)
 	if err != nil {
 		return nil, err
 	}
-	err = point.UnmarshalBinary([]byte(decoded))
+	err = point.UnmarshalBinary(decoded)
 	if err != nil {
 		return nil, err
 	}
@@ -382,7 +406,7 @@ func UnmarshallPublicKey(publicKey string) (kyber.Point, error) {
 }
 
 //---------------------------------Symmetric Decryption using AES with GCM mode---------------------------------
-func (pre *PREEncryptionScheme) SymDec(group kyber.Group, ctx []byte, keyhash []byte) ([]byte, error) {
+func (pre *PREEncryptionScheme) SymDec(ctx []byte, keyhash []byte) ([]byte, error) {
 	len := 32 + 12
 	key := keyhash[:32]
 	nonce := keyhash[32:len]
@@ -414,7 +438,6 @@ func (pre *PREEncryptionScheme) Encrypt(data []byte) (*EncryptedMessage, error) 
 }
 
 func (pre *PREEncryptionScheme) decrypt(encMsg *EncryptedMessage) ([]byte, error) {
-	var g kyber.Group = pre.SuiteObj
 	C := &PREEncryptedMessage{}
 	C.EncryptedKey = pre.EncryptedKey
 	C.EncryptedData = encMsg.EncryptedData
@@ -434,17 +457,17 @@ func (pre *PREEncryptionScheme) decrypt(encMsg *EncryptedMessage) ([]byte, error
 	// if err != nil {
 	// 	return nil, err
 	// }
-	alp := pre.hash6(g, C.TagA, pre.PrivateKey) // alp = H6(tagA,skA)
-	chk1 := pre.hash5(g, C.EncryptedKey, C.EncryptedData, C.MessageChecksum, alp)
+	alp := pre.hash6(C.TagA, pre.PrivateKey) // alp = H6(tagA,skA)
+	chk1 := pre.hash5(C.EncryptedKey, C.EncryptedData, C.MessageChecksum, alp)
 	if !bytes.Equal(chk1, C.OverallChecksum) { // Check if C4 = H5(C1,C2,C3,alp)
 		return nil, fmt.Errorf("Invalid Ciphertext in decrypt, C4 != H5")
 	}
-	Ht := pre.hash1(pre.SuiteObj, pre.Tag, pre.PrivateKey) // Ht  = H1(tagA,skA)
-	T := g.Point().Sub(C.EncryptedKey, Ht)                 // T   = C1 - Ht
-	key := pre.hash2(g, T)                                 // key = H2(T)
-	recmsg, err2 := pre.SymDec(g, C.EncryptedData, key)    // recover message using Sym.Decrypt(C2,key)
+	Ht := pre.hash1(pre.Tag, pre.PrivateKey) // Ht  = H1(tagA,skA)
+	T := curve.NewEdwardsPoint().Sub(C.EncryptedKey, Ht)
+	key := pre.hash2(T)                                 // key = H2(T)
+	recmsg, err2 := pre.SymDec(C.EncryptedData, key)    // recover message using Sym.Decrypt(C2,key)
 	if err2 == nil {
-		chk2 := pre.hash3(g, recmsg, T)
+		chk2 := pre.hash3(recmsg, T)
 		if !bytes.Equal(chk2, C.MessageChecksum) { // Check if C3 = H3(m,T)
 			return nil, fmt.Errorf("Invalid Ciphertext in decrypt, C3 != H3")
 		} else {
@@ -465,9 +488,7 @@ func (pre *PREEncryptionScheme) ReEncrypt(encMsg *EncryptedMessage, reGenKey str
 
 //-----------------------------------------------ReEncryption-------------------------------------------------
 //reencrypt the data, cancelling the previous encryption by using the new regenkey
-func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey string, clientPublicKey kyber.Point) (*ReEncryptedMessage, error) {
-	var g kyber.Group = pre.SuiteObj
-	s := pre.SuiteObj
+func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey string, clientPublicKey *curve.EdwardsPoint) (*ReEncryptedMessage, error) {
 	C := &PREEncryptedMessage{}
 	C.EncryptedKey = pre.EncryptedKey
 	C.EncryptedData = encMsg.EncryptedData
@@ -485,9 +506,9 @@ func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey str
 	C.TagA = pre.Tag
 
 	rk := new(ReKey)
-	rk.R1 = g.Point()
-	rk.R2 = g.Point()
-	rk.R3 = g.Scalar()
+	rk.R1 = curve.NewEdwardsPoint()
+	rk.R2 = curve.NewEdwardsPoint()
+	rk.R3 = scalar.New()
 	err = rk.UnmarshalJSON([]byte(reGenKey))
 	if err != nil {
 		return nil, err
@@ -495,39 +516,41 @@ func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey str
 
 	var reEncMsg = new(ReEncryptedMessage)
 
-	chk1 := pre.hash5(g, C.EncryptedKey, C.EncryptedData, C.MessageChecksum, rk.R3)
+	chk1 := pre.hash5(C.EncryptedKey, C.EncryptedData, C.MessageChecksum, rk.R3)
 	if !bytes.Equal(chk1, C.OverallChecksum) { // Check if C4 = H5(C1,C2,C3,alp)
 		return nil, fmt.Errorf("Invalid Ciphertext in reEncrypt, C4 != H5")
 	}
-	t := s.Scalar().Pick(s.RandomStream()) // Pick a random integer t
-	reEncMsg.D5 = s.Point().Mul(t, nil)    // D5    = tP
-	tXj := s.Point().Mul(t, clientPublicKey) // tXj   = t.pkB
-	reEncMsg.D1 = g.Point().Add(C.EncryptedKey, rk.R1)
+	t, err := scalar.New().SetRandom(crand.Reader)
+	if err != nil {
+		return nil, err
+	}
+
+	reEncMsg.D5 = curve.NewEdwardsPoint().MulBasepoint(curve.ED25519_BASEPOINT_TABLE, t)    // D5    = tP
+	tXj := curve.NewEdwardsPoint().Mul(clientPublicKey, t)
+	reEncMsg.D1 = curve.NewEdwardsPoint().Add(C.EncryptedKey, rk.R1)
 	reEncMsg.D2 = C.EncryptedData                                                // D2    = C2
 	reEncMsg.D3 = C.MessageChecksum                                              // D3    = C3
 	reEncMsg.D4 = rk.R2                                                          // D4    = R2
-	bet := pre.hash7(g, tXj, reEncMsg.D2, reEncMsg.D3, reEncMsg.D4, reEncMsg.D5) // bet   = H7(tXj,D2,D3,D4,D5)
-	reEncMsg.D1 = s.Point().Mul(bet, reEncMsg.D1)                                // D1    = bet.(C1 + R1)
+	bet := pre.hash7(tXj, reEncMsg.D2, reEncMsg.D3, reEncMsg.D4, reEncMsg.D5) // bet   = H7(tXj,D2,D3,D4,D5)
+	reEncMsg.D1 = curve.NewEdwardsPoint().Mul(reEncMsg.D1, bet)                    // D1    = bet.(C1 + R1)
 	return reEncMsg, nil                                                         // Return D = (D1,D2,D3,D4,D5)
 }
 
 //-----------------------------------------------ReDecryption-------------------------------------------------
 func (pre *PREEncryptionScheme) ReDecrypt(D *ReEncryptedMessage) ([]byte, error) {
-	s := pre.SuiteObj
-	tXj := s.Point().Mul(pre.PrivateKey, D.D5) // tXj   = skB.D5
-	var g kyber.Group = s
-	bet := pre.hash7(g, tXj, D.D2, D.D3, D.D4, D.D5) // bet   = H7(tXj,D2,D3,D4,D5)
-	binv := s.Scalar().Inv(bet)
-	xinv := s.Scalar().Inv(pre.PrivateKey)
+	tXj := curve.NewEdwardsPoint().Mul(D.D5, pre.PrivateKey) // tXj   = skB.D5
+	bet := pre.hash7(tXj, D.D2, D.D3, D.D4, D.D5) // bet   = H7(tXj,D2,D3,D4,D5)
+	binv := scalar.New().Invert(bet)
+	xinv := scalar.New().Invert(pre.PrivateKey)
 
-	T1 := s.Point().Mul(binv, D.D1)
-	T2 := s.Point().Mul(xinv, D.D4)
-	T := g.Point().Sub(T1, T2) // T     = bet^(-1).D1 - skB^(-1).D4
-	key := pre.hash2(g, T)     // key   = H2(T)
+	T1 := curve.NewEdwardsPoint().Mul(D.D1, binv)
+	T2 := curve.NewEdwardsPoint().Mul(D.D4, xinv)
+	T := curve.NewEdwardsPoint().Sub(T1, T2) // T     = bet^(-1).D1 - skB^(-1).D4
+	key := pre.hash2(T)     // key   = H2(T)
 
-	recmsg, err2 := pre.SymDec(g, D.D2, key) // recover message using Sym.Decrypt(D2,key)
+	recmsg, err2 := pre.SymDec(D.D2, key) // recover message using Sym.Decrypt(D2,key)
 	if err2 == nil {
-		chk2 := pre.hash3(g, recmsg, T)
+		chk2 := pre.hash3(recmsg, T)
 		if !bytes.Equal(chk2, D.D3) { // Check if D3 = H3(m,T)
 			return nil, fmt.Errorf("Invalid Ciphertext in reDecrypt, D3 != H3")
 		} else {
@@ -564,6 +587,7 @@ func (pre *PREEncryptionScheme) GetEncryptedKey() string {
 
 func (pre *PREEncryptionScheme) GetPublicKey() (string, error) {
 	keyBytes, err := pre.PublicKey.MarshalBinary()
+	fmt.Println(keyBytes)
 	if err != nil {
 		return "", err
 	}
@@ -583,24 +607,26 @@ func (pre *PREEncryptionScheme) GetPrivateKey() (string, error) {
 func (pre *PREEncryptionScheme) GetReGenKey(encPublicKey string, tag string) (string, error) {
 	condA := []byte(tag)
 	var RK = new(ReKey)
-	var g kyber.Group = pre.SuiteObj
-	r := pre.SuiteObj.Scalar().Pick(pre.SuiteObj.RandomStream()) // Pick a random integer r
-	Hc := pre.hash1(pre.SuiteObj, condA, pre.PrivateKey)         // Hc   = H1(condA,skA)
-	RK.R1 = pre.SuiteObj.Point().Mul(r, nil)
-	RK.R1 = g.Point().Sub(RK.R1, Hc) // R1   = rP - Hc
+	r, err := scalar.New().SetRandom(crand.Reader)
+	if err != nil {
+		return "", err
+	}
+	Hc := pre.hash1(condA, pre.PrivateKey)         // Hc   = H1(condA,skA)
+	RK.R1 = curve.NewEdwardsPoint().MulBasepoint(curve.ED25519_BASEPOINT_TABLE, r)
+	RK.R1 = curve.NewEdwardsPoint().Sub(RK.R1, Hc) // R1   = rP - Hc
 
 	keyBytes, err := base64.StdEncoding.DecodeString(encPublicKey)
 	if err != nil {
 		return "", err
 	}
-	p := g.Point()
+	p := curve.NewEdwardsPoint()
 	err = p.UnmarshalBinary(keyBytes)
 	if err != nil {
 		return "", err
 	}
 
-	RK.R2 = pre.SuiteObj.Point().Mul(r, p)      // R2   = r.pkB
-	RK.R3 = pre.hash6(g, condA, pre.PrivateKey) // R3   = H6(condA,skA)
+	RK.R2 = curve.NewEdwardsPoint().Mul(p, r)      // R2   = r.pkB
+	RK.R3 = pre.hash6(condA, pre.PrivateKey) // R3   = H6(condA,skA)
 	rkBytes, err := RK.MarshalJSON()
 	if err != nil {
 		return "", err
