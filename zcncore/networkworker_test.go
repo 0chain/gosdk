@@ -15,12 +15,12 @@ func TestUpdateNetworkDetailsWorker(t *testing.T) {
 	})
 	
 }
-func TestUpdateNetworkDetails(t *testing.T) {
-	t.Run("Update Network Details Success", func(t *testing.T) {
-		err := UpdateNetworkDetails()
-		require.NoError(t, err)
-	})
-}
+// func TestUpdateNetworkDetails(t *testing.T) {
+// 	t.Run("Update Network Details Success", func(t *testing.T) {
+// 		err := UpdateNetworkDetails()
+// 		require.NoError(t, err)
+// 	})
+// }
 func TestUpdateRequired(t *testing.T) {
 	t.Run("Update Required return false", func(t *testing.T) {
 		_config.chain.Miners = []string{"1", "2"}

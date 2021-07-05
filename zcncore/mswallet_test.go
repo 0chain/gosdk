@@ -1,6 +1,7 @@
 package zcncore
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -105,15 +106,24 @@ func TestCreateMSVote(t *testing.T) {
 		assert.Equal(t, "", resp)
 		assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
 	})
-	// t.Run("Error while parsing the signer wallet", func(t *testing.T) {
-	// 	_config.chain.SignatureScheme = "bls0chain"
-	// 	resp, err := CreateMSVote("proposal", "grpClientID", mnemonic, clientID, 2)
+	t.Run("Error while parsing the signer wallet", func(t *testing.T) {
+		_config.chain.SignatureScheme = "bls0chain"
+		wallet := &zcncrypto.Wallet{
+			Keys: []zcncrypto.KeyPair{
+				{
+					PublicKey:  mockPublicKey,
+					PrivateKey: mockPrivateKey,
+				},
+			},
+		}
+		str, err := json.Marshal(wallet)
+		require.NoError(t, err)
 
-	// 	// expectedErrorMsg := "Token cannot be less than 1"
+		resp, err := CreateMSVote("proposal", "grpClientID", string(str), clientID, 2)
 
-	// 	assert.Equal(t, "", resp)
-	// 	require.NoError(t, err)
-	// })
+		assert.NotEmpty(t, resp)
+		require.Nil(t, err)
+	})
 }
 
 func TestGetWallets(t *testing.T) {
