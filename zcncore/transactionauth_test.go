@@ -3,7 +3,6 @@ package zcncore
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -28,6 +27,7 @@ const (
 
 var verifyPublickey = `e8a6cfa7b3076ae7e04764ffdfe341632a136b52953dfafa6926361dd9a466196faecca6f696774bbd64b938ff765dbc837e8766a5e2d8996745b2b94e1beb9e`
 var signPrivatekey = `5e1fc9c03d53a8b9a63030acc2864f0c33dffddb3c276bf2b3c8d739269cc018`
+
 //RUNOK
 func TestNewTransactionWithAuth(t *testing.T) {
 	t.Run("Test New Transaction With Auth Success", func(t *testing.T) {
@@ -40,6 +40,7 @@ func TestNewTransactionWithAuth(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
 //RUNOK
 func TestTransactionAuthSetTransactionCallback(t *testing.T) {
 	t.Run("Test New Transaction With Auth transaction already exists", func(t *testing.T) {
@@ -66,6 +67,7 @@ func TestTransactionAuthSetTransactionCallback(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
 //RUNOK
 func TestTransactionAuthSetTransactionFee(t *testing.T) {
 	t.Run("Test Transaction Auth Set Transaction Fee", func(t *testing.T) {
@@ -91,6 +93,7 @@ func TestTransactionAuthSetTransactionFee(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
 //RUNOK
 func TestVerifyFn(t *testing.T) {
 	t.Run("Test Verify Fn", func(t *testing.T) {
@@ -103,6 +106,7 @@ func TestVerifyFn(t *testing.T) {
 		require.Equal(t, false, resp)
 	})
 }
+
 //RUNOK
 func TestSend(t *testing.T) {
 	var (
@@ -125,7 +129,6 @@ func TestSend(t *testing.T) {
 		}
 	)
 	mockTxn.ComputeHashData()
-	fmt.Println("=============1", mockTxn.Hash)
 
 	_config.wallet = zcncrypto.Wallet{
 		ClientID: mockClientID,
@@ -218,6 +221,7 @@ func TestSend(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
 //RUNOK
 func TestStoreData(t *testing.T) {
 	var (
@@ -240,7 +244,6 @@ func TestStoreData(t *testing.T) {
 		}
 	)
 	mockTxn.ComputeHashData()
-	fmt.Println("=============1", mockTxn.Hash)
 
 	_config.wallet = zcncrypto.Wallet{
 		ClientID: mockClientID,
@@ -359,7 +362,6 @@ func TestTransactionAuthExecuteFaucetSCWallet(t *testing.T) {
 		}
 	)
 	mockTxn.ComputeHashData()
-	fmt.Println("=============1", mockTxn.Hash)
 
 	_config.wallet = zcncrypto.Wallet{
 		ClientID: mockClientID,
@@ -432,7 +434,6 @@ func TestTransactionAuthExecuteFaucetSCWallet(t *testing.T) {
 					ToClientID:   mockClientID,
 					CreationDate: mockCreationDate,
 					Value:        mockValue,
-					
 				},
 			},
 		}
@@ -465,7 +466,6 @@ func TestExecuteSmartContract(t *testing.T) {
 		}
 	)
 	mockTxn.ComputeHashData()
-	fmt.Println("=============1", mockTxn.Hash)
 
 	_config.wallet = zcncrypto.Wallet{
 		ClientID: mockClientID,
@@ -538,17 +538,17 @@ func TestExecuteSmartContract(t *testing.T) {
 					ToClientID:   mockClientID,
 					CreationDate: mockCreationDate,
 					Value:        mockValue,
-					
 				},
 			},
 		}
 		scData := make(map[string]interface{})
 		out, err := json.Marshal(scData)
-		require.NoError(t,err)
-		err = ta.ExecuteSmartContract(mockToClientID,"GET",string(out),1)
+		require.NoError(t, err)
+		err = ta.ExecuteSmartContract(mockToClientID, "GET", string(out), 1)
 		require.NoError(t, err)
 	})
 }
+
 // func TestExecuteFaucetSCWallet(t *testing.T) {
 // 	t.Run("Test Execute Faucet SC Wallet", func(t *testing.T) {
 // 		ta := &TransactionWithAuth{
@@ -587,6 +587,7 @@ func TestTransactionAuthSetTransactionHash(t *testing.T) {
 		assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
 	})
 }
+
 //RUNOK
 func TestTransactionAuthGetTransactionHash(t *testing.T) {
 	t.Run("Test Get Transaction Hash", func(t *testing.T) {
@@ -600,6 +601,7 @@ func TestTransactionAuthGetTransactionHash(t *testing.T) {
 		require.NotNil(t, resp)
 	})
 }
+
 //RUNOK
 func TestTransactionAuthVerify(t *testing.T) {
 	t.Run("Test Transaction Auth Verify", func(t *testing.T) {
@@ -614,6 +616,7 @@ func TestTransactionAuthVerify(t *testing.T) {
 		assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
 	})
 }
+
 //RUNOK
 func TestTransactionAuthGetVerifyOutput(t *testing.T) {
 	t.Run("Test Transaction Auth Get Verify Output", func(t *testing.T) {
@@ -627,6 +630,7 @@ func TestTransactionAuthGetVerifyOutput(t *testing.T) {
 		require.NotNil(t, resp)
 	})
 }
+
 //RUNOK
 func TestTransactionAuthGetTransactionError(t *testing.T) {
 	t.Run("Test Transaction Auth Get Transaction Error", func(t *testing.T) {
@@ -640,6 +644,7 @@ func TestTransactionAuthGetTransactionError(t *testing.T) {
 		require.NotNil(t, resp)
 	})
 }
+
 //RUNOK
 func TestTransactionAuthGetVerifyError(t *testing.T) {
 	t.Run("Test Transaction Auth Get Verify Error", func(t *testing.T) {
@@ -653,6 +658,7 @@ func TestTransactionAuthGetVerifyError(t *testing.T) {
 		require.NotNil(t, resp)
 	})
 }
+
 //RUNOK
 func TestTransactionAuthOutput(t *testing.T) {
 	t.Run("Test Transaction Auth Output", func(t *testing.T) {
@@ -667,238 +673,6 @@ func TestTransactionAuthOutput(t *testing.T) {
 	})
 }
 
-
-// func TestTransactionAuthVestingTrigger(t *testing.T) {
-// 	t.Run("Test Transaction Auth Vesting Trigger", func(t *testing.T) {
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
-
-// 		resp := ta.VestingTrigger("poolID")
-// 		require.NoError(t, resp)
-// 	})
-// }
-// func TestTransactionAuthVestingStop(t *testing.T) {
-// 	t.Run("Test Transaction Auth Vesting Stop", func(t *testing.T) {
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
-
-// 		resp := ta.VestingStop(&VestingStopRequest{})
-// 		require.NoError(t, resp)
-// 	})
-// }
-
-// func TestTransactionAuthVestingUnlock(t *testing.T) {
-// 	t.Run("Test Transaction Auth Vesting Unlock", func(t *testing.T) {
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
-
-// 		resp := ta.VestingUnlock("poolID")
-// 		require.NoError(t, resp)
-// 	})
-// }
-
-// func TestTransactionAuthVestingAdd(t *testing.T) {
-// 	t.Run("Test Transaction Auth Vesting Add", func(t *testing.T) {
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
-
-// 		resp := ta.VestingAdd(&VestingAddRequest{}, 1)
-// 		require.NoError(t, resp)
-// 	})
-// }
-// func TestTransactionAuthVestingDelete(t *testing.T) {
-// 	t.Run("Test Transaction Auth Vesting Delete", func(t *testing.T) {
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
-
-// 		resp := ta.VestingDelete("poolID")
-// 		require.NoError(t, resp)
-// 	})
-// }
-
-
-// func TestTransactionAuthMinerSCSettings(t *testing.T) {
-// 	t.Run("Test Transaction Auth Miner SC Settings", func(t *testing.T) {
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
-
-// 		resp := ta.MinerSCSettings(&MinerSCMinerInfo{})
-// 		require.NoError(t, resp)
-// 	})
-// }
-// func TestTransactionAuthMinerSCLock(t *testing.T) {
-// 	t.Run("Test Transaction Auth Miner SC Lock", func(t *testing.T) {
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
-
-// 		resp := ta.MinerSCLock("minerID", 1)
-// 		require.NoError(t, resp)
-// 	})
-// }
-// func TestTransactionAuthMienrSCUnlock(t *testing.T) {
-// 	t.Run("Test Transaction Auth Miner SC Lock", func(t *testing.T) {
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
-
-// 		resp := ta.MienrSCUnlock("nodeID", "poolID")
-// 		require.NoError(t, resp)
-// 	})
-// }
-// func TestTransactionAuthLockTokens(t *testing.T) {
-// 	t.Run("Test Transaction Auth Lock Tokens", func(t *testing.T) {
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
-
-// 		resp := ta.LockTokens(1, 1, 1)
-// 		require.NoError(t, resp)
-// 	})
-// }
-// func TestTransactionAuthUnlockTokens(t *testing.T) {
-// 	var (
-// 		mockPublicKey       = "mock public key"
-// 		mockPrivateKey      = "mock private key"
-// 		mockSignature       = "mock signature"
-// 		mockClientID        = "mock client id"
-// 		mockToClientID      = "cf8d0df9bd8cc637a4ff4e792ffe3686da6220c45f0e1103baa609f3f1751ef4"
-// 		mockTxnData         = `{"name":"unlock","input":{"pool_id":"mock pool id"}}`
-// 		mockCreationDate    = int64(1625030157)
-// 		mockValue           = int64(0)
-// 		mockTransactionType = int(1000)
-// 		mockTxn             = &transaction.Transaction{
-// 			PublicKey:       mockPublicKey,
-// 			ClientID:        mockClientID,
-// 			TransactionData: mockTxnData,
-// 			CreationDate:    mockCreationDate,
-// 			ToClientID:      mockToClientID,
-// 			Value:           mockValue,
-// 			Signature:       mockSignature,
-// 			TransactionType: mockTransactionType,
-// 		}
-// 	)
-// 	mockTxn.ComputeHashData()
-// 	fmt.Println("=============1", mockTxn.Hash)
-
-// 	_config.wallet = zcncrypto.Wallet{
-// 		ClientID: mockClientID,
-// 		Keys: []zcncrypto.KeyPair{
-// 			{
-// 				PublicKey:  mockPublicKey,
-// 				PrivateKey: mockPrivateKey,
-// 			},
-// 		},
-// 	}
-// 	_config.chain.SignatureScheme = "bls0chain"
-// 	_config.authUrl = "UnlockTokens"
-
-// 	t.Run("Test Unlock Tokens", func(t *testing.T) {
-// 		var mockClient = zcnmocks.HttpClient{}
-// 		util.Client = &mockClient
-
-// 		mockSignatureScheme := &zcncryptomock.SignatureScheme{}
-// 		mockSignatureScheme.On("SetPrivateKey", mockPrivateKey).Return(nil)
-// 		mockSignatureScheme.On("SetPublicKey", mockPublicKey).Return(nil)
-// 		mockSignatureScheme.On("Sign", mockTxn.Hash).Return(mockSignature, nil)
-// 		mockSignatureScheme.On("Verify", mockSignature, mockTxn.Hash).Return(true, nil)
-// 		mockSignatureScheme.On("Add", mockTxn.Signature, mockTxn.Hash).Return(mockSignature, nil)
-// 		setupSignatureSchemeMock(mockSignatureScheme)
-
-// 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-// 			if req.Method == "POST" && req.URL.Path == _config.authUrl+"/transaction" {
-// 				require.EqualValues(t, "application/json", strings.Split(req.Header.Get("Content-Type"), ";")[0])
-// 				defer req.Body.Close()
-// 				body, err := ioutil.ReadAll(req.Body)
-// 				require.NoError(t, err, "ioutil.ReadAll(req.Body)")
-// 				var reqTxn *transaction.Transaction
-// 				err = json.Unmarshal(body, &reqTxn)
-// 				require.NoError(t, err, "json.Unmarshal(body, &reqTxn)")
-// 				require.EqualValues(t, mockTxn, reqTxn)
-// 				return true
-// 			}
-// 			return false
-// 		})).Return(&http.Response{
-// 			Body: func() io.ReadCloser {
-// 				jsonFR, err := json.Marshal(mockTxn)
-// 				require.NoError(t, err, "json.Marshal(mockTxn)")
-// 				return ioutil.NopCloser(bytes.NewReader(jsonFR))
-// 			}(),
-// 			StatusCode: http.StatusOK,
-// 		}, nil)
-
-// 		_config.chain.Miners = []string{"UnlockTokens1", ""}
-
-// 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-// 			if strings.HasPrefix(req.URL.Path, "/dns") || strings.HasPrefix(req.URL.Path, "UnlockTokens1") || strings.HasPrefix(req.URL.Path, "/v1/") {
-// 				return true
-// 			}
-// 			return false
-// 		})).Return(&http.Response{
-// 			Body: func() io.ReadCloser {
-// 				jsonFR, err := json.Marshal(mockTxn)
-// 				require.NoError(t, err, "json.Marshal(mockTxn)")
-// 				return ioutil.NopCloser(bytes.NewReader(jsonFR))
-// 			}(),
-// 			StatusCode: http.StatusOK,
-// 		}, nil)
-// 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-// 			if strings.HasPrefix(req.URL.Path, "/dns") || strings.HasPrefix(req.URL.Path, "TestTransactionAuthCancelAllocation1") || strings.HasPrefix(req.URL.Path, "/v1/") {
-// 				return true
-// 			}
-// 			return false
-// 		})).Return(&http.Response{
-// 			Body: func() io.ReadCloser {
-// 				jsonFR, err := json.Marshal(mockTxn)
-// 				require.NoError(t, err, "json.Marshal(mockTxn)")
-// 				return ioutil.NopCloser(bytes.NewReader(jsonFR))
-// 			}(),
-// 			StatusCode: http.StatusOK,
-// 		}, nil)
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{
-// 					Hash:            mockTxn.Hash,
-// 					ClientID:        mockClientID,
-// 					PublicKey:       mockPublicKey,
-// 					ToClientID:      mockToClientID,
-// 					CreationDate:    mockCreationDate,
-// 					Value:           mockValue,
-// 					TransactionData: mockTxnData,
-// 					TransactionType: mockTxn.TransactionType,
-// 					Signature:       mockSignature,
-// 				},
-// 			},
-// 		}
-
-// 		err := ta.UnlockTokens("mock pool id")
-// 		require.NoError(t, err)
-// 	})
-// }
 //RUNOK
 func TestTransactionAuthRegisterMultiSig(t *testing.T) {
 	t.Run("Test Transaction Auth Register MultiSig", func(t *testing.T) {
@@ -913,6 +687,7 @@ func TestTransactionAuthRegisterMultiSig(t *testing.T) {
 		assert.EqualErrorf(t, resp, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, resp)
 	})
 }
+
 //RUNOK
 func TestTransactionAuthFinalizeAllocation(t *testing.T) {
 	var (
@@ -1014,6 +789,7 @@ func TestTransactionAuthFinalizeAllocation(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
+
 //RUNOK
 func TestTransactionAuthCancelAllocation(t *testing.T) {
 	var (
@@ -1107,6 +883,7 @@ func TestTransactionAuthCancelAllocation(t *testing.T) {
 		require.NoError(t, resp)
 	})
 }
+
 //RUNOK
 func TestTransactionAuthVestingTrigger(t *testing.T) {
 	var (
@@ -1200,6 +977,7 @@ func TestTransactionAuthVestingTrigger(t *testing.T) {
 		require.NoError(t, resp)
 	})
 }
+
 //RUNOK
 func TestTransactionAuthVestingStop(t *testing.T) {
 	var (
@@ -1293,6 +1071,7 @@ func TestTransactionAuthVestingStop(t *testing.T) {
 		require.NoError(t, resp)
 	})
 }
+
 //RUNOK
 func TestTransactionAuthVestingUnlock(t *testing.T) {
 	var (
@@ -1386,6 +1165,7 @@ func TestTransactionAuthVestingUnlock(t *testing.T) {
 		require.NoError(t, resp)
 	})
 }
+
 //RUNOK
 func TestTransactionAuthVestingAdd(t *testing.T) {
 	var (
@@ -1475,10 +1255,11 @@ func TestTransactionAuthVestingAdd(t *testing.T) {
 			},
 		}
 
-		resp := ta.VestingAdd(&VestingAddRequest{},1)
+		resp := ta.VestingAdd(&VestingAddRequest{}, 1)
 		require.NoError(t, resp)
 	})
 }
+
 //RUNOK
 func TestTransactionAuthVestingDelete(t *testing.T) {
 	var (
@@ -1572,6 +1353,7 @@ func TestTransactionAuthVestingDelete(t *testing.T) {
 		require.NoError(t, resp)
 	})
 }
+
 //RUNOK
 func TestTransactionAuthVestingUpdateConfig(t *testing.T) {
 	var (
@@ -1665,6 +1447,7 @@ func TestTransactionAuthVestingUpdateConfig(t *testing.T) {
 		require.NoError(t, resp)
 	})
 }
+
 //RUNOK
 func TestTransactionAuthMinerSCSettings(t *testing.T) {
 	var (
@@ -1758,6 +1541,7 @@ func TestTransactionAuthMinerSCSettings(t *testing.T) {
 		require.NoError(t, resp)
 	})
 }
+
 //RUNOK
 func TestTransactionAuthMinerSCLock(t *testing.T) {
 	var (
@@ -1851,6 +1635,7 @@ func TestTransactionAuthMinerSCLock(t *testing.T) {
 		require.NoError(t, resp)
 	})
 }
+
 //RUNOK
 func TestTransactionAuthMienrSCUnlock(t *testing.T) {
 	var (
@@ -1944,199 +1729,1228 @@ func TestTransactionAuthMienrSCUnlock(t *testing.T) {
 		require.NoError(t, resp)
 	})
 }
-// func TestTransactionAuthCreateAllocation(t *testing.T) {
-// 	t.Run("Test Transaction Auth Cancel Allocation", func(t *testing.T) {
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
 
-// 		resp := ta.CreateAllocation(&CreateAllocationRequest{}, 1, 1)
-// 		require.NoError(t, resp)
-// 	})
-// }
-// func TestTransactionAuthCreateReadPool(t *testing.T) {
-// 	t.Run("Test Transaction Auth Create ReadPool", func(t *testing.T) {
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
+//RUNOK
+func TestTransactionAuthLockTokens(t *testing.T) {
+	var (
+		mockPublicKey    = "mock public key"
+		mockPrivateKey   = "mock private key"
+		mockSignature    = "mock signature"
+		mockClientID     = "mock client id"
+		mockToClientID   = "cf8d0df9bd8cc637a4ff4e792ffe3686da6220c45f0e1103baa609f3f1751ef4"
+		mockTxnData      = `{"name":"lock","input":{"duration":"1h1m"}}`
+		mockCreationDate = int64(1625030157)
+		mockValue        = int64(1)
+		mockTxn          = &transaction.Transaction{
+			PublicKey:       mockPublicKey,
+			ClientID:        mockClientID,
+			TransactionData: mockTxnData,
+			CreationDate:    mockCreationDate,
+			ToClientID:      mockToClientID,
+			Value:           mockValue,
+			Signature:       mockSignature,
+			TransactionType: transaction.TxnTypeData,
+		}
+	)
+	mockTxn.ComputeHashData()
+	_config.wallet = zcncrypto.Wallet{
+		ClientID: mockClientID,
+		Keys: []zcncrypto.KeyPair{
+			{
+				PublicKey:  mockPublicKey,
+				PrivateKey: mockPrivateKey,
+			},
+		},
+	}
+	_config.chain.SignatureScheme = "bls0chain"
+	_config.authUrl = "MienrSCUnlock"
+	t.Run("Test Vesting Delete", func(t *testing.T) {
+		var mockClient = zcnmocks.HttpClient{}
+		util.Client = &mockClient
 
-// 		resp := ta.CreateReadPool(1)
-// 		require.NoError(t, resp)
-// 	})
-// }
-// func TestTransactionAuthReadPoolLock(t *testing.T) {
-// 	t.Run("Test Transaction Auth Create ReadPool", func(t *testing.T) {
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
+		mockSignatureScheme := &zcncryptomock.SignatureScheme{}
+		mockSignatureScheme.On("SetPrivateKey", mockPrivateKey).Return(nil)
+		mockSignatureScheme.On("SetPublicKey", mockPublicKey).Return(nil)
+		mockSignatureScheme.On("Sign", mockTxn.Hash).Return(mockSignature, nil)
+		mockSignatureScheme.On("Verify", mockSignature, mockTxn.Hash).Return(true, nil)
+		mockSignatureScheme.On("Add", mockTxn.Signature, mockTxn.Hash).Return(mockSignature, nil)
+		setupSignatureSchemeMock(mockSignatureScheme)
 
-// 		resp := ta.ReadPoolLock("allocID", "blobberID", 1, 1, 1)
-// 		require.NoError(t, resp)
-// 	})
-// }
-// func TestTransactionAuthReadPoolUnlock(t *testing.T) {
-// 	t.Run("Test Transaction Auth Read Pool Unlock", func(t *testing.T) {
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if req.Method == "POST" && req.URL.Path == _config.authUrl+"/transaction" {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
 
-// 		resp := ta.ReadPoolUnlock("poolID", 1)
-// 		require.NoError(t, resp)
-// 	})
-// }
-// func TestTransactionAuthStakePoolLock(t *testing.T) {
-// 	t.Run("Test Transaction Auth Stake Pool Lock", func(t *testing.T) {
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
+		_config.chain.Miners = []string{"LockTokens1", ""}
 
-// 		resp := ta.StakePoolLock("blobberID", 1, 1)
-// 		require.NoError(t, resp)
-// 	})
-// }
-// func TestTransactionAuthStakePoolUnlock(t *testing.T) {
-// 	t.Run("Test Transaction Auth Stake Pool Lock", func(t *testing.T) {
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if strings.HasPrefix(req.URL.Path, "/dns") || strings.HasPrefix(req.URL.Path, "LockTokens1") || strings.HasPrefix(req.URL.Path, "/v1/") {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
 
-// 		resp := ta.StakePoolUnlock("blobberID", "poolID", 1)
-// 		require.NoError(t, resp)
-// 	})
-// }
-// func TestTransactionAuthStakePoolPayInterests(t *testing.T) {
-// 	t.Run("Test Transaction Auth Stake Pool Lock", func(t *testing.T) {
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
+		ta := &TransactionWithAuth{
+			t: &Transaction{
+				txn: &transaction.Transaction{
+					Hash:         mockTxn.Hash,
+					ClientID:     mockClientID,
+					PublicKey:    mockPublicKey,
+					ToClientID:   mockClientID,
+					CreationDate: mockCreationDate,
+					Value:        mockValue,
+				},
+			},
+		}
 
-// 		resp := ta.StakePoolPayInterests("blobberID", 1)
-// 		require.NoError(t, resp)
-// 	})
-// }
-// func TestTransactionAuthUpdateBlobberSettings(t *testing.T) {
-// 	t.Run("Test Transaction Auth Stake Pool Lock", func(t *testing.T) {
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
+		resp := ta.LockTokens(1, 1, 1)
+		require.NoError(t, resp)
+	})
+}
 
-// 		resp := ta.UpdateBlobberSettings(&Blobber{}, 1)
-// 		require.NoError(t, resp)
-// 	})
-// }
-// func TestTransactionAuthUpdateAllocation(t *testing.T) {
-// 	t.Run("Test Transaction Auth Update Allocation", func(t *testing.T) {
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
+//RUNOK
+func TestTransactionAuthUnlockTokens(t *testing.T) {
+	var (
+		mockPublicKey    = "mock public key"
+		mockPrivateKey   = "mock private key"
+		mockSignature    = "mock signature"
+		mockClientID     = "mock client id"
+		mockToClientID   = "cf8d0df9bd8cc637a4ff4e792ffe3686da6220c45f0e1103baa609f3f1751ef4"
+		mockTxnData      = `{"name":"unlock","input":{"pool_id":"mock pool id"}}`
+		mockCreationDate = int64(1625030157)
+		mockValue        = int64(0)
+		mockTxn          = &transaction.Transaction{
+			PublicKey:       mockPublicKey,
+			ClientID:        mockClientID,
+			TransactionData: mockTxnData,
+			CreationDate:    mockCreationDate,
+			ToClientID:      mockToClientID,
+			Value:           mockValue,
+			Signature:       mockSignature,
+			TransactionType: transaction.TxnTypeData,
+		}
+	)
+	mockTxn.ComputeHashData()
+	_config.wallet = zcncrypto.Wallet{
+		ClientID: mockClientID,
+		Keys: []zcncrypto.KeyPair{
+			{
+				PublicKey:  mockPublicKey,
+				PrivateKey: mockPrivateKey,
+			},
+		},
+	}
+	_config.chain.SignatureScheme = "bls0chain"
+	_config.authUrl = "UnlockTokens"
+	t.Run("Test Vesting Delete", func(t *testing.T) {
+		var mockClient = zcnmocks.HttpClient{}
+		util.Client = &mockClient
 
-// 		resp := ta.UpdateAllocation("allocID", 1, 1, 1, 1)
-// 		require.NoError(t, resp)
-// 	})
-// }
-// func TestTransactionAuthWritePoolLock(t *testing.T) {
-// 	t.Run("Test Transaction Auth Write Pool Lock", func(t *testing.T) {
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
+		mockSignatureScheme := &zcncryptomock.SignatureScheme{}
+		mockSignatureScheme.On("SetPrivateKey", mockPrivateKey).Return(nil)
+		mockSignatureScheme.On("SetPublicKey", mockPublicKey).Return(nil)
+		mockSignatureScheme.On("Sign", mockTxn.Hash).Return(mockSignature, nil)
+		mockSignatureScheme.On("Verify", mockSignature, mockTxn.Hash).Return(true, nil)
+		mockSignatureScheme.On("Add", mockTxn.Signature, mockTxn.Hash).Return(mockSignature, nil)
+		setupSignatureSchemeMock(mockSignatureScheme)
 
-// 		resp := ta.WritePoolLock("allocID", "blobberID", 1, 1, 1)
-// 		require.NoError(t, resp)
-// 	})
-// }
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if req.Method == "POST" && req.URL.Path == _config.authUrl+"/transaction" {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
 
-// func TestTransactionAuthWritePoolUnlock(t *testing.T) {
-// 	t.Run("Test Transaction Auth Write Pool Lock", func(t *testing.T) {
-// 		var mockClient = zcnmocks.HttpClient{}
-// 		util.Client = &mockClient
-// 		_config.wallet = zcncrypto.Wallet{
-// 			Keys: []zcncrypto.KeyPair{
-// 				zcncrypto.KeyPair{
-// 					PublicKey:  public_key,
-// 					PrivateKey: private_key,
-// 				},
-// 			},
-// 		}
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
-// 		_config.authUrl = "TestTransactionAuthWritePoolUnlock"
+		_config.chain.Miners = []string{"UnlockTokens1", ""}
 
-// 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-// 			return strings.HasPrefix(req.URL.Path, "/TestTransactionAuthWritePoolUnlock")
-// 		})).Return(&http.Response{
-// 			Body: func() io.ReadCloser {
-// 				jsonFR, err := json.Marshal(&transaction.Transaction{
-// 					Hash:      mockHash,
-// 					Signature: "bls0chain",
-// 				})
-// 				require.NoError(t, err)
-// 				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
-// 			}(),
-// 			StatusCode: http.StatusOK,
-// 		}, nil)
-// 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-// 			return strings.HasPrefix(req.URL.Path, "/TestTransactionAuthWritePoolUnlock")
-// 		})).Return(&http.Response{
-// 			Body: func() io.ReadCloser {
-// 				jsonFR, err := json.Marshal(&transaction.Transaction{
-// 					Hash:      mockHash,
-// 					Signature: "bls0chain",
-// 				})
-// 				require.NoError(t, err)
-// 				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
-// 			}(),
-// 			StatusCode: http.StatusOK,
-// 		}, nil)
-// 		resp := ta.WritePoolUnlock("poolID", 1)
-// 		require.NoError(t, resp)
-// 	})
-// }
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if strings.HasPrefix(req.URL.Path, "/dns") || strings.HasPrefix(req.URL.Path, "UnlockTokens1") || strings.HasPrefix(req.URL.Path, "/v1/") {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
 
-// func TestTransactionAuthGetAuthorize(t *testing.T) {
-// 	t.Run("Test Transaction Auth get Authorize", func(t *testing.T) {
-// 		_config.wallet = zcncrypto.Wallet{
-// 			Keys: []zcncrypto.KeyPair{
-// 				zcncrypto.KeyPair{
-// 					PublicKey:  public_key,
-// 					PrivateKey: private_key,
-// 				},
-// 			},
-// 		}
-// 		ta := &TransactionWithAuth{
-// 			t: &Transaction{
-// 				txn: &transaction.Transaction{},
-// 			},
-// 		}
+		ta := &TransactionWithAuth{
+			t: &Transaction{
+				txn: &transaction.Transaction{
+					Hash:         mockTxn.Hash,
+					ClientID:     mockClientID,
+					PublicKey:    mockPublicKey,
+					ToClientID:   mockClientID,
+					CreationDate: mockCreationDate,
+					Value:        mockValue,
+				},
+			},
+		}
 
-// 		transaction, err := ta.getAuthorize()
-// 		require.Nil(t, transaction)
-// 		expectedErrorMsg := "network error. host not reachable"
-// 		assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
-// 	})
-// }
+		resp := ta.UnlockTokens("mock pool id")
+		require.NoError(t, resp)
+	})
+}
+
+//RUNOK
+func TestTransactionAuthCreateAllocation(t *testing.T) {
+	var (
+		mockPublicKey    = "mock public key"
+		mockPrivateKey   = "mock private key"
+		mockSignature    = "mock signature"
+		mockClientID     = "mock client id"
+		mockToClientID   = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
+		mockTxnData      = `{"name":"new_allocation_request","input":{"data_shards":0,"parity_shards":0,"size":0,"expiration_date":0,"owner_id":"","owner_public_key":"","preferred_blobbers":null,"read_price_range":{"min":0,"max":0},"write_price_range":{"min":0,"max":0},"max_challenge_completion_time":0}}`
+		mockCreationDate = int64(1625030157)
+		mockValue        = int64(1)
+		mockTxn          = &transaction.Transaction{
+			PublicKey:       mockPublicKey,
+			ClientID:        mockClientID,
+			TransactionData: mockTxnData,
+			CreationDate:    mockCreationDate,
+			ToClientID:      mockToClientID,
+			Value:           mockValue,
+			Signature:       mockSignature,
+			TransactionType: transaction.TxnTypeData,
+		}
+	)
+	mockTxn.ComputeHashData()
+	_config.wallet = zcncrypto.Wallet{
+		ClientID: mockClientID,
+		Keys: []zcncrypto.KeyPair{
+			{
+				PublicKey:  mockPublicKey,
+				PrivateKey: mockPrivateKey,
+			},
+		},
+	}
+	_config.chain.SignatureScheme = "bls0chain"
+	_config.authUrl = "CreateAllocation"
+	t.Run("Test Vesting Delete", func(t *testing.T) {
+		var mockClient = zcnmocks.HttpClient{}
+		util.Client = &mockClient
+
+		mockSignatureScheme := &zcncryptomock.SignatureScheme{}
+		mockSignatureScheme.On("SetPrivateKey", mockPrivateKey).Return(nil)
+		mockSignatureScheme.On("SetPublicKey", mockPublicKey).Return(nil)
+		mockSignatureScheme.On("Sign", mockTxn.Hash).Return(mockSignature, nil)
+		mockSignatureScheme.On("Verify", mockSignature, mockTxn.Hash).Return(true, nil)
+		mockSignatureScheme.On("Add", mockTxn.Signature, mockTxn.Hash).Return(mockSignature, nil)
+		setupSignatureSchemeMock(mockSignatureScheme)
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if req.Method == "POST" && req.URL.Path == _config.authUrl+"/transaction" {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		_config.chain.Miners = []string{"CreateAllocation1", ""}
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if strings.HasPrefix(req.URL.Path, "/dns") || strings.HasPrefix(req.URL.Path, "CreateAllocation1") || strings.HasPrefix(req.URL.Path, "/v1/") {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		ta := &TransactionWithAuth{
+			t: &Transaction{
+				txn: &transaction.Transaction{
+					Hash:         mockTxn.Hash,
+					ClientID:     mockClientID,
+					PublicKey:    mockPublicKey,
+					ToClientID:   mockClientID,
+					CreationDate: mockCreationDate,
+					Value:        mockValue,
+				},
+			},
+		}
+
+		resp := ta.CreateAllocation(&CreateAllocationRequest{}, 1, 1)
+		require.NoError(t, resp)
+	})
+}
+
+//RUNOK
+func TestTransactionAuthCreateReadPool(t *testing.T) {
+	var (
+		mockPublicKey    = "mock public key"
+		mockPrivateKey   = "mock private key"
+		mockSignature    = "mock signature"
+		mockClientID     = "mock client id"
+		mockToClientID   = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
+		mockTxnData      = `{"name":"new_read_pool","input":null}`
+		mockCreationDate = int64(1625030157)
+		mockValue        = int64(0)
+		mockTxn          = &transaction.Transaction{
+			PublicKey:       mockPublicKey,
+			ClientID:        mockClientID,
+			TransactionData: mockTxnData,
+			CreationDate:    mockCreationDate,
+			ToClientID:      mockToClientID,
+			Value:           mockValue,
+			Signature:       mockSignature,
+			TransactionType: transaction.TxnTypeData,
+		}
+	)
+	mockTxn.ComputeHashData()
+	_config.wallet = zcncrypto.Wallet{
+		ClientID: mockClientID,
+		Keys: []zcncrypto.KeyPair{
+			{
+				PublicKey:  mockPublicKey,
+				PrivateKey: mockPrivateKey,
+			},
+		},
+	}
+	_config.chain.SignatureScheme = "bls0chain"
+	_config.authUrl = "CreateReadPool"
+	t.Run("Test Vesting Delete", func(t *testing.T) {
+		var mockClient = zcnmocks.HttpClient{}
+		util.Client = &mockClient
+
+		mockSignatureScheme := &zcncryptomock.SignatureScheme{}
+		mockSignatureScheme.On("SetPrivateKey", mockPrivateKey).Return(nil)
+		mockSignatureScheme.On("SetPublicKey", mockPublicKey).Return(nil)
+		mockSignatureScheme.On("Sign", mockTxn.Hash).Return(mockSignature, nil)
+		mockSignatureScheme.On("Verify", mockSignature, mockTxn.Hash).Return(true, nil)
+		mockSignatureScheme.On("Add", mockTxn.Signature, mockTxn.Hash).Return(mockSignature, nil)
+		setupSignatureSchemeMock(mockSignatureScheme)
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if req.Method == "POST" && req.URL.Path == _config.authUrl+"/transaction" {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		_config.chain.Miners = []string{"CreateReadPool1", ""}
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if strings.HasPrefix(req.URL.Path, "/dns") || strings.HasPrefix(req.URL.Path, "CreateReadPool1") || strings.HasPrefix(req.URL.Path, "/v1/") {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		ta := &TransactionWithAuth{
+			t: &Transaction{
+				txn: &transaction.Transaction{
+					Hash:         mockTxn.Hash,
+					ClientID:     mockClientID,
+					PublicKey:    mockPublicKey,
+					ToClientID:   mockClientID,
+					CreationDate: mockCreationDate,
+					Value:        mockValue,
+				},
+			},
+		}
+
+		resp := ta.CreateReadPool(1)
+		require.NoError(t, resp)
+	})
+}
+
+//RUNOK
+func TestTransactionAuthReadPoolLock(t *testing.T) {
+	var (
+		mockPublicKey    = "mock public key"
+		mockPrivateKey   = "mock private key"
+		mockSignature    = "mock signature"
+		mockClientID     = "mock client id"
+		mockToClientID   = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
+		mockTxnData      = `{"name":"read_pool_lock","input":{"duration":1,"allocation_id":"mock allocation id","blobber_id":"mock blobber id"}}`
+		mockCreationDate = int64(1625030157)
+		mockValue        = int64(1)
+		mockTxn          = &transaction.Transaction{
+			PublicKey:       mockPublicKey,
+			ClientID:        mockClientID,
+			TransactionData: mockTxnData,
+			CreationDate:    mockCreationDate,
+			ToClientID:      mockToClientID,
+			Value:           mockValue,
+			Signature:       mockSignature,
+			TransactionType: transaction.TxnTypeData,
+		}
+	)
+	mockTxn.ComputeHashData()
+	_config.wallet = zcncrypto.Wallet{
+		ClientID: mockClientID,
+		Keys: []zcncrypto.KeyPair{
+			{
+				PublicKey:  mockPublicKey,
+				PrivateKey: mockPrivateKey,
+			},
+		},
+	}
+	_config.chain.SignatureScheme = "bls0chain"
+	_config.authUrl = "CreateReadPool"
+	t.Run("Test Vesting Delete", func(t *testing.T) {
+		var mockClient = zcnmocks.HttpClient{}
+		util.Client = &mockClient
+
+		mockSignatureScheme := &zcncryptomock.SignatureScheme{}
+		mockSignatureScheme.On("SetPrivateKey", mockPrivateKey).Return(nil)
+		mockSignatureScheme.On("SetPublicKey", mockPublicKey).Return(nil)
+		mockSignatureScheme.On("Sign", mockTxn.Hash).Return(mockSignature, nil)
+		mockSignatureScheme.On("Verify", mockSignature, mockTxn.Hash).Return(true, nil)
+		mockSignatureScheme.On("Add", mockTxn.Signature, mockTxn.Hash).Return(mockSignature, nil)
+		setupSignatureSchemeMock(mockSignatureScheme)
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if req.Method == "POST" && req.URL.Path == _config.authUrl+"/transaction" {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		_config.chain.Miners = []string{"ReadPoolLock1", ""}
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if strings.HasPrefix(req.URL.Path, "/dns") || strings.HasPrefix(req.URL.Path, "ReadPoolLock1") || strings.HasPrefix(req.URL.Path, "/v1/") {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		ta := &TransactionWithAuth{
+			t: &Transaction{
+				txn: &transaction.Transaction{
+					Hash:         mockTxn.Hash,
+					ClientID:     mockClientID,
+					PublicKey:    mockPublicKey,
+					ToClientID:   mockClientID,
+					CreationDate: mockCreationDate,
+					Value:        mockValue,
+				},
+			},
+		}
+
+		resp := ta.ReadPoolLock("mock allocation id", "mock blobber id", 1, 1, 1)
+		require.NoError(t, resp)
+	})
+}
+
+//RUNOK
+func TestTransactionAuthReadPoolUnlock(t *testing.T) {
+	var (
+		mockPublicKey    = "mock public key"
+		mockPrivateKey   = "mock private key"
+		mockSignature    = "mock signature"
+		mockClientID     = "mock client id"
+		mockToClientID   = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
+		mockTxnData      = `{"name":"read_pool_unlock","input":{"pool_id":"mock pool id"}}`
+		mockCreationDate = int64(1625030157)
+		mockValue        = int64(0)
+		mockTxn          = &transaction.Transaction{
+			PublicKey:       mockPublicKey,
+			ClientID:        mockClientID,
+			TransactionData: mockTxnData,
+			CreationDate:    mockCreationDate,
+			ToClientID:      mockToClientID,
+			Value:           mockValue,
+			Signature:       mockSignature,
+			TransactionType: transaction.TxnTypeData,
+		}
+	)
+	mockTxn.ComputeHashData()
+	_config.wallet = zcncrypto.Wallet{
+		ClientID: mockClientID,
+		Keys: []zcncrypto.KeyPair{
+			{
+				PublicKey:  mockPublicKey,
+				PrivateKey: mockPrivateKey,
+			},
+		},
+	}
+	_config.chain.SignatureScheme = "bls0chain"
+	_config.authUrl = "ReadPoolUnlock"
+	t.Run("Test Vesting Delete", func(t *testing.T) {
+		var mockClient = zcnmocks.HttpClient{}
+		util.Client = &mockClient
+
+		mockSignatureScheme := &zcncryptomock.SignatureScheme{}
+		mockSignatureScheme.On("SetPrivateKey", mockPrivateKey).Return(nil)
+		mockSignatureScheme.On("SetPublicKey", mockPublicKey).Return(nil)
+		mockSignatureScheme.On("Sign", mockTxn.Hash).Return(mockSignature, nil)
+		mockSignatureScheme.On("Verify", mockSignature, mockTxn.Hash).Return(true, nil)
+		mockSignatureScheme.On("Add", mockTxn.Signature, mockTxn.Hash).Return(mockSignature, nil)
+		setupSignatureSchemeMock(mockSignatureScheme)
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if req.Method == "POST" && req.URL.Path == _config.authUrl+"/transaction" {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		_config.chain.Miners = []string{"ReadPoolUnlock1", ""}
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if strings.HasPrefix(req.URL.Path, "/dns") || strings.HasPrefix(req.URL.Path, "ReadPoolUnlock1") || strings.HasPrefix(req.URL.Path, "/v1/") {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		ta := &TransactionWithAuth{
+			t: &Transaction{
+				txn: &transaction.Transaction{
+					Hash:         mockTxn.Hash,
+					ClientID:     mockClientID,
+					PublicKey:    mockPublicKey,
+					ToClientID:   mockClientID,
+					CreationDate: mockCreationDate,
+					Value:        mockValue,
+				},
+			},
+		}
+
+		resp := ta.ReadPoolUnlock("mock pool id", 1)
+		require.NoError(t, resp)
+	})
+}
+
+//RUNOK
+func TestTransactionAuthStakePoolLock(t *testing.T) {
+	var (
+		mockPublicKey    = "mock public key"
+		mockPrivateKey   = "mock private key"
+		mockSignature    = "mock signature"
+		mockClientID     = "mock client id"
+		mockToClientID   = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
+		mockTxnData      = `{"name":"stake_pool_lock","input":{"blobber_id":"mock blobber id"}}`
+		mockCreationDate = int64(1625030157)
+		mockValue        = int64(1)
+		mockTxn          = &transaction.Transaction{
+			PublicKey:       mockPublicKey,
+			ClientID:        mockClientID,
+			TransactionData: mockTxnData,
+			CreationDate:    mockCreationDate,
+			ToClientID:      mockToClientID,
+			Value:           mockValue,
+			Signature:       mockSignature,
+			TransactionType: transaction.TxnTypeData,
+		}
+	)
+	mockTxn.ComputeHashData()
+	_config.wallet = zcncrypto.Wallet{
+		ClientID: mockClientID,
+		Keys: []zcncrypto.KeyPair{
+			{
+				PublicKey:  mockPublicKey,
+				PrivateKey: mockPrivateKey,
+			},
+		},
+	}
+	_config.chain.SignatureScheme = "bls0chain"
+	_config.authUrl = "ReadPoolUnlock"
+	t.Run("Test Vesting Delete", func(t *testing.T) {
+		var mockClient = zcnmocks.HttpClient{}
+		util.Client = &mockClient
+
+		mockSignatureScheme := &zcncryptomock.SignatureScheme{}
+		mockSignatureScheme.On("SetPrivateKey", mockPrivateKey).Return(nil)
+		mockSignatureScheme.On("SetPublicKey", mockPublicKey).Return(nil)
+		mockSignatureScheme.On("Sign", mockTxn.Hash).Return(mockSignature, nil)
+		mockSignatureScheme.On("Verify", mockSignature, mockTxn.Hash).Return(true, nil)
+		mockSignatureScheme.On("Add", mockTxn.Signature, mockTxn.Hash).Return(mockSignature, nil)
+		setupSignatureSchemeMock(mockSignatureScheme)
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if req.Method == "POST" && req.URL.Path == _config.authUrl+"/transaction" {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		_config.chain.Miners = []string{"StakePoolLock1", ""}
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if strings.HasPrefix(req.URL.Path, "/dns") || strings.HasPrefix(req.URL.Path, "StakePoolLock1") || strings.HasPrefix(req.URL.Path, "/v1/") {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		ta := &TransactionWithAuth{
+			t: &Transaction{
+				txn: &transaction.Transaction{
+					Hash:         mockTxn.Hash,
+					ClientID:     mockClientID,
+					PublicKey:    mockPublicKey,
+					ToClientID:   mockClientID,
+					CreationDate: mockCreationDate,
+					Value:        mockValue,
+				},
+			},
+		}
+
+		resp := ta.StakePoolLock("mock blobber id", 1, 1)
+		require.NoError(t, resp)
+	})
+}
+
+//RUNOK
+func TestTransactionAuthStakePoolUnlock(t *testing.T) {
+	var (
+		mockPublicKey    = "mock public key"
+		mockPrivateKey   = "mock private key"
+		mockSignature    = "mock signature"
+		mockClientID     = "mock client id"
+		mockToClientID   = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
+		mockTxnData      = `{"name":"stake_pool_unlock","input":{"blobber_id":"mock blobber id","pool_id":"mock pool id"}}`
+		mockCreationDate = int64(1625030157)
+		mockValue        = int64(0)
+		mockTxn          = &transaction.Transaction{
+			PublicKey:       mockPublicKey,
+			ClientID:        mockClientID,
+			TransactionData: mockTxnData,
+			CreationDate:    mockCreationDate,
+			ToClientID:      mockToClientID,
+			Value:           mockValue,
+			Signature:       mockSignature,
+			TransactionType: transaction.TxnTypeData,
+		}
+	)
+	mockTxn.ComputeHashData()
+	_config.wallet = zcncrypto.Wallet{
+		ClientID: mockClientID,
+		Keys: []zcncrypto.KeyPair{
+			{
+				PublicKey:  mockPublicKey,
+				PrivateKey: mockPrivateKey,
+			},
+		},
+	}
+	_config.chain.SignatureScheme = "bls0chain"
+	_config.authUrl = "StakePoolUnlock"
+	t.Run("Test Vesting Delete", func(t *testing.T) {
+		var mockClient = zcnmocks.HttpClient{}
+		util.Client = &mockClient
+
+		mockSignatureScheme := &zcncryptomock.SignatureScheme{}
+		mockSignatureScheme.On("SetPrivateKey", mockPrivateKey).Return(nil)
+		mockSignatureScheme.On("SetPublicKey", mockPublicKey).Return(nil)
+		mockSignatureScheme.On("Sign", mockTxn.Hash).Return(mockSignature, nil)
+		mockSignatureScheme.On("Verify", mockSignature, mockTxn.Hash).Return(true, nil)
+		mockSignatureScheme.On("Add", mockTxn.Signature, mockTxn.Hash).Return(mockSignature, nil)
+		setupSignatureSchemeMock(mockSignatureScheme)
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if req.Method == "POST" && req.URL.Path == _config.authUrl+"/transaction" {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		_config.chain.Miners = []string{"StakePoolUnlock1", ""}
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if strings.HasPrefix(req.URL.Path, "/dns") || strings.HasPrefix(req.URL.Path, "StakePoolUnlock1") || strings.HasPrefix(req.URL.Path, "/v1/") {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		ta := &TransactionWithAuth{
+			t: &Transaction{
+				txn: &transaction.Transaction{
+					Hash:         mockTxn.Hash,
+					ClientID:     mockClientID,
+					PublicKey:    mockPublicKey,
+					ToClientID:   mockClientID,
+					CreationDate: mockCreationDate,
+					Value:        mockValue,
+				},
+			},
+		}
+
+		resp := ta.StakePoolUnlock("mock blobber id", "mock pool id", 1)
+		require.NoError(t, resp)
+	})
+}
+
+//RUNOK
+func TestTransactionAuthStakePoolPayInterests(t *testing.T) {
+	var (
+		mockPublicKey    = "mock public key"
+		mockPrivateKey   = "mock private key"
+		mockSignature    = "mock signature"
+		mockClientID     = "mock client id"
+		mockToClientID   = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
+		mockTxnData      = `{"name":"stake_pool_pay_interests","input":{"blobber_id":"mock blobber id"}}`
+		mockCreationDate = int64(1625030157)
+		mockValue        = int64(0)
+		mockTxn          = &transaction.Transaction{
+			PublicKey:       mockPublicKey,
+			ClientID:        mockClientID,
+			TransactionData: mockTxnData,
+			CreationDate:    mockCreationDate,
+			ToClientID:      mockToClientID,
+			Value:           mockValue,
+			Signature:       mockSignature,
+			TransactionType: transaction.TxnTypeData,
+		}
+	)
+	mockTxn.ComputeHashData()
+	_config.wallet = zcncrypto.Wallet{
+		ClientID: mockClientID,
+		Keys: []zcncrypto.KeyPair{
+			{
+				PublicKey:  mockPublicKey,
+				PrivateKey: mockPrivateKey,
+			},
+		},
+	}
+	_config.chain.SignatureScheme = "bls0chain"
+	_config.authUrl = "StakePoolPayInterests"
+	t.Run("Test Vesting Delete", func(t *testing.T) {
+		var mockClient = zcnmocks.HttpClient{}
+		util.Client = &mockClient
+
+		mockSignatureScheme := &zcncryptomock.SignatureScheme{}
+		mockSignatureScheme.On("SetPrivateKey", mockPrivateKey).Return(nil)
+		mockSignatureScheme.On("SetPublicKey", mockPublicKey).Return(nil)
+		mockSignatureScheme.On("Sign", mockTxn.Hash).Return(mockSignature, nil)
+		mockSignatureScheme.On("Verify", mockSignature, mockTxn.Hash).Return(true, nil)
+		mockSignatureScheme.On("Add", mockTxn.Signature, mockTxn.Hash).Return(mockSignature, nil)
+		setupSignatureSchemeMock(mockSignatureScheme)
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if req.Method == "POST" && req.URL.Path == _config.authUrl+"/transaction" {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		_config.chain.Miners = []string{"StakePoolPayInterests1", ""}
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if strings.HasPrefix(req.URL.Path, "/dns") || strings.HasPrefix(req.URL.Path, "StakePoolPayInterests1") || strings.HasPrefix(req.URL.Path, "/v1/") {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		ta := &TransactionWithAuth{
+			t: &Transaction{
+				txn: &transaction.Transaction{
+					Hash:         mockTxn.Hash,
+					ClientID:     mockClientID,
+					PublicKey:    mockPublicKey,
+					ToClientID:   mockClientID,
+					CreationDate: mockCreationDate,
+					Value:        mockValue,
+				},
+			},
+		}
+
+		resp := ta.StakePoolPayInterests("mock blobber id", 1)
+		require.NoError(t, resp)
+	})
+}
+
+//RUNOK
+func TestTransactionAuthUpdateBlobberSettings(t *testing.T) {
+	var (
+		mockPublicKey    = "mock public key"
+		mockPrivateKey   = "mock private key"
+		mockSignature    = "mock signature"
+		mockClientID     = "mock client id"
+		mockToClientID   = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
+		mockTxnData      = `{"name":"update_blobber_settings","input":{"id":"","url":"","terms":{"read_price":0,"write_price":0,"min_lock_demand":0,"max_offer_duration":0,"challenge_completion_time":0},"capacity":0,"used":0,"last_health_check":0,"stake_pool_settings":{"delegate_wallet":"","min_stake":0,"max_stake":0,"num_delegates":0}}}`
+		mockCreationDate = int64(1625030157)
+		mockValue        = int64(0)
+		mockTxn          = &transaction.Transaction{
+			PublicKey:       mockPublicKey,
+			ClientID:        mockClientID,
+			TransactionData: mockTxnData,
+			CreationDate:    mockCreationDate,
+			ToClientID:      mockToClientID,
+			Value:           mockValue,
+			Signature:       mockSignature,
+			TransactionType: transaction.TxnTypeData,
+		}
+	)
+	mockTxn.ComputeHashData()
+	_config.wallet = zcncrypto.Wallet{
+		ClientID: mockClientID,
+		Keys: []zcncrypto.KeyPair{
+			{
+				PublicKey:  mockPublicKey,
+				PrivateKey: mockPrivateKey,
+			},
+		},
+	}
+	_config.chain.SignatureScheme = "bls0chain"
+	_config.authUrl = "UpdateBlobberSettings"
+	t.Run("Test Vesting Delete", func(t *testing.T) {
+		var mockClient = zcnmocks.HttpClient{}
+		util.Client = &mockClient
+
+		mockSignatureScheme := &zcncryptomock.SignatureScheme{}
+		mockSignatureScheme.On("SetPrivateKey", mockPrivateKey).Return(nil)
+		mockSignatureScheme.On("SetPublicKey", mockPublicKey).Return(nil)
+		mockSignatureScheme.On("Sign", mockTxn.Hash).Return(mockSignature, nil)
+		mockSignatureScheme.On("Verify", mockSignature, mockTxn.Hash).Return(true, nil)
+		mockSignatureScheme.On("Add", mockTxn.Signature, mockTxn.Hash).Return(mockSignature, nil)
+		setupSignatureSchemeMock(mockSignatureScheme)
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if req.Method == "POST" && req.URL.Path == _config.authUrl+"/transaction" {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		_config.chain.Miners = []string{"UpdateBlobberSettings1", ""}
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if strings.HasPrefix(req.URL.Path, "/dns") || strings.HasPrefix(req.URL.Path, "UpdateBlobberSettings1") || strings.HasPrefix(req.URL.Path, "/v1/") {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		ta := &TransactionWithAuth{
+			t: &Transaction{
+				txn: &transaction.Transaction{
+					Hash:         mockTxn.Hash,
+					ClientID:     mockClientID,
+					PublicKey:    mockPublicKey,
+					ToClientID:   mockClientID,
+					CreationDate: mockCreationDate,
+					Value:        mockValue,
+				},
+			},
+		}
+
+		resp := ta.UpdateBlobberSettings(&Blobber{}, 1)
+		require.NoError(t, resp)
+	})
+}
+
+//RUNOK
+func TestTransactionAuthWritePoolLock(t *testing.T) {
+	var (
+		mockPublicKey    = "mock public key"
+		mockPrivateKey   = "mock private key"
+		mockSignature    = "mock signature"
+		mockClientID     = "mock client id"
+		mockToClientID   = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
+		mockTxnData      = `{"name":"write_pool_lock","input":{"duration":1,"allocation_id":"mock allocation id","blobber_id":"mock blobber id"}}`
+		mockCreationDate = int64(1625030157)
+		mockValue        = int64(1)
+		mockTxn          = &transaction.Transaction{
+			PublicKey:       mockPublicKey,
+			ClientID:        mockClientID,
+			TransactionData: mockTxnData,
+			CreationDate:    mockCreationDate,
+			ToClientID:      mockToClientID,
+			Value:           mockValue,
+			Signature:       mockSignature,
+			TransactionType: transaction.TxnTypeData,
+		}
+	)
+	mockTxn.ComputeHashData()
+	_config.wallet = zcncrypto.Wallet{
+		ClientID: mockClientID,
+		Keys: []zcncrypto.KeyPair{
+			{
+				PublicKey:  mockPublicKey,
+				PrivateKey: mockPrivateKey,
+			},
+		},
+	}
+	_config.chain.SignatureScheme = "bls0chain"
+	_config.authUrl = "WritePoolLock"
+	t.Run("Test Vesting Delete", func(t *testing.T) {
+		var mockClient = zcnmocks.HttpClient{}
+		util.Client = &mockClient
+
+		mockSignatureScheme := &zcncryptomock.SignatureScheme{}
+		mockSignatureScheme.On("SetPrivateKey", mockPrivateKey).Return(nil)
+		mockSignatureScheme.On("SetPublicKey", mockPublicKey).Return(nil)
+		mockSignatureScheme.On("Sign", mockTxn.Hash).Return(mockSignature, nil)
+		mockSignatureScheme.On("Verify", mockSignature, mockTxn.Hash).Return(true, nil)
+		mockSignatureScheme.On("Add", mockTxn.Signature, mockTxn.Hash).Return(mockSignature, nil)
+		setupSignatureSchemeMock(mockSignatureScheme)
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if req.Method == "POST" && req.URL.Path == _config.authUrl+"/transaction" {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		_config.chain.Miners = []string{"WritePoolLock1", ""}
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if strings.HasPrefix(req.URL.Path, "/dns") || strings.HasPrefix(req.URL.Path, "WritePoolLock1") || strings.HasPrefix(req.URL.Path, "/v1/") {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		ta := &TransactionWithAuth{
+			t: &Transaction{
+				txn: &transaction.Transaction{
+					Hash:         mockTxn.Hash,
+					ClientID:     mockClientID,
+					PublicKey:    mockPublicKey,
+					ToClientID:   mockClientID,
+					CreationDate: mockCreationDate,
+					Value:        mockValue,
+				},
+			},
+		}
+
+		resp := ta.WritePoolLock("mock allocation id", "mock blobber id", 1, 1, 1)
+		require.NoError(t, resp)
+	})
+}
+
+//RUNOK
+func TestTransactionAuthWritePoolUnlock(t *testing.T) {
+	var (
+		mockPublicKey    = "mock public key"
+		mockPrivateKey   = "mock private key"
+		mockSignature    = "mock signature"
+		mockClientID     = "mock client id"
+		mockToClientID   = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
+		mockTxnData      = `{"name":"write_pool_unlock","input":{"pool_id":"mock pool id"}}`
+		mockCreationDate = int64(1625030157)
+		mockValue        = int64(0)
+		mockTxn          = &transaction.Transaction{
+			PublicKey:       mockPublicKey,
+			ClientID:        mockClientID,
+			TransactionData: mockTxnData,
+			CreationDate:    mockCreationDate,
+			ToClientID:      mockToClientID,
+			Value:           mockValue,
+			Signature:       mockSignature,
+			TransactionType: transaction.TxnTypeData,
+		}
+	)
+	mockTxn.ComputeHashData()
+	_config.wallet = zcncrypto.Wallet{
+		ClientID: mockClientID,
+		Keys: []zcncrypto.KeyPair{
+			{
+				PublicKey:  mockPublicKey,
+				PrivateKey: mockPrivateKey,
+			},
+		},
+	}
+	_config.chain.SignatureScheme = "bls0chain"
+	_config.authUrl = "WritePoolUnlock"
+	t.Run("Test Vesting Delete", func(t *testing.T) {
+		var mockClient = zcnmocks.HttpClient{}
+		util.Client = &mockClient
+
+		mockSignatureScheme := &zcncryptomock.SignatureScheme{}
+		mockSignatureScheme.On("SetPrivateKey", mockPrivateKey).Return(nil)
+		mockSignatureScheme.On("SetPublicKey", mockPublicKey).Return(nil)
+		mockSignatureScheme.On("Sign", mockTxn.Hash).Return(mockSignature, nil)
+		mockSignatureScheme.On("Verify", mockSignature, mockTxn.Hash).Return(true, nil)
+		mockSignatureScheme.On("Add", mockTxn.Signature, mockTxn.Hash).Return(mockSignature, nil)
+		setupSignatureSchemeMock(mockSignatureScheme)
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if req.Method == "POST" && req.URL.Path == _config.authUrl+"/transaction" {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		_config.chain.Miners = []string{"WritePoolUnlock1", ""}
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if strings.HasPrefix(req.URL.Path, "/dns") || strings.HasPrefix(req.URL.Path, "WritePoolUnlock1") || strings.HasPrefix(req.URL.Path, "/v1/") {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		ta := &TransactionWithAuth{
+			t: &Transaction{
+				txn: &transaction.Transaction{
+					Hash:         mockTxn.Hash,
+					ClientID:     mockClientID,
+					PublicKey:    mockPublicKey,
+					ToClientID:   mockClientID,
+					CreationDate: mockCreationDate,
+					Value:        mockValue,
+				},
+			},
+		}
+
+		resp := ta.WritePoolUnlock("mock pool id", 1)
+		require.NoError(t, resp)
+	})
+}
+
+//RUNOK
+func TestTransactionAuthUpdateAllocation(t *testing.T) {
+	var (
+		mockPublicKey    = "mock public key"
+		mockPrivateKey   = "mock private key"
+		mockSignature    = "mock signature"
+		mockClientID     = "mock client id"
+		mockToClientID   = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
+		mockTxnData      = `{"name":"update_allocation_request","input":{"id":"mock pool id","size":1,"expiration_date":1}}`
+		mockCreationDate = int64(1625030157)
+		mockValue        = int64(1)
+		mockTxn          = &transaction.Transaction{
+			PublicKey:       mockPublicKey,
+			ClientID:        mockClientID,
+			TransactionData: mockTxnData,
+			CreationDate:    mockCreationDate,
+			ToClientID:      mockToClientID,
+			Value:           mockValue,
+			Signature:       mockSignature,
+			TransactionType: transaction.TxnTypeData,
+		}
+	)
+	mockTxn.ComputeHashData()
+	_config.wallet = zcncrypto.Wallet{
+		ClientID: mockClientID,
+		Keys: []zcncrypto.KeyPair{
+			{
+				PublicKey:  mockPublicKey,
+				PrivateKey: mockPrivateKey,
+			},
+		},
+	}
+	_config.chain.SignatureScheme = "bls0chain"
+	_config.authUrl = "UpdateAllocation"
+	t.Run("Test Vesting Delete", func(t *testing.T) {
+		var mockClient = zcnmocks.HttpClient{}
+		util.Client = &mockClient
+
+		mockSignatureScheme := &zcncryptomock.SignatureScheme{}
+		mockSignatureScheme.On("SetPrivateKey", mockPrivateKey).Return(nil)
+		mockSignatureScheme.On("SetPublicKey", mockPublicKey).Return(nil)
+		mockSignatureScheme.On("Sign", mockTxn.Hash).Return(mockSignature, nil)
+		mockSignatureScheme.On("Verify", mockSignature, mockTxn.Hash).Return(true, nil)
+		mockSignatureScheme.On("Add", mockTxn.Signature, mockTxn.Hash).Return(mockSignature, nil)
+		setupSignatureSchemeMock(mockSignatureScheme)
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if req.Method == "POST" && req.URL.Path == _config.authUrl+"/transaction" {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		_config.chain.Miners = []string{"UpdateAllocation1", ""}
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if strings.HasPrefix(req.URL.Path, "/dns") || strings.HasPrefix(req.URL.Path, "UpdateAllocation1") || strings.HasPrefix(req.URL.Path, "/v1/") {
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(mockTxn)
+				require.NoError(t, err, "json.Marshal(mockTxn)")
+				return ioutil.NopCloser(bytes.NewReader(jsonFR))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+
+		ta := &TransactionWithAuth{
+			t: &Transaction{
+				txn: &transaction.Transaction{
+					Hash:         mockTxn.Hash,
+					ClientID:     mockClientID,
+					PublicKey:    mockPublicKey,
+					ToClientID:   mockClientID,
+					CreationDate: mockCreationDate,
+					Value:        mockValue,
+				},
+			},
+		}
+
+		resp := ta.UpdateAllocation("mock pool id", 1, 1, 1, 1)
+		require.NoError(t, resp)
+	})
+}
 func setupSignatureSchemeMock(ss *zcncryptomock.SignatureScheme) {
 	zcncrypto.NewSignatureScheme = func(sigScheme string) zcncrypto.SignatureScheme {
 		return ss

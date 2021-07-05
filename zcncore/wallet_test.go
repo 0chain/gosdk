@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/0chain/gosdk/core/transaction"
@@ -119,42 +120,75 @@ func TestCloseLog(t *testing.T) {
 	})
 }
 
-// func TestInit(t *testing.T) {
-// 	t.Run("Test Init", func(t *testing.T) {
-// 		var mockClient = mocks.HttpClient{}
+func TestInit(t *testing.T) {
+	t.Run("Test Init", func(t *testing.T) {
+		var mockClient = mocks.HttpClient{}
 
-// 		util.Client = &mockClient
-// 		_config.chain.BlockWorker = "TestInit"
-// 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-// 			if strings.HasPrefix(req.URL.Path, "TestInit") || strings.HasPrefix(req.URL.Path, "/dns/network") || strings.HasPrefix(req.URL.Path, "/v1/transaction/put"){
-// 				return true
-// 			}
-// 			return false
+		util.Client = &mockClient
+		_config.chain.BlockWorker = "TestInit"
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if strings.HasPrefix(req.URL.Path, "TestInit") || strings.HasPrefix(req.URL.Path, "/dns/network") || strings.HasPrefix(req.URL.Path, "/v1/transaction/put") {
+				return true
+			}
+			return false
 
-// 			})).Return(&http.Response{
-// 			Body: func() io.ReadCloser {
-// 				jsonFR, err := json.Marshal(&Network{
-// 					Miners:   []string{""},
-// 					Sharders: []string{""},
-// 				})
-// 				require.NoError(t, err)
-// 				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
-// 			}(),
-// 			StatusCode: http.StatusOK,
-// 		}, nil)
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(&Network{
+					Miners:   []string{""},
+					Sharders: []string{""},
+				})
+				require.NoError(t, err)
+				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
 
-// 		_config.isConfigured = false
-// 		jsonFR, err := json.Marshal(&ChainConfig{
-// 			ChainID:         "",
-// 			BlockWorker:     "",
-// 			SignatureScheme: "bls0chain",
-// 		})
-// 		require.NoError(t, err)
+		_config.isConfigured = false
+		jsonFR, err := json.Marshal(&ChainConfig{
+			ChainID:         "",
+			BlockWorker:     "",
+			SignatureScheme: "bls0chain",
+		})
+		require.NoError(t, err)
 
-// 		err = Init(string(jsonFR))
-// 		require.NoError(t, err)
-// 	})
-// }
+		err = Init(string(jsonFR))
+		require.NoError(t, err)
+	})
+}
+
+func TestGetBalanceWallet(t *testing.T) {
+	t.Run("Test Init", func(t *testing.T) {
+		var mockClient = mocks.HttpClient{}
+
+		util.Client = &mockClient
+		_config.chain.BlockWorker = "TestGetBalanceWallet"
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if strings.HasPrefix(req.URL.Path, "TestGetBalanceWallet") || strings.HasPrefix(req.URL.Path, "/dns/network") || strings.HasPrefix(req.URL.Path, "/v1/transaction/put") {
+				return true
+			}
+			return false
+
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(&Network{
+					Miners:   []string{""},
+					Sharders: []string{""},
+				})
+				require.NoError(t, err)
+				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+		var mockGetBalanceCallback = mocks.GetBalanceCallback{}
+
+		mockGetBalanceCallback.On("OnBalanceAvailable", 2, int64(0), "").Return()
+	
+
+		err := GetBalanceWallet(walletString,mockGetBalanceCallback)
+		require.NoError(t, err)
+	})
+}
 func TestWithChainID(t *testing.T) {
 	t.Run("Test With Chain ID", func(t *testing.T) {
 		_config.isConfigured = false
@@ -361,20 +395,6 @@ func TestSplitKeys(t *testing.T) {
 	})
 }
 
-// func TestGetClientDetails(t *testing.T) {
-// 	t.Run("Test Get Client Details", func(t *testing.T) {
-// 		_config.chain.Miners = []string{""}
-// 		resp, err  := GetClientDetails(clientID)
-
-// 		// jsonFR, err := json.Marshal(&Network{
-// 		// 	Miners:   []string{"", ""},
-// 		// 	Sharders: []string{"3", "4"},
-// 		// })
-// 		// require.NoError(t, err)
-// 		require.NoError(t,err)
-// 		require.NotNil(t, resp)
-// 	})
-// }
 func TestDecrypt(t *testing.T) {
 	t.Run("Test Decrypt invalid key", func(t *testing.T) {
 		resp, err := Decrypt(hash, "text")
@@ -395,110 +415,109 @@ func TestEncrypt(t *testing.T) {
 	})
 }
 
-// func TestGetWritePoolInfo(t *testing.T) {
-// 	t.Run("Test Get Write Pool Info", func(t *testing.T) {
-// 		var mockClient = mocks.HttpClient{}
+func TestGetWritePoolInfo(t *testing.T) {
+	t.Run("Test Get Write Pool Info", func(t *testing.T) {
+		var mockClient = mocks.HttpClient{}
 
-// 		util.Client = &mockClient
+		util.Client = &mockClient
 
-// 		_config.isConfigured = true
-// 		_config.chain.Miners = []string{"", ""}
-// 		_config.chain.Sharders = []string{"", ""}
-// 		var mockGetInfoCallback = mocks.GetInfoCallback{}
-// 		_config.isValidWallet = true
-// 		_config.wallet.ClientID = clientID
-// 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-// 			return strings.HasPrefix(req.URL.Path, "")
-// 		})).Return(&http.Response{
-// 			Body: func() io.ReadCloser {
-// 				jsonFR, err := json.Marshal(&Network{
-// 					Miners:   []string{""},
-// 					Sharders: []string{""},
-// 				})
-// 				require.NoError(t, err)
-// 				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
-// 			}(),
-// 			StatusCode: http.StatusOK,
-// 		}, nil)
+		_config.isConfigured = true
+		_config.chain.Miners = []string{"", ""}
+		_config.chain.Sharders = []string{"", ""}
+		var mockGetInfoCallback = mocks.GetInfoCallback{}
+		_config.isValidWallet = true
+		_config.wallet.ClientID = clientID
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return strings.HasPrefix(req.URL.Path, "")
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(&Network{
+					Miners:   []string{""},
+					Sharders: []string{""},
+				})
+				require.NoError(t, err)
+				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
 
-// 		mockGetInfoCallback.On("OnInfoAvailable", 12, 0, "", "").Return()
-// 		err := GetWritePoolInfo(clientID, mockGetInfoCallback)
-// 		require.NoError(t, err)
-// 		// expectedErrorMsg := "crypto/aes: invalid key size 64"
-// 		// assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
-// 	})
-// }
-// func TestGetBlobber(t *testing.T) {
-// 	t.Run("Test Get Blobber", func(t *testing.T) {
-// 		var mockClient = mocks.HttpClient{}
+		mockGetInfoCallback.On("OnInfoAvailable", 12, 0, "", "").Return()
+		err := GetWritePoolInfo(clientID, mockGetInfoCallback)
+		require.NoError(t, err)
+		// expectedErrorMsg := "crypto/aes: invalid key size 64"
+		// assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+	})
+}
+func TestGetBlobber(t *testing.T) {
+	t.Run("Test Get Blobber", func(t *testing.T) {
+		var mockClient = mocks.HttpClient{}
 
-// 		util.Client = &mockClient
+		util.Client = &mockClient
 
-// 		_config.isConfigured = true
-// 		_config.chain.Miners = []string{"", ""}
-// 		_config.chain.Sharders = []string{"", ""}
-// 		var mockGetInfoCallback = mocks.GetInfoCallback{}
-// 		_config.isValidWallet = true
-// 		_config.wallet.ClientID = clientID
-// 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-// 			return strings.HasPrefix(req.URL.Path, "")
-// 		})).Return(&http.Response{
-// 			Body: func() io.ReadCloser {
-// 				jsonFR, err := json.Marshal(&Network{
-// 					Miners:   []string{"https://nine.devnet-0chain.net/miner01"},
-// 					Sharders: []string{"https://nine.devnet-0chain.net/sharder02"},
-// 				})
-// 				require.NoError(t, err)
-// 				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
-// 			}(),
-// 			StatusCode: http.StatusOK,
-// 		}, nil)
+		_config.isConfigured = true
+		_config.chain.Miners = []string{"", ""}
+		_config.chain.Sharders = []string{"", ""}
+		var mockGetInfoCallback = mocks.GetInfoCallback{}
+		_config.isValidWallet = true
+		_config.wallet.ClientID = clientID
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return strings.HasPrefix(req.URL.Path, "")
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(&Network{
+					Miners:   []string{""},
+					Sharders: []string{""},
+				})
+				require.NoError(t, err)
+				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
 
-// 		mockGetInfoCallback.On("OnInfoAvailable", 11, 0, "", "").Return()
-// 		err := GetBlobber("bloberID", mockGetInfoCallback)
-// 		require.NoError(t, err)
-// 		// expectedErrorMsg := "crypto/aes: invalid key size 64"
-// 		// assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
-// 	})
-// }
+		mockGetInfoCallback.On("OnInfoAvailable", 11, 0, "", "").Return()
+		err := GetBlobber("bloberID", mockGetInfoCallback)
+		require.NoError(t, err)
+		// expectedErrorMsg := "crypto/aes: invalid key size 64"
+		// assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+	})
+}
 
-// func TestGetBlobbers(t *testing.T) {
-// 	t.Run("Test Get Blobber", func(t *testing.T) {
-// 		var mockClient = mocks.HttpClient{}
+func TestGetBlobbers(t *testing.T) {
+	t.Run("Test Get Blobber", func(t *testing.T) {
+		var mockClient = mocks.HttpClient{}
 
-// 		util.Client = &mockClient
+		util.Client = &mockClient
 
-// 		_config.isConfigured = true
-// 		_config.chain.Miners = []string{"", ""}
-// 		_config.chain.Sharders = []string{"", ""}
-// 		var mockGetInfoCallback = mocks.GetInfoCallback{}
-// 		_config.isValidWallet = true
-// 		_config.wallet.ClientID = clientID
-// 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-// 			fmt.Println("uuuuuuuuuuu", req.URL.Path)
-// 			if strings.HasPrefix(req.URL.Path, "/v1/screst/") || strings.HasPrefix(req.URL.Path, "/v1/client") || strings.HasPrefix(req.URL.Path, "url/_nh/whoami"){
-// 				return true
-// 			}
-// 			return false
-// 		})).Return(&http.Response{
-// 			Body: func() io.ReadCloser {
-// 				jsonFR, err := json.Marshal(&Network{
-// 					Miners:   []string{""},
-// 					Sharders: []string{""},
-// 				})
-// 				require.NoError(t, err)
-// 				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
-// 			}(),
-// 			StatusCode: http.StatusOK,
-// 		}, nil)
+		_config.isConfigured = true
+		_config.chain.Miners = []string{"", ""}
+		_config.chain.Sharders = []string{"", ""}
+		var mockGetInfoCallback = mocks.GetInfoCallback{}
+		_config.isValidWallet = true
+		_config.wallet.ClientID = clientID
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if strings.HasPrefix(req.URL.Path, "/v1/screst/") || strings.HasPrefix(req.URL.Path, "/v1/client") || strings.HasPrefix(req.URL.Path, "url/_nh/whoami"){
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(&Network{
+					Miners:   []string{""},
+					Sharders: []string{""},
+				})
+				require.NoError(t, err)
+				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
 
-// 		mockGetInfoCallback.On("OnInfoAvailable", 10, 0, "", "").Return()
-// 		err := GetBlobbers(mockGetInfoCallback)
-// 		require.NoError(t, err)
-// 		// expectedErrorMsg := "crypto/aes: invalid key size 64"
-// 		// assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
-// 	})
-// }
+		mockGetInfoCallback.On("OnInfoAvailable", 10, 0, "", "").Return()
+		err := GetBlobbers(mockGetInfoCallback)
+		require.NoError(t, err)
+		// expectedErrorMsg := "crypto/aes: invalid key size 64"
+		// assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+	})
+}
 func TestGetStakePoolUserInfo(t *testing.T) {
 	t.Run("Test Get Stake Pool User Info", func(t *testing.T) {
 
@@ -1078,22 +1097,22 @@ func TestGetIdForUrl(t *testing.T) {
 	})
 }
 
-// func TestSetupAuth(t *testing.T) {
-// 	t.Run("Test Setup Auth", func(t *testing.T) {
-// 		_config.isConfigured = true
-// 		_config.chain.Miners = []string{"", ""}
-// 		_config.chain.Sharders = []string{"", ""}
-// 		var mockAuthCallback = mocks.AuthCallback{}
-// 		_config.isValidWallet = true
-// 		_config.wallet.ClientID = clientID
+func TestSetupAuth(t *testing.T) {
+	t.Run("Test Setup Auth", func(t *testing.T) {
+		_config.isConfigured = true
+		_config.chain.Miners = []string{"", ""}
+		_config.chain.Sharders = []string{"", ""}
+		var mockAuthCallback = mocks.AuthCallback{}
+		_config.isValidWallet = true
+		_config.wallet.ClientID = clientID
 
-// 		mockAuthCallback.On("OnSetupComplete", 0, "").Return()
-// 		resp := SetupAuth("authHost", "clientID", "clientKey", "publicKey", "privateKey", "localPublicKey", mockAuthCallback)
-// 		require.Nil(t, resp)
-// 		// expectedErrorMsg := "crypto/aes: invalid key size 64"
-// 		// assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
-// 	})
-// }
+		mockAuthCallback.On("OnSetupComplete", 0, "").Return()
+		resp := SetupAuth("authHost", "clientID", "clientKey", "publicKey", "privateKey", "localPublicKey", mockAuthCallback)
+		require.Nil(t, resp)
+		// expectedErrorMsg := "crypto/aes: invalid key size 64"
+		// assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+	})
+}
 func TestGetZcnUSDInfo(t *testing.T) {
 	t.Run("Test Setup Auth", func(t *testing.T) {
 		_config.isConfigured = true
@@ -1359,88 +1378,61 @@ func TestSetWalletInfo(t *testing.T) {
 	})
 }
 
-// func TestConvertTokenToUSD(t *testing.T) {
-// 	type CoinGeckoResponse struct {
-// 		ID         string `json:"id"`
-// 		Symbol     string `json:"symbol"`
-// 		MarketData struct {
-// 			CurrentPrice map[string]float64 `json:"current_price"`
-// 		} `json:"market_data"`
-// 	}
-// 	t.Run("Test Convert Token To USD", func(t *testing.T) {
-// 		var mockClient = zcnmocks.HttpClient{}
-// 		util.Client = &mockClient
-// 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-// 			fmt.Println("+++++++++++",req.URL.Path)
-// 			return strings.HasPrefix(req.URL.Path, "/v1/client/get/balance")
-// 		})).Return(&http.Response{
-// 			Body: func() io.ReadCloser {
-// 				jsonFR, err := json.Marshal(&CoinGeckoResponse{})
-// 				require.NoError(t, err)
-// 				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
-// 			}(),
-// 			StatusCode: http.StatusOK,
-// 		}, nil)
-// 		resp, err := ConvertTokenToUSD(1)
-// 		require.NotNil(t, resp)
-// 		require.NoError(t, err)
-// 	})
-// }
+func TestIsMnemonicValid(t *testing.T) {
+	t.Run("Test Is Mnemonic Valid", func(t *testing.T) {
+		
+		resp := IsMnemonicValid(mnemonic)
+		require.True(t, resp)
+		
+		// expectedErrorMsg := "invalid auth url"
+		// assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+	})
+}
 
-// func TestGetClientDetails(t *testing.T) {
-// 	t.Run("Test Get Client Details", func(t *testing.T) {
-// 		var mockClient = mocks.HttpClient{}
-// 		_config.chain.Miners = []string{"TestGetClientDetails"}
-// 		util.Client = &mockClient
-// 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-// 			if req.Method == "GET" && (strings.HasPrefix(req.URL.Path, "TestGetClientDetails") || strings.HasPrefix(req.URL.Path, "/v1/client/get") || strings.HasPrefix(req.URL.Path, "/v1/screst/")) {
+func TestConvertTokenToUSD(t *testing.T) {
+	type CoinGeckoResponse struct {
+		ID         string `json:"id"`
+		Symbol     string `json:"symbol"`
+		MarketData struct {
+			CurrentPrice map[string]float64 `json:"current_price"`
+		} `json:"market_data"`
+	}
+	t.Run("Test Convert Token To USD", func(t *testing.T) {
 
-// 				return true
-// 			}
-// 			return false
-// 		})).Return(&http.Response{
-// 			Body: func() io.ReadCloser {
-// 				jsonFR, err := json.Marshal(&GetClientResponse{
-// 					ID:           "",
-// 					Version:      "",
-// 					CreationDate: 1,
-// 					PublicKey:    "",
-// 				})
-// 				require.NoError(t, err)
-// 				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
-// 			}(),
-// 			StatusCode: http.StatusOK,
-// 		}, nil)
-// 		resp, err := GetClientDetails(clientID)
-// 		require.NotEmpty(t, resp)
-// 		require.Nil(t, err)
-// 	})
-// }
+		resp, err := ConvertTokenToUSD(1)
+		require.NotNil(t, resp)
+		require.NoError(t, err)
+		// expectedErrorMsg := "unexpected end of JSON input"
+		// assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+	})
+}
 
-// func TestRegisterToMiners(t *testing.T) {
-// 	t.Run("Test Register To Miners", func(t *testing.T) {
-// 		var mockClient = mocks.HttpClient{}
+func TestGetClientDetails(t *testing.T) {
+	t.Run("Test Get Client Details", func(t *testing.T) {
+		var mockClient = mocks.HttpClient{}
+		_config.chain.Miners = []string{"TestGetClientDetails"}
+		util.Client = &mockClient
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			if req.Method == "GET" && (strings.HasPrefix(req.URL.Path, "TestGetClientDetails") || strings.HasPrefix(req.URL.Path, "/v1/client/get") || strings.HasPrefix(req.URL.Path, "/v1/screst/")) {
 
-// 		util.Client = &mockClient
-// 		var mockWalletCallback = mocks.WalletCallback{}
-// 		mockWalletCallback.On("OnWalletCreateComplete", 0, walletString, "").Return()
-
-// 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-// 			return strings.HasPrefix(req.URL.Path, "")
-// 		})).Return(&http.Response{
-// 			Body: func() io.ReadCloser {
-// 				jsonFR, err := json.Marshal(&GetClientResponse{
-// 					ID:           "",
-// 					Version:      "",
-// 					CreationDate: 1,
-// 					PublicKey:    "",
-// 				})
-// 				require.NoError(t, err)
-// 				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
-// 			}(),
-// 			StatusCode: http.StatusOK,
-// 		}, nil)
-// 		err := RegisterToMiners(&zcncrypto.Wallet{}, mockWalletCallback)
-// 		require.NoError(t, err)
-// 	})
-// }
+				return true
+			}
+			return false
+		})).Return(&http.Response{
+			Body: func() io.ReadCloser {
+				jsonFR, err := json.Marshal(&GetClientResponse{
+					ID:           "",
+					Version:      "",
+					CreationDate: 1,
+					PublicKey:    "",
+				})
+				require.NoError(t, err)
+				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+			}(),
+			StatusCode: http.StatusOK,
+		}, nil)
+		resp, err := GetClientDetails(clientID)
+		require.NotEmpty(t, resp)
+		require.Nil(t, err)
+	})
+}
