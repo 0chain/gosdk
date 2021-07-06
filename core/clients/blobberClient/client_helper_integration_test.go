@@ -563,8 +563,8 @@ func (c *TestDataController) AddUpdateAttributesTestData(allocationTx, pubkey, c
 	expTime := time.Now().Add(time.Hour * 100000).UnixNano()
 
 	_, err = tx.Exec(`
-INSERT INTO allocations (id, tx, owner_id, owner_public_key, expiration_date, payer_id, blobber_size, allocation_root, repairer_id, is_immutable)
-VALUES ('exampleId' ,'` + allocationTx + `','` + clientId + `','` + pubkey + `',` + fmt.Sprint(expTime) + `,'examplePayerId', 99999999, '/', 'repairer_id', false);
+INSERT INTO allocations (id, tx, owner_id, owner_public_key, expiration_date, payer_id, blobber_size, allocation_root)
+VALUES ('exampleId' ,'` + allocationTx + `','` + clientId + `','` + pubkey + `',` + fmt.Sprint(expTime) + `,'examplePayerId', 99999999, '/');
 `)
 	if err != nil {
 		return err
