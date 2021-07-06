@@ -3,6 +3,7 @@ module github.com/0chain/gosdk
 require (
 	github.com/h2non/filetype v1.0.9
 	github.com/herumi/bls-go-binary v0.0.0-20191119080710-898950e1a520
+	github.com/jtguibas/cinema v0.0.0-20200208054232-ca271f28a020
 	github.com/klauspost/cpuid v1.2.0 // indirect
 	github.com/klauspost/reedsolomon v1.9.2
 	github.com/mitchellh/go-homedir v1.1.0

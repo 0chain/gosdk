@@ -2,26 +2,34 @@ package sdk
 
 import (
 	"errors"
+	"log"
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
+
+	"github.com/jtguibas/cinema"
 )
 
 // YoutubeDL wrap youtube-dl to download video from youtube
 type YoutubeDL struct {
-	fileReader *os.File
-	fileName   string
-	err        error
-	cmd        *exec.Cmd
+	fileReader  *os.File
+	fileName    string
+	err         error
+	cmd         *exec.Cmd
+	delay       float64
+	clipsIndex  int
+	clipsOffset float64
+	offset      int64
 }
 
 // CreateYoutubeDL create a youtube-dl instance to download video file from youtube
-func CreateYoutubeDL(feedURL string, format string, cacheDir string, proxy string) (*YoutubeDL, error) {
+func CreateYoutubeDL(feedURL string, format string, cacheDir string, proxy string, delay int) (*YoutubeDL, error) {
 
-	args := []string{"--no-part", "-f", format}
+	args := []string{"--no-part", "-q", "-f", format}
 	if len(proxy) > 0 {
 		args = append(args, "--proxy", proxy)
 	}
@@ -49,10 +57,12 @@ func CreateYoutubeDL(feedURL string, format string, cacheDir string, proxy strin
 
 	dl := &YoutubeDL{
 		fileName: fileName,
+		delay:    float64(delay),
 		cmd:      cmd,
 	}
 
 	go dl.Wait()
+	go dl.splitClips()
 
 	return dl, nil
 }
@@ -69,6 +79,32 @@ func (dl *YoutubeDL) Wait() {
 	}()
 
 	dl.err = dl.cmd.Wait()
+
+}
+
+func (dl *YoutubeDL) splitClips() {
+	for {
+
+		time.Sleep(5 * time.Second)
+
+		video, err := cinema.Load(dl.fileName)
+
+		if err == nil {
+
+			if video.End().Seconds() > dl.clipsOffset+dl.delay {
+				//video.Trim(start time.Duration, end time.Duration)
+				video.SetStart(time.Duration(dl.clipsOffset) * time.Second)
+				video.SetEnd(time.Duration(dl.delay) * time.Second)
+
+				video.Render(dl.fileName + "." + strconv.Itoa(dl.clipsIndex))
+
+				dl.clipsOffset += dl.delay
+				dl.clipsIndex++
+			}
+
+		}
+
+	}
 
 }
 
@@ -102,34 +138,32 @@ func (dl *YoutubeDL) Read(p []byte) (int, error) {
 		}
 	}
 
-	n := len(p)
+	wantRead := int64(len(p))
 
-	readLen := 0
+	//loop read bytes till ready
+	for {
 
-	for i := 0; i < n; i++ {
-		//loop read bytes till ready
-		for {
-
-			if dl.err != nil {
-				return readLen, dl.err
-			}
-
-			if dl.fileReader != nil {
-				buf := make([]byte, 1)
-				m, _ := dl.fileReader.Read(buf)
-
-				if m == 1 {
-					readLen++
-					p[i] = buf[0]
-					break
-				}
-			}
-			time.Sleep(1 * time.Second)
+		if dl.err != nil {
+			return 0, dl.err
 		}
+
+		fi, _ := dl.fileReader.Stat()
+
+		log.Println(fi.Size() / 1024 / 1024)
+
+		if dl.offset+wantRead < fi.Size() {
+			dl.fileReader.Seek(dl.offset, 0)
+			readLen, err := dl.fileReader.Read(p)
+
+			dl.offset += int64(readLen)
+
+			return readLen, err
+		}
+
+		time.Sleep(1 * time.Second)
 
 	}
 
-	return readLen, nil
 }
 
 // Close implements io.Closer

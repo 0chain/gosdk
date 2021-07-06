@@ -33,10 +33,11 @@ type LiveUpload struct {
 func CreateLiveUpload(allocationObj *Allocation, liveMeta LiveMeta, streamReader io.Reader, opts ...LiveUploadOption) *LiveUpload {
 	u := &LiveUpload{
 		allocationObj: allocationObj,
-		delay:         5 * time.Second,
-		liveMeta:      liveMeta,
-		streamReader:  streamReader,
-		clipsIndex:    1,
+		//delay:         5 * time.Second,
+		clipsSize:    1024 * 1024 * 20, //50M
+		liveMeta:     liveMeta,
+		streamReader: streamReader,
+		clipsIndex:   1,
 	}
 
 	for _, opt := range opts {
