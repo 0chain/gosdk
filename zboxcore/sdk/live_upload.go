@@ -10,8 +10,10 @@ import (
 type LiveUpload struct {
 	allocationObj *Allocation
 
-	// delay how long has a video file
+	// delay  delay to upload video
 	delay time.Duration
+	// clipsSize how much bytes in a video clips
+	clipsSize int
 
 	liveMeta     LiveMeta
 	streamReader io.Reader
@@ -47,7 +49,7 @@ func CreateLiveUpload(allocationObj *Allocation, liveMeta LiveMeta, streamReader
 // Start start live streaming upload
 func (lu *LiveUpload) Start() error {
 
-	reader := createLiveUploadReader(lu.streamReader, lu.delay)
+	reader := createLiveUploadReader(lu.streamReader, lu.delay, lu.clipsSize)
 
 	var err error
 	var clipsUpload *StreamUpload

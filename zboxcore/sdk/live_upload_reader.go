@@ -7,16 +7,20 @@ import (
 
 // LiveUploadReader wrap io.Reader with delay feature
 type LiveUploadReader struct {
-	reader io.Reader
-	delay  time.Duration
-	since  time.Time
+	reader    io.Reader
+	delay     time.Duration
+	clipsSize int
+	since     time.Time
+	readSize  int
 }
 
-func createLiveUploadReader(reader io.Reader, delay time.Duration) *LiveUploadReader {
+func createLiveUploadReader(reader io.Reader, delay time.Duration, clipsSize int) *LiveUploadReader {
 	return &LiveUploadReader{
-		reader: reader,
-		delay:  delay,
-		since:  time.Now(),
+		reader:    reader,
+		delay:     delay,
+		clipsSize: clipsSize,
+		since:     time.Now(),
+		readSize:  0,
 	}
 }
 
@@ -29,11 +33,21 @@ func (r *LiveUploadReader) Read(p []byte) (int, error) {
 		return i, err
 	}
 
-	now := time.Now()
-	if now.Sub(r.since) > r.delay {
-		r.since = now
+	if r.delay > 0 {
+		now := time.Now()
+		if now.Sub(r.since) > r.delay {
+			r.since = now
 
-		return i, io.EOF
+			return i, io.EOF
+		}
+	}
+
+	if r.clipsSize > 0 {
+		r.readSize += i
+		if r.readSize >= r.clipsSize {
+			r.readSize = 0
+			return i, io.EOF
+		}
 	}
 
 	return i, nil

@@ -5,11 +5,20 @@ import "time"
 // LiveUploadOption set live upload option
 type LiveUploadOption func(lu *LiveUpload)
 
-// WithLiveDelay set delayed . ignore if delayed <=0
-func WithLiveDelay(delay time.Duration) LiveUploadOption {
+// WithLiveClipsSize set clipsSize . ignore if clipsSize <=0
+func WithLiveClipsSize(clipsSize int) LiveUploadOption {
 	return func(lu *LiveUpload) {
-		if delay > 0 {
-			lu.delay = delay
+		if clipsSize > 0 {
+			lu.clipsSize = clipsSize
+		}
+	}
+}
+
+// WithLiveDelay set delayed . ignore if delayed <=0
+func WithLiveDelay(delaySeconds int) LiveUploadOption {
+	return func(lu *LiveUpload) {
+		if delaySeconds > 0 {
+			lu.delay = time.Duration(delaySeconds) * time.Second
 		}
 	}
 }
