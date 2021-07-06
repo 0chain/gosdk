@@ -1,21 +1,13 @@
 package sdk
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"mime/multipart"
-	"net/http"
 	"strconv"
 	"sync"
-	"time"
-
-	"github.com/0chain/gosdk/core/clients/blobberClient"
 
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
-
+	"github.com/0chain/gosdk/core/clients/blobberClient"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -24,7 +16,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type ReferencePathResult struct {
@@ -207,50 +198,24 @@ func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.W
 		Logger.Error("Signing writemarker failed: ", err)
 		return err
 	}
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
 	wmData, err := json.Marshal(wm)
 	if err != nil {
 		Logger.Error("Creating writemarker failed: ", err)
 		return err
 	}
-	formWriter.WriteField("connection_id", req.connectionID)
-	formWriter.WriteField("write_marker", string(wmData))
 
-	formWriter.Close()
-
-	httpreq, err := zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationTx, body)
+	Logger.Info("Committing to blobber." + req.blobber.Baseurl)
+	commitResp, err := blobberClient.Commit(req.blobber.Baseurl, &blobbergrpc.CommitRequest{
+		Allocation:   req.allocationTx,
+		ConnectionId: req.connectionID,
+		WriteMarker:  string(wmData),
+	})
 	if err != nil {
-		Logger.Error("Error creating commit req: ", err)
+		Logger.Error("Commit response - " + string(commitResp))
 		return err
 	}
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 60))
-	Logger.Info("Committing to blobber." + req.blobber.Baseurl)
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("Commit: ", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == http.StatusOK {
-			Logger.Info(req.blobber.Baseurl, req.connectionID, " committed")
-		} else {
-			Logger.Error("Commit response: ", resp.StatusCode)
-		}
 
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			Logger.Error("Response read: ", err)
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			Logger.Error(req.blobber.Baseurl, " Commit response:", string(resp_body))
-			return common.NewError("commit_error", string(resp_body))
-		}
-		return nil
-	})
-	return err
+	return nil
 }
 
 func AddCommitRequest(req *CommitRequest) {
@@ -258,31 +223,22 @@ func AddCommitRequest(req *CommitRequest) {
 }
 
 func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths []string) error {
-	var req *http.Request
-	req, err := zboxutil.NewCalculateHashRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
-	if err != nil || len(paths) == 0 {
-		Logger.Error("Creating calculate hash req", err)
+	pathsRaw, err := json.Marshal(paths)
+	if err != nil {
 		return err
 	}
-	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("Calculate hash error:", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			Logger.Error("Calculate hash response : ", resp.StatusCode)
-		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			Logger.Error("Calculate hash: Resp", err)
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("Calculate hash error response: Status: %d - %s ", resp.StatusCode, string(resp_body))
-		}
-		return nil
+
+	Logger.Info("Calculating Hash " + commitreq.blobber.Baseurl)
+	resp, err := blobberClient.CalculateHash(commitreq.blobber.Baseurl, &blobbergrpc.CalculateHashRequest{
+		Allocation: commitreq.allocationTx,
+		Path:       "",
+		Paths:      string(pathsRaw),
 	})
-	return err
+
+	if err != nil {
+		Logger.Error("Commit response - " + string(resp))
+		return err
+	}
+
+	return nil
 }
