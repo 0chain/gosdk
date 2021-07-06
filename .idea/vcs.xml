@@ -5,6 +5,7 @@
     <mapping directory="$PROJECT_DIR$" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/_herumi/bls" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/_herumi/mcl" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/blobber" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/herumi/bls" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/herumi/mcl" vcs="Git" />
     <mapping directory="$PROJECT_DIR$/../zboxcmd" vcs="Git" />

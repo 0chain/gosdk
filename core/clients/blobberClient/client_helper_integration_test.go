@@ -535,3 +535,63 @@ VALUES
 
 	return nil
 }
+
+func (c *TestDataController) AddUpdateAttributesTestData(allocationTx, pubkey, clientId string) error {
+	var err error
+	var tx *sql.Tx
+	defer func() {
+		if err != nil {
+			if tx != nil {
+				errRollback := tx.Rollback()
+				if errRollback != nil {
+					log.Println(errRollback)
+				}
+			}
+		}
+	}()
+
+	db, err := c.db.DB()
+	if err != nil {
+		return err
+	}
+
+	tx, err = db.BeginTx(context.Background(), &sql.TxOptions{})
+	if err != nil {
+		return err
+	}
+
+	expTime := time.Now().Add(time.Hour * 100000).UnixNano()
+
+	_, err = tx.Exec(`
+INSERT INTO allocations (id, tx, owner_id, owner_public_key, expiration_date, payer_id, blobber_size, allocation_root, repairer_id, is_immutable)
+VALUES ('exampleId' ,'` + allocationTx + `','` + clientId + `','` + pubkey + `',` + fmt.Sprint(expTime) + `,'examplePayerId', 99999999, '/', 'repairer_id', false);
+`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`
+INSERT INTO allocation_connections (connection_id, allocation_id, client_id, size, status)
+VALUES ('connection_id' ,'exampleId','` + clientId + `', 1337, 1);
+`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`
+INSERT INTO reference_objects (id, allocation_id, path_hash,lookup_hash,type,name,path,hash,custom_meta,content_hash,merkle_root,actual_file_hash,mimetype,write_marker,thumbnail_hash, actual_thumbnail_hash, parent_path)
+VALUES 
+(1234,'exampleId','exampleId:examplePath','exampleId:examplePath','d','root','/','someHash','customMeta','contentHash','merkleRoot','actualFileHash','mimetype','writeMarker','thumbnailHash','actualThumbnailHash','/'),
+(123,'exampleId','exampleId:examplePath','exampleId:examplePath','f','some_file','/some_file','someHash','customMeta','contentHash','merkleRoot','actualFileHash','mimetype','writeMarker','thumbnailHash','actualThumbnailHash','/');
+`)
+	if err != nil {
+		return err
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

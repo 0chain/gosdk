@@ -857,4 +857,71 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("TestUpdateAttributes", func(t *testing.T) {
+		allocationTx := randString(32)
+
+		pubKey, privKey, _ := GeneratePubPrivateKey(t)
+		pubKeyBytes, _ := hex.DecodeString(pubKey)
+		clientId := encryption.Hash(pubKeyBytes)
+
+		err := tdController.ClearDatabase()
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = tdController.AddUpdateAttributesTestData(allocationTx, pubKey, clientId)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		attr := &reference.Attributes{WhoPaysForReads: common.WhoPays3rdParty}
+		attrBytes, err := json.Marshal(attr)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		testCases := []struct {
+			name            string
+			input           *blobbergrpc.UpdateObjectAttributesRequest
+			expectedMessage int
+			expectingError  bool
+		}{
+			{
+				name: "Success",
+				input: &blobbergrpc.UpdateObjectAttributesRequest{
+					Allocation:   allocationTx,
+					Path:         "/some_file",
+					PathHash:     "exampleId:examplePath",
+					ConnectionId: "connection_id",
+					Attributes:   string(attrBytes),
+				},
+				expectedMessage: int(attr.WhoPaysForReads),
+				expectingError:  false,
+			},
+		}
+
+		for _, tc := range testCases {
+			clientRaw, _ := json.Marshal(client.Client{Wallet: &zcncrypto.Wallet{
+				ClientID: clientId,
+				Keys:     []zcncrypto.KeyPair{{PublicKey: pubKey, PrivateKey: privKey}},
+			}})
+
+			err := client.PopulateClient(string(clientRaw), signScheme)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			_, err = UpdateObjectAttributes(BlobberAddr, tc.input)
+			if err != nil {
+				if !tc.expectingError {
+					t.Fatal(err)
+				}
+				continue
+			}
+
+			if tc.expectingError {
+				t.Fatal("expected error")
+			}
+		}
+	})
 }
