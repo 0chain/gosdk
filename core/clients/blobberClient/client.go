@@ -16,7 +16,7 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-const GRPCPort = 7031
+const GRPCPort = 31501
 
 func newBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberClient, error) {
 	u, err := url.Parse(urlRaw)

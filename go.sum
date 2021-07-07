@@ -38,6 +38,8 @@ github.com/0chain/blobber v0.3.3-0.20210615144156-f1e82dba38c7 h1:EQGou91rPTOuvs
 github.com/0chain/blobber v0.3.3-0.20210615144156-f1e82dba38c7/go.mod h1:+yZ9tOuAesEa8W2kKcDxMVXbFRWXm2Qpr/jaDwu54hI=
 github.com/0chain/blobber v0.3.3-0.20210615145747-f2022dce6b79 h1:GgPxzwzBvO6bAfVMKefDYU1UCWqakLHUn3YtGZGjOb0=
 github.com/0chain/blobber v0.3.3-0.20210615145747-f2022dce6b79/go.mod h1:+yZ9tOuAesEa8W2kKcDxMVXbFRWXm2Qpr/jaDwu54hI=
+github.com/0chain/blobber v0.3.3-0.20210707165506-8534f3bbf649 h1:MW+pZ5YOcXfJu0ckiplXUraCEscnfeuEK6+12I955I0=
+github.com/0chain/blobber v0.3.3-0.20210707165506-8534f3bbf649/go.mod h1:O6qzprBJEN/RCBhtJ8iXGYtMjliMH+oESx7DnpEmjuM=
 github.com/0chain/gosdk v1.1.6/go.mod h1:edV5GwogiT6nK2+s4QcFCz3saUhkuFK6EIqNJfOt8xc=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
