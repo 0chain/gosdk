@@ -11,8 +11,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobberhttp"
+
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/allocation"
-	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobberHTTP"
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/reference"
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/writemarker"
@@ -26,7 +27,7 @@ import (
 	"gorm.io/gorm"
 )
 
-const BlobberAddr = "localhost:7031"
+const BlobberAddr = "localhost:31501"
 const RetryAttempts = 8
 const RetryTimeout = 3
 const signScheme = "bls0chain"
@@ -361,7 +362,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 				t.Fatal("expected error")
 			}
 
-			var listEntitiesResp blobberHTTP.ListResult
+			var listEntitiesResp blobberhttp.ListResult
 			json.Unmarshal(respRaw, &listEntitiesResp)
 
 			if path, _ := listEntitiesResp.Meta["path"].(string); path != tc.expectedPath {
@@ -427,7 +428,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 				t.Fatal("expected error")
 			}
 
-			var getReferencePathResp *blobberHTTP.ReferencePathResult
+			var getReferencePathResp *blobberhttp.ReferencePathResult
 			json.Unmarshal(respRaw, &getReferencePathResp)
 
 			if path, _ := getReferencePathResp.ReferencePath.Meta["path"].(string); path != tc.expectedPath {
@@ -500,7 +501,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 				t.Fatal("expected error")
 			}
 
-			var getObjectTreeResp blobberHTTP.ReferencePathResult
+			var getObjectTreeResp blobberhttp.ReferencePathResult
 			json.Unmarshal(respRaw, &getObjectTreeResp)
 
 			if filename, _ := getObjectTreeResp.ReferencePath.Meta["name"].(string); filename != tc.expectedFileName {
@@ -615,7 +616,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 				t.Fatal("expected error")
 			}
 
-			var commiteResp blobberHTTP.CommitResult
+			var commiteResp blobberhttp.CommitResult
 			json.Unmarshal(respRaw, &commiteResp)
 
 			if commiteResp.WriteMarker.AllocationID != tc.expectedAllocation {
