@@ -17,7 +17,6 @@ import (
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -238,7 +237,7 @@ func TestNewTransaction(t *testing.T) {
 func TestNewTransactionFunction(t *testing.T) {
 	tests := []struct {
 		name    string
-		setup   func(*testing.T)
+		setup   func(*testing.T) (teardown func(*testing.T))
 		wantErr bool
 		errMsg  string
 	}{
@@ -249,37 +248,46 @@ func TestNewTransactionFunction(t *testing.T) {
 		},
 		{
 			name: "Test_Error_Auth_Url_Not_Set",
-			setup: func(t *testing.T) {
-				_config.chain.Sharders = []string{"3", "4"}
+			setup: func(t *testing.T) (teardown func(t *testing.T)) {
+				_config.chain.Sharders = []string{"TestNewTransactionFunction"}
 				_config.chain.Miners = []string{"0", "1"}
 				_config.isValidWallet = true
 				_config.isSplitWallet = true
 				_config.wallet.ClientID = "test"
 				_config.isConfigured = true
+				return func(t *testing.T) {
+					_config.chain.Sharders = nil
+				}
 			},
 			wantErr: true,
 			errMsg:  "auth url not set",
 		},
 		{
 			name: "Test_Success_With_Auth",
-			setup: func(t *testing.T) {
-				_config.chain.Sharders = []string{"3", "4"}
+			setup: func(t *testing.T) (teardown func(t *testing.T)) {
+				_config.chain.Sharders = []string{"TestNewTransactionFunction"}
 				_config.chain.Miners = []string{"0", "1"}
 				_config.isValidWallet = true
 				_config.isSplitWallet = true
 				_config.wallet.ClientID = "test"
 				_config.isConfigured = true
 				_config.authUrl = "mockauthurl"
+				return func(t *testing.T) {
+					_config.chain.Sharders = nil
+				}
 			},
 		},
 		{
 			name: "Test_Success",
-			setup: func(t *testing.T) {
-				_config.chain.Sharders = []string{"3", "4"}
+			setup: func(t *testing.T) (teardown func(t *testing.T)) {
+				_config.chain.Sharders = []string{"TestNewTransactionFunction"}
 				_config.chain.Miners = []string{"0", "1"}
 				_config.isValidWallet = true
 				_config.wallet.ClientID = "test"
 				_config.isConfigured = true
+				return func(t *testing.T) {
+					_config.chain.Sharders = nil
+				}
 			},
 		},
 	}
@@ -287,7 +295,9 @@ func TestNewTransactionFunction(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			if tt.setup != nil {
-				tt.setup(t)
+				if teardown := tt.setup(t); teardown != nil {
+					defer teardown(t)
+				}
 			}
 			mockWalletCallback := MockTransactionCallback{}
 			mockWalletCallback.On("OnTransactionComplete", &Transaction{}, 0).Return()
@@ -387,7 +397,6 @@ func TestSendWithSignatureHash(t *testing.T) {
 	t.Run("Test_Success", func(t *testing.T) {
 		_config.chain.Miners = []string{"TestTransaction_TestSendWithSignatureHash"}
 		_config.chain.MinSubmit = 9
-		_config.chain.Miners = []string{"TestTransaction_TestSend"}
 		setupMockSubmitTxn()
 		setupMockHttpResponse([]byte(""))
 		trans := &Transaction{
@@ -485,16 +494,7 @@ func TestExecuteFaucetSCWallet(t *testing.T) {
 func TestTransaction_ExecuteSmartContract(t *testing.T) {
 	_config.chain.Miners = []string{"TestTransaction_ExecuteSmartContract"}
 	setupMockSubmitTxn()
-	// setupMockHttpResponse([]byte(""))
-	var mockClient = mocks.HttpClient{}
-	util.Client = &mockClient
-	mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-		fmt.Println("************", req.URL.Path)
-		return strings.HasPrefix(req.URL.Path, "TestTransaction_TestExecuteSmartContract")
-	})).Return(&http.Response{
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
-		StatusCode: http.StatusOK,
-	}, nil)
+	setupMockHttpResponse([]byte(""))
 	trans := &Transaction{
 		txnOut: "test",
 		txn:    &transaction.Transaction{},
@@ -680,7 +680,7 @@ func TestGetTransactionConfirmation(t *testing.T) {
 	util.Client = &mockClient
 	tests := []struct {
 		name    string
-		setup   func(*testing.T)
+		setup   func(*testing.T) (teardown func(*testing.T))
 		wantErr bool
 		errMsg  string
 	}{
@@ -691,16 +691,17 @@ func TestGetTransactionConfirmation(t *testing.T) {
 		},
 		{
 			name: "Test_Success",
-			setup: func(t *testing.T) {
+			setup: func(t *testing.T) (teardown func(t *testing.T)) {
 				_config.chain.Sharders = []string{"TestGetTransactionConfirmation"}
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-					fmt.Println("------------", req.URL.Path)
-					fmt.Println("++++++++++++ TestGetTransactionConfirmation")
-					return strings.HasPrefix(req.URL.Path, "TestGetTransactionConfirmation/v1/transaction/get/confirmation")
+					return strings.HasPrefix(req.URL.Path, "TestGetTransactionConfirmation")
 				})).Return(&http.Response{
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"confirmation":{"block_hash":"0a80e736fb4dd8b9b976695a67d8baf0b6184f3ba7eb51d2e99caf320cb0e2af","txn":{"hash":"mockhash"},"merkle_tree_path":{"nodes":["mockmerkletreepath"]},"merkle_tree_root":"29e7836bba52aa41c929e5018cf5eaee051ab8f21ec471fa09d7a240e469cf7b","receipt_merkle_tree_path":{"nodes":["mockreceiptmerkletreepath"]},"receipt_merkle_tree_root":"1af88a7aadb2543f58f0ed07f56c5cf1bb52c9274aa4231a7900ccf1da3dc7c5"}}`))),
 					StatusCode: http.StatusOK,
 				}, nil).Once()
+				return func(t *testing.T) {
+					_config.chain.Sharders = nil
+				}
 			},
 		},
 	}
@@ -708,7 +709,9 @@ func TestGetTransactionConfirmation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			if tt.setup != nil {
-				tt.setup(t)
+				if teardown := tt.setup(t); teardown != nil {
+					defer teardown(t)
+				}
 			}
 			got, _, _, err := getTransactionConfirmation(1, "mockhash")
 			require.EqualValues(tt.wantErr, err != nil)
@@ -732,7 +735,7 @@ func TestGetLatestFinalized(t *testing.T) {
 	util.Client = &mockClient
 	tests := []struct {
 		name    string
-		setup   func(*testing.T)
+		setup   func(*testing.T) (teardown func(*testing.T))
 		wantErr bool
 		errMsg  string
 	}{
@@ -743,11 +746,9 @@ func TestGetLatestFinalized(t *testing.T) {
 		},
 		{
 			name: "Test_Success",
-			setup: func(t *testing.T) {
+			setup: func(t *testing.T) (teardown func(t *testing.T)) {
 				_config.chain.Sharders = []string{"TestGetLatestFinalized"}
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-					fmt.Println("------------", req.URL.Path)
-					fmt.Println("------------ TestGetLatestFinalized")
 					return strings.HasPrefix(req.URL.Path, "TestGetLatestFinalized")
 				})).Return(&http.Response{
 					Body: func() io.ReadCloser {
@@ -759,6 +760,9 @@ func TestGetLatestFinalized(t *testing.T) {
 					}(),
 					StatusCode: http.StatusOK,
 				}, nil).Once()
+				return func(t *testing.T) {
+					_config.chain.Sharders = nil
+				}
 			},
 		},
 	}
@@ -766,7 +770,9 @@ func TestGetLatestFinalized(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			if tt.setup != nil {
-				tt.setup(t)
+				if teardown := tt.setup(t); teardown != nil {
+					defer teardown(t)
+				}
 			}
 			ctx := context.Background()
 			got, err := GetLatestFinalized(ctx, 1)
@@ -789,7 +795,7 @@ func TestGetLatestFinalizedMagicBlock(t *testing.T) {
 	util.Client = &mockClient
 	tests := []struct {
 		name    string
-		setup   func(*testing.T)
+		setup   func(*testing.T) (teardown func(*testing.T))
 		wantErr bool
 		errMsg  string
 	}{
@@ -800,7 +806,7 @@ func TestGetLatestFinalizedMagicBlock(t *testing.T) {
 		},
 		{
 			name: "Test_Success",
-			setup: func(t *testing.T) {
+			setup: func(t *testing.T) (teardown func(t *testing.T)) {
 				_config.chain.Sharders = []string{"TestGetLatestFinalizedMagicBlock"}
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, "TestGetLatestFinalizedMagicBlock")
@@ -808,6 +814,9 @@ func TestGetLatestFinalizedMagicBlock(t *testing.T) {
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"magic_block":{"hash":"mockhash"}}`))),
 					StatusCode: http.StatusOK,
 				}, nil).Once()
+				return func(t *testing.T) {
+					_config.chain.Sharders = nil
+				}
 			},
 		},
 	}
@@ -815,7 +824,9 @@ func TestGetLatestFinalizedMagicBlock(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			if tt.setup != nil {
-				tt.setup(t)
+				if teardown := tt.setup(t); teardown != nil {
+					defer teardown(t)
+				}
 			}
 			ctx := context.Background()
 			got, err := GetLatestFinalizedMagicBlock(ctx, 1)
@@ -838,7 +849,7 @@ func TestGetChainStats(t *testing.T) {
 	util.Client = &mockClient
 	tests := []struct {
 		name    string
-		setup   func(*testing.T)
+		setup   func(*testing.T) (teardown func(*testing.T))
 		wantErr bool
 		errMsg  string
 	}{
@@ -849,7 +860,7 @@ func TestGetChainStats(t *testing.T) {
 		},
 		{
 			name: "Test_Success",
-			setup: func(t *testing.T) {
+			setup: func(t *testing.T) (teardown func(t *testing.T)) {
 				_config.chain.Sharders = []string{"TestGetChainStats"}
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, "TestGetChainStats")
@@ -863,6 +874,9 @@ func TestGetChainStats(t *testing.T) {
 					}(),
 					StatusCode: http.StatusOK,
 				}, nil).Once()
+				return func(t *testing.T) {
+					_config.chain.Sharders = nil
+				}
 			},
 		},
 	}
@@ -870,7 +884,9 @@ func TestGetChainStats(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			if tt.setup != nil {
-				tt.setup(t)
+				if teardown := tt.setup(t); teardown != nil {
+					defer teardown(t)
+				}
 			}
 			ctx := context.Background()
 			got, err := GetChainStats(ctx)
@@ -893,7 +909,7 @@ func TestGetBlockByRound(t *testing.T) {
 	util.Client = &mockClient
 	tests := []struct {
 		name    string
-		setup   func(*testing.T)
+		setup   func(*testing.T) (teardown func(*testing.T))
 		wantErr bool
 		errMsg  string
 	}{
@@ -904,7 +920,7 @@ func TestGetBlockByRound(t *testing.T) {
 		},
 		{
 			name: "Test_Success",
-			setup: func(t *testing.T) {
+			setup: func(t *testing.T) (teardown func(t *testing.T)) {
 				_config.chain.Sharders = []string{"TestGetBlockByRound"}
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, "TestGetBlockByRound")
@@ -912,6 +928,9 @@ func TestGetBlockByRound(t *testing.T) {
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"block":{"hash":"mockhash"},"header":{"hash":"mockhash"}}`))),
 					StatusCode: http.StatusOK,
 				}, nil).Once()
+				return func(t *testing.T) {
+					_config.chain.Sharders = nil
+				}
 			},
 		},
 	}
@@ -919,7 +938,9 @@ func TestGetBlockByRound(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			if tt.setup != nil {
-				tt.setup(t)
+				if teardown := tt.setup(t); teardown != nil {
+					defer teardown(t)
+				}
 			}
 			ctx := context.Background()
 			got, err := GetBlockByRound(ctx, 1, 1)
@@ -945,7 +966,7 @@ func TestGetMagicBlockByNumber(t *testing.T) {
 	util.Client = &mockClient
 	tests := []struct {
 		name    string
-		setup   func(*testing.T)
+		setup   func(*testing.T) (teardown func(*testing.T))
 		wantErr bool
 		errMsg  string
 	}{
@@ -956,7 +977,7 @@ func TestGetMagicBlockByNumber(t *testing.T) {
 		},
 		{
 			name: "Test_Success",
-			setup: func(t *testing.T) {
+			setup: func(t *testing.T) (teardown func(t *testing.T)) {
 				_config.chain.Sharders = []string{"TestGetMagicBlockByNumber"}
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, "TestGetMagicBlockByNumber")
@@ -964,6 +985,9 @@ func TestGetMagicBlockByNumber(t *testing.T) {
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"magic_block":{"hash":"mockhash"}}`))),
 					StatusCode: http.StatusOK,
 				}, nil).Once()
+				return func(t *testing.T) {
+					_config.chain.Sharders = nil
+				}
 			},
 		},
 	}
@@ -971,7 +995,9 @@ func TestGetMagicBlockByNumber(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			if tt.setup != nil {
-				tt.setup(t)
+				if teardown := tt.setup(t); teardown != nil {
+					defer teardown(t)
+				}
 			}
 			ctx := context.Background()
 			got, err := GetMagicBlockByNumber(ctx, 1, 1)
@@ -994,7 +1020,7 @@ func Test_getBlockInfoByRound(t *testing.T) {
 	util.Client = &mockClient
 	tests := []struct {
 		name    string
-		setup   func(*testing.T)
+		setup   func(*testing.T) (teardown func(*testing.T))
 		wantErr bool
 		errMsg  string
 	}{
@@ -1005,7 +1031,7 @@ func Test_getBlockInfoByRound(t *testing.T) {
 		},
 		{
 			name: "Test_Success",
-			setup: func(t *testing.T) {
+			setup: func(t *testing.T) (teardown func(t *testing.T)) {
 				_config.chain.Sharders = []string{"TestGetBlockInfoByRound"}
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 					return strings.HasPrefix(req.URL.Path, "TestGetBlockInfoByRound")
@@ -1013,6 +1039,9 @@ func Test_getBlockInfoByRound(t *testing.T) {
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"header":{"hash":"mockhash"}}`))),
 					StatusCode: http.StatusOK,
 				}, nil).Once()
+				return func(t *testing.T) {
+					_config.chain.Sharders = nil
+				}
 			},
 		},
 	}
@@ -1020,7 +1049,9 @@ func Test_getBlockInfoByRound(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			if tt.setup != nil {
-				tt.setup(t)
+				if teardown := tt.setup(t); teardown != nil {
+					defer teardown(t)
+				}
 			}
 			got, err := getBlockInfoByRound(1, 1, "test")
 			require.EqualValues(tt.wantErr, err != nil)
@@ -1166,7 +1197,7 @@ func TestVerify(t *testing.T) {
 		name       string
 		parameters parameters
 		wantErr    bool
-		setup      func(*testing.T)
+		setup      func(*testing.T) (teardown func(*testing.T))
 		errMsg     string
 	}{
 		{
@@ -1185,7 +1216,7 @@ func TestVerify(t *testing.T) {
 				},
 				txnHash: "mockhash",
 			},
-			setup: func(t *testing.T) {
+			setup: func(t *testing.T) (teardown func(t *testing.T)) {
 				_config.chain.Sharders = []string{"TestVerify"}
 
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -1201,6 +1232,10 @@ func TestVerify(t *testing.T) {
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"header":{"hash":"mockhash"}}`))),
 					StatusCode: http.StatusOK,
 				}, nil).Once()
+
+				return func(t *testing.T) {
+					_config.chain.Sharders = nil
+				}
 			},
 		},
 	}
@@ -1208,7 +1243,9 @@ func TestVerify(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			if tt.setup != nil {
-				tt.setup(t)
+				if teardown := tt.setup(t); teardown != nil {
+					defer teardown(t)
+				}
 			}
 			tr := &Transaction{
 				txnOut:  "test",
@@ -1305,6 +1342,49 @@ func TestGetVerifyError(t *testing.T) {
 	})
 }
 
+func TestNewMSTransaction(t *testing.T) {
+	type parameters struct {
+		walletString string
+	}
+	tests := []struct {
+		name       string
+		parameters parameters
+		wantErr    bool
+		errMsg     string
+	}{
+		{
+			name: "Test_Error_Parse",
+			parameters: parameters{
+				walletString: "walletString",
+			},
+			wantErr: true,
+			errMsg:  "invalid character 'w' looking for beginning of value",
+		},
+		{
+			name: "Test_Success",
+			parameters: parameters{
+				walletString: walletString,
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require := require.New(t)
+			mockWalletCallback := MockTransactionCallback{}
+			mockWalletCallback.On("OnTransactionComplete", &Transaction{}, 0).Return()
+			got, err := NewMSTransaction(tt.parameters.walletString, mockWalletCallback)
+			require.EqualValues(tt.wantErr, err != nil)
+			if err != nil {
+				require.EqualValues(tt.errMsg, err.Error())
+				return
+			}
+			require.NoErrorf(err, "unexpected error: %v", err)
+			require.EqualValues(got.txnStatus, StatusUnknown)
+			require.EqualValues(got.verifyStatus, StatusUnknown)
+		})
+	}
+}
+
 func TestVestingTrigger(t *testing.T) {
 	t.Run("Test_Vesting_Trigger_Success", func(t *testing.T) {
 		_config.chain.Miners = []string{"TestTransaction_TestVestingTrigger"}
@@ -1375,7 +1455,7 @@ func TestVestingAdd(t *testing.T) {
 
 func TestVestingDelete(t *testing.T) {
 	t.Run("Test_Vesting_Update_Config_Success", func(t *testing.T) {
-		_config.chain.Miners = []string{"TestVestingDelete"}
+		_config.chain.Miners = []string{"TestTransaction_TestVestingDelete"}
 		setupMockSubmitTxn()
 		setupMockHttpResponse([]byte(""))
 		trans := &Transaction{
@@ -1424,6 +1504,23 @@ func TestMinerSCSettings(t *testing.T) {
 	})
 }
 
+func TestVestinggUpdateConfig(t *testing.T) {
+	t.Run("Test_Vesting_Update_Config_Success", func(t *testing.T) {
+		_config.chain.Miners = []string{"TestTransaction_TestVestingUpdateConfig"}
+		setupMockSubmitTxn()
+		setupMockHttpResponse([]byte(""))
+		trans := &Transaction{
+			txnOut: "test",
+			txn:    &transaction.Transaction{},
+		}
+		trans.txnStatus = StatusUnknown
+
+		err := trans.VestingUpdateConfig(&VestingSCConfig{})
+
+		require.NoError(t, err)
+	})
+}
+
 func TestMinerSCLock(t *testing.T) {
 	t.Run("Test_Miner_SCLock_Success", func(t *testing.T) {
 		_config.chain.Miners = []string{"TestTransaction_TestMinerSCLock"}
@@ -1433,7 +1530,7 @@ func TestMinerSCLock(t *testing.T) {
 			txnOut: "test",
 			txn:    &transaction.Transaction{},
 		}
-		trans.txnStatus = StatusUnknown
+		trans.txnStatus = StatusAuthTimeout
 
 		err := trans.MinerSCLock("nodeID", 1)
 
@@ -1508,50 +1605,6 @@ func TestRegisterMultiSig(t *testing.T) {
 		require.NoError(t, err)
 	})
 }
-
-func TestNewMSTransaction(t *testing.T) {
-	type parameters struct {
-		walletString string
-	}
-	tests := []struct {
-		name       string
-		parameters parameters
-		wantErr    bool
-		errMsg     string
-	}{
-		{
-			name: "Test_Error_Parse",
-			parameters: parameters{
-				walletString: "walletString",
-			},
-			wantErr: true,
-			errMsg:  "invalid character 'w' looking for beginning of value",
-		},
-		{
-			name: "Test_Success",
-			parameters: parameters{
-				walletString: walletString,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require := require.New(t)
-			mockWalletCallback := MockTransactionCallback{}
-			mockWalletCallback.On("OnTransactionComplete", &Transaction{}, 0).Return()
-			got, err := NewMSTransaction(tt.parameters.walletString, mockWalletCallback)
-			require.EqualValues(tt.wantErr, err != nil)
-			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
-				return
-			}
-			require.NoErrorf(err, "unexpected error: %v", err)
-			require.EqualValues(got.txnStatus, StatusUnknown)
-			require.EqualValues(got.verifyStatus, StatusUnknown)
-		})
-	}
-}
-
 func TestRegisterVote(t *testing.T) {
 	t.Run("Test_Register_Vote_Success", func(t *testing.T) {
 		_config.chain.Miners = []string{"TestTransaction_TestRegisterVoteTest_Register_Vote_Success"}
@@ -1585,68 +1638,68 @@ func TestRegisterVote(t *testing.T) {
 	})
 }
 
-func TestVerifyContentHash(t *testing.T) {
-	var mockClient = mocks.HttpClient{}
-	util.Client = &mockClient
-	type parameters struct {
-		signerwalletstr string
-	}
-	tests := []struct {
-		name       string
-		parameters parameters
-		setup      func(*testing.T)
-		wantErr    bool
-		errMsg     string
-	}{
-		{
-			name: "Test_Error_Decode",
-			parameters: parameters{
-				signerwalletstr: "{error}",
-			},
-			wantErr: true,
-			errMsg:  "metaTxnData_decode_error: Unable to decode metaTxnData json",
-		},
-		{
-			name: "Test_Error_Unable_To_Fetch_Txn_Details",
-			parameters: parameters{
-				signerwalletstr: "{}",
-			},
-			wantErr: true,
-			errMsg:  "fetch_txm_details: Unable to fetch txn details",
-		},
-		{
-			name: "Test_Error_Transaction_Data",
-			parameters: parameters{
-				signerwalletstr: `{"Metadata":{"Hash":"mockhash"}}`,
-			},
-			setup: func(t *testing.T) {
-				blockchain.SetSharders([]string{"TestVerifyContentHash"})
-				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-					return strings.HasPrefix(req.URL.Path, "TestVerifyContentHash")
-				})).Return(&http.Response{
-					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"txn":{"block_hash":"mockhash","signature":"mocksignature","transaction_data":"{\"MetaData\":{\"Hash\":\"mockhash\"}}"}}`))),
-					StatusCode: http.StatusOK,
-				}, nil)
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require := require.New(t)
-			if tt.setup != nil {
-				tt.setup(t)
-			}
-			got, err := VerifyContentHash(tt.parameters.signerwalletstr)
-			require.EqualValues(tt.wantErr, err != nil)
-			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
-				return
-			}
-			require.NoErrorf(err, "unexpected error: %v", err)
-			require.True(got)
-		})
-	}
-}
+// func TestVerifyContentHash(t *testing.T) {
+// 	var mockClient = mocks.HttpClient{}
+// 	util.Client = &mockClient
+// 	type parameters struct {
+// 		signerwalletstr string
+// 	}
+// 	tests := []struct {
+// 		name       string
+// 		parameters parameters
+// 		setup      func(*testing.T)
+// 		wantErr    bool
+// 		errMsg     string
+// 	}{
+// 		{
+// 			name: "Test_Error_Decode",
+// 			parameters: parameters{
+// 				signerwalletstr: "{error}",
+// 			},
+// 			wantErr: true,
+// 			errMsg:  "metaTxnData_decode_error: Unable to decode metaTxnData json",
+// 		},
+// 		{
+// 			name: "Test_Error_Unable_To_Fetch_Txn_Details",
+// 			parameters: parameters{
+// 				signerwalletstr: "{}",
+// 			},
+// 			wantErr: true,
+// 			errMsg:  "fetch_txm_details: Unable to fetch txn details",
+// 		},
+// 		{
+// 			name: "Test_Error_Transaction_Data",
+// 			parameters: parameters{
+// 				signerwalletstr: `{"Metadata":{"Hash":"mockhash"}}`,
+// 			},
+// 			setup: func(t *testing.T) {
+// 				blockchain.SetSharders([]string{"TestVerifyContentHash"})
+// 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+// 					return strings.HasPrefix(req.URL.Path, "TestVerifyContentHash")
+// 				})).Return(&http.Response{
+// 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"txn":{"block_hash":"mockhash","signature":"mocksignature","transaction_data":"{\"MetaData\":{\"Hash\":\"mockhash\"}}"}}`))),
+// 					StatusCode: http.StatusOK,
+// 				}, nil)
+// 			},
+// 		},
+// 	}
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			require := require.New(t)
+// 			if tt.setup != nil {
+// 				tt.setup(t)
+// 			}
+// 			got, err := VerifyContentHash(tt.parameters.signerwalletstr)
+// 			require.EqualValues(tt.wantErr, err != nil)
+// 			if err != nil {
+// 				require.EqualValues(tt.errMsg, err.Error())
+// 				return
+// 			}
+// 			require.NoErrorf(err, "unexpected error: %v", err)
+// 			require.True(got)
+// 		})
+// 	}
+// }
 
 func TestFinalizeAllocation(t *testing.T) {
 	t.Run("Test_Finalize_Allocation_Success", func(t *testing.T) {
@@ -1855,25 +1908,8 @@ func TestWritePoolLock(t *testing.T) {
 func TestWritePoolUnlock(t *testing.T) {
 	t.Run("Write_Pool_Unlock_Success", func(t *testing.T) {
 		_config.chain.Miners = []string{"TestTransaction_TestWritePoolUnlock"}
-		_config.chain.SignatureScheme = "bls0chain"
-		var mockClient = mocks.HttpClient{}
-		util.Client = &mockClient
-		_config.wallet = zcncrypto.Wallet{
-			Keys: []zcncrypto.KeyPair{
-				{
-					PublicKey:  mockPublicKey,
-					PrivateKey: mockPrivateKey,
-				},
-			},
-		}
-		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-			fmt.Println("-----------", req.URL.Path)
-			fmt.Println("+++++++++++TestWritePoolUnlock")
-			return true
-		})).Return(&http.Response{
-			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
-			StatusCode: http.StatusOK,
-		}, nil)
+		setupMockSubmitTxn()
+		setupMockHttpResponse([]byte(""))
 		trans := &Transaction{
 			txnOut: "test",
 			txn:    &transaction.Transaction{},
