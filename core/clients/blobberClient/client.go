@@ -25,7 +25,7 @@ func newBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberClient, error) {
 	}
 	host, _, _ := net.SplitHostPort(u.Host)
 
-	cc, err := grpc.Dial(host+":"+fmt.Sprint(GRPCPort), grpc.WithInsecure())
+	cc, err := grpc.Dial(host+":"+fmt.Sprint(GRPCPort), grpc.WithDefaultCallOptions(grpc.UseCompressor("gzip")), grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
