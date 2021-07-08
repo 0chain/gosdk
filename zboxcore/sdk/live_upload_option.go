@@ -1,7 +1,5 @@
 package sdk
 
-import "time"
-
 // LiveUploadOption set live upload option
 type LiveUploadOption func(lu *LiveUpload)
 
@@ -18,7 +16,7 @@ func WithLiveClipsSize(clipsSize int) LiveUploadOption {
 func WithLiveDelay(delaySeconds int) LiveUploadOption {
 	return func(lu *LiveUpload) {
 		if delaySeconds > 0 {
-			lu.delay = time.Duration(delaySeconds) * time.Second
+			lu.delay = delaySeconds
 		}
 	}
 }

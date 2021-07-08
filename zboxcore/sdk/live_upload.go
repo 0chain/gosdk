@@ -1,9 +1,7 @@
 package sdk
 
 import (
-	"io"
 	"strconv"
-	"time"
 )
 
 // LiveUpload live streaming video upload manager
@@ -11,12 +9,12 @@ type LiveUpload struct {
 	allocationObj *Allocation
 
 	// delay  delay to upload video
-	delay time.Duration
+	delay int
 	// clipsSize how much bytes in a video clips
 	clipsSize int
 
-	liveMeta     LiveMeta
-	streamReader io.Reader
+	liveMeta   LiveMeta
+	liveReader LiveUploadReader
 
 	// encryptOnUpload encrypt data on upload or not.
 	encryptOnUpload bool
@@ -30,14 +28,14 @@ type LiveUpload struct {
 }
 
 // CreateLiveUpload create a LiveStreamUpload instance
-func CreateLiveUpload(allocationObj *Allocation, liveMeta LiveMeta, streamReader io.Reader, opts ...LiveUploadOption) *LiveUpload {
+func CreateLiveUpload(allocationObj *Allocation, liveMeta LiveMeta, liveReader LiveUploadReader, opts ...LiveUploadOption) *LiveUpload {
 	u := &LiveUpload{
 		allocationObj: allocationObj,
 		//delay:         5 * time.Second,
-		clipsSize:    1024 * 1024 * 20, //50M
-		liveMeta:     liveMeta,
-		streamReader: streamReader,
-		clipsIndex:   1,
+		//clipsSize:    1024 * 1024 * 20, //50M
+		liveMeta:   liveMeta,
+		liveReader: liveReader,
+		clipsIndex: 1,
 	}
 
 	for _, opt := range opts {
@@ -50,13 +48,11 @@ func CreateLiveUpload(allocationObj *Allocation, liveMeta LiveMeta, streamReader
 // Start start live streaming upload
 func (lu *LiveUpload) Start() error {
 
-	reader := createLiveUploadReader(lu.streamReader, lu.delay, lu.clipsSize)
-
 	var err error
 	var clipsUpload *StreamUpload
 	for {
 
-		clipsUpload = lu.createClipsUpload(lu.clipsIndex, reader)
+		clipsUpload = lu.createClipsUpload(lu.clipsIndex, lu.liveReader)
 
 		err = clipsUpload.Start()
 
@@ -70,8 +66,10 @@ func (lu *LiveUpload) Start() error {
 
 }
 
-func (lu *LiveUpload) createClipsUpload(clipsIndex int, reader io.Reader) *StreamUpload {
+func (lu *LiveUpload) createClipsUpload(clipsIndex int, reader LiveUploadReader) *StreamUpload {
 	fileMeta := FileMeta{
+		Path:       reader.GetFileName(clipsIndex),
+		ActualSize: reader.Size(),
 
 		MimeType:   lu.liveMeta.MimeType,
 		RemoteName: lu.liveMeta.RemoteName + "." + strconv.Itoa(clipsIndex),

@@ -1,55 +1,48 @@
 package sdk
 
 import (
+	"errors"
 	"io"
-	"time"
 )
 
-// LiveUploadReader wrap io.Reader with delay feature
-type LiveUploadReader struct {
-	reader    io.Reader
-	delay     time.Duration
-	clipsSize int
-	since     time.Time
-	readSize  int
+var (
+	// ErrClispIsNotReady clips file is not ready
+	ErrClispIsNotReady = errors.New("live: clips is not ready")
+)
+
+// LiveUploadReader implements io.Reader and Size for live stream upload
+type LiveUploadReader interface {
+	io.Reader
+	Size() int64
+	GetFileName(clipsIndex int) string
 }
 
-func createLiveUploadReader(reader io.Reader, delay time.Duration, clipsSize int) *LiveUploadReader {
-	return &LiveUploadReader{
-		reader:    reader,
-		delay:     delay,
-		clipsSize: clipsSize,
-		since:     time.Now(),
-		readSize:  0,
-	}
-}
+// // liveUploadReader wrap io.Reader with delay feature
+// type liveUploadReader struct {
+// 	reader    io.Reader
+// 	delay     int
+// 	clipsSize int
+// 	since     time.Time
+// 	readSize  int
+// }
 
-// Read implements io.Reader
-func (r *LiveUploadReader) Read(p []byte) (int, error) {
+// func createLiveUploadReader(reader io.Reader, delay, clipsSize int) *LiveUploadReader {
+// 	return &liveUploadReader{
+// 		reader:    reader,
+// 		delay:     delay,
+// 		clipsSize: clipsSize,
+// 		since:     time.Now(),
+// 		readSize:  0,
+// 	}
+// }
 
-	i, err := r.reader.Read(p)
+// // Read implements io.Reader
+// func (r *liveUploadReader) Read(p []byte) (int, error) {
 
-	if err != nil {
-		return i, err
-	}
+// 	i, err := r.reader.Read(p)
 
-	if r.delay > 0 {
-		now := time.Now()
-		if now.Sub(r.since) > r.delay {
-			r.since = now
+// 	if err != nil {
+// 		return i, err
+// 	}
 
-			return i, io.EOF
-		}
-	}
-
-	if r.clipsSize > 0 {
-		r.readSize += i
-		if r.readSize >= r.clipsSize {
-			r.readSize = 0
-			return i, io.EOF
-		}
-	}
-
-	return i, nil
-
-}
+// }

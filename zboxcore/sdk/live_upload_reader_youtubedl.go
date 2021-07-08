@@ -2,7 +2,6 @@ package sdk
 
 import (
 	"errors"
-	"log"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -109,8 +108,13 @@ func (dl *YoutubeDL) splitClips() {
 }
 
 // GetFileName get video file name
-func (dl *YoutubeDL) GetFileName() string {
+func (dl *YoutubeDL) GetFileName(clipsIndex int) string {
 	return dl.fileName
+}
+
+// Size get size of clips
+func (dl *YoutubeDL) Size() int64 {
+	return 0
 }
 
 // Read implements io.Raader
@@ -149,7 +153,7 @@ func (dl *YoutubeDL) Read(p []byte) (int, error) {
 
 		fi, _ := dl.fileReader.Stat()
 
-		log.Println(fi.Size() / 1024 / 1024)
+		//log.Println(fi.Size() / 1024 / 1024)
 
 		if dl.offset+wantRead < fi.Size() {
 			dl.fileReader.Seek(dl.offset, 0)
