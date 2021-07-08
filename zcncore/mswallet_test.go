@@ -6,7 +6,6 @@ import (
 
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/mocks"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -53,10 +52,10 @@ func TestCreateMSWallet(t *testing.T) {
 	t.Run("Create MSWallet encryption scheme fails", func(t *testing.T) {
 		smsw, groupClientID, wallets, err := CreateMSWallet(1, 1)
 		expectedErrorMsg := "encryption scheme for this blockchain is not bls0chain"
-		assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
-		assert.Equal(t, "", smsw)
-		assert.Equal(t, "", groupClientID)
-		assert.Equal(t, []string([]string(nil)), wallets)
+		require.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+		require.Equal(t, "", smsw)
+		require.Equal(t, "", groupClientID)
+		require.Equal(t, []string([]string(nil)), wallets)
 	})
 	t.Run("Success create MSWallet", func(t *testing.T) {
 		_config.chain.SignatureScheme = "bls0chain"
@@ -85,8 +84,8 @@ func TestCreateMSVote(t *testing.T) {
 
 		expectedErrorMsg := "proposal or groupClient or signer wallet or toClientID cannot be empty"
 
-		assert.Equal(t, "", resp)
-		assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+		require.Equal(t, "", resp)
+		require.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
 	})
 	t.Run("Token less than 1", func(t *testing.T) {
 		_config.chain.SignatureScheme = "bls0chain"
@@ -94,8 +93,8 @@ func TestCreateMSVote(t *testing.T) {
 
 		expectedErrorMsg := "Token cannot be less than 1"
 
-		assert.Equal(t, "", resp)
-		assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+		require.Equal(t, "", resp)
+		require.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
 	})
 	t.Run("Error while parsing the signer wallet", func(t *testing.T) {
 		_config.chain.SignatureScheme = "bls0chain"
@@ -103,8 +102,8 @@ func TestCreateMSVote(t *testing.T) {
 
 		expectedErrorMsg := "Token cannot be less than 1"
 
-		assert.Equal(t, "", resp)
-		assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+		require.Equal(t, "", resp)
+		require.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
 	})
 	t.Run("Error while parsing the signer wallet", func(t *testing.T) {
 		_config.chain.SignatureScheme = "bls0chain"
@@ -121,7 +120,7 @@ func TestCreateMSVote(t *testing.T) {
 
 		resp, err := CreateMSVote("proposal", "grpClientID", string(str), clientID, 2)
 
-		assert.NotEmpty(t, resp)
+		require.NotEmpty(t, resp)
 		require.Nil(t, err)
 	})
 }
@@ -138,7 +137,7 @@ func TestGetWallets(t *testing.T) {
 		}
 		resp, err := getWallets(msw)
 		require.NoError(t, err)
-		assert.NotNil(t, resp)
+		require.NotNil(t, resp)
 	})
 }
 func TestMakeWallet(t *testing.T) {
@@ -146,7 +145,7 @@ func TestMakeWallet(t *testing.T) {
 
 		resp, err := makeWallet(private_key, public_key, mnemonic)
 		require.NoError(t, err)
-		assert.NotNil(t, resp)
+		require.NotNil(t, resp)
 	})
 }
 func TestGetClientID(t *testing.T) {
@@ -154,7 +153,7 @@ func TestGetClientID(t *testing.T) {
 
 		resp := GetClientID(public_key)
 		// require.NoError(t, err)
-		assert.NotNil(t, resp)
+		require.NotNil(t, resp)
 	})
 }
 func TestGetMultisigPayload(t *testing.T) {
@@ -162,14 +161,14 @@ func TestGetMultisigPayload(t *testing.T) {
 
 		resp, err := GetMultisigPayload(msw)
 		require.NoError(t, err)
-		assert.NotNil(t, resp)
+		require.NotNil(t, resp)
 	})
 	t.Run("Get Client ID Success", func(t *testing.T) {
 
 		resp, err := GetMultisigPayload(mswFail)
 		expectedErrorMsg := "unexpected end of JSON input"
-		assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
-		assert.Equal(t, "", resp)
+		require.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+		require.Equal(t, "", resp)
 	})
 }
 func TestGetMultisigVotePayload(t *testing.T) {
@@ -177,13 +176,13 @@ func TestGetMultisigVotePayload(t *testing.T) {
 
 		resp, err := GetMultisigVotePayload(msv)
 		require.NoError(t, err)
-		assert.NotNil(t, resp)
+		require.NotNil(t, resp)
 	})
 	t.Run("Get Multisig Vote Payload Fail", func(t *testing.T) {
 
 		resp, err := GetMultisigVotePayload(msvFail)
 		expectedErrorMsg := "unexpected end of JSON input"
-		assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
-		assert.Equal(t, nil, resp)
+		require.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+		require.Equal(t, nil, resp)
 	})
 }

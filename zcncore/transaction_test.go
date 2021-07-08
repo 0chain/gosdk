@@ -17,8 +17,8 @@ import (
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/mocks"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
@@ -31,7 +31,7 @@ func setupMockHttpResponse(body []byte) {
 	var mockClient = mocks.HttpClient{}
 	util.Client = &mockClient
 	mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-		fmt.Println("************", req.URL.Path)
+		fmt.Println("**********", req.URL.Path)
 		return strings.HasPrefix(req.URL.Path, "TestTransaction")
 	})).Return(&http.Response{
 		Body:       ioutil.NopCloser(bytes.NewReader([]byte(body))),
@@ -175,7 +175,7 @@ func TestTransaction_submitTxn(t *testing.T) {
 			},
 			wantFunc: func(trans *Transaction) {
 				require.EqualValues(t, trans.txnStatus, StatusError)
-				require.EqualValues(t, trans.txnError.Error(), "submit transaction failed. ")
+				require.Contains(t, trans.txnError.Error(), "submit transaction failed. ")
 			},
 		},
 		{
@@ -304,7 +304,7 @@ func TestNewTransactionFunction(t *testing.T) {
 			_, err := NewTransaction(mockWalletCallback, 100)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
+				require.Contains(err.Error(), tt.errMsg)
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -347,7 +347,7 @@ func TestSetTransactionCallback(t *testing.T) {
 			err := trans.SetTransactionCallback(mockWalletCallback)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
+				require.Contains(err.Error(), tt.errMsg)
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -373,7 +373,7 @@ func TestSetTransactionFee(t *testing.T) {
 
 		err := trans.SetTransactionFee(100)
 		expectedErrorMsg := "transaction already exists. cannot set transaction fee."
-		assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+		require.Contains(t, err.Error(), expectedErrorMsg)
 	})
 }
 
@@ -472,7 +472,7 @@ func TestCreateFaucetSCWallet(t *testing.T) {
 
 		wallet, err := trans.createFaucetSCWallet("walletString", "get", []byte("input"))
 		expectedErrorMsg := "invalid character 'w' looking for beginning of value"
-		assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+		require.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
 		require.Nil(t, wallet)
 	})
 }
@@ -527,7 +527,7 @@ func TestSetTransactionHash(t *testing.T) {
 
 		err := trans.SetTransactionHash(hash)
 		expectedErrorMsg := "transaction already exists. cannot set transaction hash."
-		assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+		require.Contains(t, err.Error(), expectedErrorMsg)
 	})
 }
 
@@ -661,7 +661,7 @@ func Test_getBlockHeaderFromTransactionConfirmation(t *testing.T) {
 			got, err := getBlockHeaderFromTransactionConfirmation(tt.parameters.txnHash, tt.parameters.cfmBlock)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
+				require.Contains(err.Error(), tt.errMsg)
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -716,7 +716,7 @@ func TestGetTransactionConfirmation(t *testing.T) {
 			got, _, _, err := getTransactionConfirmation(1, "mockhash")
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
+				require.Contains(err.Error(), tt.errMsg)
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -778,7 +778,7 @@ func TestGetLatestFinalized(t *testing.T) {
 			got, err := GetLatestFinalized(ctx, 1)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
+				require.Contains(err.Error(), tt.errMsg)
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -832,7 +832,7 @@ func TestGetLatestFinalizedMagicBlock(t *testing.T) {
 			got, err := GetLatestFinalizedMagicBlock(ctx, 1)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
+				require.Contains(err.Error(), tt.errMsg)
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -892,7 +892,7 @@ func TestGetChainStats(t *testing.T) {
 			got, err := GetChainStats(ctx)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
+				require.Contains(err.Error(), tt.errMsg)
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -946,7 +946,7 @@ func TestGetBlockByRound(t *testing.T) {
 			got, err := GetBlockByRound(ctx, 1, 1)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
+				require.Contains(err.Error(), tt.errMsg)
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -1003,7 +1003,7 @@ func TestGetMagicBlockByNumber(t *testing.T) {
 			got, err := GetMagicBlockByNumber(ctx, 1, 1)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
+				require.Contains(err.Error(), tt.errMsg)
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -1056,7 +1056,7 @@ func Test_getBlockInfoByRound(t *testing.T) {
 			got, err := getBlockInfoByRound(1, 1, "test")
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
+				require.Contains(err.Error(), tt.errMsg)
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -1255,7 +1255,7 @@ func TestVerify(t *testing.T) {
 			err := tr.Verify()
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
+				require.Contains(err.Error(), tt.errMsg)
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -1381,6 +1381,69 @@ func TestNewMSTransaction(t *testing.T) {
 			require.NoErrorf(err, "unexpected error: %v", err)
 			require.EqualValues(got.txnStatus, StatusUnknown)
 			require.EqualValues(got.verifyStatus, StatusUnknown)
+		})
+	}
+}
+
+func TestVerifyContentHash(t *testing.T) {
+	var mockClient = mocks.HttpClient{}
+	util.Client = &mockClient
+	type parameters struct {
+		signerwalletstr string
+	}
+	tests := []struct {
+		name       string
+		parameters parameters
+		setup      func(*testing.T)
+		wantErr    bool
+		errMsg     string
+	}{
+		{
+			name: "Test_Error_Decode",
+			parameters: parameters{
+				signerwalletstr: "{error}",
+			},
+			wantErr: true,
+			errMsg:  "metaTxnData_decode_error: Unable to decode metaTxnData json",
+		},
+		{
+			name: "Test_Error_Unable_To_Fetch_Txn_Details",
+			parameters: parameters{
+				signerwalletstr: "{}",
+			},
+			wantErr: true,
+			errMsg:  "fetch_txm_details: Unable to fetch txn details",
+		},
+		{
+			name: "Test_Error_Transaction_Data",
+			parameters: parameters{
+				signerwalletstr: `{"Metadata":{"Hash":"mockhash"}}`,
+			},
+			setup: func(t *testing.T) {
+				blockchain.SetSharders([]string{"TestVerifyContentHash"})
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return strings.HasPrefix(req.URL.Path, "TestVerifyContentHash")
+				})).Return(&http.Response{
+					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"txn":{"block_hash":"mockhash","signature":"mocksignature","transaction_data":"{\"MetaData\":{\"Hash\":\"mockhash\"}}"}}`))),
+					StatusCode: http.StatusOK,
+				}, nil)
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require := require.New(t)
+			if tt.setup != nil {
+				tt.setup(t)
+			}
+			got, err := VerifyContentHash(tt.parameters.signerwalletstr)
+			require.EqualValues(tt.wantErr, err != nil)
+			if err != nil {
+				require.EqualValues(tt.errMsg, err.Error())
+				return
+			}
+			require.NoErrorf(err, "unexpected error: %v", err)
+			require.True(got)
 		})
 	}
 }
@@ -1634,72 +1697,9 @@ func TestRegisterVote(t *testing.T) {
 		err := trans.RegisterVote("walletString", msv)
 
 		expectedErrorMsg := "invalid character 'w' looking for beginning of value"
-		assert.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+		require.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
 	})
 }
-
-// func TestVerifyContentHash(t *testing.T) {
-// 	var mockClient = mocks.HttpClient{}
-// 	util.Client = &mockClient
-// 	type parameters struct {
-// 		signerwalletstr string
-// 	}
-// 	tests := []struct {
-// 		name       string
-// 		parameters parameters
-// 		setup      func(*testing.T)
-// 		wantErr    bool
-// 		errMsg     string
-// 	}{
-// 		{
-// 			name: "Test_Error_Decode",
-// 			parameters: parameters{
-// 				signerwalletstr: "{error}",
-// 			},
-// 			wantErr: true,
-// 			errMsg:  "metaTxnData_decode_error: Unable to decode metaTxnData json",
-// 		},
-// 		{
-// 			name: "Test_Error_Unable_To_Fetch_Txn_Details",
-// 			parameters: parameters{
-// 				signerwalletstr: "{}",
-// 			},
-// 			wantErr: true,
-// 			errMsg:  "fetch_txm_details: Unable to fetch txn details",
-// 		},
-// 		{
-// 			name: "Test_Error_Transaction_Data",
-// 			parameters: parameters{
-// 				signerwalletstr: `{"Metadata":{"Hash":"mockhash"}}`,
-// 			},
-// 			setup: func(t *testing.T) {
-// 				blockchain.SetSharders([]string{"TestVerifyContentHash"})
-// 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-// 					return strings.HasPrefix(req.URL.Path, "TestVerifyContentHash")
-// 				})).Return(&http.Response{
-// 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(`{"txn":{"block_hash":"mockhash","signature":"mocksignature","transaction_data":"{\"MetaData\":{\"Hash\":\"mockhash\"}}"}}`))),
-// 					StatusCode: http.StatusOK,
-// 				}, nil)
-// 			},
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			require := require.New(t)
-// 			if tt.setup != nil {
-// 				tt.setup(t)
-// 			}
-// 			got, err := VerifyContentHash(tt.parameters.signerwalletstr)
-// 			require.EqualValues(tt.wantErr, err != nil)
-// 			if err != nil {
-// 				require.EqualValues(tt.errMsg, err.Error())
-// 				return
-// 			}
-// 			require.NoErrorf(err, "unexpected error: %v", err)
-// 			require.True(got)
-// 		})
-// 	}
-// }
 
 func TestFinalizeAllocation(t *testing.T) {
 	t.Run("Test_Finalize_Allocation_Success", func(t *testing.T) {
@@ -1909,7 +1909,15 @@ func TestWritePoolUnlock(t *testing.T) {
 	t.Run("Write_Pool_Unlock_Success", func(t *testing.T) {
 		_config.chain.Miners = []string{"TestTransaction_TestWritePoolUnlock"}
 		setupMockSubmitTxn()
-		setupMockHttpResponse([]byte(""))
+		var mockClient = mocks.HttpClient{}
+		util.Client = &mockClient
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			fmt.Println("**********", req.URL.Path)
+			return strings.HasPrefix(req.URL.Path, "TestTransaction_TestWritePoolUnlock")
+		})).Return(&http.Response{
+			Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
+			StatusCode: http.StatusOK,
+		}, nil)
 		trans := &Transaction{
 			txnOut: "test",
 			txn:    &transaction.Transaction{},
