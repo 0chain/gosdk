@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const NETWORK_ENDPOINT = "https://nine.devnet-0chain.net/dns/network"
+const NETWORK_ENDPOINT = "/network"
 
 var networkWorkerTimerInHours = 1
 

@@ -52,7 +52,7 @@ func TestCreateMSWallet(t *testing.T) {
 	t.Run("Create MSWallet encryption scheme fails", func(t *testing.T) {
 		smsw, groupClientID, wallets, err := CreateMSWallet(1, 1)
 		expectedErrorMsg := "encryption scheme for this blockchain is not bls0chain"
-		require.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+		require.Contains(t, err.Error(), expectedErrorMsg)
 		require.Equal(t, "", smsw)
 		require.Equal(t, "", groupClientID)
 		require.Equal(t, []string([]string(nil)), wallets)
@@ -85,7 +85,7 @@ func TestCreateMSVote(t *testing.T) {
 		expectedErrorMsg := "proposal or groupClient or signer wallet or toClientID cannot be empty"
 
 		require.Equal(t, "", resp)
-		require.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+		require.Contains(t, err.Error(), expectedErrorMsg)
 	})
 	t.Run("Token less than 1", func(t *testing.T) {
 		_config.chain.SignatureScheme = "bls0chain"
@@ -94,7 +94,7 @@ func TestCreateMSVote(t *testing.T) {
 		expectedErrorMsg := "Token cannot be less than 1"
 
 		require.Equal(t, "", resp)
-		require.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+		require.Contains(t, err.Error(), expectedErrorMsg)
 	})
 	t.Run("Error while parsing the signer wallet", func(t *testing.T) {
 		_config.chain.SignatureScheme = "bls0chain"
@@ -103,7 +103,7 @@ func TestCreateMSVote(t *testing.T) {
 		expectedErrorMsg := "Token cannot be less than 1"
 
 		require.Equal(t, "", resp)
-		require.EqualErrorf(t, err, expectedErrorMsg, "Error should be: %v, got: %v", expectedErrorMsg, err)
+		require.Contains(t, err.Error(), expectedErrorMsg)
 	})
 	t.Run("Error while parsing the signer wallet", func(t *testing.T) {
 		_config.chain.SignatureScheme = "bls0chain"

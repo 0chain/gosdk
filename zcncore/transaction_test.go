@@ -590,7 +590,7 @@ func Test_getBlockHeaderFromTransactionConfirmation(t *testing.T) {
 				},
 			},
 			wantErr: true,
-			errMsg:  "txn confirmation parse error. invalid character 'e' looking for beginning of object key string",
+			errMsg:  "txn confirmation parse error",
 		},
 		{
 			name: "Test_Error_Missing_Transaction",
@@ -1439,7 +1439,7 @@ func TestVerifyContentHash(t *testing.T) {
 			got, err := VerifyContentHash(tt.parameters.signerwalletstr)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
+				require.Contains(err.Error(), tt.errMsg)
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
