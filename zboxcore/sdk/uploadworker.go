@@ -73,6 +73,7 @@ type uploadResult struct {
 }
 
 type UploadRequest struct {
+	dataSource        io.Reader
 	filepath          string
 	thumbnailpath     string
 	remotefilepath    string
@@ -616,6 +617,219 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 	}
 
 	return
+}
+
+func (req *UploadRequest) processStreamingUpload(ctx context.Context, a *Allocation) {
+	if req.completedCallback != nil {
+		defer req.completedCallback(req.filepath)
+	}
+
+	err := req.setupUpload(a)
+	if err != nil && req.statusCallback != nil {
+		req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("setup_upload_failed", err.Error()))
+		return
+	}
+
+	size := req.filemeta.Size
+
+	// Calculate number of bytes per shard.
+	perShard := (size + int64(a.DataShards) - 1) / int64(a.DataShards)
+
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
+	if len(req.thumbnailpath) > 0 {
+		wg.Add(1)
+		go req.processThumbnail(a, wg)
+	}
+
+	go func() {
+		defer wg.Done()
+		// Pad data to Shards*perShard.
+		padding := make([]byte, (int64(a.DataShards)*perShard)-size)
+		dataReader := io.MultiReader(req.dataSource, bytes.NewBuffer(padding))
+		chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
+		if req.isEncrypted {
+			chunkSizeWithHeader -= 16
+			chunkSizeWithHeader -= 2 * 1024
+		}
+		chunksPerShard := (perShard + chunkSizeWithHeader - 1) / chunkSizeWithHeader
+		Logger.Info("Size:", size, " perShard:", perShard, " chunks/shard:", chunksPerShard)
+		req.isUploadCanceled = false
+		if req.statusCallback != nil {
+			req.statusCallback.Started(a.ID, req.remotefilepath, OpUpload, int(perShard)*(a.DataShards+a.ParityShards))
+		}
+
+		for ctr := int64(0); ctr < chunksPerShard; ctr++ {
+			remaining := int64(math.Min(float64(perShard-(ctr*chunkSizeWithHeader)), float64(chunkSizeWithHeader)))
+
+			constantChunkSize := chunkSizeWithHeader * int64(a.DataShards)
+			currentChunkSize := remaining * int64(a.DataShards)
+
+			b := readChunkFromSource(dataReader, int(currentChunkSize), currentChunkSize != constantChunkSize)
+
+			if req.isUploadCanceled {
+				req.isUploadCanceled = false
+				if !req.isUpdate && !req.isRepair {
+					go a.DeleteFile(req.remotefilepath)
+				}
+				if req.statusCallback != nil {
+					req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("user_aborted", "Upload aborted by user"))
+				}
+				return
+			}
+
+			err = req.pushData(b)
+			if err != nil {
+				req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("push_error", err.Error()))
+				return
+			}
+		}
+
+		err = req.completePush()
+		if err != nil && req.statusCallback != nil {
+			req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, err)
+			return
+		}
+	}()
+	wg.Wait()
+	Logger.Info("Completed the upload. Submitting for commit")
+
+	for _, ch := range req.uploadDataCh {
+		close(ch)
+	}
+
+	for _, ch := range req.uploadThumbCh {
+		close(ch)
+	}
+	Logger.Info("Closed all the channels. Submitting for commit")
+	req.consensus = 0
+	wg = &sync.WaitGroup{}
+	ones := req.uploadMask.CountOnes()
+	wg.Add(ones)
+	commitReqs := make([]*CommitRequest, ones)
+	var c, pos uint64 = 0, 0
+	for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		//go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.wg)
+		commitReq := &CommitRequest{}
+		commitReq.allocationID = a.ID
+		commitReq.allocationTx = a.Tx
+		commitReq.blobber = a.Blobbers[pos]
+		if req.isUpdate {
+			newChange := &allocationchange.UpdateFileChange{}
+			newChange.NewFile = req.file[c]
+			newChange.NumBlocks = req.file[c].NumBlocks
+			newChange.Operation = allocationchange.UPDATE_OPERATION
+			newChange.Size = req.file[c].Size
+			newChange.NewFile.Attributes = req.file[c].Attributes
+			commitReq.changes = append(commitReq.changes, newChange)
+		} else {
+			newChange := &allocationchange.NewFileChange{}
+			newChange.File = req.file[c]
+			newChange.NumBlocks = req.file[c].NumBlocks
+			newChange.Operation = allocationchange.INSERT_OPERATION
+			newChange.Size = req.file[c].Size
+			newChange.File.Attributes = req.file[c].Attributes
+			commitReq.changes = append(commitReq.changes, newChange)
+		}
+
+		commitReq.connectionID = req.connectionID
+		commitReq.wg = wg
+		commitReqs[c] = commitReq
+		go AddCommitRequest(commitReq)
+		c++
+	}
+	wg.Wait()
+
+	retries := 0
+	req.consensus = 0
+	for retries < 3 && !req.isConsensusOk() {
+		req.consensus = 0
+		failedCommits := make([]*CommitRequest, 0)
+		for _, commitReq := range commitReqs {
+			if commitReq.result != nil {
+				if commitReq.result.Success {
+					Logger.Info("Commit success", commitReq.blobber.Baseurl, "Retries ", retries)
+					req.consensus++
+				} else {
+					failedCommits = append(failedCommits, commitReq)
+					Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage, "Retries ", retries)
+				}
+			} else {
+				failedCommits = append(failedCommits, commitReq)
+				Logger.Info("Commit result not set", commitReq.blobber.Baseurl, "Retries ", retries)
+			}
+		}
+		if !req.isConsensusOk() {
+			wg := &sync.WaitGroup{}
+			wg.Add(len(failedCommits))
+			for _, failedCommit := range failedCommits {
+				failedCommit.wg = wg
+				go AddCommitRequest(failedCommit)
+			}
+			wg.Wait()
+		}
+		retries++
+	}
+	// for _, commitReq := range commitReqs {
+	// 	if commitReq.result != nil {
+	// 		if commitReq.result.Success {
+	// 			Logger.Info("Commit success", commitReq.blobber.Baseurl, "Retries ", retries)
+	// 			req.consensus++
+	// 		} else {
+	// 			Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage, "Retries ", retries)
+	// 		}
+	// 	} else {
+	// 		Logger.Info("Commit result not set", commitReq.blobber.Baseurl, "Retries ", retries)
+	// 	}
+	// }
+
+	if !req.isConsensusOk() {
+		if req.consensus != 0 {
+			Logger.Info("Commit consensus failed, Deleting remote file....")
+			a.deleteFile(req.remotefilepath, req.consensus, req.consensus)
+		}
+		if req.statusCallback != nil {
+			req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, common.NewError("commit_consensus_failed", "Upload failed as there was no commit consensus"))
+			return
+		}
+	}
+
+	if req.statusCallback != nil {
+		sizeInCallback := int64(float32(perShard) * req.consensus)
+		OpID := OpUpload
+		if req.isUpdate {
+			OpID = OpUpdate
+		}
+		req.statusCallback.Completed(a.ID, req.remotefilepath, req.filemeta.Name, req.filemeta.MimeType, int(sizeInCallback), OpID)
+	}
+
+	return
+}
+
+//readChunkFromSource returns a fixed sized chunk of data by reading from source,
+// or all remaining data if isLastBytes is true
+func readChunkFromSource(src io.Reader, targetSize int, isLastBytes bool) []byte {
+	res := make([]byte, targetSize)
+	if targetSize < 1 {
+		return res
+	}
+
+	if isLastBytes {
+		b, err := io.ReadAll(src)
+		if err != nil {
+			return nil
+		}
+		//log.Println("this is the last possible read for this file, len, ",len(b))
+		return b
+	}
+
+	_, err := io.ReadFull(src, res)
+	if err != nil {
+		return nil
+	}
+
+	return res
 }
 
 func (req *UploadRequest) IsFullConsensusSupported() bool {

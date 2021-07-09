@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -39,6 +40,12 @@ const (
 
 var GetFileInfo = func(localpath string) (os.FileInfo, error) {
 	return os.Stat(localpath)
+}
+
+type UploadStreamInput struct {
+	Data io.Reader
+	Size int64
+	Type string
 }
 
 type BlobberAllocationStats struct {
@@ -81,6 +88,8 @@ type ConsolidatedFileMeta struct {
 	CommitMetaTxns  []fileref.CommitMetaTxn
 	Collaborators   []fileref.Collaborator
 	Attributes      fileref.Attributes
+	CreatedAt string
+	UpdatedAt string
 }
 
 type AllocationStats struct {
@@ -164,6 +173,7 @@ type Allocation struct {
 
 	numBlockDownloads       int
 	uploadChan              chan *UploadRequest
+	streamingUploadChan     chan *UploadRequest
 	downloadChan            chan *DownloadRequest
 	repairChan              chan *RepairRequest
 	ctx                     context.Context
@@ -210,6 +220,7 @@ func (a *Allocation) InitAllocation() {
 	// 	v.isDownloadCanceled = true
 	// }
 	a.uploadChan = make(chan *UploadRequest, 10)
+	a.streamingUploadChan = make(chan *UploadRequest, 10)
 	a.downloadChan = make(chan *DownloadRequest, 10)
 	a.repairChan = make(chan *RepairRequest, 1)
 	a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
@@ -240,6 +251,10 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 
 			Logger.Info(fmt.Sprintf("received a upload request for %v %v\n", uploadReq.filepath, uploadReq.remotefilepath))
 			go uploadReq.processUpload(ctx, a)
+		case streamingUploadReq := <-a.streamingUploadChan:
+
+			Logger.Info(fmt.Sprintf("received a streaming upload request for %v %v\n", streamingUploadReq.filepath, streamingUploadReq.remotefilepath))
+			go streamingUploadReq.processStreamingUpload(ctx, a)
 		case downloadReq := <-a.downloadChan:
 
 			Logger.Info(fmt.Sprintf("received a download request for %v\n", downloadReq.remotefilepath))
@@ -263,6 +278,13 @@ func (a *Allocation) UploadFile(localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
 	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "", false,
+		false, attrs)
+}
+
+func (a *Allocation) UploadStream(input *UploadStreamInput, remotepath string,
+	attrs fileref.Attributes, status StatusCallback) error {
+
+	return a.uploadOrUpdateUsingStream(input, remotepath, status, false, "", false,
 		false, attrs)
 }
 
@@ -410,6 +432,66 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
 		a.uploadProgressMap[localpath] = uploadReq
+	}()
+	return nil
+}
+
+func (a *Allocation) uploadOrUpdateUsingStream(input *UploadStreamInput, remotepath string,
+	status StatusCallback, isUpdate bool, thumbnailpath string, encryption bool,
+	isRepair bool, attrs fileref.Attributes) error {
+
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	remotepath = zboxutil.RemoteClean(remotepath)
+	isabs := zboxutil.IsRemoteAbs(remotepath)
+	if !isabs {
+		return common.NewError("invalid_path", "Path should be valid and absolute")
+	}
+	remotepath = zboxutil.GetFullRemotePathForStreamUpload(remotepath)
+
+	var fileName string
+	_, fileName = filepath.Split(remotepath)
+	uploadReq := &UploadRequest{}
+	uploadReq.dataSource = input.Data
+	uploadReq.remotefilepath = remotepath
+	uploadReq.thumbnailpath = thumbnailpath
+	uploadReq.filepath = remotepath
+	uploadReq.filemeta = &UploadFileMeta{}
+	uploadReq.filemeta.Name = fileName
+	uploadReq.filemeta.Size = input.Size
+	uploadReq.filemeta.MimeType = input.Type
+	uploadReq.filemeta.Path = remotepath
+	//uploadReq.filemeta.ThumbnailSize = thumbnailSize
+	uploadReq.filemeta.Attributes = attrs
+	uploadReq.remaining = uploadReq.filemeta.Size
+	uploadReq.thumbRemaining = uploadReq.filemeta.ThumbnailSize
+	uploadReq.isUpdate = isUpdate
+	uploadReq.isRepair = isRepair
+	uploadReq.connectionID = zboxutil.NewConnectionId()
+	uploadReq.statusCallback = status
+	uploadReq.datashards = a.DataShards
+	uploadReq.parityshards = a.ParityShards
+	uploadReq.setUploadMask(len(a.Blobbers))
+	uploadReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
+	uploadReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+	uploadReq.isEncrypted = encryption
+	uploadReq.completedCallback = func(filepath string) {
+		a.mutex.Lock()
+		defer a.mutex.Unlock()
+		delete(a.uploadProgressMap, filepath)
+	}
+
+	if !uploadReq.IsFullConsensusSupported() {
+		return fmt.Errorf("allocation requires [%v] blobbers, which is greater than the maximum permitted number of [%v]. reduce number of data or parity shards and try again", uploadReq.fullconsensus, uploadReq.GetMaxBlobbersSupported())
+	}
+
+	go func() {
+		a.streamingUploadChan <- uploadReq
+		a.mutex.Lock()
+		defer a.mutex.Unlock()
+		a.uploadProgressMap[remotepath] = uploadReq
 	}()
 	return nil
 }
@@ -592,13 +674,15 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.LookupHash = ref.LookupHash
 		result.MimeType = ref.MimeType
 		result.Path = ref.Path
-		result.Size = ref.ActualFileSize
+		result.Size = ref.Size
 		result.EncryptedKey = ref.EncryptedKey
 		result.CommitMetaTxns = ref.CommitMetaTxns
 		result.Collaborators = ref.Collaborators
 		result.Attributes = ref.Attributes
-		result.ActualFileSize = ref.Size
+		result.ActualFileSize = ref.ActualFileSize
 		result.ActualNumBlocks = ref.NumBlocks
+		result.UpdatedAt = ref.UpdatedAt
+		result.CreatedAt = ref.CreatedAt
 		return result, nil
 	}
 	return nil, errors.New("file_meta_error", "Error getting the file meta data from blobbers")
