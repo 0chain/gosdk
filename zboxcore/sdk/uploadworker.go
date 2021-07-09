@@ -16,7 +16,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -304,7 +304,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 		}
 		if resp.StatusCode != http.StatusOK {
 			Logger.Error(blobber.Baseurl, " Upload error response: ", resp.StatusCode, string(respbody))
-			req.err = fmt.Errorf(string(respbody))
+			req.err = errors.New(string(respbody))
 			return err
 		}
 		var r uploadResult
@@ -316,7 +316,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 		}
 		if r.Filename != formData.Filename || r.ShardSize != shardSize ||
 			r.Hash != formData.Hash || r.MerkleRoot != formData.MerkleRoot {
-			err = fmt.Errorf(blobber.Baseurl, "Unexpected upload response data", string(respbody))
+			err = errors.New(fmt.Sprintf(blobber.Baseurl, "Unexpected upload response data", string(respbody)))
 			Logger.Error(err)
 			req.err = err
 			return err
@@ -440,7 +440,7 @@ func (req *UploadRequest) completePush() error {
 	}
 	req.wg.Wait()
 	if !req.isConsensusOk() {
-		return fmt.Errorf("Upload failed: Consensus_rate:%f, expected:%f", req.getConsensusRate(), req.getConsensusRequiredForOk())
+		return errors.New(fmt.Sprintf("Upload failed: Consensus_rate:%f, expected:%f", req.getConsensusRate(), req.getConsensusRequiredForOk()))
 	}
 	return nil
 }
@@ -453,19 +453,19 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 	var inFile *os.File
 	inFile, err := os.Open(req.filepath)
 	if err != nil && req.statusCallback != nil {
-		req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("open_file_failed", err.Error()))
+		req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("open_file_failed", err.Error()))
 		return
 	}
 	defer inFile.Close()
 	mimetype, err := zboxutil.GetFileContentType(inFile)
 	if err != nil && req.statusCallback != nil {
-		req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("mime_type_error", err.Error()))
+		req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("mime_type_error", err.Error()))
 		return
 	}
 	req.filemeta.MimeType = mimetype
 	err = req.setupUpload(a)
 	if err != nil && req.statusCallback != nil {
-		req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("setup_upload_failed", err.Error()))
+		req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("setup_upload_failed", err.Error()))
 		return
 	}
 	size := req.filemeta.Size
@@ -499,7 +499,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			b1 := make([]byte, remaining*int64(a.DataShards))
 			_, err = dataReader.Read(b1)
 			if err != nil && req.statusCallback != nil {
-				req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("read_failed", err.Error()))
+				req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("read_failed", err.Error()))
 				return
 			}
 			if req.isUploadCanceled {
@@ -508,13 +508,13 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 					go a.DeleteFile(req.remotefilepath)
 				}
 				if req.statusCallback != nil {
-					req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("user_aborted", "Upload aborted by user"))
+					req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("user_aborted", "Upload aborted by user"))
 				}
 				return
 			}
 			err = req.pushData(b1)
 			if err != nil {
-				req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("push_error", err.Error()))
+				req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("push_error", err.Error()))
 				return
 			}
 
@@ -624,7 +624,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			a.deleteFile(req.remotefilepath, req.consensus, req.consensus)
 		}
 		if req.statusCallback != nil {
-			req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, common.NewError("commit_consensus_failed", "Upload failed as there was no commit consensus"))
+			req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, errors.New("commit_consensus_failed", "Upload failed as there was no commit consensus"))
 			return
 		}
 	}

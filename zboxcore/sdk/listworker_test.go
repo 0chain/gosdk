@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -13,6 +12,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	zclient "github.com/0chain/gosdk/zboxcore/client"
@@ -80,7 +80,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 				})).Return(&http.Response{
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 					StatusCode: p.respStatusCode,
-				}, fmt.Errorf(mockErrorMessage))
+				}, errors.New(mockErrorMessage))
 			},
 			wantErr: true,
 			errMsg:  mockErrorMessage,
@@ -117,7 +117,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 				}, nil)
 			},
 			wantErr: true,
-			errMsg:  "list entities response parse error: invalid character 'h' in literal true (expecting 'r')",
+			errMsg:  "list entities response parse error:",
 		},
 		{
 			name: "Test_Success",
@@ -193,7 +193,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 			resp := <-rspCh
 			require.EqualValues(tt.wantErr, resp.err != nil)
 			if resp.err != nil {
-				require.EqualValues(tt.errMsg, resp.err.Error())
+				require.EqualValues(tt.errMsg, errors.Top(resp.err))
 				return
 			}
 			require.EqualValues(tt.parameters.listHttpResp.ref, resp.ref)
