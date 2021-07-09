@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
+	thrown "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -286,7 +287,7 @@ func (sb *StreamUploadBobbler) processCommit(su *StreamUpload, wg *sync.WaitGrou
 		}
 		if resp.StatusCode != http.StatusOK {
 			logger.Logger.Error(sb.blobber.Baseurl, " Commit response:", string(body))
-			return common.NewError("commit_error", string(body))
+			return thrown.New("commit_error", string(body))
 		}
 		return nil
 	})

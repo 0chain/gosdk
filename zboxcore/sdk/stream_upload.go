@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/gosdk/core/common"
+	thrown "github.com/0chain/gosdk/core/common/errors"
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -519,7 +519,7 @@ func (su *StreamUpload) processCommit() error {
 			su.allocationObj.deleteFile(su.fileMeta.RemotePath, su.consensus, su.consensus)
 		}
 		if su.statusCallback != nil {
-			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, OpUpload, common.NewError("commit_consensus_failed", "Upload failed as there was no commit consensus"))
+			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, OpUpload, thrown.New("commit_consensus_failed", "Upload failed as there was no commit consensus"))
 			return nil
 		}
 	}
