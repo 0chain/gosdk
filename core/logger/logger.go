@@ -50,7 +50,7 @@ type Logger struct {
 	fWriter  io.Writer
 }
 
-// Init - Initialize loggind
+// Init - Initialize logging
 func (l *Logger) Init(lvl int, prefix string) {
 	l.SetLevel(lvl)
 	l.prefix = prefix
@@ -63,6 +63,26 @@ func (l *Logger) Init(lvl int, prefix string) {
 // SetLevel - Configures the log level. Higher the number more verbose.
 func (l *Logger) SetLevel(lvl int) {
 	l.lvl = lvl
+}
+
+// syncPrefixes - syncs the logger prefixes
+func syncPrefixes(maxPrefixLen int, loggers []*Logger) {
+	for _, lgr := range loggers {
+		if maxPrefixLen-len(lgr.prefix) > 0 {
+			lgr.prefix = fmt.Sprintf("%-*s", maxPrefixLen, lgr.prefix)
+		}
+	}
+}
+
+// SyncLoggers - syncs the loggers
+func SyncLoggers(loggers []*Logger) {
+	maxPrefixLen := 0
+	for _, lgr := range loggers {
+		if len(lgr.prefix) > maxPrefixLen {
+			maxPrefixLen = len(lgr.prefix)
+		}
+	}
+	syncPrefixes(maxPrefixLen, loggers)
 }
 
 // SetLogFile - Writes log to the file. set verbose false disables log to os.Stderr

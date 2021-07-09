@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"math/bits"
 	"os"
 	"strings"
 	"sync"
 
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encoder"
@@ -45,7 +45,7 @@ type DownloadRequest struct {
 	ctx                context.Context
 	authTicket         *marker.AuthTicket
 	wg                 *sync.WaitGroup
-	downloadMask       uint32
+	downloadMask       zboxutil.Uint128
 	encryptedKey       string
 	isDownloadCanceled bool
 	completedCallback  func(remotepath string, remotepathhash string)
@@ -55,14 +55,14 @@ type DownloadRequest struct {
 
 func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([]byte, error) {
 	req.consensus = 0
-	numDownloads := bits.OnesCount32(req.downloadMask)
+	numDownloads := req.downloadMask.CountOnes()
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numDownloads)
 	rspCh := make(chan *downloadBlock, numDownloads)
 	// Download from only specific blobbers
-	c, pos := 0, 0
-	for i := req.downloadMask; i != 0; i &= ^(1 << uint32(pos)) {
-		pos = bits.TrailingZeros32(i)
+	var c, pos int = 0, 0
+	for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(uint64(pos)).Not()) {
+		pos = i.TrailingZeros()
 		blockDownloadReq := &BlockDownloadRequest{}
 		blockDownloadReq.allocationID = req.allocationID
 		blockDownloadReq.allocationTx = req.allocationTx
@@ -110,7 +110,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 			Logger.Error("Download block : ", req.blobbers[result.idx].Baseurl, " ", result.err)
 		} else {
 			blockSuccess := false
-			if(blockChunksMax < len(result.BlockChunks)){
+			if blockChunksMax < len(result.BlockChunks) {
 				downloadChunks = blockChunksMax
 			}
 			//for blockNum := 0; blockNum < len(result.BlockChunks); blockNum++ {
@@ -159,12 +159,12 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 	}
 	erasureencoder, err := encoder.NewEncoder(req.datashards, req.parityshards)
 	if err != nil {
-		return []byte{}, fmt.Errorf("encoder init error %s", err.Error())
+		return []byte{}, errors.Wrap(err, "encoder init error")
 	}
 	for blockNum := 0; blockNum < decodeNumBlocks; blockNum++ {
 		data, err := erasureencoder.Decode(shards[blockNum], decodeLen[blockNum])
 		if err != nil {
-			return []byte{}, fmt.Errorf("Block decode error %s", err.Error())
+			return []byte{}, errors.Wrap(err, "Block decode error")
 		}
 		retData = append(retData, data...)
 	}
@@ -192,9 +192,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 	listReq.authToken = req.authTicket
 	req.downloadMask, fileRef, _ = listReq.getFileConsensusFromBlobbers()
-	if req.downloadMask == 0 || fileRef == nil {
+	if req.downloadMask.Equals64(0) || fileRef == nil {
 		if req.statusCallback != nil {
-			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, fmt.Errorf("No minimum consensus for file meta data of file"))
+			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("No minimum consensus for file meta data of file"))
 		}
 		return
 	}
@@ -221,7 +221,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if err != nil {
 		if req.statusCallback != nil {
 			Logger.Error(err.Error())
-			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, fmt.Errorf("Can't create local file %s", err.Error()))
+			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.Wrap(err, "Can't create local file"))
 		}
 		return
 	}
@@ -247,20 +247,20 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	numBlocks := req.numBlocks
 	//batchCount := (chunksPerShard + req.numBlocks - 1) / req.numBlocks
 	//for cnt := req.startBlock; cnt < req.endBlock; cnt += req.numBlocks {
-	for(startBlock < endBlock){
+	for startBlock < endBlock {
 		//blockSize := int64(math.Min(float64(perShard-(cnt*fileref.CHUNK_SIZE)), fileref.CHUNK_SIZE))
 
-		cnt:= startBlock
-		Logger.Info("Downloading block ", cnt + 1)
-		if((startBlock + numBlocks) > endBlock){
+		cnt := startBlock
+		Logger.Info("Downloading block ", cnt+1)
+		if (startBlock + numBlocks) > endBlock {
 			numBlocks = endBlock - startBlock
 		}
 
-		data, err := req.downloadBlock(cnt + 1, int(numBlocks))
+		data, err := req.downloadBlock(cnt+1, int(numBlocks))
 		if err != nil {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, fmt.Errorf("Download failed for block %d. Error : %s", cnt+1, err.Error()))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", cnt+1)))
 			}
 			return
 		}
@@ -268,7 +268,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			req.isDownloadCanceled = false
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, fmt.Errorf("Download aborted by user"))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("Download aborted by user"))
 			}
 			return
 		}
@@ -278,7 +278,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		if err != nil {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, fmt.Errorf("Write file failed : %s", err.Error()))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.Wrap(err, "Write file failed"))
 			}
 			return
 		}
@@ -289,9 +289,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			req.statusCallback.InProgress(req.allocationID, remotePathCallback, OpDownload, downloaded, data)
 		}
 
-		if((startBlock + numBlocks) > endBlock){
+		if (startBlock + numBlocks) > endBlock {
 			startBlock += endBlock - startBlock
-		}else{
+		} else {
 			startBlock += numBlocks
 		}
 	}
@@ -306,7 +306,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		if calcHash != expectedHash {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, fmt.Errorf("File content didn't match with uploaded file"))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("File content didn't match with uploaded file"))
 			}
 			return
 		}

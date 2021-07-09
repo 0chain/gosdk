@@ -3,6 +3,8 @@ package zcncrypto
 import (
 	"encoding/hex"
 	"testing"
+
+	"github.com/0chain/gosdk/core/common/errors"
 )
 
 var edverifyPublickey = `b987071c14695caf340ea11560f5a3cb76ad1e709803a8b339826ab3964e470a`
@@ -21,7 +23,7 @@ func TestEd25519GenerateKeys(t *testing.T) {
 	}
 	w, err := sigScheme.GenerateKeys()
 	if err != nil {
-		t.Fatalf("Generate keys failed %s", err.Error())
+		t.Fatalf("Generate keys failed %s", errors.Top(err))
 	}
 	if w.ClientID == "" || w.ClientKey == "" || len(w.Keys) != 1 || w.Mnemonic == "" {
 		t.Fatalf("Invalid keys generated")

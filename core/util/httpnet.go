@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
+	"os"
 	"time"
 )
 
@@ -32,6 +34,12 @@ type PostResponse struct {
 	Body       string
 }
 
+type HttpClient interface {
+	Do(req *http.Request) (*http.Response, error)
+}
+
+var Client HttpClient
+
 // Run the HTTP request in a goroutine and pass the response to f.
 var transport = &http.Transport{
 	Proxy: http.ProxyFromEnvironment,
@@ -47,10 +55,52 @@ var transport = &http.Transport{
 	MaxIdleConnsPerHost:   5,
 }
 
+func getEnvAny(names ...string) string {
+	for _, n := range names {
+		if val := os.Getenv(n); val != "" {
+			return val
+		}
+	}
+	return ""
+}
+
+func (pfe *proxyFromEnv) initialize() {
+	pfe.HTTPProxy = getEnvAny("HTTP_PROXY", "http_proxy")
+	pfe.HTTPSProxy = getEnvAny("HTTPS_PROXY", "https_proxy")
+	pfe.NoProxy = getEnvAny("NO_PROXY", "no_proxy")
+
+	if pfe.NoProxy != "" {
+		return
+	}
+
+	if pfe.HTTPProxy != "" {
+		pfe.http, _ = url.Parse(pfe.HTTPProxy)
+	}
+	if pfe.HTTPSProxy != "" {
+		pfe.https, _ = url.Parse(pfe.HTTPSProxy)
+	}
+}
+
+type proxyFromEnv struct {
+	HTTPProxy  string
+	HTTPSProxy string
+	NoProxy    string
+
+	http, https *url.URL
+}
+
+var envProxy proxyFromEnv
+
+func init() {
+	Client = &http.Client{
+		Transport: transport,
+	}
+	envProxy.initialize()
+}
+
 func httpDo(req *http.Request, ctx context.Context, cncl context.CancelFunc, f func(*http.Response, error) error) error {
-	client := &http.Client{Transport: transport}
 	c := make(chan error, 1)
-	go func() { c <- f(client.Do(req.WithContext(ctx))) }()
+	go func() { c <- f(Client.Do(req.WithContext(ctx))) }()
 	defer cncl()
 	select {
 	case <-ctx.Done():

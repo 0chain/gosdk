@@ -11,13 +11,12 @@ import (
 	"io"
 	"io/ioutil"
 	"math"
-	"math/bits"
 	"mime/multipart"
 	"net/http"
 	"os"
 	"sync"
 
-	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -94,13 +93,17 @@ type UploadRequest struct {
 	connectionID      string
 	datashards        int
 	parityshards      int
-	uploadMask        uint32
+	uploadMask        zboxutil.Uint128
 	isEncrypted       bool
 	encscheme         encryption.EncryptionScheme
 	isUploadCanceled  bool
 	completedCallback func(filepath string)
 	err               error
 	Consensus
+}
+
+func (req *UploadRequest) setUploadMask(numBlobbers int) {
+	req.uploadMask = zboxutil.NewUint128(1).Lsh(uint64(numBlobbers)).Sub64(1)
 }
 
 func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.StorageNode, file *fileref.FileRef, uploadCh chan []byte, uploadThumbCh chan []byte, wg *sync.WaitGroup) {
@@ -278,7 +281,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 		}
 		if resp.StatusCode != http.StatusOK {
 			Logger.Error(blobber.Baseurl, " Upload error response: ", resp.StatusCode, string(respbody))
-			req.err = fmt.Errorf(string(respbody))
+			req.err = errors.New(string(respbody))
 			return err
 		}
 		var r uploadResult
@@ -290,7 +293,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 		}
 		if r.Filename != formData.Filename || r.ShardSize != shardSize ||
 			r.Hash != formData.Hash || r.MerkleRoot != formData.MerkleRoot {
-			err = fmt.Errorf(blobber.Baseurl, "Unexpected upload response data", string(respbody))
+			err = errors.New(fmt.Sprintf(blobber.Baseurl, "Unexpected upload response data", string(respbody)))
 			Logger.Error(err)
 			req.err = err
 			return err
@@ -315,7 +318,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 }
 
 func (req *UploadRequest) setupUpload(a *Allocation) error {
-	numUploads := bits.OnesCount32(req.uploadMask)
+	numUploads := req.uploadMask.CountOnes()
 	req.uploadDataCh = make([]chan []byte, numUploads)
 	req.uploadThumbCh = make([]chan []byte, numUploads)
 	req.file = make([]*fileref.FileRef, numUploads)
@@ -350,9 +353,9 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 	req.consensus = 0
 
 	// Start upload for each blobber
-	c, pos := 0, 0
-	for i := req.uploadMask; i != 0; i &= ^(1 << uint32(pos)) {
-		pos = bits.TrailingZeros32(i)
+	var c, pos uint64 = 0, 0
+	for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
 		go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.uploadThumbCh[c], req.wg)
 		c++
 	}
@@ -375,10 +378,10 @@ func (req *UploadRequest) pushData(data []byte) error {
 		Logger.Error("Erasure coding failed.", err.Error())
 		return err
 	}
-	c, pos := 0, 0
+	var c, pos uint64 = 0, 0
 	if req.isEncrypted {
-		for i := req.uploadMask; i != 0; i &= ^(1 << uint32(pos)) {
-			pos = bits.TrailingZeros32(i)
+		for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+			pos = uint64(i.TrailingZeros())
 			encMsg, err := req.encscheme.Encrypt(shards[pos])
 			if err != nil {
 				Logger.Error("Encryption failed.", err.Error())
@@ -389,13 +392,15 @@ func (req *UploadRequest) pushData(data []byte) error {
 			shards[pos] = append(header, encMsg.EncryptedData...)
 			c++
 		}
+
 		c, pos = 0, 0
 	}
-	for i := req.uploadMask; i != 0; i &= ^(1 << uint32(pos)) {
-		pos = bits.TrailingZeros32(i)
+	for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
 		req.uploadDataCh[c] <- shards[pos]
 		c++
 	}
+
 	return nil
 }
 
@@ -403,16 +408,16 @@ func (req *UploadRequest) completePush() error {
 	if !req.isRepair {
 		req.filemeta.Hash = hex.EncodeToString(req.fileHash.Sum(nil))
 		//fmt.Println("req.filemeta.Hash=" + req.filemeta.Hash)
-		c, pos := 0, 0
-		for i := req.uploadMask; i != 0; i &= ^(1 << uint32(pos)) {
-			pos = bits.TrailingZeros32(i)
+		var c, pos uint64 = 0, 0
+		for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+			pos = uint64(i.TrailingZeros())
 			req.uploadDataCh[c] <- []byte("done")
 			c++
 		}
 	}
 	req.wg.Wait()
 	if !req.isConsensusOk() {
-		return fmt.Errorf("Upload failed: Consensus_rate:%f, expected:%f", req.getConsensusRate(), req.getConsensusRequiredForOk())
+		return errors.New(fmt.Sprintf("Upload failed: Consensus_rate:%f, expected:%f", req.getConsensusRate(), req.getConsensusRequiredForOk()))
 	}
 	return nil
 }
@@ -425,19 +430,19 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 	var inFile *os.File
 	inFile, err := os.Open(req.filepath)
 	if err != nil && req.statusCallback != nil {
-		req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("open_file_failed", err.Error()))
+		req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("open_file_failed", err.Error()))
 		return
 	}
 	defer inFile.Close()
 	mimetype, err := zboxutil.GetFileContentType(inFile)
 	if err != nil && req.statusCallback != nil {
-		req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("mime_type_error", err.Error()))
+		req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("mime_type_error", err.Error()))
 		return
 	}
 	req.filemeta.MimeType = mimetype
 	err = req.setupUpload(a)
 	if err != nil && req.statusCallback != nil {
-		req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("setup_upload_failed", err.Error()))
+		req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("setup_upload_failed", err.Error()))
 		return
 	}
 	size := req.filemeta.Size
@@ -471,7 +476,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			b1 := make([]byte, remaining*int64(a.DataShards))
 			_, err = dataReader.Read(b1)
 			if err != nil && req.statusCallback != nil {
-				req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("read_failed", err.Error()))
+				req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("read_failed", err.Error()))
 				return
 			}
 			if req.isUploadCanceled {
@@ -480,20 +485,20 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 					go a.DeleteFile(req.remotefilepath)
 				}
 				if req.statusCallback != nil {
-					req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("user_aborted", "Upload aborted by user"))
+					req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("user_aborted", "Upload aborted by user"))
 				}
 				return
 			}
 			err = req.pushData(b1)
 			if err != nil {
-				req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("push_error", err.Error()))
+				req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("push_error", err.Error()))
 				return
 			}
 
 		}
 		err = req.completePush()
 		if err != nil && req.statusCallback != nil {
-			req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, req.err)
+			req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, err)
 			return
 		}
 	}()
@@ -510,11 +515,12 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 	Logger.Info("Closed all the channels. Submitting for commit")
 	req.consensus = 0
 	wg = &sync.WaitGroup{}
-	wg.Add(bits.OnesCount32(req.uploadMask))
-	commitReqs := make([]*CommitRequest, bits.OnesCount32(req.uploadMask))
-	c, pos := 0, 0
-	for i := req.uploadMask; i != 0; i &= ^(1 << uint32(pos)) {
-		pos = bits.TrailingZeros32(i)
+	ones := req.uploadMask.CountOnes()
+	wg.Add(ones)
+	commitReqs := make([]*CommitRequest, ones)
+	var c, pos uint64 = 0, 0
+	for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
 		//go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.wg)
 		commitReq := &CommitRequest{}
 		commitReq.allocationID = a.ID
@@ -595,7 +601,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			a.deleteFile(req.remotefilepath, req.consensus, req.consensus)
 		}
 		if req.statusCallback != nil {
-			req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, common.NewError("commit_consensus_failed", "Upload failed as there was no commit consensus"))
+			req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, errors.New("commit_consensus_failed", "Upload failed as there was no commit consensus"))
 			return
 		}
 	}
@@ -610,4 +616,14 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 	}
 
 	return
+}
+
+func (req *UploadRequest) IsFullConsensusSupported() bool {
+	var maxBlobbers = req.GetMaxBlobbersSupported()
+
+	return maxBlobbers >= int(req.fullconsensus)
+}
+
+func (req *UploadRequest) GetMaxBlobbersSupported() int {
+	return req.uploadMask.CountOnes()
 }

@@ -2,7 +2,6 @@ package sdk
 
 import (
 	"context"
-	"math/bits"
 	"os"
 	"sync"
 
@@ -118,7 +117,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 
 	if repairRequired {
 		Logger.Info("Repair required for the path :", zap.Any("path", file.Path))
-		if bits.OnesCount32(found) >= a.DataShards {
+		if found.CountOnes() >= a.DataShards {
 			Logger.Info("Repair by upload", zap.Any("path", file.Path))
 			var wg sync.WaitGroup
 			statusCB := &RepairStatusCB{
@@ -168,7 +167,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 			}
 		} else {
 			Logger.Info("Repair by delete", zap.Any("path", file.Path))
-			consensus := float32(bits.OnesCount32(found))
+			consensus := float32(found.CountOnes())
 			err := a.deleteFile(file.Path, consensus, consensus)
 			if err != nil {
 				Logger.Error("repair_file_failed", zap.Error(err))
