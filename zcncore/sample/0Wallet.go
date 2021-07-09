@@ -39,7 +39,7 @@ const ChainConfig = `{
 	"sharders": [
 		"http://ohio.devi.testnet-0chain.net:7171"
 	],
-	"signaturescheme": "bls0chain"
+	"signature_scheme": "bls0chain"
 }`
 
 var wallet = `

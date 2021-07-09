@@ -10,6 +10,6 @@ type GetBalanceCallback struct {
 }
 
 // OnBalanceAvailable provides a mock function with given fields: status, value, info
-func (_m *GetBalanceCallback) OnBalanceAvailable(status int, value int64, info string) {
+func (_m GetBalanceCallback) OnBalanceAvailable(status int, value int64, info string) {
 	_m.Called(status, value, info)
 }
