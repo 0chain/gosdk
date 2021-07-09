@@ -1,0 +1,15 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox sp-lock" as cli
+collections gosdk
+
+cli -> gosdk: StakePoolLock(blobberID, tokens, fee)
+
+gosdk -> gosdk: check initialized sdk
+alt empty blobber id
+gosdk -> gosdk: get client id
+end
+gosdk -> gosdk: create stake pool request
+gosdk -> gosdk: create smart contract txn data
+gosdk -> gosdk: send smart contract txn value fee
+gosdk --> cli: return pool id
+@enduml

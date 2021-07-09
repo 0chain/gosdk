@@ -1,0 +1,13 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox bl-info" as cli
+collections gosdk
+
+cli -> gosdk: GetBlobber(blobberID)
+
+gosdk -> gosdk: check initialized sdk
+gosdk -> gosdk: make SC rest api call
+gosdk -> gosdk: check response result 
+gosdk -> gosdk: create new blobber
+gosdk -> gosdk: return response result for blobber
+gosdk --> cli: return blobber
+@enduml
