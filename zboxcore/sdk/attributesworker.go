@@ -3,7 +3,6 @@ package sdk
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"io/ioutil"
 	"math/bits"
 	"mime/multipart"
@@ -11,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -130,8 +130,7 @@ func (ar *AttributesRequest) ProcessAttributes() (err error) {
 	ar.wg.Wait()
 
 	if !ar.isConsensusOk() {
-		return fmt.Errorf("Update attributes failed: " +
-			"request failed, operation failed")
+		return errors.New("Update attributes failed: request failed, operation failed")
 	}
 
 	ar.consensus = 0
@@ -182,7 +181,7 @@ func (ar *AttributesRequest) ProcessAttributes() (err error) {
 	}
 
 	if !ar.isConsensusOk() {
-		return fmt.Errorf("Delete failed: Commit consensus failed")
+		return errors.New("Delete failed: Commit consensus failed")
 	}
 
 	return nil
