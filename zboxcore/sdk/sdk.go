@@ -806,6 +806,16 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 	return allocations, nil
 }
 
+func CreateAllocationWithBlobbers(datashards, parityshards int, size, expiry int64,
+	readPrice, writePrice PriceRange, mcct time.Duration, lock int64, blobbers []string) (
+	string, error) {
+
+	return CreateAllocationForOwner(client.GetClientID(),
+		client.GetClientPublicKey(), datashards, parityshards,
+		size, expiry, readPrice, writePrice, mcct, lock,
+		blobbers)
+}
+
 func CreateAllocation(datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, mcct time.Duration, lock int64) (
 	string, error) {
