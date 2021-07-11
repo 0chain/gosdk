@@ -32,8 +32,26 @@ func NewBLS0ChainScheme() *BLS0ChainScheme {
 	return &BLS0ChainScheme{}
 }
 
+func (b0 *BLS0ChainScheme) GenerateKeysWithEth(mnemonic, password string) (*Wallet, error) {
+	if len(mnemonic) == 0{
+		return nil, fmt.Errorf("Mnemonic phase is mandatory.")
+	}
+	b0.Mnemonic = mnemonic
+
+	_, err := bip39.NewSeedWithErrorChecking(b0.Mnemonic, password)
+	if err != nil{
+		return nil, fmt.Errorf("Wrong mnemonic phase.")
+	}
+
+	return b0.generateKeys(password)
+}
+
 //GenerateKeys - implement interface
 func (b0 *BLS0ChainScheme) GenerateKeys() (*Wallet, error) {
+	return b0.generateKeys("0chain-client-split-key")
+}
+
+func (b0 *BLS0ChainScheme) generateKeys(password string) (*Wallet, error){
 	// Check for recovery
 	if len(b0.Mnemonic) == 0 {
 		entropy, err := bip39.NewEntropy(256)
@@ -47,7 +65,7 @@ func (b0 *BLS0ChainScheme) GenerateKeys() (*Wallet, error) {
 	}
 
 	// Generate a Bip32 HD wallet for the mnemonic and a user supplied password
-	seed := bip39.NewSeed(b0.Mnemonic, "0chain-client-split-key")
+	seed := bip39.NewSeed(b0.Mnemonic, password)
 	r := bytes.NewReader(seed)
 	bls.SetRandFunc(r)
 
