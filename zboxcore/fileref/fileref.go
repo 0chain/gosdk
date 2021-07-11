@@ -31,6 +31,22 @@ type Collaborator struct {
 	CreatedAt string `json:"created_at"`
 }
 
+type ConsolidatedFileMeta struct {
+	Name            string
+	Type            string
+	Path            string
+	LookupHash      string
+	Hash            string
+	MimeType        string
+	Size            int64
+	ActualFileSize  int64
+	ActualNumBlocks int64
+	EncryptedKey    string
+	CommitMetaTxns  []CommitMetaTxn
+	Collaborators   []Collaborator
+	Attributes      Attributes
+}
+
 // The Attributes represents file attributes.
 type Attributes struct {
 	// The WhoPaysForReads represents reading payer. It can be allocation owner

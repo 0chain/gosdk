@@ -200,9 +200,7 @@ func TestCollaboratorRequest_updateCollaboratorToBlobber(t *testing.T) {
 			req.a.Blobbers = append(req.a.Blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name + mockBlobberUrl,
 			})
-			rspCh := make(chan bool, 1)
-			go req.updateCollaboratorToBlobber(req.a.Blobbers[0], 0, rspCh)
-			resp := <-rspCh
+			resp := req.UpdateCollaboratorToBlobbers()
 			var check = require.False
 			if tt.want {
 				check = require.True
@@ -390,9 +388,7 @@ func TestCollaboratorRequest_removeCollaboratorFromBlobber(t *testing.T) {
 			req.a.Blobbers = append(req.a.Blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name + mockBlobberUrl,
 			})
-			rspCh := make(chan bool, 1)
-			go req.removeCollaboratorFromBlobber(req.a.Blobbers[0], 0, rspCh)
-			resp := <-rspCh
+			resp := req.RemoveCollaboratorFromBlobbers()
 			var check = require.False
 			if tt.want {
 				check = require.True
