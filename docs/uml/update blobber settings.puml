@@ -1,0 +1,10 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox bl-update" as cli
+collections gosdk
+
+cli -> gosdk: UpdateBlobberSettings(blob)
+
+gosdk -> gosdk: check initialized sdk
+gosdk -> gosdk: create smart contract txn data
+gosdk -> gosdk: send smart contract txn
+@enduml
