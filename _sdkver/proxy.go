@@ -127,12 +127,25 @@ func initializeConfig(this js.Value, p []js.Value) interface{} {
 
 func initStorageSDK(this js.Value, p []js.Value) interface{} {
 	clientJSON := p[0].String()
-	err := initSDK(clientJSON)
-	if err != nil {
-		return err.Error()
-	}
 
-	return nil
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
+
+		go func() {
+			err := initSDK(clientJSON)
+			if err != nil {
+				reject.Invoke(err.Error())
+			}
+
+			resolve.Invoke(true)
+		}()
+
+		return nil
+	})
+
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 func initSDK(clientJSON string) error {
