@@ -266,6 +266,27 @@ func (a *Allocation) UploadFile(localpath string, remotepath string,
 		false, attrs)
 }
 
+func (a *Allocation) CreateDir(dirName string) error {
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	if len(dirName) == 0 {
+		return errors.New("invalid_name", "Invalid name for dir")
+	}
+
+	dirName = zboxutil.RemoteClean(dirName)
+	req := DirRequest{}
+	req.action = "create"
+	req.allocationID = a.ID
+	req.connectionID = zboxutil.NewConnectionId()
+	req.ctx = a.ctx
+	req.name = dirName
+
+	err := req.ProcessDir(a)
+	return err
+}
+
 func (a *Allocation) RepairFile(localpath string, remotepath string,
 	status StatusCallback) error {
 
