@@ -1,0 +1,12 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox list-all" as cli
+collections gosdk
+
+cli -> gosdk: GetAllocation(allocationID)
+cli -> gosdk: GetRemoteFileMap()
+
+gosdk -> gosdk: create a map of file info 
+gosdk -> gosdk: iteratively get directory and files seperately till no more directories left
+
+gosdk --> cli: return map of file info
+@enduml

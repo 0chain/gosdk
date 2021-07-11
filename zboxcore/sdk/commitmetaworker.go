@@ -8,7 +8,7 @@ import (
 
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
 	"github.com/0chain/gosdk/core/clients/blobberClient"
-	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -61,7 +61,7 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 		return
 	}
 	if t == nil {
-		err = common.NewError("transaction_validation_failed", "Failed to get the transaction confirmation")
+		err = errors.New("transaction_validation_failed", "Failed to get the transaction confirmation")
 		req.status.CommitMetaCompleted(commitMetaDataString, "", err)
 		return
 	}

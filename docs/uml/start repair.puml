@@ -1,0 +1,17 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox start-repair" as cli
+collections gosdk
+
+cli -> gosdk: StartRepair(localRootPath, repairPath, statusBar)
+
+gosdk -> gosdk: check initialized allocation
+gosdk -> gosdk: get list result with repair path
+gosdk -> gosdk: create repair request
+gosdk -> gosdk: process repair
+gosdk -> gosdk: check for cancel repair
+gosdk -> gosdk: iteratively get directory and files seperately till no more directories left
+
+alt not empty statusCB
+gosdk -> cli: repair completed and return
+end
+@enduml
