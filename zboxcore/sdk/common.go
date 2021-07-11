@@ -40,6 +40,7 @@ func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationTx 
 	respRaw, err := blobberClient.GetAllocation(blobber.Baseurl, &blobbergrpc.GetAllocationRequest{Id: allocationTx})
 	if err != nil {
 		logger.Logger.Error("could not get allocation from blobber -" + blobber.Baseurl + " - " + err.Error())
+		respCh <- &BlobberAllocationStats{}
 		return
 	}
 
