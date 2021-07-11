@@ -4,16 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
-	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
-	zclient "github.com/0chain/gosdk/zboxcore/client"
-	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/mocks"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 	"io"
 	"io/ioutil"
 	"mime"
@@ -23,6 +13,17 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
+	zclient "github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/mocks"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
@@ -73,7 +74,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 				})).Return(&http.Response{
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 					StatusCode: p.respStatusCode,
-				}, fmt.Errorf(mockErrorMessage))
+				}, errors.New(mockErrorMessage))
 			},
 			wantErr: true,
 			errMsg:  mockErrorMessage,
@@ -92,7 +93,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 				}, nil)
 			},
 			wantErr: true,
-			errMsg:  "file stats response parse error: unexpected end of JSON input",
+			errMsg:  "file stats response parse error",
 		},
 		{
 			name: "Test_Success",
@@ -166,7 +167,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 			resp := <-rspCh
 			require.EqualValues(t, tt.wantErr, resp.err != nil)
 			if resp.err != nil {
-				require.EqualValues(t, tt.errMsg, resp.err.Error())
+				require.EqualValues(t, tt.errMsg, errors.Top(resp.err))
 				return
 			}
 			require.EqualValues(t, tt.parameters.fileStatsFinal, *resp.filestats)

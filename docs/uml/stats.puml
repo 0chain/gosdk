@@ -1,0 +1,23 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox stats" as cli
+collections gosdk
+collections blobber
+
+cli -> gosdk: GetAllocation(allocationID)
+cli -> gosdk: GetFileStats(remotepath)
+
+gosdk -> gosdk: check initialized allocation
+gosdk -> gosdk: check valid path
+gosdk -> gosdk: create list request
+
+group for each blobber (blobber, bidx)
+gosdk -> blobber: call http request to get file stats info
+alt successful status code
+blobber --> gosdk: return file stats
+end
+end
+
+alt not empty file stats
+gosdk -> cli: return file stats
+end
+@enduml

@@ -1,0 +1,50 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox commit" as cli
+collections gosdk
+collections blobber
+collections miner
+collections sharder
+
+cli -> gosdk: GetAllocation(allocationID)
+cli -> gosdk: GetFileStats(remotepath)
+
+alt not empty file stats
+cli -> gosdk: CommitMetaTransaction()
+gosdk -> gosdk: check initialized allocation
+
+alt empty file meta
+alt not empty remote path 
+gosdk -> blobber: get file meta
+else not empty auth ticket
+gosdk -> blobber: get file meta with auth ticket
+end
+end
+
+gosdk -> gosdk: create commit meta request
+gosdk -> gosdk: create new transaction entity
+gosdk -> gosdk: compute hash and sign
+gosdk -> miner: send transaction
+
+group for each txn query
+gosdk -> sharder: verify transaction
+end
+
+gosdk -> gosdk: create commit meta response
+gosdk -> gosdk: commit meta completed
+
+else 
+cli -> gosdk: CommitFolderChange()
+gosdk -> gosdk: check initialized allocation
+gosdk -> gosdk: create commit folder data
+gosdk -> gosdk: create new transaction entity
+gosdk -> gosdk: compute hash and sign
+gosdk -> miner: send transaction
+
+group for each txn query
+gosdk -> sharder: verify transaction
+end
+
+gosdk -> gosdk: create commit folder response
+gosdk -> cli: return commit folder response
+end
+@enduml

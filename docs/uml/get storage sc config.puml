@@ -1,0 +1,13 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox sc-config" as cli
+collections gosdk
+
+cli -> gosdk: GetStorageSCConfig()
+
+gosdk -> gosdk: check initialized sdk
+gosdk -> gosdk: make SC rest api call
+gosdk -> gosdk: check response result 
+gosdk -> gosdk: create new storage SC config
+gosdk -> gosdk: return response result for storage SC config
+gosdk --> cli: return storage SC config
+@enduml
