@@ -365,7 +365,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
 	remotepath = zboxutil.RemoteClean(remotepath)
 	isabs := zboxutil.IsRemoteAbs(remotepath)
 	if !isabs {
-		return errors.New("Path should be valid and absolute")
+		return errors.New("invalid_path", "Path should be valid and absolute")
 	}
 	remotepath = zboxutil.GetFullRemotePath(localpath, remotepath)
 
