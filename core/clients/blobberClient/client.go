@@ -7,6 +7,8 @@ import (
 	"net"
 	"net/url"
 
+	"google.golang.org/grpc/encoding/gzip"
+
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/convert"
 	blobbercommon "github.com/0chain/blobber/code/go/0chain.net/core/common"
@@ -25,7 +27,7 @@ func newBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberClient, error) {
 	}
 	host, _, _ := net.SplitHostPort(u.Host)
 
-	cc, err := grpc.Dial(host+":"+fmt.Sprint(GRPCPort), grpc.WithDefaultCallOptions(grpc.UseCompressor("gzip")), grpc.WithInsecure())
+	cc, err := grpc.Dial(host+":"+fmt.Sprint(GRPCPort), grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)), grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}

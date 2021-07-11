@@ -39,7 +39,7 @@ gosdk-test:
 	go test -tags bn256 ./...
 
 gosdk-integration-test:
-	go test -tags bn256 ./... -args integration;
+	go test ./core/clients/blobberClient -args integration
 
 install-gosdk: | gosdk-build gosdk-test
 
