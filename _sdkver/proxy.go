@@ -925,7 +925,18 @@ func main() {
 	js.Global().Set("CreateWalletFromEthMnemonic", js.FuncOf(CreateWalletFromEthMnemonic))
 
 	// wallet.go
+	js.Global().Set("GetMinShardersVerify", js.FuncOf(GetMinShardersVerify))
+	js.Global().Set("GetVersion", js.FuncOf(GetVersion))
+	js.Global().Set("SetLogLevel", js.FuncOf(SetLogLevel))
+	js.Global().Set("SetLogFile", js.FuncOf(SetLogFile))
+	js.Global().Set("CloseLog", js.FuncOf(CloseLog))
 	js.Global().Set("InitZCNSDK", js.FuncOf(InitZCNSDK))
+	js.Global().Set("SetNetwork", js.FuncOf(SetNetwork))
+	js.Global().Set("SplitKeys", js.FuncOf(SplitKeys))
+	js.Global().Set("GetNetworkJSON", js.FuncOf(GetNetworkJSON))
+	js.Global().Set("CreateWallet", js.FuncOf(CreateWallet))
+	js.Global().Set("RecoverWallet", js.FuncOf(RecoverWallet))
+	js.Global().Set("SplitKeys", js.FuncOf(SplitKeys))
 
 	<-c
 }
