@@ -127,12 +127,51 @@ func New(args ...string) *Error {
 	return &currentError
 }
 
+/*
+Newf - creates a new error
+*/
+func Newf(code string, format string, args ...interface{}) *Error {
+	return New(code, fmt.Sprintf(format, args...))
+}
+
 func getErrorLocation(level int) string {
 	_, file, line, _ := runtime.Caller(level)
 	return fmt.Sprintf("%s:%d", file, line)
 }
 
-// /*InvalidRequest - create error messages that are needed when validating request input */
-// func InvalidRequest(msg string) error {
-// 	return New("invalid_request", fmt.Sprintf("Invalid request (%v)", msg))
-// }
+/* Is - tells whether actual error is targer error
+where, actual error can be either Error/withError
+if actual error is wrapped error then if any internal error
+matches the target error then function results in true
+*/
+func Is(actual error, target *Error) bool {
+	actualError := isError(actual)
+	if actualError != nil {
+		return (actualError.Code == target.Code) && (actualError.Msg == target.Msg)
+	} else {
+		actualWithError := isWithError(actual)
+		if actualWithError != nil {
+			return Is(actualWithError.current, target) || Is(actualWithError.previous, target)
+		} else {
+			return false
+		}
+	}
+}
+
+// isError - parses the error into Error
+func isError(err error) *Error {
+	t, ok := err.(*Error)
+	if ok {
+		return t
+	}
+	return nil
+}
+
+// isError - parses the error into withError
+func isWithError(err error) *withError {
+	t, ok := err.(*withError)
+	if ok {
+		return t
+	}
+	return nil
+}

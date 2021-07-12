@@ -162,3 +162,80 @@ func TestTop(t *testing.T) {
 		})
 	}
 }
+
+type newErrorfTestCase struct {
+	about           string
+	code            string
+	format          string
+	args            []interface{}
+	expectedCode    string
+	expectedMessage string
+}
+
+func getNewErrorfTestCase() []newErrorfTestCase {
+	return []newErrorfTestCase{
+		{
+			about:           "creating an error with code and msg with integer arg.",
+			code:            "integer_error",
+			format:          "This error has a integer: %d",
+			args:            []interface{}{500},
+			expectedCode:    "integer_error",
+			expectedMessage: "This error has a integer: 500",
+		},
+		{
+			about:           "creating an error with code and msg with string arg.",
+			code:            "string_error",
+			format:          "This error has a string: %s",
+			args:            []interface{}{"500"},
+			expectedCode:    "string_error",
+			expectedMessage: "This error has a string: 500",
+		},
+		{
+			about:           "creating an error with empty code and empty msg with string arg.",
+			code:            "",
+			format:          "This error has empty code with a string: %s",
+			args:            []interface{}{"401"},
+			expectedCode:    "",
+			expectedMessage: "This error has empty code with a string: 401",
+		},
+		{
+			about:           "creating an error with just msg.",
+			code:            "",
+			format:          "This is a short error!",
+			args:            []interface{}{},
+			expectedCode:    "",
+			expectedMessage: "This is a short error!",
+		},
+		// {
+		// 	about:           "creating an error with 0args and args are expected",
+		// 	code:            "incorrect_usage",
+		// 	format:          "This is a short error! %d %s",
+		// 	args:            []interface{}{},
+		// 	expectedCode:    "incorrect_usage",
+		// 	expectedMessage: "This is a short error!",
+		// },
+		// {
+		// 	about:           "creating an error with not allowed parameters",
+		// 	args:            []string{"code", "message", "third", "fourth"},
+		// 	expectedCode:    "incorrect_usage",
+		// 	expectedMessage: "you should at least pass message to create a proper error!",
+		// },
+		// {
+		// 	about:           "creating an error with empty parameters",
+		// 	args:            []string{},
+		// 	expectedCode:    "incorrect_usage",
+		// 	expectedMessage: "you should at least pass message to create a proper error!",
+		// },
+	}
+}
+
+func TestNewf(t *testing.T) {
+	for _, tc := range getNewErrorfTestCase() {
+		t.Run(tc.about, func(t *testing.T) {
+			err := Newf(tc.code, tc.format, tc.args...)
+
+			require.Equal(t, tc.expectedCode, err.Code)
+			require.Equal(t, tc.expectedMessage, err.Msg)
+		})
+	}
+}
