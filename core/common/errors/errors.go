@@ -3,6 +3,7 @@ package errors
 import (
 	"fmt"
 	"runtime"
+	"strings"
 )
 
 /*Error type for a new application error */
@@ -13,24 +14,24 @@ type Error struct {
 }
 
 func (err *Error) Error() string {
-	if err.Code == "" {
-		return fmt.Sprintf("%s %s", err.Location, err.Msg)
+	if strings.TrimSpace(err.Code) == "" {
+		return fmt.Sprintf("%s %s", err.Location, strings.TrimSpace(err.Msg))
 	}
-	return fmt.Sprintf("%s %s: %s", err.Location, err.Code, err.Msg)
+	return fmt.Sprintf("%s %s: %s", err.Location, strings.TrimSpace(err.Code), strings.TrimSpace(err.Msg))
 }
 
 func (err *Error) top() string {
-	if err.Code == "" {
+	if strings.TrimSpace(err.Code) == "" {
 		return err.Msg
 	}
-	return fmt.Sprintf("%s: %s", err.Code, err.Msg)
+	return fmt.Sprintf("%s: %s", strings.TrimSpace(err.Code), strings.TrimSpace(err.Msg))
 }
 
 func (err *Error) excludeLocation() string {
-	if err.Code == "" {
+	if strings.TrimSpace(err.Code) == "" {
 		return err.Msg
 	}
-	return fmt.Sprintf("%s: %s", err.Code, err.Msg)
+	return fmt.Sprintf("%s: %s", strings.TrimSpace(err.Code), strings.TrimSpace(err.Msg))
 }
 
 // Top since errors can be wrapped and stacked,
