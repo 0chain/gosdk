@@ -26,6 +26,13 @@ func (err *Error) top() string {
 	return fmt.Sprintf("%s: %s", err.Code, err.Msg)
 }
 
+func (err *Error) excludeLocation() string {
+	if err.Code == "" {
+		return err.Msg
+	}
+	return fmt.Sprintf("%s: %s", err.Code, err.Msg)
+}
+
 // Top since errors can be wrapped and stacked,
 // it's necessary to get the top level error for tests and validations
 func Top(err error) string {
@@ -56,6 +63,32 @@ func (w *withError) Error() string {
 	}
 	if w.previous != nil {
 		retError += "\n" + w.previous.Error()
+	}
+	return retError
+}
+
+func (w *withError) excludeLocation() string {
+	retError := ""
+	if w.current != nil {
+		switch c := w.current.(type) {
+		case *Error:
+			retError += c.excludeLocation()
+		case *withError:
+			retError += c.excludeLocation()
+		default:
+			retError += c.Error()
+		}
+	}
+	if w.previous != nil {
+		// retError += "\n" + w.previous.Error()
+		switch p := w.previous.(type) {
+		case *Error:
+			retError += ": " + p.excludeLocation()
+		case *withError:
+			retError += ": " + p.excludeLocation()
+		default:
+			retError += ": " + p.Error()
+		}
 	}
 	return retError
 }
@@ -174,4 +207,15 @@ func isWithError(err error) *withError {
 		return t
 	}
 	return nil
+}
+
+func ExcludeLocation(err error) string {
+	switch e := err.(type) {
+	case *Error:
+		return e.excludeLocation()
+	case *withError:
+		return e.excludeLocation()
+	default:
+		return e.Error()
+	}
 }
