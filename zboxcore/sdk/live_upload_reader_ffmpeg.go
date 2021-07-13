@@ -5,9 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"path"
-	"path/filepath"
-	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -17,12 +14,7 @@ import (
 
 // FfmpegRecorder wrap ffmpeg command to capture video and audio from local camera and microphone
 type FfmpegRecorder struct {
-	// fileName output file name
-	fileName string
-	// fileExt extention of output file
-	fileExt string
-	// dir output dir
-	dir string
+	builder FileNameBuilder
 
 	// delay segment time of output
 	delay int
@@ -43,15 +35,11 @@ type FfmpegRecorder struct {
 // CreateFfmpegRecorder create a ffmpeg commander to capture video and audio  local camera and microphone
 func CreateFfmpegRecorder(file string, delay int) (*FfmpegRecorder, error) {
 
-	ext := filepath.Ext(file)
+	builder := createFileNameBuilder(file)
 
-	dir, fileName := path.Split(file)
+	args := buildFfmpegArgs(builder.OutFile(), delay)
 
-	fileName = strings.TrimRight(fileName, ext)
-
-	args := buildFfmpegArgs(dir+fileName+".%d"+ext, delay)
-
-	fmt.Println(args)
+	fmt.Println("ffmpeg", strings.Join(args, " "))
 
 	cmd := exec.Command("ffmpeg", args...)
 	cmd.Stderr = os.Stderr
@@ -64,9 +52,7 @@ func CreateFfmpegRecorder(file string, delay int) (*FfmpegRecorder, error) {
 	}
 
 	fr := &FfmpegRecorder{
-		fileName:   fileName,
-		fileExt:    ext,
-		dir:        dir,
+		builder:    builder,
 		delay:      delay,
 		cmd:        cmd,
 		clipsIndex: 0,
@@ -89,13 +75,14 @@ func (fr *FfmpegRecorder) wait() {
 	fr.err = fr.cmd.Wait()
 }
 
-// func (fr *FfmpegRecorder) createReader(clipsIndex int) *io.ReadCloser {
-// 	io.TeeReader(r io.Reader, w io.Writer)
-// }
+// GetClipsFile get clips file
+func (fr *FfmpegRecorder) GetClipsFile(clipsIndex int) string {
+	return fr.builder.ClipsFile(clipsIndex)
+}
 
 // GetFileName get clips file name
-func (fr *FfmpegRecorder) GetFileName(clipsIndex int) string {
-	return fr.dir + fr.fileName + "." + strconv.Itoa(clipsIndex) + fr.fileExt
+func (fr *FfmpegRecorder) GetClipsFileName(clipsIndex int) string {
+	return fr.builder.ClipsFileName(clipsIndex)
 }
 
 // Read implements io.Raader
@@ -167,7 +154,7 @@ func (fr *FfmpegRecorder) GetFileContentType() (string, error) {
 			return "", fr.err
 		}
 
-		reader, err := os.Open(fr.GetFileName(fr.clipsIndex))
+		reader, err := os.Open(fr.GetClipsFile(fr.clipsIndex))
 
 		if err == nil {
 			defer reader.Close()
@@ -225,7 +212,7 @@ func (fr *FfmpegRecorder) initClipsReader() error {
 
 	if fr.clipsReader == nil {
 
-		nextClips := fr.GetFileName(fr.clipsIndex + 1)
+		nextClips := fr.GetClipsFile(fr.clipsIndex + 1)
 
 		for {
 
@@ -238,7 +225,7 @@ func (fr *FfmpegRecorder) initClipsReader() error {
 
 			if err == nil {
 				if fr.clipsReader == nil {
-					fr.clipsReader, err = os.Open(fr.GetFileName(fr.clipsIndex))
+					fr.clipsReader, err = os.Open(fr.GetClipsFile(fr.clipsIndex))
 
 					if err != nil {
 						return err

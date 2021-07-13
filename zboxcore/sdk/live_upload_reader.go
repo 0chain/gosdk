@@ -14,7 +14,8 @@ var (
 type LiveUploadReader interface {
 	io.Reader
 	Size() int64
-	GetFileName(clipsIndex int) string
+	GetClipsFile(clipsIndex int) string
+	GetClipsFileName(cliipsIndex int) string
 }
 
 // // liveUploadReader wrap io.Reader with delay feature

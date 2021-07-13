@@ -107,8 +107,13 @@ func (dl *YoutubeDL) splitClips() {
 
 }
 
-// GetFileName get video file name
-func (dl *YoutubeDL) GetFileName(clipsIndex int) string {
+// GetClipsFile get video file name
+func (dl *YoutubeDL) GetClipsFile(clipsIndex int) string {
+	return dl.fileName
+}
+
+// GetClipsFileName get video file name
+func (dl *YoutubeDL) GetClipsFileName(clipsIndex int) string {
 	return dl.fileName
 }
 

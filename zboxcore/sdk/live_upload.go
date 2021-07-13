@@ -1,9 +1,5 @@
 package sdk
 
-import (
-	"strconv"
-)
-
 // LiveUpload live streaming video upload manager
 type LiveUpload struct {
 	allocationObj *Allocation
@@ -68,12 +64,12 @@ func (lu *LiveUpload) Start() error {
 
 func (lu *LiveUpload) createClipsUpload(clipsIndex int, reader LiveUploadReader) *StreamUpload {
 	fileMeta := FileMeta{
-		Path:       reader.GetFileName(clipsIndex),
+		Path:       reader.GetClipsFile(clipsIndex),
 		ActualSize: reader.Size(),
 
 		MimeType:   lu.liveMeta.MimeType,
-		RemoteName: lu.liveMeta.RemoteName + "." + strconv.Itoa(clipsIndex),
-		RemotePath: lu.liveMeta.RemotePath + "." + strconv.Itoa(clipsIndex),
+		RemoteName: reader.GetClipsFileName(clipsIndex),
+		RemotePath: lu.liveMeta.RemotePath + "/" + reader.GetClipsFileName(clipsIndex),
 		Attributes: lu.liveMeta.Attributes,
 	}
 

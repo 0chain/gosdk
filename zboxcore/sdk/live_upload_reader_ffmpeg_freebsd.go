@@ -1,5 +1,9 @@
 package sdk
 
+import (
+	"strconv"
+)
+
 // buildFfmpegArgs build ffmpeg arguments for freebsd
 func buildFfmpegArgs(fileName string, delay int) []string {
 	return []string{
