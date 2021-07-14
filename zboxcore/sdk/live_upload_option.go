@@ -3,15 +3,6 @@ package sdk
 // LiveUploadOption set live upload option
 type LiveUploadOption func(lu *LiveUpload)
 
-// WithLiveClipsSize set clipsSize . ignore if clipsSize <=0
-func WithLiveClipsSize(clipsSize int) LiveUploadOption {
-	return func(lu *LiveUpload) {
-		if clipsSize > 0 {
-			lu.clipsSize = clipsSize
-		}
-	}
-}
-
 // WithLiveDelay set delayed . ignore if delayed <=0
 func WithLiveDelay(delaySeconds int) LiveUploadOption {
 	return func(lu *LiveUpload) {

@@ -1,191 +1,126 @@
 package sdk
 
 import (
-	"errors"
+	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"os/signal"
 	"strconv"
 	"strings"
 	"syscall"
-	"time"
-
-	"github.com/jtguibas/cinema"
 )
 
 // YoutubeDL wrap youtube-dl to download video from youtube
 type YoutubeDL struct {
-	fileReader  *os.File
-	fileName    string
-	err         error
-	cmd         *exec.Cmd
-	delay       float64
-	clipsIndex  int
-	clipsOffset float64
-	offset      int64
+	liveUploadReaderBase
+
+	// cmdYoutubeDL youtube-dl command
+	cmdYoutubeDL *exec.Cmd
+
+	// cmdFfmpeg ffmpeg command
+	cmdFfmpeg *exec.Cmd
 }
 
 // CreateYoutubeDL create a youtube-dl instance to download video file from youtube
-func CreateYoutubeDL(feedURL string, format string, cacheDir string, proxy string, delay int) (*YoutubeDL, error) {
+func CreateYoutubeDL(localPath string, feedURL string, format string, proxy string, delay int) (*YoutubeDL, error) {
 
-	args := []string{"--no-part", "-q", "-f", format}
+	//youtube-dl -f best https://www.youtube.com/watch?v=qjNQfSobVwE --proxy http://127.0.0.1:8000 -o - | ffmpeg -i - -flags +cgop -g 30 -hls_time 5 youtube.m3u8
+
+	builder := createFileNameBuilder(localPath)
+
+	argsYoutubeDL := []string{
+		//"-q",
+		"-f", format,
+		feedURL,
+		"-o", "-"} //output to stdout
+
 	if len(proxy) > 0 {
-		args = append(args, "--proxy", proxy)
+		argsYoutubeDL = append(argsYoutubeDL, "--proxy", proxy)
 	}
 
-	cmdGetFileName := exec.Command("youtube-dl", append(args, "--get-filename", "--id", feedURL)...)
-	buf, err := cmdGetFileName.Output()
+	argsYoutubeDL = append(argsYoutubeDL, "|", "ffmpeg")
 
+	fmt.Println("[cmd]", "youtube-dl", strings.Join(argsYoutubeDL, " "))
+
+	r, w := io.Pipe()
+
+	cmdYoutubeDL := exec.Command("youtube-dl", argsYoutubeDL...)
+	cmdYoutubeDL.Stderr = os.Stderr
+	cmdYoutubeDL.Stdout = w
+
+	argsFfmpeg := []string{
+		"-i", "-",
+		"-flags", "+cgop",
+		"-g", "30",
+		"-hls_time", strconv.Itoa(delay),
+		builder.OutFile(),
+	}
+
+	fmt.Println("ffmpeg", strings.Join(argsFfmpeg, " "))
+	cmdFfmpeg := exec.Command("ffmpeg", argsFfmpeg...)
+	cmdFfmpeg.Stderr = os.Stderr
+	cmdFfmpeg.Stdin = r
+
+	err := cmdYoutubeDL.Start()
 	if err != nil {
 		return nil, err
 	}
-	defer cmdGetFileName.Process.Kill()
 
-	//remove line-break
-	fileName := cacheDir + string(os.PathSeparator) + time.Now().Format("2006-01-02_15-04-05") + "_" + strings.Split(string(buf), "\n")[0]
-
-	cmd := exec.Command("youtube-dl", append(args, "-o", fileName, feedURL)...)
-	cmd.Stderr = os.Stderr
-	cmd.Stdout = os.Stdout
-
-	err = cmd.Start()
-
+	err = cmdFfmpeg.Start()
 	if err != nil {
 		return nil, err
 	}
 
 	dl := &YoutubeDL{
-		fileName: fileName,
-		delay:    float64(delay),
-		cmd:      cmd,
+
+		liveUploadReaderBase: liveUploadReaderBase{
+			builder:    builder,
+			delay:      delay,
+			clipsIndex: 0,
+		},
+		cmdYoutubeDL: cmdYoutubeDL,
+		cmdFfmpeg:    cmdFfmpeg,
 	}
 
-	go dl.Wait()
-	go dl.splitClips()
+	go dl.wait()
 
 	return dl, nil
 }
 
-// Wait wait youtube-dl to complete or crash
-func (dl *YoutubeDL) Wait() {
-
+func (r *YoutubeDL) wait() {
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
 		<-sigs
-		dl.Close()
+		r.Close()
 	}()
 
-	dl.err = dl.cmd.Wait()
+	go func() {
+		r.err = r.cmdFfmpeg.Wait()
+	}()
 
-}
-
-func (dl *YoutubeDL) splitClips() {
-	for {
-
-		time.Sleep(5 * time.Second)
-
-		video, err := cinema.Load(dl.fileName)
-
-		if err == nil {
-
-			if video.End().Seconds() > dl.clipsOffset+dl.delay {
-				//video.Trim(start time.Duration, end time.Duration)
-				video.SetStart(time.Duration(dl.clipsOffset) * time.Second)
-				video.SetEnd(time.Duration(dl.delay) * time.Second)
-
-				video.Render(dl.fileName + "." + strconv.Itoa(dl.clipsIndex))
-
-				dl.clipsOffset += dl.delay
-				dl.clipsIndex++
-			}
-
-		}
-
-	}
-
-}
-
-// GetClipsFile get video file name
-func (dl *YoutubeDL) GetClipsFile(clipsIndex int) string {
-	return dl.fileName
-}
-
-// GetClipsFileName get video file name
-func (dl *YoutubeDL) GetClipsFileName(clipsIndex int) string {
-	return dl.fileName
-}
-
-// Size get size of clips
-func (dl *YoutubeDL) Size() int64 {
-	return 0
-}
-
-// Read implements io.Raader
-func (dl *YoutubeDL) Read(p []byte) (int, error) {
-
-	if dl.fileReader == nil {
-		var err error
-		for {
-
-			if dl.err != nil {
-				return 0, dl.err
-			}
-
-			if dl.fileReader == nil {
-				dl.fileReader, err = os.Open(dl.fileName)
-				if err != nil {
-					if errors.Is(err, os.ErrNotExist) { //download is not started yet
-						time.Sleep(1 * time.Second)
-						continue
-					}
-				}
-				// download is started, and bytes is ready
-				break
-			}
-		}
-	}
-
-	wantRead := int64(len(p))
-
-	//loop read bytes till ready
-	for {
-
-		if dl.err != nil {
-			return 0, dl.err
-		}
-
-		fi, _ := dl.fileReader.Stat()
-
-		//log.Println(fi.Size() / 1024 / 1024)
-
-		if dl.offset+wantRead < fi.Size() {
-			dl.fileReader.Seek(dl.offset, 0)
-			readLen, err := dl.fileReader.Read(p)
-
-			dl.offset += int64(readLen)
-
-			return readLen, err
-		}
-
-		time.Sleep(1 * time.Second)
-
-	}
-
+	r.err = r.cmdYoutubeDL.Wait()
 }
 
 // Close implements io.Closer
-func (dl *YoutubeDL) Close() error {
-
-	if dl != nil {
-
-		if dl.fileReader != nil {
-			dl.fileReader.Close()
+func (r *YoutubeDL) Close() error {
+	if r != nil {
+		if r.cmd != nil {
+			r.cmd.Process.Kill()
 		}
 
-		if dl.cmd != nil {
-			dl.cmd.Process.Kill()
+		if r.cmdYoutubeDL != nil {
+			r.cmdYoutubeDL.Process.Kill()
+		}
+
+		if r.cmdFfmpeg != nil {
+			r.cmdFfmpeg.Process.Kill()
+		}
+
+		if r.clipsReader != nil {
+			r.clipsReader.Close()
 		}
 	}
 

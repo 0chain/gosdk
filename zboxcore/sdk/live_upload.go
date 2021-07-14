@@ -6,8 +6,6 @@ type LiveUpload struct {
 
 	// delay  delay to upload video
 	delay int
-	// clipsSize how much bytes in a video clips
-	clipsSize int
 
 	liveMeta   LiveMeta
 	liveReader LiveUploadReader
