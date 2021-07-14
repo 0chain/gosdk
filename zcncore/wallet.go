@@ -32,6 +32,7 @@ type ChainConfig struct {
 	MinSubmit               int      `json:"min_submit"`
 	MinConfirmation         int      `json:"min_confirmation"`
 	ConfirmationChainLength int      `json:"confirmation_chain_length"`
+	EthNode                 string   `json:"eth_node"`
 }
 
 var defaultLogLevel = logger.DEBUG
@@ -674,6 +675,10 @@ func ConvertUSDToToken(usd float64) (float64, error) {
 }
 
 func getTokenUSDRate() (float64, error) {
+	return getTokenRateByCurrency("usd")
+}
+
+func getTokenRateByCurrency(currency string) (float64, error){
 	var CoinGeckoResponse struct {
 		ID         string `json:"id"`
 		Symbol     string `json:"symbol"`
@@ -704,7 +709,7 @@ func getTokenUSDRate() (float64, error) {
 		return 0, err
 	}
 
-	return CoinGeckoResponse.MarketData.CurrentPrice["usd"], nil
+	return CoinGeckoResponse.MarketData.CurrentPrice[currency], nil
 }
 
 func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {

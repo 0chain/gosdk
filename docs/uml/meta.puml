@@ -1,0 +1,66 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox meta" as cli
+collections gosdk
+collections blobber
+
+alt not empty remotepath
+cli -> gosdk: GetAllocation(allocationID)
+cli -> gosdk: GetFileMeta(remotepath)
+
+gosdk -> gosdk: check initialized allocation
+gosdk -> gosdk: create list request
+
+group for each blobber (blobber, bidx)
+gosdk -> blobber: call http request to get file meta
+alt successful status code
+blobber --> gosdk: return file meta
+end
+end
+
+group for each file meta return from blobber (fileref, idx)
+alt number of actual hash greater than number of consensus
+gosdk -> gosdk: increase consensus
+end
+alt number of consensus already met threshold
+gosdk -> gosdk: return current fileref and create corresponding foundMask
+end
+end
+
+alt not empty fileref
+gosdk -> cli: return consolidated file meta
+end
+
+else not empty authticket
+cli -> gosdk: GetAllocationFromAuthTicket(authticket)
+cli -> gosdk: InitAuthTicket(authticket)
+alt length of lookuphash equal 0
+cli -> gosdk: GetLookupHash()
+end
+cli -> gosdk: GetFileMetaFromAuthTicket(authticket, lookuphash)
+
+gosdk -> gosdk: check initialized allocation
+gosdk -> gosdk: get auth ticket from authticket
+gosdk -> gosdk: check valid hash
+gosdk -> gosdk: create list request
+
+group for each blobber (blobber, bidx)
+gosdk -> blobber: call http request to get file meta
+alt successful status code
+blobber --> gosdk: return file meta
+end
+end
+
+group for each file meta return from blobber (fileref, idx)
+alt number of actual hash greater than number of consensus
+gosdk -> gosdk: increase consensus
+end
+alt number of consensus already met threshold
+gosdk -> gosdk: return current fileref and create corresponding foundMask
+end
+end
+
+alt not empty fileref
+gosdk -> cli: return consolidated file meta
+end
+end
+@enduml
