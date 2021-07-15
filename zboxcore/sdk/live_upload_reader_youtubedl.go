@@ -23,23 +23,17 @@ type YoutubeDL struct {
 }
 
 // CreateYoutubeDL create a youtube-dl instance to download video file from youtube
-func CreateYoutubeDL(localPath string, feedURL string, format string, proxy string, delay int) (*YoutubeDL, error) {
+func CreateYoutubeDL(localPath string, feedURL string, downloadArgs []string, ffmpegArgs []string, delay int) (*YoutubeDL, error) {
 
 	//youtube-dl -f best https://www.youtube.com/watch?v=qjNQfSobVwE --proxy http://127.0.0.1:8000 -o - | ffmpeg -i - -flags +cgop -g 30 -hls_time 5 youtube.m3u8
 
 	builder := createFileNameBuilder(localPath)
 
-	argsYoutubeDL := []string{
-		//"-q",
-		"-f", format,
-		feedURL,
-		"-o", "-"} //output to stdout
+	argsYoutubeDL := append(downloadArgs,
+		"-o", "-",
+		feedURL) //output to stdout
 
-	if len(proxy) > 0 {
-		argsYoutubeDL = append(argsYoutubeDL, "--proxy", proxy)
-	}
-
-	argsYoutubeDL = append(argsYoutubeDL, "|", "ffmpeg")
+	//argsYoutubeDL = append(argsYoutubeDL)
 
 	fmt.Println("[cmd]", "youtube-dl", strings.Join(argsYoutubeDL, " "))
 
@@ -49,18 +43,18 @@ func CreateYoutubeDL(localPath string, feedURL string, format string, proxy stri
 	cmdYoutubeDL.Stderr = os.Stderr
 	cmdYoutubeDL.Stdout = w
 
-	argsFfmpeg := []string{
+	argsFfmpeg := append(ffmpegArgs,
 		"-i", "-",
 		"-flags", "+cgop",
 		"-g", "30",
 		"-hls_time", strconv.Itoa(delay),
-		builder.OutFile(),
-	}
+		builder.OutFile())
 
 	fmt.Println("ffmpeg", strings.Join(argsFfmpeg, " "))
 	cmdFfmpeg := exec.Command("ffmpeg", argsFfmpeg...)
 	cmdFfmpeg.Stderr = os.Stderr
 	cmdFfmpeg.Stdin = r
+	cmdFfmpeg.Stdout = os.Stdout
 
 	err := cmdYoutubeDL.Start()
 	if err != nil {

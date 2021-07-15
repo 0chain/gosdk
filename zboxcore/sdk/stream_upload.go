@@ -405,7 +405,6 @@ func (su *StreamUpload) readNextChunks(chunkIndex int) ([][]byte, int64, int64, 
 
 		if !errors.Is(err, io.EOF) {
 			return nil, 0, 0, false, err
-
 		}
 
 		//all bytes are read
@@ -423,6 +422,10 @@ func (su *StreamUpload) readNextChunks(chunkIndex int) ([][]byte, int64, int64, 
 		chunkSize = int(math.Ceil(float64(readLen) / float64(su.allocationObj.DataShards)))
 		chunkBytes = chunkBytes[:readLen]
 		isFinal = true
+	}
+
+	if readLen == 0 {
+		return nil, int64(readLen), int64(chunkSize), isFinal, nil
 	}
 
 	shards, err := su.fileErasureEncoder.Split(chunkBytes)
