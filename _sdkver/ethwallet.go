@@ -205,6 +205,27 @@ type BalanceCallback struct {
 	info   string
 }
 
+type InfoCallback struct {
+	wg     *sync.WaitGroup
+	status int
+	value  int64
+	info   string
+}
+
+type USDInfoCallback struct {
+	wg     *sync.WaitGroup
+	status int
+	value  int64
+	info   string
+}
+
+type AuthCallback struct {
+	wg     *sync.WaitGroup
+	status int
+	value  int64
+	info   string
+}
+
 func (balCall *BalanceCallback) OnBalanceAvailable(status int, value int64, info string) {
 	defer balCall.wg.Done()
 
