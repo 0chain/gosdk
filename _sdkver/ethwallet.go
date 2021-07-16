@@ -207,23 +207,23 @@ type BalanceCallback struct {
 
 type InfoCallback struct {
 	wg     *sync.WaitGroup
+	op     int
 	status int
-	value  int64
 	info   string
+	err    string
 }
 
 type USDInfoCallback struct {
 	wg     *sync.WaitGroup
 	status int
-	value  int64
 	info   string
+	err    string
 }
 
 type AuthCallback struct {
 	wg     *sync.WaitGroup
 	status int
-	value  int64
-	info   string
+	err    string
 }
 
 func (balCall *BalanceCallback) OnBalanceAvailable(status int, value int64, info string) {
@@ -241,4 +241,31 @@ func (wallCall *WalletCallback) OnWalletCreateComplete(status int, w string, err
 	wallCall.status = status
 	wallCall.wallet = w
 	wallCall.err = err
+}
+
+func (infoCall *InfoCallback) OnInfoAvailable(op int, status int, info string, err string) {
+	defer infoCall.wg.Done()
+	fmt.Println("callback [op, status, info, err]:", op, status, info, err)
+
+	infoCall.op = op
+	infoCall.status = status
+	infoCall.info = info
+	infoCall.err = err
+}
+
+func (usdCall *USDInfoCallback) OnUSDInfoAvailable(status int, info string, err string) {
+	defer usdCall.wg.Done()
+	fmt.Println("callback [status, info, err]:", status, info, err)
+
+	usdCall.status = status
+	usdCall.info = info
+	usdCall.err = err
+}
+
+func (authCall *AuthCallback) OnSetupComplete(status int, err string) {
+	defer authCall.wg.Done()
+	fmt.Println("callback [status, err]:", status, err)
+
+	authCall.status = status
+	authCall.err = err
 }

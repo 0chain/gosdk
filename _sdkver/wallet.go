@@ -12,7 +12,7 @@ import (
 )
 
 // convert JS String to []String
-func strToListSring(s string) []String {
+func strToListSring(s string) []string {
 	slice := []string{}
 	err := json.Unmarshal([]byte(s), &slice)
 
@@ -22,12 +22,12 @@ func strToListSring(s string) []String {
 	return slice
 }
 
-func GetMinShardersVerify(this js.Value) interface{} {
+func GetMinShardersVerify(this js.Value, p []js.Value) interface{} {
 	result := zcncore.GetMinShardersVerify()
 	return result
 }
 
-func GetVersion(this js.Value) interface{} {
+func GetVersion(this js.Value, p []js.Value) interface{} {
 	result := zcncore.GetVersion()
 	return result
 }
@@ -47,7 +47,7 @@ func SetLogFile(this js.Value, p []js.Value) interface{} {
 	return nil
 }
 
-func CloseLog(this js.Value) interface{} {
+func CloseLog(this js.Value, p []js.Value) interface{} {
 	zcncore.CloseLog()
 	return nil
 }
@@ -84,7 +84,7 @@ func SetNetwork(this js.Value, p []js.Value) interface{} {
 }
 
 func GetNetworkJSON(this js.Value, p []js.Value) interface{} {
-	result = zcncore.GetNetworkJSON()
+	result := zcncore.GetNetworkJSON()
 	return result
 }
 
@@ -162,13 +162,14 @@ func SplitKeys(this js.Value, p []js.Value) interface{} {
 	return result
 }
 
-func strToWallet(s string) Wallet {
+func strToWallet(s string) zcncrypto.Wallet {
 	var w zcncrypto.Wallet
 	err := json.Unmarshal([]byte(s), &w)
-	if err != nil {
-		return w
+	if err == nil {
+		fmt.Println("error:", err)
 	}
-	fmt.Println("error:", err)
+
+	return w
 }
 
 func RegisterToMiners(this js.Value, p []js.Value) interface{} {
@@ -185,7 +186,7 @@ func RegisterToMiners(this js.Value, p []js.Value) interface{} {
 
 			wallet := strToWallet(s_wallet)
 
-			err := zcncore.RegisterToMiners(wallet, tcb)
+			err := zcncore.RegisterToMiners(&wallet, tcb)
 			if err != nil {
 				tcb.wg.Done()
 				reject.Invoke(err.Error())
@@ -226,16 +227,18 @@ func SetWalletInfo(this js.Value, p []js.Value) interface{} {
 	splitKeyWallet, _ := strconv.ParseBool(p[0].String())
 	err := zcncore.SetWalletInfo(s_wallet, splitKeyWallet)
 	if err != nil {
-		return err
+		fmt.Println("Cannot set wallet info")
 	}
+	return err
 }
 
 func SetAuthUrl(this js.Value, p []js.Value) interface{} {
 	url := p[0].String()
 	err := zcncore.SetAuthUrl(url)
 	if err != nil {
-		return err
+		fmt.Println("Cannot set auth url")
 	}
+	return err
 }
 
 func GetBalance(this js.Value, p []js.Value) interface{} {
@@ -257,8 +260,8 @@ func GetBalance(this js.Value, p []js.Value) interface{} {
 
 			resolve.Invoke(map[string]interface{}{
 				"status": tcb.status,
-				"err":    tcb.err,
-				"wallet": tcb.wallet,
+				"value":  tcb.value,
+				"info":   tcb.info,
 			})
 		}()
 
@@ -281,9 +284,7 @@ func GetBalanceWallet(this js.Value, p []js.Value) interface{} {
 			tcb.wg = &sync.WaitGroup{}
 			tcb.wg.Add(1)
 
-			wallet := strToWallet(s_wallet)
-
-			err := zcncore.GetBalanceWallet(wallet, tcb)
+			err := zcncore.GetBalanceWallet(s_wallet, tcb)
 			if err != nil {
 				tcb.wg.Done()
 				reject.Invoke(err.Error())
@@ -292,8 +293,8 @@ func GetBalanceWallet(this js.Value, p []js.Value) interface{} {
 
 			resolve.Invoke(map[string]interface{}{
 				"status": tcb.status,
-				"err":    tcb.err,
-				"wallet": tcb.wallet,
+				"value":  tcb.value,
+				"info":   tcb.info,
 			})
 		}()
 
@@ -305,25 +306,26 @@ func GetBalanceWallet(this js.Value, p []js.Value) interface{} {
 }
 
 func ConvertToToken(this js.Value, p []js.Value) interface{} {
-	value := strconv.ParseInt([0].String(), 10, 64)
+	value, _ := strconv.ParseInt(p[0].String(), 10, 64)
 	result := zcncore.ConvertToToken(value)
+
 	return result
 }
 
 func ConvertToValue(this js.Value, p []js.Value) interface{} {
-	token := strconv.ParseFloat([0].String(), 10, 64)
+	token, _ := strconv.ParseFloat(p[0].String(), 64)
 	result := zcncore.ConvertToValue(token)
 	return result
 }
 
 func ConvertTokenToUSD(this js.Value, p []js.Value) interface{} {
-	token := strconv.ParseFloat([0].String(), 10, 64)
+	token, _ := strconv.ParseFloat(p[0].String(), 64)
 	result, _ := zcncore.ConvertTokenToUSD(token)
 	return result
 }
 
 func ConvertUSDToToken(this js.Value, p []js.Value) interface{} {
-	usd := strconv.ParseFloat([0].String(), 10, 64)
+	usd, _ := strconv.ParseFloat(p[0].String(), 64)
 	result, _ := zcncore.ConvertUSDToToken(usd)
 	return result
 }
@@ -334,7 +336,7 @@ func GetLockConfig(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			tcb := &BalanceCallback{}
+			tcb := &InfoCallback{}
 			tcb.wg = &sync.WaitGroup{}
 			tcb.wg.Add(1)
 
@@ -346,9 +348,10 @@ func GetLockConfig(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -377,9 +380,10 @@ func GetLockedTokens(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -427,8 +431,8 @@ func GetZcnUSDInfo(this js.Value, p []js.Value) interface{} {
 
 			resolve.Invoke(map[string]interface{}{
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -441,12 +445,12 @@ func GetZcnUSDInfo(this js.Value, p []js.Value) interface{} {
 
 func SetupAuth(this js.Value, p []js.Value) interface{} {
 	authHost := p[0].String()
-	clientID := p[1].String() 
+	clientID := p[1].String()
 	clientKey := p[2].String()
 	publicKey := p[3].String()
 	privateKey := p[4].String()
-	localPublicKey := p[5]].String()
-	
+	localPublicKey := p[5].String()
+
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
@@ -466,7 +470,6 @@ func SetupAuth(this js.Value, p []js.Value) interface{} {
 			resolve.Invoke(map[string]interface{}{
 				"status": tcb.status,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -486,7 +489,7 @@ func GetIdForUrl(this js.Value, p []js.Value) interface{} {
 
 func GetVestingPoolInfo(this js.Value, p []js.Value) interface{} {
 	poolID := p[0].String()
-	
+
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
@@ -504,9 +507,10 @@ func GetVestingPoolInfo(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -519,7 +523,7 @@ func GetVestingPoolInfo(this js.Value, p []js.Value) interface{} {
 
 func GetVestingClientList(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
-	
+
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
@@ -537,9 +541,10 @@ func GetVestingClientList(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -568,9 +573,10 @@ func GetVestingSCConfig(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -599,9 +605,10 @@ func GetMiners(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -630,9 +637,10 @@ func GetSharders(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -645,7 +653,7 @@ func GetSharders(this js.Value, p []js.Value) interface{} {
 
 func GetMinerSCNodeInfo(this js.Value, p []js.Value) interface{} {
 	id := p[0].String()
-	
+
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
@@ -663,9 +671,10 @@ func GetMinerSCNodeInfo(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -679,7 +688,7 @@ func GetMinerSCNodeInfo(this js.Value, p []js.Value) interface{} {
 func GetMinerSCNodePool(this js.Value, p []js.Value) interface{} {
 	id := p[0].String()
 	poolID := p[1].String()
-	
+
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
@@ -697,9 +706,10 @@ func GetMinerSCNodePool(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -712,7 +722,7 @@ func GetMinerSCNodePool(this js.Value, p []js.Value) interface{} {
 
 func GetMinerSCUserInfo(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
-	
+
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
@@ -730,9 +740,10 @@ func GetMinerSCUserInfo(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -761,9 +772,10 @@ func GetMinerSCConfig(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -773,7 +785,6 @@ func GetMinerSCConfig(this js.Value, p []js.Value) interface{} {
 	promiseConstructor := js.Global().Get("Promise")
 	return promiseConstructor.New(handler)
 }
-
 
 // //
 // // Storage SC
@@ -796,9 +807,10 @@ func GetStorageSCConfig(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -811,7 +823,7 @@ func GetStorageSCConfig(this js.Value, p []js.Value) interface{} {
 
 func GetChallengePoolInfo(this js.Value, p []js.Value) interface{} {
 	allocID := p[0].String()
-	
+
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
@@ -829,9 +841,10 @@ func GetChallengePoolInfo(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -844,7 +857,7 @@ func GetChallengePoolInfo(this js.Value, p []js.Value) interface{} {
 
 func GetAllocation(this js.Value, p []js.Value) interface{} {
 	allocID := p[0].String()
-	
+
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
@@ -862,9 +875,10 @@ func GetAllocation(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -877,7 +891,7 @@ func GetAllocation(this js.Value, p []js.Value) interface{} {
 
 func GetAllocations(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
-	
+
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
@@ -895,9 +909,10 @@ func GetAllocations(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -910,7 +925,7 @@ func GetAllocations(this js.Value, p []js.Value) interface{} {
 
 func GetReadPoolInfo(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
-	
+
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
@@ -928,9 +943,10 @@ func GetReadPoolInfo(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -943,7 +959,7 @@ func GetReadPoolInfo(this js.Value, p []js.Value) interface{} {
 
 func GetStakePoolInfo(this js.Value, p []js.Value) interface{} {
 	blobberID := p[0].String()
-	
+
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
@@ -961,9 +977,10 @@ func GetStakePoolInfo(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -976,7 +993,7 @@ func GetStakePoolInfo(this js.Value, p []js.Value) interface{} {
 
 func GetStakePoolUserInfo(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
-	
+
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
@@ -994,9 +1011,10 @@ func GetStakePoolUserInfo(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -1025,9 +1043,10 @@ func GetBlobbers(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -1040,7 +1059,7 @@ func GetBlobbers(this js.Value, p []js.Value) interface{} {
 
 func GetBlobber(this js.Value, p []js.Value) interface{} {
 	blobberID := p[0].String()
-	
+
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
@@ -1058,9 +1077,10 @@ func GetBlobber(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -1073,7 +1093,7 @@ func GetBlobber(this js.Value, p []js.Value) interface{} {
 
 func GetWritePoolInfo(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
-	
+
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
@@ -1091,9 +1111,10 @@ func GetWritePoolInfo(this js.Value, p []js.Value) interface{} {
 			tcb.wg.Wait()
 
 			resolve.Invoke(map[string]interface{}{
+				"op":     tcb.op,
 				"status": tcb.status,
+				"info":   tcb.info,
 				"err":    tcb.err,
-				"wallet": tcb.wallet,
 			})
 		}()
 
@@ -1108,7 +1129,7 @@ func Encrypt(this js.Value, p []js.Value) interface{} {
 	key := p[0].String()
 	text := p[0].String()
 
-	result, err := zcncore.Encrypt(key,text)
+	result, err := zcncore.Encrypt(key, text)
 	if err != nil {
 		return err
 	}
@@ -1119,7 +1140,7 @@ func Decrypt(this js.Value, p []js.Value) interface{} {
 	key := p[0].String()
 	text := p[0].String()
 
-	result, err := zcncore.Decrypt(key,text)
+	result, err := zcncore.Decrypt(key, text)
 	if err != nil {
 		return err
 	}
