@@ -3,14 +3,15 @@ package sdk
 import (
 	"bytes"
 	"context"
-	"fmt"
-	"github.com/0chain/gosdk/zboxcore/fileref"
 	"io/ioutil"
 	"math/bits"
 	"mime/multipart"
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/gosdk/zboxcore/fileref"
 
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -102,7 +103,7 @@ func (req *CopyRequest) ProcessCopy() error {
 	req.wg.Wait()
 
 	if !req.isConsensusOk() {
-		return fmt.Errorf("Copy failed: Copy request failed. Operation failed.")
+		return errors.New("Copy failed: Copy request failed. Operation failed.")
 	}
 
 	req.consensus = 0
@@ -146,7 +147,7 @@ func (req *CopyRequest) ProcessCopy() error {
 	}
 
 	if !req.isConsensusOk() {
-		return fmt.Errorf("Copy failed: Commit consensus failed")
+		return errors.New("Copy failed: Commit consensus failed")
 	}
 	return nil
 }

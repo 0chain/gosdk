@@ -1,0 +1,22 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox newallocation" as cli
+collections gosdk
+
+alt cost only
+cli -> gosdk: GetAllocationMinLock()
+gosdk -> gosdk: check initialized sdk
+gosdk -> gosdk: create allocation request data
+gosdk -> gosdk: make SC rest api call
+gosdk -> gosdk: check response result 
+gosdk -> gosdk: create a new map for response
+gosdk --> cli: return response of min lock demand
+else
+cli -> gosdk: CreateAllocation()
+gosdk -> gosdk: check initialized sdk
+gosdk -> gosdk: create allocation request
+gosdk -> gosdk: create smart contract txn data
+gosdk -> gosdk: send smart contract txn value
+gosdk -> cli: return allocation ID
+cli -> cli: store allocation
+end
+@enduml

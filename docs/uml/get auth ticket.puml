@@ -1,0 +1,20 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox share" as cli
+collections gosdk
+
+cli -> gosdk: GetAllocation(allocationID)
+cli -> gosdk: GetFileStats(remotepath)
+cli -> gosdk: GetAuthTicket()
+
+gosdk -> gosdk: check initialized allocation
+gosdk -> gosdk: check valid path
+gosdk -> gosdk: create share request
+
+alt length of refereeEncryptionPublicKey greater than 0
+gosdk -> gosdk: get auth ticket for encrypted file
+gosdk -> cli: return auth ticket
+end
+
+gosdk -> gosdk: get auth ticket 
+gosdk --> cli: return auth ticket
+@enduml

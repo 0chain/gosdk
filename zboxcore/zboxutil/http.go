@@ -13,7 +13,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -56,6 +56,7 @@ const (
 	COLLABORATOR_ENDPOINT    = "/v1/file/collaborator/"
 	CALCULATE_HASH_ENDPOINT  = "/v1/file/calculatehash/"
 	SHARE_ENDPOINT           = "/v1/marketplace/shareinfo/"
+	DIR_ENDPOINT             = "/v1/dir/"
 
 	// CLIENT_SIGNATURE_HEADER represents http request header contains signature.
 	CLIENT_SIGNATURE_HEADER = "X-App-Client-Signature"
@@ -443,6 +444,20 @@ func NewDeleteRequest(baseUrl, allocation string, body io.Reader) (*http.Request
 	return req, nil
 }
 
+func NewCreateDirRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s", baseUrl, DIR_ENDPOINT, allocation)
+	req, err := http.NewRequest(http.MethodPost, url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func NewShareRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, SHARE_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodPost, url, body)
@@ -517,7 +532,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	var err error
 	rate := maxCount * 100 / float32(numSharders)
 	if rate < consensusThresh {
-		err = common.NewError("consensus_failed", "consensus failed on sharders")
+		err = errors.New("consensus_failed", "consensus failed on sharders")
 	}
 
 	if handler != nil {

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/tyler-smith/go-bip39"
 )
@@ -30,6 +31,9 @@ type Wallet struct {
 type SignatureScheme interface {
 	// Generate fresh keys
 	GenerateKeys() (*Wallet, error)
+	// Generate fresh keys based on eth wallet
+	GenerateKeysWithEth(mnemonic, password string) (*Wallet, error)
+
 	// Generate keys from mnemonic for recovery
 	RecoverKeys(mnemonic string) (*Wallet, error)
 
@@ -46,6 +50,7 @@ type SignatureScheme interface {
 	// Combine signature for schemes BLS
 	Add(signature, msg string) (string, error)
 }
+
 // SplitSignatureScheme splits the primary key into number of parts.
 type SplitSignatureScheme interface {
 	SignatureScheme
@@ -62,14 +67,13 @@ func NewSignatureScheme(sigScheme string) SignatureScheme {
 	default:
 		panic(fmt.Sprintf("unknown signature scheme: %v", sigScheme))
 	}
-	return nil
 }
 
 // Marshal returns json string
 func (w *Wallet) Marshal() (string, error) {
 	ws, err := json.Marshal(w)
 	if err != nil {
-		return "", fmt.Errorf("Invalid Wallet")
+		return "", errors.New("wallet_marshal", "Invalid Wallet")
 	}
 	return string(ws), nil
 }
