@@ -9,8 +9,6 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/0chain/gosdk/core/common/errors"
@@ -136,8 +134,8 @@ func (reEncMsg *ReEncryptedMessage) Marshal() ([]byte, error) {
 
 	headerBytes := make([]byte, 256)
 	// 44 + 88 + 44 + 44 => 220, so rest of the 36 bytes minus the commas are padding
-	header := base64.StdEncoding.EncodeToString(D1Bytes) + ","+ base64.StdEncoding.EncodeToString(reEncMsg.D3)
-	header += "," + base64.StdEncoding.EncodeToString(D4Bytes) + ","+ base64.StdEncoding.EncodeToString(D5Bytes)
+	header := base64.StdEncoding.EncodeToString(D1Bytes) + "," + base64.StdEncoding.EncodeToString(reEncMsg.D3)
+	header += "," + base64.StdEncoding.EncodeToString(D4Bytes) + "," + base64.StdEncoding.EncodeToString(D5Bytes)
 	copy(headerBytes, header)
 
 	return append(headerBytes, reEncMsg.D2...), nil
@@ -500,8 +498,8 @@ func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey str
 	if !bytes.Equal(chk1, C.OverallChecksum) { // Check if C4 = H5(C1,C2,C3,alp)
 		return nil, errors.New("Invalid Ciphertext in reEncrypt, C4 != H5")
 	}
-	t := s.Scalar().Pick(s.RandomStream()) // Pick a random integer t
-	reEncMsg.D5 = s.Point().Mul(t, nil)    // D5    = tP
+	t := s.Scalar().Pick(s.RandomStream())   // Pick a random integer t
+	reEncMsg.D5 = s.Point().Mul(t, nil)      // D5    = tP
 	tXj := s.Point().Mul(t, clientPublicKey) // tXj   = t.pkB
 	reEncMsg.D1 = g.Point().Add(C.EncryptedKey, rk.R1)
 	reEncMsg.D2 = C.EncryptedData                                                // D2    = C2
