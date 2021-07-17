@@ -61,12 +61,12 @@ func (at *AuthTicket) GetLookupHash() (string, error) {
 func (at *AuthTicket) Unmarshall() (*marker.AuthTicket, error) {
 	sEnc, err := base64.StdEncoding.DecodeString(at.b64Ticket)
 	if err != nil {
-		return nil, common.NewError("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
+		return nil, errors.New("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
 	}
 	authTicket := &marker.AuthTicket{}
 	err = json.Unmarshal(sEnc, authTicket)
 	if err != nil {
-		return nil, common.NewError("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
+		return nil, errors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
 	}
 	return authTicket, nil
 }
