@@ -143,10 +143,10 @@ if two arguments are passed then
 	second argument is considered for message
 */
 func New(args ...string) *Error {
-	return NewWithLocationLevel(2, args...)
+	return newWithLevel(3, args...)
 }
 
-func NewWithLocationLevel(level int, args ...string) *Error {
+func newWithLevel(level int, args ...string) *Error {
 	currentError := Error{
 		Location: getErrorLocation(level),
 	}
@@ -169,7 +169,7 @@ func NewWithLocationLevel(level int, args ...string) *Error {
 Newf - creates a new error
 */
 func Newf(code string, format string, args ...interface{}) *Error {
-	return NewWithLocationLevel(2, code, fmt.Sprintf(format, args...))
+	return newWithLevel(3, code, fmt.Sprintf(format, args...))
 }
 
 func getErrorLocation(level int) string {
@@ -222,5 +222,11 @@ func ExcludeLocation(err error) string {
 		return e.excludeLocation()
 	default:
 		return e.Error()
+	}
+}
+
+func RegisterCustomError(args ...string) func() *Error {
+	return func() *Error {
+		return newWithLevel(4, args...)
 	}
 }

@@ -36,11 +36,11 @@ func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) 
 	}
 	res, err := req.Post()
 	if err != nil {
-		return nil, errNetwork
+		return nil, errNetwork()
 	}
 	if res.StatusCode != http.StatusOK {
 		if res.StatusCode == http.StatusUnauthorized {
-			return nil, errUserRejected
+			return nil, errUserRejected()
 		}
 		return nil, errors.New(strconv.Itoa(res.StatusCode), fmt.Sprintf("auth error: %v. %v", res.Status, res.Body))
 	}
@@ -54,11 +54,11 @@ func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) 
 	ok, err := txnResp.VerifyTransaction(verifyFn)
 	if err != nil {
 		Logger.Error("verification failed for txn from auth", err.Error())
-		return nil, errAuthVerifyFailed
+		return nil, errAuthVerifyFailed()
 	}
 	if !ok {
-		ta.completeTxn(StatusAuthVerifyFailed, "", errAuthVerifyFailed)
-		return nil, errAuthVerifyFailed
+		ta.completeTxn(StatusAuthVerifyFailed, "", errAuthVerifyFailed())
+		return nil, errAuthVerifyFailed()
 	}
 	return &txnResp, nil
 }
@@ -67,13 +67,13 @@ func (ta *TransactionWithAuth) completeTxn(status int, out string, err error) {
 	// do error code translation
 	if status != StatusSuccess {
 		switch err {
-		case errNetwork:
+		case errNetwork():
 			status = StatusNetworkError
-		case errUserRejected:
+		case errUserRejected():
 			status = StatusRejectedByUser
-		case errAuthVerifyFailed:
+		case errAuthVerifyFailed():
 			status = StatusAuthVerifyFailed
-		case errAuthTimeout:
+		case errAuthTimeout():
 			status = StatusAuthTimeout
 		}
 	}
@@ -122,7 +122,7 @@ func (ta *TransactionWithAuth) submitTxn() {
 	ta.t.txn.CreationDate = authTxn.CreationDate
 	err = ta.sign(authTxn.Signature)
 	if err != nil {
-		ta.completeTxn(StatusError, "", errAddSignature)
+		ta.completeTxn(StatusError, "", errAddSignature())
 	}
 	ta.t.submitTxn()
 }

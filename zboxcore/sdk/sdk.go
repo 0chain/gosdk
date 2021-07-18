@@ -27,7 +27,7 @@ import (
 
 const STORAGE_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
 
-var sdkNotInitialized = errors.New("sdk_not_initialized", "SDK is not initialised")
+var sdknotInitialized = errors.RegisterCustomError("sdk_not_initialized", "SDK is not initialised")
 
 const (
 	OpUpload   int = 0
@@ -127,7 +127,7 @@ func SetNetwork(miners []string, sharders []string) {
 
 func CreateReadPool() (err error) {
 	if !sdkInitialized {
-		return sdkNotInitialized
+		return sdknotInitialized()
 	}
 	_, _, err = smartContractTxn(transaction.SmartContractTxnData{
 		Name: transaction.STORAGESC_CREATE_READ_POOL,
@@ -178,7 +178,7 @@ func (aps *AllocationPoolStats) AllocFilter(allocID string) {
 // for current client of the sdk.
 func GetReadPoolInfo(clientID string) (info *AllocationPoolStats, err error) {
 	if !sdkInitialized {
-		return nil, sdkNotInitialized
+		return nil, sdknotInitialized()
 	}
 
 	if clientID == "" {
@@ -207,7 +207,7 @@ func GetReadPoolInfo(clientID string) (info *AllocationPoolStats, err error) {
 func ReadPoolLock(dur time.Duration, allocID, blobberID string,
 	tokens, fee int64) (err error) {
 	if !sdkInitialized {
-		return sdkNotInitialized
+		return sdknotInitialized()
 	}
 
 	type lockRequest struct {
@@ -232,7 +232,7 @@ func ReadPoolLock(dur time.Duration, allocID, blobberID string,
 // ReadPoolUnlock unlocks tokens in expired read pool
 func ReadPoolUnlock(poolID string, fee int64) (err error) {
 	if !sdkInitialized {
-		return sdkNotInitialized
+		return sdknotInitialized()
 	}
 
 	type unlockRequest struct {
@@ -323,7 +323,7 @@ type StakePoolInfo struct {
 // for current client of the sdk.
 func GetStakePoolInfo(blobberID string) (info *StakePoolInfo, err error) {
 	if !sdkInitialized {
-		return nil, sdkNotInitialized
+		return nil, sdknotInitialized()
 	}
 	if blobberID == "" {
 		blobberID = client.GetClientID()
@@ -356,7 +356,7 @@ type StakePoolUserInfo struct {
 // for a user. If given clientID is empty string, then current client used.
 func GetStakePoolUserInfo(clientID string) (info *StakePoolUserInfo, err error) {
 	if !sdkInitialized {
-		return nil, sdkNotInitialized
+		return nil, sdknotInitialized()
 	}
 	if clientID == "" {
 		clientID = client.GetClientID()
@@ -388,7 +388,7 @@ type stakePoolRequest struct {
 // StakePoolLock locks tokens lack in stake pool
 func StakePoolLock(blobberID string, value, fee int64) (poolID string, err error) {
 	if !sdkInitialized {
-		return poolID, sdkNotInitialized
+		return poolID, sdknotInitialized()
 	}
 	if blobberID == "" {
 		blobberID = client.GetClientID()
@@ -422,7 +422,7 @@ func StakePoolUnlock(blobberID, poolID string, fee int64) (
 	unstake common.Timestamp, err error) {
 
 	if !sdkInitialized {
-		return 0, sdkNotInitialized
+		return 0, sdknotInitialized()
 	}
 	if blobberID == "" {
 		blobberID = client.GetClientID()
@@ -453,7 +453,7 @@ func StakePoolUnlock(blobberID, poolID string, fee int64) (
 // StakePoolPayInterests unlocks a stake pool rewards.
 func StakePoolPayInterests(bloberID string) (err error) {
 	if !sdkInitialized {
-		return sdkNotInitialized
+		return sdknotInitialized()
 	}
 	if bloberID == "" {
 		bloberID = client.GetClientID()
@@ -478,7 +478,7 @@ func StakePoolPayInterests(bloberID string) (err error) {
 // for current client of the sdk.
 func GetWritePoolInfo(clientID string) (info *AllocationPoolStats, err error) {
 	if !sdkInitialized {
-		return nil, sdkNotInitialized
+		return nil, sdknotInitialized()
 	}
 	if clientID == "" {
 		clientID = client.GetClientID()
@@ -506,7 +506,7 @@ func GetWritePoolInfo(clientID string) (info *AllocationPoolStats, err error) {
 func WritePoolLock(dur time.Duration, allocID, blobberID string,
 	tokens, fee int64) (err error) {
 	if !sdkInitialized {
-		return sdkNotInitialized
+		return sdknotInitialized()
 	}
 
 	type lockRequest struct {
@@ -531,7 +531,7 @@ func WritePoolLock(dur time.Duration, allocID, blobberID string,
 // WritePoolUnlock unlocks tokens in expired read pool
 func WritePoolUnlock(poolID string, fee int64) (err error) {
 	if !sdkInitialized {
-		return sdkNotInitialized
+		return sdknotInitialized()
 	}
 
 	type unlockRequest struct {
@@ -565,7 +565,7 @@ type ChallengePoolInfo struct {
 // GetChallengePoolInfo for given allocation.
 func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 	if !sdkInitialized {
-		return nil, sdkNotInitialized
+		return nil, sdknotInitialized()
 	}
 
 	var b []byte
@@ -638,7 +638,7 @@ type StorageSCConfig struct {
 
 func GetStorageSCConfig() (conf *StorageSCConfig, err error) {
 	if !sdkInitialized {
-		return nil, sdkNotInitialized
+		return nil, sdknotInitialized()
 	}
 
 	var b []byte
@@ -675,7 +675,7 @@ type Blobber struct {
 
 func GetBlobbers() (bs []*Blobber, err error) {
 	if !sdkInitialized {
-		return nil, sdkNotInitialized
+		return nil, sdknotInitialized()
 	}
 
 	var b []byte
@@ -704,7 +704,7 @@ func GetBlobbers() (bs []*Blobber, err error) {
 // GetBlobber instance.
 func GetBlobber(blobberID string) (blob *Blobber, err error) {
 	if !sdkInitialized {
-		return nil, sdkNotInitialized
+		return nil, sdknotInitialized()
 	}
 	var b []byte
 	b, err = zboxutil.MakeSCRestAPICall(
@@ -731,7 +731,7 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 
 func GetClientEncryptedPublicKey() (string, error) {
 	if !sdkInitialized {
-		return "", sdkNotInitialized
+		return "", sdknotInitialized()
 	}
 	encScheme := encryption.NewEncryptionScheme()
 	err := encScheme.Initialize(client.GetClient().Mnemonic)
@@ -743,7 +743,7 @@ func GetClientEncryptedPublicKey() (string, error) {
 
 func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error) {
 	if !sdkInitialized {
-		return nil, sdkNotInitialized
+		return nil, sdknotInitialized()
 	}
 	sEnc, err := base64.StdEncoding.DecodeString(authTicket)
 	if err != nil {
@@ -759,7 +759,7 @@ func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error) {
 
 func GetAllocation(allocationID string) (*Allocation, error) {
 	if !sdkInitialized {
-		return nil, sdkNotInitialized
+		return nil, sdknotInitialized()
 	}
 	params := make(map[string]string)
 	params["allocation"] = allocationID
@@ -790,7 +790,7 @@ func GetAllocations() ([]*Allocation, error) {
 
 func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 	if !sdkInitialized {
-		return nil, sdkNotInitialized
+		return nil, sdknotInitialized()
 	}
 	params := make(map[string]string)
 	params["client"] = clientID
@@ -822,7 +822,7 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 	lock int64, preferredBlobbers []string) (hash string, err error) {
 
 	if !sdkInitialized {
-		return "", sdkNotInitialized
+		return "", sdknotInitialized()
 	}
 
 	var allocationRequest = map[string]interface{}{
@@ -849,7 +849,7 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 
 func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit float64) error {
 	if !sdkInitialized {
-		return sdkNotInitialized
+		return sdknotInitialized()
 	}
 
 	var input = map[string]interface{}{
@@ -870,7 +870,7 @@ func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit 
 
 func CreateFreeAllocation(marker string, value int64) (string, error) {
 	if !sdkInitialized {
-		return "", sdkNotInitialized
+		return "", sdknotInitialized()
 	}
 
 	var input = map[string]interface{}{
@@ -890,7 +890,7 @@ func UpdateAllocation(size int64, expiry int64, allocationID string,
 	lock int64, setImmutable bool) (hash string, err error) {
 
 	if !sdkInitialized {
-		return "", sdkNotInitialized
+		return "", sdknotInitialized()
 	}
 
 	updateAllocationRequest := make(map[string]interface{})
@@ -910,7 +910,7 @@ func UpdateAllocation(size int64, expiry int64, allocationID string,
 
 func CreateFreeUpdateAllocation(marker, allocationId string, value int64) (string, error) {
 	if !sdkInitialized {
-		return "", sdkNotInitialized
+		return "", sdknotInitialized()
 	}
 
 	var input = map[string]interface{}{
@@ -928,7 +928,7 @@ func CreateFreeUpdateAllocation(marker, allocationId string, value int64) (strin
 
 func FinalizeAllocation(allocID string) (hash string, err error) {
 	if !sdkInitialized {
-		return "", sdkNotInitialized
+		return "", sdknotInitialized()
 	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_FINALIZE_ALLOCATION,
@@ -940,7 +940,7 @@ func FinalizeAllocation(allocID string) (hash string, err error) {
 
 func CancelAllocation(allocID string) (hash string, err error) {
 	if !sdkInitialized {
-		return "", sdkNotInitialized
+		return "", sdknotInitialized()
 	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_CANCEL_ALLOCATION,
@@ -952,7 +952,7 @@ func CancelAllocation(allocID string) (hash string, err error) {
 
 func AddCurator(curatorId, allocationId string) (string, error) {
 	if !sdkInitialized {
-		return "", sdkNotInitialized
+		return "", sdknotInitialized()
 	}
 
 	var allocationRequest = map[string]interface{}{
@@ -969,7 +969,7 @@ func AddCurator(curatorId, allocationId string) (string, error) {
 
 func CuratorTransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (string, error) {
 	if !sdkInitialized {
-		return "", sdkNotInitialized
+		return "", sdknotInitialized()
 	}
 
 	var allocationRequest = map[string]interface{}{
@@ -987,7 +987,7 @@ func CuratorTransferAllocation(allocationId, newOwner, newOwnerPublicKey string)
 
 func UpdateBlobberSettings(blob *Blobber) (resp string, err error) {
 	if !sdkInitialized {
-		return "", sdkNotInitialized
+		return "", sdknotInitialized()
 	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS,
@@ -1063,7 +1063,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 
 func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 	if !sdkInitialized {
-		return "", sdkNotInitialized
+		return "", sdknotInitialized()
 	}
 	var fabricConfig struct {
 		URL  string `json:"url"`
@@ -1127,7 +1127,7 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 func GetAllocationMinLock(datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, mcct time.Duration) (int64, error) {
 	if !sdkInitialized {
-		return 0, sdkNotInitialized
+		return 0, sdknotInitialized()
 	}
 
 	var allocationRequestData = map[string]interface{}{

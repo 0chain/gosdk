@@ -25,11 +25,11 @@ var (
 )
 
 var (
-	errNetwork          = errors.New("network error. host not reachable")
-	errUserRejected     = errors.New("rejected by user")
-	errAuthVerifyFailed = errors.New("verfication failed for auth response")
-	errAuthTimeout      = errors.New("auth timed out")
-	errAddSignature     = errors.New("error adding signature")
+	errNetwork          = errors.RegisterCustomError("network error. host not reachable")
+	errUserRejected     = errors.RegisterCustomError("rejected by user")
+	errAuthVerifyFailed = errors.RegisterCustomError("verfication failed for auth response")
+	errAuthTimeout      = errors.RegisterCustomError("auth timed out")
+	errAddSignature     = errors.RegisterCustomError("error adding signature")
 )
 
 // TransactionCallback needs to be implemented by the caller for transaction related APIs
