@@ -225,8 +225,8 @@ func ExcludeLocation(err error) string {
 	}
 }
 
-func RegisterCustomError(args ...string) func() *Error {
+func Register(args ...string) func() *Error {
 	return func() *Error {
-		return newWithLevel(4, args...)
+		return newWithLevel(3, args...)
 	}
 }
