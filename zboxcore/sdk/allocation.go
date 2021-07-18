@@ -27,8 +27,8 @@ import (
 )
 
 var (
-	noBLOBBERS     = errors.RegisterCustomError("No Blobbers set in this allocation")
-	notInitialized = errors.RegisterCustomError("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
+	noBLOBBERS     = errors.Register("No Blobbers set in this allocation")
+	notInitialized = errors.Register("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 )
 
 const (

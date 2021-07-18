@@ -27,7 +27,7 @@ import (
 
 const STORAGE_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
 
-var sdknotInitialized = errors.RegisterCustomError("sdk_not_initialized", "SDK is not initialised")
+var sdknotInitialized = errors.Register("sdk_not_initialized", "SDK is not initialised")
 
 const (
 	OpUpload   int = 0

@@ -14,7 +14,7 @@ import (
 const TXN_SUBMIT_URL = "v1/transaction/put"
 const TXN_VERIFY_URL = "v1/transaction/get/confirmation?hash="
 
-var ErrNoTxnDetail = errors.RegisterCustomError("missing_transaction_detail", "No transaction detail was found on any of the sharders")
+var ErrNoTxnDetail = errors.Register("missing_transaction_detail", "No transaction detail was found on any of the sharders")
 
 //Transaction entity that encapsulates the transaction related data and meta data
 type Transaction struct {
