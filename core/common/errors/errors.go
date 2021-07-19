@@ -215,6 +215,9 @@ func isWithError(err error) *withError {
 }
 
 func ExcludeLocation(err error) string {
+	if err == nil {
+		return ""
+	}
 	switch e := err.(type) {
 	case *Error:
 		return e.excludeLocation()
