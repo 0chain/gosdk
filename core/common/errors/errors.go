@@ -27,7 +27,7 @@ func (err *Error) top() string {
 	return fmt.Sprintf("%s: %s", strings.TrimSpace(err.Code), strings.TrimSpace(err.Msg))
 }
 
-func (err *Error) excludeLocation() string {
+func (err *Error) pprint() string {
 	if strings.TrimSpace(err.Code) == "" {
 		return err.Msg
 	}
@@ -68,14 +68,14 @@ func (w *withError) Error() string {
 	return retError
 }
 
-func (w *withError) excludeLocation() string {
+func (w *withError) pprint() string {
 	retError := ""
 	if w.current != nil {
 		switch c := w.current.(type) {
 		case *Error:
-			retError += c.excludeLocation()
+			retError += c.pprint()
 		case *withError:
-			retError += c.excludeLocation()
+			retError += c.pprint()
 		default:
 			retError += c.Error()
 		}
@@ -84,9 +84,9 @@ func (w *withError) excludeLocation() string {
 		// retError += "\n" + w.previous.Error()
 		switch p := w.previous.(type) {
 		case *Error:
-			retError += ": " + p.excludeLocation()
+			retError += ": " + p.pprint()
 		case *withError:
-			retError += ": " + p.excludeLocation()
+			retError += ": " + p.pprint()
 		default:
 			retError += ": " + p.Error()
 		}
@@ -185,7 +185,7 @@ matches the target error then function results in true
 func Is(actual error, target *Error) bool {
 	actualError := isError(actual)
 	if actualError != nil {
-		return (actualError.Code == target.Code) && (actualError.Msg == target.Msg)
+		return actualError.Code == target.Code
 	} else {
 		actualWithError := isWithError(actual)
 		if actualWithError != nil {
@@ -214,15 +214,16 @@ func isWithError(err error) *withError {
 	return nil
 }
 
-func ExcludeLocation(err error) string {
+// PPrint - pretty print
+func PPrint(err error) string {
 	if err == nil {
 		return ""
 	}
 	switch e := err.(type) {
 	case *Error:
-		return e.excludeLocation()
+		return e.pprint()
 	case *withError:
-		return e.excludeLocation()
+		return e.pprint()
 	default:
 		return e.Error()
 	}
