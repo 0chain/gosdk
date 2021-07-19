@@ -189,10 +189,10 @@ func Is(actual error, target *Error) bool {
 	} else {
 		actualWithError := isWithError(actual)
 		if actualWithError != nil {
-			if actualWithError.previous != nil {
-				return Is(actualWithError.previous, target)
-			} else {
+			if actualWithError.current != nil {
 				return Is(actualWithError.current, target)
+			} else {
+				return Is(actualWithError.previous, target)
 			}
 		} else {
 			return false
