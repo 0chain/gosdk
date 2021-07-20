@@ -270,3 +270,25 @@ func CalculateHash(url string, req *blobbergrpc.CalculateHashRequest) ([]byte, e
 
 	return json.Marshal(convert.GetCalculateHashResponseHandler(calculateHashResp))
 }
+
+func UploadFile(url string, req *blobbergrpc.UploadFileRequest, opts ...grpc.CallOption) ([]byte, error) {
+
+	blobberClient, err := newBlobberGRPCClient(url)
+	if err != nil {
+		return nil, err
+	}
+
+	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
+		blobbercommon.ClientHeader:          client.GetClientID(),
+		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
+		blobbercommon.ClientSignatureHeader: "",
+	}))
+
+	uploadFileResp, err := blobberClient.UploadFile(grpcCtx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(convert.UploadFileResponseCreator(uploadFileResp))
+
+}
