@@ -200,18 +200,6 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 }
 
 func (a *Allocation) InitAllocation() {
-	// if a.uploadChan != nil {
-	// 	close(a.uploadChan)
-	// }
-	// if a.downloadChan != nil {
-	// 	close(a.downloadChan)
-	// }
-	// if a.ctx != nil {
-	// 	a.ctx.Done()
-	// }
-	// for _, v := range a.downloadProgressMap {
-	// 	v.isDownloadCanceled = true
-	// }
 	a.uploadChan = make(chan *UploadRequest, 10)
 	a.downloadChan = make(chan *DownloadRequest, 10)
 	a.repairChan = make(chan *RepairRequest, 1)
@@ -901,8 +889,7 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 					Logger.Error(url, " Revoke share error response: ", resp.StatusCode, string(respbody))
 					return fmt.Errorf(string(respbody))
 				}
-				data := map[string]interface{} {
-				}
+				data := map[string]interface{}{}
 				err = json.Unmarshal(respbody, &data)
 				if err != nil {
 					return err
@@ -1044,9 +1031,9 @@ func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPu
 	}
 	wg.Wait()
 	consensus := Consensus{
-		consensus: float32(len(success)),
-		consensusThresh: (float32(a.DataShards) * 100) / float32(a.DataShards + a.ParityShards),
-		fullconsensus: float32(a.DataShards + a.ParityShards),
+		consensus:       float32(len(success)),
+		consensusThresh: (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards),
+		fullconsensus:   float32(a.DataShards + a.ParityShards),
 	}
 	if !consensus.isConsensusOk() {
 		return errors.New("consensus not reached")
