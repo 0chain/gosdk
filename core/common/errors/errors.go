@@ -185,7 +185,12 @@ matches the target error then function results in true
 func Is(actual error, target *Error) bool {
 	actualError := isError(actual)
 	if actualError != nil {
-		return actualError.Code == target.Code
+		if actualError.Code == "" && target.Code == "" {
+			return actualError.Msg == target.Msg
+		} else {
+			return actualError.Code == target.Code
+		}
+
 	} else {
 		actualWithError := isWithError(actual)
 		if actualWithError != nil {
