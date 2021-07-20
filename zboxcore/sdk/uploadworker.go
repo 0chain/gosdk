@@ -114,12 +114,13 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 
 	bodyReader, bodyWriter := io.Pipe()
 	formWriter := multipart.NewWriter(bodyWriter)
-	httpreq, _ := zboxutil.NewUploadRequest(blobber.Baseurl, a.Tx, bodyReader, req.isUpdate)
+	// httpreq, _ := zboxutil.NewUploadRequest(blobber.Baseurl, a.Tx, bodyReader, req.isUpdate)
 	//timeout := time.Duration(int64(math.Max(10, float64(obj.file.Size)/(CHUNK_SIZE*float64(len(obj.blobbers)/2)))))
 	//ctx, cncl := context.WithTimeout(context.Background(), (time.Second * timeout))
 
 	// httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	var formData uploadFormData
+	var metaData []byte
 	shardSize := (req.filemeta.Size + int64(a.DataShards) - 1) / int64(a.DataShards)
 	chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
 	if req.isEncrypted {
@@ -257,7 +258,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 			formData.EncryptedKey = req.encscheme.GetEncryptedKey()
 		}
 		_ = formWriter.WriteField("connection_id", req.connectionID)
-		var metaData []byte
+
 		metaData, err = json.Marshal(formData)
 		// Logger.Debug("Upload with",string(metaData))
 		if err == nil {
@@ -270,14 +271,30 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 			bodyWriter.CloseWithError(formWriter.Close())
 		}
 	}()
-	respRaw, err := blobberClient.UploadFile(blobber.Baseurl, &blobbergrpc.UploadFileRequest{
-		Path:                "",
-		Allocation:          a.Tx,
-		ConnectionId:        req.connectionID,
-		UpdateMeta:          formData.CustomMeta,
-		UploadFile:          formData.Path,
-		UploadThumbnailFile: req.thumbnailpath,
-	})
+
+	uploadRequest := &blobbergrpc.UploadFileRequest{}
+
+	if req.isUpdate {
+		uploadRequest = &blobbergrpc.UploadFileRequest{
+			Path:                "",
+			Allocation:          a.Tx,
+			ConnectionId:        req.connectionID,
+			UpdateMeta:          string(metaData),
+			UploadFile:          <-uploadCh,
+			UploadThumbnailFile: <-uploadThumbCh,
+		}
+	} else {
+		uploadRequest = &blobbergrpc.UploadFileRequest{
+			Path:                "",
+			Allocation:          a.Tx,
+			ConnectionId:        req.connectionID,
+			UploadMeta:          string(metaData),
+			UploadFile:          <-uploadCh,
+			UploadThumbnailFile: <-uploadThumbCh,
+		}
+	}
+
+	respRaw, err := blobberClient.UploadFile(blobber.Baseurl, uploadRequest)
 	if err != nil {
 		Logger.Error("could not upload file to blobber -" + blobber.Baseurl + " - " + err.Error())
 		return
@@ -289,15 +306,13 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 
 	if err != nil {
 		Logger.Error(blobber.Baseurl, " Upload response parse error: ", err)
-		req.err = err
-		return err
+		return
 	}
 	if r.Filename != formData.Filename || r.ShardSize != shardSize ||
 		r.Hash != formData.Hash || r.MerkleRoot != formData.MerkleRoot {
 		err = errors.New(fmt.Sprintf(blobber.Baseurl, "Unexpected upload response data", string(respbody)))
 		Logger.Error(err)
-		req.err = err
-		return err
+		return
 	}
 	req.consensus++
 	Logger.Info(blobber.Baseurl, formData.Path, " uploaded")
