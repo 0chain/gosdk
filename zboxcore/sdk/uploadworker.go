@@ -9,12 +9,14 @@ import (
 	"fmt"
 	"hash"
 	"io"
-	"io/ioutil"
 	"math"
 	"mime/multipart"
-	"net/http"
 	"os"
+	"strings"
 	"sync"
+
+	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
+	"github.com/0chain/gosdk/core/clients/blobberClient"
 
 	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/util"
@@ -107,13 +109,16 @@ func (req *UploadRequest) setUploadMask(numBlobbers int) {
 }
 
 func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.StorageNode, file *fileref.FileRef, uploadCh chan []byte, uploadThumbCh chan []byte, wg *sync.WaitGroup) {
+
+	var s strings.Builder
+
 	bodyReader, bodyWriter := io.Pipe()
 	formWriter := multipart.NewWriter(bodyWriter)
 	httpreq, _ := zboxutil.NewUploadRequest(blobber.Baseurl, a.Tx, bodyReader, req.isUpdate)
 	//timeout := time.Duration(int64(math.Max(10, float64(obj.file.Size)/(CHUNK_SIZE*float64(len(obj.blobbers)/2)))))
 	//ctx, cncl := context.WithTimeout(context.Background(), (time.Second * timeout))
 
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+	// httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	var formData uploadFormData
 	shardSize := (req.filemeta.Size + int64(a.DataShards) - 1) / int64(a.DataShards)
 	chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
@@ -265,55 +270,99 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 			bodyWriter.CloseWithError(formWriter.Close())
 		}
 	}()
-	_ = zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("Upload : ", err)
-			req.err = err
-			return err
-		}
-		defer resp.Body.Close()
-
-		respbody, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			Logger.Error("Error: Resp ", err)
-			req.err = err
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			Logger.Error(blobber.Baseurl, " Upload error response: ", resp.StatusCode, string(respbody))
-			req.err = errors.New(string(respbody))
-			return err
-		}
-		var r uploadResult
-		err = json.Unmarshal(respbody, &r)
-		if err != nil {
-			Logger.Error(blobber.Baseurl, " Upload response parse error: ", err)
-			req.err = err
-			return err
-		}
-		if r.Filename != formData.Filename || r.ShardSize != shardSize ||
-			r.Hash != formData.Hash || r.MerkleRoot != formData.MerkleRoot {
-			err = errors.New(fmt.Sprintf(blobber.Baseurl, "Unexpected upload response data", string(respbody)))
-			Logger.Error(err)
-			req.err = err
-			return err
-		}
-		req.consensus++
-		Logger.Info(blobber.Baseurl, formData.Path, " uploaded")
-		file.MerkleRoot = formData.MerkleRoot
-		file.ContentHash = formData.Hash
-		file.ThumbnailHash = formData.ThumbnailHash
-		file.ThumbnailSize = thumbnailSize
-		file.Size = shardSize
-		file.Path = formData.Path
-		file.ActualFileHash = formData.ActualHash
-		file.ActualFileSize = formData.ActualSize
-		file.ActualThumbnailHash = formData.ActualThumbnailHash
-		file.ActualThumbnailSize = formData.ActualThumbnailSize
-		file.EncryptedKey = formData.EncryptedKey
-		file.CalculateHash()
-		return nil
+	respRaw, err := blobberClient.UploadFile(blobber.Baseurl, &blobbergrpc.UploadFileRequest{
+		Path:                "",
+		Allocation:          a.Tx,
+		ConnectionId:        req.connectionID,
+		UpdateMeta:          formData.CustomMeta,
+		UploadFile:          formData.Path,
+		UploadThumbnailFile: req.thumbnailpath,
 	})
+	if err != nil {
+		Logger.Error("could not upload file to blobber -" + blobber.Baseurl + " - " + err.Error())
+		return
+	}
+	s.WriteString(string(respRaw))
+
+	var r uploadResult
+	err = json.Unmarshal(respRaw, &r)
+
+	if err != nil {
+		Logger.Error(blobber.Baseurl, " Upload response parse error: ", err)
+		req.err = err
+		return err
+	}
+	if r.Filename != formData.Filename || r.ShardSize != shardSize ||
+		r.Hash != formData.Hash || r.MerkleRoot != formData.MerkleRoot {
+		err = errors.New(fmt.Sprintf(blobber.Baseurl, "Unexpected upload response data", string(respbody)))
+		Logger.Error(err)
+		req.err = err
+		return err
+	}
+	req.consensus++
+	Logger.Info(blobber.Baseurl, formData.Path, " uploaded")
+	file.MerkleRoot = formData.MerkleRoot
+	file.ContentHash = formData.Hash
+	file.ThumbnailHash = formData.ThumbnailHash
+	file.ThumbnailSize = thumbnailSize
+	file.Size = shardSize
+	file.Path = formData.Path
+	file.ActualFileHash = formData.ActualHash
+	file.ActualFileSize = formData.ActualSize
+	file.ActualThumbnailHash = formData.ActualThumbnailHash
+	file.ActualThumbnailSize = formData.ActualThumbnailSize
+	file.EncryptedKey = formData.EncryptedKey
+	file.CalculateHash()
+
+	// _ = zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
+	// 	if err != nil {
+	// 		Logger.Error("Upload : ", err)
+	// 		req.err = err
+	// 		return err
+	// 	}
+	// 	defer resp.Body.Close()
+
+	// 	respbody, err := ioutil.ReadAll(resp.Body)
+	// 	if err != nil {
+	// 		Logger.Error("Error: Resp ", err)
+	// 		req.err = err
+	// 		return err
+	// 	}
+	// 	if resp.StatusCode != http.StatusOK {
+	// 		Logger.Error(blobber.Baseurl, " Upload error response: ", resp.StatusCode, string(respbody))
+	// 		req.err = errors.New(string(respbody))
+	// 		return err
+	// 	}
+	// 	var r uploadResult
+	// 	err = json.Unmarshal(respbody, &r)
+	// 	if err != nil {
+	// 		Logger.Error(blobber.Baseurl, " Upload response parse error: ", err)
+	// 		req.err = err
+	// 		return err
+	// 	}
+	// 	if r.Filename != formData.Filename || r.ShardSize != shardSize ||
+	// 		r.Hash != formData.Hash || r.MerkleRoot != formData.MerkleRoot {
+	// 		err = errors.New(fmt.Sprintf(blobber.Baseurl, "Unexpected upload response data", string(respbody)))
+	// 		Logger.Error(err)
+	// 		req.err = err
+	// 		return err
+	// 	}
+	// 	req.consensus++
+	// 	Logger.Info(blobber.Baseurl, formData.Path, " uploaded")
+	// 	file.MerkleRoot = formData.MerkleRoot
+	// 	file.ContentHash = formData.Hash
+	// 	file.ThumbnailHash = formData.ThumbnailHash
+	// 	file.ThumbnailSize = thumbnailSize
+	// 	file.Size = shardSize
+	// 	file.Path = formData.Path
+	// 	file.ActualFileHash = formData.ActualHash
+	// 	file.ActualFileSize = formData.ActualSize
+	// 	file.ActualThumbnailHash = formData.ActualThumbnailHash
+	// 	file.ActualThumbnailSize = formData.ActualThumbnailSize
+	// 	file.EncryptedKey = formData.EncryptedKey
+	// 	file.CalculateHash()
+	// 	return nil
+	// })
 	wg.Done()
 }
 
