@@ -155,7 +155,7 @@ func newWithLevel(level int, args ...string) *Error {
 		currentError.Msg = args[0]
 	case 2:
 		if isInvalidCode(args[0]) {
-			return invalidCode()
+			return invalidCode(args[0])
 		}
 		currentError.Code, currentError.Msg = args[0], args[1]
 	default:
@@ -173,10 +173,10 @@ func invalidUsage() *Error {
 	}
 }
 
-func invalidCode() *Error {
+func invalidCode(code string) *Error {
 	return &Error{
 		Code:     "incorrect_code",
-		Msg:      "code should not have spaces",
+		Msg:      "code should not have spaces. use '" + strings.ToLower(strings.ReplaceAll(code, " ", "_")) + "' instead of '" + code + "'",
 		Location: getErrorLocation(4),
 	}
 }
