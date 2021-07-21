@@ -104,7 +104,6 @@ func invalidWrap() error {
 
 // Wrap wrap the previous error with current error/ message
 func Wrap(previous error, current interface{}) error {
-
 	var currentError error
 	switch c := current.(type) {
 	case error:
@@ -155,14 +154,35 @@ func newWithLevel(level int, args ...string) *Error {
 	case 1:
 		currentError.Msg = args[0]
 	case 2:
-		currentError.Code = args[0]
-		currentError.Msg = args[1]
+		if isInvalidCode(args[0]) {
+			return invalidCode()
+		}
+		currentError.Code, currentError.Msg = args[0], args[1]
 	default:
-		currentError.Code = "incorrect_usage"
-		currentError.Msg = "you should at least pass message to create a proper error!"
+		return invalidUsage()
 	}
 
 	return &currentError
+}
+
+func invalidUsage() *Error {
+	return &Error{
+		Code:     "incorrect_usage",
+		Msg:      "you should at least pass message to properly wrap the current error!",
+		Location: getErrorLocation(4),
+	}
+}
+
+func invalidCode() *Error {
+	return &Error{
+		Code:     "incorrect_code",
+		Msg:      "code should not have spaces",
+		Location: getErrorLocation(4),
+	}
+}
+
+func isInvalidCode(code string) bool {
+	return len(strings.Split(code, " ")) != 1
 }
 
 /*
@@ -242,4 +262,41 @@ func Register(args ...string) func() *Error {
 	return func() *Error {
 		return newWithLevel(3, args...)
 	}
+}
+
+func Unmarshal(data string) error {
+	errors := strings.Split(data, "\n")
+	var finalError error
+
+	for i := len(errors) - 1; i >= 0; i-- {
+		e := errors[i]
+		var err Error
+		se := strings.Split(e, " ")
+
+		switch len(se) {
+		case 2:
+			err.Location = se[0]
+			err.Msg = se[1]
+		case 3:
+			err.Location = se[0]
+			if isCode(se[1]) {
+				err.Code = extractCode(se[1])
+				err.Msg = se[2]
+			} else {
+				err.Msg = strings.Join(se[1:], " ")
+			}
+		default:
+			continue
+		}
+		finalError = Wrap(finalError, &err)
+	}
+	return finalError
+}
+
+func isCode(code string) bool {
+	return string(code[len(code)-1]) == ":"
+}
+
+func extractCode(code string) string {
+	return strings.TrimRight(code, ":")
 }
