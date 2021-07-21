@@ -3243,27 +3243,7 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 		mockType       = "f"
 	)
 
-	var mockClient = mocks.HttpClient{}
-	zboxutil.Client = &mockClient
-
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
-
-	a := &Allocation{
-		ID:           mockAllocationId,
-		Tx:           mockAllocationTxId,
-		DataShards:   2,
-		ParityShards: 2,
-	}
-	a.InitAllocation()
-	sdkInitialized = true
-	setupMockGetFileInfoResponse(t, &mockClient)
-	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, mockClientId, "", 0)
-	require.NoErrorf(t, err, "unexpected get auth ticket error: %v", err)
-	require.NotEmptyf(t, authTicket, "unexpected empty auth ticket")
+	var authTicket = getMockAuthTicket(t)
 
 	type parameters struct {
 		authTicket, lookupHash string
@@ -3271,13 +3251,13 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 	tests := []struct {
 		name       string
 		parameters parameters
-		setup      func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
+		setup      func(*testing.T, string, *Allocation, *mocks.HttpClient) (teardown func(t *testing.T))
 		wantErr    bool
 		errMsg     string
 	}{
 		{
 			name: "Test_Uninitialized_Failed",
-			setup: func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
+			setup: func(t *testing.T, testCaseName string, a *Allocation, _ *mocks.HttpClient) (teardown func(t *testing.T)) {
 				a.initialized = false
 				return func(t *testing.T) {
 					a.initialized = true
@@ -3326,7 +3306,7 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 				authTicket: authTicket,
 				lookupHash: mockLookupHash,
 			},
-			setup: func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
+			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
 				for i := 0; i < numBlobbers; i++ {
 					a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 						ID:      testCaseName + mockBlobberId + strconv.Itoa(i),
@@ -3337,7 +3317,7 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 					ActualFileHash: mockActualHash,
 				})
 				require.NoError(t, err)
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_GetFileMetaFromAuthTicket", testCaseName, a, http.MethodPost, http.StatusOK, body)
+				setupMockHttpResponse(t, mockClient, "TestAllocation_GetFileMetaFromAuthTicket", testCaseName, a, http.MethodPost, http.StatusOK, body)
 				return nil
 			},
 		},
@@ -3345,9 +3325,28 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var mockClient = mocks.HttpClient{}
+			zboxutil.Client = &mockClient
+
+			client := zclient.GetClient()
+			client.Wallet = &zcncrypto.Wallet{
+				ClientID:  mockClientId,
+				ClientKey: mockClientKey,
+			}
+
+			a := &Allocation{
+				ID:           mockAllocationId,
+				Tx:           mockAllocationTxId,
+				DataShards:   2,
+				ParityShards: 2,
+			}
+			a.InitAllocation()
+			sdkInitialized = true
+			a.initialized = true
+
 			require := require.New(t)
 			if tt.setup != nil {
-				if teardown := tt.setup(t, tt.name); teardown != nil {
+				if teardown := tt.setup(t, tt.name, a, &mockClient); teardown != nil {
 					defer teardown(t)
 				}
 			}
@@ -3394,9 +3393,7 @@ func TestAllocation_DownloadThumbnailFromAuthTicket(t *testing.T) {
 		})
 	}
 
-	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, mockClientId, "", 0)
-	require.NoErrorf(err, "unexpected get auth ticket error: %v", err)
-	require.NotEmptyf(authTicket, "unexpected auth ticket")
+	var authTicket = getMockAuthTicket(t)
 
 	body, err := json.Marshal(&fileref.ReferencePath{
 		Meta: map[string]interface{}{
@@ -3419,6 +3416,8 @@ func TestAllocation_DownloadFromAuthTicket(t *testing.T) {
 		mockType           = "d"
 	)
 
+	var authTicket = getMockAuthTicket(t)
+
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
@@ -3439,11 +3438,7 @@ func TestAllocation_DownloadFromAuthTicket(t *testing.T) {
 		})
 	}
 
-	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, mockClientId, "", 0)
-	require.NoErrorf(err, "unexpected get auth ticket error: %v", err)
-	require.NotEmptyf(authTicket, "unexpected auth ticket")
-
-	err = a.DownloadFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, true, nil)
+	err := a.DownloadFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, true, nil)
 	defer os.Remove("alloc/1.txt")
 	require.NoErrorf(err, "unexpected error: %v", err)
 }
@@ -3455,6 +3450,8 @@ func TestAllocation_DownloadFromAuthTicketByBlocks(t *testing.T) {
 		mockRemoteFilePath = "1.txt"
 		mockType           = "d"
 	)
+
+	var authTicket = getMockAuthTicket(t)
 
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
@@ -3476,13 +3473,9 @@ func TestAllocation_DownloadFromAuthTicketByBlocks(t *testing.T) {
 		})
 	}
 
-	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, mockClientId, "", 0)
-	require.NoErrorf(err, "unexpected get auth ticket error: %v", err)
-	require.NotEmptyf(authTicket, "unexpected auth ticket")
-
 	setupMockHttpResponse(t, &mockClient, "TestAllocation_DownloadFromAuthTicketByBlocks", "", a, http.MethodPost, http.StatusBadRequest, []byte(""))
 
-	err = a.DownloadFromAuthTicketByBlocks(mockLocalPath, authTicket, 1, 0, numBlockDownloads, mockLookupHash, mockRemoteFilePath, true, nil)
+	err := a.DownloadFromAuthTicketByBlocks(mockLocalPath, authTicket, 1, 0, numBlockDownloads, mockLookupHash, mockRemoteFilePath, true, nil)
 	defer os.Remove("alloc/1.txt")
 	require.NoErrorf(err, "unexpected error: %v", err)
 }
@@ -3492,6 +3485,8 @@ func TestAllocation_CommitMetaTransaction(t *testing.T) {
 		mockLookupHash = "mock lookup hash"
 		mockType       = "d"
 	)
+
+	var authTicket = getMockAuthTicket(t)
 
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
@@ -3505,10 +3500,6 @@ func TestAllocation_CommitMetaTransaction(t *testing.T) {
 	a := &Allocation{}
 	a.InitAllocation()
 	sdkInitialized = true
-
-	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, mockClientId, "", 0)
-	require.NoErrorf(t, err, "unexpected get auth ticket error: %v", err)
-	require.NotEmptyf(t, authTicket, "unexpected empty auth ticket")
 
 	type parameters struct {
 		path          string
