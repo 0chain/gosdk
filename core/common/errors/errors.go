@@ -294,7 +294,8 @@ func Unmarshal(data string) error {
 }
 
 func isCode(code string) bool {
-	return string(code[len(code)-1]) == ":"
+	// ascii code for ":" is 58
+	return code[len(code)-1] == 58
 }
 
 func extractCode(code string) string {
