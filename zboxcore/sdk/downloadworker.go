@@ -1,13 +1,12 @@
 package sdk
 
 import (
-	"bytes"
 	"context"
 	"fmt"
+	"go.dedis.ch/kyber/v3/group/edwards25519"
 	"io"
 	"math"
 	"os"
-	"strings"
 	"sync"
 
 	"github.com/0chain/gosdk/core/common/errors"
@@ -78,6 +77,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 		blockDownloadReq.remotefilepathhash = req.remotefilepathhash
 		blockDownloadReq.numBlocks = req.numBlocks
 		blockDownloadReq.rxPay = req.rxPay
+		blockDownloadReq.encryptedKey = req.encryptedKey
 		go AddBlockDownloadReq(blockDownloadReq)
 		//go obj.downloadBlobberBlock(&obj.blobbers[pos], pos, path, blockNum, rspCh, isPathHash, authTicket)
 		c++
@@ -116,27 +116,24 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 			//for blockNum := 0; blockNum < len(result.BlockChunks); blockNum++ {
 			for blockNum := 0; blockNum < downloadChunks; blockNum++ {
 				if len(req.encryptedKey) > 0 {
-					headerBytes := result.BlockChunks[blockNum][:(2 * 1024)]
-					headerBytes = bytes.Trim(headerBytes, "\x00")
-					headerString := string(headerBytes)
-					encMsg := &encryption.EncryptedMessage{}
-					encMsg.EncryptedData = result.BlockChunks[blockNum][(2 * 1024):]
-					headerChecksums := strings.Split(headerString, ",")
-					if len(headerChecksums) != 2 {
-						Logger.Error("Block has invalid header", req.blobbers[result.idx].Baseurl)
-						break
+					suite := edwards25519.NewBlakeSHA256Ed25519()
+					reEncMessage := &encryption.ReEncryptedMessage{
+						D1: suite.Point(),
+						D4: suite.Point(),
+						D5: suite.Point(),
 					}
-					encMsg.MessageChecksum, encMsg.OverallChecksum = headerChecksums[0], headerChecksums[1]
-					encMsg.EncryptedKey = encscheme.GetEncryptedKey()
-					if req.authTicket != nil {
-						encMsg.ReEncryptionKey = req.authTicket.ReEncryptionKey
-					}
-					decryptedBytes, err := encscheme.Decrypt(encMsg)
+					err := reEncMessage.Unmarshal(result.BlockChunks[blockNum])
 					if err != nil {
-						Logger.Error("Block decryption failed", req.blobbers[result.idx].Baseurl, err)
+						Logger.Error("ReEncrypted Block unmarshall failed", req.blobbers[result.idx].Baseurl, err)
 						break
 					}
-					shards[blockNum][result.idx] = decryptedBytes
+					decrypted, err := encscheme.ReDecrypt(reEncMessage)
+					if err != nil {
+						Logger.Error("Block redecryption failed", req.blobbers[result.idx].Baseurl, err)
+						break
+					}
+
+					shards[blockNum][result.idx] = decrypted
 				} else {
 					shards[blockNum][result.idx] = result.BlockChunks[blockNum]
 				}

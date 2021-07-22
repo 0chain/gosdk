@@ -13,6 +13,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/0chain/gosdk/zboxcore/encryption"
+
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/transaction"
@@ -2306,6 +2308,28 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 }
 
 func TestAllocation_GetAuthTicketForShare(t *testing.T) {
+	const mockContentHash = "mock content hash"
+	const numberBlobbers = 10
+
+	var mockClient = mocks.HttpClient{}
+	httpResponse := http.Response{
+		StatusCode: http.StatusOK,
+		Body: func() io.ReadCloser {
+			jsonFR, err := json.Marshal(fileref.FileRef{
+				Ref: fileref.Ref{
+					Name: mockFileRefName,
+				},
+				ContentHash: mockContentHash,
+			})
+			require.NoError(t, err)
+			return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+		}(),
+	}
+	zboxutil.Client = &mockClient
+	for i := 0; i < numBlobbers; i++ {
+		mockClient.On("Do", mock.Anything).Return(&httpResponse, nil)
+	}
+
 	client := zclient.GetClient()
 	client.Wallet = &zcncrypto.Wallet{
 		ClientID:  mockClientId,
@@ -2314,6 +2338,9 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 	require := require.New(t)
 	a := &Allocation{}
 	a.InitAllocation()
+	for i := 0; i < numberBlobbers; i++ {
+		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
+	}
 	sdkInitialized = true
 	at, err := a.GetAuthTicketForShare("/1.txt", "1.txt", fileref.FILE, mockClientId)
 	require.NotEmptyf(at, "unexpected empty auth ticket")
@@ -2321,15 +2348,7 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 }
 
 func TestAllocation_GetAuthTicket(t *testing.T) {
-	var mockClient = mocks.HttpClient{}
-	zboxutil.Client = &mockClient
-
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
-
+	var testTitle = "TestAllocation_GetAuthTicket"
 	type parameters struct {
 		path                       string
 		filename                   string
@@ -2340,14 +2359,30 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 	tests := []struct {
 		name       string
 		parameters parameters
-		setup      func(*testing.T, string, *Allocation) (teardown func(*testing.T))
+		setup      func(*testing.T, string, *Allocation, *mocks.HttpClient) (teardown func(*testing.T))
 		wantErr    bool
 		errMsg     string
 	}{
 		{
 			name: "Test_Uninitialized_Failed",
-			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
+			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
 				a.initialized = false
+				httpResponse := http.Response{
+					StatusCode: http.StatusOK,
+					Body: func() io.ReadCloser {
+						jsonFR, err := json.Marshal(fileref.FileRef{
+							Ref: fileref.Ref{
+								Name: mockFileRefName,
+							},
+							ContentHash: "mock content hash",
+						})
+						require.NoError(t, err)
+						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					}(),
+				}
+				for i := 0; i < numBlobbers; i++ {
+					mockClient.On("Do", mock.Anything).Return(&httpResponse, nil)
+				}
 				return func(t *testing.T) {
 					a.initialized = true
 				}
@@ -2363,24 +2398,71 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 				referenceType:   fileref.DIRECTORY,
 				refereeClientID: mockClientId,
 			},
+			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
+				httpResponse := &http.Response{
+					StatusCode: http.StatusOK,
+					Body: func() io.ReadCloser {
+						jsonFR, err := json.Marshal(fileref.FileRef{
+							Ref: fileref.Ref{
+								Name: mockFileRefName,
+							},
+							ContentHash: "mock content hash",
+						})
+						require.NoError(t, err)
+						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					}(),
+				}
+				for i := 0; i < numBlobbers; i++ {
+					mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+						return strings.HasPrefix(req.URL.Path, testTitle+testCaseName)
+					})).Return(httpResponse, nil)
+				}
+				return nil
+			},
 		},
 		{
 			name: "Test_Success_With_Referee_Encryption_Public_Key",
 			parameters: parameters{
-				path:                       "/1.txt",
-				filename:                   "1.txt",
-				referenceType:              fileref.FILE,
-				refereeClientID:            mockClientId,
-				refereeEncryptionPublicKey: "this is some public key",
+				path:            "/1.txt",
+				filename:        "1.txt",
+				referenceType:   fileref.FILE,
+				refereeClientID: mockClientId,
+				refereeEncryptionPublicKey: func() string {
+					client_mnemonic := "travel twenty hen negative fresh sentence hen flat swift embody increase juice eternal satisfy want vessel matter honey video begin dutch trigger romance assault"
+					client_encscheme := encryption.NewEncryptionScheme()
+					client_encscheme.Initialize(client_mnemonic)
+					client_encscheme.InitForEncryption("filetype:audio")
+					client_enc_pub_key, err := client_encscheme.GetPublicKey()
+					require.NoError(t, err)
+					return client_enc_pub_key
+				}(),
 			},
-			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
+			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
 				body, err := json.Marshal(&fileref.ReferencePath{
 					Meta: map[string]interface{}{
 						"type": "f",
 					},
 				})
+				httpResponse := &http.Response{
+					StatusCode: http.StatusOK,
+					Body: func() io.ReadCloser {
+						jsonFR, err := json.Marshal(fileref.FileRef{
+							Ref: fileref.Ref{
+								Name: mockFileRefName,
+							},
+							ContentHash: "mock content hash",
+						})
+						require.NoError(t, err)
+						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					}(),
+				}
+				for i := 0; i < numBlobbers; i++ {
+					mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+						return strings.HasPrefix(req.URL.Path, testTitle+testCaseName)
+					})).Return(httpResponse, nil)
+				}
 				require.NoError(t, err)
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_GetAuthTicket", testCaseName, a, http.MethodPost, http.StatusOK, body)
+				setupMockHttpResponse(t, mockClient, "TestAllocation_GetAuthTicket", testCaseName, a, http.MethodPost, http.StatusOK, body)
 				return nil
 			},
 		},
@@ -2392,6 +2474,27 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 				referenceType:              fileref.FILE,
 				refereeClientID:            mockClientId,
 				refereeEncryptionPublicKey: "",
+			},
+			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
+				httpResponse := &http.Response{
+					StatusCode: http.StatusOK,
+					Body: func() io.ReadCloser {
+						jsonFR, err := json.Marshal(fileref.FileRef{
+							Ref: fileref.Ref{
+								Name: mockFileRefName,
+							},
+							ContentHash: "mock content hash",
+						})
+						require.NoError(t, err)
+						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+					}(),
+				}
+				for i := 0; i < numBlobbers; i++ {
+					mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+						return strings.HasPrefix(req.URL.Path, testTitle+testCaseName)
+					})).Return(httpResponse, nil)
+				}
+				return nil
 			},
 		},
 		{
@@ -2414,22 +2517,42 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var mockClient = mocks.HttpClient{}
+			zboxutil.Client = &mockClient
+
+			client := zclient.GetClient()
+			client.Wallet = &zcncrypto.Wallet{
+				ClientID:  mockClientId,
+				ClientKey: mockClientKey,
+			}
+
 			require := require.New(t)
 			a := &Allocation{}
 			a.InitAllocation()
 			sdkInitialized = true
+
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
 					Baseurl: "TestAllocation_GetAuthTicket" + tt.name + mockBlobberUrl + strconv.Itoa(i),
 				})
 			}
+			const mockContentHash = "mock content hash"
+			const numberBlobbers = 10
+
+			zboxutil.Client = &mockClient
+
+			a.InitAllocation()
+			a.DataShards = 1
+			a.ParityShards = 1
+			sdkInitialized = true
+
 			if tt.setup != nil {
-				if teardown := tt.setup(t, tt.name, a); teardown != nil {
+				if teardown := tt.setup(t, tt.name, a, &mockClient); teardown != nil {
 					defer teardown(t)
 				}
 			}
-			at, err := a.GetAuthTicket(tt.parameters.path, tt.parameters.filename, tt.parameters.referenceType, tt.parameters.refereeClientID, tt.parameters.refereeEncryptionPublicKey)
+			at, err := a.GetAuthTicket(tt.parameters.path, tt.parameters.filename, tt.parameters.referenceType, tt.parameters.refereeClientID, tt.parameters.refereeEncryptionPublicKey, 0)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))
@@ -2581,6 +2704,7 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 			name: "Test_Uninitialized_Failed",
 			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
 				a.initialized = false
+
 				return func(t *testing.T) {
 					a.initialized = true
 				}
@@ -2674,24 +2798,7 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 		mockType       = "d"
 	)
 
-	var mockClient = mocks.HttpClient{}
-	zboxutil.Client = &mockClient
-
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
-
-	a := &Allocation{
-		ID: mockAllocationId,
-		Tx: mockAllocationTxId,
-	}
-	a.InitAllocation()
-	sdkInitialized = true
-	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, mockClientId, "")
-	require.NoErrorf(t, err, "unexpected get auth ticket error: %v", err)
-	require.NotEmptyf(t, authTicket, "unexpected empty auth ticket")
+	authTicket := getMockAuthTicket(t)
 
 	type parameters struct {
 		authTicket     string
@@ -2701,20 +2808,20 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 	tests := []struct {
 		name       string
 		parameters parameters
-		setup      func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
+		setup      func(*testing.T, string, *Allocation, *mocks.HttpClient) (teardown func(t *testing.T))
 		wantErr    bool
 		errMsg     string
 	}{
 		{
 			name: "Test_Uninitialized_Failed",
-			setup: func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
+			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
 				a.initialized = false
 				return func(t *testing.T) {
 					a.initialized = true
 				}
 			},
 			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
+			errMsg:  "invalid_path: Invalid path for the list",
 		},
 		{
 			name: "Test_Cannot_Decode_Auth_Ticket_Failed",
@@ -2723,7 +2830,8 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 			},
 			setup:   nil,
 			wantErr: true,
-			errMsg:  "auth_ticket_decode_error: Error decoding the auth ticket.illegal base64 data at input byte 4",
+			errMsg: "invalid_path: Invalid path for the list" +
+				"",
 		},
 		{
 			name: "Test_Cannot_Unmarshal_Auth_Ticket_Failed",
@@ -2732,7 +2840,7 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 			},
 			setup:   nil,
 			wantErr: true,
-			errMsg:  "auth_ticket_decode_error: Error unmarshaling the auth ticket.invalid character 's' looking for beginning of value",
+			errMsg:  "invalid_path: Invalid path for the list",
 		},
 		{
 			name: "Test_Wrong_Auth_Ticket_File_Path_Hash_Or_Lookup_Hash_Failed",
@@ -2751,13 +2859,13 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 				lookupHash:     mockLookupHash,
 				expectedResult: &ListResult{},
 			},
-			setup: func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
+			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
 				for i := 0; i < numBlobbers; i++ {
 					a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 						Baseurl: "TestAllocation_ListDirFromAuthTicket" + testCaseName + mockBlobberUrl + strconv.Itoa(i),
 					})
 				}
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_ListDirFromAuthTicket", testCaseName, a, http.MethodGet, http.StatusBadRequest, []byte(""))
+				setupMockHttpResponse(t, mockClient, "TestAllocation_ListDirFromAuthTicket", testCaseName, a, http.MethodGet, http.StatusBadRequest, []byte(""))
 				return func(t *testing.T) {
 					a.Blobbers = nil
 				}
@@ -2773,7 +2881,7 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 					Size: -1,
 				},
 			},
-			setup: func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
+			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
 				for i := 0; i < numBlobbers; i++ {
 					a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 						ID:      testCaseName + mockBlobberId + strconv.Itoa(i),
@@ -2787,7 +2895,7 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 					},
 				})
 				require.NoError(t, err)
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_ListDirFromAuthTicket", testCaseName, a, http.MethodGet, http.StatusOK, body)
+				setupMockHttpResponse(t, mockClient, "TestAllocation_ListDirFromAuthTicket", testCaseName, a, http.MethodGet, http.StatusOK, body)
 				return nil
 			},
 		},
@@ -2795,12 +2903,34 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
+
+			var mockClient = mocks.HttpClient{}
+			zboxutil.Client = &mockClient
+
+			client := zclient.GetClient()
+			client.Wallet = &zcncrypto.Wallet{
+				ClientID:  mockClientId,
+				ClientKey: mockClientKey,
+			}
+			a := &Allocation{
+				ID: mockAllocationId,
+				Tx: mockAllocationTxId,
+			}
+
 			if tt.setup != nil {
-				if teardown := tt.setup(t, tt.name); teardown != nil {
+				if teardown := tt.setup(t, tt.name, a, &mockClient); teardown != nil {
 					defer teardown(t)
 				}
 			}
-			got, err := a.ListDirFromAuthTicket(tt.parameters.authTicket, tt.parameters.lookupHash)
+
+			setupMockGetFileInfoResponse(t, &mockClient)
+			a.InitAllocation()
+			sdkInitialized = true
+			for i := 0; i < numBlobbers; i++ {
+				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
+			}
+
+			got, err := a.ListDirFromAuthTicket(authTicket, tt.parameters.lookupHash)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))
@@ -2837,10 +2967,8 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 		ParityShards: 2,
 	}
 	setupMockAllocation(t, a)
-
-	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, mockClientId, "")
-	require.NoErrorf(t, err, "unexpected get auth ticket error: %v", err)
-	require.NotEmptyf(t, authTicket, "unexpected empty auth ticket")
+	setupMockGetFileInfoResponse(t, &mockClient)
+	authTicket := getMockAuthTicket(t)
 
 	type parameters struct {
 		localPath      string
@@ -2993,15 +3121,6 @@ func TestAllocation_listDir(t *testing.T) {
 		mockType = "d"
 	)
 
-	var mockClient = mocks.HttpClient{}
-	zboxutil.Client = &mockClient
-
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
-
 	type parameters struct {
 		path                           string
 		consensusThresh, fullConsensus float32
@@ -3010,13 +3129,13 @@ func TestAllocation_listDir(t *testing.T) {
 	tests := []struct {
 		name       string
 		parameters parameters
-		setup      func(*testing.T, string, *Allocation) (teardown func(*testing.T))
+		setup      func(*testing.T, string, *Allocation, *mocks.HttpClient) (teardown func(*testing.T))
 		wantErr    bool
 		errMsg     string
 	}{
 		{
 			name: "Test_Uninitialized_Failed",
-			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
+			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
 				a.initialized = false
 				return func(t *testing.T) {
 					a.initialized = true
@@ -3046,8 +3165,8 @@ func TestAllocation_listDir(t *testing.T) {
 				fullConsensus:   4,
 				expectedResult:  &ListResult{},
 			},
-			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_listDir", testCaseName, a, http.MethodGet, http.StatusBadRequest, []byte(""))
+			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
+				setupMockHttpResponse(t, mockClient, "TestAllocation_listDir", testCaseName, a, http.MethodGet, http.StatusBadRequest, []byte(""))
 				return nil
 			},
 		},
@@ -3062,7 +3181,7 @@ func TestAllocation_listDir(t *testing.T) {
 					Size: -1,
 				},
 			},
-			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
+			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
 				body, err := json.Marshal(&fileref.ListResult{
 					AllocationRoot: mockAllocationRoot,
 					Meta: map[string]interface{}{
@@ -3070,7 +3189,7 @@ func TestAllocation_listDir(t *testing.T) {
 					},
 				})
 				require.NoError(t, err)
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_listDir", testCaseName, a, http.MethodGet, http.StatusOK, body)
+				setupMockHttpResponse(t, mockClient, "TestAllocation_listDir", testCaseName, a, http.MethodGet, http.StatusOK, body)
 				return nil
 			},
 		},
@@ -3078,6 +3197,15 @@ func TestAllocation_listDir(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var mockClient = mocks.HttpClient{}
+			zboxutil.Client = &mockClient
+
+			client := zclient.GetClient()
+			client.Wallet = &zcncrypto.Wallet{
+				ClientID:  mockClientId,
+				ClientKey: mockClientKey,
+			}
+
 			require := require.New(t)
 			a := &Allocation{
 				ID: mockAllocationId,
@@ -3092,7 +3220,7 @@ func TestAllocation_listDir(t *testing.T) {
 				})
 			}
 			if tt.setup != nil {
-				if teardown := tt.setup(t, tt.name, a); teardown != nil {
+				if teardown := tt.setup(t, tt.name, a, &mockClient); teardown != nil {
 					defer teardown(t)
 				}
 			}
@@ -3115,26 +3243,7 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 		mockType       = "f"
 	)
 
-	var mockClient = mocks.HttpClient{}
-	zboxutil.Client = &mockClient
-
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
-
-	a := &Allocation{
-		ID:           mockAllocationId,
-		Tx:           mockAllocationTxId,
-		DataShards:   2,
-		ParityShards: 2,
-	}
-	a.InitAllocation()
-	sdkInitialized = true
-	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, mockClientId, "")
-	require.NoErrorf(t, err, "unexpected get auth ticket error: %v", err)
-	require.NotEmptyf(t, authTicket, "unexpected empty auth ticket")
+	var authTicket = getMockAuthTicket(t)
 
 	type parameters struct {
 		authTicket, lookupHash string
@@ -3142,13 +3251,13 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 	tests := []struct {
 		name       string
 		parameters parameters
-		setup      func(t *testing.T, testCaseName string) (teardown func(t *testing.T))
+		setup      func(*testing.T, string, *Allocation, *mocks.HttpClient) (teardown func(t *testing.T))
 		wantErr    bool
 		errMsg     string
 	}{
 		{
 			name: "Test_Uninitialized_Failed",
-			setup: func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
+			setup: func(t *testing.T, testCaseName string, a *Allocation, _ *mocks.HttpClient) (teardown func(t *testing.T)) {
 				a.initialized = false
 				return func(t *testing.T) {
 					a.initialized = true
@@ -3197,7 +3306,7 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 				authTicket: authTicket,
 				lookupHash: mockLookupHash,
 			},
-			setup: func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
+			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
 				for i := 0; i < numBlobbers; i++ {
 					a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 						ID:      testCaseName + mockBlobberId + strconv.Itoa(i),
@@ -3208,7 +3317,7 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 					ActualFileHash: mockActualHash,
 				})
 				require.NoError(t, err)
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_GetFileMetaFromAuthTicket", testCaseName, a, http.MethodPost, http.StatusOK, body)
+				setupMockHttpResponse(t, mockClient, "TestAllocation_GetFileMetaFromAuthTicket", testCaseName, a, http.MethodPost, http.StatusOK, body)
 				return nil
 			},
 		},
@@ -3216,9 +3325,28 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			var mockClient = mocks.HttpClient{}
+			zboxutil.Client = &mockClient
+
+			client := zclient.GetClient()
+			client.Wallet = &zcncrypto.Wallet{
+				ClientID:  mockClientId,
+				ClientKey: mockClientKey,
+			}
+
+			a := &Allocation{
+				ID:           mockAllocationId,
+				Tx:           mockAllocationTxId,
+				DataShards:   2,
+				ParityShards: 2,
+			}
+			a.InitAllocation()
+			sdkInitialized = true
+			a.initialized = true
+
 			require := require.New(t)
 			if tt.setup != nil {
-				if teardown := tt.setup(t, tt.name); teardown != nil {
+				if teardown := tt.setup(t, tt.name, a, &mockClient); teardown != nil {
 					defer teardown(t)
 				}
 			}
@@ -3265,9 +3393,7 @@ func TestAllocation_DownloadThumbnailFromAuthTicket(t *testing.T) {
 		})
 	}
 
-	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, mockClientId, "")
-	require.NoErrorf(err, "unexpected get auth ticket error: %v", err)
-	require.NotEmptyf(authTicket, "unexpected auth ticket")
+	var authTicket = getMockAuthTicket(t)
 
 	body, err := json.Marshal(&fileref.ReferencePath{
 		Meta: map[string]interface{}{
@@ -3290,6 +3416,8 @@ func TestAllocation_DownloadFromAuthTicket(t *testing.T) {
 		mockType           = "d"
 	)
 
+	var authTicket = getMockAuthTicket(t)
+
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
@@ -3310,11 +3438,7 @@ func TestAllocation_DownloadFromAuthTicket(t *testing.T) {
 		})
 	}
 
-	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, mockClientId, "")
-	require.NoErrorf(err, "unexpected get auth ticket error: %v", err)
-	require.NotEmptyf(authTicket, "unexpected auth ticket")
-
-	err = a.DownloadFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, true, nil)
+	err := a.DownloadFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, true, nil)
 	defer os.Remove("alloc/1.txt")
 	require.NoErrorf(err, "unexpected error: %v", err)
 }
@@ -3326,6 +3450,8 @@ func TestAllocation_DownloadFromAuthTicketByBlocks(t *testing.T) {
 		mockRemoteFilePath = "1.txt"
 		mockType           = "d"
 	)
+
+	var authTicket = getMockAuthTicket(t)
 
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
@@ -3347,13 +3473,9 @@ func TestAllocation_DownloadFromAuthTicketByBlocks(t *testing.T) {
 		})
 	}
 
-	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, mockClientId, "")
-	require.NoErrorf(err, "unexpected get auth ticket error: %v", err)
-	require.NotEmptyf(authTicket, "unexpected auth ticket")
-
 	setupMockHttpResponse(t, &mockClient, "TestAllocation_DownloadFromAuthTicketByBlocks", "", a, http.MethodPost, http.StatusBadRequest, []byte(""))
 
-	err = a.DownloadFromAuthTicketByBlocks(mockLocalPath, authTicket, 1, 0, numBlockDownloads, mockLookupHash, mockRemoteFilePath, true, nil)
+	err := a.DownloadFromAuthTicketByBlocks(mockLocalPath, authTicket, 1, 0, numBlockDownloads, mockLookupHash, mockRemoteFilePath, true, nil)
 	defer os.Remove("alloc/1.txt")
 	require.NoErrorf(err, "unexpected error: %v", err)
 }
@@ -3363,6 +3485,8 @@ func TestAllocation_CommitMetaTransaction(t *testing.T) {
 		mockLookupHash = "mock lookup hash"
 		mockType       = "d"
 	)
+
+	var authTicket = getMockAuthTicket(t)
 
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
@@ -3376,10 +3500,6 @@ func TestAllocation_CommitMetaTransaction(t *testing.T) {
 	a := &Allocation{}
 	a.InitAllocation()
 	sdkInitialized = true
-
-	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, mockClientId, "")
-	require.NoErrorf(t, err, "unexpected get auth ticket error: %v", err)
-	require.NotEmptyf(t, authTicket, "unexpected empty auth ticket")
 
 	type parameters struct {
 		path          string
@@ -3656,4 +3776,67 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 			}
 		}
 	}()
+}
+
+func setupMockGetFileInfoResponse(t *testing.T, mockClient *mocks.HttpClient) {
+	httpResponse := http.Response{
+		StatusCode: http.StatusOK,
+		Body: func() io.ReadCloser {
+			jsonFR, err := json.Marshal(fileref.FileRef{
+				Ref: fileref.Ref{
+					Name: mockFileRefName,
+				},
+				ContentHash: "mock content hash",
+			})
+			require.NoError(t, err)
+			return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+		}(),
+	}
+	for i := 0; i < numBlobbers; i++ {
+		mockClient.On("Do", mock.Anything).Return(&httpResponse, nil)
+	}
+}
+
+func getMockAuthTicket(t *testing.T) string {
+	var mockClient = mocks.HttpClient{}
+	zboxutil.Client = &mockClient
+
+	client := zclient.GetClient()
+	client.Wallet = &zcncrypto.Wallet{
+		ClientID:  mockClientId,
+		ClientKey: mockClientKey,
+	}
+	a := &Allocation{
+		ID: mockAllocationId,
+		Tx: mockAllocationTxId,
+	}
+	setupMockGetFileInfoResponse(t, &mockClient)
+	a.InitAllocation()
+	sdkInitialized = true
+	for i := 0; i < numBlobbers; i++ {
+		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
+	}
+
+	httpResponse := &http.Response{
+		StatusCode: http.StatusOK,
+		Body: func() io.ReadCloser {
+			jsonFR, err := json.Marshal(fileref.FileRef{
+				Ref: fileref.Ref{
+					Name: mockFileRefName,
+				},
+				ContentHash: "mock content hash",
+			})
+			require.NoError(t, err)
+			return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+		}(),
+	}
+	for i := 0; i < numBlobbers; i++ {
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return strings.HasPrefix(req.URL.Path, "TestAllocation_ListDirFromAuthTicket")
+		})).Return(httpResponse, nil)
+	}
+	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, mockClientId, "", 0)
+	require.NoErrorf(t, err, "unexpected get auth ticket error: %v", err)
+	require.NotEmptyf(t, authTicket, "unexpected empty auth ticket")
+	return authTicket
 }

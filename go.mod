@@ -4,7 +4,6 @@ require (
 	github.com/ethereum/go-ethereum v1.10.3
 	github.com/h2non/filetype v1.0.9
 	github.com/herumi/bls-go-binary v0.0.0-20191119080710-898950e1a520
-	github.com/jtguibas/cinema v0.0.0-20200208054232-ca271f28a020
 	github.com/klauspost/reedsolomon v1.9.11
 	github.com/miguelmota/go-ethereum-hdwallet v0.0.1
 	github.com/mitchellh/go-homedir v1.1.0
