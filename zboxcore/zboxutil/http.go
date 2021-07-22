@@ -55,6 +55,7 @@ const (
 	COMMIT_META_TXN_ENDPOINT = "/v1/file/commitmetatxn/"
 	COLLABORATOR_ENDPOINT    = "/v1/file/collaborator/"
 	CALCULATE_HASH_ENDPOINT  = "/v1/file/calculatehash/"
+	SHARE_ENDPOINT           = "/v1/marketplace/shareinfo/"
 	DIR_ENDPOINT             = "/v1/dir/"
 
 	// CLIENT_SIGNATURE_HEADER represents http request header contains signature.
@@ -446,6 +447,34 @@ func NewDeleteRequest(baseUrl, allocation string, body io.Reader) (*http.Request
 func NewCreateDirRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, DIR_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodPost, url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+func NewShareRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s", baseUrl, SHARE_ENDPOINT, allocation)
+	req, err := http.NewRequest(http.MethodPost, url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+func NewRevokeShareRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s", baseUrl, SHARE_ENDPOINT, allocation)
+	req, err := http.NewRequest(http.MethodDelete, url, body)
 	if err != nil {
 		return nil, err
 	}

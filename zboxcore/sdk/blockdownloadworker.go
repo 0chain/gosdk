@@ -202,13 +202,20 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				// dec := json.NewDecoder(resp.Body)
 				// err := dec.Decode(&rspData)
 				err = json.Unmarshal(response, &rspData)
+				// After getting start of stream JSON message, other message chunks should not be in JSON
 				if err != nil {
 					rspData.Success = true
 					//rawData := make([]byte,0)
 					//json.Unmarshal(response, &rawData)
 					rspData.RawData = response
-					chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
-					rspData.BlockChunks = chunks
+					if len(req.encryptedKey) > 0 {
+						// 256 for the additional header bytes,  where chunk_size - 2 * 1024 is the encrypted data size
+						chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE - 2 * 1024 + 256)
+						rspData.BlockChunks = chunks
+					} else {
+						chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
+						rspData.BlockChunks = chunks
+					}
 					rspData.RawData = []byte{}
 					incBlobberReadCtr(req.blobber, req.numBlocks)
 					req.result <- &rspData
