@@ -279,6 +279,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 			Path:                "",
 			Allocation:          a.Tx,
 			ConnectionId:        req.connectionID,
+			Method:              "put",
 			UpdateMeta:          string(metaData),
 			UploadFile:          <-uploadCh,
 			UploadThumbnailFile: <-uploadThumbCh,
@@ -288,6 +289,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 			Path:                "",
 			Allocation:          a.Tx,
 			ConnectionId:        req.connectionID,
+			Method:              "post",
 			UploadMeta:          string(metaData),
 			UploadFile:          <-uploadCh,
 			UploadThumbnailFile: <-uploadThumbCh,
@@ -310,7 +312,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 	}
 	if r.Filename != formData.Filename || r.ShardSize != shardSize ||
 		r.Hash != formData.Hash || r.MerkleRoot != formData.MerkleRoot {
-		err = errors.New(fmt.Sprintf(blobber.Baseurl, "Unexpected upload response data", string(respbody)))
+		err = errors.New(fmt.Sprintf(blobber.Baseurl, "Unexpected upload response data", string(respRaw)))
 		Logger.Error(err)
 		return
 	}
