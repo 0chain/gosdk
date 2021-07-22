@@ -591,6 +591,28 @@ func (a *Allocation) listDir(path string, consensusThresh, fullconsensus float32
 	return nil, errors.New("list_request_failed", "Failed to get list response from the blobbers")
 }
 
+//This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
+func (a *Allocation) GetObjectTree(path, offsetPath string, page int) (*[]fileref.FileRef, error) {
+	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
+		return nil, errors.New("invalid_path", "Invalid path for the objectTree. Absolute path required")
+	}
+	if !a.isInitialized() {
+		return nil, notInitialized
+	}
+	oTreeReq := &ObjectTreeRequest{
+		allocationID:   a.ID,
+		allocationTx:   a.Tx,
+		blobbers:       a.Blobbers,
+		remotefilepath: path,
+		offsetPath:     offsetPath,
+		page:           page,
+	}
+	oTreeReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+	oTreeReq.consensusThresh = (float32(a.DataShards) * 100) / oTreeReq.fullconsensus
+
+	return oTreeReq.GetObjectTree()
+}
+
 func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
