@@ -43,22 +43,22 @@ func getNewErrorTestCase() []newErrorTestCase {
 			expectedMessage: "This is a short error!",
 		},
 		{
-			about:           "creating an error with not allowed parameters",
+			about:           "creating an error by passing 3 parameters which is not allowed",
 			args:            []string{"code", "message", "third"},
 			expectedCode:    "incorrect_usage",
-			expectedMessage: "you should at least pass message to create a proper error!",
+			expectedMessage: "max allowed parameters is 2 i.e code, msg. parameters sent - 3",
 		},
 		{
-			about:           "creating an error with not allowed parameters",
+			about:           "creating an error by passing 4 parameters which is not allowed",
 			args:            []string{"code", "message", "third", "fourth"},
 			expectedCode:    "incorrect_usage",
-			expectedMessage: "you should at least pass message to create a proper error!",
+			expectedMessage: "max allowed parameters is 2 i.e code, msg. parameters sent - 4",
 		},
 		{
 			about:           "creating an error with empty parameters",
 			args:            []string{},
 			expectedCode:    "incorrect_usage",
-			expectedMessage: "you should at least pass message to create a proper error!",
+			expectedMessage: "max allowed parameters is 2 i.e code, msg. parameters sent - 0",
 		},
 	}
 }
