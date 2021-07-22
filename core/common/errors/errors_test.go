@@ -106,7 +106,7 @@ func getWrapTopTestCases() []wrapTopTestCase {
 				fmt.Errorf("%s", "error created from fmt package"),
 				nil,
 			},
-			expectedTopMessage: "incorrect_usage: you should at least pass message to properly wrap the current error!",
+			expectedTopMessage: "incorrect_usage: you should pass either error or message to properly wrap the error!",
 		},
 		{
 			about: "wrapping all messages",
@@ -116,7 +116,7 @@ func getWrapTopTestCases() []wrapTopTestCase {
 				"This is a short error!",
 				"",
 			},
-			expectedTopMessage: "incorrect_usage: you should at least pass message to properly wrap the current error!",
+			expectedTopMessage: "incorrect_usage: you should pass either error or message to properly wrap the error!",
 		},
 		{
 			about: "wrapping errors and messages",
