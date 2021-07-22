@@ -268,7 +268,7 @@ func (a *Allocation) UploadFile(localpath string, remotepath string,
 
 func (a *Allocation) CreateDir(dirName string) error {
 	if !a.isInitialized() {
-		return notInitialized
+		return notInitialized()
 	}
 
 	if len(dirName) == 0 {
