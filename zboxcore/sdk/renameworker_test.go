@@ -76,7 +76,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 				}, nil)
 			},
 			wantErr: true,
-			errMsg:  "400: Object tree error response: Body:  ",
+			errMsg:  "400: Object tree error response: Body:",
 		},
 		{
 			name: "Test_Rename_Blobber_Object_Failed",
