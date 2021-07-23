@@ -20,7 +20,7 @@ type ObjectTreeResult struct {
 	Page          int64               `json:"page"`
 	TotalPages    int64               `json:"total_pages"`
 	NewOffsetPath string              `json:"offsetPath"`
-	Refs          []oRef              `json:"refs"`
+	Refs          []ORef              `json:"refs"`
 	LatestWM      *marker.WriteMarker `json:"latest_write_marker"`
 }
 
@@ -115,7 +115,7 @@ func (o *ObjectTreeRequest) getFileRefs(oTreechan *oTreeChan, bUrl string) {
 	oTreechan.dataCh <- &oResult
 }
 
-type oRef struct {
+type ORef struct {
 	ID                  int64          `json:"id"`
 	Type                string         `json:"type"`
 	AllocationID        string         `json:"allocation_id"`
