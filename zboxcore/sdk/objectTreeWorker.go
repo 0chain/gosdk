@@ -39,13 +39,13 @@ type ObjectTreeRequest struct {
 }
 
 type oTreeChan struct {
-	dataCh chan *[]fileref.FileRef
+	dataCh chan *ObjectTreeResult
 	errCh  chan error
 }
 
 //Paginated tree should not be collected as this will stall the client
 //It should rather be handled by application that uses gosdk
-func (o *ObjectTreeRequest) GetObjectTree() (*[]fileref.FileRef, error) {
+func (o *ObjectTreeRequest) GetObjectTree() (*ObjectTreeResult, error) {
 	totalBlobbersCount := len(o.blobbers)
 	oTreeChans := make([]oTreeChan, totalBlobbersCount)
 	o.wg.Add(totalBlobbersCount)
@@ -57,23 +57,23 @@ func (o *ObjectTreeRequest) GetObjectTree() (*[]fileref.FileRef, error) {
 	//TODO Check for consensus and send the result
 	refsMap := make(map[string]map[string]interface{})
 	for _, oTreeChan := range oTreeChans {
-		refs := <-oTreeChan.dataCh
+		oTreeResult := <-oTreeChan.dataCh
 		err := <-oTreeChan.errCh
 
 		if err != nil {
 			continue
 		}
 
-		for _, ref := range *refs {
+		for _, ref := range oTreeResult.Refs {
 			if _, ok := refsMap[ref.LookupHash]; !ok {
 				//Consensus work left
 			}
 		}
 	}
-	data := <-oTreeChans[0].dataCh
+	oTreeResult := <-oTreeChans[0].dataCh
 	err := <-oTreeChans[0].errCh
 
-	return data, err
+	return oTreeResult, err
 }
 
 func (o *ObjectTreeRequest) getFileRefs(oTreechan *oTreeChan, bUrl string) {
@@ -112,5 +112,5 @@ func (o *ObjectTreeRequest) getFileRefs(oTreechan *oTreeChan, bUrl string) {
 		oTreechan.errCh <- err
 		return
 	}
-	oTreechan.dataCh <- &oResult.Refs
+	oTreechan.dataCh <- &oResult
 }

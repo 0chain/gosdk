@@ -592,7 +592,7 @@ func (a *Allocation) listDir(path string, consensusThresh, fullconsensus float32
 }
 
 //This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
-func (a *Allocation) GetObjectTree(path, offsetPath string, page int) (*[]fileref.FileRef, error) {
+func (a *Allocation) GetObjectTree(path, offsetPath string, page int) (*ObjectTreeResult, error) {
 	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
 		return nil, errors.New("invalid_path", "Invalid path for the objectTree. Absolute path required")
 	}
