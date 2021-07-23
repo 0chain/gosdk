@@ -10,17 +10,17 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"gorm.io/datatypes"
 )
 
 type ObjectTreeResult struct {
 	Page          int64               `json:"page"`
 	TotalPages    int64               `json:"total_pages"`
 	NewOffsetPath string              `json:"offsetPath"`
-	Refs          []fileref.FileRef   `json:"refs"`
+	Refs          []oRef              `json:"refs"`
 	LatestWM      *marker.WriteMarker `json:"latest_write_marker"`
 }
 
@@ -113,4 +113,35 @@ func (o *ObjectTreeRequest) getFileRefs(oTreechan *oTreeChan, bUrl string) {
 		return
 	}
 	oTreechan.dataCh <- &oResult
+}
+
+type oRef struct {
+	ID                  int64          `json:"id"`
+	Type                string         `json:"type"`
+	AllocationID        string         `json:"allocation_id"`
+	LookupHash          string         `json:"lookup_hash"`
+	Name                string         `json:"name"`
+	Path                string         `json:"path"`
+	Hash                string         `json:"hash"`
+	NumBlocks           int64          `json:"num_blocks"`
+	PathHash            string         `json:"path_hash"`
+	ParentPath          string         `json:"parent_path"`
+	PathLevel           int            `json:"level"`
+	CustomMeta          string         `json:"custom_meta"`
+	ContentHash         string         `json:"content_hash"`
+	Size                int64          `json:"size"`
+	MerkleRoot          string         `json:"merkle_root"`
+	ActualFileSize      int64          `json:"actual_file_size"`
+	ActualFileHash      string         `json:"actual_file_hash"`
+	MimeType            string         `json:"mimetype"`
+	WriteMarker         string         `json:"write_marker"`
+	ThumbnailSize       int64          `json:"thumbnail_size"`
+	ThumbnailHash       string         `json:"thumbnail_hash"`
+	ActualThumbnailSize int64          `json:"actual_thumbnail_size"`
+	ActualThumbnailHash string         `json:"actual_thumbnail_hash"`
+	EncryptedKey        string         `json:"encrypted_key"`
+	Attributes          datatypes.JSON `json:"attributes"`
+	OnCloud             bool           `json:"on_cloud"`
+	CreatedAt           time.Time      `json:"created_at"`
+	UpdatedAt           time.Time      `json:"updated_at"`
 }
