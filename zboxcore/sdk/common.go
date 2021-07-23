@@ -1,13 +1,11 @@
 package sdk
 
 import (
-	"context"
 	"encoding/json"
+	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
 	"sync"
 
 	"github.com/0chain/gosdk/core/clients/blobberClient"
-
-	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
 
 	"github.com/0chain/gosdk/zboxcore/logger"
 
@@ -15,7 +13,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
-func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx string, remotefilepath string, blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
+func getObjectTreeFromBlobber(allocationID, allocationTx, remotefilepath string, blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
 
 	respRaw, err := blobberClient.GetObjectTree(blobber.Baseurl, &blobbergrpc.GetObjectTreeRequest{
 		Path:       remotefilepath,

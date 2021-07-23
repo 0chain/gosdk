@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
 	"net"
 	"net/url"
 
 	"google.golang.org/grpc/encoding/gzip"
 
-	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc"
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/convert"
 	blobbercommon "github.com/0chain/blobber/code/go/0chain.net/core/common"
 	"github.com/0chain/gosdk/core/encryption"
@@ -20,7 +20,7 @@ import (
 
 const GRPCPort = 31501
 
-func newBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberClient, error) {
+func newBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberServiceClient, error) {
 	u, err := url.Parse(urlRaw)
 	if err != nil {
 		return nil, err
@@ -31,7 +31,7 @@ func newBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberClient, error) {
 	if err != nil {
 		return nil, err
 	}
-	return blobbergrpc.NewBlobberClient(cc), nil
+	return blobbergrpc.NewBlobberServiceClient(cc), nil
 }
 
 func Commit(url string, req *blobbergrpc.CommitRequest) ([]byte, error) {
