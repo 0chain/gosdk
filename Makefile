@@ -35,9 +35,6 @@ gosdk-mocks:
 gosdk-test:
 	go test -tags bn256 ./...
 
-gosdk-test:
-	go test -tags bn256 ./...
-
 gosdk-integration-test:
 	go test ./core/clients/blobberClient -args integration
 
