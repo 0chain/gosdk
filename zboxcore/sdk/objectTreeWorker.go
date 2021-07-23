@@ -17,11 +17,11 @@ import (
 )
 
 type ObjectTreeResult struct {
-	Page          int64                    `json:"page"`
-	TotalPages    int64                    `json:"total_pages"`
-	NewOffsetPath string                   `json:"offsetPath"`
-	Refs          []fileref.FileRef        `json:"refs"`
-	LatestWM      *writemarker.WriteMarker `json:"latest_write_marker"`
+	Page          int64               `json:"page"`
+	TotalPages    int64               `json:"total_pages"`
+	NewOffsetPath string              `json:"offsetPath"`
+	Refs          []fileref.FileRef   `json:"refs"`
+	LatestWM      *marker.WriteMarker `json:"latest_write_marker"`
 }
 
 type ObjectTreeRequest struct {
@@ -43,6 +43,8 @@ type oTreeChan struct {
 	errCh  chan error
 }
 
+//Paginated tree should not be collected as this will stall the client
+//It should rather be handled by application that uses gosdk
 func (o *ObjectTreeRequest) GetObjectTree() (*[]fileref.FileRef, error) {
 	totalBlobbersCount := len(o.blobbers)
 	oTreeChans := make([]oTreeChan, totalBlobbersCount)
