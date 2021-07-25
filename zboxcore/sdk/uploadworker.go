@@ -272,27 +272,53 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 		}
 	}()
 
+	buffer := new(bytes.Buffer)
+
+	buffer.ReadFrom(bodyReader)
+
 	uploadRequest := &blobbergrpc.UploadFileRequest{}
+
+	formReader := multipart.NewReader(bodyReader, formWriter.Boundary())
+	uploadFilePart, err := formReader.NextPart()
+	if err != nil {
+		return
+	}
+	uploadFile := make([]byte, req.filemeta.Size)
+	_, err = io.ReadFull(uploadFilePart, uploadFile)
+	if err != nil {
+		return
+	}
+
+	thumbnailFilePart, err := formReader.NextPart()
+	thumbnailFile := make([]byte, req.filemeta.ThumbnailSize)
+	if err != nil && err != io.EOF {
+		return
+	} else {
+		_, err = io.ReadFull(thumbnailFilePart, thumbnailFile)
+		if err != nil {
+			return
+		}
+	}
 
 	if req.isUpdate {
 		uploadRequest = &blobbergrpc.UploadFileRequest{
 			Path:                "",
 			Allocation:          a.Tx,
 			ConnectionId:        req.connectionID,
-			Method:              "put",
+			Method:              "PUT",
 			UpdateMeta:          string(metaData),
-			UploadFile:          <-uploadCh,
-			UploadThumbnailFile: <-uploadThumbCh,
+			UploadFile:          uploadFile,
+			UploadThumbnailFile: thumbnailFile,
 		}
 	} else {
 		uploadRequest = &blobbergrpc.UploadFileRequest{
 			Path:                "",
 			Allocation:          a.Tx,
 			ConnectionId:        req.connectionID,
-			Method:              "post",
+			Method:              "POST",
 			UploadMeta:          string(metaData),
-			UploadFile:          <-uploadCh,
-			UploadThumbnailFile: <-uploadThumbCh,
+			UploadFile:          uploadFile,
+			UploadThumbnailFile: thumbnailFile,
 		}
 	}
 
