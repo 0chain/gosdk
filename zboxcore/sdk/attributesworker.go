@@ -37,8 +37,7 @@ type AttributesRequest struct {
 func (ar *AttributesRequest) getObjectTreeFromBlobber(
 	blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
 
-	return getObjectTreeFromBlobber(ar.ctx, ar.allocationID, ar.allocationTx,
-		ar.remotefilepath, blobber)
+	return getObjectTreeFromBlobber(ar.allocationID, ar.allocationTx, ar.remotefilepath, blobber)
 }
 
 func (ar *AttributesRequest) updateBlobberObjectAttributes(

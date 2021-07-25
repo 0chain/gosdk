@@ -1,10 +1,12 @@
 module github.com/0chain/gosdk
 
 require (
-	github.com/0chain/blobber v0.3.3-0.20210707165506-8534f3bbf649
+	github.com/0chain/blobber v0.3.3-0.20210723062022-d4f7eb725c38
 	github.com/ethereum/go-ethereum v1.10.3
+	github.com/gedex/inflector v0.0.0-20170307190818-16278e9db813 // indirect
 	github.com/h2non/filetype v1.0.9
 	github.com/herumi/bls-go-binary v0.0.0-20191119080710-898950e1a520
+	github.com/idubinskiy/schematyper v0.0.0-20190118213059-f71b40dac30d // indirect
 	github.com/klauspost/reedsolomon v1.9.11
 	github.com/miguelmota/go-ethereum-hdwallet v0.0.1
 	github.com/mitchellh/mapstructure v1.3.1
