@@ -1,10 +1,10 @@
 module github.com/0chain/gosdk
 
 require (
-	github.com/ethereum/go-ethereum v1.10.3
+	github.com/ethereum/go-ethereum v1.10.4
 	github.com/h2non/filetype v1.0.9
 	github.com/klauspost/reedsolomon v1.9.11
-	github.com/miguelmota/go-ethereum-hdwallet v0.0.0-20210314074952-8dd49aa599b9
+	github.com/miguelmota/go-ethereum-hdwallet v0.1.0
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/stretchr/testify v1.7.0
 	github.com/tyler-smith/go-bip39 v1.1.0
@@ -15,3 +15,5 @@ require (
 )
 
 go 1.13
+
+replace github.com/ethereum/go-ethereum => github.com/certifaction/go-ethereum v1.10.3-wasm
