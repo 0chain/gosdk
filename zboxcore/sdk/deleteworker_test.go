@@ -14,7 +14,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	zclient "github.com/0chain/gosdk/zboxcore/client"
@@ -155,7 +154,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 						require.EqualValues(t, expected, string(actual))
 					}
 					require.Error(t, err)
-					require.EqualValues(t, "EOF", errors.Top(err))
+					require.EqualValues(t, "EOF", err)
 
 					return strings.HasPrefix(req.URL.Path, testName) &&
 						req.Method == "DELETE" &&
@@ -384,7 +383,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			err := req.ProcessDelete()
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.Contains(errors.Top(err), tt.errMsg, "expected error contains '%s'", tt.errMsg)
+				require.Contains(err, tt.errMsg, "expected error contains '%s'", tt.errMsg)
 				return
 			}
 			if tt.wantFunc != nil {

@@ -13,7 +13,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	zclient "github.com/0chain/gosdk/zboxcore/client"
@@ -166,7 +165,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 						require.EqualValues(t, expected, string(actual))
 					}
 					require.Error(t, err)
-					require.EqualValues(t, "EOF", errors.Top(err))
+					require.EqualValues(t, "EOF", err)
 
 					return strings.HasPrefix(req.URL.Path, testName) &&
 						req.Method == "POST" &&
@@ -210,7 +209,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 			_, err := req.copyBlobberObject(req.blobbers[0], 0)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(err))
+				require.EqualValues(tt.errMsg, err)
 				return
 			}
 			require.NoErrorf(err, "expected no error but got %v", err)
@@ -400,7 +399,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			err := req.ProcessCopy()
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(err))
+				require.EqualValues(tt.errMsg, err)
 				return
 			}
 			if tt.wantFunc != nil {

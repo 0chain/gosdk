@@ -12,7 +12,6 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	zclient "github.com/0chain/gosdk/zboxcore/client"
@@ -173,7 +172,7 @@ func TestCollaboratorRequest_updateCollaboratorToBlobber(t *testing.T) {
 						require.EqualValues(t, expected, string(actual))
 					}
 					require.Error(t, err)
-					require.EqualValues(t, "EOF", errors.Top(err))
+					require.EqualValues(t, "EOF", err)
 
 					return strings.HasPrefix(req.URL.Path, testName)
 				})).Return(&http.Response{
@@ -363,7 +362,7 @@ func TestCollaboratorRequest_removeCollaboratorFromBlobber(t *testing.T) {
 						require.EqualValues(t, expected, string(actual))
 					}
 					require.Error(t, err)
-					require.EqualValues(t, "EOF", errors.Top(err))
+					require.EqualValues(t, "EOF", err)
 
 					return strings.HasPrefix(req.URL.Path, testName)
 				})).Return(&http.Response{

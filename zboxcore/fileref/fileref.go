@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/pkg/errors"
 )
 
 const CHUNK_SIZE = 64 * 1024
