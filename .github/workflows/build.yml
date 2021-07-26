@@ -132,7 +132,7 @@ jobs:
         asset_name: artifact.zip
         asset_content_type: application/zip
         
-    - name: Upload Release Asset For v0.0.0
+    - name: Upload Release Asset For input tag
       if: github.event.inputs.fixed_tag == 'no' && github.event.inputs.version_tag != ''
       id: upload-release-asset_fixed1
       uses: actions/upload-release-asset@v1
