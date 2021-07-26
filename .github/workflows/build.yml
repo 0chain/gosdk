@@ -114,7 +114,7 @@ jobs:
 
     - name: Upload Release Asset
       id: upload-release-asset 
-#       if: steps.get_version.outputs.TAG != 'master'
+      if: steps.get_version.outputs.TAG != 'master'
       uses: actions/upload-release-asset@v1
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }}
