@@ -651,7 +651,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 			err := a.RepairFile(tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.status)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err)
+				require.EqualValues(tt.errMsg, err.Error())
 				return
 			}
 			require.NoErrorf(err, "Unexpected error %v", err)
@@ -1014,7 +1014,7 @@ func TestAllocation_uploadOrUpdateFile(t *testing.T) {
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 
-				require.EqualValues(tt.errMsg, err)
+				require.EqualValues(tt.errMsg, err.Error())
 				return
 			}
 			require.NoErrorf(err, "Unexpected error %v", err)
@@ -1164,7 +1164,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 			}
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err)
+				require.EqualValues(tt.errMsg, err.Error())
 				return
 			}
 			expected := &fileref.FileRef{
@@ -1424,7 +1424,7 @@ func TestAllocation_downloadFile(t *testing.T) {
 			err := a.downloadFile(tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.contentMode, tt.parameters.startBlock, tt.parameters.endBlock, tt.parameters.numBlocks, tt.parameters.statusCallback)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err)
+				require.EqualValues(tt.errMsg, err.Error())
 				return
 			}
 			require.NoErrorf(err, "Unexpected error: %v", err)
@@ -1566,7 +1566,7 @@ func TestAllocation_deleteFile(t *testing.T) {
 			err := a.DeleteFile(tt.parameters.path)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err)
+				require.EqualValues(tt.errMsg, err.Error())
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -1716,7 +1716,7 @@ func TestAllocation_UpdateObjectAttributes(t *testing.T) {
 			err := a.UpdateObjectAttributes(tt.parameters.path, tt.parameters.attrs)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err)
+				require.EqualValues(tt.errMsg, err.Error())
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -1809,7 +1809,7 @@ func TestAllocation_MoveObject(t *testing.T) {
 			err := a.MoveObject(tt.parameters.path, tt.parameters.destPath)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err)
+				require.EqualValues(tt.errMsg, err.Error())
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -1914,7 +1914,7 @@ func TestAllocation_CopyObject(t *testing.T) {
 			err := a.CopyObject(tt.parameters.path, tt.parameters.destPath)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err)
+				require.EqualValues(tt.errMsg, err.Error())
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -2019,7 +2019,7 @@ func TestAllocation_RenameObject(t *testing.T) {
 			err := a.RenameObject(tt.parameters.path, tt.parameters.destName)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err)
+				require.EqualValues(tt.errMsg, err.Error())
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -2107,7 +2107,7 @@ func TestAllocation_AddCollaborator(t *testing.T) {
 			err := a.AddCollaborator(tt.parameters.filePath, tt.parameters.collaboratorID)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err)
+				require.EqualValues(tt.errMsg, err.Error())
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -2195,7 +2195,7 @@ func TestAllocation_RemoveCollaborator(t *testing.T) {
 			err := a.RemoveCollaborator(tt.parameters.filePath, tt.parameters.collaboratorID)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err)
+				require.EqualValues(tt.errMsg, err.Error())
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -2294,7 +2294,7 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 			got, err := a.GetFileMeta(tt.parameters.path)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err)
+				require.EqualValues(tt.errMsg, err.Error())
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -2554,7 +2554,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 			at, err := a.GetAuthTicket(tt.parameters.path, tt.parameters.filename, tt.parameters.referenceType, tt.parameters.refereeClientID, tt.parameters.refereeEncryptionPublicKey, 0)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err)
+				require.EqualValues(tt.errMsg, err.Error())
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -2605,7 +2605,7 @@ func TestAllocation_CancelUpload(t *testing.T) {
 			err := a.CancelUpload(tt.parameters.localpath)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err)
+				require.EqualValues(tt.errMsg, err.Error())
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -2782,7 +2782,7 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 			_, err := a.CommitFolderChange(tt.parameters.operation, tt.parameters.preValue, tt.parameters.currValue)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err)
+				require.EqualValues(tt.errMsg, err.Error())
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
