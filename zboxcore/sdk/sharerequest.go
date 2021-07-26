@@ -5,7 +5,7 @@ import (
 	b64 "encoding/base64"
 	"encoding/json"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -88,7 +88,7 @@ func (req *ShareRequest) GetFileRef() (*fileref.FileRef, error) {
 	}
 	_, fileRef, _ = listReq.getFileConsensusFromBlobbers()
 	if fileRef == nil {
-		return nil, errors.New("file_meta_error", "Error getting object meta data from blobbers")
+		return nil, gosdkErrors.New("file_meta_error", "Error getting object meta data from blobbers")
 	}
 	return fileRef, nil
 }

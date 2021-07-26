@@ -14,12 +14,13 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/common/errors"
+	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/pkg/errors"
 )
 
 type ChainConfig struct {
@@ -200,14 +201,14 @@ func init() {
 }
 func checkSdkInit() error {
 	if !_config.isConfigured || len(_config.chain.Miners) < 1 || len(_config.chain.Sharders) < 1 {
-		return errors.New("SDK not initialized")
+		return gosdkErrors.New("SDK not initialized")
 	}
 	return nil
 }
 func checkWalletConfig() error {
 	if !_config.isValidWallet || _config.wallet.ClientID == "" {
 		Logger.Error("wallet info not found. returning error.")
-		return errors.New("wallet info not found. set wallet info")
+		return gosdkErrors.New("wallet info not found. set wallet info")
 	}
 	return nil
 }
@@ -294,7 +295,7 @@ func Init(c string) error {
 	if err == nil {
 		// Check signature scheme is supported
 		if _config.chain.SignatureScheme != "ed25519" && _config.chain.SignatureScheme != "bls0chain" {
-			return errors.New("invalid/unsupported signature scheme")
+			return gosdkErrors.New("invalid/unsupported signature scheme")
 		}
 
 		err := UpdateNetworkDetails()
@@ -342,7 +343,7 @@ func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
 func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
 	if signscheme != "ed25519" && signscheme != "bls0chain" {
-		return errors.New("invalid/unsupported signature scheme")
+		return gosdkErrors.New("invalid/unsupported signature scheme")
 	}
 	_config.chain.BlockWorker = blockWorker
 	_config.chain.SignatureScheme = signscheme
@@ -388,7 +389,7 @@ func GetNetworkJSON() string {
 // It also registers the wallet again to block chain.
 func CreateWallet(statusCb WalletCallback) error {
 	if len(_config.chain.Miners) < 1 || len(_config.chain.Sharders) < 1 {
-		return errors.New("SDK not initialized")
+		return gosdkErrors.New("SDK not initialized")
 	}
 	go func() {
 		sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
@@ -410,7 +411,7 @@ func CreateWallet(statusCb WalletCallback) error {
 // It also registers the wallet again to block chain.
 func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
 	if zcncrypto.IsMnemonicValid(mnemonic) != true {
-		return errors.New("Invalid mnemonic")
+		return gosdkErrors.New("Invalid mnemonic")
 	}
 	go func() {
 		sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
@@ -431,7 +432,7 @@ func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
 // Split keys from the primary master key
 func SplitKeys(privateKey string, numSplits int) (string, error) {
 	if _config.chain.SignatureScheme != "bls0chain" {
-		return "", errors.New("signature key doesn't support split key")
+		return "", gosdkErrors.New("signature key doesn't support split key")
 	}
 	sigScheme := zcncrypto.NewBLS0ChainScheme()
 	err := sigScheme.SetPrivateKey(privateKey)
@@ -489,7 +490,7 @@ func RegisterToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 	}
 	rate := consensus * 100 / float32(len(_config.chain.Miners))
 	if rate < consensusThresh {
-		return errors.New(fmt.Sprintf("Register consensus not met. Consensus: %f, Expected: %f", rate, consensusThresh))
+		return gosdkErrors.New(fmt.Sprintf("Register consensus not met. Consensus: %f, Expected: %f", rate, consensusThresh))
 	}
 	w, err := wallet.Marshal()
 	if err != nil {
@@ -551,10 +552,10 @@ func SetWalletInfo(w string, splitKeyWallet bool) error {
 // SetAuthUrl will be called by app to set zauth URL to SDK.
 func SetAuthUrl(url string) error {
 	if !_config.isSplitWallet {
-		return errors.New("wallet type is not split key")
+		return gosdkErrors.New("wallet type is not split key")
 	}
 	if url == "" {
-		return errors.New("invalid auth url")
+		return gosdkErrors.New("invalid auth url")
 	}
 	_config.authUrl = strings.TrimRight(url, "/")
 	return nil
@@ -641,7 +642,7 @@ func getBalanceFromSharders(clientID string) (int64, string, error) {
 	}
 	rate := consensus * 100 / float32(len(_config.chain.Sharders))
 	if rate < consensusThresh {
-		return 0, winError, errors.New("get balance failed. consensus not reached")
+		return 0, winError, gosdkErrors.New("get balance failed. consensus not reached")
 	}
 	return winBalance, winInfo, nil
 }
@@ -676,7 +677,7 @@ func getTokenUSDRate() (float64, error) {
 	return getTokenRateByCurrency("usd")
 }
 
-func getTokenRateByCurrency(currency string) (float64, error){
+func getTokenRateByCurrency(currency string) (float64, error) {
 	var CoinGeckoResponse struct {
 		ID         string `json:"id"`
 		Symbol     string `json:"symbol"`
@@ -699,7 +700,7 @@ func getTokenRateByCurrency(currency string) (float64, error){
 
 	if res.StatusCode != http.StatusOK {
 		Logger.Error("Response status not OK. ", res.StatusCode)
-		return 0, errors.New("invalid_res_status_code", "Response status code is not OK")
+		return 0, gosdkErrors.New("invalid_res_status_code", "Response status code is not OK")
 	}
 
 	err = json.Unmarshal([]byte(res.Body), &CoinGeckoResponse)

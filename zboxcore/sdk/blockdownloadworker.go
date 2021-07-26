@@ -13,13 +13,14 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/common/errors"
+	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/pkg/errors"
 )
 
 type BlockDownloadRequest struct {
@@ -121,7 +122,7 @@ func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
 func (req *BlockDownloadRequest) downloadBlobberBlock() {
 	defer req.wg.Done()
 	if req.numBlocks <= 0 {
-		req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.New("invalid_request", "Invalid number of blocks for download")}
+		req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: gosdkErrors.New("invalid_request", "Invalid number of blocks for download")}
 		return
 	}
 	retry := 0
@@ -129,7 +130,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 		if req.blobber.IsSkip() {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx,
-				err: errors.New("skip blobber by previous errors")}
+				err: gosdkErrors.New("skip blobber by previous errors")}
 			return
 		}
 
@@ -210,7 +211,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					rspData.RawData = response
 					if len(req.encryptedKey) > 0 {
 						// 256 for the additional header bytes,  where chunk_size - 2 * 1024 is the encrypted data size
-						chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE - 2 * 1024 + 256)
+						chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE-2*1024+256)
 						rspData.BlockChunks = chunks
 					} else {
 						chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
@@ -236,7 +237,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					Logger.Info("Will be retrying download")
 					setBlobberReadCtr(req.blobber, rspData.LatestRM.ReadCounter)
 					shouldRetry = true
-					return errors.New("Need to retry the download")
+					return gosdkErrors.New("Need to retry the download")
 				}
 
 			} else {
@@ -244,7 +245,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				if err != nil {
 					return err
 				}
-				err = errors.New(fmt.Sprintf("Response Error: %s", string(resp_body)))
+				err = gosdkErrors.New(fmt.Sprintf("Response Error: %s", string(resp_body)))
 				if strings.Contains(err.Error(), "not_enough_tokens") {
 					shouldRetry, retry = false, 3 // don't repeat
 					req.blobber.SetSkip(true)

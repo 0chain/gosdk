@@ -7,6 +7,7 @@ require (
 	github.com/klauspost/reedsolomon v1.9.11
 	github.com/miguelmota/go-ethereum-hdwallet v0.0.1
 	github.com/mitchellh/mapstructure v1.1.2
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/tyler-smith/go-bip39 v1.1.0
 	go.dedis.ch/kyber/v3 v3.0.5

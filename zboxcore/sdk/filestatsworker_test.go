@@ -14,7 +14,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -74,7 +75,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 				})).Return(&http.Response{
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 					StatusCode: p.respStatusCode,
-				}, errors.New(mockErrorMessage))
+				}, gosdkErrors.New(mockErrorMessage))
 			},
 			wantErr: true,
 			errMsg:  mockErrorMessage,
@@ -167,7 +168,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 			resp := <-rspCh
 			require.EqualValues(t, tt.wantErr, resp.err != nil)
 			if resp.err != nil {
-				require.EqualValues(t, tt.errMsg, errors.Top(resp.err))
+				require.EqualValues(t, tt.errMsg, resp.err)
 				return
 			}
 			require.EqualValues(t, tt.parameters.fileStatsFinal, *resp.filestats)

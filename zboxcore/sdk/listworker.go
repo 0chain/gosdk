@@ -10,13 +10,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/pkg/errors"
 )
 
 const CHUNK_SIZE = 64 * 1024
@@ -121,7 +122,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 			}
 			return nil
 		} else {
-			return errors.New(fmt.Sprintf("error from server list response: %s", s.String()))
+			return gosdkErrors.New(fmt.Sprintf("error from server list response: %s", s.String()))
 		}
 	})
 }

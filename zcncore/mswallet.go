@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/pkg/errors"
 )
 
 //MSVote -- this should mimic the type Vote defined in MultiSig SC
@@ -56,7 +57,7 @@ type MSTransfer struct {
 func (msw *MSWallet) Marshal() (string, error) {
 	msws, err := json.Marshal(msw)
 	if err != nil {
-		return "", errors.New("Invalid Wallet")
+		return "", gosdkErrors.New("Invalid Wallet")
 	}
 	return string(msws), nil
 }
@@ -70,7 +71,7 @@ type MSVoteCallback interface {
 func CreateMSWallet(t, n int) (string, string, []string, error) {
 	id := 0
 	if _config.chain.SignatureScheme != "bls0chain" {
-		return "", "", nil, errors.New("encryption scheme for this blockchain is not bls0chain")
+		return "", "", nil, gosdkErrors.New("encryption scheme for this blockchain is not bls0chain")
 
 	}
 
@@ -141,11 +142,11 @@ func RegisterWallet(walletString string, cb WalletCallback) {
 func CreateMSVote(proposal, grpClientID, signerWalletstr, toClientID string, token int64) (string, error) {
 
 	if proposal == "" || grpClientID == "" || toClientID == "" || signerWalletstr == "" {
-		return "", errors.New("proposal or groupClient or signer wallet or toClientID cannot be empty")
+		return "", gosdkErrors.New("proposal or groupClient or signer wallet or toClientID cannot be empty")
 	}
 
 	if token < 1 {
-		return "", errors.New("Token cannot be less than 1")
+		return "", gosdkErrors.New("Token cannot be less than 1")
 	}
 
 	signerWallet, err := GetWallet(signerWalletstr)

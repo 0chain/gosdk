@@ -12,7 +12,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	zclient "github.com/0chain/gosdk/zboxcore/client"
@@ -80,7 +80,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 				})).Return(&http.Response{
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 					StatusCode: p.respStatusCode,
-				}, errors.New(mockErrorMessage))
+				}, gosdkErrors.New(mockErrorMessage))
 			},
 			wantErr: true,
 			errMsg:  mockErrorMessage,
@@ -193,7 +193,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 			resp := <-rspCh
 			require.EqualValues(tt.wantErr, resp.err != nil)
 			if resp.err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(resp.err))
+				require.EqualValues(tt.errMsg, resp.err)
 				return
 			}
 			require.EqualValues(tt.parameters.listHttpResp.ref, resp.ref)

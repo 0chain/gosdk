@@ -3,8 +3,9 @@ package allocationchange
 import (
 	"path/filepath"
 
-	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+
+	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
 )
 
 type UpdateFileChange struct {
@@ -32,7 +33,7 @@ func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		if found {
 			treelevel++
 		} else {
-			return errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+			return gosdkErrors.New("invalid_reference_path", "Invalid reference path from the blobber")
 		}
 	}
 	idx := -1
@@ -44,7 +45,7 @@ func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		}
 	}
 	if idx < 0 || ch.OldFile == nil {
-		return errors.New("file_not_found", "File to update not found in blobber")
+		return gosdkErrors.New("file_not_found", "File to update not found in blobber")
 	}
 	dirRef.Children[idx] = ch.NewFile
 	rootRef.CalculateHash()

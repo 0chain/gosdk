@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"bytes"
 
-	"github.com/0chain/gosdk/core/common/errors"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 
 	"github.com/klauspost/reedsolomon"
+
+	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
 )
 
 type codec interface {
@@ -54,7 +55,7 @@ func (e *StreamEncoder) Encode(in []byte) ([][]byte, error) {
 func (e *StreamEncoder) Decode(in [][]byte, shardSize int) ([]byte, error) {
 	// Verify the input
 	if (len(in) < e.iDataShards+e.iParityShards) || (shardSize <= 0) {
-		return []byte{}, errors.New("Invalid input length")
+		return []byte{}, gosdkErrors.New("Invalid input length")
 	}
 
 	err := e.erasureCode.Reconstruct(in)

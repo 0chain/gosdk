@@ -1,10 +1,11 @@
 package errors
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"testing"
+
+	"errors"
 
 	"github.com/stretchr/testify/require"
 )

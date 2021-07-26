@@ -12,9 +12,10 @@ import (
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"go.uber.org/zap"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/pkg/errors"
 )
 
 const NETWORK_ENDPOINT = "/network"
@@ -79,7 +80,7 @@ func UpdateRequired(networkDetails *Network) bool {
 func GetNetworkDetails() (*Network, error) {
 	req, ctx, cncl, err := zboxutil.NewHTTPRequest(http.MethodGet, blockchain.GetBlockWorker()+NETWORK_ENDPOINT, nil)
 	if err != nil {
-		return nil, errors.New("get_network_details_error", "Unable to create new http request with error "+err.Error())
+		return nil, gosdkErrors.New("get_network_details_error", "Unable to create new http request with error "+err.Error())
 	}
 
 	var networkResponse Network
@@ -103,7 +104,7 @@ func GetNetworkDetails() (*Network, error) {
 			}
 			return nil
 		}
-		return errors.New(strconv.Itoa(resp.StatusCode), "Get network details status not OK")
+		return gosdkErrors.New(strconv.Itoa(resp.StatusCode), "Get network details status not OK")
 
 	})
 	return &networkResponse, err

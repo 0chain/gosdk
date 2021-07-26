@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/0chain/gosdk/core/common/errors"
-
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/herumi/bls-go-binary/bls"
 	"github.com/tyler-smith/go-bip39"
+
+	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	"github.com/pkg/errors"
 )
 
 func init() {
@@ -33,13 +34,13 @@ func NewBLS0ChainScheme() *BLS0ChainScheme {
 }
 
 func (b0 *BLS0ChainScheme) GenerateKeysWithEth(mnemonic, password string) (*Wallet, error) {
-	if len(mnemonic) == 0{
+	if len(mnemonic) == 0 {
 		return nil, fmt.Errorf("Mnemonic phase is mandatory.")
 	}
 	b0.Mnemonic = mnemonic
 
 	_, err := bip39.NewSeedWithErrorChecking(b0.Mnemonic, password)
-	if err != nil{
+	if err != nil {
 		return nil, fmt.Errorf("Wrong mnemonic phase.")
 	}
 
@@ -51,7 +52,7 @@ func (b0 *BLS0ChainScheme) GenerateKeys() (*Wallet, error) {
 	return b0.generateKeys("0chain-client-split-key")
 }
 
-func (b0 *BLS0ChainScheme) generateKeys(password string) (*Wallet, error){
+func (b0 *BLS0ChainScheme) generateKeys(password string) (*Wallet, error) {
 	// Check for recovery
 	if len(b0.Mnemonic) == 0 {
 		entropy, err := bip39.NewEntropy(256)
@@ -95,10 +96,10 @@ func (b0 *BLS0ChainScheme) generateKeys(password string) (*Wallet, error){
 
 func (b0 *BLS0ChainScheme) RecoverKeys(mnemonic string) (*Wallet, error) {
 	if mnemonic == "" {
-		return nil, errors.New("recover_keys", "Set mnemonic key failed")
+		return nil, gosdkErrors.New("recover_keys", "Set mnemonic key failed")
 	}
 	if b0.PublicKey != "" || b0.PrivateKey != "" {
-		return nil, errors.New("recover_keys", "Cannot recover when there are keys")
+		return nil, gosdkErrors.New("recover_keys", "Cannot recover when there are keys")
 	}
 	b0.Mnemonic = mnemonic
 	return b0.GenerateKeys()
@@ -107,10 +108,10 @@ func (b0 *BLS0ChainScheme) RecoverKeys(mnemonic string) (*Wallet, error) {
 //SetPrivateKey - implement interface
 func (b0 *BLS0ChainScheme) SetPrivateKey(privateKey string) error {
 	if b0.PublicKey != "" {
-		return errors.New("set_private_key", "cannot set private key when there is a public key")
+		return gosdkErrors.New("set_private_key", "cannot set private key when there is a public key")
 	}
 	if b0.PrivateKey != "" {
-		return errors.New("set_private_key", "private key already exists")
+		return gosdkErrors.New("set_private_key", "private key already exists")
 	}
 	b0.PrivateKey = privateKey
 	//ToDo: b0.publicKey should be set here?
@@ -120,10 +121,10 @@ func (b0 *BLS0ChainScheme) SetPrivateKey(privateKey string) error {
 //SetPublicKey - implement interface
 func (b0 *BLS0ChainScheme) SetPublicKey(publicKey string) error {
 	if b0.PrivateKey != "" {
-		return errors.New("set_public_key", "cannot set public key when there is a private key")
+		return gosdkErrors.New("set_public_key", "cannot set public key when there is a private key")
 	}
 	if b0.PublicKey != "" {
-		return errors.New("set_public_key", "public key already exists")
+		return gosdkErrors.New("set_public_key", "public key already exists")
 	}
 	b0.PublicKey = MiraclToHerumiPK(publicKey)
 	return nil
@@ -165,14 +166,14 @@ func (b0 *BLS0ChainScheme) GetPrivateKey() string {
 func (b0 *BLS0ChainScheme) rawSign(hash string) (*bls.Sign, error) {
 	var sk bls.SecretKey
 	if b0.PrivateKey == "" {
-		return nil, errors.New("raw_sign", "private key does not exists for signing")
+		return nil, gosdkErrors.New("raw_sign", "private key does not exists for signing")
 	}
 	rawHash, err := hex.DecodeString(hash)
 	if err != nil {
 		return nil, err
 	}
 	if rawHash == nil {
-		return nil, errors.New("raw_sign", "failed hash while signing")
+		return nil, gosdkErrors.New("raw_sign", "failed hash while signing")
 	}
 	sk.SetByCSPRNG()
 	sk.DeserializeHexStr(b0.PrivateKey)
@@ -192,7 +193,7 @@ func (b0 *BLS0ChainScheme) Sign(hash string) (string, error) {
 //Verify - implement interface
 func (b0 *BLS0ChainScheme) Verify(signature, msg string) (bool, error) {
 	if b0.PublicKey == "" {
-		return false, errors.New("verify", "public key does not exists for verification")
+		return false, gosdkErrors.New("verify", "public key does not exists for verification")
 	}
 	var sig bls.Sign
 	var pk bls.PublicKey
@@ -205,7 +206,7 @@ func (b0 *BLS0ChainScheme) Verify(signature, msg string) (bool, error) {
 		return false, err
 	}
 	if rawHash == nil {
-		return false, errors.New("verify", "failed hash while signing")
+		return false, gosdkErrors.New("verify", "failed hash while signing")
 	}
 	pk.DeserializeHexStr(b0.PublicKey)
 	return sig.Verify(&pk, string(rawHash)), nil
@@ -258,7 +259,7 @@ func (tss *BLS0ChainThresholdScheme) GetID() string {
 // GetPrivateKeyAsByteArray - converts private key into byte array
 func (b0 *BLS0ChainScheme) GetPrivateKeyAsByteArray() ([]byte, error) {
 	if len(b0.PrivateKey) == 0 {
-		return nil, errors.New("get_private_key_as_byte_array", "cannot convert empty private key to byte array")
+		return nil, gosdkErrors.New("get_private_key_as_byte_array", "cannot convert empty private key to byte array")
 	}
 	privateKeyBytes, err := hex.DecodeString(b0.PrivateKey)
 	if err != nil {
@@ -273,7 +274,7 @@ func BLS0GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]BL
 
 	b0ss, ok := originalKey.(*BLS0ChainScheme)
 	if !ok {
-		return nil, errors.New("bls0_generate_threshold_key_shares", "Invalid encryption scheme")
+		return nil, gosdkErrors.New("bls0_generate_threshold_key_shares", "Invalid encryption scheme")
 	}
 
 	var b0original bls.SecretKey
@@ -318,7 +319,7 @@ func BLS0GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]BL
 
 func (b0 *BLS0ChainScheme) SplitKeys(numSplits int) (*Wallet, error) {
 	if b0.PrivateKey == "" {
-		return nil, errors.New("split_keys", "primary private key not found")
+		return nil, gosdkErrors.New("split_keys", "primary private key not found")
 	}
 	var primaryFr bls.Fr
 	var primarySk bls.SecretKey
