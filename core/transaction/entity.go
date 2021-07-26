@@ -210,7 +210,7 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 	numSharders := len(sharders)
 	numSuccess := 0
 	var retTxn *Transaction
-	var customError error
+	var customError error = nil
 	for _, sharder := range sharders {
 		url := fmt.Sprintf("%v/%v%v", sharder, TXN_VERIFY_URL, txnHash)
 		req, err := util.NewHTTPGetRequest(url)
