@@ -131,7 +131,15 @@ jobs:
         asset_path: ./artifact.zip
         asset_name: artifact.zip
         asset_content_type: application/zip
-      
+        
+  0proxy:
+    name: Triggering 0proxy build
+    runs-on: ubuntu-20.04
+
+    needs: 
+    - make
+    
+    steps:    
     - name: Triggering 0proxy build
       uses: convictional/trigger-workflow-and-wait@v1.3.0
       with:
@@ -140,6 +148,7 @@ jobs:
         github_token: ${{ secrets.GOSDK }}
         workflow_file_name: build.yml
         ref: master
+        inputs: '{"latest_tag":"no"}'
         propagate_failure: true
         trigger_workflow: true
         wait_workflow: true
