@@ -5,11 +5,12 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
-	"go.dedis.ch/kyber/v3/group/edwards25519"
 	"io"
 	"math"
 	"os"
 	"sync"
+
+	"go.dedis.ch/kyber/v3/group/edwards25519"
 
 	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -188,6 +189,8 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		ctx:                req.ctx,
 	}
 	listReq.authToken = req.authTicket
+	listReq.fullconsensus = req.fullconsensus
+	listReq.consensusThresh = req.consensusThresh
 	req.downloadMask, fileRef, _ = listReq.getFileConsensusFromBlobbers()
 	if req.downloadMask.Equals64(0) || fileRef == nil {
 		if req.statusCallback != nil {
