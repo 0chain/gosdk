@@ -226,7 +226,7 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 			continue
 		} else {
 			if response.StatusCode != 200 {
-				customError = errors.Wrap(customError, err.Error())
+				customError = errors.Wrap(customError, fmt.Sprintf("Sharder with url: %s responded with statusCode: %d", url, response.StatusCode))
 				continue
 			}
 			contents := response.Body
