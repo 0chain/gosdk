@@ -30,8 +30,12 @@ type ObjectTreeRequest struct {
 	blobbers           []*blockchain.StorageNode
 	remotefilepathhash string
 	remotefilepath     string
-	page               int
+	pageLimit          int
+	level              int
+	_type              string
 	offsetPath         string
+	updatedDate        string
+	offsetDate         string
 	authToken          *marker.AuthTicket
 	ctx                context.Context
 	wg                 *sync.WaitGroup
@@ -45,12 +49,12 @@ type oTreeChan struct {
 
 //Paginated tree should not be collected as this will stall the client
 //It should rather be handled by application that uses gosdk
-func (o *ObjectTreeRequest) GetObjectTree() (*ObjectTreeResult, error) {
+func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	totalBlobbersCount := len(o.blobbers)
 	oTreeChans := make([]oTreeChan, totalBlobbersCount)
 	o.wg.Add(totalBlobbersCount)
 	for i, blob := range o.blobbers {
-		Logger.Info(fmt.Sprintf("Getting page %v of file refs for path %v from blobber %v", o.page, o.remotefilepath, blob.Baseurl))
+		Logger.Info(fmt.Sprintf("Getting file refs for path %v from blobber %v", o.remotefilepath, blob.Baseurl))
 		go o.getFileRefs(&oTreeChans[i], blob.Baseurl)
 	}
 	o.wg.Wait()
@@ -78,7 +82,7 @@ func (o *ObjectTreeRequest) GetObjectTree() (*ObjectTreeResult, error) {
 
 func (o *ObjectTreeRequest) getFileRefs(oTreechan *oTreeChan, bUrl string) {
 	defer o.wg.Done()
-	oReq, err := zboxutil.NewPaginatedObjectTreeRequest(bUrl, o.allocationID, o.remotefilepath, o.offsetPath, o.page)
+	oReq, err := zboxutil.NewRefsRequest(bUrl, o.allocationID, o.remotefilepath, o.offsetPath, o.updatedDate, o.offsetDate, o._type, o.level, o.pageLimit)
 	if err != nil {
 		oTreechan.errCh <- err
 		return

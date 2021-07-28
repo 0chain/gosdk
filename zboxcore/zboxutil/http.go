@@ -39,25 +39,25 @@ type HttpClient interface {
 var Client HttpClient
 
 const (
-	ALLOCATION_ENDPOINT            = "/allocation"
-	UPLOAD_ENDPOINT                = "/v1/file/upload/"
-	ATTRS_ENDPOINT                 = "/v1/file/attributes/"
-	RENAME_ENDPOINT                = "/v1/file/rename/"
-	COPY_ENDPOINT                  = "/v1/file/copy/"
-	LIST_ENDPOINT                  = "/v1/file/list/"
-	REFERENCE_ENDPOINT             = "/v1/file/referencepath/"
-	CONNECTION_ENDPOINT            = "/v1/connection/details/"
-	COMMIT_ENDPOINT                = "/v1/connection/commit/"
-	DOWNLOAD_ENDPOINT              = "/v1/file/download/"
-	LATEST_READ_MARKER             = "/v1/readmarker/latest"
-	FILE_META_ENDPOINT             = "/v1/file/meta/"
-	FILE_STATS_ENDPOINT            = "/v1/file/stats/"
-	OBJECT_TREE_ENDPOINT           = "/v1/file/objecttree/"
-	PAGINATED_OBJECT_TREE_ENDPOINT = "/v1/file/pg_objecttree/"
-	COMMIT_META_TXN_ENDPOINT       = "/v1/file/commitmetatxn/"
-	COLLABORATOR_ENDPOINT          = "/v1/file/collaborator/"
-	CALCULATE_HASH_ENDPOINT        = "/v1/file/calculatehash/"
-	DIR_ENDPOINT                   = "/v1/dir/"
+	ALLOCATION_ENDPOINT      = "/allocation"
+	UPLOAD_ENDPOINT          = "/v1/file/upload/"
+	ATTRS_ENDPOINT           = "/v1/file/attributes/"
+	RENAME_ENDPOINT          = "/v1/file/rename/"
+	COPY_ENDPOINT            = "/v1/file/copy/"
+	LIST_ENDPOINT            = "/v1/file/list/"
+	REFERENCE_ENDPOINT       = "/v1/file/referencepath/"
+	CONNECTION_ENDPOINT      = "/v1/connection/details/"
+	COMMIT_ENDPOINT          = "/v1/connection/commit/"
+	DOWNLOAD_ENDPOINT        = "/v1/file/download/"
+	LATEST_READ_MARKER       = "/v1/readmarker/latest"
+	FILE_META_ENDPOINT       = "/v1/file/meta/"
+	FILE_STATS_ENDPOINT      = "/v1/file/stats/"
+	OBJECT_TREE_ENDPOINT     = "/v1/file/objecttree/"
+	REFS_ENDPOINT            = "/v1/file/refs/"
+	COMMIT_META_TXN_ENDPOINT = "/v1/file/commitmetatxn/"
+	COLLABORATOR_ENDPOINT    = "/v1/file/collaborator/"
+	CALCULATE_HASH_ENDPOINT  = "/v1/file/calculatehash/"
+	DIR_ENDPOINT             = "/v1/dir/"
 
 	// CLIENT_SIGNATURE_HEADER represents http request header contains signature.
 	CLIENT_SIGNATURE_HEADER = "X-App-Client-Signature"
@@ -245,16 +245,20 @@ func NewObjectTreeRequest(baseUrl, allocation string, path string) (*http.Reques
 	return req, nil
 }
 
-func NewPaginatedObjectTreeRequest(baseUrl, allocationID, path, offsetPath string, page int) (*http.Request, error) {
+func NewRefsRequest(baseUrl, allocationID, path, offsetPath, updateDate, offsetDate, _type string, level, pageLimit int) (*http.Request, error) {
 	nUrl, err := url.Parse(baseUrl)
 	if err != nil {
 		return nil, err
 	}
-	nUrl.Path += PAGINATED_OBJECT_TREE_ENDPOINT + allocationID
+	nUrl.Path += REFS_ENDPOINT + allocationID
 	params := url.Values{}
 	params.Add("path", path)
 	params.Add("offsetPath", offsetPath)
-	params.Add("page", strconv.Itoa(page))
+	params.Add("pageLimit", strconv.Itoa(pageLimit))
+	params.Add("updateDate", updateDate)
+	params.Add("offsetDate", offsetDate)
+	params.Add("type", _type)
+	params.Add("level", strconv.Itoa(level))
 	nUrl.RawQuery = params.Encode()
 	req, err := http.NewRequest(http.MethodGet, nUrl.String(), nil)
 	if err != nil {
