@@ -21,23 +21,23 @@ jobs:
     
     steps:    
     - name: Triggering 0proxy Build
-      run: |
-        echo "Tag ${{ github.event.inputs.latest_tag }}."
-      # uses: convictional/trigger-workflow-and-wait@v1.3.0
-      # with:
-      #   owner: 0chain
-      #   repo: 0proxy
-      #   github_token: ${{ secrets.GOSDK }}
-      #   workflow_file_name: build.yml
-      #   ref: ${{ github.event.inputs.branch_ref }} 
-      #   inputs: '{"latest_tag":"$LATEST_TAG" }'
-      #   propagate_failure: true
-      #   trigger_workflow: true
-      #   wait_workflow: true
-      # env:
-      #   LATEST_TAG: ${{ github.event.inputs.latest_tag }}
+      uses: convictional/trigger-workflow-and-wait@v1.3.0
+      with:
+        owner: 0chain
+        repo: 0proxy
+        github_token: ${{ secrets.GOSDK }}
+        workflow_file_name: build.yml
+        ref: ${{ github.event.inputs.branch_ref }} 
+        inputs: '{"latest_tag":"$LATEST_TAG" }'
+        propagate_failure: true
+        trigger_workflow: true
+        wait_workflow: true
+      env:
+        LATEST_TAG: ${{ github.event.inputs.latest_tag }}
     
     - name: Completing Trigger
+      run: |
+        echo "Tag ${{ github.event.inputs.latest_tag }}."
         BRANCH=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')
         SHORT_SHA=$(echo $GITHUB_SHA | head -c 8)
       
