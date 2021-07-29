@@ -83,8 +83,8 @@ jobs:
         echo ::set-output name=TAG::${VERSION}
 
     - name: Create Release for Fixed v0.0.0
-      id: create_release_fixed
-      if: github.event.inputs.fixed_tag == 'yes' && github.event.inputs.version_tag == '' && steps.get_version.outputs.TAG == 'master'
+      id: create_release_v0.0.0
+      if: github.event.inputs.fixed_tag == 'yes' && steps.get_version.outputs.TAG == 'master'
       uses: zendesk/action-create-release@v1
       with:
         tag_name: v0.0.0
@@ -93,7 +93,7 @@ jobs:
         prerelease: false
 
     - name: Create Release for Fixed v0.0.0
-      id: create_release_fixed
+      id: create_release_fixed_${{ github.event.inputs.version_tag }}
       if: github.event.inputs.fixed_tag == 'yes' && steps.get_version.outputs.TAG == 'master'
       uses: zendesk/action-create-release@v1
       with:
@@ -103,7 +103,7 @@ jobs:
         prerelease: false
 
     - name: Create Release
-      id: create_release_fix
+      id: create_release_fix_${{ github.event.inputs.version_tag }}
       if: github.event.inputs.fixed_tag == 'no' && github.event.inputs.version_tag != ''
       uses: zendesk/action-create-release@v1 
       with:
