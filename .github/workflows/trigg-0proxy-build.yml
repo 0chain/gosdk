@@ -23,8 +23,11 @@ jobs:
     - name: Completing Trigger
       run: |
         echo "Tag ${{ github.event.inputs.latest_tag }}."
+        echo "Tage_env $LATEST_TAG."
         BRANCH=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')
         SHORT_SHA=$(echo $GITHUB_SHA | head -c 8)
+      env:
+        LATEST_TAG: ${{ github.event.inputs.latest_tag }}
 
     # - name: Triggering 0proxy Build
     #   uses: convictional/trigger-workflow-and-wait@v1.3.0
