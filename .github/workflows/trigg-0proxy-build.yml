@@ -28,7 +28,7 @@ jobs:
         github_token: ${{ secrets.GOSDK }}
         workflow_file_name: build.yml
         ref: $BRANCH_REF
-        inputs: ${{ env.LATEST_TAG }}
+        inputs: '{"latest_tag":"no"}'
         propagate_failure: true
         trigger_workflow: true
         wait_workflow: true
