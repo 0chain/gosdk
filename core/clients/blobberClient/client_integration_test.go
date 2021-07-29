@@ -864,7 +864,8 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 		pubKey, privKey, _ := GeneratePubPrivateKey(t)
 		allocationTx := randString(32)
 
-		clientId := "exampleOwnerId"
+		pubKeyBytes, _ := hex.DecodeString(pubKey)
+		clientId := encryption.Hash(pubKeyBytes)
 
 		err := tdController.ClearDatabase()
 		if err != nil {
@@ -883,12 +884,12 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 			expectingError bool
 		}{
 			{
-				name:         "Success",
-				clientHeader: "exampleOwnerId",
+				name: "Success",
 				input: &blobbergrpc.RenameObjectRequest{
 					Path:         "/",
+					PathHash:     "exampleId:examplePath",
 					Allocation:   allocationTx,
-					ConnectionId: "exampleConnectionId",
+					ConnectionId: "connection_id",
 					NewName:      "somethingNew",
 				},
 				expectedPath:   "/",
@@ -898,8 +899,9 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 
 		for _, tc := range testCases {
 			clientRaw, _ := json.Marshal(client.Client{Wallet: &zcncrypto.Wallet{
-				ClientID: tc.clientHeader,
-				Keys:     []zcncrypto.KeyPair{{PublicKey: pubKey, PrivateKey: privKey}},
+				ClientID:  clientId,
+				ClientKey: pubKey,
+				Keys:      []zcncrypto.KeyPair{{PublicKey: pubKey, PrivateKey: privKey}},
 			}})
 
 			err := client.PopulateClient(string(clientRaw), signScheme)
