@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
 	"net"
 	"net/url"
+
+	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
 
 	"google.golang.org/grpc/encoding/gzip"
 
@@ -269,4 +270,29 @@ func CalculateHash(url string, req *blobbergrpc.CalculateHashRequest) ([]byte, e
 	}
 
 	return json.Marshal(convert.GetCalculateHashResponseHandler(calculateHashResp))
+}
+
+func RenameObject(url string, req *blobbergrpc.RenameObjectRequest) ([]byte, error) {
+	blobberClient, err := newBlobberGRPCClient(url)
+	if err != nil {
+		return nil, err
+	}
+
+	clientSignature, err := client.Sign(encryption.Hash(req.Allocation))
+	if err != nil {
+		return nil, err
+	}
+
+	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
+		blobbercommon.ClientHeader:          client.GetClientID(),
+		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
+		blobbercommon.ClientSignatureHeader: clientSignature,
+	}))
+
+	renameObjectResp, err := blobberClient.RenameObject(grpcCtx, req)
+	if err != nil {
+		return nil, err
+	}
+
+	return json.Marshal(convert.RenameObjectResponseCreator(renameObjectResp))
 }
