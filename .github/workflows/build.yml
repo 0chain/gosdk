@@ -81,16 +81,6 @@ jobs:
       run: |
         VERSION=$(echo ${GITHUB_REF#refs/*/} | head -c 6) 
         echo ::set-output name=TAG::${VERSION}     
-
-    # - name: Create Release
-    #   id: create_release
-    #   if: steps.get_version.outputs.TAG != 'master'
-    #   uses: zendesk/action-create-release@v1 
-    #   with:
-    #     tag_name: ${{ steps.get_version.outputs.TAG }}
-    #     release_name: ${{ steps.get_version.outputs.TAG }}
-    #     draft: false
-    #     prerelease: false  
           
     - name: Create Release for Fixed v0.0.0
       id: create_release_fixed
@@ -104,33 +94,13 @@ jobs:
 
     - name: Create Release
       id: create_release_fix
-      if: github.event.inputs.fixed_tag == 'no' && github.event.inputs.version_tag != '' && steps.get_version.outputs.TAG != 'master'
+      if: github.event.inputs.fixed_tag == 'no' && github.event.inputs.version_tag != ''
       uses: zendesk/action-create-release@v1 
       with:
         tag_name: ${{ github.event.inputs.version_tag }}
         release_name: ${{ github.event.inputs.version_tag }}
         draft: false
         prerelease: false
-
-    # - name: Upload Release Asset
-    #   id: upload-release-asset 
-    #   if: steps.get_version.outputs.TAG != 'master'
-    #   uses: actions/upload-release-asset@v1
-    #   with:
-    #     upload_url: ${{ steps.create_release.outputs.upload_url }}
-    #     asset_path: ./artifact.zip
-    #     asset_name: artifact.zip
-    #     asset_content_type: application/zip
-
-    # - name: Upload Release Asset For v0.0.0
-    #   if: github.event.inputs.fixed_tag == 'yes' && github.event.inputs.version_tag != ''
-    #   id: upload-release-asset_fixed
-    #   uses: actions/upload-release-asset@v1
-    #   with:
-    #     upload_url: ${{ steps.create_release_fixed.outputs.upload_url }}
-    #     asset_path: ./artifact.zip
-    #     asset_name: artifact.zip
-    #     asset_content_type: application/zip
         
   # zproxy:
   #   name: Triggering 0proxy Build
