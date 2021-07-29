@@ -15,7 +15,7 @@ env:
   GITHUB_TOKEN: ${{ secrets.GOSDK }}
 
 jobs:        
-  zdns:
+  zbox:
     name: Triggering 0box Build
     runs-on: ubuntu-20.04
     

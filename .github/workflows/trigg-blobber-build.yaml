@@ -15,7 +15,7 @@ env:
   GITHUB_TOKEN: ${{ secrets.GOSDK }}
 
 jobs:        
-  zblock:
+  blobber:
     name: Triggering blobber Build
     runs-on: ubuntu-20.04
     

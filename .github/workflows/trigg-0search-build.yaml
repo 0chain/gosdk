@@ -15,7 +15,7 @@ env:
   GITHUB_TOKEN: ${{ secrets.GOSDK }}
 
 jobs:        
-  zdns:
+  zsearch:
     name: Triggering 0search Build
     runs-on: ubuntu-20.04
     
