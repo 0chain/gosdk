@@ -861,50 +861,17 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 	})
 
 	t.Run("UploadFile", func(t *testing.T) {
-		pubKey, privKey, ss := GeneratePubPrivateKey(t)
+		pubKey, privKey, _ := GeneratePubPrivateKey(t)
 		allocationTx := randString(32)
 
 		pubKeyBytes, _ := hex.DecodeString(pubKey)
 		clientId := encryption.Hash(pubKeyBytes)
-		now := common.Timestamp(time.Now().UnixNano())
-
-		blobberPubKey := "de52c0a51872d5d2ec04dbc15a6f0696cba22657b80520e1d070e72de64c9b04e19ce3223cae3c743a20184158457582ffe9c369ca9218c04bfe83a26a62d88d"
-		blobberPubKeyBytes, _ := hex.DecodeString(blobberPubKey)
-
-		fr := reference.Ref{
-			AllocationID:   "exampleId",
-			Type:           "f",
-			Name:           "new_name",
-			Path:           "/new_name",
-			ContentHash:    "contentHash",
-			MerkleRoot:     "merkleRoot",
-			ActualFileHash: "actualFileHash",
-		}
-
-		rootRefHash := encryption.Hash(encryption.Hash(fr.GetFileHashData()))
-
-		wm := writemarker.WriteMarker{
-			AllocationRoot:         encryption.Hash(rootRefHash + ":" + strconv.FormatInt(int64(now), 10)),
-			PreviousAllocationRoot: "/",
-			AllocationID:           "exampleId",
-			Size:                   1337,
-			BlobberID:              encryption.Hash(blobberPubKeyBytes),
-			Timestamp:              now,
-			ClientID:               clientId,
-		}
-
-		wmSig, err := ss.Sign(encryption.Hash(wm.GetHashData()))
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		wm.Signature = wmSig
 
 		err = tdController.ClearDatabase()
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = tdController.AddUploadTestData(allocationTx, pubKey, clientId, wmSig, now)
+		err = tdController.AddUploadTestData(allocationTx, pubKey, clientId)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -928,14 +895,14 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 		formData := uploadFormData{
 			ConnectionID:        "connection_id",
 			Filename:            "uploadfile",
-			Path:                "somepath",
-			ActualHash:          "exampleId:examplePath",
-			ActualSize:          102444,
-			ActualThumbnailHash: "exampleId:examplePath",
-			ActualThumbnailSize: 1024,
+			Path:                "/",
+			ActualHash:          "ActualHash",
+			ActualSize:          1024,
+			ActualThumbnailHash: "ActualThumbnailHash",
+			ActualThumbnailSize: 24,
 			MimeType:            "sometype",
-			Hash:                "exampleId:examplePath",
-			ThumbnailHash:       "exampleId:examplePath",
+			Hash:                "exampleId:Hash",
+			ThumbnailHash:       "exampleId:ThumbnailHash",
 			MerkleRoot:          "exmaple:fileMerkleRoot",
 		}
 		uploadMeta, _ := json.Marshal(formData)
