@@ -909,7 +909,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 					UploadFile:          []byte("exampleUploadFile"),
 					UploadThumbnailFile: []byte("exampleUploadThumbnailFile"),
 				},
-				expectingError: true,
+				expectingError: false,
 			},
 		}
 
