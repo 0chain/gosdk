@@ -783,7 +783,7 @@ VALUES
 	return nil
 }
 
-func (c *TestDataController) AddUploadTestData(allocationTx, pubkey, clientId string) error {
+func (c *TestDataController) AddUploadTestData(allocationTx, pubkey, clientId string, wmSig string, now common.Timestamp) error {
 	var err error
 	var tx *sql.Tx
 	defer func() {
@@ -820,6 +820,22 @@ VALUES ('exampleId' ,'` + allocationTx + `','` + clientId + `','` + pubkey + `',
 	_, err = tx.Exec(`
 	INSERT INTO allocation_connections (connection_id, allocation_id, client_id, size, status)
 	VALUES ('connection_id' ,'exampleId','` + clientId + `', 1337, 1);
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`
+	INSERT INTO allocation_changes (id, connection_id, operation, size, input)
+	VALUES (1 ,'connection_id','rename', 1200, '{"allocation_id":"exampleId","path":"/some_file","new_name":"new_name"}');
+	`)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(`
+	INSERT INTO write_markers(prev_allocation_root, allocation_root, status, allocation_id, size, client_id, signature, blobber_id, timestamp, connection_id, client_key)
+	VALUES ('/', '/', 2,'exampleId', 1337, '` + clientId + `','` + wmSig + `','blobber_id', ` + fmt.Sprint(now) + `, 'connection_id', '` + pubkey + `');
 	`)
 	if err != nil {
 		return err
