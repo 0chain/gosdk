@@ -876,6 +876,37 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 			t.Fatal(err)
 		}
 
+		type uploadFormData struct {
+			ConnectionID        string `json:"connection_id"`
+			Filename            string `json:"filename"`
+			Path                string `json:"filepath"`
+			Hash                string `json:"content_hash,omitempty"`
+			ThumbnailHash       string `json:"thumbnail_content_hash,omitempty"`
+			MerkleRoot          string `json:"merkle_root,omitempty"`
+			ActualHash          string `json:"actual_hash"`
+			ActualSize          int64  `json:"actual_size"`
+			ActualThumbnailSize int64  `json:"actual_thumb_size"`
+			ActualThumbnailHash string `json:"actual_thumb_hash"`
+			MimeType            string `json:"mimetype"`
+			CustomMeta          string `json:"custom_meta,omitempty"`
+			EncryptedKey        string `json:"encrypted_key,omitempty"`
+		}
+
+		formData := uploadFormData{
+			ConnectionID:        "exampleconnectionID",
+			Filename:            "uploadfile",
+			Path:                "somepath",
+			ActualHash:          "exampleId:examplePath",
+			ActualSize:          102444,
+			ActualThumbnailHash: "exampleId:examplePath",
+			ActualThumbnailSize: 1024,
+			MimeType:            "sometype",
+			Hash:                "exampleId:examplePath",
+			ThumbnailHash:       "exampleId:examplePath",
+			MerkleRoot:          "exmaple:fileMerkleRoot",
+		}
+		uploadMeta, err = json.Marshal(formData)
+
 		testCases := []struct {
 			name           string
 			context        metadata.MD
@@ -891,7 +922,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 					Allocation:          "exampleTransaction",
 					ConnectionId:        "exampleID",
 					Method:              "POST",
-					UploadMeta:          "exampleUploadMeta",
+					UploadMeta:          string(uploadMeta)
 					UploadFile:          []byte{104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100},
 					UploadThumbnailFile: []byte{104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100},
 				},
@@ -905,7 +936,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 					Allocation:          "exampleTransaction",
 					ConnectionId:        "exampleID",
 					Method:              "PUT",
-					UpdateMeta:          "exampleUpdateMeta",
+					UpdateMeta:          string(uploadMeta),
 					UploadFile:          []byte{104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100},
 					UploadThumbnailFile: []byte{104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100},
 				},
