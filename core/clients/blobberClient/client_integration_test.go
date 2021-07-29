@@ -900,7 +900,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 
 		wm.Signature = wmSig
 
-		err := tdController.ClearDatabase()
+		err = tdController.ClearDatabase()
 		if err != nil {
 			t.Fatal(err)
 		}
