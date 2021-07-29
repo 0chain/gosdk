@@ -1,4 +1,4 @@
-name: GOSDK_RELEASE
+name: TRIGGER_0PROXY
 
 on:
   workflow_dispatch:
@@ -16,11 +16,11 @@ env:
 
 jobs:        
   zproxy:
-    name: Triggering 0proxy build
+    name: Triggering 0proxy Build
     runs-on: ubuntu-20.04
     
     steps:    
-    - name: Triggering 0proxy build
+    - name: Triggering 0proxy Build
       uses: convictional/trigger-workflow-and-wait@v1.3.0
       with:
         owner: 0chain
