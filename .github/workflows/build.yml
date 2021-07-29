@@ -69,8 +69,8 @@ jobs:
     #         }
     #     EOF
         
-    - name: Create SDK
-      run: go build -o sdkversion sdkversion.go
+    # - name: Create SDK
+    #   run: go build -o sdkversion sdkversion.go
 
     - name: Get Branch
       id: get_branch
