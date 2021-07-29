@@ -4,13 +4,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"testing"
 	"time"
+
+	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
 
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobberhttp"
 
@@ -858,4 +859,67 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("TestRenameObject", func(t *testing.T) {
+		pubKey, privKey, _ := GeneratePubPrivateKey(t)
+		allocationTx := randString(32)
+
+		pubKeyBytes, _ := hex.DecodeString(pubKey)
+		clientId := encryption.Hash(pubKeyBytes)
+
+		err := tdController.ClearDatabase()
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = tdController.AddRenameTestData(allocationTx, pubKey, clientId)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		testCases := []struct {
+			name           string
+			clientHeader   string
+			input          *blobbergrpc.RenameObjectRequest
+			expectedPath   string
+			expectingError bool
+		}{
+			{
+				name:         "Success",
+				clientHeader: "exampleOwnerId",
+				input: &blobbergrpc.RenameObjectRequest{
+					Path:         "/",
+					Allocation:   allocationTx,
+					ConnectionId: "exampleConnectionId",
+					NewName:      "somethingNew",
+				},
+				expectedPath:   "/",
+				expectingError: false,
+			},
+		}
+
+		for _, tc := range testCases {
+			clientRaw, _ := json.Marshal(client.Client{Wallet: &zcncrypto.Wallet{
+				ClientID: tc.clientHeader,
+				Keys:     []zcncrypto.KeyPair{{PublicKey: pubKey, PrivateKey: privKey}},
+			}})
+
+			err := client.PopulateClient(string(clientRaw), signScheme)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			_, err = CalculateHash(BlobberAddr, tc.input)
+			if err != nil {
+				if !tc.expectingError {
+					t.Fatal(err)
+				}
+				continue
+			}
+
+			if tc.expectingError {
+				t.Fatal("expected error")
+			}
+		}
+	})
+
 }
