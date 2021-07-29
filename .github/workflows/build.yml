@@ -4,11 +4,11 @@ on:
   workflow_dispatch:
     inputs:
       fixed_tag:
-        description: 'type yes for building with tag v0.0.0'
+        description: 'Type yes For Building With Tag v0.0.0'
         default: 'no'
         required: true
       version_tag:
-        description: 'Input tag Example - v1.2.2'
+        description: 'Input Tag Example - v1.2.2'
         required: true
   push: 
     tags:
@@ -76,11 +76,12 @@ jobs:
       run: |
         zip -r artifact.zip .
 
-    - name: Get Tag
-      id: get_version
+    - name: Get Branch
+      id: get_branch
       run: |
-        VERSION=$(echo ${GITHUB_REF#refs/*/} | head -c 6) 
+        VERSION=$(echo ${GITHUB_REF#refs/*/}) 
         echo ::set-output name=TAG::${VERSION}
+        echo "Branch-- ${TAG}"
 
     - name: Create Release for Fixed v0.0.0
       id: create_release_v0_0_0
@@ -112,23 +113,37 @@ jobs:
         draft: false
         prerelease: false
         
-  # zproxy:
-  #   name: Triggering 0proxy Build
-  #   runs-on: ubuntu-20.04
+  zproxy:
+    name: Triggering 0proxy Build
+    runs-on: ubuntu-20.04
 
-  #   needs: 
-  #   - make
+    needs: 
+    - make
     
-  #   steps:    
-  #   - name: Triggering 0proxy Build
-  #     uses: convictional/trigger-workflow-and-wait@v1.3.0
-  #     with:
-  #       owner: 0chain
-  #       repo: 0proxy
-  #       github_token: ${{ secrets.GOSDK }}
-  #       workflow_file_name: build.yml
-  #       ref: gitactionsfix
-  #       inputs: '{"latest_tag":"no"}'
-  #       propagate_failure: true
-  #       trigger_workflow: true
-  #       wait_workflow: true
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Get Branch
+      id: get_branch1
+      run: |
+        echo "branch from above ${TAG}"
+        VERSION1=$(echo ${GITHUB_REF#refs/*/}) 
+        echo ::set-output name=TAG1::${VERSION1}
+        echo "Branch-- ${TAG1}"
+
+    # - name: Triggering 0proxy Build
+    #   uses: convictional/trigger-workflow-and-wait@v1.3.0
+    #   with:
+    #     owner: 0chain
+    #     repo: gosdk
+    #     github_token: ${{ secrets.GOSDK }}
+    #     workflow_file_name: trigg-0proxy-build.yml
+    #     ref: ${{ github.event.inputs.branch_ref }}
+    #     inputs: '{"latest_tag":"$LATEST_TAG","branch_ref":"$INPUT_BRANCH"}'
+    #     propagate_failure: true
+    #     trigger_workflow: true
+    #     wait_workflow: true
+    #   env:
+    #     LATEST_TAG: ${{ github.event.inputs.latest_tag }}
+    #     INPUT_BRANCH: ${{ github.event.inputs.latest_tag }}
