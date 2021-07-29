@@ -1,10 +1,10 @@
-name: TRIGGER_0DNS
+name: TRIGGER_0BLOCK
 
 on:
   workflow_dispatch:
     inputs:
       branch_ref:
-        description: 'Input branch of 0dns to build'
+        description: 'Input branch of 0block to build'
         required: true
       latest_tag:
         description: 'type yes for building latest tag'
@@ -15,16 +15,16 @@ env:
   GITHUB_TOKEN: ${{ secrets.GOSDK }}
 
 jobs:        
-  zdns:
-    name: Triggering 0dns Build
+  zblock:
+    name: Triggering 0block Build
     runs-on: ubuntu-20.04
     
-    steps:    
-    - name: Triggering 0dns Build
+    steps:
+    - name: Triggering 0block Build
       uses: convictional/trigger-workflow-and-wait@v1.3.0
       with:
         owner: 0chain
-        repo: 0dns
+        repo: 0block
         github_token: ${{ secrets.GOSDK }}
         workflow_file_name: build.yml
         ref: ${{ github.event.inputs.branch_ref }} 
@@ -41,4 +41,3 @@ jobs:
         echo "Tage_env "$LATEST_TAG"."
         BRANCH=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')
         SHORT_SHA=$(echo $GITHUB_SHA | head -c 8)
-      
