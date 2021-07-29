@@ -92,8 +92,8 @@ jobs:
         draft: false
         prerelease: false
 
-    - name: Create Release for Fixed v0.0.0
-      id: create_release_fixed_${{ github.event.inputs.version_tag }}
+    - name: Create Release for Input Tag
+      id: create_release_fixed
       if: github.event.inputs.fixed_tag == 'yes' && steps.get_version.outputs.TAG == 'master'
       uses: zendesk/action-create-release@v1
       with:
@@ -102,9 +102,9 @@ jobs:
         draft: false
         prerelease: false
 
-    - name: Create Release
-      id: create_release_fix_${{ github.event.inputs.version_tag }}
-      if: github.event.inputs.fixed_tag == 'no' && github.event.inputs.version_tag != ''
+    - name: Create Release for Input Tag
+      id: create_release_fix
+      if: github.event.inputs.fixed_tag == 'no'
       uses: zendesk/action-create-release@v1 
       with:
         tag_name: ${{ github.event.inputs.version_tag }}
