@@ -905,7 +905,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 			ThumbnailHash:       "exampleId:examplePath",
 			MerkleRoot:          "exmaple:fileMerkleRoot",
 		}
-		uploadMeta, err = json.Marshal(formData)
+		uploadMeta, _ := json.Marshal(formData)
 
 		testCases := []struct {
 			name           string
@@ -922,7 +922,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 					Allocation:          "exampleTransaction",
 					ConnectionId:        "exampleID",
 					Method:              "POST",
-					UploadMeta:          string(uploadMeta)
+					UploadMeta:          string(uploadMeta),
 					UploadFile:          []byte{104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100},
 					UploadThumbnailFile: []byte{104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100},
 				},
