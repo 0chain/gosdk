@@ -133,7 +133,7 @@ jobs:
     runs-on: ubuntu-20.04
 
     needs: 
-    - make
+    - zproxy
     
     steps:    
     - name: Triggering 0box Build
@@ -156,7 +156,7 @@ jobs:
     runs-on: ubuntu-20.04
 
     needs: 
-    - make
+    - zbox
     
     steps:    
     - name: Triggering 0dns Build
@@ -179,7 +179,7 @@ jobs:
     runs-on: ubuntu-20.04
 
     needs: 
-    - make
+    - zdns
     
     steps:    
     - name: Triggering 0block Build
@@ -202,7 +202,7 @@ jobs:
     runs-on: ubuntu-20.04
 
     needs: 
-    - make
+    - zblock
     
     steps:    
     - name: Triggering 0search Build
@@ -225,7 +225,7 @@ jobs:
     runs-on: ubuntu-20.04
 
     needs: 
-    - make
+    - zsearch
     
     steps:    
     - name: Triggering blobber Build
