@@ -864,8 +864,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 		pubKey, privKey, _ := GeneratePubPrivateKey(t)
 		allocationTx := randString(32)
 
-		pubKeyBytes, _ := hex.DecodeString(pubKey)
-		clientId := encryption.Hash(pubKeyBytes)
+		clientId := "exampleOwnerId"
 
 		err := tdController.ClearDatabase()
 		if err != nil {
@@ -908,7 +907,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			_, err = CalculateHash(BlobberAddr, tc.input)
+			_, err = RenameObject(BlobberAddr, tc.input)
 			if err != nil {
 				if !tc.expectingError {
 					t.Fatal(err)
