@@ -31,19 +31,19 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
 
-    - name: Get dependencies
-      run: |
-        go get -v -t -d ./...
-        if [ -f Gopkg.toml ]; then
-            curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-            dep ensure
-        fi
+    # - name: Get dependencies
+    #   run: |
+    #     go get -v -t -d ./...
+    #     if [ -f Gopkg.toml ]; then
+    #         curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
+    #         dep ensure
+    #     fi
         
-    - name: Build
-      run: go build -v ./...
+    # - name: Build
+    #   run: go build -v ./...
 
-    - name: Test
-      run: go test -v ./...      
+    # - name: Test
+    #   run: go test -v ./...      
 
   make:
     name: Make File
@@ -56,63 +56,59 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v2
       
-    - name: Create sdkfile
-      run: |
-        cat <<EOF > sdkversion.go
-          package main
-            import (
-                "fmt"
-                "github.com/0chain/gosdk/zcncore"
-            )
-            func main() {
-                fmt.Println("gosdk version: ", zcncore.GetVersion())
-            }
-        EOF
+    # - name: Create sdkfile
+    #   run: |
+    #     cat <<EOF > sdkversion.go
+    #       package main
+    #         import (
+    #             "fmt"
+    #             "github.com/0chain/gosdk/zcncore"
+    #         )
+    #         func main() {
+    #             fmt.Println("gosdk version: ", zcncore.GetVersion())
+    #         }
+    #     EOF
         
     - name: Create SDK
       run: go build -o sdkversion sdkversion.go
-      
-    - name: Creating zip for Artifacts
-      run: |
-        zip -r artifact.zip .
 
     - name: Get Branch
       id: get_branch
       run: |
         VERSION=$(echo ${GITHUB_REF#refs/*/}) 
         echo ::set-output name=TAG::${VERSION}
-        echo "Branch-- $TAG"
-        echo "Branch-- ${TAG}"
+        echo "Branch-- ${{ steps.get_branch.outputs.TAG }}"
+        echo "Branch-- ${{ steps.get_branch.outputs.VERSION }}"
 
-    - name: Create Release for Fixed v0.0.0
-      id: create_release_v0_0_0
-      if: github.event.inputs.fixed_tag == 'yes' && steps.get_version.outputs.TAG == 'master'
-      uses: zendesk/action-create-release@v1
-      with:
-        tag_name: v0.0.0
-        release_name: v0.0.0
-        draft: false
-        prerelease: false
+    # - name: Create Release for Fixed v0.0.0
+    #   id: create_release_v0_0_0
+    #   if: github.event.inputs.fixed_tag == 'yes' && steps.get_version.outputs.TAG == 'master'
+    #   uses: zendesk/action-create-release@v1
+    #   with:
+    #     tag_name: v0.0.0
+    #     release_name: v0.0.0
+    #     draft: false
+    #     prerelease: false
 
-    - name: Create Release for Input Tag
-      id: create_release_fixed
-      if: github.event.inputs.fixed_tag == 'yes' && steps.get_version.outputs.TAG == 'master'
-      uses: zendesk/action-create-release@v1
-      with:
-        tag_name: ${{ github.event.inputs.version_tag }}
-        release_name: ${{ github.event.inputs.version_tag }}
-        draft: false
-        prerelease: false
+    # - name: Create Release for Input Tag
+    #   id: create_release_fixed
+    #   if: github.event.inputs.fixed_tag == 'yes' && steps.get_version.outputs.TAG == 'master'
+    #   uses: zendesk/action-create-release@v1
+    #   with:
+    #     tag_name: ${{ github.event.inputs.version_tag }}
+    #     release_name: ${{ github.event.inputs.version_tag }}
+    #     draft: false
+    #     prerelease: false
 
-    - name: Create Release for Input Tag
-      id: create_release_fix
-      if: github.event.inputs.fixed_tag == 'no'
-      uses: zendesk/action-create-release@v1 
-      with:
-        tag_name: ${{ github.event.inputs.version_tag }}
-        release_name: ${{ github.event.inputs.version_tag }}
-        draft: false
-        prerelease: false
+    # - name: Create Release for Input Tag
+    #   id: create_release_fix
+    #   if: github.event.inputs.fixed_tag == 'no'
+    #   uses: zendesk/action-create-release@v1 
+    #   with:
+    #     tag_name: ${{ github.event.inputs.version_tag }}
+    #     release_name: ${{ github.event.inputs.version_tag }}
+    #     draft: false
+    #     prerelease: false
         
   zproxy:
     name: Triggering 0proxy Build
@@ -128,12 +124,10 @@ jobs:
     - name: Get Branch
       id: get_branch1
       run: |
-        echo "Branch-- $TAG"
-        echo "Branch-- ${TAG}"
         VERSION1=$(echo ${GITHUB_REF#refs/*/}) 
         echo ::set-output name=TAG1::${VERSION1}
-        echo "Branch-- $TAG1"
-        echo "Branch-- ${TAG1}"
+        echo "Branch-- ${{ steps.get_branch1.outputs.VERSION1 }}"
+        echo "Branch-- ${{ steps.get_branch1.outputs.TAG1 }}"
 
     # - name: Triggering 0proxy Build
     #   uses: convictional/trigger-workflow-and-wait@v1.3.0
