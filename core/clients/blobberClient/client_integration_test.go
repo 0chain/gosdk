@@ -919,7 +919,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 				clientHeader: "exampleOwnerId",
 				input: &blobbergrpc.UploadFileRequest{
 					Path:                "examplePath",
-					Allocation:          "exampleTransaction",
+					Allocation:          allocationTx,
 					ConnectionId:        "exampleID",
 					Method:              "POST",
 					UploadMeta:          string(uploadMeta),
@@ -933,7 +933,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 				clientHeader: "exampleOwnerId",
 				input: &blobbergrpc.UploadFileRequest{
 					Path:                "examplePath",
-					Allocation:          "exampleTransaction",
+					Allocation:          allocationTx,
 					ConnectionId:        "exampleID",
 					Method:              "PUT",
 					UpdateMeta:          string(uploadMeta),
