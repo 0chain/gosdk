@@ -893,7 +893,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 		}
 
 		formData := uploadFormData{
-			ConnectionID:        "exampleconnectionID",
+			ConnectionID:        "connection_id",
 			Filename:            "uploadfile",
 			Path:                "somepath",
 			ActualHash:          "exampleId:examplePath",
@@ -917,9 +917,9 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 			{
 				name: "is update is false",
 				input: &blobbergrpc.UploadFileRequest{
-					Path:                "examplePath",
+					Path:                "/",
 					Allocation:          allocationTx,
-					ConnectionId:        "exampleID",
+					ConnectionId:        "connection_id",
 					Method:              "POST",
 					UploadMeta:          string(uploadMeta),
 					UploadFile:          []byte{104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100},
@@ -930,9 +930,9 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 			{
 				name: "is update is true",
 				input: &blobbergrpc.UploadFileRequest{
-					Path:                "examplePath",
+					Path:                "/",
 					Allocation:          allocationTx,
-					ConnectionId:        "exampleID",
+					ConnectionId:        "connection_id",
 					Method:              "PUT",
 					UpdateMeta:          string(uploadMeta),
 					UploadFile:          []byte{104, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100},

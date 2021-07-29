@@ -817,6 +817,14 @@ VALUES ('exampleId' ,'` + allocationTx + `','` + clientId + `','` + pubkey + `',
 		return err
 	}
 
+	_, err = tx.Exec(`
+	INSERT INTO allocation_connections (connection_id, allocation_id, client_id, size, status)
+	VALUES ('connection_id' ,'exampleId','` + clientId + `', 1337, 1);
+	`)
+	if err != nil {
+		return err
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		return err
