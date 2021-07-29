@@ -81,7 +81,9 @@ jobs:
       run: |
         VERSION=$(echo ${GITHUB_REF#refs/*/}) 
         echo ::set-output name=TAG::${VERSION}
+        echo "Branch-- $TAG"
         echo "Branch-- ${TAG}"
+        echo "Branch-- ${{ TAG }}"
 
     - name: Create Release for Fixed v0.0.0
       id: create_release_v0_0_0
@@ -127,10 +129,14 @@ jobs:
     - name: Get Branch
       id: get_branch1
       run: |
-        echo "branch from above ${TAG}"
+        echo "Branch-- $TAG"
+        echo "Branch-- ${TAG}"
+        echo "Branch-- ${{ TAG }}"
         VERSION1=$(echo ${GITHUB_REF#refs/*/}) 
         echo ::set-output name=TAG1::${VERSION1}
+        echo "Branch-- $TAG1"
         echo "Branch-- ${TAG1}"
+        echo "Branch-- ${{ TAG1 }}"
 
     # - name: Triggering 0proxy Build
     #   uses: convictional/trigger-workflow-and-wait@v1.3.0
