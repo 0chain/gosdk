@@ -864,7 +864,8 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 		pubKey, privKey, _ := GeneratePubPrivateKey(t)
 		allocationTx := randString(32)
 
-		clientId := "exampleOwnerId"
+		pubKeyBytes, _ := hex.DecodeString(pubKey)
+		clientId := encryption.Hash(pubKeyBytes)
 
 		err := tdController.ClearDatabase()
 		if err != nil {
@@ -914,8 +915,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 			expectingError bool
 		}{
 			{
-				name:         "Success",
-				clientHeader: "exampleOwnerId",
+				name: "is update is false",
 				input: &blobbergrpc.UploadFileRequest{
 					Path:                "examplePath",
 					Allocation:          allocationTx,
@@ -928,8 +928,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 				expectingError: false,
 			},
 			{
-				name:         "Unknown file path",
-				clientHeader: "exampleOwnerId",
+				name: "is update is true",
 				input: &blobbergrpc.UploadFileRequest{
 					Path:                "examplePath",
 					Allocation:          allocationTx,
@@ -945,8 +944,9 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 
 		for _, tc := range testCases {
 			clientRaw, _ := json.Marshal(client.Client{Wallet: &zcncrypto.Wallet{
-				ClientID: tc.clientHeader,
-				Keys:     []zcncrypto.KeyPair{{PublicKey: pubKey, PrivateKey: privKey}},
+				ClientID:  clientId,
+				ClientKey: pubKey,
+				Keys:      []zcncrypto.KeyPair{{PublicKey: pubKey, PrivateKey: privKey}},
 			}})
 
 			err = client.PopulateClient(string(clientRaw), signScheme)
