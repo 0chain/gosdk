@@ -1,22 +1,18 @@
 package sdk
 
 import (
-	"bytes"
 	"context"
-	"io/ioutil"
 	"math/bits"
-	"mime/multipart"
-	"net/http"
 	"sync"
-	"time"
 
+	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
+	"github.com/0chain/gosdk/core/clients/blobberClient"
 	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	. "github.com/0chain/gosdk/zboxcore/logger"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type RenameRequest struct {
@@ -42,42 +38,21 @@ func (req *RenameRequest) renameBlobberObject(blobber *blockchain.StorageNode, b
 		return nil, err
 	}
 
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
-
-	_ = formWriter.WriteField("connection_id", req.connectionID)
-	formWriter.WriteField("path", req.remotefilepath)
-	formWriter.WriteField("new_name", req.newName)
-
-	formWriter.Close()
-	httpreq, err := zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationTx, body)
-	if err != nil {
-		Logger.Error(blobber.Baseurl, "Error creating rename request", err)
-		return nil, err
-	}
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("Rename : ", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == http.StatusOK {
-			req.consensus++
-			req.renameMask |= (1 << uint32(blobberIdx))
-			Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " renamed.")
-		} else {
-			resp_body, err := ioutil.ReadAll(resp.Body)
-			if err == nil {
-				Logger.Error(blobber.Baseurl, "Response: ", string(resp_body))
-			}
-		}
-		return nil
+	_, err = blobberClient.RenameObject(blobber.Baseurl, &blobbergrpc.RenameObjectRequest{
+		Path:         req.remotefilepath,
+		Allocation:   req.allocationTx,
+		ConnectionId: req.connectionID,
+		NewName:      req.newName,
 	})
 	if err != nil {
+		Logger.Error("could not list entities from blobber -" + blobber.Baseurl + " - " + err.Error())
 		return nil, err
 	}
+
+	req.consensus++
+	req.renameMask |= (1 << uint32(blobberIdx))
+	Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " renamed.")
+
 	return refEntity, nil
 }
 
