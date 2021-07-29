@@ -945,7 +945,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 
 		for _, tc := range testCases {
 			clientRaw, _ := json.Marshal(client.Client{Wallet: &zcncrypto.Wallet{
-				ClientID: "",
+				ClientID: tc.clientHeader,
 				Keys:     []zcncrypto.KeyPair{{PublicKey: pubKey, PrivateKey: privKey}},
 			}})
 
