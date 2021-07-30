@@ -102,12 +102,12 @@ jobs:
     #     draft: false
     #     prerelease: false
         
-  # zproxy:
-  #   name: Triggering 0proxy Build
-  #   runs-on: ubuntu-20.04
+  zproxy:
+    name: Triggering 0proxy Build
+    runs-on: ubuntu-20.04
 
-  #   needs: 
-  #   - make
+    needs: 
+    - make
     
     steps:    
     - name: Triggering 0proxy Build
