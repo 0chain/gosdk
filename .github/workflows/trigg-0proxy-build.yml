@@ -24,7 +24,7 @@ jobs:
     - name:
       id: get_tag
       run: |
-          JSON=$(echo \'{"latest_tag":"$TAG"}\')
+          JSON=$(echo \'{\"latest_tag\":\"$TAG\"}\')
           echo ::set-output name=JSON::${JSON}
       env:
         TAG: ${{ github.event.inputs.latest_tag }}
