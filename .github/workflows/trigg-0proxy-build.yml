@@ -19,7 +19,16 @@ jobs:
     name: Triggering 0proxy Build
     runs-on: ubuntu-20.04
     
+    
     steps:
+    - name:
+      id: get_tag
+      run: |
+          JSON=$(echo \'{"latest_tag":"$TAG"}\')
+          echo ::set-output name=JSON::${JSON}
+      env:
+        TAG: ${{ github.event.inputs.latest_tag }}
+
     - name: Triggering 0proxy Build
       uses: convictional/trigger-workflow-and-wait@v1.3.0
       with:
@@ -28,12 +37,10 @@ jobs:
         github_token: ${{ secrets.GOSDK }}
         workflow_file_name: build.yml
         ref: ${{ github.event.inputs.branch_ref }} 
-        inputs: '{"latest_tag":"$LATEST_TAG" }'
+        inputs: ${{ steps.get_tag.outputs.JSON }}
         propagate_failure: true
         trigger_workflow: true
         wait_workflow: true
-      env:
-        LATEST_TAG: ${{ github.event.inputs.latest_tag }}
 
     - name: Completing Trigger
       run: |
