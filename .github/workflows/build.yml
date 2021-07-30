@@ -109,7 +109,15 @@ jobs:
     needs: 
     - make
     
-    steps:    
+    steps:
+    - name:
+      id: get_tag
+      run: |
+          JSON=$(echo {\"latest_tag\":\"$TAG\","branch_ref":"gitactionsfix"})
+          echo ::set-output name=JSON::${JSON}
+      env:
+        TAG: ${{ github.event.inputs.fixed_tag }}
+
     - name: Triggering 0proxy Build
       uses: convictional/trigger-workflow-and-wait@v1.3.0
       with:
@@ -117,8 +125,8 @@ jobs:
         repo: gosdk
         github_token: ${{ secrets.GOSDK }}
         workflow_file_name: trigg-0proxy-build.yml
-        ref: master
-        inputs: '{"latest_tag":"$LATEST_TAG","branch_ref":"master"}'
+        ref: gitaction-fix
+        inputs: ${{ steps.get_tag.outputs.JSON }}
         propagate_failure: true
         trigger_workflow: true
         wait_workflow: true

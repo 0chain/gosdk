@@ -18,8 +18,7 @@ jobs:
   zproxy:
     name: Triggering 0proxy Build
     runs-on: ubuntu-20.04
-    
-    
+
     steps:
     - name:
       id: get_tag
@@ -44,7 +43,8 @@ jobs:
 
     - name: Completing Trigger
       run: |
-        echo "Tag ${{ github.event.inputs.latest_tag }}."
-        echo "Tage_env "$LATEST_TAG"."
+        echo "Tag ${TAG}."
         BRANCH=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')
         SHORT_SHA=$(echo $GITHUB_SHA | head -c 8)
+      env:
+        TAG: ${{ github.event.inputs.latest_tag }}
