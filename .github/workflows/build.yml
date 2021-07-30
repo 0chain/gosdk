@@ -11,6 +11,9 @@ on:
         description: 'Input Tag Example - v1.2.2'
         required: true
 
+env:
+  GITHUB_TOKEN: ${{ secrets.GOSDK }}
+  
 jobs:
   build:
     name: Build

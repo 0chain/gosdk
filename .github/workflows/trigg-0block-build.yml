@@ -11,9 +11,6 @@ on:
         default: 'no'
         required: true
 
-env:
-  GITHUB_TOKEN: ${{ secrets.GOSDK }}
-  
 jobs:        
   zblock:
     name: Triggering 0block Build
