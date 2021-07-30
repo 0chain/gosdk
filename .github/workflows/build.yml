@@ -105,28 +105,28 @@ jobs:
         draft: false
         prerelease: false
         
-  zproxy:
-    name: Triggering 0proxy Build
-    runs-on: ubuntu-20.04
+  # zproxy:
+  #   name: Triggering 0proxy Build
+  #   runs-on: ubuntu-20.04
 
-    needs: 
-    - make
+  #   needs: 
+  #   - make
     
-    steps:    
-    - name: Triggering 0proxy Build
-      uses: convictional/trigger-workflow-and-wait@v1.3.0
-      with:
-        owner: 0chain
-        repo: gosdk
-        github_token: ${{ secrets.GOSDK }}
-        workflow_file_name: trigg-0proxy-build.yml
-        ref: master
-        inputs: '{"latest_tag":"$LATEST_TAG","branch_ref":"master"}'
-        propagate_failure: true
-        trigger_workflow: true
-        wait_workflow: true
-      env:
-        LATEST_TAG: ${{ github.event.inputs.fixed_tag }}
+  #   steps:    
+  #   - name: Triggering 0proxy Build
+  #     uses: convictional/trigger-workflow-and-wait@v1.3.0
+  #     with:
+  #       owner: 0chain
+  #       repo: gosdk
+  #       github_token: ${{ secrets.GOSDK }}
+  #       workflow_file_name: trigg-0proxy-build.yml
+  #       ref: master
+  #       inputs: '{"latest_tag":"$LATEST_TAG","branch_ref":"master"}'
+  #       propagate_failure: true
+  #       trigger_workflow: true
+  #       wait_workflow: true
+  #     env:
+  #       LATEST_TAG: ${{ github.event.inputs.fixed_tag }}
         
   zbox:
     name: Triggering 0box Build
@@ -135,7 +135,7 @@ jobs:
     needs: 
     - zproxy
     
-    steps:    
+    steps:
     - name: Triggering 0box Build
       uses: convictional/trigger-workflow-and-wait@v1.3.0
       with:
@@ -151,94 +151,94 @@ jobs:
       env:
         LATEST_TAG: ${{ github.event.inputs.fixed_tag }}
         
-  zdns:
-    name: Triggering 0dns Build
-    runs-on: ubuntu-20.04
+  # zdns:
+  #   name: Triggering 0dns Build
+  #   runs-on: ubuntu-20.04
 
-    needs: 
-    - zbox
+  #   needs: 
+  #   - zbox
     
-    steps:    
-    - name: Triggering 0dns Build
-      uses: convictional/trigger-workflow-and-wait@v1.3.0
-      with:
-        owner: 0chain
-        repo: gosdk
-        github_token: ${{ secrets.GOSDK }}
-        workflow_file_name: trigg-0dns-build.yml
-        ref: master
-        inputs: '{"latest_tag":"$LATEST_TAG","branch_ref":"master"}'
-        propagate_failure: true
-        trigger_workflow: true
-        wait_workflow: true
-      env:
-        LATEST_TAG: ${{ github.event.inputs.fixed_tag }}
+  #   steps:    
+  #   - name: Triggering 0dns Build
+  #     uses: convictional/trigger-workflow-and-wait@v1.3.0
+  #     with:
+  #       owner: 0chain
+  #       repo: gosdk
+  #       github_token: ${{ secrets.GOSDK }}
+  #       workflow_file_name: trigg-0dns-build.yml
+  #       ref: master
+  #       inputs: '{"latest_tag":"$LATEST_TAG","branch_ref":"master"}'
+  #       propagate_failure: true
+  #       trigger_workflow: true
+  #       wait_workflow: true
+  #     env:
+  #       LATEST_TAG: ${{ github.event.inputs.fixed_tag }}
         
-  zblock:
-    name: Triggering 0block Build
-    runs-on: ubuntu-20.04
+  # zblock:
+  #   name: Triggering 0block Build
+  #   runs-on: ubuntu-20.04
 
-    needs: 
-    - zdns
+  #   needs: 
+  #   - zdns
     
-    steps:    
-    - name: Triggering 0block Build
-      uses: convictional/trigger-workflow-and-wait@v1.3.0
-      with:
-        owner: 0chain
-        repo: gosdk
-        github_token: ${{ secrets.GOSDK }}
-        workflow_file_name: trigg-0block-build.yml
-        ref: master
-        inputs: '{"latest_tag":"$LATEST_TAG","branch_ref":"master"}'
-        propagate_failure: true
-        trigger_workflow: true
-        wait_workflow: true
-      env:
-        LATEST_TAG: ${{ github.event.inputs.fixed_tag }}
+  #   steps:    
+  #   - name: Triggering 0block Build
+  #     uses: convictional/trigger-workflow-and-wait@v1.3.0
+  #     with:
+  #       owner: 0chain
+  #       repo: gosdk
+  #       github_token: ${{ secrets.GOSDK }}
+  #       workflow_file_name: trigg-0block-build.yml
+  #       ref: master
+  #       inputs: '{"latest_tag":"$LATEST_TAG","branch_ref":"master"}'
+  #       propagate_failure: true
+  #       trigger_workflow: true
+  #       wait_workflow: true
+  #     env:
+  #       LATEST_TAG: ${{ github.event.inputs.fixed_tag }}
         
-  zsearch:
-    name: Triggering 0search Build
-    runs-on: ubuntu-20.04
+  # zsearch:
+  #   name: Triggering 0search Build
+  #   runs-on: ubuntu-20.04
 
-    needs: 
-    - zblock
+  #   needs: 
+  #   - zblock
     
-    steps:    
-    - name: Triggering 0search Build
-      uses: convictional/trigger-workflow-and-wait@v1.3.0
-      with:
-        owner: 0chain
-        repo: gosdk
-        github_token: ${{ secrets.GOSDK }}
-        workflow_file_name: trigg-0search-build.yml
-        ref: master
-        inputs: '{"latest_tag":"$LATEST_TAG","branch_ref":"master"}'
-        propagate_failure: true
-        trigger_workflow: true
-        wait_workflow: true
-      env:
-        LATEST_TAG: ${{ github.event.inputs.fixed_tag }}
+  #   steps:    
+  #   - name: Triggering 0search Build
+  #     uses: convictional/trigger-workflow-and-wait@v1.3.0
+  #     with:
+  #       owner: 0chain
+  #       repo: gosdk
+  #       github_token: ${{ secrets.GOSDK }}
+  #       workflow_file_name: trigg-0search-build.yml
+  #       ref: master
+  #       inputs: '{"latest_tag":"$LATEST_TAG","branch_ref":"master"}'
+  #       propagate_failure: true
+  #       trigger_workflow: true
+  #       wait_workflow: true
+  #     env:
+  #       LATEST_TAG: ${{ github.event.inputs.fixed_tag }}
         
-  blobber:
-    name: Triggering blobber Build
-    runs-on: ubuntu-20.04
+  # blobber:
+  #   name: Triggering blobber Build
+  #   runs-on: ubuntu-20.04
 
-    needs: 
-    - zsearch
+  #   needs: 
+  #   - zsearch
     
-    steps:    
-    - name: Triggering blobber Build
-      uses: convictional/trigger-workflow-and-wait@v1.3.0
-      with:
-        owner: 0chain
-        repo: gosdk
-        github_token: ${{ secrets.GOSDK }}
-        workflow_file_name: trigg-blobber-build.yml
-        ref: master
-        inputs: '{"latest_tag":"$LATEST_TAG","branch_ref":"master"}'
-        propagate_failure: true
-        trigger_workflow: true
-        wait_workflow: true
-      env:
-        LATEST_TAG: ${{ github.event.inputs.fixed_tag }}
+  #   steps:    
+  #   - name: Triggering blobber Build
+  #     uses: convictional/trigger-workflow-and-wait@v1.3.0
+  #     with:
+  #       owner: 0chain
+  #       repo: gosdk
+  #       github_token: ${{ secrets.GOSDK }}
+  #       workflow_file_name: trigg-blobber-build.yml
+  #       ref: master
+  #       inputs: '{"latest_tag":"$LATEST_TAG","branch_ref":"master"}'
+  #       propagate_failure: true
+  #       trigger_workflow: true
+  #       wait_workflow: true
+  #     env:
+  #       LATEST_TAG: ${{ github.event.inputs.fixed_tag }}
