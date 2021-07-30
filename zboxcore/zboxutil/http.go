@@ -13,7 +13,7 @@ import (
 	"os"
 	"time"
 
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -532,7 +532,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	var err error
 	rate := maxCount * 100 / float32(numSharders)
 	if rate < consensusThresh {
-		err = gosdkErrors.New("consensus_failed", "consensus failed on sharders")
+		err = zchainErrors.New("consensus_failed", "consensus failed on sharders")
 	}
 
 	if handler != nil {

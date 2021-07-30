@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/pkg/errors"
 
 	"github.com/0chain/gosdk/core/logger"
@@ -29,7 +29,7 @@ import (
 
 const STORAGE_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
 
-var sdkNotInitialized = gosdkErrors.New("sdk_not_initialized", "SDK is not initialised")
+var sdkNotInitialized = zchainErrors.New("sdk_not_initialized", "SDK is not initialised")
 
 const (
 	OpUpload   int = 0
@@ -194,7 +194,7 @@ func GetReadPoolInfo(clientID string) (info *AllocationPoolStats, err error) {
 		return nil, errors.Wrap(err, "error requesting read pool info")
 	}
 	if len(b) == 0 {
-		return nil, gosdkErrors.New("empty response")
+		return nil, zchainErrors.New("empty response")
 	}
 
 	info = new(AllocationPoolStats)
@@ -338,7 +338,7 @@ func GetStakePoolInfo(blobberID string) (info *StakePoolInfo, err error) {
 		return nil, errors.Wrap(err, "error requesting stake pool info:")
 	}
 	if len(b) == 0 {
-		return nil, gosdkErrors.New("empty response")
+		return nil, zchainErrors.New("empty response")
 	}
 
 	info = new(StakePoolInfo)
@@ -371,7 +371,7 @@ func GetStakePoolUserInfo(clientID string) (info *StakePoolUserInfo, err error) 
 		return nil, errors.Wrap(err, "error requesting stake pool user info:")
 	}
 	if len(b) == 0 {
-		return nil, gosdkErrors.New("empty response")
+		return nil, zchainErrors.New("empty response")
 	}
 
 	info = new(StakePoolUserInfo)
@@ -493,7 +493,7 @@ func GetWritePoolInfo(clientID string) (info *AllocationPoolStats, err error) {
 		return nil, errors.Wrap(err, "error requesting read pool info:")
 	}
 	if len(b) == 0 {
-		return nil, gosdkErrors.New("empty response")
+		return nil, zchainErrors.New("empty response")
 	}
 
 	info = new(AllocationPoolStats)
@@ -578,7 +578,7 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 		return nil, errors.Wrap(err, "error requesting challenge pool info:")
 	}
 	if len(b) == 0 {
-		return nil, gosdkErrors.New("empty response")
+		return nil, zchainErrors.New("empty response")
 	}
 
 	info = new(ChallengePoolInfo)
@@ -650,7 +650,7 @@ func GetStorageSCConfig() (conf *StorageSCConfig, err error) {
 		return nil, errors.Wrap(err, "error requesting storage SC configs:")
 	}
 	if len(b) == 0 {
-		return nil, gosdkErrors.New("empty response")
+		return nil, zchainErrors.New("empty response")
 	}
 
 	conf = new(StorageSCConfig)
@@ -659,7 +659,7 @@ func GetStorageSCConfig() (conf *StorageSCConfig, err error) {
 	}
 
 	if conf.ReadPool == nil || conf.WritePool == nil || conf.StakePool == nil {
-		return nil, gosdkErrors.New("invalid confg: missing read/write/stake pool configs")
+		return nil, zchainErrors.New("invalid confg: missing read/write/stake pool configs")
 	}
 	return
 }
@@ -687,7 +687,7 @@ func GetBlobbers() (bs []*Blobber, err error) {
 		return nil, errors.Wrap(err, "error requesting blobbers:")
 	}
 	if len(b) == 0 {
-		return nil, gosdkErrors.New("empty response")
+		return nil, zchainErrors.New("empty response")
 	}
 
 	type nodes struct {
@@ -718,7 +718,7 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 		return nil, errors.Wrap(err, "requesting blobber:")
 	}
 	if len(b) == 0 {
-		return nil, gosdkErrors.New("empty response from sharders")
+		return nil, zchainErrors.New("empty response from sharders")
 	}
 	blob = new(Blobber)
 	if err = json.Unmarshal(b, blob); err != nil {
@@ -749,12 +749,12 @@ func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error) {
 	}
 	sEnc, err := base64.StdEncoding.DecodeString(authTicket)
 	if err != nil {
-		return nil, gosdkErrors.New("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
+		return nil, zchainErrors.New("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
 	}
 	at := &marker.AuthTicket{}
 	err = json.Unmarshal(sEnc, at)
 	if err != nil {
-		return nil, gosdkErrors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
+		return nil, zchainErrors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
 	}
 	return GetAllocation(at.AllocationID)
 }
@@ -767,12 +767,12 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	params["allocation"] = allocationID
 	allocationBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params, nil)
 	if err != nil {
-		return nil, gosdkErrors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
+		return nil, zchainErrors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
 	allocationObj := &Allocation{}
 	err = json.Unmarshal(allocationBytes, allocationObj)
 	if err != nil {
-		return nil, gosdkErrors.New("allocation_decode_error", "Error decoding the allocation."+err.Error())
+		return nil, zchainErrors.New("allocation_decode_error", "Error decoding the allocation."+err.Error())
 	}
 	allocationObj.numBlockDownloads = numBlockDownloads
 	allocationObj.InitAllocation()
@@ -798,12 +798,12 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 	params["client"] = clientID
 	allocationsBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocations", params, nil)
 	if err != nil {
-		return nil, gosdkErrors.New("allocations_fetch_error", "Error fetching the allocations."+err.Error())
+		return nil, zchainErrors.New("allocations_fetch_error", "Error fetching the allocations."+err.Error())
 	}
 	allocations := make([]*Allocation, 0)
 	err = json.Unmarshal(allocationsBytes, &allocations)
 	if err != nil {
-		return nil, gosdkErrors.New("allocations_decode_error", "Error decoding the allocations."+err.Error())
+		return nil, zchainErrors.New("allocations_decode_error", "Error decoding the allocations."+err.Error())
 	}
 	return allocations, nil
 }
@@ -1056,7 +1056,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	}
 
 	if t == nil {
-		return "", "", gosdkErrors.New("transaction_validation_failed",
+		return "", "", zchainErrors.New("transaction_validation_failed",
 			"Failed to get the transaction confirmation")
 	}
 
@@ -1084,7 +1084,7 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 
 	err := json.Unmarshal([]byte(fabricConfigJSON), &fabricConfig)
 	if err != nil {
-		return "", gosdkErrors.New("fabric_config_decode_error", "Unable to decode fabric config json")
+		return "", zchainErrors.New("fabric_config_decode_error", "Unable to decode fabric config json")
 	}
 
 	// Clear if any existing args passed
@@ -1094,12 +1094,12 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 
 	fabricData, err := json.Marshal(fabricConfig.Body)
 	if err != nil {
-		return "", gosdkErrors.New("fabric_config_encode_error", "Unable to encode fabric config body")
+		return "", zchainErrors.New("fabric_config_encode_error", "Unable to encode fabric config body")
 	}
 
 	req, ctx, cncl, err := zboxutil.NewHTTPRequest(http.MethodPost, fabricConfig.URL, fabricData)
 	if err != nil {
-		return "", gosdkErrors.New("fabric_commit_error", "Unable to create new http request with error "+err.Error())
+		return "", zchainErrors.New("fabric_commit_error", "Unable to create new http request with error "+err.Error())
 	}
 
 	// Set basic auth
@@ -1121,7 +1121,7 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 			fabricResponse = string(respBody)
 			return nil
 		}
-		return gosdkErrors.New(strconv.Itoa(resp.StatusCode), "Fabric commit status not OK!")
+		return zchainErrors.New(strconv.Itoa(resp.StatusCode), "Fabric commit status not OK!")
 	})
 	return fabricResponse, err
 }
@@ -1151,13 +1151,13 @@ func GetAllocationMinLock(datashards, parityshards int, size, expiry int64,
 	params["allocation_data"] = string(allocationData)
 	allocationsBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation_min_lock", params, nil)
 	if err != nil {
-		return 0, gosdkErrors.New("allocation_min_lock_fetch_error", "Error fetching the allocation min lock."+err.Error())
+		return 0, zchainErrors.New("allocation_min_lock_fetch_error", "Error fetching the allocation min lock."+err.Error())
 	}
 
 	var response = make(map[string]int64)
 	err = json.Unmarshal(allocationsBytes, &response)
 	if err != nil {
-		return 0, gosdkErrors.New("allocation_min_lock_decode_error", "Error decoding the response."+err.Error())
+		return 0, zchainErrors.New("allocation_min_lock_decode_error", "Error decoding the response."+err.Error())
 	}
 	return response["min_lock_demand"], nil
 }

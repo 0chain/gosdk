@@ -9,14 +9,14 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
 
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/pkg/errors"
 )
 
 const TXN_SUBMIT_URL = "v1/transaction/put"
 const TXN_VERIFY_URL = "v1/transaction/get/confirmation?hash="
 
-var ErrNoTxnDetail = gosdkErrors.New("missing_transaction_detail", "No transaction detail was found on any of the sharders")
+var ErrNoTxnDetail = zchainErrors.New("missing_transaction_detail", "No transaction detail was found on any of the sharders")
 
 //Transaction entity that encapsulates the transaction related data and meta data
 type Transaction struct {
@@ -175,7 +175,7 @@ func (t *Transaction) VerifyTransaction(verifyHandler VerifyFunc) (bool, error) 
 	hash := t.Hash
 	t.ComputeHashData()
 	if t.Hash != hash {
-		return false, gosdkErrors.New("verify_transaction", fmt.Sprintf(`{"error":"hash_mismatch", "expected":"%v", "actual":%v"}`, t.Hash, hash))
+		return false, zchainErrors.New("verify_transaction", fmt.Sprintf(`{"error":"hash_mismatch", "expected":"%v", "actual":%v"}`, t.Hash, hash))
 	}
 	return verifyHandler(t.Signature, t.Hash, t.PublicKey)
 }
@@ -203,7 +203,7 @@ func sendTransactionToURL(url string, txn *Transaction, wg *sync.WaitGroup) ([]b
 	if postResponse.StatusCode >= 200 && postResponse.StatusCode <= 299 {
 		return []byte(postResponse.Body), nil
 	}
-	return nil, errors.Wrap(err, gosdkErrors.New("transaction_send_error", postResponse.Body).Error())
+	return nil, errors.Wrap(err, zchainErrors.New("transaction_send_error", postResponse.Body).Error())
 }
 
 func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) {
@@ -262,5 +262,5 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 		}
 		return nil, errors.Wrap(customError, ErrNoTxnDetail.Error())
 	}
-	return nil, errors.Wrap(customError, gosdkErrors.New("transaction_not_found", "Transaction was not found on any of the sharders").Error())
+	return nil, errors.Wrap(customError, zchainErrors.New("transaction_not_found", "Transaction was not found on any of the sharders").Error())
 }

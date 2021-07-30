@@ -7,7 +7,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/marker"
 
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 )
 
 type AuthTicket struct {
@@ -23,12 +23,12 @@ func InitAuthTicket(authTicket string) *AuthTicket {
 func (at *AuthTicket) IsDir() (bool, error) {
 	sEnc, err := base64.StdEncoding.DecodeString(at.b64Ticket)
 	if err != nil {
-		return false, gosdkErrors.New("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
+		return false, zchainErrors.New("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
 	}
 	authTicket := &marker.AuthTicket{}
 	err = json.Unmarshal(sEnc, authTicket)
 	if err != nil {
-		return false, gosdkErrors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
+		return false, zchainErrors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
 	}
 	return authTicket.RefType == fileref.DIRECTORY, nil
 }
@@ -36,12 +36,12 @@ func (at *AuthTicket) IsDir() (bool, error) {
 func (at *AuthTicket) GetFileName() (string, error) {
 	sEnc, err := base64.StdEncoding.DecodeString(at.b64Ticket)
 	if err != nil {
-		return "", gosdkErrors.New("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
+		return "", zchainErrors.New("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
 	}
 	authTicket := &marker.AuthTicket{}
 	err = json.Unmarshal(sEnc, authTicket)
 	if err != nil {
-		return "", gosdkErrors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
+		return "", zchainErrors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
 	}
 	return authTicket.FileName, nil
 }
@@ -49,12 +49,12 @@ func (at *AuthTicket) GetFileName() (string, error) {
 func (at *AuthTicket) GetLookupHash() (string, error) {
 	sEnc, err := base64.StdEncoding.DecodeString(at.b64Ticket)
 	if err != nil {
-		return "", gosdkErrors.New("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
+		return "", zchainErrors.New("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
 	}
 	authTicket := &marker.AuthTicket{}
 	err = json.Unmarshal(sEnc, authTicket)
 	if err != nil {
-		return "", gosdkErrors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
+		return "", zchainErrors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
 	}
 	return authTicket.FilePathHash, nil
 }
@@ -62,12 +62,12 @@ func (at *AuthTicket) GetLookupHash() (string, error) {
 func (at *AuthTicket) Unmarshall() (*marker.AuthTicket, error) {
 	sEnc, err := base64.StdEncoding.DecodeString(at.b64Ticket)
 	if err != nil {
-		return nil, gosdkErrors.New("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
+		return nil, zchainErrors.New("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
 	}
 	authTicket := &marker.AuthTicket{}
 	err = json.Unmarshal(sEnc, authTicket)
 	if err != nil {
-		return nil, gosdkErrors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
+		return nil, zchainErrors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
 	}
 	return authTicket, nil
 }

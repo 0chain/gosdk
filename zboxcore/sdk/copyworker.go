@@ -17,7 +17,7 @@ import (
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 )
 
 type CopyRequest struct {
@@ -104,7 +104,7 @@ func (req *CopyRequest) ProcessCopy() error {
 	req.wg.Wait()
 
 	if !req.isConsensusOk() {
-		return gosdkErrors.New("Copy failed: Copy request failed. Operation failed.")
+		return zchainErrors.New("Copy failed: Copy request failed. Operation failed.")
 	}
 
 	req.consensus = 0
@@ -148,7 +148,7 @@ func (req *CopyRequest) ProcessCopy() error {
 	}
 
 	if !req.isConsensusOk() {
-		return gosdkErrors.New("Copy failed: Commit consensus failed")
+		return zchainErrors.New("Copy failed: Commit consensus failed")
 	}
 	return nil
 }

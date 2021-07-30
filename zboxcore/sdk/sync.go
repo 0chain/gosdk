@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/pkg/errors"
 
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -281,11 +281,11 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath s
 			}
 			content, err := ioutil.ReadFile(lastSyncCachePath)
 			if err != nil {
-				return lFdiff, gosdkErrors.New("can't read cache file.")
+				return lFdiff, zchainErrors.New("can't read cache file.")
 			}
 			err = json.Unmarshal(content, &prevRemoteFileMap)
 			if err != nil {
-				return lFdiff, gosdkErrors.New("invalid cache content.")
+				return lFdiff, zchainErrors.New("invalid cache content.")
 			}
 		}
 	}

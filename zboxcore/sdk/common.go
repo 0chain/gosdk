@@ -15,7 +15,7 @@ import (
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 )
 
 func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx string, remotefilepath string, blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
@@ -41,7 +41,7 @@ func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx st
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
-			return gosdkErrors.New(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Object tree error response: Body: %s ", string(resp_body)))
+			return zchainErrors.New(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Object tree error response: Body: %s ", string(resp_body)))
 		} else {
 			Logger.Info("Object tree:", string(resp_body))
 			err = json.Unmarshal(resp_body, &lR)

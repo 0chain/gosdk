@@ -5,7 +5,7 @@ import (
 
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 )
 
 type UpdateFileChange struct {
@@ -33,7 +33,7 @@ func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		if found {
 			treelevel++
 		} else {
-			return gosdkErrors.New("invalid_reference_path", "Invalid reference path from the blobber")
+			return zchainErrors.New("invalid_reference_path", "Invalid reference path from the blobber")
 		}
 	}
 	idx := -1
@@ -45,7 +45,7 @@ func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		}
 	}
 	if idx < 0 || ch.OldFile == nil {
-		return gosdkErrors.New("file_not_found", "File to update not found in blobber")
+		return zchainErrors.New("file_not_found", "File to update not found in blobber")
 	}
 	dirRef.Children[idx] = ch.NewFile
 	rootRef.CalculateHash()

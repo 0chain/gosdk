@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -73,7 +73,7 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 		return
 	}
 	if t == nil {
-		err = gosdkErrors.New("transaction_validation_failed", "Failed to get the transaction confirmation")
+		err = zchainErrors.New("transaction_validation_failed", "Failed to get the transaction confirmation")
 		req.status.CommitMetaCompleted(commitMetaDataString, "", err)
 		return
 	}

@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"time"
 
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
@@ -76,12 +76,12 @@ func UpdateRequired(networkDetails *Network) bool {
 func GetNetworkDetails() (*Network, error) {
 	req, err := util.NewHTTPGetRequest(_config.chain.BlockWorker + NETWORK_ENDPOINT)
 	if err != nil {
-		return nil, gosdkErrors.New("get_network_details_error", "Unable to create new http request with error "+err.Error())
+		return nil, zchainErrors.New("get_network_details_error", "Unable to create new http request with error "+err.Error())
 	}
 
 	res, err := req.Get()
 	if err != nil {
-		return nil, gosdkErrors.New("get_network_details_error", "Unable to get http request with error "+err.Error())
+		return nil, zchainErrors.New("get_network_details_error", "Unable to get http request with error "+err.Error())
 	}
 
 	var networkResponse Network

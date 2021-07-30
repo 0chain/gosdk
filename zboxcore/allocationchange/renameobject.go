@@ -6,7 +6,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 )
 
 type RenameFileChange struct {
@@ -34,7 +34,7 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		if found {
 			treelevel++
 		} else {
-			return gosdkErrors.New("invalid_reference_path", "Invalid reference path from the blobber")
+			return zchainErrors.New("invalid_reference_path", "Invalid reference path from the blobber")
 		}
 	}
 	idx := -1
@@ -45,7 +45,7 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		}
 	}
 	if idx < 0 {
-		return gosdkErrors.New("file_not_found", "Object to rename not found in blobber")
+		return zchainErrors.New("file_not_found", "Object to rename not found in blobber")
 	}
 	dirRef.Children[idx] = ch.ObjectTree
 	// Logger.Info("Old name: " + dirRef.Children[idx].GetName())

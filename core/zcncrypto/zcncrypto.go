@@ -7,7 +7,7 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/tyler-smith/go-bip39"
 
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 )
 
 const CryptoVersion = "1.0"
@@ -74,7 +74,7 @@ func NewSignatureScheme(sigScheme string) SignatureScheme {
 func (w *Wallet) Marshal() (string, error) {
 	ws, err := json.Marshal(w)
 	if err != nil {
-		return "", gosdkErrors.New("wallet_marshal", "Invalid Wallet")
+		return "", zchainErrors.New("wallet_marshal", "Invalid Wallet")
 	}
 	return string(ws), nil
 }

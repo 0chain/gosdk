@@ -6,7 +6,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 )
 
 type CopyFileChange struct {
@@ -34,7 +34,7 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		if found {
 			treelevel++
 		} else {
-			return gosdkErrors.New("invalid_reference_path", "Invalid reference path from the blobber")
+			return zchainErrors.New("invalid_reference_path", "Invalid reference path from the blobber")
 		}
 	}
 	var foundRef fileref.RefEntity
@@ -50,7 +50,7 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	}
 
 	if foundRef == nil {
-		return gosdkErrors.New("file_not_found", "Object to copy not found in blobber")
+		return zchainErrors.New("file_not_found", "Object to copy not found in blobber")
 	}
 
 	var affectedRef *fileref.Ref

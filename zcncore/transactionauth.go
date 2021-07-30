@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -43,7 +43,7 @@ func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) 
 		if res.StatusCode == http.StatusUnauthorized {
 			return nil, errUserRejected
 		}
-		return nil, gosdkErrors.New(strconv.Itoa(res.StatusCode), fmt.Sprintf("auth error: %v. %v", res.Status, res.Body))
+		return nil, zchainErrors.New(strconv.Itoa(res.StatusCode), fmt.Sprintf("auth error: %v. %v", res.Status, res.Body))
 	}
 	var txnResp transaction.Transaction
 	err = json.Unmarshal([]byte(res.Body), &txnResp)
@@ -94,7 +94,7 @@ func verifyFn(signature, msgHash, publicKey string) (bool, error) {
 	v.SetPublicKey(publicKey)
 	ok, err := v.Verify(signature, msgHash)
 	if err != nil || ok == false {
-		return false, gosdkErrors.New(`{"error": "signature_mismatch"}`)
+		return false, zchainErrors.New(`{"error": "signature_mismatch"}`)
 	}
 	return true, nil
 }
@@ -354,7 +354,7 @@ func (ta *TransactionWithAuth) UnlockTokens(poolID string) error {
 
 //RegisterMultiSig register a multisig wallet with the SC.
 func (ta *TransactionWithAuth) RegisterMultiSig(walletstr string, mswallet string) error {
-	return gosdkErrors.New("not implemented")
+	return zchainErrors.New("not implemented")
 }
 
 //

@@ -3,7 +3,7 @@ package fileref
 import (
 	"github.com/mitchellh/mapstructure"
 
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 )
 
 type ReferencePath struct {
@@ -61,7 +61,7 @@ func (rp *ReferencePath) GetDirTree(allocationID string) (*Ref, error) {
 		}
 		return rootRef, nil
 	}
-	return nil, gosdkErrors.New("invalid_ref_path", "Invalid reference path. root was not a directory type")
+	return nil, zchainErrors.New("invalid_ref_path", "Invalid reference path. root was not a directory type")
 }
 
 func (rp *ReferencePath) populateChildren(ref *Ref) error {

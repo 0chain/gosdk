@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -127,7 +127,7 @@ func (commitreq *CommitRequest) processCommit() {
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
-			return gosdkErrors.New(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Reference path error response: Status: %d - %s ", resp.StatusCode, string(resp_body)))
+			return zchainErrors.New(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Reference path error response: Status: %d - %s ", resp.StatusCode, string(resp_body)))
 
 		} else {
 			//Logger.Info("Reference path:", string(resp_body))
@@ -260,7 +260,7 @@ func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.W
 		}
 		if resp.StatusCode != http.StatusOK {
 			Logger.Error(req.blobber.Baseurl, " Commit response:", string(resp_body))
-			return gosdkErrors.New("commit_error", string(resp_body))
+			return zchainErrors.New("commit_error", string(resp_body))
 		}
 		return nil
 	})
@@ -294,7 +294,7 @@ func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths 
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
-			return gosdkErrors.New(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Calculate hash error response: Body: %s ", string(resp_body)))
+			return zchainErrors.New(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Calculate hash error response: Body: %s ", string(resp_body)))
 		}
 		return nil
 	})

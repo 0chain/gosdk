@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -122,7 +122,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 			}
 			return nil
 		} else {
-			return gosdkErrors.New(fmt.Sprintf("error from server list response: %s", s.String()))
+			return zchainErrors.New(fmt.Sprintf("error from server list response: %s", s.String()))
 		}
 	})
 }

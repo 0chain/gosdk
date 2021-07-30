@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -122,7 +122,7 @@ func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
 func (req *BlockDownloadRequest) downloadBlobberBlock() {
 	defer req.wg.Done()
 	if req.numBlocks <= 0 {
-		req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: gosdkErrors.New("invalid_request", "Invalid number of blocks for download")}
+		req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: zchainErrors.New("invalid_request", "Invalid number of blocks for download")}
 		return
 	}
 	retry := 0
@@ -130,7 +130,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 		if req.blobber.IsSkip() {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx,
-				err: gosdkErrors.New("skip blobber by previous errors")}
+				err: zchainErrors.New("skip blobber by previous errors")}
 			return
 		}
 
@@ -237,7 +237,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					Logger.Info("Will be retrying download")
 					setBlobberReadCtr(req.blobber, rspData.LatestRM.ReadCounter)
 					shouldRetry = true
-					return gosdkErrors.New("Need to retry the download")
+					return zchainErrors.New("Need to retry the download")
 				}
 
 			} else {
@@ -245,7 +245,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				if err != nil {
 					return err
 				}
-				err = gosdkErrors.New(fmt.Sprintf("Response Error: %s", string(resp_body)))
+				err = zchainErrors.New(fmt.Sprintf("Response Error: %s", string(resp_body)))
 				if strings.Contains(err.Error(), "not_enough_tokens") {
 					shouldRetry, retry = false, 3 // don't repeat
 					req.blobber.SetSkip(true)

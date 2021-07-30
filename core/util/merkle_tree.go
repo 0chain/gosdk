@@ -3,7 +3,7 @@ package util
 import (
 	"fmt"
 
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 )
 
 /*MerkleTree - A data structure that implements MerkleTreeI interface */
@@ -82,7 +82,7 @@ func (mt *MerkleTree) GetTree() []string {
 func (mt *MerkleTree) SetTree(leavesCount int, tree []string) error {
 	size, levels := mt.computeSize(leavesCount)
 	if size != len(tree) {
-		return gosdkErrors.New(fmt.Sprintf("Merkle tree with leaves %v should have size %v but only %v is given", leavesCount, size, len(tree)))
+		return zchainErrors.New(fmt.Sprintf("Merkle tree with leaves %v should have size %v but only %v is given", leavesCount, size, len(tree)))
 	}
 	mt.levels = levels
 	mt.tree = tree

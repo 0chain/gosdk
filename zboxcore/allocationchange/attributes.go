@@ -5,7 +5,7 @@ import (
 
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 )
 
 type AttributesChange struct {
@@ -40,7 +40,7 @@ func (ac *AttributesChange) ProcessChange(root *fileref.Ref) (err error) {
 		if found {
 			treelevel++
 		} else {
-			return gosdkErrors.New("attributes_change_process",
+			return zchainErrors.New("attributes_change_process",
 				"Invalid reference path from the blobber")
 		}
 	}
@@ -58,7 +58,7 @@ func (ac *AttributesChange) ProcessChange(root *fileref.Ref) (err error) {
 	}
 
 	if idx < 0 || file == nil {
-		return gosdkErrors.New("attributes_change_process",
+		return zchainErrors.New("attributes_change_process",
 			"File, to update attributes for, not found in blobber")
 	}
 

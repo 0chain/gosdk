@@ -1,7 +1,7 @@
 package fileref
 
 import (
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -13,7 +13,7 @@ type ListResult struct {
 
 func (lr *ListResult) GetDirTree(allocationID string) (*Ref, error) {
 	if lr.Meta == nil {
-		return nil, gosdkErrors.New("invalid_list_path", "badly formatted list result, nil meta")
+		return nil, zchainErrors.New("invalid_list_path", "badly formatted list result, nil meta")
 	}
 	reftype := lr.Meta["type"].(string)
 	if reftype == DIRECTORY {
@@ -39,7 +39,7 @@ func (lr *ListResult) GetDirTree(allocationID string) (*Ref, error) {
 		}
 		return rootRef, nil
 	}
-	return nil, gosdkErrors.New("invalid_list_path", "Invalid list path. list was not for a directory")
+	return nil, zchainErrors.New("invalid_list_path", "Invalid list path. list was not for a directory")
 }
 
 func (lr *ListResult) populateChildren(ref *Ref) error {

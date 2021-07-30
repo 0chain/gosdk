@@ -9,7 +9,7 @@ import (
 
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/common"
-	gosdkErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
@@ -26,11 +26,11 @@ var (
 )
 
 var (
-	errNetwork          = gosdkErrors.New("network error. host not reachable")
-	errUserRejected     = gosdkErrors.New("rejected by user")
-	errAuthVerifyFailed = gosdkErrors.New("verfication failed for auth response")
-	errAuthTimeout      = gosdkErrors.New("auth timed out")
-	errAddSignature     = gosdkErrors.New("error adding signature")
+	errNetwork          = zchainErrors.New("network error. host not reachable")
+	errUserRejected     = zchainErrors.New("rejected by user")
+	errAuthVerifyFailed = zchainErrors.New("verfication failed for auth response")
+	errAuthTimeout      = zchainErrors.New("auth timed out")
+	errAddSignature     = zchainErrors.New("error adding signature")
 )
 
 // TransactionCallback needs to be implemented by the caller for transaction related APIs
@@ -164,7 +164,7 @@ func signWithWallet(hash string, wi interface{}) (string, error) {
 
 	if !ok {
 		fmt.Printf("Error in casting to wallet")
-		return "", gosdkErrors.New("error in casting to wallet")
+		return "", zchainErrors.New("error in casting to wallet")
 	}
 	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 	sigScheme.SetPrivateKey(w.Keys[0].PrivateKey)
@@ -261,7 +261,7 @@ func (t *Transaction) submitTxn() {
 	}
 	rate := consensus * 100 / float32(len(randomMiners))
 	if rate < consensusThresh {
-		t.completeTxn(StatusError, "", gosdkErrors.New(fmt.Sprintf("submit transaction failed. %s", tFailureRsp)))
+		t.completeTxn(StatusError, "", zchainErrors.New(fmt.Sprintf("submit transaction failed. %s", tFailureRsp)))
 		return
 	}
 	time.Sleep(3 * time.Second)
@@ -285,7 +285,7 @@ func NewTransaction(cb TransactionCallback, txnFee int64) (TransactionScheme, er
 	}
 	if _config.isSplitWallet {
 		if _config.authUrl == "" {
-			return nil, gosdkErrors.New("auth url not set")
+			return nil, zchainErrors.New("auth url not set")
 		}
 		Logger.Info("New transaction interface with auth")
 		return newTransactionWithAuth(cb, txnFee)
@@ -296,7 +296,7 @@ func NewTransaction(cb TransactionCallback, txnFee int64) (TransactionScheme, er
 
 func (t *Transaction) SetTransactionCallback(cb TransactionCallback) error {
 	if t.txnStatus != StatusUnknown {
-		return gosdkErrors.New("transaction already exists. cannot set transaction hash.")
+		return zchainErrors.New("transaction already exists. cannot set transaction hash.")
 	}
 	t.txnCb = cb
 	return nil
@@ -304,7 +304,7 @@ func (t *Transaction) SetTransactionCallback(cb TransactionCallback) error {
 
 func (t *Transaction) SetTransactionFee(txnFee int64) error {
 	if t.txnStatus != StatusUnknown {
-		return gosdkErrors.New("transaction already exists. cannot set transaction fee.")
+		return zchainErrors.New("transaction already exists. cannot set transaction fee.")
 	}
 	t.txn.TransactionFee = txnFee
 	return nil
@@ -399,7 +399,7 @@ func (t *Transaction) ExecuteSmartContract(address, methodName, jsoninput string
 
 func (t *Transaction) SetTransactionHash(hash string) error {
 	if t.txnStatus != StatusUnknown {
-		return gosdkErrors.New("transaction already exists. cannot set transaction hash.")
+		return zchainErrors.New("transaction already exists. cannot set transaction hash.")
 	}
 	t.txnHash = hash
 	return nil
@@ -466,17 +466,17 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 			return nil, errors.Wrap(err, "txn confirmation parse error.")
 		}
 		if cfm.Transaction == nil {
-			return nil, gosdkErrors.New(fmt.Sprintf("missing transaction %s in block confirmation", txnHash))
+			return nil, zchainErrors.New(fmt.Sprintf("missing transaction %s in block confirmation", txnHash))
 		}
 		if txnHash != cfm.Transaction.Hash {
-			return nil, gosdkErrors.New(fmt.Sprintf("invalid transaction hash. Expected: %s. Received: %s", txnHash, cfm.Transaction.Hash))
+			return nil, zchainErrors.New(fmt.Sprintf("invalid transaction hash. Expected: %s. Received: %s", txnHash, cfm.Transaction.Hash))
 		}
 		if !util.VerifyMerklePath(cfm.Transaction.Hash, cfm.MerkleTreePath, cfm.MerkleTreeRoot) {
-			return nil, gosdkErrors.New("txn merkle validation failed.")
+			return nil, zchainErrors.New("txn merkle validation failed.")
 		}
 		txnRcpt := transaction.NewTransactionReceipt(cfm.Transaction)
 		if !util.VerifyMerklePath(txnRcpt.GetHash(), cfm.ReceiptMerkleTreePath, cfm.ReceiptMerkleTreeRoot) {
-			return nil, gosdkErrors.New("txn receipt cmerkle validation failed.")
+			return nil, zchainErrors.New("txn receipt cmerkle validation failed.")
 		}
 		prevBlockHash := cfm.PreviousBlockHash
 		block.MinerId = cfm.MinerID
@@ -490,10 +490,10 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 		if isBlockExtends(prevBlockHash, block) {
 			return block, nil
 		} else {
-			return nil, gosdkErrors.New("block hash verification failed in confirmation")
+			return nil, zchainErrors.New("block hash verification failed in confirmation")
 		}
 	}
-	return nil, gosdkErrors.New("txn confirmation not found.")
+	return nil, zchainErrors.New("txn confirmation not found.")
 }
 
 func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
@@ -541,7 +541,7 @@ func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, 
 		}
 	}
 	if maxConfirmation == 0 {
-		return nil, confirmation, &lfb, gosdkErrors.New("transaction not found")
+		return nil, confirmation, &lfb, zchainErrors.New("transaction not found")
 	}
 	return blockHdr, confirmation, &lfb, nil
 }
@@ -581,7 +581,7 @@ func GetLatestFinalized(ctx context.Context, numSharders int) (b *block.Header, 
 	}
 
 	if maxConsensus == 0 {
-		return nil, gosdkErrors.New("block info not found")
+		return nil, zchainErrors.New("block info not found")
 	}
 
 	return
@@ -628,7 +628,7 @@ func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *bloc
 	}
 
 	if maxConsensus == 0 {
-		return nil, gosdkErrors.New("magic block info not found")
+		return nil, zchainErrors.New("magic block info not found")
 	}
 
 	return
@@ -650,7 +650,7 @@ func GetChainStats(ctx context.Context) (b *block.ChainStats, err error) {
 	}
 
 	if rsp == nil {
-		return nil, gosdkErrors.New("http_request_failed", "Request failed with status not 200")
+		return nil, zchainErrors.New("http_request_failed", "Request failed with status not 200")
 	}
 
 	if err = json.Unmarshal([]byte(rsp.Body), &b); err != nil {
@@ -721,7 +721,7 @@ func GetBlockByRound(ctx context.Context, numSharders int, round int64) (b *bloc
 	}
 
 	if maxConsensus == 0 {
-		return nil, gosdkErrors.New("round info not found")
+		return nil, zchainErrors.New("round info not found")
 	}
 
 	return
@@ -771,7 +771,7 @@ func GetMagicBlockByNumber(ctx context.Context, numSharders int, number int64) (
 	}
 
 	if maxConsensus == 0 {
-		return nil, gosdkErrors.New("magic block info not found")
+		return nil, zchainErrors.New("magic block info not found")
 	}
 
 	return
@@ -823,7 +823,7 @@ func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHe
 		}
 	}
 	if maxConsensus == 0 {
-		return nil, gosdkErrors.New("round info not found.")
+		return nil, zchainErrors.New("round info not found.")
 	}
 	return &blkHdr, nil
 }
@@ -884,12 +884,12 @@ func (t *Transaction) isTransactionExpired(lfbCreationTime, currentTime int64) b
 }
 func (t *Transaction) Verify() error {
 	if t.txnHash == "" && t.txnStatus == StatusUnknown {
-		return gosdkErrors.New("invalid transaction. cannot be verified.")
+		return zchainErrors.New("invalid transaction. cannot be verified.")
 	}
 	if t.txnHash == "" && t.txnStatus == StatusSuccess {
 		h := t.GetTransactionHash()
 		if h == "" {
-			return gosdkErrors.New("invalid transaction. cannot be verified.")
+			return zchainErrors.New("invalid transaction. cannot be verified.")
 		}
 	}
 	// If transaction is verify only start from current time
@@ -909,14 +909,14 @@ func (t *Transaction) Verify() error {
 					confirmBlock, confirmation, lfb, err = getTransactionConfirmation(getMinShardersVerify(), t.txnHash)
 					if err != nil {
 						if t.isTransactionExpired(lfb.CreationDate, tn) {
-							t.completeVerify(StatusError, "", gosdkErrors.New(`{"error": "verify transaction failed"}`))
+							t.completeVerify(StatusError, "", zchainErrors.New(`{"error": "verify transaction failed"}`))
 							return
 						}
 						continue
 					}
 				} else {
 					if t.isTransactionExpired(lfb.CreationDate, tn) {
-						t.completeVerify(StatusError, "", gosdkErrors.New(`{"error": "verify transaction failed"}`))
+						t.completeVerify(StatusError, "", zchainErrors.New(`{"error": "verify transaction failed"}`))
 						return
 					}
 					continue
@@ -926,7 +926,7 @@ func (t *Transaction) Verify() error {
 			if valid {
 				output, err := json.Marshal(confirmation)
 				if err != nil {
-					t.completeVerify(StatusError, "", gosdkErrors.New(`{"error": "transaction confirmation json marshal error"`))
+					t.completeVerify(StatusError, "", zchainErrors.New(`{"error": "transaction confirmation json marshal error"`))
 					return
 				}
 				t.completeVerify(StatusSuccess, string(output), nil)
@@ -1282,12 +1282,12 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 	var metaTxnData sdk.CommitMetaResponse
 	err := json.Unmarshal([]byte(metaTxnDataJSON), &metaTxnData)
 	if err != nil {
-		return false, gosdkErrors.New("metaTxnData_decode_error", "Unable to decode metaTxnData json")
+		return false, zchainErrors.New("metaTxnData_decode_error", "Unable to decode metaTxnData json")
 	}
 
 	t, err := transaction.VerifyTransaction(metaTxnData.TxnID, blockchain.GetSharders())
 	if err != nil {
-		return false, gosdkErrors.New("fetch_txm_details", "Unable to fetch txn details")
+		return false, zchainErrors.New("fetch_txm_details", "Unable to fetch txn details")
 	}
 
 	var metaOperation sdk.CommitMetaData
