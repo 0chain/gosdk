@@ -11,9 +11,6 @@ on:
         description: 'Input Tag Example - v1.2.2'
         required: true
 
-env:
-  GITHUB_TOKEN: ${{ secrets.GOSDK }}
-
 jobs:
   build:
     name: Build
@@ -112,44 +109,44 @@ jobs:
   #   needs: 
   #   - make
     
-  #   steps:    
-  #   - name: Triggering 0proxy Build
-  #     uses: convictional/trigger-workflow-and-wait@v1.3.0
-  #     with:
-  #       owner: 0chain
-  #       repo: gosdk
-  #       github_token: ${{ secrets.GOSDK }}
-  #       workflow_file_name: trigg-0proxy-build.yml
-  #       ref: master
-  #       inputs: '{"latest_tag":"$LATEST_TAG","branch_ref":"master"}'
-  #       propagate_failure: true
-  #       trigger_workflow: true
-  #       wait_workflow: true
-  #     env:
-  #       LATEST_TAG: ${{ github.event.inputs.fixed_tag }}
-        
-  zbox:
-    name: Triggering 0box Build
-    runs-on: ubuntu-20.04
-
-    needs: 
-    - make
-    
-    steps:
-    - name: Triggering 0box Build
+    steps:    
+    - name: Triggering 0proxy Build
       uses: convictional/trigger-workflow-and-wait@v1.3.0
       with:
         owner: 0chain
         repo: gosdk
         github_token: ${{ secrets.GOSDK }}
-        workflow_file_name: trigg-0box-build.yml
+        workflow_file_name: trigg-0proxy-build.yml
         ref: master
-        inputs: '{"latest_tag":"$LATEST_TAG","branch_ref":"gitactionsfix"}'
+        inputs: '{"latest_tag":"$LATEST_TAG","branch_ref":"master"}'
         propagate_failure: true
         trigger_workflow: true
         wait_workflow: true
       env:
         LATEST_TAG: ${{ github.event.inputs.fixed_tag }}
+        
+  # zbox:
+  #   name: Triggering 0box Build
+  #   runs-on: ubuntu-20.04
+
+  #   needs: 
+  #   - make
+    
+  #   steps:
+  #   - name: Triggering 0box Build
+  #     uses: convictional/trigger-workflow-and-wait@v1.3.0
+  #     with:
+  #       owner: 0chain
+  #       repo: gosdk
+  #       github_token: ${{ secrets.GOSDK }}
+  #       workflow_file_name: trigg-0box-build.yml
+  #       ref: master
+  #       inputs: '{"latest_tag":"$LATEST_TAG","branch_ref":"gitactionsfix"}'
+  #       propagate_failure: true
+  #       trigger_workflow: true
+  #       wait_workflow: true
+  #     env:
+  #       LATEST_TAG: ${{ github.event.inputs.fixed_tag }}
         
   # zdns:
   #   name: Triggering 0dns Build
