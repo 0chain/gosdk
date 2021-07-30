@@ -209,7 +209,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 			_, err := req.copyBlobberObject(req.blobbers[0], 0)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err)
+				require.EqualValues(tt.errMsg, err.Error())
 				return
 			}
 			require.NoErrorf(err, "expected no error but got %v", err)

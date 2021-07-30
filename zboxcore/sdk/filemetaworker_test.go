@@ -178,7 +178,7 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 			resp := <-rspCh
 			require.EqualValues(t, tt.wantErr, resp.err != nil)
 			if resp.err != nil {
-				require.EqualValues(t, tt.errMsg, resp.err)
+				require.EqualValues(t, tt.errMsg, resp.err.Error())
 				return
 			}
 			require.EqualValues(t, tt.parameters.fileRefToRetrieve, *resp.fileref)

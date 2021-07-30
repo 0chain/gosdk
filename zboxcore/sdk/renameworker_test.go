@@ -211,7 +211,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			_, err := req.renameBlobberObject(req.blobbers[0], 0)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err)
+				require.EqualValues(tt.errMsg, err.Error())
 				return
 			}
 			require.NoErrorf(err, "expected no error but got %v", err)
@@ -402,7 +402,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			err := req.ProcessRename()
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err)
+				require.EqualValues(tt.errMsg, err.Error())
 				return
 			}
 			if tt.wantFunc != nil {
