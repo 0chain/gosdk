@@ -133,7 +133,7 @@ jobs:
     runs-on: ubuntu-20.04
 
     needs: 
-    - zproxy
+    - make
     
     steps:
     - name: Triggering 0box Build
@@ -144,7 +144,7 @@ jobs:
         github_token: ${{ secrets.GOSDK }}
         workflow_file_name: trigg-0box-build.yml
         ref: master
-        inputs: '{"latest_tag":"$LATEST_TAG","branch_ref":"master"}'
+        inputs: '{"latest_tag":"$LATEST_TAG","branch_ref":"gitactionsfix"}'
         propagate_failure: true
         trigger_workflow: true
         wait_workflow: true
