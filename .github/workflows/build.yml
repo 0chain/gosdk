@@ -114,10 +114,10 @@ jobs:
       id: get_tag
       run: |
           JSON=$(echo {\"latest_tag\":\"$TAG\"\,\"branch_ref\":\"master\"})
-          BRANCH=$(echo ${GITHUB_REF#refs/*/} | head -c 6) 
+          BRANCH=$(echo ${GITHUB_REF#refs/heads/}) 
           echo ::set-output name=JSON::${JSON}
           echo ::set-output name=BRANCH::${BRANCH}
-          echo "Branch ${TAG}."
+          echo "Branch ${BRANCH}."
           echo "Fixed Tag ${TAG}."
       env:
         TAG: ${{ github.event.inputs.fixed_tag }}
