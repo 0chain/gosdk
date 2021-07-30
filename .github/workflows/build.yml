@@ -113,7 +113,7 @@ jobs:
     - name:
       id: get_tag
       run: |
-          JSON=$(echo {\"latest_tag\":\"$TAG\","branch_ref":"gitactionsfix"})
+          JSON=$(echo {\"latest_tag\":\"$TAG\"\,\"branch_ref\":\"gitactionsfix\"})
           echo ::set-output name=JSON::${JSON}
       env:
         TAG: ${{ github.event.inputs.fixed_tag }}
