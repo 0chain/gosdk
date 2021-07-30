@@ -1,4 +1,4 @@
-name: GOSDK_RELEASE
+name: GOSDK_RELEASE_PROD
 
 on:
   workflow_dispatch:
