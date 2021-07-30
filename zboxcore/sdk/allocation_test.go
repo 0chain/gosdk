@@ -2723,7 +2723,7 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 				return nil
 			},
 			wantErr: true,
-			errMsg:  "transaction_not_found: Transaction was not found on any of the sharders: Sharder with url: Test_Sharder_Verify_Txn_FailedmockSharders/v1/transaction/get/confirmation?hash=dd407a1e0c5c66284445f93672b38dd7218112a7b4f68054e339c14912efadd5 responded with statusCode: 400: ",
+			errMsg:  "transaction_not_found: Transaction was not found on any of the sharders",
 		},
 		{
 			name: "Test_Max_Retried_Failed",
@@ -2782,7 +2782,7 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 			_, err := a.CommitFolderChange(tt.parameters.operation, tt.parameters.preValue, tt.parameters.currValue)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err.Error())
+				require.Contains(err.Error(), tt.errMsg)
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
