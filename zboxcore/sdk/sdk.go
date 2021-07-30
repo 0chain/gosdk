@@ -701,6 +701,34 @@ func GetBlobbers() (bs []*Blobber, err error) {
 	return wrap.Nodes, nil
 }
 
+func GetBlobberStakeTotals() (bs map[string]float64, err error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+
+	var b []byte
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getBlobberStakeTotals", nil,
+		nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "error requesting blobbers stake totals:")
+	}
+	if len(b) == 0 {
+		return nil, errors.New("empty response")
+	}
+
+	blobberTotals := struct {
+		Totals map[string]float64
+	}{
+		Totals: make(map[string]float64),
+	}
+
+	if err = json.Unmarshal(b, &blobberTotals); err != nil {
+		return nil, errors.Wrap(err, "error decoding response:")
+	}
+
+	return blobberTotals.Totals, nil
+}
+
 // GetBlobber instance.
 func GetBlobber(blobberID string) (blob *Blobber, err error) {
 	if !sdkInitialized {

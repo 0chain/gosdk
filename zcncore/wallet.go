@@ -82,6 +82,7 @@ const (
 	STORAGESC_GET_STAKE_POOL_INFO      = STORAGESC_PFX + "/getStakePoolStat"
 	STORAGESC_GET_STAKE_POOL_USER_INFO = STORAGESC_PFX + "/getUserStakePoolStat"
 	STORAGESC_GET_BLOBBERS             = STORAGESC_PFX + "/getblobbers"
+	STORAGESC_GET_BLOBBER_STAKE_TOTALS = STORAGESC_PFX + "/getBlobberStakeTotals"
 	STORAGESC_GET_BLOBBER              = STORAGESC_PFX + "/getBlobber"
 	STORAGESC_GET_WRITE_POOL_INFO      = STORAGESC_PFX + "/getWritePoolStat"
 )
@@ -138,6 +139,7 @@ const (
 	OpStorageSCGetBlobbers
 	OpStorageSCGetBlobber
 	OpStorageSCGetWritePoolInfo
+	OpStorageSCGetBlobberStakeTotals
 )
 
 // WalletCallback needs to be implmented for wallet creation.
@@ -1190,6 +1192,16 @@ func GetBlobber(blobberID string, cb GetInfoCallback) (err error) {
 		"blobber_id": blobberID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetBlobber, cb)
+	return
+}
+
+// GetBlobberStakeTotals gets a list of blobbers with stake totals.
+func GetBlobberStakeTotals(blobberID string, cb GetInfoCallback) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	var url = STORAGESC_GET_BLOBBER_STAKE_TOTALS
+	go getInfoFromSharders(url, OpStorageSCGetBlobberStakeTotals, cb)
 	return
 }
 
