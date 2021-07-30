@@ -4,18 +4,12 @@ on:
   workflow_dispatch:
     inputs:
       fixed_tag:
-        description: 'type yes for building with tag v0.0.0'
+        description: 'Type yes For Building With Tag v0.0.0'
         default: 'no'
         required: true
       version_tag:
-        description: 'Input tag Example - v1.2.2'
+        description: 'Input Tag Example - v1.2.2'
         required: true
-  push: 
-    tags:
-      - 'v*.*.*'
-
-env:
-  GITHUB_TOKEN: ${{ secrets.GOSDK }}
 
 jobs:
   build:
@@ -31,7 +25,7 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
 
-    - name: Get dependencies
+    - name: Get Dependencies
       run: |
         go get -v -t -d ./...
         if [ -f Gopkg.toml ]; then
@@ -71,12 +65,8 @@ jobs:
         
     - name: Create SDK
       run: go build -o sdkversion sdkversion.go
-      
-    - name: Creating zip for Artifacts
-      run: |
-        zip -r artifact.zip .
 
-    - name: Get Tag
+    - name: Get Branch
       id: get_version
       run: |
         VERSION=$(echo ${GITHUB_REF#refs/*/} | head -c 6) 
@@ -119,16 +109,169 @@ jobs:
   #   needs: 
   #   - make
     
-  #   steps:    
+  #   steps:
+  #   - name: Generating JSON for Input
+  #     id: get_tag
+  #     run: |
+  #         JSON=$(echo {\"latest_tag\":\"$TAG\"\,\"branch_ref\":\"gitactionsfix\"})
+  #         echo ::set-output name=JSON::${JSON}
+  #     env:
+  #       TAG: ${{ github.event.inputs.fixed_tag }}
+
   #   - name: Triggering 0proxy Build
   #     uses: convictional/trigger-workflow-and-wait@v1.3.0
   #     with:
   #       owner: 0chain
-  #       repo: 0proxy
+  #       repo: gosdk
   #       github_token: ${{ secrets.GOSDK }}
-  #       workflow_file_name: build.yml
-  #       ref: gitactionsfix
-  #       inputs: '{"latest_tag":"no"}'
+  #       workflow_file_name: trigg-0proxy-build.yml
+  #       ref: gitaction-fix
+  #       inputs: ${{ steps.get_tag.outputs.JSON }}
+  #       propagate_failure: true
+  #       trigger_workflow: true
+  #       wait_workflow: true
+        
+  # zbox:
+  #   name: Triggering 0box Build
+  #   runs-on: ubuntu-20.04
+
+  #   needs: 
+  #   - make
+    
+  #   steps:
+  #   - name: Generating JSON for Input
+  #     id: get_tag
+  #     run: |
+  #         JSON=$(echo {\"latest_tag\":\"$TAG\"\,\"branch_ref\":\"gitactionsfix\"})
+  #         echo ::set-output name=JSON::${JSON}
+  #     env:
+  #       TAG: ${{ github.event.inputs.fixed_tag }}
+
+  #   - name: Triggering 0box Build
+  #     uses: convictional/trigger-workflow-and-wait@v1.3.0
+  #     with:
+  #       owner: 0chain
+  #       repo: gosdk
+  #       github_token: ${{ secrets.GOSDK }}
+  #       workflow_file_name: trigg-0box-build.yml
+  #       ref: gitaction-fix
+  #       inputs: ${{ steps.get_tag.outputs.JSON }}
+  #       propagate_failure: true
+  #       trigger_workflow: true
+  #       wait_workflow: true
+        
+  # zdns:
+  #   name: Triggering 0dns Build
+  #   runs-on: ubuntu-20.04
+
+  #   needs: 
+  #   - make
+    
+  #   steps:
+  #   - name: Generating JSON for Input
+  #     id: get_tag
+  #     run: |
+  #         JSON=$(echo {\"latest_tag\":\"$TAG\"\,\"branch_ref\":\"gitactionsfix\"})
+  #         echo ::set-output name=JSON::${JSON}
+  #     env:
+  #       TAG: ${{ github.event.inputs.fixed_tag }}
+        
+  #   - name: Triggering 0dns Build
+  #     uses: convictional/trigger-workflow-and-wait@v1.3.0
+  #     with:
+  #       owner: 0chain
+  #       repo: gosdk
+  #       github_token: ${{ secrets.GOSDK }}
+  #       workflow_file_name: trigg-0dns-build.yml
+  #       ref: gitaction-fix
+  #       inputs: ${{ steps.get_tag.outputs.JSON }}
+  #       propagate_failure: true
+  #       trigger_workflow: true
+  #       wait_workflow: true
+        
+  # zblock:
+  #   name: Triggering 0block Build
+  #   runs-on: ubuntu-20.04
+
+  #   needs: 
+  #   - make
+    
+  #   steps:
+  #   - name: Generating JSON for Input
+  #     id: get_tag
+  #     run: |
+  #         JSON=$(echo {\"latest_tag\":\"$TAG\"\,\"branch_ref\":\"gitactionsfix\"})
+  #         echo ::set-output name=JSON::${JSON}
+  #     env:
+  #       TAG: ${{ github.event.inputs.fixed_tag }}
+        
+  #   - name: Triggering 0block Build
+  #     uses: convictional/trigger-workflow-and-wait@v1.3.0
+  #     with:
+  #       owner: 0chain
+  #       repo: gosdk
+  #       github_token: ${{ secrets.GOSDK }}
+  #       workflow_file_name: trigg-0block-build.yml
+  #       ref: gitaction-fix
+  #       inputs: ${{ steps.get_tag.outputs.JSON }}
+  #       propagate_failure: true
+  #       trigger_workflow: true
+  #       wait_workflow: true
+        
+  # zsearch:
+  #   name: Triggering 0search Build
+  #   runs-on: ubuntu-20.04
+
+  #   needs: 
+  #   - make
+    
+  #   steps:
+  #   - name: Generating JSON for Input
+  #     id: get_tag
+  #     run: |
+  #         JSON=$(echo {\"latest_tag\":\"$TAG\"\,\"branch_ref\":\"gitactionsfix\"})
+  #         echo ::set-output name=JSON::${JSON}
+  #     env:
+  #       TAG: ${{ github.event.inputs.fixed_tag }}
+        
+  #   - name: Triggering 0search Build
+  #     uses: convictional/trigger-workflow-and-wait@v1.3.0
+  #     with:
+  #       owner: 0chain
+  #       repo: gosdk
+  #       github_token: ${{ secrets.GOSDK }}
+  #       workflow_file_name: trigg-0search-build.yml
+  #       ref: gitaction-fix
+  #       inputs: ${{ steps.get_tag.outputs.JSON }}
+  #       propagate_failure: true
+  #       trigger_workflow: true
+  #       wait_workflow: true
+        
+  # blobber:
+  #   name: Triggering blobber Build
+  #   runs-on: ubuntu-20.04
+
+  #   needs: 
+  #   - make
+    
+  #   steps:
+  #   - name: Generating JSON for Input
+  #     id: get_tag
+  #     run: |
+  #         JSON=$(echo {\"latest_tag\":\"$TAG\"\,\"branch_ref\":\"gitactionsfix\"})
+  #         echo ::set-output name=JSON::${JSON}
+  #     env:
+  #       TAG: ${{ github.event.inputs.fixed_tag }}
+        
+  #   - name: Triggering blobber Build
+  #     uses: convictional/trigger-workflow-and-wait@v1.3.0
+  #     with:
+  #       owner: 0chain
+  #       repo: gosdk
+  #       github_token: ${{ secrets.GOSDK }}
+  #       workflow_file_name: trigg-blobber-build.yml
+  #       ref: gitaction-fix
+  #       inputs: ${{ steps.get_tag.outputs.JSON }}
   #       propagate_failure: true
   #       trigger_workflow: true
   #       wait_workflow: true
