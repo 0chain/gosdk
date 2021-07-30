@@ -11,9 +11,6 @@ on:
         default: 'no'
         required: true
 
-env:
-  GITHUB_TOKEN: ${{ secrets.GOSDK }}
-
 jobs:        
   zproxy:
     name: Triggering 0proxy Build

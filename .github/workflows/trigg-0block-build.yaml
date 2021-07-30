@@ -11,9 +11,6 @@ on:
         default: 'no'
         required: true
 
-env:
-  GITHUB_TOKEN: ${{ secrets.GOSDK }}
-
 jobs:        
   zblock:
     name: Triggering 0block Build
@@ -40,8 +37,6 @@ jobs:
         propagate_failure: true
         trigger_workflow: true
         wait_workflow: true
-      env:
-        LATEST_TAG: ${{ github.event.inputs.latest_tag }}
 
     - name: Completing Trigger
       run: |
