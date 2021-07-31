@@ -171,7 +171,7 @@ func TestAttributesRequest_updateBlobberObjectAttributes(t *testing.T) {
 						require.EqualValues(t, expected, string(actual))
 					}
 					require.Error(t, err)
-					require.EqualValues(t, "EOF", err)
+					require.EqualValues(t, "EOF", err.Error())
 
 					return strings.HasPrefix(req.URL.Path, testName) &&
 						req.Method == "POST" &&
