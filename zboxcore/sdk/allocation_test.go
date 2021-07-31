@@ -199,7 +199,7 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit128(t *testing.T)
 	if err == nil {
 		t.Errorf("uploadOrUpdateFile() = expected error  but was %v", nil)
 	} else if err.Error() != expectedErr {
-		t.Errorf("uploadOrUpdateFile() = expected error message to be %v  but was %v", expectedErr, err)
+		t.Errorf("uploadOrUpdateFile() = expected error message to be %v  but was %v", expectedErr, err.Error())
 	}
 }
 
@@ -223,7 +223,7 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanExplicitLimit(t *testing.T) {
 	if err == nil {
 		t.Errorf("uploadOrUpdateFile() = expected error  but was %v", nil)
 	} else if err.Error() != expectedErr {
-		t.Errorf("uploadOrUpdateFile() = expected error message to be %v  but was %v", expectedErr, err)
+		t.Errorf("uploadOrUpdateFile() = expected error message to be %v  but was %v", expectedErr, err.Error())
 	}
 }
 

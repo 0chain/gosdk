@@ -165,7 +165,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 						require.EqualValues(t, expected, string(actual))
 					}
 					require.Error(t, err)
-					require.EqualValues(t, "EOF", err)
+					require.EqualValues(t, "EOF", err.Error())
 
 					return strings.HasPrefix(req.URL.Path, testName) &&
 						req.Method == "POST" &&
@@ -399,7 +399,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			err := req.ProcessCopy()
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, err)
+				require.EqualValues(tt.errMsg, err.Error())
 				return
 			}
 			if tt.wantFunc != nil {

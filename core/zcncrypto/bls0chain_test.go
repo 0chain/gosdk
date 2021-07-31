@@ -23,7 +23,7 @@ func TestSignatureScheme(t *testing.T) {
 	}
 	w, err := sigScheme.GenerateKeys()
 	if err != nil {
-		t.Fatalf("Generate Key failed %s", err)
+		t.Fatalf("Generate Key failed %s", err.Error())
 	}
 	if w.ClientID == "" || w.ClientKey == "" || len(w.Keys) != 1 || w.Mnemonic == "" {
 		t.Fatalf("Invalid keys generated")
@@ -81,7 +81,7 @@ func TestCombinedSignAndVerify(t *testing.T) {
 	sig0 := NewSignatureScheme("bls0chain")
 	err := sig0.SetPrivateKey(sk0)
 	if err != nil {
-		t.Fatalf("Set private key failed - %s", err)
+		t.Fatalf("Set private key failed - %s", err.Error())
 	}
 	signature, err := sig0.Sign(hash)
 	if err != nil {
@@ -91,7 +91,7 @@ func TestCombinedSignAndVerify(t *testing.T) {
 	sig1 := NewSignatureScheme("bls0chain")
 	err = sig1.SetPrivateKey(sk1)
 	if err != nil {
-		t.Fatalf("Set private key failed - %s", err)
+		t.Fatalf("Set private key failed - %s", err.Error())
 	}
 	addSig, err := sig1.Add(signature, hash)
 
@@ -110,7 +110,7 @@ func TestSplitKey(t *testing.T) {
 	sig0 := NewBLS0ChainScheme()
 	err := sig0.SetPrivateKey(primaryKeyStr)
 	if err != nil {
-		t.Fatalf("Set private key failed - %s", err)
+		t.Fatalf("Set private key failed - %s", err.Error())
 	}
 	hash := Sha3Sum256(data)
 	signature, err := sig0.Sign(hash)
@@ -120,7 +120,7 @@ func TestSplitKey(t *testing.T) {
 	numSplitKeys := int(2)
 	w, err := sig0.SplitKeys(numSplitKeys)
 	if err != nil {
-		t.Fatalf("Splitkeys key failed - %s", err)
+		t.Fatalf("Splitkeys key failed - %s", err.Error())
 	}
 	sigAggScheme := make([]BLS0ChainScheme, numSplitKeys)
 	for i := 0; i < numSplitKeys; i++ {

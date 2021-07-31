@@ -134,7 +134,7 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 						require.EqualValues(t, expected, string(actual))
 					}
 					require.Error(t, err)
-					require.EqualValues(t, "EOF", err)
+					require.EqualValues(t, "EOF", err.Error())
 
 					return req.URL.Path == "Test_Success"+zboxutil.FILE_META_ENDPOINT+mockAllocationTxId &&
 						req.URL.RawPath == "Test_Success"+zboxutil.FILE_META_ENDPOINT+mockAllocationTxId &&
