@@ -1,6 +1,7 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -46,4 +47,8 @@ func New(args ...string) *Error {
 
 func Newf(code string, format string, args ...interface{}) *Error {
 	return New(code, fmt.Sprintf(format, args...))
+}
+
+func Is(err error, target error) bool {
+	return errors.Is(err, target)
 }
