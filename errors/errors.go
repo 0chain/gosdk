@@ -43,3 +43,7 @@ func New(args ...string) *Error {
 
 	return &currentError
 }
+
+func Newf(code string, format string, args ...interface{}) *Error {
+	return New(code, fmt.Sprintf(format, args...))
+}
