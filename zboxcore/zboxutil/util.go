@@ -13,8 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/util"
+	zchainErrors "github.com/0chain/gosdk/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/h2non/filetype"
 )

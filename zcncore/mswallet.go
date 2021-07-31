@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	zchainErrors "github.com/0chain/gosdk/errors"
 	"github.com/pkg/errors"
 )
 

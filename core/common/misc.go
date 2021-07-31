@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	zchainErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/errors"
 )
 
 const tokenUnit = 10000000000.0

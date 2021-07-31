@@ -12,8 +12,8 @@ import (
 	"sync"
 	"testing"
 
-	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	zchainErrors "github.com/0chain/gosdk/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	zclient "github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"

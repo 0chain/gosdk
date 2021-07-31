@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
-	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/encryption"
+	zchainErrors "github.com/0chain/gosdk/errors"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"

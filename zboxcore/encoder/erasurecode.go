@@ -8,7 +8,7 @@ import (
 
 	"github.com/klauspost/reedsolomon"
 
-	zchainErrors "github.com/0chain/gosdk/core/common/errors"
+	zchainErrors "github.com/0chain/gosdk/errors"
 )
 
 type codec interface {

@@ -1,4 +1,4 @@
-module github.com/0chain/gosdk/core/common/errors
+module github.com/0chain/gosdk/errors
        
 go 1.16
 

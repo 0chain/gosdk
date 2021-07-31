@@ -5,8 +5,8 @@ import (
 	"encoding/hex"
 	"time"
 
-	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/encryption"
+	zchainErrors "github.com/0chain/gosdk/errors"
 	"github.com/pkg/errors"
 	"github.com/tyler-smith/go-bip39"
 	"golang.org/x/crypto/ed25519"

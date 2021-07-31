@@ -10,9 +10,7 @@ import (
 	"os"
 	"sync"
 
-	zchainErrors "github.com/0chain/gosdk/core/common/errors"
-	"github.com/pkg/errors"
-	"go.dedis.ch/kyber/v3/group/edwards25519"
+	zchainErrors "github.com/0chain/gosdk/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encoder"
@@ -21,6 +19,8 @@ import (
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/pkg/errors"
+	"go.dedis.ch/kyber/v3/group/edwards25519"
 )
 
 const (

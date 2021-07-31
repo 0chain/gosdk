@@ -14,11 +14,11 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
-	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	zchainErrors "github.com/0chain/gosdk/errors"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/pkg/errors"
 )
