@@ -55,6 +55,9 @@ func Newf(code string, format string, args ...interface{}) *Error {
 // }
 
 func Is(err error, target error) bool {
+	if err == nil {
+		return false
+	}
 	unWrappingError := err
 	for {
 		insideErr := errors.Unwrap(unWrappingError)
