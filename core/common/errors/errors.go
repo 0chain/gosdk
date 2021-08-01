@@ -59,7 +59,8 @@ func Is(err error, target *Error) bool {
 			return actualError.Code == target.Code
 		}
 	} else {
-		return pkgErrors.Is(err, target)
+		targetError := *target
+		return pkgErrors.As(err, &targetError)
 	}
 }
 
