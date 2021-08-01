@@ -1,9 +1,9 @@
 package errors
 
 import (
-	"errors"
 	"fmt"
-	"strings"
+
+	pkgErrors "github.com/pkg/errors"
 )
 
 /*Error type for a new application error */
@@ -50,31 +50,11 @@ func Newf(code string, format string, args ...interface{}) *Error {
 	return New(code, fmt.Sprintf(format, args...))
 }
 
-// func Is(err error, target error) bool {
-// 	return errors.Is(err, target)
-// }
-
-func Is(err error, target error) bool {
-	fmt.Printf("Is .......... 1 err => %v, target => %v\n", err, target)
-	if err == nil {
-		return false
+func Is(err error, target *Error) bool {
+	switch err := pkgErrors.Cause(err).(type) {
+	case *Error:
+		return err.Code == target.Code
+	default:
+		return pkgErrors.Is(err, target)
 	}
-	unWrappingError := err
-	for {
-		insideErr := errors.Unwrap(unWrappingError)
-		if insideErr == nil {
-			return false
-		} else if errors.Is(insideErr, target) || isError(unWrappingError, insideErr, target) {
-			return true
-		}
-
-		unWrappingError = insideErr
-	}
-}
-
-func isError(err error, unwrappedError error, target error) bool {
-
-	fmt.Printf("Is .......... 2 err => %v, unwrappedError => %v, target => %v\n", err, unwrappedError, target)
-
-	return strings.TrimRight(strings.TrimSpace(strings.ReplaceAll(err.Error(), unwrappedError.Error(), "")), ":") == target.Error()
 }
