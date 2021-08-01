@@ -61,11 +61,12 @@ func Is(err error, target error) bool {
 	unWrappingError := err
 	for {
 		insideErr := errors.Unwrap(unWrappingError)
-		if errors.Is(insideErr, target) || isError(unWrappingError, insideErr, target) {
-			return true
-		} else if insideErr == nil {
+		if insideErr == nil {
 			return false
+		} else if errors.Is(insideErr, target) || isError(unWrappingError, insideErr, target) {
+			return true
 		}
+
 		unWrappingError = insideErr
 	}
 }
