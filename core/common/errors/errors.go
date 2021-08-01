@@ -1,8 +1,8 @@
 package errors
 
 import (
-	"errors"
 	"fmt"
+	"strings"
 )
 
 /*Error type for a new application error */
@@ -58,8 +58,12 @@ func Is(err error, target *Error) bool {
 			return actualError.Code == target.Code
 		}
 	} else {
-		return errors.As(err, &target)
+		return is(err, target)
 	}
+}
+
+func is(err error, target *Error) bool {
+	return strings.Contains(strings.Trim(strings.Split(err.Error(), " ")[0], ":"), target.Code)
 }
 
 func isError(err error) *Error {
