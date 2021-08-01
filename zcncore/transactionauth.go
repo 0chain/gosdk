@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"time"
 
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
-	zchainErrors "github.com/0chain/gosdk/errors"
 	"github.com/pkg/errors"
 )
 

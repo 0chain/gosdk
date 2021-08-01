@@ -10,7 +10,7 @@ import (
 	"os"
 	"sync"
 
-	zchainErrors "github.com/0chain/gosdk/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encoder"

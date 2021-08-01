@@ -12,7 +12,7 @@ import (
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"go.uber.org/zap"
 
-	zchainErrors "github.com/0chain/gosdk/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/pkg/errors"

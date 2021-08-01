@@ -7,7 +7,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/marker"
 
-	zchainErrors "github.com/0chain/gosdk/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 )
 
 type AuthTicket struct {

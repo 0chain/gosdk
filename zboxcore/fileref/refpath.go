@@ -3,7 +3,7 @@ package fileref
 import (
 	"github.com/mitchellh/mapstructure"
 
-	zchainErrors "github.com/0chain/gosdk/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 )
 
 type ReferencePath struct {

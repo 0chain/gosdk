@@ -5,7 +5,7 @@ import (
 
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
-	zchainErrors "github.com/0chain/gosdk/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 )
 
 type UpdateFileChange struct {

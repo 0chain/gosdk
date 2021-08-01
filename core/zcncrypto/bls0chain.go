@@ -10,7 +10,7 @@ import (
 	"github.com/herumi/bls-go-binary/bls"
 	"github.com/tyler-smith/go-bip39"
 
-	zchainErrors "github.com/0chain/gosdk/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/pkg/errors"
 )
 

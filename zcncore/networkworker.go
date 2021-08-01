@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"time"
 
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/util"
-	zchainErrors "github.com/0chain/gosdk/errors"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 )

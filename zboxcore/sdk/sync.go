@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	zchainErrors "github.com/0chain/gosdk/errors"
+	zchainErrors "github.com/0chain/gosdk/core/common/errors"
 	"github.com/pkg/errors"
 
 	"github.com/0chain/gosdk/zboxcore/fileref"
