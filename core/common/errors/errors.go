@@ -1,9 +1,8 @@
 package errors
 
 import (
+	"errors"
 	"fmt"
-
-	pkgErrors "github.com/pkg/errors"
 )
 
 /*Error type for a new application error */
@@ -59,8 +58,7 @@ func Is(err error, target *Error) bool {
 			return actualError.Code == target.Code
 		}
 	} else {
-		targetError := *target
-		return pkgErrors.As(err, &targetError)
+		return errors.As(err, &target)
 	}
 }
 
