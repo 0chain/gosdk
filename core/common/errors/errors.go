@@ -50,6 +50,9 @@ func Newf(code string, format string, args ...interface{}) *Error {
 }
 
 func Is(err error, target *Error) bool {
+	if err == nil {
+		return false
+	}
 	actualError := isError(err)
 	if actualError != nil {
 		if actualError.Code == "" && target.Code == "" {
