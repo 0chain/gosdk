@@ -3,6 +3,8 @@ package errors
 import (
 	"fmt"
 	"strings"
+
+	"github.com/pkg/errors"
 )
 
 /*Error type for a new application error */
@@ -75,4 +77,11 @@ func isError(err error) *Error {
 		return t
 	}
 	return nil
+}
+
+func Wrap(err error, message string) error {
+	if err == nil {
+		err = errors.New("")
+	}
+	return errors.Wrap(err, message)
 }
