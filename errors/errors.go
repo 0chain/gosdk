@@ -3,6 +3,7 @@ package errors
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 /*Error type for a new application error */
@@ -49,6 +50,23 @@ func Newf(code string, format string, args ...interface{}) *Error {
 	return New(code, fmt.Sprintf(format, args...))
 }
 
+// func Is(err error, target error) bool {
+// 	return errors.Is(err, target)
+// }
+
 func Is(err error, target error) bool {
-	return errors.Is(err, target)
+	unWrappingError := err
+	for {
+		insideErr := errors.Unwrap(unWrappingError)
+		if errors.Is(insideErr, target) || isError(unWrappingError, insideErr, target) {
+			return true
+		} else if insideErr == nil {
+			return false
+		}
+		unWrappingError = insideErr
+	}
+}
+
+func isError(err error, unwrappedError error, target error) bool {
+	return strings.TrimRight(strings.TrimSpace(strings.ReplaceAll(err.Error(), unwrappedError.Error(), "")), ":") == target.Error()
 }
