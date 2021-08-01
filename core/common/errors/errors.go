@@ -53,6 +53,9 @@ func Newf(code string, format string, args ...interface{}) *Error {
 func Is(err error, target *Error) bool {
 	switch err := pkgErrors.Cause(err).(type) {
 	case *Error:
+		if err.Code == "" && target.Code == "" {
+			return err.Msg == target.Msg
+		}
 		return err.Code == target.Code
 	default:
 		return pkgErrors.Is(err, target)
