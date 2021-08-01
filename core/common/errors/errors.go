@@ -55,6 +55,7 @@ func Newf(code string, format string, args ...interface{}) *Error {
 // }
 
 func Is(err error, target error) bool {
+	fmt.Printf("Is .......... 1 err => %v, target => %v\n", err, target)
 	if err == nil {
 		return false
 	}
@@ -72,5 +73,8 @@ func Is(err error, target error) bool {
 }
 
 func isError(err error, unwrappedError error, target error) bool {
+
+	fmt.Printf("Is .......... 2 err => %v, unwrappedError => %v, target => %v\n", err, unwrappedError, target)
+
 	return strings.TrimRight(strings.TrimSpace(strings.ReplaceAll(err.Error(), unwrappedError.Error(), "")), ":") == target.Error()
 }
