@@ -17,9 +17,9 @@ import (
 )
 
 type ObjectTreeResult struct {
-	Page          int64               `json:"page"`
 	TotalPages    int64               `json:"total_pages"`
 	NewOffsetPath string              `json:"offsetPath"`
+	NewOffsetDate string              `json:"offsetDate"`
 	Refs          []ORef              `json:"refs"`
 	LatestWM      *marker.WriteMarker `json:"latest_write_marker"`
 }
@@ -32,7 +32,8 @@ type ObjectTreeRequest struct {
 	remotefilepath     string
 	pageLimit          int
 	level              int
-	_type              string
+	fileType           string
+	refType            string
 	offsetPath         string
 	updatedDate        string
 	offsetDate         string
@@ -42,27 +43,30 @@ type ObjectTreeRequest struct {
 	Consensus
 }
 
-type oTreeChan struct {
-	dataCh chan *ObjectTreeResult
-	errCh  chan error
+type oTreeResponse struct {
+	oTResult *ObjectTreeResult
+	err      error
 }
 
 //Paginated tree should not be collected as this will stall the client
 //It should rather be handled by application that uses gosdk
 func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	totalBlobbersCount := len(o.blobbers)
-	oTreeChans := make([]oTreeChan, totalBlobbersCount)
+	oTreeResponses := make([]oTreeResponse, totalBlobbersCount)
 	o.wg.Add(totalBlobbersCount)
+	Logger.Info(fmt.Sprintf("Total blobbers count: %v", totalBlobbersCount))
 	for i, blob := range o.blobbers {
 		Logger.Info(fmt.Sprintf("Getting file refs for path %v from blobber %v", o.remotefilepath, blob.Baseurl))
-		go o.getFileRefs(&oTreeChans[i], blob.Baseurl)
+		go o.getFileRefs(&oTreeResponses[i], blob.Baseurl)
 	}
+	Logger.Info("Before waiting")
 	o.wg.Wait()
+	Logger.Info("Reached this line")
 	//TODO Check for consensus and send the result
 	refsMap := make(map[string]map[string]interface{})
-	for _, oTreeChan := range oTreeChans {
-		oTreeResult := <-oTreeChan.dataCh
-		err := <-oTreeChan.errCh
+	for _, oTreeResponse := range oTreeResponses {
+		oTreeResult := oTreeResponse.oTResult
+		err := oTreeResponse.err
 
 		if err != nil {
 			continue
@@ -74,17 +78,18 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 			}
 		}
 	}
-	oTreeResult := <-oTreeChans[0].dataCh
-	err := <-oTreeChans[0].errCh
+	//Temporarily used for data feeding. Should check for above consensus
+	oTreeResult := oTreeResponses[0].oTResult
+	err := oTreeResponses[0].err
 
 	return oTreeResult, err
 }
 
-func (o *ObjectTreeRequest) getFileRefs(oTreechan *oTreeChan, bUrl string) {
+func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 	defer o.wg.Done()
-	oReq, err := zboxutil.NewRefsRequest(bUrl, o.allocationID, o.remotefilepath, o.offsetPath, o.updatedDate, o.offsetDate, o._type, o.level, o.pageLimit)
+	oReq, err := zboxutil.NewRefsRequest(bUrl, o.allocationID, o.remotefilepath, o.offsetPath, o.updatedDate, o.offsetDate, o.fileType, o.refType, o.level, o.pageLimit)
 	if err != nil {
-		oTreechan.errCh <- err
+		oTR.err = err
 		return
 	}
 	oResult := ObjectTreeResult{}
@@ -113,10 +118,11 @@ func (o *ObjectTreeRequest) getFileRefs(oTreechan *oTreeChan, bUrl string) {
 		return nil
 	})
 	if err != nil {
-		oTreechan.errCh <- err
+		oTR.err = err
 		return
 	}
-	oTreechan.dataCh <- &oResult
+	oTR.oTResult = &oResult
+	Logger.Info("Gottcha result")
 }
 
 type ORef struct {

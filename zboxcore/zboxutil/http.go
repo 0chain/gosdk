@@ -245,7 +245,7 @@ func NewObjectTreeRequest(baseUrl, allocation string, path string) (*http.Reques
 	return req, nil
 }
 
-func NewRefsRequest(baseUrl, allocationID, path, offsetPath, updateDate, offsetDate, _type string, level, pageLimit int) (*http.Request, error) {
+func NewRefsRequest(baseUrl, allocationID, path, offsetPath, updateDate, offsetDate, fileType, refType string, level, pageLimit int) (*http.Request, error) {
 	nUrl, err := url.Parse(baseUrl)
 	if err != nil {
 		return nil, err
@@ -257,7 +257,8 @@ func NewRefsRequest(baseUrl, allocationID, path, offsetPath, updateDate, offsetD
 	params.Add("pageLimit", strconv.Itoa(pageLimit))
 	params.Add("updateDate", updateDate)
 	params.Add("offsetDate", offsetDate)
-	params.Add("type", _type)
+	params.Add("type", fileType)
+	params.Add("refType", refType)
 	params.Add("level", strconv.Itoa(level))
 	nUrl.RawQuery = params.Encode()
 	req, err := http.NewRequest(http.MethodGet, nUrl.String(), nil)
