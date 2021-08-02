@@ -587,6 +587,26 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 	return
 }
 
+func GetMptKey(key string) (string, error) {
+	if !sdkInitialized {
+		return "", sdkNotInitialized
+	}
+
+	var b []byte
+	b, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
+		"/get_mpt_key", map[string]string{"key": key},
+		nil,
+	)
+	if err != nil {
+		return "", errors.Wrap(err, "error requesting challenge pool info:")
+	}
+	if len(b) == 0 {
+		return "", errors.New("empty response")
+	}
+
+	return string(b), nil
+}
+
 //
 // storage SC configurations and blobbers
 //
