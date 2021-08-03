@@ -33,7 +33,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 	for i := 0; i < numList; i++ {
 		go func(blobberIdx int) {
 			defer req.wg.Done()
-			err := req.createDirInBlobber(a.Blobbers[i])
+			err := req.createDirInBlobber(a.Blobbers[blobberIdx])
 			if err != nil {
 				Logger.Error(err.Error())
 				return
