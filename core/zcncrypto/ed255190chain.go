@@ -53,7 +53,7 @@ func (ed *ED255190chainScheme) GenerateKeys() (*Wallet, error) {
 	w.ClientID = encryption.Hash([]byte(public))
 	w.Mnemonic = ed.mnemonic
 	w.Version = CryptoVersion
-	w.DateCreated = time.Now().String()
+	w.DateCreated = time.Now().Format(time.RFC3339)
 	return w, nil
 }
 
