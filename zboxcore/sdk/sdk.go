@@ -587,9 +587,9 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 	return
 }
 
-func GetMptKey(key string) (string, error) {
+func GetMptData(key string) ([]byte, error) {
 	if !sdkInitialized {
-		return "", sdkNotInitialized
+		return nil, sdkNotInitialized
 	}
 
 	var b []byte
@@ -598,13 +598,13 @@ func GetMptKey(key string) (string, error) {
 		nil,
 	)
 	if err != nil {
-		return "", errors.Wrap(err, "error requesting challenge pool info:")
+		return nil, errors.Wrap(err, "error requesting challenge pool info:")
 	}
 	if len(b) == 0 {
-		return "", errors.New("empty response")
+		return nil, errors.New("empty response")
 	}
 
-	return string(b), nil
+	return b, nil
 }
 
 //
