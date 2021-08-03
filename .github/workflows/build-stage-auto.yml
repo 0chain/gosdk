@@ -1,4 +1,4 @@
-name: GOSDK_RELEASE_TEST
+name: GOSDK_RELEASE_STAGE
 
 on:
   workflow_dispatch:
@@ -116,7 +116,7 @@ jobs:
     - name: Generating JSON for Input
       id: get_tag
       run: |
-          JSON=$(echo {\"latest_tag\":\"$TAG\"\,\"branch_ref\":\"master\"})
+          JSON=$(echo {\"latest_tag\":\"no\"\,\"branch_ref\":\"staging\"})
           BRANCH=$(echo ${GITHUB_REF#refs/heads/}) 
           echo ::set-output name=JSON::${JSON}
           echo ::set-output name=BRANCH::${BRANCH}
@@ -127,7 +127,7 @@ jobs:
 
     - name: Triggering 0proxy Build
       uses: convictional/trigger-workflow-and-wait@v1.3.0
-      if: steps.get_tag.outputs.BRANCH == 'staging'
+      if: steps.get_tag.outputs.BRANCH == 'staging' && github.event.inputs.fixed_tag == 'yes'
       with:
         owner: 0chain
         repo: gosdk
@@ -150,7 +150,7 @@ jobs:
     - name: Generating JSON for Input
       id: get_tag
       run: |
-          JSON=$(echo {\"latest_tag\":\"$TAG\"\,\"branch_ref\":\"master\"})
+          JSON=$(echo {\"latest_tag\":\"no\"\,\"branch_ref\":\"staging\"})
           BRANCH=$(echo ${GITHUB_REF#refs/heads/}) 
           echo ::set-output name=JSON::${JSON}
           echo ::set-output name=BRANCH::${BRANCH}
@@ -161,7 +161,7 @@ jobs:
 
     - name: Triggering 0box Build
       uses: convictional/trigger-workflow-and-wait@v1.3.0
-      if: steps.get_tag.outputs.BRANCH == 'staging'
+      if: steps.get_tag.outputs.BRANCH == 'staging' && github.event.inputs.fixed_tag == 'yes'
       with:
         owner: 0chain
         repo: gosdk
@@ -184,7 +184,7 @@ jobs:
     - name: Generating JSON for Input
       id: get_tag
       run: |
-          JSON=$(echo {\"latest_tag\":\"$TAG\"\,\"branch_ref\":\"master\"})
+          JSON=$(echo {\"latest_tag\":\"no\"\,\"branch_ref\":\"staging\"})
           BRANCH=$(echo ${GITHUB_REF#refs/heads/}) 
           echo ::set-output name=JSON::${JSON}
           echo ::set-output name=BRANCH::${BRANCH}
@@ -195,7 +195,7 @@ jobs:
         
     - name: Triggering 0dns Build
       uses: convictional/trigger-workflow-and-wait@v1.3.0
-      if: steps.get_tag.outputs.BRANCH == 'staging'
+      if: steps.get_tag.outputs.BRANCH == 'staging' && github.event.inputs.fixed_tag == 'yes'
       with:
         owner: 0chain
         repo: gosdk
@@ -218,7 +218,7 @@ jobs:
     - name: Generating JSON for Input
       id: get_tag
       run: |
-          JSON=$(echo {\"latest_tag\":\"$TAG\"\,\"branch_ref\":\"master\"})
+          JSON=$(echo {\"latest_tag\":\"no\"\,\"branch_ref\":\"staging\"})
           BRANCH=$(echo ${GITHUB_REF#refs/heads/}) 
           echo ::set-output name=JSON::${JSON}
           echo ::set-output name=BRANCH::${BRANCH}
@@ -229,7 +229,7 @@ jobs:
         
     - name: Triggering 0block Build
       uses: convictional/trigger-workflow-and-wait@v1.3.0
-      if: steps.get_tag.outputs.BRANCH == 'staging'
+      if: steps.get_tag.outputs.BRANCH == 'staging' && github.event.inputs.fixed_tag == 'yes'
       with:
         owner: 0chain
         repo: gosdk
@@ -252,7 +252,7 @@ jobs:
     - name: Generating JSON for Input
       id: get_tag
       run: |
-          JSON=$(echo {\"latest_tag\":\"$TAG\"\,\"branch_ref\":\"master\"})
+          JSON=$(echo {\"latest_tag\":\"no\"\,\"branch_ref\":\"staging\"})
           BRANCH=$(echo ${GITHUB_REF#refs/heads/}) 
           echo ::set-output name=JSON::${JSON}
           echo ::set-output name=BRANCH::${BRANCH}
@@ -263,7 +263,7 @@ jobs:
         
     - name: Triggering 0search Build
       uses: convictional/trigger-workflow-and-wait@v1.3.0
-      if: steps.get_tag.outputs.BRANCH == 'staging'
+      if: steps.get_tag.outputs.BRANCH == 'staging' && github.event.inputs.fixed_tag == 'yes'
       with:
         owner: 0chain
         repo: gosdk
@@ -286,7 +286,7 @@ jobs:
     - name: Generating JSON for Input
       id: get_tag
       run: |
-          JSON=$(echo {\"latest_tag\":\"$TAG\"\,\"branch_ref\":\"master\"})
+          JSON=$(echo {\"latest_tag\":\"no\"\,\"branch_ref\":\"staging\"})
           BRANCH=$(echo ${GITHUB_REF#refs/heads/}) 
           echo ::set-output name=JSON::${JSON}
           echo ::set-output name=BRANCH::${BRANCH}
@@ -297,7 +297,7 @@ jobs:
         
     - name: Triggering blobber Build
       uses: convictional/trigger-workflow-and-wait@v1.3.0
-      if: steps.get_tag.outputs.BRANCH == 'staging'
+      if: steps.get_tag.outputs.BRANCH == 'staging' && github.event.inputs.fixed_tag == 'yes'
       with:
         owner: 0chain
         repo: gosdk
