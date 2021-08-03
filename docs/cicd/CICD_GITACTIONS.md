@@ -101,21 +101,21 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Steps are as follows:-<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1. Go to the gosdk repository.<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2. Click on the Actions to choose the workflow to run.<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3. Choose/Click the workflow i.e. TRIGGER_0PROXY. Click on the Run workflow.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3. Choose/Click the workflow i.e. GOSDK_RELEASE_PROD. Click on the Run workflow.<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Select the branch from where to trigger the build(Recommended/Default to be "master").<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input the branch of 0chain/0proxy repository for creating build.<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input no/yes for latest tag(Recommended/Default to be "no")<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input the branch of 0chain/gosdk repository for creating build.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input 'yes' for creating release with tag v0.0.0 & with current release version. If input is 'yes', it will trigger other repositories build with tag 'latest'. If input is 'no', it will only create the release of gosdk with current release version.<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4. Finally click on the Run Workflow.
-![0proxy](https://github.com/0chain/gosdk/blob/master/docs/cicd/workflow-prod.png "WorkFlow diagram for Staging")
+![0proxy](https://github.com/0chain/gosdk/blob/master/docs/cicd/workflow-prod.png "WorkFlow diagram for Production")
 
 ### For staging gosdk release from gosdk repo
 ![0proxy](https://github.com/0chain/gosdk/blob/master/docs/cicd/build-stage-auto.png "UML diagram for Staging")
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Steps are as follows:-<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1. Go to the gosdk repository.<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2. Click on the Actions to choose the workflow to run.<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3. Choose/Click the workflow i.e. TRIGGER_0PROXY. Click on the Run workflow.<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Select the branch from where to trigger the build(Recommended/Default to be "master").<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input the branch of 0chain/0proxy repository for creating build.<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input no/yes for latest tag(Recommended/Default to be "no")<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3. Choose/Click the workflow i.e. GOSDK_RELEASE_STAGE. Click on the Run workflow.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Select the branch from where to trigger the build(Recommended/Default to be "staging").<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input the branch of 0chain/gosdk repository for creating build.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input 'yes' for creating release with tag v1.1.1 & with current release version. If input is 'yes', it will trigger other repositories build with tag 'staging-commit'. If input is 'no', it will only create the release of gosdk with current release version.<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4. Finally click on the Run Workflow.
 ![0proxy](https://github.com/0chain/gosdk/blob/master/docs/cicd/workflow-stage.png "WorkFlow diagram for Staging")
