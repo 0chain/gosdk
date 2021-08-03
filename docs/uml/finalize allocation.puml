@@ -1,0 +1,12 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox alloc-fini" as cli
+collections gosdk
+
+cli -> cli: check allocation should not be finalized
+cli -> gosdk: FinalizeAllocation(allocID)
+
+gosdk -> gosdk: check initialized sdk
+gosdk -> gosdk: create smart contract txn data
+gosdk -> gosdk: send smart contract txn
+gosdk -> cli: return txn hash
+@enduml

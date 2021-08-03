@@ -1,0 +1,13 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox get-upload-cost" as cli
+collections gosdk
+
+cli -> gosdk: GetAllocation(allocID)
+
+cli -> cli: create new total cost 
+group for each BlobberDetails (BlobberAllocation, bidx)
+cli -> cli: calculate cost for blobber and add to total cost
+end
+cli -> cli: print out total cost corresponding to duration
+
+@enduml

@@ -1,7 +1,6 @@
 package sdk
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
@@ -9,9 +8,11 @@ import (
 	"io"
 	"math"
 	"os"
-	"strings"
 	"sync"
 
+	"go.dedis.ch/kyber/v3/group/edwards25519"
+
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encoder"
@@ -77,6 +78,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 		blockDownloadReq.remotefilepathhash = req.remotefilepathhash
 		blockDownloadReq.numBlocks = req.numBlocks
 		blockDownloadReq.rxPay = req.rxPay
+		blockDownloadReq.encryptedKey = req.encryptedKey
 		go AddBlockDownloadReq(blockDownloadReq)
 		//go obj.downloadBlobberBlock(&obj.blobbers[pos], pos, path, blockNum, rspCh, isPathHash, authTicket)
 		c++
@@ -115,27 +117,24 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 			//for blockNum := 0; blockNum < len(result.BlockChunks); blockNum++ {
 			for blockNum := 0; blockNum < downloadChunks; blockNum++ {
 				if len(req.encryptedKey) > 0 {
-					headerBytes := result.BlockChunks[blockNum][:(2 * 1024)]
-					headerBytes = bytes.Trim(headerBytes, "\x00")
-					headerString := string(headerBytes)
-					encMsg := &encryption.EncryptedMessage{}
-					encMsg.EncryptedData = result.BlockChunks[blockNum][(2 * 1024):]
-					headerChecksums := strings.Split(headerString, ",")
-					if len(headerChecksums) != 2 {
-						Logger.Error("Block has invalid header", req.blobbers[result.idx].Baseurl)
-						break
+					suite := edwards25519.NewBlakeSHA256Ed25519()
+					reEncMessage := &encryption.ReEncryptedMessage{
+						D1: suite.Point(),
+						D4: suite.Point(),
+						D5: suite.Point(),
 					}
-					encMsg.MessageChecksum, encMsg.OverallChecksum = headerChecksums[0], headerChecksums[1]
-					encMsg.EncryptedKey = encscheme.GetEncryptedKey()
-					if req.authTicket != nil {
-						encMsg.ReEncryptionKey = req.authTicket.ReEncryptionKey
-					}
-					decryptedBytes, err := encscheme.Decrypt(encMsg)
+					err := reEncMessage.Unmarshal(result.BlockChunks[blockNum])
 					if err != nil {
-						Logger.Error("Block decryption failed", req.blobbers[result.idx].Baseurl, err)
+						Logger.Error("ReEncrypted Block unmarshall failed", req.blobbers[result.idx].Baseurl, err)
 						break
 					}
-					shards[blockNum][result.idx] = decryptedBytes
+					decrypted, err := encscheme.ReDecrypt(reEncMessage)
+					if err != nil {
+						Logger.Error("Block redecryption failed", req.blobbers[result.idx].Baseurl, err)
+						break
+					}
+
+					shards[blockNum][result.idx] = decrypted
 				} else {
 					shards[blockNum][result.idx] = result.BlockChunks[blockNum]
 				}
@@ -158,12 +157,12 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 	}
 	erasureencoder, err := encoder.NewEncoder(req.datashards, req.parityshards)
 	if err != nil {
-		return []byte{}, fmt.Errorf("encoder init error %s", err.Error())
+		return []byte{}, errors.Wrap(err, "encoder init error")
 	}
 	for blockNum := 0; blockNum < decodeNumBlocks; blockNum++ {
 		data, err := erasureencoder.Decode(shards[blockNum], decodeLen[blockNum])
 		if err != nil {
-			return []byte{}, fmt.Errorf("Block decode error %s", err.Error())
+			return []byte{}, errors.Wrap(err, "Block decode error")
 		}
 		retData = append(retData, data...)
 	}
@@ -190,10 +189,12 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		ctx:                req.ctx,
 	}
 	listReq.authToken = req.authTicket
+	listReq.fullconsensus = req.fullconsensus
+	listReq.consensusThresh = req.consensusThresh
 	req.downloadMask, fileRef, _ = listReq.getFileConsensusFromBlobbers()
 	if req.downloadMask.Equals64(0) || fileRef == nil {
 		if req.statusCallback != nil {
-			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, fmt.Errorf("No minimum consensus for file meta data of file"))
+			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("No minimum consensus for file meta data of file"))
 		}
 		return
 	}
@@ -220,7 +221,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if err != nil {
 		if req.statusCallback != nil {
 			Logger.Error(err.Error())
-			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, fmt.Errorf("Can't create local file %s", err.Error()))
+			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.Wrap(err, "Can't create local file"))
 		}
 		return
 	}
@@ -259,7 +260,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		if err != nil {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, fmt.Errorf("Download failed for block %d. Error : %s", cnt+1, err.Error()))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", cnt+1)))
 			}
 			return
 		}
@@ -267,7 +268,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			req.isDownloadCanceled = false
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, fmt.Errorf("Download aborted by user"))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("Download aborted by user"))
 			}
 			return
 		}
@@ -277,7 +278,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		if err != nil {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, fmt.Errorf("Write file failed : %s", err.Error()))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.Wrap(err, "Write file failed"))
 			}
 			return
 		}
@@ -305,7 +306,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		if calcHash != expectedHash {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, fmt.Errorf("File content didn't match with uploaded file"))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("File content didn't match with uploaded file"))
 			}
 			return
 		}

@@ -9,8 +9,9 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
+	"strings"
 
+	"github.com/0chain/gosdk/core/common/errors"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 )
@@ -51,7 +52,7 @@ type ReKeyBytes struct {
 	R3Bytes []byte `json:"r3"`
 }
 
-type reEncryptedMessage struct {
+type ReEncryptedMessage struct {
 	D1 kyber.Point
 	D2 []byte
 	D3 []byte
@@ -113,6 +114,85 @@ func (u *PREEncryptedMessage) MarshalJSON() ([]byte, error) {
 		EncryptedKeyBytes: c1Bytes,
 		Alias:             (*Alias)(u),
 	})
+}
+
+func (reEncMsg *ReEncryptedMessage) Marshal() ([]byte, error) {
+	D1Bytes, err := reEncMsg.D1.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	D4Bytes, err := reEncMsg.D4.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	D5Bytes, err := reEncMsg.D5.MarshalBinary()
+	if err != nil {
+		return nil, err
+	}
+
+	headerBytes := make([]byte, 256)
+	// 44 + 88 + 44 + 44 => 220, so rest of the 36 bytes minus the commas are padding
+	header := base64.StdEncoding.EncodeToString(D1Bytes) + "," + base64.StdEncoding.EncodeToString(reEncMsg.D3)
+	header += "," + base64.StdEncoding.EncodeToString(D4Bytes) + "," + base64.StdEncoding.EncodeToString(D5Bytes)
+	copy(headerBytes, header)
+
+	return append(headerBytes, reEncMsg.D2...), nil
+}
+
+func (reEncMsg *ReEncryptedMessage) Unmarshal(data []byte) error {
+	headerBytes := data[:256]
+	headerBytes = bytes.Trim(headerBytes, "\x00")
+	encryptedData := data[256:]
+
+	headerString := string(headerBytes)
+	headerChecksums := strings.Split(headerString, ",")
+	if len(headerChecksums) != 4 {
+		return errors.New("Invalid data received for unmarsalling of reEncrypted data")
+	}
+
+	d1, d3, d4, d5 := headerChecksums[0], headerChecksums[1], headerChecksums[2], headerChecksums[3]
+
+	d1Bytes, err := base64.StdEncoding.DecodeString(d1)
+	if err != nil {
+		return err
+	}
+
+	d3Bytes, err := base64.StdEncoding.DecodeString(d3)
+	if err != nil {
+		return err
+	}
+
+	d4Bytes, err := base64.StdEncoding.DecodeString(d4)
+	if err != nil {
+		return err
+	}
+
+	d5Bytes, err := base64.StdEncoding.DecodeString(d5)
+	if err != nil {
+		return err
+	}
+
+	err = reEncMsg.D1.UnmarshalBinary(d1Bytes)
+	if err != nil {
+		return err
+	}
+
+	reEncMsg.D2 = encryptedData
+	reEncMsg.D3 = d3Bytes
+
+	err = reEncMsg.D4.UnmarshalBinary(d4Bytes)
+	if err != nil {
+		return err
+	}
+
+	err = reEncMsg.D5.UnmarshalBinary(d5Bytes)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (pre *PREEncryptionScheme) Initialize(mnemonic string) error {
@@ -286,6 +366,20 @@ func (pre *PREEncryptionScheme) SymEnc(group kyber.Group, message []byte, keyhas
 	return ctx.Bytes(), nil
 }
 
+func UnmarshallPublicKey(publicKey string) (kyber.Point, error) {
+	suite := edwards25519.NewBlakeSHA256Ed25519()
+	point := suite.Point()
+	decoded, err := base64.StdEncoding.DecodeString(publicKey)
+	if err != nil {
+		return nil, err
+	}
+	err = point.UnmarshalBinary([]byte(decoded))
+	if err != nil {
+		return nil, err
+	}
+	return point, nil
+}
+
 //---------------------------------Symmetric Decryption using AES with GCM mode---------------------------------
 func (pre *PREEncryptionScheme) SymDec(group kyber.Group, ctx []byte, keyhash []byte) ([]byte, error) {
 	len := 32 + 12
@@ -342,7 +436,7 @@ func (pre *PREEncryptionScheme) decrypt(encMsg *EncryptedMessage) ([]byte, error
 	alp := pre.hash6(g, C.TagA, pre.PrivateKey) // alp = H6(tagA,skA)
 	chk1 := pre.hash5(g, C.EncryptedKey, C.EncryptedData, C.MessageChecksum, alp)
 	if !bytes.Equal(chk1, C.OverallChecksum) { // Check if C4 = H5(C1,C2,C3,alp)
-		return nil, fmt.Errorf("Invalid Ciphertext in decrypt, C4 != H5")
+		return nil, errors.New("Invalid Ciphertext in decrypt, C4 != H5")
 	}
 	Ht := pre.hash1(pre.SuiteObj, pre.Tag, pre.PrivateKey) // Ht  = H1(tagA,skA)
 	T := g.Point().Sub(C.EncryptedKey, Ht)                 // T   = C1 - Ht
@@ -351,7 +445,7 @@ func (pre *PREEncryptionScheme) decrypt(encMsg *EncryptedMessage) ([]byte, error
 	if err2 == nil {
 		chk2 := pre.hash3(g, recmsg, T)
 		if !bytes.Equal(chk2, C.MessageChecksum) { // Check if C3 = H3(m,T)
-			return nil, fmt.Errorf("Invalid Ciphertext in decrypt, C3 != H3")
+			return nil, errors.New("Invalid Ciphertext in decrypt, C3 != H3")
 		} else {
 			//fmt.Println("First level ciphertext decrypted successfully")
 			return recmsg, nil
@@ -360,8 +454,17 @@ func (pre *PREEncryptionScheme) decrypt(encMsg *EncryptedMessage) ([]byte, error
 	return nil, err2
 }
 
+func (pre *PREEncryptionScheme) ReEncrypt(encMsg *EncryptedMessage, reGenKey string, clientPublicKey string) (*ReEncryptedMessage, error) {
+	key, err := UnmarshallPublicKey(clientPublicKey)
+	if err != nil {
+		return nil, err
+	}
+	return pre.reEncrypt(encMsg, reGenKey, key)
+}
+
 //-----------------------------------------------ReEncryption-------------------------------------------------
-func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey string) (*reEncryptedMessage, error) {
+//reencrypt the data, cancelling the previous encryption by using the new regenkey
+func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey string, clientPublicKey kyber.Point) (*ReEncryptedMessage, error) {
 	var g kyber.Group = pre.SuiteObj
 	s := pre.SuiteObj
 	C := &PREEncryptedMessage{}
@@ -389,15 +492,15 @@ func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey str
 		return nil, err
 	}
 
-	var reEncMsg = new(reEncryptedMessage)
+	var reEncMsg = new(ReEncryptedMessage)
 
 	chk1 := pre.hash5(g, C.EncryptedKey, C.EncryptedData, C.MessageChecksum, rk.R3)
 	if !bytes.Equal(chk1, C.OverallChecksum) { // Check if C4 = H5(C1,C2,C3,alp)
-		return nil, fmt.Errorf("Invalid Ciphertext in reEncrypt, C4 != H5")
+		return nil, errors.New("Invalid Ciphertext in reEncrypt, C4 != H5")
 	}
-	t := s.Scalar().Pick(s.RandomStream()) // Pick a random integer t
-	reEncMsg.D5 = s.Point().Mul(t, nil)    // D5    = tP
-	tXj := s.Point().Mul(t, pre.PublicKey) // tXj   = t.pkB
+	t := s.Scalar().Pick(s.RandomStream())   // Pick a random integer t
+	reEncMsg.D5 = s.Point().Mul(t, nil)      // D5    = tP
+	tXj := s.Point().Mul(t, clientPublicKey) // tXj   = t.pkB
 	reEncMsg.D1 = g.Point().Add(C.EncryptedKey, rk.R1)
 	reEncMsg.D2 = C.EncryptedData                                                // D2    = C2
 	reEncMsg.D3 = C.MessageChecksum                                              // D3    = C3
@@ -408,7 +511,7 @@ func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey str
 }
 
 //-----------------------------------------------ReDecryption-------------------------------------------------
-func (pre *PREEncryptionScheme) reDecrypt(D *reEncryptedMessage) ([]byte, error) {
+func (pre *PREEncryptionScheme) ReDecrypt(D *ReEncryptedMessage) ([]byte, error) {
 	s := pre.SuiteObj
 	tXj := s.Point().Mul(pre.PrivateKey, D.D5) // tXj   = skB.D5
 	var g kyber.Group = s
@@ -425,7 +528,7 @@ func (pre *PREEncryptionScheme) reDecrypt(D *reEncryptedMessage) ([]byte, error)
 	if err2 == nil {
 		chk2 := pre.hash3(g, recmsg, T)
 		if !bytes.Equal(chk2, D.D3) { // Check if D3 = H3(m,T)
-			return nil, fmt.Errorf("Invalid Ciphertext in reDecrypt, D3 != H3")
+			return nil, errors.New("Invalid Ciphertext in reDecrypt, D3 != H3")
 		} else {
 			return recmsg, nil
 		}
@@ -435,11 +538,11 @@ func (pre *PREEncryptionScheme) reDecrypt(D *reEncryptedMessage) ([]byte, error)
 
 func (pre *PREEncryptionScheme) Decrypt(encMsg *EncryptedMessage) ([]byte, error) {
 	if len(encMsg.ReEncryptionKey) > 0 {
-		reEncMsg, err := pre.reEncrypt(encMsg, encMsg.ReEncryptionKey)
+		reEncMsg, err := pre.reEncrypt(encMsg, encMsg.ReEncryptionKey, pre.PublicKey)
 		if err != nil {
 			return nil, err
 		}
-		decryptedMessage, err := pre.reDecrypt(reEncMsg)
+		decryptedMessage, err := pre.ReDecrypt(reEncMsg)
 		if err != nil {
 			return nil, err
 		}
@@ -460,6 +563,15 @@ func (pre *PREEncryptionScheme) GetEncryptedKey() string {
 
 func (pre *PREEncryptionScheme) GetPublicKey() (string, error) {
 	keyBytes, err := pre.PublicKey.MarshalBinary()
+	if err != nil {
+		return "", err
+	}
+	keyString := base64.StdEncoding.EncodeToString(keyBytes)
+	return keyString, nil
+}
+
+func (pre *PREEncryptionScheme) GetPrivateKey() (string, error) {
+	keyBytes, err := pre.PrivateKey.MarshalBinary()
 	if err != nil {
 		return "", err
 	}
