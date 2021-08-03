@@ -9,9 +9,11 @@
 &nbsp;&nbsp;&nbsp;&nbsp; [1.5 For 0search from gosdk repo.](#for-0search-from-gosdk-repo)<br />
 &nbsp;&nbsp;&nbsp;&nbsp; [1.6 For blobber from gosdk repo.](#for-blobber-from-gosdk-repo)<br />
 
+----
 ## Manual Trigger
-   
+
 ### For 0proxy from gosdk repo
+![picture alt](https://github.com/0chain/gosdk/blob/master/docs/cicd/trigg-0proxy-build.png "WorkFlow diagram for 0proxy")
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Steps are as follows:-<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1. Go to the gosdk repository.<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2. Click on the Actions to choose the workflow to run.<br />
@@ -20,9 +22,11 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input the branch of 0chain/0proxy repository for creating build.<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input no/yes for latest tag(Recommended/Default to be "no")<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4. Finally click on the Run Workflow.
+![picture alt](https://github.com/0chain/gosdk/blob/master/docs/cicd/workflow-0proxy.png "WorkFlow diagram for 0proxy")
 
-
+----
 ### For 0box from gosdk repo
+![picture alt](https://github.com/0chain/gosdk/blob/master/docs/cicd/trigg-0proxy-build.png "WorkFlow diagram for 0proxy")
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Steps are as follows:-<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1. Go to the gosdk repository.<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2. Click on the Actions to choose the workflow to run.<br />
@@ -31,9 +35,11 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input the branch of 0chain/0box repository for creating build.<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input no/yes for latest tag(Recommended/Default to be "no")<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4. Finally click on the Run Workflow.
+![picture alt](https://github.com/0chain/gosdk/blob/master/docs/cicd/workflow-0box.png "WorkFlow diagram for 0proxy")
 
-
+----
 ### For 0dns from gosdk repo
+![picture alt](https://github.com/0chain/gosdk/blob/master/docs/cicd/trigg-0proxy-build.png "WorkFlow diagram for 0proxy")
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Steps are as follows:-<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1. Go to the gosdk repository.<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2. Click on the Actions to choose the workflow to run.<br />
@@ -42,8 +48,11 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input the branch of 0chain/0dns repository for creating build.<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input no/yes for latest tag(Recommended/Default to be "no")<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4. Finally click on the Run Workflow.
+![picture alt](https://github.com/0chain/gosdk/blob/master/docs/cicd/workflow-0dns.png "WorkFlow diagram for 0proxy")
 
+----
 ### For 0block from gosdk repo
+![picture alt](https://github.com/0chain/gosdk/blob/master/docs/cicd/trigg-0proxy-build.png "WorkFlow diagram for 0proxy")
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Steps are as follows:-<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1. Go to the gosdk repository.<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2. Click on the Actions to choose the workflow to run.<br />
@@ -52,8 +61,11 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input the branch of 0chain/0block repository for creating build.<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input no/yes for latest tag(Recommended/Default to be "no")<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4. Finally click on the Run Workflow.
+![picture alt](https://github.com/0chain/gosdk/blob/master/docs/cicd/workflow-0block.png "WorkFlow diagram for 0proxy")
 
+----
 ### For 0search from gosdk repo
+![picture alt](https://github.com/0chain/gosdk/blob/master/docs/cicd/trigg-0proxy-build.png "WorkFlow diagram for 0proxy")
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Steps are as follows:-<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1. Go to the gosdk repository.<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2. Click on the Actions to choose the workflow to run.<br />
@@ -62,8 +74,11 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input the branch of 0chain/0search repository for creating build.<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input no/yes for latest tag(Recommended/Default to be "no")<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4. Finally click on the Run Workflow.
+![picture alt](https://github.com/0chain/gosdk/blob/master/docs/cicd/workflow-0search.png "WorkFlow diagram for 0proxy")
 
+----
 ### For blobber from gosdk repo
+![picture alt](https://github.com/0chain/gosdk/blob/master/docs/cicd/trigg-0proxy-build.png "WorkFlow diagram for 0proxy")
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Steps are as follows:-<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1. Go to the gosdk repository.<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2. Click on the Actions to choose the workflow to run.<br />
@@ -72,3 +87,4 @@
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input the branch of 0chain/blobber repository for creating build.<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input no/yes for latest tag(Recommended/Default to be "no")<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4. Finally click on the Run Workflow.
+![picture alt](https://github.com/0chain/gosdk/blob/master/docs/cicd/workflow-blobber.png "WorkFlow diagram for 0proxy")
