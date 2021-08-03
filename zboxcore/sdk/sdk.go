@@ -598,7 +598,7 @@ func GetMptData(key string) ([]byte, error) {
 		nil,
 	)
 	if err != nil {
-		return nil, errors.Wrap(err, "error requesting challenge pool info:")
+		return nil, errors.Wrap(err, "error requesting mpt key data:")
 	}
 	if len(b) == 0 {
 		return nil, errors.New("empty response")
