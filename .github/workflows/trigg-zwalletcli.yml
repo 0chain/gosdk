@@ -22,10 +22,12 @@ jobs:
     - name: Generating JSON for Input
       id: get_tag
       run: |
-          JSON=$(echo {\"latest_tag\":\"$TAG\"})
+          JSON=$(echo {\"fixed_tag\":\"$TAG\",\"version_tag\":\"$v_TAG\"})
+          BRANCH=$(echo ${GITHUB_REF#refs/heads/})
           echo ::set-output name=JSON::${JSON}
       env:
-        TAG: ${{ github.event.inputs.latest_tag }}
+        TAG: ${{ github.event.inputs.fixed_tag }}
+        v_TAG: ${{ github.event.inputs.version_tag }}
         
     - name: Triggering zwalletcli Build
       uses: convictional/trigger-workflow-and-wait@v1.3.0
@@ -47,4 +49,5 @@ jobs:
         BRANCH=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')
         SHORT_SHA=$(echo $GITHUB_SHA | head -c 8)
       env:
-        TAG: ${{ github.event.inputs.latest_tag }}
+        TAG: ${{ github.event.inputs.fixed_tag }}
+        v_TAG: ${{ github.event.inputs.version_tag }}

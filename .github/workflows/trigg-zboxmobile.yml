@@ -22,10 +22,11 @@ jobs:
     - name: Generating JSON for Input
       id: get_tag
       run: |
-          JSON=$(echo {\"latest_tag\":\"$TAG\"})
+          JSON=$(echo {\"fixed_tag\":\"$TAG\",\"version_tag\":\"$v_TAG\"})
           echo ::set-output name=JSON::${JSON}
       env:
-        TAG: ${{ github.event.inputs.latest_tag }}
+        TAG: ${{ github.event.inputs.fixed_tag }}
+        v_TAG: ${{ github.event.inputs.version_tag }}
         
     - name: Triggering zboxmobile Build
       uses: convictional/trigger-workflow-and-wait@v1.3.0
@@ -35,7 +36,6 @@ jobs:
         github_token: ${{ secrets.GOSDK }}
         workflow_file_name: build-zboxmobile.yml
         ref: ${{ github.event.inputs.branch_ref }}
-        fixed_tag: ${{ github.event.inputs.fixed_tag }} 
         inputs: ${{ steps.get_tag.outputs.JSON }}
         propagate_failure: true
         trigger_workflow: true
@@ -47,4 +47,5 @@ jobs:
         BRANCH=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g')
         SHORT_SHA=$(echo $GITHUB_SHA | head -c 8)
       env:
-        TAG: ${{ github.event.inputs.latest_tag }}
+        TAG: ${{ github.event.inputs.fixed_tag }}
+        v_TAG: ${{ github.event.inputs.version_tag }}
