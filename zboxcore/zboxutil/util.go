@@ -15,8 +15,8 @@ import (
 	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/google/uuid"
 	"github.com/h2non/filetype"
+	"github.com/lithammer/shortuuid/v3"
 )
 
 const EncryptedFolderName = "encrypted"
@@ -84,7 +84,7 @@ func GetFullRemotePath(localPath, remotePath string) string {
 
 // NewConnectionId generate new connection id
 func NewConnectionId() string {
-	return strings.Replace(uuid.New().String(), "-", "", -1)
+	return shortuuid.New()
 }
 
 func IsRemoteAbs(path string) bool {
