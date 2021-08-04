@@ -219,7 +219,7 @@ func makeWallet(privateKey, publicKey, mnemonic string) (string, error) {
 	w.ClientKey = publicKey
 	w.Mnemonic = mnemonic
 	w.Version = zcncrypto.CryptoVersion
-	w.DateCreated = time.Now().String()
+	w.DateCreated = time.Now().Format(time.RFC3339)
 
 	return w.Marshal()
 }

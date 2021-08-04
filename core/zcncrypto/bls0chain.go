@@ -86,7 +86,7 @@ func (b0 *BLS0ChainScheme) generateKeys(password string) (*Wallet, error){
 	w.ClientID = encryption.Hash(pub.Serialize())
 	w.Mnemonic = b0.Mnemonic
 	w.Version = CryptoVersion
-	w.DateCreated = time.Now().String()
+	w.DateCreated = time.Now().Format(time.RFC3339)
 
 	// Revert the Random function to default
 	bls.SetRandFunc(nil)
@@ -355,7 +355,7 @@ func (b0 *BLS0ChainScheme) SplitKeys(numSplits int) (*Wallet, error) {
 	w.ClientID = encryption.Hash(primarySk.GetPublicKey().Serialize())
 	w.Mnemonic = b0.Mnemonic
 	w.Version = CryptoVersion
-	w.DateCreated = time.Now().String()
+	w.DateCreated = time.Now().Format(time.RFC3339)
 
 	return w, nil
 }
