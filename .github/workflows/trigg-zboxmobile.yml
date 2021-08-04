@@ -22,11 +22,11 @@ jobs:
     - name: Generating JSON for Input
       id: get_tag
       run: |
-          JSON=$(echo {\"fixed_tag\":\"$TAG\",\"version_tag\":\"$v_TAG\"})
+          JSON=$(echo {\"fixed_tag\":\"$TAG\"\,\"version_tag\":\"$VERSION_TAG\"})
           echo ::set-output name=JSON::${JSON}
       env:
         TAG: ${{ github.event.inputs.fixed_tag }}
-        v_TAG: ${{ github.event.inputs.version_tag }}
+        VERSION_TAG: ${{ github.event.inputs.version_tag }}
         
     - name: Triggering zboxmobile Build
       uses: convictional/trigger-workflow-and-wait@v1.3.0
@@ -48,4 +48,4 @@ jobs:
         SHORT_SHA=$(echo $GITHUB_SHA | head -c 8)
       env:
         TAG: ${{ github.event.inputs.fixed_tag }}
-        v_TAG: ${{ github.event.inputs.version_tag }}
+        VERSION_TAG: ${{ github.event.inputs.version_tag }}
