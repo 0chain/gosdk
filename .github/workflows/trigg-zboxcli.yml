@@ -26,7 +26,7 @@ jobs:
           echo ::set-output name=JSON::${JSON}
       env:
         TAG: ${{ github.event.inputs.latest_tag }}
-        
+
     - name: Triggering zboxcli Build
       uses: convictional/trigger-workflow-and-wait@v1.3.0
       with:
@@ -35,6 +35,7 @@ jobs:
         github_token: ${{ secrets.GOSDK }}
         workflow_file_name: build-zboxcli.yml
         ref: ${{ github.event.inputs.branch_ref }} 
+        fixed_tag: ${{ github.event.inputs.fixed_tag }}
         inputs: ${{ steps.get_tag.outputs.JSON }}
         propagate_failure: true
         trigger_workflow: true

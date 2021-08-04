@@ -15,7 +15,7 @@ on:
         required: true
 jobs:        
   zboxmobile:
-    name: Triggering 0box Build
+    name: Triggering zboxmobile Build
     runs-on: ubuntu-20.04
     
     steps:
@@ -34,7 +34,8 @@ jobs:
         repo: zboxmobile
         github_token: ${{ secrets.GOSDK }}
         workflow_file_name: build-zboxmobile.yml
-        ref: ${{ github.event.inputs.branch_ref }} 
+        ref: ${{ github.event.inputs.branch_ref }}
+        fixed_tag: ${{ github.event.inputs.fixed_tag }} 
         inputs: ${{ steps.get_tag.outputs.JSON }}
         propagate_failure: true
         trigger_workflow: true
