@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       fixed_tag:
-        description: 'Type yes For Building With Tag v0.0.0'
+        description: 'Type yes For Building With Tag v0.0.0 & Trigger with latest Tag for all Dependent Repos.'
         default: 'no'
         required: true
       version_tag:
