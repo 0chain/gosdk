@@ -114,7 +114,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 			if blockChunksMax < len(result.BlockChunks) {
 				downloadChunks = blockChunksMax
 			}
-			//for blockNum := 0; blockNum < len(result.BlockChunks); blockNum++ {
+
 			for blockNum := 0; blockNum < downloadChunks; blockNum++ {
 				if len(req.encryptedKey) > 0 {
 					suite := edwards25519.NewBlakeSHA256Ed25519()
@@ -245,11 +245,8 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	startBlock := req.startBlock
 	endBlock := req.endBlock
 	numBlocks := req.numBlocks
-	//batchCount := (chunksPerShard + req.numBlocks - 1) / req.numBlocks
-	//for cnt := req.startBlock; cnt < req.endBlock; cnt += req.numBlocks {
-	for startBlock < endBlock {
-		//blockSize := int64(math.Min(float64(perShard-(cnt*fileref.CHUNK_SIZE)), fileref.CHUNK_SIZE))
 
+	for startBlock < endBlock {
 		cnt := startBlock
 		Logger.Info("Downloading block ", cnt+1)
 		if (startBlock + numBlocks) > endBlock {
@@ -272,7 +269,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			}
 			return
 		}
-		//fmt.Println("Length of decoded data:", len(data))
+
 		n := int64(math.Min(float64(size), float64(len(data))))
 		_, err = mW.Write(data[:n])
 		if err != nil {
