@@ -8,6 +8,9 @@
 &nbsp;&nbsp;&nbsp;&nbsp; [1.4 For 0block from gosdk repo.](#for-0block-from-gosdk-repo)<br />
 &nbsp;&nbsp;&nbsp;&nbsp; [1.5 For 0search from gosdk repo.](#for-0search-from-gosdk-repo)<br />
 &nbsp;&nbsp;&nbsp;&nbsp; [1.6 For blobber from gosdk repo.](#for-blobber-from-gosdk-repo)<br />
+&nbsp;&nbsp;&nbsp;&nbsp; [1.7 For zboxcli from gosdk repo.](#for-zboxcli-from-gosdk-repo)<br />
+&nbsp;&nbsp;&nbsp;&nbsp; [1.8 For zboxmobile from gosdk repo.](#for-zboxmobile-from-gosdk-repo)<br />
+&nbsp;&nbsp;&nbsp;&nbsp; [1.9 For zwalletcli from gosdk repo.](#for-zwalletcli-from-gosdk-repo)<br />
 [2. Auto Trigger](#auto-trigger)<br />
 &nbsp;&nbsp;&nbsp;&nbsp; [1.1 For production gosdk release from gosdk repo.](#for-production-gosdk-release-from-gosdk-repo)<br />
 &nbsp;&nbsp;&nbsp;&nbsp; [1.2 For staging gosdk release gosdk repo.](#for-staging-gosdk-release-from-gosdk-repo)<br />
@@ -93,6 +96,48 @@
 ![blobber](https://github.com/0chain/gosdk/blob/master/docs/cicd/workflow-blobber.png "WorkFlow diagram for blobber")
 
 ----
+
+### For zboxcli from gosdk repo
+![zboxcli](https://github.com/0chain/gosdk/blob/master/docs/cicd/trigg-blobber-build.png "UML diagram for zboxcli")
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Steps are as follows:-<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1. Go to the gosdk repository.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2. Click on the Actions to choose the workflow to run.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3. Choose/Click the workflow i.e. TRIGGER_ZBOXCLI. Click on the Run workflow.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Select the branch from where to trigger the build(Recommended/Default to be "master").<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input the branch of 0chain/zboxcli repository for creating build.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input yes For Building With Tag v0.0.0 from master & v1.1.1 from staging<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input the current release version for zboxcli (Input Tag Example - v1.2.2)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4. Finally click on the Run Workflow.
+![zboxcli](https://github.com/0chain/gosdk/blob/master/docs/cicd/workflow-blobber.png "WorkFlow diagram for zboxcli")
+
+----
+### For zboxmobile from gosdk repo
+![zboxmobile](https://github.com/0chain/gosdk/blob/master/docs/cicd/trigg-blobber-build.png "UML diagram for zboxmobile")
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Steps are as follows:-<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1. Go to the gosdk repository.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2. Click on the Actions to choose the workflow to run.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3. Choose/Click the workflow i.e. TRIGGER_ZBOXMOBILE. Click on the Run workflow.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Select the branch from where to trigger the build(Recommended/Default to be "master").<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input the branch of 0chain/zboxmobile repository for creating build.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input yes For Building With Tag v0.0.0 from master & v1.1.1 from staging<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input the current release version for zboxmobile(Input Tag Example - v1.2.2)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4. Finally click on the Run Workflow.
+![zboxmobile](https://github.com/0chain/gosdk/blob/master/docs/cicd/workflow-blobber.png "WorkFlow diagram for zboxmobile")
+
+----
+### For zwalletcli from gosdk repo
+![zwalletcli](https://github.com/0chain/gosdk/blob/master/docs/cicd/trigg-blobber-build.png "UML diagram for zwalletcli")
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Steps are as follows:-<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 1. Go to the gosdk repository.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 2. Click on the Actions to choose the workflow to run.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 3. Choose/Click the workflow i.e. TRIGGER_ZWALLETCLI. Click on the Run workflow.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Select the branch from where to trigger the build(Recommended/Default to be "master").<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input the branch of 0chain/zwalletcli repository for creating build.<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input yes For Building With Tag v0.0.0 from master & v1.1.1 from staging<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; NOTE: Input the current release version for zwalletcli(Input Tag Example - v1.2.2)<br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 4. Finally click on the Run Workflow.
+![zwalletcli](https://github.com/0chain/gosdk/blob/master/docs/cicd/workflow-blobber.png "WorkFlow diagram for zwalletcli")
+
 ----
 ## Auto Trigger
 
