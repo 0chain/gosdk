@@ -1336,13 +1336,12 @@ func (a *Allocation) GetMaxWriteReadFromBlobbers(blobbers []*BlobberAllocation) 
 		return 0, 0, notInitialized
 	}
 
-	blobbersCopy := blobbers
-	if len(blobbersCopy) == 0 {
+	if len(blobbers) == 0 {
 		return 0, 0, noBLOBBERS
 	}
 
 	maxWritePrice, maxReadPrice := 0.0, 0.0
-	for _, v := range blobbersCopy {
+	for _, v := range blobbers {
 		if v.Terms.WritePrice.ToToken() > maxWritePrice {
 			maxWritePrice = v.Terms.WritePrice.ToToken()
 		}
@@ -1385,13 +1384,8 @@ func (a *Allocation) GetMaxStorageCostFromBlobbers(size int64, blobbers []*Blobb
 	var cost common.Balance // total price for size / duration
 
 	for _, d := range blobbers {
-		fmt.Printf("write price for blobber %f datashards %d parity %d\n",
-			float64(d.Terms.WritePrice), a.DataShards, a.ParityShards)
-
 		cost += a.uploadCostForBlobber(float64(d.Terms.WritePrice), size,
 			a.DataShards, a.ParityShards)
-
-		fmt.Printf("Total cost %d\n", cost)
 	}
 
 	return cost.ToToken(), nil
