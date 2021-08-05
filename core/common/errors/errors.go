@@ -68,7 +68,11 @@ func Is(err error, target *Error) bool {
 }
 
 func is(err error, target *Error) bool {
-	return strings.Contains(strings.Trim(strings.Split(err.Error(), " ")[0], ":"), target.Code)
+	compareWith := target.Code
+	if compareWith == "" {
+		compareWith = target.Msg
+	}
+	return strings.Contains(strings.Trim(strings.Split(err.Error(), " ")[0], ":"), compareWith)
 }
 
 func isError(err error) *Error {
