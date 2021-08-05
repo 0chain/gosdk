@@ -5,6 +5,7 @@ require (
 	github.com/h2non/filetype v1.0.9
 	github.com/herumi/bls-go-binary v0.0.0-20191119080710-898950e1a520
 	github.com/klauspost/reedsolomon v1.9.11
+	github.com/lithammer/shortuuid/v3 v3.0.7
 	github.com/miguelmota/go-ethereum-hdwallet v0.0.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.1.2

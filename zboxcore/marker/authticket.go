@@ -12,7 +12,7 @@ type AuthTicket struct {
 	OwnerID         string `json:"owner_id"`
 	AllocationID    string `json:"allocation_id"`
 	FilePathHash    string `json:"file_path_hash"`
-	ContentHash     string `json:"content_hash"`
+	ActualFileHash  string `json:"actual_file_hash"`
 	FileName        string `json:"file_name"`
 	RefType         string `json:"reference_type"`
 	Expiration      int64  `json:"expiration"`
@@ -23,7 +23,7 @@ type AuthTicket struct {
 }
 
 func (rm *AuthTicket) GetHashData() string {
-	hashData := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v:%v:%v:%v:%v", rm.AllocationID, rm.ClientID, rm.OwnerID, rm.FilePathHash, rm.FileName, rm.RefType, rm.ReEncryptionKey, rm.Expiration, rm.Timestamp, rm.ContentHash, rm.Encrypted)
+	hashData := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v:%v:%v:%v:%v", rm.AllocationID, rm.ClientID, rm.OwnerID, rm.FilePathHash, rm.FileName, rm.RefType, rm.ReEncryptionKey, rm.Expiration, rm.Timestamp, rm.ActualFileHash, rm.Encrypted)
 	return hashData
 }
 
