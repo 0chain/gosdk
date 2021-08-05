@@ -1,21 +1,20 @@
 package sdk
 
 import (
-	"bytes"
 	"context"
-	"io/ioutil"
+	"encoding/json"
 	"math/bits"
-	"mime/multipart"
-	"net/http"
+	"strings"
 	"sync"
-	"time"
+
+	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
+	"github.com/0chain/gosdk/core/clients/blobberClient"
 
 	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 
 	. "github.com/0chain/gosdk/zboxcore/logger"
 )
@@ -43,63 +42,39 @@ func (ar *AttributesRequest) getObjectTreeFromBlobber(
 func (ar *AttributesRequest) updateBlobberObjectAttributes(
 	blobber *blockchain.StorageNode, blobberIdx int) (
 	re fileref.RefEntity, err error) {
+	var s strings.Builder
 
 	re, err = ar.getObjectTreeFromBlobber(ar.blobbers[blobberIdx])
 	if err != nil {
 		return
 	}
 
-	var (
-		body bytes.Buffer
-		form = multipart.NewWriter(&body)
-	)
+	remoteFilePathHash := fileref.GetReferenceLookup(ar.allocationID, ar.remotefilepath)
 
-	form.WriteField("connection_id", ar.connectionID)
-	form.WriteField("path", ar.remotefilepath)
-	form.WriteField("attributes", ar.attributes)
-
-	form.Close()
-
-	var httpreq *http.Request
-	httpreq, err = zboxutil.NewAttributesRequest(blobber.Baseurl,
-		ar.allocationTx, &body)
+	respRaw, err := blobberClient.UpdateObjectAttributes(blobber.Baseurl, &blobbergrpc.UpdateObjectAttributesRequest{
+		Path:         ar.remotefilepath,
+		PathHash:     remoteFilePathHash,
+		Allocation:   ar.allocationTx,
+		ConnectionId: ar.connectionID,
+		Attributes:   ar.attributes,
+	})
 	if err != nil {
-		Logger.Error(blobber.Baseurl,
-			"Error creating update attributes request", err)
+		Logger.Error("could not update object attributes from blobber -" + blobber.Baseurl + " - " + err.Error())
+		return
+	}
+	s.WriteString(string(respRaw))
+
+	updateBlobberObjectAttributesResult := &blobbergrpc.UpdateObjectAttributesResponse{}
+	err = json.Unmarshal(respRaw, updateBlobberObjectAttributesResult)
+	if err != nil {
+		Logger.Error(blobber.Baseurl, "Reading response: ", err)
 		return
 	}
 
-	httpreq.Header.Add("Content-Type", form.FormDataContentType())
-
-	var ctx, cncl = context.WithTimeout(ar.ctx, (time.Second * 30))
-	defer cncl()
-
-	err = zboxutil.HttpDo(ctx, cncl, httpreq,
-		func(resp *http.Response, err error) error {
-			if err != nil {
-				Logger.Error("Request error: ", err)
-				return err
-			}
-			defer resp.Body.Close()
-
-			if resp.StatusCode == http.StatusOK {
-				ar.consensus++
-				ar.attributesMask |= (1 << uint32(blobberIdx))
-				Logger.Info(blobber.Baseurl, " "+ar.remotefilepath,
-					" attributes updated.")
-				return nil
-			}
-
-			var respBody []byte
-			if respBody, err = ioutil.ReadAll(resp.Body); err != nil {
-				Logger.Error(blobber.Baseurl, "Reading response: ", err)
-				return nil
-			}
-
-			Logger.Error(blobber.Baseurl, "Response error: ",
-				string(respBody))
-			return nil
-		})
+	ar.consensus++
+	ar.attributesMask |= (1 << uint32(blobberIdx))
+	Logger.Info(blobber.Baseurl, " "+ar.remotefilepath,
+		" attributes updated.")
 
 	return
 }
