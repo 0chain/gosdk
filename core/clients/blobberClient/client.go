@@ -272,15 +272,15 @@ func CalculateHash(url string, req *blobbergrpc.CalculateHashRequest) ([]byte, e
 	return json.Marshal(convert.GetCalculateHashResponseHandler(calculateHashResp))
 }
 
-func RenameObject(url string, req *blobbergrpc.RenameObjectRequest) ([]byte, error) {
+func RenameObject(url string, req *blobbergrpc.RenameObjectRequest) (err error) {
 	blobberClient, err := newBlobberGRPCClient(url)
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	clientSignature, err := client.Sign(encryption.Hash(req.Allocation))
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
@@ -289,10 +289,9 @@ func RenameObject(url string, req *blobbergrpc.RenameObjectRequest) ([]byte, err
 		blobbercommon.ClientSignatureHeader: clientSignature,
 	}))
 
-	renameObjectResp, err := blobberClient.RenameObject(grpcCtx, req)
+	_, err = blobberClient.RenameObject(grpcCtx, req)
 	if err != nil {
-		return nil, err
+		return
 	}
-
-	return json.Marshal(convert.RenameObjectResponseCreator(renameObjectResp))
+	return
 }

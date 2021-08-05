@@ -909,14 +909,13 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			_, err = RenameObject(BlobberAddr, tc.input)
+			err = RenameObject(BlobberAddr, tc.input)
 			if err != nil {
 				if !tc.expectingError {
 					t.Fatal(err)
 				}
 				continue
 			}
-
 			if tc.expectingError {
 				t.Fatal("expected error")
 			}
