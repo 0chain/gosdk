@@ -895,6 +895,18 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 				expectedPath:   "/",
 				expectingError: false,
 			},
+			{
+				name: "Failed",
+				input: &blobbergrpc.RenameObjectRequest{
+					Path:         "",
+					PathHash:     "",
+					Allocation:   "",
+					ConnectionId: "",
+					NewName:      "",
+				},
+				expectedPath:   "/",
+				expectingError: false,
+			},
 		}
 
 		for _, tc := range testCases {
@@ -909,7 +921,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			err = RenameObject(BlobberAddr, tc.input)
+			_, err = RenameObject(BlobberAddr, tc.input)
 			if err != nil {
 				if !tc.expectingError {
 					t.Fatal(err)

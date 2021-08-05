@@ -38,7 +38,7 @@ func (req *RenameRequest) renameBlobberObject(blobber *blockchain.StorageNode, b
 		return nil, err
 	}
 
-	err = blobberClient.RenameObject(blobber.Baseurl, &blobbergrpc.RenameObjectRequest{
+	_, err = blobberClient.RenameObject(blobber.Baseurl, &blobbergrpc.RenameObjectRequest{
 		Path:         req.remotefilepath,
 		Allocation:   req.allocationTx,
 		ConnectionId: req.connectionID,
