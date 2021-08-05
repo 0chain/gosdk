@@ -905,7 +905,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 					NewName:      "",
 				},
 				expectedPath:   "/",
-				expectingError: false,
+				expectingError: true,
 			},
 		}
 
