@@ -916,6 +916,7 @@ func main() {
 	js.Global().Set("EthToTokens", js.FuncOf(EthToTokens))
 	js.Global().Set("GTokensToEth", js.FuncOf(GTokensToEth))
 	js.Global().Set("GEthToTokens", js.FuncOf(GEthToTokens))
+	js.Global().Set("GetEthBalance", js.FuncOf(GetEthBalance))
 	js.Global().Set("ConvertZcnTokenToETH", js.FuncOf(ConvertZcnTokenToETH))
 	js.Global().Set("SuggestEthGasPrice", js.FuncOf(SuggestEthGasPrice))
 	js.Global().Set("TransferEthTokens", js.FuncOf(TransferEthTokens))
