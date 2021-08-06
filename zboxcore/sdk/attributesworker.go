@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
+	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobberhttp"
 	"github.com/0chain/gosdk/core/clients/blobberClient"
 
 	"github.com/0chain/gosdk/core/common/errors"
@@ -64,7 +65,7 @@ func (ar *AttributesRequest) updateBlobberObjectAttributes(
 	}
 	s.WriteString(string(respRaw))
 
-	updateBlobberObjectAttributesResult := &blobbergrpc.UpdateObjectAttributesResponse{}
+	updateBlobberObjectAttributesResult := &blobberhttp.UpdateObjectAttributesResponse{}
 	err = json.Unmarshal(respRaw, updateBlobberObjectAttributesResult)
 	if err != nil {
 		Logger.Error(blobber.Baseurl, "Reading response: ", err)
