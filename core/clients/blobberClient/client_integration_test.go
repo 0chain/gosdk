@@ -902,7 +902,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 				expectingError: false,
 			},
 			{
-				name: "Success",
+				name: "Failed",
 				input: &blobbergrpc.UpdateObjectAttributesRequest{
 					Path:         "",
 					PathHash:     "",
