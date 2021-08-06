@@ -224,7 +224,6 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 			continue
 		} else {
 			if response.StatusCode != 200 {
-				customError = errors.Wrap(customError, err)
 				continue
 			}
 			contents := response.Body
