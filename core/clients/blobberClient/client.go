@@ -4,14 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
 	"net"
 	"net/url"
+
+	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
 
 	"google.golang.org/grpc/encoding/gzip"
 
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/convert"
 	blobbercommon "github.com/0chain/blobber/code/go/0chain.net/core/common"
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"google.golang.org/grpc"
@@ -269,4 +271,27 @@ func CalculateHash(url string, req *blobbergrpc.CalculateHashRequest) ([]byte, e
 	}
 
 	return json.Marshal(convert.GetCalculateHashResponseHandler(calculateHashResp))
+}
+func CopyObject(url string, req *blobbergrpc.CopyObjectRequest) ([]byte, error) {
+	blobberClient, err := newBlobberGRPCClient(url)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create blobber grpc client")
+	}
+
+	clientSignature, err := client.Sign(encryption.Hash(req.Allocation))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to generate client signature")
+	}
+
+	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
+		blobbercommon.ClientHeader:          client.GetClientID(),
+		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
+		blobbercommon.ClientSignatureHeader: clientSignature,
+	}))
+
+	copyObjectResponse, err := blobberClient.CopyObject(grpcCtx, req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to CopyObject")
+	}
+	return json.Marshal(convert.CopyObjectResponseHandler(copyObjectResponse))
 }
