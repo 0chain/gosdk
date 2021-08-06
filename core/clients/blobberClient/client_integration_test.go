@@ -4,13 +4,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"testing"
 	"time"
+
+	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
 
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobberhttp"
 
@@ -855,6 +856,89 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 
 			if tc.expectingError {
 				t.Fatal("expected error")
+			}
+		}
+	})
+
+	t.Run("TestCopyObject", func(t *testing.T) {
+		pubKey, privKey, _ := GeneratePubPrivateKey(t)
+		allocationTx := randString(32)
+
+		pubKeyBytes, _ := hex.DecodeString(pubKey)
+		clientId := encryption.Hash(pubKeyBytes)
+
+		err := tdController.ClearDatabase()
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = tdController.AddCopyObjectData(allocationTx, pubKey, clientId)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		testCases := []struct {
+			name            string
+			clientHeader    string
+			input           *blobbergrpc.CopyObjectRequest
+			expectedMessage string
+			expectingError  bool
+		}{
+			{
+				name: "Success",
+				input: &blobbergrpc.CopyObjectRequest{
+					Path:         "/some_file",
+					PathHash:     "exampleId:examplePath",
+					Allocation:   allocationTx,
+					ConnectionId: "connection_id",
+					Dest:         "/copy",
+				},
+				expectedMessage: "some_file",
+				expectingError:  false,
+			},
+			{
+				name: "Failed",
+				input: &blobbergrpc.CopyObjectRequest{
+					Path:         "",
+					PathHash:     "",
+					Allocation:   "",
+					ConnectionId: "",
+					Dest:         "",
+				},
+				expectedMessage: "",
+				expectingError:  true,
+			},
+		}
+
+		for _, tc := range testCases {
+			clientRaw, _ := json.Marshal(client.Client{Wallet: &zcncrypto.Wallet{
+				ClientID:  clientId,
+				ClientKey: pubKey,
+				Keys:      []zcncrypto.KeyPair{{PublicKey: pubKey, PrivateKey: privKey}},
+			}})
+
+			err := client.PopulateClient(string(clientRaw), signScheme)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			response, err := CopyObject(BlobberAddr, tc.input)
+			if err != nil {
+				if !tc.expectingError {
+					t.Fatal(err)
+				}
+				continue
+			}
+			if tc.expectingError {
+				t.Fatal("expected error")
+			}
+
+			copyResponseResult := &blobberhttp.UploadResult{}
+			err = json.Unmarshal(response, copyResponseResult)
+			if err != nil {
+				t.Fatal("failed!")
+			}
+			if copyResponseResult.Filename != tc.expectedMessage {
+				t.Fatal("failed!")
 			}
 		}
 	})
