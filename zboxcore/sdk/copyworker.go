@@ -1,22 +1,21 @@
 package sdk
 
 import (
-	"bytes"
 	"context"
-	"io/ioutil"
+	"encoding/json"
 	"math/bits"
-	"mime/multipart"
-	"net/http"
+	"strings"
 	"sync"
-	"time"
 
+	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
+	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobberhttp"
+	"github.com/0chain/gosdk/core/clients/blobberClient"
 	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	. "github.com/0chain/gosdk/zboxcore/logger"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type CopyRequest struct {
@@ -41,46 +40,33 @@ func (req *CopyRequest) copyBlobberObject(blobber *blockchain.StorageNode, blobb
 	if err != nil {
 		return nil, err
 	}
+	var s strings.Builder
+	remoteFilePathHash := fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
-
-	_ = formWriter.WriteField("connection_id", req.connectionID)
-	formWriter.WriteField("path", req.remotefilepath)
-	formWriter.WriteField("dest", req.destPath)
-
-	formWriter.Close()
-	httpreq, err := zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationTx, body)
-	if err != nil {
-		Logger.Error(blobber.Baseurl, "Error creating rename request", err)
-		return nil, err
-	}
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	Logger.Info(httpreq.URL.Path)
-	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("Copy : ", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == http.StatusOK {
-			resp_body, _ := ioutil.ReadAll(resp.Body)
-			Logger.Info("copy resp:", string(resp_body))
-			req.consensus++
-			req.copyMask |= (1 << uint32(blobberIdx))
-			Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " copied.")
-		} else {
-			resp_body, err := ioutil.ReadAll(resp.Body)
-			if err == nil {
-				Logger.Error(blobber.Baseurl, "Response: ", string(resp_body))
-			}
-		}
-		return nil
+	respRaw, err := blobberClient.CopyObject(blobber.Baseurl, &blobbergrpc.CopyObjectRequest{
+		Path:         req.remotefilepath,
+		PathHash:     remoteFilePathHash,
+		Allocation:   req.allocationTx,
+		ConnectionId: req.connectionID,
+		Dest:         req.destPath,
 	})
+
+	if err != nil {
+		Logger.Error("could not copy object-" + blobber.Baseurl + " - " + err.Error())
+		return nil, err
+	}
+	s.WriteString(string(respRaw))
+
+	copyObjectResult := &blobberhttp.UploadResult{}
+	err = json.Unmarshal(respRaw, copyObjectResult)
 	if err != nil {
 		return nil, err
 	}
+	Logger.Info("copy resp:", copyObjectResult)
+	req.consensus++
+	req.copyMask |= (1 << uint32(blobberIdx))
+	Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " copied.")
+
 	return refEntity, nil
 }
 

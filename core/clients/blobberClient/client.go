@@ -272,6 +272,7 @@ func CalculateHash(url string, req *blobbergrpc.CalculateHashRequest) ([]byte, e
 
 	return json.Marshal(convert.GetCalculateHashResponseHandler(calculateHashResp))
 }
+
 func CopyObject(url string, req *blobbergrpc.CopyObjectRequest) ([]byte, error) {
 	blobberClient, err := newBlobberGRPCClient(url)
 	if err != nil {
