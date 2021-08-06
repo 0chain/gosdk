@@ -44,6 +44,12 @@ func strToBlob(s string) sdk.Blobber {
 	return b
 }
 
+func InitAuthTicket(this js.Value, p []js.Value) interface{} {
+	authTicket := p[0].String()
+	result = sdk.InitAuthTicket(authTicket)
+	return result
+}
+
 func ZBOXSetLogLevel(this js.Value, p []js.Value) interface{} {
 	logLevel, _ := strconv.Atoi(p[0].String())
 
@@ -340,6 +346,12 @@ func ZBOXGetAllocation(this js.Value, p []js.Value) interface{} {
 		return err
 	}
 	return result
+}
+
+func SetNumBlockDownloads(this js.Value, p []js.Value) interface{} {
+	num, _ := strconv.ParseInt(p[0].String(), 10, 64)
+	sdk.SetNumBlockDownloads(num)
+	return nil
 }
 
 func ZBOXGetAllocations(this js.Value, p []js.Value) interface{} {
