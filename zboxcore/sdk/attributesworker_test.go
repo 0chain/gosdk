@@ -76,7 +76,7 @@ func TestAttributesRequest_updateBlobberObjectAttributes(t *testing.T) {
 				}, nil)
 			},
 			wantErr: true,
-			errMsg:  "400: Object tree error response: Body:  ",
+			errMsg:  "400: Object tree error response: Body:",
 		},
 		{
 			name: "Test_Update_Blobber_Object_Attributes_Failed",

@@ -75,7 +75,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 				}, nil)
 			},
 			wantErr: true,
-			errMsg:  "400: Object tree error response: Body:  ",
+			errMsg:  "400: Object tree error response: Body:",
 		},
 		{
 			name: "Test_Copy_Blobber_Object_Failed",

@@ -2579,7 +2579,7 @@ func TestAllocation_CancelUpload(t *testing.T) {
 		{
 			name:    "Test_Failed",
 			wantErr: true,
-			errMsg:  "local_path_not_found: Invalid path. No upload in progress for the path ",
+			errMsg:  "local_path_not_found: Invalid path. No upload in progress for the path",
 		},
 		{
 			name: "Test_Success",
@@ -2629,7 +2629,7 @@ func TestAllocation_CancelDownload(t *testing.T) {
 		{
 			name:    "Test_Failed",
 			wantErr: true,
-			errMsg:  "local_path_not_found: Invalid path. No upload in progress for the path ",
+			errMsg:  "local_path_not_found: Invalid path. No upload in progress for the path",
 		},
 		{
 			name: "Test_Success",
