@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -210,7 +210,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					rspData.RawData = response
 					if len(req.encryptedKey) > 0 {
 						// 256 for the additional header bytes,  where chunk_size - 2 * 1024 is the encrypted data size
-						chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE - 2 * 1024 + 256)
+						chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE-2*1024+256)
 						rspData.BlockChunks = chunks
 					} else {
 						chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)

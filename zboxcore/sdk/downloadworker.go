@@ -12,7 +12,7 @@ import (
 
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encoder"

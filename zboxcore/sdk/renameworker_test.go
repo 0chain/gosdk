@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	zclient "github.com/0chain/gosdk/zboxcore/client"

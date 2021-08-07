@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 )
 
 const tokenUnit = 10000000000.0
