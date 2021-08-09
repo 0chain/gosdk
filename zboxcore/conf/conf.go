@@ -4,7 +4,6 @@ package conf
 
 import (
 	"errors"
-	"fmt"
 	"net/url"
 	"os"
 	"path"
@@ -136,8 +135,7 @@ func getConfigDir() string {
 	// Find home directory.
 	home, err := homedir.Dir()
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		panic(err)
 	}
 	configDir = home + string(os.PathSeparator) + ".zcn"
 
