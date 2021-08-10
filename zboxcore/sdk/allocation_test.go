@@ -2725,7 +2725,7 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 				return nil
 			},
 			wantErr:       true,
-			exceptedError: transaction.ErrNoTxnDetail,
+			exceptedError: transaction.ErrTooLessConfirmation,
 			errMsg:        "transaction_not_found: Transaction was not found on any of the sharders",
 		},
 		{
@@ -2788,7 +2788,7 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 
 				// test it by predefined error variable instead of error message
 				if tt.exceptedError != nil {
-					require.ErrorIs(t, tt.exceptedError, err)
+					require.ErrorIs(err, tt.exceptedError)
 				} else {
 					require.EqualValues(tt.errMsg, errors.Top(err))
 				}
