@@ -17,13 +17,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/gosdk/zboxcore/client"
-	"github.com/0chain/gosdk/zboxcore/fileref"
-
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -1234,7 +1234,7 @@ type CommitFolderResponse struct {
 	Data  *CommitFolderData
 }
 
-func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (string, error) {
+func (a *Allocation) CommitFolderChange(operation, preValue, currValue string, cfg conf.Config) (string, error) {
 	if !a.isInitialized() {
 		return "", notInitialized
 	}
@@ -1264,8 +1264,9 @@ func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (
 	time.Sleep(querySleepTime)
 	retries := 0
 	var t *transaction.Transaction
+
 	for retries < blockchain.GetMaxTxnQuery() {
-		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders())
+		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders(), cfg)
 		if err == nil {
 			break
 		}

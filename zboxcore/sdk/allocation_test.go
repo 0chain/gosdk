@@ -17,6 +17,7 @@ import (
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -2782,7 +2783,9 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 					defer teardown(t)
 				}
 			}
-			_, err := a.CommitFolderChange(tt.parameters.operation, tt.parameters.preValue, tt.parameters.currValue)
+			cfg, _ := conf.LoadDefault()
+
+			_, err := a.CommitFolderChange(tt.parameters.operation, tt.parameters.preValue, tt.parameters.currValue, cfg)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 

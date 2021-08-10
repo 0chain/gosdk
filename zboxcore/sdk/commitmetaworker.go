@@ -5,17 +5,17 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"mime/multipart"
-	"net/http"
-	"sync"
-	"time"
-
 	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"mime/multipart"
+	"net/http"
+	"sync"
+	"time"
 )
 
 type CommitMetaData struct {
@@ -29,6 +29,7 @@ type CommitMetaRequest struct {
 	a         *Allocation
 	authToken string
 	wg        *sync.WaitGroup
+	cfg       conf.Config
 }
 
 type CommitMetaResponse struct {
@@ -59,7 +60,7 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 	retries := 0
 	var t *transaction.Transaction
 	for retries < blockchain.GetMaxTxnQuery() {
-		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders())
+		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders(), req.cfg)
 		if err == nil {
 			break
 		}

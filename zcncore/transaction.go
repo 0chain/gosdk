@@ -10,6 +10,7 @@ import (
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
@@ -1277,14 +1278,14 @@ func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error 
 	return nil
 }
 
-func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
+func VerifyContentHash(metaTxnDataJSON string, cfg conf.Config) (bool, error) {
 	var metaTxnData sdk.CommitMetaResponse
 	err := json.Unmarshal([]byte(metaTxnDataJSON), &metaTxnData)
 	if err != nil {
 		return false, errors.New("metaTxnData_decode_error", "Unable to decode metaTxnData json")
 	}
 
-	t, err := transaction.VerifyTransaction(metaTxnData.TxnID, blockchain.GetSharders())
+	t, err := transaction.VerifyTransaction(metaTxnData.TxnID, blockchain.GetSharders(), cfg)
 	if err != nil {
 		return false, errors.New("fetch_txm_details", "Unable to fetch txn details")
 	}
