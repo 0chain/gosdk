@@ -28,7 +28,7 @@ func LoadDefault() (Config, error) {
 	return Load("config.yaml")
 }
 
-// Load load and parse config file in ~/.zcn folder. it is ~/.zcn/config.yaml if file is invalid.
+// Load load and parse config file in ~/.zcn folder.
 // Example:
 //   conf.Load("stream.yaml"), it will load settings from ~/.zcn/stream.yaml
 func Load(fileName string) (Config, error) {
