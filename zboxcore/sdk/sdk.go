@@ -980,6 +980,23 @@ func CancelAllocation(allocID string) (hash string, err error) {
 	return
 }
 
+func RemoveCurator(curatorId, allocationId string) (string, error) {
+	if !sdkInitialized {
+		return "", sdkNotInitialized
+	}
+
+	var allocationRequest = map[string]interface{}{
+		"curator_id":    curatorId,
+		"allocation_id": allocationId,
+	}
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_REMOVE_CURATOR,
+		InputArgs: allocationRequest,
+	}
+	hash, _, err := smartContractTxn(sn)
+	return hash, err
+}
+
 func AddCurator(curatorId, allocationId string) (string, error) {
 	if !sdkInitialized {
 		return "", sdkNotInitialized
