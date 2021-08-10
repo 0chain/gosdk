@@ -74,7 +74,6 @@ jobs:
       run: |
         VERSION=$(echo ${GITHUB_REF#refs/heads/}) 
         echo ::set-output name=TAG::${VERSION}
-
     - name: Create Release for Fixed v1.1.1
       id: create_release_v0_0_0
       if: github.event.inputs.fixed_tag == 'yes' && steps.get_version.outputs.TAG == 'staging'
@@ -304,6 +303,111 @@ jobs:
         github_token: ${{ secrets.GOSDK }}
         workflow_file_name: trigg-blobber-build.yml
         ref: staging
+        inputs: ${{ steps.get_tag.outputs.JSON }}
+        propagate_failure: true
+        trigger_workflow: true
+        wait_workflow: true
+
+  zboxcli:
+    name: Triggering zboxcli Build
+    runs-on: ubuntu-20.04
+    
+    needs: 
+    - make
+    
+    steps:
+    - name: Generating JSON for Input
+      id: get_tag
+      run: |
+          JSON=$(echo {\"branch_ref\":\"staging\"\,\"fixed_tag\":\"$TAG\"\,\"version_tag\":\"$VERSION_TAG\"})
+          BRANCH=$(echo ${GITHUB_REF#refs/heads/}) 
+          echo ::set-output name=JSON::${JSON}
+          echo ::set-output name=BRANCH::${BRANCH}
+          echo "Branch ${BRANCH}."
+          echo "Fixed Tag ${TAG}."
+      env:
+        TAG: ${{ github.event.inputs.fixed_tag }}
+        VERSION_TAG: ${{ github.event.inputs.version_tag }}
+
+    - name: Triggering zboxcli Build
+      uses: convictional/trigger-workflow-and-wait@v1.3.0
+      if: steps.get_tag.outputs.BRANCH == 'staging' && github.event.inputs.fixed_tag == 'yes'
+      with:
+        owner: 0chain
+        repo: gosdk
+        github_token: ${{ secrets.GOSDK }}
+        workflow_file_name: trigg-zboxcli.yml
+        ref: staging
+        inputs: ${{ steps.get_tag.outputs.JSON }}
+        propagate_failure: true
+        trigger_workflow: true
+        wait_workflow: true
+
+  zboxmobile:
+    name: Triggering zboxmobile Build
+    runs-on: ubuntu-20.04
+    
+    needs: 
+    - make
+
+    steps:
+    - name: Generating JSON for Input
+      id: get_tag
+      run: |
+          JSON=$(echo {\"branch_ref\":\"staging\"\,\"fixed_tag\":\"$TAG\"\,\"version_tag\":\"$VERSION_TAG\"})
+          BRANCH=$(echo ${GITHUB_REF#refs/heads/}) 
+          echo ::set-output name=JSON::${JSON}
+          echo ::set-output name=BRANCH::${BRANCH}
+          echo "Branch ${BRANCH}."
+          echo "Fixed Tag ${TAG}."
+      env:
+        TAG: ${{ github.event.inputs.fixed_tag }}
+        VERSION_TAG: ${{ github.event.inputs.version_tag }}
+        
+    - name: Triggering zboxmobile Build
+      uses: convictional/trigger-workflow-and-wait@v1.3.0
+      if: steps.get_tag.outputs.BRANCH == 'staging' && github.event.inputs.fixed_tag == 'yes'
+      with:
+        owner: 0chain
+        repo: gosdk
+        github_token: ${{ secrets.GOSDK }}
+        workflow_file_name: trigg-zboxmobile.yml
+        ref: staging
+        inputs: ${{ steps.get_tag.outputs.JSON }}
+        propagate_failure: true
+        trigger_workflow: true
+        wait_workflow: true   
+
+  zwalletcli:
+    name: Triggering zwalletcli Build
+    runs-on: ubuntu-20.04
+    
+    needs: 
+    - make
+    
+    steps:
+    - name: Generating JSON for Input
+      id: get_tag
+      run: |
+          JSON=$(echo {\"branch_ref\":\"staging\"\,\"fixed_tag\":\"$TAG\"\,\"version_tag\":\"$VERSION_TAG\"})
+          BRANCH=$(echo ${GITHUB_REF#refs/heads/}) 
+          echo ::set-output name=JSON::${JSON}
+          echo ::set-output name=BRANCH::${BRANCH}
+          echo "Branch ${BRANCH}."
+          echo "Fixed Tag ${TAG}."
+      env:
+        TAG: ${{ github.event.inputs.fixed_tag }}
+        VERSION_TAG: ${{ github.event.inputs.version_tag }}
+        
+    - name: Triggering zwalletcli Build
+      uses: convictional/trigger-workflow-and-wait@v1.3.0
+      if: steps.get_tag.outputs.BRANCH == 'staging' && github.event.inputs.fixed_tag == 'yes'
+      with:
+        owner: 0chain
+        repo: gosdk
+        github_token: ${{ secrets.GOSDK }}
+        workflow_file_name: trigg-zwalletcli.yml
+        ref: staging 
         inputs: ${{ steps.get_tag.outputs.JSON }}
         propagate_failure: true
         trigger_workflow: true
