@@ -2788,7 +2788,7 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 
 				// test it by predefined error variable instead of error message
 				if tt.exceptedError != nil {
-					require.ErrorsIs(t, tt.exceptedError, err)
+					require.ErrorIs(t, tt.exceptedError, err)
 				} else {
 					require.EqualValues(tt.errMsg, errors.Top(err))
 				}
