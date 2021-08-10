@@ -274,7 +274,7 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 
 	consensus := int(float64(numSuccess) / float64(numSharders) * 100)
 
-	if consensus >= conf.Config.MinConfirmation {
+	if consensus > 0 && consensus >= conf.Config.MinConfirmation {
 
 		if retTxn == nil {
 			return nil, errors.Throw(ErrNoTxnDetail, strings.Join(msgList, "\r\n"))
