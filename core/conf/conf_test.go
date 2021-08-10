@@ -22,7 +22,7 @@ func TestMissingConfig(t *testing.T) {
 
 	configFile := "missing_config.yaml"
 
-	err := Load(configFile)
+	_, err := Load(configFile)
 
 	require.ErrorIs(t, err, ErrMssingConfig)
 }
@@ -36,7 +36,7 @@ func TestBadFormat(t *testing.T) {
 `)
 	defer tearDownConfig("bad_format.yaml")
 
-	err := Load("bad_format.yaml")
+	_, err := Load("bad_format.yaml")
 
 	require.ErrorIs(t, err, ErrBadFormat)
 }
@@ -48,7 +48,7 @@ block_worker: 127.0.0.1:9091
 `)
 	defer tearDownConfig("invalid_blockworker.yaml")
 
-	err := Load("invalid_blockworker.yaml")
+	_, err := Load("invalid_blockworker.yaml")
 
 	require.ErrorIs(t, err, ErrInvalidValue)
 }

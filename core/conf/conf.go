@@ -15,14 +15,6 @@ import (
 )
 
 var (
-	// DefaultConfigFileName default config file in ~/.zcn
-	DefaultConfigFileName = "config.yaml"
-
-	// Config current config instance for zbox
-	Config ZConfig
-)
-
-var (
 	// ErrMssingConfig config file is missing
 	ErrMssingConfig = errors.New("[conf]missing config file")
 	// ErrInvalidValue invalid value in config
@@ -31,42 +23,27 @@ var (
 	ErrBadFormat = errors.New("[conf]bad format")
 )
 
-func init() {
-	LoadDefault()
-}
-
 // LoadDefault load and parse config from ~/.zcn/config.yaml
-func LoadDefault() error {
-	return Load(DefaultConfigFileName)
+func LoadDefault() (Config, error) {
+	return Load("config.yaml")
 }
 
 // Load load and parse config file in ~/.zcn folder. it is ~/.zcn/config.yaml if file is invalid.
 // Example:
 //   conf.Load("stream.yaml"), it will load settings from ~/.zcn/stream.yaml
-func Load(fileName string) error {
+func Load(fileName string) (Config, error) {
+
+	var cfg Config
+
 	file := path.Join(getConfigDir(), fileName)
 	_, err := os.Stat(file)
 
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return thrown.Throw(ErrMssingConfig, err.Error())
+			return cfg, thrown.Throw(ErrMssingConfig, err.Error())
 		}
-		return err
+		return cfg, err
 	}
-
-	cfg, err := loadConfigFile(file)
-
-	if err != nil {
-		return err
-	}
-
-	Config = cfg
-	return nil
-}
-
-func loadConfigFile(file string) (ZConfig, error) {
-
-	var cfg ZConfig
 
 	v := viper.New()
 
@@ -85,9 +62,7 @@ func loadConfigFile(file string) (ZConfig, error) {
 	minSubmit := v.GetInt("min_submit")
 
 	if minSubmit < 1 {
-		minSubmit = 50
-	} else if minSubmit > 100 {
-		minSubmit = 100
+		minSubmit = 3
 	}
 
 	minCfm := v.GetInt("min_confirmation")

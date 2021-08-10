@@ -1,6 +1,6 @@
 package conf
 
-// ZConfig settings from ~/.zcn/config.yaml
+// Config settings from ~/.zcn/config.yaml
 // block_worker: http://198.18.0.98:9091
 // signature_scheme: bls0chain
 // min_submit: 50
@@ -13,7 +13,7 @@ package conf
 // #   - http://one.devnet-0chain.net:31051
 // #   - http://one.devnet-0chain.net:31052
 // #   - http://one.devnet-0chain.net:31053
-type ZConfig struct {
+type Config struct {
 	// BlockWorker the url of 0dns's network api
 	BlockWorker string
 	// PreferredBlobbers preferred blobbers on new allocation
