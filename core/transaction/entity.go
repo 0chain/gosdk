@@ -106,6 +106,7 @@ const (
 	STORAGESC_WRITE_POOL_LOCK          = "write_pool_lock"
 	STORAGESC_WRITE_POOL_UNLOCK        = "write_pool_unlock"
 	STORAGESC_ADD_CURATOR              = "add_curator"
+	STORAGESC_REMOVE_CURATOR           = "remove_curator"
 	STORAGESC_CURATOR_TRANSFER         = "curator_transfer_allocation"
 
 	// Miner SC
