@@ -2694,11 +2694,12 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 	blockchain.SetQuerySleepTime(1)
 
 	tests := []struct {
-		name       string
-		parameters parameters
-		setup      func(*testing.T, string, *Allocation) (teardown func(*testing.T))
-		wantErr    bool
-		errMsg     string
+		name          string
+		parameters    parameters
+		setup         func(*testing.T, string, *Allocation) (teardown func(*testing.T))
+		wantErr       bool
+		errMsg        string
+		exceptedError error
 	}{
 		{
 			name: "Test_Uninitialized_Failed",
@@ -2723,8 +2724,9 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 				setupHttpResponse(t, testCaseName+"mockSharders", http.MethodGet, http.StatusBadRequest, []byte(""))
 				return nil
 			},
-			wantErr: true,
-			errMsg:  "transaction_not_found: Transaction was not found on any of the sharders",
+			wantErr:       true,
+			exceptedError: transaction.ErrNoTxnDetail,
+			errMsg:        "transaction_not_found: Transaction was not found on any of the sharders",
 		},
 		{
 			name: "Test_Max_Retried_Failed",
@@ -2783,7 +2785,14 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 			_, err := a.CommitFolderChange(tt.parameters.operation, tt.parameters.preValue, tt.parameters.currValue)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(err))
+
+				// test it by predefined error variable instead of error message
+				if tt.exceptedError != nil {
+					require.ErrorsIs(t, tt.exceptedError, err)
+				} else {
+					require.EqualValues(tt.errMsg, errors.Top(err))
+				}
+
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
