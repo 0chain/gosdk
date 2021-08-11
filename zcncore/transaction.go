@@ -7,9 +7,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/common/errors"
+
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"

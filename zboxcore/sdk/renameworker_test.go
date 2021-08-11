@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	zclient "github.com/0chain/gosdk/zboxcore/client"
@@ -76,7 +76,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 				}, nil)
 			},
 			wantErr: true,
-			errMsg:  "400: Object tree error response: Body:  ",
+			errMsg:  "400: Object tree error response: Body:",
 		},
 		{
 			name: "Test_Rename_Blobber_Object_Failed",
