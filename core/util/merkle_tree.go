@@ -3,7 +3,7 @@ package util
 import (
 	"fmt"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 )
 
 /*MerkleTree - A data structure that implements MerkleTreeI interface */
