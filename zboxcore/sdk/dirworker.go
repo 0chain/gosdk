@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -29,11 +30,12 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numList)
 
+	var err error
 	Logger.Info("Start creating dir for blobbers")
 	for i := 0; i < numList; i++ {
 		go func(blobberIdx int) {
 			defer req.wg.Done()
-			err := req.createDirInBlobber(a.Blobbers[blobberIdx])
+			err = req.createDirInBlobber(a.Blobbers[blobberIdx])
 			if err != nil {
 				Logger.Error(err.Error())
 				return
@@ -42,7 +44,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 	}
 	req.wg.Wait()
 
-	return nil
+	return err
 }
 
 func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode) error {
@@ -61,6 +63,8 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode) error
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 
+	var respError error
+
 	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
 			Logger.Error("Copy : ", err)
@@ -75,11 +79,16 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode) error
 		} else {
 			resp_body, err := ioutil.ReadAll(resp.Body)
 			if err == nil {
+				respError = errors.New(string(resp_body))
 				Logger.Error(blobber.Baseurl, "Response: ", string(resp_body))
 			}
 		}
 		return nil
 	})
+
+	if respError != nil {
+		return respError
+	}
 
 	if err != nil {
 		return err
