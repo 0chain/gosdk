@@ -948,7 +948,7 @@ func (a *Allocation) GetAuthTicket(
 	} else {
 		shareReq.refType = fileref.FILE
 	}
-	if len(refereeEncryptionPublicKey) > 0 {
+	if len(refereeEncryptionPublicKey) > 0 || len(refereeClientID) > 0 {
 		authTicket, err := shareReq.GetAuthTicketForEncryptedFile(refereeClientID, refereeEncryptionPublicKey)
 		if err != nil {
 			return "", err
