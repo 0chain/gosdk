@@ -14,7 +14,6 @@ import (
 	"github.com/0chain/gosdk/core/logger"
 
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -125,7 +124,7 @@ func SetNetwork(miners []string, sharders []string) {
 // read pool
 //
 
-func CreateReadPool(cfg conf.Config) (err error) {
+func CreateReadPool() (err error) {
 	if !sdkInitialized {
 		return sdkNotInitialized
 	}
