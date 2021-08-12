@@ -8,16 +8,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/core/transaction"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
-	"github.com/0chain/gosdk/zboxcore/fileref"
-	. "github.com/0chain/gosdk/zboxcore/logger"
-	"github.com/0chain/gosdk/zboxcore/marker"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -26,6 +16,16 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/transaction"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/fileref"
+	. "github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/0chain/gosdk/zboxcore/marker"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 var (
@@ -1233,7 +1233,7 @@ type CommitFolderResponse struct {
 	Data  *CommitFolderData
 }
 
-func (a *Allocation) CommitFolderChange(operation, preValue, currValue string, cfg conf.Config) (string, error) {
+func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (string, error) {
 	if !a.isInitialized() {
 		return "", notInitialized
 	}
@@ -1265,7 +1265,7 @@ func (a *Allocation) CommitFolderChange(operation, preValue, currValue string, c
 	var t *transaction.Transaction
 
 	for retries < blockchain.GetMaxTxnQuery() {
-		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders(), cfg)
+		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders())
 		if err == nil {
 			break
 		}

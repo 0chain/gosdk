@@ -32,3 +32,10 @@ type Config struct {
 	// QuerySleepTime sleep time before transcation query
 	QuerySleepTime int
 }
+
+// ConfigReader a config reader
+type ConfigReader interface {
+	GetString(key string) string
+	GetInt(key string) int
+	GetStringSlice(key string) []string
+}

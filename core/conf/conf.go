@@ -6,11 +6,9 @@ import (
 	"errors"
 	"net/url"
 	"os"
-	"path"
 	"strings"
 
 	thrown "github.com/0chain/errors"
-	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/viper"
 )
 
@@ -19,28 +17,23 @@ var (
 	ErrMssingConfig = errors.New("[conf]missing config file")
 	// ErrInvalidValue invalid value in config
 	ErrInvalidValue = errors.New("[conf]invalid value")
-	// ErrBadFormat fail to parse config via spf13/viper
-	ErrBadFormat = errors.New("[conf]bad format")
+	// ErrBadParsing fail to parse config via spf13/viper
+	ErrBadParsing = errors.New("[conf]bad parsing")
 )
 
-// LoadDefault load and parse config from ~/.zcn/config.yaml
-func LoadDefault() (Config, error) {
-	return Load("config.yaml")
-}
-
-// Load load and parse config file in ~/.zcn folder.
+// LoadFile load config from file
 // Example:
-//   conf.Load("stream.yaml"), it will load settings from ~/.zcn/stream.yaml
-func Load(fileName string) (Config, error) {
+//   conf.Load("~/.zcn/config.yaml"), it will load settings from ~/.zcn/config.yaml
+func LoadFile(file string) (Config, error) {
 
 	var cfg Config
+	var err error
 
-	file := path.Join(getConfigDir(), fileName)
-	_, err := os.Stat(file)
+	_, err = os.Stat(file)
 
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return cfg, thrown.Throw(ErrMssingConfig, err.Error())
+			return cfg, thrown.Throw(ErrMssingConfig, file)
 		}
 		return cfg, err
 	}
@@ -50,8 +43,16 @@ func Load(fileName string) (Config, error) {
 	v.SetConfigFile(file)
 
 	if err := v.ReadInConfig(); err != nil {
-		return cfg, thrown.Throw(ErrBadFormat, err.Error())
+		return cfg, thrown.Throw(ErrBadParsing, err.Error())
 	}
+
+	return Load(v)
+}
+
+// Load load and parse config
+func Load(v ConfigReader) (Config, error) {
+
+	var cfg Config
 
 	blockWorker := strings.TrimSpace(v.GetString("block_worker"))
 
@@ -80,7 +81,6 @@ func Load(fileName string) (Config, error) {
 	}
 
 	// additional settings depending network latency
-
 	maxTxnQuery := v.GetInt("max_txn_query")
 	if maxTxnQuery < 1 {
 		maxTxnQuery = 5
@@ -101,22 +101,6 @@ func Load(fileName string) (Config, error) {
 
 	return cfg, nil
 
-}
-
-// getConfigDir get config directory , default is ~/.zcn/
-func getConfigDir() string {
-
-	var configDir string
-	// Find home directory.
-	home, err := homedir.Dir()
-	if err != nil {
-		panic(err)
-	}
-	configDir = home + string(os.PathSeparator) + ".zcn"
-
-	os.MkdirAll(configDir, 0744)
-
-	return configDir
 }
 
 func isURL(s string) bool {

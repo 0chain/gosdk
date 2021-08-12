@@ -9,7 +9,6 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
 )
@@ -206,7 +205,7 @@ func sendTransactionToURL(url string, txn *Transaction, wg *sync.WaitGroup) ([]b
 }
 
 // VerifyTransaction query transaction status from sharders, and verify it by mininal confirmation
-func VerifyTransaction(txnHash string, sharders []string, cfg conf.Config) (*Transaction, error) {
+func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) {
 	numSharders := len(sharders)
 
 	if numSharders == 0 {
@@ -274,6 +273,9 @@ func VerifyTransaction(txnHash string, sharders []string, cfg conf.Config) (*Tra
 
 	consensus := int(float64(numSuccess) / float64(numSharders) * 100)
 
+	if cfg == nil {
+		return nil, ErrConfigIsNotInitialized
+	}
 	if consensus > 0 && consensus >= cfg.MinConfirmation {
 
 		if retTxn == nil {

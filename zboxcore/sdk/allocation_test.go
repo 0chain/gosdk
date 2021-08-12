@@ -17,8 +17,8 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
-
 	"github.com/0chain/gosdk/core/conf"
+
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -2718,6 +2718,9 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 		{
 			name: "Test_Sharder_Verify_Txn_Failed",
 			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
+
+				transaction.SetConfig(&conf.Config{})
+
 				body, err := json.Marshal(&transaction.Transaction{
 					Hash: mockHash,
 				})
@@ -2784,9 +2787,8 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 					defer teardown(t)
 				}
 			}
-			cfg, _ := conf.LoadDefault()
 
-			_, err := a.CommitFolderChange(tt.parameters.operation, tt.parameters.preValue, tt.parameters.currValue, cfg)
+			_, err := a.CommitFolderChange(tt.parameters.operation, tt.parameters.preValue, tt.parameters.currValue)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 
