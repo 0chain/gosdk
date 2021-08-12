@@ -17,6 +17,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/gosdk/zboxcore/commitmeta"
+
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
@@ -68,22 +70,6 @@ type BlobberAllocationStats struct {
 		ReadPrice    int    `json:"ReadPrice"`
 		WritePrice   int    `json:"WritePrice"`
 	} `json:"Terms"`
-}
-
-type ConsolidatedFileMeta struct {
-	Name            string
-	Type            string
-	Path            string
-	LookupHash      string
-	Hash            string
-	MimeType        string
-	Size            int64
-	ActualFileSize  int64
-	ActualNumBlocks int64
-	EncryptedKey    string
-	CommitMetaTxns  []fileref.CommitMetaTxn
-	Collaborators   []fileref.Collaborator
-	Attributes      fileref.Attributes
 }
 
 type AllocationStats struct {
@@ -600,12 +586,12 @@ func (a *Allocation) listDir(path string, consensusThresh, fullconsensus float32
 	return nil, errors.New("list_request_failed", "Failed to get list response from the blobbers")
 }
 
-func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
+func (a *Allocation) GetFileMeta(path string) (*fileref.ConsolidatedFileMeta, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
 
-	result := &ConsolidatedFileMeta{}
+	result := &fileref.ConsolidatedFileMeta{}
 	listReq := &ListRequest{}
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
@@ -634,12 +620,12 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	return nil, errors.New("file_meta_error", "Error getting the file meta data from blobbers")
 }
 
-func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash string) (*ConsolidatedFileMeta, error) {
+func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash string) (*fileref.ConsolidatedFileMeta, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
 
-	result := &ConsolidatedFileMeta{}
+	result := &fileref.ConsolidatedFileMeta{}
 	sEnc, err := base64.StdEncoding.DecodeString(authTicket)
 	if err != nil {
 		return nil, errors.New("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
@@ -1150,7 +1136,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	return nil
 }
 
-func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, lookupHash string, fileMeta *ConsolidatedFileMeta, status StatusCallback) (err error) {
+func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, lookupHash string, fileMeta *fileref.ConsolidatedFileMeta, status StatusCallback) (err error) {
 	if !a.isInitialized() {
 		return notInitialized
 	}
@@ -1170,7 +1156,7 @@ func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, look
 	}
 
 	req := &CommitMetaRequest{
-		CommitMetaData: CommitMetaData{
+		CommitMetaData: commitmeta.CommitMetaData{
 			CrudType: crudOperation,
 			MetaData: fileMeta,
 		},

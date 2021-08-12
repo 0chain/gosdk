@@ -1,39 +1,27 @@
 package sdk
 
 import (
-	"bytes"
-	"context"
 	"encoding/base64"
 	"encoding/json"
-	"mime/multipart"
-	"net/http"
+	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
 	"sync"
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/clients/blobberClient"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/commitmeta"
 	. "github.com/0chain/gosdk/zboxcore/logger"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
-type CommitMetaData struct {
-	CrudType string
-	MetaData *ConsolidatedFileMeta
-}
-
 type CommitMetaRequest struct {
-	CommitMetaData
+	commitmeta.CommitMetaData
 	status    StatusCallback
 	a         *Allocation
 	authToken string
 	wg        *sync.WaitGroup
-}
-
-type CommitMetaResponse struct {
-	TxnID    string
-	MetaData *ConsolidatedFileMeta
 }
 
 func (req *CommitMetaRequest) processCommitMetaRequest() {
@@ -84,7 +72,7 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 		Logger.Info("Failed to update commitMetaTxnID to all blobbers")
 	}
 
-	commitMetaResponse := &CommitMetaResponse{
+	commitMetaResponse := &commitmeta.CommitMetaResponse{
 		TxnID:    t.Hash,
 		MetaData: req.CommitMetaData.MetaData,
 	}
@@ -126,43 +114,32 @@ func (req *CommitMetaRequest) updateCommitMetaTxnToBlobbers(txnHash string) bool
 }
 
 func (req *CommitMetaRequest) updatCommitMetaTxnToBlobber(blobber *blockchain.StorageNode, blobberIdx int, txnHash string, rspCh chan<- bool) {
-
 	defer req.wg.Done()
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
 
-	formWriter.WriteField("path_hash", req.MetaData.LookupHash)
-	formWriter.WriteField("txn_id", txnHash)
-
+	var authToken string
 	if len(req.authToken) > 0 {
 		sEnc, err := base64.StdEncoding.DecodeString(req.authToken)
 		if err != nil {
 			Logger.Error("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
 			return
 		}
-		formWriter.WriteField("auth_token", string(sEnc))
+
+		authToken = string(sEnc)
 	}
 
-	formWriter.Close()
-	httpreq, err := zboxutil.NewCommitMetaTxnRequest(blobber.Baseurl, req.a.Tx, body)
+	_, err := blobberClient.CommitMetaTxn(blobber.Baseurl, &blobbergrpc.CommitMetaTxnRequest{
+		Path:       req.MetaData.Path,
+		PathHash:   req.MetaData.LookupHash,
+		AuthToken:  authToken,
+		Allocation: req.a.Tx,
+		TxnId:      txnHash,
+	})
 	if err != nil {
-		Logger.Error("Update commit meta txn request error: ", err.Error())
+		Logger.Error("Update CommitMetaTxn: ", err)
+		rspCh <- false
 		return
 	}
 
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	ctx, cncl := context.WithTimeout(req.a.ctx, (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("Update CommitMetaTxn : ", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == http.StatusOK {
-			rspCh <- true
-			return err
-		}
-		rspCh <- false
-		return err
-	})
+	rspCh <- true
+	return
 }

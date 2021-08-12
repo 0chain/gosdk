@@ -2299,7 +2299,7 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
-			expectedResult := &ConsolidatedFileMeta{
+			expectedResult := &fileref.ConsolidatedFileMeta{
 				Hash: mockActualHash,
 			}
 			require.EqualValues(expectedResult, got)
@@ -3357,7 +3357,7 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
-			expectedResult := &ConsolidatedFileMeta{
+			expectedResult := &fileref.ConsolidatedFileMeta{
 				Hash: mockActualHash,
 			}
 			require.EqualValues(expectedResult, got)
@@ -3506,7 +3506,7 @@ func TestAllocation_CommitMetaTransaction(t *testing.T) {
 		crudOperation string
 		authTicket    string
 		lookupHash    string
-		fileMeta      func(t *testing.T, testCaseName string) *ConsolidatedFileMeta
+		fileMeta      func(t *testing.T, testCaseName string) *fileref.ConsolidatedFileMeta
 		status        func(t *testing.T) StatusCallback
 	}
 	tests := []struct {
@@ -3575,7 +3575,7 @@ func TestAllocation_CommitMetaTransaction(t *testing.T) {
 					defer teardown(t)
 				}
 			}
-			var fileMeta *ConsolidatedFileMeta
+			var fileMeta *fileref.ConsolidatedFileMeta
 			if tt.parameters.fileMeta != nil {
 				fileMeta = tt.parameters.fileMeta(t, tt.name)
 			}

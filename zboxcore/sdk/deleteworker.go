@@ -81,7 +81,7 @@ func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blo
 }
 
 func (req *DeleteRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.remotefilepath, blobber)
+	return getObjectTreeFromBlobber(req.allocationID, req.allocationTx, req.remotefilepath, blobber)
 }
 
 func (req *DeleteRequest) ProcessDelete() error {

@@ -1,18 +1,14 @@
 package sdk
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"mime/multipart"
-	"net/http"
+	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
 	"strconv"
 	"sync"
-	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/clients/blobberClient"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -21,7 +17,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type ReferencePathResult struct {
@@ -104,47 +99,30 @@ func (commitreq *CommitRequest) processCommit() {
 	for _, change := range commitreq.changes {
 		paths = append(paths, change.GetAffectedPath())
 	}
-	var req *http.Request
 	var lR ReferencePathResult
-	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
-	if err != nil || len(paths) == 0 {
-		Logger.Error("Creating ref path req", err)
+
+	pathsRaw, err := json.Marshal(paths)
+	if err != nil {
 		return
 	}
-	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("Ref path error:", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			Logger.Error("Ref path response : ", resp.StatusCode)
-		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			Logger.Error("Ref path: Resp", err)
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			return errors.New(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Reference path error response: Status: %d - %s ", resp.StatusCode, string(resp_body)))
 
-		} else {
-			//Logger.Info("Reference path:", string(resp_body))
-			err = json.Unmarshal(resp_body, &lR)
-			if err != nil {
-				Logger.Error("Reference path json decode error: ", err)
-				return err
-			}
-		}
-		return nil
+	respRaw, err := blobberClient.GetReferencePath(commitreq.blobber.Baseurl, &blobbergrpc.GetReferencePathRequest{
+		Paths:      string(pathsRaw),
+		Path:       "",
+		Allocation: commitreq.allocationTx,
 	})
 	//process the commit request for the blobber here
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
 		commitreq.wg.Done()
+		Logger.Error("could not get reference path from blobber -" + commitreq.blobber.Baseurl + " - " + err.Error())
 		return
 	}
+	err = json.Unmarshal(respRaw, &lR)
+	if err != nil {
+		return
+	}
+
 	rootRef, err := lR.GetDirTree(commitreq.allocationID)
 	if lR.LatestWM != nil {
 		//Can not verify signature due to collaborator flow
@@ -221,50 +199,24 @@ func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.W
 		Logger.Error("Signing writemarker failed: ", err)
 		return err
 	}
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
 	wmData, err := json.Marshal(wm)
 	if err != nil {
 		Logger.Error("Creating writemarker failed: ", err)
 		return err
 	}
-	formWriter.WriteField("connection_id", req.connectionID)
-	formWriter.WriteField("write_marker", string(wmData))
 
-	formWriter.Close()
-
-	httpreq, err := zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationTx, body)
+	Logger.Info("Committing to blobber." + req.blobber.Baseurl)
+	commitResp, err := blobberClient.Commit(req.blobber.Baseurl, &blobbergrpc.CommitRequest{
+		Allocation:   req.allocationTx,
+		ConnectionId: req.connectionID,
+		WriteMarker:  string(wmData),
+	})
 	if err != nil {
-		Logger.Error("Error creating commit req: ", err)
+		Logger.Error("Commit response - " + string(commitResp))
 		return err
 	}
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 60))
-	Logger.Info("Committing to blobber." + req.blobber.Baseurl)
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("Commit: ", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == http.StatusOK {
-			Logger.Info(req.blobber.Baseurl, req.connectionID, " committed")
-		} else {
-			Logger.Error("Commit response: ", resp.StatusCode)
-		}
 
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			Logger.Error("Response read: ", err)
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			Logger.Error(req.blobber.Baseurl, " Commit response:", string(resp_body))
-			return errors.New("commit_error", string(resp_body))
-		}
-		return nil
-	})
-	return err
+	return nil
 }
 
 func AddCommitRequest(req *CommitRequest) {
@@ -272,31 +224,22 @@ func AddCommitRequest(req *CommitRequest) {
 }
 
 func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths []string) error {
-	var req *http.Request
-	req, err := zboxutil.NewCalculateHashRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
-	if err != nil || len(paths) == 0 {
-		Logger.Error("Creating calculate hash req", err)
+	pathsRaw, err := json.Marshal(paths)
+	if err != nil {
 		return err
 	}
-	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("Calculate hash error:", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			Logger.Error("Calculate hash response : ", resp.StatusCode)
-		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			Logger.Error("Calculate hash: Resp", err)
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			return errors.New(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Calculate hash error response: Body: %s ", string(resp_body)))
-		}
-		return nil
+
+	Logger.Info("Calculating Hash " + commitreq.blobber.Baseurl)
+	resp, err := blobberClient.CalculateHash(commitreq.blobber.Baseurl, &blobbergrpc.CalculateHashRequest{
+		Allocation: commitreq.allocationTx,
+		Path:       "",
+		Paths:      string(pathsRaw),
 	})
-	return err
+
+	if err != nil {
+		Logger.Error("Commit response - " + string(resp))
+		return err
+	}
+
+	return nil
 }

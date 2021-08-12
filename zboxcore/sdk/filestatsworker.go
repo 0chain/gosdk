@@ -1,21 +1,17 @@
 package sdk
 
 import (
-	"bytes"
-	"context"
 	"encoding/json"
-	"io/ioutil"
-	"mime/multipart"
-	"net/http"
+	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/clients/blobberClient"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	. "github.com/0chain/gosdk/zboxcore/logger"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type FileStats struct {
@@ -45,8 +41,6 @@ type fileStatsResponse struct {
 
 func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- *fileStatsResponse) {
 	defer req.wg.Done()
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
 
 	var fileStats *FileStats
 	var s strings.Builder
@@ -58,44 +52,28 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 	if len(req.remotefilepath) > 0 {
 		req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 	}
-	formWriter.WriteField("path_hash", req.remotefilepathhash)
 
-	formWriter.Close()
-	httpreq, err := zboxutil.NewFileStatsRequest(blobber.Baseurl, req.allocationTx, body)
+	respRaw, err := blobberClient.GetFileStats(blobber.Baseurl, &blobbergrpc.GetFileStatsRequest{
+		PathHash:   req.remotefilepathhash,
+		Allocation: req.allocationTx,
+	})
 	if err != nil {
-		Logger.Error("File meta info request error: ", err.Error())
+		logger.Logger.Error("could not get file stats from blobber -" + blobber.Baseurl + " - " + err.Error())
+		return
+	}
+	s.WriteString(string(respRaw))
+	err = json.Unmarshal(respRaw, &fileStats)
+	if err != nil {
 		return
 	}
 
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			Logger.Error("GetFileStats : ", err)
-			return err
-		}
-		defer resp.Body.Close()
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return errors.Wrap(err, "Error: Resp")
-		}
-		s.WriteString(string(resp_body))
-		if resp.StatusCode == http.StatusOK {
-			err = json.Unmarshal(resp_body, &fileStats)
-			if err != nil {
-				return errors.Wrap(err, "file stats response parse error")
-			}
-			if len(fileStats.WriteMarkerRedeemTxn) > 0 {
-				fileStats.BlockchainAware = true
-			} else {
-				fileStats.BlockchainAware = false
-			}
-			fileStats.BlobberID = blobber.ID
-			fileStats.BlobberURL = blobber.Baseurl
-			return nil
-		}
-		return err
-	})
+	if len(fileStats.WriteMarkerRedeemTxn) > 0 {
+		fileStats.BlockchainAware = true
+	} else {
+		fileStats.BlockchainAware = false
+	}
+	fileStats.BlobberID = blobber.ID
+	fileStats.BlobberURL = blobber.Baseurl
 }
 
 func (req *ListRequest) getFileStatsFromBlobbers() map[string]*FileStats {
