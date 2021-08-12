@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
@@ -219,7 +219,7 @@ func makeWallet(privateKey, publicKey, mnemonic string) (string, error) {
 	w.ClientKey = publicKey
 	w.Mnemonic = mnemonic
 	w.Version = zcncrypto.CryptoVersion
-	w.DateCreated = time.Now().String()
+	w.DateCreated = time.Now().Format(time.RFC3339)
 
 	return w.Marshal()
 }

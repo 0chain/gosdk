@@ -1,7 +1,6 @@
 package sdk
 
 import (
-	"bytes"
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
@@ -9,10 +8,11 @@ import (
 	"io"
 	"math"
 	"os"
-	"strings"
 	"sync"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"go.dedis.ch/kyber/v3/group/edwards25519"
+
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encoder"
@@ -78,6 +78,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 		blockDownloadReq.remotefilepathhash = req.remotefilepathhash
 		blockDownloadReq.numBlocks = req.numBlocks
 		blockDownloadReq.rxPay = req.rxPay
+		blockDownloadReq.encryptedKey = req.encryptedKey
 		go AddBlockDownloadReq(blockDownloadReq)
 		//go obj.downloadBlobberBlock(&obj.blobbers[pos], pos, path, blockNum, rspCh, isPathHash, authTicket)
 		c++
@@ -113,30 +114,27 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 			if blockChunksMax < len(result.BlockChunks) {
 				downloadChunks = blockChunksMax
 			}
-			//for blockNum := 0; blockNum < len(result.BlockChunks); blockNum++ {
+
 			for blockNum := 0; blockNum < downloadChunks; blockNum++ {
 				if len(req.encryptedKey) > 0 {
-					headerBytes := result.BlockChunks[blockNum][:(2 * 1024)]
-					headerBytes = bytes.Trim(headerBytes, "\x00")
-					headerString := string(headerBytes)
-					encMsg := &encryption.EncryptedMessage{}
-					encMsg.EncryptedData = result.BlockChunks[blockNum][(2 * 1024):]
-					headerChecksums := strings.Split(headerString, ",")
-					if len(headerChecksums) != 2 {
-						Logger.Error("Block has invalid header", req.blobbers[result.idx].Baseurl)
-						break
+					suite := edwards25519.NewBlakeSHA256Ed25519()
+					reEncMessage := &encryption.ReEncryptedMessage{
+						D1: suite.Point(),
+						D4: suite.Point(),
+						D5: suite.Point(),
 					}
-					encMsg.MessageChecksum, encMsg.OverallChecksum = headerChecksums[0], headerChecksums[1]
-					encMsg.EncryptedKey = encscheme.GetEncryptedKey()
-					if req.authTicket != nil {
-						encMsg.ReEncryptionKey = req.authTicket.ReEncryptionKey
-					}
-					decryptedBytes, err := encscheme.Decrypt(encMsg)
+					err := reEncMessage.Unmarshal(result.BlockChunks[blockNum])
 					if err != nil {
-						Logger.Error("Block decryption failed", req.blobbers[result.idx].Baseurl, err)
+						Logger.Error("ReEncrypted Block unmarshall failed", req.blobbers[result.idx].Baseurl, err)
 						break
 					}
-					shards[blockNum][result.idx] = decryptedBytes
+					decrypted, err := encscheme.ReDecrypt(reEncMessage)
+					if err != nil {
+						Logger.Error("Block redecryption failed", req.blobbers[result.idx].Baseurl, err)
+						break
+					}
+
+					shards[blockNum][result.idx] = decrypted
 				} else {
 					shards[blockNum][result.idx] = result.BlockChunks[blockNum]
 				}
@@ -191,6 +189,8 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		ctx:                req.ctx,
 	}
 	listReq.authToken = req.authTicket
+	listReq.fullconsensus = req.fullconsensus
+	listReq.consensusThresh = req.consensusThresh
 	req.downloadMask, fileRef, _ = listReq.getFileConsensusFromBlobbers()
 	if req.downloadMask.Equals64(0) || fileRef == nil {
 		if req.statusCallback != nil {
@@ -245,11 +245,8 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	startBlock := req.startBlock
 	endBlock := req.endBlock
 	numBlocks := req.numBlocks
-	//batchCount := (chunksPerShard + req.numBlocks - 1) / req.numBlocks
-	//for cnt := req.startBlock; cnt < req.endBlock; cnt += req.numBlocks {
-	for startBlock < endBlock {
-		//blockSize := int64(math.Min(float64(perShard-(cnt*fileref.CHUNK_SIZE)), fileref.CHUNK_SIZE))
 
+	for startBlock < endBlock {
 		cnt := startBlock
 		Logger.Info("Downloading block ", cnt+1)
 		if (startBlock + numBlocks) > endBlock {
@@ -272,7 +269,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			}
 			return
 		}
-		//fmt.Println("Length of decoded data:", len(data))
+
 		n := int64(math.Min(float64(size), float64(len(data))))
 		_, err = mW.Write(data[:n])
 		if err != nil {

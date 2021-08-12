@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha1"
 	"encoding/base64"
@@ -8,6 +9,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"mime/multipart"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,8 +22,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	. "github.com/0chain/gosdk/zboxcore/logger"
@@ -183,18 +186,6 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 }
 
 func (a *Allocation) InitAllocation() {
-	// if a.uploadChan != nil {
-	// 	close(a.uploadChan)
-	// }
-	// if a.downloadChan != nil {
-	// 	close(a.downloadChan)
-	// }
-	// if a.ctx != nil {
-	// 	a.ctx.Done()
-	// }
-	// for _, v := range a.downloadProgressMap {
-	// 	v.isDownloadCanceled = true
-	// }
 	a.uploadChan = make(chan *UploadRequest, 10)
 	a.downloadChan = make(chan *DownloadRequest, 10)
 	a.repairChan = make(chan *RepairRequest, 1)
@@ -316,17 +307,35 @@ func (a *Allocation) EncryptAndUpdateFileWithThumbnail(localpath string,
 		thumbnailpath, true, false, attrs)
 }
 
-func (a *Allocation) EncryptAndUploadFileWithThumbnail(localpath string,
-	remotepath string, thumbnailpath string, attrs fileref.Attributes,
-	status StatusCallback) error {
+func (a *Allocation) EncryptAndUploadFileWithThumbnail(
+	localpath string,
+	remotepath string,
+	thumbnailpath string,
+	attrs fileref.Attributes,
+	status StatusCallback,
+) error {
 
-	return a.uploadOrUpdateFile(localpath, remotepath, status, false,
-		thumbnailpath, true, false, attrs)
+	return a.uploadOrUpdateFile(
+		localpath,
+		remotepath,
+		status,
+		false,
+		thumbnailpath,
+		true,
+		false,
+		attrs,
+	)
 }
 
-func (a *Allocation) uploadOrUpdateFile(localpath string, remotepath string,
-	status StatusCallback, isUpdate bool, thumbnailpath string, encryption bool,
-	isRepair bool, attrs fileref.Attributes) error {
+func (a *Allocation) uploadOrUpdateFile(localpath string,
+	remotepath string,
+	status StatusCallback,
+	isUpdate bool,
+	thumbnailpath string,
+	encryption bool,
+	isRepair bool,
+	attrs fileref.Attributes,
+) error {
 
 	if !a.isInitialized() {
 		return notInitialized
@@ -825,10 +834,80 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 }
 
 func (a *Allocation) GetAuthTicketForShare(path string, filename string, referenceType string, refereeClientID string) (string, error) {
-	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "")
+	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "", 0)
 }
 
-func (a *Allocation) GetAuthTicket(path string, filename string, referenceType string, refereeClientID string, refereeEncryptionPublicKey string) (string, error) {
+func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
+	success := make(chan int, len(a.Blobbers))
+	notFound := make(chan int, len(a.Blobbers))
+	wg := &sync.WaitGroup{}
+	for idx := range a.Blobbers {
+		url := a.Blobbers[idx].Baseurl
+		body := new(bytes.Buffer)
+		formWriter := multipart.NewWriter(body)
+		formWriter.WriteField("path", path)
+		formWriter.WriteField("refereeClientID", refereeClientID)
+		formWriter.Close()
+		httpreq, err := zboxutil.NewRevokeShareRequest(url, a.Tx, body)
+		if err != nil {
+			return err
+		}
+		httpreq.Header.Set("Content-Type", formWriter.FormDataContentType())
+		if err := formWriter.Close(); err != nil {
+			return err
+		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
+				if err != nil {
+					Logger.Error("Revoke share : ", err)
+					return err
+				}
+				defer resp.Body.Close()
+
+				respbody, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					Logger.Error("Error: Resp ", err)
+					return err
+				}
+				if resp.StatusCode != http.StatusOK {
+					Logger.Error(url, " Revoke share error response: ", resp.StatusCode, string(respbody))
+					return fmt.Errorf(string(respbody))
+				}
+				data := map[string]interface{}{}
+				err = json.Unmarshal(respbody, &data)
+				if err != nil {
+					return err
+				}
+				if data["status"].(float64) == http.StatusNotFound {
+					notFound <- 1
+				}
+				return nil
+			})
+			if err == nil {
+				success <- 1
+			}
+		}()
+	}
+	wg.Wait()
+	if len(success) == len(a.Blobbers) {
+		if len(notFound) == len(a.Blobbers) {
+			return errors.New("share not found")
+		}
+		return nil
+	}
+	return errors.New("consensus not reached")
+}
+
+func (a *Allocation) GetAuthTicket(
+	path string,
+	filename string,
+	referenceType string,
+	refereeClientID string,
+	refereeEncryptionPublicKey string,
+	expiration int64,
+) (string, error) {
 	if !a.isInitialized() {
 		return "", notInitialized
 	}
@@ -841,7 +920,9 @@ func (a *Allocation) GetAuthTicket(path string, filename string, referenceType s
 		return "", errors.New("invalid_path", "Path should be valid and absolute")
 	}
 
-	shareReq := &ShareRequest{}
+	shareReq := &ShareRequest{
+		expirationSeconds: expiration,
+	}
 	shareReq.allocationID = a.ID
 	shareReq.allocationTx = a.Tx
 	shareReq.blobbers = a.Blobbers
@@ -858,14 +939,92 @@ func (a *Allocation) GetAuthTicket(path string, filename string, referenceType s
 		if err != nil {
 			return "", err
 		}
-		return authTicket, nil
-
+		err = a.UploadAuthTicketToBlobber(authTicket, refereeEncryptionPublicKey)
+		if err != nil {
+			return "", err
+		}
+		// generate another auth ticket without reencryption key
+		at := &marker.AuthTicket{}
+		decoded, err := base64.StdEncoding.DecodeString(authTicket)
+		err = json.Unmarshal(decoded, at)
+		at.ReEncryptionKey = ""
+		err = at.Sign()
+		if err != nil {
+			return "", err
+		}
+		atBytes, err := json.Marshal(at)
+		if err != nil {
+			return "", err
+		}
+		sEnc := base64.StdEncoding.EncodeToString(atBytes)
+		return sEnc, nil
 	}
 	authTicket, err := shareReq.GetAuthTicket(refereeClientID)
 	if err != nil {
 		return "", err
 	}
 	return authTicket, nil
+}
+
+func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPubKey string) error {
+	decodedAuthTicket, err := base64.StdEncoding.DecodeString(authticketB64)
+	if err != nil {
+		return err
+	}
+
+	success := make(chan int, len(a.Blobbers))
+	wg := &sync.WaitGroup{}
+	for idx := range a.Blobbers {
+		url := a.Blobbers[idx].Baseurl
+		body := new(bytes.Buffer)
+		formWriter := multipart.NewWriter(body)
+		formWriter.WriteField("encryption_public_key", clientEncPubKey)
+		formWriter.WriteField("auth_ticket", string(decodedAuthTicket))
+		formWriter.Close()
+		httpreq, err := zboxutil.NewShareRequest(url, a.Tx, body)
+		if err != nil {
+			return err
+		}
+		httpreq.Header.Set("Content-Type", formWriter.FormDataContentType())
+		if err := formWriter.Close(); err != nil {
+			return err
+		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
+				if err != nil {
+					Logger.Error("Insert share info : ", err)
+					return err
+				}
+				defer resp.Body.Close()
+
+				respbody, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					Logger.Error("Error: Resp ", err)
+					return err
+				}
+				if resp.StatusCode != http.StatusOK {
+					Logger.Error(url, " Insert share info error response: ", resp.StatusCode, string(respbody))
+					return fmt.Errorf(string(respbody))
+				}
+				return nil
+			})
+			if err == nil {
+				success <- 1
+			}
+		}()
+	}
+	wg.Wait()
+	consensus := Consensus{
+		consensus:       float32(len(success)),
+		consensusThresh: (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards),
+		fullconsensus:   float32(a.DataShards + a.ParityShards),
+	}
+	if !consensus.isConsensusOk() {
+		return errors.New("consensus not reached")
+	}
+	return nil
 }
 
 func (a *Allocation) CancelUpload(localpath string) error {
@@ -1158,18 +1317,17 @@ func (a *Allocation) RemoveCollaborator(filePath, collaboratorID string) error {
 	return errors.New("remove_collaborator_failed", "Failed to remove collaborator on all blobbers.")
 }
 
-func (a *Allocation) GetMaxWriteRead() (maxW float64, maxR float64, err error) {
+func (a *Allocation) GetMaxWriteReadFromBlobbers(blobbers []*BlobberAllocation) (maxW float64, maxR float64, err error) {
 	if !a.isInitialized() {
 		return 0, 0, notInitialized
 	}
 
-	blobbersCopy := a.BlobberDetails
-	if len(blobbersCopy) == 0 {
+	if len(blobbers) == 0 {
 		return 0, 0, noBLOBBERS
 	}
 
 	maxWritePrice, maxReadPrice := 0.0, 0.0
-	for _, v := range blobbersCopy {
+	for _, v := range blobbers {
 		if v.Terms.WritePrice.ToToken() > maxWritePrice {
 			maxWritePrice = v.Terms.WritePrice.ToToken()
 		}
@@ -1179,6 +1337,10 @@ func (a *Allocation) GetMaxWriteRead() (maxW float64, maxR float64, err error) {
 	}
 
 	return maxWritePrice, maxReadPrice, nil
+}
+
+func (a *Allocation) GetMaxWriteRead() (maxW float64, maxR float64, err error) {
+	return a.GetMaxWriteReadFromBlobbers(a.BlobberDetails)
 }
 
 func (a *Allocation) GetMinWriteRead() (minW float64, minR float64, err error) {
@@ -1202,6 +1364,17 @@ func (a *Allocation) GetMinWriteRead() (minW float64, minR float64, err error) {
 	}
 
 	return minWritePrice, minReadPrice, nil
+}
+
+func (a *Allocation) GetMaxStorageCostFromBlobbers(size int64, blobbers []*BlobberAllocation) (float64, error) {
+	var cost common.Balance // total price for size / duration
+
+	for _, d := range blobbers {
+		cost += a.uploadCostForBlobber(float64(d.Terms.WritePrice), size,
+			a.DataShards, a.ParityShards)
+	}
+
+	return cost.ToToken(), nil
 }
 
 func (a *Allocation) GetMaxStorageCost(size int64) (float64, error) {
