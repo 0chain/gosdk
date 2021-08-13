@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"sync"
 
-	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/clients/blobberClient"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"

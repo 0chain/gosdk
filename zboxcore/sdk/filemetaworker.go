@@ -6,7 +6,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/clients/blobberClient"
 
 
