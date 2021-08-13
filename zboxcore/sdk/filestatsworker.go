@@ -7,11 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/clients/blobberClient"
-	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/logger"
 )
 
 type FileStats struct {
