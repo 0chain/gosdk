@@ -131,6 +131,12 @@ func (r *Resty) httpDo(req *http.Request) {
 
 // Wait wait all of requests to done
 func (r *Resty) Wait() []error {
+	defer func() {
+		// call cancelFunc, aovid to memory leak issue
+		if r.cancelFunc != nil {
+			r.cancelFunc()
+		}
+	}()
 
 	errs := make([]error, 0, r.qty)
 	done := 0
