@@ -16,7 +16,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"

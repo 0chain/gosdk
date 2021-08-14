@@ -10,10 +10,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/logger"
-
-	"github.com/0chain/gosdk/zboxcore/marker"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
@@ -22,6 +20,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	. "github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 

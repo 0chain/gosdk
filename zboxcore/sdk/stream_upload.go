@@ -14,7 +14,7 @@ import (
 	"sync"
 	"time"
 
-	thrown "github.com/0chain/gosdk/core/common/errors"
+	thrown "github.com/0chain/errors"
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"

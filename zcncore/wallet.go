@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
@@ -678,7 +678,7 @@ func getTokenUSDRate() (float64, error) {
 	return getTokenRateByCurrency("usd")
 }
 
-func getTokenRateByCurrency(currency string) (float64, error){
+func getTokenRateByCurrency(currency string) (float64, error) {
 	var CoinGeckoResponse struct {
 		ID         string `json:"id"`
 		Symbol     string `json:"symbol"`

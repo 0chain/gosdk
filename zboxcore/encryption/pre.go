@@ -11,7 +11,7 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 )

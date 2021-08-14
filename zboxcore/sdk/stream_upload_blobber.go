@@ -15,8 +15,8 @@ import (
 	"sync"
 	"time"
 
+	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
-	thrown "github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"

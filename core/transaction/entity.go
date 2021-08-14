@@ -3,18 +3,18 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 	"sync"
 
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
 )
 
 const TXN_SUBMIT_URL = "v1/transaction/put"
 const TXN_VERIFY_URL = "v1/transaction/get/confirmation?hash="
-
-var ErrNoTxnDetail = errors.New("missing_transaction_detail", "No transaction detail was found on any of the sharders")
 
 //Transaction entity that encapsulates the transaction related data and meta data
 type Transaction struct {
@@ -204,61 +204,89 @@ func sendTransactionToURL(url string, txn *Transaction, wg *sync.WaitGroup) ([]b
 	return nil, errors.Wrap(err, errors.New("transaction_send_error", postResponse.Body))
 }
 
+// VerifyTransaction query transaction status from sharders, and verify it by mininal confirmation
 func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) {
 	numSharders := len(sharders)
+
+	if numSharders == 0 {
+		return nil, ErrNoAvailableSharder
+	}
+
 	numSuccess := 0
 	var retTxn *Transaction
-	var customError error
+
+	//leave first item for ErrTooLessConfirmation
+	var msgList = make([]string, 1, numSharders)
+
 	for _, sharder := range sharders {
 		url := fmt.Sprintf("%v/%v%v", sharder, TXN_VERIFY_URL, txnHash)
 		req, err := util.NewHTTPGetRequest(url)
 		if err != nil {
-			customError = errors.Wrap(customError, err)
-			numSharders--
+			msgList = append(msgList, err.Error()+": ", url)
 			continue
 		}
 		response, err := req.Get()
 		if err != nil {
-			customError = errors.Wrap(customError, err)
-			numSharders--
+			msgList = append(msgList, err.Error()+": ", url)
 			continue
 		} else {
 			if response.StatusCode != 200 {
-				customError = errors.Wrap(customError, err)
+				msgList = append(msgList, strconv.Itoa(response.StatusCode)+": "+response.Body+" "+url)
 				continue
 			}
+
 			contents := response.Body
 			var objmap map[string]json.RawMessage
 			err = json.Unmarshal([]byte(contents), &objmap)
 			if err != nil {
-				customError = errors.Wrap(customError, err)
+				msgList = append(msgList, "json: "+contents)
 				continue
 			}
-			if _, ok := objmap["txn"]; !ok {
+			txnRawJSON, ok := objmap["txn"]
+
+			// txn data is found, success
+			if ok {
+				txn := &Transaction{}
+				err = json.Unmarshal(txnRawJSON, txn)
+				if err != nil {
+					msgList = append(msgList, "json: "+string(txnRawJSON))
+					continue
+				}
+				if len(txn.Signature) > 0 {
+					retTxn = txn
+				}
+				numSuccess++
+
+			} else {
+				// txn data is not found, but get block_hash, success
 				if _, ok := objmap["block_hash"]; ok {
 					numSuccess++
 				} else {
-					customError = errors.Wrap(customError, fmt.Sprintf("Sharder does not have the block summary with url: %s, contents: %s", url, contents))
+					// txn and block_hash
+					msgList = append(msgList, fmt.Sprintf("Sharder does not have the block summary with url: %s, contents: %s", url, contents))
 				}
-				continue
+
 			}
-			txn := &Transaction{}
-			err = json.Unmarshal(objmap["txn"], txn)
-			if err != nil {
-				customError = errors.Wrap(customError, err)
-				continue
-			}
-			if len(txn.Signature) > 0 {
-				retTxn = txn
-			}
-			numSuccess++
+
 		}
 	}
-	if numSharders == 0 || float64(numSuccess*1.0/numSharders) > 0.5 {
-		if retTxn != nil {
-			return retTxn, nil
-		}
-		return nil, errors.Wrap(customError, ErrNoTxnDetail)
+
+	consensus := int(float64(numSuccess) / float64(numSharders) * 100)
+
+	if cfg == nil {
+		return nil, ErrConfigIsNotInitialized
 	}
-	return nil, errors.Wrap(customError, errors.New("transaction_not_found", "Transaction was not found on any of the sharders"))
+	if consensus > 0 && consensus >= cfg.MinConfirmation {
+
+		if retTxn == nil {
+			return nil, errors.Throw(ErrNoTxnDetail, strings.Join(msgList, "\r\n"))
+		}
+
+		return retTxn, nil
+	}
+
+	msgList[0] = fmt.Sprintf("want %v, but got %v ", cfg.MinConfirmation, consensus)
+
+	return nil, errors.Throw(ErrTooLessConfirmation, strings.Join(msgList, "\r\n"))
+
 }
