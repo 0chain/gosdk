@@ -277,24 +277,11 @@ func (ta *TransactionWithAuth) VestingUpdateConfig(
 // miner sc
 //
 
-func (ta *TransactionWithAuth) MinerSCMinerSettings(info *MinerSCMinerInfo) (
+func (ta *TransactionWithAuth) MinerSCSettings(info *MinerSCMinerInfo) (
 	err error) {
 
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_MINER_SETTINGS, info, 0)
-	if err != nil {
-		Logger.Error(err)
-		return
-	}
-	go func() { ta.submitTxn() }()
-	return
-}
-
-func (ta *TransactionWithAuth) MinerSCSharderSettings(info *MinerSCMinerInfo) (
-	err error) {
-
-	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_SHARDER_SETTINGS, info, 0)
+		transaction.MINERSC_SETTINGS, info, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
