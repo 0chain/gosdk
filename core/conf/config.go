@@ -10,6 +10,19 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	// DefaultMinSubmit default value for min_submit
+	DefaultMinSubmit = 50
+	// DefaultMinConfirmation default value for min_confirmation
+	DefaultMinConfirmation = 50
+	// DefaultMaxTxnQuery default value for max_txn_query
+	DefaultMaxTxnQuery = 5
+	// DefaultConfirmationChainLength default value for confirmation_chain_length
+	DefaultConfirmationChainLength = 3
+	// DefaultQuerySleepTime default value for query_sleep_time
+	DefaultQuerySleepTime = 5
+)
+
 // Config settings from ~/.zcn/config.yaml
 // block_worker: http://198.18.0.98:9091
 // signature_scheme: bls0chain
@@ -81,13 +94,13 @@ func LoadConfig(v Reader) (Config, error) {
 
 	blockWorker := strings.TrimSpace(v.GetString("block_worker"))
 
-	if isURL(blockWorker) == false {
+	if !isURL(blockWorker) {
 		return cfg, thrown.Throw(ErrInvalidValue, "block_worker="+blockWorker)
 	}
 
 	minSubmit := v.GetInt("min_submit")
 	if minSubmit < 1 {
-		minSubmit = 50
+		minSubmit = DefaultMinSubmit
 	} else if minSubmit > 100 {
 		minSubmit = 100
 	}
@@ -95,7 +108,7 @@ func LoadConfig(v Reader) (Config, error) {
 	minCfm := v.GetInt("min_confirmation")
 
 	if minCfm < 1 {
-		minCfm = 50
+		minCfm = DefaultMinConfirmation
 	} else if minCfm > 100 {
 		minCfm = 100
 	}
@@ -103,18 +116,18 @@ func LoadConfig(v Reader) (Config, error) {
 	CfmChainLength := v.GetInt("confirmation_chain_length")
 
 	if CfmChainLength < 1 {
-		CfmChainLength = 3
+		CfmChainLength = DefaultConfirmationChainLength
 	}
 
 	// additional settings depending network latency
 	maxTxnQuery := v.GetInt("max_txn_query")
 	if maxTxnQuery < 1 {
-		maxTxnQuery = 5
+		maxTxnQuery = DefaultMaxTxnQuery
 	}
 
 	querySleepTime := v.GetInt("query_sleep_time")
 	if querySleepTime < 1 {
-		querySleepTime = 5
+		querySleepTime = DefaultQuerySleepTime
 	}
 
 	cfg.BlockWorker = blockWorker
