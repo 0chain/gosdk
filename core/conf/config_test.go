@@ -9,6 +9,22 @@ import (
 
 func TestLoadConfig(t *testing.T) {
 
+	var mockDefaultReader = func() Reader {
+		reader := &mocks.Reader{}
+		reader.On("GetString", "block_worker").Return("http://127.0.0.1:9091/dns")
+		reader.On("GetInt", "min_submit").Return(0)
+		reader.On("GetInt", "min_confirmation").Return(0)
+		reader.On("GetInt", "max_txn_query").Return(0)
+		reader.On("GetInt", "query_sleep_time").Return(0)
+		reader.On("GetInt", "confirmation_chain_length").Return(0)
+		reader.On("GetStringSlice", "preferred_blobbers").Return(nil)
+		reader.On("GetString", "signature_scheme").Return("")
+		reader.On("GetString", "chain_id").Return("")
+
+		return reader
+
+	}
+
 	tests := []struct {
 		name        string
 		exceptedErr error
@@ -42,19 +58,7 @@ func TestLoadConfig(t *testing.T) {
 			name: "Test_Config_BlockWorker",
 
 			setup: func(t *testing.T) Reader {
-
-				reader := &mocks.Reader{}
-				reader.On("GetString", "block_worker").Return("http://127.0.0.1:9091/dns")
-				reader.On("GetInt", "min_submit").Return(0)
-				reader.On("GetInt", "min_confirmation").Return(0)
-				reader.On("GetInt", "max_txn_query").Return(0)
-				reader.On("GetInt", "query_sleep_time").Return(0)
-				reader.On("GetInt", "confirmation_chain_length").Return(0)
-				reader.On("GetStringSlice", "preferred_blobbers").Return(nil)
-				reader.On("GetString", "signature_scheme").Return("")
-				reader.On("GetString", "chain_id").Return("")
-
-				return reader
+				return mockDefaultReader()
 			},
 			run: func(r *require.Assertions, cfg Config) {
 				r.Equal("http://127.0.0.1:9091/dns", cfg.BlockWorker)
@@ -64,19 +68,7 @@ func TestLoadConfig(t *testing.T) {
 			name: "Test_Config_Min_Submit_Less_Than_1",
 
 			setup: func(t *testing.T) Reader {
-
-				reader := &mocks.Reader{}
-				reader.On("GetString", "block_worker").Return("https://127.0.0.1:9091/dns")
-				reader.On("GetInt", "min_submit").Return(0)
-				reader.On("GetInt", "min_confirmation").Return(0)
-				reader.On("GetInt", "max_txn_query").Return(0)
-				reader.On("GetInt", "query_sleep_time").Return(0)
-				reader.On("GetInt", "confirmation_chain_length").Return(0)
-				reader.On("GetStringSlice", "preferred_blobbers").Return(nil)
-				reader.On("GetString", "signature_scheme").Return("")
-				reader.On("GetString", "chain_id").Return("")
-
-				return reader
+				return mockDefaultReader()
 			},
 			run: func(r *require.Assertions, cfg Config) {
 				r.Equal(50, cfg.MinSubmit)
@@ -108,19 +100,7 @@ func TestLoadConfig(t *testing.T) {
 			name: "Test_Config_Min_Confirmation_Less_Than_1",
 
 			setup: func(t *testing.T) Reader {
-
-				reader := &mocks.Reader{}
-				reader.On("GetString", "block_worker").Return("https://127.0.0.1:9091/dns")
-				reader.On("GetInt", "min_submit").Return(0)
-				reader.On("GetInt", "min_confirmation").Return(0)
-				reader.On("GetInt", "max_txn_query").Return(0)
-				reader.On("GetInt", "query_sleep_time").Return(0)
-				reader.On("GetInt", "confirmation_chain_length").Return(0)
-				reader.On("GetStringSlice", "preferred_blobbers").Return(nil)
-				reader.On("GetString", "signature_scheme").Return("")
-				reader.On("GetString", "chain_id").Return("")
-
-				return reader
+				return mockDefaultReader()
 			},
 			run: func(r *require.Assertions, cfg Config) {
 				r.Equal(50, cfg.MinConfirmation)
@@ -152,18 +132,7 @@ func TestLoadConfig(t *testing.T) {
 
 			setup: func(t *testing.T) Reader {
 
-				reader := &mocks.Reader{}
-				reader.On("GetString", "block_worker").Return("https://127.0.0.1:9091/dns")
-				reader.On("GetInt", "min_submit").Return(0)
-				reader.On("GetInt", "min_confirmation").Return(0)
-				reader.On("GetInt", "max_txn_query").Return(0)
-				reader.On("GetInt", "query_sleep_time").Return(0)
-				reader.On("GetInt", "confirmation_chain_length").Return(0)
-				reader.On("GetStringSlice", "preferred_blobbers").Return(nil)
-				reader.On("GetString", "signature_scheme").Return("")
-				reader.On("GetString", "chain_id").Return("")
-
-				return reader
+				return mockDefaultReader()
 			},
 			run: func(r *require.Assertions, cfg Config) {
 				r.Equal(5, cfg.QuerySleepTime)
@@ -173,18 +142,7 @@ func TestLoadConfig(t *testing.T) {
 
 			setup: func(t *testing.T) Reader {
 
-				reader := &mocks.Reader{}
-				reader.On("GetString", "block_worker").Return("https://127.0.0.1:9091/dns")
-				reader.On("GetInt", "min_submit").Return(0)
-				reader.On("GetInt", "min_confirmation").Return(0)
-				reader.On("GetInt", "max_txn_query").Return(0)
-				reader.On("GetInt", "query_sleep_time").Return(0)
-				reader.On("GetInt", "confirmation_chain_length").Return(0)
-				reader.On("GetStringSlice", "preferred_blobbers").Return(nil)
-				reader.On("GetString", "signature_scheme").Return("")
-				reader.On("GetString", "chain_id").Return("")
-
-				return reader
+				return mockDefaultReader()
 			},
 			run: func(r *require.Assertions, cfg Config) {
 				r.Equal(5, cfg.MaxTxnQuery)
@@ -193,19 +151,7 @@ func TestLoadConfig(t *testing.T) {
 			name: "Test_Config_Confirmation_Chain_Length_Less_Than_1",
 
 			setup: func(t *testing.T) Reader {
-
-				reader := &mocks.Reader{}
-				reader.On("GetString", "block_worker").Return("https://127.0.0.1:9091/dns")
-				reader.On("GetInt", "min_submit").Return(0)
-				reader.On("GetInt", "min_confirmation").Return(0)
-				reader.On("GetInt", "max_txn_query").Return(0)
-				reader.On("GetInt", "query_sleep_time").Return(0)
-				reader.On("GetInt", "confirmation_chain_length").Return(0)
-				reader.On("GetStringSlice", "preferred_blobbers").Return(nil)
-				reader.On("GetString", "signature_scheme").Return("")
-				reader.On("GetString", "chain_id").Return("")
-
-				return reader
+				return mockDefaultReader()
 			},
 			run: func(r *require.Assertions, cfg Config) {
 				r.Equal(3, cfg.ConfirmationChainLength)
