@@ -131,7 +131,8 @@ type TransactionScheme interface {
 
 	// Miner SC
 
-	MinerSCSettings(*MinerSCMinerInfo) error
+	MinerSCMinerSettings(*MinerSCMinerInfo) error
+	MinerSCSharderSettings(*MinerSCMinerInfo) error
 	MinerSCLock(minerID string, lock int64) error
 	MienrSCUnlock(minerID, poolID string) error
 
@@ -1093,13 +1094,13 @@ type MinerSCMinerStat struct {
 }
 
 type MinerSCMinerInfo struct {
-	*SimpleMienrSCMinerInfo `json:"simple_miner"`
+	*SimpleMinerSCMinerInfo `json:"simple_miner"`
 	Pending                 map[string]MinerSCDelegatePool `json:"pending"`
 	Active                  map[string]MinerSCDelegatePool `json:"active"`
 	Deleting                map[string]MinerSCDelegatePool `json:"deleting"`
 }
 
-type SimpleMienrSCMinerInfo struct {
+type SimpleMinerSCMinerInfo struct {
 	ID      string `json:"id"`
 	BaseURL string `json:"url"`
 
@@ -1112,9 +1113,20 @@ type SimpleMienrSCMinerInfo struct {
 	Stat MinerSCMinerStat `json:"stat"`
 }
 
-func (t *Transaction) MinerSCSettings(info *MinerSCMinerInfo) (err error) {
+func (t *Transaction) MinerSCMinerSettings(info *MinerSCMinerInfo) (err error) {
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_SETTINGS, info, 0)
+		transaction.MINERSC_MINER_SETTINGS, info, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+func (t *Transaction) MinerSCSharderSettings(info *MinerSCMinerInfo) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_SHARDER_SETTINGS, info, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
