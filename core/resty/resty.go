@@ -102,9 +102,20 @@ func (r *Resty) httpDo(req *http.Request) {
 		var err error
 
 		if r.retry > 0 {
-			for i := 0; i < r.retry; i++ {
+			for i := 1; ; i++ {
 				resp, err = r.client.Do(req)
 				if resp != nil && resp.StatusCode == 200 {
+					break
+				}
+				// close body ReadClose to release resource before retrying it
+				if resp != nil && resp.Body != nil {
+					// don't close it if it is latest retry
+					if i < r.retry {
+						resp.Body.Close()
+					}
+				}
+
+				if i == r.retry {
 					break
 				}
 			}
