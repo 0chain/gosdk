@@ -108,9 +108,10 @@ const (
 	STORAGESC_CURATOR_TRANSFER         = "curator_transfer_allocation"
 
 	// Miner SC
-	MINERSC_LOCK     = "addToDelegatePool"
-	MINERSC_UNLOCK   = "deleteFromDelegatePool"
-	MINERSC_SETTINGS = "update_settings"
+	MINERSC_LOCK             = "addToDelegatePool"
+	MINERSC_UNLOCK           = "deleteFromDelegatePool"
+	MINERSC_MINER_SETTINGS   = "update_miner_settings"
+	MINERSC_SHARDER_SETTINGS = "update_sharder_settings"
 )
 
 type SignFunc = func(msg string) (string, error)
