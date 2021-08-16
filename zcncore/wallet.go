@@ -676,7 +676,7 @@ func getTokenUSDRate() (float64, error) {
 	return getTokenRateByCurrency("usd")
 }
 
-func getTokenRateByCurrency(currency string) (float64, error){
+func getTokenRateByCurrency(currency string) (float64, error) {
 	var CoinGeckoResponse struct {
 		ID         string `json:"id"`
 		Symbol     string `json:"symbol"`
@@ -932,6 +932,10 @@ type VestingSCConfig struct {
 	MaxDuration          time.Duration  `json:"max_duration"`
 	MaxDestinations      int            `json:"max_destinations"`
 	MaxDescriptionLength int            `json:"max_description_length"`
+}
+
+type InputMap struct {
+	fields map[string]interface{}
 }
 
 func GetVestingSCConfig(cb GetInfoCallback) (err error) {

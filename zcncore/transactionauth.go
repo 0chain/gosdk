@@ -261,7 +261,7 @@ func (ta *TransactionWithAuth) VestingDelete(poolID string) (err error) {
 }
 
 func (ta *TransactionWithAuth) VestingUpdateConfig(
-	vscc *VestingSCConfig) (err error) {
+	vscc *InputMap) (err error) {
 
 	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
 		transaction.VESTING_UPDATE_CONFIG, vscc, 0)

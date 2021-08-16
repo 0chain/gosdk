@@ -127,7 +127,7 @@ type TransactionScheme interface {
 	VestingUnlock(poolID string) error
 	VestingAdd(ar *VestingAddRequest, value int64) error
 	VestingDelete(poolID string) error
-	VestingUpdateConfig(vscc *VestingSCConfig) error
+	VestingUpdateConfig(vscc *InputMap) error
 
 	// Miner SC
 
@@ -1048,7 +1048,7 @@ func (t *Transaction) VestingDelete(poolID string) (err error) {
 	return
 }
 
-func (t *Transaction) VestingUpdateConfig(vscc *VestingSCConfig) (err error) {
+func (t *Transaction) VestingUpdateConfig(vscc *InputMap) (err error) {
 
 	err = t.createSmartContractTxn(VestingSmartContractAddress,
 		transaction.VESTING_UPDATE_CONFIG, vscc, 0)
