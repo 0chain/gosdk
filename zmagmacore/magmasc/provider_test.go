@@ -22,21 +22,7 @@ func Test_Provider_Decode(t *testing.T) {
 		t.Fatalf("json.Marshal() error: %v | want: %v", err, nil)
 	}
 
-	provInvalid = mockProvider()
-	provInvalid.Terms.QoS.UploadMbps = -0.1
-	UploadMbpsBlobInvalid, err := json.Marshal(provInvalid)
-	if err != nil {
-		t.Fatalf("json.Marshal() error: %v | want: %v", err, nil)
-	}
-
-	provInvalid = mockProvider()
-	provInvalid.Terms.QoS.DownloadMbps = -0.1
-	DownloadMbpsBlobInvalid, err := json.Marshal(provInvalid)
-	if err != nil {
-		t.Fatalf("json.Marshal() error: %v | want: %v", err, nil)
-	}
-
-	tests := [5]struct {
+	tests := [3]struct {
 		name  string
 		blob  []byte
 		want  *Provider
@@ -60,18 +46,6 @@ func Test_Provider_Decode(t *testing.T) {
 			want:  &Provider{},
 			error: true,
 		},
-		{
-			name:  "QoS_Upload_Mbps_Invalid_ERR",
-			blob:  UploadMbpsBlobInvalid,
-			want:  &Provider{},
-			error: true,
-		},
-		{
-			name:  "QoS_Download_Mbps_Invalid_ERR",
-			blob:  DownloadMbpsBlobInvalid,
-			want:  &Provider{},
-			error: true,
-		},
 	}
 
 	for idx := range tests {
@@ -81,7 +55,7 @@ func Test_Provider_Decode(t *testing.T) {
 
 			got := &Provider{}
 			if err := got.Decode(test.blob); (err != nil) != test.error {
-				t.Errorf("Decode() error: %v | want: %v", err, nil)
+				t.Errorf("Decode() error: %v | want: %v", err, test.error)
 			}
 			if !reflect.DeepEqual(got, test.want) {
 				t.Errorf("Decode() got: %#v | want: %#v", got, test.want)
@@ -142,13 +116,10 @@ func Test_Provider_Validate(t *testing.T) {
 	provEmptyExtID := mockProvider()
 	provEmptyExtID.ExtID = ""
 
-	provNegTermsQoSUploadMbps := mockProvider()
-	provNegTermsQoSUploadMbps.Terms.QoS.UploadMbps = -0.1
+	provEmptyHost := mockProvider()
+	provEmptyHost.Host = ""
 
-	provNegTermsQoSDownloadMbps := mockProvider()
-	provNegTermsQoSDownloadMbps.Terms.QoS.DownloadMbps = -0.1
-
-	tests := [4]struct {
+	tests := [3]struct {
 		name  string
 		prov  *Provider
 		error bool
@@ -164,13 +135,8 @@ func Test_Provider_Validate(t *testing.T) {
 			error: true,
 		},
 		{
-			name:  "Neg_Terms_QoS_Upload_Mbps_ERR",
-			prov:  provNegTermsQoSUploadMbps,
-			error: true,
-		},
-		{
-			name:  "Neg_Terms_QoS_Download_Mbps_ERR",
-			prov:  provNegTermsQoSDownloadMbps,
+			name:  "Empty_Host_ERR",
+			prov:  provEmptyHost,
 			error: true,
 		},
 	}

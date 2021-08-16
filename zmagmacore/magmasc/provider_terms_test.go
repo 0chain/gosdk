@@ -84,18 +84,20 @@ func Test_ProviderTerms_Decrease(t *testing.T) {
 	t.Parallel()
 
 	terms := mockProviderTerms()
+
+	want := terms
 	// the volume of terms must to be zeroed
-	terms.Volume = 0
+	want.Volume = 0
 	// prolong terms expire
-	terms.ExpiredAt += time.Timestamp(terms.ProlongDuration)
-	if terms.PriceAutoUpdate != 0 && terms.Price > terms.PriceAutoUpdate {
-		terms.Price -= terms.PriceAutoUpdate // down the price
+	want.ExpiredAt += time.Timestamp(want.ProlongDuration)
+	if want.PriceAutoUpdate != 0 && want.Price > want.PriceAutoUpdate {
+		want.Price -= want.PriceAutoUpdate // down the price
 	}
-	if terms.QoSAutoUpdate.UploadMbps != 0 {
-		terms.QoS.UploadMbps += terms.QoSAutoUpdate.UploadMbps // up the qos of upload mbps
+	if want.QoSAutoUpdate.UploadMbps != 0 {
+		want.QoS.UploadMbps += want.QoSAutoUpdate.UploadMbps // up the qos of upload mbps
 	}
-	if terms.QoSAutoUpdate.DownloadMbps != 0 {
-		terms.QoS.DownloadMbps += terms.QoSAutoUpdate.DownloadMbps // up the qos of download mbps
+	if want.QoSAutoUpdate.DownloadMbps != 0 {
+		want.QoS.DownloadMbps += want.QoSAutoUpdate.DownloadMbps // up the qos of download mbps
 	}
 
 	tests := [1]struct {
@@ -105,8 +107,8 @@ func Test_ProviderTerms_Decrease(t *testing.T) {
 	}{
 		{
 			name:  "OK",
-			terms: mockProviderTerms(),
-			want:  terms,
+			terms: terms,
+			want:  want,
 		},
 	}
 
@@ -322,18 +324,19 @@ func Test_ProviderTerms_Increase(t *testing.T) {
 
 	terms := mockProviderTerms()
 
+	want := terms
 	// the volume must to be zeroed
-	terms.Volume = 0
+	want.Volume = 0
 	// prolong expire of terms
-	terms.ExpiredAt += time.Timestamp(terms.ProlongDuration)
-	if terms.PriceAutoUpdate != 0 {
-		terms.Price += terms.PriceAutoUpdate // up the price
+	want.ExpiredAt += time.Timestamp(want.ProlongDuration)
+	if want.PriceAutoUpdate != 0 {
+		want.Price += want.PriceAutoUpdate // up the price
 	}
-	if terms.QoSAutoUpdate.UploadMbps != 0 && terms.QoS.UploadMbps > terms.QoSAutoUpdate.UploadMbps {
-		terms.QoS.UploadMbps -= terms.QoSAutoUpdate.UploadMbps // down the qos of upload mbps
+	if want.QoSAutoUpdate.UploadMbps != 0 && want.QoS.UploadMbps > want.QoSAutoUpdate.UploadMbps {
+		want.QoS.UploadMbps -= want.QoSAutoUpdate.UploadMbps // down the qos of upload mbps
 	}
-	if terms.QoSAutoUpdate.DownloadMbps != 0 && terms.QoS.DownloadMbps > terms.QoSAutoUpdate.DownloadMbps {
-		terms.QoS.DownloadMbps -= terms.QoSAutoUpdate.DownloadMbps // down the qos of download mbps
+	if want.QoSAutoUpdate.DownloadMbps != 0 && want.QoS.DownloadMbps > want.QoSAutoUpdate.DownloadMbps {
+		want.QoS.DownloadMbps -= want.QoSAutoUpdate.DownloadMbps // down the qos of download mbps
 	}
 
 	tests := [1]struct {
@@ -343,8 +346,8 @@ func Test_ProviderTerms_Increase(t *testing.T) {
 	}{
 		{
 			name:  "OK",
-			terms: mockProviderTerms(),
-			want:  terms,
+			terms: terms,
+			want:  want,
 		},
 	}
 

@@ -54,12 +54,13 @@ func mockProvider() *Provider {
 		ID:    "id:provider:" + now,
 		ExtID: "id:provider:external:" + now,
 		Host:  "localhost:8020",
-		Terms: mockProviderTerms(),
+		Terms: mockProviderTermsList(10),
 	}
 }
 
 func mockProviderTerms() ProviderTerms {
 	return ProviderTerms{
+		AccessPointID:   "id:access:point" + time.Now().Format(time.RFC3339Nano),
 		Price:           0.1,
 		PriceAutoUpdate: 0.001,
 		MinCost:         0.5,
@@ -72,6 +73,16 @@ func mockProviderTerms() ProviderTerms {
 		ProlongDuration: 1 * 60 * 60,              // 1 hour
 		ExpiredAt:       ts.Now() + (1 * 60 * 60), // 1 hour from now
 	}
+}
+
+func mockProviderTermsList(size int) map[string]ProviderTerms {
+	list := make(map[string]ProviderTerms, size)
+	for idx := 0; idx < size; idx++ {
+		terms := mockProviderTerms()
+		list[terms.AccessPointID] = terms
+	}
+
+	return list
 }
 
 func mockTokenPool() *TokenPool {

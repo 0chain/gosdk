@@ -11,8 +11,9 @@ import (
 )
 
 type (
-	// ProviderTerms represents data of provider and services terms.
+	// ProviderTerms represents a provider and service terms.
 	ProviderTerms struct {
+		AccessPointID   string         `json:"apid"`                        // access point id
 		Price           float32        `json:"price"`                       // tokens per Megabyte
 		PriceAutoUpdate float32        `json:"price_auto_update,omitempty"` // price change on auto update
 		MinCost         float32        `json:"min_cost"`                    // minimal cost for a session
@@ -50,6 +51,7 @@ func (m *ProviderTerms) Decode(blob []byte) error {
 		return err
 	}
 
+	m.AccessPointID = terms.AccessPointID
 	m.Price = terms.Price
 	m.PriceAutoUpdate = terms.PriceAutoUpdate
 	m.MinCost = terms.MinCost
@@ -173,6 +175,9 @@ func (m *ProviderTerms) Increase() *ProviderTerms {
 // If it is not return errInvalidProviderTerms.
 func (m *ProviderTerms) Validate() (err error) {
 	switch { // is invalid
+	case m.AccessPointID == "":
+		err = errors.New(errCodeBadRequest, "invalid access point id")
+
 	case m.QoS == nil:
 		err = errors.New(errCodeBadRequest, "invalid terms qos")
 

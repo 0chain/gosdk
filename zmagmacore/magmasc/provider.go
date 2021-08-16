@@ -16,10 +16,10 @@ import (
 type (
 	// Provider represents providers node stored in blockchain.
 	Provider struct {
-		ID    string        `json:"id"`
-		ExtID string        `json:"ext_id"`
-		Host  string        `json:"host,omitempty"`
-		Terms ProviderTerms `json:"terms"`
+		ID    string    `json:"id"`
+		ExtID string    `json:"ext_id"`
+		Host  string    `json:"host,omitempty"`
+		Terms TermsList `json:"terms"`
 	}
 )
 
@@ -30,26 +30,32 @@ var (
 
 // NewProviderFromCfg creates Consumer from config.Consumer.
 func NewProviderFromCfg(cfg *config.Provider) *Provider {
+	terms := make(map[string]ProviderTerms, len(cfg.Terms))
+	for _, item := range cfg.Terms {
+		terms[item.AccessPointID] = ProviderTerms{
+			AccessPointID:   item.AccessPointID,
+			Price:           item.Price,
+			PriceAutoUpdate: item.PriceAutoUpdate,
+			MinCost:         item.MinCost,
+			Volume:          item.Volume,
+			QoS: &protos.QoS{
+				DownloadMbps: item.QoS.DownloadMbps,
+				UploadMbps:   item.QoS.UploadMbps,
+			},
+			QoSAutoUpdate: &QoSAutoUpdate{
+				DownloadMbps: item.QoSAutoUpdate.DownloadMbps,
+				UploadMbps:   item.QoSAutoUpdate.DownloadMbps,
+			},
+			ProlongDuration: time.Duration(item.ProlongDuration),
+			ExpiredAt:       ctime.Timestamp(time.Now().Add(time.Duration(item.ExpiredAt) * time.Minute).Unix()),
+		}
+	}
+
 	return &Provider{
 		ID:    node.ID(),
 		ExtID: cfg.ExtID,
 		Host:  cfg.Host,
-		Terms: ProviderTerms{
-			Price:           cfg.Terms.Price,
-			PriceAutoUpdate: cfg.Terms.PriceAutoUpdate,
-			MinCost:         cfg.Terms.MinCost,
-			Volume:          cfg.Terms.Volume,
-			QoS: &protos.QoS{
-				DownloadMbps: cfg.Terms.QoS.DownloadMbps,
-				UploadMbps:   cfg.Terms.QoS.UploadMbps,
-			},
-			QoSAutoUpdate: &QoSAutoUpdate{
-				DownloadMbps: cfg.Terms.QoSAutoUpdate.DownloadMbps,
-				UploadMbps:   cfg.Terms.QoSAutoUpdate.DownloadMbps,
-			},
-			ProlongDuration: time.Duration(cfg.Terms.ProlongDuration),
-			ExpiredAt:       ctime.Timestamp(time.Now().Add(time.Duration(cfg.Terms.ExpiredAt) * time.Minute).Unix()),
-		},
+		Terms: terms,
 	}
 }
 
@@ -89,11 +95,8 @@ func (m *Provider) Validate() (err error) {
 	case m.ExtID == "":
 		err = errors.New(errCodeBadRequest, "provider external id is required")
 
-	case m.Terms.QoS.UploadMbps < 0:
-		err = errors.New(errCodeBadRequest, "invalid provider qos upload mbps")
-
-	case m.Terms.QoS.DownloadMbps < 0:
-		err = errors.New(errCodeBadRequest, "invalid provider qos download mbps")
+	case m.Host == "":
+		err = errors.New(errCodeBadRequest, "provider host is required")
 
 	default:
 		return nil // is valid
