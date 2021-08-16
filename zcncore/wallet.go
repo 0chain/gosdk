@@ -935,7 +935,7 @@ type VestingSCConfig struct {
 }
 
 type InputMap struct {
-	fields map[string]interface{}
+	Fields map[string]interface{} `json:"fields"`
 }
 
 func GetVestingSCConfig(cb GetInfoCallback) (err error) {
