@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	noBLOBBERS     = errors.New("no_blobber", "No Blobbers set in this allocation")
+	noBLOBBERS     = errors.New("", "No Blobbers set in this allocation")
 	notInitialized = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 )
 
@@ -1035,7 +1035,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPu
 		fullconsensus:   float32(a.DataShards + a.ParityShards),
 	}
 	if !consensus.isConsensusOk() {
-		return errors.New("invalid_consensus", "consensus not reached")
+		return errors.New("", "consensus not reached")
 	}
 	return nil
 }

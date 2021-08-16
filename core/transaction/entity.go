@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net"
 	"net/http"
 	"strconv"
@@ -221,11 +222,11 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 		return nil, ErrNoAvailableSharder
 	}
 
-	minNumConfirmation := cfg.MinConfirmation / 100 * numSharders
+	minNumConfirmation := int(math.Ceil(float64(cfg.MinConfirmation*numSharders) / 100))
 
 	rand := util.NewRand(numSharders)
 
-	selectedSharders := make([]string, minNumConfirmation+1)
+	selectedSharders := make([]string, 0, minNumConfirmation+1)
 
 	// random pick minNumConfirmation+1 first
 	for i := 0; i <= minNumConfirmation; i++ {
@@ -245,10 +246,9 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 	//leave first item for ErrTooLessConfirmation
 	var msgList = make([]string, 1, numSharders)
 
-	urls := make([]string, len(selectedSharders))
+	urls := make([]string, 0, len(selectedSharders))
 
 	for _, sharder := range selectedSharders {
-
 		urls = append(urls, fmt.Sprintf("%v/%v%v", sharder, TXN_VERIFY_URL, txnHash))
 	}
 
@@ -267,18 +267,18 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 		url := req.URL.String()
 
 		if err != nil { //network issue
-			msgList = append(msgList, err.Error()+": ", url)
+			msgList = append(msgList, err.Error())
 			return err
 		}
 
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil { //network issue
-			msgList = append(msgList, err.Error()+": "+url)
+			msgList = append(msgList, url+": "+err.Error())
 			return err
 		}
 
 		if resp.StatusCode != 200 {
-			msgList = append(msgList, strconv.Itoa(resp.StatusCode)+": "+url)
+			msgList = append(msgList, url+": ["+strconv.Itoa(resp.StatusCode)+"] "+string(body))
 			return errors.Throw(ErrInvalidRequest, strconv.Itoa(resp.StatusCode)+": "+resp.Status)
 		}
 
@@ -349,7 +349,7 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 		return retTxn, nil
 	}
 
-	msgList[0] = fmt.Sprintf("min_confirmation is %v%, but got %v/%v sharders", cfg.MinConfirmation, numSuccess, numSharders)
+	msgList[0] = fmt.Sprintf("min_confirmation is %v%%, but got %v/%v sharders", cfg.MinConfirmation, numSuccess, numSharders)
 
 	return nil, errors.Throw(ErrTooLessConfirmation, strings.Join(msgList, "\r\n"))
 

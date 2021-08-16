@@ -22,16 +22,21 @@ func New(transport *http.Transport, handle Handle, opts ...Option) *Resty {
 		r.transport = &http.Transport{}
 	}
 
-	client := &http.Client{
-		Transport: r.transport,
-	}
-	if r.timeout > 0 {
-		client.Timeout = r.timeout
-	}
-
-	r.client = client
+	r.client = CreateClient(r.transport, r.timeout)
 
 	return r
+}
+
+// CreateClient a function that create a client instance
+var CreateClient = func(t *http.Transport, timeout time.Duration) Client {
+	client := &http.Client{
+		Transport: t,
+	}
+	if timeout > 0 {
+		client.Timeout = timeout
+	}
+
+	return client
 }
 
 // Client http client

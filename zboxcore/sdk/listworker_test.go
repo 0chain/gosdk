@@ -80,7 +80,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 				})).Return(&http.Response{
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 					StatusCode: p.respStatusCode,
-				}, errors.New(mockErrorMessage))
+				}, errors.New("", mockErrorMessage))
 			},
 			wantErr: true,
 			errMsg:  mockErrorMessage,
