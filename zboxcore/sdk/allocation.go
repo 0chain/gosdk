@@ -1035,7 +1035,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPu
 		fullconsensus:   float32(a.DataShards + a.ParityShards),
 	}
 	if !consensus.isConsensusOk() {
-		return errors.New("invalid_consensus", "consensus not reached")
+		return errors.New("", "consensus not reached")
 	}
 	return nil
 }
