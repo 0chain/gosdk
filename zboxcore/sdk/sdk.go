@@ -191,7 +191,7 @@ func GetReadPoolInfo(clientID string) (info *AllocationPoolStats, err error) {
 		return nil, errors.Wrap(err, "error requesting read pool info")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, errors.New("", "empty response")
 	}
 
 	info = new(AllocationPoolStats)
@@ -335,7 +335,7 @@ func GetStakePoolInfo(blobberID string) (info *StakePoolInfo, err error) {
 		return nil, errors.Wrap(err, "error requesting stake pool info:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, errors.New("", "empty response")
 	}
 
 	info = new(StakePoolInfo)
@@ -368,7 +368,7 @@ func GetStakePoolUserInfo(clientID string) (info *StakePoolUserInfo, err error) 
 		return nil, errors.Wrap(err, "error requesting stake pool user info:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, errors.New("", "empty response")
 	}
 
 	info = new(StakePoolUserInfo)
@@ -490,7 +490,7 @@ func GetWritePoolInfo(clientID string) (info *AllocationPoolStats, err error) {
 		return nil, errors.Wrap(err, "error requesting read pool info:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, errors.New("", "empty response")
 	}
 
 	info = new(AllocationPoolStats)
@@ -575,7 +575,7 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 		return nil, errors.Wrap(err, "error requesting challenge pool info:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, errors.New("", "empty response")
 	}
 
 	info = new(ChallengePoolInfo)
@@ -600,7 +600,7 @@ func GetMptData(key string) ([]byte, error) {
 		return nil, errors.Wrap(err, "error requesting mpt key data:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, errors.New("", "empty response")
 	}
 
 	return b, nil
@@ -667,7 +667,7 @@ func GetStorageSCConfig() (conf *StorageSCConfig, err error) {
 		return nil, errors.Wrap(err, "error requesting storage SC configs:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, errors.New("", "empty response")
 	}
 
 	conf = new(StorageSCConfig)
@@ -676,7 +676,7 @@ func GetStorageSCConfig() (conf *StorageSCConfig, err error) {
 	}
 
 	if conf.ReadPool == nil || conf.WritePool == nil || conf.StakePool == nil {
-		return nil, errors.New("invalid confg: missing read/write/stake pool configs")
+		return nil, errors.New("", "invalid confg: missing read/write/stake pool configs")
 	}
 	return
 }
@@ -704,7 +704,7 @@ func GetBlobbers() (bs []*Blobber, err error) {
 		return nil, errors.Wrap(err, "error requesting blobbers:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, errors.New("","empty response")
 	}
 
 	type nodes struct {
@@ -735,7 +735,7 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 		return nil, errors.Wrap(err, "requesting blobber:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response from sharders")
+		return nil, errors.New("","empty response from sharders")
 	}
 	blob = new(Blobber)
 	if err = json.Unmarshal(b, blob); err != nil {

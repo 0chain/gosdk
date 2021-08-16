@@ -40,7 +40,7 @@ type Client interface {
 }
 
 // Handle handler of http response
-type Handle func(*http.Request, *http.Response, context.CancelFunc, error) error
+type Handle func(req *http.Request, resp *http.Response, cf context.CancelFunc, err error) error
 
 // Option set restry option
 type Option func(*Resty)

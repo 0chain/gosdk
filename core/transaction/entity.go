@@ -1,8 +1,12 @@
 package transaction
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net"
+	"net/http"
 	"strconv"
 	"strings"
 	"sync"
@@ -10,6 +14,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/util"
 )
 
@@ -206,77 +211,136 @@ func sendTransactionToURL(url string, txn *Transaction, wg *sync.WaitGroup) ([]b
 
 // VerifyTransaction query transaction status from sharders, and verify it by mininal confirmation
 func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) {
+	if cfg == nil {
+		return nil, ErrConfigIsNotInitialized
+	}
+
 	numSharders := len(sharders)
 
 	if numSharders == 0 {
 		return nil, ErrNoAvailableSharder
 	}
 
+	minNumConfirmation := cfg.MinConfirmation / 100 * numSharders
+
+	rand := util.NewRand(numSharders)
+
+	selectedSharders := make([]string, minNumConfirmation+1)
+
+	// random pick minNumConfirmation+1 first
+	for i := 0; i <= minNumConfirmation; i++ {
+		n, err := rand.Next()
+
+		if err != nil {
+			break
+		}
+
+		selectedSharders = append(selectedSharders, sharders[n])
+	}
+
 	numSuccess := 0
+
 	var retTxn *Transaction
 
 	//leave first item for ErrTooLessConfirmation
 	var msgList = make([]string, 1, numSharders)
 
-	for _, sharder := range sharders {
-		url := fmt.Sprintf("%v/%v%v", sharder, TXN_VERIFY_URL, txnHash)
-		req, err := util.NewHTTPGetRequest(url)
-		if err != nil {
-			msgList = append(msgList, err.Error()+": ", url)
-			continue
-		}
-		response, err := req.Get()
-		if err != nil {
-			msgList = append(msgList, err.Error()+": ", url)
-			continue
-		} else {
-			if response.StatusCode != 200 {
-				msgList = append(msgList, strconv.Itoa(response.StatusCode)+": "+response.Body+" "+url)
-				continue
-			}
+	urls := make([]string, len(selectedSharders))
 
-			contents := response.Body
-			var objmap map[string]json.RawMessage
-			err = json.Unmarshal([]byte(contents), &objmap)
+	for _, sharder := range selectedSharders {
+
+		urls = append(urls, fmt.Sprintf("%v/%v%v", sharder, TXN_VERIFY_URL, txnHash))
+	}
+
+	header := map[string]string{
+		"Content-Type":                "application/json; charset=utf-8",
+		"Access-Control-Allow-Origin": "*",
+	}
+
+	transport := &http.Transport{
+		Dial: (&net.Dialer{
+			Timeout: resty.DefaultDialTimeout,
+		}).Dial,
+		TLSHandshakeTimeout: resty.DefaultDialTimeout,
+	}
+	r := resty.New(transport, func(req *http.Request, resp *http.Response, cf context.CancelFunc, err error) error {
+		url := req.URL.String()
+
+		if err != nil { //network issue
+			msgList = append(msgList, err.Error()+": ", url)
+			return err
+		}
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil { //network issue
+			msgList = append(msgList, err.Error()+": "+url)
+			return err
+		}
+
+		if resp.StatusCode != 200 {
+			msgList = append(msgList, strconv.Itoa(resp.StatusCode)+": "+url)
+			return errors.Throw(ErrInvalidRequest, strconv.Itoa(resp.StatusCode)+": "+resp.Status)
+		}
+
+		var objmap map[string]json.RawMessage
+		err = json.Unmarshal(body, &objmap)
+		if err != nil {
+			msgList = append(msgList, "json: "+string(body))
+			return err
+		}
+		txnRawJSON, ok := objmap["txn"]
+
+		// txn data is found, success
+		if ok {
+			txn := &Transaction{}
+			err = json.Unmarshal(txnRawJSON, txn)
 			if err != nil {
-				msgList = append(msgList, "json: "+contents)
-				continue
+				msgList = append(msgList, "json: "+string(txnRawJSON))
+				return err
 			}
-			txnRawJSON, ok := objmap["txn"]
+			if len(txn.Signature) > 0 {
+				retTxn = txn
+			}
+			numSuccess++
 
-			// txn data is found, success
-			if ok {
-				txn := &Transaction{}
-				err = json.Unmarshal(txnRawJSON, txn)
-				if err != nil {
-					msgList = append(msgList, "json: "+string(txnRawJSON))
-					continue
-				}
-				if len(txn.Signature) > 0 {
-					retTxn = txn
-				}
+		} else {
+			// txn data is not found, but get block_hash, success
+			if _, ok := objmap["block_hash"]; ok {
 				numSuccess++
-
 			} else {
-				// txn data is not found, but get block_hash, success
-				if _, ok := objmap["block_hash"]; ok {
-					numSuccess++
-				} else {
-					// txn and block_hash
-					msgList = append(msgList, fmt.Sprintf("Sharder does not have the block summary with url: %s, contents: %s", url, contents))
-				}
-
+				// txn and block_hash
+				msgList = append(msgList, fmt.Sprintf("Sharder does not have the block summary with url: %s, contents: %s", url, string(body)))
 			}
 
 		}
+
+		return nil
+	},
+		resty.WithTimeout(resty.DefaultRequestTimeout),
+		resty.WithRetry(resty.DefaultRetry),
+		resty.WithHeader(header))
+
+	for {
+		r.DoGet(context.TODO(), urls...)
+
+		r.Wait()
+
+		if numSuccess >= minNumConfirmation {
+			break
+		}
+
+		// pick more one sharder to query transaction
+		n, err := rand.Next()
+
+		if errors.Is(err, util.ErrNoItem) {
+			break
+		}
+
+		urls = []string{fmt.Sprintf("%v/%v%v", sharders[n], TXN_VERIFY_URL, txnHash)}
+
 	}
 
-	consensus := int(float64(numSuccess) / float64(numSharders) * 100)
-
-	if cfg == nil {
-		return nil, ErrConfigIsNotInitialized
-	}
-	if consensus > 0 && consensus >= cfg.MinConfirmation {
+	if numSuccess > 0 && numSuccess >= minNumConfirmation {
 
 		if retTxn == nil {
 			return nil, errors.Throw(ErrNoTxnDetail, strings.Join(msgList, "\r\n"))
@@ -285,7 +349,7 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 		return retTxn, nil
 	}
 
-	msgList[0] = fmt.Sprintf("want %v, but got %v ", cfg.MinConfirmation, consensus)
+	msgList[0] = fmt.Sprintf("min_confirmation is %v%, but got %v/%v sharders", cfg.MinConfirmation, numSuccess, numSharders)
 
 	return nil, errors.Throw(ErrTooLessConfirmation, strings.Join(msgList, "\r\n"))
 

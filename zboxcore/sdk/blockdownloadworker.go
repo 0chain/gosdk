@@ -130,7 +130,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 		if req.blobber.IsSkip() {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx,
-				err: errors.New("skip blobber by previous errors")}
+				err: errors.New("", "skip blobber by previous errors")}
 			return
 		}
 
@@ -237,7 +237,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					Logger.Info("Will be retrying download")
 					setBlobberReadCtr(req.blobber, rspData.LatestRM.ReadCounter)
 					shouldRetry = true
-					return errors.New("Need to retry the download")
+					return errors.New("", "Need to retry the download")
 				}
 
 			} else {
@@ -245,7 +245,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				if err != nil {
 					return err
 				}
-				err = errors.New(fmt.Sprintf("Response Error: %s", string(resp_body)))
+				err = fmt.Errorf("Response Error: %s", string(resp_body))
 				if strings.Contains(err.Error(), "not_enough_tokens") {
 					shouldRetry, retry = false, 3 // don't repeat
 					req.blobber.SetSkip(true)

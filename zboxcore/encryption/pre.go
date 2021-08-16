@@ -11,7 +11,8 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/0chain/errors"
+	"errors"
+
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 )
