@@ -83,12 +83,12 @@ const (
 	ADD_FREE_ALLOCATION_ASSIGNER = "add_free_storage_assigner"
 
 	// Vesting SC
-	VESTING_TRIGGER       = "trigger"
-	VESTING_STOP          = "stop"
-	VESTING_UNLOCK        = "unlock"
-	VESTING_ADD           = "add"
-	VESTING_DELETE        = "delete"
-	VESTING_UPDATE_CONFIG = "update_config"
+	VESTING_TRIGGER         = "trigger"
+	VESTING_STOP            = "stop"
+	VESTING_UNLOCK          = "unlock"
+	VESTING_ADD             = "add"
+	VESTING_DELETE          = "delete"
+	VESTING_UPDATE_SETTINGS = "vestingsc-update-settings"
 
 	// Storage SC
 	STORAGESC_FINALIZE_ALLOCATION      = "finalize_allocation"

@@ -1051,7 +1051,7 @@ func (t *Transaction) VestingDelete(poolID string) (err error) {
 func (t *Transaction) VestingUpdateConfig(vscc *InputMap) (err error) {
 
 	err = t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.VESTING_UPDATE_CONFIG, vscc, 0)
+		transaction.VESTING_UPDATE_SETTINGS, vscc, 0)
 	if err != nil {
 		Logger.Error(err)
 		return

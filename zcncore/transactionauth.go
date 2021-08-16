@@ -264,7 +264,7 @@ func (ta *TransactionWithAuth) VestingUpdateConfig(
 	vscc *InputMap) (err error) {
 
 	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.VESTING_UPDATE_CONFIG, vscc, 0)
+		transaction.VESTING_UPDATE_SETTINGS, vscc, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
