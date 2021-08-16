@@ -12,12 +12,14 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/0chain/gosdk/zboxcore/encryption"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/conf"
+	"github.com/0chain/gosdk/core/resty"
 
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
@@ -2673,6 +2675,13 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 
 	var mockClient = mocks.HttpClient{}
 	util.Client = &mockClient
+	resty.CreateClient = func(t *http.Transport, timeout time.Duration) resty.Client {
+		return &mockClient
+	}
+
+	transaction.SetConfig(&conf.Config{
+		MinConfirmation: 50,
+	})
 
 	client := zclient.GetClient()
 	client.Wallet = &zcncrypto.Wallet{
@@ -2683,7 +2692,7 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 	setupHttpResponse := func(t *testing.T, name string, httpMethod string, statusCode int, body []byte) {
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return req.Method == httpMethod &&
-				strings.HasPrefix(req.URL.Path, name)
+				strings.Index(req.URL.String(), name) > -1
 		})).Return(&http.Response{
 			StatusCode: statusCode,
 			Body:       ioutil.NopCloser(bytes.NewReader([]byte(body))),
@@ -2718,8 +2727,6 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 		{
 			name: "Test_Sharder_Verify_Txn_Failed",
 			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
-
-				transaction.SetConfig(&conf.Config{})
 
 				body, err := json.Marshal(&transaction.Transaction{
 					Hash: mockHash,
@@ -2780,8 +2787,8 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 			}
 			a.InitAllocation()
 			sdkInitialized = true
-			blockchain.SetMiners([]string{tt.name + "mockMiners"})
-			blockchain.SetSharders([]string{tt.name + "mockSharders"})
+			blockchain.SetMiners([]string{"http://" + tt.name + "mockMiners"})
+			blockchain.SetSharders([]string{"http://" + tt.name + "mockSharders"})
 			if tt.setup != nil {
 				if teardown := tt.setup(t, tt.name, a); teardown != nil {
 					defer teardown(t)
