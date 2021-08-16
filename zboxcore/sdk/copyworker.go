@@ -10,7 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/errors"
+	"errors"
+
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
 	"github.com/0chain/gosdk/zboxcore/allocationchange"

@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	noBLOBBERS     = errors.New("No Blobbers set in this allocation")
+	noBLOBBERS     = errors.New("no_blobber", "No Blobbers set in this allocation")
 	notInitialized = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
 )
 
@@ -414,7 +414,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 		}
 
 		if !repairRequired {
-			return errors.New("Repair not required")
+			return errors.New("", "Repair not required")
 		}
 
 		file, _ := ioutil.ReadFile(localpath)
@@ -422,7 +422,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 		hash.Write(file)
 		contentHash := hex.EncodeToString(hash.Sum(nil))
 		if contentHash != fileRef.ActualFileHash {
-			return errors.New("Content hash doesn't match")
+			return errors.New("", "Content hash doesn't match")
 		}
 
 		uploadReq.filemeta.Hash = fileRef.ActualFileHash
@@ -431,7 +431,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 	}
 
 	if !uploadReq.IsFullConsensusSupported() {
-		return errors.New(fmt.Sprintf("allocation requires [%v] blobbers, which is greater than the maximum permitted number of [%v]. reduce number of data or parity shards and try again", uploadReq.fullconsensus, uploadReq.GetMaxBlobbersSupported()))
+		return fmt.Errorf("allocation requires [%v] blobbers, which is greater than the maximum permitted number of [%v]. reduce number of data or parity shards and try again", uploadReq.fullconsensus, uploadReq.GetMaxBlobbersSupported())
 	}
 
 	go func() {
@@ -458,7 +458,7 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, 
 	listReq.remotefilepath = remotepath
 	found, fileRef, _ := listReq.getFileConsensusFromBlobbers()
 	if fileRef == nil {
-		return found, false, fileRef, errors.New("File not found for the given remotepath")
+		return found, false, fileRef, errors.New("", "File not found for the given remotepath")
 	}
 
 	uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
@@ -486,13 +486,13 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	}
 	if stat, err := os.Stat(localPath); err == nil {
 		if !stat.IsDir() {
-			return errors.New(fmt.Sprintf("Local path is not a directory '%s'", localPath))
+			return fmt.Errorf("Local path is not a directory '%s'", localPath)
 		}
 		localPath = strings.TrimRight(localPath, "/")
 		_, rFile := filepath.Split(remotePath)
 		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
 		if _, err := os.Stat(localPath); err == nil {
-			return errors.New(fmt.Sprintf("Local file already exists '%s'", localPath))
+			return fmt.Errorf("Local file already exists '%s'", localPath)
 		}
 	}
 	lPath, _ := filepath.Split(localPath)
@@ -906,11 +906,11 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 	wg.Wait()
 	if len(success) == len(a.Blobbers) {
 		if len(notFound) == len(a.Blobbers) {
-			return errors.New("share not found")
+			return errors.New("", "share not found")
 		}
 		return nil
 	}
-	return errors.New("consensus not reached")
+	return errors.New("", "consensus not reached")
 }
 
 func (a *Allocation) GetAuthTicket(
@@ -1035,7 +1035,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPu
 		fullconsensus:   float32(a.DataShards + a.ParityShards),
 	}
 	if !consensus.isConsensusOk() {
-		return errors.New("consensus not reached")
+		return errors.New("invalid_consensus", "consensus not reached")
 	}
 	return nil
 }
@@ -1103,13 +1103,13 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	}
 	if stat, err := os.Stat(localPath); err == nil {
 		if !stat.IsDir() {
-			return errors.New(fmt.Sprintf("Local path is not a directory '%s'", localPath))
+			return fmt.Errorf("Local path is not a directory '%s'", localPath)
 		}
 		localPath = strings.TrimRight(localPath, "/")
 		_, rFile := filepath.Split(remoteFilename)
 		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
 		if _, err := os.Stat(localPath); err == nil {
-			return errors.New(fmt.Sprintf("Local file already exists '%s'", localPath))
+			return fmt.Errorf("Local file already exists '%s'", localPath)
 		}
 	}
 	if len(a.Blobbers) <= 1 {

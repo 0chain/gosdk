@@ -309,7 +309,7 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 				numSuccess++
 			} else {
 				// txn and block_hash
-				msgList = append(msgList, fmt.Sprintf("Sharder does not have the block summary with url: %s, contents: %s", url, contents))
+				msgList = append(msgList, fmt.Sprintf("Sharder does not have the block summary with url: %s, contents: %s", url, string(body)))
 			}
 
 		}

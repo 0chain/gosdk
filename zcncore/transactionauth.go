@@ -93,7 +93,7 @@ func verifyFn(signature, msgHash, publicKey string) (bool, error) {
 	v.SetPublicKey(publicKey)
 	ok, err := v.Verify(signature, msgHash)
 	if err != nil || ok == false {
-		return false, errors.New(`{"error": "signature_mismatch"}`)
+		return false, errors.New("", `{"error": "signature_mismatch"}`)
 	}
 	return true, nil
 }
@@ -353,7 +353,7 @@ func (ta *TransactionWithAuth) UnlockTokens(poolID string) error {
 
 //RegisterMultiSig register a multisig wallet with the SC.
 func (ta *TransactionWithAuth) RegisterMultiSig(walletstr string, mswallet string) error {
-	return errors.New("not implemented")
+	return errors.New("", "not implemented")
 }
 
 //
