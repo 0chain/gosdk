@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"math/rand"
 	"time"
 )
@@ -68,4 +69,47 @@ func GetRandom(in []string, n int) []string {
 		}
 	}
 	return out
+}
+
+var (
+	randGen = rand.New(rand.NewSource(time.Now().UnixNano()))
+	// ErrNoItem there is no item anymore
+	ErrNoItem = errors.New("rand: there is no item anymore")
+)
+
+// Rand a progressive rand
+type Rand struct {
+	items []int
+}
+
+// Next get next random item
+func (r *Rand) Next() (int, error) {
+	it := -1
+	if len(r.items) > 0 {
+		i := randGen.Intn(len(r.items))
+
+		it = r.items[i]
+
+		copy(r.items[i:], r.items[i+1:])
+		r.items = r.items[:len(r.items)-1]
+
+		return it, nil
+	}
+
+	return -1, ErrNoItem
+
+}
+
+// NewRand create a ProgressiveRand instance
+func NewRand(max int) Rand {
+	r := Rand{
+		items: make([]int, max),
+	}
+
+	for i := 0; i < max; i++ {
+		r.items[i] = i
+	}
+
+	return r
+
 }

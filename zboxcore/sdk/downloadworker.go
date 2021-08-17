@@ -194,7 +194,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	req.downloadMask, fileRef, _ = listReq.getFileConsensusFromBlobbers()
 	if req.downloadMask.Equals64(0) || fileRef == nil {
 		if req.statusCallback != nil {
-			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("No minimum consensus for file meta data of file"))
+			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "No minimum consensus for file meta data of file"))
 		}
 		return
 	}
@@ -265,7 +265,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			req.isDownloadCanceled = false
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("Download aborted by user"))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("","Download aborted by user"))
 			}
 			return
 		}
@@ -303,7 +303,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		if calcHash != expectedHash {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("File content didn't match with uploaded file"))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("","File content didn't match with uploaded file"))
 			}
 			return
 		}

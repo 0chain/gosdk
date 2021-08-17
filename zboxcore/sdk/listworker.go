@@ -120,9 +120,10 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 				return errors.Wrap(err, "error getting the dir tree from list response:")
 			}
 			return nil
-		} else {
-			return errors.New(fmt.Sprintf("error from server list response: %s", s.String()))
 		}
+
+		return fmt.Errorf("error from server list response: %s", s.String())
+
 	})
 }
 
