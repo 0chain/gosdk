@@ -59,6 +59,11 @@ const (
 	GET_VESTING_POOL_INFO    = VESTINGSC_PFX + `/getPoolInfo`
 	GET_VESTING_CLIENT_POOLS = VESTINGSC_PFX + `/getClientPools`
 
+	// inerest pool SC
+
+	INTERESTPOOLSC_PFX        = `/v1/screst/` + InterestPoolSmartContractAddress
+	GET_INTERESTPOOLSC_CONFIG = INTERESTPOOLSC_PFX + `/getConfig`
+
 	// miner SC
 
 	MINERSC_PFX = `/v1/screst/` + MinerSmartContractAddress
@@ -943,6 +948,16 @@ func GetVestingSCConfig(cb GetInfoCallback) (err error) {
 		return
 	}
 	go getInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
+	return
+}
+
+// interest pools sc
+
+func GetInterestPoolSCConfig(cb GetInfoCallback) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	go getInfoFromSharders(GET_INTERESTPOOLSC_CONFIG, 0, cb)
 	return
 }
 
