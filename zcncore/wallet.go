@@ -926,14 +926,6 @@ func GetVestingClientList(clientID string, cb GetInfoCallback) (err error) {
 	return
 }
 
-type VestingSCConfig struct {
-	MinLock              common.Balance `json:"min_lock"`
-	MinDuration          time.Duration  `json:"min_duration"`
-	MaxDuration          time.Duration  `json:"max_duration"`
-	MaxDestinations      int            `json:"max_destinations"`
-	MaxDescriptionLength int            `json:"max_description_length"`
-}
-
 type InputMap struct {
 	Fields map[string]interface{} `json:"fields"`
 }

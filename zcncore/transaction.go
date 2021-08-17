@@ -127,7 +127,7 @@ type TransactionScheme interface {
 	VestingUnlock(poolID string) error
 	VestingAdd(ar *VestingAddRequest, value int64) error
 	VestingDelete(poolID string) error
-	VestingUpdateConfig(vscc *InputMap) error
+	VestingUpdateConfig(*InputMap) error
 
 	// Miner SC
 
@@ -151,6 +151,9 @@ type TransactionScheme interface {
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock, fee int64) error
 	WritePoolLock(allocID string, blobberID string, duration int64, lock, fee int64) error
 	WritePoolUnlock(poolID string, fee int64) error
+
+	// Interest pool SC
+	InterestPoolUpdateConfig(*InputMap) error
 }
 
 func signFn(hash string) (string, error) {
@@ -1052,6 +1055,18 @@ func (t *Transaction) VestingUpdateConfig(vscc *InputMap) (err error) {
 
 	err = t.createSmartContractTxn(VestingSmartContractAddress,
 		transaction.VESTING_UPDATE_SETTINGS, vscc, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+func (t *Transaction) InterestPoolUpdateConfig(vscc *InputMap) (err error) {
+
+	err = t.createSmartContractTxn(VestingSmartContractAddress,
+		transaction.INTERESTPOOLSC_UPDATE_SETTINGS, vscc, 0)
 	if err != nil {
 		Logger.Error(err)
 		return

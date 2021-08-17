@@ -261,10 +261,25 @@ func (ta *TransactionWithAuth) VestingDelete(poolID string) (err error) {
 }
 
 func (ta *TransactionWithAuth) VestingUpdateConfig(
-	vscc *InputMap) (err error) {
-
+	ip *InputMap,
+) (err error) {
 	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.VESTING_UPDATE_SETTINGS, vscc, 0)
+		transaction.VESTING_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+// Interest pool SC
+
+func (ta *TransactionWithAuth) InterestPoolUpdateConfig(
+	ip *InputMap,
+) (err error) {
+	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
+		transaction.INTERESTPOOLSC_UPDATE_SETTINGS, ip, 0)
 	if err != nil {
 		Logger.Error(err)
 		return

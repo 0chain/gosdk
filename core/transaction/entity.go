@@ -115,6 +115,9 @@ const (
 
 	// Faucet SC
 	FAUCETSC_UPDATE_SETTINGS = "faucetsc-update-settings"
+
+	// Interest pool SC
+	INTERESTPOOLSC_UPDATE_SETTINGS = "updateVariables"
 )
 
 type SignFunc = func(msg string) (string, error)
