@@ -278,7 +278,7 @@ func (ta *TransactionWithAuth) VestingUpdateConfig(
 func (ta *TransactionWithAuth) InterestPoolUpdateConfig(
 	ip *InputMap,
 ) (err error) {
-	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
+	err = ta.t.createSmartContractTxn(InterestPoolSmartContractAddress,
 		transaction.INTERESTPOOLSC_UPDATE_SETTINGS, ip, 0)
 	if err != nil {
 		Logger.Error(err)
