@@ -1063,10 +1063,12 @@ func (t *Transaction) VestingUpdateConfig(vscc *InputMap) (err error) {
 	return
 }
 
-func (t *Transaction) InterestPoolUpdateConfig(vscc *InputMap) (err error) {
+// interest pool smart contract
 
-	err = t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.INTERESTPOOLSC_UPDATE_SETTINGS, vscc, 0)
+func (t *Transaction) InterestPoolUpdateConfig(ip *InputMap) (err error) {
+
+	err = t.createSmartContractTxn(InterestPoolSmartContractAddress,
+		transaction.INTERESTPOOLSC_UPDATE_SETTINGS, ip, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
