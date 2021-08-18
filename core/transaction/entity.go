@@ -114,7 +114,7 @@ const (
 	MINERSC_SHARDER_SETTINGS = "update_sharder_settings"
 
 	// Faucet SC
-	FAUCETSC_UPDATE_SETTINGS = "faucetsc-update-settings"
+	FAUCETSC_UPDATE_SETTINGS = "update-settings"
 
 	// Interest pool SC
 	INTERESTPOOLSC_UPDATE_SETTINGS = "updateVariables"

@@ -154,6 +154,9 @@ type TransactionScheme interface {
 
 	// Interest pool SC
 	InterestPoolUpdateConfig(*InputMap) error
+
+	// Faucet
+	FaucetUpdateConfig(*InputMap) error
 }
 
 func signFn(hash string) (string, error) {
@@ -1069,6 +1072,20 @@ func (t *Transaction) InterestPoolUpdateConfig(ip *InputMap) (err error) {
 
 	err = t.createSmartContractTxn(InterestPoolSmartContractAddress,
 		transaction.INTERESTPOOLSC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+// faucet smart contract
+
+func (t *Transaction) FaucetUpdateConfig(ip *InputMap) (err error) {
+
+	err = t.createSmartContractTxn(InterestPoolSmartContractAddress,
+		transaction.FAUCETSC_UPDATE_SETTINGS, ip, 0)
 	if err != nil {
 		Logger.Error(err)
 		return

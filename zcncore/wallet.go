@@ -64,6 +64,11 @@ const (
 	INTERESTPOOLSC_PFX        = `/v1/screst/` + InterestPoolSmartContractAddress
 	GET_INTERESTPOOLSC_CONFIG = INTERESTPOOLSC_PFX + `/getConfig`
 
+	// faucet sc
+
+	FAUCETSC_PFX        = `/v1/screst/` + FaucetSmartContractAddress
+	GET_FAUCETSC_CONFIG = FAUCETSC_PFX + `/getConfig`
+
 	// miner SC
 
 	MINERSC_PFX = `/v1/screst/` + MinerSmartContractAddress
@@ -958,6 +963,16 @@ func GetInterestPoolSCConfig(cb GetInfoCallback) (err error) {
 		return
 	}
 	go getInfoFromSharders(GET_INTERESTPOOLSC_CONFIG, 0, cb)
+	return
+}
+
+// faucet
+
+func GetFaucetSCConfig(cb GetInfoCallback) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	go getInfoFromSharders(GET_FAUCETSC_CONFIG, 0, cb)
 	return
 }
 

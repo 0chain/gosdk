@@ -288,6 +288,21 @@ func (ta *TransactionWithAuth) InterestPoolUpdateConfig(
 	return
 }
 
+// faucet smart contract
+
+func (ta *TransactionWithAuth) FaucetUpdateConfig(
+	ip *InputMap,
+) (err error) {
+	err = ta.t.createSmartContractTxn(InterestPoolSmartContractAddress,
+		transaction.FAUCETSC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
 //
 // miner sc
 //
