@@ -54,7 +54,6 @@ func mockProvider() *Provider {
 		ID:    "id:provider:" + now,
 		ExtID: "id:provider:external:" + now,
 		Host:  "localhost:8020",
-		Terms: mockProviderTermsList(10),
 	}
 }
 
@@ -75,23 +74,13 @@ func mockProviderTerms() ProviderTerms {
 	}
 }
 
-func mockProviderTermsList(size int) map[string]ProviderTerms {
-	list := make(map[string]ProviderTerms, size)
-	for idx := 0; idx < size; idx++ {
-		terms := mockProviderTerms()
-		list[terms.AccessPointID] = terms
-	}
-
-	return list
-}
-
 func mockTokenPool() *TokenPool {
 	now := time.Now().Format(time.RFC3339Nano)
 	return &TokenPool{
-		ID:        "id:session:" + now,
-		Balance:   1000,
-		PayerID:   "id:payer:" + now,
-		PayeeID:   "id:payee:" + now,
+		ID:      "id:session:" + now,
+		Balance: 1000,
+		PayerID: "id:payer:" + now,
+		PayeeID: "id:payee:" + now,
 		Transfers: []TokenPoolTransfer{
 			mockTokenPoolTransfer(),
 			mockTokenPoolTransfer(),

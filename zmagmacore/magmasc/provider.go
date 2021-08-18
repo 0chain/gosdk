@@ -2,24 +2,19 @@ package magmasc
 
 import (
 	"encoding/json"
-	"time"
-
-	"github.com/magma/augmented-networks/accounting/protos"
 
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zmagmacore/config"
 	"github.com/0chain/gosdk/zmagmacore/errors"
 	"github.com/0chain/gosdk/zmagmacore/node"
-	ctime "github.com/0chain/gosdk/zmagmacore/time"
 )
 
 type (
 	// Provider represents providers node stored in blockchain.
 	Provider struct {
-		ID    string    `json:"id"`
-		ExtID string    `json:"ext_id"`
-		Host  string    `json:"host,omitempty"`
-		Terms TermsList `json:"terms"`
+		ID    string `json:"id"`
+		ExtID string `json:"ext_id"`
+		Host  string `json:"host,omitempty"`
 	}
 )
 
@@ -30,32 +25,10 @@ var (
 
 // NewProviderFromCfg creates Consumer from config.Consumer.
 func NewProviderFromCfg(cfg *config.Provider) *Provider {
-	terms := make(map[string]ProviderTerms, len(cfg.Terms))
-	for _, item := range cfg.Terms {
-		terms[item.AccessPointID] = ProviderTerms{
-			AccessPointID:   item.AccessPointID,
-			Price:           item.Price,
-			PriceAutoUpdate: item.PriceAutoUpdate,
-			MinCost:         item.MinCost,
-			Volume:          item.Volume,
-			QoS: &protos.QoS{
-				DownloadMbps: item.QoS.DownloadMbps,
-				UploadMbps:   item.QoS.UploadMbps,
-			},
-			QoSAutoUpdate: &QoSAutoUpdate{
-				DownloadMbps: item.QoSAutoUpdate.DownloadMbps,
-				UploadMbps:   item.QoSAutoUpdate.UploadMbps,
-			},
-			ProlongDuration: time.Duration(item.ProlongDuration),
-			ExpiredAt:       ctime.Timestamp(time.Now().Add(time.Duration(item.ExpiredAt) * time.Minute).Unix()),
-		}
-	}
-
 	return &Provider{
 		ID:    node.ID(),
 		ExtID: cfg.ExtID,
 		Host:  cfg.Host,
-		Terms: terms,
 	}
 }
 
@@ -72,7 +45,6 @@ func (m *Provider) Decode(blob []byte) error {
 	m.ID = provider.ID
 	m.ExtID = provider.ExtID
 	m.Host = provider.Host
-	m.Terms = provider.Terms
 
 	return nil
 }
