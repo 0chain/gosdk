@@ -293,7 +293,7 @@ func (ta *TransactionWithAuth) InterestPoolUpdateConfig(
 func (ta *TransactionWithAuth) FaucetUpdateConfig(
 	ip *InputMap,
 ) (err error) {
-	err = ta.t.createSmartContractTxn(InterestPoolSmartContractAddress,
+	err = ta.t.createSmartContractTxn(FaucetSmartContractAddress,
 		transaction.FAUCETSC_UPDATE_SETTINGS, ip, 0)
 	if err != nil {
 		Logger.Error(err)
