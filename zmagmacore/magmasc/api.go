@@ -6,26 +6,6 @@ import (
 	"github.com/0chain/gosdk/zmagmacore/http"
 )
 
-// RequestTerms makes smart contract rest api call to magma smart contract
-// ProviderTermsRP rest point to retrieve provider.ProviderTerms for provider with provided external ID.
-func RequestTerms(providerExtID string) (*ProviderTerms, error) {
-	params := map[string]string{
-		"ext_id": providerExtID,
-	}
-
-	blob, err := http.MakeSCRestAPICall(Address, ProviderTermsRP, params)
-	if err != nil {
-		return nil, err
-	}
-
-	terms := ProviderTerms{}
-	if err = json.Unmarshal(blob, &terms); err != nil {
-		return nil, err
-	}
-
-	return &terms, err
-}
-
 // GetAllConsumers makes smart contract rest api call to magma smart contract
 // GetAllConsumersRP rest point to retrieve all registered consumer.Consumer.
 func GetAllConsumers() ([]Consumer, error) {

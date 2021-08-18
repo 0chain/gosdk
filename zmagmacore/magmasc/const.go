@@ -81,6 +81,10 @@ const (
 	// Used for updating provider terms.
 	ProviderUpdateFuncName = "provider_update"
 
+	// ProviderSessionInitFuncName represents MagmaSC function.
+	// Used for initializing session by a provider.
+	ProviderSessionInitFuncName = "provider_session_init"
+
 	// ProviderFetchRP represents MagmaSC relative path.
 	// Used to fetch provider info.
 	ProviderFetchRP = "/providerFetch"
@@ -88,10 +92,6 @@ const (
 	// ProviderRegisteredRP represents MagmaSC relative path.
 	// Used to fetch provider registered info.
 	ProviderRegisteredRP = "/providerExist"
-
-	// ProviderTermsRP represents MagmaSC relative path.
-	// Used for getting provider's terms.
-	ProviderTermsRP = "/providerTerms"
 
 	// providerType contents a value of provider node type.
 	providerType = "provider"

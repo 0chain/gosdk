@@ -8,27 +8,17 @@ import (
 )
 
 // ExecuteSessionStart starts session for provided IDs by executing ConsumerSessionStartFuncName.
-func ExecuteSessionStart(ctx context.Context, provExtID, apID, consExtID, sessID string) (*Acknowledgment, error) {
+func ExecuteSessionStart(ctx context.Context, sessID string) (*Acknowledgment, error) {
 	txn, err := transaction.NewTransactionEntity()
 	if err != nil {
 		return nil, err
 	}
 
-	ackn := Acknowledgment{
-		Consumer: &Consumer{
-			ExtID: consExtID,
-		},
-		Provider: &Provider{
-			ExtID: provExtID,
-		},
-		AccessPointID: apID,
-		SessionID:     sessID,
-	}
-	input, err := json.Marshal(&ackn)
+	ackn, err := RequestAcknowledgment(sessID)
 	if err != nil {
 		return nil, err
 	}
-	terms, err := RequestTerms(provExtID)
+	input, err := json.Marshal(&ackn)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +27,7 @@ func ExecuteSessionStart(ctx context.Context, provExtID, apID, consExtID, sessID
 		Address,
 		ConsumerSessionStartFuncName,
 		string(input),
-		terms.GetAmount(),
+		ackn.Terms.GetAmount(),
 	)
 	if err != nil {
 		return nil, err
@@ -48,12 +38,12 @@ func ExecuteSessionStart(ctx context.Context, provExtID, apID, consExtID, sessID
 		return nil, err
 	}
 
-	ackn = Acknowledgment{}
+	ackn = new(Acknowledgment)
 	if err := json.Unmarshal([]byte(txn.TransactionOutput), &ackn); err != nil {
 		return nil, err
 	}
 
-	return &ackn, err
+	return ackn, err
 }
 
 // ExecuteDataUsage executes ProviderDataUsageFuncName and returns current Acknowledgment.
@@ -245,4 +235,50 @@ func ExecuteConsumerUpdate(ctx context.Context, consumer *Consumer) (*Consumer, 
 	}
 
 	return consumer, nil
+}
+
+// ExecuteSessionInit executes session init magma sc function and returns Acknowledgment.
+func ExecuteSessionInit(ctx context.Context, consExtID, provExtID, apID, sessID string, terms ProviderTerms) (*Acknowledgment, error) {
+	txn, err := transaction.NewTransactionEntity()
+	if err != nil {
+		return nil, err
+	}
+
+	ackn := Acknowledgment{
+		Consumer: &Consumer{
+			ExtID: consExtID,
+		},
+		Provider: &Provider{
+			ExtID: provExtID,
+		},
+		AccessPointID: apID,
+		SessionID:     sessID,
+		Terms:         terms,
+	}
+	input, err := json.Marshal(&ackn)
+	if err != nil {
+		return nil, err
+	}
+	txnHash, err := txn.ExecuteSmartContract(
+		ctx,
+		Address,
+		ProviderSessionInitFuncName,
+		string(input),
+		0,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	txn, err = transaction.VerifyTransaction(ctx, txnHash)
+	if err != nil {
+		return nil, err
+	}
+
+	ackn = Acknowledgment{}
+	if err := json.Unmarshal([]byte(txn.TransactionOutput), &ackn); err != nil {
+		return nil, err
+	}
+
+	return &ackn, err
 }
