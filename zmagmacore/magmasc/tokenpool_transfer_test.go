@@ -18,7 +18,7 @@ func Test_TokenPoolTransfer_Decode(t *testing.T) {
 	tests := [2]struct {
 		name  string
 		blob  []byte
-		want  *TokenPoolTransfer
+		want  TokenPoolTransfer
 		error bool
 	}{
 		{
@@ -30,7 +30,7 @@ func Test_TokenPoolTransfer_Decode(t *testing.T) {
 		{
 			name:  "Decode_ERR",
 			blob:  []byte(":"), // invalid json
-			want:  &TokenPoolTransfer{},
+			want:  TokenPoolTransfer{},
 			error: true,
 		},
 	}
@@ -40,7 +40,7 @@ func Test_TokenPoolTransfer_Decode(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := &TokenPoolTransfer{}
+			got := TokenPoolTransfer{}
 			if err := got.Decode(test.blob); (err != nil) != test.error {
 				t.Errorf("Decode() error: %v | want: %v", err, test.error)
 				return
@@ -63,7 +63,7 @@ func Test_TokenPoolTransfer_Encode(t *testing.T) {
 
 	tests := [1]struct {
 		name string
-		resp *TokenPoolTransfer
+		resp TokenPoolTransfer
 		want []byte
 	}{
 		{

@@ -22,7 +22,7 @@ func Test_Billing_CalcAmount(t *testing.T) {
 
 	tests := [3]struct {
 		name  string
-		bill  *Billing
+		bill  Billing
 		terms ProviderTerms
 		want  int64
 	}{
@@ -83,7 +83,7 @@ func Test_Billing_Decode(t *testing.T) {
 	tests := [3]struct {
 		name  string
 		blob  []byte
-		want  *Billing
+		want  Billing
 		error bool
 	}{
 		{
@@ -101,7 +101,7 @@ func Test_Billing_Decode(t *testing.T) {
 		{
 			name:  "Decode_ERR",
 			blob:  []byte(":"), // invalid json
-			want:  &Billing{},
+			want:  Billing{},
 			error: true,
 		},
 	}
@@ -111,12 +111,12 @@ func Test_Billing_Decode(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := &Billing{}
+			got := Billing{}
 			if err := got.Decode(test.blob); (err != nil) != test.error {
 				t.Errorf("Decode() error: %v | want: %v", err, test.error)
 				return
 			}
-			if test.want != nil && !reflect.DeepEqual(got, test.want) {
+			if !reflect.DeepEqual(got, test.want) {
 				t.Errorf("Decode() got: %#v | want: %#v", got, test.want)
 			}
 		})
@@ -134,7 +134,7 @@ func Test_Billing_Encode(t *testing.T) {
 
 	tests := [1]struct {
 		name string
-		bill *Billing
+		bill Billing
 		want []byte
 	}{
 		{
@@ -173,7 +173,7 @@ func Test_Billing_Validate(t *testing.T) {
 	tests := [5]struct {
 		name  string
 		du    *DataUsage
-		bill  *Billing
+		bill  Billing
 		error bool
 	}{
 		{

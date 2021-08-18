@@ -9,10 +9,11 @@ import (
 type (
 	// TokenPool represents token pool implementation.
 	TokenPool struct {
-		ID      string `json:"id"`
-		Balance int64  `json:"balance"`
-		PayerID string `json:"payer_id"`
-		PayeeID string `json:"payee_id"`
+		ID        string              `json:"id"`
+		Balance   int64               `json:"balance"`
+		PayerID   string              `json:"payer_id"`
+		PayeeID   string              `json:"payee_id"`
+		Transfers []TokenPoolTransfer `json:"transfers,omitempty"`
 	}
 )
 
@@ -32,6 +33,7 @@ func (m *TokenPool) Decode(blob []byte) error {
 	m.Balance = pool.Balance
 	m.PayerID = pool.PayerID
 	m.PayeeID = pool.PayeeID
+	m.Transfers = pool.Transfers
 
 	return nil
 }

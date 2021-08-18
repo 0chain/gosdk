@@ -23,8 +23,8 @@ func mockAcknowledgment() *Acknowledgment {
 	}
 }
 
-func mockBilling() *Billing {
-	return &Billing{
+func mockBilling() Billing {
+	return Billing{
 		DataUsage: mockDataUsage(),
 	}
 }
@@ -88,19 +88,25 @@ func mockProviderTermsList(size int) map[string]ProviderTerms {
 func mockTokenPool() *TokenPool {
 	now := time.Now().Format(time.RFC3339Nano)
 	return &TokenPool{
-		ID:      "id:session:" + now,
-		Balance: 1000,
-		PayerID: "id:payer:" + now,
-		PayeeID: "id:payee:" + now,
+		ID:        "id:session:" + now,
+		Balance:   1000,
+		PayerID:   "id:payer:" + now,
+		PayeeID:   "id:payee:" + now,
+		Transfers: []TokenPoolTransfer{
+			mockTokenPoolTransfer(),
+			mockTokenPoolTransfer(),
+			mockTokenPoolTransfer(),
+		},
 	}
 }
 
-func mockTokenPoolTransfer() *TokenPoolTransfer {
+func mockTokenPoolTransfer() TokenPoolTransfer {
 	now := time.Now()
 	bin, _ := time.Now().MarshalBinary()
 	hash := sha3.Sum256(bin)
 	fix := now.Format(time.RFC3339Nano)
-	return &TokenPoolTransfer{
+
+	return TokenPoolTransfer{
 		TxnHash:    hex.EncodeToString(hash[:]),
 		FromPool:   "id:from:pool:" + fix,
 		ToPool:     "id:to:pool:" + fix,

@@ -44,7 +44,7 @@ func NewProviderFromCfg(cfg *config.Provider) *Provider {
 			},
 			QoSAutoUpdate: &QoSAutoUpdate{
 				DownloadMbps: item.QoSAutoUpdate.DownloadMbps,
-				UploadMbps:   item.QoSAutoUpdate.DownloadMbps,
+				UploadMbps:   item.QoSAutoUpdate.UploadMbps,
 			},
 			ProlongDuration: time.Duration(item.ProlongDuration),
 			ExpiredAt:       ctime.Timestamp(time.Now().Add(time.Duration(item.ExpiredAt) * time.Minute).Unix()),

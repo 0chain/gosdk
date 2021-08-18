@@ -13,13 +13,12 @@ type (
 	// accepts the provider terms and stores in the state of the blockchain
 	// as a result of performing the consumerAcceptTerms MagmaSmartContract function.
 	Acknowledgment struct {
-		SessionID         string             `json:"session_id"`
-		AccessPointID     string             `json:"access_point_id"`
-		Billing           *Billing           `json:"billing,omitempty"`
-		Consumer          *Consumer          `json:"consumer,omitempty"`
-		Provider          *Provider          `json:"provider,omitempty"`
-		TokenPool         *TokenPool         `json:"token_pool,omitempty"`
-		TokenPoolTransfer *TokenPoolTransfer `json:"token_pool_transfer,omitempty"`
+		SessionID     string     `json:"session_id"`
+		AccessPointID string     `json:"access_point_id"`
+		Billing       Billing    `json:"billing,omitempty"`
+		Consumer      *Consumer  `json:"consumer,omitempty"`
+		Provider      *Provider  `json:"provider,omitempty"`
+		TokenPool     *TokenPool `json:"token_pool,omitempty"`
 	}
 )
 
@@ -47,7 +46,6 @@ func (m *Acknowledgment) Decode(blob []byte) error {
 	m.Consumer = ackn.Consumer
 	m.Provider = ackn.Provider
 	m.TokenPool = ackn.TokenPool
-	m.TokenPoolTransfer = ackn.TokenPoolTransfer
 
 	return nil
 }
