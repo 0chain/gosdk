@@ -9,35 +9,9 @@ import (
 type (
 	// Provider represents configs of the providers' node.
 	Provider struct {
-		ID    string                   `yaml:"id"`
-		ExtID string                   `yaml:"ext_id"`
-		Host  string                   `yaml:"host"`
-		Terms map[string]ProviderTerms `yaml:"terms"`
-	}
-
-	// ProviderTerms represents config of provider and services terms.
-	ProviderTerms struct {
-		AccessPointID   string         `yaml:"apid"`              // access point id
-		Price           float32        `yaml:"price"`             // tokens per Megabyte
-		PriceAutoUpdate float32        `yaml:"price_auto_update"` // price change on auto update
-		MinCost         float32        `yaml:"min_cost"`          // minimal cost for a session
-		Volume          int64          `yaml:"volume"`            // bytes per a session
-		QoS             *QoS           `yaml:"qos"`               // qos of service
-		QoSAutoUpdate   *QoSAutoUpdate `yaml:"qos_auto_update"`   // qos change on auto update
-		ProlongDuration int64          `yaml:"prolong_duration"`  // duration in seconds to prolong the terms
-		ExpiredAt       int64          `yaml:"expired_at"`        // timestamp till a session valid
-	}
-
-	// QoS represents config of qos.
-	QoS struct {
-		DownloadMbps float32 `yaml:"download_mbps"`
-		UploadMbps   float32 `yaml:"upload_mbps"`
-	}
-
-	// QoSAutoUpdate represents config of qos terms on auto update.
-	QoSAutoUpdate struct {
-		DownloadMbps float32 `yaml:"download_mbps"`
-		UploadMbps   float32 `yaml:"upload_mbps"`
+		ID    string `yaml:"id"`
+		ExtID string `yaml:"ext_id"`
+		Host  string `yaml:"host"`
 	}
 )
 
