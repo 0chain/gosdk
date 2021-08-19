@@ -113,6 +113,7 @@ const (
 	MINERSC_UNLOCK           = "deleteFromDelegatePool"
 	MINERSC_MINER_SETTINGS   = "update_miner_settings"
 	MINERSC_SHARDER_SETTINGS = "update_sharder_settings"
+	MINERSC_UPDATE_SETTINGS  = "update_settings"
 
 	// Faucet SC
 	FAUCETSC_UPDATE_SETTINGS = "update-settings"

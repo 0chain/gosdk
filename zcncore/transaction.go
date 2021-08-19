@@ -135,6 +135,7 @@ type TransactionScheme interface {
 	MinerSCSharderSettings(*MinerSCMinerInfo) error
 	MinerSCLock(minerID string, lock int64) error
 	MienrSCUnlock(minerID, poolID string) error
+	MinerScUpdateConfig(*InputMap) error
 
 	// Storage SC
 
@@ -1098,6 +1099,17 @@ func (t *Transaction) FaucetUpdateConfig(ip *InputMap) (err error) {
 //
 // miner SC
 //
+
+func (t *Transaction) MinerScUpdateConfig(ip *InputMap) (err error) {
+	err = t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.MINERSC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
 
 type MinerSCPoolStats struct {
 	DelegateID   string         `json:"delegate_id"`
