@@ -18,8 +18,8 @@ const (
 	// AcknowledgmentPrefix represents prefix to save into storage.
 	AcknowledgmentPrefix = "ackn"
 
-	// ActiveAcknowledgmentsKey represents key for stored ActiveAcknowledgments
-	ActiveAcknowledgmentsKey = "active-acknowledgments"
+	// AcknowledgmentActivePrefixPart represents prefix part to save into storage.
+	AcknowledgmentActivePrefixPart = "act"
 
 	// AcknowledgmentRP represents MagmaSC relative path.
 	// Used to retrieve accepted acknowledgment.

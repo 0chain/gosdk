@@ -64,6 +64,14 @@ func (m *Acknowledgment) Key() []byte {
 	return []byte(AcknowledgmentPrefix + m.SessionID)
 }
 
+// ActiveKey returns key:
+// AcknowledgmentPrefix + AcknowledgmentActivePrefixPart + Acknowledgment.SessionID.
+//
+// Used for operations with storage.Storage.
+func (m *Acknowledgment) ActiveKey() []byte {
+	return []byte(AcknowledgmentPrefix + AcknowledgmentActivePrefixPart + m.SessionID)
+}
+
 // Validate checks Acknowledgment for correctness.
 // If it is not return errInvalidAcknowledgment.
 func (m *Acknowledgment) Validate() (err error) {
