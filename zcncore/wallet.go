@@ -71,8 +71,7 @@ const (
 
 	// miner SC
 
-	MINERSC_PFX = `/v1/screst/` + MinerSmartContractAddress
-
+	MINERSC_PFX          = `/v1/screst/` + MinerSmartContractAddress
 	GET_MINERSC_NODE     = MINERSC_PFX + "/nodeStat"
 	GET_MINERSC_POOL     = MINERSC_PFX + "/nodePoolStat"
 	GET_MINERSC_CONFIG   = MINERSC_PFX + "/configs"
@@ -1075,30 +1074,6 @@ func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error) {
 	}), 0, cb)
 
 	return
-}
-
-type MinerSCConfig struct {
-	ViewChange          int64          `json:"view_change"`
-	MaxN                int            `json:"max_n"`
-	MinN                int            `json:"min_n"`
-	MinS                int            `json:"min_s"`
-	MaxS                int            `json:"max_s"`
-	TPercent            float64        `json:"t_percent"`
-	KPercent            float64        `json:"k_percent"`
-	LastRound           int64          `json:"last_round"`
-	MaxStake            common.Balance `json:"max_stake"`
-	MinStake            common.Balance `json:"min_stake"`
-	InterestRate        float64        `json:"interest_rate"`
-	RewardRate          float64        `json:"reward_rate"`
-	ShareRatio          float64        `json:"share_ratio"`
-	BlockReward         common.Balance `json:"block_reward"`
-	MaxCharge           float64        `json:"max_charge"`
-	Epoch               int64          `json:"epoch"`
-	RewardDeclineRate   float64        `json:"reward_decline_rate"`
-	InterestDeclineRate float64        `json:"interest_decline_rate"`
-	MaxMint             common.Balance `json:"max_mint"`
-	Minted              common.Balance `json:"minted"`
-	MaxDelegates        int            `json:"max_delegates"`
 }
 
 func GetMinerSCConfig(cb GetInfoCallback) (err error) {
