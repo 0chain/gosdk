@@ -1118,8 +1118,7 @@ func GetStorageSCConfig(cb GetInfoCallback) (err error) {
 	if err = checkConfig(); err != nil {
 		return
 	}
-	var url = STORAGESC_GET_SC_CONFIG
-	go getInfoFromSharders(url, OpStorageSCGetConfig, cb)
+	go getInfoFromSharders(STORAGESC_GET_SC_CONFIG, OpStorageSCGetConfig, cb)
 	return
 }
 

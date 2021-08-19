@@ -403,6 +403,19 @@ func (ta *TransactionWithAuth) RegisterMultiSig(walletstr string, mswallet strin
 // Storage SC
 //
 
+func (ta *TransactionWithAuth) StorageScUpdateConfig(
+	ip *InputMap,
+) (err error) {
+	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
 // FinalizeAllocation transaction.
 func (ta *TransactionWithAuth) FinalizeAllocation(allocID string, fee int64) (
 	err error) {

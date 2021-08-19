@@ -106,6 +106,7 @@ const (
 	STORAGESC_WRITE_POOL_UNLOCK        = "write_pool_unlock"
 	STORAGESC_ADD_CURATOR              = "add_curator"
 	STORAGESC_CURATOR_TRANSFER         = "curator_transfer_allocation"
+	STORAGESC_UPDATE_SETTINGS          = "update_settings"
 
 	// Miner SC
 	MINERSC_LOCK             = "addToDelegatePool"

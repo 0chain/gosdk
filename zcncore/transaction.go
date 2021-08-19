@@ -151,6 +151,7 @@ type TransactionScheme interface {
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock, fee int64) error
 	WritePoolLock(allocID string, blobberID string, duration int64, lock, fee int64) error
 	WritePoolUnlock(poolID string, fee int64) error
+	StorageScUpdateConfig(*InputMap) error
 
 	// Interest pool SC
 	InterestPoolUpdateConfig(*InputMap) error
@@ -1348,6 +1349,17 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 //
 // Storage SC transactions
 //
+
+func (t *Transaction) StorageScUpdateConfig(ip *InputMap) (err error) {
+	err = t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
 
 // FinalizeAllocation transaction.
 func (t *Transaction) FinalizeAllocation(allocID string, fee int64) (
