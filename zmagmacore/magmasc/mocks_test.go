@@ -77,10 +77,11 @@ func mockProviderTerms() ProviderTerms {
 func mockTokenPool() *TokenPool {
 	now := time.Now().Format(time.RFC3339Nano)
 	return &TokenPool{
-		ID:      "id:session:" + now,
-		Balance: 1000,
-		PayerID: "id:payer:" + now,
-		PayeeID: "id:payee:" + now,
+		ID:       "id:session:" + now,
+		Balance:  1000,
+		HolderID: "id:holder:" + now,
+		PayerID:  "id:payer:" + now,
+		PayeeID:  "id:payee:" + now,
 		Transfers: []TokenPoolTransfer{
 			mockTokenPoolTransfer(),
 			mockTokenPoolTransfer(),

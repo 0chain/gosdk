@@ -11,6 +11,7 @@ type (
 	TokenPool struct {
 		ID        string              `json:"id"`
 		Balance   int64               `json:"balance"`
+		HolderID  string              `json:"holder_id"`
 		PayerID   string              `json:"payer_id"`
 		PayeeID   string              `json:"payee_id"`
 		Transfers []TokenPoolTransfer `json:"transfers,omitempty"`
@@ -31,6 +32,7 @@ func (m *TokenPool) Decode(blob []byte) error {
 
 	m.ID = pool.ID
 	m.Balance = pool.Balance
+	m.HolderID = pool.HolderID
 	m.PayerID = pool.PayerID
 	m.PayeeID = pool.PayeeID
 	m.Transfers = pool.Transfers
