@@ -24,12 +24,21 @@ type (
 )
 
 var (
-	// Make sure Acknowledgment implements Serializable interface.
-	_ util.Serializable = (*Acknowledgment)(nil)
+	// Make sure Acknowledgment implements PoolConfigurator interface.
+	_ PoolConfigurator = (*Acknowledgment)(nil)
 
 	// Make sure Acknowledgment implements Value interface.
 	_ storage.Value = (*Acknowledgment)(nil)
+
+	// Make sure Acknowledgment implements Serializable interface.
+	_ util.Serializable = (*Acknowledgment)(nil)
 )
+
+// ActiveKey returns key used for operations with storage.Storage
+// AcknowledgmentPrefix + AcknowledgmentActivePrefixPart + Acknowledgment.SessionID.
+func (m *Acknowledgment) ActiveKey() []byte {
+	return []byte(AcknowledgmentPrefix + AcknowledgmentActivePrefixPart + m.SessionID)
+}
 
 // Decode implements util.Serializable interface.
 func (m *Acknowledgment) Decode(blob []byte) error {
@@ -64,12 +73,29 @@ func (m *Acknowledgment) Key() []byte {
 	return []byte(AcknowledgmentPrefix + m.SessionID)
 }
 
-// ActiveKey returns key:
-// AcknowledgmentPrefix + AcknowledgmentActivePrefixPart + Acknowledgment.SessionID.
-//
-// Used for operations with storage.Storage.
-func (m *Acknowledgment) ActiveKey() []byte {
-	return []byte(AcknowledgmentPrefix + AcknowledgmentActivePrefixPart + m.SessionID)
+// PoolBalance implements PoolConfigurator interface.
+func (m *Acknowledgment) PoolBalance() int64 {
+	return m.Terms.GetAmount()
+}
+
+// PoolID implements PoolConfigurator interface.
+func (m *Acknowledgment) PoolID() string {
+	return m.SessionID
+}
+
+// PoolHolderID implements PoolConfigurator interface.
+func (m *Acknowledgment) PoolHolderID() string {
+	return Address
+}
+
+// PoolPayerID implements PoolConfigurator interface.
+func (m *Acknowledgment) PoolPayerID() string {
+	return m.Consumer.ID
+}
+
+// PoolPayeeID implements PoolConfigurator interface.
+func (m *Acknowledgment) PoolPayeeID() string {
+	return m.Provider.ID
 }
 
 // Validate checks Acknowledgment for correctness.
