@@ -369,7 +369,7 @@ func (ta *TransactionWithAuth) MienrSCUnlock(nodeID, poolID string) (
 func (ta *TransactionWithAuth) MinerScUpdateConfig(
 	ip *InputMap,
 ) (err error) {
-	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_UPDATE_SETTINGS, ip, 0)
 	if err != nil {
 		Logger.Error(err)

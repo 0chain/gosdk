@@ -1101,7 +1101,7 @@ func (t *Transaction) FaucetUpdateConfig(ip *InputMap) (err error) {
 //
 
 func (t *Transaction) MinerScUpdateConfig(ip *InputMap) (err error) {
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_UPDATE_SETTINGS, ip, 0)
 	if err != nil {
 		Logger.Error(err)
