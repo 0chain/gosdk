@@ -2340,7 +2340,7 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 		ClientKey: mockClientKey,
 	}
 	require := require.New(t)
-	a := &Allocation{}
+	a := &Allocation{DataShards: 1, ParityShards: 1}
 	a.InitAllocation()
 	for i := 0; i < numberBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
@@ -3438,8 +3438,6 @@ func TestAllocation_DownloadFromAuthTicket(t *testing.T) {
 		mockType           = "d"
 	)
 
-	var authTicket = getMockAuthTicket(t)
-
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
@@ -3459,6 +3457,8 @@ func TestAllocation_DownloadFromAuthTicket(t *testing.T) {
 			Baseurl: "TestAllocation_DownloadFromAuthTicket" + mockBlobberUrl + strconv.Itoa(i),
 		})
 	}
+
+	var authTicket = getMockAuthTicket(t)
 
 	err := a.DownloadFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, true, nil)
 	defer os.Remove("alloc/1.txt")
@@ -3829,14 +3829,19 @@ func getMockAuthTicket(t *testing.T) string {
 		ClientKey: mockClientKey,
 	}
 	a := &Allocation{
-		ID: mockAllocationId,
-		Tx: mockAllocationTxId,
+		ID:           mockAllocationId,
+		Tx:           mockAllocationTxId,
+		DataShards:   1,
+		ParityShards: 1,
 	}
 	setupMockGetFileInfoResponse(t, &mockClient)
 	a.InitAllocation()
 	sdkInitialized = true
 	for i := 0; i < numBlobbers; i++ {
-		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
+		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
+			ID:      strconv.Itoa(i),
+			Baseurl: "TestAllocation_getMockAuthTicket" + mockBlobberUrl + strconv.Itoa(i),
+		})
 	}
 
 	httpResponse := &http.Response{
@@ -3855,6 +3860,10 @@ func getMockAuthTicket(t *testing.T) string {
 	for i := 0; i < numBlobbers; i++ {
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return strings.HasPrefix(req.URL.Path, "TestAllocation_ListDirFromAuthTicket")
+		})).Return(httpResponse, nil)
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return strings.HasPrefix(req.URL.Path, "TestAllocation_getMockAuthTicket")
 		})).Return(httpResponse, nil)
 	}
 	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, mockClientId, "", 0)
