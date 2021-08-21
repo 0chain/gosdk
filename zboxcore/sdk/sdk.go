@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
 
 	"github.com/0chain/gosdk/core/common"
@@ -75,14 +76,18 @@ func GetLogger() *logger.Logger {
 	return &Logger
 }
 
-func InitStorageSDK(clientJson string, blockWorker string, chainID string, signatureScheme string, preferredBlobbers []string) error {
-	err := client.PopulateClient(clientJson, signatureScheme)
+// InitStorageSDK init storage sdk with wallet json and config
+func InitStorageSDK(walletJSON string, cfg conf.Config) error {
+	err := client.PopulateClient(walletJSON, cfg.SignatureScheme)
 	if err != nil {
 		return err
 	}
-	blockchain.SetChainID(chainID)
-	blockchain.SetPreferredBlobbers(preferredBlobbers)
-	blockchain.SetBlockWorker(blockWorker)
+	blockchain.SetChainID(cfg.ChainID)
+	blockchain.SetPreferredBlobbers(cfg.PreferredBlobbers)
+	blockchain.SetBlockWorker(cfg.BlockWorker)
+
+	transaction.SetConfig(&cfg)
+
 	err = UpdateNetworkDetails()
 	if err != nil {
 		return err
@@ -704,7 +709,7 @@ func GetBlobbers() (bs []*Blobber, err error) {
 		return nil, errors.Wrap(err, "error requesting blobbers:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("","empty response")
+		return nil, errors.New("", "empty response")
 	}
 
 	type nodes struct {
@@ -735,7 +740,7 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 		return nil, errors.Wrap(err, "requesting blobber:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("","empty response from sharders")
+		return nil, errors.New("", "empty response from sharders")
 	}
 	blob = new(Blobber)
 	if err = json.Unmarshal(b, blob); err != nil {
