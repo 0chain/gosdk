@@ -1111,6 +1111,17 @@ func (t *Transaction) MinerScUpdateConfig(ip *InputMap) (err error) {
 	return
 }
 
+func (t *Transaction) MinerScUpdateGlobals(ip *InputMap) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
 type MinerSCPoolStats struct {
 	DelegateID   string         `json:"delegate_id"`
 	High         common.Balance `json:"high"`

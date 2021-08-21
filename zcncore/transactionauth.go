@@ -379,6 +379,19 @@ func (ta *TransactionWithAuth) MinerScUpdateConfig(
 	return
 }
 
+func (ta *TransactionWithAuth) MinerScUpdateGlobals(
+	ip *InputMap,
+) (err error) {
+	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
 //
 // interest pool
 //
