@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/util"
 	"go.uber.org/zap"
 )
@@ -51,6 +52,10 @@ func UpdateNetworkDetails() error {
 		_config.isConfigured = false
 		_config.chain.Miners = networkDetails.Miners
 		_config.chain.Sharders = networkDetails.Sharders
+		conf.InitChainNetwork(&conf.Network{
+			Sharders: networkDetails.Sharders,
+			Miners:   networkDetails.Miners,
+		})
 		_config.isConfigured = true
 	}
 	return nil
