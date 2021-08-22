@@ -89,7 +89,7 @@ func GetLogger() *logger.Logger {
 //		"version":"1.0",
 //		"date_created":"2021-08-18T08:34:39+08:00"
 //	 }
-//   2) for 0proxy, 0box, 0explorer, andorid,ios : clientJSON is
+//   2) for 0proxy, 0box, 0explorer, andorid, ios : clientJSON is
 //	 {
 //      "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
 //		"signature_scheme" : "bls0chain",
@@ -112,7 +112,7 @@ func InitStorageSDK(clientJSON string, blockWorker, chainID, signatureScheme str
 	reader, err := conf.NewReaderFromJSON(clientJSON)
 	if err == nil { //it is valid json
 		cfg, _ := conf.LoadConfig(reader)
-		if len(cfg.BlockWorker) > 0 { // it is an valid config.json in zbox
+		if len(cfg.BlockWorker) > 0 { // it is an valid config.json
 			transaction.SetConfig(&cfg)
 		}
 	}
