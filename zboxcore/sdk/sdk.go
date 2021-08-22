@@ -76,17 +76,50 @@ func GetLogger() *logger.Logger {
 	return &Logger
 }
 
-// InitStorageSDK init storage sdk with wallet json and config
-func InitStorageSDK(walletJSON string, cfg conf.Config) error {
-	err := client.PopulateClient(walletJSON, cfg.SignatureScheme)
+// InitStorageSDK init storage sdk with clientJSON
+//   1) for zbox: clientJSON is
+//   {
+//		"client_id":"322d1dadec182effbcbdeef77d84fedda15842b83739969a7754089669c13992",
+//		"client_key":"3b6d02a22ec82d4d9aa1402917ca268c869b94d0f2a04506107bc5bf9acff60e6422ad1c95759cc243db116f89a98a7a2641ff2fbd2f5b951ef450504217bd1e",
+//		"keys":[{
+//			"public_key":"3b6d02a22ec82d4d9aa1402917ca268c869b94d0f2a04506107bc5bf9acff60e6422ad1c95759cc243db116f89a98a7a2641ff2fbd2f5b951ef450504217bd1e",
+//			"private_key":"25f2e1355d3864de01aba0bfec370270ae90ec9e4e4b363cc761ce7a16f15914"
+//			}],
+//		"mnemonics":"double wink spin mushroom thing notable trumpet chapter eternal first embody pond embrace gravity minute frozen praise october defy faculty sustain autumn material kitten",
+//		"version":"1.0",
+//		"date_created":"2021-08-18T08:34:39+08:00"
+//	 }
+//   2) for 0proxy, 0box, 0explorer, andorid,ios : clientJSON is
+//	 {
+//      "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
+//		"signature_scheme" : "bls0chain",
+//		"block_worker" : "https://dev.0chain.net/dns",
+// 		"min_submit" : 50,
+//		"min_confirmation" : 50,
+//		"confirmation_chain_length" : 3,
+//		"num_keys" : 1,
+//		"eth_node" : "https://ropsten.infura.io/v3/f0a254d8d18b4749bd8540da63b3292b"
+//	 }
+func InitStorageSDK(clientJSON string, blockWorker, chainID, signatureScheme string, preferredBlobbers []string) error {
+
+	// try to initialize client for zbox
+	err := client.PopulateClient(clientJSON, signatureScheme)
 	if err != nil {
 		return err
 	}
-	blockchain.SetChainID(cfg.ChainID)
-	blockchain.SetPreferredBlobbers(cfg.PreferredBlobbers)
-	blockchain.SetBlockWorker(cfg.BlockWorker)
 
-	transaction.SetConfig(&cfg)
+	// try to initiazlie conf/Config for other apps
+	reader, err := conf.NewReaderFromJSON(clientJSON)
+	if err == nil { //it is valid json
+		cfg, _ := conf.LoadConfig(reader)
+		if len(cfg.BlockWorker) > 0 { // it is an valid config.json in zbox
+			transaction.SetConfig(&cfg)
+		}
+	}
+
+	blockchain.SetChainID(chainID)
+	blockchain.SetPreferredBlobbers(preferredBlobbers)
+	blockchain.SetBlockWorker(blockWorker)
 
 	err = UpdateNetworkDetails()
 	if err != nil {
