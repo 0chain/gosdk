@@ -112,8 +112,8 @@ func InitStorageSDK(clientJSON string, blockWorker, chainID, signatureScheme str
 	reader, err := conf.NewReaderFromJSON(clientJSON)
 	if err == nil { //it is valid json
 		cfg, _ := conf.LoadConfig(reader)
-		if len(cfg.BlockWorker) > 0 { // it is an valid config.json
-			transaction.SetConfig(&cfg)
+		if len(cfg.BlockWorker) > 0 { // it is a valid config.json
+			conf.InitClientConfig(&cfg)
 		}
 	}
 
