@@ -383,7 +383,7 @@ func (ta *TransactionWithAuth) MinerScUpdateGlobals(
 	ip *InputMap,
 ) (err error) {
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_UPDATE_SETTINGS, ip, 0)
+		transaction.MINERSC_UPDATE_GLOBALS, ip, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
