@@ -13,7 +13,7 @@ import (
 
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/convert"
 	blobbercommon "github.com/0chain/blobber/code/go/0chain.net/core/common"
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"google.golang.org/grpc"
