@@ -9,14 +9,15 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"gorm.io/datatypes"
 )
 
 type ObjectTreeResult struct {
+	// raw           []byte
 	TotalPages    int64               `json:"total_pages"`
 	NewOffsetPath string              `json:"offsetPath"`
 	NewOffsetDate string              `json:"offsetDate"`
@@ -44,8 +45,9 @@ type ObjectTreeRequest struct {
 }
 
 type oTreeResponse struct {
-	oTResult *ObjectTreeResult
-	err      error
+	oTResult     *ObjectTreeResult
+	responseHash string
+	err          error
 }
 
 //Paginated tree should not be collected as this will stall the client
@@ -59,30 +61,47 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 		Logger.Info(fmt.Sprintf("Getting file refs for path %v from blobber %v", o.remotefilepath, blob.Baseurl))
 		go o.getFileRefs(&oTreeResponses[i], blob.Baseurl)
 	}
-	Logger.Info("Before waiting")
 	o.wg.Wait()
-	Logger.Info("Reached this line")
-	//TODO Check for consensus and send the result
-	refsMap := make(map[string]map[string]interface{})
-	for _, oTreeResponse := range oTreeResponses {
-		oTreeResult := oTreeResponse.oTResult
-		err := oTreeResponse.err
+	hashCount := make(map[string]uint8)
+	hashRefsMap := make(map[string]*ObjectTreeResult)
 
+	for _, oTreeResponse := range oTreeResponses {
+		if oTreeResponse.err != nil {
+			continue
+		}
+		var similarFieldRefs []SimilarField
+		for _, ref := range oTreeResponse.oTResult.Refs {
+			similarFieldRefs = append(similarFieldRefs, ref.SimilarField)
+		}
+		refsMarshall, err := json.Marshal(similarFieldRefs)
 		if err != nil {
 			continue
 		}
+		hash := zboxutil.GetRefsHash(refsMarshall)
 
-		for _, ref := range oTreeResult.Refs {
-			if _, ok := refsMap[ref.LookupHash]; !ok {
-				//Consensus work left
-			}
+		if _, ok := hashCount[hash]; ok {
+			hashCount[hash]++
+		} else {
+			hashCount[hash]++
+			hashRefsMap[hash] = oTreeResponse.oTResult
 		}
 	}
-	//Temporarily used for data feeding. Should check for above consensus
-	oTreeResult := oTreeResponses[0].oTResult
-	err := oTreeResponses[0].err
 
-	return oTreeResult, err
+	var selected *ObjectTreeResult
+	Logger.Info(fmt.Sprintf("Consensus threshold: %v, fullconsensus: %v", o.consensusThresh, o.fullconsensus))
+	Logger.Info(fmt.Sprint("Hash count map: ", hashCount))
+	for k, v := range hashCount {
+		if float32(v)/o.fullconsensus >= o.consensusThresh {
+			selected = hashRefsMap[k]
+			break
+		}
+	}
+
+	if selected != nil {
+		return selected, nil
+	}
+	return nil, errors.New("Refs consensus is less than consensus threshold")
+
 }
 
 func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
@@ -125,33 +144,58 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 	Logger.Info("Gottcha result")
 }
 
+// type ORef struct {
+// 	ID                  int64          `json:"id"`
+// 	Type                string         `json:"type"`
+// 	AllocationID        string         `json:"allocation_id"`
+// 	LookupHash          string         `json:"lookup_hash"`
+// 	Name                string         `json:"name"`
+// 	Path                string         `json:"path"`
+// 	Hash                string         `json:"hash"`
+// 	NumBlocks           int64          `json:"num_blocks"`
+// 	PathHash            string         `json:"path_hash"`
+// 	ParentPath          string         `json:"parent_path"`
+// 	PathLevel           int            `json:"level"`
+// 	CustomMeta          string         `json:"custom_meta"`
+// 	ContentHash         string         `json:"content_hash"`
+// 	Size                int64          `json:"size"`
+// 	MerkleRoot          string         `json:"merkle_root"`
+// 	ActualFileSize      int64          `json:"actual_file_size"`
+// 	ActualFileHash      string         `json:"actual_file_hash"`
+// 	MimeType            string         `json:"mimetype"`
+// 	WriteMarker         string         `json:"write_marker"`
+// 	ThumbnailSize       int64          `json:"thumbnail_size"`
+// 	ThumbnailHash       string         `json:"thumbnail_hash"`
+// 	ActualThumbnailSize int64          `json:"actual_thumbnail_size"`
+// 	ActualThumbnailHash string         `json:"actual_thumbnail_hash"`
+// 	EncryptedKey        string         `json:"encrypted_key"`
+// 	Attributes          datatypes.JSON `json:"attributes"`
+// 	OnCloud             bool           `json:"on_cloud"`
+// 	CreatedAt           time.Time      `json:"created_at"`
+// 	UpdatedAt           time.Time      `json:"updated_at"`
+// }
+
+// Blobber response will be different from each other so we should only consider similar fields
+// i.e. we cannot calculate hash of response and have consensus on it
 type ORef struct {
-	ID                  int64          `json:"id"`
-	Type                string         `json:"type"`
-	AllocationID        string         `json:"allocation_id"`
-	LookupHash          string         `json:"lookup_hash"`
-	Name                string         `json:"name"`
-	Path                string         `json:"path"`
-	Hash                string         `json:"hash"`
-	NumBlocks           int64          `json:"num_blocks"`
-	PathHash            string         `json:"path_hash"`
-	ParentPath          string         `json:"parent_path"`
-	PathLevel           int            `json:"level"`
-	CustomMeta          string         `json:"custom_meta"`
-	ContentHash         string         `json:"content_hash"`
-	Size                int64          `json:"size"`
-	MerkleRoot          string         `json:"merkle_root"`
-	ActualFileSize      int64          `json:"actual_file_size"`
-	ActualFileHash      string         `json:"actual_file_hash"`
-	MimeType            string         `json:"mimetype"`
-	WriteMarker         string         `json:"write_marker"`
-	ThumbnailSize       int64          `json:"thumbnail_size"`
-	ThumbnailHash       string         `json:"thumbnail_hash"`
-	ActualThumbnailSize int64          `json:"actual_thumbnail_size"`
-	ActualThumbnailHash string         `json:"actual_thumbnail_hash"`
-	EncryptedKey        string         `json:"encrypted_key"`
-	Attributes          datatypes.JSON `json:"attributes"`
-	OnCloud             bool           `json:"on_cloud"`
-	CreatedAt           time.Time      `json:"created_at"`
-	UpdatedAt           time.Time      `json:"updated_at"`
+	SimilarField
+	CreatedAt time.Time `json:"created_at"` //It cannot be considered for consensus calculation as blobbers can have
+	UpdatedAt time.Time `json:"updated_at"` //minor difference and will fail in concensus
+}
+
+type SimilarField struct {
+	ID                  int64  `json:"id"`
+	Type                string `json:"type"`
+	AllocationID        string `json:"allocation_id"`
+	LookupHash          string `json:"lookup_hash"`
+	Name                string `json:"name"`
+	Path                string `json:"path"`
+	PathHash            string `json:"path_hash"`
+	ParentPath          string `json:"parent_path"`
+	PathLevel           int    `json:"level"`
+	ActualFileSize      int64  `json:"actual_file_size"`
+	ActualFileHash      string `json:"actual_file_hash"`
+	MimeType            string `json:"mimetype"`
+	ActualThumbnailSize int64  `json:"actual_thumbnail_size"`
+	ActualThumbnailHash string `json:"actual_thumbnail_hash"`
 }

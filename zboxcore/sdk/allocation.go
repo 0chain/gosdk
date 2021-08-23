@@ -616,7 +616,7 @@ func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType
 		ctx:            a.ctx,
 	}
 	oTreeReq.fullconsensus = float32(a.DataShards + a.ParityShards)
-	oTreeReq.consensusThresh = (float32(a.DataShards) * 100) / oTreeReq.fullconsensus
+	oTreeReq.consensusThresh = float32(a.DataShards) / oTreeReq.fullconsensus
 
 	return oTreeReq.GetRefs()
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/h2non/filetype"
+	"golang.org/x/crypto/sha3"
 )
 
 const EncryptedFolderName = "encrypted"
@@ -210,4 +211,12 @@ func calculateMinRequired(minRequired, percent float64) int {
 
 func Join(a, b string) string {
 	return strings.ReplaceAll(filepath.Join(a, b), "\\", "/")
+}
+
+func GetRefsHash(r []byte) string {
+	hash := sha3.New256()
+	hash.Write(r)
+	var buf []byte
+	buf = hash.Sum(buf)
+	return string(buf)
 }
