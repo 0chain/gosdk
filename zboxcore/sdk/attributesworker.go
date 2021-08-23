@@ -2,13 +2,10 @@ package sdk
 
 import (
 	"context"
-	"encoding/json"
 	"math/bits"
-	"strings"
 	"sync"
 
 	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
-	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobberhttp"
 	"github.com/0chain/gosdk/core/clients/blobberClient"
 
 	"github.com/0chain/gosdk/core/common/errors"
@@ -43,32 +40,21 @@ func (ar *AttributesRequest) getObjectTreeFromBlobber(
 func (ar *AttributesRequest) updateBlobberObjectAttributes(
 	blobber *blockchain.StorageNode, blobberIdx int) (
 	re fileref.RefEntity, err error) {
-	var s strings.Builder
 
 	re, err = ar.getObjectTreeFromBlobber(ar.blobbers[blobberIdx])
 	if err != nil {
 		return
 	}
 
-	remoteFilePathHash := fileref.GetReferenceLookup(ar.allocationID, ar.remotefilepath)
-
-	respRaw, err := blobberClient.UpdateObjectAttributes(blobber.Baseurl, &blobbergrpc.UpdateObjectAttributesRequest{
+	_, err = blobberClient.UpdateObjectAttributes(blobber.Baseurl, &blobbergrpc.UpdateObjectAttributesRequest{
 		Path:         ar.remotefilepath,
-		PathHash:     remoteFilePathHash,
 		Allocation:   ar.allocationTx,
 		ConnectionId: ar.connectionID,
 		Attributes:   ar.attributes,
 	})
 	if err != nil {
 		Logger.Error("could not update object attributes from blobber -" + blobber.Baseurl + " - " + err.Error())
-		return
-	}
-	s.WriteString(string(respRaw))
-
-	updateBlobberObjectAttributesResult := &blobberhttp.UpdateObjectAttributesResponse{}
-	err = json.Unmarshal(respRaw, updateBlobberObjectAttributesResult)
-	if err != nil {
-		Logger.Error(blobber.Baseurl, "Reading response: ", err)
+		err = errors.Wrap(err, "update attribute failed")
 		return
 	}
 
@@ -76,7 +62,6 @@ func (ar *AttributesRequest) updateBlobberObjectAttributes(
 	ar.attributesMask |= (1 << uint32(blobberIdx))
 	Logger.Info(blobber.Baseurl, " "+ar.remotefilepath,
 		" attributes updated.")
-
 	return
 }
 
