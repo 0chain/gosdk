@@ -352,6 +352,7 @@ func (sb *StreamUploadBobbler) processWriteMarker(su *StreamUpload) (*fileref.Re
 
 		rootRef.CalculateHash()
 		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
+		// TODO: it is a concurrent change conflict on database.  check concurrent write for allocation
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
 			logger.Logger.Info("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
 		}
