@@ -4,13 +4,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 	"testing"
 	"time"
+
+	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
 
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobberhttp"
 
@@ -853,6 +854,86 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 				continue
 			}
 
+			if tc.expectingError {
+				t.Fatal("expected error")
+			}
+		}
+	})
+
+	t.Run("TestUpdateObjectAttributes", func(t *testing.T) {
+		pubKey, privKey, _ := GeneratePubPrivateKey(t)
+		allocationTx := randString(32)
+
+		pubKeyBytes, _ := hex.DecodeString(pubKey)
+		clientId := encryption.Hash(pubKeyBytes)
+
+		err := tdController.ClearDatabase()
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = tdController.AddAttributesTestData(allocationTx, pubKey, clientId)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		attr := &reference.Attributes{WhoPaysForReads: common.WhoPays3rdParty}
+		attrBytes, err := json.Marshal(attr)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		testCases := []struct {
+			name           string
+			clientHeader   string
+			input          *blobbergrpc.UpdateObjectAttributesRequest
+			expectedPath   string
+			expectingError bool
+		}{
+			{
+				name: "Success",
+				input: &blobbergrpc.UpdateObjectAttributesRequest{
+					Path:         "/",
+					PathHash:     "exampleId:examplePath",
+					Allocation:   allocationTx,
+					ConnectionId: "connection_id",
+					Attributes:   string(attrBytes),
+				},
+				expectedPath:   "/",
+				expectingError: false,
+			},
+			{
+				name: "Failed",
+				input: &blobbergrpc.UpdateObjectAttributesRequest{
+					Path:         "",
+					PathHash:     "",
+					Allocation:   "",
+					ConnectionId: "",
+					Attributes:   "",
+				},
+				expectedPath:   "/",
+				expectingError: true,
+			},
+		}
+
+		for _, tc := range testCases {
+			clientRaw, _ := json.Marshal(client.Client{Wallet: &zcncrypto.Wallet{
+				ClientID:  clientId,
+				ClientKey: pubKey,
+				Keys:      []zcncrypto.KeyPair{{PublicKey: pubKey, PrivateKey: privKey}},
+			}})
+
+			err := client.PopulateClient(string(clientRaw), signScheme)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			_, err = UpdateObjectAttributes(BlobberAddr, tc.input)
+			if err != nil {
+				if !tc.expectingError {
+					t.Fatal(err)
+				}
+				continue
+			}
 			if tc.expectingError {
 				t.Fatal("expected error")
 			}
