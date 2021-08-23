@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"testing"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 )
 
 var edverifyPublickey = `b987071c14695caf340ea11560f5a3cb76ad1e709803a8b339826ab3964e470a`
