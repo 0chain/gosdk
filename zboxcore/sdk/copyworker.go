@@ -41,11 +41,9 @@ func (req *CopyRequest) copyBlobberObject(blobber *blockchain.StorageNode, blobb
 		return nil, err
 	}
 	var s strings.Builder
-	remoteFilePathHash := fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 
 	respRaw, err := blobberClient.CopyObject(blobber.Baseurl, &blobbergrpc.CopyObjectRequest{
 		Path:         req.remotefilepath,
-		PathHash:     remoteFilePathHash,
 		Allocation:   req.allocationTx,
 		ConnectionId: req.connectionID,
 		Dest:         req.destPath,
@@ -53,7 +51,7 @@ func (req *CopyRequest) copyBlobberObject(blobber *blockchain.StorageNode, blobb
 
 	if err != nil {
 		Logger.Error("could not copy object-" + blobber.Baseurl + " - " + err.Error())
-		return nil, err
+		return nil, errors.Wrap(err, "failed to copy object")
 	}
 	s.WriteString(string(respRaw))
 
