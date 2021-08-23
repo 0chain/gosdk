@@ -3,7 +3,7 @@ package allocationchange
 import (
 	"path/filepath"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 

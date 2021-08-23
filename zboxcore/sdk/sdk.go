@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/logger"
 
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -587,6 +587,26 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 	return
 }
 
+func GetMptData(key string) ([]byte, error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+
+	var b []byte
+	b, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
+		"/get_mpt_key", map[string]string{"key": key},
+		nil,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "error requesting mpt key data:")
+	}
+	if len(b) == 0 {
+		return nil, errors.New("empty response")
+	}
+
+	return b, nil
+}
+
 //
 // storage SC configurations and blobbers
 //
@@ -804,6 +824,16 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 		return nil, errors.New("allocations_decode_error", "Error decoding the allocations."+err.Error())
 	}
 	return allocations, nil
+}
+
+func CreateAllocationWithBlobbers(datashards, parityshards int, size, expiry int64,
+	readPrice, writePrice PriceRange, mcct time.Duration, lock int64, blobbers []string) (
+	string, error) {
+
+	return CreateAllocationForOwner(client.GetClientID(),
+		client.GetClientPublicKey(), datashards, parityshards,
+		size, expiry, readPrice, writePrice, mcct, lock,
+		blobbers)
 }
 
 func CreateAllocation(datashards, parityshards int, size, expiry int64,

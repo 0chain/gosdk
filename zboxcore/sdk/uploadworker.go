@@ -16,7 +16,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -106,7 +106,14 @@ func (req *UploadRequest) setUploadMask(numBlobbers int) {
 	req.uploadMask = zboxutil.NewUint128(1).Lsh(uint64(numBlobbers)).Sub64(1)
 }
 
-func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.StorageNode, file *fileref.FileRef, uploadCh chan []byte, uploadThumbCh chan []byte, wg *sync.WaitGroup) {
+func (req *UploadRequest) prepareUpload(
+	a *Allocation,
+	blobber *blockchain.StorageNode,
+	file *fileref.FileRef,
+	uploadCh chan []byte,
+	uploadThumbCh chan []byte,
+	wg *sync.WaitGroup,
+) {
 	bodyReader, bodyWriter := io.Pipe()
 	formWriter := multipart.NewWriter(bodyWriter)
 	httpreq, _ := zboxutil.NewUploadRequest(blobber.Baseurl, a.Tx, bodyReader, req.isUpdate)
@@ -317,11 +324,13 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 	wg.Done()
 }
 
+// setups upload for each blobber with same file
 func (req *UploadRequest) setupUpload(a *Allocation) error {
 	numUploads := req.uploadMask.CountOnes()
 	req.uploadDataCh = make([]chan []byte, numUploads)
 	req.uploadThumbCh = make([]chan []byte, numUploads)
 	req.file = make([]*fileref.FileRef, numUploads)
+
 	for i := range req.uploadDataCh {
 		req.uploadDataCh[i] = make(chan []byte)
 		req.uploadThumbCh[i] = make(chan []byte)
@@ -341,7 +350,8 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 	}
 	if req.isEncrypted {
 		req.encscheme = encryption.NewEncryptionScheme()
-		err := req.encscheme.Initialize(client.GetClient().Mnemonic)
+		mnemonic := client.GetClient().Mnemonic
+		err := req.encscheme.Initialize(mnemonic)
 		if err != nil {
 			return err
 		}
@@ -362,6 +372,7 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 	return nil
 }
 
+// this will push the data to the blobber, encrypt if the using the encrypted upload mode
 func (req *UploadRequest) pushData(data []byte) error {
 	//TODO: Check for optimization
 	n := int64(math.Min(float64(req.remaining), float64(len(data))))

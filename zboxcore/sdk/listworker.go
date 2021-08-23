@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/0chain/gosdk/core/clients/blobberClient"
-
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"

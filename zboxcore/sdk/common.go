@@ -7,10 +7,9 @@ import (
 
 	"github.com/0chain/gosdk/core/clients/blobberClient"
 
-	"github.com/0chain/gosdk/zboxcore/logger"
-
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/logger"
 )
 
 func getObjectTreeFromBlobber(allocationID, allocationTx, remotefilepath string, blobber *blockchain.StorageNode) (fileref.RefEntity, error) {

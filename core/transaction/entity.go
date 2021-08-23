@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/common/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
 )
