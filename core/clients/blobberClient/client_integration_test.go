@@ -935,10 +935,10 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 			copyResponseResult := &blobberhttp.UploadResult{}
 			err = json.Unmarshal(response, copyResponseResult)
 			if err != nil {
-				t.Fatal("failed!")
+				t.Fatalf("failed to unmarshal %+v", err)
 			}
 			if copyResponseResult.Filename != tc.expectedMessage {
-				t.Fatal("failed!")
+				t.Fatalf("Invalid filename, expected %s got %s", copyResponseResult.Filename, tc.expectedMessage)
 			}
 		}
 	})
