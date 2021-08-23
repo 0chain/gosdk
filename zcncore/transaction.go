@@ -136,6 +136,7 @@ type TransactionScheme interface {
 	MinerSCLock(minerID string, lock int64) error
 	MienrSCUnlock(minerID, poolID string) error
 	MinerScUpdateConfig(*InputMap) error
+	MinerScUpdateGlobals(*InputMap) error
 
 	// Storage SC
 
