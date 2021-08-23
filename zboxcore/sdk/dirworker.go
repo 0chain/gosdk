@@ -25,7 +25,7 @@ type DirRequest struct {
 }
 
 func (req *DirRequest) ProcessDir(a *Allocation) error {
-	numList := len(a.Blobbers) - 1
+	numList := len(a.Blobbers)
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numList)
 
@@ -33,7 +33,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 	for i := 0; i < numList; i++ {
 		go func(blobberIdx int) {
 			defer req.wg.Done()
-			err := req.createDirInBlobber(a.Blobbers[i])
+			err := req.createDirInBlobber(a.Blobbers[blobberIdx])
 			if err != nil {
 				Logger.Error(err.Error())
 				return
@@ -56,7 +56,7 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode) error
 		Logger.Error(blobber.Baseurl, "Error creating dir request", err)
 		return err
 	}
-	Logger.Info(httpreq.URL.Path)
+	Logger.Debug(httpreq.URL)
 
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))

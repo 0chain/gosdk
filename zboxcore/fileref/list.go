@@ -1,7 +1,7 @@
 package fileref
 
 import (
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -12,6 +12,9 @@ type ListResult struct {
 }
 
 func (lr *ListResult) GetDirTree(allocationID string) (*Ref, error) {
+	if lr.Meta == nil {
+		return nil, errors.New("invalid_list_path", "badly formatted list result, nil meta")
+	}
 	reftype := lr.Meta["type"].(string)
 	if reftype == DIRECTORY {
 		rootRef := &Ref{Type: DIRECTORY}
