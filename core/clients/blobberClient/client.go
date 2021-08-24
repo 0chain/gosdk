@@ -320,3 +320,27 @@ func CopyObject(url string, req *blobbergrpc.CopyObjectRequest) ([]byte, error) 
 	}
 	return json.Marshal(convert.CopyObjectResponseHandler(copyObjectResponse))
 }
+
+func RenameObject(url string, req *blobbergrpc.RenameObjectRequest) ([]byte, error) {
+	blobberClient, err := newBlobberGRPCClient(url)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create blobber grpc client")
+	}
+
+	clientSignature, err := client.Sign(encryption.Hash(req.Allocation))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to generate client signature")
+	}
+
+	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
+		blobbercommon.ClientHeader:          client.GetClientID(),
+		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
+		blobbercommon.ClientSignatureHeader: clientSignature,
+	}))
+
+	renameObjectResp, err := blobberClient.RenameObject(grpcCtx, req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to RenameObject")
+	}
+	return json.Marshal(renameObjectResp)
+}
