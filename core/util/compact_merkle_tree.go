@@ -14,7 +14,7 @@ var (
 )
 
 // CompactMerkleTree it is a stateful algorithm. It takes data in (leaf nodes), hashes it, and computes as many parent hashes as it can.
-// 	- /0chain/go/gosdk/docs/merkle/streaming-merkle-hasher.txt
+// see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-compactmerkletree
 type CompactMerkleTree struct {
 	Tree  []string                        `json:"tree"`  //node tree with computed as many parent hashes as it can
 	Hash  func(left, right string) string `json:"-"`     //it should be set once hasher is created

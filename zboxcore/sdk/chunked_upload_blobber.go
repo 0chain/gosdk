@@ -39,8 +39,10 @@ type ChunkedUploadBobbler struct {
 	commitResult  *CommitResult
 }
 
-func (sb *ChunkedUploadBobbler) processHash(fileBytes []byte, chunkIndex int) {
-	sb.progress.FixedMerkleTree.Write(fileBytes, chunkIndex)
+// processHash update ChallengeHash and ContentHash
+func (sb *ChunkedUploadBobbler) processHash(fileBytes []byte, chunkHash string, chunkIndex int) {
+	sb.progress.ChallengeHasher.Write(fileBytes, chunkIndex)
+	sb.progress.ContentHasher.Push(chunkHash, chunkIndex)
 }
 
 func (sb *ChunkedUploadBobbler) processUpload(su *ChunkedUpload, chunkIndex int, fileBytes, thumbnailBytes []byte, isFinal bool, wg *sync.WaitGroup) {
@@ -91,19 +93,21 @@ func (sb *ChunkedUploadBobbler) processUpload(su *ChunkedUpload, chunkIndex int,
 		return
 	}
 
-	sb.processHash(fileBytes, chunkIndex)
-
 	chunkHashWriter := sha1.New()
 	chunkWriters := io.MultiWriter(uploadFile, chunkHashWriter)
 
 	chunkWriters.Write(fileBytes)
 
-	formData.ContentHash = hex.EncodeToString(chunkHashWriter.Sum(nil))
+	formData.ChunkHash = hex.EncodeToString(chunkHashWriter.Sum(nil))
+	formData.ContentHash = formData.ChunkHash
+
+	sb.processHash(fileBytes, formData.ChunkHash, chunkIndex)
 
 	if isFinal {
 
 		//fixed shard data's info in last chunk for stream
-		formData.MerkleRoot = sb.progress.getMerkelRoot()
+		formData.MerkleRoot = sb.progress.getChallengeHash()
+		formData.ContentHash = sb.progress.getContentHash()
 
 		//fixed original file's info in last chunk for stream
 		formData.ActualHash = su.fileMeta.ActualHash

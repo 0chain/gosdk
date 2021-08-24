@@ -24,7 +24,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
-	"github.com/mitchellh/go-homedir"
 )
 
 var (
@@ -38,7 +37,7 @@ var (
 const DefaultChunkSize = 64 * 1024
 
 // CreateChunkedUpload create a ChunkedUpload instance
-func CreateChunkedUpload(allocationObj *Allocation, fileMeta FileMeta, fileReader io.Reader, opts ...ChunkedUploadOption) *ChunkedUpload {
+func CreateChunkedUpload(homedir string, allocationObj *Allocation, fileMeta FileMeta, fileReader io.Reader, opts ...ChunkedUploadOption) *ChunkedUpload {
 
 	su := &ChunkedUpload{
 		allocationObj: allocationObj,
@@ -55,9 +54,7 @@ func CreateChunkedUpload(allocationObj *Allocation, fileMeta FileMeta, fileReade
 		encryptOnUpload: false,
 	}
 
-	home, _ := homedir.Dir()
-
-	su.configDir = home + string(os.PathSeparator) + ".zcn"
+	su.configDir = homedir + string(os.PathSeparator) + ".zcn"
 
 	//create upload folder to save progress
 	os.MkdirAll(su.configDir+"/upload", 0744)
@@ -236,7 +233,10 @@ func (su *ChunkedUpload) createUploadProgress() UploadProgress {
 
 	for i := 0; i < len(progress.Blobbers); i++ {
 		progress.Blobbers[i] = &UploadBlobberStatus{
-			FixedMerkleTree: &util.FixedMerkleTree{ChunkSize: su.chunkSize},
+			ChallengeHasher: &util.FixedMerkleTree{ChunkSize: su.chunkSize},
+			ContentHasher: util.NewCompactMerkleTree(func(left, right string) string {
+				return coreEncryption.Hash(left + right)
+			}),
 		}
 	}
 
@@ -460,7 +460,7 @@ func (su *ChunkedUpload) readNextChunks(chunkIndex int) ([][]byte, int64, int64,
 }
 
 //processUpload process upload shard to its blobber
-func (su *ChunkedUpload) processUpload(chunkIndex int, fileShards [][]byte, thumbnailShards [][]byte, isFinal bool, uploadLenght int64) {
+func (su *ChunkedUpload) processUpload(chunkIndex int, fileShards [][]byte, thumbnailShards [][]byte, isFinal bool, uploadLength int64) {
 	threads := su.allocationObj.DataShards + su.allocationObj.ParityShards
 
 	wg := &sync.WaitGroup{}
@@ -471,7 +471,7 @@ func (su *ChunkedUpload) processUpload(chunkIndex int, fileShards [][]byte, thum
 		pos = uint64(i.TrailingZeros())
 
 		blobber := su.blobbers[pos]
-		blobber.progress.UploadLength += uploadLenght
+		blobber.progress.UploadLength += uploadLength
 
 		if len(thumbnailShards) > 0 {
 			go blobber.processUpload(su, chunkIndex, fileShards[pos], thumbnailShards[pos], isFinal, wg)

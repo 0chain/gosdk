@@ -3,6 +3,7 @@ package sdk
 // LiveUpload live streaming video upload manager
 type LiveUpload struct {
 	allocationObj *Allocation
+	homedir       string
 
 	// delay  delay to upload video
 	delay int
@@ -22,9 +23,10 @@ type LiveUpload struct {
 }
 
 // CreateLiveUpload create a LiveChunkedUpload instance
-func CreateLiveUpload(allocationObj *Allocation, liveMeta LiveMeta, liveReader LiveUploadReader, opts ...LiveUploadOption) *LiveUpload {
+func CreateLiveUpload(homedir string, allocationObj *Allocation, liveMeta LiveMeta, liveReader LiveUploadReader, opts ...LiveUploadOption) *LiveUpload {
 	u := &LiveUpload{
 		allocationObj: allocationObj,
+		homedir:       homedir,
 		//delay:         5 * time.Second,
 		//clipsSize:    1024 * 1024 * 20, //50M
 		liveMeta:   liveMeta,
@@ -71,7 +73,7 @@ func (lu *LiveUpload) createClipsUpload(clipsIndex int, reader LiveUploadReader)
 		Attributes: lu.liveMeta.Attributes,
 	}
 
-	return CreateChunkedUpload(lu.allocationObj, fileMeta, reader,
+	return CreateChunkedUpload(lu.homedir, lu.allocationObj, fileMeta, reader,
 		WithChunkSize(lu.chunkSize),
 		WithEncrypt(lu.encryptOnUpload),
 		WithStatusCallback(lu.statusCallback()))

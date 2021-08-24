@@ -46,12 +46,12 @@ type UploadFormData struct {
 	// Path remote path
 	Path string `json:"filepath,omitempty"`
 
-	// ContentHash hash of chunk data (encoded,encrypted)
+	// ContentHash hash of shard data (encoded,encrypted) when it is last chunk. it is ChunkHash if it is not last chunk.
 	ContentHash string `json:"content_hash,omitempty"`
 	// Hash hash of shard thumbnail  (encoded,encrypted)
 	ThumbnailContentHash string `json:"thumbnail_content_hash,omitempty"`
 
-	// MerkleRoot merkle's root hash of shard data (encoded, encrypted)
+	// MerkleRoot challenge hash of shard data (encoded, encrypted)
 	MerkleRoot string `json:"merkle_root,omitempty"`
 
 	// ActualHash hash of orignial file (unencoded, unencrypted)
@@ -68,10 +68,11 @@ type UploadFormData struct {
 	EncryptedKey string             `json:"encrypted_key,omitempty"`
 	Attributes   fileref.Attributes `json:"attributes,omitempty"`
 
-	IsFinal      bool  `json:"is_final,omitempty"`      // current chunk is last or not
-	ChunkIndex   int   `json:"chunk_index,omitempty"`   // the seq of current chunk. all chunks MUST be uploaded one by one because of streaming merkle hash
-	ChunkSize    int64 `json:"chunk_size,omitempty"`    // the size of achunk. 64*1024 is default
-	UploadOffset int64 `json:"upload_offset,omitempty"` // It is next position that new incoming chunk should be append to
+	IsFinal      bool   `json:"is_final,omitempty"`      // current chunk is last or not
+	ChunkHash    string `json:"chunk_hash"`              // hash of current chunk
+	ChunkIndex   int    `json:"chunk_index,omitempty"`   // the seq of current chunk. all chunks MUST be uploaded one by one because of streaming merkle hash
+	ChunkSize    int64  `json:"chunk_size,omitempty"`    // the size of achunk. 64*1024 is default
+	UploadOffset int64  `json:"upload_offset,omitempty"` // It is next position that new incoming chunk should be append to
 
 }
 
@@ -97,9 +98,8 @@ type UploadProgress struct {
 
 // UploadBlobberStatus the status of blobber's upload progress
 type UploadBlobberStatus struct {
-	FixedMerkleTree *util.FixedMerkleTree `json:"trusted_content_hasher"`
-
-	// ShardHasher hash.Hash `json:"-"`
+	ChallengeHasher *util.FixedMerkleTree   `json:"challenge_hasher"`
+	ContentHasher   *util.CompactMerkleTree `json:"content_hashser"`
 
 	// UploadLength total bytes that has been uploaded to blobbers
 	UploadLength int64 `json:"upload_length,omitempty"`
@@ -107,7 +107,12 @@ type UploadBlobberStatus struct {
 	//MerkleHasher util.CompactMerkleTree `json:"merkle_hasher,omitempty"`
 }
 
-// getMerkelRoot see section 1.8 Oursourcing Attack Protection on Whitepaper
-func (status *UploadBlobberStatus) getMerkelRoot() string {
-	return status.FixedMerkleTree.GetMerkleRoot()
+// getChallengeHash see detail on https://github.com/0chain/blobber/wiki/Protocols
+func (status *UploadBlobberStatus) getChallengeHash() string {
+	return status.ChallengeHasher.GetMerkleRoot()
+}
+
+// getContentHash see detail on https://github.com/0chain/blobber/wiki/Protocols
+func (status *UploadBlobberStatus) getContentHash() string {
+	return status.ContentHasher.GetMerkleRoot()
 }
