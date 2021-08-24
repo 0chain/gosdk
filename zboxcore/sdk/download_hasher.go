@@ -11,7 +11,7 @@ import (
 // downloadHahser verify hash for downloading
 type downloadHasher struct {
 	hasher       hash.Hash
-	streamHasher *util.StreamMerkleHasher
+	streamHasher *util.CompactMerkleTree
 	chunkIndex   int
 	shardSize    int
 	buf          []byte
@@ -29,7 +29,7 @@ func createDownloadHasher(chunkSize int, dataShards int, encryptOnUpload bool) *
 
 	return &downloadHasher{
 		hasher:       sha1.New(),
-		streamHasher: util.NewStreamMerkleHasher(nil),
+		streamHasher: util.NewCompactMerkleTree(nil),
 		shardSize:    shardSize,
 		buf:          make([]byte, 0, shardSize),
 		chunkIndex:   0,

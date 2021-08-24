@@ -5,15 +5,16 @@ import (
 	"encoding/hex"
 )
 
-// TrustedConentHasher A trusted mekerl tree for outsourcing attack protection. see section 1.8 on whitepager
-type TrustedConentHasher struct {
+// FixedMerkleTree A trusted mekerl tree for outsourcing attack protection. see section 1.8 on whitepager
+// see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-fixedmerkletree
+type FixedMerkleTree struct {
 	// ChunkSize size of chunk
 	ChunkSize int `json:"chunk_size,omitempty"`
-	// Leaves a leaf is a StreamMerkleHash of 1/1024 shard
-	Leaves []*StreamMerkleHasher `json:"leaves,omitempty"`
+	// Leaves a leaf is a CompactMerkleTree of 1/1024 shard
+	Leaves []*CompactMerkleTree `json:"leaves,omitempty"`
 }
 
-func (tch *TrustedConentHasher) Write(buf []byte, chunkIndex int) {
+func (tch *FixedMerkleTree) Write(buf []byte, chunkIndex int) {
 	merkleChunkSize := tch.ChunkSize / 1024
 	total := len(buf)
 	for i := 0; i < total; i += merkleChunkSize {
@@ -27,9 +28,9 @@ func (tch *TrustedConentHasher) Write(buf []byte, chunkIndex int) {
 		h.Write(buf[i:end])
 
 		if len(tch.Leaves) != 1024 {
-			tch.Leaves = make([]*StreamMerkleHasher, 1024)
+			tch.Leaves = make([]*CompactMerkleTree, 1024)
 			for n := 0; n < 1024; n++ {
-				tch.Leaves[n] = NewStreamMerkleHasher(nil)
+				tch.Leaves[n] = NewCompactMerkleTree(nil)
 			}
 		}
 
@@ -38,7 +39,7 @@ func (tch *TrustedConentHasher) Write(buf []byte, chunkIndex int) {
 }
 
 // GetMerkleRoot get merkle root
-func (tch *TrustedConentHasher) GetMerkleRoot() string {
+func (tch *FixedMerkleTree) GetMerkleRoot() string {
 	merkleLeaves := make([]Hashable, 1024)
 
 	for idx, leaf := range tch.Leaves {

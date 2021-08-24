@@ -40,7 +40,7 @@ type StreamUploadBobbler struct {
 }
 
 func (sb *StreamUploadBobbler) processHash(fileBytes []byte, chunkIndex int) {
-	sb.progress.TrustedConentHasher.Write(fileBytes, chunkIndex)
+	sb.progress.FixedMerkleTree.Write(fileBytes, chunkIndex)
 }
 
 func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, fileBytes, thumbnailBytes []byte, isFinal bool, wg *sync.WaitGroup) {

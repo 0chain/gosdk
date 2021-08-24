@@ -97,17 +97,17 @@ type UploadProgress struct {
 
 // UploadBlobberStatus the status of blobber's upload progress
 type UploadBlobberStatus struct {
-	TrustedConentHasher *util.TrustedConentHasher `json:"trusted_content_hasher"`
+	FixedMerkleTree *util.FixedMerkleTree `json:"trusted_content_hasher"`
 
 	// ShardHasher hash.Hash `json:"-"`
 
 	// UploadLength total bytes that has been uploaded to blobbers
 	UploadLength int64 `json:"upload_length,omitempty"`
 	// MerkleHasher a stateful stream merkle tree for uploaded chunks
-	//MerkleHasher util.StreamMerkleHasher `json:"merkle_hasher,omitempty"`
+	//MerkleHasher util.CompactMerkleTree `json:"merkle_hasher,omitempty"`
 }
 
 // getMerkelRoot see section 1.8 Oursourcing Attack Protection on Whitepaper
 func (status *UploadBlobberStatus) getMerkelRoot() string {
-	return status.TrustedConentHasher.GetMerkleRoot()
+	return status.FixedMerkleTree.GetMerkleRoot()
 }

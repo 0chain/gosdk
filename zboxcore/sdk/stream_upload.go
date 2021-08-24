@@ -44,7 +44,7 @@ func CreateStreamUpload(allocationObj *Allocation, fileMeta FileMeta, fileReader
 		allocationObj: allocationObj,
 		fileMeta:      fileMeta,
 		fileReader:    fileReader,
-		fileHasher: util.NewStreamMerkleHasher(func(left, right string) string {
+		fileHasher: util.NewCompactMerkleTree(func(left, right string) string {
 			return coreEncryption.Hash(left + right)
 		}),
 		progressSaveChan:   make(chan UploadProgress, 10),
@@ -125,7 +125,7 @@ type StreamUpload struct {
 	fileReader         io.Reader
 	fileErasureEncoder reedsolomon.Encoder
 	fileEncscheme      encryption.EncryptionScheme
-	fileHasher         *util.StreamMerkleHasher
+	fileHasher         *util.CompactMerkleTree
 
 	thumbnailBytes         []byte
 	thumbailErasureEncoder reedsolomon.Encoder
@@ -236,7 +236,7 @@ func (su *StreamUpload) createUploadProgress() UploadProgress {
 
 	for i := 0; i < len(progress.Blobbers); i++ {
 		progress.Blobbers[i] = &UploadBlobberStatus{
-			TrustedConentHasher: &util.TrustedConentHasher{ChunkSize: su.chunkSize},
+			FixedMerkleTree: &util.FixedMerkleTree{ChunkSize: su.chunkSize},
 		}
 	}
 

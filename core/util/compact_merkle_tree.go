@@ -13,18 +13,18 @@ var (
 	ErrLeafNoSequenced = errors.New("merkle: leaf must be pushed with sequence")
 )
 
-// StreamMerkleHasher it is a stateful algorithm. It takes data in (leaf nodes), hashes it, and computes as many parent hashes as it can.
+// CompactMerkleTree it is a stateful algorithm. It takes data in (leaf nodes), hashes it, and computes as many parent hashes as it can.
 // 	- /0chain/go/gosdk/docs/merkle/streaming-merkle-hasher.txt
-type StreamMerkleHasher struct {
+type CompactMerkleTree struct {
 	Tree  []string                        `json:"tree"`  //node tree with computed as many parent hashes as it can
 	Hash  func(left, right string) string `json:"-"`     //it should be set once hasher is created
 	Count int                             `json:"count"` //how many leaves has been pushed
 }
 
-// NewStreamMerkleHasher create a StreamMerkleHasher with specify hash method
-func NewStreamMerkleHasher(hash func(left, right string) string) *StreamMerkleHasher {
+// NewCompactMerkleTree create a CompactMerkleTree with specify hash method
+func NewCompactMerkleTree(hash func(left, right string) string) *CompactMerkleTree {
 
-	return &StreamMerkleHasher{
+	return &CompactMerkleTree{
 		Tree: make([]string, 0, 10),
 		Hash: hash,
 	}
@@ -32,7 +32,7 @@ func NewStreamMerkleHasher(hash func(left, right string) string) *StreamMerkleHa
 }
 
 // Push add leaf hash and update the the Merkle tree.
-func (hasher *StreamMerkleHasher) Push(leaf string, index int) error {
+func (hasher *CompactMerkleTree) Push(leaf string, index int) error {
 
 	if index < hasher.Count {
 		return ErrLeafExists
@@ -78,7 +78,7 @@ func (hasher *StreamMerkleHasher) Push(leaf string, index int) error {
 // For the last, lowest-level hash, we hash it with itself.
 // From there, the nodes are hashed to the top level
 // to calculate the Merkle root.
-func (hasher *StreamMerkleHasher) GetMerkleRoot() string {
+func (hasher *CompactMerkleTree) GetMerkleRoot() string {
 	if hasher.Hash == nil {
 		hasher.Hash = func(left, right string) string {
 			return encryption.Hash(left + right)
