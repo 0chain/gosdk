@@ -21,7 +21,7 @@ type LiveUpload struct {
 	statusCallback func() StatusCallback
 }
 
-// CreateLiveUpload create a LiveStreamUpload instance
+// CreateLiveUpload create a LiveChunkedUpload instance
 func CreateLiveUpload(allocationObj *Allocation, liveMeta LiveMeta, liveReader LiveUploadReader, opts ...LiveUploadOption) *LiveUpload {
 	u := &LiveUpload{
 		allocationObj: allocationObj,
@@ -43,7 +43,7 @@ func CreateLiveUpload(allocationObj *Allocation, liveMeta LiveMeta, liveReader L
 func (lu *LiveUpload) Start() error {
 
 	var err error
-	var clipsUpload *StreamUpload
+	var clipsUpload *ChunkedUpload
 	for {
 
 		clipsUpload = lu.createClipsUpload(lu.clipsIndex, lu.liveReader)
@@ -60,7 +60,7 @@ func (lu *LiveUpload) Start() error {
 
 }
 
-func (lu *LiveUpload) createClipsUpload(clipsIndex int, reader LiveUploadReader) *StreamUpload {
+func (lu *LiveUpload) createClipsUpload(clipsIndex int, reader LiveUploadReader) *ChunkedUpload {
 	fileMeta := FileMeta{
 		Path:       reader.GetClipsFile(clipsIndex),
 		ActualSize: reader.Size(),
@@ -71,7 +71,7 @@ func (lu *LiveUpload) createClipsUpload(clipsIndex int, reader LiveUploadReader)
 		Attributes: lu.liveMeta.Attributes,
 	}
 
-	return CreateStreamUpload(lu.allocationObj, fileMeta, reader,
+	return CreateChunkedUpload(lu.allocationObj, fileMeta, reader,
 		WithChunkSize(lu.chunkSize),
 		WithEncrypt(lu.encryptOnUpload),
 		WithStatusCallback(lu.statusCallback()))

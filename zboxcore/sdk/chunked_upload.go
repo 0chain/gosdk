@@ -37,10 +37,10 @@ var (
 // DefaultChunkSize default chunk size for file and thumbnail
 const DefaultChunkSize = 64 * 1024
 
-// CreateStreamUpload create a StreamUpload instance
-func CreateStreamUpload(allocationObj *Allocation, fileMeta FileMeta, fileReader io.Reader, opts ...StreamUploadOption) *StreamUpload {
+// CreateChunkedUpload create a ChunkedUpload instance
+func CreateChunkedUpload(allocationObj *Allocation, fileMeta FileMeta, fileReader io.Reader, opts ...ChunkedUploadOption) *ChunkedUpload {
 
-	su := &StreamUpload{
+	su := &ChunkedUpload{
 		allocationObj: allocationObj,
 		fileMeta:      fileMeta,
 		fileReader:    fileReader,
@@ -85,10 +85,10 @@ func CreateStreamUpload(allocationObj *Allocation, fileMeta FileMeta, fileReader
 
 	}
 
-	su.blobbers = make([]*StreamUploadBobbler, len(su.allocationObj.Blobbers))
+	su.blobbers = make([]*ChunkedUploadBobbler, len(su.allocationObj.Blobbers))
 
 	for i := 0; i < len(su.allocationObj.Blobbers); i++ {
-		su.blobbers[i] = &StreamUploadBobbler{
+		su.blobbers[i] = &ChunkedUploadBobbler{
 			progress: su.progress.Blobbers[i],
 			blobber:  su.allocationObj.Blobbers[i],
 			fileRef: &fileref.FileRef{
@@ -108,8 +108,8 @@ func CreateStreamUpload(allocationObj *Allocation, fileMeta FileMeta, fileReader
 
 }
 
-// StreamUpload upload manager with resumable upload feature
-type StreamUpload struct {
+// ChunkedUpload upload manager with resumable upload feature
+type ChunkedUpload struct {
 	Consensus
 
 	configDir string
@@ -143,17 +143,17 @@ type StreamUpload struct {
 	// statusCallback trigger progress on StatusCallback
 	statusCallback StatusCallback
 
-	blobbers []*StreamUploadBobbler
+	blobbers []*ChunkedUploadBobbler
 }
 
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
-func (su *StreamUpload) progressID() string {
+func (su *ChunkedUpload) progressID() string {
 
 	return su.configDir + "/upload/" + su.allocationObj.ID + "_" + su.fileMeta.FileID()
 }
 
 // loadProgress load progress from ~/.zcn/upload/[progressID]
-func (su *StreamUpload) loadProgress() {
+func (su *ChunkedUpload) loadProgress() {
 	progressID := su.progressID()
 	buf, err := ioutil.ReadFile(progressID)
 
@@ -175,7 +175,7 @@ func (su *StreamUpload) loadProgress() {
 }
 
 // autoSaveProgress a background save worker is running in a single thread for higher perfornamce. Because `json.Marshal` hits performance issue.
-func (su *StreamUpload) autoSaveProgress() {
+func (su *ChunkedUpload) autoSaveProgress() {
 
 	var progress *UploadProgress
 	delay, cancel := context.WithTimeout(context.TODO(), 1*time.Second)
@@ -216,17 +216,17 @@ func (su *StreamUpload) autoSaveProgress() {
 }
 
 // saveProgress save progress to ~/.zcn/upload/[progressID]
-func (su *StreamUpload) saveProgress() {
+func (su *ChunkedUpload) saveProgress() {
 	go func() { su.progressSaveChan <- su.progress }()
 }
 
 // removeProgress remove progress info once it is done
-func (su *StreamUpload) removeProgress() {
+func (su *ChunkedUpload) removeProgress() {
 	go func() { su.progressRemoveChan <- su.progress }()
 }
 
 // createUploadProgress create a new UploadProgress
-func (su *StreamUpload) createUploadProgress() UploadProgress {
+func (su *ChunkedUpload) createUploadProgress() UploadProgress {
 	progress := UploadProgress{ConnectionID: zboxutil.NewConnectionId(),
 		ChunkIndex:   0,
 		ChunkSize:    su.chunkSize,
@@ -244,7 +244,7 @@ func (su *StreamUpload) createUploadProgress() UploadProgress {
 	return progress
 }
 
-func (su *StreamUpload) createEncscheme() encryption.EncryptionScheme {
+func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 	encscheme := encryption.NewEncryptionScheme()
 
 	if len(su.progress.EncryptPrivteKey) > 0 {
@@ -270,7 +270,7 @@ func (su *StreamUpload) createEncscheme() encryption.EncryptionScheme {
 }
 
 // Start start/resume upload
-func (su *StreamUpload) Start() error {
+func (su *ChunkedUpload) Start() error {
 
 	if su.statusCallback != nil {
 		su.statusCallback.Started(su.allocationObj.ID, su.fileMeta.RemotePath, OpUpload, int(su.fileMeta.ActualSize)+int(su.fileMeta.ActualThumbnailSize))
@@ -351,7 +351,7 @@ func (su *StreamUpload) Start() error {
 }
 
 // readThumbnailShards encode and encrypt thumbnail
-func (su *StreamUpload) readThumbnailShards() ([][]byte, error) {
+func (su *ChunkedUpload) readThumbnailShards() ([][]byte, error) {
 
 	shards, err := su.thumbailErasureEncoder.Split(su.thumbnailBytes)
 	if err != nil {
@@ -386,7 +386,7 @@ func (su *StreamUpload) readThumbnailShards() ([][]byte, error) {
 	return shards, nil
 }
 
-func (su *StreamUpload) readNextChunks(chunkIndex int) ([][]byte, int64, int64, bool, error) {
+func (su *ChunkedUpload) readNextChunks(chunkIndex int) ([][]byte, int64, int64, bool, error) {
 
 	chunkSize := su.chunkSize
 
@@ -460,7 +460,7 @@ func (su *StreamUpload) readNextChunks(chunkIndex int) ([][]byte, int64, int64, 
 }
 
 //processUpload process upload shard to its blobber
-func (su *StreamUpload) processUpload(chunkIndex int, fileShards [][]byte, thumbnailShards [][]byte, isFinal bool, uploadLenght int64) {
+func (su *ChunkedUpload) processUpload(chunkIndex int, fileShards [][]byte, thumbnailShards [][]byte, isFinal bool, uploadLenght int64) {
 	threads := su.allocationObj.DataShards + su.allocationObj.ParityShards
 
 	wg := &sync.WaitGroup{}
@@ -485,7 +485,7 @@ func (su *StreamUpload) processUpload(chunkIndex int, fileShards [][]byte, thumb
 }
 
 // processCommit commit shard upload on its blobber
-func (su *StreamUpload) processCommit() error {
+func (su *ChunkedUpload) processCommit() error {
 	logger.Logger.Info("Submitting for commit")
 	su.consensus = 0
 	wg := &sync.WaitGroup{}

@@ -9,12 +9,12 @@ import (
 	"github.com/klauspost/reedsolomon"
 )
 
-// StreamUploadOption set stream option
-type StreamUploadOption func(su *StreamUpload)
+// ChunkedUploadOption set stream option
+type ChunkedUploadOption func(su *ChunkedUpload)
 
 // WithThumbnail add thumbnail. stream mode is unnecessary for thumbnail
-func WithThumbnail(buf []byte) StreamUploadOption {
-	return func(su *StreamUpload) {
+func WithThumbnail(buf []byte) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
 
 		size := len(buf)
 
@@ -36,7 +36,7 @@ func WithThumbnail(buf []byte) StreamUploadOption {
 }
 
 // WithThumbnailFile add thumbnail from file. stream mode is unnecessary for thumbnail
-func WithThumbnailFile(fileName string) StreamUploadOption {
+func WithThumbnailFile(fileName string) ChunkedUploadOption {
 
 	buf, _ := ioutil.ReadFile(fileName)
 
@@ -44,8 +44,8 @@ func WithThumbnailFile(fileName string) StreamUploadOption {
 }
 
 // WithChunkSize set custom chunk size. ignore if size <=0
-func WithChunkSize(size int) StreamUploadOption {
-	return func(su *StreamUpload) {
+func WithChunkSize(size int) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
 		if size > 0 {
 			su.chunkSize = size
 		}
@@ -53,15 +53,15 @@ func WithChunkSize(size int) StreamUploadOption {
 }
 
 // WithEncrypt trun on/off encrypt on upload. It is turn off as default.
-func WithEncrypt(status bool) StreamUploadOption {
-	return func(su *StreamUpload) {
+func WithEncrypt(status bool) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
 		su.encryptOnUpload = status
 	}
 }
 
 // WithStatusCallback register StatusCallback instance
-func WithStatusCallback(callback StatusCallback) StreamUploadOption {
-	return func(su *StreamUpload) {
+func WithStatusCallback(callback StatusCallback) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
 		su.statusCallback = callback
 	}
 }

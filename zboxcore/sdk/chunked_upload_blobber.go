@@ -27,8 +27,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
-// StreamUploadBobbler client of blobber's upload
-type StreamUploadBobbler struct {
+// ChunkedUploadBobbler client of blobber's upload
+type ChunkedUploadBobbler struct {
 	blobber  *blockchain.StorageNode
 	fileRef  *fileref.FileRef
 	progress *UploadBlobberStatus
@@ -39,11 +39,11 @@ type StreamUploadBobbler struct {
 	commitResult  *CommitResult
 }
 
-func (sb *StreamUploadBobbler) processHash(fileBytes []byte, chunkIndex int) {
+func (sb *ChunkedUploadBobbler) processHash(fileBytes []byte, chunkIndex int) {
 	sb.progress.FixedMerkleTree.Write(fileBytes, chunkIndex)
 }
 
-func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, fileBytes, thumbnailBytes []byte, isFinal bool, wg *sync.WaitGroup) {
+func (sb *ChunkedUploadBobbler) processUpload(su *ChunkedUpload, chunkIndex int, fileBytes, thumbnailBytes []byte, isFinal bool, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	if len(fileBytes) == 0 {
@@ -217,7 +217,7 @@ func (sb *StreamUploadBobbler) processUpload(su *StreamUpload, chunkIndex int, f
 
 }
 
-func (sb *StreamUploadBobbler) processCommit(su *StreamUpload, wg *sync.WaitGroup) error {
+func (sb *ChunkedUploadBobbler) processCommit(su *ChunkedUpload, wg *sync.WaitGroup) error {
 	defer wg.Done()
 	rootRef, latestWM, size, err := sb.processWriteMarker(su)
 
@@ -301,7 +301,7 @@ func (sb *StreamUploadBobbler) processCommit(su *StreamUpload, wg *sync.WaitGrou
 	return nil
 }
 
-func (sb *StreamUploadBobbler) processWriteMarker(su *StreamUpload) (*fileref.Ref, *marker.WriteMarker, int64, error) {
+func (sb *ChunkedUploadBobbler) processWriteMarker(su *ChunkedUpload) (*fileref.Ref, *marker.WriteMarker, int64, error) {
 	logger.Logger.Info("received a commit request")
 	paths := make([]string, 0)
 	for _, change := range sb.commitChanges {
