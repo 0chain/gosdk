@@ -296,3 +296,27 @@ func UpdateObjectAttributes(url string, req *blobbergrpc.UpdateObjectAttributesR
 	}
 	return json.Marshal(convert.UpdateObjectAttributesResponseHandler(updateObjectAttributesResponse))
 }
+
+func CopyObject(url string, req *blobbergrpc.CopyObjectRequest) ([]byte, error) {
+	blobberClient, err := newBlobberGRPCClient(url)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create blobber grpc client")
+	}
+
+	clientSignature, err := client.Sign(encryption.Hash(req.Allocation))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to generate client signature")
+	}
+
+	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
+		blobbercommon.ClientHeader:          client.GetClientID(),
+		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
+		blobbercommon.ClientSignatureHeader: clientSignature,
+	}))
+
+	copyObjectResponse, err := blobberClient.CopyObject(grpcCtx, req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to CopyObject")
+	}
+	return json.Marshal(convert.CopyObjectResponseHandler(copyObjectResponse))
+}
