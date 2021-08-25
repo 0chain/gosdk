@@ -2,7 +2,6 @@ package sdk
 
 import (
 	"context"
-	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -105,7 +104,7 @@ func CreateChunkedUpload(homedir string, allocationObj *Allocation, fileMeta Fil
 
 }
 
-// ChunkedUpload upload manager with resumable upload feature
+// ChunkedUpload upload manager with chunked upload feature
 type ChunkedUpload struct {
 	Consensus
 
@@ -302,7 +301,6 @@ func (su *ChunkedUpload) Start() error {
 			if su.fileMeta.ActualSize == 0 {
 				su.fileMeta.ActualSize = su.progress.UploadLength
 			}
-
 		}
 
 		// upload entire thumbnail in first reqeust only
@@ -412,10 +410,7 @@ func (su *ChunkedUpload) readNextChunks(chunkIndex int) ([][]byte, int64, int64,
 	}
 
 	if readLen > 0 {
-		hash := sha1.New()
-		hash.Write(chunkBytes[:readLen])
-		leafHash := hex.EncodeToString(hash.Sum(nil))
-		su.fileHasher.Push(leafHash, chunkIndex)
+		su.fileHasher.AddDataBlocks(chunkBytes[:readLen], chunkIndex)
 	}
 
 	if readLen < shardSize {

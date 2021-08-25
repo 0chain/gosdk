@@ -86,7 +86,7 @@ type UploadProgress struct {
 	EncryptOnUpload  bool `json:"is_encrypted,omitempty"`
 	EncryptPrivteKey string
 
-	// ConnectionID resumable upload connection_id
+	// ConnectionID chunked upload connection_id
 	ConnectionID string `json:"connection_id,omitempty"`
 	// ChunkIndex index of last updated chunk
 	ChunkIndex int `json:"chunk_index,omitempty"`
@@ -103,8 +103,6 @@ type UploadBlobberStatus struct {
 
 	// UploadLength total bytes that has been uploaded to blobbers
 	UploadLength int64 `json:"upload_length,omitempty"`
-	// MerkleHasher a stateful stream merkle tree for uploaded chunks
-	//MerkleHasher util.CompactMerkleTree `json:"merkle_hasher,omitempty"`
 }
 
 // getChallengeHash see detail on https://github.com/0chain/blobber/wiki/Protocols

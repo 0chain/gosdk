@@ -42,7 +42,7 @@ type ChunkedUploadBobbler struct {
 // processHash update ChallengeHash and ContentHash
 func (sb *ChunkedUploadBobbler) processHash(fileBytes []byte, chunkHash string, chunkIndex int) {
 	sb.progress.ChallengeHasher.Write(fileBytes, chunkIndex)
-	sb.progress.ContentHasher.Push(chunkHash, chunkIndex)
+	sb.progress.ContentHasher.AddLeaf(chunkHash, chunkIndex)
 }
 
 func (sb *ChunkedUploadBobbler) processUpload(su *ChunkedUpload, chunkIndex int, fileBytes, thumbnailBytes []byte, isFinal bool, wg *sync.WaitGroup) {

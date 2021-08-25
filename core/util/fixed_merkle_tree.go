@@ -1,8 +1,10 @@
 package util
 
 import (
-	"crypto/sha1"
-	"encoding/hex"
+	"bytes"
+	"io"
+
+	"github.com/0chain/errors"
 )
 
 // FixedMerkleTree A trusted mekerl tree for outsourcing attack protection. see section 1.8 on whitepager
@@ -10,12 +12,31 @@ import (
 type FixedMerkleTree struct {
 	// ChunkSize size of chunk
 	ChunkSize int `json:"chunk_size,omitempty"`
-	// Leaves a leaf is a CompactMerkleTree of 1/1024 shard
+	// Leaves a leaf is a CompactMerkleTree for 1/1024 shard data
 	Leaves []*CompactMerkleTree `json:"leaves,omitempty"`
 }
 
-func (tch *FixedMerkleTree) Write(buf []byte, chunkIndex int) {
-	merkleChunkSize := tch.ChunkSize / 1024
+// NewFixedMerkleTree create a FixedMerkleTree with specify hash method
+func NewFixedMerkleTree(chunkSize int) *FixedMerkleTree {
+
+	t := &FixedMerkleTree{
+		ChunkSize: chunkSize,
+	}
+	t.initLeaves()
+
+	return t
+
+}
+
+func (fmt *FixedMerkleTree) initLeaves() {
+	fmt.Leaves = make([]*CompactMerkleTree, 1024)
+	for n := 0; n < 1024; n++ {
+		fmt.Leaves[n] = NewCompactMerkleTree(nil)
+	}
+}
+
+func (fmt *FixedMerkleTree) Write(buf []byte, chunkIndex int) error {
+	merkleChunkSize := fmt.ChunkSize / 1024
 	total := len(buf)
 	for i := 0; i < total; i += merkleChunkSize {
 		end := i + merkleChunkSize
@@ -24,25 +45,24 @@ func (tch *FixedMerkleTree) Write(buf []byte, chunkIndex int) {
 		}
 		offset := i / merkleChunkSize
 
-		h := sha1.New()
-		h.Write(buf[i:end])
-
-		if len(tch.Leaves) != 1024 {
-			tch.Leaves = make([]*CompactMerkleTree, 1024)
-			for n := 0; n < 1024; n++ {
-				tch.Leaves[n] = NewCompactMerkleTree(nil)
-			}
+		if len(fmt.Leaves) != 1024 {
+			fmt.initLeaves()
 		}
 
-		tch.Leaves[offset].Push(hex.EncodeToString(h.Sum(nil)), chunkIndex)
+		err := fmt.Leaves[offset].AddDataBlocks(buf[i:end], chunkIndex)
+		if errors.Is(err, ErrLeafNoSequenced) {
+			return err
+		}
 	}
+
+	return nil
 }
 
 // GetMerkleRoot get merkle root
-func (tch *FixedMerkleTree) GetMerkleRoot() string {
+func (fmt *FixedMerkleTree) GetMerkleRoot() string {
 	merkleLeaves := make([]Hashable, 1024)
 
-	for idx, leaf := range tch.Leaves {
+	for idx, leaf := range fmt.Leaves {
 
 		merkleLeaves[idx] = NewStringHashable(leaf.GetMerkleRoot())
 	}
@@ -51,4 +71,36 @@ func (tch *FixedMerkleTree) GetMerkleRoot() string {
 	mt.ComputeTree(merkleLeaves)
 
 	return mt.GetRoot()
+}
+
+// Reload reset and reload leaves from io.Reader
+func (fmt *FixedMerkleTree) Reload(reader io.Reader) error {
+
+	fmt.initLeaves()
+
+	bytesBuf := bytes.NewBuffer(make([]byte, 0, fmt.ChunkSize))
+	for i := 0; ; i++ {
+		written, err := io.CopyN(bytesBuf, reader, int64(fmt.ChunkSize))
+
+		if written > 0 {
+			err = fmt.Write(bytesBuf.Bytes(), i)
+			bytesBuf.Reset()
+
+			if err != nil {
+				return err
+			}
+
+		}
+
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+
+			return err
+		}
+
+	}
+
+	return nil
 }

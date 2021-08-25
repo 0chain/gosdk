@@ -41,9 +41,7 @@ func (dh *downloadHasher) Write(p []byte) (n int, err error) {
 
 	for _, v := range p {
 		if len(dh.buf) == dh.shardSize {
-			hasher := sha1.New()
-			hasher.Write(dh.buf)
-			dh.streamHasher.Push(hex.EncodeToString(hasher.Sum(nil)), dh.chunkIndex)
+			dh.streamHasher.AddDataBlocks(dh.buf, dh.chunkIndex)
 			dh.chunkIndex++
 			dh.buf = make([]byte, 0, dh.shardSize)
 		}
@@ -63,9 +61,7 @@ func (dh *downloadHasher) GetHash() string {
 // GetMerkleRoot get merkle root hash for new upload
 func (dh *downloadHasher) GetMerkleRoot() string {
 	if len(dh.buf) > 0 {
-		hasher := sha1.New()
-		hasher.Write(dh.buf)
-		dh.streamHasher.Push(hex.EncodeToString(hasher.Sum(nil)), dh.chunkIndex)
+		dh.streamHasher.AddDataBlocks(dh.buf, dh.chunkIndex)
 		dh.chunkIndex++
 		dh.buf = make([]byte, 0, dh.shardSize)
 	}
