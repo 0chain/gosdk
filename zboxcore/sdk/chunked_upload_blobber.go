@@ -176,8 +176,8 @@ func (sb *ChunkedUploadBobbler) processUpload(su *ChunkedUpload, chunkIndex int,
 			//req.err = err
 			return err
 		}
-		if r.Filename != formData.Filename || r.Hash != formData.ContentHash {
-			err = fmt.Errorf("%s Unexpected upload response data %s %s %s", sb.blobber.Baseurl, formData.Filename, formData.ContentHash, string(respbody))
+		if r.Filename != formData.Filename || r.Hash != formData.ChunkHash {
+			err = fmt.Errorf("%s Unexpected upload response data %s %s %s", sb.blobber.Baseurl, formData.Filename, formData.ChunkHash, string(respbody))
 			logger.Logger.Error(err)
 			//req.err = err
 			return err
