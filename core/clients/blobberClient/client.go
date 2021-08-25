@@ -22,6 +22,21 @@ import (
 
 const GRPCPort = 31501
 
+var blobbersInfo = map[string]blobbergrpc.BlobberServiceClient{}
+
+func getBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberServiceClient, error) {
+	if blobberClient, ok := blobbersInfo[urlRaw]; ok {
+		return blobberClient, nil
+	}
+
+	blobberClient, err := newBlobberGRPCClient(urlRaw)
+	if err != nil {
+		return nil, err
+	}
+	blobbersInfo[urlRaw] = blobberClient
+	return blobberClient, err
+}
+
 func newBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberServiceClient, error) {
 	u, err := url.Parse(urlRaw)
 	if err != nil {
@@ -48,7 +63,7 @@ func Commit(url string, req *blobbergrpc.CommitRequest) ([]byte, error) {
 		blobbercommon.ClientSignatureHeader: clientSignature,
 	}))
 
-	blobberClient, err := newBlobberGRPCClient(url)
+	blobberClient, err := getBlobberGRPCClient(url)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +83,7 @@ func GetAllocation(url string, req *blobbergrpc.GetAllocationRequest) ([]byte, e
 		blobbercommon.ClientSignatureHeader: "",
 	}))
 
-	blobberClient, err := newBlobberGRPCClient(url)
+	blobberClient, err := getBlobberGRPCClient(url)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +98,7 @@ func GetAllocation(url string, req *blobbergrpc.GetAllocationRequest) ([]byte, e
 
 func GetObjectTree(url string, req *blobbergrpc.GetObjectTreeRequest) ([]byte, error) {
 
-	blobberClient, err := newBlobberGRPCClient(url)
+	blobberClient, err := getBlobberGRPCClient(url)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +124,7 @@ func GetObjectTree(url string, req *blobbergrpc.GetObjectTreeRequest) ([]byte, e
 
 func GetReferencePath(url string, req *blobbergrpc.GetReferencePathRequest) ([]byte, error) {
 
-	blobberClient, err := newBlobberGRPCClient(url)
+	blobberClient, err := getBlobberGRPCClient(url)
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +149,7 @@ func GetReferencePath(url string, req *blobbergrpc.GetReferencePathRequest) ([]b
 }
 
 func ListEntities(url string, req *blobbergrpc.ListEntitiesRequest) ([]byte, error) {
-	blobberClient, err := newBlobberGRPCClient(url)
+	blobberClient, err := getBlobberGRPCClient(url)
 	if err != nil {
 		return nil, err
 	}
@@ -154,7 +169,7 @@ func ListEntities(url string, req *blobbergrpc.ListEntitiesRequest) ([]byte, err
 }
 
 func GetFileStats(url string, req *blobbergrpc.GetFileStatsRequest) ([]byte, error) {
-	blobberClient, err := newBlobberGRPCClient(url)
+	blobberClient, err := getBlobberGRPCClient(url)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +194,7 @@ func GetFileStats(url string, req *blobbergrpc.GetFileStatsRequest) ([]byte, err
 }
 
 func GetFileMetaData(url string, req *blobbergrpc.GetFileMetaDataRequest) ([]byte, error) {
-	blobberClient, err := newBlobberGRPCClient(url)
+	blobberClient, err := getBlobberGRPCClient(url)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +214,7 @@ func GetFileMetaData(url string, req *blobbergrpc.GetFileMetaDataRequest) ([]byt
 }
 
 func CommitMetaTxn(url string, req *blobbergrpc.CommitMetaTxnRequest) ([]byte, error) {
-	blobberClient, err := newBlobberGRPCClient(url)
+	blobberClient, err := getBlobberGRPCClient(url)
 	if err != nil {
 		return nil, err
 	}
@@ -224,7 +239,7 @@ func CommitMetaTxn(url string, req *blobbergrpc.CommitMetaTxnRequest) ([]byte, e
 }
 
 func Collaborator(url string, req *blobbergrpc.CollaboratorRequest) ([]byte, error) {
-	blobberClient, err := newBlobberGRPCClient(url)
+	blobberClient, err := getBlobberGRPCClient(url)
 	if err != nil {
 		return nil, err
 	}
@@ -249,7 +264,7 @@ func Collaborator(url string, req *blobbergrpc.CollaboratorRequest) ([]byte, err
 }
 
 func CalculateHash(url string, req *blobbergrpc.CalculateHashRequest) ([]byte, error) {
-	blobberClient, err := newBlobberGRPCClient(url)
+	blobberClient, err := getBlobberGRPCClient(url)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +289,7 @@ func CalculateHash(url string, req *blobbergrpc.CalculateHashRequest) ([]byte, e
 }
 
 func UpdateObjectAttributes(url string, req *blobbergrpc.UpdateObjectAttributesRequest) ([]byte, error) {
-	blobberClient, err := newBlobberGRPCClient(url)
+	blobberClient, err := getBlobberGRPCClient(url)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create blobber grpc client")
 	}
@@ -298,7 +313,7 @@ func UpdateObjectAttributes(url string, req *blobbergrpc.UpdateObjectAttributesR
 }
 
 func CopyObject(url string, req *blobbergrpc.CopyObjectRequest) ([]byte, error) {
-	blobberClient, err := newBlobberGRPCClient(url)
+	blobberClient, err := getBlobberGRPCClient(url)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create blobber grpc client")
 	}
@@ -322,7 +337,7 @@ func CopyObject(url string, req *blobbergrpc.CopyObjectRequest) ([]byte, error) 
 }
 
 func RenameObject(url string, req *blobbergrpc.RenameObjectRequest) ([]byte, error) {
-	blobberClient, err := newBlobberGRPCClient(url)
+	blobberClient, err := getBlobberGRPCClient(url)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create blobber grpc client")
 	}
