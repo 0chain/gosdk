@@ -8,7 +8,7 @@ import (
 	"net/url"
 
 	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
-	"github.com/0chain/gosdk/core/logger"
+	. "github.com/0chain/gosdk/zboxcore/logger"
 
 	"google.golang.org/grpc/encoding/gzip"
 
@@ -32,7 +32,7 @@ func getBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberServiceClient, erro
 
 	blobberClient, err := newBlobberGRPCClient(urlRaw)
 	if err != nil {
-		logger.Logger.Error("could not create blobber GRPC client - " + urlRaw + " - " + err.Error())
+		Logger.Error("could not create blobber GRPC client - " + urlRaw, err.Error())
 		return nil, errors.Wrap(err, "can't create blobber GRPC client")
 	}
 	blobbersInfo[urlRaw] = blobberClient
