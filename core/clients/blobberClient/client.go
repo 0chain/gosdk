@@ -8,6 +8,7 @@ import (
 	"net/url"
 
 	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
+	"github.com/0chain/gosdk/core/logger"
 
 	"google.golang.org/grpc/encoding/gzip"
 
@@ -31,22 +32,23 @@ func getBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberServiceClient, erro
 
 	blobberClient, err := newBlobberGRPCClient(urlRaw)
 	if err != nil {
-		return nil, err
+		logger.Logger.Error("could not create blobber GRPC client - " + urlRaw + " - " + err.Error())
+		return nil, errors.Wrap(err, "can't create blobber GRPC client")
 	}
 	blobbersInfo[urlRaw] = blobberClient
-	return blobberClient, err
+	return blobberClient, nil
 }
 
 func newBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberServiceClient, error) {
 	u, err := url.Parse(urlRaw)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't parse url")
 	}
 	host, _, _ := net.SplitHostPort(u.Host)
 
 	cc, err := grpc.Dial(host+":"+fmt.Sprint(GRPCPort), grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)), grpc.WithInsecure())
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "can't create GRPC connection")
 	}
 	return blobbergrpc.NewBlobberServiceClient(cc), nil
 }
