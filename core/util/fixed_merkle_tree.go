@@ -58,8 +58,8 @@ func (fmt *FixedMerkleTree) Write(buf []byte, chunkIndex int) error {
 	return nil
 }
 
-// GetMerkleRoot get merkle root
-func (fmt *FixedMerkleTree) GetMerkleRoot() string {
+// GetMerkleRoot get merkle tree
+func (fmt *FixedMerkleTree) GetMerkleTree() MerkleTreeI {
 	merkleLeaves := make([]Hashable, 1024)
 
 	for idx, leaf := range fmt.Leaves {
@@ -70,7 +70,12 @@ func (fmt *FixedMerkleTree) GetMerkleRoot() string {
 
 	mt.ComputeTree(merkleLeaves)
 
-	return mt.GetRoot()
+	return mt
+}
+
+// GetMerkleRoot get merkle root
+func (fmt *FixedMerkleTree) GetMerkleRoot() string {
+	return fmt.GetMerkleTree().GetRoot()
 }
 
 // Reload reset and reload leaves from io.Reader
