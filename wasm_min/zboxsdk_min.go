@@ -1,4 +1,4 @@
-package main
+package wasm_min
 
 import (
 	"encoding/json"

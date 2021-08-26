@@ -1,4 +1,4 @@
-package main
+package wasm
 
 import (
 	"encoding/json"
@@ -46,7 +46,7 @@ func strToBlob(s string) sdk.Blobber {
 
 func InitAuthTicket(this js.Value, p []js.Value) interface{} {
 	authTicket := p[0].String()
-	result = sdk.InitAuthTicket(authTicket)
+	result := sdk.InitAuthTicket(authTicket)
 	return result
 }
 
@@ -349,7 +349,7 @@ func ZBOXGetAllocation(this js.Value, p []js.Value) interface{} {
 }
 
 func SetNumBlockDownloads(this js.Value, p []js.Value) interface{} {
-	num, _ := strconv.ParseInt(p[0].String(), 10, 64)
+	num, _ := strconv.Atoi(p[0].String())
 	sdk.SetNumBlockDownloads(num)
 	return nil
 }
