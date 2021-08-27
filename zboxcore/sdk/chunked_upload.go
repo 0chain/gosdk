@@ -91,7 +91,7 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	for i := 0; i < len(su.allocationObj.Blobbers); i++ {
 
 		su.blobbers[i] = &ChunkedUploadBobbler{
-			flock:    flock.New(filepath.Join(su.workdir, su.allocationObj.Blobbers[i].ID+".lock")),
+			flock:    flock.New(filepath.Join(su.workdir, "blobber."+su.allocationObj.Blobbers[i].ID+".lock")),
 			progress: su.progress.Blobbers[i],
 			blobber:  su.allocationObj.Blobbers[i],
 			fileRef: &fileref.FileRef{
@@ -339,7 +339,6 @@ func (su *ChunkedUpload) Start() error {
 		}
 
 		if isFinal {
-			su.removeProgress()
 			break
 		}
 	}

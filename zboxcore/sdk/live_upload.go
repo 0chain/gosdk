@@ -48,7 +48,10 @@ func (lu *LiveUpload) Start() error {
 	var clipsUpload *ChunkedUpload
 	for {
 
-		clipsUpload = lu.createClipsUpload(lu.clipsIndex, lu.liveReader)
+		clipsUpload, err = lu.createClipsUpload(lu.clipsIndex, lu.liveReader)
+		if err != nil {
+			return err
+		}
 
 		err = clipsUpload.Start()
 
@@ -62,7 +65,7 @@ func (lu *LiveUpload) Start() error {
 
 }
 
-func (lu *LiveUpload) createClipsUpload(clipsIndex int, reader LiveUploadReader) *ChunkedUpload {
+func (lu *LiveUpload) createClipsUpload(clipsIndex int, reader LiveUploadReader) (*ChunkedUpload, error) {
 	fileMeta := FileMeta{
 		Path:       reader.GetClipsFile(clipsIndex),
 		ActualSize: reader.Size(),
