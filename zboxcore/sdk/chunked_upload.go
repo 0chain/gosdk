@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"math"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/gofrs/flock"
 	"github.com/klauspost/reedsolomon"
 )
 
@@ -36,7 +38,7 @@ var (
 const DefaultChunkSize = 64 * 1024
 
 // CreateChunkedUpload create a ChunkedUpload instance
-func CreateChunkedUpload(homedir string, allocationObj *Allocation, fileMeta FileMeta, fileReader io.Reader, opts ...ChunkedUploadOption) *ChunkedUpload {
+func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta FileMeta, fileReader io.Reader, opts ...ChunkedUploadOption) (*ChunkedUpload, error) {
 
 	su := &ChunkedUpload{
 		allocationObj: allocationObj,
@@ -53,10 +55,13 @@ func CreateChunkedUpload(homedir string, allocationObj *Allocation, fileMeta Fil
 		encryptOnUpload: false,
 	}
 
-	su.configDir = homedir + string(os.PathSeparator) + ".zcn"
+	su.workdir = workdir + string(os.PathSeparator) + ".zcn"
 
 	//create upload folder to save progress
-	os.MkdirAll(su.configDir+"/upload", 0744)
+	err := os.MkdirAll(su.workdir+"/upload", 0744)
+	if err != nil {
+		return nil, err
+	}
 
 	su.loadProgress()
 
@@ -84,7 +89,9 @@ func CreateChunkedUpload(homedir string, allocationObj *Allocation, fileMeta Fil
 	su.blobbers = make([]*ChunkedUploadBobbler, len(su.allocationObj.Blobbers))
 
 	for i := 0; i < len(su.allocationObj.Blobbers); i++ {
+
 		su.blobbers[i] = &ChunkedUploadBobbler{
+			flock:    flock.New(filepath.Join(su.workdir, su.allocationObj.Blobbers[i].ID+".lock")),
 			progress: su.progress.Blobbers[i],
 			blobber:  su.allocationObj.Blobbers[i],
 			fileRef: &fileref.FileRef{
@@ -99,8 +106,8 @@ func CreateChunkedUpload(homedir string, allocationObj *Allocation, fileMeta Fil
 		}
 	}
 
-	go su.autoSaveProgress()
-	return su
+	go su.startAutoSaveProgress()
+	return su, nil
 
 }
 
@@ -108,7 +115,7 @@ func CreateChunkedUpload(homedir string, allocationObj *Allocation, fileMeta Fil
 type ChunkedUpload struct {
 	Consensus
 
-	configDir string
+	workdir string
 
 	allocationObj *Allocation
 
@@ -145,7 +152,7 @@ type ChunkedUpload struct {
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
 func (su *ChunkedUpload) progressID() string {
 
-	return su.configDir + "/upload/" + su.allocationObj.ID + "_" + su.fileMeta.FileID()
+	return su.workdir + "/upload/" + su.allocationObj.ID + "_" + su.fileMeta.FileID()
 }
 
 // loadProgress load progress from ~/.zcn/upload/[progressID]
@@ -170,8 +177,8 @@ func (su *ChunkedUpload) loadProgress() {
 	su.progress.ID = progressID
 }
 
-// autoSaveProgress a background save worker is running in a single thread for higher perfornamce. Because `json.Marshal` hits performance issue.
-func (su *ChunkedUpload) autoSaveProgress() {
+// startAutoSaveProgress a background save worker is running in a single thread for higher perfornamce. Because `json.Marshal` hits performance issue.
+func (su *ChunkedUpload) startAutoSaveProgress() {
 
 	var progress *UploadProgress
 	delay, cancel := context.WithTimeout(context.TODO(), 1*time.Second)
@@ -186,7 +193,10 @@ func (su *ChunkedUpload) autoSaveProgress() {
 			progress = &it
 		case it := <-su.progressRemoveChan:
 
-			os.Remove(it.ID)
+			err := os.Remove(it.ID)
+			if err != nil {
+				logger.Logger.Error("[upload] remove progress: ", err)
+			}
 			break
 		case <-delay.Done():
 

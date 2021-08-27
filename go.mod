@@ -3,6 +3,7 @@ module github.com/0chain/gosdk
 require (
 	github.com/0chain/errors v1.0.2
 	github.com/ethereum/go-ethereum v1.10.3
+	github.com/gofrs/flock v0.8.1
 	github.com/h2non/filetype v1.0.9
 	github.com/herumi/bls-go-binary v0.0.0-20191119080710-898950e1a520
 	github.com/klauspost/reedsolomon v1.9.11
