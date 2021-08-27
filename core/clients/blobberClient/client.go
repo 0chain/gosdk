@@ -21,8 +21,6 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-const GRPCPort = 31501
-
 var blobbersInfo = map[string]blobbergrpc.BlobberServiceClient{}
 
 func getBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberServiceClient, error) {
@@ -44,9 +42,12 @@ func newBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberServiceClient, erro
 	if err != nil {
 		return nil, errors.Wrap(err, "can't parse url")
 	}
-	host, _, _ := net.SplitHostPort(u.Host)
+	host, port, err := net.SplitHostPort(u.Host)
+	if err != nil {
+		return nil, errors.Wrap(err, "can't split host port")
+	}
 
-	cc, err := grpc.Dial(host+":"+fmt.Sprint(GRPCPort), grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)), grpc.WithInsecure())
+	cc, err := grpc.Dial(host+":"+fmt.Sprint(port), grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)), grpc.WithInsecure())
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create GRPC connection")
 	}
