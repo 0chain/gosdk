@@ -30,7 +30,7 @@ func getBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberServiceClient, erro
 
 	blobberClient, err := newBlobberGRPCClient(urlRaw)
 	if err != nil {
-		Logger.Error("could not create blobber GRPC client - " + urlRaw, err.Error())
+		Logger.Error("could not create blobber GRPC client - " + urlRaw + " - ", err.Error())
 		return nil, errors.Wrap(err, "can't create blobber GRPC client")
 	}
 	blobbersInfo[urlRaw] = blobberClient
