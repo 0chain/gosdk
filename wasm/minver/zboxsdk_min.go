@@ -1,4 +1,4 @@
-package wasm_min
+package minver
 
 import (
 	"encoding/json"

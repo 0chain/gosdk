@@ -244,7 +244,7 @@ func GetMinShardersVerify() int {
 
 func getMinShardersVerify() int {
 	minSharders := util.MaxInt(calculateMinRequired(float64(_config.chain.MinConfirmation), float64(len(_config.chain.Sharders))/100), 1)
-	Logger.Info("Minimum sharders used for verify :", minSharders)
+	// Logger.Info("Minimum sharders used for verify :", minSharders)
 	return minSharders
 }
 func getMinRequiredChainLength() int64 {
@@ -671,7 +671,7 @@ func getTokenUSDRate() (float64, error) {
 	return getTokenRateByCurrency("usd")
 }
 
-func getTokenRateByCurrency(currency string) (float64, error){
+func getTokenRateByCurrency(currency string) (float64, error) {
 	var CoinGeckoResponse struct {
 		ID         string `json:"id"`
 		Symbol     string `json:"symbol"`

@@ -11,17 +11,6 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
-// convert JS String to []String
-func strToListSring(s string) []string {
-	slice := []string{}
-	err := json.Unmarshal([]byte(s), &slice)
-
-	if err != nil {
-		panic(err)
-	}
-	return slice
-}
-
 func GetMinShardersVerify(this js.Value, p []js.Value) interface{} {
 	result := zcncore.GetMinShardersVerify()
 	return result
@@ -77,8 +66,8 @@ func InitZCNSDK(this js.Value, p []js.Value) interface{} {
 }
 
 func SetNetwork(this js.Value, p []js.Value) interface{} {
-	miners := strToListSring(p[0].String())
-	sharders := strToListSring(p[1].String())
+	miners := []string{p[0].String()}
+	sharders := []string{p[1].String()}
 	zcncore.SetNetwork(miners, sharders)
 	return nil
 }
@@ -157,7 +146,9 @@ func SplitKeys(this js.Value, p []js.Value) interface{} {
 	numSplits, _ := strconv.Atoi(p[1].String())
 	result, err := zcncore.SplitKeys(privKey, numSplits)
 	if err != nil {
-		fmt.Println("error:", err)
+		return map[string]interface{}{
+			"error": fmt.Sprintf("SplitKeys failed. Reason: %s", err),
+		}
 	}
 	return result
 }
@@ -211,7 +202,9 @@ func GetClientDetails(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
 	result, err := zcncore.GetClientDetails(clientID)
 	if err != nil {
-		fmt.Println("error:", err)
+		return map[string]interface{}{
+			"error": fmt.Sprintf("GetClientDetails failed. Reason: %s", err),
+		}
 	}
 	return result
 }
@@ -224,10 +217,12 @@ func IsMnemonicValid(this js.Value, p []js.Value) interface{} {
 
 func SetWalletInfo(this js.Value, p []js.Value) interface{} {
 	s_wallet := p[0].String()
-	splitKeyWallet, _ := strconv.ParseBool(p[0].String())
+	splitKeyWallet, _ := strconv.ParseBool(p[1].String())
 	err := zcncore.SetWalletInfo(s_wallet, splitKeyWallet)
 	if err != nil {
-		fmt.Println("Cannot set wallet info")
+		return map[string]interface{}{
+			"error": fmt.Sprintf("SetWalletInfo failed. Reason: %s", err),
+		}
 	}
 	return err
 }
@@ -236,7 +231,9 @@ func SetAuthUrl(this js.Value, p []js.Value) interface{} {
 	url := p[0].String()
 	err := zcncore.SetAuthUrl(url)
 	if err != nil {
-		fmt.Println("Cannot set auth url")
+		return map[string]interface{}{
+			"error": fmt.Sprintf("SetAuthUrl failed. Reason: %s", err),
+		}
 	}
 	return err
 }
@@ -398,7 +395,9 @@ func GetWallet(this js.Value, p []js.Value) interface{} {
 	wallet := p[0].String()
 	result, err := zcncore.GetWallet(wallet)
 	if err != nil {
-		return err
+		return map[string]interface{}{
+			"error": "Cannot get wallet",
+		}
 	}
 	return result
 }
@@ -407,7 +406,9 @@ func GetWalletClientID(this js.Value, p []js.Value) interface{} {
 	wallet := p[0].String()
 	result, err := zcncore.GetWalletClientID(wallet)
 	if err != nil {
-		return err
+		return map[string]interface{}{
+			"error": "Cannot get wallet clientId",
+		}
 	}
 	return result
 }
@@ -1127,22 +1128,26 @@ func GetWritePoolInfo(this js.Value, p []js.Value) interface{} {
 
 func Encrypt(this js.Value, p []js.Value) interface{} {
 	key := p[0].String()
-	text := p[0].String()
+	text := p[1].String()
 
 	result, err := zcncore.Encrypt(key, text)
 	if err != nil {
-		return err
+		return map[string]interface{}{
+			"error": fmt.Sprintf("Encrypt failed: %s", err),
+		}
 	}
 	return result
 }
 
 func Decrypt(this js.Value, p []js.Value) interface{} {
 	key := p[0].String()
-	text := p[0].String()
+	text := p[1].String()
 
 	result, err := zcncore.Decrypt(key, text)
 	if err != nil {
-		return err
+		return map[string]interface{}{
+			"error": fmt.Sprintf("Decrypt failed: %s", err),
+		}
 	}
 	return result
 }

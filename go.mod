@@ -12,7 +12,7 @@ require (
 	go.dedis.ch/kyber/v3 v3.0.5
 	go.uber.org/zap v1.15.0
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
-	gopkg.in/cheggaaa/pb.v1 v1.0.28 // indirect
+	gopkg.in/cheggaaa/pb.v1 v1.0.28
 )
 
 go 1.13
