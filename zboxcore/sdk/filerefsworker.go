@@ -18,11 +18,11 @@ import (
 
 type ObjectTreeResult struct {
 	// raw           []byte
-	TotalPages    int64               `json:"total_pages"`
-	NewOffsetPath string              `json:"offsetPath"`
-	NewOffsetDate string              `json:"offsetDate"`
-	Refs          []ORef              `json:"refs"`
-	LatestWM      *marker.WriteMarker `json:"latest_write_marker"`
+	TotalPages int64               `json:"total_pages"`
+	OffsetPath string              `json:"offset_path"`
+	OffsetDate string              `json:"offset_date"`
+	Refs       []ORef              `json:"refs"`
+	LatestWM   *marker.WriteMarker `json:"latest_write_marker"`
 }
 
 type ObjectTreeRequest struct {
@@ -36,8 +36,8 @@ type ObjectTreeRequest struct {
 	fileType           string
 	refType            string
 	offsetPath         string
-	updatedDate        string
-	offsetDate         string
+	updatedDate        string //must have "2006-01-02T15:04:05.99999Z07:00" format
+	offsetDate         string //must have "2006-01-02T15:04:05.99999Z07:00" format
 	authToken          *marker.AuthTicket
 	ctx                context.Context
 	wg                 *sync.WaitGroup
@@ -179,12 +179,12 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 // i.e. we cannot calculate hash of response and have consensus on it
 type ORef struct {
 	SimilarField
+	ID        int64     `json:"id"`
 	CreatedAt time.Time `json:"created_at"` //It cannot be considered for consensus calculation as blobbers can have
 	UpdatedAt time.Time `json:"updated_at"` //minor difference and will fail in concensus
 }
 
 type SimilarField struct {
-	ID                  int64  `json:"id"`
 	Type                string `json:"type"`
 	AllocationID        string `json:"allocation_id"`
 	LookupHash          string `json:"lookup_hash"`
