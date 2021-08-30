@@ -3,13 +3,13 @@ package sdk
 import (
 	"context"
 	"encoding/json"
+	"github.com/pkg/errors"
 	"math/bits"
 	"strings"
 	"sync"
 
 	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobberhttp"
-	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/clients/blobberClient"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 

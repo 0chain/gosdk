@@ -74,7 +74,7 @@ package sdk
 //				})).Return(&http.Response{
 //					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 //					StatusCode: p.respStatusCode,
-//				}, errors.New(mockErrorMessage))
+//				}, errors.New("", mockErrorMessage))
 //			},
 //			wantErr: true,
 //			errMsg:  mockErrorMessage,
@@ -275,3 +275,4 @@ package sdk
 //		})
 //	}
 //}
+//>>>>>>> master
