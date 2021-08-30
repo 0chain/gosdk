@@ -28,7 +28,7 @@ import (
 	"gorm.io/gorm"
 )
 
-const BlobberAddr = "localhost:31501"
+const BlobberAddr = "https://localhost:31501"
 const RetryAttempts = 8
 const RetryTimeout = 3
 const signScheme = "bls0chain"
