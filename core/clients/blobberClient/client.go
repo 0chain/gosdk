@@ -3,8 +3,6 @@ package blobberClient
 import (
 	"context"
 	"encoding/json"
-	"fmt"
-	"net"
 	"net/url"
 
 	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
@@ -42,12 +40,12 @@ func newBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberServiceClient, erro
 	if err != nil {
 		return nil, errors.Wrap(err, "can't parse url")
 	}
-	host, port, err := net.SplitHostPort(u.Host)
-	if err != nil {
-		return nil, errors.Wrap(err, "can't split host port")
+
+	if host, port := u.Hostname(), u.Port(); len(host) == 0 || len(port) == 0 {
+		return nil, errors.Wrap(err, "can't get host:port")
 	}
 
-	cc, err := grpc.Dial(host+":"+fmt.Sprint(port), grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)), grpc.WithInsecure())
+	cc, err := grpc.Dial(u.Host, grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)), grpc.WithInsecure())
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create GRPC connection")
 	}
