@@ -12,6 +12,9 @@ var (
 )
 
 var (
+	//ErrNilConfig config is nil
+	ErrNilConfig = errors.New("[conf]config is nil")
+
 	// ErrMssingConfig config file is missing
 	ErrMssingConfig = errors.New("[conf]missing config file")
 	// ErrInvalidValue invalid value in config
@@ -39,5 +42,16 @@ func InitClientConfig(c *Config) {
 
 // InitChainNetwork set global chain network
 func InitChainNetwork(n *Network) {
-	network = n
+	if n == nil {
+		return
+	}
+
+	if network == nil {
+		network = n
+		return
+	}
+
+	network.Sharders = n.Sharders
+	network.Miners = n.Miners
+
 }

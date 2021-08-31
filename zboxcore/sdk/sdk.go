@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
 
 	"github.com/0chain/gosdk/core/common"
@@ -76,8 +75,7 @@ func GetLogger() *logger.Logger {
 	return &Logger
 }
 
-// InitStorageSDK init storage sdk with clientJSON
-//   1) for zbox: clientJSON is
+// InitStorageSDK init storage sdk with walletJSON
 //   {
 //		"client_id":"322d1dadec182effbcbdeef77d84fedda15842b83739969a7754089669c13992",
 //		"client_key":"3b6d02a22ec82d4d9aa1402917ca268c869b94d0f2a04506107bc5bf9acff60e6422ad1c95759cc243db116f89a98a7a2641ff2fbd2f5b951ef450504217bd1e",
@@ -89,32 +87,12 @@ func GetLogger() *logger.Logger {
 //		"version":"1.0",
 //		"date_created":"2021-08-18T08:34:39+08:00"
 //	 }
-//   2) for 0proxy, 0box, 0explorer, andorid, ios : clientJSON is
-//	 {
-//      "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
-//		"signature_scheme" : "bls0chain",
-//		"block_worker" : "https://dev.0chain.net/dns",
-// 		"min_submit" : 50,
-//		"min_confirmation" : 50,
-//		"confirmation_chain_length" : 3,
-//		"num_keys" : 1,
-//		"eth_node" : "https://ropsten.infura.io/v3/f0a254d8d18b4749bd8540da63b3292b"
-//	 }
-func InitStorageSDK(clientJSON string, blockWorker, chainID, signatureScheme string, preferredBlobbers []string) error {
+func InitStorageSDK(walletJSON string, blockWorker, chainID, signatureScheme string, preferredBlobbers []string) error {
 
 	// try to initialize client for zbox
-	err := client.PopulateClient(clientJSON, signatureScheme)
+	err := client.PopulateClient(walletJSON, signatureScheme)
 	if err != nil {
 		return err
-	}
-
-	// try to initiazlie conf/Config for other apps
-	reader, err := conf.NewReaderFromJSON(clientJSON)
-	if err == nil { //it is valid json
-		cfg, _ := conf.LoadConfig(reader)
-		if len(cfg.BlockWorker) > 0 { // it is a valid config.json
-			conf.InitClientConfig(&cfg)
-		}
 	}
 
 	blockchain.SetChainID(chainID)
