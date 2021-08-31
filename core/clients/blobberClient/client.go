@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/url"
+	"sync"
 
 	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
 	. "github.com/0chain/gosdk/zboxcore/logger"
@@ -19,19 +20,30 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-var blobbersInfo = map[string]blobbergrpc.BlobberServiceClient{}
+type Client struct {
+	mu      *sync.Mutex
+	clients map[string]blobbergrpc.BlobberServiceClient
+}
+
+var c = &Client{
+	mu:      &sync.Mutex{},
+	clients: map[string]blobbergrpc.BlobberServiceClient{},
+}
 
 func getBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberServiceClient, error) {
-	if blobberClient, ok := blobbersInfo[urlRaw]; ok {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if blobberClient, ok := c.clients[urlRaw]; ok {
 		return blobberClient, nil
 	}
 
 	blobberClient, err := newBlobberGRPCClient(urlRaw)
 	if err != nil {
-		Logger.Error("could not create blobber GRPC client - " + urlRaw + " - ", err.Error())
+		Logger.Error("could not create blobber GRPC client - "+urlRaw+" - ", err.Error())
 		return nil, errors.Wrap(err, "can't create blobber GRPC client")
 	}
-	blobbersInfo[urlRaw] = blobberClient
+	c.clients[urlRaw] = blobberClient
 	return blobberClient, nil
 }
 
