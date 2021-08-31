@@ -294,12 +294,12 @@ func CloseLog() {
 //	 {
 //      "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
 //		"signature_scheme" : "bls0chain",
-//		"block_worker" : "https://dev.0chain.net/dns",
+//		"block_worker" : "http://localhost/dns",
 // 		"min_submit" : 50,
 //		"min_confirmation" : 50,
 //		"confirmation_chain_length" : 3,
 //		"num_keys" : 1,
-//		"eth_node" : "https://ropsten.infura.io/v3/f0a254d8d18b4749bd8540da63b3292b"
+//		"eth_node" : "https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx"
 //	 }
 func Init(chainConfigJSON string) error {
 	err := json.Unmarshal([]byte(chainConfigJSON), &_config.chain)

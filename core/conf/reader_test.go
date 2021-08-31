@@ -11,13 +11,13 @@ func TestJSONReader(t *testing.T) {
 	reader, _ := NewReaderFromJSON(`{
 		"chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
 		"signature_scheme" : "bls0chain",
-		"block_worker" : "https://dev.0chain.net/dns",
+		"block_worker" : "http://localhost/dns",
 		"min_submit" : -20,
 		"min_confirmation" : 10,
 		"confirmation_chain_length" : 0,
-		"preferred_blobbers":["http://one.devnet-0chain.net:31051",
-		"http://one.devnet-0chain.net:31052",
-		"http://one.devnet-0chain.net:31053"
+		"preferred_blobbers":["http://localhost:31051",
+		"http://localhost:31052",
+		"http://localhost:31053"
 		]
 }`)
 
@@ -30,7 +30,7 @@ func TestJSONReader(t *testing.T) {
 			run: func(r *require.Assertions) {
 				r.Equal("0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe", reader.GetString("chain_id"))
 				r.Equal("bls0chain", reader.GetString("signature_scheme"))
-				r.Equal("https://dev.0chain.net/dns", reader.GetString("block_worker"))
+				r.Equal("http://localhost/dns", reader.GetString("block_worker"))
 			},
 		},
 		{
@@ -49,9 +49,9 @@ func TestJSONReader(t *testing.T) {
 				preferredBlobbers := reader.GetStringSlice("preferred_blobbers")
 
 				r.Equal(3, len(preferredBlobbers))
-				r.Equal(preferredBlobbers[0], "http://one.devnet-0chain.net:31051")
-				r.Equal(preferredBlobbers[1], "http://one.devnet-0chain.net:31052")
-				r.Equal(preferredBlobbers[2], "http://one.devnet-0chain.net:31053")
+				r.Equal(preferredBlobbers[0], "http://localhost:31051")
+				r.Equal(preferredBlobbers[1], "http://localhost:31052")
+				r.Equal(preferredBlobbers[2], "http://localhost:31053")
 			},
 		},
 	}
