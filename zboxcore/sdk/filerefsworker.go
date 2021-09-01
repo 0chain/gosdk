@@ -133,8 +133,8 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 			return nil
 		} else {
 			Logger.Error(bUrl, "ObjectTree Response: ", string(respBody))
+			return err
 		}
-		return nil
 	})
 	if err != nil {
 		oTR.err = err
