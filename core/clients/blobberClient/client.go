@@ -53,15 +53,21 @@ func newBlobberGRPCClient(urlRaw string) (blobbergrpc.BlobberServiceClient, erro
 		return nil, errors.Wrap(err, "can't parse url")
 	}
 
-	if host, port := u.Hostname(), u.Port(); len(host) == 0 || len(port) == 0 {
+	host, port := u.Hostname(), u.Port()
+	if len(host) == 0 || len(port) == 0 {
 		return nil, errors.Wrap(err, "can't get host:port")
 	}
+	port = getGRPCPort(port)
 
-	cc, err := grpc.Dial(u.Host, grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)), grpc.WithInsecure())
+	cc, err := grpc.Dial(host+":"+port, grpc.WithDefaultCallOptions(grpc.UseCompressor(gzip.Name)), grpc.WithInsecure())
 	if err != nil {
 		return nil, errors.Wrap(err, "can't create GRPC connection")
 	}
 	return blobbergrpc.NewBlobberServiceClient(cc), nil
+}
+
+func getGRPCPort(port string) string {
+	return "3150" + port[len(port)-1:]
 }
 
 func Commit(url string, req *blobbergrpc.CommitRequest) ([]byte, error) {
