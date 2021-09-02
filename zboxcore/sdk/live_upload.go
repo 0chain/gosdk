@@ -76,7 +76,7 @@ func (lu *LiveUpload) createClipsUpload(clipsIndex int, reader LiveUploadReader)
 		Attributes: lu.liveMeta.Attributes,
 	}
 
-	return CreateChunkedUpload(lu.homedir, lu.allocationObj, fileMeta, reader,
+	return CreateChunkedUpload(lu.homedir, lu.allocationObj, fileMeta, reader, false,
 		WithChunkSize(lu.chunkSize),
 		WithEncrypt(lu.encryptOnUpload),
 		WithStatusCallback(lu.statusCallback()))

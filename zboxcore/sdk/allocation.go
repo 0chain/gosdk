@@ -388,12 +388,11 @@ func (a *Allocation) startChunkedUpload(localPath string,
 	// home dir is unsupported in our mobile devices,use TempDir instead.
 	workdir := os.TempDir()
 
-	ChunkedUpload, err := CreateChunkedUpload(workdir, a, fileMeta, fileReader,
+	ChunkedUpload, err := CreateChunkedUpload(workdir, a, fileMeta, fileReader, isUpdate,
 		WithThumbnailFile(thumbnailPath),
 		WithChunkSize(DefaultChunkSize),
 		WithEncrypt(encryption),
-		WithStatusCallback(status),
-		WithMethod(isUpdate))
+		WithStatusCallback(status))
 	if err != nil {
 		return err
 	}

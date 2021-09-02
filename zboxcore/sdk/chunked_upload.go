@@ -40,12 +40,11 @@ var (
 const DefaultChunkSize = 64 * 1024
 
 // CreateChunkedUpload create a ChunkedUpload instance
-func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta FileMeta, fileReader io.Reader, opts ...ChunkedUploadOption) (*ChunkedUpload, error) {
+func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta FileMeta, fileReader io.Reader, isUpdate bool, opts ...ChunkedUploadOption) (*ChunkedUpload, error) {
 
 	su := &ChunkedUpload{
 		allocationObj: allocationObj,
 
-		httpMethod: http.MethodPost,
 		fileMeta:   fileMeta,
 		fileReader: fileReader,
 		fileHasher: util.NewCompactMerkleTree(func(left, right string) string {
@@ -57,6 +56,31 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 		uploadMask:      zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1),
 		chunkSize:       DefaultChunkSize,
 		encryptOnUpload: false,
+	}
+
+	if isUpdate {
+		su.httpMethod = http.MethodPut
+		su.buildChange = func(ref *fileref.FileRef) allocationchange.AllocationChange {
+			change := &allocationchange.UpdateFileChange{}
+			change.NewFile = ref
+			change.NumBlocks = ref.NumBlocks
+			change.Operation = constants.FileOperationUpdate
+			change.Size = ref.Size
+			change.NewFile.Attributes = ref.Attributes
+
+			return change
+		}
+	} else {
+		su.httpMethod = http.MethodPost
+		su.buildChange = func(ref *fileref.FileRef) allocationchange.AllocationChange {
+			change := &allocationchange.NewFileChange{}
+			change.File = ref
+			change.NumBlocks = ref.NumBlocks
+			change.Operation = constants.FileOperationInsert
+			change.Size = ref.Size
+			change.File.Attributes = ref.Attributes
+			return change
+		}
 	}
 
 	su.workdir = workdir + string(os.PathSeparator) + ".zcn"
@@ -129,7 +153,8 @@ type ChunkedUpload struct {
 	uploadMask         zboxutil.Uint128
 
 	// httpMethod POST = Upload File / PUT = Update file
-	httpMethod string
+	httpMethod  string
+	buildChange func(ref *fileref.FileRef) allocationchange.AllocationChange
 
 	fileMeta           FileMeta
 	fileReader         io.Reader
@@ -379,7 +404,7 @@ func (su *ChunkedUpload) readThumbnailShards() ([][]byte, error) {
 		return nil, err
 	}
 
-	var c, pos uint64 = 0, 0
+	var c, pos uint64
 	if su.encryptOnUpload {
 		for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
@@ -394,7 +419,7 @@ func (su *ChunkedUpload) readThumbnailShards() ([][]byte, error) {
 			c++
 		}
 
-		c, pos = 0, 0
+		//c, pos = 0, 0
 	}
 
 	return shards, nil
@@ -514,14 +539,7 @@ func (su *ChunkedUpload) processCommit() error {
 		blobber.fileRef.ChunkSize = su.chunkSize
 		blobber.fileRef.NumBlocks = int64(su.progress.ChunkIndex + 1)
 
-		newChange := &allocationchange.NewFileChange{}
-		newChange.File = blobber.fileRef
-		newChange.NumBlocks = blobber.fileRef.NumBlocks
-		newChange.Operation = constants.FileOperationInsert
-		newChange.Size = blobber.fileRef.Size
-		newChange.File.Attributes = blobber.fileRef.Attributes
-
-		blobber.commitChanges = append(blobber.commitChanges, newChange)
+		blobber.commitChanges = append(blobber.commitChanges, su.buildChange(blobber.fileRef))
 
 		go blobber.processCommit(su, wg)
 	}
