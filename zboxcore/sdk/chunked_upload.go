@@ -9,12 +9,14 @@ import (
 	"io"
 	"io/ioutil"
 	"math"
+	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -42,8 +44,10 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 
 	su := &ChunkedUpload{
 		allocationObj: allocationObj,
-		fileMeta:      fileMeta,
-		fileReader:    fileReader,
+
+		httpMethod: http.MethodPost,
+		fileMeta:   fileMeta,
+		fileReader: fileReader,
 		fileHasher: util.NewCompactMerkleTree(func(left, right string) string {
 			return coreEncryption.Hash(left + right)
 		}),
@@ -123,6 +127,9 @@ type ChunkedUpload struct {
 	progressSaveChan   chan UploadProgress
 	progressRemoveChan chan UploadProgress
 	uploadMask         zboxutil.Uint128
+
+	// httpMethod POST = Upload File / PUT = Update file
+	httpMethod string
 
 	fileMeta           FileMeta
 	fileReader         io.Reader
@@ -510,7 +517,7 @@ func (su *ChunkedUpload) processCommit() error {
 		newChange := &allocationchange.NewFileChange{}
 		newChange.File = blobber.fileRef
 		newChange.NumBlocks = blobber.fileRef.NumBlocks
-		newChange.Operation = allocationchange.INSERT_OPERATION
+		newChange.Operation = constants.FileOperationInsert
 		newChange.Size = blobber.fileRef.Size
 		newChange.File.Attributes = blobber.fileRef.Attributes
 

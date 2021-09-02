@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"io/ioutil"
 	"math"
+	"net/http"
 
 	"github.com/klauspost/reedsolomon"
 )
@@ -63,5 +64,16 @@ func WithEncrypt(status bool) ChunkedUploadOption {
 func WithStatusCallback(callback StatusCallback) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		su.statusCallback = callback
+	}
+}
+
+// WithMethod set upload or update file
+func WithMethod(isUpdate bool) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
+		if isUpdate {
+			su.httpMethod = http.MethodPut
+		} else {
+			su.httpMethod = http.MethodPost
+		}
 	}
 }

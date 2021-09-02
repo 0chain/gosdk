@@ -35,8 +35,6 @@ type ChunkedUploadBobbler struct {
 	fileRef  *fileref.FileRef
 	progress *UploadBlobberStatus
 
-	err error
-
 	commitChanges []allocationchange.AllocationChange
 	commitResult  *CommitResult
 }
@@ -147,7 +145,7 @@ func (sb *ChunkedUploadBobbler) processUpload(su *ChunkedUpload, chunkIndex int,
 	_ = formWriter.WriteField("uploadMeta", string(metaData))
 
 	formWriter.Close()
-	httpreq, _ := zboxutil.NewUploadRequestWithMethod(sb.blobber.Baseurl, su.allocationObj.Tx, body, http.MethodPatch)
+	httpreq, _ := zboxutil.NewUploadRequestWithMethod(sb.blobber.Baseurl, su.allocationObj.Tx, body, su.httpMethod)
 
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 

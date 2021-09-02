@@ -17,6 +17,7 @@ import (
 	"sync"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -564,7 +565,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			newChange := &allocationchange.UpdateFileChange{}
 			newChange.NewFile = req.file[c]
 			newChange.NumBlocks = req.file[c].NumBlocks
-			newChange.Operation = allocationchange.UPDATE_OPERATION
+			newChange.Operation = constants.FileOperationUpdate
 			newChange.Size = req.file[c].Size
 			newChange.NewFile.Attributes = req.file[c].Attributes
 			commitReq.changes = append(commitReq.changes, newChange)
@@ -572,7 +573,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			newChange := &allocationchange.NewFileChange{}
 			newChange.File = req.file[c]
 			newChange.NumBlocks = req.file[c].NumBlocks
-			newChange.Operation = allocationchange.INSERT_OPERATION
+			newChange.Operation = constants.FileOperationInsert
 			newChange.Size = req.file[c].Size
 			newChange.File.Attributes = req.file[c].Attributes
 			commitReq.changes = append(commitReq.changes, newChange)
