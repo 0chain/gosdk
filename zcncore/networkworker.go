@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/util"
 	"go.uber.org/zap"
 )
