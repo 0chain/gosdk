@@ -57,7 +57,7 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 		Allocation: req.allocationTx,
 	})
 	if err != nil {
-		logger.Logger.Error("could not get file stats from blobber -" + blobber.Baseurl + " - " + err.Error())
+		logger.Logger.Error("could not get file stats from blobber -" + blobber.Baseurl + ": %v", err)
 		return
 	}
 	s.WriteString(string(respRaw))
