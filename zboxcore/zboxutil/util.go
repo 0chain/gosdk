@@ -8,15 +8,16 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"math/big"
 	"os"
 	"path/filepath"
 	"strings"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"errors"
+
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/h2non/filetype"
+	"github.com/lithammer/shortuuid/v3"
 )
 
 const EncryptedFolderName = "encrypted"
@@ -82,12 +83,9 @@ func GetFullRemotePath(localPath, remotePath string) string {
 	return remotePath
 }
 
+// NewConnectionId generate new connection id
 func NewConnectionId() string {
-	nBig, err := rand.Int(rand.Reader, big.NewInt(0xffffffff))
-	if err != nil {
-		panic(err)
-	}
-	return fmt.Sprintf("%d", nBig.Int64())
+	return shortuuid.New()
 }
 
 func IsRemoteAbs(path string) bool {

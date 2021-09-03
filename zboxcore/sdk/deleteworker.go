@@ -13,7 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"errors"
+
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -120,7 +121,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 	req.wg.Wait()
 
 	if !req.isConsensusOk() {
-		return errors.New(fmt.Sprintf("Delete failed: Success_rate:%2f, expected:%2f", req.getConsensusRate(), req.getConsensusRequiredForOk()))
+		return fmt.Errorf("Delete failed: Success_rate:%2f, expected:%2f", req.getConsensusRate(), req.getConsensusRequiredForOk())
 	}
 
 	req.consensus = 0

@@ -112,28 +112,37 @@ func httpDo(req *http.Request, ctx context.Context, cncl context.CancelFunc, f f
 	}
 }
 
+// NewHTTPGetRequest create a GetRequest instance with 60s timeout
 func NewHTTPGetRequest(url string) (*GetRequest, error) {
-	var ctx, _ = context.WithTimeout(context.Background(), 60*time.Second)
+	var ctx, cancel = context.WithTimeout(context.Background(), 60*time.Second)
+	go func() {
+		//call cancel to avoid memory leak here
+		<-ctx.Done()
+
+		cancel()
+
+	}()
+
 	return NewHTTPGetRequestContext(ctx, url)
 }
 
-func NewHTTPGetRequestContext(ctx context.Context, url string) (
-	gr *GetRequest, err error) {
+// NewHTTPGetRequestContext create a GetRequest with context and url
+func NewHTTPGetRequestContext(ctx context.Context, url string) (*GetRequest, error) {
 
-	var req *http.Request
-	if req, err = http.NewRequest(http.MethodGet, url, nil); err != nil {
-		return
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
 	}
 
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	req.Header.Set("Access-Control-Allow-Origin", "*")
 
-	gr = new(GetRequest)
+	gr := new(GetRequest)
 	gr.PostRequest = &PostRequest{}
 	gr.url = url
 	gr.req = req
 	gr.ctx, gr.cncl = context.WithCancel(ctx)
-	return
+	return gr, nil
 }
 
 func NewHTTPPostRequest(url string, data interface{}) (*PostRequest, error) {
