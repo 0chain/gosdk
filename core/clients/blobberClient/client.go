@@ -200,10 +200,16 @@ func GetFileStats(url string, req *blobbergrpc.GetFileStatsRequest) ([]byte, err
 
 	getFileStatsResp, err := blobberClient.GetFileStats(grpcCtx, req)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed from blobber")
 	}
 
-	return json.Marshal(convert.GetFileStatsResponseHandler(getFileStatsResp))
+	result ,err := json.Marshal(convert.GetFileStatsResponseHandler(getFileStatsResp))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed at conversion state")
+	}
+
+
+	return result, nil
 }
 
 func GetFileMetaData(url string, req *blobbergrpc.GetFileMetaDataRequest) ([]byte, error) {
