@@ -12,9 +12,10 @@ import (
 type (
 	// Provider represents providers node stored in blockchain.
 	Provider struct {
-		ID    string `json:"id"`
-		ExtID string `json:"ext_id"`
-		Host  string `json:"host,omitempty"`
+		ID       string `json:"id"`
+		ExtID    string `json:"ext_id"`
+		Host     string `json:"host,omitempty"`
+		MinStake int64  `json:"min_stake,omitempty"`
 	}
 )
 
@@ -23,12 +24,13 @@ var (
 	_ util.Serializable = (*Provider)(nil)
 )
 
-// NewProviderFromCfg creates Consumer from config.Consumer.
+// NewProviderFromCfg creates Provider from config.Provider.
 func NewProviderFromCfg(cfg *config.Provider) *Provider {
 	return &Provider{
-		ID:    node.ID(),
-		ExtID: cfg.ExtID,
-		Host:  cfg.Host,
+		ID:       node.ID(),
+		ExtID:    cfg.ExtID,
+		Host:     cfg.Host,
+		MinStake: cfg.MinStake,
 	}
 }
 
@@ -45,6 +47,7 @@ func (m *Provider) Decode(blob []byte) error {
 	m.ID = provider.ID
 	m.ExtID = provider.ExtID
 	m.Host = provider.Host
+	m.MinStake = provider.MinStake
 
 	return nil
 }

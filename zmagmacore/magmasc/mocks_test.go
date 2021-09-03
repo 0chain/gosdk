@@ -54,6 +54,7 @@ func mockProvider() *Provider {
 		ID:    "id:provider:" + now,
 		ExtID: "id:provider:external:" + now,
 		Host:  "localhost:8020",
+		MinStake: billion,
 	}
 }
 
