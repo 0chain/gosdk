@@ -16,4 +16,4 @@ jobs:
         run: sudo make install-herumi-ubuntu
 
       - name: Run Unit Test
-        run: LIBRARY_PATH=/usr/local/lib:$LIBRARY_PATH make gosdk-test
+        run: LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH make gosdk-test
