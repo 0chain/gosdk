@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
-
 	"github.com/herumi/bls/ffi/go/bls"
 	"github.com/tyler-smith/go-bip39"
 
