@@ -1,7 +1,6 @@
 package sdk
 
 import (
-	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -35,7 +34,7 @@ func init() {
 func createFileNameBuilder(file string) FileNameBuilder {
 	fileExt := filepath.Ext(file)
 
-	dir, fileName := path.Split(file)
+	dir, fileName := filepath.Split(file)
 
 	fileName = strings.TrimRight(fileName, fileExt)
 

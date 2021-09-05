@@ -83,10 +83,10 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 		}
 	}
 
-	su.workdir = workdir + string(os.PathSeparator) + ".zcn"
+	su.workdir = filepath.Join(workdir, ".zcn")
 
 	//create upload folder to save progress
-	err := os.MkdirAll(su.workdir+"/upload", 0744)
+	err := os.MkdirAll(filepath.Join(su.workdir, "upload"), 0744)
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +184,7 @@ type ChunkedUpload struct {
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
 func (su *ChunkedUpload) progressID() string {
 
-	return su.workdir + "/upload/" + su.allocationObj.ID + "_" + su.fileMeta.FileID()
+	return filepath.Join(su.workdir, "upload", su.allocationObj.ID+"_"+su.fileMeta.FileID())
 }
 
 // loadProgress load progress from ~/.zcn/upload/[progressID]

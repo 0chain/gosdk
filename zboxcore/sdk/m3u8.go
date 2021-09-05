@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 )
@@ -25,6 +26,7 @@ import (
 
 // MediaPlaylist m3u8 encoder and decoder
 type MediaPlaylist struct {
+	dir   string
 	delay int
 
 	writer M3u8Writer
@@ -37,8 +39,9 @@ type MediaPlaylist struct {
 }
 
 // NewMediaPlaylist create media playlist(.m3u8)
-func NewMediaPlaylist(delay int, writer M3u8Writer) *MediaPlaylist {
+func NewMediaPlaylist(delay int, dir string, writer M3u8Writer) *MediaPlaylist {
 	m3u8 := &MediaPlaylist{
+		dir:    dir,
 		delay:  delay,
 		wait:   make([]string, 0, 5),
 		next:   make(chan string, 100),
@@ -67,15 +70,15 @@ func (m *MediaPlaylist) Play() {
 
 		item := <-m.next
 
-		_, err := os.Stat(item)
+		_, err := os.Stat(filepath.Join(m.dir, item))
 
 		if err == nil {
 			if len(m.wait) < 5 {
 				m.seq = 1
-				m.wait = append(m.wait, item)
+				m.wait = append(m.wait, "."+string(os.PathSeparator)+item)
 			} else {
 				m.seq++
-				m.wait = append(m.wait[1:], item)
+				m.wait = append(m.wait[1:], "."+string(os.PathSeparator)+item)
 			}
 
 			m.flush()
