@@ -118,6 +118,49 @@ func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
 	return chunks
 }
 
+func (req *BlockDownloadRequest) AddToForm(formWriter *multipart.Writer) bool {
+	rm := &marker.ReadMarker{}
+	rm.ClientID = client.GetClientID()
+	rm.ClientPublicKey = client.GetClientPublicKey()
+	rm.BlobberID = req.blobber.ID
+	rm.AllocationID = req.allocationID
+	rm.OwnerID = client.GetClientID()
+	rm.Timestamp = common.Now()
+	rm.ReadCounter = getBlobberReadCtr(req.blobber) + req.numBlocks
+	err := rm.Sign()
+	if err != nil {
+		req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error: Signing readmarker failed")}
+		return false
+	}
+	rmData, err := json.Marshal(rm)
+	if err != nil {
+		req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating readmarker")}
+		return false
+	}
+	if len(req.remotefilepath) > 0 {
+		req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
+	}
+	formWriter.WriteField("path_hash", req.remotefilepathhash)
+
+	if req.rxPay {
+		formWriter.WriteField("rx_pay", "true") // pay oneself
+	}
+
+	formWriter.WriteField("block_num", fmt.Sprintf("%d", req.blockNum))
+	formWriter.WriteField("num_blocks", fmt.Sprintf("%d", req.numBlocks))
+	formWriter.WriteField("read_marker", string(rmData))
+	if req.authTicket != nil {
+		authTicketBytes, _ := json.Marshal(req.authTicket)
+		formWriter.WriteField("auth_token", string(authTicketBytes))
+	}
+	if len(req.contentMode) > 0 {
+		formWriter.WriteField("content", req.contentMode)
+	}
+
+	formWriter.Close()
+	return true
+}
+
 func (req *BlockDownloadRequest) downloadBlobberBlock() {
 	defer req.wg.Done()
 	if req.numBlocks <= 0 {
@@ -133,47 +176,12 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			return
 		}
 
-		rm := &marker.ReadMarker{}
-		rm.ClientID = client.GetClientID()
-		rm.ClientPublicKey = client.GetClientPublicKey()
-		rm.BlobberID = req.blobber.ID
-		rm.AllocationID = req.allocationID
-		rm.OwnerID = client.GetClientID()
-		rm.Timestamp = common.Now()
-		rm.ReadCounter = getBlobberReadCtr(req.blobber) + req.numBlocks
-		err := rm.Sign()
-		if err != nil {
-			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error: Signing readmarker failed")}
-			return
-		}
 		body := new(bytes.Buffer)
 		formWriter := multipart.NewWriter(body)
-		rmData, err := json.Marshal(rm)
-		if err != nil {
-			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating readmarker")}
+		if !req.AddToForm(formWriter) {
 			return
 		}
-		if len(req.remotefilepath) > 0 {
-			req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
-		}
-		formWriter.WriteField("path_hash", req.remotefilepathhash)
 
-		if req.rxPay {
-			formWriter.WriteField("rx_pay", "true") // pay oneself
-		}
-
-		formWriter.WriteField("block_num", fmt.Sprintf("%d", req.blockNum))
-		formWriter.WriteField("num_blocks", fmt.Sprintf("%d", req.numBlocks))
-		formWriter.WriteField("read_marker", string(rmData))
-		if req.authTicket != nil {
-			authTicketBytes, _ := json.Marshal(req.authTicket)
-			formWriter.WriteField("auth_token", string(authTicketBytes))
-		}
-		if len(req.contentMode) > 0 {
-			formWriter.WriteField("content", req.contentMode)
-		}
-
-		formWriter.Close()
 		httpreq, err := zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationTx, body)
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating download request")}
