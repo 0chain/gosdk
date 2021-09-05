@@ -222,7 +222,7 @@ func (a *Allocation) InitAllocation() {
 }
 
 func (a *Allocation) isInitialized() bool {
-	return a.initialized && sdkInitialized
+	return a.initialized && SdkInitialized
 }
 
 func (a *Allocation) startWorker(ctx context.Context) {

@@ -11,18 +11,8 @@ import (
 
 	// "github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zcncore"
 )
-
-// convert JS String to []String
-func ZBOXstrToListSring(s string) []string {
-	slice := []string{}
-	err := json.Unmarshal([]byte(s), &slice)
-
-	if err != nil {
-		panic(err)
-	}
-	return slice
-}
 
 func strToPriceRange(s string) sdk.PriceRange {
 	var p sdk.PriceRange
@@ -44,20 +34,110 @@ func strToBlob(s string) sdk.Blobber {
 	return b
 }
 
+//-----------------------------------------------------------------------------
+// Ported over from `code/go/0proxy.io/core/config/config.go`
+//-----------------------------------------------------------------------------
+
+/*Config - all the config options passed from the command line*/
+type Config struct {
+	Port                 int    `json:"port"`
+	ChainID              string `json:"chain_id"`
+	DeploymentMode       byte   `json:"deployment_mode"`
+	SignatureScheme      string `json:"signature_scheme"`
+	BlockWorker          string `json:"block_worker"`
+	CleanUpWorkerMinutes int    `json:"cleanup_worker"`
+}
+
+/*Configuration of the system */
+var Configuration Config
+
+// Ported from `code/go/0proxy.io/zproxycore/zproxy/main.go`
+func InitializeConfig(this js.Value, p []js.Value) interface{} {
+	err := json.Unmarshal([]byte(p[0].String()), &Configuration)
+	if err != nil {
+		return map[string]interface{}{
+			"error": fmt.Sprintf("InitializeConfig fails. Reason: %s", err),
+		}
+	}
+	return nil
+}
+
+//-----------------------------------------------------------------------------
+// Ported over from `code/go/0proxy.io/zproxycore/handler/util.go`
+//-----------------------------------------------------------------------------
+
+func InitStorageSDK(this js.Value, p []js.Value) interface{} {
+	clientJSON := p[0].String()
+	// chainJSON := p[1].String()
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
+
+		go func() {
+			var preferredBlobbers []string
+
+			err := sdk.InitStorageSDK(clientJSON,
+				Configuration.BlockWorker,
+				Configuration.ChainID,
+				Configuration.SignatureScheme,
+				preferredBlobbers)
+			// TODO: there is a problem when testing `zcncore.Init()` function
+			// especially in the `zcncore.GetNetworkDetails()`
+			// err := initSDK(clientJSON, chainJSON)
+			if err != nil {
+				reject.Invoke(err.Error())
+			}
+
+			resolve.Invoke(true)
+		}()
+
+		// SdkInitialized need to set to 'true' if err is nil.
+		// This will be available when other function that need sdk
+		// to be preset is called in WASM
+		sdk.SdkInitialized = true
+		return nil
+	})
+
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
+}
+
+func initSDK(clientJSON string, chainJSON string) error {
+	if len(Configuration.BlockWorker) == 0 ||
+		len(Configuration.ChainID) == 0 ||
+		len(Configuration.SignatureScheme) == 0 {
+		return NewError("invalid_param", "Configuration is empty")
+	}
+
+	var preferredBlobbers []string
+
+	err := sdk.InitStorageSDK(clientJSON,
+		Configuration.BlockWorker,
+		Configuration.ChainID,
+		Configuration.SignatureScheme,
+		preferredBlobbers)
+
+	if err != nil {
+		return err
+	}
+
+	return zcncore.Init(chainJSON)
+}
+
 func InitAuthTicket(this js.Value, p []js.Value) interface{} {
 	authTicket := p[0].String()
 	result := sdk.InitAuthTicket(authTicket)
 	return result
 }
 
-func ZBOXSetLogLevel(this js.Value, p []js.Value) interface{} {
+func SetSDKLogLevel(this js.Value, p []js.Value) interface{} {
 	logLevel, _ := strconv.Atoi(p[0].String())
 
 	sdk.SetLogLevel(logLevel)
 	return nil
 }
 
-func ZBOXSetLogFile(this js.Value, p []js.Value) interface{} {
+func SetSDKLogFile(this js.Value, p []js.Value) interface{} {
 	logFile := p[0].String()
 	verbose, _ := strconv.ParseBool(p[1].String())
 
@@ -66,8 +146,16 @@ func ZBOXSetLogFile(this js.Value, p []js.Value) interface{} {
 }
 
 func GetNetwork(this js.Value, p []js.Value) interface{} {
-	result := sdk.GetNetwork()
-	return result
+	n := sdk.GetNetwork()
+	result, err := json.Marshal(n)
+
+	if err != nil {
+		return map[string]interface{}{
+			"error": fmt.Sprintf("GetNetwork failed. Reason: %s", err),
+		}
+	}
+
+	return string(result)
 }
 
 func SetMaxTxnQuery(this js.Value, p []js.Value) interface{} {
@@ -95,8 +183,8 @@ func SetMinConfirmation(this js.Value, p []js.Value) interface{} {
 }
 
 func ZBOXSetNetwork(this js.Value, p []js.Value) interface{} {
-	miners := ZBOXstrToListSring(p[0].String())
-	sharders := ZBOXstrToListSring(p[1].String())
+	miners := []string{p[0].String()}
+	sharders := []string{p[1].String()}
 	sdk.SetNetwork(miners, sharders)
 	return nil
 }
@@ -106,11 +194,32 @@ func ZBOXSetNetwork(this js.Value, p []js.Value) interface{} {
 // //
 
 func CreateReadPool(this js.Value, p []js.Value) interface{} {
-	err := sdk.CreateReadPool()
-	if err != nil {
-		fmt.Println("Cannot create read pool")
-	}
-	return err
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
+
+		go func() {
+			err := sdk.CreateReadPool()
+
+			if err != nil {
+				// fmt.Println("get_public_encryption_key_failed: " + err.Error())
+				reject.Invoke(js.ValueOf("get_blobber_failed: " + err.Error()))
+				return
+			}
+
+			responseConstructor := js.Global().Get("Response")
+			response := responseConstructor.New(js.ValueOf(err))
+
+			// Resolve the Promise
+			resolve.Invoke(response)
+		}()
+
+		return nil
+	})
+
+	// Create and return the Promise object
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 func AllocFilter(this js.Value, p []js.Value) interface{} {
@@ -119,8 +228,10 @@ func AllocFilter(this js.Value, p []js.Value) interface{} {
 
 	var alloc sdk.AllocationPoolStats
 	err := json.Unmarshal([]byte(poolStats), &alloc)
-	if err == nil {
-		fmt.Println("error:", err)
+	if err != nil {
+		return map[string]interface{}{
+			"error": fmt.Sprintf("AllocFilter failed. Reason: %s", err),
+		}
 	}
 	allocFilter := (*sdk.AllocationPoolStats).AllocFilter
 
@@ -130,11 +241,32 @@ func AllocFilter(this js.Value, p []js.Value) interface{} {
 
 func ZBOXGetReadPoolInfo(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
-	result, err := sdk.GetReadPoolInfo(clientID)
-	if err != nil {
-		return err
-	}
-	return result
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
+
+		go func() {
+			result, err := sdk.GetReadPoolInfo(clientID)
+
+			if err != nil {
+				// fmt.Println("get_public_encryption_key_failed: " + err.Error())
+				reject.Invoke(js.ValueOf("get_blobber_failed: " + err.Error()))
+				return
+			}
+
+			responseConstructor := js.Global().Get("Response")
+			response := responseConstructor.New(js.ValueOf(result))
+
+			// Resolve the Promise
+			resolve.Invoke(response)
+		}()
+
+		return nil
+	})
+
+	// Create and return the Promise object
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 // // ReadPoolLock locks given number of tokes for given duration in read pool.
@@ -172,22 +304,64 @@ func ReadPoolUnlock(this js.Value, p []js.Value) interface{} {
 // // for current client of the sdk.
 func ZBOXGetStakePoolInfo(this js.Value, p []js.Value) interface{} {
 	blobberID := p[0].String()
-	result, err := sdk.GetStakePoolInfo(blobberID)
-	if err != nil {
-		return err
-	}
-	return result
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
+
+		go func() {
+			result, err := sdk.GetStakePoolInfo(blobberID)
+
+			if err != nil {
+				// fmt.Println("get_public_encryption_key_failed: " + err.Error())
+				reject.Invoke(js.ValueOf("get_blobber_failed: " + err.Error()))
+				return
+			}
+
+			responseConstructor := js.Global().Get("Response")
+			response := responseConstructor.New(js.ValueOf(result))
+
+			// Resolve the Promise
+			resolve.Invoke(response)
+		}()
+
+		return nil
+	})
+
+	// Create and return the Promise object
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 // // GetStakePoolUserInfo obtains blobbers/validators delegate pools statistic
 // // for a user. If given clientID is empty string, then current client used.
 func ZBOXGetStakePoolUserInfo(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
-	result, err := sdk.GetStakePoolUserInfo(clientID)
-	if err != nil {
-		return err
-	}
-	return result
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
+
+		go func() {
+			result, err := sdk.GetStakePoolUserInfo(clientID)
+
+			if err != nil {
+				// fmt.Println("get_public_encryption_key_failed: " + err.Error())
+				reject.Invoke(js.ValueOf("get_blobber_failed: " + err.Error()))
+				return
+			}
+
+			responseConstructor := js.Global().Get("Response")
+			response := responseConstructor.New(js.ValueOf(result))
+
+			// Resolve the Promise
+			resolve.Invoke(response)
+		}()
+
+		return nil
+	})
+
+	// Create and return the Promise object
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 // // StakePoolLock locks tokens lack in stake pool
@@ -240,11 +414,32 @@ func StakePoolPayInterests(this js.Value, p []js.Value) interface{} {
 // // for current client of the sdk.
 func ZBOXGetWritePoolInfo(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
-	result, err := sdk.GetWritePoolInfo(clientID)
-	if err != nil {
-		return err
-	}
-	return result
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
+
+		go func() {
+			result, err := sdk.GetWritePoolInfo(clientID)
+
+			if err != nil {
+				// fmt.Println("get_public_encryption_key_failed: " + err.Error())
+				reject.Invoke(js.ValueOf("get_blobber_failed: " + err.Error()))
+				return
+			}
+
+			responseConstructor := js.Global().Get("Response")
+			response := responseConstructor.New(js.ValueOf(result))
+
+			// Resolve the Promise
+			resolve.Invoke(response)
+		}()
+
+		return nil
+	})
+
+	// Create and return the Promise object
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 // // WritePoolLock locks given number of tokes for given duration in read pool.
@@ -281,11 +476,32 @@ func WritePoolUnlock(this js.Value, p []js.Value) interface{} {
 // // GetChallengePoolInfo for given allocation.
 func ZBOXGetChallengePoolInfo(this js.Value, p []js.Value) interface{} {
 	allocID := p[0].String()
-	result, err := sdk.GetChallengePoolInfo(allocID)
-	if err != nil {
-		return err
-	}
-	return result
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
+
+		go func() {
+			result, err := sdk.GetChallengePoolInfo(allocID)
+
+			if err != nil {
+				// fmt.Println("get_public_encryption_key_failed: " + err.Error())
+				reject.Invoke(js.ValueOf("get_blobber_failed: " + err.Error()))
+				return
+			}
+
+			responseConstructor := js.Global().Get("Response")
+			response := responseConstructor.New(js.ValueOf(result))
+
+			// Resolve the Promise
+			resolve.Invoke(response)
+		}()
+
+		return nil
+	})
+
+	// Create and return the Promise object
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 // //
@@ -293,41 +509,131 @@ func ZBOXGetChallengePoolInfo(this js.Value, p []js.Value) interface{} {
 // //
 
 func ZBOXGetStorageSCConfig(this js.Value, p []js.Value) interface{} {
-	result, err := sdk.GetStorageSCConfig()
-	if err != nil {
-		return err
-	}
-	return result
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
+
+		go func() {
+			result, err := sdk.GetStorageSCConfig()
+
+			if err != nil {
+				// fmt.Println("get_public_encryption_key_failed: " + err.Error())
+				reject.Invoke(js.ValueOf("get_blobber_failed: " + err.Error()))
+				return
+			}
+
+			responseConstructor := js.Global().Get("Response")
+			response := responseConstructor.New(js.ValueOf(result))
+
+			// Resolve the Promise
+			resolve.Invoke(response)
+		}()
+
+		return nil
+	})
+
+	// Create and return the Promise object
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 func ZBOXGetBlobbers(this js.Value, p []js.Value) interface{} {
-	result, err := sdk.GetBlobbers()
-	if err != nil {
-		return err
-	}
-	return result
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
+
+		go func() {
+			result, err := sdk.GetBlobbers()
+
+			if err != nil {
+				// fmt.Println("get_public_encryption_key_failed: " + err.Error())
+				reject.Invoke(js.ValueOf("get_blobber_failed: " + err.Error()))
+				return
+			}
+
+			responseConstructor := js.Global().Get("Response")
+			response := responseConstructor.New(js.ValueOf(result))
+
+			// Resolve the Promise
+			resolve.Invoke(response)
+		}()
+
+		return nil
+	})
+
+	// Create and return the Promise object
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 // // GetBlobber instance.
 func ZBOXGetBlobber(this js.Value, p []js.Value) interface{} {
 	blobberID := p[0].String()
-	result, err := sdk.GetBlobber(blobberID)
-	if err != nil {
-		return err
-	}
-	return result
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
+
+		go func() {
+			result, err := sdk.GetBlobber(blobberID)
+
+			if err != nil {
+				// fmt.Println("get_public_encryption_key_failed: " + err.Error())
+				reject.Invoke(js.ValueOf("get_blobber_failed: " + err.Error()))
+				return
+			}
+
+			responseConstructor := js.Global().Get("Response")
+			response := responseConstructor.New(js.ValueOf(result))
+
+			// Resolve the Promise
+			resolve.Invoke(response)
+		}()
+
+		return nil
+	})
+
+	// Create and return the Promise object
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 // //
 // // ---
 // //
 
-func ZBOXGetClientEncryptedPublicKey(this js.Value, p []js.Value) interface{} {
-	result, err := sdk.GetClientEncryptedPublicKey()
-	if err != nil {
-		return err
-	}
-	return result
+// Ported from `code/go/0proxy.io/zproxycore/handler/wallet.go`
+// Promise code taken from:
+// https://withblue.ink/2020/10/03/go-webassembly-http-requests-and-promises.html
+func GetClientEncryptedPublicKey(this js.Value, p []js.Value) interface{} {
+	clientJSON := p[0].String()
+	chainJSON := p[1].String()
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
+
+		go func() {
+			initSDK(clientJSON, chainJSON)
+			key, err := sdk.GetClientEncryptedPublicKey()
+
+			if err != nil {
+				// fmt.Println("get_public_encryption_key_failed: " + err.Error())
+				reject.Invoke(js.ValueOf("get_public_encryption_key_failed: " + err.Error()))
+				return
+			}
+
+			responseConstructor := js.Global().Get("Response")
+			response := responseConstructor.New(js.ValueOf(key))
+
+			// Resolve the Promise
+			resolve.Invoke(response)
+		}()
+
+		return nil
+	})
+
+	// Create and return the Promise object
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 func GetAllocationFromAuthTicket(this js.Value, p []js.Value) interface{} {
@@ -403,7 +709,7 @@ func CreateAllocationForOwner(this js.Value, p []js.Value) interface{} {
 	s_write := p[7].String()
 	mcct, _ := time.ParseDuration(p[8].String())
 	lock, _ := strconv.ParseInt(p[9].String(), 10, 64)
-	preferredBlobbers := ZBOXstrToListSring(p[10].String())
+	preferredBlobbers := []string{p[10].String()}
 
 	readPrice := strToPriceRange(s_read)
 	writePrice := strToPriceRange(s_write)

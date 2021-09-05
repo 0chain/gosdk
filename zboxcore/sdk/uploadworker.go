@@ -341,7 +341,7 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 	}
 	if req.isEncrypted {
 		req.encscheme = encryption.NewEncryptionScheme()
-		err := req.encscheme.Initialize(client.GetClient().Mnemonic)
+		err := req.encscheme.Initialize(client.GetClient().Wallet.Mnemonic)
 		if err != nil {
 			return err
 		}

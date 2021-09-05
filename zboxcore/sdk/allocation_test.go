@@ -1,12 +1,13 @@
 package sdk
 
 import (
+	"os"
+	"testing"
+
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/stretchr/testify/require"
-	"os"
-	"testing"
 )
 
 const tokenUnit = 10000000000.0
@@ -17,7 +18,7 @@ func TestGetMinMaxWriteReadSuccess(t *testing.T) {
 	ssc.ParityShards = 4
 
 	ssc.initialized = true
-	sdkInitialized = true
+	SdkInitialized = true
 	require.NotNil(t, ssc.BlobberDetails)
 
 	t.Run("Success minR, minW", func(t *testing.T) {
@@ -31,7 +32,7 @@ func TestGetMinMaxWriteReadSuccess(t *testing.T) {
 		maxW, maxR, err := ssc.GetMaxWriteRead()
 		require.NoError(t, err)
 		require.Equal(t, 0.01, maxW)
-		require.Equal(t,0.01, maxR)
+		require.Equal(t, 0.01, maxR)
 	})
 
 	t.Run("Error / No Blobbers", func(t *testing.T) {
@@ -66,7 +67,7 @@ func TestGetMaxMinStorageCostSuccess(t *testing.T) {
 	ssc.ParityShards = 2
 
 	ssc.initialized = true
-	sdkInitialized = true
+	SdkInitialized = true
 
 	t.Run("Storage cost", func(t *testing.T) {
 		cost, err := ssc.GetMaxStorageCost(100 * GB)
@@ -113,7 +114,7 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit128(t *testing.T)
 	var allocation = &Allocation{}
 	var blobbers = make([]*blockchain.StorageNode, maxNumOfBlobbers)
 	allocation.initialized = true
-	sdkInitialized = true
+	SdkInitialized = true
 	allocation.Blobbers = blobbers
 	allocation.DataShards = 64
 	allocation.ParityShards = 65
@@ -137,7 +138,7 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanExplicitLimit(t *testing.T) {
 	var allocation = &Allocation{}
 	var blobbers = make([]*blockchain.StorageNode, maxNumOfBlobbers)
 	allocation.initialized = true
-	sdkInitialized = true
+	SdkInitialized = true
 	allocation.Blobbers = blobbers
 	allocation.DataShards = 5
 	allocation.ParityShards = 6
@@ -161,7 +162,7 @@ func TestDoNotThrowErrorWhenBlobbersRequiredLessThanLimit(t *testing.T) {
 	var allocation = &Allocation{}
 	var blobbers = make([]*blockchain.StorageNode, maxNumOfBlobbers)
 	allocation.initialized = true
-	sdkInitialized = true
+	SdkInitialized = true
 	allocation.Blobbers = blobbers
 	allocation.DataShards = 5
 	allocation.ParityShards = 4

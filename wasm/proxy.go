@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/0chain/gosdk/core/version"
-	"github.com/0chain/gosdk/zcncore"
 
 	"github.com/0chain/gosdk/bls"
 	// "github.com/0chain/gosdk/miracl"
@@ -74,97 +73,6 @@ func TestSSSignAndVerify(t *testing.T) {
 	if ok, err := verifyScheme.Verify(signature, hash); err != nil || !ok {
 		t.Fatalf("Verification failed\n")
 	}
-}
-
-// Ported from `code/go/0proxy.io/zproxycore/handler/wallet.go`
-// Promise code taken from:
-// https://withblue.ink/2020/10/03/go-webassembly-http-requests-and-promises.html
-func GetClientEncryptedPublicKey(this js.Value, p []js.Value) interface{} {
-	clientJSON := p[0].String()
-	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		resolve := args[0]
-		reject := args[1]
-
-		go func() {
-			initSDK(clientJSON)
-			key, err := sdk.GetClientEncryptedPublicKey()
-
-			if err != nil {
-				// fmt.Println("get_public_encryption_key_failed: " + err.Error())
-				reject.Invoke(js.ValueOf("get_public_encryption_key_failed: " + err.Error()))
-				return
-			}
-
-			responseConstructor := js.Global().Get("Response")
-			response := responseConstructor.New(js.ValueOf(key))
-
-			// Resolve the Promise
-			resolve.Invoke(response)
-		}()
-
-		return nil
-	})
-
-	// Create and return the Promise object
-	promiseConstructor := js.Global().Get("Promise")
-	return promiseConstructor.New(handler)
-}
-
-// Ported from `code/go/0proxy.io/zproxycore/zproxy/main.go`
-// TODO: should be passing in JSON. Better than a long arg list.
-func initializeConfig(this js.Value, p []js.Value) interface{} {
-	Configuration.ChainID = p[0].String()
-	Configuration.SignatureScheme = p[1].String()
-	Configuration.Port = p[2].Int()
-	Configuration.BlockWorker = p[3].String()
-	Configuration.CleanUpWorkerMinutes = p[4].Int()
-	return nil
-}
-
-//-----------------------------------------------------------------------------
-// Ported over from `code/go/0proxy.io/zproxycore/handler/util.go`
-//-----------------------------------------------------------------------------
-
-func initStorageSDK(this js.Value, p []js.Value) interface{} {
-	clientJSON := p[0].String()
-
-	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		resolve := args[0]
-		reject := args[1]
-
-		go func() {
-			err := initSDK(clientJSON)
-			if err != nil {
-				reject.Invoke(err.Error())
-			}
-
-			resolve.Invoke(true)
-		}()
-
-		return nil
-	})
-
-	promiseConstructor := js.Global().Get("Promise")
-	return promiseConstructor.New(handler)
-}
-
-func initSDK(clientJSON string) error {
-	if len(Configuration.BlockWorker) == 0 ||
-		len(Configuration.ChainID) == 0 ||
-		len(Configuration.SignatureScheme) == 0 {
-		return NewError("invalid_param", "Configuration is empty")
-	}
-
-	err := sdk.InitStorageSDK(clientJSON,
-		Configuration.BlockWorker,
-		Configuration.ChainID,
-		Configuration.SignatureScheme,
-		nil)
-	if err != nil {
-		return err
-	}
-
-	return zcncore.Init(clientJSON)
 }
 
 func validateClientDetails(allocation, clientJSON string) error {
@@ -241,12 +149,13 @@ func PrintError(v ...interface{}) {
 func Download(this js.Value, p []js.Value) interface{} {
 	allocation := p[0].String()
 	clientJSON := p[1].String()
-	remotePath := p[2].String()
-	authTicket := p[3].String()
-	numBlocks := p[4].String()
-	rx_pay := p[5].String()
-	file_name := p[6].String()
-	lookuphash := p[7].String()
+	chainJSON := p[2].String()
+	remotePath := p[3].String()
+	authTicket := p[4].String()
+	numBlocks := p[5].String()
+	rx_pay := p[6].String()
+	file_name := p[7].String()
+	lookuphash := p[8].String()
 
 	err := validateClientDetails(allocation, clientJSON)
 	if err != nil {
@@ -267,7 +176,7 @@ func Download(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			err = initSDK(clientJSON)
+			err = initSDK(clientJSON, chainJSON)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
 				return
@@ -376,7 +285,8 @@ func Download(this js.Value, p []js.Value) interface{} {
 func Delete(this js.Value, p []js.Value) interface{} {
 	allocation := p[0].String()
 	clientJSON := p[1].String()
-	remotePath := p[2].String()
+	chainJSON := p[2].String()
+	remotePath := p[3].String()
 
 	err := validateClientDetails(allocation, clientJSON)
 	if err != nil {
@@ -392,7 +302,7 @@ func Delete(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			err = initSDK(clientJSON)
+			err = initSDK(clientJSON, chainJSON)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
 				return
@@ -448,23 +358,6 @@ func NewError(code string, msg string) *Error {
 func InvalidRequest(msg string) error {
 	return NewError("invalid_request", fmt.Sprintf("Invalid request (%v)", msg))
 }
-
-//-----------------------------------------------------------------------------
-// Ported over from `code/go/0proxy.io/core/config/config.go`
-//-----------------------------------------------------------------------------
-
-/*Config - all the config options passed from the command line*/
-type Config struct {
-	Port                 int
-	ChainID              string
-	DeploymentMode       byte
-	SignatureScheme      string
-	BlockWorker          string
-	CleanUpWorkerMinutes int
-}
-
-/*Configuration of the system */
-var Configuration Config
 
 //-----------------------------------------------------------------------------
 // Ported over from `code/go/0proxy.io/zproxycore/handler/file_operations.go`
@@ -529,13 +422,14 @@ func createDirIfNotExists(allocation string) {
 func Rename(this js.Value, p []js.Value) interface{} {
 	allocation := p[0].String()
 	clientJSON := p[1].String()
+	chainJSON := p[2].String()
 	err := validateClientDetails(allocation, clientJSON)
 	if err != nil {
 		return js.ValueOf("error: " + err.Error())
 	}
 
-	remotePath := p[2].String()
-	newName := p[3].String()
+	remotePath := p[3].String()
+	newName := p[4].String()
 	if len(remotePath) == 0 || len(newName) == 0 {
 		return js.ValueOf("error: " + NewError("invalid_param", "Please provide remote_path and new_name for rename").Error())
 	}
@@ -545,7 +439,7 @@ func Rename(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			err = initSDK(clientJSON)
+			err = initSDK(clientJSON, chainJSON)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
 				return
@@ -586,13 +480,14 @@ func Rename(this js.Value, p []js.Value) interface{} {
 func Copy(this js.Value, p []js.Value) interface{} {
 	allocation := p[0].String()
 	clientJSON := p[1].String()
+	chainJSON := p[2].String()
 	err := validateClientDetails(allocation, clientJSON)
 	if err != nil {
 		return js.ValueOf("error: " + err.Error())
 	}
 
-	remotePath := p[2].String()
-	destPath := p[3].String()
+	remotePath := p[3].String()
+	destPath := p[4].String()
 	if len(remotePath) == 0 || len(destPath) == 0 {
 		return js.ValueOf("error: " + NewError("invalid_param", "Please provide remote_path and dest_path for copy").Error())
 	}
@@ -602,7 +497,7 @@ func Copy(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			err = initSDK(clientJSON)
+			err = initSDK(clientJSON, chainJSON)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
 				return
@@ -643,12 +538,13 @@ func Copy(this js.Value, p []js.Value) interface{} {
 func Share(this js.Value, p []js.Value) interface{} {
 	allocation := p[0].String()
 	clientJSON := p[1].String()
+	chainJSON := p[2].String()
 	err := validateClientDetails(allocation, clientJSON)
 	if err != nil {
 		return js.ValueOf("error: " + err.Error())
 	}
 
-	remotePath := p[2].String()
+	remotePath := p[3].String()
 	if len(remotePath) == 0 {
 		return js.ValueOf("error: " + NewError("invalid_param", "Please provide remote_path for share").Error())
 	}
@@ -661,7 +557,7 @@ func Share(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			err = initSDK(clientJSON)
+			err = initSDK(clientJSON, chainJSON)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
 				return
@@ -727,13 +623,14 @@ func Share(this js.Value, p []js.Value) interface{} {
 func Move(this js.Value, p []js.Value) interface{} {
 	allocation := p[0].String()
 	clientJSON := p[1].String()
+	chainJSON := p[2].String()
 	err := validateClientDetails(allocation, clientJSON)
 	if err != nil {
 		return js.ValueOf("error: " + err.Error())
 	}
 
-	remotePath := p[2].String()
-	destPath := p[3].String()
+	remotePath := p[3].String()
+	destPath := p[4].String()
 	if len(remotePath) == 0 || len(destPath) == 0 {
 		return js.ValueOf("error: " + NewError("invalid_param", "Please provide remote_path and dest_path for move").Error())
 	}
@@ -743,7 +640,7 @@ func Move(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			err = initSDK(clientJSON)
+			err = initSDK(clientJSON, chainJSON)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
 				return
@@ -787,26 +684,27 @@ func Upload(this js.Value, p []js.Value) interface{} {
 	method := p[0].String() // POST or PUT
 	allocation := p[1].String()
 	clientJSON := p[2].String()
+	chainJSON := p[3].String()
 	err := validateClientDetails(allocation, clientJSON)
 	if err != nil {
 		return js.ValueOf("error: " + err.Error())
 	}
 
-	remotePath := p[3].String()
+	remotePath := p[4].String()
 	if len(remotePath) == 0 {
 		return js.ValueOf("error: " + NewError("invalid_param", "Please provide remote_path for upload").Error())
 	}
 
-	Filename := p[4].String()
-	file := p[5].String()
+	Filename := p[5].String()
+	file := p[6].String()
 	// file, fileHeader, err := r.FormFile("file")
 	// if err != nil {
 	// 	js.ValueOf("error: " + NewError("invalid_params", "Unable to get file for upload :"+err.Error()).Error())
 	// }
 	// defer file.Close()
-	encrypt := p[6].String()
+	encrypt := p[7].String()
 
-	fileAttrs := p[7].String()
+	fileAttrs := p[8].String()
 	var attrs fileref.Attributes
 	if len(fileAttrs) > 0 {
 		err := json.Unmarshal([]byte(fileAttrs), &attrs)
@@ -830,7 +728,7 @@ func Upload(this js.Value, p []js.Value) interface{} {
 			}
 			defer deleletFile(localFilePath)
 
-			err = initSDK(clientJSON)
+			err = initSDK(clientJSON, chainJSON)
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
 				return
@@ -900,8 +798,6 @@ func main() {
 	c := make(chan struct{}, 0)
 
 	// Just functions for 0proxy.
-	js.Global().Set("initializeConfig", js.FuncOf(initializeConfig))
-	js.Global().Set("initStorageSDK", js.FuncOf(initStorageSDK))
 	js.Global().Set("Upload", js.FuncOf(Upload))
 	js.Global().Set("Download", js.FuncOf(Download))
 	js.Global().Set("Share", js.FuncOf(Share))
@@ -909,7 +805,6 @@ func main() {
 	js.Global().Set("Copy", js.FuncOf(Copy))
 	js.Global().Set("Delete", js.FuncOf(Delete))
 	js.Global().Set("Move", js.FuncOf(Move))
-	js.Global().Set("GetClientEncryptedPublicKey", js.FuncOf(GetClientEncryptedPublicKey))
 
 	// ethwallet.go
 	js.Global().Set("TokensToEth", js.FuncOf(TokensToEth))
@@ -977,10 +872,12 @@ func main() {
 	js.Global().Set("Encrypt", js.FuncOf(Encrypt))
 	js.Global().Set("Decrypt", js.FuncOf(Decrypt))
 
-	// zboxsdk.go
+	// sdk.go
+	js.Global().Set("initializeConfig", js.FuncOf(InitializeConfig))
+	js.Global().Set("initStorageSDK", js.FuncOf(InitStorageSDK))
 	js.Global().Set("InitAuthTicket", js.FuncOf(InitAuthTicket))
-	js.Global().Set("ZBOXSetLogLevel", js.FuncOf(ZBOXSetLogLevel))
-	js.Global().Set("ZBOXSetLogFile", js.FuncOf(ZBOXSetLogFile))
+	js.Global().Set("SetSDKLogLevel", js.FuncOf(SetSDKLogLevel))
+	js.Global().Set("SetSDKLogFile", js.FuncOf(SetSDKLogFile))
 	js.Global().Set("GetNetwork", js.FuncOf(GetNetwork))
 	js.Global().Set("SetMaxTxnQuery", js.FuncOf(SetMaxTxnQuery))
 	js.Global().Set("SetQuerySleepTime", js.FuncOf(SetQuerySleepTime))
@@ -1004,7 +901,7 @@ func main() {
 	js.Global().Set("ZBOXGetStorageSCConfig", js.FuncOf(ZBOXGetStorageSCConfig))
 	js.Global().Set("ZBOXGetBlobbers", js.FuncOf(ZBOXGetBlobbers))
 	js.Global().Set("ZBOXGetBlobber", js.FuncOf(ZBOXGetBlobber))
-	js.Global().Set("ZBOXGetClientEncryptedPublicKey", js.FuncOf(ZBOXGetClientEncryptedPublicKey))
+	js.Global().Set("GetClientEncryptedPublicKey", js.FuncOf(GetClientEncryptedPublicKey))
 	js.Global().Set("GetAllocationFromAuthTicket", js.FuncOf(GetAllocationFromAuthTicket))
 	js.Global().Set("ZBOXGetAllocation", js.FuncOf(ZBOXGetAllocation))
 	js.Global().Set("ZBOXGetAllocations", js.FuncOf(ZBOXGetAllocations))

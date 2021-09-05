@@ -93,7 +93,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 	if len(req.encryptedKey) > 0 {
 		encscheme = encryption.NewEncryptionScheme()
 		// TODO: Remove after testing
-		encscheme.Initialize(client.GetClient().Mnemonic)
+		encscheme.Initialize(client.GetClient().Wallet.Mnemonic)
 		encscheme.InitForDecryption("filetype:audio", req.encryptedKey)
 	}
 

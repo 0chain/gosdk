@@ -57,7 +57,7 @@ func (req *ShareRequest) GetAuthTicketForEncryptedFile(clientID string, encPubli
 	}
 	var encscheme encryption.EncryptionScheme
 	encscheme = encryption.NewEncryptionScheme()
-	encscheme.Initialize(client.GetClient().Mnemonic)
+	encscheme.Initialize(client.GetClient().Wallet.Mnemonic)
 	reKey, err := encscheme.GetReGenKey(encPublicKey, "filetype:audio")
 	if err != nil {
 		return "", err
