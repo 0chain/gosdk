@@ -23,7 +23,7 @@ func buildFfmpegArgs(fileName string, delay int) []string {
 		}
 	}
 
-	//mp4
+	//mp4, avi...etc
 	return []string{
 		//"-thread_queue_size", "50",
 		"-f", "avfoundation",

@@ -1,7 +1,9 @@
 package sdk
 
 import (
-	"github.com/0chain/gosdk/core/encryption"
+	"hash/fnv"
+	"strconv"
+
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
@@ -35,7 +37,11 @@ type FileMeta struct {
 
 // FileID generante id of progress on local cache
 func (meta *FileMeta) FileID() string {
-	return encryption.Hash(meta.Path+"_"+meta.RemotePath) + "_" + meta.RemoteName
+
+	hash := fnv.New64a()
+	hash.Write([]byte(meta.Path + "_" + meta.RemotePath))
+
+	return strconv.FormatUint(hash.Sum64(), 36) + "_" + meta.RemoteName
 }
 
 // UploadFormData form data of upload

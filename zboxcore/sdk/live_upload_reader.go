@@ -135,7 +135,8 @@ func (r *liveUploadReaderBase) GetFileContentType() (string, error) {
 			return "", r.err
 		}
 
-		reader, err := os.Open(r.GetClipsFile(r.clipsIndex))
+		currentClips := r.GetClipsFile(r.clipsIndex)
+		reader, err := os.Open(currentClips)
 
 		if err == nil {
 			defer reader.Close()

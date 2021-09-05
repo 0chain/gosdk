@@ -184,7 +184,7 @@ type ChunkedUpload struct {
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
 func (su *ChunkedUpload) progressID() string {
 
-	return filepath.Join(su.workdir, "upload", su.allocationObj.ID+"_"+su.fileMeta.FileID())
+	return filepath.Join(su.workdir, "upload", su.allocationObj.ID[:8]+"_"+su.fileMeta.FileID())
 }
 
 // loadProgress load progress from ~/.zcn/upload/[progressID]

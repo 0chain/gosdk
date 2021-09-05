@@ -72,7 +72,7 @@ func (b mediaNameBuilder) OutDir() string {
 
 // OutFile build file
 func (b mediaNameBuilder) OutFile() string {
-	return b.outDir + b.fileName + b.fileExt
+	return filepath.Join(b.outDir, b.fileName+"%d"+b.fileExt)
 }
 
 // FileExt get file ext
@@ -82,7 +82,7 @@ func (b mediaNameBuilder) FileExt() string {
 
 // ClipsFile build filename
 func (b mediaNameBuilder) ClipsFile(index int) string {
-	return b.outDir + b.ClipsFileName(index)
+	return filepath.Join(b.outDir, b.ClipsFileName(index))
 }
 
 // ClipsFileName build filename
@@ -106,11 +106,11 @@ func (b m3u8NameBuilder) OutDir() string {
 
 // File build file
 func (b m3u8NameBuilder) OutFile() string {
-	return b.outDir + b.fileName + b.fileExt
+	return filepath.Join(b.outDir, b.fileName+b.fileExt)
 }
 
 func (b m3u8NameBuilder) ClipsFile(index int) string {
-	return b.outDir + b.ClipsFileName(index)
+	return filepath.Join(b.outDir, b.ClipsFileName(index))
 }
 
 func (b m3u8NameBuilder) ClipsFileName(index int) string {
