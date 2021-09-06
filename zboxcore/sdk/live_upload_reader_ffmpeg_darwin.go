@@ -18,7 +18,7 @@ func buildFfmpegArgs(fileName string, delay int) []string {
 			"-flags", "+cgop",
 			"-g", "30",
 			"-hls_time", strconv.Itoa(delay),
-			"-loglevel", "warning",
+
 			fileName, //*.m3u8
 		}
 	}
@@ -36,7 +36,7 @@ func buildFfmpegArgs(fileName string, delay int) []string {
 		"-map", "0",
 		"-f", "segment",
 		"-segment_time", strconv.Itoa(delay),
-		"-loglevel", "warning",
+
 		fileName,
 	}
 
