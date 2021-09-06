@@ -21,10 +21,6 @@ func buildFfmpegArgs(fileName string, delay int) []string {
 			"-acodec", "aac",
 			"-strict", "-2",
 			"-ac", "2",
-			"-ab", "32k",
-			"-ar", "44100",
-			"-flags", "+cgop",
-			"-g", "30",
 			"-hls_time", strconv.Itoa(delay),
 			"-loglevel", "warning",
 			fileName, //*.m3u8
