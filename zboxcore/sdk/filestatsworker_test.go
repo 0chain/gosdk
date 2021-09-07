@@ -14,7 +14,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -74,7 +74,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 				})).Return(&http.Response{
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 					StatusCode: p.respStatusCode,
-				}, errors.New(mockErrorMessage))
+				}, errors.New("", mockErrorMessage))
 			},
 			wantErr: true,
 			errMsg:  mockErrorMessage,

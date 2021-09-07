@@ -17,7 +17,7 @@ type AuthTicket struct {
 	RefType         string `json:"reference_type"`
 	Expiration      int64  `json:"expiration"`
 	Timestamp       int64  `json:"timestamp"`
-	ReEncryptionKey string `json:"re_encryption_key"`
+	ReEncryptionKey string `json:"re_encryption_key,omitempty"`
 	Encrypted       bool   `json:"encrypted"`
 	Signature       string `json:"signature"`
 }

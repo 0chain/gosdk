@@ -1,5 +1,0 @@
-package gosdk
-
-func init() {
-
-}
