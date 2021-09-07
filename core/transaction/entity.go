@@ -115,7 +115,6 @@ const (
 	STORAGESC_CURATOR_TRANSFER         = "curator_transfer_allocation"
 	STORAGESC_UPDATE_SETTINGS          = "update_settings"
 
-	// Miner SC
 	MINERSC_LOCK             = "addToDelegatePool"
 	MINERSC_UNLOCK           = "deleteFromDelegatePool"
 	MINERSC_MINER_SETTINGS   = "update_miner_settings"

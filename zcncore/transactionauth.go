@@ -333,6 +333,32 @@ func (ta *TransactionWithAuth) MinerSCSharderSettings(info *MinerSCMinerInfo) (
 	return
 }
 
+func (ta *TransactionWithAuth) MinerSCDeleteMiner(info *MinerSCMinerInfo) (
+	err error) {
+
+	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_MINER_DELETE, info, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) MinerSCDeleteSharder(info *MinerSCMinerInfo) (
+	err error) {
+
+	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_SHARDER_DELETE, info, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
 func (ta *TransactionWithAuth) MinerSCLock(minerID string,
 	lock int64) (err error) {
 

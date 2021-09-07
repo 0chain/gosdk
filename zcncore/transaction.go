@@ -138,6 +138,9 @@ type TransactionScheme interface {
 	MienrSCUnlock(minerID, poolID string) error
 	MinerScUpdateConfig(*InputMap) error
 	MinerScUpdateGlobals(*InputMap) error
+	MinerSCDeleteMiner(*MinerSCMinerInfo) error
+	MinerSCDeleteSharder(*MinerSCMinerInfo) error
+
 
 	// Storage SC
 
@@ -1187,6 +1190,28 @@ func (t *Transaction) MinerSCMinerSettings(info *MinerSCMinerInfo) (err error) {
 func (t *Transaction) MinerSCSharderSettings(info *MinerSCMinerInfo) (err error) {
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_SHARDER_SETTINGS, info, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+func (t *Transaction) MinerSCDeleteMiner(info *MinerSCMinerInfo) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_MINER_DELETE, info, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_SHARDER_DELETE, info, 0)
 	if err != nil {
 		Logger.Error(err)
 		return

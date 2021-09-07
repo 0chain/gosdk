@@ -827,7 +827,7 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
 		"max_challenge_completion_time": mcct,
-		"diversify_blobbers":            true,
+		"diversify_blobbers":            false,
 	}
 
 	var sn = transaction.SmartContractTxnData{
@@ -1149,7 +1149,7 @@ func GetAllocationMinLock(datashards, parityshards int, size, expiry int64,
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
 		"max_challenge_completion_time": mcct,
-		"diversify_blobbers":            true,
+		"diversify_blobbers":            false,
 	}
 	allocationData, _ := json.Marshal(allocationRequestData)
 
