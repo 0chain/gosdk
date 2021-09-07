@@ -121,6 +121,8 @@ const (
 	MINERSC_SHARDER_SETTINGS = "update_sharder_settings"
 	MINERSC_UPDATE_SETTINGS  = "update_settings"
 	MINERSC_UPDATE_GLOBALS   = "update_globals"
+	MINERSC_MINER_DELETE     = "delete_miner"
+	MINERSC_SHARDER_DELETE   = "delete_sharder"
 
 	// Faucet SC
 	FAUCETSC_UPDATE_SETTINGS = "update-settings"
