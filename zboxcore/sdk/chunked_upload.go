@@ -227,7 +227,9 @@ func (su *ChunkedUpload) startAutoSaveProgress() {
 
 			err := os.Remove(it.ID)
 			if err != nil {
-				logger.Logger.Error("[upload] remove progress: ", err)
+				if !errors.Is(err, os.ErrNotExist) {
+					logger.Logger.Error("[upload] remove progress: ", err)
+				}
 			}
 			break
 		case <-delay.Done():
