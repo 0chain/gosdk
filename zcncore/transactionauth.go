@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -93,7 +93,7 @@ func verifyFn(signature, msgHash, publicKey string) (bool, error) {
 	v.SetPublicKey(publicKey)
 	ok, err := v.Verify(signature, msgHash)
 	if err != nil || ok == false {
-		return false, errors.New(`{"error": "signature_mismatch"}`)
+		return false, errors.New("", `{"error": "signature_mismatch"}`)
 	}
 	return true, nil
 }
@@ -277,11 +277,24 @@ func (ta *TransactionWithAuth) VestingUpdateConfig(
 // miner sc
 //
 
-func (ta *TransactionWithAuth) MinerSCSettings(info *MinerSCMinerInfo) (
+func (ta *TransactionWithAuth) MinerSCMinerSettings(info *MinerSCMinerInfo) (
 	err error) {
 
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_SETTINGS, info, 0)
+		transaction.MINERSC_MINER_SETTINGS, info, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) MinerSCSharderSettings(info *MinerSCMinerInfo) (
+	err error) {
+
+	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_SHARDER_SETTINGS, info, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
@@ -379,7 +392,7 @@ func (ta *TransactionWithAuth) UnlockTokens(poolID string) error {
 
 //RegisterMultiSig register a multisig wallet with the SC.
 func (ta *TransactionWithAuth) RegisterMultiSig(walletstr string, mswallet string) error {
-	return errors.New("not implemented")
+	return errors.New("", "not implemented")
 }
 
 //

@@ -12,11 +12,15 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/0chain/gosdk/zboxcore/encryption"
 
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/gosdk/core/conf"
+	"github.com/0chain/gosdk/core/resty"
+
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -2336,7 +2340,7 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 		ClientKey: mockClientKey,
 	}
 	require := require.New(t)
-	a := &Allocation{}
+	a := &Allocation{DataShards: 1, ParityShards: 1}
 	a.InitAllocation()
 	for i := 0; i < numberBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
@@ -2579,7 +2583,7 @@ func TestAllocation_CancelUpload(t *testing.T) {
 		{
 			name:    "Test_Failed",
 			wantErr: true,
-			errMsg:  "local_path_not_found: Invalid path. No upload in progress for the path ",
+			errMsg:  "local_path_not_found: Invalid path. No upload in progress for the path",
 		},
 		{
 			name: "Test_Success",
@@ -2629,7 +2633,7 @@ func TestAllocation_CancelDownload(t *testing.T) {
 		{
 			name:    "Test_Failed",
 			wantErr: true,
-			errMsg:  "local_path_not_found: Invalid path. No upload in progress for the path ",
+			errMsg:  "local_path_not_found: Invalid path. No upload in progress for the path",
 		},
 		{
 			name: "Test_Success",
@@ -2671,6 +2675,13 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 
 	var mockClient = mocks.HttpClient{}
 	util.Client = &mockClient
+	resty.CreateClient = func(t *http.Transport, timeout time.Duration) resty.Client {
+		return &mockClient
+	}
+
+	transaction.SetConfig(&conf.Config{
+		MinConfirmation: 50,
+	})
 
 	client := zclient.GetClient()
 	client.Wallet = &zcncrypto.Wallet{
@@ -2681,7 +2692,7 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 	setupHttpResponse := func(t *testing.T, name string, httpMethod string, statusCode int, body []byte) {
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return req.Method == httpMethod &&
-				strings.HasPrefix(req.URL.Path, name)
+				strings.Index(req.URL.String(), name) > -1
 		})).Return(&http.Response{
 			StatusCode: statusCode,
 			Body:       ioutil.NopCloser(bytes.NewReader([]byte(body))),
@@ -2694,11 +2705,12 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 	blockchain.SetQuerySleepTime(1)
 
 	tests := []struct {
-		name       string
-		parameters parameters
-		setup      func(*testing.T, string, *Allocation) (teardown func(*testing.T))
-		wantErr    bool
-		errMsg     string
+		name          string
+		parameters    parameters
+		setup         func(*testing.T, string, *Allocation) (teardown func(*testing.T))
+		wantErr       bool
+		errMsg        string
+		exceptedError error
 	}{
 		{
 			name: "Test_Uninitialized_Failed",
@@ -2715,6 +2727,7 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 		{
 			name: "Test_Sharder_Verify_Txn_Failed",
 			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
+
 				body, err := json.Marshal(&transaction.Transaction{
 					Hash: mockHash,
 				})
@@ -2723,8 +2736,9 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 				setupHttpResponse(t, testCaseName+"mockSharders", http.MethodGet, http.StatusBadRequest, []byte(""))
 				return nil
 			},
-			wantErr: true,
-			errMsg:  "transaction_not_found: Transaction was not found on any of the sharders",
+			wantErr:       true,
+			exceptedError: transaction.ErrTooLessConfirmation,
+			errMsg:        "transaction_not_found: Transaction was not found on any of the sharders",
 		},
 		{
 			name: "Test_Max_Retried_Failed",
@@ -2773,17 +2787,25 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 			}
 			a.InitAllocation()
 			sdkInitialized = true
-			blockchain.SetMiners([]string{tt.name + "mockMiners"})
-			blockchain.SetSharders([]string{tt.name + "mockSharders"})
+			blockchain.SetMiners([]string{"http://" + tt.name + "mockMiners"})
+			blockchain.SetSharders([]string{"http://" + tt.name + "mockSharders"})
 			if tt.setup != nil {
 				if teardown := tt.setup(t, tt.name, a); teardown != nil {
 					defer teardown(t)
 				}
 			}
+
 			_, err := a.CommitFolderChange(tt.parameters.operation, tt.parameters.preValue, tt.parameters.currValue)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(err))
+
+				// test it by predefined error variable instead of error message
+				if tt.exceptedError != nil {
+					require.ErrorIs(err, tt.exceptedError)
+				} else {
+					require.EqualValues(tt.errMsg, errors.Top(err))
+				}
+
 				return
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
@@ -3416,8 +3438,6 @@ func TestAllocation_DownloadFromAuthTicket(t *testing.T) {
 		mockType           = "d"
 	)
 
-	var authTicket = getMockAuthTicket(t)
-
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
@@ -3437,6 +3457,8 @@ func TestAllocation_DownloadFromAuthTicket(t *testing.T) {
 			Baseurl: "TestAllocation_DownloadFromAuthTicket" + mockBlobberUrl + strconv.Itoa(i),
 		})
 	}
+
+	var authTicket = getMockAuthTicket(t)
 
 	err := a.DownloadFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, true, nil)
 	defer os.Remove("alloc/1.txt")
@@ -3807,14 +3829,19 @@ func getMockAuthTicket(t *testing.T) string {
 		ClientKey: mockClientKey,
 	}
 	a := &Allocation{
-		ID: mockAllocationId,
-		Tx: mockAllocationTxId,
+		ID:           mockAllocationId,
+		Tx:           mockAllocationTxId,
+		DataShards:   1,
+		ParityShards: 1,
 	}
 	setupMockGetFileInfoResponse(t, &mockClient)
 	a.InitAllocation()
 	sdkInitialized = true
 	for i := 0; i < numBlobbers; i++ {
-		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
+		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
+			ID:      strconv.Itoa(i),
+			Baseurl: "TestAllocation_getMockAuthTicket" + mockBlobberUrl + strconv.Itoa(i),
+		})
 	}
 
 	httpResponse := &http.Response{
@@ -3833,6 +3860,10 @@ func getMockAuthTicket(t *testing.T) string {
 	for i := 0; i < numBlobbers; i++ {
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return strings.HasPrefix(req.URL.Path, "TestAllocation_ListDirFromAuthTicket")
+		})).Return(httpResponse, nil)
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return strings.HasPrefix(req.URL.Path, "TestAllocation_getMockAuthTicket")
 		})).Return(httpResponse, nil)
 	}
 	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, mockClientId, "", 0)
