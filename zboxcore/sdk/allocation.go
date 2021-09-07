@@ -243,12 +243,14 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 	}
 }
 
+// UpdateFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UpdateFile(localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
 	return a.startChunkedUpload(localpath, remotepath, status, true, "", false, attrs)
 }
 
+// UploadFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UploadFile(localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
@@ -283,6 +285,7 @@ func (a *Allocation) RepairFile(localpath string, remotepath string,
 		false, true, fileref.Attributes{})
 }
 
+// UpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UpdateFileWithThumbnail(localpath string, remotepath string,
 	thumbnailpath string, attrs fileref.Attributes, status StatusCallback) error {
 
@@ -290,6 +293,7 @@ func (a *Allocation) UpdateFileWithThumbnail(localpath string, remotepath string
 		thumbnailpath, false, attrs)
 }
 
+// UploadFileWithThumbnail [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UploadFileWithThumbnail(localpath string,
 	remotepath string, thumbnailpath string, attrs fileref.Attributes,
 	status StatusCallback) error {
@@ -298,18 +302,21 @@ func (a *Allocation) UploadFileWithThumbnail(localpath string,
 		thumbnailpath, false, attrs)
 }
 
+// EncryptAndUpdateFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUpdateFile(localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
 	return a.startChunkedUpload(localpath, remotepath, status, true, "", true, attrs)
 }
 
+// EncryptAndUploadFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUploadFile(localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
 	return a.startChunkedUpload(localpath, remotepath, status, false, "", true, attrs)
 }
 
+// EncryptAndUpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUpdateFileWithThumbnail(localpath string,
 	remotepath string, thumbnailpath string, attrs fileref.Attributes, status StatusCallback) error {
 
@@ -317,6 +324,7 @@ func (a *Allocation) EncryptAndUpdateFileWithThumbnail(localpath string,
 		thumbnailpath, true, attrs)
 }
 
+// EncryptAndUploadFileWithThumbnail [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	localpath string,
 	remotepath string,
@@ -400,6 +408,7 @@ func (a *Allocation) startChunkedUpload(localPath string,
 	return ChunkedUpload.Start()
 }
 
+// uploadOrUpdateFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) uploadOrUpdateFile(localpath string,
 	remotepath string,
 	status StatusCallback,

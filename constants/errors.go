@@ -4,6 +4,9 @@ package constants
 import "errors"
 
 var (
+	// ErrMissingParameter required parameter is not specified
+	ErrMissingParameter = errors.New("requires parameter")
+
 	// ErrUnableHash failed to hash with unknown exception
 	ErrUnableHash = errors.New("unable to hash")
 

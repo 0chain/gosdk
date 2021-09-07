@@ -169,7 +169,7 @@ func (sb *ChunkedUploadBobbler) processUpload(su *ChunkedUpload, chunkIndex int,
 			//req.err = fmt.Errorf(string(respbody))
 			return err
 		}
-		var r uploadResult
+		var r UploadResult
 		err = json.Unmarshal(respbody, &r)
 		if err != nil {
 			logger.Logger.Error(sb.blobber.Baseurl, " Upload response parse error: ", err)

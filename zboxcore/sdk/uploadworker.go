@@ -88,7 +88,7 @@ type uploadFormData struct {
 	Attributes   fileref.Attributes `json:"attributes,omitempty"`
 }
 
-type uploadResult struct {
+type UploadResult struct {
 	Filename   string `json:"filename"`
 	ShardSize  int64  `json:"size"`
 	Hash       string `json:"content_hash,omitempty"`
@@ -315,7 +315,7 @@ func (req *UploadRequest) prepareUpload(
 			req.err = errors.New("", string(respbody))
 			return err
 		}
-		var r uploadResult
+		var r UploadResult
 		err = json.Unmarshal(respbody, &r)
 		if err != nil {
 			Logger.Error(blobber.Baseurl, " Upload response parse error: ", err)

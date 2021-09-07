@@ -42,6 +42,10 @@ const DefaultChunkSize = 64 * 1024
 // CreateChunkedUpload create a ChunkedUpload instance
 func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta FileMeta, fileReader io.Reader, isUpdate bool, opts ...ChunkedUploadOption) (*ChunkedUpload, error) {
 
+	if allocationObj == nil {
+		return nil, thrown.Throw(constants.ErrMissingParameter, "allocationObj")
+	}
+
 	su := &ChunkedUpload{
 		allocationObj: allocationObj,
 
@@ -184,7 +188,11 @@ type ChunkedUpload struct {
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
 func (su *ChunkedUpload) progressID() string {
 
-	return filepath.Join(su.workdir, "upload", su.allocationObj.ID[:8]+"_"+su.fileMeta.FileID())
+	if len(su.allocationObj.ID) > 8 {
+		return filepath.Join(su.workdir, "upload", su.allocationObj.ID[:8]+"_"+su.fileMeta.FileID())
+	}
+
+	return filepath.Join(su.workdir, "upload", su.allocationObj.ID+"_"+su.fileMeta.FileID())
 }
 
 // loadProgress load progress from ~/.zcn/upload/[progressID]
