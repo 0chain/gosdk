@@ -36,11 +36,15 @@ func TestAllocation_UpdateFile(t *testing.T) {
 		DataShards:   2,
 	}
 	setupMockAllocation(t, a)
+
+	server := dev.NewBlobberServer()
+	defer server.Close()
+
 	for i := 0; i < numBlobbers; i++ {
 
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 			ID:      mockBlobberId + strconv.Itoa(i),
-			Baseurl: dev.NewBlobberServer().URL,
+			Baseurl: server.URL,
 		})
 	}
 	a.uploadChan = make(chan *UploadRequest, 4)
@@ -59,11 +63,13 @@ func TestAllocation_UploadFile(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 	}
+	server := dev.NewBlobberServer()
+	defer server.Close()
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 			ID:      mockBlobberId + strconv.Itoa(i),
-			Baseurl: dev.NewBlobberServer().URL,
+			Baseurl: server.URL,
 		})
 	}
 	err := a.UploadFile(mockLocalPath, "/", fileref.Attributes{}, nil)
@@ -96,6 +102,9 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 		},
 	}
 
+	server := dev.NewBlobberServer()
+	defer server.Close()
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
@@ -120,7 +129,7 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      mockBlobberId + strconv.Itoa(i),
-					Baseurl: dev.NewBlobberServer().URL,
+					Baseurl: server.URL,
 				})
 			}
 			err := a.UpdateFileWithThumbnail(tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.thumbnailPath, fileref.Attributes{}, tt.parameters.status)
@@ -147,11 +156,13 @@ func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 	}
+	server := dev.NewBlobberServer()
+	defer server.Close()
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 			ID:      mockBlobberId + strconv.Itoa(i),
-			Baseurl: dev.NewBlobberServer().URL,
+			Baseurl: server.URL,
 		})
 	}
 	err := a.UploadFileWithThumbnail(mockLocalPath, "/", mockThumbnailPath, fileref.Attributes{}, nil)
@@ -169,11 +180,14 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 	}
+
+	server := dev.NewBlobberServer()
+	defer server.Close()
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 			ID:      mockBlobberId + strconv.Itoa(i),
-			Baseurl: dev.NewBlobberServer().URL,
+			Baseurl: server.URL,
 		})
 	}
 	err := a.EncryptAndUpdateFile(mockLocalPath, "/", fileref.Attributes{}, nil)
@@ -191,11 +205,13 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 	}
+	server := dev.NewBlobberServer()
+	defer server.Close()
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 			ID:      mockBlobberId + strconv.Itoa(i),
-			Baseurl: dev.NewBlobberServer().URL,
+			Baseurl: server.URL,
 		})
 	}
 	err := a.EncryptAndUploadFile(mockLocalPath, "/", fileref.Attributes{}, nil)
@@ -216,11 +232,13 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 	}
+	server := dev.NewBlobberServer()
+	defer server.Close()
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 			ID:      mockBlobberId + strconv.Itoa(i),
-			Baseurl: dev.NewBlobberServer().URL,
+			Baseurl: server.URL,
 		})
 	}
 	err := a.EncryptAndUpdateFileWithThumbnail(mockLocalPath, "/", mockThumbnailPath, fileref.Attributes{}, nil)
@@ -241,11 +259,13 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 	}
+	server := dev.NewBlobberServer()
+	defer server.Close()
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 			ID:      mockBlobberId + strconv.Itoa(i),
-			Baseurl: dev.NewBlobberServer().URL,
+			Baseurl: server.URL,
 		})
 	}
 	err := a.EncryptAndUploadFileWithThumbnail(mockLocalPath, "/", mockThumbnailPath, fileref.Attributes{}, nil)

@@ -150,7 +150,7 @@ func (sb *ChunkedUploadBobbler) processUpload(su *ChunkedUpload, chunkIndex int,
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 
 	//TODO: retry http
-	err = zboxutil.HttpDo(su.allocationObj.ctx, su.allocationObj.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
+	err = zboxutil.HttpClientDo(su.allocationObj.ctx, su.allocationObj.ctxCancelF, su.client, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
 			logger.Logger.Error("Upload : ", err)
 			//req.err = err
@@ -279,7 +279,7 @@ func (sb *ChunkedUploadBobbler) processCommit(su *ChunkedUpload, wg *sync.WaitGr
 
 	//for retries := 0; retries < 3; retries++ {
 	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 60))
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
+	err = zboxutil.HttpClientDo(ctx, cncl, su.client, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
 			logger.Logger.Error("Commit: ", err)
 			return err
@@ -326,7 +326,7 @@ func (sb *ChunkedUploadBobbler) processWriteMarker(su *ChunkedUpload) (*fileref.
 		return nil, nil, 0, err
 	}
 	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
+	err = zboxutil.HttpClientDo(ctx, cncl, su.client, req, func(resp *http.Response, err error) error {
 		if err != nil {
 			logger.Logger.Error("Ref path error:", err)
 			return err

@@ -113,10 +113,19 @@ type UploadBlobberStatus struct {
 
 // getChallengeHash see detail on https://github.com/0chain/blobber/wiki/Protocols
 func (status *UploadBlobberStatus) getChallengeHash() string {
-	return status.ChallengeHasher.GetMerkleRoot()
+	if status != nil && status.ChallengeHasher != nil {
+		return status.ChallengeHasher.GetMerkleRoot()
+	}
+
+	return ""
+
 }
 
 // getContentHash see detail on https://github.com/0chain/blobber/wiki/Protocols
 func (status *UploadBlobberStatus) getContentHash() string {
-	return status.ContentHasher.GetMerkleRoot()
+	if status != nil && status.ContentHasher != nil {
+		return status.ContentHasher.GetMerkleRoot()
+	}
+
+	return ""
 }

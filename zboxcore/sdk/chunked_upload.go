@@ -3,17 +3,14 @@ package sdk
 import (
 	"context"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math"
 	"net/http"
 	"os"
 	"path/filepath"
 	"sync"
-	"time"
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
@@ -48,14 +45,16 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 
 	su := &ChunkedUpload{
 		allocationObj: allocationObj,
+		client: &http.Client{
+			Transport: zboxutil.DefaultTransport,
+		},
 
 		fileMeta:   fileMeta,
 		fileReader: fileReader,
 		fileHasher: util.NewCompactMerkleTree(func(left, right string) string {
 			return coreEncryption.Hash(left + right)
 		}),
-		progressSaveChan:   make(chan UploadProgress, 10),
-		progressRemoveChan: make(chan UploadProgress, 10),
+		progressStorer: createFsChunkedUploadProgress(context.Background()),
 
 		uploadMask:      zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1),
 		chunkSize:       DefaultChunkSize,
@@ -102,12 +101,8 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	}
 
 	// encrypt option has been chaned.upload it from scratch
-	if su.progress.EncryptOnUpload != su.encryptOnUpload {
-		su.progress = su.createUploadProgress()
-	}
-
 	// chunkSize has been changed. upload it from scratch
-	if su.progress.ChunkSize != su.chunkSize {
+	if su.progress.EncryptOnUpload != su.encryptOnUpload || su.progress.ChunkSize != su.chunkSize {
 		su.progress = su.createUploadProgress()
 	}
 
@@ -138,7 +133,6 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 		}
 	}
 
-	go su.startAutoSaveProgress()
 	return su, nil
 
 }
@@ -151,10 +145,11 @@ type ChunkedUpload struct {
 
 	allocationObj *Allocation
 
-	progress           UploadProgress
-	progressSaveChan   chan UploadProgress
-	progressRemoveChan chan UploadProgress
-	uploadMask         zboxutil.Uint128
+	progress       UploadProgress
+	progressStorer ChunkedUploadProgressStorer
+	client         zboxutil.HttpClient
+
+	uploadMask zboxutil.Uint128
 
 	// httpMethod POST = Upload File / PUT = Update file
 	httpMethod  string
@@ -198,79 +193,24 @@ func (su *ChunkedUpload) progressID() string {
 // loadProgress load progress from ~/.zcn/upload/[progressID]
 func (su *ChunkedUpload) loadProgress() {
 	progressID := su.progressID()
-	buf, err := ioutil.ReadFile(progressID)
 
-	if errors.Is(err, os.ErrNotExist) {
-		logger.Logger.Info("[upload] init progress: ", progressID)
-		su.progress = su.createUploadProgress()
-		return
+	progress := su.progressStorer.Load(progressID)
+
+	if progress != nil {
+		su.progress = *progress
+		su.progress.ID = progressID
 	}
 
-	progress := UploadProgress{}
-	if err := json.Unmarshal(buf, &progress); err != nil {
-		logger.Logger.Info("[upload] init progress failed: ", err, ", upload it from scratch")
-		su.progress = su.createUploadProgress()
-		return
-	}
-
-	su.progress = progress
-	su.progress.ID = progressID
-}
-
-// startAutoSaveProgress a background save worker is running in a single thread for higher perfornamce. Because `json.Marshal` hits performance issue.
-func (su *ChunkedUpload) startAutoSaveProgress() {
-
-	var progress *UploadProgress
-	delay, cancel := context.WithTimeout(context.TODO(), 1*time.Second)
-
-	defer cancel()
-
-	for {
-
-		select {
-		case it := <-su.progressSaveChan:
-
-			progress = &it
-		case it := <-su.progressRemoveChan:
-
-			err := os.Remove(it.ID)
-			if err != nil {
-				if !errors.Is(err, os.ErrNotExist) {
-					logger.Logger.Error("[upload] remove progress: ", err)
-				}
-			}
-			break
-		case <-delay.Done():
-
-			if progress != nil {
-				buf, err := json.Marshal(progress)
-				if err != nil {
-					logger.Logger.Error("[upload] save progress: ", err)
-				}
-				progressID := progress.ID
-				err = ioutil.WriteFile(progressID, buf, 0644)
-				if err != nil {
-					logger.Logger.Error("[upload] save progress: ", progressID, err)
-				}
-
-				progress = nil
-			}
-
-			delay, cancel = context.WithTimeout(context.TODO(), 1*time.Second)
-
-		}
-
-	}
 }
 
 // saveProgress save progress to ~/.zcn/upload/[progressID]
 func (su *ChunkedUpload) saveProgress() {
-	go func() { su.progressSaveChan <- su.progress }()
+	su.progressStorer.Save(&su.progress)
 }
 
 // removeProgress remove progress info once it is done
 func (su *ChunkedUpload) removeProgress() {
-	go func() { su.progressRemoveChan <- su.progress }()
+	su.progressStorer.Remove(su.progress.ID)
 }
 
 // createUploadProgress create a new UploadProgress
@@ -385,10 +325,12 @@ func (su *ChunkedUpload) Start() error {
 		}
 	}
 
-	if su.isConsensusOk() {
-		logger.Logger.Info("Completed the upload. Submitting for commit")
-		return su.processCommit()
-	}
+	// if su.isConsensusOk() {
+	// 	logger.Logger.Info("Completed the upload. Submitting for commit")
+	// 	return su.processCommit()
+	// }
+
+	return nil
 
 	err := fmt.Errorf("Upload failed: Consensus_rate:%f, expected:%f", su.getConsensusRate(), su.getConsensusRequiredForOk())
 	if su.statusCallback != nil {
