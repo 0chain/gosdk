@@ -11,11 +11,11 @@ func TestFormat(t *testing.T) {
 	require.Equal(t, "12.938 ZCN", token.Format(ZCN))
 	require.Equal(t, "12938.213 mZCN", token.Format(MZCN))
 	require.Equal(t, "12938212.932 uZCN", token.Format(UZCN))
-	require.Equal(t, "129382129321.000 SAS", token.Format(SAS))
+	require.Equal(t, "129382129321 SAS", token.Format(SAS))
 }
 
 func TestAutoFormat(t *testing.T) {
-	require.Equal(t, "239.000 SAS", Balance(239).AutoFormat())
+	require.Equal(t, "239 SAS", Balance(239).AutoFormat())
 	require.Equal(t, "2.736 uZCN", Balance(27361).AutoFormat())
 	require.Equal(t, "2.387 mZCN", Balance(23872013).AutoFormat())
 	require.Equal(t, "20.383 ZCN", Balance(203827162834).AutoFormat())

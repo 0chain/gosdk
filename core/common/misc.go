@@ -101,7 +101,7 @@ func (b Balance) Format(unit BalanceUnit) string {
 	v := float64(b)
 	switch unit {
 	case SAS:
-		v /= 1e0
+		return fmt.Sprintf("%d %v", b, unit)
 	case UZCN:
 		v /= 1e4
 	case MZCN:
