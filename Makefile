@@ -61,10 +61,10 @@ clean: clean-gosdk clean-herumi
 	@rm -rf $(OUTDIR)
 
 lint-wasm:
-	GOOS=js GOARCH=wasm CGO_ENABLED=0 $(GOPATH)/bin/golangci-lint run wasm
+	GOOS=js GOARCH=wasm CGO_ENABLED=0 golangci-lint run wasm
 
 lint: lint-wasm
-	$(GOPATH)/bin/golangci-lint run --skip-dirs wasm
+	golangci-lint run --skip-dirs wasm
 
 help:
 	@echo "Environment: "
