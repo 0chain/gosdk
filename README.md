@@ -62,4 +62,3 @@ It is possible to support the sdk for other variations of Linux as well.
 - [About XCode](https://developer.apple.com/xcode/)
 - [Android Studio](https://developer.android.com/studio)
 - [Android NDK](https://developer.android.com/ndk/)
-
