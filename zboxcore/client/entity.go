@@ -7,19 +7,21 @@ import (
 )
 
 type Client struct {
-	Wallet                *zcncrypto.Wallet `json:"wallet"`
-	SignatureSchemeString string            `json:"signature_scheme"`
+	*zcncrypto.Wallet
+	signatureSchemeString string `json:"signature_scheme"`
 }
 
 var client *Client
 
 func init() {
-	client = &Client{}
+	client = &Client{
+		Wallet: &zcncrypto.Wallet{},
+	}
 }
 
 func PopulateClient(clientjson string, signatureScheme string) error {
 	err := json.Unmarshal([]byte(clientjson), &client)
-	client.SignatureSchemeString = signatureScheme
+	client.signatureSchemeString = signatureScheme
 	return err
 }
 
@@ -38,7 +40,7 @@ func GetClientPublicKey() string {
 func Sign(hash string) (string, error) {
 	retSignature := ""
 	for _, kv := range client.Wallet.Keys {
-		ss := zcncrypto.NewSignatureScheme(client.SignatureSchemeString)
+		ss := zcncrypto.NewSignatureScheme(client.signatureSchemeString)
 		ss.SetPrivateKey(kv.PrivateKey)
 		var err error
 		if len(retSignature) == 0 {
@@ -54,7 +56,7 @@ func Sign(hash string) (string, error) {
 }
 
 func VerifySignature(signature string, msg string) (bool, error) {
-	ss := zcncrypto.NewSignatureScheme(client.SignatureSchemeString)
+	ss := zcncrypto.NewSignatureScheme(client.signatureSchemeString)
 	ss.SetPublicKey(client.Wallet.ClientKey)
 	return ss.Verify(signature, msg)
 }

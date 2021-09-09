@@ -91,10 +91,6 @@ func InitStorageSDK(this js.Value, p []js.Value) interface{} {
 			resolve.Invoke(true)
 		}()
 
-		// SdkInitialized need to set to 'true' if err is nil.
-		// This will be available when other function that need sdk
-		// to be preset is called in WASM
-		sdk.SdkInitialized = true
 		return nil
 	})
 

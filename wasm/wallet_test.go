@@ -85,13 +85,20 @@ func TestNetwork(t *testing.T) {
 		t.Errorf("got %#v, want %#v", got, fmt.Sprintf("{\"miners\":[%#v],\"sharders\":[%#v]}", miner.URL+"/miner01", sharder.URL+"/sharder01"))
 	}
 
+	var miner_dummy = js.Global().Call("eval", fmt.Sprintf("({minerString: %#v})", miner.URL+"/miner02"))
+
+	var sharders_dummy = js.Global().Call("eval", fmt.Sprintf("({shardersArray: [%#v, %#v]})", sharder.URL+"/sharder02", sharder.URL+"/sharder03"))
+
 	setNetwork := js.FuncOf(SetNetwork)
 	defer setNetwork.Release()
 
-	setNetwork.Invoke(miner.URL+"/miner03", sharder.URL+"/sharder03")
+	miners := miner_dummy.Get("minerString")
+	sharders := sharders_dummy.Get("shardersArray")
 
-	if got := getNetworkJSON.Invoke().String(); got != fmt.Sprintf("{\"miners\":[%#v],\"sharders\":[%#v]}", miner.URL+"/miner03", sharder.URL+"/sharder03") {
-		t.Errorf("got %#v, want %#v", got, fmt.Sprintf("{\"miners\":[%#v],\"sharders\":[%#v]}", miner.URL+"/miner03", sharder.URL+"/sharder03"))
+	setNetwork.Invoke(miners, sharders)
+
+	if got := getNetworkJSON.Invoke().String(); got != fmt.Sprintf("{\"miners\":[%#v],\"sharders\":[%#v,%#v]}", miner.URL+"/miner02", sharder.URL+"/sharder02", sharder.URL+"/sharder03") {
+		t.Errorf("got %#v, want %#v", got, fmt.Sprintf("{\"miners\":[%#v],\"sharders\":[%#v,%#v]}", miner.URL+"/miner02", sharder.URL+"/sharder02", sharder.URL+"/sharder03"))
 	}
 }
 

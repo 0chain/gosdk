@@ -52,10 +52,10 @@ func UpdateNetworkDetails() error {
 
 	shouldUpdate := UpdateRequired(networkDetails)
 	if shouldUpdate {
-		SdkInitialized = false
+		sdkInitialized = false
 		blockchain.SetMiners(networkDetails.Miners)
 		blockchain.SetSharders(networkDetails.Sharders)
-		SdkInitialized = true
+		sdkInitialized = true
 	}
 	return nil
 }

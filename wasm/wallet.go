@@ -66,10 +66,50 @@ func InitZCNSDK(this js.Value, p []js.Value) interface{} {
 }
 
 func SetNetwork(this js.Value, p []js.Value) interface{} {
-	miners := []string{p[0].String()}
-	sharders := []string{p[1].String()}
-	zcncore.SetNetwork(miners, sharders)
-	return nil
+	var miners []string
+	var sharders []string
+	jsMiners := p[0]
+	jsSharders := p[1]
+
+	if got := js.Global().Get("Array").Call("isArray", jsMiners).Bool(); got {
+		for i := 0; i < jsMiners.Length(); i++ {
+			if got := jsMiners.Index(i).Type().String(); got == "string" {
+				miners = append(miners, jsMiners.Index(i).String())
+			} else {
+				return map[string]interface{}{
+					"error": fmt.Sprintf("SetNetwork failed. Reason: expected type \"string\". got=%#v", jsMiners.Index(i).Type().String()),
+				}
+			}
+		}
+	}
+
+	if got := jsMiners.Type().String(); got == "string" {
+		miners = append(miners, jsMiners.String())
+	}
+
+	if got := js.Global().Get("Array").Call("isArray", jsSharders).Bool(); got {
+		for i := 0; i < jsSharders.Length(); i++ {
+			if got := jsSharders.Index(i).Type().String(); got == "string" {
+				sharders = append(sharders, jsSharders.Index(i).String())
+			} else {
+				return map[string]interface{}{
+					"error": fmt.Sprintf("SetNetwork failed. Reason: expected type \"string\". got=%#v", jsSharders.Index(i).Type().String()),
+				}
+			}
+		}
+	}
+
+	if got := jsSharders.Type().String(); got == "string" {
+		sharders = append(sharders, jsSharders.String())
+	}
+
+	if len(miners) > 0 && len(sharders) > 0 {
+		zcncore.SetNetwork(miners, sharders)
+	}
+
+	return map[string]interface{}{
+		"error": "SetNetwork failed. Reason: empty miners or sharders",
+	}
 }
 
 func GetNetworkJSON(this js.Value, p []js.Value) interface{} {
