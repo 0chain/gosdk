@@ -93,6 +93,10 @@ const (
 	// Used to fetch provider registered info.
 	ProviderRegisteredRP = "/providerExist"
 
+	// MinStakeFetchRP represents MagmaSC relative path.
+	// Used to fetch min stake configured value.
+	MinStakeFetchRP = "/minStakeFetch"
+
 	// providerType contents a value of provider node type.
 	providerType = "provider"
 )

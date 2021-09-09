@@ -178,3 +178,19 @@ func IsProviderRegisteredRP(extID string) (bool, error) {
 
 	return registered, nil
 }
+
+// MinStakeFetch makes smart contract rest api call to magma smart contract
+// MinStakeFetchRP rest point to fetch configured min stake value.
+func MinStakeFetch() (int64, error) {
+	minStakeByt, err := http.MakeSCRestAPICall(Address, MinStakeFetchRP, make(map[string]string))
+	if err != nil {
+		return 0, err
+	}
+
+	var minStake int64
+	if err := json.Unmarshal(minStakeByt, &minStake); err != nil {
+		return 0, err
+	}
+
+	return minStake, nil
+}

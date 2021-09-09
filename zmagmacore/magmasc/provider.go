@@ -16,6 +16,7 @@ type (
 		ExtID    string `json:"ext_id"`
 		Host     string `json:"host,omitempty"`
 		MinStake int64  `json:"min_stake,omitempty"`
+		minStake bool
 	}
 )
 
@@ -30,7 +31,7 @@ func NewProviderFromCfg(cfg *config.Provider) *Provider {
 		ID:       node.ID(),
 		ExtID:    cfg.ExtID,
 		Host:     cfg.Host,
-		MinStake: cfg.MinStake,
+		minStake: cfg.MinStake,
 	}
 }
 

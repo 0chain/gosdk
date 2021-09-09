@@ -2,37 +2,18 @@ package registration
 
 import (
 	"context"
-
-	"github.com/0chain/gosdk/zmagmacore/magmasc"
 )
 
 type (
-	// Node represent bandwidth-marketplace node that can be registered.
+	// Node represent bandwidth-marketplace node that can be registered and updated.
 	Node interface {
-		// RegistrationFuncName returns name of magma sc function used for registration Node.
-		RegistrationFuncName() string
+		// Register executes registration function of the Magma Smart Contract.
+		Register(context.Context) (Node, error)
 
-		// UpdateNodeFuncName returns name of magma sc function used for updating Node.
-		UpdateNodeFuncName() string
+		// Update executes update function of the Magma Smart Contract.
+		Update(context.Context) (Node, error)
 
-		// IsNodeRegisteredRP returns name of magma sc relative path for checking registration of Node.
-		IsNodeRegisteredRP() string
-
-		// ExternalID returns external ID of Node
-		ExternalID() string
-
-		// Encode encodes Node in json bytes.
-		Encode() []byte
+		// IsNodeRegistered calls rest point of the Magma Smart Contract and checks is node already registered.
+		IsNodeRegistered() (bool, error)
 	}
-
-	// executeSmartContract represent types for functions that executes sc functions.
-	executeSmartContract func(ctx context.Context, node Node) (string, error)
-)
-
-var (
-	// Ensure Consumer implements interface.
-	_ Node = (*magmasc.Consumer)(nil)
-
-	// Ensure Provider implements interface.
-	_ Node = (*magmasc.Provider)(nil)
 )
