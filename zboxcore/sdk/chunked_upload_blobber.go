@@ -82,7 +82,7 @@ func (sb *ChunkedUploadBobbler) processUpload(su *ChunkedUpload, chunkIndex int,
 		IsFinal:      isFinal,
 		ChunkSize:    int64(su.chunkSize),
 		ChunkIndex:   chunkIndex,
-		UploadOffset: int64(su.chunkSize * chunkIndex),
+		UploadOffset: su.chunkSize * int64(chunkIndex),
 	}
 
 	formWriter := multipart.NewWriter(body)

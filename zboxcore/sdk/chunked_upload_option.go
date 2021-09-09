@@ -44,7 +44,7 @@ func WithThumbnailFile(fileName string) ChunkedUploadOption {
 }
 
 // WithChunkSize set custom chunk size. ignore if size <=0
-func WithChunkSize(size int) ChunkedUploadOption {
+func WithChunkSize(size int64) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		if size > 0 {
 			su.chunkSize = size

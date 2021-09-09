@@ -204,7 +204,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		size = fileRef.ActualThumbnailSize
 	}
 	req.encryptedKey = fileRef.EncryptedKey
-	req.chunkSize = fileRef.ChunkSize
+	req.chunkSize = int(fileRef.ChunkSize)
 	Logger.Info("Encrypted key from fileref", req.encryptedKey)
 	// Calculate number of bytes per shard.
 	perShard := (size + int64(req.datashards) - 1) / int64(req.datashards)
@@ -266,7 +266,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			req.isDownloadCanceled = false
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("","Download aborted by user"))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "Download aborted by user"))
 			}
 			return
 		}
@@ -309,7 +309,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		if expectedHash != merkleRoot {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("","File content didn't match with uploaded file"))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "File content didn't match with uploaded file"))
 			}
 			return
 		}

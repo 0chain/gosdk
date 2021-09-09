@@ -104,7 +104,7 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 		su.progress = su.createUploadProgress()
 	}
 
-	su.fileErasureEncoder, _ = reedsolomon.New(su.allocationObj.DataShards, su.allocationObj.ParityShards, reedsolomon.WithAutoGoroutines(su.chunkSize))
+	su.fileErasureEncoder, _ = reedsolomon.New(su.allocationObj.DataShards, su.allocationObj.ParityShards, reedsolomon.WithAutoGoroutines(int(su.chunkSize)))
 
 	if su.encryptOnUpload {
 		su.fileEncscheme = su.createEncscheme()
@@ -175,7 +175,7 @@ type ChunkedUpload struct {
 	// encryptOnUpload encrypt data on upload or not.
 	encryptOnUpload bool
 	// chunkSize how much bytes a chunk has. 64KB is default value.
-	chunkSize int
+	chunkSize int64
 
 	// shardUploadedSize how much bytes a shard has. it is original size
 	shardUploadedSize int64
@@ -232,7 +232,7 @@ func (su *ChunkedUpload) createUploadProgress() UploadProgress {
 
 	for i := 0; i < len(progress.Blobbers); i++ {
 		progress.Blobbers[i] = &UploadBlobberStatus{
-			ChallengeHasher: &util.FixedMerkleTree{ChunkSize: su.chunkSize},
+			ChallengeHasher: &util.FixedMerkleTree{ChunkSize: int(su.chunkSize)},
 			ContentHasher: util.NewCompactMerkleTree(func(left, right string) string {
 				return coreEncryption.Hash(left + right)
 			}),
@@ -275,7 +275,7 @@ func (su *ChunkedUpload) Start() error {
 		su.statusCallback.Started(su.allocationObj.ID, su.fileMeta.RemotePath, OpUpload, int(su.fileMeta.ActualSize)+int(su.fileMeta.ActualThumbnailSize))
 	}
 
-	for i := 0; ; i++ {
+	for {
 
 		chunk, err := su.chunkReader.Next()
 
@@ -283,25 +283,19 @@ func (su *ChunkedUpload) Start() error {
 			return err
 		}
 
-		fileShards := chunk.Fragments
+		su.shardUploadedSize += chunk.FragmentSize
+		su.progress.UploadLength += chunk.ReadSize
 
-		readLen := chunk.Size
-		chunkSize := chunk.FragmentSize
-		isFinal := chunk.IsFinal
-
-		su.shardUploadedSize += chunkSize
-		su.progress.UploadLength += int64(readLen)
-
-		if i == 0 && len(su.thumbnailBytes) > 0 {
+		if chunk.Index == 0 && len(su.thumbnailBytes) > 0 {
 			su.progress.UploadLength += int64(su.fileMeta.ActualThumbnailSize)
 		}
 
 		//skip chunk if it has been uploaded
-		if i < su.progress.ChunkIndex {
+		if chunk.Index < su.progress.ChunkIndex {
 			continue
 		}
 
-		if isFinal {
+		if chunk.IsFinal {
 			su.fileMeta.ActualHash, err = su.fileHasher.GetFileHash()
 			if err != nil {
 				return err
@@ -312,24 +306,24 @@ func (su *ChunkedUpload) Start() error {
 			}
 		}
 
-		// upload entire thumbnail in first reqeust only
-		if i == 0 && len(su.thumbnailBytes) > 0 {
+		// upload entire thumbnail in first request only
+		if chunk.Index == 0 && len(su.thumbnailBytes) > 0 {
 
-			thumbnailShards, err := su.readThumbnailShards()
+			thumbnailFragments, err := su.chunkReader.Read(su.thumbnailBytes)
 			if err != nil {
 				return err
 			}
 
-			su.processUpload(i, fileShards, thumbnailShards, isFinal, readLen)
+			su.processUpload(chunk.Index, chunk.Fragments, thumbnailFragments, chunk.IsFinal, chunk.ReadSize)
 
 		} else {
-			su.processUpload(i, fileShards, nil, isFinal, readLen)
+			su.processUpload(chunk.Index, chunk.Fragments, nil, chunk.IsFinal, chunk.ReadSize)
 		}
 
 		// last chunk might 0 with io.EOF
 		// https://stackoverflow.com/questions/41208359/how-to-test-eof-on-io-reader-in-go
-		if readLen > 0 {
-			su.progress.ChunkIndex = i
+		if chunk.ReadSize > 0 {
+			su.progress.ChunkIndex = chunk.Index
 			su.saveProgress()
 
 			if su.statusCallback != nil {
@@ -337,7 +331,7 @@ func (su *ChunkedUpload) Start() error {
 			}
 		}
 
-		if isFinal {
+		if chunk.IsFinal {
 			break
 		}
 	}

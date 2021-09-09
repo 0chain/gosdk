@@ -97,7 +97,7 @@ type Ref struct {
 	Size           int64      `json:"size"`
 	ActualSize     int64      `json:"actual_file_size"`
 	Hash           string     `json:"hash"`
-	ChunkSize      int        `json:"chunk_size"`
+	ChunkSize      int64      `json:"chunk_size"`
 	NumBlocks      int64      `json:"num_of_blocks"`
 	PathHash       string     `json:"path_hash"`
 	LookupHash     string     `json:"lookup_hash"`
@@ -224,7 +224,7 @@ func (fr *FileRef) GetHashData() string {
 	hashArray = append(hashArray, fr.ActualFileHash)
 	var attrs, _ = json.Marshal(&fr.Attributes)
 	hashArray = append(hashArray, string(attrs))
-	hashArray = append(hashArray, strconv.Itoa(fr.ChunkSize))
+	hashArray = append(hashArray, strconv.FormatInt(fr.ChunkSize, 10))
 	return strings.Join(hashArray, ":")
 }
 

@@ -87,7 +87,7 @@ type UploadProgress struct {
 	ID string `json:"id"`
 
 	// ChunkSize size of chunk
-	ChunkSize int `json:"chunk_size,omitempty"`
+	ChunkSize int64 `json:"chunk_size,omitempty"`
 	// EncryptOnUpload encrypt data on upload or not
 	EncryptOnUpload  bool `json:"is_encrypted,omitempty"`
 	EncryptPrivteKey string

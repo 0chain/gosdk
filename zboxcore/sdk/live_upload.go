@@ -14,7 +14,7 @@ type LiveUpload struct {
 	// encryptOnUpload encrypt data on upload or not.
 	encryptOnUpload bool
 	// chunkSize how much bytes a chunk has. 64KB is default value.
-	chunkSize int
+	chunkSize int64
 
 	clipsIndex int
 

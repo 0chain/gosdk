@@ -16,7 +16,7 @@ func WithLiveDelay(delaySeconds int) LiveUploadOption {
 func WithLiveChunkSize(size int) LiveUploadOption {
 	return func(lu *LiveUpload) {
 		if size > 0 {
-			lu.chunkSize = size
+			lu.chunkSize = int64(size)
 		}
 	}
 }

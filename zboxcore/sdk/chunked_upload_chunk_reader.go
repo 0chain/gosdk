@@ -8,14 +8,16 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/encryption"
-	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
 )
 
 type ChunkReader interface {
-	// GetChunkDataSize() int64
+	// Next read, encode and encrypt next chunk
 	Next() (*ChunkData, error)
+
+	// Read read, encode and encrypt all bytes
+	Read(buf []byte) ([][]byte, error)
 }
 
 // chunkReader read chunk bytes from io.Reader. see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-fixedmerkletree
@@ -32,7 +34,7 @@ type chunkReader struct {
 	chunkDataSizePerRead int64
 
 	// nextChunkIndex next index for reading
-	nextChunkIndex int64
+	nextChunkIndex int
 
 	dataShards int
 
@@ -93,12 +95,12 @@ func createChunkReader(fileReader io.Reader, chunkSize int64, dataShards int, en
 // ChunkData data of a chunk
 type ChunkData struct {
 	// Index current index of chunks
-	Index int64
+	Index int
 	// IsFinal last chunk or not
 	IsFinal bool
 
-	// Size total size read from original reader (un-encoded, un-encrypted)
-	Size int64
+	// ReadSize total size read from original reader (un-encoded, un-encrypted)
+	ReadSize int64
 	// FragmentSize fragment size for a blobber (un-encrypted)
 	FragmentSize int64
 	// Fragments data shared for bloobers
@@ -123,7 +125,7 @@ func (r *chunkReader) Next() (*ChunkData, error) {
 		Index:   r.nextChunkIndex,
 		IsFinal: false,
 
-		Size:         0,
+		ReadSize:     0,
 		FragmentSize: 0,
 	}
 
@@ -151,7 +153,7 @@ func (r *chunkReader) Next() (*ChunkData, error) {
 		chunk.IsFinal = true
 	}
 
-	chunk.Size = int64(readLen)
+	chunk.ReadSize = int64(readLen)
 
 	err = r.hasher.WriteToFile(chunkBytes, chunk.Index)
 	if err != nil {
@@ -160,7 +162,6 @@ func (r *chunkReader) Next() (*ChunkData, error) {
 
 	fragments, err := r.erasureEncoder.Split(chunkBytes)
 	if err != nil {
-		logger.Logger.Error("[upload] Erasure coding on thumbnail failed:", err.Error())
 		return nil, err
 	}
 
@@ -175,7 +176,6 @@ func (r *chunkReader) Next() (*ChunkData, error) {
 			pos = uint64(i.TrailingZeros())
 			encMsg, err := r.encscheme.Encrypt(fragments[pos])
 			if err != nil {
-				logger.Logger.Error("[upload] Encryption on thumbnail failed:", err.Error())
 				return nil, err
 			}
 			header := make([]byte, 2*1024)
@@ -187,4 +187,43 @@ func (r *chunkReader) Next() (*ChunkData, error) {
 	chunk.Fragments = fragments
 	r.nextChunkIndex++
 	return chunk, nil
+}
+
+// Read read, encode and encrypt all bytes
+func (r *chunkReader) Read(buf []byte) ([][]byte, error) {
+
+	if buf == nil {
+		return nil, nil
+	}
+
+	if r == nil {
+		return nil, errors.Throw(constants.ErrInvalidParameter, "r")
+	}
+
+	fragments, err := r.erasureEncoder.Split(buf)
+	if err != nil {
+		return nil, err
+	}
+
+	err = r.erasureEncoder.Encode(fragments)
+	if err != nil {
+		return nil, err
+	}
+
+	var c, pos uint64
+	if r.encryptOnUpload {
+		for i := r.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+			pos = uint64(i.TrailingZeros())
+			encMsg, err := r.encscheme.Encrypt(fragments[pos])
+			if err != nil {
+				return nil, err
+			}
+			header := make([]byte, 2*1024)
+			copy(header[:], encMsg.MessageChecksum+","+encMsg.OverallChecksum)
+			fragments[pos] = append(header, encMsg.EncryptedData...)
+			c++
+		}
+	}
+
+	return fragments, nil
 }

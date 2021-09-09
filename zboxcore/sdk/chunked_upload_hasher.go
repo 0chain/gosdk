@@ -9,7 +9,7 @@ import (
 type Hasher interface {
 	GetFileHash() (string, error)
 	// WriteToFile write bytes to file hasher
-	WriteToFile(buf []byte, chunkIndex int64) error
+	WriteToFile(buf []byte, chunkIndex int) error
 }
 
 type hasher struct {
@@ -37,7 +37,7 @@ func (h *hasher) GetFileHash() (string, error) {
 }
 
 // WriteToFile write bytes to file hasher
-func (h *hasher) WriteToFile(buf []byte, chunkIndex int64) error {
+func (h *hasher) WriteToFile(buf []byte, chunkIndex int) error {
 	if h == nil {
 		return errors.Throw(constants.ErrInvalidParameter, "h")
 	}
@@ -46,5 +46,5 @@ func (h *hasher) WriteToFile(buf []byte, chunkIndex int64) error {
 		return errors.Throw(constants.ErrInvalidParameter, "h.File")
 	}
 
-	return h.File.AddDataBlocks(buf, int(chunkIndex))
+	return h.File.AddDataBlocks(buf, chunkIndex)
 }
