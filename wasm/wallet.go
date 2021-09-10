@@ -54,13 +54,12 @@ func InitZCNSDK(this js.Value, p []js.Value) interface{} {
 			if err != nil {
 				reject.Invoke(err.Error())
 			}
-			resolve.Invoke()
+			resolve.Invoke(true)
 		}()
 
 		return nil
 	})
 
-	// Create and return the Promise object
 	promiseConstructor := js.Global().Get("Promise")
 	return promiseConstructor.New(handler)
 }
@@ -257,7 +256,7 @@ func IsMnemonicValid(this js.Value, p []js.Value) interface{} {
 
 func SetWalletInfo(this js.Value, p []js.Value) interface{} {
 	s_wallet := p[0].String()
-	splitKeyWallet, _ := strconv.ParseBool(p[1].String())
+	splitKeyWallet := p[1].Bool()
 	err := zcncore.SetWalletInfo(s_wallet, splitKeyWallet)
 	if err != nil {
 		return map[string]interface{}{

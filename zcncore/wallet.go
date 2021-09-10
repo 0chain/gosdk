@@ -244,7 +244,7 @@ func GetMinShardersVerify() int {
 
 func getMinShardersVerify() int {
 	minSharders := util.MaxInt(calculateMinRequired(float64(_config.chain.MinConfirmation), float64(len(_config.chain.Sharders))/100), 1)
-	// Logger.Info("Minimum sharders used for verify :", minSharders)
+	Logger.Info("Minimum sharders used for verify :", 1)
 	return minSharders
 }
 func getMinRequiredChainLength() int64 {
