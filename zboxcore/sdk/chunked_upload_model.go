@@ -4,7 +4,6 @@ import (
 	"hash/fnv"
 	"strconv"
 
-	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
@@ -104,28 +103,8 @@ type UploadProgress struct {
 
 // UploadBlobberStatus the status of blobber's upload progress
 type UploadBlobberStatus struct {
-	ChallengeHasher *util.FixedMerkleTree   `json:"challenge_hasher"`
-	ContentHasher   *util.CompactMerkleTree `json:"content_hashser"`
+	Hasher Hasher
 
 	// UploadLength total bytes that has been uploaded to blobbers
 	UploadLength int64 `json:"upload_length,omitempty"`
-}
-
-// getChallengeHash see detail on https://github.com/0chain/blobber/wiki/Protocols
-func (status *UploadBlobberStatus) getChallengeHash() string {
-	if status != nil && status.ChallengeHasher != nil {
-		return status.ChallengeHasher.GetMerkleRoot()
-	}
-
-	return ""
-
-}
-
-// getContentHash see detail on https://github.com/0chain/blobber/wiki/Protocols
-func (status *UploadBlobberStatus) getContentHash() string {
-	if status != nil && status.ContentHasher != nil {
-		return status.ContentHasher.GetMerkleRoot()
-	}
-
-	return ""
 }

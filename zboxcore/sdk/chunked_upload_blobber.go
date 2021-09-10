@@ -3,11 +3,8 @@ package sdk
 import (
 	"bytes"
 	"context"
-	"crypto/sha1"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -39,14 +36,12 @@ type ChunkedUploadBobbler struct {
 	commitResult  *CommitResult
 }
 
-// processHash update ChallengeHash and ContentHash
-func (sb *ChunkedUploadBobbler) processHash(fileBytes []byte, chunkHash string, chunkIndex int) {
-	sb.progress.ChallengeHasher.Write(fileBytes, chunkIndex)
-	sb.progress.ContentHasher.AddLeaf(chunkHash, chunkIndex)
-}
-
 func (sb *ChunkedUploadBobbler) processUpload(su *ChunkedUpload, chunkIndex int, fileBytes, thumbnailBytes []byte, isFinal bool, wg *sync.WaitGroup) {
 	defer wg.Done()
+	encryptedKey := ""
+	if su.fileEncscheme != nil {
+		encryptedKey = su.fileEncscheme.GetEncryptedKey()
+	}
 
 	if len(fileBytes) == 0 {
 		//fixed fileRef in last chunk on stream. io.EOF with nil bytes
@@ -57,97 +52,101 @@ func (sb *ChunkedUploadBobbler) processUpload(su *ChunkedUpload, chunkIndex int,
 			sb.fileRef.ActualFileHash = su.fileMeta.ActualHash
 			sb.fileRef.ActualFileSize = su.fileMeta.ActualSize
 
-			sb.fileRef.EncryptedKey = su.fileEncscheme.GetEncryptedKey()
+			sb.fileRef.EncryptedKey = encryptedKey
 			sb.fileRef.CalculateHash()
 		}
 
 		return
 	}
 
-	body := new(bytes.Buffer)
+	body, formData, err := su.formBuilder.Build(&su.fileMeta, sb.progress.Hasher, su.progress.ConnectionID, su.chunkSize, chunkIndex, isFinal, encryptedKey, fileBytes, thumbnailBytes)
 
-	formData := UploadFormData{
-		ConnectionID: su.progress.ConnectionID,
-		Filename:     su.fileMeta.RemoteName,
-		Path:         su.fileMeta.RemotePath,
+	// body := new(bytes.Buffer)
 
-		ActualSize: su.fileMeta.ActualSize,
+	// formData := UploadFormData{
+	// 	ConnectionID: su.progress.ConnectionID,
+	// 	Filename:     su.fileMeta.RemoteName,
+	// 	Path:         su.fileMeta.RemotePath,
 
-		ActualThumbHash: su.fileMeta.ActualThumbnailHash,
-		ActualThumbSize: su.fileMeta.ActualThumbnailSize,
+	// 	ActualSize: su.fileMeta.ActualSize,
 
-		MimeType:   su.fileMeta.MimeType,
-		Attributes: su.fileMeta.Attributes,
+	// 	ActualThumbHash: su.fileMeta.ActualThumbnailHash,
+	// 	ActualThumbSize: su.fileMeta.ActualThumbnailSize,
 
-		IsFinal:      isFinal,
-		ChunkSize:    int64(su.chunkSize),
-		ChunkIndex:   chunkIndex,
-		UploadOffset: su.chunkSize * int64(chunkIndex),
-	}
+	// 	MimeType:   su.fileMeta.MimeType,
+	// 	Attributes: su.fileMeta.Attributes,
 
-	formWriter := multipart.NewWriter(body)
+	// 	IsFinal:      isFinal,
+	// 	ChunkSize:    int64(su.chunkSize),
+	// 	ChunkIndex:   chunkIndex,
+	// 	UploadOffset: su.chunkSize * int64(chunkIndex),
+	// }
 
-	uploadFile, err := formWriter.CreateFormFile("uploadFile", formData.Filename)
-	if err != nil {
-		logger.Logger.Error("[upload] Create form on field [uploadFile] failed: ", err)
-		return
-	}
+	// formWriter := multipart.NewWriter(body)
 
-	chunkHashWriter := sha1.New()
-	chunkWriters := io.MultiWriter(uploadFile, chunkHashWriter)
+	// uploadFile, err := formWriter.CreateFormFile("uploadFile", formData.Filename)
+	// if err != nil {
+	// 	logger.Logger.Error("[upload] Create form on field [uploadFile] failed: ", err)
+	// 	return
+	// }
 
-	chunkWriters.Write(fileBytes)
+	// chunkHashWriter := sha1.New()
+	// chunkWriters := io.MultiWriter(uploadFile, chunkHashWriter)
 
-	formData.ChunkHash = hex.EncodeToString(chunkHashWriter.Sum(nil))
-	formData.ContentHash = formData.ChunkHash
+	// chunkWriters.Write(fileBytes)
 
-	sb.processHash(fileBytes, formData.ChunkHash, chunkIndex)
+	// formData.ChunkHash = hex.EncodeToString(chunkHashWriter.Sum(nil))
+	// formData.ContentHash = formData.ChunkHash
 
-	if isFinal {
+	// sb.processHash(fileBytes, formData.ChunkHash, chunkIndex)
 
-		//fixed shard data's info in last chunk for stream
-		formData.MerkleRoot = sb.progress.getChallengeHash()
-		formData.ContentHash = sb.progress.getContentHash()
+	// if isFinal {
 
-		//fixed original file's info in last chunk for stream
-		formData.ActualHash = su.fileMeta.ActualHash
-		formData.ActualSize = su.fileMeta.ActualSize
+	// 	//fixed shard data's info in last chunk for stream
+	// 	formData.MerkleRoot = sb.progress.getChallengeHash()
+	// 	formData.ContentHash = sb.progress.getContentHash()
 
-	}
+	// 	//fixed original file's info in last chunk for stream
+	// 	formData.ActualHash = su.fileMeta.ActualHash
+	// 	formData.ActualSize = su.fileMeta.ActualSize
 
-	thumbnailSize := len(thumbnailBytes)
-	if thumbnailSize > 0 {
+	// }
 
-		uploadThumbnailFile, err := formWriter.CreateFormFile("uploadThumbnailFile", su.fileMeta.RemoteName+".thumb")
-		if err != nil {
-			logger.Logger.Error("[upload] Create form on field [uploadThumbnailFile] failed: ", err)
-			return
-		}
+	// thumbnailSize := len(thumbnailBytes)
+	// if thumbnailSize > 0 {
 
-		thumbnailHash := sha1.New()
-		thumbnailWriters := io.MultiWriter(uploadThumbnailFile, thumbnailHash)
-		thumbnailWriters.Write(thumbnailBytes)
+	// 	uploadThumbnailFile, err := formWriter.CreateFormFile("uploadThumbnailFile", su.fileMeta.RemoteName+".thumb")
+	// 	if err != nil {
+	// 		logger.Logger.Error("[upload] Create form on field [uploadThumbnailFile] failed: ", err)
+	// 		return
+	// 	}
 
-		formData.ActualThumbSize = su.fileMeta.ActualThumbnailSize
-		formData.ThumbnailContentHash = hex.EncodeToString(thumbnailHash.Sum(nil))
+	// 	thumbnailHash := sha1.New()
+	// 	thumbnailWriters := io.MultiWriter(uploadThumbnailFile, thumbnailHash)
+	// 	thumbnailWriters.Write(thumbnailBytes)
 
-	}
+	// 	formData.ActualThumbSize = su.fileMeta.ActualThumbnailSize
+	// 	formData.ThumbnailContentHash = hex.EncodeToString(thumbnailHash.Sum(nil))
 
-	if su.encryptOnUpload {
-		formData.EncryptedKey = su.fileEncscheme.GetEncryptedKey()
+	// }
 
-		sb.fileRef.EncryptedKey = formData.EncryptedKey
-	}
-	_ = formWriter.WriteField("connection_id", su.progress.ConnectionID)
+	// if su.encryptOnUpload {
+	// 	formData.EncryptedKey = su.fileEncscheme.GetEncryptedKey()
 
-	metaData, err := json.Marshal(formData)
+	// 	sb.fileRef.EncryptedKey = formData.EncryptedKey
+	// }
+	// _ = formWriter.WriteField("connection_id", su.progress.ConnectionID)
 
-	_ = formWriter.WriteField("uploadMeta", string(metaData))
+	// metaData, err := json.Marshal(formData)
 
-	formWriter.Close()
+	// _ = formWriter.WriteField("uploadMeta", string(metaData))
+
+	// formWriter.Close()
+
 	httpreq, _ := zboxutil.NewUploadRequestWithMethod(sb.blobber.Baseurl, su.allocationObj.Tx, body, su.httpMethod)
 
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+	//httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+	httpreq.Header.Add("Content-Type", formData.ContentType)
 
 	//TODO: retry http
 	err = zboxutil.HttpClientDo(su.allocationObj.ctx, su.allocationObj.ctxCancelF, su.client, httpreq, func(resp *http.Response, err error) error {
@@ -176,16 +175,15 @@ func (sb *ChunkedUploadBobbler) processUpload(su *ChunkedUpload, chunkIndex int,
 			//req.err = err
 			return err
 		}
-		if r.Filename != formData.Filename || r.Hash != formData.ChunkHash {
-			err = fmt.Errorf("%s Unexpected upload response data %s %s %s", sb.blobber.Baseurl, formData.Filename, formData.ChunkHash, string(respbody))
+		if r.Filename != su.fileMeta.RemoteName || r.Hash != formData.ChunkHash {
+			err = fmt.Errorf("%s Unexpected upload response data %s %s %s", sb.blobber.Baseurl, su.fileMeta.RemoteName, formData.ChunkHash, string(respbody))
 			logger.Logger.Error(err)
-			//req.err = err
 			return err
 		}
 		//req.consensus++
-		logger.Logger.Info(sb.blobber.Baseurl, formData.Path, " uploaded")
+		logger.Logger.Info(sb.blobber.Baseurl, su.fileMeta.RemotePath, " uploaded")
 
-		su.Done()
+		su.consensus.Done()
 
 		return nil
 	})
@@ -205,16 +203,16 @@ func (sb *ChunkedUploadBobbler) processUpload(su *ChunkedUpload, chunkIndex int,
 
 		//fixed fileRef in last chunk on stream
 		if isFinal {
-			sb.fileRef.MerkleRoot = formData.MerkleRoot
+			sb.fileRef.MerkleRoot = formData.ChallengeHash
 			sb.fileRef.ContentHash = formData.ContentHash
 
 			sb.fileRef.ChunkSize = su.chunkSize
 			sb.fileRef.Size = su.shardUploadedSize
-			sb.fileRef.Path = formData.Path
-			sb.fileRef.ActualFileHash = formData.ActualHash
-			sb.fileRef.ActualFileSize = formData.ActualSize
+			sb.fileRef.Path = su.fileMeta.RemotePath
+			sb.fileRef.ActualFileHash = su.fileMeta.ActualHash
+			sb.fileRef.ActualFileSize = su.fileMeta.ActualSize
 
-			sb.fileRef.EncryptedKey = formData.EncryptedKey
+			sb.fileRef.EncryptedKey = encryptedKey
 			sb.fileRef.CalculateHash()
 		}
 	}
@@ -304,7 +302,7 @@ func (sb *ChunkedUploadBobbler) processCommit(su *ChunkedUpload, wg *sync.WaitGr
 	})
 
 	if err == nil {
-		su.Done()
+		su.consensus.Done()
 		return nil
 	}
 	//}

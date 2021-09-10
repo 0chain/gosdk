@@ -24,6 +24,12 @@ func (req *Consensus) Reset() {
 	req.consensus = 0
 }
 
+func (req *Consensus) getConsensus() float32 {
+	req.RLock()
+	defer req.RUnlock()
+	return req.consensus
+}
+
 func (req *Consensus) getConsensusRate() float32 {
 	req.RLock()
 	defer req.RUnlock()
