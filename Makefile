@@ -69,3 +69,15 @@ help:
 	@echo "\tmake build-tools       - Install go, jq and supporting tools required for build"
 	@echo "\tmake install           - Install gosdk"
 	@echo "\tmake clean             - Deletes all build output files"
+
+install-herumi-ubuntu:
+	@cd /tmp && \
+        wget -O - https://github.com/herumi/mcl/archive/master.tar.gz | tar xz && \
+        wget -O - https://github.com/herumi/bls/archive/master.tar.gz | tar xz && \
+        mv mcl* mcl && \
+        mv bls* bls && \
+        make -C mcl -j $(nproc) lib/libmclbn256.so install && \
+        cp mcl/lib/libmclbn256.so /usr/local/lib && \
+        make MCL_DIR=../mcl -C bls -j $(nproc) install && \
+        rm -R /tmp/mcl && \
+        rm -R /tmp/bls
