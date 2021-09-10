@@ -6,7 +6,7 @@ require (
 	github.com/0chain/errors v1.0.2
 	github.com/dgraph-io/badger/v3 v3.2103.1
 	github.com/didip/tollbooth v4.0.2+incompatible
-	github.com/ethereum/go-ethereum v1.10.3
+	github.com/ethereum/go-ethereum v1.10.8
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.7.3
 	github.com/h2non/filetype v1.0.9
