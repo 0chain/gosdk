@@ -13,6 +13,7 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.0
 	github.com/herumi/bls v0.0.0-20210731023914-2ffc4ffc1a53
 	github.com/klauspost/reedsolomon v1.9.11
+	github.com/kr/text v0.2.0 // indirect
 	github.com/lithammer/shortuuid/v3 v3.0.7
 	github.com/magma/augmented-networks/accounting/protos v0.1.1
 	github.com/miguelmota/go-ethereum-hdwallet v0.0.1

@@ -11,6 +11,7 @@ import (
 	"regexp"
 
 	"github.com/0chain/gosdk/core/zcncrypto"
+	hdwallet "github.com/0chain/gosdk/zcncore/ethhdwallet"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -18,11 +19,10 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
-	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
 	"golang.org/x/crypto/sha3"
 )
 
-// TODO channge to real wallets
+// TODO change to real wallets
 const walletAddr = "0xb9EF770B6A5e12E45983C5D80545258aA38F3B78"
 const tokenAddress = "0x28b149020d2152179873ec60bed6bf7cd705775d"
 
