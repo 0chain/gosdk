@@ -6,6 +6,39 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
+type nopeHasher struct {
+}
+
+// GetFileHash get file hash
+func (h *nopeHasher) GetFileHash() (string, error) {
+	return "", nil
+}
+
+// WriteToFile write bytes to file hasher
+func (h *nopeHasher) WriteToFile(buf []byte, chunkIndex int) error {
+	return nil
+}
+
+// GetChallengeHash get challenge hash
+func (h *nopeHasher) GetChallengeHash() (string, error) {
+	return "", nil
+}
+
+// WriteToChallenge write bytes to challenge hasher
+func (h *nopeHasher) WriteToChallenge(buf []byte, chunkIndex int) error {
+	return nil
+}
+
+// GetContentHash get content hash
+func (h *nopeHasher) GetContentHash() (string, error) {
+	return "", nil
+}
+
+// WriteHashToContent write hash leaf to content hasher
+func (h *nopeHasher) WriteHashToContent(hash string, chunkIndex int) error {
+	return nil
+}
+
 func BenchmarkFormBuilder(b *testing.B) {
 
 	KB := 1024
@@ -13,31 +46,31 @@ func BenchmarkFormBuilder(b *testing.B) {
 	GB := 1024 * MB
 
 	benchmarks := []struct {
-		Name string
-		Size int
-
+		Name            string
+		Size            int
+		Hasher          Hasher
 		ChunkSize       int
 		EncryptOnUpload bool
 	}{
-		{Name: "10M 64K", Size: MB * 10, ChunkSize: KB * 64, EncryptOnUpload: false},
-		{Name: "10M 64K", Size: MB * 10, ChunkSize: KB * 64, EncryptOnUpload: false},
-		{Name: "10M 6M", Size: MB * 10, ChunkSize: MB * 6, EncryptOnUpload: false},
-		{Name: "10M 6M", Size: MB * 10, ChunkSize: MB * 6, EncryptOnUpload: false},
+		{Name: "10M 64K", Size: MB * 10, ChunkSize: KB * 64, EncryptOnUpload: false, Hasher: createHasher(KB * 64)},
+		{Name: "10M 6M", Size: MB * 10, ChunkSize: MB * 6, EncryptOnUpload: false, Hasher: createHasher(KB * 64)},
+		{Name: "10M 64K NoHash", Size: MB * 10, ChunkSize: KB * 64, EncryptOnUpload: false, Hasher: &nopeHasher{}},
+		{Name: "10M 6M  NoHash", Size: MB * 10, ChunkSize: MB * 6, EncryptOnUpload: false, Hasher: &nopeHasher{}},
 
-		{Name: "100M 64K", Size: MB * 100, ChunkSize: KB * 64, EncryptOnUpload: false},
-		{Name: "100M 64K", Size: MB * 100, ChunkSize: KB * 64, EncryptOnUpload: false},
-		{Name: "100M 6M", Size: MB * 100, ChunkSize: MB * 6, EncryptOnUpload: false},
-		{Name: "100M 6M", Size: MB * 100, ChunkSize: MB * 6, EncryptOnUpload: false},
+		{Name: "100M 64K", Size: MB * 100, ChunkSize: KB * 64, EncryptOnUpload: false, Hasher: createHasher(KB * 64)},
+		{Name: "100M 6M", Size: MB * 100, ChunkSize: MB * 6, EncryptOnUpload: false, Hasher: createHasher(KB * 64)},
+		{Name: "100M 64K NoHash", Size: MB * 100, ChunkSize: KB * 64, EncryptOnUpload: false, Hasher: &nopeHasher{}},
+		{Name: "100M 6M  NoHash", Size: MB * 100, ChunkSize: MB * 6, EncryptOnUpload: false, Hasher: &nopeHasher{}},
 
-		{Name: "500M 64K", Size: MB * 500, ChunkSize: KB * 64, EncryptOnUpload: false},
-		{Name: "500M 64K", Size: MB * 500, ChunkSize: KB * 64, EncryptOnUpload: false},
-		{Name: "500M 6M", Size: MB * 500, ChunkSize: MB * 6, EncryptOnUpload: false},
-		{Name: "500M 6M", Size: MB * 500, ChunkSize: MB * 6, EncryptOnUpload: false},
+		{Name: "500M 64K", Size: MB * 500, ChunkSize: KB * 64, EncryptOnUpload: false, Hasher: createHasher(KB * 64)},
+		{Name: "500M 6M", Size: MB * 500, ChunkSize: MB * 6, EncryptOnUpload: false, Hasher: createHasher(KB * 64)},
+		{Name: "500M 64K NoHash", Size: MB * 500, ChunkSize: KB * 64, EncryptOnUpload: false, Hasher: &nopeHasher{}},
+		{Name: "500M 6M  NoHash", Size: MB * 500, ChunkSize: MB * 6, EncryptOnUpload: false, Hasher: &nopeHasher{}},
 
-		{Name: "1G 64K", Size: GB * 1, ChunkSize: KB * 64, EncryptOnUpload: false},
-		{Name: "1G 64K", Size: GB * 1, ChunkSize: KB * 64, EncryptOnUpload: false},
-		{Name: "1G 60M", Size: GB * 1, ChunkSize: MB * 60, EncryptOnUpload: false},
-		{Name: "1G 60M", Size: GB * 1, ChunkSize: MB * 60, EncryptOnUpload: false},
+		{Name: "1G 64K", Size: GB * 1, ChunkSize: KB * 64, EncryptOnUpload: false, Hasher: createHasher(KB * 64)},
+		{Name: "1G 60M", Size: GB * 1, ChunkSize: MB * 60, EncryptOnUpload: false, Hasher: createHasher(KB * 64)},
+		{Name: "1G 64K NoHash", Size: GB * 1, ChunkSize: KB * 64, EncryptOnUpload: false, Hasher: &nopeHasher{}},
+		{Name: "1G 60M NoHash", Size: GB * 1, ChunkSize: MB * 60, EncryptOnUpload: false, Hasher: &nopeHasher{}},
 	}
 
 	for _, bm := range benchmarks {
