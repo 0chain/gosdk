@@ -245,9 +245,9 @@ func (su *ChunkedUpload) createUploadProgress() UploadProgress {
 func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 	encscheme := encryption.NewEncryptionScheme()
 
-	if len(su.progress.EncryptPrivteKey) > 0 {
+	if len(su.progress.EncryptPrivateKey) > 0 {
 
-		privateKey, _ := hex.DecodeString(su.progress.EncryptPrivteKey)
+		privateKey, _ := hex.DecodeString(su.progress.EncryptPrivateKey)
 
 		err := encscheme.InitializeWithPrivateKey(privateKey)
 		if err != nil {
@@ -259,7 +259,7 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 			return nil
 		}
 
-		su.progress.EncryptPrivteKey = hex.EncodeToString(privateKey)
+		su.progress.EncryptPrivateKey = hex.EncodeToString(privateKey)
 	}
 
 	encscheme.InitForEncryption("filetype:audio")

@@ -81,7 +81,7 @@ func (b *formBuilder) Build(fileMeta *FileMeta, hasher Hasher, connectionID stri
 	if isFinal {
 
 		//fixed shard data's info in last chunk for stream
-		formData.MerkleRoot, err = hasher.GetChallengeHash()
+		formData.ChallengeHash, err = hasher.GetChallengeHash()
 		if err != nil {
 			return nil, metadata, err
 		}
@@ -132,7 +132,7 @@ func (b *formBuilder) Build(fileMeta *FileMeta, hasher Hasher, connectionID stri
 	}
 	metadata.ContentType = formWriter.FormDataContentType()
 	metadata.ChunkHash = formData.ChunkHash
-	metadata.ChallengeHash = formData.MerkleRoot
+	metadata.ChallengeHash = formData.ChallengeHash
 	metadata.ContentHash = formData.ContentHash
 	metadata.ThumbnailContentHash = formData.ThumbnailContentHash
 

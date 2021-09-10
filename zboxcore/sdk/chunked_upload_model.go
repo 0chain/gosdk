@@ -17,13 +17,13 @@ type FileMeta struct {
 	// ThumbnailPath local path of source thumbnail
 	ThumbnailPath string
 
-	// ActualHash hash of orignial file (unencoded, unencrypted)
+	// ActualHash hash of original file (un-encoded, un-encrypted)
 	ActualHash string
-	// ActualSize total bytes of  orignial file (unencoded, unencrypted).  it is 0 if input is live stream.
+	// ActualSize total bytes of  original file (unencoded, un-encrypted).  it is 0 if input is live stream.
 	ActualSize int64
-	// ActualThumbnailSize total bytes of orignial thumbnail (unencoded, unencrypted)
+	// ActualThumbnailSize total bytes of original thumbnail (un-encoded, un-encrypted)
 	ActualThumbnailSize int64
-	// ActualThumbnailHash hash of orignial thumbnail (unencoded, unencrypted)
+	// ActualThumbnailHash hash of original thumbnail (un-encoded, un-encrypted)
 	ActualThumbnailHash string
 
 	//RemoteName remote file name
@@ -34,7 +34,7 @@ type FileMeta struct {
 	Attributes fileref.Attributes
 }
 
-// FileID generante id of progress on local cache
+// FileID generate id of progress on local cache
 func (meta *FileMeta) FileID() string {
 
 	hash := fnv.New64a()
@@ -56,16 +56,16 @@ type UploadFormData struct {
 	// Hash hash of shard thumbnail  (encoded,encrypted)
 	ThumbnailContentHash string `json:"thumbnail_content_hash,omitempty"`
 
-	// MerkleRoot challenge hash of shard data (encoded, encrypted)
-	MerkleRoot string `json:"merkle_root,omitempty"`
+	// ChallengeHash challenge hash of shard data (encoded, encrypted)
+	ChallengeHash string `json:"merkle_root,omitempty"`
 
-	// ActualHash hash of orignial file (unencoded, unencrypted)
+	// ActualHash hash of original file (un-encoded, un-encrypted)
 	ActualHash string `json:"actual_hash,omitempty"`
-	// ActualSize total bytes of  orignial file (unencoded, unencrypted)
+	// ActualSize total bytes of original file (un-encoded, un-encrypted)
 	ActualSize int64 `json:"actual_size,omitempty"`
-	// ActualThumbnailSize total bytes of orignial thumbnail (unencoded, unencrypted)
+	// ActualThumbnailSize total bytes of original thumbnail (un-encoded, un-encrypted)
 	ActualThumbSize int64 `json:"actual_thumb_size,omitempty"`
-	// ActualThumbnailHash hash of orignial thumbnail (unencoded, unencrypted)
+	// ActualThumbnailHash hash of original thumbnail (un-encoded, un-encrypted)
 	ActualThumbHash string `json:"actual_thumb_hash,omitempty"`
 
 	MimeType     string             `json:"mimetype,omitempty"`
@@ -88,8 +88,8 @@ type UploadProgress struct {
 	// ChunkSize size of chunk
 	ChunkSize int64 `json:"chunk_size,omitempty"`
 	// EncryptOnUpload encrypt data on upload or not
-	EncryptOnUpload  bool `json:"is_encrypted,omitempty"`
-	EncryptPrivteKey string
+	EncryptOnUpload   bool   `json:"is_encrypted,omitempty"`
+	EncryptPrivateKey string `json:"-"`
 
 	// ConnectionID chunked upload connection_id
 	ConnectionID string `json:"connection_id,omitempty"`
