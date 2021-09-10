@@ -183,20 +183,25 @@ func BenchmarkChunkReader(b *testing.B) {
 		ParityShards    int
 		EncryptOnUpload bool
 	}{
-		{Name: "10M 64KB 2+1", Size: MB * 10, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: true},
-		{Name: "10M 64KB 10+1", Size: MB * 10, ChunkSize: KB * 64, DataShards: 10, ParityShards: 3, EncryptOnUpload: true},
-		{Name: "10M 6M 2+1", Size: MB * 10, ChunkSize: MB * 6, DataShards: 2, ParityShards: 1, EncryptOnUpload: true},
-		{Name: "10M 6M 10+1", Size: MB * 10, ChunkSize: MB * 6, DataShards: 10, ParityShards: 3, EncryptOnUpload: true},
+		{Name: "10M 64KB 2+1", Size: MB * 10, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+		{Name: "10M 64KB 10+1", Size: MB * 10, ChunkSize: KB * 64, DataShards: 10, ParityShards: 3, EncryptOnUpload: false},
+		{Name: "10M 6M 2+1", Size: MB * 10, ChunkSize: MB * 6, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+		{Name: "10M 6M 10+1", Size: MB * 10, ChunkSize: MB * 6, DataShards: 10, ParityShards: 3, EncryptOnUpload: false},
 
-		{Name: "100M 64KB 2+1", Size: MB * 100, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: true},
-		{Name: "100M 64KB 10+1", Size: MB * 100, ChunkSize: KB * 64, DataShards: 10, ParityShards: 3, EncryptOnUpload: true},
-		{Name: "100M 6M 2+1", Size: MB * 100, ChunkSize: MB * 6, DataShards: 2, ParityShards: 1, EncryptOnUpload: true},
-		{Name: "100M 6M 10+1", Size: MB * 100, ChunkSize: MB * 6, DataShards: 10, ParityShards: 3, EncryptOnUpload: true},
+		{Name: "100M 64KB 2+1", Size: MB * 100, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+		{Name: "100M 64KB 10+1", Size: MB * 100, ChunkSize: KB * 64, DataShards: 10, ParityShards: 3, EncryptOnUpload: false},
+		{Name: "100M 6M 2+1", Size: MB * 100, ChunkSize: MB * 6, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+		{Name: "100M 6M 10+1", Size: MB * 100, ChunkSize: MB * 6, DataShards: 10, ParityShards: 3, EncryptOnUpload: false},
 
-		{Name: "1G 64KB 2+1", Size: GB * 1, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: true},
-		{Name: "1G 64KB 10+1", Size: GB * 1, ChunkSize: KB * 64, DataShards: 10, ParityShards: 3, EncryptOnUpload: true},
-		{Name: "1G 6M 2+1", Size: GB * 1, ChunkSize: MB * 6, DataShards: 2, ParityShards: 1, EncryptOnUpload: true},
-		{Name: "1G 6M 10+1", Size: GB * 1, ChunkSize: MB * 6, DataShards: 10, ParityShards: 3, EncryptOnUpload: true},
+		{Name: "500M 64KB 2+1", Size: MB * 500, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+		{Name: "500M 64KB 10+1", Size: MB * 500, ChunkSize: KB * 64, DataShards: 10, ParityShards: 3, EncryptOnUpload: false},
+		{Name: "500M 6M 2+1", Size: MB * 500, ChunkSize: MB * 6, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+		{Name: "500M 6M 10+1", Size: MB * 500, ChunkSize: MB * 6, DataShards: 10, ParityShards: 3, EncryptOnUpload: false},
+
+		{Name: "1G 64KB 2+1", Size: GB * 1, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+		{Name: "1G 64KB 10+1", Size: GB * 1, ChunkSize: KB * 64, DataShards: 10, ParityShards: 3, EncryptOnUpload: false},
+		{Name: "1G 60M 2+1", Size: GB * 1, ChunkSize: MB * 60, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+		{Name: "1G 60M 10+1", Size: GB * 1, ChunkSize: MB * 60, DataShards: 10, ParityShards: 3, EncryptOnUpload: false},
 	}
 
 	for _, bm := range benchmarks {
