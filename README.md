@@ -76,7 +76,13 @@ Steps:
 3. Now you need to compile a new `<any_name>.wasm` (e.g. proxy.wasm). The command is currently: 
 
     ```bash
-        $ GOOS=js CGO_ENABLED=0 GOARCH=wasm go build -o <any_name>.wasm github.com/0chain/gosdk/wasm
+    $ GOOS=js CGO_ENABLED=0 GOARCH=wasm go build -o <any_name>.wasm github.com/0chain/gosdk/wasm
+    ```
+
+4. You can compile a minimum version by adding tags `-minver`, for example:
+
+    ```bash
+    $ CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -tags minver -o min.wasm github.com/0chain/gosdk/wasm
     ```
 
 ### An important note regarding export of a async function
