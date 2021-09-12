@@ -7,13 +7,33 @@ import (
 	"sync"
 	"syscall/js"
 
+	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zcncore"
 )
 
+var Logger logger.Logger
+
 func GetMinShardersVerify(this js.Value, p []js.Value) interface{} {
-	result := zcncore.GetMinShardersVerify()
-	return result
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
+
+		go func() {
+			result := zcncore.GetMinShardersVerify()
+			if result < 0 {
+				reject.Invoke(map[string]interface{}{
+					"error": "GetMinShardersVerify less than 0.",
+				})
+			}
+			resolve.Invoke(result)
+		}()
+
+		return nil
+	})
+
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 func GetVersion(this js.Value, p []js.Value) interface{} {
@@ -64,7 +84,7 @@ func InitZCNSDK(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func SetNetwork(this js.Value, p []js.Value) interface{} {
+func SetWalletNetwork(this js.Value, p []js.Value) interface{} {
 	var miners []string
 	var sharders []string
 	jsMiners := p[0]
@@ -104,6 +124,7 @@ func SetNetwork(this js.Value, p []js.Value) interface{} {
 
 	if len(miners) > 0 && len(sharders) > 0 {
 		zcncore.SetNetwork(miners, sharders)
+		return nil
 	}
 
 	return map[string]interface{}{
@@ -826,10 +847,7 @@ func GetMinerSCConfig(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-// //
-// // Storage SC
-// //
-func GetStorageSCConfig(this js.Value, p []js.Value) interface{} {
+func GetWalletStorageSCConfig(this js.Value, p []js.Value) interface{} {
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
@@ -861,7 +879,7 @@ func GetStorageSCConfig(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func GetChallengePoolInfo(this js.Value, p []js.Value) interface{} {
+func GetWalletChallengePoolInfo(this js.Value, p []js.Value) interface{} {
 	allocID := p[0].String()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -895,7 +913,7 @@ func GetChallengePoolInfo(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func GetAllocation(this js.Value, p []js.Value) interface{} {
+func GetWalletAllocation(this js.Value, p []js.Value) interface{} {
 	allocID := p[0].String()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -929,7 +947,7 @@ func GetAllocation(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func GetAllocations(this js.Value, p []js.Value) interface{} {
+func GetWalletAllocations(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -963,7 +981,7 @@ func GetAllocations(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func GetReadPoolInfo(this js.Value, p []js.Value) interface{} {
+func GetWalletReadPoolInfo(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -997,7 +1015,7 @@ func GetReadPoolInfo(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func GetStakePoolInfo(this js.Value, p []js.Value) interface{} {
+func GetWalletStakePoolInfo(this js.Value, p []js.Value) interface{} {
 	blobberID := p[0].String()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -1031,7 +1049,7 @@ func GetStakePoolInfo(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func GetStakePoolUserInfo(this js.Value, p []js.Value) interface{} {
+func GetWalletStakePoolUserInfo(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -1065,7 +1083,7 @@ func GetStakePoolUserInfo(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func GetBlobbers(this js.Value, p []js.Value) interface{} {
+func GetWalletBlobbers(this js.Value, p []js.Value) interface{} {
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
@@ -1097,7 +1115,7 @@ func GetBlobbers(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func GetBlobber(this js.Value, p []js.Value) interface{} {
+func GetWalletBlobber(this js.Value, p []js.Value) interface{} {
 	blobberID := p[0].String()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -1131,7 +1149,7 @@ func GetBlobber(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func GetWritePoolInfo(this js.Value, p []js.Value) interface{} {
+func GetWalletWritePoolInfo(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {

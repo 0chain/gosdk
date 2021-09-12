@@ -12,23 +12,20 @@ import (
 func TestWasmSDK(t *testing.T) {
 	Logger.Info("Testing WASM SDK")
 
-	t.Run("Setting All Configuration", func(t *testing.T) {
-		TestAllConfig(t)
-	})
+	TestAllConfig(t)
 
 	var miner_dummy = js.Global().Call("eval", fmt.Sprintf("({minerString: %#v})", miner.URL+"/miner02"))
 
 	var sharders_dummy = js.Global().Call("eval", fmt.Sprintf("({shardersArray: [%#v, %#v]})", sharder.URL+"/sharder02", sharder.URL+"/sharder03"))
 
 	t.Run("Test SDK SetNetwork", func(t *testing.T) {
-		setNetwork := js.FuncOf(ZBOXSetNetwork)
+		setNetwork := js.FuncOf(SetNetwork)
 		defer setNetwork.Release()
 
 		miners := miner_dummy.Get("minerString")
 		sharders := sharders_dummy.Get("shardersArray")
 
-		setNetwork.Invoke(miners, sharders)
-
+		assert.Empty(t, setNetwork.Invoke(miners, sharders).Truthy())
 		assert.Equal(t, blockchain.GetMiners()[0], miner.URL+"/miner02")
 		assert.Equal(t, blockchain.GetSharders()[0], sharder.URL+"/sharder02")
 		assert.Equal(t, blockchain.GetSharders()[1], sharder.URL+"/sharder03")
@@ -38,6 +35,7 @@ func TestWasmSDK(t *testing.T) {
 		getNetwork := js.FuncOf(GetNetwork)
 		defer getNetwork.Release()
 		res := getNetwork.Invoke()
+
 		assert.Equal(t, res.Get("miners").String(), miner.URL+"/miner02")
 		assert.Equal(t, res.Get("sharders").String(), sharder.URL+"/sharder02,"+sharder.URL+"/sharder03")
 	})
@@ -48,8 +46,7 @@ func TestWasmSDK(t *testing.T) {
 		setMaxTxnQuery := js.FuncOf(SetMaxTxnQuery)
 		defer setMaxTxnQuery.Release()
 
-		setMaxTxnQuery.Invoke("1")
-
+		assert.Empty(t, setMaxTxnQuery.Invoke("1").Truthy())
 		assert.Equal(t, 1, blockchain.GetMaxTxnQuery())
 	})
 
@@ -59,8 +56,7 @@ func TestWasmSDK(t *testing.T) {
 		setQuerySleepTime := js.FuncOf(SetQuerySleepTime)
 		defer setQuerySleepTime.Release()
 
-		setQuerySleepTime.Invoke("1")
-
+		assert.Empty(t, setQuerySleepTime.Invoke("1").Truthy())
 		assert.Equal(t, 1, blockchain.GetQuerySleepTime())
 	})
 
@@ -70,8 +66,7 @@ func TestWasmSDK(t *testing.T) {
 		setMinSubmit := js.FuncOf(SetMinSubmit)
 		defer setMinSubmit.Release()
 
-		setMinSubmit.Invoke("2")
-
+		assert.Empty(t, setMinSubmit.Invoke("2").Truthy())
 		assert.Equal(t, 2, blockchain.GetMinSubmit())
 	})
 
@@ -81,8 +76,7 @@ func TestWasmSDK(t *testing.T) {
 		setMinConfirmation := js.FuncOf(SetMinConfirmation)
 		defer setMinConfirmation.Release()
 
-		setMinConfirmation.Invoke("2")
-
+		assert.Empty(t, setMinConfirmation.Invoke("2").Truthy())
 		assert.Equal(t, 2, blockchain.GetMinConfirmation())
 	})
 }

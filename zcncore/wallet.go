@@ -244,7 +244,7 @@ func GetMinShardersVerify() int {
 
 func getMinShardersVerify() int {
 	minSharders := util.MaxInt(calculateMinRequired(float64(_config.chain.MinConfirmation), float64(len(_config.chain.Sharders))/100), 1)
-	Logger.Info("Minimum sharders used for verify :", 1)
+	Logger.Info("Minimum sharders used for verify :", minSharders)
 	return minSharders
 }
 func getMinRequiredChainLength() int64 {
@@ -286,6 +286,7 @@ func CloseLog() {
 // configuration provided in JSON format
 func Init(c string) error {
 	err := json.Unmarshal([]byte(c), &_config.chain)
+	fmt.Printf("_config.chain: %#v", _config.chain)
 	if err == nil {
 		// Check signature scheme is supported
 		if _config.chain.SignatureScheme != "ed25519" && _config.chain.SignatureScheme != "bls0chain" {

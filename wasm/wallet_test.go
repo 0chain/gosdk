@@ -8,10 +8,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"net/http/httptest"
-
-	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zcncore"
 )
 
 var validMnemonic = "inside february piece turkey offer merry select combine tissue wave wet shift room afraid december gown mean brick speak grant gain become toy clown"
@@ -23,156 +19,106 @@ var storageConfig = fmt.Sprintf("{\"wallet\":%s,\"signature_scheme\":\"bls0chain
 var server *httptest.Server
 var miner *httptest.Server
 var sharder *httptest.Server
-var Logger logger.Logger
 
 func TestWasmWallet(t *testing.T) {
 	Logger.Info("Testing WASM version of Zcncore.Wallet")
-	defer server.Close()
-	t.Run("Setting All Configuration", func(t *testing.T) {
-		TestAllConfig(t)
-	})
+
+	TestAllConfig(t)
 
 	t.Run("Test Network", func(t *testing.T) {
-		TestNetwork(t)
+		getNetworkJSON := js.FuncOf(GetNetworkJSON)
+		defer getNetworkJSON.Release()
+
+		network := fmt.Sprintf("{\"miners\":[%#v],\"sharders\":[%#v]}", miner.URL+"/miner01", sharder.URL+"/sharder01")
+
+		networkJson := getNetworkJSON.Invoke().String()
+
+		assert.Equal(t, network, networkJson)
+
+		var miner_dummy = js.Global().Call("eval", fmt.Sprintf("({minerString: %#v})", miner.URL+"/miner02"))
+
+		var sharders_dummy = js.Global().Call("eval", fmt.Sprintf("({shardersArray: [%#v, %#v]})", sharder.URL+"/sharder02", sharder.URL+"/sharder03"))
+
+		setNetwork := js.FuncOf(SetWalletNetwork)
+		defer setNetwork.Release()
+
+		miners := miner_dummy.Get("minerString")
+		sharders := sharders_dummy.Get("shardersArray")
+
+		assert.Empty(t, setNetwork.Invoke(miners, sharders).Truthy())
+
+		newNetwork := fmt.Sprintf("{\"miners\":[%#v],\"sharders\":[%#v,%#v]}", miner.URL+"/miner02", sharder.URL+"/sharder02", sharder.URL+"/sharder03")
+
+		newNetworkJson := getNetworkJSON.Invoke().String()
+
+		assert.Equal(t, newNetwork, newNetworkJson)
 	})
 
 	t.Run("Test Mnemonic", func(t *testing.T) {
-		TestMnemonic(t)
+		isMnemonicValid := js.FuncOf(IsMnemonicValid)
+		defer isMnemonicValid.Release()
+
+		assert.Equal(t, true, isMnemonicValid.Invoke(validMnemonic).Bool())
 	})
 
 	t.Run("Test Get Version", func(t *testing.T) {
-		TestGetVersion(t)
+		getVersion := js.FuncOf(GetVersion)
+		defer getVersion.Release()
+
+		assert.Equal(t, "v1.3.0", getVersion.Invoke().String())
 	})
 
 	t.Run("Test Set Auth URL", func(t *testing.T) {
-		TestSetAuthUrl(t)
+		setAuthUrl := js.FuncOf(SetAuthUrl)
+		defer setAuthUrl.Release()
+
+		assert.Equal(t, true, setAuthUrl.Invoke("miner/miner").IsNull())
 	})
 
 	t.Run("Test Split Keys", func(t *testing.T) {
-		TestSplitKeys(t)
+		splitKeys := js.FuncOf(SplitKeys)
+		defer splitKeys.Release()
+
+		assert.NotEmpty(t, splitKeys.Invoke("a3a88aad5d89cec28c6e37c2925560ce160ac14d2cdcf4a4654b2bb358fe7514", "2").String())
 	})
 
 	t.Run("Test Conversion", func(t *testing.T) {
-		TestConversion(t)
+		token := "100"
+		ctv := js.FuncOf(ConvertToValue)
+		defer ctv.Release()
+
+		assert.Equal(t, 1000000000000, ctv.Invoke(token).Int())
+
+		val := ctv.Invoke(token).Int()
+		ctt := js.FuncOf(ConvertToToken)
+		defer ctt.Release()
+
+		assert.Equal(t, float64(100), ctt.Invoke(fmt.Sprintf("%d", val)).Float())
 	})
 
 	t.Run("Test Encryption", func(t *testing.T) {
-		TestEncryption(t)
+		key := "0123456789abcdef"
+		var message string = "Lorem ipsum dolor sit amet"
+
+		enc := js.FuncOf(Encrypt)
+		defer enc.Release()
+
+		emsg := enc.Invoke(key, message)
+
+		dec := js.FuncOf(Decrypt)
+		defer dec.Release()
+
+		dmsg := dec.Invoke(key, emsg.String())
+
+		assert.Equal(t, message, dmsg.String(), "The two message should be the same.")
 	})
 
 	t.Run("Test Get Min Sharder Verify", func(t *testing.T) {
-		TestGetMinShardersVerify(t)
+		getMinSharders := js.FuncOf(GetMinShardersVerify)
+		defer getMinSharders.Release()
+		result, err := await(getMinSharders.Invoke())
+
+		assert.Equal(t, true, err[0].IsNull())
+		assert.Equal(t, 1, result[0].Int())
 	})
-
-}
-
-func TestNetwork(t *testing.T) {
-	getNetworkJSON := js.FuncOf(GetNetworkJSON)
-	defer getNetworkJSON.Release()
-
-	network := fmt.Sprintf("{\"miners\":[%#v],\"sharders\":[%#v]}", miner.URL+"/miner01", sharder.URL+"/sharder01")
-
-	networkJson := getNetworkJSON.Invoke().String()
-
-	assert.Equal(t, network, networkJson)
-
-	var miner_dummy = js.Global().Call("eval", fmt.Sprintf("({minerString: %#v})", miner.URL+"/miner02"))
-
-	var sharders_dummy = js.Global().Call("eval", fmt.Sprintf("({shardersArray: [%#v, %#v]})", sharder.URL+"/sharder02", sharder.URL+"/sharder03"))
-
-	setNetwork := js.FuncOf(SetNetwork)
-	defer setNetwork.Release()
-
-	miners := miner_dummy.Get("minerString")
-	sharders := sharders_dummy.Get("shardersArray")
-
-	setNetwork.Invoke(miners, sharders)
-
-	newNetwork := fmt.Sprintf("{\"miners\":[%#v],\"sharders\":[%#v,%#v]}", miner.URL+"/miner02", sharder.URL+"/sharder02", sharder.URL+"/sharder03")
-
-	newNetworkJson := getNetworkJSON.Invoke().String()
-
-	assert.Equal(t, newNetwork, newNetworkJson)
-}
-
-func TestMnemonic(t *testing.T) {
-	isMnemonicValid := js.FuncOf(IsMnemonicValid)
-	defer isMnemonicValid.Release()
-
-	assert.Equal(t, true, isMnemonicValid.Invoke(validMnemonic).Bool())
-}
-
-func TestGetVersion(t *testing.T) {
-	getVersion := js.FuncOf(GetVersion)
-	defer getVersion.Release()
-
-	assert.Equal(t, "v1.3.0", getVersion.Invoke().String())
-}
-
-func TestSetAuthUrl(t *testing.T) {
-	setup(t)
-	testSetWalletInfo(t)
-	setAuthUrl := js.FuncOf(SetAuthUrl)
-	defer setAuthUrl.Release()
-
-	au := setAuthUrl.Invoke("miner/miner")
-
-	assert.Equal(t, true, au.IsNull())
-}
-
-func TestSplitKeys(t *testing.T) {
-	splitKeys := js.FuncOf(SplitKeys)
-	defer splitKeys.Release()
-
-	au := splitKeys.Invoke("a3a88aad5d89cec28c6e37c2925560ce160ac14d2cdcf4a4654b2bb358fe7514", "2")
-
-	assert.NotEmpty(t, au.String())
-}
-
-func TestConversion(t *testing.T) {
-	token := "100"
-	ctv := js.FuncOf(ConvertToValue)
-	defer ctv.Release()
-
-	assert.Equal(t, 1000000000000, ctv.Invoke(token).Int())
-
-	val := ctv.Invoke(token).Int()
-
-	ctt := js.FuncOf(ConvertToToken)
-	defer ctt.Release()
-
-	assert.Equal(t, float64(100), ctt.Invoke(fmt.Sprintf("%d", val)).Float())
-}
-
-func TestEncryption(t *testing.T) {
-	key := "0123456789abcdef" // must be of 16 bytes for this example to work
-	var message string = "Lorem ipsum dolor sit amet"
-
-	enc := js.FuncOf(Encrypt)
-	defer enc.Release()
-
-	emsg := enc.Invoke(key, message)
-
-	dec := js.FuncOf(Decrypt)
-	defer dec.Release()
-
-	dmsg := dec.Invoke(key, emsg.String())
-
-	assert.Equal(t, message, dmsg.String(), "The two message should be the same.")
-}
-
-func TestGetMinShardersVerify(t *testing.T) {
-	initStorageSDK := js.FuncOf(InitStorageSDK)
-	defer initStorageSDK.Release()
-
-	var chainConfig = "{\"chain_id\":\"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe\",\"block_worker\":\"\",\"miners\":[],\"sharders\":[],\"signature_scheme\":\"bls0chain\",\"min_submit\":50,\"min_confirmation\":50,\"confirmation_chain_length\":3,\"eth_node\":\"\"}"
-
-	result, err := await(initStorageSDK.Invoke(storageConfig, chainConfig))
-
-	assert.Equal(t, true, err[0].IsNull())
-	assert.Equal(t, true, result[0].Truthy())
-	assert.Equal(t, blockchain.GetBlockWorker(), server.URL+"/dns")
-	getMinSharders := zcncore.GetMinShardersVerify()
-
-	assert.Equal(t, "1", getMinSharders)
 }
