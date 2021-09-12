@@ -16,6 +16,8 @@ type FormBuilder interface {
 }
 
 type FormMetadata struct {
+	FileBytesLen         int
+	ThumbnailBytesLen    int
 	ContentType          string
 	ChunkHash            string
 	ChallengeHash        string
@@ -32,7 +34,10 @@ type formBuilder struct {
 
 func (b *formBuilder) Build(fileMeta *FileMeta, hasher Hasher, connectionID string, chunkSize int64, chunkIndex int, isFinal bool, encryptedKey string, fileBytes, thumbnailBytes []byte) (*bytes.Buffer, FormMetadata, error) {
 
-	metadata := FormMetadata{}
+	metadata := FormMetadata{
+		FileBytesLen:      len(fileBytes),
+		ThumbnailBytesLen: len(thumbnailBytes),
+	}
 
 	if len(fileBytes) == 0 {
 		return nil, metadata, nil
@@ -70,13 +75,22 @@ func (b *formBuilder) Build(fileMeta *FileMeta, hasher Hasher, connectionID stri
 	chunkHashWriter := sha1.New()
 	chunkWriters := io.MultiWriter(uploadFile, chunkHashWriter)
 
-	chunkWriters.Write(fileBytes)
+	_, err = chunkWriters.Write(fileBytes)
+	if err != nil {
+		return nil, metadata, err
+	}
 
 	formData.ChunkHash = hex.EncodeToString(chunkHashWriter.Sum(nil))
 	formData.ContentHash = formData.ChunkHash
 
-	hasher.WriteToChallenge(fileBytes, chunkIndex)
-	hasher.WriteHashToContent(formData.ChunkHash, chunkIndex)
+	err = hasher.WriteToChallenge(fileBytes, chunkIndex)
+	if err != nil {
+		return nil, metadata, err
+	}
+	err = hasher.WriteHashToContent(formData.ChunkHash, chunkIndex)
+	if err != nil {
+		return nil, metadata, err
+	}
 
 	if isFinal {
 
@@ -107,7 +121,10 @@ func (b *formBuilder) Build(fileMeta *FileMeta, hasher Hasher, connectionID stri
 
 		thumbnailHash := sha1.New()
 		thumbnailWriters := io.MultiWriter(uploadThumbnailFile, thumbnailHash)
-		thumbnailWriters.Write(thumbnailBytes)
+		_, err = thumbnailWriters.Write(thumbnailBytes)
+		if err != nil {
+			return nil, metadata, err
+		}
 
 		formData.ActualThumbSize = fileMeta.ActualThumbnailSize
 		formData.ThumbnailContentHash = hex.EncodeToString(thumbnailHash.Sum(nil))

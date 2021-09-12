@@ -9,8 +9,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strconv"
-	"sync"
-	"time"
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
@@ -36,14 +34,9 @@ type ChunkedUploadBobbler struct {
 	commitResult  *CommitResult
 }
 
-func (sb *ChunkedUploadBobbler) processUpload(su *ChunkedUpload, chunkIndex int, fileBytes, thumbnailBytes []byte, isFinal bool, wg *sync.WaitGroup) {
-	defer wg.Done()
-	encryptedKey := ""
-	if su.fileEncscheme != nil {
-		encryptedKey = su.fileEncscheme.GetEncryptedKey()
-	}
+func (sb *ChunkedUploadBobbler) sendUploadRequest(ctx context.Context, su *ChunkedUpload, chunkIndex int, isFinal bool, encryptedKey string, body *bytes.Buffer, formData FormMetadata) error {
 
-	if len(fileBytes) == 0 {
+	if formData.FileBytesLen == 0 {
 		//fixed fileRef in last chunk on stream. io.EOF with nil bytes
 		if isFinal {
 			sb.fileRef.ChunkSize = su.chunkSize
@@ -56,62 +49,56 @@ func (sb *ChunkedUploadBobbler) processUpload(su *ChunkedUpload, chunkIndex int,
 			sb.fileRef.CalculateHash()
 		}
 
-		return
+		return nil
 	}
 
-	body, formData, err := su.formBuilder.Build(&su.fileMeta, sb.progress.Hasher, su.progress.ConnectionID, su.chunkSize, chunkIndex, isFinal, encryptedKey, fileBytes, thumbnailBytes)
+	req, err := zboxutil.NewUploadRequestWithMethod(sb.blobber.Baseurl, su.allocationObj.Tx, body, su.httpMethod)
+	if err != nil {
+		return err
+	}
 
-	httpreq, _ := zboxutil.NewUploadRequestWithMethod(sb.blobber.Baseurl, su.allocationObj.Tx, body, su.httpMethod)
+	req.Header.Add("Content-Type", formData.ContentType)
 
-	httpreq.Header.Add("Content-Type", formData.ContentType)
+	resp, err := su.client.Do(req.WithContext(ctx))
 
-	//TODO: retry http
-	err = zboxutil.HttpClientDo(su.allocationObj.ctx, su.allocationObj.ctxCancelF, su.client, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			logger.Logger.Error("Upload : ", err)
-			//req.err = err
-			return err
-		}
-		defer resp.Body.Close()
+	if err != nil {
+		logger.Logger.Error("Upload : ", err)
+		return err
+	}
+	defer resp.Body.Close()
 
-		respbody, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			logger.Logger.Error("Error: Resp ", err)
-			//req.err = err
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			logger.Logger.Error(sb.blobber.Baseurl, " Upload error response: ", resp.StatusCode, string(respbody))
-			//req.err = fmt.Errorf(string(respbody))
-			return err
-		}
-		var r UploadResult
-		err = json.Unmarshal(respbody, &r)
-		if err != nil {
-			logger.Logger.Error(sb.blobber.Baseurl, " Upload response parse error: ", err)
-			//req.err = err
-			return err
-		}
-		if r.Filename != su.fileMeta.RemoteName || r.Hash != formData.ChunkHash {
-			err = fmt.Errorf("%s Unexpected upload response data %s %s %s", sb.blobber.Baseurl, su.fileMeta.RemoteName, formData.ChunkHash, string(respbody))
-			logger.Logger.Error(err)
-			return err
-		}
-		//req.consensus++
-		logger.Logger.Info(sb.blobber.Baseurl, su.fileMeta.RemotePath, " uploaded")
+	respbody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		logger.Logger.Error("Error: Resp ", err)
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		logger.Logger.Error(sb.blobber.Baseurl, " Upload error response: ", resp.StatusCode, string(respbody))
+		return err
+	}
+	var r UploadResult
+	err = json.Unmarshal(respbody, &r)
+	if err != nil {
+		logger.Logger.Error(sb.blobber.Baseurl, " Upload response parse error: ", err)
+		return err
+	}
+	if r.Filename != su.fileMeta.RemoteName || r.Hash != formData.ChunkHash {
+		err = fmt.Errorf("%s Unexpected upload response data %s %s %s", sb.blobber.Baseurl, su.fileMeta.RemoteName, formData.ChunkHash, string(respbody))
+		logger.Logger.Error(err)
+		return err
+	}
 
-		su.consensus.Done()
+	logger.Logger.Info(sb.blobber.Baseurl, su.fileMeta.RemotePath, " uploaded")
 
-		return nil
-	})
+	su.consensus.Done()
 
 	//fixed fileRef
 	if err == nil {
 
 		//fixed thumbnail info in first chunk if it has thumbnail
-		if len(thumbnailBytes) > 0 {
+		if formData.ThumbnailBytesLen > 0 {
 
-			sb.fileRef.ThumbnailSize = int64(len(thumbnailBytes))
+			sb.fileRef.ThumbnailSize = int64(formData.ThumbnailBytesLen)
 			sb.fileRef.ThumbnailHash = formData.ThumbnailContentHash
 
 			sb.fileRef.ActualThumbnailSize = su.fileMeta.ActualThumbnailSize
@@ -134,10 +121,11 @@ func (sb *ChunkedUploadBobbler) processUpload(su *ChunkedUpload, chunkIndex int,
 		}
 	}
 
+	return err
+
 }
 
-func (sb *ChunkedUploadBobbler) processCommit(su *ChunkedUpload, wg *sync.WaitGroup) error {
-	defer wg.Done()
+func (sb *ChunkedUploadBobbler) processCommit(ctx context.Context, su *ChunkedUpload) error {
 
 	err := sb.flock.Lock()
 	if err != nil {
@@ -148,6 +136,7 @@ func (sb *ChunkedUploadBobbler) processCommit(su *ChunkedUpload, wg *sync.WaitGr
 	rootRef, latestWM, size, err := sb.processWriteMarker(su)
 
 	if err != nil {
+		sb.commitResult = ErrorCommitResult(err.Error())
 		return err
 	}
 
@@ -183,40 +172,39 @@ func (sb *ChunkedUploadBobbler) processCommit(su *ChunkedUpload, wg *sync.WaitGr
 
 	formWriter.Close()
 
-	httpreq, err := zboxutil.NewCommitRequest(sb.blobber.Baseurl, su.allocationObj.Tx, body)
+	req, err := zboxutil.NewCommitRequest(sb.blobber.Baseurl, su.allocationObj.Tx, body)
 	if err != nil {
 		logger.Logger.Error("Error creating commit req: ", err)
 		return err
 	}
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+	req.Header.Add("Content-Type", formWriter.FormDataContentType())
 
 	logger.Logger.Info("Committing to blobber." + sb.blobber.Baseurl)
 
 	//for retries := 0; retries < 3; retries++ {
-	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 60))
-	err = zboxutil.HttpClientDo(ctx, cncl, su.client, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			logger.Logger.Error("Commit: ", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == http.StatusOK {
-			logger.Logger.Info(sb.blobber.Baseurl, su.progress.ConnectionID, " committed")
-		} else {
-			logger.Logger.Error("Commit response: ", resp.StatusCode)
-		}
 
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			logger.Logger.Error("Response read: ", err)
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			logger.Logger.Error(sb.blobber.Baseurl, " Commit response:", string(body))
-			return thrown.New("commit_error", string(body))
-		}
-		return nil
-	})
+	resp, err := su.client.Do(req.WithContext(ctx))
+
+	if err != nil {
+		logger.Logger.Error("Commit: ", err)
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode == http.StatusOK {
+		logger.Logger.Info(sb.blobber.Baseurl, su.progress.ConnectionID, " committed")
+	} else {
+		logger.Logger.Error("Commit response: ", resp.StatusCode)
+	}
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		logger.Logger.Error("Response read: ", err)
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		logger.Logger.Error(sb.blobber.Baseurl, " Commit response:", string(respBody))
+		return thrown.New("commit_error", string(respBody))
+	}
 
 	if err == nil {
 		su.consensus.Done()
@@ -240,36 +228,34 @@ func (sb *ChunkedUploadBobbler) processWriteMarker(su *ChunkedUpload) (*fileref.
 		logger.Logger.Error("Creating ref path req", err)
 		return nil, nil, 0, err
 	}
-	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
-	err = zboxutil.HttpClientDo(ctx, cncl, su.client, req, func(resp *http.Response, err error) error {
-		if err != nil {
-			logger.Logger.Error("Ref path error:", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			logger.Logger.Error("Ref path response : ", resp.StatusCode)
-		}
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			logger.Logger.Error("Ref path: Resp", err)
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("Reference path error response: Status: %d - %s ", resp.StatusCode, string(body))
-		}
 
-		err = json.Unmarshal(body, &lR)
-		if err != nil {
-			logger.Logger.Error("Reference path json decode error: ", err)
-			return err
-		}
+	resp, err := su.client.Do(req)
 
-		return nil
-	})
+	if err != nil {
+		logger.Logger.Error("Ref path error:", err)
+		return nil, nil, 0, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		logger.Logger.Error("Ref path response : ", resp.StatusCode)
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		logger.Logger.Error("Ref path: Resp", err)
+		return nil, nil, 0, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, nil, 0, fmt.Errorf("Reference path error response: Status: %d - %s ", resp.StatusCode, string(body))
+	}
+
+	err = json.Unmarshal(body, &lR)
+	if err != nil {
+		logger.Logger.Error("Reference path json decode error: ", err)
+		return nil, nil, 0, err
+	}
+
 	//process the commit request for the blobber here
 	if err != nil {
-		sb.commitResult = ErrorCommitResult(err.Error())
 
 		return nil, nil, 0, err
 	}
@@ -284,7 +270,7 @@ func (sb *ChunkedUploadBobbler) processWriteMarker(su *ChunkedUpload) (*fileref.
 		}
 	}
 	if err != nil {
-		sb.commitResult = ErrorCommitResult(err.Error())
+
 		return nil, nil, 0, err
 	}
 	size := int64(0)
@@ -296,7 +282,7 @@ func (sb *ChunkedUploadBobbler) processWriteMarker(su *ChunkedUpload) (*fileref.
 		size += change.GetSize()
 	}
 	if err != nil {
-		sb.commitResult = ErrorCommitResult(err.Error())
+
 		return nil, nil, 0, err
 	}
 

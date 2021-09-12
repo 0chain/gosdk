@@ -564,22 +564,6 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	return nil, err
 }
 
-func HttpClientDo(ctx context.Context, cncl context.CancelFunc, client HttpClient, req *http.Request, f func(*http.Response, error) error) error {
-	// Run the HTTP request in a goroutine and pass the response to f.
-	c := make(chan error, 1)
-	go func() { c <- f(client.Do(req.WithContext(ctx))) }()
-	// TODO: Check cncl context required in any case
-	// defer cncl()
-	select {
-	case <-ctx.Done():
-		DefaultTransport.CancelRequest(req)
-		<-c // Wait for f to return.
-		return ctx.Err()
-	case err := <-c:
-		return err
-	}
-}
-
 func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f func(*http.Response, error) error) error {
 	// Run the HTTP request in a goroutine and pass the response to f.
 	c := make(chan error, 1)

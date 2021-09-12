@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"fmt"
@@ -8,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sync"
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
@@ -349,12 +349,24 @@ func (su *ChunkedUpload) Start() error {
 
 }
 
-//processUpload process upload shard to its blobber
-func (su *ChunkedUpload) processUpload(chunkIndex int, fileShards [][]byte, thumbnailShards [][]byte, isFinal bool, uploadLength int64) {
-	threads := su.allocationObj.DataShards + su.allocationObj.ParityShards
+func (su *ChunkedUpload) buildForm(sb *ChunkedUploadBobbler, chunkIndex int, isFinal bool, encryptedKey string, fileBytes, thumbnailBytes []byte) (*bytes.Buffer, FormMetadata, error) {
+	return su.formBuilder.Build(&su.fileMeta, sb.progress.Hasher, su.progress.ConnectionID, su.chunkSize, chunkIndex, isFinal, encryptedKey, fileBytes, thumbnailBytes)
+}
 
-	wg := &sync.WaitGroup{}
-	wg.Add(threads)
+//processUpload process upload shard to its blobber
+func (su *ChunkedUpload) processUpload(chunkIndex int, fileShards [][]byte, thumbnailShards [][]byte, isFinal bool, uploadLength int64) error {
+	num := su.allocationObj.DataShards + su.allocationObj.ParityShards
+
+	wait := make(chan error, num)
+	defer close(wait)
+
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+
+	encryptedKey := ""
+	if su.fileEncscheme != nil {
+		encryptedKey = su.fileEncscheme.GetEncryptedKey()
+	}
 
 	var pos uint64
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -363,14 +375,33 @@ func (su *ChunkedUpload) processUpload(chunkIndex int, fileShards [][]byte, thum
 		blobber := su.blobbers[pos]
 		blobber.progress.UploadLength += uploadLength
 
+		var thumbnailBytes []byte
+
 		if len(thumbnailShards) > 0 {
-			go blobber.processUpload(su, chunkIndex, fileShards[pos], thumbnailShards[pos], isFinal, wg)
-		} else {
-			go blobber.processUpload(su, chunkIndex, fileShards[pos], nil, isFinal, wg)
+			thumbnailBytes = thumbnailShards[pos]
+		}
+
+		go func(file, thumbnail []byte) {
+			body, formData, err := su.buildForm(blobber, chunkIndex, isFinal, encryptedKey, file, thumbnail)
+			if err != nil {
+				wait <- err
+				return
+			}
+			wait <- blobber.sendUploadRequest(ctx, su, chunkIndex, isFinal, encryptedKey, body, formData)
+		}(fileShards[pos], thumbnailBytes)
+
+	}
+	var err error
+	for i := 0; i < num; i++ {
+		err = <-wait
+		if err != nil {
+			cancel()
+
+			return err
 		}
 	}
 
-	wg.Wait()
+	return nil
 
 }
 
@@ -378,10 +409,14 @@ func (su *ChunkedUpload) processUpload(chunkIndex int, fileShards [][]byte, thum
 func (su *ChunkedUpload) processCommit() error {
 	logger.Logger.Info("Submitting for commit")
 	su.consensus.Reset()
-	wg := &sync.WaitGroup{}
-	ones := su.uploadMask.CountOnes()
 
-	wg.Add(ones)
+	num := su.allocationObj.DataShards + su.allocationObj.ParityShards
+
+	wait := make(chan error, num)
+	defer close(wait)
+
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
 
 	var pos uint64
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -395,9 +430,20 @@ func (su *ChunkedUpload) processCommit() error {
 
 		blobber.commitChanges = append(blobber.commitChanges, su.buildChange(blobber.fileRef))
 
-		go blobber.processCommit(su, wg)
+		go func(b *ChunkedUploadBobbler) {
+			wait <- b.processCommit(ctx, su)
+		}(blobber)
 	}
-	wg.Wait()
+
+	var err error
+	for i := 0; i < num; i++ {
+		err = <-wait
+
+		if err != nil {
+			cancel()
+			break
+		}
+	}
 
 	if !su.consensus.isConsensusOk() {
 		if su.consensus.getConsensus() != 0 {
