@@ -138,27 +138,3 @@ func BenchmarkChunkedUpload(b *testing.B) {
 		})
 	}
 }
-
-// func BenchmarkChunkedUpload10M(b *testing.B) {
-// 	m := fstest.MapFS{
-// 		"hello.txt": {
-// 			Data: []byte("hello, world"),
-// 		},
-// 	}
-// }
-
-// func BenchmarkChunkedUpload100M(b *testing.B) {
-// 	m := fstest.MapFS{
-// 		"hello.txt": {
-// 			Data: []byte("hello, world"),
-// 		},
-// 	}
-// }
-
-// func BenchmarkChunkedUpload1G(b *testing.B) {
-// 	m := fstest.MapFS{
-// 		"hello.txt": {
-// 			Data: []byte("hello, world"),
-// 		},
-// 	}
-// }

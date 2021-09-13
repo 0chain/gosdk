@@ -9,7 +9,7 @@ import (
 	"github.com/klauspost/reedsolomon"
 )
 
-func BenchmarkChunkReader(b *testing.B) {
+func BenchmarkChunkedUploadChunkReader(b *testing.B) {
 
 	KB := 1024
 	MB := 1024 * KB

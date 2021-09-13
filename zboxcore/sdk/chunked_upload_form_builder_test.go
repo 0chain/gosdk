@@ -39,7 +39,7 @@ func (h *nopeHasher) WriteHashToContent(hash string, chunkIndex int) error {
 	return nil
 }
 
-func BenchmarkFormBuilder(b *testing.B) {
+func BenchmarkChunkedUploadFormBuilder(b *testing.B) {
 
 	KB := 1024
 	MB := 1024 * KB

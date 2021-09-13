@@ -1,0 +1,25 @@
+name: Benchmark tests
+
+on:
+  push:
+    # branches: [ master ]
+  pull_request:
+    # branches: [ master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup go 1.16
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.16' # The Go version to download (if necessary) and use.
+      
+      - name: Run benchmark
+        run: go test -tags bn256 -benchmem -benchtime=10s -run="BenchmarkChunkedUpload*" -bench="BenchmarkChunkedUpload*"   ./... | tee benchmark.txt
+      - name: Store benchmark result
+        uses: rhysd/github-action-benchmark@v1
+        with:
+          tool: 'go'
+          output-file-path: benchmark.txt

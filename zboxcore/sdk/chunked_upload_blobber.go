@@ -228,7 +228,6 @@ func (sb *ChunkedUploadBobbler) processWriteMarker(ctx context.Context, su *Chun
 		return nil, nil, 0, err
 	}
 
-	logger.Logger.Info("req: ", req.URL)
 	resp, err := su.client.Do(req)
 
 	if err != nil {
