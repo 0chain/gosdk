@@ -381,22 +381,25 @@ func (su *ChunkedUpload) processUpload(chunkIndex int, fileShards [][]byte, thum
 			thumbnailBytes = thumbnailShards[pos]
 		}
 
-		go func(file, thumbnail []byte) {
-			body, formData, err := su.buildForm(blobber, chunkIndex, isFinal, encryptedKey, file, thumbnail)
-			if err != nil {
+		body, formData, err := su.buildForm(blobber, chunkIndex, isFinal, encryptedKey, fileShards[pos], thumbnailBytes)
+		if err != nil {
+			return err
+		}
+
+		go func(b *bytes.Buffer, form FormMetadata) {
+			err := blobber.sendUploadRequest(ctx, su, chunkIndex, isFinal, encryptedKey, b, form)
+
+			if ctx.Err() == nil {
 				wait <- err
-				return
 			}
-			wait <- blobber.sendUploadRequest(ctx, su, chunkIndex, isFinal, encryptedKey, body, formData)
-		}(fileShards[pos], thumbnailBytes)
+
+		}(body, formData)
 
 	}
 	var err error
 	for i := 0; i < num; i++ {
 		err = <-wait
 		if err != nil {
-			cancel()
-
 			return err
 		}
 	}
@@ -431,7 +434,13 @@ func (su *ChunkedUpload) processCommit() error {
 		blobber.commitChanges = append(blobber.commitChanges, su.buildChange(blobber.fileRef))
 
 		go func(b *ChunkedUploadBobbler) {
-			wait <- b.processCommit(ctx, su)
+
+			err := b.processCommit(ctx, su)
+
+			if ctx.Err() == nil {
+				wait <- err
+			}
+
 		}(blobber)
 	}
 
