@@ -133,10 +133,9 @@ func (sb *ChunkedUploadBobbler) processCommit(ctx context.Context, su *ChunkedUp
 	}
 	defer sb.flock.Unlock()
 
-	rootRef, latestWM, size, err := sb.processWriteMarker(su)
+	rootRef, latestWM, size, err := sb.processWriteMarker(ctx, su)
 
 	if err != nil {
-		sb.commitResult = ErrorCommitResult(err.Error())
 		return err
 	}
 
@@ -215,13 +214,13 @@ func (sb *ChunkedUploadBobbler) processCommit(ctx context.Context, su *ChunkedUp
 	return nil
 }
 
-func (sb *ChunkedUploadBobbler) processWriteMarker(su *ChunkedUpload) (*fileref.Ref, *marker.WriteMarker, int64, error) {
+func (sb *ChunkedUploadBobbler) processWriteMarker(ctx context.Context, su *ChunkedUpload) (*fileref.Ref, *marker.WriteMarker, int64, error) {
 	logger.Logger.Info("received a commit request")
 	paths := make([]string, 0)
 	for _, change := range sb.commitChanges {
 		paths = append(paths, change.GetAffectedPath())
 	}
-	var req *http.Request
+
 	var lR ReferencePathResult
 	req, err := zboxutil.NewReferencePathRequest(sb.blobber.Baseurl, su.allocationObj.Tx, paths)
 	if err != nil || len(paths) == 0 {
@@ -229,6 +228,7 @@ func (sb *ChunkedUploadBobbler) processWriteMarker(su *ChunkedUpload) (*fileref.
 		return nil, nil, 0, err
 	}
 
+	logger.Logger.Info("req: ", req.URL)
 	resp, err := su.client.Do(req)
 
 	if err != nil {

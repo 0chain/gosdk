@@ -104,7 +104,11 @@ func BenchmarkFormBuilder(b *testing.B) {
 
 					fileBytes := buf[begin:end]
 
-					builder.Build(fileMeta, createHasher(bm.ChunkSize), "connectionID", int64(bm.ChunkSize), chunkIndex, isFinal, "", fileBytes, nil)
+					_, _, err := builder.Build(fileMeta, createHasher(bm.ChunkSize), "connectionID", int64(bm.ChunkSize), chunkIndex, isFinal, "", fileBytes, nil)
+					if err != nil {
+						b.Fatal(err)
+						return
+					}
 
 					if isFinal {
 						break

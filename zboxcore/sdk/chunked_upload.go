@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
@@ -277,7 +278,6 @@ func (su *ChunkedUpload) Start() error {
 	for {
 
 		chunk, err := su.chunkReader.Next()
-
 		if err != nil {
 			return err
 		}
@@ -305,18 +305,21 @@ func (su *ChunkedUpload) Start() error {
 			}
 		}
 
+		var thumbnailFragments [][]byte
+
 		// upload entire thumbnail in first request only
 		if chunk.Index == 0 && len(su.thumbnailBytes) > 0 {
 
-			thumbnailFragments, err := su.chunkReader.Read(su.thumbnailBytes)
+			thumbnailFragments, err = su.chunkReader.Read(su.thumbnailBytes)
 			if err != nil {
 				return err
 			}
 
-			su.processUpload(chunk.Index, chunk.Fragments, thumbnailFragments, chunk.IsFinal, chunk.ReadSize)
+		}
 
-		} else {
-			su.processUpload(chunk.Index, chunk.Fragments, nil, chunk.IsFinal, chunk.ReadSize)
+		err = su.processUpload(chunk.Index, chunk.Fragments, thumbnailFragments, chunk.IsFinal, chunk.ReadSize)
+		if err != nil {
+			return err
 		}
 
 		// last chunk might 0 with io.EOF
@@ -349,13 +352,13 @@ func (su *ChunkedUpload) Start() error {
 
 }
 
-func (su *ChunkedUpload) buildForm(sb *ChunkedUploadBobbler, chunkIndex int, isFinal bool, encryptedKey string, fileBytes, thumbnailBytes []byte) (*bytes.Buffer, FormMetadata, error) {
-	return su.formBuilder.Build(&su.fileMeta, sb.progress.Hasher, su.progress.ConnectionID, su.chunkSize, chunkIndex, isFinal, encryptedKey, fileBytes, thumbnailBytes)
-}
-
-//processUpload process upload shard to its blobber
-func (su *ChunkedUpload) processUpload(chunkIndex int, fileShards [][]byte, thumbnailShards [][]byte, isFinal bool, uploadLength int64) error {
+//processUpload process upload fragment to its blobber
+func (su *ChunkedUpload) processUpload(chunkIndex int, fileFragments [][]byte, thumbnailFragments [][]byte, isFinal bool, uploadLength int64) error {
 	num := su.allocationObj.DataShards + su.allocationObj.ParityShards
+
+	if num != len(su.blobbers) {
+		return thrown.Throw(constants.ErrInvalidParameter, "len(su.blobbers) requires "+strconv.Itoa(num)+", not "+strconv.Itoa(len(su.blobbers)))
+	}
 
 	wait := make(chan error, num)
 	defer close(wait)
@@ -376,27 +379,35 @@ func (su *ChunkedUpload) processUpload(chunkIndex int, fileShards [][]byte, thum
 		blobber.progress.UploadLength += uploadLength
 
 		var thumbnailBytes []byte
+		var fileBytes []byte
 
-		if len(thumbnailShards) > 0 {
-			thumbnailBytes = thumbnailShards[pos]
+		if len(thumbnailFragments) > 0 {
+			thumbnailBytes = thumbnailFragments[pos]
 		}
 
-		go func(file, thumbnail []byte) {
-			body, formData, err := su.buildForm(blobber, chunkIndex, isFinal, encryptedKey, file, thumbnail)
-			if err != nil {
-				wait <- err
-				return
-			}
-			wait <- blobber.sendUploadRequest(ctx, su, chunkIndex, isFinal, encryptedKey, body, formData)
-		}(fileShards[pos], thumbnailBytes)
+		if len(fileFragments) > 0 {
+			fileBytes = fileFragments[pos]
+		}
 
+		body, formData, err := su.formBuilder.Build(&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID, su.chunkSize, chunkIndex, isFinal, encryptedKey, fileBytes, thumbnailBytes)
+
+		if err != nil {
+			return err
+		}
+
+		go func(b *ChunkedUploadBobbler, buf *bytes.Buffer, form FormMetadata) {
+			err := b.sendUploadRequest(ctx, su, chunkIndex, isFinal, encryptedKey, buf, form)
+
+			// channel is not closed
+			if ctx.Err() == nil {
+				wait <- err
+			}
+		}(blobber, body, formData)
 	}
 	var err error
 	for i := 0; i < num; i++ {
 		err = <-wait
 		if err != nil {
-			cancel()
-
 			return err
 		}
 	}
@@ -431,7 +442,18 @@ func (su *ChunkedUpload) processCommit() error {
 		blobber.commitChanges = append(blobber.commitChanges, su.buildChange(blobber.fileRef))
 
 		go func(b *ChunkedUploadBobbler) {
-			wait <- b.processCommit(ctx, su)
+
+			err := b.processCommit(ctx, su)
+
+			if err != nil {
+				b.commitResult = ErrorCommitResult(err.Error())
+			}
+
+			// channel is not closed
+			if ctx.Err() == nil {
+				wait <- err
+			}
+
 		}(blobber)
 	}
 
@@ -440,7 +462,7 @@ func (su *ChunkedUpload) processCommit() error {
 		err = <-wait
 
 		if err != nil {
-			cancel()
+			logger.Logger.Error("Commit: ", err)
 			break
 		}
 	}
