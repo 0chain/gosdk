@@ -22,7 +22,7 @@ jobs:
       #       echo "TAG=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g' )" >> $GITHUB_ENV
 
       - name: Run benchmark
-        run: go test -tags bn256 -benchmem -benchtime=10s -run="BenchmarkChunkedUpload*" -bench="BenchmarkChunkedUpload*"   ./... | tee benchmark.txt
+        run: go test -tags bn256 -benchmem -benchtime=5s -run="BenchmarkChunkedUpload*" -bench="BenchmarkChunkedUpload*"   ./... | tee benchmark.txt
  
       # Run `github-action-benchmark` action
       # - name: Push benchmark report
