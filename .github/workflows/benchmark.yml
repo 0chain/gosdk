@@ -26,7 +26,7 @@ jobs:
  
       # Run `github-action-benchmark` action
       - name: Push benchmark report
-        uses: rhysd/github-action-benchmark@v1
+        uses: cnlangzi/github-action-benchmark@v1
         with:
           name: 0chain/gosdk Benchmark
           tool: 'go'
@@ -34,5 +34,6 @@ jobs:
           output-file-path: benchmark.txt
           # Personal access token to deploy GitHub Pages branch
           github-token: ${{ secrets.GOSDK }}
+          #github-token: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
           # Push and deploy GitHub pages branch automatically
           auto-push: true
