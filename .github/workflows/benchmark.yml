@@ -26,7 +26,7 @@ jobs:
  
       # Run `github-action-benchmark` action
       - name: Push benchmark report
-        uses: cnlangzi/github-action-benchmark@v1.8.2
+        uses: cnlangzi/github-action-benchmark@v1
         with:
           name: 0chain/gosdk Benchmark
           tool: 'go'
