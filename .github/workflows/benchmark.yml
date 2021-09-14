@@ -25,7 +25,7 @@ jobs:
         with:
           name: 0chain/gosdk Benchmark
           tool: 'go'
-          output-file-path: output.txt
+          output-file-path: benchmark.txt
           # Personal access token to deploy GitHub Pages branch
           github-token: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
           # Push and deploy GitHub pages branch automatically
