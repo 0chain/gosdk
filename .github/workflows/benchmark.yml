@@ -26,11 +26,11 @@ jobs:
  
       # Run `github-action-benchmark` action
       - name: Push benchmark report
-        uses: cnlangzi/github-action-benchmark@latest
+        uses: cnlangzi/github-action-benchmark@v1.8.2
         with:
           name: 0chain/gosdk Benchmark
           tool: 'go'
-          benchmark-data-dir-path: $${{ env.TAG }}
+          benchmark-data-dir-path: ${{ env.TAG }}/bench
           output-file-path: benchmark.txt
           # Personal access token to deploy GitHub Pages branch
           github-token: ${{ secrets.GOSDK }}
