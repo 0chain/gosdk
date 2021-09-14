@@ -13,7 +13,7 @@ func BenchmarkChunkedUploadChunkReader(b *testing.B) {
 
 	KB := 1024
 	MB := 1024 * KB
-	GB := 1024 * MB
+	//	GB := 1024 * MB
 
 	benchmarks := []struct {
 		Name string
@@ -39,10 +39,10 @@ func BenchmarkChunkedUploadChunkReader(b *testing.B) {
 		{Name: "500M 6M 2+1", Size: MB * 500, ChunkSize: MB * 6, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
 		{Name: "500M 6M 10+1", Size: MB * 500, ChunkSize: MB * 6, DataShards: 10, ParityShards: 3, EncryptOnUpload: false},
 
-		{Name: "1G 64K 2+1", Size: GB * 1, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
-		{Name: "1G 64K 10+1", Size: GB * 1, ChunkSize: KB * 64, DataShards: 10, ParityShards: 3, EncryptOnUpload: false},
-		{Name: "1G 60M 2+1", Size: GB * 1, ChunkSize: MB * 60, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
-		{Name: "1G 60M 10+1", Size: GB * 1, ChunkSize: MB * 60, DataShards: 10, ParityShards: 3, EncryptOnUpload: false},
+		// {Name: "1G 64K 2+1", Size: GB * 1, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+		// {Name: "1G 64K 10+1", Size: GB * 1, ChunkSize: KB * 64, DataShards: 10, ParityShards: 3, EncryptOnUpload: false},
+		// {Name: "1G 60M 2+1", Size: GB * 1, ChunkSize: MB * 60, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+		// {Name: "1G 60M 10+1", Size: GB * 1, ChunkSize: MB * 60, DataShards: 10, ParityShards: 3, EncryptOnUpload: false},
 	}
 
 	for _, bm := range benchmarks {
