@@ -60,13 +60,23 @@ const (
 	GET_VESTING_POOL_INFO    = VESTINGSC_PFX + `/getPoolInfo`
 	GET_VESTING_CLIENT_POOLS = VESTINGSC_PFX + `/getClientPools`
 
+	// inerest pool SC
+
+	INTERESTPOOLSC_PFX        = `/v1/screst/` + InterestPoolSmartContractAddress
+	GET_INTERESTPOOLSC_CONFIG = INTERESTPOOLSC_PFX + `/getConfig`
+
+	// faucet sc
+
+	FAUCETSC_PFX        = `/v1/screst/` + FaucetSmartContractAddress
+	GET_FAUCETSC_CONFIG = FAUCETSC_PFX + `/getConfig`
+
 	// miner SC
 
-	MINERSC_PFX = `/v1/screst/` + MinerSmartContractAddress
-
+	MINERSC_PFX          = `/v1/screst/` + MinerSmartContractAddress
 	GET_MINERSC_NODE     = MINERSC_PFX + "/nodeStat"
 	GET_MINERSC_POOL     = MINERSC_PFX + "/nodePoolStat"
 	GET_MINERSC_CONFIG   = MINERSC_PFX + "/configs"
+	GET_MINERSC_GLOBALS  = MINERSC_PFX + "/globals"
 	GET_MINERSC_USER     = MINERSC_PFX + "/getUserPools"
 	GET_MINERSC_MINERS   = MINERSC_PFX + "/getMinerList"
 	GET_MINERSC_SHARDERS = MINERSC_PFX + "/getSharderList"
@@ -936,11 +946,35 @@ type VestingSCConfig struct {
 	MaxDescriptionLength int            `json:"max_description_length"`
 }
 
+type InputMap struct {
+	Fields map[string]string `json:"fields"`
+}
+
 func GetVestingSCConfig(cb GetInfoCallback) (err error) {
 	if err = checkConfig(); err != nil {
 		return
 	}
 	go getInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
+	return
+}
+
+// interest pools sc
+
+func GetInterestPoolSCConfig(cb GetInfoCallback) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	go getInfoFromSharders(GET_INTERESTPOOLSC_CONFIG, 0, cb)
+	return
+}
+
+// faucet
+
+func GetFaucetSCConfig(cb GetInfoCallback) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	go getInfoFromSharders(GET_FAUCETSC_CONFIG, 0, cb)
 	return
 }
 
@@ -1045,35 +1079,19 @@ func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error) {
 	return
 }
 
-type MinerSCConfig struct {
-	ViewChange          int64          `json:"view_change"`
-	MaxN                int            `json:"max_n"`
-	MinN                int            `json:"min_n"`
-	MinS                int            `json:"min_s"`
-	MaxS                int            `json:"max_s"`
-	TPercent            float64        `json:"t_percent"`
-	KPercent            float64        `json:"k_percent"`
-	LastRound           int64          `json:"last_round"`
-	MaxStake            common.Balance `json:"max_stake"`
-	MinStake            common.Balance `json:"min_stake"`
-	InterestRate        float64        `json:"interest_rate"`
-	RewardRate          float64        `json:"reward_rate"`
-	ShareRatio          float64        `json:"share_ratio"`
-	BlockReward         common.Balance `json:"block_reward"`
-	MaxCharge           float64        `json:"max_charge"`
-	Epoch               int64          `json:"epoch"`
-	RewardDeclineRate   float64        `json:"reward_decline_rate"`
-	InterestDeclineRate float64        `json:"interest_decline_rate"`
-	MaxMint             common.Balance `json:"max_mint"`
-	Minted              common.Balance `json:"minted"`
-	MaxDelegates        int            `json:"max_delegates"`
-}
-
 func GetMinerSCConfig(cb GetInfoCallback) (err error) {
 	if err = checkConfig(); err != nil {
 		return
 	}
 	go getInfoFromSharders(GET_MINERSC_CONFIG, 0, cb)
+	return
+}
+
+func GetMinerSCGlobals(cb GetInfoCallback) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	go getInfoFromSharders(GET_MINERSC_GLOBALS, 0, cb)
 	return
 }
 
@@ -1086,8 +1104,7 @@ func GetStorageSCConfig(cb GetInfoCallback) (err error) {
 	if err = checkConfig(); err != nil {
 		return
 	}
-	var url = STORAGESC_GET_SC_CONFIG
-	go getInfoFromSharders(url, OpStorageSCGetConfig, cb)
+	go getInfoFromSharders(STORAGESC_GET_SC_CONFIG, OpStorageSCGetConfig, cb)
 	return
 }
 

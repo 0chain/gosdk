@@ -89,12 +89,12 @@ const (
 	ADD_FREE_ALLOCATION_ASSIGNER = "add_free_storage_assigner"
 
 	// Vesting SC
-	VESTING_TRIGGER       = "trigger"
-	VESTING_STOP          = "stop"
-	VESTING_UNLOCK        = "unlock"
-	VESTING_ADD           = "add"
-	VESTING_DELETE        = "delete"
-	VESTING_UPDATE_CONFIG = "update_config"
+	VESTING_TRIGGER         = "trigger"
+	VESTING_STOP            = "stop"
+	VESTING_UNLOCK          = "unlock"
+	VESTING_ADD             = "add"
+	VESTING_DELETE          = "delete"
+	VESTING_UPDATE_SETTINGS = "vestingsc-update-settings"
 
 	// Storage SC
 	STORAGESC_FINALIZE_ALLOCATION      = "finalize_allocation"
@@ -111,12 +111,24 @@ const (
 	STORAGESC_WRITE_POOL_LOCK          = "write_pool_lock"
 	STORAGESC_WRITE_POOL_UNLOCK        = "write_pool_unlock"
 	STORAGESC_ADD_CURATOR              = "add_curator"
+	STORAGESC_REMOVE_CURATOR           = "remove_curator"
 	STORAGESC_CURATOR_TRANSFER         = "curator_transfer_allocation"
+	STORAGESC_UPDATE_SETTINGS          = "update_settings"
 
-	// Miner SC
-	MINERSC_LOCK     = "addToDelegatePool"
-	MINERSC_UNLOCK   = "deleteFromDelegatePool"
-	MINERSC_SETTINGS = "update_settings"
+	MINERSC_LOCK             = "addToDelegatePool"
+	MINERSC_UNLOCK           = "deleteFromDelegatePool"
+	MINERSC_MINER_SETTINGS   = "update_miner_settings"
+	MINERSC_SHARDER_SETTINGS = "update_sharder_settings"
+	MINERSC_UPDATE_SETTINGS  = "update_settings"
+	MINERSC_UPDATE_GLOBALS   = "update_globals"
+	MINERSC_MINER_DELETE     = "delete_miner"
+	MINERSC_SHARDER_DELETE   = "delete_sharder"
+
+	// Faucet SC
+	FAUCETSC_UPDATE_SETTINGS = "update-settings"
+
+	// Interest pool SC
+	INTERESTPOOLSC_UPDATE_SETTINGS = "updateVariables"
 )
 
 type SignFunc = func(msg string) (string, error)
