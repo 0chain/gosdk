@@ -18,8 +18,22 @@ jobs:
       
       - name: Run benchmark
         run: go test -tags bn256 -benchmem -benchtime=10s -run="BenchmarkChunkedUpload*" -bench="BenchmarkChunkedUpload*"   ./... | tee benchmark.txt
+      # Download previous benchmark result from cache (if exists)
+      - name: Download previous benchmark data
+        uses: actions/cache@v1
+        with:
+          path: ./cache
+          key: ${{ runner.os }}-benchmark
+      # Run `github-action-benchmark` action
       - name: Store benchmark result
         uses: rhysd/github-action-benchmark@v1
         with:
+          # What benchmark tool the output.txt came from
           tool: 'go'
+          # Where the output from the benchmark tool is stored
           output-file-path: benchmark.txt
+          # Where the previous data file is stored
+          external-data-json-path: ./cache/benchmark-data.json
+          # Workflow will fail when an alert happens
+          fail-on-alert: true
+      # Upload the updated cache file for the next job by actions/cache
