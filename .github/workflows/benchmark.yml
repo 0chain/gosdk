@@ -17,23 +17,16 @@ jobs:
           go-version: '1.16' # The Go version to download (if necessary) and use.
       
       - name: Run benchmark
-        run: go test -tags bn256 -benchmem -benchtime=10s -run="BenchmarkChunkedUpload*" -bench="BenchmarkChunkedUpload*"   ./... | tee benchmark.txt
-      # Download previous benchmark result from cache (if exists)
-      - name: Download previous benchmark data
-        uses: actions/cache@v1
-        with:
-          path: ./cache
-          key: ${{ runner.os }}-benchmark
+        run: go test -tags bn256 -benchmem -benchtime=1s -run="BenchmarkChunkedUploadChunkReader" -bench="BenchmarkChunkedUploadChunkReader"   ./... | tee ./benchmark.txt
+ 
       # Run `github-action-benchmark` action
-      - name: Store benchmark result
+      - name: Push benchmark report
         uses: rhysd/github-action-benchmark@v1
         with:
-          # What benchmark tool the output.txt came from
+          name: 0chain/gosdk Benchmark
           tool: 'go'
-          # Where the output from the benchmark tool is stored
-          output-file-path: benchmark.txt
-          # Where the previous data file is stored
-          external-data-json-path: ./cache/benchmark-data.json
-          # Workflow will fail when an alert happens
-          fail-on-alert: true
-      # Upload the updated cache file for the next job by actions/cache
+          output-file-path: output.txt
+          # Personal access token to deploy GitHub Pages branch
+          github-token: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
+          # Push and deploy GitHub pages branch automatically
+          auto-push: true
