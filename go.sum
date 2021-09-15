@@ -42,6 +42,8 @@ github.com/0chain/blobber v0.3.3-0.20210903180155-d23ac87b8414 h1:E5apcdi1jkM1ht
 github.com/0chain/blobber v0.3.3-0.20210903180155-d23ac87b8414/go.mod h1:ylDmB3aJ3n1jy9AwyTFy9AGgNb8HSVJGUw/7VLXXUHo=
 github.com/0chain/blobber v0.3.3-0.20210906180942-a4d07506321c h1:8/dPQHbQtuxjN0KN8EV2Rmaq9tP5nJF2970bT4tjJ80=
 github.com/0chain/blobber v0.3.3-0.20210906180942-a4d07506321c/go.mod h1:ylDmB3aJ3n1jy9AwyTFy9AGgNb8HSVJGUw/7VLXXUHo=
+github.com/0chain/blobber v0.3.3-0.20210915144430-f966b39d52a0 h1:g1cySPPVEJ7E+Z6nOVYLZzrO1ybL67mvGy0fnkDZuIQ=
+github.com/0chain/blobber v0.3.3-0.20210915144430-f966b39d52a0/go.mod h1:ylDmB3aJ3n1jy9AwyTFy9AGgNb8HSVJGUw/7VLXXUHo=
 github.com/0chain/errors v1.0.2 h1:IIUMeh/qFlqDcyHesjU92CpRMVz9dIQWAtZooqrYinA=
 github.com/0chain/errors v1.0.2/go.mod h1:5t76jLb56TKfg/K2VD+eUMmNZJ42QsIRI8KzWuztwU4=
 github.com/0chain/gosdk v1.2.68-0.20210701180605-719eb403820c/go.mod h1:EntD+g2xA5SLUAm6JABMhkYAlTOmp0XhSnf/5xfwnV4=
