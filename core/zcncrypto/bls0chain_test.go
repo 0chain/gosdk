@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/0chain/errors"
-	"github.com/herumi/bls/-go-binary/bls"
+	"github.com/herumi/bls-go-binary/bls"
 	"github.com/stretchr/testify/require"
 
 	"github.com/0chain/gosdk/core/encryption"

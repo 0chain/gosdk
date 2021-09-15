@@ -15,7 +15,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/h2non/filetype v1.0.9
 	github.com/hashicorp/go-retryablehttp v0.7.0
-	github.com/herumi/bls v0.0.0-20210731023914-2ffc4ffc1a53
+	github.com/herumi/bls-go-binary v1.0.0
 	github.com/klauspost/cpuid/v2 v2.0.4 // indirect
 	github.com/klauspost/reedsolomon v1.9.11
 	github.com/kr/text v0.2.0 // indirect
