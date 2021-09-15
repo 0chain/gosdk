@@ -1,7 +1,7 @@
 module github.com/0chain/gosdk
 
 require (
-	github.com/0chain/blobber v0.3.3-0.20210903180155-d23ac87b8414
+	github.com/0chain/blobber v0.3.3-0.20210915144430-f966b39d52a0
 	github.com/0chain/errors v1.0.2
 	github.com/ethereum/go-ethereum v1.10.3
 	github.com/h2non/filetype v1.0.9
