@@ -14,6 +14,14 @@ func TestFormat(t *testing.T) {
 	require.Equal(t, "129382129321 SAS", token.Format(SAS))
 }
 
+func TestFormatStatic(t *testing.T) {
+	amount := int64(129382129321)
+	require.Equal(t, "12.938 ZCN", FormatStatic(amount, "ZCN"))
+	require.Equal(t, "12938.213 mZCN", FormatStatic(amount, "mZCN"))
+	require.Equal(t, "12938212.932 uZCN", FormatStatic(amount, "uZCN"))
+	require.Equal(t, "129382129321 SAS", FormatStatic(amount, "SAS"))
+}
+
 func TestAutoFormat(t *testing.T) {
 	require.Equal(t, "239 SAS", Balance(239).AutoFormat())
 	require.Equal(t, "2.736 uZCN", Balance(27361).AutoFormat())

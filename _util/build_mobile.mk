@@ -52,7 +52,7 @@ ifneq ($(IOS),)
 endif
 ifneq ($(ANDROID),)
 	@echo "Building Android framework. Please wait..."
-	@gomobile bind -target=android/arm64,android/amd64 -ldflags=-extldflags=-Wl,-soname,libgojni.so -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(GOSDK_PATH)/zcncore
+	@gomobile bind -target=android/arm64,android/amd64 -ldflags=-extldflags=-Wl,-soname,libgojni.so -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common
 	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"
 endif
 	@echo ""
