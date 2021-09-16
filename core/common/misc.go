@@ -207,3 +207,17 @@ func (unit *BalanceUnit) Parse(s string) error {
 	}
 	return nil
 }
+
+func ParseBalanceStatic(str string) (int64, error) {
+	bal, err := ParseBalance(str)
+	return int64(bal), err
+}
+
+func FormatStatic(amount int64, unit string) string {
+	token := Balance(amount)
+
+	var unitB BalanceUnit
+	unitB.Parse(unit)
+
+	return token.Format(unitB)
+}
