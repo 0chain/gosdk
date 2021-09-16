@@ -30,7 +30,7 @@ func (nope *nopeChunkedUploadProgressStorer) Remove(id string) error {
 	return nil
 }
 
-func GenerateRandomBytes(n int) []byte {
+func generateRandomBytes(n int) []byte {
 	b := make([]byte, n)
 	_, err := rand.Read(b)
 	// Note that err == nil only if we read len(b) bytes.
@@ -72,7 +72,7 @@ func BenchmarkChunkedUpload(b *testing.B) {
 	for n, bm := range benchmarks {
 		b.Run(bm.Name, func(b *testing.B) {
 
-			buf := GenerateRandomBytes(bm.Size)
+			buf := generateRandomBytes(bm.Size)
 
 			b.ResetTimer()
 

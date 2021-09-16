@@ -48,7 +48,7 @@ func BenchmarkChunkedUploadChunkReader(b *testing.B) {
 	for _, bm := range benchmarks {
 		b.Run(bm.Name, func(b *testing.B) {
 
-			buf := GenerateRandomBytes(bm.Size)
+			buf := generateRandomBytes(bm.Size)
 			b.ResetTimer()
 
 			for i := 0; i < b.N; i++ {

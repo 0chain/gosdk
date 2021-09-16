@@ -76,7 +76,7 @@ func BenchmarkChunkedUploadFormBuilder(b *testing.B) {
 	for _, bm := range benchmarks {
 		b.Run(bm.Name, func(b *testing.B) {
 
-			buf := GenerateRandomBytes(bm.Size)
+			buf := generateRandomBytes(bm.Size)
 			fileMeta := &FileMeta{
 				Path:       "/tmp/" + bm.Name,
 				ActualSize: int64(bm.Size),
