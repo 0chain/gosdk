@@ -12,7 +12,7 @@ import (
 	"github.com/klauspost/reedsolomon"
 )
 
-type ChunkReader interface {
+type ChunkedUploadChunkReader interface {
 	// Next read, encode and encrypt next chunk
 	Next() (*ChunkData, error)
 
@@ -20,8 +20,8 @@ type ChunkReader interface {
 	Read(buf []byte) ([][]byte, error)
 }
 
-// chunkReader read chunk bytes from io.Reader. see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-fixedmerkletree
-type chunkReader struct {
+// chunkedUploadChunkReader read chunk bytes from io.Reader. see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-fixedmerkletree
+type chunkedUploadChunkReader struct {
 	fileReader io.Reader
 
 	// chunkSize chunk size with encryption header
@@ -51,7 +51,7 @@ type chunkReader struct {
 }
 
 // createChunkReader create ChunkReader instance
-func createChunkReader(fileReader io.Reader, chunkSize int64, dataShards int, encryptOnUpload bool, uploadMask zboxutil.Uint128, erasureEncoder reedsolomon.Encoder, encscheme encryption.EncryptionScheme, hasher Hasher) (ChunkReader, error) {
+func createChunkReader(fileReader io.Reader, chunkSize int64, dataShards int, encryptOnUpload bool, uploadMask zboxutil.Uint128, erasureEncoder reedsolomon.Encoder, encscheme encryption.EncryptionScheme, hasher Hasher) (ChunkedUploadChunkReader, error) {
 
 	if chunkSize <= 0 {
 		return nil, errors.Throw(constants.ErrInvalidParameter, "chunkSize: "+strconv.FormatInt(chunkSize, 10))
@@ -69,7 +69,7 @@ func createChunkReader(fileReader io.Reader, chunkSize int64, dataShards int, en
 		return nil, errors.Throw(constants.ErrInvalidParameter, "hasher")
 	}
 
-	r := &chunkReader{
+	r := &chunkedUploadChunkReader{
 		fileReader:      fileReader,
 		chunkSize:       chunkSize,
 		nextChunkIndex:  0,
@@ -115,7 +115,7 @@ type ChunkData struct {
 // }
 
 // Next read next chunks for blobbers
-func (r *chunkReader) Next() (*ChunkData, error) {
+func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 
 	if r == nil {
 		return nil, errors.Throw(constants.ErrInvalidParameter, "r")
@@ -190,7 +190,7 @@ func (r *chunkReader) Next() (*ChunkData, error) {
 }
 
 // Read read, encode and encrypt all bytes
-func (r *chunkReader) Read(buf []byte) ([][]byte, error) {
+func (r *chunkedUploadChunkReader) Read(buf []byte) ([][]byte, error) {
 
 	if buf == nil {
 		return nil, nil

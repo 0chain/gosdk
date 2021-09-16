@@ -96,7 +96,7 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 		opt(su)
 	}
 
-	su.fileHasher = createHasher(int(su.chunkSize))
+	su.fileHasher = CreateHasher(int(su.chunkSize))
 
 	// encrypt option has been chaned.upload it from scratch
 	// chunkSize has been changed. upload it from scratch
@@ -139,7 +139,7 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 
 	su.chunkReader = cReader
 
-	su.formBuilder = createFormBuilder()
+	su.formBuilder = CreateChunkedUploadFormBuilder()
 
 	return su, nil
 
@@ -172,8 +172,8 @@ type ChunkedUpload struct {
 	thumbnailBytes         []byte
 	thumbailErasureEncoder reedsolomon.Encoder
 
-	chunkReader ChunkReader
-	formBuilder FormBuilder
+	chunkReader ChunkedUploadChunkReader
+	formBuilder ChunkedUploadFormBuilder
 
 	// encryptOnUpload encrypt data on upload or not.
 	encryptOnUpload bool
@@ -235,7 +235,7 @@ func (su *ChunkedUpload) createUploadProgress() UploadProgress {
 
 	for i := 0; i < len(progress.Blobbers); i++ {
 		progress.Blobbers[i] = &UploadBlobberStatus{
-			Hasher: createHasher(int(su.chunkSize)),
+			Hasher: CreateHasher(int(su.chunkSize)),
 		}
 	}
 
@@ -395,7 +395,7 @@ func (su *ChunkedUpload) processUpload(chunkIndex int, fileFragments [][]byte, t
 			return err
 		}
 
-		go func(b *ChunkedUploadBobbler, buf *bytes.Buffer, form FormMetadata) {
+		go func(b *ChunkedUploadBobbler, buf *bytes.Buffer, form ChunkedUploadFormMetadata) {
 			err := b.sendUploadRequest(ctx, su, chunkIndex, isFinal, encryptedKey, buf, form)
 
 			// channel is not closed

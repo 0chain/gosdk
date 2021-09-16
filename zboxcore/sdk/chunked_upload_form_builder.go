@@ -9,13 +9,14 @@ import (
 	"mime/multipart"
 )
 
-// FormBuilder build form data for uploading
-type FormBuilder interface {
+// ChunkedUploadFormBuilder build form data for uploading
+type ChunkedUploadFormBuilder interface {
 	// build form data
-	Build(fileMeta *FileMeta, hasher Hasher, connectionID string, chunkSize int64, chunkIndex int, isFinal bool, encryptedKey string, fileBytes, thumbnailBytes []byte) (*bytes.Buffer, FormMetadata, error)
+	Build(fileMeta *FileMeta, hasher Hasher, connectionID string, chunkSize int64, chunkIndex int, isFinal bool, encryptedKey string, fileBytes, thumbnailBytes []byte) (*bytes.Buffer, ChunkedUploadFormMetadata, error)
 }
 
-type FormMetadata struct {
+// ChunkedUploadFormMetadata upload form metadata
+type ChunkedUploadFormMetadata struct {
 	FileBytesLen         int
 	ThumbnailBytesLen    int
 	ContentType          string
@@ -25,16 +26,17 @@ type FormMetadata struct {
 	ThumbnailContentHash string
 }
 
-func createFormBuilder() FormBuilder {
-	return &formBuilder{}
+// CreateChunkedUploadFormBuilder create ChunkedUploadFormBuilder instance
+func CreateChunkedUploadFormBuilder() ChunkedUploadFormBuilder {
+	return &chunkedUploadFormBuilder{}
 }
 
-type formBuilder struct {
+type chunkedUploadFormBuilder struct {
 }
 
-func (b *formBuilder) Build(fileMeta *FileMeta, hasher Hasher, connectionID string, chunkSize int64, chunkIndex int, isFinal bool, encryptedKey string, fileBytes, thumbnailBytes []byte) (*bytes.Buffer, FormMetadata, error) {
+func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, connectionID string, chunkSize int64, chunkIndex int, isFinal bool, encryptedKey string, fileBytes, thumbnailBytes []byte) (*bytes.Buffer, ChunkedUploadFormMetadata, error) {
 
-	metadata := FormMetadata{
+	metadata := ChunkedUploadFormMetadata{
 		FileBytesLen:      len(fileBytes),
 		ThumbnailBytesLen: len(thumbnailBytes),
 	}

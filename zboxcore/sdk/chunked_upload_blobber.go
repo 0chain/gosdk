@@ -34,7 +34,7 @@ type ChunkedUploadBobbler struct {
 	commitResult  *CommitResult
 }
 
-func (sb *ChunkedUploadBobbler) sendUploadRequest(ctx context.Context, su *ChunkedUpload, chunkIndex int, isFinal bool, encryptedKey string, body *bytes.Buffer, formData FormMetadata) error {
+func (sb *ChunkedUploadBobbler) sendUploadRequest(ctx context.Context, su *ChunkedUpload, chunkIndex int, isFinal bool, encryptedKey string, body *bytes.Buffer, formData ChunkedUploadFormMetadata) error {
 
 	if formData.FileBytesLen == 0 {
 		//fixed fileRef in last chunk on stream. io.EOF with nil bytes

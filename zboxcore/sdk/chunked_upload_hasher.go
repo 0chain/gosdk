@@ -30,7 +30,8 @@ type hasher struct {
 	Content   *util.CompactMerkleTree `json:"content"`
 }
 
-func createHasher(chunkSize int) Hasher {
+// CreateHasher creat Hasher instance
+func CreateHasher(chunkSize int) Hasher {
 	h := &hasher{
 		File:      util.NewCompactMerkleTree(nil),
 		Challenge: &util.FixedMerkleTree{ChunkSize: chunkSize},

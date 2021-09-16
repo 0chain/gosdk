@@ -48,7 +48,7 @@ func BenchmarkChunkedUploadChunkReader(b *testing.B) {
 	for _, bm := range benchmarks {
 		b.Run(bm.Name, func(b *testing.B) {
 
-			buf := generateRandomBytes(bm.Size)
+			buf := GenerateRandomBytes(bm.Size)
 			b.ResetTimer()
 
 			for i := 0; i < b.N; i++ {
@@ -62,7 +62,7 @@ func BenchmarkChunkedUploadChunkReader(b *testing.B) {
 				}
 
 				encscheme.InitForEncryption("filetype:audio")
-				reader, err := createChunkReader(bytes.NewReader(buf), int64(bm.ChunkSize), bm.DataShards, bm.EncryptOnUpload, uploadMask, erasureEncoder, encscheme, createHasher(bm.ChunkSize))
+				reader, err := createChunkReader(bytes.NewReader(buf), int64(bm.ChunkSize), bm.DataShards, bm.EncryptOnUpload, uploadMask, erasureEncoder, encscheme, CreateHasher(bm.ChunkSize))
 				if err != nil {
 					b.Fatal(err)
 				}
