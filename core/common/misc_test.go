@@ -23,6 +23,13 @@ func TestFormatStatic(t *testing.T) {
 }
 
 func TestAutoFormat(t *testing.T) {
+	require.Equal(t, "239 SAS", AutoFormatStatic(239))
+	require.Equal(t, "2.736 uZCN", AutoFormatStatic(27361))
+	require.Equal(t, "2.387 mZCN", AutoFormatStatic(23872013))
+	require.Equal(t, "20.383 ZCN", AutoFormatStatic(203827162834))
+}
+
+func TestAutoFormatStatic(t *testing.T) {
 	require.Equal(t, "239 SAS", Balance(239).AutoFormat())
 	require.Equal(t, "2.736 uZCN", Balance(27361).AutoFormat())
 	require.Equal(t, "2.387 mZCN", Balance(23872013).AutoFormat())
