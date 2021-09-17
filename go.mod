@@ -11,7 +11,6 @@ require (
 	github.com/didip/tollbooth v4.0.2+incompatible
 	github.com/ethereum/go-ethereum v1.10.8
 	github.com/go-kit/kit v0.10.0 // indirect
-	github.com/gofrs/flock v0.8.1
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/h2non/filetype v1.0.9

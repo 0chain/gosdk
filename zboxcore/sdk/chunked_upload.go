@@ -20,7 +20,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"github.com/gofrs/flock"
 	"github.com/klauspost/reedsolomon"
 )
 
@@ -116,7 +115,7 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	for i := 0; i < len(su.allocationObj.Blobbers); i++ {
 
 		su.blobbers[i] = &ChunkedUploadBobbler{
-			flock:    flock.New(filepath.Join(su.workdir, "blobber."+su.allocationObj.Blobbers[i].ID+".lock")),
+			FLock:    createFLock(filepath.Join(su.workdir, "blobber."+su.allocationObj.Blobbers[i].ID+".lock")),
 			progress: su.progress.Blobbers[i],
 			blobber:  su.allocationObj.Blobbers[i],
 			fileRef: &fileref.FileRef{

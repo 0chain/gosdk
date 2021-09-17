@@ -2,8 +2,14 @@ package sdk
 
 import (
 	"hash/fnv"
+	"os"
+	"runtime"
 	"strconv"
+	"sync"
 
+	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/filelock"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
@@ -107,4 +113,53 @@ type UploadBlobberStatus struct {
 
 	// UploadLength total bytes that has been uploaded to blobbers
 	UploadLength int64 `json:"upload_length,omitempty"`
+}
+
+type FLock struct {
+	sync.Mutex
+	file string
+	fh   *os.File
+}
+
+func createFLock(file string) *FLock {
+	return &FLock{
+		file: file,
+	}
+}
+
+func (f *FLock) Lock() error {
+	if f == nil {
+		return errors.Throw(constants.ErrInvalidParameter, "f")
+	}
+
+	f.Mutex.Lock()
+	defer f.Mutex.Unlock()
+
+	if f.fh == nil {
+		// open a new os.File instance
+		// create it if it doesn't exist, and open the file read-only.
+		flags := os.O_CREATE
+		if runtime.GOOS == "aix" {
+			// AIX cannot preform write-lock (ie exclusive) on a
+			// read-only file.
+			flags |= os.O_RDWR
+		} else {
+			flags |= os.O_RDONLY
+		}
+		fh, err := os.OpenFile(f.file, flags, os.FileMode(0600))
+		if err != nil {
+			return err
+		}
+
+		f.fh = fh
+	}
+
+	return filelock.Lock(f.fh)
+}
+
+func (f *FLock) Unlock() {
+	err := filelock.Unlock(f.fh)
+	if err != nil {
+		os.Remove(f.file)
+	}
 }

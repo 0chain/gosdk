@@ -20,12 +20,11 @@ import (
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"github.com/gofrs/flock"
 )
 
 // ChunkedUploadBobbler client of blobber's upload
 type ChunkedUploadBobbler struct {
-	flock    *flock.Flock
+	*FLock
 	blobber  *blockchain.StorageNode
 	fileRef  *fileref.FileRef
 	progress *UploadBlobberStatus
@@ -127,11 +126,12 @@ func (sb *ChunkedUploadBobbler) sendUploadRequest(ctx context.Context, su *Chunk
 
 func (sb *ChunkedUploadBobbler) processCommit(ctx context.Context, su *ChunkedUpload) error {
 
-	err := sb.flock.Lock()
+	err := sb.Lock()
 	if err != nil {
 		return err
 	}
-	defer sb.flock.Unlock()
+
+	defer sb.Unlock()
 
 	rootRef, latestWM, size, err := sb.processWriteMarker(ctx, su)
 
