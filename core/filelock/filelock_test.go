@@ -17,7 +17,7 @@ import (
 	"testing"
 	"time"
 
-	"cmd/go/internal/lockedfile/internal/filelock"
+	"github.com/0chain/gosdk/core/filelock"
 )
 
 func lock(t *testing.T, f *os.File) {
