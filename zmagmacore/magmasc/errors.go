@@ -14,9 +14,9 @@ var (
 	// that decode data was failed.
 	errDecodeData = errors.New("decode_error", "decode error")
 
-	// errInvalidAcknowledgment represents an error
-	// that an acknowledgment was invalidated.
-	errInvalidAcknowledgment = errors.New(errCodeInvalid, "invalid acknowledgment")
+	// errInvalidSession represents an error
+	// that a session was invalidated.
+	errInvalidSession = errors.New(errCodeInvalid, "invalid session")
 
 	// errInvalidConsumer represents an error
 	// that consumer was invalidated.
@@ -30,7 +30,11 @@ var (
 	// that provider was invalidated.
 	errInvalidProvider = errors.New(errCodeInvalid, "invalid provider")
 
-	// errInvalidProviderTerms represents an error
-	// that provider terms was invalidated.
-	errInvalidProviderTerms = errors.New(errCodeInvalid, "invalid provider terms")
+	// errInvalidTerms represents an error
+	// that terms was invalidated.
+	errInvalidTerms = errors.New(errCodeInvalid, "invalid terms")
+
+	// errInvalidAccessPoint represents an error
+	// that access point was invalidated.
+	errInvalidAccessPoint = errors.New(errCodeInvalid, "invalid access point")
 )

@@ -10,16 +10,16 @@ import (
 	ts "github.com/0chain/gosdk/zmagmacore/time"
 )
 
-func mockAcknowledgment() *Acknowledgment {
+func mockSession() *Session {
 	now := time.Now().Format(time.RFC3339Nano)
 	billing := mockBilling()
 
-	return &Acknowledgment{
-		SessionID:     billing.DataUsage.SessionID,
-		AccessPointID: "id:access:point:" + now,
-		Billing:       billing,
-		Consumer:      mockConsumer(),
-		Provider:      mockProvider(),
+	return &Session{
+		SessionID:   billing.DataUsage.SessionID,
+		AccessPoint: &AccessPoint{ID: "id:access:point:" + now},
+		Billing:     billing,
+		Consumer:    mockConsumer(),
+		Provider:    mockProvider(),
 	}
 }
 
@@ -51,16 +51,15 @@ func mockDataUsage() DataUsage {
 func mockProvider() *Provider {
 	now := time.Now().Format(time.RFC3339Nano)
 	return &Provider{
-		ID:    "id:provider:" + now,
-		ExtID: "id:provider:external:" + now,
-		Host:  "localhost:8020",
+		ID:       "id:provider:" + now,
+		ExtID:    "id:provider:external:" + now,
+		Host:     "localhost:8020",
 		MinStake: billion,
 	}
 }
 
-func mockProviderTerms() ProviderTerms {
-	return ProviderTerms{
-		AccessPointID:   "id:access:point" + time.Now().Format(time.RFC3339Nano),
+func mockTerms() Terms {
+	return Terms{
 		Price:           0.1,
 		PriceAutoUpdate: 0.001,
 		MinCost:         0.5,

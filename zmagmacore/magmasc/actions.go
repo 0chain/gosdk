@@ -8,17 +8,17 @@ import (
 )
 
 // ExecuteSessionStart starts session for provided IDs by executing ConsumerSessionStartFuncName.
-func ExecuteSessionStart(ctx context.Context, sessID string) (*Acknowledgment, error) {
+func ExecuteSessionStart(ctx context.Context, sessID string) (*Session, error) {
 	txn, err := transaction.NewTransactionEntity()
 	if err != nil {
 		return nil, err
 	}
 
-	ackn, err := RequestAcknowledgment(sessID)
+	session, err := RequestSession(sessID)
 	if err != nil {
 		return nil, err
 	}
-	input, err := json.Marshal(&ackn)
+	input, err := json.Marshal(&session)
 	if err != nil {
 		return nil, err
 	}
@@ -27,7 +27,7 @@ func ExecuteSessionStart(ctx context.Context, sessID string) (*Acknowledgment, e
 		Address,
 		ConsumerSessionStartFuncName,
 		string(input),
-		ackn.Terms.GetAmount(),
+		session.AccessPoint.Terms.GetAmount(),
 	)
 	if err != nil {
 		return nil, err
@@ -38,17 +38,17 @@ func ExecuteSessionStart(ctx context.Context, sessID string) (*Acknowledgment, e
 		return nil, err
 	}
 
-	ackn = new(Acknowledgment)
-	if err := json.Unmarshal([]byte(txn.TransactionOutput), &ackn); err != nil {
+	session = new(Session)
+	if err := json.Unmarshal([]byte(txn.TransactionOutput), &session); err != nil {
 		return nil, err
 	}
 
-	return ackn, err
+	return session, err
 }
 
-// ExecuteDataUsage executes ProviderDataUsageFuncName and returns current Acknowledgment.
+// ExecuteDataUsage executes ProviderDataUsageFuncName and returns current Session.
 func ExecuteDataUsage(
-	ctx context.Context, downloadBytes, uploadBytes uint64, sessID string, sessTime uint32) (*Acknowledgment, error) {
+	ctx context.Context, downloadBytes, uploadBytes uint64, sessID string, sessTime uint32) (*Session, error) {
 
 	txn, err := transaction.NewTransactionEntity()
 	if err != nil {
@@ -75,31 +75,31 @@ func ExecuteDataUsage(
 		return nil, err
 	}
 
-	ackn := Acknowledgment{}
-	if err = json.Unmarshal([]byte(txn.TransactionOutput), &ackn); err != nil {
+	session := Session{}
+	if err = json.Unmarshal([]byte(txn.TransactionOutput), &session); err != nil {
 		return nil, err
 	}
 
-	return &ackn, err
+	return &session, err
 }
 
-// ExecuteSessionStop requests Acknowledgment from the blockchain and executes ConsumerSessionStopFuncName
+// ExecuteSessionStop requests Session from the blockchain and executes ConsumerSessionStopFuncName
 // and verifies including the transaction in the blockchain.
 //
-// Returns Acknowledgment for session with provided ID.
-func ExecuteSessionStop(ctx context.Context, sessionID string) (*Acknowledgment, error) {
+// Returns Session for session with provided ID.
+func ExecuteSessionStop(ctx context.Context, sessionID string) (*Session, error) {
 	txn, err := transaction.NewTransactionEntity()
 	if err != nil {
 		return nil, err
 	}
 
 	// need to respond billing to compute value of txn
-	ackn, err := RequestAcknowledgment(sessionID)
+	session, err := RequestSession(sessionID)
 	if err != nil {
 		return nil, err
 	}
 
-	input, err := json.Marshal(&ackn)
+	input, err := json.Marshal(&session)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ func ExecuteSessionStop(ctx context.Context, sessionID string) (*Acknowledgment,
 		Address,
 		ConsumerSessionStopFuncName,
 		string(input),
-		ackn.Billing.Amount,
+		session.Billing.Amount,
 	)
 	if err != nil {
 		return nil, err
@@ -119,12 +119,12 @@ func ExecuteSessionStop(ctx context.Context, sessionID string) (*Acknowledgment,
 		return nil, err
 	}
 
-	ackn = new(Acknowledgment)
-	if err := json.Unmarshal([]byte(txn.TransactionOutput), ackn); err != nil {
+	session = new(Session)
+	if err := json.Unmarshal([]byte(txn.TransactionOutput), session); err != nil {
 		return nil, err
 	}
 
-	return ackn, err
+	return session, err
 }
 
 // ExecuteProviderRegister executes provider registration magma sc function and returns current Provider.
@@ -237,25 +237,81 @@ func ExecuteConsumerUpdate(ctx context.Context, consumer *Consumer) (*Consumer, 
 	return consumer, nil
 }
 
-// ExecuteSessionInit executes session init magma sc function and returns Acknowledgment.
-func ExecuteSessionInit(ctx context.Context, consExtID, provExtID, apID, sessID string, terms ProviderTerms) (*Acknowledgment, error) {
+// ExecuteAccessPointRegister executes access point registration magma sc function and returns current AccessPoint.
+func ExecuteAccessPointRegister(ctx context.Context, accessPoint *AccessPoint) (*AccessPoint, error) {
 	txn, err := transaction.NewTransactionEntity()
 	if err != nil {
 		return nil, err
 	}
 
-	ackn := Acknowledgment{
+	input, err := json.Marshal(accessPoint)
+	if err != nil {
+		return nil, err
+	}
+	txnHash, err := txn.ExecuteSmartContract(ctx, Address, AccessPointRegisterFuncName, string(input), accessPoint.MinStake)
+	if err != nil {
+		return nil, err
+	}
+
+	txn, err = transaction.VerifyTransaction(ctx, txnHash)
+	if err != nil {
+		return nil, err
+	}
+
+	accessPoint = &AccessPoint{}
+	if err = json.Unmarshal([]byte(txn.TransactionOutput), accessPoint); err != nil {
+		return nil, err
+	}
+
+	return accessPoint, nil
+}
+
+// ExecuteAccessPointUpdate executes update access point magma sc function and returns updated AccessPoint.
+func ExecuteAccessPointUpdate(ctx context.Context, accessPoint *AccessPoint) (*AccessPoint, error) {
+	txn, err := transaction.NewTransactionEntity()
+	if err != nil {
+		return nil, err
+	}
+
+	input := accessPoint.Encode()
+	hash, err := txn.ExecuteSmartContract(ctx, Address, AccessPointUpdateFuncName, string(input), accessPoint.MinStake)
+	if err != nil {
+		return nil, err
+	}
+
+	txn, err = transaction.VerifyTransaction(ctx, hash)
+	if err != nil {
+		return nil, err
+	}
+
+	accessPoint = new(AccessPoint)
+	if err := json.Unmarshal([]byte(txn.TransactionOutput), accessPoint); err != nil {
+		return nil, err
+	}
+
+	return accessPoint, nil
+}
+
+// ExecuteSessionInit executes session init magma sc function and returns Session.
+func ExecuteSessionInit(ctx context.Context, consExtID, provExtID, apID, sessID string) (*Session, error) {
+	txn, err := transaction.NewTransactionEntity()
+	if err != nil {
+		return nil, err
+	}
+
+	session := Session{
 		Consumer: &Consumer{
 			ExtID: consExtID,
 		},
 		Provider: &Provider{
 			ExtID: provExtID,
 		},
-		AccessPointID: apID,
-		SessionID:     sessID,
-		Terms:         terms,
+		SessionID: sessID,
+		AccessPoint: &AccessPoint{
+			ID: apID,
+		},
 	}
-	input, err := json.Marshal(&ackn)
+	input, err := json.Marshal(&session)
 	if err != nil {
 		return nil, err
 	}
@@ -275,10 +331,10 @@ func ExecuteSessionInit(ctx context.Context, consExtID, provExtID, apID, sessID 
 		return nil, err
 	}
 
-	ackn = Acknowledgment{}
-	if err := json.Unmarshal([]byte(txn.TransactionOutput), &ackn); err != nil {
+	session = Session{}
+	if err := json.Unmarshal([]byte(txn.TransactionOutput), &session); err != nil {
 		return nil, err
 	}
 
-	return &ackn, err
+	return &session, err
 }

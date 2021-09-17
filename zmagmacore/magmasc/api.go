@@ -38,34 +38,34 @@ func GetAllProviders() ([]Provider, error) {
 	return providers, err
 }
 
-// RequestAcknowledgment makes smart contract rest api call to magma smart contract
-// AcknowledgmentRP rest point to retrieve Acknowledgment.
-func RequestAcknowledgment(sessionID string) (*Acknowledgment, error) {
+// RequestSession makes smart contract rest api call to magma smart contract
+// SessionRP rest point to retrieve Session.
+func RequestSession(sessionID string) (*Session, error) {
 	params := map[string]string{
 		"id": sessionID,
 	}
 
-	blob, err := http.MakeSCRestAPICall(Address, AcknowledgmentRP, params)
+	blob, err := http.MakeSCRestAPICall(Address, SessionRP, params)
 	if err != nil {
 		return nil, err
 	}
 
-	ackn := Acknowledgment{}
-	if err = json.Unmarshal(blob, &ackn); err != nil {
+	session := Session{}
+	if err = json.Unmarshal(blob, &session); err != nil {
 		return nil, err
 	}
 
-	return &ackn, nil
+	return &session, nil
 }
 
-// IsAcknowledgmentExist makes smart contract rest api call to magma smart contract
-// IsAcknowledgmentExistRP rest point to ensure that Acknowledgment with provided session ID exist in the blockchain.
-func IsAcknowledgmentExist(sessionID string) (bool, error) {
+// IsSessionExist makes smart contract rest api call to magma smart contract
+// IsSessionExistRP rest point to ensure that Session with provided session ID exist in the blockchain.
+func IsSessionExist(sessionID string) (bool, error) {
 	params := map[string]string{
 		"id": sessionID,
 	}
 
-	blob, err := http.MakeSCRestAPICall(Address, IsAcknowledgmentExistRP, params)
+	blob, err := http.MakeSCRestAPICall(Address, IsSessionExistRP, params)
 	if err != nil {
 		return false, err
 	}
@@ -78,9 +78,9 @@ func IsAcknowledgmentExist(sessionID string) (bool, error) {
 	return exist, nil
 }
 
-// VerifyAcknowledgmentAccepted makes smart contract rest api call to magma smart contract
-// VerifyAcknowledgmentAcceptedRP rest point to ensure that Acknowledgment with provided IDs was accepted.
-func VerifyAcknowledgmentAccepted(sessionID, accessPointID, consumerExtID, providerExtID string) (*Acknowledgment, error) {
+// VerifySessionAccepted makes smart contract rest api call to magma smart contract
+// VerifySessionAcceptedRP rest point to ensure that Session with provided IDs was accepted.
+func VerifySessionAccepted(sessionID, accessPointID, consumerExtID, providerExtID string) (*Session, error) {
 	params := map[string]string{
 		"session_id":      sessionID,
 		"access_point_id": accessPointID,
@@ -88,17 +88,17 @@ func VerifyAcknowledgmentAccepted(sessionID, accessPointID, consumerExtID, provi
 		"consumer_ext_id": consumerExtID,
 	}
 
-	blob, err := http.MakeSCRestAPICall(Address, VerifyAcknowledgmentAcceptedRP, params)
+	blob, err := http.MakeSCRestAPICall(Address, VerifySessionAcceptedRP, params)
 	if err != nil {
 		return nil, err
 	}
 
-	ackn := Acknowledgment{}
-	if err = json.Unmarshal(blob, &ackn); err != nil {
+	session := Session{}
+	if err = json.Unmarshal(blob, &session); err != nil {
 		return nil, err
 	}
 
-	return &ackn, nil
+	return &session, nil
 }
 
 // ConsumerFetch makes smart contract rest api call to magma smart contract
@@ -141,6 +141,26 @@ func ProviderFetch(id string) (*Provider, error) {
 	return &prov, nil
 }
 
+// AccessPointFetch makes smart contract rest api call to magma smart contract
+// AccessPointFetchRP rest point to fetch AccessPoint info.
+func AccessPointFetch(id string) (*AccessPoint, error) {
+	params := map[string]string{
+		"id": id,
+	}
+
+	blob, err := http.MakeSCRestAPICall(Address, AccessPointFetchRP, params)
+	if err != nil {
+		return nil, err
+	}
+
+	aP := AccessPoint{}
+	if err = json.Unmarshal(blob, &aP); err != nil {
+		return nil, err
+	}
+
+	return &aP, nil
+}
+
 // IsConsumerRegisteredRP makes smart contract rest api call to magma smart contract
 // ConsumerRegisteredRP rest point to check registration of the consumer with provided external ID.
 func IsConsumerRegisteredRP(extID string) (bool, error) {
@@ -177,4 +197,39 @@ func IsProviderRegisteredRP(extID string) (bool, error) {
 	}
 
 	return registered, nil
+}
+
+// IsAccessPointRegisteredRP makes smart contract rest api call to magma smart contract
+// AccessPointRegisteredRP rest point to check registration of the access point with provided ID.
+func IsAccessPointRegisteredRP(ID string) (bool, error) {
+	params := map[string]string{
+		"id": ID,
+	}
+	registeredByt, err := http.MakeSCRestAPICall(Address, AccessPointRegisteredRP, params)
+	if err != nil {
+		return false, err
+	}
+
+	var registered bool
+	if err := json.Unmarshal(registeredByt, &registered); err != nil {
+		return false, err
+	}
+
+	return registered, nil
+}
+
+// AccessPointMinStakeFetch makes smart contract rest api call to magma smart contract
+// AccessPointMinStakeFetchRP rest point to fetch configured min stake value.
+func AccessPointMinStakeFetch() (int64, error) {
+	minStakeByte, err := http.MakeSCRestAPICall(Address, AccessPointMinStakeFetchRP, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	var minStake int64
+	if err := json.Unmarshal(minStakeByte, &minStake); err != nil {
+		return 0, err
+	}
+
+	return minStake, nil
 }

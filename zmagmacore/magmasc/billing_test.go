@@ -11,9 +11,9 @@ import (
 func Test_Billing_CalcAmount(t *testing.T) {
 	t.Parallel()
 
-	bill, terms := mockBilling(), mockProviderTerms()
+	bill, terms := mockBilling(), mockTerms()
 
-	termsMinCost := mockProviderTerms()
+	termsMinCost := mockTerms()
 	termsMinCost.MinCost = 1000
 
 	// data usage summary in megabytes
@@ -23,7 +23,7 @@ func Test_Billing_CalcAmount(t *testing.T) {
 	tests := [3]struct {
 		name  string
 		bill  Billing
-		terms ProviderTerms
+		terms Terms
 		want  int64
 	}{
 		{
@@ -35,7 +35,7 @@ func Test_Billing_CalcAmount(t *testing.T) {
 		{
 			name:  "Zero_Amount_OK",
 			bill:  mockBilling(),
-			terms: ProviderTerms{},
+			terms: Terms{},
 			want:  0,
 		},
 		{
@@ -73,7 +73,7 @@ func Test_Billing_Decode(t *testing.T) {
 	}
 
 	billCompleted := mockBilling()
-	billCompleted.CalcAmount(mockProviderTerms())
+	billCompleted.CalcAmount(mockTerms())
 	billCompleted.CompletedAt = time.Now()
 	blobCompleted, err := json.Marshal(billCompleted)
 	if err != nil {

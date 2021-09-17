@@ -15,23 +15,23 @@ const (
 )
 
 const (
-	// AcknowledgmentPrefix represents prefix to save into storage.
-	AcknowledgmentPrefix = "ackn"
+	// SessionPrefix represents prefix to save into storage.
+	SessionPrefix = "session"
 
-	// AcknowledgmentActivePrefixPart represents prefix part to save into storage.
-	AcknowledgmentActivePrefixPart = "act"
+	// SessionActivePrefixPart represents prefix part to save into storage.
+	SessionActivePrefixPart = "act"
 
-	// AcknowledgmentRP represents MagmaSC relative path.
-	// Used to retrieve accepted acknowledgment.
-	AcknowledgmentRP = "/acknowledgmentAccepted"
+	// SessionRP represents MagmaSC relative path.
+	// Used to retrieve accepted session.
+	SessionRP = "/sessionAccepted"
 
-	// IsAcknowledgmentExistRP represents MagmaSC relative path.
-	// Used to check existing of acknowledgment.
-	IsAcknowledgmentExistRP = "/acknowledgmentExist"
+	// IsSessionExistRP represents MagmaSC relative path.
+	// Used to check existing of session.
+	IsSessionExistRP = "/sessionExist"
 
-	// VerifyAcknowledgmentAcceptedRP represents MagmaSC relative path.
+	// VerifySessionAcceptedRP represents MagmaSC relative path.
 	// Used to verify accepting Provider's terms by Consumer.
-	VerifyAcknowledgmentAcceptedRP = "/acknowledgmentAcceptedVerify"
+	VerifySessionAcceptedRP = "/sessionAcceptedVerify"
 )
 
 const (
@@ -95,6 +95,31 @@ const (
 
 	// providerType contents a value of provider node type.
 	providerType = "provider"
+)
+
+const (
+	// AccessPointRegisterFuncName represents MagmaSC function.
+	// Used to register bandwidth-marketplace's node.
+	AccessPointRegisterFuncName = "access_point_register"
+
+	// AccessPointUpdateFuncName represents MagmaSC function.
+	// Used to update access point node info.
+	AccessPointUpdateFuncName = "access_point_update"
+
+	// accessPointType contents a value of type of Access Point's node
+	accessPointType = "access-point"
+
+	// AccessPointFetchRP represents MagmaSC relative path.
+	// Used to fetch access point info.
+	AccessPointFetchRP = "/accessPointFetch"
+
+	// AccessPointMinStakeFetchRP represents MagmaSC relative path.
+	// Used to fetch min stake configured value.
+	AccessPointMinStakeFetchRP = "/accessPointMinStakeFetch"
+
+	// AccessPointRegisteredRP represents MagmaSC relative path.
+	// Used to fetch access point registered info.
+	AccessPointRegisteredRP = "/accessPointExist"
 )
 
 const (

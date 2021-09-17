@@ -24,7 +24,7 @@ var (
 
 // CalcAmount calculates and sets the billing Amount value by given price.
 // NOTE: the cost value must be represented in token units per megabyte.
-func (m *Billing) CalcAmount(terms ProviderTerms) {
+func (m *Billing) CalcAmount(terms Terms) {
 	price := float64(terms.GetPrice())
 	if price > 0 {
 		// data usage summary in megabytes

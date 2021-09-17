@@ -11,9 +11,8 @@ import (
 )
 
 type (
-	// ProviderTerms represents a provider and service terms.
-	ProviderTerms struct {
-		AccessPointID   string         `json:"apid"`                        // access point id
+	// Terms represents a provider and service terms.
+	Terms struct {
 		Price           float32        `json:"price"`                       // tokens per Megabyte
 		PriceAutoUpdate float32        `json:"price_auto_update,omitempty"` // price change on auto update
 		MinCost         float32        `json:"min_cost"`                    // minimal cost for a session
@@ -32,18 +31,18 @@ type (
 )
 
 var (
-	// Make sure ProviderTerms implements Serializable interface.
-	_ util.Serializable = (*ProviderTerms)(nil)
+	// Make sure Terms implements Serializable interface.
+	_ util.Serializable = (*Terms)(nil)
 )
 
-// NewProviderTerms returns a new constructed provider terms.
-func NewProviderTerms() *ProviderTerms {
-	return &ProviderTerms{QoS: &magma.QoS{}}
+// NewTerms returns a new constructed provider terms.
+func NewTerms() *Terms {
+	return &Terms{QoS: &magma.QoS{}}
 }
 
 // Decode implements util.Serializable interface.
-func (m *ProviderTerms) Decode(blob []byte) error {
-	var terms ProviderTerms
+func (m *Terms) Decode(blob []byte) error {
+	var terms Terms
 	if err := json.Unmarshal(blob, &terms); err != nil {
 		return errDecodeData.Wrap(err)
 	}
@@ -51,7 +50,6 @@ func (m *ProviderTerms) Decode(blob []byte) error {
 		return err
 	}
 
-	m.AccessPointID = terms.AccessPointID
 	m.Price = terms.Price
 	m.PriceAutoUpdate = terms.PriceAutoUpdate
 	m.MinCost = terms.MinCost
@@ -66,7 +64,7 @@ func (m *ProviderTerms) Decode(blob []byte) error {
 }
 
 // Decrease makes automatically Decrease provider terms by config.
-func (m *ProviderTerms) Decrease() *ProviderTerms {
+func (m *Terms) Decrease() *Terms {
 	m.Volume = 0 // the volume of terms must be zeroed
 
 	if m.ProlongDuration != 0 {
@@ -91,18 +89,18 @@ func (m *ProviderTerms) Decrease() *ProviderTerms {
 }
 
 // Encode implements util.Serializable interface.
-func (m *ProviderTerms) Encode() []byte {
+func (m *Terms) Encode() []byte {
 	blob, _ := json.Marshal(m)
 	return blob
 }
 
 // Expired returns if terms already expired.
-func (m *ProviderTerms) Expired() bool {
+func (m *Terms) Expired() bool {
 	return m.ExpiredAt < time.Now()+TermsExpiredDuration
 }
 
 // GetAmount returns calculated amount value of provider terms.
-func (m *ProviderTerms) GetAmount() (amount int64) {
+func (m *Terms) GetAmount() (amount int64) {
 	price := m.GetPrice()
 	if price > 0 {
 		amount = price * m.GetVolume()
@@ -115,7 +113,7 @@ func (m *ProviderTerms) GetAmount() (amount int64) {
 }
 
 // GetMinCost returns calculated min cost value of provider terms.
-func (m *ProviderTerms) GetMinCost() (cost int64) {
+func (m *Terms) GetMinCost() (cost int64) {
 	if m.MinCost > 0 {
 		cost = int64(m.MinCost * billion)
 	}
@@ -125,7 +123,7 @@ func (m *ProviderTerms) GetMinCost() (cost int64) {
 
 // GetPrice returns calculated price value of provider terms.
 // NOTE: the price value will be represented in token units per megabyte.
-func (m *ProviderTerms) GetPrice() (price int64) {
+func (m *Terms) GetPrice() (price int64) {
 	if m.Price > 0 {
 		price = int64(m.Price * billion)
 	}
@@ -135,7 +133,7 @@ func (m *ProviderTerms) GetPrice() (price int64) {
 
 // GetVolume returns value of the provider terms volume.
 // If the Volume is empty it will be calculated by the provider terms.
-func (m *ProviderTerms) GetVolume() int64 {
+func (m *Terms) GetVolume() int64 {
 	if m.Volume == 0 {
 		mbps := (m.QoS.UploadMbps + m.QoS.DownloadMbps) / octet // megabytes per second
 		duration := float32(m.ExpiredAt - time.Now())           // duration in seconds
@@ -147,7 +145,7 @@ func (m *ProviderTerms) GetVolume() int64 {
 }
 
 // Increase makes automatically Increase provider terms by config.
-func (m *ProviderTerms) Increase() *ProviderTerms {
+func (m *Terms) Increase() *Terms {
 	m.Volume = 0 // the volume of terms must be zeroed
 
 	if m.ProlongDuration != 0 {
@@ -171,13 +169,10 @@ func (m *ProviderTerms) Increase() *ProviderTerms {
 	return m
 }
 
-// Validate checks ProviderTerms for correctness.
-// If it is not return errInvalidProviderTerms.
-func (m *ProviderTerms) Validate() (err error) {
+// Validate checks Terms for correctness.
+// If it is not return errInvalidTerms.
+func (m *Terms) Validate() (err error) {
 	switch { // is invalid
-	case m.AccessPointID == "":
-		err = errors.New(errCodeBadRequest, "invalid access point id")
-
 	case m.QoS == nil:
 		err = errors.New(errCodeBadRequest, "invalid terms qos")
 
@@ -195,5 +190,5 @@ func (m *ProviderTerms) Validate() (err error) {
 		return nil // is valid
 	}
 
-	return errInvalidProviderTerms.Wrap(err)
+	return errInvalidTerms.Wrap(err)
 }
