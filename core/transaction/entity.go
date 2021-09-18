@@ -22,6 +22,11 @@ import (
 const TXN_SUBMIT_URL = "v1/transaction/put"
 const TXN_VERIFY_URL = "v1/transaction/get/confirmation?hash="
 
+const (
+	TxnSuccess = 1 // Indicates the transaction is successful in updating the state or smart contract
+	TxnFail    = 3 // Indicates a transaction has failed to update the state or smart contract
+)
+
 //Transaction entity that encapsulates the transaction related data and meta data
 type Transaction struct {
 	Hash              string `json:"hash,omitempty"`
@@ -38,6 +43,7 @@ type Transaction struct {
 	TransactionOutput string `json:"transaction_output,omitempty"`
 	TransactionFee    int64  `json:"transaction_fee"`
 	OutputHash        string `json:"txn_output_hash"`
+	Status            int    `json:"transaction_status"`
 }
 
 //TxnReceipt - a transaction receipt is a processed transaction that contains the output
@@ -120,7 +126,7 @@ const (
 	MINERSC_MINER_SETTINGS   = "update_miner_settings"
 	MINERSC_SHARDER_SETTINGS = "update_sharder_settings"
 	MINERSC_UPDATE_SETTINGS  = "update_settings"
-	MINERSC_UPDATE_GLOBALS   = "update_globals"
+	MINERSC_UPDATE_GLOBALS   = "update_global_settings"
 	MINERSC_MINER_DELETE     = "delete_miner"
 	MINERSC_SHARDER_DELETE   = "delete_sharder"
 

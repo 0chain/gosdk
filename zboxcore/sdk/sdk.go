@@ -1066,6 +1066,10 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 			"Failed to get the transaction confirmation")
 	}
 
+	if t.Status == transaction.TxnFail {
+		return t.Hash, t.TransactionOutput, errors.New("", t.TransactionOutput)
+	}
+
 	return t.Hash, t.TransactionOutput, nil
 }
 
