@@ -221,3 +221,8 @@ func FormatStatic(amount int64, unit string) string {
 
 	return token.Format(unitB)
 }
+
+func AutoFormatStatic(amount int64) string {
+	token := Balance(amount)
+	return token.AutoFormat()
+}
