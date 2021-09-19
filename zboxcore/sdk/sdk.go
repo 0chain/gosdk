@@ -77,16 +77,19 @@ func GetLogger() *logger.Logger {
 }
 
 // InitStorageSDK init storage sdk with wallet json and config
-func InitStorageSDK(walletJSON string, cfg conf.Config) error {
-	err := client.PopulateClient(walletJSON, cfg.SignatureScheme)
+func InitStorageSDK(clientJson string, blockWorker string, chainID string, signatureScheme string, preferredBlobbers []string) error {
+	blockchain.SetChainID(chainID)
+	blockchain.SetPreferredBlobbers(preferredBlobbers)
+	blockchain.SetBlockWorker(blockWorker)
+
+	var cfg conf.Config
+	err := json.Unmarshal([]byte(clientJson), &cfg)
 	if err != nil {
 		return err
 	}
-	blockchain.SetChainID(cfg.ChainID)
-	blockchain.SetPreferredBlobbers(cfg.PreferredBlobbers)
-	blockchain.SetBlockWorker(cfg.BlockWorker)
 
 	transaction.SetConfig(&cfg)
+	cfg.PreferredBlobbers = preferredBlobbers
 
 	err = UpdateNetworkDetails()
 	if err != nil {
