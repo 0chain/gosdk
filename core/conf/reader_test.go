@@ -9,7 +9,7 @@ import (
 func TestJSONReader(t *testing.T) {
 
 	reader, _ := NewReaderFromJSON(`{
-		"chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
+		"chain_id":"chain_id",
 		"signature_scheme" : "bls0chain",
 		"block_worker" : "http://localhost/dns",
 		"min_submit" : -20,
@@ -28,7 +28,7 @@ func TestJSONReader(t *testing.T) {
 		{
 			name: "Test_JSONReader_GetString",
 			run: func(r *require.Assertions) {
-				r.Equal("0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe", reader.GetString("chain_id"))
+				r.Equal("chain_id", reader.GetString("chain_id"))
 				r.Equal("bls0chain", reader.GetString("signature_scheme"))
 				r.Equal("http://localhost/dns", reader.GetString("block_worker"))
 			},

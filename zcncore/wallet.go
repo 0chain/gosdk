@@ -21,6 +21,7 @@ import (
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/jcmturner/gokrb5/v8/config"
 )
 
 type ChainConfig struct {
@@ -309,14 +310,16 @@ func Init(chainConfigJSON string) error {
 			return errors.New("", "invalid/unsupported signature scheme")
 		}
 
-		// try to initiazlie conf/Config
-		reader, err := conf.NewReaderFromJSON(chainConfigJSON)
-		if err == nil { //it is valid json
-			cfg, _ := conf.LoadConfig(reader)
-			if len(cfg.BlockWorker) > 0 { // it is a valid config.json
-				conf.InitClientConfig(&cfg)
-			}
+		cfg := &config.Config{
+			BlockWorker:             _config.chain.BlockWorker,
+			MinSubmit:               _config.chain.MinSubmit,
+			MinConfirmation:         _config.chain.MinConfirmation,
+			ConfirmationChainLength: _config.chain.ConfirmationChainLength,
+			SignatureScheme:         _config.chain.SignatureScheme,
+			ChainID:                 _config.chain.ChainID,
 		}
+
+		conf.InitClientConfig(&cfg)
 
 		err = UpdateNetworkDetails()
 		if err != nil {

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
 
 	"github.com/0chain/gosdk/core/common"
@@ -77,19 +78,18 @@ func GetLogger() *logger.Logger {
 
 // InitStorageSDK init storage sdk with walletJSON
 //   {
-//		"client_id":"322d1dadec182effbcbdeef77d84fedda15842b83739969a7754089669c13992",
-//		"client_key":"3b6d02a22ec82d4d9aa1402917ca268c869b94d0f2a04506107bc5bf9acff60e6422ad1c95759cc243db116f89a98a7a2641ff2fbd2f5b951ef450504217bd1e",
+//		"client_id":"322d1dadec182effbcbdeef77d84f",
+//		"client_key":"3b6d02a22ec82d4d9aa1402917ca2",
 //		"keys":[{
-//			"public_key":"3b6d02a22ec82d4d9aa1402917ca268c869b94d0f2a04506107bc5bf9acff60e6422ad1c95759cc243db116f89a98a7a2641ff2fbd2f5b951ef450504217bd1e",
-//			"private_key":"25f2e1355d3864de01aba0bfec370270ae90ec9e4e4b363cc761ce7a16f15914"
+//			"public_key":"3b6d02a22ec82d4d9aa1402917ca268",
+//			"private_key":"25f2e1355d3864de01aba0bfec3702"
 //			}],
-//		"mnemonics":"double wink spin mushroom thing notable trumpet chapter eternal first embody pond embrace gravity minute frozen praise october defy faculty sustain autumn material kitten",
+//		"mnemonics":"double wink spin mushroom thing notable trumpet chapter",
 //		"version":"1.0",
 //		"date_created":"2021-08-18T08:34:39+08:00"
 //	 }
 func InitStorageSDK(walletJSON string, blockWorker, chainID, signatureScheme string, preferredBlobbers []string) error {
 
-	// try to initialize client for zbox
 	err := client.PopulateClient(walletJSON, signatureScheme)
 	if err != nil {
 		return err
@@ -118,10 +118,22 @@ func GetNetwork() *Network {
 
 func SetMaxTxnQuery(num int) {
 	blockchain.SetMaxTxnQuery(num)
+
+	cfg, _ := conf.GetClientConfig()
+	if cfg != nil {
+		cfg.MaxTxnQuery = num
+	}
+
 }
 
 func SetQuerySleepTime(time int) {
 	blockchain.SetQuerySleepTime(time)
+
+	cfg, _ := conf.GetClientConfig()
+	if cfg != nil {
+		cfg.QuerySleepTime = time
+	}
+
 }
 
 func SetMinSubmit(num int) {
