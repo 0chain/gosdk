@@ -21,7 +21,6 @@ import (
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"github.com/jcmturner/gokrb5/v8/config"
 )
 
 type ChainConfig struct {
@@ -320,7 +319,7 @@ func Init(chainConfigJSON string) error {
 		assertConfig()
 		_config.isConfigured = true
 
-		cfg := &config.Config{
+		cfg := &conf.Config{
 			BlockWorker:             _config.chain.BlockWorker,
 			MinSubmit:               _config.chain.MinSubmit,
 			MinConfirmation:         _config.chain.MinConfirmation,
@@ -329,7 +328,7 @@ func Init(chainConfigJSON string) error {
 			ChainID:                 _config.chain.ChainID,
 		}
 
-		conf.InitClientConfig(&cfg)
+		conf.InitClientConfig(cfg)
 	}
 	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
 	return err
@@ -389,7 +388,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 	_config.isConfigured = true
 	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
 
-	cfg := &config.Config{
+	cfg := &conf.Config{
 		BlockWorker:             _config.chain.BlockWorker,
 		MinSubmit:               _config.chain.MinSubmit,
 		MinConfirmation:         _config.chain.MinConfirmation,
@@ -398,7 +397,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 		ChainID:                 _config.chain.ChainID,
 	}
 
-	conf.InitClientConfig(&cfg)
+	conf.InitClientConfig(cfg)
 
 	return nil
 }
