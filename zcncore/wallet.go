@@ -310,6 +310,16 @@ func Init(chainConfigJSON string) error {
 			return errors.New("", "invalid/unsupported signature scheme")
 		}
 
+		err = UpdateNetworkDetails()
+		if err != nil {
+			return err
+		}
+
+		go UpdateNetworkDetailsWorker(context.Background())
+
+		assertConfig()
+		_config.isConfigured = true
+
 		cfg := &config.Config{
 			BlockWorker:             _config.chain.BlockWorker,
 			MinSubmit:               _config.chain.MinSubmit,
@@ -320,16 +330,6 @@ func Init(chainConfigJSON string) error {
 		}
 
 		conf.InitClientConfig(&cfg)
-
-		err = UpdateNetworkDetails()
-		if err != nil {
-			return err
-		}
-
-		go UpdateNetworkDetailsWorker(context.Background())
-
-		assertConfig()
-		_config.isConfigured = true
 	}
 	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
 	return err
@@ -364,23 +364,13 @@ func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 }
 
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
-func InitZCNSDK(cfg *conf.Config) error {
+func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
 
-	if cfg == nil {
-		return errors.Throw(conf.ErrNilConfig)
-	}
-
-	if cfg.SignatureScheme != "ed25519" && cfg.SignatureScheme != "bls0chain" {
+	if signscheme != "ed25519" && signscheme != "bls0chain" {
 		return errors.New("", "invalid/unsupported signature scheme")
 	}
-	_config.chain.BlockWorker = cfg.BlockWorker
-	_config.chain.SignatureScheme = cfg.SignatureScheme
-	_config.chain.ChainID = cfg.ChainID
-	_config.chain.ConfirmationChainLength = cfg.ConfirmationChainLength
-	_config.chain.MinConfirmation = cfg.MinConfirmation
-	_config.chain.MinSubmit = cfg.MinSubmit
-
-	conf.InitClientConfig(cfg)
+	_config.chain.BlockWorker = blockWorker
+	_config.chain.SignatureScheme = signscheme
 
 	err := UpdateNetworkDetails()
 	if err != nil {
@@ -389,9 +379,27 @@ func InitZCNSDK(cfg *conf.Config) error {
 
 	go UpdateNetworkDetailsWorker(context.Background())
 
+	for _, conf := range configs {
+		err := conf(&_config.chain)
+		if err != nil {
+			return errors.Wrap(err, "invalid/unsupported options.")
+		}
+	}
 	assertConfig()
 	_config.isConfigured = true
 	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
+
+	cfg := &config.Config{
+		BlockWorker:             _config.chain.BlockWorker,
+		MinSubmit:               _config.chain.MinSubmit,
+		MinConfirmation:         _config.chain.MinConfirmation,
+		ConfirmationChainLength: _config.chain.ConfirmationChainLength,
+		SignatureScheme:         _config.chain.SignatureScheme,
+		ChainID:                 _config.chain.ChainID,
+	}
+
+	conf.InitClientConfig(&cfg)
+
 	return nil
 }
 
