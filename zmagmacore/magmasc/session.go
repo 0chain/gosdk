@@ -93,7 +93,7 @@ func (s *Session) PoolPayerID() string {
 
 // PoolPayeeID implements PoolConfigurator interface.
 func (s *Session) PoolPayeeID() string {
-	return s.Provider.ID
+	return s.AccessPoint.ID
 }
 
 // Validate checks Session for correctness.
