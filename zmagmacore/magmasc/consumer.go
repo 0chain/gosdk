@@ -55,6 +55,11 @@ func (m *Consumer) Encode() []byte {
 	return blob
 }
 
+// ExternalID returns the external id of Consumer node.
+func (m *Consumer) ExternalID() string {
+	return m.ExtID
+}
+
 // GetType returns node type.
 func (m *Consumer) GetType() string {
 	return consumerType

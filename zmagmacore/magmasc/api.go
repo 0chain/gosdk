@@ -161,6 +161,22 @@ func AccessPointFetch(id string) (*AccessPoint, error) {
 	return &aP, nil
 }
 
+// ProviderMinStakeFetch makes smart contract rest api call to magma smart contract
+// ProviderFetchRP rest point to fetch Provider info.
+func ProviderMinStakeFetch() (int64, error) {
+	blob, err := http.MakeSCRestAPICall(Address, ProviderMinStakeFetchRP, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	var minStake int64
+	if err = json.Unmarshal(blob, &minStake); err != nil {
+		return 0, err
+	}
+
+	return minStake, nil
+}
+
 // IsConsumerRegisteredRP makes smart contract rest api call to magma smart contract
 // ConsumerRegisteredRP rest point to check registration of the consumer with provided external ID.
 func IsConsumerRegisteredRP(extID string) (bool, error) {

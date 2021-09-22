@@ -89,6 +89,10 @@ const (
 	// Used to fetch provider info.
 	ProviderFetchRP = "/providerFetch"
 
+	// ProviderMinStakeFetchRP represents MagmaSC relative path
+	// Used to fetch provider min stake
+	ProviderMinStakeFetchRP = "/providerMinStakeFetch"
+
 	// ProviderRegisteredRP represents MagmaSC relative path.
 	// Used to fetch provider registered info.
 	ProviderRegisteredRP = "/providerExist"

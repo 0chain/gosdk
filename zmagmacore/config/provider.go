@@ -12,7 +12,7 @@ type (
 		ID       string `yaml:"id"`
 		ExtID    string `yaml:"ext_id"`
 		Host     string `yaml:"host"`
-		MinStake int64  `yaml:"min_stake"`
+		MinStake bool   `yaml:"min_stake"`
 	}
 )
 

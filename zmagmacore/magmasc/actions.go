@@ -138,7 +138,7 @@ func ExecuteProviderRegister(ctx context.Context, provider *Provider) (*Provider
 	if err != nil {
 		return nil, err
 	}
-	txnHash, err := txn.ExecuteSmartContract(ctx, Address, ProviderRegisterFuncName, string(input), 0)
+	txnHash, err := txn.ExecuteSmartContract(ctx, Address, ProviderRegisterFuncName, string(input), provider.MinStake)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func ExecuteProviderUpdate(ctx context.Context, provider *Provider) (*Provider, 
 	}
 
 	input := provider.Encode()
-	hash, err := txn.ExecuteSmartContract(ctx, Address, ProviderUpdateFuncName, string(input), 0)
+	hash, err := txn.ExecuteSmartContract(ctx, Address, ProviderUpdateFuncName, string(input), provider.MinStake)
 	if err != nil {
 		return nil, err
 	}

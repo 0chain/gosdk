@@ -16,6 +16,7 @@ type (
 		ExtID    string `json:"ext_id"`
 		Host     string `json:"host,omitempty"`
 		MinStake int64  `json:"min_stake,omitempty"`
+		minStake bool
 	}
 )
 
@@ -30,7 +31,7 @@ func NewProviderFromCfg(cfg *config.Provider) *Provider {
 		ID:       node.ID(),
 		ExtID:    cfg.ExtID,
 		Host:     cfg.Host,
-		MinStake: cfg.MinStake,
+		minStake: cfg.MinStake,
 	}
 }
 
@@ -56,6 +57,11 @@ func (m *Provider) Decode(blob []byte) error {
 func (m *Provider) Encode() []byte {
 	blob, _ := json.Marshal(m)
 	return blob
+}
+
+// ExternalID returns the external id of Provider node.
+func (m *Provider) ExternalID() string {
+	return m.ExtID
 }
 
 // GetType returns Provider's type.

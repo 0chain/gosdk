@@ -1,51 +1,76 @@
 package magmasc
 
-// ExternalID represents simple getter for ExtID.
-func (m *Consumer) ExternalID() string {
-	return m.ExtID
+import (
+	"context"
+	"github.com/0chain/gosdk/zmagmacore/errors"
+	"github.com/0chain/gosdk/zmagmacore/registration"
+)
+
+var (
+	// Ensure Consumer implements registration.Node interface.
+	_ registration.Node = (*Consumer)(nil)
+)
+
+// IsNodeRegistered implements registration.Node interface.
+func (m *Consumer) IsNodeRegistered() (bool, error) {
+	return IsConsumerRegisteredRP(m.ID)
 }
 
-// FetchNodeRP returns name of magma sc rest point used for fetching consumer's node info.
-func (m *Consumer) FetchNodeRP() string {
-	return ConsumerFetchRP
+// Register implements registration.Node interface.
+func (m *Consumer) Register(ctx context.Context) (registration.Node, error) {
+	return ExecuteConsumerRegister(ctx, m)
 }
 
-// IsNodeRegisteredRP returns name of magma sc rest point used for checking consumer's node registration.
-func (m *Consumer) IsNodeRegisteredRP() string {
-	return ConsumerRegisteredRP
+// Update implements registration.Node interface.
+func (m *Consumer) Update(ctx context.Context) (registration.Node, error) {
+	return ExecuteConsumerRegister(ctx, m)
 }
 
-// RegistrationFuncName returns name of magma sc function used for consumer's node registration.
-func (m *Consumer) RegistrationFuncName() string {
-	return ConsumerRegisterFuncName
+var (
+	// Ensure Provider implements registration.Node interface.
+	_ registration.Node = (*Provider)(nil)
+)
+
+// IsNodeRegistered implements registration.Node interface.
+func (m *Provider) IsNodeRegistered() (bool, error) {
+	return IsProviderRegisteredRP(m.ID)
 }
 
-// UpdateNodeFuncName returns name of magma sc function used for consumer's node updating.
-func (m *Consumer) UpdateNodeFuncName() string {
-	return ConsumerUpdateFuncName
+// Register implements registration.Node interface.
+func (m *Provider) Register(ctx context.Context) (registration.Node, error) {
+	var (
+		errCode = "provider_register"
+
+		minStake int64
+	)
+	if m.minStake {
+		var err error
+		minStake, err = ProviderMinStakeFetch()
+		if err != nil {
+			return nil, errors.Wrap(errCode, "error while fetching min stake", err)
+		}
+	}
+
+	m.MinStake = minStake
+	return ExecuteProviderRegister(ctx, m)
 }
 
-// ExternalID represents simple getter for ExtID.
-func (m *Provider) ExternalID() string {
-	return m.ExtID
-}
+// Update implements registration.Node interface.
+func (m *Provider) Update(ctx context.Context) (registration.Node, error) {
+	var (
+		errCode = "provider_update"
 
-// FetchNodeRP returns name of magma sc rest point used for fetching provider's node info.
-func (m *Provider) FetchNodeRP() string {
-	return ProviderFetchRP
-}
+		minStake int64
+	)
+	if m.minStake {
+		var err error
+		minStake, err = ProviderMinStakeFetch()
+		if err != nil {
+			return nil, errors.Wrap(errCode, "error while fetching min stake", err)
+		}
+	}
 
-// IsNodeRegisteredRP returns name of magma sc rest point used for checking provider's node registration.
-func (m *Provider) IsNodeRegisteredRP() string {
-	return ProviderRegisteredRP
-}
+	m.MinStake = minStake
 
-// RegistrationFuncName returns name of magma sc function used for provider's node registration.
-func (m *Provider) RegistrationFuncName() string {
-	return ProviderRegisterFuncName
-}
-
-// UpdateNodeFuncName returns name of magma sc function used for provider's node updating.
-func (m *Provider) UpdateNodeFuncName() string {
-	return ProviderUpdateFuncName
+	return ExecuteProviderUpdate(ctx, m)
 }
