@@ -24,7 +24,7 @@ func (m *Consumer) Register(ctx context.Context) (registration.Node, error) {
 
 // Update implements registration.Node interface.
 func (m *Consumer) Update(ctx context.Context) (registration.Node, error) {
-	return ExecuteConsumerRegister(ctx, m)
+	return ExecuteConsumerUpdate(ctx, m)
 }
 
 var (
