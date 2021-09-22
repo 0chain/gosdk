@@ -2,6 +2,7 @@ package magmasc
 
 import (
 	"context"
+
 	"github.com/0chain/gosdk/zmagmacore/errors"
 	"github.com/0chain/gosdk/zmagmacore/registration"
 )
@@ -13,7 +14,7 @@ var (
 
 // IsNodeRegistered implements registration.Node interface.
 func (m *Consumer) IsNodeRegistered() (bool, error) {
-	return IsConsumerRegisteredRP(m.ID)
+	return IsConsumerRegisteredRP(m.ExtID)
 }
 
 // Register implements registration.Node interface.
@@ -33,7 +34,7 @@ var (
 
 // IsNodeRegistered implements registration.Node interface.
 func (m *Provider) IsNodeRegistered() (bool, error) {
-	return IsProviderRegisteredRP(m.ID)
+	return IsProviderRegisteredRP(m.ExtID)
 }
 
 // Register implements registration.Node interface.
