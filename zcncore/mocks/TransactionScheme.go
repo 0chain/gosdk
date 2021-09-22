@@ -505,11 +505,11 @@ func (_m *TransactionScheme) VestingUnlock(poolID string) error {
 }
 
 // VestingUpdateConfig provides a mock function with given fields: vscc
-func (_m *TransactionScheme) VestingUpdateConfig(vscc *zcncore.VestingSCConfig) error {
+func (_m *TransactionScheme) VestingUpdateConfig(vscc *zcncore.InputMap) error {
 	ret := _m.Called(vscc)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*zcncore.VestingSCConfig) error); ok {
+	if rf, ok := ret.Get(0).(func(*zcncore.InputMap) error); ok {
 		r0 = rf(vscc)
 	} else {
 		r0 = ret.Error(0)

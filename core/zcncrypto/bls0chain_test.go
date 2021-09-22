@@ -3,10 +3,11 @@ package zcncrypto
 import (
 	"testing"
 
-	"github.com/0chain/gosdk/core/common/errors"
-	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/errors"
 	"github.com/herumi/bls-go-binary/bls"
 	"github.com/stretchr/testify/require"
+
+	"github.com/0chain/gosdk/core/encryption"
 )
 
 var verifyPublickey = `e8a6cfa7b3076ae7e04764ffdfe341632a136b52953dfafa6926361dd9a466196faecca6f696774bbd64b938ff765dbc837e8766a5e2d8996745b2b94e1beb9e`

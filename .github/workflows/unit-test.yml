@@ -2,9 +2,9 @@ name: Unit tests
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, staging ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, staging ]
 
 jobs:
   test:
@@ -12,5 +12,8 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Install herumi's libraries
+        run: sudo make install-herumi-ubuntu
+
       - name: Run Unit Test
-        run: make gosdk-test
+        run: LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH make gosdk-test

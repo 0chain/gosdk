@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -120,9 +120,10 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 				return errors.Wrap(err, "error getting the dir tree from list response:")
 			}
 			return nil
-		} else {
-			return errors.New(fmt.Sprintf("error from server list response: %s", s.String()))
 		}
+
+		return fmt.Errorf("error from server list response: %s", s.String())
+
 	})
 }
 

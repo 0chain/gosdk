@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -93,7 +93,7 @@ func verifyFn(signature, msgHash, publicKey string) (bool, error) {
 	v.SetPublicKey(publicKey)
 	ok, err := v.Verify(signature, msgHash)
 	if err != nil || ok == false {
-		return false, errors.New(`{"error": "signature_mismatch"}`)
+		return false, errors.New("", `{"error": "signature_mismatch"}`)
 	}
 	return true, nil
 }
@@ -261,10 +261,40 @@ func (ta *TransactionWithAuth) VestingDelete(poolID string) (err error) {
 }
 
 func (ta *TransactionWithAuth) VestingUpdateConfig(
-	vscc *VestingSCConfig) (err error) {
-
+	ip *InputMap,
+) (err error) {
 	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.VESTING_UPDATE_CONFIG, vscc, 0)
+		transaction.VESTING_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+// Interest pool SC
+
+func (ta *TransactionWithAuth) InterestPoolUpdateConfig(
+	ip *InputMap,
+) (err error) {
+	err = ta.t.createSmartContractTxn(InterestPoolSmartContractAddress,
+		transaction.INTERESTPOOLSC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+// faucet smart contract
+
+func (ta *TransactionWithAuth) FaucetUpdateConfig(
+	ip *InputMap,
+) (err error) {
+	err = ta.t.createSmartContractTxn(FaucetSmartContractAddress,
+		transaction.FAUCETSC_UPDATE_SETTINGS, ip, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
@@ -277,11 +307,50 @@ func (ta *TransactionWithAuth) VestingUpdateConfig(
 // miner sc
 //
 
-func (ta *TransactionWithAuth) MinerSCSettings(info *MinerSCMinerInfo) (
+func (ta *TransactionWithAuth) MinerSCMinerSettings(info *MinerSCMinerInfo) (
 	err error) {
 
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_SETTINGS, info, 0)
+		transaction.MINERSC_MINER_SETTINGS, info, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) MinerSCSharderSettings(info *MinerSCMinerInfo) (
+	err error) {
+
+	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_SHARDER_SETTINGS, info, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) MinerSCDeleteMiner(info *MinerSCMinerInfo) (
+	err error) {
+
+	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_MINER_DELETE, info, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) MinerSCDeleteSharder(info *MinerSCMinerInfo) (
+	err error) {
+
+	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_SHARDER_DELETE, info, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
@@ -323,6 +392,32 @@ func (ta *TransactionWithAuth) MienrSCUnlock(nodeID, poolID string) (
 	return
 }
 
+func (ta *TransactionWithAuth) MinerScUpdateConfig(
+	ip *InputMap,
+) (err error) {
+	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) MinerScUpdateGlobals(
+	ip *InputMap,
+) (err error) {
+	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_UPDATE_GLOBALS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
 //
 // interest pool
 //
@@ -353,12 +448,25 @@ func (ta *TransactionWithAuth) UnlockTokens(poolID string) error {
 
 //RegisterMultiSig register a multisig wallet with the SC.
 func (ta *TransactionWithAuth) RegisterMultiSig(walletstr string, mswallet string) error {
-	return errors.New("not implemented")
+	return errors.New("", "not implemented")
 }
 
 //
 // Storage SC
 //
+
+func (ta *TransactionWithAuth) StorageScUpdateConfig(
+	ip *InputMap,
+) (err error) {
+	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
 
 // FinalizeAllocation transaction.
 func (ta *TransactionWithAuth) FinalizeAllocation(allocID string, fee int64) (

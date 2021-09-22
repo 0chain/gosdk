@@ -10,10 +10,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
-
-	"github.com/0chain/gosdk/zboxcore/marker"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
@@ -22,6 +21,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	. "github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
@@ -76,14 +76,18 @@ func GetLogger() *logger.Logger {
 	return &Logger
 }
 
-func InitStorageSDK(clientJson string, blockWorker string, chainID string, signatureScheme string, preferredBlobbers []string) error {
-	err := client.PopulateClient(clientJson, signatureScheme)
+// InitStorageSDK init storage sdk with wallet json and config
+func InitStorageSDK(walletJSON string, cfg conf.Config) error {
+	err := client.PopulateClient(walletJSON, cfg.SignatureScheme)
 	if err != nil {
 		return err
 	}
-	blockchain.SetChainID(chainID)
-	blockchain.SetPreferredBlobbers(preferredBlobbers)
-	blockchain.SetBlockWorker(blockWorker)
+	blockchain.SetChainID(cfg.ChainID)
+	blockchain.SetPreferredBlobbers(cfg.PreferredBlobbers)
+	blockchain.SetBlockWorker(cfg.BlockWorker)
+
+	transaction.SetConfig(&cfg)
+
 	err = UpdateNetworkDetails()
 	if err != nil {
 		return err
@@ -192,7 +196,7 @@ func GetReadPoolInfo(clientID string) (info *AllocationPoolStats, err error) {
 		return nil, errors.Wrap(err, "error requesting read pool info")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, errors.New("", "empty response")
 	}
 
 	info = new(AllocationPoolStats)
@@ -336,7 +340,7 @@ func GetStakePoolInfo(blobberID string) (info *StakePoolInfo, err error) {
 		return nil, errors.Wrap(err, "error requesting stake pool info:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, errors.New("", "empty response")
 	}
 
 	info = new(StakePoolInfo)
@@ -369,7 +373,7 @@ func GetStakePoolUserInfo(clientID string) (info *StakePoolUserInfo, err error) 
 		return nil, errors.Wrap(err, "error requesting stake pool user info:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, errors.New("", "empty response")
 	}
 
 	info = new(StakePoolUserInfo)
@@ -491,7 +495,7 @@ func GetWritePoolInfo(clientID string) (info *AllocationPoolStats, err error) {
 		return nil, errors.Wrap(err, "error requesting read pool info:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, errors.New("", "empty response")
 	}
 
 	info = new(AllocationPoolStats)
@@ -576,7 +580,7 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 		return nil, errors.Wrap(err, "error requesting challenge pool info:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, errors.New("", "empty response")
 	}
 
 	info = new(ChallengePoolInfo)
@@ -587,56 +591,35 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 	return
 }
 
+func GetMptData(key string) ([]byte, error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+
+	var b []byte
+	b, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
+		"/get_mpt_key", map[string]string{"key": key},
+		nil,
+	)
+	if err != nil {
+		return nil, errors.Wrap(err, "error requesting mpt key data:")
+	}
+	if len(b) == 0 {
+		return nil, errors.New("", "empty response")
+	}
+
+	return b, nil
+}
+
 //
 // storage SC configurations and blobbers
 //
 
-type StorageStakePoolConfig struct {
-	MinLock          common.Balance `json:"min_lock"`
-	InterestRate     float64        `json:"interest_rate"`
-	InterestInterval time.Duration  `json:"interest_interval"`
+type InputMap struct {
+	Fields map[string]interface{} `json:"fields"`
 }
 
-// read pool configs
-
-type StorageReadPoolConfig struct {
-	MinLock       common.Balance `json:"min_lock"`
-	MinLockPeriod time.Duration  `json:"min_lock_period"`
-	MaxLockPeriod time.Duration  `json:"max_lock_period"`
-}
-
-// write pool configurations
-
-type StorageWritePoolConfig struct {
-	MinLock       common.Balance `json:"min_lock"`
-	MinLockPeriod time.Duration  `json:"min_lock_period"`
-	MaxLockPeriod time.Duration  `json:"max_lock_period"`
-}
-
-type StorageSCConfig struct {
-	MinAllocSize                    common.Size             `json:"min_alloc_size"`
-	MinAllocDuration                time.Duration           `json:"min_alloc_duration"`
-	MaxChallengeCompletionTime      time.Duration           `json:"max_challenge_completion_time"`
-	MinOfferDuration                time.Duration           `json:"min_offer_duration"`
-	MinBlobberCapacity              common.Size             `json:"min_blobber_capacity"`
-	ReadPool                        *StorageReadPoolConfig  `json:"readpool"`
-	WritePool                       *StorageWritePoolConfig `json:"writepool"`
-	StakePool                       *StorageStakePoolConfig `json:"stakepool"`
-	ValidatorReward                 float64                 `json:"validator_reward"`
-	BlobberSlash                    float64                 `json:"blobber_slash"`
-	MaxReadPrice                    common.Balance          `json:"max_read_price"`
-	MaxWritePrice                   common.Balance          `json:"max_write_price"`
-	FailedChallengesToCancel        int                     `json:"failed_challenges_to_cancel"`
-	FailedChallengesToRevokeMinLock int                     `json:"failed_challenges_to_revoke_min_lock"`
-	ChallengeEnabled                bool                    `json:"challenge_enabled"`
-	MaxChallengesPerGeneration      int                     `json:"max_challenges_per_generation"`
-	ChallengeGenerationRate         float64                 `json:"challenge_rate_per_mb_min"`
-	MaxDelegates                    int                     `json:"max_delegates"`
-	MaxCharge                       float64                 `json:"max_charge"`
-	TimeUnit                        time.Duration           `json:"time_unit"`
-}
-
-func GetStorageSCConfig() (conf *StorageSCConfig, err error) {
+func GetStorageSCConfig() (conf *InputMap, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
 	}
@@ -648,17 +631,15 @@ func GetStorageSCConfig() (conf *StorageSCConfig, err error) {
 		return nil, errors.Wrap(err, "error requesting storage SC configs:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, errors.New("", "empty response")
 	}
 
-	conf = new(StorageSCConfig)
+	conf = new(InputMap)
+	conf.Fields = make(map[string]interface{})
 	if err = json.Unmarshal(b, conf); err != nil {
 		return nil, errors.Wrap(err, "rror decoding response:")
 	}
 
-	if conf.ReadPool == nil || conf.WritePool == nil || conf.StakePool == nil {
-		return nil, errors.New("invalid confg: missing read/write/stake pool configs")
-	}
 	return
 }
 
@@ -685,7 +666,7 @@ func GetBlobbers() (bs []*Blobber, err error) {
 		return nil, errors.Wrap(err, "error requesting blobbers:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response")
+		return nil, errors.New("", "empty response")
 	}
 
 	type nodes struct {
@@ -716,7 +697,7 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 		return nil, errors.Wrap(err, "requesting blobber:")
 	}
 	if len(b) == 0 {
-		return nil, errors.New("empty response from sharders")
+		return nil, errors.New("", "empty response from sharders")
 	}
 	blob = new(Blobber)
 	if err = json.Unmarshal(b, blob); err != nil {
@@ -806,6 +787,16 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 	return allocations, nil
 }
 
+func CreateAllocationWithBlobbers(datashards, parityshards int, size, expiry int64,
+	readPrice, writePrice PriceRange, mcct time.Duration, lock int64, blobbers []string) (
+	string, error) {
+
+	return CreateAllocationForOwner(client.GetClientID(),
+		client.GetClientPublicKey(), datashards, parityshards,
+		size, expiry, readPrice, writePrice, mcct, lock,
+		blobbers)
+}
+
 func CreateAllocation(datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, mcct time.Duration, lock int64) (
 	string, error) {
@@ -836,7 +827,7 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
 		"max_challenge_completion_time": mcct,
-		"diversify_blobbers":            true,
+		"diversify_blobbers":            false,
 	}
 
 	var sn = transaction.SmartContractTxnData{
@@ -950,6 +941,23 @@ func CancelAllocation(allocID string) (hash string, err error) {
 	return
 }
 
+func RemoveCurator(curatorId, allocationId string) (string, error) {
+	if !sdkInitialized {
+		return "", sdkNotInitialized
+	}
+
+	var allocationRequest = map[string]interface{}{
+		"curator_id":    curatorId,
+		"allocation_id": allocationId,
+	}
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_REMOVE_CURATOR,
+		InputArgs: allocationRequest,
+	}
+	hash, _, err := smartContractTxn(sn)
+	return hash, err
+}
+
 func AddCurator(curatorId, allocationId string) (string, error) {
 	if !sdkInitialized {
 		return "", sdkNotInitialized
@@ -1058,6 +1066,10 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 			"Failed to get the transaction confirmation")
 	}
 
+	if t.Status == transaction.TxnFail {
+		return t.Hash, t.TransactionOutput, errors.New("", t.TransactionOutput)
+	}
+
 	return t.Hash, t.TransactionOutput, nil
 }
 
@@ -1141,7 +1153,7 @@ func GetAllocationMinLock(datashards, parityshards int, size, expiry int64,
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
 		"max_challenge_completion_time": mcct,
-		"diversify_blobbers":            true,
+		"diversify_blobbers":            false,
 	}
 	allocationData, _ := json.Marshal(allocationRequestData)
 

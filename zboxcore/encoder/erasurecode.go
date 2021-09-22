@@ -4,7 +4,8 @@ import (
 	"bufio"
 	"bytes"
 
-	"github.com/0chain/gosdk/core/common/errors"
+	"errors"
+
 	. "github.com/0chain/gosdk/zboxcore/logger"
 
 	"github.com/klauspost/reedsolomon"
