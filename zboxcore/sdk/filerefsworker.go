@@ -100,7 +100,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	if selected != nil {
 		return selected, nil
 	}
-	return nil, errors.New("Refs consensus is less than consensus threshold")
+	return nil, errors.New("consensus_failed", "Refs consensus is less than consensus threshold")
 
 }
 
