@@ -14,6 +14,7 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/util"
@@ -230,8 +231,11 @@ func sendTransactionToURL(url string, txn *Transaction, wg *sync.WaitGroup) ([]b
 
 // VerifyTransaction query transaction status from sharders, and verify it by mininal confirmation
 func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) {
-	if cfg == nil {
-		return nil, ErrConfigIsNotInitialized
+
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
+
+		return nil, err
 	}
 
 	numSharders := len(sharders)
