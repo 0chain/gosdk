@@ -1,4 +1,4 @@
-package main
+package wasm
 
 import (
 	"encoding/json"
@@ -7,24 +7,33 @@ import (
 	"sync"
 	"syscall/js"
 
+	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zcncore"
 )
 
-// convert JS String to []String
-func strToListSring(s string) []string {
-	slice := []string{}
-	err := json.Unmarshal([]byte(s), &slice)
-
-	if err != nil {
-		panic(err)
-	}
-	return slice
-}
+var Logger logger.Logger
 
 func GetMinShardersVerify(this js.Value, p []js.Value) interface{} {
-	result := zcncore.GetMinShardersVerify()
-	return result
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
+
+		go func() {
+			result := zcncore.GetMinShardersVerify()
+			if result < 0 {
+				reject.Invoke(map[string]interface{}{
+					"error": "GetMinShardersVerify less than 0.",
+				})
+			}
+			resolve.Invoke(result)
+		}()
+
+		return nil
+	})
+
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 func GetVersion(this js.Value, p []js.Value) interface{} {
@@ -65,22 +74,62 @@ func InitZCNSDK(this js.Value, p []js.Value) interface{} {
 			if err != nil {
 				reject.Invoke(err.Error())
 			}
-			resolve.Invoke()
+			resolve.Invoke(true)
 		}()
 
 		return nil
 	})
 
-	// Create and return the Promise object
 	promiseConstructor := js.Global().Get("Promise")
 	return promiseConstructor.New(handler)
 }
 
-func SetNetwork(this js.Value, p []js.Value) interface{} {
-	miners := strToListSring(p[0].String())
-	sharders := strToListSring(p[1].String())
-	zcncore.SetNetwork(miners, sharders)
-	return nil
+func SetWalletNetwork(this js.Value, p []js.Value) interface{} {
+	var miners []string
+	var sharders []string
+	jsMiners := p[0]
+	jsSharders := p[1]
+
+	if got := js.Global().Get("Array").Call("isArray", jsMiners).Bool(); got {
+		for i := 0; i < jsMiners.Length(); i++ {
+			if got := jsMiners.Index(i).Type().String(); got == "string" {
+				miners = append(miners, jsMiners.Index(i).String())
+			} else {
+				return map[string]interface{}{
+					"error": fmt.Sprintf("SetNetwork failed. Reason: expected type \"string\". got=%#v", jsMiners.Index(i).Type().String()),
+				}
+			}
+		}
+	}
+
+	if got := jsMiners.Type().String(); got == "string" {
+		miners = append(miners, jsMiners.String())
+	}
+
+	if got := js.Global().Get("Array").Call("isArray", jsSharders).Bool(); got {
+		for i := 0; i < jsSharders.Length(); i++ {
+			if got := jsSharders.Index(i).Type().String(); got == "string" {
+				sharders = append(sharders, jsSharders.Index(i).String())
+			} else {
+				return map[string]interface{}{
+					"error": fmt.Sprintf("SetNetwork failed. Reason: expected type \"string\". got=%#v", jsSharders.Index(i).Type().String()),
+				}
+			}
+		}
+	}
+
+	if got := jsSharders.Type().String(); got == "string" {
+		sharders = append(sharders, jsSharders.String())
+	}
+
+	if len(miners) > 0 && len(sharders) > 0 {
+		zcncore.SetNetwork(miners, sharders)
+		return nil
+	}
+
+	return map[string]interface{}{
+		"error": "SetNetwork failed. Reason: empty miners or sharders",
+	}
 }
 
 func GetNetworkJSON(this js.Value, p []js.Value) interface{} {
@@ -157,7 +206,9 @@ func SplitKeys(this js.Value, p []js.Value) interface{} {
 	numSplits, _ := strconv.Atoi(p[1].String())
 	result, err := zcncore.SplitKeys(privKey, numSplits)
 	if err != nil {
-		fmt.Println("error:", err)
+		return map[string]interface{}{
+			"error": fmt.Sprintf("SplitKeys failed. Reason: %s", err),
+		}
 	}
 	return result
 }
@@ -211,7 +262,9 @@ func GetClientDetails(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
 	result, err := zcncore.GetClientDetails(clientID)
 	if err != nil {
-		fmt.Println("error:", err)
+		return map[string]interface{}{
+			"error": fmt.Sprintf("GetClientDetails failed. Reason: %s", err),
+		}
 	}
 	return result
 }
@@ -224,10 +277,12 @@ func IsMnemonicValid(this js.Value, p []js.Value) interface{} {
 
 func SetWalletInfo(this js.Value, p []js.Value) interface{} {
 	s_wallet := p[0].String()
-	splitKeyWallet, _ := strconv.ParseBool(p[0].String())
+	splitKeyWallet := p[1].Bool()
 	err := zcncore.SetWalletInfo(s_wallet, splitKeyWallet)
 	if err != nil {
-		fmt.Println("Cannot set wallet info")
+		return map[string]interface{}{
+			"error": fmt.Sprintf("SetWalletInfo failed. Reason: %s", err),
+		}
 	}
 	return err
 }
@@ -236,7 +291,9 @@ func SetAuthUrl(this js.Value, p []js.Value) interface{} {
 	url := p[0].String()
 	err := zcncore.SetAuthUrl(url)
 	if err != nil {
-		fmt.Println("Cannot set auth url")
+		return map[string]interface{}{
+			"error": fmt.Sprintf("SetAuthUrl failed. Reason: %s", err),
+		}
 	}
 	return err
 }
@@ -398,7 +455,9 @@ func GetWallet(this js.Value, p []js.Value) interface{} {
 	wallet := p[0].String()
 	result, err := zcncore.GetWallet(wallet)
 	if err != nil {
-		return err
+		return map[string]interface{}{
+			"error": "Cannot get wallet",
+		}
 	}
 	return result
 }
@@ -407,7 +466,9 @@ func GetWalletClientID(this js.Value, p []js.Value) interface{} {
 	wallet := p[0].String()
 	result, err := zcncore.GetWalletClientID(wallet)
 	if err != nil {
-		return err
+		return map[string]interface{}{
+			"error": "Cannot get wallet clientId",
+		}
 	}
 	return result
 }
@@ -786,10 +847,7 @@ func GetMinerSCConfig(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-// //
-// // Storage SC
-// //
-func GetStorageSCConfig(this js.Value, p []js.Value) interface{} {
+func GetWalletStorageSCConfig(this js.Value, p []js.Value) interface{} {
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
@@ -821,7 +879,7 @@ func GetStorageSCConfig(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func GetChallengePoolInfo(this js.Value, p []js.Value) interface{} {
+func GetWalletChallengePoolInfo(this js.Value, p []js.Value) interface{} {
 	allocID := p[0].String()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -855,7 +913,7 @@ func GetChallengePoolInfo(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func GetAllocation(this js.Value, p []js.Value) interface{} {
+func GetWalletAllocation(this js.Value, p []js.Value) interface{} {
 	allocID := p[0].String()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -889,7 +947,7 @@ func GetAllocation(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func GetAllocations(this js.Value, p []js.Value) interface{} {
+func GetWalletAllocations(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -923,7 +981,7 @@ func GetAllocations(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func GetReadPoolInfo(this js.Value, p []js.Value) interface{} {
+func GetWalletReadPoolInfo(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -957,7 +1015,7 @@ func GetReadPoolInfo(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func GetStakePoolInfo(this js.Value, p []js.Value) interface{} {
+func GetWalletStakePoolInfo(this js.Value, p []js.Value) interface{} {
 	blobberID := p[0].String()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -991,7 +1049,7 @@ func GetStakePoolInfo(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func GetStakePoolUserInfo(this js.Value, p []js.Value) interface{} {
+func GetWalletStakePoolUserInfo(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -1025,7 +1083,7 @@ func GetStakePoolUserInfo(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func GetBlobbers(this js.Value, p []js.Value) interface{} {
+func GetWalletBlobbers(this js.Value, p []js.Value) interface{} {
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
@@ -1057,7 +1115,7 @@ func GetBlobbers(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func GetBlobber(this js.Value, p []js.Value) interface{} {
+func GetWalletBlobber(this js.Value, p []js.Value) interface{} {
 	blobberID := p[0].String()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -1091,7 +1149,7 @@ func GetBlobber(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func GetWritePoolInfo(this js.Value, p []js.Value) interface{} {
+func GetWalletWritePoolInfo(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
@@ -1127,22 +1185,26 @@ func GetWritePoolInfo(this js.Value, p []js.Value) interface{} {
 
 func Encrypt(this js.Value, p []js.Value) interface{} {
 	key := p[0].String()
-	text := p[0].String()
+	text := p[1].String()
 
 	result, err := zcncore.Encrypt(key, text)
 	if err != nil {
-		return err
+		return map[string]interface{}{
+			"error": fmt.Sprintf("Encrypt failed: %s", err),
+		}
 	}
 	return result
 }
 
 func Decrypt(this js.Value, p []js.Value) interface{} {
 	key := p[0].String()
-	text := p[0].String()
+	text := p[1].String()
 
 	result, err := zcncore.Decrypt(key, text)
 	if err != nil {
-		return err
+		return map[string]interface{}{
+			"error": fmt.Sprintf("Decrypt failed: %s", err),
+		}
 	}
 	return result
 }

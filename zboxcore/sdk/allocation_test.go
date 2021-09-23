@@ -1,12 +1,13 @@
 package sdk
 
 import (
+	"os"
+	"testing"
+
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/stretchr/testify/require"
-	"os"
-	"testing"
 )
 
 const tokenUnit = 10000000000.0
@@ -31,7 +32,7 @@ func TestGetMinMaxWriteReadSuccess(t *testing.T) {
 		maxW, maxR, err := ssc.GetMaxWriteRead()
 		require.NoError(t, err)
 		require.Equal(t, 0.01, maxW)
-		require.Equal(t,0.01, maxR)
+		require.Equal(t, 0.01, maxR)
 	})
 
 	t.Run("Error / No Blobbers", func(t *testing.T) {

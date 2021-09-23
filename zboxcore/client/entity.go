@@ -2,23 +2,27 @@ package client
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
 type Client struct {
 	*zcncrypto.Wallet
-	signatureSchemeString string
+	signatureSchemeString string `json:"signature_scheme"`
 }
 
 var client *Client
 
 func init() {
-	client = &Client{}
+	client = &Client{
+		Wallet: &zcncrypto.Wallet{},
+	}
 }
 
 func PopulateClient(clientjson string, signatureScheme string) error {
 	err := json.Unmarshal([]byte(clientjson), &client)
+	fmt.Printf("client set to: %#v", client)
 	client.signatureSchemeString = signatureScheme
 	return err
 }

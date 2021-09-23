@@ -26,13 +26,16 @@ clean-gosdk:
 gosdk-build: gomod-download
 	go build -x -v -tags bn256 ./...
 
-sdkver:
-	cd _sdkver; go build -o sdkver sdkver.go; ./sdkver
+wasm-build:
+	CGO_ENABLED=0 GOOS=js GOARCH=wasm $(GOROOT)/bin/go build -o sdk.wasm github.com/0chain/gosdk/wasm
+     
+wasm-test:
+	CGO_ENABLED=0 GOOS=js GOARCH=wasm $(GOROOT)/bin/go test -v github.com/0chain/gosdk/wasm
 
-gosdk-test:
-	go test -tags bn256 ./...
+gosdk-test: wasm-test
+	$(GOROOT)/bin/go test -tags bn256 ./...
 
-install-gosdk: | gosdk-build
+install-gosdk: | gosdk-build wasm-build
 
 $(GOPATH)/bin/modvendor:
 	@go get -u github.com/goware/modvendor
@@ -57,8 +60,11 @@ test: gosdk-test
 clean: clean-gosdk clean-herumi
 	@rm -rf $(OUTDIR)
 
-lint:
-	@golangci-lint run
+lint-wasm:
+	GOOS=js GOARCH=wasm CGO_ENABLED=0 golangci-lint run wasm
+
+lint: lint-wasm
+	golangci-lint run --skip-dirs wasm
 
 help:
 	@echo "Environment: "

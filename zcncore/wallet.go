@@ -286,6 +286,7 @@ func CloseLog() {
 // configuration provided in JSON format
 func Init(c string) error {
 	err := json.Unmarshal([]byte(c), &_config.chain)
+	fmt.Printf("_config.chain: %#v", _config.chain)
 	if err == nil {
 		// Check signature scheme is supported
 		if _config.chain.SignatureScheme != "ed25519" && _config.chain.SignatureScheme != "bls0chain" {
@@ -671,7 +672,7 @@ func getTokenUSDRate() (float64, error) {
 	return getTokenRateByCurrency("usd")
 }
 
-func getTokenRateByCurrency(currency string) (float64, error){
+func getTokenRateByCurrency(currency string) (float64, error) {
 	var CoinGeckoResponse struct {
 		ID         string `json:"id"`
 		Symbol     string `json:"symbol"`

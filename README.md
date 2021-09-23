@@ -53,45 +53,37 @@ It is possible to support the sdk for other variations of Linux as well.
         For Android only:
                 make build-mobilesdk ANDROID=1
 
-## How to run BLS unit tests ##
-
-It's advisable to put GOPATH as $TOP/../go, to avoid conflicts with this command: `go build ./...`
-
-To run all the unit tests in `bls0chain_test.go`, run this command from $TOP: `go test github.com/0chain/gosdk/core/zcncrypto -v`
-
-To run a specific unit test in `bls0chain_test.go` such as `TestSignatureScheme`, run this: `go test github.com/0chain/gosdk/core/zcncrypto -v -run TestSignatureScheme`
-
-## How to export a gosdk function to proxy.wasm ##
+## How to export a gosdk function to WebAssembly ##
 
 Examples:
-* `_sdkver/ethwallet.go` which exports the functions in `zcncore/ethwallet.go`.
-* `_sdkver/wallet.go` which exports one function in `zcncore/wallet.go`.
+* `wasm/ethwallet.go` which exports the functions in `zcncore/ethwallet.go`.
+* `wasm/wallet.go` which exports one function in `zcncore/wallet.go`.
 
 Steps:
 
-1a. If you are exporting a new function from `zcncore/wallet.go`, you should add to `_sdkver/wallet.go`
+1. If you are exporting:
+  
+    - a new function from `zcncore/wallet.go`, you should add to `wasm/wallet.go`
+  
+    - a function from a new file, you should create a new `<filename>.go` file for it, in the same style as `wasm/wallet.go` or `wasm/ethwallet.go`
 
-1b. If you are exporrting a function from a new file, you should create a new .go file for it, in the same style as `_sdkver/wallet.go` or `_sdkver/ethwallet.go`
+2. In func main(), `https://github.com/0chain/gosdk/wasm/proxy.go`, you need to add this line:
 
-2. In func main(), `https://github.com/0chain/gosdk/blob/jssdk/_sdkver/proxy.go`, you need to add this line:
+    ```golang
+        js.Global().Set("YOURFUNC", js.FuncOf(YOURFUNC))
+    ```
 
-```
-	js.Global().Set("YOURFUNC", js.FuncOf(YOURFUNC))
-```
+3. Now you need to compile a new `<any_name>.wasm` (e.g. proxy.wasm). The command is currently: 
 
-3. Now you need to compile a new `proxy.wasm`. The command is currently: `GOOS=js CGO_ENABLED=0 GOARCH=wasm go build -o proxy.wasm proxy.go ethwallet.go wallet.go;`
+    ```bash
+    $ GOOS=js CGO_ENABLED=0 GOARCH=wasm go build -o <any_name>.wasm github.com/0chain/gosdk/wasm
+    ```
 
-3a. Please note that if you added a new golang file, then you need to add a new golang file to that compile command.
+4. You can compile a minimum version by adding tags `-minver`, for example:
 
-4. Now you need to test that `proxy.wasm`. We currently have a test page going at the js-client-sdk repo: `https://github.com/0chain/js-client-sdk/blob/gosdk/test/index.html`
-
-4a. You can replace the proxy.wasm at `https://github.com/0chain/js-client-sdk/blob/gosdk/test/proxy.wasm`
-
-4b. You need to startup a special test server in order to stream WASM files. Use this command from js-client-sdk $TOP: `sudo php -S localhost:82 test/server.php`
-
-4c. See "testethwallet" function in index.html for how the testing for ethwallet.go is done
-
-4d. To test the function you exported, it's probably as simple as calling "HelloWorld()". It should be a 1-liner.
+    ```bash
+    $ CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -tags minver -o min.wasm github.com/0chain/gosdk/wasm
+    ```
 
 ### An important note regarding export of a async function
 
@@ -99,7 +91,7 @@ If your golang function requires to be run asynchronously, you need to add more 
 
 See "InitZCNSDK" example:
 
-```
+```golang
 func InitZCNSDK(this js.Value, p []js.Value) interface{} {
 	blockWorker := p[0].String()
 	signscheme := p[1].String()
@@ -127,26 +119,48 @@ func InitZCNSDK(this js.Value, p []js.Value) interface{} {
 
 ## How to run unit test ##
 
+### BLS unit test
+
+It's advisable to put GOPATH as $TOP/../go, to avoid conflicts with this command: `go build ./...`
+
 To run all the unit tests in `gosdk`: go test github.com/0chain/gosdk/zboxcore/sdk -v`
 ```bash
-go test ./...
+$ go test ./...
 ```
 
-To run a specific unit test in `gosdk`:
-```bash
-go test <path_to_folder> -run <test_function>
-```
+To run all the unit tests in `bls0chain_test.go`, run this command from $TOP: `go test github.com/0chain/gosdk/core/zcncrypto -v`
 
-Eg:
-```bash
-go test ./zboxcore/sdk -run TestGetMinMaxWriteReadSuccess
-```
+To run a specific unit test in `bls0chain_test.go` such as `TestSignatureScheme`, run this: `go test github.com/0chain/gosdk/core/zcncrypto -v -run TestSignatureScheme`
 
 To run the coverage test in `gosdk:
 ```bash
-go test <path_to_folder> -coverprofile=coverage.out
-go tool cover -html=coverage.out
+$ go test <path_to_folder> -coverprofile=coverage.out
+$ go tool cover -html=coverage.out
 ```
+
+### WebAssembly
+
+#### Using go test
+
+1. You need to install nodejs first, see [this page](https://nodejs.org/en/download/) for further instructions
+
+2. Add `/path/to/go/misc/wasm` to your `$PATH` environment variable (so that "go test" can find "go_js_wasm_exec"). For example in ubuntu, run `$export PATH=$PATH:/usr/local/go/misc/wasm/`.
+
+3. You can then run the test by following the [BLS unit test](#bls-unit-test) above with adding the prefix environment `GOOS=js CGO_ENABLED=0 GOARCH=wasm` before `go test -v`.
+
+#### Test in the client 
+
+1. After you successfully [export the wasm package to proxy.wasm](#how-to-export-a-gosdk-function-to-webassembly), now you can test that `proxy.wasm`. 
+
+2. We currently have a test page going at the js-client-sdk repo: `https://github.com/0chain/js-client-sdk/blob/gosdk/test/index.html`
+
+3. You can replace the proxy.wasm at `https://github.com/0chain/js-client-sdk/blob/gosdk/test/proxy.wasm`
+
+4. You need to startup a special test server in order to stream WASM files. Use this command from js-client-sdk $TOP: `sudo php -S localhost:82 test/server.php`
+
+5. See "testethwallet" function in index.html for how the testing for ethwallet.go is done
+
+6. To test the function you exported, it's probably as simple as calling "HelloWorld()". It should be a 1-liner.
 
 ## FAQ ##
 

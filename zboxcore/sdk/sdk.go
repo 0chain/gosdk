@@ -936,6 +936,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 		retries        = 0
 		t              *transaction.Transaction
 	)
+
 	time.Sleep(querySleepTime)
 
 	for retries < blockchain.GetMaxTxnQuery() {
