@@ -15,6 +15,7 @@ import (
 
 	"errors"
 
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -139,7 +140,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 		newChange := &allocationchange.DeleteFileChange{}
 		newChange.ObjectTree = objectTreeRefs[pos]
 		newChange.NumBlocks = newChange.ObjectTree.GetNumBlocks()
-		newChange.Operation = allocationchange.DELETE_OPERATION
+		newChange.Operation = constants.FileOperationDelete
 		newChange.Size = newChange.ObjectTree.GetSize()
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReq.connectionID = req.connectionID

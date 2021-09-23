@@ -53,6 +53,15 @@ It is possible to support the sdk for other variations of Linux as well.
         For Android only:
                 make build-mobilesdk ANDROID=1
 
+### How to install `ffmepg` 
+
+### On linux ubuntu
+
+```
+sudo apt-get install ffmpeg
+sudo apt-get install v4l-utils
+``
+
 ### FAQ ###
 
 - [How to install GO on any platform](https://golang.org/doc/install)

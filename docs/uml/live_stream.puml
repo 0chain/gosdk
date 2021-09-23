@@ -1,0 +1,37 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+actor streamer
+actor viewer
+actor 0chain
+rectangle Youtube {
+  streamer -- (youtube stream):push stream to youbute
+  (youtube stream) .> (youtube live feed):boardcast to viewer
+  (youtube live feed) -- viewer: view video online on youtube's web/app
+  (youtube live feed) -- 0chain: download video from youtube's live feed
+}
+
+rectangle Tiktok {
+  streamer -- (tiktok stream):push stream to tiktok
+  (tiktok stream) .> (tiktok live feed):boardcast to viewer
+  (tiktok live feed) -- viewer: view video online in tiktok's web/app
+  (tiktok live feed) -- 0chain: download video from tiktok's live feed
+}
+
+rectangle 0Stream {
+  streamer -- (0Stream stream):push stream to 0Stream
+  (0Stream stream) .> (0Stream live feed):boardcast to viewer
+  (0Stream live feed) -- viewer: view video online in 0Stream's web/app
+  (0Stream live feed) -- 0chain: download video from 0Stream's live feed
+}
+
+rectangle 0Storage {
+0chain -- (video streamer): push video streaming 
+(video streamer) .> (video clips): split stream into smaller video files
+(video clips) .> (stream upload): upload video clips files to 0Storage
+(stream upload) .> (video-streaming-download): sumbmit transaction in blockchain for sharing
+(video-streaming-download) -- viewer: view video on 0chain's web/app instead of other online platform
+}
+
+
+@enduml

@@ -1,7 +1,8 @@
 package encryption
 
 type EncryptionScheme interface {
-	Initialize(mnemonic string) error
+	Initialize(mnemonic string) ([]byte, error)
+	InitializeWithPrivateKey(privateKey []byte) error
 	InitForEncryption(tag string)
 	InitForDecryption(tag string, encryptedKey string) error
 	Encrypt(data []byte) (*EncryptedMessage, error)

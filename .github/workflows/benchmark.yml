@@ -1,0 +1,39 @@
+name: Benchmark tests
+
+on:
+  push:
+    # branches: [ master ]
+  pull_request:
+    # branches: [ master ]
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup go 1.16
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.16' # The Go version to download (if necessary) and use.
+      # - name: Set GITHUB_ENV
+      #   run: |
+      #       echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+      #       echo "GOSDK=$(echo $(dirname $(pwd)))/gosdk" >> $GITHUB_ENV
+      #       echo "TAG=$(echo ${GITHUB_REF#refs/heads/} | sed 's/\//-/g' )" >> $GITHUB_ENV
+
+      - name: Run benchmark
+        run: go test -tags bn256 -benchmem -benchtime=5s -run="BenchmarkChunkedUpload*" -bench="BenchmarkChunkedUpload*"   ./... | tee benchmark.txt
+ 
+      # Run `github-action-benchmark` action
+      # - name: Push benchmark report
+      #   uses: cnlangzi/github-action-benchmark@v1
+      #   with:
+      #     name: 0chain/gosdk Benchmark
+      #     tool: 'go'
+      #     benchmark-data-dir-path: ${{ env.TAG }}/bench
+      #     output-file-path: benchmark.txt
+      #     # Personal access token to deploy GitHub Pages branch
+      #     github-token: ${{ secrets.GOSDK }}
+      #     #github-token: ${{ secrets.PERSONAL_GITHUB_TOKEN }}
+      #     # Push and deploy GitHub pages branch automatically
+      #     auto-push: true

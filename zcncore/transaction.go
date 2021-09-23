@@ -128,13 +128,19 @@ type TransactionScheme interface {
 	VestingUnlock(poolID string) error
 	VestingAdd(ar *VestingAddRequest, value int64) error
 	VestingDelete(poolID string) error
-	VestingUpdateConfig(vscc *VestingSCConfig) error
+	VestingUpdateConfig(*InputMap) error
 
 	// Miner SC
 
-	MinerSCSettings(*MinerSCMinerInfo) error
+	MinerSCMinerSettings(*MinerSCMinerInfo) error
+	MinerSCSharderSettings(*MinerSCMinerInfo) error
 	MinerSCLock(minerID string, lock int64) error
 	MienrSCUnlock(minerID, poolID string) error
+	MinerScUpdateConfig(*InputMap) error
+	MinerScUpdateGlobals(*InputMap) error
+	MinerSCDeleteMiner(*MinerSCMinerInfo) error
+	MinerSCDeleteSharder(*MinerSCMinerInfo) error
+
 
 	// Storage SC
 
@@ -151,6 +157,13 @@ type TransactionScheme interface {
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock, fee int64) error
 	WritePoolLock(allocID string, blobberID string, duration int64, lock, fee int64) error
 	WritePoolUnlock(poolID string, fee int64) error
+	StorageScUpdateConfig(*InputMap) error
+
+	// Interest pool SC
+	InterestPoolUpdateConfig(*InputMap) error
+
+	// Faucet
+	FaucetUpdateConfig(*InputMap) error
 }
 
 func signFn(hash string) (string, error) {
@@ -1048,10 +1061,38 @@ func (t *Transaction) VestingDelete(poolID string) (err error) {
 	return
 }
 
-func (t *Transaction) VestingUpdateConfig(vscc *VestingSCConfig) (err error) {
+func (t *Transaction) VestingUpdateConfig(vscc *InputMap) (err error) {
 
 	err = t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.VESTING_UPDATE_CONFIG, vscc, 0)
+		transaction.VESTING_UPDATE_SETTINGS, vscc, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+// interest pool smart contract
+
+func (t *Transaction) InterestPoolUpdateConfig(ip *InputMap) (err error) {
+
+	err = t.createSmartContractTxn(InterestPoolSmartContractAddress,
+		transaction.INTERESTPOOLSC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+// faucet smart contract
+
+func (t *Transaction) FaucetUpdateConfig(ip *InputMap) (err error) {
+
+	err = t.createSmartContractTxn(FaucetSmartContractAddress,
+		transaction.FAUCETSC_UPDATE_SETTINGS, ip, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
@@ -1063,6 +1104,28 @@ func (t *Transaction) VestingUpdateConfig(vscc *VestingSCConfig) (err error) {
 //
 // miner SC
 //
+
+func (t *Transaction) MinerScUpdateConfig(ip *InputMap) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+func (t *Transaction) MinerScUpdateGlobals(ip *InputMap) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_UPDATE_GLOBALS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
 
 type MinerSCPoolStats struct {
 	DelegateID   string         `json:"delegate_id"`
@@ -1094,13 +1157,13 @@ type MinerSCMinerStat struct {
 }
 
 type MinerSCMinerInfo struct {
-	*SimpleMienrSCMinerInfo `json:"simple_miner"`
+	*SimpleMinerSCMinerInfo `json:"simple_miner"`
 	Pending                 map[string]MinerSCDelegatePool `json:"pending"`
 	Active                  map[string]MinerSCDelegatePool `json:"active"`
 	Deleting                map[string]MinerSCDelegatePool `json:"deleting"`
 }
 
-type SimpleMienrSCMinerInfo struct {
+type SimpleMinerSCMinerInfo struct {
 	ID      string `json:"id"`
 	BaseURL string `json:"url"`
 
@@ -1113,9 +1176,42 @@ type SimpleMienrSCMinerInfo struct {
 	Stat MinerSCMinerStat `json:"stat"`
 }
 
-func (t *Transaction) MinerSCSettings(info *MinerSCMinerInfo) (err error) {
+func (t *Transaction) MinerSCMinerSettings(info *MinerSCMinerInfo) (err error) {
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_SETTINGS, info, 0)
+		transaction.MINERSC_MINER_SETTINGS, info, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+func (t *Transaction) MinerSCSharderSettings(info *MinerSCMinerInfo) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_SHARDER_SETTINGS, info, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+func (t *Transaction) MinerSCDeleteMiner(info *MinerSCMinerInfo) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_MINER_DELETE, info, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
+func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_SHARDER_DELETE, info, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
@@ -1303,6 +1399,17 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 //
 // Storage SC transactions
 //
+
+func (t *Transaction) StorageScUpdateConfig(ip *InputMap) (err error) {
+	err = t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
 
 // FinalizeAllocation transaction.
 func (t *Transaction) FinalizeAllocation(allocID string, fee int64) (

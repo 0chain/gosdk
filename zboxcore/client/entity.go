@@ -14,7 +14,9 @@ type Client struct {
 var client *Client
 
 func init() {
-	client = &Client{}
+	client = &Client{
+		Wallet: &zcncrypto.Wallet{},
+	}
 }
 
 func PopulateClient(clientjson string, signatureScheme string) error {
