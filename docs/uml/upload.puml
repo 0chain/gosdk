@@ -1,0 +1,74 @@
+
+@startuml continuous upload
+
+
+CLI -> gosdk:create cmd with chunk flag
+
+gosdk -> cache: check status ~/.zcn/cache/
+gosdk <- cache: connection_id and offset
+
+gosdk -> UploadHandler: send `INIT` request if offset is 0 with 1st chunk and thumbnail if it has
+UploadHandler -> StorageHandler: WriteFile
+StorageHandler -> FileStore: Verify allocation, and call WriteFile 
+FileStore -> FileSystem: Write chunk to temp file
+FileStore <- FileSystem: FileRef with merkle leave hash
+StorageHandler <- FileStore: FileOutputData
+StorageHandler -> AllocationChangeProcessor: Add `InitFileChange`
+UploadHandler <- StorageHandler: UploadResult
+gosdk <- UploadHandler: UploadResult
+
+gosdk -> UploadHandler: send `APPEND` requests if offset is not 0 with next chunk
+UploadHandler -> StorageHandler: WriteFile
+StorageHandler -> FileStore: Verify allocation, and call WriteFile 
+FileStore -> FileSystem: Write chunk to temp file
+FileStore <- FileSystem: FileRef with merkle leave hash
+StorageHandler <- FileStore: FileOutputData
+StorageHandler -> AllocationChangeProcessor: Add `AppendFileChange`
+UploadHandler <- StorageHandler: UploadResult
+gosdk <- UploadHandler: UploadResult
+
+gosdk -> UploadHandler: send `FINALIZE` request with last chunk
+UploadHandler -> StorageHandler: WriteFile
+StorageHandler -> FileStore: Verify allocation, and call WriteFile 
+FileStore -> FileSystem: Write chunk to temp file
+FileStore <- FileSystem: FileRef with merkle leave and root hash
+StorageHandler <- FileStore: FileOutputData
+StorageHandler -> AllocationChangeProcessor: Add `FinalizeFileChange`
+UploadHandler <- StorageHandler: UploadResult
+gosdk <- UploadHandler: UploadResult
+
+
+gosdk -> CommitHandler: send `COMMIT` request 
+CommitHandler -> StorageHandler: call CommitWrite
+StorageHandler -> AllocationChangeProcessor: Verify allocation, VerifyMaker, and call ApplyChanges
+StorageHandler -> Store: update transaction in postgres
+StorageHandler -> AllocationChangeProcessor: call CommitToFileStore
+AllocationChangeProcessor -> FileStore: call CommitWrite
+FileStore -> FileSystem: rename temp file to remote file path
+CommitHandler <- StorageHandler: CommitResult
+gosdk <- CommitHandler: CommitResult
+cache <- gosdk: clean status
+CLI <- gosdk: exit cmd
+
+@enduml
+
+
+
+@startuml stream upload flow
+
+loop till done
+FileInput -> reedsolomon.Encoder : read bytes with datashards * 64KB or datashards *(64KB - 16 - 2KB)
+reedsolomon.Encoder --> encryption.EncryptionScheme : encrypt data, and added header (2KB)
+encryption.EncryptionScheme --> APIClient: send client data
+reedsolomon.Encoder -> APIClient: send client data
+
+note over APIClient,blobber
+WHEN:
+1. receive all chunks data
+2. recevie $batch * chunks data
+end note
+APIClient -> blobber : upload to blobber
+
+end
+
+@enduml

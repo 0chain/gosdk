@@ -2,11 +2,12 @@ package encryption
 
 import (
 	"encoding/base64"
+	"math/rand"
+	"testing"
+
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/stretchr/testify/require"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
-	"math/rand"
-	"testing"
 )
 
 func TestMnemonic(t *testing.T) {
@@ -14,9 +15,8 @@ func TestMnemonic(t *testing.T) {
 
 	encscheme := NewEncryptionScheme()
 
-	err := encscheme.Initialize(mnemonic)
+	_, err := encscheme.Initialize(mnemonic)
 	require.NoError(t, err)
-
 
 	encscheme.InitForEncryption("filetype:audio")
 	pvk, _ := encscheme.GetPrivateKey()
@@ -101,7 +101,7 @@ func TestReEncryptionAndDecryptionForMarketplaceShare(t *testing.T) {
 
 func TestKyberPointMarshal(t *testing.T) {
 	suite := edwards25519.NewBlakeSHA256Ed25519()
-	reenc := ReEncryptedMessage {
+	reenc := ReEncryptedMessage{
 		D1: suite.Point(),
 		D2: []byte("d2"),
 		D3: []byte("d3"),

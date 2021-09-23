@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -221,7 +222,7 @@ func (a *Allocation) startWorker(ctx context.Context) {
 }
 
 func (a *Allocation) dispatchWork(ctx context.Context) {
-	for true {
+	for {
 		select {
 		case <-ctx.Done():
 			Logger.Info("Upload cancelled by the parent")
@@ -242,18 +243,18 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 	}
 }
 
+// UpdateFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UpdateFile(localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.uploadOrUpdateFile(localpath, remotepath, status, true, "", false,
-		false, attrs)
+	return a.startChunkedUpload(localpath, remotepath, status, true, "", false, attrs)
 }
 
+// UploadFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UploadFile(localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "", false,
-		false, attrs)
+	return a.startChunkedUpload(localpath, remotepath, status, false, "", false, attrs)
 }
 
 func (a *Allocation) CreateDir(dirName string) error {
@@ -284,42 +285,46 @@ func (a *Allocation) RepairFile(localpath string, remotepath string,
 		false, true, fileref.Attributes{})
 }
 
+// UpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UpdateFileWithThumbnail(localpath string, remotepath string,
 	thumbnailpath string, attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.uploadOrUpdateFile(localpath, remotepath, status, true,
-		thumbnailpath, false, false, attrs)
+	return a.startChunkedUpload(localpath, remotepath, status, true,
+		thumbnailpath, false, attrs)
 }
 
+// UploadFileWithThumbnail [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UploadFileWithThumbnail(localpath string,
 	remotepath string, thumbnailpath string, attrs fileref.Attributes,
 	status StatusCallback) error {
 
-	return a.uploadOrUpdateFile(localpath, remotepath, status, false,
-		thumbnailpath, false, false, attrs)
+	return a.startChunkedUpload(localpath, remotepath, status, false,
+		thumbnailpath, false, attrs)
 }
 
+// EncryptAndUpdateFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUpdateFile(localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.uploadOrUpdateFile(localpath, remotepath, status, true, "", true,
-		false, attrs)
+	return a.startChunkedUpload(localpath, remotepath, status, true, "", true, attrs)
 }
 
+// EncryptAndUploadFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUploadFile(localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "", true,
-		false, attrs)
+	return a.startChunkedUpload(localpath, remotepath, status, false, "", true, attrs)
 }
 
+// EncryptAndUpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUpdateFileWithThumbnail(localpath string,
 	remotepath string, thumbnailpath string, attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.uploadOrUpdateFile(localpath, remotepath, status, true,
-		thumbnailpath, true, false, attrs)
+	return a.startChunkedUpload(localpath, remotepath, status, true,
+		thumbnailpath, true, attrs)
 }
 
+// EncryptAndUploadFileWithThumbnail [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	localpath string,
 	remotepath string,
@@ -328,18 +333,82 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	status StatusCallback,
 ) error {
 
-	return a.uploadOrUpdateFile(
+	return a.startChunkedUpload(
 		localpath,
 		remotepath,
 		status,
 		false,
 		thumbnailpath,
 		true,
-		false,
 		attrs,
 	)
 }
 
+func (a *Allocation) startChunkedUpload(localPath string,
+	remotePath string,
+	status StatusCallback,
+	isUpdate bool,
+	thumbnailPath string,
+	encryption bool,
+	attrs fileref.Attributes,
+) error {
+
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	fileReader, err := os.Open(localPath)
+	if err != nil {
+		return err
+	}
+	defer fileReader.Close()
+
+	fileInfo, err := fileReader.Stat()
+	if err != nil {
+		return err
+	}
+
+	mimeType, err := zboxutil.GetFileContentType(fileReader)
+	if err != nil {
+		return err
+	}
+
+	remotePath = zboxutil.RemoteClean(remotePath)
+	isabs := zboxutil.IsRemoteAbs(remotePath)
+	if !isabs {
+		err = thrown.New("invalid_path", "Path should be valid and absolute")
+		return err
+	}
+	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
+
+	_, fileName := filepath.Split(remotePath)
+
+	fileMeta := FileMeta{
+		Path:       localPath,
+		ActualSize: fileInfo.Size(),
+		MimeType:   mimeType,
+		RemoteName: fileName,
+		RemotePath: remotePath,
+		Attributes: attrs,
+	}
+
+	//workdir = util.GetHomeDir()
+	// home dir is unsupported in our mobile devices,use TempDir instead.
+	workdir := os.TempDir()
+
+	ChunkedUpload, err := CreateChunkedUpload(workdir, a, fileMeta, fileReader, isUpdate,
+		WithThumbnailFile(thumbnailPath),
+		WithChunkSize(DefaultChunkSize),
+		WithEncrypt(encryption),
+		WithStatusCallback(status))
+	if err != nil {
+		return err
+	}
+
+	return ChunkedUpload.Start()
+}
+
+// uploadOrUpdateFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) uploadOrUpdateFile(localpath string,
 	remotepath string,
 	status StatusCallback,

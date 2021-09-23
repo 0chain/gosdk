@@ -35,6 +35,7 @@ func (rp *ReferencePath) GetRefFromObjectTree(allocationID string) (RefEntity, e
 	return rp.GetDirTree(allocationID)
 }
 
+// GetDirTree covert and build root Ref with children
 func (rp *ReferencePath) GetDirTree(allocationID string) (*Ref, error) {
 	reftype := rp.Meta["type"].(string)
 	if reftype == DIRECTORY {

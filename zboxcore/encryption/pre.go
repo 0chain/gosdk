@@ -196,12 +196,35 @@ func (reEncMsg *ReEncryptedMessage) Unmarshal(data []byte) error {
 	return nil
 }
 
-func (pre *PREEncryptionScheme) Initialize(mnemonic string) error {
+func (pre *PREEncryptionScheme) Initialize(mnemonic string) ([]byte, error) {
 	suite := edwards25519.NewBlakeSHA256Ed25519()
 	rand := suite.XOF([]byte(mnemonic))
 
 	// Create a public/private keypair (X,x)
 	pre.PrivateKey = suite.Scalar().Pick(rand)
+
+	privateKey, _ := pre.PrivateKey.MarshalBinary()
+
+	pre.PublicKey = suite.Point().Mul(pre.PrivateKey, nil)
+	pre.SuiteObj = suite
+
+	return privateKey, nil
+}
+
+// InitializeWithPrivateKey initialize with private key
+func (pre *PREEncryptionScheme) InitializeWithPrivateKey(privateKey []byte) error {
+	suite := edwards25519.NewBlakeSHA256Ed25519()
+
+	scalar := suite.Scalar()
+
+	err := scalar.UnmarshalBinary(privateKey)
+
+	if err != nil {
+		return err
+	}
+
+	// Create a public/private keypair (X,x)
+	pre.PrivateKey = scalar
 	pre.PublicKey = suite.Point().Mul(pre.PrivateKey, nil)
 	pre.SuiteObj = suite
 

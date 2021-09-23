@@ -29,6 +29,7 @@ type BlockDownloadRequest struct {
 	blobberIdx         int
 	remotefilepath     string
 	remotefilepathhash string
+	chunkSize          int
 	blockNum           int64
 	encryptedKey       string
 	contentMode        string
@@ -210,10 +211,10 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					rspData.RawData = response
 					if len(req.encryptedKey) > 0 {
 						// 256 for the additional header bytes,  where chunk_size - 2 * 1024 is the encrypted data size
-						chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE-2*1024+256)
+						chunks := req.splitData(rspData.RawData, req.chunkSize-2*1024+256)
 						rspData.BlockChunks = chunks
 					} else {
-						chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
+						chunks := req.splitData(rspData.RawData, req.chunkSize)
 						rspData.BlockChunks = chunks
 					}
 					rspData.RawData = []byte{}

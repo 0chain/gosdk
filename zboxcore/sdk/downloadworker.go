@@ -2,8 +2,6 @@ package sdk
 
 import (
 	"context"
-	"crypto/sha1"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"math"
@@ -39,6 +37,7 @@ type DownloadRequest struct {
 	localpath          string
 	startBlock         int64
 	endBlock           int64
+	chunkSize          int
 	numBlocks          int64
 	rxPay              bool
 	statusCallback     StatusCallback
@@ -69,6 +68,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 		blockDownloadReq.authTicket = req.authTicket
 		blockDownloadReq.blobber = req.blobbers[pos]
 		blockDownloadReq.blobberIdx = pos
+		blockDownloadReq.chunkSize = req.chunkSize
 		blockDownloadReq.blockNum = blockNum
 		blockDownloadReq.contentMode = req.contentMode
 		blockDownloadReq.result = rspCh
@@ -204,10 +204,11 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		size = fileRef.ActualThumbnailSize
 	}
 	req.encryptedKey = fileRef.EncryptedKey
+	req.chunkSize = int(fileRef.ChunkSize)
 	Logger.Info("Encrypted key from fileref", req.encryptedKey)
 	// Calculate number of bytes per shard.
 	perShard := (size + int64(req.datashards) - 1) / int64(req.datashards)
-	chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
+	chunkSizeWithHeader := int64(fileRef.ChunkSize)
 	if len(fileRef.EncryptedKey) > 0 {
 		chunkSizeWithHeader -= 16
 		chunkSizeWithHeader -= 2 * 1024
@@ -239,8 +240,8 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	Logger.Info("Start block: ", req.startBlock+1, " End block: ", req.endBlock, " Num blocks: ", req.numBlocks)
 
 	downloaded := int(0)
-	fH := sha1.New()
-	mW := io.MultiWriter(fH, wrFile)
+	fileHasher := createDownloadHasher(req.chunkSize, req.datashards, len(fileRef.EncryptedKey) > 0)
+	mW := io.MultiWriter(fileHasher, wrFile)
 
 	startBlock := req.startBlock
 	endBlock := req.endBlock
@@ -265,13 +266,14 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			req.isDownloadCanceled = false
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("","Download aborted by user"))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "Download aborted by user"))
 			}
 			return
 		}
 
 		n := int64(math.Min(float64(size), float64(len(data))))
 		_, err = mW.Write(data[:n])
+
 		if err != nil {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
@@ -295,15 +297,19 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	// Only check hash when the download request is not by block/partial.
 	if req.endBlock == chunksPerShard && req.startBlock == 0 {
-		calcHash := hex.EncodeToString(fH.Sum(nil))
+		//calcHash := fileHasher.GetHash()
+		merkleRoot := fileHasher.GetMerkleRoot()
+
 		expectedHash := fileRef.ActualFileHash
 		if req.contentMode == DOWNLOAD_CONTENT_THUMB {
 			expectedHash = fileRef.ActualThumbnailHash
 		}
-		if calcHash != expectedHash {
+
+		//if calcHash != expectedHash && expectedHash != merkleRoot {
+		if expectedHash != merkleRoot {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("","File content didn't match with uploaded file"))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "File content didn't match with uploaded file"))
 			}
 			return
 		}

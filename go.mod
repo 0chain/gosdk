@@ -23,8 +23,10 @@ require (
 	github.com/magma/augmented-networks/accounting/protos v0.1.1
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
+	github.com/rogpeppe/go-internal v1.3.0
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/spf13/viper v1.7.0
+	github.com/stretchr/objx v0.2.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/tyler-smith/go-bip39 v1.1.0
 	go.dedis.ch/kyber/v3 v3.0.5

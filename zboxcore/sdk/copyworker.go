@@ -12,6 +12,7 @@ import (
 
 	"errors"
 
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -123,7 +124,7 @@ func (req *CopyRequest) ProcessCopy() error {
 		newChange.DestPath = req.destPath
 		newChange.ObjectTree = objectTreeRefs[pos]
 		newChange.NumBlocks = 0
-		newChange.Operation = allocationchange.COPY_OPERATION
+		newChange.Operation = constants.FileOperationCopy
 		newChange.Size = 0
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReq.connectionID = req.connectionID
