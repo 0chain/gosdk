@@ -2679,7 +2679,7 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 		return &mockClient
 	}
 
-	transaction.SetConfig(&conf.Config{
+	conf.InitClientConfig(&conf.Config{
 		MinConfirmation: 50,
 	})
 

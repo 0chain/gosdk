@@ -15,6 +15,7 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
@@ -289,15 +290,26 @@ func CloseLog() {
 
 // Init inializes the SDK with miner, sharder and signature scheme provided in
 // configuration provided in JSON format
-func Init(c string) error {
-	err := json.Unmarshal([]byte(c), &_config.chain)
+// It is used for 0proxy, 0box, 0explorer, andorid, ios : walletJSON is ChainConfig
+//	 {
+//      "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
+//		"signature_scheme" : "bls0chain",
+//		"block_worker" : "http://localhost/dns",
+// 		"min_submit" : 50,
+//		"min_confirmation" : 50,
+//		"confirmation_chain_length" : 3,
+//		"num_keys" : 1,
+//		"eth_node" : "https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx"
+//	 }
+func Init(chainConfigJSON string) error {
+	err := json.Unmarshal([]byte(chainConfigJSON), &_config.chain)
 	if err == nil {
 		// Check signature scheme is supported
 		if _config.chain.SignatureScheme != "ed25519" && _config.chain.SignatureScheme != "bls0chain" {
 			return errors.New("", "invalid/unsupported signature scheme")
 		}
 
-		err := UpdateNetworkDetails()
+		err = UpdateNetworkDetails()
 		if err != nil {
 			return err
 		}
@@ -306,6 +318,17 @@ func Init(c string) error {
 
 		assertConfig()
 		_config.isConfigured = true
+
+		cfg := &conf.Config{
+			BlockWorker:             _config.chain.BlockWorker,
+			MinSubmit:               _config.chain.MinSubmit,
+			MinConfirmation:         _config.chain.MinConfirmation,
+			ConfirmationChainLength: _config.chain.ConfirmationChainLength,
+			SignatureScheme:         _config.chain.SignatureScheme,
+			ChainID:                 _config.chain.ChainID,
+		}
+
+		conf.InitClientConfig(cfg)
 	}
 	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
 	return err
@@ -341,6 +364,7 @@ func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
 func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
+
 	if signscheme != "ed25519" && signscheme != "bls0chain" {
 		return errors.New("", "invalid/unsupported signature scheme")
 	}
@@ -363,6 +387,18 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 	assertConfig()
 	_config.isConfigured = true
 	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
+
+	cfg := &conf.Config{
+		BlockWorker:             _config.chain.BlockWorker,
+		MinSubmit:               _config.chain.MinSubmit,
+		MinConfirmation:         _config.chain.MinConfirmation,
+		ConfirmationChainLength: _config.chain.ConfirmationChainLength,
+		SignatureScheme:         _config.chain.SignatureScheme,
+		ChainID:                 _config.chain.ChainID,
+	}
+
+	conf.InitClientConfig(cfg)
+
 	return nil
 }
 
@@ -376,6 +412,11 @@ func GetNetwork() *Network {
 func SetNetwork(miners []string, sharders []string) {
 	_config.chain.Miners = miners
 	_config.chain.Sharders = sharders
+
+	conf.InitChainNetwork(&conf.Network{
+		Miners:   miners,
+		Sharders: sharders,
+	})
 }
 
 func GetNetworkJSON() string {
