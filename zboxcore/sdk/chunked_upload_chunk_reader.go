@@ -32,6 +32,8 @@ type chunkedUploadChunkReader struct {
 	// chunkSize chunk size with encryption header
 	chunkSize int64
 
+	// chunkHeaderSize encrypt header size
+	chunkHeaderSize int64
 	// chunkDataSize data size without encryption header in a chunk. It is same as ChunkSize if EncryptOnUpload is false
 	chunkDataSize int64
 
@@ -88,7 +90,8 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 	}
 
 	if r.encryptOnUpload {
-		r.chunkDataSize = chunkSize - 16 - 2*1024
+		r.chunkHeaderSize = 16 + 2*1024
+		r.chunkDataSize = chunkSize - r.chunkHeaderSize
 	} else {
 		r.chunkDataSize = chunkSize
 	}
@@ -153,7 +156,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		return chunk, nil
 	}
 
-	chunk.FragmentSize = int64(math.Ceil(float64(readLen) / float64(r.dataShards)))
+	chunk.FragmentSize = int64(math.Ceil(float64(readLen)/float64(r.dataShards))) + r.chunkHeaderSize
 
 	if readLen < int(r.chunkDataSizePerRead) {
 		chunkBytes = chunkBytes[:readLen]
