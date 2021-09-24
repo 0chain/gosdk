@@ -112,3 +112,24 @@ func mockQoS() *magma.QoS {
 		UploadMbps:   1.2345,
 	}
 }
+
+func mockUserDataMarker() *UserDataMarker {
+	now := time.Now().Format(time.RFC3339Nano)
+	return &UserDataMarker{
+		UserID:     "id:user:" + now,
+		ProviderID: "id:provider:" + now,
+		SessionID:  "id:session:" + now,
+		DataUsage: DataUsage{
+			DownloadBytes: billion,
+			UploadBytes:   million,
+			SessionID:     "id:session:" + now,
+			SessionTime:   12345,
+		},
+		QoS: QoS{
+			DownloadMbps: 5.4321,
+			UploadMbps:   1.2345,
+			Latency:      6.789,
+		},
+		Timestamp: ts.Now(),
+	}
+}

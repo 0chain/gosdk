@@ -38,6 +38,7 @@ type (
 	QoS struct {
 		DownloadMbps float32 `yaml:"download_mbps"`
 		UploadMbps   float32 `yaml:"upload_mbps"`
+		Latency      float32 `yaml:"latency"`
 	}
 )
 

@@ -37,4 +37,12 @@ var (
 	// errInvalidAccessPoint represents an error
 	// that access point was invalidated.
 	errInvalidAccessPoint = errors.New(errCodeInvalid, "invalid access point")
+
+	// errInvalidUser represents an error
+	// that user was invalidated.
+	errInvalidUser = errors.New(errCodeInvalid, "invalid user")
+
+	// errInvalidUserDataMarker represents an error
+	// that user data marker was invalidated.
+	errInvalidUserDataMarker = errors.New(errCodeInvalid, "invalid user data marker")
 )
