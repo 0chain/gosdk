@@ -24,9 +24,16 @@ type ChunkedUploadChunkReader interface {
 type chunkedUploadChunkReader struct {
 	fileReader io.Reader
 
+	//size total size of source. 0 means we don't it
+	size int64
+	// readSize total read size from source
+	readSize int64
+
 	// chunkSize chunk size with encryption header
 	chunkSize int64
 
+	// chunkHeaderSize encrypt header size
+	chunkHeaderSize int64
 	// chunkDataSize data size without encryption header in a chunk. It is same as ChunkSize if EncryptOnUpload is false
 	chunkDataSize int64
 
@@ -51,7 +58,7 @@ type chunkedUploadChunkReader struct {
 }
 
 // createChunkReader create ChunkReader instance
-func createChunkReader(fileReader io.Reader, chunkSize int64, dataShards int, encryptOnUpload bool, uploadMask zboxutil.Uint128, erasureEncoder reedsolomon.Encoder, encscheme encryption.EncryptionScheme, hasher Hasher) (ChunkedUploadChunkReader, error) {
+func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards int, encryptOnUpload bool, uploadMask zboxutil.Uint128, erasureEncoder reedsolomon.Encoder, encscheme encryption.EncryptionScheme, hasher Hasher) (ChunkedUploadChunkReader, error) {
 
 	if chunkSize <= 0 {
 		return nil, errors.Throw(constants.ErrInvalidParameter, "chunkSize: "+strconv.FormatInt(chunkSize, 10))
@@ -71,6 +78,7 @@ func createChunkReader(fileReader io.Reader, chunkSize int64, dataShards int, en
 
 	r := &chunkedUploadChunkReader{
 		fileReader:      fileReader,
+		size:            size,
 		chunkSize:       chunkSize,
 		nextChunkIndex:  0,
 		dataShards:      dataShards,
@@ -82,7 +90,8 @@ func createChunkReader(fileReader io.Reader, chunkSize int64, dataShards int, en
 	}
 
 	if r.encryptOnUpload {
-		r.chunkDataSize = chunkSize - 16 - 2*1024
+		r.chunkHeaderSize = 16 + 2*1024
+		r.chunkDataSize = chunkSize - r.chunkHeaderSize
 	} else {
 		r.chunkDataSize = chunkSize
 	}
@@ -147,13 +156,20 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		return chunk, nil
 	}
 
+	chunk.FragmentSize = int64(math.Ceil(float64(readLen)/float64(r.dataShards))) + r.chunkHeaderSize
+
 	if readLen < int(r.chunkDataSizePerRead) {
-		chunk.FragmentSize = int64(math.Ceil(float64(readLen) / float64(r.dataShards)))
 		chunkBytes = chunkBytes[:readLen]
 		chunk.IsFinal = true
 	}
 
 	chunk.ReadSize = int64(readLen)
+	r.readSize += chunk.ReadSize
+	if r.size > 0 {
+		if r.readSize >= r.size {
+			chunk.IsFinal = true
+		}
+	}
 
 	err = r.hasher.WriteToFile(chunkBytes, chunk.Index)
 	if err != nil {
