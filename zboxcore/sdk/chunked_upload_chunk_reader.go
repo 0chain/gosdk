@@ -24,6 +24,11 @@ type ChunkedUploadChunkReader interface {
 type chunkedUploadChunkReader struct {
 	fileReader io.Reader
 
+	//size total size of source. 0 means we don't it
+	size int64
+	// readSize total read size from source
+	readSize int64
+
 	// chunkSize chunk size with encryption header
 	chunkSize int64
 
@@ -51,7 +56,7 @@ type chunkedUploadChunkReader struct {
 }
 
 // createChunkReader create ChunkReader instance
-func createChunkReader(fileReader io.Reader, chunkSize int64, dataShards int, encryptOnUpload bool, uploadMask zboxutil.Uint128, erasureEncoder reedsolomon.Encoder, encscheme encryption.EncryptionScheme, hasher Hasher) (ChunkedUploadChunkReader, error) {
+func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards int, encryptOnUpload bool, uploadMask zboxutil.Uint128, erasureEncoder reedsolomon.Encoder, encscheme encryption.EncryptionScheme, hasher Hasher) (ChunkedUploadChunkReader, error) {
 
 	if chunkSize <= 0 {
 		return nil, errors.Throw(constants.ErrInvalidParameter, "chunkSize: "+strconv.FormatInt(chunkSize, 10))
@@ -71,6 +76,7 @@ func createChunkReader(fileReader io.Reader, chunkSize int64, dataShards int, en
 
 	r := &chunkedUploadChunkReader{
 		fileReader:      fileReader,
+		size:            size,
 		chunkSize:       chunkSize,
 		nextChunkIndex:  0,
 		dataShards:      dataShards,
@@ -147,13 +153,20 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		return chunk, nil
 	}
 
+	chunk.FragmentSize = int64(math.Ceil(float64(readLen) / float64(r.dataShards)))
+
 	if readLen < int(r.chunkDataSizePerRead) {
-		chunk.FragmentSize = int64(math.Ceil(float64(readLen) / float64(r.dataShards)))
 		chunkBytes = chunkBytes[:readLen]
 		chunk.IsFinal = true
 	}
 
 	chunk.ReadSize = int64(readLen)
+	r.readSize += chunk.ReadSize
+	if r.size > 0 {
+		if r.readSize >= r.size {
+			chunk.IsFinal = true
+		}
+	}
 
 	err = r.hasher.WriteToFile(chunkBytes, chunk.Index)
 	if err != nil {

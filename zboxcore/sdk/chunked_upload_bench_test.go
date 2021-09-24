@@ -30,7 +30,7 @@ func (nope *nopeChunkedUploadProgressStorer) Remove(id string) error {
 	return nil
 }
 
-func generateRandomBytes(n int) []byte {
+func generateRandomBytes(n int64) []byte {
 	b := make([]byte, n)
 	_, err := rand.Read(b)
 	// Note that err == nil only if we read len(b) bytes.
@@ -52,10 +52,13 @@ func BenchmarkChunkedUpload(b *testing.B) {
 
 	benchmarks := []struct {
 		Name            string
-		Size            int
+		Size            int64
 		ChunkSize       int
 		EncryptOnUpload bool
 	}{
+		{Name: "1M 1K", Size: MB * 1, ChunkSize: KB * 1, EncryptOnUpload: false},
+		{Name: "1M 64K", Size: MB * 1, ChunkSize: KB * 64, EncryptOnUpload: false},
+
 		{Name: "10M 64K", Size: MB * 10, ChunkSize: KB * 64, EncryptOnUpload: false},
 		{Name: "10M 6M", Size: MB * 10, ChunkSize: MB * 6, EncryptOnUpload: false},
 
