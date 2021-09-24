@@ -2,8 +2,6 @@ package sdk
 
 import (
 	"bytes"
-	"fmt"
-	"io/ioutil"
 	"math"
 	"testing"
 
@@ -44,6 +42,27 @@ func TestReadChunks(t *testing.T) {
 		{Name: "Size_Equals_3_x_DataShards_x_ChunkSize", Size: KB * 64 * 2 * 3, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
 		// size > 3 * datashards * chunk_size
 		{Name: "Size_Greater_3_x_DataShards_x_ChunkSize", Size: KB*64*2*3 + KB*1, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+
+		// size < chunk_size
+		{Name: "Size_Less_ChunkSize_Encrypt", Size: KB*64 - KB*1, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+		// size == chunk_size
+		{Name: "size_Equals_ChunkSize_Encrypt", Size: KB * 64 * 1, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+		// size > chunk_size
+		{Name: "Size_Greater_ChunkSize_Encrypt", Size: KB*64 + KB*1, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+
+		// size < datashards * chunk_size
+		{Name: "Size_Less_DataShards_x_ChunkSize_Encrypt", Size: KB*64*2 - KB*1, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+		// size == datashards * chunk_size
+		{Name: "size_Equals_DataShards_x_ChunkSize_Encrypt", Size: KB * 64 * 2, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+		// size > datashards * chunk_size
+		{Name: "Size_Greater_DataShards_x_ChunkSize_Encrypt", Size: KB*64*2 + KB*1, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+
+		// size = 3 * datashards * chunk_size
+		{Name: "Size_Less_3_x_DataShards_x_ChunkSize_Encrypt", Size: KB*64*2*3 - KB*1, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+		// size = 3 * datashards * chunk_size
+		{Name: "Size_Equals_3_x_DataShards_x_ChunkSize_Encrypt", Size: KB * 64 * 2 * 3, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+		// size > 3 * datashards * chunk_size
+		{Name: "Size_Greater_3_x_DataShards_x_ChunkSize_Encrypt", Size: KB*64*2*3 + KB*1, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
 	}
 
 	for _, test := range tests {
@@ -58,8 +77,6 @@ func TestReadChunks(t *testing.T) {
 			encscheme.InitForEncryption("filetype:audio")
 
 			buf := generateRandomBytes(test.Size)
-
-			ioutil.WriteFile("/tmp/size_"+fmt.Sprintf("%.0f", float64(test.Size)/float64(KB)), buf, 0600)
 
 			reader, err := createChunkReader(bytes.NewReader(buf), int64(test.Size), int64(test.ChunkSize), test.DataShards, test.EncryptOnUpload, uploadMask, erasureEncoder, encscheme, CreateHasher(int(test.ChunkSize)))
 
@@ -94,9 +111,15 @@ func TestReadChunks(t *testing.T) {
 			chunkDataSizePerRead := chunkDataSize * int64(test.DataShards)
 			chunkNumber := int(math.Ceil(float64(test.Size) / float64(chunkDataSizePerRead)))
 
+			totalSize := test.Size
+
+			if test.EncryptOnUpload {
+				totalSize += 16 + 2*1024*int64(test.DataShards)
+			}
+
 			require.Equal(chunkNumber, lastChunkIndex+1)
-			require.Equal(test.Size, totalFragmentSize)
-			require.Equal(test.Size, totalReadSize)
+			require.Equal(totalSize, totalFragmentSize)
+			require.Equal(totalSize, totalReadSize)
 		})
 	}
 }
