@@ -1,0 +1,13 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox getwallet" as cli
+collections gosdk
+
+cli -> gosdk: GetClientEncryptedPublicKey()
+
+gosdk -> gosdk: check initialized sdk
+gosdk -> gosdk: create new encryption scheme
+gosdk -> gosdk: initialize encryption scheme with mnemonic
+gosdk --> cli: return encrypted public key
+
+cli -> cli: initialize wallet with client public key, client id and encrypted public key
+@enduml

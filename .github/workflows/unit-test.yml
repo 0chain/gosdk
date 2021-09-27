@@ -2,9 +2,9 @@ name: Unit tests
 
 on:
   push:
-    branches: [ master ]
+    branches: [ master, staging, 'dayi/main' ]
   pull_request:
-    branches: [ master ]
+    branches: [ master, staging, 'dayi/main' ]
 
 jobs:
   test:
@@ -12,5 +12,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - name: Setup go 1.16
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.16' # The Go version to download (if necessary) and use.
+
+      - name: Install herumi's libraries
+        run: sudo make install-herumi-ubuntu
+
       - name: Run Unit Test
-        run: make gosdk-test
+        run: LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH make gosdk-test

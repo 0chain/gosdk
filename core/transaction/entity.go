@@ -1,19 +1,32 @@
 package transaction
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"math"
+	"net"
+	"net/http"
+	"strconv"
+	"strings"
 	"sync"
 
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/util"
 )
 
 const TXN_SUBMIT_URL = "v1/transaction/put"
 const TXN_VERIFY_URL = "v1/transaction/get/confirmation?hash="
 
-var ErrNoTxnDetail = common.NewError("missing_transaction_detail", "No transaction detail was found on any of the sharders")
+const (
+	TxnSuccess = 1 // Indicates the transaction is successful in updating the state or smart contract
+	TxnFail    = 3 // Indicates a transaction has failed to update the state or smart contract
+)
 
 //Transaction entity that encapsulates the transaction related data and meta data
 type Transaction struct {
@@ -31,6 +44,7 @@ type Transaction struct {
 	TransactionOutput string `json:"transaction_output,omitempty"`
 	TransactionFee    int64  `json:"transaction_fee"`
 	OutputHash        string `json:"txn_output_hash"`
+	Status            int    `json:"transaction_status"`
 }
 
 //TxnReceipt - a transaction receipt is a processed transaction that contains the output
@@ -73,17 +87,21 @@ type RoundBlockHeader struct {
 
 const (
 	NEW_ALLOCATION_REQUEST    = "new_allocation_request"
+	NEW_FREE_ALLOCATION       = "free_allocation_request"
 	UPDATE_ALLOCATION_REQUEST = "update_allocation_request"
+	FREE_UPDATE_ALLOCATION    = "free_update_allocation"
 	LOCK_TOKEN                = "lock"
 	UNLOCK_TOKEN              = "unlock"
 
+	ADD_FREE_ALLOCATION_ASSIGNER = "add_free_storage_assigner"
+
 	// Vesting SC
-	VESTING_TRIGGER       = "trigger"
-	VESTING_STOP          = "stop"
-	VESTING_UNLOCK        = "unlock"
-	VESTING_ADD           = "add"
-	VESTING_DELETE        = "delete"
-	VESTING_UPDATE_CONFIG = "update_config"
+	VESTING_TRIGGER         = "trigger"
+	VESTING_STOP            = "stop"
+	VESTING_UNLOCK          = "unlock"
+	VESTING_ADD             = "add"
+	VESTING_DELETE          = "delete"
+	VESTING_UPDATE_SETTINGS = "vestingsc-update-settings"
 
 	// Storage SC
 	STORAGESC_FINALIZE_ALLOCATION      = "finalize_allocation"
@@ -99,11 +117,25 @@ const (
 	STORAGESC_UPDATE_ALLOCATION        = "update_allocation_request"
 	STORAGESC_WRITE_POOL_LOCK          = "write_pool_lock"
 	STORAGESC_WRITE_POOL_UNLOCK        = "write_pool_unlock"
+	STORAGESC_ADD_CURATOR              = "add_curator"
+	STORAGESC_REMOVE_CURATOR           = "remove_curator"
+	STORAGESC_CURATOR_TRANSFER         = "curator_transfer_allocation"
+	STORAGESC_UPDATE_SETTINGS          = "update_settings"
 
-	// Miner SC
-	MINERSC_LOCK     = "addToDelegatePool"
-	MINERSC_UNLOCK   = "deleteFromDelegatePool"
-	MINERSC_SETTINGS = "update_settings"
+	MINERSC_LOCK             = "addToDelegatePool"
+	MINERSC_UNLOCK           = "deleteFromDelegatePool"
+	MINERSC_MINER_SETTINGS   = "update_miner_settings"
+	MINERSC_SHARDER_SETTINGS = "update_sharder_settings"
+	MINERSC_UPDATE_SETTINGS  = "update_settings"
+	MINERSC_UPDATE_GLOBALS   = "update_global_settings"
+	MINERSC_MINER_DELETE     = "delete_miner"
+	MINERSC_SHARDER_DELETE   = "delete_sharder"
+
+	// Faucet SC
+	FAUCETSC_UPDATE_SETTINGS = "update-settings"
+
+	// Interest pool SC
+	INTERESTPOOLSC_UPDATE_SETTINGS = "updateVariables"
 )
 
 type SignFunc = func(msg string) (string, error)
@@ -174,7 +206,7 @@ func (t *Transaction) VerifyTransaction(verifyHandler VerifyFunc) (bool, error) 
 	hash := t.Hash
 	t.ComputeHashData()
 	if t.Hash != hash {
-		return false, fmt.Errorf(`{"error":"hash_mismatch", "expected":"%v", "actual":%v"}`, t.Hash, hash)
+		return false, errors.New("verify_transaction", fmt.Sprintf(`{"error":"hash_mismatch", "expected":"%v", "actual":%v"}`, t.Hash, hash))
 	}
 	return verifyHandler(t.Signature, t.Hash, t.PublicKey)
 }
@@ -202,57 +234,153 @@ func sendTransactionToURL(url string, txn *Transaction, wg *sync.WaitGroup) ([]b
 	if postResponse.StatusCode >= 200 && postResponse.StatusCode <= 299 {
 		return []byte(postResponse.Body), nil
 	}
-	return nil, common.NewError("transaction_send_error", postResponse.Body)
+	return nil, errors.Wrap(err, errors.New("transaction_send_error", postResponse.Body))
 }
 
+// VerifyTransaction query transaction status from sharders, and verify it by mininal confirmation
 func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) {
+
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
+
+		return nil, err
+	}
+
 	numSharders := len(sharders)
-	numSuccess := 0
-	var retTxn *Transaction
-	for _, sharder := range sharders {
-		url := fmt.Sprintf("%v/%v%v", sharder, TXN_VERIFY_URL, txnHash)
-		req, err := util.NewHTTPGetRequest(url)
-		response, err := req.Get()
+
+	if numSharders == 0 {
+		return nil, ErrNoAvailableSharder
+	}
+
+	minNumConfirmation := int(math.Ceil(float64(cfg.MinConfirmation*numSharders) / 100))
+
+	rand := util.NewRand(numSharders)
+
+	selectedSharders := make([]string, 0, minNumConfirmation+1)
+
+	// random pick minNumConfirmation+1 first
+	for i := 0; i <= minNumConfirmation; i++ {
+		n, err := rand.Next()
+
 		if err != nil {
-			//Logger.Error("Error getting transaction confirmation", err.Error())
-			numSharders--
-		} else {
-			if response.StatusCode != 200 {
-				continue
-			}
-			contents := response.Body
-			var objmap map[string]json.RawMessage
-			err = json.Unmarshal([]byte(contents), &objmap)
-			if err != nil {
-				//Logger.Error("Error unmarshalling response", err.Error())
-				continue
-			}
-			if _, ok := objmap["txn"]; !ok {
-				//Logger.Info("Not transaction information. Only block summary.", url, contents)
-				if _, ok := objmap["block_hash"]; ok {
-					numSuccess++
-					continue
-				}
-				//Logger.Info("Sharder does not have the block summary", url, contents)
-				continue
-			}
+			break
+		}
+
+		selectedSharders = append(selectedSharders, sharders[n])
+	}
+
+	numSuccess := 0
+
+	var retTxn *Transaction
+
+	//leave first item for ErrTooLessConfirmation
+	var msgList = make([]string, 1, numSharders)
+
+	urls := make([]string, 0, len(selectedSharders))
+
+	for _, sharder := range selectedSharders {
+		urls = append(urls, fmt.Sprintf("%v/%v%v", sharder, TXN_VERIFY_URL, txnHash))
+	}
+
+	header := map[string]string{
+		"Content-Type":                "application/json; charset=utf-8",
+		"Access-Control-Allow-Origin": "*",
+	}
+
+	transport := &http.Transport{
+		Dial: (&net.Dialer{
+			Timeout: resty.DefaultDialTimeout,
+		}).Dial,
+		TLSHandshakeTimeout: resty.DefaultDialTimeout,
+	}
+	r := resty.New(transport, func(req *http.Request, resp *http.Response, cf context.CancelFunc, err error) error {
+		url := req.URL.String()
+
+		if err != nil { //network issue
+			msgList = append(msgList, err.Error())
+			return err
+		}
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil { //network issue
+			msgList = append(msgList, url+": "+err.Error())
+			return err
+		}
+
+		if resp.StatusCode != 200 {
+			msgList = append(msgList, url+": ["+strconv.Itoa(resp.StatusCode)+"] "+string(body))
+			return errors.Throw(ErrInvalidRequest, strconv.Itoa(resp.StatusCode)+": "+resp.Status)
+		}
+
+		var objmap map[string]json.RawMessage
+		err = json.Unmarshal(body, &objmap)
+		if err != nil {
+			msgList = append(msgList, "json: "+string(body))
+			return err
+		}
+		txnRawJSON, ok := objmap["txn"]
+
+		// txn data is found, success
+		if ok {
 			txn := &Transaction{}
-			err = json.Unmarshal(objmap["txn"], txn)
+			err = json.Unmarshal(txnRawJSON, txn)
 			if err != nil {
-				//Logger.Error("Error unmarshalling to get transaction response", err.Error())
+				msgList = append(msgList, "json: "+string(txnRawJSON))
+				return err
 			}
 			if len(txn.Signature) > 0 {
 				retTxn = txn
 			}
-
 			numSuccess++
+
+		} else {
+			// txn data is not found, but get block_hash, success
+			if _, ok := objmap["block_hash"]; ok {
+				numSuccess++
+			} else {
+				// txn and block_hash
+				msgList = append(msgList, fmt.Sprintf("Sharder does not have the block summary with url: %s, contents: %s", url, string(body)))
+			}
+
 		}
-	}
-	if numSharders == 0 || float64(numSuccess*1.0/numSharders) > float64(0.5) {
-		if retTxn != nil {
-			return retTxn, nil
+
+		return nil
+	},
+		resty.WithTimeout(resty.DefaultRequestTimeout),
+		resty.WithRetry(resty.DefaultRetry),
+		resty.WithHeader(header))
+
+	for {
+		r.DoGet(context.TODO(), urls...)
+
+		r.Wait()
+
+		if numSuccess >= minNumConfirmation {
+			break
 		}
-		return nil, ErrNoTxnDetail
+
+		// pick more one sharder to query transaction
+		n, err := rand.Next()
+
+		if errors.Is(err, util.ErrNoItem) {
+			break
+		}
+
+		urls = []string{fmt.Sprintf("%v/%v%v", sharders[n], TXN_VERIFY_URL, txnHash)}
+
 	}
-	return nil, common.NewError("transaction_not_found", "Transaction was not found on any of the sharders")
+
+	if numSuccess > 0 && numSuccess >= minNumConfirmation {
+
+		if retTxn == nil {
+			return nil, errors.Throw(ErrNoTxnDetail, strings.Join(msgList, "\r\n"))
+		}
+
+		return retTxn, nil
+	}
+
+	msgList[0] = fmt.Sprintf("min_confirmation is %v%%, but got %v/%v sharders", cfg.MinConfirmation, numSuccess, numSharders)
+
+	return nil, errors.Throw(ErrTooLessConfirmation, strings.Join(msgList, "\r\n"))
+
 }

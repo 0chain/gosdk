@@ -1,0 +1,14 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox sp-pay-interests" as cli
+collections gosdk
+
+cli -> gosdk: StakePoolPayInterests(blobberID)
+gosdk -> gosdk: create stake pool info
+gosdk -> gosdk: check initialized sdk
+alt empty blobber id
+gosdk -> gosdk: get client id 
+end
+gosdk -> gosdk: create stake pool request
+gosdk -> gosdk: create smart contract txn data
+gosdk -> gosdk: get value fee from smart contract txn
+@enduml

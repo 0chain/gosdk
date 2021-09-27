@@ -1,0 +1,37 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox copy" as cli
+collections gosdk
+collections blobber
+
+cli -> gosdk: GetAllocation(allocationID)
+cli -> gosdk: GetFileStats(remotepath)
+alt not empty file stats
+cli -> gosdk: GetFileMeta(remotepath)
+end
+cli -> gosdk: CopyObject(remotepath, destpath)
+
+gosdk -> gosdk: check initialized allocation
+gosdk -> gosdk: check valid path
+gosdk -> gosdk: create copy request
+
+group for each blobber (blobber, bidx)
+gosdk -> blobber: call http request to get object tree
+gosdk -> blobber: call http request to copy blobber
+alt successful status code
+gosdk -> gosdk: increase consensus and change copyMask
+end
+end
+
+gosdk -> gosdk: check threshold consensus
+gosdk -> gosdk: create commit request
+
+group for each bit 1 in the copyMask
+gosdk -> blobber: add commit request
+end
+
+group for each successful commit
+gosdk -> gosdk: increase consensus
+end
+
+gosdk -> gosdk: check threshold consensus
+@enduml

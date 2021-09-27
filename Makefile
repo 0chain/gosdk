@@ -27,13 +27,16 @@ gosdk-build: gomod-download
 	go build -x -v -tags bn256 ./...
 
 wasm-build:
-	CGO_ENABLED=0 GOOS=js GOARCH=wasm $(GOROOT)/bin/go build -o sdk.wasm github.com/0chain/gosdk/wasm
+	CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -o sdk.wasm github.com/0chain/gosdk/wasm
      
 wasm-test:
-	CGO_ENABLED=0 GOOS=js GOARCH=wasm $(GOROOT)/bin/go test -v github.com/0chain/gosdk/wasm
+	CGO_ENABLED=0 GOOS=js GOARCH=wasm go test -v github.com/0chain/gosdk/wasm
+
+gosdk-mocks:
+	./generate_mocks.sh
 
 gosdk-test: wasm-test
-	$(GOROOT)/bin/go test -tags bn256 ./...
+	go test -tags bn256 ./...
 
 install-gosdk: | gosdk-build wasm-build
 
@@ -78,3 +81,15 @@ help:
 	@echo "\tmake install           - Install gosdk"
 	@echo "\tmake clean             - Deletes all build output files"
 	@echo "\tmake lint              - Runs the golangci-lint
+
+install-herumi-ubuntu:
+	@cd /tmp && \
+        wget -O - https://github.com/herumi/mcl/archive/master.tar.gz | tar xz && \
+        wget -O - https://github.com/herumi/bls/archive/master.tar.gz | tar xz && \
+        mv mcl* mcl && \
+        mv bls* bls && \
+        make -C mcl -j $(nproc) lib/libmclbn256.so install && \
+        cp mcl/lib/libmclbn256.so /usr/local/lib && \
+        make MCL_DIR=../mcl -C bls -j $(nproc) install && \
+        rm -R /tmp/mcl && \
+        rm -R /tmp/bls

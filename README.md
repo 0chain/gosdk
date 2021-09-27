@@ -162,7 +162,16 @@ $ go tool cover -html=coverage.out
 
 6. To test the function you exported, it's probably as simple as calling "HelloWorld()". It should be a 1-liner.
 
-## FAQ ##
+### How to install `ffmepg` 
+
+### On linux ubuntu
+
+```
+sudo apt-get install ffmpeg
+sudo apt-get install v4l-utils
+```
+
+### FAQ ###
 
 - [How to install GO on any platform](https://golang.org/doc/install)
 - [How to install different version of GO](https://golang.org/doc/install#extra_versions)

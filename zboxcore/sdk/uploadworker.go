@@ -16,7 +16,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -38,34 +39,56 @@ func isSetTestEnv(name string) bool {
 const additionalSuccessRate = (10)
 
 type UploadFileMeta struct {
-	Name          string
-	Path          string
-	Hash          string
-	MimeType      string
-	Size          int64
+	// Name remote file name
+	Name string
+	// Path remote path
+	Path string
+	// Hash hash of entire source file
+	Hash     string
+	MimeType string
+	// Size total bytes of entire source file
+	Size int64
+
+	// ThumbnailSize total bytes of entire thumbnail
 	ThumbnailSize int64
+	// ThumbnailHash hash code of entire thumbnail
 	ThumbnailHash string
-	Attributes    fileref.Attributes
+
+	// Attributes file attributes in blockchain
+	Attributes fileref.Attributes
 }
 
 type uploadFormData struct {
-	ConnectionID        string             `json:"connection_id"`
-	Filename            string             `json:"filename"`
-	Path                string             `json:"filepath"`
-	Hash                string             `json:"content_hash,omitempty"`
-	ThumbnailHash       string             `json:"thumbnail_content_hash,omitempty"`
-	MerkleRoot          string             `json:"merkle_root,omitempty"`
-	ActualHash          string             `json:"actual_hash"`
-	ActualSize          int64              `json:"actual_size"`
-	ActualThumbnailSize int64              `json:"actual_thumb_size"`
-	ActualThumbnailHash string             `json:"actual_thumb_hash"`
-	MimeType            string             `json:"mimetype"`
-	CustomMeta          string             `json:"custom_meta,omitempty"`
-	EncryptedKey        string             `json:"encrypted_key,omitempty"`
-	Attributes          fileref.Attributes `json:"attributes,omitempty"`
+	ConnectionID string `json:"connection_id"`
+	// Filename remote file name
+	Filename string `json:"filename"`
+	// Path remote path
+	Path string `json:"filepath"`
+
+	// Hash hash of shard data (encoded, encrypted)
+	Hash string `json:"content_hash,omitempty"`
+	// Hash hash of shard thumbnail (encoded, encrypted)
+	ThumbnailHash string `json:"thumbnail_content_hash,omitempty"`
+
+	// MerkleRoot merkle's root hash of shard data (encoded, encrypted)
+	MerkleRoot string `json:"merkle_root,omitempty"`
+
+	// ActualHash hash of orignial file (unencoded, unencrypted)
+	ActualHash string `json:"actual_hash"`
+	// ActualSize total bytes of orignial file (unencoded, unencrypted)
+	ActualSize int64 `json:"actual_size"`
+	// ActualThumbnailSize total bytes of orignial thumbnail (unencoded, unencrypted)
+	ActualThumbnailSize int64 `json:"actual_thumb_size"`
+	// ActualThumbnailHash hash of orignial thumbnail (unencoded, unencrypted)
+	ActualThumbnailHash string `json:"actual_thumb_hash"`
+
+	MimeType     string             `json:"mimetype"`
+	CustomMeta   string             `json:"custom_meta,omitempty"`
+	EncryptedKey string             `json:"encrypted_key,omitempty"`
+	Attributes   fileref.Attributes `json:"attributes,omitempty"`
 }
 
-type uploadResult struct {
+type UploadResult struct {
 	Filename   string `json:"filename"`
 	ShardSize  int64  `json:"size"`
 	Hash       string `json:"content_hash,omitempty"`
@@ -106,7 +129,14 @@ func (req *UploadRequest) setUploadMask(numBlobbers int) {
 	req.uploadMask = zboxutil.NewUint128(1).Lsh(uint64(numBlobbers)).Sub64(1)
 }
 
-func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.StorageNode, file *fileref.FileRef, uploadCh chan []byte, uploadThumbCh chan []byte, wg *sync.WaitGroup) {
+func (req *UploadRequest) prepareUpload(
+	a *Allocation,
+	blobber *blockchain.StorageNode,
+	file *fileref.FileRef,
+	uploadCh chan []byte,
+	uploadThumbCh chan []byte,
+	wg *sync.WaitGroup,
+) {
 	bodyReader, bodyWriter := io.Pipe()
 	formWriter := multipart.NewWriter(bodyWriter)
 	httpreq, _ := zboxutil.NewUploadRequest(blobber.Baseurl, a.Tx, bodyReader, req.isUpdate)
@@ -214,6 +244,7 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 			}
 			// Setup file hash compute
 			h := sha1.New()
+
 			hWr := io.MultiWriter(h)
 			// Read the data
 			for remaining > 0 {
@@ -281,10 +312,10 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 		}
 		if resp.StatusCode != http.StatusOK {
 			Logger.Error(blobber.Baseurl, " Upload error response: ", resp.StatusCode, string(respbody))
-			req.err = fmt.Errorf(string(respbody))
+			req.err = errors.New("", string(respbody))
 			return err
 		}
-		var r uploadResult
+		var r UploadResult
 		err = json.Unmarshal(respbody, &r)
 		if err != nil {
 			Logger.Error(blobber.Baseurl, " Upload response parse error: ", err)
@@ -317,11 +348,13 @@ func (req *UploadRequest) prepareUpload(a *Allocation, blobber *blockchain.Stora
 	wg.Done()
 }
 
+// setups upload for each blobber with same file
 func (req *UploadRequest) setupUpload(a *Allocation) error {
 	numUploads := req.uploadMask.CountOnes()
 	req.uploadDataCh = make([]chan []byte, numUploads)
 	req.uploadThumbCh = make([]chan []byte, numUploads)
 	req.file = make([]*fileref.FileRef, numUploads)
+
 	for i := range req.uploadDataCh {
 		req.uploadDataCh[i] = make(chan []byte)
 		req.uploadThumbCh[i] = make(chan []byte)
@@ -341,7 +374,8 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 	}
 	if req.isEncrypted {
 		req.encscheme = encryption.NewEncryptionScheme()
-		err := req.encscheme.Initialize(client.GetClient().Mnemonic)
+		mnemonic := client.GetClient().Mnemonic
+		_, err := req.encscheme.Initialize(mnemonic)
 		if err != nil {
 			return err
 		}
@@ -362,6 +396,7 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 	return nil
 }
 
+// this will push the data to the blobber, encrypt if the using the encrypted upload mode
 func (req *UploadRequest) pushData(data []byte) error {
 	//TODO: Check for optimization
 	n := int64(math.Min(float64(req.remaining), float64(len(data))))
@@ -430,19 +465,19 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 	var inFile *os.File
 	inFile, err := os.Open(req.filepath)
 	if err != nil && req.statusCallback != nil {
-		req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("open_file_failed", err.Error()))
+		req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("open_file_failed", err.Error()))
 		return
 	}
 	defer inFile.Close()
 	mimetype, err := zboxutil.GetFileContentType(inFile)
 	if err != nil && req.statusCallback != nil {
-		req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("mime_type_error", err.Error()))
+		req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("mime_type_error", err.Error()))
 		return
 	}
 	req.filemeta.MimeType = mimetype
 	err = req.setupUpload(a)
 	if err != nil && req.statusCallback != nil {
-		req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("setup_upload_failed", err.Error()))
+		req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("setup_upload_failed", err.Error()))
 		return
 	}
 	size := req.filemeta.Size
@@ -476,7 +511,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			b1 := make([]byte, remaining*int64(a.DataShards))
 			_, err = dataReader.Read(b1)
 			if err != nil && req.statusCallback != nil {
-				req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("read_failed", err.Error()))
+				req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("read_failed", err.Error()))
 				return
 			}
 			if req.isUploadCanceled {
@@ -485,13 +520,13 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 					go a.DeleteFile(req.remotefilepath)
 				}
 				if req.statusCallback != nil {
-					req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("user_aborted", "Upload aborted by user"))
+					req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("user_aborted", "Upload aborted by user"))
 				}
 				return
 			}
 			err = req.pushData(b1)
 			if err != nil {
-				req.statusCallback.Error(a.ID, req.filepath, OpUpload, common.NewError("push_error", err.Error()))
+				req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("push_error", err.Error()))
 				return
 			}
 
@@ -530,7 +565,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			newChange := &allocationchange.UpdateFileChange{}
 			newChange.NewFile = req.file[c]
 			newChange.NumBlocks = req.file[c].NumBlocks
-			newChange.Operation = allocationchange.UPDATE_OPERATION
+			newChange.Operation = constants.FileOperationUpdate
 			newChange.Size = req.file[c].Size
 			newChange.NewFile.Attributes = req.file[c].Attributes
 			commitReq.changes = append(commitReq.changes, newChange)
@@ -538,7 +573,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			newChange := &allocationchange.NewFileChange{}
 			newChange.File = req.file[c]
 			newChange.NumBlocks = req.file[c].NumBlocks
-			newChange.Operation = allocationchange.INSERT_OPERATION
+			newChange.Operation = constants.FileOperationInsert
 			newChange.Size = req.file[c].Size
 			newChange.File.Attributes = req.file[c].Attributes
 			commitReq.changes = append(commitReq.changes, newChange)
@@ -601,7 +636,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			a.deleteFile(req.remotefilepath, req.consensus, req.consensus)
 		}
 		if req.statusCallback != nil {
-			req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, common.NewError("commit_consensus_failed", "Upload failed as there was no commit consensus"))
+			req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, errors.New("commit_consensus_failed", "Upload failed as there was no commit consensus"))
 			return
 		}
 	}

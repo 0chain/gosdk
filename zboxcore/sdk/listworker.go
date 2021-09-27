@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -104,7 +105,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 		defer resp.Body.Close()
 		resp_body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("Error: Resp : %s", err.Error())
+			return errors.Wrap(err, "Error: Resp")
 		}
 		s.WriteString(string(resp_body))
 		Logger.Debug("List result:", string(resp_body))
@@ -112,16 +113,17 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 			listResult := &fileref.ListResult{}
 			err = json.Unmarshal(resp_body, listResult)
 			if err != nil {
-				return fmt.Errorf("list entities response parse error: %s", err.Error())
+				return errors.Wrap(err, "list entities response parse error:")
 			}
 			ref, err = listResult.GetDirTree(req.allocationID)
 			if err != nil {
-				return fmt.Errorf("error getting the dir tree from list response: %s", err.Error())
+				return errors.Wrap(err, "error getting the dir tree from list response:")
 			}
 			return nil
-		} else {
-			return fmt.Errorf("error from server list response: %s", s.String())
 		}
+
+		return fmt.Errorf("error from server list response: %s", s.String())
+
 	})
 }
 

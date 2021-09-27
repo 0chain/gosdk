@@ -3,11 +3,11 @@ package zcncore
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"time"
 
-	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/util"
 	"go.uber.org/zap"
 )
@@ -52,6 +52,10 @@ func UpdateNetworkDetails() error {
 		_config.isConfigured = false
 		_config.chain.Miners = networkDetails.Miners
 		_config.chain.Sharders = networkDetails.Sharders
+		conf.InitChainNetwork(&conf.Network{
+			Sharders: networkDetails.Sharders,
+			Miners:   networkDetails.Miners,
+		})
 		_config.isConfigured = true
 	}
 	return nil
@@ -76,18 +80,18 @@ func UpdateRequired(networkDetails *Network) bool {
 func GetNetworkDetails() (*Network, error) {
 	req, err := util.NewHTTPGetRequest(_config.chain.BlockWorker + NETWORK_ENDPOINT)
 	if err != nil {
-		return nil, common.NewError("get_network_details_error", "Unable to create new http request with error "+err.Error())
+		return nil, errors.New("get_network_details_error", "Unable to create new http request with error "+err.Error())
 	}
 
 	res, err := req.Get()
 	if err != nil {
-		return nil, common.NewError("get_network_details_error", "Unable to get http request with error "+err.Error())
+		return nil, errors.New("get_network_details_error", "Unable to get http request with error "+err.Error())
 	}
 
 	var networkResponse Network
 	err = json.Unmarshal([]byte(res.Body), &networkResponse)
 	if err != nil {
-		return nil, fmt.Errorf("Error unmarshaling response : %s", err.Error())
+		return nil, errors.Wrap(err, "Error unmarshaling response :")
 	}
 	return &networkResponse, nil
 

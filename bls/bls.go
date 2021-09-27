@@ -5,10 +5,11 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/0chain/gosdk/miracl"
 	"io"
 	"math/rand"
 	"unsafe"
+
+	BN254 "github.com/0chain/gosdk/miracl"
 )
 
 var r *BN254.BIG
@@ -215,7 +216,7 @@ func (sig *Sign) Recover(shares []Sign, from []ID) error {
 		_a := a.v.GetBIG()
 		_a.Div(b)
 		t := BN254.G1mul(shares[i].v, _a) // G::mul(shares[i], a/b)
-		r.Add(t) // G::add(r, t) // r += t
+		r.Add(t)                          // G::add(r, t) // r += t
 	}
 
 	sig.v = r

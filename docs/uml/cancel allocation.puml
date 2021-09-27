@@ -1,0 +1,11 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox alloc-cancel" as cli
+collections gosdk
+
+cli -> gosdk: CancelAllocation(allocID)
+
+gosdk -> gosdk: check initialized sdk
+gosdk -> gosdk: create smart contract txn data
+gosdk -> gosdk: send smart contract txn
+gosdk -> cli: return txn hash
+@enduml

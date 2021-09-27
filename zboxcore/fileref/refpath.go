@@ -1,7 +1,7 @@
 package fileref
 
 import (
-	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/errors"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -35,6 +35,7 @@ func (rp *ReferencePath) GetRefFromObjectTree(allocationID string) (RefEntity, e
 	return rp.GetDirTree(allocationID)
 }
 
+// GetDirTree covert and build root Ref with children
 func (rp *ReferencePath) GetDirTree(allocationID string) (*Ref, error) {
 	reftype := rp.Meta["type"].(string)
 	if reftype == DIRECTORY {
@@ -60,7 +61,7 @@ func (rp *ReferencePath) GetDirTree(allocationID string) (*Ref, error) {
 		}
 		return rootRef, nil
 	}
-	return nil, common.NewError("invalid_ref_path", "Invalid reference path. root was not a directory type")
+	return nil, errors.New("invalid_ref_path", "Invalid reference path. root was not a directory type")
 }
 
 func (rp *ReferencePath) populateChildren(ref *Ref) error {

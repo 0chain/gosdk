@@ -6,15 +6,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
-const (
-	INSERT_OPERATION       = "insert"
-	DELETE_OPERATION       = "delete"
-	UPDATE_OPERATION       = "update"
-	RENAME_OPERATION       = "rename"
-	COPY_OPERATION         = "copy"
-	UPDATE_ATTRS_OPERATION = "update_attrs"
-)
-
 type change struct {
 	Size      int64  `json:"size"`
 	NumBlocks int64  `json:"num_of_blocks"`

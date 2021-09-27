@@ -5,7 +5,13 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
+	"log"
+	"math"
+	"math/big"
+	"regexp"
+
 	"github.com/0chain/gosdk/core/zcncrypto"
+	hdwallet "github.com/0chain/gosdk/zcncore/ethhdwallet"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -13,17 +19,25 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
-	hdwallet "github.com/miguelmota/go-ethereum-hdwallet"
 	"golang.org/x/crypto/sha3"
-	"log"
-	"math"
-	"math/big"
-	"regexp"
 )
 
-// TODO channge to real wallets
+// TODO change to real wallets
 const walletAddr = "0xb9EF770B6A5e12E45983C5D80545258aA38F3B78"
 const tokenAddress = "0x28b149020d2152179873ec60bed6bf7cd705775d"
+
+var GetEthClient = func() (*ethclient.Client, error) {
+	if len(_config.chain.EthNode) == 0 {
+		return nil, fmt.Errorf("eth node SDK not initialized")
+	}
+
+	Logger.Info("requesting from", _config.chain.EthNode)
+	client, err := ethclient.Dial(_config.chain.EthNode)
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
+}
 
 // TokensToEth - converting wei to eth tokens
 func TokensToEth(tokens int64) float64 {
@@ -38,7 +52,7 @@ func EthToTokens(tokens float64) int64 {
 	return int64(tokens * float64(params.Ether))
 }
 
-func GTokensToEth(tokens int64) float64{
+func GTokensToEth(tokens int64) float64 {
 	return float64(tokens) / float64(params.GWei)
 }
 
@@ -89,12 +103,7 @@ func GetEthBalance(ethAddr string, cb GetBalanceCallback) error {
 
 // IsValidEthAddress - multiple checks for valid ETH address
 func IsValidEthAddress(ethAddr string) (bool, error) {
-	if len(_config.chain.EthNode) == 0 {
-		return false, fmt.Errorf("Eth node SDK not initialized.")
-	}
-
-	Logger.Info("requesting from", _config.chain.EthNode)
-	client, err := ethclient.Dial(_config.chain.EthNode)
+	client, err := GetEthClient()
 	if err != nil {
 		return false, err
 	}
@@ -109,11 +118,12 @@ func isValidEthAddress(ethAddr string, client *ethclient.Client) (bool, error) {
 	}
 
 	address := common.HexToAddress(ethAddr)
-	bytecode, err := client.CodeAt(context.Background(), address, nil) // nil is latest block
+	balance, err := client.BalanceAt(context.Background(), address, nil)
 	if err != nil {
 		return false, fmt.Errorf(err.Error())
 	}
-	isContract := len(bytecode) > 0
+
+	isContract := balance.Int64() > 0
 	return isContract, nil
 }
 
@@ -126,12 +136,12 @@ func CreateWalletFromEthMnemonic(mnemonic, password string, statusCb WalletCallb
 		sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 		wallet, err := sigScheme.GenerateKeysWithEth(mnemonic, password)
 		if err != nil {
-			statusCb.OnWalletCreateComplete(StatusError, "", fmt.Sprintf("%s", err.Error()))
+			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
 		}
 		err = RegisterToMiners(wallet, statusCb)
 		if err != nil {
-			statusCb.OnWalletCreateComplete(StatusError, "", fmt.Sprintf("%s", err.Error()))
+			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
 		}
 	}()
@@ -145,12 +155,12 @@ func CheckEthHashStatus(hash string) int {
 
 	var client *ethclient.Client
 	var err error
-	if client, err = getEthClient(); err != nil {
-		return  -1
+	if client, err = GetEthClient(); err != nil {
+		return -1
 	}
 
 	tx, err := client.TransactionReceipt(context.Background(), txHash)
-	if err !=nil {
+	if err != nil {
 		return -1
 	}
 	return int(tx.Status)
@@ -169,12 +179,12 @@ func ConvertZcnTokenToETH(token float64) (float64, error) {
 func SuggestEthGasPrice() (int64, error) {
 	var client *ethclient.Client
 	var err error
-	if client, err = getEthClient(); err != nil {
-		return  0, err
+	if client, err = GetEthClient(); err != nil {
+		return 0, err
 	}
 
 	gasPrice, err := client.SuggestGasPrice(context.Background())
-	if err != nil{
+	if err != nil {
 		return 0, err
 	}
 
@@ -182,16 +192,16 @@ func SuggestEthGasPrice() (int64, error) {
 }
 
 // TransferEthTokens - transfer ETH tokens to multisign wallet
-func TransferEthTokens(fromPrivKey string, amountTokens, gasPrice int64) (string, error){
+func TransferEthTokens(fromPrivKey string, amountTokens, gasPrice int64) (string, error) {
 	var client *ethclient.Client
 	var err error
-	if client, err = getEthClient(); err != nil {
-		return  "", err
+	if client, err = GetEthClient(); err != nil {
+		return "", err
 	}
 
 	privateKey, err := crypto.HexToECDSA(fromPrivKey)
 	if err != nil {
-		return  "", err
+		return "", err
 	}
 
 	publicKey := privateKey.Public()
@@ -200,7 +210,7 @@ func TransferEthTokens(fromPrivKey string, amountTokens, gasPrice int64) (string
 	fromAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
-		return  "", err
+		return "", err
 	}
 
 	toAddress := common.HexToAddress(walletAddr)
@@ -216,7 +226,6 @@ func TransferEthTokens(fromPrivKey string, amountTokens, gasPrice int64) (string
 	fmt.Println(hexutil.Encode(paddedAddress)) // 0x0000000000000000000000004592d8f8d7b001e72cb26a73e4fa1806a51ac79d
 
 	amount := new(big.Int)
-	//amount.SetString("1000000000000000000000", 10) // sets the value to 1000 tokens, in the token denomination
 	amount.SetInt64(amountTokens)
 
 	paddedAmount := common.LeftPadBytes(amount.Bytes(), 32)
@@ -234,57 +243,37 @@ func TransferEthTokens(fromPrivKey string, amountTokens, gasPrice int64) (string
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println(gasLimit) // 23256
 
 	txData := &types.LegacyTx{
-		Nonce: nonce,
+		Nonce:    nonce,
 		GasPrice: big.NewInt(gasPrice),
-		Gas: gasLimit,
-		To: &tokenAddress,
-		Value: amount,
-		Data: data,
+		Gas:      gasLimit,
+		To:       &tokenAddress,
+		Value:    amount,
+		Data:     data,
 	}
 	tx := types.NewTx(txData)
 
-	chainID, err := client.NetworkID(context.Background())
+	chainID, err := client.ChainID(context.Background())
 	if err != nil {
-		return  "", err
+		return "", err
 	}
 
 	signedTx, err := types.SignTx(tx, types.NewEIP155Signer(chainID), privateKey)
 	if err != nil {
-		return  "", err
+		return "", err
 	}
 
 	err = client.SendTransaction(context.Background(), signedTx)
 	if err != nil {
-		return  "", err
+		return "", err
 	}
 
 	return signedTx.Hash().Hex(), nil
 }
 
-func getEthClient() (*ethclient.Client, error) {
-	if len(_config.chain.EthNode) == 0 {
-		return nil, fmt.Errorf("Eth node SDK not initialized.")
-	}
-
-	Logger.Info("requesting from", _config.chain.EthNode)
-	client, err := ethclient.Dial(_config.chain.EthNode)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
-}
-
 func getBalanceFromEthNode(ethAddr string) (int64, error) {
-	if client, err := getEthClient(); err == nil {
-		// TODO
-		//res, err := isValidEthAddress(ethAddr, client)
-		//if !res {
-		//	return 0, err
-		//}
-
+	if client, err := GetEthClient(); err == nil {
 		account := common.HexToAddress(ethAddr)
 		Logger.Info("for eth address", account)
 		balance, err := client.BalanceAt(context.Background(), account, nil)

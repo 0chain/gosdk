@@ -4,7 +4,6 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -14,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 )
@@ -29,15 +29,18 @@ const (
 )
 
 type fileInfo struct {
-	Size int64  `json:"size"`
-	Hash string `json:"hash"`
-	Type string `json:"type"`
+	Size       int64              `json:"size"`
+	ActualSize int64              `json:"actual_size"`
+	Hash       string             `json:"hash"`
+	Type       string             `json:"type"`
+	Attributes fileref.Attributes `json:"attributes"`
 }
 
 type FileDiff struct {
-	Op   string `json:"operation"`
-	Path string `json:"path"`
-	Type string `json:"type"`
+	Op         string             `json:"operation"`
+	Path       string             `json:"path"`
+	Type       string             `json:"type"`
+	Attributes fileref.Attributes `json:"attributes"`
 }
 
 func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]fileInfo, exclMap map[string]int) ([]string, error) {
@@ -51,7 +54,7 @@ func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]fil
 			if _, ok := exclMap[child.Path]; ok {
 				continue
 			}
-			fMap[child.Path] = fileInfo{Size: child.Size, Hash: child.Hash, Type: child.Type}
+			fMap[child.Path] = fileInfo{Size: child.Size, ActualSize: child.ActualSize, Hash: child.Hash, Type: child.Type, Attributes: child.Attributes}
 			if child.Type == fileref.DIRECTORY {
 				childDirList = append(childDirList, child.Path)
 			}
@@ -61,7 +64,7 @@ func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]fil
 }
 
 func (a *Allocation) GetRemoteFileMap(exclMap map[string]int) (map[string]fileInfo, error) {
-	// 1. Iteratively get dir and files seperately till no more dirs left
+	// 1. Iteratively get dir and files separately till no more dirs left
 	remoteList := make(map[string]fileInfo)
 	dirs := []string{"/"}
 	var err error
@@ -240,7 +243,7 @@ func findDelta(rMap map[string]fileInfo, lMap map[string]fileInfo, prevMap map[s
 				continue
 			}
 		}
-		lFDiff = append(lFDiff, FileDiff{Path: lPath, Op: op, Type: lMap[lPath].Type})
+		lFDiff = append(lFDiff, FileDiff{Path: lPath, Op: op, Type: lMap[lPath].Type, Attributes: lMap[lPath].Attributes})
 	}
 
 	// If there are differences, remove childs if the parent folder is deleted
@@ -274,15 +277,15 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath s
 		fileInfo, err := os.Stat(lastSyncCachePath)
 		if err == nil {
 			if fileInfo.IsDir() {
-				return lFdiff, fmt.Errorf("invalid file cache. %v", err)
+				return lFdiff, errors.Wrap(err, "invalid file cache.")
 			}
 			content, err := ioutil.ReadFile(lastSyncCachePath)
 			if err != nil {
-				return lFdiff, fmt.Errorf("can't read cache file.")
+				return lFdiff, errors.New("", "can't read cache file.")
 			}
 			err = json.Unmarshal(content, &prevRemoteFileMap)
 			if err != nil {
-				return lFdiff, fmt.Errorf("invalid cache content.")
+				return lFdiff, errors.New("", "invalid cache content.")
 			}
 		}
 	}
@@ -293,14 +296,14 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath s
 	// 3. Get flat file list from remote
 	remoteFileMap, err := a.GetRemoteFileMap(exclMap)
 	if err != nil {
-		return lFdiff, fmt.Errorf("error getting list dir from remote. %v", err)
+		return lFdiff, errors.Wrap(err, "error getting list dir from remote.")
 	}
 
 	// 4. Get flat file list on the local filesystem
 	localRootPath = strings.TrimRight(localRootPath, "/")
 	localFileList, err := getLocalFileMap(localRootPath, localFileFilters, exclMap)
 	if err != nil {
-		return lFdiff, fmt.Errorf("error getting list dir from local. %v", err)
+		return lFdiff, errors.Wrap(err, "error getting list dir from local.")
 	}
 
 	// 5. Get the file diff with operation
@@ -317,7 +320,7 @@ func (a *Allocation) SaveRemoteSnapshot(pathToSave string, remoteExcludePath []s
 	fileInfo, err := os.Stat(pathToSave)
 	if err == nil {
 		if fileInfo.IsDir() {
-			return fmt.Errorf("invalid file path to save. %v", err)
+			return errors.Wrap(err, "invalid file path to save.")
 		}
 		bIsFileExists = true
 	}
@@ -326,23 +329,23 @@ func (a *Allocation) SaveRemoteSnapshot(pathToSave string, remoteExcludePath []s
 	exclMap := getRemoteExcludeMap(remoteExcludePath)
 	remoteFileList, err := a.GetRemoteFileMap(exclMap)
 	if err != nil {
-		return fmt.Errorf("error getting list dir from remote. %v", err)
+		return errors.Wrap(err, "error getting list dir from remote.")
 	}
 
 	// Now we got the list from remote, delete the file if exists
 	if bIsFileExists {
 		err = os.Remove(pathToSave)
 		if err != nil {
-			return fmt.Errorf("error deleting previous cache. %v", err)
+			return errors.Wrap(err, "error deleting previous cache.")
 		}
 	}
 	by, err := json.Marshal(remoteFileList)
 	if err != nil {
-		return fmt.Errorf("failed to convert JSON. %v", err)
+		return errors.Wrap(err, "failed to convert JSON.")
 	}
 	err = ioutil.WriteFile(pathToSave, by, 0644)
 	if err != nil {
-		return fmt.Errorf("error saving file. %v", err)
+		return errors.Wrap(err, "error saving file.")
 	}
 	// Successfully saved
 	return nil

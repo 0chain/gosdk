@@ -3,16 +3,17 @@ package sdk
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"reflect"
+	"strconv"
 	"time"
 
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"go.uber.org/zap"
 
-	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
@@ -55,6 +56,10 @@ func UpdateNetworkDetails() error {
 		sdkInitialized = false
 		blockchain.SetMiners(networkDetails.Miners)
 		blockchain.SetSharders(networkDetails.Sharders)
+		conf.InitChainNetwork(&conf.Network{
+			Sharders: networkDetails.Sharders,
+			Miners:   networkDetails.Miners,
+		})
 		sdkInitialized = true
 	}
 	return nil
@@ -79,7 +84,7 @@ func UpdateRequired(networkDetails *Network) bool {
 func GetNetworkDetails() (*Network, error) {
 	req, ctx, cncl, err := zboxutil.NewHTTPRequest(http.MethodGet, blockchain.GetBlockWorker()+NETWORK_ENDPOINT, nil)
 	if err != nil {
-		return nil, common.NewError("get_network_details_error", "Unable to create new http request with error "+err.Error())
+		return nil, errors.New("get_network_details_error", "Unable to create new http request with error "+err.Error())
 	}
 
 	var networkResponse Network
@@ -92,18 +97,19 @@ func GetNetworkDetails() (*Network, error) {
 		defer resp.Body.Close()
 		respBody, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("Error reading response : %s", err.Error())
+			return errors.Wrap(err, "Error reading response : ")
 		}
 
 		Logger.Debug("Get network result:", string(respBody))
 		if resp.StatusCode == http.StatusOK {
 			err = json.Unmarshal(respBody, &networkResponse)
 			if err != nil {
-				return fmt.Errorf("Error unmarshaling response : %s", err.Error())
+				return errors.Wrap(err, "Error unmarshaling response :")
 			}
 			return nil
 		}
-		return fmt.Errorf("Get network details status not OK, Status : %v", resp.StatusCode)
+		return errors.New(strconv.Itoa(resp.StatusCode), "Get network details status not OK")
+
 	})
 	return &networkResponse, err
 }

@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
@@ -38,7 +40,7 @@ func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx st
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("Object tree error response: Status: %d - %s ", resp.StatusCode, string(resp_body))
+			return errors.New(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Object tree error response: Body: %s ", string(resp_body)))
 		} else {
 			Logger.Info("Object tree:", string(resp_body))
 			err = json.Unmarshal(resp_body, &lR)

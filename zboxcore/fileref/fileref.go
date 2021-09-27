@@ -2,12 +2,12 @@ package fileref
 
 import (
 	"encoding/json"
-	"fmt"
 	"math"
 	"sort"
 	"strconv"
 	"strings"
 
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 )
@@ -51,7 +51,7 @@ func (a *Attributes) IsZero() bool {
 // Validate the Attributes.
 func (a *Attributes) Validate() (err error) {
 	if err = a.WhoPaysForReads.Validate(); err != nil {
-		return fmt.Errorf("invalid who_pays_for_reads field: %v", err)
+		return errors.Wrap(err, "invalid who_pays_for_reads field")
 	}
 	return
 }
@@ -97,6 +97,7 @@ type Ref struct {
 	Size           int64      `json:"size"`
 	ActualSize     int64      `json:"actual_file_size"`
 	Hash           string     `json:"hash"`
+	ChunkSize      int64      `json:"chunk_size"`
 	NumBlocks      int64      `json:"num_of_blocks"`
 	PathHash       string     `json:"path_hash"`
 	LookupHash     string     `json:"lookup_hash"`
@@ -135,8 +136,10 @@ func (r *Ref) CalculateHash() string {
 	// fmt.Println("ref hash data: " + strings.Join(childHashes, ":"))
 	r.Hash = encryption.Hash(strings.Join(childHashes, ":"))
 	// fmt.Println("ref hash : " + r.Hash)
+
 	r.NumBlocks = refNumBlocks
 	r.Size = size
+
 	//fmt.Println("Ref Path hash: " + strings.Join(childPathHashes, ":"))
 	r.PathHash = encryption.Hash(strings.Join(childPathHashes, ":"))
 
@@ -221,6 +224,7 @@ func (fr *FileRef) GetHashData() string {
 	hashArray = append(hashArray, fr.ActualFileHash)
 	var attrs, _ = json.Marshal(&fr.Attributes)
 	hashArray = append(hashArray, string(attrs))
+	hashArray = append(hashArray, strconv.FormatInt(fr.ChunkSize, 10))
 	return strings.Join(hashArray, ":")
 }
 

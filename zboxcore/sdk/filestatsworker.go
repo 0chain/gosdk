@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -12,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
@@ -77,13 +77,13 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 		defer resp.Body.Close()
 		resp_body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return fmt.Errorf("Error: Resp : %s", err.Error())
+			return errors.Wrap(err, "Error: Resp")
 		}
 		s.WriteString(string(resp_body))
 		if resp.StatusCode == http.StatusOK {
 			err = json.Unmarshal(resp_body, &fileStats)
 			if err != nil {
-				return fmt.Errorf("file stats response parse error: %s", err.Error())
+				return errors.Wrap(err, "file stats response parse error")
 			}
 			if len(fileStats.WriteMarkerRedeemTxn) > 0 {
 				fileStats.BlockchainAware = true

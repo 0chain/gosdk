@@ -1,0 +1,11 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox wp-unlock" as cli
+collections gosdk
+
+cli -> gosdk: WritePoolUnlock()
+
+gosdk -> gosdk: check initialized sdk
+gosdk -> gosdk: create unlock request
+gosdk -> gosdk: create smart contract txn data
+gosdk -> gosdk: send smart contract txn value fee
+@enduml

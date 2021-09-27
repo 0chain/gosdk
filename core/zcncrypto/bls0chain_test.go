@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/bls"
-	"github.com/0chain/gosdk/miracl"
 	"github.com/0chain/gosdk/core/encryption"
+	BN254 "github.com/0chain/gosdk/miracl"
+	"github.com/stretchr/testify/require"
 )
 
 var verifyPublickey = `041eeb1b4eb9b2456799d8e2a566877e83bc5d76ff38b964bd4b7796f6a6ccae6f1966a4d91d362669fafa3d95526b132a6341e3dfff6447e0e76a07b3a7cfa6e8034574266b382b8e5174477ab8a32a49a57eda74895578031cd2d41fd0aef446046d6e633f5eb68a93013dfac1420bf7a1e1bf7a87476024478e97a1cc115de9`
@@ -82,7 +84,7 @@ func TestSecretKeySet(t *testing.T) {
 	var expectedSijPK bls.PublicKey
 	expectedSijPK.Set(mpk, &id)
 
-	if !expectedSijPK.IsEqual( sij.GetPublicKey() ) {
+	if !expectedSijPK.IsEqual(sij.GetPublicKey()) {
 		t.Fatalf("Should've been a valid share.")
 	}
 }
@@ -161,7 +163,7 @@ func TestSignatureScheme(t *testing.T) {
 	}
 	w, err := sigScheme.GenerateKeys()
 	if err != nil {
-		t.Fatalf("Generate Key failed %s", err.Error())
+		t.Fatalf("Generate Key failed %s", errors.Top(err))
 	}
 	if w.ClientID == "" || w.ClientKey == "" || len(w.Keys) != 1 || w.Mnemonic == "" {
 		t.Fatalf("Invalid keys generated")
@@ -232,7 +234,7 @@ func TestCombinedSignAndVerify(t *testing.T) {
 	scheme0 := NewSignatureScheme("bls0chain")
 	err := scheme0.SetPrivateKey(sk0)
 	if err != nil {
-		t.Fatalf("Set private key failed - %s", err.Error())
+		t.Fatalf("Set private key failed - %s", errors.Top(err))
 	}
 	sig0, err := scheme0.Sign(hash)
 	if err != nil {
@@ -243,7 +245,7 @@ func TestCombinedSignAndVerify(t *testing.T) {
 	scheme1 := NewSignatureScheme("bls0chain")
 	err = scheme1.SetPrivateKey(sk1)
 	if err != nil {
-		t.Fatalf("Set private key failed - %s", err.Error())
+		t.Fatalf("Set private key failed - %s", errors.Top(err))
 	}
 	sig1, err := scheme1.Add(sig0, hash)
 
@@ -265,7 +267,7 @@ func TestSplitKey(t *testing.T) {
 	scheme0 := NewBLS0ChainScheme()
 	err := scheme0.SetPrivateKey(primaryKeyStr)
 	if err != nil {
-		t.Fatalf("Set private key failed - %s", err.Error())
+		t.Fatalf("Set private key failed - %s", errors.Top(err))
 	}
 	hash := Sha3Sum256(data)
 	sig0, err := scheme0.Sign(hash)
@@ -277,7 +279,7 @@ func TestSplitKey(t *testing.T) {
 	numSplitKeys := int(2)
 	w, err := scheme0.SplitKeys(numSplitKeys)
 	if err != nil {
-		t.Fatalf("Splitkeys key failed - %s", err.Error())
+		t.Fatalf("Splitkeys key failed - %s", errors.Top(err))
 	}
 
 	// Generate schemes from the split keys.
@@ -305,4 +307,16 @@ func TestSplitKey(t *testing.T) {
 	if aggrSig != sig0 {
 		t.Fatalf("split key signature failed")
 	}
+}
+
+func TestMiraclToHerumiPK(t *testing.T) {
+	miraclpk1 := `0418a02c6bd223ae0dfda1d2f9a3c81726ab436ce5e9d17c531ff0a385a13a0b491bdfed3a85690775ee35c61678957aaba7b1a1899438829f1dc94248d87ed36817f6dfafec19bfa87bf791a4d694f43fec227ae6f5a867490e30328cac05eaff039ac7dfc3364e851ebd2631ea6f1685609fc66d50223cc696cb59ff2fee47ac`
+	pk1 := MiraclToHerumiPK(miraclpk1)
+
+	require.EqualValues(t, pk1, "68d37ed84842c91d9f82389489a1b1a7ab7a957816c635ee750769853aeddf1b490b3aa185a3f01f537cd1e9e56c43ab2617c8a3f9d2a1fd0dae23d26b2ca018")
+
+	// Assert DeserializeHexStr works on the output of MiraclToHerumiPK
+	var pk bls.PublicKey
+	err := pk.DeserializeHexStr(pk1)
+	require.NoError(t, err)
 }

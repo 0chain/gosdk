@@ -1,0 +1,18 @@
+@startuml
+participant "<size:20><&terminal></size> ./zbox move" as cli
+collections gosdk
+collections blobber
+
+cli -> gosdk: GetAllocation(allocationID)
+cli -> gosdk: GetFileStats(remotepath)
+alt not empty file stats
+cli -> gosdk: GetFileMeta(remotepath)
+end
+cli -> gosdk: MoveObject(remotepath, destpath)
+
+gosdk -> blobber: copy object with remotepath and destpath
+
+gosdk -> gosdk: check copy process is successful
+
+gosdk -> blobber: delete object from remotepath
+@enduml
