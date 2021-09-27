@@ -265,6 +265,15 @@ func (pk *PublicKey) Serialize() []byte {
 	return ToBytes2(pk.v)
 }
 
+func (pk *PublicKey) SetHexString(s string) error {
+	b, err := hex2byte(s)
+	if err != nil {
+		return err
+	}
+	pk.v = BN254.ECP2_fromBytes(b)
+	return nil
+}
+
 func (pk *PublicKey) Add(rhs *PublicKey) {
 	pk.v.Add(rhs.v)
 }
