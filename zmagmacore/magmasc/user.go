@@ -34,7 +34,7 @@ func (m *User) Decode(blob []byte) error {
 	if err := json.Unmarshal(blob, &user); err != nil {
 		return errDecodeData.Wrap(err)
 	}
-	if err := m.Validate(); err != nil {
+	if err := user.Validate(); err != nil {
 		return err
 	}
 
