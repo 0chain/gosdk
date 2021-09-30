@@ -11,7 +11,7 @@ import (
 
 // User represent user in blockchain.
 type User struct {
-	ID         string `yaml:"id,omitempty"`
+	ID         string `json:"id,omitempty"`
 	ConsumerID string `json:"consumer_id,omitempty"`
 }
 
