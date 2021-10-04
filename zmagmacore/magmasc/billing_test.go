@@ -5,8 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	pb "github.com/0chain/bandwidth_marketplace/code/pb/provider"
-
+	"github.com/0chain/gosdk/zmagmacore/magmasc/pb"
 	"github.com/0chain/gosdk/zmagmacore/time"
 )
 

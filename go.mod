@@ -3,7 +3,6 @@ module github.com/0chain/gosdk
 go 1.16
 
 require (
-	github.com/0chain/bandwidth_marketplace/code/pb v0.0.0-20211001082149-e62605c77d05
 	github.com/0chain/errors v1.0.2
 	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/btcsuite/btcd v0.21.0-beta
@@ -32,7 +31,9 @@ require (
 	go.dedis.ch/kyber/v3 v3.0.5
 	go.uber.org/zap v1.15.0
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
+	google.golang.org/genproto v0.0.0-20210701191553-46259e63a0a9 // indirect
 	google.golang.org/grpc v1.39.0
+	google.golang.org/protobuf v1.27.1
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b

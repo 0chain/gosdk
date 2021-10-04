@@ -5,9 +5,8 @@ import (
 	"reflect"
 	"testing"
 
-	pb "github.com/0chain/bandwidth_marketplace/code/pb/provider"
-
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zmagmacore/magmasc/pb"
 )
 
 func Test_DataMarker_Decode(t *testing.T) {
@@ -20,7 +19,7 @@ func Test_DataMarker_Decode(t *testing.T) {
 	}
 
 	dataMarkerInvalid := mockDataMarker()
-	dataMarkerInvalid.UserID = ""
+	dataMarkerInvalid.UserId = ""
 	blobInvalid, err := json.Marshal(dataMarkerInvalid)
 	if err != nil {
 		t.Fatalf("json.Marshal() error: %v | want: %v", err, nil)
@@ -187,7 +186,7 @@ func Test_DataMarker_Validate(t *testing.T) {
 			data: &DataMarker{
 				DataMarker: &pb.DataMarker{
 					DataUsage: &pb.DataUsage{
-						SessionID: "",
+						SessionId: "",
 					},
 				},
 			},
@@ -202,7 +201,7 @@ func Test_DataMarker_Validate(t *testing.T) {
 			name: "QoS_Marker_Invalid_UserID_ERR",
 			data: &DataMarker{
 				DataMarker: &pb.DataMarker{
-					UserID:    "",
+					UserId:    "",
 					DataUsage: dataMarker.DataUsage,
 					Qos:       dataMarker.Qos,
 					PublicKey: dataMarker.PublicKey,
@@ -216,7 +215,7 @@ func Test_DataMarker_Validate(t *testing.T) {
 			name: "QoS_Marker_Nil_QoS_ERR",
 			data: &DataMarker{
 				DataMarker: &pb.DataMarker{
-					UserID:    dataMarker.UserID,
+					UserId:    dataMarker.UserId,
 					DataUsage: mockDataUsage(),
 					Qos:       nil,
 					PublicKey: dataMarker.PublicKey,
@@ -230,7 +229,7 @@ func Test_DataMarker_Validate(t *testing.T) {
 			name: "QoS_Marker_Invalid_QoS_DownloadMbps_ERR",
 			data: &DataMarker{
 				DataMarker: &pb.DataMarker{
-					UserID:    dataMarker.UserID,
+					UserId:    dataMarker.UserId,
 					DataUsage: mockDataUsage(),
 					Qos: &pb.QoS{
 						DownloadMbps: 0,
@@ -248,7 +247,7 @@ func Test_DataMarker_Validate(t *testing.T) {
 			name: "QoS_Marker_Invalid_QoS_UploadMbps_ERR",
 			data: &DataMarker{
 				DataMarker: &pb.DataMarker{
-					UserID:    dataMarker.UserID,
+					UserId:    dataMarker.UserId,
 					DataUsage: mockDataUsage(),
 					Qos: &pb.QoS{
 						DownloadMbps: dataMarker.Qos.DownloadMbps,
@@ -266,7 +265,7 @@ func Test_DataMarker_Validate(t *testing.T) {
 			name: "QoS_Marker_Invalid_QoS_Latency_ERR",
 			data: &DataMarker{
 				DataMarker: &pb.DataMarker{
-					UserID:    dataMarker.UserID,
+					UserId:    dataMarker.UserId,
 					DataUsage: mockDataUsage(),
 					Qos: &pb.QoS{
 						DownloadMbps: dataMarker.Qos.DownloadMbps,
@@ -284,7 +283,7 @@ func Test_DataMarker_Validate(t *testing.T) {
 			name: "QoS_Marker_Invalid_Public_Key_ERR",
 			data: &DataMarker{
 				DataMarker: &pb.DataMarker{
-					UserID:    dataMarker.UserID,
+					UserId:    dataMarker.UserId,
 					DataUsage: mockDataUsage(),
 					Qos: &pb.QoS{
 						DownloadMbps: dataMarker.Qos.DownloadMbps,
@@ -302,7 +301,7 @@ func Test_DataMarker_Validate(t *testing.T) {
 			name: "QoS_Marker_Invalid_SigScheme_ERR",
 			data: &DataMarker{
 				DataMarker: &pb.DataMarker{
-					UserID:    dataMarker.UserID,
+					UserId:    dataMarker.UserId,
 					DataUsage: mockDataUsage(),
 					Qos: &pb.QoS{
 						DownloadMbps: dataMarker.Qos.DownloadMbps,
@@ -320,7 +319,7 @@ func Test_DataMarker_Validate(t *testing.T) {
 			name: "QoS_Marker_Invalid_Signature_ERR",
 			data: &DataMarker{
 				DataMarker: &pb.DataMarker{
-					UserID:    dataMarker.UserID,
+					UserId:    dataMarker.UserId,
 					DataUsage: mockDataUsage(),
 					Qos: &pb.QoS{
 						DownloadMbps: dataMarker.Qos.DownloadMbps,
@@ -338,7 +337,7 @@ func Test_DataMarker_Validate(t *testing.T) {
 			name: "QoS_Marker_UserID_And_Public_Key_Mismatching_ERR",
 			data: &DataMarker{
 				DataMarker: &pb.DataMarker{
-					UserID:    "invalid_user_id",
+					UserId:    "invalid_user_id",
 					DataUsage: mockDataUsage(),
 					Qos: &pb.QoS{
 						DownloadMbps: dataMarker.Qos.DownloadMbps,
@@ -406,7 +405,7 @@ func Test_DataMarker_Verify(t *testing.T) {
 			name: "Wrong_Scheme_FALSE",
 			data: &DataMarker{
 				DataMarker: &pb.DataMarker{
-					UserID:    dataMarker.UserID,
+					UserId:    dataMarker.UserId,
 					DataUsage: dataMarker.DataUsage,
 					Qos:       dataMarker.Qos,
 					PublicKey: anotherScheme.GetPublicKey(),
@@ -421,7 +420,7 @@ func Test_DataMarker_Verify(t *testing.T) {
 			name: "Empty_Public_Key_ERR",
 			data: &DataMarker{
 				DataMarker: &pb.DataMarker{
-					UserID:    dataMarker.UserID,
+					UserId:    dataMarker.UserId,
 					DataUsage: dataMarker.DataUsage,
 					Qos:       dataMarker.Qos,
 					PublicKey: "",
@@ -436,7 +435,7 @@ func Test_DataMarker_Verify(t *testing.T) {
 			name: "Unsupported_scheme_ERR",
 			data: &DataMarker{
 				DataMarker: &pb.DataMarker{
-					UserID:    dataMarker.UserID,
+					UserId:    dataMarker.UserId,
 					DataUsage: dataMarker.DataUsage,
 					Qos:       dataMarker.Qos,
 					PublicKey: dataMarker.PublicKey,

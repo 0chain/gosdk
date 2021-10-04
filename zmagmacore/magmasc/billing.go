@@ -3,10 +3,9 @@ package magmasc
 import (
 	"encoding/json"
 
-	pb "github.com/0chain/bandwidth_marketplace/code/pb/provider"
-
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zmagmacore/errors"
+	"github.com/0chain/gosdk/zmagmacore/magmasc/pb"
 	"github.com/0chain/gosdk/zmagmacore/time"
 )
 

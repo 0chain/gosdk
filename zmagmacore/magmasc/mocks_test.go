@@ -4,11 +4,11 @@ import (
 	"encoding/hex"
 	"time"
 
-	"github.com/0chain/bandwidth_marketplace/code/pb/provider"
 	magma "github.com/magma/augmented-networks/accounting/protos"
 	"golang.org/x/crypto/sha3"
 
 	"github.com/0chain/gosdk/zmagmacore/crypto"
+	"github.com/0chain/gosdk/zmagmacore/magmasc/pb"
 	ts "github.com/0chain/gosdk/zmagmacore/time"
 )
 
@@ -17,7 +17,7 @@ func mockSession() *Session {
 	billing := mockBilling()
 
 	return &Session{
-		SessionID:   billing.DataMarker.DataUsage.SessionID,
+		SessionID:   billing.DataMarker.DataUsage.SessionId,
 		AccessPoint: &AccessPoint{ID: "id:access:point:" + now},
 		Billing:     billing,
 		Consumer:    mockConsumer(),
@@ -40,12 +40,12 @@ func mockConsumer() *Consumer {
 	}
 }
 
-func mockDataUsage() *provider.DataUsage {
+func mockDataUsage() *pb.DataUsage {
 	now := time.Now().Format(time.RFC3339Nano)
-	return &provider.DataUsage{
+	return &pb.DataUsage{
 		DownloadBytes: 3 * million,
 		UploadBytes:   2 * million,
-		SessionID:     "id:session:" + now,
+		SessionId:     "id:session:" + now,
 		SessionTime:   1 * 60, // 1 minute
 	}
 }
@@ -120,10 +120,10 @@ func mockDataMarker() *DataMarker {
 	// private key for public key above
 	// pr := "42b649226c17b6b6f03d5e3f5c63a311ba0d520ad18188a1a0d79324885a051a"
 	return &DataMarker{
-		DataMarker: &provider.DataMarker{
-			UserID:    crypto.Hash(pbKey),
+		DataMarker: &pb.DataMarker{
+			UserId:    crypto.Hash(pbKey),
 			DataUsage: mockDataUsage(),
-			Qos: &provider.QoS{
+			Qos: &pb.QoS{
 				DownloadMbps: 5.4321,
 				UploadMbps:   1.2345,
 				Latency:      6.789,

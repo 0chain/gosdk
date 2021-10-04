@@ -3,12 +3,11 @@ package magmasc
 import (
 	"encoding/json"
 
-	pb "github.com/0chain/bandwidth_marketplace/code/pb/provider"
-
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zmagmacore/crypto"
 	"github.com/0chain/gosdk/zmagmacore/errors"
+	"github.com/0chain/gosdk/zmagmacore/magmasc/pb"
 )
 
 type (
@@ -42,7 +41,7 @@ func (m *DataMarker) Decode(blob []byte) error {
 	}
 
 	m.DataMarker = &pb.DataMarker{}
-	m.UserID = dataMarker.UserID
+	m.UserId = dataMarker.UserId
 	m.DataUsage = dataMarker.DataUsage
 	m.Qos = dataMarker.Qos
 	m.PublicKey = dataMarker.PublicKey
@@ -90,7 +89,7 @@ func (m *DataMarker) getSignatureScheme() (zcncrypto.SignatureScheme, error) {
 func (m *DataMarker) hashToSign() string {
 	udm := &DataMarker{
 		DataMarker: &pb.DataMarker{
-			UserID:    m.UserID,
+			UserId:    m.UserId,
 			DataUsage: m.DataUsage,
 			Qos:       m.Qos,
 		},
@@ -101,7 +100,7 @@ func (m *DataMarker) hashToSign() string {
 
 // IsQoSType checks that DataMarker is QoS type or not.
 func (m *DataMarker) IsQoSType() bool {
-	return m.UserID != "" || m.PublicKey != "" || m.SigScheme != "" || m.Signature != "" || m.Qos != nil
+	return m.UserId != "" || m.PublicKey != "" || m.SigScheme != "" || m.Signature != "" || m.Qos != nil
 }
 
 // Sign signs the data.
@@ -125,7 +124,7 @@ func (m *DataMarker) Sign(scheme zcncrypto.SignatureScheme, schemeType string) e
 // If it is not returns errInvalidDataMarker.
 func (m *DataMarker) Validate() (err error) {
 	// validate DataUsage, because it is required for all DataMarker's types
-	if m.DataUsage == nil || m.DataUsage.SessionID == "" {
+	if m.DataUsage == nil || m.DataUsage.SessionId == "" {
 		err = errors.New(errCodeBadRequest, "session id is required")
 		return errInvalidDataMarker.Wrap(err)
 	}
@@ -141,7 +140,7 @@ func (m *DataMarker) Validate() (err error) {
 // validateAsQoSType validates fields of DataMarker which belongs to the QoS marker's type.
 func (m *DataMarker) validateAsQoSType() (err error) {
 	switch {
-	case m.UserID == "":
+	case m.UserId == "":
 		err = errors.New(errCodeBadRequest, "user id is required")
 
 	case m.Qos == nil:
@@ -165,7 +164,7 @@ func (m *DataMarker) validateAsQoSType() (err error) {
 	case m.Signature == "":
 		err = errors.New(errCodeBadRequest, "signature is required")
 
-	case crypto.Hash(m.PublicKey) != m.UserID:
+	case crypto.Hash(m.PublicKey) != m.UserId:
 		err = errors.New(errCodeBadRequest, "user id does not belong to the public key")
 
 	default:

@@ -81,3 +81,18 @@ install-herumi-ubuntu:
         make MCL_DIR=../mcl -C bls -j $(nproc) install && \
         rm -R /tmp/mcl && \
         rm -R /tmp/bls
+
+proto_path=./
+
+generate-proto:
+	@echo "Compiling protobuf files..."
+
+	@protoc -I $(proto_path) \
+    	--go_opt=module="github.com/0chain/gosdk" \
+    	--go-grpc_opt=module="github.com/0chain/gosdk" \
+    	--go-grpc_out=$(proto_path) \
+    	--go_out=$(proto_path) \
+    	--grpc-gateway_out=$(proto_path) \
+    	$(proto_path)/zmagmacore/magmasc/pb/proto/*.proto
+
+	@echo "Compiling completed."
