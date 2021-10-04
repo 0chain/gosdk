@@ -4,9 +4,11 @@ import (
 	"encoding/hex"
 	"time"
 
+	"github.com/0chain/bandwidth_marketplace/code/pb/provider"
 	magma "github.com/magma/augmented-networks/accounting/protos"
 	"golang.org/x/crypto/sha3"
 
+	"github.com/0chain/gosdk/zmagmacore/crypto"
 	ts "github.com/0chain/gosdk/zmagmacore/time"
 )
 
@@ -15,7 +17,7 @@ func mockSession() *Session {
 	billing := mockBilling()
 
 	return &Session{
-		SessionID:   billing.DataUsage.SessionID,
+		SessionID:   billing.DataMarker.DataUsage.SessionID,
 		AccessPoint: &AccessPoint{ID: "id:access:point:" + now},
 		Billing:     billing,
 		Consumer:    mockConsumer(),
@@ -25,7 +27,7 @@ func mockSession() *Session {
 
 func mockBilling() Billing {
 	return Billing{
-		DataUsage: mockDataUsage(),
+		DataMarker: mockDataMarker(),
 	}
 }
 
@@ -38,9 +40,9 @@ func mockConsumer() *Consumer {
 	}
 }
 
-func mockDataUsage() DataUsage {
+func mockDataUsage() *provider.DataUsage {
 	now := time.Now().Format(time.RFC3339Nano)
-	return DataUsage{
+	return &provider.DataUsage{
 		DownloadBytes: 3 * million,
 		UploadBytes:   2 * million,
 		SessionID:     "id:session:" + now,
@@ -113,23 +115,22 @@ func mockQoS() *magma.QoS {
 	}
 }
 
-func mockUserDataMarker() *UserDataMarker {
-	now := time.Now().Format(time.RFC3339Nano)
-	return &UserDataMarker{
-		UserID:     "id:user:" + now,
-		ProviderID: "id:provider:" + now,
-		SessionID:  "id:session:" + now,
-		DataUsage: DataUsage{
-			DownloadBytes: billion,
-			UploadBytes:   million,
-			SessionID:     "id:session:" + now,
-			SessionTime:   12345,
+func mockDataMarker() *DataMarker {
+	pbKey := "87600ad70ce2e902e6b5d67762b6d623a3d3a3caedd300529dab947b72e2c813874a2635c1c7bc0226d16031c2575c1f6c8094cea8ebfe213a9c8fe20deb4695"
+	// private key for public key above
+	// pr := "42b649226c17b6b6f03d5e3f5c63a311ba0d520ad18188a1a0d79324885a051a"
+	return &DataMarker{
+		DataMarker: &provider.DataMarker{
+			UserID:    crypto.Hash(pbKey),
+			DataUsage: mockDataUsage(),
+			Qos: &provider.QoS{
+				DownloadMbps: 5.4321,
+				UploadMbps:   1.2345,
+				Latency:      6.789,
+			},
+			PublicKey: pbKey,
+			SigScheme: "bls0chain",
+			Signature: "da40ea8816a242f205d4e3b6cfad3dcf43eaa617bf755ed69788ecd80ffec98b",
 		},
-		QoS: QoS{
-			DownloadMbps: 5.4321,
-			UploadMbps:   1.2345,
-			Latency:      6.789,
-		},
-		Timestamp: ts.Now(),
 	}
 }

@@ -42,7 +42,7 @@ var (
 	// that user was invalidated.
 	errInvalidUser = errors.New(errCodeInvalid, "invalid user")
 
-	// errInvalidUserDataMarker represents an error
-	// that user data marker was invalidated.
-	errInvalidUserDataMarker = errors.New(errCodeInvalid, "invalid user data marker")
+	// errInvalidDataMarker represents an error
+	// that data marker was invalidated.
+	errInvalidDataMarker = errors.New(errCodeInvalid, "invalid data marker")
 )
