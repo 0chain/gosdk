@@ -247,14 +247,14 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 func (a *Allocation) UpdateFile(localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.StartChunkedUpload(os.TempDir(), localpath, remotepath, status, true, "", false, attrs)
+	return a.StartChunkedUpload(getHomeDir(), localpath, remotepath, status, true, "", false, attrs)
 }
 
 // UploadFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UploadFile(localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.StartChunkedUpload(os.TempDir(), localpath, remotepath, status, false, "", false, attrs)
+	return a.StartChunkedUpload(getHomeDir(), localpath, remotepath, status, false, "", false, attrs)
 }
 
 func (a *Allocation) CreateDir(dirName string) error {
@@ -289,7 +289,7 @@ func (a *Allocation) RepairFile(localpath string, remotepath string,
 func (a *Allocation) UpdateFileWithThumbnail(localpath string, remotepath string,
 	thumbnailpath string, attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.StartChunkedUpload(os.TempDir(), localpath, remotepath, status, true,
+	return a.StartChunkedUpload(getHomeDir(), localpath, remotepath, status, true,
 		thumbnailpath, false, attrs)
 }
 
@@ -298,7 +298,7 @@ func (a *Allocation) UploadFileWithThumbnail(localpath string,
 	remotepath string, thumbnailpath string, attrs fileref.Attributes,
 	status StatusCallback) error {
 
-	return a.StartChunkedUpload(os.TempDir(), localpath, remotepath, status, false,
+	return a.StartChunkedUpload(getHomeDir(), localpath, remotepath, status, false,
 		thumbnailpath, false, attrs)
 }
 
@@ -306,21 +306,21 @@ func (a *Allocation) UploadFileWithThumbnail(localpath string,
 func (a *Allocation) EncryptAndUpdateFile(localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.StartChunkedUpload(os.TempDir(), localpath, remotepath, status, true, "", true, attrs)
+	return a.StartChunkedUpload(getHomeDir(), localpath, remotepath, status, true, "", true, attrs)
 }
 
 // EncryptAndUploadFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUploadFile(localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.StartChunkedUpload(os.TempDir(), localpath, remotepath, status, false, "", true, attrs)
+	return a.StartChunkedUpload(getHomeDir(), localpath, remotepath, status, false, "", true, attrs)
 }
 
 // EncryptAndUpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUpdateFileWithThumbnail(localpath string,
 	remotepath string, thumbnailpath string, attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.StartChunkedUpload(os.TempDir(), localpath, remotepath, status, true,
+	return a.StartChunkedUpload(getHomeDir(), localpath, remotepath, status, true,
 		thumbnailpath, true, attrs)
 }
 
@@ -333,7 +333,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	status StatusCallback,
 ) error {
 
-	return a.StartChunkedUpload(os.TempDir(),
+	return a.StartChunkedUpload(getHomeDir(),
 		localpath,
 		remotepath,
 		status,
