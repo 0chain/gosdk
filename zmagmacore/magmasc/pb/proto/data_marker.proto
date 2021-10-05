@@ -5,7 +5,7 @@ option go_package = "github.com/0chain/gosdk/zmagmacore/magmasc/pb";
 
 message data_marker {
   string user_id = 1;
-  data_usage data_usage = 2;
+  data_usage data_usage = 2; // @gotags: json:"data_usage"
   QoS qos = 3;
   string public_key = 4;
   string sig_scheme = 5;

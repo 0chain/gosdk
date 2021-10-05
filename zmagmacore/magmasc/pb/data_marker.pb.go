@@ -26,7 +26,7 @@ type DataMarker struct {
 	unknownFields protoimpl.UnknownFields
 
 	UserId    string     `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	DataUsage *DataUsage `protobuf:"bytes,2,opt,name=data_usage,json=dataUsage,proto3" json:"data_usage,omitempty"`
+	DataUsage *DataUsage `protobuf:"bytes,2,opt,name=data_usage,json=dataUsage,proto3" json:"data_usage"` // @gotags: json:"data_usage"
 	Qos       *QoS       `protobuf:"bytes,3,opt,name=qos,proto3" json:"qos,omitempty"`
 	PublicKey string     `protobuf:"bytes,4,opt,name=public_key,json=publicKey,proto3" json:"public_key,omitempty"`
 	SigScheme string     `protobuf:"bytes,5,opt,name=sig_scheme,json=sigScheme,proto3" json:"sig_scheme,omitempty"`

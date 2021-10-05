@@ -82,17 +82,17 @@ install-herumi-ubuntu:
         rm -R /tmp/mcl && \
         rm -R /tmp/bls
 
-proto_path=./
 
 generate-proto:
 	@echo "Compiling protobuf files..."
 
-	@protoc -I $(proto_path) \
+	@protoc -I=. \
     	--go_opt=module="github.com/0chain/gosdk" \
     	--go-grpc_opt=module="github.com/0chain/gosdk" \
-    	--go-grpc_out=$(proto_path) \
-    	--go_out=$(proto_path) \
-    	--grpc-gateway_out=$(proto_path) \
-    	$(proto_path)/zmagmacore/magmasc/pb/proto/*.proto
+    	--go-grpc_out=. \
+    	--go_out=. \
+    	--proto_path=zmagmacore/magmasc/pb/proto zmagmacore/magmasc/pb/proto/*.proto && \
+        go get github.com/favadi/protoc-go-inject-tag && \
+        protoc-go-inject-tag -input=zmagmacore/magmasc/pb/*.pb.go
 
 	@echo "Compiling completed."
