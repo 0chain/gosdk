@@ -1,9 +1,14 @@
 package magmasc
 
 import (
+	"bytes"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
+
+	"gopkg.in/yaml.v3"
 )
 
 func Test_Provider_Decode(t *testing.T) {
@@ -147,7 +152,59 @@ func Test_Provider_Validate(t *testing.T) {
 			t.Parallel()
 
 			if err := test.prov.Validate(); (err != nil) != test.error {
-				t.Errorf("validate() error: %v | want: %v", err, test.error)
+				t.Errorf("Validate() error: %v | want: %v", err, test.error)
+			}
+		})
+	}
+}
+
+func Test_Provider_ReadYAML(t *testing.T) {
+	t.Parallel()
+
+	var (
+		buf = bytes.NewBuffer(nil)
+		enc = yaml.NewEncoder(buf)
+
+		prov = mockProvider()
+	)
+
+	err := enc.Encode(prov)
+	if err != nil {
+		if err != nil {
+			t.Fatalf("yaml Encode() error: %v | want: %v", err, nil)
+		}
+	}
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	err = os.WriteFile(path, buf.Bytes(), 0777)
+	if err != nil {
+		if err != nil {
+			t.Fatalf("os.WriteFile() error: %v | want: %v", err, nil)
+		}
+	}
+
+	tests := [1]struct {
+		name  string
+		want  *Provider
+		error bool
+	}{
+		{
+			name:  "OK",
+			want:  prov,
+			error: false,
+		},
+	}
+
+	for idx := range tests {
+		test := tests[idx]
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := &Provider{}
+			if err := got.ReadYAML(path); (err != nil) != test.error {
+				t.Errorf("ReadYAML() error: %v | want: %v", err, nil)
+			}
+			if !reflect.DeepEqual(got, test.want) {
+				t.Errorf("ReadYAML() got: %#v | want: %#v", got, test.want)
 			}
 		})
 	}

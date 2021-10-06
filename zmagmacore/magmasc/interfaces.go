@@ -39,39 +39,34 @@ func (m *Provider) IsNodeRegistered() (bool, error) {
 
 // Register implements registration.Node interface.
 func (m *Provider) Register(ctx context.Context) (registration.Node, error) {
-	var (
-		errCode = "provider_register"
+	var errCode = "provider_register"
+	provider, err := ExecuteProviderRegister(ctx, m)
+	if err != nil {
+		return nil, errors.Wrap(errCode, "error while registering provider", err)
+	}
+	m.Provider = provider.Provider
 
-		minStake int64
-	)
-	if m.minStake {
-		var err error
-		minStake, err = ProviderMinStakeFetch()
-		if err != nil {
-			return nil, errors.Wrap(errCode, "error while fetching min stake", err)
-		}
+	provider, err = ExecuteProviderStake(ctx, m)
+	if err != nil {
+		return m, nil
 	}
 
-	m.MinStake = minStake
-	return ExecuteProviderRegister(ctx, m)
+	return provider, nil
 }
 
 // Update implements registration.Node interface.
 func (m *Provider) Update(ctx context.Context) (registration.Node, error) {
-	var (
-		errCode = "provider_update"
+	var errCode = "provider_update"
+	provider, err := ExecuteProviderUpdate(ctx, m)
+	if err != nil {
+		return nil, errors.Wrap(errCode, "error while updating provider", err)
+	}
+	m.Provider = provider.Provider
 
-		minStake int64
-	)
-	if m.minStake {
-		var err error
-		minStake, err = ProviderMinStakeFetch()
-		if err != nil {
-			return nil, errors.Wrap(errCode, "error while fetching min stake", err)
-		}
+	provider, err = ExecuteProviderStake(ctx, m)
+	if err != nil {
+		return m, nil
 	}
 
-	m.MinStake = minStake
-
-	return ExecuteProviderUpdate(ctx, m)
+	return provider, nil
 }

@@ -7,6 +7,7 @@ import (
 	magma "github.com/magma/augmented-networks/accounting/protos"
 	"golang.org/x/crypto/sha3"
 
+	"github.com/0chain/gosdk/zmagmacore/magmasc/pb"
 	ts "github.com/0chain/gosdk/zmagmacore/time"
 )
 
@@ -51,10 +52,11 @@ func mockDataUsage() DataUsage {
 func mockProvider() *Provider {
 	now := time.Now().Format(time.RFC3339Nano)
 	return &Provider{
-		ID:       "id:provider:" + now,
-		ExtID:    "id:provider:external:" + now,
-		Host:     "localhost:8020",
-		MinStake: billion,
+		&pb.Provider{
+			ID:    "id:provider:" + now,
+			ExtID: "id:provider:external:" + now,
+			Host:  "localhost:8020",
+		},
 	}
 }
 

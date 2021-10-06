@@ -2,21 +2,19 @@ package magmasc
 
 import (
 	"encoding/json"
+	"os"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/zmagmacore/config"
 	"github.com/0chain/gosdk/zmagmacore/errors"
-	"github.com/0chain/gosdk/zmagmacore/node"
+	"github.com/0chain/gosdk/zmagmacore/magmasc/pb"
 )
 
 type (
 	// Provider represents providers node stored in blockchain.
 	Provider struct {
-		ID       string `json:"id"`
-		ExtID    string `json:"ext_id"`
-		Host     string `json:"host,omitempty"`
-		MinStake int64  `json:"min_stake,omitempty"`
-		minStake bool
+		*pb.Provider
 	}
 )
 
@@ -24,16 +22,6 @@ var (
 	// Make sure Provider implements Serializable interface.
 	_ util.Serializable = (*Provider)(nil)
 )
-
-// NewProviderFromCfg creates Provider from config.Provider.
-func NewProviderFromCfg(cfg *config.Provider) *Provider {
-	return &Provider{
-		ID:       node.ID(),
-		ExtID:    cfg.ExtID,
-		Host:     cfg.Host,
-		minStake: cfg.MinStake,
-	}
-}
 
 // Decode implements util.Serializable interface.
 func (m *Provider) Decode(blob []byte) error {
@@ -45,10 +33,7 @@ func (m *Provider) Decode(blob []byte) error {
 		return err
 	}
 
-	m.ID = provider.ID
-	m.ExtID = provider.ExtID
-	m.Host = provider.Host
-	m.MinStake = provider.MinStake
+	m.Provider = provider.Provider
 
 	return nil
 }
@@ -73,6 +58,9 @@ func (m *Provider) GetType() string {
 // If it is not return errInvalidProvider.
 func (m *Provider) Validate() (err error) {
 	switch { // is invalid
+	case m.Provider == nil:
+		err = errors.New(errCodeBadRequest, "provider is not present yet")
+
 	case m.ExtID == "":
 		err = errors.New(errCodeBadRequest, "provider external id is required")
 
@@ -84,4 +72,17 @@ func (m *Provider) Validate() (err error) {
 	}
 
 	return errInvalidProvider.Wrap(err)
+}
+
+// ReadYAML reads config yaml file from path.
+func (m *Provider) ReadYAML(path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer func(f *os.File) { _ = f.Close() }(f)
+
+	decoder := yaml.NewDecoder(f)
+
+	return decoder.Decode(m)
 }

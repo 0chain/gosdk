@@ -85,6 +85,14 @@ const (
 	// Used for initializing session by a provider.
 	ProviderSessionInitFuncName = "provider_session_init"
 
+	// ProviderStakeFuncName represents MagmaSC function.
+	// Used to stake tokens to MagmaSC.
+	ProviderStakeFuncName = "provider_stake"
+
+	// ProviderUnStakeFuncName represents MagmaSC function.
+	// Used for unstake tokens to MagmaSC.
+	ProviderUnStakeFuncName = "provider_unstake"
+
 	// ProviderFetchRP represents MagmaSC relative path.
 	// Used to fetch provider info.
 	ProviderFetchRP = "/providerFetch"

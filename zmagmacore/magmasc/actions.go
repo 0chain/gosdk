@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/0chain/gosdk/zmagmacore/magmasc/pb"
 	"github.com/0chain/gosdk/zmagmacore/transaction"
 )
 
@@ -134,11 +135,11 @@ func ExecuteProviderRegister(ctx context.Context, provider *Provider) (*Provider
 		return nil, err
 	}
 
-	input, err := json.Marshal(provider)
+	input := provider.Encode()
 	if err != nil {
 		return nil, err
 	}
-	txnHash, err := txn.ExecuteSmartContract(ctx, Address, ProviderRegisterFuncName, string(input), provider.MinStake)
+	txnHash, err := txn.ExecuteSmartContract(ctx, Address, ProviderRegisterFuncName, string(input), 0)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +150,7 @@ func ExecuteProviderRegister(ctx context.Context, provider *Provider) (*Provider
 	}
 
 	provider = &Provider{}
-	if err = json.Unmarshal([]byte(txn.TransactionOutput), provider); err != nil {
+	if err = provider.Decode([]byte(txn.TransactionOutput)); err != nil {
 		return nil, err
 	}
 
@@ -164,7 +165,7 @@ func ExecuteProviderUpdate(ctx context.Context, provider *Provider) (*Provider, 
 	}
 
 	input := provider.Encode()
-	hash, err := txn.ExecuteSmartContract(ctx, Address, ProviderUpdateFuncName, string(input), provider.MinStake)
+	hash, err := txn.ExecuteSmartContract(ctx, Address, ProviderUpdateFuncName, string(input), 0)
 	if err != nil {
 		return nil, err
 	}
@@ -174,8 +175,65 @@ func ExecuteProviderUpdate(ctx context.Context, provider *Provider) (*Provider, 
 		return nil, err
 	}
 
-	provider = new(Provider)
-	if err := json.Unmarshal([]byte(txn.TransactionOutput), provider); err != nil {
+	provider = &Provider{}
+	if err = provider.Decode([]byte(txn.TransactionOutput)); err != nil {
+		return nil, err
+	}
+
+	return provider, nil
+}
+
+// ExecuteProviderStake stakes the provider tokens of the magma sc and returns Provider.
+func ExecuteProviderStake(ctx context.Context, provider *Provider) (*Provider, error) {
+	minStake, err := ProviderMinStakeFetch()
+	if err != nil {
+		return nil, err
+	}
+
+	txn, err := transaction.NewTransactionEntity()
+	if err != nil {
+		return nil, err
+	}
+
+	input := provider.Encode()
+	hash, err := txn.ExecuteSmartContract(ctx, Address, ProviderStakeFuncName, string(input), minStake)
+	if err != nil {
+		return nil, err
+	}
+
+	txn, err = transaction.VerifyTransaction(ctx, hash)
+	if err != nil {
+		return nil, err
+	}
+
+	provider = &Provider{}
+	if err = provider.Decode([]byte(txn.TransactionOutput)); err != nil {
+		return nil, err
+	}
+
+	return provider, nil
+}
+
+// ExecuteProviderUnStake unstaked provider tokens of the magma sc and returns Provider.
+func ExecuteProviderUnStake(ctx context.Context, provider *Provider) (*Provider, error) {
+	txn, err := transaction.NewTransactionEntity()
+	if err != nil {
+		return nil, err
+	}
+
+	input := provider.Encode()
+	hash, err := txn.ExecuteSmartContract(ctx, Address, ProviderUnStakeFuncName, string(input), 0)
+	if err != nil {
+		return nil, err
+	}
+
+	txn, err = transaction.VerifyTransaction(ctx, hash)
+	if err != nil {
+		return nil, err
+	}
+
+	provider = &Provider{}
+	if err = provider.Decode([]byte(txn.TransactionOutput)); err != nil {
 		return nil, err
 	}
 
@@ -304,7 +362,9 @@ func ExecuteSessionInit(ctx context.Context, consExtID, provExtID, apID, sessID 
 			ExtID: consExtID,
 		},
 		Provider: &Provider{
-			ExtID: provExtID,
+			Provider: &pb.Provider{
+				ExtID: provExtID,
+			},
 		},
 		SessionID: sessID,
 		AccessPoint: &AccessPoint{
