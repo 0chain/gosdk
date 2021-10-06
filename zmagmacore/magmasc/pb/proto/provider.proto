@@ -2,8 +2,7 @@ syntax = "proto3";
 
 package magmasc;
 
-// TODO When transferring to 0Chain, change the import path!
-option go_package = "github.com/evenlab/gosdk/zmagmacore/magmasc/pb";
+option go_package = "github.com/0chain/gosdk/zmagmacore/magmasc/pb";
 
 message Provider {
   string ID = 1;      // @gotags: json:"id" yaml:"id"
