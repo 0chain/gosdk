@@ -48,24 +48,14 @@ func ExecuteSessionStart(ctx context.Context, sessID string) (*Session, error) {
 }
 
 // ExecuteDataUsage executes ProviderDataUsageFuncName and returns current Session.
-func ExecuteDataUsage(
-	ctx context.Context, downloadBytes, uploadBytes uint64, sessID string, sessTime uint32) (*Session, error) {
+func ExecuteDataUsage(ctx context.Context, marker *DataMarker) (*Session, error) {
 
 	txn, err := transaction.NewTransactionEntity()
 	if err != nil {
 		return nil, err
 	}
 
-	dataUsage := DataUsage{
-		DownloadBytes: downloadBytes,
-		UploadBytes:   uploadBytes,
-		SessionID:     sessID,
-		SessionTime:   sessTime,
-	}
-	input, err := json.Marshal(&dataUsage)
-	if err != nil {
-		return nil, err
-	}
+	input := marker.Encode()
 	txnHash, err := txn.ExecuteSmartContract(ctx, Address, ProviderDataUsageFuncName, string(input), 0)
 	if err != nil {
 		return nil, err

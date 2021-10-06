@@ -249,3 +249,19 @@ func AccessPointMinStakeFetch() (int64, error) {
 
 	return minStake, nil
 }
+
+// FetchBillingRatio makes smart contract rest api call to magma smart contract
+// FetchBillingRatioRP rest point to fetch configured billing ratio.
+func FetchBillingRatio() (int64, error) {
+	billingRatioByt, err := http.MakeSCRestAPICall(Address, FetchBillingRatioRP, nil)
+	if err != nil {
+		return 0, err
+	}
+
+	var billingRatio int64
+	if err := json.Unmarshal(billingRatioByt, &billingRatio); err != nil {
+		return 0, err
+	}
+
+	return billingRatio, nil
+}

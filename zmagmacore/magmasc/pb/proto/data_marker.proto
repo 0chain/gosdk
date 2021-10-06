@@ -1,0 +1,26 @@
+syntax = "proto3";
+package zchain.pb.magmasc;
+
+option go_package = "github.com/0chain/gosdk/zmagmacore/magmasc/pb";
+
+message data_marker {
+  string user_id = 1;
+  data_usage data_usage = 2; // @gotags: json:"data_usage"
+  QoS qos = 3;
+  string public_key = 4;
+  string sig_scheme = 5;
+  string signature = 6;
+}
+
+message data_usage {
+  string session_id = 1;
+  uint64 download_bytes = 2;
+  uint64 upload_bytes = 3;
+  uint32 session_time = 4;
+}
+
+message QoS {
+  float download_mbps = 1;
+  float upload_mbps = 2;
+  float latency = 3;
+}

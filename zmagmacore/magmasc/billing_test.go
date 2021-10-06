@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/0chain/gosdk/zmagmacore/magmasc/pb"
 	"github.com/0chain/gosdk/zmagmacore/time"
 )
 
@@ -17,7 +18,7 @@ func Test_Billing_CalcAmount(t *testing.T) {
 	termsMinCost.MinCost = 1000
 
 	// data usage summary in megabytes
-	mbps := float64(bill.DataUsage.UploadBytes+bill.DataUsage.DownloadBytes) / million
+	mbps := float64(bill.DataMarker.DataUsage.UploadBytes+bill.DataMarker.DataUsage.DownloadBytes) / million
 	want := int64(mbps * float64(terms.GetPrice()))
 
 	tests := [3]struct {
@@ -162,23 +163,23 @@ func Test_Billing_Validate(t *testing.T) {
 	bill, dataUsage := mockBilling(), mockDataUsage()
 
 	duInvalidSessionTime := mockDataUsage()
-	duInvalidSessionTime.SessionTime = bill.DataUsage.SessionTime - 1
+	duInvalidSessionTime.SessionTime = bill.DataMarker.DataUsage.SessionTime - 1
 
 	duInvalidUploadBytes := mockDataUsage()
-	duInvalidUploadBytes.UploadBytes = bill.DataUsage.UploadBytes - 1
+	duInvalidUploadBytes.UploadBytes = bill.DataMarker.DataUsage.UploadBytes - 1
 
 	duInvalidDownloadBytes := mockDataUsage()
-	duInvalidDownloadBytes.DownloadBytes = bill.DataUsage.DownloadBytes - 1
+	duInvalidDownloadBytes.DownloadBytes = bill.DataMarker.DataUsage.DownloadBytes - 1
 
 	tests := [5]struct {
 		name  string
-		du    *DataUsage
+		du    *pb.DataUsage
 		bill  Billing
 		error bool
 	}{
 		{
 			name:  "OK",
-			du:    &dataUsage,
+			du:    dataUsage,
 			bill:  bill,
 			error: false,
 		},
@@ -190,19 +191,19 @@ func Test_Billing_Validate(t *testing.T) {
 		},
 		{
 			name:  "Invalid_Session_Time_ERR",
-			du:    &duInvalidSessionTime,
+			du:    duInvalidSessionTime,
 			bill:  bill,
 			error: true,
 		},
 		{
 			name:  "Invalid_Upload_Bytes_ERR",
-			du:    &duInvalidUploadBytes,
+			du:    duInvalidUploadBytes,
 			bill:  bill,
 			error: true,
 		},
 		{
 			name:  "Invalid_Download_Bytes_ERR",
-			du:    &duInvalidDownloadBytes,
+			du:    duInvalidDownloadBytes,
 			bill:  bill,
 			error: true,
 		},

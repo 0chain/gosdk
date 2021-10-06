@@ -135,6 +135,12 @@ const (
 )
 
 const (
+	// FetchBillingRatioRP represents MagmaSC relative path.
+	// Used to fetch billing ratio.
+	FetchBillingRatioRP = "/fetchBillingRatio"
+)
+
+const (
 	// one billion (Giga) is a unit prefix in metric systems
 	// of units denoting a factor of one billion (1e9 or 1_000_000_000).
 	billion = 1e9
