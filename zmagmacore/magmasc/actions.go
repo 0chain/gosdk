@@ -15,6 +15,11 @@ func ExecuteSessionStart(ctx context.Context, sessID string) (*Session, error) {
 		return nil, err
 	}
 
+	billRatio, err := FetchBillingRatio()
+	if err != nil {
+		return nil, err
+	}
+
 	session, err := RequestSession(sessID)
 	if err != nil {
 		return nil, err
@@ -28,7 +33,7 @@ func ExecuteSessionStart(ctx context.Context, sessID string) (*Session, error) {
 		Address,
 		ConsumerSessionStartFuncName,
 		string(input),
-		session.AccessPoint.Terms.GetAmount(),
+		session.AccessPoint.Terms.GetAmount()*billRatio,
 	)
 	if err != nil {
 		return nil, err
