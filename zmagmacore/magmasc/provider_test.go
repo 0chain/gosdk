@@ -170,16 +170,12 @@ func Test_Provider_ReadYAML(t *testing.T) {
 
 	err := enc.Encode(prov)
 	if err != nil {
-		if err != nil {
-			t.Fatalf("yaml Encode() error: %v | want: %v", err, nil)
-		}
+		t.Fatalf("yaml Encode() error: %v | want: %v", err, nil)
 	}
 	path := filepath.Join(t.TempDir(), "config.yaml")
 	err = os.WriteFile(path, buf.Bytes(), 0777)
 	if err != nil {
-		if err != nil {
-			t.Fatalf("os.WriteFile() error: %v | want: %v", err, nil)
-		}
+		t.Fatalf("os.WriteFile() error: %v | want: %v", err, nil)
 	}
 
 	tests := [1]struct {
