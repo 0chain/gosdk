@@ -177,6 +177,26 @@ func ProviderMinStakeFetch() (int64, error) {
 	return minStake, nil
 }
 
+// UserFetch makes smart contract rest api call to magma smart contract
+// UserFetchRP rest point to fetch User info.
+func UserFetch(id string) (*User, error) {
+	params := map[string]string{
+		"id": id,
+	}
+
+	blob, err := http.MakeSCRestAPICall(Address, UserFetchRP, params)
+	if err != nil {
+		return nil, err
+	}
+
+	user := User{}
+	if err = json.Unmarshal(blob, &user); err != nil {
+		return nil, err
+	}
+
+	return &user, nil
+}
+
 // IsConsumerRegisteredRP makes smart contract rest api call to magma smart contract
 // ConsumerRegisteredRP rest point to check registration of the consumer with provided external ID.
 func IsConsumerRegisteredRP(extID string) (bool, error) {
@@ -264,4 +284,23 @@ func FetchBillingRatio() (int64, error) {
 	}
 
 	return billingRatio, nil
+}
+
+// IsUserRegisteredRP makes smart contract rest api call to magma smart contract
+// UserRegisteredRP rest point to check registration of the user with provided ID.
+func IsUserRegisteredRP(id string) (bool, error) {
+	params := map[string]string{
+		"id": id,
+	}
+	registeredByt, err := http.MakeSCRestAPICall(Address, UserRegisteredRP, params)
+	if err != nil {
+		return false, err
+	}
+
+	var registered bool
+	if err := json.Unmarshal(registeredByt, &registered); err != nil {
+		return false, err
+	}
+
+	return registered, nil
 }

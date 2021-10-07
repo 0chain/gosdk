@@ -393,3 +393,55 @@ func ExecuteSessionInit(ctx context.Context, consExtID, provExtID, apID, sessID 
 
 	return &session, err
 }
+
+// ExecuteUserRegister executes user registration magma sc function and returns current User.
+func ExecuteUserRegister(ctx context.Context, user *User) (*User, error) {
+	txn, err := transaction.NewTransactionEntity()
+	if err != nil {
+		return nil, err
+	}
+
+	input := user.Encode()
+	txnHash, err := txn.ExecuteSmartContract(ctx, Address, UserRegisterFuncName, string(input), 0)
+	if err != nil {
+		return nil, err
+	}
+
+	txn, err = transaction.VerifyTransaction(ctx, txnHash)
+	if err != nil {
+		return nil, err
+	}
+
+	user = &User{}
+	if err = user.Decode([]byte(txn.TransactionOutput)); err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+// ExecuteUserUpdate executes update user magma sc function and returns updated User.
+func ExecuteUserUpdate(ctx context.Context, user *User) (*User, error) {
+	txn, err := transaction.NewTransactionEntity()
+	if err != nil {
+		return nil, err
+	}
+
+	input := user.Encode()
+	hash, err := txn.ExecuteSmartContract(ctx, Address, UserUpdateFuncName, string(input), 0)
+	if err != nil {
+		return nil, err
+	}
+
+	txn, err = transaction.VerifyTransaction(ctx, hash)
+	if err != nil {
+		return nil, err
+	}
+
+	user = &User{}
+	if err = user.Decode([]byte(txn.TransactionOutput)); err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}

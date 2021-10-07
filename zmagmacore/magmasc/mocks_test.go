@@ -135,3 +135,13 @@ func mockDataMarker() *DataMarker {
 		},
 	}
 }
+
+func mockUser() *User {
+	now := time.Now().Format(time.RFC3339Nano)
+	return &User{
+		User: &pb.User{
+			ID:         "id:user:" + now,
+			ConsumerID: "id:consumer:" + now,
+		},
+	}
+}

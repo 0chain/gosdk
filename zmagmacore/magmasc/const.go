@@ -152,3 +152,19 @@ const (
 	// octet represents number of bits in an octet.
 	octet = 8
 )
+
+const (
+	// UserRegisterFuncName represents name for User's registration MagmaSmartContract function.
+	UserRegisterFuncName = "user_register"
+
+	// UserUpdateFuncName represents name for user data update MagmaSmartContract function.
+	UserUpdateFuncName = "user_update"
+
+	// UserFetchRP represents MagmaSC relative path.
+	// Used to fetch user info.
+	UserFetchRP = "/userFetch"
+
+	// UserRegisteredRP represents MagmaSC relative path.
+	// Used to fetch user registered info.
+	UserRegisteredRP = "/userExist"
+)
