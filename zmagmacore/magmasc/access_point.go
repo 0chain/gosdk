@@ -15,7 +15,7 @@ import (
 // AccessPoint represents access point node stored in blockchain.
 type AccessPoint struct {
 	ID            string `json:"id"`
-	Terms         Terms  `json:"terms,omitempty"`
+	Terms         Terms  `json:"terms"`
 	MinStake      int64  `json:"min_stake,omitempty"`
 	ProviderExtID string `json:"provider_ext_id"`
 }
