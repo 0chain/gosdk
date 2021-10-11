@@ -1,6 +1,3 @@
-//go:build wasm
-// +build wasm
-
 package wasm
 
 import (
@@ -42,13 +39,6 @@ func GetMinShardersVerify(this js.Value, p []js.Value) interface{} {
 func GetVersion(this js.Value, p []js.Value) interface{} {
 	result := zcncore.GetVersion()
 	return result
-}
-
-func SetLogLevel(this js.Value, p []js.Value) interface{} {
-	logLevel, _ := strconv.Atoi(p[0].String())
-
-	zcncore.SetLogLevel(logLevel)
-	return nil
 }
 
 func SetLogFile(this js.Value, p []js.Value) interface{} {
@@ -263,13 +253,33 @@ func RegisterToMiners(this js.Value, p []js.Value) interface{} {
 
 func GetClientDetails(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
-	result, err := zcncore.GetClientDetails(clientID)
-	if err != nil {
-		return map[string]interface{}{
-			"error": fmt.Sprintf("GetClientDetails failed. Reason: %s", err),
-		}
-	}
-	return result
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
+		reject := args[1]
+
+		go func() {
+			result, err := zcncore.GetClientDetails(clientID)
+			if err != nil {
+				reject.Invoke(map[string]interface{}{
+					"error": fmt.Sprintf("GetClientDetails failed. Reason: %s", err),
+				})
+			}
+
+			clientDetails, err := json.Marshal(result)
+			if err != nil {
+				reject.Invoke(map[string]interface{}{
+					"error": fmt.Sprintf("GetClientDetails to JSON Failed. Reason: %s", err),
+				})
+			}
+
+			resolve.Invoke(string(clientDetails))
+		}()
+
+		return nil
+	})
+
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 func IsMnemonicValid(this js.Value, p []js.Value) interface{} {

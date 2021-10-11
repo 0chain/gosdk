@@ -542,6 +542,7 @@ func Share(this js.Value, p []js.Value) interface{} {
 
 	refereeClientID := p[3].String()
 	encryptionpublickey := p[4].String()
+	expiry := p[5].Int()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
@@ -582,7 +583,7 @@ func Share(this js.Value, p []js.Value) interface{} {
 			var fileName string
 			_, fileName = filepath.Split(remotePath)
 
-			at, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, refereeClientID, encryptionpublickey)
+			at, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, refereeClientID, encryptionpublickey, int64(expiry))
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("get_auth_ticket_failed", err.Error()).Error()))
 				return
@@ -797,7 +798,6 @@ func main() {
 	// wallet.go
 	js.Global().Set("GetMinShardersVerify", js.FuncOf(GetMinShardersVerify))
 	js.Global().Set("GetVersion", js.FuncOf(GetVersion))
-	js.Global().Set("SetLogLevel", js.FuncOf(SetLogLevel))
 	js.Global().Set("SetLogFile", js.FuncOf(SetLogFile))
 	js.Global().Set("CloseLog", js.FuncOf(CloseLog))
 	js.Global().Set("InitZCNSDK", js.FuncOf(InitZCNSDK))

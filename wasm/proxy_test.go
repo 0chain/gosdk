@@ -1,61 +1,42 @@
-//go:build wasm
-// +build wasm
-
 package wasm
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
 	"syscall/js"
 	"testing"
 
 	"github.com/0chain/gosdk/bls"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zcncore"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/0chain/gosdk/wasm/httpwasm"
 )
+
+// var server *httptest.Server
+// var sharder *httpwasm.Server
+// var miner *httpwasm.Server
 
 func TestAllConfig(t *testing.T) {
 	Logger.Info("Setting Up All Configuration")
 
-	t.Run("Setup Mock Server Miner And Sharder", func(t *testing.T) {
-		sharder = httptest.NewServer(
-			http.HandlerFunc(
-				func(w http.ResponseWriter, r *http.Request) {
-				},
-			),
-		)
+	sharder := httpwasm.NewSharderServer()
+	defer sharder.Close()
 
-		miner = httptest.NewServer(
-			http.HandlerFunc(
-				func(w http.ResponseWriter, r *http.Request) {
-				},
-			),
-		)
+	miner := httpwasm.NewMinerServer()
+	defer miner.Close()
 
-		server = httptest.NewServer(
-			http.HandlerFunc(
-				func(w http.ResponseWriter, r *http.Request) {
-					n := zcncore.Network{Miners: []string{miner.URL + "/miner01"}, Sharders: []string{sharder.URL + "/sharder01"}}
-					blob, err := json.Marshal(n)
-					if err != nil {
-						t.Fatal(err)
-					}
+	blockchain.SetMiners([]string{miner.URL + "/miner01"})
+	blockchain.SetSharders([]string{miner.URL + "/sharder01"})
 
-					if _, err := w.Write(blob); err != nil {
-						t.Fatal(err)
-					}
-				},
-			),
-		)
-	})
+	server := httpwasm.NewDefaultServer()
+	defer server.Close()
 
 	var chainConfig = fmt.Sprintf("{\"chain_id\":\"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe\",\"block_worker\":%#v,\"miners\":[%#v],\"sharders\":[%#v],\"signature_scheme\":\"bls0chain\",\"min_submit\":50,\"min_confirmation\":50,\"confirmation_chain_length\":3,\"eth_node\":\"\"}", server.URL+"/dns", miner.URL+"/miner01", sharder.URL+"/sharder01")
 
 	var initConfig = fmt.Sprintf("{\"port\":31082,\"chain_id\":\"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe\",\"deployment_mode\":0,\"signature_scheme\":\"bls0chain\",\"block_worker\":\"%s\",\"cleanup_worker\":10,\"preferred_blobers\":[]}", server.URL+"/dns")
+
+	var storageConfig = fmt.Sprintf("{\"wallet\":%s,\"signature_scheme\":\"bls0chain\"}", walletConfig)
 
 	t.Run("Initialize Config", func(t *testing.T) {
 		initCfg := js.FuncOf(InitializeConfig)
@@ -85,12 +66,11 @@ func TestAllConfig(t *testing.T) {
 
 		assert.Equal(t, true, err[0].IsNull())
 		assert.Equal(t, true, result[0].Bool())
-		fmt.Printf("%s", blockchain.GetBlockWorker())
-		fmt.Printf(server.URL + "/dns")
+
 		assert.Equal(t, blockchain.GetBlockWorker(), server.URL+"/dns")
 	})
 
-	t.Run("Set Wallet Info", func(t *testing.T) {
+	t.Run("Test SetWalletInfo", func(t *testing.T) {
 		setWalletInfo := js.FuncOf(SetWalletInfo)
 		defer setWalletInfo.Release()
 

@@ -1,6 +1,3 @@
-//go:build wasm
-// +build wasm
-
 package wasm
 
 import (
@@ -19,21 +16,11 @@ import (
 func strToPriceRange(s string) sdk.PriceRange {
 	var p sdk.PriceRange
 	err := json.Unmarshal([]byte(s), &p)
-	if err == nil {
+	if err != nil {
 		fmt.Println("error:", err)
 	}
 
 	return p
-}
-
-func strToBlob(s string) sdk.Blobber {
-	var b sdk.Blobber
-	err := json.Unmarshal([]byte(s), &b)
-	if err == nil {
-		fmt.Println("error:", err)
-	}
-
-	return b
 }
 
 //-----------------------------------------------------------------------------
@@ -213,7 +200,7 @@ func CreateReadPool(this js.Value, p []js.Value) interface{} {
 				})
 			}
 			resolve.Invoke(map[string]interface{}{
-				"result": fmt.Sprintf("%s", err),
+				"result": err,
 			})
 		}()
 
@@ -224,21 +211,47 @@ func CreateReadPool(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
+// AllocFilter will return new instanceOf AllocationPoolStats object
 func AllocFilter(this js.Value, p []js.Value) interface{} {
-	poolStats := p[0].String()
-	allocID := p[1].String()
+	var allocPoolStatArr []sdk.AllocationPoolStat
+	var allocPoolStat sdk.AllocationPoolStat
+	var backPool sdk.BackPool
 
-	var alloc sdk.AllocationPoolStats
-	err := json.Unmarshal([]byte(poolStats), &alloc)
+	poolStatArr := p[0].Get("pools")
+	backPoolJS := p[0].Get("back")
+	allocID := p[1].String()
+	if got := js.Global().Get("Array").Call("isArray", poolStatArr).Bool(); got {
+		for i := 0; i < poolStatArr.Length(); i++ {
+			poolS := poolStatArr.Index(i)
+			jsonPoolStat := js.Global().Get("JSON").Call("stringify", poolS).String()
+
+			err := json.Unmarshal([]byte(jsonPoolStat), &allocPoolStat)
+			if err != nil {
+				return map[string]interface{}{
+					"error": fmt.Sprintf("AllocFilter failed. Reason: %s", err),
+				}
+			}
+			allocPoolStatArr = append(allocPoolStatArr, allocPoolStat)
+		}
+	}
+
+	jsonBackPool := js.Global().Get("JSON").Call("stringify", backPoolJS).String()
+	err := json.Unmarshal([]byte(jsonBackPool), &backPool)
 	if err != nil {
 		return map[string]interface{}{
 			"error": fmt.Sprintf("AllocFilter failed. Reason: %s", err),
 		}
 	}
-	allocFilter := (*sdk.AllocationPoolStats).AllocFilter
 
-	allocFilter(&alloc, allocID)
-	return nil
+	alloc := sdk.AllocationPoolStats{}
+	alloc.Back = &backPool
+	for i := 0; i < len(allocPoolStatArr); i++ {
+		alloc.Pools = append(alloc.Pools, &allocPoolStatArr[i])
+	}
+
+	alloc.AllocFilter(allocID)
+	json, _ := json.Marshal(alloc)
+	return string(json)
 }
 
 func GetReadPoolInfo(this js.Value, p []js.Value) interface{} {
@@ -278,24 +291,22 @@ func ReadPoolLock(this js.Value, p []js.Value) interface{} {
 	dur, _ := time.ParseDuration(p[0].String()) // time.Duration,
 	allocID := p[1].String()
 	blobberID := p[2].String()
-	tokens, _ := strconv.ParseInt(p[3].String(), 10, 64)
-	fee, _ := strconv.ParseInt(p[4].String(), 10, 64)
+	tokens := p[3].Int()
+	fee := p[4].Int()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
 
 		go func() {
-			err := sdk.ReadPoolLock(dur, allocID, blobberID, tokens, fee)
+			err := sdk.ReadPoolLock(dur, allocID, blobberID, int64(tokens), int64(fee))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("ReadPoolLock failed. Reason: %s", err),
 				})
 			}
 
-			resolve.Invoke(map[string]interface{}{
-				"result": fmt.Sprintf("%s", err),
-			})
+			resolve.Invoke(err)
 		}()
 
 		return nil
@@ -307,23 +318,21 @@ func ReadPoolLock(this js.Value, p []js.Value) interface{} {
 
 func ReadPoolUnlock(this js.Value, p []js.Value) interface{} {
 	poolID := p[0].String()
-	fee, _ := strconv.ParseInt(p[1].String(), 10, 64)
+	fee := p[1].Int()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
 
 		go func() {
-			err := sdk.ReadPoolUnlock(poolID, fee)
+			err := sdk.ReadPoolUnlock(poolID, int64(fee))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("ReadPoolUnlock failed. Reason: %s", err),
 				})
 			}
 
-			resolve.Invoke(map[string]interface{}{
-				"result": fmt.Sprintf("%s", err),
-			})
+			resolve.Invoke(err)
 		}()
 
 		return nil
@@ -401,15 +410,15 @@ func GetStakePoolUserInfo(this js.Value, p []js.Value) interface{} {
 
 func StakePoolLock(this js.Value, p []js.Value) interface{} {
 	blobberID := p[0].String()
-	value, _ := strconv.ParseInt(p[3].String(), 10, 64)
-	fee, _ := strconv.ParseInt(p[4].String(), 10, 64)
+	value := p[1].Int()
+	fee := p[2].Int()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.StakePoolLock(blobberID, value, fee)
+			result, err := sdk.StakePoolLock(blobberID, int64(value), int64(fee))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("StakePoolLock failed. Reason: %s", err),
@@ -431,14 +440,14 @@ func StakePoolLock(this js.Value, p []js.Value) interface{} {
 func StakePoolUnlock(this js.Value, p []js.Value) interface{} {
 	blobberID := p[0].String()
 	poolID := p[1].String()
-	fee, _ := strconv.ParseInt(p[2].String(), 10, 64)
+	fee := p[2].Int()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.StakePoolUnlock(blobberID, poolID, fee)
+			result, err := sdk.StakePoolUnlock(blobberID, poolID, int64(fee))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("StakePoolUnlock failed. Reason: %s", err),
@@ -472,9 +481,7 @@ func StakePoolPayInterests(this js.Value, p []js.Value) interface{} {
 				})
 			}
 
-			resolve.Invoke(map[string]interface{}{
-				"result": fmt.Sprintf("%s", err),
-			})
+			resolve.Invoke(err)
 		}()
 
 		return nil
@@ -521,24 +528,21 @@ func WritePoolLock(this js.Value, p []js.Value) interface{} {
 	dur, _ := time.ParseDuration(p[0].String()) // time.Duration,
 	allocID := p[1].String()
 	blobberID := p[2].String()
-	tokens, _ := strconv.ParseInt(p[3].String(), 10, 64)
-	fee, _ := strconv.ParseInt(p[4].String(), 10, 64)
+	tokens := p[3].Int()
+	fee := p[4].Int()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
 
 		go func() {
-			err := sdk.WritePoolLock(dur, allocID, blobberID, tokens, fee)
+			err := sdk.WritePoolLock(dur, allocID, blobberID, int64(tokens), int64(fee))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("WritePoolLock failed. Reason: %s", err),
 				})
 			}
-
-			resolve.Invoke(map[string]interface{}{
-				"result": fmt.Sprintf("%s", err),
-			})
+			resolve.Invoke(err)
 		}()
 
 		return nil
@@ -550,23 +554,20 @@ func WritePoolLock(this js.Value, p []js.Value) interface{} {
 
 func WritePoolUnlock(this js.Value, p []js.Value) interface{} {
 	poolID := p[0].String()
-	fee, _ := strconv.ParseInt(p[1].String(), 10, 64)
+	fee := p[1].Int()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
 
 		go func() {
-			err := sdk.WritePoolUnlock(poolID, fee)
+			err := sdk.WritePoolUnlock(poolID, int64(fee))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("WritePoolUnlock failed. Reason: %s", err),
 				})
 			}
-
-			resolve.Invoke(map[string]interface{}{
-				"result": fmt.Sprintf("%s", err),
-			})
+			resolve.Invoke(err)
 		}()
 
 		return nil
@@ -622,16 +623,14 @@ func GetStorageSCConfig(this js.Value, p []js.Value) interface{} {
 				})
 			}
 
-			challengePool, err := json.Marshal(result)
+			storageConfig, err := json.Marshal(result)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("GetStorageSCConfig to JSON Failed. Reason: %s", err),
 				})
 			}
 
-			resolve.Invoke(map[string]interface{}{
-				"result": string(challengePool),
-			})
+			resolve.Invoke(string(storageConfig))
 		}()
 
 		return nil
@@ -694,9 +693,7 @@ func GetBlobber(this js.Value, p []js.Value) interface{} {
 				})
 			}
 
-			resolve.Invoke(map[string]interface{}{
-				"result": string(blobber),
-			})
+			resolve.Invoke(string(blobber))
 		}()
 
 		return nil
@@ -722,9 +719,7 @@ func GetClientEncryptedPublicKey(this js.Value, p []js.Value) interface{} {
 				})
 			}
 
-			resolve.Invoke(map[string]interface{}{
-				"result": key,
-			})
+			resolve.Invoke(key)
 		}()
 
 		return nil
@@ -756,9 +751,7 @@ func GetAllocationFromAuthTicket(this js.Value, p []js.Value) interface{} {
 				})
 			}
 
-			resolve.Invoke(map[string]interface{}{
-				"result": string(alloc),
-			})
+			resolve.Invoke(string(alloc))
 		}()
 
 		return nil
@@ -789,9 +782,7 @@ func GetAllocation(this js.Value, p []js.Value) interface{} {
 				})
 			}
 
-			resolve.Invoke(map[string]interface{}{
-				"result": string(alloc),
-			})
+			resolve.Invoke(string(alloc))
 		}()
 
 		return nil
@@ -802,7 +793,7 @@ func GetAllocation(this js.Value, p []js.Value) interface{} {
 }
 
 func SetNumBlockDownloads(this js.Value, p []js.Value) interface{} {
-	num, _ := strconv.Atoi(p[0].String())
+	num := p[0].Int()
 	sdk.SetNumBlockDownloads(num)
 	return nil
 }
@@ -860,9 +851,7 @@ func GetAllocationsForClient(this js.Value, p []js.Value) interface{} {
 				})
 			}
 
-			resolve.Invoke(map[string]interface{}{
-				"result": string(alloc),
-			})
+			resolve.Invoke(string(alloc))
 		}()
 
 		return nil
@@ -873,14 +862,14 @@ func GetAllocationsForClient(this js.Value, p []js.Value) interface{} {
 }
 
 func CreateAllocation(this js.Value, p []js.Value) interface{} {
-	datashards, _ := strconv.Atoi(p[0].String())
-	parityshards, _ := strconv.Atoi(p[1].String())
-	size, _ := strconv.ParseInt(p[2].String(), 10, 64)
-	expiry, _ := strconv.ParseInt(p[3].String(), 10, 64)
+	datashards := p[0].Int()
+	parityshards := p[1].Int()
+	size := p[2].Int()
+	expiry := p[3].Int()
 	s_read := p[4].String()
 	s_write := p[5].String()
 	mcct, _ := time.ParseDuration(p[6].String())
-	lock, _ := strconv.ParseInt(p[7].String(), 10, 64)
+	lock := p[7].Int()
 
 	readPrice := strToPriceRange(s_read)
 	writePrice := strToPriceRange(s_write)
@@ -890,7 +879,7 @@ func CreateAllocation(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.CreateAllocation(datashards, parityshards, size, expiry, readPrice, writePrice, mcct, lock)
+			result, err := sdk.CreateAllocation(datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct, int64(lock))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("CreateAllocation failed. Reason: %s", err),
@@ -912,15 +901,29 @@ func CreateAllocation(this js.Value, p []js.Value) interface{} {
 func CreateAllocationForOwner(this js.Value, p []js.Value) interface{} {
 	owner := p[0].String()
 	ownerpublickey := p[1].String()
-	datashards, _ := strconv.Atoi(p[2].String())
-	parityshards, _ := strconv.Atoi(p[3].String())
-	size, _ := strconv.ParseInt(p[4].String(), 10, 64)
-	expiry, _ := strconv.ParseInt(p[5].String(), 10, 64)
+	datashards := p[2].Int()
+	parityshards := p[3].Int()
+	size := p[4].Int()
+	expiry := p[5].Int()
 	s_read := p[6].String()
 	s_write := p[7].String()
 	mcct, _ := time.ParseDuration(p[8].String())
-	lock, _ := strconv.ParseInt(p[9].String(), 10, 64)
-	preferredBlobbers := []string{p[10].String()}
+	lock := p[9].Int()
+	jsPreferredBlobbers := p[10]
+
+	var preferredBlobbers []string
+
+	if got := js.Global().Get("Array").Call("isArray", jsPreferredBlobbers).Bool(); got {
+		for i := 0; i < jsPreferredBlobbers.Length(); i++ {
+			if got := jsPreferredBlobbers.Index(i).Type().String(); got == "string" {
+				preferredBlobbers = append(preferredBlobbers, jsPreferredBlobbers.Index(i).String())
+			} else {
+				return map[string]interface{}{
+					"error": fmt.Sprintf("SetNetwork failed. Reason: expected type \"string\". got=%#v", jsPreferredBlobbers.Index(i).Type().String()),
+				}
+			}
+		}
+	}
 
 	readPrice := strToPriceRange(s_read)
 	writePrice := strToPriceRange(s_write)
@@ -930,7 +933,7 @@ func CreateAllocationForOwner(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.CreateAllocationForOwner(owner, ownerpublickey, datashards, parityshards, size, expiry, readPrice, writePrice, mcct, lock, preferredBlobbers)
+			result, err := sdk.CreateAllocationForOwner(owner, ownerpublickey, datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct, int64(lock), preferredBlobbers)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("CreateAllocationForOwner failed. Reason: %s", err),
@@ -950,26 +953,25 @@ func CreateAllocationForOwner(this js.Value, p []js.Value) interface{} {
 }
 
 func UpdateAllocation(this js.Value, p []js.Value) interface{} {
-	size, _ := strconv.ParseInt(p[0].String(), 10, 64)
-	expiry, _ := strconv.ParseInt(p[1].String(), 10, 64)
+	size := p[0].Int()
+	expiry := p[1].Int()
 	allocationID := p[2].String()
-	lock, _ := strconv.ParseInt(p[3].String(), 10, 64)
+	lock := p[3].Int()
+	setImmutable := p[4].Bool()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.UpdateAllocation(size, expiry, allocationID, lock)
+			result, err := sdk.UpdateAllocation(int64(size), int64(expiry), allocationID, int64(lock), setImmutable)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("UpdateAllocation failed. Reason: %s", err),
 				})
 			}
 
-			resolve.Invoke(map[string]interface{}{
-				"result": result,
-			})
+			resolve.Invoke(result)
 		}()
 
 		return nil
@@ -994,9 +996,7 @@ func FinalizeAllocation(this js.Value, p []js.Value) interface{} {
 				})
 			}
 
-			resolve.Invoke(map[string]interface{}{
-				"result": result,
-			})
+			resolve.Invoke(result)
 		}()
 
 		return nil
@@ -1035,7 +1035,13 @@ func CancelAllocation(this js.Value, p []js.Value) interface{} {
 
 func UpdateBlobberSettings(this js.Value, p []js.Value) interface{} {
 	s_blob := p[0].String()
-	blob := strToBlob(s_blob)
+	var blob sdk.Blobber
+	err := json.Unmarshal([]byte(s_blob), &blob)
+	if err != nil {
+		return map[string]interface{}{
+			"error": fmt.Sprintf("UpdateBlobberSettings failed. Reason: %s", err),
+		}
+	}
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
@@ -1049,9 +1055,7 @@ func UpdateBlobberSettings(this js.Value, p []js.Value) interface{} {
 				})
 			}
 
-			resolve.Invoke(map[string]interface{}{
-				"result": result,
-			})
+			resolve.Invoke(result)
 		}()
 
 		return nil
@@ -1077,9 +1081,7 @@ func CommitToFabric(this js.Value, p []js.Value) interface{} {
 				})
 			}
 
-			resolve.Invoke(map[string]interface{}{
-				"result": result,
-			})
+			resolve.Invoke(result)
 		}()
 
 		return nil
@@ -1090,10 +1092,10 @@ func CommitToFabric(this js.Value, p []js.Value) interface{} {
 }
 
 func GetAllocationMinLock(this js.Value, p []js.Value) interface{} {
-	datashards, _ := strconv.Atoi(p[0].String())
-	parityshards, _ := strconv.Atoi(p[1].String())
-	size, _ := strconv.ParseInt(p[2].String(), 10, 64)
-	expiry, _ := strconv.ParseInt(p[3].String(), 10, 64)
+	datashards := p[0].Int()
+	parityshards := p[1].Int()
+	size := p[2].Int()
+	expiry := p[3].Int()
 	s_read := p[4].String()
 	s_write := p[5].String()
 	mcct, _ := time.ParseDuration(p[6].String())
@@ -1106,16 +1108,14 @@ func GetAllocationMinLock(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.GetAllocationMinLock(datashards, parityshards, size, expiry, readPrice, writePrice, mcct)
+			result, err := sdk.GetAllocationMinLock(datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("GetAllocationMinLock failed. Reason: %s", err),
 				})
 			}
 
-			resolve.Invoke(map[string]interface{}{
-				"result": result,
-			})
+			resolve.Invoke(result)
 		}()
 
 		return nil
