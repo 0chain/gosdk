@@ -16,9 +16,14 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: '1.16' # The Go version to download (if necessary) and use.
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
 
       - name: Install herumi's libraries
         run: sudo make install-herumi-ubuntu
 
       - name: Run Unit Test
-        run: LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH make gosdk-test
+        run: |
+          export PATH=$PATH:$(echo $GOROOT)/misc/wasm
+          LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH make gosdk-test
