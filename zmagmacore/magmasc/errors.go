@@ -29,6 +29,7 @@ const (
 	ErrCodeTokenPoolCreate  = "token_pool_create"
 	ErrCodeTokenPoolSpend   = "token_pool_spend"
 
+	ErrCodeUserReg 	  = "user_reg"
 	ErrCodeUserUpdate = "user_update"
 
 	ErrTextDecode     = "decode error"
