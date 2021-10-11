@@ -222,4 +222,8 @@ const (
 	// UserRegisteredRP represents MagmaSC relative path.
 	// Used to fetch user registered info.
 	UserRegisteredRP = "/userExist"
+
+
+	// UserType contents a value of type of User's.
+	UserType = "user"
 )
