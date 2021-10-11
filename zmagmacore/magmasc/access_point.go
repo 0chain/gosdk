@@ -48,7 +48,7 @@ func NewAccessPointFromCfg(cfg *config.AccessPoint) *AccessPoint {
 func (m *AccessPoint) Decode(blob []byte) error {
 	var accessPoint AccessPoint
 	if err := json.Unmarshal(blob, &accessPoint); err != nil {
-		return errDecodeData.Wrap(err)
+		return ErrDecodeData.Wrap(err)
 	}
 	if err := accessPoint.Validate(); err != nil {
 		return err
@@ -70,7 +70,7 @@ func (m *AccessPoint) Encode() []byte {
 
 // GetType returns node type.
 func (m *AccessPoint) GetType() string {
-	return accessPointType
+	return AccessPointType
 }
 
 // Validate checks the AccessPoint for correctness.
@@ -78,14 +78,14 @@ func (m *AccessPoint) GetType() string {
 func (m *AccessPoint) Validate() (err error) {
 	switch { // is invalid
 	case m.ID == "":
-		err = errors.New(errCodeBadRequest, "accessPoint external id is required")
+		err = errors.New(ErrCodeBadRequest, "accessPoint external id is required")
 
 	case m.ProviderExtID == "":
-		err = errors.New(errCodeBadRequest, "accessPoint provider external id is required")
+		err = errors.New(ErrCodeBadRequest, "accessPoint provider external id is required")
 
 	default:
 		return nil // is valid
 	}
 
-	return errInvalidAccessPoint.Wrap(err)
+	return ErrInvalidAccessPoint.Wrap(err)
 }

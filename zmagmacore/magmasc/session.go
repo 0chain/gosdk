@@ -43,7 +43,7 @@ func (s *Session) ActiveKey() []byte {
 func (s *Session) Decode(blob []byte) error {
 	var sess Session
 	if err := json.Unmarshal(blob, &sess); err != nil {
-		return errDecodeData.Wrap(err)
+		return ErrDecodeData.Wrap(err)
 	}
 	if err := sess.Validate(); err != nil {
 		return err
@@ -101,20 +101,20 @@ func (s *Session) PoolPayeeID() string {
 func (s *Session) Validate() (err error) {
 	switch { // is invalid
 	case s.SessionID == "":
-		err = errors.New(errCodeBadRequest, "session id is required")
+		err = errors.New(ErrCodeBadRequest, "session id is required")
 
 	case s.AccessPoint == nil || s.AccessPoint.ID == "":
-		err = errors.New(errCodeBadRequest, "access point id is required")
+		err = errors.New(ErrCodeBadRequest, "access point id is required")
 
 	case s.Consumer == nil || s.Consumer.ExtID == "":
-		err = errors.New(errCodeBadRequest, "consumer external id is required")
+		err = errors.New(ErrCodeBadRequest, "consumer external id is required")
 
 	case s.Provider == nil || s.Provider.ExtID == "":
-		err = errors.New(errCodeBadRequest, "provider external id is required")
+		err = errors.New(ErrCodeBadRequest, "provider external id is required")
 
 	default:
 		return nil // is valid
 	}
 
-	return errInvalidSession.Wrap(err)
+	return ErrInvalidSession.Wrap(err)
 }

@@ -34,7 +34,7 @@ var (
 func (m *DataMarker) Decode(blob []byte) error {
 	var dataMarker DataMarker
 	if err := json.Unmarshal(blob, &dataMarker); err != nil {
-		return errDecodeData.Wrap(err)
+		return ErrDecodeData.Wrap(err)
 	}
 	if err := dataMarker.Validate(); err != nil {
 		return err
@@ -106,7 +106,7 @@ func (m *DataMarker) IsQoSType() bool {
 // Sign signs the data.
 func (m *DataMarker) Sign(scheme zcncrypto.SignatureScheme, schemeType string) error {
 	if len(scheme.GetPrivateKey()) == 0 {
-		return errors.New(errCodeBadRequest, "private key is empty")
+		return errors.New(ErrCodeBadRequest, "private key is empty")
 	}
 	sign, err := scheme.Sign(m.hashToSign())
 	if err != nil {
@@ -125,8 +125,8 @@ func (m *DataMarker) Sign(scheme zcncrypto.SignatureScheme, schemeType string) e
 func (m *DataMarker) Validate() (err error) {
 	// validate DataUsage, because it is required for all DataMarker's types
 	if m.DataUsage == nil || m.DataUsage.SessionId == "" {
-		err = errors.New(errCodeBadRequest, "session id is required")
-		return errInvalidDataMarker.Wrap(err)
+		err = errors.New(ErrCodeBadRequest, "session id is required")
+		return ErrInvalidDataMarker.Wrap(err)
 	}
 
 	// if marker is not QoS type, then is no need to continue
@@ -141,43 +141,43 @@ func (m *DataMarker) Validate() (err error) {
 func (m *DataMarker) validateAsQoSType() (err error) {
 	switch {
 	case m.UserId == "":
-		err = errors.New(errCodeBadRequest, "user id is required")
+		err = errors.New(ErrCodeBadRequest, "user id is required")
 
 	case m.Qos == nil:
-		err = errors.New(errCodeBadRequest, "qos is nil")
+		err = errors.New(ErrCodeBadRequest, "qos is nil")
 
 	case m.Qos.UploadMbps <= 0:
-		err = errors.New(errCodeBadRequest, "invalid qos upload mbps")
+		err = errors.New(ErrCodeBadRequest, "invalid qos upload mbps")
 
 	case m.Qos.DownloadMbps <= 0:
-		err = errors.New(errCodeBadRequest, "invalid qos download mbps")
+		err = errors.New(ErrCodeBadRequest, "invalid qos download mbps")
 
 	case m.Qos.Latency <= 0:
-		err = errors.New(errCodeBadRequest, "invalid qos latency")
+		err = errors.New(ErrCodeBadRequest, "invalid qos latency")
 
 	case m.PublicKey == "":
-		err = errors.New(errCodeBadRequest, "public key is required")
+		err = errors.New(ErrCodeBadRequest, "public key is required")
 
 	case m.SigScheme == "":
-		err = errors.New(errCodeBadRequest, "signature scheme is required")
+		err = errors.New(ErrCodeBadRequest, "signature scheme is required")
 
 	case m.Signature == "":
-		err = errors.New(errCodeBadRequest, "signature is required")
+		err = errors.New(ErrCodeBadRequest, "signature is required")
 
 	case crypto.Hash(m.PublicKey) != m.UserId:
-		err = errors.New(errCodeBadRequest, "user id does not belong to the public key")
+		err = errors.New(ErrCodeBadRequest, "user id does not belong to the public key")
 
 	default:
 		return nil
 	}
 
-	return errInvalidDataMarker.Wrap(err)
+	return ErrInvalidDataMarker.Wrap(err)
 }
 
 // Verify verifies data marker's signature.
 func (m *DataMarker) Verify() (bool, error) {
 	if len(m.PublicKey) == 0 {
-		return false, errors.New(errCodeBadRequest, "public key is empty")
+		return false, errors.New(ErrCodeBadRequest, "public key is empty")
 	}
 
 	hash := m.hashToSign()

@@ -39,10 +39,9 @@ func (m *Provider) IsNodeRegistered() (bool, error) {
 
 // Register implements registration.Node interface.
 func (m *Provider) Register(ctx context.Context) (registration.Node, error) {
-	var errCode = "provider_register"
 	provider, err := ExecuteProviderRegister(ctx, m)
 	if err != nil {
-		return nil, errors.Wrap(errCode, "error while registering provider", err)
+		return nil, errors.Wrap(ErrCodeProviderReg, "error while registering provider", err)
 	}
 	m.Provider = provider.Provider
 
@@ -56,10 +55,9 @@ func (m *Provider) Register(ctx context.Context) (registration.Node, error) {
 
 // Update implements registration.Node interface.
 func (m *Provider) Update(ctx context.Context) (registration.Node, error) {
-	var errCode = "provider_update"
 	provider, err := ExecuteProviderUpdate(ctx, m)
 	if err != nil {
-		return nil, errors.Wrap(errCode, "error while updating provider", err)
+		return nil, errors.Wrap(ErrCodeProviderUpdate, "error while updating provider", err)
 	}
 	m.Provider = provider.Provider
 

@@ -5,44 +5,106 @@ import (
 )
 
 const (
-	errCodeBadRequest = "bad_request"
-	errCodeInvalid    = "invalid_error"
+	ErrCodeBadRequest     = "bad_request"
+	ErrCodeConsumerReg    = "consumer_reg"
+	ErrCodeConsumerUpdate = "consumer_update"
+	ErrCodeDataUsage      = "data_usage"
+	ErrCodeDecode         = "decode_error"
+	ErrCodeFetchData      = "fetch_data"
+	ErrCodeInternal       = "internal_error"
+	ErrCodeInvalid    = "invalid_error"
+	ErrCodeProviderReg    = "provider_reg"
+	ErrCodeProviderStake    = "provider_stake"
+	ErrCodeProviderUnstake = "provider_unstake"
+	ErrCodeProviderUpdate = "provider_update"
+	ErrCodeSessionInit    = "session_init"
+	ErrCodeSessionStart   = "session_start"
+	ErrCodeSessionStop    = "session_stop"
+
+	ErrCodeAccessPointReg    = "access_point_reg"
+	ErrCodeAccessPointUpdate = "access_point_update"
+
+	ErrCodeRewardPoolLock   = "reward_pool_lock"
+	ErrCodeRewardPoolUnlock = "reward_pool_unlock"
+	ErrCodeTokenPoolCreate  = "token_pool_create"
+	ErrCodeTokenPoolSpend   = "token_pool_spend"
+
+	ErrCodeUserUpdate = "user_update"
+
+	ErrTextDecode     = "decode error"
+	ErrTextUnexpected = "unexpected error"
+
+	ErrCodeInvalidConfig = "invalid_config"
+	ErrCodeInvalidFuncName = "invalid_func_name"
+	ErrTextInvalidFuncName = "function with provided name is not supported"
 )
 
 var (
-	// errDecodeData represents an error
-	// that decode data was failed.
-	errDecodeData = errors.New("decode_error", "decode error")
+	// ErrInsufficientFunds represents an error that can occur while
+	// check a balance value condition.
+	ErrInsufficientFunds = errors.New(ErrCodeBadRequest, "insufficient funds")
 
-	// errInvalidSession represents an error
-	// that a session was invalidated.
-	errInvalidSession = errors.New(errCodeInvalid, "invalid session")
+	// ErrInternalUnexpected represents an error
+	// that internal unexpected issue.
+	ErrInternalUnexpected = errors.New(ErrCodeInternal, ErrTextUnexpected)
 
-	// errInvalidConsumer represents an error
-	// that consumer was invalidated.
-	errInvalidConsumer = errors.New(errCodeInvalid, "invalid consumer")
-
-	// errInvalidDataUsage represents an error
-	// that a data usage was invalidated.
-	errInvalidDataUsage = errors.New(errCodeInvalid, "invalid data usage")
-
-	// errInvalidProvider represents an error
-	// that provider was invalidated.
-	errInvalidProvider = errors.New(errCodeInvalid, "invalid provider")
-
-	// errInvalidTerms represents an error
-	// that terms was invalidated.
-	errInvalidTerms = errors.New(errCodeInvalid, "invalid terms")
-
-	// errInvalidAccessPoint represents an error
+	// ErrInvalidAccessPoint represents an error
 	// that access point was invalidated.
-	errInvalidAccessPoint = errors.New(errCodeInvalid, "invalid access point")
+	ErrInvalidAccessPoint = errors.New(ErrCodeInvalid, "invalid access point")
 
-	// errInvalidUser represents an error
+	// ErrInvalidAccessPointID represents an error
+	// that access point id was invalidated.
+	ErrInvalidAccessPointID = errors.New(ErrCodeBadRequest, "invalid access_point_id")
+
+	// ErrDecodeData represents an error
+	// that decode data was failed.
+	ErrDecodeData = errors.New("decode_error", "decode error")
+
+	// ErrInvalidConsumer represents an error
+	// that consumer was invalidated.
+	ErrInvalidConsumer = errors.New(ErrCodeInvalid, "invalid consumer")
+
+	// ErrInvalidConsumerExtID represents an error
+	// that consumer external id was invalidated.
+	ErrInvalidConsumerExtID = errors.New(ErrCodeBadRequest, "invalid consumer_ext_id")
+
+	// ErrInvalidDataUsage represents an error
+	// that a data usage was invalidated.
+	ErrInvalidDataUsage = errors.New(ErrCodeInvalid, "invalid data usage")
+
+	// ErrInvalidFuncName represents an error that can occur while
+	// smart contract is calling with unsupported function name.
+	ErrInvalidFuncName = errors.New(ErrCodeInvalidFuncName, ErrTextInvalidFuncName)
+
+	// ErrInvalidProvider represents an error
+	// that provider was invalidated.
+	ErrInvalidProvider = errors.New(ErrCodeInvalid, "invalid provider")
+
+	// ErrInvalidProviderExtID represents an error
+	// that provider external id was invalidated.
+	ErrInvalidProviderExtID = errors.New(ErrCodeBadRequest, "invalid provider_ext_id")
+
+	// ErrInvalidSession represents an error
+	// that a session was invalidated.
+	ErrInvalidSession = errors.New(ErrCodeInvalid, "invalid session")
+
+	// ErrInvalidTerms represents an error
+	// that terms was invalidated.
+	ErrInvalidTerms = errors.New(ErrCodeInvalid, "invalid terms")
+
+	// ErrInvalidUser represents an error
 	// that user was invalidated.
-	errInvalidUser = errors.New(errCodeInvalid, "invalid user")
+	ErrInvalidUser = errors.New(ErrCodeInvalid, "invalid user")
 
-	// errInvalidDataMarker represents an error
-	// that data marker was invalidated.
-	errInvalidDataMarker = errors.New(errCodeInvalid, "invalid data marker")
+	// ErrInvalidDataMarker represents an error
+	// that user data marker was invalidated.
+	ErrInvalidDataMarker = errors.New(ErrCodeInvalid, "invalid data marker")
+
+	// ErrNegativeValue represents an error that can occur while
+	// a checked value is negative.
+	ErrNegativeValue = errors.New(ErrCodeBadRequest, "negative value")
+
+	// ErrNilPointerValue represents an error that can occur while
+	// a checked value is a nil pointer.
+	ErrNilPointerValue = errors.New(ErrCodeInternal, "nil pointer value")
 )

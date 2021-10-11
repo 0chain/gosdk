@@ -109,8 +109,8 @@ func Test_Provider_GetType(t *testing.T) {
 		t.Parallel()
 
 		prov := Provider{}
-		if got := prov.GetType(); got != providerType {
-			t.Errorf("GetType() got: %v | want: %v", got, providerType)
+		if got := prov.GetType(); got != ProviderType {
+			t.Errorf("GetType() got: %v | want: %v", got, ProviderType)
 		}
 	})
 }

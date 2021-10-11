@@ -36,7 +36,7 @@ func NewConsumerFromCfg(cfg *config.Consumer) *Consumer {
 func (m *Consumer) Decode(blob []byte) error {
 	var consumer Consumer
 	if err := json.Unmarshal(blob, &consumer); err != nil {
-		return errDecodeData.Wrap(err)
+		return ErrDecodeData.Wrap(err)
 	}
 	if err := consumer.Validate(); err != nil {
 		return err
@@ -62,7 +62,7 @@ func (m *Consumer) ExternalID() string {
 
 // GetType returns node type.
 func (m *Consumer) GetType() string {
-	return consumerType
+	return ConsumerType
 }
 
 // Validate checks the Consumer for correctness.
@@ -70,11 +70,11 @@ func (m *Consumer) GetType() string {
 func (m *Consumer) Validate() (err error) {
 	switch { // is invalid
 	case m.ExtID == "":
-		err = errors.New(errCodeBadRequest, "consumer external id is required")
+		err = errors.New(ErrCodeBadRequest, "consumer external id is required")
 
 	default:
 		return nil // is valid
 	}
 
-	return errInvalidConsumer.Wrap(err)
+	return ErrInvalidConsumer.Wrap(err)
 }

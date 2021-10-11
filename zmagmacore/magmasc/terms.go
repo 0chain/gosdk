@@ -44,7 +44,7 @@ func NewTerms() *Terms {
 func (m *Terms) Decode(blob []byte) error {
 	var terms Terms
 	if err := json.Unmarshal(blob, &terms); err != nil {
-		return errDecodeData.Wrap(err)
+		return ErrDecodeData.Wrap(err)
 	}
 	if err := terms.Validate(); err != nil {
 		return err
@@ -174,21 +174,21 @@ func (m *Terms) Increase() *Terms {
 func (m *Terms) Validate() (err error) {
 	switch { // is invalid
 	case m.QoS == nil:
-		err = errors.New(errCodeBadRequest, "invalid terms qos")
+		err = errors.New(ErrCodeBadRequest, "invalid terms qos")
 
 	case m.QoS.UploadMbps <= 0:
-		err = errors.New(errCodeBadRequest, "invalid terms qos upload mbps")
+		err = errors.New(ErrCodeBadRequest, "invalid terms qos upload mbps")
 
 	case m.QoS.DownloadMbps <= 0:
-		err = errors.New(errCodeBadRequest, "invalid terms qos download mbps")
+		err = errors.New(ErrCodeBadRequest, "invalid terms qos download mbps")
 
 	case m.Expired():
 		now := time.NowTime().Add(TermsExpiredDuration).Format(time.RFC3339)
-		err = errors.New(errCodeBadRequest, "expired at must be after "+now)
+		err = errors.New(ErrCodeBadRequest, "expired at must be after "+now)
 
 	default:
 		return nil // is valid
 	}
 
-	return errInvalidTerms.Wrap(err)
+	return ErrInvalidTerms.Wrap(err)
 }

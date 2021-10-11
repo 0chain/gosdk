@@ -27,7 +27,7 @@ var (
 func (m *TokenPool) Decode(blob []byte) error {
 	var pool TokenPool
 	if err := json.Unmarshal(blob, &pool); err != nil {
-		return errDecodeData.Wrap(err)
+		return ErrDecodeData.Wrap(err)
 	}
 
 	m.ID = pool.ID

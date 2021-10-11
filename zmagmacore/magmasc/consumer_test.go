@@ -104,8 +104,8 @@ func Test_Consumer_GetType(t *testing.T) {
 		t.Parallel()
 
 		cons := Consumer{}
-		if got := cons.GetType(); got != consumerType {
-			t.Errorf("GetType() got: %v | want: %v", got, consumerType)
+		if got := cons.GetType(); got != ConsumerType {
+			t.Errorf("GetType() got: %v | want: %v", got, ConsumerType)
 		}
 	})
 }

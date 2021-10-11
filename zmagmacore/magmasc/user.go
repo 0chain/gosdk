@@ -32,7 +32,7 @@ func NewUserFromCfg(cfg *config.User) *User {
 func (m *User) Decode(blob []byte) error {
 	var user User
 	if err := json.Unmarshal(blob, &user); err != nil {
-		return errDecodeData.Wrap(err)
+		return ErrDecodeData.Wrap(err)
 	}
 	if err := user.Validate(); err != nil {
 		return err
@@ -55,14 +55,14 @@ func (m *User) Encode() []byte {
 func (m *User) Validate() (err error) {
 	switch { // is invalid
 	case m.ID == "":
-		err = errors.New(errCodeBadRequest, "user id is required")
+		err = errors.New(ErrCodeBadRequest, "user id is required")
 
 	case m.ConsumerID == "":
-		err = errors.New(errCodeBadRequest, "user consumer id is required")
+		err = errors.New(ErrCodeBadRequest, "user consumer id is required")
 
 	default:
 		return nil // is valid
 	}
 
-	return errInvalidUser.Wrap(err)
+	return ErrInvalidUser.Wrap(err)
 }
