@@ -11,44 +11,57 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-func Test_Provider_Decode(t *testing.T) {
+func Test_User_Decode(t *testing.T) {
 	t.Parallel()
 
-	prov := mockProvider()
-	blob, err := json.Marshal(prov)
+	user := mockUser()
+	blob, err := json.Marshal(user.User)
 	if err != nil {
 		t.Fatalf("json.Marshal() error: %v | want: %v", err, nil)
 	}
 
-	provInvalid := mockProvider()
-	provInvalid.ExtID = ""
-	extIDBlobInvalid, err := json.Marshal(provInvalid)
+	userIDInvalid := mockUser()
+	userIDInvalid.ID = "" // invalid user's id
+	userIDBlobInvalid, err := json.Marshal(userIDInvalid.User)
 	if err != nil {
 		t.Fatalf("json.Marshal() error: %v | want: %v", err, nil)
 	}
 
-	tests := [3]struct {
+	consumerIDInvalid := mockUser()
+	consumerIDInvalid.ConsumerID = "" // invalid consumer's id
+	consumerIDBlobInvalid, err := json.Marshal(consumerIDInvalid.User)
+	if err != nil {
+		t.Fatalf("json.Marshal() error: %v | want: %v", err, nil)
+	}
+
+	tests := [4]struct {
 		name  string
 		blob  []byte
-		want  *Provider
+		want  *User
 		error bool
 	}{
 		{
 			name:  "OK",
 			blob:  blob,
-			want:  prov,
+			want:  user,
 			error: false,
 		},
 		{
 			name:  "Decode_ERR",
 			blob:  []byte(":"), // invalid json
-			want:  &Provider{},
+			want:  &User{},
 			error: true,
 		},
 		{
-			name:  "Ext_ID_Invalid_ERR",
-			blob:  extIDBlobInvalid,
-			want:  &Provider{},
+			name:  "User_ID_Invalid_ERR",
+			blob:  userIDBlobInvalid,
+			want:  &User{},
+			error: true,
+		},
+		{
+			name:  "Consumer_ID_Invalid_ERR",
+			blob:  consumerIDBlobInvalid,
+			want:  &User{},
 			error: true,
 		},
 	}
@@ -58,9 +71,9 @@ func Test_Provider_Decode(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := &Provider{}
+			got := &User{}
 			if err := got.Decode(test.blob); (err != nil) != test.error {
-				t.Errorf("Decode() error: %v | want: %v", err, test.error)
+				t.Errorf("Decode() error: %v | want: %v", err, nil)
 			}
 			if !reflect.DeepEqual(got, test.want) {
 				t.Errorf("Decode() got: %#v | want: %#v", got, test.want)
@@ -69,23 +82,23 @@ func Test_Provider_Decode(t *testing.T) {
 	}
 }
 
-func Test_Provider_Encode(t *testing.T) {
+func Test_User_Encode(t *testing.T) {
 	t.Parallel()
 
-	prov := mockProvider()
-	blob, err := json.Marshal(prov)
+	user := mockUser()
+	blob, err := json.Marshal(user.User)
 	if err != nil {
 		t.Fatalf("json.Marshal() error: %v | want: %v", err, nil)
 	}
 
 	tests := [1]struct {
 		name string
-		prov *Provider
+		user *User
 		want []byte
 	}{
 		{
 			name: "OK",
-			prov: prov,
+			user: user,
 			want: blob,
 		},
 	}
@@ -95,53 +108,40 @@ func Test_Provider_Encode(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			if got := test.prov.Encode(); !reflect.DeepEqual(got, test.want) {
+			if got := test.user.Encode(); !reflect.DeepEqual(got, test.want) {
 				t.Errorf("Encode() got: %#v | want: %#v", got, test.want)
 			}
 		})
 	}
 }
 
-func Test_Provider_GetType(t *testing.T) {
+func Test_User_Validate(t *testing.T) {
 	t.Parallel()
 
-	t.Run("OK", func(t *testing.T) {
-		t.Parallel()
+	userEmptyID := mockUser()
+	userEmptyID.ID = "" // invalid user's id
 
-		prov := Provider{}
-		if got := prov.GetType(); got != ProviderType {
-			t.Errorf("GetType() got: %v | want: %v", got, ProviderType)
-		}
-	})
-}
-
-func Test_Provider_Validate(t *testing.T) {
-	t.Parallel()
-
-	provEmptyExtID := mockProvider()
-	provEmptyExtID.ExtID = ""
-
-	provEmptyHost := mockProvider()
-	provEmptyHost.Host = ""
+	consumerEmptyID := mockUser()
+	consumerEmptyID.ConsumerID = "" // invalid consumer's id
 
 	tests := [3]struct {
 		name  string
-		prov  *Provider
+		cons  *User
 		error bool
 	}{
 		{
 			name:  "OK",
-			prov:  mockProvider(),
+			cons:  mockUser(),
 			error: false,
 		},
 		{
-			name:  "Empty_Ext_ID_ERR",
-			prov:  provEmptyExtID,
+			name:  "Empty_User_ID_ERR",
+			cons:  userEmptyID,
 			error: true,
 		},
 		{
-			name:  "Empty_Host_ERR",
-			prov:  provEmptyHost,
+			name:  "Empty_Consumer_ID_ERR",
+			cons:  consumerEmptyID,
 			error: true,
 		},
 	}
@@ -151,24 +151,24 @@ func Test_Provider_Validate(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			if err := test.prov.Validate(); (err != nil) != test.error {
+			if err := test.cons.Validate(); (err != nil) != test.error {
 				t.Errorf("Validate() error: %v | want: %v", err, test.error)
 			}
 		})
 	}
 }
 
-func Test_Provider_ReadYAML(t *testing.T) {
+func Test_User_ReadYAML(t *testing.T) {
 	t.Parallel()
 
 	var (
 		buf = bytes.NewBuffer(nil)
 		enc = yaml.NewEncoder(buf)
 
-		prov = mockProvider()
+		user = mockUser()
 	)
 
-	err := enc.Encode(prov)
+	err := enc.Encode(user)
 	if err != nil {
 		t.Fatalf("yaml Encode() error: %v | want: %v", err, nil)
 	}
@@ -180,12 +180,12 @@ func Test_Provider_ReadYAML(t *testing.T) {
 
 	tests := [1]struct {
 		name  string
-		want  *Provider
+		want  *User
 		error bool
 	}{
 		{
 			name:  "OK",
-			want:  prov,
+			want:  user,
 			error: false,
 		},
 	}
@@ -195,7 +195,7 @@ func Test_Provider_ReadYAML(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := &Provider{}
+			got := &User{}
 			if err := got.ReadYAML(path); (err != nil) != test.error {
 				t.Errorf("ReadYAML() error: %v | want: %v", err, nil)
 			}

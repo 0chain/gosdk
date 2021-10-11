@@ -9,7 +9,7 @@ import (
 )
 
 // ExecuteSessionStart starts session for provided IDs by executing ConsumerSessionStartFuncName.
-func ExecuteSessionStart(ctx context.Context, sessID string) (*Session, error) {
+func ExecuteSessionStart(ctx context.Context, consExtID, provExtID, sessID string, accessPoint *AccessPoint) (*Session, error) {
 	txn, err := transaction.NewTransactionEntity()
 	if err != nil {
 		return nil, err
@@ -20,10 +20,19 @@ func ExecuteSessionStart(ctx context.Context, sessID string) (*Session, error) {
 		return nil, err
 	}
 
-	session, err := RequestSession(sessID)
-	if err != nil {
-		return nil, err
+	session := &Session{
+		Consumer: &Consumer{
+			ExtID: consExtID,
+		},
+		Provider: &Provider{
+			Provider: &pb.Provider{
+				ExtID: provExtID,
+			},
+		},
+		SessionID:   sessID,
+		AccessPoint: accessPoint,
 	}
+
 	input, err := json.Marshal(&session)
 	if err != nil {
 		return nil, err
@@ -345,38 +354,15 @@ func ExecuteAccessPointUpdate(ctx context.Context, accessPoint *AccessPoint) (*A
 	return accessPoint, nil
 }
 
-// ExecuteSessionInit executes session init magma sc function and returns Session.
-func ExecuteSessionInit(ctx context.Context, consExtID, provExtID, apID, sessID string) (*Session, error) {
+// ExecuteUserRegister executes user registration magma sc function and returns current User.
+func ExecuteUserRegister(ctx context.Context, user *User) (*User, error) {
 	txn, err := transaction.NewTransactionEntity()
 	if err != nil {
 		return nil, err
 	}
 
-	session := Session{
-		Consumer: &Consumer{
-			ExtID: consExtID,
-		},
-		Provider: &Provider{
-			Provider: &pb.Provider{
-				ExtID: provExtID,
-			},
-		},
-		SessionID: sessID,
-		AccessPoint: &AccessPoint{
-			ID: apID,
-		},
-	}
-	input, err := json.Marshal(&session)
-	if err != nil {
-		return nil, err
-	}
-	txnHash, err := txn.ExecuteSmartContract(
-		ctx,
-		Address,
-		ProviderSessionInitFuncName,
-		string(input),
-		0,
-	)
+	input := user.Encode()
+	txnHash, err := txn.ExecuteSmartContract(ctx, Address, UserRegisterFuncName, string(input), 0)
 	if err != nil {
 		return nil, err
 	}
@@ -386,10 +372,36 @@ func ExecuteSessionInit(ctx context.Context, consExtID, provExtID, apID, sessID 
 		return nil, err
 	}
 
-	session = Session{}
-	if err := json.Unmarshal([]byte(txn.TransactionOutput), &session); err != nil {
+	user = &User{}
+	if err = user.Decode([]byte(txn.TransactionOutput)); err != nil {
 		return nil, err
 	}
 
-	return &session, err
+	return user, nil
+}
+
+// ExecuteUserUpdate executes update user magma sc function and returns updated User.
+func ExecuteUserUpdate(ctx context.Context, user *User) (*User, error) {
+	txn, err := transaction.NewTransactionEntity()
+	if err != nil {
+		return nil, err
+	}
+
+	input := user.Encode()
+	hash, err := txn.ExecuteSmartContract(ctx, Address, UserUpdateFuncName, string(input), 0)
+	if err != nil {
+		return nil, err
+	}
+
+	txn, err = transaction.VerifyTransaction(ctx, hash)
+	if err != nil {
+		return nil, err
+	}
+
+	user = &User{}
+	if err = user.Decode([]byte(txn.TransactionOutput)); err != nil {
+		return nil, err
+	}
+
+	return user, nil
 }

@@ -2,31 +2,27 @@ package magmasc
 
 import (
 	"encoding/json"
+	"os"
 
 	"github.com/0chain/errors"
+	"gopkg.in/yaml.v3"
 
 	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/zmagmacore/config"
+	"github.com/0chain/gosdk/zmagmacore/magmasc/pb"
 )
 
-// User represent user in blockchain.
-type User struct {
-	ID         string `json:"id,omitempty"`
-	ConsumerID string `json:"consumer_id,omitempty"`
-}
+type (
+	// User wraps proto.user for blockchain use.
+	User struct {
+		// pb.User embedded struct for implement our interface.
+		*pb.User
+	}
+)
 
 var (
 	// Make sure User implements Serializable interface.
 	_ util.Serializable = (*User)(nil)
 )
-
-// NewUserFromCfg creates User from config.User
-func NewUserFromCfg(cfg *config.User) *User {
-	return &User{
-		ID:         cfg.ID,
-		ConsumerID: cfg.ConsumerID,
-	}
-}
 
 // Decode implements util.Serializable interface.
 func (m *User) Decode(blob []byte) error {
@@ -38,15 +34,14 @@ func (m *User) Decode(blob []byte) error {
 		return err
 	}
 
-	m.ID = user.ID
-	m.ConsumerID = user.ConsumerID
+	m.User = user.User
 
 	return nil
 }
 
 // Encode implements util.Serializable interface.
 func (m *User) Encode() []byte {
-	blob, _ := json.Marshal(m)
+	blob, _ := json.Marshal(m.User)
 	return blob
 }
 
@@ -54,6 +49,9 @@ func (m *User) Encode() []byte {
 // If it is not return errInvalidUser.
 func (m *User) Validate() (err error) {
 	switch { // is invalid
+	case m.User == nil:
+		err = errors.New(errCodeBadRequest, "user is not present yet")
+
 	case m.ID == "":
 		err = errors.New(ErrCodeBadRequest, "user id is required")
 
@@ -65,4 +63,17 @@ func (m *User) Validate() (err error) {
 	}
 
 	return ErrInvalidUser.Wrap(err)
+}
+
+// ReadYAML reads config yaml file from path.
+func (m *User) ReadYAML(path string) error {
+	f, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer func(f *os.File) { _ = f.Close() }(f)
+
+	decoder := yaml.NewDecoder(f)
+
+	return decoder.Decode(m)
 }

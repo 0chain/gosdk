@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package magmasc;
+
+option go_package = "github.com/0chain/gosdk/zmagmacore/magmasc/pb";
+
+message User {
+  string ID = 1;  // @gotags: yaml:"id"
+  string ConsumerID = 2;  // @gotags: yaml:"consumer_id"
+}
