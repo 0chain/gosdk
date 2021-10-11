@@ -247,14 +247,14 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 func (a *Allocation) UpdateFile(localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.startChunkedUpload(localpath, remotepath, status, true, "", false, attrs)
+	return a.StartChunkedUpload(getHomeDir(), localpath, remotepath, status, true, "", false, attrs)
 }
 
 // UploadFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UploadFile(localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.startChunkedUpload(localpath, remotepath, status, false, "", false, attrs)
+	return a.StartChunkedUpload(getHomeDir(), localpath, remotepath, status, false, "", false, attrs)
 }
 
 func (a *Allocation) CreateDir(dirName string) error {
@@ -289,7 +289,7 @@ func (a *Allocation) RepairFile(localpath string, remotepath string,
 func (a *Allocation) UpdateFileWithThumbnail(localpath string, remotepath string,
 	thumbnailpath string, attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.startChunkedUpload(localpath, remotepath, status, true,
+	return a.StartChunkedUpload(getHomeDir(), localpath, remotepath, status, true,
 		thumbnailpath, false, attrs)
 }
 
@@ -298,7 +298,7 @@ func (a *Allocation) UploadFileWithThumbnail(localpath string,
 	remotepath string, thumbnailpath string, attrs fileref.Attributes,
 	status StatusCallback) error {
 
-	return a.startChunkedUpload(localpath, remotepath, status, false,
+	return a.StartChunkedUpload(getHomeDir(), localpath, remotepath, status, false,
 		thumbnailpath, false, attrs)
 }
 
@@ -306,21 +306,21 @@ func (a *Allocation) UploadFileWithThumbnail(localpath string,
 func (a *Allocation) EncryptAndUpdateFile(localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.startChunkedUpload(localpath, remotepath, status, true, "", true, attrs)
+	return a.StartChunkedUpload(getHomeDir(), localpath, remotepath, status, true, "", true, attrs)
 }
 
 // EncryptAndUploadFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUploadFile(localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.startChunkedUpload(localpath, remotepath, status, false, "", true, attrs)
+	return a.StartChunkedUpload(getHomeDir(), localpath, remotepath, status, false, "", true, attrs)
 }
 
 // EncryptAndUpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUpdateFileWithThumbnail(localpath string,
 	remotepath string, thumbnailpath string, attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.startChunkedUpload(localpath, remotepath, status, true,
+	return a.StartChunkedUpload(getHomeDir(), localpath, remotepath, status, true,
 		thumbnailpath, true, attrs)
 }
 
@@ -333,7 +333,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	status StatusCallback,
 ) error {
 
-	return a.startChunkedUpload(
+	return a.StartChunkedUpload(getHomeDir(),
 		localpath,
 		remotepath,
 		status,
@@ -344,7 +344,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	)
 }
 
-func (a *Allocation) startChunkedUpload(localPath string,
+func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	remotePath string,
 	status StatusCallback,
 	isUpdate bool,
@@ -391,10 +391,6 @@ func (a *Allocation) startChunkedUpload(localPath string,
 		RemotePath: remotePath,
 		Attributes: attrs,
 	}
-
-	//workdir = util.GetHomeDir()
-	// home dir is unsupported in our mobile devices,use TempDir instead.
-	workdir := os.TempDir()
 
 	ChunkedUpload, err := CreateChunkedUpload(workdir, a, fileMeta, fileReader, isUpdate,
 		WithThumbnailFile(thumbnailPath),
@@ -666,6 +662,36 @@ func (a *Allocation) listDir(path string, consensusThresh, fullconsensus float32
 		return ref, nil
 	}
 	return nil, errors.New("list_request_failed", "Failed to get list response from the blobbers")
+}
+
+//This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
+//TODO use allocation context
+func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
+	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
+		return nil, errors.New("invalid_path", "Invalid path for the objectTree. Absolute path required")
+	}
+	if !a.isInitialized() {
+		return nil, notInitialized
+	}
+	oTreeReq := &ObjectTreeRequest{
+		allocationID:   a.ID,
+		allocationTx:   a.Tx,
+		blobbers:       a.Blobbers,
+		remotefilepath: path,
+		pageLimit:      pageLimit,
+		level:          level,
+		offsetPath:     offsetPath,
+		updatedDate:    updatedDate,
+		offsetDate:     offsetDate,
+		fileType:       fileType,
+		refType:        refType,
+		wg:             &sync.WaitGroup{},
+		ctx:            a.ctx,
+	}
+	oTreeReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+	oTreeReq.consensusThresh = float32(a.DataShards) / oTreeReq.fullconsensus
+
+	return oTreeReq.GetRefs()
 }
 
 func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {

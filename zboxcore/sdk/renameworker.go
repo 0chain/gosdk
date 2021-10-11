@@ -67,7 +67,7 @@ func (req *RenameRequest) renameBlobberObject(blobber *blockchain.StorageNode, b
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusOK {
 			req.consensus++
-			req.renameMask |= (1 << uint32(blobberIdx))
+			req.renameMask |= (1 << uint32(blobberIdx)) //Can have race condition
 			Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " renamed.")
 		} else {
 			resp_body, err := ioutil.ReadAll(resp.Body)

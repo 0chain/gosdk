@@ -41,17 +41,16 @@ func (h *nopeHasher) WriteHashToContent(hash string, chunkIndex int) error {
 
 func BenchmarkChunkedUploadFormBuilder(b *testing.B) {
 
-	KB := 1024
-	MB := 1024 * KB
-	GB := 1024 * MB
-
 	benchmarks := []struct {
 		Name            string
-		Size            int
+		Size            int64
 		Hasher          Hasher
 		ChunkSize       int
 		EncryptOnUpload bool
 	}{
+		{Name: "1M 1K", Size: MB * 1, ChunkSize: MB * 1, EncryptOnUpload: false, Hasher: CreateHasher(KB * 1)},
+		{Name: "1M 64K", Size: MB * 1, ChunkSize: KB * 64, EncryptOnUpload: false, Hasher: CreateHasher(KB * 64)},
+
 		{Name: "10M 64K", Size: MB * 10, ChunkSize: KB * 64, EncryptOnUpload: false, Hasher: CreateHasher(KB * 64)},
 		{Name: "10M 6M", Size: MB * 10, ChunkSize: MB * 6, EncryptOnUpload: false, Hasher: CreateHasher(KB * 64)},
 		// {Name: "10M 64K NoHash", Size: MB * 10, ChunkSize: KB * 64, EncryptOnUpload: false, Hasher: &nopeHasher{}},
@@ -96,8 +95,8 @@ func BenchmarkChunkedUploadFormBuilder(b *testing.B) {
 
 				hasher := CreateHasher(bm.ChunkSize)
 				for chunkIndex := 0; ; chunkIndex++ {
-					begin := chunkIndex * bm.ChunkSize
-					end := chunkIndex*bm.ChunkSize + bm.ChunkSize
+					begin := int64(chunkIndex * bm.ChunkSize)
+					end := int64(chunkIndex*bm.ChunkSize + bm.ChunkSize)
 					if end > bm.Size {
 						end = bm.Size
 						isFinal = true

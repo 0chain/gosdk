@@ -11,19 +11,20 @@ import (
 
 func BenchmarkChunkedUploadChunkReader(b *testing.B) {
 
-	KB := 1024
-	MB := 1024 * KB
-	//	GB := 1024 * MB
-
 	benchmarks := []struct {
 		Name string
-		Size int
+		Size int64
 
 		ChunkSize       int
 		DataShards      int
 		ParityShards    int
 		EncryptOnUpload bool
 	}{
+		{Name: "1M 1K 2+1", Size: MB * 1, ChunkSize: KB * 1, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+		{Name: "1M 1K 10+1", Size: MB * 1, ChunkSize: KB * 1, DataShards: 10, ParityShards: 3, EncryptOnUpload: false},
+		{Name: "1M 64K 2+1", Size: MB * 1, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
+		{Name: "1M 64K 10+1", Size: MB * 1, ChunkSize: KB * 64, DataShards: 10, ParityShards: 3, EncryptOnUpload: false},
+
 		{Name: "10M 64K 2+1", Size: MB * 10, ChunkSize: KB * 64, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
 		{Name: "10M 64K 10+1", Size: MB * 10, ChunkSize: KB * 64, DataShards: 10, ParityShards: 3, EncryptOnUpload: false},
 		{Name: "10M 6M 2+1", Size: MB * 10, ChunkSize: MB * 6, DataShards: 2, ParityShards: 1, EncryptOnUpload: false},
@@ -62,7 +63,7 @@ func BenchmarkChunkedUploadChunkReader(b *testing.B) {
 				}
 
 				encscheme.InitForEncryption("filetype:audio")
-				reader, err := createChunkReader(bytes.NewReader(buf), int64(bm.ChunkSize), bm.DataShards, bm.EncryptOnUpload, uploadMask, erasureEncoder, encscheme, CreateHasher(bm.ChunkSize))
+				reader, err := createChunkReader(bytes.NewReader(buf), int64(bm.Size), int64(bm.ChunkSize), bm.DataShards, bm.EncryptOnUpload, uploadMask, erasureEncoder, encscheme, CreateHasher(bm.ChunkSize))
 				if err != nil {
 					b.Fatal(err)
 				}

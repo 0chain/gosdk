@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/0chain/errors"
@@ -52,6 +53,7 @@ const (
 	FILE_META_ENDPOINT       = "/v1/file/meta/"
 	FILE_STATS_ENDPOINT      = "/v1/file/stats/"
 	OBJECT_TREE_ENDPOINT     = "/v1/file/objecttree/"
+	REFS_ENDPOINT            = "/v1/file/refs/"
 	COMMIT_META_TXN_ENDPOINT = "/v1/file/commitmetatxn/"
 	COLLABORATOR_ENDPOINT    = "/v1/file/collaborator/"
 	CALCULATE_HASH_ENDPOINT  = "/v1/file/calculatehash/"
@@ -238,6 +240,34 @@ func NewObjectTreeRequest(baseUrl, allocation string, path string) (*http.Reques
 	}
 
 	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+func NewRefsRequest(baseUrl, allocationID, path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*http.Request, error) {
+	nUrl, err := url.Parse(baseUrl)
+	if err != nil {
+		return nil, err
+	}
+	nUrl.Path += REFS_ENDPOINT + allocationID
+	params := url.Values{}
+	params.Add("path", path)
+	params.Add("offsetPath", offsetPath)
+	params.Add("pageLimit", strconv.Itoa(pageLimit))
+	params.Add("updatedDate", updatedDate)
+	params.Add("offsetDate", offsetDate)
+	params.Add("type", fileType)
+	params.Add("refType", refType)
+	params.Add("level", strconv.Itoa(level))
+	nUrl.RawQuery = params.Encode()
+	req, err := http.NewRequest(http.MethodGet, nUrl.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocationID); err != nil {
 		return nil, err
 	}
 
