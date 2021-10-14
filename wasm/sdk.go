@@ -41,6 +41,11 @@ type Config struct {
 /*Configuration of the system */
 var Configuration Config
 
+/*NewError - create a new error */
+func NewError(code string, msg string) *Error {
+	return &Error{Code: code, Msg: msg}
+}
+
 // Ported from `code/go/0proxy.io/zproxycore/zproxy/main.go`
 func InitializeConfig(this js.Value, p []js.Value) interface{} {
 	err := json.Unmarshal([]byte(p[0].String()), &Configuration)
