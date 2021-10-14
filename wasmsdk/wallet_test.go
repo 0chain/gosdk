@@ -1,4 +1,4 @@
-package wasm
+package main
 
 import (
 	"encoding/json"
@@ -9,7 +9,7 @@ import (
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/wasm/httpwasm"
+	"github.com/0chain/gosdk/wasmsdk/httpwasm"
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/stretchr/testify/assert"
 )

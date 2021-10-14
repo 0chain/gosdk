@@ -1,7 +1,7 @@
 //go:build minver
 // +build minver
 
-package wasm
+package main
 
 import (
 	"fmt"

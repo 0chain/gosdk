@@ -1,4 +1,4 @@
-package wasm
+package main
 
 import (
 	"encoding/json"
@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/wasm/httpwasm"
+	"github.com/0chain/gosdk/wasmsdk/httpwasm"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"

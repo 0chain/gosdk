@@ -56,18 +56,18 @@ It is possible to support the sdk for other variations of Linux as well.
 ## How to export a gosdk function to WebAssembly ##
 
 Examples:
-* `wasm/ethwallet.go` which exports the functions in `zcncore/ethwallet.go`.
-* `wasm/wallet.go` which exports one function in `zcncore/wallet.go`.
+* `wasmsdk/ethwallet.go` which exports the functions in `zcncore/ethwallet.go`.
+* `wasmsdk/wallet.go` which exports one function in `zcncore/wallet.go`.
 
 Steps:
 
 1. If you are exporting:
   
-    - a new function from `zcncore/wallet.go`, you should add to `wasm/wallet.go`
+    - a new function from `zcncore/wallet.go`, you should add to `wasmsdk/wallet.go`
   
-    - a function from a new file, you should create a new `<filename>.go` file for it, in the same style as `wasm/wallet.go` or `wasm/ethwallet.go`
+    - a function from a new file, you should create a new `<filename>.go` file for it, in the same style as `wasmsdk/wallet.go` or `wasmsdk/ethwallet.go`
 
-2. In func main(), `https://github.com/0chain/gosdk/wasm/proxy.go`, you need to add this line:
+2. In func main(), `https://github.com/0chain/gosdk/wasmsdk/proxy.go`, you need to add this line:
 
     ```golang
         js.Global().Set("YOURFUNC", js.FuncOf(YOURFUNC))
@@ -76,13 +76,13 @@ Steps:
 3. Now you need to compile a new `<any_name>.wasm` (e.g. proxy.wasm). The command is currently: 
 
     ```bash
-    $ GOOS=js CGO_ENABLED=0 GOARCH=wasm go build -o <any_name>.wasm github.com/0chain/gosdk/wasm
+    $ GOOS=js CGO_ENABLED=0 GOARCH=wasm go build -o <any_name>.wasm github.com/0chain/gosdk/wasmsdk
     ```
 
 4. You can compile a minimum version by adding tags `-minver`, for example:
 
     ```bash
-    $ CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -tags minver -o min.wasm github.com/0chain/gosdk/wasm
+    $ CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -tags minver -o min.wasm github.com/0chain/gosdk/wasmsdk
     ```
 
 ### An important note regarding export of a async function

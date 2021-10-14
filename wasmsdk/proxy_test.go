@@ -1,4 +1,4 @@
-package wasm
+package main
 
 import (
 	"fmt"
@@ -10,7 +10,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/stretchr/testify/assert"
 
-	"github.com/0chain/gosdk/wasm/httpwasm"
+	"github.com/0chain/gosdk/wasmsdk/httpwasm"
 )
 
 // var server *httptest.Server

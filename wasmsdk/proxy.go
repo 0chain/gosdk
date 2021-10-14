@@ -2,7 +2,7 @@
 // +build wasm
 // +build !minver
 
-package wasm
+package main
 
 import (
 	"fmt"
@@ -16,8 +16,6 @@ import (
 
 func main() {
 	fmt.Printf("0CHAIN - GOSDK (version=%v)\n", version.VERSIONSTR)
-
-	c := make(chan struct{}, 0)
 
 	// Just functions for 0proxy.
 	js.Global().Set("Upload", js.FuncOf(Upload))
@@ -135,5 +133,5 @@ func main() {
 	js.Global().Set("GetAllocationMinLock", js.FuncOf(GetAllocationMinLock))
 	js.Global().Set("SetNumBlockDownloads", js.FuncOf(SetNumBlockDownloads))
 
-	<-c
+	<-make(chan bool)
 }

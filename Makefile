@@ -27,10 +27,10 @@ gosdk-build: gomod-download
 	go build -x -v -tags bn256 ./...
 
 wasm-build:
-	CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -o sdk.wasm github.com/0chain/gosdk/wasm
+	CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -o sdk.wasm github.com/0chain/gosdk/wasmsdk
      
 wasm-test:
-	CGO_ENABLED=0 GOOS=js GOARCH=wasm go test -v github.com/0chain/gosdk/wasm
+	CGO_ENABLED=0 GOOS=js GOARCH=wasm go test -v github.com/0chain/gosdk/wasmsdk
 
 gosdk-mocks:
 	./generate_mocks.sh
