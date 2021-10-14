@@ -10,7 +10,7 @@ import (
 	"github.com/0chain/gosdk/core/version"
 )
 
-func init() {
+func main() {
 	fmt.Printf("0CHAIN - GOSDK COMPACT (version=%v)\n", version.VERSIONSTR)
 
 	c := make(chan struct{}, 0)

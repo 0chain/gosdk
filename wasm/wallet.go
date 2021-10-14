@@ -472,7 +472,13 @@ func GetWallet(this js.Value, p []js.Value) interface{} {
 			"error": "Cannot get wallet",
 		}
 	}
-	return result
+	w, err := json.Marshal(result)
+	if err != nil {
+		return map[string]interface{}{
+			"error": "Cannot Marshall wallet",
+		}
+	}
+	return string(w)
 }
 
 func GetWalletClientID(this js.Value, p []js.Value) interface{} {
@@ -556,9 +562,19 @@ func SetupAuth(this js.Value, p []js.Value) interface{} {
 
 func GetIdForUrl(this js.Value, p []js.Value) interface{} {
 	url := p[0].String()
-	result := zcncore.GetIdForUrl(url)
+	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		resolve := args[0]
 
-	return result
+		go func() {
+			err := zcncore.GetIdForUrl(url)
+			resolve.Invoke(err)
+		}()
+
+		return nil
+	})
+
+	promiseConstructor := js.Global().Get("Promise")
+	return promiseConstructor.New(handler)
 }
 
 func GetVestingPoolInfo(this js.Value, p []js.Value) interface{} {

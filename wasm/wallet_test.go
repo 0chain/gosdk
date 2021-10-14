@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"syscall/js"
 	"testing"
+	"time"
 
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/wasm/httpwasm"
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/stretchr/testify/assert"
@@ -157,5 +160,211 @@ func TestWasmWallet(t *testing.T) {
 		defer isMnemonicValid.Release()
 
 		assert.Equal(t, true, isMnemonicValid.Invoke(validMnemonic).Bool())
+	})
+
+	t.Run("Test GetBalance", func(t *testing.T) {
+		getBalance := js.FuncOf(GetBalance)
+		defer getBalance.Release()
+
+		result, err := await(getBalance.Invoke())
+
+		assert.Equal(t, true, err[0].IsNull())
+		assert.Equal(t, 1000, result[0].Get("value").Int())
+		assert.Equal(t, `{"balance":1000}`, result[0].Get("info").String())
+	})
+
+	t.Run("Test GetBalanceWallet", func(t *testing.T) {
+		getBalanceWallet := js.FuncOf(GetBalanceWallet)
+		defer getBalanceWallet.Release()
+
+		jsWallet := js.Global().Call("eval", fmt.Sprintf(`({wallet: %#v})`, walletConfig))
+		wallet := jsWallet.Get("wallet")
+
+		result, err := await(getBalanceWallet.Invoke(wallet))
+
+		assert.Equal(t, true, err[0].IsNull())
+		assert.Equal(t, 1000, result[0].Get("value").Int())
+		assert.Equal(t, `{"balance":1000}`, result[0].Get("info").String())
+	})
+
+	t.Run("Test GetLockConfig", func(t *testing.T) {
+		getLockConfig := js.FuncOf(GetLockConfig)
+		defer getLockConfig.Release()
+
+		result, err := await(getLockConfig.Invoke())
+
+		assert.Equal(t, true, err[0].IsNull())
+		assert.Equal(t, 0, result[0].Get("op").Int())
+		assert.Equal(t, `{"balance":1000}`, result[0].Get("info").String())
+	})
+
+	t.Run("Test GetLockedTokens", func(t *testing.T) {
+		getLockedTokens := js.FuncOf(GetLockedTokens)
+		defer getLockedTokens.Release()
+
+		result, err := await(getLockedTokens.Invoke())
+
+		assert.Equal(t, true, err[0].IsNull())
+		assert.Equal(t, 1, result[0].Get("op").Int())
+		assert.Equal(t, `{"balance":1000}`, result[0].Get("info").String())
+	})
+
+	t.Run("Test GetWallet", func(t *testing.T) {
+		getWallet := js.FuncOf(GetWallet)
+		defer getWallet.Release()
+
+		jsWallet := js.Global().Call("eval", fmt.Sprintf(`({wallet: %#v})`, walletConfig))
+		wallet := jsWallet.Get("wallet")
+
+		result := getWallet.Invoke(wallet)
+
+		var w zcncrypto.Wallet
+		res := result.String()
+
+		assert.Empty(t, json.Unmarshal([]byte(res), &w))
+		assert.Equal(t, "40cd10039913ceabacf05a7c60e1ad69bb2964987bc50f77495e514dc451f907c3d8ebcdab20eedde9c8f39b9a1d66609a637352f318552fb69d4b3672516d1a", w.ClientKey)
+	})
+
+	t.Run("Test GetWalletClientID", func(t *testing.T) {
+		getWalletClientID := js.FuncOf(GetWalletClientID)
+		defer getWalletClientID.Release()
+
+		jsWallet := js.Global().Call("eval", fmt.Sprintf(`({wallet: %#v})`, walletConfig))
+		wallet := jsWallet.Get("wallet")
+
+		result := getWalletClientID.Invoke(wallet).String()
+
+		assert.Equal(t, "9a566aa4f8e8c342fed97c8928040a21f21b8f574e5782c28568635ba9c75a85", result)
+	})
+
+	t.Run("Test SetupAuth", func(t *testing.T) {
+		setupAuth := js.FuncOf(SetupAuth)
+		defer setupAuth.Release()
+
+		server := httpwasm.NewDefaultServer()
+		defer server.Close()
+
+		jsAuth := js.Global().Call("eval", fmt.Sprintf(`({auth_host: %#v,client_id: "9a566aa4f8e8c342fed97c8928040a21f21b8f574e5782c28568635ba9c75a85", client_key: "40cd10039913ceabacf05a7c60e1ad69bb2964987bc50f77495e514dc451f907c3d8ebcdab20eedde9c8f39b9a1d66609a637352f318552fb69d4b3672516d1a", public_key: "041eeb1b4eb9b2456799d8e2a566877e83bc5d76ff38b964bd4b7796f6a6ccae6f1966a4d91d362669fafa3d95526b132a6341e3dfff6447e0e76a07b3a7cfa6e8034574266b382b8e5174477ab8a32a49a57eda74895578031cd2d41fd0aef446046d6e633f5eb68a93013dfac1420bf7a1e1bf7a87476024478e97a1cc115de9", private_key: "18c09c2639d7c8b3f26b273cdbfddf330c4f86c2ac3030a6b9a8533dc0c91f5e", peer_public_key: "041eeb1b4eb9b2456799d8e2a566877e83bc5d76ff38b964bd4b7796f6a6ccae6f1966a4d91d362669fafa3d95526b132a6341e3dfff6447e0e76a07b3a7cfa6e8034574266b382b8e5174477ab8a32a49a57eda74895578031cd2d41fd0aef446046d6e633f5eb68a93013dfac1420bf7a1e1bf7a87476024478e97a1cc115de9"})`, server.URL+"/"))
+
+		authHost := jsAuth.Get("auth_host")
+		clientID := jsAuth.Get("client_id")
+		clientKey := jsAuth.Get("client_key")
+		publicKey := jsAuth.Get("public_key")
+		privateKey := jsAuth.Get("private_key")
+		peerPublicKey := jsAuth.Get("peer_public_key")
+
+		result, err := await(setupAuth.Invoke(authHost, clientID, clientKey, publicKey, privateKey, peerPublicKey))
+
+		assert.Equal(t, true, err[0].IsNull())
+		assert.Equal(t, 0, result[0].Get("status").Int())
+		assert.Empty(t, result[0].Get("err").String())
+	})
+
+	t.Run("Test GetIdForUrl", func(t *testing.T) {
+		getIdForUrl := js.FuncOf(GetIdForUrl)
+		defer getIdForUrl.Release()
+
+		server := httpwasm.NewDefaultServer()
+		defer server.Close()
+
+		jsAuth := js.Global().Call("eval", fmt.Sprintf(`({url: %#v})`, server.URL+"/"))
+
+		url := jsAuth.Get("url")
+
+		result, _ := await(getIdForUrl.Invoke(url))
+
+		assert.Equal(t, "9a566aa4f8e8c342fed97c8928040a21f21b8f574e5782c28568635ba9c75a85", result[0].String())
+	})
+
+	t.Run("Test GetVestingPoolInfo", func(t *testing.T) {
+		getVestingPoolInfo := js.FuncOf(GetVestingPoolInfo)
+		defer getVestingPoolInfo.Release()
+
+		jsPoolID := js.Global().Call("eval", fmt.Sprintf(`({poolID: %#v})`, httpwasm.GetMockId(1)))
+		PoolID := jsPoolID.Get("poolID")
+
+		result, err := await(getVestingPoolInfo.Invoke(PoolID))
+
+		assert.Equal(t, true, err[0].IsNull())
+		assert.Equal(t, 0, result[0].Get("op").Int())
+		assert.Equal(t, httpwasm.GetMockId(1), result[0].Get("info").String())
+	})
+
+	t.Run("Test GetVestingClientList", func(t *testing.T) {
+		getVestingClientList := js.FuncOf(GetVestingClientList)
+		defer getVestingClientList.Release()
+		jsClientID := js.Global().Call("eval", fmt.Sprintf(`({clientID: %#v})`, httpwasm.GetMockId(0)))
+		clientID := jsClientID.Get("clientID")
+
+		result, err := await(getVestingClientList.Invoke(clientID))
+
+		assert.Equal(t, true, err[0].IsNull())
+		assert.Equal(t, 0, result[0].Get("op").Int())
+		assert.Equal(t, httpwasm.GetMockId(0), result[0].Get("info").String())
+	})
+
+	t.Run("Test GetVestingSCConfig", func(t *testing.T) {
+		getVestingSCConfig := js.FuncOf(GetVestingSCConfig)
+		defer getVestingSCConfig.Release()
+
+		scconfig := zcncore.VestingSCConfig{
+			MinLock:              common.Balance(2000),
+			MinDuration:          time.Duration(time.Hour),
+			MaxDuration:          time.Duration(time.Hour * 48),
+			MaxDestinations:      20,
+			MaxDescriptionLength: 100,
+		}
+
+		result, err := await(getVestingSCConfig.Invoke())
+		sc := result[0].Get("info").String()
+
+		var resp zcncore.VestingSCConfig
+
+		assert.Equal(t, true, err[0].IsNull())
+		assert.Empty(t, json.Unmarshal([]byte(sc), &resp))
+		assert.Equal(t, 0, result[0].Get("op").Int())
+		assert.Equal(t, scconfig, resp)
+	})
+
+	t.Run("Test GetMiners", func(t *testing.T) {
+		getMiners := js.FuncOf(GetMiners)
+		defer getMiners.Release()
+
+		result, err := await(getMiners.Invoke())
+		minerArr := result[0].Get("info").String()
+
+		assert.Equal(t, true, err[0].IsNull())
+		assert.Equal(t, 0, result[0].Get("op").Int())
+		assert.Equal(t, "[\"127.0.0.1:1/miner01\",\"127.0.0.1:1/miner02\"]", minerArr)
+	})
+
+	t.Run("Test GetSharders", func(t *testing.T) {
+		getSharders := js.FuncOf(GetSharders)
+		defer getSharders.Release()
+
+		result, err := await(getSharders.Invoke())
+		sharderArr := result[0].Get("info").String()
+
+		assert.Equal(t, true, err[0].IsNull())
+		assert.Equal(t, 0, result[0].Get("op").Int())
+		assert.Equal(t, "[\"127.0.0.1:1/sharder01\",\"127.0.0.1:1/sharder02\"]", sharderArr)
+	})
+
+	t.Run("Test GetMinerSCNodeInfo", func(t *testing.T) {
+		getMinerSCNodeInfo := js.FuncOf(GetMinerSCNodeInfo)
+		defer getMinerSCNodeInfo.Release()
+
+		jsID := js.Global().Call("eval", fmt.Sprintf(`({id: %#v})`, httpwasm.GetMockId(100)))
+		id := jsID.Get("id")
+
+		result, err := await(getMinerSCNodeInfo.Invoke(id))
+		msc := result[0].Get("info").String()
+
+		var resp zcncore.MinerSCNodes
+
+		assert.Equal(t, true, err[0].IsNull())
+		assert.Empty(t, json.Unmarshal([]byte(msc), &resp))
+		assert.Equal(t, 0, result[0].Get("op").Int())
+		assert.Equal(t, httpwasm.GetMockId(100), resp.Nodes[1].Miner.ID)
 	})
 }

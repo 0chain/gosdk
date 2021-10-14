@@ -2,6 +2,7 @@ package httpwasm
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -304,6 +305,70 @@ func allocationMinLock(w http.ResponseWriter, req *http.Request) {
 	respondWithJSON(w, http.StatusOK, response)
 }
 
+func sharderGetBalance(w http.ResponseWriter, req *http.Request) {
+	v := req.URL.Query()
+	client_id := v.Get("client_id")
+
+	var response = make(map[string]int64)
+
+	fmt.Println("client_id:" + client_id)
+	response["balance"] = 1000
+
+	respondWithJSON(w, http.StatusOK, response)
+}
+
+func vestingPoolInfo(w http.ResponseWriter, req *http.Request) {
+	v := req.URL.Query()
+	pool_id := v.Get("pool_id")
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(pool_id))
+}
+
+func getClientPools(w http.ResponseWriter, req *http.Request) {
+	v := req.URL.Query()
+	client_id := v.Get("client_id")
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(client_id))
+}
+
+func getVestingSCConfig(w http.ResponseWriter, req *http.Request) {
+	scconfig := zcncore.VestingSCConfig{
+		MinLock:              common.Balance(2000),
+		MinDuration:          time.Duration(time.Hour),
+		MaxDuration:          time.Duration(time.Hour * 48),
+		MaxDestinations:      20,
+		MaxDescriptionLength: 100,
+	}
+
+	respondWithJSON(w, http.StatusOK, scconfig)
+}
+
+func getMinerList(w http.ResponseWriter, req *http.Request) {
+	minerArray := []string{"127.0.0.1:1/miner01", "127.0.0.1:1/miner02"}
+	respondWithJSON(w, http.StatusOK, minerArray)
+}
+
+func getSharderList(w http.ResponseWriter, req *http.Request) {
+	minerArray := []string{"127.0.0.1:1/sharder01", "127.0.0.1:1/sharder02"}
+	respondWithJSON(w, http.StatusOK, minerArray)
+}
+
+func getNodeStat(w http.ResponseWriter, req *http.Request) {
+	v := req.URL.Query()
+	id := v.Get("id")
+
+	var scn zcncore.MinerSCNodes
+	scn.Nodes = append(scn.Nodes, zcncore.Node{Miner: zcncore.Miner{ID: GetMockId(1)}})
+	scn.Nodes = append(scn.Nodes, zcncore.Node{Miner: zcncore.Miner{ID: id}})
+	scn.Nodes = append(scn.Nodes, zcncore.Node{Miner: zcncore.Miner{ID: GetMockId(1000)}})
+
+	respondWithJSON(w, http.StatusOK, scn)
+}
+
 // Server API
 func getNetwork(w http.ResponseWriter, req *http.Request) {
 	n := zcncore.Network{Miners: blockchain.GetMiners(), Sharders: blockchain.GetSharders()}
@@ -331,4 +396,10 @@ func commitToFabric(w http.ResponseWriter, req *http.Request) {
 	if user == "TEST" && pass == "TEST" {
 		respondWithJSON(w, http.StatusOK, fabricMockConfig)
 	}
+}
+
+func setupAuthHost(w http.ResponseWriter, req *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("ID,200,OK,9a566aa4f8e8c342fed97c8928040a21f21b8f574e5782c28568635ba9c75a85"))
 }
