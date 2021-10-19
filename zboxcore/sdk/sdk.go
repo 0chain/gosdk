@@ -1196,3 +1196,12 @@ func GetAllocationMinLock(datashards, parityshards int, size, expiry int64,
 	}
 	return response["min_lock_demand"], nil
 }
+
+func getHomeDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return os.TempDir()
+	}
+
+	return home
+}
