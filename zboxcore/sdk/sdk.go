@@ -95,6 +95,8 @@ func InitStorageSDK(walletJSON string, blockWorker, chainID, signatureScheme str
 		return err
 	}
 
+	initZBox(client.GetClient(), signatureScheme)
+
 	blockchain.SetChainID(chainID)
 	blockchain.SetPreferredBlobbers(preferredBlobbers)
 	blockchain.SetBlockWorker(blockWorker)

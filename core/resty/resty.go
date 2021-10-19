@@ -2,7 +2,9 @@
 package resty
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"net/http"
 	"time"
 )
@@ -57,9 +59,10 @@ type Resty struct {
 	qty        int
 	done       chan Result
 
-	transport *http.Transport
-	client    Client
-	handle    Handle
+	transport  *http.Transport
+	client     Client
+	handle     Handle
+	beforeSend func(req *http.Request)
 
 	timeout time.Duration
 	retry   int
@@ -68,13 +71,43 @@ type Resty struct {
 
 // DoGet execute http requests with GET method in parallel
 func (r *Resty) DoGet(ctx context.Context, urls ...string) {
+	r.Do(ctx, http.MethodGet, nil, urls...)
+}
+
+// DoPost execute http requests with POST method in parallel
+func (r *Resty) DoPost(ctx context.Context, body *bytes.Buffer, urls ...string) {
+	r.Do(ctx, http.MethodPost, body, urls...)
+}
+
+// DoPut execute http requests with PUT method in parallel
+func (r *Resty) DoPut(ctx context.Context, body *bytes.Buffer, urls ...string) {
+	r.Do(ctx, http.MethodPut, body, urls...)
+}
+
+// DoDelete execute http requests with DELETE method in parallel
+func (r *Resty) DoDelete(ctx context.Context, urls ...string) {
+	r.Do(ctx, http.MethodDelete, nil, urls...)
+}
+
+func (r *Resty) Do(ctx context.Context, method string, body *bytes.Buffer, urls ...string) {
 	r.ctx, r.cancelFunc = context.WithCancel(ctx)
 
 	r.qty = len(urls)
 	r.done = make(chan Result, r.qty)
 
+	var bodyReader io.Reader = nil
+	if body != nil {
+		bodyReader = body
+	}
+
 	for _, url := range urls {
-		req, err := http.NewRequest(http.MethodGet, url, nil)
+
+		req, err := http.NewRequest(method, url, bodyReader)
+		if err != nil {
+			r.done <- Result{Request: req, Response: nil, Err: err}
+			continue
+		}
+
 		for key, value := range r.header {
 			req.Header.Set(key, value)
 		}
@@ -82,16 +115,12 @@ func (r *Resty) DoGet(ctx context.Context, urls ...string) {
 		req.Close = true
 		req.Header.Set("Connection", "close")
 
-		if err != nil {
-
-			r.done <- Result{Request: req, Response: nil, Err: err}
-
-			continue
+		if r.beforeSend != nil {
+			r.beforeSend(req)
 		}
 
 		go r.httpDo(req)
 	}
-
 }
 
 func (r *Resty) httpDo(req *http.Request) {
@@ -109,7 +138,7 @@ func (r *Resty) httpDo(req *http.Request) {
 		if r.retry > 0 {
 			for i := 1; ; i++ {
 				resp, err = r.client.Do(req)
-				if resp != nil && resp.StatusCode == 200 {
+				if resp != nil && (resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated) {
 					break
 				}
 				// close body ReadClose to release resource before retrying it
@@ -122,6 +151,15 @@ func (r *Resty) httpDo(req *http.Request) {
 
 				if i == r.retry {
 					break
+				}
+
+				if resp != nil && resp.StatusCode == http.StatusTooManyRequests {
+					time.Sleep(1 * time.Second)
+				}
+
+				if (req.Method == http.MethodPost || req.Method == http.MethodPut) && req.Body != nil {
+					// rebuild io.ReadCloser to fix https://github.com/golang/go/issues/36095
+					req.Body, _ = req.GetBody()
 				}
 			}
 		} else {
@@ -180,5 +218,4 @@ func (r *Resty) Wait() []error {
 		}
 
 	}
-
 }

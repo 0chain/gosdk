@@ -243,6 +243,17 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 	}
 }
 
+// getBlobberUrls get url from StorageNode
+func (a *Allocation) getBlobberUrls() []string {
+	urls := make([]string, len(a.Blobbers))
+
+	for k, v := range a.Blobbers {
+		urls[k] = v.Baseurl
+	}
+
+	return urls
+}
+
 // UpdateFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UpdateFile(localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
@@ -257,25 +268,9 @@ func (a *Allocation) UploadFile(localpath string, remotepath string,
 	return a.startChunkedUpload(localpath, remotepath, status, false, "", false, attrs)
 }
 
+// CreateDir [Deprecated]please use sdks.CreateDir
 func (a *Allocation) CreateDir(dirName string) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	if len(dirName) == 0 {
-		return errors.New("invalid_name", "Invalid name for dir")
-	}
-
-	dirName = zboxutil.RemoteClean(dirName)
-	req := DirRequest{}
-	req.action = "create"
-	req.allocationID = a.ID
-	req.connectionID = zboxutil.NewConnectionId()
-	req.ctx = a.ctx
-	req.name = dirName
-
-	err := req.ProcessDir(a)
-	return err
+	return CreateDir(context.TODO(), a.ID, dirName)
 }
 
 func (a *Allocation) RepairFile(localpath string, remotepath string,

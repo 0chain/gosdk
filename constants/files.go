@@ -8,6 +8,4 @@ const (
 	FileOperationRename      = "rename"
 	FileOperationCopy        = "copy"
 	FileOperationUpdateAttrs = "update_attrs"
-
-	FileOperationCreateDir = "createdir"
 )

@@ -114,7 +114,9 @@ func GetReferenceLookup(allocationID string, path string) string {
 
 func (r *Ref) CalculateHash() string {
 	if len(r.Children) == 0 && !r.childrenLoaded {
-		return r.Hash
+		// skip empty directory in hash
+		return ""
+		//return r.Hash
 	}
 	sort.SliceStable(r.Children, func(i, j int) bool {
 		return strings.Compare(GetReferenceLookup(r.AllocationID, r.Children[i].GetPath()), GetReferenceLookup(r.AllocationID, r.Children[j].GetPath())) == -1
@@ -122,25 +124,25 @@ func (r *Ref) CalculateHash() string {
 	for _, childRef := range r.Children {
 		childRef.CalculateHash()
 	}
-	childHashes := make([]string, len(r.Children))
-	childPathHashes := make([]string, len(r.Children))
+	childHashes := make([]string, 0, len(r.Children))
+	childPathHashes := make([]string, 0, len(r.Children))
 	var refNumBlocks int64
 	var size int64
-	for index, childRef := range r.Children {
-		childHashes[index] = childRef.GetHash()
-		childPathHashes[index] = childRef.GetPathHash()
-		refNumBlocks += childRef.GetNumBlocks()
-		size += childRef.GetSize()
+	for _, childRef := range r.Children {
+		if len(childRef.GetHash()) > 0 {
+			childHashes = append(childHashes, childRef.GetHash())
+			childPathHashes = append(childPathHashes, childRef.GetPathHash())
+
+			refNumBlocks += childRef.GetNumBlocks()
+			size += childRef.GetSize()
+		}
 	}
-	// fmt.Println("ref name and path, hash :" + r.Name + " " + r.Path + " " + r.Hash)
-	// fmt.Println("ref hash data: " + strings.Join(childHashes, ":"))
+
 	r.Hash = encryption.Hash(strings.Join(childHashes, ":"))
-	// fmt.Println("ref hash : " + r.Hash)
 
 	r.NumBlocks = refNumBlocks
 	r.Size = size
 
-	//fmt.Println("Ref Path hash: " + strings.Join(childPathHashes, ":"))
 	r.PathHash = encryption.Hash(strings.Join(childPathHashes, ":"))
 
 	return r.Hash

@@ -14,5 +14,23 @@ var (
 	ErrUnableWriteFile = errors.New("unable to write file")
 
 	// ErrNotImplemented feature/method is not implemented yet
-	ErrNotImplemented = errors.New("Not Implemented")
+	ErrNotImplemented = errors.New("not implemented")
+
+	// ErrInvalidOperation failed to invoke a method
+	ErrInvalidOperation = errors.New("invalid operation")
+
+	// ErrBadRequest bad request
+	ErrBadRequest = errors.New("bad request")
+
+	// ErrUnknown unknown exception
+	ErrUnknown = errors.New("unknown")
+
+	// ErrBadDatabaseOperation unknown exception for db
+	ErrBadDatabaseOperation = errors.New("bad db")
+
+	// ErrInternal an unknown internal server error
+	ErrInternal = errors.New("internal")
+
+	// ErrEntityNotFound entity can't found in db
+	ErrEntityNotFound = errors.New("entity not found")
 )

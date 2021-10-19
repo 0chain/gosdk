@@ -493,20 +493,6 @@ func NewDeleteRequest(baseUrl, allocation string, body io.Reader) (*http.Request
 	return req, nil
 }
 
-func NewCreateDirRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, DIR_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodPost, url, body)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := setClientInfoWithSign(req, allocation); err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 func NewShareRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, SHARE_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodPost, url, body)
