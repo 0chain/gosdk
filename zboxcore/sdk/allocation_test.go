@@ -465,44 +465,6 @@ func TestAllocation_isInitialized(t *testing.T) {
 	}
 }
 
-func TestAllocation_CreateDir(t *testing.T) {
-	const mockLocalPath = "/test"
-	require := require.New(t)
-	if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
-		defer teardown(t)
-	}
-	a := &Allocation{
-		ParityShards: 2,
-		DataShards:   2,
-	}
-	setupMockAllocation(t, a)
-
-	var mockClient = mocks.HttpClient{}
-	zboxutil.Client = &mockClient
-
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
-
-	mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-		return strings.HasPrefix(req.URL.Path, "TestAllocation_CreateDir")
-	})).Return(&http.Response{
-		StatusCode: http.StatusBadRequest,
-		Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
-	}, nil)
-
-	for i := 0; i < numBlobbers; i++ {
-		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
-			ID:      mockBlobberId + strconv.Itoa(i),
-			Baseurl: "TestAllocation_CreateDir" + mockBlobberUrl + strconv.Itoa(i),
-		})
-	}
-	err := a.CreateDir(mockLocalPath)
-	require.NoErrorf(err, "Unexpected error %v", err)
-}
-
 func TestAllocation_RepairFile(t *testing.T) {
 	const (
 		mockFileRefName = "mock file ref name"
