@@ -64,7 +64,7 @@ clean: clean-gosdk clean-herumi
 	@rm -rf $(OUTDIR)
 
 lint-wasm:
-	GOOS=js GOARCH=wasm CGO_ENABLED=0 golangci-lint run --disable-all -E errcheck run wasmsdk 
+	GOOS=js GOARCH=wasm CGO_ENABLED=0 golangci-lint run wasmsdk --disable-all -E errcheck
 
 lint: lint-wasm
 	golangci-lint run --skip-dirs wasmsdk
