@@ -294,38 +294,39 @@ func (a *Allocation) UpdateFileWithThumbnail(localpath string, remotepath string
 }
 
 // UploadFileWithThumbnail [Deprecated]please use CreateChunkedUpload
-func (a *Allocation) UploadFileWithThumbnail(localpath string,
+func (a *Allocation) UploadFileWithThumbnail(tmpPath string, localpath string,
 	remotepath string, thumbnailpath string, attrs fileref.Attributes,
 	status StatusCallback) error {
 
-	return a.StartChunkedUpload(getHomeDir(), localpath, remotepath, status, false,
+	return a.StartChunkedUpload(tmpPath, localpath, remotepath, status, false,
 		thumbnailpath, false, attrs)
 }
 
 // EncryptAndUpdateFile [Deprecated]please use CreateChunkedUpload
-func (a *Allocation) EncryptAndUpdateFile(localpath string, remotepath string,
+func (a *Allocation) EncryptAndUpdateFile(tmpPath string, localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.StartChunkedUpload(getHomeDir(), localpath, remotepath, status, true, "", true, attrs)
+	return a.StartChunkedUpload(tmpPath, localpath, remotepath, status, true, "", true, attrs)
 }
 
 // EncryptAndUploadFile [Deprecated]please use CreateChunkedUpload
-func (a *Allocation) EncryptAndUploadFile(localpath string, remotepath string,
+func (a *Allocation) EncryptAndUploadFile(tmpPath string, localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.StartChunkedUpload(getHomeDir(), localpath, remotepath, status, false, "", true, attrs)
+	return a.StartChunkedUpload(tmpPath, localpath, remotepath, status, false, "", true, attrs)
 }
 
 // EncryptAndUpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
-func (a *Allocation) EncryptAndUpdateFileWithThumbnail(localpath string,
+func (a *Allocation) EncryptAndUpdateFileWithThumbnail(tmpPath string, localpath string,
 	remotepath string, thumbnailpath string, attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.StartChunkedUpload(getHomeDir(), localpath, remotepath, status, true,
+	return a.StartChunkedUpload(tmpPath, localpath, remotepath, status, true,
 		thumbnailpath, true, attrs)
 }
 
 // EncryptAndUploadFileWithThumbnail [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUploadFileWithThumbnail(
+	tmpPath string,
 	localpath string,
 	remotepath string,
 	thumbnailpath string,
@@ -333,7 +334,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	status StatusCallback,
 ) error {
 
-	return a.StartChunkedUpload(getHomeDir(),
+	return a.StartChunkedUpload(tmpPath,
 		localpath,
 		remotepath,
 		status,
