@@ -455,6 +455,8 @@ func Upload(this js.Value, p []js.Value) interface{} {
 		return js.ValueOf("error: " + NewError("invalid_param", "Please provide remote_path for upload").Error())
 	}
 
+	workdir := p[5].String()
+
 	Filename := p[5].String()
 	file := p[6].String()
 	// file, fileHeader, err := r.FormFile("file")
@@ -508,7 +510,7 @@ func Upload(this js.Value, p []js.Value) interface{} {
 				if encryptBool {
 					// Logger.Info("Doing encrypted file upload with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
 					fmt.Println("Doing encrypted file upload with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
-					err = allocationObj.EncryptAndUploadFile(localFilePath, remotePath, attrs, statusBar)
+					err = allocationObj.EncryptAndUploadFile(workdir, localFilePath, remotePath, attrs, statusBar)
 				} else {
 					// Logger.Info("Doing file upload with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
 					fmt.Println("Doing file upload with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
