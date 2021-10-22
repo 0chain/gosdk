@@ -35,7 +35,7 @@ type Config struct {
 	SignatureScheme      string   `json:"signature_scheme"`
 	BlockWorker          string   `json:"block_worker"`
 	CleanUpWorkerMinutes int      `json:"cleanup_worker"`
-	PreferredBlobbers    []string `json:"preferred_blobers"`
+	PreferredBlobbers    []string `json:"preferred_blobbers"`
 }
 
 /*Configuration of the system */

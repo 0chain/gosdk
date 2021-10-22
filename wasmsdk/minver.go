@@ -1,5 +1,6 @@
-//go:build minver
-// +build minver
+// go:build js,wasm,minver,!fullver
+// +build js,wasm,minver
+// +build !fullver
 
 package main
 
