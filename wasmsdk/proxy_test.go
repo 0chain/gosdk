@@ -1,3 +1,7 @@
+// go:build !minver,!fullver
+// +build !minver
+// +build !fullver
+
 package main
 
 import (
