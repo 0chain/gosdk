@@ -76,7 +76,7 @@ Steps:
 3. Now you need to compile a new `<any_name>.wasm` (e.g. proxy.wasm). The command is currently: 
 
     ```bash
-    $ GOOS=js CGO_ENABLED=0 GOARCH=wasm go build -o <any_name>.wasm github.com/0chain/gosdk/wasmsdk
+    $ GOOS=js CGO_ENABLED=0 GOARCH=wasm go -tags fullver build -o <any_name>.wasm github.com/0chain/gosdk/wasmsdk
     ```
 
 4. You can compile a minimum version by adding tags `-minver`, for example:
