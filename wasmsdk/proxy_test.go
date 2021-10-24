@@ -1,6 +1,5 @@
-// go:build !minver,!fullver
-// +build !minver
-// +build !fullver
+// go:build test
+// +build test
 
 package main
 

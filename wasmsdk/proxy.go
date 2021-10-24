@@ -1,7 +1,3 @@
-// go:build js,wasm,!minver,fullver
-// +build !minver
-// +build fullver
-
 package main
 
 import (

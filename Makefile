@@ -30,7 +30,7 @@ wasm-build:
 	CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -o sdk.wasm github.com/0chain/gosdk/wasmsdk
      
 wasm-test:
-	env -i $(shell go env) PATH="$(shell go env GOROOT)/misc/wasm:$(PATH)" CGO_ENABLED=0 GOOS=js GOARCH=wasm go test -v github.com/0chain/gosdk/wasmsdk
+	env -i $(shell go env) PATH="$(shell go env GOROOT)/misc/wasm:$(PATH)" CGO_ENABLED=0 GOOS=js GOARCH=wasm go test -tags test -v github.com/0chain/gosdk/wasmsdk
 
 gosdk-mocks:
 	./generate_mocks.sh
