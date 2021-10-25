@@ -95,10 +95,6 @@ func (r *Resty) DoGet(ctx context.Context, urls ...string) {
 }
 
 func (r *Resty) httpDo(req *http.Request) {
-
-	ctx, cancel := context.WithCancel(r.ctx)
-	defer cancel()
-
 	c := make(chan error, 1)
 	defer close(c)
 
@@ -132,12 +128,11 @@ func (r *Resty) httpDo(req *http.Request) {
 
 		c <- err
 
-	}(req.WithContext(ctx))
+	}(req.WithContext(r.ctx))
 
 	select {
-	case <-ctx.Done():
-		r.transport.CancelRequest(req)
-		<-c
+	case <-r.ctx.Done():
+		//cancel and close channel
 		return
 	case <-c:
 		return
@@ -148,7 +143,7 @@ func (r *Resty) httpDo(req *http.Request) {
 // Wait wait all of requests to done
 func (r *Resty) Wait() []error {
 	defer func() {
-		// call cancelFunc, aovid to memory leak issue
+		// call cancelFunc, avoid to memory leak issue
 		if r.cancelFunc != nil {
 			r.cancelFunc()
 		}
@@ -159,24 +154,28 @@ func (r *Resty) Wait() []error {
 
 	for {
 
-		result := <-r.done
-
-		if r.handle != nil {
-			err := r.handle(result.Request, result.Response, r.cancelFunc, result.Err)
-
-			if err != nil {
-				errs = append(errs, err)
-			}
-		} else {
-			if result.Err != nil {
-				errs = append(errs, result.Err)
-			}
-		}
-
-		done++
-
-		if done >= r.qty {
+		select {
+		case <-r.ctx.Done():
 			return errs
+		case result := <-r.done:
+
+			if r.handle != nil {
+				err := r.handle(result.Request, result.Response, r.cancelFunc, result.Err)
+
+				if err != nil {
+					errs = append(errs, err)
+				}
+			} else {
+				if result.Err != nil {
+					errs = append(errs, result.Err)
+				}
+			}
+
+			if done >= r.qty {
+				return errs
+			}
+
+			done++
 		}
 
 	}
