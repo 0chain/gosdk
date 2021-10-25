@@ -89,55 +89,49 @@ func (r *Resty) DoGet(ctx context.Context, urls ...string) {
 			continue
 		}
 
-		go r.httpDo(req)
+		go r.httpDo(req.WithContext(r.ctx))
 	}
 
 }
 
 func (r *Resty) httpDo(req *http.Request) {
-	c := make(chan error, 1)
-	defer close(c)
 
-	go func(req *http.Request) {
-		var resp *http.Response
-		var err error
+	var resp *http.Response
+	var err error
 
-		if r.retry > 0 {
-			for i := 1; ; i++ {
-				resp, err = r.client.Do(req)
-				if resp != nil && resp.StatusCode == 200 {
-					break
-				}
-				// close body ReadClose to release resource before retrying it
-				if resp != nil && resp.Body != nil {
-					// don't close it if it is latest retry
-					if i < r.retry {
-						resp.Body.Close()
-					}
-				}
-
-				if i == r.retry {
-					break
-				}
+	if r.retry > 0 {
+		for i := 1; ; i++ {
+			resp, err = r.client.Do(req)
+			if resp != nil && resp.StatusCode == 200 {
+				break
 			}
-		} else {
-			resp, err = r.client.Do(req.WithContext(r.ctx))
+			// close body ReadClose to release resource before retrying it
+			if resp != nil && resp.Body != nil {
+				// don't close it if it is latest retry
+				if i < r.retry {
+					resp.Body.Close()
+				}
+
+			}
+
+			if i == r.retry {
+				break
+			}
+
+			if resp != nil && resp.StatusCode == http.StatusTooManyRequests {
+				time.Sleep(1 * time.Second)
+			}
+
+			if (req.Method == http.MethodPost || req.Method == http.MethodPut) && req.Body != nil {
+				// rebuild io.ReadCloser to fix https://github.com/golang/go/issues/36095
+				req.Body, _ = req.GetBody()
+			}
 		}
-
-		r.done <- Result{Request: req, Response: resp, Err: err}
-
-		c <- err
-
-	}(req.WithContext(r.ctx))
-
-	select {
-	case <-r.ctx.Done():
-		//cancel and close channel
-		return
-	case <-c:
-		return
+	} else {
+		resp, err = r.client.Do(req)
 	}
 
+	r.done <- Result{Request: req, Response: resp, Err: err}
 }
 
 // Wait wait all of requests to done
@@ -154,30 +148,24 @@ func (r *Resty) Wait() []error {
 
 	for {
 
-		select {
-		case <-r.ctx.Done():
-			return errs
-		case result := <-r.done:
+		result := <-r.done
 
-			if r.handle != nil {
-				err := r.handle(result.Request, result.Response, r.cancelFunc, result.Err)
+		if r.handle != nil {
+			err := r.handle(result.Request, result.Response, r.cancelFunc, result.Err)
 
-				if err != nil {
-					errs = append(errs, err)
-				}
-			} else {
-				if result.Err != nil {
-					errs = append(errs, result.Err)
-				}
+			if err != nil {
+				errs = append(errs, err)
 			}
-
-			if done >= r.qty {
-				return errs
+		} else {
+			if result.Err != nil {
+				errs = append(errs, result.Err)
 			}
-
-			done++
 		}
 
+		done++
+		if done >= r.qty {
+			return errs
+		}
 	}
 
 }
