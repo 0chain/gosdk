@@ -900,19 +900,34 @@ func CreateFreeAllocation(marker string, value int64) (string, error) {
 	return hash, err
 }
 
-func UpdateAllocation(size int64, expiry int64, allocationID string,
-	lock int64, setImmutable bool) (hash string, err error) {
-
+func UpdateAllocation(
+	size int64,
+	expiry int64,
+	allocationID string,
+	lock int64,
+	setImmutable bool,
+	setCanUpdatePositiveExpiry bool,
+	canUpdatePositiveExpiry bool,
+	setNoClosure bool,
+	noClosure bool,
+	setNoExpiryReduction bool,
+	noExpiryReduction bool,
+) (hash string, err error) {
 	if !sdkInitialized {
 		return "", sdkNotInitialized
 	}
 
 	updateAllocationRequest := make(map[string]interface{})
-	updateAllocationRequest["owner_id"] = client.GetClientID()
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
 	updateAllocationRequest["expiration_date"] = expiry
 	updateAllocationRequest["set_immutable"] = setImmutable
+	updateAllocationRequest["set_can_update_positive_expiry"] = setCanUpdatePositiveExpiry
+	updateAllocationRequest["can_update_positive_expiry"] = canUpdatePositiveExpiry
+	updateAllocationRequest["set_no_closure"] = setNoClosure
+	updateAllocationRequest["no_closure"] = noClosure
+	updateAllocationRequest["set_no_expiry_reduction"] = setNoExpiryReduction
+	updateAllocationRequest["no_expiry_reduction"] = noExpiryReduction
 
 	sn := transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
