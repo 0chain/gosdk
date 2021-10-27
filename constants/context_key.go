@@ -6,6 +6,8 @@ type ContextKey string
 const (
 	// ContextKeyAllocation
 	ContextKeyAllocation ContextKey = "allocation"
+	// ContextKeyAllocationObject
+	ContextKeyAllocationObject ContextKey = "allocation_object"
 	// ContextKeyClient
 	ContextKeyClient ContextKey = "client"
 	// ContextKeyClientKey
