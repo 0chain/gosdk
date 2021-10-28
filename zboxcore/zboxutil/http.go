@@ -349,7 +349,10 @@ func NewFileMetaRequest(baseUrl string, allocation string, body io.Reader) (*htt
 	if err != nil {
 		return nil, err
 	}
-	setClientInfo(req)
+	err = setClientInfoWithSign(req, allocation)
+	if err != nil {
+		return nil, err
+	}
 	return req, nil
 }
 
