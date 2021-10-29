@@ -190,6 +190,9 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 	if r.encryptOnUpload {
 		for i := r.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
+			//encScheme := encryption.NewEncryptionScheme()
+			//encScheme.Initialize(client.GetClient().Mnemonic)
+			//encScheme.InitForEncryption("filetype:audio")
 			encMsg, err := r.encscheme.Encrypt(fragments[pos])
 			if err != nil {
 				return nil, err
