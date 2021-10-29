@@ -811,12 +811,12 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 }
 
 func CreateAllocationWithBlobbers(datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, mcct time.Duration, lock int64, noClosure bool, blobbers []string) (
+	readPrice, writePrice PriceRange, mcct time.Duration, lock int64, permanent bool, blobbers []string) (
 	string, error) {
 
 	return CreateAllocationForOwner(client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
-		size, expiry, readPrice, writePrice, mcct, lock, noClosure,
+		size, expiry, readPrice, writePrice, mcct, lock, permanent,
 		blobbers)
 }
 
@@ -833,7 +833,7 @@ func CreateAllocation(datashards, parityshards int, size, expiry int64,
 func CreateAllocationForOwner(owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, mcct time.Duration,
-	lock int64, noClousre bool, preferredBlobbers []string) (hash string, err error) {
+	lock int64, permanent bool, preferredBlobbers []string) (hash string, err error) {
 
 	if !sdkInitialized {
 		return "", sdkNotInitialized
@@ -850,7 +850,7 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
 		"max_challenge_completion_time": mcct,
-		"no_closure":                    noClousre,
+		"permanent":                     permanent,
 	}
 
 	var sn = transaction.SmartContractTxnData{
@@ -906,8 +906,8 @@ func UpdateAllocation(
 	allocationID string,
 	lock int64,
 	setImmutable bool,
-	setNoClosure bool,
-	noClosure bool,
+	setPermanent bool,
+	permanent bool,
 ) (hash string, err error) {
 	if !sdkInitialized {
 		return "", sdkNotInitialized
@@ -918,8 +918,10 @@ func UpdateAllocation(
 	updateAllocationRequest["size"] = size
 	updateAllocationRequest["expiration_date"] = expiry
 	updateAllocationRequest["set_immutable"] = setImmutable
-	updateAllocationRequest["set_no_closure"] = setNoClosure
-	updateAllocationRequest["no_closure"] = noClosure
+	updateAllocationRequest["set_no_closure"] = setPermanent
+	if setPermanent {
+		updateAllocationRequest["permanent"] = permanent
+	}
 
 	sn := transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
