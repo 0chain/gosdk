@@ -821,12 +821,12 @@ func CreateAllocationWithBlobbers(datashards, parityshards int, size, expiry int
 }
 
 func CreateAllocation(datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, mcct time.Duration, lock int64, noClosure bool) (
+	readPrice, writePrice PriceRange, mcct time.Duration, lock int64, permanent bool) (
 	string, error) {
 
 	return CreateAllocationForOwner(client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
-		size, expiry, readPrice, writePrice, mcct, lock, noClosure,
+		size, expiry, readPrice, writePrice, mcct, lock, permanent,
 		blockchain.GetPreferredBlobbers())
 }
 
