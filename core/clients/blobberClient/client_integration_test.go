@@ -1157,7 +1157,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 					ReadMarker: string(rmString),
 					BlockNum:   "1",
 				},
-				expectedPath:   "some_new_file",
+				expectedPath:   "some_file",
 				expectingError: false,
 			},
 			{
