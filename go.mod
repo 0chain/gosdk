@@ -3,7 +3,7 @@ module github.com/0chain/gosdk
 require (
 	github.com/0chain/blobber v0.3.3-0.20210915144430-f966b39d52a0
 	github.com/0chain/errors v1.0.2
-	github.com/ethereum/go-ethereum v1.10.3
+	github.com/ethereum/go-ethereum v1.10.8
 	github.com/h2non/filetype v1.0.9
 	github.com/herumi/bls-go-binary v0.0.0-20191119080710-898950e1a520
 	github.com/klauspost/reedsolomon v1.9.11

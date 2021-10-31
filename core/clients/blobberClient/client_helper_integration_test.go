@@ -715,7 +715,7 @@ VALUES
 	return nil
 }
 
-func (c *TestDataController) AddDownloadTestData(allocationTx, pubkey, clientId, wmSig string, now common.Timestamp) error {
+func (c *TestDataController) AddDownloadTestData(allocationTx, pubkey, clientId string) error {
 	var err error
 	var tx *sql.Tx
 	defer func() {

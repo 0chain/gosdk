@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/readmarker"
 	"log"
 	"net/http"
 	"os"
@@ -1085,6 +1086,111 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 			}
 
 			_, err = RenameObject(BlobberAddr, tc.input)
+			if err != nil {
+				if !tc.expectingError {
+					t.Fatal(err)
+				}
+				continue
+			}
+			if tc.expectingError {
+				t.Fatal("expected error")
+			}
+		}
+	})
+
+	t.Run("TestDownloadObject", func(t *testing.T) {
+		pubKey, privKey, signSch := GeneratePubPrivateKey(t)
+		allocationTx := randString(32)
+
+		pubKeyBytes, _ := hex.DecodeString(pubKey)
+		clientId := encryption.Hash(pubKeyBytes)
+
+		err := tdController.ClearDatabase()
+		if err != nil {
+			t.Fatal(err)
+		}
+		allocationId := `exampleId`
+		now := common.Timestamp(time.Now().Unix())
+
+		blobberPubKey := "de52c0a51872d5d2ec04dbc15a6f0696cba22657b80520e1d070e72de64c9b04e19ce3223cae3c743a20184158457582ffe9c369ca9218c04bfe83a26a62d88d"
+		blobberPubKeyBytes, _ := hex.DecodeString(blobberPubKey)
+
+		rm := readmarker.ReadMarker{
+			BlobberID:       encryption.Hash(blobberPubKeyBytes),
+			AllocationID:    allocationId,
+			ClientPublicKey: pubKey,
+			ClientID:        clientId,
+			OwnerID:         clientId,
+			Timestamp:       now,
+			//ReadCounter:     1337,
+		}
+
+		rmSig, err := signSch.Sign(encryption.Hash(rm.GetHashData()))
+		if err != nil {
+			t.Fatal(err)
+		}
+		rm.Signature = rmSig
+
+		rmString, err := json.Marshal(rm)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		err = tdController.AddDownloadTestData(allocationTx, pubKey, clientId)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		testCases := []struct {
+			name           string
+			clientHeader   string
+			input          *blobbergrpc.DownloadFileRequest
+			expectedPath   string
+			expectingError bool
+		}{
+			{
+				name: "Success",
+				input: &blobbergrpc.DownloadFileRequest{
+					Allocation: allocationTx,
+					Path:       "/some_file",
+					PathHash:   "exampleId:examplePath",
+					ReadMarker: string(rmString),
+					BlockNum:   "1",
+				},
+				expectedPath:   "some_new_file",
+				expectingError: false,
+			},
+			{
+				name: "Failed",
+				input: &blobbergrpc.DownloadFileRequest{
+					Allocation: "",
+					Path:       "",
+					PathHash:   "",
+					RxPay:      "",
+					BlockNum:   "",
+					NumBlocks:  "",
+					ReadMarker: "",
+					AuthToken:  "",
+					Content:    "",
+				},
+				expectedPath:   "",
+				expectingError: true,
+			},
+		}
+
+		for _, tc := range testCases {
+			clientRaw, _ := json.Marshal(client.Client{Wallet: &zcncrypto.Wallet{
+				ClientID:  clientId,
+				ClientKey: pubKey,
+				Keys:      []zcncrypto.KeyPair{{PublicKey: pubKey, PrivateKey: privKey}},
+			}})
+
+			err := client.PopulateClient(string(clientRaw), signScheme)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			_, err = DownloadObject(BlobberAddr, tc.input)
 			if err != nil {
 				if !tc.expectingError {
 					t.Fatal(err)
