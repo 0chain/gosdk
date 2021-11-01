@@ -2,7 +2,7 @@ package constants
 
 const (
 	// FileOperationInsert method name of add new file
-	FileOperationInsert      = "insert"
+	FileOperationInsert      =x "insert"
 	FileOperationDelete      = "delete"
 	FileOperationUpdate      = "update"
 	FileOperationRename      = "rename"
