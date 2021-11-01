@@ -745,20 +745,6 @@ func GetClientEncryptedPublicKey() (string, error) {
 	return encScheme.GetPublicKey()
 }
 
-func GetClientReGenKey() (string, error) {
-	if !sdkInitialized {
-		return "", sdkNotInitialized
-	}
-	encScheme := encryption.NewEncryptionScheme()
-	_, err := encScheme.Initialize(client.GetClient().Mnemonic)
-	if err != nil {
-		return "", err
-	}
-
-	ecnKey, err := GetClientEncryptedPublicKey()
-	return encScheme.GetReGenKey(ecnKey, "filetype:audio")
-}
-
 func GetAllocationFromAuthTicket(authTicket string) (*Allocation, error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
