@@ -92,24 +92,16 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 	//shards := make([][]byte, len(req.blobbers))
 	decodeLen := make([]int, req.numBlocks)
 	var decodeNumBlocks int
-	var encscheme encryption.EncryptionScheme
-	if len(req.encryptedKey) > 0 {
-		encscheme = encryption.NewEncryptionScheme()
-		// TODO: Remove after testing
-		encscheme.Initialize(client.GetClient().Mnemonic)
-		encscheme.InitForDecryption("filetype:audio", req.encryptedKey)
-	}
 
 	retData := make([]byte, 0)
 	success := 0
 	Logger.Info("downloadBlock ", blockNum, " numDownloads ", numDownloads)
 
-	// init scheme here
-	if _, err := encscheme.Initialize(client.GetClient().Mnemonic); err != nil {
-		return nil, err
-	}
-	if err := encscheme.InitForDecryption("filetype:audio", req.encryptedKey); err != nil {
-		return nil, nil
+	var encscheme encryption.EncryptionScheme
+	if len(req.encryptedKey) > 0 {
+		encscheme = encryption.NewEncryptionScheme()
+		encscheme.Initialize(client.GetClient().Mnemonic)
+		encscheme.InitForDecryption("filetype:audio", req.encryptedKey)
 	}
 
 	for i := 0; i < numDownloads; i++ {
@@ -135,6 +127,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 
 						encMsg := &encryption.EncryptedMessage{}
 						encMsg.EncryptedData = result.BlockChunks[blockNum][(2 * 1024):]
+
 						headerChecksums := strings.Split(headerString, ",")
 						if len(headerChecksums) != 2 {
 							Logger.Error("Block has invalid header", req.blobbers[result.idx].Baseurl)
@@ -179,7 +172,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 			if !blockSuccess {
 				continue
 			}
-			//fmt.Printf("[%d]:%s Size:%d\n", i, req.blobbers[result.idx].Baseurl, len(shards[result.idx]))
+
 			success++
 			if success >= req.datashards {
 				decodeNumBlocks = downloadChunks

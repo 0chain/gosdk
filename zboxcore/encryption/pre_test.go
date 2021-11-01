@@ -28,6 +28,24 @@ func TestMnemonic(t *testing.T) {
 
 }
 
+func TestEncryptDecrypt(t *testing.T) {
+	mnemonic := "travel twenty hen negative fresh sentence hen flat swift embody increase juice eternal satisfy want vessel matter honey video begin dutch trigger romance assault"
+	dataToEncrypt := "encrypted_data_uttam"
+
+	encscheme := NewEncryptionScheme()
+	_, err := encscheme.Initialize(mnemonic)
+	require.NoError(t, err)
+	encscheme.InitForEncryption("filetype:audio")
+
+	encMessage, err := encscheme.Encrypt([]byte(dataToEncrypt))
+	require.Nil(t, err)
+
+	decrypted, err := encscheme.Decrypt(encMessage)
+	require.Nil(t, err)
+
+	require.Equal(t, string(decrypted), dataToEncrypt)
+}
+
 func TestReEncryptionAndDecryptionForShareData(t *testing.T) {
 	client_mnemonic := "travel twenty hen negative fresh sentence hen flat swift embody increase juice eternal satisfy want vessel matter honey video begin dutch trigger romance assault"
 	client_encscheme := NewEncryptionScheme()
