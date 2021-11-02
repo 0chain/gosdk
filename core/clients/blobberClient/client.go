@@ -360,6 +360,7 @@ func CopyObject(url string, req *blobbergrpc.CopyObjectRequest) ([]byte, error) 
 	}
 	return json.Marshal(convert.CopyObjectResponseHandler(copyObjectResponse))
 }
+// dummy comment
 
 func RenameObject(url string, req *blobbergrpc.RenameObjectRequest) ([]byte, error) {
 	blobberClient, err := getBlobberGRPCClient(url)
