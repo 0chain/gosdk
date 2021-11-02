@@ -5,22 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
-	"github.com/0chain/gosdk/core/clients/blobberClient"
-	"io/ioutil"
-	"net/http"
-	"strconv"
-	"strings"
-	"sync"
-	"time"
-
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/clients/blobberClient"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"strconv"
+	"strings"
+	"sync"
 )
 
 type BlockDownloadRequest struct {
@@ -200,7 +195,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		//}
 		//httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 		// TODO: Fix the timeout
-		ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
+		//ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 		shouldRetry := false
 		respBytes, err := blobberClient.DownloadObject(req.blobber.Baseurl, downloadReq)
 		if err != nil {
