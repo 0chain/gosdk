@@ -36,7 +36,7 @@ gosdk-test:
 	go test -tags bn256 ./...
 
 gosdk-integration-test:
-	go test ./core/clients/blobberClient -args integration
+	go test ./core/clients/blobberClient -args integration -timeout 99999s
 
 install-gosdk: | gosdk-build gosdk-test
 
