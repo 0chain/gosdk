@@ -3,8 +3,8 @@ package zcnbridge
 import (
 	"context"
 	"fmt"
-	"github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
+	"github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -18,18 +18,16 @@ import (
 
 const (
 	IncreaseAllowanceSigCode = "39509351"
+	BurnSigCode              = "fe9d9303"
 	Bytes32                  = 32
 )
 
-const (
-	Failed = types.ReceiptStatusFailed
-	Success = types.ReceiptStatusSuccessful
-)
-
 var (
+	// IncreaseAllowanceSig "increaseAllowance(address,uint256)"
 	IncreaseAllowanceSig = []byte(erc20.ERC20MetaData.Sigs[IncreaseAllowanceSigCode])
-	BurnSig = []byte(bridge.BridgeMetaData.Sigs[IncreaseAllowanceSigCode])
-	DefaultEncoder  = func(id string) []byte {
+	// BurnSig "burn(uint256,bytes)"
+	BurnSig                = []byte(bridge.BridgeMetaData.Sigs[BurnSigCode])
+	DefaultClientIDEncoder = func(id string) []byte {
 		return []byte(id)
 	}
 )
@@ -41,33 +39,31 @@ var (
 
 func InitBridge() {
 	// Read config from file
-	config.gasLimit = 300000 // TODO: InitBridge - wei, gwei, unit, tokens?
+	config.gasLimit = 300000 // FIXME: InitBridge - wei, gwei, unit, tokens?
 }
 
-// IncreaseBurnerAllowance TODO: Is amount in wei?
+// IncreaseBurnerAllowance FIXME: Is amount in wei?
 // IncreaseBurnerAllowance Increases allowance for bridge contract address to transfer
-// WZCN tokens on behalf of the token owner
+// WZCN tokens on behalf of the token owner to the TokenPool
 func IncreaseBurnerAllowance(amountTokens int64) (*types.Transaction, error) {
-	client, err := createClient()
+	// 1. Create etherClient
+	etherClient, err := createClient()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create client")
+		return nil, errors.Wrap(err, "failed to create etherClient")
 	}
 
-	// To:
-	tokenAddress := common.HexToAddress(config.wzcnAddress)
-
-	// 1. Data Parameter:
+	// 1. Data Parameter (signature)
 	hash := sha3.NewLegacyKeccak256()
 	hash.Write(IncreaseAllowanceSig)
 	methodID := hash.Sum(nil)[:4]
 	fmt.Println(hexutil.Encode(methodID)) // 0x39509351
 
-	// 2. Data Parameter:
+	// 2. Data Parameter (spender)
 	spenderAddress := common.HexToAddress(config.bridgeAddress)
 	spenderPaddedAddress := common.LeftPadBytes(spenderAddress.Bytes(), Bytes32)
 	fmt.Println(hexutil.Encode(spenderPaddedAddress)) // 0x0000000000000000000000004592d8f8d7b001e72cb26a73e4fa1806a51ac79d
 
-	// 3. Data Parameter:
+	// 3. Data Parameter (amount)
 	amount := new(big.Int)
 	amount.SetInt64(amountTokens)
 	paddedAmount := common.LeftPadBytes(amount.Bytes(), Bytes32)
@@ -78,30 +74,33 @@ func IncreaseBurnerAllowance(amountTokens int64) (*types.Transaction, error) {
 	data = append(data, spenderPaddedAddress...)
 	data = append(data, paddedAmount...)
 
-	gasLimit, err := client.EstimateGas(context.Background(), ethereum.CallMsg{
-		To:   &tokenAddress,
+	// To
+	tokenAddress := common.HexToAddress(config.wzcnAddress)
+
+	gasLimit, err := etherClient.EstimateGas(context.Background(), ethereum.CallMsg{
+		To:   &tokenAddress, // FIXME: From: is required?
 		Data: data,
 	})
 	if err != nil {
 		zcncore.Logger.Fatal(err)
 	}
 
-	// TODO: This needs to fix
-	gasLimit = gasLimit + gasLimit / 100
+	// FIXME: proper calculation
+	gasLimit = gasLimit + gasLimit/10
 
 	ownerAddress, privKey, err := ownerPrivateKeyAndAddress()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read private key and ownerAddress")
 	}
 
-	transactOpts := createSignedTransaction(client, ownerAddress, privKey, gasLimit)
+	transactOpts := createSignedTransaction(etherClient, ownerAddress, privKey, gasLimit)
 
-	wzcnToken, err := erc20.NewERC20(tokenAddress, client)
+	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, etherClient)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize WZCN-ERC20 instance")
 	}
 
-	tran, err := wzcnToken.IncreaseAllowance(transactOpts, spenderAddress, amount)
+	tran, err := wzcnTokenInstance.IncreaseAllowance(transactOpts, spenderAddress, amount)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to send `IncreaseAllowance` transaction")
 	}
@@ -113,23 +112,68 @@ func TransactionStatus(hash string) int {
 	return zcncore.CheckEthHashStatus(hash)
 }
 
-//func BurnWZCN(amount, clientId string, ctx context.Context)(*types.Transaction, error) {
-//	if DefaultEncoder == nil {
-//		return nil, errors.New("DefaultEncoder must be setup")
-//	}
-//
-//	client, err := createClient()
-//	if err != nil {
-//		return nil, errors.Wrap(err, "failed to create client")
-//	}
-//
-//	// To:
-//	bridgeAddress := common.HexToAddress(config.bridgeAddress)
-//
-//	ownerAddress, privKey, err := ownerPrivateKeyAndAddress()
-//	if err != nil {
-//		return nil, errors.Wrap(err, "failed to read private key and ownerAddress")
-//	}
-//
-//	transactOpts := createSignedTransaction(client, ownerAddress, privKey, gasLimit)
-//}
+// BurnWZCN Burns WZCN tokens on behalf of the client with ClientID = client ID in 0ZCN network
+func BurnWZCN(amountTokens int64, clientId string) (*types.Transaction, error) {
+	if DefaultClientIDEncoder == nil {
+		return nil, errors.New("DefaultClientIDEncoder must be setup")
+	}
+
+	// 1. Create etherClient
+	etherClient, err := createClient()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create etherClient")
+	}
+
+	// 1. Data Parameter (signature)
+	hash := sha3.NewLegacyKeccak256()
+	hash.Write(BurnSig)
+	methodID := hash.Sum(nil)[:4]
+	fmt.Println(hexutil.Encode(methodID)) // 0xfe9d9303
+
+	// 2. Data Parameter (amount to burn)
+	amount := new(big.Int)
+	amount.SetInt64(amountTokens)
+	paddedAmount := common.LeftPadBytes(amount.Bytes(), Bytes32)
+	fmt.Println(hexutil.Encode(paddedAmount))
+
+	// 3. Data Parameter (clientID string as []byte)
+	paddedClientID := common.LeftPadBytes(DefaultClientIDEncoder(clientId), Bytes32)
+
+	var data []byte
+	data = append(data, methodID...)
+	data = append(data, paddedAmount...)
+	data = append(data, paddedClientID...)
+
+	// To
+	bridgeAddress := common.HexToAddress(config.bridgeAddress)
+
+	ownerAddress, privKey, err := ownerPrivateKeyAndAddress()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read private key and ownerAddress")
+	}
+
+	gasLimit, err := etherClient.EstimateGas(context.Background(), ethereum.CallMsg{
+		To:   &bridgeAddress, // TODO: From: is required?
+		Data: data,
+	})
+	if err != nil {
+		zcncore.Logger.Fatal(err)
+	}
+
+	// TODO: This needs to fix
+	gasLimit = gasLimit + gasLimit/10
+
+	transactOpts := createSignedTransaction(etherClient, ownerAddress, privKey, gasLimit)
+
+	bridgeInstance, err := bridge.NewBridge(bridgeAddress, etherClient)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create bridge instance")
+	}
+
+	transaction, err := bridgeInstance.Burn(transactOpts, amount, DefaultClientIDEncoder(clientId))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to execute Burn transaction to ClientID = %s with amount = %s", clientId, amount)
+	}
+
+	return transaction, err
+}

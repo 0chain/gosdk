@@ -17,8 +17,8 @@ func TestMain(m *testing.M) {
 }
 
 func TestInitTestBridge(t *testing.T) {
-	t.Run("Burn WZCN in Ether RPC", func(t *testing.T) {
-		zcnbridge.InitBridge() // TODO: Fill in
+	t.Run("Increase Allowance for bridge contract to transfer tokens to token pool", func(t *testing.T) {
+		zcnbridge.InitBridge() // TODO: Fill in the configuration
 
 		transaction, err := zcnbridge.IncreaseBurnerAllowance(10000000)
 
@@ -26,9 +26,24 @@ func TestInitTestBridge(t *testing.T) {
 		require.NotNil(t, transaction)
 		require.NotEmpty(t, transaction.Hash())
 		t.Logf("Transaction hash: %s", transaction.Hash().Hex())
+
+		res := zcnbridge.TransactionStatus(transaction.Hash().Hex())
+		require.Equal(t, 1, res)
 	})
 }
 
 func TestTransactionStatus(t *testing.T) {
+	t.Run("Burn WZCN in Ether RPC", func(t *testing.T) {
+		zcnbridge.InitBridge() // TODO: Fill in the configuration
 
+		transaction, err := zcnbridge.BurnWZCN(10000000, "123")
+
+		require.NoError(t, err)
+		require.NotNil(t, transaction)
+		require.NotEmpty(t, transaction.Hash())
+		t.Logf("Transaction hash: %s", transaction.Hash().Hex())
+
+		res := zcnbridge.TransactionStatus(transaction.Hash().Hex())
+		require.Equal(t, 1, res)
+	})
 }
