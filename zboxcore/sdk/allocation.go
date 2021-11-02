@@ -727,34 +727,34 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus floa
 	return err
 }
 
-func (a *Allocation) RenameObject(path string, destName string) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	if len(path) == 0 {
-		return errors.New("invalid_path", "Invalid path for the list")
-	}
-	path = zboxutil.RemoteClean(path)
-	isabs := zboxutil.IsRemoteAbs(path)
-	if !isabs {
-		return errors.New("invalid_path", "Path should be valid and absolute")
-	}
-
-	req := &RenameRequest{}
-	req.blobbers = a.Blobbers
-	req.allocationID = a.ID
-	req.allocationTx = a.Tx
-	req.newName = destName
-	req.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
-	req.fullconsensus = float32(a.DataShards + a.ParityShards)
-	req.ctx = a.ctx
-	req.remotefilepath = path
-	req.renameMask = 0
-	req.connectionID = zboxutil.NewConnectionId()
-	err := req.ProcessRename()
-	return err
-}
+//func (a *Allocation) RenameObject(path string, destName string) error {
+//	if !a.isInitialized() {
+//		return notInitialized
+//	}
+//
+//	if len(path) == 0 {
+//		return errors.New("invalid_path", "Invalid path for the list")
+//	}
+//	path = zboxutil.RemoteClean(path)
+//	isabs := zboxutil.IsRemoteAbs(path)
+//	if !isabs {
+//		return errors.New("invalid_path", "Path should be valid and absolute")
+//	}
+//
+//	req := &RenameRequest{}
+//	req.blobbers = a.Blobbers
+//	req.allocationID = a.ID
+//	req.allocationTx = a.Tx
+//	req.newName = destName
+//	req.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
+//	req.fullconsensus = float32(a.DataShards + a.ParityShards)
+//	req.ctx = a.ctx
+//	req.remotefilepath = path
+//	req.renameMask = 0
+//	req.connectionID = zboxutil.NewConnectionId()
+//	err := req.ProcessRename()
+//	return err
+//}
 
 func (a *Allocation) UpdateObjectAttributes(path string,
 	attrs fileref.Attributes) (err error) {

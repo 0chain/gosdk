@@ -392,19 +392,19 @@ func NewAttributesRequest(baseUrl, allocation string, body io.Reader) (
 	return req, nil
 }
 
-func NewRenameRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, RENAME_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodPost, url, body)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := setClientInfoWithSign(req, allocation); err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
+//func NewRenameRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
+//	url := fmt.Sprintf("%s%s%s", baseUrl, RENAME_ENDPOINT, allocation)
+//	req, err := http.NewRequest(http.MethodPost, url, body)
+//	if err != nil {
+//		return nil, err
+//	}
+//
+//	if err := setClientInfoWithSign(req, allocation); err != nil {
+//		return nil, err
+//	}
+//
+//	return req, nil
+//}
 
 func NewCopyRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, COPY_ENDPOINT, allocation)

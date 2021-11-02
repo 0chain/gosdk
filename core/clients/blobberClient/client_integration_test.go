@@ -1024,79 +1024,79 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 		}
 	})
 
-	t.Run("TestRenameObject", func(t *testing.T) {
-		pubKey, privKey, _ := GeneratePubPrivateKey(t)
-		allocationTx := randString(32)
-
-		pubKeyBytes, _ := hex.DecodeString(pubKey)
-		clientId := encryption.Hash(pubKeyBytes)
-
-		err := tdController.ClearDatabase()
-		if err != nil {
-			t.Fatal(err)
-		}
-		err = tdController.AddRenameTestData(allocationTx, pubKey, clientId)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		testCases := []struct {
-			name           string
-			clientHeader   string
-			input          *blobbergrpc.RenameObjectRequest
-			expectedPath   string
-			expectingError bool
-		}{
-			{
-				name: "Success",
-				input: &blobbergrpc.RenameObjectRequest{
-					Path:         "/",
-					PathHash:     "exampleId:examplePath",
-					Allocation:   allocationTx,
-					ConnectionId: "connection_id",
-					NewName:      "somethingNew",
-				},
-				expectedPath:   "/",
-				expectingError: false,
-			},
-			{
-				name: "Failed",
-				input: &blobbergrpc.RenameObjectRequest{
-					Path:         "",
-					PathHash:     "",
-					Allocation:   "",
-					ConnectionId: "",
-					NewName:      "",
-				},
-				expectedPath:   "/",
-				expectingError: true,
-			},
-		}
-
-		for _, tc := range testCases {
-			clientRaw, _ := json.Marshal(client.Client{Wallet: &zcncrypto.Wallet{
-				ClientID:  clientId,
-				ClientKey: pubKey,
-				Keys:      []zcncrypto.KeyPair{{PublicKey: pubKey, PrivateKey: privKey}},
-			}})
-
-			err := client.PopulateClient(string(clientRaw), signScheme)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			_, err = RenameObject(BlobberAddr, tc.input)
-			if err != nil {
-				if !tc.expectingError {
-					t.Fatal(err)
-				}
-				continue
-			}
-			if tc.expectingError {
-				t.Fatal("expected error")
-			}
-		}
-	})
+	//t.Run("TestRenameObject", func(t *testing.T) {
+	//	pubKey, privKey, _ := GeneratePubPrivateKey(t)
+	//	allocationTx := randString(32)
+	//
+	//	pubKeyBytes, _ := hex.DecodeString(pubKey)
+	//	clientId := encryption.Hash(pubKeyBytes)
+	//
+	//	err := tdController.ClearDatabase()
+	//	if err != nil {
+	//		t.Fatal(err)
+	//	}
+	//	err = tdController.AddRenameTestData(allocationTx, pubKey, clientId)
+	//	if err != nil {
+	//		t.Fatal(err)
+	//	}
+	//
+	//	testCases := []struct {
+	//		name           string
+	//		clientHeader   string
+	//		input          *blobbergrpc.RenameObjectRequest
+	//		expectedPath   string
+	//		expectingError bool
+	//	}{
+	//		{
+	//			name: "Success",
+	//			input: &blobbergrpc.RenameObjectRequest{
+	//				Path:         "/",
+	//				PathHash:     "exampleId:examplePath",
+	//				Allocation:   allocationTx,
+	//				ConnectionId: "connection_id",
+	//				NewName:      "somethingNew",
+	//			},
+	//			expectedPath:   "/",
+	//			expectingError: false,
+	//		},
+	//		{
+	//			name: "Failed",
+	//			input: &blobbergrpc.RenameObjectRequest{
+	//				Path:         "",
+	//				PathHash:     "",
+	//				Allocation:   "",
+	//				ConnectionId: "",
+	//				NewName:      "",
+	//			},
+	//			expectedPath:   "/",
+	//			expectingError: true,
+	//		},
+	//	}
+	//
+	//	for _, tc := range testCases {
+	//		clientRaw, _ := json.Marshal(client.Client{Wallet: &zcncrypto.Wallet{
+	//			ClientID:  clientId,
+	//			ClientKey: pubKey,
+	//			Keys:      []zcncrypto.KeyPair{{PublicKey: pubKey, PrivateKey: privKey}},
+	//		}})
+	//
+	//		err := client.PopulateClient(string(clientRaw), signScheme)
+	//		if err != nil {
+	//			t.Fatal(err)
+	//		}
+	//
+	//		_, err = RenameObject(BlobberAddr, tc.input)
+	//		if err != nil {
+	//			if !tc.expectingError {
+	//				t.Fatal(err)
+	//			}
+	//			continue
+	//		}
+	//		if tc.expectingError {
+	//			t.Fatal("expected error")
+	//		}
+	//	}
+	//})
 
 	t.Run("TestDownloadObject", func(t *testing.T) {
 		pubKey, privKey, signSch := GeneratePubPrivateKey(t)
