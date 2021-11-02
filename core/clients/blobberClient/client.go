@@ -360,7 +360,6 @@ func CopyObject(url string, req *blobbergrpc.CopyObjectRequest) ([]byte, error) 
 	}
 	return json.Marshal(convert.CopyObjectResponseHandler(copyObjectResponse))
 }
-// dummy comment
 
 func RenameObject(url string, req *blobbergrpc.RenameObjectRequest) ([]byte, error) {
 	blobberClient, err := getBlobberGRPCClient(url)
@@ -384,4 +383,28 @@ func RenameObject(url string, req *blobbergrpc.RenameObjectRequest) ([]byte, err
 		return nil, errors.Wrap(err, "failed to RenameObject")
 	}
 	return json.Marshal(renameObjectResp)
+}
+
+func DownloadObject(url string, req *blobbergrpc.DownloadFileRequest) ([]byte, error) {
+	blobberClient, err := getBlobberGRPCClient(url)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create blobber grpc client")
+	}
+
+	clientSignature, err := client.Sign(encryption.Hash(req.Allocation))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to generate client signature")
+	}
+
+	grpcCtx := metadata.NewOutgoingContext(context.Background(), metadata.New(map[string]string{
+		blobbercommon.ClientHeader:          client.GetClientID(),
+		blobbercommon.ClientKeyHeader:       client.GetClientPublicKey(),
+		blobbercommon.ClientSignatureHeader: clientSignature,
+	}))
+
+	downloadObjectResp, err := blobberClient.DownloadFile(grpcCtx, req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to DownloadFile ")
+	}
+	return json.Marshal(downloadObjectResp)
 }
