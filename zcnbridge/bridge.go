@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
+	"github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	//"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/sha3"
 	"math/big"
@@ -19,8 +21,17 @@ const (
 	Bytes32                  = 32
 )
 
+const (
+	Failed = types.ReceiptStatusFailed
+	Success = types.ReceiptStatusSuccessful
+)
+
 var (
 	IncreaseAllowanceSig = []byte(erc20.ERC20MetaData.Sigs[IncreaseAllowanceSigCode])
+	BurnSig = []byte(bridge.BridgeMetaData.Sigs[IncreaseAllowanceSigCode])
+	DefaultEncoder  = func(id string) []byte {
+		return []byte(id)
+	}
 )
 
 // Description:
@@ -75,7 +86,7 @@ func IncreaseBurnerAllowance(amountTokens int64) (*types.Transaction, error) {
 		zcncore.Logger.Fatal(err)
 	}
 
-	// This needs to fix
+	// TODO: This needs to fix
 	gasLimit = gasLimit + gasLimit / 100
 
 	ownerAddress, privKey, err := ownerPrivateKeyAndAddress()
@@ -97,3 +108,28 @@ func IncreaseBurnerAllowance(amountTokens int64) (*types.Transaction, error) {
 
 	return tran, nil
 }
+
+func TransactionStatus(hash string) int {
+	return zcncore.CheckEthHashStatus(hash)
+}
+
+//func BurnWZCN(amount, clientId string, ctx context.Context)(*types.Transaction, error) {
+//	if DefaultEncoder == nil {
+//		return nil, errors.New("DefaultEncoder must be setup")
+//	}
+//
+//	client, err := createClient()
+//	if err != nil {
+//		return nil, errors.Wrap(err, "failed to create client")
+//	}
+//
+//	// To:
+//	bridgeAddress := common.HexToAddress(config.bridgeAddress)
+//
+//	ownerAddress, privKey, err := ownerPrivateKeyAndAddress()
+//	if err != nil {
+//		return nil, errors.Wrap(err, "failed to read private key and ownerAddress")
+//	}
+//
+//	transactOpts := createSignedTransaction(client, ownerAddress, privKey, gasLimit)
+//}

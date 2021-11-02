@@ -7,6 +7,13 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	// 1. IncreaseAllowance
+	// 2. Burn
+	// 3. Retrieve all authorizers
+	// 4. Send transaction hash to all authorizers
+	// 5. Poll for authorizers response
+	// 6. Collect tickers from all authorizers
+	// 7. Send tickets to ZCNSC to the chain
 }
 
 func TestInitTestBridge(t *testing.T) {
@@ -18,6 +25,10 @@ func TestInitTestBridge(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, transaction)
 		require.NotEmpty(t, transaction.Hash())
-		transaction.Hash().Hex()
+		t.Logf("Transaction hash: %s", transaction.Hash().Hex())
 	})
+}
+
+func TestTransactionStatus(t *testing.T) {
+
 }
