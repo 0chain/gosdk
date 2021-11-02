@@ -169,7 +169,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 	return retData, nil
 }
 
-func (req *DownloadRequest) processDownload(ctx context.Context) {
+func (req *DownloadRequest) processDownload(_ context.Context) {
 	remotePathCallback := req.remotefilepath
 	if len(req.remotefilepath) == 0 {
 		remotePathCallback = req.remotefilepathhash
@@ -265,7 +265,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			req.isDownloadCanceled = false
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("","Download aborted by user"))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "Download aborted by user"))
 			}
 			return
 		}
@@ -303,7 +303,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		if calcHash != expectedHash {
 			os.Remove(req.localpath)
 			if req.statusCallback != nil {
-				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("","File content didn't match with uploaded file"))
+				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "File content didn't match with uploaded file"))
 			}
 			return
 		}
