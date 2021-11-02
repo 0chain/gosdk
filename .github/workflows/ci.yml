@@ -30,6 +30,12 @@ jobs:
       - uses: satackey/action-docker-layer-caching@v0.0.11
         # Ignore the failure of a step and avoid terminating the job.
         continue-on-error: true
+      - name: Checkout tools repo
+        uses: actions/checkout@v2
+        with:
+          repository: 0chain/blobber
+          path: blobber
+          ref: grpc_v2
       - name: Build test environment and run tests
         run: |
           git clone https://github.com/0chain/blobber.git
