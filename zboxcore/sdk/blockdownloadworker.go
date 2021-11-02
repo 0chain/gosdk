@@ -203,118 +203,132 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 		shouldRetry := false
 		respBytes, err := blobberClient.DownloadObject(req.blobber.Baseurl, downloadReq)
+		if err != nil {
+			err = fmt.Errorf("response Error: %s", err)
+			if strings.Contains(err.Error(), "not_enough_tokens") {
+				shouldRetry, retry = false, 3 // don't repeat
+				req.blobber.SetSkip(true)
+			}
+		} else {
+			var rspData downloadBlock
+			rspData.idx = req.blobberIdx
+
+			err = json.Unmarshal(respBytes, &rspData)
+			if err != nil {
+				rspData.Success = true
+				rspData.RawData = respBytes
+				if len(req.encryptedKey) > 0 {
+					// 256 for the additional header bytes,  where chunk_size - 2 * 1024 is the encrypted data size
+					chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE-2*1024+256)
+					rspData.BlockChunks = chunks
+				} else {
+					chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
+					rspData.BlockChunks = chunks
+				}
+				rspData.RawData = []byte{}
+				incBlobberReadCtr(req.blobber, req.numBlocks)
+				req.result <- &rspData
+				return
+			}
+
+			if !rspData.Success && rspData.LatestRM != nil && rspData.LatestRM.ReadCounter >= getBlobberReadCtr(req.blobber) {
+				Logger.Info("Will be retrying download")
+				setBlobberReadCtr(req.blobber, rspData.LatestRM.ReadCounter)
+				shouldRetry = true
+				err = errors.New("", "Need to retry the download")
+			}
+		}
+
 		if err != nil && (!shouldRetry || retry >= 3) {
 			Logger.Error("could not download object-" + req.blobber.Baseurl + " - " + err.Error())
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error downloading blobber object")}
 			return
 		}
 
-		var rspData downloadBlock
-		rspData.idx = req.blobberIdx
-
-		err = json.Unmarshal(respBytes, &rspData)
-		if err != nil {
-			rspData.Success = true
-			rspData.RawData = respBytes
-			if len(req.encryptedKey) > 0 {
-				// 256 for the additional header bytes,  where chunk_size - 2 * 1024 is the encrypted data size
-				chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE-2*1024+256)
-				rspData.BlockChunks = chunks
-			} else {
-				chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
-				rspData.BlockChunks = chunks
-			}
-			rspData.RawData = []byte{}
-			incBlobberReadCtr(req.blobber, req.numBlocks)
-			req.result <- &rspData
-			return
-		}
-
-		// last block of code
 		if shouldRetry {
 			retry++
 		} else {
 			break
 		}
-		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-			//if err != nil {
-			//	return err
-			//}
-			//if resp.Body != nil {
-			//	defer resp.Body.Close()
-			//}
-			if resp.StatusCode == http.StatusOK {
-				//req.consensus++
-
-				response, err := ioutil.ReadAll(resp.Body)
-				// if err != nil {
-				// return errors.Wrap(err, fmt.Sprintf("[%d] Read error:\n", req.blobberIdx))
-				// }
-				var rspData downloadBlock
-				rspData.idx = req.blobberIdx
-				// dec := json.NewDecoder(resp.Body)
-				// err := dec.Decode(&rspData)
-				err = json.Unmarshal(response, &rspData)
-				// After getting start of stream JSON message, other message chunks should not be in JSON
-				if err != nil {
-					rspData.Success = true
-					//rawData := make([]byte,0)
-					//json.Unmarshal(response, &rawData)
-					rspData.RawData = response
-					if len(req.encryptedKey) > 0 {
-						// 256 for the additional header bytes,  where chunk_size - 2 * 1024 is the encrypted data size
-						chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE-2*1024+256)
-						rspData.BlockChunks = chunks
-					} else {
-						chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
-						rspData.BlockChunks = chunks
-					}
-					rspData.RawData = []byte{}
-					incBlobberReadCtr(req.blobber, req.numBlocks)
-					req.result <- &rspData
-					return nil
-					// return errors.Wrap(err, fmt.Sprintf("[%d] Json decode error:\n", req.blobberIdx))
-				}
-				// if rspData.Success {
-				// 	elapsed := time.Since(start)
-				// 	fmt.Println("Received block", req.blockNum, elapsed)
-				// 	chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
-				// 	rspData.BlockChunks = chunks
-				// 	rspData.RawData = []byte{}
-				// 	incBlobberReadCtr(req.blobber, req.numBlocks)
-				// 	req.result <- &rspData
-				// 	return nil
-				// }
-				if !rspData.Success && rspData.LatestRM != nil && rspData.LatestRM.ReadCounter >= getBlobberReadCtr(req.blobber) {
-					Logger.Info("Will be retrying download")
-					setBlobberReadCtr(req.blobber, rspData.LatestRM.ReadCounter)
-					shouldRetry = true
-					return errors.New("", "Need to retry the download")
-				}
-
-			} else {
-				resp_body, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					return err
-				}
-				err = fmt.Errorf("Response Error: %s", string(resp_body))
-				if strings.Contains(err.Error(), "not_enough_tokens") {
-					shouldRetry, retry = false, 3 // don't repeat
-					req.blobber.SetSkip(true)
-				}
-				return err
-			}
-
-			return nil
-		})
-		if err != nil && (!shouldRetry || retry >= 3) {
-			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: err}
-		}
-		if shouldRetry {
-			retry++
-		} else {
-			break
-		}
+		//err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
+		//	//if err != nil {
+		//	//	return err
+		//	//}
+		//	//if resp.Body != nil {
+		//	//	defer resp.Body.Close()
+		//	//}
+		//	if resp.StatusCode == http.StatusOK {
+		//		//req.consensus++
+		//
+		//		response, err := ioutil.ReadAll(resp.Body)
+		//		// if err != nil {
+		//		// return errors.Wrap(err, fmt.Sprintf("[%d] Read error:\n", req.blobberIdx))
+		//		// }
+		//		var rspData downloadBlock
+		//		rspData.idx = req.blobberIdx
+		//		// dec := json.NewDecoder(resp.Body)
+		//		// err := dec.Decode(&rspData)
+		//		err = json.Unmarshal(response, &rspData)
+		//		// After getting start of stream JSON message, other message chunks should not be in JSON
+		//		if err != nil {
+		//			rspData.Success = true
+		//			//rawData := make([]byte,0)
+		//			//json.Unmarshal(response, &rawData)
+		//			rspData.RawData = response
+		//			if len(req.encryptedKey) > 0 {
+		//				// 256 for the additional header bytes,  where chunk_size - 2 * 1024 is the encrypted data size
+		//				chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE-2*1024+256)
+		//				rspData.BlockChunks = chunks
+		//			} else {
+		//				chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
+		//				rspData.BlockChunks = chunks
+		//			}
+		//			rspData.RawData = []byte{}
+		//			incBlobberReadCtr(req.blobber, req.numBlocks)
+		//			req.result <- &rspData
+		//			return nil
+		//			// return errors.Wrap(err, fmt.Sprintf("[%d] Json decode error:\n", req.blobberIdx))
+		//		}
+		//		// if rspData.Success {
+		//		// 	elapsed := time.Since(start)
+		//		// 	fmt.Println("Received block", req.blockNum, elapsed)
+		//		// 	chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
+		//		// 	rspData.BlockChunks = chunks
+		//		// 	rspData.RawData = []byte{}
+		//		// 	incBlobberReadCtr(req.blobber, req.numBlocks)
+		//		// 	req.result <- &rspData
+		//		// 	return nil
+		//		// }
+		//		if !rspData.Success && rspData.LatestRM != nil && rspData.LatestRM.ReadCounter >= getBlobberReadCtr(req.blobber) {
+		//			Logger.Info("Will be retrying download")
+		//			setBlobberReadCtr(req.blobber, rspData.LatestRM.ReadCounter)
+		//			shouldRetry = true
+		//			return errors.New("", "Need to retry the download")
+		//		}
+		//
+		//	} else {
+		//		resp_body, err := ioutil.ReadAll(resp.Body)
+		//		if err != nil {
+		//			return err
+		//		}
+		//		err = fmt.Errorf("Response Error: %s", string(resp_body))
+		//		if strings.Contains(err.Error(), "not_enough_tokens") {
+		//			shouldRetry, retry = false, 3 // don't repeat
+		//			req.blobber.SetSkip(true)
+		//		}
+		//		return err
+		//	}
+		//
+		//	return nil
+		//})
+		//if err != nil && (!shouldRetry || retry >= 3) {
+		//	req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: err}
+		//}
+		//if shouldRetry {
+		//	retry++
+		//} else {
+		//	break
+		//}
 	}
 }
 
