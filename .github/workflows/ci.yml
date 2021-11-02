@@ -38,7 +38,6 @@ jobs:
           ref: grpc_v2
       - name: Build test environment and run tests
         run: |
-          git clone https://github.com/0chain/blobber.git
           cd blobber
           sed -i '/#expose_ci_port/c\    ports:\n      - "5432:5432"' ./docker.local/b0docker-compose.yml
           ./docker.local/bin/blobber.init.setup.sh
