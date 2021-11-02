@@ -1,13 +1,14 @@
 package sdk
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	blobbergrpc "github.com/0chain/blobber/code/go/0chain.net/blobbercore/blobbergrpc/proto"
+	"github.com/0chain/gosdk/core/clients/blobberClient"
 	"io/ioutil"
-	"mime/multipart"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -146,50 +147,102 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error: Signing readmarker failed")}
 			return
 		}
-		body := new(bytes.Buffer)
-		formWriter := multipart.NewWriter(body)
+
 		rmData, err := json.Marshal(rm)
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating readmarker")}
 			return
 		}
+
 		if len(req.remotefilepath) > 0 {
 			req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 		}
-		formWriter.WriteField("path_hash", req.remotefilepathhash)
+
+		downloadReq := new(blobbergrpc.DownloadFileRequest)
+
+		downloadReq.Allocation = req.allocationTx
+		downloadReq.Path = req.remotefilepath
+		downloadReq.PathHash = req.remotefilepathhash
+
+		//
+		//body := new(bytes.Buffer)
+		//formWriter := multipart.NewWriter(body)
+
+		//formWriter.WriteField("path_hash", req.remotefilepathhash)
 
 		if req.rxPay {
-			formWriter.WriteField("rx_pay", "true") // pay oneself
+			//formWriter.WriteField("rx_pay", "true") // pay oneself
+			downloadReq.RxPay = "true" // pay oneself
 		}
 
-		formWriter.WriteField("block_num", fmt.Sprintf("%d", req.blockNum))
-		formWriter.WriteField("num_blocks", fmt.Sprintf("%d", req.numBlocks))
-		formWriter.WriteField("read_marker", string(rmData))
+		downloadReq.BlockNum = strconv.FormatInt(req.blockNum, 10)
+		downloadReq.NumBlocks = strconv.FormatInt(req.numBlocks, 10)
+		downloadReq.ReadMarker = string(rmData)
+
+		//formWriter.WriteField("block_num", fmt.Sprintf("%d", req.blockNum))
+		//formWriter.WriteField("num_blocks", fmt.Sprintf("%d", req.numBlocks))
+		//formWriter.WriteField("read_marker", string(rmData))
 		if req.authTicket != nil {
 			authTicketBytes, _ := json.Marshal(req.authTicket)
-			formWriter.WriteField("auth_token", string(authTicketBytes))
+			//formWriter.WriteField("auth_token", string(authTicketBytes))
+			downloadReq.AuthToken = string(authTicketBytes)
 		}
 		if len(req.contentMode) > 0 {
-			formWriter.WriteField("content", req.contentMode)
+			//formWriter.WriteField("content", req.contentMode)
+			downloadReq.Content = req.contentMode
 		}
 
-		formWriter.Close()
-		httpreq, err := zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationTx, body)
-		if err != nil {
-			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating download request")}
-			return
-		}
-		httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+		//formWriter.Close()
+		//httpreq, err := zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationTx, body)
+		//if err != nil {
+		//	req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating download request")}
+		//	return
+		//}
+		//httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 		// TODO: Fix the timeout
 		ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 		shouldRetry := false
+		respBytes, err := blobberClient.DownloadObject(req.blobber.Baseurl, downloadReq)
+		if err != nil && (!shouldRetry || retry >= 3) {
+			Logger.Error("could not download object-" + req.blobber.Baseurl + " - " + err.Error())
+			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error downloading blobber object")}
+			return
+		}
+
+		var rspData downloadBlock
+		rspData.idx = req.blobberIdx
+
+		err = json.Unmarshal(respBytes, &rspData)
+		if err != nil {
+			rspData.Success = true
+			rspData.RawData = respBytes
+			if len(req.encryptedKey) > 0 {
+				// 256 for the additional header bytes,  where chunk_size - 2 * 1024 is the encrypted data size
+				chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE-2*1024+256)
+				rspData.BlockChunks = chunks
+			} else {
+				chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
+				rspData.BlockChunks = chunks
+			}
+			rspData.RawData = []byte{}
+			incBlobberReadCtr(req.blobber, req.numBlocks)
+			req.result <- &rspData
+			return
+		}
+
+		// last block of code
+		if shouldRetry {
+			retry++
+		} else {
+			break
+		}
 		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-			if err != nil {
-				return err
-			}
-			if resp.Body != nil {
-				defer resp.Body.Close()
-			}
+			//if err != nil {
+			//	return err
+			//}
+			//if resp.Body != nil {
+			//	defer resp.Body.Close()
+			//}
 			if resp.StatusCode == http.StatusOK {
 				//req.consensus++
 
@@ -251,6 +304,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				}
 				return err
 			}
+
 			return nil
 		})
 		if err != nil && (!shouldRetry || retry >= 3) {
