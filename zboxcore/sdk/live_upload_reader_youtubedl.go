@@ -1,18 +1,18 @@
 package sdk
 
 import (
+	"context"
 	"fmt"
 	"io"
-	"os"
 	"os/exec"
-	"os/signal"
 	"strconv"
 	"strings"
-	"syscall"
 )
 
 // YoutubeDL wrap youtube-dl to download video from youtube
 type YoutubeDL struct {
+	ctx context.Context
+
 	liveUploadReaderBase
 
 	// cmdYoutubeDL youtube-dl command
@@ -23,7 +23,7 @@ type YoutubeDL struct {
 }
 
 // CreateYoutubeDL create a youtube-dl instance to download video file from youtube
-func CreateYoutubeDL(localPath string, feedURL string, downloadArgs []string, ffmpegArgs []string, delay int) (*YoutubeDL, error) {
+func CreateYoutubeDL(ctx context.Context, localPath string, feedURL string, downloadArgs []string, ffmpegArgs []string, delay int, stderr, stdout io.Writer) (*YoutubeDL, error) {
 
 	//youtube-dl -f best https://www.youtube.com/watch?v=qjNQfSobVwE --proxy http://127.0.0.1:8000 -o - | ffmpeg -i - -flags +cgop -g 30 -hls_time 5 youtube.m3u8
 
@@ -40,7 +40,7 @@ func CreateYoutubeDL(localPath string, feedURL string, downloadArgs []string, ff
 	r, w := io.Pipe()
 
 	cmdYoutubeDL := exec.Command("youtube-dl", argsYoutubeDL...)
-	cmdYoutubeDL.Stderr = os.Stderr
+	cmdYoutubeDL.Stderr = stderr
 	cmdYoutubeDL.Stdout = w
 
 	argsFfmpeg := append(ffmpegArgs,
@@ -52,9 +52,9 @@ func CreateYoutubeDL(localPath string, feedURL string, downloadArgs []string, ff
 
 	fmt.Println("ffmpeg", strings.Join(argsFfmpeg, " "))
 	cmdFfmpeg := exec.Command("ffmpeg", argsFfmpeg...)
-	cmdFfmpeg.Stderr = os.Stderr
+	cmdFfmpeg.Stderr = stderr
 	cmdFfmpeg.Stdin = r
-	cmdFfmpeg.Stdout = os.Stdout
+	cmdFfmpeg.Stdout = stdout
 
 	err := cmdYoutubeDL.Start()
 	if err != nil {
@@ -83,11 +83,9 @@ func CreateYoutubeDL(localPath string, feedURL string, downloadArgs []string, ff
 }
 
 func (r *YoutubeDL) wait() {
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		<-sigs
+		<-r.ctx.Done()
 		r.Close()
 	}()
 
