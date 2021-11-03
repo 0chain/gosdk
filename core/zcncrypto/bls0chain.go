@@ -37,13 +37,13 @@ func NewBLS0ChainScheme() *BLS0ChainScheme {
 
 func (b0 *BLS0ChainScheme) GenerateKeysWithEth(mnemonic, password string) (*Wallet, error) {
 	if len(mnemonic) == 0 {
-		return nil, fmt.Errorf("Mnemonic phase is mandatory.")
+		return nil, fmt.Errorf("Mnemonic phrase is mandatory.")
 	}
 	b0.Mnemonic = mnemonic
 
 	_, err := bip39.NewSeedWithErrorChecking(b0.Mnemonic, password)
 	if err != nil {
-		return nil, fmt.Errorf("Wrong mnemonic phase.")
+		return nil, fmt.Errorf("Wrong mnemonic phrase.")
 	}
 
 	return b0.generateKeys(password)
@@ -146,7 +146,7 @@ func (b0 *BLS0ChainScheme) SetPublicKey(publicKey string) error {
 // 1a) find whatever repo had dependency on gosdk's MiraclToHerumiPK func.
 // 1b) replace their dependency with this function code in that repo maybe.
 // 2) remove this code
-// 
+//
 // this gosdk's MiraclToHerumiPK function needs to be replaced wherever
 // it is used with a local version, so that gosdk is able to compile without
 // C++ dependencies.
