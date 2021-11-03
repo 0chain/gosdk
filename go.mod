@@ -34,6 +34,7 @@ require (
 	github.com/magma/augmented-networks/accounting/protos v0.1.1
 	github.com/mitchellh/mapstructure v1.4.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
+	github.com/pkg/errors v0.9.1
 	github.com/rogpeppe/go-internal v1.8.0
 	github.com/shirou/gopsutil v3.21.10+incompatible // indirect
 	github.com/spf13/viper v1.9.0
