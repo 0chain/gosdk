@@ -905,6 +905,7 @@ func GetIdForUrl(url string) string {
 		Logger.Error(url, "get error. ", err.Error())
 		return ""
 	}
+
 	s := strings.Split(res.Body, ",")
 	if len(s) >= 3 {
 		return s[3]

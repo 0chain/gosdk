@@ -178,6 +178,14 @@ func (t *Transaction) ComputeHashData() {
 	t.Hash = encryption.Hash(hashdata)
 }
 
+func (t *Transaction) DebugJSON() []byte {
+	jsonByte, err := json.MarshalIndent(t, "", "  ")
+	if err != nil {
+		panic(err) // This JSONify function only supposed to be debug-only anyway.
+	}
+	return jsonByte
+}
+
 //GetHash - implement interface
 func (rh *TxnReceipt) GetHash() string {
 	return rh.Transaction.OutputHash

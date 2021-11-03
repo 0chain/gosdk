@@ -7,14 +7,17 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
-	"github.com/herumi/bls-go-binary/bls"
+	"github.com/0chain/gosdk/bls"
+	BN254 "github.com/0chain/gosdk/miracl"
+
+	// "github.com/herumi/bls-go-binary/bls"
 	"github.com/tyler-smith/go-bip39"
 
 	"github.com/0chain/gosdk/core/encryption"
 )
 
 func init() {
-	err := bls.Init(bls.CurveFp254BNb)
+	err := bls.Init()
 	if err != nil {
 		panic(err)
 	}
@@ -34,13 +37,13 @@ func NewBLS0ChainScheme() *BLS0ChainScheme {
 
 func (b0 *BLS0ChainScheme) GenerateKeysWithEth(mnemonic, password string) (*Wallet, error) {
 	if len(mnemonic) == 0 {
-		return nil, fmt.Errorf("Mnemonic phase is mandatory.")
+		return nil, fmt.Errorf("Mnemonic phrase is mandatory.")
 	}
 	b0.Mnemonic = mnemonic
 
 	_, err := bip39.NewSeedWithErrorChecking(b0.Mnemonic, password)
 	if err != nil {
-		return nil, fmt.Errorf("Wrong mnemonic phase.")
+		return nil, fmt.Errorf("Wrong mnemonic phrase.")
 	}
 
 	return b0.generateKeys(password)
@@ -113,6 +116,11 @@ func (b0 *BLS0ChainScheme) SetPrivateKey(privateKey string) error {
 		return errors.New("set_private_key", "private key already exists")
 	}
 	b0.PrivateKey = privateKey
+
+	var sk bls.SecretKey
+	sk.DeserializeHexStr(b0.PrivateKey)
+
+	b0.PrivateKey = sk.SerializeToHexStr()
 	//ToDo: b0.publicKey should be set here?
 	return nil
 }
@@ -125,33 +133,49 @@ func (b0 *BLS0ChainScheme) SetPublicKey(publicKey string) error {
 	if b0.PublicKey != "" {
 		return errors.New("set_public_key", "public key already exists")
 	}
-	b0.PublicKey = MiraclToHerumiPK(publicKey)
+	b0.PublicKey = publicKey
+
+	// TODO: remove this line once we are sure nothing was depending on this
+	// Miracl->Herumi conversion.
+	// b0.PublicKey = MiraclToHerumiPK(publicKey)
+
 	return nil
 }
 
-// Converts public key 'pk' to format that the herumi/bls library likes.
-// It's possible to get a MIRACL PublicKey which is of much longer format
-// (See below example), as wallets are using MIRACL library not herumi lib.
-// If 'pk' is not in MIRACL format, we just return the original 'pk' then.
+// TODO:
+// 1a) find whatever repo had dependency on gosdk's MiraclToHerumiPK func.
+// 1b) replace their dependency with this function code in that repo maybe.
+// 2) remove this code
 //
-// This is an example of the raw public key we expect from MIRACL
-var miraclExamplePK = `0418a02c6bd223ae0dfda1d2f9a3c81726ab436ce5e9d17c531ff0a385a13a0b491bdfed3a85690775ee35c61678957aaba7b1a1899438829f1dc94248d87ed36817f6dfafec19bfa87bf791a4d694f43fec227ae6f5a867490e30328cac05eaff039ac7dfc3364e851ebd2631ea6f1685609fc66d50223cc696cb59ff2fee47ac`
-
+// this gosdk's MiraclToHerumiPK function needs to be replaced wherever
+// it is used with a local version, so that gosdk is able to compile without
+// C++ dependencies.
 //
-// This is an example of the same MIRACL public key serialized with ToString().
-// pk ([1bdfed3a85690775ee35c61678957aaba7b1a1899438829f1dc94248d87ed368,18a02c6bd223ae0dfda1d2f9a3c81726ab436ce5e9d17c531ff0a385a13a0b49],[039ac7dfc3364e851ebd2631ea6f1685609fc66d50223cc696cb59ff2fee47ac,17f6dfafec19bfa87bf791a4d694f43fec227ae6f5a867490e30328cac05eaff])
-func MiraclToHerumiPK(pk string) string {
-	if len(pk) != len(miraclExamplePK) {
-		return pk
-	}
-	n1 := pk[2:66]
-	n2 := pk[66:(66 + 64)]
-	n3 := pk[(66 + 64):(66 + 64 + 64)]
-	n4 := pk[(66 + 64 + 64):(66 + 64 + 64 + 64)]
-	var p bls.PublicKey
-	p.SetHexString("1 " + n2 + " " + n1 + " " + n4 + " " + n3)
-	return p.SerializeToHexStr()
-}
+// // Converts public key 'pk' to format that the herumi/bls library likes.
+// // It's possible to get a MIRACL PublicKey which is of much longer format
+// // (See below example), as wallets are using MIRACL library not herumi lib.
+// // If 'pk' is not in MIRACL format, we just return the original 'pk' then.
+// //
+// // This is an example of the raw public key we expect from MIRACL
+// var miraclExamplePK = `0418a02c6bd223ae0dfda1d2f9a3c81726ab436ce5e9d17c531ff0a385a13a0b491bdfed3a85690775ee35c61678957aaba7b1a1899438829f1dc94248d87ed36817f6dfafec19bfa87bf791a4d694f43fec227ae6f5a867490e30328cac05eaff039ac7dfc3364e851ebd2631ea6f1685609fc66d50223cc696cb59ff2fee47ac`
+//
+// //
+// // This is an example of the same MIRACL public key serialized with ToString().
+// // pk ([1bdfed3a85690775ee35c61678957aaba7b1a1899438829f1dc94248d87ed368,18a02c6bd223ae0dfda1d2f9a3c81726ab436ce5e9d17c531ff0a385a13a0b49],[039ac7dfc3364e851ebd2631ea6f1685609fc66d50223cc696cb59ff2fee47ac,17f6dfafec19bfa87bf791a4d694f43fec227ae6f5a867490e30328cac05eaff])
+// func MiraclToHerumiPK(pk string) string {
+// 	if len(pk) != len(miraclExamplePK) {
+// 		return pk
+// 	}
+// 	fmt.Println(">> pk", pk)
+// 	n1 := pk[2:66]
+// 	n2 := pk[66:(66 + 64)]
+// 	n3 := pk[(66 + 64):(66 + 64 + 64)]
+// 	n4 := pk[(66 + 64 + 64):(66 + 64 + 64 + 64)]
+// 	var p bls.PublicKey
+// 	p.SetHexString("1 " + n2 + " " + n1 + " " + n4 + " " + n3)
+// 	fmt.Println(">> bp1")
+// 	return p.SerializeToHexStr()
+// }
 
 //GetPublicKey - implement interface
 func (b0 *BLS0ChainScheme) GetPublicKey() string {
@@ -163,7 +187,6 @@ func (b0 *BLS0ChainScheme) GetPrivateKey() string {
 }
 
 func (b0 *BLS0ChainScheme) rawSign(hash string) (*bls.Sign, error) {
-	var sk bls.SecretKey
 	if b0.PrivateKey == "" {
 		return nil, errors.New("raw_sign", "private key does not exists for signing")
 	}
@@ -174,9 +197,12 @@ func (b0 *BLS0ChainScheme) rawSign(hash string) (*bls.Sign, error) {
 	if rawHash == nil {
 		return nil, errors.New("raw_sign", "failed hash while signing")
 	}
+
+	// My port.
+	var sk bls.SecretKey
 	sk.SetByCSPRNG()
 	sk.DeserializeHexStr(b0.PrivateKey)
-	sig := sk.Sign(string(rawHash))
+	sig := sk.Sign(rawHash)
 	return sig, nil
 }
 
@@ -208,7 +234,7 @@ func (b0 *BLS0ChainScheme) Verify(signature, msg string) (bool, error) {
 		return false, errors.New("verify", "failed hash while signing")
 	}
 	pk.DeserializeHexStr(b0.PublicKey)
-	return sig.Verify(&pk, string(rawHash)), nil
+	return sig.Verify(&pk, rawHash), nil
 }
 
 func (b0 *BLS0ChainScheme) Add(signature, msg string) (string, error) {
@@ -276,23 +302,18 @@ func BLS0GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]BL
 		return nil, errors.New("bls0_generate_threshold_key_shares", "Invalid encryption scheme")
 	}
 
-	var b0original bls.SecretKey
 	b0PrivateKeyBytes, err := b0ss.GetPrivateKeyAsByteArray()
 	if err != nil {
 		return nil, err
 	}
 
-	err = b0original.SetLittleEndian(b0PrivateKeyBytes)
-	if err != nil {
-		return nil, err
-	}
-
+	b0original := bls.SecretKey_fromBytes(b0PrivateKeyBytes)
 	polynomial := b0original.GetMasterSecretKey(t)
 
 	var shares []BLS0ChainThresholdScheme
 	for i := 1; i <= n; i++ {
 		var id bls.ID
-		err = id.SetDecString(fmt.Sprint(i))
+		err = id.SetHexString(fmt.Sprintf("%x", i))
 		if err != nil {
 			return nil, err
 		}
@@ -304,7 +325,7 @@ func BLS0GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]BL
 		}
 
 		share := BLS0ChainThresholdScheme{}
-		share.PrivateKey = hex.EncodeToString(sk.GetLittleEndian())
+		share.PrivateKey = sk.SerializeToHexStr()
 		share.PublicKey = sk.GetPublicKey().SerializeToHexStr()
 
 		share.id = id
@@ -320,33 +341,38 @@ func (b0 *BLS0ChainScheme) SplitKeys(numSplits int) (*Wallet, error) {
 	if b0.PrivateKey == "" {
 		return nil, errors.New("split_keys", "primary private key not found")
 	}
-	var primaryFr bls.Fr
+
 	var primarySk bls.SecretKey
 	primarySk.DeserializeHexStr(b0.PrivateKey)
-	primaryFr.SetLittleEndian(primarySk.GetLittleEndian())
+	limit := BN254.NewBIGcopy(primarySk.GetBIG())
+	limit.Div(BN254.NewBIGint(numSplits))
 
 	// New Wallet
 	w := &Wallet{}
 	w.Keys = make([]KeyPair, numSplits)
-	var sk bls.SecretKey
+	aggregateSk := BN254.NewBIG()
 	for i := 0; i < numSplits-1; i++ {
 		var tmpSk bls.SecretKey
 		tmpSk.SetByCSPRNG()
-		w.Keys[i].PrivateKey = tmpSk.SerializeToHexStr()
-		pub := tmpSk.GetPublicKey()
-		w.Keys[i].PublicKey = pub.SerializeToHexStr()
-		sk.Add(&tmpSk)
-	}
-	var aggregateSk bls.Fr
-	aggregateSk.SetLittleEndian(sk.GetLittleEndian())
 
-	//Subtract the aggregated private key from the primary private key to derive the last split private key
-	var lastSk bls.Fr
-	bls.FrSub(&lastSk, &primaryFr, &aggregateSk)
+		// It is extremely important that aggregateSk < lastSk.
+		// We can ensure this by capping every tmpSk to lastSk/n
+		for BN254.Comp(limit, tmpSk.GetBIG()) < 0 {
+			tmpSk.SetByCSPRNG()
+		}
+
+		w.Keys[i].PrivateKey = tmpSk.SerializeToHexStr()
+		w.Keys[i].PublicKey = tmpSk.GetPublicKey().SerializeToHexStr()
+		aggregateSk.Add(tmpSk.GetBIG())
+	}
+
+	// Subtract the aggregated private key from the primary private key to derive
+	// the last split private key
+	lastSk := primarySk.GetBIG()
+	lastSk.Sub(aggregateSk)
 
 	// Last key
-	var lastSecretKey bls.SecretKey
-	lastSecretKey.SetLittleEndian(lastSk.Serialize())
+	lastSecretKey := bls.SecretKey_fromBIG(lastSk)
 	w.Keys[numSplits-1].PrivateKey = lastSecretKey.SerializeToHexStr()
 	w.Keys[numSplits-1].PublicKey = lastSecretKey.GetPublicKey().SerializeToHexStr()
 

@@ -2,11 +2,25 @@ name: Unit tests
 
 on:
   push:
-    branches: [ master, staging, 'dayi/main' ]
+    branches: [ master, staging ]
   pull_request:
-    branches: [ master, staging, 'dayi/main' ]
+    branches: [ master, staging ]
 
 jobs:
+  #lint:
+  #  runs-on: ubuntu-20.04
+  #  steps:
+  #  - name: Install Go
+  #    uses: actions/setup-go@v2
+  #    with:
+  #      go-version: 1.16.x
+  #  - uses: actions/checkout@v2
+  #  - name: Install golangci-lint
+  #    run: |
+  #      go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.42.0
+  #      golangci-lint --version
+  #  - name: Lint
+  #    run: make lint
   test:
     runs-on: ubuntu-latest
     steps:
@@ -16,6 +30,9 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: '1.16' # The Go version to download (if necessary) and use.
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
 
       - name: Install herumi's libraries
         run: sudo make install-herumi-ubuntu
