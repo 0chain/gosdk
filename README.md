@@ -1,5 +1,5 @@
 # 0chain/gosdk
-The 0chain client SDK is written in GO.
+The 0chain client SDK is written in Go programming language.
 This repository currently supports the following platforms:
 - OSX Mojave 10.14.5
 - LINUX (Ubuntu/bionic).
@@ -73,16 +73,10 @@ Steps:
         js.Global().Set("YOURFUNC", js.FuncOf(YOURFUNC))
     ```
 
-3. Now you need to compile a new `<any_name>.wasm` (e.g. proxy.wasm). The command is currently: 
+3. Now you need to compile a new `<any_name>.wasm` (e.g. proxy.wasm). Currently, the right version to compile wasm is with Go version 1.16. So make sure you have it to make the wasm build works properly. In order to compile, run the following command: 
 
     ```bash
-    $ GOOS=js CGO_ENABLED=0 GOARCH=wasm go -tags fullver build -o <any_name>.wasm github.com/0chain/gosdk/wasmsdk
-    ```
-
-4. You can compile a minimum version by adding tags `-minver`, for example:
-
-    ```bash
-    $ CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -tags minver -o min.wasm github.com/0chain/gosdk/wasmsdk
+    $ GOOS=js CGO_ENABLED=0 GOARCH=wasm go build -o <any_name>.wasm github.com/0chain/gosdk/wasmsdk
     ```
 
 ### An important note regarding export of a async function
@@ -146,7 +140,10 @@ $ go tool cover -html=coverage.out
 
 2. Add `/path/to/go/misc/wasm` to your `$PATH` environment variable (so that "go test" can find "go_js_wasm_exec"). For example in ubuntu, run `$export PATH=$PATH:/usr/local/go/misc/wasm/`.
 
-3. You can then run the test by following the [BLS unit test](#bls-unit-test) above with adding the prefix environment `GOOS=js CGO_ENABLED=0 GOARCH=wasm` before `go test -v`.
+3. You can then run the test by following the [BLS unit test](#bls-unit-test) above with adding the prefix environment `GOOS=js CGO_ENABLED=0 GOARCH=wasm`:
+    ```
+    go test -tags test -v github.com/0chain/gosdk/wasmsdk
+    ```
 
 #### Test in the client 
 
