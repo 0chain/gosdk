@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -23,7 +24,7 @@ type YoutubeDL struct {
 }
 
 // CreateYoutubeDL create a youtube-dl instance to download video file from youtube
-func CreateYoutubeDL(ctx context.Context, localPath string, feedURL string, downloadArgs []string, ffmpegArgs []string, delay int, stderr, stdout io.Writer) (*YoutubeDL, error) {
+func CreateYoutubeDL(ctx context.Context, localPath string, feedURL string, downloadArgs []string, ffmpegArgs []string, delay int) (*YoutubeDL, error) {
 
 	//youtube-dl -f best https://www.youtube.com/watch?v=qjNQfSobVwE --proxy http://127.0.0.1:8000 -o - | ffmpeg -i - -flags +cgop -g 30 -hls_time 5 youtube.m3u8
 
@@ -40,7 +41,7 @@ func CreateYoutubeDL(ctx context.Context, localPath string, feedURL string, down
 	r, w := io.Pipe()
 
 	cmdYoutubeDL := exec.Command("youtube-dl", argsYoutubeDL...)
-	cmdYoutubeDL.Stderr = stderr
+	cmdYoutubeDL.Stderr = os.Stderr
 	cmdYoutubeDL.Stdout = w
 
 	argsFfmpeg := append(ffmpegArgs,
@@ -52,9 +53,9 @@ func CreateYoutubeDL(ctx context.Context, localPath string, feedURL string, down
 
 	fmt.Println("ffmpeg", strings.Join(argsFfmpeg, " "))
 	cmdFfmpeg := exec.Command("ffmpeg", argsFfmpeg...)
-	cmdFfmpeg.Stderr = stderr
+	cmdFfmpeg.Stderr = os.Stderr
 	cmdFfmpeg.Stdin = r
-	cmdFfmpeg.Stdout = stdout
+	cmdFfmpeg.Stdout = os.Stdout
 
 	err := cmdYoutubeDL.Start()
 	if err != nil {
@@ -67,7 +68,7 @@ func CreateYoutubeDL(ctx context.Context, localPath string, feedURL string, down
 	}
 
 	dl := &YoutubeDL{
-
+		ctx: ctx,
 		liveUploadReaderBase: liveUploadReaderBase{
 			builder:    builder,
 			delay:      delay,
@@ -100,15 +101,15 @@ func (r *YoutubeDL) wait() {
 func (r *YoutubeDL) Close() error {
 	if r != nil {
 		if r.cmd != nil {
-			r.cmd.Process.Kill()
+			r.cmd.Process.Kill() //nolint
 		}
 
 		if r.cmdYoutubeDL != nil {
-			r.cmdYoutubeDL.Process.Kill()
+			r.cmdYoutubeDL.Process.Kill() //nolint
 		}
 
 		if r.cmdFfmpeg != nil {
-			r.cmdFfmpeg.Process.Kill()
+			r.cmdFfmpeg.Process.Kill() //nolint
 		}
 
 		if r.clipsReader != nil {
