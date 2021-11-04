@@ -811,29 +811,29 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 }
 
 func CreateAllocationWithBlobbers(datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, mcct time.Duration, lock int64, blobbers []string) (
+	readPrice, writePrice PriceRange, mcct time.Duration, lock int64, isNft bool, blobbers []string) (
 	string, error) {
 
 	return CreateAllocationForOwner(client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
-		size, expiry, readPrice, writePrice, mcct, lock,
+		size, expiry, readPrice, writePrice, mcct, lock, isNft,
 		blobbers)
 }
 
 func CreateAllocation(datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, mcct time.Duration, lock int64) (
+	readPrice, writePrice PriceRange, mcct time.Duration, lock int64, isNft bool) (
 	string, error) {
 
 	return CreateAllocationForOwner(client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
-		size, expiry, readPrice, writePrice, mcct, lock,
+		size, expiry, readPrice, writePrice, mcct, lock, isNft,
 		blockchain.GetPreferredBlobbers())
 }
 
 func CreateAllocationForOwner(owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, mcct time.Duration,
-	lock int64, preferredBlobbers []string) (hash string, err error) {
+	lock int64, isNft bool, preferredBlobbers []string) (hash string, err error) {
 
 	if !sdkInitialized {
 		return "", sdkNotInitialized
@@ -851,6 +851,7 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 		"write_price_range":             writePrice,
 		"max_challenge_completion_time": mcct,
 		"diversify_blobbers":            false,
+		"is_nft":                        isNft,
 	}
 
 	var sn = transaction.SmartContractTxnData{
