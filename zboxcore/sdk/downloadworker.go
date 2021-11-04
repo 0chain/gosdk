@@ -1,14 +1,14 @@
 package sdk
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"math"
 	"os"
+	"strings"
 	"sync"
-
-	"go.dedis.ch/kyber/v3/group/edwards25519"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -19,6 +19,7 @@ import (
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"go.dedis.ch/kyber/v3/group/edwards25519"
 )
 
 const (
@@ -91,17 +92,17 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 	//shards := make([][]byte, len(req.blobbers))
 	decodeLen := make([]int, req.numBlocks)
 	var decodeNumBlocks int
-	var encscheme encryption.EncryptionScheme
-	if len(req.encryptedKey) > 0 {
-		encscheme = encryption.NewEncryptionScheme()
-		// TODO: Remove after testing
-		encscheme.Initialize(client.GetClient().Mnemonic)
-		encscheme.InitForDecryption("filetype:audio", req.encryptedKey)
-	}
 
 	retData := make([]byte, 0)
 	success := 0
 	Logger.Info("downloadBlock ", blockNum, " numDownloads ", numDownloads)
+
+	var encscheme encryption.EncryptionScheme
+	if len(req.encryptedKey) > 0 {
+		encscheme = encryption.NewEncryptionScheme()
+		encscheme.Initialize(client.GetClient().Mnemonic)
+		encscheme.InitForDecryption("filetype:audio", req.encryptedKey)
+	}
 
 	for i := 0; i < numDownloads; i++ {
 		result := <-rspCh
@@ -117,24 +118,48 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 
 			for blockNum := 0; blockNum < downloadChunks; blockNum++ {
 				if len(req.encryptedKey) > 0 {
-					suite := edwards25519.NewBlakeSHA256Ed25519()
-					reEncMessage := &encryption.ReEncryptedMessage{
-						D1: suite.Point(),
-						D4: suite.Point(),
-						D5: suite.Point(),
-					}
-					err := reEncMessage.Unmarshal(result.BlockChunks[blockNum])
-					if err != nil {
-						Logger.Error("ReEncrypted Block unmarshall failed", req.blobbers[result.idx].Baseurl, err)
-						break
-					}
-					decrypted, err := encscheme.ReDecrypt(reEncMessage)
-					if err != nil {
-						Logger.Error("Block redecryption failed", req.blobbers[result.idx].Baseurl, err)
-						break
-					}
 
-					shards[blockNum][result.idx] = decrypted
+					// dirty, but can't see other way right now
+					if req.authTicket == nil {
+						headerBytes := result.BlockChunks[blockNum][:(2 * 1024)]
+						headerBytes = bytes.Trim(headerBytes, "\x00")
+						headerString := string(headerBytes)
+
+						encMsg := &encryption.EncryptedMessage{}
+						encMsg.EncryptedData = result.BlockChunks[blockNum][(2 * 1024):]
+
+						headerChecksums := strings.Split(headerString, ",")
+						if len(headerChecksums) != 2 {
+							Logger.Error("Block has invalid header", req.blobbers[result.idx].Baseurl)
+							continue
+						}
+						encMsg.MessageChecksum, encMsg.OverallChecksum = headerChecksums[0], headerChecksums[1]
+						encMsg.EncryptedKey = encscheme.GetEncryptedKey()
+						decryptedBytes, err := encscheme.Decrypt(encMsg)
+						if err != nil {
+							Logger.Error("Block decryption failed", req.blobbers[result.idx].Baseurl, err)
+							continue
+						}
+						shards[blockNum][result.idx] = decryptedBytes
+					} else {
+						suite := edwards25519.NewBlakeSHA256Ed25519()
+						reEncMessage := &encryption.ReEncryptedMessage{
+							D1: suite.Point(),
+							D4: suite.Point(),
+							D5: suite.Point(),
+						}
+						err := reEncMessage.Unmarshal(result.BlockChunks[blockNum])
+						if err != nil {
+							Logger.Error("ReEncrypted Block unmarshall failed", req.blobbers[result.idx].Baseurl, err)
+							break
+						}
+						decrypted, err := encscheme.ReDecrypt(reEncMessage)
+						if err != nil {
+							Logger.Error("Block redecryption failed", req.blobbers[result.idx].Baseurl, err)
+							break
+						}
+						shards[blockNum][result.idx] = decrypted
+					}
 				} else {
 					shards[blockNum][result.idx] = result.BlockChunks[blockNum]
 				}
@@ -147,7 +172,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 			if !blockSuccess {
 				continue
 			}
-			//fmt.Printf("[%d]:%s Size:%d\n", i, req.blobbers[result.idx].Baseurl, len(shards[result.idx]))
+
 			success++
 			if success >= req.datashards {
 				decodeNumBlocks = downloadChunks
