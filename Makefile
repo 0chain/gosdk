@@ -78,6 +78,6 @@ install-herumi-ubuntu:
         mv bls* bls && \
         make -C mcl -j $(nproc) lib/libmclbn256.so install && \
         cp mcl/lib/libmclbn256.so /usr/local/lib && \
-        make MCL_DIR=../mcl -C bls -j $(nproc) install && \
+        make MCL_DIR=$(shell pwd)/mcl -C bls -j $(nproc) install && \
         rm -R /tmp/mcl && \
         rm -R /tmp/bls
