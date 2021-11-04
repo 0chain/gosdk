@@ -884,7 +884,10 @@ func CreateAllocation(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.CreateAllocation(datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct, int64(lock))
+			result, err := sdk.CreateAllocation(
+				datashards, parityshards, int64(size), int64(expiry),
+				readPrice, writePrice, mcct, int64(lock), false,
+			)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("CreateAllocation failed. Reason: %s", err),
@@ -938,7 +941,10 @@ func CreateAllocationForOwner(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.CreateAllocationForOwner(owner, ownerpublickey, datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct, int64(lock), preferredBlobbers)
+			result, err := sdk.CreateAllocationForOwner(
+				owner, ownerpublickey, datashards, parityshards, int64(size), int64(expiry),
+				readPrice, writePrice, mcct, int64(lock), false, preferredBlobbers,
+			)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("CreateAllocationForOwner failed. Reason: %s", err),
