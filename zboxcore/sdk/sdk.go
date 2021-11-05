@@ -909,7 +909,6 @@ func UpdateAllocation(size int64, expiry int64, allocationID string,
 	}
 
 	updateAllocationRequest := make(map[string]interface{})
-	updateAllocationRequest["owner_id"] = client.GetClientID()
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
 	updateAllocationRequest["expiration_date"] = expiry
