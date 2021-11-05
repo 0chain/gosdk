@@ -4,6 +4,8 @@ import (
 	"context"
 	"crypto/ecdsa"
 	"encoding/json"
+	"math/big"
+
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -11,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/pkg/errors"
-	"math/big"
 )
 
 //  _allowances[owner][spender] = amount;
@@ -53,7 +54,7 @@ func getOwnerWalletInfo() (*ethWalletInfo, error) {
 	return wallet, err
 }
 
-func createClient() (*ethclient.Client, error) {
+func createEthClient() (*ethclient.Client, error) {
 	client, err := ethclient.Dial(config.nodeURL)
 	if err != nil {
 		zcncore.Logger.Error(err)

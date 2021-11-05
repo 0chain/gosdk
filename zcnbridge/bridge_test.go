@@ -7,10 +7,11 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	// 1. IncreaseAllowance
-	// 2. Burn
-	// 3. Retrieve all authorizers
-	// 4. Send transaction hash to all authorizers
+	// 1. IncreaseAllowance (client)
+	// 2. Burn (client)
+	// 3. Wait for transaction to complete (client)
+	// 3. Retrieve all authorizers (client)
+	// 4. Send transaction hash to all authorizers (client)
 	// 5. Poll for authorizers response
 	// 6. Collect tickers from all authorizers
 	// 7. Send tickets to ZCNSC to the chain

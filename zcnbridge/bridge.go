@@ -3,6 +3,7 @@ package zcnbridge
 import (
 	"context"
 	"fmt"
+
 	"github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
 	"github.com/0chain/gosdk/zcncore"
@@ -10,10 +11,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+
 	//"github.com/ethereum/go-ethereum/ethclient"
+	"math/big"
+
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/sha3"
-	"math/big"
 )
 
 const (
@@ -47,7 +50,7 @@ func InitBridge() {
 // WZCN tokens on behalf of the token owner to the TokenPool
 func IncreaseBurnerAllowance(amountTokens int64) (*types.Transaction, error) {
 	// 1. Create etherClient
-	etherClient, err := createClient()
+	etherClient, err := createEthClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create etherClient")
 	}
@@ -119,7 +122,7 @@ func BurnWZCN(amountTokens int64, clientId string) (*types.Transaction, error) {
 	}
 
 	// 1. Create etherClient
-	etherClient, err := createClient()
+	etherClient, err := createEthClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create etherClient")
 	}
