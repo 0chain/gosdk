@@ -975,7 +975,7 @@ func UpdateAllocation(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.UpdateAllocation(int64(size), int64(expiry), allocationID, int64(lock), setImmutable)
+			result, err := sdk.UpdateAllocation(int64(size), int64(expiry), allocationID, int64(lock), setImmutable, false)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("UpdateAllocation failed. Reason: %s", err),
