@@ -35,7 +35,7 @@ jobs:
         with:
           repository: 0chain/blobber
           path: blobber
-          ref: grpc_v2
+          ref: 6d0abe2e1727fc1735e59a586714050955782a76
       - name: Build test environment and run tests
         run: |
           cd blobber
