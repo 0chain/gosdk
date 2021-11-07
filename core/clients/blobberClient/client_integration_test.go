@@ -1103,20 +1103,20 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 		allocationTx := randString(32)
 
 		//root, _ := os.Getwd()
-		//path := strings.Split(root, `code`)
+		//path := strings.Split(root, `core`)
 
-		err := os.MkdirAll(`/blobber/files/files/exa/mpl/eId/objects/tmp/Mon/Wen`, 0755)
+		err := os.MkdirAll(`blobber/files/files/exa/mpl/eId/objects/tmp/Mon/Wen`, 0755)
 		if err != nil {
 			t.Fatal(err)
 		}
 		defer func() {
-			err := os.RemoveAll(`/blobber/files/files/exa/mpl/eId/objects/tmp/Mon`)
+			err := os.RemoveAll(`blobber/files/files/exa/mpl/eId/objects/tmp/Mon`)
 			if err != nil {
 				t.Fatal(err)
 			}
 		}()
 
-		f, err := os.Create(`/blobber/files/files/exa/mpl/eId/objects/tmp/Mon/Wen/MyFile`)
+		f, err := os.Create(`blobber/files/files/exa/mpl/eId/objects/tmp/Mon/Wen/MyFile`)
 		if err != nil {
 			t.Fatal(err)
 		}
