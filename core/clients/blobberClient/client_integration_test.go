@@ -1148,18 +1148,18 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 			expectedPath   string
 			expectingError bool
 		}{
-			{
-				name: "Success",
-				input: &blobbergrpc.DownloadFileRequest{
-					Allocation: allocationTx,
-					Path:       "/some_file",
-					PathHash:   "exampleId:examplePath",
-					ReadMarker: string(rmString),
-					BlockNum:   "1",
-				},
-				expectedPath:   "some_file",
-				expectingError: false,
-			},
+			//{
+			//	name: "Success",
+			//	input: &blobbergrpc.DownloadFileRequest{
+			//		Allocation: allocationTx,
+			//		Path:       "/some_file",
+			//		PathHash:   "exampleId:examplePath",
+			//		ReadMarker: string(rmString),
+			//		BlockNum:   "1",
+			//	},
+			//	expectedPath:   "some_file",
+			//	expectingError: false,
+			//},
 			{
 				name: "Failed",
 				input: &blobbergrpc.DownloadFileRequest{
