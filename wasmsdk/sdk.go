@@ -963,13 +963,14 @@ func UpdateAllocation(this js.Value, p []js.Value) interface{} {
 	allocationID := p[2].String()
 	lock := p[3].Int()
 	setImmutable := p[4].Bool()
+	updateTerms := p[5].Bool()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.UpdateAllocation(int64(size), int64(expiry), allocationID, int64(lock), setImmutable)
+			result, err := sdk.UpdateAllocation(int64(size), int64(expiry), allocationID, int64(lock), setImmutable, updateTerms)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("UpdateAllocation failed. Reason: %s", err),

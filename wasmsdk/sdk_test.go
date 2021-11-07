@@ -466,15 +466,16 @@ func TestWasmSDK(t *testing.T) {
 		updateAllocation := js.FuncOf(UpdateAllocation)
 		defer updateAllocation.Release()
 
-		jsAllocOwner := js.Global().Call("eval", fmt.Sprintf(`({size: 1000000, expiry: 1633878133, allocID: %#v, lock: 500, immutable: true})`, httpwasm.GetMockAllocationId(1)))
+		jsAllocOwner := js.Global().Call("eval", fmt.Sprintf(`({size: 1000000, expiry: 1633878133, allocID: %#v, lock: 500, immutable: true, terms: true})`, httpwasm.GetMockAllocationId(1)))
 
 		size := jsAllocOwner.Get("size")
 		expiry := jsAllocOwner.Get("expiry")
 		allocID := jsAllocOwner.Get("allocID")
 		lock := jsAllocOwner.Get("lock")
 		immutable := jsAllocOwner.Get("immutable")
+		terms := jsAllocOwner.Get("terms")
 
-		result, err := await(updateAllocation.Invoke(size, expiry, allocID, lock, immutable))
+		result, err := await(updateAllocation.Invoke(size, expiry, allocID, lock, immutable, terms))
 
 		assert.Equal(t, true, err[0].IsNull())
 		assert.Equal(t, true, result[0].Truthy())
