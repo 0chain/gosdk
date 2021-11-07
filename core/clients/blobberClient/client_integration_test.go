@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"testing"
@@ -1107,20 +1108,25 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 		path := strings.Split(root, `core`)
 		fmt.Println("PATH IS ", path[0], path[1])
 		//_ = os.Di("../../../")
+		cmd := exec.Command("sudo", "mkdir", "-m", "0777", "-p", "/blobber/files/files/exa/mpl/eId/objects/tmp/Mon/Wen")
+		stdout, err := cmd.Output()
 
-
-		err := os.MkdirAll(path[0] + `blobber/files/files/exa/mpl/eId/objects/tmp/Mon/Wen`, 0700)
 		if err != nil {
 			t.Fatal(err)
 		}
+		fmt.Println(string(stdout))
+		//err := os.MkdirAll(path[0]+`blobber/files/files/exa/mpl/eId/objects/tmp/Mon/Wen`, 0700)
+		//if err != nil {
+		//	t.Fatal(err)
+		//}
 		defer func() {
-			err := os.RemoveAll(path[0] + `blobber/files/files/exa/mpl/eId/objects/tmp/Mon`)
+			err := os.RemoveAll(`/blobber/files/files/exa/mpl/eId/objects/tmp/Mon`)
 			if err != nil {
 				t.Fatal(err)
 			}
 		}()
 
-		f, err := os.Create(path[0] + `blobber/files/files/exa/mpl/eId/objects/tmp/Mon/Wen/MyFile`)
+		f, err := os.Create(`/blobber/files/files/exa/mpl/eId/objects/tmp/Mon/Wen/MyFile`)
 		if err != nil {
 			t.Fatal(err)
 		}
