@@ -1124,16 +1124,16 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 		}
 		defer f.Close()
 
-		file, err := os.Open(root + "/helper_integration_test.go")
-		if err != nil {
-			t.Fatal(err)
-		}
-		defer file.Close()
-
-		_, err = io.Copy(f, file)
-		if err != nil {
-			t.Fatal(err)
-		}
+		//file, err := os.Open(root + "/helper_integration_test.go")
+		//if err != nil {
+		//	t.Fatal(err)
+		//}
+		//defer file.Close()
+		//
+		//_, err = io.Copy(f, file)
+		//if err != nil {
+		//	t.Fatal(err)
+		//}
 
 		pubKeyBytes, _ := hex.DecodeString(pubKey)
 		clientId := encryption.Hash(pubKeyBytes)
