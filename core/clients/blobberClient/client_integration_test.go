@@ -1131,7 +1131,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 		}
 		rm.Signature = rmSig
 
-		rmString, err := json.Marshal(rm)
+		_, err = json.Marshal(rm)
 		if err != nil {
 			t.Fatal(err)
 		}
