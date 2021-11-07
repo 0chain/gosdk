@@ -48,4 +48,5 @@ jobs:
           cd ../..
           cd ..
           pwd
+          ls
           make gosdk-integration-test
