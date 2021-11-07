@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/readmarker"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -1102,10 +1104,41 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 		pubKey, privKey, signSch := GeneratePubPrivateKey(t)
 		allocationTx := randString(32)
 
+		root, _ := os.Getwd()
+		path := strings.Split(root, `code`)
+
+		err := os.MkdirAll(path[0]+`docker.local/blobber1/files/files/exa/mpl/eId/objects/tmp/Mon/Wen`, os.ModePerm)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() {
+			err := os.RemoveAll(path[0] + `docker.local/blobber1/files/files/exa/mpl/eId/objects/tmp/Mon`)
+			if err != nil {
+				t.Fatal(err)
+			}
+		}()
+
+		f, err := os.Create(path[0] + `docker.local/blobber1/files/files/exa/mpl/eId/objects/tmp/Mon/Wen/MyFile`)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer f.Close()
+
+		file, err := os.Open(root + "/helper_integration_test.go")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer file.Close()
+
+		_, err = io.Copy(f, file)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		pubKeyBytes, _ := hex.DecodeString(pubKey)
 		clientId := encryption.Hash(pubKeyBytes)
 
-		err := tdController.ClearDatabase()
+		err = tdController.ClearDatabase()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1131,7 +1164,7 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 		}
 		rm.Signature = rmSig
 
-		_, err = json.Marshal(rm)
+		rmString, err := json.Marshal(rm)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1148,18 +1181,18 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 			expectedPath   string
 			expectingError bool
 		}{
-			//{
-			//	name: "Success",
-			//	input: &blobbergrpc.DownloadFileRequest{
-			//		Allocation: allocationTx,
-			//		Path:       "/some_file",
-			//		PathHash:   "exampleId:examplePath",
-			//		ReadMarker: string(rmString),
-			//		BlockNum:   "1",
-			//	},
-			//	expectedPath:   "some_file",
-			//	expectingError: false,
-			//},
+			{
+				name: "Success",
+				input: &blobbergrpc.DownloadFileRequest{
+					Allocation: allocationTx,
+					Path:       "/some_file",
+					PathHash:   "exampleId:examplePath",
+					ReadMarker: string(rmString),
+					BlockNum:   "1",
+				},
+				expectedPath:   "some_file",
+				expectingError: false,
+			},
 			{
 				name: "Failed",
 				input: &blobbergrpc.DownloadFileRequest{
