@@ -1116,6 +1116,15 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 			t.Fatal(err)
 		}
 		fmt.Println(string(stdout))
+
+		cmd = exec.Command("ls", "/blobber/files/files/exa/mpl/eId/objects/tmp/Mon")
+		stdout, err = cmd.Output()
+
+		if err != nil {
+			t.Fatal(err)
+		}
+		fmt.Println(string(stdout))
+
 		//err := os.MkdirAll(path[0]+`blobber/files/files/exa/mpl/eId/objects/tmp/Mon/Wen`, 0700)
 		//if err != nil {
 		//	t.Fatal(err)
