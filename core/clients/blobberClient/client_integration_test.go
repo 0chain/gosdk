@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/readmarker"
-	"io"
 	"log"
 	"net/http"
 	"os"
