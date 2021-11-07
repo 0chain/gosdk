@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -1102,21 +1103,22 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 		pubKey, privKey, signSch := GeneratePubPrivateKey(t)
 		allocationTx := randString(32)
 
-		//root, _ := os.Getwd()
-		//path := strings.Split(root, `core`)
+		root, _ := os.Getwd()
+		path := strings.Split(root, `core`)
+		fmt.Println("PATH IS ", path[0], path[1])
 
-		err := os.MkdirAll(`/blobber/files/files/exa/mpl/eId/objects/tmp/Mon/Wen`, 0700)
+		err := os.MkdirAll(`files/files/exa/mpl/eId/objects/tmp/Mon/Wen`, 0700)
 		if err != nil {
 			t.Fatal(err)
 		}
 		defer func() {
-			err := os.RemoveAll(`/blobber/files/files/exa/mpl/eId/objects/tmp/Mon`)
+			err := os.RemoveAll(`files/files/exa/mpl/eId/objects/tmp/Mon`)
 			if err != nil {
 				t.Fatal(err)
 			}
 		}()
 
-		f, err := os.Create(`/blobber/files/files/exa/mpl/eId/objects/tmp/Mon/Wen/MyFile`)
+		f, err := os.Create(`files/files/exa/mpl/eId/objects/tmp/Mon/Wen/MyFile`)
 		if err != nil {
 			t.Fatal(err)
 		}
