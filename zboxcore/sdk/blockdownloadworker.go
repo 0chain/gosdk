@@ -159,14 +159,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		downloadReq.Path = req.remotefilepath
 		downloadReq.PathHash = req.remotefilepathhash
 
-		//
-		//body := new(bytes.Buffer)
-		//formWriter := multipart.NewWriter(body)
-
-		//formWriter.WriteField("path_hash", req.remotefilepathhash)
-
 		if req.rxPay {
-			//formWriter.WriteField("rx_pay", "true") // pay oneself
 			downloadReq.RxPay = "true" // pay oneself
 		}
 
@@ -174,26 +167,13 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		downloadReq.NumBlocks = strconv.FormatInt(req.numBlocks, 10)
 		downloadReq.ReadMarker = string(rmData)
 
-		//formWriter.WriteField("block_num", fmt.Sprintf("%d", req.blockNum))
-		//formWriter.WriteField("num_blocks", fmt.Sprintf("%d", req.numBlocks))
-		//formWriter.WriteField("read_marker", string(rmData))
 		if req.authTicket != nil {
 			authTicketBytes, _ := json.Marshal(req.authTicket)
-			//formWriter.WriteField("auth_token", string(authTicketBytes))
 			downloadReq.AuthToken = string(authTicketBytes)
 		}
 		if len(req.contentMode) > 0 {
-			//formWriter.WriteField("content", req.contentMode)
 			downloadReq.Content = req.contentMode
 		}
-
-		//formWriter.Close()
-		//httpreq, err := zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationTx, body)
-		//if err != nil {
-		//	req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating download request")}
-		//	return
-		//}
-		//httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 		// TODO: Fix the timeout
 		//ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 		shouldRetry := false
@@ -245,85 +225,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		} else {
 			break
 		}
-		//err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		//	//if err != nil {
-		//	//	return err
-		//	//}
-		//	//if resp.Body != nil {
-		//	//	defer resp.Body.Close()
-		//	//}
-		//	if resp.StatusCode == http.StatusOK {
-		//		//req.consensus++
-		//
-		//		response, err := ioutil.ReadAll(resp.Body)
-		//		// if err != nil {
-		//		// return errors.Wrap(err, fmt.Sprintf("[%d] Read error:\n", req.blobberIdx))
-		//		// }
-		//		var rspData downloadBlock
-		//		rspData.idx = req.blobberIdx
-		//		// dec := json.NewDecoder(resp.Body)
-		//		// err := dec.Decode(&rspData)
-		//		err = json.Unmarshal(response, &rspData)
-		//		// After getting start of stream JSON message, other message chunks should not be in JSON
-		//		if err != nil {
-		//			rspData.Success = true
-		//			//rawData := make([]byte,0)
-		//			//json.Unmarshal(response, &rawData)
-		//			rspData.RawData = response
-		//			if len(req.encryptedKey) > 0 {
-		//				// 256 for the additional header bytes,  where chunk_size - 2 * 1024 is the encrypted data size
-		//				chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE-2*1024+256)
-		//				rspData.BlockChunks = chunks
-		//			} else {
-		//				chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
-		//				rspData.BlockChunks = chunks
-		//			}
-		//			rspData.RawData = []byte{}
-		//			incBlobberReadCtr(req.blobber, req.numBlocks)
-		//			req.result <- &rspData
-		//			return nil
-		//			// return errors.Wrap(err, fmt.Sprintf("[%d] Json decode error:\n", req.blobberIdx))
-		//		}
-		//		// if rspData.Success {
-		//		// 	elapsed := time.Since(start)
-		//		// 	fmt.Println("Received block", req.blockNum, elapsed)
-		//		// 	chunks := req.splitData(rspData.RawData, fileref.CHUNK_SIZE)
-		//		// 	rspData.BlockChunks = chunks
-		//		// 	rspData.RawData = []byte{}
-		//		// 	incBlobberReadCtr(req.blobber, req.numBlocks)
-		//		// 	req.result <- &rspData
-		//		// 	return nil
-		//		// }
-		//		if !rspData.Success && rspData.LatestRM != nil && rspData.LatestRM.ReadCounter >= getBlobberReadCtr(req.blobber) {
-		//			Logger.Info("Will be retrying download")
-		//			setBlobberReadCtr(req.blobber, rspData.LatestRM.ReadCounter)
-		//			shouldRetry = true
-		//			return errors.New("", "Need to retry the download")
-		//		}
-		//
-		//	} else {
-		//		resp_body, err := ioutil.ReadAll(resp.Body)
-		//		if err != nil {
-		//			return err
-		//		}
-		//		err = fmt.Errorf("Response Error: %s", string(resp_body))
-		//		if strings.Contains(err.Error(), "not_enough_tokens") {
-		//			shouldRetry, retry = false, 3 // don't repeat
-		//			req.blobber.SetSkip(true)
-		//		}
-		//		return err
-		//	}
-		//
-		//	return nil
-		//})
-		//if err != nil && (!shouldRetry || retry >= 3) {
-		//	req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: err}
-		//}
-		//if shouldRetry {
-		//	retry++
-		//} else {
-		//	break
-		//}
 	}
 }
 
