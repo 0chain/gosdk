@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/0chain/blobber/code/go/0chain.net/blobbercore/readmarker"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -1120,10 +1121,13 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 		//	t.Fatal(err)
 		//}
 		defer func() {
-			err := os.RemoveAll(`/blobber/files/files/exa/mpl/eId/objects/tmp/Mon`)
+			cmd := exec.Command("sudo", "rm", "-rf", "/blobber/files/files/exa/mpl/eId/objects/tmp/Mon/Wen")
+			stdout, err = cmd.Output()
+
 			if err != nil {
 				t.Fatal(err)
 			}
+			fmt.Println(string(stdout))
 		}()
 
 		f, err := os.Create(`/blobber/files/files/exa/mpl/eId/objects/tmp/Mon/Wen/MyFile`)
@@ -1132,16 +1136,16 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 		}
 		defer f.Close()
 
-		//file, err := os.Open(root + "/helper_integration_test.go")
-		//if err != nil {
-		//	t.Fatal(err)
-		//}
-		//defer file.Close()
-		//
-		//_, err = io.Copy(f, file)
-		//if err != nil {
-		//	t.Fatal(err)
-		//}
+		file, err := os.Open(root + "/client_helper_integration_test.go")
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer file.Close()
+
+		_, err = io.Copy(f, file)
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		pubKeyBytes, _ := hex.DecodeString(pubKey)
 		clientId := encryption.Hash(pubKeyBytes)
