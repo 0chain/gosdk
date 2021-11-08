@@ -81,6 +81,7 @@ const (
 	GET_MINERSC_USER     = MINERSC_PFX + "/getUserPools"
 	GET_MINERSC_MINERS   = MINERSC_PFX + "/getMinerList"
 	GET_MINERSC_SHARDERS = MINERSC_PFX + "/getSharderList"
+	GET_MINERSC_EVENTS   = MINERSC_PFX + "/get_events"
 
 	// storage SC
 
@@ -1065,6 +1066,15 @@ func GetSharders(cb GetInfoCallback) (err error) {
 		return
 	}
 	var url = GET_MINERSC_SHARDERS
+	go getInfoFromSharders(url, 0, cb)
+	return
+}
+
+func GetEvents(cb GetInfoCallback) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	var url = GET_MINERSC_EVENTS
 	go getInfoFromSharders(url, 0, cb)
 	return
 }
