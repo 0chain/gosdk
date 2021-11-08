@@ -81,7 +81,7 @@ const (
 	GET_MINERSC_USER     = MINERSC_PFX + "/getUserPools"
 	GET_MINERSC_MINERS   = MINERSC_PFX + "/getMinerList"
 	GET_MINERSC_SHARDERS = MINERSC_PFX + "/getSharderList"
-	GET_MINERSC_EVENTS   = MINERSC_PFX + "/get_events"
+	GET_MINERSC_EVENTS   = MINERSC_PFX + "/getEvents"
 
 	// storage SC
 
@@ -1074,12 +1074,13 @@ func GetEvents(cb GetInfoCallback, filters map[string]string) (err error) {
 	if err = checkConfig(); err != nil {
 		return
 	}
-	go getInfoFromSharders(withParams(GET_MINERSC_EVENTS, Params{
-		"block_number": filters["block_number"],
-		"tx_hash":      filters["tx_hash"],
-		"type":         filters["type"],
-		"tag":          filters["tag"],
-	}), 0, cb)
+	go getInfoFromSharders(GET_MINERSC_EVENTS, 0, cb)
+	//go getInfoFromSharders(withParams(GET_MINERSC_EVENTS, Params{
+	//	"block_number": filters["block_number"],
+	//	"tx_hash":      filters["tx_hash"],
+	//	"type":         filters["type"],
+	//	"tag":          filters["tag"],
+	//}), 0, cb)
 	return
 }
 
