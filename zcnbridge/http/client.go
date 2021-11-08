@@ -10,10 +10,10 @@ import (
 
 const (
 	// clientTimeout represents default http.Client timeout.
-	clientTimeout = 10 * time.Second
+	clientTimeout = 60 * time.Second
 
 	// tlsHandshakeTimeout represents default http.Transport TLS handshake timeout.
-	tlsHandshakeTimeout = 5 * time.Second
+	tlsHandshakeTimeout = 10 * time.Second
 
 	// dialTimeout represents default net.Dialer timeout.
 	dialTimeout = 5 * time.Second
@@ -21,14 +21,18 @@ const (
 
 // NewClient creates default http.Client with timeouts.
 func NewClient() *http.Client {
+	d := &net.Dialer{
+		Timeout: dialTimeout,
+	}
+
+	transport := &http.Transport{
+		TLSHandshakeTimeout: tlsHandshakeTimeout,
+		DialContext:         d.DialContext,
+	}
+
 	return &http.Client{
-		Timeout: clientTimeout,
-		Transport: &http.Transport{
-			TLSHandshakeTimeout: tlsHandshakeTimeout,
-			DialContext: (&net.Dialer{
-				Timeout: dialTimeout,
-			}).DialContext,
-		},
+		Timeout:   clientTimeout,
+		Transport: transport,
 	}
 }
 
