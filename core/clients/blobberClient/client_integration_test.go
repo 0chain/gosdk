@@ -1130,7 +1130,15 @@ func TestBlobberClient_IntegrationTest(t *testing.T) {
 		//	t.Fatal(err)
 		//}
 		defer func() {
-			cmd := exec.Command("sudo", "rm", "-rf", "/blobber/files/files/exa/mpl/eId/objects/tmp/Mon/Wen")
+			cmd := exec.Command("ls", "/blobber/files/files/exa/mpl/eId/objects/tmp/Mon/Wen")
+			stdout, err = cmd.Output()
+
+			if err != nil {
+				t.Fatal(err)
+			}
+			fmt.Println(string(stdout))
+
+			cmd = exec.Command("sudo", "rm", "-rf", "/blobber/files/files/exa/mpl/eId/objects/tmp/Mon/Wen")
 			stdout, err = cmd.Output()
 
 			if err != nil {
