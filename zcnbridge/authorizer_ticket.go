@@ -25,22 +25,22 @@ func (e *JobError) MarshalJSON() ([]byte, error) {
 	return json.Marshal(e.Error())
 }
 
-// authorizerBurnEvent The output of an authorizer job
-type authorizerBurnEvent struct {
+// AuthorizerBurnEvent returned from burn ticket handler Example: /v1/ether/burnticket/get
+type AuthorizerBurnEvent struct {
 	// 	AuthorizerID Authorizer ID
-	AuthorizerID string `json:"authorizer_id"`
+	AuthorizerID string `json:"authorizer_id,omitempty"`
 	// BurnTicket Returns burn ticket
 	BurnTicket *proofOfBurn `json:"ticket,omitempty"`
 	// Err gives error of job on server side
 	Err *JobError `json:"err,omitempty"`
-	// Status gives job status on server side
+	// Status gives job status on server side (authoriser)
 	Status JobStatus `json:"status,omitempty"`
 }
 
-func (r *authorizerBurnEvent) Error() error {
+func (r *AuthorizerBurnEvent) Error() error {
 	return r.Err
 }
 
-func (r *authorizerBurnEvent) Data() interface{} {
+func (r *AuthorizerBurnEvent) Data() interface{} {
 	return r.BurnTicket
 }

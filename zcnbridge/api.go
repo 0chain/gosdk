@@ -2,10 +2,13 @@ package zcnbridge
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -19,19 +22,20 @@ const (
 	Retrying        = 5
 	RequestDuration = time.Second * 120
 	PollInterval    = time.Second * 5
+	BurnTicketPath  = "/v1/ether/burnticket/get"
 )
 
 type (
 	// jobResult is HTTP client response result
 	jobResult struct {
 		// result is server job result
-		result *authorizerBurnEvent
+		result *AuthorizerBurnEvent
 		// error describes an error occurred during result processing on client side
 		error
 	}
 
 	responseChannelType chan *jobResult
-	resultsChannelType  chan []*authorizerBurnEvent
+	resultsChannelType  chan []*AuthorizerBurnEvent
 )
 
 var (
@@ -103,7 +107,7 @@ func CreateMintPayload(ctx context.Context, hash, address, clientID string, requ
 }
 
 func handleResults(responseChannel responseChannelType, resultsChannel resultsChannelType, wg *sync.WaitGroup) {
-	var results []*authorizerBurnEvent
+	var results []*AuthorizerBurnEvent
 	for result := range responseChannel {
 		if result.error == nil {
 			results = append(results, result.result)
@@ -117,17 +121,26 @@ func getResultFromAuthoriser(ctx context.Context, node *AuthorizerNode, values u
 	currContext, cancel := context.WithTimeout(ctx, RequestDuration)
 	defer cancel()
 
-	// TODO: Specify error in each branch
+	var (
+		result        *jobResult
+		response      *http.Response
+		lastError     error
+		ok            bool
+		burnTicketURL = strings.TrimSuffix(node.URL, "/") + BurnTicketPath
+	)
 
 	for {
 		select {
 		case <-currContext.Done():
+			result = &jobResult{}
+			result.error = errors.Wrap("get_result_from_authorizer", "request timeout", lastError)
+			responseChannel <- result
 			return
 		default:
-			response, err := client.PostForm(node.URL, values)
-			if res, ok := processResponse(ctx, response, err); ok {
-				res.result.AuthorizerID = node.ID
-				responseChannel <- res
+			response, lastError = client.PostForm(burnTicketURL, values)
+			if result, ok = processResponse(response, lastError); ok {
+				result.result.AuthorizerID = node.ID
+				responseChannel <- result
 				return
 			}
 			time.Sleep(PollInterval)
@@ -135,7 +148,12 @@ func getResultFromAuthoriser(ctx context.Context, node *AuthorizerNode, values u
 	}
 }
 
-func processResponse(ctx context.Context, response *http.Response, err error) (*jobResult, bool) {
+func processResponse(response *http.Response, err error) (*jobResult, bool) {
+	var (
+		res = &jobResult{}
+		ev  = &AuthorizerBurnEvent{}
+	)
+
 	if err != nil {
 		err = errors.Wrap("authorizer_post_request", "failed to call the authorizer", err)
 	}
@@ -144,11 +162,21 @@ func processResponse(ctx context.Context, response *http.Response, err error) (*
 		err = errors.Wrap("authorizer_post_request", fmt.Sprintf("error %d", response.StatusCode), err)
 	}
 
-	res := &jobResult{
-		error: err,
+	body, e := ioutil.ReadAll(response.Body)
+	if e != nil || len(body) == 0 {
+		res.error = err
+		return res, false
 	}
 
-	// TODO: Unmarshal body
+	e = json.Unmarshal(body, ev)
+	if e != nil {
+		err = errors.Wrap("decode_message_body", "failed to decode message body", e)
+		res.error = err
+		return res, false
+	}
+
+	res.error = err
+	res.result = ev
 
 	return res, err == nil
 }
