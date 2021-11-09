@@ -1,3 +1,5 @@
+// +build js,wasm
+
 package jsbridge
 
 import (
@@ -65,7 +67,7 @@ func TestBinder(t *testing.T) {
 	for _, it := range tests {
 		t.Run(it.Name, func(test *testing.T) {
 			fn := it.Func()
-			b, err := NewBinderBuilder(fn.Type()).Build()
+			b, err := NewInputBuilder(fn.Type()).Build()
 
 			require.NoError(test, err)
 

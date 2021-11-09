@@ -1,8 +1,8 @@
+// +build js,wasm
+
 package jsbridge
 
 import (
-	"errors"
-	"fmt"
 	"reflect"
 	"syscall/js"
 )
@@ -10,18 +10,20 @@ import (
 // InputBinder convert inputs from js.Value to reflect.Value
 type InputBinder func([]js.Value) ([]reflect.Value, error)
 
-// BinderBuilder binder builder
-type BinderBuilder struct {
-	fn      reflect.Type
-	numIn   int
-	binders []func(jv js.Value) reflect.Value
+// InputBuilder binder builder
+type InputBuilder struct {
+	fn         reflect.Type
+	numIn      int
+	IsVariadic bool
+	binders    []func(jv js.Value) reflect.Value
 }
 
-// NewBinderBuilder create BinderBuilder
-func NewBinderBuilder(fn reflect.Type) *BinderBuilder {
-	return &BinderBuilder{
-		fn:    fn,
-		numIn: fn.NumIn(),
+// NewInputBuilder create InputBuilder
+func NewInputBuilder(fn reflect.Type) *InputBuilder {
+	return &InputBuilder{
+		fn:         fn,
+		numIn:      fn.NumIn(),
+		IsVariadic: fn.IsVariadic(),
 	}
 }
 
@@ -40,9 +42,13 @@ func NewBinderBuilder(fn reflect.Type) *BinderBuilder {
 //  | map[string]interface{} | new object             |
 //
 // Panics if x is not one of the expected types.
-func (b *BinderBuilder) Build() (InputBinder, error) {
+func (b *InputBuilder) Build() (InputBinder, error) {
 
 	b.binders = make([]func(jv js.Value) reflect.Value, b.numIn)
+
+	if b.IsVariadic {
+		b.numIn--
+	}
 
 	for i := 0; i < b.numIn; i++ {
 		inputType := b.fn.In(i)
@@ -68,7 +74,7 @@ func (b *BinderBuilder) Build() (InputBinder, error) {
 			b.binders[i] = jsValueToBool
 
 		default:
-			return nil, errors.New(fmt.Sprint(v))
+			return nil, ErrBinderNotImplemented
 		}
 
 	}
@@ -77,7 +83,7 @@ func (b *BinderBuilder) Build() (InputBinder, error) {
 }
 
 // Bind bind js inputs to reflect values
-func (b *BinderBuilder) Bind(args []js.Value) ([]reflect.Value, error) {
+func (b *InputBuilder) Bind(args []js.Value) ([]reflect.Value, error) {
 	if len(args) != b.numIn {
 		return nil, ErrMismatchedInputLength
 	}

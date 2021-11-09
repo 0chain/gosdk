@@ -6,6 +6,8 @@ import (
 	"fmt"
 
 	"github.com/0chain/gosdk/core/version"
+	"github.com/0chain/gosdk/wasmsdk/jsbridge"
+	"github.com/0chain/gosdk/zcncore"
 
 	"syscall/js"
 )
@@ -15,7 +17,12 @@ import (
 func main() {
 	fmt.Printf("0CHAIN - GOSDK (version=%v)\n", version.VERSIONSTR)
 
-	js.Global().Set("InitZCNSDK", js.FuncOf(InitZCNSDK))
+	jsbridge.BindFuncs(map[string]interface{}{
+		"GetVersion": zcncore.GetVersion,
+		"InitZCNSDK": zcncore.InitZCNSDK,
+		"CloseLog":   zcncore.CloseLog,
+	})
+	js.Global().Set("initializeConfig", js.FuncOf(InitializeConfig))
 
 	// Just functions for 0proxy.
 	js.Global().Set("Upload", js.FuncOf(Upload))
@@ -41,9 +48,7 @@ func main() {
 
 	// wallet.go
 	js.Global().Set("GetMinShardersVerify", js.FuncOf(GetMinShardersVerify))
-	js.Global().Set("GetVersion", js.FuncOf(GetVersion))
 	js.Global().Set("SetLogFile", js.FuncOf(SetLogFile))
-	js.Global().Set("CloseLog", js.FuncOf(CloseLog))
 
 	js.Global().Set("SetNetwork", js.FuncOf(SetNetwork))
 	js.Global().Set("SplitKeys", js.FuncOf(SplitKeys))
@@ -92,7 +97,7 @@ func main() {
 	js.Global().Set("Decrypt", js.FuncOf(Decrypt))
 
 	// sdk.go
-	js.Global().Set("initializeConfig", js.FuncOf(InitializeConfig))
+
 	js.Global().Set("initStorageSDK", js.FuncOf(InitStorageSDK))
 	js.Global().Set("InitAuthTicket", js.FuncOf(InitAuthTicket))
 	js.Global().Set("GetNetwork", js.FuncOf(GetNetwork))
@@ -137,4 +142,6 @@ func main() {
 	m3u8.Start()
 
 	<-make(chan bool)
+
+	jsbridge.Close()
 }
