@@ -1,5 +1,5 @@
 // go:build test
-// +build test
+// +build js,wasm
 
 package main
 

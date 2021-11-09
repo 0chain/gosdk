@@ -1,3 +1,5 @@
+// +build js,wasm
+
 package main
 
 import (
@@ -12,6 +14,8 @@ import (
 
 func main() {
 	fmt.Printf("0CHAIN - GOSDK (version=%v)\n", version.VERSIONSTR)
+
+	js.Global().Set("InitZCNSDK", js.FuncOf(InitZCNSDK))
 
 	// Just functions for 0proxy.
 	js.Global().Set("Upload", js.FuncOf(Upload))
@@ -40,7 +44,7 @@ func main() {
 	js.Global().Set("GetVersion", js.FuncOf(GetVersion))
 	js.Global().Set("SetLogFile", js.FuncOf(SetLogFile))
 	js.Global().Set("CloseLog", js.FuncOf(CloseLog))
-	js.Global().Set("InitZCNSDK", js.FuncOf(InitZCNSDK))
+
 	js.Global().Set("SetNetwork", js.FuncOf(SetNetwork))
 	js.Global().Set("SplitKeys", js.FuncOf(SplitKeys))
 	js.Global().Set("GetNetworkJSON", js.FuncOf(GetNetworkJSON))
@@ -128,6 +132,9 @@ func main() {
 	js.Global().Set("CommitToFabric", js.FuncOf(CommitToFabric))
 	js.Global().Set("GetAllocationMinLock", js.FuncOf(GetAllocationMinLock))
 	js.Global().Set("SetNumBlockDownloads", js.FuncOf(SetNumBlockDownloads))
+
+	m3u8 := &M3u8Server{}
+	m3u8.Start()
 
 	<-make(chan bool)
 }
