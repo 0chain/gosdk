@@ -11,12 +11,14 @@ on:
         default: 'no'
         required: true
       version_tag:
-        description: 'Input Tag Example - v1.2.2'
+        description: 'Input major or miner for release type. Default is patch'
+        default: 'patch'
         required: true
-jobs:        
+
+jobs:
   zboxcli:
     name: Triggering zboxcli Build
-    runs-on: ubuntu-20.04
+    runs-on: [self-hosted, build]
     
     steps:
     - name: Generating JSON for Input

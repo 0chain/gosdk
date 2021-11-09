@@ -18,7 +18,7 @@ env:
 jobs:
   build:
     name: Build
-    runs-on: ubuntu-20.04
+    runs-on: [self-hosted, build]
 
     steps:
     - name: Set up Go 1.x
@@ -45,7 +45,7 @@ jobs:
 
   make:
     name: Make File
-    runs-on: ubuntu-20.04
+    runs-on: [self-hosted, build]
 
     needs: 
     - build
@@ -75,6 +75,7 @@ jobs:
       run: |
         VERSION=$(echo ${GITHUB_REF#refs/heads/}) 
         echo ::set-output name=TAG::${VERSION}
+
     - name: Delete Old Release & Tag v1.1.1
       if: github.event.inputs.fixed_tag == 'yes' && steps.get_version.outputs.TAG == 'staging'
       uses: dev-drprasad/delete-tag-and-release@v0.2.0
@@ -104,7 +105,7 @@ jobs:
         
   zproxy:
     name: Triggering 0proxy Build
-    runs-on: ubuntu-20.04
+    runs-on: [self-hosted, build]
 
     needs: 
     - make
@@ -138,7 +139,7 @@ jobs:
         
   zbox:
     name: Triggering 0box Build
-    runs-on: ubuntu-20.04
+    runs-on: [self-hosted, build]
 
     needs: 
     - make
@@ -172,7 +173,7 @@ jobs:
         
   zdns:
     name: Triggering 0dns Build
-    runs-on: ubuntu-20.04
+    runs-on: [self-hosted, build]
 
     needs: 
     - make
@@ -206,7 +207,7 @@ jobs:
         
   zblock:
     name: Triggering 0block Build
-    runs-on: ubuntu-20.04
+    runs-on: [self-hosted, build]
 
     needs: 
     - make
@@ -240,7 +241,7 @@ jobs:
         
   zsearch:
     name: Triggering 0search Build
-    runs-on: ubuntu-20.04
+    runs-on: [self-hosted, build]
 
     needs: 
     - make
@@ -274,7 +275,7 @@ jobs:
         
   blobber:
     name: Triggering blobber Build
-    runs-on: ubuntu-20.04
+    runs-on: [self-hosted, build]
 
     needs: 
     - make
@@ -306,107 +307,107 @@ jobs:
         trigger_workflow: true
         wait_workflow: true 
 
-#   zboxcli:
-#     name: Triggering zboxcli Build
-#     runs-on: ubuntu-20.04
+  zboxcli:
+    name: Triggering zboxcli Build
+    runs-on: [self-hosted, build]
     
-#     needs: 
-#     - make
+    needs: 
+    - make
     
-#     steps:
-#     - name: Generating JSON for Input
-#       id: get_tag
-#       run: |
-#           JSON=$(echo {\"branch_ref\":\"staging\"\,\"fixed_tag\":\"$TAG\"\,\"version_tag\":\"$VERSION_TAG\"})
-#           BRANCH=$(echo ${GITHUB_REF#refs/heads/}) 
-#           echo ::set-output name=JSON::${JSON}
-#           echo ::set-output name=BRANCH::${BRANCH}
-#           echo "Branch ${BRANCH}."
-#           echo "Fixed Tag ${TAG}."
-#       env:
-#         TAG: ${{ github.event.inputs.fixed_tag }}
-#         VERSION_TAG: ${{ github.event.inputs.version_tag }}
+    steps:
+    - name: Generating JSON for Input
+      id: get_tag
+      run: |
+          JSON=$(echo {\"branch_ref\":\"staging\"\,\"fixed_tag\":\"$TAG\"\,\"version_tag\":\"$VERSION_TAG\"})
+          BRANCH=$(echo ${GITHUB_REF#refs/heads/}) 
+          echo ::set-output name=JSON::${JSON}
+          echo ::set-output name=BRANCH::${BRANCH}
+          echo "Branch ${BRANCH}."
+          echo "Fixed Tag ${TAG}."
+      env:
+        TAG: ${{ github.event.inputs.fixed_tag }}
+        VERSION_TAG: ${{ github.event.inputs.version_tag }}
 
-#     - name: Triggering zboxcli Build
-#       uses: convictional/trigger-workflow-and-wait@v1.3.0
-#       if: steps.get_tag.outputs.BRANCH == 'staging' && github.event.inputs.fixed_tag == 'yes'
-#       with:
-#         owner: 0chain
-#         repo: gosdk
-#         github_token: ${{ secrets.GOSDK }}
-#         workflow_file_name: trigg-zboxcli.yml
-#         ref: staging
-#         inputs: ${{ steps.get_tag.outputs.JSON }}
-#         propagate_failure: true
-#         trigger_workflow: true
-#         wait_workflow: true
+    - name: Triggering zboxcli Build
+      uses: convictional/trigger-workflow-and-wait@v1.3.0
+      if: steps.get_tag.outputs.BRANCH == 'staging' && github.event.inputs.fixed_tag == 'yes'
+      with:
+        owner: 0chain
+        repo: gosdk
+        github_token: ${{ secrets.GOSDK }}
+        workflow_file_name: trigg-zboxcli.yml
+        ref: staging
+        inputs: ${{ steps.get_tag.outputs.JSON }}
+        propagate_failure: true
+        trigger_workflow: true
+        wait_workflow: true
 
-#   zboxmobile:
-#     name: Triggering zboxmobile Build
-#     runs-on: ubuntu-20.04
+  zboxmobile:
+    name: Triggering zboxmobile Build
+    runs-on: [self-hosted, build]
     
-#     needs: 
-#     - make
+    needs: 
+    - make
 
-#     steps:
-#     - name: Generating JSON for Input
-#       id: get_tag
-#       run: |
-#           JSON=$(echo {\"branch_ref\":\"staging\"\,\"fixed_tag\":\"$TAG\"\,\"version_tag\":\"$VERSION_TAG\"})
-#           BRANCH=$(echo ${GITHUB_REF#refs/heads/}) 
-#           echo ::set-output name=JSON::${JSON}
-#           echo ::set-output name=BRANCH::${BRANCH}
-#           echo "Branch ${BRANCH}."
-#           echo "Fixed Tag ${TAG}."
-#       env:
-#         TAG: ${{ github.event.inputs.fixed_tag }}
-#         VERSION_TAG: ${{ github.event.inputs.version_tag }}
+    steps:
+    - name: Generating JSON for Input
+      id: get_tag
+      run: |
+          JSON=$(echo {\"branch_ref\":\"staging\"\,\"fixed_tag\":\"$TAG\"\,\"version_tag\":\"$VERSION_TAG\"})
+          BRANCH=$(echo ${GITHUB_REF#refs/heads/}) 
+          echo ::set-output name=JSON::${JSON}
+          echo ::set-output name=BRANCH::${BRANCH}
+          echo "Branch ${BRANCH}."
+          echo "Fixed Tag ${TAG}."
+      env:
+        TAG: ${{ github.event.inputs.fixed_tag }}
+        VERSION_TAG: ${{ github.event.inputs.version_tag }}
         
-#     - name: Triggering zboxmobile Build
-#       uses: convictional/trigger-workflow-and-wait@v1.3.0
-#       if: steps.get_tag.outputs.BRANCH == 'staging' && github.event.inputs.fixed_tag == 'yes'
-#       with:
-#         owner: 0chain
-#         repo: gosdk
-#         github_token: ${{ secrets.GOSDK }}
-#         workflow_file_name: trigg-zboxmobile.yml
-#         ref: staging
-#         inputs: ${{ steps.get_tag.outputs.JSON }}
-#         propagate_failure: true
-#         trigger_workflow: true
-#         wait_workflow: true   
+    - name: Triggering zboxmobile Build
+      uses: convictional/trigger-workflow-and-wait@v1.3.0
+      if: steps.get_tag.outputs.BRANCH == 'staging' && github.event.inputs.fixed_tag == 'yes'
+      with:
+        owner: 0chain
+        repo: gosdk
+        github_token: ${{ secrets.GOSDK }}
+        workflow_file_name: trigg-zboxmobile.yml
+        ref: staging
+        inputs: ${{ steps.get_tag.outputs.JSON }}
+        propagate_failure: true
+        trigger_workflow: true
+        wait_workflow: true   
 
-#   zwalletcli:
-#     name: Triggering zwalletcli Build
-#     runs-on: ubuntu-20.04
+  zwalletcli:
+    name: Triggering zwalletcli Build
+    runs-on: [self-hosted, build]
     
-#     needs: 
-#     - make
+    needs: 
+    - make
     
-#     steps:
-#     - name: Generating JSON for Input
-#       id: get_tag
-#       run: |
-#           JSON=$(echo {\"branch_ref\":\"staging\"\,\"fixed_tag\":\"$TAG\"\,\"version_tag\":\"$VERSION_TAG\"})
-#           BRANCH=$(echo ${GITHUB_REF#refs/heads/}) 
-#           echo ::set-output name=JSON::${JSON}
-#           echo ::set-output name=BRANCH::${BRANCH}
-#           echo "Branch ${BRANCH}."
-#           echo "Fixed Tag ${TAG}."
-#       env:
-#         TAG: ${{ github.event.inputs.fixed_tag }}
-#         VERSION_TAG: ${{ github.event.inputs.version_tag }}
+    steps:
+    - name: Generating JSON for Input
+      id: get_tag
+      run: |
+          JSON=$(echo {\"branch_ref\":\"staging\"\,\"fixed_tag\":\"$TAG\"\,\"version_tag\":\"$VERSION_TAG\"})
+          BRANCH=$(echo ${GITHUB_REF#refs/heads/}) 
+          echo ::set-output name=JSON::${JSON}
+          echo ::set-output name=BRANCH::${BRANCH}
+          echo "Branch ${BRANCH}."
+          echo "Fixed Tag ${TAG}."
+      env:
+        TAG: ${{ github.event.inputs.fixed_tag }}
+        VERSION_TAG: ${{ github.event.inputs.version_tag }}
         
-#     - name: Triggering zwalletcli Build
-#       uses: convictional/trigger-workflow-and-wait@v1.3.0
-#       if: steps.get_tag.outputs.BRANCH == 'staging' && github.event.inputs.fixed_tag == 'yes'
-#       with:
-#         owner: 0chain
-#         repo: gosdk
-#         github_token: ${{ secrets.GOSDK }}
-#         workflow_file_name: trigg-zwalletcli.yml
-#         ref: staging 
-#         inputs: ${{ steps.get_tag.outputs.JSON }}
-#         propagate_failure: true
-#         trigger_workflow: true
-#         wait_workflow: true
+    - name: Triggering zwalletcli Build
+      uses: convictional/trigger-workflow-and-wait@v1.3.0
+      if: steps.get_tag.outputs.BRANCH == 'staging' && github.event.inputs.fixed_tag == 'yes'
+      with:
+        owner: 0chain
+        repo: gosdk
+        github_token: ${{ secrets.GOSDK }}
+        workflow_file_name: trigg-zwalletcli.yml
+        ref: staging 
+        inputs: ${{ steps.get_tag.outputs.JSON }}
+        propagate_failure: true
+        trigger_workflow: true
+        wait_workflow: true
