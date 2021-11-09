@@ -42,7 +42,13 @@ var (
 	client *retryablehttp.Client
 )
 
-func CreateMintPayload(ctx context.Context, hash, address, clientID string, requiredQuorum int) (*MintPayload, error) {
+func CreateMintPayload(
+	ctx context.Context,
+	// hash: Eth transaction hash, address: bridge contract address, clientID: client ID in 0Chain
+	hash, address, clientID string,
+	// quorum required to reach consensus
+	requiredQuorum int,
+) (*MintPayload, error) {
 	client = bridge.NewRetryableClient(Retrying)
 	authorizers, err := GetAuthorizers()
 
