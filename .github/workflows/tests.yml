@@ -1,4 +1,4 @@
-name: Unit tests
+name: Tests
 
 on:
   push:
@@ -40,7 +40,7 @@ jobs:
       - name: Run Unit Test
         run: LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH make gosdk-test
 
-wasm-test:
+  wasm-test:
     runs-on: ubuntu-latest
     env:
       GOOS: js
