@@ -138,9 +138,6 @@ func main() {
 	js.Global().Set("GetAllocationMinLock", js.FuncOf(GetAllocationMinLock))
 	js.Global().Set("SetNumBlockDownloads", js.FuncOf(SetNumBlockDownloads))
 
-	m3u8 := &M3u8Server{}
-	m3u8.Start()
-
 	<-make(chan bool)
 
 	jsbridge.Close()
