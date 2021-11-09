@@ -57,7 +57,7 @@ func wrappFunc(fn interface{}) (js.Func, error) {
 		return js.Func{}, ErrFuncNotSupported
 	}
 
-	awaiter, err := async(funcType)
+	awaiter, err := Async(funcType)
 
 	if err != nil {
 		return js.Func{}, err

@@ -9,7 +9,7 @@ import (
 
 type AsyncInvoker func(resolve, reject js.Value, fn reflect.Value, in []reflect.Value)
 
-func async(funcType reflect.Type) (AsyncInvoker, error) {
+func Async(funcType reflect.Type) (AsyncInvoker, error) {
 
 	outputBinder, err := NewOutputBuilder(funcType).Build()
 	if err != nil {
