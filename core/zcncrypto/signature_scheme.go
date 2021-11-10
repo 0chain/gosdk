@@ -2,7 +2,6 @@ package zcncrypto
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
@@ -55,19 +54,6 @@ type SignatureScheme interface {
 type SplitSignatureScheme interface {
 	SignatureScheme
 	SplitKeys(numSplits int) (*Wallet, error)
-}
-
-// NewSignatureScheme creates an instance for using signature functions
-func NewSignatureScheme(sigScheme string) SignatureScheme {
-	switch sigScheme {
-	case "ed25519":
-		return NewED255190chainScheme()
-	case "bls0chain":
-		//return NewBLS0ChainScheme()
-		return NewMircalScheme()
-	default:
-		panic(fmt.Sprintf("unknown signature scheme: %v", sigScheme))
-	}
 }
 
 // Marshal returns json string
