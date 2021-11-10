@@ -1,3 +1,5 @@
+// +build js,wasm
+
 package main
 
 import (
@@ -441,6 +443,7 @@ func Move(this js.Value, p []js.Value) interface{} {
 
 // Upload is to upload file to dStorage
 func Upload(this js.Value, p []js.Value) interface{} {
+
 	method := p[0].String() // POST or PUT
 	allocation := p[1].String()
 	clientJSON := p[2].String()

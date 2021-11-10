@@ -1,4 +1,4 @@
-name: Unit tests
+name: Tests
 
 on:
   push:
@@ -21,7 +21,7 @@ jobs:
   #      golangci-lint --version
   #  - name: Lint
   #    run: make lint
-  test:
+  go-test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -39,3 +39,29 @@ jobs:
 
       - name: Run Unit Test
         run: LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH make gosdk-test
+
+  wasm-test:
+    runs-on: ubuntu-latest
+    env:
+      GOOS: js
+      GOARCH: wasm
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup go 1.17
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.17' # The Go version to download (if necessary) and use.
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - name: Setup PATH for wasm
+        run: echo "${{env.GOROOT}}/misc/wasm" >> $GITHUB_PATH
+
+      - name: Install herumi's libraries
+        run: sudo make install-herumi-ubuntu
+
+      - name: Run wasm-test
+        run: LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH make wasm-test
+
