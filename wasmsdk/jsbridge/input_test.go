@@ -1,5 +1,3 @@
-// +build js,wasm
-
 package jsbridge
 
 import (
