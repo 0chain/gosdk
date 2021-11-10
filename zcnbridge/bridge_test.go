@@ -31,7 +31,7 @@ func TestInitTestBridge(t *testing.T) {
 		require.NotEmpty(t, transaction.Hash())
 		t.Logf("Transaction hash: %s", transaction.Hash().Hex())
 
-		res := zcnbridge.TransactionStatus(transaction.Hash().Hex())
+		res := zcnbridge.GetTransactionStatus(transaction.Hash().Hex())
 		require.Equal(t, 1, res)
 	})
 }
@@ -47,7 +47,7 @@ func TestTransactionStatus(t *testing.T) {
 		require.NotEmpty(t, transaction.Hash())
 		t.Logf("Transaction hash: %s", transaction.Hash().Hex())
 
-		res := zcnbridge.TransactionStatus(transaction.Hash().Hex())
+		res := zcnbridge.GetTransactionStatus(transaction.Hash().Hex())
 		require.Equal(t, 1, res)
 	})
 }
@@ -63,7 +63,7 @@ func TestBurnTicketCollection(t *testing.T) {
 		require.NotEmpty(t, transaction.Hash())
 		t.Logf("Transaction hash: %s", transaction.Hash().Hex())
 
-		res := zcnbridge.TransactionStatus(transaction.Hash().Hex())
+		res := zcnbridge.GetTransactionStatus(transaction.Hash().Hex())
 		require.Equal(t, 1, res)
 
 		payload, err := zcnbridge.CreateMintPayload(

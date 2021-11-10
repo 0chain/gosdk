@@ -89,7 +89,7 @@ func IncreaseBurnerAllowance(amountTokens int64) (*types.Transaction, error) {
 	// FIXME: proper calculation
 	gasLimit = gasLimit + gasLimit/10
 
-	ownerAddress, privKey, err := ownerPrivateKeyAndAddress()
+	ownerAddress, privKey, err := EthereumPrivateKeyAndAddress()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read private key and ownerAddress")
 	}
@@ -109,7 +109,7 @@ func IncreaseBurnerAllowance(amountTokens int64) (*types.Transaction, error) {
 	return tran, nil
 }
 
-func TransactionStatus(hash string) int {
+func GetTransactionStatus(hash string) int {
 	return zcncore.CheckEthHashStatus(hash)
 }
 
@@ -150,7 +150,7 @@ func BurnWZCN(amountTokens int64, clientID string) (*types.Transaction, error) {
 	// To
 	bridgeAddress := common.HexToAddress(config.bridgeAddress)
 
-	ownerAddress, privKey, err := ownerPrivateKeyAndAddress()
+	ownerAddress, privKey, err := EthereumPrivateKeyAndAddress()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read private key and ownerAddress")
 	}

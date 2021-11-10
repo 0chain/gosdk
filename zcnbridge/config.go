@@ -15,6 +15,11 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Required config
+// 1. For SC REST we need only miners address, will take it from network - init from config
+// 2. For SC method we need to run local chain to run minting and burning
+// 3. For Ethereum, we will take params from
+
 //  _allowances[owner][spender] = amount;
 // as a spender, ERC20 WZCN token must increase allowance for the bridge to make burn on behalf of WZCN owner
 
@@ -22,12 +27,12 @@ type bridgeConfig struct {
 	mnemonic string // owner mnemonic
 	//ownerAddress  common.Address
 	//publicKey     crypto.PublicKey
-	bridgeAddress string
-	wzcnAddress   string
-	nodeURL       string
-	chainID       int
-	gasLimit      int
-	value         int
+	bridgeAddress   string
+	wzcnAddress     string
+	ethereumNodeURL string
+	chainID         int
+	gasLimit        int
+	value           int
 }
 
 type ethWalletInfo struct {
@@ -39,7 +44,7 @@ var (
 	config bridgeConfig
 )
 
-func getOwnerWalletInfo() (*ethWalletInfo, error) {
+func GetEthereumWalletInfo() (*ethWalletInfo, error) {
 	ownerWallet, err := zcncore.GetWalletAddrFromEthMnemonic(config.mnemonic)
 	if err != nil {
 		err = errors.Wrap(err, "failed to initialize wallet from mnemonic")
@@ -55,15 +60,15 @@ func getOwnerWalletInfo() (*ethWalletInfo, error) {
 }
 
 func createEthClient() (*ethclient.Client, error) {
-	client, err := ethclient.Dial(config.nodeURL)
+	client, err := ethclient.Dial(config.ethereumNodeURL)
 	if err != nil {
 		zcncore.Logger.Error(err)
 	}
 	return client, err
 }
 
-func ownerPrivateKeyAndAddress() (common.Address, *ecdsa.PrivateKey, error) {
-	ownerWalletInfo, err := getOwnerWalletInfo()
+func EthereumPrivateKeyAndAddress() (common.Address, *ecdsa.PrivateKey, error) {
+	ownerWalletInfo, err := GetEthereumWalletInfo()
 	if err != nil {
 		return [20]byte{}, nil, errors.Wrap(err, "failed to fetch wallet ownerWalletInfo")
 	}
