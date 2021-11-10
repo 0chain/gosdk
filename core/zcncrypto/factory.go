@@ -11,7 +11,7 @@ func NewSignatureScheme(sigScheme string) SignatureScheme {
 		return NewED255190chainScheme()
 	case "bls0chain":
 		//return NewBLS0ChainScheme()
-		return NewMircalScheme()
+		return NewMiraclScheme()
 	default:
 		panic(fmt.Sprintf("unknown signature scheme: %v", sigScheme))
 	}

@@ -22,25 +22,25 @@ func init() {
 	}
 }
 
-//MircalScheme - a signature scheme for BLS0Chain Signature
-type MircalScheme struct {
+//MiraclScheme - a signature scheme for BLS0Chain Signature
+type MiraclScheme struct {
 	PublicKey  string `json:"public_key"`
 	PrivateKey string `json:"private_key"`
 	Mnemonic   string `json:"mnemonic"`
 }
 
-//NewMircalScheme - create a MircalScheme object
-func NewMircalScheme() *MircalScheme {
-	return &MircalScheme{}
+//NewMiraclScheme - create a MiraclScheme object
+func NewMiraclScheme() *MiraclScheme {
+	return &MiraclScheme{}
 }
 
 // GenerateKeys  generate fresh keys
-func (b0 *MircalScheme) GenerateKeys() (*Wallet, error) {
+func (b0 *MiraclScheme) GenerateKeys() (*Wallet, error) {
 	return b0.generateKeys("0chain-client-split-key")
 }
 
 // GenerateKeysWithEth  generate fresh keys based on eth wallet
-func (b0 *MircalScheme) GenerateKeysWithEth(mnemonic, password string) (*Wallet, error) {
+func (b0 *MiraclScheme) GenerateKeysWithEth(mnemonic, password string) (*Wallet, error) {
 	if len(mnemonic) == 0 {
 		return nil, fmt.Errorf("Mnemonic phase is mandatory.")
 	}
@@ -55,7 +55,7 @@ func (b0 *MircalScheme) GenerateKeysWithEth(mnemonic, password string) (*Wallet,
 }
 
 // RecoverKeys recovery keys from mnemonic
-func (b0 *MircalScheme) RecoverKeys(mnemonic string) (*Wallet, error) {
+func (b0 *MiraclScheme) RecoverKeys(mnemonic string) (*Wallet, error) {
 	if mnemonic == "" {
 		return nil, errors.New("recover_keys", "Set mnemonic key failed")
 	}
@@ -67,7 +67,7 @@ func (b0 *MircalScheme) RecoverKeys(mnemonic string) (*Wallet, error) {
 }
 
 //SetPrivateKey  set private key to sign
-func (b0 *MircalScheme) SetPrivateKey(privateKey string) error {
+func (b0 *MiraclScheme) SetPrivateKey(privateKey string) error {
 	if b0.PublicKey != "" {
 		return errors.New("set_private_key", "cannot set private key when there is a public key")
 	}
@@ -79,12 +79,12 @@ func (b0 *MircalScheme) SetPrivateKey(privateKey string) error {
 	return nil
 }
 
-func (b0 *MircalScheme) GetPrivateKey() string {
+func (b0 *MiraclScheme) GetPrivateKey() string {
 	return b0.PrivateKey
 }
 
 //Sign sign message
-func (b0 *MircalScheme) Sign(hash string) (string, error) {
+func (b0 *MiraclScheme) Sign(hash string) (string, error) {
 	sig, err := b0.rawSign(hash)
 	if err != nil {
 		return "", err
@@ -93,7 +93,7 @@ func (b0 *MircalScheme) Sign(hash string) (string, error) {
 }
 
 //SetPublicKey - implement interface
-func (b0 *MircalScheme) SetPublicKey(publicKey string) error {
+func (b0 *MiraclScheme) SetPublicKey(publicKey string) error {
 	if b0.PrivateKey != "" {
 		return errors.New("set_public_key", "cannot set public key when there is a private key")
 	}
@@ -105,12 +105,12 @@ func (b0 *MircalScheme) SetPublicKey(publicKey string) error {
 }
 
 //GetPublicKey - implement interface
-func (b0 *MircalScheme) GetPublicKey() string {
+func (b0 *MiraclScheme) GetPublicKey() string {
 	return b0.PublicKey
 }
 
 //Verify - implement interface
-func (b0 *MircalScheme) Verify(signature, msg string) (bool, error) {
+func (b0 *MiraclScheme) Verify(signature, msg string) (bool, error) {
 	if b0.PublicKey == "" {
 		return false, errors.New("verify", "public key does not exists for verification")
 	}
@@ -131,7 +131,7 @@ func (b0 *MircalScheme) Verify(signature, msg string) (bool, error) {
 	return sig.Verify(&pk, string(rawHash)), nil
 }
 
-func (b0 *MircalScheme) Add(signature, msg string) (string, error) {
+func (b0 *MiraclScheme) Add(signature, msg string) (string, error) {
 	var sign bls.Sign
 	err := sign.DeserializeHexStr(signature)
 	if err != nil {
@@ -145,7 +145,7 @@ func (b0 *MircalScheme) Add(signature, msg string) (string, error) {
 	return sign.SerializeToHexStr(), nil
 }
 
-func (b0 *MircalScheme) generateKeys(password string) (*Wallet, error) {
+func (b0 *MiraclScheme) generateKeys(password string) (*Wallet, error) {
 	// Check for recovery
 	if len(b0.Mnemonic) == 0 {
 		entropy, err := bip39.NewEntropy(256)
@@ -187,7 +187,7 @@ func (b0 *MircalScheme) generateKeys(password string) (*Wallet, error) {
 	return w, nil
 }
 
-func (b0 *MircalScheme) rawSign(hash string) (*bls.Sign, error) {
+func (b0 *MiraclScheme) rawSign(hash string) (*bls.Sign, error) {
 	var sk bls.SecretKey
 	if b0.PrivateKey == "" {
 		return nil, errors.New("raw_sign", "private key does not exists for signing")
