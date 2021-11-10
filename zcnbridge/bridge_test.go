@@ -5,15 +5,8 @@ import (
 	"testing"
 
 	"github.com/0chain/gosdk/zcnbridge"
+	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/stretchr/testify/require"
-)
-
-// TODO: Complete tests init and client initialisation
-
-const (
-	ClientID                = ""
-	EthereumContractAddress = ""
-	ConsensusQuorum         = 0.7
 )
 
 func TestMain(m *testing.M) {
@@ -76,9 +69,9 @@ func TestBurnTicketCollection(t *testing.T) {
 		payload, err := zcnbridge.CreateMintPayload(
 			context.TODO(),
 			transaction.Hash().Hex(),
-			EthereumContractAddress,
-			ClientID,
-			ConsensusQuorum,
+			wallet.ZCNSCSmartContractAddress,
+			wallet.ClientID,
+			wallet.ConsensusThresh,
 		)
 
 		require.NoError(t, err)

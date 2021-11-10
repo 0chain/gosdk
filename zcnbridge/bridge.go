@@ -41,8 +41,6 @@ var (
 // 3. Confirm transaction was executed
 
 func InitBridge() {
-	// Read config from file
-	config.gasLimit = 300000 // FIXME: InitBridge - wei, gwei, unit, tokens?
 }
 
 // IncreaseBurnerAllowance FIXME: Is amount in wei?
@@ -115,8 +113,10 @@ func TransactionStatus(hash string) int {
 	return zcncore.CheckEthHashStatus(hash)
 }
 
-// BurnWZCN Burns WZCN tokens on behalf of the client with ClientID = client ID in 0ZCN network
-func BurnWZCN(amountTokens int64, clientId string) (*types.Transaction, error) {
+// BurnWZCN Burns WZCN tokens on behalf of the 0ZCN client
+// amountTokens - ZCN tokens
+// clientID - 0ZCN client
+func BurnWZCN(amountTokens int64, clientID string) (*types.Transaction, error) {
 	if DefaultClientIDEncoder == nil {
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
 	}
@@ -140,7 +140,7 @@ func BurnWZCN(amountTokens int64, clientId string) (*types.Transaction, error) {
 	fmt.Println(hexutil.Encode(paddedAmount))
 
 	// 3. Data Parameter (clientID string as []byte)
-	paddedClientID := common.LeftPadBytes(DefaultClientIDEncoder(clientId), Bytes32)
+	paddedClientID := common.LeftPadBytes(DefaultClientIDEncoder(clientID), Bytes32)
 
 	var data []byte
 	data = append(data, methodID...)
@@ -173,9 +173,9 @@ func BurnWZCN(amountTokens int64, clientId string) (*types.Transaction, error) {
 		return nil, errors.Wrap(err, "failed to create bridge instance")
 	}
 
-	transaction, err := bridgeInstance.Burn(transactOpts, amount, DefaultClientIDEncoder(clientId))
+	transaction, err := bridgeInstance.Burn(transactOpts, amount, DefaultClientIDEncoder(clientID))
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to execute Burn transaction to ClientID = %s with amount = %s", clientId, amount)
+		return nil, errors.Wrapf(err, "failed to execute Burn transaction to ClientID = %s with amount = %s", clientID, amount)
 	}
 
 	return transaction, err

@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/gosdk/zcnbridge/wallet"
+
 	"github.com/hashicorp/go-retryablehttp"
 
 	bridge "github.com/0chain/gosdk/zcnbridge/http"
@@ -22,7 +24,6 @@ const (
 	Retrying        = 5
 	RequestDuration = time.Second * 120
 	PollInterval    = time.Second * 5
-	BurnTicketPath  = "/v1/ether/burnticket/get"
 )
 
 type (
@@ -47,7 +48,7 @@ func CreateMintPayload(
 	// hash: Eth transaction hash, address: bridge contract address, clientID: client ID in 0Chain
 	hash, address, clientID string,
 	// quorum required to reach consensus
-	requiredQuorum int,
+	requiredQuorum float64,
 ) (*MintPayload, error) {
 	client = bridge.NewRetryableClient(Retrying)
 	authorizers, err := GetAuthorizers()
@@ -83,7 +84,7 @@ func CreateMintPayload(
 
 	numSuccess := len(results)
 
-	quorum := int(math.Ceil((float64(numSuccess) * 100) / float64(totalWorkers)))
+	quorum := math.Ceil((float64(numSuccess) * 100) / float64(totalWorkers))
 
 	if numSuccess > 0 && quorum >= requiredQuorum && len(resultsChannel) > 1 {
 		burnTicket := results[0].BurnTicket
@@ -132,7 +133,7 @@ func getResultFromAuthoriser(ctx context.Context, node *AuthorizerNode, values u
 		response      *http.Response
 		lastError     error
 		ok            bool
-		burnTicketURL = strings.TrimSuffix(node.URL, "/") + BurnTicketPath
+		burnTicketURL = strings.TrimSuffix(node.URL, "/") + wallet.BurnTicketPath
 	)
 
 	for {
