@@ -10,7 +10,6 @@ import (
 	"github.com/0chain/gosdk/bls"
 	BN254 "github.com/0chain/gosdk/miracl"
 
-	// "github.com/herumi/bls-go-binary/bls"
 	"github.com/tyler-smith/go-bip39"
 
 	"github.com/0chain/gosdk/core/encryption"

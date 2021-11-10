@@ -1,10 +1,13 @@
+// +build !js,!wasm
+
 package BN254
 
 import (
 	"fmt"
+	"testing"
+
 	"github.com/0chain/gosdk/miracl/core"
 	herumi "github.com/herumi/bls-go-binary/bls"
-	"testing"
 )
 
 func SecretKeyToStr(sec *herumi.SecretKey) string {
