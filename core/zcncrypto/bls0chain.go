@@ -27,6 +27,9 @@ type BLS0ChainScheme struct {
 	PublicKey  string `json:"public_key"`
 	PrivateKey string `json:"private_key"`
 	Mnemonic   string `json:"mnemonic"`
+
+	id  bls.ID
+	Ids string `json:"threshold_scheme_id"`
 }
 
 //NewBLS0ChainScheme - create a BLS0ChainScheme object
@@ -258,34 +261,15 @@ func (b0 *BLS0ChainScheme) Add(signature, msg string) (string, error) {
 	return sign.SerializeToHexStr(), nil
 }
 
-type ThresholdSignatureScheme interface {
-	SignatureScheme
-
-	SetID(id string) error
-	GetID() string
-}
-
-//BLS0ChainThresholdScheme - a scheme that can create threshold signature shares for BLS0Chain signature scheme
-type BLS0ChainThresholdScheme struct {
-	BLS0ChainScheme
-	id  bls.ID
-	Ids string `json:"threshold_scheme_id"`
-}
-
-//NewBLS0ChainThresholdScheme - create a new instance
-func NewBLS0ChainThresholdScheme() *BLS0ChainThresholdScheme {
-	return &BLS0ChainThresholdScheme{}
-}
-
 //SetID sets ID in HexString format
-func (tss *BLS0ChainThresholdScheme) SetID(id string) error {
-	tss.Ids = id
-	return tss.id.SetHexString(id)
+func (b0 *BLS0ChainScheme) SetID(id string) error {
+	b0.Ids = id
+	return b0.id.SetHexString(id)
 }
 
 //GetID gets ID in hex string format
-func (tss *BLS0ChainThresholdScheme) GetID() string {
-	return tss.id.GetHexString()
+func (b0 *BLS0ChainScheme) GetID() string {
+	return b0.id.GetHexString()
 }
 
 // GetPrivateKeyAsByteArray - converts private key into byte array
@@ -299,49 +283,6 @@ func (b0 *BLS0ChainScheme) GetPrivateKeyAsByteArray() ([]byte, error) {
 	}
 	return privateKeyBytes, nil
 
-}
-
-//BLS0GenerateThresholdKeyShares given a signature scheme will generate threshold sig keys
-func BLS0GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]BLS0ChainThresholdScheme, error) {
-
-	b0ss, ok := originalKey.(*BLS0ChainScheme)
-	if !ok {
-		return nil, errors.New("bls0_generate_threshold_key_shares", "Invalid encryption scheme")
-	}
-
-	b0PrivateKeyBytes, err := b0ss.GetPrivateKeyAsByteArray()
-	if err != nil {
-		return nil, err
-	}
-
-	b0original := bls.SecretKey_fromBytes(b0PrivateKeyBytes)
-	polynomial := b0original.GetMasterSecretKey(t)
-
-	var shares []BLS0ChainThresholdScheme
-	for i := 1; i <= n; i++ {
-		var id bls.ID
-		err = id.SetHexString(fmt.Sprintf("%x", i))
-		if err != nil {
-			return nil, err
-		}
-
-		var sk bls.SecretKey
-		err = sk.Set(polynomial, &id)
-		if err != nil {
-			return nil, err
-		}
-
-		share := BLS0ChainThresholdScheme{}
-		share.PrivateKey = sk.SerializeToHexStr()
-		share.PublicKey = sk.GetPublicKey().SerializeToHexStr()
-
-		share.id = id
-		share.Ids = share.GetID()
-
-		shares = append(shares, share)
-	}
-
-	return shares, nil
 }
 
 func (b0 *BLS0ChainScheme) SplitKeys(numSplits int) (*Wallet, error) {

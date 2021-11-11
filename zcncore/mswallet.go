@@ -40,9 +40,56 @@ type MSWallet struct {
 	GroupClientID   string                               `json:"group_client_id"`
 	GroupKey        zcncrypto.SignatureScheme            `json:"group_key"`
 	SignerClientIDs []string                             `json:"sig_client_ids"`
-	SignerKeys      []zcncrypto.BLS0ChainThresholdScheme `json:"signer_keys"`
+	SignerKeys      []zcncrypto.ThresholdSignatureScheme `json:"signer_keys"`
 	T               int                                  `json:"threshold"`
 	N               int                                  `json:"num_subkeys"`
+}
+
+func (msw *MSWallet) UnmarshalJSON(data []byte) error {
+	m := &struct {
+		Id              int         `json:"id"`
+		SignatureScheme string      `json:"signature_scheme"`
+		GroupClientID   string      `json:"group_client_id"`
+		SignerClientIDs []string    `json:"sig_client_ids"`
+		T               int         `json:"threshold"`
+		N               int         `json:"num_subkeys"`
+		GroupKey        interface{} `json:"group_key"`
+		SignerKeys      interface{} `json:"signer_keys"`
+	}{}
+
+	if err := json.Unmarshal(data, &m); err != nil {
+		return err
+	}
+
+	msw.Id = m.Id
+	msw.SignatureScheme = m.SignatureScheme
+	msw.GroupClientID = m.GroupClientID
+	msw.SignerClientIDs = m.SignerClientIDs
+	msw.T = m.T
+	msw.N = m.N
+
+	if m.GroupKey != nil {
+		groupKeyBuf, err := json.Marshal(m.GroupKey)
+		if err != nil {
+			return err
+		}
+
+		ss := zcncrypto.NewSignatureScheme(m.SignatureScheme)
+
+		if err := json.Unmarshal(groupKeyBuf, &ss); err != nil {
+			return err
+		}
+
+		msw.GroupKey = ss
+	}
+
+	signerKeys, err := zcncrypto.UnmarshalThresholdSignatureSchemes(m.SignatureScheme, m.SignerKeys)
+	if err != nil {
+		return err
+	}
+	msw.SignerKeys = signerKeys
+
+	return nil
 }
 
 //MSTransfer - a data structure to hold state transfer from one client to another
@@ -84,7 +131,7 @@ func CreateMSWallet(t, n int) (string, string, []string, error) {
 
 	groupClientID := GetClientID(groupKey.GetPublicKey())
 	//Code modified to directly use BLS0ChainThresholdScheme
-	signerKeys, err := zcncrypto.BLS0GenerateThresholdKeyShares(t, n, groupKey)
+	signerKeys, err := zcncrypto.GenerateThresholdKeyShares(t, n, groupKey)
 
 	if err != nil {
 		return "", "", nil, errors.Wrap(err, "Err in generateThresholdKeyShares")
@@ -247,7 +294,7 @@ func GetMultisigPayload(mswstr string) (interface{}, error) {
 	var signerPublicKeys []string
 
 	for _, scheme := range msw.SignerKeys {
-		signerThresholdIDs = append(signerThresholdIDs, scheme.Ids)
+		signerThresholdIDs = append(signerThresholdIDs, scheme.GetID())
 		signerPublicKeys = append(signerPublicKeys, scheme.GetPublicKey())
 	}
 

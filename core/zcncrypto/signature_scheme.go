@@ -47,16 +47,31 @@ type SignatureScheme interface {
 	GetPrivateKey() string
 	Verify(signature string, msg string) (bool, error)
 
-	SplitKeys(numSplits int) (*Wallet, error)
-
 	// Combine signature for schemes BLS
 	Add(signature, msg string) (string, error)
+
+	// implement SplitSignatureScheme
+
+	SplitKeys(numSplits int) (*Wallet, error)
+
+	GetPrivateKeyAsByteArray() ([]byte, error)
+
+	// // implement ThresholdSignatureScheme
+
+	// SetID(id string) error
+	// GetID() string
 }
 
 // SplitSignatureScheme splits the primary key into number of parts.
 type SplitSignatureScheme interface {
 	SignatureScheme
 	SplitKeys(numSplits int) (*Wallet, error)
+}
+
+type ThresholdSignatureScheme interface {
+	SignatureScheme
+	SetID(id string) error
+	GetID() string
 }
 
 // Marshal returns json string
