@@ -35,6 +35,7 @@ type SignatureScheme interface {
 
 	// Generate keys from mnemonic for recovery
 	RecoverKeys(mnemonic string) (*Wallet, error)
+	GetMnemonic() string
 
 	// Signing  - Set private key to sign
 	SetPrivateKey(privateKey string) error
@@ -45,6 +46,8 @@ type SignatureScheme interface {
 	GetPublicKey() string
 	GetPrivateKey() string
 	Verify(signature string, msg string) (bool, error)
+
+	SplitKeys(numSplits int) (*Wallet, error)
 
 	// Combine signature for schemes BLS
 	Add(signature, msg string) (string, error)
