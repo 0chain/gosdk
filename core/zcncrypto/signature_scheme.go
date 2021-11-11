@@ -47,6 +47,8 @@ type SignatureScheme interface {
 	GetPrivateKey() string
 	Verify(signature string, msg string) (bool, error)
 
+	SplitKeys(numSplits int) (*Wallet, error)
+
 	// Combine signature for schemes BLS
 	Add(signature, msg string) (string, error)
 
