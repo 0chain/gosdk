@@ -2,7 +2,13 @@
 
 package zcncrypto
 
-import "fmt"
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/bls"
+)
 
 // NewSignatureScheme creates an instance for using signature functions
 func NewSignatureScheme(sigScheme string) SignatureScheme {
