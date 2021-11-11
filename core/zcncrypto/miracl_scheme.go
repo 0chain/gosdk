@@ -197,6 +197,18 @@ func (b0 *MiraclScheme) Add(signature, msg string) (string, error) {
 	return sign.SerializeToHexStr(), nil
 }
 
+// GetPrivateKeyAsByteArray - converts private key into byte array
+func (b0 *MiraclScheme) GetPrivateKeyAsByteArray() ([]byte, error) {
+	if len(b0.PrivateKey) == 0 {
+		return nil, errors.New("get_private_key_as_byte_array", "cannot convert empty private key to byte array")
+	}
+	privateKeyBytes, err := hex.DecodeString(b0.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	return privateKeyBytes, nil
+}
+
 func (b0 *MiraclScheme) generateKeys(password string) (*Wallet, error) {
 	// Check for recovery
 	if len(b0.Mnemonic) == 0 {
