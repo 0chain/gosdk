@@ -38,7 +38,7 @@ type MSWallet struct {
 	Id              int                                  `json:"id"`
 	SignatureScheme string                               `json:"signature_scheme"`
 	GroupClientID   string                               `json:"group_client_id"`
-	GroupKey        *zcncrypto.BLS0ChainScheme           `json:"group_key"`
+	GroupKey        zcncrypto.SignatureScheme            `json:"group_key"`
 	SignerClientIDs []string                             `json:"sig_client_ids"`
 	SignerKeys      []zcncrypto.BLS0ChainThresholdScheme `json:"signer_keys"`
 	T               int                                  `json:"threshold"`
@@ -74,7 +74,7 @@ func CreateMSWallet(t, n int) (string, string, []string, error) {
 
 	}
 
-	groupKey := zcncrypto.NewBLS0ChainScheme()
+	groupKey := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 	wallet, err := groupKey.GenerateKeys()
 	if err != nil {
 		return "", "", nil, err
@@ -191,7 +191,7 @@ func getWallets(msw MSWallet) ([]string, error) {
 
 	b0ss := msw.GroupKey
 
-	grw, err := makeWallet(b0ss.PrivateKey, b0ss.PublicKey, b0ss.Mnemonic)
+	grw, err := makeWallet(b0ss.GetPrivateKey(), b0ss.GetPublicKey(), b0ss.GetMnemonic())
 
 	if err != nil {
 		return nil, err

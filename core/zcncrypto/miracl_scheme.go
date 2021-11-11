@@ -66,6 +66,14 @@ func (b0 *MiraclScheme) RecoverKeys(mnemonic string) (*Wallet, error) {
 	return b0.GenerateKeys()
 }
 
+func (b0 *MiraclScheme) GetMnemonic() string {
+	if b0 == nil {
+		return ""
+	}
+
+	return b0.Mnemonic
+}
+
 //SetPrivateKey  set private key to sign
 func (b0 *MiraclScheme) SetPrivateKey(privateKey string) error {
 	if b0.PublicKey != "" {
@@ -81,6 +89,50 @@ func (b0 *MiraclScheme) SetPrivateKey(privateKey string) error {
 
 func (b0 *MiraclScheme) GetPrivateKey() string {
 	return b0.PrivateKey
+}
+
+func (b0 *MiraclScheme) SplitKeys(numSplits int) (*Wallet, error) {
+	if b0.PrivateKey == "" {
+		return nil, errors.New("split_keys", "primary private key not found")
+	}
+	var primaryFr bls.Fr
+	var primarySk bls.SecretKey
+	primarySk.DeserializeHexStr(b0.PrivateKey)
+	primaryFr.SetLittleEndian(primarySk.GetLittleEndian())
+
+	// New Wallet
+	w := &Wallet{}
+	w.Keys = make([]KeyPair, numSplits)
+	var sk bls.SecretKey
+	for i := 0; i < numSplits-1; i++ {
+		var tmpSk bls.SecretKey
+		tmpSk.SetByCSPRNG()
+		w.Keys[i].PrivateKey = tmpSk.SerializeToHexStr()
+		pub := tmpSk.GetPublicKey()
+		w.Keys[i].PublicKey = pub.SerializeToHexStr()
+		sk.Add(&tmpSk)
+	}
+	var aggregateSk bls.Fr
+	aggregateSk.SetLittleEndian(sk.GetLittleEndian())
+
+	//Subtract the aggregated private key from the primary private key to derive the last split private key
+	var lastSk bls.Fr
+	bls.FrSub(&lastSk, &primaryFr, &aggregateSk)
+
+	// Last key
+	var lastSecretKey bls.SecretKey
+	lastSecretKey.SetLittleEndian(lastSk.Serialize())
+	w.Keys[numSplits-1].PrivateKey = lastSecretKey.SerializeToHexStr()
+	w.Keys[numSplits-1].PublicKey = lastSecretKey.GetPublicKey().SerializeToHexStr()
+
+	// Generate client ID and public
+	w.ClientKey = primarySk.GetPublicKey().SerializeToHexStr()
+	w.ClientID = encryption.Hash(primarySk.GetPublicKey().Serialize())
+	w.Mnemonic = b0.Mnemonic
+	w.Version = CryptoVersion
+	w.DateCreated = time.Now().Format(time.RFC3339)
+
+	return w, nil
 }
 
 //Sign sign message

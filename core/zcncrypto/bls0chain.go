@@ -106,6 +106,14 @@ func (b0 *BLS0ChainScheme) RecoverKeys(mnemonic string) (*Wallet, error) {
 	return b0.GenerateKeys()
 }
 
+func (b0 *BLS0ChainScheme) GetMnemonic() string {
+	if b0 == nil {
+		return ""
+	}
+
+	return b0.Mnemonic
+}
+
 //SetPrivateKey - implement interface
 func (b0 *BLS0ChainScheme) SetPrivateKey(privateKey string) error {
 	if b0.PublicKey != "" {
