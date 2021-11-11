@@ -17,7 +17,7 @@ func NewSignatureScheme(sigScheme string) SignatureScheme {
 }
 
 // UnmarshalThresholdSignatureSchemes unmarshal ThresholdSignatureScheme from json string
-func UnmarshalThresholdSignatureSchemes(sigScheme string, obj string) ([]ThresholdSignatureScheme, error) {
+func UnmarshalThresholdSignatureSchemes(sigScheme string, obj interface{}) ([]ThresholdSignatureScheme, error) {
 	switch sigScheme {
 
 	case "bls0chain":
@@ -66,7 +66,7 @@ func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]Thresh
 	b0original := bls.SecretKey_fromBytes(b0PrivateKeyBytes)
 	polynomial := b0original.GetMasterSecretKey(t)
 
-	var shares []BLS0ChainThresholdScheme
+	var shares []ThresholdSignatureScheme
 	for i := 1; i <= n; i++ {
 		var id bls.ID
 		err = id.SetHexString(fmt.Sprintf("%x", i))
@@ -80,7 +80,7 @@ func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]Thresh
 			return nil, err
 		}
 
-		share := BLS0ChainThresholdScheme{}
+		share := &BLS0ChainThresholdScheme{}
 		share.PrivateKey = sk.SerializeToHexStr()
 		share.PublicKey = sk.GetPublicKey().SerializeToHexStr()
 

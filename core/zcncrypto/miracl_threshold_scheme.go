@@ -1,3 +1,5 @@
+// +build !js,!wasm
+
 package zcncrypto
 
 import "github.com/herumi/bls-go-binary/bls"
