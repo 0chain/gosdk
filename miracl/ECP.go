@@ -19,8 +19,10 @@
 
 package BN254
 
-import "strings"
-import "encoding/hex"
+import (
+	"encoding/hex"
+	"strings"
+)
 
 //import "fmt"
 /* Elliptic Curve Point Structure */
@@ -464,10 +466,11 @@ func ECP_fromBytes(b []byte) *ECP {
 }
 
 func ECP_fromString(s string) *ECP {
-	s1 := s[1: (len(s)-1) ]
+	s1 := s[1:(len(s) - 1)]
 	i := strings.Index(s1, ",")
+
 	s_x := s1[0:i]
-	s_y := s1[ (i+1) : len(s1)]
+	s_y := s1[(i + 1):]
 
 	b_x, err := hex.DecodeString(s_x)
 	if err != nil {

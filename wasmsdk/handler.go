@@ -1,3 +1,5 @@
+// +build js,wasm
+
 package main
 
 import (
@@ -441,6 +443,7 @@ func Move(this js.Value, p []js.Value) interface{} {
 
 // Upload is to upload file to dStorage
 func Upload(this js.Value, p []js.Value) interface{} {
+
 	method := p[0].String() // POST or PUT
 	allocation := p[1].String()
 	clientJSON := p[2].String()
@@ -514,12 +517,12 @@ func Upload(this js.Value, p []js.Value) interface{} {
 				} else {
 					// Logger.Info("Doing file upload with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
 					fmt.Println("Doing file upload with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
-					err = allocationObj.UploadFile(localFilePath, remotePath, attrs, statusBar)
+					err = allocationObj.UploadFile(os.TempDir(), localFilePath, remotePath, attrs, statusBar)
 				}
 			} else {
 				// Logger.Info("Doing file update with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
 				fmt.Println("Doing file update with", zap.Any("remotepath", remotePath), zap.Any("allocation", allocationObj.ID))
-				err = allocationObj.UpdateFile(localFilePath, remotePath, attrs, statusBar)
+				err = allocationObj.UpdateFile(os.TempDir(), localFilePath, remotePath, attrs, statusBar)
 			}
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("upload_file_failed", err.Error()).Error()))

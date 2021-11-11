@@ -1,18 +1,19 @@
 package sdk
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
-	"os/signal"
 	"strconv"
 	"strings"
-	"syscall"
 )
 
 // YoutubeDL wrap youtube-dl to download video from youtube
 type YoutubeDL struct {
+	ctx context.Context
+
 	liveUploadReaderBase
 
 	// cmdYoutubeDL youtube-dl command
@@ -23,7 +24,7 @@ type YoutubeDL struct {
 }
 
 // CreateYoutubeDL create a youtube-dl instance to download video file from youtube
-func CreateYoutubeDL(localPath string, feedURL string, downloadArgs []string, ffmpegArgs []string, delay int) (*YoutubeDL, error) {
+func CreateYoutubeDL(ctx context.Context, localPath string, feedURL string, downloadArgs []string, ffmpegArgs []string, delay int) (*YoutubeDL, error) {
 
 	//youtube-dl -f best https://www.youtube.com/watch?v=qjNQfSobVwE --proxy http://127.0.0.1:8000 -o - | ffmpeg -i - -flags +cgop -g 30 -hls_time 5 youtube.m3u8
 
@@ -67,7 +68,7 @@ func CreateYoutubeDL(localPath string, feedURL string, downloadArgs []string, ff
 	}
 
 	dl := &YoutubeDL{
-
+		ctx: ctx,
 		liveUploadReaderBase: liveUploadReaderBase{
 			builder:    builder,
 			delay:      delay,
@@ -83,11 +84,9 @@ func CreateYoutubeDL(localPath string, feedURL string, downloadArgs []string, ff
 }
 
 func (r *YoutubeDL) wait() {
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
 	go func() {
-		<-sigs
+		<-r.ctx.Done()
 		r.Close()
 	}()
 
@@ -102,15 +101,15 @@ func (r *YoutubeDL) wait() {
 func (r *YoutubeDL) Close() error {
 	if r != nil {
 		if r.cmd != nil {
-			r.cmd.Process.Kill()
+			r.cmd.Process.Kill() //nolint
 		}
 
 		if r.cmdYoutubeDL != nil {
-			r.cmdYoutubeDL.Process.Kill()
+			r.cmdYoutubeDL.Process.Kill() //nolint
 		}
 
 		if r.cmdFfmpeg != nil {
-			r.cmdFfmpeg.Process.Kill()
+			r.cmdFfmpeg.Process.Kill() //nolint
 		}
 
 		if r.clipsReader != nil {
