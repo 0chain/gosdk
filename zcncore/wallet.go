@@ -486,7 +486,7 @@ func SplitKeys(privateKey string, numSplits int) (string, error) {
 	if _config.chain.SignatureScheme != "bls0chain" {
 		return "", errors.New("", "signature key doesn't support split key")
 	}
-	sigScheme := zcncrypto.NewBLS0ChainScheme()
+	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 	err := sigScheme.SetPrivateKey(privateKey)
 	if err != nil {
 		return "", errors.Wrap(err, "set private key failed")

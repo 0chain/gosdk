@@ -156,6 +156,15 @@ func (sig *Sign) SerializeToHexStr() string {
 	return sig.v.ToString()
 }
 
+func (sig *Sign) SetHexString(s string) error {
+	b, err := hex2byte(s)
+	if err != nil {
+		return err
+	}
+	sig.v = BN254.ECP_fromBytes(b)
+	return nil
+}
+
 // Porting over <https://github.com/herumi/bls-go-binary/blob/ef6a150a928bddb19cee55aec5c80585528d9a96/bls/bls.go#L553>
 func (sig *Sign) Verify(pub *PublicKey, m []byte) bool {
 	b := BN254.Core_Verify(ToBytes(sig.v), m, ToBytes2(pub.v))

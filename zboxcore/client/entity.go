@@ -2,7 +2,6 @@ package client
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
@@ -22,7 +21,6 @@ func init() {
 
 func PopulateClient(clientjson string, signatureScheme string) error {
 	err := json.Unmarshal([]byte(clientjson), &client)
-	fmt.Printf("client set to: %#v", client)
 	client.signatureSchemeString = signatureScheme
 	return err
 }
@@ -59,6 +57,6 @@ func Sign(hash string) (string, error) {
 
 func VerifySignature(signature string, msg string) (bool, error) {
 	ss := zcncrypto.NewSignatureScheme(client.signatureSchemeString)
-	ss.SetPublicKey(client.ClientKey)
+	ss.SetPublicKey(client.Keys[0].PublicKey)
 	return ss.Verify(signature, msg)
 }

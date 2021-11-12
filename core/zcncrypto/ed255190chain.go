@@ -73,6 +73,14 @@ func (ed *ED255190chainScheme) RecoverKeys(mnemonic string) (*Wallet, error) {
 	return ed.GenerateKeys()
 }
 
+func (b0 *ED255190chainScheme) GetMnemonic() string {
+	if b0 == nil {
+		return ""
+	}
+
+	return b0.mnemonic
+}
+
 func (ed *ED255190chainScheme) SetPrivateKey(privateKey string) error {
 	if len(ed.privateKey) > 0 {
 		return errors.New("set_private_key", "cannot set private key when there is a public key")
@@ -95,6 +103,10 @@ func (ed *ED255190chainScheme) SetPublicKey(publicKey string) error {
 	var err error
 	ed.publicKey, err = hex.DecodeString(publicKey)
 	return err
+}
+
+func (b0 *ED255190chainScheme) SplitKeys(numSplits int) (*Wallet, error) {
+	return nil, errors.New("chain_scheme_splitkeys", "not implemented")
 }
 
 func (ed *ED255190chainScheme) Sign(hash string) (string, error) {
@@ -138,4 +150,30 @@ func (ed *ED255190chainScheme) GetPublicKey() string {
 //GetPrivateKey - implement interface
 func (ed *ED255190chainScheme) GetPrivateKey() string {
 	return hex.EncodeToString(ed.privateKey)
+}
+
+//SetID sets ID in HexString format
+func (ed *ED255190chainScheme) SetID(id string) error {
+	// b0.Ids = id
+	// return b0.id.SetHexString(id)
+	return errors.New("chain_scheme_set_id", "it is not implemented yet")
+}
+
+//GetID gets ID in hex string format
+func (ed *ED255190chainScheme) GetID() string {
+	//return b0.id.GetHexString()
+	return ""
+}
+
+// GetPrivateKeyAsByteArray - converts private key into byte array
+func (ed *ED255190chainScheme) GetPrivateKeyAsByteArray() ([]byte, error) {
+	// if len(b0.PrivateKey) == 0 {
+	// 	return nil, errors.New("get_private_key_as_byte_array", "cannot convert empty private key to byte array")
+	// }
+	// privateKeyBytes, err := hex.DecodeString(b0.PrivateKey)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// return privateKeyBytes, nil
+	return nil, errors.New("chain_scheme_get_private_key_as_byte_array", "it is not implemented yet")
 }
