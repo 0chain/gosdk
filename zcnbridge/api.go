@@ -12,6 +12,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/gosdk/zcnbridge/node"
+
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 
 	"github.com/hashicorp/go-retryablehttp"
@@ -43,13 +45,8 @@ var (
 	client *retryablehttp.Client
 )
 
-func CreateMintPayload(
-	ctx context.Context,
-	// hash: Eth transaction hash, address: bridge contract address, clientID: client ID in 0Chain
-	hash, address, clientID string,
-	// quorum required to reach consensus
-	requiredQuorum float64,
-) (*MintPayload, error) {
+// CreateMintPayload gets burn ticket and creates mint payload to be minted in the chain
+func CreateMintPayload(ctx context.Context, hash string) (*MintPayload, error) {
 	client = bridge.NewRetryableClient(Retrying)
 	authorizers, err := GetAuthorizers()
 
@@ -63,8 +60,8 @@ func CreateMintPayload(
 		responseChannel = make(responseChannelType, totalWorkers)
 		values          = url.Values{
 			"hash":     []string{hash},
-			"address":  []string{address},
-			"clientid": []string{clientID},
+			"address":  []string{wallet.ZCNSCSmartContractAddress},
+			"clientid": []string{node.ID()},
 		}
 	)
 
@@ -73,9 +70,9 @@ func CreateMintPayload(
 	go handleResults(responseChannel, resultsChannel, &wg)
 	defer close(resultsChannel)
 
-	for _, node := range authorizers.NodeMap {
+	for _, authorizer := range authorizers.NodeMap {
 		wg.Add(1)
-		go getResultFromAuthoriser(ctx, node, values, responseChannel)
+		go getResultFromAuthoriser(ctx, authorizer, values, responseChannel)
 	}
 
 	wg.Wait()
@@ -86,7 +83,7 @@ func CreateMintPayload(
 
 	quorum := math.Ceil((float64(numSuccess) * 100) / float64(totalWorkers))
 
-	if numSuccess > 0 && quorum >= requiredQuorum && len(resultsChannel) > 1 {
+	if numSuccess > 0 && quorum >= wallet.ConsensusThresh && len(resultsChannel) > 1 {
 		burnTicket := results[0].BurnTicket
 
 		var sigs []*AuthorizerSignature

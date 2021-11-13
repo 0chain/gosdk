@@ -3,6 +3,7 @@ package zcnbridge
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcnbridge/node"
@@ -126,10 +127,23 @@ func GetTransactionStatus(hash string) int {
 	return zcncore.CheckEthHashStatus(hash)
 }
 
+func ConfirmTransactionStatus(hash string, times int, duration time.Duration) int {
+	var res = 0
+	for i := 0; i < times; i++ {
+		res = GetTransactionStatus(hash)
+		if res == 1 {
+			break
+		}
+		log.Logger.Info(fmt.Sprintf("try # %d", i))
+		time.Sleep(time.Second * duration)
+	}
+	return res
+}
+
 // BurnWZCN Burns WZCN tokens on behalf of the 0ZCN client
 // amountTokens - ZCN tokens
 // clientID - 0ZCN client
-func BurnWZCN(amountTokens int64, clientID string) (*types.Transaction, error) {
+func BurnWZCN(amountTokens int64) (*types.Transaction, error) {
 	if DefaultClientIDEncoder == nil {
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
 	}
@@ -153,7 +167,7 @@ func BurnWZCN(amountTokens int64, clientID string) (*types.Transaction, error) {
 	fmt.Println(hexutil.Encode(paddedAmount))
 
 	// 3. Data Parameter (clientID string as []byte)
-	paddedClientID := common.LeftPadBytes(DefaultClientIDEncoder(clientID), Bytes32)
+	paddedClientID := common.LeftPadBytes(DefaultClientIDEncoder(node.ID()), Bytes32)
 
 	var data []byte
 	data = append(data, methodID...)
@@ -186,9 +200,9 @@ func BurnWZCN(amountTokens int64, clientID string) (*types.Transaction, error) {
 		return nil, errors.Wrap(err, "failed to create bridge instance")
 	}
 
-	transaction, err := bridgeInstance.Burn(transactOpts, amount, DefaultClientIDEncoder(clientID))
+	transaction, err := bridgeInstance.Burn(transactOpts, amount, DefaultClientIDEncoder(node.ID()))
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to execute Burn transaction to ClientID = %s with amount = %s", clientID, amount)
+		return nil, errors.Wrapf(err, "failed to execute Burn transaction to ClientID = %s with amount = %s", node.ID(), amount)
 	}
 
 	return transaction, err

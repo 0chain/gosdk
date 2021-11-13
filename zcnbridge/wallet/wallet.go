@@ -16,8 +16,9 @@ const (
 	DeleteAuthorizerFunc      = "DeleteAuthorizer"
 	MintFunc                  = "mint"
 	BurnFunc                  = "burn"
-	ConsensusThresh           = float64(70.0)
-	BurnTicketPath            = "/v1/ether/burnticket/get"
+	// ConsensusThresh quorum required to reach consensus
+	ConsensusThresh = float64(70.0)
+	BurnTicketPath  = "/v1/ether/burnticket/get"
 )
 
 type (

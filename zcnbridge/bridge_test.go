@@ -5,8 +5,6 @@ import (
 	"testing"
 
 	"github.com/0chain/gosdk/zcnbridge"
-	"github.com/0chain/gosdk/zcnbridge/node"
-	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/stretchr/testify/require"
 )
 
@@ -41,7 +39,7 @@ func TestTransactionStatus(t *testing.T) {
 	t.Run("Burn WZCN in Ether RPC", func(t *testing.T) {
 		zcnbridge.InitBridge() // TODO: Fill in the configuration
 
-		transaction, err := zcnbridge.BurnWZCN(10000000, "123")
+		transaction, err := zcnbridge.BurnWZCN(10000000)
 
 		require.NoError(t, err)
 		require.NotNil(t, transaction)
@@ -55,9 +53,9 @@ func TestTransactionStatus(t *testing.T) {
 
 func TestBurnTicketCollection(t *testing.T) {
 	t.Run("Burn WZCN in Ether RPC", func(t *testing.T) {
-		zcnbridge.InitBridge() // TODO: Fill in the configuration
+		zcnbridge.InitBridge()
 
-		transaction, err := zcnbridge.BurnWZCN(10000000, "123")
+		transaction, err := zcnbridge.BurnWZCN(10000000)
 
 		require.NoError(t, err)
 		require.NotNil(t, transaction)
@@ -67,13 +65,7 @@ func TestBurnTicketCollection(t *testing.T) {
 		res := zcnbridge.GetTransactionStatus(transaction.Hash().Hex())
 		require.Equal(t, 1, res)
 
-		payload, err := zcnbridge.CreateMintPayload(
-			context.TODO(),
-			transaction.Hash().Hex(),
-			wallet.ZCNSCSmartContractAddress,
-			node.ID(),
-			wallet.ConsensusThresh,
-		)
+		payload, err := zcnbridge.CreateMintPayload(context.TODO(), transaction.Hash().Hex())
 
 		require.NoError(t, err)
 		require.NotNil(t, payload)
