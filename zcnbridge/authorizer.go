@@ -10,10 +10,6 @@ import (
 type Authorizer struct {
 }
 
-// AddAuthorizer Adds new authorizer to the chain with ochain smart contract function
-func AddAuthorizer() {
-}
-
 type AuthorizerNodes struct {
 	NodeMap map[string]*AuthorizerNode `json:"node_map"`
 }

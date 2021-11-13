@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/0chain/gosdk/zcnbridge/transaction"
+
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcnbridge/node"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
@@ -200,10 +202,29 @@ func BurnWZCN(amountTokens int64) (*types.Transaction, error) {
 		return nil, errors.Wrap(err, "failed to create bridge instance")
 	}
 
-	transaction, err := bridgeInstance.Burn(transactOpts, amount, DefaultClientIDEncoder(node.ID()))
+	tran, err := bridgeInstance.Burn(transactOpts, amount, DefaultClientIDEncoder(node.ID()))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to execute Burn transaction to ClientID = %s with amount = %s", node.ID(), amount)
 	}
 
-	return transaction, err
+	return tran, err
+}
+
+func Mint(ctx context.Context, payload *MintPayload) error {
+	trx, err := transaction.NewTransactionEntity()
+	if err != nil {
+		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
+	}
+
+	hash, err := trx.ExecuteSmartContract(ctx, wallet.ZCNSCSmartContractAddress, wallet.MintFunc, string(payload.Encode()), 0)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
+	}
+
+	err = trx.Verify(ctx)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("failed to verify smart contract transaction, hash = %s", hash))
+	}
+
+	return nil
 }

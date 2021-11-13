@@ -1,5 +1,7 @@
 package zcnbridge
 
+import "encoding/json"
+
 type MintPayload struct {
 	EthereumTxnID     string                 `json:"ethereum_txn_id"`
 	Amount            int64                  `json:"amount"`
@@ -11,4 +13,9 @@ type MintPayload struct {
 type AuthorizerSignature struct {
 	ID        string `json:"authorizer_id"`
 	Signature string `json:"signature"`
+}
+
+func (mp *MintPayload) Encode() []byte {
+	buff, _ := json.Marshal(mp)
+	return buff
 }
