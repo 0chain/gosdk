@@ -1,9 +1,7 @@
 package config
 
 type BridgeConfig struct {
-	Mnemonic string // owner Mnemonic
-	// ownerAddress  common.Address
-	// publicKey     crypto.PublicKey
+	Mnemonic        string // Ethereum mnemonic
 	BridgeAddress   string
 	WzcnAddress     string
 	EthereumNodeURL string

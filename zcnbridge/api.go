@@ -16,8 +16,8 @@ import (
 
 	"github.com/hashicorp/go-retryablehttp"
 
+	"github.com/0chain/gosdk/zcnbridge/errors"
 	bridge "github.com/0chain/gosdk/zcnbridge/http"
-	"github.com/0chain/gosdk/zmagmacore/errors"
 )
 
 const (

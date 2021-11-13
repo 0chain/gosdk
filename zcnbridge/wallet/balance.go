@@ -3,8 +3,8 @@ package wallet
 import (
 	"context"
 
+	"github.com/0chain/gosdk/zcnbridge/errors"
 	"github.com/0chain/gosdk/zcncore"
-	"github.com/0chain/gosdk/zmagmacore/errors"
 )
 
 type (

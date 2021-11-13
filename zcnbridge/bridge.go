@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/0chain/gosdk/zcnbridge/config"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
 	"github.com/0chain/gosdk/zcncore"
@@ -60,7 +61,7 @@ func IncreaseBurnerAllowance(amountTokens int64) (*types.Transaction, error) {
 	fmt.Println(hexutil.Encode(methodID)) // 0x39509351
 
 	// 2. Data Parameter (spender)
-	spenderAddress := common.HexToAddress(config.bridgeAddress)
+	spenderAddress := common.HexToAddress(config.Bridge.BridgeAddress)
 	spenderPaddedAddress := common.LeftPadBytes(spenderAddress.Bytes(), Bytes32)
 	fmt.Println(hexutil.Encode(spenderPaddedAddress)) // 0x0000000000000000000000004592d8f8d7b001e72cb26a73e4fa1806a51ac79d
 
@@ -76,7 +77,7 @@ func IncreaseBurnerAllowance(amountTokens int64) (*types.Transaction, error) {
 	data = append(data, paddedAmount...)
 
 	// To
-	tokenAddress := common.HexToAddress(config.wzcnAddress)
+	tokenAddress := common.HexToAddress(config.Bridge.WzcnAddress)
 
 	gasLimit, err := etherClient.EstimateGas(context.Background(), ethereum.CallMsg{
 		To:   &tokenAddress, // FIXME: From: is required?
@@ -148,7 +149,7 @@ func BurnWZCN(amountTokens int64, clientID string) (*types.Transaction, error) {
 	data = append(data, paddedClientID...)
 
 	// To
-	bridgeAddress := common.HexToAddress(config.bridgeAddress)
+	bridgeAddress := common.HexToAddress(config.Bridge.BridgeAddress)
 
 	ownerAddress, privKey, err := EthereumPrivateKeyAndAddress()
 	if err != nil {

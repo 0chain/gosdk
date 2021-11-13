@@ -7,7 +7,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
 
-	"github.com/0chain/gosdk/zmagmacore/errors"
+	"github.com/0chain/gosdk/zcnbridge/errors"
 )
 
 var (

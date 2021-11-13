@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zcnbridge/crypto"
+	"github.com/0chain/gosdk/zcnbridge/errors"
 	"github.com/0chain/gosdk/zcncore"
-	"github.com/0chain/gosdk/zmagmacore/crypto"
-	"github.com/0chain/gosdk/zmagmacore/errors"
 )
 
 const (

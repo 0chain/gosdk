@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/0chain/gosdk/zcnbridge"
+	"github.com/0chain/gosdk/zcnbridge/node"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/stretchr/testify/require"
 )
@@ -70,7 +71,7 @@ func TestBurnTicketCollection(t *testing.T) {
 			context.TODO(),
 			transaction.Hash().Hex(),
 			wallet.ZCNSCSmartContractAddress,
-			wallet.ClientID,
+			node.ID(),
 			wallet.ConsensusThresh,
 		)
 

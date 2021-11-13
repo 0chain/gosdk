@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zmagmacore/errors"
+	"github.com/0chain/gosdk/zcnbridge/errors"
 )
 
 // ReadKeysFile reads file existing in keysFile dir and parses public and private keys from file.
