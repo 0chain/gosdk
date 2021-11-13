@@ -4,6 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/0chain/gosdk/zcnbridge/log"
+	"github.com/0chain/gosdk/zcnbridge/node"
+	"github.com/0chain/gosdk/zcnbridge/wallet"
+	"go.uber.org/zap"
+
 	"github.com/0chain/gosdk/zcnbridge/config"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
@@ -41,7 +46,14 @@ var (
 // 2. Call burn using same amount
 // 3. Confirm transaction was executed
 
+// InitBridge Sets up the wallet and node
 func InitBridge() {
+	client, err := wallet.Setup()
+	if err != nil {
+		log.Logger.Fatal("failed to setup wallet", zap.Error(err))
+	}
+
+	node.Start(client)
 }
 
 // IncreaseBurnerAllowance FIXME: Is amount in wei?
