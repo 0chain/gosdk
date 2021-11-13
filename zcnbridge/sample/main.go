@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/0chain/gosdk/zcnbridge/config"
 	"github.com/0chain/gosdk/zcnbridge/log"
+	"github.com/0chain/gosdk/zcnbridge/node"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"go.uber.org/zap"
 )
@@ -17,8 +18,10 @@ func main() {
 	config.ParseClientConfig()
 	config.Setup()
 
-	err := wallet.Setup()
+	client, err := wallet.Setup()
 	if err != nil {
 		log.Logger.Fatal("failed to setup wallet", zap.Error(err))
 	}
+
+	node.Start(client)
 }

@@ -8,24 +8,24 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
-func Setup() error {
+func Setup() (*Wallet, error) {
 	err := setupZCNSDK(config.Client)
 	if err != nil {
-		return errors.Wrap(err, "failed to setup ZCNSDK")
+		return nil, errors.Wrap(err, "failed to setup ZCNSDK")
 	}
 
 	publicKey, privateKey, err := crypto.ReadKeysFile(*config.Client.KeyFile)
 	if err != nil {
-		return errors.Wrap(err, "failed to initialize wallet keys")
+		return nil, errors.Wrap(err, "failed to initialize wallet keys")
 	}
 
 	wallet := CreateWallet(publicKey, privateKey)
 	err = wallet.RegisterToMiners()
 	if err != nil {
-		return errors.Wrap(err, "failed to register to miners")
+		return nil, errors.Wrap(err, "failed to register to miners")
 	}
 
-	return nil
+	return wallet, nil
 }
 
 // setupZCNSDK runs zcncore.SetLogFile, zcncore.SetLogLevel and zcncore.InitZCNSDK using provided Config.
