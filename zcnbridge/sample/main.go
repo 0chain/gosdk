@@ -13,17 +13,25 @@ const (
 	ConvertAmount = 10000000
 )
 
-func main() {
-	// 1. Init config
-	// 2. Init logs
-	// 2. Init SDK
-	// 3. Register wallet
-	// 4. Init bridge and make transactions
+// 1. Init config
+// 2. Init logs
+// 2. Init SDK
+// 3. Register wallet
+// 4. Init bridge and make transactions
 
+func main() {
 	config.ParseClientConfig()
 	config.Setup()
 	zcnbridge.InitBridge()
 
+	fromERCtoZCN()
+	fromZCNtoERC()
+}
+
+func fromZCNtoERC() {
+}
+
+func fromERCtoZCN() {
 	transaction, err := zcnbridge.IncreaseBurnerAllowance(ConvertAmount)
 	if err != nil {
 		log.Logger.Fatal("failed to execute IncreaseBurnerAllowance", zap.Error(err))
