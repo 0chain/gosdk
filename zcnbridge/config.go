@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"math/big"
 
+	"github.com/0chain/gosdk/zcnbridge/config"
+
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -23,29 +25,13 @@ import (
 //  _allowances[owner][spender] = amount;
 // as a spender, ERC20 WZCN token must increase allowance for the bridge to make burn on behalf of WZCN owner
 
-type bridgeConfig struct {
-	mnemonic string // owner mnemonic
-	//ownerAddress  common.Address
-	//publicKey     crypto.PublicKey
-	bridgeAddress   string
-	wzcnAddress     string
-	ethereumNodeURL string
-	chainID         int
-	gasLimit        int
-	value           int
-}
-
 type ethWalletInfo struct {
 	ID         string `json:"ID"`
 	PrivateKey string `json:"PrivateKey"`
 }
 
-var (
-	config bridgeConfig
-)
-
 func GetEthereumWalletInfo() (*ethWalletInfo, error) {
-	ownerWallet, err := zcncore.GetWalletAddrFromEthMnemonic(config.mnemonic)
+	ownerWallet, err := zcncore.GetWalletAddrFromEthMnemonic(config.Bridge.Mnemonic)
 	if err != nil {
 		err = errors.Wrap(err, "failed to initialize wallet from mnemonic")
 	}
@@ -59,8 +45,8 @@ func GetEthereumWalletInfo() (*ethWalletInfo, error) {
 	return wallet, err
 }
 
-func createEthClient() (*ethclient.Client, error) {
-	client, err := ethclient.Dial(config.ethereumNodeURL)
+func CreateEthClient() (*ethclient.Client, error) {
+	client, err := ethclient.Dial(config.Bridge.EthereumNodeURL)
 	if err != nil {
 		zcncore.Logger.Error(err)
 	}
@@ -115,12 +101,12 @@ func createSignedTransaction(
 		zcncore.Logger.Fatal(err)
 	}
 
-	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(int64(config.chainID)))
+	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(int64(config.Bridge.ChainID)))
 	if err != nil {
 		zcncore.Logger.Fatal(err)
 	}
 
-	value := new(big.Int).Mul(big.NewInt(int64(config.value)), big.NewInt(params.Wei))
+	value := new(big.Int).Mul(big.NewInt(int64(config.Bridge.Value)), big.NewInt(params.Wei))
 
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = value       // in wei

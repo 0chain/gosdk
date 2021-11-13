@@ -1,0 +1,79 @@
+linters-settings:
+  govet:
+    check-shadowing: false # disabled due to having much false positives
+  gocyclo:
+    min-complexity: 25
+  goconst:
+    min-len: 2
+    min-occurrences: 2
+  errcheck:
+    check-type-assertions: true
+  gocritic:
+    disabled-checks:
+      - ifElseChain
+  nakedret:
+    max-func-lines: 15
+gocognit:
+  min-complexity: 25
+godot:
+  scope: declarations
+  exclude:
+    - "^go:[^\ ]+"
+    - "^nolint:[^\ ]+"
+  capital: false
+gofmt:
+  simplify: true
+revive:
+  # see https://github.com/mgechev/revive#available-rules for details.
+  ignore-generated-header: true
+  severity: warning
+  rules:
+    - name: indent-error-flow
+      severity: warning
+    - name: add-constant
+      severity: warning
+      arguments:
+        - maxLitCount: "3"
+          allowStrs: '""'
+          allowInts: "0,1,2"
+          allowFloats: "0.0,0.,1.0,1.,2.0,2."
+
+run:
+  timeout: 4m
+  issues-exit-code: 1
+  tests: true
+
+  skip-dirs:
+    - mock
+    - mocks
+  skip-files:
+    - ".*\\.pb\\.go"
+
+linters:
+  enable:
+    - revive
+    - gocritic
+    - stylecheck
+    - goimports
+    - gosec
+    - unconvert
+    - unparam
+    - gochecknoinits
+    - gosec
+    - nakedret
+    - whitespace
+    - gosimple
+    - bodyclose
+    - dogsled
+    - rowserrcheck
+    - gofmt
+    - cyclop
+    - gocognit
+  disable:
+    - maligned
+    - lll
+    - dupl
+    - gochecknoglobals
+    - gci # add by file watchers
+    - goimports
+

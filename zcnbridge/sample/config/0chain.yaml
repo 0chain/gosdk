@@ -1,0 +1,19 @@
+version: 1.0
+
+logging:
+    level: "debug"
+    console: true # printing log to console is only supported in development mode
+
+#block_worker: http://localhost:9091 # to debug locally
+block_worker: http://198.18.0.98:9091 # to debug in container
+
+ethereum_chain:
+    node_url: https://ropsten.infura.io/v3/22cb2849f5f74b8599f3dc2a23085bd4
+    bridge_contract_address: 0xF26B52df8c6D9b9C20bfD7819Bed75a75258c7dB
+
+server_chain:
+    id: "0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe"
+    owner: "edb90b850f2e7e7cbd0a1fa370fdcc5cd378ffbec95363a7bc0e5a98b8ba5759"
+    genesis_block:
+        id: "ed79cae70d439c11258236da1dfa6fc550f7cc569768304623e8fbd7d70efae4"
+    signature_scheme: "bls0chain"

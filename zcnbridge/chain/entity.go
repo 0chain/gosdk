@@ -6,11 +6,12 @@ import (
 
 // Chain represents data structure that holds the chain data.
 type Chain struct {
-	ID           string
-	Version      string
-	CreationDate time.Timestamp
-	OwnerID      string
-	BlockWorker  string
+	ID              string
+	Version         string
+	CreationDate    time.Timestamp
+	OwnerID         string
+	BlockWorker     string
+	SignatureScheme string
 }
 
 // serverChain is the chain object of the chain the server is responsible for.
@@ -27,11 +28,12 @@ func GetServerChain() *Chain {
 }
 
 // NewChain creates a new Chain.
-func NewChain(id, ownerID, blockWorker string) *Chain {
+func NewChain(id, ownerID, blockWorker, signatureScheme string) *Chain {
 	chain := Provider()
 	chain.ID = id
 	chain.OwnerID = ownerID
 	chain.BlockWorker = blockWorker
+	chain.SignatureScheme = signatureScheme
 	return chain
 }
 

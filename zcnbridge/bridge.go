@@ -48,7 +48,7 @@ func InitBridge() {
 // WZCN tokens on behalf of the token owner to the TokenPool
 func IncreaseBurnerAllowance(amountTokens int64) (*types.Transaction, error) {
 	// 1. Create etherClient
-	etherClient, err := createEthClient()
+	etherClient, err := CreateEthClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create etherClient")
 	}
@@ -122,7 +122,7 @@ func BurnWZCN(amountTokens int64, clientID string) (*types.Transaction, error) {
 	}
 
 	// 1. Create etherClient
-	etherClient, err := createEthClient()
+	etherClient, err := CreateEthClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create etherClient")
 	}
