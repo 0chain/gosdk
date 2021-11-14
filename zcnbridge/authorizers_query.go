@@ -10,6 +10,9 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/0chain/gosdk/zcnbridge/log"
+	"go.uber.org/zap"
+
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	bridge "github.com/0chain/gosdk/zcnbridge/http"
 	"github.com/0chain/gosdk/zcnbridge/node"
@@ -26,6 +29,12 @@ type (
 		event JobResult
 		// error describes an error occurred during event processing on client side
 		error
+	}
+
+	requestHandler struct {
+		path    string
+		values  u.Values
+		decoder func([]byte) (JobResult, error)
 	}
 
 	responseChannelType chan *authorizerResponse
@@ -54,7 +63,17 @@ func CreateMintPayload(hash string) (*MintPayload, error) {
 		}
 	)
 
-	results := queryAllAuthorizers(authorizers, wallet.BurnWzcnTicketPath, values)
+	handler := &requestHandler{
+		path:   wallet.BurnWzcnTicketPath,
+		values: values,
+		decoder: func(body []byte) (JobResult, error) {
+			ev := &WZCNBurnEvent{}
+			err := json.Unmarshal(body, ev)
+			return ev, err
+		},
+	}
+
+	results := queryAllAuthorizers(authorizers, handler)
 
 	numSuccess := len(results)
 
@@ -91,7 +110,7 @@ func CreateMintPayload(hash string) (*MintPayload, error) {
 	return nil, errors.New("get_burn_ticket", text)
 }
 
-func queryAllAuthorizers(authorizers *AuthorizerNodes, path string, values u.Values) []JobResult {
+func queryAllAuthorizers(authorizers *AuthorizerNodes, handler *requestHandler) []JobResult {
 	var (
 		totalWorkers    = len(authorizers.NodeMap)
 		eventsChannel   = make(eventsChannelType)
@@ -105,7 +124,7 @@ func queryAllAuthorizers(authorizers *AuthorizerNodes, path string, values u.Val
 
 	for _, authorizer := range authorizers.NodeMap {
 		wg.Add(1)
-		go queryAuthoriser(authorizer, path, values, responseChannel)
+		go queryAuthoriser(authorizer, handler, responseChannel)
 	}
 
 	wg.Wait()
@@ -126,21 +145,42 @@ func handleResponse(responseChannel responseChannelType, eventsChannel eventsCha
 	eventsChannel <- events
 }
 
-func queryAuthoriser(node *AuthorizerNode, path string, values u.Values, responseChannel responseChannelType) {
+func queryAuthoriser(node *AuthorizerNode, request *requestHandler, responseChannel responseChannelType) {
 	var (
-		ticketURL = strings.TrimSuffix(node.URL, "/") + path
+		ticketURL = strings.TrimSuffix(node.URL, "/") + request.path
 	)
 
-	if job, ok := processResponse(client.PostForm(ticketURL, values)); ok {
-		job.AuthorizerID = node.ID
-		responseChannel <- job
+	job, body := processResponse(client.PostForm(ticketURL, request.values))
+	if job.error != nil {
+		log.Logger.Error(
+			"failed to process response",
+			zap.Error(job.error),
+			zap.String("node.id", node.ID),
+			zap.String("node.url", node.URL),
+		)
+		return
 	}
+
+	event, err := request.decoder(body)
+	if err != nil {
+		err = errors.Wrap("decode_message_body", "failed to decode message body", err)
+		log.Logger.Error(
+			"failed to decode event body",
+			zap.Error(job.error),
+			zap.String("node.id", node.ID),
+			zap.String("node.url", node.URL),
+		)
+		return
+	}
+
+	job.AuthorizerID = node.ID
+	job.event = event
+	responseChannel <- job
 }
 
-func processResponse(response *http.Response, err error) (*authorizerResponse, bool) {
+func processResponse(response *http.Response, err error) (*authorizerResponse, []byte) {
 	var (
 		res = &authorizerResponse{}
-		ev  = &WZCNBurnEvent{}
 	)
 
 	if err != nil {
@@ -149,27 +189,23 @@ func processResponse(response *http.Response, err error) (*authorizerResponse, b
 
 	if response == nil {
 		res.error = err
-		return res, false
+		return res, nil
 	}
 
 	if response.StatusCode >= 400 {
 		err = errors.Wrap("authorizer_post_process", fmt.Sprintf("error %d", response.StatusCode), err)
 	}
 
-	body, e := ioutil.ReadAll(response.Body)
-	if e != nil || len(body) == 0 {
-		res.error = errors.Wrap("authorizer_post_process", "failed to read body", e)
-		return res, false
-	}
-
-	e = json.Unmarshal(body, ev)
-	if e != nil {
-		res.error = errors.Wrap("decode_message_body", "failed to decode message body", e)
-		return res, false
+	body, er := ioutil.ReadAll(response.Body)
+	if er != nil || len(body) == 0 {
+		var errstrings []string
+		er = errors.Wrap("authorizer_post_process", "failed to read body", er)
+		errstrings = append(errstrings, err.Error())
+		errstrings = append(errstrings, er.Error())
+		err = fmt.Errorf(strings.Join(errstrings, "\n"))
 	}
 
 	res.error = err
-	res.event = ev
 
-	return res, err == nil
+	return res, body
 }
