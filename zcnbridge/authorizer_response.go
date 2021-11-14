@@ -15,12 +15,15 @@ type (
 		error
 	}
 
-	proofOfBurn struct {
+	proofEthereumBurn struct {
 		TxnID             string `json:"ethereum_txn_id"`
 		Amount            int64  `json:"amount"`
 		ReceivingClientID string `json:"receiving_client_id"` // 0ZCN address
 		Nonce             int64  `json:"nonce"`
 		Signature         string `json:"signature"`
+	}
+
+	proofZCNBurn struct {
 	}
 )
 
@@ -38,7 +41,7 @@ type WZCNBurnEvent struct {
 	// 	AuthorizerID Authorizer ID
 	AuthorizerID string `json:"authorizer_id,omitempty"`
 	// BurnTicket Returns burn ticket
-	BurnTicket *proofOfBurn `json:"ticket,omitempty"`
+	BurnTicket *proofEthereumBurn `json:"ticket,omitempty"`
 	// Err gives error of job on server side
 	Err *JobError `json:"err,omitempty"`
 	// Status gives job status on server side (authoriser)
@@ -50,5 +53,22 @@ func (r *WZCNBurnEvent) Error() error {
 }
 
 func (r *WZCNBurnEvent) Data() interface{} {
+	return r.BurnTicket
+}
+
+type ZCNBurnEvent struct {
+	// 	AuthorizerID Authorizer ID
+	AuthorizerID string `json:"authorizer_id,omitempty"`
+	// BurnTicket Returns burn ticket
+	BurnTicket *proofZCNBurn `json:"ticket,omitempty"`
+	// Err gives error of job on server side
+	Err *JobError `json:"err,omitempty"`
+}
+
+func (r *ZCNBurnEvent) Error() error {
+	return r.Err
+}
+
+func (r *ZCNBurnEvent) Data() interface{} {
 	return r.BurnTicket
 }

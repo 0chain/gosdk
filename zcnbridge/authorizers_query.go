@@ -18,8 +18,8 @@ import (
 )
 
 type (
-	// jobResult is HTTP client response burnEvent
-	jobResult struct {
+	// jobEthResult is HTTP client response burnEvent
+	jobEthResult struct {
 		// 	AuthorizerID is authorizer where the job was performed
 		AuthorizerID string
 		// burnEvent is server job burnEvent
@@ -28,7 +28,7 @@ type (
 		error
 	}
 
-	jobResultChannelType  chan *jobResult
+	jobResultChannelType  chan *jobEthResult
 	burnEventsChannelType chan []*WZCNBurnEvent
 )
 
@@ -133,9 +133,9 @@ func queryAuthoriser(node *AuthorizerNode, path string, values u.Values, respons
 	}
 }
 
-func processResponse(response *http.Response, err error) (*jobResult, bool) {
+func processResponse(response *http.Response, err error) (*jobEthResult, bool) {
 	var (
-		res = &jobResult{}
+		res = &jobEthResult{}
 		ev  = &WZCNBurnEvent{}
 	)
 
