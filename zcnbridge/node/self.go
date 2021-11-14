@@ -8,8 +8,10 @@ import (
 
 // Node represent self node type.
 type Node struct {
-	wallet    *wallet.Wallet
-	startTime time.Time
+	wallet          *wallet.Wallet
+	startTime       time.Time
+	nonce           int64
+	ethereumAddress string
 }
 
 var (
@@ -48,4 +50,9 @@ func PublicKey() string {
 // StartTime returns time when Node is started.
 func StartTime() time.Time {
 	return self.startTime
+}
+
+func IncrementNonce() int64 {
+	self.nonce += 1
+	return self.nonce
 }

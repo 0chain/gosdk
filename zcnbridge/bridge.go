@@ -44,12 +44,8 @@ var (
 	}
 )
 
-// Description:
-// 1. Increase the amount for token
-// 2. Call burn using same amount
-// 3. Confirm transaction was executed
-
 // InitBridge Sets up the wallet and node
+// Wallet setup reads keys from keyfile and registers in the 0chain
 func InitBridge() {
 	client, err := wallet.Setup()
 	if err != nil {
@@ -210,21 +206,57 @@ func BurnWZCN(amountTokens int64) (*types.Transaction, error) {
 	return tran, err
 }
 
-func Mint(ctx context.Context, payload *MintPayload) error {
+func Mint(ctx context.Context, payload *MintPayload) (*transaction.Transaction, error) {
 	trx, err := transaction.NewTransactionEntity()
 	if err != nil {
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
 	}
 
-	hash, err := trx.ExecuteSmartContract(ctx, wallet.ZCNSCSmartContractAddress, wallet.MintFunc, string(payload.Encode()), 0)
+	hash, err := trx.ExecuteSmartContract(
+		ctx,
+		wallet.ZCNSCSmartContractAddress,
+		wallet.MintFunc,
+		string(payload.Encode()),
+		0,
+	)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
+		return trx, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
 	}
 
 	err = trx.Verify(ctx)
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to verify smart contract transaction, hash = %s", hash))
+		return trx, errors.Wrap(err, fmt.Sprintf("failed to verify smart contract transaction, hash = %s", hash))
 	}
 
-	return nil
+	return trx, nil
+}
+
+func Burn(ctx context.Context, value int64) (*transaction.Transaction, error) {
+	payload := BurnPayload{
+		Nonce:           node.IncrementNonce(),
+		EthereumAddress: config.Bridge.EthereumAddress,
+	}
+
+	trx, err := transaction.NewTransactionEntity()
+	if err != nil {
+		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
+	}
+
+	hash, err := trx.ExecuteSmartContract(
+		ctx,
+		wallet.ZCNSCSmartContractAddress,
+		wallet.BurnFunc,
+		string(payload.Encode()),
+		value, // in ZCN tokens or just value?
+	)
+	if err != nil {
+		return trx, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
+	}
+
+	err = trx.Verify(ctx)
+	if err != nil {
+		return trx, errors.Wrap(err, fmt.Sprintf("failed to verify smart contract transaction, hash = %s", hash))
+	}
+
+	return trx, nil
 }

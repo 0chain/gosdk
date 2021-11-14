@@ -12,14 +12,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/gosdk/zcnbridge/node"
-
-	"github.com/0chain/gosdk/zcnbridge/wallet"
-
-	"github.com/hashicorp/go-retryablehttp"
-
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	bridge "github.com/0chain/gosdk/zcnbridge/http"
+	"github.com/0chain/gosdk/zcnbridge/node"
+	"github.com/0chain/gosdk/zcnbridge/wallet"
+	"github.com/hashicorp/go-retryablehttp"
 )
 
 const (

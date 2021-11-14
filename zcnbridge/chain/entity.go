@@ -9,7 +9,7 @@ type Chain struct {
 	ID              string
 	Version         string
 	CreationDate    time.Timestamp
-	OwnerID         string
+	OwnerID         string // this is not a wallet ID owner
 	BlockWorker     string
 	SignatureScheme string
 }

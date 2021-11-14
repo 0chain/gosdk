@@ -13,6 +13,8 @@ const (
 	ConvertAmount = 10000000
 )
 
+// How should we manage nonce? - when user starts again on another server - how should we restore the value?
+
 // 1. Init config
 // 2. Init logs
 // 2. Init SDK
@@ -29,6 +31,16 @@ func main() {
 }
 
 func fromZCNtoERC() {
+	trx, err := zcnbridge.Burn(context.TODO(), config.Bridge.Value)
+	if err != nil {
+		log.Logger.Fatal("failed to burn", zap.Error(err), zap.String("hash", trx.Hash))
+	}
+
+	// ASK authorizers for burn tickets
+
+	// Send burn tickets to Ethereum bridge
+
+	// Confirm that transaction
 }
 
 func fromERCtoZCN() {
@@ -43,23 +55,23 @@ func fromERCtoZCN() {
 	}
 
 	burnTrx, err := zcnbridge.BurnWZCN(ConvertAmount)
-	trxHash := burnTrx.Hash().Hex()
+	burnTrxHash := burnTrx.Hash().Hex()
 	if err != nil {
-		log.Logger.Fatal("failed to execute BurnWZCN", zap.Error(err), zap.String("hash", trxHash))
+		log.Logger.Fatal("failed to execute BurnWZCN", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
-	res = zcnbridge.ConfirmTransactionStatus(trxHash, 60, 2)
+	res = zcnbridge.ConfirmTransactionStatus(burnTrxHash, 60, 2)
 	if res == 0 {
-		log.Logger.Fatal("failed to confirm transaction ConfirmTransactionStatus", zap.String("hash", transaction.Hash().Hex()))
+		log.Logger.Fatal("failed to confirm transaction ConfirmTransactionStatus", zap.String("hash", burnTrxHash))
 	}
 
-	mintPayload, err := zcnbridge.CreateMintPayload(context.TODO(), trxHash)
+	mintPayload, err := zcnbridge.CreateMintPayload(context.TODO(), burnTrxHash)
 	if err != nil {
-		log.Logger.Fatal("failed to CreateMintPayload", zap.Error(err), zap.String("hash", trxHash))
+		log.Logger.Fatal("failed to CreateMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
-	err = zcnbridge.Mint(context.TODO(), mintPayload)
+	trx, err := zcnbridge.Mint(context.TODO(), mintPayload)
 	if err != nil {
-		log.Logger.Fatal("failed to Mint", zap.Error(err), zap.String("hash", trxHash))
+		log.Logger.Fatal("failed to Mint", zap.Error(err), zap.String("hash", trx.Hash))
 	}
 }
