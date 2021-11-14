@@ -31,7 +31,7 @@ func main() {
 }
 
 func fromZCNtoERC() {
-	trx, err := zcnbridge.Burn(context.TODO(), config.Bridge.Value)
+	trx, err := zcnbridge.BurnZCN(context.TODO(), config.Bridge.Value)
 	if err != nil {
 		log.Logger.Fatal("failed to burn", zap.Error(err), zap.String("hash", trx.Hash))
 	}
@@ -70,8 +70,8 @@ func fromERCtoZCN() {
 		log.Logger.Fatal("failed to CreateMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
-	trx, err := zcnbridge.Mint(context.TODO(), mintPayload)
+	trx, err := zcnbridge.MintZCN(context.TODO(), mintPayload)
 	if err != nil {
-		log.Logger.Fatal("failed to Mint", zap.Error(err), zap.String("hash", trx.Hash))
+		log.Logger.Fatal("failed to MintZCN", zap.Error(err), zap.String("hash", trx.Hash))
 	}
 }

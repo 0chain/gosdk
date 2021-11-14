@@ -200,13 +200,13 @@ func BurnWZCN(amountTokens int64) (*types.Transaction, error) {
 
 	tran, err := bridgeInstance.Burn(transactOpts, amount, DefaultClientIDEncoder(node.ID()))
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to execute Burn transaction to ClientID = %s with amount = %s", node.ID(), amount)
+		return nil, errors.Wrapf(err, "failed to execute BurnZCN transaction to ClientID = %s with amount = %s", node.ID(), amount)
 	}
 
 	return tran, err
 }
 
-func Mint(ctx context.Context, payload *MintPayload) (*transaction.Transaction, error) {
+func MintZCN(ctx context.Context, payload *MintPayload) (*transaction.Transaction, error) {
 	trx, err := transaction.NewTransactionEntity()
 	if err != nil {
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
@@ -231,7 +231,7 @@ func Mint(ctx context.Context, payload *MintPayload) (*transaction.Transaction, 
 	return trx, nil
 }
 
-func Burn(ctx context.Context, value int64) (*transaction.Transaction, error) {
+func BurnZCN(ctx context.Context, value int64) (*transaction.Transaction, error) {
 	payload := BurnPayload{
 		Nonce:           node.IncrementNonce(),
 		EthereumAddress: config.Bridge.EthereumAddress,

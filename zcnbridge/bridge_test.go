@@ -9,7 +9,7 @@ import (
 
 func TestMain(m *testing.M) {
 	// 1. IncreaseAllowance (client)
-	// 2. Burn (client)
+	// 2. BurnZCN (client)
 	// 3. Wait for transaction to complete (client)
 	// 3. Retrieve all authorizers (client)
 	// 4. Send transaction hash to all authorizers (client)
@@ -35,7 +35,7 @@ func TestInitTestBridge(t *testing.T) {
 }
 
 func TestTransactionStatus(t *testing.T) {
-	t.Run("Burn WZCN in Ether RPC", func(t *testing.T) {
+	t.Run("BurnZCN WZCN in Ether RPC", func(t *testing.T) {
 		zcnbridge.InitBridge() // TODO: Fill in the configuration
 
 		transaction, err := zcnbridge.BurnWZCN(10000000)
@@ -51,7 +51,7 @@ func TestTransactionStatus(t *testing.T) {
 }
 
 func TestBurnTicketCollection(t *testing.T) {
-	t.Run("Burn WZCN in Ether RPC", func(t *testing.T) {
+	t.Run("BurnZCN WZCN in Ether RPC", func(t *testing.T) {
 		zcnbridge.InitBridge()
 
 		transaction, err := zcnbridge.BurnWZCN(10000000)
