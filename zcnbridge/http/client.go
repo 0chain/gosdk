@@ -9,8 +9,11 @@ import (
 )
 
 const (
+	RetryWaitMax = 120 * time.Second
+	RetryMax     = 60
+
 	// clientTimeout represents default http.Client timeout.
-	clientTimeout = 60 * time.Second
+	clientTimeout = 120 * time.Second
 
 	// tlsHandshakeTimeout represents default http.Transport TLS handshake timeout.
 	tlsHandshakeTimeout = 10 * time.Second
@@ -37,11 +40,11 @@ func NewClient() *http.Client {
 }
 
 // NewRetryableClient creates default retryablehttp.Client with timeouts and embedded NewClient result.
-func NewRetryableClient(retryMax int) *retryablehttp.Client {
+func NewRetryableClient() *retryablehttp.Client {
 	client := retryablehttp.NewClient()
 	client.HTTPClient = NewClient()
-	client.RetryWaitMax = clientTimeout
-	client.RetryMax = retryMax
+	client.RetryWaitMax = RetryWaitMax
+	client.RetryMax = RetryMax
 	client.Logger = nil
 
 	return client

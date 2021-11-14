@@ -36,7 +36,7 @@ func MakeSCRestAPICall(relativePath string, params map[string]string) ([]byte, e
 
 	for _, sharder := range sharders {
 		var (
-			client = NewRetryableClient(5)
+			client = NewRetryableClient()
 			u      = makeURL(params, sharder, relativePath)
 		)
 

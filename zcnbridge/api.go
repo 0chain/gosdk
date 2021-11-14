@@ -1,28 +1,20 @@
 package zcnbridge
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math"
 	"net/http"
-	"net/url"
+	u "net/url"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	bridge "github.com/0chain/gosdk/zcnbridge/http"
 	"github.com/0chain/gosdk/zcnbridge/node"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/hashicorp/go-retryablehttp"
-)
-
-const (
-	Retrying        = 5
-	RequestDuration = time.Second * 120
-	PollInterval    = time.Second * 5
 )
 
 type (
@@ -43,8 +35,8 @@ var (
 )
 
 // CreateMintPayload gets burn ticket and creates mint payload to be minted in the chain
-func CreateMintPayload(ctx context.Context, hash string) (*MintPayload, error) {
-	client = bridge.NewRetryableClient(Retrying)
+func CreateMintPayload(hash string) (*MintPayload, error) {
+	client = bridge.NewRetryableClient()
 	authorizers, err := GetAuthorizers()
 
 	if err != nil || len(authorizers.NodeMap) == 0 {
@@ -52,35 +44,21 @@ func CreateMintPayload(ctx context.Context, hash string) (*MintPayload, error) {
 	}
 
 	var (
-		totalWorkers      = len(authorizers.NodeMap)
-		burnEventsChannel = make(burnEventsChannelType)
-		jobsChannel       = make(jobResultChannelType, totalWorkers)
-		values            = url.Values{
+		totalWorkers = len(authorizers.NodeMap)
+		values       = u.Values{
 			"hash":     []string{hash},
 			"address":  []string{wallet.ZCNSCSmartContractAddress},
 			"clientid": []string{node.ID()},
 		}
 	)
 
-	var wg sync.WaitGroup
-
-	go handleResults(jobsChannel, burnEventsChannel, &wg)
-	defer close(burnEventsChannel)
-
-	for _, authorizer := range authorizers.NodeMap {
-		wg.Add(1)
-		go getResultFromAuthoriser(ctx, authorizer, values, jobsChannel)
-	}
-
-	wg.Wait()
-	close(jobsChannel)
-	results := <-burnEventsChannel
+	results := queryAllAuthorizers(authorizers, values)
 
 	numSuccess := len(results)
 
 	quorum := math.Ceil((float64(numSuccess) * 100) / float64(totalWorkers))
 
-	if numSuccess > 0 && quorum >= wallet.ConsensusThresh && len(burnEventsChannel) > 1 {
+	if numSuccess > 0 && quorum >= wallet.ConsensusThresh && len(results) > 1 {
 		burnTicket := results[0].BurnTicket
 
 		var sigs []*AuthorizerSignature
@@ -107,6 +85,29 @@ func CreateMintPayload(ctx context.Context, hash string) (*MintPayload, error) {
 	return nil, errors.New("get_burn_ticket", text)
 }
 
+func queryAllAuthorizers(authorizers *AuthorizerNodes, values u.Values) []*AuthorizerBurnEvent {
+	var (
+		totalWorkers      = len(authorizers.NodeMap)
+		burnEventsChannel = make(burnEventsChannelType)
+		jobsChannel       = make(jobResultChannelType, totalWorkers)
+	)
+
+	var wg sync.WaitGroup
+
+	go handleResults(jobsChannel, burnEventsChannel, &wg)
+	defer close(burnEventsChannel)
+
+	for _, authorizer := range authorizers.NodeMap {
+		wg.Add(1)
+		go queryAuthoriser(authorizer, wallet.BurnWzcnTicketPath, values, jobsChannel)
+	}
+
+	wg.Wait()
+	close(jobsChannel)
+	results := <-burnEventsChannel
+	return results
+}
+
 func handleResults(jobResults jobResultChannelType, burnEvents burnEventsChannelType, wg *sync.WaitGroup) {
 	var events []*AuthorizerBurnEvent
 	for result := range jobResults {
@@ -118,34 +119,14 @@ func handleResults(jobResults jobResultChannelType, burnEvents burnEventsChannel
 	burnEvents <- events
 }
 
-func getResultFromAuthoriser(ctx context.Context, node *AuthorizerNode, values url.Values, responseChannel jobResultChannelType) {
-	currContext, cancel := context.WithTimeout(ctx, RequestDuration)
-	defer cancel()
-
+func queryAuthoriser(node *AuthorizerNode, path string, values u.Values, responseChannel jobResultChannelType) {
 	var (
-		job               *jobResult
-		response          *http.Response
-		lastError         error
-		ok                bool
-		burnWZCNTicketURL = strings.TrimSuffix(node.URL, "/") + wallet.BurnWzcnTicketPath
+		ticketURL = strings.TrimSuffix(node.URL, "/") + path
 	)
 
-	for {
-		select {
-		case <-currContext.Done():
-			job, _ = processResponse(nil, currContext.Err())
-			job.burnEvent.AuthorizerID = node.ID
-			responseChannel <- job
-			return
-		default:
-			response, lastError = client.PostForm(burnWZCNTicketURL, values)
-			if job, ok = processResponse(response, lastError); ok {
-				job.burnEvent.AuthorizerID = node.ID
-				responseChannel <- job
-				return
-			}
-			time.Sleep(PollInterval)
-		}
+	if job, ok := processResponse(client.PostForm(ticketURL, values)); ok {
+		job.burnEvent.AuthorizerID = node.ID
+		responseChannel <- job
 	}
 }
 

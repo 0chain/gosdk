@@ -65,7 +65,7 @@ func fromERCtoZCN() {
 		log.Logger.Fatal("failed to confirm transaction ConfirmTransactionStatus", zap.String("hash", burnTrxHash))
 	}
 
-	mintPayload, err := zcnbridge.CreateMintPayload(context.TODO(), burnTrxHash)
+	mintPayload, err := zcnbridge.CreateMintPayload(burnTrxHash)
 	if err != nil {
 		log.Logger.Fatal("failed to CreateMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))
 	}

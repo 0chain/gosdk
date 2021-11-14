@@ -14,6 +14,14 @@ type (
 	JobError struct {
 		error
 	}
+
+	proofOfBurn struct {
+		TxnID             string `json:"ethereum_txn_id"`
+		Amount            int64  `json:"amount"`
+		ReceivingClientID string `json:"receiving_client_id"` // 0ZCN address
+		Nonce             int64  `json:"nonce"`
+		Signature         string `json:"signature"`
+	}
 )
 
 func (e *JobError) UnmarshalJSON(buf []byte) error {
@@ -25,7 +33,7 @@ func (e *JobError) MarshalJSON() ([]byte, error) {
 	return json.Marshal(e.Error())
 }
 
-// AuthorizerBurnEvent returned from burn ticket handler Example: /v1/ether/burnticket/get
+// AuthorizerBurnEvent returned from burn ticket handler of: /v1/ether/burnticket/get
 type AuthorizerBurnEvent struct {
 	// 	AuthorizerID Authorizer ID
 	AuthorizerID string `json:"authorizer_id,omitempty"`

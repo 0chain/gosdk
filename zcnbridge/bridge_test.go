@@ -1,7 +1,6 @@
 package zcnbridge_test
 
 import (
-	"context"
 	"testing"
 
 	"github.com/0chain/gosdk/zcnbridge"
@@ -65,7 +64,7 @@ func TestBurnTicketCollection(t *testing.T) {
 		res := zcnbridge.GetTransactionStatus(transaction.Hash().Hex())
 		require.Equal(t, 1, res)
 
-		payload, err := zcnbridge.CreateMintPayload(context.TODO(), transaction.Hash().Hex())
+		payload, err := zcnbridge.CreateMintPayload(transaction.Hash().Hex())
 
 		require.NoError(t, err)
 		require.NotNil(t, payload)
