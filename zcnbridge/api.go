@@ -26,16 +26,16 @@ const (
 )
 
 type (
-	// jobResult is HTTP client response result
+	// jobResult is HTTP client response burnEvent
 	jobResult struct {
-		// result is server job result
-		result *AuthorizerBurnEvent
-		// error describes an error occurred during result processing on client side
+		// burnEvent is server job burnEvent
+		burnEvent *AuthorizerBurnEvent
+		// error describes an error occurred during burnEvent processing on client side
 		error
 	}
 
-	responseChannelType chan *jobResult
-	resultsChannelType  chan []*AuthorizerBurnEvent
+	jobResultChannelType  chan *jobResult
+	burnEventsChannelType chan []*AuthorizerBurnEvent
 )
 
 var (
@@ -52,10 +52,10 @@ func CreateMintPayload(ctx context.Context, hash string) (*MintPayload, error) {
 	}
 
 	var (
-		totalWorkers    = len(authorizers.NodeMap)
-		resultsChannel  = make(resultsChannelType)
-		responseChannel = make(responseChannelType, totalWorkers)
-		values          = url.Values{
+		totalWorkers      = len(authorizers.NodeMap)
+		burnEventsChannel = make(burnEventsChannelType)
+		jobsChannel       = make(jobResultChannelType, totalWorkers)
+		values            = url.Values{
 			"hash":     []string{hash},
 			"address":  []string{wallet.ZCNSCSmartContractAddress},
 			"clientid": []string{node.ID()},
@@ -64,23 +64,23 @@ func CreateMintPayload(ctx context.Context, hash string) (*MintPayload, error) {
 
 	var wg sync.WaitGroup
 
-	go handleResults(responseChannel, resultsChannel, &wg)
-	defer close(resultsChannel)
+	go handleResults(jobsChannel, burnEventsChannel, &wg)
+	defer close(burnEventsChannel)
 
 	for _, authorizer := range authorizers.NodeMap {
 		wg.Add(1)
-		go getResultFromAuthoriser(ctx, authorizer, values, responseChannel)
+		go getResultFromAuthoriser(ctx, authorizer, values, jobsChannel)
 	}
 
 	wg.Wait()
-	close(responseChannel)
-	results := <-resultsChannel
+	close(jobsChannel)
+	results := <-burnEventsChannel
 
 	numSuccess := len(results)
 
 	quorum := math.Ceil((float64(numSuccess) * 100) / float64(totalWorkers))
 
-	if numSuccess > 0 && quorum >= wallet.ConsensusThresh && len(resultsChannel) > 1 {
+	if numSuccess > 0 && quorum >= wallet.ConsensusThresh && len(burnEventsChannel) > 1 {
 		burnTicket := results[0].BurnTicket
 
 		var sigs []*AuthorizerSignature
@@ -107,41 +107,41 @@ func CreateMintPayload(ctx context.Context, hash string) (*MintPayload, error) {
 	return nil, errors.New("get_burn_ticket", text)
 }
 
-func handleResults(responseChannel responseChannelType, resultsChannel resultsChannelType, wg *sync.WaitGroup) {
-	var results []*AuthorizerBurnEvent
-	for result := range responseChannel {
+func handleResults(jobResults jobResultChannelType, burnEvents burnEventsChannelType, wg *sync.WaitGroup) {
+	var events []*AuthorizerBurnEvent
+	for result := range jobResults {
 		if result.error == nil {
-			results = append(results, result.result)
+			events = append(events, result.burnEvent)
 		}
 		wg.Done()
 	}
-	resultsChannel <- results
+	burnEvents <- events
 }
 
-func getResultFromAuthoriser(ctx context.Context, node *AuthorizerNode, values url.Values, responseChannel responseChannelType) {
+func getResultFromAuthoriser(ctx context.Context, node *AuthorizerNode, values url.Values, responseChannel jobResultChannelType) {
 	currContext, cancel := context.WithTimeout(ctx, RequestDuration)
 	defer cancel()
 
 	var (
-		result        *jobResult
-		response      *http.Response
-		lastError     error
-		ok            bool
-		burnTicketURL = strings.TrimSuffix(node.URL, "/") + wallet.BurnTicketPath
+		job               *jobResult
+		response          *http.Response
+		lastError         error
+		ok                bool
+		burnWZCNTicketURL = strings.TrimSuffix(node.URL, "/") + wallet.BurnWzcnTicketPath
 	)
 
 	for {
 		select {
 		case <-currContext.Done():
-			result = &jobResult{}
-			result.error = errors.Wrap("get_result_from_authorizer", "request timeout", lastError)
-			responseChannel <- result
+			job, _ = processResponse(nil, currContext.Err())
+			job.burnEvent.AuthorizerID = node.ID
+			responseChannel <- job
 			return
 		default:
-			response, lastError = client.PostForm(burnTicketURL, values)
-			if result, ok = processResponse(response, lastError); ok {
-				result.result.AuthorizerID = node.ID
-				responseChannel <- result
+			response, lastError = client.PostForm(burnWZCNTicketURL, values)
+			if job, ok = processResponse(response, lastError); ok {
+				job.burnEvent.AuthorizerID = node.ID
+				responseChannel <- job
 				return
 			}
 			time.Sleep(PollInterval)
@@ -156,28 +156,32 @@ func processResponse(response *http.Response, err error) (*jobResult, bool) {
 	)
 
 	if err != nil {
-		err = errors.Wrap("authorizer_post_request", "failed to call the authorizer", err)
+		err = errors.Wrap("authorizer_post_process", "failed to call the authorizer", err)
+	}
+
+	if response == nil {
+		res.error = err
+		return res, false
 	}
 
 	if response.StatusCode >= 400 {
-		err = errors.Wrap("authorizer_post_request", fmt.Sprintf("error %d", response.StatusCode), err)
+		err = errors.Wrap("authorizer_post_process", fmt.Sprintf("error %d", response.StatusCode), err)
 	}
 
 	body, e := ioutil.ReadAll(response.Body)
 	if e != nil || len(body) == 0 {
-		res.error = err
+		res.error = errors.Wrap("authorizer_post_process", "failed to read body", e)
 		return res, false
 	}
 
 	e = json.Unmarshal(body, ev)
 	if e != nil {
-		err = errors.Wrap("decode_message_body", "failed to decode message body", e)
-		res.error = err
+		res.error = errors.Wrap("decode_message_body", "failed to decode message body", e)
 		return res, false
 	}
 
 	res.error = err
-	res.result = ev
+	res.burnEvent = ev
 
 	return res, err == nil
 }

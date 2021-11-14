@@ -17,8 +17,9 @@ const (
 	MintFunc                  = "mint"
 	BurnFunc                  = "burn"
 	// ConsensusThresh quorum required to reach consensus
-	ConsensusThresh = float64(70.0)
-	BurnTicketPath  = "/v1/ether/burnticket/get"
+	ConsensusThresh      = float64(70.0)
+	BurnWzcnTicketPath   = "/v1/ether/burnticket/get"
+	BurnNativeTicketPath = "/v1/0chain/burnticket/get"
 )
 
 type (
