@@ -20,14 +20,16 @@ import (
 type (
 	// jobResult is HTTP client response burnEvent
 	jobResult struct {
+		// 	AuthorizerID is authorizer where the job was performed
+		AuthorizerID string
 		// burnEvent is server job burnEvent
-		burnEvent *AuthorizerBurnEvent
+		burnEvent *WZCNBurnEvent
 		// error describes an error occurred during burnEvent processing on client side
 		error
 	}
 
 	jobResultChannelType  chan *jobResult
-	burnEventsChannelType chan []*AuthorizerBurnEvent
+	burnEventsChannelType chan []*WZCNBurnEvent
 )
 
 var (
@@ -85,7 +87,7 @@ func CreateMintPayload(hash string) (*MintPayload, error) {
 	return nil, errors.New("get_burn_ticket", text)
 }
 
-func queryAllAuthorizers(authorizers *AuthorizerNodes, values u.Values) []*AuthorizerBurnEvent {
+func queryAllAuthorizers(authorizers *AuthorizerNodes, values u.Values) []*WZCNBurnEvent {
 	var (
 		totalWorkers      = len(authorizers.NodeMap)
 		burnEventsChannel = make(burnEventsChannelType)
@@ -94,7 +96,7 @@ func queryAllAuthorizers(authorizers *AuthorizerNodes, values u.Values) []*Autho
 
 	var wg sync.WaitGroup
 
-	go handleResults(jobsChannel, burnEventsChannel, &wg)
+	go handleWZCNBurnResponse(jobsChannel, burnEventsChannel, &wg)
 	defer close(burnEventsChannel)
 
 	for _, authorizer := range authorizers.NodeMap {
@@ -104,15 +106,16 @@ func queryAllAuthorizers(authorizers *AuthorizerNodes, values u.Values) []*Autho
 
 	wg.Wait()
 	close(jobsChannel)
-	results := <-burnEventsChannel
-	return results
+	return <-burnEventsChannel
 }
 
-func handleResults(jobResults jobResultChannelType, burnEvents burnEventsChannelType, wg *sync.WaitGroup) {
-	var events []*AuthorizerBurnEvent
-	for result := range jobResults {
-		if result.error == nil {
-			events = append(events, result.burnEvent)
+func handleWZCNBurnResponse(jobResults jobResultChannelType, burnEvents burnEventsChannelType, wg *sync.WaitGroup) {
+	var events []*WZCNBurnEvent
+	for job := range jobResults {
+		if job.error == nil {
+			event := job.burnEvent
+			event.AuthorizerID = job.AuthorizerID
+			events = append(events, event)
 		}
 		wg.Done()
 	}
@@ -125,7 +128,7 @@ func queryAuthoriser(node *AuthorizerNode, path string, values u.Values, respons
 	)
 
 	if job, ok := processResponse(client.PostForm(ticketURL, values)); ok {
-		job.burnEvent.AuthorizerID = node.ID
+		job.AuthorizerID = node.ID
 		responseChannel <- job
 	}
 }
@@ -133,7 +136,7 @@ func queryAuthoriser(node *AuthorizerNode, path string, values u.Values, respons
 func processResponse(response *http.Response, err error) (*jobResult, bool) {
 	var (
 		res = &jobResult{}
-		ev  = &AuthorizerBurnEvent{}
+		ev  = &WZCNBurnEvent{}
 	)
 
 	if err != nil {

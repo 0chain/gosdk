@@ -3,28 +3,24 @@ package zcnbridge
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"time"
 
-	"github.com/0chain/gosdk/zcnbridge/transaction"
-
-	"github.com/0chain/gosdk/zcnbridge/log"
-	"github.com/0chain/gosdk/zcnbridge/node"
-	"github.com/0chain/gosdk/zcnbridge/wallet"
-	"go.uber.org/zap"
-
 	"github.com/0chain/gosdk/zcnbridge/config"
+	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
+	"github.com/0chain/gosdk/zcnbridge/log"
+	"github.com/0chain/gosdk/zcnbridge/node"
+	"github.com/0chain/gosdk/zcnbridge/transaction"
+	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcncore"
-	"github.com/ethereum/go-ethereum"
+	eth "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
-
-	//"github.com/ethereum/go-ethereum/ethclient"
-	"math/big"
-
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -60,7 +56,7 @@ func InitBridge() {
 // WZCN tokens on behalf of the token owner to the TokenPool
 func IncreaseBurnerAllowance(amountTokens int64) (*types.Transaction, error) {
 	// 1. Create etherClient
-	etherClient, err := CreateEthClient()
+	etherClient, err := ethereum.CreateEthClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create etherClient")
 	}
@@ -90,7 +86,7 @@ func IncreaseBurnerAllowance(amountTokens int64) (*types.Transaction, error) {
 	// To
 	tokenAddress := common.HexToAddress(config.Bridge.WzcnAddress)
 
-	gasLimit, err := etherClient.EstimateGas(context.Background(), ethereum.CallMsg{
+	gasLimit, err := etherClient.EstimateGas(context.Background(), eth.CallMsg{
 		To:   &tokenAddress, // FIXME: From: is required?
 		Data: data,
 	})
@@ -101,12 +97,12 @@ func IncreaseBurnerAllowance(amountTokens int64) (*types.Transaction, error) {
 	// FIXME: proper calculation
 	gasLimit = gasLimit + gasLimit/10
 
-	ownerAddress, privKey, err := EthereumPrivateKeyAndAddress()
+	ownerAddress, privKey, err := ethereum.EthereumPrivateKeyAndAddress()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read private key and ownerAddress")
 	}
 
-	transactOpts := createSignedTransaction(etherClient, ownerAddress, privKey, gasLimit)
+	transactOpts := ethereum.CreateSignedTransaction(etherClient, ownerAddress, privKey, gasLimit)
 
 	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, etherClient)
 	if err != nil {
@@ -147,7 +143,7 @@ func BurnWZCN(amountTokens int64) (*types.Transaction, error) {
 	}
 
 	// 1. Create etherClient
-	etherClient, err := CreateEthClient()
+	etherClient, err := ethereum.CreateEthClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create etherClient")
 	}
@@ -175,12 +171,12 @@ func BurnWZCN(amountTokens int64) (*types.Transaction, error) {
 	// To
 	bridgeAddress := common.HexToAddress(config.Bridge.BridgeAddress)
 
-	ownerAddress, privKey, err := EthereumPrivateKeyAndAddress()
+	ownerAddress, privKey, err := ethereum.EthereumPrivateKeyAndAddress()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read private key and ownerAddress")
 	}
 
-	gasLimit, err := etherClient.EstimateGas(context.Background(), ethereum.CallMsg{
+	gasLimit, err := etherClient.EstimateGas(context.Background(), eth.CallMsg{
 		To:   &bridgeAddress, // TODO: From: is required?
 		Data: data,
 	})
@@ -191,7 +187,7 @@ func BurnWZCN(amountTokens int64) (*types.Transaction, error) {
 	// TODO: This needs to fix
 	gasLimit = gasLimit + gasLimit/10
 
-	transactOpts := createSignedTransaction(etherClient, ownerAddress, privKey, gasLimit)
+	transactOpts := ethereum.CreateSignedTransaction(etherClient, ownerAddress, privKey, gasLimit)
 
 	bridgeInstance, err := bridge.NewBridge(bridgeAddress, etherClient)
 	if err != nil {

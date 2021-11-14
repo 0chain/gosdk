@@ -33,8 +33,8 @@ func (e *JobError) MarshalJSON() ([]byte, error) {
 	return json.Marshal(e.Error())
 }
 
-// AuthorizerBurnEvent returned from burn ticket handler of: /v1/ether/burnticket/get
-type AuthorizerBurnEvent struct {
+// WZCNBurnEvent returned from burn ticket handler of: /v1/ether/burnticket/get
+type WZCNBurnEvent struct {
 	// 	AuthorizerID Authorizer ID
 	AuthorizerID string `json:"authorizer_id,omitempty"`
 	// BurnTicket Returns burn ticket
@@ -45,10 +45,10 @@ type AuthorizerBurnEvent struct {
 	Status JobStatus `json:"status,omitempty"`
 }
 
-func (r *AuthorizerBurnEvent) Error() error {
+func (r *WZCNBurnEvent) Error() error {
 	return r.Err
 }
 
-func (r *AuthorizerBurnEvent) Data() interface{} {
+func (r *WZCNBurnEvent) Data() interface{} {
 	return r.BurnTicket
 }

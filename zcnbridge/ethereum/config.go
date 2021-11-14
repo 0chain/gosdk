@@ -1,4 +1,4 @@
-package zcnbridge
+package ethereum
 
 import (
 	"context"
@@ -75,7 +75,7 @@ func EthereumPrivateKeyAndAddress() (common.Address, *ecdsa.PrivateKey, error) {
 	return ownerAddress, privateKey, nil
 }
 
-func createSignedTransaction(
+func CreateSignedTransaction(
 	client *ethclient.Client,
 	fromAddress common.Address,
 	privateKey *ecdsa.PrivateKey,
