@@ -10,6 +10,8 @@ type (
 	JobResult interface {
 		Error() error
 		Data() interface{}
+		SetAuthorizerID(ID string)
+		GetAuthorizerID() string
 	}
 	JobError struct {
 		error
@@ -48,6 +50,14 @@ type WZCNBurnEvent struct {
 	Status JobStatus `json:"status,omitempty"`
 }
 
+func (r *WZCNBurnEvent) GetAuthorizerID() string {
+	return r.AuthorizerID
+}
+
+func (r *WZCNBurnEvent) SetAuthorizerID(ID string) {
+	r.AuthorizerID = ID
+}
+
 func (r *WZCNBurnEvent) Error() error {
 	return r.Err
 }
@@ -56,6 +66,7 @@ func (r *WZCNBurnEvent) Data() interface{} {
 	return r.BurnTicket
 }
 
+// ZCNBurnEvent ZCN burn ticket
 type ZCNBurnEvent struct {
 	// 	AuthorizerID Authorizer ID
 	AuthorizerID string `json:"authorizer_id,omitempty"`
@@ -63,6 +74,14 @@ type ZCNBurnEvent struct {
 	BurnTicket *proofZCNBurn `json:"ticket,omitempty"`
 	// Err gives error of job on server side
 	Err *JobError `json:"err,omitempty"`
+}
+
+func (r *ZCNBurnEvent) GetAuthorizerID() string {
+	return r.AuthorizerID
+}
+
+func (r *ZCNBurnEvent) SetAuthorizerID(ID string) {
+	r.AuthorizerID = ID
 }
 
 func (r *ZCNBurnEvent) Error() error {

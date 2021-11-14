@@ -18,18 +18,18 @@ import (
 )
 
 type (
-	// jobEthResult is HTTP client response burnEvent
-	jobEthResult struct {
+	// authorizerResponse is HTTP client response event
+	authorizerResponse struct {
 		// 	AuthorizerID is authorizer where the job was performed
 		AuthorizerID string
-		// burnEvent is server job burnEvent
-		burnEvent *WZCNBurnEvent
-		// error describes an error occurred during burnEvent processing on client side
+		// event is server job event
+		event JobResult
+		// error describes an error occurred during event processing on client side
 		error
 	}
 
-	jobResultChannelType  chan *jobEthResult
-	burnEventsChannelType chan []*WZCNBurnEvent
+	responseChannelType chan *authorizerResponse
+	eventsChannelType   chan []JobResult
 )
 
 var (
@@ -54,20 +54,24 @@ func CreateMintPayload(hash string) (*MintPayload, error) {
 		}
 	)
 
-	results := queryAllAuthorizers(authorizers, values)
+	results := queryAllAuthorizers(authorizers, wallet.BurnWzcnTicketPath, values)
 
 	numSuccess := len(results)
 
 	quorum := math.Ceil((float64(numSuccess) * 100) / float64(totalWorkers))
 
 	if numSuccess > 0 && quorum >= wallet.ConsensusThresh && len(results) > 1 {
-		burnTicket := results[0].BurnTicket
+		burnTicket, ok := results[0].Data().(*proofEthereumBurn)
+		if !ok {
+			return nil, errors.Wrap("type_cast", "failed to convert to *proofEthereumBurn", err)
+		}
 
 		var sigs []*AuthorizerSignature
 		for _, result := range results {
+			ticket := result.Data().(*proofEthereumBurn)
 			sig := &AuthorizerSignature{
-				ID:        result.AuthorizerID,
-				Signature: result.BurnTicket.Signature,
+				ID:        result.GetAuthorizerID(),
+				Signature: ticket.Signature,
 			}
 			sigs = append(sigs, sig)
 		}
@@ -87,42 +91,42 @@ func CreateMintPayload(hash string) (*MintPayload, error) {
 	return nil, errors.New("get_burn_ticket", text)
 }
 
-func queryAllAuthorizers(authorizers *AuthorizerNodes, values u.Values) []*WZCNBurnEvent {
+func queryAllAuthorizers(authorizers *AuthorizerNodes, path string, values u.Values) []JobResult {
 	var (
-		totalWorkers      = len(authorizers.NodeMap)
-		burnEventsChannel = make(burnEventsChannelType)
-		jobsChannel       = make(jobResultChannelType, totalWorkers)
+		totalWorkers    = len(authorizers.NodeMap)
+		eventsChannel   = make(eventsChannelType)
+		responseChannel = make(responseChannelType, totalWorkers)
 	)
 
 	var wg sync.WaitGroup
 
-	go handleWZCNBurnResponse(jobsChannel, burnEventsChannel, &wg)
-	defer close(burnEventsChannel)
+	go handleResponse(responseChannel, eventsChannel, &wg)
+	defer close(eventsChannel)
 
 	for _, authorizer := range authorizers.NodeMap {
 		wg.Add(1)
-		go queryAuthoriser(authorizer, wallet.BurnWzcnTicketPath, values, jobsChannel)
+		go queryAuthoriser(authorizer, path, values, responseChannel)
 	}
 
 	wg.Wait()
-	close(jobsChannel)
-	return <-burnEventsChannel
+	close(responseChannel)
+	return <-eventsChannel
 }
 
-func handleWZCNBurnResponse(jobResults jobResultChannelType, burnEvents burnEventsChannelType, wg *sync.WaitGroup) {
-	var events []*WZCNBurnEvent
-	for job := range jobResults {
+func handleResponse(responseChannel responseChannelType, eventsChannel eventsChannelType, wg *sync.WaitGroup) {
+	var events []JobResult
+	for job := range responseChannel {
 		if job.error == nil {
-			event := job.burnEvent
-			event.AuthorizerID = job.AuthorizerID
+			event := job.event
+			event.SetAuthorizerID(job.AuthorizerID)
 			events = append(events, event)
 		}
 		wg.Done()
 	}
-	burnEvents <- events
+	eventsChannel <- events
 }
 
-func queryAuthoriser(node *AuthorizerNode, path string, values u.Values, responseChannel jobResultChannelType) {
+func queryAuthoriser(node *AuthorizerNode, path string, values u.Values, responseChannel responseChannelType) {
 	var (
 		ticketURL = strings.TrimSuffix(node.URL, "/") + path
 	)
@@ -133,9 +137,9 @@ func queryAuthoriser(node *AuthorizerNode, path string, values u.Values, respons
 	}
 }
 
-func processResponse(response *http.Response, err error) (*jobEthResult, bool) {
+func processResponse(response *http.Response, err error) (*authorizerResponse, bool) {
 	var (
-		res = &jobEthResult{}
+		res = &authorizerResponse{}
 		ev  = &WZCNBurnEvent{}
 	)
 
@@ -165,7 +169,7 @@ func processResponse(response *http.Response, err error) (*jobEthResult, bool) {
 	}
 
 	res.error = err
-	res.burnEvent = ev
+	res.event = ev
 
 	return res, err == nil
 }
