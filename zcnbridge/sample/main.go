@@ -49,7 +49,7 @@ func fromERCtoZCN() {
 		log.Logger.Fatal("failed to execute IncreaseBurnerAllowance", zap.Error(err))
 	}
 
-	res := zcnbridge.ConfirmTransactionStatus(transaction.Hash().Hex(), 60, 2)
+	res := zcnbridge.ConfirmEthereumTransactionStatus(transaction.Hash().Hex(), 60, 2)
 	if res == 0 {
 		log.Logger.Fatal("failed to confirm transaction", zap.String("hash", transaction.Hash().Hex()))
 	}
@@ -60,14 +60,14 @@ func fromERCtoZCN() {
 		log.Logger.Fatal("failed to execute BurnWZCN", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
-	res = zcnbridge.ConfirmTransactionStatus(burnTrxHash, 60, 2)
+	res = zcnbridge.ConfirmEthereumTransactionStatus(burnTrxHash, 60, 2)
 	if res == 0 {
-		log.Logger.Fatal("failed to confirm transaction ConfirmTransactionStatus", zap.String("hash", burnTrxHash))
+		log.Logger.Fatal("failed to confirm transaction ConfirmEthereumTransactionStatus", zap.String("hash", burnTrxHash))
 	}
 
-	mintPayload, err := zcnbridge.CreateMintPayload(burnTrxHash)
+	mintPayload, err := zcnbridge.CreateZCNMintPayload(burnTrxHash)
 	if err != nil {
-		log.Logger.Fatal("failed to CreateMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))
+		log.Logger.Fatal("failed to CreateZCNMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
 	trx, err := zcnbridge.MintZCN(context.TODO(), mintPayload)

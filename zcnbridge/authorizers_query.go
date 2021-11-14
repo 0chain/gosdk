@@ -45,8 +45,8 @@ var (
 	client *retryablehttp.Client
 )
 
-// CreateMintPayload gets burn ticket and creates mint payload to be minted in the chain
-func CreateMintPayload(hash string) (*MintPayload, error) {
+// CreateZCNMintPayload gets burn ticket and creates mint payload to be minted in the chain
+func CreateZCNMintPayload(hash string) (*MintPayload, error) {
 	client = bridge.NewRetryableClient()
 	authorizers, err := GetAuthorizers()
 

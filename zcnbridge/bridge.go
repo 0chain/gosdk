@@ -121,7 +121,7 @@ func GetTransactionStatus(hash string) int {
 	return zcncore.CheckEthHashStatus(hash)
 }
 
-func ConfirmTransactionStatus(hash string, times int, duration time.Duration) int {
+func ConfirmEthereumTransactionStatus(hash string, times int, duration time.Duration) int {
 	var res = 0
 	for i := 0; i < times; i++ {
 		res = GetTransactionStatus(hash)

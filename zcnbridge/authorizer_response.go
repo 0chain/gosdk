@@ -19,13 +19,18 @@ type (
 
 	proofEthereumBurn struct {
 		TxnID             string `json:"ethereum_txn_id"`
+		Nonce             int64  `json:"nonce"`
 		Amount            int64  `json:"amount"`
 		ReceivingClientID string `json:"receiving_client_id"` // 0ZCN address
-		Nonce             int64  `json:"nonce"`
 		Signature         string `json:"signature"`
 	}
 
 	proofZCNBurn struct {
+		TxnID           string `json:"0chain_txn_id"`
+		Nonce           int64  `json:"nonce"`
+		Amount          int64  `json:"amount"`
+		EthereumAddress string `json:"ethereum_address"`
+		Signature       string `json:"signatures"`
 	}
 )
 

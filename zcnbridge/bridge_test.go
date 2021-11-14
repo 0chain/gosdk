@@ -64,7 +64,7 @@ func TestBurnTicketCollection(t *testing.T) {
 		res := zcnbridge.GetTransactionStatus(transaction.Hash().Hex())
 		require.Equal(t, 1, res)
 
-		payload, err := zcnbridge.CreateMintPayload(transaction.Hash().Hex())
+		payload, err := zcnbridge.CreateZCNMintPayload(transaction.Hash().Hex())
 
 		require.NoError(t, err)
 		require.NotNil(t, payload)
