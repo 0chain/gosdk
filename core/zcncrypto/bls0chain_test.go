@@ -1,3 +1,5 @@
+// +build !js,!wasm
+
 package zcncrypto
 
 import (
@@ -109,7 +111,7 @@ func TestCombinedSignAndVerify(t *testing.T) {
 
 func TestSplitKey(t *testing.T) {
 	primaryKeyStr := `c36f2f92b673cf057a32e8bd0ca88888e7ace40337b737e9c7459fdc4c521918`
-	sig0 := NewBLS0ChainScheme()
+	sig0 := NewSignatureScheme("bls0chain")
 	err := sig0.SetPrivateKey(primaryKeyStr)
 	if err != nil {
 		t.Fatalf("Set private key failed - %s", errors.Top(err))
@@ -124,8 +126,9 @@ func TestSplitKey(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Splitkeys key failed - %s", errors.Top(err))
 	}
-	sigAggScheme := make([]BLS0ChainScheme, numSplitKeys)
+	sigAggScheme := make([]SignatureScheme, numSplitKeys)
 	for i := 0; i < numSplitKeys; i++ {
+		sigAggScheme[i] = NewSignatureScheme("bls0chain")
 		sigAggScheme[i].SetPrivateKey(w.Keys[i].PrivateKey)
 	}
 	var aggrSig string

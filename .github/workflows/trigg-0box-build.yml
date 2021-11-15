@@ -14,7 +14,7 @@ on:
 jobs:        
   zbox:
     name: Triggering 0box Build
-    runs-on: ubuntu-20.04
+    runs-on: [self-hosted, build]
     
     steps:
     - name: Generating JSON for Input
@@ -31,7 +31,7 @@ jobs:
         owner: 0chain
         repo: 0box
         github_token: ${{ secrets.GOSDK }}
-        workflow_file_name: build.yml
+        workflow_file_name: build-&-publish-docker-image.yml
         ref: ${{ github.event.inputs.branch_ref }} 
         inputs: ${{ steps.get_tag.outputs.JSON }}
         propagate_failure: true

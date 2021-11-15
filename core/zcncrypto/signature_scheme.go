@@ -2,7 +2,6 @@ package zcncrypto
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
@@ -36,6 +35,7 @@ type SignatureScheme interface {
 
 	// Generate keys from mnemonic for recovery
 	RecoverKeys(mnemonic string) (*Wallet, error)
+	GetMnemonic() string
 
 	// Signing  - Set private key to sign
 	SetPrivateKey(privateKey string) error
@@ -49,6 +49,17 @@ type SignatureScheme interface {
 
 	// Combine signature for schemes BLS
 	Add(signature, msg string) (string, error)
+
+	// implement SplitSignatureScheme
+
+	SplitKeys(numSplits int) (*Wallet, error)
+
+	GetPrivateKeyAsByteArray() ([]byte, error)
+
+	// // implement ThresholdSignatureScheme
+
+	// SetID(id string) error
+	// GetID() string
 }
 
 // SplitSignatureScheme splits the primary key into number of parts.
@@ -57,16 +68,10 @@ type SplitSignatureScheme interface {
 	SplitKeys(numSplits int) (*Wallet, error)
 }
 
-// NewSignatureScheme creates an instance for using signature functions
-func NewSignatureScheme(sigScheme string) SignatureScheme {
-	switch sigScheme {
-	case "ed25519":
-		return NewED255190chainScheme()
-	case "bls0chain":
-		return NewBLS0ChainScheme()
-	default:
-		panic(fmt.Sprintf("unknown signature scheme: %v", sigScheme))
-	}
+type ThresholdSignatureScheme interface {
+	SignatureScheme
+	SetID(id string) error
+	GetID() string
 }
 
 // Marshal returns json string

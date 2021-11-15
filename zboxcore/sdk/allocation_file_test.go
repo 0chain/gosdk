@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -48,7 +49,7 @@ func TestAllocation_UpdateFile(t *testing.T) {
 		})
 	}
 	a.uploadChan = make(chan *UploadRequest, 4)
-	err := a.UpdateFile(mockLocalPath, "/", fileref.Attributes{}, nil)
+	err := a.UpdateFile(os.TempDir(), mockLocalPath, "/", fileref.Attributes{}, nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -72,7 +73,7 @@ func TestAllocation_UploadFile(t *testing.T) {
 			Baseurl: server.URL,
 		})
 	}
-	err := a.UploadFile(mockLocalPath, "/", fileref.Attributes{}, nil)
+	err := a.UploadFile(os.TempDir(), mockLocalPath, "/", fileref.Attributes{}, nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -132,7 +133,7 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 					Baseurl: server.URL,
 				})
 			}
-			err := a.UpdateFileWithThumbnail(tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.thumbnailPath, fileref.Attributes{}, tt.parameters.status)
+			err := a.UpdateFileWithThumbnail(os.TempDir(), tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.thumbnailPath, fileref.Attributes{}, tt.parameters.status)
 			if tt.wantErr {
 				require.Errorf(err, "expected error != nil")
 				return
@@ -144,6 +145,7 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 
 func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 	const (
+		mockTmpPath       = "/tmp"
 		mockLocalPath     = "1.txt"
 		mockThumbnailPath = "thumbnail_alloc"
 	)
@@ -165,12 +167,15 @@ func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 			Baseurl: server.URL,
 		})
 	}
-	err := a.UploadFileWithThumbnail(mockLocalPath, "/", mockThumbnailPath, fileref.Attributes{}, nil)
+	err := a.UploadFileWithThumbnail(mockTmpPath, mockLocalPath, "/", mockThumbnailPath, fileref.Attributes{}, nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
 func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
-	const mockLocalPath = "1.txt"
+	const (
+		mockLocalPath = "1.txt"
+		mockTmpPath   = "/tmp"
+	)
 	require := require.New(t)
 	if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
 		defer teardown(t)
@@ -190,12 +195,15 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 			Baseurl: server.URL,
 		})
 	}
-	err := a.EncryptAndUpdateFile(mockLocalPath, "/", fileref.Attributes{}, nil)
+	err := a.EncryptAndUpdateFile(mockTmpPath, mockLocalPath, "/", fileref.Attributes{}, nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
 func TestAllocation_EncryptAndUploadFile(t *testing.T) {
-	const mockLocalPath = "1.txt"
+	const (
+		mockLocalPath = "1.txt"
+		mockTmpPath   = "/tmp"
+	)
 	require := require.New(t)
 	if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
 		defer teardown(t)
@@ -214,7 +222,7 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 			Baseurl: server.URL,
 		})
 	}
-	err := a.EncryptAndUploadFile(mockLocalPath, "/", fileref.Attributes{}, nil)
+	err := a.EncryptAndUploadFile(mockTmpPath, mockLocalPath, "/", fileref.Attributes{}, nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -222,6 +230,7 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 	const (
 		mockLocalPath     = "1.txt"
 		mockThumbnailPath = "thumbnail_alloc"
+		mockTmpPath       = "/tmp"
 	)
 	require := require.New(t)
 	if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
@@ -241,7 +250,7 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 			Baseurl: server.URL,
 		})
 	}
-	err := a.EncryptAndUpdateFileWithThumbnail(mockLocalPath, "/", mockThumbnailPath, fileref.Attributes{}, nil)
+	err := a.EncryptAndUpdateFileWithThumbnail(mockTmpPath, mockLocalPath, "/", mockThumbnailPath, fileref.Attributes{}, nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -249,6 +258,7 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 	const (
 		mockLocalPath     = "1.txt"
 		mockThumbnailPath = "thumbnail_alloc"
+		mockTmpPath       = "/tmp"
 	)
 	require := require.New(t)
 	if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
@@ -268,7 +278,7 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 			Baseurl: server.URL,
 		})
 	}
-	err := a.EncryptAndUploadFileWithThumbnail(mockLocalPath, "/", mockThumbnailPath, fileref.Attributes{}, nil)
+	err := a.EncryptAndUploadFileWithThumbnail(mockTmpPath, mockLocalPath, "/", mockThumbnailPath, fileref.Attributes{}, nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
