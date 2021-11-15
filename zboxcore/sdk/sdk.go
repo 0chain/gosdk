@@ -821,13 +821,11 @@ func CreateAllocationWithBlobbers(datashards, parityshards int, size, expiry int
 }
 
 func CreateAllocation(datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, mcct time.Duration, lock int64) (
+	readPrice, writePrice PriceRange, mcct time.Duration, lock int64, blobbers []string) (
 	string, error) {
 
-	return CreateAllocationForOwner(client.GetClientID(),
-		client.GetClientPublicKey(), datashards, parityshards,
-		size, expiry, readPrice, writePrice, mcct, lock,
-		blockchain.GetPreferredBlobbers())
+	return CreateAllocationWithBlobbers(datashards, parityshards, size,
+		expiry, readPrice, writePrice, mcct, lock, blobbers)
 }
 
 func CreateAllocationForOwner(owner, ownerpublickey string,
@@ -1162,7 +1160,7 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 }
 
 func GetAllocationMinLock(datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, mcct time.Duration) (int64, error) {
+	readPrice, writePrice PriceRange, mcct time.Duration, blobbers []string) (int64, error) {
 	if !sdkInitialized {
 		return 0, sdkNotInitialized
 	}
@@ -1174,7 +1172,7 @@ func GetAllocationMinLock(datashards, parityshards int, size, expiry int64,
 		"owner_id":                      client.GetClientID(),
 		"owner_public_key":              client.GetClientPublicKey(),
 		"expiration_date":               expiry,
-		"preferred_blobbers":            blockchain.GetPreferredBlobbers(),
+		"preferred_blobbers":            blobbers,
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
 		"max_challenge_completion_time": mcct,
