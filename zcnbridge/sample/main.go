@@ -38,9 +38,18 @@ func fromZCNtoERC() {
 
 	// ASK authorizers for burn tickets
 
-	// Send burn tickets to Ethereum bridge
+	tran, err := zcnbridge.MintWZCN(ConvertAmount, nil)
+	tranHash := tran.Hash().Hex()
+	if err != nil {
+		log.Logger.Fatal("failed to execute MintWZCN", zap.Error(err), zap.String("hash", tranHash))
+	}
 
-	// Confirm that transaction
+	// ASK for minting events from bridge contract
+
+	res := zcnbridge.ConfirmEthereumTransactionStatus(tranHash, 60, 2)
+	if res == 0 {
+		log.Logger.Fatal("failed to confirm transaction ConfirmEthereumTransactionStatus", zap.String("hash", tranHash))
+	}
 }
 
 func fromERCtoZCN() {

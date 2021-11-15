@@ -2,6 +2,7 @@ package zcnsc
 
 import "encoding/json"
 
+// MintPayload Payload to submit to ZCN chain `mint` smart contract
 type MintPayload struct {
 	EthereumTxnID     string                 `json:"ethereum_txn_id"`
 	Amount            int64                  `json:"amount"`

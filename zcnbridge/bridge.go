@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/0chain/gosdk/zcnbridge/config"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
@@ -29,6 +31,7 @@ import (
 const (
 	IncreaseAllowanceSigCode = "39509351"
 	BurnSigCode              = "fe9d9303"
+	MintSigCode              = "4d02be9f"
 	Bytes32                  = 32
 )
 
@@ -37,6 +40,7 @@ var (
 	IncreaseAllowanceSig = []byte(erc20.ERC20MetaData.Sigs[IncreaseAllowanceSigCode])
 	// BurnSig "burn(uint256,bytes)"
 	BurnSig                = []byte(bridge.BridgeMetaData.Sigs[BurnSigCode])
+	MintSig                = []byte(bridge.BridgeMetaData.Sigs[MintSigCode])
 	DefaultClientIDEncoder = func(id string) []byte {
 		return []byte(id)
 	}
@@ -136,24 +140,64 @@ func ConfirmEthereumTransactionStatus(hash string, times int, duration time.Dura
 	return res
 }
 
-func MintWZCN(amountTokens int64, payload *zcnsc.MintPayload) (*types.Transaction, error) {
-	// 1. Create etherClient
-	//etherClient, err := ethereum.CreateEthClient()
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "failed to create etherClient")
-	//}
+func MintWZCN(amountTokens int64, payload *ethereum.MintPayload) (*types.Transaction, error) {
+	if DefaultClientIDEncoder == nil {
+		return nil, errors.New("DefaultClientIDEncoder must be setup")
+	}
 
-	//bridgeAddress := common.HexToAddress(config.Bridge.BridgeAddress)
+	zcnTxd := DefaultClientIDEncoder(payload.ZCNTxnID)
 
-	//instance, err := bridge.NewBridge(bridgeAddress, etherClient)
-	//if err != nil {
-	//	return nil, errors.Wrap(err, "failed to create bridge instance")
-	//}
+	// 1. Data Parameter (signature)
+	hash := sha3.NewLegacyKeccak256()
+	hash.Write(MintSig)
+	methodID := hash.Sum(nil)[:4]
+	fmt.Println(hexutil.Encode(methodID))
 
+	// 2. Data Parameter (amount to burn)
+	amount := new(big.Int)
+	amount.SetInt64(amountTokens)
+	paddedAmount := common.LeftPadBytes(amount.Bytes(), Bytes32)
+
+	// 3. Data Parameter (zcnTxd string as []byte)
+	paddedZCNTxd := common.LeftPadBytes(zcnTxd, Bytes32)
+
+	// 4. Nonce Parameter
+	nonce := new(big.Int)
+	nonce.SetInt64(payload.Nonce)
+	paddedNonce := common.LeftPadBytes(amount.Bytes(), Bytes32)
+
+	// Signature
 	// For requirements from ERC20 authorizer, the signature length must be 65
-	//instance.Mint()
+	var sb strings.Builder
+	for _, signature := range payload.Signatures {
+		sb.WriteString(signature.Signature)
+	}
+	sigs := []byte(sb.String())
 
-	return nil, nil
+	var data []byte
+	data = append(data, methodID...)
+	data = append(data, paddedAmount...)
+	data = append(data, paddedZCNTxd...)
+	data = append(data, paddedNonce...)
+	data = append(data, sigs...)
+
+	bridgeInstance, transactOpts, err := prepareBridge(data)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare bridge")
+	}
+
+	tran, err := bridgeInstance.Mint(transactOpts, amount, zcnTxd, nonce, sigs)
+	if err != nil {
+		return nil, errors.Wrapf(
+			err,
+			"failed to execute MintWZCN transaction, ClientID = %s, amount = %s, ZCN TrxID = %s",
+			node.ID(),
+			amount,
+			zcnTxd,
+		)
+	}
+
+	return tran, err
 }
 
 // BurnWZCN Burns WZCN tokens on behalf of the 0ZCN client
@@ -164,11 +208,7 @@ func BurnWZCN(amountTokens int64) (*types.Transaction, error) {
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
 	}
 
-	// 1. Create etherClient
-	etherClient, err := ethereum.CreateEthClient()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create etherClient")
-	}
+	clientID := DefaultClientIDEncoder(node.ID())
 
 	// 1. Data Parameter (signature)
 	hash := sha3.NewLegacyKeccak256()
@@ -180,30 +220,49 @@ func BurnWZCN(amountTokens int64) (*types.Transaction, error) {
 	amount := new(big.Int)
 	amount.SetInt64(amountTokens)
 	paddedAmount := common.LeftPadBytes(amount.Bytes(), Bytes32)
-	fmt.Println(hexutil.Encode(paddedAmount))
 
 	// 3. Data Parameter (clientID string as []byte)
-	paddedClientID := common.LeftPadBytes(DefaultClientIDEncoder(node.ID()), Bytes32)
+	paddedClientID := common.LeftPadBytes(clientID, Bytes32)
 
 	var data []byte
 	data = append(data, methodID...)
 	data = append(data, paddedAmount...)
 	data = append(data, paddedClientID...)
 
+	bridgeInstance, transactOpts, err := prepareBridge(data)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare bridge")
+	}
+
+	tran, err := bridgeInstance.Burn(transactOpts, amount, clientID)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to execute BurnZCN transaction to ClientID = %s with amount = %s", node.ID(), amount)
+	}
+
+	return tran, err
+}
+
+func prepareBridge(data []byte) (*bridge.Bridge, *bind.TransactOpts, error) {
+	etherClient, err := ethereum.CreateEthClient()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to create etherClient")
+	}
+
 	// To
 	bridgeAddress := common.HexToAddress(config.Bridge.BridgeAddress)
 
 	ownerAddress, privKey, err := ethereum.PrivateKeyAndAddress()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read private key and ownerAddress")
+		return nil, nil, errors.Wrap(err, "failed to read private key and ownerAddress")
 	}
 
 	gasLimit, err := etherClient.EstimateGas(context.Background(), eth.CallMsg{
 		To:   &bridgeAddress, // TODO: From: is required?
 		Data: data,
 	})
+
 	if err != nil {
-		zcncore.Logger.Fatal(err)
+		return nil, nil, errors.Wrap(err, "failed to estimate gas")
 	}
 
 	// TODO: This needs to fix
@@ -213,15 +272,10 @@ func BurnWZCN(amountTokens int64) (*types.Transaction, error) {
 
 	bridgeInstance, err := bridge.NewBridge(bridgeAddress, etherClient)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to create bridge instance")
+		return nil, nil, errors.Wrap(err, "failed to create bridge")
 	}
 
-	tran, err := bridgeInstance.Burn(transactOpts, amount, DefaultClientIDEncoder(node.ID()))
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to execute BurnZCN transaction to ClientID = %s with amount = %s", node.ID(), amount)
-	}
-
-	return tran, err
+	return bridgeInstance, transactOpts, nil
 }
 
 func MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (*transaction.Transaction, error) {
