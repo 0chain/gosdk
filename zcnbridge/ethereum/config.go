@@ -53,7 +53,7 @@ func CreateEthClient() (*ethclient.Client, error) {
 	return client, err
 }
 
-func EthereumPrivateKeyAndAddress() (common.Address, *ecdsa.PrivateKey, error) {
+func PrivateKeyAndAddress() (common.Address, *ecdsa.PrivateKey, error) {
 	ownerWalletInfo, err := GetEthereumWalletInfo()
 	if err != nil {
 		return [20]byte{}, nil, errors.Wrap(err, "failed to fetch wallet ownerWalletInfo")

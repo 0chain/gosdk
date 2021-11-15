@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/0chain/gosdk/zcnbridge/zcnsc"
+
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"go.uber.org/zap"
 
@@ -46,7 +48,7 @@ var (
 )
 
 // CreateZCNMintPayload gets burn ticket and creates mint payload to be minted in the chain
-func CreateZCNMintPayload(hash string) (*MintPayload, error) {
+func CreateZCNMintPayload(hash string) (*zcnsc.MintPayload, error) {
 	client = bridge.NewRetryableClient()
 	authorizers, err := GetAuthorizers()
 
@@ -85,17 +87,17 @@ func CreateZCNMintPayload(hash string) (*MintPayload, error) {
 			return nil, errors.Wrap("type_cast", "failed to convert to *proofEthereumBurn", err)
 		}
 
-		var sigs []*AuthorizerSignature
+		var sigs []*zcnsc.AuthorizerSignature
 		for _, result := range results {
 			ticket := result.Data().(*proofEthereumBurn)
-			sig := &AuthorizerSignature{
+			sig := &zcnsc.AuthorizerSignature{
 				ID:        result.GetAuthorizerID(),
 				Signature: ticket.Signature,
 			}
 			sigs = append(sigs, sig)
 		}
 
-		payload := &MintPayload{
+		payload := &zcnsc.MintPayload{
 			EthereumTxnID:     burnTicket.TxnID,
 			Amount:            burnTicket.Amount,
 			Nonce:             burnTicket.Amount,

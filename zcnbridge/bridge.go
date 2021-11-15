@@ -6,6 +6,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/0chain/gosdk/zcnbridge/zcnsc"
+
 	"github.com/0chain/gosdk/zcnbridge/config"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
@@ -97,7 +99,7 @@ func IncreaseBurnerAllowance(amountTokens int64) (*types.Transaction, error) {
 	// FIXME: proper calculation
 	gasLimit = gasLimit + gasLimit/10
 
-	ownerAddress, privKey, err := ethereum.EthereumPrivateKeyAndAddress()
+	ownerAddress, privKey, err := ethereum.PrivateKeyAndAddress()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read private key and ownerAddress")
 	}
@@ -132,6 +134,26 @@ func ConfirmEthereumTransactionStatus(hash string, times int, duration time.Dura
 		time.Sleep(time.Second * duration)
 	}
 	return res
+}
+
+func MintWZCN(amountTokens int64, payload *zcnsc.MintPayload) (*types.Transaction, error) {
+	// 1. Create etherClient
+	//etherClient, err := ethereum.CreateEthClient()
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "failed to create etherClient")
+	//}
+
+	//bridgeAddress := common.HexToAddress(config.Bridge.BridgeAddress)
+
+	//instance, err := bridge.NewBridge(bridgeAddress, etherClient)
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "failed to create bridge instance")
+	//}
+
+	// For requirements from ERC20 authorizer, the signature length must be 65
+	//instance.Mint()
+
+	return nil, nil
 }
 
 // BurnWZCN Burns WZCN tokens on behalf of the 0ZCN client
@@ -171,7 +193,7 @@ func BurnWZCN(amountTokens int64) (*types.Transaction, error) {
 	// To
 	bridgeAddress := common.HexToAddress(config.Bridge.BridgeAddress)
 
-	ownerAddress, privKey, err := ethereum.EthereumPrivateKeyAndAddress()
+	ownerAddress, privKey, err := ethereum.PrivateKeyAndAddress()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read private key and ownerAddress")
 	}
@@ -202,7 +224,7 @@ func BurnWZCN(amountTokens int64) (*types.Transaction, error) {
 	return tran, err
 }
 
-func MintZCN(ctx context.Context, payload *MintPayload) (*transaction.Transaction, error) {
+func MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (*transaction.Transaction, error) {
 	trx, err := transaction.NewTransactionEntity()
 	if err != nil {
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
@@ -228,7 +250,7 @@ func MintZCN(ctx context.Context, payload *MintPayload) (*transaction.Transactio
 }
 
 func BurnZCN(ctx context.Context, value int64) (*transaction.Transaction, error) {
-	payload := BurnPayload{
+	payload := zcnsc.BurnPayload{
 		Nonce:           node.IncrementNonce(),
 		EthereumAddress: config.Bridge.EthereumAddress,
 	}

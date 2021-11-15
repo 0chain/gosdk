@@ -1,4 +1,4 @@
-package zcnbridge
+package zcnsc
 
 import "encoding/json"
 
