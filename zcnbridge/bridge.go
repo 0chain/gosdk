@@ -35,6 +35,10 @@ const (
 	Bytes32                  = 32
 )
 
+type (
+	wei int64
+)
+
 var (
 	// IncreaseAllowanceSig "increaseAllowance(address,uint256)"
 	IncreaseAllowanceSig = []byte(erc20.ERC20MetaData.Sigs[IncreaseAllowanceSigCode])
@@ -57,10 +61,9 @@ func InitBridge() {
 	node.Start(client)
 }
 
-// IncreaseBurnerAllowance FIXME: Is amount in wei?
 // IncreaseBurnerAllowance Increases allowance for bridge contract address to transfer
 // WZCN tokens on behalf of the token owner to the TokenPool
-func IncreaseBurnerAllowance(amountTokens int64) (*types.Transaction, error) {
+func IncreaseBurnerAllowance(amountWei wei) (*types.Transaction, error) {
 	// 1. Create etherClient
 	etherClient, err := ethereum.CreateEthClient()
 	if err != nil {
@@ -79,8 +82,7 @@ func IncreaseBurnerAllowance(amountTokens int64) (*types.Transaction, error) {
 	fmt.Println(hexutil.Encode(spenderPaddedAddress)) // 0x0000000000000000000000004592d8f8d7b001e72cb26a73e4fa1806a51ac79d
 
 	// 3. Data Parameter (amount)
-	amount := new(big.Int)
-	amount.SetInt64(amountTokens)
+	amount := big.NewInt(int64(amountWei))
 	paddedAmount := common.LeftPadBytes(amount.Bytes(), Bytes32)
 	fmt.Println(hexutil.Encode(paddedAmount)) // 0x00000000000000000000000000000000000000000000003635c9adc5dea00000
 
@@ -92,23 +94,22 @@ func IncreaseBurnerAllowance(amountTokens int64) (*types.Transaction, error) {
 	// To
 	tokenAddress := common.HexToAddress(config.Bridge.WzcnAddress)
 
-	gasLimit, err := etherClient.EstimateGas(context.Background(), eth.CallMsg{
+	gasLimitUnits, err := etherClient.EstimateGas(context.Background(), eth.CallMsg{
 		To:   &tokenAddress, // FIXME: From: is required?
 		Data: data,
 	})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to estimate gas")
+		return nil, errors.Wrap(err, "failed to estimate gas limit")
 	}
 
-	// FIXME: proper calculation
-	gasLimit = gasLimit + gasLimit/10
+	gasLimitUnits += gasLimitUnits / 10
 
 	ownerAddress, privKey, err := ethereum.PrivateKeyAndAddress()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read private key and ownerAddress")
 	}
 
-	transactOpts := ethereum.CreateSignedTransaction(etherClient, ownerAddress, privKey, gasLimit)
+	transactOpts := ethereum.CreateSignedTransaction(etherClient, ownerAddress, privKey, gasLimitUnits)
 
 	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, etherClient)
 	if err != nil {
@@ -140,7 +141,7 @@ func ConfirmEthereumTransactionStatus(hash string, times int, duration time.Dura
 	return res
 }
 
-func MintWZCN(amountTokens int64, payload *ethereum.MintPayload) (*types.Transaction, error) {
+func MintWZCN(amountTokens wei, payload *ethereum.MintPayload) (*types.Transaction, error) {
 	if DefaultClientIDEncoder == nil {
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
 	}
@@ -155,7 +156,7 @@ func MintWZCN(amountTokens int64, payload *ethereum.MintPayload) (*types.Transac
 
 	// 2. Data Parameter (amount to burn)
 	amount := new(big.Int)
-	amount.SetInt64(amountTokens)
+	amount.SetInt64(int64(amountTokens)) // wei
 	paddedAmount := common.LeftPadBytes(amount.Bytes(), Bytes32)
 
 	// 3. Data Parameter (zcnTxd string as []byte)
@@ -256,7 +257,8 @@ func prepareBridge(data []byte) (*bridge.Bridge, *bind.TransactOpts, error) {
 		return nil, nil, errors.Wrap(err, "failed to read private key and ownerAddress")
 	}
 
-	gasLimit, err := etherClient.EstimateGas(context.Background(), eth.CallMsg{
+	// Gas limits in units
+	gasLimitUnits, err := etherClient.EstimateGas(context.Background(), eth.CallMsg{
 		To:   &bridgeAddress, // TODO: From: is required?
 		Data: data,
 	})
@@ -265,10 +267,9 @@ func prepareBridge(data []byte) (*bridge.Bridge, *bind.TransactOpts, error) {
 		return nil, nil, errors.Wrap(err, "failed to estimate gas")
 	}
 
-	// TODO: This needs to fix
-	gasLimit = gasLimit + gasLimit/10
+	gasLimitUnits += gasLimitUnits / 10
 
-	transactOpts := ethereum.CreateSignedTransaction(etherClient, ownerAddress, privKey, gasLimit)
+	transactOpts := ethereum.CreateSignedTransaction(etherClient, ownerAddress, privKey, gasLimitUnits)
 
 	bridgeInstance, err := bridge.NewBridge(bridgeAddress, etherClient)
 	if err != nil {
@@ -319,7 +320,7 @@ func BurnZCN(ctx context.Context, value int64) (*transaction.Transaction, error)
 		wallet.ZCNSCSmartContractAddress,
 		wallet.BurnFunc,
 		string(payload.Encode()),
-		value, // in ZCN tokens or just value?
+		value,
 	)
 	if err != nil {
 		return trx, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))

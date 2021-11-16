@@ -70,7 +70,7 @@ func (cb *callback) waitVerifyCall(ctx context.Context) error {
 }
 
 // OnAuthComplete implements zcncore.TransactionCallback interface.
-func (cb *callback) OnAuthComplete(zcnTxn *zcncore.Transaction, status int) {
+func (cb *callback) OnAuthComplete(_ *zcncore.Transaction, status int) {
 	if status != zcncore.StatusSuccess {
 		msg := "status is not success: " + TxnStatus(status).String()
 		cb.err = errors.New("on_transaction_verify", msg)

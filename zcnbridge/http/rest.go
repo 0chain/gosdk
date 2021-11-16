@@ -15,17 +15,16 @@ import (
 )
 
 const (
-	// SCRestApiPrefix represents base URL path to execute smart contract rest points.
-	SCRestApiPrefix      = "v1/screst/"
+	// SCRestAPIPrefix represents base URL path to execute smart contract rest points.
+	SCRestAPIPrefix      = "v1/screst/"
 	SmartContractAddress = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7`
-	RestPrefix           = SCRestApiPrefix + SmartContractAddress
+	RestPrefix           = SCRestAPIPrefix + SmartContractAddress
 	GetAuthorizersPath   = "/getAuthorizerNodes"
 )
 
 // MakeSCRestAPICall calls smart contract with provided address
 // and makes retryable request to smart contract resource with provided relative path using params.
 func MakeSCRestAPICall(relativePath string, params map[string]string) ([]byte, error) {
-
 	var (
 		resMaxCounterBody []byte
 		hashMaxCounter    int

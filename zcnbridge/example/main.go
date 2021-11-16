@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ConvertAmount = 10000000
+	ConvertAmountWei = 10000000
 )
 
 // How should we manage nonce? - when user starts again on another server - how should we restore the value?
@@ -40,7 +40,7 @@ func fromZCNtoERC() {
 
 	// ASK authorizers for burn tickets
 
-	tran, err := zcnbridge.MintWZCN(ConvertAmount, nil)
+	tran, err := zcnbridge.MintWZCN(ConvertAmountWei, nil)
 	tranHash := tran.Hash().Hex()
 	if err != nil {
 		log.Logger.Fatal("failed to execute MintWZCN", zap.Error(err), zap.String("hash", tranHash))
@@ -55,7 +55,7 @@ func fromZCNtoERC() {
 }
 
 func fromERCtoZCN() {
-	transaction, err := zcnbridge.IncreaseBurnerAllowance(ConvertAmount)
+	transaction, err := zcnbridge.IncreaseBurnerAllowance(ConvertAmountWei)
 	if err != nil {
 		log.Logger.Fatal("failed to execute IncreaseBurnerAllowance", zap.Error(err))
 	}
@@ -65,7 +65,7 @@ func fromERCtoZCN() {
 		log.Logger.Fatal("failed to confirm transaction", zap.String("hash", transaction.Hash().Hex()))
 	}
 
-	burnTrx, err := zcnbridge.BurnWZCN(ConvertAmount)
+	burnTrx, err := zcnbridge.BurnWZCN(ConvertAmountWei)
 	burnTrxHash := burnTrx.Hash().Hex()
 	if err != nil {
 		log.Logger.Fatal("failed to execute BurnWZCN", zap.Error(err), zap.String("hash", burnTrxHash))

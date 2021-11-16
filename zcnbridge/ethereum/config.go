@@ -25,18 +25,18 @@ import (
 //  _allowances[owner][spender] = amount;
 // as a spender, ERC20 WZCN token must increase allowance for the bridge to make burn on behalf of WZCN owner
 
-type ethWalletInfo struct {
+type EthWalletInfo struct {
 	ID         string `json:"ID"`
 	PrivateKey string `json:"PrivateKey"`
 }
 
-func GetEthereumWalletInfo() (*ethWalletInfo, error) {
+func GetEthereumWalletInfo() (*EthWalletInfo, error) {
 	ownerWallet, err := zcncore.GetWalletAddrFromEthMnemonic(config.Bridge.Mnemonic)
 	if err != nil {
-		err = errors.Wrap(err, "failed to initialize wallet from mnemonic")
+		return nil, errors.Wrap(err, "failed to initialize wallet from mnemonic")
 	}
 
-	wallet := &ethWalletInfo{}
+	wallet := &EthWalletInfo{}
 	err = json.Unmarshal([]byte(ownerWallet), wallet)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal wallet info")
@@ -79,7 +79,7 @@ func CreateSignedTransaction(
 	client *ethclient.Client,
 	fromAddress common.Address,
 	privateKey *ecdsa.PrivateKey,
-	gasLimit uint64,
+	gasLimitUnits uint64,
 ) *bind.TransactOpts {
 	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
@@ -96,7 +96,7 @@ func CreateSignedTransaction(
 	// retrieves the currently suggested gas price to allow a timely
 	// execution of a transaction
 
-	gasPrice, err := client.SuggestGasPrice(context.Background())
+	gasPriceWei, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
 		zcncore.Logger.Fatal(err)
 	}
@@ -106,12 +106,12 @@ func CreateSignedTransaction(
 		zcncore.Logger.Fatal(err)
 	}
 
-	value := new(big.Int).Mul(big.NewInt(int64(config.Bridge.Value)), big.NewInt(params.Wei))
+	valueWei := new(big.Int).Mul(big.NewInt(config.Bridge.Value), big.NewInt(params.Wei))
 
 	auth.Nonce = big.NewInt(int64(nonce))
-	auth.Value = value       // in wei
-	auth.GasLimit = gasLimit // in units
-	auth.GasPrice = gasPrice
+	auth.Value = valueWei         // in wei
+	auth.GasLimit = gasLimitUnits // in units
+	auth.GasPrice = gasPriceWei   // wei
 
 	return auth
 }
