@@ -1,4 +1,4 @@
-package zcnbridge
+package authorizer
 
 import (
 	"encoding/json"
@@ -76,20 +76,18 @@ func CreateZCNMintPayload(hash string) (*zcnsc.MintPayload, error) {
 	}
 
 	results := queryAllAuthorizers(authorizers, handler)
-
 	numSuccess := len(results)
-
 	quorum := math.Ceil((float64(numSuccess) * 100) / float64(totalWorkers))
 
 	if numSuccess > 0 && quorum >= wallet.ConsensusThresh && len(results) > 1 {
-		burnTicket, ok := results[0].Data().(*proofEthereumBurn)
+		burnTicket, ok := results[0].Data().(*ProofEthereumBurn)
 		if !ok {
 			return nil, errors.Wrap("type_cast", "failed to convert to *proofEthereumBurn", err)
 		}
 
 		var sigs []*zcnsc.AuthorizerSignature
 		for _, result := range results {
-			ticket := result.Data().(*proofEthereumBurn)
+			ticket := result.Data().(*ProofEthereumBurn)
 			sig := &zcnsc.AuthorizerSignature{
 				ID:        result.GetAuthorizerID(),
 				Signature: ticket.Signature,
@@ -112,7 +110,7 @@ func CreateZCNMintPayload(hash string) (*zcnsc.MintPayload, error) {
 	return nil, errors.New("get_burn_ticket", text)
 }
 
-func queryAllAuthorizers(authorizers *AuthorizerNodes, handler *requestHandler) []JobResult {
+func queryAllAuthorizers(authorizers *Nodes, handler *requestHandler) []JobResult {
 	var (
 		totalWorkers    = len(authorizers.NodeMap)
 		eventsChannel   = make(eventsChannelType)
@@ -147,7 +145,7 @@ func handleResponse(responseChannel responseChannelType, eventsChannel eventsCha
 	eventsChannel <- events
 }
 
-func queryAuthoriser(node *AuthorizerNode, request *requestHandler, responseChannel responseChannelType) {
+func queryAuthoriser(node *Node, request *requestHandler, responseChannel responseChannelType) {
 	var (
 		ticketURL = strings.TrimSuffix(node.URL, "/") + request.path
 	)
@@ -165,10 +163,10 @@ func queryAuthoriser(node *AuthorizerNode, request *requestHandler, responseChan
 
 	event, err := request.decoder(body)
 	if err != nil {
-		err = errors.Wrap("decode_message_body", "failed to decode message body", err)
+		err := errors.Wrap("decode_message_body", "failed to decode message body", err)
 		log.Logger.Error(
 			"failed to decode event body",
-			zap.Error(job.error),
+			zap.Error(err),
 			zap.String("node.id", node.ID),
 			zap.String("node.url", node.URL),
 		)

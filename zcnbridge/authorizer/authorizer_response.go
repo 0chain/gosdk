@@ -1,4 +1,4 @@
-package zcnbridge
+package authorizer
 
 import (
 	"encoding/json"
@@ -17,7 +17,7 @@ type (
 		error
 	}
 
-	proofEthereumBurn struct {
+	ProofEthereumBurn struct {
 		TxnID             string `json:"ethereum_txn_id"`
 		Nonce             int64  `json:"nonce"`
 		Amount            int64  `json:"amount"`
@@ -48,7 +48,7 @@ type WZCNBurnEvent struct {
 	// 	AuthorizerID Authorizer ID
 	AuthorizerID string `json:"authorizer_id,omitempty"`
 	// BurnTicket Returns burn ticket
-	BurnTicket *proofEthereumBurn `json:"ticket,omitempty"`
+	BurnTicket *ProofEthereumBurn `json:"ticket,omitempty"`
 	// Err gives error of job on server side
 	Err *JobError `json:"err,omitempty"`
 	// Status gives job status on server side (authoriser)

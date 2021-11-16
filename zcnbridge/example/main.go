@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 
+	"github.com/0chain/gosdk/zcnbridge/authorizer"
+
 	"github.com/0chain/gosdk/zcnbridge"
 	"github.com/0chain/gosdk/zcnbridge/config"
 	"github.com/0chain/gosdk/zcnbridge/log"
@@ -74,7 +76,7 @@ func fromERCtoZCN() {
 		log.Logger.Fatal("failed to confirm transaction ConfirmEthereumTransactionStatus", zap.String("hash", burnTrxHash))
 	}
 
-	mintPayload, err := zcnbridge.CreateZCNMintPayload(burnTrxHash)
+	mintPayload, err := authorizer.CreateZCNMintPayload(burnTrxHash)
 	if err != nil {
 		log.Logger.Fatal("failed to CreateZCNMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))
 	}

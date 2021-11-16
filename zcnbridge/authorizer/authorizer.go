@@ -1,4 +1,4 @@
-package zcnbridge
+package authorizer
 
 import (
 	"encoding/json"
@@ -10,18 +10,18 @@ import (
 type Authorizer struct {
 }
 
-type AuthorizerNodes struct {
-	NodeMap map[string]*AuthorizerNode `json:"node_map"`
+type Nodes struct {
+	NodeMap map[string]*Node `json:"node_map"`
 }
 
-type AuthorizerNode struct {
+type Node struct {
 	ID        string `json:"id"`
 	PublicKey string `json:"public_key"`
 	URL       string `json:"url"`
 }
 
 // GetAuthorizers Returns authorizers
-func GetAuthorizers() (*AuthorizerNodes, error) {
+func GetAuthorizers() (*Nodes, error) {
 	resp, err := http.MakeSCRestAPICall(http.GetAuthorizersPath, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting authorizers")
@@ -30,7 +30,7 @@ func GetAuthorizers() (*AuthorizerNodes, error) {
 		return nil, errors.New("empty response")
 	}
 
-	an := &AuthorizerNodes{}
+	an := &Nodes{}
 
 	if err = json.Unmarshal(resp, &an); err != nil {
 		return nil, errors.Wrap(err, "error decoding response:")
