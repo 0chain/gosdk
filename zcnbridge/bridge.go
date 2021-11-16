@@ -102,7 +102,7 @@ func IncreaseBurnerAllowance(amountWei wei) (*types.Transaction, error) {
 		return nil, errors.Wrap(err, "failed to estimate gas limit")
 	}
 
-	gasLimitUnits += gasLimitUnits / 10
+	gasLimitUnits = AddPercents(gasLimitUnits, 10).Uint64()
 
 	ownerAddress, privKey, err := ethereum.PrivateKeyAndAddress()
 	if err != nil {
@@ -267,7 +267,7 @@ func prepareBridge(data []byte) (*bridge.Bridge, *bind.TransactOpts, error) {
 		return nil, nil, errors.Wrap(err, "failed to estimate gas")
 	}
 
-	gasLimitUnits += gasLimitUnits / 10
+	gasLimitUnits = AddPercents(gasLimitUnits, 10).Uint64()
 
 	transactOpts := ethereum.CreateSignedTransaction(etherClient, ownerAddress, privKey, gasLimitUnits)
 
@@ -332,4 +332,12 @@ func BurnZCN(ctx context.Context, value int64) (*transaction.Transaction, error)
 	}
 
 	return trx, nil
+}
+
+func AddPercents(gasLimitUnits uint64, percents int) *big.Int {
+	gasLimitBig := big.NewInt(int64(gasLimitUnits))
+	factorBig := big.NewInt(int64(percents))
+	deltaBig := gasLimitBig.Div(gasLimitBig, factorBig)
+	gasLimitBig = gasLimitBig.Add(gasLimitBig, deltaBig)
+	return gasLimitBig
 }
