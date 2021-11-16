@@ -97,7 +97,7 @@ func IncreaseBurnerAllowance(amountTokens int64) (*types.Transaction, error) {
 		Data: data,
 	})
 	if err != nil {
-		zcncore.Logger.Fatal(err)
+		return nil, errors.Wrap(err, "failed to estimate gas")
 	}
 
 	// FIXME: proper calculation
