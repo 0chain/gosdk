@@ -244,7 +244,7 @@ func (t *Transaction) submitTxn() {
 	for _, miner := range randomMiners {
 		go func(minerurl string) {
 			url := minerurl + PUT_TRANSACTION
-			Logger.Info("Submitting ", txnTypeString(t.txn.TransactionType), " transaction to ", minerurl)
+			Logger.Info("Submitting ", txnTypeString(t.txn.TransactionType), " transaction to ", minerurl, " with JSON ", string(t.txn.DebugJSON()))
 			req, err := util.NewHTTPPostRequest(url, t.txn)
 			if err != nil {
 				Logger.Error(minerurl, " new post request failed. ", err.Error())
