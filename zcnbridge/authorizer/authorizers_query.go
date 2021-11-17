@@ -50,7 +50,62 @@ var (
 )
 
 func CreateWZCNMintPayload(hash string) (*ethereum.MintPayload, error) {
-	return nil, nil
+	client = bridge.NewRetryableClient()
+	authorizers, err := GetAuthorizers()
+
+	if err != nil || len(authorizers.NodeMap) == 0 {
+		return nil, errors.Wrap("get_authorizers", "failed to get authorizers", err)
+	}
+
+	var (
+		totalWorkers = len(authorizers.NodeMap)
+		values       = u.Values{
+			"hash": []string{hash},
+		}
+	)
+
+	handler := &requestHandler{
+		path:   wallet.BurnNativeTicketPath,
+		values: values,
+		decoder: func(body []byte) (JobResult, error) {
+			ev := &ZCNBurnEvent{}
+			err := json.Unmarshal(body, ev)
+			return ev, err
+		},
+	}
+
+	results := queryAllAuthorizers(authorizers, handler)
+	numSuccess := len(results)
+	quorum := math.Ceil((float64(numSuccess) * 100) / float64(totalWorkers))
+
+	if numSuccess > 0 && quorum >= wallet.ConsensusThresh && len(results) > 1 {
+		burnTicket, ok := results[0].Data().(*proofZCNBurn)
+		if !ok {
+			return nil, errors.Wrap("type_cast", "failed to convert to *proofEthereumBurn", err)
+		}
+
+		var sigs []*ethereum.AuthorizerSignature
+		for _, result := range results {
+			ticket := result.Data().(*proofZCNBurn)
+			sig := &ethereum.AuthorizerSignature{
+				ID:        result.GetAuthorizerID(),
+				Signature: ticket.Signature,
+			}
+			sigs = append(sigs, sig)
+		}
+
+		payload := &ethereum.MintPayload{
+			ZCNTxnID:   burnTicket.TxnID,
+			Amount:     burnTicket.Amount,
+			Nonce:      burnTicket.Nonce,
+			Signatures: sigs,
+		}
+
+		return payload, nil
+	}
+
+	text := fmt.Sprintf("failed to reach the quorum. #Success: %d from #Total: %d", numSuccess, totalWorkers)
+	return nil, errors.New("get_burn_ticket", text)
 }
 
 // CreateZCNMintPayload gets burn ticket and creates mint payload to be minted in the chain
