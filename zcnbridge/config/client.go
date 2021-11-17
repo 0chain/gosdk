@@ -3,10 +3,15 @@ package config
 import (
 	"flag"
 
+	"github.com/0chain/gosdk/zcnbridge/chain"
+
+	"github.com/spf13/viper"
+
 	"github.com/0chain/gosdk/zcnbridge/log"
 )
 
 type ClientConfig struct {
+	KeyFileDir  *string
 	KeyFile     *string
 	LogPath     *string
 	ConfigFile  *string
@@ -15,19 +20,19 @@ type ClientConfig struct {
 }
 
 func (c ClientConfig) LogDir() string {
-	panic("implement me")
+	return *c.LogPath
 }
 
 func (c ClientConfig) LogLvl() string {
-	panic("implement me")
+	return viper.GetString("logging.level")
 }
 
 func (c ClientConfig) BlockWorker() string {
-	panic("implement me")
+	return chain.GetServerChain().BlockWorker
 }
 
 func (c ClientConfig) SignatureScheme() string {
-	panic("implement me")
+	return chain.GetServerChain().SignatureScheme
 }
 
 var Client ClientConfig
@@ -35,8 +40,9 @@ var Client ClientConfig
 // ParseClientConfig reads config from command line
 func ParseClientConfig() {
 	Client.Development = flag.Bool("development", true, "development mode")
+	Client.KeyFileDir = flag.String("keys_file_dir", "./keys", "keys_file_0chain")
 	Client.KeyFile = flag.String("keys_file_0chain", "", "keys_file_0chain")
-	Client.LogPath = flag.String("log_dir", "", "log_dir")
+	Client.LogPath = flag.String("log_dir", ".", "log folder")
 	Client.ConfigDir = flag.String("config_dir", "./config", "0chain config folder")
 	Client.ConfigFile = flag.String("config_file", "0chain", "0chain config file")
 
