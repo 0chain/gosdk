@@ -33,20 +33,25 @@ func main() {
 }
 
 func fromZCNtoERC() {
-	trx, err := zcnbridge.BurnZCN(context.TODO(), config.Bridge.Value)
+	burnTrx, err := zcnbridge.BurnZCN(context.TODO(), config.Bridge.Value)
+	burnTrxHash := burnTrx.Hash
 	if err != nil {
-		log.Logger.Fatal("failed to burn", zap.Error(err), zap.String("hash", trx.Hash))
+		log.Logger.Fatal("failed to burn in ZCN", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
-	// ASK authorizers for burn tickets
+	// ASK authorizers for burn tickets to mint in Ethereum
+	mintPayload, err := authorizer.CreateWZCNMintPayload(burnTrxHash)
+	if err != nil {
+		log.Logger.Fatal("failed to verify burn transactions in ZCN in CreateWZCNMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))
+	}
 
-	tran, err := zcnbridge.MintWZCN(ConvertAmountWei, nil)
+	tran, err := zcnbridge.MintWZCN(ConvertAmountWei, mintPayload)
 	tranHash := tran.Hash().Hex()
 	if err != nil {
 		log.Logger.Fatal("failed to execute MintWZCN", zap.Error(err), zap.String("hash", tranHash))
 	}
 
-	// ASK for minting events from bridge contract
+	// ASK for minting events from bridge contract but this is not necessary as we're going to check it by hash
 
 	res := zcnbridge.ConfirmEthereumTransactionStatus(tranHash, 60, 2)
 	if res == 0 {
@@ -68,14 +73,15 @@ func fromERCtoZCN() {
 	burnTrx, err := zcnbridge.BurnWZCN(ConvertAmountWei)
 	burnTrxHash := burnTrx.Hash().Hex()
 	if err != nil {
-		log.Logger.Fatal("failed to execute BurnWZCN", zap.Error(err), zap.String("hash", burnTrxHash))
+		log.Logger.Fatal("failed to execute BurnWZCN in wrapped chain", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
 	res = zcnbridge.ConfirmEthereumTransactionStatus(burnTrxHash, 60, 2)
 	if res == 0 {
-		log.Logger.Fatal("failed to confirm transaction ConfirmEthereumTransactionStatus", zap.String("hash", burnTrxHash))
+		log.Logger.Fatal("failed to confirm burn transaction in ZCN in ConfirmEthereumTransactionStatus", zap.String("hash", burnTrxHash))
 	}
 
+	// ASK authorizers for burn tickets to mint in WZCN
 	mintPayload, err := authorizer.CreateZCNMintPayload(burnTrxHash)
 	if err != nil {
 		log.Logger.Fatal("failed to CreateZCNMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))

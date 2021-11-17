@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/spf13/viper"
+
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
@@ -53,6 +55,14 @@ var (
 // InitBridge Sets up the wallet and node
 // Wallet setup reads keys from keyfile and registers in the 0chain
 func InitBridge() {
+	config.Bridge.BridgeAddress = viper.GetString("bridge.BridgeAddress")
+	config.Bridge.Mnemonic = viper.GetString("bridge.Mnemonic")
+	config.Bridge.EthereumNodeURL = viper.GetString("bridge.EthereumNodeURL")
+	config.Bridge.Value = viper.GetInt64("bridge.Value")
+	config.Bridge.ChainID = viper.GetInt("bridge.ChainID")
+	config.Bridge.GasLimit = viper.GetInt("bridge.GasLimit")
+	config.Bridge.WzcnAddress = viper.GetString("bridge.WzcnAddress")
+
 	client, err := wallet.Setup()
 	if err != nil {
 		log.Logger.Fatal("failed to setup wallet", zap.Error(err))
@@ -104,7 +114,7 @@ func IncreaseBurnerAllowance(amountWei wei) (*types.Transaction, error) {
 
 	gasLimitUnits = AddPercents(gasLimitUnits, 10).Uint64()
 
-	ownerAddress, privKey, err := ethereum.PrivateKeyAndAddress()
+	ownerAddress, _, privKey, err := ethereum.GetKeysAddress()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read private key and ownerAddress")
 	}
@@ -252,7 +262,7 @@ func prepareBridge(data []byte) (*bridge.Bridge, *bind.TransactOpts, error) {
 	// To
 	bridgeAddress := common.HexToAddress(config.Bridge.BridgeAddress)
 
-	ownerAddress, privKey, err := ethereum.PrivateKeyAndAddress()
+	ownerAddress, _, privKey, err := ethereum.GetKeysAddress()
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to read private key and ownerAddress")
 	}
@@ -305,9 +315,11 @@ func MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (*transaction.Tran
 }
 
 func BurnZCN(ctx context.Context, value int64) (*transaction.Transaction, error) {
+	address, _, _, _ := ethereum.GetKeysAddress()
+
 	payload := zcnsc.BurnPayload{
 		Nonce:           node.IncrementNonce(),
-		EthereumAddress: config.Bridge.EthereumAddress,
+		EthereumAddress: address.String(),
 	}
 
 	trx, err := transaction.NewTransactionEntity()

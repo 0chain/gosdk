@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/0chain/gosdk/zcnbridge/ethereum"
+
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
 
 	"github.com/0chain/gosdk/zcnbridge/log"
@@ -46,6 +48,10 @@ type (
 var (
 	client *retryablehttp.Client
 )
+
+func CreateWZCNMintPayload(hash string) (*ethereum.MintPayload, error) {
+	return nil, nil
+}
 
 // CreateZCNMintPayload gets burn ticket and creates mint payload to be minted in the chain
 func CreateZCNMintPayload(hash string) (*zcnsc.MintPayload, error) {

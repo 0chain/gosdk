@@ -53,6 +53,6 @@ func StartTime() time.Time {
 }
 
 func IncrementNonce() int64 {
-	self.nonce += 1
+	self.nonce++
 	return self.nonce
 }

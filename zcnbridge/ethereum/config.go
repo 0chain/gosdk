@@ -53,18 +53,18 @@ func CreateEthClient() (*ethclient.Client, error) {
 	return client, err
 }
 
-func PrivateKeyAndAddress() (common.Address, *ecdsa.PrivateKey, error) {
+func GetKeysAddress() (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, error) {
 	ownerWalletInfo, err := GetEthereumWalletInfo()
 	if err != nil {
-		return [20]byte{}, nil, errors.Wrap(err, "failed to fetch wallet ownerWalletInfo")
+		return [20]byte{}, nil, nil, errors.Wrap(err, "failed to fetch wallet ownerWalletInfo")
 	}
 
-	privateKey, err := etherCrypto.HexToECDSA(ownerWalletInfo.PrivateKey)
+	privateKeyECDSA, err := etherCrypto.HexToECDSA(ownerWalletInfo.PrivateKey)
 	if err != nil {
-		return [20]byte{}, nil, errors.Wrap(err, "failed to read private key")
+		return [20]byte{}, nil, nil, errors.Wrap(err, "failed to read private key")
 	}
 
-	publicKey := privateKey.Public()
+	publicKey := privateKeyECDSA.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
 	if !ok {
 		zcncore.Logger.Fatal("error casting public key to ECDSA")
@@ -72,7 +72,7 @@ func PrivateKeyAndAddress() (common.Address, *ecdsa.PrivateKey, error) {
 
 	ownerAddress := etherCrypto.PubkeyToAddress(*publicKeyECDSA)
 
-	return ownerAddress, privateKey, nil
+	return ownerAddress, publicKeyECDSA, privateKeyECDSA, nil
 }
 
 func CreateSignedTransaction(

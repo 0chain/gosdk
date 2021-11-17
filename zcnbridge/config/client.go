@@ -42,7 +42,7 @@ func ParseClientConfig() {
 	Client.Development = flag.Bool("development", true, "development mode")
 	Client.KeyFileDir = flag.String("keys_file_dir", "./keys", "keys_file_0chain")
 	Client.KeyFile = flag.String("keys_file_0chain", "", "keys_file_0chain")
-	Client.LogPath = flag.String("log_dir", ".", "log folder")
+	Client.LogPath = flag.String("log_dir", "./logs", "log folder")
 	Client.ConfigDir = flag.String("config_dir", "./config", "0chain config folder")
 	Client.ConfigFile = flag.String("config_file", "0chain", "0chain config file")
 
