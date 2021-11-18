@@ -1074,7 +1074,6 @@ func GetEvents(cb GetInfoCallback, filters map[string]string) (err error) {
 	if err = checkConfig(); err != nil {
 		return
 	}
-	//go getInfoFromSharders(GET_MINERSC_EVENTS, 0, cb)
 	go getInfoFromSharders(withParams(GET_MINERSC_EVENTS, Params{
 		"block_number": filters["block_number"],
 		"tx_hash":      filters["tx_hash"],
