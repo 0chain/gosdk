@@ -48,6 +48,8 @@ func UnmarshalThresholdSignatureSchemes(sigScheme string, obj interface{}) ([]Th
 		ss := make([]ThresholdSignatureScheme, len(list))
 
 		for i, v := range list {
+			// bls.ID from json
+			v.SetID(v.Ids)
 			ss[i] = v
 		}
 
