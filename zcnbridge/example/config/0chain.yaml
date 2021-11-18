@@ -5,7 +5,8 @@ logging:
     console: true # printing log to console is only supported in development mode
 
 #block_worker: http://localhost:9091 # to debug locally
-block_worker: http://198.18.0.98:9091 # to debug in container
+#block_worker: http://198.18.0.98:9091 # to debug in container
+block_worker: https://cube.devnet-0chain.net/dns # to debug in container
 
 ethereum_chain:
     node_url: https://ropsten.infura.io/v3/22cb2849f5f74b8599f3dc2a23085bd4
@@ -25,7 +26,8 @@ bridge:
     # Address of ethereum bridge contract
     BridgeAddress: "0xF26B52df8c6D9b9C20bfD7819Bed75a75258c7dB"
     # User's ethereum wallet mnemonic
-    Mnemonic: ""
+    # Address: 0x29C819651c4aE22Aba0B36bf8D4805daBaAa49F7
+    Mnemonic: "praise portion right again neglect frog border inch spatial nerve program wet"
     # Address of WZCN token
     WzcnAddress: ""
     # URL of ethereum RPC node (infura or alchemy)

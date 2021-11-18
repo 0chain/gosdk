@@ -1,6 +1,8 @@
 package wallet
 
 import (
+	"path/filepath"
+
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zcnbridge/config"
@@ -14,7 +16,9 @@ func Setup() (*Wallet, error) {
 		return nil, errors.Wrap(err, "failed to setup ZCNSDK")
 	}
 
-	publicKey, privateKey, err := crypto.ReadKeysFile(*config.Client.KeyFile)
+	file := filepath.Join(*config.Client.KeyFileDir, *config.Client.KeyFile)
+
+	publicKey, privateKey, err := crypto.ReadKeysFile(file)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize wallet keys")
 	}
