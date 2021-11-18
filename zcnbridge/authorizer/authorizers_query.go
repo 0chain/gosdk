@@ -36,9 +36,9 @@ type (
 	}
 
 	requestHandler struct {
-		path    string
-		values  u.Values
-		decoder func([]byte) (JobResult, error)
+		path        string
+		values      u.Values
+		bodyDecoder func([]byte) (JobResult, error)
 	}
 
 	responseChannelType chan *authorizerResponse
@@ -67,8 +67,8 @@ func CreateWZCNMintPayload(hash string) (*ethereum.MintPayload, error) {
 	handler := &requestHandler{
 		path:   wallet.BurnNativeTicketPath,
 		values: values,
-		decoder: func(body []byte) (JobResult, error) {
-			ev := &ZCNBurnEvent{}
+		bodyDecoder: func(body []byte) (JobResult, error) {
+			ev := &ProofZCNBurn{}
 			err := json.Unmarshal(body, ev)
 			return ev, err
 		},
@@ -79,14 +79,14 @@ func CreateWZCNMintPayload(hash string) (*ethereum.MintPayload, error) {
 	quorum := math.Ceil((float64(numSuccess) * 100) / float64(totalWorkers))
 
 	if numSuccess > 0 && quorum >= wallet.ConsensusThresh && len(results) > 1 {
-		burnTicket, ok := results[0].Data().(*proofZCNBurn)
+		burnTicket, ok := results[0].(*ProofZCNBurn)
 		if !ok {
 			return nil, errors.Wrap("type_cast", "failed to convert to *proofEthereumBurn", err)
 		}
 
 		var sigs []*ethereum.AuthorizerSignature
 		for _, result := range results {
-			ticket := result.Data().(*proofZCNBurn)
+			ticket := result.(*ProofZCNBurn)
 			sig := &ethereum.AuthorizerSignature{
 				ID:        result.GetAuthorizerID(),
 				Signature: ticket.Signature,
@@ -129,7 +129,7 @@ func CreateZCNMintPayload(hash string) (*zcnsc.MintPayload, error) {
 	handler := &requestHandler{
 		path:   wallet.BurnWzcnTicketPath,
 		values: values,
-		decoder: func(body []byte) (JobResult, error) {
+		bodyDecoder: func(body []byte) (JobResult, error) {
 			ev := &WZCNBurnEvent{}
 			err := json.Unmarshal(body, ev)
 			return ev, err
@@ -222,7 +222,7 @@ func queryAuthoriser(node *Node, request *requestHandler, responseChannel respon
 		return
 	}
 
-	event, err := request.decoder(body)
+	event, err := request.bodyDecoder(body)
 	if err != nil {
 		err := errors.Wrap("decode_message_body", "failed to decode message body", err)
 		log.Logger.Error(

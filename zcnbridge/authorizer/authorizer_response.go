@@ -6,17 +6,25 @@ import (
 )
 
 type (
+	// JobStatus = Ethereum transaction status
 	JobStatus uint
+	// JobResult = Authorizer task result, it wraps actual result of the query inside authorizer
 	JobResult interface {
+		// Error = Status of Authorizer job
 		Error() error
+		// Data returns the actual result
 		Data() interface{}
+		// SetAuthorizerID Assigns authorizer ID to the Job
 		SetAuthorizerID(ID string)
+		// GetAuthorizerID returns authorizer ID
 		GetAuthorizerID() string
 	}
+	// JobError result of internal request wrapped in authorizer job
 	JobError struct {
 		error
 	}
 
+	// ProofEthereumBurn Authorizer returns this type for Ethereum transaction
 	ProofEthereumBurn struct {
 		TxnID             string `json:"ethereum_txn_id"`
 		Nonce             int64  `json:"nonce"`
@@ -25,7 +33,9 @@ type (
 		Signature         string `json:"signature"`
 	}
 
-	proofZCNBurn struct {
+	// ProofZCNBurn Authorizer returns this type for ZCN transaction
+	ProofZCNBurn struct {
+		AuthorizerID    string `json:"authorizer_id,omitempty"`
 		TxnID           string `json:"0chain_txn_id"`
 		Nonce           int64  `json:"nonce"`
 		Amount          int64  `json:"amount"`
@@ -71,28 +81,18 @@ func (r *WZCNBurnEvent) Data() interface{} {
 	return r.BurnTicket
 }
 
-// ZCNBurnEvent ZCN burn ticket
-type ZCNBurnEvent struct {
-	// 	AuthorizerID Authorizer ID
-	AuthorizerID string `json:"authorizer_id,omitempty"`
-	// BurnTicket Returns burn ticket
-	BurnTicket *proofZCNBurn `json:"ticket,omitempty"`
-	// Err gives error of job on server side
-	Err *JobError `json:"err,omitempty"`
-}
-
-func (r *ZCNBurnEvent) GetAuthorizerID() string {
+func (r *ProofZCNBurn) GetAuthorizerID() string {
 	return r.AuthorizerID
 }
 
-func (r *ZCNBurnEvent) SetAuthorizerID(ID string) {
+func (r *ProofZCNBurn) SetAuthorizerID(ID string) {
 	r.AuthorizerID = ID
 }
 
-func (r *ZCNBurnEvent) Error() error {
-	return r.Err
+func (r *ProofZCNBurn) Error() error {
+	return nil
 }
 
-func (r *ZCNBurnEvent) Data() interface{} {
-	return r.BurnTicket
+func (r *ProofZCNBurn) Data() interface{} {
+	return r
 }
