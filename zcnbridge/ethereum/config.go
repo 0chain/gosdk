@@ -11,7 +11,7 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	etherCrypto "github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/pkg/errors"
@@ -59,7 +59,7 @@ func GetKeysAddress() (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, erro
 		return [20]byte{}, nil, nil, errors.Wrap(err, "failed to fetch wallet ownerWalletInfo")
 	}
 
-	privateKeyECDSA, err := etherCrypto.HexToECDSA(ownerWalletInfo.PrivateKey)
+	privateKeyECDSA, err := crypto.HexToECDSA(ownerWalletInfo.PrivateKey)
 	if err != nil {
 		return [20]byte{}, nil, nil, errors.Wrap(err, "failed to read private key")
 	}
@@ -70,12 +70,13 @@ func GetKeysAddress() (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, erro
 		zcncore.Logger.Fatal("error casting public key to ECDSA")
 	}
 
-	ownerAddress := etherCrypto.PubkeyToAddress(*publicKeyECDSA)
+	ownerAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
 
 	return ownerAddress, publicKeyECDSA, privateKeyECDSA, nil
 }
 
 func CreateSignedTransaction(
+	chainID *big.Int,
 	client *ethclient.Client,
 	fromAddress common.Address,
 	privateKey *ecdsa.PrivateKey,
@@ -101,7 +102,7 @@ func CreateSignedTransaction(
 		zcncore.Logger.Fatal(err)
 	}
 
-	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, big.NewInt(int64(config.Bridge.ChainID)))
+	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
 	if err != nil {
 		zcncore.Logger.Fatal(err)
 	}

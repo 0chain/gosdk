@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ConvertAmountWei = 10000000
+	ConvertAmountWei = 1000
 )
 
 // How should we manage nonce? - when user starts again on another server - how should we restore the value?
@@ -45,7 +45,7 @@ func fromZCNtoERC() {
 		log.Logger.Fatal("failed to verify burn transactions in ZCN in CreateWZCNMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
-	tran, err := zcnbridge.MintWZCN(ConvertAmountWei, mintPayload)
+	tran, err := zcnbridge.MintWZCN(context.Background(), ConvertAmountWei, mintPayload)
 	tranHash := tran.Hash().Hex()
 	if err != nil {
 		log.Logger.Fatal("failed to execute MintWZCN", zap.Error(err), zap.String("hash", tranHash))
@@ -60,7 +60,7 @@ func fromZCNtoERC() {
 }
 
 func fromERCtoZCN() {
-	transaction, err := zcnbridge.IncreaseBurnerAllowance(ConvertAmountWei)
+	transaction, err := zcnbridge.IncreaseBurnerAllowance(context.Background(), ConvertAmountWei)
 	if err != nil {
 		log.Logger.Fatal("failed to execute IncreaseBurnerAllowance", zap.Error(err))
 	}
@@ -70,7 +70,7 @@ func fromERCtoZCN() {
 		log.Logger.Fatal("failed to confirm transaction", zap.String("hash", transaction.Hash().Hex()))
 	}
 
-	burnTrx, err := zcnbridge.BurnWZCN(ConvertAmountWei)
+	burnTrx, err := zcnbridge.BurnWZCN(context.Background(), ConvertAmountWei)
 	burnTrxHash := burnTrx.Hash().Hex()
 	if err != nil {
 		log.Logger.Fatal("failed to execute BurnWZCN in wrapped chain", zap.Error(err), zap.String("hash", burnTrxHash))

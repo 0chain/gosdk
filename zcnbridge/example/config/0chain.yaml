@@ -28,13 +28,11 @@ bridge:
     # User's ethereum wallet mnemonic
     # Address: 0x29C819651c4aE22Aba0B36bf8D4805daBaAa49F7
     Mnemonic: "praise portion right again neglect frog border inch spatial nerve program wet"
-    # Address of WZCN token
-    WzcnAddress: ""
+    # Address of WZCN token (Example: https://ropsten.etherscan.io/token/0x930E1BE76461587969Cb7eB9BFe61166b1E70244)
+    WzcnAddress: "0x930E1BE76461587969Cb7eB9BFe61166b1E70244"
     # URL of ethereum RPC node (infura or alchemy)
     EthereumNodeURL: "https://ropsten.infura.io/v3/22cb2849f5f74b8599f3dc2a23085bd4"
-    # Chain ID (Ropsten, RinkeBy)
-    ChainID: 3
     # Gas limit to execute ethereum transaction
-    GasLimit: 21000
+    GasLimit: 300000
     # Value to execute ZCN smart contracts
     Value: 0

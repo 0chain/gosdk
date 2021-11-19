@@ -25,6 +25,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/sha3"
@@ -59,8 +60,7 @@ func InitBridge() {
 	config.Bridge.Mnemonic = viper.GetString("bridge.Mnemonic")
 	config.Bridge.EthereumNodeURL = viper.GetString("bridge.EthereumNodeURL")
 	config.Bridge.Value = viper.GetInt64("bridge.Value")
-	config.Bridge.ChainID = viper.GetInt("bridge.ChainID")
-	config.Bridge.GasLimit = viper.GetInt("bridge.GasLimit")
+	config.Bridge.GasLimit = viper.GetUint64("bridge.GasLimit")
 	config.Bridge.WzcnAddress = viper.GetString("bridge.WzcnAddress")
 
 	client, err := wallet.Setup()
@@ -72,8 +72,14 @@ func InitBridge() {
 }
 
 // IncreaseBurnerAllowance Increases allowance for bridge contract address to transfer
-// WZCN tokens on behalf of the token owner to the TokenPool
-func IncreaseBurnerAllowance(amountWei wei) (*types.Transaction, error) {
+// WZCN tokens on behalf of the token owner to the Burn TokenPool
+// During the burn the script transfers amount from token owner to the bridge burn token pool
+// Example: owner wants to burn some amount.
+// The contract will transfer some amount from owner address to the pool.
+// So the owner must call IncreaseAllowance of the WZCN token with 2 parameters:
+// spender address which is the bridge contract and amount to be burned (transferred)
+//nolint:funlen
+func IncreaseBurnerAllowance(ctx context.Context, amountWei wei) (*types.Transaction, error) {
 	// 1. Create etherClient
 	etherClient, err := ethereum.CreateEthClient()
 	if err != nil {
@@ -89,37 +95,47 @@ func IncreaseBurnerAllowance(amountWei wei) (*types.Transaction, error) {
 	// 2. Data Parameter (spender)
 	spenderAddress := common.HexToAddress(config.Bridge.BridgeAddress)
 	spenderPaddedAddress := common.LeftPadBytes(spenderAddress.Bytes(), Bytes32)
-	fmt.Println(hexutil.Encode(spenderPaddedAddress)) // 0x0000000000000000000000004592d8f8d7b001e72cb26a73e4fa1806a51ac79d
+	// 0x0000000000000000000000004592d8f8d7b001e72cb26a73e4fa1806a51ac79d
 
 	// 3. Data Parameter (amount)
 	amount := big.NewInt(int64(amountWei))
 	paddedAmount := common.LeftPadBytes(amount.Bytes(), Bytes32)
-	fmt.Println(hexutil.Encode(paddedAmount)) // 0x00000000000000000000000000000000000000000000003635c9adc5dea00000
+	// 0x00000000000000000000000000000000000000000000003635c9adc5dea00000
 
 	var data []byte
 	data = append(data, methodID...)
 	data = append(data, spenderPaddedAddress...)
 	data = append(data, paddedAmount...)
 
-	// To
-	tokenAddress := common.HexToAddress(config.Bridge.WzcnAddress)
+	ownerAddress, publicKey, privKey, err := ethereum.GetKeysAddress()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read private key and ownerAddress")
+	}
+	fmt.Println(crypto.PubkeyToAddress(*publicKey))
 
-	gasLimitUnits, err := etherClient.EstimateGas(context.Background(), eth.CallMsg{
-		To:   &tokenAddress, // FIXME: From: is required?
+	tokenAddress := common.HexToAddress(config.Bridge.WzcnAddress)
+	fromAddress := ownerAddress
+
+	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
+		To:   &tokenAddress,
+		From: fromAddress,
 		Data: data,
 	})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to estimate gas limit")
 	}
 
-	gasLimitUnits = AddPercents(gasLimitUnits, 10).Uint64()
-
-	ownerAddress, _, privKey, err := ethereum.GetKeysAddress()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read private key and ownerAddress")
+	if gasLimitUnits < config.Bridge.GasLimit {
+		gasLimitUnits = config.Bridge.GasLimit
 	}
 
-	transactOpts := ethereum.CreateSignedTransaction(etherClient, ownerAddress, privKey, gasLimitUnits)
+	gasLimitUnits = AddPercents(gasLimitUnits, 10).Uint64()
+	chainID, err := etherClient.ChainID(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get chain ID")
+	}
+
+	transactOpts := ethereum.CreateSignedTransaction(chainID, etherClient, ownerAddress, privKey, gasLimitUnits)
 
 	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, etherClient)
 	if err != nil {
@@ -151,7 +167,7 @@ func ConfirmEthereumTransactionStatus(hash string, times int, duration time.Dura
 	return res
 }
 
-func MintWZCN(amountTokens wei, payload *ethereum.MintPayload) (*types.Transaction, error) {
+func MintWZCN(ctx context.Context, amountTokens wei, payload *ethereum.MintPayload) (*types.Transaction, error) {
 	if DefaultClientIDEncoder == nil {
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
 	}
@@ -192,7 +208,7 @@ func MintWZCN(amountTokens wei, payload *ethereum.MintPayload) (*types.Transacti
 	data = append(data, paddedNonce...)
 	data = append(data, sigs...)
 
-	bridgeInstance, transactOpts, err := prepareBridge(data)
+	bridgeInstance, transactOpts, err := prepareBridge(ctx, data)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare bridge")
 	}
@@ -214,7 +230,7 @@ func MintWZCN(amountTokens wei, payload *ethereum.MintPayload) (*types.Transacti
 // BurnWZCN Burns WZCN tokens on behalf of the 0ZCN client
 // amountTokens - ZCN tokens
 // clientID - 0ZCN client
-func BurnWZCN(amountTokens int64) (*types.Transaction, error) {
+func BurnWZCN(ctx context.Context, amountTokens int64) (*types.Transaction, error) {
 	if DefaultClientIDEncoder == nil {
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
 	}
@@ -240,7 +256,7 @@ func BurnWZCN(amountTokens int64) (*types.Transaction, error) {
 	data = append(data, paddedAmount...)
 	data = append(data, paddedClientID...)
 
-	bridgeInstance, transactOpts, err := prepareBridge(data)
+	bridgeInstance, transactOpts, err := prepareBridge(ctx, data)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare bridge")
 	}
@@ -253,7 +269,7 @@ func BurnWZCN(amountTokens int64) (*types.Transaction, error) {
 	return tran, err
 }
 
-func prepareBridge(data []byte) (*bridge.Bridge, *bind.TransactOpts, error) {
+func prepareBridge(ctx context.Context, data []byte) (*bridge.Bridge, *bind.TransactOpts, error) {
 	etherClient, err := ethereum.CreateEthClient()
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to create etherClient")
@@ -268,7 +284,7 @@ func prepareBridge(data []byte) (*bridge.Bridge, *bind.TransactOpts, error) {
 	}
 
 	// Gas limits in units
-	gasLimitUnits, err := etherClient.EstimateGas(context.Background(), eth.CallMsg{
+	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
 		To:   &bridgeAddress, // TODO: From: is required?
 		Data: data,
 	})
@@ -278,8 +294,12 @@ func prepareBridge(data []byte) (*bridge.Bridge, *bind.TransactOpts, error) {
 	}
 
 	gasLimitUnits = AddPercents(gasLimitUnits, 10).Uint64()
+	chainID, err := etherClient.ChainID(ctx)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to get chain ID")
+	}
 
-	transactOpts := ethereum.CreateSignedTransaction(etherClient, ownerAddress, privKey, gasLimitUnits)
+	transactOpts := ethereum.CreateSignedTransaction(chainID, etherClient, ownerAddress, privKey, gasLimitUnits)
 
 	bridgeInstance, err := bridge.NewBridge(bridgeAddress, etherClient)
 	if err != nil {
@@ -350,6 +370,9 @@ func AddPercents(gasLimitUnits uint64, percents int) *big.Int {
 	gasLimitBig := big.NewInt(int64(gasLimitUnits))
 	factorBig := big.NewInt(int64(percents))
 	deltaBig := gasLimitBig.Div(gasLimitBig, factorBig)
-	gasLimitBig = gasLimitBig.Add(gasLimitBig, deltaBig)
+
+	origin := big.NewInt(int64(gasLimitUnits))
+	gasLimitBig = origin.Add(origin, deltaBig)
+
 	return gasLimitBig
 }
