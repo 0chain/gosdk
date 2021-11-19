@@ -1,6 +1,6 @@
 package config
 
-// BridgeConfig TODO: some of parameters are not initialized
+// BridgeConfig initializes Ethereum wallet and params
 type BridgeConfig struct {
 	// Ethereum mnemonic (derivation of Ethereum owner, public and private key)
 	Mnemonic string
@@ -10,6 +10,8 @@ type BridgeConfig struct {
 	WzcnAddress string
 	// URL of ethereum RPC node (infura or alchemy)
 	EthereumNodeURL string
+	// Ethereum chain ID
+	ChainID string
 	// Gas limit to execute ethereum transaction
 	GasLimit uint64
 	// Value to execute ZCN smart contracts

@@ -62,6 +62,7 @@ func InitBridge() {
 	config.Bridge.Value = viper.GetInt64("bridge.Value")
 	config.Bridge.GasLimit = viper.GetUint64("bridge.GasLimit")
 	config.Bridge.WzcnAddress = viper.GetString("bridge.WzcnAddress")
+	config.Bridge.ChainID = viper.GetString("bridge.ChainID")
 
 	client, err := wallet.Setup()
 	if err != nil {
@@ -146,21 +147,33 @@ func IncreaseBurnerAllowance(ctx context.Context, amountWei wei) (*types.Transac
 	return tran, nil
 }
 
-func GetTransactionStatus(hash string) int {
-	return zcncore.CheckEthHashStatus(hash)
+func GetTransactionStatus(hash string) (int, error) {
+	_, err := zcncore.GetEthClient()
+	if err != nil {
+		return -1, err
+	}
+
+	return zcncore.CheckEthHashStatus(hash), nil
 }
 
-func ConfirmEthereumTransactionStatus(hash string, times int, duration time.Duration) int {
-	var res = 0
+func ConfirmEthereumTransactionStatus(hash string, times int, duration time.Duration) (int, error) {
+	var (
+		res = 0
+		err error
+	)
+
 	for i := 0; i < times; i++ {
-		res = GetTransactionStatus(hash)
+		res, err = GetTransactionStatus(hash)
+		if err != nil {
+			return -1, err
+		}
 		if res == 1 {
 			break
 		}
 		log.Logger.Info(fmt.Sprintf("try # %d", i))
 		time.Sleep(time.Second * duration)
 	}
-	return res
+	return res, nil
 }
 
 func MintWZCN(ctx context.Context, amountTokens wei, payload *ethereum.MintPayload) (*types.Transaction, error) {

@@ -59,7 +59,15 @@ func fromZCNtoERC() {
 
 	// ASK for minting events from bridge contract but this is not necessary as we're going to check it by hash
 
-	res := zcnbridge.ConfirmEthereumTransactionStatus(tranHash, 60, 2)
+	res, err := zcnbridge.ConfirmEthereumTransactionStatus(tranHash, 60, 2)
+	if err != nil {
+		log.Logger.Fatal(
+			"failed to confirm transaction ConfirmEthereumTransactionStatus",
+			zap.String("hash", tranHash),
+			zap.Error(err),
+		)
+	}
+
 	if res == 0 {
 		log.Logger.Fatal("failed to confirm transaction ConfirmEthereumTransactionStatus", zap.String("hash", tranHash))
 	}
@@ -72,7 +80,15 @@ func fromERCtoZCN() {
 		log.Logger.Fatal("failed to execute IncreaseBurnerAllowance", zap.Error(err))
 	}
 
-	res := zcnbridge.ConfirmEthereumTransactionStatus(transaction.Hash().Hex(), 60, 2)
+	hash := transaction.Hash().Hex()
+	res, err := zcnbridge.ConfirmEthereumTransactionStatus(hash, 60, 2)
+	if err != nil {
+		log.Logger.Fatal(
+			"failed to confirm transaction ConfirmEthereumTransactionStatus",
+			zap.String("hash", hash),
+			zap.Error(err),
+		)
+	}
 	if res == 0 {
 		log.Logger.Fatal("failed to confirm transaction", zap.String("hash", transaction.Hash().Hex()))
 	}
@@ -83,7 +99,14 @@ func fromERCtoZCN() {
 		log.Logger.Fatal("failed to execute BurnWZCN in wrapped chain", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
-	res = zcnbridge.ConfirmEthereumTransactionStatus(burnTrxHash, 60, 2)
+	res, err = zcnbridge.ConfirmEthereumTransactionStatus(burnTrxHash, 60, 2)
+	if err != nil {
+		log.Logger.Fatal(
+			"failed to confirm transaction ConfirmEthereumTransactionStatus",
+			zap.String("hash", burnTrxHash),
+			zap.Error(err),
+		)
+	}
 	if res == 0 {
 		log.Logger.Fatal("failed to confirm burn transaction in ZCN in ConfirmEthereumTransactionStatus", zap.String("hash", burnTrxHash))
 	}

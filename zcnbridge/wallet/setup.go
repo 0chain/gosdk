@@ -41,7 +41,14 @@ func setupZCNSDK(cfg Config) error {
 	var logName = cfg.LogDir() + "/zsdk.log"
 	zcncore.SetLogFile(logName, false)
 	zcncore.SetLogLevel(logLevelFromStr(cfg.LogLvl()))
-	return zcncore.InitZCNSDK(cfg.BlockWorker(), cfg.SignatureScheme())
+	err := zcncore.InitZCNSDK(
+		cfg.BlockWorker(),
+		cfg.SignatureScheme(),
+		zcncore.WithChainID(config.Bridge.ChainID),
+		zcncore.WithEthereumNode(config.Bridge.EthereumNodeURL),
+	)
+
+	return err
 }
 
 // logLevelFromStr converts string log level to gosdk logger level int value.

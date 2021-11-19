@@ -24,7 +24,7 @@ func setupConfig(configPath, configName *string) {
 	viper.SetConfigName(*configName)
 	err := viper.ReadInConfig()
 	if err != nil {
-		panic(fmt.Errorf("fatal error config file: %s", err))
+		panic(fmt.Errorf("fatal error config file: %w", err))
 	}
 }
 
