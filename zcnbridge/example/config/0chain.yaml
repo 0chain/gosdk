@@ -34,5 +34,5 @@ bridge:
     EthereumNodeURL: "https://ropsten.infura.io/v3/22cb2849f5f74b8599f3dc2a23085bd4"
     # Gas limit to execute ethereum transaction
     GasLimit: 300000
-    # Value to execute ZCN smart contracts
+    # Value to execute ZCN smart contracts in wei
     Value: 0

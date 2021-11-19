@@ -12,10 +12,16 @@ import (
 )
 
 const (
-	ConvertAmountWei = 1000
+	ConvertAmountWei = 100
 )
 
 // How should we manage nonce? - when user starts again on another server - how should we restore the value?
+
+// Prerequisites:
+// 1. Client must have enough amount of Ethereum on his wallet (any Ethereum transaction will fail)
+// 2. Client must have enough WZCN tokens in Ethereum chain.
+
+// Order of client initialization
 
 // 1. Init config
 // 2. Init logs
@@ -60,6 +66,7 @@ func fromZCNtoERC() {
 }
 
 func fromERCtoZCN() {
+	// Example: https://ropsten.etherscan.io/tx/0xa28266fb44cfc2aa27b26bd94e268e40d065a05b1a8e6339865f826557ff9f0e
 	transaction, err := zcnbridge.IncreaseBurnerAllowance(context.Background(), ConvertAmountWei)
 	if err != nil {
 		log.Logger.Fatal("failed to execute IncreaseBurnerAllowance", zap.Error(err))

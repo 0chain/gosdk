@@ -125,10 +125,6 @@ func IncreaseBurnerAllowance(ctx context.Context, amountWei wei) (*types.Transac
 		return nil, errors.Wrap(err, "failed to estimate gas limit")
 	}
 
-	if gasLimitUnits < config.Bridge.GasLimit {
-		gasLimitUnits = config.Bridge.GasLimit
-	}
-
 	gasLimitUnits = AddPercents(gasLimitUnits, 10).Uint64()
 	chainID, err := etherClient.ChainID(ctx)
 	if err != nil {
