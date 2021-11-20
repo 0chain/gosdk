@@ -23,18 +23,9 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 	eth "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-	"golang.org/x/crypto/sha3"
-)
-
-const (
-	IncreaseAllowanceSigCode = "39509351"
-	BurnSigCode              = "fe9d9303"
-	MintSigCode              = "4d02be9f"
-	Bytes32                  = 32
 )
 
 type (
@@ -42,11 +33,6 @@ type (
 )
 
 var (
-	// IncreaseAllowanceSig "increaseAllowance(address,uint256)"
-	IncreaseAllowanceSig = []byte(erc20.ERC20MetaData.Sigs[IncreaseAllowanceSigCode])
-	// BurnSig "burn(uint256,bytes)"
-	BurnSig                = []byte(bridge.BridgeMetaData.Sigs[BurnSigCode])
-	MintSig                = []byte(bridge.BridgeMetaData.Sigs[MintSigCode])
 	DefaultClientIDEncoder = func(id string) []byte {
 		return []byte(id)
 	}
@@ -98,7 +84,6 @@ func IncreaseBurnerAllowance(ctx context.Context, amountWei wei) (*types.Transac
 	amount := big.NewInt(int64(amountWei))
 
 	ethWallet := node.GetEthereumWallet()
-
 	ownerAddress, _, privKey := ethWallet.Address, ethWallet.PublicKey, ethWallet.PrivateKey
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read private key and ownerAddress")
@@ -156,7 +141,7 @@ func GetTransactionStatus(hash string) (int, error) {
 	return zcncore.CheckEthHashStatus(hash), nil
 }
 
-func ConfirmEthereumTransactionStatus(hash string, times int, duration time.Duration) (int, error) {
+func ConfirmEthereumTransaction(hash string, times int, duration time.Duration) (int, error) {
 	var (
 		res = 0
 		err error
@@ -176,46 +161,32 @@ func ConfirmEthereumTransactionStatus(hash string, times int, duration time.Dura
 	return res, nil
 }
 
+// MintWZCN Mint ZCN tokens on behalf of the 0ZCN client
+// amountTokens: ZCN tokens
+// payload: received from authorizers
 func MintWZCN(ctx context.Context, amountTokens wei, payload *ethereum.MintPayload) (*types.Transaction, error) {
 	if DefaultClientIDEncoder == nil {
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
 	}
 
-	zcnTxd := DefaultClientIDEncoder(payload.ZCNTxnID)
-
-	// 1. Data Parameter (signature)
-	hash := sha3.NewLegacyKeccak256()
-	hash.Write(MintSig)
-	methodID := hash.Sum(nil)[:4]
-	fmt.Println(hexutil.Encode(methodID))
-
-	// 2. Data Parameter (amount to burn)
+	// 1. Data Parameter (amount to burn)
 	amount := new(big.Int)
 	amount.SetInt64(int64(amountTokens)) // wei
-	paddedAmount := common.LeftPadBytes(amount.Bytes(), Bytes32)
 
-	// 3. Data Parameter (zcnTxd string as []byte)
-	paddedZCNTxd := common.LeftPadBytes(zcnTxd, Bytes32)
+	// 2. Data Parameter (zcnTxd string as []byte)
+	zcnTxd := DefaultClientIDEncoder(payload.ZCNTxnID)
 
-	// 4. Nonce Parameter
+	// 3. Nonce Parameter
 	nonce := new(big.Int)
 	nonce.SetInt64(payload.Nonce)
-	paddedNonce := common.LeftPadBytes(amount.Bytes(), Bytes32)
 
-	// Signature
+	// 4. Signature
 	// For requirements from ERC20 authorizer, the signature length must be 65
 	var sb strings.Builder
 	for _, signature := range payload.Signatures {
 		sb.WriteString(signature.Signature)
 	}
 	sigs := []byte(sb.String())
-
-	var data []byte
-	data = append(data, methodID...)
-	data = append(data, paddedAmount...)
-	data = append(data, paddedZCNTxd...)
-	data = append(data, paddedNonce...)
-	data = append(data, sigs...)
 
 	bridgeInstance, transactOpts, err := prepareBridge(ctx, "mint", amount, zcnTxd, nonce, sigs)
 	if err != nil {
@@ -259,7 +230,12 @@ func BurnWZCN(ctx context.Context, amountTokens int64) (*types.Transaction, erro
 
 	tran, err := bridgeInstance.Burn(transactOpts, amount, clientID)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to execute BurnZCN transaction to ClientID = %s with amount = %s", node.ID(), amount)
+		return nil, errors.Wrapf(
+			err,
+			"failed to execute BurnZCN transaction to ClientID = %s with amount = %s",
+			node.ID(),
+			amount,
+		)
 	}
 
 	return tran, err
