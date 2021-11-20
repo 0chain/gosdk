@@ -1,17 +1,16 @@
 package node
 
 import (
-	"time"
-
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 )
 
 // Node represent self node type.
 type Node struct {
-	wallet          *wallet.Wallet
-	startTime       time.Time
-	nonce           int64
-	ethereumAddress string
+	wallet         *wallet.Wallet
+	ethereumWallet *wallet.EthereumWallet
+	startTime      common.Timestamp
+	nonce          int64
 }
 
 var (
@@ -19,22 +18,23 @@ var (
 )
 
 // Start writes to self node current time, sets wallet, external id and url
-//
-// Start should be used only once while application is starting.
-func Start(wallet *wallet.Wallet) {
+// Should be used only once while application is starting.
+func Start(wallet *wallet.Wallet, ethWallet *wallet.EthereumWallet) {
 	self = &Node{
-		wallet:    wallet,
-		startTime: time.Now(),
+		wallet:         wallet,
+		startTime:      common.Now(),
+		ethereumWallet: ethWallet,
 	}
+}
+
+// GetEthereumWallet returns ethereum wallet string
+func GetEthereumWallet() *wallet.EthereumWallet {
+	return self.ethereumWallet
 }
 
 // GetWalletString returns marshaled to JSON string nodes wallet.
 func GetWalletString() (string, error) {
 	return self.wallet.StringJSON()
-}
-
-func SetWallet(wall *wallet.Wallet) {
-	self.wallet = wall
 }
 
 // ID returns id of Node.
@@ -48,7 +48,7 @@ func PublicKey() string {
 }
 
 // StartTime returns time when Node is started.
-func StartTime() time.Time {
+func StartTime() common.Timestamp {
 	return self.startTime
 }
 
