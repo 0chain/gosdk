@@ -22,8 +22,8 @@ func init() {
 	}
 }
 
-//BLS0ChainScheme - a signature scheme for BLS0Chain Signature
-type BLS0ChainScheme struct {
+//WasmScheme - a signature scheme for BLS0Chain Signature
+type WasmScheme struct {
 	PublicKey  string `json:"public_key"`
 	PrivateKey string `json:"private_key"`
 	Mnemonic   string `json:"mnemonic"`
@@ -32,12 +32,12 @@ type BLS0ChainScheme struct {
 	Ids string `json:"threshold_scheme_id"`
 }
 
-//NewBLS0ChainScheme - create a BLS0ChainScheme object
-func NewBLS0ChainScheme() *BLS0ChainScheme {
-	return &BLS0ChainScheme{}
+//NewWasmScheme - create a BLS0ChainScheme object
+func NewWasmScheme() *WasmScheme {
+	return &WasmScheme{}
 }
 
-func (b0 *BLS0ChainScheme) GenerateKeysWithEth(mnemonic, password string) (*Wallet, error) {
+func (b0 *WasmScheme) GenerateKeysWithEth(mnemonic, password string) (*Wallet, error) {
 	if len(mnemonic) == 0 {
 		return nil, fmt.Errorf("Mnemonic phrase is mandatory.")
 	}
@@ -52,11 +52,11 @@ func (b0 *BLS0ChainScheme) GenerateKeysWithEth(mnemonic, password string) (*Wall
 }
 
 //GenerateKeys - implement interface
-func (b0 *BLS0ChainScheme) GenerateKeys() (*Wallet, error) {
+func (b0 *WasmScheme) GenerateKeys() (*Wallet, error) {
 	return b0.generateKeys("0chain-client-split-key")
 }
 
-func (b0 *BLS0ChainScheme) generateKeys(password string) (*Wallet, error) {
+func (b0 *WasmScheme) generateKeys(password string) (*Wallet, error) {
 	// Check for recovery
 	if len(b0.Mnemonic) == 0 {
 		entropy, err := bip39.NewEntropy(256)
@@ -98,7 +98,7 @@ func (b0 *BLS0ChainScheme) generateKeys(password string) (*Wallet, error) {
 	return w, nil
 }
 
-func (b0 *BLS0ChainScheme) RecoverKeys(mnemonic string) (*Wallet, error) {
+func (b0 *WasmScheme) RecoverKeys(mnemonic string) (*Wallet, error) {
 	if mnemonic == "" {
 		return nil, errors.New("recover_keys", "Set mnemonic key failed")
 	}
@@ -109,7 +109,7 @@ func (b0 *BLS0ChainScheme) RecoverKeys(mnemonic string) (*Wallet, error) {
 	return b0.GenerateKeys()
 }
 
-func (b0 *BLS0ChainScheme) GetMnemonic() string {
+func (b0 *WasmScheme) GetMnemonic() string {
 	if b0 == nil {
 		return ""
 	}
@@ -118,7 +118,7 @@ func (b0 *BLS0ChainScheme) GetMnemonic() string {
 }
 
 //SetPrivateKey - implement interface
-func (b0 *BLS0ChainScheme) SetPrivateKey(privateKey string) error {
+func (b0 *WasmScheme) SetPrivateKey(privateKey string) error {
 	if b0.PublicKey != "" {
 		return errors.New("set_private_key", "cannot set private key when there is a public key")
 	}
@@ -136,7 +136,7 @@ func (b0 *BLS0ChainScheme) SetPrivateKey(privateKey string) error {
 }
 
 //SetPublicKey - implement interface
-func (b0 *BLS0ChainScheme) SetPublicKey(publicKey string) error {
+func (b0 *WasmScheme) SetPublicKey(publicKey string) error {
 	if b0.PrivateKey != "" {
 		return errors.New("set_public_key", "cannot set public key when there is a private key")
 	}
@@ -188,15 +188,15 @@ func (b0 *BLS0ChainScheme) SetPublicKey(publicKey string) error {
 // }
 
 //GetPublicKey - implement interface
-func (b0 *BLS0ChainScheme) GetPublicKey() string {
+func (b0 *WasmScheme) GetPublicKey() string {
 	return b0.PublicKey
 }
 
-func (b0 *BLS0ChainScheme) GetPrivateKey() string {
+func (b0 *WasmScheme) GetPrivateKey() string {
 	return b0.PrivateKey
 }
 
-func (b0 *BLS0ChainScheme) rawSign(hash string) (*bls.Sign, error) {
+func (b0 *WasmScheme) rawSign(hash string) (*bls.Sign, error) {
 	if b0.PrivateKey == "" {
 		return nil, errors.New("raw_sign", "private key does not exists for signing")
 	}
@@ -217,7 +217,7 @@ func (b0 *BLS0ChainScheme) rawSign(hash string) (*bls.Sign, error) {
 }
 
 //Sign - implement interface
-func (b0 *BLS0ChainScheme) Sign(hash string) (string, error) {
+func (b0 *WasmScheme) Sign(hash string) (string, error) {
 	sig, err := b0.rawSign(hash)
 	if err != nil {
 		return "", err
@@ -226,7 +226,7 @@ func (b0 *BLS0ChainScheme) Sign(hash string) (string, error) {
 }
 
 //Verify - implement interface
-func (b0 *BLS0ChainScheme) Verify(signature, msg string) (bool, error) {
+func (b0 *WasmScheme) Verify(signature, msg string) (bool, error) {
 	if b0.PublicKey == "" {
 		return false, errors.New("verify", "public key does not exists for verification")
 	}
@@ -247,7 +247,7 @@ func (b0 *BLS0ChainScheme) Verify(signature, msg string) (bool, error) {
 	return sig.Verify(&pk, rawHash), nil
 }
 
-func (b0 *BLS0ChainScheme) Add(signature, msg string) (string, error) {
+func (b0 *WasmScheme) Add(signature, msg string) (string, error) {
 	var sign bls.Sign
 	err := sign.DeserializeHexStr(signature)
 	if err != nil {
@@ -262,18 +262,18 @@ func (b0 *BLS0ChainScheme) Add(signature, msg string) (string, error) {
 }
 
 //SetID sets ID in HexString format
-func (b0 *BLS0ChainScheme) SetID(id string) error {
+func (b0 *WasmScheme) SetID(id string) error {
 	b0.Ids = id
 	return b0.id.SetHexString(id)
 }
 
 //GetID gets ID in hex string format
-func (b0 *BLS0ChainScheme) GetID() string {
+func (b0 *WasmScheme) GetID() string {
 	return b0.id.GetHexString()
 }
 
 // GetPrivateKeyAsByteArray - converts private key into byte array
-func (b0 *BLS0ChainScheme) GetPrivateKeyAsByteArray() ([]byte, error) {
+func (b0 *WasmScheme) GetPrivateKeyAsByteArray() ([]byte, error) {
 	if len(b0.PrivateKey) == 0 {
 		return nil, errors.New("get_private_key_as_byte_array", "cannot convert empty private key to byte array")
 	}
@@ -285,7 +285,7 @@ func (b0 *BLS0ChainScheme) GetPrivateKeyAsByteArray() ([]byte, error) {
 
 }
 
-func (b0 *BLS0ChainScheme) SplitKeys(numSplits int) (*Wallet, error) {
+func (b0 *WasmScheme) SplitKeys(numSplits int) (*Wallet, error) {
 	if b0.PrivateKey == "" {
 		return nil, errors.New("split_keys", "primary private key not found")
 	}

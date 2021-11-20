@@ -17,8 +17,7 @@ func NewSignatureScheme(sigScheme string) SignatureScheme {
 	case "ed25519":
 		return NewED255190chainScheme()
 	case "bls0chain":
-		//return NewBLS0ChainScheme()
-		return NewMiraclScheme()
+		return NewHerumiScheme()
 	default:
 		panic(fmt.Sprintf("unknown signature scheme: %v", sigScheme))
 	}
@@ -39,7 +38,7 @@ func UnmarshalThresholdSignatureSchemes(sigScheme string, obj interface{}) ([]Th
 			return nil, err
 		}
 
-		var list []*MiraclThresholdScheme
+		var list []*HerumiThresholdScheme
 
 		if err := json.Unmarshal(buf, &list); err != nil {
 			return nil, err
@@ -63,7 +62,7 @@ func UnmarshalThresholdSignatureSchemes(sigScheme string, obj interface{}) ([]Th
 //GenerateThresholdKeyShares given a signature scheme will generate threshold sig keys
 func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]ThresholdSignatureScheme, error) {
 
-	b0ss, ok := originalKey.(*MiraclScheme)
+	b0ss, ok := originalKey.(*HerumiScheme)
 	if !ok {
 		return nil, errors.New("bls0_generate_threshold_key_shares", "Invalid encryption scheme")
 	}
@@ -95,7 +94,7 @@ func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]Thresh
 			return nil, err
 		}
 
-		share := &MiraclThresholdScheme{}
+		share := &HerumiThresholdScheme{}
 		share.PrivateKey = hex.EncodeToString(sk.GetLittleEndian())
 		share.PublicKey = sk.GetPublicKey().SerializeToHexStr()
 
