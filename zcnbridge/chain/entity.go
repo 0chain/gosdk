@@ -9,9 +9,10 @@ type Chain struct {
 	ID              string
 	Version         string
 	CreationDate    time.Timestamp
-	OwnerID         string // this is not a wallet ID owner
 	BlockWorker     string
 	SignatureScheme string
+	MinSubmit       int
+	MinCfm          int
 }
 
 // serverChain is the chain object of the chain the server is responsible for.
@@ -28,12 +29,12 @@ func GetServerChain() *Chain {
 }
 
 // NewChain creates a new Chain.
-func NewChain(id, ownerID, blockWorker, signatureScheme string) *Chain {
+func NewChain(blockWorker, signatureScheme string, minSubmit, mintCfm int) *Chain {
 	chain := Provider()
-	chain.ID = id
-	chain.OwnerID = ownerID
 	chain.BlockWorker = blockWorker
 	chain.SignatureScheme = signatureScheme
+	chain.MinSubmit = minSubmit
+	chain.MinCfm = mintCfm
 	return chain
 }
 

@@ -15,16 +15,16 @@ import (
 
 func SetupZCNWallet() (*Wallet, error) {
 	var (
-		err     error
-		dirname string
+		err  error
+		home string
 	)
 
-	dirname, err = os.UserHomeDir()
+	home, err = os.UserHomeDir()
 	if err != nil {
 		return nil, err
 	}
 
-	file := filepath.Join(dirname, *config.Client.KeyFileDir, *config.Client.KeyFile)
+	file := filepath.Join(home, ".zcn", *config.Client.WalletConfig)
 	if _, err := os.Stat(file); os.IsNotExist(err) {
 		return nil, errors.Wrap(err, "error opening the wallet "+file)
 	}
@@ -57,10 +57,13 @@ func SetupSDK(cfg Config) error {
 	var logName = cfg.LogDir() + "/zsdk.log"
 	zcncore.SetLogFile(logName, false)
 	zcncore.SetLogLevel(logLevelFromStr(cfg.LogLvl()))
+	serverChain := chain.GetServerChain()
 	err := zcncore.InitZCNSDK(
 		cfg.BlockWorker(),
 		cfg.SignatureScheme(),
-		zcncore.WithChainID(chain.GetServerChain().ID),
+		zcncore.WithChainID(serverChain.ID),
+		zcncore.WithMinSubmit(serverChain.MinSubmit),
+		zcncore.WithMinConfirmation(serverChain.MinCfm),
 		zcncore.WithEthereumNode(config.Bridge.EthereumNodeURL),
 	)
 

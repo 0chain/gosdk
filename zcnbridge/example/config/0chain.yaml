@@ -5,11 +5,9 @@ logging:
 
 block_worker: https://cube.devnet-0chain.net/dns # to debug in container
 signature_scheme: "bls0chain"
-
-server_chain:
-    id: "0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe"
-    owner: "edb90b850f2e7e7cbd0a1fa370fdcc5cd378ffbec95363a7bc0e5a98b8ba5759"
-    signature_scheme: "bls0chain"
+min_submit: 50 # in percentage
+min_confirmation: 50 # in percentage
+confirmation_chain_length: 3
 
 bridge:
     # Address of ethereum bridge contract

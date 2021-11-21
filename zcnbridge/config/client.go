@@ -11,12 +11,11 @@ import (
 )
 
 type ClientConfig struct {
-	KeyFileDir  *string
-	KeyFile     *string
-	LogPath     *string
-	ConfigFile  *string
-	ConfigDir   *string
-	Development *bool
+	WalletConfig *string
+	LogPath      *string
+	ConfigFile   *string
+	ConfigDir    *string
+	Development  *bool
 }
 
 func (c ClientConfig) LogDir() string {
@@ -40,8 +39,7 @@ var Client ClientConfig
 // ParseClientConfig reads config from command line
 func ParseClientConfig() {
 	Client.Development = flag.Bool("development", true, "development mode")
-	Client.KeyFileDir = flag.String("zcn_dir", ".zcn", "zcn home folder")
-	Client.KeyFile = flag.String("wallet_config", "wallet.json", "wallet config")
+	Client.WalletConfig = flag.String("wallet_config", "wallet.json", "wallet config")
 	Client.LogPath = flag.String("log_dir", "./logs", "log folder")
 	Client.ConfigDir = flag.String("config_dir", "./config", "0chain config folder")
 	Client.ConfigFile = flag.String("config_file", "0chain", "0chain config file")
