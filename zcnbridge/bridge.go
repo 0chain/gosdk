@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/0chain/gosdk/zcnbridge/authorizer"
+
 	"github.com/spf13/viper"
 
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
@@ -116,7 +118,7 @@ func IncreaseBurnerAllowance(ctx context.Context, amountWei wei) (*types.Transac
 		return nil, errors.Wrap(err, "failed to estimate gas limit")
 	}
 
-	gasLimitUnits = AddPercents(gasLimitUnits, 10).Uint64()
+	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 	chainID, err := etherClient.ChainID(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get chain ID")
@@ -246,62 +248,6 @@ func BurnWZCN(ctx context.Context, amountTokens int64) (*types.Transaction, erro
 	return tran, err
 }
 
-func prepareBridge(ctx context.Context, method string, params ...interface{}) (*bridge.Bridge, *bind.TransactOpts, error) {
-	etherClient, err := ethereum.CreateEthClient()
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to create etherClient")
-	}
-
-	// To
-	bridgeAddress := common.HexToAddress(config.Bridge.BridgeAddress)
-
-	// Client Ethereum wallet
-	ethereumWallet := node.GetEthereumWallet()
-
-	// Get ABI of the contract
-	abi, err := bridge.BridgeMetaData.GetAbi()
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to get ABI")
-	}
-
-	// Pack the method argument
-	pack, err := abi.Pack(method, params...)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to pack arguments")
-	}
-
-	// Gas limits in units
-	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
-		To:   &bridgeAddress,
-		From: ethereumWallet.Address,
-		Data: pack,
-	})
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to estimate gas")
-	}
-
-	gasLimitUnits = AddPercents(gasLimitUnits, 10).Uint64()
-	chainID, err := etherClient.ChainID(ctx)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to get chain ID")
-	}
-
-	transactOpts := ethereum.CreateSignedTransaction(
-		chainID,
-		etherClient,
-		ethereumWallet.Address,
-		ethereumWallet.PrivateKey,
-		gasLimitUnits,
-	)
-
-	bridgeInstance, err := bridge.NewBridge(bridgeAddress, etherClient)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to create bridge")
-	}
-
-	return bridgeInstance, transactOpts, nil
-}
-
 func MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (*transaction.Transaction, error) {
 	trx, err := transaction.NewTransactionEntity()
 	if err != nil {
@@ -359,7 +305,19 @@ func BurnZCN(ctx context.Context, value int64) (*transaction.Transaction, error)
 	return trx, nil
 }
 
-func AddPercents(gasLimitUnits uint64, percents int) *big.Int {
+// QueryZChainMintPayload gets burn ticket and creates mint payload to be minted in the ZChain
+// hash - Ethereum burn transaction hash
+func QueryZChainMintPayload(hash string) (*zcnsc.MintPayload, error) {
+	return authorizer.QueryZChainMintPayload(hash)
+}
+
+// QueryEthereumMintPayload gets burn ticket and creates mint payload to be minted in the Ethereum chain
+// hash - Ethereum burn transaction hash
+func QueryEthereumMintPayload(hash string) (*ethereum.MintPayload, error) {
+	return authorizer.QueryEthereumMintPayload(hash)
+}
+
+func addPercents(gasLimitUnits uint64, percents int) *big.Int {
 	gasLimitBig := big.NewInt(int64(gasLimitUnits))
 	factorBig := big.NewInt(int64(percents))
 	deltaBig := gasLimitBig.Div(gasLimitBig, factorBig)
@@ -368,4 +326,60 @@ func AddPercents(gasLimitUnits uint64, percents int) *big.Int {
 	gasLimitBig = origin.Add(origin, deltaBig)
 
 	return gasLimitBig
+}
+
+func prepareBridge(ctx context.Context, method string, params ...interface{}) (*bridge.Bridge, *bind.TransactOpts, error) {
+	etherClient, err := ethereum.CreateEthClient()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to create etherClient")
+	}
+
+	// To
+	bridgeAddress := common.HexToAddress(config.Bridge.BridgeAddress)
+
+	// Client Ethereum wallet
+	ethereumWallet := node.GetEthereumWallet()
+
+	// Get ABI of the contract
+	abi, err := bridge.BridgeMetaData.GetAbi()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to get ABI")
+	}
+
+	// Pack the method argument
+	pack, err := abi.Pack(method, params...)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to pack arguments")
+	}
+
+	// Gas limits in units
+	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
+		To:   &bridgeAddress,
+		From: ethereumWallet.Address,
+		Data: pack,
+	})
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to estimate gas")
+	}
+
+	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
+	chainID, err := etherClient.ChainID(ctx)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to get chain ID")
+	}
+
+	transactOpts := ethereum.CreateSignedTransaction(
+		chainID,
+		etherClient,
+		ethereumWallet.Address,
+		ethereumWallet.PrivateKey,
+		gasLimitUnits,
+	)
+
+	bridgeInstance, err := bridge.NewBridge(bridgeAddress, etherClient)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to create bridge")
+	}
+
+	return bridgeInstance, transactOpts, nil
 }

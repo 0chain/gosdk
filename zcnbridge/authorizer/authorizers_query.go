@@ -49,7 +49,9 @@ var (
 	client *retryablehttp.Client
 )
 
-func CreateEthereumMintPayload(hash string) (*ethereum.MintPayload, error) {
+// QueryEthereumMintPayload gets burn ticket and creates mint payload to be minted in the Ethereum chain
+// zchainBurnHash - Ethereum burn transaction hash
+func QueryEthereumMintPayload(zchainBurnHash string) (*ethereum.MintPayload, error) {
 	client = bridge.NewRetryableClient()
 	authorizers, err := GetAuthorizers()
 
@@ -60,7 +62,7 @@ func CreateEthereumMintPayload(hash string) (*ethereum.MintPayload, error) {
 	var (
 		totalWorkers = len(authorizers.NodeMap)
 		values       = u.Values{
-			"hash": []string{hash},
+			"zchainBurnHash": []string{zchainBurnHash},
 		}
 	)
 
@@ -108,8 +110,9 @@ func CreateEthereumMintPayload(hash string) (*ethereum.MintPayload, error) {
 	return nil, errors.New("get_burn_ticket", text)
 }
 
-// CreateZChainMintPayload gets burn ticket and creates mint payload to be minted in the ZChain
-func CreateZChainMintPayload(hash string) (*zcnsc.MintPayload, error) {
+// QueryZChainMintPayload gets burn ticket and creates mint payload to be minted in the ZChain
+// ethBurnHash - Ethereum burn transaction hash
+func QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPayload, error) {
 	client = bridge.NewRetryableClient()
 	authorizers, err := GetAuthorizers()
 
@@ -120,9 +123,9 @@ func CreateZChainMintPayload(hash string) (*zcnsc.MintPayload, error) {
 	var (
 		totalWorkers = len(authorizers.NodeMap)
 		values       = u.Values{
-			"hash":     []string{hash},
-			"address":  []string{wallet.ZCNSCSmartContractAddress},
-			"clientid": []string{node.ID()},
+			"eth_burn_hash": []string{ethBurnHash},
+			"address":       []string{wallet.ZCNSCSmartContractAddress},
+			"clientid":      []string{node.ID()},
 		}
 	)
 
