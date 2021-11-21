@@ -3,8 +3,11 @@ package wallet
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"sync"
 
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zcnbridge/common"
 	"github.com/0chain/gosdk/zcnbridge/crypto"
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	"github.com/0chain/gosdk/zcncore"
@@ -28,6 +31,16 @@ type (
 		ZCNWallet *zcncrypto.Wallet
 	}
 )
+
+func AssignWallet(clientConfig string) (*Wallet, error) {
+	w := &zcncrypto.Wallet{}
+	err := json.Unmarshal([]byte(clientConfig), w)
+	if err != nil {
+		return nil, errors.Wrap("unmarshal", "error while unmarshalling the wallet", err)
+	}
+
+	return &Wallet{w}, nil
+}
 
 // CreateWallet creates initialized Wallet.
 func CreateWallet(publicKey, privateKey []byte) *Wallet {
@@ -83,8 +96,23 @@ func (w *Wallet) RegisterToMiners() error {
 		return errors.Wrap(errCode, "error while init wallet", err)
 	}
 
-	if err = zcncore.RegisterToMiners(w.ZCNWallet, new(walletCallback)); err != nil {
-		return errors.Wrap(errCode, "error while registering wallet to miners", err)
+	wg := &sync.WaitGroup{}
+	statusBar := &common.ZCNStatus{Wg: wg}
+	wg.Add(1)
+	err = zcncore.RegisterToMiners(w.ZCNWallet, statusBar)
+	if err != nil {
+		return errors.Wrap(errCode, "error while init wallet", err)
 	}
+	wg.Wait()
+	if statusBar.Success {
+		fmt.Println("wallet registered")
+	} else {
+		return errors.Wrap(errCode, "wallet registration failed "+statusBar.ErrMsg, err)
+	}
+
+	//if err = zcncore.RegisterToMiners(w.ZCNWallet, new(walletCallback)); err != nil {
+	//	return errors.Wrap(errCode, "error while registering wallet to miners", err)
+	//}
+
 	return nil
 }

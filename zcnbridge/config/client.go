@@ -40,8 +40,8 @@ var Client ClientConfig
 // ParseClientConfig reads config from command line
 func ParseClientConfig() {
 	Client.Development = flag.Bool("development", true, "development mode")
-	Client.KeyFileDir = flag.String("keys_file_dir", "./keys", "keys_file_0chain")
-	Client.KeyFile = flag.String("keys_file_0chain", "", "keys_file_0chain")
+	Client.KeyFileDir = flag.String("zcn_dir", ".zcn", "zcn home folder")
+	Client.KeyFile = flag.String("wallet_config", "wallet.json", "wallet config")
 	Client.LogPath = flag.String("log_dir", "./logs", "log folder")
 	Client.ConfigDir = flag.String("config_dir", "./config", "0chain config folder")
 	Client.ConfigFile = flag.String("config_file", "0chain", "0chain config file")
@@ -52,9 +52,7 @@ func ParseClientConfig() {
 }
 
 func validateRequiredFlags() {
-	required := []string{
-		"keys_file_0chain",
-	}
+	required := []string{}
 
 	seen := make(map[string]bool)
 	flag.Visit(func(f *flag.Flag) { seen[f.Name] = true })

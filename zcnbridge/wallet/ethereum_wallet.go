@@ -14,7 +14,7 @@ type EthereumWallet struct {
 	Address    common.Address
 }
 
-func NewEthereumWallet() (*EthereumWallet, error) {
+func SetupEthereumWallet() (*EthereumWallet, error) {
 	address, publicKey, privateKey, err := ethereum.GetKeysAddress()
 	if err != nil {
 		return nil, errors.Wrap("wallet_init", "failed to initialize ethereum wallet", err)
