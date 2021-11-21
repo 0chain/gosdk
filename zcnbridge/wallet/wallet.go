@@ -4,10 +4,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"sync"
 
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zcnbridge/common"
 	"github.com/0chain/gosdk/zcnbridge/crypto"
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	"github.com/0chain/gosdk/zcncore"
@@ -91,22 +89,25 @@ func (w *Wallet) RegisterToMiners() error {
 	if err != nil {
 		return errors.Wrap(errCode, "error while marshalling wallet", err)
 	}
+
 	if err := zcncore.SetWalletInfo(walletStr, false); err != nil {
 		return errors.Wrap(errCode, "error while init wallet", err)
 	}
 
-	wg := &sync.WaitGroup{}
-	statusBar := &common.ZCNStatus{Wg: wg}
-	wg.Add(1)
-	err = zcncore.RegisterToMiners(w.ZCNWallet, statusBar)
+	status := NewZCNStatus()
+	status.Begin()
+
+	err = zcncore.RegisterToMiners(w.ZCNWallet, status)
 	if err != nil {
 		return errors.Wrap(errCode, "error while init wallet", err)
 	}
-	wg.Wait()
-	if statusBar.Success {
+
+	status.Wait()
+
+	if status.Success {
 		fmt.Println("wallet registered")
 	} else {
-		return errors.Wrap(errCode, "wallet registration failed "+statusBar.ErrMsg, err)
+		return errors.Wrap(errCode, "wallet registration failed "+status.ErrMsg, err)
 	}
 
 	return nil
