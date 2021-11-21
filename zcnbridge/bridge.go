@@ -49,7 +49,7 @@ func InitBridge() {
 	config.Bridge.WzcnAddress = viper.GetString("bridge.WzcnAddress")
 	config.Bridge.ChainID = viper.GetString("bridge.ChainID")
 
-	walletConfig, err := wallet.Setup()
+	walletConfig, err := wallet.NewZCNWallet()
 	if err != nil {
 		log.Logger.Fatal("failed to setup wallet", zap.Error(err))
 	}

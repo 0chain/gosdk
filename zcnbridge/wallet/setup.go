@@ -10,7 +10,7 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
-func Setup() (*Wallet, error) {
+func NewZCNWallet() (*Wallet, error) {
 	err := setupZCNSDK(config.Client)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to setup ZCNSDK")
