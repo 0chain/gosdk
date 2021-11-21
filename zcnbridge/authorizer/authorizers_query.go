@@ -49,7 +49,7 @@ var (
 	client *retryablehttp.Client
 )
 
-func CreateWZCNMintPayload(hash string) (*ethereum.MintPayload, error) {
+func CreateEthereumMintPayload(hash string) (*ethereum.MintPayload, error) {
 	client = bridge.NewRetryableClient()
 	authorizers, err := GetAuthorizers()
 
@@ -108,8 +108,8 @@ func CreateWZCNMintPayload(hash string) (*ethereum.MintPayload, error) {
 	return nil, errors.New("get_burn_ticket", text)
 }
 
-// CreateZCNMintPayload gets burn ticket and creates mint payload to be minted in the chain
-func CreateZCNMintPayload(hash string) (*zcnsc.MintPayload, error) {
+// CreateZChainMintPayload gets burn ticket and creates mint payload to be minted in the ZChain
+func CreateZChainMintPayload(hash string) (*zcnsc.MintPayload, error) {
 	client = bridge.NewRetryableClient()
 	authorizers, err := GetAuthorizers()
 
