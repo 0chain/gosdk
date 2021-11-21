@@ -38,9 +38,9 @@ func setupLogging() {
 
 func setupChainConfiguration() {
 	chain.SetServerChain(chain.NewChain(
-		viper.GetString("server_chain.id"),
-		viper.GetString("server_chain.owner"),
+		viper.GetString("id"),
+		viper.GetString("owner"),
 		viper.GetString("block_worker"),
-		viper.GetString("server_chain.signature_scheme"),
+		viper.GetString("signature_scheme"),
 	))
 }

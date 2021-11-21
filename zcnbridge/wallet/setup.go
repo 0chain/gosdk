@@ -23,13 +23,13 @@ func SetupZCNWallet() (*Wallet, error) {
 	if err != nil {
 		return nil, err
 	}
-	file := filepath.Join(dirname, *config.Client.KeyFileDir, *config.Client.KeyFile)
 
-	f, err := os.Open(file)
-	if err != nil {
+	file := filepath.Join(dirname, *config.Client.KeyFileDir, *config.Client.KeyFile)
+	if _, err := os.Stat(file); os.IsNotExist(err) {
 		return nil, errors.Wrap(err, "error opening the wallet "+file)
 	}
 
+	f, _ := os.Open(file)
 	clientBytes, err := ioutil.ReadAll(f)
 	if err != nil {
 		return nil, errors.Wrap(err, "error reading the wallet")

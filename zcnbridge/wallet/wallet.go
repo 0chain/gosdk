@@ -68,7 +68,6 @@ func (w *Wallet) PublicKey() string {
 }
 
 // ID returns the client id.
-//
 // NOTE: client id represents hex encoded SHA3-256 hash of the raw public key.
 func (w *Wallet) ID() string {
 	return w.ZCNWallet.ClientID
@@ -109,10 +108,6 @@ func (w *Wallet) RegisterToMiners() error {
 	} else {
 		return errors.Wrap(errCode, "wallet registration failed "+statusBar.ErrMsg, err)
 	}
-
-	//if err = zcncore.RegisterToMiners(w.ZCNWallet, new(walletCallback)); err != nil {
-	//	return errors.Wrap(errCode, "error while registering wallet to miners", err)
-	//}
 
 	return nil
 }

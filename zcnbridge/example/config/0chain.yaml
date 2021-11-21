@@ -2,19 +2,14 @@ version: 1.0
 
 logging:
     level: "debug"
-    console: true # printing log to console is only supported in development mode
 
 block_worker: https://cube.devnet-0chain.net/dns # to debug in container
+signature_scheme: "bls0chain"
 
 server_chain:
     id: "0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe"
     owner: "edb90b850f2e7e7cbd0a1fa370fdcc5cd378ffbec95363a7bc0e5a98b8ba5759"
-    genesis_block:
-        id: "ed79cae70d439c11258236da1dfa6fc550f7cc569768304623e8fbd7d70efae4"
     signature_scheme: "bls0chain"
-
-owner:
-    ethereum: "0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe"
 
 bridge:
     # Address of ethereum bridge contract
