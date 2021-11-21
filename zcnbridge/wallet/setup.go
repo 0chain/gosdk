@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/0chain/gosdk/zcnbridge/chain"
+
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zcnbridge/config"
@@ -58,7 +60,7 @@ func SetupSDK(cfg Config) error {
 	err := zcncore.InitZCNSDK(
 		cfg.BlockWorker(),
 		cfg.SignatureScheme(),
-		zcncore.WithChainID(config.Bridge.ChainID),
+		zcncore.WithChainID(chain.GetServerChain().ID),
 		zcncore.WithEthereumNode(config.Bridge.EthereumNodeURL),
 	)
 
