@@ -11,6 +11,7 @@ import (
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/wasmsdk/httpwasm"
+	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
@@ -584,7 +585,11 @@ func TestWasmSDK(t *testing.T) {
 	})
 
 	t.Run("Test GetAllocationMinLock", func(t *testing.T) {
-		getAllocationMinLock := js.FuncOf(GetAllocationMinLock)
+		getAllocationMinLock := func() js.Func {
+			fn, _ := jsbridge.WrappFunc(sdk.GetAllocationMinLock)
+			return fn
+		}()
+
 		defer getAllocationMinLock.Release()
 
 		readPrice := &sdk.PriceRange{
@@ -598,7 +603,7 @@ func TestWasmSDK(t *testing.T) {
 		}
 		writePriceJSON, _ := json.Marshal(writePrice)
 
-		jsAllocOwner := js.Global().Call("eval", fmt.Sprintf(`({datashards: 2000, parityshards: 1000, size: 500, expiry: 1633878133, readPrice: %#v, writePrice: %#v, mcct: "60h"})`, string(readPriceJSON), string(writePriceJSON)))
+		jsAllocOwner := js.Global().Call("eval", fmt.Sprintf(`({datashards: 2000, parityshards: 1000, size: 500, expiry: 1633878133, readPrice: %#v, writePrice: %#v, mcct: "60h", blobbers: []})`, string(readPriceJSON), string(writePriceJSON)))
 
 		datashards := jsAllocOwner.Get("datashards")
 		parityshards := jsAllocOwner.Get("parityshards")
@@ -607,8 +612,9 @@ func TestWasmSDK(t *testing.T) {
 		readPriceArgs := jsAllocOwner.Get("readPrice")
 		writePriceArgs := jsAllocOwner.Get("writePrice")
 		mcct := jsAllocOwner.Get("mcct")
+		blobbers := jsAllocOwner.Get("blobbers")
 
-		result, err := await(getAllocationMinLock.Invoke(datashards, parityshards, size, expiry, readPriceArgs, writePriceArgs, mcct))
+		result, err := jsbridge.Await(getAllocationMinLock.Invoke(datashards, parityshards, size, expiry, readPriceArgs, writePriceArgs, mcct, blobbers))
 
 		assert.Equal(t, true, err[0].IsNull())
 		assert.Equal(t, expiry.Int(), result[0].Int())

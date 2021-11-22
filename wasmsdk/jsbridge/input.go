@@ -3,6 +3,7 @@
 package jsbridge
 
 import (
+	"fmt"
 	"reflect"
 	"syscall/js"
 )
@@ -72,8 +73,11 @@ func (b *InputBuilder) Build() (InputBinder, error) {
 			b.binders[i] = jsValueToFloat64
 		case *bool:
 			b.binders[i] = jsValueToBool
+		case *[]string:
+			b.binders[i] = jsValueToSlice
 
 		default:
+			fmt.Printf("TYPE: %#v\n", reflect.TypeOf(v))
 			return nil, ErrBinderNotImplemented
 		}
 
@@ -157,4 +161,21 @@ func jsValueToFloat64(jv js.Value) reflect.Value {
 	}
 
 	return reflect.ValueOf(i)
+}
+
+func jsValueToSlice(jv js.Value) reflect.Value {
+	var arr []string
+
+	if got := js.Global().Get("Array").Call("isArray", jv).Bool(); got {
+		for i := 0; i < jv.Length(); i++ {
+			got := jv.Index(i).Type().String()
+			if got == "string" {
+				arr = append(arr, jv.Index(i).String())
+			} else {
+				return reflect.Zero(reflect.TypeOf(got))
+			}
+		}
+	}
+
+	return reflect.ValueOf(arr)
 }

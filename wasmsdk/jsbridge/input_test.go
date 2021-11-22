@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var jsArr = js.Global().Call("eval", "({arr: [\"hello\", \"world\"]})")
+
 func TestBinder(t *testing.T) {
 
 	tests := []struct {
@@ -62,6 +64,13 @@ func TestBinder(t *testing.T) {
 
 			return reflect.ValueOf(fn)
 		}, In: []js.Value{js.ValueOf(1)}, Out: float64(1)},
+		{Name: "[]string", Func: func() reflect.Value {
+			fn := func(i []string) []string {
+				return i
+			}
+
+			return reflect.ValueOf(fn)
+		}, In: []js.Value{js.ValueOf(jsArr.Get("arr"))}, Out: []string{"hello", "world"}},
 	}
 
 	for _, it := range tests {

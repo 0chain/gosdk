@@ -16,7 +16,7 @@ import (
 // - func(...) (T,error)
 func BindFunc(jsFuncName string, fn interface{}) error {
 
-	jsFunc, err := wrappFunc(fn)
+	jsFunc, err := WrappFunc(fn)
 	if err != nil {
 		return err
 	}
@@ -31,7 +31,7 @@ func BindFuncs(fnList map[string]interface{}) error {
 	global := js.Global()
 
 	for jsFuncName, fn := range fnList {
-		jsFunc, err := wrappFunc(fn)
+		jsFunc, err := WrappFunc(fn)
 
 		if err != nil {
 			fmt.Println(err)
@@ -44,7 +44,7 @@ func BindFuncs(fnList map[string]interface{}) error {
 	return nil
 }
 
-func wrappFunc(fn interface{}) (js.Func, error) {
+func WrappFunc(fn interface{}) (js.Func, error) {
 	funcType := reflect.TypeOf(fn)
 
 	if funcType.Kind() != reflect.Func {

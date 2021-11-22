@@ -7,6 +7,7 @@ import (
 
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
 
 	"syscall/js"
@@ -18,9 +19,10 @@ func main() {
 	fmt.Printf("0CHAIN - GOSDK (version=%v)\n", version.VERSIONSTR)
 
 	jsbridge.BindFuncs(map[string]interface{}{
-		"GetVersion": zcncore.GetVersion,
-		"InitZCNSDK": zcncore.InitZCNSDK,
-		"CloseLog":   zcncore.CloseLog,
+		"GetVersion":           zcncore.GetVersion,
+		"InitZCNSDK":           zcncore.InitZCNSDK,
+		"CloseLog":             zcncore.CloseLog,
+		"GetAllocationMinLock": sdk.GetAllocationMinLock,
 	})
 	js.Global().Set("initializeConfig", js.FuncOf(InitializeConfig))
 
@@ -135,7 +137,7 @@ func main() {
 	js.Global().Set("CancelAllocation", js.FuncOf(CancelAllocation))
 	js.Global().Set("UpdateBlobberSettings", js.FuncOf(UpdateBlobberSettings))
 	js.Global().Set("CommitToFabric", js.FuncOf(CommitToFabric))
-	js.Global().Set("GetAllocationMinLock", js.FuncOf(GetAllocationMinLock))
+	// js.Global().Set("GetAllocationMinLock", js.FuncOf(GetAllocationMinLock))
 	js.Global().Set("SetNumBlockDownloads", js.FuncOf(SetNumBlockDownloads))
 
 	<-make(chan bool)

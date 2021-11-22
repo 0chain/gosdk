@@ -869,6 +869,8 @@ func GetAllocationsForClient(this js.Value, p []js.Value) interface{} {
 }
 
 func CreateAllocation(this js.Value, p []js.Value) interface{} {
+	var blobbers []string
+
 	datashards := p[0].Int()
 	parityshards := p[1].Int()
 	size := p[2].Int()
@@ -877,6 +879,19 @@ func CreateAllocation(this js.Value, p []js.Value) interface{} {
 	s_write := p[5].String()
 	mcct, _ := time.ParseDuration(p[6].String())
 	lock := p[7].Int()
+	jsBlobbers := p[8]
+
+	if got := js.Global().Get("Array").Call("isArray", jsBlobbers).Bool(); got {
+		for i := 0; i < jsBlobbers.Length(); i++ {
+			if got := jsBlobbers.Index(i).Type().String(); got == "string" {
+				blobbers = append(blobbers, jsBlobbers.Index(i).String())
+			} else {
+				return map[string]interface{}{
+					"error": fmt.Sprintf("SetNetwork failed. Reason: expected type \"string\". got=%#v", jsBlobbers.Index(i).Type().String()),
+				}
+			}
+		}
+	}
 
 	readPrice := strToPriceRange(s_read)
 	writePrice := strToPriceRange(s_write)
@@ -886,7 +901,7 @@ func CreateAllocation(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.CreateAllocation(datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct, int64(lock))
+			result, err := sdk.CreateAllocation(datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct, int64(lock), blobbers)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("CreateAllocation failed. Reason: %s", err),
@@ -1099,36 +1114,36 @@ func CommitToFabric(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func GetAllocationMinLock(this js.Value, p []js.Value) interface{} {
-	datashards := p[0].Int()
-	parityshards := p[1].Int()
-	size := p[2].Int()
-	expiry := p[3].Int()
-	s_read := p[4].String()
-	s_write := p[5].String()
-	mcct, _ := time.ParseDuration(p[6].String())
+// func GetAllocationMinLock(this js.Value, p []js.Value) interface{} {
+// 	datashards := p[0].Int()
+// 	parityshards := p[1].Int()
+// 	size := p[2].Int()
+// 	expiry := p[3].Int()
+// 	s_read := p[4].String()
+// 	s_write := p[5].String()
+// 	mcct, _ := time.ParseDuration(p[6].String())
 
-	readPrice := strToPriceRange(s_read)
-	writePrice := strToPriceRange(s_write)
+// 	readPrice := strToPriceRange(s_read)
+// 	writePrice := strToPriceRange(s_write)
 
-	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		resolve := args[0]
-		reject := args[1]
+// 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+// 		resolve := args[0]
+// 		reject := args[1]
 
-		go func() {
-			result, err := sdk.GetAllocationMinLock(datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct)
-			if err != nil {
-				reject.Invoke(map[string]interface{}{
-					"error": fmt.Sprintf("GetAllocationMinLock failed. Reason: %s", err),
-				})
-			}
+// 		go func() {
+// 			result, err := sdk.GetAllocationMinLock(datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct)
+// 			if err != nil {
+// 				reject.Invoke(map[string]interface{}{
+// 					"error": fmt.Sprintf("GetAllocationMinLock failed. Reason: %s", err),
+// 				})
+// 			}
 
-			resolve.Invoke(result)
-		}()
+// 			resolve.Invoke(result)
+// 		}()
 
-		return nil
-	})
+// 		return nil
+// 	})
 
-	promiseConstructor := js.Global().Get("Promise")
-	return promiseConstructor.New(handler)
-}
+// 	promiseConstructor := js.Global().Get("Promise")
+// 	return promiseConstructor.New(handler)
+// }

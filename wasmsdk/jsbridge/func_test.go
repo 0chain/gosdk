@@ -17,7 +17,7 @@ func TestBindFunc(t *testing.T) {
 		Result interface{}
 	}{
 		{Name: "ReturnString", Func: func() js.Func {
-			fn, _ := wrappFunc(func() string {
+			fn, _ := WrappFunc(func() string {
 				return "ReturnString"
 			})
 
@@ -26,7 +26,7 @@ func TestBindFunc(t *testing.T) {
 			return outputs[0].String()
 		}, Result: "ReturnString"},
 		{Name: "ReturnInt", Func: func() js.Func {
-			fn, _ := wrappFunc(func() int {
+			fn, _ := WrappFunc(func() int {
 				return 1
 			})
 
@@ -35,7 +35,7 @@ func TestBindFunc(t *testing.T) {
 			return outputs[0].Int()
 		}, Result: 1},
 		{Name: "ReturnInt32", Func: func() js.Func {
-			fn, _ := wrappFunc(func() int32 {
+			fn, _ := WrappFunc(func() int32 {
 				return int32(1)
 			})
 
@@ -44,7 +44,7 @@ func TestBindFunc(t *testing.T) {
 			return int32(outputs[0].Int())
 		}, Result: int32(1)},
 		{Name: "ReturnInt64", Func: func() js.Func {
-			fn, _ := wrappFunc(func() int64 {
+			fn, _ := WrappFunc(func() int64 {
 				return int64(1)
 			})
 
@@ -53,7 +53,7 @@ func TestBindFunc(t *testing.T) {
 			return int64(outputs[0].Int())
 		}, Result: int64(1)},
 		{Name: "ReturnFloat32", Func: func() js.Func {
-			fn, _ := wrappFunc(func() float32 {
+			fn, _ := WrappFunc(func() float32 {
 				return float32(1)
 			})
 
@@ -62,7 +62,7 @@ func TestBindFunc(t *testing.T) {
 			return float32(outputs[0].Float())
 		}, Result: float32(1)},
 		{Name: "ReturnFloat64", Func: func() js.Func {
-			fn, _ := wrappFunc(func() float64 {
+			fn, _ := WrappFunc(func() float64 {
 				return float64(1)
 			})
 
