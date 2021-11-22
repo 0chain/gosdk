@@ -21,3 +21,24 @@ type BridgeConfig struct {
 var (
 	Bridge BridgeConfig
 )
+
+//// InitBridge Sets up the wallet and node
+//// Wallet setup reads keys from keyfile and registers in the 0chain
+//func InitBridge() {
+//	err := wallet.SetupSDK(config.GetSDKConfig())
+//	if err != nil {
+//		log.Logger.Fatal("failed to setup ZCNSDK", zap.Error(err))
+//	}
+//
+//	walletConfig, err := wallet.SetupZCNWallet()
+//	if err != nil {
+//		log.Logger.Fatal("failed to setup wallet", zap.Error(err))
+//	}
+//
+//	ethWalletConfig, err := wallet.SetupEthereumWallet()
+//	if err != nil {
+//		log.Logger.Fatal("failed to setup ethereum wallet", zap.Error(err))
+//	}
+//
+//	node.Start(walletConfig, ethWalletConfig)
+//}

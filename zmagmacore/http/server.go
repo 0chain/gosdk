@@ -25,8 +25,8 @@ func CreateServer(setupHandlers setupHandlers, cfg config.Handler, port int, dev
 	address := ":" + strconv.Itoa(port)
 	originsOk := handlers.AllowedOriginValidator(isValidOrigin)
 	headersOk := handlers.AllowedHeaders([]string{
-		"X-Requested-With", "X-App-Client-ID",
-		"X-App-Client-Key", "Content-Type",
+		"X-Requested-With", "X-App-cmd-ID",
+		"X-App-cmd-Key", "Content-Type",
 	})
 	methodsOk := handlers.AllowedMethods([]string{"GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"})
 

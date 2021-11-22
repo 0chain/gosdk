@@ -8,18 +8,20 @@ import (
 	"github.com/spf13/viper"
 )
 
-func Setup() {
-	setDefault()
-	setupConfig(Client.ConfigDir, Client.ConfigFile)
+// SetupBridge Use this from standalone application
+func SetupBridge() {
+	setDefaults()
+	readConfig(cmd.ConfigDir, cmd.ConfigFile)
 	setupLogging()
 	setupChainConfiguration()
+	setupBridge()
 }
 
-func setDefault() {
+func setDefaults() {
 	viper.SetDefault("logging.level", "info")
 }
 
-func setupConfig(configPath, configName *string) {
+func readConfig(configPath, configName *string) {
 	viper.AddConfigPath(*configPath)
 	viper.SetConfigName(*configName)
 	err := viper.ReadInConfig()
@@ -30,8 +32,8 @@ func setupConfig(configPath, configName *string) {
 
 func setupLogging() {
 	log.InitLogging(
-		*Client.Development,
-		*Client.LogPath,
+		*cmd.Development,
+		*cmd.LogPath,
 		viper.GetString("logging.level"),
 	)
 }
@@ -43,4 +45,14 @@ func setupChainConfiguration() {
 		viper.GetInt("min_submit"),
 		viper.GetInt("min_confirmation"),
 	))
+}
+
+func setupBridge() {
+	Bridge.BridgeAddress = viper.GetString("bridge.BridgeAddress")
+	Bridge.Mnemonic = viper.GetString("bridge.Mnemonic")
+	Bridge.EthereumNodeURL = viper.GetString("bridge.EthereumNodeURL")
+	Bridge.Value = viper.GetInt64("bridge.Value")
+	Bridge.GasLimit = viper.GetUint64("bridge.GasLimit")
+	Bridge.WzcnAddress = viper.GetString("bridge.WzcnAddress")
+	Bridge.ChainID = viper.GetString("bridge.ChainID")
 }

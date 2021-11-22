@@ -24,7 +24,7 @@ func SetupZCNWallet() (*Wallet, error) {
 		return nil, err
 	}
 
-	file := filepath.Join(home, ".zcn", *config.Client.WalletConfig)
+	file := filepath.Join(home, ".zcn", config.GetWalletFileConfig())
 	if _, err := os.Stat(file); os.IsNotExist(err) {
 		return nil, errors.Wrap(err, "error opening the wallet "+file)
 	}
@@ -50,10 +50,10 @@ func SetupZCNWallet() (*Wallet, error) {
 	return wallet, nil
 }
 
-// SetupSDK runs zcncore.SetLogFile, zcncore.SetLogLevel and zcncore.InitZCNSDK using provided Config.
+// SetupSDK runs zcncore.SetLogFile, zcncore.SetLogLevel and zcncore.InitZCNSDK using provided ChainConfig.
 // If an error occurs during execution, the program terminates with code 2 and the error will be written in os.Stderr.
 // setupZCNSDK should be used only once while application is starting.
-func SetupSDK(cfg Config) error {
+func SetupSDK(cfg config.ChainConfig) error {
 	var logName = cfg.LogDir() + "/zsdk.log"
 	zcncore.SetLogFile(logName, false)
 	zcncore.SetLogLevel(logLevelFromStr(cfg.LogLvl()))

@@ -8,13 +8,11 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/zcnbridge/authorizer"
-
-	"github.com/spf13/viper"
+	"github.com/0chain/gosdk/zcnbridge/config"
 
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
-	"github.com/0chain/gosdk/zcnbridge/config"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
@@ -40,18 +38,14 @@ var (
 	}
 )
 
-// InitBridge Sets up the wallet and node
-// Wallet setup reads keys from keyfile and registers in the 0chain
-func InitBridge() {
-	config.Bridge.BridgeAddress = viper.GetString("bridge.BridgeAddress")
-	config.Bridge.Mnemonic = viper.GetString("bridge.Mnemonic")
-	config.Bridge.EthereumNodeURL = viper.GetString("bridge.EthereumNodeURL")
-	config.Bridge.Value = viper.GetInt64("bridge.Value")
-	config.Bridge.GasLimit = viper.GetUint64("bridge.GasLimit")
-	config.Bridge.WzcnAddress = viper.GetString("bridge.WzcnAddress")
-	config.Bridge.ChainID = viper.GetString("bridge.ChainID")
+func InitBridge(cfg *config.BridgeConfig) {
+	config.Bridge = *cfg
+}
 
-	err := wallet.SetupSDK(config.Client)
+// SetupBridge Sets up the wallet and node
+// Wallet setup reads keys from keyfile and registers in the 0chain
+func SetupBridge() {
+	err := wallet.SetupSDK(config.GetSDKConfig())
 	if err != nil {
 		log.Logger.Fatal("failed to setup ZCNSDK", zap.Error(err))
 	}
@@ -337,7 +331,7 @@ func prepareBridge(ctx context.Context, method string, params ...interface{}) (*
 	// To
 	bridgeAddress := common.HexToAddress(config.Bridge.BridgeAddress)
 
-	// Client Ethereum wallet
+	// cmd Ethereum wallet
 	ethereumWallet := node.GetEthereumWallet()
 
 	// Get ABI of the contract

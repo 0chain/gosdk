@@ -4,19 +4,19 @@ import (
 	"flag"
 
 	"github.com/0chain/gosdk/zcnbridge/chain"
-
-	"github.com/spf13/viper"
-
 	"github.com/0chain/gosdk/zcnbridge/log"
+	"github.com/spf13/viper"
 )
 
 type ClientConfig struct {
-	WalletConfig *string
-	LogPath      *string
-	ConfigFile   *string
-	ConfigDir    *string
-	Development  *bool
+	WalletFileConfig *string
+	LogPath          *string
+	ConfigFile       *string
+	ConfigDir        *string
+	Development      *bool
 }
+
+var cmd ClientConfig
 
 func (c ClientConfig) LogDir() string {
 	return *c.LogPath
@@ -34,15 +34,21 @@ func (c ClientConfig) SignatureScheme() string {
 	return chain.GetServerChain().SignatureScheme
 }
 
-var Client ClientConfig
+func GetSDKConfig() ChainConfig {
+	return cmd
+}
 
-// ParseClientConfig reads config from command line
-func ParseClientConfig() {
-	Client.Development = flag.Bool("development", true, "development mode")
-	Client.WalletConfig = flag.String("wallet_config", "wallet.json", "wallet config")
-	Client.LogPath = flag.String("log_dir", "./logs", "log folder")
-	Client.ConfigDir = flag.String("config_dir", "./config", "0chain config folder")
-	Client.ConfigFile = flag.String("config_file", "0chain", "0chain config file")
+func GetWalletFileConfig() string {
+	return *cmd.WalletFileConfig
+}
+
+// ReadClientConfigFromCmd reads config from command line
+func ReadClientConfigFromCmd() {
+	cmd.Development = flag.Bool("development", true, "development mode")
+	cmd.WalletFileConfig = flag.String("wallet_config", "wallet.json", "wallet config")
+	cmd.LogPath = flag.String("log_dir", "./logs", "log folder")
+	cmd.ConfigDir = flag.String("config_dir", "./config", "0chain config folder")
+	cmd.ConfigFile = flag.String("config_file", "0chain", "0chain config file")
 
 	flag.Parse()
 

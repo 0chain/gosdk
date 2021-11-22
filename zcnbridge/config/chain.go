@@ -1,8 +1,8 @@
-package wallet
+package config
 
 type (
-	// Config represents config interface used for setup wallet.
-	Config interface {
+	// ChainConfig represents config interface used for setup wallet.
+	ChainConfig interface {
 		// LogDir returns directory to store logs.
 		LogDir() string
 

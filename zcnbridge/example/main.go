@@ -19,8 +19,8 @@ const (
 // How should we manage nonce? - when user starts again on another server - how should we restore the value?
 
 // Prerequisites:
-// 1. Client must have enough amount of Ethereum on his wallet (any Ethereum transaction will fail)
-// 2. Client must have enough WZCN tokens in Ethereum chain.
+// 1. cmd must have enough amount of Ethereum on his wallet (any Ethereum transaction will fail)
+// 2. cmd must have enough WZCN tokens in Ethereum chain.
 
 // Order of client initialization
 
@@ -46,9 +46,9 @@ var tranHashes = []string{
 }
 
 func main() {
-	config.ParseClientConfig()
-	config.Setup()
-	zcnbridge.InitBridge()
+	config.ReadClientConfigFromCmd()
+	config.SetupBridge()
+	zcnbridge.SetupBridge()
 
 	// To test this, authorizers must be installed
 	PrintEthereumConfirmation()

@@ -17,7 +17,7 @@ func TestMain(m *testing.M) {
 
 func TestInitTestBridge(t *testing.T) {
 	//t.Run("Increase Allowance for bridge contract to transfer tokens to token pool", func(t *testing.T) {
-	//	zcnbridge.InitBridge() // TODO: Fill in the configuration
+	//	zcnbridge.SetupBridge() // TODO: Fill in the configuration
 	//
 	//	transaction, err := zcnbridge.IncreaseBurnerAllowance(10000000)
 	//
@@ -33,7 +33,7 @@ func TestInitTestBridge(t *testing.T) {
 
 func TestTransactionStatus(t *testing.T) {
 	//t.Run("BurnZCN WZCN in Ether RPC", func(t *testing.T) {
-	//	zcnbridge.InitBridge() // TODO: Fill in the configuration
+	//	zcnbridge.SetupBridge() // TODO: Fill in the configuration
 	//
 	//	transaction, err := zcnbridge.BurnWZCN(10000000)
 	//
@@ -49,7 +49,7 @@ func TestTransactionStatus(t *testing.T) {
 
 func TestBurnTicketCollection(t *testing.T) {
 	//t.Run("BurnZCN WZCN in Ether RPC", func(t *testing.T) {
-	//	zcnbridge.InitBridge()
+	//	zcnbridge.SetupBridge()
 	//
 	//	transaction, err := zcnbridge.BurnWZCN(10000000)
 	//
