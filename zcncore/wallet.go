@@ -118,7 +118,7 @@ const (
 	defaultMinConfirmation         = int(50)
 	defaultConfirmationChainLength = int(3)
 	defaultTxnExpirationSeconds    = 60
-	defaultWaitSeconds             = (3 * time.Second)
+	defaultWaitSeconds             = 3 * time.Second
 )
 
 const (
@@ -346,6 +346,13 @@ func Init(chainConfigJSON string) error {
 	return err
 }
 
+func WithEthereumNode(uri string) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.EthNode = uri
+		return nil
+	}
+}
+
 func WithChainID(id string) func(c *ChainConfig) error {
 	return func(c *ChainConfig) error {
 		c.ChainID = id
@@ -376,7 +383,6 @@ func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
 func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
-
 	if signscheme != "ed25519" && signscheme != "bls0chain" {
 		return errors.New("", "invalid/unsupported signature scheme")
 	}
@@ -438,7 +444,7 @@ func GetNetworkJSON() string {
 	return string(networkBytes)
 }
 
-// CreateWallet creates the a wallet for the configure signature scheme.
+// CreateWallet creates the wallet for to configure signature scheme.
 // It also registers the wallet again to block chain.
 func CreateWallet(statusCb WalletCallback) error {
 	if len(_config.chain.Miners) < 1 || len(_config.chain.Sharders) < 1 {
