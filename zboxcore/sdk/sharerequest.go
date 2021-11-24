@@ -23,6 +23,7 @@ type ShareRequest struct {
 	refType           string
 	ctx               context.Context
 	expirationSeconds int64
+	availableSeconds  int64
 }
 
 func (req *ShareRequest) GetFileRef() (*fileref.FileRef, error) {
@@ -57,9 +58,11 @@ func (req *ShareRequest) getAuthTicket(clientID, encPublicKey string) (*marker.A
 		FilePathHash:   fileref.GetReferenceLookup(req.allocationID, req.remotefilepath),
 		RefType:        req.refType,
 		ActualFileHash: fRef.ActualFileHash,
+		Available:      req.availableSeconds,
 	}
 
 	at.Timestamp = int64(common.Now())
+
 	if req.expirationSeconds != 0 {
 		at.Expiration = at.Timestamp + req.expirationSeconds
 	}

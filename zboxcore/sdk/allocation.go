@@ -969,7 +969,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 }
 
 func (a *Allocation) GetAuthTicketForShare(path string, filename string, referenceType string, refereeClientID string) (string, error) {
-	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "", 0)
+	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "", 0, 0)
 }
 
 func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
@@ -1035,7 +1035,7 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 	return errors.New("", "consensus not reached")
 }
 
-func (a *Allocation) GetAuthTicket(path, filename, referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration int64) (string, error) {
+func (a *Allocation) GetAuthTicket(path, filename, referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration, available int64) (string, error) {
 	if !a.isInitialized() {
 		return "", notInitialized
 	}
@@ -1058,6 +1058,7 @@ func (a *Allocation) GetAuthTicket(path, filename, referenceType, refereeClientI
 		ctx:               a.ctx,
 		remotefilepath:    path,
 		remotefilename:    filename,
+		availableSeconds:  available,
 	}
 
 	if referenceType == fileref.DIRECTORY {
@@ -1207,6 +1208,11 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	if err != nil {
 		return errors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
 	}
+
+	if common.Now() < common.Timestamp(at.Available) {
+		return errors.New("file_not_yet_available", "File will be available at: "+common.Timestamp(at.Available).ToTime().UTC().Format("2006-01-02T15:04:05"))
+	}
+
 	if stat, err := os.Stat(localPath); err == nil {
 		if !stat.IsDir() {
 			return fmt.Errorf("Local path is not a directory '%s'", localPath)
