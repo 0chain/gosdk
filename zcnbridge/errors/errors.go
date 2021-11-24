@@ -18,8 +18,8 @@ type (
 )
 
 type (
-	// wrapper implements error wrapper interface.
-	errWrapper struct {
+	// ErrWrapper implements error wrapper interface.
+	ErrWrapper struct {
 		code string
 		text string
 		wrap error
@@ -27,17 +27,17 @@ type (
 )
 
 // Error implements error interface.
-func (e *errWrapper) Error() string {
+func (e *ErrWrapper) Error() string {
 	return e.code + delim + e.text
 }
 
 // Unwrap implements error unwrap interface.
-func (e *errWrapper) Unwrap() error {
+func (e *ErrWrapper) Unwrap() error {
 	return e.wrap
 }
 
 // Wrap implements error wrapper interface.
-func (e *errWrapper) Wrap(err error) *errWrapper {
+func (e *ErrWrapper) Wrap(err error) *ErrWrapper {
 	return Wrap(e.code, e.text, err)
 }
 
@@ -74,13 +74,13 @@ func Is(err, target error) bool {
 }
 
 // New returns constructed error wrapper interface.
-func New(code, text string) *errWrapper {
-	return &errWrapper{code: code, text: text}
+func New(code, text string) *ErrWrapper {
+	return &ErrWrapper{code: code, text: text}
 }
 
 // Wrap wraps given error into a new error with format.
-func Wrap(code, text string, err error) *errWrapper {
-	wrapper := &errWrapper{code: code, text: text}
+func Wrap(code, text string, err error) *ErrWrapper {
+	wrapper := &ErrWrapper{code: code, text: text}
 	if err != nil && !errors.Is(wrapper, err) {
 		wrapper.wrap = err
 		wrapper.text += delim + err.Error()

@@ -1,4 +1,4 @@
-package authorizer
+package zcnbridge
 
 import (
 	"encoding/json"
@@ -69,8 +69,8 @@ func (r *WZCNBurnEvent) GetAuthorizerID() string {
 	return r.AuthorizerID
 }
 
-func (r *WZCNBurnEvent) SetAuthorizerID(ID string) {
-	r.AuthorizerID = ID
+func (r *WZCNBurnEvent) SetAuthorizerID(id string) {
+	r.AuthorizerID = id
 }
 
 func (r *WZCNBurnEvent) Error() error {
@@ -85,8 +85,8 @@ func (r *ProofZCNBurn) GetAuthorizerID() string {
 	return r.AuthorizerID
 }
 
-func (r *ProofZCNBurn) SetAuthorizerID(ID string) {
-	r.AuthorizerID = ID
+func (r *ProofZCNBurn) SetAuthorizerID(id string) {
+	r.AuthorizerID = id
 }
 
 func (r *ProofZCNBurn) Error() error {

@@ -6,8 +6,9 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/zcnbridge"
-	"github.com/0chain/gosdk/zcnbridge/authorizer"
+
 	"github.com/0chain/gosdk/zcnbridge/config"
+
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"go.uber.org/zap"
 )
@@ -46,17 +47,17 @@ var tranHashes = []string{
 }
 
 func main() {
-	config.ReadClientConfigFromCmd()
-	config.SetupBridge()
-	zcnbridge.SetupBridge()
+	cfg := zcnbridge.ReadClientConfigFromCmd()
+
+	var bridge = config.SetupBridge(*cfg.ConfigDir, *cfg.ConfigFile, *cfg.Development, cfg.LogDir())
+	bridge.SetupWallets(cfg)
 
 	// To test this, authorizers must be installed
 	PrintEthereumConfirmation()
 	PrintAuthorizers()
-	PrintEthereumBurnTicketsPayloads()
-
-	fromERCtoZCN()
-	fromZCNtoERC()
+	PrintEthereumBurnTicketsPayloads(bridge)
+	fromERCtoZCN(bridge)
+	fromZCNtoERC(bridge)
 }
 
 func PrintEthereumConfirmation() {
@@ -70,9 +71,9 @@ func PrintEthereumConfirmation() {
 	}
 }
 
-func PrintEthereumBurnTicketsPayloads() {
+func PrintEthereumBurnTicketsPayloads(b *zcnbridge.Bridge) {
 	for _, hash := range tranHashes {
-		payload, err := zcnbridge.QueryZChainMintPayload(hash)
+		payload, err := b.QueryZChainMintPayload(hash)
 		if err != nil {
 			fmt.Println(err)
 			continue
@@ -82,27 +83,27 @@ func PrintEthereumBurnTicketsPayloads() {
 }
 
 func PrintAuthorizers() {
-	authorizers, err := authorizer.GetAuthorizers()
+	authorizers, err := zcnbridge.GetAuthorizers()
 	if err != nil {
 		fmt.Print(err)
 	}
 	fmt.Println(authorizers)
 }
 
-func fromZCNtoERC() {
-	burnTrx, err := zcnbridge.BurnZCN(context.TODO(), config.Bridge.Value)
+func fromZCNtoERC(b *zcnbridge.Bridge) {
+	burnTrx, err := b.BurnZCN(context.TODO())
 	burnTrxHash := burnTrx.Hash
 	if err != nil {
 		log.Logger.Fatal("failed to burn in ZCN", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
 	// ASK authorizers for burn tickets to mint in Ethereum
-	mintPayload, err := zcnbridge.QueryEthereumMintPayload(burnTrxHash)
+	mintPayload, err := b.QueryEthereumMintPayload(burnTrxHash)
 	if err != nil {
 		log.Logger.Fatal("failed to verify burn transactions in ZCN in QueryEthereumMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
-	tran, err := zcnbridge.MintWZCN(context.Background(), ConvertAmountWei, mintPayload)
+	tran, err := b.MintWZCN(context.Background(), ConvertAmountWei, mintPayload)
 	tranHash := tran.Hash().Hex()
 	if err != nil {
 		log.Logger.Fatal("failed to execute MintWZCN", zap.Error(err), zap.String("hash", tranHash))
@@ -124,9 +125,9 @@ func fromZCNtoERC() {
 	}
 }
 
-func fromERCtoZCN() {
+func fromERCtoZCN(b *zcnbridge.Bridge) {
 	// Example: https://ropsten.etherscan.io/tx/0xa28266fb44cfc2aa27b26bd94e268e40d065a05b1a8e6339865f826557ff9f0e
-	transaction, err := zcnbridge.IncreaseBurnerAllowance(context.Background(), ConvertAmountWei)
+	transaction, err := b.IncreaseBurnerAllowance(context.Background(), ConvertAmountWei)
 	if err != nil {
 		log.Logger.Fatal("failed to execute IncreaseBurnerAllowance", zap.Error(err))
 	}
@@ -144,7 +145,7 @@ func fromERCtoZCN() {
 		log.Logger.Fatal("failed to confirm transaction", zap.String("hash", transaction.Hash().Hex()))
 	}
 
-	burnTrx, err := zcnbridge.BurnWZCN(context.Background(), ConvertAmountWei)
+	burnTrx, err := b.BurnWZCN(context.Background(), ConvertAmountWei)
 	burnTrxHash := burnTrx.Hash().Hex()
 	if err != nil {
 		log.Logger.Fatal("failed to execute BurnWZCN in wrapped chain", zap.Error(err), zap.String("hash", burnTrxHash))
@@ -163,12 +164,12 @@ func fromERCtoZCN() {
 	}
 
 	// ASK authorizers for burn tickets to mint in WZCN
-	mintPayload, err := zcnbridge.QueryZChainMintPayload(burnTrxHash)
+	mintPayload, err := b.QueryZChainMintPayload(burnTrxHash)
 	if err != nil {
 		log.Logger.Fatal("failed to QueryZChainMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
-	trx, err := zcnbridge.MintZCN(context.TODO(), mintPayload)
+	trx, err := b.MintZCN(context.TODO(), mintPayload)
 	if err != nil {
 		log.Logger.Fatal("failed to MintZCN", zap.Error(err), zap.String("hash", trx.Hash))
 	}

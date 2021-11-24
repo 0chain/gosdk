@@ -46,7 +46,7 @@ func Test_errWrapper_Unwrap(t *testing.T) {
 
 	tests := [1]struct {
 		name    string
-		wrapper *errWrapper
+		wrapper *ErrWrapper
 		want    error
 	}{
 		{
@@ -76,14 +76,14 @@ func Test_errWrapper_Wrap(t *testing.T) {
 	tests := [1]struct {
 		name    string
 		error   error
-		wrapper *errWrapper
-		want    *errWrapper
+		wrapper *ErrWrapper
+		want    *ErrWrapper
 	}{
 		{
 			name:    "OK",
 			error:   New(testCode, testText),
 			wrapper: New(wrapCode, wrapText),
-			want:    &errWrapper{code: wrapCode, text: wrapText + delim + err.Error(), wrap: err},
+			want:    &ErrWrapper{code: wrapCode, text: wrapText + delim + err.Error(), wrap: err},
 		},
 	}
 
@@ -182,13 +182,13 @@ func Test_errNew(t *testing.T) {
 		name string
 		code string
 		text string
-		want *errWrapper
+		want *ErrWrapper
 	}{
 		{
 			name: "Equal",
 			code: testCode,
 			text: testText,
-			want: &errWrapper{code: testCode, text: testText},
+			want: &ErrWrapper{code: testCode, text: testText},
 		},
 	}
 

@@ -1,4 +1,4 @@
-package authorizer
+package zcnbridge
 
 import (
 	"encoding/json"
@@ -10,18 +10,14 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/0chain/gosdk/zcnbridge/ethereum"
-
-	"github.com/0chain/gosdk/zcnbridge/zcnsc"
-
-	"github.com/0chain/gosdk/zcnbridge/log"
-	"go.uber.org/zap"
-
 	"github.com/0chain/gosdk/zcnbridge/errors"
-	bridge "github.com/0chain/gosdk/zcnbridge/http"
-	"github.com/0chain/gosdk/zcnbridge/node"
+	"github.com/0chain/gosdk/zcnbridge/ethereum"
+	h "github.com/0chain/gosdk/zcnbridge/http"
+	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
+	"github.com/0chain/gosdk/zcnbridge/zcnsc"
 	"github.com/hashicorp/go-retryablehttp"
+	"go.uber.org/zap"
 )
 
 type (
@@ -51,8 +47,8 @@ var (
 
 // QueryEthereumMintPayload gets burn ticket and creates mint payload to be minted in the Ethereum chain
 // zchainBurnHash - Ethereum burn transaction hash
-func QueryEthereumMintPayload(zchainBurnHash string) (*ethereum.MintPayload, error) {
-	client = bridge.NewRetryableClient()
+func (b *Bridge) QueryEthereumMintPayload(zchainBurnHash string) (*ethereum.MintPayload, error) {
+	client = h.NewRetryableClient()
 	authorizers, err := GetAuthorizers()
 
 	if err != nil || len(authorizers.NodeMap) == 0 {
@@ -76,11 +72,12 @@ func QueryEthereumMintPayload(zchainBurnHash string) (*ethereum.MintPayload, err
 		},
 	}
 
+	thresh := float64(b.ConsensusThreshold)
 	results := queryAllAuthorizers(authorizers, handler)
 	numSuccess := len(results)
 	quorum := math.Ceil((float64(numSuccess) * 100) / float64(totalWorkers))
 
-	if numSuccess > 0 && quorum >= wallet.ConsensusThresh && len(results) > 1 {
+	if numSuccess > 0 && quorum >= thresh && len(results) > 1 {
 		burnTicket, ok := results[0].(*ProofZCNBurn)
 		if !ok {
 			return nil, errors.Wrap("type_cast", "failed to convert to *proofEthereumBurn", err)
@@ -112,8 +109,8 @@ func QueryEthereumMintPayload(zchainBurnHash string) (*ethereum.MintPayload, err
 
 // QueryZChainMintPayload gets burn ticket and creates mint payload to be minted in the ZChain
 // ethBurnHash - Ethereum burn transaction hash
-func QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPayload, error) {
-	client = bridge.NewRetryableClient()
+func (b *Bridge) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPayload, error) {
+	client = h.NewRetryableClient()
 	authorizers, err := GetAuthorizers()
 
 	if err != nil || len(authorizers.NodeMap) == 0 {
@@ -125,7 +122,7 @@ func QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPayload, error) {
 		values       = u.Values{
 			"eth_burn_hash": []string{ethBurnHash},
 			"address":       []string{wallet.ZCNSCSmartContractAddress},
-			"clientid":      []string{node.ID()},
+			"clientid":      []string{b.ID()},
 		}
 	)
 
@@ -139,11 +136,12 @@ func QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPayload, error) {
 		},
 	}
 
+	thresh := float64(b.ConsensusThreshold)
 	results := queryAllAuthorizers(authorizers, handler)
 	numSuccess := len(results)
 	quorum := math.Ceil((float64(numSuccess) * 100) / float64(totalWorkers))
 
-	if numSuccess > 0 && quorum >= wallet.ConsensusThresh && len(results) > 1 {
+	if numSuccess > 0 && quorum >= thresh && len(results) > 1 {
 		burnTicket, ok := results[0].Data().(*ProofEthereumBurn)
 		if !ok {
 			return nil, errors.Wrap("type_cast", "failed to convert to *proofEthereumBurn", err)
@@ -174,7 +172,7 @@ func QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPayload, error) {
 	return nil, errors.New("get_burn_ticket", text)
 }
 
-func queryAllAuthorizers(authorizers *Nodes, handler *requestHandler) []JobResult {
+func queryAllAuthorizers(authorizers *AuthorizerNodes, handler *requestHandler) []JobResult {
 	var (
 		totalWorkers    = len(authorizers.NodeMap)
 		eventsChannel   = make(eventsChannelType)
@@ -209,9 +207,9 @@ func handleResponse(responseChannel responseChannelType, eventsChannel eventsCha
 	eventsChannel <- events
 }
 
-func queryAuthoriser(node *Node, request *requestHandler, responseChannel responseChannelType) {
+func queryAuthoriser(au *AuthorizerNode, request *requestHandler, responseChannel responseChannelType) {
 	var (
-		ticketURL = strings.TrimSuffix(node.URL, "/") + request.path
+		ticketURL = strings.TrimSuffix(au.URL, "/") + request.path
 	)
 
 	job, body := processResponse(client.PostForm(ticketURL, request.values))
@@ -219,8 +217,8 @@ func queryAuthoriser(node *Node, request *requestHandler, responseChannel respon
 		log.Logger.Error(
 			"failed to process response",
 			zap.Error(job.error),
-			zap.String("node.id", node.ID),
-			zap.String("node.url", node.URL),
+			zap.String("node.id", au.ID),
+			zap.String("node.url", au.URL),
 		)
 		return
 	}
@@ -231,13 +229,13 @@ func queryAuthoriser(node *Node, request *requestHandler, responseChannel respon
 		log.Logger.Error(
 			"failed to decode event body",
 			zap.Error(err),
-			zap.String("node.id", node.ID),
-			zap.String("node.url", node.URL),
+			zap.String("node.id", au.ID),
+			zap.String("node.url", au.URL),
 		)
 		return
 	}
 
-	job.AuthorizerID = node.ID
+	job.AuthorizerID = au.ID
 	job.event = event
 	responseChannel <- job
 }

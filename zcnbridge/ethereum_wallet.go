@@ -1,4 +1,4 @@
-package ethereum
+package zcnbridge
 
 import (
 	"context"
@@ -6,32 +6,42 @@ import (
 	"encoding/json"
 	"math/big"
 
-	"github.com/0chain/gosdk/zcnbridge/config"
-
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/pkg/errors"
+
+	"github.com/ethereum/go-ethereum/common"
 )
-
-// Required config
-// 1. For SC REST we need only miners address, will take it from network - init from config
-// 2. For SC method we need to run local chain to run minting and burning
-// 3. For Ethereum, we will take params from
-
-//  _allowances[owner][spender] = amount;
-// as a spender, ERC20 WZCN token must increase allowance for the bridge to make burn on behalf of WZCN owner
 
 type EthWalletInfo struct {
 	ID         string `json:"ID"`
 	PrivateKey string `json:"PrivateKey"`
 }
 
-func GetEthereumWalletInfo() (*EthWalletInfo, error) {
-	ownerWallet, err := zcncore.GetWalletAddrFromEthMnemonic(config.Bridge.Mnemonic)
+type EthereumWallet struct {
+	PublicKey  *ecdsa.PublicKey
+	PrivateKey *ecdsa.PrivateKey
+	Address    common.Address
+}
+
+func (b *Bridge) SetupEthereumWallet() (*EthereumWallet, error) {
+	address, publicKey, privateKey, err := b.GetKeysAddress()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to initialize ethereum wallet")
+	}
+
+	return &EthereumWallet{
+		PublicKey:  publicKey,
+		PrivateKey: privateKey,
+		Address:    address,
+	}, nil
+}
+
+func (b *Bridge) GetEthereumWalletInfo() (*EthWalletInfo, error) {
+	ownerWallet, err := zcncore.GetWalletAddrFromEthMnemonic(b.Mnemonic)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize wallet from mnemonic")
 	}
@@ -45,16 +55,16 @@ func GetEthereumWalletInfo() (*EthWalletInfo, error) {
 	return wallet, err
 }
 
-func CreateEthClient() (*ethclient.Client, error) {
-	client, err := ethclient.Dial(config.Bridge.EthereumNodeURL)
+func (b *Bridge) CreateEthClient() (*ethclient.Client, error) {
+	client, err := ethclient.Dial(b.EthereumNodeURL)
 	if err != nil {
 		zcncore.Logger.Error(err)
 	}
 	return client, err
 }
 
-func GetKeysAddress() (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, error) {
-	ownerWalletInfo, err := GetEthereumWalletInfo()
+func (b *Bridge) GetKeysAddress() (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, error) {
+	ownerWalletInfo, err := b.GetEthereumWalletInfo()
 	if err != nil {
 		return [20]byte{}, nil, nil, errors.Wrap(err, "failed to fetch wallet ownerWalletInfo")
 	}
@@ -75,7 +85,15 @@ func GetKeysAddress() (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, erro
 	return ownerAddress, publicKeyECDSA, privateKeyECDSA, nil
 }
 
-func CreateSignedTransaction(
+// Required config
+// 1. For SC REST we need only miners address, will take it from network - init from config
+// 2. For SC method we need to run local chain to run minting and burning
+// 3. For Ethereum, we will take params from
+
+//  _allowances[owner][spender] = amount;
+// as a spender, ERC20 WZCN token must increase allowance for the bridge to make burn on behalf of WZCN owner
+
+func (b *Bridge) CreateSignedTransaction(
 	chainID *big.Int,
 	client *ethclient.Client,
 	fromAddress common.Address,
@@ -107,7 +125,7 @@ func CreateSignedTransaction(
 		zcncore.Logger.Fatal(err)
 	}
 
-	valueWei := new(big.Int).Mul(big.NewInt(config.Bridge.Value), big.NewInt(params.Wei))
+	valueWei := new(big.Int).Mul(big.NewInt(b.Value), big.NewInt(params.Wei))
 
 	auth.Nonce = big.NewInt(int64(nonce))
 	auth.Value = valueWei         // in wei

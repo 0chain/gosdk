@@ -13,14 +13,10 @@ import (
 
 const (
 	ZCNSCSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712e0"
-	AddAuthorizerFunc         = "AddAuthorizer"
-	DeleteAuthorizerFunc      = "DeleteAuthorizer"
 	MintFunc                  = "mint"
 	BurnFunc                  = "burn"
-	// ConsensusThresh quorum required to reach consensus
-	ConsensusThresh      = float64(70.0)
-	BurnWzcnTicketPath   = "/v1/ether/burnticket/get"
-	BurnNativeTicketPath = "/v1/0chain/burnticket/get"
+	BurnWzcnTicketPath        = "/v1/ether/burnticket/get"
+	BurnNativeTicketPath      = "/v1/0chain/burnticket/get"
 )
 
 type (
@@ -41,6 +37,7 @@ func AssignWallet(clientConfig string) (*Wallet, error) {
 }
 
 // CreateWallet creates initialized Wallet.
+//goland:noinspection GoUnusedExportedFunction
 func CreateWallet(publicKey, privateKey []byte) *Wallet {
 	var (
 		publicKeyHex, privateKeyHex = hex.EncodeToString(publicKey), hex.EncodeToString(privateKey)

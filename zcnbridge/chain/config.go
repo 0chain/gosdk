@@ -1,8 +1,8 @@
-package config
+package chain
 
 type (
-	// ChainConfig represents config interface used for setup wallet.
-	ChainConfig interface {
+	// Config represents config interface used for setup wallet.
+	Config interface {
 		// LogDir returns directory to store logs.
 		LogDir() string
 
@@ -14,5 +14,8 @@ type (
 
 		// SignatureScheme returns signature scheme.
 		SignatureScheme() string
+
+		// WalletFile is ZChain wallet config file
+		WalletFile() string
 	}
 )

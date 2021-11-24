@@ -1,5 +1,3 @@
-version: 1.0
-
 logging:
     level: "debug"
 
@@ -24,3 +22,4 @@ bridge:
     ChainID: "3"
     # Value to execute ZCN smart contracts in wei
     Value: 0
+    ConsensusThreshold: 70.0

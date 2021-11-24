@@ -1,19 +1,46 @@
-package wallet
+package zcnbridge
 
 import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
-	"github.com/0chain/gosdk/zcnbridge/chain"
+	"github.com/0chain/gosdk/core/common"
+
+	"github.com/0chain/gosdk/core/logger"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/zcnbridge/config"
+	"github.com/0chain/gosdk/zcnbridge/chain"
+	"github.com/0chain/gosdk/zcnbridge/log"
+	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcncore"
+	"go.uber.org/zap"
 )
 
-func SetupZCNWallet() (*Wallet, error) {
+// SetupWallets Sets up the wallet and node
+// Wallet setup reads keys from keyfile and registers in the 0chain
+func (b *Bridge) SetupWallets(cfg chain.Config) {
+	err := b.SetupSDK(cfg)
+	if err != nil {
+		log.Logger.Fatal("failed to setup ZCNSDK", zap.Error(err))
+	}
+
+	walletConfig, err := SetupZCNWallet(cfg)
+	if err != nil {
+		log.Logger.Fatal("failed to setup wallet", zap.Error(err))
+	}
+
+	ethWalletConfig, err := b.SetupEthereumWallet()
+	if err != nil {
+		log.Logger.Fatal("failed to setup ethereum wallet", zap.Error(err))
+	}
+
+	b.Instance.startTime = common.Now()
+	b.Instance.wallet = walletConfig
+	b.Instance.ethereumWallet = ethWalletConfig
+}
+
+func SetupZCNWallet(cfg chain.Config) (*wallet.Wallet, error) {
 	var (
 		err  error
 		home string
@@ -24,7 +51,7 @@ func SetupZCNWallet() (*Wallet, error) {
 		return nil, err
 	}
 
-	file := filepath.Join(home, ".zcn", config.GetWalletFileConfig())
+	file := filepath.Join(home, ".zcn", cfg.WalletFile())
 	if _, err := os.Stat(file); os.IsNotExist(err) {
 		return nil, errors.Wrap(err, "error opening the wallet "+file)
 	}
@@ -37,23 +64,23 @@ func SetupZCNWallet() (*Wallet, error) {
 
 	clientConfig := string(clientBytes)
 
-	wallet, err := AssignWallet(clientConfig)
+	w, err := wallet.AssignWallet(clientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to assign the wallet")
 	}
 
-	err = wallet.RegisterToMiners()
+	err = w.RegisterToMiners()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to register to miners")
 	}
 
-	return wallet, nil
+	return w, nil
 }
 
-// SetupSDK runs zcncore.SetLogFile, zcncore.SetLogLevel and zcncore.InitZCNSDK using provided ChainConfig.
+// SetupSDK runs zcncore.SetLogFile, zcncore.SetLogLevel and zcncore.InitZCNSDK using provided Config.
 // If an error occurs during execution, the program terminates with code 2 and the error will be written in os.Stderr.
 // setupZCNSDK should be used only once while application is starting.
-func SetupSDK(cfg config.ChainConfig) error {
+func (b *Bridge) SetupSDK(cfg chain.Config) error {
 	var logName = cfg.LogDir() + "/zsdk.log"
 	zcncore.SetLogFile(logName, false)
 	zcncore.SetLogLevel(logLevelFromStr(cfg.LogLvl()))
@@ -64,7 +91,7 @@ func SetupSDK(cfg config.ChainConfig) error {
 		zcncore.WithChainID(serverChain.ID),
 		zcncore.WithMinSubmit(serverChain.MinSubmit),
 		zcncore.WithMinConfirmation(serverChain.MinCfm),
-		zcncore.WithEthereumNode(config.Bridge.EthereumNodeURL),
+		zcncore.WithEthereumNode(b.EthereumNodeURL),
 	)
 
 	return err
