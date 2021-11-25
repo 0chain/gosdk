@@ -23,8 +23,8 @@ func NewSignatureScheme(sigScheme string) SignatureScheme {
 	}
 }
 
-// UnmarshalThresholdSignatureSchemes unmarshal ThresholdSignatureScheme from json string
-func UnmarshalThresholdSignatureSchemes(sigScheme string, obj interface{}) ([]ThresholdSignatureScheme, error) {
+// UnmarshalSignatureSchemes unmarshal SignatureScheme from json string
+func UnmarshalSignatureSchemes(sigScheme string, obj interface{}) ([]SignatureScheme, error) {
 	switch sigScheme {
 
 	case "bls0chain":
@@ -38,13 +38,13 @@ func UnmarshalThresholdSignatureSchemes(sigScheme string, obj interface{}) ([]Th
 			return nil, err
 		}
 
-		var list []*WasmThresholdScheme
+		var list []*WasmScheme
 
 		if err := json.Unmarshal(buf, &list); err != nil {
 			return nil, err
 		}
 
-		ss := make([]ThresholdSignatureScheme, len(list))
+		ss := make([]SignatureScheme, len(list))
 
 		for i, v := range list {
 			// bls.ID from json
@@ -60,7 +60,7 @@ func UnmarshalThresholdSignatureSchemes(sigScheme string, obj interface{}) ([]Th
 }
 
 //GenerateThresholdKeyShares given a signature scheme will generate threshold sig keys
-func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]ThresholdSignatureScheme, error) {
+func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]SignatureScheme, error) {
 
 	b0ss, ok := originalKey.(*WasmScheme)
 	if !ok {
@@ -75,7 +75,7 @@ func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]Thresh
 	b0original := bls.SecretKey_fromBytes(b0PrivateKeyBytes)
 	polynomial := b0original.GetMasterSecretKey(t)
 
-	var shares []ThresholdSignatureScheme
+	var shares []SignatureScheme
 	for i := 1; i <= n; i++ {
 		var id bls.ID
 		err = id.SetHexString(fmt.Sprintf("%x", i))
@@ -89,7 +89,7 @@ func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]Thresh
 			return nil, err
 		}
 
-		share := &WasmThresholdScheme{}
+		share := &WasmScheme{}
 		share.PrivateKey = sk.SerializeToHexStr()
 		share.PublicKey = sk.GetPublicKey().SerializeToHexStr()
 

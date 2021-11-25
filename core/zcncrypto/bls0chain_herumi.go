@@ -24,11 +24,16 @@ type HerumiScheme struct {
 	PublicKey  string `json:"public_key"`
 	PrivateKey string `json:"private_key"`
 	Mnemonic   string `json:"mnemonic"`
+
+	id  ID
+	Ids string `json:"threshold_scheme_id"`
 }
 
 //NewHerumiScheme - create a MiraclScheme object
 func NewHerumiScheme() *HerumiScheme {
-	return &HerumiScheme{}
+	return &HerumiScheme{
+		id: blsInstance.NewID(),
+	}
 }
 
 // GenerateKeys  generate fresh keys
@@ -222,6 +227,23 @@ func (b0 *HerumiScheme) GetPrivateKeyAsByteArray() ([]byte, error) {
 		return nil, err
 	}
 	return privateKeyBytes, nil
+}
+
+//SetID sets ID in HexString format
+func (b0 *HerumiScheme) SetID(id string) error {
+	if b0.id == nil {
+		b0.id = blsInstance.NewID()
+	}
+	b0.Ids = id
+	return b0.id.SetHexString(id)
+}
+
+//GetID gets ID in hex string format
+func (b0 *HerumiScheme) GetID() string {
+	if b0.id == nil {
+		b0.id = blsInstance.NewID()
+	}
+	return b0.id.GetHexString()
 }
 
 func (b0 *HerumiScheme) generateKeys(password string) (*Wallet, error) {
