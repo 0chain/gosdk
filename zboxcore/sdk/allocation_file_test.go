@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -48,7 +49,7 @@ func TestAllocation_UpdateFile(t *testing.T) {
 		})
 	}
 	a.uploadChan = make(chan *UploadRequest, 4)
-	err := a.UpdateFile(mockLocalPath, "/", fileref.Attributes{}, nil)
+	err := a.UpdateFile(os.TempDir(), mockLocalPath, "/", fileref.Attributes{}, nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -72,7 +73,7 @@ func TestAllocation_UploadFile(t *testing.T) {
 			Baseurl: server.URL,
 		})
 	}
-	err := a.UploadFile(mockLocalPath, "/", fileref.Attributes{}, nil)
+	err := a.UploadFile(os.TempDir(), mockLocalPath, "/", fileref.Attributes{}, nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -132,7 +133,7 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 					Baseurl: server.URL,
 				})
 			}
-			err := a.UpdateFileWithThumbnail(tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.thumbnailPath, fileref.Attributes{}, tt.parameters.status)
+			err := a.UpdateFileWithThumbnail(os.TempDir(), tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.thumbnailPath, fileref.Attributes{}, tt.parameters.status)
 			if tt.wantErr {
 				require.Errorf(err, "expected error != nil")
 				return
