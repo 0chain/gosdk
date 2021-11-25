@@ -4,6 +4,7 @@
 package zcncrypto
 
 import (
+	"errors"
 	"io"
 
 	"github.com/herumi/bls-go-binary/bls"
@@ -39,6 +40,12 @@ func (b *herumiBls) NewSignature() Signature {
 	}
 
 	return sg
+}
+
+func (b *herumiBls) NewID() ID {
+	id := &herumiID{}
+
+	return id
 }
 
 func (b *herumiBls) SetRandFunc(randReader io.Reader) {
@@ -111,6 +118,37 @@ func (sk *herumiSecretKey) Sign(m string) Signature {
 	}
 }
 
+func (sk *herumiSecretKey) GetMasterSecretKey(k int) []SecretKey {
+	list := sk.SecretKey.GetMasterSecretKey(k)
+
+	msk := make([]SecretKey, len(list))
+
+	for i, it := range list {
+		msk[i] = &herumiSecretKey{SecretKey: it}
+
+	}
+
+	return msk
+}
+
+func (sk *herumiSecretKey) Set(msk []SecretKey, id ID) error {
+
+	blsMsk := make([]bls.SecretKey, len(msk))
+
+	for i, it := range msk {
+		k, ok := it.(*herumiSecretKey)
+		if !ok {
+			return errors.New("invalid herumi secret key")
+		}
+
+		blsMsk[i] = k.SecretKey
+	}
+
+	blsID, _ := id.(*herumiID)
+
+	return sk.SecretKey.Set(blsMsk, &blsID.ID)
+}
+
 type herumiPublicKey struct {
 	*bls.PublicKey
 }
@@ -150,4 +188,19 @@ func (sg *herumiSignature) Verify(pk PublicKey, m string) bool {
 	pub, _ := pk.(*herumiPublicKey)
 
 	return sg.Sign.Verify(pub.PublicKey, m)
+}
+
+type herumiID struct {
+	bls.ID
+}
+
+func (id *herumiID) SetHexString(s string) error {
+	return id.ID.SetHexString(s)
+}
+func (id *herumiID) GetHexString() string {
+	return id.ID.GetHexString()
+}
+
+func (id *herumiID) SetDecString(s string) error {
+	return id.ID.SetDecString(s)
 }

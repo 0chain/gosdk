@@ -12,6 +12,7 @@ type BlsInstance interface {
 	NewSecretKey() SecretKey
 	NewPublicKey() PublicKey
 	NewSignature() Signature
+	NewID() ID
 }
 
 // Fr --
@@ -36,6 +37,9 @@ type SecretKey interface {
 
 	Sign(m string) Signature
 	Add(rhs SecretKey)
+
+	GetMasterSecretKey(k int) (msk []SecretKey)
+	Set(msk []SecretKey, id ID) error
 }
 
 type PublicKey interface {
@@ -52,4 +56,11 @@ type Signature interface {
 	Add(rhs Signature)
 
 	Verify(pk PublicKey, m string) bool
+}
+
+type ID interface {
+	SetHexString(s string) error
+	GetHexString() string
+
+	SetDecString(s string) error
 }

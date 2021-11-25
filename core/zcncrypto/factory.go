@@ -1,3 +1,4 @@
+//go:build !js && !wasm
 // +build !js,!wasm
 
 package zcncrypto
@@ -8,7 +9,6 @@ import (
 	"fmt"
 
 	"github.com/0chain/errors"
-	"github.com/herumi/bls-go-binary/bls"
 )
 
 // NewSignatureScheme creates an instance for using signature functions
@@ -67,7 +67,7 @@ func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]Thresh
 		return nil, errors.New("bls0_generate_threshold_key_shares", "Invalid encryption scheme")
 	}
 
-	var b0original bls.SecretKey
+	b0original := blsInstance.NewSecretKey()
 	b0PrivateKeyBytes, err := b0ss.GetPrivateKeyAsByteArray()
 	if err != nil {
 		return nil, err
@@ -82,14 +82,14 @@ func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]Thresh
 
 	var shares []ThresholdSignatureScheme
 	for i := 1; i <= n; i++ {
-		var id bls.ID
+		id := blsInstance.NewID()
 		err = id.SetDecString(fmt.Sprint(i))
 		if err != nil {
 			return nil, err
 		}
 
-		var sk bls.SecretKey
-		err = sk.Set(polynomial, &id)
+		sk := blsInstance.NewSecretKey()
+		err = sk.Set(polynomial, id)
 		if err != nil {
 			return nil, err
 		}
