@@ -288,7 +288,7 @@ func SetLogFile(logFile string, verbose bool) {
 		return
 	}
 	Logger.SetLogFile(f, verbose)
-	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " *******")
+	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (SetLogFile)")
 }
 
 func GetLogger() *logger.Logger {
@@ -342,7 +342,7 @@ func Init(chainConfigJSON string) error {
 
 		conf.InitClientConfig(cfg)
 	}
-	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
+	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (Init)")
 	return err
 }
 
@@ -405,7 +405,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 	}
 	assertConfig()
 	_config.isConfigured = true
-	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
+	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (InitZCNSDK)")
 
 	cfg := &conf.Config{
 		BlockWorker:             _config.chain.BlockWorker,

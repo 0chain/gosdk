@@ -111,7 +111,7 @@ func fromZCNtoERC(b *zcnbridge.Bridge) {
 
 	// ASK for minting events from bridge contract but this is not necessary as we're going to check it by hash
 
-	res, err := zcnbridge.ConfirmEthereumTransaction(tranHash, 60, 2)
+	res, err := zcnbridge.ConfirmEthereumTransaction(tranHash, 60, time.Second)
 	if err != nil {
 		log.Logger.Fatal(
 			"failed to confirm transaction ConfirmEthereumTransaction",
@@ -133,7 +133,7 @@ func fromERCtoZCN(b *zcnbridge.Bridge) {
 	}
 
 	hash := transaction.Hash().Hex()
-	res, err := zcnbridge.ConfirmEthereumTransaction(hash, 60, 2)
+	res, err := zcnbridge.ConfirmEthereumTransaction(hash, 60, time.Second)
 	if err != nil {
 		log.Logger.Fatal(
 			"failed to confirm transaction ConfirmEthereumTransaction",
@@ -151,7 +151,7 @@ func fromERCtoZCN(b *zcnbridge.Bridge) {
 		log.Logger.Fatal("failed to execute BurnWZCN in wrapped chain", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
-	res, err = zcnbridge.ConfirmEthereumTransaction(burnTrxHash, 60, 2)
+	res, err = zcnbridge.ConfirmEthereumTransaction(burnTrxHash, 60, time.Second)
 	if err != nil {
 		log.Logger.Fatal(
 			"failed to confirm transaction ConfirmEthereumTransaction",
