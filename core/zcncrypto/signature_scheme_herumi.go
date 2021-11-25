@@ -1,3 +1,4 @@
+//go:build !js && !wasm
 // +build !js,!wasm
 
 package zcncrypto
@@ -9,17 +10,13 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
-	"github.com/herumi/bls-go-binary/bls"
 	"github.com/tyler-smith/go-bip39"
 
 	"github.com/0chain/gosdk/core/encryption"
 )
 
 func init() {
-	err := bls.Init(bls.CurveFp254BNb)
-	if err != nil {
-		panic(err)
-	}
+
 }
 
 //HerumiScheme - a signature scheme for BLS0Chain Signature
@@ -95,33 +92,47 @@ func (b0 *HerumiScheme) SplitKeys(numSplits int) (*Wallet, error) {
 	if b0.PrivateKey == "" {
 		return nil, errors.New("split_keys", "primary private key not found")
 	}
-	var primaryFr bls.Fr
-	var primarySk bls.SecretKey
-	primarySk.DeserializeHexStr(b0.PrivateKey)
-	primaryFr.SetLittleEndian(primarySk.GetLittleEndian())
+	primaryFr := blsInstance.NewFr()
+	primarySk := blsInstance.NewSecretKey()
+	err := primarySk.DeserializeHexStr(b0.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	err = primaryFr.SetLittleEndian(primarySk.GetLittleEndian())
+
+	if err != nil {
+		return nil, err
+	}
 
 	// New Wallet
 	w := &Wallet{}
 	w.Keys = make([]KeyPair, numSplits)
-	var sk bls.SecretKey
+	sk := blsInstance.NewSecretKey()
 	for i := 0; i < numSplits-1; i++ {
-		var tmpSk bls.SecretKey
+		tmpSk := blsInstance.NewSecretKey()
 		tmpSk.SetByCSPRNG()
 		w.Keys[i].PrivateKey = tmpSk.SerializeToHexStr()
 		pub := tmpSk.GetPublicKey()
 		w.Keys[i].PublicKey = pub.SerializeToHexStr()
-		sk.Add(&tmpSk)
+		sk.Add(tmpSk)
 	}
-	var aggregateSk bls.Fr
-	aggregateSk.SetLittleEndian(sk.GetLittleEndian())
+	aggregateSk := blsInstance.NewFr()
+	err = aggregateSk.SetLittleEndian(sk.GetLittleEndian())
+
+	if err != nil {
+		return nil, err
+	}
 
 	//Subtract the aggregated private key from the primary private key to derive the last split private key
-	var lastSk bls.Fr
-	bls.FrSub(&lastSk, &primaryFr, &aggregateSk)
+	lastSk := blsInstance.NewFr()
+	blsInstance.FrSub(lastSk, primaryFr, aggregateSk)
 
 	// Last key
-	var lastSecretKey bls.SecretKey
-	lastSecretKey.SetLittleEndian(lastSk.Serialize())
+	lastSecretKey := blsInstance.NewSecretKey()
+	err = lastSecretKey.SetLittleEndian(lastSk.Serialize())
+	if err != nil {
+		return nil, err
+	}
 	w.Keys[numSplits-1].PrivateKey = lastSecretKey.SerializeToHexStr()
 	w.Keys[numSplits-1].PublicKey = lastSecretKey.GetPublicKey().SerializeToHexStr()
 
@@ -166,8 +177,8 @@ func (b0 *HerumiScheme) Verify(signature, msg string) (bool, error) {
 	if b0.PublicKey == "" {
 		return false, errors.New("verify", "public key does not exists for verification")
 	}
-	var sig bls.Sign
-	var pk bls.PublicKey
+	sig := blsInstance.NewSignature()
+	pk := blsInstance.NewPublicKey()
 	err := sig.DeserializeHexStr(signature)
 	if err != nil {
 		return false, err
@@ -179,12 +190,16 @@ func (b0 *HerumiScheme) Verify(signature, msg string) (bool, error) {
 	if rawHash == nil {
 		return false, errors.New("verify", "failed hash while signing")
 	}
-	pk.DeserializeHexStr(b0.PublicKey)
-	return sig.Verify(&pk, string(rawHash)), nil
+	err = pk.DeserializeHexStr(b0.PublicKey)
+	if err != nil {
+		return false, err
+	}
+
+	return sig.Verify(pk, string(rawHash)), nil
 }
 
 func (b0 *HerumiScheme) Add(signature, msg string) (string, error) {
-	var sign bls.Sign
+	sign := blsInstance.NewSignature()
 	err := sign.DeserializeHexStr(signature)
 	if err != nil {
 		return "", err
@@ -225,14 +240,14 @@ func (b0 *HerumiScheme) generateKeys(password string) (*Wallet, error) {
 	// Generate a Bip32 HD wallet for the mnemonic and a user supplied password
 	seed := bip39.NewSeed(b0.Mnemonic, password)
 	r := bytes.NewReader(seed)
-	bls.SetRandFunc(r)
+	blsInstance.SetRandFunc(r)
 
 	// New Wallet
 	w := &Wallet{}
 	w.Keys = make([]KeyPair, 1)
 
 	// Generate pair
-	var sk bls.SecretKey
+	sk := blsInstance.NewSecretKey()
 	sk.SetByCSPRNG()
 	w.Keys[0].PrivateKey = sk.SerializeToHexStr()
 	pub := sk.GetPublicKey()
@@ -247,12 +262,12 @@ func (b0 *HerumiScheme) generateKeys(password string) (*Wallet, error) {
 	w.DateCreated = time.Now().Format(time.RFC3339)
 
 	// Revert the Random function to default
-	bls.SetRandFunc(nil)
+	blsInstance.SetRandFunc(nil)
 	return w, nil
 }
 
-func (b0 *HerumiScheme) rawSign(hash string) (*bls.Sign, error) {
-	var sk bls.SecretKey
+func (b0 *HerumiScheme) rawSign(hash string) (Signature, error) {
+	sk := blsInstance.NewSecretKey()
 	if b0.PrivateKey == "" {
 		return nil, errors.New("raw_sign", "private key does not exists for signing")
 	}

@@ -1,0 +1,55 @@
+package zcncrypto
+
+import "io"
+
+var blsInstance BlsInstance
+
+type BlsInstance interface {
+	SetRandFunc(randReader io.Reader)
+	FrSub(out Fr, x Fr, y Fr)
+
+	NewFr() Fr
+	NewSecretKey() SecretKey
+	NewPublicKey() PublicKey
+	NewSignature() Signature
+}
+
+// Fr --
+type Fr interface {
+	Serialize() []byte
+
+	SetLittleEndian(buf []byte) error
+}
+
+type SecretKey interface {
+	SerializeToHexStr() string
+	DeserializeHexStr(s string) error
+
+	Serialize() []byte
+
+	GetLittleEndian() []byte
+	SetLittleEndian(buf []byte) error
+
+	SetByCSPRNG()
+
+	GetPublicKey() PublicKey
+
+	Sign(m string) Signature
+	Add(rhs SecretKey)
+}
+
+type PublicKey interface {
+	SerializeToHexStr() string
+	DeserializeHexStr(s string) error
+
+	Serialize() []byte
+}
+
+type Signature interface {
+	SerializeToHexStr() string
+	DeserializeHexStr(s string) error
+
+	Add(rhs Signature)
+
+	Verify(pk PublicKey, m string) bool
+}
