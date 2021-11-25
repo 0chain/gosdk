@@ -3,7 +3,8 @@ package wallet
 import (
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
+
+	"github.com/0chain/gosdk/zcnbridge/log"
 
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zcnbridge/crypto"
@@ -102,7 +103,7 @@ func (w *Wallet) RegisterToMiners() error {
 	status.Wait()
 
 	if status.Success {
-		fmt.Println("wallet registered")
+		log.Logger.Info("wallet registered")
 	} else {
 		return errors.Wrap(errCode, "wallet registration failed "+status.ErrMsg, err)
 	}
