@@ -19,11 +19,17 @@ type HerumiThresholdScheme struct {
 
 //SetID sets ID in HexString format
 func (mts *HerumiThresholdScheme) SetID(id string) error {
+	if mts.id == nil {
+		mts.id = blsInstance.NewID()
+	}
 	mts.Ids = id
 	return mts.id.SetHexString(id)
 }
 
 //GetID gets ID in hex string format
 func (mts *HerumiThresholdScheme) GetID() string {
+	if mts.id == nil {
+		mts.id = blsInstance.NewID()
+	}
 	return mts.id.GetHexString()
 }
