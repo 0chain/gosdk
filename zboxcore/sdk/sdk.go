@@ -901,7 +901,7 @@ func CreateFreeAllocation(marker string, value int64) (string, error) {
 }
 
 func UpdateAllocation(size int64, expiry int64, allocationID string,
-	lock int64, setImmutable bool) (hash string, err error) {
+	lock int64, setImmutable, updateTerms bool) (hash string, err error) {
 
 	if !sdkInitialized {
 		return "", sdkNotInitialized
@@ -913,6 +913,7 @@ func UpdateAllocation(size int64, expiry int64, allocationID string,
 	updateAllocationRequest["size"] = size
 	updateAllocationRequest["expiration_date"] = expiry
 	updateAllocationRequest["set_immutable"] = setImmutable
+	updateAllocationRequest["update_terms"] = updateTerms
 
 	sn := transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
@@ -1068,6 +1069,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 		retries        = 0
 		t              *transaction.Transaction
 	)
+
 	time.Sleep(querySleepTime)
 
 	for retries < blockchain.GetMaxTxnQuery() {
@@ -1193,13 +1195,4 @@ func GetAllocationMinLock(datashards, parityshards int, size, expiry int64,
 		return 0, errors.New("allocation_min_lock_decode_error", "Error decoding the response."+err.Error())
 	}
 	return response["min_lock_demand"], nil
-}
-
-func getHomeDir() string {
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return os.TempDir()
-	}
-
-	return home
 }

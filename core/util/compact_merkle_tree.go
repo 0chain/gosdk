@@ -141,12 +141,15 @@ func (cmt *CompactMerkleTree) GetMerkleRoot() string {
 func (cmt *CompactMerkleTree) Reload(chunkSize int64, reader io.Reader) error {
 	cmt.Tree = make([]string, 0, 10)
 
-	bytesBuf := bytes.NewBuffer(make([]byte, 0, chunkSize))
+	merkleChunkSize := chunkSize / 1024
+
+	bytesBuf := bytes.NewBuffer(make([]byte, 0, merkleChunkSize))
 	for i := 0; ; i++ {
-		written, err := io.CopyN(bytesBuf, reader, chunkSize)
+
+		written, err := io.CopyN(bytesBuf, reader, merkleChunkSize)
 
 		if written > 0 {
-			cmt.AddDataBlocks(bytesBuf.Bytes(), i)
+			cmt.AddDataBlocks(bytesBuf.Bytes(), i) //nolint
 			bytesBuf.Reset()
 		}
 
