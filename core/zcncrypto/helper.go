@@ -1,3 +1,4 @@
+//go:build !js && !wasm
 // +build !js,!wasm
 
 package zcncrypto
@@ -24,6 +25,6 @@ func MiraclToHerumiPK(pk string) string {
 	n3 := pk[(66 + 64):(66 + 64 + 64)]
 	n4 := pk[(66 + 64 + 64):(66 + 64 + 64 + 64)]
 	var p bls.PublicKey
-	p.SetHexString("1 " + n2 + " " + n1 + " " + n4 + " " + n3)
+	p.SetHexString("1 " + n2 + " " + n1 + " " + n4 + " " + n3) //nolint
 	return p.SerializeToHexStr()
 }

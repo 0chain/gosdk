@@ -98,7 +98,7 @@ func (ed *ED255190chainScheme) SetPublicKey(publicKey string) error {
 		return errors.New("set_public_key", "cannot set public key when there is a private key")
 	}
 	if len(ed.publicKey) > 0 {
-		errors.New("set_public_key", "public key already exists")
+		return errors.New("set_public_key", "public key already exists")
 	}
 	var err error
 	ed.publicKey, err = hex.DecodeString(publicKey)

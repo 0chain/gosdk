@@ -48,7 +48,10 @@ func UnmarshalSignatureSchemes(sigScheme string, obj interface{}) ([]SignatureSc
 
 		for i, v := range list {
 			// bls.ID from json
-			v.SetID(v.Ids)
+			err = v.SetID(v.Ids)
+			if err != nil {
+				return nil, err
+			}
 			ss[i] = v
 		}
 

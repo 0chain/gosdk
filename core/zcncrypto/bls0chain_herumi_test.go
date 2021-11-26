@@ -38,14 +38,18 @@ func TestSignatureScheme(t *testing.T) {
 
 func TestSSSignAndVerify(t *testing.T) {
 	signScheme := NewSignatureScheme("bls0chain")
-	signScheme.SetPrivateKey(signPrivatekey)
+	err := signScheme.SetPrivateKey(signPrivatekey)
+
+	require.NoError(t, err)
+
 	hash := Sha3Sum256(data)
 	signature, err := signScheme.Sign(hash)
 	if err != nil {
 		t.Fatalf("BLS signing failed")
 	}
 	verifyScheme := NewSignatureScheme("bls0chain")
-	verifyScheme.SetPublicKey(verifyPublickey)
+	err = verifyScheme.SetPublicKey(verifyPublickey)
+	require.NoError(t, err)
 	if ok, err := verifyScheme.Verify(signature, hash); err != nil || !ok {
 		t.Fatalf("Verification failed\n")
 	}
@@ -53,7 +57,8 @@ func TestSSSignAndVerify(t *testing.T) {
 
 func BenchmarkBLSSign(b *testing.B) {
 	sigScheme := NewSignatureScheme("bls0chain")
-	sigScheme.SetPrivateKey(signPrivatekey)
+	err := sigScheme.SetPrivateKey(signPrivatekey)
+	require.NoError(b, err)
 	for i := 0; i < b.N; i++ {
 		_, err := sigScheme.Sign(encryption.Hash(data))
 		if err != nil {
@@ -100,6 +105,8 @@ func TestCombinedSignAndVerify(t *testing.T) {
 	}
 	addSig, err := sig1.Add(signature, hash)
 
+	require.NoError(t, err)
+
 	verifyScheme := NewSignatureScheme("bls0chain")
 	err = verifyScheme.SetPublicKey(primaryKey)
 	if err != nil {
@@ -130,7 +137,9 @@ func TestSplitKey(t *testing.T) {
 	sigAggScheme := make([]SignatureScheme, numSplitKeys)
 	for i := 0; i < numSplitKeys; i++ {
 		sigAggScheme[i] = NewSignatureScheme("bls0chain")
-		sigAggScheme[i].SetPrivateKey(w.Keys[i].PrivateKey)
+		err = sigAggScheme[i].SetPrivateKey(w.Keys[i].PrivateKey)
+
+		require.NoError(t, err)
 	}
 	var aggrSig string
 	for i := 1; i < numSplitKeys; i++ {

@@ -32,6 +32,7 @@ require (
 	github.com/klauspost/reedsolomon v1.9.14
 	github.com/lithammer/shortuuid/v3 v3.0.7
 	github.com/magma/augmented-networks/accounting/protos v0.1.1
+	github.com/miracl/core v0.0.0
 	github.com/mitchellh/mapstructure v1.4.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/rogpeppe/go-internal v1.8.0
@@ -58,4 +59,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 )
 
-replace github.com/ethereum/go-ethereum => github.com/certifaction/go-ethereum v1.10.3-wasm
+replace (
+	github.com/ethereum/go-ethereum => github.com/certifaction/go-ethereum v1.10.3-wasm
+	github.com/miracl/core v0.0.0 => github.com/0chain/miracl v1.0.3
+)

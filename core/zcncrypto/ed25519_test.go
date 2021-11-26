@@ -5,12 +5,14 @@ import (
 	"testing"
 
 	"github.com/0chain/errors"
+	"github.com/stretchr/testify/require"
 )
 
 var edverifyPublickey = `b987071c14695caf340ea11560f5a3cb76ad1e709803a8b339826ab3964e470a`
 var edsignPrivatekey = `62fc118369fb9dd1fa6065d4f8f765c52ac68ad5aced17a1e5c4f8b4301a9469b987071c14695caf340ea11560f5a3cb76ad1e709803a8b339826ab3964e470a`
 var eddata = `TEST`
-var edexpectedHash = `f4f08e9367e133dc42a4b9c9c665a9efbd4bf15db14d49c6ec51d0dc4c437ffb`
+
+//var edexpectedHash = `f4f08e9367e133dc42a4b9c9c665a9efbd4bf15db14d49c6ec51d0dc4c437ffb`
 var edWallet *Wallet
 
 func TestEd25519GenerateKeys(t *testing.T) {
@@ -34,18 +36,21 @@ func TestEd25519GenerateKeys(t *testing.T) {
 func TestEd25519SignAndVerify(t *testing.T) {
 	signScheme := NewSignatureScheme("ed25519")
 	// Check failure without private key
-	signature, err := signScheme.Sign(eddata)
+	_, err := signScheme.Sign(eddata)
 	if err == nil {
 		t.Fatalf("Sign passed without private key")
 	}
 	// Sign with valid private key
-	signScheme.SetPrivateKey(edsignPrivatekey)
-	signature, err = signScheme.Sign(hex.EncodeToString([]byte(eddata)))
+	err = signScheme.SetPrivateKey(edsignPrivatekey)
+	require.NoError(t, err)
+
+	signature, err := signScheme.Sign(hex.EncodeToString([]byte(eddata)))
 	if err != nil {
 		t.Fatalf("ed25519 signing failed")
 	}
 	verifyScheme := NewSignatureScheme("ed25519")
-	verifyScheme.SetPublicKey(edverifyPublickey)
+	err = verifyScheme.SetPublicKey(edverifyPublickey)
+	require.NoError(t, err)
 	if ok, err := verifyScheme.Verify(signature, hex.EncodeToString([]byte(eddata))); err != nil || !ok {
 		t.Fatalf("Verification failed\n")
 	}
@@ -64,14 +69,16 @@ func TestEd25519RecoveryKeys(t *testing.T) {
 
 func BenchmarkE25519Signandverify(b *testing.B) {
 	sigScheme := NewSignatureScheme("ed25519")
-	sigScheme.SetPrivateKey(edsignPrivatekey)
+	err := sigScheme.SetPrivateKey(edsignPrivatekey)
+	require.NoError(b, err)
 	for i := 0; i < b.N; i++ {
 		signature, err := sigScheme.Sign(eddata)
 		if err != nil {
 			b.Fatalf("BLS signing failed")
 		}
 		verifyScheme := NewSignatureScheme("ed25519")
-		verifyScheme.SetPublicKey(edverifyPublickey)
+		err = verifyScheme.SetPublicKey(edverifyPublickey)
+		require.NoError(b, err)
 		if ok, err := verifyScheme.Verify(signature, eddata); err != nil || !ok {
 			b.Fatalf("Verification failed\n")
 		}
