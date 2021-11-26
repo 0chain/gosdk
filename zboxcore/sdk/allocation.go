@@ -1095,9 +1095,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPu
 			return err
 		}
 		httpreq.Header.Set("Content-Type", formWriter.FormDataContentType())
-		if err := formWriter.Close(); err != nil {
-			return err
-		}
+
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
