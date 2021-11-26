@@ -7,8 +7,6 @@ import (
 
 	"github.com/0chain/gosdk/zcnbridge"
 
-	"github.com/0chain/gosdk/zcnbridge/config"
-
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"go.uber.org/zap"
 )
@@ -49,8 +47,12 @@ var tranHashes = []string{
 func main() {
 	cfg := zcnbridge.ReadClientConfigFromCmd()
 
-	var bridge = config.SetupBridge(*cfg.ConfigDir, *cfg.ConfigFile, *cfg.Development, cfg.LogDir())
-	bridge.SetupWallets(cfg)
+	var bridge = zcnbridge.SetupBridge(*cfg.ConfigDir, *cfg.ConfigFile, *cfg.Development, *cfg.LogPath)
+
+	bridge.SetupChain()
+	bridge.SetupSDK(cfg)
+	bridge.SetupWallet()
+	bridge.SetupEthereumWallet()
 
 	// To test this, authorizers must be installed
 	PrintEthereumConfirmation()

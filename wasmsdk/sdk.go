@@ -1,3 +1,4 @@
+//go:build js && wasm
 // +build js,wasm
 
 package main
@@ -74,7 +75,7 @@ func InitStorageSDK(this js.Value, p []js.Value) interface{} {
 			err := initSDK(clientJSON, chainJSON)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
-					"error": fmt.Sprintf("InitSDK failed. Reason: %s", err),
+					"error": fmt.Sprintf("initSDK failed. Reason: %s", err),
 				})
 			}
 

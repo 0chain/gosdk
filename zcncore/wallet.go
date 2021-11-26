@@ -338,6 +338,7 @@ func Init(chainConfigJSON string) error {
 			ConfirmationChainLength: _config.chain.ConfirmationChainLength,
 			SignatureScheme:         _config.chain.SignatureScheme,
 			ChainID:                 _config.chain.ChainID,
+			EthereumNode:            _config.chain.EthNode,
 		}
 
 		conf.InitClientConfig(cfg)
@@ -414,6 +415,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 		ConfirmationChainLength: _config.chain.ConfirmationChainLength,
 		SignatureScheme:         _config.chain.SignatureScheme,
 		ChainID:                 _config.chain.ChainID,
+		EthereumNode:            _config.chain.EthNode,
 	}
 
 	conf.InitClientConfig(cfg)

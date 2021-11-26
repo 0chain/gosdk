@@ -14,8 +14,5 @@ type (
 
 		// SignatureScheme returns signature scheme.
 		SignatureScheme() string
-
-		// WalletFile is ZChain wallet config file
-		WalletFile() string
 	}
 )
