@@ -1,67 +1,79 @@
-//go:build !js && !wasm
-// +build !js,!wasm
+//go:build js && wasm
+// +build js,wasm
 
-package zcncrypto
+package bls
 
 import (
 	"errors"
 	"io"
+	"syscall/js"
 
-	"github.com/herumi/bls-go-binary/bls"
+	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
 func init() {
-	err := bls.Init(bls.CurveFp254BNb)
-	if err != nil {
-		panic(err)
+
+	jsBls := NewJsObject(js.Global().Get("bls"))
+
+	//	bls.BN25 == 0
+	jsBls.Init(0)
+
+	zcncrypto.BlsSignerInstance = &herumiBls{
+		JsObject: jsBls,
 	}
-	BlsSignerInstance = &herumiBls{}
 }
 
 type herumiBls struct {
+	JsObject
 }
 
-func (b *herumiBls) NewFr() Fr {
-	return &herumiFr{}
+func (b *herumiBls) NewFr() zcncrypto.Fr {
+	return &herumiFr{
+		Fr: b.JsObject.NewFr(),
+	}
 }
-func (b *herumiBls) NewSecretKey() SecretKey {
-	return &herumiSecretKey{}
-}
-
-func (b *herumiBls) NewPublicKey() PublicKey {
-	return &herumiPublicKey{
-		PublicKey: &bls.PublicKey{},
+func (b *herumiBls) NewSecretKey() zcncrypto.SecretKey {
+	return &herumiSecretKey{
+		SecretKey: b.JsObject.NewSecretKey(),
 	}
 }
 
-func (b *herumiBls) NewSignature() Signature {
+func (b *herumiBls) NewPublicKey() zcncrypto.PublicKey {
+	return &herumiPublicKey{
+		PublicKey: b.JsObject.NewPublicKey(),
+	}
+}
+
+func (b *herumiBls) NewSignature() zcncrypto.Signature {
 	sg := &herumiSignature{
-		Sign: &bls.Sign{},
+		Sign: b.JsObject.NewSignature(),
 	}
 
 	return sg
 }
 
-func (b *herumiBls) NewID() ID {
-	id := &herumiID{}
+func (b *herumiBls) NewID() zcncrypto.ID {
+	id := &herumiID{
+		ID: b.JsObject.NewID(),
+	}
 
 	return id
 }
 
 func (b *herumiBls) SetRandFunc(randReader io.Reader) {
-	bls.SetRandFunc(randReader)
+	b.JsObject.SetRandFunc(randReader)
 }
 
-func (b *herumiBls) FrSub(out Fr, x Fr, y Fr) {
-	o1, _ := out.(*herumiFr)
+func (b *herumiBls) FrSub(out zcncrypto.Fr, x zcncrypto.Fr, y zcncrypto.Fr) {
+	out1, _ := out.(*herumiFr)
 	x1, _ := x.(*herumiFr)
 	y1, _ := y.(*herumiFr)
 
-	bls.FrSub(&o1.Fr, &x1.Fr, &y1.Fr)
+	b.JsObject.FrSub(out1.Fr, x1.Fr, y1.Fr)
 }
 
 type herumiFr struct {
-	bls.Fr
+	Fr JsObject
 }
 
 func (fr *herumiFr) Serialize() []byte {
@@ -73,7 +85,7 @@ func (fr *herumiFr) SetLittleEndian(buf []byte) error {
 }
 
 type herumiSecretKey struct {
-	bls.SecretKey
+	SecretKey JsObject
 }
 
 func (sk *herumiSecretKey) SerializeToHexStr() string {
@@ -98,19 +110,19 @@ func (sk *herumiSecretKey) SetByCSPRNG() {
 	sk.SecretKey.SetByCSPRNG()
 }
 
-func (sk *herumiSecretKey) GetPublicKey() PublicKey {
+func (sk *herumiSecretKey) GetPublicKey() zcncrypto.PublicKey {
 	pk := sk.SecretKey.GetPublicKey()
 	return &herumiPublicKey{
 		PublicKey: pk,
 	}
 }
 
-func (sk *herumiSecretKey) Add(rhs SecretKey) {
+func (sk *herumiSecretKey) Add(rhs zcncrypto.SecretKey) {
 	i, _ := rhs.(*herumiSecretKey)
-	sk.SecretKey.Add(&i.SecretKey)
+	sk.SecretKey.Add(i.SecretKey)
 }
 
-func (sk *herumiSecretKey) Sign(m string) Signature {
+func (sk *herumiSecretKey) Sign(m string) zcncrypto.Signature {
 	sig := sk.SecretKey.Sign(m)
 
 	return &herumiSignature{
@@ -118,10 +130,10 @@ func (sk *herumiSecretKey) Sign(m string) Signature {
 	}
 }
 
-func (sk *herumiSecretKey) GetMasterSecretKey(k int) []SecretKey {
+func (sk *herumiSecretKey) GetMasterSecretKey(k int) []zcncrypto.SecretKey {
 	list := sk.SecretKey.GetMasterSecretKey(k)
 
-	msk := make([]SecretKey, len(list))
+	msk := make([]zcncrypto.SecretKey, len(list))
 
 	for i, it := range list {
 		msk[i] = &herumiSecretKey{SecretKey: it}
@@ -131,9 +143,9 @@ func (sk *herumiSecretKey) GetMasterSecretKey(k int) []SecretKey {
 	return msk
 }
 
-func (sk *herumiSecretKey) Set(msk []SecretKey, id ID) error {
+func (sk *herumiSecretKey) Set(msk []zcncrypto.SecretKey, id zcncrypto.ID) error {
 
-	blsMsk := make([]bls.SecretKey, len(msk))
+	blsMsk := make([]JsObject, len(msk))
 
 	for i, it := range msk {
 		k, ok := it.(*herumiSecretKey)
@@ -146,11 +158,11 @@ func (sk *herumiSecretKey) Set(msk []SecretKey, id ID) error {
 
 	blsID, _ := id.(*herumiID)
 
-	return sk.SecretKey.Set(blsMsk, &blsID.ID)
+	return sk.SecretKey.SetKeys(blsMsk, blsID.ID)
 }
 
 type herumiPublicKey struct {
-	*bls.PublicKey
+	PublicKey JsObject
 }
 
 func (pk *herumiPublicKey) SerializeToHexStr() string {
@@ -166,7 +178,7 @@ func (pk *herumiPublicKey) Serialize() []byte {
 }
 
 type herumiSignature struct {
-	*bls.Sign
+	Sign JsObject
 }
 
 // SerializeToHexStr --
@@ -178,20 +190,20 @@ func (sg *herumiSignature) DeserializeHexStr(s string) error {
 	return sg.Sign.DeserializeHexStr(s)
 }
 
-func (sg *herumiSignature) Add(rhs Signature) {
+func (sg *herumiSignature) Add(rhs zcncrypto.Signature) {
 	sg2, _ := rhs.(*herumiSignature)
 
 	sg.Sign.Add(sg2.Sign)
 }
 
-func (sg *herumiSignature) Verify(pk PublicKey, m string) bool {
+func (sg *herumiSignature) Verify(pk zcncrypto.PublicKey, m string) bool {
 	pub, _ := pk.(*herumiPublicKey)
 
-	return sg.Sign.Verify(pub.PublicKey, m)
+	return pub.PublicKey.Verify(pub.PublicKey, m)
 }
 
 type herumiID struct {
-	bls.ID
+	ID JsObject
 }
 
 func (id *herumiID) SetHexString(s string) error {

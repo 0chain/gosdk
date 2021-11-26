@@ -67,7 +67,7 @@ func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]Signat
 		return nil, errors.New("bls0_generate_threshold_key_shares", "Invalid encryption scheme")
 	}
 
-	b0original := blsInstance.NewSecretKey()
+	b0original := BlsSignerInstance.NewSecretKey()
 	b0PrivateKeyBytes, err := b0ss.GetPrivateKeyAsByteArray()
 	if err != nil {
 		return nil, err
@@ -82,13 +82,13 @@ func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]Signat
 
 	var shares []SignatureScheme
 	for i := 1; i <= n; i++ {
-		id := blsInstance.NewID()
+		id := BlsSignerInstance.NewID()
 		err = id.SetDecString(fmt.Sprint(i))
 		if err != nil {
 			return nil, err
 		}
 
-		sk := blsInstance.NewSecretKey()
+		sk := BlsSignerInstance.NewSecretKey()
 		err = sk.Set(polynomial, id)
 		if err != nil {
 			return nil, err

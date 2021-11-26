@@ -2,9 +2,9 @@ package zcncrypto
 
 import "io"
 
-var blsInstance BlsInstance
+var BlsSignerInstance BlsSigner
 
-type BlsInstance interface {
+type BlsSigner interface {
 	SetRandFunc(randReader io.Reader)
 	FrSub(out Fr, x Fr, y Fr)
 
