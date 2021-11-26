@@ -125,16 +125,20 @@ func ConfirmEthereumTransaction(hash string, times int, duration time.Duration) 
 		err error
 	)
 
+	if hash == "" {
+		return -1, errors.New("transaction hash should not be empty")
+	}
+
 	for i := 0; i < times; i++ {
 		res, err = GetTransactionStatus(hash)
-		if err != nil {
+		if err != nil || res == -1 {
 			return -1, err
 		}
 		if res == 1 || res == 0 {
 			break
 		}
 		log.Logger.Info(fmt.Sprintf("try # %d", i))
-		time.Sleep(time.Second * duration)
+		time.Sleep(duration)
 	}
 	return res, nil
 }

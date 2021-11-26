@@ -5,8 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/0chain/gosdk/core/common"
-
 	"github.com/0chain/gosdk/core/logger"
 
 	"github.com/0chain/errors"
@@ -17,41 +15,44 @@ import (
 	"go.uber.org/zap"
 )
 
-// SetupWallets Sets up the wallet and node
-// Wallet setup reads keys from keyfile and registers in the 0chain
-func (b *Bridge) SetupWallets(cfg chain.Config) {
-	err := b.SetupSDK(cfg)
+func (b *Bridge) SetupChain() {
+	initChain()
+}
+
+func (b *Bridge) RestoreChain() {
+	restoreChain()
+}
+
+func (b *Bridge) SetupSDK(cfg chain.Config) {
+	err := b.initSDK(cfg)
 	if err != nil {
 		log.Logger.Fatal("failed to setup ZCNSDK", zap.Error(err))
 	}
+}
 
-	walletConfig, err := SetupZCNWallet(cfg)
+// SetupWallet Sets up the wallet and node
+// Wallet setup reads keys from keyfile and registers in the 0chain
+func (b *Bridge) SetupWallet() {
+	walletConfig, err := initZCNWallet()
 	if err != nil {
 		log.Logger.Fatal("failed to setup wallet", zap.Error(err))
 	}
+	b.Instance.wallet = walletConfig
+}
 
-	ethWalletConfig, err := b.SetupEthereumWallet()
+func (b *Bridge) SetupEthereumWallet() {
+	var ethWalletConfig, err = b.CreateEthereumWallet()
 	if err != nil {
 		log.Logger.Fatal("failed to setup ethereum wallet", zap.Error(err))
+	} else {
+		log.Logger.Info("created ethereum wallet", zap.Error(err))
 	}
 
-	b.Instance.startTime = common.Now()
-	b.Instance.wallet = walletConfig
 	b.Instance.ethereumWallet = ethWalletConfig
 }
 
-func SetupZCNWallet(cfg chain.Config) (*wallet.Wallet, error) {
-	var (
-		err  error
-		home string
-	)
-
-	home, err = os.UserHomeDir()
-	if err != nil {
-		return nil, err
-	}
-
-	file := filepath.Join(home, ".zcn", cfg.WalletFile())
+func initZCNWallet() (*wallet.Wallet, error) {
+	file := filepath.Join(getConfigDir(), "wallet.json")
 	if _, err := os.Stat(file); os.IsNotExist(err) {
 		return nil, errors.Wrap(err, "error opening the wallet "+file)
 	}
@@ -77,17 +78,17 @@ func SetupZCNWallet(cfg chain.Config) (*wallet.Wallet, error) {
 	return w, nil
 }
 
-// SetupSDK runs zcncore.SetLogFile, zcncore.SetLogLevel and zcncore.InitZCNSDK using provided Config.
+// initSDK runs zcncore.SetLogFile, zcncore.SetLogLevel and zcncore.InitZCNSDK using provided Config.
 // If an error occurs during execution, the program terminates with code 2 and the error will be written in os.Stderr.
 // setupZCNSDK should be used only once while application is starting.
-func (b *Bridge) SetupSDK(cfg chain.Config) error {
+func (b *Bridge) initSDK(cfg chain.Config) error {
 	var logName = cfg.LogDir() + "/zsdk.log"
 	zcncore.SetLogFile(logName, false)
 	zcncore.SetLogLevel(logLevelFromStr(cfg.LogLvl()))
 	serverChain := chain.GetServerChain()
 	err := zcncore.InitZCNSDK(
-		cfg.BlockWorker(),
-		cfg.SignatureScheme(),
+		serverChain.BlockWorker,
+		serverChain.SignatureScheme,
 		zcncore.WithChainID(serverChain.ID),
 		zcncore.WithMinSubmit(serverChain.MinSubmit),
 		zcncore.WithMinConfirmation(serverChain.MinCfm),

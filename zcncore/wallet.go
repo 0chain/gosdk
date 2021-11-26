@@ -288,7 +288,7 @@ func SetLogFile(logFile string, verbose bool) {
 		return
 	}
 	Logger.SetLogFile(f, verbose)
-	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " *******")
+	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (SetLogFile)")
 }
 
 func GetLogger() *logger.Logger {
@@ -338,11 +338,12 @@ func Init(chainConfigJSON string) error {
 			ConfirmationChainLength: _config.chain.ConfirmationChainLength,
 			SignatureScheme:         _config.chain.SignatureScheme,
 			ChainID:                 _config.chain.ChainID,
+			EthereumNode:            _config.chain.EthNode,
 		}
 
 		conf.InitClientConfig(cfg)
 	}
-	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
+	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (Init)")
 	return err
 }
 
@@ -405,7 +406,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 	}
 	assertConfig()
 	_config.isConfigured = true
-	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
+	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (InitZCNSDK)")
 
 	cfg := &conf.Config{
 		BlockWorker:             _config.chain.BlockWorker,
@@ -414,6 +415,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 		ConfirmationChainLength: _config.chain.ConfirmationChainLength,
 		SignatureScheme:         _config.chain.SignatureScheme,
 		ChainID:                 _config.chain.ChainID,
+		EthereumNode:            _config.chain.EthNode,
 	}
 
 	conf.InitClientConfig(cfg)

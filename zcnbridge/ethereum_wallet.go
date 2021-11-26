@@ -27,7 +27,7 @@ type EthereumWallet struct {
 	Address    common.Address
 }
 
-func (b *Bridge) SetupEthereumWallet() (*EthereumWallet, error) {
+func (b *Bridge) CreateEthereumWallet() (*EthereumWallet, error) {
 	address, publicKey, privateKey, err := b.GetKeysAddress()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to initialize ethereum wallet")
