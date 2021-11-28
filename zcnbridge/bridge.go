@@ -113,7 +113,7 @@ func (b *Bridge) IncreaseBurnerAllowance(ctx context.Context, amountWei Wei) (*t
 func GetTransactionStatus(hash string) (int, error) {
 	_, err := zcncore.GetEthClient()
 	if err != nil {
-		return -1, err
+		return -1, err // TODO: Notify that EthClient failed so doesn't make sense to make retries
 	}
 
 	return zcncore.CheckEthHashStatus(hash), nil
@@ -131,7 +131,7 @@ func ConfirmEthereumTransaction(hash string, times int, duration time.Duration) 
 
 	for i := 0; i < times; i++ {
 		res, err = GetTransactionStatus(hash)
-		if err != nil || res == -1 {
+		if err != nil {
 			return -1, err
 		}
 		if res == 1 || res == 0 {
