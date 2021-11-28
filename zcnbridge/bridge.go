@@ -24,7 +24,7 @@ import (
 )
 
 type (
-	wei int64
+	Wei int64
 )
 
 var (
@@ -42,7 +42,7 @@ var (
 // spender address which is the bridge contract and amount to be burned (transferred)
 //nolint:funlen
 // ERC20 signature: "increaseAllowance(address,uint256)"
-func (b *Bridge) IncreaseBurnerAllowance(ctx context.Context, amountWei wei) (*types.Transaction, error) {
+func (b *Bridge) IncreaseBurnerAllowance(ctx context.Context, amountWei Wei) (*types.Transaction, error) {
 	etherClient, err := b.CreateEthClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create etherClient")
@@ -146,7 +146,7 @@ func ConfirmEthereumTransaction(hash string, times int, duration time.Duration) 
 // MintWZCN Mint ZCN tokens on behalf of the 0ZCN client
 // amountTokens: ZCN tokens
 // payload: received from authorizers
-func (b *Bridge) MintWZCN(ctx context.Context, amountTokens wei, payload *ethereum.MintPayload) (*types.Transaction, error) {
+func (b *Bridge) MintWZCN(ctx context.Context, amountTokens Wei, payload *ethereum.MintPayload) (*types.Transaction, error) {
 	if DefaultClientIDEncoder == nil {
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
 	}
