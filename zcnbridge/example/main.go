@@ -93,7 +93,7 @@ func PrintAuthorizers() {
 }
 
 func fromZCNtoERC(b *zcnbridge.Bridge) {
-	burnTrx, err := b.BurnZCN(context.TODO())
+	burnTrx, err := b.BurnZCN(context.TODO(), ConvertAmountWei)
 	burnTrxHash := burnTrx.Hash
 	if err != nil {
 		log.Logger.Fatal("failed to burn in ZCN", zap.Error(err), zap.String("hash", burnTrxHash))
