@@ -248,7 +248,7 @@ func (b *Bridge) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (*tran
 	return trx, nil
 }
 
-func (b *Bridge) BurnZCN(ctx context.Context) (*transaction.Transaction, error) {
+func (b *Bridge) BurnZCN(ctx context.Context, amount int64) (*transaction.Transaction, error) {
 	address := b.GetEthereumAddress()
 
 	payload := zcnsc.BurnPayload{
@@ -261,12 +261,14 @@ func (b *Bridge) BurnZCN(ctx context.Context) (*transaction.Transaction, error) 
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
 	}
 
+	trx.Value = amount
+
 	hash, err := trx.ExecuteSmartContract(
 		ctx,
 		wallet.ZCNSCSmartContractAddress,
 		wallet.BurnFunc,
 		string(payload.Encode()),
-		b.Value,
+		amount,
 	)
 	if err != nil {
 		return trx, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
