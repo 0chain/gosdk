@@ -24,7 +24,7 @@ import (
 )
 
 type (
-	wei int64
+	Wei int64
 )
 
 var (
@@ -42,7 +42,7 @@ var (
 // spender address which is the bridge contract and amount to be burned (transferred)
 //nolint:funlen
 // ERC20 signature: "increaseAllowance(address,uint256)"
-func (b *Bridge) IncreaseBurnerAllowance(ctx context.Context, amountWei wei) (*types.Transaction, error) {
+func (b *Bridge) IncreaseBurnerAllowance(ctx context.Context, amountWei Wei) (*types.Transaction, error) {
 	etherClient, err := b.CreateEthClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create etherClient")
@@ -113,7 +113,7 @@ func (b *Bridge) IncreaseBurnerAllowance(ctx context.Context, amountWei wei) (*t
 func GetTransactionStatus(hash string) (int, error) {
 	_, err := zcncore.GetEthClient()
 	if err != nil {
-		return -1, err
+		return -1, err // TODO: Notify that EthClient failed so doesn't make sense to make retries
 	}
 
 	return zcncore.CheckEthHashStatus(hash), nil
@@ -131,7 +131,7 @@ func ConfirmEthereumTransaction(hash string, times int, duration time.Duration) 
 
 	for i := 0; i < times; i++ {
 		res, err = GetTransactionStatus(hash)
-		if err != nil || res == -1 {
+		if err != nil {
 			return -1, err
 		}
 		if res == 1 || res == 0 {
@@ -146,7 +146,7 @@ func ConfirmEthereumTransaction(hash string, times int, duration time.Duration) 
 // MintWZCN Mint ZCN tokens on behalf of the 0ZCN client
 // amountTokens: ZCN tokens
 // payload: received from authorizers
-func (b *Bridge) MintWZCN(ctx context.Context, amountTokens wei, payload *ethereum.MintPayload) (*types.Transaction, error) {
+func (b *Bridge) MintWZCN(ctx context.Context, amountTokens Wei, payload *ethereum.MintPayload) (*types.Transaction, error) {
 	if DefaultClientIDEncoder == nil {
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
 	}
