@@ -322,6 +322,7 @@ func Share(this js.Value, p []js.Value) interface{} {
 	refereeClientID := p[3].String()
 	encryptionpublickey := p[4].String()
 	expiry := p[5].Int()
+	available := p[6].Int()
 
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
@@ -362,7 +363,7 @@ func Share(this js.Value, p []js.Value) interface{} {
 			var fileName string
 			_, fileName = filepath.Split(remotePath)
 
-			at, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, refereeClientID, encryptionpublickey, int64(expiry))
+			at, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, refereeClientID, encryptionpublickey, int64(expiry), int64(available))
 			if err != nil {
 				reject.Invoke(js.ValueOf("error: " + NewError("get_auth_ticket_failed", err.Error()).Error()))
 				return

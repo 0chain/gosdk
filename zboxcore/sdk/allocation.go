@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -1090,7 +1091,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPu
 		formWriter := multipart.NewWriter(body)
 		formWriter.WriteField("encryption_public_key", clientEncPubKey)
 		formWriter.WriteField("auth_ticket", string(decodedAuthTicket))
-		formWriter.WriteField("available_after", string(availableAfter))
+		formWriter.WriteField("available_after", strconv.FormatInt(availableAfter, 10))
 		formWriter.Close()
 		httpreq, err := zboxutil.NewShareRequest(url, a.Tx, body)
 		if err != nil {
