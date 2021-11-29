@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -1035,7 +1036,7 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 	return errors.New("", "consensus not reached")
 }
 
-func (a *Allocation) GetAuthTicket(path, filename, referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration, available int64) (string, error) {
+func (a *Allocation) GetAuthTicket(path, filename, referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration, availableAfter int64) (string, error) {
 	if !a.isInitialized() {
 		return "", notInitialized
 	}
@@ -1058,7 +1059,6 @@ func (a *Allocation) GetAuthTicket(path, filename, referenceType, refereeClientI
 		ctx:               a.ctx,
 		remotefilepath:    path,
 		remotefilename:    filename,
-		availableSeconds:  available,
 	}
 
 	if referenceType == fileref.DIRECTORY {
@@ -1077,7 +1077,7 @@ func (a *Allocation) GetAuthTicket(path, filename, referenceType, refereeClientI
 		return "", err
 	}
 
-	if err := a.UploadAuthTicketToBlobber(string(atBytes), refereeEncryptionPublicKey); err != nil {
+	if err := a.UploadAuthTicketToBlobber(string(atBytes), refereeEncryptionPublicKey, availableAfter); err != nil {
 		return "", err
 	}
 
@@ -1092,7 +1092,7 @@ func (a *Allocation) GetAuthTicket(path, filename, referenceType, refereeClientI
 	return base64.StdEncoding.EncodeToString(atBytes), nil
 }
 
-func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKey string) error {
+func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKey string, availableAfter int64) error {
 	success := make(chan int, len(a.Blobbers))
 	wg := &sync.WaitGroup{}
 	for idx := range a.Blobbers {
@@ -1101,6 +1101,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 		formWriter := multipart.NewWriter(body)
 		formWriter.WriteField("encryption_public_key", clientEncPubKey)
 		formWriter.WriteField("auth_ticket", authTicket)
+		formWriter.WriteField("available_after", strconv.FormatInt(availableAfter, 10))
 		formWriter.Close()
 		httpreq, err := zboxutil.NewShareRequest(url, a.Tx, body)
 		if err != nil {
@@ -1207,10 +1208,6 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	err = json.Unmarshal(sEnc, at)
 	if err != nil {
 		return errors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
-	}
-
-	if common.Now() < common.Timestamp(at.Available) {
-		return errors.New("file_not_yet_available", "File will be available at: "+common.Timestamp(at.Available).ToTime().UTC().Format("2006-01-02T15:04:05"))
 	}
 
 	if stat, err := os.Stat(localPath); err == nil {
