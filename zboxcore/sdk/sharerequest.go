@@ -25,7 +25,6 @@ type ShareRequest struct {
 	refType           string
 	ctx               context.Context
 	expirationSeconds int64
-	availableSeconds  int64
 }
 
 func (req *ShareRequest) GetAuthTicketForEncryptedFile(clientID string, encPublicKey string) (string, error) {
@@ -50,18 +49,6 @@ func (req *ShareRequest) GetAuthTicketForEncryptedFile(clientID string, encPubli
 	} else {
 		at.Expiration = timestamp + req.expirationSeconds
 	}
-
-	if req.availableSeconds == 0 {
-		// default available is the same as the time creation
-		at.Available = timestamp
-	} else {
-		at.Available = req.availableSeconds
-	}
-
-	if at.Expiration < at.Available {
-		return "", errors.New("auth_ticket_error", "expiration should be greater than available")
-	}
-
 	at.Timestamp = timestamp
 	at.Encrypted = true
 	err = at.Sign()
@@ -132,7 +119,6 @@ func (req *ShareRequest) GetAuthTicket(clientID string) (string, error) {
 		at.Expiration = timestamp + req.expirationSeconds
 	}
 	at.Timestamp = timestamp
-	at.Available = timestamp
 	err = at.Sign()
 	if err != nil {
 		return "", err

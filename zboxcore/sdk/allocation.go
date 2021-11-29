@@ -1016,7 +1016,7 @@ func (a *Allocation) GetAuthTicket(
 	refereeClientID string,
 	refereeEncryptionPublicKey string,
 	expiration int64,
-	available int64,
+	availableAfter int64,
 ) (string, error) {
 	if !a.isInitialized() {
 		return "", notInitialized
@@ -1045,12 +1045,11 @@ func (a *Allocation) GetAuthTicket(
 		shareReq.refType = fileref.FILE
 	}
 	if len(refereeEncryptionPublicKey) > 0 || len(refereeClientID) > 0 {
-		shareReq.availableSeconds = available
 		authTicket, err := shareReq.GetAuthTicketForEncryptedFile(refereeClientID, refereeEncryptionPublicKey)
 		if err != nil {
 			return "", err
 		}
-		err = a.UploadAuthTicketToBlobber(authTicket, refereeEncryptionPublicKey)
+		err = a.UploadAuthTicketToBlobber(authTicket, refereeEncryptionPublicKey, availableAfter)
 		if err != nil {
 			return "", err
 		}
@@ -1077,7 +1076,7 @@ func (a *Allocation) GetAuthTicket(
 	return authTicket, nil
 }
 
-func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPubKey string) error {
+func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPubKey string, availableAfter int64) error {
 	decodedAuthTicket, err := base64.StdEncoding.DecodeString(authticketB64)
 	if err != nil {
 		return err
@@ -1091,6 +1090,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPu
 		formWriter := multipart.NewWriter(body)
 		formWriter.WriteField("encryption_public_key", clientEncPubKey)
 		formWriter.WriteField("auth_ticket", string(decodedAuthTicket))
+		formWriter.WriteField("available_after", string(availableAfter))
 		formWriter.Close()
 		httpreq, err := zboxutil.NewShareRequest(url, a.Tx, body)
 		if err != nil {
@@ -1196,10 +1196,6 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	err = json.Unmarshal(sEnc, at)
 	if err != nil {
 		return errors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
-	}
-
-	if common.Now() < common.Timestamp(at.Available) {
-		return errors.New("file_not_yet_available", "File will be available at: "+common.Timestamp(at.Available).ToTime().UTC().Format("2006-01-02T15:04:05"))
 	}
 
 	if stat, err := os.Stat(localPath); err == nil {
