@@ -1,9 +1,11 @@
+//go:build js && wasm
 // +build js,wasm
 
 package jsbridge
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"syscall/js"
 )
@@ -14,37 +16,99 @@ import (
 // - func(...) error
 // - func(...) T
 // - func(...) (T,error)
-func BindFunc(jsFuncName string, fn interface{}) error {
+func BindFunc(global js.Value, jsFuncName string, fn interface{}) error {
 
-	jsFunc, err := wrappFunc(fn)
+	jsFunc, err := promise(fn)
 	if err != nil {
 		return err
 	}
 
-	js.Global().Set(jsFuncName, jsFunc)
+	global.Set(jsFuncName, jsFunc)
 
 	return nil
 }
 
-func BindFuncs(fnList map[string]interface{}) error {
-
-	global := js.Global()
+func BindAsyncFuncs(global js.Value, fnList map[string]interface{}) {
 
 	for jsFuncName, fn := range fnList {
-		jsFunc, err := wrappFunc(fn)
+		jsFunc, err := promise(fn)
 
 		if err != nil {
-			fmt.Println(err)
-			return err
+			log.Println(jsFuncName, err)
 		}
 
 		global.Set(jsFuncName, jsFunc)
 	}
 
-	return nil
 }
 
-func wrappFunc(fn interface{}) (js.Func, error) {
+func BindFuncs(global js.Value, fnList map[string]interface{}) {
+
+	for jsFuncName, fn := range fnList {
+		jsFunc, err := invoke(fn)
+
+		if err != nil {
+			log.Println(jsFuncName, err)
+		}
+
+		global.Set(jsFuncName, jsFunc)
+	}
+
+}
+
+func invoke(fn interface{}) (js.Func, error) {
+	funcType := reflect.TypeOf(fn)
+
+	if funcType.Kind() != reflect.Func {
+		return js.Func{}, ErrIsNotFunc
+	}
+
+	numOut := funcType.NumOut()
+
+	if numOut > 2 {
+		return js.Func{}, ErrFuncNotSupported
+	}
+
+	invoker := reflect.ValueOf(fn)
+
+	outputBinder, err := NewOutputBuilder(funcType).Build()
+	if err != nil {
+		return js.Func{}, err
+	}
+
+	if err != nil {
+		return js.Func{}, err
+	}
+
+	inputBuilder, err := NewInputBuilder(funcType).Build()
+
+	if err != nil {
+		return js.Func{}, err
+	}
+
+	jsFunc := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("[recover]", r)
+			}
+		}()
+
+		in, err := inputBuilder(args)
+		if err != nil {
+			return js.Error{Value: js.ValueOf(err.Error())}
+		}
+
+		output := invoker.Call(in)
+
+		return outputBinder(output)
+	})
+
+	jsFuncList = append(jsFuncList, jsFunc)
+
+	return jsFunc, nil
+}
+
+func promise(fn interface{}) (js.Func, error) {
 	funcType := reflect.TypeOf(fn)
 
 	if funcType.Kind() != reflect.Func {
@@ -71,11 +135,15 @@ func wrappFunc(fn interface{}) (js.Func, error) {
 
 	invoker := reflect.ValueOf(fn)
 
-	// jsPromise := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-	// 	resolve := args[0]
-	// 	reject := args[1]
-
 	jsFunc := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
+
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("[recover]", r)
+			}
+
+		}()
+
 		in, err := inputBuilder(args)
 		if err != nil {
 			return js.Error{Value: js.ValueOf(err.Error())}
@@ -100,25 +168,3 @@ func wrappFunc(fn interface{}) (js.Func, error) {
 
 	return jsFunc, nil
 }
-
-// func InitZCNSDK(this js.Value, p []js.Value) interface{} {
-// blockWorker := p[0].String()
-// 	signscheme := p[1].String()
-
-// 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-// 		resolve := args[0]
-// 		reject := args[1]
-
-// 		go func() {
-// 			err := zcncore.InitZCNSDK(blockWorker, signscheme)
-// 			if err != nil {
-// 				reject.Invoke(err.Error())
-// 			}
-// 			resolve.Invoke(true)
-// 		}()
-
-// 		return nil
-// 	})
-
-// 	promiseConstructor := js.Global().Get("Promise")
-// 	return promiseConstructor.New(handler)

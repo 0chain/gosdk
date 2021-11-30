@@ -1,3 +1,4 @@
+//go:build js && wasm
 // +build js,wasm
 
 package jsbridge
@@ -69,47 +70,6 @@ func (b *OutputBuilder) Build() (OutputBinder, error) {
 				return js.ValueOf(rv.Interface())
 			}
 		}
-
-		// v := reflect.New(OutputType).Interface()
-
-		// switch v.(type) {
-		// case *string:
-		// //	b.binders[i] = jsValueToString
-
-		// case *int:
-		// //	b.binders[i] = jsValueToInt
-		// case *int32:
-		// //	b.binders[i] = jsValueToInt32
-		// case *int64:
-		// //	b.binders[i] = jsValueToInt64
-
-		// case *float32:
-		// //	b.binders[i] = jsValueToFloat32
-		// case *float64:
-		// //	b.binders[i] = jsValueToFloat64
-		// case *bool:
-		// //	b.binders[i] = jsValueToBool
-
-		// switch x := x.(type) {
-		// case js.Value:
-		// 	return x
-		// case js.Wrapper:
-		// 	return x.JSValue()
-		// case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, uintptr,
-		// 	unsafe.Pointer, float32, float64, string:
-		// 	return js.ValueOf(x)
-		// case complex64:
-		// 	return js.ValueOf(map[string]interface{}{
-		// 		"real": real(x),
-		// 		"imag": imag(x),
-		// 	})
-		// case complex128:
-		// 	return js.ValueOf(map[string]interface{}{
-		// 		"real": real(x),
-		// 		"imag": imag(x),
-		// 	})
-		// }
-
 	}
 
 	return b.Bind, nil
@@ -121,7 +81,6 @@ func (b *OutputBuilder) Bind(args []reflect.Value) []js.Value {
 	for i := 0; i < b.numOut; i++ {
 		values[i] = b.binders[i](args[i])
 	}
-
 	return values
 }
 

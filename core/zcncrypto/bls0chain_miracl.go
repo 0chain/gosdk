@@ -1,6 +1,3 @@
-//go:build !js && !wasm
-// +build !js,!wasm
-
 package zcncrypto
 
 import (
@@ -197,6 +194,26 @@ func (b0 *MiraclScheme) GetPrivateKeyAsByteArray() ([]byte, error) {
 		return nil, err
 	}
 	return privateKeyBytes, nil
+}
+
+//SetID sets ID in HexString format
+func (b0 *MiraclScheme) SetID(id string) error {
+	// if b0.id == nil {
+	// 	b0.id = BlsSignerInstance.NewID()
+	// }
+	// b0.Ids = id
+	// return b0.id.SetHexString(id)
+	return errors.New("miracl_scheme_unsupported", "SetID")
+}
+
+//GetID gets ID in hex string format
+func (b0 *MiraclScheme) GetID() string {
+	// if b0.id == nil {
+	// 	b0.id = BlsSignerInstance.NewID()
+	// }
+	// return b0.id.GetHexString()
+
+	return ""
 }
 
 func (b0 *MiraclScheme) generateKeys(password string) (*Wallet, error) {

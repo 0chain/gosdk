@@ -93,7 +93,7 @@ func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]Signat
 		share.PrivateKey = sk.SerializeToHexStr()
 		share.PublicKey = sk.GetPublicKey().SerializeToHexStr()
 
-		share.id = id
+		//share.id = id
 		share.Ids = id.GetHexString()
 
 		shares = append(shares, share)
