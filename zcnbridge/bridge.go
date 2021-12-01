@@ -144,16 +144,15 @@ func ConfirmEthereumTransaction(hash string, times int, duration time.Duration) 
 }
 
 // MintWZCN Mint ZCN tokens on behalf of the 0ZCN client
-// amountTokens: ZCN tokens
 // payload: received from authorizers
-func (b *Bridge) MintWZCN(ctx context.Context, amountTokens Wei, payload *ethereum.MintPayload) (*types.Transaction, error) {
+func (b *Bridge) MintWZCN(ctx context.Context, payload *ethereum.MintPayload) (*types.Transaction, error) {
 	if DefaultClientIDEncoder == nil {
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
 	}
 
 	// 1. Data Parameter (amount to burn)
 	amount := new(big.Int)
-	amount.SetInt64(int64(amountTokens)) // wei
+	amount.SetInt64(payload.Amount) // wei
 
 	// 2. Data Parameter (zcnTxd string as []byte)
 	zcnTxd := DefaultClientIDEncoder(payload.ZCNTxnID)
