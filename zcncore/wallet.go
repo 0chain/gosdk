@@ -118,7 +118,7 @@ const (
 	defaultMinConfirmation         = int(50)
 	defaultConfirmationChainLength = int(3)
 	defaultTxnExpirationSeconds    = 60
-	defaultWaitSeconds             = (3 * time.Second)
+	defaultWaitSeconds             = 3 * time.Second
 )
 
 const (
@@ -288,7 +288,7 @@ func SetLogFile(logFile string, verbose bool) {
 		return
 	}
 	Logger.SetLogFile(f, verbose)
-	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " *******")
+	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (SetLogFile)")
 }
 
 func GetLogger() *logger.Logger {
@@ -338,12 +338,20 @@ func Init(chainConfigJSON string) error {
 			ConfirmationChainLength: _config.chain.ConfirmationChainLength,
 			SignatureScheme:         _config.chain.SignatureScheme,
 			ChainID:                 _config.chain.ChainID,
+			EthereumNode:            _config.chain.EthNode,
 		}
 
 		conf.InitClientConfig(cfg)
 	}
-	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
+	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (Init)")
 	return err
+}
+
+func WithEthereumNode(uri string) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.EthNode = uri
+		return nil
+	}
 }
 
 func WithChainID(id string) func(c *ChainConfig) error {
@@ -376,7 +384,6 @@ func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
 func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
-
 	if signscheme != "ed25519" && signscheme != "bls0chain" {
 		return errors.New("", "invalid/unsupported signature scheme")
 	}
@@ -399,7 +406,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 	}
 	assertConfig()
 	_config.isConfigured = true
-	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
+	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (InitZCNSDK)")
 
 	cfg := &conf.Config{
 		BlockWorker:             _config.chain.BlockWorker,
@@ -408,6 +415,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 		ConfirmationChainLength: _config.chain.ConfirmationChainLength,
 		SignatureScheme:         _config.chain.SignatureScheme,
 		ChainID:                 _config.chain.ChainID,
+		EthereumNode:            _config.chain.EthNode,
 	}
 
 	conf.InitClientConfig(cfg)
@@ -438,7 +446,7 @@ func GetNetworkJSON() string {
 	return string(networkBytes)
 }
 
-// CreateWallet creates the a wallet for the configure signature scheme.
+// CreateWallet creates the wallet for to configure signature scheme.
 // It also registers the wallet again to block chain.
 func CreateWallet(statusCb WalletCallback) error {
 	if len(_config.chain.Miners) < 1 || len(_config.chain.Sharders) < 1 {
