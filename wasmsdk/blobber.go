@@ -26,11 +26,8 @@ func Delete(allocationID, remotePath string, commit bool) error {
 		return err
 	}
 
-	err = allocationObj.DeleteFile(remotePath)
-	if err != nil {
-		return err
-	}
-
+	var fileMeta *sdk.ConsolidatedFileMeta
+	isFile := false
 	if commit {
 
 		statsMap, err := allocationObj.GetFileStats(remotePath)
@@ -38,7 +35,6 @@ func Delete(allocationID, remotePath string, commit bool) error {
 			return err
 		}
 
-		isFile := false
 		for _, v := range statsMap {
 			if v != nil {
 				isFile = true
@@ -46,11 +42,19 @@ func Delete(allocationID, remotePath string, commit bool) error {
 			}
 		}
 
+		fileMeta, err = allocationObj.GetFileMeta(remotePath)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = allocationObj.DeleteFile(remotePath)
+	if err != nil {
+		return err
+	}
+
+	if commit {
 		if isFile {
-			fileMeta, err := allocationObj.GetFileMeta(remotePath)
-			if err != nil {
-				return err
-			}
 
 			fmt.Println("Commiting changes to blockchain ...")
 

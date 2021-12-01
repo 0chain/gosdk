@@ -104,10 +104,12 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 
 // CommitMetaCompleted when commit meta completes
 func (s *StatusBar) CommitMetaCompleted(request, response string, err error) {
+	s.wg.Done()
 }
 
 // RepairCompleted when repair is completed
 func (s *StatusBar) RepairCompleted(filesRepaired int) {
+	s.wg.Done()
 }
 
 // PrintError is to print error
