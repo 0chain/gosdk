@@ -4,6 +4,7 @@
 package jsbridge
 
 import (
+	"fmt"
 	"reflect"
 	"syscall/js"
 )
@@ -52,20 +53,30 @@ func (b *OutputBuilder) Build() (OutputBinder, error) {
 		switch outputType.String() {
 		case TypeError:
 			b.binders[i] = func(rv reflect.Value) js.Value {
+				if rv.IsNil() {
+					return js.Null()
+				}
+
 				err := rv.Interface().(error)
 				if err != nil {
-					return js.ValueOf(NewJsError(err.Error()))
+					jsErr := NewJsError(err.Error())
+					return js.ValueOf(jsErr)
 				}
 				return js.Null()
 
 			}
 		case TypeString:
 			b.binders[i] = func(rv reflect.Value) js.Value {
+				if rv.IsZero() {
+					return js.Null()
+				}
+
 				s := rv.Interface().(string)
 				return js.ValueOf(s)
 			}
 
 		default:
+			fmt.Println("Output: missing binder for ", outputType.String())
 			b.binders[i] = func(rv reflect.Value) js.Value {
 				return js.ValueOf(rv.Interface())
 			}
@@ -84,8 +95,8 @@ func (b *OutputBuilder) Bind(args []reflect.Value) []js.Value {
 	return values
 }
 
-func NewJsError(message string) map[string]string {
-	return map[string]string{
-		"error": message,
-	}
+func NewJsError(message interface{}) js.Value {
+	return js.ValueOf(map[string]interface{}{
+		"error": fmt.Sprint(message),
+	})
 }

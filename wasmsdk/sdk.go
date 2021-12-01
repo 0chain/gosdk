@@ -4,26 +4,30 @@
 package main
 
 import (
-	"fmt"
-	"strings"
-
-	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zcncore"
 )
 
 // Init init sharder/miners ,
-func Init(sharders, miners []string) string {
+func Init(chainID, blockWorker, signatureScheme string,
+	minConfirmation, minSubmit, confirmationChainLength int) error {
 
-	list := strings.Join(sharders, ",") + ":" + strings.Join(miners, ",")
+	err := sdk.InitStorageSDK("{}", blockWorker, chainID, signatureScheme, nil)
+	if err != nil {
+		return err
+	}
+	zcncore.InitZCNSDK(blockWorker, signatureScheme,
+		zcncore.WithChainID(chainID),
+		zcncore.WithMinConfirmation(minConfirmation),
+		zcncore.WithMinSubmit(minSubmit),
+		zcncore.WithConfirmationChainLength(confirmationChainLength))
 
-	return list
+	return nil
 }
 
-func TestSign() string {
-
-	sign, err := zcncrypto.SignJsProxy(zcncrypto.Sha3Sum256("data"))
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	return sign
+func SetWallet(clientID, publicKey string) {
+	c := client.GetClient()
+	c.ClientID = clientID
+	c.ClientKey = publicKey
 }

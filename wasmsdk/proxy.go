@@ -10,6 +10,7 @@ import (
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
+	"github.com/0chain/gosdk/zboxcore/client"
 
 	"syscall/js"
 )
@@ -28,18 +29,28 @@ func main() {
 
 		sign := bls.Get("sign")
 
-		zcncrypto.SignJsProxy = func(hash string) (string, error) {
+		signer := func(hash string) (string, error) {
 			result, err := jsbridge.Await(sign.Invoke(hash))
+
 			if len(err) > 0 && !err[0].IsNull() {
-				return "", errors.New("sign:" + err[0].String())
+				return "", errors.New("sign: " + err[0].String())
 			}
 			return result[0].String(), nil
 		}
 
+		//update sign with js sign
+		zcncrypto.Sign = signer
+		client.Sign = signer
+
 		// tiny wasm sdk with new methods
+
 		jsbridge.BindAsyncFuncs(sdk, map[string]interface{}{
-			"init": Init,
-			"test": TestSign,
+			//sdk
+			"init":      Init,
+			"setWallet": SetWallet,
+
+			//blobber
+			"delete": Delete,
 		})
 
 		fmt.Println("__wasm_initialized__ = true;")

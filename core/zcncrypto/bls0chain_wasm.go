@@ -1,3 +1,6 @@
+//go:build js && wasm
+// +build js,wasm
+
 package zcncrypto
 
 import (
@@ -7,7 +10,7 @@ import (
 )
 
 var (
-	SignJsProxy func(hash string) (string, error)
+	Sign func(hash string) (string, error)
 )
 
 //WasmScheme - a signature scheme for BLS0Chain Signature
@@ -68,8 +71,8 @@ func (b0 *WasmScheme) Sign(hash string) (string, error) {
 		return "", err
 	}
 
-	if SignJsProxy != nil {
-		return SignJsProxy(string(rawHash))
+	if Sign != nil {
+		return Sign(string(rawHash))
 	}
 
 	return "", errors.New("wasm_not_initialized", "please init wasm sdk first")

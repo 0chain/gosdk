@@ -4,7 +4,6 @@
 package jsbridge
 
 import (
-	"errors"
 	"reflect"
 	"syscall/js"
 )
@@ -15,7 +14,7 @@ var (
 
 var (
 	TypeFunc   = reflect.TypeOf(func() {}).String()
-	TypeError  = reflect.TypeOf(errors.New("type")).String()
+	TypeError  = "error"
 	TypeString = reflect.TypeOf("string").String()
 )
 

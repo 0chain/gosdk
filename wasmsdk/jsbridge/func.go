@@ -48,7 +48,8 @@ func BindFuncs(global js.Value, fnList map[string]interface{}) {
 		jsFunc, err := invoke(fn)
 
 		if err != nil {
-			log.Println(jsFuncName, err)
+			log.Println("[", jsFuncName, "]", err)
+			continue
 		}
 
 		global.Set(jsFuncName, jsFunc)
@@ -69,12 +70,13 @@ func invoke(fn interface{}) (js.Func, error) {
 		return js.Func{}, ErrFuncNotSupported
 	}
 
-	invoker := reflect.ValueOf(fn)
+	syncInvoker, err := Sync(funcType)
 
-	outputBinder, err := NewOutputBuilder(funcType).Build()
 	if err != nil {
 		return js.Func{}, err
 	}
+
+	invoker := reflect.ValueOf(fn)
 
 	if err != nil {
 		return js.Func{}, err
@@ -95,12 +97,12 @@ func invoke(fn interface{}) (js.Func, error) {
 
 		in, err := inputBuilder(args)
 		if err != nil {
-			return js.Error{Value: js.ValueOf(err.Error())}
+			return NewJsError(err.Error())
 		}
 
-		output := invoker.Call(in)
+		result := syncInvoker(invoker, in)
 
-		return outputBinder(output)
+		return result
 	})
 
 	jsFuncList = append(jsFuncList, jsFunc)

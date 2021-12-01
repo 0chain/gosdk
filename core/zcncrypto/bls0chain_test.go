@@ -6,8 +6,6 @@ import (
 
 	"github.com/herumi/bls-go-binary/bls"
 	"github.com/stretchr/testify/require"
-
-	bls2 "github.com/0chain/gosdk/bls"
 )
 
 const (
@@ -35,17 +33,7 @@ func TestGenerateKeys(t *testing.T) {
 
 	require.Equal(t, testHerumiPublicKeyStr, pk1.GetHexString())
 
-	miracl := &WasmScheme{}
-	w2, err := miracl.RecoverKeys(testMnemonic)
 	require.NoError(t, err)
-	var pk2 bls2.PublicKey
-	err = pk2.DeserializeHexStr(w2.Keys[0].PublicKey)
-
-	//MiraclToHerumiPK(w2.Keys[0].PublicKey)
-
-	require.NoError(t, err)
-	fmt.Println(w2.Keys[0].PrivateKey)
-	fmt.Println(pk2.ToString())
 
 }
 
@@ -55,7 +43,6 @@ func TestSignAndVerify(t *testing.T) {
 	w, err := signScheme.RecoverKeys(testMnemonic)
 
 	var pk = w.Keys[0].PublicKey
-	fmt.Println(pk)
 	var pk1 bls.PublicKey
 
 	pk1.DeserializeHexStr(pk)
@@ -69,7 +56,7 @@ func TestSignAndVerify(t *testing.T) {
 	if err != nil {
 		t.Fatalf("BLS signing failed")
 	}
-	verifyScheme := &WasmScheme{}
+	verifyScheme := &HerumiScheme{}
 	err = verifyScheme.SetPublicKey(w.Keys[0].PublicKey)
 	require.NoError(t, err)
 	if ok, err := verifyScheme.Verify(signature, hash); err != nil || !ok {

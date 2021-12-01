@@ -1,3 +1,4 @@
+//go:build js && wasm
 // +build js,wasm
 
 package main
@@ -673,62 +674,6 @@ func Download(this js.Value, p []js.Value) interface{} {
 
 			responseConstructor := js.Global().Get("Response")
 			response := responseConstructor.New(js.ValueOf(localFilePath))
-
-			resolve.Invoke(response)
-		}()
-
-		return nil
-	})
-
-	promiseConstructor := js.Global().Get("Promise")
-	return promiseConstructor.New(handler)
-}
-
-//-----------------------------------------------------------------------------
-// Ported over from `code/go/0proxy.io/zproxycore/handler/delete.go`
-//-----------------------------------------------------------------------------
-
-// Delete is to delete a file in dStorage
-func Delete(this js.Value, p []js.Value) interface{} {
-	allocation := p[0].String()
-	clientJSON := p[1].String()
-	chainJSON := p[2].String()
-	remotePath := p[3].String()
-
-	err := validateClientDetails(allocation, clientJSON)
-	if err != nil {
-		return js.ValueOf("error: " + err.Error())
-	}
-
-	if len(remotePath) == 0 {
-		return js.ValueOf("error: " + NewError("invalid_param", "Please provide remote_path for delete").Error())
-	}
-
-	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		resolve := args[0]
-		reject := args[1]
-
-		go func() {
-			err = initSDK(clientJSON, chainJSON)
-			if err != nil {
-				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
-				return
-			}
-
-			allocationObj, err := sdk.GetAllocation(allocation)
-			if err != nil {
-				reject.Invoke(js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error()))
-				return
-			}
-
-			err = allocationObj.DeleteFile(remotePath)
-			if err != nil {
-				reject.Invoke(js.ValueOf("error: " + NewError("delete_object_failed", err.Error()).Error()))
-				return
-			}
-
-			responseConstructor := js.Global().Get("Response")
-			response := responseConstructor.New(js.ValueOf("Delete done successfully"))
 
 			resolve.Invoke(response)
 		}()

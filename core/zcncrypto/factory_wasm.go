@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/bls"
 )
 
 // NewSignatureScheme creates an instance for using signature functions
@@ -62,42 +61,5 @@ func UnmarshalSignatureSchemes(sigScheme string, obj interface{}) ([]SignatureSc
 //GenerateThresholdKeyShares given a signature scheme will generate threshold sig keys
 func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]SignatureScheme, error) {
 
-	b0ss, ok := originalKey.(*WasmScheme)
-	if !ok {
-		return nil, errors.New("bls0_generate_threshold_key_shares", "Invalid encryption scheme")
-	}
-
-	b0PrivateKeyBytes, err := b0ss.GetPrivateKeyAsByteArray()
-	if err != nil {
-		return nil, err
-	}
-
-	b0original := bls.SecretKey_fromBytes(b0PrivateKeyBytes)
-	polynomial := b0original.GetMasterSecretKey(t)
-
-	var shares []SignatureScheme
-	for i := 1; i <= n; i++ {
-		var id bls.ID
-		err = id.SetHexString(fmt.Sprintf("%x", i))
-		if err != nil {
-			return nil, err
-		}
-
-		var sk bls.SecretKey
-		err = sk.Set(polynomial, &id)
-		if err != nil {
-			return nil, err
-		}
-
-		share := &WasmScheme{}
-		share.PrivateKey = sk.SerializeToHexStr()
-		share.PublicKey = sk.GetPublicKey().SerializeToHexStr()
-
-		//share.id = id
-		share.Ids = id.GetHexString()
-
-		shares = append(shares, share)
-	}
-
-	return shares, nil
+	return nil, errors.New("wasm_not_supported", "GenerateThresholdKeyShares")
 }
