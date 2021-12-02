@@ -168,7 +168,7 @@ func (b0 *HerumiScheme) SetPublicKey(publicKey string) error {
 	if b0.PublicKey != "" {
 		return errors.New("set_public_key", "public key already exists")
 	}
-	b0.PublicKey = MiraclToHerumiPK(publicKey)
+	b0.PublicKey = publicKey
 	return nil
 }
 
