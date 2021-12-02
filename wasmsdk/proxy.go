@@ -51,6 +51,10 @@ func main() {
 
 			//blobber
 			"delete": Delete,
+			"rename": Rename,
+			"copy":   Copy,
+			"move":   Move,
+			"share":  Share,
 		})
 
 		fmt.Println("__wasm_initialized__ = true;")
