@@ -172,7 +172,7 @@ func Move(allocationID, remotePath, destPath string, commit bool) error {
 }
 
 // Share  generate an authtoken that provides authorization to the holder to the specified file on the remotepath.
-func Share(allocationID, remotePath, clientID, encryptionpublicKey string, expiration int, revoke bool) (string, error) {
+func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expiration int, revoke bool) (string, error) {
 
 	if len(allocationID) == 0 {
 		return "", RequiredArg("allocationID")
@@ -219,7 +219,7 @@ func Share(allocationID, remotePath, clientID, encryptionpublicKey string, expir
 		return "", nil
 	}
 
-	ref, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, clientID, encryptionpublicKey, int64(expiration))
+	ref, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, clientID, encryptionPublicKey, int64(expiration))
 	if err != nil {
 		PrintError(err.Error())
 		return "", err

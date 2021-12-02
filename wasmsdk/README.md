@@ -11,6 +11,11 @@ The 0chain wasm SDK is written in Go programming language, and released with Web
 
 
 ## Blobber methods
-- `zcn.sdk.delete(allocationID, remotePath string,commit bool)`: delete remote file from blobbers
+- `zcn.sdk.delete(allocationID, remotePath string,commit bool)`:    delete remote file from blobbers
+- `zcn.sdk.rename(allocationID, remotePath, destName string, commit bool)`: rename a file existing already on dStorage. Only the allocation's owner can rename a file.
+- `zcn.sdk.copy(allocationID, remotePath, destPath string, commit bool)`:   copy file to another folder path on blobbers
+- `zcn.sdk.move(allocationID, remotePath, destPath string, commit bool)`:   move file to another remote folder path on dStorage. Only the owner of the allocation can copy an object.
+- `zcn.sdk.share(allocationID, remotePath, clientID, encryptionPublicKey string, expiration int, revoke bool)`:    generate an authtoken that provides authorization to the holder to the specified file on the remotepath.
+
 
   
