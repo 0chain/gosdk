@@ -65,18 +65,7 @@ func (b *OutputBuilder) Build() (OutputBinder, error) {
 				return js.Null()
 
 			}
-		case TypeString:
-			b.binders[i] = func(rv reflect.Value) js.Value {
-				if rv.IsZero() {
-					return js.Null()
-				}
-
-				s := rv.Interface().(string)
-				return js.ValueOf(s)
-			}
-
 		default:
-			fmt.Println("Output: missing binder for ", outputType.String())
 			b.binders[i] = func(rv reflect.Value) js.Value {
 				return js.ValueOf(rv.Interface())
 			}
