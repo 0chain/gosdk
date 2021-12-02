@@ -46,8 +46,9 @@ func main() {
 
 		jsbridge.BindAsyncFuncs(sdk, map[string]interface{}{
 			//sdk
-			"init":      Init,
-			"setWallet": SetWallet,
+			"init":                  Init,
+			"setWallet":             SetWallet,
+			"getEncryptedPublicKey": GetEncryptedPublicKey,
 
 			//blobber
 			"delete": Delete,
