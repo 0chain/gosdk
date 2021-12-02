@@ -105,7 +105,7 @@ func fromZCNtoERC(b *zcnbridge.Bridge) {
 		log.Logger.Fatal("failed to verify burn transactions in ZCN in QueryEthereumMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
-	tran, err := b.MintWZCN(context.Background(), ConvertAmountWei, mintPayload)
+	tran, err := b.MintWZCN(context.Background(), mintPayload)
 	tranHash := tran.Hash().Hex()
 	if err != nil {
 		log.Logger.Fatal("failed to execute MintWZCN", zap.Error(err), zap.String("hash", tranHash))
