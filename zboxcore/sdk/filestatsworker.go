@@ -111,7 +111,7 @@ func (req *ListRequest) getFileStatsFromBlobbers() map[string]*FileStats {
 	fileInfos := make(map[string]*FileStats)
 	for i := 0; i < numList; i++ {
 		ch := <-rspCh
-		fileInfos[req.blobbers[i].ID] = ch.filestats
+		fileInfos[ch.filestats.BlobberID] = ch.filestats
 	}
 	return fileInfos
 }

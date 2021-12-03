@@ -8,7 +8,7 @@ import (
 
 type Client struct {
 	*zcncrypto.Wallet
-	signatureSchemeString string
+	signatureSchemeString string `json:"signature_scheme"`
 }
 
 var client *Client
@@ -57,6 +57,6 @@ func Sign(hash string) (string, error) {
 
 func VerifySignature(signature string, msg string) (bool, error) {
 	ss := zcncrypto.NewSignatureScheme(client.signatureSchemeString)
-	ss.SetPublicKey(client.ClientKey)
+	ss.SetPublicKey(client.Keys[0].PublicKey)
 	return ss.Verify(signature, msg)
 }

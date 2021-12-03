@@ -59,6 +59,9 @@ type Config struct {
 	SignatureScheme string
 	// ChainID which blockchain it is working
 	ChainID string
+
+	// Ethereum node: "https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx"
+	EthereumNode string
 }
 
 // LoadConfigFile load and parse Config from file

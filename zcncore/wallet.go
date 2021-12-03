@@ -81,6 +81,7 @@ const (
 	GET_MINERSC_USER     = MINERSC_PFX + "/getUserPools"
 	GET_MINERSC_MINERS   = MINERSC_PFX + "/getMinerList"
 	GET_MINERSC_SHARDERS = MINERSC_PFX + "/getSharderList"
+	GET_MINERSC_EVENTS   = MINERSC_PFX + "/getEvents"
 
 	// storage SC
 
@@ -117,7 +118,7 @@ const (
 	defaultMinConfirmation         = int(50)
 	defaultConfirmationChainLength = int(3)
 	defaultTxnExpirationSeconds    = 60
-	defaultWaitSeconds             = (3 * time.Second)
+	defaultWaitSeconds             = 3 * time.Second
 )
 
 const (
@@ -287,7 +288,7 @@ func SetLogFile(logFile string, verbose bool) {
 		return
 	}
 	Logger.SetLogFile(f, verbose)
-	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " *******")
+	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (SetLogFile)")
 }
 
 func GetLogger() *logger.Logger {
@@ -337,12 +338,20 @@ func Init(chainConfigJSON string) error {
 			ConfirmationChainLength: _config.chain.ConfirmationChainLength,
 			SignatureScheme:         _config.chain.SignatureScheme,
 			ChainID:                 _config.chain.ChainID,
+			EthereumNode:            _config.chain.EthNode,
 		}
 
 		conf.InitClientConfig(cfg)
 	}
-	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
+	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (Init)")
 	return err
+}
+
+func WithEthereumNode(uri string) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.EthNode = uri
+		return nil
+	}
 }
 
 func WithChainID(id string) func(c *ChainConfig) error {
@@ -375,7 +384,6 @@ func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
 func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
-
 	if signscheme != "ed25519" && signscheme != "bls0chain" {
 		return errors.New("", "invalid/unsupported signature scheme")
 	}
@@ -398,7 +406,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 	}
 	assertConfig()
 	_config.isConfigured = true
-	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
+	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (InitZCNSDK)")
 
 	cfg := &conf.Config{
 		BlockWorker:             _config.chain.BlockWorker,
@@ -407,6 +415,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 		ConfirmationChainLength: _config.chain.ConfirmationChainLength,
 		SignatureScheme:         _config.chain.SignatureScheme,
 		ChainID:                 _config.chain.ChainID,
+		EthereumNode:            _config.chain.EthNode,
 	}
 
 	conf.InitClientConfig(cfg)
@@ -437,7 +446,7 @@ func GetNetworkJSON() string {
 	return string(networkBytes)
 }
 
-// CreateWallet creates the a wallet for the configure signature scheme.
+// CreateWallet creates the wallet for to configure signature scheme.
 // It also registers the wallet again to block chain.
 func CreateWallet(statusCb WalletCallback) error {
 	if len(_config.chain.Miners) < 1 || len(_config.chain.Sharders) < 1 {
@@ -486,7 +495,7 @@ func SplitKeys(privateKey string, numSplits int) (string, error) {
 	if _config.chain.SignatureScheme != "bls0chain" {
 		return "", errors.New("", "signature key doesn't support split key")
 	}
-	sigScheme := zcncrypto.NewBLS0ChainScheme()
+	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 	err := sigScheme.SetPrivateKey(privateKey)
 	if err != nil {
 		return "", errors.Wrap(err, "set private key failed")
@@ -905,6 +914,7 @@ func GetIdForUrl(url string) string {
 		Logger.Error(url, "get error. ", err.Error())
 		return ""
 	}
+
 	s := strings.Split(res.Body, ",")
 	if len(s) >= 3 {
 		return s[3]
@@ -1065,6 +1075,19 @@ func GetSharders(cb GetInfoCallback) (err error) {
 	}
 	var url = GET_MINERSC_SHARDERS
 	go getInfoFromSharders(url, 0, cb)
+	return
+}
+
+func GetEvents(cb GetInfoCallback, filters map[string]string) (err error) {
+	if err = checkConfig(); err != nil {
+		return
+	}
+	go getInfoFromSharders(withParams(GET_MINERSC_EVENTS, Params{
+		"block_number": filters["block_number"],
+		"tx_hash":      filters["tx_hash"],
+		"type":         filters["type"],
+		"tag":          filters["tag"],
+	}), 0, cb)
 	return
 }
 
