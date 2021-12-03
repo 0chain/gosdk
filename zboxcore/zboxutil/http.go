@@ -258,7 +258,7 @@ func NewRefsRequest(baseUrl, allocationID, path, offsetPath, updatedDate, offset
 	params.Add("pageLimit", strconv.Itoa(pageLimit))
 	params.Add("updatedDate", updatedDate)
 	params.Add("offsetDate", offsetDate)
-	params.Add("type", fileType)
+	params.Add("fileType", fileType)
 	params.Add("refType", refType)
 	params.Add("level", strconv.Itoa(level))
 	nUrl.RawQuery = params.Encode()
