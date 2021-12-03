@@ -14,6 +14,7 @@ import (
 	"sync"
 	"syscall/js"
 
+	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"go.uber.org/zap"
@@ -101,8 +102,13 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 	s.wg.Done()
 }
 
+var fireTransactionAdd func(txn *transaction.Transaction)
+
 // CommitMetaCompleted when commit meta completes
-func (s *StatusBar) CommitMetaCompleted(request, response string, err error) {
+func (s *StatusBar) CommitMetaCompleted(request, response string, txn *transaction.Transaction, err error) {
+	if fireTransactionAdd != nil {
+		fireTransactionAdd(txn)
+	}
 	s.wg.Done()
 }
 

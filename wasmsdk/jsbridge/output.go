@@ -4,7 +4,6 @@
 package jsbridge
 
 import (
-	"fmt"
 	"reflect"
 	"syscall/js"
 )
@@ -82,10 +81,4 @@ func (b *OutputBuilder) Bind(args []reflect.Value) []js.Value {
 		values[i] = b.binders[i](args[i])
 	}
 	return values
-}
-
-func NewJsError(message interface{}) js.Value {
-	return js.ValueOf(map[string]interface{}{
-		"error": fmt.Sprint(message),
-	})
 }

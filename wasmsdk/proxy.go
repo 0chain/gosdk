@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
@@ -25,9 +26,9 @@ func main() {
 	zcn := window.Get("__zcn_wasm__")
 	if !(zcn.IsNull() || zcn.IsUndefined()) {
 		sdk := zcn.Get("sdk")
-		bls := zcn.Get("bls")
+		jsClient := zcn.Get("js")
 
-		sign := bls.Get("sign")
+		sign := jsClient.Get("sign")
 
 		signer := func(hash string) (string, error) {
 			result, err := jsbridge.Await(sign.Invoke(hash))
@@ -36,6 +37,12 @@ func main() {
 				return "", errors.New("sign: " + err[0].String())
 			}
 			return result[0].String(), nil
+		}
+
+		fire := jsClient.Get("fireTransactionAdd")
+
+		fireTransactionAdd = func(txn *transaction.Transaction) {
+			jsbridge.Await(fire.Invoke(jsbridge.NewObject(txn), client.GetClientID()))
 		}
 
 		//update sign with js sign

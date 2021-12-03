@@ -39,7 +39,7 @@ type CommitMetaResponse struct {
 func (req *CommitMetaRequest) processCommitMetaRequest() {
 	commitMetaDataBytes, err := json.Marshal(req.CommitMetaData)
 	if err != nil {
-		req.status.CommitMetaCompleted("", "", err)
+		req.status.CommitMetaCompleted("", "", nil, err)
 		return
 	}
 	commitMetaDataString := string(commitMetaDataBytes)
@@ -49,7 +49,7 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 	txn.TransactionType = transaction.TxnTypeData
 	err = txn.ComputeHashAndSign(client.Sign)
 	if err != nil {
-		req.status.CommitMetaCompleted(commitMetaDataString, "", err)
+		req.status.CommitMetaCompleted(commitMetaDataString, "", nil, err)
 		return
 	}
 
@@ -69,12 +69,12 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 
 	if err != nil {
 		Logger.Error("Error verifying the commit transaction", err.Error(), txn.Hash)
-		req.status.CommitMetaCompleted(commitMetaDataString, "", err)
+		req.status.CommitMetaCompleted(commitMetaDataString, "", nil, err)
 		return
 	}
 	if t == nil {
 		err = errors.New("transaction_validation_failed", "Failed to get the transaction confirmation")
-		req.status.CommitMetaCompleted(commitMetaDataString, "", err)
+		req.status.CommitMetaCompleted(commitMetaDataString, "", nil, err)
 		return
 	}
 
@@ -93,14 +93,14 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 	commitMetaReponseBytes, err := json.Marshal(commitMetaResponse)
 	if err != nil {
 		Logger.Error("Failed to marshal commitMetaResponse to bytes")
-		req.status.CommitMetaCompleted(commitMetaDataString, "", err)
+		req.status.CommitMetaCompleted(commitMetaDataString, "", t, err)
 	}
 
 	Logger.Info("Converting commitMetaResponse bytes to string")
 	commitMetaResponseString := string(commitMetaReponseBytes)
 
 	Logger.Info("Commit complete, Calling CommitMetaCompleted callback")
-	req.status.CommitMetaCompleted(commitMetaDataString, commitMetaResponseString, nil)
+	req.status.CommitMetaCompleted(commitMetaDataString, commitMetaResponseString, t, nil)
 
 	Logger.Info("All process done, Calling return")
 	return

@@ -4,6 +4,7 @@
 package jsbridge
 
 import (
+	"encoding/json"
 	"fmt"
 	"syscall/js"
 )
@@ -23,4 +24,21 @@ func NewArray(items ...interface{}) js.Value {
 	}
 
 	return list
+}
+
+func NewJsError(message interface{}) js.Value {
+	return js.ValueOf(map[string]interface{}{
+		"error": fmt.Sprint(message),
+	})
+}
+
+func NewObject(obj interface{}) js.Value {
+	buf, err := json.Marshal(obj)
+	if err != nil {
+		return js.Null()
+	}
+
+	j := js.Global().Get("JSON")
+
+	return j.Call("parse", string(buf))
 }
