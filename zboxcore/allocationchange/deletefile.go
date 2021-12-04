@@ -36,11 +36,12 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		}
 	}
 	for i, child := range dirRef.Children {
-		dirRef.RemoveChild(i)
 		if path == "/" {
+			dirRef.RemoveChild(i)
 			continue
 		}
 		if child.GetName() == ch.ObjectTree.GetName() && child.GetHash() == ch.ObjectTree.GetHash() {
+			dirRef.RemoveChild(i)
 			rootRef.CalculateHash()
 			return nil
 		}
