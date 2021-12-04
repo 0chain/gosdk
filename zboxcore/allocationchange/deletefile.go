@@ -42,7 +42,7 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref) error {
 			break
 		}
 	}
-	if idx < 0 {
+	if idx < 0 && path != "/" {
 		return errors.New("file_not_found", "File to delete not found in blobber")
 	}
 	//dirRef.Children = append(dirRef.Children[:idx], dirRef.Children[idx+1:]...)
