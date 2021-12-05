@@ -7,14 +7,18 @@ import (
 	"strings"
 	"time"
 
+	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zcnbridge/chain"
+
+	comerr "github.com/0chain/gosdk/zcnbridge/errors"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	binding "github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
 	"github.com/0chain/gosdk/zcnbridge/log"
+	"github.com/0chain/gosdk/zcnbridge/transaction"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
 	"github.com/0chain/gosdk/zcncore"
-	"github.com/0chain/gosdk/zmagmacore/transaction"
 	eth "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -143,6 +147,23 @@ func ConfirmEthereumTransaction(hash string, times int, duration time.Duration) 
 	return res, nil
 }
 
+func (b *Bridge) VerifyZCNTransaction(ctx context.Context, hash string) (*transaction.Transaction, error) {
+	return transaction.VerifyTransaction(ctx, hash, b.ID(), b.PublicKey())
+}
+
+func (b *Bridge) TestSign(hash string) (string, error) {
+	scheme := chain.GetServerChain().SignatureScheme
+	signScheme := zcncrypto.NewSignatureScheme(scheme)
+	if signScheme != nil {
+		err := signScheme.SetPrivateKey(b.PrivateKey())
+		if err != nil {
+			return "", err
+		}
+		return signScheme.Sign(hash)
+	}
+	return "", comerr.NewError("invalid_signature_scheme", "Invalid signature scheme. Please check configuration")
+}
+
 // MintWZCN Mint ZCN tokens on behalf of the 0ZCN client
 // payload: received from authorizers
 func (b *Bridge) MintWZCN(ctx context.Context, payload *ethereum.MintPayload) (*types.Transaction, error) {
@@ -223,7 +244,7 @@ func (b *Bridge) BurnWZCN(ctx context.Context, amountTokens int64) (*types.Trans
 }
 
 func (b *Bridge) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (*transaction.Transaction, error) {
-	trx, err := transaction.NewTransactionEntity()
+	trx, err := transaction.NewTransactionEntity(b.ID(), b.PublicKey())
 	if err != nil {
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
 	}
@@ -235,13 +256,9 @@ func (b *Bridge) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (*tran
 		string(payload.Encode()),
 		0,
 	)
+
 	if err != nil {
 		return trx, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
-	}
-
-	err = trx.Verify(ctx)
-	if err != nil {
-		return trx, errors.Wrap(err, fmt.Sprintf("failed to verify smart contract transaction, hash = %s", hash))
 	}
 
 	return trx, nil
@@ -252,10 +269,10 @@ func (b *Bridge) BurnZCN(ctx context.Context, amount int64) (*transaction.Transa
 
 	payload := zcnsc.BurnPayload{
 		Nonce:           b.IncrementNonce(),
-		EthereumAddress: address.String(),
+		EthereumAddress: address.String(), // TODO: this should be receiver address not the bridge
 	}
 
-	trx, err := transaction.NewTransactionEntity()
+	trx, err := transaction.NewTransactionEntity(b.ID(), b.PublicKey())
 	if err != nil {
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
 	}
@@ -269,13 +286,9 @@ func (b *Bridge) BurnZCN(ctx context.Context, amount int64) (*transaction.Transa
 		string(payload.Encode()),
 		amount,
 	)
+
 	if err != nil {
 		return trx, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
-	}
-
-	err = trx.Verify(ctx)
-	if err != nil {
-		return trx, errors.Wrap(err, fmt.Sprintf("failed to verify smart contract transaction, hash = %s", hash))
 	}
 
 	return trx, nil
