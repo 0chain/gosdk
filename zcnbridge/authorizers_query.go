@@ -87,7 +87,7 @@ func (b *Bridge) QueryEthereumMintPayload(zchainBurnHash string) (*ethereum.Mint
 		for _, result := range results {
 			ticket := result.(*ProofZCNBurn)
 			sig := &ethereum.AuthorizerSignature{
-				ID:        result.GetAuthorizerID(),
+				ID:        ticket.GetAuthorizerID(),
 				Signature: ticket.Signature,
 			}
 			sigs = append(sigs, sig)
