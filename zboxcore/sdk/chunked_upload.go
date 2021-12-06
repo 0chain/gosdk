@@ -56,9 +56,7 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 
 	su := &ChunkedUpload{
 		allocationObj: allocationObj,
-		client: &http.Client{
-			Transport: zboxutil.DefaultTransport,
-		},
+		client: zboxutil.Client,
 
 		fileMeta:   fileMeta,
 		fileReader: fileReader,
@@ -381,7 +379,7 @@ func (su *ChunkedUpload) processUpload(chunkIndex int, fileFragments [][]byte, t
 
 	num := len(su.blobbers)
 	if su.isRepair {
-		num = su.uploadMask.TrailingZeros()
+		num = len(su.blobbers) - su.uploadMask.TrailingZeros()
 	}else{
 		consensus := su.allocationObj.DataShards + su.allocationObj.ParityShards
 
@@ -453,7 +451,7 @@ func (su *ChunkedUpload) processCommit() error {
 
 	num := su.allocationObj.DataShards + su.allocationObj.ParityShards
 	if su.isRepair {
-		num = su.uploadMask.TrailingZeros()
+		num = num - su.uploadMask.TrailingZeros()
 	}
 
 	wait := make(chan error, num)
