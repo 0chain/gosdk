@@ -116,6 +116,15 @@ func (b *Bridge) ID() string {
 	return b.wallet.ID()
 }
 
+// PublicKey returns public key of Node
+func (b *Bridge) PublicKey() string {
+	return b.wallet.PublicKey()
+}
+
+func (b *Bridge) PrivateKey() string {
+	return b.wallet.PrivateKey()
+}
+
 func (b *Bridge) IncrementNonce() int64 {
 	b.nonce++
 	return b.nonce
