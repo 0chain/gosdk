@@ -58,12 +58,6 @@ type SignatureScheme interface {
 
 	// // implement ThresholdSignatureScheme
 
-	// SetID(id string) error
-	// GetID() string
-}
-
-type ThresholdSignatureScheme interface {
-	SignatureScheme
 	SetID(id string) error
 	GetID() string
 }

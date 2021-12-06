@@ -52,6 +52,11 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 	var s strings.Builder
 	var err error
 	fileMetaRetFn := func() {
+		if fileStats == nil {
+			fileStats = &FileStats{}
+			fileStats.BlobberID = blobber.ID
+			fileStats.BlobberURL = blobber.Baseurl
+		}
 		rspCh <- &fileStatsResponse{filestats: fileStats, responseStr: s.String(), blobberIdx: blobberIdx, err: err}
 	}
 	defer fileMetaRetFn()

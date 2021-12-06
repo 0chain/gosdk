@@ -1,3 +1,4 @@
+//go:build !js && !wasm
 // +build !js,!wasm
 
 package zcncrypto
@@ -8,7 +9,6 @@ import (
 	"fmt"
 
 	"github.com/0chain/errors"
-	"github.com/herumi/bls-go-binary/bls"
 )
 
 // NewSignatureScheme creates an instance for using signature functions
@@ -17,15 +17,14 @@ func NewSignatureScheme(sigScheme string) SignatureScheme {
 	case "ed25519":
 		return NewED255190chainScheme()
 	case "bls0chain":
-		//return NewBLS0ChainScheme()
-		return NewMiraclScheme()
+		return NewHerumiScheme()
 	default:
 		panic(fmt.Sprintf("unknown signature scheme: %v", sigScheme))
 	}
 }
 
-// UnmarshalThresholdSignatureSchemes unmarshal ThresholdSignatureScheme from json string
-func UnmarshalThresholdSignatureSchemes(sigScheme string, obj interface{}) ([]ThresholdSignatureScheme, error) {
+// UnmarshalThresholdSignatureSchemes unmarshal SignatureScheme from json string
+func UnmarshalSignatureSchemes(sigScheme string, obj interface{}) ([]SignatureScheme, error) {
 	switch sigScheme {
 
 	case "bls0chain":
@@ -39,17 +38,20 @@ func UnmarshalThresholdSignatureSchemes(sigScheme string, obj interface{}) ([]Th
 			return nil, err
 		}
 
-		var list []*MiraclThresholdScheme
+		var list []*HerumiScheme
 
 		if err := json.Unmarshal(buf, &list); err != nil {
 			return nil, err
 		}
 
-		ss := make([]ThresholdSignatureScheme, len(list))
+		ss := make([]SignatureScheme, len(list))
 
 		for i, v := range list {
 			// bls.ID from json
-			v.SetID(v.Ids)
+			err = v.SetID(v.Ids)
+			if err != nil {
+				return nil, err
+			}
 			ss[i] = v
 		}
 
@@ -61,14 +63,14 @@ func UnmarshalThresholdSignatureSchemes(sigScheme string, obj interface{}) ([]Th
 }
 
 //GenerateThresholdKeyShares given a signature scheme will generate threshold sig keys
-func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]ThresholdSignatureScheme, error) {
+func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]SignatureScheme, error) {
 
-	b0ss, ok := originalKey.(*MiraclScheme)
+	b0ss, ok := originalKey.(*HerumiScheme)
 	if !ok {
 		return nil, errors.New("bls0_generate_threshold_key_shares", "Invalid encryption scheme")
 	}
 
-	var b0original bls.SecretKey
+	b0original := BlsSignerInstance.NewSecretKey()
 	b0PrivateKeyBytes, err := b0ss.GetPrivateKeyAsByteArray()
 	if err != nil {
 		return nil, err
@@ -81,21 +83,21 @@ func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]Thresh
 
 	polynomial := b0original.GetMasterSecretKey(t)
 
-	var shares []ThresholdSignatureScheme
+	var shares []SignatureScheme
 	for i := 1; i <= n; i++ {
-		var id bls.ID
+		id := BlsSignerInstance.NewID()
 		err = id.SetDecString(fmt.Sprint(i))
 		if err != nil {
 			return nil, err
 		}
 
-		var sk bls.SecretKey
-		err = sk.Set(polynomial, &id)
+		sk := BlsSignerInstance.NewSecretKey()
+		err = sk.Set(polynomial, id)
 		if err != nil {
 			return nil, err
 		}
 
-		share := &MiraclThresholdScheme{}
+		share := &HerumiScheme{}
 		share.PrivateKey = hex.EncodeToString(sk.GetLittleEndian())
 		share.PublicKey = sk.GetPublicKey().SerializeToHexStr()
 

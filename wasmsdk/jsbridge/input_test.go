@@ -1,16 +1,18 @@
+//go:build js && wasm
 // +build js,wasm
 
 package jsbridge
 
 import (
 	"reflect"
+	"strings"
 	"syscall/js"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestBinder(t *testing.T) {
+func TestInputBinder(t *testing.T) {
 
 	tests := []struct {
 		Name string
@@ -62,6 +64,13 @@ func TestBinder(t *testing.T) {
 
 			return reflect.ValueOf(fn)
 		}, In: []js.Value{js.ValueOf(1)}, Out: float64(1)},
+		{Name: "[]string", Func: func() reflect.Value {
+			fn := func(list []string) string {
+				return strings.Join(list, ",")
+			}
+
+			return reflect.ValueOf(fn)
+		}, In: []js.Value{NewArray("a", "b")}, Out: "a,b"},
 	}
 
 	for _, it := range tests {
