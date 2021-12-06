@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
@@ -37,12 +36,6 @@ func main() {
 				return "", errors.New("sign: " + err[0].String())
 			}
 			return result[0].String(), nil
-		}
-
-		fire := jsClient.Get("fireTransactionAdd")
-
-		fireTransactionAdd = func(txn *transaction.Transaction) {
-			jsbridge.Await(fire.Invoke(jsbridge.NewObject(txn), client.GetClientID()))
 		}
 
 		//update sign with js sign

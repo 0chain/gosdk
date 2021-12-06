@@ -8,167 +8,168 @@ import (
 	"path/filepath"
 	"sync"
 
+	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
 // Delete delete file from blobbers
-func Delete(allocationID, remotePath string, commit bool) error {
+func Delete(allocationID, remotePath string, commit bool) (*transaction.Transaction, error) {
 
 	if len(allocationID) == 0 {
-		return RequiredArg("allocationID")
+		return nil, RequiredArg("allocationID")
 	}
 
 	if len(remotePath) == 0 {
-		return RequiredArg("remotePath")
+		return nil, RequiredArg("remotePath")
 	}
 
 	allocationObj, err := sdk.GetAllocation(allocationID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	fileMeta, isFile, err := getFileMeta(allocationObj, remotePath, commit)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = allocationObj.DeleteFile(remotePath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	fmt.Println(remotePath + " deleted")
 
-	err = commitTxn(allocationObj, remotePath, "", "Delete", fileMeta, commit, isFile)
+	txn, err := commitTxn(allocationObj, remotePath, "", "Delete", fileMeta, commit, isFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return txn, nil
 }
 
 // Rename rename a file existing already on dStorage. Only the allocation's owner can rename a file.
-func Rename(allocationID, remotePath, destName string, commit bool) error {
+func Rename(allocationID, remotePath, destName string, commit bool) (*transaction.Transaction, error) {
 	if len(allocationID) == 0 {
-		return RequiredArg("allocationID")
+		return nil, RequiredArg("allocationID")
 	}
 
 	if len(remotePath) == 0 {
-		return RequiredArg("remotePath")
+		return nil, RequiredArg("remotePath")
 	}
 
 	if len(destName) == 0 {
-		return RequiredArg("destName")
+		return nil, RequiredArg("destName")
 	}
 
 	allocationObj, err := sdk.GetAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
-		return err
+		return nil, err
 	}
 
 	fileMeta, isFile, err := getFileMeta(allocationObj, remotePath, commit)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = allocationObj.RenameObject(remotePath, destName)
 	if err != nil {
 		PrintError(err.Error())
-		return err
+		return nil, err
 	}
 	fmt.Println(remotePath + " renamed")
 
-	err = commitTxn(allocationObj, remotePath, destName, "Rename", fileMeta, commit, isFile)
+	txn, err := commitTxn(allocationObj, remotePath, destName, "Rename", fileMeta, commit, isFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return txn, nil
 }
 
 // Copy copy file to another folder path on blobbers
-func Copy(allocationID, remotePath, destPath string, commit bool) error {
+func Copy(allocationID, remotePath, destPath string, commit bool) (*transaction.Transaction, error) {
 
 	if len(allocationID) == 0 {
-		return RequiredArg("allocationID")
+		return nil, RequiredArg("allocationID")
 	}
 
 	if len(remotePath) == 0 {
-		return RequiredArg("remotePath")
+		return nil, RequiredArg("remotePath")
 	}
 
 	if len(destPath) == 0 {
-		return RequiredArg("destPath")
+		return nil, RequiredArg("destPath")
 	}
 
 	allocationObj, err := sdk.GetAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
-		return err
+		return nil, err
 	}
 
 	fileMeta, isFile, err := getFileMeta(allocationObj, remotePath, commit)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = allocationObj.CopyObject(remotePath, destPath)
 	if err != nil {
 		PrintError(err.Error())
-		return err
+		return nil, err
 	}
 
 	fmt.Println(remotePath + " copied")
 
-	err = commitTxn(allocationObj, remotePath, destPath, "Copy", fileMeta, commit, isFile)
+	txn, err := commitTxn(allocationObj, remotePath, destPath, "Copy", fileMeta, commit, isFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return txn, nil
 }
 
 // Move move file to another remote folder path on dStorage. Only the owner of the allocation can copy an object.
-func Move(allocationID, remotePath, destPath string, commit bool) error {
+func Move(allocationID, remotePath, destPath string, commit bool) (*transaction.Transaction, error) {
 	if len(allocationID) == 0 {
-		return RequiredArg("allocationID")
+		return nil, RequiredArg("allocationID")
 	}
 
 	if len(remotePath) == 0 {
-		return RequiredArg("remotePath")
+		return nil, RequiredArg("remotePath")
 	}
 
 	if len(destPath) == 0 {
-		return RequiredArg("destPath")
+		return nil, RequiredArg("destPath")
 	}
 
 	allocationObj, err := sdk.GetAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
-		return err
+		return nil, err
 	}
 
 	fileMeta, isFile, err := getFileMeta(allocationObj, remotePath, commit)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = allocationObj.MoveObject(remotePath, destPath)
 	if err != nil {
 		PrintError(err.Error())
-		return err
+		return nil, err
 	}
 
 	fmt.Println(remotePath + " moved")
 
-	err = commitTxn(allocationObj, remotePath, destPath, "Move", fileMeta, commit, isFile)
+	txn, err := commitTxn(allocationObj, remotePath, destPath, "Move", fileMeta, commit, isFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return txn, nil
 }
 
 // Share  generate an authtoken that provides authorization to the holder to the specified file on the remotepath.
@@ -256,7 +257,7 @@ func getFileMeta(allocationObj *sdk.Allocation, remotePath string, commit bool) 
 	return fileMeta, isFile, nil
 }
 
-func commitTxn(allocationObj *sdk.Allocation, remotePath, newFolderPath, commandName string, fileMeta *sdk.ConsolidatedFileMeta, commit, isFile bool) error {
+func commitTxn(allocationObj *sdk.Allocation, remotePath, newFolderPath, commandName string, fileMeta *sdk.ConsolidatedFileMeta, commit, isFile bool) (*transaction.Transaction, error) {
 	if commit {
 		if isFile {
 
@@ -269,7 +270,7 @@ func commitTxn(allocationObj *sdk.Allocation, remotePath, newFolderPath, command
 			err := allocationObj.CommitMetaTransaction(remotePath, commandName, "", "", fileMeta, statusBar)
 			if err != nil {
 				PrintError("Commit failed.", err)
-				return err
+				return nil, err
 			}
 
 			wg.Wait()
@@ -280,12 +281,20 @@ func commitTxn(allocationObj *sdk.Allocation, remotePath, newFolderPath, command
 			resp, err := allocationObj.CommitFolderChange(commandName, remotePath, newFolderPath)
 			if err != nil {
 				PrintError("Commit failed.", err)
-				return err
+				return nil, err
 			}
 
 			fmt.Println("Commit Metadata successful, Response :", resp)
 		}
+
+		txn, err := getLastMetadataCommitTxn()
+
+		if err != nil {
+			return nil, err
+		}
+
+		return txn, nil
 	}
 
-	return nil
+	return nil, nil
 }

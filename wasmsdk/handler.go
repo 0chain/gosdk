@@ -102,13 +102,9 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 	s.wg.Done()
 }
 
-var fireTransactionAdd func(txn *transaction.Transaction)
-
 // CommitMetaCompleted when commit meta completes
 func (s *StatusBar) CommitMetaCompleted(request, response string, txn *transaction.Transaction, err error) {
-	if fireTransactionAdd != nil {
-		fireTransactionAdd(txn)
-	}
+	setLastMetadataCommitTxn(txn, err)
 	s.wg.Done()
 }
 

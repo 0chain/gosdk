@@ -66,7 +66,10 @@ func (b *OutputBuilder) Build() (OutputBinder, error) {
 			}
 		default:
 			b.binders[i] = func(rv reflect.Value) js.Value {
-				return js.ValueOf(rv.Interface())
+				if rv.IsNil() {
+					return js.Null()
+				}
+				return NewObject(rv.Interface())
 			}
 		}
 	}
