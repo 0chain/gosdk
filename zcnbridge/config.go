@@ -2,20 +2,24 @@ package zcnbridge
 
 import (
 	"flag"
+	"fmt"
+	"os"
+	"path"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/zcnbridge/chain"
+	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	ether "github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/viper"
 )
 
 type ClientConfig struct {
-	WalletFileConfig *string
-	LogPath          *string
-	ConfigFile       *string
-	ConfigDir        *string
-	Development      *bool
+	LogPath     *string
+	ConfigFile  *string
+	ConfigDir   *string
+	Development *bool
 }
 
 // BridgeConfig initializes Ethereum wallet and params
@@ -46,8 +50,8 @@ type Instance struct {
 }
 
 type Bridge struct {
-	BridgeConfig
-	Instance
+	*BridgeConfig
+	*Instance
 }
 
 func (c ClientConfig) LogDir() string {
@@ -66,15 +70,10 @@ func (c ClientConfig) SignatureScheme() string {
 	return chain.GetServerChain().SignatureScheme
 }
 
-func (c ClientConfig) WalletFile() string {
-	return *c.WalletFileConfig
-}
-
 // ReadClientConfigFromCmd reads config from command line
 func ReadClientConfigFromCmd() *ClientConfig {
 	cmd := &ClientConfig{}
 	cmd.Development = flag.Bool("development", true, "development mode")
-	cmd.WalletFileConfig = flag.String("wallet_config", "wallet.json", "wallet config")
 	cmd.LogPath = flag.String("log_dir", "./logs", "log folder")
 	cmd.ConfigDir = flag.String("config_dir", "./config", "config folder")
 	cmd.ConfigFile = flag.String("config_file", "bridge", "config file")
@@ -86,7 +85,7 @@ func ReadClientConfigFromCmd() *ClientConfig {
 
 func SetupBridgeFromConfig() *Bridge {
 	return &Bridge{
-		BridgeConfig: BridgeConfig{
+		BridgeConfig: &BridgeConfig{
 			Mnemonic:           viper.GetString("bridge.Mnemonic"),
 			BridgeAddress:      viper.GetString("bridge.BridgeAddress"),
 			WzcnAddress:        viper.GetString("bridge.WzcnAddress"),
@@ -95,6 +94,9 @@ func SetupBridgeFromConfig() *Bridge {
 			GasLimit:           viper.GetUint64("bridge.GasLimit"),
 			Value:              viper.GetInt64("bridge.Value"),
 			ConsensusThreshold: viper.GetInt("bridge.ConsensusThreshold"),
+		},
+		Instance: &Instance{
+			startTime: common.Now(),
 		},
 	}
 }
@@ -114,7 +116,99 @@ func (b *Bridge) ID() string {
 	return b.wallet.ID()
 }
 
+// PublicKey returns public key of Node
+func (b *Bridge) PublicKey() string {
+	return b.wallet.PublicKey()
+}
+
+func (b *Bridge) PrivateKey() string {
+	return b.wallet.PrivateKey()
+}
+
 func (b *Bridge) IncrementNonce() int64 {
 	b.nonce++
 	return b.nonce
+}
+
+func getConfigDir() string {
+	var configDir string
+	home, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	configDir = home + "/.zcn"
+	return configDir
+}
+
+func initChain() {
+	nodeConfig := viper.New()
+	configDir := getConfigDir()
+	nodeConfig.AddConfigPath(configDir)
+	nodeConfig.SetConfigFile(path.Join(configDir, "config.yaml"))
+
+	if err := nodeConfig.ReadInConfig(); err != nil {
+		ExitWithError("Can't read config:", err)
+	}
+
+	InitChainFromConfig(nodeConfig)
+}
+
+func restoreChain() {
+	config, err := conf.GetClientConfig()
+	if err != nil {
+		ExitWithError("Can't read config:", err)
+	}
+
+	RestoreFromConfig(config)
+}
+
+// SetupBridge Use this from standalone application
+func SetupBridge(configDir, configFile string, development bool, logPath string) *Bridge {
+	setDefaults()
+	ReadConfig(configDir, configFile)
+	setupLogging(development, logPath)
+	bridge := SetupBridgeFromConfig()
+
+	return bridge
+}
+
+func setDefaults() {
+	viper.SetDefault("bridge.loglevel", "info")
+}
+
+func ReadConfig(configPath, configName string) {
+	viper.AddConfigPath(configPath)
+	viper.SetConfigName(configName)
+	err := viper.ReadInConfig()
+	if err != nil {
+		panic(fmt.Errorf("fatal error config file: %w", err))
+	}
+}
+
+func setupLogging(development bool, logPath string) {
+	log.InitLogging(development, logPath, viper.GetString("bridge.loglevel"))
+}
+
+func RestoreFromConfig(cfg *conf.Config) {
+	chain.SetServerChain(chain.NewChain(
+		cfg.BlockWorker,
+		cfg.SignatureScheme,
+		cfg.MinSubmit,
+		cfg.MinConfirmation,
+	))
+}
+
+func InitChainFromConfig(reader conf.Reader) {
+	chain.SetServerChain(chain.NewChain(
+		reader.GetString("block_worker"),
+		reader.GetString("signature_scheme"),
+		reader.GetInt("min_submit"),
+		reader.GetInt("min_confirmation"),
+	))
+}
+
+func ExitWithError(v ...interface{}) {
+	_, _ = fmt.Fprintln(os.Stderr, v...)
+	os.Exit(1)
 }

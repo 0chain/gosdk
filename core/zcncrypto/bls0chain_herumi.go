@@ -1,3 +1,4 @@
+//go:build !js && !wasm
 // +build !js,!wasm
 
 package zcncrypto
@@ -9,38 +10,39 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
-	"github.com/herumi/bls-go-binary/bls"
 	"github.com/tyler-smith/go-bip39"
 
 	"github.com/0chain/gosdk/core/encryption"
 )
 
 func init() {
-	err := bls.Init(bls.CurveFp254BNb)
-	if err != nil {
-		panic(err)
-	}
+
 }
 
-//MiraclScheme - a signature scheme for BLS0Chain Signature
-type MiraclScheme struct {
+//HerumiScheme - a signature scheme for BLS0Chain Signature
+type HerumiScheme struct {
 	PublicKey  string `json:"public_key"`
 	PrivateKey string `json:"private_key"`
 	Mnemonic   string `json:"mnemonic"`
+
+	id  ID
+	Ids string `json:"threshold_scheme_id"`
 }
 
-//NewMiraclScheme - create a MiraclScheme object
-func NewMiraclScheme() *MiraclScheme {
-	return &MiraclScheme{}
+//NewHerumiScheme - create a MiraclScheme object
+func NewHerumiScheme() *HerumiScheme {
+	return &HerumiScheme{
+		id: BlsSignerInstance.NewID(),
+	}
 }
 
 // GenerateKeys  generate fresh keys
-func (b0 *MiraclScheme) GenerateKeys() (*Wallet, error) {
+func (b0 *HerumiScheme) GenerateKeys() (*Wallet, error) {
 	return b0.generateKeys("0chain-client-split-key")
 }
 
 // GenerateKeysWithEth  generate fresh keys based on eth wallet
-func (b0 *MiraclScheme) GenerateKeysWithEth(mnemonic, password string) (*Wallet, error) {
+func (b0 *HerumiScheme) GenerateKeysWithEth(mnemonic, password string) (*Wallet, error) {
 	if len(mnemonic) == 0 {
 		return nil, fmt.Errorf("Mnemonic phase is mandatory.")
 	}
@@ -55,7 +57,7 @@ func (b0 *MiraclScheme) GenerateKeysWithEth(mnemonic, password string) (*Wallet,
 }
 
 // RecoverKeys recovery keys from mnemonic
-func (b0 *MiraclScheme) RecoverKeys(mnemonic string) (*Wallet, error) {
+func (b0 *HerumiScheme) RecoverKeys(mnemonic string) (*Wallet, error) {
 	if mnemonic == "" {
 		return nil, errors.New("recover_keys", "Set mnemonic key failed")
 	}
@@ -66,7 +68,7 @@ func (b0 *MiraclScheme) RecoverKeys(mnemonic string) (*Wallet, error) {
 	return b0.GenerateKeys()
 }
 
-func (b0 *MiraclScheme) GetMnemonic() string {
+func (b0 *HerumiScheme) GetMnemonic() string {
 	if b0 == nil {
 		return ""
 	}
@@ -75,7 +77,7 @@ func (b0 *MiraclScheme) GetMnemonic() string {
 }
 
 //SetPrivateKey  set private key to sign
-func (b0 *MiraclScheme) SetPrivateKey(privateKey string) error {
+func (b0 *HerumiScheme) SetPrivateKey(privateKey string) error {
 	if b0.PublicKey != "" {
 		return errors.New("set_private_key", "cannot set private key when there is a public key")
 	}
@@ -87,41 +89,55 @@ func (b0 *MiraclScheme) SetPrivateKey(privateKey string) error {
 	return nil
 }
 
-func (b0 *MiraclScheme) GetPrivateKey() string {
+func (b0 *HerumiScheme) GetPrivateKey() string {
 	return b0.PrivateKey
 }
 
-func (b0 *MiraclScheme) SplitKeys(numSplits int) (*Wallet, error) {
+func (b0 *HerumiScheme) SplitKeys(numSplits int) (*Wallet, error) {
 	if b0.PrivateKey == "" {
 		return nil, errors.New("split_keys", "primary private key not found")
 	}
-	var primaryFr bls.Fr
-	var primarySk bls.SecretKey
-	primarySk.DeserializeHexStr(b0.PrivateKey)
-	primaryFr.SetLittleEndian(primarySk.GetLittleEndian())
+	primaryFr := BlsSignerInstance.NewFr()
+	primarySk := BlsSignerInstance.NewSecretKey()
+	err := primarySk.DeserializeHexStr(b0.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
+	err = primaryFr.SetLittleEndian(primarySk.GetLittleEndian())
+
+	if err != nil {
+		return nil, err
+	}
 
 	// New Wallet
 	w := &Wallet{}
 	w.Keys = make([]KeyPair, numSplits)
-	var sk bls.SecretKey
+	sk := BlsSignerInstance.NewSecretKey()
 	for i := 0; i < numSplits-1; i++ {
-		var tmpSk bls.SecretKey
+		tmpSk := BlsSignerInstance.NewSecretKey()
 		tmpSk.SetByCSPRNG()
 		w.Keys[i].PrivateKey = tmpSk.SerializeToHexStr()
 		pub := tmpSk.GetPublicKey()
 		w.Keys[i].PublicKey = pub.SerializeToHexStr()
-		sk.Add(&tmpSk)
+		sk.Add(tmpSk)
 	}
-	var aggregateSk bls.Fr
-	aggregateSk.SetLittleEndian(sk.GetLittleEndian())
+	aggregateSk := BlsSignerInstance.NewFr()
+	err = aggregateSk.SetLittleEndian(sk.GetLittleEndian())
+
+	if err != nil {
+		return nil, err
+	}
 
 	//Subtract the aggregated private key from the primary private key to derive the last split private key
-	var lastSk bls.Fr
-	bls.FrSub(&lastSk, &primaryFr, &aggregateSk)
+	lastSk := BlsSignerInstance.NewFr()
+	BlsSignerInstance.FrSub(lastSk, primaryFr, aggregateSk)
 
 	// Last key
-	var lastSecretKey bls.SecretKey
-	lastSecretKey.SetLittleEndian(lastSk.Serialize())
+	lastSecretKey := BlsSignerInstance.NewSecretKey()
+	err = lastSecretKey.SetLittleEndian(lastSk.Serialize())
+	if err != nil {
+		return nil, err
+	}
 	w.Keys[numSplits-1].PrivateKey = lastSecretKey.SerializeToHexStr()
 	w.Keys[numSplits-1].PublicKey = lastSecretKey.GetPublicKey().SerializeToHexStr()
 
@@ -136,7 +152,7 @@ func (b0 *MiraclScheme) SplitKeys(numSplits int) (*Wallet, error) {
 }
 
 //Sign sign message
-func (b0 *MiraclScheme) Sign(hash string) (string, error) {
+func (b0 *HerumiScheme) Sign(hash string) (string, error) {
 	sig, err := b0.rawSign(hash)
 	if err != nil {
 		return "", err
@@ -145,29 +161,29 @@ func (b0 *MiraclScheme) Sign(hash string) (string, error) {
 }
 
 //SetPublicKey - implement interface
-func (b0 *MiraclScheme) SetPublicKey(publicKey string) error {
+func (b0 *HerumiScheme) SetPublicKey(publicKey string) error {
 	if b0.PrivateKey != "" {
 		return errors.New("set_public_key", "cannot set public key when there is a private key")
 	}
 	if b0.PublicKey != "" {
 		return errors.New("set_public_key", "public key already exists")
 	}
-	b0.PublicKey = MiraclToHerumiPK(publicKey)
+	b0.PublicKey = publicKey
 	return nil
 }
 
 //GetPublicKey - implement interface
-func (b0 *MiraclScheme) GetPublicKey() string {
+func (b0 *HerumiScheme) GetPublicKey() string {
 	return b0.PublicKey
 }
 
 //Verify - implement interface
-func (b0 *MiraclScheme) Verify(signature, msg string) (bool, error) {
+func (b0 *HerumiScheme) Verify(signature, msg string) (bool, error) {
 	if b0.PublicKey == "" {
 		return false, errors.New("verify", "public key does not exists for verification")
 	}
-	var sig bls.Sign
-	var pk bls.PublicKey
+	sig := BlsSignerInstance.NewSignature()
+	pk := BlsSignerInstance.NewPublicKey()
 	err := sig.DeserializeHexStr(signature)
 	if err != nil {
 		return false, err
@@ -179,12 +195,16 @@ func (b0 *MiraclScheme) Verify(signature, msg string) (bool, error) {
 	if rawHash == nil {
 		return false, errors.New("verify", "failed hash while signing")
 	}
-	pk.DeserializeHexStr(b0.PublicKey)
-	return sig.Verify(&pk, string(rawHash)), nil
+	err = pk.DeserializeHexStr(b0.PublicKey)
+	if err != nil {
+		return false, err
+	}
+
+	return sig.Verify(pk, string(rawHash)), nil
 }
 
-func (b0 *MiraclScheme) Add(signature, msg string) (string, error) {
-	var sign bls.Sign
+func (b0 *HerumiScheme) Add(signature, msg string) (string, error) {
+	sign := BlsSignerInstance.NewSignature()
 	err := sign.DeserializeHexStr(signature)
 	if err != nil {
 		return "", err
@@ -198,7 +218,7 @@ func (b0 *MiraclScheme) Add(signature, msg string) (string, error) {
 }
 
 // GetPrivateKeyAsByteArray - converts private key into byte array
-func (b0 *MiraclScheme) GetPrivateKeyAsByteArray() ([]byte, error) {
+func (b0 *HerumiScheme) GetPrivateKeyAsByteArray() ([]byte, error) {
 	if len(b0.PrivateKey) == 0 {
 		return nil, errors.New("get_private_key_as_byte_array", "cannot convert empty private key to byte array")
 	}
@@ -209,7 +229,24 @@ func (b0 *MiraclScheme) GetPrivateKeyAsByteArray() ([]byte, error) {
 	return privateKeyBytes, nil
 }
 
-func (b0 *MiraclScheme) generateKeys(password string) (*Wallet, error) {
+//SetID sets ID in HexString format
+func (b0 *HerumiScheme) SetID(id string) error {
+	if b0.id == nil {
+		b0.id = BlsSignerInstance.NewID()
+	}
+	b0.Ids = id
+	return b0.id.SetHexString(id)
+}
+
+//GetID gets ID in hex string format
+func (b0 *HerumiScheme) GetID() string {
+	if b0.id == nil {
+		b0.id = BlsSignerInstance.NewID()
+	}
+	return b0.id.GetHexString()
+}
+
+func (b0 *HerumiScheme) generateKeys(password string) (*Wallet, error) {
 	// Check for recovery
 	if len(b0.Mnemonic) == 0 {
 		entropy, err := bip39.NewEntropy(256)
@@ -225,14 +262,14 @@ func (b0 *MiraclScheme) generateKeys(password string) (*Wallet, error) {
 	// Generate a Bip32 HD wallet for the mnemonic and a user supplied password
 	seed := bip39.NewSeed(b0.Mnemonic, password)
 	r := bytes.NewReader(seed)
-	bls.SetRandFunc(r)
+	BlsSignerInstance.SetRandFunc(r)
 
 	// New Wallet
 	w := &Wallet{}
 	w.Keys = make([]KeyPair, 1)
 
 	// Generate pair
-	var sk bls.SecretKey
+	sk := BlsSignerInstance.NewSecretKey()
 	sk.SetByCSPRNG()
 	w.Keys[0].PrivateKey = sk.SerializeToHexStr()
 	pub := sk.GetPublicKey()
@@ -247,12 +284,12 @@ func (b0 *MiraclScheme) generateKeys(password string) (*Wallet, error) {
 	w.DateCreated = time.Now().Format(time.RFC3339)
 
 	// Revert the Random function to default
-	bls.SetRandFunc(nil)
+	BlsSignerInstance.SetRandFunc(nil)
 	return w, nil
 }
 
-func (b0 *MiraclScheme) rawSign(hash string) (*bls.Sign, error) {
-	var sk bls.SecretKey
+func (b0 *HerumiScheme) rawSign(hash string) (Signature, error) {
+	sk := BlsSignerInstance.NewSecretKey()
 	if b0.PrivateKey == "" {
 		return nil, errors.New("raw_sign", "private key does not exists for signing")
 	}
@@ -264,7 +301,10 @@ func (b0 *MiraclScheme) rawSign(hash string) (*bls.Sign, error) {
 		return nil, errors.New("raw_sign", "failed hash while signing")
 	}
 	sk.SetByCSPRNG()
-	sk.DeserializeHexStr(b0.PrivateKey)
+	err = sk.DeserializeHexStr(b0.PrivateKey)
+	if err != nil {
+		return nil, err
+	}
 	sig := sk.Sign(string(rawHash))
 	return sig, nil
 }

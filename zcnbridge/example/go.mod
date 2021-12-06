@@ -2,8 +2,11 @@ module example
 
 replace github.com/0chain/gosdk => ../../
 
+//replace 0chain.net/0chain/authorizer => ../example/authorizer
+
 require (
 	github.com/0chain/gosdk v0.0.0
+	//0chain.net/0chain/authorizer v0.0.0
 	go.uber.org/zap v1.19.1
 )
 
@@ -13,7 +16,7 @@ require (
 	github.com/btcsuite/btcd v0.22.0-beta // indirect
 	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce // indirect
 	github.com/deckarep/golang-set v1.7.1 // indirect
-	github.com/ethereum/go-ethereum v1.10.12 // indirect
+	github.com/ethereum/go-ethereum v1.10.13 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
@@ -50,7 +53,7 @@ require (
 	go.uber.org/atomic v1.9.0 // indirect
 	go.uber.org/multierr v1.7.0 // indirect
 	golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871 // indirect
-	golang.org/x/sys v0.0.0-20211117180635-dee7805ff2e1 // indirect
+	golang.org/x/sys v0.0.0-20211124211545-fe61309f8881 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/cheggaaa/pb.v1 v1.0.28 // indirect
 	gopkg.in/ini.v1 v1.64.0 // indirect

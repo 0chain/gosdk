@@ -1,14 +1,19 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
+	"github.com/0chain/gosdk/core/encryption"
+
+	"github.com/0chain/gosdk/zcnbridge/ethereum"
+
+	"github.com/0chain/gosdk/zcnbridge/authorizer"
+
 	"github.com/0chain/gosdk/zcnbridge"
-
-	"github.com/0chain/gosdk/zcnbridge/config"
-
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"go.uber.org/zap"
 )
@@ -49,18 +54,186 @@ var tranHashes = []string{
 func main() {
 	cfg := zcnbridge.ReadClientConfigFromCmd()
 
-	var bridge = config.SetupBridge(*cfg.ConfigDir, *cfg.ConfigFile, *cfg.Development, cfg.LogDir())
-	bridge.SetupWallets(cfg)
+	var bridge = zcnbridge.SetupBridge(*cfg.ConfigDir, *cfg.ConfigFile, *cfg.Development, *cfg.LogPath)
 
-	// To test this, authorizers must be installed
-	PrintEthereumConfirmation()
-	PrintAuthorizers()
+	bridge.SetupChain()
+	bridge.SetupSDK(cfg)
+	bridge.SetupWallet()
+	bridge.SetupEthereumWallet()
+
+	// TODO: Verify that Ethereum Burn work
+	// TODO: Debug mint in Ethereum
+
+	// Testing WZCN minting side. It won't require
+	TraceRouteZCNToEthereumWith0ChainStab(bridge)
+
+	// Tracing with authorizer stub executed in-proc locally. It will require 0Chain with ZCNSC SC working.
+	TraceRouteZCNToEthereum(bridge)
+
+	// Verifications of pre-performed transactions
+	// Authorizers must be installed in these tests
+	ConfirmEthereumTransaction()
+	PrintAuthorizersList()
 	PrintEthereumBurnTicketsPayloads(bridge)
+
+	// Full test conversion
 	fromERCtoZCN(bridge)
 	fromZCNtoERC(bridge)
 }
 
-func PrintEthereumConfirmation() {
+// TraceRouteZCNToEthereumWith0ChainStab Implements to WZCN Ethereum minting
+// It will use ZCNSC SC Burn stab and won't require 0Chain working.
+// It's possible to test WZCN burning in Ethereum side without 0Chain working
+func TraceRouteZCNToEthereumWith0ChainStab(b *zcnbridge.Bridge) {
+	output := GenerateBurnTransactionOutput(b)
+	TraceEthereumMint(b, string(output))
+}
+
+// TraceRouteZCNToEthereum Traces the route from ZCN burn to Ethereum mint, bypassing authorizer part which
+// was duplicated here
+func TraceRouteZCNToEthereum(b *zcnbridge.Bridge) {
+	// --------------------- This part is executed in client in GOSDK part -------------------------------
+	// Sends {nonce,ethereum_address} payload to burn function
+	tx, err := b.BurnZCN(context.TODO(), ConvertAmountWei)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	tx, err = b.VerifyZCNTransaction(context.TODO(), tx.Hash)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	fmt.Printf("Burn transaction hash: %s\n. Confirmed", tx.Hash)
+	fmt.Printf("Burn transaction output: %s\n", tx.TransactionOutput)
+	// ---------------------- End SDK -------------------------------------------------------------------
+
+	output := tx.TransactionOutput
+
+	// ---------------------  This part is executed in authorizers in /burnticket handler ---------------
+	TraceEthereumMint(b, output)
+}
+
+var nonce int64
+
+// GenerateBurnTransactionOutput stub for burn transaction
+func GenerateBurnTransactionOutput(b *zcnbridge.Bridge) []byte {
+	// Type of input of burn transaction
+	type BurnPayload struct {
+		Nonce           int64  `json:"nonce"`
+		EthereumAddress string `json:"ethereum_address"`
+	}
+
+	// Type of response of burn transaction
+	type BurnPayloadResponse struct {
+		TxnID           string `json:"0chain_txn_id"`
+		Nonce           int64  `json:"nonce"`
+		Amount          int64  `json:"amount"`
+		EthereumAddress string `json:"ethereum_address"`
+	}
+
+	var scAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712e0"
+	nonce++
+
+	// Executed at burn function in smartcontract
+	payload := &BurnPayload{
+		Nonce:           nonce,
+		EthereumAddress: b.GetEthereumWallet().Address.String(),
+	}
+
+	// generating transaction hash
+	transactionData, _ := json.Marshal(payload)
+	hashData := fmt.Sprintf("%v:%v:%v:%v:%v", time.Now(), b.ID(), scAddress, 0, encryption.Hash(transactionData))
+	hash := encryption.Hash(hashData)
+
+	output := &BurnPayloadResponse{
+		TxnID:           hash,
+		Nonce:           payload.Nonce,
+		Amount:          ConvertAmountWei,
+		EthereumAddress: payload.EthereumAddress,
+	}
+
+	buffer, _ := json.Marshal(output)
+
+	return buffer
+}
+
+func TraceEthereumMint(b *zcnbridge.Bridge, output string) {
+	// --------------------- This part is executed in authorizers in /burnticket handler ---------------
+	// Sends hash to authorizer
+	pb := &authorizer.ProofOfBurn{}
+	err := pb.Decode([]byte(output)) // TODO: Ensure that transaction output contains proofOfBurn
+	if err != nil {
+		fmt.Print(err)
+	}
+	err = pb.Verify()
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	err = pb.Sign(b)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	buf := bytes.NewBuffer(nil)
+	_ = json.NewEncoder(buf).Encode(pb)
+	bridgeAnswer := buf.Bytes()
+
+	// --------------- END authorizer --------------------------------
+
+	// --------------- GOSDK part executed in Client -----------------
+	burnTicket := &zcnbridge.ProofZCNBurn{}
+	err = json.Unmarshal(bridgeAnswer, burnTicket)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	var sigs []*ethereum.AuthorizerSignature
+
+	sig := &ethereum.AuthorizerSignature{
+		ID:        burnTicket.GetAuthorizerID(),
+		Signature: burnTicket.Signature,
+	}
+
+	sigs = append(sigs, sig)
+
+	payload := &ethereum.MintPayload{
+		ZCNTxnID:   burnTicket.TxnID,
+		Amount:     burnTicket.Amount,
+		Nonce:      burnTicket.Nonce,
+		Signatures: sigs,
+	}
+	// --------------- END GOSDK part executed in Client -----------------------------
+
+	// --------------- GOSDK part starts on the client and executed in Ethereum ------
+	ethTrx, err := b.MintWZCN(context.TODO(), payload)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	status, err := zcnbridge.ConfirmEthereumTransaction(ethTrx.Hash().String(), 5, time.Second)
+	if err != nil {
+		fmt.Print(err)
+		return
+	}
+
+	if status == 1 {
+		fmt.Println("Transaction is successful")
+	} else {
+		fmt.Println("Transaction failed")
+	}
+
+	// ---------------- Completed ZCN -> WZCN transaction ------------------------------
+}
+
+func ConfirmEthereumTransaction() {
 	for _, hash := range tranHashes {
 		status, err := zcnbridge.ConfirmEthereumTransaction(hash, 10, time.Second)
 		if err != nil {
@@ -82,7 +255,7 @@ func PrintEthereumBurnTicketsPayloads(b *zcnbridge.Bridge) {
 	}
 }
 
-func PrintAuthorizers() {
+func PrintAuthorizersList() {
 	authorizers, err := zcnbridge.GetAuthorizers()
 	if err != nil {
 		fmt.Print(err)
@@ -91,10 +264,15 @@ func PrintAuthorizers() {
 }
 
 func fromZCNtoERC(b *zcnbridge.Bridge) {
-	burnTrx, err := b.BurnZCN(context.TODO())
+	burnTrx, err := b.BurnZCN(context.TODO(), ConvertAmountWei)
 	burnTrxHash := burnTrx.Hash
 	if err != nil {
 		log.Logger.Fatal("failed to burn in ZCN", zap.Error(err), zap.String("hash", burnTrxHash))
+	}
+
+	burnTrx, err = b.VerifyZCNTransaction(context.TODO(), burnTrxHash)
+	if err != nil {
+		return
 	}
 
 	// ASK authorizers for burn tickets to mint in Ethereum
@@ -103,15 +281,15 @@ func fromZCNtoERC(b *zcnbridge.Bridge) {
 		log.Logger.Fatal("failed to verify burn transactions in ZCN in QueryEthereumMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
-	tran, err := b.MintWZCN(context.Background(), ConvertAmountWei, mintPayload)
-	tranHash := tran.Hash().Hex()
+	mintTrx, err := b.MintWZCN(context.Background(), mintPayload)
+	tranHash := mintTrx.Hash().Hex()
 	if err != nil {
 		log.Logger.Fatal("failed to execute MintWZCN", zap.Error(err), zap.String("hash", tranHash))
 	}
 
 	// ASK for minting events from bridge contract but this is not necessary as we're going to check it by hash
 
-	res, err := zcnbridge.ConfirmEthereumTransaction(tranHash, 60, 2)
+	res, err := zcnbridge.ConfirmEthereumTransaction(tranHash, 60, time.Second)
 	if err != nil {
 		log.Logger.Fatal(
 			"failed to confirm transaction ConfirmEthereumTransaction",
@@ -133,7 +311,7 @@ func fromERCtoZCN(b *zcnbridge.Bridge) {
 	}
 
 	hash := transaction.Hash().Hex()
-	res, err := zcnbridge.ConfirmEthereumTransaction(hash, 60, 2)
+	res, err := zcnbridge.ConfirmEthereumTransaction(hash, 60, time.Second)
 	if err != nil {
 		log.Logger.Fatal(
 			"failed to confirm transaction ConfirmEthereumTransaction",
@@ -151,7 +329,7 @@ func fromERCtoZCN(b *zcnbridge.Bridge) {
 		log.Logger.Fatal("failed to execute BurnWZCN in wrapped chain", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
-	res, err = zcnbridge.ConfirmEthereumTransaction(burnTrxHash, 60, 2)
+	res, err = zcnbridge.ConfirmEthereumTransaction(burnTrxHash, 60, time.Second)
 	if err != nil {
 		log.Logger.Fatal(
 			"failed to confirm transaction ConfirmEthereumTransaction",
@@ -169,8 +347,8 @@ func fromERCtoZCN(b *zcnbridge.Bridge) {
 		log.Logger.Fatal("failed to QueryZChainMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
-	trx, err := b.MintZCN(context.TODO(), mintPayload)
+	mintTrx, err := b.MintZCN(context.TODO(), mintPayload)
 	if err != nil {
-		log.Logger.Fatal("failed to MintZCN", zap.Error(err), zap.String("hash", trx.Hash))
+		log.Logger.Fatal("failed to MintZCN", zap.Error(err), zap.String("hash", mintTrx.Hash))
 	}
 }

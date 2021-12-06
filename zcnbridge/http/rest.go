@@ -11,6 +11,7 @@ import (
 
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zcnbridge/errors"
+	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcncore"
 )
 
@@ -39,6 +40,7 @@ func MakeSCRestAPICall(relativePath string, params map[string]string) ([]byte, e
 			u      = makeURL(params, sharder, relativePath)
 		)
 
+		log.Logger.Info(fmt.Sprintf("Query %s", u.String()))
 		resp, err := client.Get(u.String())
 		if err != nil {
 			lastErrMsg = fmt.Sprintf("error while requesting sharders: %v", err)

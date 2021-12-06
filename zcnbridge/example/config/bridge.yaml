@@ -1,13 +1,11 @@
-logging:
-    level: "debug"
-
-block_worker: https://cube.devnet-0chain.net/dns # to debug in container
-signature_scheme: "bls0chain"
-min_submit: 50 # in percentage
-min_confirmation: 50 # in percentage
-confirmation_chain_length: 3
+#block_worker: https://cube.devnet-0chain.net/dns # to debug in container
+#signature_scheme: "bls0chain"
+#min_submit: 50 # in percentage
+#min_confirmation: 50 # in percentage
+#confirmation_chain_length: 3
 
 bridge:
+    loglevel: "debug"
     # Address of ethereum bridge contract
     BridgeAddress: "0xF26B52df8c6D9b9C20bfD7819Bed75a75258c7dB"
     # User's ethereum wallet mnemonic

@@ -1,3 +1,4 @@
+//go:build js && wasm
 // +build js,wasm
 
 package jsbridge
@@ -65,14 +66,14 @@ func (b *InputBuilder) Build() (InputBinder, error) {
 			b.binders[i] = jsValueToInt32
 		case *int64:
 			b.binders[i] = jsValueToInt64
-
 		case *float32:
 			b.binders[i] = jsValueToFloat32
 		case *float64:
 			b.binders[i] = jsValueToFloat64
 		case *bool:
 			b.binders[i] = jsValueToBool
-
+		case *[]string:
+			b.binders[i] = jsValueToStringSlice
 		default:
 			return nil, ErrBinderNotImplemented
 		}
@@ -84,6 +85,9 @@ func (b *InputBuilder) Build() (InputBinder, error) {
 
 // Bind bind js inputs to reflect values
 func (b *InputBuilder) Bind(args []js.Value) ([]reflect.Value, error) {
+	defer func() {
+
+	}()
 	if len(args) != b.numIn {
 		return nil, ErrMismatchedInputLength
 	}
@@ -157,4 +161,21 @@ func jsValueToFloat64(jv js.Value) reflect.Value {
 	}
 
 	return reflect.ValueOf(i)
+}
+
+func jsValueToStringSlice(jv js.Value) reflect.Value {
+	var list []string
+
+	if js.Global().Get("Array").Call("isArray", jv).Bool() {
+		list = make([]string, jv.Length())
+		for i := 0; i < len(list); i++ {
+			it := jv.Index(i)
+			if it.Truthy() {
+				list[i] = it.String()
+			}
+
+		}
+	}
+
+	return reflect.ValueOf(list)
 }

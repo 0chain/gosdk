@@ -3,7 +3,8 @@ package wallet
 import (
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
+
+	"github.com/0chain/gosdk/zcnbridge/log"
 
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zcnbridge/crypto"
@@ -62,6 +63,11 @@ func (w *Wallet) PublicKey() string {
 	return w.ZCNWallet.Keys[0].PublicKey
 }
 
+// PrivateKey returns the public key.
+func (w *Wallet) PrivateKey() string {
+	return w.ZCNWallet.Keys[0].PrivateKey
+}
+
 // ID returns the client id.
 // NOTE: client id represents hex encoded SHA3-256 hash of the raw public key.
 func (w *Wallet) ID() string {
@@ -102,7 +108,7 @@ func (w *Wallet) RegisterToMiners() error {
 	status.Wait()
 
 	if status.Success {
-		fmt.Println("wallet registered")
+		log.Logger.Info("wallet registered")
 	} else {
 		return errors.Wrap(errCode, "wallet registration failed "+status.ErrMsg, err)
 	}

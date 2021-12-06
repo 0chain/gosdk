@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -674,7 +675,7 @@ func (a *Allocation) listDir(path string, consensusThresh, fullconsensus float32
 //TODO use allocation context
 func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
 	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
-		return nil, errors.New("invalid_path", "Invalid path for the objectTree. Absolute path required")
+		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
 	}
 	if !a.isInitialized() {
 		return nil, notInitialized
@@ -994,7 +995,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 }
 
 func (a *Allocation) GetAuthTicketForShare(path string, filename string, referenceType string, refereeClientID string) (string, error) {
-	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "", 0)
+	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "", 0, 0)
 }
 
 func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
@@ -1067,6 +1068,7 @@ func (a *Allocation) GetAuthTicket(
 	refereeClientID string,
 	refereeEncryptionPublicKey string,
 	expiration int64,
+	availableAfter int64,
 ) (string, error) {
 	if !a.isInitialized() {
 		return "", notInitialized
@@ -1099,7 +1101,7 @@ func (a *Allocation) GetAuthTicket(
 		if err != nil {
 			return "", err
 		}
-		err = a.UploadAuthTicketToBlobber(authTicket, refereeEncryptionPublicKey)
+		err = a.UploadAuthTicketToBlobber(authTicket, refereeEncryptionPublicKey, availableAfter)
 		if err != nil {
 			return "", err
 		}
@@ -1126,7 +1128,7 @@ func (a *Allocation) GetAuthTicket(
 	return authTicket, nil
 }
 
-func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPubKey string) error {
+func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPubKey string, availableAfter int64) error {
 	decodedAuthTicket, err := base64.StdEncoding.DecodeString(authticketB64)
 	if err != nil {
 		return err
@@ -1140,6 +1142,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPu
 		formWriter := multipart.NewWriter(body)
 		formWriter.WriteField("encryption_public_key", clientEncPubKey)
 		formWriter.WriteField("auth_ticket", string(decodedAuthTicket))
+		formWriter.WriteField("available_after", strconv.FormatInt(availableAfter, 10))
 		formWriter.Close()
 		httpreq, err := zboxutil.NewShareRequest(url, a.Tx, body)
 		if err != nil {
@@ -1246,6 +1249,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	if err != nil {
 		return errors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
 	}
+
 	if stat, err := os.Stat(localPath); err == nil {
 		if !stat.IsDir() {
 			return fmt.Errorf("Local path is not a directory '%s'", localPath)
