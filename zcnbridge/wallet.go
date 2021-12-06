@@ -38,6 +38,7 @@ func (b *Bridge) SetupWallet() {
 		log.Logger.Fatal("failed to setup wallet", zap.Error(err))
 	}
 	b.Instance.wallet = walletConfig
+	chain.GetServerChain().ID = walletConfig.ID()
 }
 
 func (b *Bridge) SetupEthereumWallet() {

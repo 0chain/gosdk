@@ -670,7 +670,7 @@ func (a *Allocation) listDir(path string, consensusThresh, fullconsensus float32
 //TODO use allocation context
 func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
 	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
-		return nil, errors.New("invalid_path", "Invalid path for the objectTree. Absolute path required")
+		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
 	}
 	if !a.isInitialized() {
 		return nil, notInitialized

@@ -2,6 +2,7 @@ package errors
 
 import (
 	"errors"
+	"fmt"
 	"os"
 )
 
@@ -87,4 +88,17 @@ func Wrap(code, text string, err error) *ErrWrapper {
 	}
 
 	return wrapper
+}
+
+func (err *Error) Error() string {
+	return fmt.Sprintf("%s: %s", err.Code, err.Msg)
+}
+
+func NewError(code string, msg string) *Error {
+	return &Error{Code: code, Msg: msg}
+}
+
+/*NewErrorf - create a new error with format */
+func NewErrorf(code string, format string, args ...interface{}) *Error {
+	return &Error{Code: code, Msg: fmt.Sprintf(format, args...)}
 }

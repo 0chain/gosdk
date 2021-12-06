@@ -1,3 +1,4 @@
+//go:build js && wasm
 // +build js,wasm
 
 package main
@@ -9,11 +10,11 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"os"
-	"path/filepath"
 	"strconv"
 	"sync"
 	"syscall/js"
 
+	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"go.uber.org/zap"
@@ -102,11 +103,14 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 }
 
 // CommitMetaCompleted when commit meta completes
-func (s *StatusBar) CommitMetaCompleted(request, response string, err error) {
+func (s *StatusBar) CommitMetaCompleted(request, response string, txn *transaction.Transaction, err error) {
+	setLastMetadataCommitTxn(txn, err)
+	s.wg.Done()
 }
 
 // RepairCompleted when repair is completed
 func (s *StatusBar) RepairCompleted(filesRepaired int) {
+	s.wg.Done()
 }
 
 // PrintError is to print error
@@ -186,256 +190,6 @@ func createDirIfNotExists(allocation string) {
 	} else {
 		fmt.Println("WARN: error in createDirIfNotExists: ", err.Error())
 	}
-}
-
-//-----------------------------------------------------------------------------
-// Ported over from `code/go/0proxy.io/zproxycore/handler/rename.go`
-//-----------------------------------------------------------------------------
-
-// Rename is to rename file in dStorage
-func Rename(this js.Value, p []js.Value) interface{} {
-	allocation := p[0].String()
-	clientJSON := p[1].String()
-	chainJSON := p[2].String()
-	err := validateClientDetails(allocation, clientJSON)
-	if err != nil {
-		return js.ValueOf("error: " + err.Error())
-	}
-
-	remotePath := p[3].String()
-	newName := p[4].String()
-	if len(remotePath) == 0 || len(newName) == 0 {
-		return js.ValueOf("error: " + NewError("invalid_param", "Please provide remote_path and new_name for rename").Error())
-	}
-
-	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		resolve := args[0]
-		reject := args[1]
-
-		go func() {
-			err = initSDK(clientJSON, chainJSON)
-			if err != nil {
-				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
-				return
-			}
-
-			allocationObj, err := sdk.GetAllocation(allocation)
-			if err != nil {
-				reject.Invoke(js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error()))
-				return
-			}
-
-			err = allocationObj.RenameObject(remotePath, newName)
-			if err != nil {
-				reject.Invoke(js.ValueOf("error: " + NewError("rename_object_failed", err.Error()).Error()))
-				return
-			}
-
-			responseConstructor := js.Global().Get("Response")
-			response := responseConstructor.New(js.ValueOf("Rename done successfully"))
-
-			resolve.Invoke(response)
-		}()
-
-		return nil
-	})
-
-	promiseConstructor := js.Global().Get("Promise")
-	return promiseConstructor.New(handler)
-}
-
-//-----------------------------------------------------------------------------
-// Ported over from `code/go/0proxy.io/zproxycore/handler/rename.go`
-//-----------------------------------------------------------------------------
-
-// Copy is to copy a file from remotePath to destPath in dStorage
-func Copy(this js.Value, p []js.Value) interface{} {
-	allocation := p[0].String()
-	clientJSON := p[1].String()
-	chainJSON := p[2].String()
-	err := validateClientDetails(allocation, clientJSON)
-	if err != nil {
-		return js.ValueOf("error: " + err.Error())
-	}
-
-	remotePath := p[3].String()
-	destPath := p[4].String()
-	if len(remotePath) == 0 || len(destPath) == 0 {
-		return js.ValueOf("error: " + NewError("invalid_param", "Please provide remote_path and dest_path for copy").Error())
-	}
-
-	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		resolve := args[0]
-		reject := args[1]
-
-		go func() {
-			err = initSDK(clientJSON, chainJSON)
-			if err != nil {
-				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
-				return
-			}
-
-			allocationObj, err := sdk.GetAllocation(allocation)
-			if err != nil {
-				reject.Invoke(js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error()))
-				return
-			}
-
-			err = allocationObj.CopyObject(remotePath, destPath)
-			if err != nil {
-				reject.Invoke(js.ValueOf("error: " + NewError("copy_object_failed", err.Error()).Error()))
-				return
-			}
-
-			responseConstructor := js.Global().Get("Response")
-			response := responseConstructor.New(js.ValueOf("Copy done successfully"))
-
-			resolve.Invoke(response)
-		}()
-
-		return nil
-	})
-
-	promiseConstructor := js.Global().Get("Promise")
-	return promiseConstructor.New(handler)
-}
-
-//-----------------------------------------------------------------------------
-// Ported over from `code/go/0proxy.io/zproxycore/handler/share.go`
-//-----------------------------------------------------------------------------
-
-// Share is to share file in dStorage
-func Share(this js.Value, p []js.Value) interface{} {
-	allocation := p[0].String()
-	clientJSON := p[1].String()
-	chainJSON := p[2].String()
-	err := validateClientDetails(allocation, clientJSON)
-	if err != nil {
-		return js.ValueOf("error: " + err.Error())
-	}
-
-	remotePath := p[3].String()
-	if len(remotePath) == 0 {
-		return js.ValueOf("error: " + NewError("invalid_param", "Please provide remote_path for share").Error())
-	}
-
-	refereeClientID := p[3].String()
-	encryptionpublickey := p[4].String()
-	expiry := p[5].Int()
-	available := p[6].Int()
-
-	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		resolve := args[0]
-		reject := args[1]
-
-		go func() {
-			err = initSDK(clientJSON, chainJSON)
-			if err != nil {
-				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
-				return
-			}
-
-			allocationObj, err := sdk.GetAllocation(allocation)
-			if err != nil {
-				reject.Invoke(js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error()))
-				return
-
-			}
-
-			refType := fileref.FILE
-			statsMap, err := allocationObj.GetFileStats(remotePath)
-			if err != nil {
-				reject.Invoke(js.ValueOf("error: " + NewError("get_file_stats_failed", err.Error()).Error()))
-				return
-			}
-
-			isFile := false
-			for _, v := range statsMap {
-				if v != nil {
-					isFile = true
-					break
-				}
-			}
-			if !isFile {
-				refType = fileref.DIRECTORY
-			}
-
-			var fileName string
-			_, fileName = filepath.Split(remotePath)
-
-			at, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, refereeClientID, encryptionpublickey, int64(expiry), int64(available))
-			if err != nil {
-				reject.Invoke(js.ValueOf("error: " + NewError("get_auth_ticket_failed", err.Error()).Error()))
-				return
-			}
-
-			responseConstructor := js.Global().Get("Response")
-			response := responseConstructor.New(js.ValueOf(at))
-
-			resolve.Invoke(response)
-		}()
-
-		return nil
-	})
-
-	promiseConstructor := js.Global().Get("Promise")
-	return promiseConstructor.New(handler)
-}
-
-//-----------------------------------------------------------------------------
-// Ported over from `code/go/0proxy.io/zproxycore/handler/move.go`
-//-----------------------------------------------------------------------------
-
-// Move is to move file in dStorage
-func Move(this js.Value, p []js.Value) interface{} {
-	allocation := p[0].String()
-	clientJSON := p[1].String()
-	chainJSON := p[2].String()
-	err := validateClientDetails(allocation, clientJSON)
-	if err != nil {
-		return js.ValueOf("error: " + err.Error())
-	}
-
-	remotePath := p[3].String()
-	destPath := p[4].String()
-	if len(remotePath) == 0 || len(destPath) == 0 {
-		return js.ValueOf("error: " + NewError("invalid_param", "Please provide remote_path and dest_path for move").Error())
-	}
-
-	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		resolve := args[0]
-		reject := args[1]
-
-		go func() {
-			err = initSDK(clientJSON, chainJSON)
-			if err != nil {
-				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
-				return
-			}
-
-			allocationObj, err := sdk.GetAllocation(allocation)
-			if err != nil {
-				reject.Invoke(js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error()))
-				return
-			}
-
-			err = allocationObj.MoveObject(remotePath, destPath)
-			if err != nil {
-				reject.Invoke(js.ValueOf("error: " + NewError("move_object_failed", err.Error()).Error()))
-				return
-			}
-
-			responseConstructor := js.Global().Get("Response")
-			response := responseConstructor.New(js.ValueOf("Move done successfully"))
-
-			resolve.Invoke(response)
-		}()
-
-		return nil
-	})
-
-	promiseConstructor := js.Global().Get("Promise")
-	return promiseConstructor.New(handler)
 }
 
 //-----------------------------------------------------------------------------
@@ -674,62 +428,6 @@ func Download(this js.Value, p []js.Value) interface{} {
 
 			responseConstructor := js.Global().Get("Response")
 			response := responseConstructor.New(js.ValueOf(localFilePath))
-
-			resolve.Invoke(response)
-		}()
-
-		return nil
-	})
-
-	promiseConstructor := js.Global().Get("Promise")
-	return promiseConstructor.New(handler)
-}
-
-//-----------------------------------------------------------------------------
-// Ported over from `code/go/0proxy.io/zproxycore/handler/delete.go`
-//-----------------------------------------------------------------------------
-
-// Delete is to delete a file in dStorage
-func Delete(this js.Value, p []js.Value) interface{} {
-	allocation := p[0].String()
-	clientJSON := p[1].String()
-	chainJSON := p[2].String()
-	remotePath := p[3].String()
-
-	err := validateClientDetails(allocation, clientJSON)
-	if err != nil {
-		return js.ValueOf("error: " + err.Error())
-	}
-
-	if len(remotePath) == 0 {
-		return js.ValueOf("error: " + NewError("invalid_param", "Please provide remote_path for delete").Error())
-	}
-
-	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		resolve := args[0]
-		reject := args[1]
-
-		go func() {
-			err = initSDK(clientJSON, chainJSON)
-			if err != nil {
-				reject.Invoke(js.ValueOf("error: " + NewError("sdk_not_initialized", "Unable to initialize gosdk with the given client details").Error()))
-				return
-			}
-
-			allocationObj, err := sdk.GetAllocation(allocation)
-			if err != nil {
-				reject.Invoke(js.ValueOf("error: " + NewError("get_allocation_failed", err.Error()).Error()))
-				return
-			}
-
-			err = allocationObj.DeleteFile(remotePath)
-			if err != nil {
-				reject.Invoke(js.ValueOf("error: " + NewError("delete_object_failed", err.Error()).Error()))
-				return
-			}
-
-			responseConstructor := js.Global().Get("Response")
-			response := responseConstructor.New(js.ValueOf("Delete done successfully"))
 
 			resolve.Invoke(response)
 		}()

@@ -3177,7 +3177,7 @@ func TestAllocation_CommitMetaTransaction(t *testing.T) {
 				fileMeta:      nil,
 				status: func(t *testing.T) StatusCallback {
 					scm := &mocks.StatusCallback{}
-					scm.On("CommitMetaCompleted", mock.Anything, mock.Anything, mock.Anything).Maybe()
+					scm.On("CommitMetaCompleted", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Maybe()
 					return scm
 				},
 			},
