@@ -15,7 +15,7 @@ type ProofOfBurn struct {
 	Nonce           int64  `json:"nonce"`
 	Amount          int64  `json:"amount"`
 	EthereumAddress string `json:"ethereum_address"`
-	Signature       string `json:"signatures,omitempty"`
+	Signature       []byte `json:"signatures,omitempty"`
 }
 
 func (pb *ProofOfBurn) Encode() []byte {
@@ -46,7 +46,7 @@ func (pb *ProofOfBurn) Sign(b *zcnbridge.Bridge) (err error) {
 	if err != nil {
 		return errors.Wrap("signature", "failed to sign proof of burn ticket", err)
 	}
-	pb.Signature = string(sig)
+	pb.Signature = sig
 
 	return
 }

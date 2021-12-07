@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
@@ -205,11 +204,10 @@ func (b *Bridge) MintWZCN(ctx context.Context, payload *ethereum.MintPayload) (*
 
 	// 4. Signature
 	// For requirements from ERC20 authorizer, the signature length must be 65
-	var sb strings.Builder
+	var sigs []byte
 	for _, signature := range payload.Signatures {
-		sb.WriteString(signature.Signature)
+		sigs = append(sigs, signature.Signature...)
 	}
-	sigs := []byte(sb.String())
 
 	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, "mint", amount, zcnTxd, nonce, sigs)
 	if err != nil {

@@ -12,7 +12,7 @@ type MintPayload struct {
 
 type AuthorizerSignature struct {
 	ID        string `json:"authorizer_id"`
-	Signature string `json:"signature"`
+	Signature []byte `json:"signature"`
 }
 
 func (mp *MintPayload) Encode() []byte {
