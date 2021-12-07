@@ -124,7 +124,7 @@ func BenchmarkChunkedUpload(b *testing.B) {
 					Attributes: fileref.Attributes{},
 				}
 
-				chunkedUpload, err := CreateChunkedUpload("/tmp", a, fileMeta, reader, false)
+				chunkedUpload, err := CreateChunkedUpload("/tmp", a, fileMeta, reader, false, false)
 				if err != nil {
 					b.Fatal(err)
 					return

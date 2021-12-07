@@ -33,6 +33,7 @@ require (
 	github.com/lithammer/shortuuid/v3 v3.0.7
 	github.com/magma/augmented-networks/accounting/protos v0.1.1
 	github.com/mattn/go-runewidth v0.0.13 // indirect
+	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.4.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
 	github.com/pkg/errors v0.9.1
