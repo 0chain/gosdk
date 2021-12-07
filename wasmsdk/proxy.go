@@ -24,42 +24,55 @@ func main() {
 
 	zcn := window.Get("__zcn_wasm__")
 	if !(zcn.IsNull() || zcn.IsUndefined()) {
-		sdk := zcn.Get("sdk")
-		jsClient := zcn.Get("js")
 
-		sign := jsClient.Get("sign")
+		jsProxy := zcn.Get("jsProxy")
+		if !(jsProxy.IsNull() || jsProxy.IsUndefined()) {
+			sign := jsProxy.Get("sign")
 
-		signer := func(hash string) (string, error) {
-			result, err := jsbridge.Await(sign.Invoke(hash))
+			if !(sign.IsNull() || sign.IsUndefined()) {
+				signer := func(hash string) (string, error) {
+					result, err := jsbridge.Await(sign.Invoke(hash))
 
-			if len(err) > 0 && !err[0].IsNull() {
-				return "", errors.New("sign: " + err[0].String())
+					if len(err) > 0 && !err[0].IsNull() {
+						return "", errors.New("sign: " + err[0].String())
+					}
+					return result[0].String(), nil
+				}
+
+				//update sign with js sign
+				zcncrypto.Sign = signer
+				client.Sign = signer
+			} else {
+				PrintError("__zcn_wasm__.jsProxy.sign is not installed yet")
 			}
-			return result[0].String(), nil
+
+		} else {
+			PrintError("__zcn_wasm__.jsProxy is not installed yet")
 		}
 
-		//update sign with js sign
-		zcncrypto.Sign = signer
-		client.Sign = signer
-
 		// tiny wasm sdk with new methods
+		sdk := zcn.Get("sdk")
+		if !(sdk.IsNull() || sdk.IsUndefined()) {
+			jsbridge.BindAsyncFuncs(sdk, map[string]interface{}{
+				//sdk
+				"init":                  Init,
+				"setWallet":             SetWallet,
+				"getEncryptedPublicKey": GetEncryptedPublicKey,
 
-		jsbridge.BindAsyncFuncs(sdk, map[string]interface{}{
-			//sdk
-			"init":                  Init,
-			"setWallet":             SetWallet,
-			"getEncryptedPublicKey": GetEncryptedPublicKey,
+				//blobber
+				"delete": Delete,
+				"rename": Rename,
+				"copy":   Copy,
+				"move":   Move,
+				"share":  Share,
+			})
 
-			//blobber
-			"delete": Delete,
-			"rename": Rename,
-			"copy":   Copy,
-			"move":   Move,
-			"share":  Share,
-		})
+			fmt.Println("__wasm_initialized__ = true;")
+			zcn.Set("__wasm_initialized__", true)
+		} else {
+			PrintError("__zcn_wasm__.sdk is not installed yet")
+		}
 
-		fmt.Println("__wasm_initialized__ = true;")
-		zcn.Set("__wasm_initialized__", true)
 	}
 
 	<-make(chan bool)
