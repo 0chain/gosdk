@@ -3,9 +3,16 @@ package main
 import (
 	"bytes"
 	"context"
+	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
+
+	"github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/0chain/gosdk/core/encryption"
 
@@ -52,6 +59,9 @@ var tranHashes = []string{
 }
 
 func main() {
+
+	SignatureTests()
+
 	cfg := zcnbridge.ReadClientConfigFromCmd()
 
 	var bridge = zcnbridge.SetupBridge(*cfg.ConfigDir, *cfg.ConfigFile, *cfg.Development, *cfg.LogPath)
@@ -79,6 +89,71 @@ func main() {
 	// Full test conversion
 	fromERCtoZCN(bridge)
 	fromZCNtoERC(bridge)
+}
+
+// SignatureTests Create public and private keys, signs data and recovers signer public key
+func SignatureTests() {
+	// 1. Private Key
+	privateKeyHex := "fad9c8855b740a0b7ed4c221dbad0f33a83a49cad6b3fe8d5817ac83d38b6a19"
+	privateKey, err := crypto.HexToECDSA(privateKeyHex)
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	// 2. Public Key
+	publicKey := privateKey.Public()
+	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+	if !ok {
+		fmt.Print(err)
+	}
+	publicKeyBytes := crypto.FromECDSAPub(publicKeyECDSA)
+
+	// 3. Create data and signature
+	data, sig := CreateSignature(privateKey)
+
+	// 4. Recover public key from hashed data and signature
+	pubKeyBytes := RecoverSignerPublicKey(data, sig)
+
+	// 5. Compare
+	equal := bytes.Equal(pubKeyBytes, publicKeyBytes)
+	if !equal {
+		fmt.Print("signatures failure")
+	}
+}
+
+// CreateSignature Approach used in authorizers to sign payload to Ethereum bridge
+// Returns data hash and
+func CreateSignature(privateKey *ecdsa.PrivateKey) (common.Hash, []byte) {
+	// 1. Hash data
+	data := []byte("payload")
+	hash := crypto.Keccak256Hash(data)
+	fmt.Println(hash.Hex())
+
+	// 2. Signing the data
+	signature, err := crypto.Sign(hash.Bytes(), privateKey)
+	if err != nil {
+		fmt.Print(err)
+	}
+
+	// 3. Signature to hex string
+	fmt.Println("Signature length: ", len(signature))
+	sig := hexutil.Encode(signature)
+	fmt.Println(sig)
+
+	return hash, signature
+}
+
+func RecoverSignerPublicKey(data common.Hash, signature []byte) []byte {
+	sigPublicKey, err := crypto.Ecrecover(data.Bytes(), signature)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return sigPublicKey
+}
+
+func VerifySignature(sig string) {
+
 }
 
 // TraceRouteZCNToEthereumWith0ChainStab Implements to WZCN Ethereum minting
@@ -179,6 +254,8 @@ func TraceEthereumMint(b *zcnbridge.Bridge, output string) {
 		fmt.Print(err)
 		return
 	}
+
+	fmt.Printf("Generated signature of length: %d\n", len(pb.Signature))
 
 	buf := bytes.NewBuffer(nil)
 	_ = json.NewEncoder(buf).Encode(pb)
