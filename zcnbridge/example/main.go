@@ -59,7 +59,6 @@ var tranHashes = []string{
 }
 
 func main() {
-
 	SignatureTests()
 
 	cfg := zcnbridge.ReadClientConfigFromCmd()
