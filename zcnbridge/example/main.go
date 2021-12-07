@@ -73,7 +73,7 @@ func main() {
 	// TODO: Verify that Ethereum Burn work
 	// TODO: Debug mint in Ethereum
 
-	// Testing WZCN minting side. It won't require
+	// Testing WZCN minting side
 	TraceRouteZCNToEthereumWith0ChainStab(bridge)
 
 	// Tracing with authorizer stub executed in-proc locally. It will require 0Chain with ZCNSC SC working.
@@ -108,7 +108,7 @@ func SignatureTests() {
 	publicKeyBytes := crypto.FromECDSAPub(publicKeyECDSA)
 
 	// 3. Create data and signature
-	data, sig := CreateSignature(privateKey)
+	data, sig := CreateSignature("message", privateKey)
 
 	// 4. Recover public key from hashed data and signature
 	pubKeyBytes := RecoverSignerPublicKey(data, sig)
@@ -122,9 +122,9 @@ func SignatureTests() {
 
 // CreateSignature Approach used in authorizers to sign payload to Ethereum bridge
 // Returns data hash and
-func CreateSignature(privateKey *ecdsa.PrivateKey) (common.Hash, []byte) {
+func CreateSignature(message string, privateKey *ecdsa.PrivateKey) (common.Hash, []byte) {
 	// 1. Hash data
-	data := []byte("payload")
+	data := []byte(message)
 	hash := crypto.Keccak256Hash(data)
 	fmt.Println(hash.Hex())
 
@@ -149,10 +149,6 @@ func RecoverSignerPublicKey(data common.Hash, signature []byte) []byte {
 	}
 
 	return sigPublicKey
-}
-
-func VerifySignature(sig string) {
-
 }
 
 // TraceRouteZCNToEthereumWith0ChainStab Implements to WZCN Ethereum minting
@@ -192,7 +188,7 @@ func TraceRouteZCNToEthereum(b *zcnbridge.Bridge) {
 
 var nonce int64
 
-// GenerateBurnTransactionOutput stub for burn transaction
+// GenerateBurnTransactionOutput stub for burn transaction in ZCN Chain
 func GenerateBurnTransactionOutput(b *zcnbridge.Bridge) []byte {
 	// Type of input of burn transaction
 	type BurnPayload struct {

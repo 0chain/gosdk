@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/crypto"
+
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zcnbridge/chain"
 
@@ -151,7 +153,26 @@ func (b *Bridge) VerifyZCNTransaction(ctx context.Context, hash string) (*transa
 	return transaction.VerifyTransaction(ctx, hash, b.ID(), b.PublicKey())
 }
 
-func (b *Bridge) TestSign(hash string) (string, error) {
+func (b *Bridge) CreateHash(message string) common.Hash {
+	data := []byte(message)
+	hash := crypto.Keccak256Hash(data)
+
+	return hash
+}
+
+func (b *Bridge) SignWithEthereumChain(message string) ([]byte, error) {
+	hash := b.CreateHash(message)
+	privateKey := b.GetEthereumWallet().PrivateKey
+	signature, err := crypto.Sign(hash.Bytes(), privateKey)
+	if err != nil {
+		return []byte{}, errors.Wrap(err, "failed to sign the message")
+	}
+
+	return signature, nil
+}
+
+// SignInZCNChain signs the digest with ZCN chain singer
+func (b *Bridge) SignInZCNChain(hash string) (string, error) {
 	scheme := chain.GetServerChain().SignatureScheme
 	signScheme := zcncrypto.NewSignatureScheme(scheme)
 	if signScheme != nil {
