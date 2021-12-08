@@ -25,7 +25,7 @@ type ClientConfig struct {
 // BridgeConfig initializes Ethereum wallet and params
 type BridgeConfig struct {
 	// Ethereum mnemonic (derivation of Ethereum owner, public and private key)
-	Mnemonic string
+	ClientEthereumMnemonic string
 	// Address of Ethereum bridge contract
 	BridgeAddress string
 	// Address of Ethereum authorizers contract
@@ -88,15 +88,15 @@ func ReadClientConfigFromCmd() *ClientConfig {
 func SetupBridgeFromConfig() *Bridge {
 	return &Bridge{
 		BridgeConfig: &BridgeConfig{
-			Mnemonic:           viper.GetString("bridge.Mnemonic"),
-			BridgeAddress:      viper.GetString("bridge.BridgeAddress"),
-			AuthorizersAddress: viper.GetString("bridge.AuthorizersAddress"),
-			WzcnAddress:        viper.GetString("bridge.WzcnAddress"),
-			EthereumNodeURL:    viper.GetString("bridge.EthereumNodeURL"),
-			ChainID:            viper.GetString("bridge.ChainID"),
-			GasLimit:           viper.GetUint64("bridge.GasLimit"),
-			Value:              viper.GetInt64("bridge.Value"),
-			ConsensusThreshold: viper.GetInt("bridge.ConsensusThreshold"),
+			ClientEthereumMnemonic: viper.GetString("bridge.ClientEthereumMnemonic"),
+			BridgeAddress:          viper.GetString("bridge.BridgeAddress"),
+			AuthorizersAddress:     viper.GetString("bridge.AuthorizersAddress"),
+			WzcnAddress:            viper.GetString("bridge.WzcnAddress"),
+			EthereumNodeURL:        viper.GetString("bridge.EthereumNodeURL"),
+			ChainID:                viper.GetString("bridge.ChainID"),
+			GasLimit:               viper.GetUint64("bridge.GasLimit"),
+			Value:                  viper.GetInt64("bridge.Value"),
+			ConsensusThreshold:     viper.GetInt("bridge.ConsensusThreshold"),
 		},
 		Instance: &Instance{
 			startTime: common.Now(),

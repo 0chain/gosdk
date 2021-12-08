@@ -69,7 +69,7 @@ func (b *Bridge) GetEthereumWalletInfoFromMnemonic(mnemonic string) (*EthWalletI
 }
 
 func (b *Bridge) GetEthereumWalletInfo() (*EthWalletInfo, error) {
-	return b.GetEthereumWalletInfoFromMnemonic(b.Mnemonic)
+	return b.GetEthereumWalletInfoFromMnemonic(b.ClientEthereumMnemonic)
 }
 
 func (b *Bridge) CreateEthClient() (*ethclient.Client, error) {

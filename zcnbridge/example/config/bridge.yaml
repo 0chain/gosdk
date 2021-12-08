@@ -12,7 +12,7 @@ bridge:
     AuthorizersAddress: "0x7950dE78CE1d77331E39D9166A001beE4cba2Ca3"
     # User's ethereum wallet mnemonic
     # Address: 0x29C819651c4aE22Aba0B36bf8D4805daBaAa49F7
-    Mnemonic: "praise portion right again neglect frog border inch spatial nerve program wet"
+    ClientEthereumMnemonic: "praise portion right again neglect frog border inch spatial nerve program wet"
     # Address of WZCN token (Example: https://ropsten.etherscan.io/token/0x930E1BE76461587969Cb7eB9BFe61166b1E70244)
     WzcnAddress: "0x930E1BE76461587969Cb7eB9BFe61166b1E70244"
     # URL of ethereum RPC node (infura or alchemy)
