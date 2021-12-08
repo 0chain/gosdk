@@ -60,11 +60,12 @@ func main() {
 				"getEncryptedPublicKey": GetEncryptedPublicKey,
 
 				//blobber
-				"delete": Delete,
-				"rename": Rename,
-				"copy":   Copy,
-				"move":   Move,
-				"share":  Share,
+				"delete":   Delete,
+				"rename":   Rename,
+				"copy":     Copy,
+				"move":     Move,
+				"share":    Share,
+				"download": Download,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")

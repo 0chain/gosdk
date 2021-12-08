@@ -17,6 +17,7 @@ The 0chain wasm SDK is written in Go programming language, and released with Web
 - `zcn.sdk.copy(allocationID, remotePath, destPath string, commit bool)`:   copy file to another folder path on blobbers
 - `zcn.sdk.move(allocationID, remotePath, destPath string, commit bool)`:   move file to another remote folder path on dStorage. Only the owner of the allocation can copy an object.
 - `zcn.sdk.share(allocationID, remotePath, clientID, encryptionPublicKey string, expiration int, revoke bool,availableAfter int)`:    generate an authtoken that provides authorization to the holder to the specified file on the remotepath.
+- `zcn.sdk.download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly, autoCommit, rxPay, live, delay bool, blocksPerMarker, startBlock, endBlock int)`: download your own or a shared file.
 
 
   
