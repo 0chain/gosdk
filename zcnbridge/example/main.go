@@ -8,20 +8,15 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
-
-	"github.com/ethereum/go-ethereum/crypto"
-
 	"github.com/0chain/gosdk/core/encryption"
-
-	"github.com/0chain/gosdk/zcnbridge/ethereum"
-
-	"github.com/0chain/gosdk/zcnbridge/authorizer"
-
 	"github.com/0chain/gosdk/zcnbridge"
+	"github.com/0chain/gosdk/zcnbridge/authorizer"
+	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	"github.com/0chain/gosdk/zcnbridge/log"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/spf13/viper"
 	"go.uber.org/zap"
 )
 
@@ -59,16 +54,18 @@ var tranHashes = []string{
 }
 
 func main() {
-	SignatureTests()
-
 	cfg := zcnbridge.ReadClientConfigFromCmd()
 
 	var bridge = zcnbridge.SetupBridge(*cfg.ConfigDir, *cfg.ConfigFile, *cfg.Development, *cfg.LogPath)
+
+	SignatureTests()
 
 	bridge.SetupChain()
 	bridge.SetupSDK(cfg)
 	bridge.SetupWallet()
 	bridge.SetupEthereumWallet()
+
+	AddEthereumAuthorizers(*cfg.ConfigDir, bridge)
 
 	// TODO: Verify that Ethereum Burn work
 	// TODO: Debug mint in Ethereum
@@ -88,6 +85,42 @@ func main() {
 	// Full test conversion
 	fromERCtoZCN(bridge)
 	fromZCNtoERC(bridge)
+}
+
+func AddEthereumAuthorizers(configDir string, bridge *zcnbridge.Bridge) {
+	authorizers := viper.New()
+	authorizers.AddConfigPath(configDir)
+	authorizers.SetConfigName("authorizers")
+	if err := authorizers.ReadInConfig(); err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	mnemonics := authorizers.GetStringSlice("authorizers")
+
+	for _, mnemonic := range mnemonics {
+		wallet, err := bridge.CreateEthereumWalletFromMnemonic(mnemonic)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+
+		transaction, err := bridge.AddEthereumAuthorizer(context.TODO(), wallet.Address)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		status, err := zcnbridge.ConfirmEthereumTransaction(transaction.Hash().String(), 5, time.Second*5)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		if status == 1 {
+			fmt.Printf("Authorizer has been added: %s\n", wallet.Address.String())
+		} else {
+			fmt.Printf("Authorizer has failed to be added: %s\n", wallet.Address.String())
+		}
+	}
 }
 
 // SignatureTests Create public and private keys, signs data and recovers signer public key

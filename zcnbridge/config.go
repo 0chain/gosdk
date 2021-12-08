@@ -28,6 +28,8 @@ type BridgeConfig struct {
 	Mnemonic string
 	// Address of Ethereum bridge contract
 	BridgeAddress string
+	// Address of Ethereum authorizers contract
+	AuthorizersAddress string
 	// Address of WZCN Ethereum wrapped token
 	WzcnAddress string
 	// URL of ethereum RPC node (infura or alchemy)
@@ -88,6 +90,7 @@ func SetupBridgeFromConfig() *Bridge {
 		BridgeConfig: &BridgeConfig{
 			Mnemonic:           viper.GetString("bridge.Mnemonic"),
 			BridgeAddress:      viper.GetString("bridge.BridgeAddress"),
+			AuthorizersAddress: viper.GetString("bridge.AuthorizersAddress"),
 			WzcnAddress:        viper.GetString("bridge.WzcnAddress"),
 			EthereumNodeURL:    viper.GetString("bridge.EthereumNodeURL"),
 			ChainID:            viper.GetString("bridge.ChainID"),

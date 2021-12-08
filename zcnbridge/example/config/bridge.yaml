@@ -6,8 +6,10 @@
 
 bridge:
     loglevel: "debug"
-    # Address of ethereum bridge contract
+    # Address of Ethereum bridge contract
     BridgeAddress: "0xF26B52df8c6D9b9C20bfD7819Bed75a75258c7dB"
+    # Address of Ethereum authorizers contract
+    AuthorizersAddress: "0x7950dE78CE1d77331E39D9166A001beE4cba2Ca3"
     # User's ethereum wallet mnemonic
     # Address: 0x29C819651c4aE22Aba0B36bf8D4805daBaAa49F7
     Mnemonic: "praise portion right again neglect frog border inch spatial nerve program wet"
