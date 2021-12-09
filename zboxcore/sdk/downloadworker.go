@@ -224,6 +224,21 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 
+	// the smallest ChunkSize is 64kb
+	if fileRef.Type == fileref.FILE && fileRef.ChunkSize < 64 {
+		if req.statusCallback != nil {
+			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "File ChunkSize less than 64kb"))
+		}
+		return
+	}
+
+	if fileRef.Type == fileref.DIRECTORY && fileRef.ChunkSize == 0 {
+		if req.statusCallback != nil {
+			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "Cannot download directory"))
+		}
+		return
+	}
+
 	size := fileRef.ActualFileSize
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
 		size = fileRef.ActualThumbnailSize
