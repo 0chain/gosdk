@@ -147,6 +147,8 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 				}
 				Logger.Info("Download file success for repair", zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
 				statusCB.success = false
+			}else{
+				Logger.Info("FILE EXISTS", zap.Any("bool", true))
 			}
 
 			if r.checkForCancel(a) {
