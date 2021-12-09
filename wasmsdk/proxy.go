@@ -7,10 +7,12 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 
 	"syscall/js"
 )
@@ -19,6 +21,8 @@ import (
 
 func main() {
 	fmt.Printf("0CHAIN - GOSDK (version=%v)\n", version.VERSIONSTR)
+
+	sdk.FS = common.NewMemFS()
 
 	window := js.Global()
 
@@ -44,6 +48,28 @@ func main() {
 				client.Sign = signer
 			} else {
 				PrintError("__zcn_wasm__.jsProxy.sign is not installed yet")
+			}
+
+			createObjectURL := jsProxy.Get("createObjectURL")
+			if !(createObjectURL.IsNull() || createObjectURL.IsUndefined()) {
+
+				CreateObjectURL = func(buf []byte, mimeType string) string {
+					arrayBuffer := js.Global().Get("ArrayBuffer").New(len(buf))
+
+					uint8Array := js.Global().Get("Uint8Array").New(arrayBuffer)
+
+					js.CopyBytesToJS(uint8Array, buf)
+
+					result, err := jsbridge.Await(createObjectURL.Invoke(uint8Array, mimeType))
+					if len(err) > 0 && !err[0].IsNull() {
+						PrintError(err[0].String())
+						return ""
+					}
+
+					return result[0].String()
+				}
+			} else {
+				PrintError("__zcn_wasm__.jsProxy.createObjectURL is not installed yet")
 			}
 
 		} else {

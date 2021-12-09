@@ -10,6 +10,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
@@ -43,7 +44,7 @@ func Delete(allocationID, remotePath string, commit bool) (*transaction.Transact
 
 	fmt.Println(remotePath + " deleted")
 
-	txn, err := commitTxn(allocationObj, remotePath, "", "Delete", fileMeta, commit, isFile)
+	txn, err := commitTxn(allocationObj, remotePath, "", "", "", "Delete", fileMeta, commit, isFile)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +84,7 @@ func Rename(allocationID, remotePath, destName string, commit bool) (*transactio
 	}
 	fmt.Println(remotePath + " renamed")
 
-	txn, err := commitTxn(allocationObj, remotePath, destName, "Rename", fileMeta, commit, isFile)
+	txn, err := commitTxn(allocationObj, remotePath, destName, "", "", "Rename", fileMeta, commit, isFile)
 	if err != nil {
 		return nil, err
 	}
@@ -125,7 +126,7 @@ func Copy(allocationID, remotePath, destPath string, commit bool) (*transaction.
 
 	fmt.Println(remotePath + " copied")
 
-	txn, err := commitTxn(allocationObj, remotePath, destPath, "Copy", fileMeta, commit, isFile)
+	txn, err := commitTxn(allocationObj, remotePath, destPath, "", "", "Copy", fileMeta, commit, isFile)
 	if err != nil {
 		return nil, err
 	}
@@ -166,7 +167,7 @@ func Move(allocationID, remotePath, destPath string, commit bool) (*transaction.
 
 	fmt.Println(remotePath + " moved")
 
-	txn, err := commitTxn(allocationObj, remotePath, destPath, "Move", fileMeta, commit, isFile)
+	txn, err := commitTxn(allocationObj, remotePath, destPath, "", "", "Move", fileMeta, commit, isFile)
 	if err != nil {
 		return nil, err
 	}
@@ -234,7 +235,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 }
 
 // Download download file
-func Download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly, autoCommit, rxPay, live, delay bool, blocksPerMarker, startBlock, endBlock int) (*transaction.Transaction, error) {
+func Download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly, commit, rxPay, live, delay bool, blocksPerMarker, startBlock, endBlock int) (*DownloadResponse, error) {
 
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, RequiredArg("remotePath/authTicket")
@@ -271,11 +272,13 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 	var errE, err error
 	var allocationObj *sdk.Allocation
 	fileName := filepath.Base(remotePath)
-	localPath, err := getTempFile(allocationID, fileName)
+	localPath := filepath.Join(allocationID, fileName)
+
 	if err != nil {
 		PrintError(err)
 		return nil, err
 	}
+	defer sdk.FS.Remove(localPath) //nolint
 
 	if len(authTicket) > 0 {
 		at, err := sdk.InitAuthTicket(authTicket).Unmarshall()
@@ -357,13 +360,29 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 		return nil, errors.New("Download failed: unknown error")
 	}
 
-	// if commit {
-	// 	//	statusBar.wg.Add(1)
-	// 	//	commitMetaTxn(remotePath, "Download", authTicket, lookupHash, allocationObj, nil, statusBar)
-	// 	//statusBar.wg.Wait()
-	// }
+	result := &DownloadResponse{
+		FileName: fileName,
+	}
 
-	return nil, nil
+	fs, _ := sdk.FS.Open(localPath)
+
+	mf, _ := fs.(*common.MemFile)
+
+	result.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
+
+	if commit {
+
+		txn, err := commitTxn(allocationObj, remotePath, "", authTicket, lookupHash, "Download", nil, true, true)
+		if err != nil {
+			result.Error = err.Error()
+
+		} else {
+			result.Txn = txn
+		}
+
+	}
+
+	return result, nil
 
 }
 
@@ -393,7 +412,7 @@ func getFileMeta(allocationObj *sdk.Allocation, remotePath string, commit bool) 
 	return fileMeta, isFile, nil
 }
 
-func commitTxn(allocationObj *sdk.Allocation, remotePath, newFolderPath, commandName string, fileMeta *sdk.ConsolidatedFileMeta, commit, isFile bool) (*transaction.Transaction, error) {
+func commitTxn(allocationObj *sdk.Allocation, remotePath, newFolderPath, authTicket, lookupHash string, commandName string, fileMeta *sdk.ConsolidatedFileMeta, commit, isFile bool) (*transaction.Transaction, error) {
 	if commit {
 		if isFile {
 
@@ -403,7 +422,7 @@ func commitTxn(allocationObj *sdk.Allocation, remotePath, newFolderPath, command
 			statusBar := &StatusBar{wg: wg}
 			wg.Add(1)
 
-			err := allocationObj.CommitMetaTransaction(remotePath, commandName, "", "", fileMeta, statusBar)
+			err := allocationObj.CommitMetaTransaction(remotePath, commandName, authTicket, lookupHash, fileMeta, statusBar)
 			if err != nil {
 				PrintError("Commit failed.", err)
 				return nil, err

@@ -30,7 +30,7 @@ const (
 )
 
 var (
-	fs common.FS = common.NewDiskFS()
+	FS common.FS = common.NewDiskFS()
 )
 
 type DownloadRequest struct {
@@ -249,7 +249,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		perShard += chunksPerShard * (16 + (2 * 1024))
 	}
 
-	wrFile, err := fs.OpenFile(req.localpath, os.O_CREATE|os.O_WRONLY, 0644)
+	wrFile, err := FS.OpenFile(req.localpath, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		if req.statusCallback != nil {
 			logger.Logger.Error(err.Error())
@@ -287,7 +287,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 		data, err := req.downloadBlock(cnt+1, int(numBlocks))
 		if err != nil {
-			fs.Remove(req.localpath)
+			FS.Remove(req.localpath)
 			if req.statusCallback != nil {
 				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", cnt+1)))
 			}
@@ -295,7 +295,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		}
 		if req.isDownloadCanceled {
 			req.isDownloadCanceled = false
-			fs.Remove(req.localpath)
+			FS.Remove(req.localpath)
 			if req.statusCallback != nil {
 				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "Download aborted by user"))
 			}
@@ -306,7 +306,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		_, err = mW.Write(data[:n])
 
 		if err != nil {
-			fs.Remove(req.localpath)
+			FS.Remove(req.localpath)
 			if req.statusCallback != nil {
 				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.Wrap(err, "Write file failed"))
 			}
@@ -338,7 +338,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 		//if calcHash != expectedHash && expectedHash != merkleRoot {
 		if expectedHash != merkleRoot {
-			fs.Remove(req.localpath)
+			FS.Remove(req.localpath)
 			if req.statusCallback != nil {
 				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "File content didn't match with uploaded file"))
 			}
@@ -348,7 +348,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	wrFile.Sync()
 	wrFile.Close()
-	wrFile, _ = fs.Open(req.localpath)
+	wrFile, _ = FS.Open(req.localpath)
 	defer wrFile.Close()
 	wrFile.Seek(0, 0)
 	mimetype, _ := zboxutil.GetFileContentType(wrFile)

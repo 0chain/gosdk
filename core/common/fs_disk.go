@@ -23,7 +23,6 @@ func (fs *DiskFS) Open(name string) (File, error) {
 
 func (fs *DiskFS) OpenFile(name string, flag int, perm os.FileMode) (File, error) {
 	return os.OpenFile(name, flag, perm)
-
 }
 
 // Remove removes the named file or (empty) directory.
