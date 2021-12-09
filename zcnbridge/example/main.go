@@ -65,10 +65,8 @@ func main() {
 	bridge.SetupWallet()
 	bridge.SetupEthereumWallet()
 
-	AddEthereumAuthorizers(*cfg.ConfigDir, bridge)
-
-	// TODO: Verify that Ethereum Burn work
-	// TODO: Debug mint in Ethereum
+	// Don't uncomment, authorizers has already been added
+	// AddEthereumAuthorizers(*cfg.ConfigDir, bridge)
 
 	// Testing WZCN minting side
 	TraceRouteZCNToEthereumWith0ChainStab(bridge)
@@ -243,7 +241,7 @@ func GenerateBurnTransactionOutput(b *zcnbridge.Bridge) []byte {
 	// Executed at burn function in smartcontract
 	payload := &BurnPayload{
 		Nonce:           nonce,
-		EthereumAddress: b.GetEthereumWallet().Address.String(),
+		EthereumAddress: b.GetClientEthereumWallet().Address.String(),
 	}
 
 	// generating transaction hash

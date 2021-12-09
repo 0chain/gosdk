@@ -61,7 +61,7 @@ func (b *Bridge) IncreaseBurnerAllowance(ctx context.Context, amountWei Wei) (*t
 	// 2. Data Parameter (amount)
 	amount := big.NewInt(int64(amountWei))
 
-	ethWallet := b.GetEthereumWallet()
+	ethWallet := b.GetClientEthereumWallet()
 	ownerAddress, _, privKey := ethWallet.Address, ethWallet.PublicKey, ethWallet.PrivateKey
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read private key and ownerAddress")
@@ -164,7 +164,7 @@ func (b *Bridge) CreateHash(message string) common.Hash {
 // SignWithEthereumChain signs the digest with Ethereum chain signer
 func (b *Bridge) SignWithEthereumChain(message string) ([]byte, error) {
 	hash := b.CreateHash(message)
-	ethereumWallet := b.GetEthereumWallet()
+	ethereumWallet := b.GetClientEthereumWallet()
 	fmt.Printf("Signging message with %s: ", ethereumWallet.Address.Hex())
 	privateKey := ethereumWallet.PrivateKey
 	signature, err := crypto.Sign(hash.Bytes(), privateKey)
@@ -300,7 +300,7 @@ func (b *Bridge) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (*tran
 }
 
 func (b *Bridge) BurnZCN(ctx context.Context, amount int64) (*transaction.Transaction, error) {
-	address := b.GetEthereumAddress()
+	address := b.GetClientEthereumAddress()
 
 	payload := zcnsc.BurnPayload{
 		Nonce:           b.IncrementNonce(),
@@ -350,7 +350,7 @@ func (b *Bridge) prepareAuthorizers(ctx context.Context, method string, params .
 	contractAddress := common.HexToAddress(b.AuthorizersAddress)
 
 	// Bridge Ethereum Wallet
-	ethereumWallet := b.GetEthereumWallet()
+	ethereumWallet := b.GetOwnerEthereumWallet()
 	if ethereumWallet == nil {
 		return nil, nil, errors.New("Bridge Ethereum wallet is not initialized")
 	}
@@ -412,7 +412,7 @@ func (b *Bridge) prepareBridge(ctx context.Context, method string, params ...int
 	contractAddress := common.HexToAddress(b.BridgeAddress)
 
 	// Bridge Ethereum Wallet
-	ethereumWallet := b.GetEthereumWallet()
+	ethereumWallet := b.GetClientEthereumWallet()
 	if ethereumWallet == nil {
 		return nil, nil, errors.New("Bridge Ethereum wallet is not initialized")
 	}

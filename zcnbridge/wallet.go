@@ -42,14 +42,23 @@ func (b *Bridge) SetupWallet() {
 }
 
 func (b *Bridge) SetupEthereumWallet() {
-	var ethWalletConfig, err = b.CreateEthereumWallet()
+	clientEthereumWallet, err := b.CreateClientEthereumWallet()
 	if err != nil {
-		log.Logger.Fatal("failed to setup ethereum wallet", zap.Error(err))
+		log.Logger.Fatal("failed to setup client ethereum wallet", zap.Error(err))
 	} else {
-		log.Logger.Info("created ethereum wallet", zap.Error(err))
+		log.Logger.Info("created client ethereum wallet", zap.Error(err))
 	}
 
-	b.Instance.ethereumWallet = ethWalletConfig
+	b.Instance.clientEthereumWallet = clientEthereumWallet
+
+	ownerEthereumWallet, err := b.CreateOwnerEthereumWallet()
+	if err != nil {
+		log.Logger.Fatal("failed to setup owner ethereum wallet", zap.Error(err))
+	} else {
+		log.Logger.Info("created owner ethereum wallet", zap.Error(err))
+	}
+
+	b.Instance.ownerEthereumWallet = ownerEthereumWallet
 }
 
 func initZCNWallet() (*wallet.Wallet, error) {

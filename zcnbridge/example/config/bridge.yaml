@@ -13,6 +13,7 @@ bridge:
     # User's ethereum wallet mnemonic
     # Address: 0x29C819651c4aE22Aba0B36bf8D4805daBaAa49F7
     ClientEthereumMnemonic: "praise portion right again neglect frog border inch spatial nerve program wet"
+    OwnerEthereumMnemonic: "add here the owner mnemonic that has deployed auth and bridge contracts"
     # Address of WZCN token (Example: https://ropsten.etherscan.io/token/0x930E1BE76461587969Cb7eB9BFe61166b1E70244)
     WzcnAddress: "0x930E1BE76461587969Cb7eB9BFe61166b1E70244"
     # URL of ethereum RPC node (infura or alchemy)

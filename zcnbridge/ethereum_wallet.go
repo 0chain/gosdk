@@ -40,10 +40,23 @@ func (b *Bridge) CreateEthereumWalletFromMnemonic(mnemonic string) (*EthereumWal
 	}, nil
 }
 
-func (b *Bridge) CreateEthereumWallet() (*EthereumWallet, error) {
+func (b *Bridge) CreateOwnerEthereumWallet() (*EthereumWallet, error) {
+	address, publicKey, privateKey, err := b.GetKeysAndAddressFromMnemonic(b.OwnerEthereumMnemonic)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to initialize owner ethereum wallet")
+	}
+
+	return &EthereumWallet{
+		PublicKey:  publicKey,
+		PrivateKey: privateKey,
+		Address:    address,
+	}, nil
+}
+
+func (b *Bridge) CreateClientEthereumWallet() (*EthereumWallet, error) {
 	address, publicKey, privateKey, err := b.GetKeysAndAddress()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to initialize ethereum wallet")
+		return nil, errors.Wrap(err, "failed to initialize client ethereum wallet")
 	}
 
 	return &EthereumWallet{

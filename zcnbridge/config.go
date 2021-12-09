@@ -26,6 +26,8 @@ type ClientConfig struct {
 type BridgeConfig struct {
 	// Ethereum mnemonic (derivation of Ethereum owner, public and private key)
 	ClientEthereumMnemonic string
+	// Deployer of all bridge contracts
+	OwnerEthereumMnemonic string
 	// Address of Ethereum bridge contract
 	BridgeAddress string
 	// Address of Ethereum authorizers contract
@@ -45,10 +47,11 @@ type BridgeConfig struct {
 }
 
 type Instance struct {
-	wallet         *wallet.Wallet
-	ethereumWallet *EthereumWallet
-	startTime      common.Timestamp
-	nonce          int64
+	wallet               *wallet.Wallet
+	clientEthereumWallet *EthereumWallet
+	ownerEthereumWallet  *EthereumWallet
+	startTime            common.Timestamp
+	nonce                int64
 }
 
 type Bridge struct {
@@ -89,6 +92,7 @@ func SetupBridgeFromConfig() *Bridge {
 	return &Bridge{
 		BridgeConfig: &BridgeConfig{
 			ClientEthereumMnemonic: viper.GetString("bridge.ClientEthereumMnemonic"),
+			OwnerEthereumMnemonic:  viper.GetString("bridge.OwnerEthereumMnemonic"),
 			BridgeAddress:          viper.GetString("bridge.BridgeAddress"),
 			AuthorizersAddress:     viper.GetString("bridge.AuthorizersAddress"),
 			WzcnAddress:            viper.GetString("bridge.WzcnAddress"),
@@ -104,14 +108,19 @@ func SetupBridgeFromConfig() *Bridge {
 	}
 }
 
-// GetEthereumAddress returns ethereum wallet string
-func (b *Bridge) GetEthereumAddress() ether.Address {
-	return b.ethereumWallet.Address
+// GetClientEthereumAddress returns ethereum wallet string
+func (b *Bridge) GetClientEthereumAddress() ether.Address {
+	return b.clientEthereumWallet.Address
 }
 
-// GetEthereumWallet returns ethereum wallet string
-func (b *Bridge) GetEthereumWallet() *EthereumWallet {
-	return b.ethereumWallet
+// GetClientEthereumWallet returns ethereum wallet string
+func (b *Bridge) GetClientEthereumWallet() *EthereumWallet {
+	return b.clientEthereumWallet
+}
+
+// GetOwnerEthereumWallet returns owner ethereum wallet
+func (b *Bridge) GetOwnerEthereumWallet() *EthereumWallet {
+	return b.ownerEthereumWallet
 }
 
 // ID returns id of Node.
