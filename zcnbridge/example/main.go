@@ -26,6 +26,8 @@ const (
 
 // How should we manage nonce? - when user starts again on another server - how should we restore the value?
 
+// Who would use this SDK
+
 // Prerequisites:
 // 1. cmd must have enough amount of Ethereum on his wallet (any Ethereum transaction will fail)
 // 2. cmd must have enough WZCN tokens in Ethereum chain.
@@ -66,7 +68,7 @@ func main() {
 	bridge.SetupEthereumWallet()
 
 	// Don't uncomment, authorizers has already been added
-	// AddEthereumAuthorizers(*cfg.ConfigDir, bridge)
+	AddEthereumAuthorizers(*cfg.ConfigDir, bridge)
 
 	// Testing WZCN minting side
 	TraceRouteZCNToEthereumWith0ChainStab(bridge)
