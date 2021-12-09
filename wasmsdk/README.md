@@ -80,7 +80,11 @@ rename a file existing already on dStorage. Only the allocation's owner can rena
 **Output**:
 > [transaction.Transaction](https://github.com/0chain/gosdk/blob/e1e35e084d5c17d6bf233bbe8ac9c91701bdd8fd/core/transaction/entity.go#L32)
 
-### `zcn.sdk.copy(allocationID, remotePath, destPath string, commit bool)`:   copy file to another folder path on blobbers
+### zcn.sdk.copy
+copy file to another folder path on blobbers
+**Input**:
+> allocationID, remotePath, destPath string, commit bool
+
 
 **Output**:
 > [transaction.Transaction](https://github.com/0chain/gosdk/blob/e1e35e084d5c17d6bf233bbe8ac9c91701bdd8fd/core/transaction/entity.go#L32)
