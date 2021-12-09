@@ -5,7 +5,8 @@ The 0chain wasm SDK is written in Go programming language, and released with Web
 
 ## ZCN methods
 
-### `zcn.sdk.init`: init wasm sdk 
+### zcn.sdk.init
+init wasm sdk 
   Input:
   > chainID, blockWorker, signatureScheme string, minConfirmation, minSubmit, confirmationChainLength int
 
@@ -13,21 +14,26 @@ The 0chain wasm SDK is written in Go programming language, and released with Web
   > N/A
 
 
-### `zcn.jsProxy.setWallet`: set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWallet` to set wallet on go.
+### zcn.jsProxy.setWallet 
+set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWallet` to set wallet on go.
+
 **Input**:
 > bls, clientID, sk, pk string
 
 **Output**:
 > N/A
 
-### `zcn.sdk.setWallet`: set wallet on go
+### zcn.sdk.setWallet
+set wallet on go
+
 **Input**:
 > clientID,publicKey string
 
 **Output**:
 > N/A
 
-### `zcn.sdk.getEncryptedPublicKey`: get encrypted public key by mnemonic
+### zcn.sdk.getEncryptedPublicKey
+get encrypted public key by mnemonic
 **Input**:
 > mnemonic string
 
@@ -37,7 +43,9 @@ The 0chain wasm SDK is written in Go programming language, and released with Web
 
 
 ## Blobber methods
-### `zcn.sdk.delete`:    delete remote file from blobbers
+### zcn.sdk.delete
+delete remote file from blobbers
+
 **Input**:
 > allocationID, remotePath string,commit bool
 
@@ -63,7 +71,9 @@ The 0chain wasm SDK is written in Go programming language, and released with Web
 }
 ```
 
-### `zcn.sdk.rename`: rename a file existing already on dStorage. Only the allocation's owner can rename a file.
+### zcn.sdk.rename
+rename a file existing already on dStorage. Only the allocation's owner can rename a file.
+
 **Input**:
 > allocationID, remotePath, destName string, commit bool
 
@@ -75,7 +85,9 @@ The 0chain wasm SDK is written in Go programming language, and released with Web
 **Output**:
 > [transaction.Transaction](https://github.com/0chain/gosdk/blob/e1e35e084d5c17d6bf233bbe8ac9c91701bdd8fd/core/transaction/entity.go#L32)
 
-### `zcn.sdk.move`:   move file to another remote folder path on dStorage. Only the owner of the allocation can copy an object.
+### zcn.sdk.move
+move file to another remote folder path on dStorage. Only the owner of the allocation can copy an object.
+
 **Input**:
 > allocationID, remotePath, destPath string, commit bool
 
@@ -83,14 +95,17 @@ The 0chain wasm SDK is written in Go programming language, and released with Web
 > [transaction.Transaction](https://github.com/0chain/gosdk/blob/e1e35e084d5c17d6bf233bbe8ac9c91701bdd8fd/core/transaction/entity.go#L32)
 
 
-### `zcn.sdk.share`:    generate an authtoken that provides authorization to the holder to the specified file on the remotepath.
+### zcn.sdk.share
+generate an authtoken that provides authorization to the holder to the specified file on the remotepath.
+
 **Input**:
 > allocationID, remotePath, clientID, encryptionPublicKey string, expiration int, revoke bool,availableAfter int
 
 **Output**:
 > [transaction.Transaction](https://github.com/0chain/gosdk/blob/e1e35e084d5c17d6bf233bbe8ac9c91701bdd8fd/core/transaction/entity.go#L32)
 
-### `zcn.sdk.download`: download your own or a shared file.
+### zcn.sdk.download
+download your own or a shared file.
 
 **Input**:
 > allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly, autoCommit, rxPay, live, delay bool, blocksPerMarker, startBlock, endBlock int
