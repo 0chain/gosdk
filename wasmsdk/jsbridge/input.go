@@ -74,6 +74,8 @@ func (b *InputBuilder) Build() (InputBinder, error) {
 			b.binders[i] = jsValueToBool
 		case *[]string:
 			b.binders[i] = jsValueToStringSlice
+		case *[]byte:
+			b.binders[i] = jsValueToBytes
 		default:
 			return nil, ErrBinderNotImplemented
 		}
@@ -178,4 +180,15 @@ func jsValueToStringSlice(jv js.Value) reflect.Value {
 	}
 
 	return reflect.ValueOf(list)
+}
+
+func jsValueToBytes(jv js.Value) reflect.Value {
+	var buf []byte
+
+	if jv.Truthy() {
+		buf = make([]byte, jv.Length())
+		js.CopyBytesToGo(buf, jv)
+	}
+
+	return reflect.ValueOf(buf)
 }

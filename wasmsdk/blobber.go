@@ -4,6 +4,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 // Delete delete file from blobbers
@@ -386,70 +388,107 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 
 }
 
-func getFileMeta(allocationObj *sdk.Allocation, remotePath string, commit bool) (*sdk.ConsolidatedFileMeta, bool, error) {
-	var fileMeta *sdk.ConsolidatedFileMeta
-	isFile := false
-	if commit {
+func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, commit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, chunkSize int, isUpdate, isRepair bool) (*transaction.Transaction, error) {
 
-		statsMap, err := allocationObj.GetFileStats(remotePath)
-		if err != nil {
-			return nil, false, err
-		}
-
-		for _, v := range statsMap {
-			if v != nil {
-				isFile = true
-				break
-			}
-		}
-
-		fileMeta, err = allocationObj.GetFileMeta(remotePath)
-		if err != nil {
-			return nil, false, err
-		}
+	if len(allocationID) == 0 {
+		return nil, RequiredArg("allocationID")
 	}
 
-	return fileMeta, isFile, nil
-}
+	if len(remotePath) == 0 {
+		return nil, RequiredArg("remotePath")
+	}
 
-func commitTxn(allocationObj *sdk.Allocation, remotePath, newFolderPath, authTicket, lookupHash string, commandName string, fileMeta *sdk.ConsolidatedFileMeta, commit, isFile bool) (*transaction.Transaction, error) {
-	if commit {
-		if isFile {
+	allocationObj, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return nil, err
+	}
 
-			fmt.Println("Commiting changes to blockchain ...")
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	wg.Add(1)
+	if strings.HasPrefix(remotePath, "/Encrypted") {
+		encrypt = true
+	}
 
-			wg := &sync.WaitGroup{}
-			statusBar := &StatusBar{wg: wg}
-			wg.Add(1)
+	var attrs fileref.Attributes
+	if len(attrWhoPaysForReads) > 0 {
+		var (
+			wp common.WhoPays
+		)
 
-			err := allocationObj.CommitMetaTransaction(remotePath, commandName, authTicket, lookupHash, fileMeta, statusBar)
-			if err != nil {
-				PrintError("Commit failed.", err)
-				return nil, err
-			}
-
-			wg.Wait()
-
-			fmt.Println("Commit Metadata successful")
-		} else {
-			fmt.Println("Commiting changes to blockchain ...")
-			resp, err := allocationObj.CommitFolderChange(commandName, remotePath, newFolderPath)
-			if err != nil {
-				PrintError("Commit failed.", err)
-				return nil, err
-			}
-
-			fmt.Println("Commit Metadata successful, Response :", resp)
-		}
-
-		txn, err := getLastMetadataCommitTxn()
-
-		if err != nil {
+		if err := wp.Parse(attrWhoPaysForReads); err != nil {
+			PrintError(err)
 			return nil, err
 		}
-
-		return txn, nil
+		attrs.WhoPaysForReads = wp // set given value
 	}
+
+	if isLiveUpload {
+		// capture video and audio from local default camera and micrlphone, and upload it to zcn
+		//	err = startLiveUpload(cmd, allocationObj, localpath, remotepath, encrypt, chunkSize, attrs)
+		return nil, errors.New("live upload is not supported yet")
+	} else if isSyncUpload {
+		// download video from remote live feed(eg youtube), and sync it to zcn
+		//	err = startSyncUpload(cmd, allocationObj, localpath, remotepath, encrypt, chunkSize, attrs)
+		return nil, errors.New("sync upload is not supported yet")
+	}
+
+	fileReader := bytes.NewReader(fileBytes)
+
+	mimeType, err := zboxutil.GetFileContentType(fileReader)
+	if err != nil {
+		return nil, err
+	}
+
+	localPath := remotePath
+
+	remotePath = zboxutil.RemoteClean(remotePath)
+	isabs := zboxutil.IsRemoteAbs(remotePath)
+	if !isabs {
+		err = errors.New("invalid_path: Path should be valid and absolute")
+		return nil, err
+	}
+	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
+
+	_, fileName := filepath.Split(remotePath)
+
+	fileMeta := sdk.FileMeta{
+		Path:       localPath,
+		ActualSize: int64(len(fileBytes)),
+		MimeType:   mimeType,
+		RemoteName: fileName,
+		RemotePath: remotePath,
+		Attributes: attrs,
+	}
+
+	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair,
+		sdk.WithThumbnail(thumbnailBytes),
+		sdk.WithChunkSize(int64(chunkSize)),
+		sdk.WithEncrypt(encrypt),
+		sdk.WithStatusCallback(statusBar))
+	if err != nil {
+		return nil, err
+	}
+
+	err = ChunkedUpload.Start()
+
+	if err != nil {
+		PrintError("Upload failed.", err)
+		return nil, err
+	}
+	wg.Wait()
+	if !statusBar.success {
+
+		return nil, errors.New("upload failed: unknown")
+	}
+
+	// if commit {
+	// 	remotepath = zboxutil.GetFullRemotePath(localpath, remotepath)
+	// 	statusBar.wg.Add(1)
+	// 	commitMetaTxn(remotepath, "Upload", "", "", allocationObj, nil, statusBar)
+	// 	statusBar.wg.Wait()
+	// }
 
 	return nil, nil
 }
