@@ -226,8 +226,9 @@ func (b *BridgeOwner) AddEthereumAuthorizers(configDir string) {
 		}
 
 		transaction, err := b.AddEthereumAuthorizer(context.TODO(), wallet.Address)
-		if err != nil {
+		if err != nil || transaction == nil {
 			fmt.Println(err)
+			continue
 		}
 
 		status, err := ConfirmEthereumTransaction(transaction.Hash().String(), 5, time.Second*5)

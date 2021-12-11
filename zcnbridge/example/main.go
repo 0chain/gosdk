@@ -51,6 +51,7 @@ func main() {
 
 	if *cfg.ConfigFile == "owner" {
 		runOwnerExample(cfg)
+		return
 	}
 
 	var bridge = zcnbridge.SetupBridgeClient(cfg)
