@@ -4,11 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"time"
-
-	"github.com/spf13/viper"
-
-	"github.com/0chain/gosdk/zcnbridge/ethereum/authorizers"
 
 	"github.com/ethereum/go-ethereum/crypto"
 
@@ -23,7 +18,6 @@ import (
 	"github.com/0chain/gosdk/zcnbridge/transaction"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
-	"github.com/0chain/gosdk/zcncore"
 	eth "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -119,53 +113,13 @@ func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei We
 	return tran, nil
 }
 
-func GetTransactionStatus(hash string) (int, error) {
-	_, err := zcncore.GetEthClient()
-	if err != nil {
-		return -1, err
-	}
-
-	return zcncore.CheckEthHashStatus(hash), nil
-}
-
-func ConfirmEthereumTransaction(hash string, times int, duration time.Duration) (int, error) {
-	var (
-		res = 0
-		err error
-	)
-
-	if hash == "" {
-		return -1, errors.New("transaction hash should not be empty")
-	}
-
-	for i := 0; i < times; i++ {
-		res, err = GetTransactionStatus(hash)
-		if err != nil {
-			return -1, err
-		}
-		if res == 1 || res == 0 {
-			break
-		}
-		log.Logger.Info(fmt.Sprintf("try # %d", i))
-		time.Sleep(duration)
-	}
-	return res, nil
-}
-
 func (b *BridgeClient) VerifyZCNTransaction(ctx context.Context, hash string) (*transaction.Transaction, error) {
 	return transaction.VerifyTransaction(ctx, hash, b.ID(), b.PublicKey())
 }
 
-func (b *BridgeClient) CreateHash(message string) common.Hash {
-	data := []byte(message)
-	hash := crypto.Keccak256Hash(data)
-
-	return hash
-}
-
 // SignWithEthereumChain signs the digest with Ethereum chain signer
 func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
-	hash := b.CreateHash(message)
+	hash := CreateHash(message)
 	ethereumWallet := b.GetClientEthereumWallet()
 	fmt.Printf("Signging message with %s: ", ethereumWallet.Address.Hex())
 	privateKey := ethereumWallet.PrivateKey
@@ -189,59 +143,6 @@ func (b *BridgeClient) SignWithZCNChain(hash string) (string, error) {
 		return signScheme.Sign(hash)
 	}
 	return "", commonErr.NewError("invalid_signature_scheme", "Invalid signature scheme. Please check configuration")
-}
-
-// AddEthereumAuthorizer Adds authorizer to Ethereum bridge. Only contract deployer can call this method
-func (b *BridgeOwner) AddEthereumAuthorizer(ctx context.Context, address common.Address) (*types.Transaction, error) {
-	instance, transactOpts, err := b.prepareAuthorizers(ctx, "addAuthorizers", address)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to prepare bridge")
-	}
-
-	tran, err := instance.AddAuthorizers(transactOpts, address)
-	if err != nil {
-		msg := "failed to execute BurnZCN transaction to ClientID = %s with amount = %s"
-		return nil, errors.Wrapf(err, msg, b.ID(), address.String())
-	}
-
-	return tran, err
-}
-
-func (b *BridgeOwner) AddEthereumAuthorizers(configDir string) {
-	authorizers := viper.New()
-	authorizers.AddConfigPath(configDir)
-	authorizers.SetConfigName("authorizers")
-	if err := authorizers.ReadInConfig(); err != nil {
-		fmt.Println(err)
-		return
-	}
-
-	mnemonics := authorizers.GetStringSlice("authorizers")
-
-	for _, mnemonic := range mnemonics {
-		wallet, err := CreateEthereumWalletFromMnemonic(mnemonic)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		transaction, err := b.AddEthereumAuthorizer(context.TODO(), wallet.Address)
-		if err != nil || transaction == nil {
-			fmt.Println(err)
-			continue
-		}
-
-		status, err := ConfirmEthereumTransaction(transaction.Hash().String(), 5, time.Second*5)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		if status == 1 {
-			fmt.Printf("Authorizer has been added: %s\n", wallet.Address.String())
-		} else {
-			fmt.Printf("Authorizer has failed to be added: %s\n", wallet.Address.String())
-		}
-	}
 }
 
 // MintWZCN Mint ZCN tokens on behalf of the 0ZCN client
@@ -366,79 +267,6 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount int64) (*transaction.
 	}
 
 	return trx, nil
-}
-
-func addPercents(gasLimitUnits uint64, percents int) *big.Int {
-	gasLimitBig := big.NewInt(int64(gasLimitUnits))
-	factorBig := big.NewInt(int64(percents))
-	deltaBig := gasLimitBig.Div(gasLimitBig, factorBig)
-
-	origin := big.NewInt(int64(gasLimitUnits))
-	gasLimitBig = origin.Add(origin, deltaBig)
-
-	return gasLimitBig
-}
-
-func (b *BridgeOwner) prepareAuthorizers(ctx context.Context, method string, params ...interface{}) (*authorizers.Authorizers, *bind.TransactOpts, error) {
-	etherClient, err := b.CreateEthClient()
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to create etherClient")
-	}
-
-	// To (contract)
-	contractAddress := common.HexToAddress(b.AuthorizersAddress)
-
-	// BridgeClient Ethereum Wallet
-	ethereumWallet := b.GetEthereumWallet()
-	if ethereumWallet == nil {
-		return nil, nil, errors.New("BridgeClient Ethereum zcnWallet is not initialized")
-	}
-
-	// Get ABI of the contract
-	abi, err := authorizers.AuthorizersMetaData.GetAbi()
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to get ABI")
-	}
-
-	// Pack the method argument
-	pack, err := abi.Pack(method, params...)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to pack arguments")
-	}
-
-	// Gas limits in units
-	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
-		To:   &contractAddress,
-		From: ethereumWallet.Address,
-		Data: pack,
-	})
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to estimate gas")
-	}
-
-	// Update gas limits + 10%
-	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
-	chainID, err := etherClient.ChainID(ctx)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to get chain ID")
-	}
-
-	// Create options
-	transactOpts := CreateSignedTransaction(
-		chainID,
-		etherClient,
-		ethereumWallet.Address,
-		ethereumWallet.PrivateKey,
-		gasLimitUnits,
-	)
-
-	// Authorizers instance
-	authorizersInstance, err := authorizers.NewAuthorizers(contractAddress, etherClient)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to create authorizers instance")
-	}
-
-	return authorizersInstance, transactOpts, nil
 }
 
 func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params ...interface{}) (*binding.Bridge, *bind.TransactOpts, error) {

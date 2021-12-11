@@ -2,14 +2,8 @@ package zcnbridge
 
 import (
 	"flag"
-	"fmt"
-	"os"
-	"path"
 
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/zcnbridge/chain"
-	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	ether "github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/viper"
@@ -175,8 +169,8 @@ func (b *BridgeClient) IncrementNonce() int64 {
 	return b.nonce
 }
 
-// SetupBridgeClient Use this from standalone application
-func SetupBridgeClient(cfg *BridgeSDKConfig) *BridgeClient {
+// SetupBridgeClientSDK Use this from standalone application
+func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 	initChainFromConfig("config.yaml")
 
 	bridgeClient := CreateBridgeClient(readSDKConfig(cfg))
@@ -187,8 +181,8 @@ func SetupBridgeClient(cfg *BridgeSDKConfig) *BridgeClient {
 	return bridgeClient
 }
 
-// SetupBridgeOwner Use this from standalone application
-func SetupBridgeOwner(cfg *BridgeSDKConfig) *BridgeOwner {
+// SetupBridgeOwnerSDK Use this from standalone application
+func SetupBridgeOwnerSDK(cfg *BridgeSDKConfig) *BridgeOwner {
 	bridgeOwner := CreateBridgeOwner(readSDKConfig(cfg))
 	bridgeOwner.SetupEthereumWallet()
 
@@ -198,75 +192,4 @@ func SetupBridgeOwner(cfg *BridgeSDKConfig) *BridgeOwner {
 // GetEthereumWallet returns owner ethereum zcnWallet
 func (b *BridgeOwner) GetEthereumWallet() *EthereumWallet {
 	return b.ethWallet
-}
-
-func getConfigDir() string {
-	var configDir string
-	home, err := os.UserHomeDir()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	configDir = home + "/.zcn"
-	return configDir
-}
-
-func initChainFromConfig(filename string) {
-	configDir := getConfigDir()
-
-	chainConfig := viper.New()
-	chainConfig.AddConfigPath(configDir)
-	chainConfig.SetConfigFile(path.Join(configDir, filename))
-
-	if err := chainConfig.ReadInConfig(); err != nil {
-		ExitWithError("Can't read config: ", err)
-	}
-
-	InitChainFromConfig(chainConfig)
-}
-
-func restoreChain() {
-	config, err := conf.GetClientConfig()
-	if err != nil {
-		ExitWithError("Can't read config:", err)
-	}
-
-	RestoreFromConfig(config)
-}
-
-func readSDKConfig(sdkConfig *BridgeSDKConfig) *viper.Viper {
-	cfg := viper.New()
-	cfg.AddConfigPath(*sdkConfig.ConfigDir)
-	cfg.SetConfigName(*sdkConfig.ConfigFile)
-	err := cfg.ReadInConfig()
-	if err != nil {
-		panic(fmt.Errorf("fatal error config file: %w", err))
-	}
-
-	log.InitLogging(*sdkConfig.Development, *sdkConfig.LogPath, *sdkConfig.LogLevel)
-
-	return cfg
-}
-
-func RestoreFromConfig(cfg *conf.Config) {
-	chain.SetServerChain(chain.NewChain(
-		cfg.BlockWorker,
-		cfg.SignatureScheme,
-		cfg.MinSubmit,
-		cfg.MinConfirmation,
-	))
-}
-
-func InitChainFromConfig(reader conf.Reader) {
-	chain.SetServerChain(chain.NewChain(
-		reader.GetString("block_worker"),
-		reader.GetString("signature_scheme"),
-		reader.GetInt("min_submit"),
-		reader.GetInt("min_confirmation"),
-	))
-}
-
-func ExitWithError(v ...interface{}) {
-	_, _ = fmt.Fprintln(os.Stderr, v...)
-	os.Exit(1)
 }

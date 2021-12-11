@@ -27,19 +27,6 @@ type EthereumWallet struct {
 	Address    common.Address
 }
 
-func CreateEthereumWalletFromMnemonic(mnemonic string) (*EthereumWallet, error) {
-	address, publicKey, privateKey, err := GetKeysAndAddressFromMnemonic(mnemonic)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to initialize ethereum zcnWallet")
-	}
-
-	return &EthereumWallet{
-		PublicKey:  publicKey,
-		PrivateKey: privateKey,
-		Address:    address,
-	}, nil
-}
-
 func (b *BridgeOwner) CreateEthereumWallet() (*EthereumWallet, error) {
 	address, publicKey, privateKey, err := GetKeysAndAddressFromMnemonic(b.EthereumMnemonic)
 	if err != nil {
@@ -66,6 +53,40 @@ func (b *BridgeClient) CreateEthereumWallet() (*EthereumWallet, error) {
 	}, nil
 }
 
+func (b *BridgeClient) GetEthereumWalletInfo() (*EthWalletInfo, error) {
+	return GetEthereumWalletInfoFromMnemonic(b.EthereumMnemonic)
+}
+
+func (b *EthereumConfig) CreateEthClient() (*ethclient.Client, error) {
+	client, err := ethclient.Dial(b.EthereumNodeURL)
+	if err != nil {
+		zcncore.Logger.Error(err)
+	}
+	return client, err
+}
+
+func (b *BridgeClient) GetKeysAndAddress() (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, error) {
+	ownerWalletInfo, err := b.GetEthereumWalletInfo()
+	if err != nil {
+		return [20]byte{}, nil, nil, errors.Wrap(err, "failed to fetch zcnWallet ownerWalletInfo")
+	}
+
+	return GetKeysAndAddressFromPrivateKey(ownerWalletInfo.PrivateKey)
+}
+
+func CreateEthereumWalletFromMnemonic(mnemonic string) (*EthereumWallet, error) {
+	address, publicKey, privateKey, err := GetKeysAndAddressFromMnemonic(mnemonic)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to initialize ethereum zcnWallet")
+	}
+
+	return &EthereumWallet{
+		PublicKey:  publicKey,
+		PrivateKey: privateKey,
+		Address:    address,
+	}, nil
+}
+
 func GetEthereumWalletInfoFromMnemonic(mnemonic string) (*EthWalletInfo, error) {
 	ownerWallet, err := zcncore.GetWalletAddrFromEthMnemonic(mnemonic)
 	if err != nil {
@@ -79,36 +100,6 @@ func GetEthereumWalletInfoFromMnemonic(mnemonic string) (*EthWalletInfo, error) 
 	}
 
 	return wallet, err
-}
-
-func (b *BridgeClient) GetEthereumWalletInfo() (*EthWalletInfo, error) {
-	return GetEthereumWalletInfoFromMnemonic(b.EthereumMnemonic)
-}
-
-func (b *EthereumConfig) CreateEthClient() (*ethclient.Client, error) {
-	client, err := ethclient.Dial(b.EthereumNodeURL)
-	if err != nil {
-		zcncore.Logger.Error(err)
-	}
-	return client, err
-}
-
-func GetKeysAndAddressFromMnemonic(mnemonic string) (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, error) {
-	ownerWalletInfo, err := GetEthereumWalletInfoFromMnemonic(mnemonic)
-	if err != nil {
-		return [20]byte{}, nil, nil, errors.Wrap(err, "failed to fetch zcnWallet ownerWalletInfo")
-	}
-
-	return GetKeysAndAddressFromPrivateKey(ownerWalletInfo.PrivateKey)
-}
-
-func (b *BridgeClient) GetKeysAndAddress() (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, error) {
-	ownerWalletInfo, err := b.GetEthereumWalletInfo()
-	if err != nil {
-		return [20]byte{}, nil, nil, errors.Wrap(err, "failed to fetch zcnWallet ownerWalletInfo")
-	}
-
-	return GetKeysAndAddressFromPrivateKey(ownerWalletInfo.PrivateKey)
 }
 
 func GetKeysAndAddressFromPrivateKey(privateKey string) (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, error) {
@@ -128,10 +119,14 @@ func GetKeysAndAddressFromPrivateKey(privateKey string) (common.Address, *ecdsa.
 	return ownerAddress, publicKeyECDSA, privateKeyECDSA, nil
 }
 
-// Required config
-// 1. For SC REST we need only miners address, will take it from network - init from config
-// 2. For SC method we need to run local chain to run minting and burning
-// 3. For Ethereum, we will take params from
+func GetKeysAndAddressFromMnemonic(mnemonic string) (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, error) {
+	ownerWalletInfo, err := GetEthereumWalletInfoFromMnemonic(mnemonic)
+	if err != nil {
+		return [20]byte{}, nil, nil, errors.Wrap(err, "failed to fetch zcnWallet ownerWalletInfo")
+	}
+
+	return GetKeysAndAddressFromPrivateKey(ownerWalletInfo.PrivateKey)
+}
 
 //  _allowances[owner][spender] = amount;
 // as a spender, ERC20 WZCN token must increase allowance for the bridge to make burn on behalf of WZCN owner

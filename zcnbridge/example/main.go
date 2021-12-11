@@ -54,7 +54,7 @@ func main() {
 		return
 	}
 
-	var bridge = zcnbridge.SetupBridgeClient(cfg)
+	var bridge = zcnbridge.SetupBridgeClientSDK(cfg)
 
 	SignatureTests()
 
@@ -76,7 +76,7 @@ func main() {
 }
 
 func runOwnerExample(cfg *zcnbridge.BridgeSDKConfig) {
-	var owner = zcnbridge.SetupBridgeOwner(cfg)
+	var owner = zcnbridge.SetupBridgeOwnerSDK(cfg)
 	owner.AddEthereumAuthorizers(*cfg.ConfigDir)
 }
 
