@@ -15,92 +15,101 @@ import (
 	"github.com/spf13/viper"
 )
 
-type ClientConfig struct {
+type BridgeSDKConfig struct {
+	LogLevel    *string
 	LogPath     *string
 	ConfigFile  *string
 	ConfigDir   *string
 	Development *bool
 }
 
-// BridgeConfig initializes Ethereum wallet and params
-type BridgeConfig struct {
-	// Ethereum mnemonic (derivation of Ethereum owner, public and private key)
-	ClientEthereumMnemonic string
-	// Deployer of all bridge contracts
-	OwnerEthereumMnemonic string
-	// Address of Ethereum bridge contract
-	BridgeAddress string
-	// Address of Ethereum authorizers contract
-	AuthorizersAddress string
-	// Address of WZCN Ethereum wrapped token
-	WzcnAddress string
+type EthereumConfig struct {
 	// URL of ethereum RPC node (infura or alchemy)
 	EthereumNodeURL string
+	// Address of Ethereum bridge contract
+	BridgeAddress string
+	// Address of WZCN Ethereum wrapped token
+	WzcnAddress string
+
 	// Ethereum chain ID
 	ChainID string
 	// Gas limit to execute ethereum transaction
 	GasLimit uint64
 	// Value to execute ZCN smart contracts
 	Value int64
+}
+
+type BridgeOwnerConfig struct {
+	EthereumConfig
+	// Deployer of all bridge contracts
+	EthereumMnemonic string
+	// Address of Ethereum authorizers contract
+	AuthorizersAddress string
+}
+
+// BridgeClientConfig initializes Ethereum zcnWallet and params
+type BridgeClientConfig struct {
+	EthereumConfig
+	// Ethereum mnemonic (derivation of Ethereum owner, public and private key)
+	EthereumMnemonic string
 	// Authorizers required to confirm (in percents)
 	ConsensusThreshold int
 }
 
 type Instance struct {
-	wallet               *wallet.Wallet
-	clientEthereumWallet *EthereumWallet
-	ownerEthereumWallet  *EthereumWallet
-	startTime            common.Timestamp
-	nonce                int64
+	zcnWallet *wallet.Wallet
+	ethWallet *EthereumWallet
+	startTime common.Timestamp
+	nonce     int64
 }
 
-type Bridge struct {
-	*BridgeConfig
+type BridgeClient struct {
+	*BridgeClientConfig
 	*Instance
 }
 
-func (c ClientConfig) LogDir() string {
-	return *c.LogPath
-}
-
-func (c ClientConfig) LogLvl() string {
-	return viper.GetString("logging.level")
-}
-
-func (c ClientConfig) BlockWorker() string {
-	return chain.GetServerChain().BlockWorker
-}
-
-func (c ClientConfig) SignatureScheme() string {
-	return chain.GetServerChain().SignatureScheme
+type BridgeOwner struct {
+	*BridgeOwnerConfig
+	*Instance
 }
 
 // ReadClientConfigFromCmd reads config from command line
-func ReadClientConfigFromCmd() *ClientConfig {
-	cmd := &ClientConfig{}
+// Bridge has several configs:
+// Chain config at ~/.zcn/config.json
+// User 0Chain wallet config at ~/.zcn/wallet.json
+// User EthBridge config ~/.zcn/bridge.json
+// Owner EthBridge config ~/.zcn/bridgeowner.json
+func ReadClientConfigFromCmd() *BridgeSDKConfig {
+	// reading from bridge.yaml
+	cmd := &BridgeSDKConfig{}
 	cmd.Development = flag.Bool("development", true, "development mode")
 	cmd.LogPath = flag.String("log_dir", "./logs", "log folder")
 	cmd.ConfigDir = flag.String("config_dir", "./config", "config folder")
 	cmd.ConfigFile = flag.String("config_file", "bridge", "config file")
+	cmd.LogLevel = flag.String("loglevel", "debug", "log level")
 
 	flag.Parse()
 
 	return cmd
 }
 
-func SetupBridgeFromConfig() *Bridge {
-	return &Bridge{
-		BridgeConfig: &BridgeConfig{
-			ClientEthereumMnemonic: viper.GetString("bridge.ClientEthereumMnemonic"),
-			OwnerEthereumMnemonic:  viper.GetString("bridge.OwnerEthereumMnemonic"),
-			BridgeAddress:          viper.GetString("bridge.BridgeAddress"),
-			AuthorizersAddress:     viper.GetString("bridge.AuthorizersAddress"),
-			WzcnAddress:            viper.GetString("bridge.WzcnAddress"),
-			EthereumNodeURL:        viper.GetString("bridge.EthereumNodeURL"),
-			ChainID:                viper.GetString("bridge.ChainID"),
-			GasLimit:               viper.GetUint64("bridge.GasLimit"),
-			Value:                  viper.GetInt64("bridge.Value"),
-			ConsensusThreshold:     viper.GetInt("bridge.ConsensusThreshold"),
+func CreateBridgeOwner(cfg *viper.Viper) *BridgeOwner {
+	owner := cfg.Get("owner")
+	if owner == nil {
+		ExitWithError("Can't read config with `owner` key")
+	}
+	return &BridgeOwner{
+		BridgeOwnerConfig: &BridgeOwnerConfig{
+			EthereumConfig: EthereumConfig{
+				EthereumNodeURL: cfg.GetString("owner.EthereumNodeURL"),
+				// BridgeAddress:   cfg.GetString("owner.BridgeAddress"),
+				WzcnAddress: cfg.GetString("owner.WzcnAddress"),
+				ChainID:     cfg.GetString("owner.ChainID"),
+				GasLimit:    cfg.GetUint64("owner.GasLimit"),
+				Value:       cfg.GetInt64("owner.Value"),
+			},
+			EthereumMnemonic:   cfg.GetString("owner.OwnerEthereumMnemonic"),
+			AuthorizersAddress: cfg.GetString("owner.AuthorizersAddress"),
 		},
 		Instance: &Instance{
 			startTime: common.Now(),
@@ -108,38 +117,87 @@ func SetupBridgeFromConfig() *Bridge {
 	}
 }
 
-// GetClientEthereumAddress returns ethereum wallet string
-func (b *Bridge) GetClientEthereumAddress() ether.Address {
-	return b.clientEthereumWallet.Address
+func CreateBridgeClient(cfg *viper.Viper) *BridgeClient {
+	bridge := cfg.Get("bridge")
+	if bridge == nil {
+		ExitWithError("Can't read config with `bridge` key")
+	}
+	return &BridgeClient{
+		BridgeClientConfig: &BridgeClientConfig{
+			EthereumConfig: EthereumConfig{
+				EthereumNodeURL: cfg.GetString("bridge.EthereumNodeURL"),
+				BridgeAddress:   cfg.GetString("bridge.BridgeAddress"),
+				WzcnAddress:     cfg.GetString("bridge.WzcnAddress"),
+				ChainID:         cfg.GetString("bridge.ChainID"),
+				GasLimit:        cfg.GetUint64("bridge.GasLimit"),
+				Value:           cfg.GetInt64("bridge.Value"),
+			},
+			EthereumMnemonic:   cfg.GetString("bridge.ClientEthereumMnemonic"),
+			ConsensusThreshold: cfg.GetInt("bridge.ConsensusThreshold"),
+		},
+		Instance: &Instance{
+			startTime: common.Now(),
+		},
+	}
 }
 
-// GetClientEthereumWallet returns ethereum wallet string
-func (b *Bridge) GetClientEthereumWallet() *EthereumWallet {
-	return b.clientEthereumWallet
+// GetClientEthereumAddress returns ethereum zcnWallet string
+func (b *BridgeClient) GetClientEthereumAddress() ether.Address {
+	return b.ethWallet.Address
 }
 
-// GetOwnerEthereumWallet returns owner ethereum wallet
-func (b *Bridge) GetOwnerEthereumWallet() *EthereumWallet {
-	return b.ownerEthereumWallet
+// GetClientEthereumWallet returns ethereum zcnWallet string
+func (b *BridgeClient) GetClientEthereumWallet() *EthereumWallet {
+	return b.ethWallet
 }
 
 // ID returns id of Node.
-func (b *Bridge) ID() string {
-	return b.wallet.ID()
+func (b *BridgeClient) ID() string {
+	return b.zcnWallet.ID()
+}
+
+// ID returns id of Node.
+func (b *BridgeOwner) ID() string {
+	return b.zcnWallet.ID()
 }
 
 // PublicKey returns public key of Node
-func (b *Bridge) PublicKey() string {
-	return b.wallet.PublicKey()
+func (b *BridgeClient) PublicKey() string {
+	return b.zcnWallet.PublicKey()
 }
 
-func (b *Bridge) PrivateKey() string {
-	return b.wallet.PrivateKey()
+func (b *BridgeClient) PrivateKey() string {
+	return b.zcnWallet.PrivateKey()
 }
 
-func (b *Bridge) IncrementNonce() int64 {
+func (b *BridgeClient) IncrementNonce() int64 {
 	b.nonce++
 	return b.nonce
+}
+
+// SetupBridgeClient Use this from standalone application
+func SetupBridgeClient(cfg *BridgeSDKConfig) *BridgeClient {
+	initChainFromConfig("config.yaml")
+
+	bridgeClient := CreateBridgeClient(readSDKConfig(cfg))
+	bridgeClient.SetupZCNSDK(*cfg.LogPath, *cfg.LogLevel)
+	bridgeClient.SetupZCNWallet("wallet.json")
+	bridgeClient.SetupEthereumWallet()
+
+	return bridgeClient
+}
+
+// SetupBridgeOwner Use this from standalone application
+func SetupBridgeOwner(cfg *BridgeSDKConfig) *BridgeOwner {
+	bridgeOwner := CreateBridgeOwner(readSDKConfig(cfg))
+	bridgeOwner.SetupEthereumWallet()
+
+	return bridgeOwner
+}
+
+// GetEthereumWallet returns owner ethereum zcnWallet
+func (b *BridgeOwner) GetEthereumWallet() *EthereumWallet {
+	return b.ethWallet
 }
 
 func getConfigDir() string {
@@ -153,17 +211,18 @@ func getConfigDir() string {
 	return configDir
 }
 
-func initChain() {
-	nodeConfig := viper.New()
+func initChainFromConfig(filename string) {
 	configDir := getConfigDir()
-	nodeConfig.AddConfigPath(configDir)
-	nodeConfig.SetConfigFile(path.Join(configDir, "config.yaml"))
 
-	if err := nodeConfig.ReadInConfig(); err != nil {
-		ExitWithError("Can't read config:", err)
+	chainConfig := viper.New()
+	chainConfig.AddConfigPath(configDir)
+	chainConfig.SetConfigFile(path.Join(configDir, filename))
+
+	if err := chainConfig.ReadInConfig(); err != nil {
+		ExitWithError("Can't read config: ", err)
 	}
 
-	InitChainFromConfig(nodeConfig)
+	InitChainFromConfig(chainConfig)
 }
 
 func restoreChain() {
@@ -175,31 +234,18 @@ func restoreChain() {
 	RestoreFromConfig(config)
 }
 
-// SetupBridge Use this from standalone application
-func SetupBridge(configDir, configFile string, development bool, logPath string) *Bridge {
-	setDefaults()
-	ReadConfig(configDir, configFile)
-	setupLogging(development, logPath)
-	bridge := SetupBridgeFromConfig()
-
-	return bridge
-}
-
-func setDefaults() {
-	viper.SetDefault("bridge.loglevel", "info")
-}
-
-func ReadConfig(configPath, configName string) {
-	viper.AddConfigPath(configPath)
-	viper.SetConfigName(configName)
-	err := viper.ReadInConfig()
+func readSDKConfig(sdkConfig *BridgeSDKConfig) *viper.Viper {
+	cfg := viper.New()
+	cfg.AddConfigPath(*sdkConfig.ConfigDir)
+	cfg.SetConfigName(*sdkConfig.ConfigFile)
+	err := cfg.ReadInConfig()
 	if err != nil {
 		panic(fmt.Errorf("fatal error config file: %w", err))
 	}
-}
 
-func setupLogging(development bool, logPath string) {
-	log.InitLogging(development, logPath, viper.GetString("bridge.loglevel"))
+	log.InitLogging(*sdkConfig.Development, *sdkConfig.LogPath, *sdkConfig.LogLevel)
+
+	return cfg
 }
 
 func RestoreFromConfig(cfg *conf.Config) {

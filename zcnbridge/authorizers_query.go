@@ -47,7 +47,7 @@ var (
 
 // QueryEthereumMintPayload gets burn ticket and creates mint payload to be minted in the Ethereum chain
 // zchainBurnHash - Ethereum burn transaction hash
-func (b *Bridge) QueryEthereumMintPayload(zchainBurnHash string) (*ethereum.MintPayload, error) {
+func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereum.MintPayload, error) {
 	client = h.NewRetryableClient()
 	authorizers, err := GetAuthorizers()
 
@@ -109,7 +109,7 @@ func (b *Bridge) QueryEthereumMintPayload(zchainBurnHash string) (*ethereum.Mint
 
 // QueryZChainMintPayload gets burn ticket and creates mint payload to be minted in the ZChain
 // ethBurnHash - Ethereum burn transaction hash
-func (b *Bridge) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPayload, error) {
+func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPayload, error) {
 	client = h.NewRetryableClient()
 	authorizers, err := GetAuthorizers()
 
