@@ -10,6 +10,8 @@ import (
 	"path"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts"
+
 	"github.com/ethereum/go-ethereum/ethclient"
 
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -63,7 +65,7 @@ var tranHashes = []string{
 func main() {
 	cfg := zcnbridge.ReadClientConfigFromCmd()
 
-	coldStorageExample()
+	keyStorageExample()
 	signingExamples()
 
 	if *cfg.ConfigFile == "owner" {
@@ -74,10 +76,13 @@ func main() {
 	runBridgeClientExample(cfg)
 }
 
-func coldStorageExample() {
+func keyStorageExample() {
 	mnemonic := "tag volcano eight thank tide danger coast health above argue embrace heavy"
-	importKeyToStorage(mnemonic, "password")
-	createKeyStorage("password")
+	password := "password"
+
+	createKeyStorage(password, true)
+	importFromMnemonicToStorage(mnemonic, password, false)
+	signWithKeyStore("0xC49926C4124cEe1cbA0Ea94Ea31a6c12318df947", password)
 }
 
 func signingExamples() {
@@ -86,10 +91,80 @@ func signingExamples() {
 	signDynamicTransactorExample(mnemonic)
 }
 
-func createKeyStorage(password string) {
+func createKeyStorage(password string, delete bool) {
+	keyDir := path.Join(zcnbridge.GetConfigDir(), "wallets")
+	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	account, err := ks.NewAccount(password)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println(account.Address.Hex())
+
+	// 5. Delete key store
+
+	if delete {
+		err = ks.Delete(account, password)
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
 }
 
-func importKeyToStorage(mnemonic, password string) {
+func signWithKeyStore(address, password string) {
+	// 1. Create storage and account if it doesn't exist and add account to it
+
+	keyDir := path.Join(zcnbridge.GetConfigDir(), "wallets")
+	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+
+	// Create account definitions
+	fromAccDef := accounts.Account{
+		Address: common.HexToAddress(address),
+	}
+
+	// Find the signing account
+	signAcc, err := ks.Find(fromAccDef)
+	if err != nil {
+		fmt.Printf("account keystore find error %v", err)
+		return
+	}
+
+	// Unlock the signing account
+	errUnlock := ks.Unlock(signAcc, password)
+	if errUnlock != nil {
+		fmt.Println("account unlock error:")
+		return
+	}
+	fmt.Printf("account unlocked: signAcc.addr=%s; signAcc.url=%s\n", signAcc.Address.String(), signAcc.URL)
+
+	nonce := uint64(0)
+	chainID := big.NewInt(3)
+	value := big.NewInt(1000000000000000000)
+	toAddress := common.HexToAddress("0xC49926C4124cEe1cbA0Ea94Ea31a6c12318df947")
+	gasLimit := uint64(21000)
+	gasPrice := big.NewInt(21000000000)
+	var data []byte
+
+	tx := types.NewTx(&types.LegacyTx{
+		Nonce:    nonce,
+		To:       &toAddress,
+		Value:    value,
+		Gas:      gasLimit,
+		GasPrice: gasPrice,
+		Data:     data,
+	})
+
+	signedTx, err := ks.SignTx(signAcc, tx, chainID)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	spew.Dump(signedTx)
+}
+
+func importFromMnemonicToStorage(mnemonic, password string, delete bool) {
 	// 1. Create storage and account if it doesn't exist and add account to it
 
 	keyDir := path.Join(zcnbridge.GetConfigDir(), "wallets")
@@ -120,6 +195,7 @@ func importKeyToStorage(mnemonic, password string) {
 
 	acc, err := ks.Find(account)
 	if err == nil {
+		fmt.Printf("Account found: %s\n", acc.Address.Hex())
 		fmt.Println(acc.URL.Path)
 		return
 	}
@@ -139,9 +215,11 @@ func importKeyToStorage(mnemonic, password string) {
 
 	// 5. Delete key store
 
-	err = ks.Delete(account, password)
-	if err != nil {
-		fmt.Println(err)
+	if delete {
+		err = ks.Delete(account, password)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 }
 
@@ -219,6 +297,7 @@ func signDynamicTransactorExample(mnemonic string) {
 
 	signedTx, err := tx.WithSignature(signer, signature)
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 
@@ -277,7 +356,8 @@ func signLegacyTransactionExample(mnemonic string) {
 
 	signedTx, err := wallet.SignTx(account, tx, nil)
 	if err != nil {
-		zcnbridge.ExitWithError(err)
+		fmt.Println(err)
+		return
 	}
 
 	spew.Dump(signedTx)
