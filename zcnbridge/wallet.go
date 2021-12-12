@@ -60,7 +60,7 @@ func (b *BridgeOwner) SetupEthereumWallet() {
 }
 
 func initZCNWallet(filename string) (*wallet.Wallet, error) {
-	file := filepath.Join(getConfigDir(), filename)
+	file := filepath.Join(GetConfigDir(), filename)
 	if _, err := os.Stat(file); os.IsNotExist(err) {
 		return nil, errors.Wrap(err, "error opening the zcnWallet "+file)
 	}

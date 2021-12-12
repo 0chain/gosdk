@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-func getConfigDir() string {
+func GetConfigDir() string {
 	var configDir string
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -23,7 +23,7 @@ func getConfigDir() string {
 }
 
 func initChainFromConfig(filename string) {
-	configDir := getConfigDir()
+	configDir := GetConfigDir()
 
 	chainConfig := viper.New()
 	chainConfig.AddConfigPath(configDir)

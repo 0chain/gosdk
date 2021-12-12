@@ -158,17 +158,20 @@ func CreateSignedTransaction(
 		zcncore.Logger.Fatal(err)
 	}
 
-	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
+	// reading from the private file
+	// bind.NewTransactorWithChainID()
+
+	opts, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
 	if err != nil {
 		zcncore.Logger.Fatal(err)
 	}
 
 	valueWei := new(big.Int).Mul(big.NewInt(0), big.NewInt(params.Wei))
 
-	auth.Nonce = big.NewInt(int64(nonce))
-	auth.Value = valueWei         // in wei
-	auth.GasLimit = gasLimitUnits // in units
-	auth.GasPrice = gasPriceWei   // wei
+	opts.Nonce = big.NewInt(int64(nonce))
+	opts.Value = valueWei         // in wei
+	opts.GasLimit = gasLimitUnits // in units
+	opts.GasPrice = gasPriceWei   // wei
 
-	return auth
+	return opts
 }

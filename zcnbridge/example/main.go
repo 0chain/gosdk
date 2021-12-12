@@ -6,7 +6,16 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"path"
 	"time"
+
+	"github.com/ethereum/go-ethereum/ethclient"
+
+	"github.com/ethereum/go-ethereum/accounts/keystore"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zcnbridge"
@@ -16,6 +25,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
+
+	hdw "github.com/miguelmota/go-ethereum-hdwallet"
 	"go.uber.org/zap"
 )
 
@@ -46,17 +57,194 @@ var tranHashes = []string{
 	"0x5f8efdce13d0235c273b3714bcad8817cacb6d60867b156032f3e52cd6f32ebe",
 }
 
+// main:
+// `--config_file bridge` runs bridge client
+// `--config_file owner`  runs owner client
 func main() {
 	cfg := zcnbridge.ReadClientConfigFromCmd()
 
+	signingExamples()
+	coldStorageExample()
+
 	if *cfg.ConfigFile == "owner" {
-		runOwnerExample(cfg)
+		runBridgeOwnerExample(cfg)
 		return
 	}
 
+	runBridgeClientExample(cfg)
+}
+
+func coldStorageExample() {
+	mnemonic := "tag volcano eight thank tide danger coast health above argue embrace heavy"
+	initColdStorage(mnemonic, "password")
+}
+
+func signingExamples() {
+	mnemonic := "tag volcano eight thank tide danger coast health above argue embrace heavy"
+	signLegacyTransactionExample(mnemonic)
+	signDynamicTransactorExample(mnemonic)
+}
+
+func initColdStorage(mnemonic, password string) {
+	keyDir := path.Join(zcnbridge.GetConfigDir(), "wallets")
+	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	account, err := ks.NewAccount(password)
+	if err != nil {
+		zcnbridge.ExitWithError(err)
+	}
+	fmt.Println(account.Address.Hex()) // 0x20F8D42FB0F667F2E53930fed426f225752453b3
+	err = ks.Delete(account, password)
+	if err != nil {
+		zcnbridge.ExitWithError(err)
+	}
+}
+
+// signDynamicTransactorExample is sey when gasPrice is set nil
+func signDynamicTransactorExample(mnemonic string) {
+	ctx := context.Background()
+	client, err := ethclient.Dial("https://ropsten.infura.io/v3/22cb2849f5f74b8599f3dc2a23085bd4")
+	chainID, _ := client.ChainID(ctx)
+
+	wallet, err := hdw.NewFromMnemonic(mnemonic)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	pathD := hdw.MustParseDerivationPath("m/44'/60'/0'/0/0")
+	account, err := wallet.Derive(pathD, true)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	key, err := wallet.PrivateKey(account)
+
+	signer := types.NewLondonSigner(chainID)
+
+	gasTipCap, err := client.SuggestGasTipCap(ctx)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	head, err := client.HeaderByNumber(ctx, nil)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	if head.BaseFee == nil {
+		return
+	}
+
+	gasFeeCap := new(big.Int).Add(
+		gasTipCap,
+		new(big.Int).Mul(head.BaseFee, big.NewInt(2)),
+	)
+
+	nonce, err := client.PendingNonceAt(ctx, account.Address)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	value := big.NewInt(1000000000000000000)
+	toAddress := common.HexToAddress("0xC49926C4124cEe1cbA0Ea94Ea31a6c12318df947")
+	gasLimit := uint64(21000)
+	var data []byte
+
+	baseTx := &types.DynamicFeeTx{
+		To:        &toAddress,
+		Nonce:     nonce,
+		GasFeeCap: gasFeeCap,
+		GasTipCap: gasTipCap,
+		Gas:       gasLimit,
+		Value:     value,
+		Data:      data,
+	}
+
+	tx := types.NewTx(baseTx)
+
+	signature, err := crypto.Sign(signer.Hash(tx).Bytes(), key)
+	if err != nil {
+		zcnbridge.ExitWithError(err)
+	}
+
+	signedTx, err := tx.WithSignature(signer, signature)
+	if err != nil {
+		return
+	}
+
+	spew.Dump(signedTx)
+
+	// Sending raw transaction
+	//_ := client.SendTransaction(ctx, signedTx)
+}
+
+// signLegacyTransactionExample is called when gas price is set
+func signLegacyTransactionExample(mnemonic string) {
+	wallet, err := hdw.NewFromMnemonic(mnemonic)
+	if err != nil {
+		zcnbridge.ExitWithError(err)
+	}
+
+	//wallet.SetFixIssue172(true)
+
+	pathD := hdw.MustParseDerivationPath("m/44'/60'/0'/0/0")
+	account, err := wallet.Derive(pathD, true)
+	if err != nil {
+		zcnbridge.ExitWithError(err)
+	}
+
+	fmt.Println(account.Address.Hex())
+
+	url, err := wallet.Path(account)
+	if err != nil {
+		zcnbridge.ExitWithError(err)
+	}
+	fmt.Println(url)
+
+	lena := wallet.Accounts()
+	fmt.Println(lena)
+
+	// Signing
+
+	nonce := uint64(0)
+	value := big.NewInt(1000000000000000000)
+	toAddress := common.HexToAddress("0xC49926C4124cEe1cbA0Ea94Ea31a6c12318df947")
+	gasLimit := uint64(21000)
+	gasPrice := big.NewInt(21000000000)
+	var data []byte
+
+	tx := types.NewTx(&types.LegacyTx{
+		Nonce:    nonce,
+		To:       &toAddress,
+		Value:    value,
+		Gas:      gasLimit,
+		GasPrice: gasPrice,
+		Data:     data,
+	})
+
+	signedTx, err := wallet.SignTx(account, tx, nil)
+	if err != nil {
+		zcnbridge.ExitWithError(err)
+	}
+
+	spew.Dump(signedTx)
+
+	// Sending raw transaction
+	//_ := client.SendTransaction(ctx, transaction)
+}
+
+func runBridgeClientExample(cfg *zcnbridge.BridgeSDKConfig) {
 	var bridge = zcnbridge.SetupBridgeClientSDK(cfg)
 
-	SignatureTests()
+	signatureTests()
+
+	// Full test conversion
+	fromERCtoZCN(bridge)
+	fromZCNtoERC(bridge)
 
 	// Testing WZCN minting side
 	TraceRouteZCNToEthereumWith0ChainStab(bridge)
@@ -69,19 +257,15 @@ func main() {
 	ConfirmEthereumTransaction()
 	PrintAuthorizersList()
 	PrintEthereumBurnTicketsPayloads(bridge)
-
-	// Full test conversion
-	fromERCtoZCN(bridge)
-	fromZCNtoERC(bridge)
 }
 
-func runOwnerExample(cfg *zcnbridge.BridgeSDKConfig) {
+func runBridgeOwnerExample(cfg *zcnbridge.BridgeSDKConfig) {
 	var owner = zcnbridge.SetupBridgeOwnerSDK(cfg)
 	owner.AddEthereumAuthorizers(*cfg.ConfigDir)
 }
 
-// SignatureTests Create public and private keys, signs data and recovers signer public key
-func SignatureTests() {
+// signatureTests Create public and private keys, signs data and recovers signer public key
+func signatureTests() {
 	// 1. Private Key
 	privateKeyHex := "fad9c8855b740a0b7ed4c221dbad0f33a83a49cad6b3fe8d5817ac83d38b6a19"
 	privateKey, err := crypto.HexToECDSA(privateKeyHex)
@@ -98,10 +282,10 @@ func SignatureTests() {
 	publicKeyBytes := crypto.FromECDSAPub(publicKeyECDSA)
 
 	// 3. Create data and signature
-	data, sig := CreateSignature("message", privateKey)
+	data, sig := createSignature("message", privateKey)
 
 	// 4. Recover public key from hashed data and signature
-	pubKeyBytes := RecoverSignerPublicKey(data, sig)
+	pubKeyBytes := recoverSignerPublicKey(data, sig)
 
 	// 5. Compare
 	equal := bytes.Equal(pubKeyBytes, publicKeyBytes)
@@ -110,9 +294,9 @@ func SignatureTests() {
 	}
 }
 
-// CreateSignature Approach used in authorizers to sign payload to Ethereum bridge
+// createSignature Approach used in authorizers to sign payload to Ethereum bridge
 // Returns data hash and
-func CreateSignature(message string, privateKey *ecdsa.PrivateKey) (common.Hash, []byte) {
+func createSignature(message string, privateKey *ecdsa.PrivateKey) (common.Hash, []byte) {
 	// 1. Hash data
 	data := []byte(message)
 	hash := crypto.Keccak256Hash(data)
@@ -132,7 +316,7 @@ func CreateSignature(message string, privateKey *ecdsa.PrivateKey) (common.Hash,
 	return hash, signature
 }
 
-func RecoverSignerPublicKey(data common.Hash, signature []byte) []byte {
+func recoverSignerPublicKey(data common.Hash, signature []byte) []byte {
 	sigPublicKey, err := crypto.Ecrecover(data.Bytes(), signature)
 	if err != nil {
 		fmt.Println(err)
