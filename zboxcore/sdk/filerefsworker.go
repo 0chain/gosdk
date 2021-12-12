@@ -17,7 +17,6 @@ import (
 )
 
 type ObjectTreeResult struct {
-	// raw           []byte
 	TotalPages int64               `json:"total_pages"`
 	OffsetPath string              `json:"offset_path"`
 	OffsetDate string              `json:"offset_date"`
@@ -26,28 +25,25 @@ type ObjectTreeResult struct {
 }
 
 type ObjectTreeRequest struct {
-	allocationID       string
-	allocationTx       string
-	blobbers           []*blockchain.StorageNode
-	remotefilepathhash string
-	remotefilepath     string
-	pageLimit          int
-	level              int
-	fileType           string
-	refType            string
-	offsetPath         string
-	updatedDate        string //must have "2006-01-02T15:04:05.99999Z07:00" format
-	offsetDate         string //must have "2006-01-02T15:04:05.99999Z07:00" format
-	authToken          *marker.AuthTicket
-	ctx                context.Context
-	wg                 *sync.WaitGroup
+	allocationID   string
+	allocationTx   string
+	blobbers       []*blockchain.StorageNode
+	remotefilepath string
+	pageLimit      int // numbers of refs that will be returned by blobber at max
+	level          int
+	fileType       string
+	refType        string
+	offsetPath     string
+	updatedDate    string // must have "2006-01-02T15:04:05.99999Z07:00" format
+	offsetDate     string // must have "2006-01-02T15:04:05.99999Z07:00" format
+	ctx            context.Context
+	wg             *sync.WaitGroup
 	Consensus
 }
 
 type oTreeResponse struct {
-	oTResult     *ObjectTreeResult
-	responseHash string
-	err          error
+	oTResult *ObjectTreeResult
+	err      error
 }
 
 //Paginated tree should not be collected as this will stall the client
@@ -141,39 +137,8 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 		return
 	}
 	oTR.oTResult = &oResult
-	Logger.Info("Gottcha result")
+	Logger.Info("Got result for remotepath ", o.remotefilepath)
 }
-
-// type ORef struct {
-// 	ID                  int64          `json:"id"`
-// 	Type                string         `json:"type"`
-// 	AllocationID        string         `json:"allocation_id"`
-// 	LookupHash          string         `json:"lookup_hash"`
-// 	Name                string         `json:"name"`
-// 	Path                string         `json:"path"`
-// 	Hash                string         `json:"hash"`
-// 	NumBlocks           int64          `json:"num_blocks"`
-// 	PathHash            string         `json:"path_hash"`
-// 	ParentPath          string         `json:"parent_path"`
-// 	PathLevel           int            `json:"level"`
-// 	CustomMeta          string         `json:"custom_meta"`
-// 	ContentHash         string         `json:"content_hash"`
-// 	Size                int64          `json:"size"`
-// 	MerkleRoot          string         `json:"merkle_root"`
-// 	ActualFileSize      int64          `json:"actual_file_size"`
-// 	ActualFileHash      string         `json:"actual_file_hash"`
-// 	MimeType            string         `json:"mimetype"`
-// 	WriteMarker         string         `json:"write_marker"`
-// 	ThumbnailSize       int64          `json:"thumbnail_size"`
-// 	ThumbnailHash       string         `json:"thumbnail_hash"`
-// 	ActualThumbnailSize int64          `json:"actual_thumbnail_size"`
-// 	ActualThumbnailHash string         `json:"actual_thumbnail_hash"`
-// 	EncryptedKey        string         `json:"encrypted_key"`
-// 	Attributes          datatypes.JSON `json:"attributes"`
-// 	OnCloud             bool           `json:"on_cloud"`
-// 	CreatedAt           time.Time      `json:"created_at"`
-// 	UpdatedAt           time.Time      `json:"updated_at"`
-// }
 
 // Blobber response will be different from each other so we should only consider similar fields
 // i.e. we cannot calculate hash of response and have consensus on it
