@@ -76,6 +76,9 @@ func main() {
 	runBridgeClientExample(cfg)
 }
 
+// keyStorageExample Shows how new/existing user will work with key storage
+// 1. If user is new, user creates new storage with key and/or mnemonic
+// 2. if user exists, user can sign transactions using public key and password to unlock the key storage
 func keyStorageExample() {
 	mnemonic := "tag volcano eight thank tide danger coast health above argue embrace heavy"
 	password := "password"
@@ -91,6 +94,7 @@ func signingExamples() {
 	signDynamicTransactorExample(mnemonic)
 }
 
+// createKeyStorage create new key storage and a new account
 func createKeyStorage(password string, delete bool) {
 	keyDir := path.Join(zcnbridge.GetConfigDir(), "wallets")
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
@@ -112,6 +116,7 @@ func createKeyStorage(password string, delete bool) {
 	}
 }
 
+// signWithKeyStore signs the transaction using public key and key storage
 func signWithKeyStore(address, password string) {
 	// 1. Create storage and account if it doesn't exist and add account to it
 
@@ -164,6 +169,7 @@ func signWithKeyStore(address, password string) {
 	spew.Dump(signedTx)
 }
 
+// importFromMnemonicToStorage Importing wallet to key storage from mnemonic
 func importFromMnemonicToStorage(mnemonic, password string, delete bool) {
 	// 1. Create storage and account if it doesn't exist and add account to it
 
