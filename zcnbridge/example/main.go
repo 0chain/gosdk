@@ -63,8 +63,8 @@ var tranHashes = []string{
 func main() {
 	cfg := zcnbridge.ReadClientConfigFromCmd()
 
-	signingExamples()
 	coldStorageExample()
+	signingExamples()
 
 	if *cfg.ConfigFile == "owner" {
 		runBridgeOwnerExample(cfg)
@@ -76,7 +76,8 @@ func main() {
 
 func coldStorageExample() {
 	mnemonic := "tag volcano eight thank tide danger coast health above argue embrace heavy"
-	initColdStorage(mnemonic, "password")
+	importKeyToStorage(mnemonic, "password")
+	createKeyStorage("password")
 }
 
 func signingExamples() {
@@ -85,21 +86,66 @@ func signingExamples() {
 	signDynamicTransactorExample(mnemonic)
 }
 
-func initColdStorage(mnemonic, password string) {
+func createKeyStorage(password string) {
+}
+
+func importKeyToStorage(mnemonic, password string) {
+	// 1. Create storage and account if it doesn't exist and add account to it
+
 	keyDir := path.Join(zcnbridge.GetConfigDir(), "wallets")
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
-	account, err := ks.NewAccount(password)
+
+	// 2. Init wallet
+
+	wallet, err := hdw.NewFromMnemonic(mnemonic)
 	if err != nil {
-		zcnbridge.ExitWithError(err)
+		fmt.Println(err)
+		return
 	}
-	fmt.Println(account.Address.Hex()) // 0x20F8D42FB0F667F2E53930fed426f225752453b3
+
+	pathD := hdw.MustParseDerivationPath("m/44'/60'/0'/0/0")
+	account, err := wallet.Derive(pathD, true)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	key, err := wallet.PrivateKey(account)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	// 3. Find key
+
+	acc, err := ks.Find(account)
+	if err == nil {
+		fmt.Println(acc.URL.Path)
+		return
+	}
+
+	// 4. Import the key if it doesn't exist
+
+	acc, err = ks.ImportECDSA(key, password)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	fmt.Println(acc.URL.Path)
+	fmt.Println(acc.Address.Hex())
+	fmt.Println(account.URL.Path)
+	fmt.Println(account.Address.Hex())
+
+	// 5. Delete key store
+
 	err = ks.Delete(account, password)
 	if err != nil {
-		zcnbridge.ExitWithError(err)
+		fmt.Println(err)
 	}
 }
 
-// signDynamicTransactorExample is sey when gasPrice is set nil
+// signDynamicTransactorExample - London hard fork, is set when gasPrice is set nil
 func signDynamicTransactorExample(mnemonic string) {
 	ctx := context.Background()
 	client, err := ethclient.Dial("https://ropsten.infura.io/v3/22cb2849f5f74b8599f3dc2a23085bd4")
@@ -186,7 +232,8 @@ func signDynamicTransactorExample(mnemonic string) {
 func signLegacyTransactionExample(mnemonic string) {
 	wallet, err := hdw.NewFromMnemonic(mnemonic)
 	if err != nil {
-		zcnbridge.ExitWithError(err)
+		fmt.Println(err)
+		return
 	}
 
 	//wallet.SetFixIssue172(true)
@@ -194,14 +241,16 @@ func signLegacyTransactionExample(mnemonic string) {
 	pathD := hdw.MustParseDerivationPath("m/44'/60'/0'/0/0")
 	account, err := wallet.Derive(pathD, true)
 	if err != nil {
-		zcnbridge.ExitWithError(err)
+		fmt.Println(err)
+		return
 	}
 
 	fmt.Println(account.Address.Hex())
 
 	url, err := wallet.Path(account)
 	if err != nil {
-		zcnbridge.ExitWithError(err)
+		fmt.Println(err)
+		return
 	}
 	fmt.Println(url)
 
