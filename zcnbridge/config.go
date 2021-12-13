@@ -103,8 +103,8 @@ func CreateBridgeOwner(cfg *viper.Viper) *BridgeOwner {
 				GasLimit:        cfg.GetUint64("owner.GasLimit"),
 				Value:           cfg.GetInt64("owner.Value"),
 			},
-			Address:  cfg.GetString("owner.address"),
-			Password: cfg.GetString("owner.password"),
+			Address:  cfg.GetString("owner.Address"),
+			Password: cfg.GetString("owner.Password"),
 		},
 		Instance: &Instance{
 			startTime: common.Now(),
@@ -131,7 +131,8 @@ func CreateBridgeClient(cfg *viper.Viper) *BridgeClient {
 				GasLimit:        cfg.GetUint64("bridge.GasLimit"),
 				Value:           cfg.GetInt64("bridge.Value"),
 			},
-			Address: cfg.GetString("bridge.address"),
+			Address:  cfg.GetString("bridge.Address"),
+			Password: cfg.GetString("bridge.Password"),
 		},
 		BridgeConfig: &BridgeConfig{
 			ConsensusThreshold: cfg.GetInt("bridge.ConsensusThreshold"),

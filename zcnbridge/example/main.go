@@ -38,6 +38,7 @@ const (
 // Prerequisites:
 // 1. cmd must have enough amount of Ethereum on his wallet (any Ethereum transaction will fail)
 // 2. cmd must have enough WZCN tokens in Ethereum chain.
+// 3. Address of the client should be initializer in storage using ImportAccount(mnemonic, password)
 
 // main:
 // `--config_file bridge` runs bridge client
@@ -46,7 +47,13 @@ func main() {
 	// First is read config from command line
 	cfg := zcnbridge.ReadClientConfigFromCmd()
 
-	zcnbridge.ListAccount()
+	// Checking if an account exists in key storage
+	if zcnbridge.AccountExists("0x860FA46F170a87dF44D7bB867AA4a5D2813127c1") {
+		fmt.Println("Account exists")
+	}
+
+	// List all accounts initialized in storage
+	zcnbridge.ListStorageAccount()
 
 	// Next step is register your account in the key storage if it doesn't exist (mandatory)
 	// This should be done in zwallet cli

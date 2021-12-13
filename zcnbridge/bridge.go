@@ -83,7 +83,6 @@ func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei We
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 
 	transactOpts := CreateSignedTransactionFromKeyStore(etherClient, fromAddress, gasLimitUnits, b.Password)
-	//transactOpts := CreateSignedTransaction(chainID, etherClient, ownerAddress, privKey, gasLimitUnits)
 
 	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, etherClient)
 	if err != nil {

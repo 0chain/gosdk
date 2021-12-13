@@ -86,7 +86,7 @@ func CreateSignedTransactionFromKeyStore(
 	}
 	signerAcc, err := ks.Find(signer)
 	if err != nil {
-		zcncore.Logger.Fatal(err)
+		zcncore.Logger.Fatal(errors.Wrapf(err, "signer: %s", signerAddress.Hex()))
 	}
 
 	chainID, err := client.ChainID(context.Background())
@@ -104,7 +104,7 @@ func CreateSignedTransactionFromKeyStore(
 		zcncore.Logger.Fatal(err)
 	}
 
-	err = ks.TimedUnlock(signer, password, time.Second*10)
+	err = ks.TimedUnlock(signer, password, time.Second*2)
 	if err != nil {
 		zcncore.Logger.Fatal(err)
 	}

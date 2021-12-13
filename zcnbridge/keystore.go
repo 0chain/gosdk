@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/ethereum/go-ethereum/common"
+
 	hdw "github.com/miguelmota/go-ethereum-hdwallet"
 
 	"github.com/ethereum/go-ethereum/accounts"
@@ -11,14 +13,37 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ListAccount List available accounts
-func ListAccount() {
+// ListStorageAccount List available accounts
+func ListStorageAccount() {
 	keyDir := path.Join(GetConfigDir(), "wallets")
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	config := &accounts.Config{InsecureUnlockAllowed: false}
 	am := accounts.NewManager(config, ks)
 	addresses := am.Accounts()
 	fmt.Println(addresses)
+}
+
+func AccountExists(address string) bool {
+	keyDir := path.Join(GetConfigDir(), "wallets")
+	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	config := &accounts.Config{InsecureUnlockAllowed: false}
+	am := accounts.NewManager(config, ks)
+
+	wallet, err := am.Find(accounts.Account{
+		Address: common.HexToAddress(address),
+	})
+
+	if err != nil && wallet == nil {
+		fmt.Printf("failed to find account %s, error: %s", address, err)
+		return false
+	}
+
+	status, err := wallet.Status()
+	url := wallet.URL()
+
+	fmt.Printf("Account exists. Status: %s, Path: %s", status, url)
+
+	return true
 }
 
 // CreateKeyStorage create, restore or unlock key storage
