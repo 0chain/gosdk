@@ -13,14 +13,15 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ListStorageAccount List available accounts
-func ListStorageAccount() {
+// ListStorageAccounts List available accounts
+func ListStorageAccounts() []common.Address {
 	keyDir := path.Join(GetConfigDir(), "wallets")
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	config := &accounts.Config{InsecureUnlockAllowed: false}
 	am := accounts.NewManager(config, ks)
 	addresses := am.Accounts()
-	fmt.Println(addresses)
+
+	return addresses
 }
 
 func AccountExists(address string) bool {

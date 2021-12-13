@@ -53,7 +53,7 @@ func main() {
 	}
 
 	// List all accounts initialized in storage
-	zcnbridge.ListStorageAccount()
+	zcnbridge.ListStorageAccounts()
 
 	// Next step is register your account in the key storage if it doesn't exist (mandatory)
 	// This should be done in zwallet cli
