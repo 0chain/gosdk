@@ -5,6 +5,11 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"math/big"
+	"path"
+
+	"github.com/ethereum/go-ethereum/accounts"
+
+	"github.com/ethereum/go-ethereum/accounts/keystore"
 
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -158,10 +163,45 @@ func CreateSignedTransaction(
 		zcncore.Logger.Fatal(err)
 	}
 
-	// reading from the private file
-	// bind.NewTransactorWithChainID()
-
 	opts, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
+	if err != nil {
+		zcncore.Logger.Fatal(err)
+	}
+
+	valueWei := new(big.Int).Mul(big.NewInt(0), big.NewInt(params.Wei))
+
+	opts.Nonce = big.NewInt(int64(nonce))
+	opts.Value = valueWei         // in wei
+	opts.GasLimit = gasLimitUnits // in units
+	opts.GasPrice = gasPriceWei   // wei
+
+	return opts
+}
+
+func CreateSignedTransactionFromKeyStore(
+	chainID *big.Int,
+	client *ethclient.Client,
+	fromAddress common.Address,
+	signerAddress string,
+	gasLimitUnits uint64,
+) *bind.TransactOpts {
+	keyDir := path.Join(GetConfigDir(), "wallets")
+	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	signer := accounts.Account{
+		Address: common.HexToAddress(signerAddress),
+	}
+
+	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
+	if err != nil {
+		zcncore.Logger.Fatal(err)
+	}
+
+	gasPriceWei, err := client.SuggestGasPrice(context.Background())
+	if err != nil {
+		zcncore.Logger.Fatal(err)
+	}
+
+	opts, err := bind.NewKeyStoreTransactorWithChainID(ks, signer, chainID)
 	if err != nil {
 		zcncore.Logger.Fatal(err)
 	}
