@@ -3,7 +3,6 @@ package zcnbridge
 import (
 	"context"
 	"crypto/ecdsa"
-	"encoding/json"
 	"math/big"
 	"path"
 
@@ -21,46 +20,46 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type EthWalletInfo struct {
-	ID         string `json:"ID"`
-	PrivateKey string `json:"PrivateKey"`
-}
+//type EthWalletInfo struct {
+//	ID         string `json:"ID"`
+//	PrivateKey string `json:"PrivateKey"`
+//}
 
-type EthereumWallet struct {
-	PublicKey  *ecdsa.PublicKey
-	PrivateKey *ecdsa.PrivateKey
-	Address    common.Address
-}
+//type EthereumWallet struct {
+//	PublicKey  *ecdsa.PublicKey
+//	PrivateKey *ecdsa.PrivateKey
+//	Address    common.Address
+//}
 
-func (b *BridgeOwner) CreateEthereumWallet() (*EthereumWallet, error) {
-	address, publicKey, privateKey, err := GetKeysAndAddressFromMnemonic(b.EthereumMnemonic)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to initialize owner ethereum zcnWallet")
-	}
+//func (b *BridgeOwner) CreateEthereumWallet() (*EthereumWallet, error) {
+//	address, publicKey, privateKey, err := GetKeysAndAddressFromMnemonic(b.EthereumMnemonic)
+//	if err != nil {
+//		return nil, errors.Wrap(err, "failed to initialize owner ethereum zcnWallet")
+//	}
+//
+//	return &EthereumWallet{
+//		PublicKey:  publicKey,
+//		PrivateKey: privateKey,
+//		Address:    address,
+//	}, nil
+//}
 
-	return &EthereumWallet{
-		PublicKey:  publicKey,
-		PrivateKey: privateKey,
-		Address:    address,
-	}, nil
-}
+//func (b *BridgeClient) CreateEthereumWallet() (*EthereumWallet, error) {
+//	address, publicKey, privateKey, err := GetKeysAndAddressFromMnemonic(b.EthereumMnemonic)
+//	if err != nil {
+//		return nil, errors.Wrap(err, "failed to initialize client ethereum zcnWallet")
+//	}
+//
+//	return &EthereumWallet{
+//		PublicKey:  publicKey,
+//		PrivateKey: privateKey,
+//		Address:    address,
+//	}, nil
+//}
 
-func (b *BridgeClient) CreateEthereumWallet() (*EthereumWallet, error) {
-	address, publicKey, privateKey, err := GetKeysAndAddressFromMnemonic(b.EthereumMnemonic)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to initialize client ethereum zcnWallet")
-	}
-
-	return &EthereumWallet{
-		PublicKey:  publicKey,
-		PrivateKey: privateKey,
-		Address:    address,
-	}, nil
-}
-
-func (b *BridgeClient) GetEthereumWalletInfo() (*EthWalletInfo, error) {
-	return GetEthereumWalletInfoFromMnemonic(b.EthereumMnemonic)
-}
+//func (b *BridgeClient) GetEthereumWalletInfo() (*EthWalletInfo, error) {
+//	return GetEthereumWalletInfoFromMnemonic(b.EthereumMnemonic)
+//}
 
 func (b *EthereumConfig) CreateEthClient() (*ethclient.Client, error) {
 	client, err := ethclient.Dial(b.EthereumNodeURL)
@@ -70,42 +69,42 @@ func (b *EthereumConfig) CreateEthClient() (*ethclient.Client, error) {
 	return client, err
 }
 
-func (b *BridgeClient) GetKeysAndAddress() (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, error) {
-	ownerWalletInfo, err := b.GetEthereumWalletInfo()
-	if err != nil {
-		return [20]byte{}, nil, nil, errors.Wrap(err, "failed to fetch zcnWallet ownerWalletInfo")
-	}
+//func (b *BridgeClient) GetKeysAndAddress() (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, error) {
+//	ownerWalletInfo, err := b.GetEthereumWalletInfo()
+//	if err != nil {
+//		return [20]byte{}, nil, nil, errors.Wrap(err, "failed to fetch zcnWallet ownerWalletInfo")
+//	}
+//
+//	return GetKeysAndAddressFromPrivateKey(ownerWalletInfo.PrivateKey)
+//}
 
-	return GetKeysAndAddressFromPrivateKey(ownerWalletInfo.PrivateKey)
-}
+//func CreateEthereumWalletFromMnemonic(mnemonic string) (*EthereumWallet, error) {
+//	address, publicKey, privateKey, err := GetKeysAndAddressFromMnemonic(mnemonic)
+//	if err != nil {
+//		return nil, errors.Wrap(err, "failed to initialize ethereum zcnWallet")
+//	}
+//
+//	return &EthereumWallet{
+//		PublicKey:  publicKey,
+//		PrivateKey: privateKey,
+//		Address:    address,
+//	}, nil
+//}
 
-func CreateEthereumWalletFromMnemonic(mnemonic string) (*EthereumWallet, error) {
-	address, publicKey, privateKey, err := GetKeysAndAddressFromMnemonic(mnemonic)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to initialize ethereum zcnWallet")
-	}
-
-	return &EthereumWallet{
-		PublicKey:  publicKey,
-		PrivateKey: privateKey,
-		Address:    address,
-	}, nil
-}
-
-func GetEthereumWalletInfoFromMnemonic(mnemonic string) (*EthWalletInfo, error) {
-	ownerWallet, err := zcncore.GetWalletAddrFromEthMnemonic(mnemonic)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to initialize zcnWallet from mnemonic")
-	}
-
-	wallet := &EthWalletInfo{}
-	err = json.Unmarshal([]byte(ownerWallet), wallet)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal zcnWallet info")
-	}
-
-	return wallet, err
-}
+//func GetEthereumWalletInfoFromMnemonic(mnemonic string) (*EthWalletInfo, error) {
+//	ownerWallet, err := zcncore.GetWalletAddrFromEthMnemonic(mnemonic)
+//	if err != nil {
+//		return nil, errors.Wrap(err, "failed to initialize zcnWallet from mnemonic")
+//	}
+//
+//	wallet := &EthWalletInfo{}
+//	err = json.Unmarshal([]byte(ownerWallet), wallet)
+//	if err != nil {
+//		return nil, errors.Wrap(err, "failed to unmarshal zcnWallet info")
+//	}
+//
+//	return wallet, err
+//}
 
 func GetKeysAndAddressFromPrivateKey(privateKey string) (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, error) {
 	privateKeyECDSA, err := crypto.HexToECDSA(privateKey)
@@ -124,14 +123,14 @@ func GetKeysAndAddressFromPrivateKey(privateKey string) (common.Address, *ecdsa.
 	return ownerAddress, publicKeyECDSA, privateKeyECDSA, nil
 }
 
-func GetKeysAndAddressFromMnemonic(mnemonic string) (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, error) {
-	ownerWalletInfo, err := GetEthereumWalletInfoFromMnemonic(mnemonic)
-	if err != nil {
-		return [20]byte{}, nil, nil, errors.Wrap(err, "failed to fetch zcnWallet ownerWalletInfo")
-	}
-
-	return GetKeysAndAddressFromPrivateKey(ownerWalletInfo.PrivateKey)
-}
+//func GetKeysAndAddressFromMnemonic(mnemonic string) (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, error) {
+//	ownerWalletInfo, err := GetEthereumWalletInfoFromMnemonic(mnemonic)
+//	if err != nil {
+//		return [20]byte{}, nil, nil, errors.Wrap(err, "failed to fetch zcnWallet ownerWalletInfo")
+//	}
+//
+//	return GetKeysAndAddressFromPrivateKey(ownerWalletInfo.PrivateKey)
+//}
 
 //  _allowances[owner][spender] = amount;
 // as a spender, ERC20 WZCN token must increase allowance for the bridge to make burn on behalf of WZCN owner
@@ -182,13 +181,17 @@ func CreateSignedTransactionFromKeyStore(
 	chainID *big.Int,
 	client *ethclient.Client,
 	fromAddress common.Address,
-	signerAddress string,
+	signerAddress common.Address,
 	gasLimitUnits uint64,
 ) *bind.TransactOpts {
 	keyDir := path.Join(GetConfigDir(), "wallets")
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	signer := accounts.Account{
-		Address: common.HexToAddress(signerAddress),
+		Address: signerAddress,
+	}
+	signerAcc, err := ks.Find(signer)
+	if err != nil {
+		zcncore.Logger.Fatal(err)
 	}
 
 	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
@@ -201,7 +204,7 @@ func CreateSignedTransactionFromKeyStore(
 		zcncore.Logger.Fatal(err)
 	}
 
-	opts, err := bind.NewKeyStoreTransactorWithChainID(ks, signer, chainID)
+	opts, err := bind.NewKeyStoreTransactorWithChainID(ks, signerAcc, chainID)
 	if err != nil {
 		zcncore.Logger.Fatal(err)
 	}

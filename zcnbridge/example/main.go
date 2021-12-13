@@ -519,7 +519,7 @@ func GenerateBurnTransactionOutput(b *zcnbridge.BridgeClient) []byte {
 	// Executed at burn function in smartcontract
 	payload := &BurnPayload{
 		Nonce:           nonce,
-		EthereumAddress: b.GetClientEthereumWallet().Address.String(),
+		EthereumAddress: b.Address,
 	}
 
 	// generating transaction hash

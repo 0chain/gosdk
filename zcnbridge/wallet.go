@@ -37,27 +37,27 @@ func (b *BridgeClient) SetupZCNWallet(filename string) {
 	chain.GetServerChain().ID = walletConfig.ID()
 }
 
-func (b *BridgeClient) SetupEthereumWallet() {
-	clientEthereumWallet, err := b.CreateEthereumWallet()
-	if err != nil {
-		log.Logger.Fatal("failed to setup client ethereum zcnWallet", zap.Error(err))
-	} else {
-		log.Logger.Info("created client ethereum zcnWallet", zap.Error(err))
-	}
+//func (b *BridgeClient) SetupEthereumWallet() {
+//	clientEthereumWallet, err := b.CreateEthereumWallet()
+//	if err != nil {
+//		log.Logger.Fatal("failed to setup client ethereum zcnWallet", zap.Error(err))
+//	} else {
+//		log.Logger.Info("created client ethereum zcnWallet", zap.Error(err))
+//	}
+//
+//	b.Instance.ethWallet = clientEthereumWallet
+//}
 
-	b.Instance.ethWallet = clientEthereumWallet
-}
-
-func (b *BridgeOwner) SetupEthereumWallet() {
-	ownerEthereumWallet, err := b.CreateEthereumWallet()
-	if err != nil {
-		log.Logger.Fatal("failed to setup owner ethereum zcnWallet", zap.Error(err))
-	} else {
-		log.Logger.Info("created owner ethereum zcnWallet", zap.Error(err))
-	}
-
-	b.Instance.ethWallet = ownerEthereumWallet
-}
+//func (b *BridgeOwner) SetupEthereumWallet() {
+//	ownerEthereumWallet, err := b.CreateEthereumWallet()
+//	if err != nil {
+//		log.Logger.Fatal("failed to setup owner ethereum zcnWallet", zap.Error(err))
+//	} else {
+//		log.Logger.Info("created owner ethereum zcnWallet", zap.Error(err))
+//	}
+//
+//	b.Instance.ethWallet = ownerEthereumWallet
+//}
 
 func initZCNWallet(filename string) (*wallet.Wallet, error) {
 	file := filepath.Join(GetConfigDir(), filename)

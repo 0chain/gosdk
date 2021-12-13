@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"path"
 
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/0chain/gosdk/zcncore"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
 
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zcnbridge/chain"
@@ -57,14 +60,14 @@ func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei We
 	// 2. Data Parameter (amount)
 	amount := big.NewInt(int64(amountWei))
 
-	ethWallet := b.GetClientEthereumWallet()
-	ownerAddress, _, privKey := ethWallet.Address, ethWallet.PublicKey, ethWallet.PrivateKey
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read private key and ownerAddress")
-	}
+	//ethWallet := b.GetClientEthereumWallet()
+	//ownerAddress, _, privKey := ethWallet.Address, ethWallet.PublicKey, ethWallet.PrivateKey
+	//if err != nil {
+	//	return nil, errors.Wrap(err, "failed to read private key and ownerAddress")
+	//}
 
 	tokenAddress := common.HexToAddress(b.WzcnAddress)
-	fromAddress := ownerAddress
+	fromAddress := common.HexToAddress(b.Address)
 
 	abi, err := erc20.ERC20MetaData.GetAbi()
 	if err != nil {
@@ -91,7 +94,8 @@ func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei We
 		return nil, errors.Wrap(err, "failed to get chain ID")
 	}
 
-	transactOpts := CreateSignedTransaction(chainID, etherClient, ownerAddress, privKey, gasLimitUnits)
+	transactOpts := CreateSignedTransactionFromKeyStore(chainID, etherClient, fromAddress, fromAddress, gasLimitUnits)
+	//transactOpts := CreateSignedTransaction(chainID, etherClient, ownerAddress, privKey, gasLimitUnits)
 
 	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, etherClient)
 	if err != nil {
@@ -120,10 +124,27 @@ func (b *BridgeClient) VerifyZCNTransaction(ctx context.Context, hash string) (*
 // SignWithEthereumChain signs the digest with Ethereum chain signer
 func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
 	hash := CreateHash(message)
-	ethereumWallet := b.GetClientEthereumWallet()
-	fmt.Printf("Signging message with %s: ", ethereumWallet.Address.Hex())
-	privateKey := ethereumWallet.PrivateKey
-	signature, err := crypto.Sign(hash.Bytes(), privateKey)
+
+	keyDir := path.Join(GetConfigDir(), "wallets")
+	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	signer := accounts.Account{
+		Address: common.HexToAddress(b.Address),
+	}
+
+	signerAcc, err := ks.Find(signer)
+	if err != nil {
+		zcncore.Logger.Fatal(err)
+	}
+
+	//ethereumWallet := b.GetClientEthereumWallet()
+	//fmt.Printf("Signing message with %s: ", ethereumWallet.Address.Hex())
+	//privateKey := ethereumWallet.PrivateKey
+	//signature, err := crypto.Sign(hash.Bytes(), privateKey)
+
+	signature, err := ks.SignHash(signerAcc, hash.Bytes())
+	if err != nil {
+		return nil, err
+	}
 	if err != nil {
 		return []byte{}, errors.Wrap(err, "failed to sign the message")
 	}
@@ -240,11 +261,11 @@ func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) 
 }
 
 func (b *BridgeClient) BurnZCN(ctx context.Context, amount int64) (*transaction.Transaction, error) {
-	address := b.GetClientEthereumAddress()
+	//address := b.GetClientEthereumAddress()
 
 	payload := zcnsc.BurnPayload{
 		Nonce:           b.IncrementNonce(),
-		EthereumAddress: address.String(), // TODO: this should be receiver address not the bridge
+		EthereumAddress: b.Address, // TODO: this should be receiver address not the bridge
 	}
 
 	trx, err := transaction.NewTransactionEntity(b.ID(), b.PublicKey())
@@ -279,10 +300,10 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params 
 	contractAddress := common.HexToAddress(b.BridgeAddress)
 
 	// BridgeClient Ethereum Wallet
-	ethereumWallet := b.GetClientEthereumWallet()
-	if ethereumWallet == nil {
-		return nil, nil, errors.New("BridgeClient Ethereum zcnWallet is not initialized")
-	}
+	//ethereumWallet := b.GetClientEthereumWallet()
+	//if ethereumWallet == nil {
+	//	return nil, nil, errors.New("BridgeClient Ethereum zcnWallet is not initialized")
+	//}
 
 	// Get ABI of the contract
 	abi, err := binding.BridgeMetaData.GetAbi()
@@ -297,9 +318,11 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params 
 	}
 
 	// Gas limits in units
+	fromAddress := common.HexToAddress(b.Address)
+
 	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
 		To:   &contractAddress,
-		From: ethereumWallet.Address,
+		From: fromAddress,
 		Data: pack,
 	})
 	if err != nil {
@@ -314,13 +337,15 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params 
 	}
 
 	// Create options
-	transactOpts := CreateSignedTransaction(
-		chainID,
-		etherClient,
-		ethereumWallet.Address,
-		ethereumWallet.PrivateKey,
-		gasLimitUnits,
-	)
+	//transactOpts := CreateSignedTransaction(
+	//	chainID,
+	//	etherClient,
+	//	ethereumWallet.Address,
+	//	ethereumWallet.PrivateKey,
+	//	gasLimitUnits,
+	//)
+
+	transactOpts := CreateSignedTransactionFromKeyStore(chainID, etherClient, fromAddress, fromAddress, gasLimitUnits)
 
 	// BridgeClient instance
 	bridgeInstance, err := binding.NewBridge(contractAddress, etherClient)

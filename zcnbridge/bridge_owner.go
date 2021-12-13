@@ -26,10 +26,10 @@ func (b *BridgeOwner) prepareAuthorizers(ctx context.Context, method string, par
 	contractAddress := common.HexToAddress(b.AuthorizersAddress)
 
 	// BridgeClient Ethereum Wallet
-	ethereumWallet := b.GetEthereumWallet()
-	if ethereumWallet == nil {
-		return nil, nil, errors.New("BridgeClient Ethereum zcnWallet is not initialized")
-	}
+	//ethereumWallet := b.GetEthereumWallet()
+	//if ethereumWallet == nil {
+	//	return nil, nil, errors.New("BridgeClient Ethereum zcnWallet is not initialized")
+	//}
 
 	// Get ABI of the contract
 	abi, err := authorizers.AuthorizersMetaData.GetAbi()
@@ -43,10 +43,12 @@ func (b *BridgeOwner) prepareAuthorizers(ctx context.Context, method string, par
 		return nil, nil, errors.Wrap(err, "failed to pack arguments")
 	}
 
+	from := common.HexToAddress(b.Address)
+
 	// Gas limits in units
 	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
 		To:   &contractAddress,
-		From: ethereumWallet.Address,
+		From: from,
 		Data: pack,
 	})
 	if err != nil {
@@ -61,13 +63,15 @@ func (b *BridgeOwner) prepareAuthorizers(ctx context.Context, method string, par
 	}
 
 	// Create options
-	transactOpts := CreateSignedTransaction(
-		chainID,
-		etherClient,
-		ethereumWallet.Address,
-		ethereumWallet.PrivateKey,
-		gasLimitUnits,
-	)
+	//transactOpts := CreateSignedTransaction(
+	//	chainID,
+	//	etherClient,
+	//	ethereumWallet.Address,
+	//	ethereumWallet.PrivateKey,
+	//	gasLimitUnits,
+	//)
+
+	transactOpts := CreateSignedTransactionFromKeyStore(chainID, etherClient, from, from, gasLimitUnits)
 
 	// Authorizers instance
 	authorizersInstance, err := authorizers.NewAuthorizers(contractAddress, etherClient)
@@ -103,16 +107,10 @@ func (b *BridgeOwner) AddEthereumAuthorizers(configDir string) {
 		return
 	}
 
-	mnemonics := cfg.GetStringSlice("cfg")
+	addresses := cfg.GetStringSlice("cfg")
 
-	for _, mnemonic := range mnemonics {
-		wallet, err := CreateEthereumWalletFromMnemonic(mnemonic)
-		if err != nil {
-			fmt.Println(err)
-			continue
-		}
-
-		transaction, err := b.AddEthereumAuthorizer(context.TODO(), wallet.Address)
+	for _, address := range addresses {
+		transaction, err := b.AddEthereumAuthorizer(context.TODO(), common.HexToAddress(address))
 		if err != nil || transaction == nil {
 			fmt.Println(err)
 			continue
@@ -124,9 +122,9 @@ func (b *BridgeOwner) AddEthereumAuthorizers(configDir string) {
 		}
 
 		if status == 1 {
-			fmt.Printf("Authorizer has been added: %s\n", wallet.Address.String())
+			fmt.Printf("Authorizer has been added: %s\n", address)
 		} else {
-			fmt.Printf("Authorizer has failed to be added: %s\n", wallet.Address.String())
+			fmt.Printf("Authorizer has failed to be added: %s\n", address)
 		}
 	}
 }

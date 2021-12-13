@@ -5,7 +5,6 @@ import (
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
-	ether "github.com/ethereum/go-ethereum/common"
 	"github.com/spf13/viper"
 )
 
@@ -35,8 +34,9 @@ type EthereumConfig struct {
 
 type BridgeOwnerConfig struct {
 	EthereumConfig
-	// Deployer of all bridge contracts
-	EthereumMnemonic string
+	// Deployer public key
+	Address string
+	//EthereumMnemonic string
 	// Address of Ethereum authorizers contract
 	AuthorizersAddress string
 }
@@ -44,15 +44,16 @@ type BridgeOwnerConfig struct {
 // BridgeClientConfig initializes Ethereum zcnWallet and params
 type BridgeClientConfig struct {
 	EthereumConfig
+	Address string
 	// Ethereum mnemonic (derivation of Ethereum owner, public and private key)
-	EthereumMnemonic string
+	//EthereumMnemonic string
 	// Authorizers required to confirm (in percents)
 	ConsensusThreshold int
 }
 
 type Instance struct {
 	zcnWallet *wallet.Wallet
-	ethWallet *EthereumWallet
+	//ethWallet *EthereumWallet
 	startTime common.Timestamp
 	nonce     int64
 }
@@ -102,7 +103,7 @@ func CreateBridgeOwner(cfg *viper.Viper) *BridgeOwner {
 				GasLimit:    cfg.GetUint64("owner.GasLimit"),
 				Value:       cfg.GetInt64("owner.Value"),
 			},
-			EthereumMnemonic:   cfg.GetString("owner.OwnerEthereumMnemonic"),
+			Address:            cfg.GetString("owner.address"),
 			AuthorizersAddress: cfg.GetString("owner.AuthorizersAddress"),
 		},
 		Instance: &Instance{
@@ -126,7 +127,7 @@ func CreateBridgeClient(cfg *viper.Viper) *BridgeClient {
 				GasLimit:        cfg.GetUint64("bridge.GasLimit"),
 				Value:           cfg.GetInt64("bridge.Value"),
 			},
-			EthereumMnemonic:   cfg.GetString("bridge.ClientEthereumMnemonic"),
+			Address:            cfg.GetString("bridge.address"),
 			ConsensusThreshold: cfg.GetInt("bridge.ConsensusThreshold"),
 		},
 		Instance: &Instance{
@@ -135,15 +136,15 @@ func CreateBridgeClient(cfg *viper.Viper) *BridgeClient {
 	}
 }
 
-// GetClientEthereumAddress returns ethereum zcnWallet string
-func (b *BridgeClient) GetClientEthereumAddress() ether.Address {
-	return b.ethWallet.Address
-}
+//// GetClientEthereumAddress returns ethereum zcnWallet string
+//func (b *BridgeClient) GetClientEthereumAddress() ether.Address {
+//	return b.ethWallet.Address
+//}
 
-// GetClientEthereumWallet returns ethereum zcnWallet string
-func (b *BridgeClient) GetClientEthereumWallet() *EthereumWallet {
-	return b.ethWallet
-}
+//// GetClientEthereumWallet returns ethereum zcnWallet string
+//func (b *BridgeClient) GetClientEthereumWallet() *EthereumWallet {
+//	return b.ethWallet
+//}
 
 // ID returns id of Node.
 func (b *BridgeClient) ID() string {
@@ -176,7 +177,7 @@ func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 	bridgeClient := CreateBridgeClient(readSDKConfig(cfg))
 	bridgeClient.SetupZCNSDK(*cfg.LogPath, *cfg.LogLevel)
 	bridgeClient.SetupZCNWallet("wallet.json")
-	bridgeClient.SetupEthereumWallet()
+	//bridgeClient.SetupEthereumWallet()
 
 	return bridgeClient
 }
@@ -184,12 +185,12 @@ func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 // SetupBridgeOwnerSDK Use this from standalone application
 func SetupBridgeOwnerSDK(cfg *BridgeSDKConfig) *BridgeOwner {
 	bridgeOwner := CreateBridgeOwner(readSDKConfig(cfg))
-	bridgeOwner.SetupEthereumWallet()
+	//bridgeOwner.SetupEthereumWallet()
 
 	return bridgeOwner
 }
 
-// GetEthereumWallet returns owner ethereum zcnWallet
-func (b *BridgeOwner) GetEthereumWallet() *EthereumWallet {
-	return b.ethWallet
-}
+//// GetEthereumWallet returns owner ethereum zcnWallet
+//func (b *BridgeOwner) GetEthereumWallet() *EthereumWallet {
+//	return b.ethWallet
+//}
