@@ -104,6 +104,28 @@ func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei We
 	return tran, nil
 }
 
+func (b *BridgeClient) GetBalance() (*big.Int, error) {
+	etherClient, err := b.CreateEthClient()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create etherClient")
+	}
+
+	tokenAddress := common.HexToAddress(b.WzcnAddress)
+	fromAddress := common.HexToAddress(b.Address)
+
+	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, etherClient)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to initialize WZCN-ERC20 instance")
+	}
+
+	wei, err := wzcnTokenInstance.BalanceOf(&bind.CallOpts{}, fromAddress)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to call `BalanceOf` for %s", b.Address)
+	}
+
+	return wei, nil
+}
+
 func (b *BridgeClient) VerifyZCNTransaction(ctx context.Context, hash string) (*transaction.Transaction, error) {
 	return transaction.VerifyTransaction(ctx, hash, b.ID(), b.PublicKey())
 }

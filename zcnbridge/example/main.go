@@ -383,6 +383,11 @@ func signLegacyTransactionExample(mnemonic string) {
 func runBridgeClientExample(cfg *zcnbridge.BridgeSDKConfig) {
 	var bridge = zcnbridge.SetupBridgeClientSDK(cfg)
 
+	balance, err := bridge.GetBalance()
+	if err == nil {
+		fmt.Println(balance)
+	}
+
 	signatureTests()
 
 	// Full test conversion
