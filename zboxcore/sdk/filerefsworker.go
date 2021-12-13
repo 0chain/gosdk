@@ -52,7 +52,6 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	totalBlobbersCount := len(o.blobbers)
 	oTreeResponses := make([]oTreeResponse, totalBlobbersCount)
 	o.wg.Add(totalBlobbersCount)
-	Logger.Info(fmt.Sprintf("Total blobbers count: %v", totalBlobbersCount))
 	for i, blob := range o.blobbers {
 		Logger.Info(fmt.Sprintf("Getting file refs for path %v from blobber %v", o.remotefilepath, blob.Baseurl))
 		go o.getFileRefs(&oTreeResponses[i], blob.Baseurl)
@@ -84,8 +83,6 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	}
 
 	var selected *ObjectTreeResult
-	Logger.Info(fmt.Sprintf("Consensus threshold: %v, fullconsensus: %v", o.consensusThresh, o.fullconsensus))
-	Logger.Info(fmt.Sprint("Hash count map: ", hashCount))
 	for k, v := range hashCount {
 		if float32(v)/o.fullconsensus >= o.consensusThresh {
 			selected = hashRefsMap[k]
@@ -97,7 +94,6 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 		return selected, nil
 	}
 	return nil, errors.New("consensus_failed", "Refs consensus is less than consensus threshold")
-
 }
 
 func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
@@ -111,24 +107,24 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 	ctx, cncl := context.WithTimeout(o.ctx, time.Second*30)
 	err = zboxutil.HttpDo(ctx, cncl, oReq, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("ObjectTree: ", err)
+			Logger.Error(err)
 			return err
 		}
 		defer resp.Body.Close()
 		respBody, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			Logger.Error("ObjectTree: Error ", err, "while reading response from ", bUrl)
+			Logger.Error(err)
 			return err
 		}
 		if resp.StatusCode == http.StatusOK {
 			err := json.Unmarshal(respBody, &oResult)
 			if err != nil {
-				Logger.Error("ObjectTree: Error ", err, "while unmarshalling response from ", bUrl)
+				Logger.Error(err)
 				return err
 			}
 			return nil
 		} else {
-			Logger.Error(bUrl, "ObjectTree Response: ", string(respBody))
+			Logger.Error(err)
 			return err
 		}
 	})
@@ -137,7 +133,6 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 		return
 	}
 	oTR.oTResult = &oResult
-	Logger.Info("Got result for remotepath ", o.remotefilepath)
 }
 
 // Blobber response will be different from each other so we should only consider similar fields
