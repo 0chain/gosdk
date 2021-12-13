@@ -6,11 +6,22 @@ import (
 
 	hdw "github.com/miguelmota/go-ethereum-hdwallet"
 
+	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/pkg/errors"
 )
 
-// CreateKeyStorage create, restore or unlock key storage to
+// ListAccount List available accounts
+func ListAccount() {
+	keyDir := path.Join(GetConfigDir(), "wallets")
+	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	config := &accounts.Config{InsecureUnlockAllowed: false}
+	am := accounts.NewManager(config, ks)
+	addresses := am.Accounts()
+	fmt.Println(addresses)
+}
+
+// CreateKeyStorage create, restore or unlock key storage
 func CreateKeyStorage(password string) error {
 	keyDir := path.Join(GetConfigDir(), "wallets")
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)

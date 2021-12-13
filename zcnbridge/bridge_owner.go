@@ -5,15 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/spf13/viper"
-
 	"github.com/0chain/gosdk/zcnbridge/ethereum/authorizers"
-
 	eth "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	hdw "github.com/miguelmota/go-ethereum-hdwallet"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 )
 
 func (b *BridgeOwner) prepareAuthorizers(ctx context.Context, method string, params ...interface{}) (*authorizers.Authorizers, *bind.TransactOpts, error) {
@@ -57,10 +56,6 @@ func (b *BridgeOwner) prepareAuthorizers(ctx context.Context, method string, par
 
 	// Update gas limits + 10%
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
-	chainID, err := etherClient.ChainID(ctx)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to get chain ID")
-	}
 
 	// Create options
 	//transactOpts := CreateSignedTransaction(
@@ -71,7 +66,7 @@ func (b *BridgeOwner) prepareAuthorizers(ctx context.Context, method string, par
 	//	gasLimitUnits,
 	//)
 
-	transactOpts := CreateSignedTransactionFromKeyStore(chainID, etherClient, from, from, gasLimitUnits)
+	transactOpts := CreateSignedTransactionFromKeyStore(etherClient, from, gasLimitUnits, b.Password)
 
 	// Authorizers instance
 	authorizersInstance, err := authorizers.NewAuthorizers(contractAddress, etherClient)
@@ -101,18 +96,31 @@ func (b *BridgeOwner) AddEthereumAuthorizer(ctx context.Context, address common.
 func (b *BridgeOwner) AddEthereumAuthorizers(configDir string) {
 	cfg := viper.New()
 	cfg.AddConfigPath(configDir)
-	cfg.SetConfigName("cfg")
+	cfg.SetConfigName("authorizers")
 	if err := cfg.ReadInConfig(); err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	addresses := cfg.GetStringSlice("cfg")
+	mnemonics := cfg.GetStringSlice("authorizers")
 
-	for _, address := range addresses {
-		transaction, err := b.AddEthereumAuthorizer(context.TODO(), common.HexToAddress(address))
-		if err != nil || transaction == nil {
+	for _, mnemonic := range mnemonics {
+		wallet, err := hdw.NewFromMnemonic(mnemonic)
+		if err != nil {
+			fmt.Printf("failed to read mnemonic: %v", err)
+			continue
+		}
+
+		pathD := hdw.MustParseDerivationPath("m/44'/60'/0'/0/0")
+		account, err := wallet.Derive(pathD, true)
+		if err != nil {
 			fmt.Println(err)
+			continue
+		}
+
+		transaction, err := b.AddEthereumAuthorizer(context.TODO(), account.Address)
+		if err != nil || transaction == nil {
+			fmt.Printf("AddAuthorizer error: %v, Address: %s", err, account.Address.Hex())
 			continue
 		}
 
@@ -122,9 +130,9 @@ func (b *BridgeOwner) AddEthereumAuthorizers(configDir string) {
 		}
 
 		if status == 1 {
-			fmt.Printf("Authorizer has been added: %s\n", address)
+			fmt.Printf("Authorizer has been added: %s\n", mnemonic)
 		} else {
-			fmt.Printf("Authorizer has failed to be added: %s\n", address)
+			fmt.Printf("Authorizer has failed to be added: %s\n", mnemonic)
 		}
 	}
 }

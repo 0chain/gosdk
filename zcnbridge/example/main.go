@@ -10,23 +10,19 @@ import (
 	"path"
 	"time"
 
-	"github.com/ethereum/go-ethereum/accounts"
-
-	"github.com/ethereum/go-ethereum/ethclient"
-
-	"github.com/ethereum/go-ethereum/accounts/keystore"
-
-	"github.com/davecgh/go-spew/spew"
-	"github.com/ethereum/go-ethereum/core/types"
-
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zcnbridge"
 	"github.com/0chain/gosdk/zcnbridge/authorizer"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	"github.com/0chain/gosdk/zcnbridge/log"
+	"github.com/davecgh/go-spew/spew"
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/ethclient"
 
 	hdw "github.com/miguelmota/go-ethereum-hdwallet"
 	"go.uber.org/zap"
@@ -36,44 +32,49 @@ const (
 	ConvertAmountWei = 100
 )
 
-// How should we manage nonce? - when user starts again on another server - how should we restore the value?
-
-// Who would use this SDK
+// ? How should we manage nonce ?
+// When user starts again on another server - how should we restore the nonce value?
 
 // Prerequisites:
 // 1. cmd must have enough amount of Ethereum on his wallet (any Ethereum transaction will fail)
 // 2. cmd must have enough WZCN tokens in Ethereum chain.
 
-// Ropsten burn successful transactions for which we may receive burn tickets and mint payloads
-// to mint ZCN tokens
-var tranHashes = []string{
-	"0xa5049192c3622534e6195fbadcf21c9eb928ca3e5e8c7056f500f78f31c1c1aa",
-	"0xd3583513ea4f76f25000e704c8fc12c5b7b71a1574138d4df20d948255bd7f9c",
-	"0x468805e8bb268d584659ccd104e36bd5e552feec440d1a761aa8f9034a92b2fd",
-	"0x39ba7befd88a6dc6abec1bd503a6c2ced9472b8643704e4048d673728fb373b5",
-	"0x31925839586949a96e72cacf25fed7f47de5faff78adc20946183daf3c4cf230",
-	"0xef7494153ca9ddb871f4ca385ebaf47c572fbe14c39f98b5decc6d91b9230dd3",
-	"0x943f86ca64a87adc346bc46a6732ea4a4c0eb7dee1453b1c37fb86f144f88658",
-	"0x29ce974e8a44e6628af4749d50df04b6555bd3b932f080b0447bbe4d61f09a90",
-	"0xe0c3941fc74ea7e17a80750e5923e2fca8e7db3dcf9b67d2ab4e1528524fe808",
-	"0x5f8efdce13d0235c273b3714bcad8817cacb6d60867b156032f3e52cd6f32ebe",
-}
-
 // main:
 // `--config_file bridge` runs bridge client
 // `--config_file owner`  runs owner client
 func main() {
+	// First is read config from command line
 	cfg := zcnbridge.ReadClientConfigFromCmd()
 
+	zcnbridge.ListAccount()
+
+	// Next step is register your account in the key storage if it doesn't exist (mandatory)
+	// This should be done in zwallet cli
+	registerAccountInKeyStorage(
+		"tag volcano eight thank tide danger coast health above argue embrace heavy",
+		"password",
+	)
+
+	// How to manage key storage example sets
 	keyStorageExample()
+	// How to sign using legacy and dynamic transactions
 	signingExamples()
 
+	// Owner examples: adding new authorizer
 	if *cfg.ConfigFile == "owner" {
 		runBridgeOwnerExample(cfg)
 		return
 	}
 
+	// Bridge client examples
 	runBridgeClientExample(cfg)
+}
+
+func registerAccountInKeyStorage(mnemonic, password string) {
+	err := zcnbridge.ImportAccount(mnemonic, password)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 // keyStorageExample Shows how new/existing user will work with key storage
@@ -612,6 +613,21 @@ func TraceEthereumMint(b *zcnbridge.BridgeClient, output string) {
 	}
 
 	// ---------------- Completed ZCN -> WZCN transaction ------------------------------
+}
+
+// Ropsten burn successful transactions for which we may receive burn tickets and mint payloads
+// to mint ZCN tokens
+var tranHashes = []string{
+	"0xa5049192c3622534e6195fbadcf21c9eb928ca3e5e8c7056f500f78f31c1c1aa",
+	"0xd3583513ea4f76f25000e704c8fc12c5b7b71a1574138d4df20d948255bd7f9c",
+	"0x468805e8bb268d584659ccd104e36bd5e552feec440d1a761aa8f9034a92b2fd",
+	"0x39ba7befd88a6dc6abec1bd503a6c2ced9472b8643704e4048d673728fb373b5",
+	"0x31925839586949a96e72cacf25fed7f47de5faff78adc20946183daf3c4cf230",
+	"0xef7494153ca9ddb871f4ca385ebaf47c572fbe14c39f98b5decc6d91b9230dd3",
+	"0x943f86ca64a87adc346bc46a6732ea4a4c0eb7dee1453b1c37fb86f144f88658",
+	"0x29ce974e8a44e6628af4749d50df04b6555bd3b932f080b0447bbe4d61f09a90",
+	"0xe0c3941fc74ea7e17a80750e5923e2fca8e7db3dcf9b67d2ab4e1528524fe808",
+	"0x5f8efdce13d0235c273b3714bcad8817cacb6d60867b156032f3e52cd6f32ebe",
 }
 
 func ConfirmEthereumTransaction() {

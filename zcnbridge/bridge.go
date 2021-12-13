@@ -89,12 +89,8 @@ func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei We
 	}
 
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
-	chainID, err := etherClient.ChainID(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get chain ID")
-	}
 
-	transactOpts := CreateSignedTransactionFromKeyStore(chainID, etherClient, fromAddress, fromAddress, gasLimitUnits)
+	transactOpts := CreateSignedTransactionFromKeyStore(etherClient, fromAddress, gasLimitUnits, b.Password)
 	//transactOpts := CreateSignedTransaction(chainID, etherClient, ownerAddress, privKey, gasLimitUnits)
 
 	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, etherClient)
@@ -331,10 +327,6 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params 
 
 	// Update gas limits + 10%
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
-	chainID, err := etherClient.ChainID(ctx)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to get chain ID")
-	}
 
 	// Create options
 	//transactOpts := CreateSignedTransaction(
@@ -345,7 +337,7 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params 
 	//	gasLimitUnits,
 	//)
 
-	transactOpts := CreateSignedTransactionFromKeyStore(chainID, etherClient, fromAddress, fromAddress, gasLimitUnits)
+	transactOpts := CreateSignedTransactionFromKeyStore(etherClient, fromAddress, gasLimitUnits, b.Password)
 
 	// BridgeClient instance
 	bridgeInstance, err := binding.NewBridge(contractAddress, etherClient)

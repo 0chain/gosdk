@@ -16,14 +16,22 @@ type BridgeSDKConfig struct {
 	Development *bool
 }
 
-type EthereumConfig struct {
-	// URL of ethereum RPC node (infura or alchemy)
-	EthereumNodeURL string
+type ContractsRegistry struct {
 	// Address of Ethereum bridge contract
 	BridgeAddress string
 	// Address of WZCN Ethereum wrapped token
 	WzcnAddress string
+	// Address of Ethereum authorizers contract
+	AuthorizersAddress string
+}
 
+type BridgeConfig struct {
+	ConsensusThreshold int
+}
+
+type EthereumConfig struct {
+	// URL of ethereum RPC node (infura or alchemy)
+	EthereumNodeURL string
 	// Ethereum chain ID
 	ChainID string
 	// Gas limit to execute ethereum transaction
@@ -32,39 +40,27 @@ type EthereumConfig struct {
 	Value int64
 }
 
-type BridgeOwnerConfig struct {
-	EthereumConfig
-	// Deployer public key
-	Address string
-	//EthereumMnemonic string
-	// Address of Ethereum authorizers contract
-	AuthorizersAddress string
-}
-
-// BridgeClientConfig initializes Ethereum zcnWallet and params
 type BridgeClientConfig struct {
+	ContractsRegistry
 	EthereumConfig
-	Address string
-	// Ethereum mnemonic (derivation of Ethereum owner, public and private key)
-	//EthereumMnemonic string
-	// Authorizers required to confirm (in percents)
-	ConsensusThreshold int
+	Address  string
+	Password string
 }
 
 type Instance struct {
 	zcnWallet *wallet.Wallet
-	//ethWallet *EthereumWallet
 	startTime common.Timestamp
 	nonce     int64
 }
 
 type BridgeClient struct {
+	*BridgeConfig
 	*BridgeClientConfig
 	*Instance
 }
 
 type BridgeOwner struct {
-	*BridgeOwnerConfig
+	*BridgeClientConfig
 	*Instance
 }
 
@@ -93,18 +89,22 @@ func CreateBridgeOwner(cfg *viper.Viper) *BridgeOwner {
 	if owner == nil {
 		ExitWithError("Can't read config with `owner` key")
 	}
+
 	return &BridgeOwner{
-		BridgeOwnerConfig: &BridgeOwnerConfig{
+		BridgeClientConfig: &BridgeClientConfig{
+			ContractsRegistry: ContractsRegistry{
+				BridgeAddress:      cfg.GetString("owner.BridgeAddress"),
+				WzcnAddress:        cfg.GetString("owner.WzcnAddress"),
+				AuthorizersAddress: cfg.GetString("owner.AuthorizersAddress"),
+			},
 			EthereumConfig: EthereumConfig{
 				EthereumNodeURL: cfg.GetString("owner.EthereumNodeURL"),
-				// BridgeAddress:   cfg.GetString("owner.BridgeAddress"),
-				WzcnAddress: cfg.GetString("owner.WzcnAddress"),
-				ChainID:     cfg.GetString("owner.ChainID"),
-				GasLimit:    cfg.GetUint64("owner.GasLimit"),
-				Value:       cfg.GetInt64("owner.Value"),
+				ChainID:         cfg.GetString("owner.ChainID"),
+				GasLimit:        cfg.GetUint64("owner.GasLimit"),
+				Value:           cfg.GetInt64("owner.Value"),
 			},
-			Address:            cfg.GetString("owner.address"),
-			AuthorizersAddress: cfg.GetString("owner.AuthorizersAddress"),
+			Address:  cfg.GetString("owner.address"),
+			Password: cfg.GetString("owner.password"),
 		},
 		Instance: &Instance{
 			startTime: common.Now(),
@@ -117,17 +117,23 @@ func CreateBridgeClient(cfg *viper.Viper) *BridgeClient {
 	if bridge == nil {
 		ExitWithError("Can't read config with `bridge` key")
 	}
+
 	return &BridgeClient{
 		BridgeClientConfig: &BridgeClientConfig{
+			ContractsRegistry: ContractsRegistry{
+				BridgeAddress:      cfg.GetString("bridge.BridgeAddress"),
+				WzcnAddress:        cfg.GetString("bridge.WzcnAddress"),
+				AuthorizersAddress: cfg.GetString("bridge.AuthorizersAddress"),
+			},
 			EthereumConfig: EthereumConfig{
 				EthereumNodeURL: cfg.GetString("bridge.EthereumNodeURL"),
-				BridgeAddress:   cfg.GetString("bridge.BridgeAddress"),
-				WzcnAddress:     cfg.GetString("bridge.WzcnAddress"),
 				ChainID:         cfg.GetString("bridge.ChainID"),
 				GasLimit:        cfg.GetUint64("bridge.GasLimit"),
 				Value:           cfg.GetInt64("bridge.Value"),
 			},
-			Address:            cfg.GetString("bridge.address"),
+			Address: cfg.GetString("bridge.address"),
+		},
+		BridgeConfig: &BridgeConfig{
 			ConsensusThreshold: cfg.GetInt("bridge.ConsensusThreshold"),
 		},
 		Instance: &Instance{

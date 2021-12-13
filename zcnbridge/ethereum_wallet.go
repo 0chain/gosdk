@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"math/big"
 	"path"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts"
 
@@ -12,7 +13,6 @@ import (
 
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/pkg/errors"
@@ -106,22 +106,22 @@ func (b *EthereumConfig) CreateEthClient() (*ethclient.Client, error) {
 //	return wallet, err
 //}
 
-func GetKeysAndAddressFromPrivateKey(privateKey string) (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, error) {
-	privateKeyECDSA, err := crypto.HexToECDSA(privateKey)
-	if err != nil {
-		return [20]byte{}, nil, nil, errors.Wrap(err, "failed to read private key")
-	}
-
-	publicKey := privateKeyECDSA.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		zcncore.Logger.Fatal("error casting public key to ECDSA")
-	}
-
-	ownerAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-
-	return ownerAddress, publicKeyECDSA, privateKeyECDSA, nil
-}
+//func GetKeysAndAddressFromPrivateKey(privateKey string) (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, error) {
+//	privateKeyECDSA, err := crypto.HexToECDSA(privateKey)
+//	if err != nil {
+//		return [20]byte{}, nil, nil, errors.Wrap(err, "failed to read private key")
+//	}
+//
+//	publicKey := privateKeyECDSA.Public()
+//	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
+//	if !ok {
+//		zcncore.Logger.Fatal("error casting public key to ECDSA")
+//	}
+//
+//	ownerAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
+//
+//	return ownerAddress, publicKeyECDSA, privateKeyECDSA, nil
+//}
 
 //func GetKeysAndAddressFromMnemonic(mnemonic string) (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, error) {
 //	ownerWalletInfo, err := GetEthereumWalletInfoFromMnemonic(mnemonic)
@@ -178,11 +178,10 @@ func CreateSignedTransaction(
 }
 
 func CreateSignedTransactionFromKeyStore(
-	chainID *big.Int,
 	client *ethclient.Client,
-	fromAddress common.Address,
 	signerAddress common.Address,
 	gasLimitUnits uint64,
+	password string,
 ) *bind.TransactOpts {
 	keyDir := path.Join(GetConfigDir(), "wallets")
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
@@ -194,12 +193,22 @@ func CreateSignedTransactionFromKeyStore(
 		zcncore.Logger.Fatal(err)
 	}
 
-	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
+	chainID, err := client.ChainID(context.Background())
+	if err != nil {
+		zcncore.Logger.Fatal(errors.Wrap(err, "failed to get chain ID"))
+	}
+
+	nonce, err := client.PendingNonceAt(context.Background(), signerAddress)
 	if err != nil {
 		zcncore.Logger.Fatal(err)
 	}
 
 	gasPriceWei, err := client.SuggestGasPrice(context.Background())
+	if err != nil {
+		zcncore.Logger.Fatal(err)
+	}
+
+	err = ks.TimedUnlock(signer, password, time.Second*10)
 	if err != nil {
 		zcncore.Logger.Fatal(err)
 	}
