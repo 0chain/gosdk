@@ -24,12 +24,6 @@ func (b *BridgeOwner) prepareAuthorizers(ctx context.Context, method string, par
 	// To (contract)
 	contractAddress := common.HexToAddress(b.AuthorizersAddress)
 
-	// BridgeClient Ethereum Wallet
-	//ethereumWallet := b.GetEthereumWallet()
-	//if ethereumWallet == nil {
-	//	return nil, nil, errors.New("BridgeClient Ethereum zcnWallet is not initialized")
-	//}
-
 	// Get ABI of the contract
 	abi, err := authorizers.AuthorizersMetaData.GetAbi()
 	if err != nil {
@@ -56,15 +50,6 @@ func (b *BridgeOwner) prepareAuthorizers(ctx context.Context, method string, par
 
 	// Update gas limits + 10%
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
-
-	// Create options
-	//transactOpts := CreateSignedTransaction(
-	//	chainID,
-	//	etherClient,
-	//	ethereumWallet.Address,
-	//	ethereumWallet.PrivateKey,
-	//	gasLimitUnits,
-	//)
 
 	transactOpts := CreateSignedTransactionFromKeyStore(etherClient, from, gasLimitUnits, b.Password)
 

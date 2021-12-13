@@ -142,16 +142,6 @@ func CreateBridgeClient(cfg *viper.Viper) *BridgeClient {
 	}
 }
 
-//// GetClientEthereumAddress returns ethereum zcnWallet string
-//func (b *BridgeClient) GetClientEthereumAddress() ether.Address {
-//	return b.ethWallet.Address
-//}
-
-//// GetClientEthereumWallet returns ethereum zcnWallet string
-//func (b *BridgeClient) GetClientEthereumWallet() *EthereumWallet {
-//	return b.ethWallet
-//}
-
 // ID returns id of Node.
 func (b *BridgeClient) ID() string {
 	return b.zcnWallet.ID()
@@ -183,7 +173,6 @@ func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 	bridgeClient := CreateBridgeClient(readSDKConfig(cfg))
 	bridgeClient.SetupZCNSDK(*cfg.LogPath, *cfg.LogLevel)
 	bridgeClient.SetupZCNWallet("wallet.json")
-	//bridgeClient.SetupEthereumWallet()
 
 	return bridgeClient
 }
@@ -191,12 +180,6 @@ func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 // SetupBridgeOwnerSDK Use this from standalone application
 func SetupBridgeOwnerSDK(cfg *BridgeSDKConfig) *BridgeOwner {
 	bridgeOwner := CreateBridgeOwner(readSDKConfig(cfg))
-	//bridgeOwner.SetupEthereumWallet()
 
 	return bridgeOwner
 }
-
-//// GetEthereumWallet returns owner ethereum zcnWallet
-//func (b *BridgeOwner) GetEthereumWallet() *EthereumWallet {
-//	return b.ethWallet
-//}
