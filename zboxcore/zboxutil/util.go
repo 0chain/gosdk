@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -58,11 +57,11 @@ func (b *lazybuf) string() string {
 	return b.volAndPath[:b.volLen] + string(b.buf[:b.w])
 }
 
-func GetFileContentType(out *os.File) (string, error) {
-
+func GetFileContentType(out io.ReadSeeker) (string, error) {
 	buffer := make([]byte, 261)
 	_, err := out.Read(buffer)
 	defer out.Seek(0, 0)
+
 	if err != nil {
 		return "", err
 	}

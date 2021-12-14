@@ -22,8 +22,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
-// ChunkedUploadBobbler client of blobber's upload
-type ChunkedUploadBobbler struct {
+// ChunkedUploadBlobber client of blobber's upload
+type ChunkedUploadBlobber struct {
 	*FLock
 	blobber  *blockchain.StorageNode
 	fileRef  *fileref.FileRef
@@ -33,7 +33,7 @@ type ChunkedUploadBobbler struct {
 	commitResult  *CommitResult
 }
 
-func (sb *ChunkedUploadBobbler) sendUploadRequest(ctx context.Context, su *ChunkedUpload, chunkIndex int, isFinal bool, encryptedKey string, body *bytes.Buffer, formData ChunkedUploadFormMetadata) error {
+func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *ChunkedUpload, chunkIndex int, isFinal bool, encryptedKey string, body *bytes.Buffer, formData ChunkedUploadFormMetadata) error {
 
 	if formData.FileBytesLen == 0 {
 		//fixed fileRef in last chunk on stream. io.EOF with nil bytes
@@ -124,7 +124,7 @@ func (sb *ChunkedUploadBobbler) sendUploadRequest(ctx context.Context, su *Chunk
 
 }
 
-func (sb *ChunkedUploadBobbler) processCommit(ctx context.Context, su *ChunkedUpload) error {
+func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUpload) error {
 
 	err := sb.Lock()
 	if err != nil {
@@ -214,7 +214,7 @@ func (sb *ChunkedUploadBobbler) processCommit(ctx context.Context, su *ChunkedUp
 	return nil
 }
 
-func (sb *ChunkedUploadBobbler) processWriteMarker(ctx context.Context, su *ChunkedUpload) (*fileref.Ref, *marker.WriteMarker, int64, error) {
+func (sb *ChunkedUploadBlobber) processWriteMarker(ctx context.Context, su *ChunkedUpload) (*fileref.Ref, *marker.WriteMarker, int64, error) {
 	logger.Logger.Info("received a commit request")
 	paths := make([]string, 0)
 	for _, change := range sb.commitChanges {
