@@ -42,3 +42,24 @@ func NewObject(obj interface{}) js.Value {
 
 	return j.Call("parse", string(buf))
 }
+
+// var arrayBuffer = new ArrayBuffer(100);
+// var uint8Array = new Uint8Array(arrayBuffer);
+// for (var i = 0; i < 100; i++) {
+// 	uint8Array[i] = i;
+// }
+
+// var blob = new Blob([uint8Array], { type: "image/png" });
+// var blobVal = URL.createObjectURL(blob);
+// func CreateObjectURL(buf []byte) string {
+// 	j := js.Global().Get("URL")
+
+// 	options := js.Global().Get("Object").New()
+// 	options.Set("type", "")
+
+// 	blob := js.Global().Get("Blob").New(args ...interface{})
+
+// 	u := j.Call("createObjectURL", object)
+
+// 	return u.String()
+// }

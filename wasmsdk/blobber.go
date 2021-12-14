@@ -4,10 +4,13 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"sync"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
@@ -41,7 +44,7 @@ func Delete(allocationID, remotePath string, commit bool) (*transaction.Transact
 
 	fmt.Println(remotePath + " deleted")
 
-	txn, err := commitTxn(allocationObj, remotePath, "", "Delete", fileMeta, commit, isFile)
+	txn, err := commitTxn(allocationObj, remotePath, "", "", "", "Delete", fileMeta, commit, isFile)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +84,7 @@ func Rename(allocationID, remotePath, destName string, commit bool) (*transactio
 	}
 	fmt.Println(remotePath + " renamed")
 
-	txn, err := commitTxn(allocationObj, remotePath, destName, "Rename", fileMeta, commit, isFile)
+	txn, err := commitTxn(allocationObj, remotePath, destName, "", "", "Rename", fileMeta, commit, isFile)
 	if err != nil {
 		return nil, err
 	}
@@ -123,7 +126,7 @@ func Copy(allocationID, remotePath, destPath string, commit bool) (*transaction.
 
 	fmt.Println(remotePath + " copied")
 
-	txn, err := commitTxn(allocationObj, remotePath, destPath, "Copy", fileMeta, commit, isFile)
+	txn, err := commitTxn(allocationObj, remotePath, destPath, "", "", "Copy", fileMeta, commit, isFile)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +167,7 @@ func Move(allocationID, remotePath, destPath string, commit bool) (*transaction.
 
 	fmt.Println(remotePath + " moved")
 
-	txn, err := commitTxn(allocationObj, remotePath, destPath, "Move", fileMeta, commit, isFile)
+	txn, err := commitTxn(allocationObj, remotePath, destPath, "", "", "Move", fileMeta, commit, isFile)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +176,7 @@ func Move(allocationID, remotePath, destPath string, commit bool) (*transaction.
 }
 
 // Share  generate an authtoken that provides authorization to the holder to the specified file on the remotepath.
-func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expiration int, revoke bool) (string, error) {
+func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expiration int, revoke bool, availableAfter int64) (string, error) {
 
 	if len(allocationID) == 0 {
 		return "", RequiredArg("allocationID")
@@ -220,7 +223,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 		return "", nil
 	}
 
-	ref, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, clientID, encryptionPublicKey, int64(expiration))
+	ref, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, clientID, encryptionPublicKey, int64(expiration), availableAfter)
 	if err != nil {
 		PrintError(err.Error())
 		return "", err
@@ -228,6 +231,158 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 	fmt.Println("Auth token :" + ref)
 
 	return ref, nil
+
+}
+
+// Download download file
+func Download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly, commit, rxPay, live, delay bool, blocksPerMarker, startBlock, endBlock int) (*DownloadResponse, error) {
+
+	if len(remotePath) == 0 && len(authTicket) == 0 {
+		return nil, RequiredArg("remotePath/authTicket")
+	}
+
+	if live {
+
+		// m3u8, err := createM3u8Downloader(localpath, remotepath, authticket, allocationID, lookuphash, rxPay, delay)
+
+		// if err != nil {
+		// 	PrintError("Error: download files and build playlist: ", err)
+		// 	os.Exit(1)
+		// }
+
+		// err = m3u8.Start()
+
+		// if err != nil {
+		// 	PrintError("Error: download files and build playlist: ", err)
+		// 	os.Exit(1)
+		// }
+
+		return nil, errors.New("download live is not supported yet")
+
+	}
+
+	if blocksPerMarker == 0 {
+		blocksPerMarker = 10
+	}
+
+	sdk.SetNumBlockDownloads(blocksPerMarker)
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	wg.Add(1)
+	var errE, err error
+	var allocationObj *sdk.Allocation
+	fileName := filepath.Base(remotePath)
+	localPath := filepath.Join(allocationID, fileName)
+
+	if err != nil {
+		PrintError(err)
+		return nil, err
+	}
+	defer sdk.FS.Remove(localPath) //nolint
+
+	if len(authTicket) > 0 {
+		at, err := sdk.InitAuthTicket(authTicket).Unmarshall()
+
+		if err != nil {
+			PrintError(err)
+			return nil, err
+		}
+
+		allocationObj, err = sdk.GetAllocationFromAuthTicket(authTicket)
+		if err != nil {
+			PrintError("Error fetching the allocation", err)
+			return nil, err
+		}
+
+		var filename string
+
+		if at.RefType == fileref.FILE {
+			filename = at.FileName
+			lookupHash = at.FilePathHash
+		} else if len(lookupHash) > 0 {
+			fileMeta, err := allocationObj.GetFileMetaFromAuthTicket(authTicket, lookupHash)
+			if err != nil {
+				PrintError("Either remotepath or lookuphash is required when using authticket of directory type")
+				return nil, err
+			}
+			filename = fileMeta.Name
+		} else if len(remotePath) > 0 {
+			lookupHash = fileref.GetReferenceLookup(allocationObj.Tx, remotePath)
+
+			pathnames := strings.Split(remotePath, "/")
+			filename = pathnames[len(pathnames)-1]
+		} else {
+			PrintError("Either remotepath or lookuphash is required when using authticket of directory type")
+			return nil, errors.New("Either remotepath or lookuphash is required when using authticket of directory type")
+		}
+
+		if downloadThumbnailOnly {
+			errE = allocationObj.DownloadThumbnailFromAuthTicket(localPath,
+				authTicket, lookupHash, filename, rxPay, statusBar)
+		} else {
+			if startBlock != 0 || endBlock != 0 {
+				errE = allocationObj.DownloadFromAuthTicketByBlocks(
+					localPath, authTicket, int64(startBlock), int64(endBlock), blocksPerMarker,
+					lookupHash, filename, rxPay, statusBar)
+			} else {
+				errE = allocationObj.DownloadFromAuthTicket(localPath,
+					authTicket, lookupHash, filename, rxPay, statusBar)
+			}
+		}
+	} else if len(remotePath) > 0 {
+		if len(allocationID) == 0 {
+			return nil, RequiredArg("allocationID")
+		}
+		allocationObj, err = sdk.GetAllocation(allocationID)
+
+		if err != nil {
+			PrintError("Error fetching the allocation", err)
+			return nil, err
+		}
+		if downloadThumbnailOnly {
+			errE = allocationObj.DownloadThumbnail(localPath, remotePath, statusBar)
+		} else {
+			if startBlock != 0 || endBlock != 0 {
+				errE = allocationObj.DownloadFileByBlock(localPath, remotePath, int64(startBlock), int64(endBlock), blocksPerMarker, statusBar)
+			} else {
+				errE = allocationObj.DownloadFile(localPath, remotePath, statusBar)
+			}
+		}
+	}
+
+	if errE == nil {
+		wg.Wait()
+	} else {
+		PrintError("Download failed.", errE.Error())
+		return nil, errE
+	}
+	if !statusBar.success {
+		return nil, errors.New("Download failed: unknown error")
+	}
+
+	result := &DownloadResponse{
+		FileName: fileName,
+	}
+
+	fs, _ := sdk.FS.Open(localPath)
+
+	mf, _ := fs.(*common.MemFile)
+
+	result.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
+
+	if commit {
+
+		txn, err := commitTxn(allocationObj, remotePath, "", authTicket, lookupHash, "Download", nil, true, true)
+		if err != nil {
+			result.Error = err.Error()
+
+		} else {
+			result.Txn = txn
+		}
+
+	}
+
+	return result, nil
 
 }
 
@@ -257,7 +412,7 @@ func getFileMeta(allocationObj *sdk.Allocation, remotePath string, commit bool) 
 	return fileMeta, isFile, nil
 }
 
-func commitTxn(allocationObj *sdk.Allocation, remotePath, newFolderPath, commandName string, fileMeta *sdk.ConsolidatedFileMeta, commit, isFile bool) (*transaction.Transaction, error) {
+func commitTxn(allocationObj *sdk.Allocation, remotePath, newFolderPath, authTicket, lookupHash string, commandName string, fileMeta *sdk.ConsolidatedFileMeta, commit, isFile bool) (*transaction.Transaction, error) {
 	if commit {
 		if isFile {
 
@@ -267,7 +422,7 @@ func commitTxn(allocationObj *sdk.Allocation, remotePath, newFolderPath, command
 			statusBar := &StatusBar{wg: wg}
 			wg.Add(1)
 
-			err := allocationObj.CommitMetaTransaction(remotePath, commandName, "", "", fileMeta, statusBar)
+			err := allocationObj.CommitMetaTransaction(remotePath, commandName, authTicket, lookupHash, fileMeta, statusBar)
 			if err != nil {
 				PrintError("Commit failed.", err)
 				return nil, err
