@@ -84,7 +84,7 @@ func (mfs *MemFS) Remove(name string) error {
 
 //MkdirAll creates a directory named path
 func (mfs *MemFS) MkdirAll(path string, perm os.FileMode) error {
-	return os.MkdirAll(path, perm)
+	return nil
 }
 
 type MemFile struct {

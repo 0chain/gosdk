@@ -142,4 +142,13 @@ download your own or a shared file.
 }
 
 ```
+
+### zcn.sdk.upload
+upload file(s)
+
+**Input**:
+allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, commit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, chunkSize int, isUpdate, isRepair bool
+
+**Output**:
+> [transaction.Transaction](https://github.com/0chain/gosdk/blob/e1e35e084d5c17d6bf233bbe8ac9c91701bdd8fd/core/transaction/entity.go#L32)
   

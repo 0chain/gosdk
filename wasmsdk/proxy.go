@@ -92,6 +92,7 @@ func main() {
 				"move":     Move,
 				"share":    Share,
 				"download": Download,
+				"upload":   Upload,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")

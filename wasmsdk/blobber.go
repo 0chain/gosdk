@@ -388,8 +388,8 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 
 }
 
+// Upload upload file
 func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, commit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, chunkSize int, isUpdate, isRepair bool) (*transaction.Transaction, error) {
-
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
 	}
@@ -425,12 +425,8 @@ func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 	}
 
 	if isLiveUpload {
-		// capture video and audio from local default camera and micrlphone, and upload it to zcn
-		//	err = startLiveUpload(cmd, allocationObj, localpath, remotepath, encrypt, chunkSize, attrs)
 		return nil, errors.New("live upload is not supported yet")
 	} else if isSyncUpload {
-		// download video from remote live feed(eg youtube), and sync it to zcn
-		//	err = startSyncUpload(cmd, allocationObj, localpath, remotepath, encrypt, chunkSize, attrs)
 		return nil, errors.New("sync upload is not supported yet")
 	}
 
@@ -466,7 +462,11 @@ func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithChunkSize(int64(chunkSize)),
 		sdk.WithEncrypt(encrypt),
-		sdk.WithStatusCallback(statusBar))
+		sdk.WithStatusCallback(statusBar),
+		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
+		sdk.WithCreateWriteMarkerLocker(func(file string) sdk.WriteMarkerLocker {
+			return &writeMarkerLocker{}
+		}))
 	if err != nil {
 		return nil, err
 	}
@@ -479,16 +479,18 @@ func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 	}
 	wg.Wait()
 	if !statusBar.success {
-
 		return nil, errors.New("upload failed: unknown")
 	}
 
-	// if commit {
-	// 	remotepath = zboxutil.GetFullRemotePath(localpath, remotepath)
-	// 	statusBar.wg.Add(1)
-	// 	commitMetaTxn(remotepath, "Upload", "", "", allocationObj, nil, statusBar)
-	// 	statusBar.wg.Wait()
-	// }
+	if commit {
+		txn, err := commitTxn(allocationObj, remotePath, "", "", "", "Upload", nil, true, true)
+
+		if err != nil {
+			return nil, err
+		}
+
+		return txn, nil
+	}
 
 	return nil, nil
 }
