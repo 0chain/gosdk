@@ -45,7 +45,7 @@ func (req *ShareRequest) GetAuthTicketForEncryptedFile(clientID string, encPubli
 
 	if req.expirationSeconds == 0 {
 		// default expiration after 90 days
-		at.Expiration = timestamp + 90*86400
+		at.Expiration = 0
 	} else {
 		at.Expiration = timestamp + req.expirationSeconds
 	}
@@ -95,7 +95,6 @@ func (req *ShareRequest) GetFileRef() (*fileref.FileRef, error) {
 }
 
 func (req *ShareRequest) GetAuthTicket(clientID string) (string, error) {
-
 	at := &marker.AuthTicket{}
 	at.AllocationID = req.allocationID
 	at.OwnerID = client.GetClientID()
@@ -114,7 +113,7 @@ func (req *ShareRequest) GetAuthTicket(clientID string) (string, error) {
 	timestamp := int64(common.Now())
 	if req.expirationSeconds == 0 {
 		// default expiration after 90 days
-		at.Expiration = timestamp + 90*86400
+		at.Expiration = 0
 	} else {
 		at.Expiration = timestamp + req.expirationSeconds
 	}

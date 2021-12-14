@@ -230,6 +230,21 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 
+	// the ChunkSize value can't be less than 0kb
+	if fileRef.Type == fileref.FILE && fileRef.ChunkSize <= 0 {
+		if req.statusCallback != nil {
+			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "File ChunkSize value is not permitted"))
+		}
+		return
+	}
+
+	if fileRef.Type == fileref.DIRECTORY {
+		if req.statusCallback != nil {
+			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "Cannot download directory"))
+		}
+		return
+	}
+
 	size := fileRef.ActualFileSize
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
 		size = fileRef.ActualThumbnailSize
