@@ -238,12 +238,12 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 
-	if fileRef.Type == fileref.DIRECTORY {
-		if req.statusCallback != nil {
-			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "Cannot download directory"))
-		}
-		return
-	}
+	// if fileRef.Type == fileref.DIRECTORY {
+	// 	if req.statusCallback != nil {
+	// 		req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "Cannot download directory"))
+	// 	}
+	// 	return
+	// }
 
 	size := fileRef.ActualFileSize
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
