@@ -2,11 +2,17 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
+
+// PrintError is to print error
+func PrintError(v ...interface{}) {
+	fmt.Fprintln(os.Stderr, v...)
+}
 
 func getFileMeta(allocationObj *sdk.Allocation, remotePath string, commit bool) (*sdk.ConsolidatedFileMeta, bool, error) {
 	var fileMeta *sdk.ConsolidatedFileMeta

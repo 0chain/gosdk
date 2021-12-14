@@ -48,11 +48,6 @@ func await(awaitable js.Value) ([]js.Value, []js.Value) {
 	}
 }
 
-// PrintError is to print error
-func PrintError(v ...interface{}) {
-	fmt.Fprintln(os.Stderr, v...)
-}
-
 //-----------------------------------------------------------------------------
 // Ported over from `code/go/0proxy.io/core/common/errors.go`
 //-----------------------------------------------------------------------------

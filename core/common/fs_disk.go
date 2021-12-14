@@ -38,11 +38,11 @@ func (dfs *DiskFS) WriteFile(name string, data []byte, perm os.FileMode) error {
 
 // Remove removes the named file or (empty) directory.
 // If there is an error, it will be of type *PathError.
-func (ddfs *DiskFS) Remove(name string) error {
+func (dfs *DiskFS) Remove(name string) error {
 	return os.Remove(name)
 }
 
 //MkdirAll creates a directory named path
-func (ddfs *DiskFS) MkdirAll(path string, perm os.FileMode) error {
+func (dfs *DiskFS) MkdirAll(path string, perm os.FileMode) error {
 	return os.MkdirAll(path, perm)
 }
