@@ -47,7 +47,7 @@ func Delete(allocationID, remotePath string, autoCommit bool) (*FileCommandRespo
 	fmt.Println(remotePath + " deleted")
 
 	resp := &FileCommandResponse{
-		CommandStatus: true,
+		CommandSuccess: true,
 	}
 
 	if autoCommit {
@@ -58,7 +58,7 @@ func Delete(allocationID, remotePath string, autoCommit bool) (*FileCommandRespo
 			return resp, nil
 		}
 
-		resp.CommitStatus = true
+		resp.CommitSuccess = true
 		resp.CommitTxn = txn
 	}
 
@@ -98,7 +98,7 @@ func Rename(allocationID, remotePath, destName string, autoCommit bool) (*FileCo
 	fmt.Println(remotePath + " renamed")
 
 	resp := &FileCommandResponse{
-		CommandStatus: true,
+		CommandSuccess: true,
 	}
 
 	if autoCommit {
@@ -109,7 +109,7 @@ func Rename(allocationID, remotePath, destName string, autoCommit bool) (*FileCo
 			return resp, nil
 		}
 
-		resp.CommitStatus = true
+		resp.CommitSuccess = true
 		resp.CommitTxn = txn
 	}
 
@@ -150,7 +150,7 @@ func Copy(allocationID, remotePath, destPath string, autoCommit bool) (*FileComm
 
 	fmt.Println(remotePath + " copied")
 	resp := &FileCommandResponse{
-		CommandStatus: true,
+		CommandSuccess: true,
 	}
 
 	if autoCommit {
@@ -162,7 +162,7 @@ func Copy(allocationID, remotePath, destPath string, autoCommit bool) (*FileComm
 			return resp, nil
 		}
 
-		resp.CommitStatus = true
+		resp.CommitSuccess = true
 		resp.CommitTxn = txn
 	}
 
@@ -203,7 +203,7 @@ func Move(allocationID, remotePath, destPath string, autoCommit bool) (*FileComm
 	fmt.Println(remotePath + " moved")
 
 	resp := &FileCommandResponse{
-		CommandStatus: true,
+		CommandSuccess: true,
 	}
 
 	if autoCommit {
@@ -214,7 +214,7 @@ func Move(allocationID, remotePath, destPath string, autoCommit bool) (*FileComm
 			return resp, nil
 		}
 
-		resp.CommitStatus = true
+		resp.CommitSuccess = true
 		resp.CommitTxn = txn
 	}
 
@@ -531,7 +531,7 @@ func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 	}
 
 	resp := &FileCommandResponse{
-		CommandStatus: true,
+		CommandSuccess: true,
 	}
 
 	if autoCommit {
@@ -543,7 +543,7 @@ func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 			return resp, nil
 		}
 
-		resp.CommitStatus = true
+		resp.CommitSuccess = true
 		resp.CommitTxn = txn
 	}
 
