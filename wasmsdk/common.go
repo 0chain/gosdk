@@ -40,44 +40,59 @@ func getFileMeta(allocationObj *sdk.Allocation, remotePath string, commit bool) 
 	return fileMeta, isFile, nil
 }
 
-func commitTxn(allocationObj *sdk.Allocation, remotePath, newFolderPath, authTicket, lookupHash string, commandName string, fileMeta *sdk.ConsolidatedFileMeta, commit, isFile bool) (*transaction.Transaction, error) {
-	if commit {
-		if isFile {
+func commitFileMetaTxn(allocationObj *sdk.Allocation, remotePath, authTicket, lookupHash string, commandName string, fileMeta *sdk.ConsolidatedFileMeta) (*transaction.Transaction, error) {
+	fmt.Println("Commiting changes to blockchain ...")
 
-			fmt.Println("Commiting changes to blockchain ...")
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	wg.Add(1)
 
-			wg := &sync.WaitGroup{}
-			statusBar := &StatusBar{wg: wg}
-			wg.Add(1)
-
-			err := allocationObj.CommitMetaTransaction(remotePath, commandName, authTicket, lookupHash, fileMeta, statusBar)
-			if err != nil {
-				PrintError("Commit failed.", err)
-				return nil, err
-			}
-
-			wg.Wait()
-
-			fmt.Println("Commit Metadata successful")
-		} else {
-			fmt.Println("Commiting changes to blockchain ...")
-			resp, err := allocationObj.CommitFolderChange(commandName, remotePath, newFolderPath)
-			if err != nil {
-				PrintError("Commit failed.", err)
-				return nil, err
-			}
-
-			fmt.Println("Commit Metadata successful, Response :", resp)
-		}
-
-		txn, err := getLastMetadataCommitTxn()
-
-		if err != nil {
-			return nil, err
-		}
-
-		return txn, nil
+	err := allocationObj.CommitMetaTransaction(remotePath, commandName, authTicket, lookupHash, fileMeta, statusBar)
+	if err != nil {
+		PrintError("Commit failed.", err)
+		return nil, err
 	}
 
-	return nil, nil
+	wg.Wait()
+
+	fmt.Println("Commit Metadata successful")
+
+	txn, err := getLastMetadataCommitTxn()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return txn, nil
+}
+
+func commitFolderMetaTxn(allocationObj *sdk.Allocation, preValue, currValue, commandName string) (*transaction.Transaction, error) {
+	fmt.Println("Commiting changes to blockchain ...")
+	resp, err := allocationObj.CommitFolderChange(commandName, preValue, currValue)
+	if err != nil {
+		PrintError("Commit failed.", err)
+		return nil, err
+	}
+
+	fmt.Println("Commit Metadata successful, Response :", resp)
+
+	txn, err := getLastMetadataCommitTxn()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return txn, nil
+}
+
+func commitTxn(allocationObj *sdk.Allocation, remotePath, newFolderPath, authTicket, lookupHash string, commandName string, fileMeta *sdk.ConsolidatedFileMeta, isFile bool) (*transaction.Transaction, error) {
+
+	if isFile {
+
+		return commitFileMetaTxn(allocationObj, remotePath, authTicket, lookupHash, commandName, fileMeta)
+	} else {
+
+		return commitFolderMetaTxn(allocationObj, remotePath, newFolderPath, commandName)
+	}
+
 }

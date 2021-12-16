@@ -93,6 +93,9 @@ func main() {
 				"share":    Share,
 				"download": Download,
 				"upload":   Upload,
+
+				"commitFileMetaTxn":   CommitFileMetaTxn,
+				"commitFolderMetaTxn": CommitFolderMetaTxn,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
