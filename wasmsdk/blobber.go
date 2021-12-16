@@ -269,7 +269,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 		return "", nil
 	}
 
-	ref, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, clientID, encryptionPublicKey, int64(expiration), availableAfter)
+	ref, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, clientID, encryptionPublicKey, int64(expiration))
 	if err != nil {
 		PrintError(err.Error())
 		return "", err
