@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strconv"
 
@@ -60,7 +59,6 @@ const DefaultChunkSize = 64 * 1024
 
 */
 func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta FileMeta, fileReader io.Reader, isUpdate, isRepair bool, opts ...ChunkedUploadOption) (*ChunkedUpload, error) {
-
 	if allocationObj == nil {
 		return nil, thrown.Throw(constants.ErrInvalidParameter, "allocationObj")
 	}
@@ -85,8 +83,6 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 
 		fileMeta:   fileMeta,
 		fileReader: fileReader,
-
-		progressStorer: createFsChunkedUploadProgress(context.Background()),
 
 		uploadMask:      uploadMask,
 		chunkSize:       DefaultChunkSize,
@@ -121,16 +117,24 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	su.workdir = filepath.Join(workdir, ".zcn")
 
 	//create upload folder to save progress
-	err := os.MkdirAll(filepath.Join(su.workdir, "upload"), 0744)
+	err := FS.MkdirAll(filepath.Join(su.workdir, "upload"), 0744)
 	if err != nil {
 		return nil, err
 	}
 
-	su.loadProgress()
-
 	for _, opt := range opts {
 		opt(su)
 	}
+
+	if su.createWriteMarkerLocker == nil {
+		su.createWriteMarkerLocker = createWriteMarkerLocker
+	}
+
+	if su.progressStorer == nil {
+		su.progressStorer = createFsChunkedUploadProgress(context.Background())
+	}
+
+	su.loadProgress()
 
 	su.fileHasher = CreateHasher(int(su.chunkSize))
 
@@ -149,7 +153,7 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 
 	blobbers := su.allocationObj.Blobbers
 	if len(blobbers) == 0 {
-		thrown.New("no_blobbers", "Unable to find blobbers")
+		return nil, thrown.New("no_blobbers", "Unable to find blobbers")
 	}
 
 	su.blobbers = make([]*ChunkedUploadBlobber, len(blobbers))
@@ -157,9 +161,9 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	for i := 0; i < len(blobbers); i++ {
 
 		su.blobbers[i] = &ChunkedUploadBlobber{
-			FLock:    createFLock(filepath.Join(su.workdir, "blobber."+su.allocationObj.Blobbers[i].ID+".lock")),
-			progress: su.progress.Blobbers[i],
-			blobber:  su.allocationObj.Blobbers[i],
+			WriteMarkerLocker: su.createWriteMarkerLocker(filepath.Join(su.workdir, "blobber."+su.allocationObj.Blobbers[i].ID+".lock")),
+			progress:          su.progress.Blobbers[i],
+			blobber:           su.allocationObj.Blobbers[i],
 			fileRef: &fileref.FileRef{
 				Ref: fileref.Ref{
 					Name:         su.fileMeta.RemoteName,
@@ -231,7 +235,8 @@ type ChunkedUpload struct {
 	// statusCallback trigger progress on StatusCallback
 	statusCallback StatusCallback
 
-	blobbers []*ChunkedUploadBlobber
+	blobbers                []*ChunkedUploadBlobber
+	createWriteMarkerLocker func(file string) WriteMarkerLocker
 
 	// isRepair identifies if upload is repair operation
 	isRepair bool
@@ -322,11 +327,11 @@ func (su *ChunkedUpload) Start() error {
 	}
 
 	for {
-
 		chunk, err := su.chunkReader.Next()
 		if err != nil {
 			return err
 		}
+		logger.Logger.Info("Read chunk #", chunk.Index)
 
 		su.shardUploadedSize += chunk.FragmentSize
 		su.progress.UploadLength += chunk.ReadSize
@@ -524,7 +529,7 @@ func (su *ChunkedUpload) processCommit() error {
 	if !su.consensus.isConsensusOk() {
 		if su.consensus.getConsensus() != 0 {
 			logger.Logger.Info("Commit consensus failed, Deleting remote file....")
-			su.allocationObj.deleteFile(su.fileMeta.RemotePath, su.consensus.getConsensus(), su.consensus.getConsensus())
+			su.allocationObj.deleteFile(su.fileMeta.RemotePath, su.consensus.getConsensus(), su.consensus.getConsensus()) //nolint
 		}
 		if su.statusCallback != nil {
 			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, OpUpload, thrown.New("commit_consensus_failed", "Upload failed as there was no commit consensus"))

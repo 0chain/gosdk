@@ -55,10 +55,35 @@ func (mfs *MemFS) OpenFile(name string, flag int, perm os.FileMode) (File, error
 
 }
 
+// ReadFile reads the file named by filename and returns the contents.
+func (mfs *MemFS) ReadFile(name string) ([]byte, error) {
+	file, ok := mfs.files[name]
+	if ok {
+		return file.Buffer.Bytes(), nil
+	}
+
+	return nil, os.ErrNotExist
+}
+
+// WriteFile writes data to a file named by filename.
+func (mfs *MemFS) WriteFile(name string, data []byte, perm os.FileMode) error {
+	fileName := filepath.Base(name)
+	file := &MemFile{Name: fileName, Buffer: new(bytes.Buffer), Mode: perm, ModTime: time.Now()}
+
+	mfs.files[name] = file
+
+	return nil
+}
+
 // Remove removes the named file or (empty) directory.
 // If there is an error, it will be of type *PathError.
 func (mfs *MemFS) Remove(name string) error {
 	delete(mfs.files, name)
+	return nil
+}
+
+//MkdirAll creates a directory named path
+func (mfs *MemFS) MkdirAll(path string, perm os.FileMode) error {
 	return nil
 }
 
