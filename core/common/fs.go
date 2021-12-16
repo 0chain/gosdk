@@ -17,9 +17,18 @@ type FS interface {
 	// OpenFile open a file
 	OpenFile(name string, flag int, perm os.FileMode) (File, error)
 
+	// ReadFile reads the file named by filename and returns the contents.
+	ReadFile(name string) ([]byte, error)
+
+	// WriteFile writes data to a file named by filename.
+	WriteFile(name string, data []byte, perm fs.FileMode) error
+
 	// Remove removes the named file or (empty) directory.
 	// If there is an error, it will be of type *PathError.
 	Remove(name string) error
+
+	//MkdirAll creates a directory named path
+	MkdirAll(path string, perm os.FileMode) error
 }
 
 type File interface {

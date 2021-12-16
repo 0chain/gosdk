@@ -43,11 +43,6 @@ type Config struct {
 /*Configuration of the system */
 var Configuration Config
 
-/*NewError - create a new error */
-func NewError(code string, msg string) *Error {
-	return &Error{Code: code, Msg: msg}
-}
-
 func InitAuthTicket(this js.Value, p []js.Value) interface{} {
 	authTicket := p[0].String()
 	result := sdk.InitAuthTicket(authTicket)

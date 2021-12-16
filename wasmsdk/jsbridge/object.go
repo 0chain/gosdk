@@ -43,6 +43,15 @@ func NewObject(obj interface{}) js.Value {
 	return j.Call("parse", string(buf))
 }
 
+func NewBytes(buf []byte) js.Value {
+
+	uint8Array := js.Global().Get("Uint8Array").New(len(buf))
+
+	js.CopyBytesToJS(uint8Array, buf)
+
+	return uint8Array
+}
+
 // var arrayBuffer = new ArrayBuffer(100);
 // var uint8Array = new Uint8Array(arrayBuffer);
 // for (var i = 0; i < 100; i++) {
