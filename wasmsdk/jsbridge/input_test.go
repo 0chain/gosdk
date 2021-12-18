@@ -4,6 +4,8 @@
 package jsbridge
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"reflect"
 	"strings"
 	"syscall/js"
@@ -13,6 +15,9 @@ import (
 )
 
 func TestInputBinder(t *testing.T) {
+
+	buf := make([]byte, 100)
+	rand.Read(buf) //nolint
 
 	tests := []struct {
 		Name string
@@ -71,6 +76,13 @@ func TestInputBinder(t *testing.T) {
 
 			return reflect.ValueOf(fn)
 		}, In: []js.Value{NewArray("a", "b")}, Out: "a,b"},
+		{Name: "[]byte", Func: func() reflect.Value {
+			fn := func(buf []byte) string {
+				return hex.EncodeToString(buf)
+			}
+
+			return reflect.ValueOf(fn)
+		}, In: []js.Value{NewBytes(buf)}, Out: hex.EncodeToString(buf)},
 	}
 
 	for _, it := range tests {

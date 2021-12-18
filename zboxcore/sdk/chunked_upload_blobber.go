@@ -24,7 +24,7 @@ import (
 
 // ChunkedUploadBlobber client of blobber's upload
 type ChunkedUploadBlobber struct {
-	*FLock
+	WriteMarkerLocker
 	blobber  *blockchain.StorageNode
 	fileRef  *fileref.FileRef
 	progress *UploadBlobberStatus

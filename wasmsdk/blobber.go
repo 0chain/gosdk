@@ -4,17 +4,22 @@
 package main
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"path/filepath"
+	"strings"
 	"sync"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 // Delete delete file from blobbers
-func Delete(allocationID, remotePath string, commit bool) (*transaction.Transaction, error) {
+func Delete(allocationID, remotePath string, autoCommit bool) (*FileCommandResponse, error) {
 
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
@@ -29,7 +34,7 @@ func Delete(allocationID, remotePath string, commit bool) (*transaction.Transact
 		return nil, err
 	}
 
-	fileMeta, isFile, err := getFileMeta(allocationObj, remotePath, commit)
+	fileMeta, isFile, err := getFileMeta(allocationObj, remotePath, autoCommit)
 	if err != nil {
 		return nil, err
 	}
@@ -41,16 +46,27 @@ func Delete(allocationID, remotePath string, commit bool) (*transaction.Transact
 
 	fmt.Println(remotePath + " deleted")
 
-	txn, err := commitTxn(allocationObj, remotePath, "", "Delete", fileMeta, commit, isFile)
-	if err != nil {
-		return nil, err
+	resp := &FileCommandResponse{
+		CommandSuccess: true,
 	}
 
-	return txn, nil
+	if autoCommit {
+		txn, err := commitTxn(allocationObj, remotePath, "", "", "", "Delete", fileMeta, isFile)
+		if err != nil {
+			resp.Error = err.Error()
+
+			return resp, nil
+		}
+
+		resp.CommitSuccess = true
+		resp.CommitTxn = txn
+	}
+
+	return resp, nil
 }
 
 // Rename rename a file existing already on dStorage. Only the allocation's owner can rename a file.
-func Rename(allocationID, remotePath, destName string, commit bool) (*transaction.Transaction, error) {
+func Rename(allocationID, remotePath, destName string, autoCommit bool) (*FileCommandResponse, error) {
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
 	}
@@ -69,7 +85,7 @@ func Rename(allocationID, remotePath, destName string, commit bool) (*transactio
 		return nil, err
 	}
 
-	fileMeta, isFile, err := getFileMeta(allocationObj, remotePath, commit)
+	fileMeta, isFile, err := getFileMeta(allocationObj, remotePath, autoCommit)
 	if err != nil {
 		return nil, err
 	}
@@ -81,16 +97,27 @@ func Rename(allocationID, remotePath, destName string, commit bool) (*transactio
 	}
 	fmt.Println(remotePath + " renamed")
 
-	txn, err := commitTxn(allocationObj, remotePath, destName, "Rename", fileMeta, commit, isFile)
-	if err != nil {
-		return nil, err
+	resp := &FileCommandResponse{
+		CommandSuccess: true,
 	}
 
-	return txn, nil
+	if autoCommit {
+		txn, err := commitTxn(allocationObj, remotePath, destName, "", "", "Rename", fileMeta, isFile)
+		if err != nil {
+			resp.Error = err.Error()
+
+			return resp, nil
+		}
+
+		resp.CommitSuccess = true
+		resp.CommitTxn = txn
+	}
+
+	return resp, nil
 }
 
 // Copy copy file to another folder path on blobbers
-func Copy(allocationID, remotePath, destPath string, commit bool) (*transaction.Transaction, error) {
+func Copy(allocationID, remotePath, destPath string, autoCommit bool) (*FileCommandResponse, error) {
 
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
@@ -110,7 +137,7 @@ func Copy(allocationID, remotePath, destPath string, commit bool) (*transaction.
 		return nil, err
 	}
 
-	fileMeta, isFile, err := getFileMeta(allocationObj, remotePath, commit)
+	fileMeta, isFile, err := getFileMeta(allocationObj, remotePath, autoCommit)
 	if err != nil {
 		return nil, err
 	}
@@ -122,17 +149,28 @@ func Copy(allocationID, remotePath, destPath string, commit bool) (*transaction.
 	}
 
 	fmt.Println(remotePath + " copied")
-
-	txn, err := commitTxn(allocationObj, remotePath, destPath, "Copy", fileMeta, commit, isFile)
-	if err != nil {
-		return nil, err
+	resp := &FileCommandResponse{
+		CommandSuccess: true,
 	}
 
-	return txn, nil
+	if autoCommit {
+
+		txn, err := commitTxn(allocationObj, remotePath, destPath, "", "", "Copy", fileMeta, isFile)
+		if err != nil {
+			resp.Error = err.Error()
+
+			return resp, nil
+		}
+
+		resp.CommitSuccess = true
+		resp.CommitTxn = txn
+	}
+
+	return resp, nil
 }
 
 // Move move file to another remote folder path on dStorage. Only the owner of the allocation can copy an object.
-func Move(allocationID, remotePath, destPath string, commit bool) (*transaction.Transaction, error) {
+func Move(allocationID, remotePath, destPath string, autoCommit bool) (*FileCommandResponse, error) {
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
 	}
@@ -151,7 +189,7 @@ func Move(allocationID, remotePath, destPath string, commit bool) (*transaction.
 		return nil, err
 	}
 
-	fileMeta, isFile, err := getFileMeta(allocationObj, remotePath, commit)
+	fileMeta, isFile, err := getFileMeta(allocationObj, remotePath, autoCommit)
 	if err != nil {
 		return nil, err
 	}
@@ -164,16 +202,27 @@ func Move(allocationID, remotePath, destPath string, commit bool) (*transaction.
 
 	fmt.Println(remotePath + " moved")
 
-	txn, err := commitTxn(allocationObj, remotePath, destPath, "Move", fileMeta, commit, isFile)
-	if err != nil {
-		return nil, err
+	resp := &FileCommandResponse{
+		CommandSuccess: true,
 	}
 
-	return txn, nil
+	if autoCommit {
+		txn, err := commitTxn(allocationObj, remotePath, destPath, "", "", "Move", fileMeta, isFile)
+		if err != nil {
+			resp.Error = err.Error()
+
+			return resp, nil
+		}
+
+		resp.CommitSuccess = true
+		resp.CommitTxn = txn
+	}
+
+	return resp, nil
 }
 
 // Share  generate an authtoken that provides authorization to the holder to the specified file on the remotepath.
-func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expiration int, revoke bool) (string, error) {
+func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expiration int, revoke bool, availableAfter int64) (string, error) {
 
 	if len(allocationID) == 0 {
 		return "", RequiredArg("allocationID")
@@ -231,70 +280,340 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 
 }
 
-func getFileMeta(allocationObj *sdk.Allocation, remotePath string, commit bool) (*sdk.ConsolidatedFileMeta, bool, error) {
-	var fileMeta *sdk.ConsolidatedFileMeta
-	isFile := false
-	if commit {
+// Download download file
+func Download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly, rxPay, autoCommit bool) (*DownloadCommandResponse, error) {
+	//var live, delay bool
+	var blocksPerMarker, startBlock, endBlock int
 
-		statsMap, err := allocationObj.GetFileStats(remotePath)
-		if err != nil {
-			return nil, false, err
-		}
-
-		for _, v := range statsMap {
-			if v != nil {
-				isFile = true
-				break
-			}
-		}
-
-		fileMeta, err = allocationObj.GetFileMeta(remotePath)
-		if err != nil {
-			return nil, false, err
-		}
+	if len(remotePath) == 0 && len(authTicket) == 0 {
+		return nil, RequiredArg("remotePath/authTicket")
 	}
 
-	return fileMeta, isFile, nil
-}
+	// if live {
 
-func commitTxn(allocationObj *sdk.Allocation, remotePath, newFolderPath, commandName string, fileMeta *sdk.ConsolidatedFileMeta, commit, isFile bool) (*transaction.Transaction, error) {
-	if commit {
-		if isFile {
+	// 	// m3u8, err := createM3u8Downloader(localpath, remotepath, authticket, allocationID, lookuphash, rxPay, delay)
 
-			fmt.Println("Commiting changes to blockchain ...")
+	// 	// if err != nil {
+	// 	// 	PrintError("Error: download files and build playlist: ", err)
+	// 	// 	os.Exit(1)
+	// 	// }
 
-			wg := &sync.WaitGroup{}
-			statusBar := &StatusBar{wg: wg}
-			wg.Add(1)
+	// 	// err = m3u8.Start()
 
-			err := allocationObj.CommitMetaTransaction(remotePath, commandName, "", "", fileMeta, statusBar)
-			if err != nil {
-				PrintError("Commit failed.", err)
-				return nil, err
-			}
+	// 	// if err != nil {
+	// 	// 	PrintError("Error: download files and build playlist: ", err)
+	// 	// 	os.Exit(1)
+	// 	// }
 
-			wg.Wait()
+	// 	return nil, errors.New("download live is not supported yet")
 
-			fmt.Println("Commit Metadata successful")
-		} else {
-			fmt.Println("Commiting changes to blockchain ...")
-			resp, err := allocationObj.CommitFolderChange(commandName, remotePath, newFolderPath)
-			if err != nil {
-				PrintError("Commit failed.", err)
-				return nil, err
-			}
+	// }
 
-			fmt.Println("Commit Metadata successful, Response :", resp)
-		}
+	if blocksPerMarker == 0 {
+		blocksPerMarker = 10
+	}
 
-		txn, err := getLastMetadataCommitTxn()
+	sdk.SetNumBlockDownloads(blocksPerMarker)
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	wg.Add(1)
+	var errE, err error
+	var allocationObj *sdk.Allocation
+	fileName := filepath.Base(remotePath)
+	localPath := filepath.Join(allocationID, fileName)
+
+	if err != nil {
+		PrintError(err)
+		return nil, err
+	}
+	defer sdk.FS.Remove(localPath) //nolint
+
+	if len(authTicket) > 0 {
+		at, err := sdk.InitAuthTicket(authTicket).Unmarshall()
 
 		if err != nil {
+			PrintError(err)
 			return nil, err
 		}
 
-		return txn, nil
+		allocationObj, err = sdk.GetAllocationFromAuthTicket(authTicket)
+		if err != nil {
+			PrintError("Error fetching the allocation", err)
+			return nil, err
+		}
+
+		var filename string
+
+		if at.RefType == fileref.FILE {
+			filename = at.FileName
+			lookupHash = at.FilePathHash
+		} else if len(lookupHash) > 0 {
+			fileMeta, err := allocationObj.GetFileMetaFromAuthTicket(authTicket, lookupHash)
+			if err != nil {
+				PrintError("Either remotepath or lookuphash is required when using authticket of directory type")
+				return nil, err
+			}
+			filename = fileMeta.Name
+		} else if len(remotePath) > 0 {
+			lookupHash = fileref.GetReferenceLookup(allocationObj.Tx, remotePath)
+
+			pathnames := strings.Split(remotePath, "/")
+			filename = pathnames[len(pathnames)-1]
+		} else {
+			PrintError("Either remotepath or lookuphash is required when using authticket of directory type")
+			return nil, errors.New("Either remotepath or lookuphash is required when using authticket of directory type")
+		}
+
+		if downloadThumbnailOnly {
+			errE = allocationObj.DownloadThumbnailFromAuthTicket(localPath,
+				authTicket, lookupHash, filename, rxPay, statusBar)
+		} else {
+			if startBlock != 0 || endBlock != 0 {
+				errE = allocationObj.DownloadFromAuthTicketByBlocks(
+					localPath, authTicket, int64(startBlock), int64(endBlock), blocksPerMarker,
+					lookupHash, filename, rxPay, statusBar)
+			} else {
+				errE = allocationObj.DownloadFromAuthTicket(localPath,
+					authTicket, lookupHash, filename, rxPay, statusBar)
+			}
+		}
+	} else if len(remotePath) > 0 {
+		if len(allocationID) == 0 {
+			return nil, RequiredArg("allocationID")
+		}
+		allocationObj, err = sdk.GetAllocation(allocationID)
+
+		if err != nil {
+			PrintError("Error fetching the allocation", err)
+			return nil, err
+		}
+		if downloadThumbnailOnly {
+			errE = allocationObj.DownloadThumbnail(localPath, remotePath, statusBar)
+		} else {
+			if startBlock != 0 || endBlock != 0 {
+				errE = allocationObj.DownloadFileByBlock(localPath, remotePath, int64(startBlock), int64(endBlock), blocksPerMarker, statusBar)
+			} else {
+				errE = allocationObj.DownloadFile(localPath, remotePath, statusBar)
+			}
+		}
 	}
 
-	return nil, nil
+	if errE == nil {
+		wg.Wait()
+	} else {
+		PrintError("Download failed.", errE.Error())
+		return nil, errE
+	}
+	if !statusBar.success {
+		return nil, errors.New("Download failed: unknown error")
+	}
+
+	resp := &DownloadCommandResponse{
+		CommandSuccess: true,
+		FileName:       fileName,
+	}
+
+	fs, _ := sdk.FS.Open(localPath)
+
+	mf, _ := fs.(*common.MemFile)
+
+	resp.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
+
+	if autoCommit {
+
+		txn, err := commitTxn(allocationObj, remotePath, "", authTicket, lookupHash, "Download", nil, true)
+		if err != nil {
+			resp.Error = err.Error()
+
+			return resp, nil
+		}
+
+		resp.CommitSuccess = true
+		resp.CommitTxn = txn
+	}
+
+	return resp, nil
+
+}
+
+// Upload upload file
+func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, autoCommit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, chunkSize int, isUpdate, isRepair bool) (*FileCommandResponse, error) {
+	if len(allocationID) == 0 {
+		return nil, RequiredArg("allocationID")
+	}
+
+	if len(remotePath) == 0 {
+		return nil, RequiredArg("remotePath")
+	}
+
+	allocationObj, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return nil, err
+	}
+
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	wg.Add(1)
+	if strings.HasPrefix(remotePath, "/Encrypted") {
+		encrypt = true
+	}
+
+	var attrs fileref.Attributes
+	if len(attrWhoPaysForReads) > 0 {
+		var (
+			wp common.WhoPays
+		)
+
+		if err := wp.Parse(attrWhoPaysForReads); err != nil {
+			PrintError(err)
+			return nil, err
+		}
+		attrs.WhoPaysForReads = wp // set given value
+	}
+
+	if isLiveUpload {
+		return nil, errors.New("live upload is not supported yet")
+	} else if isSyncUpload {
+		return nil, errors.New("sync upload is not supported yet")
+	}
+
+	fileReader := bytes.NewReader(fileBytes)
+
+	mimeType, err := zboxutil.GetFileContentType(fileReader)
+	if err != nil {
+		return nil, err
+	}
+
+	localPath := remotePath
+
+	remotePath = zboxutil.RemoteClean(remotePath)
+	isabs := zboxutil.IsRemoteAbs(remotePath)
+	if !isabs {
+		err = errors.New("invalid_path: Path should be valid and absolute")
+		return nil, err
+	}
+	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
+
+	_, fileName := filepath.Split(remotePath)
+
+	fileMeta := sdk.FileMeta{
+		Path:       localPath,
+		ActualSize: int64(len(fileBytes)),
+		MimeType:   mimeType,
+		RemoteName: fileName,
+		RemotePath: remotePath,
+		Attributes: attrs,
+	}
+
+	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair,
+		sdk.WithThumbnail(thumbnailBytes),
+		sdk.WithChunkSize(int64(chunkSize)),
+		sdk.WithEncrypt(encrypt),
+		sdk.WithStatusCallback(statusBar),
+		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
+		sdk.WithCreateWriteMarkerLocker(func(file string) sdk.WriteMarkerLocker {
+			return &writeMarkerLocker{}
+		}))
+	if err != nil {
+		return nil, err
+	}
+
+	err = ChunkedUpload.Start()
+
+	if err != nil {
+		PrintError("Upload failed.", err)
+		return nil, err
+	}
+	wg.Wait()
+	if !statusBar.success {
+		return nil, errors.New("upload failed: unknown")
+	}
+
+	resp := &FileCommandResponse{
+		CommandSuccess: true,
+	}
+
+	if autoCommit {
+		txn, err := commitTxn(allocationObj, remotePath, "", "", "", "Upload", nil, true)
+
+		if err != nil {
+			resp.Error = err.Error()
+
+			return resp, nil
+		}
+
+		resp.CommitSuccess = true
+		resp.CommitTxn = txn
+	}
+
+	return resp, nil
+}
+
+// CommitFileMetaTxn commit file changes to blockchain, and update to blobbers
+func CommitFileMetaTxn(allocationID, commandName, remotePath, authTicket, lookupHash string) (*transaction.Transaction, error) {
+	fmt.Println("Commiting changes to blockchain ...")
+
+	if len(allocationID) == 0 {
+		return nil, RequiredArg("allocationID")
+	}
+
+	allocationObj, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return nil, err
+	}
+
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	wg.Add(1)
+
+	err = allocationObj.CommitMetaTransaction(remotePath, commandName, authTicket, lookupHash, nil, statusBar)
+	if err != nil {
+		PrintError("Commit failed.", err)
+		return nil, err
+	}
+
+	wg.Wait()
+
+	txn, err := getLastMetadataCommitTxn()
+
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println("Commit Metadata successful")
+	return txn, nil
+}
+
+// CommitFolderMetaTxn commit folder changes to blockchain
+func CommitFolderMetaTxn(allocationID, commandName, preValue, currValue string) (*transaction.Transaction, error) {
+	fmt.Println("Commiting changes to blockchain ...")
+
+	if len(allocationID) == 0 {
+		return nil, RequiredArg("allocationID")
+	}
+
+	allocationObj, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return nil, err
+	}
+
+	resp, err := allocationObj.CommitFolderChange(commandName, preValue, currValue)
+	if err != nil {
+		PrintError("Commit failed.", err)
+		return nil, err
+	}
+
+	fmt.Println("Commit Metadata successful, Response :", resp)
+
+	txn, err := getLastMetadataCommitTxn()
+
+	if err != nil {
+		return nil, err
+	}
+
+	return txn, nil
+
 }

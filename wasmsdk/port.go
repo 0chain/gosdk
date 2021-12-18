@@ -1,3 +1,4 @@
+//go:build js && wasm
 // +build js,wasm
 
 package main
@@ -12,7 +13,6 @@ import (
 	"syscall/js"
 
 	"github.com/0chain/gosdk/zboxcore/sdk"
-	"github.com/0chain/gosdk/zcncore"
 )
 
 func strToPriceRange(s string) sdk.PriceRange {
@@ -42,71 +42,6 @@ type Config struct {
 
 /*Configuration of the system */
 var Configuration Config
-
-/*NewError - create a new error */
-func NewError(code string, msg string) *Error {
-	return &Error{Code: code, Msg: msg}
-}
-
-// Ported from `code/go/0proxy.io/zproxycore/zproxy/main.go`
-func InitializeConfig(this js.Value, p []js.Value) interface{} {
-	err := json.Unmarshal([]byte(p[0].String()), &Configuration)
-	if err != nil {
-		return map[string]interface{}{
-			"error": fmt.Sprintf("InitializeConfig fails. Reason: %s", err),
-		}
-	}
-	return nil
-}
-
-//-----------------------------------------------------------------------------
-// Ported over from `code/go/0proxy.io/zproxycore/handler/util.go`
-//-----------------------------------------------------------------------------
-
-func InitStorageSDK(this js.Value, p []js.Value) interface{} {
-	clientJSON := p[0].String()
-	chainJSON := p[1].String()
-	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		resolve := args[0]
-		reject := args[1]
-
-		go func() {
-			err := initSDK(clientJSON, chainJSON)
-			if err != nil {
-				reject.Invoke(map[string]interface{}{
-					"error": fmt.Sprintf("InitSDK failed. Reason: %s", err),
-				})
-			}
-
-			resolve.Invoke(true)
-		}()
-
-		return nil
-	})
-
-	promiseConstructor := js.Global().Get("Promise")
-	return promiseConstructor.New(handler)
-}
-
-func initSDK(clientJSON string, chainJSON string) error {
-	if len(Configuration.BlockWorker) == 0 ||
-		len(Configuration.ChainID) == 0 ||
-		len(Configuration.SignatureScheme) == 0 {
-		return NewError("invalid_param", "Configuration is empty")
-	}
-
-	err := sdk.InitStorageSDK(clientJSON,
-		Configuration.BlockWorker,
-		Configuration.ChainID,
-		Configuration.SignatureScheme,
-		Configuration.PreferredBlobbers)
-
-	if err != nil {
-		return err
-	}
-
-	return zcncore.Init(chainJSON)
-}
 
 func InitAuthTicket(this js.Value, p []js.Value) interface{} {
 	authTicket := p[0].String()
@@ -710,32 +645,6 @@ func GetBlobber(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-// Ported from `code/go/0proxy.io/zproxycore/handler/wallet.go`
-// Promise code taken from:
-// https://withblue.ink/2020/10/03/go-webassembly-http-requests-and-promises.html
-func GetClientEncryptedPublicKey(this js.Value, p []js.Value) interface{} {
-	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		resolve := args[0]
-		reject := args[1]
-
-		go func() {
-			key, err := sdk.GetClientEncryptedPublicKey()
-			if err != nil {
-				reject.Invoke(map[string]interface{}{
-					"error": fmt.Sprintf("GetClientEncryptedPublicKey failed. Reason: %s", err),
-				})
-			}
-
-			resolve.Invoke(key)
-		}()
-
-		return nil
-	})
-
-	promiseConstructor := js.Global().Get("Promise")
-	return promiseConstructor.New(handler)
-}
-
 func GetAllocationFromAuthTicket(this js.Value, p []js.Value) interface{} {
 	authTicket := p[0].String()
 
@@ -797,12 +706,6 @@ func GetAllocation(this js.Value, p []js.Value) interface{} {
 
 	promiseConstructor := js.Global().Get("Promise")
 	return promiseConstructor.New(handler)
-}
-
-func SetNumBlockDownloads(this js.Value, p []js.Value) interface{} {
-	num := p[0].Int()
-	sdk.SetNumBlockDownloads(num)
-	return nil
 }
 
 func GetAllocations(this js.Value, p []js.Value) interface{} {
