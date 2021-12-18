@@ -315,7 +315,7 @@ func (a *Allocation) EncryptAndUpdateFile(workdir string, localpath string, remo
 func (a *Allocation) EncryptAndUploadFile(workdir string, localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false,false, "", true, attrs)
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", true, attrs)
 }
 
 // EncryptAndUpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
@@ -670,6 +670,37 @@ func (a *Allocation) listDir(path string, consensusThresh, fullconsensus float32
 	return nil, errors.New("list_request_failed", "Failed to get list response from the blobbers")
 }
 
+func (a *Allocation) AllocationRename(name string) error {
+	if !a.isInitialized() {
+		return notInitialized
+	}
+	if len(name) == 0 {
+		return errors.New("invalid_name", "Invalid name for rename")
+	}
+	req := &AllocRenameRequest{}
+	req.allocationID = a.ID
+	req.allocationTx = a.Tx
+	req.blobbers = a.Blobbers
+	req.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
+	req.fullconsensus = float32(a.DataShards + a.ParityShards)
+	req.ctx = a.ctx
+	req.name = name
+	req.connectionID = zboxutil.NewConnectionId()
+
+	err := req.AllocationRename()
+	if err != nil {
+		return errors.New("alloc_rename_failed", "Failed to rename allocation in blobbers")
+	}
+
+	req.consensus = 0
+	err = req.CommitAllocationRename()
+	if err != nil {
+		return errors.New("alloc_rename_failed", "Failed to commit rename allocation in blobbers")
+	}
+
+	return nil
+}
+
 //This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
 //TODO use allocation context
 func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
@@ -833,12 +864,12 @@ func (a *Allocation) deleteFromBlobber(path, blobberUrl string, threshConsensus,
 
 	blobbers := make([]*blockchain.StorageNode, 0)
 	for idx := range a.Blobbers {
-		if a.Blobbers[idx].Baseurl == blobberUrl{
+		if a.Blobbers[idx].Baseurl == blobberUrl {
 			blobbers = append(blobbers, a.Blobbers[idx])
 		}
 	}
 
-	if len(blobbers) == 0{
+	if len(blobbers) == 0 {
 		return errors.New("invalid_path", "Selected blobber not found")
 	}
 
@@ -870,7 +901,6 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus floa
 	if !isabs {
 		return errors.New("invalid_path", "Path should be valid and absolute")
 	}
-
 
 	req := &DeleteRequest{}
 	req.blobbers = a.Blobbers

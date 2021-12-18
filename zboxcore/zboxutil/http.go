@@ -39,26 +39,28 @@ type HttpClient interface {
 var Client HttpClient
 
 const (
-	ALLOCATION_ENDPOINT      = "/allocation"
-	UPLOAD_ENDPOINT          = "/v1/file/upload/"
-	ATTRS_ENDPOINT           = "/v1/file/attributes/"
-	RENAME_ENDPOINT          = "/v1/file/rename/"
-	COPY_ENDPOINT            = "/v1/file/copy/"
-	LIST_ENDPOINT            = "/v1/file/list/"
-	REFERENCE_ENDPOINT       = "/v1/file/referencepath/"
-	CONNECTION_ENDPOINT      = "/v1/connection/details/"
-	COMMIT_ENDPOINT          = "/v1/connection/commit/"
-	DOWNLOAD_ENDPOINT        = "/v1/file/download/"
-	LATEST_READ_MARKER       = "/v1/readmarker/latest"
-	FILE_META_ENDPOINT       = "/v1/file/meta/"
-	FILE_STATS_ENDPOINT      = "/v1/file/stats/"
-	OBJECT_TREE_ENDPOINT     = "/v1/file/objecttree/"
-	REFS_ENDPOINT            = "/v1/file/refs/"
-	COMMIT_META_TXN_ENDPOINT = "/v1/file/commitmetatxn/"
-	COLLABORATOR_ENDPOINT    = "/v1/file/collaborator/"
-	CALCULATE_HASH_ENDPOINT  = "/v1/file/calculatehash/"
-	SHARE_ENDPOINT           = "/v1/marketplace/shareinfo/"
-	DIR_ENDPOINT             = "/v1/dir/"
+	ALLOCATION_ENDPOINT          = "/allocation"
+	ALLOC_RENAME_ENDPOINT        = "/v1/allocation/rename/"
+	COMMIT_ALLOC_RENAME_ENDPOINT = "/v1/commit-alloc/rename/"
+	UPLOAD_ENDPOINT              = "/v1/file/upload/"
+	ATTRS_ENDPOINT               = "/v1/file/attributes/"
+	RENAME_ENDPOINT              = "/v1/file/rename/"
+	COPY_ENDPOINT                = "/v1/file/copy/"
+	LIST_ENDPOINT                = "/v1/file/list/"
+	REFERENCE_ENDPOINT           = "/v1/file/referencepath/"
+	CONNECTION_ENDPOINT          = "/v1/connection/details/"
+	COMMIT_ENDPOINT              = "/v1/connection/commit/"
+	DOWNLOAD_ENDPOINT            = "/v1/file/download/"
+	LATEST_READ_MARKER           = "/v1/readmarker/latest"
+	FILE_META_ENDPOINT           = "/v1/file/meta/"
+	FILE_STATS_ENDPOINT          = "/v1/file/stats/"
+	OBJECT_TREE_ENDPOINT         = "/v1/file/objecttree/"
+	REFS_ENDPOINT                = "/v1/file/refs/"
+	COMMIT_META_TXN_ENDPOINT     = "/v1/file/commitmetatxn/"
+	COLLABORATOR_ENDPOINT        = "/v1/file/collaborator/"
+	CALCULATE_HASH_ENDPOINT      = "/v1/file/calculatehash/"
+	SHARE_ENDPOINT               = "/v1/marketplace/shareinfo/"
+	DIR_ENDPOINT                 = "/v1/dir/"
 
 	// CLIENT_SIGNATURE_HEADER represents http request header contains signature.
 	CLIENT_SIGNATURE_HEADER = "X-App-Client-Signature"
@@ -513,6 +515,34 @@ func NewCreateDirRequest(baseUrl, allocation string, body io.Reader) (*http.Requ
 
 func NewShareRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, SHARE_ENDPOINT, allocation)
+	req, err := http.NewRequest(http.MethodPost, url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+func NewAllocRenameRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s", baseUrl, ALLOC_RENAME_ENDPOINT, allocation)
+	req, err := http.NewRequest(http.MethodPost, url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+func NewCommitAllocRenameRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s", baseUrl, COMMIT_ALLOC_RENAME_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodPost, url, body)
 	if err != nil {
 		return nil, err
