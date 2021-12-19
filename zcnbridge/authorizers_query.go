@@ -72,7 +72,7 @@ func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereu
 		},
 	}
 
-	thresh := float64(b.ConsensusThreshold)
+	thresh := b.ConsensusThreshold
 	results := queryAllAuthorizers(authorizers, handler)
 	numSuccess := len(results)
 	quorum := math.Ceil((float64(numSuccess) * 100) / float64(totalWorkers))
@@ -136,7 +136,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 		},
 	}
 
-	thresh := float64(b.ConsensusThreshold)
+	thresh := b.ConsensusThreshold
 	results := queryAllAuthorizers(authorizers, handler)
 	numSuccess := len(results)
 	quorum := math.Ceil((float64(numSuccess) * 100) / float64(totalWorkers))
