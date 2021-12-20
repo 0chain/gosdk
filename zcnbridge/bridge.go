@@ -59,7 +59,7 @@ func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei We
 	amount := big.NewInt(int64(amountWei))
 
 	tokenAddress := common.HexToAddress(b.WzcnAddress)
-	fromAddress := common.HexToAddress(b.Address)
+	fromAddress := common.HexToAddress(b.EthereumAddress)
 
 	abi, err := erc20.ERC20MetaData.GetAbi()
 	if err != nil {
@@ -82,7 +82,7 @@ func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei We
 
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 
-	transactOpts := CreateSignedTransactionFromKeyStore(etherClient, fromAddress, gasLimitUnits, b.Password)
+	transactOpts := CreateSignedTransactionFromKeyStore(etherClient, fromAddress, gasLimitUnits, b.Password, b.Value)
 
 	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, etherClient)
 	if err != nil {
@@ -111,7 +111,7 @@ func (b *BridgeClient) GetBalance() (*big.Int, error) {
 	}
 
 	tokenAddress := common.HexToAddress(b.WzcnAddress)
-	fromAddress := common.HexToAddress(b.Address)
+	fromAddress := common.HexToAddress(b.EthereumAddress)
 
 	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, etherClient)
 	if err != nil {
@@ -120,7 +120,7 @@ func (b *BridgeClient) GetBalance() (*big.Int, error) {
 
 	wei, err := wzcnTokenInstance.BalanceOf(&bind.CallOpts{}, fromAddress)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to call `BalanceOf` for %s", b.Address)
+		return nil, errors.Wrapf(err, "failed to call `BalanceOf` for %s", b.EthereumAddress)
 	}
 
 	return wei, nil
@@ -137,7 +137,7 @@ func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
 	keyDir := path.Join(GetConfigDir(), "wallets")
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	signer := accounts.Account{
-		Address: common.HexToAddress(b.Address),
+		Address: common.HexToAddress(b.EthereumAddress),
 	}
 
 	signerAcc, err := ks.Find(signer)
@@ -269,7 +269,7 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount int64) (*transaction.
 
 	payload := zcnsc.BurnPayload{
 		Nonce:           b.IncrementNonce(),
-		EthereumAddress: b.Address, // TODO: this should be receiver address not the bridge
+		EthereumAddress: b.EthereumAddress, // TODO: this should be receiver address not the bridge
 	}
 
 	trx, err := transaction.NewTransactionEntity(b.ID(), b.PublicKey())
@@ -316,7 +316,7 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params 
 	}
 
 	// Gas limits in units
-	fromAddress := common.HexToAddress(b.Address)
+	fromAddress := common.HexToAddress(b.EthereumAddress)
 
 	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
 		To:   &contractAddress,
@@ -330,7 +330,7 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params 
 	// Update gas limits + 10%
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 
-	transactOpts := CreateSignedTransactionFromKeyStore(etherClient, fromAddress, gasLimitUnits, b.Password)
+	transactOpts := CreateSignedTransactionFromKeyStore(etherClient, fromAddress, gasLimitUnits, b.Password, b.Value)
 
 	// BridgeClient instance
 	bridgeInstance, err := binding.NewBridge(contractAddress, etherClient)

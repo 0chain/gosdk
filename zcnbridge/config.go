@@ -26,25 +26,23 @@ type ContractsRegistry struct {
 }
 
 type BridgeConfig struct {
-	ConsensusThreshold int
+	ConsensusThreshold float64
 }
 
 type EthereumConfig struct {
 	// URL of ethereum RPC node (infura or alchemy)
 	EthereumNodeURL string
-	// Ethereum chain ID
-	ChainID string
 	// Gas limit to execute ethereum transaction
 	GasLimit uint64
-	// Value to execute ZCN smart contracts
+	// Value to execute Ethereum smart contracts (default = 0)
 	Value int64
 }
 
 type BridgeClientConfig struct {
 	ContractsRegistry
 	EthereumConfig
-	Address  string
-	Password string
+	EthereumAddress string
+	Password        string
 }
 
 type Instance struct {
@@ -62,6 +60,25 @@ type BridgeClient struct {
 type BridgeOwner struct {
 	*BridgeClientConfig
 	*Instance
+}
+
+type BridgeOwnerYaml struct {
+	// KeyStorage unlock storage
+	Password string
+	// Owner address
+	Address string
+	// Address of Ethereum bridge contract
+	BridgeAddress string
+	// Address of Ethereum authorizers contract
+	AuthorizersAddress string
+	// Address of WZCN token (Example: https://ropsten.etherscan.io/token/0x930E1BE76461587969Cb7eB9BFe61166b1E70244)
+	WzcnAddress string
+	// URL of ethereum RPC node (infura or alchemy)
+	EthereumNodeURL string
+	// Gas limit to execute ethereum transaction
+	GasLimit int64
+	// Value to execute ZCN smart contracts in wei
+	Value int64
 }
 
 // ReadClientConfigFromCmd reads config from command line
@@ -99,12 +116,11 @@ func CreateBridgeOwner(cfg *viper.Viper) *BridgeOwner {
 			},
 			EthereumConfig: EthereumConfig{
 				EthereumNodeURL: cfg.GetString("owner.EthereumNodeURL"),
-				ChainID:         cfg.GetString("owner.ChainID"),
 				GasLimit:        cfg.GetUint64("owner.GasLimit"),
 				Value:           cfg.GetInt64("owner.Value"),
 			},
-			Address:  cfg.GetString("owner.Address"),
-			Password: cfg.GetString("owner.Password"),
+			EthereumAddress: cfg.GetString("owner.EthereumAddress"),
+			Password:        cfg.GetString("owner.Password"),
 		},
 		Instance: &Instance{
 			startTime: common.Now(),
@@ -127,15 +143,14 @@ func CreateBridgeClient(cfg *viper.Viper) *BridgeClient {
 			},
 			EthereumConfig: EthereumConfig{
 				EthereumNodeURL: cfg.GetString("bridge.EthereumNodeURL"),
-				ChainID:         cfg.GetString("bridge.ChainID"),
 				GasLimit:        cfg.GetUint64("bridge.GasLimit"),
 				Value:           cfg.GetInt64("bridge.Value"),
 			},
-			Address:  cfg.GetString("bridge.Address"),
-			Password: cfg.GetString("bridge.Password"),
+			EthereumAddress: cfg.GetString("bridge.EthereumAddress"),
+			Password:        cfg.GetString("bridge.Password"),
 		},
 		BridgeConfig: &BridgeConfig{
-			ConsensusThreshold: cfg.GetInt("bridge.ConsensusThreshold"),
+			ConsensusThreshold: cfg.GetFloat64("bridge.ConsensusThreshold"),
 		},
 		Instance: &Instance{
 			startTime: common.Now(),
