@@ -23,21 +23,21 @@ func CreateInitialOwnerConfig(
 ) {
 	type BridgeOwnerYaml struct {
 		// KeyStorage unlock storage
-		Password string `yaml:"Password,omitempty"`
+		Password string `yaml:"Password"`
 		// User's address
-		EthereumAddress string `yaml:"EthereumAddress,omitempty"`
+		EthereumAddress string `yaml:"EthereumAddress"`
 		// Address of Ethereum bridge contract
-		BridgeAddress string `yaml:"BridgeAddress,omitempty"`
+		BridgeAddress string `yaml:"BridgeAddress"`
 		// Address of WZCN token (Example: https://ropsten.etherscan.io/token/0x930E1BE76461587969Cb7eB9BFe61166b1E70244)
-		WzcnAddress string `yaml:"WzcnAddress,omitempty"`
+		WzcnAddress string `yaml:"WzcnAddress"`
 		// Address of Authorizers smart contract
-		AuthorizersAddress string `yaml:"AuthorizersAddress,omitempty"`
+		AuthorizersAddress string `yaml:"AuthorizersAddress"`
 		// URL of ethereum RPC node (infura or alchemy)
-		EthereumNodeURL string `yaml:"EthereumNodeURL,omitempty"`
+		EthereumNodeURL string `yaml:"EthereumNodeURL"`
 		// Gas limit to execute ethereum transaction
-		GasLimit int64 `yaml:"GasLimit,omitempty"`
+		GasLimit int64 `yaml:"GasLimit"`
 		// Value to execute ZCN smart contracts in wei
-		Value int64 `yaml:"Value,omitempty"`
+		Value int64 `yaml:"Value"`
 	}
 
 	type Bridge struct {
@@ -88,20 +88,20 @@ func CreateInitialClientConfig(
 ) {
 	type BridgeClientYaml struct {
 		// KeyStorage unlock storage
-		Password string `yaml:"Password,omitempty"`
+		Password string `yaml:"Password"`
 		// User's address
-		EthereumAddress string `yaml:"EthereumAddress,omitempty"`
+		EthereumAddress string `yaml:"EthereumAddress"`
 		// Address of Ethereum bridge contract
-		BridgeAddress string `yaml:"BridgeAddress,omitempty"`
+		BridgeAddress string `yaml:"BridgeAddress"`
 		// Address of WZCN token (Example: https://ropsten.etherscan.io/token/0x930E1BE76461587969Cb7eB9BFe61166b1E70244)
-		WzcnAddress string `yaml:"WzcnAddress,omitempty"`
+		WzcnAddress string `yaml:"WzcnAddress"`
 		// URL of ethereum RPC node (infura or alchemy)
-		EthereumNodeURL string `yaml:"EthereumNodeURL,omitempty"`
+		EthereumNodeURL string `yaml:"EthereumNodeURL"`
 		// Gas limit to execute ethereum transaction
-		GasLimit int64 `yaml:"GasLimit,omitempty"`
+		GasLimit int64 `yaml:"GasLimit"`
 		// Value to execute ZCN smart contracts in wei
-		Value              int64   `yaml:"Value,omitempty"`
-		ConsensusThreshold float64 `yaml:"ConsensusThreshold,omitempty"`
+		Value              int64   `yaml:"Value"`
+		ConsensusThreshold float64 `yaml:"ConsensusThreshold"`
 	}
 
 	type Bridge struct {
