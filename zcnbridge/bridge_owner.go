@@ -36,7 +36,7 @@ func (b *BridgeOwner) prepareAuthorizers(ctx context.Context, method string, par
 		return nil, nil, errors.Wrap(err, "failed to pack arguments")
 	}
 
-	from := common.HexToAddress(b.Address)
+	from := common.HexToAddress(b.EthereumAddress)
 
 	// Gas limits in units
 	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
@@ -51,7 +51,7 @@ func (b *BridgeOwner) prepareAuthorizers(ctx context.Context, method string, par
 	// Update gas limits + 10%
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 
-	transactOpts := CreateSignedTransactionFromKeyStore(etherClient, from, gasLimitUnits, b.Password)
+	transactOpts := CreateSignedTransactionFromKeyStore(etherClient, from, gasLimitUnits, b.Password, b.Value)
 
 	// Authorizers instance
 	authorizersInstance, err := authorizers.NewAuthorizers(contractAddress, etherClient)
