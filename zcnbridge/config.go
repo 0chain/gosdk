@@ -34,7 +34,7 @@ type EthereumConfig struct {
 	EthereumNodeURL string
 	// Gas limit to execute ethereum transaction
 	GasLimit uint64
-	// Value to execute ZCN smart contracts
+	// Value to execute Ethereum smart contracts (default = 0)
 	Value int64
 }
 
