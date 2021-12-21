@@ -508,6 +508,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 		mockFileRefName = "mock file ref name"
 		mockLocalPath   = "1.txt"
 		mockActualHash  = "4041e3eeb170751544a47af4e4f9d374e76cee1d"
+		mockChunkHash	= "65e97907139278eeed8b3815f36b442a0043c7e0"
 	)
 
 	var mockClient = mocks.HttpClient{}
@@ -527,7 +528,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 				hash = mockActualHash
 			}
 			frName := mockFileRefName + strconv.Itoa(i)
-			url := "TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i)
+			url := "TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/meta"
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 				return strings.HasPrefix(req.URL.Path, url)
 			})).Return(&http.Response{
@@ -539,6 +540,82 @@ func TestAllocation_RepairFile(t *testing.T) {
 							Name: fileRefName,
 						},
 					})
+					require.NoError(t, err)
+					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+				}(frName, hash),
+			}, nil)
+		}
+	}
+
+	setupHttpResponsesWithUpload := func(t *testing.T, testName string, numBlobbers, numCorrect int) {
+		require.True(t, numBlobbers >= numCorrect)
+		for i := 0; i < numBlobbers; i++ {
+			var hash string
+			if i < numCorrect {
+				hash = mockActualHash
+			}
+
+			frName := mockFileRefName + strconv.Itoa(i)
+			httpResponse := &http.Response{
+				StatusCode: http.StatusOK,
+				Body: func(fileRefName, hash string) io.ReadCloser {
+					jsonFR, err := json.Marshal(&fileref.FileRef{
+						ActualFileHash: hash,
+						Ref: fileref.Ref{
+							Name: fileRefName,
+						},
+					})
+					require.NoError(t, err)
+					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+				}(frName, hash),
+			}
+
+			urlMeta := "TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/meta"
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.HasPrefix(req.URL.Path, urlMeta)
+			})).Return(httpResponse, nil)
+
+			urlUpload := "TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/upload"
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.HasPrefix(req.URL.Path, urlUpload)
+			})).Return(&http.Response{
+				StatusCode: http.StatusOK,
+				Body: func(fileRefName, hash string) io.ReadCloser {
+					jsonFR, err := json.Marshal(&UploadResult{
+						Filename: mockLocalPath,
+						Hash: mockChunkHash,
+					})
+					require.NoError(t, err)
+					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+				}(frName, hash),
+			}, nil)
+
+			urlFilePath := "TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/referencepath"
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.HasPrefix(req.URL.Path, urlFilePath)
+			})).Return(&http.Response{
+				StatusCode: http.StatusOK,
+				Body: func(fileRefName, hash string) io.ReadCloser {
+					jsonFR, err := json.Marshal(&ReferencePathResult{
+						ReferencePath: &fileref.ReferencePath{
+							Meta: map[string]interface{}{
+								"type": "d",
+							},
+						},
+						LatestWM: nil,
+					})
+					require.NoError(t, err)
+					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+				}(frName, hash),
+			}, nil)
+
+			urlCommit := "TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/connection/commit"
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.HasPrefix(req.URL.Path, urlCommit)
+			})).Return(&http.Response{
+				StatusCode: http.StatusOK,
+				Body: func(fileRefName, hash string) io.ReadCloser {
+					jsonFR, err := json.Marshal(&ReferencePathResult{})
 					require.NoError(t, err)
 					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(frName, hash),
@@ -570,7 +647,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 			numCorrect:  4,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "Repair not required",
+			errMsg:      "chunk_upload: Repair not required",
 		},
 		{
 			name: "Test_Repair_Required_Success",
@@ -578,9 +655,9 @@ func TestAllocation_RepairFile(t *testing.T) {
 				localPath:  mockLocalPath,
 				remotePath: "/",
 			},
-			numBlobbers: 4,
-			numCorrect:  3,
-			setup:       setupHttpResponses,
+			numBlobbers: 6,
+			numCorrect:  5,
+			setup:       setupHttpResponsesWithUpload,
 		},
 	}
 
@@ -591,8 +668,8 @@ func TestAllocation_RepairFile(t *testing.T) {
 				defer teardown(t)
 			}
 			a := &Allocation{
-				ParityShards: 2,
-				DataShards:   2,
+				ParityShards: tt.numBlobbers/2,
+				DataShards:   tt.numBlobbers/2,
 			}
 			a.uploadChan = make(chan *UploadRequest, 10)
 			a.downloadChan = make(chan *DownloadRequest, 10)
@@ -3177,7 +3254,7 @@ func TestAllocation_CommitMetaTransaction(t *testing.T) {
 				fileMeta:      nil,
 				status: func(t *testing.T) StatusCallback {
 					scm := &mocks.StatusCallback{}
-					scm.On("CommitMetaCompleted", mock.Anything, mock.Anything, mock.Anything).Maybe()
+					scm.On("CommitMetaCompleted", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Maybe()
 					return scm
 				},
 			},

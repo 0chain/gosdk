@@ -1,3 +1,4 @@
+//go:build js && wasm
 // +build js,wasm
 
 package jsbridge
@@ -34,7 +35,7 @@ func Async(funcType reflect.Type) (AsyncInvoker, error) {
 					resolve.Invoke()
 				} else {
 					args := outputBinder(output)
-					reject.Invoke(args[0])
+					resolve.Invoke(args[0])
 				}
 			}, nil
 		} else { //func(...) T
@@ -57,9 +58,9 @@ func Async(funcType reflect.Type) (AsyncInvoker, error) {
 
 			args := outputBinder(output)
 			if output[1].IsNil() {
-				resolve.Invoke(args[1])
+				resolve.Invoke(args[0])
 			} else {
-				reject.Invoke(args[0], args[1])
+				resolve.Invoke(args[1])
 			}
 		}, nil
 

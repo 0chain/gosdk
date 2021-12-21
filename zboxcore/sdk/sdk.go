@@ -41,7 +41,7 @@ type StatusCallback interface {
 	InProgress(allocationId, filePath string, op int, completedBytes int, data []byte)
 	Error(allocationID string, filePath string, op int, err error)
 	Completed(allocationId, filePath string, filename string, mimetype string, size int, op int)
-	CommitMetaCompleted(request, response string, err error)
+	CommitMetaCompleted(request, response string, txn *transaction.Transaction, err error)
 	RepairCompleted(filesRepaired int)
 }
 
@@ -779,6 +779,46 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	allocationObj.numBlockDownloads = numBlockDownloads
 	allocationObj.InitAllocation()
 	return allocationObj, nil
+}
+
+func GetAllocationUpdates(allocation *Allocation) error {
+	if allocation == nil {
+		return errors.New("allocation_not_initialized", "")
+	}
+
+	params := make(map[string]string)
+	params["allocation"] = allocation.ID
+	allocationBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params, nil)
+	if err != nil {
+		return errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
+	}
+
+	updatedAllocationObj := new(Allocation)
+	if err := json.Unmarshal(allocationBytes, updatedAllocationObj); err != nil {
+		return errors.New("allocation_decode_error", "Error decoding the allocation."+err.Error())
+	}
+
+	allocation.DataShards = updatedAllocationObj.DataShards
+	allocation.ParityShards = updatedAllocationObj.ParityShards
+	allocation.Size = updatedAllocationObj.Size
+	allocation.Expiration = updatedAllocationObj.Expiration
+	allocation.Payer = updatedAllocationObj.Payer
+	allocation.Blobbers = updatedAllocationObj.Blobbers
+	allocation.Stats = updatedAllocationObj.Stats
+	allocation.TimeUnit = updatedAllocationObj.TimeUnit
+	allocation.IsImmutable = updatedAllocationObj.IsImmutable
+	allocation.BlobberDetails = updatedAllocationObj.BlobberDetails
+	allocation.ReadPriceRange = updatedAllocationObj.ReadPriceRange
+	allocation.WritePriceRange = updatedAllocationObj.WritePriceRange
+	allocation.ChallengeCompletionTime = updatedAllocationObj.ChallengeCompletionTime
+	allocation.StartTime = updatedAllocationObj.StartTime
+	allocation.Finalized = updatedAllocationObj.Finalized
+	allocation.Canceled = updatedAllocationObj.Canceled
+	allocation.MovedToChallenge = updatedAllocationObj.MovedToChallenge
+	allocation.MovedBack = updatedAllocationObj.MovedBack
+	allocation.MovedToValidators = updatedAllocationObj.MovedToValidators
+	allocation.Curators = updatedAllocationObj.Curators
+	return nil
 }
 
 func SetNumBlockDownloads(num int) {

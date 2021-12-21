@@ -5,6 +5,7 @@ import (
 	"os"
 	"sync"
 
+	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"go.uber.org/zap"
@@ -27,8 +28,8 @@ type RepairStatusCB struct {
 	statusCB StatusCallback
 }
 
-func (cb *RepairStatusCB) CommitMetaCompleted(request, response string, err error) {
-	cb.statusCB.CommitMetaCompleted(request, response, err)
+func (cb *RepairStatusCB) CommitMetaCompleted(request, response string, txn *transaction.Transaction, err error) {
+	cb.statusCB.CommitMetaCompleted(request, response, txn, err)
 }
 
 func (cb *RepairStatusCB) Started(allocationId, filePath string, op int, totalBytes int) {
@@ -146,6 +147,8 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 				}
 				Logger.Info("Download file success for repair", zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
 				statusCB.success = false
+			}else{
+				Logger.Info("FILE EXISTS", zap.Any("bool", true))
 			}
 
 			if r.checkForCancel(a) {

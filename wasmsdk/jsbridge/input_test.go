@@ -1,16 +1,23 @@
+//go:build js && wasm
 // +build js,wasm
 
 package jsbridge
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"reflect"
+	"strings"
 	"syscall/js"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestBinder(t *testing.T) {
+func TestInputBinder(t *testing.T) {
+
+	buf := make([]byte, 100)
+	rand.Read(buf) //nolint
 
 	tests := []struct {
 		Name string
@@ -62,6 +69,20 @@ func TestBinder(t *testing.T) {
 
 			return reflect.ValueOf(fn)
 		}, In: []js.Value{js.ValueOf(1)}, Out: float64(1)},
+		{Name: "[]string", Func: func() reflect.Value {
+			fn := func(list []string) string {
+				return strings.Join(list, ",")
+			}
+
+			return reflect.ValueOf(fn)
+		}, In: []js.Value{NewArray("a", "b")}, Out: "a,b"},
+		{Name: "[]byte", Func: func() reflect.Value {
+			fn := func(buf []byte) string {
+				return hex.EncodeToString(buf)
+			}
+
+			return reflect.ValueOf(fn)
+		}, In: []js.Value{NewBytes(buf)}, Out: hex.EncodeToString(buf)},
 	}
 
 	for _, it := range tests {
