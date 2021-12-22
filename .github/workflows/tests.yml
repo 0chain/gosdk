@@ -70,7 +70,8 @@ jobs:
     steps:
       - name: "Setup"
         run: |
-          echo "BRANCH=${{ github.event.pull_request.head.ref }}" >> $GITHUB_ENV
+          echo "GOSDK_PR_SHA=$(echo $GITHUB_SHA | head -c 8)" >> $GITHUB_ENV
+          echo "GOSDK_BRANCH_SHA=$(git rev-parse ${{ github.event.pull_request.head.ref }}~)" >> $GITHUB_ENV
           echo "NETWORK_URL=$(echo dev-${RUNNER_NAME:(-1)}.devnet-0chain.net)" >> $GITHUB_ENV
           echo "RUNNER_NUMBER=${RUNNER_NAME:(-1)}" >> $GITHUB_ENV
 
@@ -94,7 +95,7 @@ jobs:
       - name: "Run System tests"
         uses: 0chain/actions/run-system-tests@feature/add-gosdk-flag
         with:
-          custom_go_sdk_version: ${{ env.BRANCH }}
+          custom_go_sdk_version: ${{ env.GOSDK_PR_SHA }}
           system_tests_branch: master
           network: ${{ env.NETWORK_URL }}
           zbox_cli_branch: staging
