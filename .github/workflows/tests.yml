@@ -45,6 +45,10 @@ jobs:
       - name: Run Unit Test
         run: LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH make gosdk-test
 
+  system-test:
+    needs: go-test
+    runs-on: [ tests-suite ]
+    steps:
       - name: "Get current PR"
         uses: jwalton/gh-find-current-pr@v1
         id: findPr
@@ -63,11 +67,7 @@ jobs:
           target_url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
-
-  system-test:
-    needs: go-test
-    runs-on: [ tests-suite ]
-    steps:
+          
       - name: "Setup"
         run: |
           echo "CURRENT_BRANCH_HEAD=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
@@ -97,7 +97,7 @@ jobs:
           custom_go_sdk_version: ${{ env.CURRENT_BRANCH_HEAD }}
           system_tests_branch: master
           network: ${{ env.NETWORK_URL }}
-          zbox_cli_branch: staging
+          zbox_cli_branch: fix/upgrade_gosdk
           zwallet_cli_branch: staging
           smart_contract_owner_wallet_json: ${{ secrets.SMART_CONTRACT_OWNER_WALLET_JSON }}
           svc_account_secret: ${{ github.token }}
