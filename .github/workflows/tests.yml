@@ -64,12 +64,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
+  system-test:
+    needs: go-test
+    runs-on: [ tests-suite ]
+    steps:
       - name: "Setup"
         run: |
-          echo "branch is ${{ github.base_ref }} "
-          echo "branch is ${{ github.event.pull_request.head.ref }} "
-          echo "branch is ${{ github.ref }} "
-          echo "BRANCH=${{ github.base_ref }}" >> $GITHUB_ENV
+          echo "BRANCH=${{ github.event.pull_request.head.ref }}" >> $GITHUB_ENV
           echo "NETWORK_URL=$(echo dev-${RUNNER_NAME:(-1)}.devnet-0chain.net)" >> $GITHUB_ENV
           echo "RUNNER_NUMBER=${RUNNER_NAME:(-1)}" >> $GITHUB_ENV
 
