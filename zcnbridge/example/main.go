@@ -44,6 +44,30 @@ const (
 // `--config_file bridge` runs bridge client
 // `--config_file owner`  runs owner client
 func main() {
+	zcnbridge.CreateInitialClientConfig(
+		"bridge.yaml",
+		"0x860FA46F170a87dF44D7bB867AA4a5D2813127c1",
+		"0xF26B52df8c6D9b9C20bfD7819Bed75a75258c7dB",
+		"0x930E1BE76461587969Cb7eB9BFe61166b1E70244",
+		"https://ropsten.infura.io/v3/22cb2849f5f74b8599f3dc2a23085bd4",
+		"password",
+		300000,
+		0,
+		75.0,
+	)
+
+	zcnbridge.CreateInitialOwnerConfig(
+		"owner.yaml",
+		"0x860FA46F170a87dF44D7bB867AA4a5D2813127c1",
+		"0xF26B52df8c6D9b9C20bfD7819Bed75a75258c7dB",
+		"0x930E1BE76461587969Cb7eB9BFe61166b1E70244",
+		"0xFE20Ce9fBe514397427d20C91CB657a4478A0FFa",
+		"https://ropsten.infura.io/v3/22cb2849f5f74b8599f3dc2a23085bd4",
+		"password",
+		300000,
+		0,
+	)
+
 	// First is read config from command line
 	cfg := zcnbridge.ReadClientConfigFromCmd()
 
@@ -532,7 +556,7 @@ func GenerateBurnTransactionOutput(b *zcnbridge.BridgeClient) []byte {
 	// Executed at burn function in smartcontract
 	payload := &BurnPayload{
 		Nonce:           nonce,
-		EthereumAddress: b.Address,
+		EthereumAddress: b.EthereumAddress,
 	}
 
 	// generating transaction hash
