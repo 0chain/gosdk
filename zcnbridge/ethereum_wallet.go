@@ -78,6 +78,7 @@ func CreateSignedTransactionFromKeyStore(
 	signerAddress common.Address,
 	gasLimitUnits uint64,
 	password string,
+	value int64,
 ) *bind.TransactOpts {
 	keyDir := path.Join(GetConfigDir(), "wallets")
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
@@ -114,7 +115,7 @@ func CreateSignedTransactionFromKeyStore(
 		zcncore.Logger.Fatal(err)
 	}
 
-	valueWei := new(big.Int).Mul(big.NewInt(0), big.NewInt(params.Wei))
+	valueWei := new(big.Int).Mul(big.NewInt(value), big.NewInt(params.Wei))
 
 	opts.Nonce = big.NewInt(int64(nonce))
 	opts.Value = valueWei         // in wei

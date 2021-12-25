@@ -1,18 +1,17 @@
-# bridge config
+# bridge client config
 bridge:
     # KeyStorage unlock storage
-    Password: "password"
-    # User's address
-    Address: "0x860FA46F170a87dF44D7bB867AA4a5D2813127c1"
+    Password: password
+    # User's Ethereum address (should be registered in the local key storage)
+    EthereumAddress: 0x860FA46F170a87dF44D7bB867AA4a5D2813127c1
     # Address of Ethereum bridge contract
-    BridgeAddress: "0xF26B52df8c6D9b9C20bfD7819Bed75a75258c7dB"
+    BridgeAddress: 0xF26B52df8c6D9b9C20bfD7819Bed75a75258c7dB
     # Address of WZCN token (Example: https://ropsten.etherscan.io/token/0x930E1BE76461587969Cb7eB9BFe61166b1E70244)
-    WzcnAddress: "0x930E1BE76461587969Cb7eB9BFe61166b1E70244"
+    WzcnAddress: 0x930E1BE76461587969Cb7eB9BFe61166b1E70244
     # URL of ethereum RPC node (infura or alchemy)
-    EthereumNodeURL: "https://ropsten.infura.io/v3/22cb2849f5f74b8599f3dc2a23085bd4"
+    EthereumNodeURL: https://ropsten.infura.io/v3/22cb2849f5f74b8599f3dc2a23085bd4
     # Gas limit to execute ethereum transaction
     GasLimit: 300000
-    ChainID: "3"
     # Value to execute ZCN smart contracts in wei
     Value: 0
     ConsensusThreshold: 70.0
