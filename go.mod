@@ -5,7 +5,6 @@ go 1.16
 require (
 	github.com/0chain/errors v1.0.3
 	github.com/StackExchange/wmi v1.2.1 // indirect
-	github.com/allegro/bigcache v1.2.1 // indirect
 	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
@@ -33,7 +32,7 @@ require (
 	github.com/lithammer/shortuuid/v3 v3.0.7
 	github.com/magma/augmented-networks/accounting/protos v0.1.1
 	github.com/mattn/go-runewidth v0.0.13 // indirect
-	github.com/miguelmota/go-ethereum-hdwallet v0.1.1 // indirect
+	github.com/miguelmota/go-ethereum-hdwallet v0.1.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.4.2
 	github.com/patrickmn/go-cache v2.1.0+incompatible // indirect
