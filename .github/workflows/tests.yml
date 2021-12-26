@@ -67,7 +67,7 @@ jobs:
           target_url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
-          
+
       - name: "Setup"
         run: |
           echo "CURRENT_BRANCH_HEAD=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
@@ -75,7 +75,7 @@ jobs:
           echo "RUNNER_NUMBER=${RUNNER_NAME:(-1)}" >> $GITHUB_ENV
 
       - name: "Deploy 0Chain"
-        uses: 0chain/actions/deploy-0chain@feature/add-gosdk-flag
+        uses: 0chain/actions/deploy-0chain@master
         with:
           kube_config: ${{ secrets[format('DEV{0}KC', env.RUNNER_NUMBER)] }}
           teardown_condition: "TESTS_PASSED"
@@ -92,12 +92,12 @@ jobs:
           blobber_stake_image: latest
 
       - name: "Run System tests"
-        uses: 0chain/actions/run-system-tests@feature/add-gosdk-flag
+        uses: 0chain/actions/run-system-tests@master
         with:
           custom_go_sdk_version: ${{ env.CURRENT_BRANCH_HEAD }}
           system_tests_branch: master
           network: ${{ env.NETWORK_URL }}
-          zbox_cli_branch: fix/upgrade_gosdk
+          zbox_cli_branch: staging
           zwallet_cli_branch: staging
           smart_contract_owner_wallet_json: ${{ secrets.SMART_CONTRACT_OWNER_WALLET_JSON }}
           svc_account_secret: ${{ github.token }}
