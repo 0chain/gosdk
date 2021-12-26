@@ -1105,7 +1105,15 @@ func (a *Allocation) GetAuthTicket(
 		// generate another auth ticket without reencryption key
 		at := &marker.AuthTicket{}
 		decoded, err := base64.StdEncoding.DecodeString(authTicket)
+		if err != nil {
+			return "", err
+		}
+
 		err = json.Unmarshal(decoded, at)
+		if err != nil {
+			return "", err
+		}
+
 		at.ReEncryptionKey = ""
 		err = at.Sign()
 		if err != nil {

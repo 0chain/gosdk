@@ -67,7 +67,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 	req.wg.Add(numDownloads)
 	rspCh := make(chan *downloadBlock, numDownloads)
 	// Download from only specific blobbers
-	var c, pos int = 0, 0
+	var c, pos int
 	for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(uint64(pos)).Not()) {
 		pos = i.TrailingZeros()
 		blockDownloadReq := &BlockDownloadRequest{}

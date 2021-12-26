@@ -387,7 +387,7 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 	req.consensus = 0
 
 	// Start upload for each blobber
-	var c, pos uint64 = 0, 0
+	var c, pos uint64
 	for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.uploadThumbCh[c], req.wg)
@@ -413,7 +413,7 @@ func (req *UploadRequest) pushData(data []byte) error {
 		Logger.Error("Erasure coding failed.", err.Error())
 		return err
 	}
-	var c, pos uint64 = 0, 0
+	var c, pos uint64
 	if req.isEncrypted {
 		for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
@@ -428,8 +428,9 @@ func (req *UploadRequest) pushData(data []byte) error {
 			c++
 		}
 
-		c, pos = 0, 0
 	}
+
+	c = 0
 	for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		req.uploadDataCh[c] <- shards[pos]
@@ -443,7 +444,7 @@ func (req *UploadRequest) completePush() error {
 	if !req.isRepair {
 		req.filemeta.Hash = hex.EncodeToString(req.fileHash.Sum(nil))
 		//fmt.Println("req.filemeta.Hash=" + req.filemeta.Hash)
-		var c, pos uint64 = 0, 0
+		var c, pos uint64
 		for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
 			req.uploadDataCh[c] <- []byte("done")
@@ -553,7 +554,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 	ones := req.uploadMask.CountOnes()
 	wg.Add(ones)
 	commitReqs := make([]*CommitRequest, ones)
-	var c, pos uint64 = 0, 0
+	var c, pos uint64
 	for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		//go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.wg)
