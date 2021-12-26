@@ -175,7 +175,7 @@ func (req *UploadRequest) prepareUpload(
 				dataBytes := <-uploadCh
 				remaining = remaining - int64(len(dataBytes))
 			}
-			_ = <-uploadCh
+			<-uploadCh
 			return
 		}
 		// Setup file hash compute
@@ -218,7 +218,7 @@ func (req *UploadRequest) prepareUpload(
 		if !req.isRepair {
 			// Wait for file hash to be ready
 			// Logger.Debug("Waiting for file hash....")
-			_ = <-uploadCh
+			<-uploadCh
 			// Logger.Debug("File Hash ready", obj.file.Hash)
 		}
 		fileContentHash = hex.EncodeToString(h.Sum(nil))
@@ -259,7 +259,7 @@ func (req *UploadRequest) prepareUpload(
 			if !req.isRepair {
 				// Wait for file hash to be ready
 				// Logger.Debug("Waiting for file hash....")
-				_ = <-uploadThumbCh
+				<-uploadThumbCh
 				// Logger.Debug("File Hash ready", obj.file.Hash)
 			}
 			thumbContentHash = hex.EncodeToString(h.Sum(nil))
@@ -650,7 +650,6 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 		req.statusCallback.Completed(a.ID, req.remotefilepath, req.filemeta.Name, req.filemeta.MimeType, int(sizeInCallback), OpID)
 	}
 
-	return
 }
 
 func (req *UploadRequest) IsFullConsensusSupported() bool {

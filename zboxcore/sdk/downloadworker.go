@@ -370,5 +370,4 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if req.statusCallback != nil {
 		req.statusCallback.Completed(req.allocationID, remotePathCallback, fileRef.Name, mimetype, int(fileRef.ActualFileSize), OpDownload)
 	}
-	return
 }

@@ -172,14 +172,14 @@ func RegisterWallet(walletString string, cb WalletCallback) {
 	err := json.Unmarshal([]byte(walletString), &w)
 
 	if err != nil {
-		cb.OnWalletCreateComplete(StatusError, walletString, fmt.Sprintf("%s", err.Error()))
+		cb.OnWalletCreateComplete(StatusError, walletString, err.Error())
 	}
 
 	//We do not want to send private key to blockchain
 	w.Keys[0].PrivateKey = ""
 	err = RegisterToMiners(&w, cb)
 	if err != nil {
-		cb.OnWalletCreateComplete(StatusError, "", fmt.Sprintf("%s", err.Error()))
+		cb.OnWalletCreateComplete(StatusError, "", err.Error())
 	}
 
 }

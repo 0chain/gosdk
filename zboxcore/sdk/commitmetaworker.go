@@ -103,7 +103,6 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 	req.status.CommitMetaCompleted(commitMetaDataString, commitMetaResponseString, t, nil)
 
 	Logger.Info("All process done, Calling return")
-	return
 }
 
 func (req *CommitMetaRequest) updateCommitMetaTxnToBlobbers(txnHash string) bool {

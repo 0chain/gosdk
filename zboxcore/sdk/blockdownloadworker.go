@@ -94,7 +94,7 @@ func InitBlockDownloader(blobbers []*blockchain.StorageNode) {
 }
 
 func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest) {
-	for true {
+	for {
 		blockDownloadReq, open := <-blobberChan
 		if !open {
 			break
@@ -111,7 +111,7 @@ func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
 		chunks = append(chunks, chunk)
 	}
 	if len(buf) > 0 {
-		chunks = append(chunks, buf[:len(buf)])
+		chunks = append(chunks, buf[:])
 	}
 	return chunks
 }

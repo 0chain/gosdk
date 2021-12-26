@@ -86,7 +86,7 @@ func InitCommitWorker(blobbers []*blockchain.StorageNode) {
 }
 
 func startCommitWorker(blobberChan chan *CommitRequest, blobberID string) {
-	for true {
+	for {
 		commitreq, open := <-blobberChan
 		if !open {
 			break

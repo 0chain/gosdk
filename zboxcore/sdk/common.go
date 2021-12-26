@@ -97,5 +97,4 @@ func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationTx 
 	result.BlobberID = blobber.ID
 	result.BlobberURL = blobber.Baseurl
 	respCh <- &result
-	return
 }
