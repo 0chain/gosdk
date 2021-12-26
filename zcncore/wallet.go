@@ -185,17 +185,6 @@ type AuthCallback interface {
 	OnSetupComplete(status int, err string)
 }
 
-type regInfo struct {
-	ID        string `json:"id"`
-	PublicKey string `json:"public_key"`
-}
-
-type httpResponse struct {
-	status string
-	body   []byte
-	err    error
-}
-
 type localConfig struct {
 	chain         ChainConfig
 	wallet        zcncrypto.Wallet

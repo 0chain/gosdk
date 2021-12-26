@@ -34,12 +34,6 @@ type DeleteRequest struct {
 	Consensus
 }
 
-type deleteFormData struct {
-	ConnectionID string `json:"connection_id"`
-	Filename     string `json:"filename"`
-	Path         string `json:"filepath"`
-}
-
 func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blobberIdx int, objectTree fileref.RefEntity) {
 	defer req.wg.Done()
 

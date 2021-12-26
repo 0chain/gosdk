@@ -30,10 +30,6 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-func isSetTestEnv(name string) bool {
-	return os.Getenv("INTEGRATION_TESTS_"+name) != ""
-}
-
 // Expected success rate is calculated (NumDataShards)*100/(NumDataShards+NumParityShards)
 // Additional success percentage on top of expected success rate
 const additionalSuccessRate = (10)
