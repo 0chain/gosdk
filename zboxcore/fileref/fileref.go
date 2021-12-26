@@ -57,7 +57,7 @@ func (a *Attributes) Validate() (err error) {
 }
 
 type FileRef struct {
-	Ref                 `json:",squash"`
+	Ref
 	CustomMeta          string          `json:"custom_meta"`
 	ContentHash         string          `json:"content_hash"`
 	MerkleRoot          string          `json:"merkle_root"`

@@ -62,7 +62,7 @@ func (x Uint128) And(v Uint128) Uint128 {
 
 // And64 returns x&y.
 func (x Uint128) And64(y uint64) Uint128 {
-	return Uint128{low: x.low & y, high: x.high & 0}
+	return Uint128{low: x.low & y}
 }
 
 // Lsh returns x<<y.
