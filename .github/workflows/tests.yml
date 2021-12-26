@@ -9,6 +9,7 @@ on:
     branches: [ master, staging ]
   pull_request:
     branches: [ master, staging ]
+  
 
 jobs:
   #lint:
@@ -97,7 +98,7 @@ jobs:
           custom_go_sdk_version: ${{ env.CURRENT_BRANCH_HEAD }}
           system_tests_branch: master
           network: ${{ env.NETWORK_URL }}
-          zbox_cli_branch: fix/upgrade_gosdk
+          zbox_cli_branch: staging
           zwallet_cli_branch: staging
           smart_contract_owner_wallet_json: ${{ secrets.SMART_CONTRACT_OWNER_WALLET_JSON }}
           svc_account_secret: ${{ github.token }}
