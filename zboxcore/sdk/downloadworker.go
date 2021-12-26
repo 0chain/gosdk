@@ -49,6 +49,7 @@ type DownloadRequest struct {
 	rxPay              bool
 	statusCallback     StatusCallback
 	ctx                context.Context
+	ctxCncl            context.CancelFunc
 	authTicket         *marker.AuthTicket
 	wg                 *sync.WaitGroup
 	downloadMask       zboxutil.Uint128
@@ -201,6 +202,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 }
 
 func (req *DownloadRequest) processDownload(ctx context.Context) {
+	defer req.ctxCncl()
 	remotePathCallback := req.remotefilepath
 	if len(req.remotefilepath) == 0 {
 		remotePathCallback = req.remotefilepathhash
