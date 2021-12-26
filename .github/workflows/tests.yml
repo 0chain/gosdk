@@ -70,7 +70,7 @@ jobs:
 
       - name: "Setup"
         run: |
-          echo "CURRENT_BRANCH_HEAD=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
+          echo "CURRENT_BRANCH_HEAD=$(echo $(([ -z '${{ github.event.pull_request.head.sha }}' ] && echo  $GITHUB_SHA) || echo '${{ github.event.pull_request.head.sha }}'))" >> $GITHUB_ENV
           echo "NETWORK_URL=$(echo dev-${RUNNER_NAME:(-1)}.devnet-0chain.net)" >> $GITHUB_ENV
           echo "RUNNER_NUMBER=${RUNNER_NAME:(-1)}" >> $GITHUB_ENV
 
