@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -58,7 +57,7 @@ func (fs *fsChunkedUploadProgressStorer) start() {
 			continue
 		}
 
-		err = ioutil.WriteFile(fs.up.ID, buf, 0644)
+		err = FS.WriteFile(fs.up.ID, buf, 0644)
 		if err != nil {
 			logger.Logger.Error("[progress] save ", fs.up, err)
 			continue
@@ -72,7 +71,7 @@ func (fs *fsChunkedUploadProgressStorer) Load(progressID string) *UploadProgress
 
 	progress := UploadProgress{}
 
-	buf, err := ioutil.ReadFile(progressID)
+	buf, err := FS.ReadFile(progressID)
 
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
@@ -93,7 +92,7 @@ func (fs *fsChunkedUploadProgressStorer) Save(up *UploadProgress) {
 // Remove remove upload progress from file system
 func (fs *fsChunkedUploadProgressStorer) Remove(progressID string) error {
 	fs.isRemoved = true
-	err := os.Remove(progressID)
+	err := FS.Remove(progressID)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			return nil

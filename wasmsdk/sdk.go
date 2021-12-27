@@ -10,6 +10,8 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
+var CreateObjectURL func(buf []byte, mimeType string) string
+
 // Init init sharder/miners ,
 func Init(chainID, blockWorker, signatureScheme string,
 	minConfirmation, minSubmit, confirmationChainLength int) error {

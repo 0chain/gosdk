@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -28,6 +27,7 @@ import (
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/mitchellh/go-homedir"
 )
 
 var (
@@ -248,14 +248,14 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 func (a *Allocation) UpdateFile(workdir, localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, "", false, attrs)
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false, "", false, attrs)
 }
 
 // UploadFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UploadFile(workdir, localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, "", false, attrs)
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", false, attrs)
 }
 
 func (a *Allocation) CreateDir(dirName string) error {
@@ -282,15 +282,16 @@ func (a *Allocation) CreateDir(dirName string) error {
 func (a *Allocation) RepairFile(localpath string, remotepath string,
 	status StatusCallback) error {
 
-	return a.uploadOrUpdateFile(localpath, remotepath, status, false, "",
-		false, true, fileref.Attributes{})
+	idr, _ := homedir.Dir()
+	return a.StartChunkedUpload(idr, localpath, remotepath, status, false, true,
+		"", false, fileref.Attributes{})
 }
 
 // UpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UpdateFileWithThumbnail(workdir, localpath string, remotepath string,
 	thumbnailpath string, attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true,
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false,
 		thumbnailpath, false, attrs)
 }
 
@@ -299,7 +300,7 @@ func (a *Allocation) UploadFileWithThumbnail(workdir string, localpath string,
 	remotepath string, thumbnailpath string, attrs fileref.Attributes,
 	status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false,
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false,
 		thumbnailpath, false, attrs)
 }
 
@@ -307,21 +308,21 @@ func (a *Allocation) UploadFileWithThumbnail(workdir string, localpath string,
 func (a *Allocation) EncryptAndUpdateFile(workdir string, localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, "", true, attrs)
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false, "", true, attrs)
 }
 
 // EncryptAndUploadFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUploadFile(workdir string, localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, "", true, attrs)
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false,false, "", true, attrs)
 }
 
 // EncryptAndUpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUpdateFileWithThumbnail(workdir string, localpath string,
 	remotepath string, thumbnailpath string, attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true,
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false,
 		thumbnailpath, true, attrs)
 }
 
@@ -340,6 +341,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 		remotepath,
 		status,
 		false,
+		false,
 		thumbnailpath,
 		true,
 		attrs,
@@ -350,6 +352,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	remotePath string,
 	status StatusCallback,
 	isUpdate bool,
+	isRepair bool,
 	thumbnailPath string,
 	encryption bool,
 	attrs fileref.Attributes,
@@ -394,7 +397,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 		Attributes: attrs,
 	}
 
-	ChunkedUpload, err := CreateChunkedUpload(workdir, a, fileMeta, fileReader, isUpdate,
+	ChunkedUpload, err := CreateChunkedUpload(workdir, a, fileMeta, fileReader, isUpdate, isRepair,
 		WithThumbnailFile(thumbnailPath),
 		WithChunkSize(DefaultChunkSize),
 		WithEncrypt(encryption),
@@ -488,6 +491,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 		hash := sha1.New()
 		hash.Write(file)
 		contentHash := hex.EncodeToString(hash.Sum(nil))
+		print(contentHash)
 		if contentHash != fileRef.ActualFileHash {
 			return errors.New("", "Content hash doesn't match")
 		}
@@ -802,10 +806,55 @@ func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error) {
 	return nil, errors.New("file_stats_request_failed", "Failed to get file stats response from the blobbers")
 }
 
+func (a *Allocation) DeleteFileFromBlobber(path, blobberUrl string) error {
+	consensusThresh := (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
+	return a.deleteFromBlobber(path, blobberUrl, consensusThresh, 1)
+}
+
 func (a *Allocation) DeleteFile(path string) error {
 	consensusThresh := (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	fullconsensus := float32(a.DataShards + a.ParityShards)
 	return a.deleteFile(path, consensusThresh, fullconsensus)
+}
+
+func (a *Allocation) deleteFromBlobber(path, blobberUrl string, threshConsensus, fullConsensus float32) error {
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	if len(path) == 0 {
+		return errors.New("invalid_path", "Invalid path for the list")
+	}
+	path = zboxutil.RemoteClean(path)
+	isabs := zboxutil.IsRemoteAbs(path)
+	if !isabs {
+		return errors.New("invalid_path", "Path should be valid and absolute")
+	}
+
+	blobbers := make([]*blockchain.StorageNode, 0)
+	for idx := range a.Blobbers {
+		if a.Blobbers[idx].Baseurl == blobberUrl{
+			blobbers = append(blobbers, a.Blobbers[idx])
+		}
+	}
+
+	if len(blobbers) == 0{
+		return errors.New("invalid_path", "Selected blobber not found")
+	}
+
+	req := &DeleteRequest{}
+	req.blobbers = blobbers
+	req.allocationID = a.ID
+	req.allocationTx = a.Tx
+	req.consensusThresh = threshConsensus
+	req.fullconsensus = fullConsensus
+	req.ctx = a.ctx
+	req.remotefilepath = path
+	req.deleteMask = 0
+	req.listMask = 0
+	req.connectionID = zboxutil.NewConnectionId()
+	err := req.ProcessDelete()
+	return err
 }
 
 func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus float32) error {
@@ -821,6 +870,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus floa
 	if !isabs {
 		return errors.New("invalid_path", "Path should be valid and absolute")
 	}
+
 
 	req := &DeleteRequest{}
 	req.blobbers = a.Blobbers
@@ -944,7 +994,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 }
 
 func (a *Allocation) GetAuthTicketForShare(path string, filename string, referenceType string, refereeClientID string) (string, error) {
-	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "", 0, 0)
+	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "", 0)
 }
 
 func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
@@ -1017,7 +1067,6 @@ func (a *Allocation) GetAuthTicket(
 	refereeClientID string,
 	refereeEncryptionPublicKey string,
 	expiration int64,
-	availableAfter int64,
 ) (string, error) {
 	if !a.isInitialized() {
 		return "", notInitialized
@@ -1050,7 +1099,7 @@ func (a *Allocation) GetAuthTicket(
 		if err != nil {
 			return "", err
 		}
-		err = a.UploadAuthTicketToBlobber(authTicket, refereeEncryptionPublicKey, availableAfter)
+		err = a.UploadAuthTicketToBlobber(authTicket, refereeEncryptionPublicKey)
 		if err != nil {
 			return "", err
 		}
@@ -1077,7 +1126,7 @@ func (a *Allocation) GetAuthTicket(
 	return authTicket, nil
 }
 
-func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPubKey string, availableAfter int64) error {
+func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPubKey string) error {
 	decodedAuthTicket, err := base64.StdEncoding.DecodeString(authticketB64)
 	if err != nil {
 		return err
@@ -1091,7 +1140,6 @@ func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPu
 		formWriter := multipart.NewWriter(body)
 		formWriter.WriteField("encryption_public_key", clientEncPubKey)
 		formWriter.WriteField("auth_ticket", string(decodedAuthTicket))
-		formWriter.WriteField("available_after", strconv.FormatInt(availableAfter, 10))
 		formWriter.Close()
 		httpreq, err := zboxutil.NewShareRequest(url, a.Tx, body)
 		if err != nil {
@@ -1198,7 +1246,6 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	if err != nil {
 		return errors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
 	}
-
 	if stat, err := os.Stat(localPath); err == nil {
 		if !stat.IsDir() {
 			return fmt.Errorf("Local path is not a directory '%s'", localPath)

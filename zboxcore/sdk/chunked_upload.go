@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strconv"
 
@@ -33,25 +32,59 @@ var (
 // DefaultChunkSize default chunk size for file and thumbnail
 const DefaultChunkSize = 64 * 1024
 
-// CreateChunkedUpload create a ChunkedUpload instance
-func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta FileMeta, fileReader io.Reader, isUpdate bool, opts ...ChunkedUploadOption) (*ChunkedUpload, error) {
+/*
+    CreateChunkedUpload create a ChunkedUpload instance
 
+	Caller should be careful about fileReader parameter
+	io.ErrUnexpectedEOF might mean that source has completely been exhausted or there is some error
+	so that source could not fill up the buffer. Due this ambiguity it is responsibility of
+	developer to provide new io.Reader that sends io.EOF when source has been all read.
+	For example:
+		func newReader(source io.Reader) *EReader {
+			return &EReader{source}
+		}
+
+		type EReader struct {
+			io.Reader
+		}
+
+		func (r *EReader) Read(p []byte) (n int, err error) {
+			if n, err = io.ReadAtLeast(r.Reader, p, len(p)); err != nil {
+				if errors.Is(err, io.ErrUnexpectedEOF) {
+					return n, io.EOF
+				}
+			}
+			return
+		}
+
+*/
+func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta FileMeta, fileReader io.Reader, isUpdate, isRepair bool, opts ...ChunkedUploadOption) (*ChunkedUpload, error) {
 	if allocationObj == nil {
 		return nil, thrown.Throw(constants.ErrInvalidParameter, "allocationObj")
 	}
 
+	var uploadMask zboxutil.Uint128 = zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1)
+	if isRepair {
+		found, repairRequired, _, err := allocationObj.RepairRequired(fileMeta.RemotePath)
+		if err != nil {
+			return nil, err
+		}
+
+		if !repairRequired {
+			return nil, thrown.New("chunk_upload", "Repair not required")
+		}
+
+		uploadMask = found.Not().And(uploadMask)
+	}
+
 	su := &ChunkedUpload{
 		allocationObj: allocationObj,
-		client: &http.Client{
-			Transport: zboxutil.DefaultTransport,
-		},
+		client:        zboxutil.Client,
 
 		fileMeta:   fileMeta,
 		fileReader: fileReader,
 
-		progressStorer: createFsChunkedUploadProgress(context.Background()),
-
-		uploadMask:      zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1),
+		uploadMask:      uploadMask,
 		chunkSize:       DefaultChunkSize,
 		encryptOnUpload: false,
 	}
@@ -84,16 +117,24 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	su.workdir = filepath.Join(workdir, ".zcn")
 
 	//create upload folder to save progress
-	err := os.MkdirAll(filepath.Join(su.workdir, "upload"), 0744)
+	err := FS.MkdirAll(filepath.Join(su.workdir, "upload"), 0744)
 	if err != nil {
 		return nil, err
 	}
 
-	su.loadProgress()
-
 	for _, opt := range opts {
 		opt(su)
 	}
+
+	if su.createWriteMarkerLocker == nil {
+		su.createWriteMarkerLocker = createWriteMarkerLocker
+	}
+
+	if su.progressStorer == nil {
+		su.progressStorer = createFsChunkedUploadProgress(context.Background())
+	}
+
+	su.loadProgress()
 
 	su.fileHasher = CreateHasher(int(su.chunkSize))
 
@@ -110,14 +151,19 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 
 	}
 
-	su.blobbers = make([]*ChunkedUploadBobbler, len(su.allocationObj.Blobbers))
+	blobbers := su.allocationObj.Blobbers
+	if len(blobbers) == 0 {
+		return nil, thrown.New("no_blobbers", "Unable to find blobbers")
+	}
 
-	for i := 0; i < len(su.allocationObj.Blobbers); i++ {
+	su.blobbers = make([]*ChunkedUploadBlobber, len(blobbers))
 
-		su.blobbers[i] = &ChunkedUploadBobbler{
-			FLock:    createFLock(filepath.Join(su.workdir, "blobber."+su.allocationObj.Blobbers[i].ID+".lock")),
-			progress: su.progress.Blobbers[i],
-			blobber:  su.allocationObj.Blobbers[i],
+	for i := 0; i < len(blobbers); i++ {
+
+		su.blobbers[i] = &ChunkedUploadBlobber{
+			WriteMarkerLocker: su.createWriteMarkerLocker(filepath.Join(su.workdir, "blobber."+su.allocationObj.Blobbers[i].ID+".lock")),
+			progress:          su.progress.Blobbers[i],
+			blobber:           su.allocationObj.Blobbers[i],
 			fileRef: &fileref.FileRef{
 				Ref: fileref.Ref{
 					Name:         su.fileMeta.RemoteName,
@@ -139,6 +185,8 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	su.chunkReader = cReader
 
 	su.formBuilder = CreateChunkedUploadFormBuilder()
+
+	su.isRepair = isRepair
 
 	return su, nil
 
@@ -187,7 +235,11 @@ type ChunkedUpload struct {
 	// statusCallback trigger progress on StatusCallback
 	statusCallback StatusCallback
 
-	blobbers []*ChunkedUploadBobbler
+	blobbers                []*ChunkedUploadBlobber
+	createWriteMarkerLocker func(file string) WriteMarkerLocker
+
+	// isRepair identifies if upload is repair operation
+	isRepair bool
 }
 
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
@@ -275,11 +327,11 @@ func (su *ChunkedUpload) Start() error {
 	}
 
 	for {
-
 		chunk, err := su.chunkReader.Next()
 		if err != nil {
 			return err
 		}
+		logger.Logger.Info("Read chunk #", chunk.Index)
 
 		su.shardUploadedSize += chunk.FragmentSize
 		su.progress.UploadLength += chunk.ReadSize
@@ -353,10 +405,16 @@ func (su *ChunkedUpload) Start() error {
 
 //processUpload process upload fragment to its blobber
 func (su *ChunkedUpload) processUpload(chunkIndex int, fileFragments [][]byte, thumbnailFragments [][]byte, isFinal bool, uploadLength int64) error {
-	num := su.allocationObj.DataShards + su.allocationObj.ParityShards
 
-	if num != len(su.blobbers) {
-		return thrown.Throw(constants.ErrInvalidParameter, "len(su.blobbers) requires "+strconv.Itoa(num)+", not "+strconv.Itoa(len(su.blobbers)))
+	num := len(su.blobbers)
+	if su.isRepair {
+		num = len(su.blobbers) - su.uploadMask.TrailingZeros()
+	} else {
+		consensus := su.allocationObj.DataShards + su.allocationObj.ParityShards
+
+		if num != consensus {
+			return thrown.Throw(constants.ErrInvalidParameter, "len(su.blobbers) requires "+strconv.Itoa(num)+", not "+strconv.Itoa(len(su.blobbers)))
+		}
 	}
 
 	wait := make(chan error, num)
@@ -394,7 +452,7 @@ func (su *ChunkedUpload) processUpload(chunkIndex int, fileFragments [][]byte, t
 			return err
 		}
 
-		go func(b *ChunkedUploadBobbler, buf *bytes.Buffer, form ChunkedUploadFormMetadata) {
+		go func(b *ChunkedUploadBlobber, buf *bytes.Buffer, form ChunkedUploadFormMetadata) {
 			err := b.sendUploadRequest(ctx, su, chunkIndex, isFinal, encryptedKey, buf, form)
 
 			// channel is not closed
@@ -421,6 +479,9 @@ func (su *ChunkedUpload) processCommit() error {
 	su.consensus.Reset()
 
 	num := su.allocationObj.DataShards + su.allocationObj.ParityShards
+	if su.isRepair {
+		num = num - su.uploadMask.TrailingZeros()
+	}
 
 	wait := make(chan error, num)
 	defer close(wait)
@@ -440,8 +501,7 @@ func (su *ChunkedUpload) processCommit() error {
 
 		blobber.commitChanges = append(blobber.commitChanges, su.buildChange(blobber.fileRef))
 
-		go func(b *ChunkedUploadBobbler) {
-
+		go func(b *ChunkedUploadBlobber) {
 			err := b.processCommit(ctx, su)
 
 			if err != nil {
@@ -469,7 +529,7 @@ func (su *ChunkedUpload) processCommit() error {
 	if !su.consensus.isConsensusOk() {
 		if su.consensus.getConsensus() != 0 {
 			logger.Logger.Info("Commit consensus failed, Deleting remote file....")
-			su.allocationObj.deleteFile(su.fileMeta.RemotePath, su.consensus.getConsensus(), su.consensus.getConsensus())
+			su.allocationObj.deleteFile(su.fileMeta.RemotePath, su.consensus.getConsensus(), su.consensus.getConsensus()) //nolint
 		}
 		if su.statusCallback != nil {
 			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, OpUpload, thrown.New("commit_consensus_failed", "Upload failed as there was no commit consensus"))

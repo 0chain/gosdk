@@ -3,12 +3,16 @@ package zcnbridge
 import (
 	"context"
 	"crypto/ecdsa"
-	"encoding/json"
 	"math/big"
+	"path"
+	"time"
+
+	"github.com/ethereum/go-ethereum/accounts"
+
+	"github.com/ethereum/go-ethereum/accounts/keystore"
 
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/pkg/errors"
@@ -16,46 +20,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
-type EthWalletInfo struct {
-	ID         string `json:"ID"`
-	PrivateKey string `json:"PrivateKey"`
-}
-
-type EthereumWallet struct {
-	PublicKey  *ecdsa.PublicKey
-	PrivateKey *ecdsa.PrivateKey
-	Address    common.Address
-}
-
-func (b *Bridge) CreateEthereumWallet() (*EthereumWallet, error) {
-	address, publicKey, privateKey, err := b.GetKeysAddress()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to initialize ethereum wallet")
-	}
-
-	return &EthereumWallet{
-		PublicKey:  publicKey,
-		PrivateKey: privateKey,
-		Address:    address,
-	}, nil
-}
-
-func (b *Bridge) GetEthereumWalletInfo() (*EthWalletInfo, error) {
-	ownerWallet, err := zcncore.GetWalletAddrFromEthMnemonic(b.Mnemonic)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to initialize wallet from mnemonic")
-	}
-
-	wallet := &EthWalletInfo{}
-	err = json.Unmarshal([]byte(ownerWallet), wallet)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal wallet info")
-	}
-
-	return wallet, err
-}
-
-func (b *Bridge) CreateEthClient() (*ethclient.Client, error) {
+func (b *EthereumConfig) CreateEthClient() (*ethclient.Client, error) {
 	client, err := ethclient.Dial(b.EthereumNodeURL)
 	if err != nil {
 		zcncore.Logger.Error(err)
@@ -63,37 +28,10 @@ func (b *Bridge) CreateEthClient() (*ethclient.Client, error) {
 	return client, err
 }
 
-func (b *Bridge) GetKeysAddress() (common.Address, *ecdsa.PublicKey, *ecdsa.PrivateKey, error) {
-	ownerWalletInfo, err := b.GetEthereumWalletInfo()
-	if err != nil {
-		return [20]byte{}, nil, nil, errors.Wrap(err, "failed to fetch wallet ownerWalletInfo")
-	}
-
-	privateKeyECDSA, err := crypto.HexToECDSA(ownerWalletInfo.PrivateKey)
-	if err != nil {
-		return [20]byte{}, nil, nil, errors.Wrap(err, "failed to read private key")
-	}
-
-	publicKey := privateKeyECDSA.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		zcncore.Logger.Fatal("error casting public key to ECDSA")
-	}
-
-	ownerAddress := crypto.PubkeyToAddress(*publicKeyECDSA)
-
-	return ownerAddress, publicKeyECDSA, privateKeyECDSA, nil
-}
-
-// Required config
-// 1. For SC REST we need only miners address, will take it from network - init from config
-// 2. For SC method we need to run local chain to run minting and burning
-// 3. For Ethereum, we will take params from
-
 //  _allowances[owner][spender] = amount;
 // as a spender, ERC20 WZCN token must increase allowance for the bridge to make burn on behalf of WZCN owner
 
-func (b *Bridge) CreateSignedTransaction(
+func CreateSignedTransaction(
 	chainID *big.Int,
 	client *ethclient.Client,
 	fromAddress common.Address,
@@ -120,17 +58,69 @@ func (b *Bridge) CreateSignedTransaction(
 		zcncore.Logger.Fatal(err)
 	}
 
-	auth, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
+	opts, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
 	if err != nil {
 		zcncore.Logger.Fatal(err)
 	}
 
-	valueWei := new(big.Int).Mul(big.NewInt(b.Value), big.NewInt(params.Wei))
+	valueWei := new(big.Int).Mul(big.NewInt(0), big.NewInt(params.Wei))
 
-	auth.Nonce = big.NewInt(int64(nonce))
-	auth.Value = valueWei         // in wei
-	auth.GasLimit = gasLimitUnits // in units
-	auth.GasPrice = gasPriceWei   // wei
+	opts.Nonce = big.NewInt(int64(nonce))
+	opts.Value = valueWei         // in wei
+	opts.GasLimit = gasLimitUnits // in units
+	opts.GasPrice = gasPriceWei   // wei
 
-	return auth
+	return opts
+}
+
+func CreateSignedTransactionFromKeyStore(
+	client *ethclient.Client,
+	signerAddress common.Address,
+	gasLimitUnits uint64,
+	password string,
+	value int64,
+) *bind.TransactOpts {
+	keyDir := path.Join(GetConfigDir(), "wallets")
+	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	signer := accounts.Account{
+		Address: signerAddress,
+	}
+	signerAcc, err := ks.Find(signer)
+	if err != nil {
+		zcncore.Logger.Fatal(errors.Wrapf(err, "signer: %s", signerAddress.Hex()))
+	}
+
+	chainID, err := client.ChainID(context.Background())
+	if err != nil {
+		zcncore.Logger.Fatal(errors.Wrap(err, "failed to get chain ID"))
+	}
+
+	nonce, err := client.PendingNonceAt(context.Background(), signerAddress)
+	if err != nil {
+		zcncore.Logger.Fatal(err)
+	}
+
+	gasPriceWei, err := client.SuggestGasPrice(context.Background())
+	if err != nil {
+		zcncore.Logger.Fatal(err)
+	}
+
+	err = ks.TimedUnlock(signer, password, time.Second*2)
+	if err != nil {
+		zcncore.Logger.Fatal(err)
+	}
+
+	opts, err := bind.NewKeyStoreTransactorWithChainID(ks, signerAcc, chainID)
+	if err != nil {
+		zcncore.Logger.Fatal(err)
+	}
+
+	valueWei := new(big.Int).Mul(big.NewInt(value), big.NewInt(params.Wei))
+
+	opts.Nonce = big.NewInt(int64(nonce))
+	opts.Value = valueWei         // in wei
+	opts.GasLimit = gasLimitUnits // in units
+	opts.GasPrice = gasPriceWei   // wei
+
+	return opts
 }
