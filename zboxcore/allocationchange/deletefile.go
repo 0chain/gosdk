@@ -14,12 +14,12 @@ type DeleteFileChange struct {
 }
 
 func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref) error {
-	path, _ := filepath.Split(ch.ObjectTree.GetPath())
-
-	if path == "/" {
+	if ch.ObjectTree.GetPath() == "/" {
 		rootRef.Children = nil
 		return nil
 	}
+
+	path, _ := filepath.Split(ch.ObjectTree.GetPath())
 
 	tSubDirs := getSubDirs(path)
 	dirRef := rootRef
