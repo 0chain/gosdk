@@ -15,6 +15,12 @@ type DeleteFileChange struct {
 
 func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	path, _ := filepath.Split(ch.ObjectTree.GetPath())
+
+	if path == "/" {
+		rootRef.Children = nil
+		return nil
+	}
+
 	tSubDirs := getSubDirs(path)
 	dirRef := rootRef
 	treelevel := 0
@@ -36,21 +42,13 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		}
 	}
 	for i, child := range dirRef.Children {
-		if path == "/" {
-			dirRef.RemoveChild(i)
-			continue
-		}
 		if child.GetName() == ch.ObjectTree.GetName() && child.GetHash() == ch.ObjectTree.GetHash() {
 			dirRef.RemoveChild(i)
 			rootRef.CalculateHash()
 			return nil
 		}
 	}
-	if path != "/" {
-		return errors.New("file_not_found", "File to delete not found in blobber")
-	}
-	rootRef.CalculateHash()
-	return nil
+	return errors.New("file_not_found", "File to delete not found in blobber")
 }
 
 func (n *DeleteFileChange) GetAffectedPath() string {
