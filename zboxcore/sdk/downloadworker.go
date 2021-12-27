@@ -240,7 +240,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	if fileRef.Type == fileref.DIRECTORY {
 		if req.statusCallback != nil {
-			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "Cannot download directory"))
+			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "please get files from folder, and download them one by one"))
 		}
 		return
 	}
