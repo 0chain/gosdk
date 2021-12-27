@@ -344,8 +344,10 @@ func TestAllocation_dispatchWork(t *testing.T) {
 		a.uploadChan <- &UploadRequest{file: []*fileref.FileRef{}, filemeta: &UploadFileMeta{}}
 	})
 	t.Run("Test_Cover_Download_Request", func(t *testing.T) {
+		ctx := context.Background()
 		go a.dispatchWork(context.Background())
-		a.downloadChan <- &DownloadRequest{}
+		ctx, ctxCncl := context.WithCancel(ctx)
+		a.downloadChan <- &DownloadRequest{ctx: ctx, ctxCncl: ctxCncl}
 	})
 	t.Run("Test_Cover_Repair_Request", func(t *testing.T) {
 		go a.dispatchWork(context.Background())
