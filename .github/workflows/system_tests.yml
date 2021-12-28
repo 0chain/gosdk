@@ -52,31 +52,26 @@ jobs:
     runs-on: [ tests-suite ]
     timeout-minutes: 90
     steps:
-      
-    - name: "Get current PR"
-      uses: jwalton/gh-find-current-pr@v1
-      id: findPr
-      with:
-        github-token: ${{ github.token }} 
         
     - name: "Setup Test Run"
       run: |
         echo "NETWORK_URL=$(echo dev-${RUNNER_NAME:(-1)}.devnet-0chain.net)" >> $GITHUB_ENV
         echo "RUNNER_NUMBER=${RUNNER_NAME:(-1)}" >> $GITHUB_ENV
         echo "CURRENT_BRANCH_HEAD=$GITHUB_SHA" >> $GITHUB_ENV
-    
+
     - name: "Set PR Status Pending"
-      uses: niteoweb/pull_request_status_action@v1.0.0
-      if: steps.findPr.outputs.number
+      uses: 0chain/actions/notify-pull-request@feature/notify-PR-convenience
+      continue-on-error: true
       with:
-        pr_number: ${{ steps.findPr.outputs.pr }}
-        description: "Manual System tests running"
         state: "pending"
-        repository: ${{ github.repository }}
-        context: ${{ github.workflow }}
-        target_url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
+        message: "manual tests running"
+        system_tests_branch: ${{ github.event.inputs.system_tests_branch }}
+        zbox_cli_branch: ${{ github.event.inputs.zbox_cli_branch }}
+        zwallet_cli_branch: ${{ github.event.inputs.zwallet_cli_branch }}
+        gosdk_branch: ${{ env.CURRENT_BRANCH_HEAD }}
+        zerochain_branch: ${{ github.event.inputs.miner_image }}
+        blobber_branch: ${{ github.event.inputs.blobber_image }}
+        github_token: ${{ secrets.SVC_ACCOUNT_SECRET }}
 
     - name: "Deploy 0Chain"
       if: ${{ github.event.inputs.skip_tests == 'FALSE' }}
@@ -113,27 +108,31 @@ jobs:
         retry_failures: true
         
     - name: "Set PR Status Success"
-      if: ${{ success() && steps.findPr.outputs.number }}
-      uses: niteoweb/pull_request_status_action@v1.0.0
+      if: ${{ success() }}
+      uses: 0chain/actions/notify-pull-request@feature/notify-PR-convenience
+      continue-on-error: true
       with:
-        pr_number: ${{ steps.findPr.outputs.pr }}
-        description: "Manual System tests success"
         state: ${{ job.status }}
-        repository: ${{ github.repository }}
-        context: ${{ github.workflow }}
-        target_url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
+        message: "manual tests failed"
+        system_tests_branch: ${{ github.event.inputs.system_tests_branch }}
+        zbox_cli_branch: ${{ github.event.inputs.zbox_cli_branch }}
+        zwallet_cli_branch: ${{ github.event.inputs.zwallet_cli_branch }}
+        gosdk_branch: ${{ env.CURRENT_BRANCH_HEAD }}
+        zerochain_branch: ${{ github.event.inputs.miner_image }}
+        blobber_branch: ${{ github.event.inputs.blobber_image }}
+        github_token: ${{ secrets.SVC_ACCOUNT_SECRET }}
 
     - name: "Set PR Status Failed"
-      if: ${{ failure() && steps.findPr.outputs.number }}
-      uses: niteoweb/pull_request_status_action@v1.0.0
+      if: ${{ failure() }}
+      uses: 0chain/actions/notify-pull-request@feature/notify-PR-convenience
+      continue-on-error: true
       with:
-        pr_number: ${{ steps.findPr.outputs.pr }}
-        description: "Manual System tests failure"
         state: ${{ job.status }}
-        repository: ${{ github.repository }}
-        context: ${{ github.workflow }}
-        target_url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
+        message: "manual tests success"
+        system_tests_branch: ${{ github.event.inputs.system_tests_branch }}
+        zbox_cli_branch: ${{ github.event.inputs.zbox_cli_branch }}
+        zwallet_cli_branch: ${{ github.event.inputs.zwallet_cli_branch }}
+        gosdk_branch: ${{ env.CURRENT_BRANCH_HEAD }}
+        zerochain_branch: ${{ github.event.inputs.miner_image }}
+        blobber_branch: ${{ github.event.inputs.blobber_image }}
+        github_token: ${{ secrets.SVC_ACCOUNT_SECRET }}
