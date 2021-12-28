@@ -16,6 +16,7 @@ type DeleteFileChange struct {
 func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	if ch.ObjectTree.GetPath() == "/" {
 		rootRef.Children = nil
+		rootRef.CalculateHash()
 		return nil
 	}
 
