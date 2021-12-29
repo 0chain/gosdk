@@ -142,7 +142,7 @@ func (ar *AttributesRequest) ProcessAttributes() (err error) {
 
 	var (
 		commitReqs = make([]*CommitRequest, bits.OnesCount32(ar.attributesMask))
-		c, pos     = 0, 0
+		c, pos     int
 	)
 
 	for i := ar.attributesMask; i != 0; i &= ^(1 << uint32(pos)) {

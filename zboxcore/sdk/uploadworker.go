@@ -30,10 +30,6 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-func isSetTestEnv(name string) bool {
-	return os.Getenv("INTEGRATION_TESTS_"+name) != ""
-}
-
 // Expected success rate is calculated (NumDataShards)*100/(NumDataShards+NumParityShards)
 // Additional success percentage on top of expected success rate
 const additionalSuccessRate = (10)
@@ -175,7 +171,7 @@ func (req *UploadRequest) prepareUpload(
 				dataBytes := <-uploadCh
 				remaining = remaining - int64(len(dataBytes))
 			}
-			_ = <-uploadCh
+			<-uploadCh
 			return
 		}
 		// Setup file hash compute
@@ -218,7 +214,7 @@ func (req *UploadRequest) prepareUpload(
 		if !req.isRepair {
 			// Wait for file hash to be ready
 			// Logger.Debug("Waiting for file hash....")
-			_ = <-uploadCh
+			<-uploadCh
 			// Logger.Debug("File Hash ready", obj.file.Hash)
 		}
 		fileContentHash = hex.EncodeToString(h.Sum(nil))
@@ -259,7 +255,7 @@ func (req *UploadRequest) prepareUpload(
 			if !req.isRepair {
 				// Wait for file hash to be ready
 				// Logger.Debug("Waiting for file hash....")
-				_ = <-uploadThumbCh
+				<-uploadThumbCh
 				// Logger.Debug("File Hash ready", obj.file.Hash)
 			}
 			thumbContentHash = hex.EncodeToString(h.Sum(nil))
@@ -387,7 +383,7 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 	req.consensus = 0
 
 	// Start upload for each blobber
-	var c, pos uint64 = 0, 0
+	var c, pos uint64
 	for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.uploadThumbCh[c], req.wg)
@@ -413,7 +409,7 @@ func (req *UploadRequest) pushData(data []byte) error {
 		Logger.Error("Erasure coding failed.", err.Error())
 		return err
 	}
-	var c, pos uint64 = 0, 0
+	var c, pos uint64
 	if req.isEncrypted {
 		for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
@@ -428,8 +424,9 @@ func (req *UploadRequest) pushData(data []byte) error {
 			c++
 		}
 
-		c, pos = 0, 0
 	}
+
+	c = 0
 	for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		req.uploadDataCh[c] <- shards[pos]
@@ -443,7 +440,7 @@ func (req *UploadRequest) completePush() error {
 	if !req.isRepair {
 		req.filemeta.Hash = hex.EncodeToString(req.fileHash.Sum(nil))
 		//fmt.Println("req.filemeta.Hash=" + req.filemeta.Hash)
-		var c, pos uint64 = 0, 0
+		var c, pos uint64
 		for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
 			req.uploadDataCh[c] <- []byte("done")
@@ -553,7 +550,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 	ones := req.uploadMask.CountOnes()
 	wg.Add(ones)
 	commitReqs := make([]*CommitRequest, ones)
-	var c, pos uint64 = 0, 0
+	var c, pos uint64
 	for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		//go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.wg)
@@ -650,7 +647,6 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 		req.statusCallback.Completed(a.ID, req.remotefilepath, req.filemeta.Name, req.filemeta.MimeType, int(sizeInCallback), OpID)
 	}
 
-	return
 }
 
 func (req *UploadRequest) IsFullConsensusSupported() bool {

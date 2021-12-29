@@ -34,7 +34,7 @@ func (x Uint128) Add64(y uint64) Uint128 {
 // Sub returns x-y.
 func (x Uint128) Sub(y Uint128) Uint128 {
 	low, borrow := bits.Sub64(x.low, y.low, 0)
-	high, borrow := bits.Sub64(x.high, y.high, borrow)
+	high, _ := bits.Sub64(x.high, y.high, borrow)
 	return Uint128{high, low}
 }
 
@@ -62,7 +62,7 @@ func (x Uint128) And(v Uint128) Uint128 {
 
 // And64 returns x&y.
 func (x Uint128) And64(y uint64) Uint128 {
-	return Uint128{low: x.low & y, high: x.high & 0}
+	return Uint128{low: x.low & y}
 }
 
 // Lsh returns x<<y.
