@@ -17,7 +17,7 @@ func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	tSubDirs := getSubDirs(path)
 	dirRef := rootRef
 	treelevel := 0
-	for true {
+	for {
 		found := false
 		for _, child := range dirRef.Children {
 			if child.GetType() == fileref.DIRECTORY && treelevel < len(tSubDirs) {
