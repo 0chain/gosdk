@@ -172,3 +172,23 @@ allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, comm
 
 **Output**:
 > {commandSuccess:bool,commitSuccess:bool, commitTxn:transaction.Transaction, error:string}
+
+
+### zcn.sdk.play
+play stream video files
+
+**Input**:
+allocationID, remotePath, authTicket, lookupHash string
+
+**Output**:
+> N/A
+
+
+### zcn.sdk.stop
+stop current play
+
+**Input**:
+allocationID, remotePath, authTicket, lookupHash string
+
+**Output**:
+> N/A

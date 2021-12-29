@@ -1,20 +1,35 @@
+//go:build js && wasm
 // +build js,wasm
 
 package main
 
 import (
 	"fmt"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 	"net/http"
 )
 
-type M3u8Server struct {
+func Play(allocationID, remotePath, authTicket, lookupHash string) error {
+
+	//player is owner
+	if len(remotePath) > 0 {
+		if len(allocationID) == 0 {
+			return RequiredArg("allocationID")
+		}
+
+		allocationObj, err := sdk.GetAllocation(allocationID)
+		if err != nil {
+			PrintError("Error fetching the allocation", err)
+			return err
+		}
+
+	}
+
+	//player is viewer via shared authticket
+
+	return nil
 }
 
-func (s *M3u8Server) Start() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "hello, wasm")
-	})
-
-	fmt.Println("Start m3u8 server")
-	http.ListenAndServe(":12345", nil) //nolint
+func Stop() error {
+	return nil
 }

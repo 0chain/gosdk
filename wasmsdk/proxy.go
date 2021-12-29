@@ -30,6 +30,7 @@ func main() {
 	if !(zcn.IsNull() || zcn.IsUndefined()) {
 
 		jsProxy := zcn.Get("jsProxy")
+		// import functions from js object
 		if !(jsProxy.IsNull() || jsProxy.IsUndefined()) {
 			sign := jsProxy.Get("sign")
 
@@ -78,6 +79,7 @@ func main() {
 
 		// tiny wasm sdk with new methods
 		sdk := zcn.Get("sdk")
+		// register go functions on wasm.sdk
 		if !(sdk.IsNull() || sdk.IsUndefined()) {
 			jsbridge.BindAsyncFuncs(sdk, map[string]interface{}{
 				//sdk
@@ -94,8 +96,13 @@ func main() {
 				"download": Download,
 				"upload":   Upload,
 
+				// zcn txn
 				"commitFileMetaTxn":   CommitFileMetaTxn,
 				"commitFolderMetaTxn": CommitFolderMetaTxn,
+
+				// player
+				"play": Play,
+				"stop": Stop,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
