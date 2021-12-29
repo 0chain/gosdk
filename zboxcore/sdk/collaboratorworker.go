@@ -57,17 +57,19 @@ func (req *CollaboratorRequest) updateCollaboratorToBlobber(blobber *blockchain.
 
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	ctx, cncl := context.WithTimeout(req.a.ctx, (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
+	zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
 			Logger.Error("Update Collaborator : ", err)
+			rspCh <- false
 			return err
 		}
 		defer resp.Body.Close()
+
 		if resp.StatusCode == http.StatusOK {
 			rspCh <- true
-			return err
+		} else {
+			rspCh <- false
 		}
-		rspCh <- false
 		return err
 	})
 }
@@ -109,17 +111,20 @@ func (req *CollaboratorRequest) removeCollaboratorFromBlobber(blobber *blockchai
 
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	ctx, cncl := context.WithTimeout(req.a.ctx, (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
+
+	zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
 			Logger.Error("Delete Collaborator : ", err)
+			rspCh <- false
 			return err
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusOK {
 			rspCh <- true
-			return err
+		} else {
+			rspCh <- false
 		}
-		rspCh <- false
+
 		return err
 	})
 }

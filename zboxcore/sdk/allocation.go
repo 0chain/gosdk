@@ -576,7 +576,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	downloadReq := &DownloadRequest{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
-	downloadReq.ctx, _ = context.WithCancel(a.ctx)
+	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
 	downloadReq.localpath = localPath
 	downloadReq.remotefilepath = remotePath
 	downloadReq.statusCallback = status
@@ -1108,7 +1108,15 @@ func (a *Allocation) GetAuthTicket(
 		// generate another auth ticket without reencryption key
 		at := &marker.AuthTicket{}
 		decoded, err := base64.StdEncoding.DecodeString(authTicket)
+		if err != nil {
+			return "", err
+		}
+
 		err = json.Unmarshal(decoded, at)
+		if err != nil {
+			return "", err
+		}
+
 		at.ReEncryptionKey = ""
 		err = at.Sign()
 		if err != nil {
@@ -1266,7 +1274,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq := &DownloadRequest{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
-	downloadReq.ctx, _ = context.WithCancel(a.ctx)
+	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
 	downloadReq.localpath = localPath
 	downloadReq.remotefilepathhash = remoteLookupHash
 	downloadReq.authTicket = at

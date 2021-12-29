@@ -49,6 +49,7 @@ type DownloadRequest struct {
 	rxPay              bool
 	statusCallback     StatusCallback
 	ctx                context.Context
+	ctxCncl            context.CancelFunc
 	authTicket         *marker.AuthTicket
 	wg                 *sync.WaitGroup
 	downloadMask       zboxutil.Uint128
@@ -66,7 +67,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 	req.wg.Add(numDownloads)
 	rspCh := make(chan *downloadBlock, numDownloads)
 	// Download from only specific blobbers
-	var c, pos int = 0, 0
+	var c, pos int
 	for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(uint64(pos)).Not()) {
 		pos = i.TrailingZeros()
 		blockDownloadReq := &BlockDownloadRequest{}
@@ -201,6 +202,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 }
 
 func (req *DownloadRequest) processDownload(ctx context.Context) {
+	defer req.ctxCncl()
 	remotePathCallback := req.remotefilepath
 	if len(req.remotefilepath) == 0 {
 		remotePathCallback = req.remotefilepathhash
@@ -370,5 +372,4 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if req.statusCallback != nil {
 		req.statusCallback.Completed(req.allocationID, remotePathCallback, fileRef.Name, mimetype, int(fileRef.ActualFileSize), OpDownload)
 	}
-	return
 }
