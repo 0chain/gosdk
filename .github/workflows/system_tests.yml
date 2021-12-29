@@ -47,7 +47,7 @@ jobs:
   system-tests:
     uses: 0chain/actions/.github/workflows/manual_system_tests.yml@feature/notify-PR-convenience
     with:
-      custom_go_sdk_version: ${{ env.GITHUB_SHA }}
+      gosdk_branch: ${{ github.ref_name }}
       system_tests_branch: ${{ github.event.inputs.system_tests_branch }}
       miner_branch: ${{ github.event.inputs.miner_branch }}
       sharder_branch: ${{ github.event.inputs.sharder_branch }}
