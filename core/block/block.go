@@ -16,7 +16,7 @@ type Header struct {
 	Hash                  string `json:"hash,omitempty"`
 	MinerID               string `json:"miner_id,omitempty"`
 	Round                 int64  `json:"round,omitempty"`
-	RoundRandomSeed       int64  `json:"round_random_seed,omitempy"`
+	RoundRandomSeed       int64  `json:"round_random_seed,omitempty"`
 	MerkleTreeRoot        string `json:"merkle_tree_root,omitempty"`
 	StateHash             string `json:"state_hash,omitempty"`
 	ReceiptMerkleTreeRoot string `json:"receipt_merkle_tree_root,omitempty"`

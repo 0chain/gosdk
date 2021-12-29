@@ -92,7 +92,7 @@ func verifyFn(signature, msgHash, publicKey string) (bool, error) {
 	v := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 	v.SetPublicKey(publicKey)
 	ok, err := v.Verify(signature, msgHash)
-	if err != nil || ok == false {
+	if err != nil || !ok {
 		return false, errors.New("", `{"error": "signature_mismatch"}`)
 	}
 	return true, nil

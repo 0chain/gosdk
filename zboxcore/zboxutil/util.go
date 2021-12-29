@@ -13,8 +13,6 @@ import (
 
 	"errors"
 
-	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/h2non/filetype"
 	"github.com/lithammer/shortuuid/v3"
 	"golang.org/x/crypto/sha3"
@@ -195,11 +193,6 @@ func Decrypt(key, text []byte) ([]byte, error) {
 		return nil, err
 	}
 	return data, nil
-}
-
-func getMinShardersVerify() int {
-	minSharders := util.MaxInt(calculateMinRequired(float64(blockchain.GetMinConfirmation()), float64(len(blockchain.GetSharders()))/100), 1)
-	return minSharders
 }
 
 func calculateMinRequired(minRequired, percent float64) int {

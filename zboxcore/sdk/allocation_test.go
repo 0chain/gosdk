@@ -67,7 +67,7 @@ func setupMockCommitRequest(a *Allocation) {
 			commitChan[blobber.ID] = make(chan *CommitRequest, 1)
 			blobberChan := commitChan[blobber.ID]
 			go func(c <-chan *CommitRequest, blID string) {
-				for true {
+				for {
 					cm := <-c
 					if cm != nil {
 						cm.result = &CommitResult{
@@ -344,8 +344,9 @@ func TestAllocation_dispatchWork(t *testing.T) {
 		a.uploadChan <- &UploadRequest{file: []*fileref.FileRef{}, filemeta: &UploadFileMeta{}}
 	})
 	t.Run("Test_Cover_Download_Request", func(t *testing.T) {
+		ctx, ctxCncl := context.WithCancel(context.Background())
 		go a.dispatchWork(context.Background())
-		a.downloadChan <- &DownloadRequest{}
+		a.downloadChan <- &DownloadRequest{ctx: ctx, ctxCncl: ctxCncl}
 	})
 	t.Run("Test_Cover_Repair_Request", func(t *testing.T) {
 		go a.dispatchWork(context.Background())
@@ -508,7 +509,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 		mockFileRefName = "mock file ref name"
 		mockLocalPath   = "1.txt"
 		mockActualHash  = "4041e3eeb170751544a47af4e4f9d374e76cee1d"
-		mockChunkHash	= "65e97907139278eeed8b3815f36b442a0043c7e0"
+		mockChunkHash   = "65e97907139278eeed8b3815f36b442a0043c7e0"
 	)
 
 	var mockClient = mocks.HttpClient{}
@@ -583,7 +584,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 				Body: func(fileRefName, hash string) io.ReadCloser {
 					jsonFR, err := json.Marshal(&UploadResult{
 						Filename: mockLocalPath,
-						Hash: mockChunkHash,
+						Hash:     mockChunkHash,
 					})
 					require.NoError(t, err)
 					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
@@ -668,8 +669,8 @@ func TestAllocation_RepairFile(t *testing.T) {
 				defer teardown(t)
 			}
 			a := &Allocation{
-				ParityShards: tt.numBlobbers/2,
-				DataShards:   tt.numBlobbers/2,
+				ParityShards: tt.numBlobbers / 2,
+				DataShards:   tt.numBlobbers / 2,
 			}
 			a.uploadChan = make(chan *UploadRequest, 10)
 			a.downloadChan = make(chan *DownloadRequest, 10)
@@ -2363,7 +2364,7 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 	setupHttpResponse := func(t *testing.T, name string, httpMethod string, statusCode int, body []byte) {
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return req.Method == httpMethod &&
-				strings.Index(req.URL.String(), name) > -1
+				strings.Contains(req.URL.String(), name)
 		})).Return(&http.Response{
 			StatusCode: statusCode,
 			Body:       ioutil.NopCloser(bytes.NewReader([]byte(body))),
@@ -3431,7 +3432,7 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 	a.initialized = true
 	sdkInitialized = true
 	go func() {
-		for true {
+		for {
 			select {
 			case <-a.ctx.Done():
 				t.Log("Upload cancelled by the parent")
