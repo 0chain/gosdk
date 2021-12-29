@@ -8,8 +8,6 @@ import (
 	"math/bits"
 	"mime/multipart"
 	"net/http"
-	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -36,18 +34,8 @@ type DeleteRequest struct {
 	Consensus
 }
 
-type deleteFormData struct {
-	ConnectionID string `json:"connection_id"`
-	Filename     string `json:"filename"`
-	Path         string `json:"filepath"`
-}
-
 func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blobberIdx int, objectTree fileref.RefEntity) {
 	defer req.wg.Done()
-	path, _ := filepath.Split(req.remotefilepath)
-	if path != "/" {
-		path = strings.TrimRight(path, "/")
-	}
 
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
@@ -112,11 +100,10 @@ func (req *DeleteRequest) ProcessDelete() error {
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numDeletes)
 
-	c, pos := 0, 0
+	var c, pos int
 	for i := req.listMask; i != 0; i &= ^(1 << uint32(pos)) {
 		pos = bits.TrailingZeros32(i)
 		go req.deleteBlobberFile(req.blobbers[pos], pos, objectTreeRefs[pos])
-		//go obj.downloadBlobberBlock(&obj.blobbers[pos], pos, path, blockNum, rspCh, isPathHash, authTicket)
 		c++
 	}
 	req.wg.Wait()
@@ -129,10 +116,9 @@ func (req *DeleteRequest) ProcessDelete() error {
 	wg := &sync.WaitGroup{}
 	wg.Add(bits.OnesCount32(req.deleteMask))
 	commitReqs := make([]*CommitRequest, bits.OnesCount32(req.deleteMask))
-	c, pos = 0, 0
+	c = 0
 	for i := req.deleteMask; i != 0; i &= ^(1 << uint32(pos)) {
 		pos = bits.TrailingZeros32(i)
-		//go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.wg)
 		commitReq := &CommitRequest{}
 		commitReq.allocationID = req.allocationID
 		commitReq.allocationTx = req.allocationTx

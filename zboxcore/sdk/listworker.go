@@ -145,8 +145,7 @@ func (req *ListRequest) getlistFromBlobbers() []*listResponse {
 
 func (req *ListRequest) GetListFromBlobbers() *ListResult {
 	lR := req.getlistFromBlobbers()
-	var result *ListResult
-	result = &ListResult{}
+	result := &ListResult{}
 	selected := make(map[string]*ListResult)
 	childResultMap := make(map[string]*ListResult)
 	for i := 0; i < len(lR); i++ {

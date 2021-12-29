@@ -39,7 +39,7 @@ func AccountExists(address string) bool {
 		return false
 	}
 
-	status, err := wallet.Status()
+	status, _ := wallet.Status()
 	url := wallet.URL()
 
 	fmt.Printf("Account exists. Status: %s, Path: %s", status, url)

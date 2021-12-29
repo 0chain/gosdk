@@ -20,7 +20,7 @@ func (rp *ReferencePath) GetRefFromObjectTree(allocationID string) (RefEntity, e
 		config := &mapstructure.DecoderConfig{
 			Metadata: &md,
 			Result:   rootRef,
-			TagName:  "json",
+			TagName:  "mapstructure",
 		}
 		decoder, err := mapstructure.NewDecoder(config)
 		if err != nil {
@@ -45,7 +45,7 @@ func (rp *ReferencePath) GetDirTree(allocationID string) (*Ref, error) {
 		config := &mapstructure.DecoderConfig{
 			Metadata: &md,
 			Result:   rootRef,
-			TagName:  "json",
+			TagName:  "mapstructure",
 		}
 		decoder, err := mapstructure.NewDecoder(config)
 		if err != nil {
@@ -82,7 +82,7 @@ func (rp *ReferencePath) populateChildren(ref *Ref) error {
 		config := &mapstructure.DecoderConfig{
 			Metadata: &md,
 			Result:   childEntity,
-			TagName:  "json",
+			TagName:  "mapstructure",
 		}
 		decoder, err := mapstructure.NewDecoder(config)
 		if err != nil {

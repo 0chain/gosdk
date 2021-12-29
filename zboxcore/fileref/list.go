@@ -23,7 +23,7 @@ func (lr *ListResult) GetDirTree(allocationID string) (*Ref, error) {
 		config := &mapstructure.DecoderConfig{
 			Metadata: &md,
 			Result:   rootRef,
-			TagName:  "json",
+			TagName:  "mapstructure",
 		}
 		decoder, err := mapstructure.NewDecoder(config)
 		if err != nil {
@@ -60,7 +60,7 @@ func (lr *ListResult) populateChildren(ref *Ref) error {
 		config := &mapstructure.DecoderConfig{
 			Metadata: &md,
 			Result:   childEntity,
-			TagName:  "json",
+			TagName:  "mapstructure",
 		}
 		decoder, err := mapstructure.NewDecoder(config)
 		if err != nil {
