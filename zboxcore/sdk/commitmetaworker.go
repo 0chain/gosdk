@@ -103,7 +103,6 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 	req.status.CommitMetaCompleted(commitMetaDataString, commitMetaResponseString, t, nil)
 
 	Logger.Info("All process done, Calling return")
-	return
 }
 
 func (req *CommitMetaRequest) updateCommitMetaTxnToBlobbers(txnHash string) bool {
@@ -152,17 +151,19 @@ func (req *CommitMetaRequest) updatCommitMetaTxnToBlobber(blobber *blockchain.St
 
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	ctx, cncl := context.WithTimeout(req.a.ctx, (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
+
+	zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
 			Logger.Error("Update CommitMetaTxn : ", err)
+			rspCh <- false
 			return err
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusOK {
 			rspCh <- true
-			return err
+		} else {
+			rspCh <- false
 		}
-		rspCh <- false
 		return err
 	})
 }

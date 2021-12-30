@@ -315,7 +315,7 @@ func (a *Allocation) EncryptAndUpdateFile(workdir string, localpath string, remo
 func (a *Allocation) EncryptAndUploadFile(workdir string, localpath string, remotepath string,
 	attrs fileref.Attributes, status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false,false, "", true, attrs)
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", true, attrs)
 }
 
 // EncryptAndUpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
@@ -576,7 +576,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	downloadReq := &DownloadRequest{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
-	downloadReq.ctx, _ = context.WithCancel(a.ctx)
+	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
 	downloadReq.localpath = localPath
 	downloadReq.remotefilepath = remotePath
 	downloadReq.statusCallback = status
@@ -833,12 +833,12 @@ func (a *Allocation) deleteFromBlobber(path, blobberUrl string, threshConsensus,
 
 	blobbers := make([]*blockchain.StorageNode, 0)
 	for idx := range a.Blobbers {
-		if a.Blobbers[idx].Baseurl == blobberUrl{
+		if a.Blobbers[idx].Baseurl == blobberUrl {
 			blobbers = append(blobbers, a.Blobbers[idx])
 		}
 	}
 
-	if len(blobbers) == 0{
+	if len(blobbers) == 0 {
 		return errors.New("invalid_path", "Selected blobber not found")
 	}
 
@@ -870,7 +870,6 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus floa
 	if !isabs {
 		return errors.New("invalid_path", "Path should be valid and absolute")
 	}
-
 
 	req := &DeleteRequest{}
 	req.blobbers = a.Blobbers
@@ -1106,7 +1105,15 @@ func (a *Allocation) GetAuthTicket(
 		// generate another auth ticket without reencryption key
 		at := &marker.AuthTicket{}
 		decoded, err := base64.StdEncoding.DecodeString(authTicket)
+		if err != nil {
+			return "", err
+		}
+
 		err = json.Unmarshal(decoded, at)
+		if err != nil {
+			return "", err
+		}
+
 		at.ReEncryptionKey = ""
 		err = at.Sign()
 		if err != nil {
@@ -1264,7 +1271,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq := &DownloadRequest{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
-	downloadReq.ctx, _ = context.WithCancel(a.ctx)
+	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
 	downloadReq.localpath = localPath
 	downloadReq.remotefilepathhash = remoteLookupHash
 	downloadReq.authTicket = at
