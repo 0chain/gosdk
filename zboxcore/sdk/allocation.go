@@ -981,6 +981,9 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
+	if destPath != "/" {
+		destPath = strings.TrimSuffix(destPath, "/")
+	}
 	req.destPath = destPath
 	req.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
 	req.fullconsensus = float32(a.DataShards + a.ParityShards)
