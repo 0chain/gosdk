@@ -83,6 +83,10 @@ type Transaction struct {
 	verifyError  error
 }
 
+type SendTxnData struct {
+	Note         string        `json:"note"`
+}
+
 // TransactionScheme implements few methods for block chain.
 //
 // Note: to be buildable on MacOSX all arguments should have names.
@@ -321,23 +325,31 @@ func (t *Transaction) SetTransactionFee(txnFee int64) error {
 }
 
 func (t *Transaction) Send(toClientID string, val int64, desc string) error {
+	txnData, err := json.Marshal(SendTxnData{Note: desc})
+	if err != nil {
+		return errors.New("", "Could not serialize description to transaction_data")
+	}
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeSend
 		t.txn.ToClientID = toClientID
 		t.txn.Value = val
-		t.txn.TransactionData = desc
+		t.txn.TransactionData = string(txnData)
 		t.submitTxn()
 	}()
 	return nil
 }
 
 func (t *Transaction) SendWithSignatureHash(toClientID string, val int64, desc string, sig string, CreationDate int64, hash string) error {
+	txnData, err := json.Marshal(SendTxnData{Note: desc})
+	if err != nil {
+		return errors.New("", "Could not serialize description to transaction_data")
+	}
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeSend
 		t.txn.ToClientID = toClientID
 		t.txn.Value = val
 		t.txn.Hash = hash
-		t.txn.TransactionData = desc
+		t.txn.TransactionData = string(txnData)
 		t.txn.Signature = sig
 		t.txn.CreationDate = CreationDate
 		t.submitTxn()
