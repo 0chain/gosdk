@@ -15,14 +15,7 @@ const (
 	DEBUG = 4
 )
 
-const cBlack = "\u001b[30m"
 const cRed = "\u001b[31m"
-const cGreen = "\u001b[32m"
-const cYellow = "\u001b[33m"
-const cBlue = "\u001b[34m"
-const cMagenta = "\u001b[35m"
-const cCyan = "\u001b[36m"
-const cWhite = "\u001b[37m"
 const cReset = "\u001b[0m"
 
 const (
@@ -31,14 +24,6 @@ const (
 	strINFO  = "[INFO]   "
 	strDEBUG = "[DEBUG]  "
 )
-
-type loggerIf interface {
-	Init(lvl int)
-	Debug(v ...interface{})
-	Info(v ...interface{})
-	Error(v ...interface{})
-	Fatal(v ...interface{})
-}
 
 type Logger struct {
 	lvl      int
