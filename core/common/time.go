@@ -1,7 +1,6 @@
 package common
 
 import (
-	"math/rand"
 	"time"
 )
 
@@ -23,5 +22,3 @@ func (t Timestamp) Within(seconds Timestamp) bool {
 func (t Timestamp) ToTime() time.Time {
 	return time.Unix(int64(t), 0)
 }
-
-var randGenerator = rand.New(rand.NewSource(time.Now().UnixNano()))

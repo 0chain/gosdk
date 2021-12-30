@@ -3,11 +3,12 @@ package sdk
 import (
 	"bytes"
 	"encoding/hex"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"io"
 	"math"
 	"os"
 	"sync"
+
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 
 	"github.com/0chain/gosdk/zboxcore/encoder"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -31,7 +32,7 @@ func (req *UploadRequest) pushThumbnailData(data []byte) error {
 		return err
 	}
 
-	var c, pos uint64 = 0, 0
+	var c, pos uint64
 	if req.isEncrypted {
 		for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
@@ -46,8 +47,9 @@ func (req *UploadRequest) pushThumbnailData(data []byte) error {
 			c++
 		}
 
-		c, pos = 0, 0
 	}
+
+	c = 0
 	for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		req.uploadThumbCh[c] <- shards[pos]
@@ -101,7 +103,7 @@ func (req *UploadRequest) completeThumbnailPush() error {
 	if !req.isRepair {
 		req.filemeta.ThumbnailHash = hex.EncodeToString(req.thumbnailHash.Sum(nil))
 		//fmt.Println("req.filemeta.ThumbnailHash=" + req.filemeta.ThumbnailHash)
-		var c, pos uint64 = 0, 0
+		var c, pos uint64
 		for i := req.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
 			req.uploadThumbCh[c] <- []byte("done")

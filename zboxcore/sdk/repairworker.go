@@ -71,8 +71,6 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 	if r.statusCB != nil {
 		r.statusCB.RepairCompleted(r.filesRepaired)
 	}
-
-	return
 }
 
 func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
@@ -101,8 +99,6 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
 	default:
 		Logger.Info("Invalid directory type", zap.Any("type", dir.Type))
 	}
-
-	return
 }
 
 func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
@@ -147,7 +143,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 				}
 				Logger.Info("Download file success for repair", zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
 				statusCB.success = false
-			}else{
+			} else {
 				Logger.Info("FILE EXISTS", zap.Any("bool", true))
 			}
 
@@ -181,7 +177,6 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 		r.filesRepaired++
 	}
 
-	return
 }
 
 func (r *RepairRequest) getLocalPath(file *ListResult) string {

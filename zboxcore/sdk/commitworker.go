@@ -86,7 +86,7 @@ func InitCommitWorker(blobbers []*blockchain.StorageNode) {
 }
 
 func startCommitWorker(blobberChan chan *CommitRequest, blobberID string) {
-	for true {
+	for {
 		commitreq, open := <-blobberChan
 		if !open {
 			break
@@ -278,7 +278,7 @@ func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths 
 		Logger.Error("Creating calculate hash req", err)
 		return err
 	}
-	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
+	ctx, cncl := context.WithTimeout(ctx, (time.Second * 30))
 	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
 		if err != nil {
 			Logger.Error("Calculate hash error:", err)
