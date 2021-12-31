@@ -92,7 +92,7 @@ func verifyFn(signature, msgHash, publicKey string) (bool, error) {
 	v := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 	v.SetPublicKey(publicKey)
 	ok, err := v.Verify(signature, msgHash)
-	if err != nil || ok == false {
+	if err != nil || !ok {
 		return false, errors.New("", `{"error": "signature_mismatch"}`)
 	}
 	return true, nil
@@ -128,11 +128,15 @@ func (ta *TransactionWithAuth) submitTxn() {
 }
 
 func (ta *TransactionWithAuth) Send(toClientID string, val int64, desc string) error {
+	txnData, err := json.Marshal(SendTxnData{Note: desc})
+	if err != nil {
+		return errors.New("", "Could not serialize description to transaction_data")
+	}
 	go func() {
 		ta.t.txn.TransactionType = transaction.TxnTypeSend
 		ta.t.txn.ToClientID = toClientID
 		ta.t.txn.Value = val
-		ta.t.txn.TransactionData = desc
+		ta.t.txn.TransactionData = string(txnData)
 		ta.submitTxn()
 	}()
 	return nil
