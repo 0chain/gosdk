@@ -14,7 +14,14 @@ type DeleteFileChange struct {
 }
 
 func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref) error {
+	if ch.ObjectTree.GetPath() == "/" {
+		rootRef.Children = nil
+		rootRef.CalculateHash()
+		return nil
+	}
+
 	path, _ := filepath.Split(ch.ObjectTree.GetPath())
+
 	tSubDirs := getSubDirs(path)
 	dirRef := rootRef
 	treelevel := 0
@@ -35,20 +42,14 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref) error {
 			return errors.New("invalid_reference_path", "Invalid reference path from the blobber")
 		}
 	}
-	idx := -1
 	for i, child := range dirRef.Children {
 		if child.GetName() == ch.ObjectTree.GetName() && child.GetHash() == ch.ObjectTree.GetHash() {
-			idx = i
-			break
+			dirRef.RemoveChild(i)
+			rootRef.CalculateHash()
+			return nil
 		}
 	}
-	if idx < 0 {
-		return errors.New("file_not_found", "File to delete not found in blobber")
-	}
-	//dirRef.Children = append(dirRef.Children[:idx], dirRef.Children[idx+1:]...)
-	dirRef.RemoveChild(idx)
-	rootRef.CalculateHash()
-	return nil
+	return errors.New("file_not_found", "File to delete not found in blobber")
 }
 
 func (n *DeleteFileChange) GetAffectedPath() string {
