@@ -154,6 +154,8 @@ type SimilarField struct {
 	ParentPath          string `json:"parent_path"`
 	PathLevel           int    `json:"level"`
 	Size                int64  `json:"size"`
+	ChunkSize           int64  `json:"chunk_size"`
+	EncryptedKey        string `json:"encrypted_key"`
 	ActualFileSize      int64  `json:"actual_file_size"`
 	ActualFileHash      string `json:"actual_file_hash"`
 	MimeType            string `json:"mimetype"`
