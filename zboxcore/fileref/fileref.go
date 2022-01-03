@@ -57,21 +57,21 @@ func (a *Attributes) Validate() (err error) {
 }
 
 type FileRef struct {
-	Ref                 `json:",squash"`
-	CustomMeta          string          `json:"custom_meta"`
-	ContentHash         string          `json:"content_hash"`
-	MerkleRoot          string          `json:"merkle_root"`
-	ThumbnailSize       int64           `json:"thumbnail_size"`
-	ThumbnailHash       string          `json:"thumbnail_hash"`
-	ActualFileSize      int64           `json:"actual_file_size"`
-	ActualFileHash      string          `json:"actual_file_hash"`
-	ActualThumbnailSize int64           `json:"actual_thumbnail_size"`
-	ActualThumbnailHash string          `json:"actual_thumbnail_hash"`
-	MimeType            string          `json:"mimetype"`
-	EncryptedKey        string          `json:"encrypted_key"`
-	CommitMetaTxns      []CommitMetaTxn `json:"commit_meta_txns"`
-	Collaborators       []Collaborator  `json:"collaborators"`
-	Attributes          Attributes      `json:"attributes"`
+	Ref                 `mapstructure:",squash"`
+	CustomMeta          string          `json:"custom_meta" mapstructure:"custom_meta"`
+	ContentHash         string          `json:"content_hash" mapstructure:"content_hash"`
+	MerkleRoot          string          `json:"merkle_root" mapstructure:"merkle_root"`
+	ThumbnailSize       int64           `json:"thumbnail_size" mapstructure:"thumbnail_size"`
+	ThumbnailHash       string          `json:"thumbnail_hash" mapstructure:"thumbnail_hash"`
+	ActualFileSize      int64           `json:"actual_file_size" mapstructure:"actual_file_size"`
+	ActualFileHash      string          `json:"actual_file_hash" mapstructure:"actual_file_hash"`
+	ActualThumbnailSize int64           `json:"actual_thumbnail_size" mapstructure:"actual_thumbnail_size"`
+	ActualThumbnailHash string          `json:"actual_thumbnail_hash" mapstructure:"actual_thumbnail_hash"`
+	MimeType            string          `json:"mimetype" mapstructure:"mimetype"`
+	EncryptedKey        string          `json:"encrypted_key" mapstructure:"encrypted_key"`
+	CommitMetaTxns      []CommitMetaTxn `json:"commit_meta_txns" mapstructure:"commit_meta_txns"`
+	Collaborators       []Collaborator  `json:"collaborators" mapstructure:"collaborators"`
+	Attributes          Attributes      `json:"attributes" mapstructure:"attributes"`
 }
 
 type RefEntity interface {
@@ -90,22 +90,22 @@ type RefEntity interface {
 }
 
 type Ref struct {
-	Type           string     `json:"type"`
-	AllocationID   string     `json:"allocation_id"`
-	Name           string     `json:"name"`
-	Path           string     `json:"path"`
-	Size           int64      `json:"size"`
-	ActualSize     int64      `json:"actual_file_size"`
-	Hash           string     `json:"hash"`
-	ChunkSize      int64      `json:"chunk_size"`
-	NumBlocks      int64      `json:"num_of_blocks"`
-	PathHash       string     `json:"path_hash"`
-	LookupHash     string     `json:"lookup_hash"`
-	Attributes     Attributes `json:"attributes"`
+	Type           string     `json:"type" mapstructure:"type"`
+	AllocationID   string     `json:"allocation_id" mapstructure:"allocation_id"`
+	Name           string     `json:"name" mapstructure:"name"`
+	Path           string     `json:"path" mapstructure:"path"`
+	Size           int64      `json:"size" mapstructure:"size"`
+	ActualSize     int64      `json:"actual_file_size" mapstructure:"actual_file_size"`
+	Hash           string     `json:"hash" mapstructure:"hash"`
+	ChunkSize      int64      `json:"chunk_size" mapstructure:"chunk_size"`
+	NumBlocks      int64      `json:"num_of_blocks" mapstructure:"num_of_blocks"`
+	PathHash       string     `json:"path_hash" mapstructure:"path_hash"`
+	LookupHash     string     `json:"lookup_hash" mapstructure:"lookup_hash"`
+	Attributes     Attributes `json:"attributes" mapstructure:"attributes"`
 	childrenLoaded bool
-	Children       []RefEntity `json:"-"`
-	CreatedAt      string      `json:"created_at"`
-	UpdatedAt      string      `json:"updated_at"`
+	Children       []RefEntity `json:"-" mapstructure:"-"`
+	CreatedAt      string      `json:"created_at" mapstructure:"created_at"`
+	UpdatedAt      string      `json:"updated_at" mapstructure:"updated_at"`
 }
 
 func GetReferenceLookup(allocationID string, path string) string {

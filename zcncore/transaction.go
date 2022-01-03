@@ -64,7 +64,7 @@ type blockHeader struct {
 	Hash                  string `json:"hash,omitempty"`
 	MinerId               string `json:"miner_id,omitempty"`
 	Round                 int64  `json:"round,omitempty"`
-	RoundRandomSeed       int64  `json:"round_random_seed,omitempy"`
+	RoundRandomSeed       int64  `json:"round_random_seed,omitempty"`
 	MerkleTreeRoot        string `json:"merkle_tree_root,omitempty"`
 	StateHash             string `json:"state_hash,omitempty"`
 	ReceiptMerkleTreeRoot string `json:"receipt_merkle_tree_root,omitempty"`
@@ -81,6 +81,10 @@ type Transaction struct {
 	verifyStatus int
 	verifyOut    string
 	verifyError  error
+}
+
+type SendTxnData struct {
+	Note         string        `json:"note"`
 }
 
 // TransactionScheme implements few methods for block chain.
@@ -140,7 +144,6 @@ type TransactionScheme interface {
 	MinerScUpdateGlobals(*InputMap) error
 	MinerSCDeleteMiner(*MinerSCMinerInfo) error
 	MinerSCDeleteSharder(*MinerSCMinerInfo) error
-
 
 	// Storage SC
 
@@ -255,22 +258,20 @@ func (t *Transaction) submitTxn() {
 				Logger.Error(minerurl, " submit transaction error. ", err.Error())
 			}
 			result <- res
-			return
 		}(miner)
 	}
 	consensus := float32(0)
 	for range randomMiners {
-		select {
-		case rsp := <-result:
-			Logger.Debug(rsp.Url, rsp.Status)
-			if rsp.StatusCode == http.StatusOK {
-				consensus++
-				tSuccessRsp = rsp.Body
-			} else {
-				Logger.Error(rsp.Body)
-				tFailureRsp = rsp.Body
-			}
+		rsp := <-result
+		Logger.Debug(rsp.Url, rsp.Status)
+		if rsp.StatusCode == http.StatusOK {
+			consensus++
+			tSuccessRsp = rsp.Body
+		} else {
+			Logger.Error(rsp.Body)
+			tFailureRsp = rsp.Body
 		}
+
 	}
 	rate := consensus * 100 / float32(len(randomMiners))
 	if rate < consensusThresh {
@@ -324,23 +325,31 @@ func (t *Transaction) SetTransactionFee(txnFee int64) error {
 }
 
 func (t *Transaction) Send(toClientID string, val int64, desc string) error {
+	txnData, err := json.Marshal(SendTxnData{Note: desc})
+	if err != nil {
+		return errors.New("", "Could not serialize description to transaction_data")
+	}
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeSend
 		t.txn.ToClientID = toClientID
 		t.txn.Value = val
-		t.txn.TransactionData = desc
+		t.txn.TransactionData = string(txnData)
 		t.submitTxn()
 	}()
 	return nil
 }
 
 func (t *Transaction) SendWithSignatureHash(toClientID string, val int64, desc string, sig string, CreationDate int64, hash string) error {
+	txnData, err := json.Marshal(SendTxnData{Note: desc})
+	if err != nil {
+		return errors.New("", "Could not serialize description to transaction_data")
+	}
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeSend
 		t.txn.ToClientID = toClientID
 		t.txn.Value = val
 		t.txn.Hash = hash
-		t.txn.TransactionData = desc
+		t.txn.TransactionData = string(txnData)
 		t.txn.Signature = sig
 		t.txn.CreationDate = CreationDate
 		t.submitTxn()
@@ -465,7 +474,6 @@ func queryFromShardersContext(ctx context.Context, numSharders int,
 				Logger.Error(sharderurl, " get error. ", err.Error())
 			}
 			result <- res
-			return
 		}(sharder)
 	}
 }
@@ -521,37 +529,36 @@ func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, 
 	var lfb blockHeader
 	var confirmation map[string]json.RawMessage
 	for i := 0; i < numSharders; i++ {
-		select {
-		case rsp := <-result:
-			Logger.Debug(rsp.Url + " " + rsp.Status)
-			Logger.Debug(rsp.Body)
-			if rsp.StatusCode == http.StatusOK {
-				var cfmLfb map[string]json.RawMessage
-				err := json.Unmarshal([]byte(rsp.Body), &cfmLfb)
+		rsp := <-result
+		Logger.Debug(rsp.Url + " " + rsp.Status)
+		Logger.Debug(rsp.Body)
+		if rsp.StatusCode == http.StatusOK {
+			var cfmLfb map[string]json.RawMessage
+			err := json.Unmarshal([]byte(rsp.Body), &cfmLfb)
+			if err != nil {
+				Logger.Error("txn confirmation parse error", err)
+				continue
+			}
+			bH, err := getBlockHeaderFromTransactionConfirmation(txnHash, cfmLfb)
+			if err != nil {
+				Logger.Error(err)
+			}
+			if err == nil {
+				txnConfirmations[bH.Hash]++
+				if txnConfirmations[bH.Hash] > maxConfirmation {
+					maxConfirmation = txnConfirmations[bH.Hash]
+					blockHdr = bH
+					confirmation = cfmLfb
+				}
+			} else if lfbRaw, ok := cfmLfb["latest_finalized_block"]; ok {
+				err := json.Unmarshal([]byte(lfbRaw), &lfb)
 				if err != nil {
-					Logger.Error("txn confirmation parse error", err)
+					Logger.Error("round info parse error.", err)
 					continue
-				}
-				bH, err := getBlockHeaderFromTransactionConfirmation(txnHash, cfmLfb)
-				if err != nil {
-					Logger.Error(err)
-				}
-				if err == nil {
-					txnConfirmations[bH.Hash]++
-					if txnConfirmations[bH.Hash] > maxConfirmation {
-						maxConfirmation = txnConfirmations[bH.Hash]
-						blockHdr = bH
-						confirmation = cfmLfb
-					}
-				} else if lfbRaw, ok := cfmLfb["latest_finalized_block"]; ok {
-					err := json.Unmarshal([]byte(lfbRaw), &lfb)
-					if err != nil {
-						Logger.Error("round info parse error.", err)
-						continue
-					}
 				}
 			}
 		}
+
 	}
 	if maxConfirmation == 0 {
 		return nil, confirmation, &lfb, errors.New("", "transaction not found")
@@ -799,41 +806,40 @@ func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHe
 	roundConsensus := make(map[string]int)
 	var blkHdr blockHeader
 	for i := 0; i < numSharders; i++ {
-		select {
-		case rsp := <-result:
-			Logger.Debug(rsp.Url, rsp.Status)
-			if rsp.StatusCode == http.StatusOK {
-				var objmap map[string]json.RawMessage
-				err := json.Unmarshal([]byte(rsp.Body), &objmap)
+		rsp := <-result
+		Logger.Debug(rsp.Url, rsp.Status)
+		if rsp.StatusCode == http.StatusOK {
+			var objmap map[string]json.RawMessage
+			err := json.Unmarshal([]byte(rsp.Body), &objmap)
+			if err != nil {
+				Logger.Error("round info parse error. ", err)
+				continue
+			}
+			if header, ok := objmap["header"]; ok {
+				err := json.Unmarshal([]byte(header), &objmap)
 				if err != nil {
 					Logger.Error("round info parse error. ", err)
 					continue
 				}
-				if header, ok := objmap["header"]; ok {
-					err := json.Unmarshal([]byte(header), &objmap)
-					if err != nil {
-						Logger.Error("round info parse error. ", err)
-						continue
-					}
-					if hash, ok := objmap["hash"]; ok {
-						h := encryption.FastHash([]byte(hash))
-						roundConsensus[h]++
-						if roundConsensus[h] > maxConsensus {
-							maxConsensus = roundConsensus[h]
-							err := json.Unmarshal([]byte(header), &blkHdr)
-							if err != nil {
-								Logger.Error("round info parse error. ", err)
-								continue
-							}
+				if hash, ok := objmap["hash"]; ok {
+					h := encryption.FastHash([]byte(hash))
+					roundConsensus[h]++
+					if roundConsensus[h] > maxConsensus {
+						maxConsensus = roundConsensus[h]
+						err := json.Unmarshal([]byte(header), &blkHdr)
+						if err != nil {
+							Logger.Error("round info parse error. ", err)
+							continue
 						}
 					}
-				} else {
-					Logger.Debug(rsp.Url, "no round confirmation. Resp:", rsp.Body)
 				}
 			} else {
-				Logger.Error(rsp.Body)
+				Logger.Debug(rsp.Url, "no round confirmation. Resp:", rsp.Body)
 			}
+		} else {
+			Logger.Error(rsp.Body)
 		}
+
 	}
 	if maxConsensus == 0 {
 		return nil, errors.New("", "round info not found.")
@@ -845,10 +851,7 @@ func isBlockExtends(prevHash string, block *blockHeader) bool {
 	data := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v", block.MinerId, prevHash, block.CreationDate, block.Round,
 		block.RoundRandomSeed, block.MerkleTreeRoot, block.ReceiptMerkleTreeRoot)
 	h := encryption.Hash(data)
-	if block.Hash == h {
-		return true
-	}
-	return false
+	return block.Hash == h
 }
 
 func validateChain(confirmBlock *blockHeader) bool {

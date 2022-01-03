@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -49,7 +50,7 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode) error
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
 	formWriter.WriteField("connection_id", req.connectionID)
-	formWriter.WriteField("dir_path", req.name)
+	formWriter.WriteField("dir_path", filepath.Join("/", req.name))
 	formWriter.Close()
 	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, body)
 	if err != nil {
@@ -63,13 +64,13 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode) error
 
 	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("Copy : ", err)
+			Logger.Error("createdir : ", err)
 			return err
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusOK {
 			resp_body, _ := ioutil.ReadAll(resp.Body)
-			Logger.Info("copy resp:", string(resp_body))
+			Logger.Info("createdir resp:", string(resp_body))
 			req.consensus++
 			Logger.Info(blobber.Baseurl, " "+req.name, " created.")
 		} else {

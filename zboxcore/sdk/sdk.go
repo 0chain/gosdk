@@ -825,7 +825,6 @@ func SetNumBlockDownloads(num int) {
 	if num > 0 && num <= 100 {
 		numBlockDownloads = num
 	}
-	return
 }
 
 func GetAllocations() ([]*Allocation, error) {
