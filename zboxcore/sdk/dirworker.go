@@ -92,7 +92,9 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode) error
 		} else {
 			resp_body, err := ioutil.ReadAll(resp.Body)
 			if err == nil {
-				Logger.Error(blobber.Baseurl, "Response: ", string(resp_body))
+				msg := strings.TrimSpace(string(resp_body))
+				Logger.Error(blobber.Baseurl, "Response: ", msg)
+				return errors.New(msg)
 			}
 		}
 		return nil
