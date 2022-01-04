@@ -6,8 +6,11 @@ package main
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"sort"
+	"sync"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
@@ -18,7 +21,7 @@ type Player struct {
 	authTicket   string
 	lookupHash   string
 
-	isOwner       bool
+	isViewer      bool
 	allocationObj *sdk.Allocation
 	authTicketObj *marker.AuthTicket
 
@@ -51,6 +54,46 @@ func (p *Player) stop() {
 }
 
 func (p *Player) download(it *sdk.ListResult) {
+	//Download(p.allocationID, remotePath string, authTicket string, lookupHash string, downloadThumbnailOnly bool, rxPay bool, autoCommit bool)
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	wg.Add(1)
+
+	fileName := it.Name
+	localPath := filepath.Join(p.allocationID, fileName)
+
+	downloader, err := sdk.CreateDownloader(p.allocationID, localPath, it.Path,
+		sdk.WithAllocation(p.allocationObj),
+		sdk.WithAuthticket(p.authTicket, p.lookupHash))
+
+	if err != nil {
+		PrintError(err.Error())
+		return
+	}
+
+	defer sdk.FS.Remove(localPath) //nolint
+
+	err = downloader.Start(statusBar)
+
+	if err == nil {
+		wg.Wait()
+	} else {
+		PrintError("Download failed.", err.Error())
+		return
+	}
+	if !statusBar.success {
+		PrintError("Download failed: unknown error")
+		return
+	}
+
+	PrintInfo("downloaded [", it.Path, "]")
+	fs, _ := sdk.FS.Open(localPath)
+
+	mf, _ := fs.(*common.MemFile)
+
+	PrintInfo("playing [", it.Path, "]")
+
+	AppendVideo(mf.Buffer.Bytes())
 
 }
 
@@ -62,7 +105,7 @@ func (p *Player) startDownload() {
 			break
 		case it := <-p.todo:
 			p.download(it)
-			PrintInfo("downloaded [", it.Name, "]")
+
 			go p.nextTodo()
 		}
 
@@ -96,7 +139,7 @@ func (p *Player) reloadList() {
 
 			for _, it := range list {
 				if latestTodo == nil || (len(it.Name) > len(latestTodo.Name) || it.Name > latestTodo.Name) {
-					PrintInfo("found [", it.Name, "]")
+					PrintInfo("found [", it.Path, "]")
 					p.todo <- it
 					latestTodo = it
 					p.latestTodo = it
@@ -109,10 +152,10 @@ func (p *Player) reloadList() {
 }
 
 func (p *Player) loadList() ([]*sdk.ListResult, error) {
-	//get list from remoete allocations's path
-	if p.isOwner {
 
-		ref, err := p.allocationObj.ListDir(p.remotePath)
+	if p.isViewer {
+		//get list from authticket
+		ref, err := p.allocationObj.ListDirFromAuthTicket(p.authTicket, p.lookupHash)
 		if err != nil {
 			return nil, err
 		}
@@ -120,8 +163,8 @@ func (p *Player) loadList() ([]*sdk.ListResult, error) {
 		return ref.Children, nil
 	}
 
-	//get list from authticket
-	ref, err := p.allocationObj.ListDirFromAuthTicket(p.authTicket, p.lookupHash)
+	//get list from remote allocations's path
+	ref, err := p.allocationObj.ListDir(p.remotePath)
 	if err != nil {
 		return nil, err
 	}
@@ -159,43 +202,46 @@ func createPalyer(allocationID, remotePath, authTicket, lookupHash string) (*Pla
 
 	player := &Player{}
 	player.prefetchQty = 5
+	player.remotePath = remotePath
+	player.authTicket = authTicket
+	player.lookupHash = lookupHash
 
-	//player is owner
-	if len(remotePath) > 0 {
-		if len(allocationID) == 0 {
-			return nil, RequiredArg("allocationID")
+	//player is viewer
+	if len(authTicket) > 0 {
+		//player is viewer via shared authticket
+		at, err := sdk.InitAuthTicket(authTicket).Unmarshall()
+
+		if err != nil {
+			PrintError(err)
+			return nil, err
 		}
 
-		allocationObj, err := sdk.GetAllocation(allocationID)
+		allocationObj, err := sdk.GetAllocationFromAuthTicket(authTicket)
 		if err != nil {
 			PrintError("Error fetching the allocation", err)
 			return nil, err
 		}
 
-		player.isOwner = true
+		player.isViewer = true
 		player.allocationObj = allocationObj
+		player.authTicketObj = at
 
 		return player, nil
 
 	}
 
-	//player is viewer via shared authticket
-	at, err := sdk.InitAuthTicket(authTicket).Unmarshall()
-
-	if err != nil {
-		PrintError(err)
-		return nil, err
+	if len(allocationID) == 0 {
+		return nil, RequiredArg("allocationID")
 	}
 
-	allocationObj, err := sdk.GetAllocationFromAuthTicket(authTicket)
+	allocationObj, err := sdk.GetAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return nil, err
 	}
 
-	player.isOwner = false
+	player.isViewer = false
 	player.allocationObj = allocationObj
-	player.authTicketObj = at
 
 	return player, nil
 }

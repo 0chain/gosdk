@@ -44,14 +44,16 @@ func CreateYoutubeDL(ctx context.Context, localPath string, feedURL string, down
 	cmdYoutubeDL.Stderr = os.Stderr
 	cmdYoutubeDL.Stdout = w
 
-	argsFfmpeg := append(ffmpegArgs,
-		"-i", "-",
+	argsFfmpeg := []string{"-i", "-"}
+
+	argsFfmpeg = append(argsFfmpeg, ffmpegArgs...)
+	argsFfmpeg = append(argsFfmpeg,
 		"-flags", "+cgop",
 		"-g", "30",
 		"-hls_time", strconv.Itoa(delay),
 		builder.OutFile())
 
-	fmt.Println("ffmpeg", strings.Join(argsFfmpeg, " "))
+	fmt.Println("[cmd]ffmpeg", strings.Join(argsFfmpeg, " "))
 	cmdFfmpeg := exec.Command("ffmpeg", argsFfmpeg...)
 	cmdFfmpeg.Stderr = os.Stderr
 	cmdFfmpeg.Stdin = r

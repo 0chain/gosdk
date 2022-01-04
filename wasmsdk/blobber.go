@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -382,7 +383,7 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 	statusBar := &StatusBar{wg: wg}
 	wg.Add(1)
 
-	fileName := strings.Replace(remotePath, "/", "-", -1)
+	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
 	localPath := filepath.Join(allocationID, fileName)
 
 	downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,

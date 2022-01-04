@@ -168,7 +168,7 @@ download your own or a shared file.
 upload file(s)
 
 **Input**:
-allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, commit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, chunkSize int, isUpdate, isRepair bool
+> allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, commit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, chunkSize int, isUpdate, isRepair bool
 
 **Output**:
 > {commandSuccess:bool,commitSuccess:bool, commitTxn:transaction.Transaction, error:string}
@@ -178,7 +178,7 @@ allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, comm
 play stream video files
 
 **Input**:
-allocationID, remotePath, authTicket, lookupHash string
+> allocationID, remotePath, authTicket, lookupHash string
 
 **Output**:
 > N/A
@@ -188,7 +188,7 @@ allocationID, remotePath, authTicket, lookupHash string
 stop current play
 
 **Input**:
-allocationID, remotePath, authTicket, lookupHash string
+> N/A
 
 **Output**:
 > N/A
