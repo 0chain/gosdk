@@ -11,6 +11,7 @@ import (
 )
 
 var CreateObjectURL func(buf []byte, mimeType string) string
+var AppendVideo func(buf []byte)
 
 // Init init sharder/miners ,
 func Init(chainID, blockWorker, signatureScheme string,
