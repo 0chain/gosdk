@@ -3,11 +3,12 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
-	"sync"
+	"strings"
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -20,28 +21,43 @@ type DirRequest struct {
 	name         string
 	ctx          context.Context
 	action       string // create, del
-	wg           *sync.WaitGroup
 	connectionID string
 	Consensus
 }
 
 func (req *DirRequest) ProcessDir(a *Allocation) error {
 	numList := len(a.Blobbers)
-	req.wg = &sync.WaitGroup{}
-	req.wg.Add(numList)
+
+	wg := make(chan error, numList)
 
 	Logger.Info("Start creating dir for blobbers")
 	for i := 0; i < numList; i++ {
 		go func(blobberIdx int) {
-			defer req.wg.Done()
+
 			err := req.createDirInBlobber(a.Blobbers[blobberIdx])
+			defer func() {
+				wg <- err
+			}()
+
 			if err != nil {
 				Logger.Error(err.Error())
 				return
 			}
+
 		}(i)
 	}
-	req.wg.Wait()
+
+	msgList := make([]string, 0, numList)
+	for i := 0; i < numList; i++ {
+		err := <-wg
+		if err != nil {
+			msgList = append(msgList, err.Error())
+		}
+	}
+
+	if len(msgList) > 0 {
+		return errors.New(strings.Join(msgList, ", "))
+	}
 
 	return nil
 }
