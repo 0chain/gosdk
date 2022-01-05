@@ -28,7 +28,7 @@ type DirRequest struct {
 func (req *DirRequest) ProcessDir(a *Allocation) error {
 	numList := len(a.Blobbers)
 
-	wg := make(chan error, numList)
+	errChan := make(chan error, numList)
 
 	Logger.Info("Start creating dir for blobbers")
 	for i := 0; i < numList; i++ {
@@ -36,7 +36,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 
 			err := req.createDirInBlobber(a.Blobbers[blobberIdx])
 			defer func() {
-				wg <- err
+				errChan <- err
 			}()
 
 			if err != nil {
@@ -49,7 +49,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 
 	msgList := make([]string, 0, numList)
 	for i := 0; i < numList; i++ {
-		err := <-wg
+		err := <-errChan
 		if err != nil {
 			msgList = append(msgList, err.Error())
 		}
