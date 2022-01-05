@@ -3,16 +3,17 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
-	"sync"
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"golang.org/x/sync/errgroup"
 )
 
 type DirRequest struct {
@@ -20,30 +21,33 @@ type DirRequest struct {
 	name         string
 	ctx          context.Context
 	action       string // create, del
-	wg           *sync.WaitGroup
 	connectionID string
 	Consensus
 }
 
 func (req *DirRequest) ProcessDir(a *Allocation) error {
 	numList := len(a.Blobbers)
-	req.wg = &sync.WaitGroup{}
-	req.wg.Add(numList)
 
 	Logger.Info("Start creating dir for blobbers")
+	errs := new(errgroup.Group)
 	for i := 0; i < numList; i++ {
-		go func(blobberIdx int) {
-			defer req.wg.Done()
-			err := req.createDirInBlobber(a.Blobbers[blobberIdx])
+		i := i
+		errs.Go(func() error {
+			err := req.createDirInBlobber(a.Blobbers[i])
 			if err != nil {
 				Logger.Error(err.Error())
-				return
+				return err
 			}
-		}(i)
+			return err
+		})
 	}
-	req.wg.Wait()
+	err := errs.Wait()
 
-	return nil
+	if err == nil {
+		Logger.Info("Directory created successfully.")
+	}
+
+	return err
 }
 
 func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode) error {
@@ -77,9 +81,10 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode) error
 			resp_body, err := ioutil.ReadAll(resp.Body)
 			if err == nil {
 				Logger.Error(blobber.Baseurl, "Response: ", string(resp_body))
+				return errors.New(string(resp_body))
 			}
 		}
-		return nil
+		return err
 	})
 
 	if err != nil {
