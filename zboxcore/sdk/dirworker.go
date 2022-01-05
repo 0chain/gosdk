@@ -62,10 +62,7 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode) error
 	formWriter := multipart.NewWriter(body)
 	formWriter.WriteField("connection_id", req.connectionID)
 
-	dirPath := filepath.ToSlash(req.name)
-	if !strings.HasPrefix(dirPath, "/") {
-		dirPath = filepath.Join("/", dirPath)
-	}
+	dirPath := filepath.Join("/", filepath.ToSlash(req.name))
 	formWriter.WriteField("dir_path", dirPath)
 
 	formWriter.Close()
