@@ -3,11 +3,12 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
-	"sync"
+	"strings"
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -20,28 +21,38 @@ type DirRequest struct {
 	name         string
 	ctx          context.Context
 	action       string // create, del
-	wg           *sync.WaitGroup
 	connectionID string
 	Consensus
 }
 
 func (req *DirRequest) ProcessDir(a *Allocation) error {
 	numList := len(a.Blobbers)
-	req.wg = &sync.WaitGroup{}
-	req.wg.Add(numList)
 
 	Logger.Info("Start creating dir for blobbers")
+
+	await := make(chan error, numList)
+
 	for i := 0; i < numList; i++ {
 		go func(blobberIdx int) {
-			defer req.wg.Done()
 			err := req.createDirInBlobber(a.Blobbers[blobberIdx])
 			if err != nil {
 				Logger.Error(err.Error())
-				return
 			}
+			await <- err
 		}(i)
 	}
-	req.wg.Wait()
+
+	msgList := make([]string, 0, numList)
+	for i := 0; i < numList; i++ {
+		err := <-await
+		if err != nil {
+			msgList = append(msgList, err.Error())
+		}
+	}
+
+	if len(msgList) > 0 {
+		return errors.New(strings.Join(msgList, ", "))
+	}
 
 	return nil
 }
@@ -50,14 +61,16 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode) error
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
 	formWriter.WriteField("connection_id", req.connectionID)
-	formWriter.WriteField("dir_path", filepath.Join("/", req.name))
+
+	dirPath := filepath.Join("/", filepath.ToSlash(req.name))
+	formWriter.WriteField("dir_path", dirPath)
+
 	formWriter.Close()
 	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, body)
 	if err != nil {
 		Logger.Error(blobber.Baseurl, "Error creating dir request", err)
 		return err
 	}
-	Logger.Debug(httpreq.URL)
 
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
@@ -76,10 +89,12 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode) error
 		} else {
 			resp_body, err := ioutil.ReadAll(resp.Body)
 			if err == nil {
-				Logger.Error(blobber.Baseurl, "Response: ", string(resp_body))
+				msg := strings.TrimSpace(string(resp_body))
+				Logger.Error(blobber.Baseurl, "Response: ", msg)
+				return errors.New(msg)
 			}
 		}
-		return nil
+		return err
 	})
 
 	if err != nil {
