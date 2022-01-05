@@ -8,12 +8,12 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"golang.org/x/sync/errgroup"
 )
 
 type DirRequest struct {
@@ -29,39 +29,51 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 	numList := len(a.Blobbers)
 
 	Logger.Info("Start creating dir for blobbers")
-	errs := new(errgroup.Group)
+
+	await := make(chan error, numList)
+
 	for i := 0; i < numList; i++ {
-		i := i
-		errs.Go(func() error {
-			err := req.createDirInBlobber(a.Blobbers[i])
+		go func(blobberIdx int) {
+			err := req.createDirInBlobber(a.Blobbers[blobberIdx])
 			if err != nil {
 				Logger.Error(err.Error())
-				return err
 			}
-			return err
-		})
-	}
-	err := errs.Wait()
-
-	if err == nil {
-		Logger.Info("Directory created successfully.")
+			await <- err
+		}(i)
 	}
 
-	return err
+	msgList := make([]string, 0, numList)
+	for i := 0; i < numList; i++ {
+		err := <-await
+		if err != nil {
+			msgList = append(msgList, err.Error())
+		}
+	}
+
+	if len(msgList) > 0 {
+		return errors.New(strings.Join(msgList, ", "))
+	}
+
+	return nil
 }
 
 func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode) error {
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
 	formWriter.WriteField("connection_id", req.connectionID)
-	formWriter.WriteField("dir_path", filepath.ToSlash(filepath.Join("/", req.name)))
+
+	dirPath := filepath.ToSlash(req.name)
+	if !strings.HasPrefix(dirPath, "/") {
+		dirPath = filepath.Join("/", dirPath)
+	}
+	formWriter.WriteField("dir_path", dirPath)
+
 	formWriter.Close()
 	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, body)
 	if err != nil {
 		Logger.Error(blobber.Baseurl, "Error creating dir request", err)
 		return err
 	}
-	Logger.Debug(httpreq.URL)
 
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
@@ -80,8 +92,9 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode) error
 		} else {
 			resp_body, err := ioutil.ReadAll(resp.Body)
 			if err == nil {
-				Logger.Error(blobber.Baseurl, "Response: ", string(resp_body))
-				return errors.New(string(resp_body))
+				msg := strings.TrimSpace(string(resp_body))
+				Logger.Error(blobber.Baseurl, "Response: ", msg)
+				return errors.New(msg)
 			}
 		}
 		return err
