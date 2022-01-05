@@ -73,7 +73,6 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode) error
 		Logger.Error(blobber.Baseurl, "Error creating dir request", err)
 		return err
 	}
-	Logger.Debug(httpreq.URL)
 
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
