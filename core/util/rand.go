@@ -84,11 +84,10 @@ type Rand struct {
 
 // Next get next random item
 func (r *Rand) Next() (int, error) {
-	it := -1
 	if len(r.items) > 0 {
 		i := randGen.Intn(len(r.items))
 
-		it = r.items[i]
+		it := r.items[i]
 
 		copy(r.items[i:], r.items[i+1:])
 		r.items = r.items[:len(r.items)-1]

@@ -4,7 +4,6 @@
 package zcncrypto
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/herumi/bls-go-binary/bls"
@@ -49,8 +48,6 @@ func TestSignAndVerify(t *testing.T) {
 	var pk1 bls.PublicKey
 
 	pk1.DeserializeHexStr(pk)
-
-	fmt.Println(pk1.GetHexString())
 
 	require.NoError(t, err)
 

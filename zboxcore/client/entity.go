@@ -10,7 +10,7 @@ type SignFunc func(hash string) (string, error)
 
 type Client struct {
 	*zcncrypto.Wallet
-	signatureSchemeString string `json:"signature_scheme"`
+	signatureSchemeString string
 }
 
 var (
