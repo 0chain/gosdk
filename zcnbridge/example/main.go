@@ -44,6 +44,7 @@ const (
 // `--config_file bridge` runs bridge client
 // `--config_file owner`  runs owner client
 func main() {
+	// Create bridge client configuration
 	zcnbridge.CreateInitialClientConfig(
 		"bridge.yaml",
 		"0x860FA46F170a87dF44D7bB867AA4a5D2813127c1",
@@ -56,6 +57,7 @@ func main() {
 		75.0,
 	)
 
+	// Create bridge owner configuration
 	zcnbridge.CreateInitialOwnerConfig(
 		"owner.yaml",
 		"0x860FA46F170a87dF44D7bB867AA4a5D2813127c1",
@@ -67,9 +69,6 @@ func main() {
 		300000,
 		0,
 	)
-
-	// First is read config from command line
-	cfg := zcnbridge.ReadClientConfigFromCmd()
 
 	// Checking if an account exists in key storage
 	if zcnbridge.AccountExists("0x860FA46F170a87dF44D7bB867AA4a5D2813127c1") {
@@ -90,6 +89,9 @@ func main() {
 	keyStorageExample()
 	// How to sign using legacy and dynamic transactions
 	signingExamples()
+
+	// First is read config from command line
+	cfg := zcnbridge.ReadClientConfigFromCmd()
 
 	// Owner examples: adding new authorizer
 	if *cfg.ConfigFile == "owner" {
