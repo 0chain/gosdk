@@ -28,6 +28,8 @@ type ObjectTreeRequest struct {
 	allocationID   string
 	allocationTx   string
 	blobbers       []*blockchain.StorageNode
+	authToken      string
+	pathHash       string
 	remotefilepath string
 	pageLimit      int // numbers of refs that will be returned by blobber at max
 	level          int
@@ -98,7 +100,20 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 
 func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 	defer o.wg.Done()
-	oReq, err := zboxutil.NewRefsRequest(bUrl, o.allocationID, o.remotefilepath, o.offsetPath, o.updatedDate, o.offsetDate, o.fileType, o.refType, o.level, o.pageLimit)
+	oReq, err := zboxutil.NewRefsRequest(
+		bUrl,
+		o.allocationID,
+		o.remotefilepath,
+		o.pathHash,
+		o.authToken,
+		o.offsetPath,
+		o.updatedDate,
+		o.offsetDate,
+		o.fileType,
+		o.refType,
+		o.level,
+		o.pageLimit,
+	)
 	if err != nil {
 		oTR.err = err
 		return
