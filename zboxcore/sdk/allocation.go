@@ -670,19 +670,17 @@ func (a *Allocation) listDir(path string, consensusThresh, fullconsensus float32
 	return nil, errors.New("list_request_failed", "Failed to get list response from the blobbers")
 }
 
-//This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
-//TODO use allocation context
-func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
-	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
-		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
-	}
+func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
+
 	oTreeReq := &ObjectTreeRequest{
 		allocationID:   a.ID,
 		allocationTx:   a.Tx,
 		blobbers:       a.Blobbers,
+		authToken:      authToken,
+		pathHash:       pathHash,
 		remotefilepath: path,
 		pageLimit:      pageLimit,
 		level:          level,
@@ -694,10 +692,41 @@ func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType
 		wg:             &sync.WaitGroup{},
 		ctx:            a.ctx,
 	}
+
 	oTreeReq.fullconsensus = float32(a.DataShards + a.ParityShards)
 	oTreeReq.consensusThresh = float32(a.DataShards) / oTreeReq.fullconsensus
-
 	return oTreeReq.GetRefs()
+}
+
+// GetRefsWithAuthTicket get refs that are children of shared remote path.
+func (a *Allocation) GetRefsWithAuthTicket(authToken, path, pathHash, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
+	if authToken == "" {
+		return nil, errors.New("empty_auth_token", "auth token cannot be empty")
+	}
+
+	authTicket := new(marker.AuthTicket)
+	if err := json.Unmarshal([]byte(authToken), authTicket); err != nil {
+		return nil, errors.New("json_unmarshall_error", err.Error())
+	}
+
+	return a.getRefs(path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
+}
+
+//This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
+func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
+	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
+		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
+	}
+
+	return a.getRefs(path, "", "", offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
+}
+
+func (a *Allocation) GetRefsFromLookupHash(pathHash, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
+	if pathHash == "" {
+		return nil, errors.New("invalid_lookup_hash", "lookup hash cannot be empty")
+	}
+
+	return a.getRefs("", pathHash, "", offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
 }
 
 func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
@@ -1209,6 +1238,50 @@ func (a *Allocation) CancelDownload(remotepath string) error {
 		return nil
 	}
 	return errors.New("remote_path_not_found", "Invalid path. No download in progress for the path "+remotepath)
+}
+
+func (a *Allocation) GetStreamDownloader(remotePath, pathHash, authToken, contentMode, downloadType string, rxPay bool, retry int, blocksPerMarker uint) (*StreamDownload, error) {
+	if !a.isInitialized() {
+		return nil, notInitialized
+	}
+	//Remove content mode option
+	remotePath = filepath.Clean(remotePath)
+	var res *ObjectTreeResult
+	var err error
+	switch {
+	case authToken != "":
+		res, err = a.GetRefsWithAuthTicket(authToken, remotePath, pathHash, "", "", "", "", "regular", 0, 1)
+	case remotePath != "":
+		fmt.Println("GEt refs with remotepath")
+		res, err = a.GetRefs(remotePath, "", "", "", "", "regular", 0, 1)
+	case pathHash != "":
+		res, err = a.GetRefsFromLookupHash(pathHash, "", "", "", "", "regular", 0, 1) //
+	default:
+		return nil, errors.New("invalid_path", "remote path or authticket is required")
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(res.Refs) == 0 {
+		return nil, errors.New("file_does_not_exist", "")
+	}
+	ref := &res.Refs[0]
+	if ref.Type != fileref.FILE {
+		return nil, errors.New("operation_not_supported", "downloading other than file is not supported")
+	}
+
+	sdo := &StreamDownloadOption{
+		ContentMode:     contentMode,
+		AuthTicket:      authToken,
+		DownloadType:    downloadType,
+		RxPay:           rxPay,
+		Retry:           retry,
+		BlocksPerMarker: blocksPerMarker,
+	}
+
+	return GetDStorageFileReader(a, ref, sdo)
 }
 
 func (a *Allocation) DownloadThumbnailFromAuthTicket(localPath string,
