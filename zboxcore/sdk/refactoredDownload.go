@@ -18,7 +18,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
-	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
@@ -42,6 +41,9 @@ const (
 
 	// TooManyRequestWaitTime wait for this time to re-request when too_many_requests errors ocucurs
 	TooManyRequestWaitTime = time.Millisecond * 100
+
+	Vertical   = "vertical"
+	Horizontal = "horizontal"
 )
 
 // error codes
@@ -60,6 +62,8 @@ const (
 	Panic                   = "code_panicked"
 	InvalidHeader           = "invalid_header"
 	DecryptionError         = "decryption_error"
+	UnknownDownloadType     = "unknown_download_type"
+	InvalidBlocksPerMarker  = "invalid_blocks_per_marker"
 )
 
 //errors
@@ -78,6 +82,8 @@ var (
 	ErrPanic                    = errors.New(Panic, "")
 	ErrInvalidHeader            = errors.New(InvalidHeader, "")
 	ErrDecryption               = errors.New(DecryptionError, "")
+	ErrUnknownDownloadType      = errors.New(UnknownDownloadType, "")
+	ErrInvalidBlocksPerMarker   = errors.New(InvalidBlocksPerMarker, "")
 )
 
 // errors func
@@ -166,28 +172,11 @@ func (bl *blobberStreamDownloadRequest) decrypt(enData []byte) ([]byte, error) {
 		OverallChecksum: string(overallChecksum),
 	}
 
-	return bl.sd.encScheme.Decrypt(&encMsg)
-}
-
-func (bl *blobberStreamDownloadRequest) split(buf []byte, lim int64) (chunks [][]byte, err error) {
-	if bl.sd.encrypted {
-		return bl.splitAndDecrypt(buf, lim)
+	data, err := bl.sd.encScheme.Decrypt(&encMsg)
+	if err != nil {
+		return nil, errors.New(DecryptionError, err.Error())
 	}
-
-	var chunk []byte
-	chunkSize := int(math.Ceil(float64(len(buf)) / float64(lim)))
-	chunks = make([][]byte, 0, chunkSize)
-
-	for int64(len(buf)) >= lim {
-		chunk, buf = buf[:lim], buf[lim:]
-		chunks = append(chunks, chunk)
-	}
-
-	if len(buf) > 0 {
-		chunks = append(chunks, buf[:])
-	}
-
-	return chunks, nil
+	return data, nil
 }
 
 func (bl *blobberStreamDownloadRequest) splitAndDecrypt(buf []byte, lim int64) (chunks [][]byte, err error) {
@@ -224,6 +213,27 @@ func (bl *blobberStreamDownloadRequest) splitAndDecrypt(buf []byte, lim int64) (
 	return chunks, nil
 }
 
+func (bl *blobberStreamDownloadRequest) split(buf []byte, lim int64) (chunks [][]byte, err error) {
+	if bl.sd.encrypted {
+		return bl.splitAndDecrypt(buf, lim)
+	}
+
+	var chunk []byte
+	chunkSize := int(math.Ceil(float64(len(buf)) / float64(lim)))
+	chunks = make([][]byte, 0, chunkSize)
+
+	for int64(len(buf)) >= lim {
+		chunk, buf = buf[:lim], buf[lim:]
+		chunks = append(chunks, chunk)
+	}
+
+	if len(buf) > 0 {
+		chunks = append(chunks, buf[:])
+	}
+
+	return chunks, nil
+}
+
 type dataStatus struct {
 	err  error
 	data [][]byte
@@ -234,10 +244,26 @@ func (sd *StreamDownload) SetOffset(offset int64) {
 	sd.offset = offset
 }
 
+// getDownloadType get download type and blocks per marker that fits the download requirement in optimal way
+// It tries to get at max 100MB data per request
+func (sd *StreamDownload) getDownloadType(wantSize int) (downloadType string, bpm int) {
+	startingIdx := sd.getBlobberStartingIdx()
+	chunksRequired := sd.getChunksRequired(startingIdx, wantSize)
+	if chunksRequired == 1 {
+		return Horizontal, 1
+	}
+
+	if sd.blockSize >= 100*MB {
+		return Horizontal, 1
+	}
+
+	return Vertical, int(100 * MB / (sd.blockSize))
+}
+
 // Read io.Reader implementation
 func (sd *StreamDownload) Read(p []byte) (n int, err error) {
 	if !sd.opened {
-		return 0, errors.New("file_closed", "s")
+		return 0, errors.New("file_closed", "")
 	}
 
 	if sd.eofReached || sd.offset >= sd.fileSize {
@@ -248,10 +274,26 @@ func (sd *StreamDownload) Read(p []byte) (n int, err error) {
 		return 0, ErrExceedingFailedBlobber(len(sd.failedBlobbers), sd.parityShards)
 	}
 
-	data, err := sd.getDataHorizontal(len(p))
+	wantSize := int(math.Min(float64(len(p)), float64(sd.fileSize-sd.offset)))
 
-	_ = err  //check for errors
-	_ = data //check if eof is reached
+	downloadType := sd.downloadType
+	if downloadType == "" {
+		downloadType, sd.blocksPerMarker = sd.getDownloadType(wantSize)
+	}
+
+	var data []byte
+	switch downloadType {
+	case Vertical:
+		fmt.Println("vertical download type")
+		data, err = sd.getDataVertical(wantSize)
+	case Horizontal:
+		fmt.Println("horizontal download type")
+		data, err = sd.getDataHorizontal(wantSize)
+	}
+
+	n = len(data)
+	copy(p[:n], data)
+
 	return
 }
 
@@ -286,7 +328,7 @@ func (sd *StreamDownload) getBlobberEndIdx(size int) int {
 func (sd *StreamDownload) getDataOffset(wantSize int) int {
 	startingBlock := sd.offset / sd.effectiveBlockSize
 	blockOffset := startingBlock * sd.effectiveBlockSize
-
+	fmt.Println("Data offset: ", sd.offset-blockOffset)
 	return int(sd.offset - blockOffset)
 }
 
@@ -312,7 +354,7 @@ func (sd *StreamDownload) getEndOffsetBlock(wantSize int) int {
 }
 
 func (sd *StreamDownload) getStartOffsetBlock() int {
-	return int(sd.offset / sd.effectiveBlockSize / int64(sd.dataShards))
+	return int(sd.offset/sd.effectiveBlockSize/int64(sd.dataShards)) + 1
 }
 
 func (sd *StreamDownload) getDataVertical(wantSize int) (data []byte, err error) {
@@ -322,6 +364,7 @@ func (sd *StreamDownload) getDataVertical(wantSize int) (data []byte, err error)
 	totBlocksPerBlobber := endOffsetBlock - int(startOffsetBlock) + 1
 	startingIdx := sd.getBlobberStartingIdx()
 	chunksRequired := sd.getChunksRequired(startingIdx, wantSize)
+	fmt.Println("ChunksRequired: ", chunksRequired)
 
 	bpm := sd.blocksPerMarker // blocks per marker
 
@@ -385,14 +428,14 @@ func (sd *StreamDownload) getDataVertical(wantSize int) (data []byte, err error)
 	}
 
 	dataOffset := sd.getDataOffset(wantSize)
-	data = data[dataOffset:]
-
 	newOffset := sd.offset + int64(wantSize)
+
+	data = data[dataOffset:]
 	if newOffset >= sd.fileSize {
 		sd.eofReached = true
-	} else {
-		data = data[:newOffset]
 	}
+	lastIdx := int(math.Min(float64(len(data)), float64(wantSize)))
+	data = data[:lastIdx]
 
 	sd.SetOffset(newOffset)
 	return
@@ -404,14 +447,16 @@ func (sd *StreamDownload) getDataHorizontal(wantSize int) (data []byte, err erro
 	totalBlocksRequired := sd.getBlocksRequired(wantSize)
 
 	chunkNums := sd.getChunksRequired(startingBlobberIdx, wantSize)
-
+	fmt.Println("chunknums: ", chunkNums)
 	var blocksRequested int
 	for i := 0; i < chunkNums; i++ {
+		fmt.Println("Downloading chunk ", i)
 		results := make([]*blobberStreamDownloadRequest, sd.dataShards)
 		reconstructionRequiredCh := make(chan struct{}, sd.dataShards)
 		downloadCompletedCh := make(chan struct{}, sd.dataShards)
 		var count int
 		for j := startingBlobberIdx; j < sd.dataShards; j++ {
+			fmt.Println("Downloading block for chunk ", i, " from ", j, "th blobber")
 			blobber := sd.blobbers[j]
 			if _, ok := sd.failedBlobbers[j]; ok {
 				//give error
@@ -424,7 +469,7 @@ func (sd *StreamDownload) getDataHorizontal(wantSize int) (data []byte, err erro
 				blobberUrl:      blobber.Baseurl,
 				sd:              sd,
 				offsetBlock:     offsetBlock,
-				blocksPerMarker: sd.blocksPerMarker,
+				blocksPerMarker: 1,
 			}
 
 			go bsdl.downloadData(reconstructionRequiredCh, downloadCompletedCh)
@@ -433,12 +478,14 @@ func (sd *StreamDownload) getDataHorizontal(wantSize int) (data []byte, err erro
 			count++
 			blocksRequested++
 			if blocksRequested == totalBlocksRequired {
+				fmt.Println("blocks requested: ", blocksRequested)
 				break
 			}
 		}
 
 		var isReconstructionRequired bool
 		for k := 0; k < count; k++ { //Wait for all goroutines to complete
+			fmt.Println("Waiting for ", k, " goroutine")
 			select {
 			case <-downloadCompletedCh:
 			case <-reconstructionRequiredCh:
@@ -484,9 +531,9 @@ func (sd *StreamDownload) getDataHorizontal(wantSize int) (data []byte, err erro
 	data = data[dataOffset:]
 	if newOffset >= sd.fileSize {
 		sd.eofReached = true
-	} else {
-		data = data[:newOffset]
 	}
+	lastIdx := int(math.Min(float64(len(data)), float64(wantSize)))
+	data = data[:lastIdx]
 
 	sd.SetOffset(newOffset)
 
@@ -512,7 +559,7 @@ func (sd *StreamDownload) reconstructVertical(results []*blobberStreamDownloadRe
 				if count == reqParity {
 					breakLoopCh <- struct{}{}
 					gotRequiredShards = true
-					break
+					break outerloop
 				}
 			case <-ctx.Done():
 				breakLoopCh <- struct{}{}
@@ -624,10 +671,11 @@ outerloop:
 			continue
 		}
 		bsdl := &blobberStreamDownloadRequest{
-			blobberID:  blobber.ID,
-			blobberIdx: i,
-			blobberUrl: blobber.Baseurl,
-			sd:         sd,
+			blobberID:       blobber.ID,
+			blobberIdx:      i,
+			blobberUrl:      blobber.Baseurl,
+			sd:              sd,
+			blocksPerMarker: 1,
 		}
 
 		go bsdl.downloadData(nextBlobberRequiredChan, downloadCompletedChan)
@@ -667,9 +715,9 @@ outerloop:
 }
 
 func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- struct{}) {
+	var latestRC int64
 	for retry := 0; retry < bl.sd.retry; retry++ {
-
-		var latestRC int64
+		fmt.Println("Retry: ", retry)
 		rm := &marker.ReadMarker{
 			ClientID:        client.GetClientID(),
 			ClientPublicKey: client.GetClientPublicKey(),
@@ -681,23 +729,27 @@ func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- str
 			ReadCounter: latestRC + int64(bl.blocksPerMarker),
 		}
 
+		fmt.Println("Read count: ", rm.ReadCounter)
 		if err := rm.Sign(); err != nil {
 			bl.result.err = errors.New(SigningError, err.Error())
+			errCh <- struct{}{}
 			return
 		}
 
 		rmData, err := json.Marshal(rm)
 		if err != nil {
 			bl.result.err = errors.New(MarshallError, err.Error())
+			errCh <- struct{}{}
 			return
 		}
 
 		body := new(bytes.Buffer)
 		formWriter := multipart.NewWriter(body)
 		formWriter.WriteField("path_hash", bl.sd.pathHash)
+		fmt.Printf("\nBlock requested with blockNum %v and numBlocks %v\n", bl.offsetBlock, bl.blocksPerMarker)
 		formWriter.WriteField("block_num", fmt.Sprint(bl.offsetBlock))
 		formWriter.WriteField("num_blocks", fmt.Sprint(bl.blocksPerMarker))
-		formWriter.WriteField("content", bl.sd.contentMode) //TODO take from struct
+		formWriter.WriteField("content", bl.sd.contentMode)
 		formWriter.WriteField("read_marker", string(rmData))
 		formWriter.WriteField("rx_pay", fmt.Sprint(bl.sd.rxPay))
 		formWriter.WriteField("auth_token", bl.sd.authTicket)
@@ -707,6 +759,7 @@ func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- str
 		downReq, err := zboxutil.NewDownloadRequest(bl.blobberUrl, bl.sd.allocationID, body)
 		if err != nil {
 			bl.result.err = err
+			errCh <- struct{}{}
 			return
 		}
 		downReq.Header.Add("Content-Type", formWriter.FormDataContentType())
@@ -758,11 +811,13 @@ func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- str
 			return nil
 		})
 
+		fmt.Println("zbox httpdo error: ", err)
 		switch {
 		case errors.Is(err, nil):
 			successCh <- struct{}{}
 			return
 		case errors.Is(err, ErrReadCounterUpdate):
+			fmt.Println("Latest rc is ", latestRC)
 			retry = 0 // Retry indefinitely
 			//
 		case errors.Is(err, ErrTooManyRequests):
@@ -790,14 +845,28 @@ func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- str
 }
 
 // GetDStorageFileReader Get a reader that provides io.Reader interface
-func GetDStorageFileReader(allocation *Allocation, ref *fileref.FileRef, contentMode, authTicket string, rxPay bool, retry int) (*StreamDownload, error) {
+func GetDStorageFileReader(allocation *Allocation, ref *ORef, sdo *StreamDownloadOption) (*StreamDownload, error) {
+	switch sdo.DownloadType {
+	case Horizontal, "":
+	case Vertical:
+		if sdo.BlocksPerMarker == 0 {
+			return nil, errors.New(InvalidBlocksPerMarker, "blocks per marker value should be greater than 0")
+		}
+	default:
+		return nil, errors.New(UnknownDownloadType, fmt.Sprintf("downloadType %v is not supported", sdo.DownloadType))
+	}
+
 	downloadRetry := Retry
-	if retry > 0 {
-		downloadRetry = retry
+	if sdo.Retry > 0 {
+		downloadRetry = sdo.Retry
 	}
 
 	var isEncrypted bool
-	var effectiveBlockSize, effectiveChunkSize int64
+	// remove assignment
+	var effectiveBlockSize int64 = 1048576
+	var effectiveChunkSize int64 = int64(allocation.DataShards) * 1048576
+	//
+
 	var encScheme encryption.EncryptionScheme
 	if ref.EncryptedKey != "" { // TODO: check for encrypted_key as similar field
 		isEncrypted = true
@@ -815,23 +884,41 @@ func GetDStorageFileReader(allocation *Allocation, ref *fileref.FileRef, content
 	}
 
 	return &StreamDownload{
-		allocationID:       allocation.ID,
-		allocationTx:       allocation.Tx,
-		ownerId:            allocation.Owner, // TODO verify ownerId field
-		dataShards:         allocation.DataShards,
-		parityShards:       allocation.ParityShards,
-		blobbers:           allocation.Blobbers,
-		encScheme:          encScheme,
-		chunkSize:          ref.ChunkSize * int64(allocation.DataShards),
-		blockSize:          ref.ChunkSize,
+		opened:       true,
+		allocationID: allocation.ID,
+		allocationTx: allocation.Tx,
+		ownerId:      allocation.Owner, // TODO verify ownerId field
+		dataShards:   allocation.DataShards,
+		parityShards: allocation.ParityShards,
+		blobbers:     allocation.Blobbers,
+		encScheme:    encScheme,
+		// chunkSize:          ref.ChunkSize * int64(allocation.DataShards),
+		chunkSize: effectiveChunkSize,
+		// blockSize:          ref.ChunkSize,
+		blockSize:          effectiveBlockSize,
 		effectiveChunkSize: effectiveChunkSize,
 		effectiveBlockSize: effectiveBlockSize,
 		encrypted:          isEncrypted,
-		contentMode:        contentMode,
-		rxPay:              rxPay,
 		remotePath:         ref.Path,
 		pathHash:           ref.PathHash,
 		fileSize:           ref.ActualFileSize,
+		authTicket:         sdo.AuthTicket,
+		contentMode:        sdo.ContentMode,
+		rxPay:              sdo.RxPay,
+		downloadType:       sdo.DownloadType,
+		blocksPerMarker:    int(sdo.BlocksPerMarker),
 		retry:              downloadRetry,
+		fbMu:               &sync.Mutex{},
+		failedBlobbers:     make(map[int]*blockchain.StorageNode),
 	}, nil
+}
+
+// StreamDownloadOption options that manipulate stream download
+type StreamDownloadOption struct {
+	ContentMode     string
+	AuthTicket      string
+	DownloadType    string // vertical, horizontail or ""
+	RxPay           bool
+	Retry           int
+	BlocksPerMarker uint // Number of blocks to download per request
 }
