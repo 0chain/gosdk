@@ -36,6 +36,7 @@ func (fmt *FixedMerkleTree) initLeaves() {
 }
 
 func (fmt *FixedMerkleTree) Write(buf []byte, chunkIndex int) error {
+	//Fixme if chunkSize is < 1024 then merklechunkSize becomes 0.
 	merkleChunkSize := fmt.ChunkSize / 1024
 	total := len(buf)
 	for i := 0; i < total; i += merkleChunkSize {

@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"fmt"
 	"io"
 	"math"
 	"strconv"
@@ -10,6 +11,11 @@ import (
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
+)
+
+const (
+	// MessageChecksum(128) + ","(1) + OverallChecksum(128) + increasedDataSize(16)
+	EncryptionOverhead = 273 // bytes
 )
 
 type ChunkedUploadChunkReader interface {
@@ -89,15 +95,14 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 		hasher:          hasher,
 	}
 
+	r.chunkDataSize = chunkSize
 	if r.encryptOnUpload {
-		r.chunkHeaderSize = 16 + 2*1024
-		r.chunkDataSize = chunkSize - r.chunkHeaderSize
-	} else {
-		r.chunkDataSize = chunkSize
+		r.chunkDataSize -= EncryptionOverhead
 	}
 
 	r.chunkDataSizePerRead = r.chunkDataSize * int64(dataShards)
 
+	fmt.Println("Chunk data size per read: ", r.chunkDataSizePerRead)
 	return r, nil
 }
 
@@ -194,7 +199,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 			if err != nil {
 				return nil, err
 			}
-			header := make([]byte, 2*1024)
+			header := make([]byte, EncryptionOverhead)
 			copy(header[:], encMsg.MessageChecksum+","+encMsg.OverallChecksum)
 			fragments[pos] = append(header, encMsg.EncryptedData...)
 		}

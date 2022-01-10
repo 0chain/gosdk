@@ -33,7 +33,7 @@ var (
 const DefaultChunkSize = 64 * 1024
 
 /*
-    CreateChunkedUpload create a ChunkedUpload instance
+    CreateChunkedUpload create a ChunkedUpload instance. ChunkSize increases by 273 bytes for each block if encryption is required
 
 	Caller should be careful about fileReader parameter
 	io.ErrUnexpectedEOF might mean that source has completely been exhausted or there is some error
@@ -174,6 +174,12 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 				Attributes: su.fileMeta.Attributes,
 			},
 		}
+	}
+
+	fmt.Println("Chunk size is ", su.chunkSize)
+	if su.encryptOnUpload {
+		//Would be better to add this in WithChunkSize() option. But encryption might not be set to true.
+		su.chunkSize += EncryptionOverhead
 	}
 
 	cReader, err := createChunkReader(su.fileReader, fileMeta.ActualSize, int64(su.chunkSize), su.allocationObj.DataShards, su.encryptOnUpload, su.uploadMask, su.fileErasureEncoder, su.fileEncscheme, su.fileHasher)
