@@ -307,7 +307,7 @@ type StakePoolDelegatePoolInfo struct {
 	PendingInterests common.Balance `json:"pending_interests"` // total for all time
 	// Unstake > 0, then the pool wants to unstake. And the Unstake is maximal
 	// time it can't be unstaked.
-	Unstake common.Timestamp `json:"unstake"`
+	Unstake bool `json:"unstake"`
 }
 
 // StakePoolSettings information.
@@ -334,8 +334,8 @@ type StakePoolInfo struct {
 	Capacity   common.Size    `json:"capacity"`    // blobber bid
 	WritePrice common.Balance `json:"write_price"` // its write price
 
-	Offers      []*StakePoolOfferInfo `json:"offers"`       //
-	OffersTotal common.Balance        `json:"offers_total"` //
+	OffersTotal  common.Balance `json:"offers_total"` // total offers
+	UnstakeTotal common.Balance `json:"unstakeTotal"` // total of stakes marked for unstaking
 	// delegate pools
 	Delegate []*StakePoolDelegatePoolInfo `json:"delegate"`
 	Earnings common.Balance               `json:"interests"` // total for all
