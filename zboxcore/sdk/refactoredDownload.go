@@ -21,6 +21,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
+	"go.dedis.ch/kyber/v3/group/edwards25519"
 )
 
 type FileStatus int
@@ -64,6 +65,8 @@ const (
 	DecryptionError         = "decryption_error"
 	UnknownDownloadType     = "unknown_download_type"
 	InvalidBlocksPerMarker  = "invalid_blocks_per_marker"
+	ReDecryptUnmarshallFail = "redecrypt_unmarshall_fail"
+	ReDecryptionFail        = "redecryption_fail"
 )
 
 //errors
@@ -84,6 +87,8 @@ var (
 	ErrDecryption               = errors.New(DecryptionError, "")
 	ErrUnknownDownloadType      = errors.New(UnknownDownloadType, "")
 	ErrInvalidBlocksPerMarker   = errors.New(InvalidBlocksPerMarker, "")
+	ErrReDecryptUnmarshallFail  = errors.New(ReDecryptUnmarshallFail, "")
+	ErrReDecryptionFail         = errors.New(ReDecryptionFail, "")
 )
 
 // errors func
@@ -152,7 +157,30 @@ type blobberStreamDownloadRequest struct {
 	retry int
 }
 
+func (bl *blobberStreamDownloadRequest) proxyDecrypt(enData []byte) ([]byte, error) {
+	suite := edwards25519.NewBlakeSHA256Ed25519()
+	reEncMessage := &encryption.ReEncryptedMessage{
+		D1: suite.Point(),
+		D4: suite.Point(),
+		D5: suite.Point(),
+	}
+	if err := reEncMessage.Unmarshal(enData); err != nil {
+		return nil, errors.New(ReDecryptUnmarshallFail, err.Error())
+	}
+
+	decryptedData, err := bl.sd.encScheme.ReDecrypt(reEncMessage)
+	if err != nil {
+		return nil, errors.New(ReDecryptionFail, err.Error())
+	}
+
+	return decryptedData, nil
+}
+
 func (bl *blobberStreamDownloadRequest) decrypt(enData []byte) ([]byte, error) {
+	if bl.sd.authTicket != "" {
+		return bl.proxyDecrypt(enData)
+	}
+
 	header := enData[:257]
 	header = bytes.Trim(header, "\x00")
 	splitChar := []byte(",")
