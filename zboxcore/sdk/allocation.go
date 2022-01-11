@@ -703,13 +703,18 @@ func (a *Allocation) GetRefsWithAuthTicket(authToken, path, pathHash, offsetPath
 	if authToken == "" {
 		return nil, errors.New("empty_auth_token", "auth token cannot be empty")
 	}
+	sEnc, err := base64.StdEncoding.DecodeString(authToken)
+	if err != nil {
+		return nil, errors.New("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
+	}
 
 	authTicket := new(marker.AuthTicket)
-	if err := json.Unmarshal([]byte(authToken), authTicket); err != nil {
+	if err := json.Unmarshal(sEnc, authTicket); err != nil {
 		return nil, errors.New("json_unmarshall_error", err.Error())
 	}
 
-	return a.getRefs(path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
+	at, _ := json.Marshal(authTicket)
+	return a.getRefs(path, pathHash, string(at), offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
 }
 
 //This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
