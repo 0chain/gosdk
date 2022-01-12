@@ -65,3 +65,15 @@ func WithStatusCallback(callback StatusCallback) ChunkedUploadOption {
 		su.statusCallback = callback
 	}
 }
+
+func WithProgressStorer(progressStorer ChunkedUploadProgressStorer) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
+		su.progressStorer = progressStorer
+	}
+}
+
+func WithCreateWriteMarkerLocker(createWriteMarkerLocker func(file string) WriteMarkerLocker) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
+		su.createWriteMarkerLocker = createWriteMarkerLocker
+	}
+}

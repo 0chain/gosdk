@@ -190,17 +190,6 @@ type AuthCallback interface {
 	OnSetupComplete(status int, err string)
 }
 
-type regInfo struct {
-	ID        string `json:"id"`
-	PublicKey string `json:"public_key"`
-}
-
-type httpResponse struct {
-	status string
-	body   []byte
-	err    error
-}
-
 type localConfig struct {
 	chain         ChainConfig
 	wallet        zcncrypto.Wallet
@@ -461,12 +450,12 @@ func CreateWallet(statusCb WalletCallback) error {
 		sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 		wallet, err := sigScheme.GenerateKeys()
 		if err != nil {
-			statusCb.OnWalletCreateComplete(StatusError, "", fmt.Sprintf("%s", err.Error()))
+			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
 		}
 		err = RegisterToMiners(wallet, statusCb)
 		if err != nil {
-			statusCb.OnWalletCreateComplete(StatusError, "", fmt.Sprintf("%s", err.Error()))
+			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
 		}
 	}()
@@ -476,19 +465,19 @@ func CreateWallet(statusCb WalletCallback) error {
 // RecoverWallet recovers the previously generated wallet using the mnemonic.
 // It also registers the wallet again to block chain.
 func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
-	if zcncrypto.IsMnemonicValid(mnemonic) != true {
+	if !zcncrypto.IsMnemonicValid(mnemonic) {
 		return errors.New("", "Invalid mnemonic")
 	}
 	go func() {
 		sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 		wallet, err := sigScheme.RecoverKeys(mnemonic)
 		if err != nil {
-			statusCb.OnWalletCreateComplete(StatusError, "", fmt.Sprintf("%s", err.Error()))
+			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
 		}
 		err = RegisterToMiners(wallet, statusCb)
 		if err != nil {
-			statusCb.OnWalletCreateComplete(StatusError, "", fmt.Sprintf("%s", err.Error()))
+			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
 		}
 	}()
@@ -538,21 +527,19 @@ func RegisterToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 				Logger.Error(minerurl, "send error. ", err.Error())
 			}
 			result <- res
-			return
 		}(miner)
 	}
 	consensus := float32(0)
 	for range _config.chain.Miners {
-		select {
-		case rsp := <-result:
-			Logger.Debug(rsp.Url, rsp.Status)
+		rsp := <-result
+		Logger.Debug(rsp.Url, rsp.Status)
 
-			if rsp.StatusCode == http.StatusOK {
-				consensus++
-			} else {
-				Logger.Debug(rsp.Body)
-			}
+		if rsp.StatusCode == http.StatusOK {
+			consensus++
+		} else {
+			Logger.Debug(rsp.Body)
 		}
+
 	}
 	rate := consensus * 100 / float32(len(_config.chain.Miners))
 	if rate < consensusThresh {
@@ -683,12 +670,15 @@ func GetBalanceWallet(walletStr string, cb GetBalanceCallback) error {
 	}()
 	return nil
 }
+
 func getBalanceFromSharders(clientID string) (int64, string, error) {
 	return getBalanceFieldFromSharders(clientID, "balance")
 }
+
 func getNonceFromSharders(clientID string) (int64, string, error) {
 	return getBalanceFieldFromSharders(clientID, "nonce")
 }
+
 func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
 	result := make(chan *util.GetResponse)
 	defer close(result)
@@ -701,33 +691,32 @@ func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
 	var winInfo string
 	var winError string
 	for i := 0; i < numSharders; i++ {
-		select {
-		case rsp := <-result:
-			Logger.Debug(rsp.Url, rsp.Status)
-			if rsp.StatusCode != http.StatusOK {
-				Logger.Error(rsp.Body)
-				winError = rsp.Body
-				continue
-			}
-			Logger.Debug(rsp.Body)
-			var objmap map[string]json.RawMessage
-			err := json.Unmarshal([]byte(rsp.Body), &objmap)
+		rsp := <-result
+		Logger.Debug(rsp.Url, rsp.Status)
+		if rsp.StatusCode != http.StatusOK {
+			Logger.Error(rsp.Body)
+			winError = rsp.Body
+			continue
+		}
+		Logger.Debug(rsp.Body)
+		var objmap map[string]json.RawMessage
+		err := json.Unmarshal([]byte(rsp.Body), &objmap)
+		if err != nil {
+			continue
+		}
+		if v, ok := objmap[name]; ok {
+			bal, err := strconv.ParseInt(string(v), 10, 64)
 			if err != nil {
 				continue
 			}
-			if v, ok := objmap[name]; ok {
-				bal, err := strconv.ParseInt(string(v), 10, 64)
-				if err != nil {
-					continue
-				}
-				balMap[bal]++
-				if balMap[bal] > consensus {
-					consensus = balMap[bal]
-					winBalance = bal
-					winInfo = rsp.Body
-				}
+			balMap[bal]++
+			if balMap[bal] > consensus {
+				consensus = balMap[bal]
+				winBalance = bal
+				winInfo = rsp.Body
 			}
 		}
+
 	}
 	rate := consensus * 100 / float32(len(_config.chain.Sharders))
 	if rate < consensusThresh {
@@ -810,14 +799,12 @@ func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 	resultMap := make(map[int]float32)
 	var winresult *util.GetResponse
 	for i := 0; i < numSharders; i++ {
-		select {
-		case rsp := <-result:
-			Logger.Debug(rsp.Url, rsp.Status)
-			resultMap[rsp.StatusCode]++
-			if resultMap[rsp.StatusCode] > consensus {
-				consensus = resultMap[rsp.StatusCode]
-				winresult = rsp
-			}
+		rsp := <-result
+		Logger.Debug(rsp.Url, rsp.Status)
+		resultMap[rsp.StatusCode]++
+		if resultMap[rsp.StatusCode] > consensus {
+			consensus = resultMap[rsp.StatusCode]
+			winresult = rsp
 		}
 	}
 	rate := consensus * 100 / float32(len(_config.chain.Sharders))

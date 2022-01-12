@@ -1,8 +1,10 @@
+//go:build js && wasm
 // +build js,wasm
 
 package jsbridge
 
 import (
+	"fmt"
 	"reflect"
 	"syscall/js"
 )
@@ -43,6 +45,11 @@ func NewInputBuilder(fn reflect.Type) *InputBuilder {
 //
 // Panics if x is not one of the expected types.
 func (b *InputBuilder) Build() (InputBinder, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("[recover]InputBuilder.Build: ", r)
+		}
+	}()
 
 	b.binders = make([]func(jv js.Value) reflect.Value, b.numIn)
 
@@ -57,22 +64,24 @@ func (b *InputBuilder) Build() (InputBinder, error) {
 
 		switch v.(type) {
 		case *string:
-			b.binders[i] = jsValueToString
+			b.binders[i] = withRecover(i, jsValueToString)
 
 		case *int:
-			b.binders[i] = jsValueToInt
+			b.binders[i] = withRecover(i, jsValueToInt)
 		case *int32:
-			b.binders[i] = jsValueToInt32
+			b.binders[i] = withRecover(i, jsValueToInt32)
 		case *int64:
-			b.binders[i] = jsValueToInt64
-
+			b.binders[i] = withRecover(i, jsValueToInt64)
 		case *float32:
-			b.binders[i] = jsValueToFloat32
+			b.binders[i] = withRecover(i, jsValueToFloat32)
 		case *float64:
-			b.binders[i] = jsValueToFloat64
+			b.binders[i] = withRecover(i, jsValueToFloat64)
 		case *bool:
-			b.binders[i] = jsValueToBool
-
+			b.binders[i] = withRecover(i, jsValueToBool)
+		case *[]string:
+			b.binders[i] = withRecover(i, jsValueToStringSlice)
+		case *[]byte:
+			b.binders[i] = withRecover(i, jsValueToBytes)
 		default:
 			return nil, ErrBinderNotImplemented
 		}
@@ -94,6 +103,20 @@ func (b *InputBuilder) Bind(args []js.Value) ([]reflect.Value, error) {
 	}
 
 	return values, nil
+}
+
+func withRecover(inputIndex int, inputBinder func(jv js.Value) reflect.Value) func(jv js.Value) reflect.Value {
+
+	return func(jv js.Value) reflect.Value {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("[recover]", inputIndex, ":", r)
+			}
+		}()
+
+		return inputBinder(jv)
+	}
+
 }
 
 func jsValueToString(jv js.Value) reflect.Value {
@@ -157,4 +180,33 @@ func jsValueToFloat64(jv js.Value) reflect.Value {
 	}
 
 	return reflect.ValueOf(i)
+}
+
+func jsValueToStringSlice(jv js.Value) reflect.Value {
+	var list []string
+
+	if js.Global().Get("Array").Call("isArray", jv).Bool() {
+		list = make([]string, jv.Length())
+		for i := 0; i < len(list); i++ {
+			it := jv.Index(i)
+			if it.Truthy() {
+				list[i] = it.String()
+			}
+
+		}
+	}
+
+	return reflect.ValueOf(list)
+}
+
+func jsValueToBytes(jv js.Value) reflect.Value {
+
+	var buf []byte
+
+	if jv.Truthy() {
+		buf = make([]byte, jv.Length())
+		js.CopyBytesToGo(buf, jv)
+	}
+
+	return reflect.ValueOf(buf)
 }

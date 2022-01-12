@@ -1,7 +1,7 @@
 package allocationchange
 
 import (
-	"path/filepath"
+	"strings"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -15,11 +15,11 @@ type CopyFileChange struct {
 }
 
 func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
-	path, _ := filepath.Split(ch.DestPath)
-	tSubDirs := getSubDirs(path)
+	// path, _ := filepath.Split(ch.DestPath)
+	tSubDirs := getSubDirs(ch.DestPath)
 	dirRef := rootRef
 	treelevel := 0
-	for treelevel < len(tSubDirs) {
+	for true {
 		found := false
 		for _, child := range dirRef.Children {
 			if child.GetType() == fileref.DIRECTORY && treelevel < len(tSubDirs) {
@@ -32,23 +32,22 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		}
 		if found {
 			treelevel++
-		} else {
-			return errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+			continue
 		}
-	}
-	var foundRef fileref.RefEntity
-	if dirRef.GetPath() == ch.DestPath && dirRef.GetType() == fileref.DIRECTORY {
-		foundRef = dirRef
-	} else {
-		for i, child := range dirRef.Children {
-			if child.GetPath() == ch.DestPath && child.GetType() == fileref.DIRECTORY {
-				foundRef = dirRef.Children[i]
-				break
-			}
+		if len(tSubDirs) <= treelevel {
+			break
 		}
+		newRef := &fileref.Ref{}
+		newRef.Type = fileref.DIRECTORY
+		newRef.AllocationID = dirRef.AllocationID
+		newRef.Path = "/" + strings.Join(tSubDirs[:treelevel+1], "/")
+		newRef.Name = tSubDirs[treelevel]
+		dirRef.AddChild(newRef)
+		dirRef = newRef
+		treelevel++
 	}
 
-	if foundRef == nil {
+	if dirRef.GetPath() != ch.DestPath || dirRef.GetType() != fileref.DIRECTORY {
 		return errors.New("file_not_found", "Object to copy not found in blobber")
 	}
 
@@ -59,11 +58,10 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		affectedRef = ch.ObjectTree.(*fileref.Ref)
 	}
 
-	affectedRef.Path = zboxutil.Join(foundRef.GetPath(), affectedRef.Name)
+	affectedRef.Path = zboxutil.Join(dirRef.GetPath(), affectedRef.Name)
 	ch.processChildren(affectedRef)
 
-	destRef := foundRef.(*fileref.Ref)
-	destRef.AddChild(ch.ObjectTree)
+	dirRef.AddChild(ch.ObjectTree)
 
 	rootRef.CalculateHash()
 	return nil

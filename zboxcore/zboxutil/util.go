@@ -8,14 +8,11 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"os"
 	"path/filepath"
 	"strings"
 
 	"errors"
 
-	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/h2non/filetype"
 	"github.com/lithammer/shortuuid/v3"
 	"golang.org/x/crypto/sha3"
@@ -58,11 +55,11 @@ func (b *lazybuf) string() string {
 	return b.volAndPath[:b.volLen] + string(b.buf[:b.w])
 }
 
-func GetFileContentType(out *os.File) (string, error) {
-
+func GetFileContentType(out io.ReadSeeker) (string, error) {
 	buffer := make([]byte, 261)
 	_, err := out.Read(buffer)
 	defer out.Seek(0, 0)
+
 	if err != nil {
 		return "", err
 	}
@@ -196,11 +193,6 @@ func Decrypt(key, text []byte) ([]byte, error) {
 		return nil, err
 	}
 	return data, nil
-}
-
-func getMinShardersVerify() int {
-	minSharders := util.MaxInt(calculateMinRequired(float64(blockchain.GetMinConfirmation()), float64(len(blockchain.GetSharders()))/100), 1)
-	return minSharders
 }
 
 func calculateMinRequired(minRequired, percent float64) int {
