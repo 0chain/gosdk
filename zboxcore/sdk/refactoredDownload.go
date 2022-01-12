@@ -820,7 +820,7 @@ func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- str
 
 				if !downloadedBlock.Success && downloadedBlock.LatestRM != nil {
 					latestRC = downloadedBlock.LatestRM.ReadCounter
-					incBlobberReadCtr(bl.blobberID, latestRC)
+					setBlobberReadCtr(bl.blobberID, latestRC)
 					return ErrReadCounterUpdate
 				}
 
