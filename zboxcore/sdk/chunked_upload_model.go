@@ -113,6 +113,11 @@ type UploadBlobberStatus struct {
 	UploadLength int64 `json:"upload_length,omitempty"`
 }
 
+type WriteMarkerLocker interface {
+	Lock() error
+	Unlock()
+}
+
 // TODO: copy lockedfile from https://cs.opensource.google/go/go/+/refs/tags/go1.17.1:src/cmd/go/internal/lockedfile/internal/filelock/
 // see more detail on
 
@@ -120,7 +125,7 @@ type UploadBlobberStatus struct {
 // - https://go.googlesource.com/proposal/+/master/design/33974-add-public-lockedfile-pkg.md
 
 // We should replaced it with official package if it is released as public
-type FLock struct {
+type fileLocker struct {
 	sync.Mutex
 	file string
 
@@ -128,13 +133,13 @@ type FLock struct {
 	fileUnlock func()
 }
 
-func createFLock(file string) *FLock {
-	return &FLock{
+func createWriteMarkerLocker(file string) WriteMarkerLocker {
+	return &fileLocker{
 		file: file,
 	}
 }
 
-func (f *FLock) Lock() error {
+func (f *fileLocker) Lock() error {
 	if f == nil {
 		return errors.Throw(constants.ErrInvalidParameter, "f")
 	}
@@ -172,7 +177,7 @@ func (f *FLock) Lock() error {
 	return nil
 }
 
-func (f *FLock) Unlock() {
+func (f *fileLocker) Unlock() {
 
 	if f.fileUnlock != nil {
 		f.fileUnlock()

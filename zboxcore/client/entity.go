@@ -6,17 +6,24 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
+type SignFunc func(hash string) (string, error)
+
 type Client struct {
 	*zcncrypto.Wallet
-	signatureSchemeString string `json:"signature_scheme"`
+	signatureSchemeString string
 }
 
-var client *Client
+var (
+	client *Client
+	Sign   SignFunc
+)
 
 func init() {
 	client = &Client{
 		Wallet: &zcncrypto.Wallet{},
 	}
+
+	Sign = defaultSignFunc
 }
 
 func PopulateClient(clientjson string, signatureScheme string) error {
@@ -37,7 +44,7 @@ func GetClientPublicKey() string {
 	return client.ClientKey
 }
 
-func Sign(hash string) (string, error) {
+func defaultSignFunc(hash string) (string, error) {
 	retSignature := ""
 	for _, kv := range client.Keys {
 		ss := zcncrypto.NewSignatureScheme(client.signatureSchemeString)

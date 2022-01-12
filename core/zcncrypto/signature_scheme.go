@@ -58,18 +58,6 @@ type SignatureScheme interface {
 
 	// // implement ThresholdSignatureScheme
 
-	// SetID(id string) error
-	// GetID() string
-}
-
-// SplitSignatureScheme splits the primary key into number of parts.
-type SplitSignatureScheme interface {
-	SignatureScheme
-	SplitKeys(numSplits int) (*Wallet, error)
-}
-
-type ThresholdSignatureScheme interface {
-	SignatureScheme
 	SetID(id string) error
 	GetID() string
 }

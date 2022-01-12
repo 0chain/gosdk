@@ -52,6 +52,11 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 	var s strings.Builder
 	var err error
 	fileMetaRetFn := func() {
+		if fileStats == nil {
+			fileStats = &FileStats{}
+			fileStats.BlobberID = blobber.ID
+			fileStats.BlobberURL = blobber.Baseurl
+		}
 		rspCh <- &fileStatsResponse{filestats: fileStats, responseStr: s.String(), blobberIdx: blobberIdx, err: err}
 	}
 	defer fileMetaRetFn()
@@ -94,7 +99,7 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 			fileStats.BlobberURL = blobber.Baseurl
 			return nil
 		}
-		return err
+		return errors.New(resp.Status, s.String())
 	})
 }
 
@@ -111,7 +116,9 @@ func (req *ListRequest) getFileStatsFromBlobbers() map[string]*FileStats {
 	fileInfos := make(map[string]*FileStats)
 	for i := 0; i < numList; i++ {
 		ch := <-rspCh
-		fileInfos[ch.filestats.BlobberID] = ch.filestats
+		if ch.err == nil {
+			fileInfos[ch.filestats.BlobberID] = ch.filestats
+		}
 	}
 	return fileInfos
 }

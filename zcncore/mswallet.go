@@ -35,14 +35,14 @@ type MultisigSCWallet struct {
 
 // MSWallet Client data necessary for a multi-sig wallet.
 type MSWallet struct {
-	Id              int                                  `json:"id"`
-	SignatureScheme string                               `json:"signature_scheme"`
-	GroupClientID   string                               `json:"group_client_id"`
-	GroupKey        zcncrypto.SignatureScheme            `json:"group_key"`
-	SignerClientIDs []string                             `json:"sig_client_ids"`
-	SignerKeys      []zcncrypto.ThresholdSignatureScheme `json:"signer_keys"`
-	T               int                                  `json:"threshold"`
-	N               int                                  `json:"num_subkeys"`
+	Id              int                         `json:"id"`
+	SignatureScheme string                      `json:"signature_scheme"`
+	GroupClientID   string                      `json:"group_client_id"`
+	GroupKey        zcncrypto.SignatureScheme   `json:"group_key"`
+	SignerClientIDs []string                    `json:"sig_client_ids"`
+	SignerKeys      []zcncrypto.SignatureScheme `json:"signer_keys"`
+	T               int                         `json:"threshold"`
+	N               int                         `json:"num_subkeys"`
 }
 
 func (msw *MSWallet) UnmarshalJSON(data []byte) error {
@@ -83,7 +83,7 @@ func (msw *MSWallet) UnmarshalJSON(data []byte) error {
 		msw.GroupKey = ss
 	}
 
-	signerKeys, err := zcncrypto.UnmarshalThresholdSignatureSchemes(m.SignatureScheme, m.SignerKeys)
+	signerKeys, err := zcncrypto.UnmarshalSignatureSchemes(m.SignatureScheme, m.SignerKeys)
 	if err != nil {
 		return err
 	}
@@ -172,14 +172,14 @@ func RegisterWallet(walletString string, cb WalletCallback) {
 	err := json.Unmarshal([]byte(walletString), &w)
 
 	if err != nil {
-		cb.OnWalletCreateComplete(StatusError, walletString, fmt.Sprintf("%s", err.Error()))
+		cb.OnWalletCreateComplete(StatusError, walletString, err.Error())
 	}
 
 	//We do not want to send private key to blockchain
 	w.Keys[0].PrivateKey = ""
 	err = RegisterToMiners(&w, cb)
 	if err != nil {
-		cb.OnWalletCreateComplete(StatusError, "", fmt.Sprintf("%s", err.Error()))
+		cb.OnWalletCreateComplete(StatusError, "", err.Error())
 	}
 
 }
