@@ -4,6 +4,10 @@
 package main
 
 import (
+	"io"
+	"os"
+
+	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/sdk"
@@ -43,4 +47,20 @@ func GetEncryptedPublicKey(mnemonic string) (string, error) {
 		return "", err
 	}
 	return encScheme.GetPublicKey()
+}
+
+func showLogs() {
+	zcncore.GetLogger().SetLevel(logger.DEBUG)
+	sdk.GetLogger().SetLevel(logger.DEBUG)
+
+	zcncore.GetLogger().SetLogFile(os.Stdout, true)
+	sdk.GetLogger().SetLogFile(os.Stdout, true)
+}
+
+func hideLogs() {
+	zcncore.GetLogger().SetLevel(logger.ERROR)
+	sdk.GetLogger().SetLevel(logger.ERROR)
+
+	zcncore.GetLogger().SetLogFile(io.Discard, false)
+	sdk.GetLogger().SetLogFile(io.Discard, false)
 }

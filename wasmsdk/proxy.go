@@ -106,6 +106,8 @@ func main() {
 				"init":                  Init,
 				"setWallet":             SetWallet,
 				"getEncryptedPublicKey": GetEncryptedPublicKey,
+				"hideLogs":              hideLogs,
+				"showLogs":              showLogs,
 
 				//blobber
 				"delete":   Delete,
@@ -132,6 +134,8 @@ func main() {
 		}
 
 	}
+
+	hideLogs()
 
 	<-make(chan bool)
 

@@ -13,6 +13,21 @@ init wasm sdk
   Output:
   > N/A
 
+### zcn.sdk.hideLogs
+hide interactive sdk logs. default is hidden.
+  Input:
+  > N/A
+
+  Output:
+  > N/A
+
+### zcn.sdk.showLogs
+show interactive sdk logs. default is hidden.
+  Input:
+  > N/A
+
+  Output:
+  > N/A
 
 ### zcn.jsProxy.setWallet 
 set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWallet` to set wallet on go.
