@@ -49,7 +49,7 @@ func NewTransactionEntity(clientID, publicKey string) (*Transaction, error) {
 		PublicKey:    publicKey,
 		callBack:     newCallBack(),
 	}
-	zcntxn, err := zcncore.NewTransaction(txn.callBack, 0)
+	zcntxn, err := zcncore.NewTransaction(txn.callBack, 0, 0)
 	if err != nil {
 		return nil, err
 	}

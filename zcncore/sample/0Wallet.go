@@ -174,7 +174,7 @@ func main() {
 		}
 		fmt.Println("**** Mnemonic is Valid ****")
 	case "send":
-		txn, err := zcncore.NewTransaction(s, 0)
+		txn, err := zcncore.NewTransaction(s, 0, 0)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -190,7 +190,7 @@ func main() {
 		txn.Verify()
 		s.wg.Wait()
 	case "store":
-		txn, err := zcncore.NewTransaction(s, 0)
+		txn, err := zcncore.NewTransaction(s, 0, 0)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -206,7 +206,7 @@ func main() {
 		txn.Verify()
 		s.wg.Wait()
 	case "faucet":
-		txn, err := zcncore.NewTransaction(s, 0)
+		txn, err := zcncore.NewTransaction(s, 0, 0)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -242,7 +242,7 @@ func main() {
 		}
 		s.wg.Wait()
 	case "verify":
-		txn, err := zcncore.NewTransaction(s, 0)
+		txn, err := zcncore.NewTransaction(s, 0, 0)
 		if err != nil {
 			fmt.Println(err)
 			return
