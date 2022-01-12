@@ -51,28 +51,6 @@ type downloadBlock struct {
 	NumBlocks   int64 `json:"num_of_blocks"`
 }
 
-var blobberReadCounter *sync.Map
-
-func getBlobberReadCtr(blobber *blockchain.StorageNode) int64 {
-	rctr, ok := blobberReadCounter.Load(blobber.ID)
-	if ok {
-		return rctr.(int64)
-	}
-	return int64(0)
-}
-
-func incBlobberReadCtr(blobber *blockchain.StorageNode, numBlocks int64) {
-	rctr, ok := blobberReadCounter.Load(blobber.ID)
-	if !ok {
-		rctr = int64(0)
-	}
-	blobberReadCounter.Store(blobber.ID, (rctr.(int64))+numBlocks)
-}
-
-func setBlobberReadCtr(blobber *blockchain.StorageNode, ctr int64) {
-	blobberReadCounter.Store(blobber.ID, ctr)
-}
-
 var downloadBlockChan map[string]chan *BlockDownloadRequest
 var initDownloadMutex sync.Mutex
 
@@ -82,7 +60,6 @@ func InitBlockDownloader(blobbers []*blockchain.StorageNode) {
 	if downloadBlockChan == nil {
 		downloadBlockChan = make(map[string]chan *BlockDownloadRequest)
 	}
-	blobberReadCounter = &sync.Map{}
 
 	for _, blobber := range blobbers {
 		if _, ok := downloadBlockChan[blobber.ID]; !ok {
@@ -138,7 +115,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		rm.AllocationID = req.allocationID
 		rm.OwnerID = client.GetClientID()
 		rm.Timestamp = common.Now()
-		rm.ReadCounter = getBlobberReadCtr(req.blobber) + req.numBlocks
+		rm.ReadCounter = getBlobberReadCtr(req.blobber.ID) + req.numBlocks
 		err := rm.Sign()
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error: Signing readmarker failed")}
@@ -218,14 +195,14 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 						rspData.BlockChunks = chunks
 					}
 					rspData.RawData = []byte{}
-					incBlobberReadCtr(req.blobber, req.numBlocks)
+					incBlobberReadCtr(req.blobber.ID, req.numBlocks)
 					req.result <- &rspData
 					return nil
 				}
 
-				if !rspData.Success && rspData.LatestRM != nil && rspData.LatestRM.ReadCounter >= getBlobberReadCtr(req.blobber) {
+				if !rspData.Success && rspData.LatestRM != nil && rspData.LatestRM.ReadCounter >= getBlobberReadCtr(req.blobber.ID) {
 					Logger.Info("Will be retrying download")
-					setBlobberReadCtr(req.blobber, rspData.LatestRM.ReadCounter)
+					setBlobberReadCtr(req.blobber.ID, rspData.LatestRM.ReadCounter)
 					shouldRetry = true
 					return errors.New("", "Need to retry the download")
 				}

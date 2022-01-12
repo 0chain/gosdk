@@ -211,6 +211,7 @@ func (a *Allocation) InitAllocation() {
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers)
+	initReadCounter()
 	a.initialized = true
 }
 

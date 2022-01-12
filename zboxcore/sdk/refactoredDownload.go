@@ -743,7 +743,7 @@ outerloop:
 }
 
 func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- struct{}) {
-	var latestRC int64
+	latestRC := getBlobberReadCtr(bl.blobberID)
 	for retry := 0; retry < bl.sd.retry; retry++ {
 		fmt.Println("Retry: ", retry)
 		rm := &marker.ReadMarker{
@@ -813,12 +813,14 @@ func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- str
 				err = json.Unmarshal(response, downloadedBlock)
 				if err != nil { //It means response is file data
 					downloadedBlock.Success = true
+					incBlobberReadCtr(bl.blobberID, int64(bl.blocksPerMarker))
 					bl.result.data, err = bl.split(response, bl.sd.blockSize)
 					return err
 				}
 
 				if !downloadedBlock.Success && downloadedBlock.LatestRM != nil {
 					latestRC = downloadedBlock.LatestRM.ReadCounter
+					incBlobberReadCtr(bl.blobberID, latestRC)
 					return ErrReadCounterUpdate
 				}
 
