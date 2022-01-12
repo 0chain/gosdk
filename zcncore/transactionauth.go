@@ -17,10 +17,14 @@ type TransactionWithAuth struct {
 	t *Transaction
 }
 
-func newTransactionWithAuth(cb TransactionCallback, txnFee int64) (*TransactionWithAuth, error) {
+func (ta *TransactionWithAuth) SetTransactionNonce(txnNonce int64) error {
+	return ta.t.SetTransactionNonce(txnNonce)
+}
+
+func newTransactionWithAuth(cb TransactionCallback, txnFee int64, nonce int64) (*TransactionWithAuth, error) {
 	ta := &TransactionWithAuth{}
 	var err error
-	ta.t, err = newTransaction(cb, txnFee)
+	ta.t, err = newTransaction(cb, txnFee, nonce)
 	return ta, err
 }
 

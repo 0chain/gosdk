@@ -163,6 +163,11 @@ type GetBalanceCallback interface {
 	OnBalanceAvailable(status int, value int64, info string)
 }
 
+// GetNonceCallback needs to be implemented by the caller of GetNonce() to get the status
+type GetNonceCallback interface {
+	OnNonceAvailable(status int, nonce int64, info string)
+}
+
 // GetInfoCallback needs to be implemented by the caller of GetLockTokenConfig() and GetLockedTokens()
 type GetInfoCallback interface {
 	// OnInfoAvailable will be called when GetLockTokenConfig is complete
@@ -640,6 +645,24 @@ func GetBalance(cb GetBalanceCallback) error {
 	return nil
 }
 
+// GetBalance retreives wallet nonce from sharders
+func GetNonce(cb GetNonceCallback) error {
+	err := checkConfig()
+	if err != nil {
+		return err
+	}
+	go func() {
+		value, info, err := getNonceFromSharders(_config.wallet.ClientID)
+		if err != nil {
+			Logger.Error(err)
+			cb.OnNonceAvailable(StatusError, 0, info)
+			return
+		}
+		cb.OnNonceAvailable(StatusSuccess, value, info)
+	}()
+	return nil
+}
+
 // GetBalance retreives wallet balance from sharders
 func GetBalanceWallet(walletStr string, cb GetBalanceCallback) error {
 
@@ -660,8 +683,13 @@ func GetBalanceWallet(walletStr string, cb GetBalanceCallback) error {
 	}()
 	return nil
 }
-
 func getBalanceFromSharders(clientID string) (int64, string, error) {
+	return getBalanceFieldFromSharders(clientID, "balance")
+}
+func getNonceFromSharders(clientID string) (int64, string, error) {
+	return getBalanceFieldFromSharders(clientID, "nonce")
+}
+func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
 	result := make(chan *util.GetResponse)
 	defer close(result)
 	// getMinShardersVerify
@@ -687,7 +715,7 @@ func getBalanceFromSharders(clientID string) (int64, string, error) {
 			if err != nil {
 				continue
 			}
-			if v, ok := objmap["balance"]; ok {
+			if v, ok := objmap[name]; ok {
 				bal, err := strconv.ParseInt(string(v), 10, 64)
 				if err != nil {
 					continue

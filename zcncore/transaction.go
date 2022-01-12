@@ -110,6 +110,8 @@ type TransactionScheme interface {
 	SetTransactionHash(hash string) error
 	// SetTransactionFee implements method to set the transaction fee
 	SetTransactionFee(txnFee int64) error
+	// SetTransactionNonce implements method to set the transaction nonce
+	SetTransactionNonce(txnNonce int64) error
 	// Verify implements verify the transaction
 	Verify() error
 	// GetVerifyOutput implements the verifcation output from sharders
@@ -140,7 +142,6 @@ type TransactionScheme interface {
 	MinerScUpdateGlobals(*InputMap) error
 	MinerSCDeleteMiner(*MinerSCMinerInfo) error
 	MinerSCDeleteSharder(*MinerSCMinerInfo) error
-
 
 	// Storage SC
 
@@ -221,11 +222,43 @@ func (t *Transaction) completeVerify(status int, out string, err error) {
 	}
 }
 
+type getNonceCallBack struct {
+	nonceCh chan int64
+	err     error
+}
+
+func (g getNonceCallBack) OnNonceAvailable(status int, nonce int64, info string) {
+	if status != StatusSuccess {
+		g.err = errors.New("get_nonce", "failed respond nonce")
+	}
+
+	g.nonceCh <- nonce
+}
+
 func (t *Transaction) submitTxn() {
-	// Clear the status, incase transaction object reused
+	// Clear the status, in case transaction object reused
 	t.txnStatus = StatusUnknown
 	t.txnOut = ""
 	t.txnError = nil
+
+	nonce := t.txn.TransactionNonce
+	if nonce < 1 {
+		Logger.Info("Requesting nonce from remote")
+		back := &getNonceCallBack{
+			nonceCh: make(chan int64),
+			err:     nil,
+		}
+		if err := GetNonce(back); err != nil {
+			Logger.Error("can't get nonce", err)
+			return
+		}
+		nonce = <-back.nonceCh
+		Logger.Info("received nonce: ", nonce)
+		if nonce == 0 || back.err != nil {
+			Logger.Error("can't get nonce, trying with nonce=1", back.err)
+		}
+		t.txn.TransactionNonce = nonce + 1
+	}
 
 	// If Signature is not passed compute signature
 	if t.txn.Signature == "" {
@@ -281,17 +314,18 @@ func (t *Transaction) submitTxn() {
 	t.completeTxn(StatusSuccess, tSuccessRsp, nil)
 }
 
-func newTransaction(cb TransactionCallback, txnFee int64) (*Transaction, error) {
+func newTransaction(cb TransactionCallback, txnFee int64, nonce int64) (*Transaction, error) {
 	t := &Transaction{}
 	t.txn = transaction.NewTransactionEntity(_config.wallet.ClientID, _config.chain.ChainID, _config.wallet.ClientKey)
 	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
 	t.txnCb = cb
 	t.txn.TransactionFee = txnFee
+	t.txn.TransactionNonce = nonce
 	return t, nil
 }
 
 // NewTransaction allocation new generic transaction object for any operation
-func NewTransaction(cb TransactionCallback, txnFee int64) (TransactionScheme, error) {
+func NewTransaction(cb TransactionCallback, txnFee int64, nonce int64) (TransactionScheme, error) {
 	err := checkConfig()
 	if err != nil {
 		return nil, err
@@ -301,10 +335,11 @@ func NewTransaction(cb TransactionCallback, txnFee int64) (TransactionScheme, er
 			return nil, errors.New("", "auth url not set")
 		}
 		Logger.Info("New transaction interface with auth")
-		return newTransactionWithAuth(cb, txnFee)
+		return newTransactionWithAuth(cb, txnFee, nonce)
 	}
 	Logger.Info("New transaction interface")
-	return newTransaction(cb, txnFee)
+	t, err := newTransaction(cb, txnFee, nonce)
+	return t, err
 }
 
 func (t *Transaction) SetTransactionCallback(cb TransactionCallback) error {
@@ -320,6 +355,13 @@ func (t *Transaction) SetTransactionFee(txnFee int64) error {
 		return errors.New("", "transaction already exists. cannot set transaction fee.")
 	}
 	t.txn.TransactionFee = txnFee
+	return nil
+}
+func (t *Transaction) SetTransactionNonce(txnNonce int64) error {
+	if t.txnStatus != StatusUnknown {
+		return errors.New("", "transaction already exists. cannot set transaction fee.")
+	}
+	t.txn.TransactionNonce = txnNonce
 	return nil
 }
 

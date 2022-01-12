@@ -233,6 +233,14 @@ func main() {
 			return
 		}
 		s.wg.Wait()
+	case "getnonce":
+		s.wg.Add(1)
+		err = zcncore.GetNonce(nil)
+		if err != nil {
+			fmt.Println("get balance failed: ", err)
+			return
+		}
+		s.wg.Wait()
 	case "verify":
 		txn, err := zcncore.NewTransaction(s, 0)
 		if err != nil {

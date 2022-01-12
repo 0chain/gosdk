@@ -43,6 +43,7 @@ type Transaction struct {
 	TransactionType   int    `json:"transaction_type"`
 	TransactionOutput string `json:"transaction_output,omitempty"`
 	TransactionFee    int64  `json:"transaction_fee"`
+	TransactionNonce  int64  `json:"transaction_nonce"`
 	OutputHash        string `json:"txn_output_hash"`
 	Status            int    `json:"transaction_status"`
 }
@@ -173,7 +174,7 @@ func (t *Transaction) ComputeHashAndSign(signHandler SignFunc) error {
 }
 
 func (t *Transaction) ComputeHashData() {
-	hashdata := fmt.Sprintf("%v:%v:%v:%v:%v", t.CreationDate, t.ClientID,
+	hashdata := fmt.Sprintf("%v:%v:%v:%v:%v:%v", t.CreationDate, t.TransactionNonce, t.ClientID,
 		t.ToClientID, t.Value, encryption.Hash(t.TransactionData))
 	t.Hash = encryption.Hash(hashdata)
 }
