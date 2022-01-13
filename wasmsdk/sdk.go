@@ -4,7 +4,6 @@
 package main
 
 import (
-	"io"
 	"os"
 
 	"github.com/0chain/gosdk/core/logger"
@@ -61,6 +60,6 @@ func hideLogs() {
 	zcncore.GetLogger().SetLevel(logger.ERROR)
 	sdk.GetLogger().SetLevel(logger.ERROR)
 
-	zcncore.GetLogger().SetLogFile(io.Discard, false)
-	sdk.GetLogger().SetLogFile(io.Discard, false)
+	zcncore.GetLogger().SetLogFile(os.Stdout, false)
+	sdk.GetLogger().SetLogFile(os.Stdout, false)
 }

@@ -25,12 +25,14 @@ type Player struct {
 	allocationObj *sdk.Allocation
 	authTicketObj *marker.AuthTicket
 
-	todo        chan *sdk.ListResult
-	reload      chan *sdk.ListResult
+	todoQueue   chan *sdk.ListResult
+	reloadQueue chan *sdk.ListResult
 	latestTodo  *sdk.ListResult
-	ctx         context.Context
-	cancel      context.CancelFunc
-	prefetchQty int
+
+	downloadedQueue chan []byte
+	ctx             context.Context
+	cancel          context.CancelFunc
+	prefetchQty     int
 }
 
 var currentPlayer *Player
@@ -41,8 +43,9 @@ func (p *Player) start() {
 	}
 
 	p.ctx, p.cancel = context.WithCancel(context.TODO())
-	p.todo = make(chan *sdk.ListResult, 100)
-	p.reload = make(chan *sdk.ListResult, p.prefetchQty)
+	p.todoQueue = make(chan *sdk.ListResult, 100)
+	p.reloadQueue = make(chan *sdk.ListResult, p.prefetchQty)
+	p.downloadedQueue = make(chan []byte, p.prefetchQty)
 
 	go p.reloadList()
 	go p.startDownload()
@@ -73,6 +76,7 @@ func (p *Player) download(it *sdk.ListResult) {
 
 	defer sdk.FS.Remove(localPath) //nolint
 
+	PrintInfo("downloading [", it.Path, "]")
 	err = downloader.Start(statusBar)
 
 	if err == nil {
@@ -91,9 +95,9 @@ func (p *Player) download(it *sdk.ListResult) {
 
 	mf, _ := fs.(*common.MemFile)
 
-	PrintInfo("playing [", it.Path, "]")
+	//AppendVideo(mf.Buffer.Bytes())
 
-	AppendVideo(mf.Buffer.Bytes())
+	p.downloadedQueue <- mf.Buffer.Bytes()
 
 }
 
@@ -102,8 +106,10 @@ func (p *Player) startDownload() {
 		select {
 		case <-p.ctx.Done():
 			PrintInfo("cancelled download")
-			break
-		case it := <-p.todo:
+			close(p.todoQueue)
+			close(p.reloadQueue)
+			return
+		case it := <-p.todoQueue:
 			p.download(it)
 
 			go p.nextTodo()
@@ -113,9 +119,9 @@ func (p *Player) startDownload() {
 }
 
 func (p *Player) nextTodo() {
-	if len(p.todo) < p.prefetchQty {
+	if len(p.todoQueue) < p.prefetchQty {
 		PrintInfo("reload list")
-		p.reload <- p.latestTodo
+		p.reloadQueue <- p.latestTodo
 	}
 }
 
@@ -125,7 +131,7 @@ func (p *Player) reloadList() {
 		case <-p.ctx.Done():
 			PrintInfo("canceled reloadList")
 			return
-		case latestTodo := <-p.reload:
+		case latestTodo := <-p.reloadQueue:
 
 			list, err := p.loadList()
 
@@ -140,9 +146,9 @@ func (p *Player) reloadList() {
 			for _, it := range list {
 				if latestTodo == nil || (len(it.Name) > len(latestTodo.Name) || it.Name > latestTodo.Name) {
 					PrintInfo("found [", it.Path, "]")
-					p.todo <- it
-					latestTodo = it
 					p.latestTodo = it
+					p.todoQueue <- it
+					latestTodo = it
 				}
 			}
 
@@ -170,6 +176,10 @@ func (p *Player) loadList() ([]*sdk.ListResult, error) {
 	}
 
 	return ref.Children, nil
+}
+
+func (p *Player) getNextSegment() []byte {
+	return <-p.downloadedQueue
 }
 
 // SortedListResult sort files order by time
@@ -201,7 +211,7 @@ func (a SortedListResult) Swap(i, j int) {
 func createPalyer(allocationID, remotePath, authTicket, lookupHash string) (*Player, error) {
 
 	player := &Player{}
-	player.prefetchQty = 5
+	player.prefetchQty = 3
 	player.remotePath = remotePath
 	player.authTicket = authTicket
 	player.lookupHash = lookupHash
@@ -273,4 +283,12 @@ func Stop() error {
 	currentPlayer = nil
 
 	return nil
+}
+
+func GetNextSegment() ([]byte, error) {
+	if currentPlayer == nil {
+		return nil, errors.New("No player is available")
+	}
+
+	return currentPlayer.getNextSegment(), nil
 }

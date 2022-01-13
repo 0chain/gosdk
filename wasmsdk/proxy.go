@@ -72,27 +72,6 @@ func main() {
 			} else {
 				PrintError("__zcn_wasm__.jsProxy.createObjectURL is not installed yet")
 			}
-
-			appendVideo := jsProxy.Get("appendVideo")
-			if !(appendVideo.IsNull() || appendVideo.IsUndefined()) {
-
-				AppendVideo = func(buf []byte) {
-					arrayBuffer := js.Global().Get("ArrayBuffer").New(len(buf))
-
-					uint8Array := js.Global().Get("Uint8Array").New(arrayBuffer)
-
-					js.CopyBytesToJS(uint8Array, buf)
-
-					_, err := jsbridge.Await(appendVideo.Invoke(uint8Array))
-					if len(err) > 0 && !err[0].IsNull() {
-						PrintError(err[0].String())
-					}
-
-				}
-			} else {
-				PrintError("__zcn_wasm__.jsProxy.appendVideoBuffer is not installed yet")
-			}
-
 		} else {
 			PrintError("__zcn_wasm__.jsProxy is not installed yet")
 		}
@@ -123,8 +102,9 @@ func main() {
 				"commitFolderMetaTxn": CommitFolderMetaTxn,
 
 				// player
-				"play": Play,
-				"stop": Stop,
+				"play":           Play,
+				"stop":           Stop,
+				"getNextSegment": GetNextSegment,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
