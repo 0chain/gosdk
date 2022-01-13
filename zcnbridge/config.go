@@ -62,25 +62,6 @@ type BridgeOwner struct {
 	*Instance
 }
 
-type BridgeOwnerYaml struct {
-	// KeyStorage unlock storage
-	Password string
-	// Owner address
-	Address string
-	// Address of Ethereum bridge contract
-	BridgeAddress string
-	// Address of Ethereum authorizers contract
-	AuthorizersAddress string
-	// Address of WZCN token (Example: https://ropsten.etherscan.io/token/0x930E1BE76461587969Cb7eB9BFe61166b1E70244)
-	WzcnAddress string
-	// URL of ethereum RPC node (infura or alchemy)
-	EthereumNodeURL string
-	// Gas limit to execute ethereum transaction
-	GasLimit int64
-	// Value to execute ZCN smart contracts in wei
-	Value int64
-}
-
 // ReadClientConfigFromCmd reads config from command line
 // Bridge has several configs:
 // Chain config at ~/.zcn/config.json

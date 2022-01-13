@@ -7,8 +7,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"os"
 	"path"
 	"time"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zcnbridge"
@@ -46,7 +49,7 @@ const (
 func main() {
 	// Create bridge client configuration
 	zcnbridge.CreateInitialClientConfig(
-		"bridge.yaml",
+		zcnbridge.BridgeClientConfigName,
 		"0x860FA46F170a87dF44D7bB867AA4a5D2813127c1",
 		"0xF26B52df8c6D9b9C20bfD7819Bed75a75258c7dB",
 		"0x930E1BE76461587969Cb7eB9BFe61166b1E70244",
@@ -59,7 +62,7 @@ func main() {
 
 	// Create bridge owner configuration
 	zcnbridge.CreateInitialOwnerConfig(
-		"owner.yaml",
+		zcnbridge.OwnerClientConfigName,
 		"0x860FA46F170a87dF44D7bB867AA4a5D2813127c1",
 		"0xF26B52df8c6D9b9C20bfD7819Bed75a75258c7dB",
 		"0x930E1BE76461587969Cb7eB9BFe61166b1E70244",
@@ -104,10 +107,25 @@ func main() {
 }
 
 func registerAccountInKeyStorage(mnemonic, password string) {
-	err := zcnbridge.ImportAccount(mnemonic, password)
+	addr, err := zcnbridge.ImportAccount(mnemonic, password)
 	if err != nil {
 		fmt.Println(err)
+		return
 	}
+
+	updateClientEthereumAddress(addr)
+}
+
+func updateClientEthereumAddress(address string) {
+	configFile := path.Join(zcnbridge.GetConfigDir(), zcnbridge.BridgeClientConfigName)
+	buf, _ := os.ReadFile(configFile)
+	cfg := &zcnbridge.Bridge{}
+	_ = yaml.Unmarshal(buf, cfg)
+
+	cfg.Owner.EthereumAddress = address
+
+	text, _ := yaml.Marshal(cfg)
+	_ = os.WriteFile(configFile, text, 0644)
 }
 
 // keyStorageExample Shows how new/existing user will work with key storage
