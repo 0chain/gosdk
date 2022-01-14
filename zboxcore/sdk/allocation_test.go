@@ -490,7 +490,7 @@ func TestAllocation_CreateDir(t *testing.T) {
 	mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 		return strings.HasPrefix(req.URL.Path, "TestAllocation_CreateDir")
 	})).Return(&http.Response{
-		StatusCode: http.StatusBadRequest,
+		StatusCode: http.StatusOK,
 		Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 	}, nil)
 
