@@ -168,6 +168,12 @@ type GetNonceCallback interface {
 	OnNonceAvailable(status int, nonce int64, info string)
 }
 
+type GetNonceCallbackStub struct {
+}
+
+func (g *GetNonceCallbackStub) OnNonceAvailable(status int, nonce int64, info string) {
+}
+
 // GetInfoCallback needs to be implemented by the caller of GetLockTokenConfig() and GetLockedTokens()
 type GetInfoCallback interface {
 	// OnInfoAvailable will be called when GetLockTokenConfig is complete
@@ -634,6 +640,9 @@ func GetBalance(cb GetBalanceCallback) error {
 
 // GetBalance retreives wallet nonce from sharders
 func GetNonce(cb GetNonceCallback) error {
+	if cb == nil {
+		cb = &GetNonceCallbackStub{}
+	}
 	err := checkConfig()
 	if err != nil {
 		return err
