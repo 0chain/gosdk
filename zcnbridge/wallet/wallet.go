@@ -4,8 +4,8 @@ import (
 	"encoding/hex"
 	"encoding/json"
 
-	"github.com/0chain/gosdk/zcnbridge/log"
-
+	//"github.com/0chain/gosdk/zcnbridge/log"
+	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zcnbridge/crypto"
 	"github.com/0chain/gosdk/zcnbridge/errors"
@@ -19,6 +19,13 @@ const (
 	BurnWzcnTicketPath        = "/v1/ether/burnticket/get"
 	BurnNativeTicketPath      = "/v1/0chain/burnticket/get"
 )
+
+var Logger logger.Logger
+var defaultLogLevel = logger.DEBUG
+
+func init() {
+	Logger.Init(defaultLogLevel, "0chain-zcnbridge-sdk")
+}
 
 type (
 	// Wallet represents a wallet that stores keys and additional info.
@@ -108,7 +115,7 @@ func (w *Wallet) RegisterToMiners() error {
 	status.Wait()
 
 	if status.Success {
-		log.Logger.Info("wallet registered")
+		Logger.Info("wallet registered")
 	} else {
 		return errors.Wrap(errCode, "wallet registration failed "+status.ErrMsg, err)
 	}

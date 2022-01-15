@@ -93,8 +93,8 @@ func initZCNWallet(filename string) (*wallet.Wallet, error) {
 // If an error occurs during execution, the program terminates with code 2 and the error will be written in os.Stderr.
 // setupZCNSDK should be used only once while application is starting.
 func (b *BridgeClient) initSDK(logDir, logLevel string) error {
-	var logName = logDir + "/zsdk.log"
-	zcncore.SetLogFile(logName, false)
+	var logName = logDir + "/zcnbridge-sdk.log"
+	zcncore.SetLogFile(logName, true)
 	zcncore.SetLogLevel(logLevelFromStr(logLevel))
 	serverChain := chain.GetServerChain()
 	err := zcncore.InitZCNSDK(

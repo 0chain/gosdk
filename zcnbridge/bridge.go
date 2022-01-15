@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"path"
 
+	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zcnbridge/chain"
 	commonErr "github.com/0chain/gosdk/zcnbridge/errors"
@@ -13,7 +14,8 @@ import (
 	binding "github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
 	"github.com/0chain/gosdk/zcnbridge/log"
-	. "github.com/0chain/gosdk/zcnbridge/log"
+
+	//. "github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcnbridge/transaction"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
@@ -31,6 +33,13 @@ import (
 type (
 	Wei int64
 )
+
+var Logger logger.Logger
+var defaultLogLevel = logger.DEBUG
+
+func init() {
+	Logger.Init(defaultLogLevel, "0chain-zcnbridge-sdk")
+}
 
 var (
 	DefaultClientIDEncoder = func(id string) []byte {
