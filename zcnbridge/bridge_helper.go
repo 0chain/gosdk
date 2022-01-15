@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/0chain/gosdk/zcnbridge/log"
+	. "github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/pkg/errors"
 )
@@ -35,14 +35,23 @@ func ConfirmEthereumTransaction(hash string, times int, duration time.Duration) 
 	for i := 0; i < times; i++ {
 		res, err = GetTransactionStatus(hash)
 		if err != nil {
+			Logger.Info(fmt.Sprintf("confirm hash %s [ERROR]", hash))
 			return -1, err
 		}
-		if res == 1 || res == 0 {
-			break
+		if res == 1 {
+			Logger.Info(fmt.Sprintf("confirm hash %s [OK]", hash))
+			return res, nil
 		}
-		log.Logger.Info(fmt.Sprintf("try # %d", i))
+		if res == 0 {
+			Logger.Info(fmt.Sprintf("confirm hash %s [FAILED]", hash))
+			return res, nil
+		}
+		Logger.Info(fmt.Sprintf("try confirm hash %s # %d", hash, i))
 		time.Sleep(duration)
 	}
+
+	Logger.Info(fmt.Sprintf("Verification of %s is still pending after %d efforts, try checking it later", hash, times))
+
 	return res, nil
 }
 
