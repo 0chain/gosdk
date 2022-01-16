@@ -2816,9 +2816,8 @@ func TestAllocation_listDir(t *testing.T) {
 	)
 
 	type parameters struct {
-		path                           string
-		consensusThresh, fullConsensus float32
-		expectedResult                 *ListResult
+		path           string
+		expectedResult *ListResult
 	}
 	tests := []struct {
 		name       string
@@ -2854,10 +2853,8 @@ func TestAllocation_listDir(t *testing.T) {
 		{
 			name: "Test_Error_Get_List_File_From_Blobbers_Failed",
 			parameters: parameters{
-				path:            mockPath,
-				consensusThresh: 50,
-				fullConsensus:   4,
-				expectedResult:  &ListResult{},
+				path:           mockPath,
+				expectedResult: &ListResult{},
 			},
 			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
 				setupMockHttpResponse(t, mockClient, "TestAllocation_listDir", testCaseName, a, http.MethodGet, http.StatusBadRequest, []byte(""))
@@ -2867,9 +2864,7 @@ func TestAllocation_listDir(t *testing.T) {
 		{
 			name: "Test_Success",
 			parameters: parameters{
-				path:            mockPath,
-				consensusThresh: 50,
-				fullConsensus:   4,
+				path: mockPath,
 				expectedResult: &ListResult{
 					Type: mockType,
 					Size: -1,
@@ -2918,7 +2913,7 @@ func TestAllocation_listDir(t *testing.T) {
 					defer teardown(t)
 				}
 			}
-			got, err := a.listDir(tt.parameters.path, tt.parameters.consensusThresh, tt.parameters.fullConsensus)
+			got, err := a.ListDir(tt.parameters.path)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))
