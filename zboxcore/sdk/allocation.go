@@ -822,47 +822,6 @@ func (a *Allocation) DeleteFile(path string) error {
 	return a.deleteFile(path, a.consensusThreshold, a.fullconsensus)
 }
 
-func (a *Allocation) DeleteFileFromBlobber(path, blobberUrl string) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	if len(path) == 0 {
-		return errors.New("invalid_path", "Invalid path for the list")
-	}
-	path = zboxutil.RemoteClean(path)
-	isabs := zboxutil.IsRemoteAbs(path)
-	if !isabs {
-		return errors.New("invalid_path", "Path should be valid and absolute")
-	}
-
-	blobbers := make([]*blockchain.StorageNode, 0)
-	for idx := range a.Blobbers {
-		if a.Blobbers[idx].Baseurl == blobberUrl {
-			blobbers = append(blobbers, a.Blobbers[idx])
-		}
-	}
-
-	if len(blobbers) == 0 {
-		return errors.New("invalid_path", "Selected blobber not found")
-	}
-
-	req := &DeleteRequest{}
-	req.blobbers = blobbers
-	req.allocationID = a.ID
-	req.allocationTx = a.Tx
-	req.consensusThresh = a.consensusThreshold
-	req.fullconsensus = a.fullconsensus
-	req.consensusRequiredForOk = a.consensusOK
-	req.ctx = a.ctx
-	req.remotefilepath = path
-	req.deleteMask = 0
-	req.listMask = 0
-	req.connectionID = zboxutil.NewConnectionId()
-	err := req.ProcessDelete()
-	return err
-}
-
 func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus float32) error {
 	if !a.isInitialized() {
 		return notInitialized
