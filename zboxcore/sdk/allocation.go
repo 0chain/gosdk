@@ -1567,7 +1567,7 @@ func (a *Allocation) getConsensuses() (fullConsensus float32, consensusThreshold
 	}
 
 	fullConsensus = float32(a.DataShards + a.ParityShards)
-	consensusThreshold = float32(a.DataShards) * 100 / fullConsensus
+	consensusThreshold = (float32(a.DataShards) * 100) / fullConsensus
 	consensusOK = consensusThreshold + additionalSuccessRate
 	return
 }
