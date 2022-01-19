@@ -108,7 +108,8 @@ func TestConsensus_isConsensusOk(t *testing.T) {
 
 func TestConsensus_getConsensusRequiredForOk(t *testing.T) {
 	type fields struct {
-		consensusThresh float32
+		consensusThresh        float32
+		consensusRequiredForOk float32
 	}
 	tests := []struct {
 		name   string
@@ -118,7 +119,8 @@ func TestConsensus_getConsensusRequiredForOk(t *testing.T) {
 		{
 			"Test_Result_Get_Consensus_Required_For_Ok",
 			fields{
-				consensusThresh: 50,
+				consensusThresh:        50,
+				consensusRequiredForOk: 60,
 			},
 			60,
 		},
