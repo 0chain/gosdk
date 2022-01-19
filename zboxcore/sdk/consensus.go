@@ -43,6 +43,10 @@ func (req *Consensus) getConsensusRequiredForOk() float32 {
 	req.RLock()
 	defer req.RUnlock()
 
+	//TODO This if block can be removed if consensus issue is fixed/considered in chunked upload
+	if req.consensusRequiredForOk == 0 {
+		return req.consensusThresh + 10
+	}
 	return (req.consensusRequiredForOk)
 }
 
