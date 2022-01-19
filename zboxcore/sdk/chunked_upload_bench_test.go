@@ -85,7 +85,7 @@ func BenchmarkChunkedUpload(b *testing.B) {
 				DataShards:   2,
 				ParityShards: 1,
 			}
-
+			a.fullconsensus, a.consensusThreshold, a.consensusOK = a.getConsensuses()
 			for i := 0; i < (a.DataShards + a.ParityShards); i++ {
 
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{

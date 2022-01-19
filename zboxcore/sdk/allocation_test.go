@@ -2206,7 +2206,11 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 			}
 
 			require := require.New(t)
-			a := &Allocation{}
+			a := &Allocation{
+				DataShards:   1,
+				ParityShards: 1,
+			}
+			a.fullconsensus, a.consensusThreshold, a.consensusOK = a.getConsensuses()
 			a.InitAllocation()
 			sdkInitialized = true
 
@@ -2220,13 +2224,6 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 			const numberBlobbers = 10
 
 			zboxutil.Client = &mockClient
-
-			a.InitAllocation()
-			a.DataShards = 1
-			a.ParityShards = 1
-			a.fullconsensus, a.consensusThreshold, a.consensusOK = a.getConsensuses()
-
-			sdkInitialized = true
 
 			if tt.setup != nil {
 				if teardown := tt.setup(t, tt.name, a, &mockClient); teardown != nil {
@@ -3430,6 +3427,9 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
 	a.mutex = &sync.Mutex{}
 	a.initialized = true
+	if a.DataShards != 0 {
+		a.fullconsensus, a.consensusThreshold, a.consensusOK = a.getConsensuses()
+	}
 	sdkInitialized = true
 	go func() {
 		for {
