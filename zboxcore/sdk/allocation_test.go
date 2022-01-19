@@ -2210,7 +2210,6 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 				DataShards:   1,
 				ParityShards: 1,
 			}
-			a.fullconsensus, a.consensusThreshold, a.consensusOK = a.getConsensuses()
 			a.InitAllocation()
 			sdkInitialized = true
 
