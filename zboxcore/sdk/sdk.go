@@ -1134,6 +1134,10 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 		return t.Hash, t.TransactionOutput, errors.New("", t.TransactionOutput)
 	}
 
+	if t.Status == transaction.TxnChargeableError {
+		return t.Hash, t.TransactionOutput, errors.New("", t.TransactionOutput)
+	}
+
 	return t.Hash, t.TransactionOutput, nil
 }
 

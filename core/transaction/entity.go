@@ -24,8 +24,9 @@ const TXN_SUBMIT_URL = "v1/transaction/put"
 const TXN_VERIFY_URL = "v1/transaction/get/confirmation?hash="
 
 const (
-	TxnSuccess = 1 // Indicates the transaction is successful in updating the state or smart contract
-	TxnFail    = 3 // Indicates a transaction has failed to update the state or smart contract
+	TxnSuccess         = 1 // Indicates the transaction is successful in updating the state or smart contract
+	TxnChargeableError = 2 // Indicates the transaction is successful in updating the state or smart contract
+	TxnFail            = 3 // Indicates a transaction has failed to update the state or smart contract
 )
 
 //Transaction entity that encapsulates the transaction related data and meta data
