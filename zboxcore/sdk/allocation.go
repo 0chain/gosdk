@@ -1558,6 +1558,10 @@ func (a *Allocation) sizeInGB(size int64) float64 {
 }
 
 func (a *Allocation) getConsensuses() (fullConsensus float32, consensusThreshold float32, consensusOK float32) {
+	if a.DataShards == 0 {
+		return 0, 0, 0
+	}
+
 	if a.ParityShards == 0 {
 		return float32(a.DataShards), 100, 100
 	}
