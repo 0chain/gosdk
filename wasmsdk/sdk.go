@@ -4,6 +4,9 @@
 package main
 
 import (
+	"os"
+
+	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/sdk"
@@ -11,6 +14,7 @@ import (
 )
 
 var CreateObjectURL func(buf []byte, mimeType string) string
+var AppendVideo func(buf []byte)
 
 // Init init sharder/miners ,
 func Init(chainID, blockWorker, signatureScheme string,
@@ -42,4 +46,20 @@ func GetEncryptedPublicKey(mnemonic string) (string, error) {
 		return "", err
 	}
 	return encScheme.GetPublicKey()
+}
+
+func showLogs() {
+	zcncore.GetLogger().SetLevel(logger.DEBUG)
+	sdk.GetLogger().SetLevel(logger.DEBUG)
+
+	zcncore.GetLogger().SetLogFile(os.Stdout, true)
+	sdk.GetLogger().SetLogFile(os.Stdout, true)
+}
+
+func hideLogs() {
+	zcncore.GetLogger().SetLevel(logger.ERROR)
+	sdk.GetLogger().SetLevel(logger.ERROR)
+
+	zcncore.GetLogger().SetLogFile(os.Stdout, false)
+	sdk.GetLogger().SetLogFile(os.Stdout, false)
 }

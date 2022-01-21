@@ -283,8 +283,9 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 				blobbers:     []*blockchain.StorageNode{},
 				wg:           &sync.WaitGroup{},
 				Consensus: Consensus{
-					consensusThresh: 50,
-					fullconsensus:   4,
+					consensusThresh:        50,
+					fullconsensus:          4,
+					consensusRequiredForOk: 60,
 				},
 			}
 			for i := 0; i < tt.numBlobbers; i++ {

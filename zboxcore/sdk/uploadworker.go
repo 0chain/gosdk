@@ -30,10 +30,6 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-// Expected success rate is calculated (NumDataShards)*100/(NumDataShards+NumParityShards)
-// Additional success percentage on top of expected success rate
-const additionalSuccessRate = (10)
-
 type UploadFileMeta struct {
 	// Name remote file name
 	Name string
