@@ -17,7 +17,7 @@ import (
 
 // ListStorageAccounts List available accounts
 func ListStorageAccounts() []common.Address {
-	keyDir := path.Join(GetConfigDir(), "wallets")
+	keyDir := path.Join(GetConfigDir(), EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	config := &accounts.Config{InsecureUnlockAllowed: false}
 	am := accounts.NewManager(config, ks)
@@ -27,7 +27,7 @@ func ListStorageAccounts() []common.Address {
 }
 
 //func DeleteAccount(address string) bool {
-//	keyDir := path.Join(GetConfigDir(), "wallets")
+//	keyDir := path.Join(GetConfigDir(), EthereumWalletStorageDir)
 //	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 //	config := &accounts.Config{InsecureUnlockAllowed: false}
 //	am := accounts.NewManager(config, ks)
@@ -43,7 +43,7 @@ func ListStorageAccounts() []common.Address {
 //}
 
 func AccountExists(address string) bool {
-	keyDir := path.Join(GetConfigDir(), "wallets")
+	keyDir := path.Join(GetConfigDir(), EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	config := &accounts.Config{InsecureUnlockAllowed: false}
 	am := accounts.NewManager(config, ks)
@@ -67,7 +67,7 @@ func AccountExists(address string) bool {
 
 // CreateKeyStorage create, restore or unlock key storage
 func CreateKeyStorage(password string) error {
-	keyDir := path.Join(GetConfigDir(), "wallets")
+	keyDir := path.Join(GetConfigDir(), EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	account, err := ks.NewAccount(password)
 	if err != nil {
@@ -99,13 +99,13 @@ func UpdateClientEthereumAddress(address string) (err error) {
 
 	err = os.WriteFile(configFile, text, 0644)
 
-	return nil
+	return err
 }
 
 func ImportAccount(mnemonic, password string) (string, error) {
 	// 1. Create storage and account if it doesn't exist and add account to it
 
-	keyDir := path.Join(GetConfigDir(), "wallets")
+	keyDir := path.Join(GetConfigDir(), EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 
 	// 2. Init wallet

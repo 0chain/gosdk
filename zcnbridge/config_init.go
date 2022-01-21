@@ -9,8 +9,14 @@ import (
 )
 
 const (
-	BridgeClientConfigName = "bridge.yaml"
-	OwnerClientConfigName  = "owner.yaml"
+	BridgeClientConfigName         = "bridge.yaml"
+	OwnerClientConfigName          = "owner.yaml"
+	ZChainsClientConfigName        = "config.yaml"
+	EthereumWalletClientConfigName = "wallet.json"
+	EthereumWalletStorageDir       = "wallets"
+	ClientConfigKeyName            = "bridge"
+	OwnerConfigKeyName             = "owner"
+	DefaultHomeDir                 = "" // By default (~/.zcn)
 )
 
 type BridgeOwnerYaml struct {
@@ -46,7 +52,7 @@ type Bridge struct {
 // gas - default gas value for Ethereum transaction,
 // value - is a default value for Ethereum transaction, default is 0,
 func CreateInitialOwnerConfig(
-	filename, ethereumAddress, bridgeAddress, wzcnAddress, authorizersAddress, ethereumNodeURL, password string,
+	filename, homedir, ethereumAddress, bridgeAddress, wzcnAddress, authorizersAddress, ethereumNodeURL, password string,
 	gas, value int64,
 ) {
 
@@ -69,14 +75,18 @@ func CreateInitialOwnerConfig(
 		return
 	}
 
-	filePath := path.Join(GetConfigDir(), filename)
+	if homedir == "" {
+		homedir = GetConfigDir()
+	}
+
+	filePath := path.Join(homedir, filename)
 	err = ioutil.WriteFile(filePath, data, 0644)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	fmt.Println("config written to " + filePath)
+	fmt.Printf("Client config file saved to %s\n", filePath)
 }
 
 // CreateInitialClientConfig create initial config for the bridge client using argument,
@@ -89,7 +99,7 @@ func CreateInitialOwnerConfig(
 // value - is a default value for Ethereum transaction, default is 0,
 // consensus - is a consensus to find for burn/mint tickets
 func CreateInitialClientConfig(
-	filename, ethereumAddress, bridgeAddress, wzcnAddress, ethereumNodeURL, password string,
+	filename, homedir, ethereumAddress, bridgeAddress, wzcnAddress, ethereumNodeURL, password string,
 	gas, value int64,
 	consensus float64,
 ) {
@@ -134,12 +144,16 @@ func CreateInitialClientConfig(
 		return
 	}
 
-	filePath := path.Join(GetConfigDir(), filename)
+	if homedir == "" {
+		homedir = GetConfigDir()
+	}
+
+	filePath := path.Join(homedir, filename)
 	err = ioutil.WriteFile(filePath, data, 0644)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
-	fmt.Println("config written to " + filePath)
+	fmt.Printf("Owner client config file saved to %s\n", filePath)
 }

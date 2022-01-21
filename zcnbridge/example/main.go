@@ -50,6 +50,7 @@ func main() {
 	// Create bridge client configuration
 	zcnbridge.CreateInitialClientConfig(
 		zcnbridge.BridgeClientConfigName,
+		zcnbridge.DefaultHomeDir,
 		"0x860FA46F170a87dF44D7bB867AA4a5D2813127c1",
 		"0xF26B52df8c6D9b9C20bfD7819Bed75a75258c7dB",
 		"0x930E1BE76461587969Cb7eB9BFe61166b1E70244",
@@ -63,6 +64,7 @@ func main() {
 	// Create bridge owner configuration
 	zcnbridge.CreateInitialOwnerConfig(
 		zcnbridge.OwnerClientConfigName,
+		zcnbridge.DefaultHomeDir,
 		"0x860FA46F170a87dF44D7bB867AA4a5D2813127c1",
 		"0xF26B52df8c6D9b9C20bfD7819Bed75a75258c7dB",
 		"0x930E1BE76461587969Cb7eB9BFe61166b1E70244",
@@ -148,7 +150,7 @@ func signingExamples() {
 
 // createKeyStorage create new key storage and a new account
 func createKeyStorage(password string, delete bool) {
-	keyDir := path.Join(zcnbridge.GetConfigDir(), "wallets")
+	keyDir := path.Join(zcnbridge.GetConfigDir(), zcnbridge.EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	account, err := ks.NewAccount(password)
 	if err != nil {
@@ -172,7 +174,7 @@ func createKeyStorage(password string, delete bool) {
 func signWithKeyStore(address, password string) {
 	// 1. Create storage and account if it doesn't exist and add account to it
 
-	keyDir := path.Join(zcnbridge.GetConfigDir(), "wallets")
+	keyDir := path.Join(zcnbridge.GetConfigDir(), zcnbridge.EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 
 	// Create account definitions
@@ -225,7 +227,7 @@ func signWithKeyStore(address, password string) {
 func importFromMnemonicToStorage(mnemonic, password string, delete bool) {
 	// 1. Create storage and account if it doesn't exist and add account to it
 
-	keyDir := path.Join(zcnbridge.GetConfigDir(), "wallets")
+	keyDir := path.Join(zcnbridge.GetConfigDir(), zcnbridge.EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 
 	// 2. Init wallet

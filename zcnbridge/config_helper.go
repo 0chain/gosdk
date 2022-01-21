@@ -24,7 +24,6 @@ func GetConfigDir() string {
 
 func initChainFromConfig(filename string) {
 	configDir := GetConfigDir()
-
 	chainConfig := viper.New()
 	chainConfig.AddConfigPath(configDir)
 	chainConfig.SetConfigFile(path.Join(configDir, filename))

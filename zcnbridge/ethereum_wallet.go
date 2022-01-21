@@ -80,7 +80,7 @@ func CreateSignedTransactionFromKeyStore(
 	password string,
 	value int64,
 ) *bind.TransactOpts {
-	keyDir := path.Join(GetConfigDir(), "wallets")
+	keyDir := path.Join(GetConfigDir(), EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	signer := accounts.Account{
 		Address: signerAddress,

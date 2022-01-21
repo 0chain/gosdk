@@ -40,7 +40,7 @@ func (b *BridgeClient) SetupZCNWallet(filename string) {
 //func (b *BridgeClient) SetupEthereumWallet() {
 //	clientEthereumWallet, err := b.CreateEthereumWallet()
 //	if err != nil {
-//		log.Logger.Fatal("failed to setup client ethereum zcnWallet", zap.Error(err))
+//		log.Logger.Fatal("failed to set up client ethereum zcnWallet", zap.Error(err))
 //	} else {
 //		log.Logger.Info("created client ethereum zcnWallet", zap.Error(err))
 //	}
