@@ -78,9 +78,7 @@ func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
 	case fileref.DIRECTORY:
 		if len(dir.Children) == 0 {
 			var err error
-			fullconsensus := float32(a.DataShards + a.ParityShards)
-			consensusThresh := 100 / fullconsensus
-			dir, err = a.listDir(dir.Path, consensusThresh, fullconsensus)
+			dir, err = a.ListDir(dir.Path)
 			if err != nil {
 				Logger.Error("Failed to get listDir for path ", zap.Any("path", dir.Path), zap.Error(err))
 				return
