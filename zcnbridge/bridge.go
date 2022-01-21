@@ -306,7 +306,7 @@ func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) 
 	input := string(payload.Encode())
 
 	Logger.Info(
-		"Starting %s smart contract",
+		"Starting MINT smart contract",
 		zap.String("sc address", wallet.ZCNSCSmartContractAddress),
 		zap.String("function", wallet.MintFunc),
 		zap.String("payload", input),
@@ -345,7 +345,7 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount int64) (*transaction.
 	input := string(payload.Encode())
 
 	Logger.Info(
-		"Starting %s smart contract",
+		"Starting BURN smart contract",
 		zap.String("sc address", wallet.ZCNSCSmartContractAddress),
 		zap.String("function", wallet.BurnFunc),
 		zap.String("payload", input),
