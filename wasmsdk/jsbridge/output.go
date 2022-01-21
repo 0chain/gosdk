@@ -64,6 +64,17 @@ func (b *OutputBuilder) Build() (OutputBinder, error) {
 				return js.Null()
 
 			}
+		case TypeBytes:
+			b.binders[i] = func(rv reflect.Value) js.Value {
+				if rv.IsNil() {
+					return js.Null()
+				}
+
+				buf := rv.Interface().([]byte)
+
+				return NewBytes(buf)
+
+			}
 		default:
 			b.binders[i] = func(rv reflect.Value) js.Value {
 
