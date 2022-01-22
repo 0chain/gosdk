@@ -577,6 +577,26 @@ func WritePoolUnlock(poolID string, fee int64) (err error) {
 }
 
 //
+// Challenges
+//
+
+// Force Challenge Generation
+func GenerateChallenges(fee int64) (err error) {
+	if !sdkInitialized {
+		return sdkNotInitialized
+	}
+
+	var empty interface{}
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_GENERATE_CHALLENGES,
+		InputArgs: &empty,
+	}
+
+	_, _, err = smartContractTxnValueFee(sn, 0, fee)
+	return err
+}
+
+//
 // challenge pool
 //
 
