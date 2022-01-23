@@ -86,7 +86,7 @@ func CreateInitialOwnerConfig(
 		return
 	}
 
-	fmt.Printf("Client config file saved to %s\n", filePath)
+	fmt.Printf("Owner config file was saved to %s\n", filePath)
 }
 
 // CreateInitialClientConfig create initial config for the bridge client using argument,
@@ -155,5 +155,5 @@ func CreateInitialClientConfig(
 		return
 	}
 
-	fmt.Printf("Owner client config file saved to %s\n", filePath)
+	fmt.Printf("Client client config file was saved to %s\n", filePath)
 }
