@@ -130,7 +130,7 @@ func ImportAccount(mnemonic, password string) (string, error) {
 
 	acc, err := ks.Find(account)
 	if err == nil {
-		fmt.Printf("Account already exists %s\n, Path: %s", acc.Address.Hex(), acc.URL.Path)
+		fmt.Printf("Account already exists %s\nPath: %s", acc.Address.Hex(), acc.URL.Path)
 		return acc.Address.Hex(), nil
 	}
 
