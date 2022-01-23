@@ -6,16 +6,18 @@ import (
 	"path"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/spf13/viper"
 )
 
 type BridgeSDKConfig struct {
-	LogLevel    *string
-	LogPath     *string
-	ConfigFile  *string
-	ConfigDir   *string
-	Development *bool
+	LogLevel         *string
+	LogPath          *string
+	ConfigBridgeFile *string
+	ConfigChainFile  *string
+	ConfigDir        *string
+	Development      *bool
 }
 
 type ContractsRegistry struct {
@@ -75,9 +77,10 @@ func ReadClientConfigFromCmd() *BridgeSDKConfig {
 	// reading from bridge.yaml
 	cmd := &BridgeSDKConfig{}
 	cmd.Development = flag.Bool("development", true, "development mode")
-	cmd.LogPath = flag.String("log_dir", "./logs", "log folder")
-	cmd.ConfigDir = flag.String("config_dir", "./config", "config folder")
-	cmd.ConfigFile = flag.String("config_file", "bridge", "config file")
+	cmd.LogPath = flag.String("logs", "./logs", "log folder")
+	cmd.ConfigDir = flag.String("path", "./config", "config folder")
+	cmd.ConfigBridgeFile = flag.String("bridge", "bridge", "bridge config file")
+	cmd.ConfigChainFile = flag.String("chain", "config", "chain config file")
 	cmd.LogLevel = flag.String("loglevel", "debug", "log level")
 
 	flag.Parse()
@@ -181,19 +184,23 @@ func (b *BridgeClient) IncrementNonce() int64 {
 }
 
 // SetupBridgeClientSDK Use this from standalone application
+// 0Chain SDK initialization is required
 func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
-	initChainFromConfig(ZChainsClientConfigName)
+	log.InitLogging(*cfg.Development, *cfg.LogPath, *cfg.LogLevel)
 
-	bridgeClient := CreateBridgeClient(readSDKConfig(cfg))
+	initChainFromConfig(initChainConfig(cfg))
+
+	bridgeClient := CreateBridgeClient(initBridgeConfig(cfg))
 	bridgeClient.SetupZCNSDK(*cfg.LogPath, *cfg.LogLevel)
 	bridgeClient.SetupZCNWallet(EthereumWalletClientConfigName)
 
 	return bridgeClient
 }
 
-// SetupBridgeOwnerSDK Use this from standalone application
+// SetupBridgeOwnerSDK Use this from standalone application to initialize bridge owner.
+// 0Chain SDK initialization is not required in this case
 func SetupBridgeOwnerSDK(cfg *BridgeSDKConfig) *BridgeOwner {
-	bridgeOwner := CreateBridgeOwner(readSDKConfig(cfg))
+	bridgeOwner := CreateBridgeOwner(initBridgeConfig(cfg))
 
 	return bridgeOwner
 }

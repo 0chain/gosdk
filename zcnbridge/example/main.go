@@ -51,7 +51,7 @@ func main() {
 	zcnbridge.CreateInitialClientConfig(
 		zcnbridge.BridgeClientConfigName,
 		zcnbridge.DefaultHomeDir,
-		"0x860FA46F170a87dF44D7bB867AA4a5D2813127c1",
+		"0xC49926C4124cEe1cbA0Ea94Ea31a6c12318df947",
 		"0xF26B52df8c6D9b9C20bfD7819Bed75a75258c7dB",
 		"0x930E1BE76461587969Cb7eB9BFe61166b1E70244",
 		"https://ropsten.infura.io/v3/22cb2849f5f74b8599f3dc2a23085bd4",
@@ -99,7 +99,7 @@ func main() {
 	cfg := zcnbridge.ReadClientConfigFromCmd()
 
 	// Owner examples: adding new authorizer
-	if *cfg.ConfigFile == "owner" {
+	if *cfg.ConfigBridgeFile == "owner" {
 		runBridgeOwnerExample(cfg)
 		return
 	}
