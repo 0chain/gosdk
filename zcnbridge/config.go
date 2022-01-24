@@ -78,9 +78,9 @@ func ReadClientConfigFromCmd() *BridgeSDKConfig {
 	cmd := &BridgeSDKConfig{}
 	cmd.Development = flag.Bool("development", true, "development mode")
 	cmd.LogPath = flag.String("logs", "./logs", "log folder")
-	cmd.ConfigDir = flag.String("path", "./config", "config folder")
-	cmd.ConfigBridgeFile = flag.String("bridge", "bridge", "bridge config file")
-	cmd.ConfigChainFile = flag.String("chain", "config", "chain config file")
+	cmd.ConfigDir = flag.String("path", GetConfigDir(), "config home folder")
+	cmd.ConfigBridgeFile = flag.String("bridge_config", BridgeClientConfigName, "bridge config file")
+	cmd.ConfigChainFile = flag.String("chain_config", ZChainsClientConfigName, "chain config file")
 	cmd.LogLevel = flag.String("loglevel", "debug", "log level")
 
 	flag.Parse()

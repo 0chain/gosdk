@@ -102,10 +102,10 @@ func UpdateClientEthereumAddress(address string) (err error) {
 	return err
 }
 
-func ImportAccount(mnemonic, password string) (string, error) {
+func ImportAccount(homedir, mnemonic, password string) (string, error) {
 	// 1. Create storage and account if it doesn't exist and add account to it
 
-	keyDir := path.Join(GetConfigDir(), EthereumWalletStorageDir)
+	keyDir := path.Join(homedir, EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 
 	// 2. Init wallet
@@ -130,7 +130,7 @@ func ImportAccount(mnemonic, password string) (string, error) {
 
 	acc, err := ks.Find(account)
 	if err == nil {
-		fmt.Printf("Account already exists %s\nPath: %s", acc.Address.Hex(), acc.URL.Path)
+		fmt.Printf("Account already exists: %s\nPath: %s\n\n", acc.Address.Hex(), acc.URL.Path)
 		return acc.Address.Hex(), nil
 	}
 

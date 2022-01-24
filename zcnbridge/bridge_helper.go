@@ -35,22 +35,22 @@ func ConfirmEthereumTransaction(hash string, times int, duration time.Duration) 
 	for i := 0; i < times; i++ {
 		res, err = GetTransactionStatus(hash)
 		if err != nil {
-			Logger.Info(fmt.Sprintf("confirm hash %s [ERROR]", hash))
+			Logger.Info(fmt.Sprintf("confirmation of Ethereum transaction %s [ERROR]", hash))
 			return -1, err
 		}
 		if res == 1 {
-			Logger.Info(fmt.Sprintf("confirm hash %s [OK]", hash))
+			Logger.Info(fmt.Sprintf("confirmation of Ethereum transaction %s [OK]", hash))
 			return res, nil
 		}
 		if res == 0 {
-			Logger.Info(fmt.Sprintf("confirm hash %s [FAILED]", hash))
+			Logger.Info(fmt.Sprintf("confirmation of Ethereum transaction %s [FAILED]", hash))
 			return res, nil
 		}
-		Logger.Info(fmt.Sprintf("try confirm hash %s # %d", hash, i))
+		Logger.Info(fmt.Sprintf("Try confirming Ethereum transaction %s # %d", hash, i))
 		time.Sleep(duration)
 	}
 
-	Logger.Info(fmt.Sprintf("Verification of %s is still pending after %d efforts, try checking it later", hash, times))
+	Logger.Info(fmt.Sprintf("Verification of transaction %s is still pending after %d efforts, try checking it later", hash, times))
 
 	return res, nil
 }
