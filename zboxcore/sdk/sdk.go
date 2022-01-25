@@ -326,7 +326,6 @@ type StakePoolSettings struct {
 type StakePoolInfo struct {
 	ID      common.Key     `json:"pool_id"` // blobber ID
 	Balance common.Balance `json:"balance"` // total stake
-	Unstake common.Balance `json:"unstake"` // total unstake amount
 
 	Free       common.Size    `json:"free"`        // free staked space
 	Capacity   common.Size    `json:"capacity"`    // blobber bid
@@ -428,25 +427,16 @@ func StakePoolLock(blobberID string, value, fee int64) (poolID string, err error
 	return
 }
 
-// StakePoolUnlockUnstake is stake pool unlock response in case where tokens
-// can't be unlocked due to opened offers. In this case it returns the maximal
-// time to wait to be able to unlock the tokens. The real time can be lesser if
-// someone cancels an allocation, or someone else stake more tokens, etc.
-type StakePoolUnlockUnstake struct {
-	Unstake common.Timestamp `json:"unstake"`
-}
-
 // StakePoolUnlock unlocks a stake pool tokens. If tokens can't be unlocked due
 // to opened offers, then it returns time where the tokens can be unlocked,
 // marking the pool as 'want to unlock' to avoid its usage in offers in the
 // future. The time is maximal time that can be lesser in some cases. To
 // unlock tokens can't be unlocked now, wait the time and unlock them (call
 // this function again).
-func StakePoolUnlock(blobberID, poolID string, fee int64) (
-	unstake common.Timestamp, err error) {
+func StakePoolUnlock(blobberID, poolID string, fee int64) (err error) {
 
 	if !sdkInitialized {
-		return 0, sdkNotInitialized
+		return sdkNotInitialized
 	}
 	if blobberID == "" {
 		blobberID = client.GetClientID()
@@ -461,17 +451,11 @@ func StakePoolUnlock(blobberID, poolID string, fee int64) (
 		InputArgs: &spr,
 	}
 
-	var out string
-	if _, out, err = smartContractTxnValueFee(sn, 0, fee); err != nil {
+	if _, _, err = smartContractTxnValueFee(sn, 0, fee); err != nil {
 		return // an error
 	}
 
-	var spuu StakePoolUnlockUnstake
-	if err = json.Unmarshal([]byte(out), &spuu); err != nil {
-		return
-	}
-
-	return spuu.Unstake, nil
+	return nil
 }
 
 // StakePoolPayInterests unlocks a stake pool rewards.
