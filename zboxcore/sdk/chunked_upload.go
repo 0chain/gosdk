@@ -336,7 +336,8 @@ func (su *ChunkedUpload) Start() error {
 		if err != nil {
 			return err
 		}
-		logger.Logger.Info("Read chunk #", chunk.Index)
+		logger.Logger.Debug(fmt.Sprintf("Read chunk: index=%d fragmentsize=%d readsize=%d connection=%s",
+			chunk.Index, chunk.FragmentSize, chunk.ReadSize, su.progress.ConnectionID))
 
 		su.shardUploadedSize += chunk.FragmentSize
 		su.progress.UploadLength += chunk.ReadSize
@@ -390,6 +391,8 @@ func (su *ChunkedUpload) Start() error {
 		}
 
 		if chunk.IsFinal {
+			logger.Logger.Debug(fmt.Sprintf("Final size: sharduploadedsize=%d connection=%s",
+				su.shardUploadedSize, su.progress.ConnectionID))
 			break
 		}
 	}
@@ -466,16 +469,20 @@ func (su *ChunkedUpload) processUpload(chunkIndex int, fileFragments [][]byte, t
 			}
 		}(blobber, body, formData)
 	}
+
 	var err error
 	for i := 0; i < num; i++ {
-		err = <-wait
+		e := <-wait
 		if err != nil {
-			return err
+			err = e
+			logger.Logger.Debug(fmt.Sprintf("Upload error: err=%s allocation=%s connection=%s",
+				err.Error(), su.allocationObj.ID, su.progress.ConnectionID))
+			// Tyrone - should still wait for requests
+			//break
 		}
 	}
 
-	return nil
-
+	return err
 }
 
 // processCommit commit shard upload on its blobber
@@ -521,13 +528,15 @@ func (su *ChunkedUpload) processCommit() error {
 		}(blobber)
 	}
 
-	var err error
+	//var err error
 	for i := 0; i < num; i++ {
-		err = <-wait
+		err := <-wait
 
 		if err != nil {
-			logger.Logger.Error("Commit: ", err)
-			break
+			logger.Logger.Debug(fmt.Sprintf("Commit error: err=%s allocation=%s connection=%s",
+				err.Error(), su.allocationObj.ID, su.progress.ConnectionID))
+			// Tyrone - should still wait for requests
+			//break
 		}
 	}
 

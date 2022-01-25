@@ -46,6 +46,9 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *Chunk
 
 			sb.fileRef.EncryptedKey = encryptedKey
 			sb.fileRef.CalculateHash()
+
+			logger.Logger.Debug(fmt.Sprintf("Final file ref (0 byte len): size=%d  path=%s, actualsize=%d, chunksize=%d allocation=%s connection=%s blobber=%s ",
+				sb.fileRef.Size, sb.fileRef.Path, sb.fileRef.ActualSize, sb.fileRef.ChunkSize, su.allocationObj.ID, su.progress.ConnectionID, sb.blobber.Baseurl))
 		}
 
 		return nil
@@ -117,6 +120,9 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *Chunk
 
 			sb.fileRef.EncryptedKey = encryptedKey
 			sb.fileRef.CalculateHash()
+
+			logger.Logger.Debug(fmt.Sprintf("Final file ref: size=%d  path=%s, actualsize=%d, chunksize=%d allocation=%s connection=%s blobber=%s ",
+				sb.fileRef.Size, sb.fileRef.Path, sb.fileRef.ActualSize, sb.fileRef.ChunkSize, su.allocationObj.ID, su.progress.ConnectionID, sb.blobber.Baseurl))
 		}
 	}
 
@@ -136,6 +142,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	rootRef, latestWM, size, err := sb.processWriteMarker(ctx, su)
 
 	if err != nil {
+		logger.Logger.Error(fmt.Sprintf("Process write marker error=%s blobber=%s allocation=%s connection=%s", err.Error(), sb.blobber.Baseurl, su.allocationObj.ID, su.progress.ConnectionID))
 		return err
 	}
 
@@ -159,6 +166,9 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 		logger.Logger.Error("Signing writemarker failed: ", err)
 		return err
 	}
+
+	logger.Logger.Debug(fmt.Sprintf("Write marker: blobber=%s  allocation=%s, prevAlloc=%s, size=%d blobber=%s connection=%s", sb.blobber.Baseurl, wm.AllocationID, wm.PreviousAllocationRoot, wm.Size, wm.BlobberID, su.progress.ConnectionID))
+
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
 	wmData, err := json.Marshal(wm)
@@ -178,30 +188,35 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	}
 	req.Header.Add("Content-Type", formWriter.FormDataContentType())
 
-	logger.Logger.Info("Committing to blobber." + sb.blobber.Baseurl)
+	//logger.Logger.Info("Committing to blobber." + sb.blobber.Baseurl)
 
+	// Tyrone - why is this here before???
 	//for retries := 0; retries < 3; retries++ {
 
 	resp, err := su.client.Do(req.WithContext(ctx))
 
 	if err != nil {
-		logger.Logger.Error("Commit: ", err)
+		logger.Logger.Error(fmt.Sprintf("Commit failed. blobber=%s alloc=%s connection=%s", sb.blobber.Baseurl, wm.AllocationID, su.progress.ConnectionID))
 		return err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode == http.StatusOK {
-		logger.Logger.Info(sb.blobber.Baseurl, su.progress.ConnectionID, " committed")
+		logger.Logger.Debug(fmt.Sprintf("Commit success. blobber=%s alloc=%s connection=%s", sb.blobber.Baseurl, wm.AllocationID, su.progress.ConnectionID))
+		//logger.Logger.Info(sb.blobber.Baseurl, su.progress.ConnectionID, " committed")
 	} else {
-		logger.Logger.Error("Commit response: ", resp.StatusCode)
+		logger.Logger.Error(fmt.Sprintf("Commit response not OK. status=%d blobber=%s alloc=%s connection=%s", resp.StatusCode, sb.blobber.Baseurl, wm.AllocationID, su.progress.ConnectionID))
+		//logger.Logger.Error("Commit response: ", resp.StatusCode)
 	}
 
 	respBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		logger.Logger.Error("Response read: ", err)
+		logger.Logger.Error(fmt.Sprintf("Response read failed. blobber=%s alloc=%s connection=%s", sb.blobber.Baseurl, wm.AllocationID, su.progress.ConnectionID))
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		logger.Logger.Error(sb.blobber.Baseurl, " Commit response:", string(respBody))
+		logger.Logger.Error(fmt.Sprintf("Commit failed. body=%s blobber=%s alloc=%s connection=%s", string(respBody), sb.blobber.Baseurl, wm.AllocationID, su.progress.ConnectionID))
+		//logger.Logger.Error("Commit response not OK. status=%d blobber=%s alloc=%s connection=%s", resp.StatusCode, sb.blobber.Baseurl, wm.AllocationID, su.progress.ConnectionID)
+		//logger.Logger.Error(sb.blobber.Baseurl, " Commit response:", string(respBody))
 		return thrown.New("commit_error", string(respBody))
 	}
 
@@ -273,11 +288,13 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(ctx context.Context, su *Chun
 		return nil, nil, 0, err
 	}
 	size := int64(0)
+	logger.Logger.Info(fmt.Sprintf("Commit changes count for blobber=%s allocation=%s count=%d connection=%s", sb.blobber.Baseurl, su.allocationObj.ID, len(sb.commitChanges), su.progress.ConnectionID))
 	for _, change := range sb.commitChanges {
 		err = change.ProcessChange(rootRef)
 		if err != nil {
 			break
 		}
+		logger.Logger.Info(fmt.Sprintf("Commit changes for blobber%s allocation=%s size=%d connection=%s", sb.blobber.Baseurl, su.allocationObj.ID, change.GetSize(), su.progress.ConnectionID))
 		size += change.GetSize()
 	}
 	if err != nil {
