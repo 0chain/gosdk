@@ -64,7 +64,9 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *Chunk
 	resp, err := su.client.Do(req.WithContext(ctx))
 
 	if err != nil {
-		logger.Logger.Error("Upload : ", err)
+		logger.Logger.Error(fmt.Sprintf("Upload failed: error=%s, allocation=%s connection=%s blobber=%s",
+			err.Error(), su.allocationObj.ID, su.progress.ConnectionID, sb.blobber.Baseurl))
+		//logger.Logger.Error("Upload : ", err)
 		return err
 	}
 	defer resp.Body.Close()
@@ -75,7 +77,9 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *Chunk
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		logger.Logger.Error(sb.blobber.Baseurl, " Upload error response: ", resp.StatusCode, string(respbody))
+		logger.Logger.Error(fmt.Sprintf("Upload error response: status=%d, res=%s, allocation=%s connection=%s blobber=%s",
+			resp.StatusCode, string(respbody), su.allocationObj.ID, su.progress.ConnectionID, sb.blobber.Baseurl))
+		//logger.Logger.Error(sb.blobber.Baseurl, " Upload error response: ", resp.StatusCode, string(respbody))
 		return err
 	}
 	var r UploadResult
