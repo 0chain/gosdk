@@ -635,28 +635,6 @@ func (ta *TransactionWithAuth) StakePoolUnlock(blobberID, poolID string,
 	return
 }
 
-// StakePoolPayInterests trigger interests payments.
-func (ta *TransactionWithAuth) StakePoolPayInterests(blobberID string,
-	fee int64) (err error) {
-
-	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
-	}
-
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
-
-	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_STAKE_POOL_PAY_INTERESTS, &spr, 0)
-	if err != nil {
-		Logger.Error(err)
-		return
-	}
-	ta.t.SetTransactionFee(fee)
-	go func() { ta.submitTxn() }()
-	return
-}
-
 // UpdateBlobberSettings update settings of a blobber.
 func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber, fee int64) (
 	err error) {

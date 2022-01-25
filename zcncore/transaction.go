@@ -84,7 +84,7 @@ type Transaction struct {
 }
 
 type SendTxnData struct {
-	Note         string        `json:"note"`
+	Note string `json:"note"`
 }
 
 // TransactionScheme implements few methods for block chain.
@@ -155,7 +155,6 @@ type TransactionScheme interface {
 	ReadPoolUnlock(poolID string, fee int64) error
 	StakePoolLock(blobberID string, lock, fee int64) error
 	StakePoolUnlock(blobberID string, poolID string, fee int64) error
-	StakePoolPayInterests(blobberID string, fee int64) error
 	UpdateBlobberSettings(blobber *Blobber, fee int64) error
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock, fee int64) error
 	WritePoolLock(allocID string, blobberID string, duration int64, lock, fee int64) error
@@ -1586,28 +1585,6 @@ func (t *Transaction) StakePoolUnlock(blobberID, poolID string,
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
-	if err != nil {
-		Logger.Error(err)
-		return
-	}
-	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
-	return
-}
-
-// StakePoolPayInterests trigger interests payments.
-func (t *Transaction) StakePoolPayInterests(blobberID string, fee int64) (
-	err error) {
-
-	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
-	}
-
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
-
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_STAKE_POOL_PAY_INTERESTS, &spr, 0)
 	if err != nil {
 		Logger.Error(err)
 		return

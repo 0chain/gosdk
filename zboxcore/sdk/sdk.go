@@ -474,26 +474,6 @@ func StakePoolUnlock(blobberID, poolID string, fee int64) (
 	return spuu.Unstake, nil
 }
 
-// StakePoolPayInterests unlocks a stake pool rewards.
-func StakePoolPayInterests(bloberID string) (err error) {
-	if !sdkInitialized {
-		return sdkNotInitialized
-	}
-	if bloberID == "" {
-		bloberID = client.GetClientID()
-	}
-
-	var spr stakePoolRequest
-	spr.BlobberID = bloberID
-
-	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_STAKE_POOL_PAY_INTERESTS,
-		InputArgs: &spr,
-	}
-	_, _, err = smartContractTxnValueFee(sn, 0, 0)
-	return
-}
-
 //
 // write pool
 //
