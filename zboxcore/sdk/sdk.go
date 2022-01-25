@@ -298,13 +298,11 @@ type StakePoolRewardsInfo struct {
 
 // StakePoolDelegatePoolInfo represents delegate pool of a stake pool info.
 type StakePoolDelegatePoolInfo struct {
-	ID               common.Key     `json:"id"`                // pool ID
-	Balance          common.Balance `json:"balance"`           // current balance
-	DelegateID       common.Key     `json:"delegate_id"`       // wallet
-	Rewards          common.Balance `json:"rewards"`           // total for all time
-	Interests        common.Balance `json:"interests"`         // total for all time
-	Penalty          common.Balance `json:"penalty"`           // total for all time
-	PendingInterests common.Balance `json:"pending_interests"` // total for all time
+	ID         common.Key     `json:"id"`          // pool ID
+	Balance    common.Balance `json:"balance"`     // current balance
+	DelegateID common.Key     `json:"delegate_id"` // wallet
+	Rewards    common.Balance `json:"rewards"`     // total for all time
+	Penalty    common.Balance `json:"penalty"`     // total for all time
 	// Unstake > 0, then the pool wants to unstake. And the Unstake is maximal
 	// time it can't be unstaked.
 	Unstake bool `json:"unstake"`
@@ -334,12 +332,11 @@ type StakePoolInfo struct {
 	Capacity   common.Size    `json:"capacity"`    // blobber bid
 	WritePrice common.Balance `json:"write_price"` // its write price
 
-	OffersTotal  common.Balance `json:"offers_total"` // total offers
-	UnstakeTotal common.Balance `json:"unstakeTotal"` // total of stakes marked for unstaking
+	OffersTotal  common.Balance `json:"offers_total"`  // total offers
+	UnstakeTotal common.Balance `json:"unstake_total"` // total of stakes marked for unstaking
 	// delegate pools
 	Delegate []*StakePoolDelegatePoolInfo `json:"delegate"`
-	Earnings common.Balance               `json:"interests"` // total for all
-	Penalty  common.Balance               `json:"penalty"`   // total for all
+	Penalty  common.Balance               `json:"penalty"` // total for all
 	// rewards
 	Rewards StakePoolRewardsInfo `json:"rewards"`
 	// settings
