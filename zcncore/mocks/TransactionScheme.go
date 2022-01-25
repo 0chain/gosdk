@@ -336,6 +336,20 @@ func (_m *TransactionScheme) StakePoolLock(blobberID string, lock int64, fee int
 	return r0
 }
 
+// StakePoolPayInterests provides a mock function with given fields: blobberID, fee
+func (_m *TransactionScheme) StakePoolPayInterests(blobberID string, fee int64) error {
+	ret := _m.Called(blobberID, fee)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(string, int64) error); ok {
+		r0 = rf(blobberID, fee)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // StakePoolUnlock provides a mock function with given fields: blobberID, poolID, fee
 func (_m *TransactionScheme) StakePoolUnlock(blobberID string, poolID string, fee int64) error {
 	ret := _m.Called(blobberID, poolID, fee)
