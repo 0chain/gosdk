@@ -27,16 +27,19 @@ import (
 
 func TestAllocation_UpdateFile(t *testing.T) {
 	const mockLocalPath = "1.txt"
-	require := require.New(t)
-	if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
-		defer teardown(t)
-	}
+
 	a := &Allocation{
+		ID:           "TestAllocation_UpdateFile",
 		Tx:           "TestAllocation_UpdateFile",
 		ParityShards: 2,
 		DataShards:   2,
 	}
 	setupMockAllocation(t, a)
+
+	require := require.New(t)
+	if teardown := setupMockFileAndReferencePathResult(t, a.ID, mockLocalPath); teardown != nil {
+		defer teardown(t)
+	}
 
 	server := dev.NewBlobberServer()
 	defer server.Close()
@@ -109,14 +112,18 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
-				defer teardown(t)
-			}
+
 			a := &Allocation{
+				ID:           "TestAllocation_UpdateFileWithThumbnail",
 				Tx:           "TestAllocation_UpdateFileWithThumbnail",
 				ParityShards: 2,
 				DataShards:   2,
 			}
+
+			if teardown := setupMockFileAndReferencePathResult(t, a.ID, mockLocalPath); teardown != nil {
+				defer teardown(t)
+			}
+
 			a.uploadChan = make(chan *UploadRequest, 10)
 			a.downloadChan = make(chan *DownloadRequest, 10)
 			a.repairChan = make(chan *RepairRequest, 1)
@@ -177,13 +184,15 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 		mockTmpPath   = "/tmp"
 	)
 	require := require.New(t)
-	if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
-		defer teardown(t)
-	}
+
 	a := &Allocation{
 		Tx:           "TestAllocation_EncryptAndUpdateFile",
 		ParityShards: 2,
 		DataShards:   2,
+	}
+
+	if teardown := setupMockFileAndReferencePathResult(t, a.Tx, mockLocalPath); teardown != nil {
+		defer teardown(t)
 	}
 
 	server := dev.NewBlobberServer()
