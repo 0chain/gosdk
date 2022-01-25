@@ -78,11 +78,18 @@ func verifyTransaction(w http.ResponseWriter, req *http.Request) {
 	signScheme.SetPrivateKey(signPrivatekey)
 	scheme, _ := signScheme.Sign(hash)
 
+	spuu := sdk.StakePoolUnlockUnstake{
+		Unstake: common.Timestamp(1641016719),
+	}
+
+	txnOutput, _ := json.Marshal(spuu)
+
 	txn := &Transaction{}
 	txn.Hash = hash
 	txn.ChainID = blockchain.GetChainID()
 	txn.ClientID = client.GetClientID()
 	txn.Signature = scheme
+	txn.TransactionOutput = string(txnOutput)
 	txn.Value = 500
 
 	var objmap = map[string]Transaction{
