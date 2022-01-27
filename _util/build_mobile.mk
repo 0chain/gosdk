@@ -3,7 +3,7 @@ GOSDK_PATH :=  $(0CHAIN_PATH)/gosdk
 OUTDIR := $(ROOT_DIR)/out
 IOSMOBILESDKDIR     := $(OUTDIR)/0chainiosmobilesdk
 ANDROIDMOBILESDKDIR := $(OUTDIR)/0chainandroidmobilesdk
-IOSBINNAME 		:= zcncore.framework
+IOSBINNAME 		:= zcncore.xcframework
 ANDROIDBINNAME	:= zcncore.aar
 
 .PHONY: build-mobilesdk
