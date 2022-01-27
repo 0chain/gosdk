@@ -1,5 +1,5 @@
-//go:build js || wasm
-// +build js,wasm,!android,!ios
+//go:build android || ios
+// +build android,ios
 
 package zcncrypto
 
