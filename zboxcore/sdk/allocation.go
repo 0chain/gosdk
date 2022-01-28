@@ -3,7 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -499,7 +499,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 		}
 
 		file, _ := ioutil.ReadFile(localpath)
-		hash := sha1.New()
+		hash := sha256.New()
 		hash.Write(file)
 		contentHash := hex.EncodeToString(hash.Sum(nil))
 		print(contentHash)

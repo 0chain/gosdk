@@ -1,17 +1,15 @@
 package sdk
 
 import (
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"hash"
-
-	"github.com/0chain/gosdk/core/util"
 )
 
 // downloadHahser verify hash for downloading
 type downloadHasher struct {
 	hasher       hash.Hash
-	streamHasher *util.CompactMerkleTree
+	streamHasher hash.Hash
 	chunkIndex   int
 	shardSize    int
 	buf          []byte
@@ -28,8 +26,8 @@ func createDownloadHasher(chunkSize int, dataShards int, encryptOnUpload bool) *
 	shardSize := chunkSize * dataShards
 
 	return &downloadHasher{
-		hasher:       sha1.New(),
-		streamHasher: util.NewCompactMerkleTree(nil),
+		hasher:       sha256.New(),
+		streamHasher: sha256.New(),
 		shardSize:    shardSize,
 		buf:          make([]byte, 0, shardSize),
 		chunkIndex:   0,
@@ -41,7 +39,7 @@ func (dh *downloadHasher) Write(p []byte) (n int, err error) {
 
 	for _, v := range p {
 		if len(dh.buf) == dh.shardSize {
-			dh.streamHasher.AddDataBlocks(dh.buf, dh.chunkIndex)
+			dh.streamHasher.Write(dh.buf)
 			dh.chunkIndex++
 			dh.buf = make([]byte, 0, dh.shardSize)
 		}
@@ -61,10 +59,10 @@ func (dh *downloadHasher) GetHash() string {
 // GetMerkleRoot get merkle root hash for new upload
 func (dh *downloadHasher) GetMerkleRoot() string {
 	if len(dh.buf) > 0 {
-		dh.streamHasher.AddDataBlocks(dh.buf, dh.chunkIndex)
+		dh.streamHasher.Write(dh.buf)
 		dh.chunkIndex++
 		dh.buf = make([]byte, 0, dh.shardSize)
 	}
 
-	return dh.streamHasher.GetMerkleRoot()
+	return hex.EncodeToString(dh.streamHasher.Sum(nil))
 }
