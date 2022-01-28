@@ -14,8 +14,9 @@ type Client struct {
 }
 
 var (
-	client *Client
-	Sign   SignFunc
+	client  *Client
+	clients []*Client
+	Sign    SignFunc
 )
 
 func init() {
@@ -26,14 +27,32 @@ func init() {
 	Sign = defaultSignFunc
 }
 
+// Populate Single Client
 func PopulateClient(clientjson string, signatureScheme string) error {
 	err := json.Unmarshal([]byte(clientjson), &client)
 	client.signatureSchemeString = signatureScheme
 	return err
 }
 
+// PopulateClients This is a workaround for blobber tests that requires multiple clients to test authticket functionality
+func PopulateClients(clientJsons []string, signatureScheme string) error {
+	for _, clientJson := range clientJsons {
+		c := new(Client)
+		if err := json.Unmarshal([]byte(clientJson), c); err != nil {
+			return err
+		}
+		c.signatureSchemeString = signatureScheme
+		clients = append(clients, c)
+	}
+	return nil
+}
+
 func GetClient() *Client {
 	return client
+}
+
+func GetClients() []*Client {
+	return clients
 }
 
 func GetClientID() string {
