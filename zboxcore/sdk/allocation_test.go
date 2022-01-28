@@ -3,6 +3,8 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -14,6 +16,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0chain/gosdk/dev/blobber"
+	"github.com/0chain/gosdk/dev/blobber/model"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 
 	"github.com/0chain/errors"
@@ -88,6 +92,42 @@ func setupMockFile(t *testing.T, path string) (teardown func(t *testing.T)) {
 	ioutil.WriteFile(path, []byte("mockActualHash"), os.ModePerm)
 	return func(t *testing.T) {
 		os.Remove(path)
+	}
+}
+
+func setupMockFileAndReferencePathResult(t *testing.T, allocationID, name string) (teardown func(t *testing.T)) {
+	var buf = []byte("mockActualHash")
+	h := sha256.New()
+	f, _ := os.Create(name)
+	w := io.MultiWriter(h, f)
+	//nolint: errcheck
+	w.Write(buf)
+
+	cancel := blobber.MockReferencePathResult(allocationID, &model.Ref{
+		AllocationID: allocationID,
+		Type:         model.DIRECTORY,
+		Name:         "/",
+		Path:         "/",
+		PathLevel:    1,
+		ParentPath:   "",
+		Children: []*model.Ref{
+			{
+				AllocationID:   allocationID,
+				Name:           name,
+				Type:           model.FILE,
+				Path:           "/" + name,
+				ActualFileSize: int64(len(buf)),
+				ActualFileHash: hex.EncodeToString(h.Sum(nil)),
+				ChunkSize:      CHUNK_SIZE,
+				PathLevel:      2,
+				ParentPath:     "/",
+			},
+		},
+	})
+
+	return func(t *testing.T) {
+		cancel()
+		os.Remove(name)
 	}
 }
 
@@ -511,8 +551,8 @@ func TestAllocation_RepairFile(t *testing.T) {
 	const (
 		mockFileRefName = "mock file ref name"
 		mockLocalPath   = "1.txt"
-		mockActualHash  = "4041e3eeb170751544a47af4e4f9d374e76cee1d"
-		mockChunkHash   = "65e97907139278eeed8b3815f36b442a0043c7e0"
+		mockActualHash  = "75a919d23622c29ade8096ed1add6606ec970579459178db3a7d1d0ff8df92d3"
+		mockChunkHash   = "a6fb1cb61c9a3b8709242de28e44fb0b4de3753995396ae1d21ca9d4e956e9e2"
 	)
 
 	var mockClient = mocks.HttpClient{}
