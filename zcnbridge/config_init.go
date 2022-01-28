@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -16,7 +17,7 @@ const (
 	EthereumWalletStorageDir       = "wallets"
 	ClientConfigKeyName            = "bridge"
 	OwnerConfigKeyName             = "owner"
-	DefaultHomeDir                 = "" // By default (~/.zcn)
+	//DefaultHomeDir                 = "" // By default (~/.zcn)
 )
 
 type BridgeOwnerYaml struct {
@@ -39,7 +40,7 @@ type BridgeOwnerYaml struct {
 }
 
 type Bridge struct {
-	Owner *BridgeOwnerYaml `yaml:"bridge"`
+	Owner *BridgeOwnerYaml `yaml:"owner"`
 }
 
 // CreateInitialOwnerConfig create initial config for the bridge owner using argument,
@@ -55,7 +56,6 @@ func CreateInitialOwnerConfig(
 	filename, homedir, ethereumAddress, bridgeAddress, wzcnAddress, authorizersAddress, ethereumNodeURL, password string,
 	gas, value int64,
 ) {
-
 	cfg := &BridgeOwnerYaml{
 		Password:           password,
 		EthereumAddress:    ethereumAddress,
@@ -77,6 +77,12 @@ func CreateInitialOwnerConfig(
 
 	if homedir == "" {
 		homedir = GetConfigDir()
+	}
+
+	homedir, err = filepath.Abs(homedir)
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
 
 	filePath := path.Join(homedir, filename)
@@ -122,7 +128,7 @@ func CreateInitialClientConfig(
 	}
 
 	type Bridge struct {
-		Bridge *BridgeClientYaml
+		Bridge *BridgeClientYaml `yaml:"bridge"`
 	}
 
 	cfg := &BridgeClientYaml{
@@ -146,6 +152,12 @@ func CreateInitialClientConfig(
 
 	if homedir == "" {
 		homedir = GetConfigDir()
+	}
+
+	homedir, err = filepath.Abs(homedir)
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
 
 	filePath := path.Join(homedir, filename)

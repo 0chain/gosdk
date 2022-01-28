@@ -48,9 +48,10 @@ const (
 // `--config_file bridge` runs bridge client
 // `--config_file owner`  runs owner client
 func main() {
-	// First is read config from command line
 	cfg := zcnbridge.ReadClientConfigFromCmd()
-	log.InitLogging(false, *cfg.LogPath, *cfg.LogLevel)
+	log.InitLogging(*cfg.Development, *cfg.LogPath, *cfg.LogLevel)
+	l := log.Logger
+	l.Info(fmt.Sprintf("Starting examples with configs in '%s' and logs in '%s'", *cfg.ConfigDir, *cfg.LogPath))
 
 	// Create bridge client configuration
 	zcnbridge.CreateInitialClientConfig(
@@ -80,10 +81,25 @@ func main() {
 		0,
 	)
 
+	var (
+		bridge       *zcnbridge.BridgeClient
+		owner        *zcnbridge.BridgeOwner
+		clientConfig *zcnbridge.BridgeClientConfig
+	)
+
+	// Owner examples: adding new authorizer
+	if *cfg.ConfigBridgeFile == "owner" {
+		owner = zcnbridge.SetupBridgeOwnerSDK(cfg)
+		clientConfig = owner.BridgeClientConfig
+	} else {
+		bridge = zcnbridge.SetupBridgeClientSDK(cfg)
+		clientConfig = bridge.BridgeClientConfig
+	}
+
 	// Next step is register your account in the key storage if it doesn't exist (mandatory)
 	// This should be done in zwallet cli
 	registerAccountInKeyStorage(
-		*cfg.ConfigDir,
+		clientConfig.Homedir,
 		"tag volcano eight thank tide danger coast health above argue embrace heavy",
 		"password",
 	)
@@ -91,22 +107,22 @@ func main() {
 	// Owner examples: adding new authorizer
 	if *cfg.ConfigBridgeFile == "owner" {
 		// Bridge Owner examples
-		runBridgeOwnerExample(cfg)
+		runBridgeOwnerExample(owner)
 	} else {
 		// Bridge client examples
-		runBridgeClientExample(cfg)
+		runBridgeClientExample(bridge)
 	}
 
 	// Checking if an account exists in key storage
-	if zcnbridge.AccountExists("0x860FA46F170a87dF44D7bB867AA4a5D2813127c1") {
+	if zcnbridge.AccountExists(bridge.Homedir, "0x860FA46F170a87dF44D7bB867AA4a5D2813127c1") {
 		fmt.Println("Account exists")
 	}
 
 	// List all accounts initialized in storage
-	zcnbridge.ListStorageAccounts()
+	zcnbridge.ListStorageAccounts(bridge.Homedir)
 
 	// How to manage key storage example sets
-	keyStorageExample()
+	keyStorageExample(bridge.Homedir)
 
 	// How to sign using legacy and dynamic transactions
 	signingExamples()
@@ -119,11 +135,11 @@ func registerAccountInKeyStorage(homedir, mnemonic, password string) {
 		return
 	}
 
-	updateClientEthereumAddress(addr)
+	updateClientEthereumAddress(homedir, addr)
 }
 
-func updateClientEthereumAddress(address string) {
-	configFile := path.Join(zcnbridge.GetConfigDir(), zcnbridge.BridgeClientConfigName)
+func updateClientEthereumAddress(homedir, address string) {
+	configFile := path.Join(homedir, zcnbridge.BridgeClientConfigName)
 	buf, _ := os.ReadFile(configFile)
 	cfg := &zcnbridge.Bridge{}
 	_ = yaml.Unmarshal(buf, cfg)
@@ -137,13 +153,13 @@ func updateClientEthereumAddress(address string) {
 // keyStorageExample Shows how new/existing user will work with key storage
 // 1. If user is new, user creates new storage with key and/or mnemonic
 // 2. if user exists, user can sign transactions using public key and password to unlock the key storage
-func keyStorageExample() {
+func keyStorageExample(homedir string) {
 	mnemonic := "tag volcano eight thank tide danger coast health above argue embrace heavy"
 	password := "password"
 
-	createKeyStorage(password, true)
-	importFromMnemonicToStorage(mnemonic, password, false)
-	signWithKeyStore("0xC49926C4124cEe1cbA0Ea94Ea31a6c12318df947", password)
+	createKeyStorage(homedir, password, true)
+	importFromMnemonicToStorage(homedir, mnemonic, password, false)
+	signWithKeyStore(homedir, "0xC49926C4124cEe1cbA0Ea94Ea31a6c12318df947", password)
 }
 
 func signingExamples() {
@@ -153,8 +169,8 @@ func signingExamples() {
 }
 
 // createKeyStorage create new key storage and a new account
-func createKeyStorage(password string, delete bool) {
-	keyDir := path.Join(zcnbridge.GetConfigDir(), zcnbridge.EthereumWalletStorageDir)
+func createKeyStorage(homedir, password string, delete bool) {
+	keyDir := path.Join(homedir, zcnbridge.EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	account, err := ks.NewAccount(password)
 	if err != nil {
@@ -175,10 +191,10 @@ func createKeyStorage(password string, delete bool) {
 }
 
 // signWithKeyStore signs the transaction using public key and key storage
-func signWithKeyStore(address, password string) {
+func signWithKeyStore(homedir, address, password string) {
 	// 1. Create storage and account if it doesn't exist and add account to it
 
-	keyDir := path.Join(zcnbridge.GetConfigDir(), zcnbridge.EthereumWalletStorageDir)
+	keyDir := path.Join(homedir, zcnbridge.EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 
 	// Create account definitions
@@ -228,10 +244,10 @@ func signWithKeyStore(address, password string) {
 }
 
 // importFromMnemonicToStorage Importing wallet to key storage from mnemonic
-func importFromMnemonicToStorage(mnemonic, password string, delete bool) {
+func importFromMnemonicToStorage(homedir, mnemonic, password string, delete bool) {
 	// 1. Create storage and account if it doesn't exist and add account to it
 
-	keyDir := path.Join(zcnbridge.GetConfigDir(), zcnbridge.EthereumWalletStorageDir)
+	keyDir := path.Join(homedir, zcnbridge.EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 
 	// 2. Init wallet
@@ -430,9 +446,7 @@ func signLegacyTransactionExample(mnemonic string) {
 	//_ := client.SendTransaction(ctx, transaction)
 }
 
-func runBridgeClientExample(cfg *zcnbridge.BridgeSDKConfig) {
-	var bridge = zcnbridge.SetupBridgeClientSDK(cfg)
-
+func runBridgeClientExample(bridge *zcnbridge.BridgeClient) {
 	balance, err := bridge.GetBalance()
 	if err == nil {
 		fmt.Println(balance)
@@ -457,9 +471,8 @@ func runBridgeClientExample(cfg *zcnbridge.BridgeSDKConfig) {
 	PrintEthereumBurnTicketsPayloads(bridge)
 }
 
-func runBridgeOwnerExample(cfg *zcnbridge.BridgeSDKConfig) {
-	var owner = zcnbridge.SetupBridgeOwnerSDK(cfg)
-	owner.AddEthereumAuthorizers(*cfg.ConfigDir)
+func runBridgeOwnerExample(owner *zcnbridge.BridgeOwner) {
+	owner.AddEthereumAuthorizers(owner.Homedir)
 }
 
 // signatureTests Create public and private keys, signs data and recovers signer public key

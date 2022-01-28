@@ -92,7 +92,7 @@ func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei We
 
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 
-	transactOpts := CreateSignedTransactionFromKeyStore(etherClient, fromAddress, gasLimitUnits, b.Password, b.Value)
+	transactOpts := b.CreateSignedTransactionFromKeyStore(etherClient, gasLimitUnits)
 
 	wzcnTokenInstance, err := erc20.NewERC20(tokenAddress, etherClient)
 	if err != nil {
@@ -161,7 +161,7 @@ func (b *BridgeClient) VerifyZCNTransaction(ctx context.Context, hash string) (*
 func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
 	hash := CreateHash(message)
 
-	keyDir := path.Join(GetConfigDir(), EthereumWalletStorageDir)
+	keyDir := path.Join(b.Homedir, EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	signer := accounts.Account{
 		Address: common.HexToAddress(b.EthereumAddress),
@@ -405,7 +405,7 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params 
 	// Update gas limits + 10%
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 
-	transactOpts := CreateSignedTransactionFromKeyStore(etherClient, fromAddress, gasLimitUnits, b.Password, b.Value)
+	transactOpts := b.CreateSignedTransactionFromKeyStore(etherClient, gasLimitUnits)
 
 	// BridgeClient instance
 	bridgeInstance, err := binding.NewBridge(contractAddress, etherClient)

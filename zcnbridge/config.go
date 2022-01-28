@@ -76,7 +76,7 @@ type BridgeOwner struct {
 func ReadClientConfigFromCmd() *BridgeSDKConfig {
 	// reading from bridge.yaml
 	cmd := &BridgeSDKConfig{}
-	cmd.Development = flag.Bool("development", true, "development mode")
+	cmd.Development = flag.Bool("development", false, "development mode")
 	cmd.LogPath = flag.String("logs", "./logs", "log folder")
 	cmd.ConfigDir = flag.String("path", GetConfigDir(), "config home folder")
 	cmd.ConfigBridgeFile = flag.String("bridge_config", BridgeClientConfigName, "bridge config file")
@@ -91,13 +91,13 @@ func ReadClientConfigFromCmd() *BridgeSDKConfig {
 func CreateBridgeOwner(cfg *viper.Viper) *BridgeOwner {
 	owner := cfg.Get(OwnerConfigKeyName)
 	if owner == nil {
-		ExitWithError("Can't read config with `owner` key")
+		ExitWithError("CreateBridgeOwner: can't read config with `owner` key")
 	}
 
 	fileUsed := cfg.ConfigFileUsed()
 	homedir := path.Dir(fileUsed)
 	if homedir == "" {
-		ExitWithError("homedir is required")
+		ExitWithError("CreateBridgeOwner: homedir is required")
 	}
 
 	return &BridgeOwner{

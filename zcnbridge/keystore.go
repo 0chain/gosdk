@@ -5,19 +5,17 @@ import (
 	"os"
 	"path"
 
-	"github.com/ethereum/go-ethereum/common"
-	"gopkg.in/yaml.v2"
-
-	hdw "github.com/miguelmota/go-ethereum-hdwallet"
-
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
+	"github.com/ethereum/go-ethereum/common"
+	hdw "github.com/miguelmota/go-ethereum-hdwallet"
 	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
 )
 
 // ListStorageAccounts List available accounts
-func ListStorageAccounts() []common.Address {
-	keyDir := path.Join(GetConfigDir(), EthereumWalletStorageDir)
+func ListStorageAccounts(homedir string) []common.Address {
+	keyDir := path.Join(homedir, EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	config := &accounts.Config{InsecureUnlockAllowed: false}
 	am := accounts.NewManager(config, ks)
@@ -26,24 +24,26 @@ func ListStorageAccounts() []common.Address {
 	return addresses
 }
 
-//func DeleteAccount(address string) bool {
-//	keyDir := path.Join(GetConfigDir(), EthereumWalletStorageDir)
-//	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
-//	config := &accounts.Config{InsecureUnlockAllowed: false}
-//	am := accounts.NewManager(config, ks)
-//
-//	wallet, err := am.Find(accounts.Account{
-//		Address: common.HexToAddress(address),
-//	})
-//
-//	if err != nil && wallet == nil {
-//		fmt.Printf("failed to find account %s, error: %s", address, err)
-//		return false
-//	}
-//}
+func DeleteAccount(homedir, address string) bool {
+	keyDir := path.Join(homedir, EthereumWalletStorageDir)
+	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
+	config := &accounts.Config{InsecureUnlockAllowed: false}
+	am := accounts.NewManager(config, ks)
 
-func AccountExists(address string) bool {
-	keyDir := path.Join(GetConfigDir(), EthereumWalletStorageDir)
+	wallet, err := am.Find(accounts.Account{
+		Address: common.HexToAddress(address),
+	})
+
+	if err != nil && wallet == nil {
+		fmt.Printf("failed to find account %s, error: %s", address, err)
+		return false
+	}
+
+	return true
+}
+
+func AccountExists(homedir, address string) bool {
+	keyDir := path.Join(homedir, EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	config := &accounts.Config{InsecureUnlockAllowed: false}
 	am := accounts.NewManager(config, ks)
@@ -66,8 +66,8 @@ func AccountExists(address string) bool {
 }
 
 // CreateKeyStorage create, restore or unlock key storage
-func CreateKeyStorage(password string) error {
-	keyDir := path.Join(GetConfigDir(), EthereumWalletStorageDir)
+func CreateKeyStorage(homedir, password string) error {
+	keyDir := path.Join(homedir, EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	account, err := ks.NewAccount(password)
 	if err != nil {
@@ -78,8 +78,8 @@ func CreateKeyStorage(password string) error {
 	return nil
 }
 
-func UpdateClientEthereumAddress(address string) (err error) {
-	configFile := path.Join(GetConfigDir(), BridgeClientConfigName)
+func UpdateClientEthereumAddress(homedir, address string) (err error) {
+	configFile := path.Join(homedir, BridgeClientConfigName)
 	buf, err := os.ReadFile(configFile)
 	if err != nil {
 		return err

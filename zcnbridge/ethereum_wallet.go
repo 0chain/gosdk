@@ -73,14 +73,14 @@ func CreateSignedTransaction(
 	return opts
 }
 
-func CreateSignedTransactionFromKeyStore(
-	client *ethclient.Client,
-	signerAddress common.Address,
-	gasLimitUnits uint64,
-	password string,
-	value int64,
-) *bind.TransactOpts {
-	keyDir := path.Join(GetConfigDir(), EthereumWalletStorageDir)
+func (b *BridgeClientConfig) CreateSignedTransactionFromKeyStore(client *ethclient.Client, gasLimitUnits uint64) *bind.TransactOpts {
+	var (
+		signerAddress = common.HexToAddress(b.EthereumAddress)
+		password      = b.Password
+		value         = b.Value
+	)
+
+	keyDir := path.Join(b.Homedir, EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	signer := accounts.Account{
 		Address: signerAddress,

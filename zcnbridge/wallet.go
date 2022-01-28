@@ -29,7 +29,7 @@ func (b *BridgeClient) SetupZCNSDK(logDir, logLevel string) {
 // SetupZCNWallet Sets up the zcnWallet and node
 // Wallet setup reads keys from keyfile and registers in the 0chain
 func (b *BridgeClient) SetupZCNWallet(filename string) {
-	walletConfig, err := initZCNWallet(filename)
+	walletConfig, err := b.initZCNWallet(filename)
 	if err != nil {
 		log.Logger.Fatal("failed to setup zcn wallet", zap.Error(err))
 	}
@@ -59,8 +59,8 @@ func (b *BridgeClient) SetupZCNWallet(filename string) {
 //	b.Instance.ethWallet = ownerEthereumWallet
 //}
 
-func initZCNWallet(filename string) (*wallet.Wallet, error) {
-	file := filepath.Join(GetConfigDir(), filename)
+func (b *BridgeClientConfig) initZCNWallet(filename string) (*wallet.Wallet, error) {
+	file := filepath.Join(b.Homedir, filename)
 	if _, err := os.Stat(file); os.IsNotExist(err) {
 		return nil, errors.Wrap(err, "error opening the zcnWallet "+file)
 	}
@@ -92,7 +92,7 @@ func initZCNWallet(filename string) (*wallet.Wallet, error) {
 // initSDK runs zcncore.SetLogFile, zcncore.SetLogLevel and zcncore.InitZCNSDK using provided Config.
 // If an error occurs during execution, the program terminates with code 2 and the error will be written in os.Stderr.
 // setupZCNSDK should be used only once while application is starting.
-func (b *BridgeClient) initSDK(logDir, logLevel string) error {
+func (b *BridgeClientConfig) initSDK(logDir, logLevel string) error {
 	var logName = logDir + "/zcnbridge-sdk.log"
 	zcncore.SetLogFile(logName, true)
 	zcncore.SetLogLevel(logLevelFromStr(logLevel))
