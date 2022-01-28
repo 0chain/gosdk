@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"path"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -14,6 +15,7 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
@@ -280,34 +282,12 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 
 }
 
-// Download download file
-func Download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly, rxPay, autoCommit bool) (*DownloadCommandResponse, error) {
-	//var live, delay bool
+func downloadFile(allocationObj *sdk.Allocation, authTicket string, authTicketObj *marker.AuthTicket, localPath, remotePath, lookupHash string, downloadThumbnailOnly, rxPay bool) (string, error) {
 	var blocksPerMarker, startBlock, endBlock int
 
 	if len(remotePath) == 0 && len(authTicket) == 0 {
-		return nil, RequiredArg("remotePath/authTicket")
+		return "", RequiredArg("remotePath/authTicket")
 	}
-
-	// if live {
-
-	// 	// m3u8, err := createM3u8Downloader(localpath, remotepath, authticket, allocationID, lookuphash, rxPay, delay)
-
-	// 	// if err != nil {
-	// 	// 	PrintError("Error: download files and build playlist: ", err)
-	// 	// 	os.Exit(1)
-	// 	// }
-
-	// 	// err = m3u8.Start()
-
-	// 	// if err != nil {
-	// 	// 	PrintError("Error: download files and build playlist: ", err)
-	// 	// 	os.Exit(1)
-	// 	// }
-
-	// 	return nil, errors.New("download live is not supported yet")
-
-	// }
 
 	if blocksPerMarker == 0 {
 		blocksPerMarker = 10
@@ -318,74 +298,55 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 	statusBar := &StatusBar{wg: wg}
 	wg.Add(1)
 	var errE, err error
-	var allocationObj *sdk.Allocation
+
 	fileName := filepath.Base(remotePath)
-	localPath := filepath.Join(allocationID, fileName)
 
 	if err != nil {
 		PrintError(err)
-		return nil, err
+		return "", err
 	}
 	defer sdk.FS.Remove(localPath) //nolint
 
 	if len(authTicket) > 0 {
-		at, err := sdk.InitAuthTicket(authTicket).Unmarshall()
 
-		if err != nil {
-			PrintError(err)
-			return nil, err
-		}
-
-		allocationObj, err = sdk.GetAllocationFromAuthTicket(authTicket)
-		if err != nil {
-			PrintError("Error fetching the allocation", err)
-			return nil, err
-		}
-
-		var filename string
-
-		if at.RefType == fileref.FILE {
-			filename = at.FileName
-			lookupHash = at.FilePathHash
+		if authTicketObj.RefType == fileref.FILE {
+			fileName = authTicketObj.FileName
+			lookupHash = authTicketObj.FilePathHash
 		} else if len(lookupHash) > 0 {
 			fileMeta, err := allocationObj.GetFileMetaFromAuthTicket(authTicket, lookupHash)
 			if err != nil {
 				PrintError("Either remotepath or lookuphash is required when using authticket of directory type")
-				return nil, err
+				return "", err
 			}
-			filename = fileMeta.Name
+			fileName = fileMeta.Name
 		} else if len(remotePath) > 0 {
 			lookupHash = fileref.GetReferenceLookup(allocationObj.Tx, remotePath)
 
 			pathnames := strings.Split(remotePath, "/")
-			filename = pathnames[len(pathnames)-1]
+			fileName = pathnames[len(pathnames)-1]
 		} else {
 			PrintError("Either remotepath or lookuphash is required when using authticket of directory type")
-			return nil, errors.New("Either remotepath or lookuphash is required when using authticket of directory type")
+			return "", errors.New("Either remotepath or lookuphash is required when using authticket of directory type")
 		}
 
 		if downloadThumbnailOnly {
 			errE = allocationObj.DownloadThumbnailFromAuthTicket(localPath,
-				authTicket, lookupHash, filename, rxPay, statusBar)
+				authTicket, lookupHash, fileName, rxPay, statusBar)
 		} else {
 			if startBlock != 0 || endBlock != 0 {
 				errE = allocationObj.DownloadFromAuthTicketByBlocks(
 					localPath, authTicket, int64(startBlock), int64(endBlock), blocksPerMarker,
-					lookupHash, filename, rxPay, statusBar)
+					lookupHash, fileName, rxPay, statusBar)
 			} else {
 				errE = allocationObj.DownloadFromAuthTicket(localPath,
-					authTicket, lookupHash, filename, rxPay, statusBar)
+					authTicket, lookupHash, fileName, rxPay, statusBar)
 			}
 		}
 	} else if len(remotePath) > 0 {
-		if len(allocationID) == 0 {
-			return nil, RequiredArg("allocationID")
-		}
-		allocationObj, err = sdk.GetAllocation(allocationID)
 
 		if err != nil {
 			PrintError("Error fetching the allocation", err)
-			return nil, err
+			return "", err
 		}
 		if downloadThumbnailOnly {
 			errE = allocationObj.DownloadThumbnail(localPath, remotePath, statusBar)
@@ -402,7 +363,48 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 		wg.Wait()
 	} else {
 		PrintError("Download failed.", errE.Error())
-		return nil, errE
+		return "", errE
+	}
+	if !statusBar.success {
+		return "", errors.New("Download failed: unknown error")
+	}
+
+	return fileName, nil
+}
+
+// Download download file
+func Download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly, rxPay, autoCommit bool) (*DownloadCommandResponse, error) {
+
+	if len(remotePath) == 0 && len(authTicket) == 0 {
+		return nil, RequiredArg("remotePath/authTicket")
+	}
+
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	wg.Add(1)
+
+	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
+	localPath := filepath.Join(allocationID, fileName)
+
+	downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
+		sdk.WithAuthticket(authTicket, lookupHash),
+		sdk.WithOnlyThumbnail(downloadThumbnailOnly),
+		sdk.WithRxPay(rxPay))
+
+	if err != nil {
+		PrintError(err.Error())
+		return nil, err
+	}
+
+	defer sdk.FS.Remove(localPath) //nolint
+
+	err = downloader.Start(statusBar)
+
+	if err == nil {
+		wg.Wait()
+	} else {
+		PrintError("Download failed.", err.Error())
+		return nil, err
 	}
 	if !statusBar.success {
 		return nil, errors.New("Download failed: unknown error")
@@ -421,7 +423,7 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 
 	if autoCommit {
 
-		txn, err := commitTxn(allocationObj, remotePath, "", authTicket, lookupHash, "Download", nil, true)
+		txn, err := commitTxn(downloader.GetAllocation(), remotePath, "", authTicket, lookupHash, "Download", nil, true)
 		if err != nil {
 			resp.Error = err.Error()
 

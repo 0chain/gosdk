@@ -9,9 +9,14 @@ import (
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
-// PrintError is to print error
+// PrintError is to print stderr
 func PrintError(v ...interface{}) {
 	fmt.Fprintln(os.Stderr, v...)
+}
+
+// PrintInfo is to print stdout
+func PrintInfo(v ...interface{}) {
+	fmt.Fprintln(os.Stdout, v...)
 }
 
 func getFileMeta(allocationObj *sdk.Allocation, remotePath string, commit bool) (*sdk.ConsolidatedFileMeta, bool, error) {

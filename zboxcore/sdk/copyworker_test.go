@@ -198,8 +198,9 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 				remotefilepath: mockRemoteFilePath,
 				destPath:       mockDestPath,
 				Consensus: Consensus{
-					consensusThresh: 50,
-					fullconsensus:   4,
+					consensusThresh:        50,
+					fullconsensus:          4,
+					consensusRequiredForOk: 60,
 				},
 				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
@@ -384,8 +385,9 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 				remotefilepath: mockRemoteFilePath,
 				destPath:       mockDestPath,
 				Consensus: Consensus{
-					consensusThresh: 50,
-					fullconsensus:   4,
+					consensusThresh:        50,
+					fullconsensus:          4,
+					consensusRequiredForOk: 60,
 				},
 				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
