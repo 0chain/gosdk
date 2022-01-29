@@ -2,7 +2,7 @@ package sdk
 
 import (
 	"bytes"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"io"
@@ -74,7 +74,7 @@ func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, conn
 		return nil, metadata, err
 	}
 
-	chunkHashWriter := sha1.New()
+	chunkHashWriter := sha256.New()
 	chunkWriters := io.MultiWriter(uploadFile, chunkHashWriter)
 
 	_, err = chunkWriters.Write(fileBytes)
@@ -121,7 +121,7 @@ func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, conn
 			return nil, metadata, err
 		}
 
-		thumbnailHash := sha1.New()
+		thumbnailHash := sha256.New()
 		thumbnailWriters := io.MultiWriter(uploadThumbnailFile, thumbnailHash)
 		_, err = thumbnailWriters.Write(thumbnailBytes)
 		if err != nil {

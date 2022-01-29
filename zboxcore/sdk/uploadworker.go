@@ -3,7 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -171,7 +171,7 @@ func (req *UploadRequest) prepareUpload(
 			return
 		}
 		// Setup file hash compute
-		h := sha1.New()
+		h := sha256.New()
 		//merkleHash := sha3.New256()
 		hWr := io.MultiWriter(h)
 		merkleHashes := make([]hash.Hash, 1024)
@@ -235,7 +235,7 @@ func (req *UploadRequest) prepareUpload(
 				return
 			}
 			// Setup file hash compute
-			h := sha1.New()
+			h := sha256.New()
 
 			hWr := io.MultiWriter(h)
 			// Read the data
@@ -359,9 +359,9 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 	}
 
 	if !req.isRepair {
-		req.fileHash = sha1.New()
+		req.fileHash = sha256.New()
 		req.fileHashWr = io.MultiWriter(req.fileHash)
-		req.thumbnailHash = sha1.New()
+		req.thumbnailHash = sha256.New()
 		req.thumbnailHashWr = io.MultiWriter(req.thumbnailHash)
 	}
 	if req.isEncrypted {
