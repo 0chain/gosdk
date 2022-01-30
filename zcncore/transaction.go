@@ -72,15 +72,16 @@ type blockHeader struct {
 }
 
 type Transaction struct {
-	txn          *transaction.Transaction
-	txnOut       string
-	txnHash      string
-	txnStatus    int
-	txnError     error
-	txnCb        TransactionCallback
-	verifyStatus int
-	verifyOut    string
-	verifyError  error
+	txn                      *transaction.Transaction
+	txnOut                   string
+	txnHash                  string
+	txnStatus                int
+	txnError                 error
+	txnCb                    TransactionCallback
+	verifyStatus             int
+	verifyConfirmationStatus ConfirmationStatus
+	verifyOut                string
+	verifyError              error
 }
 
 type SendTxnData struct {
@@ -116,6 +117,8 @@ type TransactionScheme interface {
 	SetTransactionFee(txnFee int64) error
 	// Verify implements verify the transaction
 	Verify() error
+	// GetVerifyConfirmationStatus implements the verification status from sharders
+	GetVerifyConfirmationStatus() ConfirmationStatus
 	// GetVerifyOutput implements the verifcation output from sharders
 	GetVerifyOutput() string
 	// GetTransactionError implements error string incase of transaction failure
@@ -215,7 +218,12 @@ func (t *Transaction) completeTxn(status int, out string, err error) {
 }
 
 func (t *Transaction) completeVerify(status int, out string, err error) {
+	t.completeVerifyWithConStatus(status, 0, out, err)
+}
+
+func (t *Transaction) completeVerifyWithConStatus(status int, conStatus ConfirmationStatus, out string, err error) {
 	t.verifyStatus = status
+	t.verifyConfirmationStatus = conStatus
 	t.verifyOut = out
 	t.verifyError = err
 	if t.txnCb != nil {
@@ -944,12 +952,38 @@ func (t *Transaction) Verify() error {
 					t.completeVerify(StatusError, "", errors.New("", `{"error": "transaction confirmation json marshal error"`))
 					return
 				}
-				t.completeVerify(StatusSuccess, string(output), nil)
+				confJson := confirmation["confirmation"]
+
+				var conf map[string]json.RawMessage
+				if err := json.Unmarshal(confJson, &conf); err != nil {
+					return
+				}
+				txnJson := conf["txn"]
+
+				var tr map[string]json.RawMessage
+				if err := json.Unmarshal(txnJson, &tr); err != nil {
+					return
+				}
+
+				txStatus := tr["transaction_status"]
+				switch string(txStatus) {
+				case "1":
+					t.completeVerifyWithConStatus(StatusSuccess, Success, string(output), nil)
+				case "2":
+					txOutput := tr["transaction_output"]
+					t.completeVerifyWithConStatus(StatusSuccess, ChargeableError, string(txOutput), nil)
+				default:
+					t.completeVerify(StatusError, string(output), nil)
+				}
 				return
 			}
 		}
 	}()
 	return nil
+}
+
+func (t *Transaction) GetVerifyConfirmationStatus() ConfirmationStatus {
+	return t.verifyConfirmationStatus
 }
 
 func (t *Transaction) GetVerifyOutput() string {

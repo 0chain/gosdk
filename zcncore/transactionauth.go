@@ -185,6 +185,10 @@ func (ta *TransactionWithAuth) GetTransactionHash() string {
 	return ta.t.GetTransactionHash()
 }
 
+func (ta *TransactionWithAuth) GetVerifyConfirmationStatus() ConfirmationStatus {
+	return ta.t.GetVerifyConfirmationStatus()
+}
+
 func (ta *TransactionWithAuth) Verify() error {
 	return ta.t.Verify()
 }
