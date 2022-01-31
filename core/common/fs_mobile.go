@@ -1,5 +1,5 @@
-//go:build !ios && !android
-// +build !ios,!android
+//go:build ios || android
+// +build ios,android
 
 package common
 
@@ -15,10 +15,10 @@ type FS interface {
 	// the returned file can be used for reading; the associated file
 	// descriptor has mode O_RDONLY.
 	// If there is an error, it will be of type *PathError.
-	Open(name string) (File, error)
+	Open(name string) (MemFile, error)
 
 	// OpenFile open a file
-	OpenFile(name string, flag int, perm os.FileMode) (File, error)
+	OpenFile(name string, flag int, perm os.FileMode) (MemFile, error)
 
 	// ReadFile reads the file named by filename and returns the contents.
 	ReadFile(name string) ([]byte, error)
@@ -32,15 +32,4 @@ type FS interface {
 
 	//MkdirAll creates a directory named path
 	MkdirAll(path string, perm os.FileMode) error
-}
-
-type File interface {
-	Stat() (fs.FileInfo, error)
-	Read([]byte) (int, error)
-	Write(p []byte) (n int, err error)
-
-	Sync() error
-	Seek(offset int64, whence int) (ret int64, err error)
-
-	Close() error
 }

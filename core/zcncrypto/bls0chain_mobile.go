@@ -29,16 +29,16 @@ func NewWasmScheme() *WasmScheme {
 }
 
 func (b0 *WasmScheme) GenerateKeysWithEth(mnemonic, password string) (*Wallet, error) {
-	return nil, errors.New("wasm_not_support", "please generate keys by bls_wasm in js")
+	return nil, errors.New("wasm_not_support", "please generate keys by bls_wasm in ios/android")
 }
 
 //GenerateKeys - implement interface
 func (b0 *WasmScheme) GenerateKeys() (*Wallet, error) {
-	return nil, errors.New("wasm_not_support", "please generate keys by bls_wasm in js")
+	return nil, errors.New("wasm_not_support", "please generate keys by bls_wasm in ios/android")
 }
 
 func (b0 *WasmScheme) RecoverKeys(mnemonic string) (*Wallet, error) {
-	return nil, errors.New("wasm_not_support", "please recover keys by bls_wasm in js")
+	return nil, errors.New("wasm_not_support", "please recover keys by bls_wasm in ios/android")
 }
 
 func (b0 *WasmScheme) GetMnemonic() string {
@@ -47,21 +47,21 @@ func (b0 *WasmScheme) GetMnemonic() string {
 
 //SetPrivateKey - implement interface
 func (b0 *WasmScheme) SetPrivateKey(privateKey string) error {
-	return errors.New("wasm_not_support", "please set keys by bls_wasm in js")
+	return errors.New("wasm_not_support", "please set keys by bls_wasm in ios/android")
 }
 
 //SetPublicKey - implement interface
 func (b0 *WasmScheme) SetPublicKey(publicKey string) error {
-	return errors.New("wasm_not_support", "please set keys by bls_wasm in js")
+	return errors.New("wasm_not_support", "please set keys by bls_wasm in ios/android")
 }
 
 //GetPublicKey - implement interface
 func (b0 *WasmScheme) GetPublicKey() string {
-	return "please get key in js"
+	return "please get key in ios/android"
 }
 
 func (b0 *WasmScheme) GetPrivateKey() string {
-	return "please get key in js"
+	return "please get key in ios/android"
 }
 
 //Sign - implement interface
