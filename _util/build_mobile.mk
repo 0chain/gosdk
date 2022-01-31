@@ -47,7 +47,7 @@ endif
 	@$(PRINT_CYN)
 ifneq ($(IOS),)
 	@echo "Building iOS framework. Please wait..."
-	@gomobile bind -ldflags="-s -w" -target=ios -o $(IOSMOBILESDKDIR)/$(IOSBINNAME) $(GOSDK_PATH)/zcncore
+	@gomobile bind -ldflags="-s -w" -target=ios -o $(IOSMOBILESDKDIR)/$(IOSBINNAME) $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common
 	@echo "   $(IOSMOBILESDKDIR)/$(IOSBINNAME). - [OK]"
 endif
 ifneq ($(ANDROID),)

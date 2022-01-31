@@ -1,11 +1,14 @@
-//go:build !ios && !android
-// +build !ios,!android
+//go:build ios || android
+// +build ios,android
 
 package common
 
 import (
+	"bytes"
+	"io/fs"
 	"io/ioutil"
 	"os"
+	"time"
 )
 
 // DiskFS implement file system on disk
@@ -21,12 +24,17 @@ func NewDiskFS() FS {
 // the returned file can be used for reading; the associated file
 // descriptor has mode O_RDONLY.
 // If there is an error, it will be of type *PathError.
-func (dfs *DiskFS) Open(name string) (File, error) {
+func (dfs *DiskFS) Open(name string) (MemFile, error) {
 	return dfs.OpenFile(name, os.O_RDONLY, 0)
 }
 
-func (dfs *DiskFS) OpenFile(name string, flag int, perm os.FileMode) (File, error) {
-	return os.OpenFile(name, flag, perm)
+func (dfs *DiskFS) OpenFile(name string, flag int, perm os.FileMode) (MemFile, error) {
+	file, err := os.OpenFile(name, flag, perm)
+	if err != nil {
+		return MemFile{}, err
+	}
+
+	return MemFile{Name: file.Name(), Buffer: new(bytes.Buffer), Mode: fs.ModePerm, ModTime: time.Now()}, nil
 }
 
 // ReadFile reads the file named by filename and returns the contents.
