@@ -1,7 +1,7 @@
 package sdk
 
 import (
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"io"
@@ -89,7 +89,7 @@ func calcFileHash(filePath string) string {
 	}
 	defer fp.Close()
 
-	h := sha1.New()
+	h := sha256.New()
 	if _, err := io.Copy(h, fp); err != nil {
 		log.Fatal(err)
 	}

@@ -2,7 +2,7 @@ package util
 
 import (
 	"bytes"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"io"
 
@@ -46,7 +46,7 @@ func NewCompactMerkleTree(hash func(left, right string) string) *CompactMerkleTr
 // AddLeaf add leaf hash and update the the Merkle tree.
 func (cmt *CompactMerkleTree) AddDataBlocks(buf []byte, index int) error {
 
-	h := sha1.New()
+	h := sha256.New()
 	h.Write(buf)
 
 	return cmt.AddLeaf(hex.EncodeToString(h.Sum(nil)), index)
