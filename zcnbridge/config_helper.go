@@ -10,16 +10,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-func initChainConfig(sdkConfig *BridgeSDKConfig) *viper.Viper {
-	cfg := readConfig(sdkConfig, func() string {
-		return *sdkConfig.ConfigChainFile
-	})
-
-	log.Logger.Info(fmt.Sprintf("Chain config has been initialized from %s", cfg.ConfigFileUsed()))
-
-	return cfg
-}
-
 func initBridgeConfig(sdkConfig *BridgeSDKConfig) *viper.Viper {
 	cfg := readConfig(sdkConfig, func() string {
 		return *sdkConfig.ConfigBridgeFile
@@ -48,33 +38,6 @@ func readConfig(sdkConfig *BridgeSDKConfig, getConfigName func() string) *viper.
 	}
 	return cfg
 }
-
-//func restoreChain() {
-//	config, err := conf.GetClientConfig()
-//	if err != nil {
-//		ExitWithError("Can't read config:", err)
-//	}
-//
-//	RestoreChainFromConfig(config)
-//}
-
-//func RestoreChainFromConfig(cfg *conf.Config) {
-//	chain.SetServerChain(chain.NewChain(
-//		cfg.BlockWorker,
-//		cfg.SignatureScheme,
-//		cfg.MinSubmit,
-//		cfg.MinConfirmation,
-//	))
-//}
-
-//func initChainFromConfig(reader conf.Reader) {
-//	chain.SetServerChain(chain.NewChain(
-//		reader.GetString("block_worker"),
-//		reader.GetString("signature_scheme"),
-//		reader.GetInt("min_submit"),
-//		reader.GetInt("min_confirmation"),
-//	))
-//}
 
 func GetConfigDir() string {
 	var configDir string
