@@ -93,6 +93,7 @@ func main() {
 		clientConfig = owner.BridgeClientConfig
 	} else {
 		bridge = zcnbridge.SetupBridgeClientSDK(cfg)
+		//bridge.SetupZCNClient(cfg)
 		clientConfig = bridge.BridgeClientConfig
 	}
 
@@ -142,12 +143,16 @@ func updateClientEthereumAddress(homedir, address string) {
 	configFile := path.Join(homedir, zcnbridge.BridgeClientConfigName)
 	buf, _ := os.ReadFile(configFile)
 	cfg := &zcnbridge.Bridge{}
-	_ = yaml.Unmarshal(buf, cfg)
+	err := yaml.Unmarshal(buf, cfg)
 
-	cfg.Owner.EthereumAddress = address
+	owner := cfg.Owner
+	if owner != nil && err != nil {
+		owner.EthereumAddress = address
+		owner.EthereumAddress = address
 
-	text, _ := yaml.Marshal(cfg)
-	_ = os.WriteFile(configFile, text, 0644)
+		text, _ := yaml.Marshal(cfg)
+		_ = os.WriteFile(configFile, text, 0644)
+	}
 }
 
 // keyStorageExample Shows how new/existing user will work with key storage

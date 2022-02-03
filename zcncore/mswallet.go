@@ -281,6 +281,10 @@ func GetClientID(pkey string) string {
 	return encryption.Hash(publicKeyBytes)
 }
 
+func GetClientWalletID() string {
+	return _config.wallet.ClientID
+}
+
 //GetMultisigPayload given a multisig wallet as a string, makes a multisig wallet payload to register
 func GetMultisigPayload(mswstr string) (interface{}, error) {
 	var msw MSWallet

@@ -7,8 +7,8 @@ import (
 // VerifyTransaction verifies including in blockchain transaction with provided hash.
 //
 // If execution completed with no error, returns Transaction with provided hash.
-func VerifyTransaction(ctx context.Context, txnHash string, clientID, publicKey string) (*Transaction, error) {
-	txn, err := NewTransactionEntity(clientID, publicKey)
+func VerifyTransaction(ctx context.Context, txnHash string) (*Transaction, error) {
+	txn, err := NewTransactionEntity()
 	if err != nil {
 		return nil, err
 	}

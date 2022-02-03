@@ -7,9 +7,10 @@ import (
 	"path"
 
 	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zcnbridge/chain"
-	commonErr "github.com/0chain/gosdk/zcnbridge/errors"
+	//"github.com/0chain/gosdk/core/zcncrypto"
+	//"github.com/0chain/gosdk/zcnbridge/chain"
+	//commonErr "github.com/0chain/gosdk/zcnbridge/errors"
+	//"github.com/0chain/gosdk/zcnbridge/chain"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	binding "github.com/0chain/gosdk/zcnbridge/ethereum/bridge"
 	"github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
@@ -154,7 +155,7 @@ func (b *BridgeClient) GetBalance() (*big.Int, error) {
 
 // VerifyZCNTransaction verifies 0CHain transaction
 func (b *BridgeClient) VerifyZCNTransaction(ctx context.Context, hash string) (*transaction.Transaction, error) {
-	return transaction.VerifyTransaction(ctx, hash, b.ID(), b.PublicKey())
+	return transaction.VerifyTransaction(ctx, hash)
 }
 
 // SignWithEthereumChain signs the digest with Ethereum chain signer taking key from the current user key storage
@@ -184,18 +185,17 @@ func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
 }
 
 // SignWithZCNChain signs the digest with ZCN chain signer
-func (b *BridgeClient) SignWithZCNChain(hash string) (string, error) {
-	scheme := chain.GetServerChain().SignatureScheme
-	signScheme := zcncrypto.NewSignatureScheme(scheme)
-	if signScheme != nil {
-		err := signScheme.SetPrivateKey(b.PrivateKey())
-		if err != nil {
-			return "", err
-		}
-		return signScheme.Sign(hash)
-	}
-	return "", commonErr.NewError("invalid_signature_scheme", "Invalid signature scheme. Please check configuration")
-}
+//func (b *BridgeClient) SignWithZCNChain(hash string) (string, error) {
+//	signScheme := zcncrypto.NewSignatureScheme(scheme)
+//	if signScheme != nil {
+//		err := signScheme.SetPrivateKey(b.PrivateKey())
+//		if err != nil {
+//			return "", err
+//		}
+//		return signScheme.Sign(hash)
+//	}
+//	return "", commonErr.NewError("invalid_signature_scheme", "Invalid signature scheme. Please check configuration")
+//}
 
 // MintWZCN Mint ZCN tokens on behalf of the 0ZCN client
 // payload: received from authorizers
@@ -229,7 +229,7 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 
 	Logger.Info(
 		"Staring Mint WZCN",
-		zap.String("clientID", b.ID()),
+		//zap.String("clientID", b.ID()),
 		zap.Int64("amount", amount.Int64()),
 		zap.String("zcnTxd", string(zcnTxd)),
 		zap.String("nonce", nonce.String()),
@@ -238,14 +238,14 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 	tran, err := bridgeInstance.Mint(transactOpts, amount, zcnTxd, nonce, sigs)
 	if err != nil {
 		Logger.Error("Mint WZCN FAILED", zap.Error(err))
-		msg := "failed to execute MintWZCN transaction, ClientID = %s, amount = %s, ZCN TrxID = %s"
-		return nil, errors.Wrapf(err, msg, b.ID(), amount, zcnTxd)
+		msg := "failed to execute MintWZCN transaction, amount = %s, ZCN TrxID = %s"
+		return nil, errors.Wrapf(err, msg, amount, zcnTxd)
 	}
 
 	Logger.Info(
 		"Posted Mint WZCN",
 		zap.String("hash", tran.Hash().String()),
-		zap.String("clientID", b.ID()),
+		//zap.String("clientID", b.ID()),
 		zap.Int64("amount", amount.Int64()),
 		zap.String("zcnTxd", string(zcnTxd)),
 		zap.String("nonce", nonce.String()),
@@ -277,7 +277,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens int64) (*types
 
 	Logger.Info(
 		"Staring Burn WZCN",
-		zap.String("clientID", b.ID()),
+		//zap.String("clientID", b.ID()),
 		zap.Int64("amount", amount.Int64()),
 	)
 
@@ -298,7 +298,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens int64) (*types
 
 // MintZCN mints ZCN tokens after receiving proof-of-burn of WZCN tokens
 func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (*transaction.Transaction, error) {
-	trx, err := transaction.NewTransactionEntity(b.ID(), b.PublicKey())
+	trx, err := transaction.NewTransactionEntity()
 	if err != nil {
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
 	}
@@ -336,7 +336,7 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount int64) (*transaction.
 		EthereumAddress: b.EthereumAddress, // TODO: this should be receiver address not the bridge
 	}
 
-	trx, err := transaction.NewTransactionEntity(b.ID(), b.PublicKey())
+	trx, err := transaction.NewTransactionEntity()
 	if err != nil {
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
 	}

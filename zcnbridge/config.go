@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"path"
 
+	"github.com/0chain/gosdk/zcncore"
+
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zcnbridge/log"
-	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/spf13/viper"
 )
 
@@ -51,7 +52,7 @@ type BridgeClientConfig struct {
 }
 
 type Instance struct {
-	zcnWallet *wallet.Wallet
+	//zcnWallet *wallet.Wallet
 	startTime common.Timestamp
 	nonce     int64
 }
@@ -161,38 +162,43 @@ func CreateBridgeClient(cfg *viper.Viper) *BridgeClient {
 
 // ID returns id of Node.
 func (b *BridgeClient) ID() string {
-	return b.zcnWallet.ID()
+	return zcncore.GetClientWalletID()
+	//return b.zcnWallet.ID()
 }
 
 // ID returns id of Node.
 func (b *BridgeOwner) ID() string {
-	return b.zcnWallet.ID()
+	return zcncore.GetClientWalletID()
+	//return b.zcnWallet.ID()
 }
 
 // PublicKey returns public key of Node
-func (b *BridgeClient) PublicKey() string {
-	return b.zcnWallet.PublicKey()
-}
-
-func (b *BridgeClient) PrivateKey() string {
-	return b.zcnWallet.PrivateKey()
-}
+//func (b *BridgeClient) PublicKey() string {
+//	return b.zcnWallet.PublicKey()
+//}
+//
+//func (b *BridgeClient) PrivateKey() string {
+//	return b.zcnWallet.PrivateKey()
+//}
 
 func (b *BridgeClient) IncrementNonce() int64 {
 	b.nonce++
 	return b.nonce
 }
 
+//func (b *BridgeClient) SetupZCNClient(cfg *BridgeSDKConfig) {
+//	b.SetupZCNSDK(*cfg.LogPath, *cfg.LogLevel)
+//	b.SetupZCNWallet(EthereumWalletClientConfigName)
+//}
+
 // SetupBridgeClientSDK Use this from standalone application
 // 0Chain SDK initialization is required
 func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 	log.InitLogging(*cfg.Development, *cfg.LogPath, *cfg.LogLevel)
 
-	initChainFromConfig(initChainConfig(cfg))
+	//initChainFromConfig(initChainConfig(cfg))
 
 	bridgeClient := CreateBridgeClient(initBridgeConfig(cfg))
-	bridgeClient.SetupZCNSDK(*cfg.LogPath, *cfg.LogLevel)
-	bridgeClient.SetupZCNWallet(EthereumWalletClientConfigName)
 
 	return bridgeClient
 }

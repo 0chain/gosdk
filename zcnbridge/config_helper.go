@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/zcnbridge/chain"
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/spf13/viper"
 )
@@ -51,32 +49,32 @@ func readConfig(sdkConfig *BridgeSDKConfig, getConfigName func() string) *viper.
 	return cfg
 }
 
-func restoreChain() {
-	config, err := conf.GetClientConfig()
-	if err != nil {
-		ExitWithError("Can't read config:", err)
-	}
+//func restoreChain() {
+//	config, err := conf.GetClientConfig()
+//	if err != nil {
+//		ExitWithError("Can't read config:", err)
+//	}
+//
+//	RestoreChainFromConfig(config)
+//}
 
-	RestoreChainFromConfig(config)
-}
+//func RestoreChainFromConfig(cfg *conf.Config) {
+//	chain.SetServerChain(chain.NewChain(
+//		cfg.BlockWorker,
+//		cfg.SignatureScheme,
+//		cfg.MinSubmit,
+//		cfg.MinConfirmation,
+//	))
+//}
 
-func RestoreChainFromConfig(cfg *conf.Config) {
-	chain.SetServerChain(chain.NewChain(
-		cfg.BlockWorker,
-		cfg.SignatureScheme,
-		cfg.MinSubmit,
-		cfg.MinConfirmation,
-	))
-}
-
-func initChainFromConfig(reader conf.Reader) {
-	chain.SetServerChain(chain.NewChain(
-		reader.GetString("block_worker"),
-		reader.GetString("signature_scheme"),
-		reader.GetInt("min_submit"),
-		reader.GetInt("min_confirmation"),
-	))
-}
+//func initChainFromConfig(reader conf.Reader) {
+//	chain.SetServerChain(chain.NewChain(
+//		reader.GetString("block_worker"),
+//		reader.GetString("signature_scheme"),
+//		reader.GetInt("min_submit"),
+//		reader.GetInt("min_confirmation"),
+//	))
+//}
 
 func GetConfigDir() string {
 	var configDir string
