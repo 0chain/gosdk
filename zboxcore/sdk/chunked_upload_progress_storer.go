@@ -2,11 +2,13 @@ package sdk
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"errors"
 	"os"
 	"time"
 
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/logger"
 )
 
@@ -69,7 +71,7 @@ func (fs *fsChunkedUploadProgressStorer) start() {
 // Load load upload progress from file system
 func (fs *fsChunkedUploadProgressStorer) Load(progressID string) *UploadProgress {
 
-	progress := UploadProgress{}
+	progress := new(UploadProgress)
 
 	buf, err := FS.ReadFile(progressID)
 
@@ -77,11 +79,98 @@ func (fs *fsChunkedUploadProgressStorer) Load(progressID string) *UploadProgress
 		return nil
 	}
 
-	if err := json.Unmarshal(buf, &progress); err != nil {
+	// progress storerer Map String Interface
+	psMSI := make(map[string]interface{})
+	if err := json.Unmarshal(buf, &psMSI); err != nil {
 		return nil
 	}
 
-	return &progress
+	idI, ok := psMSI["id"]
+	if !ok {
+		return nil
+	}
+
+	progress.ID = idI.(string)
+
+	chunkSizeI, ok := psMSI["chunk_size"]
+	if !ok {
+		return nil
+	}
+
+	progress.ChunkSize = int64(chunkSizeI.(float64))
+
+	connectionIDI, ok := psMSI["connection_id"]
+	if !ok {
+		return nil
+	}
+	progress.ConnectionID = connectionIDI.(string)
+
+	merkleHashersI, ok := psMSI["merkle_hashers"]
+	if !ok {
+		return nil
+	}
+
+	uploadBlobberStatuses := make([]*UploadBlobberStatus, 0)
+
+	merkleHashers, ok := merkleHashersI.([]interface{})
+	if !ok {
+		return nil
+	}
+	for _, merkleHashI := range merkleHashers {
+		merkleHashMap, ok := merkleHashI.(map[string]interface{})
+		if !ok {
+			return nil
+		}
+		uploadLength, ok := merkleHashMap["upload_length"].(float64)
+		if !ok {
+			return nil
+		}
+		hasherMap, ok := merkleHashMap["Hasher"].(map[string]interface{})
+		if !ok {
+			return nil
+		}
+
+		challenge := new(util.FixedMerkleTree)
+		content := new(util.CompactMerkleTree)
+
+		for key, value := range hasherMap {
+			switch key {
+			case "file":
+				continue
+			case "challenge":
+				marshalledValue, err := json.Marshal((value))
+				if err != nil {
+					return nil
+				}
+				if err := json.Unmarshal(marshalledValue, challenge); err != nil {
+					return nil
+				}
+			case "content":
+				marshaledvalue, err := json.Marshal(value)
+				if err != nil {
+					return nil
+				}
+				if err := json.Unmarshal(marshaledvalue, content); err != nil {
+					return nil
+				}
+			}
+		}
+
+		h := hasher{}
+		h.File = sha256.New()
+		h.Challenge = challenge
+		h.Content = content
+
+		ubs := UploadBlobberStatus{ // UploadBlobberStatus
+			Hasher:       &h,
+			UploadLength: int64(uploadLength),
+		}
+
+		uploadBlobberStatuses = append(uploadBlobberStatuses, &ubs)
+	}
+
+	progress.Blobbers = uploadBlobberStatuses
+	return progress
 }
 
 // Save save upload progress in file system
