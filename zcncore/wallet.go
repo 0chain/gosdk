@@ -134,6 +134,14 @@ const (
 	StatusUnknown          int = -1
 )
 
+type ConfirmationStatus int
+
+const (
+	Undefined ConfirmationStatus = iota
+	Success
+	ChargeableError
+)
+
 const TOKEN_UNIT int64 = 1e10
 
 const (
