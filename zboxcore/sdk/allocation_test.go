@@ -3,6 +3,8 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -14,6 +16,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/0chain/gosdk/dev/blobber"
+	"github.com/0chain/gosdk/dev/blobber/model"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 
 	"github.com/0chain/errors"
@@ -88,6 +92,42 @@ func setupMockFile(t *testing.T, path string) (teardown func(t *testing.T)) {
 	ioutil.WriteFile(path, []byte("mockActualHash"), os.ModePerm)
 	return func(t *testing.T) {
 		os.Remove(path)
+	}
+}
+
+func setupMockFileAndReferencePathResult(t *testing.T, allocationID, name string) (teardown func(t *testing.T)) {
+	var buf = []byte("mockActualHash")
+	h := sha256.New()
+	f, _ := os.Create(name)
+	w := io.MultiWriter(h, f)
+	//nolint: errcheck
+	w.Write(buf)
+
+	cancel := blobber.MockReferencePathResult(allocationID, &model.Ref{
+		AllocationID: allocationID,
+		Type:         model.DIRECTORY,
+		Name:         "/",
+		Path:         "/",
+		PathLevel:    1,
+		ParentPath:   "",
+		Children: []*model.Ref{
+			{
+				AllocationID:   allocationID,
+				Name:           name,
+				Type:           model.FILE,
+				Path:           "/" + name,
+				ActualFileSize: int64(len(buf)),
+				ActualFileHash: hex.EncodeToString(h.Sum(nil)),
+				ChunkSize:      CHUNK_SIZE,
+				PathLevel:      2,
+				ParentPath:     "/",
+			},
+		},
+	})
+
+	return func(t *testing.T) {
+		cancel()
+		os.Remove(name)
 	}
 }
 
@@ -196,6 +236,7 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit128(t *testing.T)
 	allocation.Blobbers = blobbers
 	allocation.DataShards = 64
 	allocation.ParityShards = 65
+	allocation.fullconsensus, allocation.consensusThreshold, allocation.consensusOK = allocation.getConsensuses()
 
 	var file fileref.Attributes
 	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false, file)
@@ -220,6 +261,7 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanExplicitLimit(t *testing.T) {
 	allocation.Blobbers = blobbers
 	allocation.DataShards = 5
 	allocation.ParityShards = 6
+	allocation.fullconsensus, allocation.consensusThreshold, allocation.consensusOK = allocation.getConsensuses()
 
 	var file fileref.Attributes
 	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false, file)
@@ -244,6 +286,7 @@ func TestDoNotThrowErrorWhenBlobbersRequiredLessThanLimit(t *testing.T) {
 	allocation.Blobbers = blobbers
 	allocation.DataShards = 5
 	allocation.ParityShards = 4
+	allocation.fullconsensus, allocation.consensusThreshold, allocation.consensusOK = allocation.getConsensuses()
 
 	var file fileref.Attributes
 	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false, file)
@@ -508,8 +551,8 @@ func TestAllocation_RepairFile(t *testing.T) {
 	const (
 		mockFileRefName = "mock file ref name"
 		mockLocalPath   = "1.txt"
-		mockActualHash  = "4041e3eeb170751544a47af4e4f9d374e76cee1d"
-		mockChunkHash   = "65e97907139278eeed8b3815f36b442a0043c7e0"
+		mockActualHash  = "75a919d23622c29ade8096ed1add6606ec970579459178db3a7d1d0ff8df92d3"
+		mockChunkHash   = "a6fb1cb61c9a3b8709242de28e44fb0b4de3753995396ae1d21ca9d4e956e9e2"
 	)
 
 	var mockClient = mocks.HttpClient{}
@@ -2203,7 +2246,10 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 			}
 
 			require := require.New(t)
-			a := &Allocation{}
+			a := &Allocation{
+				DataShards:   1,
+				ParityShards: 1,
+			}
 			a.InitAllocation()
 			sdkInitialized = true
 
@@ -2217,11 +2263,6 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 			const numberBlobbers = 10
 
 			zboxutil.Client = &mockClient
-
-			a.InitAllocation()
-			a.DataShards = 1
-			a.ParityShards = 1
-			sdkInitialized = true
 
 			if tt.setup != nil {
 				if teardown := tt.setup(t, tt.name, a, &mockClient); teardown != nil {
@@ -2816,9 +2857,8 @@ func TestAllocation_listDir(t *testing.T) {
 	)
 
 	type parameters struct {
-		path                           string
-		consensusThresh, fullConsensus float32
-		expectedResult                 *ListResult
+		path           string
+		expectedResult *ListResult
 	}
 	tests := []struct {
 		name       string
@@ -2854,10 +2894,8 @@ func TestAllocation_listDir(t *testing.T) {
 		{
 			name: "Test_Error_Get_List_File_From_Blobbers_Failed",
 			parameters: parameters{
-				path:            mockPath,
-				consensusThresh: 50,
-				fullConsensus:   4,
-				expectedResult:  &ListResult{},
+				path:           mockPath,
+				expectedResult: &ListResult{},
 			},
 			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
 				setupMockHttpResponse(t, mockClient, "TestAllocation_listDir", testCaseName, a, http.MethodGet, http.StatusBadRequest, []byte(""))
@@ -2867,9 +2905,7 @@ func TestAllocation_listDir(t *testing.T) {
 		{
 			name: "Test_Success",
 			parameters: parameters{
-				path:            mockPath,
-				consensusThresh: 50,
-				fullConsensus:   4,
+				path: mockPath,
 				expectedResult: &ListResult{
 					Type: mockType,
 					Size: -1,
@@ -2918,7 +2954,7 @@ func TestAllocation_listDir(t *testing.T) {
 					defer teardown(t)
 				}
 			}
-			got, err := a.listDir(tt.parameters.path, tt.parameters.consensusThresh, tt.parameters.fullConsensus)
+			got, err := a.ListDir(tt.parameters.path)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))
@@ -3430,6 +3466,9 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
 	a.mutex = &sync.Mutex{}
 	a.initialized = true
+	if a.DataShards != 0 {
+		a.fullconsensus, a.consensusThreshold, a.consensusOK = a.getConsensuses()
+	}
 	sdkInitialized = true
 	go func() {
 		for {

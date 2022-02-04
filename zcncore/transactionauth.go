@@ -189,6 +189,10 @@ func (ta *TransactionWithAuth) GetTransactionHash() string {
 	return ta.t.GetTransactionHash()
 }
 
+func (ta *TransactionWithAuth) GetVerifyConfirmationStatus() ConfirmationStatus {
+	return ta.t.GetVerifyConfirmationStatus()
+}
+
 func (ta *TransactionWithAuth) Verify() error {
 	return ta.t.Verify()
 }
@@ -630,28 +634,6 @@ func (ta *TransactionWithAuth) StakePoolUnlock(blobberID, poolID string,
 
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
-	if err != nil {
-		Logger.Error(err)
-		return
-	}
-	ta.t.SetTransactionFee(fee)
-	go func() { ta.submitTxn() }()
-	return
-}
-
-// StakePoolPayInterests trigger interests payments.
-func (ta *TransactionWithAuth) StakePoolPayInterests(blobberID string,
-	fee int64) (err error) {
-
-	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
-	}
-
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
-
-	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_STAKE_POOL_PAY_INTERESTS, &spr, 0)
 	if err != nil {
 		Logger.Error(err)
 		return

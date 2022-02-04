@@ -207,8 +207,9 @@ func TestAttributesRequest_updateBlobberObjectAttributes(t *testing.T) {
 				remotefilepath: mockRemoteFilePath,
 				attributes:     string(attrsb),
 				Consensus: Consensus{
-					consensusThresh: 50,
-					fullconsensus:   4,
+					consensusThresh:        50,
+					fullconsensus:          4,
+					consensusRequiredForOk: 60,
 				},
 				ctx:            context.TODO(),
 				attributesMask: 0,
@@ -396,8 +397,9 @@ func TestAttributesRequest_ProcessAttributes(t *testing.T) {
 				remotefilepath: mockRemoteFilePath,
 				attributes:     string(attrsb),
 				Consensus: Consensus{
-					consensusThresh: 50,
-					fullconsensus:   4,
+					consensusThresh:        50,
+					fullconsensus:          4,
+					consensusRequiredForOk: 60,
 				},
 				ctx:            context.TODO(),
 				attributesMask: 0,
