@@ -408,31 +408,6 @@ func StakePoolUnlock(this js.Value, p []js.Value) interface{} {
 	return promiseConstructor.New(handler)
 }
 
-func StakePoolPayInterests(this js.Value, p []js.Value) interface{} {
-	blobberID := p[0].String()
-
-	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		resolve := args[0]
-		reject := args[1]
-
-		go func() {
-			err := sdk.StakePoolPayInterests(blobberID)
-			if err != nil {
-				reject.Invoke(map[string]interface{}{
-					"error": fmt.Sprintf("StakePoolPayInterests failed. Reason: %s", err),
-				})
-			}
-
-			resolve.Invoke(err)
-		}()
-
-		return nil
-	})
-
-	promiseConstructor := js.Global().Get("Promise")
-	return promiseConstructor.New(handler)
-}
-
 func GetWritePoolInfo(this js.Value, p []js.Value) interface{} {
 	clientID := p[0].String()
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {

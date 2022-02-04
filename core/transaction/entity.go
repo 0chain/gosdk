@@ -24,8 +24,9 @@ const TXN_SUBMIT_URL = "v1/transaction/put"
 const TXN_VERIFY_URL = "v1/transaction/get/confirmation?hash="
 
 const (
-	TxnSuccess = 1 // Indicates the transaction is successful in updating the state or smart contract
-	TxnFail    = 3 // Indicates a transaction has failed to update the state or smart contract
+	TxnSuccess         = 1 // Indicates the transaction is successful in updating the state or smart contract
+	TxnChargeableError = 2 // Indicates the transaction is successful in updating the state or smart contract
+	TxnFail            = 3 // Indicates a transaction has failed to update the state or smart contract
 )
 
 //Transaction entity that encapsulates the transaction related data and meta data
@@ -104,23 +105,22 @@ const (
 	VESTING_UPDATE_SETTINGS = "vestingsc-update-settings"
 
 	// Storage SC
-	STORAGESC_FINALIZE_ALLOCATION      = "finalize_allocation"
-	STORAGESC_CANCEL_ALLOCATION        = "cancel_allocation"
-	STORAGESC_CREATE_ALLOCATION        = "new_allocation_request"
-	STORAGESC_CREATE_READ_POOL         = "new_read_pool"
-	STORAGESC_READ_POOL_LOCK           = "read_pool_lock"
-	STORAGESC_READ_POOL_UNLOCK         = "read_pool_unlock"
-	STORAGESC_STAKE_POOL_LOCK          = "stake_pool_lock"
-	STORAGESC_STAKE_POOL_UNLOCK        = "stake_pool_unlock"
-	STORAGESC_STAKE_POOL_PAY_INTERESTS = "stake_pool_pay_interests"
-	STORAGESC_UPDATE_BLOBBER_SETTINGS  = "update_blobber_settings"
-	STORAGESC_UPDATE_ALLOCATION        = "update_allocation_request"
-	STORAGESC_WRITE_POOL_LOCK          = "write_pool_lock"
-	STORAGESC_WRITE_POOL_UNLOCK        = "write_pool_unlock"
-	STORAGESC_ADD_CURATOR              = "add_curator"
-	STORAGESC_REMOVE_CURATOR           = "remove_curator"
-	STORAGESC_CURATOR_TRANSFER         = "curator_transfer_allocation"
-	STORAGESC_UPDATE_SETTINGS          = "update_settings"
+	STORAGESC_FINALIZE_ALLOCATION     = "finalize_allocation"
+	STORAGESC_CANCEL_ALLOCATION       = "cancel_allocation"
+	STORAGESC_CREATE_ALLOCATION       = "new_allocation_request"
+	STORAGESC_CREATE_READ_POOL        = "new_read_pool"
+	STORAGESC_READ_POOL_LOCK          = "read_pool_lock"
+	STORAGESC_READ_POOL_UNLOCK        = "read_pool_unlock"
+	STORAGESC_STAKE_POOL_LOCK         = "stake_pool_lock"
+	STORAGESC_STAKE_POOL_UNLOCK       = "stake_pool_unlock"
+	STORAGESC_UPDATE_BLOBBER_SETTINGS = "update_blobber_settings"
+	STORAGESC_UPDATE_ALLOCATION       = "update_allocation_request"
+	STORAGESC_WRITE_POOL_LOCK         = "write_pool_lock"
+	STORAGESC_WRITE_POOL_UNLOCK       = "write_pool_unlock"
+	STORAGESC_ADD_CURATOR             = "add_curator"
+	STORAGESC_REMOVE_CURATOR          = "remove_curator"
+	STORAGESC_CURATOR_TRANSFER        = "curator_transfer_allocation"
+	STORAGESC_UPDATE_SETTINGS         = "update_settings"
 
 	MINERSC_LOCK             = "addToDelegatePool"
 	MINERSC_UNLOCK           = "deleteFromDelegatePool"
