@@ -1085,46 +1085,6 @@ func (a *Allocation) GetAuthTicket(path, filename, referenceType, refereeClientI
 	}
 
 	return base64.StdEncoding.EncodeToString(atBytes), nil
-
-	// if len(refereeEncryptionPublicKey) > 0 || len(refereeClientID) > 0 {
-	// 	authTicket, err := shareReq.GetAuthTicketForEncryptedFile(refereeClientID, refereeEncryptionPublicKey)
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	err = a.UploadAuthTicketToBlobber(authTicket, refereeEncryptionPublicKey)
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	// generate another auth ticket without reencryption key
-	// 	at := &marker.AuthTicket{}
-	// 	decoded, err := base64.StdEncoding.DecodeString(authTicket)
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-
-	// 	err = json.Unmarshal(decoded, at)
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-
-	// 	at.ReEncryptionKey = ""
-	// 	err = at.Sign()
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	atBytes, err := json.Marshal(at)
-	// 	if err != nil {
-	// 		return "", err
-	// 	}
-	// 	sEnc := base64.StdEncoding.EncodeToString(atBytes)
-	// 	return sEnc, nil
-	// }
-
-	// authTicket, err := shareReq.GetAuthTicket(refereeClientID)
-	// if err != nil {
-	// 	return "", err
-	// }
-	// return authTicket, nil
 }
 
 func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKey string) error {
