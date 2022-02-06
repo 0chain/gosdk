@@ -51,12 +51,12 @@ func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereu
 	client = h.NewRetryableClient()
 	authorizers, err := GetAuthorizers()
 
-	if err != nil || len(authorizers.NodeMap) == 0 {
+	if err != nil || len(authorizers) == 0 {
 		return nil, errors.Wrap("get_authorizers", "failed to get authorizers", err)
 	}
 
 	var (
-		totalWorkers = len(authorizers.NodeMap)
+		totalWorkers = len(authorizers)
 		values       = u.Values{
 			"zchainBurnHash": []string{zchainBurnHash},
 		}
@@ -113,12 +113,12 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 	client = h.NewRetryableClient()
 	authorizers, err := GetAuthorizers()
 
-	if err != nil || len(authorizers.NodeMap) == 0 {
+	if err != nil || len(authorizers) == 0 {
 		return nil, errors.Wrap("get_authorizers", "failed to get authorizers", err)
 	}
 
 	var (
-		totalWorkers = len(authorizers.NodeMap)
+		totalWorkers = len(authorizers)
 		values       = u.Values{
 			"eth_burn_hash": []string{ethBurnHash},
 			"address":       []string{wallet.ZCNSCSmartContractAddress},
@@ -172,9 +172,9 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 	return nil, errors.New("get_burn_ticket", text)
 }
 
-func queryAllAuthorizers(authorizers *AuthorizerNodes, handler *requestHandler) []JobResult {
+func queryAllAuthorizers(authorizers []*AuthorizerNodeResponse, handler *requestHandler) []JobResult {
 	var (
-		totalWorkers    = len(authorizers.NodeMap)
+		totalWorkers    = len(authorizers)
 		eventsChannel   = make(eventsChannelType)
 		responseChannel = make(responseChannelType, totalWorkers)
 	)
@@ -184,7 +184,7 @@ func queryAllAuthorizers(authorizers *AuthorizerNodes, handler *requestHandler) 
 	go handleResponse(responseChannel, eventsChannel, &wg)
 	defer close(eventsChannel)
 
-	for _, authorizer := range authorizers.NodeMap {
+	for _, authorizer := range authorizers {
 		wg.Add(1)
 		go queryAuthoriser(authorizer, handler, responseChannel)
 	}
@@ -207,7 +207,7 @@ func handleResponse(responseChannel responseChannelType, eventsChannel eventsCha
 	eventsChannel <- events
 }
 
-func queryAuthoriser(au *AuthorizerNode, request *requestHandler, responseChannel responseChannelType) {
+func queryAuthoriser(au *AuthorizerNodeResponse, request *requestHandler, responseChannel responseChannelType) {
 	var (
 		ticketURL = strings.TrimSuffix(au.URL, "/") + request.path
 	)

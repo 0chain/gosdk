@@ -3,13 +3,41 @@ package zcnbridge
 import (
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
+	"runtime"
 
-	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/zcnbridge/chain"
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/spf13/viper"
 )
+
+func initBridgeConfig(sdkConfig *BridgeSDKConfig) *viper.Viper {
+	cfg := readConfig(sdkConfig, func() string {
+		return *sdkConfig.ConfigBridgeFile
+	})
+
+	log.Logger.Info(fmt.Sprintf("Bridge config has been initialized from %s", cfg.ConfigFileUsed()))
+
+	return cfg
+}
+
+func readConfig(sdkConfig *BridgeSDKConfig, getConfigName func() string) *viper.Viper {
+	cfg := viper.New()
+	cfg.AddConfigPath(*sdkConfig.ConfigDir)
+	cfg.SetConfigName(getConfigName())
+	cfg.SetConfigType("yaml")
+	err := cfg.ReadInConfig()
+	if err != nil {
+		_, file, line, ok := runtime.Caller(2)
+		if !ok {
+			file = "???"
+			line = 0
+		}
+		f := filepath.Base(file)
+		header := fmt.Sprintf("[ERROR] %s:%d: ", f, line)
+		ExitWithError(header+"Can't read config: ", err)
+	}
+	return cfg
+}
 
 func GetConfigDir() string {
 	var configDir string
@@ -20,61 +48,6 @@ func GetConfigDir() string {
 	}
 	configDir = home + "/.zcn"
 	return configDir
-}
-
-func initChainFromConfig(filename string) {
-	configDir := GetConfigDir()
-
-	chainConfig := viper.New()
-	chainConfig.AddConfigPath(configDir)
-	chainConfig.SetConfigFile(path.Join(configDir, filename))
-
-	if err := chainConfig.ReadInConfig(); err != nil {
-		ExitWithError("Can't read config: ", err)
-	}
-
-	InitChainFromConfig(chainConfig)
-}
-
-func restoreChain() {
-	config, err := conf.GetClientConfig()
-	if err != nil {
-		ExitWithError("Can't read config:", err)
-	}
-
-	RestoreChainFromConfig(config)
-}
-
-func readSDKConfig(sdkConfig *BridgeSDKConfig) *viper.Viper {
-	cfg := viper.New()
-	cfg.AddConfigPath(*sdkConfig.ConfigDir)
-	cfg.SetConfigName(*sdkConfig.ConfigFile)
-	err := cfg.ReadInConfig()
-	if err != nil {
-		panic(fmt.Errorf("fatal error config file: %w", err))
-	}
-
-	log.InitLogging(*sdkConfig.Development, *sdkConfig.LogPath, *sdkConfig.LogLevel)
-
-	return cfg
-}
-
-func RestoreChainFromConfig(cfg *conf.Config) {
-	chain.SetServerChain(chain.NewChain(
-		cfg.BlockWorker,
-		cfg.SignatureScheme,
-		cfg.MinSubmit,
-		cfg.MinConfirmation,
-	))
-}
-
-func InitChainFromConfig(reader conf.Reader) {
-	chain.SetServerChain(chain.NewChain(
-		reader.GetString("block_worker"),
-		reader.GetString("signature_scheme"),
-		reader.GetInt("min_submit"),
-		reader.GetInt("min_confirmation"),
-	))
 }
 
 func ExitWithError(v ...interface{}) {
