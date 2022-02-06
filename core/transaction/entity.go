@@ -130,6 +130,7 @@ const (
 	MINERSC_UPDATE_GLOBALS   = "update_globals"
 	MINERSC_MINER_DELETE     = "delete_miner"
 	MINERSC_SHARDER_DELETE   = "delete_sharder"
+	MINERSC_PAY_REWARD       = "pay_reward"
 
 	// Faucet SC
 	FAUCETSC_UPDATE_SETTINGS = "update-settings"
