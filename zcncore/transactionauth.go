@@ -367,20 +367,22 @@ func (ta *TransactionWithAuth) MinerSCDeleteSharder(info *MinerSCMinerInfo) (
 	return
 }
 
-func (ta *TransactionWithAuth) MinerSCPayReward(minerID string,
-	input MinerSCPayReward) (err error) {
-
-	var mscl MinerSCLock
-	mscl.ID = minerID
-
-	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_PAY_REWARD, &input, 0)
+func (ta *TransactionWithAuth) MinerSCPayReward(
+	poolId, providerType string,
+) error {
+	input, err := newMinerSCPayReward(poolId, providerType)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
+	}
+	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_PAY_REWARD, input, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
 	}
 	go func() { ta.submitTxn() }()
-	return
+	return err
 }
 
 func (ta *TransactionWithAuth) MinerSCLock(minerID string,
