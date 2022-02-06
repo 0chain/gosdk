@@ -1256,6 +1256,36 @@ func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
 	return
 }
 
+type Provider int
+
+const (
+	ProviderMiner Provider = iota
+	ProviderSharder
+	ProviderBlobber
+	ProviderValidator
+	ProviderAuthorizer
+)
+
+type MinerSCPayReward struct {
+	PoolId       string   `json:"pool_id"`
+	ProviderType Provider `json:"provider_type"`
+}
+
+func (t *Transaction) MinerSCPayReward(nodeID string, input MinerSCPayReward) (err error) {
+
+	var mscl MinerSCLock
+	mscl.ID = nodeID
+
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_PAY_REWARD, &input, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.submitTxn() }()
+	return
+}
+
 type MinerSCLock struct {
 	ID string `json:"id"`
 }
