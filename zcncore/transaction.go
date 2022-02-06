@@ -139,6 +139,7 @@ type TransactionScheme interface {
 
 	// Miner SC
 
+	MinerSCPayReward(poolId, providerType string) error
 	MinerSCMinerSettings(*MinerSCMinerInfo) error
 	MinerSCSharderSettings(*MinerSCMinerInfo) error
 	MinerSCLock(minerID string, lock int64) error
@@ -1271,19 +1272,44 @@ type MinerSCPayReward struct {
 	ProviderType Provider `json:"provider_type"`
 }
 
-func (t *Transaction) MinerSCPayReward(nodeID string, input MinerSCPayReward) (err error) {
+func newMinerSCPayReward(
+	poolId, providerType string,
+) (*MinerSCPayReward, error) {
+	var mpr MinerSCPayReward
+	mpr.PoolId = poolId
+	switch providerType {
+	case "miner":
+		mpr.ProviderType = ProviderMiner
+	case "sharder":
+		mpr.ProviderType = ProviderSharder
+	case "blobber":
+		mpr.ProviderType = ProviderBlobber
+	case "validator":
+		mpr.ProviderType = ProviderValidator
+	case "authorizer":
+		mpr.ProviderType = ProviderAuthorizer
+	default:
+		return nil, fmt.Errorf("invalid provider %v", providerType)
+	}
+	return &mpr, nil
+}
 
-	var mscl MinerSCLock
-	mscl.ID = nodeID
-
-	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_PAY_REWARD, &input, 0)
+func (t *Transaction) MinerSCPayReward(
+	poolId string, providerType string,
+) error {
+	input, err := newMinerSCPayReward(poolId, providerType)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
+	}
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_PAY_REWARD, input, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
 	}
 	go func() { t.submitTxn() }()
-	return
+	return err
 }
 
 type MinerSCLock struct {
