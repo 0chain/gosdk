@@ -1015,6 +1015,23 @@ func AddCurator(curatorId, allocationId string) (string, error) {
 	return hash, err
 }
 
+func PayRewards(poolId string, providerType int) (string, error) {
+	if !sdkInitialized {
+		return "", sdkNotInitialized
+	}
+
+	var input = map[string]interface{}{
+		"provider_type": providerType,
+		"pool_id":       poolId,
+	}
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_PAY_REWARD,
+		InputArgs: input,
+	}
+	hash, _, err := smartContractTxn(sn)
+	return hash, err
+}
+
 func CuratorTransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (string, error) {
 	if !sdkInitialized {
 		return "", sdkNotInitialized
