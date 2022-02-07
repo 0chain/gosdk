@@ -139,7 +139,7 @@ type TransactionScheme interface {
 
 	// Miner SC
 
-	MinerSCPayReward(poolId, providerType string) error
+	MinerSCPayReward(*SCPayReward) error
 	MinerSCMinerSettings(*MinerSCMinerInfo) error
 	MinerSCSharderSettings(*MinerSCMinerInfo) error
 	MinerSCLock(minerID string, lock int64) error
@@ -151,6 +151,7 @@ type TransactionScheme interface {
 
 	// Storage SC
 
+	StorageSCPayReward(*SCPayReward) error
 	FinalizeAllocation(allocID string, fee int64) error
 	CancelAllocation(allocID string, fee int64) error
 	CreateAllocation(car *CreateAllocationRequest, lock, fee int64) error //
@@ -1267,15 +1268,15 @@ const (
 	ProviderAuthorizer
 )
 
-type MinerSCPayReward struct {
+type SCPayReward struct {
 	PoolId       string   `json:"pool_id"`
 	ProviderType Provider `json:"provider_type"`
 }
 
-func newMinerSCPayReward(
+func newSCPayReward(
 	poolId, providerType string,
-) (*MinerSCPayReward, error) {
-	var mpr MinerSCPayReward
+) (*SCPayReward, error) {
+	var mpr SCPayReward
 	mpr.PoolId = poolId
 	switch providerType {
 	case "miner":
@@ -1294,15 +1295,8 @@ func newMinerSCPayReward(
 	return &mpr, nil
 }
 
-func (t *Transaction) MinerSCPayReward(
-	poolId string, providerType string,
-) error {
-	input, err := newMinerSCPayReward(poolId, providerType)
-	if err != nil {
-		Logger.Error(err)
-		return err
-	}
-	err = t.createSmartContractTxn(MinerSmartContractAddress,
+func (t *Transaction) MinerSCPayReward(input *SCPayReward) error {
+	err := t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_PAY_REWARD, input, 0)
 	if err != nil {
 		Logger.Error(err)
@@ -1491,6 +1485,17 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 //
 // Storage SC transactions
 //
+
+func (t *Transaction) StorageSCPayReward(input *SCPayReward) error {
+	err := t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_PAY_REWARD, input, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { t.submitTxn() }()
+	return err
+}
 
 func (t *Transaction) StorageScUpdateConfig(ip *InputMap) (err error) {
 	err = t.createSmartContractTxn(StorageSmartContractAddress,

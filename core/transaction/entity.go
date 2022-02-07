@@ -121,6 +121,7 @@ const (
 	STORAGESC_REMOVE_CURATOR          = "remove_curator"
 	STORAGESC_CURATOR_TRANSFER        = "curator_transfer_allocation"
 	STORAGESC_UPDATE_SETTINGS         = "update_settings"
+	STORAGESC_PAY_REWARD              = "pay_reward"
 
 	MINERSC_LOCK             = "addToDelegatePool"
 	MINERSC_UNLOCK           = "deleteFromDelegatePool"
