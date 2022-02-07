@@ -1273,7 +1273,7 @@ type SCPayReward struct {
 	ProviderType Provider `json:"provider_type"`
 }
 
-func newSCPayReward(
+func NewSCPayReward(
 	poolId, providerType string,
 ) (*SCPayReward, error) {
 	var mpr SCPayReward
