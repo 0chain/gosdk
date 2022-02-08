@@ -139,7 +139,7 @@ type TransactionScheme interface {
 
 	// Miner SC
 
-	MinerSCPayReward(*SCPayReward) error
+	MinerSCPayReward(string, Provider) error
 	MinerSCMinerSettings(*MinerSCMinerInfo) error
 	MinerSCSharderSettings(*MinerSCMinerInfo) error
 	MinerSCLock(minerID string, lock int64) error
@@ -151,7 +151,7 @@ type TransactionScheme interface {
 
 	// Storage SC
 
-	StorageSCPayReward(*SCPayReward) error
+	StorageSCPayReward(string, Provider) error
 	FinalizeAllocation(allocID string, fee int64) error
 	CancelAllocation(allocID string, fee int64) error
 	CreateAllocation(car *CreateAllocationRequest, lock, fee int64) error //
@@ -1273,31 +1273,13 @@ type SCPayReward struct {
 	ProviderType Provider `json:"provider_type"`
 }
 
-func NewSCPayReward(
-	poolId, providerType string,
-) (*SCPayReward, error) {
-	var mpr SCPayReward
-	mpr.PoolId = poolId
-	switch providerType {
-	case "miner":
-		mpr.ProviderType = ProviderMiner
-	case "sharder":
-		mpr.ProviderType = ProviderSharder
-	case "blobber":
-		mpr.ProviderType = ProviderBlobber
-	case "validator":
-		mpr.ProviderType = ProviderValidator
-	case "authorizer":
-		mpr.ProviderType = ProviderAuthorizer
-	default:
-		return nil, fmt.Errorf("invalid provider %v", providerType)
+func (t *Transaction) MinerSCPayReward(poolId string, providerType Provider) error {
+	pr := &SCPayReward{
+		PoolId:       poolId,
+		ProviderType: providerType,
 	}
-	return &mpr, nil
-}
-
-func (t *Transaction) MinerSCPayReward(input *SCPayReward) error {
 	err := t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_PAY_REWARD, input, 0)
+		transaction.MINERSC_PAY_REWARD, pr, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err
@@ -1486,9 +1468,13 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 // Storage SC transactions
 //
 
-func (t *Transaction) StorageSCPayReward(input *SCPayReward) error {
+func (t *Transaction) StorageSCPayReward(poolId string, providerType Provider) error {
+	pr := &SCPayReward{
+		PoolId:       poolId,
+		ProviderType: providerType,
+	}
 	err := t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_PAY_REWARD, input, 0)
+		transaction.STORAGESC_PAY_REWARD, pr, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err

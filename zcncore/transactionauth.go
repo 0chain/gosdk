@@ -367,9 +367,13 @@ func (ta *TransactionWithAuth) MinerSCDeleteSharder(info *MinerSCMinerInfo) (
 	return
 }
 
-func (ta *TransactionWithAuth) MinerSCPayReward(input *SCPayReward) error {
+func (ta *TransactionWithAuth) MinerSCPayReward(poolId string, providerType Provider) error {
+	pr := &SCPayReward{
+		PoolId:       poolId,
+		ProviderType: providerType,
+	}
 	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_PAY_REWARD, input, 0)
+		transaction.MINERSC_PAY_REWARD, pr, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err
@@ -474,9 +478,13 @@ func (ta *TransactionWithAuth) RegisterMultiSig(walletstr string, mswallet strin
 // Storage SC
 //
 
-func (ta *TransactionWithAuth) StorageSCPayReward(input *SCPayReward) error {
+func (ta *TransactionWithAuth) StorageSCPayReward(poolId string, providerType Provider) error {
+	pr := &SCPayReward{
+		PoolId:       poolId,
+		ProviderType: providerType,
+	}
 	err := ta.t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_PAY_REWARD, input, 0)
+		transaction.STORAGESC_PAY_REWARD, pr, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err
