@@ -10,8 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/0chain/gosdk/zcncore"
-
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
@@ -1017,7 +1015,7 @@ func AddCurator(curatorId, allocationId string) (string, error) {
 	return hash, err
 }
 
-func PayRewards(poolId string, providerType zcncore.Provider) (string, error) {
+func PayRewards(poolId string, providerType int) (string, error) {
 	if !sdkInitialized {
 		return "", sdkNotInitialized
 	}
