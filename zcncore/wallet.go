@@ -1345,13 +1345,13 @@ func Decrypt(key, text string) (string, error) {
 	return string(response), nil
 }
 
-type NonceCache = struct {
+type NonceCache struct {
 	cache map[string]int64
 	guard sync.Mutex
 }
 
-func NewNonceCache() NonceCache {
-	return NonceCache{cache: make(map[string]int64)}
+func NewNonceCache() *NonceCache {
+	return &NonceCache{cache: make(map[string]int64)}
 }
 
 func (nc *NonceCache) GetNextNonce(clientId string) int64 {
