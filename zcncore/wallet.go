@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/0chain/errors"
@@ -1342,4 +1343,47 @@ func Decrypt(key, text string) (string, error) {
 		return "", err
 	}
 	return string(response), nil
+}
+
+type NonceCache = struct {
+	cache map[string]int64
+	guard sync.Mutex
+}
+
+func NewNonceCache() NonceCache {
+	return NonceCache{cache: make(map[string]int64)}
+}
+
+func (nc *NonceCache) GetNextNonce(clientId string) int64 {
+	nc.guard.Lock()
+	defer nc.guard.Unlock()
+	if _, ok := nc.cache[clientId]; !ok {
+		back := &getNonceCallBack{
+			nonceCh: make(chan int64),
+			err:     nil,
+		}
+		if err := GetNonce(back); err != nil {
+			return 0
+		}
+
+		timeout, _ := context.WithTimeout(context.Background(), time.Second)
+		select {
+		case n := <-back.nonceCh:
+			if back.err != nil {
+				return 0
+			}
+			nc.cache[clientId] = n
+		case <-timeout.Done():
+			return 0
+		}
+	}
+
+	nc.cache[clientId] += 1
+	return nc.cache[clientId]
+}
+
+func (nc *NonceCache) Evict(clientId string) {
+	nc.guard.Lock()
+	defer nc.guard.Unlock()
+	delete(nc.cache, clientId)
 }
