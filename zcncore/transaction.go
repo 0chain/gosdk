@@ -228,6 +228,9 @@ func (t *Transaction) completeVerifyWithConStatus(status int, conStatus Confirma
 	t.verifyConfirmationStatus = conStatus
 	t.verifyOut = out
 	t.verifyError = err
+	if status == StatusError {
+		transaction.Cache.Evict(t.txn.ClientID)
+	}
 	if t.txnCb != nil {
 		t.txnCb.OnVerifyComplete(t, t.verifyStatus)
 	}
@@ -254,21 +257,9 @@ func (t *Transaction) submitTxn() {
 
 	nonce := t.txn.TransactionNonce
 	if nonce < 1 {
-		Logger.Info("Requesting nonce from remote")
-		back := &getNonceCallBack{
-			nonceCh: make(chan int64),
-			err:     nil,
-		}
-		if err := GetNonce(back); err != nil {
-			Logger.Error("can't get nonce", err)
-			return
-		}
-		nonce = <-back.nonceCh
-		Logger.Info("received nonce: ", nonce)
-		if nonce == 0 || back.err != nil {
-			Logger.Error("can't get nonce, trying with nonce=1", back.err)
-		}
-		t.txn.TransactionNonce = nonce + 1
+		nonce = transaction.Cache.GetNextNonce(t.txn.ClientID)
+	} else {
+		transaction.Cache.Set(t.txn.ClientID, nonce)
 	}
 
 	// If Signature is not passed compute signature
@@ -276,6 +267,7 @@ func (t *Transaction) submitTxn() {
 		err := t.txn.ComputeHashAndSign(signFn)
 		if err != nil {
 			t.completeTxn(StatusError, "", err)
+			transaction.Cache.Evict(t.txn.ClientID)
 			return
 		}
 	}
@@ -317,6 +309,7 @@ func (t *Transaction) submitTxn() {
 	rate := consensus * 100 / float32(len(randomMiners))
 	if rate < consensusThresh {
 		t.completeTxn(StatusError, "", fmt.Errorf("submit transaction failed. %s", tFailureRsp))
+		transaction.Cache.Evict(t.txn.ClientID)
 		return
 	}
 	time.Sleep(3 * time.Second)
@@ -955,6 +948,7 @@ func (t *Transaction) Verify() error {
 	if t.txnHash == "" && t.txnStatus == StatusSuccess {
 		h := t.GetTransactionHash()
 		if h == "" {
+			transaction.Cache.Evict(t.txn.ClientID)
 			return errors.New("", "invalid transaction. cannot be verified.")
 		}
 	}

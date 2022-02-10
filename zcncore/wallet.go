@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/gosdk/core/transaction"
 	"log"
 	"math"
 	"net/http"
@@ -442,6 +443,8 @@ func GetNetwork() *Network {
 func SetNetwork(miners []string, sharders []string) {
 	_config.chain.Miners = miners
 	_config.chain.Sharders = sharders
+
+	transaction.InitCache(sharders)
 
 	conf.InitChainNetwork(&conf.Network{
 		Miners:   miners,
@@ -1380,6 +1383,12 @@ func (nc *NonceCache) GetNextNonce(clientId string) int64 {
 
 	nc.cache[clientId] += 1
 	return nc.cache[clientId]
+}
+
+func (nc *NonceCache) Set(clientId string, nonce int64) {
+	nc.guard.Lock()
+	defer nc.guard.Unlock()
+	nc.cache[clientId] = nonce
 }
 
 func (nc *NonceCache) Evict(clientId string) {

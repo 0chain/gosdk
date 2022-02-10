@@ -146,6 +146,7 @@ func SetMinConfirmation(num int) {
 func SetNetwork(miners []string, sharders []string) {
 	blockchain.SetMiners(miners)
 	blockchain.SetSharders(sharders)
+	transaction.InitCache(sharders)
 }
 
 //
@@ -1073,6 +1074,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	txn.Value = value
 	txn.TransactionFee = fee
 	txn.TransactionType = transaction.TxnTypeSmartContract
+	txn.TransactionNonce = transaction.Cache.GetNextNonce(txn.ClientID)
 
 	if err = txn.ComputeHashAndSign(client.Sign); err != nil {
 		return
@@ -1098,6 +1100,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	}
 
 	if err != nil {
+		transaction.Cache.Evict(txn.ClientID)
 		Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
 		return
 	}
