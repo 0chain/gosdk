@@ -27,16 +27,16 @@ type NonceCache struct {
 }
 
 func InitCache(sharders []string) {
-	once.Do(func() {
-		Cache = &NonceCache{
-			cache:    make(map[string]int64),
-			sharders: sharders,
-		}
-	})
+	Cache.sharders = sharders
 }
 
 func init() {
 	Logger.Init(defaultLogLevel, "0chain-core-cache")
+	once.Do(func() {
+		Cache = &NonceCache{
+			cache: make(map[string]int64),
+		}
+	})
 }
 
 func (nc *NonceCache) GetNextNonce(clientId string) int64 {
