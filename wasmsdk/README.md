@@ -13,6 +13,21 @@ init wasm sdk
   Output:
   > N/A
 
+### zcn.sdk.hideLogs
+hide interactive sdk logs. default is hidden.
+  Input:
+  > N/A
+
+  Output:
+  > N/A
+
+### zcn.sdk.showLogs
+show interactive sdk logs. default is hidden.
+  Input:
+  > N/A
+
+  Output:
+  > N/A
 
 ### zcn.jsProxy.setWallet 
 set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWallet` to set wallet on go.
@@ -168,7 +183,27 @@ download your own or a shared file.
 upload file(s)
 
 **Input**:
-allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, commit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, chunkSize int, isUpdate, isRepair bool
+> allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, commit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, chunkSize int, isUpdate, isRepair bool
 
 **Output**:
 > {commandSuccess:bool,commitSuccess:bool, commitTxn:transaction.Transaction, error:string}
+
+
+### zcn.sdk.play
+play stream video files
+
+**Input**:
+> allocationID, remotePath, authTicket, lookupHash string
+
+**Output**:
+> N/A
+
+
+### zcn.sdk.stop
+stop current play
+
+**Input**:
+> N/A
+
+**Output**:
+> N/A

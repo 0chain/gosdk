@@ -224,6 +224,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	listReq.authToken = req.authTicket
 	listReq.fullconsensus = req.fullconsensus
 	listReq.consensusThresh = req.consensusThresh
+	listReq.consensusRequiredForOk = req.consensusRequiredForOk
 	req.downloadMask, fileRef, _ = listReq.getFileConsensusFromBlobbers()
 	if req.downloadMask.Equals64(0) || fileRef == nil {
 		if req.statusCallback != nil {
@@ -323,7 +324,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		_, err = mW.Write(data[:n])
 
 		if err != nil {
-			FS.Remove(req.localpath)
+			FS.Remove(req.localpath) //nolint: errcheck
 			if req.statusCallback != nil {
 				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.Wrap(err, "Write file failed"))
 			}
@@ -355,7 +356,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 		//if calcHash != expectedHash && expectedHash != merkleRoot {
 		if expectedHash != merkleRoot {
-			FS.Remove(req.localpath)
+			FS.Remove(req.localpath) //nolint: errcheck
 			if req.statusCallback != nil {
 				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "File content didn't match with uploaded file"))
 			}

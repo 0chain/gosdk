@@ -78,6 +78,11 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	}
 
 	su := &ChunkedUpload{
+		// consensus: Consensus{
+		// 	fullconsensus:          allocationObj.fullconsensus,
+		// 	consensusThresh:        allocationObj.consensusThreshold,
+		// 	consensusRequiredForOk: allocationObj.consensusOK,
+		// },
 		allocationObj: allocationObj,
 		client:        zboxutil.Client,
 
