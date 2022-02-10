@@ -8,7 +8,6 @@ import (
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 
 	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/zcnbridge/chain"
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	ctime "github.com/0chain/gosdk/zcnbridge/time"
 	"github.com/0chain/gosdk/zcncore"
@@ -17,10 +16,10 @@ import (
 type (
 	// Transaction entity that encapsulates the transaction related data and metadata.
 	Transaction struct {
-		Hash              string          `json:"hash,omitempty"`
-		Version           string          `json:"version,omitempty"`
-		ClientID          string          `json:"client_id,omitempty"`
-		PublicKey         string          `json:"public_key,omitempty"`
+		Hash    string `json:"hash,omitempty"`
+		Version string `json:"version,omitempty"`
+		//ClientID          string          `json:"client_id,omitempty"`
+		//PublicKey         string          `json:"public_key,omitempty"`
 		ToClientID        string          `json:"to_client_id,omitempty"`
 		ChainID           string          `json:"chain_id,omitempty"`
 		TransactionData   string          `json:"transaction_data,omitempty"`
@@ -39,15 +38,15 @@ type (
 
 // NewTransactionEntity creates Transaction with initialized fields.
 // Sets version, client ID, creation date, public key and creates internal zcncore.TransactionScheme.
-func NewTransactionEntity(clientID, publicKey string) (*Transaction, error) {
+func NewTransactionEntity() (*Transaction, error) {
 	txn := &Transaction{
-		Version:      "1.0",
-		ClientID:     clientID,
+		Version: "1.0",
+		//ClientID:     clientID,
 		ToClientID:   wallet.ZCNSCSmartContractAddress,
 		CreationDate: ctime.Now(),
-		ChainID:      chain.GetServerChain().ID,
-		PublicKey:    publicKey,
-		callBack:     newCallBack(),
+		//ChainID:      chain.GetServerChain().ID,
+		//PublicKey:    publicKey,
+		callBack: newCallBack(),
 	}
 	zcntxn, err := zcncore.NewTransaction(txn.callBack, 0)
 	if err != nil {
