@@ -45,7 +45,7 @@ func (nc *NonceCache) GetNextNonce(clientId string) int64 {
 	if _, ok := nc.cache[clientId]; !ok {
 		nonce, _, err := nc.getNonceFromSharders(clientId)
 		if err != nil {
-			return 0
+			nonce = 0
 		}
 		nc.cache[clientId] = nonce
 	}
