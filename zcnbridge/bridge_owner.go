@@ -51,7 +51,7 @@ func (b *BridgeOwner) prepareAuthorizers(ctx context.Context, method string, par
 	// Update gas limits + 10%
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 
-	transactOpts := CreateSignedTransactionFromKeyStore(etherClient, from, gasLimitUnits, b.Password, b.Value)
+	transactOpts := b.CreateSignedTransactionFromKeyStore(etherClient, gasLimitUnits)
 
 	// Authorizers instance
 	authorizersInstance, err := authorizers.NewAuthorizers(contractAddress, etherClient)
