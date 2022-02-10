@@ -261,6 +261,7 @@ func (t *Transaction) submitTxn() {
 	} else {
 		transaction.Cache.Set(t.txn.ClientID, nonce)
 	}
+	t.txn.TransactionNonce = nonce
 
 	// If Signature is not passed compute signature
 	if t.txn.Signature == "" {
