@@ -259,6 +259,9 @@ func (su *ChunkedUpload) progressID() string {
 
 // loadProgress load progress from ~/.zcn/upload/[progressID]
 func (su *ChunkedUpload) loadProgress() {
+	// ChunkIndex starts with 0, so default value should be -1
+	su.progress.ChunkIndex = -1
+
 	progressID := su.progressID()
 
 	progress := su.progressStorer.Load(progressID)
@@ -272,7 +275,7 @@ func (su *ChunkedUpload) loadProgress() {
 
 // saveProgress save progress to ~/.zcn/upload/[progressID]
 func (su *ChunkedUpload) saveProgress() {
-	su.progressStorer.Save(&su.progress)
+	su.progressStorer.Save(su.progress)
 }
 
 // removeProgress remove progress info once it is done
@@ -283,7 +286,7 @@ func (su *ChunkedUpload) removeProgress() {
 // createUploadProgress create a new UploadProgress
 func (su *ChunkedUpload) createUploadProgress() UploadProgress {
 	progress := UploadProgress{ConnectionID: zboxutil.NewConnectionId(),
-		ChunkIndex:   0,
+		ChunkIndex:   -1,
 		ChunkSize:    su.chunkSize,
 		UploadLength: 0,
 		Blobbers:     make([]*UploadBlobberStatus, su.allocationObj.DataShards+su.allocationObj.ParityShards),
@@ -336,7 +339,7 @@ func (su *ChunkedUpload) Start() error {
 		if err != nil {
 			return err
 		}
-		logger.Logger.Info("Read chunk #", chunk.Index)
+		//logger.Logger.Debug("Read chunk #", chunk.Index)
 
 		su.shardUploadedSize += chunk.FragmentSize
 		su.progress.UploadLength += chunk.ReadSize
@@ -346,7 +349,7 @@ func (su *ChunkedUpload) Start() error {
 		}
 
 		//skip chunk if it has been uploaded
-		if chunk.Index < su.progress.ChunkIndex {
+		if chunk.Index <= su.progress.ChunkIndex {
 			continue
 		}
 

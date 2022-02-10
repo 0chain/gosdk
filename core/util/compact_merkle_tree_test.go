@@ -18,7 +18,7 @@ func TestCompactMerkleTreeWithEvenLeaves(t *testing.T) {
 					    [2+3]─────┘               │
 					  3──┘                        │
 				                    [[[0+1]+[2+3]]+[[4+5]+[4+5]]]
-				  	  4──┐                        │
+				  	4──┐                        │
 					    [4+5]─────┐               │
 					  5──┘        │               │
 		                    [[4+5]+[4+5]]─────────┘
@@ -36,6 +36,7 @@ func TestCompactMerkleTreeWithEvenLeaves(t *testing.T) {
 		require.NotEqual(t, ErrLeafNoSequenced, hasher.AddLeaf(strconv.Itoa(i), i))
 	}
 
+	require.Equal(t, 5, hasher.LastIndex)
 	require.Equal(t, "[[[0+1]+[2+3]]+[[4+5]+[4+5]]]", hasher.GetMerkleRoot(), "MerkleRoot with even leaves MUST equal")
 
 }
@@ -69,6 +70,7 @@ func TestCompactMerkleTreeWithOddLeaves(t *testing.T) {
 		require.NotEqual(t, ErrLeafNoSequenced, hasher.AddLeaf(strconv.Itoa(i), i))
 	}
 
+	require.Equal(t, 6, hasher.LastIndex)
 	require.Equal(t, "[[[0+1]+[2+3]]+[[4+5]+[6+6]]]", hasher.GetMerkleRoot(), "MerkleRoot with odd leaves MUST equal")
 }
 
@@ -103,7 +105,7 @@ func TestCompactMerkleTreeWithStateful(t *testing.T) {
 		//try to push a leaf twice, merkle root should work properly
 		require.NotEqual(t, ErrLeafNoSequenced, hasher.AddLeaf(strconv.Itoa(i), i))
 	}
-
+	require.Equal(t, 6, hasher.LastIndex)
 	require.Equal(t, "[[[0+1]+[2+3]]+[[4+5]+[6+6]]]", hasher.GetMerkleRoot(), "MerkleRoot with odd leaves MUST equal")
 }
 

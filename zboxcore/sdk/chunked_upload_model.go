@@ -1,12 +1,15 @@
 package sdk
 
 import (
+	"crypto/sha256"
+	"encoding/json"
 	"hash/fnv"
 	"strconv"
 	"sync"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/rogpeppe/go-internal/lockedfile"
 )
@@ -111,6 +114,30 @@ type UploadBlobberStatus struct {
 
 	// UploadLength total bytes that has been uploaded to blobbers
 	UploadLength int64 `json:"upload_length,omitempty"`
+}
+
+type status struct {
+	Hasher       hasher
+	UploadLength int64 `json:"upload_length,omitempty"`
+}
+
+func (s *UploadBlobberStatus) UnmarshalJSON(b []byte) error {
+	//fixed Hasher doesn't work in UnmarshalJSON
+	status := &status{}
+
+	if err := json.Unmarshal(b, status); err != nil {
+		return err
+	}
+
+	status.Hasher.File = sha256.New()
+	status.Hasher.Content.Hash = func(left, right string) string {
+		return encryption.Hash(left + right)
+	}
+
+	s.Hasher = &status.Hasher
+	s.UploadLength = status.UploadLength
+
+	return nil
 }
 
 type WriteMarkerLocker interface {
