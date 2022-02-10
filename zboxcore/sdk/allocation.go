@@ -1031,20 +1031,15 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 	return errors.New("", "consensus not reached")
 }
 
-func (a *Allocation) GetAuthTicket(
-	path string,
-	filename string,
-	referenceType string,
-	refereeClientID string,
-	refereeEncryptionPublicKey string,
-	expiration int64,
-) (string, error) {
+func (a *Allocation) GetAuthTicket(path, filename, referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration int64) (string, error) {
 	if !a.isInitialized() {
 		return "", notInitialized
 	}
-	if len(path) == 0 {
+
+	if path == "" {
 		return "", errors.New("invalid_path", "Invalid path for the list")
 	}
+
 	path = zboxutil.RemoteClean(path)
 	isabs := zboxutil.IsRemoteAbs(path)
 	if !isabs {
@@ -1053,64 +1048,46 @@ func (a *Allocation) GetAuthTicket(
 
 	shareReq := &ShareRequest{
 		expirationSeconds: expiration,
+		allocationID:      a.ID,
+		allocationTx:      a.Tx,
+		blobbers:          a.Blobbers,
+		ctx:               a.ctx,
+		remotefilepath:    path,
+		remotefilename:    filename,
 	}
-	shareReq.allocationID = a.ID
-	shareReq.allocationTx = a.Tx
-	shareReq.blobbers = a.Blobbers
-	shareReq.ctx = a.ctx
-	shareReq.remotefilepath = path
-	shareReq.remotefilename = filename
+
 	if referenceType == fileref.DIRECTORY {
 		shareReq.refType = fileref.DIRECTORY
 	} else {
 		shareReq.refType = fileref.FILE
 	}
-	if len(refereeEncryptionPublicKey) > 0 || len(refereeClientID) > 0 {
-		authTicket, err := shareReq.GetAuthTicketForEncryptedFile(refereeClientID, refereeEncryptionPublicKey)
-		if err != nil {
-			return "", err
-		}
-		err = a.UploadAuthTicketToBlobber(authTicket, refereeEncryptionPublicKey)
-		if err != nil {
-			return "", err
-		}
-		// generate another auth ticket without reencryption key
-		at := &marker.AuthTicket{}
-		decoded, err := base64.StdEncoding.DecodeString(authTicket)
-		if err != nil {
-			return "", err
-		}
 
-		err = json.Unmarshal(decoded, at)
-		if err != nil {
-			return "", err
-		}
-
-		at.ReEncryptionKey = ""
-		err = at.Sign()
-		if err != nil {
-			return "", err
-		}
-		atBytes, err := json.Marshal(at)
-		if err != nil {
-			return "", err
-		}
-		sEnc := base64.StdEncoding.EncodeToString(atBytes)
-		return sEnc, nil
-	}
-	authTicket, err := shareReq.GetAuthTicket(refereeClientID)
+	aTicket, err := shareReq.getAuthTicket(refereeClientID, refereeEncryptionPublicKey)
 	if err != nil {
 		return "", err
 	}
-	return authTicket, nil
-}
 
-func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPubKey string) error {
-	decodedAuthTicket, err := base64.StdEncoding.DecodeString(authticketB64)
+	atBytes, err := json.Marshal(aTicket)
 	if err != nil {
-		return err
+		return "", err
 	}
 
+	if err := a.UploadAuthTicketToBlobber(string(atBytes), refereeEncryptionPublicKey); err != nil {
+		return "", err
+	}
+
+	aTicket.ReEncryptionKey = ""
+	aTicket.Sign()
+
+	atBytes, err = json.Marshal(aTicket)
+	if err != nil {
+		return "", err
+	}
+
+	return base64.StdEncoding.EncodeToString(atBytes), nil
+}
+
+func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKey string) error {
 	success := make(chan int, len(a.Blobbers))
 	wg := &sync.WaitGroup{}
 	for idx := range a.Blobbers {
@@ -1118,7 +1095,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPu
 		body := new(bytes.Buffer)
 		formWriter := multipart.NewWriter(body)
 		formWriter.WriteField("encryption_public_key", clientEncPubKey)
-		formWriter.WriteField("auth_ticket", string(decodedAuthTicket))
+		formWriter.WriteField("auth_ticket", authTicket)
 		formWriter.Close()
 		httpreq, err := zboxutil.NewShareRequest(url, a.Tx, body)
 		if err != nil {
