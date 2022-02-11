@@ -139,7 +139,7 @@ type TransactionScheme interface {
 
 	// Miner SC
 
-	MinerSCPayReward(string, Provider) error
+	MinerSCCollectReward(string, Provider) error
 	MinerSCMinerSettings(*MinerSCMinerInfo) error
 	MinerSCSharderSettings(*MinerSCMinerInfo) error
 	MinerSCLock(minerID string, lock int64) error
@@ -151,7 +151,7 @@ type TransactionScheme interface {
 
 	// Storage SC
 
-	StorageSCPayReward(string, Provider) error
+	StorageSCCollectReward(string, Provider) error
 	FinalizeAllocation(allocID string, fee int64) error
 	CancelAllocation(allocID string, fee int64) error
 	CreateAllocation(car *CreateAllocationRequest, lock, fee int64) error //
@@ -1268,18 +1268,18 @@ const (
 	ProviderAuthorizer
 )
 
-type SCPayReward struct {
+type SCCollectReward struct {
 	PoolId       string   `json:"pool_id"`
 	ProviderType Provider `json:"provider_type"`
 }
 
-func (t *Transaction) MinerSCPayReward(poolId string, providerType Provider) error {
-	pr := &SCPayReward{
+func (t *Transaction) MinerSCCollectReward(poolId string, providerType Provider) error {
+	pr := &SCCollectReward{
 		PoolId:       poolId,
 		ProviderType: providerType,
 	}
 	err := t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_PAY_REWARD, pr, 0)
+		transaction.MINERSC_COLLECT_REWARD, pr, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err
@@ -1468,13 +1468,13 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 // Storage SC transactions
 //
 
-func (t *Transaction) StorageSCPayReward(poolId string, providerType Provider) error {
-	pr := &SCPayReward{
+func (t *Transaction) StorageSCCollectReward(poolId string, providerType Provider) error {
+	pr := &SCCollectReward{
 		PoolId:       poolId,
 		ProviderType: providerType,
 	}
 	err := t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_PAY_REWARD, pr, 0)
+		transaction.STORAGESC_COLLECT_REWARD, pr, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err

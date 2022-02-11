@@ -1016,7 +1016,7 @@ func AddCurator(curatorId, allocationId string) (string, error) {
 	return hash, err
 }
 
-func PayRewards(poolId string, providerType int) (string, error) {
+func CollectRewards(poolId string, providerType int) (string, error) {
 	if !sdkInitialized {
 		return "", sdkNotInitialized
 	}
@@ -1026,7 +1026,7 @@ func PayRewards(poolId string, providerType int) (string, error) {
 		"pool_id":       poolId,
 	}
 	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_PAY_REWARD,
+		Name:      transaction.STORAGESC_COLLECT_REWARD,
 		InputArgs: input,
 	}
 	hash, _, err := smartContractTxn(sn)
