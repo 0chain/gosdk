@@ -15,13 +15,18 @@ func TestFixedMerkleTreeWithChunkSize(t *testing.T) {
 		Data       []byte
 	}{
 		{
+			Name:       "ChunkSize < 1024",
+			MerkleTree: *NewFixedMerkleTree(1024),
+			Data:       GenerateRandomBytes(1023),
+		},
+		{
 			Name:       "ChunkSize = 1024",
 			MerkleTree: *NewFixedMerkleTree(1024),
 			Data:       GenerateRandomBytes(1024),
 		},
 		{
 			Name:       "ChunkSize > 1024",
-			MerkleTree: *NewFixedMerkleTree(1025),
+			MerkleTree: *NewFixedMerkleTree(1024),
 			Data:       GenerateRandomBytes(1025),
 		},
 	}
@@ -32,14 +37,6 @@ func TestFixedMerkleTreeWithChunkSize(t *testing.T) {
 			require.Nil(test.MerkleTree.Write(test.Data, 0))
 		})
 	}
-
-}
-
-func TestFixedMerkleTreeChunksizeLessThan1024(t *testing.T) {
-
-}
-
-func TestFixedMerkleTreeChunksizeGreaterThan1024(t *testing.T) {
 
 }
 
