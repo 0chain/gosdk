@@ -443,6 +443,13 @@ func (t *Transaction) ExecuteFaucetSCWallet(walletStr string, methodName string,
 		return err
 	}
 	go func() {
+		nonce := t.txn.TransactionNonce
+		if nonce < 1 {
+			nonce = transaction.Cache.GetNextNonce(t.txn.ClientID)
+		} else {
+			transaction.Cache.Set(t.txn.ClientID, nonce)
+		}
+		t.txn.TransactionNonce = nonce
 		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
 		fmt.Printf("submitted transaction\n")
 		t.submitTxn()
@@ -1397,6 +1404,14 @@ func (t *Transaction) RegisterMultiSig(walletstr string, mswallet string) error 
 		t.txn.ToClientID = MultiSigSmartContractAddress
 		t.txn.TransactionData = string(snBytes)
 		t.txn.Value = 0
+		nonce := t.txn.TransactionNonce
+		if nonce < 1 {
+			nonce = transaction.Cache.GetNextNonce(t.txn.ClientID)
+		} else {
+			transaction.Cache.Set(t.txn.ClientID, nonce)
+		}
+		t.txn.TransactionNonce = nonce
+
 		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
 		t.submitTxn()
 	}()
@@ -1442,6 +1457,13 @@ func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error 
 		t.txn.ToClientID = MultiSigSmartContractAddress
 		t.txn.TransactionData = string(snBytes)
 		t.txn.Value = 0
+		nonce := t.txn.TransactionNonce
+		if nonce < 1 {
+			nonce = transaction.Cache.GetNextNonce(t.txn.ClientID)
+		} else {
+			transaction.Cache.Set(t.txn.ClientID, nonce)
+		}
+		t.txn.TransactionNonce = nonce
 		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
 		t.submitTxn()
 	}()

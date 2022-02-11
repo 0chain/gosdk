@@ -112,6 +112,14 @@ func (ta *TransactionWithAuth) sign(otherSig string) error {
 }
 
 func (ta *TransactionWithAuth) submitTxn() {
+	nonce := ta.t.txn.TransactionNonce
+	if nonce < 1 {
+		nonce = transaction.Cache.GetNextNonce(ta.t.txn.ClientID)
+	} else {
+		transaction.Cache.Set(ta.t.txn.ClientID, nonce)
+	}
+	ta.t.txn.TransactionNonce = nonce
+
 	authTxn, err := ta.getAuthorize()
 	if err != nil {
 		Logger.Error("get auth error for send.", err.Error())
@@ -162,6 +170,13 @@ func (ta *TransactionWithAuth) ExecuteFaucetSCWallet(walletStr string, methodNam
 		return err
 	}
 	go func() {
+		nonce := ta.t.txn.TransactionNonce
+		if nonce < 1 {
+			nonce = transaction.Cache.GetNextNonce(ta.t.txn.ClientID)
+		} else {
+			transaction.Cache.Set(ta.t.txn.ClientID, nonce)
+		}
+		ta.t.txn.TransactionNonce = nonce
 		ta.t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
 		ta.submitTxn()
 	}()

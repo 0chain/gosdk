@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/util"
 	"net/http"
 	"strconv"
@@ -15,8 +14,8 @@ import (
 const GET_BALANCE = `/v1/client/get/balance?client_id=`
 const consensusThresh = float32(25.0)
 
-var defaultLogLevel = logger.DEBUG
-var Logger logger.Logger
+//var defaultLogLevel = logger.DEBUG
+//var Logger logger.Logger
 var Cache *NonceCache
 var once sync.Once
 
@@ -31,7 +30,7 @@ func InitCache(sharders []string) {
 }
 
 func init() {
-	Logger.Init(defaultLogLevel, "0chain-core-cache")
+	//Logger.Init(defaultLogLevel, "0chain-core-cache")
 	once.Do(func() {
 		Cache = &NonceCache{
 			cache: make(map[string]int64),
@@ -89,13 +88,13 @@ func getBalanceFieldFromSharders(clientID, name string, sharders []string) (int6
 	var winError string
 	for i := 0; i < numSharders; i++ {
 		rsp := <-result
-		Logger.Debug(rsp.Url, rsp.Status)
+		//		Logger.Debug(rsp.Url, rsp.Status)
 		if rsp.StatusCode != http.StatusOK {
-			Logger.Error(rsp.Body)
+			//Logger.Error(rsp.Body)
 			winError = rsp.Body
 			continue
 		}
-		Logger.Debug(rsp.Body)
+		//		Logger.Debug(rsp.Body)
 		var objmap map[string]json.RawMessage
 		err := json.Unmarshal([]byte(rsp.Body), &objmap)
 		if err != nil {
@@ -127,16 +126,16 @@ func queryFromShardersContext(ctx context.Context, sharders []string,
 
 	for _, sharder := range util.Shuffle(sharders) {
 		go func(sharderurl string) {
-			Logger.Info("Query from ", sharderurl+query)
+			//Logger.Info("Query from ", sharderurl+query)
 			url := fmt.Sprintf("%v%v", sharderurl, query)
 			req, err := util.NewHTTPGetRequestContext(ctx, url)
 			if err != nil {
-				Logger.Error(sharderurl, " new get request failed. ", err.Error())
+				//Logger.Error(sharderurl, " new get request failed. ", err.Error())
 				return
 			}
 			res, err := req.Get()
 			if err != nil {
-				Logger.Error(sharderurl, " get error. ", err.Error())
+				//Logger.Error(sharderurl, " get error. ", err.Error())
 			}
 			result <- res
 		}(sharder)
