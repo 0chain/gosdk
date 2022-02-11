@@ -39,6 +39,14 @@ func (h *nopeHasher) WriteHashToContent(hash string, chunkIndex int) error {
 	return nil
 }
 
+func (h *nopeHasher) MarshalJSON() ([]byte, error) {
+	return nil, nil
+}
+
+func (h *nopeHasher) UnmarshalJSON(data []byte) error {
+	return nil
+}
+
 func BenchmarkChunkedUploadFormBuilder(b *testing.B) {
 
 	benchmarks := []struct {
