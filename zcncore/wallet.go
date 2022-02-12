@@ -312,6 +312,7 @@ func CloseLog() {
 //	 }
 func Init(chainConfigJSON string) error {
 	err := json.Unmarshal([]byte(chainConfigJSON), &_config.chain)
+	// storageSdk := &sdk.NewStorageSdkSchema()
 	if err == nil {
 		// Check signature scheme is supported
 		if _config.chain.SignatureScheme != "ed25519" && _config.chain.SignatureScheme != "bls0chain" {

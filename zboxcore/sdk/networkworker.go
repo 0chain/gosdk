@@ -53,14 +53,14 @@ func UpdateNetworkDetails() error {
 
 	shouldUpdate := UpdateRequired(networkDetails)
 	if shouldUpdate {
-		sdkInitialized = false
+		storageSdk.sdkInitialized = false
 		blockchain.SetMiners(networkDetails.Miners)
 		blockchain.SetSharders(networkDetails.Sharders)
 		conf.InitChainNetwork(&conf.Network{
 			Sharders: networkDetails.Sharders,
 			Miners:   networkDetails.Miners,
 		})
-		sdkInitialized = true
+		storageSdk.sdkInitialized = true
 	}
 	return nil
 }

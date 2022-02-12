@@ -37,7 +37,7 @@ type DownloadOptions struct {
 }
 
 // CreateDownloader create a downloander
-func CreateDownloader(allocationID, localPath, remotePath string, opts ...DownloadOption) (Downloader, error) {
+func CreateDownloader(storageSdk *storageSdkSchema, allocationID, localPath, remotePath string, opts ...DownloadOption) (Downloader, error) {
 	do := &DownloadOptions{
 		localPath:  localPath,
 		remotePath: remotePath,
@@ -51,12 +51,12 @@ func CreateDownloader(allocationID, localPath, remotePath string, opts ...Downlo
 	var err error
 	if do.allocationObj == nil {
 		if do.isViewer {
-			do.allocationObj, err = GetAllocationFromAuthTicket(do.authTicket)
+			do.allocationObj, err = storageSdk.GetAllocationFromAuthTicket(do.authTicket)
 			if err != nil {
 				return nil, err
 			}
 		} else {
-			do.allocationObj, err = GetAllocation(allocationID)
+			do.allocationObj, err = storageSdk.GetAllocation(allocationID)
 			if err != nil {
 				return nil, err
 			}

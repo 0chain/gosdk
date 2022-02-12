@@ -137,7 +137,7 @@ func TestGetMinMaxWriteReadSuccess(t *testing.T) {
 	ssc.ParityShards = 4
 
 	ssc.initialized = true
-	sdkInitialized = true
+	storageSdk.sdkInitialized = true
 	require.NotNil(t, ssc.BlobberDetails)
 
 	t.Run("Success minR, minW", func(t *testing.T) {
@@ -185,7 +185,7 @@ func TestGetMaxMinStorageCostSuccess(t *testing.T) {
 	ssc.ParityShards = 2
 
 	ssc.initialized = true
-	sdkInitialized = true
+	storageSdk.sdkInitialized = true
 
 	t.Run("Storage cost", func(t *testing.T) {
 		cost, err := ssc.GetMaxStorageCost(100 * GB)
@@ -232,7 +232,7 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit128(t *testing.T)
 	var allocation = &Allocation{}
 	var blobbers = make([]*blockchain.StorageNode, maxNumOfBlobbers)
 	allocation.initialized = true
-	sdkInitialized = true
+	storageSdk.sdkInitialized = true
 	allocation.Blobbers = blobbers
 	allocation.DataShards = 64
 	allocation.ParityShards = 65
@@ -257,7 +257,7 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanExplicitLimit(t *testing.T) {
 	var allocation = &Allocation{}
 	var blobbers = make([]*blockchain.StorageNode, maxNumOfBlobbers)
 	allocation.initialized = true
-	sdkInitialized = true
+	storageSdk.sdkInitialized = true
 	allocation.Blobbers = blobbers
 	allocation.DataShards = 5
 	allocation.ParityShards = 6
@@ -282,7 +282,7 @@ func TestDoNotThrowErrorWhenBlobbersRequiredLessThanLimit(t *testing.T) {
 	var allocation = &Allocation{}
 	var blobbers = make([]*blockchain.StorageNode, maxNumOfBlobbers)
 	allocation.initialized = true
-	sdkInitialized = true
+	storageSdk.sdkInitialized = true
 	allocation.Blobbers = blobbers
 	allocation.DataShards = 5
 	allocation.ParityShards = 4
@@ -472,8 +472,9 @@ func TestAllocation_GetBlobberStats(t *testing.T) {
 
 func TestAllocation_isInitialized(t *testing.T) {
 	tests := []struct {
-		name                                        string
-		sdkInitialized, allocationInitialized, want bool
+		name string
+		sdkInitialized,
+		allocationInitialized, want bool
 	}{
 		{
 			"Test_Initialized",
@@ -494,9 +495,9 @@ func TestAllocation_isInitialized(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			originalSDKInitialized := sdkInitialized
-			defer func() { sdkInitialized = originalSDKInitialized }()
-			sdkInitialized = tt.sdkInitialized
+			originalSDKInitialized := storageSdk.sdkInitialized
+			defer func() { storageSdk.sdkInitialized = originalSDKInitialized }()
+			storageSdk.sdkInitialized = tt.sdkInitialized
 			a := &Allocation{initialized: tt.allocationInitialized}
 			got := a.isInitialized()
 			require := require.New(t)
@@ -723,7 +724,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 			a.downloadProgressMap = make(map[string]*DownloadRequest)
 			a.mutex = &sync.Mutex{}
 			a.initialized = true
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			setupMockAllocation(t, a)
 			for i := 0; i < tt.numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -869,7 +870,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 				ParityShards: 2,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			if tt.setup != nil {
 				if teardown := tt.setup(t, tt.name, a); teardown != nil {
 					defer teardown(t)
@@ -1128,7 +1129,7 @@ func TestAllocation_downloadFile(t *testing.T) {
 			a.downloadProgressMap = make(map[string]*DownloadRequest)
 			a.mutex = &sync.Mutex{}
 			a.initialized = true
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			setupMockAllocation(t, a)
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -1173,7 +1174,7 @@ func TestAllocation_DeleteFile(t *testing.T) {
 		ParityShards: 2,
 	}
 	a.InitAllocation()
-	sdkInitialized = true
+	storageSdk.sdkInitialized = true
 
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -1271,7 +1272,7 @@ func TestAllocation_deleteFile(t *testing.T) {
 				ParityShards: 2,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
@@ -1421,7 +1422,7 @@ func TestAllocation_UpdateObjectAttributes(t *testing.T) {
 				ParityShards: 2,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
@@ -1514,7 +1515,7 @@ func TestAllocation_MoveObject(t *testing.T) {
 				ParityShards: 2,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
@@ -1619,7 +1620,7 @@ func TestAllocation_CopyObject(t *testing.T) {
 				ParityShards: 2,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
@@ -1724,7 +1725,7 @@ func TestAllocation_RenameObject(t *testing.T) {
 				ParityShards: 2,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
@@ -1812,7 +1813,7 @@ func TestAllocation_AddCollaborator(t *testing.T) {
 				ParityShards: 2,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
@@ -1900,7 +1901,7 @@ func TestAllocation_RemoveCollaborator(t *testing.T) {
 				ParityShards: 2,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
@@ -1999,7 +2000,7 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 				ParityShards: 2,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
@@ -2060,7 +2061,7 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 	for i := 0; i < numberBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
 	}
-	sdkInitialized = true
+	storageSdk.sdkInitialized = true
 	at, err := a.GetAuthTicketForShare("/1.txt", "1.txt", fileref.FILE, mockClientId)
 	require.NotEmptyf(at, "unexpected empty auth ticket")
 	require.NoErrorf(err, "unexpected error: %v", err)
@@ -2251,7 +2252,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 				ParityShards: 1,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -2314,7 +2315,7 @@ func TestAllocation_CancelUpload(t *testing.T) {
 			require := require.New(t)
 			a := &Allocation{}
 			a.InitAllocation()
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			if tt.setup != nil {
 				if teardown := tt.setup(t, a); teardown != nil {
 					defer teardown(t)
@@ -2364,7 +2365,7 @@ func TestAllocation_CancelDownload(t *testing.T) {
 			require := require.New(t)
 			a := &Allocation{}
 			a.InitAllocation()
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			if tt.setup != nil {
 				if teardown := tt.setup(t, a); teardown != nil {
 					defer teardown(t)
@@ -2503,7 +2504,7 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 				ParityShards: 2,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			blockchain.SetMiners([]string{"http://" + tt.name + "mockMiners"})
 			blockchain.SetSharders([]string{"http://" + tt.name + "mockSharders"})
 			if tt.setup != nil {
@@ -2664,7 +2665,7 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 
 			setupMockGetFileInfoResponse(t, &mockClient)
 			a.InitAllocation()
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
 			}
@@ -2946,7 +2947,7 @@ func TestAllocation_listDir(t *testing.T) {
 				Tx: mockAllocationTxId,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
@@ -3075,7 +3076,7 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 				ParityShards: 2,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			a.initialized = true
 
 			require := require.New(t)
@@ -3233,7 +3234,7 @@ func TestAllocation_CommitMetaTransaction(t *testing.T) {
 
 	a := &Allocation{}
 	a.InitAllocation()
-	sdkInitialized = true
+	storageSdk.sdkInitialized = true
 
 	type parameters struct {
 		path          string
@@ -3473,7 +3474,7 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 	if a.DataShards != 0 {
 		a.fullconsensus, a.consensusThreshold, a.consensusOK = a.getConsensuses()
 	}
-	sdkInitialized = true
+	storageSdk.sdkInitialized = true
 	go func() {
 		for {
 			select {
@@ -3551,7 +3552,7 @@ func getMockAuthTicket(t *testing.T) string {
 	}
 	setupMockGetFileInfoResponse(t, &mockClient)
 	a.InitAllocation()
-	sdkInitialized = true
+	storageSdk.sdkInitialized = true
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 			ID:      strconv.Itoa(i),

@@ -132,7 +132,7 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 			a.downloadProgressMap = make(map[string]*DownloadRequest)
 			a.mutex = &sync.Mutex{}
 			a.initialized = true
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			setupMockAllocation(t, a)
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
