@@ -530,12 +530,11 @@ type StakePoolUnlockUnstake struct {
 // future. The time is maximal time that can be lesser in some cases. To
 // unlock tokens can't be unlocked now, wait the time and unlock them (call
 // this function again).
-func (s *storageSdkSchema) StakePoolUnlock(blobberID, poolID string, fee int64) (
-	unstake bool, err error) {
-
+func (s *storageSdkSchema) StakePoolUnlock(blobberID, poolID string, fee int64) (unstake bool, err error) {
 	if !s.sdkInitialized {
 		return false, sdkNotInitialized
 	}
+
 	if blobberID == "" {
 		blobberID = client.GetClientID()
 	}
