@@ -19,8 +19,7 @@ type downloadHasher struct {
 func createDownloadHasher(chunkSize int, dataShards int, encryptOnUpload bool) *downloadHasher {
 
 	if encryptOnUpload {
-		chunkSize -= 16
-		chunkSize -= 2 * 1024
+		chunkSize -= EncryptionHeaderSize
 	}
 
 	shardSize := chunkSize * dataShards

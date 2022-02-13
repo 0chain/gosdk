@@ -198,26 +198,18 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				// After getting start of stream JSON message, other message chunks should not be in JSON
 				if err != nil {
 					rspData.Success = true
-					rspData.RawData = response
 
-					// TODO download by 'chunks' should not download full stream and then chunk it
-					// It has to download already chunked data
 					if len(req.encryptedKey) > 0 {
-
-						var chunks [][]byte
-						if req.authTicket == nil {
-							// 256 for the additional header bytes,  where chunk_size - 2 * 1024 is the encrypted data size
-							chunks = req.splitData(rspData.RawData, req.chunkSize-2*1024+256)
+						if req.authTicket != nil {
+							// 256 for the additional header bytes for ReEncrypt,  where chunk_size - 2 * 1024 is the encrypted data size
+							rspData.BlockChunks = req.splitData(response, req.chunkSize-EncryptionHeaderSize+ReEncryptionHeaderSize)
 						} else {
-							chunks = req.splitData(rspData.RawData, req.chunkSize)
+							rspData.BlockChunks = req.splitData(response, req.chunkSize)
 						}
-
-						rspData.BlockChunks = chunks
 					} else {
-						chunks := req.splitData(rspData.RawData, req.chunkSize)
-						rspData.BlockChunks = chunks
+						rspData.BlockChunks = req.splitData(response, req.chunkSize)
 					}
-					rspData.RawData = []byte{}
+
 					incBlobberReadCtr(req.blobber, req.numBlocks)
 					req.result <- &rspData
 					return nil

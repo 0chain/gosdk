@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"errors"
+
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
@@ -27,10 +29,21 @@ var (
 	DefaultHashFunc = func(left, right string) string {
 		return coreEncryption.Hash(left + right)
 	}
+
+	ErrInvalidChunkSize = errors.New("chunk: chunk size is too smaller. it must greater than 2056 if file is uploaded with encryption")
 )
 
 // DefaultChunkSize default chunk size for file and thumbnail
 const DefaultChunkSize = 64 * 1024
+
+const (
+	// EncryptedDataPaddingSize additional bytes to save encrypted data
+	EncryptedDataPaddingSize = 16
+	// EncryptionHeaderSize encryption header size in chunk
+	EncryptionHeaderSize = 2 * 1024
+	// ReEncryptionHeaderSize re-encryption header size in chunk
+	ReEncryptionHeaderSize = 256
+)
 
 /*
     CreateChunkedUpload create a ChunkedUpload instance
@@ -153,6 +166,10 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 
 	if su.encryptOnUpload {
 		su.fileEncscheme = su.createEncscheme()
+
+		if su.chunkSize <= EncryptionHeaderSize {
+			return nil, ErrInvalidChunkSize
+		}
 
 	}
 
