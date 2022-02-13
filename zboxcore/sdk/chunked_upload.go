@@ -30,7 +30,7 @@ var (
 		return coreEncryption.Hash(left + right)
 	}
 
-	ErrInvalidChunkSize = errors.New("chunk: chunk size is too smaller. it must greater than 2056 if file is uploaded with encryption")
+	ErrInvalidChunkSize = errors.New("chunk: chunk size is too small. it must greater than 2056 if file is uploaded with encryption")
 )
 
 // DefaultChunkSize default chunk size for file and thumbnail
