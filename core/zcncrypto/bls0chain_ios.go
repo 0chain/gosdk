@@ -1,5 +1,5 @@
-//go:build android || ios
-// +build android,ios
+//go:build ios
+// +build ios
 
 package zcncrypto
 
