@@ -90,7 +90,8 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 	}
 
 	if r.encryptOnUpload {
-		r.chunkHeaderSize = 16 + 2*1024
+		//additional 16 bytes to save encrypted data
+		r.chunkHeaderSize = EncryptedDataPaddingSize + EncryptionHeaderSize
 		r.chunkDataSize = chunkSize - r.chunkHeaderSize
 	} else {
 		r.chunkDataSize = chunkSize

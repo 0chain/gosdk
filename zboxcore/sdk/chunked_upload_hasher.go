@@ -12,6 +12,7 @@ import (
 )
 
 type Hasher interface {
+
 	// GetFileHash get file hash
 	GetFileHash() (string, error)
 	// WriteToFile write bytes to file hasher
@@ -30,7 +31,7 @@ type Hasher interface {
 
 // see more detail about hash on  https://github.com/0chain/blobber/wiki/Protocols#file-hash
 type hasher struct {
-	File      hash.Hash               `json:"file"`
+	File      hash.Hash               `json:"-"`
 	Challenge *util.FixedMerkleTree   `json:"challenge"`
 	Content   *util.CompactMerkleTree `json:"content"`
 }
