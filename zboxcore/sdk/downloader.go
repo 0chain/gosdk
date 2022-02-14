@@ -37,7 +37,7 @@ type DownloadOptions struct {
 }
 
 // CreateDownloader create a downloander
-func CreateDownloader(storageSdk *storageSdkSchema, allocationID, localPath, remotePath string, opts ...DownloadOption) (Downloader, error) {
+func CreateDownloader(allocationID, localPath, remotePath string, opts ...DownloadOption) (Downloader, error) {
 	do := &DownloadOptions{
 		localPath:  localPath,
 		remotePath: remotePath,
