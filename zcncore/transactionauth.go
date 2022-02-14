@@ -378,7 +378,7 @@ func (ta *TransactionWithAuth) MinerSCCollectReward(poolId string, providerType 
 		Logger.Error(err)
 		return err
 	}
-	go func() { ta.submitTxn() }()
+	go ta.submitTxn()
 	return err
 }
 

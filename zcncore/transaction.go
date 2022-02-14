@@ -1479,7 +1479,7 @@ func (t *Transaction) StorageSCCollectReward(poolId string, providerType Provide
 		Logger.Error(err)
 		return err
 	}
-	go func() { t.submitTxn() }()
+	go t.submitTxn()
 	return err
 }
 

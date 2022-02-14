@@ -1016,7 +1016,17 @@ func AddCurator(curatorId, allocationId string) (string, error) {
 	return hash, err
 }
 
-func CollectRewards(poolId string, providerType int) (string, error) {
+type ProviderType int
+
+const (
+	ProviderMiner ProviderType = iota
+	ProviderSharder
+	ProviderBlobber
+	ProviderValidator
+	ProviderAuthorizer
+)
+
+func CollectRewards(poolId string, providerType ProviderType) (string, error) {
 	if !sdkInitialized {
 		return "", sdkNotInitialized
 	}
