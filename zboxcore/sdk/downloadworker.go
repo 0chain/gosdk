@@ -128,12 +128,12 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 
 					// dirty, but can't see other way right now
 					if req.authTicket == nil {
-						headerBytes := result.BlockChunks[blockNum][:(2 * 1024)]
+						headerBytes := result.BlockChunks[blockNum][:(EncryptionHeaderSize)]
 						headerBytes = bytes.Trim(headerBytes, "\x00")
 						headerString := string(headerBytes)
 
 						encMsg := &encryption.EncryptedMessage{}
-						encMsg.EncryptedData = result.BlockChunks[blockNum][(2 * 1024):]
+						encMsg.EncryptedData = result.BlockChunks[blockNum][(EncryptionHeaderSize):]
 
 						headerChecksums := strings.Split(headerString, ",")
 						if len(headerChecksums) != 2 {
@@ -259,12 +259,12 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	perShard := (size + int64(req.datashards) - 1) / int64(req.datashards)
 	chunkSizeWithHeader := int64(fileRef.ChunkSize)
 	if len(fileRef.EncryptedKey) > 0 {
-		chunkSizeWithHeader -= 16
-		chunkSizeWithHeader -= 2 * 1024
+		chunkSizeWithHeader -= EncryptedDataPaddingSize
+		chunkSizeWithHeader -= EncryptionHeaderSize
 	}
 	chunksPerShard := (perShard + chunkSizeWithHeader - 1) / chunkSizeWithHeader
 	if len(fileRef.EncryptedKey) > 0 {
-		perShard += chunksPerShard * (16 + (2 * 1024))
+		perShard += chunksPerShard * (EncryptedDataPaddingSize + EncryptionHeaderSize)
 	}
 
 	wrFile, err := FS.OpenFile(req.localpath, os.O_CREATE|os.O_WRONLY, 0644)

@@ -195,7 +195,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 			if err != nil {
 				return nil, err
 			}
-			header := make([]byte, 2*1024)
+			header := make([]byte, EncryptionHeaderSize)
 			copy(header[:], encMsg.MessageChecksum+","+encMsg.OverallChecksum)
 			fragments[pos] = append(header, encMsg.EncryptedData...)
 		}
@@ -235,7 +235,7 @@ func (r *chunkedUploadChunkReader) Read(buf []byte) ([][]byte, error) {
 			if err != nil {
 				return nil, err
 			}
-			header := make([]byte, 2*1024)
+			header := make([]byte, EncryptionHeaderSize)
 			copy(header[:], encMsg.MessageChecksum+","+encMsg.OverallChecksum)
 			fragments[pos] = append(header, encMsg.EncryptedData...)
 			c++

@@ -140,12 +140,12 @@ func (req *UploadRequest) prepareUpload(
 	shardSize := (req.filemeta.Size + int64(a.DataShards) - 1) / int64(a.DataShards)
 	chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
 	if req.isEncrypted {
-		chunkSizeWithHeader -= 16
-		chunkSizeWithHeader -= 2 * 1024
+		chunkSizeWithHeader -= EncryptedDataPaddingSize
+		chunkSizeWithHeader -= EncryptionHeaderSize
 	}
 	chunksPerShard := (shardSize + chunkSizeWithHeader - 1) / chunkSizeWithHeader
 	if req.isEncrypted {
-		shardSize += chunksPerShard * (16 + (2 * 1024))
+		shardSize += chunksPerShard * (EncryptedDataPaddingSize + EncryptionHeaderSize)
 	}
 	thumbnailSize := int64(0)
 	remaining := shardSize
@@ -220,12 +220,12 @@ func (req *UploadRequest) prepareUpload(
 			thumbnailSize = (req.filemeta.ThumbnailSize + int64(a.DataShards) - 1) / int64(a.DataShards)
 			chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
 			if req.isEncrypted {
-				chunkSizeWithHeader -= 16
-				chunkSizeWithHeader -= 2 * 1024
+				chunkSizeWithHeader -= EncryptedDataPaddingSize
+				chunkSizeWithHeader -= EncryptionHeaderSize
 			}
 			chunksPerShard := (thumbnailSize + chunkSizeWithHeader - 1) / chunkSizeWithHeader
 			if req.isEncrypted {
-				thumbnailSize += chunksPerShard * (16 + (2 * 1024))
+				thumbnailSize += chunksPerShard * (EncryptedDataPaddingSize + EncryptionHeaderSize)
 			}
 			remaining := thumbnailSize
 
@@ -414,7 +414,7 @@ func (req *UploadRequest) pushData(data []byte) error {
 				Logger.Error("Encryption failed.", err.Error())
 				return err
 			}
-			header := make([]byte, 2*1024)
+			header := make([]byte, EncryptionHeaderSize)
 			copy(header[:], encMsg.MessageChecksum+","+encMsg.OverallChecksum)
 			shards[pos] = append(header, encMsg.EncryptedData...)
 			c++
@@ -489,8 +489,8 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 		dataReader := io.MultiReader(inFile, bytes.NewBuffer(padding))
 		chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
 		if req.isEncrypted {
-			chunkSizeWithHeader -= 16
-			chunkSizeWithHeader -= 2 * 1024
+			chunkSizeWithHeader -= EncryptedDataPaddingSize
+			chunkSizeWithHeader -= EncryptionHeaderSize
 		}
 		chunksPerShard := (perShard + chunkSizeWithHeader - 1) / chunkSizeWithHeader
 		Logger.Info("Size:", size, " perShard:", perShard, " chunks/shard:", chunksPerShard)

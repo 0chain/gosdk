@@ -39,8 +39,8 @@ const DefaultChunkSize = 64 * 1024
 const (
 	// EncryptedDataPaddingSize additional bytes to save encrypted data
 	EncryptedDataPaddingSize = 16
-	// EncryptionHeaderSize encryption header size in chunk
-	EncryptionHeaderSize = 2 * 1024
+	// EncryptionHeaderSize encryption header size in chunk: PRE.MessageChecksum(128)+","+PRE.OverallChecksum(128)
+	EncryptionHeaderSize = 128 + 1 + 128
 	// ReEncryptionHeaderSize re-encryption header size in chunk
 	ReEncryptionHeaderSize = 256
 )
@@ -167,7 +167,7 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	if su.encryptOnUpload {
 		su.fileEncscheme = su.createEncscheme()
 
-		if su.chunkSize <= EncryptionHeaderSize {
+		if su.chunkSize <= EncryptionHeaderSize+EncryptedDataPaddingSize {
 			return nil, ErrInvalidChunkSize
 		}
 
@@ -297,7 +297,7 @@ func (su *ChunkedUpload) saveProgress() {
 
 // removeProgress remove progress info once it is done
 func (su *ChunkedUpload) removeProgress() {
-	su.progressStorer.Remove(su.progress.ID)
+	su.progressStorer.Remove(su.progress.ID) //nolint
 }
 
 // createUploadProgress create a new UploadProgress
