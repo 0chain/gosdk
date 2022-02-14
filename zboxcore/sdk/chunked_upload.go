@@ -39,8 +39,8 @@ const DefaultChunkSize = 64 * 1024
 const (
 	// EncryptedDataPaddingSize additional bytes to save encrypted data
 	EncryptedDataPaddingSize = 16
-	// EncryptionHeaderSize encryption header size in chunk: PRE.MessageChecksum(128)+","+PRE.OverallChecksum(128)
-	EncryptionHeaderSize = 128 + 1 + 128
+	// EncryptionHeaderSize encryption header size in chunk: PRE.MessageChecksum(128)+PRE.OverallChecksum(128)
+	EncryptionHeaderSize = 128 + 128
 	// ReEncryptionHeaderSize re-encryption header size in chunk
 	ReEncryptionHeaderSize = 256
 )

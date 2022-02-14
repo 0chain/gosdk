@@ -7,7 +7,6 @@ import (
 	"io"
 	"math"
 	"os"
-	"strings"
 	"sync"
 
 	"github.com/0chain/errors"
@@ -130,17 +129,20 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 					if req.authTicket == nil {
 						headerBytes := result.BlockChunks[blockNum][:(EncryptionHeaderSize)]
 						headerBytes = bytes.Trim(headerBytes, "\x00")
-						headerString := string(headerBytes)
+
+						if len(headerBytes) != EncryptionHeaderSize {
+							logger.Logger.Error("Block has invalid header", req.blobbers[result.idx].Baseurl)
+							continue
+						}
 
 						encMsg := &encryption.EncryptedMessage{}
 						encMsg.EncryptedData = result.BlockChunks[blockNum][(EncryptionHeaderSize):]
 
-						headerChecksums := strings.Split(headerString, ",")
-						if len(headerChecksums) != 2 {
+						if len(headerBytes) != EncryptionHeaderSize {
 							logger.Logger.Error("Block has invalid header", req.blobbers[result.idx].Baseurl)
 							continue
 						}
-						encMsg.MessageChecksum, encMsg.OverallChecksum = headerChecksums[0], headerChecksums[1]
+						encMsg.MessageChecksum, encMsg.OverallChecksum = string(headerBytes[:128]), string(headerBytes[128:])
 						encMsg.EncryptedKey = encscheme.GetEncryptedKey()
 						decryptedBytes, err := encscheme.Decrypt(encMsg)
 						if err != nil {

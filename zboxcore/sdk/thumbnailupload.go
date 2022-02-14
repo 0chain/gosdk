@@ -42,7 +42,7 @@ func (req *UploadRequest) pushThumbnailData(data []byte) error {
 				return err
 			}
 			header := make([]byte, EncryptionHeaderSize)
-			copy(header[:], encMsg.MessageChecksum+","+encMsg.OverallChecksum)
+			copy(header[:], encMsg.MessageChecksum+encMsg.OverallChecksum)
 			shards[pos] = append(header, encMsg.EncryptedData...)
 			c++
 		}
