@@ -127,7 +127,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 
 					// dirty, but can't see other way right now
 					if req.authTicket == nil {
-						headerBytes := result.BlockChunks[blockNum][:(EncryptionHeaderSize)]
+						headerBytes := result.BlockChunks[blockNum][:EncryptionHeaderSize]
 						headerBytes = bytes.Trim(headerBytes, "\x00")
 
 						if len(headerBytes) != EncryptionHeaderSize {
@@ -136,7 +136,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 						}
 
 						encMsg := &encryption.EncryptedMessage{}
-						encMsg.EncryptedData = result.BlockChunks[blockNum][(EncryptionHeaderSize):]
+						encMsg.EncryptedData = result.BlockChunks[blockNum][EncryptionHeaderSize:]
 
 						if len(headerBytes) != EncryptionHeaderSize {
 							logger.Logger.Error("Block has invalid header", req.blobbers[result.idx].Baseurl)

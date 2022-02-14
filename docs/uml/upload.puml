@@ -57,8 +57,8 @@ CLI <- gosdk: exit cmd
 @startuml stream upload flow
 
 loop till done
-FileInput -> reedsolomon.Encoder : read bytes with datashards * 64KB or datashards *(64KB - 16 - 257)
-reedsolomon.Encoder --> encryption.EncryptionScheme : encrypt data, and added header (257)
+FileInput -> reedsolomon.Encoder : read bytes with datashards * 64KB or datashards *(64KB - 16 - 256)
+reedsolomon.Encoder --> encryption.EncryptionScheme : encrypt data, and added header (256)
 encryption.EncryptionScheme --> APIClient: send client data
 reedsolomon.Encoder -> APIClient: send client data
 
