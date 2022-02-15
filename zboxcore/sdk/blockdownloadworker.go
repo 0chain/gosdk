@@ -201,7 +201,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 					if len(req.encryptedKey) > 0 {
 						if req.authTicket != nil {
-							// 256 for the additional header bytes for ReEncrypt,  where chunk_size - 2 * 1024 is the encrypted data size
+							// ReEncryptionHeaderSize for the additional header bytes for ReEncrypt,  where chunk_size - EncryptionHeaderSize is the encrypted data size
 							rspData.BlockChunks = req.splitData(response, req.chunkSize-EncryptionHeaderSize+ReEncryptionHeaderSize)
 						} else {
 							rspData.BlockChunks = req.splitData(response, req.chunkSize)
