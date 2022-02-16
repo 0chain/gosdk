@@ -1,4 +1,4 @@
-name: Webassemble
+name: Webassembly
 
 concurrency:
   group: "${{ github.ref }}"
@@ -31,6 +31,7 @@ jobs:
           TAG=$(echo ${GITHUB_REF#refs/tags/})
           if [[ ${TAG} = v*\.*\.* ]] ; then
             echo "RELEASE=true" >> $GITHUB_ENV
+            echo "TAG=${TAG}" >> $GITHUB_ENV
           fi
              
       - name: Build
