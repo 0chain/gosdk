@@ -1,4 +1,4 @@
-name: Wasm
+name: wasm
 
 concurrency:
   group: "${{ github.ref }}"
@@ -15,7 +15,7 @@ env:
   RELEASE: false
   
 jobs:
-  build:
+  release:
     runs-on: [self-hosted, build]
     steps:
       - name: Set up Go 1.17
