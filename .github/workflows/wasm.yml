@@ -15,7 +15,8 @@ env:
   RELEASE: false
   
 jobs:
-  release:
+  build:
+    name: Build & Release
     runs-on: [self-hosted, build]
     steps:
       - name: Set up Go 1.17
