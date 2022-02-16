@@ -851,7 +851,7 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 	readPrice, writePrice PriceRange, mcct time.Duration,
 	lock int64, preferredBlobbers []string) (hash string, err error) {
 
-	if lock <= 0 {
+	if lock < 0 {
 		return "", errors.New("", "invalid value for lock")
 	}
 
@@ -907,7 +907,7 @@ func CreateFreeAllocation(marker string, value int64) (string, error) {
 		return "", sdkNotInitialized
 	}
 
-	if value <= 0 {
+	if value < 0 {
 		return "", errors.New("", "invalid value for lock")
 	}
 
@@ -930,7 +930,7 @@ func UpdateAllocation(size int64, expiry int64, allocationID string,
 	if !sdkInitialized {
 		return "", sdkNotInitialized
 	}
-	if lock <= 0 {
+	if lock < 0 {
 		return "", errors.New("", "invalid value for lock")
 	}
 
@@ -954,7 +954,7 @@ func CreateFreeUpdateAllocation(marker, allocationId string, value int64) (strin
 	if !sdkInitialized {
 		return "", sdkNotInitialized
 	}
-	if value <= 0 {
+	if value < 0 {
 		return "", errors.New("", "invalid value for lock")
 	}
 
