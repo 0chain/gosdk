@@ -6,11 +6,10 @@ concurrency:
 
 on:
   push:
-    branches: [ master, staging ]
+    branches:
     tags:
       - 'v*.*.*'
   pull_request:
-    branches: [ master, staging ]
 
 env:
   TAG: NONE
