@@ -1,0 +1,45 @@
+name: wasm
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master, staging ]
+  pull_request:
+    branches: [ master, staging ]
+  
+jobs:
+  build:
+    runs-on: [self-hosted, build]
+    steps:
+      - name: Set up Go 1.17
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.17
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set GITHUB_ENV
+        run: |
+          echo "BRANCH=$(echo ${GITHUB_REF#refs/heads/})" >> $GITHUB_ENV
+          echo "TAG=$(echo ${GITHUB_REF#refs/tags/})" >> $GITHUB_ENV
+             
+      - name: Build
+        run: CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -o ./zcn.wasm  ./wasmsdk
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        if: env.TAG 
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: zcn.wasm
+          tag: ${{ env.TAG }}
+          overwrite: true
+          file_glob: true
+
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v2
+        with:
+          name: zcn.wasm
+          path: zcn.wasm
+          retention-days: 5
