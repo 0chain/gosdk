@@ -1,11 +1,13 @@
 name: wasm
 
 on:
-  workflow_dispatch:
   push:
     branches: [ master, staging ]
   pull_request:
     branches: [ master, staging ]
+  tags:
+    - 'v*.*.*'
+
 env:
   TAG: NONE
   
