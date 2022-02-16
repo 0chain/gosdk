@@ -1,5 +1,10 @@
 name: wasm
 
+
+concurrency:
+  group: "${{ github.ref }}"
+  cancel-in-progress: true
+
 on:
   push:
     branches: [ master, staging ]
@@ -41,7 +46,7 @@ jobs:
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
-        if: env.TAG != 'NONE'
+        if:  [[ env.TAG = v*\.*\.* ]]
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: zcn.wasm
