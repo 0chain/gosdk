@@ -1,4 +1,4 @@
-name: wasm
+name: Webassemble
 
 concurrency:
   group: "${{ github.ref }}"
