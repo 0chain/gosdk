@@ -1,5 +1,4 @@
-name: wasm
-
+name: Wasm
 
 concurrency:
   group: "${{ github.ref }}"
@@ -8,10 +7,10 @@ concurrency:
 on:
   push:
     branches: [ master, staging ]
+    tags:
+      - 'v*.*.*'
   pull_request:
     branches: [ master, staging ]
-  tags:
-    - 'v*.*.*'
 
 env:
   TAG: NONE
