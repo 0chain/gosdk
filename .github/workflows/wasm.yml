@@ -1,0 +1,56 @@
+name: Webassembly
+
+concurrency:
+  group: "${{ github.ref }}"
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+    tags:
+      - 'v*.*.*'
+  pull_request:
+
+env:
+  RELEASE: false
+  
+jobs:
+  build:
+    name: Build & Release
+    runs-on: [self-hosted, build]
+    steps:
+      - name: Set up Go 1.17
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.17
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set GITHUB_ENV
+        run: |
+          TAG=$(echo ${GITHUB_REF#refs/tags/})
+          if [[ ${TAG} = v*\.*\.* ]] ; then
+            echo "RELEASE=true" >> $GITHUB_ENV
+            echo "TAG=${TAG}" >> $GITHUB_ENV
+          fi
+             
+      - name: Build
+        run: CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -o ./zcn.wasm  ./wasmsdk
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        if:  env.RELEASE == 'true'
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: zcn.wasm
+          tag: ${{ env.TAG }}
+          overwrite: true
+          file_glob: true
+
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v2
+        with:
+          name: zcn.wasm
+          path: zcn.wasm
+          retention-days: 5
