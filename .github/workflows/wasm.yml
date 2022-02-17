@@ -10,6 +10,11 @@ on:
     tags:
       - 'v*.*.*'
   pull_request:
+  workflow_dispatch:
+    inputs:
+      wasm_sdk:
+        description: 'webassembly sdk version'
+        required: true
 
 env:
   RELEASE: false
@@ -30,7 +35,11 @@ jobs:
       - name: Set GITHUB_ENV
         run: |
           TAG=$(echo ${GITHUB_REF#refs/tags/})
-          if [[ ${TAG} = v*\.*\.* ]] ; then
+
+          if [[ -z "${{github.event.inputs.wasm_sdk}}" ]]; then
+            echo "RELEASE=true" >> $GITHUB_ENV
+            echo "TAG=${github.event.inputs.wasm_sdk}" >> $GITHUB_ENV
+          elif [[ ${TAG} = v*\.*\.* ]] ; then
             echo "RELEASE=true" >> $GITHUB_ENV
             echo "TAG=${TAG}" >> $GITHUB_ENV
           fi
