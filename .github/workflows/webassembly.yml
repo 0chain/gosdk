@@ -48,9 +48,21 @@ jobs:
           overwrite: true
           file_glob: true
 
+      - name: Create PR on block-explorer
+        uses: convictional/trigger-workflow-and-wait@v1.3.0
+        with:
+          owner: 0chain
+          repo: block-explorer
+          github_token: ${{ secrets.GOSDK }}
+          workflow_file_name: webassembly.yml
+          inputs: "{'wasm:sdk':'{{env.TAG}}'}"
+          propagate_failure: true
+          trigger_workflow: true
+          wait_workflow: true
+
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v2
         with:
           name: zcn.wasm
           path: zcn.wasm
-          retention-days: 5
+          retention-days: 30
