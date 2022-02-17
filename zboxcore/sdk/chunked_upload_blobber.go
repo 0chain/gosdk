@@ -94,7 +94,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *Chunk
 		return err
 	}
 
-	logger.Logger.Info(sb.blobber.Baseurl, su.fileMeta.RemotePath, " uploaded")
+	//logger.Logger.Debug(sb.blobber.Baseurl, su.fileMeta.RemotePath, " uploaded")
 
 	su.consensus.Done()
 
