@@ -7,6 +7,7 @@ This repository currently supports the following platforms:
 - LINUX (RHEL/CENTOS 7+)
   - All Releases based on RHEL 7+, Centos 7+, Fedora 30 etc. (yum based package installer)
 
+
 It is possible to support the sdk for other variations of Linux as well.
 
 ## Usage
