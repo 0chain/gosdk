@@ -1,7 +1,7 @@
-name: Webassembly
+name: WebAssembly
 
 concurrency:
-  group: "${{ github.ref }}"
+  group: "wasm-${{ github.ref }}"
   cancel-in-progress: true
 
 on:
@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
     inputs:
       wasm_sdk:
-        description: 'webassembly sdk version'
+        description: '0Chain WebAssembly SDK version'
         required: true
 
 env:
