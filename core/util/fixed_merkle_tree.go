@@ -36,14 +36,21 @@ func (fmt *FixedMerkleTree) initLeaves() {
 }
 
 func (fmt *FixedMerkleTree) Write(buf []byte, chunkIndex int) error {
+	//split chunk into 1024 parts for challenge hash
 	merkleChunkSize := fmt.ChunkSize / 1024
+
+	// chunksize is less than 1024
+	if merkleChunkSize == 0 {
+		merkleChunkSize = 1
+	}
+
 	total := len(buf)
+	offset := 0
 	for i := 0; i < total; i += merkleChunkSize {
 		end := i + merkleChunkSize
 		if end > len(buf) {
 			end = len(buf)
 		}
-		offset := i / merkleChunkSize
 
 		if len(fmt.Leaves) != 1024 {
 			fmt.initLeaves()
@@ -52,6 +59,11 @@ func (fmt *FixedMerkleTree) Write(buf []byte, chunkIndex int) error {
 		err := fmt.Leaves[offset].AddDataBlocks(buf[i:end], chunkIndex)
 		if errors.Is(err, ErrLeafNoSequenced) {
 			return err
+		}
+
+		offset++
+		if offset >= 1024 {
+			offset = 0
 		}
 	}
 
