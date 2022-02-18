@@ -23,11 +23,11 @@ func (mem *chunkedUploadProgressStorer) Load(id string) *sdk.UploadProgress {
 }
 
 // Save save upload progress
-func (mem *chunkedUploadProgressStorer) Save(up *sdk.UploadProgress) {
+func (mem *chunkedUploadProgressStorer) Save(up sdk.UploadProgress) {
 	if mem.list == nil {
 		mem.list = make(map[string]*sdk.UploadProgress)
 	}
-	mem.list[up.ID] = up
+	mem.list[up.ID] = &up
 }
 
 // Remove remove upload progress by id
