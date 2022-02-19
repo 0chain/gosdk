@@ -121,6 +121,7 @@ const (
 	STORAGESC_REMOVE_CURATOR          = "remove_curator"
 	STORAGESC_CURATOR_TRANSFER        = "curator_transfer_allocation"
 	STORAGESC_UPDATE_SETTINGS         = "update_settings"
+	STORAGESC_COLLECT_REWARD          = "collect_reward"
 
 	MINERSC_LOCK             = "addToDelegatePool"
 	MINERSC_UNLOCK           = "deleteFromDelegatePool"
@@ -130,6 +131,7 @@ const (
 	MINERSC_UPDATE_GLOBALS   = "update_globals"
 	MINERSC_MINER_DELETE     = "delete_miner"
 	MINERSC_SHARDER_DELETE   = "delete_sharder"
+	MINERSC_COLLECT_REWARD   = "collect_reward"
 
 	// Faucet SC
 	FAUCETSC_UPDATE_SETTINGS = "update-settings"
