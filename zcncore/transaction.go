@@ -312,7 +312,7 @@ func newTransaction(cb TransactionCallback, txnFee int64) (*Transaction, error) 
 
 // NewTransaction allocation new generic transaction object for any operation
 func NewTransaction(cb TransactionCallback, txnFee int64) (TransactionScheme, error) {
-	err := checkConfig()
+	err := CheckConfig()
 	if err != nil {
 		return nil, err
 	}

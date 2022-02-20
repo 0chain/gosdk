@@ -160,6 +160,9 @@ const (
 	OpStorageSCGetBlobbers
 	OpStorageSCGetBlobber
 	OpStorageSCGetWritePoolInfo
+	OpZCNSCGetGlobalConfig
+	OpZCNSCGetAuthorizerConfig
+	OpZCNSCGetAuthorizerNodes
 )
 
 // WalletCallback needs to be implmented for wallet creation.
@@ -222,7 +225,7 @@ func checkWalletConfig() error {
 	}
 	return nil
 }
-func checkConfig() error {
+func CheckConfig() error {
 	err := checkSdkInit()
 	if err != nil {
 		return err
@@ -620,7 +623,7 @@ func SetAuthUrl(url string) error {
 
 // GetBalance retreives wallet balance from sharders
 func GetBalance(cb GetBalanceCallback) error {
-	err := checkConfig()
+	err := CheckConfig()
 	if err != nil {
 		return err
 	}
@@ -810,7 +813,7 @@ func GetLockConfig(cb GetInfoCallback) error {
 
 // GetLockedTokens returns the ealier locked token pool stats
 func GetLockedTokens(cb GetInfoCallback) error {
-	err := checkConfig()
+	err := CheckConfig()
 	if err != nil {
 		return err
 	}
@@ -956,7 +959,7 @@ func withParams(uri string, params Params) string {
 }
 
 func GetVestingPoolInfo(poolID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	getInfoFromSharders(withParams(GET_VESTING_POOL_INFO, Params{
@@ -970,7 +973,7 @@ type VestingClientList struct {
 }
 
 func GetVestingClientList(clientID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	if clientID == "" {
@@ -995,7 +998,7 @@ type InputMap struct {
 }
 
 func GetVestingSCConfig(cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	go getInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
@@ -1005,7 +1008,7 @@ func GetVestingSCConfig(cb GetInfoCallback) (err error) {
 // interest pools sc
 
 func GetInterestPoolSCConfig(cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	go getInfoFromSharders(GET_INTERESTPOOLSC_CONFIG, 0, cb)
@@ -1015,7 +1018,7 @@ func GetInterestPoolSCConfig(cb GetInfoCallback) (err error) {
 // faucet
 
 func GetFaucetSCConfig(cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	go getInfoFromSharders(GET_FAUCETSC_CONFIG, 0, cb)
@@ -1053,7 +1056,7 @@ type MinerSCNodes struct {
 
 // GetMiners obtains list of all active miners.
 func GetMiners(cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = GET_MINERSC_MINERS
@@ -1063,7 +1066,7 @@ func GetMiners(cb GetInfoCallback) (err error) {
 
 // GetSharders obtains list of all active sharders.
 func GetSharders(cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = GET_MINERSC_SHARDERS
@@ -1072,7 +1075,7 @@ func GetSharders(cb GetInfoCallback) (err error) {
 }
 
 func GetEvents(cb GetInfoCallback, filters map[string]string) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	go getInfoFromSharders(withParams(GET_MINERSC_EVENTS, Params{
@@ -1086,7 +1089,7 @@ func GetEvents(cb GetInfoCallback, filters map[string]string) (err error) {
 
 func GetMinerSCNodeInfo(id string, cb GetInfoCallback) (err error) {
 
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 
@@ -1097,7 +1100,7 @@ func GetMinerSCNodeInfo(id string, cb GetInfoCallback) (err error) {
 }
 
 func GetMinerSCNodePool(id, poolID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	go getInfoFromSharders(withParams(GET_MINERSC_POOL, Params{
@@ -1123,7 +1126,7 @@ type MinerSCUserPoolsInfo struct {
 }
 
 func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	if clientID == "" {
@@ -1137,7 +1140,7 @@ func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error) {
 }
 
 func GetMinerSCConfig(cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	go getInfoFromSharders(GET_MINERSC_CONFIG, 0, cb)
@@ -1145,7 +1148,7 @@ func GetMinerSCConfig(cb GetInfoCallback) (err error) {
 }
 
 func GetMinerSCGlobals(cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	go getInfoFromSharders(GET_MINERSC_GLOBALS, 0, cb)
@@ -1158,7 +1161,7 @@ func GetMinerSCGlobals(cb GetInfoCallback) (err error) {
 
 // GetStorageSCConfig obtains Storage SC configurations.
 func GetStorageSCConfig(cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	go getInfoFromSharders(STORAGESC_GET_SC_CONFIG, OpStorageSCGetConfig, cb)
@@ -1167,7 +1170,7 @@ func GetStorageSCConfig(cb GetInfoCallback) (err error) {
 
 // GetChallengePoolInfo obtains challenge pool information for an allocation.
 func GetChallengePoolInfo(allocID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = withParams(STORAGESC_GET_CHALLENGE_POOL_INFO, Params{
@@ -1179,7 +1182,7 @@ func GetChallengePoolInfo(allocID string, cb GetInfoCallback) (err error) {
 
 // GetAllocation obtains allocation information.
 func GetAllocation(allocID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = withParams(STORAGESC_GET_ALLOCATION, Params{
@@ -1191,7 +1194,7 @@ func GetAllocation(allocID string, cb GetInfoCallback) (err error) {
 
 // GetAllocations obtains list of allocations of a user.
 func GetAllocations(clientID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	if clientID == "" {
@@ -1206,7 +1209,7 @@ func GetAllocations(clientID string, cb GetInfoCallback) (err error) {
 
 // GetReadPoolInfo obtains information about read pool of a user.
 func GetReadPoolInfo(clientID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	if clientID == "" {
@@ -1222,7 +1225,7 @@ func GetReadPoolInfo(clientID string, cb GetInfoCallback) (err error) {
 // GetStakePoolInfo obtains information about stake pool of a blobber and
 // related validator.
 func GetStakePoolInfo(blobberID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = withParams(STORAGESC_GET_STAKE_POOL_INFO, Params{
@@ -1234,7 +1237,7 @@ func GetStakePoolInfo(blobberID string, cb GetInfoCallback) (err error) {
 
 // GetStakePoolUserInfo for a user.
 func GetStakePoolUserInfo(clientID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	if clientID == "" {
@@ -1249,7 +1252,7 @@ func GetStakePoolUserInfo(clientID string, cb GetInfoCallback) (err error) {
 
 // GetBlobbers obtains list of all active blobbers.
 func GetBlobbers(cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = STORAGESC_GET_BLOBBERS
@@ -1259,7 +1262,7 @@ func GetBlobbers(cb GetInfoCallback) (err error) {
 
 // GetBlobber obtains blobber information.
 func GetBlobber(blobberID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = withParams(STORAGESC_GET_BLOBBER, Params{
@@ -1272,7 +1275,7 @@ func GetBlobber(blobberID string, cb GetInfoCallback) (err error) {
 // GetWritePoolInfo obtains information about all write pools of a user.
 // If given clientID is empty, then current user used.
 func GetWritePoolInfo(clientID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	if clientID == "" {
