@@ -2,6 +2,9 @@ package zcnbridge
 
 import (
 	"fmt"
+	"strconv"
+
+	"github.com/0chain/gosdk/core/common"
 
 	"github.com/0chain/gosdk/zcnbridge/http"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
@@ -9,6 +12,28 @@ import (
 )
 
 // Models
+
+type Authorizer struct {
+	AuthorizerID string `json:"id"`
+	URL          string `json:"url"`
+
+	// Configuration
+	Fee common.Balance `json:"fee"`
+
+	// Geolocation
+	Latitude  float64 `json:"latitude"`
+	Longitude float64 `json:"longitude"`
+
+	// Stats
+	LastHealthCheck int64 `json:"last_health_check"`
+
+	// stake_pool_settings
+	DelegateWallet string         `json:"delegate_wallet"`
+	MinStake       common.Balance `json:"min_stake"`
+	MaxStake       common.Balance `json:"max_stake"`
+	NumDelegates   int            `json:"num_delegates"`
+	ServiceCharge  float64        `json:"service_charge"`
+}
 
 type AuthorizerNode struct {
 	ID  string `json:"id"`
@@ -47,6 +72,20 @@ func getAuthorizers() ([]*AuthorizerNode, error) {
 	}
 
 	return authorizers.Nodes, nil
+}
+
+// GetAuthorizer returned authorizer by ID
+func GetAuthorizer(id int64, cb zcncore.GetInfoCallback) (err error) {
+	err = zcncore.CheckConfig()
+	if err != nil {
+		return err
+	}
+
+	go http.MakeSCRestAPICall(zcncore.OpZCNSCGetAuthorizer, http.PathGetAuthorizer, http.Params{
+		"id": strconv.FormatInt(id, 10),
+	}, cb)
+
+	return
 }
 
 // GetAuthorizers Returns authorizers

@@ -25,6 +25,8 @@ const (
 	PathGetAuthorizer      = "/getAuthorizer"
 )
 
+type Params map[string]string
+
 var Logger logger.Logger
 var defaultLogLevel = logger.DEBUG
 
@@ -34,7 +36,7 @@ func init() {
 
 // MakeSCRestAPICall calls smart contract with provided address
 // and makes retryable request to smart contract resource with provided relative path using params.
-func MakeSCRestAPICall(opCode int, relativePath string, params map[string]string, cb zcncore.GetInfoCallback) {
+func MakeSCRestAPICall(opCode int, relativePath string, params Params, cb zcncore.GetInfoCallback) {
 	var (
 		resMaxCounterBody []byte
 		hashMaxCounter    int
@@ -117,8 +119,8 @@ func extractSharders() []string {
 }
 
 // makeURL creates url.URL to make smart contract request to sharder.
-func makeURL(params map[string]string, sharder, relativePath string) *url.URL {
-	uString := fmt.Sprintf("%v/%v%v", sharder, RestPrefix, relativePath)
+func makeURL(params Params, baseURL, relativePath string) *url.URL {
+	uString := fmt.Sprintf("%v/%v%v", baseURL, RestPrefix, relativePath)
 	u, _ := url.Parse(uString)
 	q := u.Query()
 	for k, v := range params {
