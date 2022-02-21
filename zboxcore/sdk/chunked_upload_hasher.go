@@ -1,6 +1,10 @@
 package sdk
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"hash"
+
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/encryption"
@@ -8,6 +12,7 @@ import (
 )
 
 type Hasher interface {
+
 	// GetFileHash get file hash
 	GetFileHash() (string, error)
 	// WriteToFile write bytes to file hasher
@@ -24,8 +29,9 @@ type Hasher interface {
 	WriteHashToContent(hash string, chunkIndex int) error
 }
 
+// see more detail about hash on  https://github.com/0chain/blobber/wiki/Protocols#file-hash
 type hasher struct {
-	File      *util.CompactMerkleTree `json:"file"`
+	File      hash.Hash               `json:"-"`
 	Challenge *util.FixedMerkleTree   `json:"challenge"`
 	Content   *util.CompactMerkleTree `json:"content"`
 }
@@ -33,7 +39,7 @@ type hasher struct {
 // CreateHasher creat Hasher instance
 func CreateHasher(chunkSize int) Hasher {
 	h := &hasher{
-		File:      util.NewCompactMerkleTree(nil),
+		File:      sha256.New(),
 		Challenge: &util.FixedMerkleTree{ChunkSize: chunkSize},
 		Content: util.NewCompactMerkleTree(func(left, right string) string {
 			return encryption.Hash(left + right)
@@ -52,7 +58,8 @@ func (h *hasher) GetFileHash() (string, error) {
 		return "", errors.Throw(constants.ErrInvalidParameter, "h.File")
 	}
 
-	return h.File.GetMerkleRoot(), nil
+	return hex.EncodeToString(h.File.Sum(nil)), nil
+
 }
 
 // WriteToFile write bytes to file hasher
@@ -65,7 +72,9 @@ func (h *hasher) WriteToFile(buf []byte, chunkIndex int) error {
 		return errors.Throw(constants.ErrInvalidParameter, "h.File")
 	}
 
-	return h.File.AddDataBlocks(buf, chunkIndex)
+	_, err := h.File.Write(buf)
+
+	return err
 }
 
 // GetChallengeHash get challenge hash

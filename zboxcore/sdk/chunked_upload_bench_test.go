@@ -21,8 +21,8 @@ func (nope *nopeChunkedUploadProgressStorer) Load(id string) *UploadProgress {
 	return nope.up
 }
 
-func (nope *nopeChunkedUploadProgressStorer) Save(up *UploadProgress) {
-	nope.up = up
+func (nope *nopeChunkedUploadProgressStorer) Save(up UploadProgress) {
+	nope.up = &up
 }
 
 func (nope *nopeChunkedUploadProgressStorer) Remove(id string) error {

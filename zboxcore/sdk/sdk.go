@@ -298,16 +298,14 @@ type StakePoolRewardsInfo struct {
 
 // StakePoolDelegatePoolInfo represents delegate pool of a stake pool info.
 type StakePoolDelegatePoolInfo struct {
-	ID               common.Key     `json:"id"`                // pool ID
-	Balance          common.Balance `json:"balance"`           // current balance
-	DelegateID       common.Key     `json:"delegate_id"`       // wallet
-	Rewards          common.Balance `json:"rewards"`           // total for all time
-	Interests        common.Balance `json:"interests"`         // total for all time
-	Penalty          common.Balance `json:"penalty"`           // total for all time
-	PendingInterests common.Balance `json:"pending_interests"` // total for all time
+	ID         common.Key     `json:"id"`          // pool ID
+	Balance    common.Balance `json:"balance"`     // current balance
+	DelegateID common.Key     `json:"delegate_id"` // wallet
+	Rewards    common.Balance `json:"rewards"`     // total for all time
+	Penalty    common.Balance `json:"penalty"`     // total for all time
 	// Unstake > 0, then the pool wants to unstake. And the Unstake is maximal
 	// time it can't be unstaked.
-	Unstake common.Timestamp `json:"unstake"`
+	Unstake bool `json:"unstake"`
 }
 
 // StakePoolSettings information.
@@ -334,12 +332,11 @@ type StakePoolInfo struct {
 	Capacity   common.Size    `json:"capacity"`    // blobber bid
 	WritePrice common.Balance `json:"write_price"` // its write price
 
-	Offers      []*StakePoolOfferInfo `json:"offers"`       //
-	OffersTotal common.Balance        `json:"offers_total"` //
+	OffersTotal  common.Balance `json:"offers_total"`  // total offers
+	UnstakeTotal common.Balance `json:"unstake_total"` // total of stakes marked for unstaking
 	// delegate pools
 	Delegate []*StakePoolDelegatePoolInfo `json:"delegate"`
-	Earnings common.Balance               `json:"interests"` // total for all
-	Penalty  common.Balance               `json:"penalty"`   // total for all
+	Penalty  common.Balance               `json:"penalty"` // total for all
 	// rewards
 	Rewards StakePoolRewardsInfo `json:"rewards"`
 	// settings
@@ -475,26 +472,6 @@ func StakePoolUnlock(blobberID, poolID string, fee int64) (
 	}
 
 	return spuu.Unstake, nil
-}
-
-// StakePoolPayInterests unlocks a stake pool rewards.
-func StakePoolPayInterests(bloberID string) (err error) {
-	if !sdkInitialized {
-		return sdkNotInitialized
-	}
-	if bloberID == "" {
-		bloberID = client.GetClientID()
-	}
-
-	var spr stakePoolRequest
-	spr.BlobberID = bloberID
-
-	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_STAKE_POOL_PAY_INTERESTS,
-		InputArgs: &spr,
-	}
-	_, _, err = smartContractTxnValueFee(sn, 0, 0)
-	return
 }
 
 //
@@ -1131,6 +1108,10 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	}
 
 	if t.Status == transaction.TxnFail {
+		return t.Hash, t.TransactionOutput, errors.New("", t.TransactionOutput)
+	}
+
+	if t.Status == transaction.TxnChargeableError {
 		return t.Hash, t.TransactionOutput, errors.New("", t.TransactionOutput)
 	}
 

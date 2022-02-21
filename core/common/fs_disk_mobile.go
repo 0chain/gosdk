@@ -1,5 +1,5 @@
-//go:build ios || android
-// +build ios,android
+//go:build android
+// +build android
 
 package common
 

@@ -41,8 +41,8 @@ func (req *UploadRequest) pushThumbnailData(data []byte) error {
 				Logger.Error("Encryption failed.", err.Error())
 				return err
 			}
-			header := make([]byte, 2*1024)
-			copy(header[:], encMsg.MessageChecksum+","+encMsg.OverallChecksum)
+			header := make([]byte, EncryptionHeaderSize)
+			copy(header[:], encMsg.MessageChecksum+encMsg.OverallChecksum)
 			shards[pos] = append(header, encMsg.EncryptedData...)
 			c++
 		}
@@ -73,8 +73,8 @@ func (req *UploadRequest) processThumbnail(a *Allocation, wg *sync.WaitGroup) {
 	dataReader := io.MultiReader(inFile, bytes.NewBuffer(padding))
 	chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
 	if req.isEncrypted {
-		chunkSizeWithHeader -= 16
-		chunkSizeWithHeader -= 2 * 1024
+		chunkSizeWithHeader -= EncryptedDataPaddingSize
+		chunkSizeWithHeader -= EncryptionHeaderSize
 	}
 	chunksPerShard := (perShard + chunkSizeWithHeader - 1) / chunkSizeWithHeader
 	Logger.Info("Thumbnail Size:", size, " perShard:", perShard, " chunks/shard:", chunksPerShard)
