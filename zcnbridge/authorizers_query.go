@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/0chain/gosdk/core/common"
+
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	h "github.com/0chain/gosdk/zcnbridge/http"
@@ -159,7 +161,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 
 		payload := &zcnsc.MintPayload{
 			EthereumTxnID:     burnTicket.TxnID,
-			Amount:            burnTicket.Amount,
+			Amount:            common.Balance(burnTicket.Amount),
 			Nonce:             burnTicket.Amount,
 			Signatures:        sigs,
 			ReceivingClientID: burnTicket.ReceivingClientID,
