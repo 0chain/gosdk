@@ -2,7 +2,6 @@ package zcnbridge
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/0chain/gosdk/core/common"
 
@@ -75,14 +74,14 @@ func getAuthorizers() ([]*AuthorizerNode, error) {
 }
 
 // GetAuthorizer returned authorizer by ID
-func GetAuthorizer(id int64, cb zcncore.GetInfoCallback) (err error) {
+func GetAuthorizer(id string, cb zcncore.GetInfoCallback) (err error) {
 	err = zcncore.CheckConfig()
 	if err != nil {
 		return err
 	}
 
 	go http.MakeSCRestAPICall(zcncore.OpZCNSCGetAuthorizer, http.PathGetAuthorizer, http.Params{
-		"id": strconv.FormatInt(id, 10),
+		"id": id,
 	}, cb)
 
 	return
