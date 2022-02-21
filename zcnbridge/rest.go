@@ -13,7 +13,7 @@ import (
 
 // Models
 
-type Authorizer struct {
+type AuthorizerResponse struct {
 	AuthorizerID string `json:"id"`
 	URL          string `json:"url"`
 
@@ -35,13 +35,13 @@ type Authorizer struct {
 	ServiceCharge  float64        `json:"service_charge"`
 }
 
+type AuthorizerNodesResponse struct {
+	Nodes []*AuthorizerNode `json:"nodes"`
+}
+
 type AuthorizerNode struct {
 	ID  string `json:"id"`
 	URL string `json:"url"`
-}
-
-type AuthorizerNodesResponse struct {
-	Nodes []*AuthorizerNode `json:"nodes"`
 }
 
 // Rest endpoints
