@@ -330,10 +330,10 @@ type StakePoolInfo struct {
 	Balance common.Balance `json:"balance"` // total balance
 	Unstake common.Balance `json:"unstake"` // total unstake amount
 
+	Free       int64          `json:"free"`        // free staked space
 	Capacity   int64          `json:"capacity"`    // blobber bid
 	WritePrice common.Balance `json:"write_price"` // its write price
 
-	Free         int64          `json:"free"`         // free staked space
 	OffersTotal  common.Balance `json:"offers_total"` //
 	UnstakeTotal common.Balance `json:"unstake_total"`
 	// delegate pools
