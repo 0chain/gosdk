@@ -856,6 +856,12 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 		return "", errors.New("", "invalid value for lock")
 	}
 
+	allocationBlobbers, err := getAllocationBlobbers(owner, ownerpublickey, datashards,
+		parityshards, size, expiry, readPrice,
+		writePrice, mcct)
+	if err != nil {
+		return "", errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
+	}
 	if !sdkInitialized {
 		return "", sdkNotInitialized
 	}
@@ -867,7 +873,7 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 		"owner_id":                      owner,
 		"owner_public_key":              ownerpublickey,
 		"expiration_date":               expiry,
-		"preferred_blobbers":            preferredBlobbers,
+		"preferred_blobbers":            allocationBlobbers,
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
 		"max_challenge_completion_time": mcct,
@@ -882,6 +888,44 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 	return
 }
 
+func getAllocationBlobbers(owner, ownerpublickey string,
+	datashards, parityshards int, size, expiry int64,
+	readPrice, writePrice PriceRange, mcct time.Duration) ([]string, error) {
+
+	var allocationRequest = map[string]interface{}{
+		"data_shards":                   datashards,
+		"parity_shards":                 parityshards,
+		"size":                          size,
+		"owner_id":                      owner,
+		"owner_public_key":              ownerpublickey,
+		"expiration_date":               expiry,
+		"preferred_blobbers":            "",
+		"read_price_range":              readPrice,
+		"write_price_range":             writePrice,
+		"max_challenge_completion_time": mcct,
+		"diversify_blobbers":            false,
+	}
+
+	allocationData, _ := json.Marshal(allocationRequest)
+
+	params := make(map[string]string)
+	params["allocation_data"] = string(allocationData)
+	params["max_challenge_time"] = mcct.String()
+
+	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/get_alloc_blobbers", params, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to make SC-REST Call")
+	}
+
+	var allocBlobberIDs []string
+
+	err = json.Unmarshal(allocBlobber, &allocBlobberIDs)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal blobber IDs")
+	}
+
+	return allocBlobberIDs, nil
+}
 func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit float64) error {
 	if !sdkInitialized {
 		return sdkNotInitialized
