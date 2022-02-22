@@ -48,7 +48,7 @@ jobs:
             # create PR
             echo "PR=true" >> $GITHUB_ENV
 
-            WASM_SDK="'{\"wasm_sdk\":\"${TAG}\"}'"
+            WASM_SDK="{\"wasm_sdk\":\"${TAG}\"}"
             echo "WASM_SDK=${WASM_SDK}" >> $GITHUB_ENV
 
             # upload zcn.wasm on release
