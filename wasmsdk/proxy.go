@@ -13,6 +13,7 @@ import (
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zcncore"
 
 	"syscall/js"
 )
@@ -23,6 +24,8 @@ func main() {
 	fmt.Printf("0CHAIN - GOSDK (version=%v)\n", version.VERSIONSTR)
 
 	sdk.FS = common.NewMemFS()
+	sdkLogger = sdk.GetLogger()
+	zcnLogger = zcncore.GetLogger()
 
 	window := js.Global()
 

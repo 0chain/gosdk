@@ -1,22 +1,20 @@
 package main
 
 import (
-	"fmt"
-	"os"
 	"sync"
 
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
-// PrintError is to print stderr
+// PrintError is to print to stderr
 func PrintError(v ...interface{}) {
-	fmt.Fprintln(os.Stderr, v...)
+	sdkLogger.Error(v...)
 }
 
-// PrintInfo is to print stdout
+// PrintInfo is to print to stdout
 func PrintInfo(v ...interface{}) {
-	fmt.Fprintln(os.Stdout, v...)
+	sdkLogger.Info(v...)
 }
 
 func getFileMeta(allocationObj *sdk.Allocation, remotePath string, commit bool) (*sdk.ConsolidatedFileMeta, bool, error) {
@@ -46,7 +44,7 @@ func getFileMeta(allocationObj *sdk.Allocation, remotePath string, commit bool) 
 }
 
 func commitFileMetaTxn(allocationObj *sdk.Allocation, remotePath, authTicket, lookupHash string, commandName string, fileMeta *sdk.ConsolidatedFileMeta) (*transaction.Transaction, error) {
-	fmt.Println("Commiting changes to blockchain ...")
+	sdkLogger.Info("Commiting changes to blockchain ...")
 
 	wg := &sync.WaitGroup{}
 	statusBar := &StatusBar{wg: wg}
@@ -60,7 +58,7 @@ func commitFileMetaTxn(allocationObj *sdk.Allocation, remotePath, authTicket, lo
 
 	wg.Wait()
 
-	fmt.Println("Commit Metadata successful")
+	sdkLogger.Info("Commit Metadata successful")
 
 	txn, err := getLastMetadataCommitTxn()
 
@@ -72,14 +70,14 @@ func commitFileMetaTxn(allocationObj *sdk.Allocation, remotePath, authTicket, lo
 }
 
 func commitFolderMetaTxn(allocationObj *sdk.Allocation, preValue, currValue, commandName string) (*transaction.Transaction, error) {
-	fmt.Println("Commiting changes to blockchain ...")
+	sdkLogger.Info("Commiting changes to blockchain ...")
 	resp, err := allocationObj.CommitFolderChange(commandName, preValue, currValue)
 	if err != nil {
 		PrintError("Commit failed.", err)
 		return nil, err
 	}
 
-	fmt.Println("Commit Metadata successful, Response :", resp)
+	sdkLogger.Info("Commit Metadata successful, Response :", resp)
 
 	txn, err := getLastMetadataCommitTxn()
 
