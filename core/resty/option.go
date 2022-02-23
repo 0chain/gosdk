@@ -17,9 +17,15 @@ func WithRetry(retry int) Option {
 // WithHeader set header for http request
 func WithHeader(header map[string]string) Option {
 	return func(r *Resty) {
-		if len(header) > 0 {
-			r.header = header
+		if r.header == nil {
+			r.header = map[string]string{}
 		}
+
+		for k, v := range header {
+			r.header[k] = v
+		}
+		r.header = header
+
 	}
 }
 
