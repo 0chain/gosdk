@@ -18,7 +18,7 @@ func WithRetry(retry int) Option {
 func WithHeader(header map[string]string) Option {
 	return func(r *Resty) {
 		if r.header == nil {
-			r.header = map[string]string{}
+			r.header = make(map[string]string)
 		}
 
 		for k, v := range header {
