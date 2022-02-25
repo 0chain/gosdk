@@ -252,7 +252,7 @@ func (m *WriteMarkerMutex) Unlock(ctx context.Context, sessionID string) error {
 		return nil
 	}
 
-	msgList := make(string, 0, len(errs))
+	msgList := make([]string, 0, len(errs))
 	for _, err := range errs {
 		msgList = append(msgList, err.Error())
 	}
