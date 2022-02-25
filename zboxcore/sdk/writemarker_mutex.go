@@ -8,7 +8,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -17,6 +16,7 @@ import (
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/resty"
+	"github.com/0chain/gosdk/sdks/blobber"
 )
 
 // WMLockStatus
@@ -115,13 +115,13 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, sessionID string) error {
 
 	urls := make([]string, T)
 
-	for i, blobber := range m.allocationObj.Blobbers {
-		urls[i] = path.Join(blobber.Baseurl, "/v1/writemarker/lock/"+m.allocationObj.Tx)
+	for i, b := range m.allocationObj.Blobbers {
+		urls[i] = strings.TrimRight(b.Baseurl, "/") + blobber.EndpointWriteMarkerLock + m.allocationObj.Tx
 	}
 
 	//protocol detail is on https://github.com/0chain/blobber/wiki/Features-Upload#upload
 	i := 1
-	M := int(math.Ceil(2 / float64(3*T))) //the minimum of M blobbers must accpet the marker
+	M := int(math.Ceil(float64(T) / float64(3) * float64(2))) //the minimum of M blobbers must accpet the marker
 	n := 0
 
 	//retry 3 times
@@ -154,6 +154,7 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, sessionID string) error {
 				// fails on current blobber, try next blobber
 				i++
 				time.Sleep(1 * time.Second)
+				continue
 			}
 
 			// it is locked by other session, wait and retry
@@ -210,7 +211,7 @@ func (m *WriteMarkerMutex) lockOne(ctx context.Context, buf *bytes.Buffer, url s
 		return nil, err[0]
 	}
 
-	return nil, nil
+	return result, nil
 }
 
 // Unlock release WriteMarker lock on blobbers
@@ -229,8 +230,8 @@ func (m *WriteMarkerMutex) Unlock(ctx context.Context, sessionID string) error {
 
 	urls := make([]string, T)
 
-	for i, blobber := range m.allocationObj.Blobbers {
-		urls[i] = path.Join(blobber.Baseurl, "/v1/writemarker/lock/"+m.allocationObj.Tx)
+	for i, b := range m.allocationObj.Blobbers {
+		urls[i] = strings.TrimRight(b.Baseurl, "/") + blobber.EndpointWriteMarkerLock + m.allocationObj.Tx
 	}
 
 	transport := &http.Transport{
