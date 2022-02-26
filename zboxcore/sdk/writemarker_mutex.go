@@ -17,6 +17,7 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/sdks/blobber"
+	"github.com/0chain/gosdk/zboxcore/logger"
 )
 
 // WMLockStatus
@@ -31,7 +32,6 @@ const (
 type WMLockResult struct {
 	Status    WMLockStatus `json:"status,omitempty"`
 	CreatedAt int64        `json:"created_at,omitempty"`
-	RootNode  *HashNode    `json:"root_node,omitempty"`
 }
 
 // HashNode ref node in hash tree
@@ -101,7 +101,7 @@ func CreateWriteMarkerMutex(allocationObj *Allocation) *WriteMarkerMutex {
 }
 
 // Lock acquire WriteMarker lock from blobbers
-func (m *WriteMarkerMutex) Lock(ctx context.Context, sessionID string) error {
+func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error {
 
 	if m == nil || m.allocationObj == nil {
 		return errors.Throw(constants.ErrInvalidParameter, "allocationObj")
@@ -120,45 +120,46 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, sessionID string) error {
 	}
 
 	//protocol detail is on https://github.com/0chain/blobber/wiki/Features-Upload#upload
-	i := 1
 	M := int(math.Ceil(float64(T) / float64(3) * float64(2))) //the minimum of M blobbers must accpet the marker
-	n := 0
 
 	//retry 3 times
 	for retry := 0; ; retry++ {
+		i := 1
+		n := 0
 
 		body := url.Values{}
-		body.Set("session_id", sessionID)
+		body.Set("connection_id", connectionID)
 
 		now := time.Now()
 		body.Set("request_time", strconv.FormatInt(now.Unix(), 10))
 		buf := bytes.NewBufferString(body.Encode())
 
 		for {
+
+			// M locks are acquired, it is safe to commit write
+			if n >= M {
+				return nil
+			}
+
+			// No more blobber, but n < M
+			if i > T && n < M {
+				//fails, release all locks
+				m.Unlock(ctx, connectionID) //nolint: errcheck
+				break
+			}
+
 			result, err := m.lockOne(ctx, buf, urls[i-1])
 
-			// current blobber fails or is down
+			// current blobber fails or is down, try next blobber
 			if err != nil {
-				// last blobber, but n < M
-				if i == T && n < M {
-					//fails, release all locks
-					err = m.Unlock(ctx, sessionID)
-					if err != nil {
-						return err
-					}
-
-					time.Sleep(1 * time.Second)
-					break
-				}
-
-				// fails on current blobber, try next blobber
+				// fails on current blobber
 				i++
-				time.Sleep(1 * time.Second)
 				continue
 			}
 
 			// it is locked by other session, wait and retry
 			if result.Status == WMLockStatusPending {
+				logger.Logger.Info("WriteMarkerLock is pending, wait and retry")
 				time.Sleep(1 * time.Second)
 				continue
 			} else if result.Status == WMLockStatusOK {
@@ -166,16 +167,13 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, sessionID string) error {
 				i++
 				n++
 			}
-
-			// M locks are acquired, it is safe to commit write
-			if n >= M {
-				return nil
-			}
 		}
 
 		if retry >= 2 {
 			return constants.ErrNotLockedWritMarker
 		}
+
+		time.Sleep(1 * time.Second)
 	}
 }
 
