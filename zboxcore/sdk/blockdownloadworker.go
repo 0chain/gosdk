@@ -156,26 +156,29 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating download request")}
 			return
 		}
-		// httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-		httpreq.Header.Add("path_hash", req.remotefilepathhash)
+
+		header := &DownloadRequestHeader{}
+		header.PathHash = req.remotefilepathhash
 
 		if req.rxPay {
-			httpreq.Header.Add("rx_pay", "true") // pay oneself
+			header.RxPay = req.rxPay // pay oneself
 		}
+		header.BlockNum = req.blockNum
+		header.NumBlocks = req.numBlocks
+		header.ReadMarker = rmData
 
-		httpreq.Header.Add("block_num", fmt.Sprintf("%d", req.blockNum))
-		httpreq.Header.Add("num_blocks", fmt.Sprintf("%d", req.numBlocks))
-		httpreq.Header.Add("read_marker", string(rmData))
 		if req.authTicket != nil {
-			authTicketBytes, _ := json.Marshal(req.authTicket)
-			httpreq.Header.Add("auth_token", string(authTicketBytes))
+			header.AuthToken, _ = json.Marshal(req.authTicket) //nolint: errcheck
 		}
 		if len(req.contentMode) > 0 {
-			httpreq.Header.Add("content", req.contentMode)
+			header.DownloadMode = req.contentMode
 		}
 
 		ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 		shouldRetry := false
+
+		header.ToHeader(httpreq)
+
 		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 			if err != nil {
 				return err
