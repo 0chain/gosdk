@@ -473,9 +473,9 @@ func NewCopyRequest(baseUrl, allocation string, body io.Reader) (*http.Request, 
 	return req, nil
 }
 
-func NewDownloadRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
+func NewDownloadRequest(baseUrl, allocation string) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, DOWNLOAD_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodGet, url, body)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
