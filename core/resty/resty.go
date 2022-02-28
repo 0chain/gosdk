@@ -2,7 +2,6 @@
 package resty
 
 import (
-	"bytes"
 	"context"
 	"io"
 	"io/ioutil"
@@ -77,12 +76,12 @@ func (r *Resty) DoGet(ctx context.Context, urls ...string) {
 }
 
 // DoPost execute http requests with POST method in parallel
-func (r *Resty) DoPost(ctx context.Context, body *bytes.Buffer, urls ...string) {
+func (r *Resty) DoPost(ctx context.Context, body io.Reader, urls ...string) {
 	r.Do(ctx, http.MethodPost, body, urls...)
 }
 
 // DoPut execute http requests with PUT method in parallel
-func (r *Resty) DoPut(ctx context.Context, body *bytes.Buffer, urls ...string) {
+func (r *Resty) DoPut(ctx context.Context, body io.Reader, urls ...string) {
 	r.Do(ctx, http.MethodPut, body, urls...)
 }
 
@@ -91,16 +90,13 @@ func (r *Resty) DoDelete(ctx context.Context, urls ...string) {
 	r.Do(ctx, http.MethodDelete, nil, urls...)
 }
 
-func (r *Resty) Do(ctx context.Context, method string, body *bytes.Buffer, urls ...string) {
+func (r *Resty) Do(ctx context.Context, method string, body io.Reader, urls ...string) {
 	r.ctx, r.cancelFunc = context.WithCancel(ctx)
 
 	r.qty = len(urls)
 	r.done = make(chan Result, r.qty)
 
-	var bodyReader io.Reader = nil
-	if body != nil {
-		bodyReader = body
-	}
+	var bodyReader io.Reader = body
 
 	for _, url := range urls {
 
@@ -193,7 +189,7 @@ func (r *Resty) httpDo(req *http.Request) {
 // Wait wait all of requests to done
 func (r *Resty) Wait() []error {
 	defer func() {
-		// call cancelFunc, aovid to memory leak issue
+		// call cancelFunc, avoid to memory leak issue
 		if r.cancelFunc != nil {
 			r.cancelFunc()
 		}
