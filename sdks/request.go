@@ -1,6 +1,8 @@
 package sdks
 
-import "bytes"
+import (
+	"io"
+)
 
 // Request request payload
 type Request struct {
@@ -13,7 +15,7 @@ type Request struct {
 	// ContentType content-type in header
 	ContentType string
 	// Body form data
-	Body *bytes.Buffer
+	Body io.Reader
 	// QueryString query string
 	QueryString map[string]string
 }
