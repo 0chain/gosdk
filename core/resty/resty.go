@@ -60,10 +60,10 @@ type Resty struct {
 	qty        int
 	done       chan Result
 
-	transport  *http.Transport
-	client     Client
-	handle     Handle
-	beforeSend func(req *http.Request)
+	transport          *http.Transport
+	client             Client
+	handle             Handle
+	requestInterceptor func(req *http.Request)
 
 	timeout time.Duration
 	retry   int
@@ -114,8 +114,8 @@ func (r *Resty) Do(ctx context.Context, method string, body io.Reader, urls ...s
 		//reuse http connection if it is possible
 		req.Header.Set("Connection", "keep-alive")
 
-		if r.beforeSend != nil {
-			r.beforeSend(req)
+		if r.requestInterceptor != nil {
+			r.requestInterceptor(req)
 		}
 
 		go r.httpDo(req.WithContext(r.ctx))

@@ -38,11 +38,9 @@ func WithTimeout(timeout time.Duration) Option {
 	}
 }
 
-// WithBefore do something before request is sent.
-func WithBefore(handle func(req *http.Request)) Option {
+// WithRequestInterceptor intercept request
+func WithRequestInterceptor(interceptor func(req *http.Request)) Option {
 	return func(r *Resty) {
-		if handle != nil {
-			r.beforeSend = handle
-		}
+		r.requestInterceptor = interceptor
 	}
 }
