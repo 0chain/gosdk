@@ -121,7 +121,7 @@ func (z *ZBox) BuildUrls(baseURLs []string, queryString map[string]string, pathF
 
 func (z *ZBox) DoPost(req *Request, handle resty.Handle) *resty.Resty {
 
-	opts := make([]resty.Option, 0)
+	opts := make([]resty.Option, 0, 4)
 
 	opts = append(opts, resty.WithRetry(resty.DefaultRetry))
 	opts = append(opts, resty.WithTimeout(resty.DefaultRequestTimeout))

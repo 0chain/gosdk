@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/0chain/errors"
@@ -90,7 +91,9 @@ func (n *HashNode) GetHashCode() string {
 
 // WriteMarkerMutex blobber WriteMarkerMutex client
 type WriteMarkerMutex struct {
-	allocationObj *Allocation
+	mutex          sync.Mutex
+	allocationObj  *Allocation
+	lockedBlobbers map[string]bool
 }
 
 // CreateWriteMarkerMutex create WriteMarkerMutex for allocation
@@ -102,8 +105,13 @@ func CreateWriteMarkerMutex(allocationObj *Allocation) *WriteMarkerMutex {
 
 // Lock acquire WriteMarker lock from blobbers
 func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error {
+	if m == nil {
+		return errors.Throw(constants.ErrInvalidParameter, "WriteMarkerMutex")
+	}
+	m.mutex.Lock()
+	defer m.mutex.Unlock()
 
-	if m == nil || m.allocationObj == nil {
+	if m.allocationObj == nil {
 		return errors.Throw(constants.ErrInvalidParameter, "allocationObj")
 	}
 
@@ -115,8 +123,13 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error 
 
 	urls := make([]string, T)
 
+	builder := &strings.Builder{}
 	for i, b := range m.allocationObj.Blobbers {
-		urls[i] = strings.TrimRight(b.Baseurl, "/") + blobber.EndpointWriteMarkerLock + m.allocationObj.Tx
+		builder.Reset()
+		builder.WriteString(strings.TrimRight(b.Baseurl, "/")) //nolint: errcheck
+		builder.WriteString(blobber.EndpointWriteMarkerLock)
+		builder.WriteString(m.allocationObj.Tx)
+		urls[i] = builder.String()
 	}
 
 	//protocol detail is on https://github.com/0chain/blobber/wiki/Features-Upload#upload
@@ -126,6 +139,7 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error 
 	for retry := 0; ; retry++ {
 		i := 1
 		n := 0
+		m.lockedBlobbers = nil
 
 		body := url.Values{}
 		body.Set("connection_id", connectionID)
@@ -144,11 +158,16 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error 
 			// No more blobber, but n < M
 			if i > T && n < M {
 				//fails, release all locks
-				m.Unlock(ctx, connectionID) //nolint: errcheck
+				err := m.Unlock(ctx, connectionID)
+				if err != nil {
+					return err
+				}
 				break
 			}
 
-			result, err := m.lockOne(ctx, buf, urls[i-1])
+			blobberUrl := urls[i-1]
+
+			result, err := m.lockOne(ctx, buf, blobberUrl)
 
 			// current blobber fails or is down, try next blobber
 			if err != nil {
@@ -164,6 +183,11 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error 
 				continue
 			} else if result.Status == WMLockStatusOK {
 				// locked on current blobber, count it and go to next blobber
+				if m.lockedBlobbers == nil {
+					m.lockedBlobbers = make(map[string]bool)
+				}
+
+				m.lockedBlobbers[blobberUrl] = true
 				i++
 				n++
 			}
@@ -179,6 +203,7 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error 
 
 // lockOne acquire WriteMarker lock from a blobber
 func (m *WriteMarkerMutex) lockOne(ctx context.Context, buf *bytes.Buffer, url string) (*WMLockResult, error) {
+
 	transport := &http.Transport{
 		Dial: (&net.Dialer{
 			Timeout: resty.DefaultDialTimeout,
@@ -214,8 +239,11 @@ func (m *WriteMarkerMutex) lockOne(ctx context.Context, buf *bytes.Buffer, url s
 
 // Unlock release WriteMarker lock on blobbers
 func (m *WriteMarkerMutex) Unlock(ctx context.Context, sessionID string) error {
+	if m == nil {
+		return errors.Throw(constants.ErrInvalidParameter, "WriteMarkerMutex")
+	}
 
-	if m == nil || m.allocationObj == nil {
+	if m.allocationObj == nil {
 		return errors.Throw(constants.ErrInvalidParameter, "allocationObj")
 	}
 
@@ -226,10 +254,25 @@ func (m *WriteMarkerMutex) Unlock(ctx context.Context, sessionID string) error {
 		return nil
 	}
 
-	urls := make([]string, T)
+	urls := make([]string, 0, T)
 
-	for i, b := range m.allocationObj.Blobbers {
-		urls[i] = strings.TrimRight(b.Baseurl, "/") + blobber.EndpointWriteMarkerLock + m.allocationObj.Tx
+	builder := &strings.Builder{}
+	for _, b := range m.allocationObj.Blobbers {
+		builder.Reset()
+		builder.WriteString(strings.TrimRight(b.Baseurl, "/")) //nolint: errcheck
+		builder.WriteString(blobber.EndpointWriteMarkerLock)
+		builder.WriteString(m.allocationObj.Tx)
+
+		blobberUrl := builder.String()
+		// only release lock on locked blobbers
+		if m.lockedBlobbers != nil {
+			if m.lockedBlobbers[blobberUrl] {
+				urls = append(urls, blobberUrl)
+			}
+		} else { // Lock is not called here, try to release all blobbers
+			urls = append(urls, blobberUrl)
+		}
+
 	}
 
 	transport := &http.Transport{
