@@ -38,7 +38,7 @@ func WithTimeout(timeout time.Duration) Option {
 	}
 }
 
-// WithBefore do something of before request is sent.
+// WithBefore do something before request is sent.
 func WithBefore(handle func(req *http.Request)) Option {
 	return func(r *Resty) {
 		if handle != nil {
