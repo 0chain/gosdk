@@ -125,7 +125,7 @@ func (z *ZBox) DoPost(req *Request, handle resty.Handle) *resty.Resty {
 
 	opts = append(opts, resty.WithRetry(resty.DefaultRetry))
 	opts = append(opts, resty.WithTimeout(resty.DefaultRequestTimeout))
-	opts = append(opts, resty.WithBefore(func(r *http.Request) {
+	opts = append(opts, resty.WithRequestInterceptor(func(r *http.Request) {
 		z.SignRequest(r, req.AllocationID) //nolint
 	}))
 
