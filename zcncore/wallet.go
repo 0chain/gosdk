@@ -546,10 +546,12 @@ func RegisterToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 	}
 	rate := consensus * 100 / float32(len(_config.chain.Miners))
 	if rate < consensusThresh {
+		statusCb.OnWalletCreateComplete(StatusError, "", "rate is less than consensus")
 		return fmt.Errorf("Register consensus not met. Consensus: %f, Expected: %f", rate, consensusThresh)
 	}
 	w, err := wallet.Marshal()
 	if err != nil {
+		statusCb.OnWalletCreateComplete(StatusError, w, err.Error())
 		return errors.Wrap(err, "wallet encoding failed")
 	}
 	statusCb.OnWalletCreateComplete(StatusSuccess, w, "")
