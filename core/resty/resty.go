@@ -131,13 +131,14 @@ func (r *Resty) httpDo(req *http.Request) {
 		var err error
 
 		if r.retry > 0 {
-			var bodyCopy io.ReadCloser
-			if (request.Method == http.MethodPost || request.Method == http.MethodPut) && request.Body != nil {
-				// clone io.ReadCloser to fix retry issue https://github.com/golang/go/issues/36095
-				bodyCopy, _ = request.GetBody() //nolint: errcheck
-			}
 
 			for i := 1; ; i++ {
+				var bodyCopy io.ReadCloser
+				if (request.Method == http.MethodPost || request.Method == http.MethodPut) && request.Body != nil {
+					// clone io.ReadCloser to fix retry issue https://github.com/golang/go/issues/36095
+					bodyCopy, _ = request.GetBody() //nolint: errcheck
+				}
+
 				resp, err = r.client.Do(request)
 				//success: 200,201,202,204
 				if resp != nil && (resp.StatusCode == http.StatusOK ||
