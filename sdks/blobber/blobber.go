@@ -7,14 +7,14 @@ import (
 
 // Blobber blobber sdk client instance
 type Blobber struct {
-	BaseURL string
+	BaseURLs []string
 	*sdks.ZBox
 }
 
-func New(zbox *sdks.ZBox, baseURL string) *Blobber {
+func New(zbox *sdks.ZBox, baseURLs ...string) *Blobber {
 	b := &Blobber{
-		BaseURL: baseURL,
-		ZBox:    zbox,
+		BaseURLs: baseURLs,
+		ZBox:     zbox,
 	}
 
 	return b
