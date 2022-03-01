@@ -195,3 +195,39 @@ func TestWriteMarkerMutext_Too_Less_Blobbers_Response_Should_Not_Lock(t *testing
 	err := mutex.Lock(context.TODO(), zboxutil.NewConnectionId())
 	require.ErrorIs(constants.ErrNotLockedWritMarker, err)
 }
+
+func TestGetRootHashnode(t *testing.T) {
+	a := &Allocation{
+		ID:           "TestWriteMarkerMutext",
+		Tx:           "TestWriteMarkerMutext",
+		DataShards:   2,
+		ParityShards: 1,
+	}
+	setupMockAllocation(t, a)
+
+	require := require.New(t)
+
+	m := make(mock.ResponseMap)
+
+	statusOK := mock.Response{
+		StatusCode: http.StatusOK,
+		Body:       []byte(`{"allocation_id":"allocation_nested","type":"D","name":"/","path":"/","attributes":null,"children":[{"allocation_id":"allocation_nested","type":"D","name":"sub1","path":"/sub1","attributes":null,"children":[{"allocation_id":"allocation_nested","type":"D","name":"file1","path":"/sub1/file1","attributes":null}]},{"allocation_id":"allocation_nested","type":"D","name":"sub2","path":"/sub2","attributes":null}]}`),
+	}
+
+	m[http.MethodGet+":"+blobber.EndpointRootHashnode+a.Tx] = statusOK
+
+	server := dev.NewBlobberServer(m)
+	defer server.Close()
+
+	mutex := CreateWriteMarkerMutex(a)
+
+	root, err := mutex.GetRootHashnode(context.TODO(), server.URL)
+	require.Nil(err)
+	require.NotNil(root)
+	require.Len(root.Children, 2)
+
+	require.Equal(root.Children[0].Name, "sub1")
+	require.Len(root.Children[0].Children, 1)
+	require.Equal(root.Children[0].Children[0].Name, "file1")
+	require.Equal(root.Children[1].Name, "sub2")
+}

@@ -17,15 +17,15 @@ func TestHashnode_GetHashcode(t *testing.T) {
 		exceptedRef    blobberRef
 		actualHashnode Hashnode
 	}{
-		// {
-		// 	name: "Empty root should be same",
-		// 	exceptedRef: blobberRef{
-		// 		Type: DIRECTORY,
-		// 	},
-		// 	actualHashnode: Hashnode{
-		// 		Type: DIRECTORY,
-		// 	},
-		// },
+		{
+			name: "Empty root should be same",
+			exceptedRef: blobberRef{
+				Type: DIRECTORY,
+			},
+			actualHashnode: Hashnode{
+				Type: DIRECTORY,
+			},
+		},
 		{
 			name: "Nested nodes should be same",
 			exceptedRef: blobberRef{

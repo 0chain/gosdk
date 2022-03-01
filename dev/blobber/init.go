@@ -14,4 +14,5 @@ func RegisterHandlers(r *mux.Router, m mock.ResponseMap) {
 
 	r.HandleFunc("/v1/writemarker/lock/{allocation}", mock.WithResponse(m)).Methods(http.MethodPost)
 	r.HandleFunc("/v1/writemarker/lock/{allocation}", mock.WithResponse(m)).Methods(http.MethodDelete)
+	r.HandleFunc("/v1/hashnode/root/{allocation}", mock.WithResponse(m)).Methods(http.MethodGet)
 }

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"math"
 	"net"
 	"net/http"
@@ -17,6 +18,7 @@ import (
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/sdks/blobber"
+	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 )
 
@@ -245,4 +247,46 @@ func (m *WriteMarkerMutex) Unlock(ctx context.Context, sessionID string) error {
 	}
 
 	return errors.Throw(constants.ErrNotUnlockedWritMarker, msgList...)
+}
+
+// GetRootHashnode get root hash node from blobber
+func (m *WriteMarkerMutex) GetRootHashnode(ctx context.Context, blobberBaseUrl string) (*fileref.Hashnode, error) {
+	transport := &http.Transport{
+		Dial: (&net.Dialer{
+			Timeout: resty.DefaultDialTimeout,
+		}).Dial,
+		TLSHandshakeTimeout: resty.DefaultDialTimeout,
+	}
+
+	root := &fileref.Hashnode{}
+
+	r := resty.New(transport, func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+		if err != nil {
+			return errors.Throw(constants.ErrInvalidHashnode, err.Error())
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			return errors.Throw(constants.ErrBadRequest, resp.Status)
+		}
+
+		if respBody != nil {
+			if err := json.Unmarshal(respBody, root); err != nil {
+				return errors.Throw(constants.ErrInvalidHashnode, err.Error())
+			}
+
+			return nil
+		}
+
+		return errors.Throw(constants.ErrInvalidHashnode, "no data")
+
+	})
+	r.DoGet(ctx, fmt.Sprint(blobberBaseUrl, blobber.EndpointRootHashnode, m.allocationObj.Tx))
+
+	errs := r.Wait()
+
+	if len(errs) > 0 {
+		return nil, errs[0]
+	}
+
+	return root, nil
 }
