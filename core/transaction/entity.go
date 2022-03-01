@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"net"
 	"net/http"
@@ -121,6 +120,7 @@ const (
 	STORAGESC_REMOVE_CURATOR          = "remove_curator"
 	STORAGESC_CURATOR_TRANSFER        = "curator_transfer_allocation"
 	STORAGESC_UPDATE_SETTINGS         = "update_settings"
+	STORAGESC_COLLECT_REWARD          = "collect_reward"
 
 	MINERSC_LOCK             = "addToDelegatePool"
 	MINERSC_UNLOCK           = "deleteFromDelegatePool"
@@ -130,6 +130,7 @@ const (
 	MINERSC_UPDATE_GLOBALS   = "update_globals"
 	MINERSC_MINER_DELETE     = "delete_miner"
 	MINERSC_SHARDER_DELETE   = "delete_sharder"
+	MINERSC_COLLECT_REWARD   = "collect_reward"
 
 	// Faucet SC
 	FAUCETSC_UPDATE_SETTINGS = "update-settings"
@@ -293,7 +294,7 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 		}).Dial,
 		TLSHandshakeTimeout: resty.DefaultDialTimeout,
 	}
-	r := resty.New(transport, func(req *http.Request, resp *http.Response, cf context.CancelFunc, err error) error {
+	r := resty.New(transport, func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 		url := req.URL.String()
 
 		if err != nil { //network issue
@@ -301,21 +302,15 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 			return err
 		}
 
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil { //network issue
-			msgList = append(msgList, url+": "+err.Error())
-			return err
-		}
-
 		if resp.StatusCode != 200 {
-			msgList = append(msgList, url+": ["+strconv.Itoa(resp.StatusCode)+"] "+string(body))
+			msgList = append(msgList, url+": ["+strconv.Itoa(resp.StatusCode)+"] "+string(respBody))
 			return errors.Throw(ErrInvalidRequest, strconv.Itoa(resp.StatusCode)+": "+resp.Status)
 		}
 
 		var objmap map[string]json.RawMessage
-		err = json.Unmarshal(body, &objmap)
+		err = json.Unmarshal(respBody, &objmap)
 		if err != nil {
-			msgList = append(msgList, "json: "+string(body))
+			msgList = append(msgList, "json: "+string(respBody))
 			return err
 		}
 		txnRawJSON, ok := objmap["txn"]
@@ -339,7 +334,7 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 				numSuccess++
 			} else {
 				// txn and block_hash
-				msgList = append(msgList, fmt.Sprintf("Sharder does not have the block summary with url: %s, contents: %s", url, string(body)))
+				msgList = append(msgList, fmt.Sprintf("Sharder does not have the block summary with url: %s, contents: %s", url, string(respBody)))
 			}
 
 		}

@@ -21,8 +21,8 @@ func (nope *nopeChunkedUploadProgressStorer) Load(id string) *UploadProgress {
 	return nope.up
 }
 
-func (nope *nopeChunkedUploadProgressStorer) Save(up *UploadProgress) {
-	nope.up = up
+func (nope *nopeChunkedUploadProgressStorer) Save(up UploadProgress) {
+	nope.up = &up
 }
 
 func (nope *nopeChunkedUploadProgressStorer) Remove(id string) error {
@@ -47,7 +47,7 @@ func BenchmarkChunkedUpload(b *testing.B) {
 
 	logger.Logger.SetLevel(2)
 
-	server := dev.NewBlobberServer()
+	server := dev.NewBlobberServer(nil)
 	defer server.Close()
 
 	benchmarks := []struct {

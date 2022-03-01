@@ -397,7 +397,7 @@ func StakePoolUnlock(this js.Value, p []js.Value) interface{} {
 			}
 
 			resolve.Invoke(map[string]interface{}{
-				"result": result.ToTime().Format(time.RFC850),
+				"result": result,
 			})
 		}()
 
