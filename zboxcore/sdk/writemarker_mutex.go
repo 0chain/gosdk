@@ -51,7 +51,7 @@ func CreateWriteMarkerMutex(allocationObj *Allocation) *WriteMarkerMutex {
 }
 
 // Lock acquire WriteMarker lock from blobbers
-func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error {
+func (m *WriteMarkerMutex) Lock(ctx context.Context, sessionID string) error {
 	if m == nil {
 		return errors.Throw(constants.ErrInvalidParameter, "WriteMarkerMutex")
 	}
@@ -89,7 +89,7 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error 
 		m.lockedBlobbers = nil
 
 		body := url.Values{}
-		body.Set("connection_id", connectionID)
+		body.Set("session_id", sessionID)
 
 		now := time.Now()
 		body.Set("request_time", strconv.FormatInt(now.Unix(), 10))
@@ -105,7 +105,7 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error 
 			// No more blobber, but n < M
 			if i > T && n < M {
 				//fails, release all locks
-				err := m.Unlock(ctx, connectionID)
+				err := m.Unlock(ctx, sessionID)
 				if err != nil {
 					return err
 				}
