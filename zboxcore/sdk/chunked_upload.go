@@ -144,10 +144,6 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 		opt(su)
 	}
 
-	if su.createWriteMarkerLocker == nil {
-		su.createWriteMarkerLocker = createWriteMarkerLocker
-	}
-
 	if su.progressStorer == nil {
 		su.progressStorer = createFsChunkedUploadProgress(context.Background())
 	}
@@ -173,6 +169,7 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 
 	}
 
+	su.writeMarkerMutex = CreateWriteMarkerMutex(su.allocationObj)
 	blobbers := su.allocationObj.Blobbers
 	if len(blobbers) == 0 {
 		return nil, thrown.New("no_blobbers", "Unable to find blobbers")
@@ -183,9 +180,9 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	for i := 0; i < len(blobbers); i++ {
 
 		su.blobbers[i] = &ChunkedUploadBlobber{
-			WriteMarkerLocker: su.createWriteMarkerLocker(filepath.Join(su.workdir, "blobber."+su.allocationObj.Blobbers[i].ID+".lock")),
-			progress:          su.progress.Blobbers[i],
-			blobber:           su.allocationObj.Blobbers[i],
+			writeMarkerMutex: su.writeMarkerMutex,
+			progress:         su.progress.Blobbers[i],
+			blobber:          su.allocationObj.Blobbers[i],
 			fileRef: &fileref.FileRef{
 				Ref: fileref.Ref{
 					Name:         su.fileMeta.RemoteName,
@@ -220,8 +217,7 @@ type ChunkedUpload struct {
 
 	workdir string
 
-	allocationObj *Allocation
-
+	allocationObj  *Allocation
 	progress       UploadProgress
 	progressStorer ChunkedUploadProgressStorer
 	client         zboxutil.HttpClient
@@ -257,8 +253,9 @@ type ChunkedUpload struct {
 	// statusCallback trigger progress on StatusCallback
 	statusCallback StatusCallback
 
-	blobbers                []*ChunkedUploadBlobber
-	createWriteMarkerLocker func(file string) WriteMarkerLocker
+	blobbers []*ChunkedUploadBlobber
+
+	writeMarkerMutex *WriteMarkerMutex
 
 	// isRepair identifies if upload is repair operation
 	isRepair bool
@@ -416,6 +413,11 @@ func (su *ChunkedUpload) Start() error {
 
 	if su.consensus.isConsensusOk() {
 		logger.Logger.Info("Completed the upload. Submitting for commit")
+
+		if err := su.writeMarkerMutex.Lock(context.TODO(), su.progressID()); err != nil {
+			return err
+		}
+
 		return su.processCommit()
 	}
 
@@ -500,6 +502,7 @@ func (su *ChunkedUpload) processUpload(chunkIndex int, fileFragments [][]byte, t
 
 // processCommit commit shard upload on its blobber
 func (su *ChunkedUpload) processCommit() error {
+	defer su.writeMarkerMutex.Unlock(context.TODO(), su.progressID())
 	logger.Logger.Info("Submitting for commit")
 	su.consensus.Reset()
 

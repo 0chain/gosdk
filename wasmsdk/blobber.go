@@ -513,10 +513,7 @@ func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 		sdk.WithChunkSize(int64(chunkSize)),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
-		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
-		sdk.WithCreateWriteMarkerLocker(func(file string) sdk.WriteMarkerLocker {
-			return &writeMarkerLocker{}
-		}))
+		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}))
 	if err != nil {
 		return nil, err
 	}
