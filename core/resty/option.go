@@ -24,8 +24,6 @@ func WithHeader(header map[string]string) Option {
 		for k, v := range header {
 			r.header[k] = v
 		}
-		r.header = header
-
 	}
 }
 
