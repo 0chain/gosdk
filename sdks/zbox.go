@@ -55,7 +55,7 @@ func (z *ZBox) SignRequest(req *http.Request, allocationID string) error {
 		return errors.Throw(constants.ErrInvalidParameter, "req")
 	}
 
-	req.Header.Set("X-App-Client-ID", z.ClientID)
+	req.Header.Set("X-App-Client-Id", z.ClientID)
 	req.Header.Set("X-App-Client-Key", z.ClientKey)
 
 	hash := encryption.Hash(allocationID)

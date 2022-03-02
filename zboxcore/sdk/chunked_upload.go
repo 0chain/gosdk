@@ -169,7 +169,11 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 
 	}
 
-	su.writeMarkerMutex = CreateWriteMarkerMutex(su.allocationObj)
+	su.writeMarkerMutex, err = CreateWriteMarkerMutex(client.GetClient(), su.allocationObj)
+	if err != nil {
+		return nil, err
+	}
+
 	blobbers := su.allocationObj.Blobbers
 	if len(blobbers) == 0 {
 		return nil, thrown.New("no_blobbers", "Unable to find blobbers")

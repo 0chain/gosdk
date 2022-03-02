@@ -17,7 +17,9 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/resty"
+	"github.com/0chain/gosdk/sdks"
 	"github.com/0chain/gosdk/sdks/blobber"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 )
@@ -39,15 +41,26 @@ type WMLockResult struct {
 // WriteMarkerMutex blobber WriteMarkerMutex client
 type WriteMarkerMutex struct {
 	mutex          sync.Mutex
+	zbox           *sdks.ZBox
 	allocationObj  *Allocation
 	lockedBlobbers map[string]bool
 }
 
 // CreateWriteMarkerMutex create WriteMarkerMutex for allocation
-func CreateWriteMarkerMutex(allocationObj *Allocation) *WriteMarkerMutex {
+func CreateWriteMarkerMutex(c *client.Client, allocationObj *Allocation) (*WriteMarkerMutex, error) {
+
+	if c == nil {
+		return nil, errors.Throw(constants.ErrInvalidParameter, "client")
+	}
+
+	if allocationObj == nil {
+		return nil, errors.Throw(constants.ErrInvalidParameter, "allocationObj")
+	}
+
 	return &WriteMarkerMutex{
 		allocationObj: allocationObj,
-	}
+		zbox:          sdks.New(c.ClientID, c.ClientKey, c.SignatureScheme),
+	}, nil
 }
 
 // Lock acquire WriteMarker lock from blobbers
@@ -165,6 +178,10 @@ func (m *WriteMarkerMutex) lockOne(ctx context.Context, buf *bytes.Buffer, url s
 			return err
 		}
 
+		if resp.StatusCode != http.StatusOK {
+			return errors.Throw(constants.ErrNotLockedWritMarker, fmt.Sprint(resp.StatusCode, ":", string(respBody)))
+		}
+
 		err = json.Unmarshal(respBody, result)
 
 		if err != nil {
@@ -172,7 +189,11 @@ func (m *WriteMarkerMutex) lockOne(ctx context.Context, buf *bytes.Buffer, url s
 		}
 
 		return nil
-	})
+	}, resty.WithRetry(resty.DefaultRetry),
+		resty.WithTimeout(resty.DefaultRequestTimeout),
+		resty.WithRequestInterceptor(func(r *http.Request) {
+			m.zbox.SignRequest(r, m.allocationObj.Tx) //nolint
+		}))
 
 	r.DoPost(ctx, buf, url)
 
