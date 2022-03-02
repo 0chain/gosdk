@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"math"
 	"net"
 	"net/http"
@@ -15,9 +16,9 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/sdks/blobber"
+	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 )
 
@@ -33,60 +34,6 @@ const (
 type WMLockResult struct {
 	Status    WMLockStatus `json:"status,omitempty"`
 	CreatedAt int64        `json:"created_at,omitempty"`
-}
-
-// HashNode ref node in hash tree
-type HashNode struct {
-	// hash data
-	AllocationID   string          `json:"allocation_id,omitempty"`
-	Type           string          `json:"type,omitempty"`
-	Name           string          `json:"name,omitempty"`
-	Path           string          `json:"path,omitempty"`
-	ContentHash    string          `json:"content_hash,omitempty"`
-	MerkleRoot     string          `json:"merkle_root,omitempty"`
-	ActualFileHash string          `json:"actual_file_hash,omitempty"`
-	Attributes     json.RawMessage `json:"attributes,omitempty"`
-	ChunkSize      int64           `json:"chunk_size,omitempty"`
-	Size           int64           `json:"size,omitempty"`
-	ActualFileSize int64           `json:"actual_file_size,omitempty"`
-
-	Children []*HashNode `json:"children,omitempty"`
-}
-
-func (n *HashNode) AddChild(c *HashNode) {
-	if n.Children == nil {
-		n.Children = make([]*HashNode, 0, 10)
-	}
-
-	n.Children = append(n.Children, c)
-}
-
-// GetLookupHash get lookuphash
-func (n *HashNode) GetLookupHash() string {
-	return encryption.Hash(n.AllocationID + ":" + n.Path)
-}
-
-// GetHashCode get hash code
-func (n *HashNode) GetHashCode() string {
-
-	if len(n.Attributes) == 0 {
-		n.Attributes = json.RawMessage("{}")
-	}
-	hashArray := []string{
-		n.AllocationID,
-		n.Type,
-		n.Name,
-		n.Path,
-		strconv.FormatInt(n.Size, 10),
-		n.ContentHash,
-		n.MerkleRoot,
-		strconv.FormatInt(n.ActualFileSize, 10),
-		n.ActualFileHash,
-		string(n.Attributes),
-		strconv.FormatInt(n.ChunkSize, 10),
-	}
-
-	return strings.Join(hashArray, ":")
 }
 
 // WriteMarkerMutex blobber WriteMarkerMutex client
@@ -300,4 +247,46 @@ func (m *WriteMarkerMutex) Unlock(ctx context.Context, sessionID string) error {
 	}
 
 	return errors.Throw(constants.ErrNotUnlockedWritMarker, msgList...)
+}
+
+// GetRootHashnode get root hash node from blobber
+func (m *WriteMarkerMutex) GetRootHashnode(ctx context.Context, blobberBaseUrl string) (*fileref.Hashnode, error) {
+	transport := &http.Transport{
+		Dial: (&net.Dialer{
+			Timeout: resty.DefaultDialTimeout,
+		}).Dial,
+		TLSHandshakeTimeout: resty.DefaultDialTimeout,
+	}
+
+	root := &fileref.Hashnode{}
+
+	r := resty.New(transport, func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+		if err != nil {
+			return errors.Throw(constants.ErrInvalidHashnode, err.Error())
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			return errors.Throw(constants.ErrBadRequest, resp.Status)
+		}
+
+		if respBody != nil {
+			if err := json.Unmarshal(respBody, root); err != nil {
+				return errors.Throw(constants.ErrInvalidHashnode, err.Error())
+			}
+
+			return nil
+		}
+
+		return errors.Throw(constants.ErrInvalidHashnode, "no data")
+
+	})
+	r.DoGet(ctx, fmt.Sprint(blobberBaseUrl, blobber.EndpointRootHashnode, m.allocationObj.Tx))
+
+	errs := r.Wait()
+
+	if len(errs) > 0 {
+		return nil, errs[0]
+	}
+
+	return root, nil
 }
