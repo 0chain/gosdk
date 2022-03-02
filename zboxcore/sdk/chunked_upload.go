@@ -414,7 +414,7 @@ func (su *ChunkedUpload) Start() error {
 	if su.consensus.isConsensusOk() {
 		logger.Logger.Info("Completed the upload. Submitting for commit")
 
-		if err := su.writeMarkerMutex.Lock(context.TODO(), su.progressID()); err != nil {
+		if err := su.writeMarkerMutex.Lock(context.TODO(), su.progress.ConnectionID); err != nil {
 			return err
 		}
 
