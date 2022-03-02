@@ -418,7 +418,9 @@ func (su *ChunkedUpload) Start() error {
 	if su.consensus.isConsensusOk() {
 		logger.Logger.Info("Completed the upload. Submitting for commit")
 
-		if err := su.writeMarkerMutex.Lock(context.TODO(), su.progress.ConnectionID); err != nil {
+		err := su.writeMarkerMutex.Lock(context.TODO(), su.progress.ConnectionID)
+		defer su.writeMarkerMutex.Unlock(context.TODO(), su.progress.ConnectionID) //nolint: errcheck
+		if err != nil {
 			return err
 		}
 
@@ -506,7 +508,7 @@ func (su *ChunkedUpload) processUpload(chunkIndex int, fileFragments [][]byte, t
 
 // processCommit commit shard upload on its blobber
 func (su *ChunkedUpload) processCommit() error {
-	defer su.writeMarkerMutex.Unlock(context.TODO(), su.progressID())
+
 	logger.Logger.Info("Submitting for commit")
 	su.consensus.Reset()
 

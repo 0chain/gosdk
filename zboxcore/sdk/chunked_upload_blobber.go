@@ -46,6 +46,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *Chunk
 
 			sb.fileRef.EncryptedKey = encryptedKey
 			sb.fileRef.CalculateHash()
+			su.consensus.Done()
 		}
 
 		return nil

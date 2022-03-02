@@ -25,18 +25,19 @@ type ZBox struct {
 	SignatureScheme string
 
 	// Wallet wallet
-	Wallet zcncrypto.Wallet
+	Wallet *zcncrypto.Wallet
 
 	// NewRequest create http request
 	NewRequest func(method, url string, body io.Reader) (*http.Request, error)
 }
 
 // New create a sdk client instance
-func New(clientID, clientKey, signatureScheme string) *ZBox {
+func New(clientID, clientKey, signatureScheme string, wallet *zcncrypto.Wallet) *ZBox {
 	s := &ZBox{
 		ClientID:        clientID,
 		ClientKey:       clientKey,
 		SignatureScheme: signatureScheme,
+		Wallet:          wallet,
 		NewRequest:      http.NewRequest,
 	}
 
@@ -55,7 +56,7 @@ func (z *ZBox) SignRequest(req *http.Request, allocationID string) error {
 		return errors.Throw(constants.ErrInvalidParameter, "req")
 	}
 
-	req.Header.Set("X-App-Client-Id", z.ClientID)
+	req.Header.Set("X-App-Client-ID", z.ClientID)
 	req.Header.Set("X-App-Client-Key", z.ClientKey)
 
 	hash := encryption.Hash(allocationID)
@@ -78,7 +79,7 @@ func (z *ZBox) SignRequest(req *http.Request, allocationID string) error {
 			return err
 		}
 	}
-
+	// ClientSignatureHeader represents http request header contains signature.
 	req.Header.Set("X-App-Client-Signature", sign)
 
 	return nil
