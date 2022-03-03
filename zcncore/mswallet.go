@@ -115,6 +115,13 @@ type MSVoteCallback interface {
 
 // CreateMSWallet returns multisig wallet information
 func CreateMSWallet(t, n int) (string, string, []string, error) {
+	if t > n {
+		return "", "", nil, errors.Newf("", fmt.Sprintf("Error: given threshold (%d) is too high. Threshold has to be less than or equal to numsigners (%d)\n", t, n))
+	}
+	if t <= 0 {
+		return "", "", nil, errors.Newf("", "Error: threshold should be bigger than 0")
+	}
+
 	id := 0
 	if _config.chain.SignatureScheme != "bls0chain" {
 		return "", "", nil, errors.New("", "encryption scheme for this blockchain is not bls0chain")
