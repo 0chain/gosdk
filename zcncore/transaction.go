@@ -1711,7 +1711,7 @@ type Blobber struct {
 }
 
 type AuthorizerConfig struct {
-	Fee string `json:"fee"`
+	Fee common.Balance `json:"fee"`
 }
 
 type AuthorizerNode struct {
