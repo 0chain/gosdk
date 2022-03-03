@@ -11,10 +11,9 @@ import (
 )
 
 // New create a Resty instance.
-func New(transport *http.Transport, handle Handle, opts ...Option) *Resty {
+func New(handle Handle, opts ...Option) *Resty {
 	r := &Resty{
-		transport: transport,
-		handle:    handle,
+		handle: handle,
 	}
 
 	for _, option := range opts {

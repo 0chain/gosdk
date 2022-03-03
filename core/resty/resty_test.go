@@ -30,7 +30,7 @@ func TestResty(t *testing.T) {
 			urls:        []string{"Test_Resty_Timeout_1", "Test_Resty_Timeout_2", "Test_Resty_Timeout_3"},
 			setup: func(ra *require.Assertions, name string, statusCode int, urls []string) (context.Context, *Resty) {
 
-				r := New(&http.Transport{}, nil)
+				r := New(nil)
 				r.client = &mocks.Timeout{
 					Timeout: 1 * time.Second,
 				}
@@ -51,7 +51,7 @@ func TestResty(t *testing.T) {
 			urls:        []string{"http://Test_Resty_Success_1", "http://Test_Resty_Success_2"},
 			setup: func(ra *require.Assertions, name string, statusCode int, urls []string) (context.Context, *Resty) {
 
-				resty := New(&http.Transport{}, func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+				resty := New(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 
 					ra.Equal(200, resp.StatusCode)
 

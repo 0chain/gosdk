@@ -166,16 +166,25 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error 
 // lockOne acquire WriteMarker lock from a blobber
 func (m *WriteMarkerMutex) lockOne(ctx context.Context, body io.Reader, url string) (*WMLockResult, error) {
 
-	transport := &http.Transport{
-		Dial: (&net.Dialer{
-			Timeout: resty.DefaultDialTimeout,
-		}).Dial,
-		TLSHandshakeTimeout: resty.DefaultDialTimeout,
-	}
-
 	result := &WMLockResult{}
 
-	r := resty.New(transport, func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+	options := []resty.Option{
+		resty.WithRetry(resty.DefaultRetry),
+		resty.WithTimeout(resty.DefaultRequestTimeout),
+		resty.WithRequestInterceptor(func(r *http.Request) {
+			m.zbox.SignRequest(r, m.allocationObj.Tx) //nolint
+		}),
+		resty.WithHeader(map[string]string{
+			"Content-Type": "application/x-www-form-urlencoded",
+		}),
+		resty.WithTransport(&http.Transport{
+			Dial: (&net.Dialer{
+				Timeout: resty.DefaultDialTimeout,
+			}).Dial,
+			TLSHandshakeTimeout: resty.DefaultDialTimeout,
+		})}
+
+	r := resty.New(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 		if err != nil {
 			return err
 		}
@@ -191,14 +200,7 @@ func (m *WriteMarkerMutex) lockOne(ctx context.Context, body io.Reader, url stri
 		}
 
 		return nil
-	}, resty.WithRetry(resty.DefaultRetry),
-		resty.WithTimeout(resty.DefaultRequestTimeout),
-		resty.WithRequestInterceptor(func(r *http.Request) {
-			m.zbox.SignRequest(r, m.allocationObj.Tx) //nolint
-		}),
-		resty.WithHeader(map[string]string{
-			"Content-Type": "application/x-www-form-urlencoded",
-		}))
+	}, options...)
 
 	r.DoPost(ctx, body, url)
 
@@ -255,13 +257,18 @@ func (m *WriteMarkerMutex) Unlock(ctx context.Context, connectionID string) erro
 		TLSHandshakeTimeout: resty.DefaultDialTimeout,
 	}
 
-	r := resty.New(transport, func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
-		return err
-	}, resty.WithRetry(resty.DefaultRetry),
+	options := []resty.Option{
+		resty.WithRetry(resty.DefaultRetry),
 		resty.WithTimeout(resty.DefaultRequestTimeout),
 		resty.WithRequestInterceptor(func(r *http.Request) {
 			m.zbox.SignRequest(r, m.allocationObj.Tx) //nolint
-		}))
+		}),
+		resty.WithTransport(transport),
+	}
+
+	r := resty.New(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+		return err
+	}, options...)
 
 	r.DoDelete(ctx, urls...)
 
@@ -290,7 +297,7 @@ func (m *WriteMarkerMutex) GetRootHashnode(ctx context.Context, blobberBaseUrl s
 
 	root := &fileref.Hashnode{}
 
-	r := resty.New(transport, func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+	r := resty.New(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 		if err != nil {
 			return errors.Throw(constants.ErrInvalidHashnode, err.Error())
 		}
@@ -309,7 +316,7 @@ func (m *WriteMarkerMutex) GetRootHashnode(ctx context.Context, blobberBaseUrl s
 
 		return errors.Throw(constants.ErrInvalidHashnode, "no data")
 
-	})
+	}, resty.WithTransport(transport))
 	r.DoGet(ctx, fmt.Sprint(blobberBaseUrl, blobber.EndpointRootHashnode, m.allocationObj.Tx))
 
 	errs := r.Wait()

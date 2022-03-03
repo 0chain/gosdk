@@ -294,7 +294,7 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 		}).Dial,
 		TLSHandshakeTimeout: resty.DefaultDialTimeout,
 	}
-	r := resty.New(transport, func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+	r := resty.New(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 		url := req.URL.String()
 
 		if err != nil { //network issue
@@ -343,7 +343,8 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 	},
 		resty.WithTimeout(resty.DefaultRequestTimeout),
 		resty.WithRetry(resty.DefaultRetry),
-		resty.WithHeader(header))
+		resty.WithHeader(header),
+		resty.WithTransport(transport))
 
 	for {
 		r.DoGet(context.TODO(), urls...)
