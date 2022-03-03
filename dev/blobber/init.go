@@ -3,11 +3,16 @@ package blobber
 import (
 	"net/http"
 
+	"github.com/0chain/gosdk/dev/mock"
 	"github.com/gorilla/mux"
 )
 
-func RegisterHandlers(s *mux.Router) {
-	s.HandleFunc("/v1/file/upload/{allocation}", uploadAndUpdateFile).Methods(http.MethodPut, http.MethodPost)
-	s.HandleFunc("/v1/file/referencepath/{allocation}", getReference).Methods(http.MethodGet)
-	s.HandleFunc("/v1/connection/commit/{allocation}", commitWrite).Methods(http.MethodPost)
+func RegisterHandlers(r *mux.Router, m mock.ResponseMap) {
+	r.HandleFunc("/v1/file/upload/{allocation}", uploadAndUpdateFile).Methods(http.MethodPut, http.MethodPost)
+	r.HandleFunc("/v1/file/referencepath/{allocation}", getReference).Methods(http.MethodGet)
+	r.HandleFunc("/v1/connection/commit/{allocation}", commitWrite).Methods(http.MethodPost)
+
+	r.HandleFunc("/v1/writemarker/lock/{allocation}", mock.WithResponse(m)).Methods(http.MethodPost)
+	r.HandleFunc("/v1/writemarker/lock/{allocation}", mock.WithResponse(m)).Methods(http.MethodDelete)
+	r.HandleFunc("/v1/hashnode/root/{allocation}", mock.WithResponse(m)).Methods(http.MethodGet)
 }

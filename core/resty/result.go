@@ -4,7 +4,8 @@ import "net/http"
 
 // Result result of a http request
 type Result struct {
-	Request  *http.Request
-	Response *http.Response
-	Err      error
+	Request      *http.Request
+	Response     *http.Response
+	ResponseBody []byte
+	Err          error
 }
