@@ -1,6 +1,7 @@
 package resty
 
 import (
+	"net/http"
 	"time"
 )
 
@@ -16,8 +17,12 @@ func WithRetry(retry int) Option {
 // WithHeader set header for http request
 func WithHeader(header map[string]string) Option {
 	return func(r *Resty) {
-		if len(header) > 0 {
-			r.header = header
+		if r.header == nil {
+			r.header = make(map[string]string)
+		}
+
+		for k, v := range header {
+			r.header[k] = v
 		}
 	}
 }
@@ -28,5 +33,12 @@ func WithTimeout(timeout time.Duration) Option {
 		if timeout > 0 {
 			r.timeout = timeout
 		}
+	}
+}
+
+// WithRequestInterceptor intercept request
+func WithRequestInterceptor(interceptor func(req *http.Request)) Option {
+	return func(r *Resty) {
+		r.requestInterceptor = interceptor
 	}
 }

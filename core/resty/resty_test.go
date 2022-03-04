@@ -25,7 +25,7 @@ func TestResty(t *testing.T) {
 		setup func(a *require.Assertions, name string, statusCode int, urls []string) (context.Context, *Resty)
 	}{
 		{
-			name:        "Test_Resty_Timeout",
+			name:        "Test_Resty_Cancel_With_Timeout",
 			exceptedErr: context.DeadlineExceeded,
 			urls:        []string{"Test_Resty_Timeout_1", "Test_Resty_Timeout_2", "Test_Resty_Timeout_3"},
 			setup: func(ra *require.Assertions, name string, statusCode int, urls []string) (context.Context, *Resty) {
@@ -47,19 +47,16 @@ func TestResty(t *testing.T) {
 		{
 			name:        "Test_Resty_All_Success",
 			statusCode:  200,
-			exceptedErr: context.DeadlineExceeded,
-			urls:        []string{"http://Test_Resty_Timeout_1", "http://Test_Resty_Timeout_2"},
+			exceptedErr: nil,
+			urls:        []string{"http://Test_Resty_Success_1", "http://Test_Resty_Success_2"},
 			setup: func(ra *require.Assertions, name string, statusCode int, urls []string) (context.Context, *Resty) {
 
-				resty := New(&http.Transport{}, func(req *http.Request, resp *http.Response, cf context.CancelFunc, e error) error {
+				resty := New(&http.Transport{}, func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 
 					ra.Equal(200, resp.StatusCode)
 
-					buf, err := ioutil.ReadAll(resp.Body)
-					defer resp.Body.Close()
-
 					ra.Equal(nil, err)
-					ra.Equal(name, string(buf))
+					ra.Equal(name, string(respBody))
 
 					return nil
 				})

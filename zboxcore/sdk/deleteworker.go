@@ -60,6 +60,10 @@ func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blo
 			req.consensus++
 			req.deleteMask |= (1 << uint32(blobberIdx))
 			Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " deleted.")
+		} else if resp.StatusCode == http.StatusNoContent {
+			req.consensus++
+			req.deleteMask |= (1 << uint32(blobberIdx))
+			Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " not available in blobber.")
 		} else {
 			resp_body, err := ioutil.ReadAll(resp.Body)
 			if err == nil {

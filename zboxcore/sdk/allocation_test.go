@@ -2388,9 +2388,13 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 
 	var mockClient = mocks.HttpClient{}
 	util.Client = &mockClient
+	createClient := resty.CreateClient
 	resty.CreateClient = func(t *http.Transport, timeout time.Duration) resty.Client {
 		return &mockClient
 	}
+	defer func() {
+		resty.CreateClient = createClient
+	}()
 
 	conf.InitClientConfig(&conf.Config{
 		MinConfirmation: 50,
