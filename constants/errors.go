@@ -21,4 +21,10 @@ var (
 
 	// ErrNotUnlockedWritMarker failed to unlock WriteMarker
 	ErrNotUnlockedWritMarker = errors.New("failed to unlock WriteMarker")
+
+	// ErrInvalidHashnode invalid hashnode
+	ErrInvalidHashnode = errors.New("invalid hashnode")
+
+	// ErrBadRequest bad request
+	ErrBadRequest = errors.New("bad request")
 )
