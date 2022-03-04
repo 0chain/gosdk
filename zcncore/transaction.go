@@ -141,6 +141,7 @@ type TransactionScheme interface {
 
 	// Miner SC
 
+	MinerSCCollectReward(string, Provider) error
 	MinerSCMinerSettings(*MinerSCMinerInfo) error
 	MinerSCSharderSettings(*MinerSCMinerInfo) error
 	MinerSCLock(minerID string, lock int64) error
@@ -152,6 +153,7 @@ type TransactionScheme interface {
 
 	// Storage SC
 
+	StorageSCCollectReward(string, Provider) error
 	FinalizeAllocation(allocID string, fee int64) error
 	CancelAllocation(allocID string, fee int64) error
 	CreateAllocation(car *CreateAllocationRequest, lock, fee int64) error //
@@ -1301,6 +1303,36 @@ func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
 	return
 }
 
+type Provider int
+
+const (
+	ProviderMiner Provider = iota
+	ProviderSharder
+	ProviderBlobber
+	ProviderValidator
+	ProviderAuthorizer
+)
+
+type SCCollectReward struct {
+	PoolId       string   `json:"pool_id"`
+	ProviderType Provider `json:"provider_type"`
+}
+
+func (t *Transaction) MinerSCCollectReward(poolId string, providerType Provider) error {
+	pr := &SCCollectReward{
+		PoolId:       poolId,
+		ProviderType: providerType,
+	}
+	err := t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { t.submitTxn() }()
+	return err
+}
+
 type MinerSCLock struct {
 	ID string `json:"id"`
 }
@@ -1495,6 +1527,21 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 //
 // Storage SC transactions
 //
+
+func (t *Transaction) StorageSCCollectReward(poolId string, providerType Provider) error {
+	pr := &SCCollectReward{
+		PoolId:       poolId,
+		ProviderType: providerType,
+	}
+	err := t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go t.submitTxn()
+	return err
+}
 
 func (t *Transaction) StorageScUpdateConfig(ip *InputMap) (err error) {
 	err = t.createSmartContractTxn(StorageSmartContractAddress,

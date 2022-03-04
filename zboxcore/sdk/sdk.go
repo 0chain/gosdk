@@ -430,11 +430,12 @@ func StakePoolLock(blobberID string, value, fee int64) (poolID string, err error
 }
 
 // StakePoolUnlockUnstake is stake pool unlock response in case where tokens
-// can't be unlocked due to opened offers. In this case it returns the maximal
-// time to wait to be able to unlock the tokens. The real time can be lesser if
-// someone cancels an allocation, or someone else stake more tokens, etc.
+// can't be unlocked due to opened offers.
 type StakePoolUnlockUnstake struct {
-	Unstake common.Timestamp `json:"unstake"`
+	// one of the fields is set in a response, the Unstake if can't unstake
+	// for now and the TokenPoolTransferResponse if has a pool had unlocked
+	Unstake bool  `json:"unstake"` // max time to wait to unstake
+	Balance int64 `json:"balance"`
 }
 
 // StakePoolUnlock unlocks a stake pool tokens. If tokens can't be unlocked due
@@ -443,11 +444,11 @@ type StakePoolUnlockUnstake struct {
 // future. The time is maximal time that can be lesser in some cases. To
 // unlock tokens can't be unlocked now, wait the time and unlock them (call
 // this function again).
-func StakePoolUnlock(blobberID, poolID string, fee int64) (
-	unstake common.Timestamp, err error) {
-
+func StakePoolUnlock(
+	blobberID, poolID string, fee int64,
+) (unstake bool, err error) {
 	if !sdkInitialized {
-		return 0, sdkNotInitialized
+		return false, sdkNotInitialized
 	}
 	if blobberID == "" {
 		blobberID = client.GetClientID()
@@ -852,6 +853,10 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 	readPrice, writePrice PriceRange, mcct time.Duration,
 	lock int64, preferredBlobbers []string) (hash string, err error) {
 
+	if lock < 0 {
+		return "", errors.New("", "invalid value for lock")
+	}
+
 	if !sdkInitialized {
 		return "", sdkNotInitialized
 	}
@@ -904,6 +909,10 @@ func CreateFreeAllocation(marker string, value int64) (string, error) {
 		return "", sdkNotInitialized
 	}
 
+	if value < 0 {
+		return "", errors.New("", "invalid value for lock")
+	}
+
 	var input = map[string]interface{}{
 		"recipient_public_key": client.GetClientPublicKey(),
 		"marker":               marker,
@@ -922,6 +931,9 @@ func UpdateAllocation(size int64, expiry int64, allocationID string,
 
 	if !sdkInitialized {
 		return "", sdkNotInitialized
+	}
+	if lock < 0 {
+		return "", errors.New("", "invalid value for lock")
 	}
 
 	updateAllocationRequest := make(map[string]interface{})
@@ -943,6 +955,9 @@ func UpdateAllocation(size int64, expiry int64, allocationID string,
 func CreateFreeUpdateAllocation(marker, allocationId string, value int64) (string, error) {
 	if !sdkInitialized {
 		return "", sdkNotInitialized
+	}
+	if value < 0 {
+		return "", errors.New("", "invalid value for lock")
 	}
 
 	var input = map[string]interface{}{
@@ -1011,6 +1026,33 @@ func AddCurator(curatorId, allocationId string) (string, error) {
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_ADD_CURATOR,
 		InputArgs: allocationRequest,
+	}
+	hash, _, err := smartContractTxn(sn)
+	return hash, err
+}
+
+type ProviderType int
+
+const (
+	ProviderMiner ProviderType = iota
+	ProviderSharder
+	ProviderBlobber
+	ProviderValidator
+	ProviderAuthorizer
+)
+
+func CollectRewards(poolId string, providerType ProviderType) (string, error) {
+	if !sdkInitialized {
+		return "", sdkNotInitialized
+	}
+
+	var input = map[string]interface{}{
+		"provider_type": providerType,
+		"pool_id":       poolId,
+	}
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_COLLECT_REWARD,
+		InputArgs: input,
 	}
 	hash, _, err := smartContractTxn(sn)
 	return hash, err

@@ -1,7 +1,9 @@
+//go:build js && wasm
+// +build js,wasm
+
 package main
 
 import (
-	"fmt"
 	"sync"
 
 	"github.com/0chain/gosdk/core/transaction"
@@ -18,23 +20,30 @@ type StatusBar struct {
 
 // Started for statusBar
 func (s *StatusBar) Started(allocationID, filePath string, op int, totalBytes int) {
-	s.b = pb.StartNew(totalBytes)
-	s.b.Set(0)
+	if logEnabled {
+		s.b = pb.StartNew(totalBytes)
+		s.b.Set(0)
+	}
 }
 
 // InProgress for statusBar
 func (s *StatusBar) InProgress(allocationID, filePath string, op int, completedBytes int, todo_name_var []byte) {
-	s.b.Set(completedBytes)
+	if logEnabled {
+		s.b.Set(completedBytes)
+	}
 }
 
 // Completed for statusBar
 func (s *StatusBar) Completed(allocationID, filePath string, filename string, mimetype string, size int, op int) {
-	if s.b != nil {
-		s.b.Finish()
+	if logEnabled {
+		if s.b != nil {
+			s.b.Finish()
+		}
 	}
 	s.success = true
+
 	defer s.wg.Done()
-	fmt.Println("Status completed callback. Type = " + mimetype + ". Name = " + filename)
+	sdkLogger.Info("Status completed callback. Type = " + mimetype + ". Name = " + filename)
 }
 
 // Error for statusBar
@@ -46,7 +55,7 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 	s.err = err
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Recovered in statusBar Error", r)
+			PrintError("Recovered in statusBar Error", r)
 		}
 	}()
 	PrintError("Error in file operation." + err.Error())
