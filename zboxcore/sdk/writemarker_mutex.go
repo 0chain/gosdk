@@ -184,25 +184,26 @@ func (m *WriteMarkerMutex) lockOne(ctx context.Context, body io.Reader, url stri
 			TLSHandshakeTimeout: resty.DefaultDialTimeout,
 		})}
 
-	r := resty.New(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
-		if err != nil {
-			return err
-		}
+	r := resty.New(options...)
 
-		if resp.StatusCode != http.StatusOK {
-			return errors.Throw(constants.ErrNotLockedWritMarker, fmt.Sprint(resp.StatusCode, ":", string(respBody)))
-		}
+	r.DoPost(ctx, body, url).
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			if err != nil {
+				return err
+			}
 
-		err = json.Unmarshal(respBody, result)
+			if resp.StatusCode != http.StatusOK {
+				return errors.Throw(constants.ErrNotLockedWritMarker, fmt.Sprint(resp.StatusCode, ":", string(respBody)))
+			}
 
-		if err != nil {
-			return err
-		}
+			err = json.Unmarshal(respBody, result)
 
-		return nil
-	}, options...)
+			if err != nil {
+				return err
+			}
 
-	r.DoPost(ctx, body, url)
+			return nil
+		})
 
 	err := r.Wait()
 	if len(err) > 0 {
@@ -266,11 +267,10 @@ func (m *WriteMarkerMutex) Unlock(ctx context.Context, connectionID string) erro
 		resty.WithTransport(transport),
 	}
 
-	r := resty.New(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
-		return err
-	}, options...)
-
-	r.DoDelete(ctx, urls...)
+	r := resty.New(options...).
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			return err
+		})
 
 	errs := r.Wait()
 
@@ -297,27 +297,30 @@ func (m *WriteMarkerMutex) GetRootHashnode(ctx context.Context, blobberBaseUrl s
 
 	root := &fileref.Hashnode{}
 
-	r := resty.New(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
-		if err != nil {
-			return errors.Throw(constants.ErrInvalidHashnode, err.Error())
-		}
+	r := resty.New(resty.WithTransport(transport))
 
-		if resp.StatusCode != http.StatusOK {
-			return errors.Throw(constants.ErrBadRequest, resp.Status)
-		}
+	r.DoGet(ctx, fmt.Sprint(blobberBaseUrl, blobber.EndpointRootHashnode, m.allocationObj.Tx)).
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 
-		if respBody != nil {
-			if err := json.Unmarshal(respBody, root); err != nil {
+			if err != nil {
 				return errors.Throw(constants.ErrInvalidHashnode, err.Error())
 			}
 
-			return nil
-		}
+			if resp.StatusCode != http.StatusOK {
+				return errors.Throw(constants.ErrBadRequest, resp.Status)
+			}
 
-		return errors.Throw(constants.ErrInvalidHashnode, "no data")
+			if respBody != nil {
+				if err := json.Unmarshal(respBody, root); err != nil {
+					return errors.Throw(constants.ErrInvalidHashnode, err.Error())
+				}
 
-	}, resty.WithTransport(transport))
-	r.DoGet(ctx, fmt.Sprint(blobberBaseUrl, blobber.EndpointRootHashnode, m.allocationObj.Tx))
+				return nil
+			}
+
+			return errors.Throw(constants.ErrInvalidHashnode, "no data")
+
+		})
 
 	errs := r.Wait()
 

@@ -138,7 +138,7 @@ func (z *ZBox) DoPost(req *Request, handle resty.Handle) *resty.Resty {
 
 	opts = append(opts, resty.WithTransport(z.CreateTransport()))
 
-	r := resty.New(handle, opts...)
+	r := resty.New(opts...).Then(handle)
 
 	return r
 }

@@ -11,10 +11,8 @@ import (
 )
 
 // New create a Resty instance.
-func New(handle Handle, opts ...Option) *Resty {
-	r := &Resty{
-		handle: handle,
-	}
+func New(opts ...Option) *Resty {
+	r := &Resty{}
 
 	for _, option := range opts {
 		option(r)
@@ -69,27 +67,36 @@ type Resty struct {
 	header  map[string]string
 }
 
+// Then callback for http response
+func (r *Resty) Then(fn Handle) *Resty {
+	if r == nil {
+		return r
+	}
+	r.handle = fn
+	return r
+}
+
 // DoGet execute http requests with GET method in parallel
-func (r *Resty) DoGet(ctx context.Context, urls ...string) {
-	r.Do(ctx, http.MethodGet, nil, urls...)
+func (r *Resty) DoGet(ctx context.Context, urls ...string) *Resty {
+	return r.Do(ctx, http.MethodGet, nil, urls...)
 }
 
 // DoPost execute http requests with POST method in parallel
-func (r *Resty) DoPost(ctx context.Context, body io.Reader, urls ...string) {
-	r.Do(ctx, http.MethodPost, body, urls...)
+func (r *Resty) DoPost(ctx context.Context, body io.Reader, urls ...string) *Resty {
+	return r.Do(ctx, http.MethodPost, body, urls...)
 }
 
 // DoPut execute http requests with PUT method in parallel
-func (r *Resty) DoPut(ctx context.Context, body io.Reader, urls ...string) {
-	r.Do(ctx, http.MethodPut, body, urls...)
+func (r *Resty) DoPut(ctx context.Context, body io.Reader, urls ...string) *Resty {
+	return r.Do(ctx, http.MethodPut, body, urls...)
 }
 
 // DoDelete execute http requests with DELETE method in parallel
-func (r *Resty) DoDelete(ctx context.Context, urls ...string) {
-	r.Do(ctx, http.MethodDelete, nil, urls...)
+func (r *Resty) DoDelete(ctx context.Context, urls ...string) *Resty {
+	return r.Do(ctx, http.MethodDelete, nil, urls...)
 }
 
-func (r *Resty) Do(ctx context.Context, method string, body io.Reader, urls ...string) {
+func (r *Resty) Do(ctx context.Context, method string, body io.Reader, urls ...string) *Resty {
 	r.ctx, r.cancelFunc = context.WithCancel(ctx)
 
 	r.qty = len(urls)
@@ -119,6 +126,8 @@ func (r *Resty) Do(ctx context.Context, method string, body io.Reader, urls ...s
 
 		go r.httpDo(req.WithContext(r.ctx))
 	}
+
+	return r
 }
 
 func (r *Resty) httpDo(req *http.Request) {
