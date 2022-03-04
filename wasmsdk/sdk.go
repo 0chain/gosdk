@@ -4,6 +4,7 @@
 package main
 
 import (
+	"io"
 	"os"
 
 	"github.com/0chain/gosdk/core/logger"
@@ -14,7 +15,6 @@ import (
 )
 
 var CreateObjectURL func(buf []byte, mimeType string) string
-var AppendVideo func(buf []byte)
 
 // Init init sharder/miners ,
 func Init(chainID, blockWorker, signatureScheme string,
@@ -24,11 +24,16 @@ func Init(chainID, blockWorker, signatureScheme string,
 	if err != nil {
 		return err
 	}
-	zcncore.InitZCNSDK(blockWorker, signatureScheme,
+
+	err = zcncore.InitZCNSDK(blockWorker, signatureScheme,
 		zcncore.WithChainID(chainID),
 		zcncore.WithMinConfirmation(minConfirmation),
 		zcncore.WithMinSubmit(minSubmit),
 		zcncore.WithConfirmationChainLength(confirmationChainLength))
+
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -48,18 +53,26 @@ func GetEncryptedPublicKey(mnemonic string) (string, error) {
 	return encScheme.GetPublicKey()
 }
 
+var sdkLogger *logger.Logger
+var zcnLogger *logger.Logger
+var logEnabled = false
+
 func showLogs() {
-	zcncore.GetLogger().SetLevel(logger.DEBUG)
-	sdk.GetLogger().SetLevel(logger.DEBUG)
+	zcnLogger.SetLevel(logger.DEBUG)
+	sdkLogger.SetLevel(logger.DEBUG)
 
 	zcncore.GetLogger().SetLogFile(os.Stdout, true)
-	sdk.GetLogger().SetLogFile(os.Stdout, true)
+	sdkLogger.SetLogFile(os.Stdout, true)
+
+	logEnabled = true
 }
 
 func hideLogs() {
-	zcncore.GetLogger().SetLevel(logger.ERROR)
-	sdk.GetLogger().SetLevel(logger.ERROR)
+	zcnLogger.SetLevel(logger.ERROR)
+	sdkLogger.SetLevel(logger.ERROR)
 
-	zcncore.GetLogger().SetLogFile(os.Stdout, false)
-	sdk.GetLogger().SetLogFile(os.Stdout, false)
+	zcnLogger.SetLogFile(io.Discard, false)
+	sdkLogger.SetLogFile(io.Discard, false)
+
+	logEnabled = false
 }

@@ -41,7 +41,7 @@ func TestAllocation_UpdateFile(t *testing.T) {
 		defer teardown(t)
 	}
 
-	server := dev.NewBlobberServer()
+	server := dev.NewBlobberServer(nil)
 	defer server.Close()
 
 	for i := 0; i < numBlobbers; i++ {
@@ -67,7 +67,7 @@ func TestAllocation_UploadFile(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 	}
-	server := dev.NewBlobberServer()
+	server := dev.NewBlobberServer(nil)
 	defer server.Close()
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
@@ -106,7 +106,7 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 		},
 	}
 
-	server := dev.NewBlobberServer()
+	server := dev.NewBlobberServer(nil)
 	defer server.Close()
 
 	for _, tt := range tests {
@@ -165,7 +165,7 @@ func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 	}
-	server := dev.NewBlobberServer()
+	server := dev.NewBlobberServer(nil)
 	defer server.Close()
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
@@ -195,7 +195,7 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 		defer teardown(t)
 	}
 
-	server := dev.NewBlobberServer()
+	server := dev.NewBlobberServer(nil)
 	defer server.Close()
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
@@ -222,7 +222,7 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 	}
-	server := dev.NewBlobberServer()
+	server := dev.NewBlobberServer(nil)
 	defer server.Close()
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
@@ -250,7 +250,7 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 	}
-	server := dev.NewBlobberServer()
+	server := dev.NewBlobberServer(nil)
 	defer server.Close()
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
@@ -278,7 +278,7 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 	}
-	server := dev.NewBlobberServer()
+	server := dev.NewBlobberServer(nil)
 	defer server.Close()
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {

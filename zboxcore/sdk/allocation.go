@@ -579,7 +579,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 		}
 	}
 	lPath, _ := filepath.Split(localPath)
-	os.MkdirAll(lPath, os.ModePerm)
+	os.MkdirAll(lPath, 0744)
 
 	if len(a.Blobbers) == 0 {
 		return noBLOBBERS
