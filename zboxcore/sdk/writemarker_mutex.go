@@ -267,7 +267,9 @@ func (m *WriteMarkerMutex) Unlock(ctx context.Context, connectionID string) erro
 		resty.WithTransport(transport),
 	}
 
-	r := resty.New(options...).
+	r := resty.New(options...)
+
+	r.DoDelete(ctx, urls...).
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 			return err
 		})
