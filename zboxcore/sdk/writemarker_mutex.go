@@ -269,10 +269,7 @@ func (m *WriteMarkerMutex) Unlock(ctx context.Context, connectionID string) erro
 
 	r := resty.New(options...)
 
-	r.DoDelete(ctx, urls...).
-		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
-			return err
-		})
+	r.DoDelete(ctx, urls...)
 
 	errs := r.Wait()
 
