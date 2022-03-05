@@ -5,6 +5,7 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -12,14 +13,25 @@ import (
 
 // New create a Resty instance.
 func New(opts ...Option) *Resty {
-	r := &Resty{}
+	r := &Resty{
+		timeout: DefaultRequestTimeout,
+		retry:   DefaultRetry,
+	}
 
 	for _, option := range opts {
 		option(r)
 	}
 
 	if r.transport == nil {
-		r.transport = &http.Transport{}
+		if DefaultTransport == nil {
+			DefaultTransport = &http.Transport{
+				Dial: (&net.Dialer{
+					Timeout: DefaultDialTimeout,
+				}).Dial,
+				TLSHandshakeTimeout: DefaultDialTimeout,
+			}
+		}
+		r.transport = DefaultTransport
 	}
 
 	r.client = CreateClient(r.transport, r.timeout)
