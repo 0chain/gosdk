@@ -8,6 +8,7 @@ import (
 	"math/bits"
 	"mime/multipart"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -34,7 +35,7 @@ type DeleteRequest struct {
 	Consensus
 }
 
-func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blobberIdx int, objectTree fileref.RefEntity) {
+func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blobberIdx int) {
 	defer req.wg.Done()
 
 	body := new(bytes.Buffer)
@@ -83,32 +84,43 @@ func (req *DeleteRequest) ProcessDelete() error {
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numList)
+	totalRefFound := 0
 	for i := 0; i < numList; i++ {
 		go func(blobberIdx int) {
 			defer req.wg.Done()
 			refEntity, err := req.getObjectTreeFromBlobber(req.blobbers[blobberIdx])
-			if err != nil {
+			if err != nil && !strings.Contains(err.Error(), "Invalid path") {
 				Logger.Error(err.Error())
 				return
 			}
 			req.consensus++
 			req.listMask |= (1 << uint32(blobberIdx))
+			if refEntity != nil {
+				totalRefFound++
+			}
 			objectTreeRefs[blobberIdx] = refEntity
 		}(i)
 	}
 	req.wg.Wait()
 
-	req.deleteMask = uint32(0)
-	req.consensus = 0
-	numDeletes := bits.OnesCount32(req.listMask)
-	req.wg = &sync.WaitGroup{}
-	req.wg.Add(numDeletes)
+	if totalRefFound == 0 {
+		return fmt.Errorf("Delete failed: Invalid reference %s", req.remotefilepath)
+	}
 
-	var c, pos int
+	initConsensus := numList - totalRefFound
+	req.deleteMask = uint32(0)
+	req.consensus = float32(initConsensus)
+	req.wg = &sync.WaitGroup{}
+
+	var pos int
 	for i := req.listMask; i != 0; i &= ^(1 << uint32(pos)) {
 		pos = bits.TrailingZeros32(i)
-		go req.deleteBlobberFile(req.blobbers[pos], pos, objectTreeRefs[pos])
-		c++
+		if objectTreeRefs[pos] != nil {
+			req.wg.Add(1)
+			go req.deleteBlobberFile(req.blobbers[pos], pos)
+		} else {
+			req.consensus++
+		}
 	}
 	req.wg.Wait()
 
@@ -116,11 +128,10 @@ func (req *DeleteRequest) ProcessDelete() error {
 		return fmt.Errorf("Delete failed: Success_rate:%2f, expected:%2f", req.getConsensusRate(), req.getConsensusRequiredForOk())
 	}
 
-	req.consensus = 0
+	req.consensus = float32(initConsensus)
 	wg := &sync.WaitGroup{}
-	wg.Add(bits.OnesCount32(req.deleteMask))
 	commitReqs := make([]*CommitRequest, bits.OnesCount32(req.deleteMask))
-	c = 0
+	var c int
 	for i := req.deleteMask; i != 0; i &= ^(1 << uint32(pos)) {
 		pos = bits.TrailingZeros32(i)
 		commitReq := &CommitRequest{}
@@ -136,6 +147,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 		commitReq.connectionID = req.connectionID
 		commitReq.wg = wg
 		commitReqs[c] = commitReq
+		wg.Add(1)
 		go AddCommitRequest(commitReq)
 		c++
 	}
