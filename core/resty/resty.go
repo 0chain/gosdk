@@ -224,6 +224,11 @@ func (r *Resty) Wait() []error {
 	errs := make([]error, 0, r.qty)
 	done := 0
 
+	// no urls
+	if r.qty == 0 {
+		return errs
+	}
+
 	for {
 
 		result := <-r.done

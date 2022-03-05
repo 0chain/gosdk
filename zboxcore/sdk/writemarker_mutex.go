@@ -43,7 +43,7 @@ type WriteMarkerMutex struct {
 	mutex          sync.Mutex
 	zbox           *sdks.ZBox
 	allocationObj  *Allocation
-	lockedBlobbers map[string]bool
+	lockedBlobbers map[int]bool
 }
 
 // CreateWriteMarkerMutex create WriteMarkerMutex for allocation
@@ -126,9 +126,9 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error 
 				break
 			}
 
-			blobberUrl := urls[i-1]
+			blobberIndex := i - 1
 
-			result, err := m.lockOne(ctx, strings.NewReader(form), blobberUrl)
+			result, err := m.lockOne(ctx, strings.NewReader(form), urls[blobberIndex])
 
 			// current blobber fails or is down, try next blobber
 			if err != nil {
@@ -146,10 +146,10 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error 
 			} else if result.Status == WMLockStatusOK {
 				// locked on current blobber, count it and go to next blobber
 				if m.lockedBlobbers == nil {
-					m.lockedBlobbers = make(map[string]bool)
+					m.lockedBlobbers = make(map[int]bool)
 				}
 
-				m.lockedBlobbers[blobberUrl] = true
+				m.lockedBlobbers[blobberIndex] = true
 				i++
 				n++
 			}
@@ -169,19 +169,11 @@ func (m *WriteMarkerMutex) lockOne(ctx context.Context, body io.Reader, url stri
 	result := &WMLockResult{}
 
 	options := []resty.Option{
-		resty.WithRetry(resty.DefaultRetry),
-		resty.WithTimeout(resty.DefaultRequestTimeout),
 		resty.WithRequestInterceptor(func(r *http.Request) {
 			m.zbox.SignRequest(r, m.allocationObj.Tx) //nolint
 		}),
 		resty.WithHeader(map[string]string{
 			"Content-Type": "application/x-www-form-urlencoded",
-		}),
-		resty.WithTransport(&http.Transport{
-			Dial: (&net.Dialer{
-				Timeout: resty.DefaultDialTimeout,
-			}).Dial,
-			TLSHandshakeTimeout: resty.DefaultDialTimeout,
 		})}
 
 	r := resty.New(options...)
@@ -233,16 +225,18 @@ func (m *WriteMarkerMutex) Unlock(ctx context.Context, connectionID string) erro
 	urls := make([]string, 0, T)
 
 	builder := &strings.Builder{}
-	for _, b := range m.allocationObj.Blobbers {
+	for i, b := range m.allocationObj.Blobbers {
 		builder.Reset()
 		builder.WriteString(strings.TrimRight(b.Baseurl, "/")) //nolint: errcheck
 		builder.WriteString(blobber.EndpointWriteMarkerLock)
 		builder.WriteString(m.allocationObj.Tx)
+		builder.WriteString("/")
+		builder.WriteString(connectionID)
 
 		blobberUrl := builder.String()
 		// only release lock on locked blobbers
 		if m.lockedBlobbers != nil {
-			if m.lockedBlobbers[blobberUrl] {
+			if m.lockedBlobbers[i] {
 				urls = append(urls, blobberUrl)
 			}
 		} else { // Lock is not called here, try to release all blobbers
@@ -251,20 +245,10 @@ func (m *WriteMarkerMutex) Unlock(ctx context.Context, connectionID string) erro
 
 	}
 
-	transport := &http.Transport{
-		Dial: (&net.Dialer{
-			Timeout: resty.DefaultDialTimeout,
-		}).Dial,
-		TLSHandshakeTimeout: resty.DefaultDialTimeout,
-	}
-
 	options := []resty.Option{
-		resty.WithRetry(resty.DefaultRetry),
-		resty.WithTimeout(resty.DefaultRequestTimeout),
 		resty.WithRequestInterceptor(func(r *http.Request) {
 			m.zbox.SignRequest(r, m.allocationObj.Tx) //nolint
 		}),
-		resty.WithTransport(transport),
 	}
 
 	r := resty.New(options...)
