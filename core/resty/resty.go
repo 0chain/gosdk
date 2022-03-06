@@ -5,16 +5,17 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"sync"
 	"time"
 )
 
 // New create a Resty instance.
-func New(transport *http.Transport, handle Handle, opts ...Option) *Resty {
+func New(opts ...Option) *Resty {
 	r := &Resty{
-		transport: transport,
-		handle:    handle,
+		timeout: DefaultRequestTimeout,
+		retry:   DefaultRetry,
 	}
 
 	for _, option := range opts {
@@ -22,7 +23,15 @@ func New(transport *http.Transport, handle Handle, opts ...Option) *Resty {
 	}
 
 	if r.transport == nil {
-		r.transport = &http.Transport{}
+		if DefaultTransport == nil {
+			DefaultTransport = &http.Transport{
+				Dial: (&net.Dialer{
+					Timeout: DefaultDialTimeout,
+				}).Dial,
+				TLSHandshakeTimeout: DefaultDialTimeout,
+			}
+		}
+		r.transport = DefaultTransport
 	}
 
 	r.client = CreateClient(r.transport, r.timeout)
@@ -70,27 +79,36 @@ type Resty struct {
 	header  map[string]string
 }
 
+// Then callback for http response
+func (r *Resty) Then(fn Handle) *Resty {
+	if r == nil {
+		return r
+	}
+	r.handle = fn
+	return r
+}
+
 // DoGet execute http requests with GET method in parallel
-func (r *Resty) DoGet(ctx context.Context, urls ...string) {
-	r.Do(ctx, http.MethodGet, nil, urls...)
+func (r *Resty) DoGet(ctx context.Context, urls ...string) *Resty {
+	return r.Do(ctx, http.MethodGet, nil, urls...)
 }
 
 // DoPost execute http requests with POST method in parallel
-func (r *Resty) DoPost(ctx context.Context, body io.Reader, urls ...string) {
-	r.Do(ctx, http.MethodPost, body, urls...)
+func (r *Resty) DoPost(ctx context.Context, body io.Reader, urls ...string) *Resty {
+	return r.Do(ctx, http.MethodPost, body, urls...)
 }
 
 // DoPut execute http requests with PUT method in parallel
-func (r *Resty) DoPut(ctx context.Context, body io.Reader, urls ...string) {
-	r.Do(ctx, http.MethodPut, body, urls...)
+func (r *Resty) DoPut(ctx context.Context, body io.Reader, urls ...string) *Resty {
+	return r.Do(ctx, http.MethodPut, body, urls...)
 }
 
 // DoDelete execute http requests with DELETE method in parallel
-func (r *Resty) DoDelete(ctx context.Context, urls ...string) {
-	r.Do(ctx, http.MethodDelete, nil, urls...)
+func (r *Resty) DoDelete(ctx context.Context, urls ...string) *Resty {
+	return r.Do(ctx, http.MethodDelete, nil, urls...)
 }
 
-func (r *Resty) Do(ctx context.Context, method string, body io.Reader, urls ...string) {
+func (r *Resty) Do(ctx context.Context, method string, body io.Reader, urls ...string) *Resty {
 	r.ctx, r.cancelFunc = context.WithCancel(ctx)
 
 	r.qty = len(urls)
@@ -120,6 +138,8 @@ func (r *Resty) Do(ctx context.Context, method string, body io.Reader, urls ...s
 
 		go r.httpDo(req.WithContext(r.ctx))
 	}
+
+	return r
 }
 
 func (r *Resty) httpDo(req *http.Request) {
@@ -203,6 +223,11 @@ func (r *Resty) Wait() []error {
 
 	errs := make([]error, 0, r.qty)
 	done := 0
+
+	// no urls
+	if r.qty == 0 {
+		return errs
+	}
 
 	for {
 
