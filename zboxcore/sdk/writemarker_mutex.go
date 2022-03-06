@@ -43,7 +43,7 @@ type WriteMarkerMutex struct {
 	mutex          sync.Mutex
 	zbox           *sdks.ZBox
 	allocationObj  *Allocation
-	lockedBlobbers map[int]bool
+	lockedBlobbers map[string]bool
 }
 
 // CreateWriteMarkerMutex create WriteMarkerMutex for allocation
@@ -146,10 +146,10 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error 
 			} else if result.Status == WMLockStatusOK {
 				// locked on current blobber, count it and go to next blobber
 				if m.lockedBlobbers == nil {
-					m.lockedBlobbers = make(map[int]bool)
+					m.lockedBlobbers = make(map[string]bool)
 				}
 
-				m.lockedBlobbers[blobberIndex] = true
+				m.lockedBlobbers[m.allocationObj.Blobbers[blobberIndex].ID] = true
 				i++
 				n++
 			}
@@ -236,7 +236,7 @@ func (m *WriteMarkerMutex) Unlock(ctx context.Context, connectionID string) erro
 		blobberUrl := builder.String()
 		// only release lock on locked blobbers
 		if m.lockedBlobbers != nil {
-			if m.lockedBlobbers[i] {
+			if m.lockedBlobbers[b.ID] {
 				urls = append(urls, blobberUrl)
 			}
 		} else { // Lock is not called here, try to release all blobbers
