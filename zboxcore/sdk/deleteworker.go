@@ -103,6 +103,9 @@ func (req *DeleteRequest) ProcessDelete() error {
 	}
 	req.wg.Wait()
 
+	if !req.isConsensusOk() {
+		return fmt.Errorf("Delete failed: Success_rate:%2f, expected:%2f", req.getConsensusRate(), req.getConsensusRequiredForOk())
+	}
 	if totalRefFound == 0 {
 		return fmt.Errorf("Delete failed: Invalid reference %s", req.remotefilepath)
 	}
