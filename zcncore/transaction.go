@@ -1817,7 +1817,7 @@ func (t *Transaction) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go t.submitTxn()
 	return
 }
 
@@ -1827,6 +1827,6 @@ func (t *Transaction) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go t.submitTxn()
 	return
 }
