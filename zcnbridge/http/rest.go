@@ -8,6 +8,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"sync"
+
+	"go.uber.org/zap"
 
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/util"
@@ -45,46 +48,60 @@ func MakeSCRestAPICall(opCode int, relativePath string, params Params, cb zcncor
 		sharders          = extractSharders()
 	)
 
-	result := make(chan *http.Response)
-	defer close(result)
+	type queryResult struct {
+		hash string
+		body []byte
+	}
+
+	results := make(chan *queryResult)
+	defer close(results)
 
 	var client = NewRetryableClient()
 
+	wg := &sync.WaitGroup{}
 	for _, sharder := range sharders {
+		wg.Add(1)
 		go func(sharderUrl string) {
+			defer wg.Done()
+
 			var u = makeURL(params, sharderUrl, relativePath)
 			Logger.Info(fmt.Sprintf("Query %s", u.String()))
+
 			resp, err := client.Get(u.String())
+			//goland:noinspection ALL
+			defer resp.Body.Close()
+
 			if err != nil {
-				msg := fmt.Sprintf("%s: error while requesting sharders: %v", sharderUrl, err)
-				Logger.Error(msg)
+				Logger.Error("MakeSCRestAPICall - failed to get response from", zap.String("URL", sharderUrl), zap.Any("error", err))
 				return
 			}
-			result <- resp
+
+			if resp.StatusCode != http.StatusOK {
+				Logger.Error("MakeSCRestAPICall - error getting response from", zap.String("URL", sharderUrl), zap.Any("error", err))
+				return
+			}
+
+			hash, body, err := hashAndBytesOfReader(resp.Body)
+			if err != nil {
+				Logger.Error("MakeSCRestAPICall - error while reading response body", zap.String("URL", sharderUrl), zap.Any("error", err))
+				return
+			}
+
+			results <- &queryResult{hash: hash, body: body}
 		}(sharder)
 	}
 
-	for range sharders {
-		resp := <-result
+	wg.Wait()
+	close(results)
 
-		hash, resBody, err := hashAndBytesOfReader(resp.Body)
-		_ = resp.Body.Close()
-
-		if err != nil {
-			msg = fmt.Sprintf("error while reading response body: %v", err)
-			continue
+	select {
+	case result := <-results:
+		hashCounters[result.hash]++
+		if hashCounters[result.hash] > hashMaxCounter {
+			hashMaxCounter = hashCounters[result.hash]
+			resMaxCounterBody = result.body
 		}
-
-		if resp.StatusCode != http.StatusOK {
-			msg = fmt.Sprintf("response status is not OK; response body: %s", string(resBody))
-			continue
-		}
-
-		hashCounters[hash]++
-		if hashCounters[hash] > hashMaxCounter {
-			hashMaxCounter = hashCounters[hash]
-			resMaxCounterBody = resBody
-		}
+	default:
 	}
 
 	if hashMaxCounter == 0 {
@@ -95,13 +112,11 @@ func MakeSCRestAPICall(opCode int, relativePath string, params Params, cb zcncor
 	}
 
 	cb.OnInfoAvailable(opCode, zcncore.StatusSuccess, string(resMaxCounterBody), "")
-
-	return
 }
 
 // hashAndBytesOfReader computes hash of readers data and returns hash encoded to hex and bytes of reader data.
 // If error occurs while reading data from reader, it returns non nil error.
-func hashAndBytesOfReader(r io.Reader) (hash string, reader []byte, err error) {
+func hashAndBytesOfReader(r io.Reader) (string, []byte, error) {
 	h := sha1.New()
 	teeReader := io.TeeReader(r, h)
 	readerBytes, err := ioutil.ReadAll(teeReader)
