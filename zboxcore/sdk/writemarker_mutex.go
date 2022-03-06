@@ -1,10 +1,10 @@
 package sdk
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"net"
 	"net/http"
@@ -17,7 +17,9 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/resty"
+	"github.com/0chain/gosdk/sdks"
 	"github.com/0chain/gosdk/sdks/blobber"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 )
@@ -39,15 +41,26 @@ type WMLockResult struct {
 // WriteMarkerMutex blobber WriteMarkerMutex client
 type WriteMarkerMutex struct {
 	mutex          sync.Mutex
+	zbox           *sdks.ZBox
 	allocationObj  *Allocation
 	lockedBlobbers map[string]bool
 }
 
 // CreateWriteMarkerMutex create WriteMarkerMutex for allocation
-func CreateWriteMarkerMutex(allocationObj *Allocation) *WriteMarkerMutex {
+func CreateWriteMarkerMutex(client *client.Client, allocationObj *Allocation) (*WriteMarkerMutex, error) {
+
+	if client == nil {
+		return nil, errors.Throw(constants.ErrInvalidParameter, "client")
+	}
+
+	if allocationObj == nil {
+		return nil, errors.Throw(constants.ErrInvalidParameter, "allocationObj")
+	}
+
 	return &WriteMarkerMutex{
 		allocationObj: allocationObj,
-	}
+		zbox:          sdks.New(client.ClientID, client.ClientKey, client.SignatureScheme, client.Wallet),
+	}, nil
 }
 
 // Lock acquire WriteMarker lock from blobbers
@@ -93,7 +106,8 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error 
 
 		now := time.Now()
 		body.Set("request_time", strconv.FormatInt(now.Unix(), 10))
-		buf := bytes.NewBufferString(body.Encode())
+
+		form := body.Encode()
 
 		for {
 
@@ -112,13 +126,14 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error 
 				break
 			}
 
-			blobberUrl := urls[i-1]
+			blobberIndex := i - 1
 
-			result, err := m.lockOne(ctx, buf, blobberUrl)
+			result, err := m.lockOne(ctx, strings.NewReader(form), urls[blobberIndex])
 
 			// current blobber fails or is down, try next blobber
 			if err != nil {
 				// fails on current blobber
+				logger.Logger.Error("lock: ", err.Error())
 				i++
 				continue
 			}
@@ -134,7 +149,7 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error 
 					m.lockedBlobbers = make(map[string]bool)
 				}
 
-				m.lockedBlobbers[blobberUrl] = true
+				m.lockedBlobbers[m.allocationObj.Blobbers[blobberIndex].ID] = true
 				i++
 				n++
 			}
@@ -149,32 +164,38 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error 
 }
 
 // lockOne acquire WriteMarker lock from a blobber
-func (m *WriteMarkerMutex) lockOne(ctx context.Context, buf *bytes.Buffer, url string) (*WMLockResult, error) {
-
-	transport := &http.Transport{
-		Dial: (&net.Dialer{
-			Timeout: resty.DefaultDialTimeout,
-		}).Dial,
-		TLSHandshakeTimeout: resty.DefaultDialTimeout,
-	}
+func (m *WriteMarkerMutex) lockOne(ctx context.Context, body io.Reader, url string) (*WMLockResult, error) {
 
 	result := &WMLockResult{}
 
-	r := resty.New(transport, func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
-		if err != nil {
-			return err
-		}
+	options := []resty.Option{
+		resty.WithRequestInterceptor(func(r *http.Request) {
+			m.zbox.SignRequest(r, m.allocationObj.Tx) //nolint
+		}),
+		resty.WithHeader(map[string]string{
+			"Content-Type": "application/x-www-form-urlencoded",
+		})}
 
-		err = json.Unmarshal(respBody, result)
+	r := resty.New(options...)
 
-		if err != nil {
-			return err
-		}
+	r.DoPost(ctx, body, url).
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			if err != nil {
+				return err
+			}
 
-		return nil
-	})
+			if resp.StatusCode != http.StatusOK {
+				return errors.Throw(constants.ErrNotLockedWritMarker, fmt.Sprint(resp.StatusCode, ":", string(respBody)))
+			}
 
-	r.DoPost(ctx, buf, url)
+			err = json.Unmarshal(respBody, result)
+
+			if err != nil {
+				return err
+			}
+
+			return nil
+		})
 
 	err := r.Wait()
 	if len(err) > 0 {
@@ -185,7 +206,7 @@ func (m *WriteMarkerMutex) lockOne(ctx context.Context, buf *bytes.Buffer, url s
 }
 
 // Unlock release WriteMarker lock on blobbers
-func (m *WriteMarkerMutex) Unlock(ctx context.Context, sessionID string) error {
+func (m *WriteMarkerMutex) Unlock(ctx context.Context, connectionID string) error {
 	if m == nil {
 		return errors.Throw(constants.ErrInvalidParameter, "WriteMarkerMutex")
 	}
@@ -209,11 +230,13 @@ func (m *WriteMarkerMutex) Unlock(ctx context.Context, sessionID string) error {
 		builder.WriteString(strings.TrimRight(b.Baseurl, "/")) //nolint: errcheck
 		builder.WriteString(blobber.EndpointWriteMarkerLock)
 		builder.WriteString(m.allocationObj.Tx)
+		builder.WriteString("/")
+		builder.WriteString(connectionID)
 
 		blobberUrl := builder.String()
 		// only release lock on locked blobbers
 		if m.lockedBlobbers != nil {
-			if m.lockedBlobbers[blobberUrl] {
+			if m.lockedBlobbers[b.ID] {
 				urls = append(urls, blobberUrl)
 			}
 		} else { // Lock is not called here, try to release all blobbers
@@ -222,16 +245,13 @@ func (m *WriteMarkerMutex) Unlock(ctx context.Context, sessionID string) error {
 
 	}
 
-	transport := &http.Transport{
-		Dial: (&net.Dialer{
-			Timeout: resty.DefaultDialTimeout,
-		}).Dial,
-		TLSHandshakeTimeout: resty.DefaultDialTimeout,
+	options := []resty.Option{
+		resty.WithRequestInterceptor(func(r *http.Request) {
+			m.zbox.SignRequest(r, m.allocationObj.Tx) //nolint
+		}),
 	}
 
-	r := resty.New(transport, func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
-		return err
-	})
+	r := resty.New(options...)
 
 	r.DoDelete(ctx, urls...)
 
@@ -260,27 +280,30 @@ func (m *WriteMarkerMutex) GetRootHashnode(ctx context.Context, blobberBaseUrl s
 
 	root := &fileref.Hashnode{}
 
-	r := resty.New(transport, func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
-		if err != nil {
-			return errors.Throw(constants.ErrInvalidHashnode, err.Error())
-		}
+	r := resty.New(resty.WithTransport(transport))
 
-		if resp.StatusCode != http.StatusOK {
-			return errors.Throw(constants.ErrBadRequest, resp.Status)
-		}
+	r.DoGet(ctx, fmt.Sprint(blobberBaseUrl, blobber.EndpointRootHashnode, m.allocationObj.Tx)).
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 
-		if respBody != nil {
-			if err := json.Unmarshal(respBody, root); err != nil {
+			if err != nil {
 				return errors.Throw(constants.ErrInvalidHashnode, err.Error())
 			}
 
-			return nil
-		}
+			if resp.StatusCode != http.StatusOK {
+				return errors.Throw(constants.ErrBadRequest, resp.Status)
+			}
 
-		return errors.Throw(constants.ErrInvalidHashnode, "no data")
+			if respBody != nil {
+				if err := json.Unmarshal(respBody, root); err != nil {
+					return errors.Throw(constants.ErrInvalidHashnode, err.Error())
+				}
 
-	})
-	r.DoGet(ctx, fmt.Sprint(blobberBaseUrl, blobber.EndpointRootHashnode, m.allocationObj.Tx))
+				return nil
+			}
+
+			return errors.Throw(constants.ErrInvalidHashnode, "no data")
+
+		})
 
 	errs := r.Wait()
 

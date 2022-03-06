@@ -25,18 +25,19 @@ type ZBox struct {
 	SignatureScheme string
 
 	// Wallet wallet
-	Wallet zcncrypto.Wallet
+	Wallet *zcncrypto.Wallet
 
 	// NewRequest create http request
 	NewRequest func(method, url string, body io.Reader) (*http.Request, error)
 }
 
 // New create a sdk client instance
-func New(clientID, clientKey, signatureScheme string) *ZBox {
+func New(clientID, clientKey, signatureScheme string, wallet *zcncrypto.Wallet) *ZBox {
 	s := &ZBox{
 		ClientID:        clientID,
 		ClientKey:       clientKey,
 		SignatureScheme: signatureScheme,
+		Wallet:          wallet,
 		NewRequest:      http.NewRequest,
 	}
 
@@ -78,7 +79,7 @@ func (z *ZBox) SignRequest(req *http.Request, allocationID string) error {
 			return err
 		}
 	}
-
+	// ClientSignatureHeader represents http request header contains signature.
 	req.Header.Set("X-App-Client-Signature", sign)
 
 	return nil
@@ -121,7 +122,7 @@ func (z *ZBox) BuildUrls(baseURLs []string, queryString map[string]string, pathF
 
 func (z *ZBox) DoPost(req *Request, handle resty.Handle) *resty.Resty {
 
-	opts := make([]resty.Option, 0, 4)
+	opts := make([]resty.Option, 0, 5)
 
 	opts = append(opts, resty.WithRetry(resty.DefaultRetry))
 	opts = append(opts, resty.WithTimeout(resty.DefaultRequestTimeout))
@@ -135,7 +136,9 @@ func (z *ZBox) DoPost(req *Request, handle resty.Handle) *resty.Resty {
 		}))
 	}
 
-	r := resty.New(z.CreateTransport(), handle, opts...)
+	opts = append(opts, resty.WithTransport(z.CreateTransport()))
+
+	r := resty.New(opts...).Then(handle)
 
 	return r
 }
