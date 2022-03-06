@@ -837,6 +837,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus floa
 	}
 
 	req := &DeleteRequest{}
+	req.allocationObj = a
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
