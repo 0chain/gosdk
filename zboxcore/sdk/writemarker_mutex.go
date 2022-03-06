@@ -225,7 +225,7 @@ func (m *WriteMarkerMutex) Unlock(ctx context.Context, connectionID string) erro
 	urls := make([]string, 0, T)
 
 	builder := &strings.Builder{}
-	for i, b := range m.allocationObj.Blobbers {
+	for _, b := range m.allocationObj.Blobbers {
 		builder.Reset()
 		builder.WriteString(strings.TrimRight(b.Baseurl, "/")) //nolint: errcheck
 		builder.WriteString(blobber.EndpointWriteMarkerLock)
