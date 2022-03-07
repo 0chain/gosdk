@@ -16,6 +16,8 @@ import (
 	"testing"
 	"time"
 
+	sdkBlobber "github.com/0chain/gosdk/sdks/blobber"
+
 	"github.com/0chain/gosdk/dev/blobber"
 	"github.com/0chain/gosdk/dev/blobber/model"
 	"github.com/0chain/gosdk/zboxcore/encryption"
@@ -56,7 +58,7 @@ func setupMockHttpResponse(t *testing.T, mockClient *mocks.HttpClient, funcName 
 		url := funcName + testCaseName + mockBlobberUrl + strconv.Itoa(i)
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return req.Method == httpMethod &&
-				strings.HasPrefix(req.URL.Path, url)
+				strings.Contains(req.URL.String(), url)
 		})).Return(&http.Response{
 			StatusCode: statusCode,
 			Body:       ioutil.NopCloser(bytes.NewReader(body)),
@@ -84,6 +86,25 @@ func setupMockCommitRequest(a *Allocation) {
 				}
 			}(blobberChan, blobber.ID)
 		}
+	}
+}
+
+func setupMockWriteLockRequest(a *Allocation, mockClient *mocks.HttpClient) {
+
+	for _, blobber := range a.Blobbers {
+		url := blobber.Baseurl + sdkBlobber.EndpointWriteMarkerLock
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return strings.Contains(req.URL.String(), url)
+		})).Return(&http.Response{
+			StatusCode: http.StatusOK,
+			Body: func() io.ReadCloser {
+				resp := &WMLockResult{
+					Status: WMLockStatusOK,
+				}
+				respBuf, _ := json.Marshal(resp)
+				return ioutil.NopCloser(bytes.NewReader(respBuf))
+			}(),
+		}, nil)
 	}
 }
 
@@ -957,148 +978,6 @@ func TestAllocation_downloadFile(t *testing.T) {
 	}
 }
 
-func TestAllocation_DeleteFile(t *testing.T) {
-	const (
-		mockType = "f"
-	)
-
-	var mockClient = mocks.HttpClient{}
-	zboxutil.Client = &mockClient
-
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
-
-	require := require.New(t)
-
-	a := &Allocation{
-		DataShards:   2,
-		ParityShards: 2,
-	}
-	a.InitAllocation()
-	sdkInitialized = true
-
-	for i := 0; i < numBlobbers; i++ {
-		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
-			ID:      mockBlobberId + strconv.Itoa(i),
-			Baseurl: "TestAllocation_DeleteFile" + mockBlobberUrl + strconv.Itoa(i),
-		})
-	}
-
-	body, err := json.Marshal(&fileref.ReferencePath{
-		Meta: map[string]interface{}{
-			"type": mockType,
-		},
-	})
-	require.NoError(err)
-	setupMockHttpResponse(t, &mockClient, "TestAllocation_DeleteFile", "", a, http.MethodGet, http.StatusOK, body)
-	setupMockHttpResponse(t, &mockClient, "TestAllocation_DeleteFile", "", a, http.MethodDelete, http.StatusOK, []byte(""))
-	setupMockCommitRequest(a)
-
-	err = a.DeleteFile("/1.txt")
-	require.NoErrorf(err, "unexpected error: %v", err)
-}
-
-func TestAllocation_deleteFile(t *testing.T) {
-	const (
-		mockType = "f"
-	)
-
-	var mockClient = mocks.HttpClient{}
-	zboxutil.Client = &mockClient
-
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
-
-	type parameters struct {
-		path string
-	}
-	tests := []struct {
-		name       string
-		parameters parameters
-		setup      func(*testing.T, string, *Allocation) (teardown func(*testing.T))
-		wantErr    bool
-		errMsg     string
-	}{
-		{
-			name: "Test_Uninitialized_Failed",
-			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
-				a.initialized = false
-				return func(t *testing.T) {
-					a.initialized = true
-				}
-			},
-			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
-		},
-		{
-			name:    "Test_Invalid_Path_Failed",
-			wantErr: true,
-			errMsg:  "invalid_path: Invalid path for the list",
-		},
-		{
-			name: "Test_Not_Abs_Path_Failed",
-			parameters: parameters{
-				path: "x.txt",
-			},
-			wantErr: true,
-			errMsg:  "invalid_path: Path should be valid and absolute",
-		},
-		{
-			name: "Test_Success",
-			parameters: parameters{
-				path: "/1.txt",
-			},
-			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
-				body, err := json.Marshal(&fileref.ReferencePath{
-					Meta: map[string]interface{}{
-						"type": mockType,
-					},
-				})
-				require.NoError(t, err)
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_deleteFile", testCaseName, a, http.MethodGet, http.StatusOK, body)
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_deleteFile", testCaseName, a, http.MethodDelete, http.StatusOK, []byte(""))
-				setupMockCommitRequest(a)
-				return nil
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require := require.New(t)
-			a := &Allocation{
-				DataShards:   2,
-				ParityShards: 2,
-			}
-			a.InitAllocation()
-			sdkInitialized = true
-			for i := 0; i < numBlobbers; i++ {
-				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
-					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
-					Baseurl: "TestAllocation_deleteFile" + tt.name + mockBlobberUrl + strconv.Itoa(i),
-				})
-			}
-			if tt.setup != nil {
-				if teardown := tt.setup(t, tt.name, a); teardown != nil {
-					defer teardown(t)
-				}
-			}
-			err := a.DeleteFile(tt.parameters.path)
-			require.EqualValues(tt.wantErr, err != nil)
-			if err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(err))
-				return
-			}
-			require.NoErrorf(err, "unexpected error: %v", err)
-		})
-	}
-}
-
 func TestAllocation_UpdateObjectAttributes(t *testing.T) {
 	const (
 		mockType = "f"
@@ -1239,99 +1118,6 @@ func TestAllocation_UpdateObjectAttributes(t *testing.T) {
 				}
 			}
 			err := a.UpdateObjectAttributes(tt.parameters.path, tt.parameters.attrs)
-			require.EqualValues(tt.wantErr, err != nil)
-			if err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(err))
-				return
-			}
-			require.NoErrorf(err, "unexpected error: %v", err)
-		})
-	}
-}
-
-func TestAllocation_MoveObject(t *testing.T) {
-	const (
-		mockType = "f"
-	)
-
-	var mockClient = mocks.HttpClient{}
-	zboxutil.Client = &mockClient
-
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
-
-	type parameters struct {
-		path     string
-		destPath string
-	}
-	tests := []struct {
-		name       string
-		parameters parameters
-		setup      func(*testing.T, string, *Allocation) (teardown func(*testing.T))
-		wantErr    bool
-		errMsg     string
-	}{
-		{
-			name: "Test_Cover_Copy_Object",
-			parameters: parameters{
-				path:     "/1.txt",
-				destPath: "/d",
-			},
-			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
-				a.initialized = false
-				return func(t *testing.T) {
-					a.initialized = true
-				}
-			},
-			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
-		},
-		{
-			name: "Test_Cover_Delete_Object",
-			parameters: parameters{
-				path:     "/1.txt",
-				destPath: "/d",
-			},
-			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
-				body, err := json.Marshal(&fileref.ReferencePath{
-					Meta: map[string]interface{}{
-						"type": mockType,
-					},
-				})
-				require.NoError(t, err)
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_MoveObject", testCaseName, a, http.MethodGet, http.StatusOK, body)
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_MoveObject", testCaseName, a, http.MethodPost, http.StatusOK, []byte(""))
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_MoveObject", testCaseName, a, http.MethodGet, http.StatusOK, body)
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_MoveObject", testCaseName, a, http.MethodDelete, http.StatusOK, []byte(""))
-				setupMockCommitRequest(a)
-				return nil
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require := require.New(t)
-			a := &Allocation{
-				DataShards:   2,
-				ParityShards: 2,
-			}
-			a.InitAllocation()
-			sdkInitialized = true
-			for i := 0; i < numBlobbers; i++ {
-				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
-					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
-					Baseurl: "TestAllocation_MoveObject" + tt.name + mockBlobberUrl + strconv.Itoa(i),
-				})
-			}
-			if tt.setup != nil {
-				if teardown := tt.setup(t, tt.name, a); teardown != nil {
-					defer teardown(t)
-				}
-			}
-			err := a.MoveObject(tt.parameters.path, tt.parameters.destPath)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))
