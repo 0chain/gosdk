@@ -42,3 +42,10 @@ func WithRequestInterceptor(interceptor func(req *http.Request)) Option {
 		r.requestInterceptor = interceptor
 	}
 }
+
+// WithTransport set transport
+func WithTransport(transport *http.Transport) Option {
+	return func(r *Resty) {
+		r.transport = transport
+	}
+}
