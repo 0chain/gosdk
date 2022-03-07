@@ -110,10 +110,12 @@ func TestAllocation_CopyObject(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			a := &Allocation{
-				DataShards:   2,
-				ParityShards: 2,
+				DataShards: numBlobbers,
 			}
 			a.InitAllocation()
+
+			setupMockAllocation(t, a)
+
 			sdkInitialized = true
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
