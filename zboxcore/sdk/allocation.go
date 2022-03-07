@@ -948,6 +948,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	}
 
 	req := &CopyRequest{}
+	req.allocationObj = a
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx

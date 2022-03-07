@@ -3,6 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io/ioutil"
 	"math/bits"
 	"mime/multipart"
@@ -13,6 +14,7 @@ import (
 	"errors"
 
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -22,6 +24,7 @@ import (
 )
 
 type CopyRequest struct {
+	allocationObj  *Allocation
 	allocationID   string
 	allocationTx   string
 	blobbers       []*blockchain.StorageNode
@@ -106,6 +109,16 @@ func (req *CopyRequest) ProcessCopy() error {
 
 	if !req.isConsensusOk() {
 		return errors.New("Copy failed: Copy request failed. Operation failed.")
+	}
+
+	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
+	if err != nil {
+		return fmt.Errorf("Delete failed: %s", err.Error())
+	}
+	err = writeMarkerMutex.Lock(context.TODO(), req.connectionID)
+	defer writeMarkerMutex.Unlock(context.TODO(), req.connectionID) //nolint: errcheck
+	if err != nil {
+		return fmt.Errorf("Delete failed: %s", err.Error())
 	}
 
 	req.consensus = 0
