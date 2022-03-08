@@ -110,12 +110,12 @@ func (req *RenameRequest) ProcessRename() error {
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
 	if err != nil {
-		return fmt.Errorf("Delete failed: %s", err.Error())
+		return fmt.Errorf("Rename failed: %s", err.Error())
 	}
 	err = writeMarkerMutex.Lock(context.TODO(), req.connectionID)
 	defer writeMarkerMutex.Unlock(context.TODO(), req.connectionID) //nolint: errcheck
 	if err != nil {
-		return fmt.Errorf("Delete failed: %s", err.Error())
+		return fmt.Errorf("Rename failed: %s", err.Error())
 	}
 
 	req.consensus = 0
