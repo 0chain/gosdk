@@ -8,12 +8,10 @@ import (
 	"math/bits"
 	"mime/multipart"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
-	"errors"
-
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -91,7 +89,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 		go func(blobberIdx int) {
 			defer req.wg.Done()
 			refEntity, err := req.getObjectTreeFromBlobber(req.blobbers[blobberIdx])
-			if err != nil && !strings.Contains(err.Error(), "Invalid path") {
+			if err != nil && (err.(*errors.Error) == nil || err.(*errors.Error).Code != "400") {
 				Logger.Error(err.Error())
 				return
 			}
@@ -182,7 +180,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 	}
 
 	if !req.isConsensusOk() {
-		return errors.New("Delete failed: Commit consensus failed")
+		return fmt.Errorf("Delete failed: Commit consensus failed")
 	}
 	return nil
 }
