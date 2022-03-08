@@ -17,12 +17,14 @@ import (
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type DeleteRequest struct {
+	allocationObj  *Allocation
 	allocationID   string
 	allocationTx   string
 	blobbers       []*blockchain.StorageNode
@@ -129,6 +131,16 @@ func (req *DeleteRequest) ProcessDelete() error {
 
 	if !req.isConsensusOk() {
 		return fmt.Errorf("Delete failed: Success_rate:%2f, expected:%2f", req.getConsensusRate(), req.getConsensusRequiredForOk())
+	}
+
+	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
+	if err != nil {
+		return fmt.Errorf("Delete failed: %s", err.Error())
+	}
+	err = writeMarkerMutex.Lock(context.TODO(), req.connectionID)
+	defer writeMarkerMutex.Unlock(context.TODO(), req.connectionID) //nolint: errcheck
+	if err != nil {
+		return fmt.Errorf("Delete failed: %s", err.Error())
 	}
 
 	req.consensus = float32(initConsensus)
