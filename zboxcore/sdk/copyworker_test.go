@@ -15,6 +15,9 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/dev"
+	devMock "github.com/0chain/gosdk/dev/mock"
+	"github.com/0chain/gosdk/sdks/blobber"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	zclient "github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -236,6 +239,8 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 		mockConnectionId   = "1234567890"
 	)
 
+	rawClient := zboxutil.Client
+
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
@@ -245,12 +250,18 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 		ClientKey: mockClientKey,
 	}
 
+	zboxutil.Client = &mockClient
+
+	defer func() {
+		zboxutil.Client = rawClient
+	}()
+
 	setupHttpResponses := func(t *testing.T, testName string, numBlobbers int, numCorrect int, req *CopyRequest) {
 		for i := 0; i < numBlobbers; i++ {
 			url := mockBlobberUrl + strconv.Itoa(i)
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 				return req.Method == "GET" &&
-					strings.HasPrefix(req.URL.Path, testName+url)
+					strings.Contains(req.URL.String(), testName+url)
 			})).Return(&http.Response{
 				StatusCode: http.StatusOK,
 				Body: func() io.ReadCloser {
@@ -265,7 +276,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			}, nil)
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 				return req.Method == "POST" &&
-					strings.HasPrefix(req.URL.Path, testName+url)
+					strings.Contains(req.URL.String(), testName+url)
 			})).Return(&http.Response{
 				StatusCode: func() int {
 					if i < numCorrect {
@@ -379,7 +390,42 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
+
+			a := &Allocation{
+				Tx:         "TestCopyRequest_ProcessCopy",
+				DataShards: numBlobbers,
+			}
+			a.InitAllocation()
+
+			setupMockAllocation(t, a)
+
+			resp := &WMLockResult{
+				Status: WMLockStatusOK,
+			}
+
+			respBuf, _ := json.Marshal(resp)
+			m := make(devMock.ResponseMap)
+
+			server := dev.NewBlobberServer(m)
+			defer server.Close()
+
+			for i := 0; i < numBlobbers; i++ {
+				path := "/TestCopyRequest_ProcessCopy" + tt.name + mockBlobberUrl + strconv.Itoa(i)
+
+				m[http.MethodPost+":"+path+blobber.EndpointWriteMarkerLock+a.Tx] = devMock.Response{
+					StatusCode: http.StatusOK,
+					Body:       respBuf,
+				}
+
+				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
+					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
+					Baseurl: server.URL + path,
+				})
+			}
+
 			req := &CopyRequest{
+				allocationObj:  a,
+				blobbers:       a.Blobbers,
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
@@ -392,19 +438,15 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
 			}
-			for i := 0; i < tt.numBlobbers; i++ {
-				req.blobbers = append(req.blobbers, &blockchain.StorageNode{
-					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
-					Baseurl: tt.name + mockBlobberUrl + strconv.Itoa(i),
-				})
-			}
+
 			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect, req)
 			err := req.ProcessCopy()
-			require.EqualValues(tt.wantErr, err != nil)
-			if err != nil {
+			if tt.wantErr {
 				require.EqualValues(tt.errMsg, errors.Top(err))
-				return
+			} else {
+				require.Nil(err)
 			}
+
 			if tt.wantFunc != nil {
 				tt.wantFunc(require, req)
 			}

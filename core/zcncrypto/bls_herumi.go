@@ -118,7 +118,11 @@ func (sk *herumiSecretKey) Sign(m string) Signature {
 	}
 }
 
-func (sk *herumiSecretKey) GetMasterSecretKey(k int) []SecretKey {
+func (sk *herumiSecretKey) GetMasterSecretKey(k int) ([]SecretKey, error) {
+	if k < 1 {
+		return nil, errors.New("cannot get master secret key for threshold less than 1")
+	}
+
 	list := sk.SecretKey.GetMasterSecretKey(k)
 
 	msk := make([]SecretKey, len(list))
@@ -128,7 +132,7 @@ func (sk *herumiSecretKey) GetMasterSecretKey(k int) []SecretKey {
 
 	}
 
-	return msk
+	return msk, nil
 }
 
 func (sk *herumiSecretKey) Set(msk []SecretKey, id ID) error {
