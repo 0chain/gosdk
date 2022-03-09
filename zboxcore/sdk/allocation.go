@@ -837,6 +837,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus floa
 	}
 
 	req := &DeleteRequest{}
+	req.allocationObj = a
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
@@ -867,6 +868,7 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	}
 
 	req := &RenameRequest{}
+	req.allocationObj = a
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
@@ -946,6 +948,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	}
 
 	req := &CopyRequest{}
+	req.allocationObj = a
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx

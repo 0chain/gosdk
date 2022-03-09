@@ -64,7 +64,6 @@ func UnmarshalSignatureSchemes(sigScheme string, obj interface{}) ([]SignatureSc
 
 //GenerateThresholdKeyShares given a signature scheme will generate threshold sig keys
 func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]SignatureScheme, error) {
-
 	b0ss, ok := originalKey.(*HerumiScheme)
 	if !ok {
 		return nil, errors.New("bls0_generate_threshold_key_shares", "Invalid encryption scheme")
@@ -81,7 +80,10 @@ func GenerateThresholdKeyShares(t, n int, originalKey SignatureScheme) ([]Signat
 		return nil, err
 	}
 
-	polynomial := b0original.GetMasterSecretKey(t)
+	polynomial, err := b0original.GetMasterSecretKey(t)
+	if err != nil {
+		return nil, err
+	}
 
 	var shares []SignatureScheme
 	for i := 1; i <= n; i++ {
