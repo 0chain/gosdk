@@ -79,7 +79,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *Chunk
 	var r UploadResult
 	err = json.Unmarshal(respbody, &r)
 	if err != nil {
-		logger.Logger.Error(sb.blobber.Baseurl, " Upload response parse error: ", err)
+		logger.Logger.Error(sb.blobber.Baseurl, " Upload response parse error: ", err, string(respbody))
 		return err
 	}
 	if r.Filename != su.fileMeta.RemoteName || r.Hash != formData.ChunkHash {
