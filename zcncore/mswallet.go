@@ -115,6 +115,10 @@ type MSVoteCallback interface {
 
 // CreateMSWallet returns multisig wallet information
 func CreateMSWallet(t, n int) (string, string, []string, error) {
+	if t < 1 || t > n {
+		return "", "", nil, errors.New("bls0_generate_threshold_key_shares", fmt.Sprintf("Given threshold (%d) is less than 1 or greater than numsigners (%d)", t, n))
+	}
+
 	id := 0
 	if _config.chain.SignatureScheme != "bls0chain" {
 		return "", "", nil, errors.New("", "encryption scheme for this blockchain is not bls0chain")
@@ -172,14 +176,14 @@ func RegisterWallet(walletString string, cb WalletCallback) {
 	err := json.Unmarshal([]byte(walletString), &w)
 
 	if err != nil {
-		cb.OnWalletCreateComplete(StatusError, walletString, fmt.Sprintf("%s", err.Error()))
+		cb.OnWalletCreateComplete(StatusError, walletString, err.Error())
 	}
 
 	//We do not want to send private key to blockchain
 	w.Keys[0].PrivateKey = ""
 	err = RegisterToMiners(&w, cb)
 	if err != nil {
-		cb.OnWalletCreateComplete(StatusError, "", fmt.Sprintf("%s", err.Error()))
+		cb.OnWalletCreateComplete(StatusError, "", err.Error())
 	}
 
 }
@@ -279,6 +283,10 @@ func GetClientID(pkey string) string {
 	}
 
 	return encryption.Hash(publicKeyBytes)
+}
+
+func GetClientWalletID() string {
+	return _config.wallet.ClientID
 }
 
 //GetMultisigPayload given a multisig wallet as a string, makes a multisig wallet payload to register

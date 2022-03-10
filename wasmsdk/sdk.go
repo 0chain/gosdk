@@ -4,6 +4,10 @@
 package main
 
 import (
+	"io"
+	"os"
+
+	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/sdk"
@@ -20,11 +24,16 @@ func Init(chainID, blockWorker, signatureScheme string,
 	if err != nil {
 		return err
 	}
-	zcncore.InitZCNSDK(blockWorker, signatureScheme,
+
+	err = zcncore.InitZCNSDK(blockWorker, signatureScheme,
 		zcncore.WithChainID(chainID),
 		zcncore.WithMinConfirmation(minConfirmation),
 		zcncore.WithMinSubmit(minSubmit),
 		zcncore.WithConfirmationChainLength(confirmationChainLength))
+
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -42,4 +51,28 @@ func GetEncryptedPublicKey(mnemonic string) (string, error) {
 		return "", err
 	}
 	return encScheme.GetPublicKey()
+}
+
+var sdkLogger *logger.Logger
+var zcnLogger *logger.Logger
+var logEnabled = false
+
+func showLogs() {
+	zcnLogger.SetLevel(logger.DEBUG)
+	sdkLogger.SetLevel(logger.DEBUG)
+
+	zcncore.GetLogger().SetLogFile(os.Stdout, true)
+	sdkLogger.SetLogFile(os.Stdout, true)
+
+	logEnabled = true
+}
+
+func hideLogs() {
+	zcnLogger.SetLevel(logger.ERROR)
+	sdkLogger.SetLevel(logger.ERROR)
+
+	zcnLogger.SetLogFile(io.Discard, false)
+	sdkLogger.SetLogFile(io.Discard, false)
+
+	logEnabled = false
 }

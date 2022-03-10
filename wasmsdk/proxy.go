@@ -13,6 +13,7 @@ import (
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zcncore"
 
 	"syscall/js"
 )
@@ -23,6 +24,8 @@ func main() {
 	fmt.Printf("0CHAIN - GOSDK (version=%v)\n", version.VERSIONSTR)
 
 	sdk.FS = common.NewMemFS()
+	sdkLogger = sdk.GetLogger()
+	zcnLogger = zcncore.GetLogger()
 
 	window := js.Global()
 
@@ -30,6 +33,7 @@ func main() {
 	if !(zcn.IsNull() || zcn.IsUndefined()) {
 
 		jsProxy := zcn.Get("jsProxy")
+		// import functions from js object
 		if !(jsProxy.IsNull() || jsProxy.IsUndefined()) {
 			sign := jsProxy.Get("sign")
 
@@ -71,19 +75,21 @@ func main() {
 			} else {
 				PrintError("__zcn_wasm__.jsProxy.createObjectURL is not installed yet")
 			}
-
 		} else {
 			PrintError("__zcn_wasm__.jsProxy is not installed yet")
 		}
 
 		// tiny wasm sdk with new methods
 		sdk := zcn.Get("sdk")
+		// register go functions on wasm.sdk
 		if !(sdk.IsNull() || sdk.IsUndefined()) {
 			jsbridge.BindAsyncFuncs(sdk, map[string]interface{}{
 				//sdk
 				"init":                  Init,
 				"setWallet":             SetWallet,
 				"getEncryptedPublicKey": GetEncryptedPublicKey,
+				"hideLogs":              hideLogs,
+				"showLogs":              showLogs,
 
 				//blobber
 				"delete":   Delete,
@@ -94,8 +100,14 @@ func main() {
 				"download": Download,
 				"upload":   Upload,
 
+				// zcn txn
 				"commitFileMetaTxn":   CommitFileMetaTxn,
 				"commitFolderMetaTxn": CommitFolderMetaTxn,
+
+				// player
+				"play":           Play,
+				"stop":           Stop,
+				"getNextSegment": GetNextSegment,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
@@ -105,6 +117,8 @@ func main() {
 		}
 
 	}
+
+	hideLogs()
 
 	<-make(chan bool)
 

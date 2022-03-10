@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"errors"
+
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
@@ -27,10 +29,21 @@ var (
 	DefaultHashFunc = func(left, right string) string {
 		return coreEncryption.Hash(left + right)
 	}
+
+	ErrInvalidChunkSize = errors.New("chunk: chunk size is too small. it must greater than 272 if file is uploaded with encryption")
 )
 
 // DefaultChunkSize default chunk size for file and thumbnail
 const DefaultChunkSize = 64 * 1024
+
+const (
+	// EncryptedDataPaddingSize additional bytes to save encrypted data
+	EncryptedDataPaddingSize = 16
+	// EncryptionHeaderSize encryption header size in chunk: PRE.MessageChecksum(128)+PRE.OverallChecksum(128)
+	EncryptionHeaderSize = 128 + 128
+	// ReEncryptionHeaderSize re-encryption header size in chunk
+	ReEncryptionHeaderSize = 256
+)
 
 /*
     CreateChunkedUpload create a ChunkedUpload instance
@@ -78,6 +91,11 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	}
 
 	su := &ChunkedUpload{
+		// consensus: Consensus{
+		// 	fullconsensus:          allocationObj.fullconsensus,
+		// 	consensusThresh:        allocationObj.consensusThreshold,
+		// 	consensusRequiredForOk: allocationObj.consensusOK,
+		// },
 		allocationObj: allocationObj,
 		client:        zboxutil.Client,
 
@@ -126,10 +144,6 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 		opt(su)
 	}
 
-	if su.createWriteMarkerLocker == nil {
-		su.createWriteMarkerLocker = createWriteMarkerLocker
-	}
-
 	if su.progressStorer == nil {
 		su.progressStorer = createFsChunkedUploadProgress(context.Background())
 	}
@@ -149,6 +163,15 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	if su.encryptOnUpload {
 		su.fileEncscheme = su.createEncscheme()
 
+		if su.chunkSize <= EncryptionHeaderSize+EncryptedDataPaddingSize {
+			return nil, ErrInvalidChunkSize
+		}
+
+	}
+
+	su.writeMarkerMutex, err = CreateWriteMarkerMutex(client.GetClient(), su.allocationObj)
+	if err != nil {
+		return nil, err
 	}
 
 	blobbers := su.allocationObj.Blobbers
@@ -161,9 +184,9 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	for i := 0; i < len(blobbers); i++ {
 
 		su.blobbers[i] = &ChunkedUploadBlobber{
-			WriteMarkerLocker: su.createWriteMarkerLocker(filepath.Join(su.workdir, "blobber."+su.allocationObj.Blobbers[i].ID+".lock")),
-			progress:          su.progress.Blobbers[i],
-			blobber:           su.allocationObj.Blobbers[i],
+			writeMarkerMutex: su.writeMarkerMutex,
+			progress:         su.progress.Blobbers[i],
+			blobber:          su.allocationObj.Blobbers[i],
 			fileRef: &fileref.FileRef{
 				Ref: fileref.Ref{
 					Name:         su.fileMeta.RemoteName,
@@ -198,8 +221,7 @@ type ChunkedUpload struct {
 
 	workdir string
 
-	allocationObj *Allocation
-
+	allocationObj  *Allocation
 	progress       UploadProgress
 	progressStorer ChunkedUploadProgressStorer
 	client         zboxutil.HttpClient
@@ -235,8 +257,9 @@ type ChunkedUpload struct {
 	// statusCallback trigger progress on StatusCallback
 	statusCallback StatusCallback
 
-	blobbers                []*ChunkedUploadBlobber
-	createWriteMarkerLocker func(file string) WriteMarkerLocker
+	blobbers []*ChunkedUploadBlobber
+
+	writeMarkerMutex *WriteMarkerMutex
 
 	// isRepair identifies if upload is repair operation
 	isRepair bool
@@ -254,6 +277,9 @@ func (su *ChunkedUpload) progressID() string {
 
 // loadProgress load progress from ~/.zcn/upload/[progressID]
 func (su *ChunkedUpload) loadProgress() {
+	// ChunkIndex starts with 0, so default value should be -1
+	su.progress.ChunkIndex = -1
+
 	progressID := su.progressID()
 
 	progress := su.progressStorer.Load(progressID)
@@ -267,18 +293,18 @@ func (su *ChunkedUpload) loadProgress() {
 
 // saveProgress save progress to ~/.zcn/upload/[progressID]
 func (su *ChunkedUpload) saveProgress() {
-	su.progressStorer.Save(&su.progress)
+	su.progressStorer.Save(su.progress)
 }
 
 // removeProgress remove progress info once it is done
 func (su *ChunkedUpload) removeProgress() {
-	su.progressStorer.Remove(su.progress.ID)
+	su.progressStorer.Remove(su.progress.ID) //nolint
 }
 
 // createUploadProgress create a new UploadProgress
 func (su *ChunkedUpload) createUploadProgress() UploadProgress {
 	progress := UploadProgress{ConnectionID: zboxutil.NewConnectionId(),
-		ChunkIndex:   0,
+		ChunkIndex:   -1,
 		ChunkSize:    su.chunkSize,
 		UploadLength: 0,
 		Blobbers:     make([]*UploadBlobberStatus, su.allocationObj.DataShards+su.allocationObj.ParityShards),
@@ -331,7 +357,7 @@ func (su *ChunkedUpload) Start() error {
 		if err != nil {
 			return err
 		}
-		logger.Logger.Info("Read chunk #", chunk.Index)
+		//logger.Logger.Debug("Read chunk #", chunk.Index)
 
 		su.shardUploadedSize += chunk.FragmentSize
 		su.progress.UploadLength += chunk.ReadSize
@@ -341,7 +367,7 @@ func (su *ChunkedUpload) Start() error {
 		}
 
 		//skip chunk if it has been uploaded
-		if chunk.Index < su.progress.ChunkIndex {
+		if chunk.Index <= su.progress.ChunkIndex {
 			continue
 		}
 
@@ -391,6 +417,13 @@ func (su *ChunkedUpload) Start() error {
 
 	if su.consensus.isConsensusOk() {
 		logger.Logger.Info("Completed the upload. Submitting for commit")
+
+		err := su.writeMarkerMutex.Lock(context.TODO(), su.progress.ConnectionID)
+		defer su.writeMarkerMutex.Unlock(context.TODO(), su.progress.ConnectionID) //nolint: errcheck
+		if err != nil {
+			return err
+		}
+
 		return su.processCommit()
 	}
 
@@ -475,6 +508,7 @@ func (su *ChunkedUpload) processUpload(chunkIndex int, fileFragments [][]byte, t
 
 // processCommit commit shard upload on its blobber
 func (su *ChunkedUpload) processCommit() error {
+
 	logger.Logger.Info("Submitting for commit")
 	su.consensus.Reset()
 

@@ -298,16 +298,14 @@ type StakePoolRewardsInfo struct {
 
 // StakePoolDelegatePoolInfo represents delegate pool of a stake pool info.
 type StakePoolDelegatePoolInfo struct {
-	ID               common.Key     `json:"id"`                // pool ID
-	Balance          common.Balance `json:"balance"`           // current balance
-	DelegateID       common.Key     `json:"delegate_id"`       // wallet
-	Rewards          common.Balance `json:"rewards"`           // total for all time
-	Interests        common.Balance `json:"interests"`         // total for all time
-	Penalty          common.Balance `json:"penalty"`           // total for all time
-	PendingInterests common.Balance `json:"pending_interests"` // total for all time
+	ID         common.Key     `json:"id"`          // pool ID
+	Balance    common.Balance `json:"balance"`     // current balance
+	DelegateID common.Key     `json:"delegate_id"` // wallet
+	Rewards    common.Balance `json:"rewards"`     // total for all time
+	Penalty    common.Balance `json:"penalty"`     // total for all time
 	// Unstake > 0, then the pool wants to unstake. And the Unstake is maximal
 	// time it can't be unstaked.
-	Unstake common.Timestamp `json:"unstake"`
+	Unstake bool `json:"unstake"`
 }
 
 // StakePoolSettings information.
@@ -334,12 +332,11 @@ type StakePoolInfo struct {
 	Capacity   common.Size    `json:"capacity"`    // blobber bid
 	WritePrice common.Balance `json:"write_price"` // its write price
 
-	Offers      []*StakePoolOfferInfo `json:"offers"`       //
-	OffersTotal common.Balance        `json:"offers_total"` //
+	OffersTotal  common.Balance `json:"offers_total"`  // total offers
+	UnstakeTotal common.Balance `json:"unstake_total"` // total of stakes marked for unstaking
 	// delegate pools
 	Delegate []*StakePoolDelegatePoolInfo `json:"delegate"`
-	Earnings common.Balance               `json:"interests"` // total for all
-	Penalty  common.Balance               `json:"penalty"`   // total for all
+	Penalty  common.Balance               `json:"penalty"` // total for all
 	// rewards
 	Rewards StakePoolRewardsInfo `json:"rewards"`
 	// settings
@@ -432,11 +429,12 @@ func StakePoolLock(blobberID string, value, fee int64) (poolID string, err error
 }
 
 // StakePoolUnlockUnstake is stake pool unlock response in case where tokens
-// can't be unlocked due to opened offers. In this case it returns the maximal
-// time to wait to be able to unlock the tokens. The real time can be lesser if
-// someone cancels an allocation, or someone else stake more tokens, etc.
+// can't be unlocked due to opened offers.
 type StakePoolUnlockUnstake struct {
-	Unstake common.Timestamp `json:"unstake"`
+	// one of the fields is set in a response, the Unstake if can't unstake
+	// for now and the TokenPoolTransferResponse if has a pool had unlocked
+	Unstake bool  `json:"unstake"` // max time to wait to unstake
+	Balance int64 `json:"balance"`
 }
 
 // StakePoolUnlock unlocks a stake pool tokens. If tokens can't be unlocked due
@@ -445,11 +443,11 @@ type StakePoolUnlockUnstake struct {
 // future. The time is maximal time that can be lesser in some cases. To
 // unlock tokens can't be unlocked now, wait the time and unlock them (call
 // this function again).
-func StakePoolUnlock(blobberID, poolID string, fee int64) (
-	unstake common.Timestamp, err error) {
-
+func StakePoolUnlock(
+	blobberID, poolID string, fee int64,
+) (unstake bool, err error) {
 	if !sdkInitialized {
-		return 0, sdkNotInitialized
+		return false, sdkNotInitialized
 	}
 	if blobberID == "" {
 		blobberID = client.GetClientID()
@@ -475,26 +473,6 @@ func StakePoolUnlock(blobberID, poolID string, fee int64) (
 	}
 
 	return spuu.Unstake, nil
-}
-
-// StakePoolPayInterests unlocks a stake pool rewards.
-func StakePoolPayInterests(bloberID string) (err error) {
-	if !sdkInitialized {
-		return sdkNotInitialized
-	}
-	if bloberID == "" {
-		bloberID = client.GetClientID()
-	}
-
-	var spr stakePoolRequest
-	spr.BlobberID = bloberID
-
-	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_STAKE_POOL_PAY_INTERESTS,
-		InputArgs: &spr,
-	}
-	_, _, err = smartContractTxnValueFee(sn, 0, 0)
-	return
 }
 
 //
@@ -825,7 +803,6 @@ func SetNumBlockDownloads(num int) {
 	if num > 0 && num <= 100 {
 		numBlockDownloads = num
 	}
-	return
 }
 
 func GetAllocations() ([]*Allocation, error) {
@@ -874,6 +851,10 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, mcct time.Duration,
 	lock int64, preferredBlobbers []string) (hash string, err error) {
+
+	if lock < 0 {
+		return "", errors.New("", "invalid value for lock")
+	}
 
 	if !sdkInitialized {
 		return "", sdkNotInitialized
@@ -927,6 +908,10 @@ func CreateFreeAllocation(marker string, value int64) (string, error) {
 		return "", sdkNotInitialized
 	}
 
+	if value < 0 {
+		return "", errors.New("", "invalid value for lock")
+	}
+
 	var input = map[string]interface{}{
 		"recipient_public_key": client.GetClientPublicKey(),
 		"marker":               marker,
@@ -945,6 +930,9 @@ func UpdateAllocation(size int64, expiry int64, allocationID string,
 
 	if !sdkInitialized {
 		return "", sdkNotInitialized
+	}
+	if lock < 0 {
+		return "", errors.New("", "invalid value for lock")
 	}
 
 	updateAllocationRequest := make(map[string]interface{})
@@ -966,6 +954,9 @@ func UpdateAllocation(size int64, expiry int64, allocationID string,
 func CreateFreeUpdateAllocation(marker, allocationId string, value int64) (string, error) {
 	if !sdkInitialized {
 		return "", sdkNotInitialized
+	}
+	if value < 0 {
+		return "", errors.New("", "invalid value for lock")
 	}
 
 	var input = map[string]interface{}{
@@ -1034,6 +1025,33 @@ func AddCurator(curatorId, allocationId string) (string, error) {
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_ADD_CURATOR,
 		InputArgs: allocationRequest,
+	}
+	hash, _, err := smartContractTxn(sn)
+	return hash, err
+}
+
+type ProviderType int
+
+const (
+	ProviderMiner ProviderType = iota
+	ProviderSharder
+	ProviderBlobber
+	ProviderValidator
+	ProviderAuthorizer
+)
+
+func CollectRewards(poolId string, providerType ProviderType) (string, error) {
+	if !sdkInitialized {
+		return "", sdkNotInitialized
+	}
+
+	var input = map[string]interface{}{
+		"provider_type": providerType,
+		"pool_id":       poolId,
+	}
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_COLLECT_REWARD,
+		InputArgs: input,
 	}
 	hash, _, err := smartContractTxn(sn)
 	return hash, err
@@ -1132,6 +1150,10 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	}
 
 	if t.Status == transaction.TxnFail {
+		return t.Hash, t.TransactionOutput, errors.New("", t.TransactionOutput)
+	}
+
+	if t.Status == transaction.TxnChargeableError {
 		return t.Hash, t.TransactionOutput, errors.New("", t.TransactionOutput)
 	}
 

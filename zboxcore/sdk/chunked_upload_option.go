@@ -1,7 +1,7 @@
 package sdk
 
 import (
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"io/ioutil"
 	"math"
@@ -24,7 +24,7 @@ func WithThumbnail(buf []byte) ChunkedUploadOption {
 			su.thumbnailBytes = buf
 			su.fileMeta.ActualThumbnailSize = int64(len(buf))
 
-			thumbnailHasher := sha1.New()
+			thumbnailHasher := sha256.New()
 			thumbnailHasher.Write(buf)
 
 			su.fileMeta.ActualThumbnailHash = hex.EncodeToString(thumbnailHasher.Sum(nil))
@@ -69,11 +69,5 @@ func WithStatusCallback(callback StatusCallback) ChunkedUploadOption {
 func WithProgressStorer(progressStorer ChunkedUploadProgressStorer) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		su.progressStorer = progressStorer
-	}
-}
-
-func WithCreateWriteMarkerLocker(createWriteMarkerLocker func(file string) WriteMarkerLocker) ChunkedUploadOption {
-	return func(su *ChunkedUpload) {
-		su.createWriteMarkerLocker = createWriteMarkerLocker
 	}
 }

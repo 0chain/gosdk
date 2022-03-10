@@ -70,17 +70,16 @@ func TestReadChunks(t *testing.T) {
 			uploadMask := zboxutil.NewUint128(1).Lsh(uint64(test.DataShards + test.ParityShards)).Sub64(1)
 			erasureEncoder, _ := reedsolomon.New(test.DataShards, test.ParityShards, reedsolomon.WithAutoGoroutines(int(test.ChunkSize)))
 			encscheme := encryption.NewEncryptionScheme()
+			require := require.New(t)
 			_, err := encscheme.Initialize(test.Name)
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.Nil(err)
+
 			encscheme.InitForEncryption("filetype:audio")
 
 			buf := generateRandomBytes(test.Size)
 
 			reader, err := createChunkReader(bytes.NewReader(buf), int64(test.Size), int64(test.ChunkSize), test.DataShards, test.EncryptOnUpload, uploadMask, erasureEncoder, encscheme, CreateHasher(int(test.ChunkSize)))
-
-			require := require.New(t)
+			require.Nil(err)
 
 			lastChunkIndex := 0
 			var totalReadSize int64
@@ -103,7 +102,7 @@ func TestReadChunks(t *testing.T) {
 
 			var chunkDataSize int64
 			if test.EncryptOnUpload {
-				chunkDataSize = test.ChunkSize - 16 - 2*1024
+				chunkDataSize = test.ChunkSize - EncryptedDataPaddingSize - EncryptionHeaderSize
 			} else {
 				chunkDataSize = test.ChunkSize
 			}
@@ -114,7 +113,7 @@ func TestReadChunks(t *testing.T) {
 			totalSize := test.Size
 
 			if test.EncryptOnUpload {
-				totalSize += 16 + 2*1024*int64(test.DataShards)
+				totalSize += (EncryptedDataPaddingSize + EncryptionHeaderSize) * int64(test.DataShards)
 			}
 
 			require.Equal(chunkNumber, lastChunkIndex+1)

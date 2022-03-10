@@ -21,8 +21,8 @@ func (nope *nopeChunkedUploadProgressStorer) Load(id string) *UploadProgress {
 	return nope.up
 }
 
-func (nope *nopeChunkedUploadProgressStorer) Save(up *UploadProgress) {
-	nope.up = up
+func (nope *nopeChunkedUploadProgressStorer) Save(up UploadProgress) {
+	nope.up = &up
 }
 
 func (nope *nopeChunkedUploadProgressStorer) Remove(id string) error {
@@ -47,7 +47,7 @@ func BenchmarkChunkedUpload(b *testing.B) {
 
 	logger.Logger.SetLevel(2)
 
-	server := dev.NewBlobberServer()
+	server := dev.NewBlobberServer(nil)
 	defer server.Close()
 
 	benchmarks := []struct {
@@ -85,7 +85,7 @@ func BenchmarkChunkedUpload(b *testing.B) {
 				DataShards:   2,
 				ParityShards: 1,
 			}
-
+			a.fullconsensus, a.consensusThreshold, a.consensusOK = a.getConsensuses()
 			for i := 0; i < (a.DataShards + a.ParityShards); i++ {
 
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{

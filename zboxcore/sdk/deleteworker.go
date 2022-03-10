@@ -8,8 +8,6 @@ import (
 	"math/bits"
 	"mime/multipart"
 	"net/http"
-	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -18,12 +16,14 @@ import (
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type DeleteRequest struct {
+	allocationObj  *Allocation
 	allocationID   string
 	allocationTx   string
 	blobbers       []*blockchain.StorageNode
@@ -36,18 +36,8 @@ type DeleteRequest struct {
 	Consensus
 }
 
-type deleteFormData struct {
-	ConnectionID string `json:"connection_id"`
-	Filename     string `json:"filename"`
-	Path         string `json:"filepath"`
-}
-
 func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blobberIdx int, objectTree fileref.RefEntity) {
 	defer req.wg.Done()
-	path, _ := filepath.Split(req.remotefilepath)
-	if path != "/" {
-		path = strings.TrimRight(path, "/")
-	}
 
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
@@ -72,6 +62,10 @@ func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blo
 			req.consensus++
 			req.deleteMask |= (1 << uint32(blobberIdx))
 			Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " deleted.")
+		} else if resp.StatusCode == http.StatusNoContent {
+			req.consensus++
+			req.deleteMask |= (1 << uint32(blobberIdx))
+			Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " not available in blobber.")
 		} else {
 			resp_body, err := ioutil.ReadAll(resp.Body)
 			if err == nil {
@@ -112,11 +106,10 @@ func (req *DeleteRequest) ProcessDelete() error {
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numDeletes)
 
-	c, pos := 0, 0
+	var c, pos int
 	for i := req.listMask; i != 0; i &= ^(1 << uint32(pos)) {
 		pos = bits.TrailingZeros32(i)
 		go req.deleteBlobberFile(req.blobbers[pos], pos, objectTreeRefs[pos])
-		//go obj.downloadBlobberBlock(&obj.blobbers[pos], pos, path, blockNum, rspCh, isPathHash, authTicket)
 		c++
 	}
 	req.wg.Wait()
@@ -125,14 +118,23 @@ func (req *DeleteRequest) ProcessDelete() error {
 		return fmt.Errorf("Delete failed: Success_rate:%2f, expected:%2f", req.getConsensusRate(), req.getConsensusRequiredForOk())
 	}
 
+	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
+	if err != nil {
+		return fmt.Errorf("Delete failed: %s", err.Error())
+	}
+	err = writeMarkerMutex.Lock(context.TODO(), req.connectionID)
+	defer writeMarkerMutex.Unlock(context.TODO(), req.connectionID) //nolint: errcheck
+	if err != nil {
+		return fmt.Errorf("Delete failed: %s", err.Error())
+	}
+
 	req.consensus = 0
 	wg := &sync.WaitGroup{}
 	wg.Add(bits.OnesCount32(req.deleteMask))
 	commitReqs := make([]*CommitRequest, bits.OnesCount32(req.deleteMask))
-	c, pos = 0, 0
+	c = 0
 	for i := req.deleteMask; i != 0; i &= ^(1 << uint32(pos)) {
 		pos = bits.TrailingZeros32(i)
-		//go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.wg)
 		commitReq := &CommitRequest{}
 		commitReq.allocationID = req.allocationID
 		commitReq.allocationTx = req.allocationTx

@@ -24,10 +24,10 @@ import (
 
 // ChunkedUploadBlobber client of blobber's upload
 type ChunkedUploadBlobber struct {
-	WriteMarkerLocker
-	blobber  *blockchain.StorageNode
-	fileRef  *fileref.FileRef
-	progress *UploadBlobberStatus
+	writeMarkerMutex *WriteMarkerMutex
+	blobber          *blockchain.StorageNode
+	fileRef          *fileref.FileRef
+	progress         *UploadBlobberStatus
 
 	commitChanges []allocationchange.AllocationChange
 	commitResult  *CommitResult
@@ -46,6 +46,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *Chunk
 
 			sb.fileRef.EncryptedKey = encryptedKey
 			sb.fileRef.CalculateHash()
+			su.consensus.Done()
 		}
 
 		return nil
@@ -87,7 +88,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *Chunk
 		return err
 	}
 
-	logger.Logger.Info(sb.blobber.Baseurl, su.fileMeta.RemotePath, " uploaded")
+	//logger.Logger.Debug(sb.blobber.Baseurl, su.fileMeta.RemotePath, " uploaded")
 
 	su.consensus.Done()
 
@@ -125,13 +126,6 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *Chunk
 }
 
 func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUpload) error {
-
-	err := sb.Lock()
-	if err != nil {
-		return err
-	}
-
-	defer sb.Unlock()
 
 	rootRef, latestWM, size, err := sb.processWriteMarker(ctx, su)
 

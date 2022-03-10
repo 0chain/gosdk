@@ -2,12 +2,16 @@ package sdks
 
 import (
 	"encoding/json"
+	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
@@ -21,18 +25,19 @@ type ZBox struct {
 	SignatureScheme string
 
 	// Wallet wallet
-	Wallet zcncrypto.Wallet
+	Wallet *zcncrypto.Wallet
 
 	// NewRequest create http request
 	NewRequest func(method, url string, body io.Reader) (*http.Request, error)
 }
 
 // New create a sdk client instance
-func New(clientID, clientKey, signatureScheme string) *ZBox {
+func New(clientID, clientKey, signatureScheme string, wallet *zcncrypto.Wallet) *ZBox {
 	s := &ZBox{
 		ClientID:        clientID,
 		ClientKey:       clientKey,
 		SignatureScheme: signatureScheme,
+		Wallet:          wallet,
 		NewRequest:      http.NewRequest,
 	}
 
@@ -74,8 +79,66 @@ func (z *ZBox) SignRequest(req *http.Request, allocationID string) error {
 			return err
 		}
 	}
-
+	// ClientSignatureHeader represents http request header contains signature.
 	req.Header.Set("X-App-Client-Signature", sign)
 
 	return nil
+}
+
+// CreateTransport create http.Transport with default dial timeout
+func (z *ZBox) CreateTransport() *http.Transport {
+	return &http.Transport{
+		Dial: (&net.Dialer{
+			Timeout: resty.DefaultDialTimeout,
+		}).Dial,
+		TLSHandshakeTimeout: resty.DefaultDialTimeout,
+	}
+}
+
+// BuildUrls build full request url
+func (z *ZBox) BuildUrls(baseURLs []string, queryString map[string]string, pathFormat string, pathArgs ...interface{}) []string {
+
+	requestURL := pathFormat
+	if len(pathArgs) > 0 {
+		requestURL = fmt.Sprintf(pathFormat, pathArgs...)
+	}
+
+	if len(queryString) > 0 {
+		requestQuery := make(url.Values)
+		for k, v := range queryString {
+			requestQuery.Add(k, v)
+		}
+
+		requestURL += "?" + requestQuery.Encode()
+	}
+
+	list := make([]string, len(baseURLs))
+	for k, v := range baseURLs {
+		list[k] = v + requestURL
+	}
+
+	return list
+}
+
+func (z *ZBox) DoPost(req *Request, handle resty.Handle) *resty.Resty {
+
+	opts := make([]resty.Option, 0, 5)
+
+	opts = append(opts, resty.WithRetry(resty.DefaultRetry))
+	opts = append(opts, resty.WithTimeout(resty.DefaultRequestTimeout))
+	opts = append(opts, resty.WithRequestInterceptor(func(r *http.Request) {
+		z.SignRequest(r, req.AllocationID) //nolint
+	}))
+
+	if len(req.ContentType) > 0 {
+		opts = append(opts, resty.WithHeader(map[string]string{
+			"Content-Type": req.ContentType,
+		}))
+	}
+
+	opts = append(opts, resty.WithTransport(z.CreateTransport()))
+
+	r := resty.New(opts...).Then(handle)
+
+	return r
 }

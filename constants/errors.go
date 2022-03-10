@@ -19,6 +19,18 @@ var (
 
 	// ErrNotImplemented feature/method is not implemented yet
 	ErrNotImplemented = errors.New("Not Implemented")
+
+	// ErrNotLockedWritMarker failed to lock WriteMarker
+	ErrNotLockedWritMarker = errors.New("failed to lock WriteMarker")
+
+	// ErrNotUnlockedWritMarker failed to unlock WriteMarker
+	ErrNotUnlockedWritMarker = errors.New("failed to unlock WriteMarker")
+
+	// ErrInvalidHashnode invalid hashnode
+	ErrInvalidHashnode = errors.New("invalid hashnode")
+
+	// ErrBadRequest bad request
+	ErrBadRequest = errors.New("bad request")
 )
 
 // zerrors code

@@ -1,7 +1,7 @@
 package sdk
 
 import (
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"io"
@@ -89,7 +89,7 @@ func calcFileHash(filePath string) string {
 	}
 	defer fp.Close()
 
-	h := sha1.New()
+	h := sha256.New()
 	if _, err := io.Copy(h, fp); err != nil {
 		log.Fatal(err)
 	}
@@ -192,7 +192,7 @@ func findDelta(rMap map[string]fileInfo, lMap map[string]fileInfo, prevMap map[s
 
 	// Iterate remote list and get diff
 	rDelMap := make(map[string]string)
-	for rPath, _ := range rMap {
+	for rPath := range rMap {
 		op := Download
 		bRemoteModified := false
 		bLocalModified := false
@@ -225,7 +225,7 @@ func findDelta(rMap map[string]fileInfo, lMap map[string]fileInfo, prevMap map[s
 	}
 
 	// Upload all local files
-	for lPath, _ := range lMap {
+	for lPath := range lMap {
 		op := Upload
 		if _, ok := lMod[lPath]; ok {
 			op = Update
@@ -253,7 +253,7 @@ func findDelta(rMap map[string]fileInfo, lMap map[string]fileInfo, prevMap map[s
 		var newlFDiff []FileDiff
 		for _, f := range lFDiff {
 			if f.Op == LocalDelete || f.Op == Delete {
-				if isParentFolderExists(newlFDiff, f.Path) == false {
+				if !isParentFolderExists(newlFDiff, f.Path) {
 					newlFDiff = append(newlFDiff, f)
 				}
 			} else {

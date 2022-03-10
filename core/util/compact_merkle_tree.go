@@ -2,7 +2,7 @@ package util
 
 import (
 	"bytes"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"io"
 
@@ -23,9 +23,10 @@ var (
 // CompactMerkleTree it is a stateful algorithm. It takes data in (leaf nodes), hashes it, and computes as many parent hashes as it can.
 // see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-compactmerkletree
 type CompactMerkleTree struct {
-	Tree  []string                        `json:"tree"`  //node tree with computed as many parent hashes as it can
-	Hash  func(left, right string) string `json:"-"`     //it should be set once CompactMerkleTree is created
-	Count int                             `json:"count"` //how many leaves has been pushed
+	Tree        []string                        `json:"tree"` //node tree with computed as many parent hashes as it can
+	Hash        func(left, right string) string `json:"-"`    //it should be set once CompactMerkleTree is created
+	Initialized bool                            `json:"initialized"`
+	LastIndex   int                             `json:"last_index"` //how many leaves has been pushed
 }
 
 // NewCompactMerkleTree create a CompactMerkleTree with specify hash method
@@ -46,7 +47,7 @@ func NewCompactMerkleTree(hash func(left, right string) string) *CompactMerkleTr
 // AddLeaf add leaf hash and update the the Merkle tree.
 func (cmt *CompactMerkleTree) AddDataBlocks(buf []byte, index int) error {
 
-	h := sha1.New()
+	h := sha256.New()
 	h.Write(buf)
 
 	return cmt.AddLeaf(hex.EncodeToString(h.Sum(nil)), index)
@@ -54,12 +55,17 @@ func (cmt *CompactMerkleTree) AddDataBlocks(buf []byte, index int) error {
 
 // AddLeaf add leaf hash and update the the Merkle tree.
 func (cmt *CompactMerkleTree) AddLeaf(leaf string, index int) error {
+	if !cmt.Initialized {
+		cmt.LastIndex = -1
+		cmt.Initialized = true
+	}
 
-	if index < cmt.Count {
+	// index starts from 0
+	if index <= cmt.LastIndex {
 		return ErrLeafExists
 	}
 
-	if index > cmt.Count {
+	if index != cmt.LastIndex+1 {
 		return ErrLeafNoSequenced
 	}
 
@@ -70,11 +76,12 @@ func (cmt *CompactMerkleTree) AddLeaf(leaf string, index int) error {
 	}
 
 	rightHash := leaf
+	cmt.LastIndex = index
 
 	for i, node := range cmt.Tree {
 		if node == "" { // If we find an empty spot in the nodes, we put the hash there and quit.
 			cmt.Tree[i] = rightHash
-			cmt.Count++
+
 			return nil
 		}
 		// Otherwise, hash the old hash with the new hash.
@@ -90,7 +97,6 @@ func (cmt *CompactMerkleTree) AddLeaf(leaf string, index int) error {
 
 	//no valid left hash found, so make it as a new leaf hash
 	cmt.Tree = append(cmt.Tree, rightHash)
-	cmt.Count++
 	return nil
 
 }
@@ -142,11 +148,15 @@ func (cmt *CompactMerkleTree) Reload(chunkSize int64, reader io.Reader) error {
 	cmt.Tree = make([]string, 0, 10)
 
 	merkleChunkSize := chunkSize / 1024
+	// chunksize is less than 1024
+	if merkleChunkSize == 0 {
+		merkleChunkSize = 1
+	}
 
 	bytesBuf := bytes.NewBuffer(make([]byte, 0, merkleChunkSize))
 	for i := 0; ; i++ {
 
-		written, err := io.CopyN(bytesBuf, reader, merkleChunkSize)
+		written, err := io.CopyN(bytesBuf, reader, int64(merkleChunkSize))
 
 		if written > 0 {
 			cmt.AddDataBlocks(bytesBuf.Bytes(), i) //nolint

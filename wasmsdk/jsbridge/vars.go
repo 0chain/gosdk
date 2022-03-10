@@ -16,6 +16,7 @@ var (
 	TypeFunc   = reflect.TypeOf(func() {}).String()
 	TypeError  = "error"
 	TypeString = reflect.TypeOf("string").String()
+	TypeBytes  = reflect.TypeOf([]byte{}).String()
 )
 
 func Close() {
