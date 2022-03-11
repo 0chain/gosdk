@@ -1120,9 +1120,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	txn.TransactionFee = fee
 	txn.TransactionType = transaction.TxnTypeSmartContract
 
-	if err = txn.ComputeHashAndSign(func(hash string) (string, error) {
-		return sys.Sign(hash, client.GetClient().SignatureScheme, client.GetClientSysKeys())
-	}); err != nil {
+	if err = txn.ComputeHashAndSign(client.Sign); err != nil {
 		return
 	}
 

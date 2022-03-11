@@ -7,6 +7,8 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
+type SignFunc func(hash string) (string, error)
+
 type Client struct {
 	*zcncrypto.Wallet
 	SignatureScheme string
@@ -15,6 +17,7 @@ type Client struct {
 var (
 	client  *Client
 	clients []*Client
+	Sign    SignFunc
 )
 
 func init() {
@@ -22,8 +25,11 @@ func init() {
 		Wallet: &zcncrypto.Wallet{},
 	}
 
-	// initialize SignFunc as default implementation
 	sys.Sign = SignHash
+	// initialize SignFunc as default implementation
+	Sign = func(hash string) (string, error) {
+		return sys.Sign(hash, client.SignatureScheme, GetClientSysKeys())
+	}
 }
 
 // Populate Single Client

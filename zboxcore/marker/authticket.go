@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/client"
 )
 
@@ -31,6 +30,6 @@ func (rm *AuthTicket) GetHashData() string {
 func (rm *AuthTicket) Sign() error {
 	var err error
 	hash := encryption.Hash(rm.GetHashData())
-	rm.Signature, err = sys.Sign(hash, client.GetClient().SignatureScheme, client.GetClientSysKeys())
+	rm.Signature, err = client.Sign(hash)
 	return err
 }

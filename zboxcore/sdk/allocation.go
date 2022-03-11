@@ -1358,9 +1358,7 @@ func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (
 	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey())
 	txn.TransactionData = commitFolderDataString
 	txn.TransactionType = transaction.TxnTypeData
-	err = txn.ComputeHashAndSign(func(hash string) (string, error) {
-		return sys.Sign(hash, client.GetClient().SignatureScheme, client.GetClientSysKeys())
-	})
+	err = txn.ComputeHashAndSign(client.Sign)
 	if err != nil {
 		return "", err
 	}

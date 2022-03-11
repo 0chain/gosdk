@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/client"
 )
 
@@ -26,6 +25,6 @@ func (dt *DeleteToken) GetHash() string {
 
 func (dt *DeleteToken) Sign() error {
 	var err error
-	dt.Signature, err = sys.Sign(dt.GetHash(), client.GetClient().SignatureScheme, client.GetClientSysKeys())
+	dt.Signature, err = client.Sign(dt.GetHash())
 	return err
 }
