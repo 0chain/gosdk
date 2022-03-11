@@ -42,7 +42,7 @@ set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWal
 set wallet on go
 
 **Input**:
-> clientID,privateKey, publicKey string
+> clientID, publicKey string
 
 **Output**:
 > N/A
