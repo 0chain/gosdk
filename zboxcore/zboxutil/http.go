@@ -16,6 +16,7 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -158,7 +159,7 @@ func setClientInfo(req *http.Request) {
 func setClientInfoWithSign(req *http.Request, allocation string) error {
 	setClientInfo(req)
 
-	sign, err := client.Sign(encryption.Hash(allocation))
+	sign, err := sys.Sign(encryption.Hash(allocation), client.GetClient().SignatureScheme, client.GetClientSysKeys())
 	if err != nil {
 		return err
 	}

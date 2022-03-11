@@ -13,6 +13,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/sys"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
@@ -1119,7 +1120,9 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	txn.TransactionFee = fee
 	txn.TransactionType = transaction.TxnTypeSmartContract
 
-	if err = txn.ComputeHashAndSign(client.Sign); err != nil {
+	if err = txn.ComputeHashAndSign(func(hash string) (string, error) {
+		return sys.Sign(hash, client.GetClient().SignatureScheme, client.GetClientSysKeys())
+	}); err != nil {
 		return
 	}
 
@@ -1131,7 +1134,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 		t              *transaction.Transaction
 	)
 
-	time.Sleep(querySleepTime)
+	sys.Sleep(querySleepTime)
 
 	for retries < blockchain.GetMaxTxnQuery() {
 		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders())
@@ -1139,7 +1142,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 			break
 		}
 		retries++
-		time.Sleep(querySleepTime)
+		sys.Sleep(querySleepTime)
 	}
 
 	if err != nil {

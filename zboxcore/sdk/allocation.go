@@ -20,6 +20,7 @@ import (
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -1357,14 +1358,16 @@ func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (
 	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey())
 	txn.TransactionData = commitFolderDataString
 	txn.TransactionType = transaction.TxnTypeData
-	err = txn.ComputeHashAndSign(client.Sign)
+	err = txn.ComputeHashAndSign(func(hash string) (string, error) {
+		return sys.Sign(hash, client.GetClient().SignatureScheme, client.GetClientSysKeys())
+	})
 	if err != nil {
 		return "", err
 	}
 
 	transaction.SendTransactionSync(txn, blockchain.GetMiners())
 	querySleepTime := time.Duration(blockchain.GetQuerySleepTime()) * time.Second
-	time.Sleep(querySleepTime)
+	sys.Sleep(querySleepTime)
 	retries := 0
 	var t *transaction.Transaction
 
@@ -1374,7 +1377,7 @@ func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (
 			break
 		}
 		retries++
-		time.Sleep(querySleepTime)
+		sys.Sleep(querySleepTime)
 	}
 
 	if err != nil {

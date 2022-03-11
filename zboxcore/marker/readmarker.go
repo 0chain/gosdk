@@ -5,6 +5,7 @@ import (
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/client"
 )
 
@@ -28,6 +29,6 @@ func (rm *ReadMarker) GetHash() string {
 
 func (rm *ReadMarker) Sign() error {
 	var err error
-	rm.Signature, err = client.Sign(rm.GetHash())
+	rm.Signature, err = sys.Sign(rm.GetHash(), client.GetClient().SignatureScheme, client.GetClientSysKeys())
 	return err
 }

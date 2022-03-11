@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -47,7 +48,9 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey())
 	txn.TransactionData = commitMetaDataString
 	txn.TransactionType = transaction.TxnTypeData
-	err = txn.ComputeHashAndSign(client.Sign)
+	err = txn.ComputeHashAndSign(func(hash string) (string, error) {
+		return sys.Sign(hash, client.GetClient().SignatureScheme, client.GetClientSysKeys())
+	})
 	if err != nil {
 		req.status.CommitMetaCompleted(commitMetaDataString, "", nil, err)
 		return
@@ -55,7 +58,7 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 
 	transaction.SendTransactionSync(txn, blockchain.GetMiners())
 	querySleepTime := time.Duration(blockchain.GetQuerySleepTime()) * time.Second
-	time.Sleep(querySleepTime)
+	sys.Sleep(querySleepTime)
 	retries := 0
 	var t *transaction.Transaction
 	for retries < blockchain.GetMaxTxnQuery() {
@@ -64,7 +67,7 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 			break
 		}
 		retries++
-		time.Sleep(querySleepTime)
+		sys.Sleep(querySleepTime)
 	}
 
 	if err != nil {

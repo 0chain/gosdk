@@ -5,6 +5,7 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/client"
 )
 
@@ -31,7 +32,7 @@ func (wm *WriteMarker) GetHash() string {
 
 func (wm *WriteMarker) Sign() error {
 	var err error
-	wm.Signature, err = client.Sign(wm.GetHash())
+	wm.Signature, err = sys.Sign(wm.GetHash(), client.GetClient().SignatureScheme, client.GetClientSysKeys())
 	return err
 }
 

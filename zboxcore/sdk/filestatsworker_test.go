@@ -16,6 +16,7 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	zclient "github.com/0chain/gosdk/zboxcore/client"
@@ -127,7 +128,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 					require.NoError(t, err)
 					require.EqualValues(t, expected, string(actual))
 
-					sign, err := zclient.Sign(encryption.Hash(mockAllocationTxId))
+					sign, _ := sys.Sign(encryption.Hash(mockAllocationTxId), zclient.GetClient().SignatureScheme, zclient.GetClientSysKeys())
 					return req.URL.Path == "Test_Success"+zboxutil.FILE_STATS_ENDPOINT+mockAllocationTxId &&
 						req.URL.RawPath == "Test_Success"+zboxutil.FILE_STATS_ENDPOINT+mockAllocationTxId &&
 						req.Method == "POST" &&
