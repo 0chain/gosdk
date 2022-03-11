@@ -76,7 +76,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *Chunk
 		logger.Logger.Error(sb.blobber.Baseurl, " Upload error response: ", resp.StatusCode, string(respbody))
 		return err
 	}
-	logger.Logger.Info(sb.blobber.Baseurl, " Upload response is: ", string(respbody))
+	logger.Logger.Error(sb.blobber.Baseurl, " Upload response is: ", string(respbody))
 	var r UploadResult
 	err = json.Unmarshal(respbody, &r)
 	if err != nil {
