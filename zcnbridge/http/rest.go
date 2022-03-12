@@ -53,7 +53,7 @@ func MakeSCRestAPICall(opCode int, relativePath string, params Params, cb zcncor
 		body []byte
 	}
 
-	results := make(chan *queryResult)
+	results := make(chan *queryResult, len(sharders))
 	defer close(results)
 
 	var client = NewRetryableClient()
