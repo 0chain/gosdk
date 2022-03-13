@@ -129,7 +129,8 @@ type TransactionScheme interface {
 	// Output of transaction.
 	Output() []byte
 
-	// vesting SC
+	// Vesting SC
+
 	VestingTrigger(poolID string) error
 	VestingStop(sr *VestingStopRequest) error
 	VestingUnlock(poolID string) error
@@ -167,10 +168,19 @@ type TransactionScheme interface {
 	StorageScUpdateConfig(*InputMap) error
 
 	// Interest pool SC
+
 	InterestPoolUpdateConfig(*InputMap) error
 
 	// Faucet
+
 	FaucetUpdateConfig(*InputMap) error
+
+	// ZCNSC Common transactions
+
+	// ZCNSCUpdateGlobalConfig updates global config
+	ZCNSCUpdateGlobalConfig(*InputMap) error
+	// ZCNSCUpdateAuthorizerConfig updates authorizer config by ID
+	ZCNSCUpdateAuthorizerConfig(*AuthorizerNode) error
 }
 
 func signFn(hash string) (string, error) {
@@ -302,7 +312,7 @@ func newTransaction(cb TransactionCallback, txnFee int64) (*Transaction, error) 
 
 // NewTransaction allocation new generic transaction object for any operation
 func NewTransaction(cb TransactionCallback, txnFee int64) (TransactionScheme, error) {
-	err := checkConfig()
+	err := CheckConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -1700,6 +1710,15 @@ type Blobber struct {
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
+type AuthorizerConfig struct {
+	Fee common.Balance `json:"fee"`
+}
+
+type AuthorizerNode struct {
+	ID     string            `json:"id"`
+	Config *AuthorizerConfig `json:"config"`
+}
+
 // UpdateBlobberSettings update settings of a blobber.
 func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee int64) (err error) {
 
@@ -1785,5 +1804,29 @@ func (t *Transaction) WritePoolUnlock(poolID string, fee int64) (
 	}
 	t.SetTransactionFee(fee)
 	go func() { t.submitTxn() }()
+	return
+}
+
+//
+// ZCNSC transactions
+//
+
+func (t *Transaction) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_GLOBAL_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go t.submitTxn()
+	return
+}
+
+func (t *Transaction) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go t.submitTxn()
 	return
 }

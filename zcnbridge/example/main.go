@@ -6,6 +6,7 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
+	slog "log"
 	"math/big"
 	"os"
 	"path"
@@ -733,11 +734,26 @@ func PrintEthereumBurnTicketsPayloads(b *zcnbridge.BridgeClient) {
 }
 
 func PrintAuthorizersList() {
-	authorizers, err := zcnbridge.GetAuthorizers()
+	var (
+		response = new(zcnbridge.AuthorizerNodesResponse)
+		cb       = NewJSONInfoCB(response)
+		err      error
+	)
+	err = zcnbridge.GetAuthorizers(cb)
 	if err != nil {
 		fmt.Print(err)
 	}
-	fmt.Println(authorizers)
+
+	if err = cb.Waiting(); err != nil {
+		slog.Fatal(err)
+	}
+
+	if len(response.Nodes) == 0 {
+		fmt.Println("no response found")
+		return
+	}
+
+	fmt.Println(response.Nodes)
 }
 
 func fromZCNtoERC(b *zcnbridge.BridgeClient) {

@@ -341,7 +341,6 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount int64) (*transaction.
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
 	}
 
-	trx.Value = amount
 	input := string(payload.Encode())
 
 	Logger.Info(

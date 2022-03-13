@@ -137,6 +137,11 @@ const (
 
 	// Interest pool SC
 	INTERESTPOOLSC_UPDATE_SETTINGS = "updateVariables"
+
+	// ZCNSC smart contract
+
+	ZCNSC_UPDATE_GLOBAL_CONFIG     = "update-global-config"
+	ZCNSC_UPDATE_AUTHORIZER_CONFIG = "update-authorizer-config"
 )
 
 type SignFunc = func(msg string) (string, error)
