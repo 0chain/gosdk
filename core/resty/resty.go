@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"sync"
 	"time"
+
+	"github.com/0chain/gosdk/core/sys"
 )
 
 // New create a Resty instance.
@@ -180,7 +182,7 @@ func (r *Resty) httpDo(req *http.Request) {
 				}
 
 				if resp != nil && resp.StatusCode == http.StatusTooManyRequests {
-					time.Sleep(1 * time.Second)
+					sys.Sleep(1 * time.Second)
 				}
 
 				if (request.Method == http.MethodPost || request.Method == http.MethodPut) && request.Body != nil {

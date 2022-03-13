@@ -9,6 +9,8 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 
 	//. "github.com/0chain/gosdk/zcnbridge/log"
+
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zcncore"
 	"github.com/pkg/errors"
 )
@@ -47,7 +49,7 @@ func ConfirmEthereumTransaction(hash string, times int, duration time.Duration) 
 			return res, nil
 		}
 		Logger.Info(fmt.Sprintf("Try confirming Ethereum transaction %s # %d", hash, i))
-		time.Sleep(duration)
+		sys.Sleep(duration)
 	}
 
 	Logger.Info(fmt.Sprintf("Verification of transaction %s is still pending after %d efforts, try checking it later", hash, times))

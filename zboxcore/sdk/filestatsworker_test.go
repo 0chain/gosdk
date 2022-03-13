@@ -127,7 +127,7 @@ func TestListRequest_getFileStatsInfoFromBlobber(t *testing.T) {
 					require.NoError(t, err)
 					require.EqualValues(t, expected, string(actual))
 
-					sign, err := zclient.Sign(encryption.Hash(mockAllocationTxId))
+					sign, _ := zclient.Sign(encryption.Hash(mockAllocationTxId))
 					return req.URL.Path == "Test_Success"+zboxutil.FILE_STATS_ENDPOINT+mockAllocationTxId &&
 						req.URL.RawPath == "Test_Success"+zboxutil.FILE_STATS_ENDPOINT+mockAllocationTxId &&
 						req.Method == "POST" &&
