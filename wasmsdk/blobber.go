@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -305,7 +306,7 @@ func downloadFile(allocationObj *sdk.Allocation, authTicket string, authTicketOb
 		PrintError(err)
 		return "", err
 	}
-	defer sdk.FS.Remove(localPath) //nolint
+	defer sys.Files.Remove(localPath) //nolint
 
 	if len(authTicket) > 0 {
 
@@ -396,7 +397,7 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 		return nil, err
 	}
 
-	defer sdk.FS.Remove(localPath) //nolint
+	defer sys.Files.Remove(localPath) //nolint
 
 	err = downloader.Start(statusBar)
 
@@ -415,9 +416,9 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 		FileName:       fileName,
 	}
 
-	fs, _ := sdk.FS.Open(localPath)
+	fs, _ := sys.Files.Open(localPath)
 
-	mf, _ := fs.(*common.MemFile)
+	mf, _ := fs.(*sys.MemFile)
 
 	resp.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
 

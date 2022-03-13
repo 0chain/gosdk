@@ -10,6 +10,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/sys"
 
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
@@ -297,7 +298,7 @@ func (t *Transaction) submitTxn() {
 		t.completeTxn(StatusError, "", fmt.Errorf("submit transaction failed. %s", tFailureRsp))
 		return
 	}
-	time.Sleep(3 * time.Second)
+	sys.Sleep(3 * time.Second)
 	t.completeTxn(StatusSuccess, tSuccessRsp, nil)
 }
 
@@ -882,11 +883,11 @@ func validateChain(confirmBlock *blockHeader) bool {
 		nextBlock, err := getBlockInfoByRound(1, round, "header")
 		if err != nil {
 			Logger.Info(err, " after a second falling thru to ", getMinShardersVerify(), "of ", len(_config.chain.Sharders), "Sharders")
-			time.Sleep(1 * time.Second)
+			sys.Sleep(1 * time.Second)
 			nextBlock, err = getBlockInfoByRound(getMinShardersVerify(), round, "header")
 			if err != nil {
 				Logger.Error(err, " block chain stalled. waiting", defaultWaitSeconds, "...")
-				time.Sleep(defaultWaitSeconds)
+				sys.Sleep(defaultWaitSeconds)
 				continue
 			}
 		}
@@ -914,7 +915,7 @@ func (t *Transaction) isTransactionExpired(lfbCreationTime, currentTime int64) b
 		return true
 	}
 	// Wait for next retry
-	time.Sleep(defaultWaitSeconds)
+	sys.Sleep(defaultWaitSeconds)
 	return false
 }
 func (t *Transaction) Verify() error {

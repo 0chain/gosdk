@@ -15,6 +15,7 @@ import (
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
@@ -135,7 +136,7 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	su.workdir = filepath.Join(workdir, ".zcn")
 
 	//create upload folder to save progress
-	err := FS.MkdirAll(filepath.Join(su.workdir, "upload"), 0744)
+	err := sys.Files.MkdirAll(filepath.Join(su.workdir, "upload"), 0744)
 	if err != nil {
 		return nil, err
 	}

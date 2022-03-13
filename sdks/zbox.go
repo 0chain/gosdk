@@ -12,7 +12,9 @@ import (
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/resty"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/client"
 )
 
 // ZBox  sdk client instance
@@ -61,24 +63,11 @@ func (z *ZBox) SignRequest(req *http.Request, allocationID string) error {
 
 	hash := encryption.Hash(allocationID)
 
-	var err error
-	sign := ""
-	for _, kv := range z.Wallet.Keys {
-		ss := zcncrypto.NewSignatureScheme(z.SignatureScheme)
-		err = ss.SetPrivateKey(kv.PrivateKey)
-		if err != nil {
-			return err
-		}
-
-		if len(sign) == 0 {
-			sign, err = ss.Sign(hash)
-		} else {
-			sign, err = ss.Add(sign, hash)
-		}
-		if err != nil {
-			return err
-		}
+	sign, err := sys.Sign(hash, z.SignatureScheme, client.GetClientSysKeys())
+	if err != nil {
+		return err
 	}
+
 	// ClientSignatureHeader represents http request header contains signature.
 	req.Header.Set("X-App-Client-Signature", sign)
 
