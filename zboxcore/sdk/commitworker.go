@@ -45,13 +45,14 @@ func SuccessCommitResult() *CommitResult {
 }
 
 type CommitRequest struct {
-	changes      []allocationchange.AllocationChange
-	blobber      *blockchain.StorageNode
-	allocationID string
-	allocationTx string
-	connectionID string
-	wg           *sync.WaitGroup
-	result       *CommitResult
+	changes        []allocationchange.AllocationChange
+	blobber        *blockchain.StorageNode
+	allocationID   string
+	allocationTx   string
+	connectionID   string
+	remotefilepath string
+	wg             *sync.WaitGroup
+	result         *CommitResult
 }
 
 var commitChan map[string]chan *CommitRequest
@@ -216,6 +217,7 @@ func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.W
 	wm.BlobberID = req.blobber.ID
 	wm.Timestamp = timestamp
 	wm.ClientID = client.GetClientID()
+	wm.LookupHash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 	err := wm.Sign()
 	if err != nil {
 		Logger.Error("Signing writemarker failed: ", err)

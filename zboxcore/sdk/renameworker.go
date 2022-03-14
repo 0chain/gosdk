@@ -139,6 +139,7 @@ func (req *RenameRequest) ProcessRename() error {
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReq.connectionID = req.connectionID
 		commitReq.wg = wg
+		commitReq.remotefilepath = req.remotefilepath
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
 		c++

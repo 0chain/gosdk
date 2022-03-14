@@ -17,6 +17,7 @@ type WriteMarker struct {
 	Timestamp              int64  `json:"timestamp"`
 	ClientID               string `json:"client_id"`
 	Signature              string `json:"signature"`
+	LookupHash             string `json:"lookup_hash"`
 }
 
 func (wm *WriteMarker) GetHashData() string {

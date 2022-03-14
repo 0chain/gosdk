@@ -574,6 +574,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 
 		commitReq.connectionID = req.connectionID
 		commitReq.wg = wg
+		commitReq.remotefilepath = req.remotefilepath
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
 		c++

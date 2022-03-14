@@ -146,6 +146,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	wm.Size = size
 	wm.BlobberID = sb.blobber.ID
 
+	wm.LookupHash = sb.fileRef.GetLookupHash()
 	wm.Timestamp = timestamp
 	wm.ClientID = client.GetClientID()
 	err = wm.Sign()
