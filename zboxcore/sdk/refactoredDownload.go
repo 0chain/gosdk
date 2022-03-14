@@ -401,7 +401,6 @@ func (sd *StreamDownload) getDataVertical(wantSize int) (data []byte, err error)
 	totBlocksPerBlobber := endOffsetBlock - int(startOffsetBlock) + 1
 	startingIdx := sd.getBlobberStartingIdx()
 	chunksRequired := sd.getChunksRequired(startingIdx, wantSize)
-	fmt.Println("ChunksRequired: ", chunksRequired)
 
 	bpm := sd.blocksPerMarker // blocks per marker
 
@@ -842,7 +841,6 @@ func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- str
 			return nil
 		})
 
-		fmt.Println("zbox httpdo error: ", err)
 		switch {
 		case errors.Is(err, nil):
 			successCh <- struct{}{}
