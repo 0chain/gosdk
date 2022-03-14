@@ -15,7 +15,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
@@ -113,7 +112,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		rm.AllocationID = req.allocationID
 		rm.OwnerID = client.GetClientID()
 		rm.Timestamp = common.Now()
-		rm.ReadCounter = getBlobberReadCtr(req.blobber.ID) + req.numBlocks
+		// rm.ReadCounter = getBlobberReadCtr(req.blobber.ID) + req.numBlocks
 		err := rm.Sign()
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error: Signing readmarker failed")}
@@ -185,16 +184,12 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 						rspData.BlockChunks = req.splitData(response, req.chunkSize)
 					}
 					rspData.RawData = []byte{}
-					incBlobberReadCtr(req.blobber.ID, req.numBlocks)
 					req.result <- &rspData
 					return nil
 				}
 
-				if !rspData.Success && rspData.LatestRM != nil && rspData.LatestRM.ReadCounter >= getBlobberReadCtr(req.blobber.ID) {
-					Logger.Info("Will be retrying download")
-					setBlobberReadCtr(req.blobber.ID, rspData.LatestRM.ReadCounter)
-					shouldRetry = true
-					return errors.New("", "Need to retry the download")
+				if !rspData.Success {
+					return errors.New("download_data", rspData.err.Error())
 				}
 
 			} else {
