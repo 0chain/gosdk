@@ -661,7 +661,7 @@ func GetNonce(cb GetNonceCallback) error {
 	if cb == nil {
 		cb = &GetNonceCallbackStub{}
 	}
-	err := checkConfig()
+	err := CheckConfig()
 	if err != nil {
 		return err
 	}
