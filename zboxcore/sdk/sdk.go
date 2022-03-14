@@ -1044,12 +1044,13 @@ const (
 	ProviderAuthorizer
 )
 
-func CollectRewards(poolId string, providerType ProviderType) (string, error) {
+func CollectRewards(providerId, poolId string, providerType ProviderType) (string, error) {
 	if !sdkInitialized {
 		return "", sdkNotInitialized
 	}
 
 	var input = map[string]interface{}{
+		"provider_id":   providerId,
 		"provider_type": providerType,
 		"pool_id":       poolId,
 	}

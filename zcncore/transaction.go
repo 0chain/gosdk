@@ -1280,6 +1280,7 @@ const (
 )
 
 type SCCollectReward struct {
+	ProviderId   string   `json:"provider_id"`
 	PoolId       string   `json:"pool_id"`
 	ProviderType Provider `json:"provider_type"`
 }
