@@ -38,7 +38,7 @@ type SecretKey interface {
 	Sign(m string) Signature
 	Add(rhs SecretKey)
 
-	GetMasterSecretKey(k int) (msk []SecretKey)
+	GetMasterSecretKey(k int) (msk []SecretKey, err error)
 	Set(msk []SecretKey, id ID) error
 }
 
