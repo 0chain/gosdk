@@ -141,7 +141,7 @@ type TransactionScheme interface {
 
 	// Miner SC
 
-	MinerSCCollectReward(string, Provider) error
+	MinerSCCollectReward(string, string, Provider) error
 	MinerSCMinerSettings(*MinerSCMinerInfo) error
 	MinerSCSharderSettings(*MinerSCMinerInfo) error
 	MinerSCLock(minerID string, lock int64) error
@@ -153,7 +153,7 @@ type TransactionScheme interface {
 
 	// Storage SC
 
-	StorageSCCollectReward(string, Provider) error
+	StorageSCCollectReward(string, string, Provider) error
 	FinalizeAllocation(allocID string, fee int64) error
 	CancelAllocation(allocID string, fee int64) error
 	CreateAllocation(car *CreateAllocationRequest, lock, fee int64) error //
@@ -1285,8 +1285,9 @@ type SCCollectReward struct {
 	ProviderType Provider `json:"provider_type"`
 }
 
-func (t *Transaction) MinerSCCollectReward(poolId string, providerType Provider) error {
+func (t *Transaction) MinerSCCollectReward(providerId, poolId string, providerType Provider) error {
 	pr := &SCCollectReward{
+		ProviderId:   providerId,
 		PoolId:       poolId,
 		ProviderType: providerType,
 	}
@@ -1480,8 +1481,9 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 // Storage SC transactions
 //
 
-func (t *Transaction) StorageSCCollectReward(poolId string, providerType Provider) error {
+func (t *Transaction) StorageSCCollectReward(providerId, poolId string, providerType Provider) error {
 	pr := &SCCollectReward{
+		ProviderId:   providerId,
 		PoolId:       poolId,
 		ProviderType: providerType,
 	}

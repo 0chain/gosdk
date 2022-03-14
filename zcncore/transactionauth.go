@@ -367,8 +367,9 @@ func (ta *TransactionWithAuth) MinerSCDeleteSharder(info *MinerSCMinerInfo) (
 	return
 }
 
-func (ta *TransactionWithAuth) MinerSCCollectReward(poolId string, providerType Provider) error {
+func (ta *TransactionWithAuth) MinerSCCollectReward(providerId, poolId string, providerType Provider) error {
 	pr := &SCCollectReward{
+		ProviderId:   providerId,
 		PoolId:       poolId,
 		ProviderType: providerType,
 	}
@@ -478,8 +479,9 @@ func (ta *TransactionWithAuth) RegisterMultiSig(walletstr string, mswallet strin
 // Storage SC
 //
 
-func (ta *TransactionWithAuth) StorageSCCollectReward(poolId string, providerType Provider) error {
+func (ta *TransactionWithAuth) StorageSCCollectReward(providerId, poolId string, providerType Provider) error {
 	pr := &SCCollectReward{
+		ProviderId:   providerId,
 		PoolId:       poolId,
 		ProviderType: providerType,
 	}
