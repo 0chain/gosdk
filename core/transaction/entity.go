@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math"
 	"net"
 	"net/http"
@@ -24,8 +23,9 @@ const TXN_SUBMIT_URL = "v1/transaction/put"
 const TXN_VERIFY_URL = "v1/transaction/get/confirmation?hash="
 
 const (
-	TxnSuccess = 1 // Indicates the transaction is successful in updating the state or smart contract
-	TxnFail    = 3 // Indicates a transaction has failed to update the state or smart contract
+	TxnSuccess         = 1 // Indicates the transaction is successful in updating the state or smart contract
+	TxnChargeableError = 2 // Indicates the transaction is successful in updating the state or smart contract
+	TxnFail            = 3 // Indicates a transaction has failed to update the state or smart contract
 )
 
 //Transaction entity that encapsulates the transaction related data and meta data
@@ -104,23 +104,23 @@ const (
 	VESTING_UPDATE_SETTINGS = "vestingsc-update-settings"
 
 	// Storage SC
-	STORAGESC_FINALIZE_ALLOCATION      = "finalize_allocation"
-	STORAGESC_CANCEL_ALLOCATION        = "cancel_allocation"
-	STORAGESC_CREATE_ALLOCATION        = "new_allocation_request"
-	STORAGESC_CREATE_READ_POOL         = "new_read_pool"
-	STORAGESC_READ_POOL_LOCK           = "read_pool_lock"
-	STORAGESC_READ_POOL_UNLOCK         = "read_pool_unlock"
-	STORAGESC_STAKE_POOL_LOCK          = "stake_pool_lock"
-	STORAGESC_STAKE_POOL_UNLOCK        = "stake_pool_unlock"
-	STORAGESC_STAKE_POOL_PAY_INTERESTS = "stake_pool_pay_interests"
-	STORAGESC_UPDATE_BLOBBER_SETTINGS  = "update_blobber_settings"
-	STORAGESC_UPDATE_ALLOCATION        = "update_allocation_request"
-	STORAGESC_WRITE_POOL_LOCK          = "write_pool_lock"
-	STORAGESC_WRITE_POOL_UNLOCK        = "write_pool_unlock"
-	STORAGESC_ADD_CURATOR              = "add_curator"
-	STORAGESC_REMOVE_CURATOR           = "remove_curator"
-	STORAGESC_CURATOR_TRANSFER         = "curator_transfer_allocation"
-	STORAGESC_UPDATE_SETTINGS          = "update_settings"
+	STORAGESC_FINALIZE_ALLOCATION     = "finalize_allocation"
+	STORAGESC_CANCEL_ALLOCATION       = "cancel_allocation"
+	STORAGESC_CREATE_ALLOCATION       = "new_allocation_request"
+	STORAGESC_CREATE_READ_POOL        = "new_read_pool"
+	STORAGESC_READ_POOL_LOCK          = "read_pool_lock"
+	STORAGESC_READ_POOL_UNLOCK        = "read_pool_unlock"
+	STORAGESC_STAKE_POOL_LOCK         = "stake_pool_lock"
+	STORAGESC_STAKE_POOL_UNLOCK       = "stake_pool_unlock"
+	STORAGESC_UPDATE_BLOBBER_SETTINGS = "update_blobber_settings"
+	STORAGESC_UPDATE_ALLOCATION       = "update_allocation_request"
+	STORAGESC_WRITE_POOL_LOCK         = "write_pool_lock"
+	STORAGESC_WRITE_POOL_UNLOCK       = "write_pool_unlock"
+	STORAGESC_ADD_CURATOR             = "add_curator"
+	STORAGESC_REMOVE_CURATOR          = "remove_curator"
+	STORAGESC_CURATOR_TRANSFER        = "curator_transfer_allocation"
+	STORAGESC_UPDATE_SETTINGS         = "update_settings"
+	STORAGESC_COLLECT_REWARD          = "collect_reward"
 
 	MINERSC_LOCK             = "addToDelegatePool"
 	MINERSC_UNLOCK           = "deleteFromDelegatePool"
@@ -130,12 +130,18 @@ const (
 	MINERSC_UPDATE_GLOBALS   = "update_globals"
 	MINERSC_MINER_DELETE     = "delete_miner"
 	MINERSC_SHARDER_DELETE   = "delete_sharder"
+	MINERSC_COLLECT_REWARD   = "collect_reward"
 
 	// Faucet SC
 	FAUCETSC_UPDATE_SETTINGS = "update-settings"
 
 	// Interest pool SC
 	INTERESTPOOLSC_UPDATE_SETTINGS = "updateVariables"
+
+	// ZCNSC smart contract
+
+	ZCNSC_UPDATE_GLOBAL_CONFIG     = "update-global-config"
+	ZCNSC_UPDATE_AUTHORIZER_CONFIG = "update-authorizer-config"
 )
 
 type SignFunc = func(msg string) (string, error)
@@ -293,62 +299,62 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 		}).Dial,
 		TLSHandshakeTimeout: resty.DefaultDialTimeout,
 	}
-	r := resty.New(transport, func(req *http.Request, resp *http.Response, cf context.CancelFunc, err error) error {
-		url := req.URL.String()
 
-		if err != nil { //network issue
-			msgList = append(msgList, err.Error())
-			return err
-		}
-
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil { //network issue
-			msgList = append(msgList, url+": "+err.Error())
-			return err
-		}
-
-		if resp.StatusCode != 200 {
-			msgList = append(msgList, url+": ["+strconv.Itoa(resp.StatusCode)+"] "+string(body))
-			return errors.Throw(ErrInvalidRequest, strconv.Itoa(resp.StatusCode)+": "+resp.Status)
-		}
-
-		var objmap map[string]json.RawMessage
-		err = json.Unmarshal(body, &objmap)
-		if err != nil {
-			msgList = append(msgList, "json: "+string(body))
-			return err
-		}
-		txnRawJSON, ok := objmap["txn"]
-
-		// txn data is found, success
-		if ok {
-			txn := &Transaction{}
-			err = json.Unmarshal(txnRawJSON, txn)
-			if err != nil {
-				msgList = append(msgList, "json: "+string(txnRawJSON))
-				return err
-			}
-			if len(txn.Signature) > 0 {
-				retTxn = txn
-			}
-			numSuccess++
-
-		} else {
-			// txn data is not found, but get block_hash, success
-			if _, ok := objmap["block_hash"]; ok {
-				numSuccess++
-			} else {
-				// txn and block_hash
-				msgList = append(msgList, fmt.Sprintf("Sharder does not have the block summary with url: %s, contents: %s", url, string(body)))
-			}
-
-		}
-
-		return nil
-	},
+	options := []resty.Option{
 		resty.WithTimeout(resty.DefaultRequestTimeout),
 		resty.WithRetry(resty.DefaultRetry),
-		resty.WithHeader(header))
+		resty.WithHeader(header),
+		resty.WithTransport(transport),
+	}
+
+	r := resty.New(options...).
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			url := req.URL.String()
+
+			if err != nil { //network issue
+				msgList = append(msgList, err.Error())
+				return err
+			}
+
+			if resp.StatusCode != 200 {
+				msgList = append(msgList, url+": ["+strconv.Itoa(resp.StatusCode)+"] "+string(respBody))
+				return errors.Throw(ErrInvalidRequest, strconv.Itoa(resp.StatusCode)+": "+resp.Status)
+			}
+
+			var objmap map[string]json.RawMessage
+			err = json.Unmarshal(respBody, &objmap)
+			if err != nil {
+				msgList = append(msgList, "json: "+string(respBody))
+				return err
+			}
+			txnRawJSON, ok := objmap["txn"]
+
+			// txn data is found, success
+			if ok {
+				txn := &Transaction{}
+				err = json.Unmarshal(txnRawJSON, txn)
+				if err != nil {
+					msgList = append(msgList, "json: "+string(txnRawJSON))
+					return err
+				}
+				if len(txn.Signature) > 0 {
+					retTxn = txn
+				}
+				numSuccess++
+
+			} else {
+				// txn data is not found, but get block_hash, success
+				if _, ok := objmap["block_hash"]; ok {
+					numSuccess++
+				} else {
+					// txn and block_hash
+					msgList = append(msgList, fmt.Sprintf("Sharder does not have the block summary with url: %s, contents: %s", url, string(respBody)))
+				}
+
+			}
+
+			return nil
+		})
 
 	for {
 		r.DoGet(context.TODO(), urls...)

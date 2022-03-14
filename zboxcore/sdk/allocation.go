@@ -3,7 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -20,6 +20,7 @@ import (
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -40,6 +41,10 @@ const (
 	MB = 1024 * KB
 	GB = 1024 * MB
 )
+
+// Expected success rate is calculated (NumDataShards)*100/(NumDataShards+NumParityShards)
+// Additional success percentage on top of expected success rate
+const additionalSuccessRate = (10)
 
 var GetFileInfo = func(localpath string) (os.FileInfo, error) {
 	return os.Stat(localpath)
@@ -177,6 +182,11 @@ type Allocation struct {
 	downloadProgressMap     map[string]*DownloadRequest
 	repairRequestInProgress *RepairRequest
 	initialized             bool
+
+	// conseususes
+	consensusThreshold float32
+	consensusOK        float32
+	fullconsensus      float32
 }
 
 func (a *Allocation) GetStats() *AllocationStats {
@@ -208,6 +218,7 @@ func (a *Allocation) InitAllocation() {
 	a.uploadProgressMap = make(map[string]*UploadRequest)
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
 	a.mutex = &sync.Mutex{}
+	a.fullconsensus, a.consensusThreshold, a.consensusOK = a.getConsensuses()
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers)
@@ -469,8 +480,9 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 	uploadReq.datashards = a.DataShards
 	uploadReq.parityshards = a.ParityShards
 	uploadReq.setUploadMask(len(a.Blobbers))
-	uploadReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
-	uploadReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+	uploadReq.fullconsensus = a.fullconsensus
+	uploadReq.consensusThresh = a.consensusThreshold
+	uploadReq.consensusRequiredForOk = a.consensusOK
 	uploadReq.isEncrypted = encryption
 	uploadReq.completedCallback = func(filepath string) {
 		a.mutex.Lock()
@@ -489,7 +501,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 		}
 
 		file, _ := ioutil.ReadFile(localpath)
-		hash := sha1.New()
+		hash := sha256.New()
 		hash.Write(file)
 		contentHash := hex.EncodeToString(hash.Sum(nil))
 		print(contentHash)
@@ -524,8 +536,9 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, 
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
-	listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
-	listReq.consensusThresh = 100 / listReq.fullconsensus
+	listReq.fullconsensus = a.fullconsensus
+	listReq.consensusThresh = a.consensusThreshold
+	listReq.consensusRequiredForOk = a.consensusOK
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = remotepath
 	found, fileRef, _ := listReq.getFileConsensusFromBlobbers()
@@ -568,9 +581,9 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 		}
 	}
 	lPath, _ := filepath.Split(localPath)
-	os.MkdirAll(lPath, os.ModePerm)
+	os.MkdirAll(lPath, 0744)
 
-	if len(a.Blobbers) <= 1 {
+	if len(a.Blobbers) == 0 {
 		return noBLOBBERS
 	}
 
@@ -588,8 +601,9 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	downloadReq.startBlock = startBlock - 1
 	downloadReq.endBlock = endBlock
 	downloadReq.numBlocks = int64(numBlocks)
-	downloadReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
-	downloadReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+	downloadReq.fullconsensus = a.fullconsensus
+	downloadReq.consensusThresh = a.consensusThreshold
+	downloadReq.consensusRequiredForOk = a.consensusOK
 	downloadReq.completedCallback = func(remotepath string, remotepathhash string) {
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
@@ -626,8 +640,9 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string)
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
-	listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
-	listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+	listReq.fullconsensus = a.fullconsensus
+	listReq.consensusThresh = a.consensusThreshold
+	listReq.consensusRequiredForOk = a.consensusOK
 	listReq.ctx = a.ctx
 	listReq.remotefilepathhash = lookupHash
 	listReq.authToken = at
@@ -639,12 +654,6 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string)
 }
 
 func (a *Allocation) ListDir(path string) (*ListResult, error) {
-	consensusThresh := (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
-	fullconsensus := float32(a.DataShards + a.ParityShards)
-	return a.listDir(path, consensusThresh, fullconsensus)
-}
-
-func (a *Allocation) listDir(path string, consensusThresh, fullconsensus float32) (*ListResult, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
@@ -660,8 +669,9 @@ func (a *Allocation) listDir(path string, consensusThresh, fullconsensus float32
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
-	listReq.consensusThresh = consensusThresh
-	listReq.fullconsensus = fullconsensus
+	listReq.fullconsensus = a.fullconsensus
+	listReq.consensusThresh = a.consensusThreshold
+	listReq.consensusRequiredForOk = a.consensusOK
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
 	ref := listReq.GetListFromBlobbers()
@@ -693,8 +703,7 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 		wg:             &sync.WaitGroup{},
 		ctx:            a.ctx,
 	}
-
-	oTreeReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+	oTreeReq.fullconsensus = a.fullconsensus
 	oTreeReq.consensusThresh = float32(a.DataShards) / oTreeReq.fullconsensus
 	return oTreeReq.GetRefs()
 }
@@ -745,8 +754,9 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
-	listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
-	listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+	listReq.fullconsensus = a.fullconsensus
+	listReq.consensusThresh = a.consensusThreshold
+	listReq.consensusRequiredForOk = a.consensusOK
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
 	_, ref, _ := listReq.getFileConsensusFromBlobbers()
@@ -792,8 +802,9 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
-	listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
-	listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+	listReq.fullconsensus = a.fullconsensus
+	listReq.consensusThresh = a.consensusThreshold
+	listReq.consensusRequiredForOk = a.consensusOK
 	listReq.ctx = a.ctx
 	listReq.remotefilepathhash = lookupHash
 	listReq.authToken = at
@@ -830,8 +841,9 @@ func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error) {
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
-	listReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
-	listReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+	listReq.fullconsensus = a.fullconsensus
+	listReq.consensusThresh = a.consensusThreshold
+	listReq.consensusRequiredForOk = a.consensusOK
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
 	ref := listReq.getFileStatsFromBlobbers()
@@ -841,55 +853,8 @@ func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error) {
 	return nil, errors.New("file_stats_request_failed", "Failed to get file stats response from the blobbers")
 }
 
-func (a *Allocation) DeleteFileFromBlobber(path, blobberUrl string) error {
-	consensusThresh := (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
-	return a.deleteFromBlobber(path, blobberUrl, consensusThresh, 1)
-}
-
 func (a *Allocation) DeleteFile(path string) error {
-	consensusThresh := (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
-	fullconsensus := float32(a.DataShards + a.ParityShards)
-	return a.deleteFile(path, consensusThresh, fullconsensus)
-}
-
-func (a *Allocation) deleteFromBlobber(path, blobberUrl string, threshConsensus, fullConsensus float32) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	if len(path) == 0 {
-		return errors.New("invalid_path", "Invalid path for the list")
-	}
-	path = zboxutil.RemoteClean(path)
-	isabs := zboxutil.IsRemoteAbs(path)
-	if !isabs {
-		return errors.New("invalid_path", "Path should be valid and absolute")
-	}
-
-	blobbers := make([]*blockchain.StorageNode, 0)
-	for idx := range a.Blobbers {
-		if a.Blobbers[idx].Baseurl == blobberUrl {
-			blobbers = append(blobbers, a.Blobbers[idx])
-		}
-	}
-
-	if len(blobbers) == 0 {
-		return errors.New("invalid_path", "Selected blobber not found")
-	}
-
-	req := &DeleteRequest{}
-	req.blobbers = blobbers
-	req.allocationID = a.ID
-	req.allocationTx = a.Tx
-	req.consensusThresh = threshConsensus
-	req.fullconsensus = fullConsensus
-	req.ctx = a.ctx
-	req.remotefilepath = path
-	req.deleteMask = 0
-	req.listMask = 0
-	req.connectionID = zboxutil.NewConnectionId()
-	err := req.ProcessDelete()
-	return err
+	return a.deleteFile(path, a.consensusThreshold, a.fullconsensus)
 }
 
 func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus float32) error {
@@ -907,11 +872,13 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus floa
 	}
 
 	req := &DeleteRequest{}
+	req.allocationObj = a
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
 	req.consensusThresh = threshConsensus
 	req.fullconsensus = fullConsensus
+	req.consensusRequiredForOk = a.consensusOK
 	req.ctx = a.ctx
 	req.remotefilepath = path
 	req.deleteMask = 0
@@ -936,12 +903,14 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	}
 
 	req := &RenameRequest{}
+	req.allocationObj = a
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
 	req.newName = destName
-	req.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
-	req.fullconsensus = float32(a.DataShards + a.ParityShards)
+	req.fullconsensus = a.fullconsensus
+	req.consensusThresh = a.consensusThreshold
+	req.consensusRequiredForOk = a.consensusOK
 	req.ctx = a.ctx
 	req.remotefilepath = path
 	req.renameMask = 0
@@ -980,8 +949,9 @@ func (a *Allocation) UpdateObjectAttributes(path string,
 	ar.allocationTx = a.Tx
 	ar.Attributes = attrs
 	ar.attributes = string(attrsb)
-	ar.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
-	ar.fullconsensus = float32(a.DataShards + a.ParityShards)
+	ar.fullconsensus = a.fullconsensus
+	ar.consensusThresh = a.consensusThreshold
+	ar.consensusRequiredForOk = a.consensusOK
 	ar.ctx = a.ctx
 	ar.remotefilepath = path
 	ar.attributesMask = 0
@@ -1013,6 +983,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	}
 
 	req := &CopyRequest{}
+	req.allocationObj = a
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
@@ -1020,8 +991,9 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 		destPath = strings.TrimSuffix(destPath, "/")
 	}
 	req.destPath = destPath
-	req.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
-	req.fullconsensus = float32(a.DataShards + a.ParityShards)
+	req.fullconsensus = a.fullconsensus
+	req.consensusThresh = a.consensusThreshold
+	req.consensusRequiredForOk = a.consensusOK
 	req.ctx = a.ctx
 	req.remotefilepath = path
 	req.copyMask = 0
@@ -1097,20 +1069,15 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 	return errors.New("", "consensus not reached")
 }
 
-func (a *Allocation) GetAuthTicket(
-	path string,
-	filename string,
-	referenceType string,
-	refereeClientID string,
-	refereeEncryptionPublicKey string,
-	expiration int64,
-) (string, error) {
+func (a *Allocation) GetAuthTicket(path, filename, referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration int64) (string, error) {
 	if !a.isInitialized() {
 		return "", notInitialized
 	}
-	if len(path) == 0 {
+
+	if path == "" {
 		return "", errors.New("invalid_path", "Invalid path for the list")
 	}
+
 	path = zboxutil.RemoteClean(path)
 	isabs := zboxutil.IsRemoteAbs(path)
 	if !isabs {
@@ -1119,64 +1086,46 @@ func (a *Allocation) GetAuthTicket(
 
 	shareReq := &ShareRequest{
 		expirationSeconds: expiration,
+		allocationID:      a.ID,
+		allocationTx:      a.Tx,
+		blobbers:          a.Blobbers,
+		ctx:               a.ctx,
+		remotefilepath:    path,
+		remotefilename:    filename,
 	}
-	shareReq.allocationID = a.ID
-	shareReq.allocationTx = a.Tx
-	shareReq.blobbers = a.Blobbers
-	shareReq.ctx = a.ctx
-	shareReq.remotefilepath = path
-	shareReq.remotefilename = filename
+
 	if referenceType == fileref.DIRECTORY {
 		shareReq.refType = fileref.DIRECTORY
 	} else {
 		shareReq.refType = fileref.FILE
 	}
-	if len(refereeEncryptionPublicKey) > 0 || len(refereeClientID) > 0 {
-		authTicket, err := shareReq.GetAuthTicketForEncryptedFile(refereeClientID, refereeEncryptionPublicKey)
-		if err != nil {
-			return "", err
-		}
-		err = a.UploadAuthTicketToBlobber(authTicket, refereeEncryptionPublicKey)
-		if err != nil {
-			return "", err
-		}
-		// generate another auth ticket without reencryption key
-		at := &marker.AuthTicket{}
-		decoded, err := base64.StdEncoding.DecodeString(authTicket)
-		if err != nil {
-			return "", err
-		}
 
-		err = json.Unmarshal(decoded, at)
-		if err != nil {
-			return "", err
-		}
-
-		at.ReEncryptionKey = ""
-		err = at.Sign()
-		if err != nil {
-			return "", err
-		}
-		atBytes, err := json.Marshal(at)
-		if err != nil {
-			return "", err
-		}
-		sEnc := base64.StdEncoding.EncodeToString(atBytes)
-		return sEnc, nil
-	}
-	authTicket, err := shareReq.GetAuthTicket(refereeClientID)
+	aTicket, err := shareReq.getAuthTicket(refereeClientID, refereeEncryptionPublicKey)
 	if err != nil {
 		return "", err
 	}
-	return authTicket, nil
-}
 
-func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPubKey string) error {
-	decodedAuthTicket, err := base64.StdEncoding.DecodeString(authticketB64)
+	atBytes, err := json.Marshal(aTicket)
 	if err != nil {
-		return err
+		return "", err
 	}
 
+	if err := a.UploadAuthTicketToBlobber(string(atBytes), refereeEncryptionPublicKey); err != nil {
+		return "", err
+	}
+
+	aTicket.ReEncryptionKey = ""
+	aTicket.Sign()
+
+	atBytes, err = json.Marshal(aTicket)
+	if err != nil {
+		return "", err
+	}
+
+	return base64.StdEncoding.EncodeToString(atBytes), nil
+}
+
+func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKey string) error {
 	success := make(chan int, len(a.Blobbers))
 	wg := &sync.WaitGroup{}
 	for idx := range a.Blobbers {
@@ -1184,7 +1133,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPu
 		body := new(bytes.Buffer)
 		formWriter := multipart.NewWriter(body)
 		formWriter.WriteField("encryption_public_key", clientEncPubKey)
-		formWriter.WriteField("auth_ticket", string(decodedAuthTicket))
+		formWriter.WriteField("auth_ticket", authTicket)
 		formWriter.Close()
 		httpreq, err := zboxutil.NewShareRequest(url, a.Tx, body)
 		if err != nil {
@@ -1220,9 +1169,10 @@ func (a *Allocation) UploadAuthTicketToBlobber(authticketB64 string, clientEncPu
 	}
 	wg.Wait()
 	consensus := Consensus{
-		consensus:       float32(len(success)),
-		consensusThresh: (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards),
-		fullconsensus:   float32(a.DataShards + a.ParityShards),
+		consensus:              float32(len(success)),
+		consensusThresh:        a.consensusThreshold,
+		fullconsensus:          a.fullconsensus,
+		consensusRequiredForOk: a.consensusOK,
 	}
 	if !consensus.isConsensusOk() {
 		return errors.New("", "consensus not reached")
@@ -1346,7 +1296,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 			return fmt.Errorf("Local file already exists '%s'", localPath)
 		}
 	}
-	if len(a.Blobbers) <= 1 {
+	if len(a.Blobbers) == 0 {
 		return noBLOBBERS
 	}
 
@@ -1367,8 +1317,9 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.endBlock = endBlock
 	downloadReq.numBlocks = int64(numBlocks)
 	downloadReq.rxPay = rxPay
-	downloadReq.consensusThresh = (float32(a.DataShards) * 100) / float32(a.DataShards+a.ParityShards)
-	downloadReq.fullconsensus = float32(a.DataShards + a.ParityShards)
+	downloadReq.fullconsensus = a.fullconsensus
+	downloadReq.consensusThresh = a.consensusThreshold
+	downloadReq.consensusRequiredForOk = a.consensusOK
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
@@ -1420,9 +1371,7 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 		return notInitialized
 	}
 
-	fullconsensus := float32(a.DataShards + a.ParityShards)
-	consensusThresh := 100 / fullconsensus
-	listDir, err := a.listDir(pathToRepair, consensusThresh, fullconsensus)
+	listDir, err := a.ListDir(pathToRepair)
 	if err != nil {
 		return err
 	}
@@ -1494,7 +1443,7 @@ func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (
 
 	transaction.SendTransactionSync(txn, blockchain.GetMiners())
 	querySleepTime := time.Duration(blockchain.GetQuerySleepTime()) * time.Second
-	time.Sleep(querySleepTime)
+	sys.Sleep(querySleepTime)
 	retries := 0
 	var t *transaction.Transaction
 
@@ -1504,7 +1453,7 @@ func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (
 			break
 		}
 		retries++
-		time.Sleep(querySleepTime)
+		sys.Sleep(querySleepTime)
 	}
 
 	if err != nil {
@@ -1665,4 +1614,19 @@ func (a *Allocation) uploadCostForBlobber(price float64, size int64, data, parit
 
 func (a *Allocation) sizeInGB(size int64) float64 {
 	return float64(size) / GB
+}
+
+func (a *Allocation) getConsensuses() (fullConsensus float32, consensusThreshold float32, consensusOK float32) {
+	if a.DataShards == 0 {
+		return 0, 0, 0
+	}
+
+	if a.ParityShards == 0 {
+		return float32(a.DataShards), 100, 100
+	}
+
+	fullConsensus = float32(a.DataShards + a.ParityShards)
+	consensusThreshold = (float32(a.DataShards) * 100) / fullConsensus
+	consensusOK = consensusThreshold + additionalSuccessRate
+	return
 }

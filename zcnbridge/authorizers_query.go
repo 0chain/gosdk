@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/0chain/gosdk/core/common"
+
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	h "github.com/0chain/gosdk/zcnbridge/http"
@@ -49,14 +51,14 @@ var (
 // zchainBurnHash - Ethereum burn transaction hash
 func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereum.MintPayload, error) {
 	client = h.NewRetryableClient()
-	authorizers, err := GetAuthorizers()
+	authorizers, err := getAuthorizers()
 
-	if err != nil || len(authorizers.NodeMap) == 0 {
+	if err != nil || len(authorizers) == 0 {
 		return nil, errors.Wrap("get_authorizers", "failed to get authorizers", err)
 	}
 
 	var (
-		totalWorkers = len(authorizers.NodeMap)
+		totalWorkers = len(authorizers)
 		values       = u.Values{
 			"zchainBurnHash": []string{zchainBurnHash},
 		}
@@ -111,14 +113,14 @@ func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereu
 // ethBurnHash - Ethereum burn transaction hash
 func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPayload, error) {
 	client = h.NewRetryableClient()
-	authorizers, err := GetAuthorizers()
+	authorizers, err := getAuthorizers()
 
-	if err != nil || len(authorizers.NodeMap) == 0 {
+	if err != nil || len(authorizers) == 0 {
 		return nil, errors.Wrap("get_authorizers", "failed to get authorizers", err)
 	}
 
 	var (
-		totalWorkers = len(authorizers.NodeMap)
+		totalWorkers = len(authorizers)
 		values       = u.Values{
 			"eth_burn_hash": []string{ethBurnHash},
 			"address":       []string{wallet.ZCNSCSmartContractAddress},
@@ -159,7 +161,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 
 		payload := &zcnsc.MintPayload{
 			EthereumTxnID:     burnTicket.TxnID,
-			Amount:            burnTicket.Amount,
+			Amount:            common.Balance(burnTicket.Amount),
 			Nonce:             burnTicket.Amount,
 			Signatures:        sigs,
 			ReceivingClientID: burnTicket.ReceivingClientID,
@@ -172,9 +174,9 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 	return nil, errors.New("get_burn_ticket", text)
 }
 
-func queryAllAuthorizers(authorizers *AuthorizerNodes, handler *requestHandler) []JobResult {
+func queryAllAuthorizers(authorizers []*AuthorizerNode, handler *requestHandler) []JobResult {
 	var (
-		totalWorkers    = len(authorizers.NodeMap)
+		totalWorkers    = len(authorizers)
 		eventsChannel   = make(eventsChannelType)
 		responseChannel = make(responseChannelType, totalWorkers)
 	)
@@ -184,7 +186,7 @@ func queryAllAuthorizers(authorizers *AuthorizerNodes, handler *requestHandler) 
 	go handleResponse(responseChannel, eventsChannel, &wg)
 	defer close(eventsChannel)
 
-	for _, authorizer := range authorizers.NodeMap {
+	for _, authorizer := range authorizers {
 		wg.Add(1)
 		go queryAuthoriser(authorizer, handler, responseChannel)
 	}

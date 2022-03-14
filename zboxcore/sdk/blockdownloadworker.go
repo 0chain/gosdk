@@ -1,12 +1,10 @@
 package sdk
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"mime/multipart"
 	"net/http"
 	"strings"
 	"sync"
@@ -121,8 +119,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error: Signing readmarker failed")}
 			return
 		}
-		body := new(bytes.Buffer)
-		formWriter := multipart.NewWriter(body)
 		rmData, err := json.Marshal(rm)
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating readmarker")}
@@ -131,33 +127,35 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		if len(req.remotefilepath) > 0 {
 			req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 		}
-		formWriter.WriteField("path_hash", req.remotefilepathhash)
 
-		if req.rxPay {
-			formWriter.WriteField("rx_pay", "true") // pay oneself
-		}
-
-		formWriter.WriteField("block_num", fmt.Sprintf("%d", req.blockNum))
-		formWriter.WriteField("num_blocks", fmt.Sprintf("%d", req.numBlocks))
-		formWriter.WriteField("read_marker", string(rmData))
-		if req.authTicket != nil {
-			authTicketBytes, _ := json.Marshal(req.authTicket)
-			formWriter.WriteField("auth_token", string(authTicketBytes))
-		}
-		if len(req.contentMode) > 0 {
-			formWriter.WriteField("content", req.contentMode)
-		}
-
-		formWriter.Close()
-		httpreq, err := zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationTx, body)
+		httpreq, err := zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationTx)
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating download request")}
 			return
 		}
-		httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+
+		header := &DownloadRequestHeader{}
+		header.PathHash = req.remotefilepathhash
+
+		if req.rxPay {
+			header.RxPay = req.rxPay // pay oneself
+		}
+		header.BlockNum = req.blockNum
+		header.NumBlocks = req.numBlocks
+		header.ReadMarker = rmData
+
+		if req.authTicket != nil {
+			header.AuthToken, _ = json.Marshal(req.authTicket) //nolint: errcheck
+		}
+		if len(req.contentMode) > 0 {
+			header.DownloadMode = req.contentMode
+		}
 
 		ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 		shouldRetry := false
+
+		header.ToHeader(httpreq)
+
 		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 			if err != nil {
 				return err
@@ -175,24 +173,16 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				// After getting start of stream JSON message, other message chunks should not be in JSON
 				if err != nil {
 					rspData.Success = true
-					rspData.RawData = response
 
-					// TODO download by 'chunks' should not download full stream and then chunk it
-					// It has to download already chunked data
 					if len(req.encryptedKey) > 0 {
-
-						var chunks [][]byte
-						if req.authTicket == nil {
-							// 256 for the additional header bytes,  where chunk_size - 2 * 1024 is the encrypted data size
-							chunks = req.splitData(rspData.RawData, req.chunkSize-2*1024+256)
+						if req.authTicket != nil {
+							// ReEncryptionHeaderSize for the additional header bytes for ReEncrypt,  where chunk_size - EncryptionHeaderSize is the encrypted data size
+							rspData.BlockChunks = req.splitData(response, req.chunkSize-EncryptionHeaderSize+ReEncryptionHeaderSize)
 						} else {
-							chunks = req.splitData(rspData.RawData, req.chunkSize)
+							rspData.BlockChunks = req.splitData(response, req.chunkSize)
 						}
-
-						rspData.BlockChunks = chunks
 					} else {
-						chunks := req.splitData(rspData.RawData, req.chunkSize)
-						rspData.BlockChunks = chunks
+						rspData.BlockChunks = req.splitData(response, req.chunkSize)
 					}
 					rspData.RawData = []byte{}
 					incBlobberReadCtr(req.blobber.ID, req.numBlocks)

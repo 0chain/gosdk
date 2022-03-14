@@ -10,6 +10,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/sys"
 
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
@@ -72,15 +73,20 @@ type blockHeader struct {
 }
 
 type Transaction struct {
-	txn          *transaction.Transaction
-	txnOut       string
-	txnHash      string
-	txnStatus    int
-	txnError     error
-	txnCb        TransactionCallback
-	verifyStatus int
-	verifyOut    string
-	verifyError  error
+	txn                      *transaction.Transaction
+	txnOut                   string
+	txnHash                  string
+	txnStatus                int
+	txnError                 error
+	txnCb                    TransactionCallback
+	verifyStatus             int
+	verifyConfirmationStatus ConfirmationStatus
+	verifyOut                string
+	verifyError              error
+}
+
+type SendTxnData struct {
+	Note string `json:"note"`
 }
 
 // TransactionScheme implements few methods for block chain.
@@ -112,6 +118,8 @@ type TransactionScheme interface {
 	SetTransactionFee(txnFee int64) error
 	// Verify implements verify the transaction
 	Verify() error
+	// GetVerifyConfirmationStatus implements the verification status from sharders
+	GetVerifyConfirmationStatus() ConfirmationStatus
 	// GetVerifyOutput implements the verifcation output from sharders
 	GetVerifyOutput() string
 	// GetTransactionError implements error string incase of transaction failure
@@ -122,7 +130,8 @@ type TransactionScheme interface {
 	// Output of transaction.
 	Output() []byte
 
-	// vesting SC
+	// Vesting SC
+
 	VestingTrigger(poolID string) error
 	VestingStop(sr *VestingStopRequest) error
 	VestingUnlock(poolID string) error
@@ -132,6 +141,7 @@ type TransactionScheme interface {
 
 	// Miner SC
 
+	MinerSCCollectReward(string, Provider) error
 	MinerSCMinerSettings(*MinerSCMinerInfo) error
 	MinerSCSharderSettings(*MinerSCMinerInfo) error
 	MinerSCLock(minerID string, lock int64) error
@@ -143,6 +153,7 @@ type TransactionScheme interface {
 
 	// Storage SC
 
+	StorageSCCollectReward(string, Provider) error
 	FinalizeAllocation(allocID string, fee int64) error
 	CancelAllocation(allocID string, fee int64) error
 	CreateAllocation(car *CreateAllocationRequest, lock, fee int64) error //
@@ -151,7 +162,6 @@ type TransactionScheme interface {
 	ReadPoolUnlock(poolID string, fee int64) error
 	StakePoolLock(blobberID string, lock, fee int64) error
 	StakePoolUnlock(blobberID string, poolID string, fee int64) error
-	StakePoolPayInterests(blobberID string, fee int64) error
 	UpdateBlobberSettings(blobber *Blobber, fee int64) error
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock, fee int64) error
 	WritePoolLock(allocID string, blobberID string, duration int64, lock, fee int64) error
@@ -159,10 +169,19 @@ type TransactionScheme interface {
 	StorageScUpdateConfig(*InputMap) error
 
 	// Interest pool SC
+
 	InterestPoolUpdateConfig(*InputMap) error
 
 	// Faucet
+
 	FaucetUpdateConfig(*InputMap) error
+
+	// ZCNSC Common transactions
+
+	// ZCNSCUpdateGlobalConfig updates global config
+	ZCNSCUpdateGlobalConfig(*InputMap) error
+	// ZCNSCUpdateAuthorizerConfig updates authorizer config by ID
+	ZCNSCUpdateAuthorizerConfig(*AuthorizerNode) error
 }
 
 func signFn(hash string) (string, error) {
@@ -212,7 +231,12 @@ func (t *Transaction) completeTxn(status int, out string, err error) {
 }
 
 func (t *Transaction) completeVerify(status int, out string, err error) {
+	t.completeVerifyWithConStatus(status, 0, out, err)
+}
+
+func (t *Transaction) completeVerifyWithConStatus(status int, conStatus ConfirmationStatus, out string, err error) {
 	t.verifyStatus = status
+	t.verifyConfirmationStatus = conStatus
 	t.verifyOut = out
 	t.verifyError = err
 	if t.txnCb != nil {
@@ -274,7 +298,7 @@ func (t *Transaction) submitTxn() {
 		t.completeTxn(StatusError, "", fmt.Errorf("submit transaction failed. %s", tFailureRsp))
 		return
 	}
-	time.Sleep(3 * time.Second)
+	sys.Sleep(3 * time.Second)
 	t.completeTxn(StatusSuccess, tSuccessRsp, nil)
 }
 
@@ -289,7 +313,7 @@ func newTransaction(cb TransactionCallback, txnFee int64) (*Transaction, error) 
 
 // NewTransaction allocation new generic transaction object for any operation
 func NewTransaction(cb TransactionCallback, txnFee int64) (TransactionScheme, error) {
-	err := checkConfig()
+	err := CheckConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -321,23 +345,31 @@ func (t *Transaction) SetTransactionFee(txnFee int64) error {
 }
 
 func (t *Transaction) Send(toClientID string, val int64, desc string) error {
+	txnData, err := json.Marshal(SendTxnData{Note: desc})
+	if err != nil {
+		return errors.New("", "Could not serialize description to transaction_data")
+	}
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeSend
 		t.txn.ToClientID = toClientID
 		t.txn.Value = val
-		t.txn.TransactionData = desc
+		t.txn.TransactionData = string(txnData)
 		t.submitTxn()
 	}()
 	return nil
 }
 
 func (t *Transaction) SendWithSignatureHash(toClientID string, val int64, desc string, sig string, CreationDate int64, hash string) error {
+	txnData, err := json.Marshal(SendTxnData{Note: desc})
+	if err != nil {
+		return errors.New("", "Could not serialize description to transaction_data")
+	}
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeSend
 		t.txn.ToClientID = toClientID
 		t.txn.Value = val
 		t.txn.Hash = hash
-		t.txn.TransactionData = desc
+		t.txn.TransactionData = string(txnData)
 		t.txn.Signature = sig
 		t.txn.CreationDate = CreationDate
 		t.submitTxn()
@@ -851,11 +883,11 @@ func validateChain(confirmBlock *blockHeader) bool {
 		nextBlock, err := getBlockInfoByRound(1, round, "header")
 		if err != nil {
 			Logger.Info(err, " after a second falling thru to ", getMinShardersVerify(), "of ", len(_config.chain.Sharders), "Sharders")
-			time.Sleep(1 * time.Second)
+			sys.Sleep(1 * time.Second)
 			nextBlock, err = getBlockInfoByRound(getMinShardersVerify(), round, "header")
 			if err != nil {
 				Logger.Error(err, " block chain stalled. waiting", defaultWaitSeconds, "...")
-				time.Sleep(defaultWaitSeconds)
+				sys.Sleep(defaultWaitSeconds)
 				continue
 			}
 		}
@@ -883,7 +915,7 @@ func (t *Transaction) isTransactionExpired(lfbCreationTime, currentTime int64) b
 		return true
 	}
 	// Wait for next retry
-	time.Sleep(defaultWaitSeconds)
+	sys.Sleep(defaultWaitSeconds)
 	return false
 }
 func (t *Transaction) Verify() error {
@@ -933,12 +965,38 @@ func (t *Transaction) Verify() error {
 					t.completeVerify(StatusError, "", errors.New("", `{"error": "transaction confirmation json marshal error"`))
 					return
 				}
-				t.completeVerify(StatusSuccess, string(output), nil)
+				confJson := confirmation["confirmation"]
+
+				var conf map[string]json.RawMessage
+				if err := json.Unmarshal(confJson, &conf); err != nil {
+					return
+				}
+				txnJson := conf["txn"]
+
+				var tr map[string]json.RawMessage
+				if err := json.Unmarshal(txnJson, &tr); err != nil {
+					return
+				}
+
+				txStatus := tr["transaction_status"]
+				switch string(txStatus) {
+				case "1":
+					t.completeVerifyWithConStatus(StatusSuccess, Success, string(output), nil)
+				case "2":
+					txOutput := tr["transaction_output"]
+					t.completeVerifyWithConStatus(StatusSuccess, ChargeableError, string(txOutput), nil)
+				default:
+					t.completeVerify(StatusError, string(output), nil)
+				}
 				return
 			}
 		}
 	}()
 	return nil
+}
+
+func (t *Transaction) GetVerifyConfirmationStatus() ConfirmationStatus {
+	return t.verifyConfirmationStatus
 }
 
 func (t *Transaction) GetVerifyOutput() string {
@@ -1211,6 +1269,36 @@ func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
 	return
 }
 
+type Provider int
+
+const (
+	ProviderMiner Provider = iota
+	ProviderSharder
+	ProviderBlobber
+	ProviderValidator
+	ProviderAuthorizer
+)
+
+type SCCollectReward struct {
+	PoolId       string   `json:"pool_id"`
+	ProviderType Provider `json:"provider_type"`
+}
+
+func (t *Transaction) MinerSCCollectReward(poolId string, providerType Provider) error {
+	pr := &SCCollectReward{
+		PoolId:       poolId,
+		ProviderType: providerType,
+	}
+	err := t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { t.submitTxn() }()
+	return err
+}
+
 type MinerSCLock struct {
 	ID string `json:"id"`
 }
@@ -1390,6 +1478,21 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 //
 // Storage SC transactions
 //
+
+func (t *Transaction) StorageSCCollectReward(poolId string, providerType Provider) error {
+	pr := &SCCollectReward{
+		PoolId:       poolId,
+		ProviderType: providerType,
+	}
+	err := t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go t.submitTxn()
+	return err
+}
 
 func (t *Transaction) StorageScUpdateConfig(ip *InputMap) (err error) {
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
@@ -1583,28 +1686,6 @@ func (t *Transaction) StakePoolUnlock(blobberID, poolID string,
 	return
 }
 
-// StakePoolPayInterests trigger interests payments.
-func (t *Transaction) StakePoolPayInterests(blobberID string, fee int64) (
-	err error) {
-
-	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
-	}
-
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
-
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_STAKE_POOL_PAY_INTERESTS, &spr, 0)
-	if err != nil {
-		Logger.Error(err)
-		return
-	}
-	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
-	return
-}
-
 type StakePoolSettings struct {
 	DelegateWallet string         `json:"delegate_wallet"`
 	MinStake       common.Balance `json:"min_stake"`
@@ -1628,6 +1709,15 @@ type Blobber struct {
 	Used              common.Size       `json:"used"`
 	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
+}
+
+type AuthorizerConfig struct {
+	Fee common.Balance `json:"fee"`
+}
+
+type AuthorizerNode struct {
+	ID     string            `json:"id"`
+	Config *AuthorizerConfig `json:"config"`
 }
 
 // UpdateBlobberSettings update settings of a blobber.
@@ -1715,5 +1805,29 @@ func (t *Transaction) WritePoolUnlock(poolID string, fee int64) (
 	}
 	t.SetTransactionFee(fee)
 	go func() { t.submitTxn() }()
+	return
+}
+
+//
+// ZCNSC transactions
+//
+
+func (t *Transaction) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_GLOBAL_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go t.submitTxn()
+	return
+}
+
+func (t *Transaction) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go t.submitTxn()
 	return
 }

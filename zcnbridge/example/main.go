@@ -6,15 +6,20 @@ import (
 	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
+	slog "log"
 	"math/big"
+	"os"
 	"path"
 	"time"
+
+	"gopkg.in/yaml.v3"
 
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zcnbridge"
 	"github.com/0chain/gosdk/zcnbridge/authorizer"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	"github.com/0chain/gosdk/zcnbridge/log"
+	. "github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -44,9 +49,16 @@ const (
 // `--config_file bridge` runs bridge client
 // `--config_file owner`  runs owner client
 func main() {
+	cfg := zcnbridge.ReadClientConfigFromCmd()
+	log.InitLogging(*cfg.Development, *cfg.LogPath, *cfg.LogLevel)
+	l := log.Logger
+	l.Info(fmt.Sprintf("Starting examples with configs in '%s' and logs in '%s'", *cfg.ConfigDir, *cfg.LogPath))
+
+	// Create bridge client configuration
 	zcnbridge.CreateInitialClientConfig(
-		"bridge.yaml",
-		"0x860FA46F170a87dF44D7bB867AA4a5D2813127c1",
+		*cfg.ConfigBridgeFile,
+		*cfg.ConfigDir,
+		"0xC49926C4124cEe1cbA0Ea94Ea31a6c12318df947",
 		"0xF26B52df8c6D9b9C20bfD7819Bed75a75258c7dB",
 		"0x930E1BE76461587969Cb7eB9BFe61166b1E70244",
 		"https://ropsten.infura.io/v3/22cb2849f5f74b8599f3dc2a23085bd4",
@@ -56,8 +68,10 @@ func main() {
 		75.0,
 	)
 
+	// Create bridge owner configuration
 	zcnbridge.CreateInitialOwnerConfig(
-		"owner.yaml",
+		zcnbridge.OwnerClientConfigName,
+		*cfg.ConfigDir,
 		"0x860FA46F170a87dF44D7bB867AA4a5D2813127c1",
 		"0xF26B52df8c6D9b9C20bfD7819Bed75a75258c7dB",
 		"0x930E1BE76461587969Cb7eB9BFe61166b1E70244",
@@ -68,56 +82,90 @@ func main() {
 		0,
 	)
 
-	// First is read config from command line
-	cfg := zcnbridge.ReadClientConfigFromCmd()
+	var (
+		bridge       *zcnbridge.BridgeClient
+		owner        *zcnbridge.BridgeOwner
+		clientConfig *zcnbridge.BridgeClientConfig
+	)
 
-	// Checking if an account exists in key storage
-	if zcnbridge.AccountExists("0x860FA46F170a87dF44D7bB867AA4a5D2813127c1") {
-		fmt.Println("Account exists")
+	// Owner examples: adding new authorizer
+	if *cfg.ConfigBridgeFile == "owner" {
+		owner = zcnbridge.SetupBridgeOwnerSDK(cfg)
+		clientConfig = owner.BridgeClientConfig
+	} else {
+		bridge = zcnbridge.SetupBridgeClientSDK(cfg)
+		//bridge.SetupZCNClient(cfg)
+		clientConfig = bridge.BridgeClientConfig
 	}
-
-	// List all accounts initialized in storage
-	zcnbridge.ListStorageAccounts()
 
 	// Next step is register your account in the key storage if it doesn't exist (mandatory)
 	// This should be done in zwallet cli
 	registerAccountInKeyStorage(
+		clientConfig.Homedir,
 		"tag volcano eight thank tide danger coast health above argue embrace heavy",
 		"password",
 	)
 
+	// Owner examples: adding new authorizer
+	if *cfg.ConfigBridgeFile == "owner" {
+		// Bridge Owner examples
+		runBridgeOwnerExample(owner)
+	} else {
+		// Bridge client examples
+		runBridgeClientExample(bridge)
+	}
+
+	// Checking if an account exists in key storage
+	if zcnbridge.AccountExists(bridge.Homedir, "0x860FA46F170a87dF44D7bB867AA4a5D2813127c1") {
+		fmt.Println("Account exists")
+	}
+
+	// List all accounts initialized in storage
+	zcnbridge.ListStorageAccounts(bridge.Homedir)
+
 	// How to manage key storage example sets
-	keyStorageExample()
+	keyStorageExample(bridge.Homedir)
+
 	// How to sign using legacy and dynamic transactions
 	signingExamples()
+}
 
-	// Owner examples: adding new authorizer
-	if *cfg.ConfigFile == "owner" {
-		runBridgeOwnerExample(cfg)
+func registerAccountInKeyStorage(homedir, mnemonic, password string) {
+	addr, err := zcnbridge.ImportAccount(homedir, mnemonic, password)
+	if err != nil {
+		fmt.Println(err)
 		return
 	}
 
-	// Bridge client examples
-	runBridgeClientExample(cfg)
+	updateClientEthereumAddress(homedir, addr)
 }
 
-func registerAccountInKeyStorage(mnemonic, password string) {
-	err := zcnbridge.ImportAccount(mnemonic, password)
-	if err != nil {
-		fmt.Println(err)
+func updateClientEthereumAddress(homedir, address string) {
+	configFile := path.Join(homedir, zcnbridge.BridgeClientConfigName)
+	buf, _ := os.ReadFile(configFile)
+	cfg := &zcnbridge.Bridge{}
+	err := yaml.Unmarshal(buf, cfg)
+
+	owner := cfg.Owner
+	if owner != nil && err != nil {
+		owner.EthereumAddress = address
+		owner.EthereumAddress = address
+
+		text, _ := yaml.Marshal(cfg)
+		_ = os.WriteFile(configFile, text, 0644)
 	}
 }
 
 // keyStorageExample Shows how new/existing user will work with key storage
 // 1. If user is new, user creates new storage with key and/or mnemonic
 // 2. if user exists, user can sign transactions using public key and password to unlock the key storage
-func keyStorageExample() {
+func keyStorageExample(homedir string) {
 	mnemonic := "tag volcano eight thank tide danger coast health above argue embrace heavy"
 	password := "password"
 
-	createKeyStorage(password, true)
-	importFromMnemonicToStorage(mnemonic, password, false)
-	signWithKeyStore("0xC49926C4124cEe1cbA0Ea94Ea31a6c12318df947", password)
+	createKeyStorage(homedir, password, true)
+	importFromMnemonicToStorage(homedir, mnemonic, password, false)
+	signWithKeyStore(homedir, "0xC49926C4124cEe1cbA0Ea94Ea31a6c12318df947", password)
 }
 
 func signingExamples() {
@@ -127,8 +175,8 @@ func signingExamples() {
 }
 
 // createKeyStorage create new key storage and a new account
-func createKeyStorage(password string, delete bool) {
-	keyDir := path.Join(zcnbridge.GetConfigDir(), "wallets")
+func createKeyStorage(homedir, password string, delete bool) {
+	keyDir := path.Join(homedir, zcnbridge.EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	account, err := ks.NewAccount(password)
 	if err != nil {
@@ -149,10 +197,10 @@ func createKeyStorage(password string, delete bool) {
 }
 
 // signWithKeyStore signs the transaction using public key and key storage
-func signWithKeyStore(address, password string) {
+func signWithKeyStore(homedir, address, password string) {
 	// 1. Create storage and account if it doesn't exist and add account to it
 
-	keyDir := path.Join(zcnbridge.GetConfigDir(), "wallets")
+	keyDir := path.Join(homedir, zcnbridge.EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 
 	// Create account definitions
@@ -202,10 +250,10 @@ func signWithKeyStore(address, password string) {
 }
 
 // importFromMnemonicToStorage Importing wallet to key storage from mnemonic
-func importFromMnemonicToStorage(mnemonic, password string, delete bool) {
+func importFromMnemonicToStorage(homedir, mnemonic, password string, delete bool) {
 	// 1. Create storage and account if it doesn't exist and add account to it
 
-	keyDir := path.Join(zcnbridge.GetConfigDir(), "wallets")
+	keyDir := path.Join(homedir, zcnbridge.EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 
 	// 2. Init wallet
@@ -404,9 +452,7 @@ func signLegacyTransactionExample(mnemonic string) {
 	//_ := client.SendTransaction(ctx, transaction)
 }
 
-func runBridgeClientExample(cfg *zcnbridge.BridgeSDKConfig) {
-	var bridge = zcnbridge.SetupBridgeClientSDK(cfg)
-
+func runBridgeClientExample(bridge *zcnbridge.BridgeClient) {
 	balance, err := bridge.GetBalance()
 	if err == nil {
 		fmt.Println(balance)
@@ -431,9 +477,8 @@ func runBridgeClientExample(cfg *zcnbridge.BridgeSDKConfig) {
 	PrintEthereumBurnTicketsPayloads(bridge)
 }
 
-func runBridgeOwnerExample(cfg *zcnbridge.BridgeSDKConfig) {
-	var owner = zcnbridge.SetupBridgeOwnerSDK(cfg)
-	owner.AddEthereumAuthorizers(*cfg.ConfigDir)
+func runBridgeOwnerExample(owner *zcnbridge.BridgeOwner) {
+	owner.AddEthereumAuthorizers(owner.Homedir)
 }
 
 // signatureTests Create public and private keys, signs data and recovers signer public key
@@ -689,18 +734,33 @@ func PrintEthereumBurnTicketsPayloads(b *zcnbridge.BridgeClient) {
 }
 
 func PrintAuthorizersList() {
-	authorizers, err := zcnbridge.GetAuthorizers()
+	var (
+		response = new(zcnbridge.AuthorizerNodesResponse)
+		cb       = NewJSONInfoCB(response)
+		err      error
+	)
+	err = zcnbridge.GetAuthorizers(cb)
 	if err != nil {
 		fmt.Print(err)
 	}
-	fmt.Println(authorizers)
+
+	if err = cb.Waiting(); err != nil {
+		slog.Fatal(err)
+	}
+
+	if len(response.Nodes) == 0 {
+		fmt.Println("no response found")
+		return
+	}
+
+	fmt.Println(response.Nodes)
 }
 
 func fromZCNtoERC(b *zcnbridge.BridgeClient) {
 	burnTrx, err := b.BurnZCN(context.TODO(), ConvertAmountWei)
 	burnTrxHash := burnTrx.Hash
 	if err != nil {
-		log.Logger.Fatal("failed to burn in ZCN", zap.Error(err), zap.String("hash", burnTrxHash))
+		Logger.Fatal("failed to burn in ZCN", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
 	burnTrx, err = b.VerifyZCNTransaction(context.TODO(), burnTrxHash)
@@ -711,20 +771,20 @@ func fromZCNtoERC(b *zcnbridge.BridgeClient) {
 	// ASK authorizers for burn tickets to mint in Ethereum
 	mintPayload, err := b.QueryEthereumMintPayload(burnTrxHash)
 	if err != nil {
-		log.Logger.Fatal("failed to verify burn transactions in ZCN in QueryEthereumMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))
+		Logger.Fatal("failed to verify burn transactions in ZCN in QueryEthereumMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
 	mintTrx, err := b.MintWZCN(context.Background(), mintPayload)
 	tranHash := mintTrx.Hash().Hex()
 	if err != nil {
-		log.Logger.Fatal("failed to execute MintWZCN", zap.Error(err), zap.String("hash", tranHash))
+		Logger.Fatal("failed to execute MintWZCN", zap.Error(err), zap.String("hash", tranHash))
 	}
 
 	// ASK for minting events from bridge contract but this is not necessary as we're going to check it by hash
 
 	res, err := zcnbridge.ConfirmEthereumTransaction(tranHash, 60, time.Second)
 	if err != nil {
-		log.Logger.Fatal(
+		Logger.Fatal(
 			"failed to confirm transaction ConfirmEthereumTransaction",
 			zap.String("hash", tranHash),
 			zap.Error(err),
@@ -732,7 +792,7 @@ func fromZCNtoERC(b *zcnbridge.BridgeClient) {
 	}
 
 	if res == 0 {
-		log.Logger.Fatal("failed to confirm transaction ConfirmEthereumTransaction", zap.String("hash", tranHash))
+		Logger.Fatal("failed to confirm transaction ConfirmEthereumTransaction", zap.String("hash", tranHash))
 	}
 }
 
@@ -740,48 +800,48 @@ func fromERCtoZCN(b *zcnbridge.BridgeClient) {
 	// Example: https://ropsten.etherscan.io/tx/0xa28266fb44cfc2aa27b26bd94e268e40d065a05b1a8e6339865f826557ff9f0e
 	transaction, err := b.IncreaseBurnerAllowance(context.Background(), ConvertAmountWei)
 	if err != nil {
-		log.Logger.Fatal("failed to execute IncreaseBurnerAllowance", zap.Error(err))
+		Logger.Fatal("failed to execute IncreaseBurnerAllowance", zap.Error(err))
 	}
 
 	hash := transaction.Hash().Hex()
 	res, err := zcnbridge.ConfirmEthereumTransaction(hash, 60, time.Second)
 	if err != nil {
-		log.Logger.Fatal(
+		Logger.Fatal(
 			"failed to confirm transaction ConfirmEthereumTransaction",
 			zap.String("hash", hash),
 			zap.Error(err),
 		)
 	}
 	if res == 0 {
-		log.Logger.Fatal("failed to confirm transaction", zap.String("hash", transaction.Hash().Hex()))
+		Logger.Fatal("failed to confirm transaction", zap.String("hash", transaction.Hash().Hex()))
 	}
 
 	burnTrx, err := b.BurnWZCN(context.Background(), ConvertAmountWei)
 	burnTrxHash := burnTrx.Hash().Hex()
 	if err != nil {
-		log.Logger.Fatal("failed to execute BurnWZCN in wrapped chain", zap.Error(err), zap.String("hash", burnTrxHash))
+		Logger.Fatal("failed to execute BurnWZCN in wrapped chain", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
 	res, err = zcnbridge.ConfirmEthereumTransaction(burnTrxHash, 60, time.Second)
 	if err != nil {
-		log.Logger.Fatal(
+		Logger.Fatal(
 			"failed to confirm transaction ConfirmEthereumTransaction",
 			zap.String("hash", burnTrxHash),
 			zap.Error(err),
 		)
 	}
 	if res == 0 {
-		log.Logger.Fatal("failed to confirm burn transaction in ZCN in ConfirmEthereumTransaction", zap.String("hash", burnTrxHash))
+		Logger.Fatal("failed to confirm burn transaction in ZCN in ConfirmEthereumTransaction", zap.String("hash", burnTrxHash))
 	}
 
 	// ASK authorizers for burn tickets to mint in WZCN
 	mintPayload, err := b.QueryZChainMintPayload(burnTrxHash)
 	if err != nil {
-		log.Logger.Fatal("failed to QueryZChainMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))
+		Logger.Fatal("failed to QueryZChainMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
 	mintTrx, err := b.MintZCN(context.TODO(), mintPayload)
 	if err != nil {
-		log.Logger.Fatal("failed to MintZCN", zap.Error(err), zap.String("hash", mintTrx.Hash))
+		Logger.Fatal("failed to MintZCN", zap.Error(err), zap.String("hash", mintTrx.Hash))
 	}
 }

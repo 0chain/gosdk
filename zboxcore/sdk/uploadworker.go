@@ -3,7 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -29,10 +29,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"golang.org/x/crypto/sha3"
 )
-
-// Expected success rate is calculated (NumDataShards)*100/(NumDataShards+NumParityShards)
-// Additional success percentage on top of expected success rate
-const additionalSuccessRate = (10)
 
 type UploadFileMeta struct {
 	// Name remote file name
@@ -144,12 +140,12 @@ func (req *UploadRequest) prepareUpload(
 	shardSize := (req.filemeta.Size + int64(a.DataShards) - 1) / int64(a.DataShards)
 	chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
 	if req.isEncrypted {
-		chunkSizeWithHeader -= 16
-		chunkSizeWithHeader -= 2 * 1024
+		chunkSizeWithHeader -= EncryptedDataPaddingSize
+		chunkSizeWithHeader -= EncryptionHeaderSize
 	}
 	chunksPerShard := (shardSize + chunkSizeWithHeader - 1) / chunkSizeWithHeader
 	if req.isEncrypted {
-		shardSize += chunksPerShard * (16 + (2 * 1024))
+		shardSize += chunksPerShard * (EncryptedDataPaddingSize + EncryptionHeaderSize)
 	}
 	thumbnailSize := int64(0)
 	remaining := shardSize
@@ -175,7 +171,7 @@ func (req *UploadRequest) prepareUpload(
 			return
 		}
 		// Setup file hash compute
-		h := sha1.New()
+		h := sha256.New()
 		//merkleHash := sha3.New256()
 		hWr := io.MultiWriter(h)
 		merkleHashes := make([]hash.Hash, 1024)
@@ -224,12 +220,12 @@ func (req *UploadRequest) prepareUpload(
 			thumbnailSize = (req.filemeta.ThumbnailSize + int64(a.DataShards) - 1) / int64(a.DataShards)
 			chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
 			if req.isEncrypted {
-				chunkSizeWithHeader -= 16
-				chunkSizeWithHeader -= 2 * 1024
+				chunkSizeWithHeader -= EncryptedDataPaddingSize
+				chunkSizeWithHeader -= EncryptionHeaderSize
 			}
 			chunksPerShard := (thumbnailSize + chunkSizeWithHeader - 1) / chunkSizeWithHeader
 			if req.isEncrypted {
-				thumbnailSize += chunksPerShard * (16 + (2 * 1024))
+				thumbnailSize += chunksPerShard * (EncryptedDataPaddingSize + EncryptionHeaderSize)
 			}
 			remaining := thumbnailSize
 
@@ -239,7 +235,7 @@ func (req *UploadRequest) prepareUpload(
 				return
 			}
 			// Setup file hash compute
-			h := sha1.New()
+			h := sha256.New()
 
 			hWr := io.MultiWriter(h)
 			// Read the data
@@ -363,9 +359,9 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 	}
 
 	if !req.isRepair {
-		req.fileHash = sha1.New()
+		req.fileHash = sha256.New()
 		req.fileHashWr = io.MultiWriter(req.fileHash)
-		req.thumbnailHash = sha1.New()
+		req.thumbnailHash = sha256.New()
 		req.thumbnailHashWr = io.MultiWriter(req.thumbnailHash)
 	}
 	if req.isEncrypted {
@@ -418,8 +414,8 @@ func (req *UploadRequest) pushData(data []byte) error {
 				Logger.Error("Encryption failed.", err.Error())
 				return err
 			}
-			header := make([]byte, 2*1024)
-			copy(header[:], encMsg.MessageChecksum+","+encMsg.OverallChecksum)
+			header := make([]byte, EncryptionHeaderSize)
+			copy(header[:], encMsg.MessageChecksum+encMsg.OverallChecksum)
 			shards[pos] = append(header, encMsg.EncryptedData...)
 			c++
 		}
@@ -493,8 +489,8 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 		dataReader := io.MultiReader(inFile, bytes.NewBuffer(padding))
 		chunkSizeWithHeader := int64(fileref.CHUNK_SIZE)
 		if req.isEncrypted {
-			chunkSizeWithHeader -= 16
-			chunkSizeWithHeader -= 2 * 1024
+			chunkSizeWithHeader -= EncryptedDataPaddingSize
+			chunkSizeWithHeader -= EncryptionHeaderSize
 		}
 		chunksPerShard := (perShard + chunkSizeWithHeader - 1) / chunkSizeWithHeader
 		Logger.Info("Size:", size, " perShard:", perShard, " chunks/shard:", chunksPerShard)

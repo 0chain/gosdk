@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+
+	"github.com/0chain/gosdk/core/sys"
 )
 
 // #EXTM3U
@@ -84,7 +86,7 @@ func (m *MediaPlaylist) Play() {
 			m.flush()
 		}
 
-		time.Sleep(1 * time.Second)
+		sys.Sleep(1 * time.Second)
 
 	}
 

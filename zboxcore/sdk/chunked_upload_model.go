@@ -1,14 +1,13 @@
 package sdk
 
 import (
+	"crypto/sha256"
+	"encoding/json"
 	"hash/fnv"
 	"strconv"
-	"sync"
 
-	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/rogpeppe/go-internal/lockedfile"
 )
 
 // FileMeta metadata of stream input/local
@@ -113,75 +112,32 @@ type UploadBlobberStatus struct {
 	UploadLength int64 `json:"upload_length,omitempty"`
 }
 
-type WriteMarkerLocker interface {
-	Lock() error
-	Unlock()
+type status struct {
+	Hasher       hasher
+	UploadLength int64 `json:"upload_length,omitempty"`
 }
 
-// TODO: copy lockedfile from https://cs.opensource.google/go/go/+/refs/tags/go1.17.1:src/cmd/go/internal/lockedfile/internal/filelock/
-// see more detail on
-
-// - https://github.com/golang/go/issues/33974
-// - https://go.googlesource.com/proposal/+/master/design/33974-add-public-lockedfile-pkg.md
-
-// We should replaced it with official package if it is released as public
-type fileLocker struct {
-	sync.Mutex
-	file string
-
-	fileMutex  *lockedfile.Mutex
-	fileUnlock func()
-}
-
-func createWriteMarkerLocker(file string) WriteMarkerLocker {
-	return &fileLocker{
-		file: file,
+func (s *UploadBlobberStatus) UnmarshalJSON(b []byte) error {
+	if s == nil {
+		return nil
 	}
-}
+	//fixed Hasher doesn't work in UnmarshalJSON
+	status := &status{}
 
-func (f *fileLocker) Lock() error {
-	if f == nil {
-		return errors.Throw(constants.ErrInvalidParameter, "f")
-	}
-
-	f.Mutex.Lock()
-	defer f.Mutex.Unlock()
-
-	if f.fileMutex == nil {
-		// // open a new os.File instance
-		// // create it if it doesn't exist, and open the file read-only.
-		// flags := os.O_CREATE
-		// if runtime.GOOS == "aix" {
-		// 	// AIX cannot preform write-lock (ie exclusive) on a
-		// 	// read-only file.
-		// 	flags |= os.O_RDWR
-		// } else {
-		// 	flags |= os.O_RDONLY
-		// }
-		// fh, err := os.OpenFile(f.file, flags, os.FileMode(0600))
-		// if err != nil {
-		// 	return err
-		// }
-
-		// f.fh = fh
-		f.fileMutex = lockedfile.MutexAt(f.file)
-	}
-
-	fileUnlock, err := f.fileMutex.Lock()
-	if err != nil {
+	if err := json.Unmarshal(b, status); err != nil {
 		return err
 	}
 
-	f.fileUnlock = fileUnlock
+	status.Hasher.File = sha256.New()
+	if status.Hasher.Content != nil {
 
-	return nil
-}
-
-func (f *fileLocker) Unlock() {
-
-	if f.fileUnlock != nil {
-		f.fileUnlock()
+		status.Hasher.Content.Hash = func(left, right string) string {
+			return encryption.Hash(left + right)
+		}
 	}
 
-	f.fileUnlock = nil
+	s.Hasher = &status.Hasher
+	s.UploadLength = status.UploadLength
+
+	return nil
 }

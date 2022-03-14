@@ -13,8 +13,10 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	zclient "github.com/0chain/gosdk/zboxcore/client"
@@ -186,8 +188,9 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
 				Consensus: Consensus{
-					consensusThresh: 50,
-					fullconsensus:   4,
+					consensusThresh:        50,
+					fullconsensus:          4,
+					consensusRequiredForOk: 60,
 				},
 				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
@@ -220,6 +223,9 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 		mockConnectionId   = "1234567890"
 	)
 
+	rawClient := zboxutil.Client
+	createClient := resty.CreateClient
+
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
@@ -229,12 +235,22 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 		ClientKey: mockClientKey,
 	}
 
+	zboxutil.Client = &mockClient
+	resty.CreateClient = func(t *http.Transport, timeout time.Duration) resty.Client {
+		return &mockClient
+	}
+
+	defer func() {
+		zboxutil.Client = rawClient
+		resty.CreateClient = createClient
+	}()
+
 	setupHttpResponses := func(t *testing.T, testName string, numBlobbers int, numCorrect int, req DeleteRequest) {
 		for i := 0; i < numBlobbers; i++ {
 			url := mockBlobberUrl + strconv.Itoa(i)
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 				return req.Method == "GET" &&
-					strings.HasPrefix(req.URL.Path, testName+url)
+					strings.Contains(req.URL.String(), testName+url)
 			})).Return(&http.Response{
 				StatusCode: http.StatusOK,
 				Body: func() io.ReadCloser {
@@ -249,7 +265,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			}, nil)
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 				return req.Method == "DELETE" &&
-					strings.HasPrefix(req.URL.Path, testName+url)
+					strings.Contains(req.URL.String(), testName+url)
 			})).Return(&http.Response{
 				StatusCode: func() int {
 					if i < numCorrect {
@@ -368,18 +384,31 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
 				Consensus: Consensus{
-					consensusThresh: 50,
-					fullconsensus:   4,
+					consensusThresh:        50,
+					fullconsensus:          4,
+					consensusRequiredForOk: 60,
 				},
 				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
 			}
+
+			a := &Allocation{
+				DataShards: numBlobbers,
+			}
+
 			for i := 0; i < tt.numBlobbers; i++ {
-				req.blobbers = append(req.blobbers, &blockchain.StorageNode{
+				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
-					Baseurl: tt.name + mockBlobberUrl + strconv.Itoa(i),
+					Baseurl: "http://" + tt.name + mockBlobberUrl + strconv.Itoa(i),
 				})
 			}
+
+			setupMockAllocation(t, a)
+			setupMockWriteLockRequest(a, &mockClient)
+
+			req.allocationObj = a
+			req.blobbers = a.Blobbers
+
 			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect, *req)
 			err := req.ProcessDelete()
 			require.EqualValues(tt.wantErr, err != nil)

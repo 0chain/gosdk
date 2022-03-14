@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"sync"
 	"time"
 
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/logger"
 )
 
@@ -15,55 +17,25 @@ type ChunkedUploadProgressStorer interface {
 	// Load load upload progress by id
 	Load(id string) *UploadProgress
 	// Save save upload progress
-	Save(up *UploadProgress)
+	Save(up UploadProgress)
 	// Remove remove upload progress by id
 	Remove(id string) error
 }
 
 // fsChunkedUploadProgressStorer load and save upload progress in file system
 type fsChunkedUploadProgressStorer struct {
+	sync.Mutex
 	isRemoved bool
-	up        *UploadProgress
+	up        UploadProgress
+	since     time.Time
 }
 
 func createFsChunkedUploadProgress(ctx context.Context) *fsChunkedUploadProgressStorer {
-	up := &fsChunkedUploadProgressStorer{}
-
-	go up.start()
+	up := &fsChunkedUploadProgressStorer{
+		since: time.Now(),
+	}
 
 	return up
-}
-
-func (fs *fsChunkedUploadProgressStorer) start() {
-
-	ticker := time.NewTicker(1 * time.Second)
-	defer ticker.Stop()
-
-	for {
-
-		<-ticker.C
-
-		if fs.up == nil {
-			continue
-		}
-
-		if fs.isRemoved {
-			break
-		}
-
-		buf, err := json.Marshal(fs.up)
-		if err != nil {
-			logger.Logger.Error("[progress] save ", fs.up, err)
-			continue
-		}
-
-		err = FS.WriteFile(fs.up.ID, buf, 0644)
-		if err != nil {
-			logger.Logger.Error("[progress] save ", fs.up, err)
-			continue
-		}
-
-	}
 }
 
 // Load load upload progress from file system
@@ -71,7 +43,7 @@ func (fs *fsChunkedUploadProgressStorer) Load(progressID string) *UploadProgress
 
 	progress := UploadProgress{}
 
-	buf, err := FS.ReadFile(progressID)
+	buf, err := sys.Files.ReadFile(progressID)
 
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
@@ -85,14 +57,38 @@ func (fs *fsChunkedUploadProgressStorer) Load(progressID string) *UploadProgress
 }
 
 // Save save upload progress in file system
-func (fs *fsChunkedUploadProgressStorer) Save(up *UploadProgress) {
+func (fs *fsChunkedUploadProgressStorer) Save(up UploadProgress) {
+	fs.Lock()
+	defer fs.Unlock()
 	fs.up = up
+	now := time.Now()
+	if now.Sub(fs.since).Seconds() > 1 {
+		if fs.isRemoved {
+			return
+		}
+
+		buf, err := json.Marshal(fs.up)
+		if err != nil {
+			logger.Logger.Error("[progress] save ", fs.up, err)
+			return
+		}
+
+		err = sys.Files.WriteFile(fs.up.ID, buf, 0644)
+		if err != nil {
+			logger.Logger.Error("[progress] save ", fs.up, err)
+			return
+		}
+
+		fs.since = now
+	}
 }
 
 // Remove remove upload progress from file system
 func (fs *fsChunkedUploadProgressStorer) Remove(progressID string) error {
+	fs.Lock()
+	defer fs.Unlock()
 	fs.isRemoved = true
-	err := FS.Remove(progressID)
+	err := sys.Files.Remove(progressID)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			return nil

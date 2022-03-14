@@ -56,9 +56,10 @@ func TestConsensus_isConsensusMin(t *testing.T) {
 
 func TestConsensus_isConsensusOk(t *testing.T) {
 	type fields struct {
-		consensus       float32
-		consensusThresh float32
-		fullconsensus   float32
+		consensus              float32
+		consensusThresh        float32
+		fullconsensus          float32
+		consensusRequiredForOk float32
 	}
 	tests := []struct {
 		name   string
@@ -68,18 +69,20 @@ func TestConsensus_isConsensusOk(t *testing.T) {
 		{
 			"Test_Is_Consensus_OK_True",
 			fields{
-				consensus:       3,
-				consensusThresh: 50,
-				fullconsensus:   4,
+				consensus:              3,
+				consensusThresh:        50,
+				fullconsensus:          4,
+				consensusRequiredForOk: 60,
 			},
 			true,
 		},
 		{
 			"Test_Is_Consensus_OK_False",
 			fields{
-				consensus:       2,
-				consensusThresh: 50,
-				fullconsensus:   4,
+				consensus:              2,
+				consensusThresh:        50,
+				fullconsensus:          4,
+				consensusRequiredForOk: 60,
 			},
 			false,
 		},
@@ -87,9 +90,10 @@ func TestConsensus_isConsensusOk(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := &Consensus{
-				consensus:       tt.fields.consensus,
-				consensusThresh: tt.fields.consensusThresh,
-				fullconsensus:   tt.fields.fullconsensus,
+				consensus:              tt.fields.consensus,
+				consensusThresh:        tt.fields.consensusThresh,
+				fullconsensus:          tt.fields.fullconsensus,
+				consensusRequiredForOk: tt.fields.consensusRequiredForOk,
 			}
 			got := req.isConsensusOk()
 			require := require.New(t)
@@ -104,7 +108,8 @@ func TestConsensus_isConsensusOk(t *testing.T) {
 
 func TestConsensus_getConsensusRequiredForOk(t *testing.T) {
 	type fields struct {
-		consensusThresh float32
+		consensusThresh        float32
+		consensusRequiredForOk float32
 	}
 	tests := []struct {
 		name   string
@@ -114,7 +119,8 @@ func TestConsensus_getConsensusRequiredForOk(t *testing.T) {
 		{
 			"Test_Result_Get_Consensus_Required_For_Ok",
 			fields{
-				consensusThresh: 50,
+				consensusThresh:        50,
+				consensusRequiredForOk: 60,
 			},
 			60,
 		},

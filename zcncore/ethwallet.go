@@ -31,7 +31,7 @@ var GetEthClient = func() (*ethclient.Client, error) {
 		return nil, fmt.Errorf("eth node SDK not initialized")
 	}
 
-	Logger.Info("requesting from", _config.chain.EthNode)
+	Logger.Info("requesting from ", _config.chain.EthNode)
 	client, err := ethclient.Dial(_config.chain.EthNode)
 	if err != nil {
 		return nil, err

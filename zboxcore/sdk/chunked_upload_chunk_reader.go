@@ -90,7 +90,8 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 	}
 
 	if r.encryptOnUpload {
-		r.chunkHeaderSize = 16 + 2*1024
+		//additional 16 bytes to save encrypted data
+		r.chunkHeaderSize = EncryptedDataPaddingSize + EncryptionHeaderSize
 		r.chunkDataSize = chunkSize - r.chunkHeaderSize
 	} else {
 		r.chunkDataSize = chunkSize
@@ -194,8 +195,8 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 			if err != nil {
 				return nil, err
 			}
-			header := make([]byte, 2*1024)
-			copy(header[:], encMsg.MessageChecksum+","+encMsg.OverallChecksum)
+			header := make([]byte, EncryptionHeaderSize)
+			copy(header[:], encMsg.MessageChecksum+encMsg.OverallChecksum)
 			fragments[pos] = append(header, encMsg.EncryptedData...)
 		}
 	}
@@ -234,8 +235,8 @@ func (r *chunkedUploadChunkReader) Read(buf []byte) ([][]byte, error) {
 			if err != nil {
 				return nil, err
 			}
-			header := make([]byte, 2*1024)
-			copy(header[:], encMsg.MessageChecksum+","+encMsg.OverallChecksum)
+			header := make([]byte, EncryptionHeaderSize)
+			copy(header[:], encMsg.MessageChecksum+encMsg.OverallChecksum)
 			fragments[pos] = append(header, encMsg.EncryptedData...)
 			c++
 		}
