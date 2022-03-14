@@ -71,9 +71,3 @@ func WithProgressStorer(progressStorer ChunkedUploadProgressStorer) ChunkedUploa
 		su.progressStorer = progressStorer
 	}
 }
-
-func WithCreateWriteMarkerLocker(createWriteMarkerLocker func(file string) WriteMarkerLocker) ChunkedUploadOption {
-	return func(su *ChunkedUpload) {
-		su.createWriteMarkerLocker = createWriteMarkerLocker
-	}
-}

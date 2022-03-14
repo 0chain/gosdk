@@ -29,7 +29,7 @@ gosdk-build: gomod-download
 wasm-build:
 	CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -o sdk.wasm github.com/0chain/gosdk/wasmsdk
      
-wasm-test:
+wasm-test: wasm-build
 	env -i $(shell go env) PATH="$(shell go env GOROOT)/misc/wasm:$(PATH)" CGO_ENABLED=0 GOOS=js GOARCH=wasm go test -v github.com/0chain/gosdk/wasmsdk/jsbridge/...
 
 gosdk-mocks:

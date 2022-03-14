@@ -1,6 +1,9 @@
 package resty
 
-import "time"
+import (
+	"net/http"
+	"time"
+)
 
 var (
 	// DefaultDialTimeout default timeout of a dialer
@@ -9,4 +12,7 @@ var (
 	DefaultRequestTimeout = 10 * time.Second
 	// DefaultRetry retry times if a request is failed with 5xx status code
 	DefaultRetry = 3
+
+	// DefaultTransport default http transport
+	DefaultTransport *http.Transport
 )

@@ -1,6 +1,8 @@
 package wallet
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -16,18 +18,28 @@ type StatusBar struct {
 
 type ZCNStatus struct {
 	walletString string
+	balance      int64
+	value        interface{}
 	Wg           *sync.WaitGroup
 	Success      bool
-	ErrMsg       string
-	balance      int64
+	Err          error
 }
 
-func NewZCNStatus() (zcns *ZCNStatus) {
-	return &ZCNStatus{Wg: new(sync.WaitGroup)}
+func NewZCNStatus(value interface{}) (zcns *ZCNStatus) {
+	return &ZCNStatus{
+		Wg:    new(sync.WaitGroup),
+		value: value,
+	}
 }
 
-func (zcn *ZCNStatus) Begin() { zcn.Wg.Add(1) }
-func (zcn *ZCNStatus) Wait()  { zcn.Wg.Wait() }
+func (zcn *ZCNStatus) Begin() {
+	zcn.Wg.Add(1)
+}
+
+func (zcn *ZCNStatus) Wait() error {
+	zcn.Wg.Wait()
+	return zcn.Err
+}
 
 func (zcn *ZCNStatus) OnBalanceAvailable(status int, value int64, _ string) {
 	defer zcn.Wg.Done()
@@ -44,7 +56,7 @@ func (zcn *ZCNStatus) OnTransactionComplete(t *zcncore.Transaction, status int) 
 	if status == zcncore.StatusSuccess {
 		zcn.Success = true
 	} else {
-		zcn.ErrMsg = t.GetTransactionError()
+		zcn.Err = errors.New(t.GetTransactionError())
 	}
 }
 
@@ -53,36 +65,50 @@ func (zcn *ZCNStatus) OnVerifyComplete(t *zcncore.Transaction, status int) {
 	if status == zcncore.StatusSuccess {
 		zcn.Success = true
 	} else {
-		zcn.ErrMsg = t.GetVerifyError()
+		zcn.Err = errors.New(t.GetVerifyError())
 	}
 }
 
 func (zcn *ZCNStatus) OnAuthComplete(_ *zcncore.Transaction, status int) {
-	fmt.Println("Authorization complete on zauth.", status)
+	fmt.Println("Authorization complete.", status)
 }
 
 func (zcn *ZCNStatus) OnWalletCreateComplete(status int, wallet string, err string) {
 	defer zcn.Wg.Done()
 	if status != zcncore.StatusSuccess {
 		zcn.Success = false
-		zcn.ErrMsg = err
+		zcn.Err = errors.New(err)
 		zcn.walletString = ""
 		return
 	}
 	zcn.Success = true
-	zcn.ErrMsg = ""
+	zcn.Err = nil
 	zcn.walletString = wallet
 }
 
-func (zcn *ZCNStatus) OnInfoAvailable(_ int, status int, config string, err string) {
+func (zcn *ZCNStatus) OnInfoAvailable(_ int, status int, info string, err string) {
 	defer zcn.Wg.Done()
 	if status != zcncore.StatusSuccess {
+		zcn.Err = errors.New(err)
 		zcn.Success = false
-		zcn.ErrMsg = err
 		return
 	}
+
+	if info == "" || info == "{}" {
+		zcn.Err = errors.New("empty response")
+		zcn.Success = false
+		return
+	}
+
+	var errm error
+	if errm = json.Unmarshal([]byte(info), zcn.value); errm != nil {
+		zcn.Err = fmt.Errorf("decoding response: %v", err)
+		zcn.Success = false
+		return
+	}
+
+	zcn.Err = nil
 	zcn.Success = true
-	zcn.ErrMsg = config
 }
 
 func (zcn *ZCNStatus) OnSetupComplete(_ int, _ string) {
@@ -101,12 +127,12 @@ func (zcn *ZCNStatus) OnVoteComplete(status int, proposal string, err string) {
 	defer zcn.Wg.Done()
 	if status != zcncore.StatusSuccess {
 		zcn.Success = false
-		zcn.ErrMsg = err
+		zcn.Err = errors.New(err)
 		zcn.walletString = ""
 		return
 	}
 	zcn.Success = true
-	zcn.ErrMsg = ""
+	zcn.Err = nil
 	zcn.walletString = proposal
 }
 

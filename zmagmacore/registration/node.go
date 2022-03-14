@@ -7,6 +7,7 @@ import (
 
 	"go.uber.org/zap"
 
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zmagmacore/errors"
 	"github.com/0chain/gosdk/zmagmacore/http"
 	"github.com/0chain/gosdk/zmagmacore/log"
@@ -46,7 +47,7 @@ func RegisterOrUpdateWithRetries(ctx context.Context, bmNode Node, numTries int)
 			log.Logger.Debug("Executing smart contract failed. Sleep for 1 seconds ...",
 				zap.String("err", err.Error()),
 			)
-			time.Sleep(time.Second)
+			sys.Sleep(time.Second)
 			continue
 		}
 

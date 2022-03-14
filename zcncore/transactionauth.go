@@ -776,3 +776,23 @@ func (ta *TransactionWithAuth) WritePoolUnlock(poolID string, fee int64) (
 	go func() { ta.submitTxn() }()
 	return
 }
+
+func (ta *TransactionWithAuth) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error) {
+	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_GLOBAL_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go ta.submitTxn()
+	return
+}
+
+func (ta *TransactionWithAuth) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error) {
+	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go ta.submitTxn()
+	return
+}
