@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -1195,7 +1196,54 @@ func (a *Allocation) CancelDownload(remotepath string) error {
 	return errors.New("remote_path_not_found", "Invalid path. No download in progress for the path "+remotepath)
 }
 
-func (a *Allocation) GetStreamDownloader(remotePath, pathHash, authToken, contentMode, downloadType string, rxPay bool, retry int, blocksPerMarker uint) (*StreamDownload, error) {
+func (a *Allocation) Download(remotePath, localPath, pathHash, authToken, contentMode, downloadType string, rxPay bool, retry int, blocksPerMarker uint) error {
+	finfo, err := os.Stat(localPath)
+	if err != nil {
+		return err
+	}
+	if !finfo.IsDir() {
+		return errors.New("invalid_path", "local path must be directory")
+	}
+
+	sd, err := a.GetStreamDownloader(remotePath, pathHash, authToken, contentMode, downloadType, rxPay, retry, blocksPerMarker)
+	if err != nil {
+		return err
+	}
+
+	fileName := filepath.Base(remotePath)
+	localFPath := filepath.Join(localPath, fileName)
+	finfo, err = os.Stat(localFPath)
+
+	var f *os.File
+	if errors.Is(err, os.ErrNotExist) {
+		f, err = os.Create(localFPath)
+	} else {
+		f, err = os.OpenFile(localFPath, os.O_WRONLY|os.O_APPEND, 0644)
+		sd.SetOffset(finfo.Size())
+	}
+
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(f, sd)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (a *Allocation) GetStreamDownloader(
+	remotePath,
+	pathHash,
+	authToken,
+	contentMode,
+	downloadType string,
+	rxPay bool,
+	retry int,
+	blocksPerMarker uint) (*StreamDownload, error) {
+
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
@@ -1207,7 +1255,6 @@ func (a *Allocation) GetStreamDownloader(remotePath, pathHash, authToken, conten
 	case authToken != "":
 		res, err = a.GetRefsWithAuthTicket(authToken, remotePath, pathHash, "", "", "", "", "regular", 0, 1)
 	case remotePath != "":
-		fmt.Println("GEt refs with remotepath")
 		res, err = a.GetRefs(remotePath, "", "", "", "", "regular", 0, 1)
 	case pathHash != "":
 		res, err = a.GetRefsFromLookupHash(pathHash, "", "", "", "", "regular", 0, 1) //
