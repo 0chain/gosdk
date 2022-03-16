@@ -248,6 +248,7 @@ func findDelta(rMap map[string]fileInfo, lMap map[string]fileInfo, prevMap map[s
 
 	// If there are differences, remove childs if the parent folder is deleted
 	if len(lFDiff) > 0 {
+		// Maybe change here
 		sort.SliceStable(lFDiff, func(i, j int) bool { return lFDiff[i].Path < lFDiff[j].Path })
 		Logger.Debug("Sorted diff: ", lFDiff)
 		var newlFDiff []FileDiff
