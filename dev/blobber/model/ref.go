@@ -3,11 +3,9 @@ package model
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"math"
 	"path/filepath"
 	"reflect"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -129,15 +127,9 @@ func (r *Ref) CalculateDirHash(ctx context.Context) (string, error) {
 	//for _, childRef := range r.Children {
 	//
 	//}
-	fmt.Println("Sorting in GoSDK!!!")
-	sort.SliceStable(r.Children, func(i, j int) bool {
-		return strings.Compare(r.Children[i].Path, r.Children[j].Path) == -1
-	})
-	fmt.Println("Parent level is: ", r.PathLevel, " || Parent Path is: ", r.Path)
-	for _, v := range r.Children {
-		fmt.Println("Child level is: ", v.PathLevel, " || Child Path is: ", v.Path)
-	}
-	fmt.Println("Finished Sorting in GoSDK!!!\nEnding...")
+	//sort.SliceStable(r.Children, func(i, j int) bool {
+	//	return strings.Compare(r.Children[i].Path, r.Children[j].Path) == -1
+	//})
 	childHashes := make([]string, len(r.Children))
 	childPathHashes := make([]string, len(r.Children))
 	var refNumBlocks int64
