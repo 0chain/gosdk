@@ -47,7 +47,7 @@ const (
 )
 
 /*
-    CreateChunkedUpload create a ChunkedUpload instance
+  CreateChunkedUpload create a ChunkedUpload instance
 
 	Caller should be careful about fileReader parameter
 	io.ErrUnexpectedEOF might mean that source has completely been exhausted or there is some error
@@ -92,11 +92,6 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	}
 
 	su := &ChunkedUpload{
-		// consensus: Consensus{
-		// 	fullconsensus:          allocationObj.fullconsensus,
-		// 	consensusThresh:        allocationObj.consensusThreshold,
-		// 	consensusRequiredForOk: allocationObj.consensusOK,
-		// },
 		allocationObj: allocationObj,
 		client:        zboxutil.Client,
 
