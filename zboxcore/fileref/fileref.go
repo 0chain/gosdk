@@ -115,13 +115,6 @@ func (r *Ref) CalculateHash() string {
 	if len(r.Children) == 0 && !r.childrenLoaded {
 		return r.Hash
 	}
-	// Maybe Here Change the Code
-	//sort.SliceStable(r.Children, func(i, j int) bool {
-	//	return strings.Compare(GetReferenceLookup(r.AllocationID, r.Children[i].GetPath()), GetReferenceLookup(r.AllocationID, r.Children[j].GetPath())) == -1
-	//})
-	//sort.SliceStable(r.Children, func(i, j int) bool {
-	//	return strings.Compare(r.Children[i].GetPath(), r.Children[j].GetPath()) == -1
-	//})
 	for _, childRef := range r.Children {
 		childRef.CalculateHash()
 	}
@@ -198,12 +191,6 @@ func (r *Ref) AddChild(child RefEntity) {
 		r.Children = make([]RefEntity, 0)
 	}
 	r.Children = append(r.Children, child)
-	//sort.SliceStable(r.Children, func(i, j int) bool {
-	//	return strings.Compare(GetReferenceLookup(r.AllocationID, r.Children[i].GetPath()), GetReferenceLookup(r.AllocationID, r.Children[j].GetPath())) == -1
-	//})
-	//sort.SliceStable(r.Children, func(i, j int) bool {
-	//	return strings.Compare(r.Children[i].GetPath(), r.Children[j].GetPath()) == -1
-	//})
 	r.childrenLoaded = true
 }
 
@@ -212,9 +199,6 @@ func (r *Ref) RemoveChild(idx int) {
 		return
 	}
 	r.Children = append(r.Children[:idx], r.Children[idx+1:]...)
-	//sort.SliceStable(r.Children, func(i, j int) bool {
-	//	return strings.Compare(GetReferenceLookup(r.AllocationID, r.Children[i].GetPath()), GetReferenceLookup(r.AllocationID, r.Children[j].GetPath())) == -1
-	//})
 }
 
 func (fr *FileRef) GetHashData() string {
