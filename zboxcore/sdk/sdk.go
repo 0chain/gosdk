@@ -13,6 +13,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/sys"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
@@ -298,14 +299,16 @@ type StakePoolRewardsInfo struct {
 
 // StakePoolDelegatePoolInfo represents delegate pool of a stake pool info.
 type StakePoolDelegatePoolInfo struct {
-	ID         common.Key     `json:"id"`          // pool ID
+	ID         common.Key     `json:"id"`          // blobber ID
 	Balance    common.Balance `json:"balance"`     // current balance
 	DelegateID common.Key     `json:"delegate_id"` // wallet
-	Rewards    common.Balance `json:"rewards"`     // total for all time
-	Penalty    common.Balance `json:"penalty"`     // total for all time
-	// Unstake > 0, then the pool wants to unstake. And the Unstake is maximal
-	// time it can't be unstaked.
-	Unstake bool `json:"unstake"`
+	Rewards    common.Balance `json:"rewards"`     // current
+	UnStake    bool           `json:"unstake"`     // want to unstake
+
+	TotalReward  common.Balance `json:"total_reward"`
+	TotalPenalty common.Balance `json:"total_penalty"`
+	Status       string         `json:"status"`
+	RoundCreated int64          `json:"round_created"`
 }
 
 // StakePoolSettings information.
@@ -324,22 +327,23 @@ type StakePoolSettings struct {
 
 // StakePool full info.
 type StakePoolInfo struct {
-	ID      common.Key     `json:"pool_id"` // blobber ID
-	Balance common.Balance `json:"balance"` // total stake
+	ID      common.Key     `json:"pool_id"` // pool ID
+	Balance common.Balance `json:"balance"` // total balance
 	Unstake common.Balance `json:"unstake"` // total unstake amount
 
-	Free       common.Size    `json:"free"`        // free staked space
-	Capacity   common.Size    `json:"capacity"`    // blobber bid
+	Free       int64          `json:"free"`        // free staked space
+	Capacity   int64          `json:"capacity"`    // blobber bid
 	WritePrice common.Balance `json:"write_price"` // its write price
 
-	OffersTotal  common.Balance `json:"offers_total"`  // total offers
-	UnstakeTotal common.Balance `json:"unstake_total"` // total of stakes marked for unstaking
+	OffersTotal  common.Balance `json:"offers_total"` //
+	UnstakeTotal common.Balance `json:"unstake_total"`
 	// delegate pools
-	Delegate []*StakePoolDelegatePoolInfo `json:"delegate"`
-	Penalty  common.Balance               `json:"penalty"` // total for all
+	Delegate []StakePoolDelegatePoolInfo `json:"delegate"`
+	Penalty  common.Balance              `json:"penalty"` // total for all
 	// rewards
-	Rewards StakePoolRewardsInfo `json:"rewards"`
-	// settings
+	Rewards common.Balance `json:"rewards"`
+
+	// Settings of the stake pool
 	Settings StakePoolSettings `json:"settings"`
 }
 
@@ -429,11 +433,12 @@ func StakePoolLock(blobberID string, value, fee int64) (poolID string, err error
 }
 
 // StakePoolUnlockUnstake is stake pool unlock response in case where tokens
-// can't be unlocked due to opened offers. In this case it returns the maximal
-// time to wait to be able to unlock the tokens. The real time can be lesser if
-// someone cancels an allocation, or someone else stake more tokens, etc.
+// can't be unlocked due to opened offers.
 type StakePoolUnlockUnstake struct {
-	Unstake common.Timestamp `json:"unstake"`
+	// one of the fields is set in a response, the Unstake if can't unstake
+	// for now and the TokenPoolTransferResponse if has a pool had unlocked
+	Unstake bool  `json:"unstake"` // max time to wait to unstake
+	Balance int64 `json:"balance"`
 }
 
 // StakePoolUnlock unlocks a stake pool tokens. If tokens can't be unlocked due
@@ -442,11 +447,11 @@ type StakePoolUnlockUnstake struct {
 // future. The time is maximal time that can be lesser in some cases. To
 // unlock tokens can't be unlocked now, wait the time and unlock them (call
 // this function again).
-func StakePoolUnlock(blobberID, poolID string, fee int64) (
-	unstake common.Timestamp, err error) {
-
+func StakePoolUnlock(
+	blobberID, poolID string, fee int64,
+) (unstake bool, err error) {
 	if !sdkInitialized {
-		return 0, sdkNotInitialized
+		return false, sdkNotInitialized
 	}
 	if blobberID == "" {
 		blobberID = client.GetClientID()
@@ -851,6 +856,10 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 	readPrice, writePrice PriceRange, mcct time.Duration,
 	lock int64, preferredBlobbers []string) (hash string, err error) {
 
+	if lock < 0 {
+		return "", errors.New("", "invalid value for lock")
+	}
+
 	if !sdkInitialized {
 		return "", sdkNotInitialized
 	}
@@ -903,6 +912,10 @@ func CreateFreeAllocation(marker string, value int64) (string, error) {
 		return "", sdkNotInitialized
 	}
 
+	if value < 0 {
+		return "", errors.New("", "invalid value for lock")
+	}
+
 	var input = map[string]interface{}{
 		"recipient_public_key": client.GetClientPublicKey(),
 		"marker":               marker,
@@ -921,6 +934,9 @@ func UpdateAllocation(size int64, expiry int64, allocationID string,
 
 	if !sdkInitialized {
 		return "", sdkNotInitialized
+	}
+	if lock < 0 {
+		return "", errors.New("", "invalid value for lock")
 	}
 
 	updateAllocationRequest := make(map[string]interface{})
@@ -942,6 +958,9 @@ func UpdateAllocation(size int64, expiry int64, allocationID string,
 func CreateFreeUpdateAllocation(marker, allocationId string, value int64) (string, error) {
 	if !sdkInitialized {
 		return "", sdkNotInitialized
+	}
+	if value < 0 {
+		return "", errors.New("", "invalid value for lock")
 	}
 
 	var input = map[string]interface{}{
@@ -1010,6 +1029,33 @@ func AddCurator(curatorId, allocationId string) (string, error) {
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_ADD_CURATOR,
 		InputArgs: allocationRequest,
+	}
+	hash, _, err := smartContractTxn(sn)
+	return hash, err
+}
+
+type ProviderType int
+
+const (
+	ProviderMiner ProviderType = iota
+	ProviderSharder
+	ProviderBlobber
+	ProviderValidator
+	ProviderAuthorizer
+)
+
+func CollectRewards(poolId string, providerType ProviderType) (string, error) {
+	if !sdkInitialized {
+		return "", sdkNotInitialized
+	}
+
+	var input = map[string]interface{}{
+		"provider_type": providerType,
+		"pool_id":       poolId,
+	}
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_COLLECT_REWARD,
+		InputArgs: input,
 	}
 	hash, _, err := smartContractTxn(sn)
 	return hash, err
@@ -1086,7 +1132,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 		t              *transaction.Transaction
 	)
 
-	time.Sleep(querySleepTime)
+	sys.Sleep(querySleepTime)
 
 	for retries < blockchain.GetMaxTxnQuery() {
 		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders())
@@ -1094,7 +1140,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 			break
 		}
 		retries++
-		time.Sleep(querySleepTime)
+		sys.Sleep(querySleepTime)
 	}
 
 	if err != nil {

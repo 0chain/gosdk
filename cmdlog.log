@@ -1,0 +1,4 @@
+0chain-core-sdk [INFO]   2021/08/12 22:40:29.487048 wallet.go:276: ******* Wallet SDK Version:v1.2.0 *******
+0box-sdk [INFO]   2021/08/12 22:40:29.488217 sdk.go:69: ******* Storage SDK Version: v1.2.0 *******
+0chain-core-sdk [INFO]   2021/08/12 22:40:30.773057 wallet.go:359: *******  Wallet SDK Version:v1.2.0 *******
+0box-sdk [DEBUG]  2021/08/12 22:40:31.531973 networkworker.go:98: Get network result:{"miners":["https://test.0chain.net/miner02","https://test.0chain.net/miner01","https://test.0chain.net/miner03"],"sharders":["https://test.0chain.net/sharder01","https://test.0chain.net/sharder02"]}

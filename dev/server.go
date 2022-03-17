@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 
 	"github.com/0chain/gosdk/dev/blobber"
+	"github.com/0chain/gosdk/dev/mock"
 	"github.com/gorilla/mux"
 )
 
@@ -26,10 +27,10 @@ func NewServer() *Server {
 }
 
 // NewBlobberServer create a local dev blobber server
-func NewBlobberServer() *Server {
+func NewBlobberServer(m mock.ResponseMap) *Server {
 	s := NewServer()
 
-	blobber.RegisterHandlers(s.Router)
+	blobber.RegisterHandlers(s.Router, m)
 
 	return s
 }

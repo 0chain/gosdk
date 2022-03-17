@@ -367,6 +367,21 @@ func (ta *TransactionWithAuth) MinerSCDeleteSharder(info *MinerSCMinerInfo) (
 	return
 }
 
+func (ta *TransactionWithAuth) MinerSCCollectReward(poolId string, providerType Provider) error {
+	pr := &SCCollectReward{
+		PoolId:       poolId,
+		ProviderType: providerType,
+	}
+	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go ta.submitTxn()
+	return err
+}
+
 func (ta *TransactionWithAuth) MinerSCLock(minerID string,
 	lock int64) (err error) {
 
@@ -462,6 +477,21 @@ func (ta *TransactionWithAuth) RegisterMultiSig(walletstr string, mswallet strin
 //
 // Storage SC
 //
+
+func (ta *TransactionWithAuth) StorageSCCollectReward(poolId string, providerType Provider) error {
+	pr := &SCCollectReward{
+		PoolId:       poolId,
+		ProviderType: providerType,
+	}
+	err := ta.t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { ta.submitTxn() }()
+	return err
+}
 
 func (ta *TransactionWithAuth) StorageScUpdateConfig(
 	ip *InputMap,
@@ -725,5 +755,25 @@ func (ta *TransactionWithAuth) WritePoolUnlock(poolID string, fee int64) (
 	}
 	ta.t.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error) {
+	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_GLOBAL_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go ta.submitTxn()
+	return
+}
+
+func (ta *TransactionWithAuth) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error) {
+	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go ta.submitTxn()
 	return
 }

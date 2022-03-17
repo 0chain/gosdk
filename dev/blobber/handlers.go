@@ -71,3 +71,12 @@ func commitWrite(w http.ResponseWriter, req *http.Request) {
 
 	json.NewEncoder(w).Encode(result)
 }
+
+func mockRespone(w http.ResponseWriter, req *http.Request, statusCode int, respBody []byte) {
+	w.Header().Set("Content-Type", "application/json")
+	if respBody != nil {
+		w.Write(respBody)
+	}
+
+	w.WriteHeader(statusCode)
+}

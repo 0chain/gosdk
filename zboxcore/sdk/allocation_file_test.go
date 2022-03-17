@@ -12,10 +12,14 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/dev"
+
+	"github.com/0chain/gosdk/sdks/blobber"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	zclient "github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -23,6 +27,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+
+	devmock "github.com/0chain/gosdk/dev/mock"
 )
 
 func TestAllocation_UpdateFile(t *testing.T) {
@@ -41,7 +47,18 @@ func TestAllocation_UpdateFile(t *testing.T) {
 		defer teardown(t)
 	}
 
-	server := dev.NewBlobberServer()
+	resp := &WMLockResult{
+		Status: WMLockStatusOK,
+	}
+
+	respBuf, _ := json.Marshal(resp)
+	respMap := make(devmock.ResponseMap)
+	respMap[http.MethodPost+":"+blobber.EndpointWriteMarkerLock+a.Tx] = devmock.Response{
+		StatusCode: http.StatusOK,
+		Body:       respBuf,
+	}
+
+	server := dev.NewBlobberServer(respMap)
 	defer server.Close()
 
 	for i := 0; i < numBlobbers; i++ {
@@ -67,7 +84,20 @@ func TestAllocation_UploadFile(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 	}
-	server := dev.NewBlobberServer()
+
+	resp := &WMLockResult{
+		Status: WMLockStatusOK,
+	}
+
+	respBuf, _ := json.Marshal(resp)
+	respMap := make(devmock.ResponseMap)
+	respMap[http.MethodPost+":"+blobber.EndpointWriteMarkerLock+a.Tx] = devmock.Response{
+		StatusCode: http.StatusOK,
+		Body:       respBuf,
+	}
+
+	server := dev.NewBlobberServer(respMap)
+
 	defer server.Close()
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
@@ -106,7 +136,17 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 		},
 	}
 
-	server := dev.NewBlobberServer()
+	resp := &WMLockResult{
+		Status: WMLockStatusOK,
+	}
+
+	respBuf, _ := json.Marshal(resp)
+	respMap := make(devmock.ResponseMap)
+	respMap[http.MethodPost+":"+blobber.EndpointWriteMarkerLock+"TestAllocation_UpdateFileWithThumbnail"] = devmock.Response{
+		StatusCode: http.StatusOK,
+		Body:       respBuf,
+	}
+	server := dev.NewBlobberServer(respMap)
 	defer server.Close()
 
 	for _, tt := range tests {
@@ -165,8 +205,20 @@ func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 	}
-	server := dev.NewBlobberServer()
+
+	resp := &WMLockResult{
+		Status: WMLockStatusOK,
+	}
+
+	respBuf, _ := json.Marshal(resp)
+	respMap := make(devmock.ResponseMap)
+	respMap[http.MethodPost+":"+blobber.EndpointWriteMarkerLock+a.Tx] = devmock.Response{
+		StatusCode: http.StatusOK,
+		Body:       respBuf,
+	}
+	server := dev.NewBlobberServer(respMap)
 	defer server.Close()
+
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -195,8 +247,19 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 		defer teardown(t)
 	}
 
-	server := dev.NewBlobberServer()
+	resp := &WMLockResult{
+		Status: WMLockStatusOK,
+	}
+
+	respBuf, _ := json.Marshal(resp)
+	respMap := make(devmock.ResponseMap)
+	respMap[http.MethodPost+":"+blobber.EndpointWriteMarkerLock+a.Tx] = devmock.Response{
+		StatusCode: http.StatusOK,
+		Body:       respBuf,
+	}
+	server := dev.NewBlobberServer(respMap)
 	defer server.Close()
+
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -222,8 +285,20 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 	}
-	server := dev.NewBlobberServer()
+
+	resp := &WMLockResult{
+		Status: WMLockStatusOK,
+	}
+
+	respBuf, _ := json.Marshal(resp)
+	respMap := make(devmock.ResponseMap)
+	respMap[http.MethodPost+":"+blobber.EndpointWriteMarkerLock+a.Tx] = devmock.Response{
+		StatusCode: http.StatusOK,
+		Body:       respBuf,
+	}
+	server := dev.NewBlobberServer(respMap)
 	defer server.Close()
+
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -250,8 +325,20 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 	}
-	server := dev.NewBlobberServer()
+
+	resp := &WMLockResult{
+		Status: WMLockStatusOK,
+	}
+
+	respBuf, _ := json.Marshal(resp)
+	respMap := make(devmock.ResponseMap)
+	respMap[http.MethodPost+":"+blobber.EndpointWriteMarkerLock+a.Tx] = devmock.Response{
+		StatusCode: http.StatusOK,
+		Body:       respBuf,
+	}
+	server := dev.NewBlobberServer(respMap)
 	defer server.Close()
+
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -278,8 +365,20 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 		ParityShards: 2,
 		DataShards:   2,
 	}
-	server := dev.NewBlobberServer()
+
+	resp := &WMLockResult{
+		Status: WMLockStatusOK,
+	}
+
+	respBuf, _ := json.Marshal(resp)
+	respMap := make(devmock.ResponseMap)
+	respMap[http.MethodPost+":"+blobber.EndpointWriteMarkerLock+a.Tx] = devmock.Response{
+		StatusCode: http.StatusOK,
+		Body:       respBuf,
+	}
+	server := dev.NewBlobberServer(respMap)
 	defer server.Close()
+
 	setupMockAllocation(t, a)
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -333,6 +432,19 @@ func TestAllocation_uploadOrUpdateFile(t *testing.T) {
 					})
 					require.NoError(t, err)
 					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+				}(frName, hash),
+			}, nil)
+
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.Contains(req.URL.Path, blobber.EndpointWriteMarkerLock)
+			})).Return(&http.Response{
+				StatusCode: http.StatusOK,
+				Body: func(fileRefName, hash string) io.ReadCloser {
+					resp := &WMLockResult{
+						Status: WMLockStatusOK,
+					}
+					respBuf, _ := json.Marshal(resp)
+					return ioutil.NopCloser(bytes.NewReader(respBuf))
 				}(frName, hash),
 			}, nil)
 		}
@@ -470,6 +582,234 @@ func TestAllocation_uploadOrUpdateFile(t *testing.T) {
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 
+				require.EqualValues(tt.errMsg, errors.Top(err))
+				return
+			}
+			require.NoErrorf(err, "Unexpected error %v", err)
+		})
+	}
+}
+
+func TestAllocation_RepairFile(t *testing.T) {
+	const (
+		mockFileRefName = "mock file ref name"
+		mockLocalPath   = "1.txt"
+		mockActualHash  = "75a919d23622c29ade8096ed1add6606ec970579459178db3a7d1d0ff8df92d3"
+		mockChunkHash   = "a6fb1cb61c9a3b8709242de28e44fb0b4de3753995396ae1d21ca9d4e956e9e2"
+	)
+
+	rawClient := zboxutil.Client
+	createClient := resty.CreateClient
+
+	var mockClient = mocks.HttpClient{}
+
+	zboxutil.Client = &mockClient
+	resty.CreateClient = func(t *http.Transport, timeout time.Duration) resty.Client {
+		return &mockClient
+	}
+
+	defer func() {
+		zboxutil.Client = rawClient
+		resty.CreateClient = createClient
+	}()
+
+	client := zclient.GetClient()
+	client.Wallet = &zcncrypto.Wallet{
+		ClientID:  mockClientId,
+		ClientKey: mockClientKey,
+	}
+
+	setupHttpResponses := func(t *testing.T, testName string, numBlobbers, numCorrect int) {
+		require.True(t, numBlobbers >= numCorrect)
+		for i := 0; i < numBlobbers; i++ {
+			var hash string
+			if i < numCorrect {
+				hash = mockActualHash
+			}
+			frName := mockFileRefName + strconv.Itoa(i)
+			url := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/meta"
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.HasPrefix(req.URL.String(), url)
+			})).Return(&http.Response{
+				StatusCode: http.StatusOK,
+				Body: func(fileRefName, hash string) io.ReadCloser {
+					jsonFR, err := json.Marshal(&fileref.FileRef{
+						ActualFileHash: hash,
+						Ref: fileref.Ref{
+							Name: fileRefName,
+						},
+					})
+					require.NoError(t, err)
+					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+				}(frName, hash),
+			}, nil)
+		}
+	}
+
+	setupHttpResponsesWithUpload := func(t *testing.T, testName string, numBlobbers, numCorrect int) {
+		require.True(t, numBlobbers >= numCorrect)
+		for i := 0; i < numBlobbers; i++ {
+			var hash string
+			if i < numCorrect {
+				hash = mockActualHash
+			}
+
+			frName := mockFileRefName + strconv.Itoa(i)
+			httpResponse := &http.Response{
+				StatusCode: http.StatusOK,
+				Body: func(fileRefName, hash string) io.ReadCloser {
+					jsonFR, err := json.Marshal(&fileref.FileRef{
+						ActualFileHash: hash,
+						Ref: fileref.Ref{
+							Name: fileRefName,
+						},
+					})
+					require.NoError(t, err)
+					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+				}(frName, hash),
+			}
+
+			urlMeta := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/meta"
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.HasPrefix(req.URL.String(), urlMeta)
+			})).Return(httpResponse, nil)
+
+			urlUpload := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/upload"
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.HasPrefix(req.URL.String(), urlUpload)
+			})).Return(&http.Response{
+				StatusCode: http.StatusOK,
+				Body: func(fileRefName, hash string) io.ReadCloser {
+					jsonFR, err := json.Marshal(&UploadResult{
+						Filename: mockLocalPath,
+						Hash:     mockChunkHash,
+					})
+					require.NoError(t, err)
+					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+				}(frName, hash),
+			}, nil)
+
+			urlFilePath := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/referencepath"
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.HasPrefix(req.URL.String(), urlFilePath)
+			})).Return(&http.Response{
+				StatusCode: http.StatusOK,
+				Body: func(fileRefName, hash string) io.ReadCloser {
+					jsonFR, err := json.Marshal(&ReferencePathResult{
+						ReferencePath: &fileref.ReferencePath{
+							Meta: map[string]interface{}{
+								"type": "d",
+							},
+						},
+						LatestWM: nil,
+					})
+					require.NoError(t, err)
+					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+				}(frName, hash),
+			}, nil)
+
+			urlCommit := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/connection/commit"
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.HasPrefix(req.URL.String(), urlCommit)
+			})).Return(&http.Response{
+				StatusCode: http.StatusOK,
+				Body: func(fileRefName, hash string) io.ReadCloser {
+					jsonFR, err := json.Marshal(&ReferencePathResult{})
+					require.NoError(t, err)
+					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
+				}(frName, hash),
+			}, nil)
+
+			urlLock := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + blobber.EndpointWriteMarkerLock
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.HasPrefix(req.URL.String(), urlLock)
+			})).Return(&http.Response{
+				StatusCode: http.StatusOK,
+				Body: func() io.ReadCloser {
+					resp := &WMLockResult{
+						Status: WMLockStatusOK,
+					}
+					respBuf, _ := json.Marshal(resp)
+					return ioutil.NopCloser(bytes.NewReader(respBuf))
+				}(),
+			}, nil)
+		}
+	}
+
+	type parameters struct {
+		localPath  string
+		remotePath string
+		status     StatusCallback
+	}
+	tests := []struct {
+		name        string
+		parameters  parameters
+		numBlobbers int
+		numCorrect  int
+		setup       func(*testing.T, string, int, int)
+		wantErr     bool
+		errMsg      string
+	}{
+		{
+			name: "Test_Repair_Not_Required_Failed",
+			parameters: parameters{
+				localPath:  mockLocalPath,
+				remotePath: "/",
+			},
+			numBlobbers: 4,
+			numCorrect:  4,
+			setup:       setupHttpResponses,
+			wantErr:     true,
+			errMsg:      "chunk_upload: Repair not required",
+		},
+		{
+			name: "Test_Repair_Required_Success",
+			parameters: parameters{
+				localPath:  mockLocalPath,
+				remotePath: "/",
+			},
+			numBlobbers: 6,
+			numCorrect:  5,
+			setup:       setupHttpResponsesWithUpload,
+		},
+	}
+
+	if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
+		defer teardown(t)
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require := require.New(t)
+
+			a := &Allocation{
+				ParityShards: tt.numBlobbers / 2,
+				DataShards:   tt.numBlobbers / 2,
+			}
+			a.uploadChan = make(chan *UploadRequest, 10)
+			a.downloadChan = make(chan *DownloadRequest, 10)
+			a.repairChan = make(chan *RepairRequest, 1)
+			a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
+			a.uploadProgressMap = make(map[string]*UploadRequest)
+			a.downloadProgressMap = make(map[string]*DownloadRequest)
+			a.mutex = &sync.Mutex{}
+			a.initialized = true
+			sdkInitialized = true
+			setupMockAllocation(t, a)
+			for i := 0; i < tt.numBlobbers; i++ {
+				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
+					Baseurl: "http://TestAllocation_RepairFile" + tt.name + mockBlobberUrl + strconv.Itoa(i),
+				})
+			}
+			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect)
+			err := a.RepairFile(tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.status)
+			if tt.wantErr {
+				require.NotNil(err)
+			} else {
+				require.Nil(err)
+			}
+
+			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))
 				return
 			}
