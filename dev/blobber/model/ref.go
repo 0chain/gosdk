@@ -121,15 +121,6 @@ func (r *Ref) CalculateDirHash(ctx context.Context) (string, error) {
 	if len(r.Children) == 0 && !r.childrenLoaded {
 		return r.Hash, nil
 	}
-	//sort.SliceStable(r.Children, func(i, j int) bool {
-	//	return strings.Compare(r.Children[i].LookupHash, r.Children[j].LookupHash) == -1
-	//})
-	//for _, childRef := range r.Children {
-	//
-	//}
-	//sort.SliceStable(r.Children, func(i, j int) bool {
-	//	return strings.Compare(r.Children[i].Path, r.Children[j].Path) == -1
-	//})
 	childHashes := make([]string, len(r.Children))
 	childPathHashes := make([]string, len(r.Children))
 	var refNumBlocks int64

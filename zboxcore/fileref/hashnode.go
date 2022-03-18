@@ -50,10 +50,6 @@ func (n *Hashnode) GetHashCode() string {
 		if len(n.Children) == 0 {
 			return ""
 		}
-		// Maybe Here Change The Code
-		//sort.SliceStable(n.Children, func(i, j int) bool {
-		//	return strings.Compare(n.Children[i].GetLookupHash(), n.Children[j].GetLookupHash()) == -1
-		//})
 
 		childHashes := make([]string, len(n.Children))
 
