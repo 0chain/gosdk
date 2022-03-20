@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/h2non/filetype"
 )
 
@@ -107,7 +108,7 @@ func (r *liveUploadReaderBase) Read(p []byte) (int, error) {
 			return readLen, err
 		}
 
-		time.Sleep(1 * time.Second)
+		sys.Sleep(1 * time.Second)
 
 	}
 }
@@ -160,7 +161,7 @@ func (r *liveUploadReaderBase) GetFileContentType() (string, error) {
 					return kind.MIME.Value, nil
 				}
 
-				time.Sleep(1 * time.Second)
+				sys.Sleep(1 * time.Second)
 			}
 
 		}
@@ -185,7 +186,7 @@ func (r *liveUploadReaderBase) Size() int64 {
 			return fi.Size()
 		}
 
-		time.Sleep(1 * time.Second)
+		sys.Sleep(1 * time.Second)
 	}
 
 }
@@ -217,7 +218,7 @@ func (r *liveUploadReaderBase) initClipsReader() error {
 				}
 			}
 
-			time.Sleep(1 * time.Second)
+			sys.Sleep(1 * time.Second)
 		}
 	}
 

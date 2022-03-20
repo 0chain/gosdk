@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/logger"
 )
 
@@ -42,7 +43,7 @@ func (fs *fsChunkedUploadProgressStorer) Load(progressID string) *UploadProgress
 
 	progress := UploadProgress{}
 
-	buf, err := FS.ReadFile(progressID)
+	buf, err := sys.Files.ReadFile(progressID)
 
 	if errors.Is(err, os.ErrNotExist) {
 		return nil
@@ -72,7 +73,7 @@ func (fs *fsChunkedUploadProgressStorer) Save(up UploadProgress) {
 			return
 		}
 
-		err = FS.WriteFile(fs.up.ID, buf, 0644)
+		err = sys.Files.WriteFile(fs.up.ID, buf, 0644)
 		if err != nil {
 			logger.Logger.Error("[progress] save ", fs.up, err)
 			return
@@ -87,7 +88,7 @@ func (fs *fsChunkedUploadProgressStorer) Remove(progressID string) error {
 	fs.Lock()
 	defer fs.Unlock()
 	fs.isRemoved = true
-	err := FS.Remove(progressID)
+	err := sys.Files.Remove(progressID)
 	if err != nil {
 		if !errors.Is(err, os.ErrNotExist) {
 			return nil

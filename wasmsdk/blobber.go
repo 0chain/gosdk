@@ -6,13 +6,13 @@ package main
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"path"
 	"path/filepath"
 	"strings"
 	"sync"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -46,7 +46,7 @@ func Delete(allocationID, remotePath string, autoCommit bool) (*FileCommandRespo
 		return nil, err
 	}
 
-	fmt.Println(remotePath + " deleted")
+	sdkLogger.Info(remotePath + " deleted")
 
 	resp := &FileCommandResponse{
 		CommandSuccess: true,
@@ -97,7 +97,7 @@ func Rename(allocationID, remotePath, destName string, autoCommit bool) (*FileCo
 		PrintError(err.Error())
 		return nil, err
 	}
-	fmt.Println(remotePath + " renamed")
+	sdkLogger.Info(remotePath + " renamed")
 
 	resp := &FileCommandResponse{
 		CommandSuccess: true,
@@ -150,7 +150,8 @@ func Copy(allocationID, remotePath, destPath string, autoCommit bool) (*FileComm
 		return nil, err
 	}
 
-	fmt.Println(remotePath + " copied")
+	sdkLogger.Info(remotePath + " copied")
+
 	resp := &FileCommandResponse{
 		CommandSuccess: true,
 	}
@@ -202,7 +203,7 @@ func Move(allocationID, remotePath, destPath string, autoCommit bool) (*FileComm
 		return nil, err
 	}
 
-	fmt.Println(remotePath + " moved")
+	sdkLogger.Info(remotePath + " moved")
 
 	resp := &FileCommandResponse{
 		CommandSuccess: true,
@@ -267,7 +268,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 			PrintError(err.Error())
 			return "", err
 		}
-		fmt.Println("Share revoked for client " + clientID)
+		sdkLogger.Info("Share revoked for client " + clientID)
 		return "", nil
 	}
 
@@ -276,7 +277,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 		PrintError(err.Error())
 		return "", err
 	}
-	fmt.Println("Auth token :" + ref)
+	sdkLogger.Info("Auth token :" + ref)
 
 	return ref, nil
 
@@ -305,7 +306,7 @@ func downloadFile(allocationObj *sdk.Allocation, authTicket string, authTicketOb
 		PrintError(err)
 		return "", err
 	}
-	defer sdk.FS.Remove(localPath) //nolint
+	defer sys.Files.Remove(localPath) //nolint
 
 	if len(authTicket) > 0 {
 
@@ -396,7 +397,7 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 		return nil, err
 	}
 
-	defer sdk.FS.Remove(localPath) //nolint
+	defer sys.Files.Remove(localPath) //nolint
 
 	err = downloader.Start(statusBar)
 
@@ -415,9 +416,9 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 		FileName:       fileName,
 	}
 
-	fs, _ := sdk.FS.Open(localPath)
+	fs, _ := sys.Files.Open(localPath)
 
-	mf, _ := fs.(*common.MemFile)
+	mf, _ := fs.(*sys.MemFile)
 
 	resp.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
 
@@ -513,10 +514,7 @@ func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 		sdk.WithChunkSize(int64(chunkSize)),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
-		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
-		sdk.WithCreateWriteMarkerLocker(func(file string) sdk.WriteMarkerLocker {
-			return &writeMarkerLocker{}
-		}))
+		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}))
 	if err != nil {
 		return nil, err
 	}
@@ -554,7 +552,7 @@ func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 
 // CommitFileMetaTxn commit file changes to blockchain, and update to blobbers
 func CommitFileMetaTxn(allocationID, commandName, remotePath, authTicket, lookupHash string) (*transaction.Transaction, error) {
-	fmt.Println("Commiting changes to blockchain ...")
+	sdkLogger.Info("Commiting changes to blockchain ...")
 
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
@@ -584,13 +582,13 @@ func CommitFileMetaTxn(allocationID, commandName, remotePath, authTicket, lookup
 		return nil, err
 	}
 
-	fmt.Println("Commit Metadata successful")
+	sdkLogger.Info("Commit Metadata successful")
 	return txn, nil
 }
 
 // CommitFolderMetaTxn commit folder changes to blockchain
 func CommitFolderMetaTxn(allocationID, commandName, preValue, currValue string) (*transaction.Transaction, error) {
-	fmt.Println("Commiting changes to blockchain ...")
+	sdkLogger.Info("Commiting changes to blockchain ...")
 
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
@@ -608,7 +606,7 @@ func CommitFolderMetaTxn(allocationID, commandName, preValue, currValue string) 
 		return nil, err
 	}
 
-	fmt.Println("Commit Metadata successful, Response :", resp)
+	sdkLogger.Info("Commit Metadata successful, Response :", resp)
 
 	txn, err := getLastMetadataCommitTxn()
 

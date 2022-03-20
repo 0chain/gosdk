@@ -15,6 +15,7 @@ import (
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
@@ -46,7 +47,7 @@ const (
 )
 
 /*
-    CreateChunkedUpload create a ChunkedUpload instance
+  CreateChunkedUpload create a ChunkedUpload instance
 
 	Caller should be careful about fileReader parameter
 	io.ErrUnexpectedEOF might mean that source has completely been exhausted or there is some error
@@ -91,11 +92,6 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	}
 
 	su := &ChunkedUpload{
-		// consensus: Consensus{
-		// 	fullconsensus:          allocationObj.fullconsensus,
-		// 	consensusThresh:        allocationObj.consensusThreshold,
-		// 	consensusRequiredForOk: allocationObj.consensusOK,
-		// },
 		allocationObj: allocationObj,
 		client:        zboxutil.Client,
 
@@ -135,17 +131,13 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	su.workdir = filepath.Join(workdir, ".zcn")
 
 	//create upload folder to save progress
-	err := FS.MkdirAll(filepath.Join(su.workdir, "upload"), 0744)
+	err := sys.Files.MkdirAll(filepath.Join(su.workdir, "upload"), 0744)
 	if err != nil {
 		return nil, err
 	}
 
 	for _, opt := range opts {
 		opt(su)
-	}
-
-	if su.createWriteMarkerLocker == nil {
-		su.createWriteMarkerLocker = createWriteMarkerLocker
 	}
 
 	if su.progressStorer == nil {
@@ -173,6 +165,11 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 
 	}
 
+	su.writeMarkerMutex, err = CreateWriteMarkerMutex(client.GetClient(), su.allocationObj)
+	if err != nil {
+		return nil, err
+	}
+
 	blobbers := su.allocationObj.Blobbers
 	if len(blobbers) == 0 {
 		return nil, thrown.New("no_blobbers", "Unable to find blobbers")
@@ -183,9 +180,9 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	for i := 0; i < len(blobbers); i++ {
 
 		su.blobbers[i] = &ChunkedUploadBlobber{
-			WriteMarkerLocker: su.createWriteMarkerLocker(filepath.Join(su.workdir, "blobber."+su.allocationObj.Blobbers[i].ID+".lock")),
-			progress:          su.progress.Blobbers[i],
-			blobber:           su.allocationObj.Blobbers[i],
+			writeMarkerMutex: su.writeMarkerMutex,
+			progress:         su.progress.Blobbers[i],
+			blobber:          su.allocationObj.Blobbers[i],
 			fileRef: &fileref.FileRef{
 				Ref: fileref.Ref{
 					Name:         su.fileMeta.RemoteName,
@@ -220,8 +217,7 @@ type ChunkedUpload struct {
 
 	workdir string
 
-	allocationObj *Allocation
-
+	allocationObj  *Allocation
 	progress       UploadProgress
 	progressStorer ChunkedUploadProgressStorer
 	client         zboxutil.HttpClient
@@ -257,8 +253,9 @@ type ChunkedUpload struct {
 	// statusCallback trigger progress on StatusCallback
 	statusCallback StatusCallback
 
-	blobbers                []*ChunkedUploadBlobber
-	createWriteMarkerLocker func(file string) WriteMarkerLocker
+	blobbers []*ChunkedUploadBlobber
+
+	writeMarkerMutex *WriteMarkerMutex
 
 	// isRepair identifies if upload is repair operation
 	isRepair bool
@@ -354,6 +351,9 @@ func (su *ChunkedUpload) Start() error {
 	for {
 		chunk, err := su.chunkReader.Next()
 		if err != nil {
+			if su.statusCallback != nil {
+				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+			}
 			return err
 		}
 		//logger.Logger.Debug("Read chunk #", chunk.Index)
@@ -373,6 +373,9 @@ func (su *ChunkedUpload) Start() error {
 		if chunk.IsFinal {
 			su.fileMeta.ActualHash, err = su.fileHasher.GetFileHash()
 			if err != nil {
+				if su.statusCallback != nil {
+					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+				}
 				return err
 			}
 
@@ -388,6 +391,9 @@ func (su *ChunkedUpload) Start() error {
 
 			thumbnailFragments, err = su.chunkReader.Read(su.thumbnailBytes)
 			if err != nil {
+				if su.statusCallback != nil {
+					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+				}
 				return err
 			}
 
@@ -395,6 +401,9 @@ func (su *ChunkedUpload) Start() error {
 
 		err = su.processUpload(chunk.Index, chunk.Fragments, thumbnailFragments, chunk.IsFinal, chunk.ReadSize)
 		if err != nil {
+			if su.statusCallback != nil {
+				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+			}
 			return err
 		}
 
@@ -416,6 +425,16 @@ func (su *ChunkedUpload) Start() error {
 
 	if su.consensus.isConsensusOk() {
 		logger.Logger.Info("Completed the upload. Submitting for commit")
+
+		err := su.writeMarkerMutex.Lock(context.TODO(), su.progress.ConnectionID)
+		defer su.writeMarkerMutex.Unlock(context.TODO(), su.progress.ConnectionID) //nolint: errcheck
+		if err != nil {
+			if su.statusCallback != nil {
+				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+			}
+			return err
+		}
+
 		return su.processCommit()
 	}
 
@@ -500,6 +519,7 @@ func (su *ChunkedUpload) processUpload(chunkIndex int, fileFragments [][]byte, t
 
 // processCommit commit shard upload on its blobber
 func (su *ChunkedUpload) processCommit() error {
+
 	logger.Logger.Info("Submitting for commit")
 	su.consensus.Reset()
 

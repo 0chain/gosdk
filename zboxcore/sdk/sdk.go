@@ -13,6 +13,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/sys"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
@@ -298,14 +299,16 @@ type StakePoolRewardsInfo struct {
 
 // StakePoolDelegatePoolInfo represents delegate pool of a stake pool info.
 type StakePoolDelegatePoolInfo struct {
-	ID         common.Key     `json:"id"`          // pool ID
+	ID         common.Key     `json:"id"`          // blobber ID
 	Balance    common.Balance `json:"balance"`     // current balance
 	DelegateID common.Key     `json:"delegate_id"` // wallet
-	Rewards    common.Balance `json:"rewards"`     // total for all time
-	Penalty    common.Balance `json:"penalty"`     // total for all time
-	// Unstake > 0, then the pool wants to unstake. And the Unstake is maximal
-	// time it can't be unstaked.
-	Unstake bool `json:"unstake"`
+	Rewards    common.Balance `json:"rewards"`     // current
+	UnStake    bool           `json:"unstake"`     // want to unstake
+
+	TotalReward  common.Balance `json:"total_reward"`
+	TotalPenalty common.Balance `json:"total_penalty"`
+	Status       string         `json:"status"`
+	RoundCreated int64          `json:"round_created"`
 }
 
 // StakePoolSettings information.
@@ -324,22 +327,23 @@ type StakePoolSettings struct {
 
 // StakePool full info.
 type StakePoolInfo struct {
-	ID      common.Key     `json:"pool_id"` // blobber ID
-	Balance common.Balance `json:"balance"` // total stake
+	ID      common.Key     `json:"pool_id"` // pool ID
+	Balance common.Balance `json:"balance"` // total balance
 	Unstake common.Balance `json:"unstake"` // total unstake amount
 
-	Free       common.Size    `json:"free"`        // free staked space
-	Capacity   common.Size    `json:"capacity"`    // blobber bid
+	Free       int64          `json:"free"`        // free staked space
+	Capacity   int64          `json:"capacity"`    // blobber bid
 	WritePrice common.Balance `json:"write_price"` // its write price
 
-	OffersTotal  common.Balance `json:"offers_total"`  // total offers
-	UnstakeTotal common.Balance `json:"unstake_total"` // total of stakes marked for unstaking
+	OffersTotal  common.Balance `json:"offers_total"` //
+	UnstakeTotal common.Balance `json:"unstake_total"`
 	// delegate pools
-	Delegate []*StakePoolDelegatePoolInfo `json:"delegate"`
-	Penalty  common.Balance               `json:"penalty"` // total for all
+	Delegate []StakePoolDelegatePoolInfo `json:"delegate"`
+	Penalty  common.Balance              `json:"penalty"` // total for all
 	// rewards
-	Rewards StakePoolRewardsInfo `json:"rewards"`
-	// settings
+	Rewards common.Balance `json:"rewards"`
+
+	// Settings of the stake pool
 	Settings StakePoolSettings `json:"settings"`
 }
 
@@ -1171,7 +1175,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 		t              *transaction.Transaction
 	)
 
-	time.Sleep(querySleepTime)
+	sys.Sleep(querySleepTime)
 
 	for retries < blockchain.GetMaxTxnQuery() {
 		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders())
@@ -1179,7 +1183,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 			break
 		}
 		retries++
-		time.Sleep(querySleepTime)
+		sys.Sleep(querySleepTime)
 	}
 
 	if err != nil {
