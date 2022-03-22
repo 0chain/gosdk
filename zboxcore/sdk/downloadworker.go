@@ -185,7 +185,6 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 			}
 		}
 	}
-
 	erasureencoder, err := encoder.NewEncoder(req.datashards, req.parityshards)
 	if err != nil {
 		return []byte{}, errors.Wrap(err, "encoder init error")
