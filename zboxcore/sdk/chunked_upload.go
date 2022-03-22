@@ -15,6 +15,7 @@ import (
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
@@ -46,7 +47,7 @@ const (
 )
 
 /*
-    CreateChunkedUpload create a ChunkedUpload instance
+  CreateChunkedUpload create a ChunkedUpload instance
 
 	Caller should be careful about fileReader parameter
 	io.ErrUnexpectedEOF might mean that source has completely been exhausted or there is some error
@@ -91,11 +92,6 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	}
 
 	su := &ChunkedUpload{
-		// consensus: Consensus{
-		// 	fullconsensus:          allocationObj.fullconsensus,
-		// 	consensusThresh:        allocationObj.consensusThreshold,
-		// 	consensusRequiredForOk: allocationObj.consensusOK,
-		// },
 		allocationObj: allocationObj,
 		client:        zboxutil.Client,
 
@@ -135,7 +131,7 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	su.workdir = filepath.Join(workdir, ".zcn")
 
 	//create upload folder to save progress
-	err := FS.MkdirAll(filepath.Join(su.workdir, "upload"), 0744)
+	err := sys.Files.MkdirAll(filepath.Join(su.workdir, "upload"), 0744)
 	if err != nil {
 		return nil, err
 	}
@@ -355,6 +351,9 @@ func (su *ChunkedUpload) Start() error {
 	for {
 		chunk, err := su.chunkReader.Next()
 		if err != nil {
+			if su.statusCallback != nil {
+				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+			}
 			return err
 		}
 		//logger.Logger.Debug("Read chunk #", chunk.Index)
@@ -374,6 +373,9 @@ func (su *ChunkedUpload) Start() error {
 		if chunk.IsFinal {
 			su.fileMeta.ActualHash, err = su.fileHasher.GetFileHash()
 			if err != nil {
+				if su.statusCallback != nil {
+					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+				}
 				return err
 			}
 
@@ -389,6 +391,9 @@ func (su *ChunkedUpload) Start() error {
 
 			thumbnailFragments, err = su.chunkReader.Read(su.thumbnailBytes)
 			if err != nil {
+				if su.statusCallback != nil {
+					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+				}
 				return err
 			}
 
@@ -396,6 +401,9 @@ func (su *ChunkedUpload) Start() error {
 
 		err = su.processUpload(chunk.Index, chunk.Fragments, thumbnailFragments, chunk.IsFinal, chunk.ReadSize)
 		if err != nil {
+			if su.statusCallback != nil {
+				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+			}
 			return err
 		}
 
@@ -421,6 +429,9 @@ func (su *ChunkedUpload) Start() error {
 		err := su.writeMarkerMutex.Lock(context.TODO(), su.progress.ConnectionID)
 		defer su.writeMarkerMutex.Unlock(context.TODO(), su.progress.ConnectionID) //nolint: errcheck
 		if err != nil {
+			if su.statusCallback != nil {
+				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+			}
 			return err
 		}
 

@@ -10,6 +10,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/0chain/gosdk/core/common"
+
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	h "github.com/0chain/gosdk/zcnbridge/http"
@@ -49,7 +51,7 @@ var (
 // zchainBurnHash - Ethereum burn transaction hash
 func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereum.MintPayload, error) {
 	client = h.NewRetryableClient()
-	authorizers, err := GetAuthorizers()
+	authorizers, err := getAuthorizers()
 
 	if err != nil || len(authorizers) == 0 {
 		return nil, errors.Wrap("get_authorizers", "failed to get authorizers", err)
@@ -111,7 +113,7 @@ func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereu
 // ethBurnHash - Ethereum burn transaction hash
 func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPayload, error) {
 	client = h.NewRetryableClient()
-	authorizers, err := GetAuthorizers()
+	authorizers, err := getAuthorizers()
 
 	if err != nil || len(authorizers) == 0 {
 		return nil, errors.Wrap("get_authorizers", "failed to get authorizers", err)
@@ -159,7 +161,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 
 		payload := &zcnsc.MintPayload{
 			EthereumTxnID:     burnTicket.TxnID,
-			Amount:            burnTicket.Amount,
+			Amount:            common.Balance(burnTicket.Amount),
 			Nonce:             burnTicket.Amount,
 			Signatures:        sigs,
 			ReceivingClientID: burnTicket.ReceivingClientID,
@@ -172,7 +174,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 	return nil, errors.New("get_burn_ticket", text)
 }
 
-func queryAllAuthorizers(authorizers []*AuthorizerNodeResponse, handler *requestHandler) []JobResult {
+func queryAllAuthorizers(authorizers []*AuthorizerNode, handler *requestHandler) []JobResult {
 	var (
 		totalWorkers    = len(authorizers)
 		eventsChannel   = make(eventsChannelType)
@@ -207,7 +209,7 @@ func handleResponse(responseChannel responseChannelType, eventsChannel eventsCha
 	eventsChannel <- events
 }
 
-func queryAuthoriser(au *AuthorizerNodeResponse, request *requestHandler, responseChannel responseChannelType) {
+func queryAuthoriser(au *AuthorizerNode, request *requestHandler, responseChannel responseChannelType) {
 	var (
 		ticketURL = strings.TrimSuffix(au.URL, "/") + request.path
 	)

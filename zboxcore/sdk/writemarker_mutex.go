@@ -17,6 +17,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/resty"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/sdks"
 	"github.com/0chain/gosdk/sdks/blobber"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -141,7 +142,7 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error 
 			// it is locked by other session, wait and retry
 			if result.Status == WMLockStatusPending {
 				logger.Logger.Info("WriteMarkerLock is pending, wait and retry")
-				time.Sleep(1 * time.Second)
+				sys.Sleep(1 * time.Second)
 				continue
 			} else if result.Status == WMLockStatusOK {
 				// locked on current blobber, count it and go to next blobber
@@ -159,7 +160,7 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error 
 			return constants.ErrNotLockedWritMarker
 		}
 
-		time.Sleep(1 * time.Second)
+		sys.Sleep(1 * time.Second)
 	}
 }
 
