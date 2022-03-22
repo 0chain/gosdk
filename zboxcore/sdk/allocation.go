@@ -970,7 +970,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 }
 
 func (a *Allocation) GetAuthTicketForShare(path string, filename string, referenceType string, refereeClientID string) (string, error) {
-	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "", 0, 0)
+	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "", 0, int64(common.Now()))
 }
 
 func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
@@ -981,9 +981,15 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 		url := a.Blobbers[idx].Baseurl
 		body := new(bytes.Buffer)
 		formWriter := multipart.NewWriter(body)
-		formWriter.WriteField("path", path)
-		formWriter.WriteField("refereeClientID", refereeClientID)
-		formWriter.Close()
+		if err := formWriter.WriteField("path", path); err != nil {
+			return err
+		}
+		if err := formWriter.WriteField("refereeClientID", refereeClientID); err != nil {
+			return err
+		}
+		if err := formWriter.Close(); err != nil {
+			return err
+		}
 		httpreq, err := zboxutil.NewRevokeShareRequest(url, a.Tx, body)
 		if err != nil {
 			return err
@@ -1036,7 +1042,9 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 	return errors.New("", "consensus not reached")
 }
 
-func (a *Allocation) GetAuthTicket(path, filename, referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration, availableAfter int64) (string, error) {
+func (a *Allocation) GetAuthTicket(path, filename string,
+	referenceType, refereeClientID, refereeEncryptionPublicKey string,
+	expiration, availableAfter int64) (string, error) {
 	if !a.isInitialized() {
 		return "", notInitialized
 	}
@@ -1082,7 +1090,9 @@ func (a *Allocation) GetAuthTicket(path, filename, referenceType, refereeClientI
 	}
 
 	aTicket.ReEncryptionKey = ""
-	aTicket.Sign()
+	if err := aTicket.Sign(); err != nil {
+		return "", err
+	}
 
 	atBytes, err = json.Marshal(aTicket)
 	if err != nil {
@@ -1099,10 +1109,18 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 		url := a.Blobbers[idx].Baseurl
 		body := new(bytes.Buffer)
 		formWriter := multipart.NewWriter(body)
-		formWriter.WriteField("encryption_public_key", clientEncPubKey)
-		formWriter.WriteField("auth_ticket", authTicket)
-		formWriter.WriteField("available_after", strconv.FormatInt(availableAfter, 10))
-		formWriter.Close()
+		if err := formWriter.WriteField("encryption_public_key", clientEncPubKey); err != nil {
+			return err
+		}
+		if err := formWriter.WriteField("auth_ticket", authTicket); err != nil {
+			return err
+		}
+		if err := formWriter.WriteField("available_after", strconv.FormatInt(availableAfter, 10)); err != nil {
+			return err
+		}
+		if err := formWriter.Close(); err != nil {
+			return err
+		}
 		httpreq, err := zboxutil.NewShareRequest(url, a.Tx, body)
 		if err != nil {
 			return err

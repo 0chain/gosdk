@@ -106,14 +106,12 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 		encscheme.InitForDecryption("filetype:audio", req.encryptedKey)
 	}
 
-	var err error
 	for i := 0; i < numDownloads; i++ {
 		result := <-rspCh
 
 		downloadChunks := len(result.BlockChunks)
 		if !result.Success {
 			logger.Logger.Error("Download block : ", req.blobbers[result.idx].Baseurl, " ", result.err)
-			err = result.err
 		} else {
 			blockSuccess := false
 			if blockChunksMax < len(result.BlockChunks) {
@@ -187,9 +185,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 			}
 		}
 	}
-	if err != nil {
-		return nil, err
-	}
+
 	erasureencoder, err := encoder.NewEncoder(req.datashards, req.parityshards)
 	if err != nil {
 		return []byte{}, errors.Wrap(err, "encoder init error")
