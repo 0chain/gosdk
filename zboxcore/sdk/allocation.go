@@ -970,7 +970,8 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 }
 
 func (a *Allocation) GetAuthTicketForShare(path string, filename string, referenceType string, refereeClientID string) (string, error) {
-	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "", 0, int64(common.Now()))
+	now := time.Now()
+	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "", 0, &now)
 }
 
 func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
@@ -1044,7 +1045,7 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 
 func (a *Allocation) GetAuthTicket(path, filename string,
 	referenceType, refereeClientID, refereeEncryptionPublicKey string,
-	expiration, availableAfter int64) (string, error) {
+	expiration int64, availableAfter *time.Time) (string, error) {
 	if !a.isInitialized() {
 		return "", notInitialized
 	}
@@ -1102,7 +1103,7 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 	return base64.StdEncoding.EncodeToString(atBytes), nil
 }
 
-func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKey string, availableAfter int64) error {
+func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKey string, availableAfter *time.Time) error {
 	success := make(chan int, len(a.Blobbers))
 	wg := &sync.WaitGroup{}
 	for idx := range a.Blobbers {
@@ -1115,9 +1116,12 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 		if err := formWriter.WriteField("auth_ticket", authTicket); err != nil {
 			return err
 		}
-		if err := formWriter.WriteField("available_after", strconv.FormatInt(availableAfter, 10)); err != nil {
-			return err
+		if availableAfter != nil {
+			if err := formWriter.WriteField("available_after", strconv.FormatInt(availableAfter.Unix(), 10)); err != nil {
+				return err
+			}
 		}
+
 		if err := formWriter.Close(); err != nil {
 			return err
 		}
