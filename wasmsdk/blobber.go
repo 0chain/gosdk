@@ -276,12 +276,12 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 	availableAt := time.Now()
 
 	if len(availableAfter) > 0 {
-		if aa, err := common.ParseTime(availableAt, availableAfter); err != nil {
+		aa, err := common.ParseTime(availableAt, availableAfter)
+		if err != nil {
 			PrintError(err.Error())
 			return "", err
-		} else {
-			availableAt = *aa
 		}
+		availableAt = *aa
 	}
 
 	ref, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, clientID, encryptionPublicKey, int64(expiration), &availableAt)

@@ -26,7 +26,7 @@ func (t Timestamp) ToTime() time.Time {
 	return time.Unix(int64(t), 0)
 }
 
-var ErrInvalidTime = errors.New("Invalid time")
+var ErrInvalidTime = errors.New("invalid time")
 
 // ParseTime parse a time string with 4 formats
 // +1h5m : now (local timezone) + 1h5m
