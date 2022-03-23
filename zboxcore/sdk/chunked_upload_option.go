@@ -52,6 +52,15 @@ func WithChunkSize(size int64) ChunkedUploadOption {
 	}
 }
 
+// WithChunkBatches set custom chunk batches. ignore if size <=0
+func WithChunkBatches(num int) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
+		if num > 0 {
+			su.chunkBatches = num
+		}
+	}
+}
+
 // WithEncrypt trun on/off encrypt on upload. It is turn off as default.
 func WithEncrypt(status bool) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {

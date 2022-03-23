@@ -12,7 +12,7 @@ import (
 // ChunkedUploadFormBuilder build form data for uploading
 type ChunkedUploadFormBuilder interface {
 	// build form data
-	Build(fileMeta *FileMeta, hasher Hasher, connectionID string, chunkSize int64, chunkIndex int, isFinal bool, encryptedKey string, fileBytes, thumbnailBytes []byte) (*bytes.Buffer, ChunkedUploadFormMetadata, error)
+	Build(fileMeta *FileMeta, hasher Hasher, connectionID string, chunkSize int64, chunkIndex int, isFinal bool, encryptedKey string, chunksBytes [][]byte, thumbnailBytes []byte) (*bytes.Buffer, ChunkedUploadFormMetadata, error)
 }
 
 // ChunkedUploadFormMetadata upload form metadata
@@ -34,14 +34,14 @@ func CreateChunkedUploadFormBuilder() ChunkedUploadFormBuilder {
 type chunkedUploadFormBuilder struct {
 }
 
-func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, connectionID string, chunkSize int64, chunkIndex int, isFinal bool, encryptedKey string, fileBytes, thumbnailBytes []byte) (*bytes.Buffer, ChunkedUploadFormMetadata, error) {
+func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, connectionID string, chunkSize int64, chunkIndex int, isFinal bool, encryptedKey string, filesBytes [][]byte, thumbnailBytes []byte) (*bytes.Buffer, ChunkedUploadFormMetadata, error) {
 
 	metadata := ChunkedUploadFormMetadata{
-		FileBytesLen:      len(fileBytes),
+		FileBytesLen:      len(filesBytes),
 		ThumbnailBytesLen: len(thumbnailBytes),
 	}
 
-	if len(fileBytes) == 0 {
+	if len(filesBytes) == 0 {
 		return nil, metadata, nil
 	}
 
@@ -75,24 +75,31 @@ func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, conn
 	}
 
 	chunkHashWriter := sha256.New()
-	chunkWriters := io.MultiWriter(uploadFile, chunkHashWriter)
+	chunksHashWriter := sha256.New()
+	chunksWriters := io.MultiWriter(uploadFile, chunkHashWriter, chunksHashWriter)
 
-	_, err = chunkWriters.Write(fileBytes)
-	if err != nil {
-		return nil, metadata, err
+	for _, chunkBytes := range filesBytes {
+
+		_, err = chunksWriters.Write(chunkBytes)
+		if err != nil {
+			return nil, metadata, err
+		}
+
+		err = hasher.WriteToChallenge(chunkBytes, chunkIndex)
+		if err != nil {
+			return nil, metadata, err
+		}
+
+		err = hasher.WriteHashToContent(hex.EncodeToString(chunkHashWriter.Sum(nil)), chunkIndex)
+		if err != nil {
+			return nil, metadata, err
+		}
+
+		chunkHashWriter.Reset()
 	}
 
-	formData.ChunkHash = hex.EncodeToString(chunkHashWriter.Sum(nil))
+	formData.ChunkHash = hex.EncodeToString(chunksHashWriter.Sum(nil))
 	formData.ContentHash = formData.ChunkHash
-
-	err = hasher.WriteToChallenge(fileBytes, chunkIndex)
-	if err != nil {
-		return nil, metadata, err
-	}
-	err = hasher.WriteHashToContent(formData.ChunkHash, chunkIndex)
-	if err != nil {
-		return nil, metadata, err
-	}
 
 	if isFinal {
 

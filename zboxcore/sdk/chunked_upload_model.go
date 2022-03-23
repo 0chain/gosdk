@@ -141,3 +141,20 @@ func (s *UploadBlobberStatus) UnmarshalJSON(b []byte) error {
 
 	return nil
 }
+
+type chunkFragments [][]byte
+
+// batchChunksData chunks data
+type batchChunksData struct {
+	// lastChunkIndex current index of chunks
+	lastChunkIndex int
+	// isFinal last chunk or not
+	isFinal bool
+	// ReadSize total size read from original reader (un-encoded, un-encrypted)
+	totalReadSize int64
+	// FragmentSize total fragment size for a blobber (un-encrypted)
+	totalFragmentSize int64
+
+	chunks    []chunkFragments
+	thumbnail chunkFragments
+}
