@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
@@ -225,7 +226,7 @@ func Move(allocationID, remotePath, destPath string, autoCommit bool) (*FileComm
 }
 
 // Share  generate an authtoken that provides authorization to the holder to the specified file on the remotepath.
-func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expiration int, revoke bool, availableAfter int64) (string, error) {
+func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expiration int, revoke bool, availableAfter string) (string, error) {
 
 	if len(allocationID) == 0 {
 		return "", RequiredArg("allocationID")
@@ -272,7 +273,18 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 		return "", nil
 	}
 
-	ref, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, clientID, encryptionPublicKey, int64(expiration))
+	availableAt := time.Now()
+
+	if len(availableAfter) > 0 {
+		aa, err := common.ParseTime(availableAt, availableAfter)
+		if err != nil {
+			PrintError(err.Error())
+			return "", err
+		}
+		availableAt = *aa
+	}
+
+	ref, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, clientID, encryptionPublicKey, int64(expiration), &availableAt)
 	if err != nil {
 		PrintError(err.Error())
 		return "", err
