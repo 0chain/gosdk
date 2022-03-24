@@ -387,7 +387,7 @@ func (su *ChunkedUpload) Start() error {
 			}
 		}
 
-		err = su.processUpload(chunks.lastChunkIndex, chunks.files, chunks.thumbnail, chunks.isFinal, chunks.totalReadSize)
+		err = su.processUpload(chunks.lastChunkIndex, chunks.fileShards, chunks.thumbnailShards, chunks.isFinal, chunks.totalReadSize)
 		if err != nil {
 			if su.statusCallback != nil {
 				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
@@ -452,28 +452,24 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 		su.shardUploadedSize += chunk.FragmentSize
 		su.progress.UploadLength += chunk.ReadSize
 
+		// upload entire thumbnail in first chunk request only
 		if chunk.Index == 0 && len(su.thumbnailBytes) > 0 {
 			data.totalReadSize += int64(su.fileMeta.ActualThumbnailSize)
-		}
 
-		if data.files == nil {
-			data.files = make([]chunkFragments, len(chunk.Fragments))
-		}
-
-		for i, v := range chunk.Fragments {
-			data.files[i] = append(data.files[i], v)
-		}
-
-	
-
-		// upload entire thumbnail in first request only
-		if chunk.Index == 0 && len(su.thumbnailBytes) > 0 {
-
-			data.thumbnail, err = su.chunkReader.Read(su.thumbnailBytes)
+			data.thumbnailShards, err = su.chunkReader.Read(su.thumbnailBytes)
 			if err != nil {
 				return nil, err
 			}
+		}
 
+		if data.fileShards == nil {
+			data.fileShards = make([]blobberShards, len(chunk.Fragments))
+		}
+
+		// concact blobber's fragments
+		for i, v := range chunk.Fragments {
+			//blobber i
+			data.fileShards[i] = append(data.fileShards[i], v)
 		}
 
 		if chunk.IsFinal {
@@ -486,7 +482,7 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 }
 
 //processUpload process upload fragment to its blobber
-func (su *ChunkedUpload) processUpload(lastChunkIndex int, files []chunkFragments, thumbnail chunkFragments, isFinal bool, uploadLength int64) error {
+func (su *ChunkedUpload) processUpload(lastChunkIndex int, fileShards []blobberShards, thumbnailShards blobberShards, isFinal bool, uploadLength int64) error {
 
 	num := len(su.blobbers)
 	if su.isRepair {
@@ -517,14 +513,13 @@ func (su *ChunkedUpload) processUpload(lastChunkIndex int, files []chunkFragment
 		blobber := su.blobbers[pos]
 		blobber.progress.UploadLength += uploadLength
 
-		var thumbnailBytes []byte
-		var fileBytes [][]byte
+		var thumbnailChunkData []byte
 
-		if len(thumbnail) > 0 {
-			thumbnailBytes = thumbnail[pos]
+		if len(thumbnailShards) > 0 {
+			thumbnailChunkData = thumbnailShards[pos]
 		}
 
-		body, formData, err := su.formBuilder.Build(&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID, su.chunkSize, lastChunkIndex, isFinal, encryptedKey, , thumbnailBytes)
+		body, formData, err := su.formBuilder.Build(&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID, su.chunkSize, lastChunkIndex, isFinal, encryptedKey, fileShards[pos], thumbnailChunkData)
 
 		if err != nil {
 			return err

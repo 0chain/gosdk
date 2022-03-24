@@ -142,7 +142,7 @@ func (s *UploadBlobberStatus) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
-type chunkFragments [][]byte
+type blobberShards [][]byte
 
 // batchChunksData chunks data
 type batchChunksData struct {
@@ -155,6 +155,6 @@ type batchChunksData struct {
 	// FragmentSize total fragment size for a blobber (un-encrypted)
 	totalFragmentSize int64
 
-	chunks    []chunkFragments
-	thumbnail chunkFragments
+	fileShards      []blobberShards
+	thumbnailShards blobberShards
 }

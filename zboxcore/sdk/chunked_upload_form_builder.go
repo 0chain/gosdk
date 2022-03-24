@@ -12,7 +12,7 @@ import (
 // ChunkedUploadFormBuilder build form data for uploading
 type ChunkedUploadFormBuilder interface {
 	// build form data
-	Build(fileMeta *FileMeta, hasher Hasher, connectionID string, chunkSize int64, chunkIndex int, isFinal bool, encryptedKey string, chunksBytes [][]byte, thumbnailBytes []byte) (*bytes.Buffer, ChunkedUploadFormMetadata, error)
+	Build(fileMeta *FileMeta, hasher Hasher, connectionID string, chunkSize int64, chunkIndex int, isFinal bool, encryptedKey string, fileChunksData [][]byte, thumbnailChunkData []byte) (*bytes.Buffer, ChunkedUploadFormMetadata, error)
 }
 
 // ChunkedUploadFormMetadata upload form metadata
@@ -34,14 +34,14 @@ func CreateChunkedUploadFormBuilder() ChunkedUploadFormBuilder {
 type chunkedUploadFormBuilder struct {
 }
 
-func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, connectionID string, chunkSize int64, chunkIndex int, isFinal bool, encryptedKey string, filesBytes [][]byte, thumbnailBytes []byte) (*bytes.Buffer, ChunkedUploadFormMetadata, error) {
+func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, connectionID string, chunkSize int64, chunkIndex int, isFinal bool, encryptedKey string, fileChunksData [][]byte, thumbnailChunkData []byte) (*bytes.Buffer, ChunkedUploadFormMetadata, error) {
 
 	metadata := ChunkedUploadFormMetadata{
-		FileBytesLen:      len(filesBytes),
-		ThumbnailBytesLen: len(thumbnailBytes),
+		FileBytesLen:      len(fileChunksData),
+		ThumbnailBytesLen: len(thumbnailChunkData),
 	}
 
-	if len(filesBytes) == 0 {
+	if len(fileChunksData) == 0 {
 		return nil, metadata, nil
 	}
 
@@ -78,7 +78,7 @@ func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, conn
 	chunksHashWriter := sha256.New()
 	chunksWriters := io.MultiWriter(uploadFile, chunkHashWriter, chunksHashWriter)
 
-	for _, chunkBytes := range filesBytes {
+	for _, chunkBytes := range fileChunksData {
 
 		_, err = chunksWriters.Write(chunkBytes)
 		if err != nil {
@@ -119,7 +119,7 @@ func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, conn
 
 	}
 
-	thumbnailSize := len(thumbnailBytes)
+	thumbnailSize := len(thumbnailChunkData)
 	if thumbnailSize > 0 {
 
 		uploadThumbnailFile, err := formWriter.CreateFormFile("uploadThumbnailFile", fileMeta.RemoteName+".thumb")
@@ -130,7 +130,7 @@ func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, conn
 
 		thumbnailHash := sha256.New()
 		thumbnailWriters := io.MultiWriter(uploadThumbnailFile, thumbnailHash)
-		_, err = thumbnailWriters.Write(thumbnailBytes)
+		_, err = thumbnailWriters.Write(thumbnailChunkData)
 		if err != nil {
 			return nil, metadata, err
 		}
