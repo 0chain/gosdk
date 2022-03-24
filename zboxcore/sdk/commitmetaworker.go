@@ -45,7 +45,11 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 	}
 	commitMetaDataString := string(commitMetaDataBytes)
 
-	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey())
+	nonce := client.GetClient().Nonce
+	if nonce != 0 {
+		nonce++
+	}
+	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey(), nonce)
 	txn.TransactionData = commitMetaDataString
 	txn.TransactionType = transaction.TxnTypeData
 	err = txn.ComputeHashAndSign(client.Sign)

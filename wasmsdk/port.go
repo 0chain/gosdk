@@ -135,7 +135,7 @@ func CreateReadPool(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			err := sdk.CreateReadPool()
+			_, _, err := sdk.CreateReadPool()
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("CreateReadPool failed. Reason: %s", err),
@@ -241,7 +241,7 @@ func ReadPoolLock(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			err := sdk.ReadPoolLock(dur, allocID, blobberID, int64(tokens), int64(fee))
+			_, _, err := sdk.ReadPoolLock(dur, allocID, blobberID, int64(tokens), int64(fee))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("ReadPoolLock failed. Reason: %s", err),
@@ -267,7 +267,7 @@ func ReadPoolUnlock(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			err := sdk.ReadPoolUnlock(poolID, int64(fee))
+			_, _, err := sdk.ReadPoolUnlock(poolID, int64(fee))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("ReadPoolUnlock failed. Reason: %s", err),
@@ -360,7 +360,7 @@ func StakePoolLock(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.StakePoolLock(blobberID, int64(value), int64(fee))
+			result, _, err := sdk.StakePoolLock(blobberID, int64(value), int64(fee))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("StakePoolLock failed. Reason: %s", err),
@@ -389,7 +389,7 @@ func StakePoolUnlock(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.StakePoolUnlock(blobberID, poolID, int64(fee))
+			result, _, err := sdk.StakePoolUnlock(blobberID, poolID, int64(fee))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("StakePoolUnlock failed. Reason: %s", err),
@@ -453,7 +453,7 @@ func WritePoolLock(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			err := sdk.WritePoolLock(dur, allocID, blobberID, int64(tokens), int64(fee))
+			_, _, err := sdk.WritePoolLock(dur, allocID, blobberID, int64(tokens), int64(fee))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("WritePoolLock failed. Reason: %s", err),
@@ -478,7 +478,7 @@ func WritePoolUnlock(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			err := sdk.WritePoolUnlock(poolID, int64(fee))
+			_, _, err := sdk.WritePoolUnlock(poolID, int64(fee))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("WritePoolUnlock failed. Reason: %s", err),
@@ -764,7 +764,7 @@ func CreateAllocation(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.CreateAllocation(datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct, int64(lock))
+			result, _, err := sdk.CreateAllocation(datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct, int64(lock))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("CreateAllocation failed. Reason: %s", err),
@@ -818,7 +818,7 @@ func CreateAllocationForOwner(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.CreateAllocationForOwner(owner, ownerpublickey, datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct, int64(lock), preferredBlobbers)
+			result, _, err := sdk.CreateAllocationForOwner(owner, ownerpublickey, datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct, int64(lock), preferredBlobbers)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("CreateAllocationForOwner failed. Reason: %s", err),
@@ -850,7 +850,7 @@ func UpdateAllocation(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.UpdateAllocation(int64(size), int64(expiry), allocationID, int64(lock), setImmutable, updateTerms)
+			result, _, err := sdk.UpdateAllocation(int64(size), int64(expiry), allocationID, int64(lock), setImmutable, updateTerms)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("UpdateAllocation failed. Reason: %s", err),
@@ -875,7 +875,7 @@ func FinalizeAllocation(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.FinalizeAllocation(allocID)
+			result, _, err := sdk.FinalizeAllocation(allocID)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("FinalizeAllocation failed. Reason: %s", err),
@@ -900,7 +900,7 @@ func CancelAllocation(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.CancelAllocation(allocID)
+			result, _, err := sdk.CancelAllocation(allocID)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("CancelAllocation failed. Reason: %s", err),
@@ -934,7 +934,7 @@ func UpdateBlobberSettings(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.UpdateBlobberSettings(&blob)
+			result, _, err := sdk.UpdateBlobberSettings(&blob)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("UpdateBlobberSettings failed. Reason: %s", err),

@@ -228,6 +228,11 @@ func (ta *TransactionWithAuth) Output() []byte {
 	return []byte(ta.t.txnOut)
 }
 
+// GetTransactionNonce returns nonce
+func (ta *TransactionWithAuth) GetTransactionNonce() int64 {
+	return ta.t.txn.TransactionNonce
+}
+
 // ========================================================================== //
 //                                vesting pool                                //
 // ========================================================================== //

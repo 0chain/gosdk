@@ -149,13 +149,14 @@ type SignFunc = func(msg string) (string, error)
 type VerifyFunc = func(signature, msgHash, publicKey string) (bool, error)
 type SignWithWallet = func(msg string, wallet interface{}) (string, error)
 
-func NewTransactionEntity(clientID string, chainID string, publicKey string) *Transaction {
+func NewTransactionEntity(clientID string, chainID string, publicKey string, nonce int64) *Transaction {
 	txn := &Transaction{}
 	txn.Version = "1.0"
 	txn.ClientID = clientID
 	txn.CreationDate = int64(common.Now())
 	txn.ChainID = chainID
 	txn.PublicKey = publicKey
+	txn.TransactionNonce = nonce
 	return txn
 }
 

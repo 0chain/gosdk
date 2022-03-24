@@ -128,6 +128,8 @@ type TransactionScheme interface {
 	GetTransactionError() string
 	// GetVerifyError implements error string incase of verify failure error
 	GetVerifyError() string
+	// GetTransactionNonce returns nonce
+	GetTransactionNonce() int64
 
 	// Output of transaction.
 	Output() []byte
@@ -332,7 +334,7 @@ func (t *Transaction) submitTxn() {
 
 func newTransaction(cb TransactionCallback, txnFee int64, nonce int64) (*Transaction, error) {
 	t := &Transaction{}
-	t.txn = transaction.NewTransactionEntity(_config.wallet.ClientID, _config.chain.ChainID, _config.wallet.ClientKey)
+	t.txn = transaction.NewTransactionEntity(_config.wallet.ClientID, _config.chain.ChainID, _config.wallet.ClientKey, nonce)
 	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
 	t.txnCb = cb
 	t.txn.TransactionFee = txnFee
@@ -1065,6 +1067,11 @@ func (t *Transaction) GetVerifyError() string {
 	return ""
 }
 
+// GetTransactionNonce returns nonce
+func (t *Transaction) GetTransactionNonce() int64 {
+	return t.txn.TransactionNonce
+}
+
 // ========================================================================== //
 //                               vesting pool                                 //
 // ========================================================================== //
@@ -1469,7 +1476,7 @@ func NewMSTransaction(walletstr string, cb TransactionCallback) (*Transaction, e
 		return nil, err
 	}
 	t := &Transaction{}
-	t.txn = transaction.NewTransactionEntity(w.ClientID, _config.chain.ChainID, w.ClientKey)
+	t.txn = transaction.NewTransactionEntity(w.ClientID, _config.chain.ChainID, w.ClientKey, w.Nonce)
 	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
 	t.txnCb = cb
 	return t, nil
