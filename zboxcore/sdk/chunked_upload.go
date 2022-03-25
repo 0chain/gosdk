@@ -245,8 +245,7 @@ type ChunkedUpload struct {
 	encryptOnUpload bool
 	// chunkSize how much bytes a chunk has. 64KB is default value.
 	chunkSize int64
-
-	// chunkNumber number of chunks in a upload request. 1 is default value
+	// chunkNumber the number of chunks in a http upload request. 1 is default value
 	chunkNumber int
 
 	// shardUploadedSize how much bytes a shard has. it is original size
