@@ -52,11 +52,11 @@ func WithChunkSize(size int64) ChunkedUploadOption {
 	}
 }
 
-// WithChunkBatches set custom chunk batches. ignore if size <=0
-func WithChunkBatches(num int) ChunkedUploadOption {
+// WithChunkNumber set the number of chunks should be upload in a request. ignore if size <=0
+func WithChunkNumber(num int) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		if num > 0 {
-			su.chunkBatches = num
+			su.chunkNumber = num
 		}
 	}
 }

@@ -146,8 +146,10 @@ type blobberShards [][]byte
 
 // batchChunksData chunks data
 type batchChunksData struct {
-	// lastChunkIndex current index of chunks
-	lastChunkIndex int
+	// chunkStartIndex start index of chunks
+	chunkStartIndex int
+	// chunkEndIndex end index of chunks
+	chunkEndIndex int
 	// isFinal last chunk or not
 	isFinal bool
 	// ReadSize total size read from original reader (un-encoded, un-encrypted)
