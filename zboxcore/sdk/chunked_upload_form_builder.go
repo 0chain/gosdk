@@ -60,10 +60,11 @@ func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, conn
 		MimeType:   fileMeta.MimeType,
 		Attributes: fileMeta.Attributes,
 
-		IsFinal:      isFinal,
-		ChunkSize:    chunkSize,
-		ChunkIndex:   chunkEndIndex,
-		UploadOffset: chunkSize * int64(chunkStartIndex),
+		IsFinal:         isFinal,
+		ChunkSize:       chunkSize,
+		ChunkStartIndex: chunkStartIndex,
+		ChunkEndIndex:   chunkEndIndex,
+		UploadOffset:    chunkSize * int64(chunkStartIndex),
 	}
 
 	formWriter := multipart.NewWriter(body)
@@ -98,8 +99,8 @@ func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, conn
 		chunkHashWriter.Reset()
 	}
 
-	formData.ChunkHash = hex.EncodeToString(chunksHashWriter.Sum(nil))
-	formData.ContentHash = formData.ChunkHash
+	formData.ChunksHash = hex.EncodeToString(chunksHashWriter.Sum(nil))
+	formData.ContentHash = formData.ChunksHash
 
 	if isFinal {
 
@@ -157,7 +158,7 @@ func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, conn
 		return nil, metadata, err
 	}
 	metadata.ContentType = formWriter.FormDataContentType()
-	metadata.ChunkHash = formData.ChunkHash
+	metadata.ChunkHash = formData.ChunksHash
 	metadata.ChallengeHash = formData.ChallengeHash
 	metadata.ContentHash = formData.ContentHash
 	metadata.ThumbnailContentHash = formData.ThumbnailContentHash
