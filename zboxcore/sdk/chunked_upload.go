@@ -47,7 +47,7 @@ const (
 )
 
 /*
-    CreateChunkedUpload create a ChunkedUpload instance
+  CreateChunkedUpload create a ChunkedUpload instance
 
 	Caller should be careful about fileReader parameter
 	io.ErrUnexpectedEOF might mean that source has completely been exhausted or there is some error
@@ -92,11 +92,6 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	}
 
 	su := &ChunkedUpload{
-		// consensus: Consensus{
-		// 	fullconsensus:          allocationObj.fullconsensus,
-		// 	consensusThresh:        allocationObj.consensusThreshold,
-		// 	consensusRequiredForOk: allocationObj.consensusOK,
-		// },
 		allocationObj: allocationObj,
 		client:        zboxutil.Client,
 
@@ -356,6 +351,9 @@ func (su *ChunkedUpload) Start() error {
 	for {
 		chunk, err := su.chunkReader.Next()
 		if err != nil {
+			if su.statusCallback != nil {
+				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+			}
 			return err
 		}
 		//logger.Logger.Debug("Read chunk #", chunk.Index)
@@ -375,6 +373,9 @@ func (su *ChunkedUpload) Start() error {
 		if chunk.IsFinal {
 			su.fileMeta.ActualHash, err = su.fileHasher.GetFileHash()
 			if err != nil {
+				if su.statusCallback != nil {
+					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+				}
 				return err
 			}
 
@@ -390,6 +391,9 @@ func (su *ChunkedUpload) Start() error {
 
 			thumbnailFragments, err = su.chunkReader.Read(su.thumbnailBytes)
 			if err != nil {
+				if su.statusCallback != nil {
+					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+				}
 				return err
 			}
 
@@ -397,6 +401,9 @@ func (su *ChunkedUpload) Start() error {
 
 		err = su.processUpload(chunk.Index, chunk.Fragments, thumbnailFragments, chunk.IsFinal, chunk.ReadSize)
 		if err != nil {
+			if su.statusCallback != nil {
+				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+			}
 			return err
 		}
 
@@ -422,6 +429,9 @@ func (su *ChunkedUpload) Start() error {
 		err := su.writeMarkerMutex.Lock(context.TODO(), su.progress.ConnectionID)
 		defer su.writeMarkerMutex.Unlock(context.TODO(), su.progress.ConnectionID) //nolint: errcheck
 		if err != nil {
+			if su.statusCallback != nil {
+				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+			}
 			return err
 		}
 
