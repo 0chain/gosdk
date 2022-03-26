@@ -21,6 +21,15 @@ func WithLiveChunkSize(size int) LiveUploadOption {
 	}
 }
 
+// WithLiveChunkNumber set the number of chunks should be upload in a request. ignore if size <=0
+func WithLiveChunkNumber(num int) LiveUploadOption {
+	return func(lu *LiveUpload) {
+		if num > 0 {
+			lu.chunkNumber = num
+		}
+	}
+}
+
 // WithLiveEncrypt trun on/off encrypt on upload. It is turn off as default.
 func WithLiveEncrypt(status bool) LiveUploadOption {
 	return func(lu *LiveUpload) {
