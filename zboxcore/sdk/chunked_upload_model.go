@@ -76,11 +76,12 @@ type UploadFormData struct {
 	EncryptedKey string             `json:"encrypted_key,omitempty"`
 	Attributes   fileref.Attributes `json:"attributes,omitempty"`
 
-	IsFinal      bool   `json:"is_final,omitempty"`      // current chunk is last or not
-	ChunkHash    string `json:"chunk_hash"`              // hash of current chunk
-	ChunkIndex   int    `json:"chunk_index,omitempty"`   // the seq of current chunk. all chunks MUST be uploaded one by one because of streaming merkle hash
-	ChunkSize    int64  `json:"chunk_size,omitempty"`    // the size of a chunk. 64*1024 is default
-	UploadOffset int64  `json:"upload_offset,omitempty"` // It is next position that new incoming chunk should be append to
+	IsFinal         bool   `json:"is_final,omitempty"`          // all of chunks are uploaded
+	ChunkHash       string `json:"chunk_hash"`                  // hash of chunks
+	ChunkStartIndex int    `json:"chunk_start_index,omitempty"` // start index of chunks.
+	ChunkEndIndex   int    `json:"chunk_end_index,omitempty"`   // end index of chunks. all chunks MUST be uploaded one by one because of streaming merkle hash
+	ChunkSize       int64  `json:"chunk_size,omitempty"`        // the size of a chunk. 64*1024 is default
+	UploadOffset    int64  `json:"upload_offset,omitempty"`     // It is next position that new incoming chunk should be append to
 
 }
 
@@ -140,4 +141,23 @@ func (s *UploadBlobberStatus) UnmarshalJSON(b []byte) error {
 	s.UploadLength = status.UploadLength
 
 	return nil
+}
+
+type blobberShards [][]byte
+
+// batchChunksData chunks data
+type batchChunksData struct {
+	// chunkStartIndex start index of chunks
+	chunkStartIndex int
+	// chunkEndIndex end index of chunks
+	chunkEndIndex int
+	// isFinal last chunk or not
+	isFinal bool
+	// ReadSize total size read from original reader (un-encoded, un-encrypted)
+	totalReadSize int64
+	// FragmentSize total fragment size for a blobber (un-encrypted)
+	totalFragmentSize int64
+
+	fileShards      []blobberShards
+	thumbnailShards blobberShards
 }
