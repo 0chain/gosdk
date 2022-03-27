@@ -15,14 +15,14 @@ type ReadMarker struct {
 	AllocationID    string           `json:"allocation_id"`
 	OwnerID         string           `json:"owner_id"`
 	Timestamp       common.Timestamp `json:"timestamp"`
-	ReadCounter     int64            `json:"counter"`
+	ReadSize        int64            `json:"read_size"`
 	Signature       string           `json:"signature"`
 }
 
 func (rm *ReadMarker) GetHash() string {
 	sigData := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v", rm.AllocationID,
 		rm.BlobberID, rm.ClientID, rm.ClientPublicKey, rm.OwnerID,
-		rm.ReadCounter, rm.Timestamp)
+		rm.ReadSize, rm.Timestamp)
 	return encryption.Hash(sigData)
 }
 
