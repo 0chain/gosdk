@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/0chain/gosdk/zcnbridge/wallet"
-
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	ctime "github.com/0chain/gosdk/zcnbridge/time"
@@ -16,23 +14,11 @@ import (
 type (
 	// Transaction entity that encapsulates the transaction related data and metadata.
 	Transaction struct {
-		Hash    string `json:"hash,omitempty"`
-		Version string `json:"version,omitempty"`
-		//ClientID          string          `json:"client_id,omitempty"`
-		//PublicKey         string          `json:"public_key,omitempty"`
-		ToClientID        string          `json:"to_client_id,omitempty"`
-		ChainID           string          `json:"chain_id,omitempty"`
-		TransactionData   string          `json:"transaction_data,omitempty"`
-		Value             int64           `json:"transaction_value,omitempty"`
-		Signature         string          `json:"signature,omitempty"`
-		CreationDate      ctime.Timestamp `json:"creation_date,omitempty"`
-		TransactionType   int             `json:"transaction_type,omitempty"`
-		TransactionOutput string          `json:"transaction_output,omitempty"`
-		OutputHash        string          `json:"txn_output_hash"`
-
-		scheme zcncore.TransactionScheme
-
-		callBack *callback
+		Hash              string `json:"hash,omitempty"`
+		Version           string `json:"version,omitempty"`
+		TransactionOutput string `json:"transaction_output,omitempty"`
+		scheme            zcncore.TransactionScheme
+		callBack          *callback
 	}
 )
 
@@ -40,12 +26,6 @@ type (
 // Sets version, client ID, creation date, public key and creates internal zcncore.TransactionScheme.
 func NewTransactionEntity() (*Transaction, error) {
 	txn := &Transaction{
-		Version: "1.0",
-		//ClientID:     clientID,
-		ToClientID:   wallet.ZCNSCSmartContractAddress,
-		CreationDate: ctime.Now(),
-		//ChainID:      chain.GetServerChain().ID,
-		//PublicKey:    publicKey,
 		callBack: newCallBack(),
 	}
 	zcntxn, err := zcncore.NewTransaction(txn.callBack, 0)

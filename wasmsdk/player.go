@@ -10,7 +10,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
@@ -74,7 +74,7 @@ func (p *Player) download(it *sdk.ListResult) {
 		return
 	}
 
-	defer sdk.FS.Remove(localPath) //nolint
+	defer sys.Files.Remove(localPath) //nolint
 
 	PrintInfo("downloading [", it.Path, "]")
 	err = downloader.Start(statusBar)
@@ -91,9 +91,9 @@ func (p *Player) download(it *sdk.ListResult) {
 	}
 
 	PrintInfo("downloaded [", it.Path, "]")
-	fs, _ := sdk.FS.Open(localPath)
+	fs, _ := sys.Files.Open(localPath)
 
-	mf, _ := fs.(*common.MemFile)
+	mf, _ := fs.(*sys.MemFile)
 
 	//AppendVideo(mf.Buffer.Bytes())
 
