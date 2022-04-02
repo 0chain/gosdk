@@ -100,6 +100,7 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 
 		uploadMask:      uploadMask,
 		chunkSize:       DefaultChunkSize,
+		chunkNumber:     1,
 		encryptOnUpload: false,
 	}
 
@@ -244,6 +245,8 @@ type ChunkedUpload struct {
 	encryptOnUpload bool
 	// chunkSize how much bytes a chunk has. 64KB is default value.
 	chunkSize int64
+	// chunkNumber the number of chunks in a http upload request. 1 is default value
+	chunkNumber int
 
 	// shardUploadedSize how much bytes a shard has. it is original size
 	shardUploadedSize int64
@@ -349,7 +352,10 @@ func (su *ChunkedUpload) Start() error {
 	}
 
 	for {
-		chunk, err := su.chunkReader.Next()
+
+		chunks, err := su.readChunks(su.chunkNumber)
+
+		// chunk, err := su.chunkReader.Next()
 		if err != nil {
 			if su.statusCallback != nil {
 				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
@@ -358,19 +364,10 @@ func (su *ChunkedUpload) Start() error {
 		}
 		//logger.Logger.Debug("Read chunk #", chunk.Index)
 
-		su.shardUploadedSize += chunk.FragmentSize
-		su.progress.UploadLength += chunk.ReadSize
+		su.shardUploadedSize += chunks.totalFragmentSize
+		su.progress.UploadLength += chunks.totalReadSize
 
-		if chunk.Index == 0 && len(su.thumbnailBytes) > 0 {
-			su.progress.UploadLength += int64(su.fileMeta.ActualThumbnailSize)
-		}
-
-		//skip chunk if it has been uploaded
-		if chunk.Index <= su.progress.ChunkIndex {
-			continue
-		}
-
-		if chunk.IsFinal {
+		if chunks.isFinal {
 			su.fileMeta.ActualHash, err = su.fileHasher.GetFileHash()
 			if err != nil {
 				if su.statusCallback != nil {
@@ -384,33 +381,22 @@ func (su *ChunkedUpload) Start() error {
 			}
 		}
 
-		var thumbnailFragments [][]byte
+		//chunk has not be uploaded yet
+		if chunks.chunkEndIndex > su.progress.ChunkIndex {
 
-		// upload entire thumbnail in first request only
-		if chunk.Index == 0 && len(su.thumbnailBytes) > 0 {
-
-			thumbnailFragments, err = su.chunkReader.Read(su.thumbnailBytes)
+			err = su.processUpload(chunks.chunkStartIndex, chunks.chunkEndIndex, chunks.fileShards, chunks.thumbnailShards, chunks.isFinal, chunks.totalReadSize)
 			if err != nil {
 				if su.statusCallback != nil {
 					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
 				}
 				return err
 			}
-
-		}
-
-		err = su.processUpload(chunk.Index, chunk.Fragments, thumbnailFragments, chunk.IsFinal, chunk.ReadSize)
-		if err != nil {
-			if su.statusCallback != nil {
-				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
-			}
-			return err
 		}
 
 		// last chunk might 0 with io.EOF
 		// https://stackoverflow.com/questions/41208359/how-to-test-eof-on-io-reader-in-go
-		if chunk.ReadSize > 0 {
-			su.progress.ChunkIndex = chunk.Index
+		if chunks.totalReadSize > 0 {
+			su.progress.ChunkIndex = chunks.chunkEndIndex
 			su.saveProgress()
 
 			if su.statusCallback != nil {
@@ -418,7 +404,7 @@ func (su *ChunkedUpload) Start() error {
 			}
 		}
 
-		if chunk.IsFinal {
+		if chunks.isFinal {
 			break
 		}
 	}
@@ -447,8 +433,61 @@ func (su *ChunkedUpload) Start() error {
 
 }
 
+func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
+
+	data := &batchChunksData{
+		chunkStartIndex: -1,
+		chunkEndIndex:   -1,
+	}
+
+	for i := 0; i < num; i++ {
+		chunk, err := su.chunkReader.Next()
+
+		if err != nil {
+			return nil, err
+		}
+		//logger.Logger.Debug("Read chunk #", chunk.Index)
+		if i == 0 {
+			data.chunkStartIndex = chunk.Index
+			data.chunkEndIndex = chunk.Index
+		} else {
+			data.chunkEndIndex = chunk.Index
+		}
+
+		data.totalFragmentSize += chunk.FragmentSize
+		data.totalReadSize += chunk.ReadSize
+
+		// upload entire thumbnail in first chunk request only
+		if chunk.Index == 0 && len(su.thumbnailBytes) > 0 {
+			data.totalReadSize += int64(su.fileMeta.ActualThumbnailSize)
+
+			data.thumbnailShards, err = su.chunkReader.Read(su.thumbnailBytes)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if data.fileShards == nil {
+			data.fileShards = make([]blobberShards, len(chunk.Fragments))
+		}
+
+		// concact blobber's fragments
+		for i, v := range chunk.Fragments {
+			//blobber i
+			data.fileShards[i] = append(data.fileShards[i], v)
+		}
+
+		if chunk.IsFinal {
+			data.isFinal = true
+			break
+		}
+	}
+
+	return data, nil
+}
+
 //processUpload process upload fragment to its blobber
-func (su *ChunkedUpload) processUpload(chunkIndex int, fileFragments [][]byte, thumbnailFragments [][]byte, isFinal bool, uploadLength int64) error {
+func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int, fileShards []blobberShards, thumbnailShards blobberShards, isFinal bool, uploadLength int64) error {
 
 	num := len(su.blobbers)
 	if su.isRepair {
@@ -479,25 +518,20 @@ func (su *ChunkedUpload) processUpload(chunkIndex int, fileFragments [][]byte, t
 		blobber := su.blobbers[pos]
 		blobber.progress.UploadLength += uploadLength
 
-		var thumbnailBytes []byte
-		var fileBytes []byte
+		var thumbnailChunkData []byte
 
-		if len(thumbnailFragments) > 0 {
-			thumbnailBytes = thumbnailFragments[pos]
+		if len(thumbnailShards) > 0 {
+			thumbnailChunkData = thumbnailShards[pos]
 		}
 
-		if len(fileFragments) > 0 {
-			fileBytes = fileFragments[pos]
-		}
-
-		body, formData, err := su.formBuilder.Build(&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID, su.chunkSize, chunkIndex, isFinal, encryptedKey, fileBytes, thumbnailBytes)
+		body, formData, err := su.formBuilder.Build(&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID, su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey, fileShards[pos], thumbnailChunkData)
 
 		if err != nil {
 			return err
 		}
 
 		go func(b *ChunkedUploadBlobber, buf *bytes.Buffer, form ChunkedUploadFormMetadata) {
-			err := b.sendUploadRequest(ctx, su, chunkIndex, isFinal, encryptedKey, buf, form)
+			err := b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, buf, form)
 
 			// channel is not closed
 			if ctx.Err() == nil {
@@ -519,6 +553,7 @@ func (su *ChunkedUpload) processUpload(chunkIndex int, fileFragments [][]byte, t
 
 // processCommit commit shard upload on its blobber
 func (su *ChunkedUpload) processCommit() error {
+	defer su.removeProgress()
 
 	logger.Logger.Info("Submitting for commit")
 	su.consensus.Reset()
@@ -581,8 +616,6 @@ func (su *ChunkedUpload) processCommit() error {
 			return nil
 		}
 	}
-
-	su.removeProgress()
 
 	if su.statusCallback != nil {
 		su.statusCallback.Completed(su.allocationObj.ID, su.fileMeta.RemotePath, su.fileMeta.RemoteName, su.fileMeta.MimeType, int(su.progress.UploadLength), OpUpload)
