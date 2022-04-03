@@ -951,8 +951,8 @@ func UpdateAllocation(
 	updateAllocationRequest["expiration_date"] = expiry
 	updateAllocationRequest["set_immutable"] = setImmutable
 	updateAllocationRequest["update_terms"] = updateTerms
-	updateAllocationRequest["added_blobber_id"] = addBlobberId
-	updateAllocationRequest["removed_blobber_id"] = removeBlobberId
+	updateAllocationRequest["add_blobber_id"] = addBlobberId
+	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
 
 	sn := transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
