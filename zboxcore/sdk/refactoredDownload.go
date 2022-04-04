@@ -907,18 +907,16 @@ func GetDStorageFileReader(allocation *Allocation, ref *ORef, sdo *StreamDownloa
 	}
 
 	return &StreamDownload{
-		opened:       true,
-		allocationID: allocation.ID,
-		allocationTx: allocation.Tx,
-		ownerId:      allocation.Owner, // TODO verify ownerId field
-		dataShards:   allocation.DataShards,
-		parityShards: allocation.ParityShards,
-		blobbers:     allocation.Blobbers,
-		encScheme:    encScheme,
-		// chunkSize:          ref.ChunkSize * int64(allocation.DataShards),
-		chunkSize: effectiveChunkSize,
-		// blockSize:          ref.ChunkSize,
-		blockSize:          effectiveBlockSize,
+		opened:             true,
+		allocationID:       allocation.ID,
+		allocationTx:       allocation.Tx,
+		ownerId:            allocation.Owner, // TODO verify ownerId field
+		dataShards:         allocation.DataShards,
+		parityShards:       allocation.ParityShards,
+		blobbers:           allocation.Blobbers,
+		encScheme:          encScheme,
+		chunkSize:          ref.ChunkSize * int64(allocation.DataShards),
+		blockSize:          ref.ChunkSize,
 		effectiveChunkSize: effectiveChunkSize,
 		effectiveBlockSize: effectiveBlockSize,
 		encrypted:          isEncrypted,
