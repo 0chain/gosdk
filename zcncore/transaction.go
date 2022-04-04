@@ -53,6 +53,7 @@ type confirmation struct {
 	Round                 int64                    `json:"round"`
 	Status                int                      `json:"transaction_status" msgpack:"sot"`
 	RoundRandomSeed       int64                    `json:"round_random_seed"`
+	StateChangesCount     int                      `json:"state_changes_count"`
 	MerkleTreeRoot        string                   `json:"merkle_tree_root"`
 	MerkleTreePath        *util.MTPath             `json:"merkle_tree_path"`
 	ReceiptMerkleTreeRoot string                   `json:"receipt_merkle_tree_root"`
@@ -66,6 +67,7 @@ type blockHeader struct {
 	MinerId               string `json:"miner_id,omitempty"`
 	Round                 int64  `json:"round,omitempty"`
 	RoundRandomSeed       int64  `json:"round_random_seed,omitempty"`
+	StateChangesCount     int    `json:"state_changes_count"`
 	MerkleTreeRoot        string `json:"merkle_tree_root,omitempty"`
 	StateHash             string `json:"state_hash,omitempty"`
 	ReceiptMerkleTreeRoot string `json:"receipt_merkle_tree_root,omitempty"`
@@ -525,6 +527,7 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 		block.CreationDate = cfm.CreationDate
 		block.Round = cfm.Round
 		block.RoundRandomSeed = cfm.RoundRandomSeed
+		block.StateChangesCount = cfm.StateChangesCount
 		block.MerkleTreeRoot = cfm.MerkleTreeRoot
 		block.ReceiptMerkleTreeRoot = cfm.ReceiptMerkleTreeRoot
 		// Verify the block
@@ -868,8 +871,8 @@ func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHe
 }
 
 func isBlockExtends(prevHash string, block *blockHeader) bool {
-	data := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v", block.MinerId, prevHash, block.CreationDate, block.Round,
-		block.RoundRandomSeed, block.MerkleTreeRoot, block.ReceiptMerkleTreeRoot)
+	data := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v:%v", block.MinerId, prevHash, block.CreationDate, block.Round,
+		block.RoundRandomSeed, block.StateChangesCount, block.MerkleTreeRoot, block.ReceiptMerkleTreeRoot)
 	h := encryption.Hash(data)
 	return block.Hash == h
 }
