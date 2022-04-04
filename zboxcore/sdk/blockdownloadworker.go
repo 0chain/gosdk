@@ -41,8 +41,7 @@ type BlockDownloadRequest struct {
 type downloadBlock struct {
 	RawData     []byte `json:"data"`
 	BlockChunks [][]byte
-	Success     bool               `json:"success"`
-	LatestRM    *marker.ReadMarker `json:"latest_rm"`
+	Success     bool `json:"success"`
 	idx         int
 	err         error
 	NumBlocks   int64 `json:"num_of_blocks"`
@@ -112,7 +111,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		rm.AllocationID = req.allocationID
 		rm.OwnerID = client.GetClientID()
 		rm.Timestamp = common.Now()
-		// rm.ReadCounter = getBlobberReadCtr(req.blobber.ID) + req.numBlocks
+		rm.ReadSize = req.numBlocks * int64(req.chunkSize)
 		err := rm.Sign()
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error: Signing readmarker failed")}
@@ -183,7 +182,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					} else {
 						rspData.BlockChunks = req.splitData(response, req.chunkSize)
 					}
-					rspData.RawData = []byte{}
 					req.result <- &rspData
 					return nil
 				}

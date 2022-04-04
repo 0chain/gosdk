@@ -12,7 +12,7 @@ import (
 // ChunkedUploadFormBuilder build form data for uploading
 type ChunkedUploadFormBuilder interface {
 	// build form data
-	Build(fileMeta *FileMeta, hasher Hasher, connectionID string, chunkSize int64, chunkIndex int, isFinal bool, encryptedKey string, fileBytes, thumbnailBytes []byte) (*bytes.Buffer, ChunkedUploadFormMetadata, error)
+	Build(fileMeta *FileMeta, hasher Hasher, connectionID string, chunkSize int64, chunkStartIndex, chunkEndIndex int, isFinal bool, encryptedKey string, fileChunksData [][]byte, thumbnailChunkData []byte) (*bytes.Buffer, ChunkedUploadFormMetadata, error)
 }
 
 // ChunkedUploadFormMetadata upload form metadata
@@ -34,14 +34,13 @@ func CreateChunkedUploadFormBuilder() ChunkedUploadFormBuilder {
 type chunkedUploadFormBuilder struct {
 }
 
-func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, connectionID string, chunkSize int64, chunkIndex int, isFinal bool, encryptedKey string, fileBytes, thumbnailBytes []byte) (*bytes.Buffer, ChunkedUploadFormMetadata, error) {
+func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, connectionID string, chunkSize int64, chunkStartIndex, chunkEndIndex int, isFinal bool, encryptedKey string, fileChunksData [][]byte, thumbnailChunkData []byte) (*bytes.Buffer, ChunkedUploadFormMetadata, error) {
 
 	metadata := ChunkedUploadFormMetadata{
-		FileBytesLen:      len(fileBytes),
-		ThumbnailBytesLen: len(thumbnailBytes),
+		ThumbnailBytesLen: len(thumbnailChunkData),
 	}
 
-	if len(fileBytes) == 0 {
+	if len(fileChunksData) == 0 {
 		return nil, metadata, nil
 	}
 
@@ -60,10 +59,11 @@ func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, conn
 		MimeType:   fileMeta.MimeType,
 		Attributes: fileMeta.Attributes,
 
-		IsFinal:      isFinal,
-		ChunkSize:    chunkSize,
-		ChunkIndex:   chunkIndex,
-		UploadOffset: chunkSize * int64(chunkIndex),
+		IsFinal:         isFinal,
+		ChunkSize:       chunkSize,
+		ChunkStartIndex: chunkStartIndex,
+		ChunkEndIndex:   chunkEndIndex,
+		UploadOffset:    chunkSize * int64(chunkStartIndex),
 	}
 
 	formWriter := multipart.NewWriter(body)
@@ -75,24 +75,31 @@ func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, conn
 	}
 
 	chunkHashWriter := sha256.New()
-	chunkWriters := io.MultiWriter(uploadFile, chunkHashWriter)
+	chunksHashWriter := sha256.New()
+	chunksWriters := io.MultiWriter(uploadFile, chunkHashWriter, chunksHashWriter)
 
-	_, err = chunkWriters.Write(fileBytes)
-	if err != nil {
-		return nil, metadata, err
+	for i, chunkBytes := range fileChunksData {
+		_, err = chunksWriters.Write(chunkBytes)
+		if err != nil {
+			return nil, metadata, err
+		}
+
+		err = hasher.WriteToChallenge(chunkBytes, chunkStartIndex+i)
+		if err != nil {
+			return nil, metadata, err
+		}
+
+		err = hasher.WriteHashToContent(hex.EncodeToString(chunkHashWriter.Sum(nil)), chunkStartIndex+i)
+		if err != nil {
+			return nil, metadata, err
+		}
+
+		metadata.FileBytesLen += len(chunkBytes)
+		chunkHashWriter.Reset()
 	}
 
-	formData.ChunkHash = hex.EncodeToString(chunkHashWriter.Sum(nil))
+	formData.ChunkHash = hex.EncodeToString(chunksHashWriter.Sum(nil))
 	formData.ContentHash = formData.ChunkHash
-
-	err = hasher.WriteToChallenge(fileBytes, chunkIndex)
-	if err != nil {
-		return nil, metadata, err
-	}
-	err = hasher.WriteHashToContent(formData.ChunkHash, chunkIndex)
-	if err != nil {
-		return nil, metadata, err
-	}
 
 	if isFinal {
 
@@ -112,7 +119,7 @@ func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, conn
 
 	}
 
-	thumbnailSize := len(thumbnailBytes)
+	thumbnailSize := len(thumbnailChunkData)
 	if thumbnailSize > 0 {
 
 		uploadThumbnailFile, err := formWriter.CreateFormFile("uploadThumbnailFile", fileMeta.RemoteName+".thumb")
@@ -123,7 +130,7 @@ func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, conn
 
 		thumbnailHash := sha256.New()
 		thumbnailWriters := io.MultiWriter(uploadThumbnailFile, thumbnailHash)
-		_, err = thumbnailWriters.Write(thumbnailBytes)
+		_, err = thumbnailWriters.Write(thumbnailChunkData)
 		if err != nil {
 			return nil, metadata, err
 		}
