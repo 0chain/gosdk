@@ -13,6 +13,7 @@ import (
 	"github.com/0chain/gosdk/dev/mock"
 	"github.com/0chain/gosdk/sdks/blobber"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/require"
 )
@@ -49,7 +50,7 @@ func TestWriteMarkerMutext_Should_Lock(t *testing.T) {
 		})
 	}
 
-	mutex := CreateWriteMarkerMutex(a)
+	mutex, _ := CreateWriteMarkerMutex(client.GetClient(), a)
 
 	err := mutex.Lock(context.TODO(), zboxutil.NewConnectionId())
 	require.Nil(err)
@@ -103,7 +104,7 @@ func TestWriteMarkerMutext_Pending_Should_Lock(t *testing.T) {
 		m[http.MethodPost+":"+blobber.EndpointWriteMarkerLock+a.Tx] = statusOK
 	}()
 
-	mutex := CreateWriteMarkerMutex(a)
+	mutex, _ := CreateWriteMarkerMutex(client.GetClient(), a)
 
 	err := mutex.Lock(context.TODO(), zboxutil.NewConnectionId())
 	require.Nil(err)
@@ -146,7 +147,7 @@ func TestWriteMarkerMutext_Some_Blobbers_Down_Should_Lock(t *testing.T) {
 	// 1st blobber is unreachable
 	a.Blobbers[0].Baseurl = "http://127.0.0.1:5003"
 
-	mutex := CreateWriteMarkerMutex(a)
+	mutex, _ := CreateWriteMarkerMutex(client.GetClient(), a)
 
 	err := mutex.Lock(context.TODO(), zboxutil.NewConnectionId())
 	require.Nil(err)
@@ -190,7 +191,7 @@ func TestWriteMarkerMutext_Too_Less_Blobbers_Response_Should_Not_Lock(t *testing
 	a.Blobbers[0].Baseurl = "http://127.0.0.1:5003"
 	a.Blobbers[1].Baseurl = "http://127.0.0.1:5003"
 
-	mutex := CreateWriteMarkerMutex(a)
+	mutex, _ := CreateWriteMarkerMutex(client.GetClient(), a)
 
 	err := mutex.Lock(context.TODO(), zboxutil.NewConnectionId())
 	require.ErrorIs(constants.ErrNotLockedWritMarker, err)
@@ -219,7 +220,7 @@ func TestGetRootHashnode(t *testing.T) {
 	server := dev.NewBlobberServer(m)
 	defer server.Close()
 
-	mutex := CreateWriteMarkerMutex(a)
+	mutex, _ := CreateWriteMarkerMutex(client.GetClient(), a)
 
 	root, err := mutex.GetRootHashnode(context.TODO(), server.URL)
 	require.Nil(err)

@@ -52,6 +52,15 @@ func WithChunkSize(size int64) ChunkedUploadOption {
 	}
 }
 
+// WithChunkNumber set the number of chunks should be upload in a request. ignore if size <=0
+func WithChunkNumber(num int) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
+		if num > 0 {
+			su.chunkNumber = num
+		}
+	}
+}
+
 // WithEncrypt trun on/off encrypt on upload. It is turn off as default.
 func WithEncrypt(status bool) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
@@ -69,11 +78,5 @@ func WithStatusCallback(callback StatusCallback) ChunkedUploadOption {
 func WithProgressStorer(progressStorer ChunkedUploadProgressStorer) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		su.progressStorer = progressStorer
-	}
-}
-
-func WithCreateWriteMarkerLocker(createWriteMarkerLocker func(file string) WriteMarkerLocker) ChunkedUploadOption {
-	return func(su *ChunkedUpload) {
-		su.createWriteMarkerLocker = createWriteMarkerLocker
 	}
 }

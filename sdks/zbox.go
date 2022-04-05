@@ -12,7 +12,9 @@ import (
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/resty"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/client"
 )
 
 // ZBox  sdk client instance
@@ -25,18 +27,19 @@ type ZBox struct {
 	SignatureScheme string
 
 	// Wallet wallet
-	Wallet zcncrypto.Wallet
+	Wallet *zcncrypto.Wallet
 
 	// NewRequest create http request
 	NewRequest func(method, url string, body io.Reader) (*http.Request, error)
 }
 
 // New create a sdk client instance
-func New(clientID, clientKey, signatureScheme string) *ZBox {
+func New(clientID, clientKey, signatureScheme string, wallet *zcncrypto.Wallet) *ZBox {
 	s := &ZBox{
 		ClientID:        clientID,
 		ClientKey:       clientKey,
 		SignatureScheme: signatureScheme,
+		Wallet:          wallet,
 		NewRequest:      http.NewRequest,
 	}
 
@@ -60,25 +63,12 @@ func (z *ZBox) SignRequest(req *http.Request, allocationID string) error {
 
 	hash := encryption.Hash(allocationID)
 
-	var err error
-	sign := ""
-	for _, kv := range z.Wallet.Keys {
-		ss := zcncrypto.NewSignatureScheme(z.SignatureScheme)
-		err = ss.SetPrivateKey(kv.PrivateKey)
-		if err != nil {
-			return err
-		}
-
-		if len(sign) == 0 {
-			sign, err = ss.Sign(hash)
-		} else {
-			sign, err = ss.Add(sign, hash)
-		}
-		if err != nil {
-			return err
-		}
+	sign, err := sys.Sign(hash, z.SignatureScheme, client.GetClientSysKeys())
+	if err != nil {
+		return err
 	}
 
+	// ClientSignatureHeader represents http request header contains signature.
 	req.Header.Set("X-App-Client-Signature", sign)
 
 	return nil
@@ -121,7 +111,7 @@ func (z *ZBox) BuildUrls(baseURLs []string, queryString map[string]string, pathF
 
 func (z *ZBox) DoPost(req *Request, handle resty.Handle) *resty.Resty {
 
-	opts := make([]resty.Option, 0, 4)
+	opts := make([]resty.Option, 0, 5)
 
 	opts = append(opts, resty.WithRetry(resty.DefaultRetry))
 	opts = append(opts, resty.WithTimeout(resty.DefaultRequestTimeout))
@@ -135,7 +125,9 @@ func (z *ZBox) DoPost(req *Request, handle resty.Handle) *resty.Resty {
 		}))
 	}
 
-	r := resty.New(z.CreateTransport(), handle, opts...)
+	opts = append(opts, resty.WithTransport(z.CreateTransport()))
+
+	r := resty.New(opts...).Then(handle)
 
 	return r
 }
