@@ -138,7 +138,7 @@ type StorageSdkSchema interface {
 	CreateAllocationForOwner(owner, ownerpublickey string, datashards, parityshards int, size, expiry int64, readPrice, writePrice PriceRange, mcct time.Duration, lock int64, preferredBlobbers []string) (string, error)
 	AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit float64) error
 	CreateFreeAllocation(marker string, value int64) (string, error)
-	UpdateAllocation(size int64, expiry int64, allocationID string, lock int64, setImmutable, updateTerms bool) (string, error)
+	UpdateAllocation(size int64, expiry int64, allocationID string, lock int64, setImmutable, updateTerms bool, addBlobberId, removeBlobberId string) (string, error)
 	CreateFreeUpdateAllocation(marker, allocationId string, value int64) (string, error)
 	FinalizeAllocation(allocID string) (string, error)
 	CancelAllocation(allocID string) (string, error)
@@ -1006,8 +1006,7 @@ func (s *storageSdkSchema) CreateFreeAllocation(marker string, value int64) (str
 	return hash, err
 }
 
-
-func UpdateAllocation(
+func (s *storageSdkSchema) UpdateAllocation(
 	size, expiry int64,
 	allocationID string,
 	lock int64,
