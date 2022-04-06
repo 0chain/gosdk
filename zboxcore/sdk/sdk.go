@@ -90,43 +90,43 @@ type StorageSdkSchema interface {
 	GetNetwork() *Network
 	SetMaxTxnQuery(num int) error
 	SetQuerySleepTime(time int) error
-	CreateReadPool() (err error)
+	CreateReadPool() error
 	// GetReadPoolInfo for given client, or, if the given clientID is empty,
 	// for current client of the sdk.
-	GetReadPoolInfo(clientID string) (info *AllocationPoolStats, err error)
+	GetReadPoolInfo(clientID string) (*AllocationPoolStats, error)
 	// ReadPoolLock locks given number of tokes for given duration in read pool.
-	ReadPoolLock(dur time.Duration, allocID, blobberID string, tokens, fee int64) (err error)
+	ReadPoolLock(dur time.Duration, allocID, blobberID string, tokens, fee int64) error
 	// ReadPoolUnlock unlocks tokens in expired read pool
-	ReadPoolUnlock(poolID string, fee int64) (err error)
+	ReadPoolUnlock(poolID string, fee int64) error
 	// GetStakePoolInfo for given client, or, if the given clientID is empty,
 	// for current client of the sdk.
-	GetStakePoolInfo(blobberID string) (info *StakePoolInfo, err error)
+	GetStakePoolInfo(blobberID string) (*StakePoolInfo, error)
 	// GetStakePoolUserInfo obtains blobbers/validators delegate pools statistic
 	// for a user. If given clientID is empty string, then current client used.
-	GetStakePoolUserInfo(clientID string) (info *StakePoolUserInfo, err error)
+	GetStakePoolUserInfo(clientID string) (*StakePoolUserInfo, error)
 	// StakePoolLock locks tokens lack in stake pool
-	StakePoolLock(blobberID string, value, fee int64) (poolID string, err error)
+	StakePoolLock(blobberID string, value, fee int64) (string, error)
 	// StakePoolUnlock unlocks a stake pool tokens. If tokens can't be unlocked due
 	// to opened offers, then it returns time where the tokens can be unlocked,
 	// marking the pool as 'want to unlock' to avoid its usage in offers in the
 	// future. The time is maximal time that can be lesser in some cases. To
 	// unlock tokens can't be unlocked now, wait the time and unlock them (call
 	// this function again).
-	StakePoolUnlock(blobberID, poolID string, fee int64) (unstake bool, err error)
+	StakePoolUnlock(blobberID, poolID string, fee int64) (bool, error)
 	// GetWritePoolInfo for given client, or, if the given clientID is empty,
 	// for current client of the sdk.
-	GetWritePoolInfo(clientID string) (info *AllocationPoolStats, err error)
+	GetWritePoolInfo(clientID string) (*AllocationPoolStats, error)
 	// WritePoolLock locks given number of tokes for given duration in read pool.
 	WritePoolLock(dur time.Duration, allocID, blobberID string, tokens, fee int64) (err error)
 	// WritePoolUnlock unlocks tokens in expired read pool
 	WritePoolUnlock(poolID string, fee int64) (err error)
 	// GetChallengePoolInfo for given allocation.
-	GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error)
+	GetChallengePoolInfo(allocID string) (*ChallengePoolInfo, error)
 	GetMptData(key string) ([]byte, error)
-	GetStorageSCConfig() (conf *InputMap, err error)
-	GetBlobbers() (bs []*Blobber, err error)
+	GetStorageSCConfig() (*InputMap, error)
+	GetBlobbers() ([]*Blobber, error)
 	// GetBlobber instance.
-	GetBlobber(blobberID string) (blob *Blobber, err error)
+	GetBlobber(blobberID string) (*Blobber, error)
 	GetClientEncryptedPublicKey() (string, error)
 	GetAllocationFromAuthTicket(authTicket string) (*Allocation, error)
 	GetAllocation(allocationID string) (*Allocation, error)
@@ -135,18 +135,18 @@ type StorageSdkSchema interface {
 	GetAllocationsForClient(clientID string) ([]*Allocation, error)
 	CreateAllocationWithBlobbers(datashards, parityshards int, size, expiry int64, readPrice, writePrice PriceRange, mcct time.Duration, lock int64, blobbers []string) (string, error)
 	CreateAllocation(datashards, parityshards int, size, expiry int64, readPrice, writePrice PriceRange, mcct time.Duration, lock int64) (string, error)
-	CreateAllocationForOwner(owner, ownerpublickey string, datashards, parityshards int, size, expiry int64, readPrice, writePrice PriceRange, mcct time.Duration, lock int64, preferredBlobbers []string) (hash string, err error)
+	CreateAllocationForOwner(owner, ownerpublickey string, datashards, parityshards int, size, expiry int64, readPrice, writePrice PriceRange, mcct time.Duration, lock int64, preferredBlobbers []string) (string, error)
 	AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit float64) error
 	CreateFreeAllocation(marker string, value int64) (string, error)
-	UpdateAllocation(size int64, expiry int64, allocationID string, lock int64, setImmutable, updateTerms bool) (hash string, err error)
+	UpdateAllocation(size int64, expiry int64, allocationID string, lock int64, setImmutable, updateTerms bool) (string, error)
 	CreateFreeUpdateAllocation(marker, allocationId string, value int64) (string, error)
-	FinalizeAllocation(allocID string) (hash string, err error)
-	CancelAllocation(allocID string) (hash string, err error)
+	FinalizeAllocation(allocID string) (string, error)
+	CancelAllocation(allocID string) (string, error)
 	RemoveCurator(curatorId, allocationId string) (string, error)
 	AddCurator(curatorId, allocationId string) (string, error)
 	CollectRewards(poolId string, providerType ProviderType) (string, error)
 	CuratorTransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (string, error)
-	UpdateBlobberSettings(blob *Blobber) (resp string, err error)
+	UpdateBlobberSettings(blob *Blobber) (string, error)
 	CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error)
 	GetAllocationMinLock(datashards, parityshards int, size, expiry int64, readPrice, writePrice PriceRange, mcct time.Duration) (int64, error)
 }
@@ -240,14 +240,14 @@ func SetNetwork(miners []string, sharders []string) {
 // read pool
 //
 
-func (s *storageSdkSchema) CreateReadPool() (err error) {
+func (s *storageSdkSchema) CreateReadPool() error {
 	if !s.sdkInitialized {
 		return sdkNotInitialized
 	}
-	_, _, err = smartContractTxn(transaction.SmartContractTxnData{
+	_, _, err := smartContractTxn(transaction.SmartContractTxnData{
 		Name: transaction.STORAGESC_CREATE_READ_POOL,
 	})
-	return
+	return err
 }
 
 type BlobberPoolStat struct {
@@ -291,7 +291,7 @@ func (aps *AllocationPoolStats) AllocFilter(allocID string) {
 
 // GetReadPoolInfo for given client, or, if the given clientID is empty,
 // for current client of the sdk.
-func (s *storageSdkSchema) GetReadPoolInfo(clientID string) (info *AllocationPoolStats, err error) {
+func (s *storageSdkSchema) GetReadPoolInfo(clientID string) (*AllocationPoolStats, error) {
 	if !s.sdkInitialized {
 		return nil, sdkNotInitialized
 	}
@@ -301,7 +301,7 @@ func (s *storageSdkSchema) GetReadPoolInfo(clientID string) (info *AllocationPoo
 	}
 
 	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getReadPoolStat",
+	b, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getReadPoolStat",
 		map[string]string{"client_id": clientID}, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting read pool info")
@@ -310,17 +310,17 @@ func (s *storageSdkSchema) GetReadPoolInfo(clientID string) (info *AllocationPoo
 		return nil, errors.New("", "empty response")
 	}
 
-	info = new(AllocationPoolStats)
+	info := new(AllocationPoolStats)
 	if err = json.Unmarshal(b, info); err != nil {
 		return nil, errors.Wrap(err, "error decoding response:")
 	}
 
-	return
+	return info, nil
 }
 
 // ReadPoolLock locks given number of tokes for given duration in read pool.
 func (s *storageSdkSchema) ReadPoolLock(dur time.Duration, allocID, blobberID string,
-	tokens, fee int64) (err error) {
+	tokens, fee int64) error {
 	if !s.sdkInitialized {
 		return sdkNotInitialized
 	}
@@ -340,12 +340,12 @@ func (s *storageSdkSchema) ReadPoolLock(dur time.Duration, allocID, blobberID st
 		Name:      transaction.STORAGESC_READ_POOL_LOCK,
 		InputArgs: &req,
 	}
-	_, _, err = smartContractTxnValueFee(sn, tokens, fee)
-	return
+	_, _, err := smartContractTxnValueFee(sn, tokens, fee)
+	return err
 }
 
 // ReadPoolUnlock unlocks tokens in expired read pool
-func (s *storageSdkSchema) ReadPoolUnlock(poolID string, fee int64) (err error) {
+func (s *storageSdkSchema) ReadPoolUnlock(poolID string, fee int64) error {
 	if !s.sdkInitialized {
 		return sdkNotInitialized
 	}
@@ -361,8 +361,8 @@ func (s *storageSdkSchema) ReadPoolUnlock(poolID string, fee int64) (err error) 
 		Name:      transaction.STORAGESC_READ_POOL_UNLOCK,
 		InputArgs: &req,
 	}
-	_, _, err = smartContractTxnValueFee(sn, 0, fee)
-	return
+	_, _, err := smartContractTxnValueFee(sn, 0, fee)
+	return err
 }
 
 //
@@ -436,7 +436,7 @@ type StakePoolInfo struct {
 
 // GetStakePoolInfo for given client, or, if the given clientID is empty,
 // for current client of the sdk.
-func (s *storageSdkSchema) GetStakePoolInfo(blobberID string) (info *StakePoolInfo, err error) {
+func (s *storageSdkSchema) GetStakePoolInfo(blobberID string) (*StakePoolInfo, error) {
 	if !s.sdkInitialized {
 		return nil, sdkNotInitialized
 	}
@@ -445,7 +445,7 @@ func (s *storageSdkSchema) GetStakePoolInfo(blobberID string) (info *StakePoolIn
 	}
 
 	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getStakePoolStat",
+	b, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getStakePoolStat",
 		map[string]string{"blobber_id": blobberID}, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting stake pool info:")
@@ -454,12 +454,12 @@ func (s *storageSdkSchema) GetStakePoolInfo(blobberID string) (info *StakePoolIn
 		return nil, errors.New("", "empty response")
 	}
 
-	info = new(StakePoolInfo)
+	info := new(StakePoolInfo)
 	if err = json.Unmarshal(b, info); err != nil {
 		return nil, errors.Wrap(err, "error decoding response:")
 	}
 
-	return
+	return info, nil
 }
 
 // StakePoolUserInfo represents user stake pools statistic.
@@ -469,7 +469,7 @@ type StakePoolUserInfo struct {
 
 // GetStakePoolUserInfo obtains blobbers/validators delegate pools statistic
 // for a user. If given clientID is empty string, then current client used.
-func (s *storageSdkSchema) GetStakePoolUserInfo(clientID string) (info *StakePoolUserInfo, err error) {
+func (s *storageSdkSchema) GetStakePoolUserInfo(clientID string) (*StakePoolUserInfo, error) {
 	if !s.sdkInitialized {
 		return nil, sdkNotInitialized
 	}
@@ -478,7 +478,7 @@ func (s *storageSdkSchema) GetStakePoolUserInfo(clientID string) (info *StakePoo
 	}
 
 	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
+	b, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
 		"/getUserStakePoolStat", map[string]string{"client_id": clientID}, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting stake pool user info:")
@@ -487,12 +487,12 @@ func (s *storageSdkSchema) GetStakePoolUserInfo(clientID string) (info *StakePoo
 		return nil, errors.New("", "empty response")
 	}
 
-	info = new(StakePoolUserInfo)
+	info := new(StakePoolUserInfo)
 	if err = json.Unmarshal(b, info); err != nil {
 		return nil, errors.Wrap(err, "error decoding response:")
 	}
 
-	return
+	return info, nil
 }
 
 type stakePoolRequest struct {
@@ -501,9 +501,9 @@ type stakePoolRequest struct {
 }
 
 // StakePoolLock locks tokens lack in stake pool
-func (s *storageSdkSchema) StakePoolLock(blobberID string, value, fee int64) (poolID string, err error) {
+func (s *storageSdkSchema) StakePoolLock(blobberID string, value, fee int64) (string, error) {
 	if !s.sdkInitialized {
-		return poolID, sdkNotInitialized
+		return "", sdkNotInitialized
 	}
 	if blobberID == "" {
 		blobberID = client.GetClientID()
@@ -515,8 +515,8 @@ func (s *storageSdkSchema) StakePoolLock(blobberID string, value, fee int64) (po
 		Name:      transaction.STORAGESC_STAKE_POOL_LOCK,
 		InputArgs: &spr,
 	}
-	poolID, _, err = smartContractTxnValueFee(sn, value, fee)
-	return
+	poolID, _, err := smartContractTxnValueFee(sn, value, fee)
+	return poolID, err
 }
 
 // StakePoolUnlockUnstake is stake pool unlock response in case where tokens
@@ -534,7 +534,7 @@ type StakePoolUnlockUnstake struct {
 // future. The time is maximal time that can be lesser in some cases. To
 // unlock tokens can't be unlocked now, wait the time and unlock them (call
 // this function again).
-func (s *storageSdkSchema) StakePoolUnlock(blobberID, poolID string, fee int64) (unstake bool, err error) {
+func (s *storageSdkSchema) StakePoolUnlock(blobberID, poolID string, fee int64) (bool, error) {
 	if !s.sdkInitialized {
 		return false, sdkNotInitialized
 	}
@@ -552,14 +552,15 @@ func (s *storageSdkSchema) StakePoolUnlock(blobberID, poolID string, fee int64) 
 		InputArgs: &spr,
 	}
 
-	var out string
-	if _, out, err = smartContractTxnValueFee(sn, 0, fee); err != nil {
-		return // an error
+	_, out, err := smartContractTxnValueFee(sn, 0, fee)
+	if err != nil {
+		return false, err // an error
 	}
 
 	var spuu StakePoolUnlockUnstake
-	if err = json.Unmarshal([]byte(out), &spuu); err != nil {
-		return
+	err = json.Unmarshal([]byte(out), &spuu)
+	if err != nil {
+		return false, err
 	}
 
 	return spuu.Unstake, nil
@@ -571,7 +572,7 @@ func (s *storageSdkSchema) StakePoolUnlock(blobberID, poolID string, fee int64) 
 
 // GetWritePoolInfo for given client, or, if the given clientID is empty,
 // for current client of the sdk.
-func (s *storageSdkSchema) GetWritePoolInfo(clientID string) (info *AllocationPoolStats, err error) {
+func (s *storageSdkSchema) GetWritePoolInfo(clientID string) (*AllocationPoolStats, error) {
 	if !s.sdkInitialized {
 		return nil, sdkNotInitialized
 	}
@@ -580,7 +581,7 @@ func (s *storageSdkSchema) GetWritePoolInfo(clientID string) (info *AllocationPo
 	}
 
 	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getWritePoolStat",
+	b, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getWritePoolStat",
 		map[string]string{"client_id": clientID}, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting read pool info:")
@@ -589,12 +590,12 @@ func (s *storageSdkSchema) GetWritePoolInfo(clientID string) (info *AllocationPo
 		return nil, errors.New("", "empty response")
 	}
 
-	info = new(AllocationPoolStats)
+	info := new(AllocationPoolStats)
 	if err = json.Unmarshal(b, info); err != nil {
 		return nil, errors.Wrap(err, "error decoding response:")
 	}
 
-	return
+	return info, nil
 }
 
 // WritePoolLock locks given number of tokes for given duration in read pool.
@@ -658,13 +659,13 @@ type ChallengePoolInfo struct {
 }
 
 // GetChallengePoolInfo for given allocation.
-func (s *storageSdkSchema) GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
+func (s *storageSdkSchema) GetChallengePoolInfo(allocID string) (*ChallengePoolInfo, error) {
 	if !s.sdkInitialized {
 		return nil, sdkNotInitialized
 	}
 
 	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
+	b, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
 		"/getChallengePoolStat", map[string]string{"allocation_id": allocID},
 		nil)
 	if err != nil {
@@ -674,12 +675,12 @@ func (s *storageSdkSchema) GetChallengePoolInfo(allocID string) (info *Challenge
 		return nil, errors.New("", "empty response")
 	}
 
-	info = new(ChallengePoolInfo)
+	info := new(ChallengePoolInfo)
 	if err = json.Unmarshal(b, info); err != nil {
 		return nil, errors.Wrap(err, "error decoding response:")
 	}
 
-	return
+	return info, nil
 }
 
 func (s *storageSdkSchema) GetMptData(key string) ([]byte, error) {
@@ -710,13 +711,13 @@ type InputMap struct {
 	Fields map[string]interface{} `json:"fields"`
 }
 
-func (s *storageSdkSchema) GetStorageSCConfig() (conf *InputMap, err error) {
+func (s *storageSdkSchema) GetStorageSCConfig() (*InputMap, error) {
 	if !s.sdkInitialized {
 		return nil, sdkNotInitialized
 	}
 
 	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getConfig", nil,
+	b, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getConfig", nil,
 		nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting storage SC configs:")
@@ -725,13 +726,13 @@ func (s *storageSdkSchema) GetStorageSCConfig() (conf *InputMap, err error) {
 		return nil, errors.New("", "empty response")
 	}
 
-	conf = new(InputMap)
+	conf := new(InputMap)
 	conf.Fields = make(map[string]interface{})
 	if err = json.Unmarshal(b, conf); err != nil {
 		return nil, errors.Wrap(err, "rror decoding response:")
 	}
 
-	return
+	return conf, nil
 }
 
 type Blobber struct {
@@ -745,13 +746,13 @@ type Blobber struct {
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
-func (s *storageSdkSchema) GetBlobbers() (bs []*Blobber, err error) {
+func (s *storageSdkSchema) GetBlobbers() ([]*Blobber, error) {
 	if !s.sdkInitialized {
 		return nil, sdkNotInitialized
 	}
 
 	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getblobbers", nil,
+	b, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getblobbers", nil,
 		nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting blobbers:")
@@ -774,12 +775,12 @@ func (s *storageSdkSchema) GetBlobbers() (bs []*Blobber, err error) {
 }
 
 // GetBlobber instance.
-func (s *storageSdkSchema) GetBlobber(blobberID string) (blob *Blobber, err error) {
+func (s *storageSdkSchema) GetBlobber(blobberID string) (*Blobber, error) {
 	if !s.sdkInitialized {
 		return nil, sdkNotInitialized
 	}
 	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(
+	b, err := zboxutil.MakeSCRestAPICall(
 		STORAGE_SCADDRESS,
 		"/getBlobber",
 		map[string]string{"blobber_id": blobberID},
@@ -790,11 +791,11 @@ func (s *storageSdkSchema) GetBlobber(blobberID string) (blob *Blobber, err erro
 	if len(b) == 0 {
 		return nil, errors.New("", "empty response from sharders")
 	}
-	blob = new(Blobber)
+	blob := new(Blobber)
 	if err = json.Unmarshal(b, blob); err != nil {
 		return nil, errors.Wrap(err, "decoding response:")
 	}
-	return
+	return blob, err
 }
 
 //
@@ -931,7 +932,7 @@ func (s *storageSdkSchema) CreateAllocation(datashards, parityshards int, size, 
 		blockchain.GetPreferredBlobbers())
 }
 
-func (s *storageSdkSchema) CreateAllocationForOwner(owner, ownerpublickey string, datashards, parityshards int, size, expiry int64, readPrice, writePrice PriceRange, mcct time.Duration, lock int64, preferredBlobbers []string) (hash string, err error) {
+func (s *storageSdkSchema) CreateAllocationForOwner(owner, ownerpublickey string, datashards, parityshards int, size, expiry int64, readPrice, writePrice PriceRange, mcct time.Duration, lock int64, preferredBlobbers []string) (string, error) {
 	if lock < 0 {
 		return "", errors.New("", "invalid value for lock")
 	}
@@ -958,8 +959,8 @@ func (s *storageSdkSchema) CreateAllocationForOwner(owner, ownerpublickey string
 		Name:      transaction.NEW_ALLOCATION_REQUEST,
 		InputArgs: allocationRequest,
 	}
-	hash, _, err = smartContractTxnValue(sn, lock)
-	return
+	hash, _, err := smartContractTxnValue(sn, lock)
+	return hash, err
 }
 
 func (s *storageSdkSchema) AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit float64) error {
@@ -1006,7 +1007,7 @@ func (s *storageSdkSchema) CreateFreeAllocation(marker string, value int64) (str
 }
 
 func (s *storageSdkSchema) UpdateAllocation(size int64, expiry int64, allocationID string,
-	lock int64, setImmutable, updateTerms bool) (hash string, err error) {
+	lock int64, setImmutable, updateTerms bool) (string, error) {
 
 	if !s.sdkInitialized {
 		return "", sdkNotInitialized
@@ -1027,8 +1028,8 @@ func (s *storageSdkSchema) UpdateAllocation(size int64, expiry int64, allocation
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
 		InputArgs: updateAllocationRequest,
 	}
-	hash, _, err = smartContractTxnValue(sn, lock)
-	return
+	hash, _, err := smartContractTxnValue(sn, lock)
+	return hash, err
 }
 
 func (s *storageSdkSchema) CreateFreeUpdateAllocation(marker, allocationId string, value int64) (string, error) {
@@ -1052,7 +1053,7 @@ func (s *storageSdkSchema) CreateFreeUpdateAllocation(marker, allocationId strin
 	return hash, err
 }
 
-func (s *storageSdkSchema) FinalizeAllocation(allocID string) (hash string, err error) {
+func (s *storageSdkSchema) FinalizeAllocation(allocID string) (string, error) {
 	if !s.sdkInitialized {
 		return "", sdkNotInitialized
 	}
@@ -1060,11 +1061,11 @@ func (s *storageSdkSchema) FinalizeAllocation(allocID string) (hash string, err 
 		Name:      transaction.STORAGESC_FINALIZE_ALLOCATION,
 		InputArgs: map[string]interface{}{"allocation_id": allocID},
 	}
-	hash, _, err = smartContractTxn(sn)
-	return
+	hash, _, err := smartContractTxn(sn)
+	return hash, err
 }
 
-func (s *storageSdkSchema) CancelAllocation(allocID string) (hash string, err error) {
+func (s *storageSdkSchema) CancelAllocation(allocID string) (string, error) {
 	if !s.sdkInitialized {
 		return "", sdkNotInitialized
 	}
@@ -1072,8 +1073,8 @@ func (s *storageSdkSchema) CancelAllocation(allocID string) (hash string, err er
 		Name:      transaction.STORAGESC_CANCEL_ALLOCATION,
 		InputArgs: map[string]interface{}{"allocation_id": allocID},
 	}
-	hash, _, err = smartContractTxn(sn)
-	return
+	hash, _, err := smartContractTxn(sn)
+	return hash, err
 }
 
 func (s *storageSdkSchema) RemoveCurator(curatorId, allocationId string) (string, error) {
@@ -1155,7 +1156,7 @@ func (s *storageSdkSchema) CuratorTransferAllocation(allocationId, newOwner, new
 	return hash, err
 }
 
-func (s *storageSdkSchema) UpdateBlobberSettings(blob *Blobber) (resp string, err error) {
+func (s *storageSdkSchema) UpdateBlobberSettings(blob *Blobber) (string, error) {
 	if !s.sdkInitialized {
 		return "", sdkNotInitialized
 	}
@@ -1163,8 +1164,8 @@ func (s *storageSdkSchema) UpdateBlobberSettings(blob *Blobber) (resp string, er
 		Name:      transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS,
 		InputArgs: blob,
 	}
-	resp, _, err = smartContractTxn(sn)
-	return
+	resp, _, err := smartContractTxn(sn)
+	return resp, err
 }
 
 func smartContractTxn(sn transaction.SmartContractTxnData) (
