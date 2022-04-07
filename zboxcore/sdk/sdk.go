@@ -931,8 +931,13 @@ func CreateFreeAllocation(marker string, value int64) (string, int64, error) {
 	return hash, n, err
 }
 
-func UpdateAllocation(size int64, expiry int64, allocationID string,
-	lock int64, setImmutable, updateTerms bool) (hash string, nonce int64, err error) {
+func UpdateAllocation(
+	size, expiry int64,
+	allocationID string,
+	lock int64,
+	setImmutable, updateTerms bool,
+	addBlobberId, removeBlobberId string,
+) (hash string, nonce int64, err error) {
 
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -948,6 +953,8 @@ func UpdateAllocation(size int64, expiry int64, allocationID string,
 	updateAllocationRequest["expiration_date"] = expiry
 	updateAllocationRequest["set_immutable"] = setImmutable
 	updateAllocationRequest["update_terms"] = updateTerms
+	updateAllocationRequest["add_blobber_id"] = addBlobberId
+	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
 
 	sn := transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
