@@ -23,6 +23,7 @@ import (
 )
 
 type DeleteRequest struct {
+	sync.Mutex
 	allocationObj  *Allocation
 	allocationID   string
 	allocationTx   string
@@ -59,12 +60,16 @@ func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blo
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusOK {
+			req.Lock()
 			req.consensus.consensus++
 			req.deleteMask |= (1 << uint32(blobberIdx))
+			req.Unlock()
 			Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " deleted.")
 		} else if resp.StatusCode == http.StatusNoContent {
+			req.Lock()
 			req.consensus.consensus++
 			req.deleteMask |= (1 << uint32(blobberIdx))
+			req.Unlock()
 			Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " not available in blobber.")
 		} else {
 			resp_body, err := ioutil.ReadAll(resp.Body)
@@ -83,7 +88,6 @@ func (req *DeleteRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNo
 func (req *DeleteRequest) ProcessDelete() error {
 	num := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, num)
-	var removedNumMutex sync.Mutex
 	removedNum := 0
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(num)
@@ -92,17 +96,20 @@ func (req *DeleteRequest) ProcessDelete() error {
 			defer req.wg.Done()
 			refEntity, err := req.getObjectTreeFromBlobber(req.blobbers[blobberIdx])
 			if err == nil {
-				req.consensus.Done()
+				req.Lock()
+				req.consensus.consensus++
 				req.listMask |= (1 << uint32(blobberIdx))
 				objectTreeRefs[blobberIdx] = refEntity
+				req.Unlock()
 				return
 			}
 			//it was removed from the blobber
 			if errors.Is(err, constants.ErrNotFound) {
-				req.consensus.Done()
-				removedNumMutex.Lock()
+				req.Lock()
+				req.consensus.consensus++
 				removedNum++
-				removedNumMutex.Unlock()
+				req.Unlock()
+
 				return
 			}
 
