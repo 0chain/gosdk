@@ -36,7 +36,7 @@ type DeleteRequest struct {
 	consensus      Consensus
 }
 
-func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blobberIdx int, objectTree fileref.RefEntity) {
+func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blobberIdx int) {
 	defer req.wg.Done()
 
 	body := new(bytes.Buffer)
@@ -83,25 +83,37 @@ func (req *DeleteRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNo
 func (req *DeleteRequest) ProcessDelete() error {
 	num := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, num)
+	var removedNumMutex sync.Mutex
+	removedNum := 0
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(num)
 	for i := 0; i < num; i++ {
 		go func(blobberIdx int) {
 			defer req.wg.Done()
 			refEntity, err := req.getObjectTreeFromBlobber(req.blobbers[blobberIdx])
-			if err != nil {
-				Logger.Error(err.Error())
+			if err == nil {
+				req.consensus.Done()
+				req.listMask |= (1 << uint32(blobberIdx))
+				objectTreeRefs[blobberIdx] = refEntity
 				return
 			}
-			req.consensus.consensus++
-			req.listMask |= (1 << uint32(blobberIdx))
-			objectTreeRefs[blobberIdx] = refEntity
+			//it was removed from the blobber
+			if errors.Is(err, constants.ErrNotFound) {
+				req.consensus.Done()
+				removedNumMutex.Lock()
+				removedNum++
+				removedNumMutex.Unlock()
+				return
+			}
+
+			Logger.Error(err.Error())
+
 		}(i)
 	}
 	req.wg.Wait()
 
 	req.deleteMask = uint32(0)
-	req.consensus.consensus = 0
+	req.consensus.consensus = float32(removedNum)
 	numDeletes := bits.OnesCount32(req.listMask)
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numDeletes)
@@ -109,7 +121,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 	var c, pos int
 	for i := req.listMask; i != 0; i &= ^(1 << uint32(pos)) {
 		pos = bits.TrailingZeros32(i)
-		go req.deleteBlobberFile(req.blobbers[pos], pos, objectTreeRefs[pos])
+		go req.deleteBlobberFile(req.blobbers[pos], pos)
 		c++
 	}
 	req.wg.Wait()
@@ -128,7 +140,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 		return fmt.Errorf("Delete failed: %s", err.Error())
 	}
 
-	req.consensus.consensus = 0
+	req.consensus.consensus = float32(removedNum)
 	wg := &sync.WaitGroup{}
 	wg.Add(bits.OnesCount32(req.deleteMask))
 	commitReqs := make([]*CommitRequest, bits.OnesCount32(req.deleteMask))
