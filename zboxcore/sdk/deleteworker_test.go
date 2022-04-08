@@ -106,7 +106,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(0), req.deleteMask)
-				require.Equal(float32(0), req.consensus)
+				require.Equal(float32(0), req.consensus.consensus)
 			},
 		},
 		{
@@ -175,7 +175,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(1), req.deleteMask)
-				require.Equal(float32(1), req.consensus)
+				require.Equal(float32(1), req.consensus.consensus)
 			},
 		},
 	}
@@ -344,7 +344,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(15), req.deleteMask)
-				require.Equal(float32(4), req.consensus)
+				require.Equal(float32(4), req.consensus.consensus)
 			},
 		},
 		{
@@ -356,7 +356,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(7), req.deleteMask)
-				require.Equal(float32(3), req.consensus)
+				require.Equal(float32(3), req.consensus.consensus)
 			},
 		},
 		{
