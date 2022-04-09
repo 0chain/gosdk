@@ -23,6 +23,7 @@ import (
 )
 
 type DeleteRequest struct {
+	sync.Mutex
 	allocationObj  *Allocation
 	allocationID   string
 	allocationTx   string
@@ -33,10 +34,10 @@ type DeleteRequest struct {
 	listMask       uint32
 	deleteMask     uint32
 	connectionID   string
-	Consensus
+	consensus      Consensus
 }
 
-func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blobberIdx int, objectTree fileref.RefEntity) {
+func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blobberIdx int) {
 	defer req.wg.Done()
 
 	body := new(bytes.Buffer)
@@ -59,12 +60,16 @@ func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blo
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusOK {
-			req.consensus++
+			req.Lock()
+			req.consensus.consensus++
 			req.deleteMask |= (1 << uint32(blobberIdx))
+			req.Unlock()
 			Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " deleted.")
 		} else if resp.StatusCode == http.StatusNoContent {
-			req.consensus++
+			req.Lock()
+			req.consensus.consensus++
 			req.deleteMask |= (1 << uint32(blobberIdx))
+			req.Unlock()
 			Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " not available in blobber.")
 		} else {
 			resp_body, err := ioutil.ReadAll(resp.Body)
@@ -81,27 +86,41 @@ func (req *DeleteRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNo
 }
 
 func (req *DeleteRequest) ProcessDelete() error {
-	numList := len(req.blobbers)
-	objectTreeRefs := make([]fileref.RefEntity, numList)
+	num := len(req.blobbers)
+	objectTreeRefs := make([]fileref.RefEntity, num)
+	removedNum := 0
 	req.wg = &sync.WaitGroup{}
-	req.wg.Add(numList)
-	for i := 0; i < numList; i++ {
+	req.wg.Add(num)
+	for i := 0; i < num; i++ {
 		go func(blobberIdx int) {
 			defer req.wg.Done()
 			refEntity, err := req.getObjectTreeFromBlobber(req.blobbers[blobberIdx])
-			if err != nil {
-				Logger.Error(err.Error())
+			if err == nil {
+				req.Lock()
+				req.consensus.consensus++
+				req.listMask |= (1 << uint32(blobberIdx))
+				objectTreeRefs[blobberIdx] = refEntity
+				req.Unlock()
 				return
 			}
-			req.consensus++
-			req.listMask |= (1 << uint32(blobberIdx))
-			objectTreeRefs[blobberIdx] = refEntity
+			//it was removed from the blobber
+			if errors.Is(err, constants.ErrNotFound) {
+				req.Lock()
+				req.consensus.consensus++
+				removedNum++
+				req.Unlock()
+
+				return
+			}
+
+			Logger.Error(err.Error())
+
 		}(i)
 	}
 	req.wg.Wait()
 
 	req.deleteMask = uint32(0)
-	req.consensus = 0
+	req.consensus.consensus = float32(removedNum)
 	numDeletes := bits.OnesCount32(req.listMask)
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numDeletes)
@@ -109,13 +128,13 @@ func (req *DeleteRequest) ProcessDelete() error {
 	var c, pos int
 	for i := req.listMask; i != 0; i &= ^(1 << uint32(pos)) {
 		pos = bits.TrailingZeros32(i)
-		go req.deleteBlobberFile(req.blobbers[pos], pos, objectTreeRefs[pos])
+		go req.deleteBlobberFile(req.blobbers[pos], pos)
 		c++
 	}
 	req.wg.Wait()
 
-	if !req.isConsensusOk() {
-		return fmt.Errorf("Delete failed: Success_rate:%2f, expected:%2f", req.getConsensusRate(), req.getConsensusRequiredForOk())
+	if !req.consensus.isConsensusOk() {
+		return fmt.Errorf("Delete failed: Success_rate:%2f, expected:%2f", req.consensus.getConsensusRate(), req.consensus.getConsensusRequiredForOk())
 	}
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
@@ -128,7 +147,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 		return fmt.Errorf("Delete failed: %s", err.Error())
 	}
 
-	req.consensus = 0
+	req.consensus.consensus = float32(removedNum)
 	wg := &sync.WaitGroup{}
 	wg.Add(bits.OnesCount32(req.deleteMask))
 	commitReqs := make([]*CommitRequest, bits.OnesCount32(req.deleteMask))
@@ -157,7 +176,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
 				Logger.Info("Commit success", commitReq.blobber.Baseurl)
-				req.consensus++
+				req.consensus.consensus++
 			} else {
 				Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
 			}
@@ -166,7 +185,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 		}
 	}
 
-	if !req.isConsensusOk() {
+	if !req.consensus.isConsensusOk() {
 		return errors.New("Delete failed: Commit consensus failed")
 	}
 	return nil

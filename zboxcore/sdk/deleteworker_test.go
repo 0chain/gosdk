@@ -106,7 +106,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(0), req.deleteMask)
-				require.Equal(float32(0), req.consensus)
+				require.Equal(float32(0), req.consensus.consensus)
 			},
 		},
 		{
@@ -175,7 +175,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(1), req.deleteMask)
-				require.Equal(float32(1), req.consensus)
+				require.Equal(float32(1), req.consensus.consensus)
 			},
 		},
 	}
@@ -187,7 +187,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
-				Consensus: Consensus{
+				consensus: Consensus{
 					consensusThresh:        50,
 					fullconsensus:          4,
 					consensusRequiredForOk: 60,
@@ -202,7 +202,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 			objectTreeRefs := make([]fileref.RefEntity, 1)
 			refEntity, _ := req.getObjectTreeFromBlobber(req.blobbers[0])
 			objectTreeRefs[0] = refEntity
-			req.deleteBlobberFile(req.blobbers[0], 0, objectTreeRefs[0])
+			req.deleteBlobberFile(req.blobbers[0], 0)
 			if tt.wantFunc != nil {
 				tt.wantFunc(require, req)
 			}
@@ -344,7 +344,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(15), req.deleteMask)
-				require.Equal(float32(4), req.consensus)
+				require.Equal(float32(4), req.consensus.consensus)
 			},
 		},
 		{
@@ -356,7 +356,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(7), req.deleteMask)
-				require.Equal(float32(3), req.consensus)
+				require.Equal(float32(3), req.consensus.consensus)
 			},
 		},
 		{
@@ -383,7 +383,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
-				Consensus: Consensus{
+				consensus: Consensus{
 					consensusThresh:        50,
 					fullconsensus:          4,
 					consensusRequiredForOk: 60,
