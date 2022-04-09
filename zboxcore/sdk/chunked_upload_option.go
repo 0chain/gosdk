@@ -43,15 +43,6 @@ func WithThumbnailFile(fileName string) ChunkedUploadOption {
 	return WithThumbnail(buf)
 }
 
-// WithChunkSize set custom chunk size. ignore if size <=0
-// func WithChunkSize(size int64) ChunkedUploadOption {
-// 	return func(su *ChunkedUpload) {
-// 		if size > 0 {
-// 			su.chunkSize = size
-// 		}
-// 	}
-// }
-
 // WithChunkNumber set the number of chunks should be upload in a request. ignore if size <=0
 func WithChunkNumber(num int) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
