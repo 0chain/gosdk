@@ -111,7 +111,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		rm.AllocationID = req.allocationID
 		rm.OwnerID = client.GetClientID()
 		rm.Timestamp = common.Now()
-		rm.ReadSize = req.numBlocks * int64(req.chunkSize)
+		rm.ReadCounter = req.numBlocks
 		err := rm.Sign()
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error: Signing readmarker failed")}
