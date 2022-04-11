@@ -97,6 +97,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		return
 	}
 	retry := 0
+	var err error
 	for retry < 3 {
 
 		if req.blobber.IsSkip() {
@@ -112,8 +113,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		rm.AllocationID = req.allocationID
 		rm.OwnerID = client.GetClientID()
 		rm.Timestamp = common.Now()
-		rm.ReadCounter = req.numBlocks
-		err := rm.Sign()
+		rm.ReadCounter = getBlobberReadCtr(req.blobber) + req.numBlocks
+		err = rm.Sign()
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error: Signing readmarker failed")}
 			return
@@ -170,8 +171,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				return err
 			}
 			if resp.StatusCode != http.StatusOK {
-				if err := json.Unmarshal(respBody, &rspData); err == nil &&
-					rspData.LatestRM != nil && rspData.LatestRM.ReadCounter > getBlobberReadCtr(req.blobber) {
+				if err = json.Unmarshal(respBody, &rspData); err == nil &&
+					rspData.LatestRM != nil && rspData.LatestRM.ReadCounter >= getBlobberReadCtr(req.blobber) {
 
 					zlogger.Logger.Info("Will be retrying download")
 					setBlobberReadCtr(req.blobber, rspData.LatestRM.ReadCounter)
@@ -201,6 +202,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				rspData.BlockChunks = req.splitData(respBody, req.chunkSize)
 			}
 
+			incBlobberReadCtr(req.blobber, req.numBlocks)
 			req.result <- &rspData
 			return nil
 		})
@@ -208,6 +210,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		if err != nil {
 			if shouldRetry {
 				retry = 0
+				shouldRetry = false
 				continue
 			}
 			if retry >= 3 {
@@ -218,8 +221,13 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			continue
 		}
 
+		req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: err}
+
 		return
 	}
+
+	req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: err}
+
 }
 
 func AddBlockDownloadReq(req *BlockDownloadRequest) {
