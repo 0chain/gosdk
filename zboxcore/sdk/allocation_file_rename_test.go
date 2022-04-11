@@ -113,7 +113,7 @@ func TestAllocation_RenameObject(t *testing.T) {
 				ParityShards: 2,
 			}
 			a.InitAllocation()
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),

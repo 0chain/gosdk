@@ -50,7 +50,7 @@ func InitAuthTicket(this js.Value, p []js.Value) interface{} {
 }
 
 func GetNetwork(this js.Value, p []js.Value) interface{} {
-	n := sdk.GetNetwork()
+	n := storageSdk.GetNetwork()
 	return map[string]interface{}{
 		"miners":   strings.Join(n.Miners, ","),
 		"sharders": strings.Join(n.Sharders, ","),
@@ -59,13 +59,13 @@ func GetNetwork(this js.Value, p []js.Value) interface{} {
 
 func SetMaxTxnQuery(this js.Value, p []js.Value) interface{} {
 	num, _ := strconv.Atoi(p[0].String())
-	sdk.SetMaxTxnQuery(num)
+	storageSdk.SetMaxTxnQuery(num)
 	return nil
 }
 
 func SetQuerySleepTime(this js.Value, p []js.Value) interface{} {
 	num, _ := strconv.Atoi(p[0].String())
-	sdk.SetQuerySleepTime(num)
+	storageSdk.SetQuerySleepTime(num)
 	return nil
 }
 
@@ -135,7 +135,7 @@ func CreateReadPool(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			err := sdk.CreateReadPool()
+			err := storageSdk.CreateReadPool()
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("CreateReadPool failed. Reason: %s", err),
@@ -203,7 +203,7 @@ func GetReadPoolInfo(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.GetReadPoolInfo(clientID)
+			result, err := storageSdk.GetReadPoolInfo(clientID)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("CreateReadPool failed. Reason: %s", err),
@@ -241,7 +241,7 @@ func ReadPoolLock(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			err := sdk.ReadPoolLock(dur, allocID, blobberID, int64(tokens), int64(fee))
+			err := storageSdk.ReadPoolLock(dur, allocID, blobberID, int64(tokens), int64(fee))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("ReadPoolLock failed. Reason: %s", err),
@@ -267,7 +267,7 @@ func ReadPoolUnlock(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			err := sdk.ReadPoolUnlock(poolID, int64(fee))
+			err := storageSdk.ReadPoolUnlock(poolID, int64(fee))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("ReadPoolUnlock failed. Reason: %s", err),
@@ -291,7 +291,7 @@ func GetStakePoolInfo(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.GetStakePoolInfo(blobberID)
+			result, err := storageSdk.GetStakePoolInfo(blobberID)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("GetStakePoolInfo failed. Reason: %s", err),
@@ -324,7 +324,7 @@ func GetStakePoolUserInfo(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.GetStakePoolUserInfo(clientID)
+			result, err := storageSdk.GetStakePoolUserInfo(clientID)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("GetStakePoolUserInfo failed. Reason: %s", err),
@@ -360,7 +360,7 @@ func StakePoolLock(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.StakePoolLock(blobberID, int64(value), int64(fee))
+			result, err := storageSdk.StakePoolLock(blobberID, int64(value), int64(fee))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("StakePoolLock failed. Reason: %s", err),
@@ -389,7 +389,7 @@ func StakePoolUnlock(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.StakePoolUnlock(blobberID, poolID, int64(fee))
+			result, err := storageSdk.StakePoolUnlock(blobberID, poolID, int64(fee))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("StakePoolUnlock failed. Reason: %s", err),
@@ -415,7 +415,7 @@ func GetWritePoolInfo(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.GetWritePoolInfo(clientID)
+			result, err := storageSdk.GetWritePoolInfo(clientID)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("GetWritePoolInfo failed. Reason: %s", err),
@@ -453,7 +453,7 @@ func WritePoolLock(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			err := sdk.WritePoolLock(dur, allocID, blobberID, int64(tokens), int64(fee))
+			err := storageSdk.WritePoolLock(dur, allocID, blobberID, int64(tokens), int64(fee))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("WritePoolLock failed. Reason: %s", err),
@@ -478,7 +478,7 @@ func WritePoolUnlock(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			err := sdk.WritePoolUnlock(poolID, int64(fee))
+			err := storageSdk.WritePoolUnlock(poolID, int64(fee))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("WritePoolUnlock failed. Reason: %s", err),
@@ -501,7 +501,7 @@ func GetChallengePoolInfo(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.GetChallengePoolInfo(allocID)
+			result, err := storageSdk.GetChallengePoolInfo(allocID)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("GetChallengePoolInfo failed. Reason: %s", err),
@@ -533,7 +533,7 @@ func GetStorageSCConfig(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.GetStorageSCConfig()
+			result, err := storageSdk.GetStorageSCConfig()
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("GetStorageSCConfig failed. Reason: %s", err),
@@ -563,7 +563,7 @@ func GetBlobbers(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.GetBlobbers()
+			result, err := storageSdk.GetBlobbers()
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("GetBlobbers failed. Reason: %s", err),
@@ -596,7 +596,7 @@ func GetBlobber(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.GetBlobber(blobberID)
+			result, err := storageSdk.GetBlobber(blobberID)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("GetBlobber failed. Reason: %s", err),
@@ -628,7 +628,7 @@ func GetAllocationFromAuthTicket(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.GetAllocationFromAuthTicket(authTicket)
+			result, err := storageSdk.GetAllocationFromAuthTicket(authTicket)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("GetAllocationFromAuthTicket failed. Reason: %s", err),
@@ -659,7 +659,7 @@ func GetAllocation(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.GetAllocation(allocationID)
+			result, err := storageSdk.GetAllocation(allocationID)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("GetAllocation failed. Reason: %s", err),
@@ -689,7 +689,7 @@ func GetAllocations(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.GetAllocations()
+			result, err := storageSdk.GetAllocations()
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("GetAllocations failed. Reason: %s", err),
@@ -722,7 +722,7 @@ func GetAllocationsForClient(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.GetAllocationsForClient(clientID)
+			result, err := storageSdk.GetAllocationsForClient(clientID)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("GetAllocationsForClient failed. Reason: %s", err),
@@ -764,7 +764,7 @@ func CreateAllocation(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.CreateAllocation(datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct, int64(lock))
+			result, err := storageSdk.CreateAllocation(datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct, int64(lock))
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("CreateAllocation failed. Reason: %s", err),
@@ -818,7 +818,7 @@ func CreateAllocationForOwner(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.CreateAllocationForOwner(owner, ownerpublickey, datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct, int64(lock), preferredBlobbers)
+			result, err := storageSdk.CreateAllocationForOwner(owner, ownerpublickey, datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct, int64(lock), preferredBlobbers)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("CreateAllocationForOwner failed. Reason: %s", err),
@@ -852,7 +852,7 @@ func UpdateAllocation(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.UpdateAllocation(
+			result, err := storageSdk.UpdateAllocation(
 				int64(size), int64(expiry), allocationID, int64(lock), setImmutable, updateTerms, addedBlobber, removedBlobber,
 			)
 			if err != nil {
@@ -879,7 +879,7 @@ func FinalizeAllocation(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.FinalizeAllocation(allocID)
+			result, err := storageSdk.FinalizeAllocation(allocID)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("FinalizeAllocation failed. Reason: %s", err),
@@ -904,7 +904,7 @@ func CancelAllocation(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.CancelAllocation(allocID)
+			result, err := storageSdk.CancelAllocation(allocID)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("CancelAllocation failed. Reason: %s", err),
@@ -938,7 +938,7 @@ func UpdateBlobberSettings(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.UpdateBlobberSettings(&blob)
+			result, err := storageSdk.UpdateBlobberSettings(&blob)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("UpdateBlobberSettings failed. Reason: %s", err),
@@ -964,7 +964,7 @@ func CommitToFabric(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.CommitToFabric(metaTxnData, fabricConfigJSON)
+			result, err := storageSdk.CommitToFabric(metaTxnData, fabricConfigJSON)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("CommitToFabric failed. Reason: %s", err),
@@ -998,7 +998,7 @@ func GetAllocationMinLock(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.GetAllocationMinLock(datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct)
+			result, err := storageSdk.GetAllocationMinLock(datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("GetAllocationMinLock failed. Reason: %s", err),

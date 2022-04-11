@@ -226,7 +226,7 @@ func createPalyer(allocationID, remotePath, authTicket, lookupHash string) (*Pla
 			return nil, err
 		}
 
-		allocationObj, err := sdk.GetAllocationFromAuthTicket(authTicket)
+		allocationObj, err := storageSdk.GetAllocationFromAuthTicket(authTicket)
 		if err != nil {
 			PrintError("Error fetching the allocation", err)
 			return nil, err
@@ -244,7 +244,7 @@ func createPalyer(allocationID, remotePath, authTicket, lookupHash string) (*Pla
 		return nil, RequiredArg("allocationID")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := storageSdk.GetAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return nil, err

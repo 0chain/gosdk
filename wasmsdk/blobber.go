@@ -32,7 +32,7 @@ func Delete(allocationID, remotePath string, autoCommit bool) (*FileCommandRespo
 		return nil, RequiredArg("remotePath")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := storageSdk.GetAllocation(allocationID)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +82,7 @@ func Rename(allocationID, remotePath, destName string, autoCommit bool) (*FileCo
 		return nil, RequiredArg("destName")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := storageSdk.GetAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return nil, err
@@ -134,7 +134,7 @@ func Copy(allocationID, remotePath, destPath string, autoCommit bool) (*FileComm
 		return nil, RequiredArg("destPath")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := storageSdk.GetAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return nil, err
@@ -187,7 +187,7 @@ func Move(allocationID, remotePath, destPath string, autoCommit bool) (*FileComm
 		return nil, RequiredArg("destPath")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := storageSdk.GetAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return nil, err
@@ -236,7 +236,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 		return "", RequiredArg("remotePath")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := storageSdk.GetAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return "", err
@@ -461,7 +461,7 @@ func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 		return nil, RequiredArg("remotePath")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := storageSdk.GetAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return nil, err
@@ -570,7 +570,7 @@ func CommitFileMetaTxn(allocationID, commandName, remotePath, authTicket, lookup
 		return nil, RequiredArg("allocationID")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := storageSdk.GetAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return nil, err
@@ -606,7 +606,7 @@ func CommitFolderMetaTxn(allocationID, commandName, preValue, currValue string) 
 		return nil, RequiredArg("allocationID")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := storageSdk.GetAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return nil, err

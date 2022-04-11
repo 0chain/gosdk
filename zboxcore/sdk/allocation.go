@@ -33,8 +33,7 @@ import (
 )
 
 var (
-	noBLOBBERS     = errors.New("", "No Blobbers set in this allocation")
-	notInitialized = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
+	noBLOBBERS = errors.New("", "No Blobbers set in this allocation")
 )
 
 const (
@@ -272,7 +271,7 @@ func (a *Allocation) UploadFile(workdir, localpath string, remotepath string,
 
 func (a *Allocation) CreateDir(dirName string) error {
 	if !a.isInitialized() {
-		return notInitialized
+		return sdkNotInitialized
 	}
 
 	if len(dirName) == 0 {
@@ -371,7 +370,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 ) error {
 
 	if !a.isInitialized() {
-		return notInitialized
+		return sdkNotInitialized
 	}
 
 	fileReader, err := os.Open(localPath)
@@ -433,7 +432,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 ) error {
 
 	if !a.isInitialized() {
-		return notInitialized
+		return sdkNotInitialized
 	}
 
 	fileInfo, err := GetFileInfo(localpath)
@@ -529,7 +528,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 
 func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, *fileref.FileRef, error) {
 	if !a.isInitialized() {
-		return zboxutil.Uint128{}, false, nil, notInitialized
+		return zboxutil.Uint128{}, false, nil, sdkNotInitialized
 	}
 
 	listReq := &ListRequest{}
@@ -567,7 +566,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	startBlock int64, endBlock int64, numBlocks int,
 	status StatusCallback) error {
 	if !a.isInitialized() {
-		return notInitialized
+		return sdkNotInitialized
 	}
 	if stat, err := os.Stat(localPath); err == nil {
 		if !stat.IsDir() {
@@ -621,7 +620,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 
 func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string) (*ListResult, error) {
 	if !a.isInitialized() {
-		return nil, notInitialized
+		return nil, sdkNotInitialized
 	}
 	sEnc, err := base64.StdEncoding.DecodeString(authTicket)
 	if err != nil {
@@ -655,7 +654,7 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string)
 
 func (a *Allocation) ListDir(path string) (*ListResult, error) {
 	if !a.isInitialized() {
-		return nil, notInitialized
+		return nil, sdkNotInitialized
 	}
 	if len(path) == 0 {
 		return nil, errors.New("invalid_path", "Invalid path for the list")
@@ -688,7 +687,7 @@ func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType
 		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
 	}
 	if !a.isInitialized() {
-		return nil, notInitialized
+		return nil, sdkNotInitialized
 	}
 	oTreeReq := &ObjectTreeRequest{
 		allocationID:   a.ID,
@@ -713,7 +712,7 @@ func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType
 
 func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	if !a.isInitialized() {
-		return nil, notInitialized
+		return nil, sdkNotInitialized
 	}
 
 	result := &ConsolidatedFileMeta{}
@@ -748,7 +747,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 
 func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash string) (*ConsolidatedFileMeta, error) {
 	if !a.isInitialized() {
-		return nil, notInitialized
+		return nil, sdkNotInitialized
 	}
 
 	result := &ConsolidatedFileMeta{}
@@ -794,7 +793,7 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 
 func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error) {
 	if !a.isInitialized() {
-		return nil, notInitialized
+		return nil, sdkNotInitialized
 	}
 	if len(path) == 0 {
 		return nil, errors.New("invalid_path", "Invalid path for the list")
@@ -826,7 +825,7 @@ func (a *Allocation) DeleteFile(path string) error {
 
 func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus float32) error {
 	if !a.isInitialized() {
-		return notInitialized
+		return sdkNotInitialized
 	}
 
 	if len(path) == 0 {
@@ -857,7 +856,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus floa
 
 func (a *Allocation) RenameObject(path string, destName string) error {
 	if !a.isInitialized() {
-		return notInitialized
+		return sdkNotInitialized
 	}
 
 	if len(path) == 0 {
@@ -890,7 +889,7 @@ func (a *Allocation) UpdateObjectAttributes(path string,
 	attrs fileref.Attributes) (err error) {
 
 	if !a.isInitialized() {
-		return notInitialized
+		return sdkNotInitialized
 	}
 
 	if len(path) == 0 {
@@ -937,7 +936,7 @@ func (a *Allocation) MoveObject(path string, destPath string) error {
 
 func (a *Allocation) CopyObject(path string, destPath string) error {
 	if !a.isInitialized() {
-		return notInitialized
+		return sdkNotInitialized
 	}
 
 	if len(path) == 0 || len(destPath) == 0 {
@@ -1047,7 +1046,7 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 	referenceType, refereeClientID, refereeEncryptionPublicKey string,
 	expiration int64, availableAfter *time.Time) (string, error) {
 	if !a.isInitialized() {
-		return "", notInitialized
+		return "", sdkNotInitialized
 	}
 
 	if path == "" {
@@ -1220,7 +1219,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	status StatusCallback) error {
 
 	if !a.isInitialized() {
-		return notInitialized
+		return sdkNotInitialized
 	}
 	sEnc, err := base64.StdEncoding.DecodeString(authTicket)
 	if err != nil {
@@ -1283,7 +1282,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 
 func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, lookupHash string, fileMeta *ConsolidatedFileMeta, status StatusCallback) (err error) {
 	if !a.isInitialized() {
-		return notInitialized
+		return sdkNotInitialized
 	}
 
 	if fileMeta == nil {
@@ -1315,7 +1314,7 @@ func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, look
 
 func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB StatusCallback) error {
 	if !a.isInitialized() {
-		return notInitialized
+		return sdkNotInitialized
 	}
 
 	listDir, err := a.ListDir(pathToRepair)
@@ -1365,7 +1364,7 @@ type CommitFolderResponse struct {
 
 func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (string, error) {
 	if !a.isInitialized() {
-		return "", notInitialized
+		return "", sdkNotInitialized
 	}
 
 	data := &CommitFolderData{
@@ -1429,7 +1428,7 @@ func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (
 
 func (a *Allocation) AddCollaborator(filePath, collaboratorID string) error {
 	if !a.isInitialized() {
-		return notInitialized
+		return sdkNotInitialized
 	}
 
 	req := &CollaboratorRequest{
@@ -1446,7 +1445,7 @@ func (a *Allocation) AddCollaborator(filePath, collaboratorID string) error {
 
 func (a *Allocation) RemoveCollaborator(filePath, collaboratorID string) error {
 	if !a.isInitialized() {
-		return notInitialized
+		return sdkNotInitialized
 	}
 
 	req := &CollaboratorRequest{
@@ -1463,7 +1462,7 @@ func (a *Allocation) RemoveCollaborator(filePath, collaboratorID string) error {
 
 func (a *Allocation) GetMaxWriteReadFromBlobbers(blobbers []*BlobberAllocation) (maxW float64, maxR float64, err error) {
 	if !a.isInitialized() {
-		return 0, 0, notInitialized
+		return 0, 0, sdkNotInitialized
 	}
 
 	if len(blobbers) == 0 {
@@ -1489,7 +1488,7 @@ func (a *Allocation) GetMaxWriteRead() (maxW float64, maxR float64, err error) {
 
 func (a *Allocation) GetMinWriteRead() (minW float64, minR float64, err error) {
 	if !a.isInitialized() {
-		return 0, 0, notInitialized
+		return 0, 0, sdkNotInitialized
 	}
 
 	blobbersCopy := a.BlobberDetails

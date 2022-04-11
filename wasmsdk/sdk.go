@@ -15,12 +15,14 @@ import (
 )
 
 var CreateObjectURL func(buf []byte, mimeType string) string
+var storageSdk sdk.StorageSdkSchema
+var err error
 
 // Init init sharder/miners ,
 func Init(chainID, blockWorker, signatureScheme string,
 	minConfirmation, minSubmit, confirmationChainLength int) error {
 
-	err := sdk.InitStorageSDK("{}", blockWorker, chainID, signatureScheme, nil)
+	storageSdk, err = sdk.InitStorageSDK("{}", blockWorker, chainID, signatureScheme, nil)
 	if err != nil {
 		return err
 	}

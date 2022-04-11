@@ -116,7 +116,7 @@ func TestAllocation_CopyObject(t *testing.T) {
 
 			setupMockAllocation(t, a)
 
-			sdkInitialized = true
+			storageSdk.sdkInitialized = true
 			for i := 0; i < numBlobbers; i++ {
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
