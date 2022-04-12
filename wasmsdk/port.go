@@ -759,12 +759,31 @@ func CreateAllocation(this js.Value, p []js.Value) interface{} {
 	readPrice := strToPriceRange(s_read)
 	writePrice := strToPriceRange(s_write)
 
+	var blobbers []string
+	jsBlobbers := p[8]
+
+	if got := js.Global().Get("Array").Call("isArray", jsBlobbers).Bool(); got {
+		for i := 0; i < jsBlobbers.Length(); i++ {
+			if got := jsBlobbers.Index(i).Type().String(); got == "string" {
+				blobbers = append(blobbers, jsBlobbers.Index(i).String())
+			} else {
+				return map[string]interface{}{
+					"error": fmt.Sprintf("CreateAllocation failed. Reason: expected type \"string\". got=%#v", jsBlobbers.Index(i).Type().String()),
+				}
+			}
+		}
+	}
+
+	if got := jsBlobbers.Type().String(); got == "string" {
+		blobbers = append(blobbers, jsBlobbers.String())
+	}
+
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.CreateAllocation(datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct, int64(lock))
+			result, err := sdk.CreateAllocation(datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct, int64(lock), blobbers)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("CreateAllocation failed. Reason: %s", err),
@@ -993,12 +1012,31 @@ func GetAllocationMinLock(this js.Value, p []js.Value) interface{} {
 	readPrice := strToPriceRange(s_read)
 	writePrice := strToPriceRange(s_write)
 
+	var blobbers []string
+	jsBlobbers := p[7]
+
+	if got := js.Global().Get("Array").Call("isArray", jsBlobbers).Bool(); got {
+		for i := 0; i < jsBlobbers.Length(); i++ {
+			if got := jsBlobbers.Index(i).Type().String(); got == "string" {
+				blobbers = append(blobbers, jsBlobbers.Index(i).String())
+			} else {
+				return map[string]interface{}{
+					"error": fmt.Sprintf("SetNetwork failed. Reason: expected type \"string\". got=%#v", jsBlobbers.Index(i).Type().String()),
+				}
+			}
+		}
+	}
+
+	if got := jsBlobbers.Type().String(); got == "string" {
+		blobbers = append(blobbers, jsBlobbers.String())
+	}
+
 	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
 		resolve := args[0]
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.GetAllocationMinLock(datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct)
+			result, err := sdk.GetAllocationMinLock(datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct, blobbers)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("GetAllocationMinLock failed. Reason: %s", err),
