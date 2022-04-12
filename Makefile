@@ -84,8 +84,8 @@ help:
 
 install-herumi-ubuntu:
 	@cd /tmp && \
-        wget -O - https://github.com/herumi/mcl/archive/master.tar.gz | tar xz && \
-        wget -O - https://github.com/herumi/bls/archive/master.tar.gz | tar xz && \
+        wget -O - https://github.com/herumi/mcl/archive/refs/tags/v1.57.tar.gz | tar xz && \
+        wget -O - https://github.com/herumi/bls/archive/refs/tags/v1.22.tar.gz | tar xz && \
         rm -rf mcl && mv mcl* mcl && \
         rm -rf bls &&mv bls* bls && \
         make -C mcl -j $(nproc) lib/libmclbn256.so install && \
