@@ -411,7 +411,6 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 
 	ChunkedUpload, err := CreateChunkedUpload(workdir, a, fileMeta, fileReader, isUpdate, isRepair,
 		WithThumbnailFile(thumbnailPath),
-		WithChunkSize(DefaultChunkSize),
 		WithEncrypt(encryption),
 		WithStatusCallback(status))
 	if err != nil {
