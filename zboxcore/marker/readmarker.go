@@ -6,8 +6,8 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/client"
-	"github.com/0chain/gosdk/zmagmacore/crypto"
 )
 
 type ReadMarker struct {
@@ -41,7 +41,11 @@ func (rm *ReadMarker) ValidateWithOtherRM(rm1 *ReadMarker) error {
 	}
 
 	signatureHash := rm1.GetHash()
-	signOK, err := crypto.Verify(rm1.ClientPublicKey, rm.Signature, signatureHash, client.GetClient().SignatureScheme)
+	herumiScheme := zcncrypto.HerumiScheme{
+		PublicKey: rm1.ClientPublicKey,
+	}
+
+	signOK, err := herumiScheme.Verify(rm.Signature, signatureHash)
 	if err != nil {
 		return err
 	}
