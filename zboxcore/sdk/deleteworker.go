@@ -96,8 +96,8 @@ func (req *DeleteRequest) ProcessDelete() error {
 			defer req.wg.Done()
 			refEntity, err := req.getObjectTreeFromBlobber(req.blobbers[blobberIdx])
 			if err == nil {
+				req.consensus.Done()
 				deleteMutex.Lock()
-				req.consensus.consensus++
 				req.listMask |= (1 << uint32(blobberIdx))
 				objectTreeRefs[blobberIdx] = refEntity
 				deleteMutex.Unlock()
@@ -105,8 +105,8 @@ func (req *DeleteRequest) ProcessDelete() error {
 			}
 			//it was removed from the blobber
 			if errors.Is(err, constants.ErrNotFound) {
+				req.consensus.Done()
 				deleteMutex.Lock()
-				req.consensus.consensus++
 				removedNum++
 				deleteMutex.Unlock()
 
@@ -176,7 +176,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
 				Logger.Info("Commit success", commitReq.blobber.Baseurl)
-				req.consensus.consensus++
+				req.consensus.Done()
 			} else {
 				Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
 			}
