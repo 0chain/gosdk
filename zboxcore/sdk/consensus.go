@@ -27,6 +27,14 @@ func (req *Consensus) Reset() {
 	req.consensus = 0
 }
 
+func (req *Consensus) Init(threshConsensus, fullConsensus, consensusOK float32) {
+	req.Lock()
+	defer req.Unlock()
+	req.consensusThresh = threshConsensus
+	req.fullconsensus = fullConsensus
+	req.consensusRequiredForOk = consensusOK
+}
+
 func (req *Consensus) getConsensus() float32 {
 	req.RLock()
 	defer req.RUnlock()
