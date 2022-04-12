@@ -59,14 +59,15 @@ func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blo
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusOK {
+			req.consensus.Done()
 			deleteMutex.Lock()
-			req.consensus.consensus++
+
 			req.deleteMask |= (1 << uint32(blobberIdx))
 			deleteMutex.Unlock()
 			Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " deleted.")
 		} else if resp.StatusCode == http.StatusNoContent {
+			req.consensus.Done()
 			deleteMutex.Lock()
-			req.consensus.consensus++
 			req.deleteMask |= (1 << uint32(blobberIdx))
 			deleteMutex.Unlock()
 			Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " not available in blobber.")
