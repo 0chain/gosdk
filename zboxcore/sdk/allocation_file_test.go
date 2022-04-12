@@ -485,7 +485,7 @@ func TestAllocation_uploadOrUpdateFile(t *testing.T) {
 				attrs:         fileref.Attributes{},
 			},
 			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
+			errMsg:  "sdk_not_initialized: SDK is not initialised",
 		},
 		{
 			name:  "Test_Thumbnail_File_Error_Success",

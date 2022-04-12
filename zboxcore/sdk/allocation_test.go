@@ -630,7 +630,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 			wantFound:            0,
 			wantMatchesConsensus: false,
 			wantErr:              true,
-			errMsg:               "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
+			errMsg:               "sdk_not_initialized: SDK is not initialised",
 		},
 		{
 			name: "Test_Repair_Required_Success",
@@ -845,7 +845,7 @@ func TestAllocation_downloadFile(t *testing.T) {
 				return func(t *testing.T) { a.initialized = true }
 			},
 			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
+			errMsg:  "sdk_not_initialized: SDK is not initialised",
 		},
 		{
 			name: "Test_Local_Path_Is_Not_Dir_Failed",
@@ -1015,7 +1015,7 @@ func TestAllocation_UpdateObjectAttributes(t *testing.T) {
 				}
 			},
 			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
+			errMsg:  "sdk_not_initialized: SDK is not initialised",
 		},
 		{
 			name: "Test_Invalid_Path_Failed",
@@ -1159,7 +1159,7 @@ func TestAllocation_AddCollaborator(t *testing.T) {
 				}
 			},
 			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
+			errMsg:  "sdk_not_initialized: SDK is not initialised",
 		},
 		{
 			name: "Test_Add_Collaborator_Error_Response_Failed",
@@ -1247,7 +1247,7 @@ func TestAllocation_RemoveCollaborator(t *testing.T) {
 				}
 			},
 			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
+			errMsg:  "sdk_not_initialized: SDK is not initialised",
 		},
 		{
 			name: "Test_Remove_Collaborator_Error_Response_Failed",
@@ -1340,7 +1340,7 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 				}
 			},
 			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
+			errMsg:  "sdk_not_initialized: SDK is not initialised",
 		},
 		{
 			name: "Test_Error_Getting_File_Meta_Data_From_Blobbers_Failed",
@@ -1489,7 +1489,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 				}
 			},
 			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
+			errMsg:  "sdk_not_initialized: SDK is not initialised",
 		},
 		{
 			name: "Test_Success_File_Type_Directory",
@@ -1821,7 +1821,7 @@ func TestAllocation_CommitFolderChange(t *testing.T) {
 				}
 			},
 			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
+			errMsg:  "sdk_not_initialized: SDK is not initialised",
 		},
 		{
 			name: "Test_Sharder_Verify_Txn_Failed",
@@ -2120,7 +2120,7 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 				}
 			},
 			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
+			errMsg:  "sdk_not_initialized: SDK is not initialised",
 		},
 		{
 			name: "Test_Cannot_Decode_Auth_Ticket_Failed",
@@ -2262,7 +2262,7 @@ func TestAllocation_listDir(t *testing.T) {
 				}
 			},
 			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
+			errMsg:  "sdk_not_initialized: SDK is not initialised",
 		},
 		{
 			name:    "Test_Invalid_Path_Failed",
@@ -2380,7 +2380,7 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 				}
 			},
 			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
+			errMsg:  "sdk_not_initialized: SDK is not initialised",
 		},
 		{
 			name: "Test_Cannot_Decode_Auth_Ticket_Failed",
@@ -2641,7 +2641,7 @@ func TestAllocation_CommitMetaTransaction(t *testing.T) {
 				}
 			},
 			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
+			errMsg:  "sdk_not_initialized: SDK is not initialised",
 		},
 		{
 			name: "Test_No_File_Meta_With_Path_parameters_Failed",
@@ -2751,7 +2751,7 @@ func TestAllocation_StartRepair(t *testing.T) {
 				}
 			},
 			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
+			errMsg:  "sdk_not_initialized: SDK is not initialised",
 		},
 		{
 			name: "Test_Repair_Success",

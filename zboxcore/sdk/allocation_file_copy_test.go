@@ -65,7 +65,7 @@ func TestAllocation_CopyObject(t *testing.T) {
 				}
 			},
 			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
+			errMsg:  "sdk_not_initialized: SDK is not initialised",
 		},
 		{
 			name: "Test_Wrong_Path_Or_Destination_Path_Failed",
