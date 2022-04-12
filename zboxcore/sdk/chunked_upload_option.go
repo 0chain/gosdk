@@ -1,7 +1,7 @@
 package sdk
 
 import (
-	"crypto/sha1"
+	"crypto/sha256"
 	"encoding/hex"
 	"io/ioutil"
 	"math"
@@ -24,7 +24,7 @@ func WithThumbnail(buf []byte) ChunkedUploadOption {
 			su.thumbnailBytes = buf
 			su.fileMeta.ActualThumbnailSize = int64(len(buf))
 
-			thumbnailHasher := sha1.New()
+			thumbnailHasher := sha256.New()
 			thumbnailHasher.Write(buf)
 
 			su.fileMeta.ActualThumbnailHash = hex.EncodeToString(thumbnailHasher.Sum(nil))
@@ -52,6 +52,15 @@ func WithChunkSize(size int64) ChunkedUploadOption {
 	}
 }
 
+// WithChunkNumber set the number of chunks should be upload in a request. ignore if size <=0
+func WithChunkNumber(num int) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
+		if num > 0 {
+			su.chunkNumber = num
+		}
+	}
+}
+
 // WithEncrypt trun on/off encrypt on upload. It is turn off as default.
 func WithEncrypt(status bool) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
@@ -63,5 +72,11 @@ func WithEncrypt(status bool) ChunkedUploadOption {
 func WithStatusCallback(callback StatusCallback) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		su.statusCallback = callback
+	}
+}
+
+func WithProgressStorer(progressStorer ChunkedUploadProgressStorer) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
+		su.progressStorer = progressStorer
 	}
 }

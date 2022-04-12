@@ -106,6 +106,7 @@ const (
 	InterestPoolSmartContractAddress = `cf8d0df9bd8cc637a4ff4e792ffe3686da6220c45f0e1103baa609f3f1751ef4`
 	MultiSigSmartContractAddress     = `27b5ef7120252b79f9dd9c05505dd28f328c80f6863ee446daede08a84d651a7`
 	MinerSmartContractAddress        = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9`
+	ZCNSCSmartContractAddress        = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712e0`
 	MultiSigRegisterFuncName         = "register"
 	MultiSigVoteFuncName             = "vote"
 )
@@ -118,7 +119,7 @@ const (
 	defaultMinConfirmation         = int(50)
 	defaultConfirmationChainLength = int(3)
 	defaultTxnExpirationSeconds    = 60
-	defaultWaitSeconds             = (3 * time.Second)
+	defaultWaitSeconds             = 3 * time.Second
 )
 
 const (
@@ -132,6 +133,14 @@ const (
 	StatusAuthVerifyFailed int = 6
 	StatusAuthTimeout      int = 7
 	StatusUnknown          int = -1
+)
+
+type ConfirmationStatus int
+
+const (
+	Undefined ConfirmationStatus = iota
+	Success
+	ChargeableError
 )
 
 const TOKEN_UNIT int64 = 1e10
@@ -151,6 +160,9 @@ const (
 	OpStorageSCGetBlobbers
 	OpStorageSCGetBlobber
 	OpStorageSCGetWritePoolInfo
+	OpZCNSCGetGlobalConfig
+	OpZCNSCGetAuthorizer
+	OpZCNSCGetAuthorizerNodes
 )
 
 // WalletCallback needs to be implmented for wallet creation.
@@ -185,17 +197,6 @@ type AuthCallback interface {
 	OnSetupComplete(status int, err string)
 }
 
-type regInfo struct {
-	ID        string `json:"id"`
-	PublicKey string `json:"public_key"`
-}
-
-type httpResponse struct {
-	status string
-	body   []byte
-	err    error
-}
-
 type localConfig struct {
 	chain         ChainConfig
 	wallet        zcncrypto.Wallet
@@ -224,7 +225,7 @@ func checkWalletConfig() error {
 	}
 	return nil
 }
-func checkConfig() error {
+func CheckConfig() error {
 	err := checkSdkInit()
 	if err != nil {
 		return err
@@ -288,7 +289,7 @@ func SetLogFile(logFile string, verbose bool) {
 		return
 	}
 	Logger.SetLogFile(f, verbose)
-	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " *******")
+	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (SetLogFile)")
 }
 
 func GetLogger() *logger.Logger {
@@ -338,12 +339,20 @@ func Init(chainConfigJSON string) error {
 			ConfirmationChainLength: _config.chain.ConfirmationChainLength,
 			SignatureScheme:         _config.chain.SignatureScheme,
 			ChainID:                 _config.chain.ChainID,
+			EthereumNode:            _config.chain.EthNode,
 		}
 
 		conf.InitClientConfig(cfg)
 	}
-	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
+	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (Init)")
 	return err
+}
+
+func WithEthereumNode(uri string) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.EthNode = uri
+		return nil
+	}
 }
 
 func WithChainID(id string) func(c *ChainConfig) error {
@@ -376,7 +385,6 @@ func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
 func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
-
 	if signscheme != "ed25519" && signscheme != "bls0chain" {
 		return errors.New("", "invalid/unsupported signature scheme")
 	}
@@ -399,7 +407,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 	}
 	assertConfig()
 	_config.isConfigured = true
-	Logger.Info("*******  Wallet SDK Version:", version.VERSIONSTR, " *******")
+	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (InitZCNSDK)")
 
 	cfg := &conf.Config{
 		BlockWorker:             _config.chain.BlockWorker,
@@ -408,6 +416,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 		ConfirmationChainLength: _config.chain.ConfirmationChainLength,
 		SignatureScheme:         _config.chain.SignatureScheme,
 		ChainID:                 _config.chain.ChainID,
+		EthereumNode:            _config.chain.EthNode,
 	}
 
 	conf.InitClientConfig(cfg)
@@ -438,7 +447,7 @@ func GetNetworkJSON() string {
 	return string(networkBytes)
 }
 
-// CreateWallet creates the a wallet for the configure signature scheme.
+// CreateWallet creates the wallet for to configure signature scheme.
 // It also registers the wallet again to block chain.
 func CreateWallet(statusCb WalletCallback) error {
 	if len(_config.chain.Miners) < 1 || len(_config.chain.Sharders) < 1 {
@@ -448,12 +457,12 @@ func CreateWallet(statusCb WalletCallback) error {
 		sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 		wallet, err := sigScheme.GenerateKeys()
 		if err != nil {
-			statusCb.OnWalletCreateComplete(StatusError, "", fmt.Sprintf("%s", err.Error()))
+			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
 		}
 		err = RegisterToMiners(wallet, statusCb)
 		if err != nil {
-			statusCb.OnWalletCreateComplete(StatusError, "", fmt.Sprintf("%s", err.Error()))
+			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
 		}
 	}()
@@ -463,19 +472,19 @@ func CreateWallet(statusCb WalletCallback) error {
 // RecoverWallet recovers the previously generated wallet using the mnemonic.
 // It also registers the wallet again to block chain.
 func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
-	if zcncrypto.IsMnemonicValid(mnemonic) != true {
+	if !zcncrypto.IsMnemonicValid(mnemonic) {
 		return errors.New("", "Invalid mnemonic")
 	}
 	go func() {
 		sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 		wallet, err := sigScheme.RecoverKeys(mnemonic)
 		if err != nil {
-			statusCb.OnWalletCreateComplete(StatusError, "", fmt.Sprintf("%s", err.Error()))
+			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
 		}
 		err = RegisterToMiners(wallet, statusCb)
 		if err != nil {
-			statusCb.OnWalletCreateComplete(StatusError, "", fmt.Sprintf("%s", err.Error()))
+			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
 		}
 	}()
@@ -525,28 +534,28 @@ func RegisterToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 				Logger.Error(minerurl, "send error. ", err.Error())
 			}
 			result <- res
-			return
 		}(miner)
 	}
 	consensus := float32(0)
 	for range _config.chain.Miners {
-		select {
-		case rsp := <-result:
-			Logger.Debug(rsp.Url, rsp.Status)
+		rsp := <-result
+		Logger.Debug(rsp.Url, rsp.Status)
 
-			if rsp.StatusCode == http.StatusOK {
-				consensus++
-			} else {
-				Logger.Debug(rsp.Body)
-			}
+		if rsp.StatusCode == http.StatusOK {
+			consensus++
+		} else {
+			Logger.Debug(rsp.Body)
 		}
+
 	}
 	rate := consensus * 100 / float32(len(_config.chain.Miners))
 	if rate < consensusThresh {
+		statusCb.OnWalletCreateComplete(StatusError, "", "rate is less than consensus")
 		return fmt.Errorf("Register consensus not met. Consensus: %f, Expected: %f", rate, consensusThresh)
 	}
 	w, err := wallet.Marshal()
 	if err != nil {
+		statusCb.OnWalletCreateComplete(StatusError, w, err.Error())
 		return errors.Wrap(err, "wallet encoding failed")
 	}
 	statusCb.OnWalletCreateComplete(StatusSuccess, w, "")
@@ -616,7 +625,7 @@ func SetAuthUrl(url string) error {
 
 // GetBalance retreives wallet balance from sharders
 func GetBalance(cb GetBalanceCallback) error {
-	err := checkConfig()
+	err := CheckConfig()
 	if err != nil {
 		return err
 	}
@@ -665,33 +674,32 @@ func getBalanceFromSharders(clientID string) (int64, string, error) {
 	var winInfo string
 	var winError string
 	for i := 0; i < numSharders; i++ {
-		select {
-		case rsp := <-result:
-			Logger.Debug(rsp.Url, rsp.Status)
-			if rsp.StatusCode != http.StatusOK {
-				Logger.Error(rsp.Body)
-				winError = rsp.Body
-				continue
-			}
-			Logger.Debug(rsp.Body)
-			var objmap map[string]json.RawMessage
-			err := json.Unmarshal([]byte(rsp.Body), &objmap)
+		rsp := <-result
+		Logger.Debug(rsp.Url, rsp.Status)
+		if rsp.StatusCode != http.StatusOK {
+			Logger.Error(rsp.Body)
+			winError = rsp.Body
+			continue
+		}
+		Logger.Debug(rsp.Body)
+		var objmap map[string]json.RawMessage
+		err := json.Unmarshal([]byte(rsp.Body), &objmap)
+		if err != nil {
+			continue
+		}
+		if v, ok := objmap["balance"]; ok {
+			bal, err := strconv.ParseInt(string(v), 10, 64)
 			if err != nil {
 				continue
 			}
-			if v, ok := objmap["balance"]; ok {
-				bal, err := strconv.ParseInt(string(v), 10, 64)
-				if err != nil {
-					continue
-				}
-				balMap[bal]++
-				if balMap[bal] > consensus {
-					consensus = balMap[bal]
-					winBalance = bal
-					winInfo = rsp.Body
-				}
+			balMap[bal]++
+			if balMap[bal] > consensus {
+				consensus = balMap[bal]
+				winBalance = bal
+				winInfo = rsp.Body
 			}
 		}
+
 	}
 	rate := consensus * 100 / float32(len(_config.chain.Sharders))
 	if rate < consensusThresh {
@@ -774,14 +782,12 @@ func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 	resultMap := make(map[int]float32)
 	var winresult *util.GetResponse
 	for i := 0; i < numSharders; i++ {
-		select {
-		case rsp := <-result:
-			Logger.Debug(rsp.Url, rsp.Status)
-			resultMap[rsp.StatusCode]++
-			if resultMap[rsp.StatusCode] > consensus {
-				consensus = resultMap[rsp.StatusCode]
-				winresult = rsp
-			}
+		rsp := <-result
+		Logger.Debug(rsp.Url, rsp.Status)
+		resultMap[rsp.StatusCode]++
+		if resultMap[rsp.StatusCode] > consensus {
+			consensus = resultMap[rsp.StatusCode]
+			winresult = rsp
 		}
 	}
 	rate := consensus * 100 / float32(len(_config.chain.Sharders))
@@ -809,7 +815,7 @@ func GetLockConfig(cb GetInfoCallback) error {
 
 // GetLockedTokens returns the ealier locked token pool stats
 func GetLockedTokens(cb GetInfoCallback) error {
-	err := checkConfig()
+	err := CheckConfig()
 	if err != nil {
 		return err
 	}
@@ -950,15 +956,15 @@ func (p Params) Query() string {
 	return "?" + params.Encode()
 }
 
-func withParams(uri string, params Params) string {
+func WithParams(uri string, params Params) string {
 	return uri + params.Query()
 }
 
 func GetVestingPoolInfo(poolID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
-	getInfoFromSharders(withParams(GET_VESTING_POOL_INFO, Params{
+	getInfoFromSharders(WithParams(GET_VESTING_POOL_INFO, Params{
 		"pool_id": poolID,
 	}), 0, cb)
 	return
@@ -969,13 +975,13 @@ type VestingClientList struct {
 }
 
 func GetVestingClientList(clientID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	if clientID == "" {
 		clientID = _config.wallet.ClientID // if not blank
 	}
-	go getInfoFromSharders(withParams(GET_VESTING_CLIENT_POOLS, Params{
+	go getInfoFromSharders(WithParams(GET_VESTING_CLIENT_POOLS, Params{
 		"client_id": clientID,
 	}), 0, cb)
 	return
@@ -994,7 +1000,7 @@ type InputMap struct {
 }
 
 func GetVestingSCConfig(cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	go getInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
@@ -1004,7 +1010,7 @@ func GetVestingSCConfig(cb GetInfoCallback) (err error) {
 // interest pools sc
 
 func GetInterestPoolSCConfig(cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	go getInfoFromSharders(GET_INTERESTPOOLSC_CONFIG, 0, cb)
@@ -1014,7 +1020,7 @@ func GetInterestPoolSCConfig(cb GetInfoCallback) (err error) {
 // faucet
 
 func GetFaucetSCConfig(cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	go getInfoFromSharders(GET_FAUCETSC_CONFIG, 0, cb)
@@ -1052,7 +1058,7 @@ type MinerSCNodes struct {
 
 // GetMiners obtains list of all active miners.
 func GetMiners(cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = GET_MINERSC_MINERS
@@ -1062,7 +1068,7 @@ func GetMiners(cb GetInfoCallback) (err error) {
 
 // GetSharders obtains list of all active sharders.
 func GetSharders(cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = GET_MINERSC_SHARDERS
@@ -1071,10 +1077,10 @@ func GetSharders(cb GetInfoCallback) (err error) {
 }
 
 func GetEvents(cb GetInfoCallback, filters map[string]string) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
-	go getInfoFromSharders(withParams(GET_MINERSC_EVENTS, Params{
+	go getInfoFromSharders(WithParams(GET_MINERSC_EVENTS, Params{
 		"block_number": filters["block_number"],
 		"tx_hash":      filters["tx_hash"],
 		"type":         filters["type"],
@@ -1085,21 +1091,21 @@ func GetEvents(cb GetInfoCallback, filters map[string]string) (err error) {
 
 func GetMinerSCNodeInfo(id string, cb GetInfoCallback) (err error) {
 
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 
-	go getInfoFromSharders(withParams(GET_MINERSC_NODE, Params{
+	go getInfoFromSharders(WithParams(GET_MINERSC_NODE, Params{
 		"id": id,
 	}), 0, cb)
 	return
 }
 
 func GetMinerSCNodePool(id, poolID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
-	go getInfoFromSharders(withParams(GET_MINERSC_POOL, Params{
+	go getInfoFromSharders(WithParams(GET_MINERSC_POOL, Params{
 		"id":      id,
 		"pool_id": poolID,
 	}), 0, cb)
@@ -1122,13 +1128,13 @@ type MinerSCUserPoolsInfo struct {
 }
 
 func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	if clientID == "" {
 		clientID = _config.wallet.ClientID
 	}
-	go getInfoFromSharders(withParams(GET_MINERSC_USER, Params{
+	go getInfoFromSharders(WithParams(GET_MINERSC_USER, Params{
 		"client_id": clientID,
 	}), 0, cb)
 
@@ -1136,7 +1142,7 @@ func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error) {
 }
 
 func GetMinerSCConfig(cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	go getInfoFromSharders(GET_MINERSC_CONFIG, 0, cb)
@@ -1144,7 +1150,7 @@ func GetMinerSCConfig(cb GetInfoCallback) (err error) {
 }
 
 func GetMinerSCGlobals(cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	go getInfoFromSharders(GET_MINERSC_GLOBALS, 0, cb)
@@ -1157,7 +1163,7 @@ func GetMinerSCGlobals(cb GetInfoCallback) (err error) {
 
 // GetStorageSCConfig obtains Storage SC configurations.
 func GetStorageSCConfig(cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	go getInfoFromSharders(STORAGESC_GET_SC_CONFIG, OpStorageSCGetConfig, cb)
@@ -1166,10 +1172,10 @@ func GetStorageSCConfig(cb GetInfoCallback) (err error) {
 
 // GetChallengePoolInfo obtains challenge pool information for an allocation.
 func GetChallengePoolInfo(allocID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
-	var url = withParams(STORAGESC_GET_CHALLENGE_POOL_INFO, Params{
+	var url = WithParams(STORAGESC_GET_CHALLENGE_POOL_INFO, Params{
 		"allocation_id": allocID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetChallengePoolInfo, cb)
@@ -1178,10 +1184,10 @@ func GetChallengePoolInfo(allocID string, cb GetInfoCallback) (err error) {
 
 // GetAllocation obtains allocation information.
 func GetAllocation(allocID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
-	var url = withParams(STORAGESC_GET_ALLOCATION, Params{
+	var url = WithParams(STORAGESC_GET_ALLOCATION, Params{
 		"allocation": allocID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetAllocation, cb)
@@ -1190,13 +1196,13 @@ func GetAllocation(allocID string, cb GetInfoCallback) (err error) {
 
 // GetAllocations obtains list of allocations of a user.
 func GetAllocations(clientID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	if clientID == "" {
 		clientID = _config.wallet.ClientID
 	}
-	var url = withParams(STORAGESC_GET_ALLOCATIONS, Params{
+	var url = WithParams(STORAGESC_GET_ALLOCATIONS, Params{
 		"client": clientID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetAllocations, cb)
@@ -1205,13 +1211,13 @@ func GetAllocations(clientID string, cb GetInfoCallback) (err error) {
 
 // GetReadPoolInfo obtains information about read pool of a user.
 func GetReadPoolInfo(clientID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	if clientID == "" {
 		clientID = _config.wallet.ClientID
 	}
-	var url = withParams(STORAGESC_GET_READ_POOL_INFO, Params{
+	var url = WithParams(STORAGESC_GET_READ_POOL_INFO, Params{
 		"client_id": clientID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetReadPoolInfo, cb)
@@ -1221,10 +1227,10 @@ func GetReadPoolInfo(clientID string, cb GetInfoCallback) (err error) {
 // GetStakePoolInfo obtains information about stake pool of a blobber and
 // related validator.
 func GetStakePoolInfo(blobberID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
-	var url = withParams(STORAGESC_GET_STAKE_POOL_INFO, Params{
+	var url = WithParams(STORAGESC_GET_STAKE_POOL_INFO, Params{
 		"blobber_id": blobberID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetStakePoolInfo, cb)
@@ -1233,13 +1239,13 @@ func GetStakePoolInfo(blobberID string, cb GetInfoCallback) (err error) {
 
 // GetStakePoolUserInfo for a user.
 func GetStakePoolUserInfo(clientID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	if clientID == "" {
 		clientID = _config.wallet.ClientID
 	}
-	var url = withParams(STORAGESC_GET_STAKE_POOL_USER_INFO, Params{
+	var url = WithParams(STORAGESC_GET_STAKE_POOL_USER_INFO, Params{
 		"client_id": clientID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetStakePoolInfo, cb)
@@ -1248,7 +1254,7 @@ func GetStakePoolUserInfo(clientID string, cb GetInfoCallback) (err error) {
 
 // GetBlobbers obtains list of all active blobbers.
 func GetBlobbers(cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = STORAGESC_GET_BLOBBERS
@@ -1258,10 +1264,10 @@ func GetBlobbers(cb GetInfoCallback) (err error) {
 
 // GetBlobber obtains blobber information.
 func GetBlobber(blobberID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
-	var url = withParams(STORAGESC_GET_BLOBBER, Params{
+	var url = WithParams(STORAGESC_GET_BLOBBER, Params{
 		"blobber_id": blobberID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetBlobber, cb)
@@ -1271,13 +1277,13 @@ func GetBlobber(blobberID string, cb GetInfoCallback) (err error) {
 // GetWritePoolInfo obtains information about all write pools of a user.
 // If given clientID is empty, then current user used.
 func GetWritePoolInfo(clientID string, cb GetInfoCallback) (err error) {
-	if err = checkConfig(); err != nil {
+	if err = CheckConfig(); err != nil {
 		return
 	}
 	if clientID == "" {
 		clientID = _config.wallet.ClientID
 	}
-	var url = withParams(STORAGESC_GET_WRITE_POOL_INFO, Params{
+	var url = WithParams(STORAGESC_GET_WRITE_POOL_INFO, Params{
 		"client_id": clientID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetWritePoolInfo, cb)

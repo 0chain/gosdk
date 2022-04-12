@@ -6,39 +6,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
-type nopeHasher struct {
-}
-
-// GetFileHash get file hash
-func (h *nopeHasher) GetFileHash() (string, error) {
-	return "", nil
-}
-
-// WriteToFile write bytes to file hasher
-func (h *nopeHasher) WriteToFile(buf []byte, chunkIndex int) error {
-	return nil
-}
-
-// GetChallengeHash get challenge hash
-func (h *nopeHasher) GetChallengeHash() (string, error) {
-	return "", nil
-}
-
-// WriteToChallenge write bytes to challenge hasher
-func (h *nopeHasher) WriteToChallenge(buf []byte, chunkIndex int) error {
-	return nil
-}
-
-// GetContentHash get content hash
-func (h *nopeHasher) GetContentHash() (string, error) {
-	return "", nil
-}
-
-// WriteHashToContent write hash leaf to content hasher
-func (h *nopeHasher) WriteHashToContent(hash string, chunkIndex int) error {
-	return nil
-}
-
 func BenchmarkChunkedUploadFormBuilder(b *testing.B) {
 
 	benchmarks := []struct {
@@ -104,7 +71,7 @@ func BenchmarkChunkedUploadFormBuilder(b *testing.B) {
 
 					fileBytes := buf[begin:end]
 
-					_, _, err := builder.Build(fileMeta, hasher, "connectionID", int64(bm.ChunkSize), chunkIndex, isFinal, "", fileBytes, nil)
+					_, _, err := builder.Build(fileMeta, hasher, "connectionID", int64(bm.ChunkSize), chunkIndex, chunkIndex, isFinal, "", [][]byte{fileBytes}, nil)
 					if err != nil {
 						b.Fatal(err)
 						return

@@ -2,8 +2,6 @@ package sdk
 
 import (
 	"context"
-	b64 "encoding/base64"
-	"encoding/json"
 
 	"github.com/0chain/errors"
 
@@ -27,55 +25,6 @@ type ShareRequest struct {
 	expirationSeconds int64
 }
 
-func (req *ShareRequest) GetAuthTicketForEncryptedFile(clientID string, encPublicKey string) (string, error) {
-	at := &marker.AuthTicket{}
-	at.AllocationID = req.allocationID
-	at.OwnerID = client.GetClientID()
-	at.ClientID = clientID
-	at.FileName = req.remotefilename
-	at.FilePathHash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
-	at.RefType = req.refType
-	timestamp := int64(common.Now())
-
-	fileRef, err := req.GetFileRef()
-	if err != nil {
-		return "", err
-	}
-	at.ActualFileHash = fileRef.ActualFileHash
-
-	if req.expirationSeconds == 0 {
-		// default expiration after 90 days
-		at.Expiration = timestamp + 90*86400
-	} else {
-		at.Expiration = timestamp + req.expirationSeconds
-	}
-	at.Timestamp = timestamp
-	at.Encrypted = true
-	err = at.Sign()
-	if err != nil {
-		return "", err
-	}
-	if len(encPublicKey) > 0 {
-		encscheme := encryption.NewEncryptionScheme()
-		encscheme.Initialize(client.GetClient().Mnemonic)
-		reKey, err := encscheme.GetReGenKey(encPublicKey, "filetype:audio")
-		if err != nil {
-			return "", err
-		}
-		at.ReEncryptionKey = reKey
-	}
-	err = at.Sign()
-	if err != nil {
-		return "", err
-	}
-	atBytes, err := json.Marshal(at)
-	if err != nil {
-		return "", err
-	}
-	sEnc := b64.StdEncoding.EncodeToString(atBytes)
-	return sEnc, nil
-}
-
 func (req *ShareRequest) GetFileRef() (*fileref.FileRef, error) {
 	filePathHash := fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 
@@ -94,39 +43,46 @@ func (req *ShareRequest) GetFileRef() (*fileref.FileRef, error) {
 	return fileRef, nil
 }
 
-func (req *ShareRequest) GetAuthTicket(clientID string) (string, error) {
-
-	at := &marker.AuthTicket{}
-	at.AllocationID = req.allocationID
-	at.OwnerID = client.GetClientID()
-	at.ClientID = clientID
-	at.FileName = req.remotefilename
-	at.FilePathHash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
-	at.RefType = req.refType
-
-	fileRef, err := req.GetFileRef()
+func (req *ShareRequest) getAuthTicket(clientID, encPublicKey string) (*marker.AuthTicket, error) {
+	fRef, err := req.GetFileRef()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	at.ActualFileHash = fileRef.ActualFileHash
+	at := &marker.AuthTicket{
+		AllocationID:   req.allocationID,
+		OwnerID:        client.GetClientID(),
+		ClientID:       clientID,
+		FileName:       req.remotefilename,
+		FilePathHash:   fileref.GetReferenceLookup(req.allocationID, req.remotefilepath),
+		RefType:        req.refType,
+		ActualFileHash: fRef.ActualFileHash,
+	}
 
-	timestamp := int64(common.Now())
-	if req.expirationSeconds == 0 {
-		// default expiration after 90 days
-		at.Expiration = timestamp + 90*86400
-	} else {
-		at.Expiration = timestamp + req.expirationSeconds
+	at.Timestamp = int64(common.Now())
+
+	if req.expirationSeconds > 0 {
+		at.Expiration = at.Timestamp + req.expirationSeconds
 	}
-	at.Timestamp = timestamp
-	err = at.Sign()
-	if err != nil {
-		return "", err
+
+	if encPublicKey != "" { // file is encrypted
+		encScheme := encryption.NewEncryptionScheme()
+		if _, err := encScheme.Initialize((client.GetClient().Mnemonic)); err != nil {
+			return nil, err
+		}
+
+		reKey, err := encScheme.GetReGenKey(encPublicKey, "filetype:audio")
+		if err != nil {
+			return nil, err
+		}
+
+		at.ReEncryptionKey = reKey
+		at.Encrypted = true
 	}
-	atBytes, err := json.Marshal(at)
-	if err != nil {
-		return "", err
+
+	if err := at.Sign(); err != nil {
+		return nil, err
 	}
-	sEnc := b64.StdEncoding.EncodeToString(atBytes)
-	return sEnc, nil
+
+	return at, nil
 }

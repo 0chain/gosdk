@@ -11,11 +11,6 @@ import (
 	"github.com/klauspost/reedsolomon"
 )
 
-type codec interface {
-	Encode(in []byte) ([][]byte, error)
-	Decode(in [][]byte) ([]byte, error)
-}
-
 type StreamEncoder struct {
 	iDataShards   int
 	iParityShards int

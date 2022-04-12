@@ -7,13 +7,15 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strconv"
+
+	"errors"
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
@@ -28,31 +30,77 @@ var (
 	DefaultHashFunc = func(left, right string) string {
 		return coreEncryption.Hash(left + right)
 	}
+
+	ErrInvalidChunkSize = errors.New("chunk: chunk size is too small. it must greater than 272 if file is uploaded with encryption")
 )
 
 // DefaultChunkSize default chunk size for file and thumbnail
 const DefaultChunkSize = 64 * 1024
 
-// CreateChunkedUpload create a ChunkedUpload instance
-func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta FileMeta, fileReader io.Reader, isUpdate bool, opts ...ChunkedUploadOption) (*ChunkedUpload, error) {
+const (
+	// EncryptedDataPaddingSize additional bytes to save encrypted data
+	EncryptedDataPaddingSize = 16
+	// EncryptionHeaderSize encryption header size in chunk: PRE.MessageChecksum(128)+PRE.OverallChecksum(128)
+	EncryptionHeaderSize = 128 + 128
+	// ReEncryptionHeaderSize re-encryption header size in chunk
+	ReEncryptionHeaderSize = 256
+)
 
+/*
+  CreateChunkedUpload create a ChunkedUpload instance
+
+	Caller should be careful about fileReader parameter
+	io.ErrUnexpectedEOF might mean that source has completely been exhausted or there is some error
+	so that source could not fill up the buffer. Due this ambiguity it is responsibility of
+	developer to provide new io.Reader that sends io.EOF when source has been all read.
+	For example:
+		func newReader(source io.Reader) *EReader {
+			return &EReader{source}
+		}
+
+		type EReader struct {
+			io.Reader
+		}
+
+		func (r *EReader) Read(p []byte) (n int, err error) {
+			if n, err = io.ReadAtLeast(r.Reader, p, len(p)); err != nil {
+				if errors.Is(err, io.ErrUnexpectedEOF) {
+					return n, io.EOF
+				}
+			}
+			return
+		}
+
+*/
+func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta FileMeta, fileReader io.Reader, isUpdate, isRepair bool, opts ...ChunkedUploadOption) (*ChunkedUpload, error) {
 	if allocationObj == nil {
 		return nil, thrown.Throw(constants.ErrInvalidParameter, "allocationObj")
 	}
 
+	var uploadMask zboxutil.Uint128 = zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1)
+	if isRepair {
+		found, repairRequired, _, err := allocationObj.RepairRequired(fileMeta.RemotePath)
+		if err != nil {
+			return nil, err
+		}
+
+		if !repairRequired {
+			return nil, thrown.New("chunk_upload", "Repair not required")
+		}
+
+		uploadMask = found.Not().And(uploadMask)
+	}
+
 	su := &ChunkedUpload{
 		allocationObj: allocationObj,
-		client: &http.Client{
-			Transport: zboxutil.DefaultTransport,
-		},
+		client:        zboxutil.Client,
 
 		fileMeta:   fileMeta,
 		fileReader: fileReader,
 
-		progressStorer: createFsChunkedUploadProgress(context.Background()),
-
-		uploadMask:      zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1),
+		uploadMask:      uploadMask,
 		chunkSize:       DefaultChunkSize,
+		chunkNumber:     1,
 		encryptOnUpload: false,
 	}
 
@@ -84,16 +132,20 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	su.workdir = filepath.Join(workdir, ".zcn")
 
 	//create upload folder to save progress
-	err := os.MkdirAll(filepath.Join(su.workdir, "upload"), 0744)
+	err := sys.Files.MkdirAll(filepath.Join(su.workdir, "upload"), 0744)
 	if err != nil {
 		return nil, err
 	}
 
-	su.loadProgress()
-
 	for _, opt := range opts {
 		opt(su)
 	}
+
+	if su.progressStorer == nil {
+		su.progressStorer = createFsChunkedUploadProgress(context.Background())
+	}
+
+	su.loadProgress()
 
 	su.fileHasher = CreateHasher(int(su.chunkSize))
 
@@ -108,16 +160,30 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	if su.encryptOnUpload {
 		su.fileEncscheme = su.createEncscheme()
 
+		if su.chunkSize <= EncryptionHeaderSize+EncryptedDataPaddingSize {
+			return nil, ErrInvalidChunkSize
+		}
+
 	}
 
-	su.blobbers = make([]*ChunkedUploadBobbler, len(su.allocationObj.Blobbers))
+	su.writeMarkerMutex, err = CreateWriteMarkerMutex(client.GetClient(), su.allocationObj)
+	if err != nil {
+		return nil, err
+	}
 
-	for i := 0; i < len(su.allocationObj.Blobbers); i++ {
+	blobbers := su.allocationObj.Blobbers
+	if len(blobbers) == 0 {
+		return nil, thrown.New("no_blobbers", "Unable to find blobbers")
+	}
 
-		su.blobbers[i] = &ChunkedUploadBobbler{
-			FLock:    createFLock(filepath.Join(su.workdir, "blobber."+su.allocationObj.Blobbers[i].ID+".lock")),
-			progress: su.progress.Blobbers[i],
-			blobber:  su.allocationObj.Blobbers[i],
+	su.blobbers = make([]*ChunkedUploadBlobber, len(blobbers))
+
+	for i := 0; i < len(blobbers); i++ {
+
+		su.blobbers[i] = &ChunkedUploadBlobber{
+			writeMarkerMutex: su.writeMarkerMutex,
+			progress:         su.progress.Blobbers[i],
+			blobber:          su.allocationObj.Blobbers[i],
 			fileRef: &fileref.FileRef{
 				Ref: fileref.Ref{
 					Name:         su.fileMeta.RemoteName,
@@ -140,6 +206,8 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 
 	su.formBuilder = CreateChunkedUploadFormBuilder()
 
+	su.isRepair = isRepair
+
 	return su, nil
 
 }
@@ -150,8 +218,7 @@ type ChunkedUpload struct {
 
 	workdir string
 
-	allocationObj *Allocation
-
+	allocationObj  *Allocation
 	progress       UploadProgress
 	progressStorer ChunkedUploadProgressStorer
 	client         zboxutil.HttpClient
@@ -178,6 +245,8 @@ type ChunkedUpload struct {
 	encryptOnUpload bool
 	// chunkSize how much bytes a chunk has. 64KB is default value.
 	chunkSize int64
+	// chunkNumber the number of chunks in a http upload request. 1 is default value
+	chunkNumber int
 
 	// shardUploadedSize how much bytes a shard has. it is original size
 	shardUploadedSize int64
@@ -187,7 +256,12 @@ type ChunkedUpload struct {
 	// statusCallback trigger progress on StatusCallback
 	statusCallback StatusCallback
 
-	blobbers []*ChunkedUploadBobbler
+	blobbers []*ChunkedUploadBlobber
+
+	writeMarkerMutex *WriteMarkerMutex
+
+	// isRepair identifies if upload is repair operation
+	isRepair bool
 }
 
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
@@ -202,6 +276,9 @@ func (su *ChunkedUpload) progressID() string {
 
 // loadProgress load progress from ~/.zcn/upload/[progressID]
 func (su *ChunkedUpload) loadProgress() {
+	// ChunkIndex starts with 0, so default value should be -1
+	su.progress.ChunkIndex = -1
+
 	progressID := su.progressID()
 
 	progress := su.progressStorer.Load(progressID)
@@ -215,18 +292,18 @@ func (su *ChunkedUpload) loadProgress() {
 
 // saveProgress save progress to ~/.zcn/upload/[progressID]
 func (su *ChunkedUpload) saveProgress() {
-	su.progressStorer.Save(&su.progress)
+	su.progressStorer.Save(su.progress)
 }
 
 // removeProgress remove progress info once it is done
 func (su *ChunkedUpload) removeProgress() {
-	su.progressStorer.Remove(su.progress.ID)
+	su.progressStorer.Remove(su.progress.ID) //nolint
 }
 
 // createUploadProgress create a new UploadProgress
 func (su *ChunkedUpload) createUploadProgress() UploadProgress {
 	progress := UploadProgress{ConnectionID: zboxutil.NewConnectionId(),
-		ChunkIndex:   0,
+		ChunkIndex:   -1,
 		ChunkSize:    su.chunkSize,
 		UploadLength: 0,
 		Blobbers:     make([]*UploadBlobberStatus, su.allocationObj.DataShards+su.allocationObj.ParityShards),
@@ -276,26 +353,26 @@ func (su *ChunkedUpload) Start() error {
 
 	for {
 
-		chunk, err := su.chunkReader.Next()
+		chunks, err := su.readChunks(su.chunkNumber)
+
+		// chunk, err := su.chunkReader.Next()
 		if err != nil {
+			if su.statusCallback != nil {
+				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+			}
 			return err
 		}
+		//logger.Logger.Debug("Read chunk #", chunk.Index)
 
-		su.shardUploadedSize += chunk.FragmentSize
-		su.progress.UploadLength += chunk.ReadSize
+		su.shardUploadedSize += chunks.totalFragmentSize
+		su.progress.UploadLength += chunks.totalReadSize
 
-		if chunk.Index == 0 && len(su.thumbnailBytes) > 0 {
-			su.progress.UploadLength += int64(su.fileMeta.ActualThumbnailSize)
-		}
-
-		//skip chunk if it has been uploaded
-		if chunk.Index < su.progress.ChunkIndex {
-			continue
-		}
-
-		if chunk.IsFinal {
+		if chunks.isFinal {
 			su.fileMeta.ActualHash, err = su.fileHasher.GetFileHash()
 			if err != nil {
+				if su.statusCallback != nil {
+					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+				}
 				return err
 			}
 
@@ -304,27 +381,22 @@ func (su *ChunkedUpload) Start() error {
 			}
 		}
 
-		var thumbnailFragments [][]byte
+		//chunk has not be uploaded yet
+		if chunks.chunkEndIndex > su.progress.ChunkIndex {
 
-		// upload entire thumbnail in first request only
-		if chunk.Index == 0 && len(su.thumbnailBytes) > 0 {
-
-			thumbnailFragments, err = su.chunkReader.Read(su.thumbnailBytes)
+			err = su.processUpload(chunks.chunkStartIndex, chunks.chunkEndIndex, chunks.fileShards, chunks.thumbnailShards, chunks.isFinal, chunks.totalReadSize)
 			if err != nil {
+				if su.statusCallback != nil {
+					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+				}
 				return err
 			}
-
-		}
-
-		err = su.processUpload(chunk.Index, chunk.Fragments, thumbnailFragments, chunk.IsFinal, chunk.ReadSize)
-		if err != nil {
-			return err
 		}
 
 		// last chunk might 0 with io.EOF
 		// https://stackoverflow.com/questions/41208359/how-to-test-eof-on-io-reader-in-go
-		if chunk.ReadSize > 0 {
-			su.progress.ChunkIndex = chunk.Index
+		if chunks.totalReadSize > 0 {
+			su.progress.ChunkIndex = chunks.chunkEndIndex
 			su.saveProgress()
 
 			if su.statusCallback != nil {
@@ -332,13 +404,23 @@ func (su *ChunkedUpload) Start() error {
 			}
 		}
 
-		if chunk.IsFinal {
+		if chunks.isFinal {
 			break
 		}
 	}
 
 	if su.consensus.isConsensusOk() {
 		logger.Logger.Info("Completed the upload. Submitting for commit")
+
+		err := su.writeMarkerMutex.Lock(context.TODO(), su.progress.ConnectionID)
+		defer su.writeMarkerMutex.Unlock(context.TODO(), su.progress.ConnectionID) //nolint: errcheck
+		if err != nil {
+			if su.statusCallback != nil {
+				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+			}
+			return err
+		}
+
 		return su.processCommit()
 	}
 
@@ -351,12 +433,71 @@ func (su *ChunkedUpload) Start() error {
 
 }
 
-//processUpload process upload fragment to its blobber
-func (su *ChunkedUpload) processUpload(chunkIndex int, fileFragments [][]byte, thumbnailFragments [][]byte, isFinal bool, uploadLength int64) error {
-	num := su.allocationObj.DataShards + su.allocationObj.ParityShards
+func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 
-	if num != len(su.blobbers) {
-		return thrown.Throw(constants.ErrInvalidParameter, "len(su.blobbers) requires "+strconv.Itoa(num)+", not "+strconv.Itoa(len(su.blobbers)))
+	data := &batchChunksData{
+		chunkStartIndex: -1,
+		chunkEndIndex:   -1,
+	}
+
+	for i := 0; i < num; i++ {
+		chunk, err := su.chunkReader.Next()
+
+		if err != nil {
+			return nil, err
+		}
+		//logger.Logger.Debug("Read chunk #", chunk.Index)
+		if i == 0 {
+			data.chunkStartIndex = chunk.Index
+			data.chunkEndIndex = chunk.Index
+		} else {
+			data.chunkEndIndex = chunk.Index
+		}
+
+		data.totalFragmentSize += chunk.FragmentSize
+		data.totalReadSize += chunk.ReadSize
+
+		// upload entire thumbnail in first chunk request only
+		if chunk.Index == 0 && len(su.thumbnailBytes) > 0 {
+			data.totalReadSize += int64(su.fileMeta.ActualThumbnailSize)
+
+			data.thumbnailShards, err = su.chunkReader.Read(su.thumbnailBytes)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if data.fileShards == nil {
+			data.fileShards = make([]blobberShards, len(chunk.Fragments))
+		}
+
+		// concact blobber's fragments
+		for i, v := range chunk.Fragments {
+			//blobber i
+			data.fileShards[i] = append(data.fileShards[i], v)
+		}
+
+		if chunk.IsFinal {
+			data.isFinal = true
+			break
+		}
+	}
+
+	return data, nil
+}
+
+//processUpload process upload fragment to its blobber
+func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int, fileShards []blobberShards, thumbnailShards blobberShards, isFinal bool, uploadLength int64) error {
+
+	num := len(su.blobbers)
+	if su.isRepair {
+		num = len(su.blobbers) - su.uploadMask.TrailingZeros()
+	} else {
+		consensus := su.allocationObj.DataShards + su.allocationObj.ParityShards
+
+		if num != consensus {
+			return thrown.Throw(constants.ErrInvalidParameter, "len(su.blobbers) requires "+strconv.Itoa(num)+", not "+strconv.Itoa(len(su.blobbers)))
+		}
 	}
 
 	wait := make(chan error, num)
@@ -377,25 +518,20 @@ func (su *ChunkedUpload) processUpload(chunkIndex int, fileFragments [][]byte, t
 		blobber := su.blobbers[pos]
 		blobber.progress.UploadLength += uploadLength
 
-		var thumbnailBytes []byte
-		var fileBytes []byte
+		var thumbnailChunkData []byte
 
-		if len(thumbnailFragments) > 0 {
-			thumbnailBytes = thumbnailFragments[pos]
+		if len(thumbnailShards) > 0 {
+			thumbnailChunkData = thumbnailShards[pos]
 		}
 
-		if len(fileFragments) > 0 {
-			fileBytes = fileFragments[pos]
-		}
-
-		body, formData, err := su.formBuilder.Build(&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID, su.chunkSize, chunkIndex, isFinal, encryptedKey, fileBytes, thumbnailBytes)
+		body, formData, err := su.formBuilder.Build(&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID, su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey, fileShards[pos], thumbnailChunkData)
 
 		if err != nil {
 			return err
 		}
 
-		go func(b *ChunkedUploadBobbler, buf *bytes.Buffer, form ChunkedUploadFormMetadata) {
-			err := b.sendUploadRequest(ctx, su, chunkIndex, isFinal, encryptedKey, buf, form)
+		go func(b *ChunkedUploadBlobber, buf *bytes.Buffer, form ChunkedUploadFormMetadata) {
+			err := b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, buf, form)
 
 			// channel is not closed
 			if ctx.Err() == nil {
@@ -417,10 +553,15 @@ func (su *ChunkedUpload) processUpload(chunkIndex int, fileFragments [][]byte, t
 
 // processCommit commit shard upload on its blobber
 func (su *ChunkedUpload) processCommit() error {
+	defer su.removeProgress()
+
 	logger.Logger.Info("Submitting for commit")
 	su.consensus.Reset()
 
 	num := su.allocationObj.DataShards + su.allocationObj.ParityShards
+	if su.isRepair {
+		num = num - su.uploadMask.TrailingZeros()
+	}
 
 	wait := make(chan error, num)
 	defer close(wait)
@@ -440,8 +581,7 @@ func (su *ChunkedUpload) processCommit() error {
 
 		blobber.commitChanges = append(blobber.commitChanges, su.buildChange(blobber.fileRef))
 
-		go func(b *ChunkedUploadBobbler) {
-
+		go func(b *ChunkedUploadBlobber) {
 			err := b.processCommit(ctx, su)
 
 			if err != nil {
@@ -469,15 +609,13 @@ func (su *ChunkedUpload) processCommit() error {
 	if !su.consensus.isConsensusOk() {
 		if su.consensus.getConsensus() != 0 {
 			logger.Logger.Info("Commit consensus failed, Deleting remote file....")
-			su.allocationObj.deleteFile(su.fileMeta.RemotePath, su.consensus.getConsensus(), su.consensus.getConsensus())
+			su.allocationObj.deleteFile(su.fileMeta.RemotePath, su.consensus.getConsensus(), su.consensus.getConsensus()) //nolint
 		}
 		if su.statusCallback != nil {
 			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, OpUpload, thrown.New("commit_consensus_failed", "Upload failed as there was no commit consensus"))
 			return nil
 		}
 	}
-
-	su.removeProgress()
 
 	if su.statusCallback != nil {
 		su.statusCallback.Completed(su.allocationObj.ID, su.fileMeta.RemotePath, su.fileMeta.RemoteName, su.fileMeta.MimeType, int(su.progress.UploadLength), OpUpload)

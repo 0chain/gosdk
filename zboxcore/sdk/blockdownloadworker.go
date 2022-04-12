@@ -1,12 +1,10 @@
 package sdk
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"mime/multipart"
 	"net/http"
 	"strings"
 	"sync"
@@ -17,7 +15,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	. "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
@@ -44,33 +41,10 @@ type BlockDownloadRequest struct {
 type downloadBlock struct {
 	RawData     []byte `json:"data"`
 	BlockChunks [][]byte
-	Success     bool               `json:"success"`
-	LatestRM    *marker.ReadMarker `json:"latest_rm"`
+	Success     bool `json:"success"`
 	idx         int
 	err         error
 	NumBlocks   int64 `json:"num_of_blocks"`
-}
-
-var blobberReadCounter *sync.Map
-
-func getBlobberReadCtr(blobber *blockchain.StorageNode) int64 {
-	rctr, ok := blobberReadCounter.Load(blobber.ID)
-	if ok {
-		return rctr.(int64)
-	}
-	return int64(0)
-}
-
-func incBlobberReadCtr(blobber *blockchain.StorageNode, numBlocks int64) {
-	rctr, ok := blobberReadCounter.Load(blobber.ID)
-	if !ok {
-		rctr = int64(0)
-	}
-	blobberReadCounter.Store(blobber.ID, (rctr.(int64))+numBlocks)
-}
-
-func setBlobberReadCtr(blobber *blockchain.StorageNode, ctr int64) {
-	blobberReadCounter.Store(blobber.ID, ctr)
 }
 
 var downloadBlockChan map[string]chan *BlockDownloadRequest
@@ -82,7 +56,6 @@ func InitBlockDownloader(blobbers []*blockchain.StorageNode) {
 	if downloadBlockChan == nil {
 		downloadBlockChan = make(map[string]chan *BlockDownloadRequest)
 	}
-	blobberReadCounter = &sync.Map{}
 
 	for _, blobber := range blobbers {
 		if _, ok := downloadBlockChan[blobber.ID]; !ok {
@@ -94,7 +67,7 @@ func InitBlockDownloader(blobbers []*blockchain.StorageNode) {
 }
 
 func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest) {
-	for true {
+	for {
 		blockDownloadReq, open := <-blobberChan
 		if !open {
 			break
@@ -111,7 +84,7 @@ func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
 		chunks = append(chunks, chunk)
 	}
 	if len(buf) > 0 {
-		chunks = append(chunks, buf[:len(buf)])
+		chunks = append(chunks, buf[:])
 	}
 	return chunks
 }
@@ -138,14 +111,12 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		rm.AllocationID = req.allocationID
 		rm.OwnerID = client.GetClientID()
 		rm.Timestamp = common.Now()
-		rm.ReadCounter = getBlobberReadCtr(req.blobber) + req.numBlocks
+		rm.ReadSize = req.numBlocks * int64(req.chunkSize)
 		err := rm.Sign()
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error: Signing readmarker failed")}
 			return
 		}
-		body := new(bytes.Buffer)
-		formWriter := multipart.NewWriter(body)
 		rmData, err := json.Marshal(rm)
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating readmarker")}
@@ -154,33 +125,35 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		if len(req.remotefilepath) > 0 {
 			req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 		}
-		formWriter.WriteField("path_hash", req.remotefilepathhash)
 
-		if req.rxPay {
-			formWriter.WriteField("rx_pay", "true") // pay oneself
-		}
-
-		formWriter.WriteField("block_num", fmt.Sprintf("%d", req.blockNum))
-		formWriter.WriteField("num_blocks", fmt.Sprintf("%d", req.numBlocks))
-		formWriter.WriteField("read_marker", string(rmData))
-		if req.authTicket != nil {
-			authTicketBytes, _ := json.Marshal(req.authTicket)
-			formWriter.WriteField("auth_token", string(authTicketBytes))
-		}
-		if len(req.contentMode) > 0 {
-			formWriter.WriteField("content", req.contentMode)
-		}
-
-		formWriter.Close()
-		httpreq, err := zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationTx, body)
+		httpreq, err := zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationTx)
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating download request")}
 			return
 		}
-		httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+
+		header := &DownloadRequestHeader{}
+		header.PathHash = req.remotefilepathhash
+
+		if req.rxPay {
+			header.RxPay = req.rxPay // pay oneself
+		}
+		header.BlockNum = req.blockNum
+		header.NumBlocks = req.numBlocks
+		header.ReadMarker = rmData
+
+		if req.authTicket != nil {
+			header.AuthToken, _ = json.Marshal(req.authTicket) //nolint: errcheck
+		}
+		if len(req.contentMode) > 0 {
+			header.DownloadMode = req.contentMode
+		}
 
 		ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 		shouldRetry := false
+
+		header.ToHeader(httpreq)
+
 		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 			if err != nil {
 				return err
@@ -198,36 +171,24 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				// After getting start of stream JSON message, other message chunks should not be in JSON
 				if err != nil {
 					rspData.Success = true
-					rspData.RawData = response
 
-					// TODO download by 'chunks' should not download full stream and then chunk it
-					// It has to download already chunked data
 					if len(req.encryptedKey) > 0 {
-
-						var chunks [][]byte
-						if req.authTicket == nil {
-							// 256 for the additional header bytes,  where chunk_size - 2 * 1024 is the encrypted data size
-							chunks = req.splitData(rspData.RawData, req.chunkSize-2*1024+256)
+						if req.authTicket != nil {
+							// ReEncryptionHeaderSize for the additional header bytes for ReEncrypt,  where chunk_size - EncryptionHeaderSize is the encrypted data size
+							rspData.BlockChunks = req.splitData(response, req.chunkSize-EncryptionHeaderSize+ReEncryptionHeaderSize)
 						} else {
-							chunks = req.splitData(rspData.RawData, req.chunkSize)
+							rspData.BlockChunks = req.splitData(response, req.chunkSize)
 						}
-
-						rspData.BlockChunks = chunks
 					} else {
-						chunks := req.splitData(rspData.RawData, req.chunkSize)
-						rspData.BlockChunks = chunks
+						rspData.BlockChunks = req.splitData(response, req.chunkSize)
 					}
-					rspData.RawData = []byte{}
-					incBlobberReadCtr(req.blobber, req.numBlocks)
+
 					req.result <- &rspData
 					return nil
 				}
 
-				if !rspData.Success && rspData.LatestRM != nil && rspData.LatestRM.ReadCounter >= getBlobberReadCtr(req.blobber) {
-					Logger.Info("Will be retrying download")
-					setBlobberReadCtr(req.blobber, rspData.LatestRM.ReadCounter)
-					shouldRetry = true
-					return errors.New("", "Need to retry the download")
+				if !rspData.Success {
+					return errors.New("download_data", rspData.err.Error())
 				}
 
 			} else {

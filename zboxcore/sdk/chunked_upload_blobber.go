@@ -10,7 +10,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -22,18 +24,18 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
-// ChunkedUploadBobbler client of blobber's upload
-type ChunkedUploadBobbler struct {
-	*FLock
-	blobber  *blockchain.StorageNode
-	fileRef  *fileref.FileRef
-	progress *UploadBlobberStatus
+// ChunkedUploadBlobber client of blobber's upload
+type ChunkedUploadBlobber struct {
+	writeMarkerMutex *WriteMarkerMutex
+	blobber          *blockchain.StorageNode
+	fileRef          *fileref.FileRef
+	progress         *UploadBlobberStatus
 
 	commitChanges []allocationchange.AllocationChange
 	commitResult  *CommitResult
 }
 
-func (sb *ChunkedUploadBobbler) sendUploadRequest(ctx context.Context, su *ChunkedUpload, chunkIndex int, isFinal bool, encryptedKey string, body *bytes.Buffer, formData ChunkedUploadFormMetadata) error {
+func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *ChunkedUpload, chunkIndex int, isFinal bool, encryptedKey string, body *bytes.Buffer, formData ChunkedUploadFormMetadata) error {
 
 	if formData.FileBytesLen == 0 {
 		//fixed fileRef in last chunk on stream. io.EOF with nil bytes
@@ -46,6 +48,7 @@ func (sb *ChunkedUploadBobbler) sendUploadRequest(ctx context.Context, su *Chunk
 
 			sb.fileRef.EncryptedKey = encryptedKey
 			sb.fileRef.CalculateHash()
+			su.consensus.Done()
 		}
 
 		return nil
@@ -72,8 +75,9 @@ func (sb *ChunkedUploadBobbler) sendUploadRequest(ctx context.Context, su *Chunk
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		logger.Logger.Error(sb.blobber.Baseurl, " Upload error response: ", resp.StatusCode, string(respbody))
-		return err
+		msg := string(respbody)
+		logger.Logger.Error(sb.blobber.Baseurl, " Upload error response: ", resp.StatusCode)
+		return errors.Throw(constants.ErrBadRequest, msg)
 	}
 	var r UploadResult
 	err = json.Unmarshal(respbody, &r)
@@ -87,7 +91,7 @@ func (sb *ChunkedUploadBobbler) sendUploadRequest(ctx context.Context, su *Chunk
 		return err
 	}
 
-	logger.Logger.Info(sb.blobber.Baseurl, su.fileMeta.RemotePath, " uploaded")
+	//logger.Logger.Debug(sb.blobber.Baseurl, su.fileMeta.RemotePath, " uploaded")
 
 	su.consensus.Done()
 
@@ -124,14 +128,7 @@ func (sb *ChunkedUploadBobbler) sendUploadRequest(ctx context.Context, su *Chunk
 
 }
 
-func (sb *ChunkedUploadBobbler) processCommit(ctx context.Context, su *ChunkedUpload) error {
-
-	err := sb.Lock()
-	if err != nil {
-		return err
-	}
-
-	defer sb.Unlock()
+func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUpload) error {
 
 	rootRef, latestWM, size, err := sb.processWriteMarker(ctx, su)
 
@@ -214,7 +211,7 @@ func (sb *ChunkedUploadBobbler) processCommit(ctx context.Context, su *ChunkedUp
 	return nil
 }
 
-func (sb *ChunkedUploadBobbler) processWriteMarker(ctx context.Context, su *ChunkedUpload) (*fileref.Ref, *marker.WriteMarker, int64, error) {
+func (sb *ChunkedUploadBlobber) processWriteMarker(ctx context.Context, su *ChunkedUpload) (*fileref.Ref, *marker.WriteMarker, int64, error) {
 	logger.Logger.Info("received a commit request")
 	paths := make([]string, 0)
 	for _, change := range sb.commitChanges {

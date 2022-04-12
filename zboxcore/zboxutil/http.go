@@ -258,7 +258,7 @@ func NewRefsRequest(baseUrl, allocationID, path, offsetPath, updatedDate, offset
 	params.Add("pageLimit", strconv.Itoa(pageLimit))
 	params.Add("updatedDate", updatedDate)
 	params.Add("offsetDate", offsetDate)
-	params.Add("type", fileType)
+	params.Add("fileType", fileType)
 	params.Add("refType", refType)
 	params.Add("level", strconv.Itoa(level))
 	nUrl.RawQuery = params.Encode()
@@ -473,9 +473,9 @@ func NewCopyRequest(baseUrl, allocation string, body io.Reader) (*http.Request, 
 	return req, nil
 }
 
-func NewDownloadRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
+func NewDownloadRequest(baseUrl, allocation string) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, DOWNLOAD_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodPost, url, body)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -92,7 +92,7 @@ func verifyFn(signature, msgHash, publicKey string) (bool, error) {
 	v := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 	v.SetPublicKey(publicKey)
 	ok, err := v.Verify(signature, msgHash)
-	if err != nil || ok == false {
+	if err != nil || !ok {
 		return false, errors.New("", `{"error": "signature_mismatch"}`)
 	}
 	return true, nil
@@ -128,11 +128,15 @@ func (ta *TransactionWithAuth) submitTxn() {
 }
 
 func (ta *TransactionWithAuth) Send(toClientID string, val int64, desc string) error {
+	txnData, err := json.Marshal(SendTxnData{Note: desc})
+	if err != nil {
+		return errors.New("", "Could not serialize description to transaction_data")
+	}
 	go func() {
 		ta.t.txn.TransactionType = transaction.TxnTypeSend
 		ta.t.txn.ToClientID = toClientID
 		ta.t.txn.Value = val
-		ta.t.txn.TransactionData = desc
+		ta.t.txn.TransactionData = string(txnData)
 		ta.submitTxn()
 	}()
 	return nil
@@ -179,6 +183,10 @@ func (ta *TransactionWithAuth) SetTransactionHash(hash string) error {
 
 func (ta *TransactionWithAuth) GetTransactionHash() string {
 	return ta.t.GetTransactionHash()
+}
+
+func (ta *TransactionWithAuth) GetVerifyConfirmationStatus() ConfirmationStatus {
+	return ta.t.GetVerifyConfirmationStatus()
 }
 
 func (ta *TransactionWithAuth) Verify() error {
@@ -359,6 +367,21 @@ func (ta *TransactionWithAuth) MinerSCDeleteSharder(info *MinerSCMinerInfo) (
 	return
 }
 
+func (ta *TransactionWithAuth) MinerSCCollectReward(poolId string, providerType Provider) error {
+	pr := &SCCollectReward{
+		PoolId:       poolId,
+		ProviderType: providerType,
+	}
+	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go ta.submitTxn()
+	return err
+}
+
 func (ta *TransactionWithAuth) MinerSCLock(minerID string,
 	lock int64) (err error) {
 
@@ -454,6 +477,21 @@ func (ta *TransactionWithAuth) RegisterMultiSig(walletstr string, mswallet strin
 //
 // Storage SC
 //
+
+func (ta *TransactionWithAuth) StorageSCCollectReward(poolId string, providerType Provider) error {
+	pr := &SCCollectReward{
+		PoolId:       poolId,
+		ProviderType: providerType,
+	}
+	err := ta.t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { ta.submitTxn() }()
+	return err
+}
 
 func (ta *TransactionWithAuth) StorageScUpdateConfig(
 	ip *InputMap,
@@ -631,28 +669,6 @@ func (ta *TransactionWithAuth) StakePoolUnlock(blobberID, poolID string,
 	return
 }
 
-// StakePoolPayInterests trigger interests payments.
-func (ta *TransactionWithAuth) StakePoolPayInterests(blobberID string,
-	fee int64) (err error) {
-
-	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
-	}
-
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
-
-	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_STAKE_POOL_PAY_INTERESTS, &spr, 0)
-	if err != nil {
-		Logger.Error(err)
-		return
-	}
-	ta.t.SetTransactionFee(fee)
-	go func() { ta.submitTxn() }()
-	return
-}
-
 // UpdateBlobberSettings update settings of a blobber.
 func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber, fee int64) (
 	err error) {
@@ -739,5 +755,25 @@ func (ta *TransactionWithAuth) WritePoolUnlock(poolID string, fee int64) (
 	}
 	ta.t.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error) {
+	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_GLOBAL_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go ta.submitTxn()
+	return
+}
+
+func (ta *TransactionWithAuth) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error) {
+	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go ta.submitTxn()
 	return
 }

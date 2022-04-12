@@ -15,6 +15,9 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/dev"
+	devMock "github.com/0chain/gosdk/dev/mock"
+	"github.com/0chain/gosdk/sdks/blobber"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	zclient "github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -198,8 +201,9 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
 				Consensus: Consensus{
-					consensusThresh: 50,
-					fullconsensus:   4,
+					consensusThresh:        50,
+					fullconsensus:          4,
+					consensusRequiredForOk: 60,
 				},
 				ctx:          context.TODO(),
 				renameMask:   0,
@@ -237,6 +241,8 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 		mockNewName        = "mock new name"
 	)
 
+	rawClient := zboxutil.Client
+
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
 
@@ -245,13 +251,16 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	}
+	defer func() {
+		zboxutil.Client = rawClient
+	}()
 
 	setupHttpResponses := func(t *testing.T, testName string, numBlobbers int, numCorrect int, req *RenameRequest) {
 		for i := 0; i < numBlobbers; i++ {
 			url := mockBlobberUrl + strconv.Itoa(i)
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 				return req.Method == "GET" &&
-					strings.HasPrefix(req.URL.Path, testName+url)
+					strings.Contains(req.URL.String(), testName+url)
 			})).Return(&http.Response{
 				StatusCode: http.StatusOK,
 				Body: func() io.ReadCloser {
@@ -266,7 +275,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			}, nil)
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 				return req.Method == "POST" &&
-					strings.HasPrefix(req.URL.Path, testName+url)
+					strings.Contains(req.URL.String(), testName+url)
 			})).Return(&http.Response{
 				StatusCode: func() int {
 					if i < numCorrect {
@@ -380,25 +389,55 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
+
+			a := &Allocation{
+				Tx:         "TestRenameRequest_ProcessRename",
+				DataShards: numBlobbers,
+			}
+
+			setupMockAllocation(t, a)
+
+			resp := &WMLockResult{
+				Status: WMLockStatusOK,
+			}
+
+			respBuf, _ := json.Marshal(resp)
+			m := make(devMock.ResponseMap)
+
+			server := dev.NewBlobberServer(m)
+			defer server.Close()
+
+			for i := 0; i < numBlobbers; i++ {
+				path := "/TestRenameRequest_ProcessRename" + tt.name + mockBlobberUrl + strconv.Itoa(i)
+
+				m[http.MethodPost+":"+path+blobber.EndpointWriteMarkerLock+a.Tx] = devMock.Response{
+					StatusCode: http.StatusOK,
+					Body:       respBuf,
+				}
+
+				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
+					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
+					Baseurl: server.URL + path,
+				})
+			}
+
 			req := &RenameRequest{
+				allocationObj:  a,
+				blobbers:       a.Blobbers,
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
 				Consensus: Consensus{
-					consensusThresh: 50,
-					fullconsensus:   4,
+					consensusThresh:        50,
+					fullconsensus:          4,
+					consensusRequiredForOk: 60,
 				},
 				ctx:          context.TODO(),
 				renameMask:   0,
 				connectionID: mockConnectionId,
 				newName:      mockNewName,
 			}
-			for i := 0; i < tt.numBlobbers; i++ {
-				req.blobbers = append(req.blobbers, &blockchain.StorageNode{
-					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
-					Baseurl: tt.name + mockBlobberUrl + strconv.Itoa(i),
-				})
-			}
+
 			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect, req)
 			err := req.ProcessRename()
 			require.EqualValues(tt.wantErr, err != nil)
