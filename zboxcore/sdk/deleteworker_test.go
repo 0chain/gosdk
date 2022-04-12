@@ -199,10 +199,11 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name,
 			})
+			deleteMutex := &sync.Mutex{}
 			objectTreeRefs := make([]fileref.RefEntity, 1)
 			refEntity, _ := req.getObjectTreeFromBlobber(req.blobbers[0])
 			objectTreeRefs[0] = refEntity
-			req.deleteBlobberFile(req.blobbers[0], 0)
+			req.deleteBlobberFile(req.blobbers[0], 0, deleteMutex)
 			if tt.wantFunc != nil {
 				tt.wantFunc(require, req)
 			}
