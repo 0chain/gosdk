@@ -3,9 +3,11 @@ package marker
 import (
 	"fmt"
 
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zmagmacore/crypto"
 )
 
 type ReadMarker struct {
@@ -30,4 +32,21 @@ func (rm *ReadMarker) Sign() error {
 	var err error
 	rm.Signature, err = client.Sign(rm.GetHash())
 	return err
+}
+
+// ValidateWithOtherRM will validate rm1 assuming rm is valid. It checks parameters equality and validity of signature
+func (rm *ReadMarker) ValidateWithOtherRM(rm1 *ReadMarker) error {
+	if rm.ClientPublicKey != rm1.ClientPublicKey {
+		return errors.New("read_marker", fmt.Sprintf("client public key %s is not same as %s", rm1.ClientPublicKey, rm.ClientPublicKey))
+	}
+
+	signatureHash := rm1.GetHash()
+	signOK, err := crypto.Verify(rm1.ClientPublicKey, rm.Signature, signatureHash, client.GetClient().SignatureScheme)
+	if err != nil {
+		return err
+	}
+	if !signOK {
+		return errors.New("read_marker", "signature is not valid")
+	}
+	return nil
 }

@@ -171,13 +171,21 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				return err
 			}
 			if resp.StatusCode != http.StatusOK {
-				if err = json.Unmarshal(respBody, &rspData); err == nil &&
-					rspData.LatestRM != nil && rspData.LatestRM.ReadCounter >= getBlobberReadCtr(req.blobber) {
+				if err = json.Unmarshal(respBody, &rspData); err == nil && rspData.LatestRM != nil {
+					if err := rm.ValidateWithOtherRM(rspData.LatestRM); err != nil {
+						retry = 3
+						return err
+					}
 
-					zlogger.Logger.Info("Will be retrying download")
-					setBlobberReadCtr(req.blobber, rspData.LatestRM.ReadCounter)
-					shouldRetry = true
-					return errors.New("stale_read_marker", "readmarker counter is not in sync with latest counter")
+					if rspData.LatestRM.ReadCounter >= getBlobberReadCtr(req.blobber) {
+						zlogger.Logger.Info("Will be retrying download")
+						setBlobberReadCtr(req.blobber, rspData.LatestRM.ReadCounter)
+						shouldRetry = true
+						return errors.New("stale_read_marker", "readmarker counter is not in sync with latest counter")
+					}
+
+					return nil
+
 				}
 
 				if bytes.Contains(respBody, []byte("not_enough_tokens")) {
