@@ -87,7 +87,6 @@ jobs:
   release:
     name: sdk-release
     needs: build
-   # if: needs.build.outputs.PR == 'true'
     runs-on: [self-hosted, build]
     steps:
       - name: upgrade
