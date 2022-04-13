@@ -111,6 +111,7 @@ jobs:
       - name: Create PR on ${{ matrix.repo }}
         uses: convictional/trigger-workflow-and-wait@v1.3.0
         if:  env.PR == 'true'
+        continue-on-error: true
         with:
           owner: 0chain
           repo: ${{ matrix.repo }}
