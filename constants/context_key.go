@@ -15,4 +15,13 @@ const (
 
 	// ContextKeyClientSignatureHeaderKey represents key for context value passed with common.ClientSignatureHeader request header.
 	ContextKeyClientSignatureHeaderKey ContextKey = "signature"
+
+	// ContextKeyObjectPath represents key for ObjectPath request header
+	ContextKeyObjectPath ContextKey = "path"
+
+	// ContextKeyCollabClientID represents key for CollabID request header
+	ContextKeyCollabClientID ContextKey = "collab_id"
+
+	// ContextKeyRefereeClientID represents key for RefereeClientID request header
+	ContextKeyRefereeClientID ContextKey = "refereeClientID"
 )
