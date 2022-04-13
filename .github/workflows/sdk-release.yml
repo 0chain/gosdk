@@ -40,8 +40,10 @@ jobs:
         id: set_github_env
         run: |
           tag=$(echo ${GITHUB_REF#refs/tags/})
+          echo ${tag}
           if [[ -n "${{github.event.inputs.version}}" ]]; then
             # create PR
+            echo "trigger from workflow_dispatch"
             echo "::set-env name=PR::true"
             echo "::set-output name=PR::true"
 
@@ -49,6 +51,7 @@ jobs:
             echo "::set-env name=SDK::${gosdk}"
           elif [[ ${tag} = v*\.*\.* ]] ; then
             # create PR
+            echo "trigger from github event"
             echo "::set-env name=PR::true"
             echo "::set-output name=PR::true"
 
@@ -78,10 +81,12 @@ jobs:
         with:
           name: zcn.wasm
           path: zcn.wasm
+    outputs:
+      PR: 'false'  
 
   release:
     name: sdk-release
-    needs: [ build ]
+    needs: build
     if: needs.build.outputs.PR == 'true'
     runs-on: [self-hosted, build]
     steps:
