@@ -1,4 +1,4 @@
-name: Release GoSDK & WebAssembly SDK 
+name: GoSDK & WasmSDK 
 
 concurrency:
   group: "sdk-${{ github.ref }}"
