@@ -22,7 +22,7 @@ env:
   
 jobs:
   build:
-    name: wasm-release
+    name: sdk-build
     runs-on: [self-hosted, build]
     steps:
       - name: Set up Go 1.17
@@ -69,134 +69,52 @@ jobs:
           overwrite: true
           file_glob: true
 
-      - name: Create PR on block-explorer
-        uses: convictional/trigger-workflow-and-wait@v1.3.0
-        if:  env.PR == 'true'
-        with:
-          owner: 0chain
-          repo: block-explorer
-          ref: staging
-          github_token: ${{ secrets.GOSDK }}
-          workflow_file_name: webassembly.yml
-          inputs: ${{ env.SDK }}
-          propagate_failure: true
-          trigger_workflow: true
-          wait_workflow: true
-
-      - name: Create PR on 0nft
-        uses: convictional/trigger-workflow-and-wait@v1.3.0
-        if:  env.PR == 'true'
-        with:
-          owner: 0chain
-          repo: 0nft
-          ref: staging
-          github_token: ${{ secrets.GOSDK }}
-          workflow_file_name: gosdk.yml
-          inputs: ${{ env.SDK }}
-          propagate_failure: true
-          trigger_workflow: true
-          wait_workflow: true
-
-      - name: Create PR on 0box
-        uses: convictional/trigger-workflow-and-wait@v1.3.0
-        if:  env.PR == 'true'
-        with:
-          owner: 0chain
-          repo: 0box
-          ref: staging
-          github_token: ${{ secrets.GOSDK }}
-          workflow_file_name: gosdk.yml
-          inputs: ${{ env.SDK }}
-          propagate_failure: true
-          trigger_workflow: true
-          wait_workflow: true
-
-      - name: Create PR on 0dns
-        uses: convictional/trigger-workflow-and-wait@v1.3.0
-        if:  env.PR == 'true'
-        with:
-          owner: 0chain
-          repo: 0dns
-          ref: staging
-          github_token: ${{ secrets.GOSDK }}
-          workflow_file_name: gosdk.yml
-          inputs: ${{ env.SDK }}
-          propagate_failure: true
-          trigger_workflow: true
-          wait_workflow: true
-
-      - name: Create PR on 0proxy
-        uses: convictional/trigger-workflow-and-wait@v1.3.0
-        if:  env.PR == 'true'
-        with:
-          owner: 0chain
-          repo: 0proxy
-          ref: staging
-          github_token: ${{ secrets.GOSDK }}
-          workflow_file_name: gosdk.yml
-          inputs: ${{ env.SDK }}
-          propagate_failure: true
-          trigger_workflow: true
-          wait_workflow: true
-
-      - name: Create PR on zwalletcli
-        uses: convictional/trigger-workflow-and-wait@v1.3.0
-        if:  env.PR == 'true'
-        with:
-          owner: 0chain
-          repo: zwalletcli
-          ref: staging
-          github_token: ${{ secrets.GOSDK }}
-          workflow_file_name: gosdk.yml
-          inputs: ${{ env.SDK }}
-          propagate_failure: true
-          trigger_workflow: true
-          wait_workflow: true
-
-      - name: Create PR on zboxcli
-        uses: convictional/trigger-workflow-and-wait@v1.3.0
-        if:  env.PR == 'true'
-        with:
-          owner: 0chain
-          repo: zboxcli
-          ref: staging
-          github_token: ${{ secrets.GOSDK }}
-          workflow_file_name: gosdk.yml
-          inputs: ${{ env.SDK }}
-          propagate_failure: true
-          trigger_workflow: true
-          wait_workflow: true
-      - name: Create PR on zboxmobile
-        uses: convictional/trigger-workflow-and-wait@v1.3.0
-        if:  env.PR == 'true'
-        with:
-          owner: 0chain
-          repo: zboxmobile
-          ref: staging
-          github_token: ${{ secrets.GOSDK }}
-          workflow_file_name: gosdk.yml
-          inputs: ${{ env.SDK }}
-          propagate_failure: true
-          trigger_workflow: true
-          wait_workflow: true
-
-      - name: Create PR on blobber
-        uses: convictional/trigger-workflow-and-wait@v1.3.0
-        if:  env.PR == 'true'
-        with:
-          owner: 0chain
-          repo: blobber
-          ref: staging
-          github_token: ${{ secrets.GOSDK }}
-          workflow_file_name: gosdk.yml
-          inputs: ${{ env.SDK }}
-          propagate_failure: true
-          trigger_workflow: true
-          wait_workflow: true
-
       - name: 'Upload Artifact'
         uses: actions/upload-artifact@v2
         with:
           name: zcn.wasm
           path: zcn.wasm
-          retention-days: 30
+
+release:
+    name: sdk-release
+    strategy:
+      matrix:
+        repo: [block-explorer, 0nft, 0box, 0dns, 0proxy, zwalletcli, zboxcli, zboxmobile, blobber ]
+    runs-on: [self-hosted, build]
+    steps:
+      - name: Set GITHUB_ENV
+        id: set_github_env
+        run: |
+          TAG=$(echo ${GITHUB_REF#refs/tags/})
+          if [[ -n "${{github.event.inputs.version}}" ]]; then
+            # create PR
+            echo "PR=true" >> $GITHUB_ENV
+
+            SDK="{\"gosdk\":\"${{github.event.inputs.version}}\"}"
+            echo "SDK=${SDK}" >> $GITHUB_ENV
+
+          elif [[ ${TAG} = v*\.*\.* ]] ; then
+            # create PR
+            echo "PR=true" >> $GITHUB_ENV
+
+            SDK="{\"gosdk\":\"${TAG}\"}"
+            echo "SDK=${SDK}" >> $GITHUB_ENV
+
+            # upload zcn.wasm on release
+            echo "RELEASE=true" >> $GITHUB_ENV
+            echo "TAG=${TAG}" >> $GITHUB_ENV
+          fi
+             
+      - name: Create PR on ${{ matrix.repo }}
+        uses: convictional/trigger-workflow-and-wait@v1.3.0
+        if:  env.PR == 'true'
+        with:
+          owner: 0chain
+          repo: ${{ matrix.repo }}
+          ref: staging
+          github_token: ${{ secrets.GOSDK }}
+          workflow_file_name: gosdk.yml
+          inputs: ${{ env.SDK }}
+          propagate_failure: true
+          trigger_workflow: true
+          wait_workflow: true        
