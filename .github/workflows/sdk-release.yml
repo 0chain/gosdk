@@ -17,9 +17,6 @@ on:
         required: true
 
 env:
-  RELEASE: false
-  SDK: ""
-  TAG: ""
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
   
 jobs:
