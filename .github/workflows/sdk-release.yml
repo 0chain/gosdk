@@ -32,7 +32,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Setup build
+      - name: Setup Build
         id: setup_build
         run: |
           tag=$(echo ${GITHUB_REF#refs/tags/})
@@ -42,7 +42,7 @@ jobs:
             echo "::set-output name=PR::true"
 
             gosdk="{\"gosdk\":\"${{github.event.inputs.version}}\"}"
-            echo "::set-env name=SDK::${gosdk}"
+            echo "::set-output name=SDK::${gosdk}"
           elif [[ ${tag} = v*\.*\.* ]] ; then
             echo "> 0Chain: trigger from git event"
             echo "::set-output name=PR::true"
