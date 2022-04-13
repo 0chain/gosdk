@@ -80,6 +80,7 @@ jobs:
     strategy:
       matrix:
         repo: [block-explorer, 0nft, 0box, 0dns, 0proxy, zwalletcli, zboxcli, zboxmobile, blobber ]
+    needs: [ build ]
     runs-on: [self-hosted, build]
     steps:
       - name: Set GITHUB_ENV
