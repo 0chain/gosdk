@@ -48,11 +48,11 @@ jobs:
             echo "::set-output name=PR::true"
 
             gosdk="{\"gosdk\":\"${tag}\"}"
-            echo "::set-env name=SDK::${gosdk}"
+            echo "::set-output name=SDK::${gosdk}"
 
             # upload zcn.wasm on release
-            echo "::set-env name=RELEASE::true"
-            echo "::set-env name=TAG::${tag}"
+            echo "::set-output name=RELEASE::true"
+            echo "::set-output name=TAG::${tag}"
           fi
              
       - name: Build
@@ -60,11 +60,11 @@ jobs:
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
-        if:  env.RELEASE == 'true'
+        if:  steps.setup_build.outputs.RELEASE == 'true'
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: zcn.wasm
-          tag: ${{ env.TAG }}
+          tag: ${{ steps.setup_build.outputs.TAG }}
           overwrite: true
           file_glob: true
 
@@ -75,6 +75,8 @@ jobs:
           path: zcn.wasm
     outputs:
       PR: ${{ steps.setup_build.outputs.PR }}
+      SDK: ${{ steps.setup_build.outputs.SDK }}
+      TAG: ${{ steps.setup_build.outputs.TAG }}
 
   release:
     name: sdk-release
@@ -92,12 +94,12 @@ jobs:
       max-parallel: 1
       matrix:
         repo: [block-explorer, 0nft, 0box, 0dns, 0proxy, zwalletcli, zboxcli, zboxmobile, blobber ]
-    needs: [ release ]
+    needs: [ build, release ]
     runs-on: [self-hosted, build]
     steps:     
       - name: Create PR on ${{ matrix.repo }}
         uses: convictional/trigger-workflow-and-wait@v1.3.0
-        if:  env.PR == 'true'
+        if:  needs.build.outputs.PR == 'true'
         with:
           owner: 0chain
           repo: ${{ matrix.repo }}
