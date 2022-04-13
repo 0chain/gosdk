@@ -23,7 +23,7 @@ env:
 jobs:
   build:
     name: sdk-build
-    runs-on: [ubuntu-latest]
+    runs-on: [self-hosted, build]
     steps:
       - name: Set up Go 1.17
         uses: actions/setup-go@v2
@@ -80,8 +80,9 @@ jobs:
     strategy:
       matrix:
         repo: [block-explorer, 0nft, 0box, 0dns, 0proxy, zwalletcli, zboxcli, zboxmobile, blobber ]
+        max-parallel: 1
     needs: [ build ]
-    runs-on: [ubuntu-latest]
+    runs-on: [self-hosted, build]
     steps:
       - name: Set GITHUB_ENV
         id: set_github_env
