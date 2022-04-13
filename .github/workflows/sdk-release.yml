@@ -35,8 +35,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
 
-      - name: Set GITHUB_ENV
-        id: set_github_env
+      - name: Setup build
+        id: setup_build
         run: |
           tag=$(echo ${GITHUB_REF#refs/tags/})
           echo ${tag}
@@ -77,38 +77,37 @@ jobs:
           name: zcn.wasm
           path: zcn.wasm
     outputs:
-      PR: ${{ steps.set_github_env.outputs.PR }}
+      PR: ${{ steps.setup_build.outputs.PR }}
 
   release:
     name: sdk-release
     needs: build
-    # if: needs.build.outputs.PR == 'true'
+    if: needs.build.outputs.PR == 'true'
     runs-on: [self-hosted, build]
     steps:
-      - name: upgrade
-        run: |
-          echo "GoSDK & WebAssembly SDK should be upgraded"
-          echo "${{ toJson(needs.build) }}"
-  # upgrade:
-  #   name: create-pr
-  #   strategy:
-  #     fail-fast: false
-  #     max-parallel: 1
-  #     matrix:
-  #       repo: [block-explorer, 0nft, 0box, 0dns, 0proxy, zwalletcli, zboxcli, zboxmobile, blobber ]
-  #   needs: [ release ]
-  #   runs-on: [self-hosted, build]
-  #   steps:     
-  #     - name: Create PR on ${{ matrix.repo }}
-  #       uses: convictional/trigger-workflow-and-wait@v1.3.0
-  #       if:  env.PR == 'true'
-  #       with:
-  #         owner: 0chain
-  #         repo: ${{ matrix.repo }}
-  #         ref: staging
-  #         github_token: ${{ secrets.GOSDK }}
-  #         workflow_file_name: gosdk.yml
-  #         inputs: ${{ env.SDK }}
-  #         propagate_failure: true
-  #         trigger_workflow: true
-  #         wait_workflow: true    
+      # - name: upgrade
+      #   run: |
+      #     echo "GoSDK & WebAssembly SDK should be upgraded"
+  create-pr:
+    name: create-pr
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        repo: [block-explorer, 0nft, 0box, 0dns, 0proxy, zwalletcli, zboxcli, zboxmobile, blobber ]
+    needs: [ release ]
+    runs-on: [self-hosted, build]
+    steps:     
+      - name: Create PR on ${{ matrix.repo }}
+        uses: convictional/trigger-workflow-and-wait@v1.3.0
+        if:  env.PR == 'true'
+        with:
+          owner: 0chain
+          repo: ${{ matrix.repo }}
+          ref: staging
+          github_token: ${{ secrets.GOSDK }}
+          workflow_file_name: gosdk.yml
+          inputs: ${{ env.SDK }}
+          propagate_failure: true
+          trigger_workflow: true
+          wait_workflow: true    
