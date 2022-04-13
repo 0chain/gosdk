@@ -106,7 +106,7 @@ jobs:
           ref: staging
           github_token: ${{ secrets.GOSDK }}
           workflow_file_name: gosdk.yml
-          inputs: ${{ env.SDK }}
+          inputs: ${{ needs.build.outputs.SDK }}
           propagate_failure: true
           trigger_workflow: true
           wait_workflow: true    
