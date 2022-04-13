@@ -87,12 +87,13 @@ jobs:
   release:
     name: sdk-release
     needs: build
+    # if: needs.build.outputs.PR == 'true'
     runs-on: [self-hosted, build]
     steps:
       - name: upgrade
         run: |
           echo "GoSDK & WebAssembly SDK should be upgraded"
-         echo "${{ toJson(needs.build) }}"
+          echo "${{ toJson(needs.build) }}"
   # upgrade:
   #   name: create-pr
   #   strategy:
