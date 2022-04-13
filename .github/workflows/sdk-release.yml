@@ -75,7 +75,7 @@ jobs:
           name: zcn.wasm
           path: zcn.wasm
 
-release:
+  release:
     name: sdk-release
     strategy:
       matrix:
