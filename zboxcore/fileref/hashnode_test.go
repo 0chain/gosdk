@@ -2,7 +2,6 @@ package fileref
 
 import (
 	"encoding/json"
-	"sort"
 	"strconv"
 	"strings"
 	"testing"
@@ -213,9 +212,6 @@ func (r *blobberRef) CalculateDirHash() string {
 	if len(r.Children) == 0 && !r.childrenLoaded {
 		return r.Hash
 	}
-	sort.SliceStable(r.Children, func(i, j int) bool {
-		return strings.Compare(r.Children[i].LookupHash, r.Children[j].LookupHash) == -1
-	})
 	for _, childRef := range r.Children {
 		childRef.CalculateHash()
 	}
