@@ -77,7 +77,7 @@ jobs:
           name: zcn.wasm
           path: zcn.wasm
     outputs:
-      PR: 'false'  
+      PR: ${{ steps.set_github_env.outputs.PR }}
 
   release:
     name: sdk-release
