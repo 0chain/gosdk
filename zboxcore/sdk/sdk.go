@@ -871,17 +871,17 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 	}
 
 	var allocationRequest = map[string]interface{}{
-		"data_shards":                   datashards,
-		"parity_shards":                 parityshards,
-		"size":                          size,
-		"owner_id":                      owner,
-		"owner_public_key":              ownerpublickey,
-		"expiration_date":               expiry,
-		"preferred_blobbers":            allocationBlobbers,
-		"read_price_range":              readPrice,
-		"write_price_range":             writePrice,
-		"max_challenge_completion_time": mcct,
-		"diversify_blobbers":            false,
+		"data_shards":         datashards,
+		"parity_shards":       parityshards,
+		"size":                size,
+		"owner_id":            owner,
+		"owner_public_key":    ownerpublickey,
+		"expiration_date":     expiry,
+		"preferred_blobbers":  allocationBlobbers,
+		"read_price_range":    readPrice,
+		"write_price_range":   writePrice,
+		"max_completion_time": mcct,
+		"diversify_blobbers":  false,
 	}
 
 	var sn = transaction.SmartContractTxnData{
