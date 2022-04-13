@@ -46,7 +46,7 @@ jobs:
 
             gosdk="{\"gosdk\":\"${{github.event.inputs.version}}\"}"
             # echo "SDK=${gosdk}" >> $GITHUB_ENV
-            echo "::set-env name=SDK::${{gosdk}}"
+            echo "::set-env name=SDK::${gosdk}"
                     
 
           elif [[ ${tag} = v*\.*\.* ]] ; then
@@ -56,14 +56,14 @@ jobs:
 
             gosdk="{\"gosdk\":\"${tag}\"}"
             # echo "SDK=${gosdk}" >> $GITHUB_ENV
-            echo "::set-env name=SDK::${{gosdk}}"
+            echo "::set-env name=SDK::${gosdk}"
 
             # upload zcn.wasm on release
             # echo "RELEASE=true" >> $GITHUB_ENV
             # echo "TAG=${tag}" >> $GITHUB_ENV
 
             echo "::set-env name=RELEASE::true"
-            echo "::set-env name=TAG::${{tag}}"
+            echo "::set-env name=TAG::${tag}"
           fi
              
       - name: Build
