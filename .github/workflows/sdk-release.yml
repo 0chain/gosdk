@@ -92,7 +92,7 @@ jobs:
     steps:
       - name: Set GITHUB_ENV
         id: set_github_env
-       if:  env.PR == 'true'
+        if:  env.PR == 'true'
         run: |
           TAG=$(echo ${GITHUB_REF#refs/tags/})
           if [[ -n "${{github.event.inputs.version}}" ]]; then
