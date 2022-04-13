@@ -21,6 +21,7 @@ env:
   PR: false
   SDK: ""
   TAG: ""
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
   
 jobs:
   build:
