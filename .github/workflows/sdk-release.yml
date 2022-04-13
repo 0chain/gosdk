@@ -111,7 +111,6 @@ jobs:
       - name: Create PR on ${{ matrix.repo }}
         uses: convictional/trigger-workflow-and-wait@v1.3.0
         if:  env.PR == 'true'
-        continue-on-error: true
         with:
           owner: 0chain
           repo: ${{ matrix.repo }}
@@ -119,6 +118,6 @@ jobs:
           github_token: ${{ secrets.GOSDK }}
           workflow_file_name: gosdk.yml
           inputs: ${{ env.SDK }}
-          propagate_failure: true
+          propagate_failure: false
           trigger_workflow: true
           wait_workflow: true        
