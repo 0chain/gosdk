@@ -85,9 +85,9 @@ jobs:
     if: needs.build.outputs.PR == 'true'
     runs-on: [self-hosted, build]
     steps:
-      # - name: upgrade
-      #   run: |
-      #     echo "GoSDK & WebAssembly SDK should be upgraded"
+      - name: start to create pr
+        run: |
+          echo "GoSDK & WebAssembly SDK should be upgraded"
   create-pr:
     name: create-pr
     strategy:
