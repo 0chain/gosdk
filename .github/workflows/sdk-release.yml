@@ -78,9 +78,10 @@ jobs:
   release:
     name: sdk-release
     strategy:
+      max-parallel: 1
       matrix:
         repo: [block-explorer, 0nft, 0box, 0dns, 0proxy, zwalletcli, zboxcli, zboxmobile, blobber ]
-        max-parallel: 1
+
     needs: [ build ]
     runs-on: [self-hosted, build]
     steps:
