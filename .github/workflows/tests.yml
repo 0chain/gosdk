@@ -94,7 +94,7 @@ jobs:
           custom_go_sdk_version: staging
 
       - name: "Run System tests"
-        uses: 0chain/actions/run-system-tests@feat/compat
+        uses: 0chain/actions/run-system-tests@master
         with:
           custom_go_sdk_version: ${{ env.CURRENT_BRANCH_HEAD }}
           system_tests_branch: master
