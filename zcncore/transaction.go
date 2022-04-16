@@ -1697,6 +1697,7 @@ type StakePoolSettings struct {
 	MinStake       common.Balance `json:"min_stake"`
 	MaxStake       common.Balance `json:"max_stake"`
 	NumDelegates   int            `json:"num_delegates"`
+	ServiceCharge  float64        `json:"service_charge"`
 }
 
 type Terms struct {
