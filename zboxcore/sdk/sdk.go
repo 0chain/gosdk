@@ -657,6 +657,7 @@ type Blobber struct {
 	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
 	PublicKey         string            `json:"-"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
+	TotalStake        int64             `json:"total_stake"`
 }
 
 func GetBlobbers() (bs []*Blobber, err error) {

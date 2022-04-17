@@ -411,7 +411,6 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 
 	ChunkedUpload, err := CreateChunkedUpload(workdir, a, fileMeta, fileReader, isUpdate, isRepair,
 		WithThumbnailFile(thumbnailPath),
-		WithChunkSize(DefaultChunkSize),
 		WithEncrypt(encryption),
 		WithStatusCallback(status))
 	if err != nil {
@@ -843,13 +842,9 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus floa
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
-	req.consensusThresh = threshConsensus
-	req.fullconsensus = fullConsensus
-	req.consensusRequiredForOk = a.consensusOK
+	req.consensus.Init(threshConsensus, fullConsensus, a.consensusOK)
 	req.ctx = a.ctx
 	req.remotefilepath = path
-	req.deleteMask = 0
-	req.listMask = 0
 	req.connectionID = zboxutil.NewConnectionId()
 	err := req.ProcessDelete()
 	return err
