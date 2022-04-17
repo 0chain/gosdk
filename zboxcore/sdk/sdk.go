@@ -871,17 +871,17 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 	}
 
 	var allocationRequest = map[string]interface{}{
-		"data_shards":         datashards,
-		"parity_shards":       parityshards,
-		"size":                size,
-		"owner_id":            owner,
-		"owner_public_key":    ownerpublickey,
-		"expiration_date":     expiry,
-		"preferred_blobbers":  allocationBlobbers,
-		"read_price_range":    readPrice,
-		"write_price_range":   writePrice,
-		"max_completion_time": mcct,
-		"diversify_blobbers":  false,
+		"data_shards":                   datashards,
+		"parity_shards":                 parityshards,
+		"size":                          size,
+		"owner_id":                      owner,
+		"owner_public_key":              ownerpublickey,
+		"expiration_date":               expiry,
+		"preferred_blobbers":            allocationBlobbers,
+		"read_price_range":              readPrice,
+		"write_price_range":             writePrice,
+		"max_challenge_completion_time": mcct,
+		"diversify_blobbers":            false,
 	}
 
 	var sn = transaction.SmartContractTxnData{
@@ -913,13 +913,11 @@ func getAllocationBlobbers(owner, ownerpublickey string,
 
 	params := make(map[string]string)
 	params["allocation_data"] = string(allocationData)
-	params["max_challenge_time"] = mcct.String()
 
 	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/get_alloc_blobbers", params, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to make SC-REST Call")
 	}
-
 	var allocBlobberIDs []string
 
 	err = json.Unmarshal(allocBlobber, &allocBlobberIDs)
