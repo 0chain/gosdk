@@ -37,20 +37,26 @@ func (rm *ReadMarker) Sign() error {
 // ValidateWithOtherRM will validate rm1 assuming rm is valid. It checks parameters equality and validity of signature
 func (rm *ReadMarker) ValidateWithOtherRM(rm1 *ReadMarker) error {
 	if rm.ClientPublicKey != rm1.ClientPublicKey {
-		return errors.New("read_marker", fmt.Sprintf("client public key %s is not same as %s", rm1.ClientPublicKey, rm.ClientPublicKey))
+		return errors.New("validate_rm", fmt.Sprintf("client public key %s is not same as %s", rm1.ClientPublicKey, rm.ClientPublicKey))
 	}
 
 	signatureHash := rm1.GetHash()
-	herumiScheme := zcncrypto.HerumiScheme{
-		PublicKey: rm1.ClientPublicKey,
+	scheme := zcncrypto.NewSignatureScheme(client.GetClient().SignatureScheme)
+	if scheme == nil {
+		return errors.New("validate_rm", "scheme is nil")
 	}
 
-	signOK, err := herumiScheme.Verify(rm.Signature, signatureHash)
-	if err != nil {
-		return err
+	if err := scheme.SetPublicKey(rm1.ClientPublicKey); err != nil {
+		return errors.New("validate_rm", err.Error())
 	}
+
+	signOK, err := scheme.Verify(rm.Signature, signatureHash)
+	if err != nil {
+		return errors.New("validate_rm", err.Error())
+	}
+
 	if !signOK {
-		return errors.New("read_marker", "signature is not valid")
+		return errors.New("validate_rm", "signature is not valid")
 	}
 	return nil
 }
