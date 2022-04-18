@@ -7,20 +7,19 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
+var (
+	// Ensure callback implements interface.
+	_ zcncore.TransactionCallback = (*callback)(nil)
+)
+
 type (
 	// callback implements zcncore.TransactionCallback interface.
 	callback struct {
 		// waitCh represents channel for making callback.OnTransactionComplete,
 		// callback.OnVerifyComplete and callBack.OnAuthComplete operations async.
 		waitCh chan interface{}
-
-		err error
+		err    error
 	}
-)
-
-var (
-	// Ensure callback implements interface.
-	_ zcncore.TransactionCallback = (*callback)(nil)
 )
 
 func newCallBack() *callback {
@@ -39,16 +38,6 @@ func (cb *callback) OnTransactionComplete(zcnTxn *zcncore.Transaction, status in
 	cb.sendCall()
 }
 
-func (cb *callback) waitCompleteCall(ctx context.Context) error {
-	select {
-	case <-ctx.Done():
-		return errors.New("completing_transaction", "completing transaction context deadline exceeded")
-
-	case <-cb.waitCh:
-		return cb.err
-	}
-}
-
 // OnVerifyComplete implements zcncore.TransactionCallback interface.
 func (cb *callback) OnVerifyComplete(zcnTxn *zcncore.Transaction, status int) {
 	if status != zcncore.StatusSuccess {
@@ -57,16 +46,6 @@ func (cb *callback) OnVerifyComplete(zcnTxn *zcncore.Transaction, status int) {
 	}
 
 	cb.sendCall()
-}
-
-func (cb *callback) waitVerifyCall(ctx context.Context) error {
-	select {
-	case <-ctx.Done():
-		return errors.New("verifying_transaction", "verifying transaction context deadline exceeded")
-
-	case <-cb.waitCh:
-		return cb.err
-	}
 }
 
 // OnAuthComplete implements zcncore.TransactionCallback interface.
@@ -79,12 +58,19 @@ func (cb *callback) OnAuthComplete(_ *zcncore.Transaction, status int) {
 	cb.sendCall()
 }
 
-//nolint:unused
-func (cb *callback) waitAuthCall(ctx context.Context) error {
+func (cb *callback) waitCompleteCall(ctx context.Context) error {
 	select {
 	case <-ctx.Done():
-		return errors.New("auth_transaction", "authenticating transaction context deadline exceeded")
+		return errors.New("completing_transaction", "completing transaction context deadline exceeded")
+	case <-cb.waitCh:
+		return cb.err
+	}
+}
 
+func (cb *callback) waitVerifyCall(ctx context.Context) error {
+	select {
+	case <-ctx.Done():
+		return errors.New("verifying_transaction", "verifying transaction context deadline exceeded")
 	case <-cb.waitCh:
 		return cb.err
 	}

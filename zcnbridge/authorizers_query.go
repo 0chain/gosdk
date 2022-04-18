@@ -188,7 +188,7 @@ func queryAllAuthorizers(authorizers []*AuthorizerNode, handler *requestHandler)
 
 	for _, authorizer := range authorizers {
 		wg.Add(1)
-		go queryAuthoriser(authorizer, handler, responseChannel)
+		go queryAuthorizer(authorizer, handler, responseChannel)
 	}
 
 	wg.Wait()
@@ -209,7 +209,7 @@ func handleResponse(responseChannel responseChannelType, eventsChannel eventsCha
 	eventsChannel <- events
 }
 
-func queryAuthoriser(au *AuthorizerNode, request *requestHandler, responseChannel responseChannelType) {
+func queryAuthorizer(au *AuthorizerNode, request *requestHandler, responseChannel responseChannelType) {
 	var (
 		ticketURL = strings.TrimSuffix(au.URL, "/") + request.path
 	)
