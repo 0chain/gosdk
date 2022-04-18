@@ -9,3 +9,5 @@ func RequiredArg(argName string) error {
 func InvalidArg(argName string) error {
 	return errors.New("arg: " + argName + " is invalid")
 }
+
+var sdkNotInitialized = errors.New("SDK is not initialised")

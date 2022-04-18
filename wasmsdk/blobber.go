@@ -23,6 +23,9 @@ import (
 
 // Delete delete file from blobbers
 func Delete(allocationID, remotePath string, autoCommit bool) (*FileCommandResponse, error) {
+	if storageSdk == nil {
+		return nil, sdkNotInitialized
+	}
 
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
@@ -70,6 +73,10 @@ func Delete(allocationID, remotePath string, autoCommit bool) (*FileCommandRespo
 
 // Rename rename a file existing already on dStorage. Only the allocation's owner can rename a file.
 func Rename(allocationID, remotePath, destName string, autoCommit bool) (*FileCommandResponse, error) {
+	if storageSdk == nil {
+		return nil, sdkNotInitialized
+	}
+
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
 	}
@@ -121,6 +128,9 @@ func Rename(allocationID, remotePath, destName string, autoCommit bool) (*FileCo
 
 // Copy copy file to another folder path on blobbers
 func Copy(allocationID, remotePath, destPath string, autoCommit bool) (*FileCommandResponse, error) {
+	if storageSdk == nil {
+		return nil, sdkNotInitialized
+	}
 
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
@@ -175,6 +185,10 @@ func Copy(allocationID, remotePath, destPath string, autoCommit bool) (*FileComm
 
 // Move move file to another remote folder path on dStorage. Only the owner of the allocation can copy an object.
 func Move(allocationID, remotePath, destPath string, autoCommit bool) (*FileCommandResponse, error) {
+	if storageSdk == nil {
+		return nil, sdkNotInitialized
+	}
+
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
 	}
@@ -227,6 +241,9 @@ func Move(allocationID, remotePath, destPath string, autoCommit bool) (*FileComm
 
 // Share  generate an authtoken that provides authorization to the holder to the specified file on the remotepath.
 func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expiration int, revoke bool, availableAfter string) (string, error) {
+	if storageSdk == nil {
+		return "", sdkNotInitialized
+	}
 
 	if len(allocationID) == 0 {
 		return "", RequiredArg("allocationID")
@@ -387,6 +404,9 @@ func downloadFile(allocationObj *sdk.Allocation, authTicket string, authTicketOb
 
 // Download download file
 func Download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly, rxPay, autoCommit bool) (*DownloadCommandResponse, error) {
+	if storageSdk == nil {
+		return nil, sdkNotInitialized
+	}
 
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, RequiredArg("remotePath/authTicket")
@@ -453,6 +473,10 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 
 // Upload upload file
 func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, autoCommit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, isUpdate, isRepair bool) (*FileCommandResponse, error) {
+	if storageSdk == nil {
+		return nil, sdkNotInitialized
+	}
+
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
 	}
@@ -563,6 +587,10 @@ func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 
 // CommitFileMetaTxn commit file changes to blockchain, and update to blobbers
 func CommitFileMetaTxn(allocationID, commandName, remotePath, authTicket, lookupHash string) (*transaction.Transaction, error) {
+	if storageSdk == nil {
+		return nil, sdkNotInitialized
+	}
+
 	sdkLogger.Info("Commiting changes to blockchain ...")
 
 	if len(allocationID) == 0 {
@@ -599,6 +627,10 @@ func CommitFileMetaTxn(allocationID, commandName, remotePath, authTicket, lookup
 
 // CommitFolderMetaTxn commit folder changes to blockchain
 func CommitFolderMetaTxn(allocationID, commandName, preValue, currValue string) (*transaction.Transaction, error) {
+	if storageSdk == nil {
+		return nil, sdkNotInitialized
+	}
+
 	sdkLogger.Info("Commiting changes to blockchain ...")
 
 	if len(allocationID) == 0 {
