@@ -13,6 +13,10 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
+var (
+	_ zcncore.TransactionCallback = (*callback)(nil)
+)
+
 type (
 	// Transaction entity that encapsulates the transaction related data and metadata.
 	Transaction struct {
@@ -52,7 +56,7 @@ type (
 // Sets version, client ID, creation date, public key and creates internal zcncore.TransactionScheme.
 func NewTransactionEntity() (*Transaction, error) {
 	txn := &Transaction{
-		callBack: newCallBack(),
+		callBack: NewStatus().(*callback),
 	}
 	zcntxn, err := zcncore.NewTransaction(txn.callBack, 0)
 	if err != nil {

@@ -22,7 +22,7 @@ type (
 	}
 )
 
-func newCallBack() *callback {
+func NewStatus() zcncore.TransactionCallback {
 	return &callback{
 		waitCh: make(chan interface{}),
 	}
