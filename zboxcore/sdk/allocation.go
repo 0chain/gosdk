@@ -226,6 +226,9 @@ func (a *Allocation) InitAllocation() {
 }
 
 func (a *Allocation) isInitialized() bool {
+	if storageSdk == nil || a == nil {
+		return false
+	}
 	return a.initialized && storageSdk.sdkInitialized
 }
 
