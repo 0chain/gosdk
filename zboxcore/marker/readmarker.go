@@ -50,7 +50,7 @@ func (rm *ReadMarker) ValidateWithOtherRM(rm1 *ReadMarker) error {
 		return errors.New("validate_rm", err.Error())
 	}
 
-	signOK, err := scheme.Verify(rm.Signature, signatureHash)
+	signOK, err := scheme.Verify(rm1.Signature, signatureHash)
 	if err != nil {
 		return errors.New("validate_rm", err.Error())
 	}
