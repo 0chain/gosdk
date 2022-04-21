@@ -1,3 +1,4 @@
+TEST=test
 ROOT_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
 GOMODCORE           := $(GOMODBASE)/zcncore
