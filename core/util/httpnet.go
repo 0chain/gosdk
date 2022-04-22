@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"io/ioutil"
-	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -39,21 +38,6 @@ type HttpClient interface {
 }
 
 var Client HttpClient
-
-// Run the HTTP request in a goroutine and pass the response to f.
-var transport = &http.Transport{
-	Proxy: http.ProxyFromEnvironment,
-	DialContext: (&net.Dialer{
-		Timeout:   30 * time.Second,
-		KeepAlive: 30 * time.Second,
-		DualStack: true,
-	}).DialContext,
-	MaxIdleConns:          1000,
-	IdleConnTimeout:       90 * time.Second,
-	TLSHandshakeTimeout:   10 * time.Second,
-	ExpectContinueTimeout: 1 * time.Second,
-	MaxIdleConnsPerHost:   5,
-}
 
 func getEnvAny(names ...string) string {
 	for _, n := range names {
