@@ -422,7 +422,7 @@ func (ta *TransactionWithAuth) MinerSCLock(minerID string,
 	return
 }
 
-func (ta *TransactionWithAuth) MienrSCUnlock(nodeID, poolID string) (
+func (ta *TransactionWithAuth) MinerSCUnlock(nodeID, poolID string) (
 	err error) {
 
 	var mscul MinerSCUnlock
@@ -794,6 +794,16 @@ func (ta *TransactionWithAuth) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error)
 
 func (ta *TransactionWithAuth) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error) {
 	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go ta.submitTxn()
+	return
+}
+
+func (ta *TransactionWithAuth) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error) {
+	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip, 0)
 	if err != nil {
 		Logger.Error(err)
 		return

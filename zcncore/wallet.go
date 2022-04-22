@@ -463,7 +463,7 @@ func GetNetworkJSON() string {
 }
 
 // CreateWallet creates the wallet for to configure signature scheme.
-// It also registers the wallet again to block chain.
+// It also registers the wallet again to blockchain.
 func CreateWallet(statusCb WalletCallback) error {
 	if len(_config.chain.Miners) < 1 || len(_config.chain.Sharders) < 1 {
 		return errors.New("", "SDK not initialized")
