@@ -119,7 +119,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error: Signing readmarker failed")}
 			return
 		}
-		rmData, err := json.Marshal(rm)
+		var rmData []byte
+		rmData, err = json.Marshal(rm)
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating readmarker")}
 			return
@@ -128,7 +129,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 		}
 
-		httpreq, err := zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationTx)
+		var httpreq *http.Request
+		httpreq, err = zboxutil.NewDownloadRequest(req.blobber.Baseurl, req.allocationTx)
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating download request")}
 			return
@@ -228,9 +230,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			retry++
 			continue
 		}
-
-		req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: err}
-
 		return
 	}
 

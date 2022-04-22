@@ -112,6 +112,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 		downloadChunks := len(result.BlockChunks)
 		if !result.Success {
 			logger.Logger.Error("Download block : ", req.blobbers[result.idx].Baseurl, " ", result.err)
+			return nil, result.err
 		} else {
 			blockSuccess := false
 			if blockChunksMax < len(result.BlockChunks) {
@@ -187,12 +188,12 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 	}
 	erasureencoder, err := encoder.NewEncoder(req.datashards, req.parityshards)
 	if err != nil {
-		return []byte{}, errors.Wrap(err, "encoder init error")
+		return nil, errors.Wrap(err, "encoder init error")
 	}
 	for blockNum := 0; blockNum < decodeNumBlocks; blockNum++ {
 		data, err := erasureencoder.Decode(shards[blockNum], decodeLen[blockNum])
 		if err != nil {
-			return []byte{}, errors.Wrap(err, "Block decode error")
+			return nil, errors.Wrap(err, "Block decode error")
 		}
 		retData = append(retData, data...)
 	}
