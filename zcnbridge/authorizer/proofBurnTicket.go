@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/0chain/gosdk/zcncore"
+
+	"github.com/0chain/gosdk/core/zcncrypto"
+
 	"github.com/0chain/gosdk/zcnbridge"
 
 	"github.com/0chain/gosdk/core/encryption"
@@ -15,7 +19,7 @@ type ProofOfBurn struct {
 	Nonce           int64  `json:"nonce"`
 	Amount          int64  `json:"amount"`
 	EthereumAddress string `json:"ethereum_address"`
-	Signature       []byte `json:"signatures,omitempty"`
+	Signature       []byte `json:"signature,omitempty"`
 }
 
 func (pb *ProofOfBurn) Encode() []byte {
@@ -40,13 +44,26 @@ func (pb *ProofOfBurn) Verify() (err error) {
 	return
 }
 
-func (pb *ProofOfBurn) Sign(b *zcnbridge.BridgeClient) (err error) {
-	message := fmt.Sprintf("%v:%v:%v:%v", pb.TxnID, pb.Amount, pb.Nonce, pb.EthereumAddress)
-	sig, err := b.SignWithEthereumChain(message)
+func (pb *ProofOfBurn) UnsignedMessage() string {
+	return fmt.Sprintf("%v:%v:%v:%v", pb.TxnID, pb.Amount, pb.Nonce, pb.EthereumAddress)
+}
+
+func (pb *ProofOfBurn) SignWithEthereum(b *zcnbridge.BridgeClient) (err error) {
+	sig, err := b.SignWithEthereumChain(pb.UnsignedMessage())
 	if err != nil {
-		return errors.Wrap("signature", "failed to sign proof of burn ticket", err)
+		return errors.Wrap("signature_ethereum", "failed to sign proof-of-burn ticket", err)
 	}
 	pb.Signature = sig
+
+	return
+}
+
+func (pb *ProofOfBurn) SignWith0Chain(w *zcncrypto.Wallet) (err error) {
+	sig, err := zcncore.SignWith0Wallet(pb.UnsignedMessage(), w)
+	if err != nil {
+		return errors.Wrap("signature_0chain", "failed to sign proof-of-burn ticket using wallet ID "+w.ClientID, err)
+	}
+	pb.Signature = []byte(sig)
 
 	return
 }
