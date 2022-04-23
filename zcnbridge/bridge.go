@@ -192,7 +192,7 @@ func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
 //		if err != nil {
 //			return "", err
 //		}
-//		return signScheme.Sign(hash)
+//		return signScheme.SignWithEthereum(hash)
 //	}
 //	return "", commonErr.NewError("invalid_signature_scheme", "Invalid signature scheme. Please check configuration")
 //}
