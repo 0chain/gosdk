@@ -284,6 +284,14 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		req.endBlock = chunksPerShard
 	}
 
+	if req.startBlock >= req.endBlock {
+		if req.statusCallback != nil {
+			sys.Files.Remove(req.localpath)
+			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("invalid_block_num", "start block should be less than end block"))
+		}
+		return
+	}
+
 	logger.Logger.Info("Download Size:", size, " Shard:", perShard, " chunks/shard:", chunksPerShard)
 	logger.Logger.Info("Start block: ", req.startBlock+1, " End block: ", req.endBlock, " Num blocks: ", req.numBlocks)
 
