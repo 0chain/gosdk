@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 package main
 
 import (
@@ -635,7 +638,7 @@ func TraceEthereumMint(b *zcnbridge.BridgeClient, output string) {
 		return
 	}
 
-	err = pb.Sign(b)
+	err = pb.SignWithEthereum(b)
 	if err != nil {
 		fmt.Print(err)
 		return

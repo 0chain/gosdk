@@ -29,7 +29,7 @@ var (
 var (
 	errNetwork          = errors.New("", "network error. host not reachable")
 	errUserRejected     = errors.New("", "rejected by user")
-	errAuthVerifyFailed = errors.New("", "verfication failed for auth response")
+	errAuthVerifyFailed = errors.New("", "verification failed for auth response")
 	errAuthTimeout      = errors.New("", "auth timed out")
 	errAddSignature     = errors.New("", "error adding signature")
 )
@@ -102,9 +102,9 @@ type TransactionScheme interface {
 	Send(toClientID string, val int64, desc string) error
 	// StoreData implements store the data to blockchain
 	StoreData(data string) error
-	// ExecuteSmartContract impements the Faucet Smart contract
+	// ExecuteSmartContract implements the Faucet Smart contract
 	ExecuteSmartContract(address, methodName, jsoninput string, val int64) error
-	// ExecuteFaucetSCWallet impements the Faucet Smart contract for a given wallet
+	// ExecuteFaucetSCWallet implements the Faucet Smart contract for a given wallet
 	ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error
 	// GetTransactionHash implements retrieval of hash of the submitted transaction
 	GetTransactionHash() string
@@ -114,7 +114,7 @@ type TransactionScheme interface {
 	UnlockTokens(poolID string) error
 	//RegisterMultiSig registers a group wallet and subwallets with MultisigSC
 	RegisterMultiSig(walletstr, mswallet string) error
-	// SetTransactionHash implements verify a previous transation status
+	// SetTransactionHash implements verify a previous transaction status
 	SetTransactionHash(hash string) error
 	// SetTransactionFee implements method to set the transaction fee
 	SetTransactionFee(txnFee int64) error
@@ -122,11 +122,11 @@ type TransactionScheme interface {
 	Verify() error
 	// GetVerifyConfirmationStatus implements the verification status from sharders
 	GetVerifyConfirmationStatus() ConfirmationStatus
-	// GetVerifyOutput implements the verifcation output from sharders
+	// GetVerifyOutput implements the verification output from sharders
 	GetVerifyOutput() string
-	// GetTransactionError implements error string incase of transaction failure
+	// GetTransactionError implements error string in case of transaction failure
 	GetTransactionError() string
-	// GetVerifyError implements error string incase of verify failure error
+	// GetVerifyError implements error string in case of verify failure error
 	GetVerifyError() string
 
 	// Output of transaction.
@@ -147,7 +147,7 @@ type TransactionScheme interface {
 	MinerSCMinerSettings(*MinerSCMinerInfo) error
 	MinerSCSharderSettings(*MinerSCMinerInfo) error
 	MinerSCLock(minerID string, lock int64) error
-	MienrSCUnlock(minerID, poolID string) error
+	MinerSCUnlock(minerID, poolID string) error
 	MinerScUpdateConfig(*InputMap) error
 	MinerScUpdateGlobals(*InputMap) error
 	MinerSCDeleteMiner(*MinerSCMinerInfo) error
@@ -184,6 +184,26 @@ type TransactionScheme interface {
 	ZCNSCUpdateGlobalConfig(*InputMap) error
 	// ZCNSCUpdateAuthorizerConfig updates authorizer config by ID
 	ZCNSCUpdateAuthorizerConfig(*AuthorizerNode) error
+	// ZCNSCAddAuthorizer adds authorizer
+	ZCNSCAddAuthorizer(*AddAuthorizerPayload) error
+}
+
+func Sign(hash string) (string, error) {
+	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	err := sigScheme.SetPrivateKey(_config.wallet.Keys[0].PrivateKey)
+	if err != nil {
+		return "", err
+	}
+	return sigScheme.Sign(hash)
+}
+
+func SignWith0Wallet(hash string, w *zcncrypto.Wallet) (string, error) {
+	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	err := sigScheme.SetPrivateKey(w.Keys[0].PrivateKey)
+	if err != nil {
+		return "", err
+	}
+	return sigScheme.Sign(hash)
 }
 
 func signFn(hash string) (string, error) {
@@ -414,7 +434,7 @@ func (t *Transaction) createFaucetSCWallet(walletStr string, methodName string, 
 	return w, nil
 }
 
-// ExecuteFaucetSCWallet impements the Faucet Smart contract for a given wallet
+// ExecuteFaucetSCWallet implements the Faucet Smart contract for a given wallet
 func (t *Transaction) ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error {
 	w, err := t.createFaucetSCWallet(walletStr, methodName, input)
 	if err != nil {
@@ -1328,7 +1348,7 @@ type MinerSCUnlock struct {
 	PoolID string `json:"pool_id"`
 }
 
-func (t *Transaction) MienrSCUnlock(nodeID, poolID string) (err error) {
+func (t *Transaction) MinerSCUnlock(nodeID, poolID string) (err error) {
 	var mscul MinerSCUnlock
 	mscul.ID = nodeID
 	mscul.PoolID = poolID
@@ -1681,8 +1701,7 @@ func (t *Transaction) StakePoolUnlock(blobberID, poolID string,
 	spr.BlobberID = blobberID
 	spr.PoolID = poolID
 
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
+	err = t.createSmartContractTxn(StorageSmartContractAddress, transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
@@ -1716,6 +1735,20 @@ type Blobber struct {
 	Used              common.Size       `json:"used"`
 	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
+}
+
+type AuthorizerStakePoolSettings struct {
+	DelegateWallet string         `json:"delegate_wallet"`
+	MinStake       common.Balance `json:"min_stake"`
+	MaxStake       common.Balance `json:"max_stake"`
+	NumDelegates   int            `json:"num_delegates"`
+	ServiceCharge  float64        `json:"service_charge"`
+}
+
+type AddAuthorizerPayload struct {
+	PublicKey         string                      `json:"public_key"`
+	URL               string                      `json:"url"`
+	StakePoolSettings AuthorizerStakePoolSettings `json:"stake_pool_settings"` // Used to initially create stake pool
 }
 
 type AuthorizerConfig struct {
@@ -1831,6 +1864,16 @@ func (t *Transaction) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error) {
 
 func (t *Transaction) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error) {
 	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go t.submitTxn()
+	return
+}
+
+func (t *Transaction) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
