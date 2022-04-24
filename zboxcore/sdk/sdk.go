@@ -1275,7 +1275,7 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 }
 
 func GetAllocationMinLock(datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, mcct time.Duration, blobbers []string) (int64, error) {
+	readPrice, writePrice PriceRange, mcct time.Duration) (int64, error) {
 	return GetAllocationMinLockBlobbers(datashards, parityshards, size, expiry,
 		readPrice, writePrice, mcct, blockchain.GetPreferredBlobbers())
 }
