@@ -783,7 +783,7 @@ func CreateAllocation(this js.Value, p []js.Value) interface{} {
 		reject := args[1]
 
 		go func() {
-			result, err := sdk.CreateAllocation(datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct, int64(lock), blobbers)
+			result, err := sdk.CreateAllocationPort(datashards, parityshards, int64(size), int64(expiry), readPrice, writePrice, mcct, int64(lock), blobbers)
 			if err != nil {
 				reject.Invoke(map[string]interface{}{
 					"error": fmt.Sprintf("CreateAllocation failed. Reason: %s", err),
