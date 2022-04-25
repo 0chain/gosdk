@@ -846,13 +846,13 @@ func CreateAllocation(name string, datashards, parityshards int, size, expiry in
 	readPrice, writePrice PriceRange, mcct time.Duration, lock int64) (
 	string, error) {
 
-	return CreateAllocationForOwner(client.GetClientID(),
-		client.GetClientPublicKey(), name, datashards, parityshards,
+	return CreateAllocationForOwner(name, client.GetClientID(),
+		client.GetClientPublicKey(), datashards, parityshards,
 		size, expiry, readPrice, writePrice, mcct, lock,
 		blockchain.GetPreferredBlobbers())
 }
 
-func CreateAllocationForOwner(owner, ownerpublickey string, name string,
+func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, mcct time.Duration,
 	lock int64, preferredBlobbers []string) (hash string, err error) {
