@@ -96,13 +96,16 @@ func (req *CollaboratorRequest) RemoveCollaboratorFromBlobbers() bool {
 func (req *CollaboratorRequest) removeCollaboratorFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- bool) {
 
 	defer req.wg.Done()
+	body := new(bytes.Buffer)
+	formWriter := multipart.NewWriter(body)
+	formWriter.Close()
 
 	httpreq, err := zboxutil.DeleteCollaboratorRequest(blobber.Baseurl, req.a.Tx)
 	if err != nil {
 		Logger.Error("Delete collaborator request error: ", err.Error())
 		return
 	}
-
+	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	httpreq.Header.Add("X-App-Client-Path", req.path)
 	httpreq.Header.Add("X-App-Client-Collab-ID", req.collaboratorID)
 	ctx, cncl := context.WithTimeout(req.a.ctx, (time.Second * 30))

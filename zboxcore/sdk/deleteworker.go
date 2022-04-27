@@ -40,6 +40,7 @@ func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blo
 	defer req.wg.Done()
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
+	formWriter.Close()
 
 	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationTx)
 	if err != nil {
