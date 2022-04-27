@@ -128,20 +128,6 @@ func init() {
 	envProxy.initialize()
 }
 
-var DefaultTransport = &http.Transport{
-	Proxy: envProxy.Proxy,
-	DialContext: (&net.Dialer{
-		Timeout:   45 * time.Second,
-		KeepAlive: 45 * time.Second,
-		DualStack: true,
-	}).DialContext,
-	MaxIdleConns:          100,
-	IdleConnTimeout:       90 * time.Second,
-	TLSHandshakeTimeout:   10 * time.Second,
-	ExpectContinueTimeout: 1 * time.Second,
-	MaxIdleConnsPerHost:   100,
-}
-
 func NewHTTPRequest(method string, url string, data []byte) (*http.Request, context.Context, context.CancelFunc, error) {
 	req, err := http.NewRequest(method, url, bytes.NewBuffer(data))
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")

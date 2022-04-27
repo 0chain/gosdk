@@ -657,6 +657,7 @@ type Blobber struct {
 	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
 	PublicKey         string            `json:"-"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
+	TotalStake        int64             `json:"total_stake"`
 }
 
 func GetBlobbers() (bs []*Blobber, err error) {
@@ -831,27 +832,27 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 	return allocations, nil
 }
 
-func CreateAllocationWithBlobbers(datashards, parityshards int, size, expiry int64,
+func CreateAllocationWithBlobbers(name string, datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, mcct time.Duration, lock int64, blobbers []string) (
 	string, error) {
 
 	return CreateAllocationForOwner(client.GetClientID(),
-		client.GetClientPublicKey(), datashards, parityshards,
+		client.GetClientPublicKey(), name, datashards, parityshards,
 		size, expiry, readPrice, writePrice, mcct, lock,
 		blobbers)
 }
 
-func CreateAllocation(datashards, parityshards int, size, expiry int64,
+func CreateAllocation(name string, datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, mcct time.Duration, lock int64) (
 	string, error) {
 
-	return CreateAllocationForOwner(client.GetClientID(),
+	return CreateAllocationForOwner(name, client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
 		size, expiry, readPrice, writePrice, mcct, lock,
 		blockchain.GetPreferredBlobbers())
 }
 
-func CreateAllocationForOwner(owner, ownerpublickey string,
+func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, mcct time.Duration,
 	lock int64, preferredBlobbers []string) (hash string, err error) {
@@ -865,6 +866,7 @@ func CreateAllocationForOwner(owner, ownerpublickey string,
 	}
 
 	var allocationRequest = map[string]interface{}{
+		"name":                          name,
 		"data_shards":                   datashards,
 		"parity_shards":                 parityshards,
 		"size":                          size,
@@ -929,7 +931,7 @@ func CreateFreeAllocation(marker string, value int64) (string, error) {
 	return hash, err
 }
 
-func UpdateAllocation(
+func UpdateAllocation(name string,
 	size, expiry int64,
 	allocationID string,
 	lock int64,
@@ -945,6 +947,7 @@ func UpdateAllocation(
 	}
 
 	updateAllocationRequest := make(map[string]interface{})
+	updateAllocationRequest["name"] = name
 	updateAllocationRequest["owner_id"] = client.GetClientID()
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size

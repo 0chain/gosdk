@@ -71,6 +71,15 @@ func (w *Wallet) Marshal() (string, error) {
 	return string(ws), nil
 }
 
+func (w *Wallet) Sign(hash, scheme string) (string, error) {
+	sigScheme := NewSignatureScheme(scheme)
+	err := sigScheme.SetPrivateKey(w.Keys[0].PrivateKey)
+	if err != nil {
+		return "", err
+	}
+	return sigScheme.Sign(hash)
+}
+
 func IsMnemonicValid(mnemonic string) bool {
 	return bip39.IsMnemonicValid(mnemonic)
 }
