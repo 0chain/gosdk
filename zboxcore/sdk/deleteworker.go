@@ -1,12 +1,10 @@
 package sdk
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"io/ioutil"
 	"math/bits"
-	"mime/multipart"
 	"net/http"
 	"sync"
 	"time"
@@ -39,18 +37,14 @@ type DeleteRequest struct {
 func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blobberIdx int, deleteMutex *sync.Mutex) {
 	defer req.wg.Done()
 
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
-
-	_ = formWriter.WriteField("connection_id", req.connectionID)
-	_ = formWriter.WriteField("path", req.remotefilepath)
-	formWriter.Close()
-	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationTx, body)
+	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationTx)
 	if err != nil {
 		Logger.Error(blobber.Baseurl, "Error creating delete request", err)
 		return
 	}
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+	httpreq.Header.Add("X-App-Client-Path", req.remotefilepath)
+
 	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 	_ = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {

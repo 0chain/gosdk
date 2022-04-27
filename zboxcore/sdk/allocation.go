@@ -977,20 +977,16 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 		url := a.Blobbers[idx].Baseurl
 		body := new(bytes.Buffer)
 		formWriter := multipart.NewWriter(body)
-		if err := formWriter.WriteField("path", path); err != nil {
-			return err
-		}
-		if err := formWriter.WriteField("refereeClientID", refereeClientID); err != nil {
-			return err
-		}
-		if err := formWriter.Close(); err != nil {
-			return err
-		}
-		httpreq, err := zboxutil.NewRevokeShareRequest(url, a.Tx, body)
+
+		httpreq, err := zboxutil.NewRevokeShareRequest(url, a.Tx)
 		if err != nil {
 			return err
 		}
+
 		httpreq.Header.Set("Content-Type", formWriter.FormDataContentType())
+		httpreq.Header.Add("X-App-Client-Path", path)
+		httpreq.Header.Add("X-App-Client-Referee-ID", refereeClientID)
+
 		if err := formWriter.Close(); err != nil {
 			return err
 		}
