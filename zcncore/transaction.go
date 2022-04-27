@@ -1200,7 +1200,7 @@ func (t *Transaction) MinerScUpdateGlobals(ip *InputMap) (err error) {
 }
 
 type MinerSCDelegatePool struct {
-	Settings sdk.StakePoolSettings `json:"settings"`
+	Settings StakePoolSettings `json:"settings"`
 }
 
 type SimpleMiner struct {
