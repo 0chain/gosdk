@@ -133,12 +133,12 @@ type StorageSdkSchema interface {
 	GetAllocationUpdates(allocation *Allocation) error
 	GetAllocations() ([]*Allocation, error)
 	GetAllocationsForClient(clientID string) ([]*Allocation, error)
-	CreateAllocationWithBlobbers(datashards, parityshards int, size, expiry int64, readPrice, writePrice PriceRange, mcct time.Duration, lock int64, blobbers []string) (string, error)
-	CreateAllocation(datashards, parityshards int, size, expiry int64, readPrice, writePrice PriceRange, mcct time.Duration, lock int64) (string, error)
-	CreateAllocationForOwner(owner, ownerpublickey string, datashards, parityshards int, size, expiry int64, readPrice, writePrice PriceRange, mcct time.Duration, lock int64, preferredBlobbers []string) (string, error)
+	CreateAllocationWithBlobbers(name string, datashards, parityshards int, size, expiry int64, readPrice, writePrice PriceRange, mcct time.Duration, lock int64, blobbers []string) (string, error)
+	CreateAllocation(name string, datashards, parityshards int, size, expiry int64, readPrice, writePrice PriceRange, mcct time.Duration, lock int64) (string, error)
+	CreateAllocationForOwner(name, owner, ownerpublickey string, datashards, parityshards int, size, expiry int64, readPrice, writePrice PriceRange, mcct time.Duration, lock int64, preferredBlobbers []string) (string, error)
 	AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit float64) error
 	CreateFreeAllocation(marker string, value int64) (string, error)
-	UpdateAllocation(size int64, expiry int64, allocationID string, lock int64, setImmutable, updateTerms bool, addBlobberId, removeBlobberId string) (string, error)
+	UpdateAllocation(name string, size int64, expiry int64, allocationID string, lock int64, setImmutable, updateTerms bool, addBlobberId, removeBlobberId string) (string, error)
 	CreateFreeUpdateAllocation(marker, allocationId string, value int64) (string, error)
 	FinalizeAllocation(allocID string) (string, error)
 	CancelAllocation(allocID string) (string, error)
@@ -919,21 +919,25 @@ func (s *storageSdkSchema) GetAllocationsForClient(clientID string) ([]*Allocati
 	return allocations, nil
 }
 
-func (s *storageSdkSchema) CreateAllocationWithBlobbers(datashards, parityshards int, size, expiry int64, readPrice, writePrice PriceRange, mcct time.Duration, lock int64, blobbers []string) (string, error) {
+func (s *storageSdkSchema) CreateAllocationWithBlobbers(name string, datashards, parityshards int, size, expiry int64, readPrice, writePrice PriceRange, mcct time.Duration, lock int64, blobbers []string) (string, error) {
 	return s.CreateAllocationForOwner(client.GetClientID(),
-		client.GetClientPublicKey(), datashards, parityshards,
+		client.GetClientPublicKey(), name, datashards, parityshards,
 		size, expiry, readPrice, writePrice, mcct, lock,
 		blobbers)
 }
 
-func (s *storageSdkSchema) CreateAllocation(datashards, parityshards int, size, expiry int64, readPrice, writePrice PriceRange, mcct time.Duration, lock int64) (string, error) {
-	return s.CreateAllocationForOwner(client.GetClientID(),
+func (s *storageSdkSchema) CreateAllocation(name string, datashards, parityshards int, size, expiry int64, readPrice, writePrice PriceRange, mcct time.Duration, lock int64) (string, error) {
+	return s.CreateAllocationForOwner(name, client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
 		size, expiry, readPrice, writePrice, mcct, lock,
 		blockchain.GetPreferredBlobbers())
 }
 
-func (s *storageSdkSchema) CreateAllocationForOwner(owner, ownerpublickey string, datashards, parityshards int, size, expiry int64, readPrice, writePrice PriceRange, mcct time.Duration, lock int64, preferredBlobbers []string) (string, error) {
+func (s *storageSdkSchema) CreateAllocationForOwner(name, owner, ownerpublickey string,
+	datashards, parityshards int, size, expiry int64,
+	readPrice, writePrice PriceRange, mcct time.Duration,
+	lock int64, preferredBlobbers []string) (string, error) {
+
 	if lock < 0 {
 		return "", errors.New("", "invalid value for lock")
 	}
@@ -943,6 +947,7 @@ func (s *storageSdkSchema) CreateAllocationForOwner(owner, ownerpublickey string
 	}
 
 	var allocationRequest = map[string]interface{}{
+		"name":                          name,
 		"data_shards":                   datashards,
 		"parity_shards":                 parityshards,
 		"size":                          size,
@@ -1007,7 +1012,7 @@ func (s *storageSdkSchema) CreateFreeAllocation(marker string, value int64) (str
 	return hash, err
 }
 
-func (s *storageSdkSchema) UpdateAllocation(
+func (s *storageSdkSchema) UpdateAllocation(name string,
 	size, expiry int64,
 	allocationID string,
 	lock int64,
@@ -1022,6 +1027,7 @@ func (s *storageSdkSchema) UpdateAllocation(
 	}
 
 	updateAllocationRequest := make(map[string]interface{})
+	updateAllocationRequest["name"] = name
 	updateAllocationRequest["owner_id"] = client.GetClientID()
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size

@@ -151,6 +151,11 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 	wm.Timestamp = timestamp
 	wm.ClientID = client.GetClientID()
+
+	wm.LookupHash = fileref.GetReferenceLookup(su.allocationObj.ID, sb.fileRef.Path)
+	wm.Name = sb.fileRef.Name
+	wm.ContentHash = sb.fileRef.ContentHash
+
 	err = wm.Sign()
 	if err != nil {
 		logger.Logger.Error("Signing writemarker failed: ", err)
