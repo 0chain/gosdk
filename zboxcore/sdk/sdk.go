@@ -883,7 +883,6 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
 		"max_challenge_completion_time": mcct,
-		"diversify_blobbers":            false,
 	}
 
 	var sn = transaction.SmartContractTxnData{
@@ -929,6 +928,26 @@ func getAllocationBlobbers(owner, ownerpublickey string,
 
 	return allocBlobberIDs, nil
 }
+func getFreeAllocationBlobbers(request map[string]interface{}) ([]string, error) {
+	data, _ := json.Marshal(request)
+
+	params := make(map[string]string)
+	params["free_allocation_data"] = string(data)
+
+	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/get_free_alloc_blobbers", params, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to make SC-REST Call")
+	}
+	var allocBlobberIDs []string
+
+	err = json.Unmarshal(allocBlobber, &allocBlobberIDs)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal blobber IDs")
+	}
+
+	return allocBlobberIDs, nil
+}
+
 func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit float64) error {
 	if !sdkInitialized {
 		return sdkNotInitialized
@@ -963,6 +982,13 @@ func CreateFreeAllocation(marker string, value int64) (string, error) {
 		"recipient_public_key": client.GetClientPublicKey(),
 		"marker":               marker,
 	}
+
+	blobbers, err := getFreeAllocationBlobbers(input)
+	if err != nil {
+		return "", err
+	}
+
+	input["blobbers"] = blobbers
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.NEW_FREE_ALLOCATION,
