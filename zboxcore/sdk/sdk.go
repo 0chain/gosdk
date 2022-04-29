@@ -907,7 +907,6 @@ func getAllocationBlobbers(owner, ownerpublickey string,
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
 		"max_challenge_completion_time": mcct,
-		"diversify_blobbers":            false,
 	}
 
 	allocationData, _ := json.Marshal(allocationRequest)
@@ -1327,7 +1326,6 @@ func GetAllocationMinLockBlobbers(datashards, parityshards int, size, expiry int
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
 		"max_challenge_completion_time": mcct,
-		"diversify_blobbers":            false,
 	}
 	allocationData, _ := json.Marshal(allocationRequestData)
 
