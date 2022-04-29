@@ -452,7 +452,7 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 }
 
 // Upload upload file
-func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, autoCommit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, chunkSize int, isUpdate, isRepair bool) (*FileCommandResponse, error) {
+func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, autoCommit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, isUpdate, isRepair bool) (*FileCommandResponse, error) {
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
 	}
@@ -523,7 +523,6 @@ func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 
 	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair,
 		sdk.WithThumbnail(thumbnailBytes),
-		sdk.WithChunkSize(int64(chunkSize)),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
 		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}))
