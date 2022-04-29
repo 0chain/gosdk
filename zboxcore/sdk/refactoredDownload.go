@@ -17,6 +17,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
+	zlogger "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
@@ -69,6 +70,8 @@ const (
 	ReDecryptionFail        = "redecryption_fail"
 	InvalidRead             = "invalid_read"
 	InvalidDownloadType     = "invalid_download_type"
+	StaleReadMarker         = "stale_read_marker"
+	InvalidReadMarker       = "invalid_read_marker"
 )
 
 //errors
@@ -92,6 +95,8 @@ var (
 	ErrReDecryptUnmarshallFail  = errors.New(ReDecryptUnmarshallFail, "")
 	ErrReDecryptionFail         = errors.New(ReDecryptionFail, "")
 	ErrInvalidRead              = errors.New(InvalidRead, "want_size is <= 0")
+	ErrStaleReadMarker          = errors.New(StaleReadMarker, "")
+	ErrInvalidReadMarker        = errors.New(InvalidReadMarker, "")
 )
 
 // errors func
@@ -752,10 +757,9 @@ func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- str
 			ClientPublicKey: client.GetClientPublicKey(),
 			BlobberID:       bl.blobberID,
 			AllocationID:    bl.sd.allocationID,
-			//Let's try with allocation owner id
-			OwnerID:   bl.sd.ownerId,
-			Timestamp: common.Now(),
-			ReadSize:  int64(bl.sd.blocksPerMarker) * (bl.sd.chunkSize),
+			OwnerID:         bl.sd.ownerId,
+			Timestamp:       common.Now(),
+			ReadCounter:     int64(bl.sd.blocksPerMarker) + getBlobberReadCtr(bl.blobberID),
 		}
 
 		if err := rm.Sign(); err != nil {
@@ -801,34 +805,34 @@ func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- str
 			}
 			defer resp.Body.Close()
 
+			response, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				return err
+			}
+
+			downloadedBlock := new(downloadBlock)
+
 			switch resp.StatusCode {
 			case http.StatusOK:
-				response, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					return err
-				}
-
-				downloadedBlock := new(downloadBlock)
 				downloadedBlock.idx = bl.blobberIdx
-				err = json.Unmarshal(response, downloadedBlock)
-				if err != nil { //It means response is file data
-					downloadedBlock.Success = true
-					bl.result.data, err = bl.split(response, bl.sd.blockSize)
-					return err
-				}
-
-				if !downloadedBlock.Success {
-					if downloadedBlock.err != nil {
-						return errors.New("download_error", downloadedBlock.err.Error())
-					}
-					return errors.New("download_error", "unknown error which downloading data")
-				}
+				downloadedBlock.Success = true
+				bl.result.data, err = bl.split(response, bl.sd.blockSize)
+				return err
 
 			default:
-				//
-				response, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					return err
+				if err = json.Unmarshal(response, &downloadedBlock); err == nil && downloadedBlock.LatestRM != nil {
+					if err := rm.ValidateWithOtherRM(downloadedBlock.LatestRM); err != nil {
+						retry = 3
+						return errors.New(InvalidReadMarker, err.Error())
+					}
+
+					if downloadedBlock.LatestRM.ReadCounter >= getBlobberReadCtr(bl.blobberID) {
+						zlogger.Logger.Info("Will be retrying download")
+						setBlobberReadCtr(bl.blobberID, downloadedBlock.LatestRM.ReadCounter)
+						retry = 0
+						return errors.New(StaleReadMarker, "readmarker counter is not in sync with latest counter")
+					}
+					return nil
 				}
 
 				if bytes.Contains(response, []byte(NotEnoughTokens)) {
@@ -838,7 +842,6 @@ func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- str
 				return errors.New(ResponseError, string(response))
 
 			}
-			return nil
 		})
 
 		switch {
@@ -857,6 +860,12 @@ func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- str
 				bl.result.err = err
 				errCh <- struct{}{}
 			}
+		case errors.Is(err, ErrInvalidReadMarker):
+			bl.result.err = err
+			errCh <- struct{}{}
+			return
+		case errors.Is(err, ErrStaleReadMarker):
+			retry--
 		default:
 			bl.result.err = err
 			bl.sd.fbMu.Lock()
