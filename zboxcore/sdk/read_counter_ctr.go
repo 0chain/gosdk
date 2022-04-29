@@ -2,8 +2,6 @@ package sdk
 
 import (
 	"sync"
-
-	"github.com/0chain/gosdk/zboxcore/blockchain"
 )
 
 type blobberReadCounter struct {
@@ -21,18 +19,18 @@ func InitReadCounter() {
 
 }
 
-func setBlobberReadCtr(blobber *blockchain.StorageNode, ctr int64) {
+func setBlobberReadCtr(blobberID string, ctr int64) {
 	brc.mu.Lock()
 	defer brc.mu.Unlock()
-	brc.m[blobber.ID] = ctr
+	brc.m[blobberID] = ctr
 }
 
-func getBlobberReadCtr(blobber *blockchain.StorageNode) int64 {
-	return brc.m[blobber.ID]
+func getBlobberReadCtr(blobberID string) int64 {
+	return brc.m[blobberID]
 }
 
-func incBlobberReadCtr(blobber *blockchain.StorageNode, numBlocks int64) {
+func incBlobberReadCtr(blobberID string, numBlocks int64) {
 	brc.mu.Lock()
 	defer brc.mu.Unlock()
-	brc.m[blobber.ID] += numBlocks
+	brc.m[blobberID] += numBlocks
 }
