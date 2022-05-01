@@ -861,8 +861,9 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 		return "", errors.New("", "invalid value for lock")
 	}
 
+	expirationDate := time.Now().Add(time.Duration(expiry) * time.Second)
 	allocationBlobbers, err := getAllocationBlobbers(owner, ownerpublickey, datashards,
-		parityshards, size, expiry, readPrice,
+		parityshards, size, expirationDate.Unix(), readPrice,
 		writePrice, mcct)
 	if err != nil {
 		return "", errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
@@ -878,7 +879,7 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 		"size":                          size,
 		"owner_id":                      owner,
 		"owner_public_key":              ownerpublickey,
-		"expiration_date":               expiry,
+		"expiration_date":               expirationDate.Unix(),
 		"blobbers":                      allocationBlobbers,
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
@@ -894,7 +895,7 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 }
 
 func getAllocationBlobbers(owner, ownerpublickey string,
-	datashards, parityshards int, size, expiry int64,
+	datashards, parityshards int, size, expirationDate int64,
 	readPrice, writePrice PriceRange, mcct time.Duration) ([]string, error) {
 
 	var allocationRequest = map[string]interface{}{
@@ -903,7 +904,7 @@ func getAllocationBlobbers(owner, ownerpublickey string,
 		"size":                          size,
 		"owner_id":                      owner,
 		"owner_public_key":              ownerpublickey,
-		"expiration_date":               expiry,
+		"expiration_date":               expirationDate,
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
 		"max_challenge_completion_time": mcct,
@@ -1012,12 +1013,14 @@ func UpdateAllocation(name string,
 		return "", errors.New("", "invalid value for lock")
 	}
 
+	expirationDate := time.Now().Add(time.Duration(expiry) * time.Second)
+
 	updateAllocationRequest := make(map[string]interface{})
 	updateAllocationRequest["name"] = name
 	updateAllocationRequest["owner_id"] = client.GetClientID()
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
-	updateAllocationRequest["expiration_date"] = expiry
+	updateAllocationRequest["expiration_date"] = expirationDate
 	updateAllocationRequest["set_immutable"] = setImmutable
 	updateAllocationRequest["update_terms"] = updateTerms
 	updateAllocationRequest["add_blobber_id"] = addBlobberId
@@ -1315,13 +1318,15 @@ func GetAllocationMinLockBlobbers(datashards, parityshards int, size, expiry int
 		return 0, sdkNotInitialized
 	}
 
+	expirationDate := time.Now().Add(time.Duration(expiry) * time.Second)
+
 	var allocationRequestData = map[string]interface{}{
 		"data_shards":                   datashards,
 		"parity_shards":                 parityshards,
 		"size":                          size,
 		"owner_id":                      client.GetClientID(),
 		"owner_public_key":              client.GetClientPublicKey(),
-		"expiration_date":               expiry,
+		"expiration_date":               expirationDate,
 		"blobbers":                      blobbers,
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
