@@ -300,14 +300,11 @@ func (t *Transaction) submitTxn() {
 	}
 	t.txn.TransactionNonce = nonce
 
-	// If Signature is not passed compute signature
-	if t.txn.Signature == "" {
-		err := t.txn.ComputeHashAndSign(signFn)
-		if err != nil {
-			t.completeTxn(StatusError, "", err)
-			transaction.Cache.Evict(t.txn.ClientID)
-			return
-		}
+	err := t.txn.ComputeHashAndSign(signFn)
+	if err != nil {
+		t.completeTxn(StatusError, "", err)
+		transaction.Cache.Evict(t.txn.ClientID)
+		return
 	}
 
 	result := make(chan *util.PostResponse, len(_config.chain.Miners))
