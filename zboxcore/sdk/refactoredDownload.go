@@ -393,20 +393,21 @@ func (sd *StreamDownload) getChunksRequired(startingIdx, wantSize int) int {
 	return int(math.Ceil((float64(chunkOffset) + float64(wantSize)) / float64(sd.effectiveChunkSize)))
 }
 
-func (sd *StreamDownload) getEndOffsetBlock(wantSize int) int {
+func (sd *StreamDownload) getEndOffsetChunkIndex(wantSize int) int {
 	newOffset := float64(sd.offset) + float64(wantSize)
 	newOffset = math.Min(float64(newOffset), float64(sd.fileSize))
 
-	return int(newOffset) / int(sd.effectiveBlockSize) / sd.dataShards
+	totalBlocks := math.Ceil(float64(newOffset) / float64(sd.effectiveBlockSize))
+	return int(math.Ceil(totalBlocks / float64(sd.dataShards)))
 }
 
-func (sd *StreamDownload) getStartOffsetBlock() int {
+func (sd *StreamDownload) getStartOffsetChunkIndex() int {
 	return int(sd.offset/sd.effectiveBlockSize/int64(sd.dataShards)) + 1
 }
 
 func (sd *StreamDownload) getDataVertical(wantSize int) (data []byte, err error) {
-	startOffsetBlock := sd.getStartOffsetBlock()
-	endOffsetBlock := sd.getEndOffsetBlock(wantSize)
+	startOffsetBlock := sd.getStartOffsetChunkIndex()
+	endOffsetBlock := sd.getEndOffsetChunkIndex(wantSize)
 
 	totBlocksPerBlobber := endOffsetBlock - int(startOffsetBlock) + 1
 	startingIdx := sd.getBlobberStartingIdx()
@@ -489,7 +490,7 @@ func (sd *StreamDownload) getDataVertical(wantSize int) (data []byte, err error)
 
 func (sd *StreamDownload) getDataHorizontal(wantSize int) (data []byte, err error) {
 	startingBlobberIdx := sd.getBlobberStartingIdx()
-	offsetBlock := sd.getStartOffsetBlock()
+	offsetBlock := sd.getStartOffsetChunkIndex()
 	totalBlocksRequired := sd.getBlocksRequired(wantSize)
 
 	chunkNums := sd.getChunksRequired(startingBlobberIdx, wantSize)
