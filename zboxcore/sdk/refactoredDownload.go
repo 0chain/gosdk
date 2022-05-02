@@ -363,7 +363,12 @@ func (sd *StreamDownload) getBlobberEndIdx(size int) int {
 	endSize := sd.offset + int64(size)
 	offsetBlock := int(math.Ceil(float64(endSize) / float64(sd.effectiveBlockSize)))
 
-	return offsetBlock % sd.dataShards
+	rm := offsetBlock % sd.dataShards
+	if rm == 0 {
+		return sd.dataShards - 1
+	}
+
+	return rm - 1
 
 }
 
