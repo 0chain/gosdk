@@ -281,8 +281,22 @@ func TestGetDataOffset(t *testing.T) {
 			},
 			want: 1,
 		},
-
-		// {}, {},
+		{
+			name: "Test#4",
+			sd: StreamDownload{
+				effectiveBlockSize: 65536,
+				offset:             65536 + 65535,
+			},
+			want: 65535,
+		},
+		{
+			name: "Test#5",
+			sd: StreamDownload{
+				effectiveBlockSize: 65536,
+				offset:             65536 + 65536 + 2,
+			},
+			want: 2,
+		},
 	}
 
 	for _, test := range tests {
