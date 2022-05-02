@@ -306,3 +306,173 @@ func TestGetDataOffset(t *testing.T) {
 		})
 	}
 }
+
+func TestGetChunksRequired(t *testing.T) {
+	type input struct {
+		name          string
+		sd            StreamDownload
+		startingIndex int
+		size          int
+		want          int
+	}
+
+	tests := []input{
+		{
+			name: "Test#1",
+			sd: StreamDownload{
+				effectiveBlockSize: 65536,
+				effectiveChunkSize: 65536 * 3,
+				dataShards:         3,
+			},
+			size:          65536 + 10,
+			startingIndex: 2,
+			want:          2,
+		},
+		{
+			name: "Test#2",
+			sd: StreamDownload{
+				effectiveBlockSize: 65536,
+				effectiveChunkSize: 65536 * 3,
+				dataShards:         3,
+			},
+			size:          65536 + 10,
+			startingIndex: 1,
+			want:          1,
+		},
+		{
+			name: "Test#3",
+			sd: StreamDownload{
+				effectiveBlockSize: 65536,
+				effectiveChunkSize: 65536 * 3,
+				dataShards:         3,
+			},
+			size:          65536 + 10,
+			startingIndex: 0,
+			want:          1,
+		},
+		{
+			name: "Test#4",
+			sd: StreamDownload{
+				effectiveBlockSize: 65536,
+				effectiveChunkSize: 65536 * 3,
+				dataShards:         3,
+			},
+			size:          655360,
+			startingIndex: 2,
+			want:          4,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.sd.getChunksRequired(test.startingIndex, test.size)
+			require.Equal(t, test.want, got)
+		})
+	}
+}
+
+func TestGetEndOffsetChunkIndex(t *testing.T) {
+	type input struct {
+		name string
+		sd   StreamDownload
+		size int
+		want int
+	}
+
+	tests := []input{
+		{
+			name: "Test#1",
+			sd: StreamDownload{
+				offset:             0,
+				fileSize:           6553600,
+				effectiveBlockSize: 65536,
+				dataShards:         3,
+			},
+			size: 655360,
+			want: 4,
+		},
+		{
+			name: "Test#2",
+			sd: StreamDownload{
+				offset:             0,
+				fileSize:           6553600,
+				effectiveBlockSize: 65536,
+				dataShards:         3,
+			},
+			size: 655360 + 65536*2,
+			want: 4,
+		},
+		{
+			name: "Test#3",
+			sd: StreamDownload{
+				offset:             65536 * 2,
+				fileSize:           6553600,
+				effectiveBlockSize: 65536,
+				dataShards:         3,
+			},
+			size: 655360 + 65536,
+			want: 5,
+		},
+		{
+			name: "Test#4",
+			sd: StreamDownload{
+				fileSize:           6553600,
+				effectiveBlockSize: 65536,
+				dataShards:         3,
+			},
+			size: 65536,
+			want: 1,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.sd.getEndOffsetChunkIndex(test.size)
+			require.Equal(t, test.want, got)
+		})
+	}
+}
+
+func TestGetStartOffsetChunkIndex(t *testing.T) {
+	type input struct {
+		name string
+		sd   StreamDownload
+		want int
+	}
+
+	tests := []input{
+		{
+			name: "Test#1",
+			sd: StreamDownload{
+				effectiveBlockSize: 65536,
+				dataShards:         3,
+			},
+			want: 1,
+		},
+		{
+			name: "Test#2",
+			sd: StreamDownload{
+				effectiveBlockSize: 65536,
+				dataShards:         3,
+				offset:             655360,
+			},
+			want: 4,
+		},
+		{
+			name: "Test#3",
+			sd: StreamDownload{
+				effectiveBlockSize: 65536,
+				dataShards:         3,
+				offset:             65536*3 - 1,
+			},
+			want: 1,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.sd.getStartOffsetChunkIndex()
+			require.Equal(t, test.want, got)
+		})
+	}
+}
