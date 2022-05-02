@@ -70,7 +70,7 @@ func NewTransactionEntity() (*Transaction, error) {
 // ExecuteSmartContract executes function of smart contract with provided address.
 //
 // Returns hash of executed transaction.
-func (t *Transaction) ExecuteSmartContract(ctx context.Context, address, funcName, input string, val int64) (string, error) {
+func (t *Transaction) ExecuteSmartContract(ctx context.Context, address, funcName string, input interface{}, val int64) (string, error) {
 	const errCode = "transaction_send"
 
 	err := t.scheme.ExecuteSmartContract(address, funcName, input, val)

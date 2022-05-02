@@ -1,36 +1,29 @@
 package transaction
 
-// ZCNSC smart contract functions wrappers. Partially covered. At this stage not all required
+// ZCNSC smart contract functions wrappers
 
 import (
 	"context"
-	"encoding/json"
 
-	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zcncore"
 )
 
-func (t *Transaction) AddAuthorizer(ctx context.Context, input *zcncore.AddAuthorizerPayload) error {
+func AddAuthorizer(input *zcncore.AddAuthorizerPayload) (*Transaction, error) {
 	t, err := NewTransactionEntity()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	buffer, err := json.Marshal(input)
+	err = t.scheme.ZCNSCAddAuthorizer(input)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = t.ExecuteSmartContract(
-		ctx,
-		zcncore.ZCNSCSmartContractAddress,
-		transaction.ZCNSC_ADD_AUTHORIZER,
-		string(buffer),
-		0,
-	)
+	err = t.callBack.waitCompleteCall(context.Background())
 	if err != nil {
-		return err
+		return nil, err
+
 	}
 
-	return nil
+	return t, nil
 }

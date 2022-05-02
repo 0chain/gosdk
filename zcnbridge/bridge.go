@@ -303,28 +303,27 @@ func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) 
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
 	}
 
-	input := string(payload.Encode())
-
 	Logger.Info(
 		"Starting MINT smart contract",
 		zap.String("sc address", wallet.ZCNSCSmartContractAddress),
 		zap.String("function", wallet.MintFunc),
-		zap.String("payload", input),
-	)
+		zap.Int64("mint amount", int64(payload.Amount)))
 
 	hash, err := trx.ExecuteSmartContract(
 		ctx,
 		wallet.ZCNSCSmartContractAddress,
 		wallet.MintFunc,
-		input,
-		0,
-	)
+		payload,
+		0)
 
 	if err != nil {
 		return trx, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
 	}
 
-	Logger.Info("Mint ZCN transaction", zap.String("hash", hash), zap.String("payload", input))
+	Logger.Info(
+		"Mint ZCN transaction",
+		zap.String("hash", hash),
+		zap.Int64("mint amount", int64(payload.Amount)))
 
 	return trx, nil
 }
@@ -341,20 +340,18 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount int64) (*transaction.
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
 	}
 
-	input := string(payload.Encode())
-
 	Logger.Info(
 		"Starting BURN smart contract",
 		zap.String("sc address", wallet.ZCNSCSmartContractAddress),
 		zap.String("function", wallet.BurnFunc),
-		zap.String("payload", input),
+		zap.Int64("burn amount", amount),
 	)
 
 	hash, err := trx.ExecuteSmartContract(
 		ctx,
 		wallet.ZCNSCSmartContractAddress,
 		wallet.BurnFunc,
-		input,
+		payload,
 		amount,
 	)
 
@@ -363,7 +360,12 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount int64) (*transaction.
 		return trx, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
 	}
 
-	Logger.Info("Burn ZCN transaction", zap.String("hash", hash), zap.String("payload", input), zap.Int64("amount", amount))
+	Logger.Info(
+		"Burn ZCN transaction",
+		zap.String("hash", hash),
+		zap.Int64("burn amount", amount),
+		zap.Int64("amount", amount),
+	)
 
 	return trx, nil
 }
