@@ -373,7 +373,7 @@ func (sd *StreamDownload) getBlobberEndIdx(size int) int {
 }
 
 // getDataOffset return offset value to slice data from 0 to this offset value
-func (sd *StreamDownload) getDataOffset(wantSize int) int {
+func (sd *StreamDownload) getDataOffset() int {
 	startingBlock := sd.offset / sd.effectiveBlockSize
 	blockOffset := startingBlock * sd.effectiveBlockSize
 	return int(sd.offset - blockOffset)
@@ -473,7 +473,7 @@ func (sd *StreamDownload) getDataVertical(wantSize int) (data []byte, err error)
 		}
 	}
 
-	dataOffset := sd.getDataOffset(wantSize)
+	dataOffset := sd.getDataOffset()
 	newOffset := sd.offset + int64(wantSize)
 
 	data = data[dataOffset:]
@@ -566,7 +566,7 @@ func (sd *StreamDownload) getDataHorizontal(wantSize int) (data []byte, err erro
 	}
 
 	// Put block below in Read method; Calculate dataOffset, new offset, etc.
-	dataOffset := sd.getDataOffset(wantSize)
+	dataOffset := sd.getDataOffset()
 	newOffset := sd.offset + int64(wantSize)
 
 	data = data[dataOffset:]
