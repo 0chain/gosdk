@@ -916,7 +916,7 @@ func getAllocationBlobbers(owner, ownerpublickey string,
 
 	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/get_alloc_blobbers", params, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to make SC-REST Call")
+		return nil, err
 	}
 	var allocBlobberIDs []string
 
@@ -935,7 +935,7 @@ func getFreeAllocationBlobbers(request map[string]interface{}) ([]string, error)
 
 	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/get_free_alloc_blobbers", params, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to make SC-REST Call")
+		return nil, err
 	}
 	var allocBlobberIDs []string
 
