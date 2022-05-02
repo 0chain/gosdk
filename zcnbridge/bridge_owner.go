@@ -6,11 +6,11 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/zcnbridge/ethereum/authorizers"
+	hdw "github.com/0chain/gosdk/zcncore/ethhdwallet"
 	eth "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	hdw "github.com/miguelmota/go-ethereum-hdwallet"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
