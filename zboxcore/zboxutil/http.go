@@ -583,7 +583,19 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	}
 
 	if dominant != 200 {
-		return nil, errors.New("", string(retObj))
+		var objmap map[string]json.RawMessage
+		err := json.Unmarshal(retObj, &objmap)
+		if err != nil {
+			return nil, errors.New("", string(retObj))
+		}
+
+		var parsed string
+		err = json.Unmarshal(objmap["error"], &parsed)
+		if err != nil || parsed == "" {
+			return nil, errors.New("", string(retObj))
+		}
+
+		return nil, errors.New("", parsed)
 	}
 
 	if handler != nil {
