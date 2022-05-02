@@ -32,7 +32,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 
-	hdw "github.com/miguelmota/go-ethereum-hdwallet"
+	hdw "github.com/0chain/gosdk/zcncore/ethhdwallet"
 	"go.uber.org/zap"
 )
 
