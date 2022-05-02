@@ -528,10 +528,10 @@ func NewRevokeShareRequest(baseUrl, allocation string, body io.Reader) (*http.Re
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, handler SCRestAPIHandler) ([]byte, error) {
 	numSharders := len(blockchain.GetSharders())
 	sharders := blockchain.GetSharders()
-	responses := make(map[int]float32)
+	responses := make(map[int]int)
 	entityResult := make(map[string][]byte)
 	var retObj []byte
-	maxCount := float32(0)
+	maxCount := 0
 	for _, sharder := range util.Shuffle(sharders) {
 		urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
 		urlObj, _ := url.Parse(urlString)
@@ -546,9 +546,9 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		if err != nil {
 			continue
 		} else {
-			if response.StatusCode != 200 {
-				continue
-			}
+			//if response.StatusCode != 200 {
+			//	continue
+			//}
 			defer response.Body.Close()
 			entityBytes, err := ioutil.ReadAll(response.Body)
 			if err != nil {
@@ -562,16 +562,28 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			entityResult[sharder] = retObj
 		}
 
-		var rate = maxCount * 100 / float32(numSharders)
+		var rate = float32(maxCount*100) / float32(numSharders)
 		if rate >= consensusThresh {
 			break // got it
 		}
 	}
 
 	var err error
-	rate := maxCount * 100 / float32(numSharders)
+	rate := float32(maxCount*100) / float32(numSharders)
 	if rate < consensusThresh {
 		err = errors.New("consensus_failed", "consensus failed on sharders")
+	}
+
+	c := 0
+	dominant := 200
+	for code, count := range responses {
+		if count > c {
+			dominant = code
+		}
+	}
+
+	if dominant != 200 {
+		return nil, errors.New("", string(retObj))
 	}
 
 	if handler != nil {
