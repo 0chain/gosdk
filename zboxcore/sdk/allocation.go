@@ -591,6 +591,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	downloadReq := &DownloadRequest{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
+	downloadReq.allocOwnerID = a.Owner
 	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
 	downloadReq.localpath = localPath
 	downloadReq.remotefilepath = remotePath
@@ -1247,6 +1248,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq := &DownloadRequest{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
+	downloadReq.allocOwnerID = a.Owner
 	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
 	downloadReq.localpath = localPath
 	downloadReq.remotefilepathhash = remoteLookupHash

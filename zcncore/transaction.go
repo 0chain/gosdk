@@ -1779,10 +1779,16 @@ func (t *Transaction) StakePoolUnlock(blobberID, poolID string,
 }
 
 type StakePoolSettings struct {
-	DelegateWallet string         `json:"delegate_wallet"`
-	MinStake       common.Balance `json:"min_stake"`
-	MaxStake       common.Balance `json:"max_stake"`
-	NumDelegates   int            `json:"num_delegates"`
+	// DelegateWallet for pool owner.
+	DelegateWallet string `json:"delegate_wallet"`
+	// MinStake allowed.
+	MinStake common.Balance `json:"min_stake"`
+	// MaxStake allowed.
+	MaxStake common.Balance `json:"max_stake"`
+	// NumDelegates maximum allowed.
+	NumDelegates int `json:"num_delegates"`
+	// ServiceCharge is blobber service charge.
+	ServiceCharge float64 `json:"service_charge"`
 }
 
 type Terms struct {
