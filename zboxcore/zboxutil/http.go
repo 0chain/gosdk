@@ -546,9 +546,6 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		if err != nil {
 			continue
 		} else {
-			//if response.StatusCode != 200 {
-			//	continue
-			//}
 			defer response.Body.Close()
 			entityBytes, err := ioutil.ReadAll(response.Body)
 			if err != nil {
