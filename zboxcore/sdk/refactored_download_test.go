@@ -1,15 +1,25 @@
 package sdk
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io"
+	"math"
+	"math/rand"
 	"net/http"
+	"strconv"
+	"sync"
 	"testing"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
 	zclient "github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
-	"github.com/0chain/gosdk/zboxcore/mocks"
+	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/klauspost/reedsolomon"
 	"github.com/stretchr/testify/require"
 )
 
@@ -17,23 +27,8 @@ const (
 	rdtMnemonic  = "critic earn bulb tribe swift soul upgrade endorse hire mesh girl grit enrich until gold chef day head strike like giant today fatigue marine"
 	rdtClientID  = "cdc97ce18cfeb235689bb9afeefe3d8e3e1bde2714ec5ecf8df982242bc5c1f8"
 	rdtClientKey = "fc7124bfae5ee2f19efe43123891a05038435c3ae5a881d1279aa3f09aec6d037f690176795a8a97b5deecceaa17508c88d7444ef5d31b05e77e88f9cbe0ec1a"
+	blockSize    = 65536
 )
-
-type mockClient struct {
-	respond func(req *http.Request) (*http.Response, error)
-}
-
-func (client *mockClient) Do(req *http.Request) (*http.Response, error) {
-	if client.respond == nil {
-		return nil, errors.New("function_not_set", "")
-	}
-	return client.respond(req)
-}
-
-func TestDownloadBlock(t *testing.T) {
-	zboxutil.Client = &mocks.HttpClient{}
-
-}
 
 func TestGetDstorageFileReader(t *testing.T) {
 	type input struct {
@@ -473,6 +468,478 @@ func TestGetStartOffsetChunkIndex(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.sd.getStartOffsetChunkIndex()
 			require.Equal(t, test.want, got)
+		})
+	}
+}
+
+func TestReadError(t *testing.T) {
+	type input struct {
+		name string
+		sd   StreamDownload
+		b    []byte
+	}
+
+	tests := []input{
+		{
+			name: "Closed Reader",
+			sd: StreamDownload{
+				opened: false,
+			},
+		},
+		{
+			name: "EOF reached",
+			sd: StreamDownload{
+				opened:     true,
+				eofReached: true,
+			},
+		},
+		{
+			name: "Offset greater than file size",
+			sd: StreamDownload{
+				opened:     true,
+				eofReached: true,
+				offset:     655360,
+				fileSize:   655360,
+			},
+		},
+		{
+			name: "Exceeding failed blobbers",
+			sd: StreamDownload{
+				opened:   true,
+				fileSize: 1,
+				failedBlobbers: map[int]*blockchain.StorageNode{
+					1: {},
+					2: {},
+				},
+				parityShards: 1,
+			},
+		},
+		{
+			name: "Want size 0",
+			sd: StreamDownload{
+				opened:   true,
+				fileSize: 10,
+			},
+			b: make([]byte, 0),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := test.sd.Read(test.b)
+			require.NotNil(t, err)
+		})
+	}
+}
+
+func getErasureEncodedData(t *testing.T, blobbers []*blockchain.StorageNode, fileSize, data, parity int) map[string][]byte {
+	p := make([]byte, fileSize)
+	n, err := rand.Read(p)
+	require.Nil(t, err)
+	require.Equal(t, n, fileSize)
+
+	chunkSize := data * blockSize
+
+	numberOfChunks := int(math.Ceil(float64(fileSize) / float64(chunkSize)))
+	resultantFileSize := numberOfChunks * chunkSize
+	numPad := resultantFileSize - fileSize
+
+	r := io.MultiReader(bytes.NewReader(p), bytes.NewReader(make([]byte, numPad)))
+	dataMap := make(map[string][]byte, data+parity)
+
+	for i := 0; i < numberOfChunks; i++ {
+		chunkdata := make([]byte, chunkSize)
+		n, err := r.Read(chunkdata)
+		require.Nil(t, err)
+		require.Equal(t, n, chunkSize)
+
+		encoder, err := reedsolomon.New(data, parity)
+		require.Nil(t, err)
+
+		splittedData, err := encoder.Split(chunkdata)
+		require.Nil(t, err)
+
+		err = encoder.Encode(splittedData)
+		require.Nil(t, err)
+
+		for i, d := range splittedData {
+			blobber := blobbers[i]
+			dataMap[blobber.ID] = append(dataMap[blobber.ID], d...)
+		}
+	}
+
+	return dataMap
+}
+
+type mockClient struct {
+	data map[string][]byte
+}
+
+func (client *mockClient) Do(req *http.Request) (*http.Response, error) {
+	if client.data == nil {
+		return nil, errors.New("data_not_set", "")
+	}
+
+	rmStr := req.Header.Get("X-Read-Marker")
+	rm := new(marker.ReadMarker)
+	err := json.Unmarshal([]byte(rmStr), rm)
+	if err != nil {
+		return nil, err
+	}
+
+	blData := client.data[rm.BlobberID]
+	if blData == nil {
+		return nil, errors.New("data_not_set", fmt.Sprintf("Data not set for blobber %s", rm.BlobberID))
+	}
+
+	startBlockStr := req.Header.Get("X-Block-Num")
+	numBlocksStr := req.Header.Get("X-Num-Blocks")
+
+	startBlock := 0
+	if startBlockStr != "" {
+		startBlock, err = strconv.Atoi(startBlockStr)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	numBlocks := 1
+	if numBlocksStr != "" {
+		numBlocks, err = strconv.Atoi(numBlocksStr)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	totalBlocks := len(blData) / blockSize
+	if startBlock < 0 || numBlocks < 0 || startBlock >= totalBlocks {
+		return nil, errors.New("invalid_block_num", "")
+	}
+
+	offset := startBlock * blockSize
+	limit := offset + numBlocks*blockSize
+	limit = int(math.Min(float64(len(blData)), float64(limit)))
+
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Body: func() io.ReadCloser {
+			return io.NopCloser(bytes.NewReader(blData[offset:limit]))
+		}(),
+	}, nil
+}
+
+func getBlobbers(n int) (blobbers []*blockchain.StorageNode) {
+	for i := 0; i < n; i++ {
+		blobbers = append(blobbers, &blockchain.StorageNode{
+			ID:      fmt.Sprintf("blobberID#%d", i),
+			Baseurl: "https://localhost/blobber" + fmt.Sprint(i),
+		})
+	}
+
+	return
+}
+
+func TestDownloadBlock(t *testing.T) {
+	type input struct {
+		name           string
+		client         *mockClient
+		sd             StreamDownload
+		wantSize       int
+		downloadType   string
+		wantDataLength int
+		wantErr        bool
+		errMsg         string
+	}
+
+	tests := []input{
+		{
+			name:   "OK Vertical Download",
+			client: &mockClient{},
+			sd: StreamDownload{
+				dataShards:         10,
+				parityShards:       5,
+				fileSize:           65536 * 10 * 10,
+				blockSize:          65536,
+				effectiveBlockSize: 65536,
+				effectiveChunkSize: 65536 * 10,
+				opened:             true,
+				blobbers:           getBlobbers(15),
+				blocksPerMarker:    5,
+				retry:              3,
+			},
+			wantSize:       65536 * 10 * 5,
+			wantDataLength: 65536 * 10 * 5,
+			downloadType:   "vertical",
+		},
+		{
+			name:   "OK Horizontal Download",
+			client: &mockClient{},
+			sd: StreamDownload{
+				dataShards:         10,
+				parityShards:       5,
+				fileSize:           65536 * 10 * 10,
+				blockSize:          65536,
+				effectiveBlockSize: 65536,
+				effectiveChunkSize: 65536 * 10,
+				opened:             true,
+				blobbers:           getBlobbers(15),
+				blocksPerMarker:    1,
+				retry:              3,
+			},
+			wantSize:       65536 * 10 * 5,
+			wantDataLength: 65536 * 10 * 5,
+			downloadType:   "horizontal",
+		},
+	}
+	for _, test := range tests {
+		test.client.data = getErasureEncodedData(
+			t, test.sd.blobbers, int(test.sd.fileSize), test.sd.dataShards, test.sd.parityShards)
+
+		zboxutil.Client = test.client
+
+		t.Run(test.name, func(t *testing.T) {
+			t.Logf("Running test: %s", test.name)
+			zboxutil.Client = test.client
+			var (
+				data []byte
+				err  error
+			)
+
+			if test.downloadType == "vertical" {
+				t.Log("Download type is vertical")
+				data, err = test.sd.getDataVertical(test.wantSize)
+			} else {
+				data, err = test.sd.getDataHorizontal(test.wantSize)
+			}
+
+			if test.wantErr {
+				require.NotNil(t, err)
+				require.Contains(t, err.Error(), test.errMsg)
+				require.Len(t, data, test.wantDataLength)
+				return
+			}
+
+			require.Nil(t, err)
+			require.Len(t, data, test.wantDataLength)
+		})
+	}
+
+}
+
+type reconstructionMockClient struct {
+	mockClient
+}
+
+func (mc reconstructionMockClient) NilData(indexes []string) {
+	if mc.data == nil {
+		return
+	}
+
+	for _, i := range indexes {
+		mc.data[i] = nil
+	}
+}
+
+func TestHorizontalReconstruction(t *testing.T) {
+	type input struct {
+		name               string
+		client             *reconstructionMockClient
+		sd                 StreamDownload
+		dataShardsCount    int
+		rawData            [][]byte
+		failedBlobbersList []int
+		wantErr            bool
+		errMsg             string
+	}
+
+	tests := []input{
+		{
+			name:   "OK Horizontal Reconstruction",
+			client: &reconstructionMockClient{},
+			sd: StreamDownload{
+				dataShards:         10,
+				parityShards:       5,
+				fileSize:           65536 * 10,
+				blockSize:          65536,
+				effectiveBlockSize: 65536,
+				effectiveChunkSize: 65536 * 10,
+				opened:             true,
+				blobbers:           getBlobbers(15),
+				blocksPerMarker:    1,
+				retry:              3,
+				fbMu:               &sync.Mutex{},
+				failedBlobbers:     make(map[int]*blockchain.StorageNode),
+			},
+			failedBlobbersList: []int{3, 5, 7},
+		},
+		{
+			name:   "Fail Horizontal Reconstruction",
+			client: &reconstructionMockClient{},
+			sd: StreamDownload{
+				dataShards:         10,
+				parityShards:       5,
+				fileSize:           65536 * 10,
+				blockSize:          65536,
+				effectiveBlockSize: 65536,
+				effectiveChunkSize: 65536 * 10,
+				opened:             true,
+				blobbers:           getBlobbers(15),
+				blocksPerMarker:    1,
+				retry:              3,
+				fbMu:               &sync.Mutex{},
+				failedBlobbers:     make(map[int]*blockchain.StorageNode),
+			},
+			failedBlobbersList: []int{3, 4, 5, 6, 7, 8, 9},
+			wantErr:            true,
+			errMsg:             ErrNoRequiredShards.Code,
+		},
+	}
+
+	for _, test := range tests {
+		test.client.data = getErasureEncodedData(
+			t, test.sd.blobbers, int(test.sd.fileSize), test.sd.dataShards, test.sd.parityShards)
+
+		var blList []string
+		for _, i := range test.failedBlobbersList {
+			blb := test.sd.blobbers[i]
+			blList = append(blList, blb.ID)
+		}
+
+		test.client.NilData(blList)
+
+		rawData := make([][]byte, test.sd.dataShards+test.sd.parityShards)
+
+		var count int
+		for i, blb := range test.sd.blobbers {
+			if count == 10 {
+				break
+			}
+			rawData[i] = test.client.data[blb.ID]
+			count++
+		}
+
+		t.Run(test.name, func(t *testing.T) {
+			t.Logf("Running test: %s", test.name)
+			zboxutil.Client = test.client
+
+			err := test.sd.reconstructHorizontal(rawData, test.sd.dataShards-len(test.failedBlobbersList))
+
+			if test.wantErr {
+				require.NotNil(t, err)
+				require.Contains(t, err.Error(), test.errMsg)
+				return
+			}
+
+			require.Nil(t, err)
+		})
+	}
+
+}
+
+func TestVerticalReconstruction(t *testing.T) {
+	type input struct {
+		name               string
+		sd                 StreamDownload
+		wantErr            bool
+		errMsg             string
+		client             *reconstructionMockClient
+		offsetBlock        int
+		failedBlobbersList []int
+	}
+
+	tests := []input{
+		{
+			name:   "OK Vertical Reconstruction",
+			client: &reconstructionMockClient{},
+			sd: StreamDownload{
+				dataShards:         10,
+				parityShards:       5,
+				fileSize:           65536 * 10 * 10,
+				blockSize:          65536,
+				effectiveBlockSize: 65536,
+				effectiveChunkSize: 65536 * 10,
+				opened:             true,
+				blobbers:           getBlobbers(15),
+				blocksPerMarker:    5,
+				retry:              3,
+			},
+			failedBlobbersList: []int{0, 3, 5},
+		},
+		{
+			name:   "Fail Vertical Reconstruction",
+			client: &reconstructionMockClient{},
+			sd: StreamDownload{
+				dataShards:         10,
+				parityShards:       5,
+				fileSize:           65536 * 10 * 10,
+				blockSize:          65536,
+				effectiveBlockSize: 65536,
+				effectiveChunkSize: 65536 * 10,
+				opened:             true,
+				blobbers:           getBlobbers(15),
+				blocksPerMarker:    5,
+				retry:              3,
+			},
+			failedBlobbersList: []int{0, 1, 3, 5, 7, 9},
+			wantErr:            true,
+			errMsg:             ErrNoRequiredShards.Code,
+		},
+	}
+
+	for _, test := range tests {
+		test.client.data = getErasureEncodedData(t,
+			test.sd.blobbers, int(test.sd.fileSize), test.sd.dataShards, test.sd.parityShards)
+
+		var blList []string
+		for _, i := range test.failedBlobbersList {
+			blb := test.sd.blobbers[i]
+			blList = append(blList, blb.ID)
+		}
+
+		test.client.NilData(blList)
+		zboxutil.Client = test.client
+
+		results := make([]*blobberStreamDownloadRequest, test.sd.dataShards+test.sd.parityShards)
+		var count int
+		for i, blb := range test.sd.blobbers {
+			if count == 10 {
+				break
+			}
+
+			bsdl := &blobberStreamDownloadRequest{
+				blobberIdx:      i,
+				blobberID:       blb.ID,
+				blobberUrl:      blb.Baseurl,
+				offsetBlock:     test.offsetBlock,
+				blocksPerMarker: test.sd.blocksPerMarker,
+			}
+
+			limit := test.sd.blocksPerMarker * blockSize
+			offset := test.offsetBlock
+
+			blobberData := test.client.data[blb.ID]
+			if blobberData != nil {
+				for start := offset; start < limit; start = start + blockSize {
+					bsdl.result.data = append(bsdl.result.data, blobberData[start:start+blockSize])
+				}
+			} else {
+				bsdl.result.err = errors.New("No data", "")
+			}
+
+			results[i] = bsdl
+			count++
+		}
+
+		t.Run(test.name, func(t *testing.T) {
+			err := test.sd.reconstructVertical(results, len(test.failedBlobbersList), test.offsetBlock, test.sd.blocksPerMarker)
+
+			if test.wantErr {
+				require.NotNil(t, err)
+				require.Contains(t, err.Error(), test.errMsg)
+				return
+			}
+
+			require.Nil(t, err)
 		})
 	}
 }
