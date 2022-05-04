@@ -636,7 +636,7 @@ outerloop:
 		requestedShards++
 		if requestedShards == reqParity {
 			select {
-			case <-downloadCompletedCh:
+			case <-breakLoopCh:
 				break outerloop
 			case <-requireNextBlobberCh:
 				requestedShards--
@@ -653,7 +653,7 @@ outerloop:
 		for i := 0; i < bpm; i++ {
 			rawData := make([][]byte, sd.dataShards+sd.parityShards)
 			for j := 0; j < sd.dataShards+sd.parityShards; j++ {
-				if results[j] != nil {
+				if results[j] != nil && len(results[j].result.data) > 0 {
 					rawData[j] = results[j].result.data[i]
 				}
 			}
@@ -669,6 +669,7 @@ outerloop:
 				}
 			}
 		}
+		return nil
 	}
 
 	return ErrNoRequiredShards
@@ -737,6 +738,10 @@ outerloop:
 
 	if gotRequiredShards {
 		for _, res := range results {
+			if res == nil || res.result.err != nil {
+				continue
+			}
+
 			rawData[res.blobberIdx] = res.result.data[0]
 		}
 
@@ -858,6 +863,7 @@ func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- str
 			if retry == bl.sd.retry-1 {
 				bl.result.err = err
 				errCh <- struct{}{}
+				return
 			}
 			time.Sleep(TooManyRequestWaitTime)
 			//
@@ -865,9 +871,13 @@ func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- str
 			if retry == bl.sd.retry-1 {
 				bl.result.err = err
 				errCh <- struct{}{}
+				return
 			}
 		case errors.Is(err, ErrInvalidReadMarker):
 			bl.result.err = err
+			bl.sd.fbMu.Lock()
+			bl.sd.failedBlobbers[bl.blobberIdx] = bl.sd.blobbers[bl.blobberIdx]
+			bl.sd.fbMu.Unlock()
 			errCh <- struct{}{}
 			return
 		case errors.Is(err, ErrStaleReadMarker):
@@ -882,6 +892,9 @@ func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- str
 			return
 		}
 	}
+
+	bl.result.err = errors.New("retry_exhausted", fmt.Sprintf("retried %d times", bl.sd.retry))
+	errCh <- struct{}{}
 }
 
 // GetDStorageFileReader Get a reader that provides io.Reader interface
