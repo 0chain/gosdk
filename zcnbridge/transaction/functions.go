@@ -9,7 +9,6 @@ import (
 )
 
 func AddAuthorizer(ctx context.Context, input *zcncore.AddAuthorizerPayload) (*Transaction, error) {
-
 	t, err := NewTransactionEntity()
 	if err != nil {
 		return nil, err
@@ -17,12 +16,12 @@ func AddAuthorizer(ctx context.Context, input *zcncore.AddAuthorizerPayload) (*T
 
 	err = t.scheme.ZCNSCAddAuthorizer(input)
 	if err != nil {
-		return nil, err
+		return t, err
 	}
 
 	err = t.callBack.waitCompleteCall(ctx)
 	if err != nil {
-		return nil, err
+		return t, err
 
 	}
 
