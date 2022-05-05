@@ -74,6 +74,8 @@ func (t *Transaction) ExecuteSmartContract(ctx context.Context, address, funcNam
 	const errCode = "transaction_send"
 
 	err := t.scheme.ExecuteSmartContract(address, funcName, input, val)
+	t.Hash = t.scheme.GetTransactionHash()
+
 	if err != nil {
 		msg := fmt.Sprintf("error while sending txn: %v", err)
 		return "", errors.New(errCode, msg)
@@ -84,7 +86,6 @@ func (t *Transaction) ExecuteSmartContract(ctx context.Context, address, funcNam
 		return "", errors.New(errCode, msg)
 	}
 
-	t.Hash = t.scheme.GetTransactionHash()
 	if len(t.scheme.GetTransactionError()) > 0 {
 		return "", errors.New(errCode, t.scheme.GetTransactionError())
 	}

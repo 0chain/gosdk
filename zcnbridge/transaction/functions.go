@@ -20,9 +20,9 @@ func AddAuthorizer(ctx context.Context, input *zcncore.AddAuthorizerPayload) (*T
 	}
 
 	err = t.callBack.waitCompleteCall(ctx)
+	t.Hash = t.scheme.GetTransactionHash()
 	if err != nil {
 		return t, err
-
 	}
 
 	return t, nil
