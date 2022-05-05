@@ -286,12 +286,12 @@ func (g getNonceCallBack) OnNonceAvailable(status int, nonce int64, info string)
 	g.nonceCh <- nonce
 }
 
-func (t *Transaction) submitTxn() {
-	// Clear the status, in case transaction object reused
-	t.txnStatus = StatusUnknown
-	t.txnOut = ""
-	t.txnError = nil
+func (t *Transaction) setNonceAndSubmit() {
+	t.setNonce()
+	t.submitTxn()
+}
 
+func (t *Transaction) setNonce() {
 	nonce := t.txn.TransactionNonce
 	if nonce < 1 {
 		nonce = transaction.Cache.GetNextNonce(t.txn.ClientID)
@@ -299,12 +299,22 @@ func (t *Transaction) submitTxn() {
 		transaction.Cache.Set(t.txn.ClientID, nonce)
 	}
 	t.txn.TransactionNonce = nonce
+}
 
-	err := t.txn.ComputeHashAndSign(signFn)
-	if err != nil {
-		t.completeTxn(StatusError, "", err)
-		transaction.Cache.Evict(t.txn.ClientID)
-		return
+func (t *Transaction) submitTxn() {
+	// Clear the status, in case transaction object reused
+	t.txnStatus = StatusUnknown
+	t.txnOut = ""
+	t.txnError = nil
+
+	// If Signature is not passed compute signature
+	if t.txn.Signature == "" {
+		err := t.txn.ComputeHashAndSign(signFn)
+		if err != nil {
+			t.completeTxn(StatusError, "", err)
+			transaction.Cache.Evict(t.txn.ClientID)
+			return
+		}
 	}
 
 	result := make(chan *util.PostResponse, len(_config.chain.Miners))
@@ -415,7 +425,7 @@ func (t *Transaction) Send(toClientID string, val int64, desc string) error {
 		t.txn.ToClientID = toClientID
 		t.txn.Value = val
 		t.txn.TransactionData = string(txnData)
-		t.submitTxn()
+		t.setNonceAndSubmit()
 	}()
 	return nil
 }
@@ -433,7 +443,7 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val int64, desc s
 		t.txn.TransactionData = string(txnData)
 		t.txn.Signature = sig
 		t.txn.CreationDate = CreationDate
-		t.submitTxn()
+		t.setNonceAndSubmit()
 	}()
 	return nil
 }
@@ -442,7 +452,7 @@ func (t *Transaction) StoreData(data string) error {
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeData
 		t.txn.TransactionData = data
-		t.submitTxn()
+		t.setNonceAndSubmit()
 	}()
 	return nil
 }
@@ -502,7 +512,7 @@ func (t *Transaction) ExecuteSmartContract(address, methodName, jsoninput string
 		return err
 	}
 	go func() {
-		t.submitTxn()
+		t.setNonceAndSubmit()
 	}()
 	return nil
 }
@@ -1117,7 +1127,7 @@ func (t *Transaction) VestingTrigger(poolID string) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1134,7 +1144,7 @@ func (t *Transaction) VestingStop(sr *VestingStopRequest) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1145,7 +1155,7 @@ func (t *Transaction) VestingUnlock(poolID string) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1170,7 +1180,7 @@ func (t *Transaction) VestingAdd(ar *VestingAddRequest, value int64) (
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1181,7 +1191,7 @@ func (t *Transaction) VestingDelete(poolID string) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1193,7 +1203,7 @@ func (t *Transaction) VestingUpdateConfig(vscc *InputMap) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1207,7 +1217,7 @@ func (t *Transaction) InterestPoolUpdateConfig(ip *InputMap) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1221,7 +1231,7 @@ func (t *Transaction) FaucetUpdateConfig(ip *InputMap) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1236,7 +1246,7 @@ func (t *Transaction) MinerScUpdateConfig(ip *InputMap) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1247,7 +1257,7 @@ func (t *Transaction) MinerScUpdateGlobals(ip *InputMap) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1307,7 +1317,7 @@ func (t *Transaction) MinerSCMinerSettings(info *MinerSCMinerInfo) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1318,7 +1328,7 @@ func (t *Transaction) MinerSCSharderSettings(info *MinerSCMinerInfo) (err error)
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1329,7 +1339,7 @@ func (t *Transaction) MinerSCDeleteMiner(info *MinerSCMinerInfo) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1340,7 +1350,7 @@ func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1370,7 +1380,7 @@ func (t *Transaction) MinerSCCollectReward(poolId string, providerType Provider)
 		Logger.Error(err)
 		return err
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return err
 }
 
@@ -1389,7 +1399,7 @@ func (t *Transaction) MinerSCLock(nodeID string, lock int64) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1409,7 +1419,7 @@ func (t *Transaction) MinerSCUnlock(nodeID, poolID string) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1431,7 +1441,7 @@ func (t *Transaction) LockTokens(val int64, durationHr int64, durationMin int) e
 		return err
 	}
 	go func() {
-		t.submitTxn()
+		t.setNonceAndSubmit()
 	}()
 	return nil
 }
@@ -1449,7 +1459,7 @@ func (t *Transaction) UnlockTokens(poolID string) error {
 		return err
 	}
 	go func() {
-		t.submitTxn()
+		t.setNonceAndSubmit()
 	}()
 	return nil
 }
@@ -1580,7 +1590,7 @@ func (t *Transaction) StorageSCCollectReward(poolId string, providerType Provide
 		Logger.Error(err)
 		return err
 	}
-	go t.submitTxn()
+	go t.setNonceAndSubmit()
 	return err
 }
 
@@ -1591,7 +1601,7 @@ func (t *Transaction) StorageScUpdateConfig(ip *InputMap) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1611,7 +1621,7 @@ func (t *Transaction) FinalizeAllocation(allocID string, fee int64) (
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1631,7 +1641,7 @@ func (t *Transaction) CancelAllocation(allocID string, fee int64) (
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1666,7 +1676,7 @@ func (t *Transaction) CreateAllocation(car *CreateAllocationRequest,
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1680,7 +1690,7 @@ func (t *Transaction) CreateReadPool(fee int64) (err error) {
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1708,7 +1718,7 @@ func (t *Transaction) ReadPoolLock(allocID, blobberID string,
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1726,7 +1736,7 @@ func (t *Transaction) ReadPoolUnlock(poolID string, fee int64) (err error) {
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1748,7 +1758,7 @@ func (t *Transaction) StakePoolLock(blobberID string, lock, fee int64) (
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1771,7 +1781,7 @@ func (t *Transaction) StakePoolUnlock(blobberID, poolID string,
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1839,7 +1849,7 @@ func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee int64) (err error) {
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1865,7 +1875,7 @@ func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1893,7 +1903,7 @@ func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64,
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1913,7 +1923,7 @@ func (t *Transaction) WritePoolUnlock(poolID string, fee int64) (
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1927,7 +1937,7 @@ func (t *Transaction) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go t.submitTxn()
+	go t.setNonceAndSubmit()
 	return
 }
 
@@ -1937,7 +1947,7 @@ func (t *Transaction) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error
 		Logger.Error(err)
 		return
 	}
-	go t.submitTxn()
+	go t.setNonceAndSubmit()
 	return
 }
 
@@ -1947,6 +1957,6 @@ func (t *Transaction) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go t.submitTxn()
+	go t.setNonceAndSubmit()
 	return
 }
