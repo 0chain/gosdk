@@ -95,7 +95,7 @@ func (t *Transaction) ExecuteSmartContract(ctx context.Context, address, funcNam
 
 func (t *Transaction) GetTransactionHash() string {
 	var txnout map[string]json.RawMessage
-	err := json.Unmarshal([]byte(t.scheme.GetVerifyOutput()), &txnout)
+	err := json.Unmarshal([]byte(t.scheme.Output()), &txnout)
 	if err != nil {
 		fmt.Println("Error in parsing", err)
 	}
