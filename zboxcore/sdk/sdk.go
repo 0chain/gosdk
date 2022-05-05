@@ -658,6 +658,8 @@ type Blobber struct {
 	PublicKey         string            `json:"-"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 	TotalStake        int64             `json:"total_stake"`
+	IsShutDown        bool              `json:"is_shut_down"`
+	IsKilled          bool              `json:"is_killed"`
 }
 
 func GetBlobbers() (bs []*Blobber, err error) {

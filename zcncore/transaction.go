@@ -1737,6 +1737,8 @@ type Blobber struct {
 	Used              common.Size       `json:"used"`
 	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
+	IsShutDown        bool              `json:"is_shut_down"`
+	IsKilled          bool              `json:"is_killed"`
 }
 
 type AuthorizerStakePoolSettings struct {
