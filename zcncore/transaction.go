@@ -132,6 +132,9 @@ type TransactionScheme interface {
 	// Output of transaction.
 	Output() []byte
 
+	// Hash Transaction status regardless of status
+	Hash() string
+
 	// Vesting SC
 
 	VestingTrigger(poolID string) error
@@ -241,6 +244,10 @@ func txnTypeString(t int) string {
 
 func (t *Transaction) Output() []byte {
 	return []byte(t.txnOut)
+}
+
+func (t *Transaction) Hash() string {
+	return t.txn.Hash
 }
 
 func (t *Transaction) completeTxn(status int, out string, err error) {

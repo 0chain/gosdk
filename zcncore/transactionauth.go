@@ -207,6 +207,10 @@ func (ta *TransactionWithAuth) Output() []byte {
 	return []byte(ta.t.txnOut)
 }
 
+func (ta *TransactionWithAuth) Hash() string {
+	return ta.t.txnHash
+}
+
 // ========================================================================== //
 //                                vesting pool                                //
 // ========================================================================== //
