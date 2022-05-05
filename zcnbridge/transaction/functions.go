@@ -8,7 +8,8 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
-func AddAuthorizer(input *zcncore.AddAuthorizerPayload) (*Transaction, error) {
+func AddAuthorizer(ctx context.Context, input *zcncore.AddAuthorizerPayload) (*Transaction, error) {
+
 	t, err := NewTransactionEntity()
 	if err != nil {
 		return nil, err
@@ -19,7 +20,7 @@ func AddAuthorizer(input *zcncore.AddAuthorizerPayload) (*Transaction, error) {
 		return nil, err
 	}
 
-	err = t.callBack.waitCompleteCall(context.Background())
+	err = t.callBack.waitCompleteCall(ctx)
 	if err != nil {
 		return nil, err
 
