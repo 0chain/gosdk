@@ -660,6 +660,10 @@ const (
 
 var statusString = []string{"active", "inactive", "shut_down", "killed", "non_existent"}
 
+func (p Status) String() string {
+	return statusString[p]
+}
+
 type ProviderStatus struct {
 	Status Status `json:"status"`
 	Reason string `json:"reason"`
