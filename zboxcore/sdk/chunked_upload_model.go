@@ -6,7 +6,6 @@ import (
 	"hash/fnv"
 	"strconv"
 
-	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
@@ -130,12 +129,6 @@ func (s *UploadBlobberStatus) UnmarshalJSON(b []byte) error {
 	}
 
 	status.Hasher.File = sha256.New()
-	if status.Hasher.Content != nil {
-
-		status.Hasher.Content.Hash = func(left, right string) string {
-			return encryption.Hash(left + right)
-		}
-	}
 
 	s.Hasher = &status.Hasher
 	s.UploadLength = status.UploadLength

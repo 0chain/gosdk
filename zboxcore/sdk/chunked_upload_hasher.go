@@ -7,7 +7,6 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/util"
 )
 
@@ -26,14 +25,14 @@ type Hasher interface {
 	// GetContentHash get content hash
 	GetContentHash() (string, error)
 	// WriteHashToContent write hash leaf to content hasher
-	WriteHashToContent(hash string, chunkIndex int) error
+	WriteHashToContent(data []byte) error
 }
 
 // see more detail about hash on  https://github.com/0chain/blobber/wiki/Protocols#file-hash
 type hasher struct {
-	File      hash.Hash               `json:"-"`
-	Challenge *util.FixedMerkleTree   `json:"challenge"`
-	Content   *util.CompactMerkleTree `json:"content"`
+	File      hash.Hash             `json:"-"`
+	Challenge *util.FixedMerkleTree `json:"challenge"`
+	Content   hash.Hash             `json:"content"`
 }
 
 // CreateHasher creat Hasher instance
@@ -41,9 +40,7 @@ func CreateHasher(chunkSize int) Hasher {
 	h := &hasher{
 		File:      sha256.New(),
 		Challenge: &util.FixedMerkleTree{ChunkSize: chunkSize},
-		Content: util.NewCompactMerkleTree(func(left, right string) string {
-			return encryption.Hash(left + right)
-		}),
+		Content:   sha256.New(),
 	}
 
 	return h
@@ -113,11 +110,11 @@ func (h *hasher) GetContentHash() (string, error) {
 		return "", errors.Throw(constants.ErrInvalidParameter, "h.Content")
 	}
 
-	return h.Content.GetMerkleRoot(), nil
+	return hex.EncodeToString(h.Content.Sum(nil)), nil
 }
 
 // WriteHashToContent write hash leaf to content hasher
-func (h *hasher) WriteHashToContent(hash string, chunkIndex int) error {
+func (h *hasher) WriteHashToContent(data []byte) error {
 	if h == nil {
 		return errors.Throw(constants.ErrInvalidParameter, "h")
 	}
@@ -126,5 +123,6 @@ func (h *hasher) WriteHashToContent(hash string, chunkIndex int) error {
 		return errors.Throw(constants.ErrInvalidParameter, "h.Content")
 	}
 
-	return h.Content.AddLeaf(hash, chunkIndex)
+	_, err := h.Content.Write(data)
+	return err
 }
