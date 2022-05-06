@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"bytes"
 	"io"
 	"math"
 	"strconv"
@@ -76,8 +77,14 @@ func createChunkReader(fileReader io.Reader, size, chunkSize int64, dataShards i
 		return nil, errors.Throw(constants.ErrInvalidParameter, "hasher")
 	}
 
+	fragmentSize := int64(dataShards) * chunkSize
+	numFragments := int(math.Ceil(float64(size) / float64(fragmentSize)))
+	resultantSize := int64(numFragments) * fragmentSize
+	zPaddings := resultantSize - size
+	newReader := io.MultiReader(fileReader, bytes.NewBuffer(make([]byte, zPaddings)))
+
 	r := &chunkedUploadChunkReader{
-		fileReader:      fileReader,
+		fileReader:      newReader,
 		size:            size,
 		chunkSize:       chunkSize,
 		nextChunkIndex:  0,
