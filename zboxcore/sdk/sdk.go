@@ -648,6 +648,46 @@ func GetStorageSCConfig() (conf *InputMap, err error) {
 	return
 }
 
+type Status int
+
+const (
+	Active Status = iota
+	Inactive
+	ShutDown
+	Killed
+	NonExistent
+)
+
+var statusString = []string{"active", "inactive", "shut_down", "killed", "non_existent"}
+
+type ProviderStatus struct {
+	Status Status `json:"status"`
+	Reason string `json:"reason"`
+}
+
+func GetStatus(providerID, providerType string, err error) (*ProviderStatus, error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+
+	var b []byte
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/storage_status", nil,
+		nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "error requesting blobbers:")
+	}
+	if len(b) == 0 {
+		return nil, errors.New("", "empty response")
+	}
+
+	var status *ProviderStatus
+	if err = json.Unmarshal(b, status); err != nil {
+		return nil, errors.Wrap(err, "error decoding response:")
+	}
+
+	return status, nil
+}
+
 type Blobber struct {
 	ID                common.Key        `json:"id"`
 	BaseURL           string            `json:"url"`
