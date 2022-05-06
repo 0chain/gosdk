@@ -469,9 +469,11 @@ func NewDownloadRequest(baseUrl, allocation string) (*http.Request, error) {
 	return req, nil
 }
 
-func NewDeleteRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, UPLOAD_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodDelete, url, body)
+func NewDeleteRequest(baseUrl, allocation string, query *url.Values) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s?", baseUrl, UPLOAD_ENDPOINT, allocation)
+
+	url += query.Encode()
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		return nil, err
 	}
