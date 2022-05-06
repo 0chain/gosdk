@@ -675,8 +675,10 @@ func StorageGetProviderStatus(providerID, providerType string) (*ProviderStatus,
 	}
 	var err error
 	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/storage_status", nil,
-		nil)
+	params := make(map[string]string)
+	params["id"] = providerID
+	params["type"] = providerType
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/storage_status", params, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting blobbers:")
 	}
