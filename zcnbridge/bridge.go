@@ -155,7 +155,7 @@ func (b *BridgeClient) GetBalance() (*big.Int, error) {
 
 // VerifyZCNTransaction verifies 0CHain transaction
 func (b *BridgeClient) VerifyZCNTransaction(ctx context.Context, hash string) (*transaction.Transaction, error) {
-	return transaction.VerifyTransaction(ctx, hash)
+	return transaction.Verify(ctx, hash)
 }
 
 // SignWithEthereumChain signs the digest with Ethereum chain signer taking key from the current user key storage

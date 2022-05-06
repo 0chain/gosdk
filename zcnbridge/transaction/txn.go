@@ -113,13 +113,8 @@ func (t *Transaction) GetTransactionHash() string {
 	return t.Hash
 }
 
-// Verify checks including of transaction in the blockchain.
 func (t *Transaction) Verify(ctx context.Context) error {
 	const errCode = "transaction_verify"
-
-	if err := t.scheme.SetTransactionHash(t.Hash); err != nil {
-		return err
-	}
 
 	err := t.scheme.Verify()
 	if err != nil {
@@ -157,19 +152,18 @@ func (t *Transaction) Verify(ctx context.Context) error {
 	return nil
 }
 
-// VerifyTransaction verifies including in blockchain transaction with provided hash.
-//
-// If execution completed with no error, returns Transaction with provided hash.
-func VerifyTransaction(ctx context.Context, txnHash string) (*Transaction, error) {
-	txn, err := NewTransactionEntity()
+// Verify checks including of transaction in the blockchain.
+func Verify(ctx context.Context, hash string) (*Transaction, error) {
+	t, err := NewTransactionEntity()
 	if err != nil {
 		return nil, err
 	}
 
-	txn.Hash = txnHash
-	err = txn.Verify(ctx)
-	if err != nil {
+	if err := t.scheme.SetTransactionHash(hash); err != nil {
 		return nil, err
 	}
-	return txn, nil
+
+	err = t.Verify(ctx)
+
+	return t, err
 }
