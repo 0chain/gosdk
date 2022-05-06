@@ -2,6 +2,7 @@ package conf
 
 import (
 	"errors"
+	"strings"
 )
 
 var (
@@ -54,4 +55,15 @@ func InitChainNetwork(n *Network) {
 	network.Sharders = n.Sharders
 	network.Miners = n.Miners
 
+	normalizeURLs(network)
+}
+
+func normalizeURLs(network *Network) {
+	for i := 0; i < len(network.Miners); i++ {
+		network.Miners[i] = strings.TrimSuffix(network.Miners[i], "/")
+	}
+
+	for i := 0; i < len(network.Sharders); i++ {
+		network.Sharders[i] = strings.TrimSuffix(network.Sharders[i], "/")
+	}
 }
