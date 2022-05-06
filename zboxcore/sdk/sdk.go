@@ -665,7 +665,7 @@ type ProviderStatus struct {
 	Reason string `json:"reason"`
 }
 
-func GetStatus(providerID, providerType string, err error) (*ProviderStatus, error) {
+func StorageGetProviderStatus(providerID, providerType string, err error) (*ProviderStatus, error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
 	}
