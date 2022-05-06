@@ -49,6 +49,7 @@ func InitChainNetwork(n *Network) {
 
 	if network == nil {
 		network = n
+		normalizeURLs(network)
 		return
 	}
 
