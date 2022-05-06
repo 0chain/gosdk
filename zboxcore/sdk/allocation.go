@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -26,7 +27,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/mitchellh/go-homedir"
@@ -240,19 +241,19 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			Logger.Info("Upload cancelled by the parent")
+			logger.Logger.Info("Upload cancelled by the parent")
 			return
 		case uploadReq := <-a.uploadChan:
 
-			Logger.Info(fmt.Sprintf("received a upload request for %v %v\n", uploadReq.filepath, uploadReq.remotefilepath))
+			logger.Logger.Info(fmt.Sprintf("received a upload request for %v %v\n", uploadReq.filepath, uploadReq.remotefilepath))
 			go uploadReq.processUpload(ctx, a)
 		case downloadReq := <-a.downloadChan:
 
-			Logger.Info(fmt.Sprintf("received a download request for %v\n", downloadReq.remotefilepath))
+			logger.Logger.Info(fmt.Sprintf("received a download request for %v\n", downloadReq.remotefilepath))
 			go downloadReq.processDownload(ctx)
 		case repairReq := <-a.repairChan:
 
-			Logger.Info(fmt.Sprintf("received a repair request for %v\n", repairReq.listDir.Path))
+			logger.Logger.Info(fmt.Sprintf("received a repair request for %v\n", repairReq.listDir.Path))
 			go repairReq.processRepair(ctx, a)
 		}
 	}
@@ -977,43 +978,33 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 	notFound := make(chan int, len(a.Blobbers))
 	wg := &sync.WaitGroup{}
 	for idx := range a.Blobbers {
-		url := a.Blobbers[idx].Baseurl
-		body := new(bytes.Buffer)
-		formWriter := multipart.NewWriter(body)
-		if err := formWriter.WriteField("path", path); err != nil {
-			return err
-		}
-		if err := formWriter.WriteField("refereeClientID", refereeClientID); err != nil {
-			return err
-		}
-		if err := formWriter.Close(); err != nil {
-			return err
-		}
-		httpreq, err := zboxutil.NewRevokeShareRequest(url, a.Tx, body)
+		baseUrl := a.Blobbers[idx].Baseurl
+		query := &url.Values{}
+		query.Add("path", path)
+		query.Add("refereeClientID", refereeClientID)
+
+		httpreq, err := zboxutil.NewRevokeShareRequest(baseUrl, a.Tx, query)
 		if err != nil {
 			return err
 		}
-		httpreq.Header.Set("Content-Type", formWriter.FormDataContentType())
-		if err := formWriter.Close(); err != nil {
-			return err
-		}
+
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
 				if err != nil {
-					Logger.Error("Revoke share : ", err)
+					logger.Logger.Error("Revoke share : ", err)
 					return err
 				}
 				defer resp.Body.Close()
 
 				respbody, err := ioutil.ReadAll(resp.Body)
 				if err != nil {
-					Logger.Error("Error: Resp ", err)
+					logger.Logger.Error("Error: Resp ", err)
 					return err
 				}
 				if resp.StatusCode != http.StatusOK {
-					Logger.Error(url, " Revoke share error response: ", resp.StatusCode, string(respbody))
+					logger.Logger.Error(baseUrl, " Revoke share error response: ", resp.StatusCode, string(respbody))
 					return fmt.Errorf(string(respbody))
 				}
 				data := map[string]interface{}{}
@@ -1134,18 +1125,18 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 			defer wg.Done()
 			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
 				if err != nil {
-					Logger.Error("Insert share info : ", err)
+					logger.Logger.Error("Insert share info : ", err)
 					return err
 				}
 				defer resp.Body.Close()
 
 				respbody, err := ioutil.ReadAll(resp.Body)
 				if err != nil {
-					Logger.Error("Error: Resp ", err)
+					logger.Logger.Error("Error: Resp ", err)
 					return err
 				}
 				if resp.StatusCode != http.StatusOK {
-					Logger.Error(url, " Insert share info error response: ", resp.StatusCode, string(respbody))
+					logger.Logger.Error(url, " Insert share info error response: ", resp.StatusCode, string(respbody))
 					return fmt.Errorf(string(respbody))
 				}
 				return nil
@@ -1403,7 +1394,7 @@ func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (
 	}
 
 	if err != nil {
-		Logger.Error("Error verifying the commit transaction", err.Error(), txn.Hash)
+		logger.Logger.Error("Error verifying the commit transaction", err.Error(), txn.Hash)
 		return "", err
 	}
 	if t == nil {
@@ -1418,7 +1409,7 @@ func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (
 
 	commitFolderReponseBytes, err := json.Marshal(commitFolderResponse)
 	if err != nil {
-		Logger.Error("Failed to marshal commitFolderResponse to bytes")
+		logger.Logger.Error("Failed to marshal commitFolderResponse to bytes")
 		return "", err
 	}
 

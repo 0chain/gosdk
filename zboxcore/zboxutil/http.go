@@ -513,9 +513,9 @@ func NewShareRequest(baseUrl, allocation string, body io.Reader) (*http.Request,
 	return req, nil
 }
 
-func NewRevokeShareRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, SHARE_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodDelete, url, body)
+func NewRevokeShareRequest(baseUrl, allocation string, query *url.Values) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s?%s", baseUrl, SHARE_ENDPOINT, allocation, query.Encode())
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		return nil, err
 	}
