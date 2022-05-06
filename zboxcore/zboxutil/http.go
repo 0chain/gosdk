@@ -301,9 +301,9 @@ func NewCollaboratorRequest(baseUrl string, allocation string, body io.Reader) (
 	return req, nil
 }
 
-func GetCollaboratorsRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, COLLABORATOR_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodGet, url, body)
+func GetCollaboratorsRequest(baseUrl string, allocation string, query *url.Values) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s?%s", baseUrl, COLLABORATOR_ENDPOINT, allocation, query.Encode())
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -315,9 +315,10 @@ func GetCollaboratorsRequest(baseUrl string, allocation string, body io.Reader) 
 	return req, nil
 }
 
-func DeleteCollaboratorRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, COLLABORATOR_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodDelete, url, body)
+func DeleteCollaboratorRequest(baseUrl string, allocation string, query *url.Values) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s?%s", baseUrl, COLLABORATOR_ENDPOINT, allocation, query.Encode())
+
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -470,9 +471,8 @@ func NewDownloadRequest(baseUrl, allocation string) (*http.Request, error) {
 }
 
 func NewDeleteRequest(baseUrl, allocation string, query *url.Values) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s?", baseUrl, UPLOAD_ENDPOINT, allocation)
+	url := fmt.Sprintf("%s%s%s?%s", baseUrl, UPLOAD_ENDPOINT, allocation, query.Encode())
 
-	url += query.Encode()
 	req, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		return nil, err
