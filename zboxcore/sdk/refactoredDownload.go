@@ -50,6 +50,7 @@ const (
 
 // error codes
 const (
+	LessThan67Percent       = "less_than_67_percent"
 	ExceedingFailedBlobber  = "exceeding_failed_blobber"
 	ReadCounterUpdate       = "rc_update"
 	TooManyRequests         = "too_many_requests"
@@ -76,7 +77,7 @@ const (
 
 //errors
 var (
-	ErrLessThan67PercentBlobber = errors.New("less_than_67_percent", "less than 67% blobbers able to respond")
+	ErrLessThan67PercentBlobber = errors.New(LessThan67Percent, "less than 67% blobbers able to respond")
 	ErrReadCounterUpdate        = errors.New(ReadCounterUpdate, "")
 	ErrTooManyRequests          = errors.New(TooManyRequests, "")
 	ErrContextCancelled         = errors.New(ContextCancelled, "")
@@ -150,10 +151,10 @@ type StreamDownload struct {
 
 	// retry Set this value to retry some failed requests due to too_many_requests, context_cancelled, timeout, etc. errors
 	retry int
+	ctx   context.Context
 }
 
 type blobberStreamDownloadRequest struct {
-	ctx context.Context
 	//blobberIdx Index of blobber in allocation's blobbers list.
 	//It indicates either blobber is data or parity shard
 	blobberIdx int
@@ -763,6 +764,12 @@ outerloop:
 
 func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- struct{}) {
 	for retry := 0; retry < bl.sd.retry; retry++ {
+		select {
+		case <-bl.sd.ctx.Done():
+			bl.result.err = ErrContextCancelled
+			errCh <- struct{}{}
+		default:
+		}
 		rm := &marker.ReadMarker{
 			ClientID:        client.GetClientID(),
 			ClientPublicKey: client.GetClientPublicKey(),
@@ -959,6 +966,7 @@ func GetDStorageFileReader(allocation *Allocation, ref *ORef, sdo *StreamDownloa
 		retry:              downloadRetry,
 		fbMu:               &sync.Mutex{},
 		failedBlobbers:     make(map[int]*blockchain.StorageNode),
+		ctx:                allocation.ctx,
 	}, nil
 }
 

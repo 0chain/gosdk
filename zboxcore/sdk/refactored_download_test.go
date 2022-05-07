@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -666,6 +667,7 @@ func TestDownloadBlock(t *testing.T) {
 				blobbers:           getBlobbers(15),
 				blocksPerMarker:    5,
 				retry:              3,
+				ctx:                context.Background(),
 			},
 			wantSize:       65536 * 10 * 5,
 			wantDataLength: 65536 * 10 * 5,
@@ -685,6 +687,7 @@ func TestDownloadBlock(t *testing.T) {
 				blobbers:           getBlobbers(15),
 				blocksPerMarker:    1,
 				retry:              3,
+				ctx:                context.Background(),
 			},
 			wantSize:       65536 * 10 * 5,
 			wantDataLength: 65536 * 10 * 5,
@@ -769,6 +772,7 @@ func TestHorizontalReconstruction(t *testing.T) {
 				retry:              3,
 				fbMu:               &sync.Mutex{},
 				failedBlobbers:     make(map[int]*blockchain.StorageNode),
+				ctx:                context.Background(),
 			},
 			failedBlobbersList: []int{3, 5, 7},
 		},
@@ -788,6 +792,7 @@ func TestHorizontalReconstruction(t *testing.T) {
 				retry:              3,
 				fbMu:               &sync.Mutex{},
 				failedBlobbers:     make(map[int]*blockchain.StorageNode),
+				ctx:                context.Background(),
 			},
 			failedBlobbersList: []int{3, 4, 5, 6, 7, 8, 9},
 			wantErr:            true,
@@ -862,6 +867,7 @@ func TestVerticalReconstruction(t *testing.T) {
 				blobbers:           getBlobbers(15),
 				blocksPerMarker:    5,
 				retry:              3,
+				ctx:                context.Background(),
 			},
 			failedBlobbersList: []int{0, 3, 5},
 		},
@@ -879,6 +885,7 @@ func TestVerticalReconstruction(t *testing.T) {
 				blobbers:           getBlobbers(15),
 				blocksPerMarker:    5,
 				retry:              3,
+				ctx:                context.Background(),
 			},
 			failedBlobbersList: []int{0, 1, 3, 5, 7, 9},
 			wantErr:            true,
