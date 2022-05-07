@@ -47,19 +47,22 @@ func InitChainNetwork(n *Network) {
 		return
 	}
 
+	normalizeURLs(n)
+
 	if network == nil {
 		network = n
-		normalizeURLs(network)
 		return
 	}
 
 	network.Sharders = n.Sharders
 	network.Miners = n.Miners
-
-	normalizeURLs(network)
 }
 
 func normalizeURLs(network *Network) {
+	if network == nil {
+		return
+	}
+
 	for i := 0; i < len(network.Miners); i++ {
 		network.Miners[i] = strings.TrimSuffix(network.Miners[i], "/")
 	}
