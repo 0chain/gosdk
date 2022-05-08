@@ -872,7 +872,19 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 	if err != nil {
 		return "", errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
 	}
-	ids := append(preferred, allocationBlobbers...)
+
+	//filter duplicates
+	ids := make(map[string]bool)
+	for _, id := range preferred {
+		ids[id] = true
+	}
+	for _, id := range allocationBlobbers {
+		ids[id] = true
+	}
+	blobbers := make([]string, 0, len(ids))
+	for id := range ids {
+		blobbers = append(blobbers, id)
+	}
 
 	if !sdkInitialized {
 		return "", sdkNotInitialized
@@ -886,7 +898,7 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 		"owner_id":                      owner,
 		"owner_public_key":              ownerpublickey,
 		"expiration_date":               expiry,
-		"blobbers":                      ids,
+		"blobbers":                      blobbers,
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
 		"max_challenge_completion_time": mcct,
