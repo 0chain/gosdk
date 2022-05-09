@@ -21,7 +21,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
@@ -58,7 +58,7 @@ func GetVersion() string {
 // SetLogLevel set the log level.
 // lvl - 0 disabled; higher number (upto 4) more verbosity
 func SetLogLevel(lvl int) {
-	Logger.SetLevel(lvl)
+	l.Logger.SetLevel(lvl)
 }
 
 // SetLogFile
@@ -69,12 +69,12 @@ func SetLogFile(logFile string, verbose bool) {
 	if err != nil {
 		return
 	}
-	Logger.SetLogFile(f, verbose)
-	Logger.Info("******* Storage SDK Version: ", version.VERSIONSTR, " *******")
+	l.Logger.SetLogFile(f, verbose)
+	l.Logger.Info("******* Storage SDK Version: ", version.VERSIONSTR, " *******")
 }
 
 func GetLogger() *logger.Logger {
-	return &Logger
+	return &l.Logger
 }
 
 // InitStorageSDK init storage sdk with walletJSON
@@ -1154,7 +1154,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	}
 
 	if err != nil {
-		Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
+		l.Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
 		return
 	}
 
@@ -1219,7 +1219,7 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 	var fabricResponse string
 	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("Fabric commit error : ", err)
+			l.Logger.Error("Fabric commit error : ", err)
 			return err
 		}
 		defer resp.Body.Close()
@@ -1227,7 +1227,7 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 		if err != nil {
 			return errors.Wrap(err, "Error reading response :")
 		}
-		Logger.Debug("Fabric commit result:", string(respBody))
+		l.Logger.Debug("Fabric commit result:", string(respBody))
 		if resp.StatusCode == http.StatusOK {
 			fabricResponse = string(respBody)
 			return nil

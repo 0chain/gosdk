@@ -18,7 +18,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
@@ -47,14 +47,14 @@ func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blo
 	formWriter.Close()
 	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationTx, body)
 	if err != nil {
-		Logger.Error(blobber.Baseurl, "Error creating delete request", err)
+		l.Logger.Error(blobber.Baseurl, "Error creating delete request", err)
 		return
 	}
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 	_ = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("Delete : ", err)
+			l.Logger.Error("Delete : ", err)
 			return err
 		}
 		defer resp.Body.Close()
@@ -63,17 +63,17 @@ func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode, blo
 			deleteMutex.Lock()
 			req.deleteMask |= (1 << uint32(blobberIdx))
 			deleteMutex.Unlock()
-			Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " deleted.")
+			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " deleted.")
 		} else if resp.StatusCode == http.StatusNoContent {
 			req.consensus.Done()
 			deleteMutex.Lock()
 			req.deleteMask |= (1 << uint32(blobberIdx))
 			deleteMutex.Unlock()
-			Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " not available in blobber.")
+			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " not available in blobber.")
 		} else {
 			resp_body, err := ioutil.ReadAll(resp.Body)
 			if err == nil {
-				Logger.Error(blobber.Baseurl, "Response: ", string(resp_body))
+				l.Logger.Error(blobber.Baseurl, "Response: ", string(resp_body))
 			}
 		}
 		return nil
@@ -113,7 +113,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 				return
 			}
 
-			Logger.Error(err.Error())
+			l.Logger.Error(err.Error())
 
 		}(i)
 	}
@@ -175,13 +175,13 @@ func (req *DeleteRequest) ProcessDelete() error {
 	for _, commitReq := range commitReqs {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
-				Logger.Info("Commit success", commitReq.blobber.Baseurl)
+				l.Logger.Info("Commit success", commitReq.blobber.Baseurl)
 				req.consensus.Done()
 			} else {
-				Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
+				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
 			}
 		} else {
-			Logger.Info("Commit result not set", commitReq.blobber.Baseurl)
+			l.Logger.Info("Commit result not set", commitReq.blobber.Baseurl)
 		}
 	}
 
