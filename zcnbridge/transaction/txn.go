@@ -93,26 +93,6 @@ func (t *Transaction) ExecuteSmartContract(ctx context.Context, address, funcNam
 	return t.Hash, nil
 }
 
-func (t *Transaction) GetTransactionHash() string {
-	var txnout map[string]json.RawMessage
-	err := json.Unmarshal([]byte(t.scheme.Output()), &txnout)
-	if err != nil {
-		fmt.Println("Error in parsing", err)
-	}
-
-	var entity map[string]interface{}
-	err = json.Unmarshal(txnout["entity"], &entity)
-	if err != nil {
-		return ""
-	}
-
-	if hash, ok := entity["hash"].(string); ok {
-		t.Hash = hash
-	}
-
-	return t.Hash
-}
-
 func (t *Transaction) Verify(ctx context.Context) error {
 	const errCode = "transaction_verify"
 
