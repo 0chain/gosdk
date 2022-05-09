@@ -1,0 +1,45 @@
+--- ../bls/ffi/go/bls/bls.go	2021-02-13 20:23:52.740853251 +0900
++++ bls/bls.go	2021-02-13 20:13:13.126133815 +0900
+@@ -1,17 +1,24 @@
+ package bls
+ 
+ /*
+-#cgo bn256 CFLAGS:-DMCLBN_FP_UNIT_SIZE=4
+-#cgo bn256 LDFLAGS:-lbls256
+-#cgo bn384 CFLAGS:-DMCLBN_FP_UNIT_SIZE=6
+-#cgo bn384 LDFLAGS:-lbls384
+-#cgo bn384_256 CFLAGS:-DMCLBN_FP_UNIT_SIZE=6 -DMCLBN_FR_UNIT_SIZE=4
+-#cgo bn384_256 LDFLAGS:-lbls384_256
+-#cgo LDFLAGS:-lcrypto -lgmp -lgmpxx -lstdc++
+-
+-#cgo LDFLAGS:-lcrypto -lgmp -lgmpxx -lstdc++
++#cgo CFLAGS:-I${SRCDIR}/include
++#cgo LDFLAGS:-lbls384_256 -lstdc++ -lm
++#cgo ios LDFLAGS:-L${SRCDIR}/lib/ios
++#cgo android,arm64 LDFLAGS:-L${SRCDIR}/lib/linux/arm64
++#cgo android,arm LDFLAGS:-L${SRCDIR}/lib/android/armeabi-v7a
++#cgo android,amd64 LDFLAGS:-L${SRCDIR}/lib/linux/amd64
++#cgo linux,amd64 LDFLAGS:-L${SRCDIR}/lib/linux/amd64
++#cgo linux,arm64 LDFLAGS:-L${SRCDIR}/lib/linux/arm64
++#cgo linux,mipsle LDFLAGS:-L${SRCDIR}/lib/linux/mipsel
++#cgo linux,arm LDFLAGS:-L${SRCDIR}/lib/android/armeabi-v7a
++#cgo darwin,amd64 LDFLAGS:-L${SRCDIR}/lib/darwin/amd64
++#cgo darwin,arm64 LDFLAGS:-L${SRCDIR}/lib/darwin/arm64
++#cgo windows,amd64 LDFLAGS:-L${SRCDIR}/lib/windows/amd64
++#cgo openbsd,amd64 LDFLAGS:-L${SRCDIR}/lib/openbsd/amd64
++#cgo freebsd,amd64 LDFLAGS:-L${SRCDIR}/lib/linux/amd64
+ typedef unsigned int (*ReadRandFunc)(void *, void *, unsigned int);
+ int wrapReadRandCgo(void *self, void *buf, unsigned int n);
++#include <mcl/bn_c384_256.h>
+ #include <bls/bls.h>
+ */
+ import "C"
+@@ -169,7 +176,7 @@ type SecretKey struct {
+ 
+ // Serialize --
+ func (sec *SecretKey) Serialize() []byte {
+-	buf := make([]byte, 48)
++	buf := make([]byte, 32)
+ 	// #nosec
+ 	n := C.blsSecretKeySerialize(unsafe.Pointer(&buf[0]), C.mclSize(len(buf)), &sec.v)
+ 	if n == 0 {

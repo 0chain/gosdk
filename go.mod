@@ -121,3 +121,4 @@ require (
 )
 
 //replace github.com/ethereum/go-ethereum => github.com/certifaction/go-ethereum v1.10.3-wasm
+//replace github.com/herumi/bls-go-binary => ./zboxmobile/bls-go-binary

@@ -23,6 +23,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Replace go.mod
+      - run: sed -i '' 's/\/\/replace github.com\/herumi\/bls-go-binary/replace github.com\/herumi\/bls-go-binary/g' go.mod
+
       - name: Set up Go 1.x
         uses: actions/setup-go@v3
         with:
@@ -79,6 +82,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Replace go.mod
+      - run: sed -i '' 's/\/\/replace github.com\/herumi\/bls-go-binary/replace github.com\/herumi\/bls-go-binary/g' go.mod
 
       - name: Install Java
         uses: actions/setup-java@v3
