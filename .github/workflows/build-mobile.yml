@@ -1,4 +1,4 @@
-name: build
+name: build-mobile
 
 concurrency:
   group: "tests-${{ github.ref }}"
@@ -35,11 +35,8 @@ jobs:
         run: |
           go install golang.org/x/mobile/cmd/gomobile@latest
           go install golang.org/x/mobile/cmd/gobind@latest
-          go get golang.org/x/mobile/cmd/gobind
-          go get golang.org/x/mobile/cmd/gomobile
           gomobile init
         env:
-          GOPROXY: https://proxy.golang.org,direct
           GO111MODULE: "on"
 
       - name: Restore Go mod cache
@@ -73,11 +70,10 @@ jobs:
         with:
           name: zcncore-ios
           path: zcncore-ios.tar.gz
-          retention-days: 5
 
   build-android:
     name: Build-android
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, docker-build]
 
     steps:
       - name: Checkout code
@@ -113,19 +109,10 @@ jobs:
         run: |
           go install golang.org/x/mobile/cmd/gomobile@latest
           go install golang.org/x/mobile/cmd/gobind@latest
-          go get golang.org/x/mobile/cmd/gobind
-          go get golang.org/x/mobile/cmd/gomobile
           gomobile init
         env:
           GOPROXY: https://proxy.golang.org,direct
           GO111MODULE: "on"
-
-      - name: Restore Go mod cache
-        id: cache
-        uses: actions/cache@v1
-        with:
-          path: ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('go.sum') }}
 
       - name: Install
         run: make build-android
@@ -154,4 +141,3 @@ jobs:
         with:
           name: zcncore-android
           path: zcncore-android.tar.gz
-          retention-days: 5
