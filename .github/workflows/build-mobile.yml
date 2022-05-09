@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Replace go.mod
-        run: sed 's/\/\/replace github.com\/herumi\/bls-go-binary/replace github.com\/herumi\/bls-go-binary/g' go.mod
+        run: sed -i -e 's/\/\/replace github.com\/herumi\/bls-go-binary/replace github.com\/herumi\/bls-go-binary/g' go.mod
 
       - name: Set up Go 1.x
         uses: actions/setup-go@v3
@@ -66,14 +66,14 @@ jobs:
 
   build-android:
     name: Build-android
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, docker-build]
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
 
       - name: Replace go.mod
-        run: sed 's/\/\/replace github.com\/herumi\/bls-go-binary/replace github.com\/herumi\/bls-go-binary/g' go.mod
+        run: sed -i -e 's/\/\/replace github.com\/herumi\/bls-go-binary/replace github.com\/herumi\/bls-go-binary/g' go.mod
 
       - name: Install Java
         uses: actions/setup-java@v3
