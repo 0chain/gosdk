@@ -17,6 +17,10 @@ type TransactionWithAuth struct {
 	t *Transaction
 }
 
+func (ta *TransactionWithAuth) Hash() string {
+	return ta.t.txnHash
+}
+
 func (ta *TransactionWithAuth) SetTransactionNonce(txnNonce int64) error {
 	return ta.t.SetTransactionNonce(txnNonce)
 }
@@ -225,7 +229,6 @@ func (ta *TransactionWithAuth) GetVerifyError() string {
 func (ta *TransactionWithAuth) Output() []byte {
 	return []byte(ta.t.txnOut)
 }
-
 
 // GetTransactionNonce returns nonce
 func (ta *TransactionWithAuth) GetTransactionNonce() int64 {
