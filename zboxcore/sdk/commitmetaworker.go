@@ -45,7 +45,19 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 	}
 	commitMetaDataString := string(commitMetaDataBytes)
 
-	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey())
+	nonce := client.GetClient().Nonce
+	if nonce != 0 {
+		nonce++
+	}
+	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey(), nonce)
+	nonce = txn.TransactionNonce
+	if nonce < 1 {
+		nonce = transaction.Cache.GetNextNonce(txn.ClientID)
+	} else {
+		transaction.Cache.Set(txn.ClientID, nonce)
+	}
+	txn.TransactionNonce = nonce
+
 	txn.TransactionData = commitMetaDataString
 	txn.TransactionType = transaction.TxnTypeData
 	err = txn.ComputeHashAndSign(client.Sign)
@@ -70,11 +82,13 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 
 	if err != nil {
 		Logger.Error("Error verifying the commit transaction", err.Error(), txn.Hash)
+		transaction.Cache.Evict(txn.ClientID)
 		req.status.CommitMetaCompleted(commitMetaDataString, "", nil, err)
 		return
 	}
 	if t == nil {
 		err = errors.New("transaction_validation_failed", "Failed to get the transaction confirmation")
+		transaction.Cache.Evict(txn.ClientID)
 		req.status.CommitMetaCompleted(commitMetaDataString, "", nil, err)
 		return
 	}
@@ -94,6 +108,7 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 	commitMetaReponseBytes, err := json.Marshal(commitMetaResponse)
 	if err != nil {
 		Logger.Error("Failed to marshal commitMetaResponse to bytes")
+		transaction.Cache.Evict(txn.ClientID)
 		req.status.CommitMetaCompleted(commitMetaDataString, "", t, err)
 	}
 
