@@ -17,14 +17,10 @@ type TransactionWithAuth struct {
 	t *Transaction
 }
 
-func (ta *TransactionWithAuth) SetTransactionNonce(txnNonce int64) error {
-	return ta.t.SetTransactionNonce(txnNonce)
-}
-
-func newTransactionWithAuth(cb TransactionCallback, txnFee int64, nonce int64) (*TransactionWithAuth, error) {
+func newTransactionWithAuth(cb TransactionCallback, txnFee int64) (*TransactionWithAuth, error) {
 	ta := &TransactionWithAuth{}
 	var err error
-	ta.t, err = newTransaction(cb, txnFee, nonce)
+	ta.t, err = newTransaction(cb, txnFee)
 	return ta, err
 }
 
@@ -112,14 +108,6 @@ func (ta *TransactionWithAuth) sign(otherSig string) error {
 }
 
 func (ta *TransactionWithAuth) submitTxn() {
-	nonce := ta.t.txn.TransactionNonce
-	if nonce < 1 {
-		nonce = transaction.Cache.GetNextNonce(ta.t.txn.ClientID)
-	} else {
-		transaction.Cache.Set(ta.t.txn.ClientID, nonce)
-	}
-	ta.t.txn.TransactionNonce = nonce
-
 	authTxn, err := ta.getAuthorize()
 	if err != nil {
 		Logger.Error("get auth error for send.", err.Error())
@@ -170,13 +158,6 @@ func (ta *TransactionWithAuth) ExecuteFaucetSCWallet(walletStr string, methodNam
 		return err
 	}
 	go func() {
-		nonce := ta.t.txn.TransactionNonce
-		if nonce < 1 {
-			nonce = transaction.Cache.GetNextNonce(ta.t.txn.ClientID)
-		} else {
-			transaction.Cache.Set(ta.t.txn.ClientID, nonce)
-		}
-		ta.t.txn.TransactionNonce = nonce
 		ta.t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
 		ta.submitTxn()
 	}()
@@ -226,10 +207,8 @@ func (ta *TransactionWithAuth) Output() []byte {
 	return []byte(ta.t.txnOut)
 }
 
-
-// GetTransactionNonce returns nonce
-func (ta *TransactionWithAuth) GetTransactionNonce() int64 {
-	return ta.t.txn.TransactionNonce
+func (ta *TransactionWithAuth) Hash() string {
+	return ta.t.txnHash
 }
 
 // ========================================================================== //

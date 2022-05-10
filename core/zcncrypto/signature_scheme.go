@@ -24,7 +24,6 @@ type Wallet struct {
 	Mnemonic    string    `json:"mnemonics"`
 	Version     string    `json:"version"`
 	DateCreated string    `json:"date_created"`
-	Nonce       int64     `json:"nonce"`
 }
 
 //SignatureScheme - an encryption scheme for signing and verifying messages

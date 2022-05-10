@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/gosdk/core/transaction"
 	"log"
 	"math"
 	"net/http"
@@ -13,7 +12,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/0chain/errors"
@@ -175,17 +173,6 @@ type WalletCallback interface {
 // GetBalanceCallback needs to be implemented by the caller of GetBalance() to get the status
 type GetBalanceCallback interface {
 	OnBalanceAvailable(status int, value int64, info string)
-}
-
-// GetNonceCallback needs to be implemented by the caller of GetNonce() to get the status
-type GetNonceCallback interface {
-	OnNonceAvailable(status int, nonce int64, info string)
-}
-
-type GetNonceCallbackStub struct {
-}
-
-func (g *GetNonceCallbackStub) OnNonceAvailable(status int, nonce int64, info string) {
 }
 
 // GetInfoCallback needs to be implemented by the caller of GetLockTokenConfig() and GetLockedTokens()
@@ -448,8 +435,6 @@ func SetNetwork(miners []string, sharders []string) {
 	_config.chain.Miners = miners
 	_config.chain.Sharders = sharders
 
-	transaction.InitCache(sharders)
-
 	conf.InitChainNetwork(&conf.Network{
 		Miners:   miners,
 		Sharders: sharders,
@@ -656,27 +641,6 @@ func GetBalance(cb GetBalanceCallback) error {
 	return nil
 }
 
-// GetBalance retreives wallet nonce from sharders
-func GetNonce(cb GetNonceCallback) error {
-	if cb == nil {
-		cb = &GetNonceCallbackStub{}
-	}
-	err := CheckConfig()
-	if err != nil {
-		return err
-	}
-	go func() {
-		value, info, err := getNonceFromSharders(_config.wallet.ClientID)
-		if err != nil {
-			Logger.Error(err)
-			cb.OnNonceAvailable(StatusError, 0, info)
-			return
-		}
-		cb.OnNonceAvailable(StatusSuccess, value, info)
-	}()
-	return nil
-}
-
 // GetBalance retreives wallet balance from sharders
 func GetBalanceWallet(walletStr string, cb GetBalanceCallback) error {
 
@@ -699,14 +663,6 @@ func GetBalanceWallet(walletStr string, cb GetBalanceCallback) error {
 }
 
 func getBalanceFromSharders(clientID string) (int64, string, error) {
-	return getBalanceFieldFromSharders(clientID, "balance")
-}
-
-func getNonceFromSharders(clientID string) (int64, string, error) {
-	return getBalanceFieldFromSharders(clientID, "nonce")
-}
-
-func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
 	result := make(chan *util.GetResponse)
 	defer close(result)
 	// getMinShardersVerify
@@ -731,7 +687,7 @@ func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
 		if err != nil {
 			continue
 		}
-		if v, ok := objmap[name]; ok {
+		if v, ok := objmap["balance"]; ok {
 			bal, err := strconv.ParseInt(string(v), 10, 64)
 			if err != nil {
 				continue
@@ -1352,53 +1308,4 @@ func Decrypt(key, text string) (string, error) {
 		return "", err
 	}
 	return string(response), nil
-}
-
-type NonceCache struct {
-	cache map[string]int64
-	guard sync.Mutex
-}
-
-func NewNonceCache() *NonceCache {
-	return &NonceCache{cache: make(map[string]int64)}
-}
-
-func (nc *NonceCache) GetNextNonce(clientId string) int64 {
-	nc.guard.Lock()
-	defer nc.guard.Unlock()
-	if _, ok := nc.cache[clientId]; !ok {
-		back := &getNonceCallBack{
-			nonceCh: make(chan int64),
-			err:     nil,
-		}
-		if err := GetNonce(back); err != nil {
-			return 0
-		}
-
-		timeout, _ := context.WithTimeout(context.Background(), time.Second)
-		select {
-		case n := <-back.nonceCh:
-			if back.err != nil {
-				return 0
-			}
-			nc.cache[clientId] = n
-		case <-timeout.Done():
-			return 0
-		}
-	}
-
-	nc.cache[clientId] += 1
-	return nc.cache[clientId]
-}
-
-func (nc *NonceCache) Set(clientId string, nonce int64) {
-	nc.guard.Lock()
-	defer nc.guard.Unlock()
-	nc.cache[clientId] = nonce
-}
-
-func (nc *NonceCache) Evict(clientId string) {
-	nc.guard.Lock()
-	defer nc.guard.Unlock()
-	delete(nc.cache, clientId)
 }

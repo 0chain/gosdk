@@ -3,7 +3,6 @@ package zcncore
 import (
 	"context"
 	"encoding/json"
-	"github.com/0chain/gosdk/core/transaction"
 	"reflect"
 	"time"
 
@@ -53,7 +52,6 @@ func UpdateNetworkDetails() error {
 		_config.isConfigured = false
 		_config.chain.Miners = networkDetails.Miners
 		_config.chain.Sharders = networkDetails.Sharders
-		transaction.InitCache(networkDetails.Sharders)
 		conf.InitChainNetwork(&conf.Network{
 			Sharders: networkDetails.Sharders,
 			Miners:   networkDetails.Miners,

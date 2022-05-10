@@ -58,7 +58,7 @@ func NewTransactionEntity() (*Transaction, error) {
 	txn := &Transaction{
 		callBack: NewStatus().(*callback),
 	}
-	zcntxn, err := zcncore.NewTransaction(txn.callBack, 0, 0)
+	zcntxn, err := zcncore.NewTransaction(txn.callBack, 0)
 	if err != nil {
 		return nil, err
 	}

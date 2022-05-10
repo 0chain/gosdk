@@ -1379,19 +1379,7 @@ func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (
 	}
 	commitFolderDataString := string(commitFolderDataBytes)
 
-	nonce := client.GetClient().Nonce
-	if nonce != 0 {
-		nonce++
-	}
-	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey(), nonce)
-	nonce = txn.TransactionNonce
-	if nonce < 1 {
-		nonce = transaction.Cache.GetNextNonce(txn.ClientID)
-	} else {
-		transaction.Cache.Set(txn.ClientID, nonce)
-	}
-	txn.TransactionNonce = nonce
-
+	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey())
 	txn.TransactionData = commitFolderDataString
 	txn.TransactionType = transaction.TxnTypeData
 	err = txn.ComputeHashAndSign(client.Sign)
@@ -1416,12 +1404,10 @@ func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (
 
 	if err != nil {
 		Logger.Error("Error verifying the commit transaction", err.Error(), txn.Hash)
-		transaction.Cache.Evict(txn.ClientID)
 		return "", err
 	}
 	if t == nil {
 		err = errors.New("transaction_validation_failed", "Failed to get the transaction confirmation")
-		transaction.Cache.Evict(txn.ClientID)
 		return "", err
 	}
 
@@ -1433,7 +1419,6 @@ func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (
 	commitFolderReponseBytes, err := json.Marshal(commitFolderResponse)
 	if err != nil {
 		Logger.Error("Failed to marshal commitFolderResponse to bytes")
-		transaction.Cache.Evict(txn.ClientID)
 		return "", err
 	}
 

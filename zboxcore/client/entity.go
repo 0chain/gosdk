@@ -39,10 +39,6 @@ func PopulateClient(clientjson string, signatureScheme string) error {
 	return err
 }
 
-func SetClientNonce(nonce int64) {
-	client.Nonce = nonce
-}
-
 // PopulateClients This is a workaround for blobber tests that requires multiple clients to test authticket functionality
 func PopulateClients(clientJsons []string, signatureScheme string) error {
 	for _, clientJson := range clientJsons {
