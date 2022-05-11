@@ -14,7 +14,7 @@ import (
 )
 
 type (
-	// Transaction entity that encapsulates the transaction related data and meta data.
+	// Transaction entity that encapsulates the transaction related data and metadata.
 	Transaction struct {
 		Hash              string          `json:"hash,omitempty"`
 		Version           string          `json:"version,omitempty"`
@@ -86,7 +86,7 @@ type (
 		Confirmation confirmation `json:"confirmation"`
 	}
 
-	// confirmation represents the acceptance that a transaction is included into the block chain.
+	// confirmation represents the acceptance that a transaction is included into the blockchain.
 	confirmation struct {
 		Version               string          `json:"version"`
 		Hash                  string          `json:"hash"`
