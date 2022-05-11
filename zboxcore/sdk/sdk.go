@@ -865,14 +865,14 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 
 	preferred, err := getPreferredBlobberIds(preferredBlobbers)
 	if err != nil {
-		return "", errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
+		return "", 0, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
 	}
 
 	allocationBlobbers, err := getAllocationBlobbers(owner, ownerpublickey, datashards,
 		parityshards, size, expiry, readPrice,
 		writePrice, mcct)
 	if err != nil {
-		return "", errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
+		return "", 0, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
 	}
 
 	//filter duplicates
@@ -1033,7 +1033,7 @@ func CreateFreeAllocation(marker string, value int64) (string, int64, error) {
 
 	blobbers, err := getFreeAllocationBlobbers(input)
 	if err != nil {
-		return "", err
+		return "", 0, err
 	}
 
 	input["blobbers"] = blobbers
