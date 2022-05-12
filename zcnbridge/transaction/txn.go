@@ -58,7 +58,7 @@ func NewTransactionEntity() (*Transaction, error) {
 	txn := &Transaction{
 		callBack: NewStatus().(*callback),
 	}
-	zcntxn, err := zcncore.NewTransaction(txn.callBack, 0)
+	zcntxn, err := zcncore.NewTransaction(txn.callBack, 0, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -70,10 +70,12 @@ func NewTransactionEntity() (*Transaction, error) {
 // ExecuteSmartContract executes function of smart contract with provided address.
 //
 // Returns hash of executed transaction.
-func (t *Transaction) ExecuteSmartContract(ctx context.Context, address, funcName, input string, val int64) (string, error) {
+func (t *Transaction) ExecuteSmartContract(ctx context.Context, address, funcName string, input interface{}, val int64) (string, error) {
 	const errCode = "transaction_send"
 
 	err := t.scheme.ExecuteSmartContract(address, funcName, input, val)
+	t.Hash = t.scheme.GetTransactionHash()
+
 	if err != nil {
 		msg := fmt.Sprintf("error while sending txn: %v", err)
 		return "", errors.New(errCode, msg)
@@ -84,7 +86,6 @@ func (t *Transaction) ExecuteSmartContract(ctx context.Context, address, funcNam
 		return "", errors.New(errCode, msg)
 	}
 
-	t.Hash = t.scheme.GetTransactionHash()
 	if len(t.scheme.GetTransactionError()) > 0 {
 		return "", errors.New(errCode, t.scheme.GetTransactionError())
 	}
@@ -92,13 +93,8 @@ func (t *Transaction) ExecuteSmartContract(ctx context.Context, address, funcNam
 	return t.Hash, nil
 }
 
-// Verify checks including of transaction in the blockchain.
 func (t *Transaction) Verify(ctx context.Context) error {
 	const errCode = "transaction_verify"
-
-	if err := t.scheme.SetTransactionHash(t.Hash); err != nil {
-		return err
-	}
 
 	err := t.scheme.Verify()
 	if err != nil {
@@ -136,19 +132,18 @@ func (t *Transaction) Verify(ctx context.Context) error {
 	return nil
 }
 
-// VerifyTransaction verifies including in blockchain transaction with provided hash.
-//
-// If execution completed with no error, returns Transaction with provided hash.
-func VerifyTransaction(ctx context.Context, txnHash string) (*Transaction, error) {
-	txn, err := NewTransactionEntity()
+// Verify checks including of transaction in the blockchain.
+func Verify(ctx context.Context, hash string) (*Transaction, error) {
+	t, err := NewTransactionEntity()
 	if err != nil {
 		return nil, err
 	}
 
-	txn.Hash = txnHash
-	err = txn.Verify(ctx)
-	if err != nil {
+	if err := t.scheme.SetTransactionHash(hash); err != nil {
 		return nil, err
 	}
-	return txn, nil
+
+	err = t.Verify(ctx)
+
+	return t, err
 }

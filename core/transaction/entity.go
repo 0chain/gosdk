@@ -43,6 +43,7 @@ type Transaction struct {
 	TransactionType   int    `json:"transaction_type"`
 	TransactionOutput string `json:"transaction_output,omitempty"`
 	TransactionFee    int64  `json:"transaction_fee"`
+	TransactionNonce  int64  `json:"transaction_nonce"`
 	OutputHash        string `json:"txn_output_hash"`
 	Status            int    `json:"transaction_status"`
 }
@@ -149,13 +150,14 @@ type SignFunc = func(msg string) (string, error)
 type VerifyFunc = func(signature, msgHash, publicKey string) (bool, error)
 type SignWithWallet = func(msg string, wallet interface{}) (string, error)
 
-func NewTransactionEntity(clientID string, chainID string, publicKey string) *Transaction {
+func NewTransactionEntity(clientID string, chainID string, publicKey string, nonce int64) *Transaction {
 	txn := &Transaction{}
 	txn.Version = "1.0"
 	txn.ClientID = clientID
 	txn.CreationDate = int64(common.Now())
 	txn.ChainID = chainID
 	txn.PublicKey = publicKey
+	txn.TransactionNonce = nonce
 	return txn
 }
 
@@ -180,7 +182,7 @@ func (t *Transaction) ComputeHashAndSign(signHandler SignFunc) error {
 }
 
 func (t *Transaction) ComputeHashData() {
-	hashdata := fmt.Sprintf("%v:%v:%v:%v:%v", t.CreationDate, t.ClientID,
+	hashdata := fmt.Sprintf("%v:%v:%v:%v:%v:%v", t.CreationDate, t.TransactionNonce, t.ClientID,
 		t.ToClientID, t.Value, encryption.Hash(t.TransactionData))
 	t.Hash = encryption.Hash(hashdata)
 }
