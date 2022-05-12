@@ -3,6 +3,7 @@ package sdk
 import (
 	"context"
 	"encoding/json"
+	"github.com/0chain/gosdk/core/transaction"
 	"io/ioutil"
 	"net/http"
 	"reflect"
@@ -56,6 +57,7 @@ func UpdateNetworkDetails() error {
 		sdkInitialized = false
 		blockchain.SetMiners(networkDetails.Miners)
 		blockchain.SetSharders(networkDetails.Sharders)
+		transaction.InitCache(networkDetails.Sharders)
 		conf.InitChainNetwork(&conf.Network{
 			Sharders: networkDetails.Sharders,
 			Miners:   networkDetails.Miners,
