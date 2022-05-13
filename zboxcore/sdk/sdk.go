@@ -876,12 +876,12 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 	}
 
 	//filter duplicates
-	ids := make(map[string]bool)
+	ids := make(map[string]struct{})
 	for _, id := range preferred {
-		ids[id] = true
+		ids[id] = struct{}{}
 	}
 	for _, id := range allocationBlobbers {
-		ids[id] = true
+		ids[id] = struct{}{}
 	}
 	blobbers := make([]string, 0, len(ids))
 	for id := range ids {
