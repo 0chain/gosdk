@@ -627,6 +627,7 @@ func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, 
 
 	numSharders = len(_config.chain.Sharders) // overwrite, use all
 	queryFromSharders(numSharders, fmt.Sprintf("%v%v&content=lfb", TXN_VERIFY_URL, txnHash), result)
+
 	maxConfirmation := int(0)
 	txnConfirmations := make(map[string]int)
 	var blockHdr *blockHeader
@@ -1018,16 +1019,27 @@ func (t *Transaction) Verify() error {
 		t.txn.CreationDate = int64(common.Now())
 	}
 
+	tq, err := NewTransactionQuery(_config.chain.Sharders)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+
 	go func() {
+
 		for {
+
+			tq.Reset()
 			// Get transaction confirmation from random sharder
-			confirmBlock, confirmation, lfb, err := getTransactionConfirmation(1, t.txnHash)
+			confirmBlock, confirmation, lfb, err := tq.GetFastConfirmation(context.TODO(), t.txnHash)
+
 			if err != nil {
 				tn := int64(common.Now())
 				Logger.Info(err, " now: ", tn, ", LFB creation time:", lfb.CreationDate)
 				if util.MaxInt64(lfb.CreationDate, tn) < (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
 					Logger.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders")
-					confirmBlock, confirmation, lfb, err = getTransactionConfirmation(getMinShardersVerify(), t.txnHash)
+					confirmBlock, confirmation, lfb, err = tq.GetConfirmation(context.TODO(), getMinShardersVerify(), t.txnHash)
+
 					if err != nil {
 						if t.isTransactionExpired(lfb.CreationDate, tn) {
 							t.completeVerify(StatusError, "", errors.New("", `{"error": "verify transaction failed"}`))
@@ -1043,6 +1055,7 @@ func (t *Transaction) Verify() error {
 					continue
 				}
 			}
+
 			valid := validateChain(confirmBlock)
 			if valid {
 				output, err := json.Marshal(confirmation)
