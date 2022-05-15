@@ -16,27 +16,27 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (b *Configuration) CreateEthClient() (*ethclient.Client, error) {
-	client, err := ethclient.Dial(b.EthereumNodeURL)
+func (conf *Configuration) CreateEthClient() (*ethclient.Client, error) {
+	client, err := ethclient.Dial(conf.EthereumNodeURL)
 	if err != nil {
 		Logger.Error(err)
 	}
 	return client, err
 }
 
-func (b *Configuration) CreateSignedTransactionFromKeyStore(ctx context.Context, gasLimitUnits uint64) *bind.TransactOpts {
+func (conf *Configuration) CreateSignedTransactionFromKeyStore(ctx context.Context, gasLimitUnits uint64) *bind.TransactOpts {
 	var (
-		signerAddress = common.HexToAddress(b.WalletAddress)
-		password      = b.VaultPassword
-		value         = b.Value
+		signerAddress = common.HexToAddress(conf.WalletAddress)
+		password      = conf.VaultPassword
+		value         = conf.Value
 	)
 
-	client, err := b.CreateEthClient()
+	client, err := conf.CreateEthClient()
 	if err != nil {
 		Logger.Fatal(errors.Wrap(err, "failed to create ethereum client"))
 	}
 
-	keyDir := path.Join(b.Homedir, WalletDir)
+	keyDir := path.Join(conf.Homedir, WalletDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	signer := accounts.Account{
 		Address: signerAddress,
