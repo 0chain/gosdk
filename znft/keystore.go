@@ -1,4 +1,4 @@
-package zcnbridge
+package znft
 
 import (
 	"fmt"
@@ -15,7 +15,7 @@ import (
 
 // ListStorageAccounts List available accounts
 func ListStorageAccounts(homedir string) []common.Address {
-	keyDir := path.Join(homedir, EthereumWalletStorageDir)
+	keyDir := path.Join(homedir, WalletDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	config := &accounts.Config{InsecureUnlockAllowed: false}
 	am := accounts.NewManager(config, ks)
@@ -26,7 +26,7 @@ func ListStorageAccounts(homedir string) []common.Address {
 
 // DeleteAccount deletes account from wallet
 func DeleteAccount(homedir, address string) bool {
-	keyDir := path.Join(homedir, EthereumWalletStorageDir)
+	keyDir := path.Join(homedir, WalletDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	config := &accounts.Config{InsecureUnlockAllowed: false}
 	am := accounts.NewManager(config, ks)
@@ -45,7 +45,7 @@ func DeleteAccount(homedir, address string) bool {
 
 // AccountExists checks if account exists
 func AccountExists(homedir, address string) bool {
-	keyDir := path.Join(homedir, EthereumWalletStorageDir)
+	keyDir := path.Join(homedir, WalletDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	config := &accounts.Config{InsecureUnlockAllowed: false}
 	am := accounts.NewManager(config, ks)
@@ -69,7 +69,7 @@ func AccountExists(homedir, address string) bool {
 
 // CreateKeyStorage create, restore or unlock key storage
 func CreateKeyStorage(homedir, password string) error {
-	keyDir := path.Join(homedir, EthereumWalletStorageDir)
+	keyDir := path.Join(homedir, WalletDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	account, err := ks.NewAccount(password)
 	if err != nil {
@@ -82,18 +82,18 @@ func CreateKeyStorage(homedir, password string) error {
 
 // UpdateClientEthereumAddress updates Ethereum address
 func UpdateClientEthereumAddress(homedir, address string) (err error) {
-	configFile := path.Join(homedir, BridgeClientConfigName)
+	configFile := path.Join(homedir, ConfigFile)
 	buf, err := os.ReadFile(configFile)
 	if err != nil {
 		return err
 	}
-	cfg := &Bridge{}
+	cfg := &Configuration{}
 	err = yaml.Unmarshal(buf, cfg)
 	if err != nil {
 		return err
 	}
 
-	cfg.Owner.EthereumAddress = address
+	cfg.WalletAddress = address
 
 	text, err := yaml.Marshal(cfg)
 	if err != nil {
@@ -109,7 +109,7 @@ func UpdateClientEthereumAddress(homedir, address string) (err error) {
 func ImportAccount(homedir, mnemonic, password string) (string, error) {
 	// 1. Create storage and account if it doesn't exist and add account to it
 
-	keyDir := path.Join(homedir, EthereumWalletStorageDir)
+	keyDir := path.Join(homedir, WalletDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 
 	// 2. Init wallet
