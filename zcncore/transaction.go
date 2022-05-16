@@ -960,10 +960,6 @@ func isBlockExtends(prevHash string, block *blockHeader) bool {
 }
 
 func validateChain(confirmBlock *blockHeader) bool {
-	if confirmBlock == nil {
-		return false
-	}
-
 	confirmRound := confirmBlock.Round
 	Logger.Debug("Confirmation round: ", confirmRound)
 	currentBlockHash := confirmBlock.Hash
