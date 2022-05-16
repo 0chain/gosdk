@@ -1038,7 +1038,7 @@ func (t *Transaction) Verify() error {
 				Logger.Info(err, " now: ", tn, ", LFB creation time:", lfb.CreationDate)
 				if util.MaxInt64(lfb.CreationDate, tn) < (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
 					Logger.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders")
-					confirmBlock, confirmation, lfb, err = tq.GetConfirmation(context.TODO(), getMinShardersVerify(), t.txnHash)
+					confirmBlock, lfb, err = tq.GetConfirmation(context.TODO(), getMinShardersVerify(), t.txnHash)
 
 					if err != nil {
 						if t.isTransactionExpired(lfb.CreationDate, tn) {

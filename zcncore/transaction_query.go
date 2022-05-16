@@ -313,39 +313,50 @@ func (tq *TransactionQuery) GetFastConfirmation(ctx context.Context, txnHash str
 	return nil, nil, nil, errors.New("zcn: transaction not found ")
 }
 
-func (tq *TransactionQuery) GetConfirmation(ctx context.Context, numSharders int, txnHash string) (*blockHeader, error) {
+func (tq *TransactionQuery) GetConfirmation(ctx context.Context, numSharders int, txnHash string) (*blockHeader, *blockHeader, error) {
 
 	maxConfirmation := int(0)
 	txnConfirmations := make(map[string]int)
-	var blockHdr *blockHeader
+	var cfmBlockHeader *blockHeader
+	var lfbBlockHeader *blockHeader
 
 	// {host}/v1/transaction/get/confirmation?hash={txnHash}&content=lfb
 	_, err := tq.FromConsensus(ctx,
 		tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"),
 		func(qr QueryResult) bool {
 			if qr.StatusCode == http.StatusOK {
-				var cfmLfb map[string]json.RawMessage
-				err := json.Unmarshal([]byte(qr.Content), &cfmLfb)
+				var confirmation map[string]json.RawMessage
+				err := json.Unmarshal([]byte(qr.Content), &confirmation)
 				if err != nil {
 					Logger.Error("txn confirmation parse error", err)
 					return false
 				}
 
-				// {
-				//	"confirmation":{}
-				//}
-				bH, err := getBlockHeaderFromTransactionConfirmation(txnHash, cfmLfb)
+				// parse confirmation section
+				bH, err := getBlockHeaderFromTransactionConfirmation(txnHash, confirmation)
 
-				// confirmation section found
 				if err == nil {
 					txnConfirmations[bH.Hash]++
 					if txnConfirmations[bH.Hash] > maxConfirmation {
 						maxConfirmation = txnConfirmations[bH.Hash]
-						blockHdr = bH
+
 					}
 
-					// it is consensus by required sharders
 					if maxConfirmation >= numSharders {
+
+						// parse latest_finalized_block section
+						if lfbRaw, ok := confirmation["latest_finalized_block"]; ok {
+							var lfb blockHeader
+							err := json.Unmarshal([]byte(lfbRaw), &lfb)
+							if err != nil {
+								Logger.Error("round info parse error.", err)
+								return false
+							}
+							cfmBlockHeader = bH
+							lfbBlockHeader = &lfb
+						}
+
+						// it is consensus by enough sharders, and latest_finalized_block is valid
 						// return true to cancel other requests
 						return true
 					}
@@ -357,8 +368,8 @@ func (tq *TransactionQuery) GetConfirmation(ctx context.Context, numSharders int
 		})
 
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return blockHdr, nil
+	return cfmBlockHeader, lfbBlockHeader, nil
 }
