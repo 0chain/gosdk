@@ -1057,7 +1057,7 @@ func (t *Transaction) Verify() error {
 					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.GetConsensusConfirmation(context.TODO(), getMinShardersVerify(), t.txnHash)
 				}
 
-				// confirmation not found
+				// txn not found in fast confirmation/consensus confirmation
 				if err != nil {
 					// it is expired
 					if t.isTransactionExpired(lfbBlockHeader.getCreationDate(now), now) {
