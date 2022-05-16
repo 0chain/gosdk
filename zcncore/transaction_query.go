@@ -20,6 +20,7 @@ var (
 	ErrInvalidNumSharder      = errors.New("zcn: number of sharders is invalid")
 	ErrNoOnlineSharders       = errors.New("zcn: no any online sharder")
 	ErrSharderOffline         = errors.New("zcn: sharder is offline")
+	ErrNoConsensus            = errors.New("zcn: no valid consensus")
 )
 
 const (
@@ -31,6 +32,9 @@ type QueryResult struct {
 	StatusCode int
 	Error      error
 }
+
+// QueryResultHandle handle query response, return true if it is a consensus-result
+type QueryResultHandle func(result QueryResult) bool
 
 type TransactionQuery struct {
 	max      int
@@ -175,20 +179,20 @@ func (tq *TransactionQuery) randOne(ctx context.Context) (string, error) {
 // FromAny query transaction form any sharder that is not selected in previous queires. use any used sharder if there is not any unused sharder
 func (tq *TransactionQuery) FromAny(ctx context.Context, query string) (QueryResult, error) {
 
-	result := QueryResult{
+	res := QueryResult{
 		StatusCode: http.StatusBadRequest,
 	}
 
 	err := tq.validate(1)
 
 	if err != nil {
-		return result, err
+		return res, err
 	}
 
 	host, err := tq.randOne(ctx)
 
 	if err != nil {
-		return result, err
+		return res, err
 	}
 
 	r := resty.New()
@@ -200,13 +204,13 @@ func (tq *TransactionQuery) FromAny(ctx context.Context, query string) (QueryRes
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 			Logger.Debug(requestUrl + " " + resp.Status)
 
-			result.Error = err
+			res.Error = err
 			if err != nil {
 				return err
 			}
 
-			result.Content = respBody
-			result.StatusCode = resp.StatusCode
+			res.Content = respBody
+			res.StatusCode = resp.StatusCode
 
 			Logger.Debug(string(respBody))
 
@@ -216,87 +220,15 @@ func (tq *TransactionQuery) FromAny(ctx context.Context, query string) (QueryRes
 	errs := r.Wait()
 
 	if len(errs) > 0 {
-		return result, errs[0]
+		return res, errs[0]
 	}
 
-	return result, nil
+	return res, nil
 
 }
 
-// From query transaction from s/S sharders whatever it is selected in previous queires
-func (tq *TransactionQuery) From(ctx context.Context, numSharders int, query string) ([]QueryResult, error) {
-	err := tq.validate(numSharders)
-
-	if err != nil {
-		return nil, err
-	}
-
-	urls := make([]string, 0, numSharders)
-	selected := make(map[string]interface{})
-	randGen := rand.New(rand.NewSource(time.Now().UnixNano()))
-	for {
-
-		if len(selected) >= tq.max {
-			return nil, ErrNoOnlineSharders
-		}
-
-		i := randGen.Intn(len(tq.sharders))
-		host := tq.sharders[i]
-
-		_, ok := selected[host]
-
-		// it was selected, try next
-		if ok {
-			continue
-		}
-
-		selected[host] = true
-
-		err := tq.checkHealth(ctx, host)
-
-		if err != nil {
-			if errors.Is(err, ErrNoOnlineSharders) {
-				return nil, err
-			}
-
-			// it is offline, try next one
-			continue
-		}
-
-		urls = append(urls, tq.buildUrl(host, query))
-
-		if len(urls) >= numSharders {
-			break
-		}
-	}
-
-	results := make([]QueryResult, 0, numSharders)
-
-	r := resty.New()
-	r.DoGet(ctx, urls...).
-		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
-			result := QueryResult{
-				Content:    respBody,
-				Error:      err,
-				StatusCode: http.StatusBadRequest,
-			}
-
-			if resp != nil {
-				result.StatusCode = resp.StatusCode
-			}
-
-			results = append(results, result)
-
-			return nil
-		})
-
-	r.Wait()
-
-	return results, nil
-}
-
-// FromAll query transaction from all sharders whatever it is selected or offline in previous queires
-func (tq *TransactionQuery) FromAll(ctx context.Context, query string) ([]QueryResult, error) {
+// FromConsensus query transaction from all sharders whatever it is selected or offline in previous queires, and return consensus result
+func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, handle QueryResultHandle) (*QueryResult, error) {
 	if tq == nil || tq.max == 0 {
 		return nil, ErrNoAvailableSharders
 	}
@@ -306,12 +238,12 @@ func (tq *TransactionQuery) FromAll(ctx context.Context, query string) ([]QueryR
 		urls = append(urls, tq.buildUrl(host, query))
 	}
 
-	results := make([]QueryResult, 0, tq.max)
+	var result *QueryResult
 
 	r := resty.New()
 	r.DoGet(ctx, urls...).
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
-			result := QueryResult{
+			res := QueryResult{
 				Content:    respBody,
 				Error:      err,
 				StatusCode: http.StatusBadRequest,
@@ -319,24 +251,33 @@ func (tq *TransactionQuery) FromAll(ctx context.Context, query string) ([]QueryR
 			Logger.Debug(req.URL.String() + " " + resp.Status)
 
 			if resp != nil {
-				result.StatusCode = resp.StatusCode
+				res.StatusCode = resp.StatusCode
 				Logger.Debug(string(respBody))
 			}
 
-			results = append(results, result)
+			if handle != nil {
+				if handle(res) {
+					result = &res
+					cf()
+				}
+			}
 
 			return nil
 		})
 
 	r.Wait()
 
-	return results, nil
+	if result == nil {
+		return nil, ErrNoConsensus
+	}
+
+	return result, nil
 }
 
 // GetFastConfirmation get txn confirmation from a random online sharder
 func (tq *TransactionQuery) GetFastConfirmation(ctx context.Context, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
 
-	// {host}/v1/transaction/get/confirmation?hash={txnHash}&&content=lfb
+	// {host}/v1/transaction/get/confirmation?hash={txnHash}&content=lfb
 	result, err := tq.FromAny(ctx, tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"))
 	if err != nil {
 		return nil, nil, nil, err
@@ -372,57 +313,52 @@ func (tq *TransactionQuery) GetFastConfirmation(ctx context.Context, txnHash str
 	return nil, nil, nil, errors.New("zcn: transaction not found ")
 }
 
-func (tq *TransactionQuery) GetConfirmation(ctx context.Context, numSharders int, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
-
-	// {host}/v1/transaction/get/confirmation?hash={txnHash}&&content=lfb
-	results, err := tq.From(ctx, numSharders, tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"))
-	if err != nil {
-		return nil, nil, nil, err
-	}
+func (tq *TransactionQuery) GetConfirmation(ctx context.Context, numSharders int, txnHash string) (*blockHeader, error) {
 
 	maxConfirmation := int(0)
 	txnConfirmations := make(map[string]int)
 	var blockHdr *blockHeader
-	var lfb blockHeader
-	var confirmation map[string]json.RawMessage
-	for _, result := range results {
 
-		if result.StatusCode == http.StatusOK {
-			var cfmLfb map[string]json.RawMessage
-			err := json.Unmarshal([]byte(result.Content), &cfmLfb)
-			if err != nil {
-				Logger.Error("txn confirmation parse error", err)
-				continue
-			}
-			bH, err := getBlockHeaderFromTransactionConfirmation(txnHash, cfmLfb)
-
-			if err == nil {
-				txnConfirmations[bH.Hash]++
-				if txnConfirmations[bH.Hash] > maxConfirmation {
-					maxConfirmation = txnConfirmations[bH.Hash]
-					blockHdr = bH
-					confirmation = cfmLfb
+	// {host}/v1/transaction/get/confirmation?hash={txnHash}&content=lfb
+	_, err := tq.FromConsensus(ctx,
+		tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"),
+		func(qr QueryResult) bool {
+			if qr.StatusCode == http.StatusOK {
+				var cfmLfb map[string]json.RawMessage
+				err := json.Unmarshal([]byte(qr.Content), &cfmLfb)
+				if err != nil {
+					Logger.Error("txn confirmation parse error", err)
+					return false
 				}
 
-				// check next result
-				continue
+				// {
+				//	"confirmation":{}
+				//}
+				bH, err := getBlockHeaderFromTransactionConfirmation(txnHash, cfmLfb)
+
+				// confirmation section found
+				if err == nil {
+					txnConfirmations[bH.Hash]++
+					if txnConfirmations[bH.Hash] > maxConfirmation {
+						maxConfirmation = txnConfirmations[bH.Hash]
+						blockHdr = bH
+					}
+
+					// it is consensus by required sharders
+					if maxConfirmation >= numSharders {
+						// return true to cancel other requests
+						return true
+					}
+				}
+
 			}
 
-			lfbRaw, ok := cfmLfb["latest_finalized_block"]
-			if !ok {
-				// don't have `confirmation` or `latest_finalized_block` in block, logging it for debugging
-				Logger.Error(err)
-				continue
-			}
-			err = json.Unmarshal([]byte(lfbRaw), &lfb)
-			if err != nil {
-				Logger.Error("round info parse error.", err)
-			}
+			return false
+		})
 
-		}
+	if err != nil {
+		return nil, err
 	}
-	if maxConfirmation == 0 {
-		return nil, confirmation, &lfb, errors.New("transaction not found")
-	}
-	return blockHdr, confirmation, &lfb, nil
+
+	return blockHdr, nil
 }

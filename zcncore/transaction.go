@@ -614,9 +614,9 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 		// Verify the block
 		if isBlockExtends(prevBlockHash, block) {
 			return block, nil
-		} else {
-			return nil, errors.New("", "block hash verification failed in confirmation")
 		}
+
+		return nil, errors.New("", "block hash verification failed in confirmation")
 	}
 	return nil, errors.New("", "txn confirmation not found.")
 }
