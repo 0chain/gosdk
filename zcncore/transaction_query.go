@@ -316,11 +316,11 @@ func (tq *TransactionQuery) GetFastConfirmation(ctx context.Context, txnHash str
 	return nil, nil, lfbBlockHeader, errors.New("zcn: transaction not found ")
 }
 
-func (tq *TransactionQuery) GetConfirmation(ctx context.Context, numSharders int, txnHash string) (*blockHeader, map[string]json.RawMessage, blockHeader, error) {
+func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSharders int, txnHash string) (*blockHeader, map[string]json.RawMessage, blockHeader, error) {
 
 	maxConfirmation := int(0)
 	txnConfirmations := make(map[string]int)
-	var comfirmationBlockHeader *blockHeader
+	var confirmationBlockHeader *blockHeader
 	var confirmationBlock map[string]json.RawMessage
 	var lfbBlockHeader blockHeader
 
@@ -328,52 +328,60 @@ func (tq *TransactionQuery) GetConfirmation(ctx context.Context, numSharders int
 	_, err := tq.FromConsensus(ctx,
 		tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"),
 		func(qr QueryResult) bool {
-			if qr.StatusCode == http.StatusOK {
-				var confirmation map[string]json.RawMessage
-				err := json.Unmarshal([]byte(qr.Content), &confirmation)
-				if err != nil {
-					Logger.Error("txn confirmation parse error", err)
-					return false
-				}
+			if qr.StatusCode != http.StatusOK {
+				return false
+			}
 
-				// parse confirmation section
-				header, err := getBlockHeaderFromTransactionConfirmation(txnHash, confirmation)
+			var cfmBlock map[string]json.RawMessage
+			err := json.Unmarshal([]byte(qr.Content), &cfmBlock)
+			if err != nil {
+				Logger.Error("txn confirmation parse error", err)
+				return false
+			}
 
-				if err == nil {
-					txnConfirmations[header.Hash]++
-					if txnConfirmations[header.Hash] > maxConfirmation {
-						maxConfirmation = txnConfirmations[header.Hash]
+			// parse confirmation section as block header
+			cfmBlockHeader, err := getBlockHeaderFromTransactionConfirmation(txnHash, cfmBlock)
+			if err != nil {
+				Logger.Error("txn confirmation parse header error", err)
+				return false
+			}
 
-						// parse latest_finalized_block section
-						if lfbRaw, ok := confirmation["latest_finalized_block"]; ok {
-							var lfb blockHeader
-							err := json.Unmarshal([]byte(lfbRaw), &lfb)
-							if err != nil {
-								Logger.Error("round info parse error.", err)
-								return false
-							}
-							lfbBlockHeader = lfb
-						}
+			txnConfirmations[cfmBlockHeader.Hash]++
+			if txnConfirmations[cfmBlockHeader.Hash] > maxConfirmation {
+				maxConfirmation = txnConfirmations[cfmBlockHeader.Hash]
 
-						if maxConfirmation >= numSharders {
-							comfirmationBlockHeader = header
-							confirmationBlock = confirmation
-						}
-
-						// it is consensus by enough sharders, and latest_finalized_block is valid
-						// return true to cancel other requests
-						return true
+				// parse latest_finalized_block section
+				if lfbRaw, ok := cfmBlock["latest_finalized_block"]; ok {
+					var lfb blockHeader
+					err := json.Unmarshal([]byte(lfbRaw), &lfb)
+					if err != nil {
+						Logger.Error("round info parse error.", err)
+						return false
 					}
+					lfbBlockHeader = lfb
 				}
 
+				if maxConfirmation >= numSharders {
+					confirmationBlockHeader = cfmBlockHeader
+					confirmationBlock = cfmBlock
+
+					// it is consensus by enough sharders, and latest_finalized_block is valid
+					// return true to cancel other requests
+					return true
+				}
 			}
 
 			return false
+
 		})
 
 	if err != nil {
 		return nil, nil, lfbBlockHeader, err
 	}
 
-	return comfirmationBlockHeader, confirmationBlock, lfbBlockHeader, nil
+	if maxConfirmation == 0 {
+		return nil, nil, lfbBlockHeader, errors.New("zcn: transaction not found")
+	}
+
+	return confirmationBlockHeader, confirmationBlock, lfbBlockHeader, nil
 }

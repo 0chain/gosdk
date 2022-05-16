@@ -1040,10 +1040,10 @@ func (t *Transaction) Verify() error {
 			if err != nil {
 				now := int64(common.Now())
 				Logger.Info(err, " now: ", now, ", LFB creation time:", lfbBlockHeader.CreationDate)
-				// the transaction should be done or expired, it means random sharder is outdated, try to query it from s/S sharders
+				// transaction is done or expired. it means random sharder might be outdated, try to query it from s/S sharders to confirm it
 				if util.MaxInt64(lfbBlockHeader.CreationDate, now) >= (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
 					Logger.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders")
-					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.GetConfirmation(context.TODO(), getMinShardersVerify(), t.txnHash)
+					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.GetConsensusConfirmation(context.TODO(), getMinShardersVerify(), t.txnHash)
 				}
 
 				// confirmation not found
