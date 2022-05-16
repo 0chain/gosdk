@@ -336,6 +336,21 @@ func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSha
 			cfmBlockHeader, err := getBlockHeaderFromTransactionConfirmation(txnHash, cfmBlock)
 			if err != nil {
 				Logger.Error("txn confirmation parse header error", err)
+
+				// parse latest_finalized_block section
+				if lfbRaw, ok := cfmBlock["latest_finalized_block"]; ok {
+					var lfb blockHeader
+					err := json.Unmarshal([]byte(lfbRaw), &lfb)
+					if err != nil {
+						Logger.Error("round info parse error.", err)
+						return false
+					}
+					//if lfbBlockHeader == nil || lfbBlockHeader.CreationDate < lfb.CreationDate {
+					lfbBlockHeader = &lfb
+					//	}
+
+				}
+
 				return false
 			}
 
@@ -351,20 +366,6 @@ func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSha
 					// return true to cancel other requests
 					return true
 				}
-			}
-
-			// parse latest_finalized_block section
-			if lfbRaw, ok := cfmBlock["latest_finalized_block"]; ok {
-				var lfb blockHeader
-				err := json.Unmarshal([]byte(lfbRaw), &lfb)
-				if err != nil {
-					Logger.Error("round info parse error.", err)
-					return false
-				}
-				if lfbBlockHeader == nil || lfbBlockHeader.CreationDate < lfb.CreationDate {
-					lfbBlockHeader = &lfb
-				}
-
 			}
 
 			return false
