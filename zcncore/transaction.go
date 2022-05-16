@@ -960,6 +960,10 @@ func isBlockExtends(prevHash string, block *blockHeader) bool {
 }
 
 func validateChain(confirmBlock *blockHeader) bool {
+	if confirmBlock == nil {
+		return false
+	}
+
 	confirmRound := confirmBlock.Round
 	Logger.Debug("Confirmation round: ", confirmRound)
 	currentBlockHash := confirmBlock.Hash
@@ -1030,40 +1034,38 @@ func (t *Transaction) Verify() error {
 		for {
 
 			tq.Reset()
-			// Get transaction confirmation from random sharder
-			confirmBlock, confirmation, lfb, err := tq.GetFastConfirmation(context.TODO(), t.txnHash)
+			// Get transaction confirmationBlock from a random sharder
+			confirmBlockHeader, confirmationBlock, lfbBlockHeader, err := tq.GetFastConfirmation(context.TODO(), t.txnHash)
 
 			if err != nil {
-				tn := int64(common.Now())
-				Logger.Info(err, " now: ", tn, ", LFB creation time:", lfb.CreationDate)
-				if util.MaxInt64(lfb.CreationDate, tn) < (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
+				now := int64(common.Now())
+				Logger.Info(err, " now: ", now, ", LFB creation time:", lfbBlockHeader.CreationDate)
+				// the transaction should be done or expired, it means random sharder is outdated, try to query it from s/S sharders
+				if util.MaxInt64(lfbBlockHeader.CreationDate, now) >= (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
 					Logger.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders")
-					confirmBlock, lfb, err = tq.GetConfirmation(context.TODO(), getMinShardersVerify(), t.txnHash)
+					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.GetConfirmation(context.TODO(), getMinShardersVerify(), t.txnHash)
+				}
 
-					if err != nil {
-						if t.isTransactionExpired(lfb.CreationDate, tn) {
-							t.completeVerify(StatusError, "", errors.New("", `{"error": "verify transaction failed"}`))
-							return
-						}
-						continue
-					}
-				} else {
-					if t.isTransactionExpired(lfb.CreationDate, tn) {
+				// confirmation not found
+				if err != nil {
+					// it is expired
+					if t.isTransactionExpired(lfbBlockHeader.CreationDate, now) {
 						t.completeVerify(StatusError, "", errors.New("", `{"error": "verify transaction failed"}`))
 						return
 					}
 					continue
 				}
+
 			}
 
-			valid := validateChain(confirmBlock)
+			valid := validateChain(confirmBlockHeader)
 			if valid {
-				output, err := json.Marshal(confirmation)
+				output, err := json.Marshal(confirmationBlock)
 				if err != nil {
 					t.completeVerify(StatusError, "", errors.New("", `{"error": "transaction confirmation json marshal error"`))
 					return
 				}
-				confJson := confirmation["confirmation"]
+				confJson := confirmationBlock["confirmation"]
 
 				var conf map[string]json.RawMessage
 				if err := json.Unmarshal(confJson, &conf); err != nil {
