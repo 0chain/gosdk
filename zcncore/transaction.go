@@ -74,6 +74,14 @@ type blockHeader struct {
 	NumTxns               int64  `json:"num_txns,omitempty"`
 }
 
+func (bh *blockHeader) getCreationDate(defaultTime int64) int64 {
+	if bh == nil {
+		return defaultTime
+	}
+
+	return bh.CreationDate
+}
+
 type Transaction struct {
 	txn                      *transaction.Transaction
 	txnOut                   string
@@ -1035,9 +1043,16 @@ func (t *Transaction) Verify() error {
 
 			if err != nil {
 				now := int64(common.Now())
-				Logger.Info(err, " now: ", now, ", LFB creation time:", lfbBlockHeader.CreationDate)
+
+				// maybe it is a network or server error
+				if lfbBlockHeader == nil {
+					Logger.Info(err, " now: ", now)
+				} else {
+					Logger.Info(err, " now: ", now, ", LFB creation time:", lfbBlockHeader.CreationDate)
+				}
+
 				// transaction is done or expired. it means random sharder might be outdated, try to query it from s/S sharders to confirm it
-				if util.MaxInt64(lfbBlockHeader.CreationDate, now) >= (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
+				if util.MaxInt64(lfbBlockHeader.getCreationDate(now), now) >= (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
 					Logger.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders")
 					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.GetConsensusConfirmation(context.TODO(), getMinShardersVerify(), t.txnHash)
 				}
@@ -1045,7 +1060,7 @@ func (t *Transaction) Verify() error {
 				// confirmation not found
 				if err != nil {
 					// it is expired
-					if t.isTransactionExpired(lfbBlockHeader.CreationDate, now) {
+					if t.isTransactionExpired(lfbBlockHeader.getCreationDate(now), now) {
 						t.completeVerify(StatusError, "", errors.New("", `{"error": "verify transaction failed"}`))
 						return
 					}

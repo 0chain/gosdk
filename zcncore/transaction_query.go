@@ -228,17 +228,15 @@ func (tq *TransactionQuery) FromAny(ctx context.Context, query string) (QueryRes
 }
 
 // FromConsensus query transaction from all sharders whatever it is selected or offline in previous queires, and return consensus result
-func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, handle QueryResultHandle) (*QueryResult, error) {
+func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, handle QueryResultHandle) error {
 	if tq == nil || tq.max == 0 {
-		return nil, ErrNoAvailableSharders
+		return ErrNoAvailableSharders
 	}
 
 	urls := make([]string, 0, tq.max)
 	for _, host := range tq.sharders {
 		urls = append(urls, tq.buildUrl(host, query))
 	}
-
-	var result *QueryResult
 
 	r := resty.New()
 	r.DoGet(ctx, urls...).
@@ -257,7 +255,7 @@ func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, han
 
 			if handle != nil {
 				if handle(res) {
-					result = &res
+
 					cf()
 				}
 			}
@@ -267,23 +265,19 @@ func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, han
 
 	r.Wait()
 
-	if result == nil {
-		return nil, ErrNoConsensus
-	}
-
-	return result, nil
+	return nil
 }
 
 // GetFastConfirmation get txn confirmation from a random online sharder
-func (tq *TransactionQuery) GetFastConfirmation(ctx context.Context, txnHash string) (*blockHeader, map[string]json.RawMessage, blockHeader, error) {
+func (tq *TransactionQuery) GetFastConfirmation(ctx context.Context, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
 	var confirmationBlockHeader *blockHeader
 	var confirmationBlock map[string]json.RawMessage
-	var lfbBlockHeader blockHeader
+	var lfbBlockHeader *blockHeader
 
 	// {host}/v1/transaction/get/confirmation?hash={txnHash}&content=lfb
 	result, err := tq.FromAny(ctx, tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"))
 	if err != nil {
-		return nil, nil, lfbBlockHeader, err
+		return nil, nil, nil, err
 	}
 
 	if result.StatusCode == http.StatusOK {
@@ -291,41 +285,41 @@ func (tq *TransactionQuery) GetFastConfirmation(ctx context.Context, txnHash str
 		err = json.Unmarshal(result.Content, &confirmationBlock)
 		if err != nil {
 			Logger.Error("txn confirmation parse error", err)
-			return nil, nil, lfbBlockHeader, err
+			return nil, nil, nil, err
 		}
 		confirmationBlockHeader, err = getBlockHeaderFromTransactionConfirmation(txnHash, confirmationBlock)
 
-		if err == nil {
-			return confirmationBlockHeader, confirmationBlock, lfbBlockHeader, nil
+		if err != nil {
+			return nil, confirmationBlock, nil, err
 		}
 
 		if lfbRaw, ok := confirmationBlock["latest_finalized_block"]; ok {
 
-			err = json.Unmarshal([]byte(lfbRaw), &lfbBlockHeader)
+			err = json.Unmarshal([]byte(lfbRaw), lfbBlockHeader)
 			if err == nil {
 				return confirmationBlockHeader, confirmationBlock, lfbBlockHeader, nil
 			}
 
 			Logger.Error("round info parse error.", err)
-			return confirmationBlockHeader, confirmationBlock, lfbBlockHeader, err
+
 		}
 
-		Logger.Error(err)
+		return confirmationBlockHeader, confirmationBlock, nil, err
 	}
 
-	return nil, nil, lfbBlockHeader, errors.New("zcn: transaction not found ")
+	return nil, nil, nil, errors.New("zcn: transaction not found ")
 }
 
-func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSharders int, txnHash string) (*blockHeader, map[string]json.RawMessage, blockHeader, error) {
+func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSharders int, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
 
 	maxConfirmation := int(0)
 	txnConfirmations := make(map[string]int)
 	var confirmationBlockHeader *blockHeader
 	var confirmationBlock map[string]json.RawMessage
-	var lfbBlockHeader blockHeader
+	var lfbBlockHeader *blockHeader
 
 	// {host}/v1/transaction/get/confirmation?hash={txnHash}&content=lfb
-	_, err := tq.FromConsensus(ctx,
+	err := tq.FromConsensus(ctx,
 		tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"),
 		func(qr QueryResult) bool {
 			if qr.StatusCode != http.StatusOK {
@@ -358,7 +352,7 @@ func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSha
 						Logger.Error("round info parse error.", err)
 						return false
 					}
-					lfbBlockHeader = lfb
+					lfbBlockHeader = &lfb
 				}
 
 				if maxConfirmation >= numSharders {
