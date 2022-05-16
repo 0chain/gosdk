@@ -272,7 +272,7 @@ func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, han
 func (tq *TransactionQuery) GetFastConfirmation(ctx context.Context, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
 	var confirmationBlockHeader *blockHeader
 	var confirmationBlock map[string]json.RawMessage
-	var lfbBlockHeader *blockHeader
+	var lfbBlockHeader blockHeader
 
 	// {host}/v1/transaction/get/confirmation?hash={txnHash}&content=lfb
 	result, err := tq.FromAny(ctx, tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"))
@@ -294,10 +294,9 @@ func (tq *TransactionQuery) GetFastConfirmation(ctx context.Context, txnHash str
 		}
 
 		if lfbRaw, ok := confirmationBlock["latest_finalized_block"]; ok {
-
-			err = json.Unmarshal([]byte(lfbRaw), lfbBlockHeader)
+			err = json.Unmarshal([]byte(lfbRaw), &lfbBlockHeader)
 			if err == nil {
-				return confirmationBlockHeader, confirmationBlock, lfbBlockHeader, nil
+				return confirmationBlockHeader, confirmationBlock, &lfbBlockHeader, nil
 			}
 
 			Logger.Error("round info parse error.", err)
@@ -344,17 +343,6 @@ func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSha
 			if txnConfirmations[cfmBlockHeader.Hash] > maxConfirmation {
 				maxConfirmation = txnConfirmations[cfmBlockHeader.Hash]
 
-				// parse latest_finalized_block section
-				if lfbRaw, ok := cfmBlock["latest_finalized_block"]; ok {
-					var lfb blockHeader
-					err := json.Unmarshal([]byte(lfbRaw), &lfb)
-					if err != nil {
-						Logger.Error("round info parse error.", err)
-						return false
-					}
-					lfbBlockHeader = &lfb
-				}
-
 				if maxConfirmation >= numSharders {
 					confirmationBlockHeader = cfmBlockHeader
 					confirmationBlock = cfmBlock
@@ -363,6 +351,20 @@ func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSha
 					// return true to cancel other requests
 					return true
 				}
+			}
+
+			// parse latest_finalized_block section
+			if lfbRaw, ok := cfmBlock["latest_finalized_block"]; ok {
+				var lfb blockHeader
+				err := json.Unmarshal([]byte(lfbRaw), &lfb)
+				if err != nil {
+					Logger.Error("round info parse error.", err)
+					return false
+				}
+				if lfbBlockHeader == nil || lfbBlockHeader.CreationDate < lfb.CreationDate {
+					lfbBlockHeader = &lfb
+				}
+
 			}
 
 			return false
