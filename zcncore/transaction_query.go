@@ -298,7 +298,7 @@ func (tq *TransactionQuery) GetFastConfirmation(ctx context.Context, txnHash str
 			if lfbRaw, ok := confirmationBlock["latest_finalized_block"]; ok {
 				err = json.Unmarshal([]byte(lfbRaw), &lfbBlockHeader)
 				if err == nil {
-					return nil, confirmationBlock, &lfbBlockHeader, nil
+					return confirmationBlockHeader, confirmationBlock, &lfbBlockHeader, nil
 				}
 
 				Logger.Error("round info parse error.", err)
@@ -308,7 +308,7 @@ func (tq *TransactionQuery) GetFastConfirmation(ctx context.Context, txnHash str
 			return confirmationBlockHeader, confirmationBlock, nil, err
 		}
 
-		return confirmationBlockHeader, confirmationBlock, nil, err
+		return confirmationBlockHeader, confirmationBlock, nil, nil
 	}
 
 	return nil, nil, nil, errors.New("zcn: transaction not found ")
