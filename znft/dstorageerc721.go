@@ -1,0 +1,131 @@
+package znft
+
+import (
+	"context"
+	"math/big"
+
+	dstorageerc721 "github.com/0chain/gosdk/znft/contracts/dstorageerc721/binding"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/pkg/errors"
+)
+
+// Functions
+// - withdraw()
+// - setReceiver(address receiver_)
+// - setRoyalty(uint256 royalty_)
+// - setMintable(bool status_)
+// - setMax(uint256 max_)
+// - setAllocation(string calldata allocation_)
+// - setURI(string calldata uri_)
+// - tokenURIFallback(uint256 tokenId)  returns (string memory)
+// - price() returns (uint256)
+// - mint(uint256 amount)
+// - mintOwner(uint256 amount)
+// - royaltyInfo(uint256 tokenId, uint256 salePrice) returns (address, uint256)
+
+const (
+	Withdraw         = "withdraw"
+	SetReceiver      = "setReceiver"
+	SetRoyalty       = "setRoyalty"
+	SetMintable      = "setMintable"
+	SetMax           = "setMax"
+	SetAllocation    = "setAllocation"
+	SetURI           = "setURI"
+	TokenURIFallback = "tokenURIFallback"
+	Price            = "price"
+	Mint             = "mint"
+	MintOwner        = "mintOwner"
+	RoyaltyInfo      = "royaltyInfo"
+)
+
+// SetRoyalty eth balance from token contract - setReceiver(address receiver_)
+func (conf *Configuration) SetRoyalty(ctx context.Context, sum *big.Int) error {
+	erc721, transaction, err := conf.construct(ctx, SetRoyalty, sum)
+	if err != nil {
+		return err
+	}
+
+	evmTr, err := erc721.SetRoyalty(transaction, sum)
+	if err != nil {
+		return errors.Wrapf(err, "failed to execute %s", SetRoyalty)
+	}
+
+	evmTr.Hash()
+
+	return nil
+}
+
+// SetReceiver eth balance from token contract - setReceiver(address receiver_)
+func (conf *Configuration) SetReceiver(ctx context.Context, receiver string) error {
+	address := common.HexToAddress(receiver)
+
+	erc721, transaction, err := conf.construct(ctx, SetReceiver, address)
+	if err != nil {
+		return err
+	}
+
+	evmTr, err := erc721.SetReceiver(transaction, address)
+	if err != nil {
+		return errors.Wrapf(err, "failed to execute %s", SetReceiver)
+	}
+
+	evmTr.Hash()
+
+	return nil
+}
+
+// Withdraw eth balance from token contract - withdraw()
+func (conf *Configuration) Withdraw(ctx context.Context) error {
+	erc721, transaction, err := conf.construct(ctx, Withdraw)
+	if err != nil {
+		return err
+	}
+
+	evmTr, err := erc721.Withdraw(transaction)
+	if err != nil {
+		return errors.Wrapf(err, "failed to execute %s", Withdraw)
+	}
+
+	evmTr.Hash()
+
+	return nil
+}
+
+func (conf *Configuration) construct(ctx context.Context, method string, params ...interface{}) (*dstorageerc721.Bindings, *bind.TransactOpts, error) {
+	erc721, err := conf.createStorageERC721()
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to create StorageERC721 in method: %s", method)
+	}
+
+	// Get ABI of the contract
+	abi, err := dstorageerc721.BindingsMetaData.GetAbi()
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to get ABI in method: %s", method)
+	}
+
+	// Pack the method arguments
+	pack, err := abi.Pack(method, params...)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to pack arguments in method: %s", method)
+	}
+
+	transaction, err := conf.createTransaction(ctx, method, pack)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to create createTransaction in method: %s", method)
+	}
+
+	return erc721, transaction, nil
+}
+
+func (conf *Configuration) createStorageERC721() (*dstorageerc721.Bindings, error) {
+	client, err := conf.CreateEthClient()
+	if err != nil {
+		return nil, err
+	}
+
+	addr := common.HexToAddress(conf.FactoryModuleERC721Address)
+	instance, err := dstorageerc721.NewBindings(addr, client)
+
+	return instance, err
+}
