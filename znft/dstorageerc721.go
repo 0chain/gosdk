@@ -25,6 +25,7 @@ import (
 // - royaltyInfo(uint256 tokenId, uint256 salePrice) returns (address, uint256)
 
 const (
+	Contract         = "StorageERC721"
 	Withdraw         = "withdraw"
 	SetReceiver      = "setReceiver"
 	SetRoyalty       = "setRoyalty"
@@ -95,24 +96,24 @@ func (conf *Configuration) Withdraw(ctx context.Context) error {
 func (conf *Configuration) construct(ctx context.Context, method string, params ...interface{}) (*dstorageerc721.Bindings, *bind.TransactOpts, error) {
 	erc721, err := conf.createStorageERC721()
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to create StorageERC721 in method: %s", method)
+		return nil, nil, errors.Wrapf(err, "failed to create %s in method: %s", Contract, method)
 	}
 
 	// Get ABI of the contract
 	abi, err := dstorageerc721.BindingsMetaData.GetAbi()
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get ABI in method: %s", method)
+		return nil, nil, errors.Wrapf(err, "failed to get ABI in %s, method: %s", Contract, method)
 	}
 
 	// Pack the method arguments
 	pack, err := abi.Pack(method, params...)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to pack arguments in method: %s", method)
+		return nil, nil, errors.Wrapf(err, "failed to pack arguments in %s, method: %s", Contract, method)
 	}
 
 	transaction, err := conf.createTransaction(ctx, method, pack)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to create createTransaction in method: %s", method)
+		return nil, nil, errors.Wrapf(err, "failed to create createTransaction in %s, method: %s", Contract, method)
 	}
 
 	return erc721, transaction, nil
