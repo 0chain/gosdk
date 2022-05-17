@@ -287,20 +287,25 @@ func (tq *TransactionQuery) GetFastConfirmation(ctx context.Context, txnHash str
 			Logger.Error("txn confirmation parse error", err)
 			return nil, nil, nil, err
 		}
+
+		// parse confirmation section as block header
 		confirmationBlockHeader, err = getBlockHeaderFromTransactionConfirmation(txnHash, confirmationBlock)
 
 		if err != nil {
-			return nil, confirmationBlock, nil, err
-		}
+			Logger.Error("txn confirmation parse header error", err)
 
-		if lfbRaw, ok := confirmationBlock["latest_finalized_block"]; ok {
-			err = json.Unmarshal([]byte(lfbRaw), &lfbBlockHeader)
-			if err == nil {
-				return confirmationBlockHeader, confirmationBlock, &lfbBlockHeader, nil
+			// parse latest_finalized_block section
+			if lfbRaw, ok := confirmationBlock["latest_finalized_block"]; ok {
+				err = json.Unmarshal([]byte(lfbRaw), &lfbBlockHeader)
+				if err == nil {
+					return confirmationBlockHeader, confirmationBlock, &lfbBlockHeader, nil
+				}
+
+				Logger.Error("round info parse error.", err)
+
 			}
 
-			Logger.Error("round info parse error.", err)
-
+			return confirmationBlockHeader, confirmationBlock, nil, err
 		}
 
 		return confirmationBlockHeader, confirmationBlock, nil, err
