@@ -316,6 +316,8 @@ func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSha
 	var confirmationBlockHeader *blockHeader
 	var confirmationBlock map[string]json.RawMessage
 	var lfbBlockHeader *blockHeader
+	maxLfbBlockHeader := int(0)
+	lfbBlockHeaders := make(map[string]int)
 
 	// {host}/v1/transaction/get/confirmation?hash={txnHash}&content=lfb
 	err := tq.FromConsensus(ctx,
@@ -345,10 +347,12 @@ func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSha
 						Logger.Error("round info parse error.", err)
 						return false
 					}
-					//if lfbBlockHeader == nil || lfbBlockHeader.CreationDate < lfb.CreationDate {
-					lfbBlockHeader = &lfb
-					//	}
 
+					lfbBlockHeaders[lfb.Hash]++
+					if lfbBlockHeaders[lfb.Hash] > maxLfbBlockHeader {
+						maxLfbBlockHeader = lfbBlockHeaders[lfb.Hash]
+						lfbBlockHeader = &lfb
+					}
 				}
 
 				return false
