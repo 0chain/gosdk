@@ -1060,11 +1060,10 @@ func (t *Transaction) Verify() error {
 				// txn not found in fast confirmation/consensus confirmation
 				if err != nil {
 
-					// if lfbBlockHeader == nil {
-					// 	// no any valid lfb on all sharders. maybe they are network/server errors. wait and try it again
-					// 	sys.Sleep(defaultWaitSeconds)
-					// 	continue
-					// }
+					if lfbBlockHeader == nil {
+						// no any valid lfb on all sharders. maybe they are network/server errors. try it again
+						continue
+					}
 
 					// it is expired
 					if t.isTransactionExpired(lfbBlockHeader.getCreationDate(now), now) {
