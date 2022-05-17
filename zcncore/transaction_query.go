@@ -15,14 +15,15 @@ import (
 )
 
 var (
-	ErrNoAvailableSharders    = errors.New("zcn: no available sharders")
-	ErrNoEnoughSharders       = errors.New("zcn: sharders is not enough")
-	ErrNoEnoughOnlineSharders = errors.New("zcn: online sharders is not enough")
-	ErrInvalidNumSharder      = errors.New("zcn: number of sharders is invalid")
-	ErrNoOnlineSharders       = errors.New("zcn: no any online sharder")
-	ErrSharderOffline         = errors.New("zcn: sharder is offline")
-	ErrInvalidConsensus       = errors.New("zcn: invalid consensus")
-	ErrTransactionNotFound    = errors.New("zcn: transaction not found")
+	ErrNoAvailableSharders     = errors.New("zcn: no available sharders")
+	ErrNoEnoughSharders        = errors.New("zcn: sharders is not enough")
+	ErrNoEnoughOnlineSharders  = errors.New("zcn: online sharders is not enough")
+	ErrInvalidNumSharder       = errors.New("zcn: number of sharders is invalid")
+	ErrNoOnlineSharders        = errors.New("zcn: no any online sharder")
+	ErrSharderOffline          = errors.New("zcn: sharder is offline")
+	ErrInvalidConsensus        = errors.New("zcn: invalid consensus")
+	ErrTransactionNotFound     = errors.New("zcn: transaction not found")
+	ErrTransactionNotConfirmed = errors.New("zcn: transaction not confirmed")
 )
 
 const (
@@ -301,12 +302,12 @@ func (tq *TransactionQuery) GetFastConfirmation(ctx context.Context, txnHash str
 		// parse `latest_finalized_block` section
 		lfbRaw, ok := confirmationBlock["latest_finalized_block"]
 		if !ok {
-			return confirmationBlockHeader, confirmationBlock, nil, ErrTransactionNotFound
+			return confirmationBlockHeader, confirmationBlock, nil, err
 		}
 
 		err = json.Unmarshal([]byte(lfbRaw), &lfbBlockHeader)
 		if err == nil {
-			return confirmationBlockHeader, confirmationBlock, &lfbBlockHeader, ErrTransactionNotFound
+			return confirmationBlockHeader, confirmationBlock, &lfbBlockHeader, ErrTransactionNotConfirmed
 		}
 
 		Logger.Error("round info parse error.", err)
