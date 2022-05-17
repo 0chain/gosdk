@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math/rand"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,6 +22,7 @@ var (
 	ErrNoOnlineSharders       = errors.New("zcn: no any online sharder")
 	ErrSharderOffline         = errors.New("zcn: sharder is offline")
 	ErrInvalidConsensus       = errors.New("zcn: invalid consensus")
+	ErrTransactionNotFound    = errors.New("zcn: transaction not found")
 )
 
 const (
@@ -298,20 +299,22 @@ func (tq *TransactionQuery) GetFastConfirmation(ctx context.Context, txnHash str
 		Logger.Error("txn confirmation parse header error", err)
 
 		// parse `latest_finalized_block` section
-		if lfbRaw, ok := confirmationBlock["latest_finalized_block"]; ok {
-			err = json.Unmarshal([]byte(lfbRaw), &lfbBlockHeader)
-			if err == nil {
-				return confirmationBlockHeader, confirmationBlock, &lfbBlockHeader, nil
-			}
-
-			Logger.Error("round info parse error.", err)
+		lfbRaw, ok := confirmationBlock["latest_finalized_block"]
+		if !ok {
+			return confirmationBlockHeader, confirmationBlock, nil, ErrTransactionNotFound
 		}
 
-		return confirmationBlockHeader, confirmationBlock, nil, err
+		err = json.Unmarshal([]byte(lfbRaw), &lfbBlockHeader)
+		if err == nil {
+			return confirmationBlockHeader, confirmationBlock, &lfbBlockHeader, ErrTransactionNotFound
+		}
+
+		Logger.Error("round info parse error.", err)
+		return nil, nil, nil, err
 
 	}
 
-	return nil, nil, nil, errors.New(fmt.Sprintf("zcn: transaction not found %v", result.StatusCode))
+	return nil, nil, nil, thrown.Throw(ErrTransactionNotFound, strconv.Itoa(result.StatusCode))
 }
 
 func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSharders int, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
