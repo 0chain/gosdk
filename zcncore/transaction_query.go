@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"math/rand"
 	"net/http"
 	"strings"
@@ -20,7 +21,7 @@ var (
 	ErrInvalidNumSharder      = errors.New("zcn: number of sharders is invalid")
 	ErrNoOnlineSharders       = errors.New("zcn: no any online sharder")
 	ErrSharderOffline         = errors.New("zcn: sharder is offline")
-	ErrNoConsensus            = errors.New("zcn: no valid consensus")
+	ErrInvalidConsensus       = errors.New("zcn: invalid consensus")
 )
 
 const (
@@ -290,28 +291,27 @@ func (tq *TransactionQuery) GetFastConfirmation(ctx context.Context, txnHash str
 
 		// parse `confirmation` section as block header
 		confirmationBlockHeader, err = getBlockHeaderFromTransactionConfirmation(txnHash, confirmationBlock)
-
-		if err != nil {
-			Logger.Error("txn confirmation parse header error", err)
-
-			// parse `latest_finalized_block` section
-			if lfbRaw, ok := confirmationBlock["latest_finalized_block"]; ok {
-				err = json.Unmarshal([]byte(lfbRaw), &lfbBlockHeader)
-				if err == nil {
-					return confirmationBlockHeader, confirmationBlock, &lfbBlockHeader, nil
-				}
-
-				Logger.Error("round info parse error.", err)
-
-			}
-
-			return confirmationBlockHeader, confirmationBlock, nil, err
+		if err == nil {
+			return confirmationBlockHeader, confirmationBlock, nil, nil
 		}
 
-		return confirmationBlockHeader, confirmationBlock, nil, nil
+		Logger.Error("txn confirmation parse header error", err)
+
+		// parse `latest_finalized_block` section
+		if lfbRaw, ok := confirmationBlock["latest_finalized_block"]; ok {
+			err = json.Unmarshal([]byte(lfbRaw), &lfbBlockHeader)
+			if err == nil {
+				return confirmationBlockHeader, confirmationBlock, &lfbBlockHeader, nil
+			}
+
+			Logger.Error("round info parse error.", err)
+		}
+
+		return confirmationBlockHeader, confirmationBlock, nil, err
+
 	}
 
-	return nil, nil, nil, errors.New("zcn: transaction not found ")
+	return nil, nil, nil, errors.New(fmt.Sprintf("zcn: transaction not found %v", result.StatusCode))
 }
 
 func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSharders int, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
@@ -387,6 +387,10 @@ func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSha
 
 	if maxConfirmation == 0 {
 		return nil, nil, lfbBlockHeader, errors.New("zcn: transaction not found")
+	}
+
+	if maxConfirmation < numSharders {
+		return nil, nil, lfbBlockHeader, ErrInvalidConsensus
 	}
 
 	return confirmationBlockHeader, confirmationBlock, lfbBlockHeader, nil
