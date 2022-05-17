@@ -40,6 +40,91 @@ const (
 	RoyaltyInfo      = "royaltyInfo"
 )
 
+// Price returns price
+func (conf *Configuration) Price(ctx context.Context) error {
+	session, err := conf.createStorageERC721Session(ctx, Price)
+	if err != nil {
+		return err
+	}
+
+	evmTr, err := session.Price()
+	if err != nil {
+		return errors.Wrapf(err, "failed to execute %s", Price)
+	}
+
+	evmTr.Int64()
+
+	return nil
+}
+
+// SetURI updates uri
+func (conf *Configuration) SetURI(ctx context.Context, uri string) error {
+	erc721, transaction, err := conf.construct(ctx, SetURI, []byte(uri))
+	if err != nil {
+		return err
+	}
+
+	evmTr, err := erc721.SetURI(transaction, uri)
+	if err != nil {
+		return errors.Wrapf(err, "failed to execute %s", SetURI)
+	}
+
+	evmTr.Hash()
+
+	return nil
+}
+
+// SetAllocation updates allocation
+func (conf *Configuration) SetAllocation(ctx context.Context, allocation string) error {
+	erc721, transaction, err := conf.construct(ctx, SetAllocation, []byte(allocation))
+	if err != nil {
+		return err
+	}
+
+	evmTr, err := erc721.SetAllocation(transaction, allocation)
+	if err != nil {
+		return errors.Wrapf(err, "failed to execute %s", SetAllocation)
+	}
+
+	evmTr.Hash()
+
+	return nil
+}
+
+// SetMax eth balance from token contract - setReceiver(address receiver_)
+func (conf *Configuration) SetMax(ctx context.Context, max *big.Int) error {
+	erc721, transaction, err := conf.construct(ctx, SetMax, max)
+	if err != nil {
+		return err
+	}
+
+	evmTr, err := erc721.SetMax(transaction, max)
+	if err != nil {
+		return errors.Wrapf(err, "failed to execute %s", SetMax)
+	}
+
+	evmTr.Hash()
+
+	return nil
+}
+
+// SetMintable updates mintable state
+func (conf *Configuration) SetMintable(ctx context.Context, status bool) error {
+	erc721, transaction, err := conf.construct(ctx, SetMintable, status)
+	if err != nil {
+		return err
+	}
+
+	evmTr, err := erc721.SetMintable(transaction, status)
+	if err != nil {
+		return errors.Wrapf(err, "failed to execute %s", SetMintable)
+	}
+
+	evmTr.Hash()
+
+	return nil
+}
+
 // SetRoyalty eth balance from token contract - setReceiver(address receiver_)
 func (conf *Configuration) SetRoyalty(ctx context.Context, sum *big.Int) error {
 	erc721, transaction, err := conf.construct(ctx, SetRoyalty, sum)
@@ -99,24 +184,30 @@ func (conf *Configuration) construct(ctx context.Context, method string, params 
 		return nil, nil, errors.Wrapf(err, "failed to create %s in method: %s", Contract, method)
 	}
 
+	transaction, err := conf.createTransactOpts(ctx, method, params)
+
+	return erc721, transaction, err
+}
+
+func (conf *Configuration) createTransactOpts(ctx context.Context, method string, params ...interface{}) (*bind.TransactOpts, error) {
 	// Get ABI of the contract
 	abi, err := dstorageerc721.BindingsMetaData.GetAbi()
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to get ABI in %s, method: %s", Contract, method)
+		return nil, errors.Wrapf(err, "failed to get ABI in %s, method: %s", Contract, method)
 	}
 
 	// Pack the method arguments
 	pack, err := abi.Pack(method, params...)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to pack arguments in %s, method: %s", Contract, method)
+		return nil, errors.Wrapf(err, "failed to pack arguments in %s, method: %s", Contract, method)
 	}
 
 	transaction, err := conf.createTransaction(ctx, method, pack)
 	if err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to create createTransaction in %s, method: %s", Contract, method)
+		return nil, errors.Wrapf(err, "failed to create createTransaction in %s, method: %s", Contract, method)
 	}
 
-	return erc721, transaction, nil
+	return transaction, nil
 }
 
 func (conf *Configuration) createStorageERC721() (*dstorageerc721.Bindings, error) {
@@ -129,4 +220,23 @@ func (conf *Configuration) createStorageERC721() (*dstorageerc721.Bindings, erro
 	instance, err := dstorageerc721.NewBindings(addr, client)
 
 	return instance, err
+}
+
+func (conf *Configuration) createStorageERC721Session(ctx context.Context, method string, params ...interface{}) (*dstorageerc721.BindingsSession, error) {
+	contract, transact, err := conf.construct(ctx, method, params...)
+	if err != nil {
+		return nil, err
+	}
+
+	session := &dstorageerc721.BindingsSession{
+		Contract: contract,
+		CallOpts: bind.CallOpts{
+			Pending: false,
+			From:    transact.From,
+			Context: ctx,
+		},
+		TransactOpts: *transact,
+	}
+
+	return session, nil
 }
