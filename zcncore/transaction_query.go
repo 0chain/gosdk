@@ -288,17 +288,17 @@ func (tq *TransactionQuery) GetFastConfirmation(ctx context.Context, txnHash str
 			return nil, nil, nil, err
 		}
 
-		// parse confirmation section as block header
+		// parse `confirmation` section as block header
 		confirmationBlockHeader, err = getBlockHeaderFromTransactionConfirmation(txnHash, confirmationBlock)
 
 		if err != nil {
 			Logger.Error("txn confirmation parse header error", err)
 
-			// parse latest_finalized_block section
+			// parse `latest_finalized_block` section
 			if lfbRaw, ok := confirmationBlock["latest_finalized_block"]; ok {
 				err = json.Unmarshal([]byte(lfbRaw), &lfbBlockHeader)
 				if err == nil {
-					return confirmationBlockHeader, confirmationBlock, &lfbBlockHeader, nil
+					return nil, confirmationBlock, &lfbBlockHeader, nil
 				}
 
 				Logger.Error("round info parse error.", err)
@@ -339,12 +339,12 @@ func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSha
 				return false
 			}
 
-			// parse confirmation section as block header
+			// parse `confirmation` section as block header
 			cfmBlockHeader, err := getBlockHeaderFromTransactionConfirmation(txnHash, cfmBlock)
 			if err != nil {
 				Logger.Error("txn confirmation parse header error", err)
 
-				// parse latest_finalized_block section
+				// parse `latest_finalized_block` section
 				if lfbRaw, ok := cfmBlock["latest_finalized_block"]; ok {
 					var lfb blockHeader
 					err := json.Unmarshal([]byte(lfbRaw), &lfb)
