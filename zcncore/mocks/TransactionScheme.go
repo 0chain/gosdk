@@ -167,7 +167,7 @@ func (_m *TransactionScheme) LockTokens(val int64, durationHr int64, durationMin
 }
 
 // MienrSCUnlock provides a mock function with given fields: minerID, poolID
-func (_m *TransactionScheme) MienrSCUnlock(minerID string, poolID string) error {
+func (_m *TransactionScheme) MinerSCUnlock(minerID string, poolID string) error {
 	ret := _m.Called(minerID, poolID)
 
 	var r0 error

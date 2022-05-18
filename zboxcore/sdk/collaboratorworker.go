@@ -5,6 +5,7 @@ import (
 	"context"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
@@ -96,20 +97,18 @@ func (req *CollaboratorRequest) RemoveCollaboratorFromBlobbers() bool {
 func (req *CollaboratorRequest) removeCollaboratorFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- bool) {
 
 	defer req.wg.Done()
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
 
-	formWriter.WriteField("path", req.path)
-	formWriter.WriteField("collab_id", req.collaboratorID)
+	query := &url.Values{}
 
-	formWriter.Close()
-	httpreq, err := zboxutil.DeleteCollaboratorRequest(blobber.Baseurl, req.a.Tx, body)
+	query.Add("path", req.path)
+	query.Add("collab_id", req.collaboratorID)
+
+	httpreq, err := zboxutil.DeleteCollaboratorRequest(blobber.Baseurl, req.a.Tx, query)
 	if err != nil {
 		l.Logger.Error("Delete collaborator request error: ", err.Error())
 		return
 	}
 
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	ctx, cncl := context.WithTimeout(req.a.ctx, (time.Second * 30))
 
 	zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {

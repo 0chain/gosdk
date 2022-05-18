@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -977,26 +978,16 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 	notFound := make(chan int, len(a.Blobbers))
 	wg := &sync.WaitGroup{}
 	for idx := range a.Blobbers {
-		url := a.Blobbers[idx].Baseurl
-		body := new(bytes.Buffer)
-		formWriter := multipart.NewWriter(body)
-		if err := formWriter.WriteField("path", path); err != nil {
-			return err
-		}
-		if err := formWriter.WriteField("refereeClientID", refereeClientID); err != nil {
-			return err
-		}
-		if err := formWriter.Close(); err != nil {
-			return err
-		}
-		httpreq, err := zboxutil.NewRevokeShareRequest(url, a.Tx, body)
+		baseUrl := a.Blobbers[idx].Baseurl
+		query := &url.Values{}
+		query.Add("path", path)
+		query.Add("refereeClientID", refereeClientID)
+
+		httpreq, err := zboxutil.NewRevokeShareRequest(baseUrl, a.Tx, query)
 		if err != nil {
 			return err
 		}
-		httpreq.Header.Set("Content-Type", formWriter.FormDataContentType())
-		if err := formWriter.Close(); err != nil {
-			return err
-		}
+
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -1013,7 +1004,7 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 					return err
 				}
 				if resp.StatusCode != http.StatusOK {
-					l.Logger.Error(url, " Revoke share error response: ", resp.StatusCode, string(respbody))
+					l.Logger.Error(baseUrl, " Revoke share error response: ", resp.StatusCode, string(respbody))
 					return fmt.Errorf(string(respbody))
 				}
 				data := map[string]interface{}{}

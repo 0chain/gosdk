@@ -1076,24 +1076,35 @@ func GetFaucetSCConfig(cb GetInfoCallback) (err error) {
 //
 
 type Miner struct {
-	ID                string      `json:"id"`
-	N2NHost           string      `json:"n2n_host"`
-	Host              string      `json:"host"`
-	Port              int         `json:"port"`
-	PublicKey         string      `json:"public_key"`
-	ShortName         string      `json:"short_name"`
-	BuildTag          string      `json:"build_tag"`
-	TotalStake        int         `json:"total_stake"`
-	DelegateWallet    string      `json:"delegate_wallet"`
-	ServiceCharge     float64     `json:"service_charge"`
-	NumberOfDelegates int         `json:"number_of_delegates"`
-	MinStake          int64       `json:"min_stake"`
-	MaxStake          int64       `json:"max_stake"`
-	Stat              interface{} `json:"stat"`
+	ID         string      `json:"id"`
+	N2NHost    string      `json:"n2n_host"`
+	Host       string      `json:"host"`
+	Port       int         `json:"port"`
+	PublicKey  string      `json:"public_key"`
+	ShortName  string      `json:"short_name"`
+	BuildTag   string      `json:"build_tag"`
+	TotalStake int64       `json:"total_stake"`
+	Stat       interface{} `json:"stat"`
+}
+
+type DelegatePool struct {
+	Balance      int64  `json:"balance"`
+	Reward       int64  `json:"reward"`
+	Status       int    `json:"status"`
+	RoundCreated int64  `json:"round_created"` // used for cool down
+	DelegateID   string `json:"delegate_id"`
+}
+
+type StakePool struct {
+	Pools    map[string]*DelegatePool `json:"pools"`
+	Reward   int64                    `json:"rewards"`
+	Settings StakePoolSettings        `json:"settings"`
+	Minter   int                      `json:"minter"`
 }
 
 type Node struct {
-	Miner Miner `json:"simple_miner"`
+	Miner     Miner `json:"simple_miner"`
+	StakePool `json:"stake_pool"`
 }
 
 type MinerSCNodes struct {
@@ -1158,17 +1169,15 @@ func GetMinerSCNodePool(id, poolID string, cb GetInfoCallback) (err error) {
 }
 
 type MinerSCDelegatePoolInfo struct {
-	ID           common.Key     `json:"id"`            // pool ID
-	Balance      common.Balance `json:"balance"`       //
-	InterestPaid common.Balance `json:"interest_paid"` //
-	RewardPaid   common.Balance `json:"reward_paid"`   //
-	Status       string         `json:"status"`        //
-	High         common.Balance `json:"high"`          // }
-	Low          common.Balance `json:"low"`           // }
+	ID         common.Key     `json:"id"`
+	Balance    common.Balance `json:"balance"`
+	Reward     common.Balance `json:"reward"`      // uncollected reread
+	RewardPaid common.Balance `json:"reward_paid"` // total reward all time
+	Status     string         `json:"status"`
 }
 
 type MinerSCUserPoolsInfo struct {
-	Pools map[string]map[string][]*MinerSCDelegatePoolInfo `json:"pools"`
+	Pools map[string][]*MinerSCDelegatePoolInfo `json:"pools"`
 }
 
 func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error) {
