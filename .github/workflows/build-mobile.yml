@@ -67,7 +67,7 @@ jobs:
 
   build-android:
     name: Build-android
-    runs-on: [self-hosted, docker-build]
+    runs-on: [self-hosted, build]
 
     steps:
       - name: Checkout code
