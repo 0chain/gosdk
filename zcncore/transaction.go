@@ -158,7 +158,7 @@ type TransactionScheme interface {
 
 	// Miner SC
 
-	MinerSCCollectReward(string, Provider) error
+	MinerSCCollectReward(string, string, Provider) error
 	MinerSCMinerSettings(*MinerSCMinerInfo) error
 	MinerSCSharderSettings(*MinerSCMinerInfo) error
 	MinerSCLock(minerID string, lock int64) error
@@ -170,7 +170,7 @@ type TransactionScheme interface {
 
 	// Storage SC
 
-	StorageSCCollectReward(string, Provider) error
+	StorageSCCollectReward(string, string, Provider) error
 	FinalizeAllocation(allocID string, fee int64) error
 	CancelAllocation(allocID string, fee int64) error
 	CreateAllocation(car *CreateAllocationRequest, lock, fee int64) error //
@@ -1298,53 +1298,17 @@ func (t *Transaction) MinerScUpdateGlobals(ip *InputMap) (err error) {
 	return
 }
 
-type MinerSCPoolStats struct {
-	DelegateID   string         `json:"delegate_id"`
-	High         common.Balance `json:"high"`
-	Low          common.Balance `json:"low"`
-	InterestRate float64        `json:"interest_rate"`
-	TotalPaid    common.Balance `json:"total_paid"`
-	NumRounds    int64          `json:"number_rounds"`
-}
-
-type MinerSCPool struct {
-	ID      string         `json:"id"`
-	Balance common.Balance `json:"balance"`
-}
-
 type MinerSCDelegatePool struct {
-	MinerSCPoolStats `json:"stats"`
-	MinerSCPool      `json:"pool"`
+	Settings StakePoolSettings `json:"settings"`
 }
 
-type MinerSCMinerStat struct {
-	// for miner (totals)
-	BlockReward      common.Balance `json:"block_reward,omitempty"`
-	ServiceCharge    common.Balance `json:"service_charge,omitempty"`
-	UsersFee         common.Balance `json:"users_fee,omitempty"`
-	BlockShardersFee common.Balance `json:"block_sharders_fee,omitempty"`
-	// for sharder (total)
-	SharderRewards common.Balance `json:"sharder_rewards,omitempty"`
+type SimpleMiner struct {
+	ID string `json:"id"`
 }
 
 type MinerSCMinerInfo struct {
-	*SimpleMinerSCMinerInfo `json:"simple_miner"`
-	Pending                 map[string]MinerSCDelegatePool `json:"pending"`
-	Active                  map[string]MinerSCDelegatePool `json:"active"`
-	Deleting                map[string]MinerSCDelegatePool `json:"deleting"`
-}
-
-type SimpleMinerSCMinerInfo struct {
-	ID      string `json:"id"`
-	BaseURL string `json:"url"`
-
-	DelegateWallet    string         `json:"delegate_wallet"`     //
-	ServiceCharge     float64        `json:"service_charge"`      // %
-	NumberOfDelegates int            `json:"number_of_delegates"` //
-	MinStake          common.Balance `json:"min_stake"`           //
-	MaxStake          common.Balance `json:"max_stake"`           //
-
-	Stat MinerSCMinerStat `json:"stat"`
+	SimpleMiner         `json:"simple_miner"`
+	MinerSCDelegatePool `json:"stake_pool"`
 }
 
 func (t *Transaction) MinerSCMinerSettings(info *MinerSCMinerInfo) (err error) {
@@ -1402,12 +1366,14 @@ const (
 )
 
 type SCCollectReward struct {
+	ProviderId   string   `json:"provider_id"`
 	PoolId       string   `json:"pool_id"`
 	ProviderType Provider `json:"provider_type"`
 }
 
-func (t *Transaction) MinerSCCollectReward(poolId string, providerType Provider) error {
+func (t *Transaction) MinerSCCollectReward(providerId, poolId string, providerType Provider) error {
 	pr := &SCCollectReward{
+		ProviderId:   providerId,
 		PoolId:       poolId,
 		ProviderType: providerType,
 	}
@@ -1616,8 +1582,9 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 // Storage SC transactions
 //
 
-func (t *Transaction) StorageSCCollectReward(poolId string, providerType Provider) error {
+func (t *Transaction) StorageSCCollectReward(providerId, poolId string, providerType Provider) error {
 	pr := &SCCollectReward{
+		ProviderId:   providerId,
 		PoolId:       poolId,
 		ProviderType: providerType,
 	}
@@ -1823,16 +1790,11 @@ func (t *Transaction) StakePoolUnlock(blobberID, poolID string,
 }
 
 type StakePoolSettings struct {
-	// DelegateWallet for pool owner.
-	DelegateWallet string `json:"delegate_wallet"`
-	// MinStake allowed.
-	MinStake common.Balance `json:"min_stake"`
-	// MaxStake allowed.
-	MaxStake common.Balance `json:"max_stake"`
-	// NumDelegates maximum allowed.
-	NumDelegates int `json:"num_delegates"`
-	// ServiceCharge is blobber service charge.
-	ServiceCharge float64 `json:"service_charge"`
+	DelegateWallet string         `json:"delegate_wallet"`
+	MinStake       common.Balance `json:"min_stake"`
+	MaxStake       common.Balance `json:"max_stake"`
+	NumDelegates   int            `json:"num_delegates"`
+	ServiceCharge  float64        `json:"service_charge"`
 }
 
 type Terms struct {
