@@ -179,7 +179,7 @@ func (tq *TransactionQuery) randOne(ctx context.Context) (string, error) {
 	}
 }
 
-// FromAny query transaction form any sharder that is not selected in previous queires. use any used sharder if there is not any unused sharder
+// FromAny query transaction from any sharder that is not selected in previous queires. use any used sharder if there is not any unused sharder
 func (tq *TransactionQuery) FromAny(ctx context.Context, query string) (QueryResult, error) {
 
 	res := QueryResult{
@@ -230,8 +230,8 @@ func (tq *TransactionQuery) FromAny(ctx context.Context, query string) (QueryRes
 
 }
 
-// FromConsensus query transaction from all sharders whatever it is selected or offline in previous queires, and return consensus result
-func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, handle QueryResultHandle) error {
+// FromAll query transaction from all sharders whatever it is selected or offline in previous queires, and return consensus result
+func (tq *TransactionQuery) FromAll(ctx context.Context, query string, handle QueryResultHandle) error {
 	if tq == nil || tq.max == 0 {
 		return ErrNoAvailableSharders
 	}
@@ -329,7 +329,7 @@ func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSha
 	lfbBlockHeaders := make(map[string]int)
 
 	// {host}/v1/transaction/get/confirmation?hash={txnHash}&content=lfb
-	err := tq.FromConsensus(ctx,
+	err := tq.FromAll(ctx,
 		tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"),
 		func(qr QueryResult) bool {
 			if qr.StatusCode != http.StatusOK {
