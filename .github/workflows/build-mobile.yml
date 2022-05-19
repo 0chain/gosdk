@@ -10,11 +10,8 @@ on:
     tags:
       - 'v*.*.*'
   pull_request:
+    branches: [ master, staging, qa ]
   workflow_dispatch:
-  inputs:
-    version:
-      description: '0Chain SDK version'
-      required: true
 
 env:
   GITHUB_TOKEN: ${{ secrets.GOSDK }}
@@ -55,7 +52,7 @@ jobs:
         run: |
           tag=$(echo ${GITHUB_REF#refs/tags/})
           echo ${tag}
-          if [[ -n "${{github.event.inputs.version}}" ]]; then
+          if [[ "${{github.event_name}}" = "workflow_dispatch" ]]; then
             echo "> 0Chain: trigger from workflow_dispatch"
          
           elif [[ ${tag} = v*\.*\.* ]] ; then
@@ -139,7 +136,7 @@ jobs:
           tag=$(echo ${GITHUB_REF#refs/tags/})
           echo ${tag}
     
-          if [[ -n "${{github.event.inputs.version}}" ]]; then
+          if [[ "${{github.event_name}}" = "workflow_dispatch" ]]; then
             echo "> 0Chain: trigger from workflow_dispatch"
          
           elif [[ ${tag} = v*\.*\.* ]] ; then
