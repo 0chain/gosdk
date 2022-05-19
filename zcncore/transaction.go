@@ -1663,7 +1663,7 @@ type CreateAllocationRequest struct {
 	Expiration                 common.Timestamp `json:"expiration_date"`
 	Owner                      string           `json:"owner_id"`
 	OwnerPublicKey             string           `json:"owner_public_key"`
-	PreferredBlobbers          []string         `json:"preferred_blobbers"`
+	Blobbers                   []string         `json:"blobbers"`
 	ReadPriceRange             PriceRange       `json:"read_price_range"`
 	WritePriceRange            PriceRange       `json:"write_price_range"`
 	MaxChallengeCompletionTime time.Duration    `json:"max_challenge_completion_time"`
