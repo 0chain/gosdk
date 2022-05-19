@@ -19,7 +19,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
@@ -99,7 +99,7 @@ func startCommitWorker(blobberChan chan *CommitRequest, blobberID string) {
 }
 
 func (commitreq *CommitRequest) processCommit() {
-	Logger.Info("received a commit request")
+	l.Logger.Info("received a commit request")
 	paths := make([]string, 0)
 	for _, change := range commitreq.changes {
 		paths = append(paths, change.GetAffectedPath())
@@ -108,22 +108,22 @@ func (commitreq *CommitRequest) processCommit() {
 	var lR ReferencePathResult
 	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
 	if err != nil || len(paths) == 0 {
-		Logger.Error("Creating ref path req", err)
+		l.Logger.Error("Creating ref path req", err)
 		return
 	}
 	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
 	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("Ref path error:", err)
+			l.Logger.Error("Ref path error:", err)
 			return err
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
-			Logger.Error("Ref path response : ", resp.StatusCode)
+			l.Logger.Error("Ref path response : ", resp.StatusCode)
 		}
 		resp_body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			Logger.Error("Ref path: Resp", err)
+			l.Logger.Error("Ref path: Resp", err)
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
@@ -133,7 +133,7 @@ func (commitreq *CommitRequest) processCommit() {
 			//Logger.Info("Reference path:", string(resp_body))
 			err = json.Unmarshal(resp_body, &lR)
 			if err != nil {
-				Logger.Error("Reference path json decode error: ", err)
+				l.Logger.Error("Reference path json decode error: ", err)
 				return err
 			}
 		}
@@ -160,7 +160,7 @@ func (commitreq *CommitRequest) processCommit() {
 		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
 			// Removing this check for testing purpose as per the convo with Saswata
-			Logger.Info("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
+			l.Logger.Info("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
 			// err = commitreq.calculateHashRequest(ctx, paths)
 			// if err != nil {
 			// 	commitreq.result = ErrorCommitResult("Failed to call blobber to recalculate the hash. URL: " + commitreq.blobber.Baseurl + ", Err : " + err.Error())
@@ -218,14 +218,14 @@ func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.W
 	wm.ClientID = client.GetClientID()
 	err := wm.Sign()
 	if err != nil {
-		Logger.Error("Signing writemarker failed: ", err)
+		l.Logger.Error("Signing writemarker failed: ", err)
 		return err
 	}
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
 	wmData, err := json.Marshal(wm)
 	if err != nil {
-		Logger.Error("Creating writemarker failed: ", err)
+		l.Logger.Error("Creating writemarker failed: ", err)
 		return err
 	}
 	formWriter.WriteField("connection_id", req.connectionID)
@@ -235,31 +235,31 @@ func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.W
 
 	httpreq, err := zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationTx, body)
 	if err != nil {
-		Logger.Error("Error creating commit req: ", err)
+		l.Logger.Error("Error creating commit req: ", err)
 		return err
 	}
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 60))
-	Logger.Info("Committing to blobber." + req.blobber.Baseurl)
+	l.Logger.Info("Committing to blobber." + req.blobber.Baseurl)
 	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("Commit: ", err)
+			l.Logger.Error("Commit: ", err)
 			return err
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusOK {
-			Logger.Info(req.blobber.Baseurl, req.connectionID, " committed")
+			l.Logger.Info(req.blobber.Baseurl, req.connectionID, " committed")
 		} else {
-			Logger.Error("Commit response: ", resp.StatusCode)
+			l.Logger.Error("Commit response: ", resp.StatusCode)
 		}
 
 		resp_body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			Logger.Error("Response read: ", err)
+			l.Logger.Error("Response read: ", err)
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
-			Logger.Error(req.blobber.Baseurl, " Commit response:", string(resp_body))
+			l.Logger.Error(req.blobber.Baseurl, " Commit response:", string(resp_body))
 			return errors.New("commit_error", string(resp_body))
 		}
 		return nil
@@ -275,22 +275,22 @@ func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths 
 	var req *http.Request
 	req, err := zboxutil.NewCalculateHashRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
 	if err != nil || len(paths) == 0 {
-		Logger.Error("Creating calculate hash req", err)
+		l.Logger.Error("Creating calculate hash req", err)
 		return err
 	}
 	ctx, cncl := context.WithTimeout(ctx, (time.Second * 30))
 	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("Calculate hash error:", err)
+			l.Logger.Error("Calculate hash error:", err)
 			return err
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
-			Logger.Error("Calculate hash response : ", resp.StatusCode)
+			l.Logger.Error("Calculate hash response : ", resp.StatusCode)
 		}
 		resp_body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			Logger.Error("Calculate hash: Resp", err)
+			l.Logger.Error("Calculate hash: Resp", err)
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {

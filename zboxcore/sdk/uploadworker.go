@@ -25,7 +25,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/encoder"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"golang.org/x/crypto/sha3"
 )
@@ -160,7 +160,7 @@ func (req *UploadRequest) prepareUpload(
 		)
 		fileField, err = formWriter.CreateFormFile("uploadFile", file.Name)
 		if err != nil {
-			Logger.Error("Create form failed: ", err)
+			l.Logger.Error("Create form failed: ", err)
 			bodyWriter.CloseWithError(err)
 			// Just read the data to unblock
 			for remaining > 0 {
@@ -231,7 +231,7 @@ func (req *UploadRequest) prepareUpload(
 
 			fileField, err := formWriter.CreateFormFile("uploadThumbnailFile", file.Name+".thumb")
 			if err != nil {
-				Logger.Error("Create form failed: ", err)
+				l.Logger.Error("Create form failed: ", err)
 				return
 			}
 			// Setup file hash compute
@@ -290,7 +290,7 @@ func (req *UploadRequest) prepareUpload(
 	}()
 	_ = zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("Upload : ", err)
+			l.Logger.Error("Upload : ", err)
 			req.err = err
 			return err
 		}
@@ -298,31 +298,31 @@ func (req *UploadRequest) prepareUpload(
 
 		respbody, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			Logger.Error("Error: Resp ", err)
+			l.Logger.Error("Error: Resp ", err)
 			req.err = err
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
-			Logger.Error(blobber.Baseurl, " Upload error response: ", resp.StatusCode, string(respbody))
+			l.Logger.Error(blobber.Baseurl, " Upload error response: ", resp.StatusCode, string(respbody))
 			req.err = errors.New("", string(respbody))
 			return err
 		}
 		var r UploadResult
 		err = json.Unmarshal(respbody, &r)
 		if err != nil {
-			Logger.Error(blobber.Baseurl, " Upload response parse error: ", err)
+			l.Logger.Error(blobber.Baseurl, " Upload response parse error: ", err)
 			req.err = err
 			return err
 		}
 		if r.Filename != formData.Filename || r.ShardSize != shardSize ||
 			r.Hash != formData.Hash || r.MerkleRoot != formData.MerkleRoot {
 			err = fmt.Errorf(blobber.Baseurl, "Unexpected upload response data", string(respbody))
-			Logger.Error(err)
+			l.Logger.Error(err)
 			req.err = err
 			return err
 		}
 		req.consensus++
-		Logger.Info(blobber.Baseurl, formData.Path, " uploaded")
+		l.Logger.Info(blobber.Baseurl, formData.Path, " uploaded")
 		file.MerkleRoot = formData.MerkleRoot
 		file.ContentHash = formData.Hash
 		file.ThumbnailHash = formData.ThumbnailHash
@@ -402,7 +402,7 @@ func (req *UploadRequest) pushData(data []byte) error {
 	}
 	shards, err := erasureencoder.Encode(data)
 	if err != nil {
-		Logger.Error("Erasure coding failed.", err.Error())
+		l.Logger.Error("Erasure coding failed.", err.Error())
 		return err
 	}
 	var c, pos uint64
@@ -411,7 +411,7 @@ func (req *UploadRequest) pushData(data []byte) error {
 			pos = uint64(i.TrailingZeros())
 			encMsg, err := req.encscheme.Encrypt(shards[pos])
 			if err != nil {
-				Logger.Error("Encryption failed.", err.Error())
+				l.Logger.Error("Encryption failed.", err.Error())
 				return err
 			}
 			header := make([]byte, EncryptionHeaderSize)
@@ -493,7 +493,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			chunkSizeWithHeader -= EncryptionHeaderSize
 		}
 		chunksPerShard := (perShard + chunkSizeWithHeader - 1) / chunkSizeWithHeader
-		Logger.Info("Size:", size, " perShard:", perShard, " chunks/shard:", chunksPerShard)
+		l.Logger.Info("Size:", size, " perShard:", perShard, " chunks/shard:", chunksPerShard)
 		req.isUploadCanceled = false
 		if req.statusCallback != nil {
 			req.statusCallback.Started(a.ID, req.remotefilepath, OpUpload, int(perShard)*(a.DataShards+a.ParityShards))
@@ -531,7 +531,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 		}
 	}()
 	wg.Wait()
-	Logger.Info("Completed the upload. Submitting for commit")
+	l.Logger.Info("Completed the upload. Submitting for commit")
 
 	for _, ch := range req.uploadDataCh {
 		close(ch)
@@ -540,7 +540,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 	for _, ch := range req.uploadThumbCh {
 		close(ch)
 	}
-	Logger.Info("Closed all the channels. Submitting for commit")
+	l.Logger.Info("Closed all the channels. Submitting for commit")
 	req.consensus = 0
 	wg = &sync.WaitGroup{}
 	ones := req.uploadMask.CountOnes()
@@ -588,15 +588,15 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 		for _, commitReq := range commitReqs {
 			if commitReq.result != nil {
 				if commitReq.result.Success {
-					Logger.Info("Commit success", commitReq.blobber.Baseurl, "Retries ", retries)
+					l.Logger.Info("Commit success", commitReq.blobber.Baseurl, "Retries ", retries)
 					req.consensus++
 				} else {
 					failedCommits = append(failedCommits, commitReq)
-					Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage, "Retries ", retries)
+					l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage, "Retries ", retries)
 				}
 			} else {
 				failedCommits = append(failedCommits, commitReq)
-				Logger.Info("Commit result not set", commitReq.blobber.Baseurl, "Retries ", retries)
+				l.Logger.Info("Commit result not set", commitReq.blobber.Baseurl, "Retries ", retries)
 			}
 		}
 		if !req.isConsensusOk() {
@@ -625,7 +625,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 
 	if !req.isConsensusOk() {
 		if req.consensus != 0 {
-			Logger.Info("Commit consensus failed, Deleting remote file....")
+			l.Logger.Info("Commit consensus failed, Deleting remote file....")
 			a.deleteFile(req.remotefilepath, req.consensus, req.consensus)
 		}
 		if req.statusCallback != nil {
