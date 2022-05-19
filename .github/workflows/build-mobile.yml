@@ -1,15 +1,20 @@
 name: build-mobile
 
 concurrency:
-  group: "tests-${{ github.ref }}"
+  group: "build-mobile-${{ github.ref }}"
   cancel-in-progress: true
 
 on:
   push:
-    branches:
+    branches: [ master, staging ]
     tags:
       - 'v*.*.*'
   pull_request:
+  workflow_dispatch:
+  inputs:
+    version:
+      description: '0Chain SDK version'
+      required: true
 
 env:
   GITHUB_TOKEN: ${{ secrets.GOSDK }}
@@ -45,9 +50,21 @@ jobs:
       - name: Compress
         run: tar -czvf zcncore-ios.tar.gz out/iossdk/zcncore.xcframework
 
-      - name: Set output
-        id: vars
-        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      - name: Setup Build
+        id: setup_build
+        run: |
+          tag=$(echo ${GITHUB_REF#refs/tags/})
+          echo ${tag}
+          if [[ -n "${{github.event.inputs.version}}" ]]; then
+            echo "> 0Chain: trigger from workflow_dispatch"
+         
+          elif [[ ${tag} = v*\.*\.* ]] ; then
+            echo "> 0Chain: trigger from git event"
+       
+            # upload output on release
+            echo "::set-output name=RELEASE::true"
+            echo "::set-output name=TAG::${tag}"
+          fi
 
       - name: Upload binaries to release
         if:  steps.setup_build.outputs.RELEASE == 'true'
@@ -55,7 +72,7 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: zcncore-ios.tar.gz
-          tag: ${{ steps.vars.outputs.tag }}
+          tag: ${{ steps.vars.outputs.TAG }}
           overwrite: true
           file_glob: true
 
@@ -116,9 +133,22 @@ jobs:
       - name: Compress
         run: tar -czvf zcncore-android.tar.gz out/androidsdk/zcncore.aar
 
-      - name: Set output
-        id: vars
-        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+      - name: Setup Build
+        id: setup_build
+        run: |
+          tag=$(echo ${GITHUB_REF#refs/tags/})
+          echo ${tag}
+    
+          if [[ -n "${{github.event.inputs.version}}" ]]; then
+            echo "> 0Chain: trigger from workflow_dispatch"
+         
+          elif [[ ${tag} = v*\.*\.* ]] ; then
+            echo "> 0Chain: trigger from git event"
+       
+            # upload output on release
+            echo "::set-output name=RELEASE::true"
+            echo "::set-output name=TAG::${tag}"
+          fi
 
       - name: Upload binaries to release
         if:  steps.setup_build.outputs.RELEASE == 'true'
@@ -126,7 +156,7 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: zcncore-android.tar.gz
-          tag: ${{ steps.vars.outputs.tag }}
+          tag: ${{ steps.vars.outputs.TAG }}
           overwrite: true
           file_glob: true
 
