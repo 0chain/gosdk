@@ -130,7 +130,6 @@ func (r *Resty) Do(ctx context.Context, method string, body io.Reader, urls ...s
 			req.Header.Set(key, value)
 		}
 
-		req.Close = true
 		//reuse http connection if it is possible
 		req.Header.Set("Connection", "keep-alive")
 

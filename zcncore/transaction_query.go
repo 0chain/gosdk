@@ -205,17 +205,17 @@ func (tq *TransactionQuery) FromAny(ctx context.Context, query string) (QueryRes
 
 	r.DoGet(ctx, requestUrl).
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
-			Logger.Debug(requestUrl + " " + resp.Status)
-
 			res.Error = err
 			if err != nil {
 				return err
 			}
 
 			res.Content = respBody
-			res.StatusCode = resp.StatusCode
-
 			Logger.Debug(string(respBody))
+
+			if resp != nil {
+				res.StatusCode = resp.StatusCode
+			}
 
 			return nil
 		})
