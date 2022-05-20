@@ -232,18 +232,22 @@ func (r *Resty) Wait() []error {
 	}
 
 	for {
+		select {
+		case <-r.ctx.Done():
+			return errs
 
-		result := <-r.done
+		case result := <-r.done:
 
-		if r.handle != nil {
-			err := r.handle(result.Request, result.Response, result.ResponseBody, r.cancelFunc, result.Err)
+			if r.handle != nil {
+				err := r.handle(result.Request, result.Response, result.ResponseBody, r.cancelFunc, result.Err)
 
-			if err != nil {
-				errs = append(errs, err)
-			}
-		} else {
-			if result.Err != nil {
-				errs = append(errs, result.Err)
+				if err != nil {
+					errs = append(errs, err)
+				}
+			} else {
+				if result.Err != nil {
+					errs = append(errs, result.Err)
+				}
 			}
 		}
 

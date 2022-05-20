@@ -74,6 +74,14 @@ type blockHeader struct {
 	NumTxns               int64  `json:"num_txns,omitempty"`
 }
 
+func (bh *blockHeader) getCreationDate(defaultTime int64) int64 {
+	if bh == nil {
+		return defaultTime
+	}
+
+	return bh.CreationDate
+}
+
 type Transaction struct {
 	txn                      *transaction.Transaction
 	txnOut                   string
@@ -614,9 +622,9 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 		// Verify the block
 		if isBlockExtends(prevBlockHash, block) {
 			return block, nil
-		} else {
-			return nil, errors.New("", "block hash verification failed in confirmation")
 		}
+
+		return nil, errors.New("", "block hash verification failed in confirmation")
 	}
 	return nil, errors.New("", "txn confirmation not found.")
 }
@@ -627,6 +635,7 @@ func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, 
 
 	numSharders = len(_config.chain.Sharders) // overwrite, use all
 	queryFromSharders(numSharders, fmt.Sprintf("%v%v&content=lfb", TXN_VERIFY_URL, txnHash), result)
+
 	maxConfirmation := int(0)
 	txnConfirmations := make(map[string]int)
 	var blockHdr *blockHeader
@@ -1018,39 +1027,62 @@ func (t *Transaction) Verify() error {
 		t.txn.CreationDate = int64(common.Now())
 	}
 
+	tq, err := NewTransactionQuery(_config.chain.Sharders)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+
 	go func() {
+
 		for {
-			// Get transaction confirmation from random sharder
-			confirmBlock, confirmation, lfb, err := getTransactionConfirmation(1, t.txnHash)
+
+			tq.Reset()
+			// Get transaction confirmationBlock from a random sharder
+			confirmBlockHeader, confirmationBlock, lfbBlockHeader, err := tq.GetFastConfirmation(context.TODO(), t.txnHash)
+
 			if err != nil {
-				tn := int64(common.Now())
-				Logger.Info(err, " now: ", tn, ", LFB creation time:", lfb.CreationDate)
-				if util.MaxInt64(lfb.CreationDate, tn) < (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
+				now := int64(common.Now())
+
+				// maybe it is a network or server error
+				if lfbBlockHeader == nil {
+					Logger.Info(err, " now: ", now)
+				} else {
+					Logger.Info(err, " now: ", now, ", LFB creation time:", lfbBlockHeader.CreationDate)
+				}
+
+				// transaction is done or expired. it means random sharder might be outdated, try to query it from s/S sharders to confirm it
+				if util.MaxInt64(lfbBlockHeader.getCreationDate(now), now) >= (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
 					Logger.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders")
-					confirmBlock, confirmation, lfb, err = getTransactionConfirmation(getMinShardersVerify(), t.txnHash)
-					if err != nil {
-						if t.isTransactionExpired(lfb.CreationDate, tn) {
-							t.completeVerify(StatusError, "", errors.New("", `{"error": "verify transaction failed"}`))
-							return
-						}
+					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.GetConsensusConfirmation(context.TODO(), getMinShardersVerify(), t.txnHash)
+				}
+
+				// txn not found in fast confirmation/consensus confirmation
+				if err != nil {
+
+					if lfbBlockHeader == nil {
+						// no any valid lfb on all sharders. maybe they are network/server errors. try it again
 						continue
 					}
-				} else {
-					if t.isTransactionExpired(lfb.CreationDate, tn) {
+
+					// it is expired
+					if t.isTransactionExpired(lfbBlockHeader.getCreationDate(now), now) {
 						t.completeVerify(StatusError, "", errors.New("", `{"error": "verify transaction failed"}`))
 						return
 					}
 					continue
 				}
+
 			}
-			valid := validateChain(confirmBlock)
+
+			valid := validateChain(confirmBlockHeader)
 			if valid {
-				output, err := json.Marshal(confirmation)
+				output, err := json.Marshal(confirmationBlock)
 				if err != nil {
 					t.completeVerify(StatusError, "", errors.New("", `{"error": "transaction confirmation json marshal error"`))
 					return
 				}
-				confJson := confirmation["confirmation"]
+				confJson := confirmationBlock["confirmation"]
 
 				var conf map[string]json.RawMessage
 				if err := json.Unmarshal(confJson, &conf); err != nil {
