@@ -868,7 +868,7 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 		return "", 0, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
 	}
 
-	allocationBlobbers, err := getAllocationBlobbers(owner, ownerpublickey, datashards,
+	allocationBlobbers, err := GetAllocationBlobbers(owner, ownerpublickey, datashards,
 		parityshards, size, expiry, readPrice,
 		writePrice, mcct)
 	if err != nil {
@@ -914,7 +914,7 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 	return
 }
 
-func getAllocationBlobbers(owner, ownerpublickey string,
+func GetAllocationBlobbers(owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, mcct time.Duration) ([]string, error) {
 
