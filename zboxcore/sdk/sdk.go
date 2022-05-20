@@ -21,7 +21,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
@@ -58,7 +58,7 @@ func GetVersion() string {
 // SetLogLevel set the log level.
 // lvl - 0 disabled; higher number (upto 4) more verbosity
 func SetLogLevel(lvl int) {
-	Logger.SetLevel(lvl)
+	l.Logger.SetLevel(lvl)
 }
 
 // SetLogFile
@@ -69,12 +69,12 @@ func SetLogFile(logFile string, verbose bool) {
 	if err != nil {
 		return
 	}
-	Logger.SetLogFile(f, verbose)
-	Logger.Info("******* Storage SDK Version: ", version.VERSIONSTR, " *******")
+	l.Logger.SetLogFile(f, verbose)
+	l.Logger.Info("******* Storage SDK Version: ", version.VERSIONSTR, " *******")
 }
 
 func GetLogger() *logger.Logger {
-	return &Logger
+	return &l.Logger
 }
 
 // InitStorageSDK init storage sdk with walletJSON
@@ -863,6 +863,31 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 		return "", 0, errors.New("", "invalid value for lock")
 	}
 
+	preferred, err := getPreferredBlobberIds(preferredBlobbers)
+	if err != nil {
+		return "", 0, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
+	}
+
+	allocationBlobbers, err := getAllocationBlobbers(owner, ownerpublickey, datashards,
+		parityshards, size, expiry, readPrice,
+		writePrice, mcct)
+	if err != nil {
+		return "", 0, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
+	}
+
+	//filter duplicates
+	ids := make(map[string]struct{})
+	for _, id := range preferred {
+		ids[id] = struct{}{}
+	}
+	for _, id := range allocationBlobbers {
+		ids[id] = struct{}{}
+	}
+	blobbers := make([]string, 0, len(ids))
+	for id := range ids {
+		blobbers = append(blobbers, id)
+	}
+
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
@@ -875,11 +900,10 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 		"owner_id":                      owner,
 		"owner_public_key":              ownerpublickey,
 		"expiration_date":               expiry,
-		"preferred_blobbers":            preferredBlobbers,
+		"blobbers":                      blobbers,
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
 		"max_challenge_completion_time": mcct,
-		"diversify_blobbers":            false,
 	}
 
 	var sn = transaction.SmartContractTxnData{
@@ -888,6 +912,88 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 	}
 	hash, _, nonce, err = smartContractTxnValue(sn, lock)
 	return
+}
+
+func getAllocationBlobbers(owner, ownerpublickey string,
+	datashards, parityshards int, size, expiry int64,
+	readPrice, writePrice PriceRange, mcct time.Duration) ([]string, error) {
+
+	var allocationRequest = map[string]interface{}{
+		"data_shards":                   datashards,
+		"parity_shards":                 parityshards,
+		"size":                          size,
+		"owner_id":                      owner,
+		"owner_public_key":              ownerpublickey,
+		"expiration_date":               expiry,
+		"read_price_range":              readPrice,
+		"write_price_range":             writePrice,
+		"max_challenge_completion_time": mcct,
+	}
+
+	allocationData, _ := json.Marshal(allocationRequest)
+
+	params := make(map[string]string)
+	params["allocation_data"] = string(allocationData)
+
+	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/alloc_blobbers", params, nil)
+	if err != nil {
+		return nil, err
+	}
+	var allocBlobberIDs []string
+
+	err = json.Unmarshal(allocBlobber, &allocBlobberIDs)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal blobber IDs")
+	}
+
+	return allocBlobberIDs, nil
+}
+
+func getPreferredBlobberIds(blobberUrls []string) ([]string, error) {
+
+	if len(blobberUrls) == 0 {
+		return make([]string, 0), nil
+	}
+
+	urlsStr, err := json.Marshal(blobberUrls)
+	if err != nil {
+		return nil, err
+	}
+
+	params := make(map[string]string)
+	params["blobber_url"] = string(urlsStr)
+	idsStr, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/blobber_ids", params, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var blobberIDs []string
+	err = json.Unmarshal(idsStr, &blobberIDs)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal preferred blobber IDs")
+	}
+
+	return blobberIDs, nil
+}
+
+func getFreeAllocationBlobbers(request map[string]interface{}) ([]string, error) {
+	data, _ := json.Marshal(request)
+
+	params := make(map[string]string)
+	params["free_allocation_data"] = string(data)
+
+	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/free_alloc_blobbers", params, nil)
+	if err != nil {
+		return nil, err
+	}
+	var allocBlobberIDs []string
+
+	err = json.Unmarshal(allocBlobber, &allocBlobberIDs)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal blobber IDs")
+	}
+
+	return allocBlobberIDs, nil
 }
 
 func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit float64) (string, int64, error) {
@@ -924,6 +1030,13 @@ func CreateFreeAllocation(marker string, value int64) (string, int64, error) {
 		"recipient_public_key": client.GetClientPublicKey(),
 		"marker":               marker,
 	}
+
+	blobbers, err := getFreeAllocationBlobbers(input)
+	if err != nil {
+		return "", 0, err
+	}
+
+	input["blobbers"] = blobbers
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.NEW_FREE_ALLOCATION,
@@ -1164,8 +1277,8 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	}
 
 	if err != nil {
+		l.Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
 		transaction.Cache.Evict(txn.ClientID)
-		Logger.Error("Error verifying the transaction", err.Error(), txn.Hash)
 		return
 	}
 
@@ -1230,7 +1343,7 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 	var fabricResponse string
 	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("Fabric commit error : ", err)
+			l.Logger.Error("Fabric commit error : ", err)
 			return err
 		}
 		defer resp.Body.Close()
@@ -1238,7 +1351,7 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 		if err != nil {
 			return errors.Wrap(err, "Error reading response :")
 		}
-		Logger.Debug("Fabric commit result:", string(respBody))
+		l.Logger.Debug("Fabric commit result:", string(respBody))
 		if resp.StatusCode == http.StatusOK {
 			fabricResponse = string(respBody)
 			return nil
@@ -1250,6 +1363,18 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 
 func GetAllocationMinLock(datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, mcct time.Duration) (int64, error) {
+
+	preferred, err := getPreferredBlobberIds(blockchain.GetPreferredBlobbers())
+	if err != nil {
+		return -1, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
+	}
+
+	return GetAllocationMinLockBlobbers(datashards, parityshards, size, expiry,
+		readPrice, writePrice, mcct, preferred)
+}
+
+func GetAllocationMinLockBlobbers(datashards, parityshards int, size, expiry int64,
+	readPrice, writePrice PriceRange, mcct time.Duration, blobbers []string) (int64, error) {
 	if !sdkInitialized {
 		return 0, sdkNotInitialized
 	}
@@ -1261,11 +1386,10 @@ func GetAllocationMinLock(datashards, parityshards int, size, expiry int64,
 		"owner_id":                      client.GetClientID(),
 		"owner_public_key":              client.GetClientPublicKey(),
 		"expiration_date":               expiry,
-		"preferred_blobbers":            blockchain.GetPreferredBlobbers(),
+		"blobbers":                      blobbers,
 		"read_price_range":              readPrice,
 		"write_price_range":             writePrice,
 		"max_challenge_completion_time": mcct,
-		"diversify_blobbers":            false,
 	}
 	allocationData, _ := json.Marshal(allocationRequestData)
 

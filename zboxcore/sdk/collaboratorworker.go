@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
@@ -52,7 +52,7 @@ func (req *CollaboratorRequest) updateCollaboratorToBlobber(blobber *blockchain.
 	formWriter.Close()
 	httpreq, err := zboxutil.NewCollaboratorRequest(blobber.Baseurl, req.a.Tx, body)
 	if err != nil {
-		Logger.Error("Update collaborator request error: ", err.Error())
+		l.Logger.Error("Update collaborator request error: ", err.Error())
 		return
 	}
 
@@ -60,7 +60,7 @@ func (req *CollaboratorRequest) updateCollaboratorToBlobber(blobber *blockchain.
 	ctx, cncl := context.WithTimeout(req.a.ctx, (time.Second * 30))
 	zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("Update Collaborator : ", err)
+			l.Logger.Error("Update Collaborator : ", err)
 			rspCh <- false
 			return err
 		}
@@ -105,7 +105,7 @@ func (req *CollaboratorRequest) removeCollaboratorFromBlobber(blobber *blockchai
 
 	httpreq, err := zboxutil.DeleteCollaboratorRequest(blobber.Baseurl, req.a.Tx, query)
 	if err != nil {
-		Logger.Error("Delete collaborator request error: ", err.Error())
+		l.Logger.Error("Delete collaborator request error: ", err.Error())
 		return
 	}
 
@@ -113,7 +113,7 @@ func (req *CollaboratorRequest) removeCollaboratorFromBlobber(blobber *blockchai
 
 	zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("Delete Collaborator : ", err)
+			l.Logger.Error("Delete Collaborator : ", err)
 			rspCh <- false
 			return err
 		}

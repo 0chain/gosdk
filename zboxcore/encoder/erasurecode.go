@@ -6,7 +6,7 @@ import (
 
 	"errors"
 
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 
 	"github.com/klauspost/reedsolomon"
 )
@@ -37,13 +37,13 @@ func (e *StreamEncoder) Encode(in []byte) ([][]byte, error) {
 	var err error
 	e.data, err = e.erasureCode.Split(in)
 	if err != nil {
-		Logger.Error("Split failed", err.Error())
+		l.Logger.Error("Split failed", err.Error())
 		return [][]byte{}, err
 	}
 
 	err = e.erasureCode.Encode(e.data)
 	if err != nil {
-		Logger.Error("Encode failed", err.Error())
+		l.Logger.Error("Encode failed", err.Error())
 		return [][]byte{}, err
 	}
 	return e.data, nil
@@ -57,12 +57,12 @@ func (e *StreamEncoder) Decode(in [][]byte, shardSize int) ([]byte, error) {
 
 	err := e.erasureCode.Reconstruct(in)
 	if err != nil {
-		Logger.Error("Reconstruct failed -", err)
+		l.Logger.Error("Reconstruct failed -", err)
 		return []byte{}, err
 	}
 	_, err = e.erasureCode.Verify(in)
 	if err != nil {
-		Logger.Error("Verification failed after reconstruction, data likely corrupted.", err.Error())
+		l.Logger.Error("Verification failed after reconstruction, data likely corrupted.", err.Error())
 		return []byte{}, err
 	}
 
@@ -71,7 +71,7 @@ func (e *StreamEncoder) Decode(in [][]byte, shardSize int) ([]byte, error) {
 	bufWriter = bufio.NewWriterSize(bufWriter, (shardSize * e.iDataShards))
 	err = e.erasureCode.Join(bufWriter, in, (shardSize * e.iDataShards))
 	if err != nil {
-		Logger.Error("join failed", err.Error())
+		l.Logger.Error("join failed", err.Error())
 		return []byte{}, err
 	}
 	bufWriter.Flush()
