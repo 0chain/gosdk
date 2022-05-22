@@ -24,7 +24,7 @@ func (conf *Configuration) CreateEthClient() (*ethclient.Client, error) {
 	return client, err
 }
 
-func (conf *Configuration) CreateSignedTransactionFromKeyStore(ctx context.Context, gasLimitUnits uint64) *bind.TransactOpts {
+func (conf *Configuration) createSignedTransactionFromKeyStore() *bind.TransactOpts {
 	var (
 		signerAddress = common.HexToAddress(conf.WalletAddress)
 		password      = conf.VaultPassword
@@ -46,19 +46,9 @@ func (conf *Configuration) CreateSignedTransactionFromKeyStore(ctx context.Conte
 		Logger.Fatal(errors.Wrapf(err, "signer: %s", signerAddress.Hex()))
 	}
 
-	chainID, err := client.ChainID(ctx)
+	chainID, err := client.ChainID(context.Background())
 	if err != nil {
 		Logger.Fatal(errors.Wrap(err, "failed to get chain ID"))
-	}
-
-	nonce, err := client.PendingNonceAt(ctx, signerAddress)
-	if err != nil {
-		Logger.Fatal(err)
-	}
-
-	gasPriceWei, err := client.SuggestGasPrice(ctx)
-	if err != nil {
-		Logger.Fatal(err)
 	}
 
 	err = ks.TimedUnlock(signer, password, time.Second*2)
@@ -73,10 +63,32 @@ func (conf *Configuration) CreateSignedTransactionFromKeyStore(ctx context.Conte
 
 	valueWei := new(big.Int).Mul(big.NewInt(value), big.NewInt(params.Wei))
 
-	opts.Nonce = big.NewInt(int64(nonce))
-	opts.Value = valueWei         // in wei
-	opts.GasLimit = gasLimitUnits // in units
-	opts.GasPrice = gasPriceWei   // wei
+	opts.Value = valueWei // in wei (= no funds)
+
+	return opts
+}
+
+func (conf *Configuration) createSignedTransactionFromKeyStoreWithGasPrice(gasLimitUnits uint64) *bind.TransactOpts {
+	client, err := conf.CreateEthClient()
+	if err != nil {
+		Logger.Fatal(errors.Wrap(err, "failed to create ethereum client"))
+	}
+
+	nonce, err := client.PendingNonceAt(context.Background(), common.HexToAddress(conf.WalletAddress))
+	if err != nil {
+		Logger.Fatal(err)
+	}
+
+	gasPriceWei, err := client.SuggestGasPrice(context.Background())
+	if err != nil {
+		Logger.Fatal(err)
+	}
+
+	opts := conf.createSignedTransactionFromKeyStore()
+
+	opts.Nonce = big.NewInt(int64(nonce)) // (nil = use pending state), look at bind.CallOpts{Pending: true}
+	opts.GasLimit = gasLimitUnits         // in units  (0 = estimate)
+	opts.GasPrice = gasPriceWei           // wei (nil = gas price oracle)
 
 	return opts
 }
