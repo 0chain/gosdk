@@ -28,12 +28,7 @@ func main() {
 	}
 
 	if cfg.Homedir == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		cfg.Homedir = home + "/.zcn"
+		cfg.Homedir = znft.GetConfigDir()
 	}
 
 	if !znft.AccountExists(cfg.Homedir, cfg.WalletAddress) {

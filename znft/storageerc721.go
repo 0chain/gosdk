@@ -4,8 +4,6 @@ import (
 	"context"
 	"math/big"
 
-	storageerc721 "github.com/0chain/gosdk/znft/contracts/dstorageerc721/binding"
-
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 )
@@ -82,7 +80,7 @@ var (
 )
 
 type StorageECR721 struct {
-	session *storageerc721.BindingsSession
+	session IBindingsSession
 	ctx     context.Context
 }
 

@@ -244,8 +244,9 @@ func (conf *Configuration) CreateStorageERC721FixedSession(ctx context.Context, 
 		TransactOpts: *transact,
 	}
 
-	storage := &StorageECR721Fixed{
+	storage := &StorageECR721{
 		session: session,
+		ctx:     ctx,
 	}
 
 	return storage, nil
