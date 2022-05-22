@@ -49,7 +49,7 @@ func (conf *Configuration) constructWithEstimation(
 		return nil, nil, errors.Wrapf(err, "failed to create %s in method: %s", ContractStorageERC721Name, method)
 	}
 
-	transaction, err := conf.createTransactOptsWithEstimation(ctx, method, params)
+	transaction, err := conf.createTransactOptsWithEstimation(ctx, address, method, params)
 
 	return erc721, transaction, err
 }
@@ -63,7 +63,11 @@ func (conf *Configuration) createTransactOpts() (*bind.TransactOpts, error) {
 	return transaction, nil
 }
 
-func (conf *Configuration) createTransactOptsWithEstimation(ctx context.Context, method string, params ...interface{}) (*bind.TransactOpts, error) {
+func (conf *Configuration) createTransactOptsWithEstimation(
+	ctx context.Context,
+	address, method string,
+	params ...interface{},
+) (*bind.TransactOpts, error) {
 	// Get ABI of the contract
 	abi, err := dstorageerc721.BindingsMetaData.GetAbi()
 	if err != nil {
@@ -76,7 +80,7 @@ func (conf *Configuration) createTransactOptsWithEstimation(ctx context.Context,
 		return nil, errors.Wrapf(err, "failed to pack arguments in %s, method: %s", ContractStorageERC721Name, method)
 	}
 
-	transaction, err := conf.createTransactionWithGasPrice(ctx, pack)
+	transaction, err := conf.createTransactionWithGasPrice(ctx, address, pack)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create createTransaction in %s, method: %s", ContractStorageERC721Name, method)
 	}

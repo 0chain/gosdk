@@ -9,8 +9,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (conf *Configuration) createTransactionWithGasPrice(ctx context.Context, pack []byte) (*bind.TransactOpts, error) {
-	gasLimitUnits, err := conf.estimateGas(ctx, pack)
+func (conf *Configuration) createTransactionWithGasPrice(ctx context.Context, address string, pack []byte) (*bind.TransactOpts, error) {
+	gasLimitUnits, err := conf.estimateGas(ctx, address, pack)
 	if err != nil {
 		return nil, err
 	}
@@ -26,14 +26,14 @@ func (conf *Configuration) createTransaction() (*bind.TransactOpts, error) {
 	return transactOpts, nil
 }
 
-func (conf *Configuration) estimateGas(ctx context.Context, pack []byte) (uint64, error) {
+func (conf *Configuration) estimateGas(ctx context.Context, address string, pack []byte) (uint64, error) {
 	etherClient, err := conf.CreateEthClient()
 	if err != nil {
-		return -1, errors.Wrap(err, "failed to create etherClient")
+		return 0, errors.Wrap(err, "failed to create etherClient")
 	}
 
 	// To (contract)
-	contractAddress := common.HexToAddress(conf.FactoryModuleERC721Address)
+	contractAddress := common.HexToAddress(address)
 
 	// Gas limits in units
 	fromAddress := common.HexToAddress(conf.WalletAddress)
