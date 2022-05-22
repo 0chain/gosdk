@@ -56,7 +56,7 @@ func main() {
 	// Start using session
 	price, err := sessionFixed.Price()
 	if err != nil {
-		return
+		panic(err)
 	}
 
 	// Create NFT with factory
@@ -71,7 +71,7 @@ func main() {
 	// Start using session
 	price, err = session.Price()
 	if err != nil {
-		return
+		panic(err)
 	}
 
 	log.Print(price)
