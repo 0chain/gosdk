@@ -89,7 +89,9 @@ type StorageECR721 struct {
 func (s *StorageECR721) Total() (*big.Int, error) {
 	total, err := s.session.Total()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to execute %s", "Total")
+		err = errors.Wrapf(err, "failed to read %s", "Total")
+		Logger.Error(err)
+		return nil, err
 	}
 
 	return total, nil
@@ -98,7 +100,9 @@ func (s *StorageECR721) Total() (*big.Int, error) {
 func (s *StorageECR721) Batch() (*big.Int, error) {
 	batch, err := s.session.Batch()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to execute %s", "Batch")
+		err = errors.Wrapf(err, "failed to read %s", "Batch")
+		Logger.Error(err)
+		return nil, err
 	}
 
 	return batch, nil
@@ -107,7 +111,9 @@ func (s *StorageECR721) Batch() (*big.Int, error) {
 func (s *StorageECR721) Mintable() (bool, error) {
 	mintable, err := s.session.Mintable()
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to execute %s", "Mintable")
+		err = errors.Wrapf(err, "failed to read %s", "Mintable")
+		Logger.Error(err)
+		return false, err
 	}
 
 	return mintable, nil
@@ -116,7 +122,9 @@ func (s *StorageECR721) Mintable() (bool, error) {
 func (s *StorageECR721) Allocation() (string, error) {
 	allocation, err := s.session.Allocation()
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to execute %s", "Allocation")
+		err = errors.Wrapf(err, "failed to read %s", "Allocation")
+		Logger.Error(err)
+		return "", err
 	}
 
 	return allocation, nil
@@ -125,7 +133,9 @@ func (s *StorageECR721) Allocation() (string, error) {
 func (s *StorageECR721) Uri() (string, error) {
 	uri, err := s.session.Uri()
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to execute %s", "URI")
+		err = errors.Wrapf(err, "failed to read %s", "URI")
+		Logger.Error(err)
+		return "", err
 	}
 
 	return uri, nil
@@ -134,7 +144,9 @@ func (s *StorageECR721) Uri() (string, error) {
 func (s *StorageECR721) UriFallback() (string, error) {
 	uri, err := s.session.UriFallback()
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to execute %s", "URIFallback")
+		err = errors.Wrapf(err, "failed to read %s", "URIFallback")
+		Logger.Error(err)
+		return "", err
 	}
 
 	return uri, nil
@@ -143,7 +155,9 @@ func (s *StorageECR721) UriFallback() (string, error) {
 func (s *StorageECR721) Royalty() (*big.Int, error) {
 	value, err := s.session.Royalty()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to execute %s", "Royalty")
+		err = errors.Wrapf(err, "failed to read %s", "Royalty")
+		Logger.Error(err)
+		return nil, err
 	}
 
 	return value, nil
@@ -152,7 +166,9 @@ func (s *StorageECR721) Royalty() (*big.Int, error) {
 func (s *StorageECR721) Receiver() (string, error) {
 	value, err := s.session.Receiver()
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to execute %s", "Receiver")
+		err = errors.Wrapf(err, "failed to read %s", "Receiver")
+		Logger.Error(err)
+		return "", err
 	}
 
 	return value.String(), nil
@@ -161,7 +177,9 @@ func (s *StorageECR721) Receiver() (string, error) {
 func (s *StorageECR721) Max() (*big.Int, error) {
 	max, err := s.session.Max()
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to execute %s", "Max")
+		err = errors.Wrapf(err, "failed to read %s", "Max")
+		Logger.Error(err)
+		return nil, err
 	}
 
 	return max, nil
@@ -170,10 +188,12 @@ func (s *StorageECR721) Max() (*big.Int, error) {
 func (s *StorageECR721) Mint(amount *big.Int) error {
 	evmTr, err := s.session.Mint(amount)
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute %s", Mint)
+		err = errors.Wrapf(err, "failed to execute %s", Mint)
+		Logger.Error(err)
+		return err
 	}
 
-	evmTr.Hash()
+	Logger.Info("Executed %s, hash %s", Mint, evmTr.Hash())
 
 	return nil
 }
@@ -181,7 +201,9 @@ func (s *StorageECR721) Mint(amount *big.Int) error {
 func (s *StorageECR721) RoyaltyInfo(tokenId, salePrice *big.Int) (string, *big.Int, error) {
 	address, sum, err := s.session.RoyaltyInfo(tokenId, salePrice)
 	if err != nil {
-		return "", nil, errors.Wrapf(err, "failed to execute %s", RoyaltyInfo)
+		err = errors.Wrapf(err, "failed to read %s", RoyaltyInfo)
+		Logger.Error(err)
+		return "", nil, err
 	}
 
 	return address.Hex(), sum, nil
@@ -190,10 +212,12 @@ func (s *StorageECR721) RoyaltyInfo(tokenId, salePrice *big.Int) (string, *big.I
 func (s *StorageECR721) MintOwner(amount *big.Int) error {
 	evmTr, err := s.session.MintOwner(amount)
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute %s", MintOwner)
+		err = errors.Wrapf(err, "failed to execute %s", MintOwner)
+		Logger.Error(err)
+		return err
 	}
 
-	evmTr.Hash()
+	Logger.Info("Executed %s, hash %s", MintOwner, evmTr.Hash())
 
 	return nil
 }
@@ -201,7 +225,9 @@ func (s *StorageECR721) MintOwner(amount *big.Int) error {
 func (s *StorageECR721) TokenURIFallback(token *big.Int) (string, error) {
 	tokenURI, err := s.session.TokenURIFallback(token)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to execute %s", TokenURIFallback)
+		err = errors.Wrapf(err, "failed to read %s", TokenURIFallback)
+		Logger.Error(err)
+		return "", err
 	}
 
 	return tokenURI, nil
@@ -211,7 +237,9 @@ func (s *StorageECR721) TokenURIFallback(token *big.Int) (string, error) {
 func (s *StorageECR721) Price() (int64, error) {
 	price, err := s.session.Price()
 	if err != nil {
-		return -1, errors.Wrapf(err, "failed to execute %s", Price)
+		err = errors.Wrapf(err, "failed to read %s", Price)
+		Logger.Error(err)
+		return -1, err
 	}
 
 	return price.Int64(), nil
@@ -221,10 +249,12 @@ func (s *StorageECR721) Price() (int64, error) {
 func (s *StorageECR721) SetURI(uri string) error {
 	evmTr, err := s.session.SetURI(uri)
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute %s", SetURI)
+		err = errors.Wrapf(err, "failed to execute %s", SetURI)
+		Logger.Error(err)
+		return err
 	}
 
-	evmTr.Hash()
+	Logger.Info("Executed %s, hash %s", SetURI, evmTr.Hash())
 
 	return nil
 }
@@ -233,10 +263,12 @@ func (s *StorageECR721) SetURI(uri string) error {
 func (s *StorageECR721) SetAllocation(allocation string) error {
 	evmTr, err := s.session.SetAllocation(allocation)
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute %s", SetAllocation)
+		err = errors.Wrapf(err, "failed to execute %s", SetAllocation)
+		Logger.Error(err)
+		return err
 	}
 
-	evmTr.Hash()
+	Logger.Info("Executed %s, hash %s", SetAllocation, evmTr.Hash())
 
 	return nil
 }
@@ -245,10 +277,12 @@ func (s *StorageECR721) SetAllocation(allocation string) error {
 func (s *StorageECR721) SetMax(max *big.Int) error {
 	evmTr, err := s.session.SetMax(max)
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute %s", SetMax)
+		err = errors.Wrapf(err, "failed to execute %s", SetMax)
+		Logger.Error(err)
+		return err
 	}
 
-	evmTr.Hash()
+	Logger.Info("Executed %s, hash %s", SetMax, evmTr.Hash())
 
 	return nil
 }
@@ -257,10 +291,12 @@ func (s *StorageECR721) SetMax(max *big.Int) error {
 func (s *StorageECR721) SetMintable(status bool) error {
 	evmTr, err := s.session.SetMintable(status)
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute %s", SetMintable)
+		err = errors.Wrapf(err, "failed to execute %s", SetMintable)
+		Logger.Error(err)
+		return err
 	}
 
-	evmTr.Hash()
+	Logger.Info("Executed %s, hash %s", SetMintable, evmTr.Hash())
 
 	return nil
 }
@@ -269,10 +305,12 @@ func (s *StorageECR721) SetMintable(status bool) error {
 func (s *StorageECR721) SetRoyalty(sum *big.Int) error {
 	evmTr, err := s.session.SetRoyalty(sum)
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute %s", SetRoyalty)
+		err = errors.Wrapf(err, "failed to execute %s", SetRoyalty)
+		Logger.Error(err)
+		return err
 	}
 
-	evmTr.Hash()
+	Logger.Info("Executed %s, hash %s", SetRoyalty, evmTr.Hash())
 
 	return nil
 }
@@ -283,10 +321,12 @@ func (s *StorageECR721) SetReceiver(receiver string) error {
 
 	evmTr, err := s.session.SetReceiver(address)
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute %s", SetReceiver)
+		err = errors.Wrapf(err, "failed to execute %s", SetReceiver)
+		Logger.Error(err)
+		return err
 	}
 
-	evmTr.Hash()
+	Logger.Info("Executed %s, hash %s", SetReceiver, evmTr.Hash())
 
 	return nil
 }
@@ -295,10 +335,12 @@ func (s *StorageECR721) SetReceiver(receiver string) error {
 func (s *StorageECR721) Withdraw() error {
 	evmTr, err := s.session.Withdraw()
 	if err != nil {
-		return errors.Wrapf(err, "failed to execute %s", Withdraw)
+		err = errors.Wrapf(err, "failed to execute %s", Withdraw)
+		Logger.Error(err)
+		return err
 	}
 
-	evmTr.Hash()
+	Logger.Info("Executed %s, hash %s", Withdraw, evmTr.Hash())
 
 	return nil
 }

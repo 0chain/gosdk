@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/0chain/gosdk/core/logger"
 	storageerc721 "github.com/0chain/gosdk/znft/contracts/dstorageerc721/binding"
 	storageerc721fixed "github.com/0chain/gosdk/znft/contracts/dstorageerc721fixed/binding"
 	storageerc721pack "github.com/0chain/gosdk/znft/contracts/dstorageerc721pack/binding"
@@ -13,6 +14,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 )
+
+var defaultLogLevel = logger.DEBUG
+var Logger logger.Logger
 
 const (
 	ConfigFile = "config.yaml"
@@ -29,6 +33,10 @@ type Configuration struct {
 	VaultPassword                    string // VaultPassword used to sign transactions on behalf of the client
 	Homedir                          string // Homedir is a client config folder
 	Value                            int64  // Value to execute Ethereum smart contracts (default = 0)
+}
+
+func init() {
+	Logger.Init(defaultLogLevel, "0chain-znft-sdk")
 }
 
 func GetConfigDir() string {
