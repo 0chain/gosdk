@@ -2,6 +2,8 @@ package znft
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	storageerc721 "github.com/0chain/gosdk/znft/contracts/dstorageerc721/binding"
 	storageerc721fixed "github.com/0chain/gosdk/znft/contracts/dstorageerc721fixed/binding"
@@ -26,8 +28,18 @@ type Configuration struct {
 	WalletAddress                    string // WalletAddress client address
 	VaultPassword                    string // VaultPassword used to sign transactions on behalf of the client
 	Homedir                          string // Homedir is a client config folder
-	GasLimit                         uint64 // GasLimit limit to execute ethereum transaction
 	Value                            int64  // Value to execute Ethereum smart contracts (default = 0)
+}
+
+func GetConfigDir() string {
+	var configDir string
+	home, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	configDir = home + "/.zcn"
+	return configDir
 }
 
 func (conf *Configuration) constructStorageERC721Random(address string) (*storageerc721random.Bindings, *bind.TransactOpts, error) {
@@ -226,7 +238,6 @@ func (conf *Configuration) CreateStorageERC721FixedSession(ctx context.Context, 
 
 	storage := &StorageECR721Fixed{
 		session: session,
-		ctx:     ctx,
 	}
 
 	return storage, nil

@@ -106,14 +106,13 @@ func UpdateClientEthereumAddress(homedir, address string) (err error) {
 }
 
 // ImportAccount imports account using mnemonic
+// password is used to lock and unlock keystorage before signing transaction
 func ImportAccount(homedir, mnemonic, password string) (string, error) {
 	// 1. Create storage and account if it doesn't exist and add account to it
-
 	keyDir := path.Join(homedir, WalletDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 
 	// 2. Init wallet
-
 	wallet, err := hdw.NewFromMnemonic(mnemonic)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to import from mnemonic")
@@ -131,7 +130,6 @@ func ImportAccount(homedir, mnemonic, password string) (string, error) {
 	}
 
 	// 3. Find key
-
 	acc, err := ks.Find(account)
 	if err == nil {
 		fmt.Printf("Account already exists: %s\nPath: %s\n\n", acc.Address.Hex(), acc.URL.Path)
@@ -139,7 +137,6 @@ func ImportAccount(homedir, mnemonic, password string) (string, error) {
 	}
 
 	// 4. Import the key if it doesn't exist
-
 	acc, err = ks.ImportECDSA(key, password)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get import private key")
