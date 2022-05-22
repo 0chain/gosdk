@@ -3,7 +3,10 @@ package znft
 import (
 	"context"
 
-	dstorageerc721 "github.com/0chain/gosdk/znft/contracts/dstorageerc721/binding"
+	storageerc721 "github.com/0chain/gosdk/znft/contracts/dstorageerc721/binding"
+	storageerc721fixed "github.com/0chain/gosdk/znft/contracts/dstorageerc721fixed/binding"
+	storageerc721pack "github.com/0chain/gosdk/znft/contracts/dstorageerc721pack/binding"
+	storageerc721random "github.com/0chain/gosdk/znft/contracts/dstorageerc721random/binding"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
@@ -27,15 +30,48 @@ type Configuration struct {
 	Value                            int64  // Value to execute Ethereum smart contracts (default = 0)
 }
 
-func (conf *Configuration) constructStorageERC721(address string) (*dstorageerc721.Bindings, *bind.TransactOpts, error) {
-	erc721, err := conf.createStorageERC721(address)
+func (conf *Configuration) constructStorageERC721Random(address string) (*storageerc721random.Bindings, *bind.TransactOpts, error) {
+	storage, err := conf.createStorageERC721Random(address)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to construct %s", ContractStorageERC721RandomName)
+	}
+
+	transaction, err := conf.createTransactOpts()
+
+	return storage, transaction, err
+}
+
+func (conf *Configuration) constructStorageERC721Pack(address string) (*storageerc721pack.Bindings, *bind.TransactOpts, error) {
+	storage, err := conf.createStorageERC721Pack(address)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to construct %s", ContractStorageERC721PackName)
+	}
+
+	transaction, err := conf.createTransactOpts()
+
+	return storage, transaction, err
+}
+
+func (conf *Configuration) constructStorageERC721Fixed(address string) (*storageerc721fixed.Bindings, *bind.TransactOpts, error) {
+	storage, err := conf.createStorageERC721Fixed(address)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to construct %s", ContractStorageERC721FixedName)
+	}
+
+	transaction, err := conf.createTransactOpts()
+
+	return storage, transaction, err
+}
+
+func (conf *Configuration) constructStorageERC721(address string) (*storageerc721.Bindings, *bind.TransactOpts, error) {
+	storage, err := conf.createStorageERC721(address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to construct %s", ContractStorageERC721Name)
 	}
 
 	transaction, err := conf.createTransactOpts()
 
-	return erc721, transaction, err
+	return storage, transaction, err
 }
 
 func (conf *Configuration) constructWithEstimation(
@@ -43,7 +79,7 @@ func (conf *Configuration) constructWithEstimation(
 	address string,
 	method string,
 	params ...interface{},
-) (*dstorageerc721.Bindings, *bind.TransactOpts, error) {
+) (*storageerc721.Bindings, *bind.TransactOpts, error) {
 	erc721, err := conf.createStorageERC721(address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to create %s in method: %s", ContractStorageERC721Name, method)
@@ -69,7 +105,7 @@ func (conf *Configuration) createTransactOptsWithEstimation(
 	params ...interface{},
 ) (*bind.TransactOpts, error) {
 	// Get ABI of the contract
-	abi, err := dstorageerc721.BindingsMetaData.GetAbi()
+	abi, err := storageerc721.BindingsMetaData.GetAbi()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get ABI in %s, method: %s", ContractStorageERC721Name, method)
 	}
@@ -88,14 +124,122 @@ func (conf *Configuration) createTransactOptsWithEstimation(
 	return transaction, nil
 }
 
-func (conf *Configuration) createStorageERC721(address string) (*dstorageerc721.Bindings, error) {
+func (conf *Configuration) createStorageERC721Pack(address string) (*storageerc721pack.Bindings, error) {
 	client, err := conf.CreateEthClient()
 	if err != nil {
 		return nil, err
 	}
 
 	addr := common.HexToAddress(address)
-	instance, err := dstorageerc721.NewBindings(addr, client)
+	instance, err := storageerc721pack.NewBindings(addr, client)
+
+	return instance, err
+}
+
+func (conf *Configuration) CreateStorageERC721RandomPack(ctx context.Context, addr string) (IStorageECR721Pack, error) {
+	contract, transact, err := conf.constructStorageERC721Pack(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	session := &storageerc721pack.BindingsSession{
+		Contract: contract,
+		CallOpts: bind.CallOpts{
+			Pending: true,
+			From:    transact.From,
+			Context: ctx,
+		},
+		TransactOpts: *transact,
+	}
+
+	storage := &StorageECR721Pack{
+		session: session,
+		ctx:     ctx,
+	}
+
+	return storage, nil
+}
+
+func (conf *Configuration) createStorageERC721Random(address string) (*storageerc721random.Bindings, error) {
+	client, err := conf.CreateEthClient()
+	if err != nil {
+		return nil, err
+	}
+
+	addr := common.HexToAddress(address)
+	instance, err := storageerc721random.NewBindings(addr, client)
+
+	return instance, err
+}
+
+func (conf *Configuration) CreateStorageERC721RandomSession(ctx context.Context, addr string) (IStorageECR721Random, error) {
+	contract, transact, err := conf.constructStorageERC721Random(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	session := &storageerc721random.BindingsSession{
+		Contract: contract,
+		CallOpts: bind.CallOpts{
+			Pending: true,
+			From:    transact.From,
+			Context: ctx,
+		},
+		TransactOpts: *transact,
+	}
+
+	storage := &StorageECR721Random{
+		session: session,
+		ctx:     ctx,
+	}
+
+	return storage, nil
+}
+
+func (conf *Configuration) createStorageERC721Fixed(address string) (*storageerc721fixed.Bindings, error) {
+	client, err := conf.CreateEthClient()
+	if err != nil {
+		return nil, err
+	}
+
+	addr := common.HexToAddress(address)
+	instance, err := storageerc721fixed.NewBindings(addr, client)
+
+	return instance, err
+}
+
+func (conf *Configuration) CreateStorageERC721FixedSession(ctx context.Context, addr string) (IStorageECR721Fixed, error) {
+	contract, transact, err := conf.constructStorageERC721Fixed(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	session := &storageerc721fixed.BindingsSession{
+		Contract: contract,
+		CallOpts: bind.CallOpts{
+			Pending: true,
+			From:    transact.From,
+			Context: ctx,
+		},
+		TransactOpts: *transact,
+	}
+
+	storage := &StorageECR721Fixed{
+		session: session,
+		ctx:     ctx,
+	}
+
+	return storage, nil
+}
+
+func (conf *Configuration) createStorageERC721(address string) (*storageerc721.Bindings, error) {
+	client, err := conf.CreateEthClient()
+	if err != nil {
+		return nil, err
+	}
+
+	addr := common.HexToAddress(address)
+	instance, err := storageerc721.NewBindings(addr, client)
 
 	return instance, err
 }
@@ -106,7 +250,7 @@ func (conf *Configuration) CreateStorageERC721Session(ctx context.Context, addr 
 		return nil, err
 	}
 
-	session := &dstorageerc721.BindingsSession{
+	session := &storageerc721.BindingsSession{
 		Contract: contract,
 		CallOpts: bind.CallOpts{
 			Pending: true,

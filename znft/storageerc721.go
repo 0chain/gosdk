@@ -4,25 +4,28 @@ import (
 	"context"
 	"math/big"
 
-	dstorageerc721 "github.com/0chain/gosdk/znft/contracts/dstorageerc721/binding"
+	storageerc721 "github.com/0chain/gosdk/znft/contracts/dstorageerc721/binding"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 )
 
 const (
-	ContractStorageERC721Name = "StorageERC721"
-	Withdraw                  = "withdraw"
-	SetReceiver               = "setReceiver"
-	SetRoyalty                = "setRoyalty"
-	SetMintable               = "setMintable"
-	SetMax                    = "setMax"
-	SetAllocation             = "setAllocation"
-	SetURI                    = "setURI"
-	TokenURIFallback          = "tokenURIFallback"
-	Price                     = "price"
-	Mint                      = "mint"
-	MintOwner                 = "mintOwner"
-	RoyaltyInfo               = "royaltyInfo"
+	ContractStorageERC721Name       = "StorageERC721"
+	ContractStorageERC721FixedName  = "StorageERC721Fixed"
+	ContractStorageERC721PackName   = "StorageERC721Pack"
+	ContractStorageERC721RandomName = "StorageERC721Random"
+	Withdraw                        = "withdraw"
+	SetReceiver                     = "setReceiver"
+	SetRoyalty                      = "setRoyalty"
+	SetMintable                     = "setMintable"
+	SetMax                          = "setMax"
+	SetAllocation                   = "setAllocation"
+	SetURI                          = "setURI"
+	TokenURIFallback                = "tokenURIFallback"
+	Price                           = "price"
+	Mint                            = "mint"
+	MintOwner                       = "mintOwner"
+	RoyaltyInfo                     = "royaltyInfo"
 )
 
 // Solidity Functions
@@ -55,7 +58,7 @@ type IStorageECR721 interface {
 }
 
 type StorageECR721 struct {
-	session *dstorageerc721.BindingsSession
+	session *storageerc721.BindingsSession
 	ctx     context.Context
 }
 
