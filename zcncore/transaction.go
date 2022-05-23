@@ -112,6 +112,8 @@ type TransactionScheme interface {
 	StoreData(data string) error
 	// ExecuteSmartContract implements wrapper for smart contract function
 	ExecuteSmartContract(address, methodName string, input interface{}, val int64) error
+	// ExecuteSmartContractMobile implements wrapper for smart contract function specially for mobile clients
+	ExecuteSmartContractMobile(address, methodName string, input string, val int64) error
 	// ExecuteFaucetSCWallet implements the `Faucet Smart contract` for a given wallet
 	ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error
 	// GetTransactionHash implements retrieval of hash of the submitted transaction
@@ -528,6 +530,10 @@ func (t *Transaction) ExecuteSmartContract(address, methodName string, input int
 		t.setNonceAndSubmit()
 	}()
 	return nil
+}
+
+func (t *Transaction) ExecuteSmartContractMobile(address, methodName string, input string, val int64) error {
+	return t.ExecuteSmartContract(address, methodName, input, val)
 }
 
 func (t *Transaction) SetTransactionHash(hash string) error {

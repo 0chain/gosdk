@@ -198,6 +198,10 @@ func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, 
 	return nil
 }
 
+func (ta *TransactionWithAuth) ExecuteSmartContractMobile(address, methodName string, input string, val int64) error {
+	return ta.ExecuteSmartContract(address, methodName, input, val)
+}
+
 func (ta *TransactionWithAuth) SetTransactionHash(hash string) error {
 	return ta.t.SetTransactionHash(hash)
 }
