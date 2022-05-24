@@ -191,7 +191,7 @@ func (s *StorageECR721) Mint(amount *big.Int) error {
 		return err
 	}
 
-	Logger.Info("Executed %s, hash %s", Mint, evmTr.Hash())
+	Logger.Info("Executed %s, hash %s", Mint, evmTr.Hash().Hex())
 
 	return nil
 }
@@ -215,7 +215,7 @@ func (s *StorageECR721) MintOwner(amount *big.Int) error {
 		return err
 	}
 
-	Logger.Info("Executed %s, hash %s", MintOwner, evmTr.Hash())
+	Logger.Info("Executed %s, hash %s", MintOwner, evmTr.Hash().Hex())
 
 	return nil
 }
@@ -252,7 +252,7 @@ func (s *StorageECR721) SetURI(uri string) error {
 		return err
 	}
 
-	Logger.Info("Executed %s, hash %s", SetURI, evmTr.Hash())
+	Logger.Info("Executed %s, hash %s", SetURI, evmTr.Hash().String())
 
 	return nil
 }

@@ -7,6 +7,12 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
+type IBindingsFixedSession interface {
+	IBindingsSession
+	SetBatch(batch_ *big.Int) (*types.Transaction, error)
+	SetPrice(price_ *big.Int) (*types.Transaction, error)
+}
+
 type IBindingsSession interface {
 	Allocation() (string, error)
 	BalanceOf(owner common.Address) (*big.Int, error)
