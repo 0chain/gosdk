@@ -57,7 +57,7 @@ const (
 
 	VESTINGSC_PFX = `/v1/screst/` + VestingSmartContractAddress
 
-	GET_VESTING_CONFIG       = VESTINGSC_PFX + `/getConfig`
+	GET_VESTING_CONFIG       = VESTINGSC_PFX + `/vesting_config`
 	GET_VESTING_POOL_INFO    = VESTINGSC_PFX + `/getPoolInfo`
 	GET_VESTING_CLIENT_POOLS = VESTINGSC_PFX + `/getClientPools`
 
@@ -69,7 +69,7 @@ const (
 	// faucet sc
 
 	FAUCETSC_PFX        = `/v1/screst/` + FaucetSmartContractAddress
-	GET_FAUCETSC_CONFIG = FAUCETSC_PFX + `/getConfig`
+	GET_FAUCETSC_CONFIG = FAUCETSC_PFX + `/faucet_config`
 
 	// miner SC
 
@@ -87,7 +87,7 @@ const (
 
 	STORAGESC_PFX = "/v1/screst/" + StorageSmartContractAddress
 
-	STORAGESC_GET_SC_CONFIG            = STORAGESC_PFX + "/getConfig"
+	STORAGESC_GET_SC_CONFIG            = STORAGESC_PFX + "/storage_config"
 	STORAGESC_GET_CHALLENGE_POOL_INFO  = STORAGESC_PFX + "/getChallengePoolStat"
 	STORAGESC_GET_ALLOCATION           = STORAGESC_PFX + "/allocation"
 	STORAGESC_GET_ALLOCATIONS          = STORAGESC_PFX + "/allocations"
