@@ -301,9 +301,9 @@ func NewCollaboratorRequest(baseUrl string, allocation string, body io.Reader) (
 	return req, nil
 }
 
-func GetCollaboratorsRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, COLLABORATOR_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodGet, url, body)
+func GetCollaboratorsRequest(baseUrl string, allocation string, query *url.Values) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s?%s", baseUrl, COLLABORATOR_ENDPOINT, allocation, query.Encode())
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -315,9 +315,10 @@ func GetCollaboratorsRequest(baseUrl string, allocation string, body io.Reader) 
 	return req, nil
 }
 
-func DeleteCollaboratorRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, COLLABORATOR_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodDelete, url, body)
+func DeleteCollaboratorRequest(baseUrl string, allocation string, query *url.Values) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s?%s", baseUrl, COLLABORATOR_ENDPOINT, allocation, query.Encode())
+
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -469,9 +470,10 @@ func NewDownloadRequest(baseUrl, allocation string) (*http.Request, error) {
 	return req, nil
 }
 
-func NewDeleteRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, UPLOAD_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodDelete, url, body)
+func NewDeleteRequest(baseUrl, allocation string, query *url.Values) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s?%s", baseUrl, UPLOAD_ENDPOINT, allocation, query.Encode())
+
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -511,9 +513,9 @@ func NewShareRequest(baseUrl, allocation string, body io.Reader) (*http.Request,
 	return req, nil
 }
 
-func NewRevokeShareRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, SHARE_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodDelete, url, body)
+func NewRevokeShareRequest(baseUrl, allocation string, query *url.Values) (*http.Request, error) {
+	url := fmt.Sprintf("%s%s%s?%s", baseUrl, SHARE_ENDPOINT, allocation, query.Encode())
+	req, err := http.NewRequest(http.MethodDelete, url, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -528,10 +530,10 @@ func NewRevokeShareRequest(baseUrl, allocation string, body io.Reader) (*http.Re
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string, handler SCRestAPIHandler) ([]byte, error) {
 	numSharders := len(blockchain.GetSharders())
 	sharders := blockchain.GetSharders()
-	responses := make(map[int]float32)
+	responses := make(map[int]int)
 	entityResult := make(map[string][]byte)
 	var retObj []byte
-	maxCount := float32(0)
+	maxCount := 0
 	for _, sharder := range util.Shuffle(sharders) {
 		urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
 		urlObj, _ := url.Parse(urlString)
@@ -546,9 +548,6 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		if err != nil {
 			continue
 		} else {
-			if response.StatusCode != 200 {
-				continue
-			}
 			defer response.Body.Close()
 			entityBytes, err := ioutil.ReadAll(response.Body)
 			if err != nil {
@@ -562,16 +561,40 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 			entityResult[sharder] = retObj
 		}
 
-		var rate = maxCount * 100 / float32(numSharders)
+		var rate = float32(maxCount*100) / float32(numSharders)
 		if rate >= consensusThresh {
 			break // got it
 		}
 	}
 
 	var err error
-	rate := maxCount * 100 / float32(numSharders)
+	rate := float32(maxCount*100) / float32(numSharders)
 	if rate < consensusThresh {
 		err = errors.New("consensus_failed", "consensus failed on sharders")
+	}
+
+	c := 0
+	dominant := 200
+	for code, count := range responses {
+		if count > c {
+			dominant = code
+		}
+	}
+
+	if dominant != 200 {
+		var objmap map[string]json.RawMessage
+		err := json.Unmarshal(retObj, &objmap)
+		if err != nil {
+			return nil, errors.New("", string(retObj))
+		}
+
+		var parsed string
+		err = json.Unmarshal(objmap["error"], &parsed)
+		if err != nil || parsed == "" {
+			return nil, errors.New("", string(retObj))
+		}
+
+		return nil, errors.New("", parsed)
 	}
 
 	if handler != nil {

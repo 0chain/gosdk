@@ -130,7 +130,6 @@ func (r *Resty) Do(ctx context.Context, method string, body io.Reader, urls ...s
 			req.Header.Set(key, value)
 		}
 
-		req.Close = true
 		//reuse http connection if it is possible
 		req.Header.Set("Connection", "keep-alive")
 
@@ -232,18 +231,22 @@ func (r *Resty) Wait() []error {
 	}
 
 	for {
+		select {
+		case <-r.ctx.Done():
+			return errs
 
-		result := <-r.done
+		case result := <-r.done:
 
-		if r.handle != nil {
-			err := r.handle(result.Request, result.Response, result.ResponseBody, r.cancelFunc, result.Err)
+			if r.handle != nil {
+				err := r.handle(result.Request, result.Response, result.ResponseBody, r.cancelFunc, result.Err)
 
-			if err != nil {
-				errs = append(errs, err)
-			}
-		} else {
-			if result.Err != nil {
-				errs = append(errs, result.Err)
+				if err != nil {
+					errs = append(errs, err)
+				}
+			} else {
+				if result.Err != nil {
+					errs = append(errs, result.Err)
+				}
 			}
 		}
 

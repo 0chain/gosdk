@@ -14,7 +14,7 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
@@ -82,7 +82,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 	if req.authToken != nil {
 		authTokenBytes, err = json.Marshal(req.authToken)
 		if err != nil {
-			Logger.Error(blobber.Baseurl, " creating auth token bytes", err)
+			l.Logger.Error(blobber.Baseurl, " creating auth token bytes", err)
 			return
 		}
 		//formWriter.WriteField("auth_token", string(authTokenBytes))
@@ -91,7 +91,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 	//formWriter.Close()
 	httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, req.allocationTx, req.remotefilepath, req.remotefilepathhash, string(authTokenBytes))
 	if err != nil {
-		Logger.Error("List info request error: ", err.Error())
+		l.Logger.Error("List info request error: ", err.Error())
 		return
 	}
 
@@ -99,7 +99,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("List : ", err)
+			l.Logger.Error("List : ", err)
 			return err
 		}
 		defer resp.Body.Close()
@@ -108,7 +108,7 @@ func (req *ListRequest) getListInfoFromBlobber(blobber *blockchain.StorageNode, 
 			return errors.Wrap(err, "Error: Resp")
 		}
 		s.WriteString(string(resp_body))
-		Logger.Debug("List result:", string(resp_body))
+		l.Logger.Debug("List result:", string(resp_body))
 		if resp.StatusCode == http.StatusOK {
 			listResult := &fileref.ListResult{}
 			err = json.Unmarshal(resp_body, listResult)
