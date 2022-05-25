@@ -206,7 +206,7 @@ func (s *StorageECR721Fixed) SetAllocation(allocation string) error {
 	return nil
 }
 
-// SetMax eth balance from token contract - setReceiver(address receiver_)
+// SetMax eth balance from token contract - setMax
 func (s *StorageECR721Fixed) SetMax(max *big.Int) error {
 	evmTr, err := s.session.SetMax(max)
 	if err != nil {
