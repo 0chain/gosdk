@@ -165,18 +165,12 @@ func CreateReadPool() (hash string, nonce int64, err error) {
 	return
 }
 
-type BlobberPoolStat struct {
-	BlobberID common.Key     `json:"blobber_id"`
-	Balance   common.Balance `json:"balance"`
-}
-
 type AllocationPoolStat struct {
-	ID           string             `json:"id"`
-	Balance      common.Balance     `json:"balance"`
-	ExpireAt     common.Timestamp   `json:"expire_at"`
-	AllocationID common.Key         `json:"allocation_id"`
-	Blobbers     []*BlobberPoolStat `json:"blobbers"`
-	Locked       bool               `json:"locked"`
+	ID           string           `json:"id"`
+	Balance      common.Balance   `json:"balance"`
+	ExpireAt     common.Timestamp `json:"expire_at"`
+	AllocationID common.Key       `json:"allocation_id"`
+	Locked       bool             `json:"locked"`
 }
 
 type BackPool struct {
