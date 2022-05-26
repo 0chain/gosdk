@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/gosdk/core/transaction"
 	"log"
 	"math"
 	"net/http"
@@ -15,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/0chain/gosdk/core/transaction"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
@@ -822,17 +823,23 @@ func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 	// getMinShardersVerify()
 	var numSharders = len(_config.chain.Sharders) // overwrite, use all
 	queryFromSharders(numSharders, urlSuffix, result)
-	consensus := float32(0)
-	resultMap := make(map[int]float32)
+	consensus := int
+	resultMap := make(map[string]int)
 	var winresult *util.GetResponse
 	for i := 0; i < numSharders; i++ {
 		rsp := <-result
 		Logger.Debug(rsp.Url, rsp.Status)
-		resultMap[rsp.StatusCode]++
-		if resultMap[rsp.StatusCode] > consensus {
-			consensus = resultMap[rsp.StatusCode]
-			winresult = rsp
+
+		if rsp.StatusCode == http.StatusOK {
+
+			rsp.Body.
+				resultMap[hash]++
+			if resultMap[rsp.StatusCode] > consensus {
+				consensus = resultMap[rsp.StatusCode]
+				winresult = rsp
+			}
 		}
+
 	}
 	rate := consensus * 100 / float32(len(_config.chain.Sharders))
 	if rate < consensusThresh {

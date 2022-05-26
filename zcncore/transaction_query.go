@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"hash/fnv"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -398,4 +399,52 @@ func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSha
 	}
 
 	return confirmationBlockHeader, confirmationBlock, lfbBlockHeader, nil
+}
+
+func (tq *TransactionQuery) GetInfo(ctx context.Context, numSharders int, query string) (*QueryResult, error) {
+
+	consensuses := make(map[uint64]int)
+	var maxConsensus int
+	var consensusesResp QueryResult
+	// {host}{query}
+	err := tq.FromAll(ctx, query,
+		func(qr QueryResult) bool {
+			if qr.StatusCode != http.StatusOK {
+				return false
+			}
+
+			hash := fnv.New64a()
+			hash.Write(qr.Content)
+			h := hash.Sum64()
+			consensuses[h]++
+
+			if consensuses[h] > maxConsensus {
+				maxConsensus = consensuses[h]
+
+				if maxConsensus >= numSharders {
+					consensusesResp = qr
+
+					// it is consensus by enough sharders, and latest_finalized_block is valid
+					// return true to cancel other requests
+					return true
+				}
+			}
+
+			return false
+
+		})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if maxConsensus == 0 {
+		return nil, errors.New("zcn: query not found")
+	}
+
+	if maxConsensus < numSharders {
+		return nil, ErrInvalidConsensus
+	}
+
+	return &consensusesResp, nil
 }
