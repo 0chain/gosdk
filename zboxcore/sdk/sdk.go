@@ -632,7 +632,7 @@ func GetStorageSCConfig() (conf *InputMap, err error) {
 	}
 
 	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getConfig", nil,
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/storage-config", nil,
 		nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting storage SC configs:")
