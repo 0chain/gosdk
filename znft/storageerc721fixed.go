@@ -10,11 +10,20 @@ import (
 	"github.com/pkg/errors"
 )
 
+// function mint(uint256 amount)
+// function price() public view override returns (uint256)
+// function setPrice(uint256 price_)
+// function setBatch(uint256 batch_)
+
 type IStorageECR721Fixed interface {
 	IStorageECR721
 	SetBatch(batch *big.Int) error
 	SetPrice(price *big.Int) error
 }
+
+var (
+	_ IStorageECR721Fixed = (*StorageECR721Fixed)(nil)
+)
 
 type StorageECR721Fixed struct {
 	session *storageerc721fixed.BindingsSession
@@ -157,6 +166,17 @@ func (s *StorageECR721Fixed) MintOwner(amount *big.Int) error {
 	return nil
 }
 
+func (s *StorageECR721Fixed) TokenURI(token *big.Int) (string, error) {
+	tokenURI, err := s.session.TokenURI(token)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to read %s", TokenURI)
+		Logger.Error(err)
+		return "", err
+	}
+
+	return tokenURI, nil
+}
+
 func (s *StorageECR721Fixed) TokenURIFallback(token *big.Int) (string, error) {
 	tokenURI, err := s.session.TokenURIFallback(token)
 	if err != nil {
@@ -169,15 +189,15 @@ func (s *StorageECR721Fixed) TokenURIFallback(token *big.Int) (string, error) {
 }
 
 // Price returns price
-func (s *StorageECR721Fixed) Price() (int64, error) {
+func (s *StorageECR721Fixed) Price() (*big.Int, error) {
 	price, err := s.session.Price()
 	if err != nil {
 		err = errors.Wrapf(err, "failed to read %s", Price)
 		Logger.Error(err)
-		return -1, err
+		return nil, err
 	}
 
-	return price.Int64(), nil
+	return price, nil
 }
 
 // SetURI updates uri

@@ -32,6 +32,10 @@ type IStorageECR721Pack interface {
 	SetOpened(opened string) error
 }
 
+var (
+	_ IStorageECR721Pack = (*StorageECR721Pack)(nil)
+)
+
 type StorageECR721Pack struct {
 	session *storageerc721pack.BindingsSession
 	ctx     context.Context
@@ -141,15 +145,15 @@ func (s *StorageECR721Pack) SetURI(uri string) error {
 	return nil
 }
 
-func (s *StorageECR721Pack) Price() (int64, error) {
+func (s *StorageECR721Pack) Price() (*big.Int, error) {
 	price, err := s.session.Price()
 	if err != nil {
 		err = errors.Wrapf(err, "failed to read %s", Price)
 		Logger.Error(err)
-		return -1, err
+		return nil, err
 	}
 
-	return price.Int64(), nil
+	return price, nil
 }
 
 func (s *StorageECR721Pack) RoyaltyInfo(tokenId, salePrice *big.Int) (string, *big.Int, error) {

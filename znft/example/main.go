@@ -40,22 +40,51 @@ func main() {
 	}
 
 	// Create NFT with factory
-	addressFixed := "beef"
+	address := "beef"
+
+	// ERC721Random
 
 	// Create session of NFT token
-	sessionFixed, err := cfg.CreateStorageERC721FixedSession(context.Background(), addressFixed)
+	sessionRandom, err := cfg.CreateStorageERC721RandomSession(context.Background(), address)
 	if err != nil {
 		panic(err)
 	}
 
 	// Start using session
-	price, err := sessionFixed.Price()
+	price, err := sessionRandom.Price()
 	if err != nil {
 		panic(err)
 	}
 
-	// Create NFT with factory
-	address := "beef"
+	// ERC721Fixed
+
+	// Create session of NFT token
+	sessionFixed, err := cfg.CreateStorageERC721FixedSession(context.Background(), address)
+	if err != nil {
+		panic(err)
+	}
+
+	// Start using session
+	price, err = sessionFixed.Price()
+	if err != nil {
+		panic(err)
+	}
+
+	// ERC721Pack
+
+	// Create session of NFT token
+	sessionPack, err := cfg.CreateStorageERC721PackSession(context.Background(), address)
+	if err != nil {
+		panic(err)
+	}
+
+	// Start using session
+	price, err = sessionPack.Price()
+	if err != nil {
+		panic(err)
+	}
+
+	// ERC721
 
 	// Create session of NFT token
 	session, err := cfg.CreateStorageERC721Session(context.Background(), address)

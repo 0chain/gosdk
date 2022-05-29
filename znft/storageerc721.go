@@ -23,6 +23,7 @@ const (
 	SetAllocation                   = "setAllocation"
 	SetURI                          = "setURI"
 	TokenURIFallback                = "tokenURIFallback"
+	TokenURI                        = "tokenURI"
 	Price                           = "price"
 	Mint                            = "mint"
 	MintOwner                       = "mintOwner"
@@ -62,7 +63,7 @@ type IStorageECR721 interface {
 	SetAllocation(allocation string) error
 	SetURI(uri string) error
 	TokenURIFallback(token *big.Int) (string, error)
-	Price() (int64, error)
+	Price() (*big.Int, error)
 	Mint(amount *big.Int) error
 	MintOwner(amount *big.Int) error
 	RoyaltyInfo(tokenId, salePrice *big.Int) (string, *big.Int, error)
@@ -234,15 +235,15 @@ func (s *StorageECR721) TokenURIFallback(token *big.Int) (string, error) {
 }
 
 // Price returns price
-func (s *StorageECR721) Price() (int64, error) {
+func (s *StorageECR721) Price() (*big.Int, error) {
 	price, err := s.session.Price()
 	if err != nil {
 		err = errors.Wrapf(err, "failed to read %s", Price)
 		Logger.Error(err)
-		return -1, err
+		return nil, err
 	}
 
-	return price.Int64(), nil
+	return price, nil
 }
 
 // SetURI updates uri

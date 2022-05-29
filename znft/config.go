@@ -156,7 +156,7 @@ func (conf *Configuration) createStorageERC721Pack(address string) (*storageerc7
 	return instance, err
 }
 
-func (conf *Configuration) CreateStorageERC721RandomPack(ctx context.Context, addr string) (IStorageECR721Pack, error) {
+func (conf *Configuration) CreateStorageERC721PackSession(ctx context.Context, addr string) (IStorageECR721Pack, error) {
 	contract, transact, err := conf.constructStorageERC721Pack(addr)
 	if err != nil {
 		return nil, err
