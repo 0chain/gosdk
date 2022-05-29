@@ -4,6 +4,8 @@ import (
 	"context"
 	"math/big"
 
+	storageerc721fixed "github.com/0chain/gosdk/znft/contracts/dstorageerc721fixed/binding"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
 )
@@ -15,7 +17,7 @@ type IStorageECR721Fixed interface {
 }
 
 type StorageECR721Fixed struct {
-	session IBindingsFixedSession
+	session *storageerc721fixed.BindingsSession
 	ctx     context.Context
 }
 
