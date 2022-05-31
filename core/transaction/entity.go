@@ -136,9 +136,6 @@ const (
 	// Faucet SC
 	FAUCETSC_UPDATE_SETTINGS = "update-settings"
 
-	// Interest pool SC
-	INTERESTPOOLSC_UPDATE_SETTINGS = "updateVariables"
-
 	// ZCNSC smart contract
 
 	ZCNSC_UPDATE_GLOBAL_CONFIG     = "update-global-config"

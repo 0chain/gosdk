@@ -1,3 +1,4 @@
+//go:build js && wasm
 // +build js,wasm
 
 package main
@@ -400,70 +401,6 @@ func ConvertUSDToToken(this js.Value, p []js.Value) interface{} {
 	usd, _ := strconv.ParseFloat(p[0].String(), 64)
 	result, _ := zcncore.ConvertUSDToToken(usd)
 	return result
-}
-
-func GetLockConfig(this js.Value, p []js.Value) interface{} {
-	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		resolve := args[0]
-		reject := args[1]
-
-		go func() {
-			tcb := &InfoCallback{}
-			tcb.wg = &sync.WaitGroup{}
-			tcb.wg.Add(1)
-
-			err := zcncore.GetLockConfig(tcb)
-			if err != nil {
-				tcb.wg.Done()
-				reject.Invoke(err.Error())
-			}
-			tcb.wg.Wait()
-
-			resolve.Invoke(map[string]interface{}{
-				"op":     tcb.op,
-				"status": tcb.status,
-				"info":   tcb.info,
-				"err":    tcb.err,
-			})
-		}()
-
-		return nil
-	})
-
-	promiseConstructor := js.Global().Get("Promise")
-	return promiseConstructor.New(handler)
-}
-
-func GetLockedTokens(this js.Value, p []js.Value) interface{} {
-	handler := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
-		resolve := args[0]
-		reject := args[1]
-
-		go func() {
-			tcb := &InfoCallback{}
-			tcb.wg = &sync.WaitGroup{}
-			tcb.wg.Add(1)
-
-			err := zcncore.GetLockedTokens(tcb)
-			if err != nil {
-				tcb.wg.Done()
-				reject.Invoke(err.Error())
-			}
-			tcb.wg.Wait()
-
-			resolve.Invoke(map[string]interface{}{
-				"op":     tcb.op,
-				"status": tcb.status,
-				"info":   tcb.info,
-				"err":    tcb.err,
-			})
-		}()
-
-		return nil
-	})
-
-	promiseConstructor := js.Global().Get("Promise")
-	return promiseConstructor.New(handler)
 }
 
 func GetWallet(this js.Value, p []js.Value) interface{} {
