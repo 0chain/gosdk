@@ -12,13 +12,9 @@ import (
 
 // function mint(uint256 amount)
 // function price() public view override returns (uint256)
-// function setPrice(uint256 price_)
-// function setBatch(uint256 batch_)
 
 type IStorageECR721Fixed interface {
 	IStorageECR721
-	SetBatch(batch *big.Int) error
-	SetPrice(price *big.Int) error
 }
 
 var (
@@ -28,6 +24,19 @@ var (
 type StorageECR721Fixed struct {
 	session *storageerc721fixed.BindingSession
 	ctx     context.Context
+}
+
+func (s *StorageECR721Fixed) SetURIFallback(uri string) error {
+	evmTr, err := s.session.SetURIFallback(uri)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to execute %s", "SetURIFallback")
+		Logger.Error(err)
+		return err
+	}
+
+	Logger.Info("Executed %s, hash %s", "SetURIFallback", evmTr.Hash().Hex())
+
+	return nil
 }
 
 func (s *StorageECR721Fixed) Total() (*big.Int, error) {
@@ -228,20 +237,6 @@ func (s *StorageECR721Fixed) SetAllocation(allocation string) error {
 	return nil
 }
 
-// SetMax eth balance from token contract - setMax
-func (s *StorageECR721Fixed) SetMax(max *big.Int) error {
-	evmTr, err := s.session.SetMax(max)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to execute %s", SetMax)
-		Logger.Error(err)
-		return err
-	}
-
-	Logger.Info("Executed %s, hash %s", SetMax, evmTr.Hash())
-
-	return nil
-}
-
 // SetMintable updates mintable state
 func (s *StorageECR721Fixed) SetMintable(status bool) error {
 	evmTr, err := s.session.SetMintable(status)
@@ -296,32 +291,6 @@ func (s *StorageECR721Fixed) Withdraw() error {
 	}
 
 	Logger.Info("Executed %s, hash %s", Withdraw, evmTr.Hash())
-
-	return nil
-}
-
-func (s *StorageECR721Fixed) SetBatch(batch *big.Int) error {
-	evmTr, err := s.session.SetBatch(batch)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to execute %s", "SetBatch")
-		Logger.Error(err)
-		return err
-	}
-
-	Logger.Info("Executed %s, hash %s", "SetBatch", evmTr.Hash())
-
-	return nil
-}
-
-func (s *StorageECR721Fixed) SetPrice(price *big.Int) error {
-	evmTr, err := s.session.SetPrice(price)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to execute %s", "SetPrice")
-		Logger.Error(err)
-		return err
-	}
-
-	Logger.Info("Executed %s, hash %s", "SetPrice", evmTr.Hash())
 
 	return nil
 }

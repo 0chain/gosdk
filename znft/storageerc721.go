@@ -19,7 +19,6 @@ const (
 	SetReceiver                     = "setReceiver"
 	SetRoyalty                      = "setRoyalty"
 	SetMintable                     = "setMintable"
-	SetMax                          = "setMax"
 	SetAllocation                   = "setAllocation"
 	SetURI                          = "setURI"
 	TokenURIFallback                = "tokenURIFallback"
@@ -38,11 +37,13 @@ const (
 // - setMax(uint256 max_)
 // - setAllocation(string calldata allocation_)
 // - setURI(string calldata uri_)
+// - setURIFallback(string calldata uri_)
 // - tokenURIFallback(uint256 tokenId)  returns (string memory)
 // - price() returns (uint256)
 // - mint(uint256 amount)
 // - mintOwner(uint256 amount)
 // - royaltyInfo(uint256 tokenId, uint256 salePrice) returns (address, uint256)
+// - freeze()
 // Fields:
 //    uint256 public total;
 //    uint256 public max;
@@ -59,9 +60,9 @@ type IStorageECR721 interface {
 	SetReceiver(receiver string) error
 	SetRoyalty(sum *big.Int) error
 	SetMintable(status bool) error
-	SetMax(max *big.Int) error
 	SetAllocation(allocation string) error
 	SetURI(uri string) error
+	SetURIFallback(uri string) error
 	TokenURIFallback(token *big.Int) (string, error)
 	Price() (*big.Int, error)
 	Mint(amount *big.Int) error
@@ -85,6 +86,19 @@ var (
 type StorageECR721 struct {
 	session *storageerc721.BindingSession
 	ctx     context.Context
+}
+
+func (s *StorageECR721) SetURIFallback(uri string) error {
+	evmTr, err := s.session.SetURIFallback(uri)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to execute %s", "SetURIFallback")
+		Logger.Error(err)
+		return err
+	}
+
+	Logger.Info("Executed %s, hash %s", "SetURIFallback", evmTr.Hash().Hex())
+
+	return nil
 }
 
 func (s *StorageECR721) Total() (*big.Int, error) {
@@ -270,20 +284,6 @@ func (s *StorageECR721) SetAllocation(allocation string) error {
 	}
 
 	Logger.Info("Executed %s, hash %s", SetAllocation, evmTr.Hash())
-
-	return nil
-}
-
-// SetMax eth balance from token contract - setReceiver(address receiver_)
-func (s *StorageECR721) SetMax(max *big.Int) error {
-	evmTr, err := s.session.SetMax(max)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to execute %s", SetMax)
-		Logger.Error(err)
-		return err
-	}
-
-	Logger.Info("Executed %s, hash %s", SetMax, evmTr.Hash())
 
 	return nil
 }

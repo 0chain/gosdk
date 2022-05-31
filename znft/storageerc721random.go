@@ -19,7 +19,6 @@ import (
 // function setHidden(string calldata hidden_)
 // function setPack(address pack_)
 // function setRevealable(bool status_)
-// function setMax(uint256 max_)
 
 type IStorageECR721Random interface {
 	MintOwner(amount *big.Int) error
@@ -30,7 +29,6 @@ type IStorageECR721Random interface {
 	SetHidden(hidden string) error
 	SetPack(address common.Address) error
 	SetRevealable(status bool) error
-	SetMax(max *big.Int) error
 	Price() (*big.Int, error)
 }
 
@@ -139,19 +137,6 @@ func (s *StorageECR721Random) SetRevealable(status bool) error {
 	}
 
 	Logger.Info("Executed %s, hash %s", "SetRevealable", evmTr.Hash())
-
-	return nil
-}
-
-func (s *StorageECR721Random) SetMax(max *big.Int) error {
-	evmTr, err := s.session.SetMax(max)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to execute %s", "SetMax")
-		Logger.Error(err)
-		return err
-	}
-
-	Logger.Info("Executed %s, hash %s", "SetMax", evmTr.Hash())
 
 	return nil
 }

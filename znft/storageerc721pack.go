@@ -25,7 +25,7 @@ type IStorageECR721Pack interface {
 	MintOwner(amount *big.Int) error
 	Mint(amount *big.Int) error
 	Reveal(tokenId *big.Int) error
-	WithdrawToken(tokenId *big.Int) error
+	Redeem(tokenId *big.Int) error
 	TokenURI(tokenId *big.Int) (string, error)
 	TokenURIFallback(tokenId *big.Int) (string, error)
 	SetClosed(closed string) error
@@ -41,8 +41,21 @@ type StorageECR721Pack struct {
 	ctx     context.Context
 }
 
+func (s *StorageECR721Pack) SetURIFallback(uri string) error {
+	evmTr, err := s.session.SetURIFallback(uri)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to execute %s", "SetURIFallback")
+		Logger.Error(err)
+		return err
+	}
+
+	Logger.Info("Executed %s, hash %s", "SetURIFallback", evmTr.Hash().Hex())
+
+	return nil
+}
+
 func (s *StorageECR721Pack) Withdraw() error {
-	evmTr, err := s.session.Withdraw0()
+	evmTr, err := s.session.Withdraw()
 	if err != nil {
 		err = errors.Wrapf(err, "failed to execute %s", Withdraw)
 		Logger.Error(err)
@@ -50,17 +63,6 @@ func (s *StorageECR721Pack) Withdraw() error {
 	}
 
 	Logger.Info("Executed %s, hash %s", Withdraw, evmTr.Hash())
-
-	return nil
-}
-
-func (s *StorageECR721Pack) WithdrawToken(tokenId *big.Int) error {
-	evmTr, err := s.session.Withdraw(tokenId)
-	if err != nil {
-		return err
-	}
-
-	Logger.Info("Executed %s, hash %s", "Withdraw", evmTr.Hash())
 
 	return nil
 }
@@ -102,19 +104,6 @@ func (s *StorageECR721Pack) SetMintable(status bool) error {
 	}
 
 	Logger.Info("Executed %s, hash %s", SetMintable, evmTr.Hash())
-
-	return nil
-}
-
-func (s *StorageECR721Pack) SetMax(max *big.Int) error {
-	evmTr, err := s.session.SetMax(max)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to execute %s", SetMax)
-		Logger.Error(err)
-		return err
-	}
-
-	Logger.Info("Executed %s, hash %s", SetMax, evmTr.Hash())
 
 	return nil
 }
@@ -266,32 +255,6 @@ func (s *StorageECR721Pack) Receiver() (string, error) {
 	return value.String(), nil
 }
 
-func (s *StorageECR721Pack) SetBatch(batch *big.Int) error {
-	evmTr, err := s.session.SetBatch(batch)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to execute %s", "SetBatch")
-		Logger.Error(err)
-		return err
-	}
-
-	Logger.Info("Executed %s, hash %s", "SetBatch", evmTr.Hash())
-
-	return nil
-}
-
-func (s *StorageECR721Pack) SetPrice(price *big.Int) error {
-	evmTr, err := s.session.SetPrice(price)
-	if err != nil {
-		err = errors.Wrapf(err, "failed to execute %s", "SetPrice")
-		Logger.Error(err)
-		return err
-	}
-
-	Logger.Info("Executed %s, hash %s", "SetPrice", evmTr.Hash())
-
-	return nil
-}
-
 func (s *StorageECR721Pack) MintOwner(amount *big.Int) error {
 	evmTr, err := s.session.MintOwner(amount)
 	if err != nil {
@@ -310,6 +273,17 @@ func (s *StorageECR721Pack) Mint(amount *big.Int) error {
 	}
 
 	Logger.Info("Executed %s, hash %s", "Mint", evmTr.Hash())
+
+	return nil
+}
+
+func (s *StorageECR721Pack) Redeem(tokenId *big.Int) error {
+	evmTr, err := s.session.Redeem(tokenId)
+	if err != nil {
+		return err
+	}
+
+	Logger.Info("Executed %s, hash %s", "Reveal", evmTr.Hash())
 
 	return nil
 }
