@@ -253,10 +253,12 @@ func (tq *TransactionQuery) FromAll(ctx context.Context, query string, handle Qu
 
 			if resp != nil {
 				res.StatusCode = resp.StatusCode
-				Logger.Debug(resp.Status + ": " + req.URL.String())
+
+				Logger.Debug(req.URL.String() + " " + resp.Status)
 				Logger.Debug(string(respBody))
 			} else {
 				Logger.Debug(req.URL.String())
+
 			}
 
 			if handle != nil {
