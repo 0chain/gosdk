@@ -83,6 +83,7 @@ func (b *InputBuilder) Build() (InputBinder, error) {
 		case *[]byte:
 			b.binders[i] = withRecover(i, jsValueToBytes)
 		default:
+			fmt.Printf("TYPE: %#v\n", reflect.TypeOf(v))
 			return nil, ErrBinderNotImplemented
 		}
 

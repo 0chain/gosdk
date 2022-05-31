@@ -74,6 +74,14 @@ type blockHeader struct {
 	NumTxns               int64  `json:"num_txns,omitempty"`
 }
 
+func (bh *blockHeader) getCreationDate(defaultTime int64) int64 {
+	if bh == nil {
+		return defaultTime
+	}
+
+	return bh.CreationDate
+}
+
 type Transaction struct {
 	txn                      *transaction.Transaction
 	txnOut                   string
@@ -150,7 +158,7 @@ type TransactionScheme interface {
 
 	// Miner SC
 
-	MinerSCCollectReward(string, Provider) error
+	MinerSCCollectReward(string, string, Provider) error
 	MinerSCMinerSettings(*MinerSCMinerInfo) error
 	MinerSCSharderSettings(*MinerSCMinerInfo) error
 	MinerSCLock(minerID string, lock int64) error
@@ -162,7 +170,7 @@ type TransactionScheme interface {
 
 	// Storage SC
 
-	StorageSCCollectReward(string, Provider) error
+	StorageSCCollectReward(string, string, Provider) error
 	FinalizeAllocation(allocID string, fee int64) error
 	CancelAllocation(allocID string, fee int64) error
 	CreateAllocation(car *CreateAllocationRequest, lock, fee int64) error //
@@ -614,9 +622,9 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 		// Verify the block
 		if isBlockExtends(prevBlockHash, block) {
 			return block, nil
-		} else {
-			return nil, errors.New("", "block hash verification failed in confirmation")
 		}
+
+		return nil, errors.New("", "block hash verification failed in confirmation")
 	}
 	return nil, errors.New("", "txn confirmation not found.")
 }
@@ -627,6 +635,7 @@ func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, 
 
 	numSharders = len(_config.chain.Sharders) // overwrite, use all
 	queryFromSharders(numSharders, fmt.Sprintf("%v%v&content=lfb", TXN_VERIFY_URL, txnHash), result)
+
 	maxConfirmation := int(0)
 	txnConfirmations := make(map[string]int)
 	var blockHdr *blockHeader
@@ -1018,39 +1027,62 @@ func (t *Transaction) Verify() error {
 		t.txn.CreationDate = int64(common.Now())
 	}
 
+	tq, err := NewTransactionQuery(_config.chain.Sharders)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+
 	go func() {
+
 		for {
-			// Get transaction confirmation from random sharder
-			confirmBlock, confirmation, lfb, err := getTransactionConfirmation(1, t.txnHash)
+
+			tq.Reset()
+			// Get transaction confirmationBlock from a random sharder
+			confirmBlockHeader, confirmationBlock, lfbBlockHeader, err := tq.GetFastConfirmation(context.TODO(), t.txnHash)
+
 			if err != nil {
-				tn := int64(common.Now())
-				Logger.Info(err, " now: ", tn, ", LFB creation time:", lfb.CreationDate)
-				if util.MaxInt64(lfb.CreationDate, tn) < (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
+				now := int64(common.Now())
+
+				// maybe it is a network or server error
+				if lfbBlockHeader == nil {
+					Logger.Info(err, " now: ", now)
+				} else {
+					Logger.Info(err, " now: ", now, ", LFB creation time:", lfbBlockHeader.CreationDate)
+				}
+
+				// transaction is done or expired. it means random sharder might be outdated, try to query it from s/S sharders to confirm it
+				if util.MaxInt64(lfbBlockHeader.getCreationDate(now), now) >= (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
 					Logger.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders")
-					confirmBlock, confirmation, lfb, err = getTransactionConfirmation(getMinShardersVerify(), t.txnHash)
-					if err != nil {
-						if t.isTransactionExpired(lfb.CreationDate, tn) {
-							t.completeVerify(StatusError, "", errors.New("", `{"error": "verify transaction failed"}`))
-							return
-						}
+					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.GetConsensusConfirmation(context.TODO(), getMinShardersVerify(), t.txnHash)
+				}
+
+				// txn not found in fast confirmation/consensus confirmation
+				if err != nil {
+
+					if lfbBlockHeader == nil {
+						// no any valid lfb on all sharders. maybe they are network/server errors. try it again
 						continue
 					}
-				} else {
-					if t.isTransactionExpired(lfb.CreationDate, tn) {
+
+					// it is expired
+					if t.isTransactionExpired(lfbBlockHeader.getCreationDate(now), now) {
 						t.completeVerify(StatusError, "", errors.New("", `{"error": "verify transaction failed"}`))
 						return
 					}
 					continue
 				}
+
 			}
-			valid := validateChain(confirmBlock)
+
+			valid := validateChain(confirmBlockHeader)
 			if valid {
-				output, err := json.Marshal(confirmation)
+				output, err := json.Marshal(confirmationBlock)
 				if err != nil {
 					t.completeVerify(StatusError, "", errors.New("", `{"error": "transaction confirmation json marshal error"`))
 					return
 				}
-				confJson := confirmation["confirmation"]
+				confJson := confirmationBlock["confirmation"]
 
 				var conf map[string]json.RawMessage
 				if err := json.Unmarshal(confJson, &conf); err != nil {
@@ -1266,53 +1298,17 @@ func (t *Transaction) MinerScUpdateGlobals(ip *InputMap) (err error) {
 	return
 }
 
-type MinerSCPoolStats struct {
-	DelegateID   string         `json:"delegate_id"`
-	High         common.Balance `json:"high"`
-	Low          common.Balance `json:"low"`
-	InterestRate float64        `json:"interest_rate"`
-	TotalPaid    common.Balance `json:"total_paid"`
-	NumRounds    int64          `json:"number_rounds"`
-}
-
-type MinerSCPool struct {
-	ID      string         `json:"id"`
-	Balance common.Balance `json:"balance"`
-}
-
 type MinerSCDelegatePool struct {
-	MinerSCPoolStats `json:"stats"`
-	MinerSCPool      `json:"pool"`
+	Settings StakePoolSettings `json:"settings"`
 }
 
-type MinerSCMinerStat struct {
-	// for miner (totals)
-	BlockReward      common.Balance `json:"block_reward,omitempty"`
-	ServiceCharge    common.Balance `json:"service_charge,omitempty"`
-	UsersFee         common.Balance `json:"users_fee,omitempty"`
-	BlockShardersFee common.Balance `json:"block_sharders_fee,omitempty"`
-	// for sharder (total)
-	SharderRewards common.Balance `json:"sharder_rewards,omitempty"`
+type SimpleMiner struct {
+	ID string `json:"id"`
 }
 
 type MinerSCMinerInfo struct {
-	*SimpleMinerSCMinerInfo `json:"simple_miner"`
-	Pending                 map[string]MinerSCDelegatePool `json:"pending"`
-	Active                  map[string]MinerSCDelegatePool `json:"active"`
-	Deleting                map[string]MinerSCDelegatePool `json:"deleting"`
-}
-
-type SimpleMinerSCMinerInfo struct {
-	ID      string `json:"id"`
-	BaseURL string `json:"url"`
-
-	DelegateWallet    string         `json:"delegate_wallet"`     //
-	ServiceCharge     float64        `json:"service_charge"`      // %
-	NumberOfDelegates int            `json:"number_of_delegates"` //
-	MinStake          common.Balance `json:"min_stake"`           //
-	MaxStake          common.Balance `json:"max_stake"`           //
-
-	Stat MinerSCMinerStat `json:"stat"`
+	SimpleMiner         `json:"simple_miner"`
+	MinerSCDelegatePool `json:"stake_pool"`
 }
 
 func (t *Transaction) MinerSCMinerSettings(info *MinerSCMinerInfo) (err error) {
@@ -1370,12 +1366,14 @@ const (
 )
 
 type SCCollectReward struct {
+	ProviderId   string   `json:"provider_id"`
 	PoolId       string   `json:"pool_id"`
 	ProviderType Provider `json:"provider_type"`
 }
 
-func (t *Transaction) MinerSCCollectReward(poolId string, providerType Provider) error {
+func (t *Transaction) MinerSCCollectReward(providerId, poolId string, providerType Provider) error {
 	pr := &SCCollectReward{
+		ProviderId:   providerId,
 		PoolId:       poolId,
 		ProviderType: providerType,
 	}
@@ -1584,8 +1582,9 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 // Storage SC transactions
 //
 
-func (t *Transaction) StorageSCCollectReward(poolId string, providerType Provider) error {
+func (t *Transaction) StorageSCCollectReward(providerId, poolId string, providerType Provider) error {
 	pr := &SCCollectReward{
+		ProviderId:   providerId,
 		PoolId:       poolId,
 		ProviderType: providerType,
 	}
@@ -1664,7 +1663,7 @@ type CreateAllocationRequest struct {
 	Expiration                 common.Timestamp `json:"expiration_date"`
 	Owner                      string           `json:"owner_id"`
 	OwnerPublicKey             string           `json:"owner_public_key"`
-	PreferredBlobbers          []string         `json:"preferred_blobbers"`
+	Blobbers                   []string         `json:"blobbers"`
 	ReadPriceRange             PriceRange       `json:"read_price_range"`
 	WritePriceRange            PriceRange       `json:"write_price_range"`
 	MaxChallengeCompletionTime time.Duration    `json:"max_challenge_completion_time"`
@@ -1791,16 +1790,11 @@ func (t *Transaction) StakePoolUnlock(blobberID, poolID string,
 }
 
 type StakePoolSettings struct {
-	// DelegateWallet for pool owner.
-	DelegateWallet string `json:"delegate_wallet"`
-	// MinStake allowed.
-	MinStake common.Balance `json:"min_stake"`
-	// MaxStake allowed.
-	MaxStake common.Balance `json:"max_stake"`
-	// NumDelegates maximum allowed.
-	NumDelegates int `json:"num_delegates"`
-	// ServiceCharge is blobber service charge.
-	ServiceCharge float64 `json:"service_charge"`
+	DelegateWallet string         `json:"delegate_wallet"`
+	MinStake       common.Balance `json:"min_stake"`
+	MaxStake       common.Balance `json:"max_stake"`
+	NumDelegates   int            `json:"num_delegates"`
+	ServiceCharge  float64        `json:"service_charge"`
 }
 
 type Terms struct {

@@ -15,7 +15,7 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 )
 
 // For sync app
@@ -71,14 +71,14 @@ func (a *Allocation) GetRemoteFileMap(exclMap map[string]int) (map[string]fileIn
 	for {
 		dirs, err = a.getRemoteFilesAndDirs(dirs, remoteList, exclMap)
 		if err != nil {
-			Logger.Error(err.Error())
+			l.Logger.Error(err.Error())
 			break
 		}
 		if len(dirs) == 0 {
 			break
 		}
 	}
-	Logger.Debug("Remote List: ", remoteList)
+	l.Logger.Debug("Remote List: ", remoteList)
 	return remoteList, err
 }
 
@@ -107,7 +107,7 @@ func getRemoteExcludeMap(exclPath []string) map[string]int {
 func addLocalFileList(root string, fMap map[string]fileInfo, dirList *[]string, filter map[string]bool, exclMap map[string]int) filepath.WalkFunc {
 	return func(path string, info os.FileInfo, err error) error {
 		if err != nil {
-			Logger.Error("Local file list error for path", path, err.Error())
+			l.Logger.Error("Local file list error for path", path, err.Error())
 			return nil
 		}
 		// Filter out
@@ -116,7 +116,7 @@ func addLocalFileList(root string, fMap map[string]fileInfo, dirList *[]string, 
 		}
 		lPath, err := filepath.Rel(root, path)
 		if err != nil {
-			Logger.Error("getting relative path failed", err)
+			l.Logger.Error("getting relative path failed", err)
 		}
 		lPath = "/" + lPath
 		// Exclude
@@ -145,7 +145,7 @@ func getLocalFileMap(rootPath string, filters []string, exclMap map[string]int) 
 	for _, d := range dirList {
 		localMap[d] = fileInfo{Type: fileref.DIRECTORY}
 	}
-	Logger.Debug("Local List: ", localMap)
+	l.Logger.Debug("Local List: ", localMap)
 	return localMap, err
 }
 
@@ -249,7 +249,7 @@ func findDelta(rMap map[string]fileInfo, lMap map[string]fileInfo, prevMap map[s
 	// If there are differences, remove childs if the parent folder is deleted
 	if len(lFDiff) > 0 {
 		sort.SliceStable(lFDiff, func(i, j int) bool { return lFDiff[i].Path < lFDiff[j].Path })
-		Logger.Debug("Sorted diff: ", lFDiff)
+		l.Logger.Debug("Sorted diff: ", lFDiff)
 		var newlFDiff []FileDiff
 		for _, f := range lFDiff {
 			if f.Op == LocalDelete || f.Op == Delete {
@@ -308,7 +308,7 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath s
 
 	// 5. Get the file diff with operation
 	lFdiff = findDelta(remoteFileMap, localFileList, prevRemoteFileMap, localRootPath)
-	Logger.Debug("Diff: ", lFdiff)
+	l.Logger.Debug("Diff: ", lFdiff)
 	return lFdiff, nil
 }
 

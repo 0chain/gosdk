@@ -1,9 +1,9 @@
 0CHAIN_PATH	:=  github.com/0chain
 GOSDK_PATH :=  $(0CHAIN_PATH)/gosdk
 OUTDIR := $(ROOT_DIR)/out
-IOSMOBILESDKDIR     := $(OUTDIR)/0chainiosmobilesdk
-ANDROIDMOBILESDKDIR := $(OUTDIR)/0chainandroidmobilesdk
-IOSBINNAME 		:= zcncore.framework
+IOSMOBILESDKDIR     := $(OUTDIR)/iossdk
+ANDROIDMOBILESDKDIR := $(OUTDIR)/androidsdk
+IOSBINNAME 		:= zcncore.xcframework
 ANDROIDBINNAME	:= zcncore.aar
 
 .PHONY: build-mobilesdk
@@ -19,7 +19,7 @@ setup-gomobile: $(IOSMOBILESDKDIR) $(ANDROIDMOBILESDKDIR)
 	@echo "============================================================"
 	@echo "    Initializing gomobile. Please wait it may take a while ..."
 	@echo "------------------------------------------------------------"
-	@go get golang.org/x/mobile/cmd/gomobile
+	@go get -d golang.org/x/mobile/cmd/gomobile
 	@$(PRINT_NON)
 	@gomobile init
 	@$(PRINT_GRN)
@@ -65,3 +65,17 @@ clean-mobilesdk:
 cleanall-gomobile:
 	@rm -rf $(OUTDIR)
 	@rm -rf $(BLS_LIB_BASE_PATH)
+
+gomobile-install:
+	go install golang.org/x/mobile/cmd/gomobile@latest
+	gomobile init
+
+build-ios: setup-gomobile
+	@echo "Building iOS framework. Please wait..."
+	@@gomobile bind -v -ldflags="-s -w" -target=ios/arm64 -o $(IOSMOBILESDKDIR)/$(IOSBINNAME) $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common
+	@echo "   $(IOSMOBILESDKDIR)/$(IOSBINNAME). - [OK]"
+
+build-android: setup-gomobile
+	@echo "Building Android framework. Please wait..."
+	@gomobile bind -target=android/arm64 -ldflags=-extldflags=-Wl,-soname,libgojni.so -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common
+	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"

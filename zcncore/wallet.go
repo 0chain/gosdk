@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/gosdk/core/transaction"
 	"log"
 	"math"
 	"net/http"
@@ -15,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/0chain/gosdk/core/transaction"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
@@ -59,7 +60,7 @@ const (
 
 	VESTINGSC_PFX = `/v1/screst/` + VestingSmartContractAddress
 
-	GET_VESTING_CONFIG       = VESTINGSC_PFX + `/getConfig`
+	GET_VESTING_CONFIG       = VESTINGSC_PFX + `/vesting-config`
 	GET_VESTING_POOL_INFO    = VESTINGSC_PFX + `/getPoolInfo`
 	GET_VESTING_CLIENT_POOLS = VESTINGSC_PFX + `/getClientPools`
 
@@ -71,7 +72,7 @@ const (
 	// faucet sc
 
 	FAUCETSC_PFX        = `/v1/screst/` + FaucetSmartContractAddress
-	GET_FAUCETSC_CONFIG = FAUCETSC_PFX + `/getConfig`
+	GET_FAUCETSC_CONFIG = FAUCETSC_PFX + `/faucet-config`
 
 	// miner SC
 
@@ -89,7 +90,7 @@ const (
 
 	STORAGESC_PFX = "/v1/screst/" + StorageSmartContractAddress
 
-	STORAGESC_GET_SC_CONFIG            = STORAGESC_PFX + "/getConfig"
+	STORAGESC_GET_SC_CONFIG            = STORAGESC_PFX + "/storage-config"
 	STORAGESC_GET_CHALLENGE_POOL_INFO  = STORAGESC_PFX + "/getChallengePoolStat"
 	STORAGESC_GET_ALLOCATION           = STORAGESC_PFX + "/allocation"
 	STORAGESC_GET_ALLOCATIONS          = STORAGESC_PFX + "/allocations"
@@ -1076,24 +1077,35 @@ func GetFaucetSCConfig(cb GetInfoCallback) (err error) {
 //
 
 type Miner struct {
-	ID                string      `json:"id"`
-	N2NHost           string      `json:"n2n_host"`
-	Host              string      `json:"host"`
-	Port              int         `json:"port"`
-	PublicKey         string      `json:"public_key"`
-	ShortName         string      `json:"short_name"`
-	BuildTag          string      `json:"build_tag"`
-	TotalStake        int         `json:"total_stake"`
-	DelegateWallet    string      `json:"delegate_wallet"`
-	ServiceCharge     float64     `json:"service_charge"`
-	NumberOfDelegates int         `json:"number_of_delegates"`
-	MinStake          int64       `json:"min_stake"`
-	MaxStake          int64       `json:"max_stake"`
-	Stat              interface{} `json:"stat"`
+	ID         string      `json:"id"`
+	N2NHost    string      `json:"n2n_host"`
+	Host       string      `json:"host"`
+	Port       int         `json:"port"`
+	PublicKey  string      `json:"public_key"`
+	ShortName  string      `json:"short_name"`
+	BuildTag   string      `json:"build_tag"`
+	TotalStake int64       `json:"total_stake"`
+	Stat       interface{} `json:"stat"`
+}
+
+type DelegatePool struct {
+	Balance      int64  `json:"balance"`
+	Reward       int64  `json:"reward"`
+	Status       int    `json:"status"`
+	RoundCreated int64  `json:"round_created"` // used for cool down
+	DelegateID   string `json:"delegate_id"`
+}
+
+type StakePool struct {
+	Pools    map[string]*DelegatePool `json:"pools"`
+	Reward   int64                    `json:"rewards"`
+	Settings StakePoolSettings        `json:"settings"`
+	Minter   int                      `json:"minter"`
 }
 
 type Node struct {
-	Miner Miner `json:"simple_miner"`
+	Miner     Miner `json:"simple_miner"`
+	StakePool `json:"stake_pool"`
 }
 
 type MinerSCNodes struct {
@@ -1158,17 +1170,15 @@ func GetMinerSCNodePool(id, poolID string, cb GetInfoCallback) (err error) {
 }
 
 type MinerSCDelegatePoolInfo struct {
-	ID           common.Key     `json:"id"`            // pool ID
-	Balance      common.Balance `json:"balance"`       //
-	InterestPaid common.Balance `json:"interest_paid"` //
-	RewardPaid   common.Balance `json:"reward_paid"`   //
-	Status       string         `json:"status"`        //
-	High         common.Balance `json:"high"`          // }
-	Low          common.Balance `json:"low"`           // }
+	ID         common.Key     `json:"id"`
+	Balance    common.Balance `json:"balance"`
+	Reward     common.Balance `json:"reward"`      // uncollected reread
+	RewardPaid common.Balance `json:"reward_paid"` // total reward all time
+	Status     string         `json:"status"`
 }
 
 type MinerSCUserPoolsInfo struct {
-	Pools map[string]map[string][]*MinerSCDelegatePoolInfo `json:"pools"`
+	Pools map[string][]*MinerSCDelegatePoolInfo `json:"pools"`
 }
 
 func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error) {

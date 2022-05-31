@@ -93,3 +93,4 @@ install-herumi-ubuntu:
         make MCL_DIR=/tmp/mcl -C bls -j $(nproc) install && \
         rm -R /tmp/mcl && \
         rm -R /tmp/bls
+

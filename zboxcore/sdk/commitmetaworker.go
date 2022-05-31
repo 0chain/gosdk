@@ -15,7 +15,7 @@ import (
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
@@ -81,7 +81,7 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 	}
 
 	if err != nil {
-		Logger.Error("Error verifying the commit transaction", err.Error(), txn.Hash)
+		l.Logger.Error("Error verifying the commit transaction", err.Error(), txn.Hash)
 		transaction.Cache.Evict(txn.ClientID)
 		req.status.CommitMetaCompleted(commitMetaDataString, "", nil, err)
 		return
@@ -94,9 +94,9 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 	}
 
 	if ok := req.updateCommitMetaTxnToBlobbers(t.Hash); ok {
-		Logger.Info("Updated commitMetaTxnID to all blobbers")
+		l.Logger.Info("Updated commitMetaTxnID to all blobbers")
 	} else {
-		Logger.Info("Failed to update commitMetaTxnID to all blobbers")
+		l.Logger.Info("Failed to update commitMetaTxnID to all blobbers")
 	}
 
 	commitMetaResponse := &CommitMetaResponse{
@@ -104,21 +104,21 @@ func (req *CommitMetaRequest) processCommitMetaRequest() {
 		MetaData: req.CommitMetaData.MetaData,
 	}
 
-	Logger.Info("Marshaling commitMetaResponse to bytes")
+	l.Logger.Info("Marshaling commitMetaResponse to bytes")
 	commitMetaReponseBytes, err := json.Marshal(commitMetaResponse)
 	if err != nil {
-		Logger.Error("Failed to marshal commitMetaResponse to bytes")
+		l.Logger.Error("Failed to marshal commitMetaResponse to bytes")
 		transaction.Cache.Evict(txn.ClientID)
 		req.status.CommitMetaCompleted(commitMetaDataString, "", t, err)
 	}
 
-	Logger.Info("Converting commitMetaResponse bytes to string")
+	l.Logger.Info("Converting commitMetaResponse bytes to string")
 	commitMetaResponseString := string(commitMetaReponseBytes)
 
-	Logger.Info("Commit complete, Calling CommitMetaCompleted callback")
+	l.Logger.Info("Commit complete, Calling CommitMetaCompleted callback")
 	req.status.CommitMetaCompleted(commitMetaDataString, commitMetaResponseString, t, nil)
 
-	Logger.Info("All process done, Calling return")
+	l.Logger.Info("All process done, Calling return")
 }
 
 func (req *CommitMetaRequest) updateCommitMetaTxnToBlobbers(txnHash string) bool {
@@ -152,7 +152,7 @@ func (req *CommitMetaRequest) updatCommitMetaTxnToBlobber(blobber *blockchain.St
 	if len(req.authToken) > 0 {
 		sEnc, err := base64.StdEncoding.DecodeString(req.authToken)
 		if err != nil {
-			Logger.Error("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
+			l.Logger.Error("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
 			return
 		}
 		formWriter.WriteField("auth_token", string(sEnc))
@@ -161,7 +161,7 @@ func (req *CommitMetaRequest) updatCommitMetaTxnToBlobber(blobber *blockchain.St
 	formWriter.Close()
 	httpreq, err := zboxutil.NewCommitMetaTxnRequest(blobber.Baseurl, req.a.Tx, body)
 	if err != nil {
-		Logger.Error("Update commit meta txn request error: ", err.Error())
+		l.Logger.Error("Update commit meta txn request error: ", err.Error())
 		return
 	}
 
@@ -170,7 +170,7 @@ func (req *CommitMetaRequest) updatCommitMetaTxnToBlobber(blobber *blockchain.St
 
 	zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("Update CommitMetaTxn : ", err)
+			l.Logger.Error("Update CommitMetaTxn : ", err)
 			rspCh <- false
 			return err
 		}
