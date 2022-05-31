@@ -26,7 +26,7 @@ var (
 )
 
 type StorageECR721Fixed struct {
-	session *storageerc721fixed.BindingsSession
+	session *storageerc721fixed.BindingSession
 	ctx     context.Context
 }
 

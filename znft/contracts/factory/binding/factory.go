@@ -28,113 +28,113 @@ var (
 	_ = event.NewSubscription
 )
 
-// BindingsMetaData contains all meta data concerning the Bindings contract.
-var BindingsMetaData = &bind.MetaData{
+// BindingMetaData contains all meta data concerning the Binding contract.
+var BindingMetaData = &bind.MetaData{
 	ABI: "[{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"module\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"status\",\"type\":\"bool\"}],\"name\":\"ModuleRegistered\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"previousOwner\",\"type\":\"address\"},{\"indexed\":true,\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"OwnershipTransferred\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":true,\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"token\",\"type\":\"address\"}],\"name\":\"TokenCreated\",\"type\":\"event\"},{\"inputs\":[],\"name\":\"count\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"module\",\"type\":\"address\"},{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"symbol\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"uri\",\"type\":\"string\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"create\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"moduleRegistry\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"module\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"status\",\"type\":\"bool\"}],\"name\":\"register\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"renounceOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"name\":\"tokenList\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"name\":\"tokenMapping\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"newOwner\",\"type\":\"address\"}],\"name\":\"transferOwnership\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
-// BindingsABI is the input ABI used to generate the binding from.
-// Deprecated: Use BindingsMetaData.ABI instead.
-var BindingsABI = BindingsMetaData.ABI
+// BindingABI is the input ABI used to generate the binding from.
+// Deprecated: Use BindingMetaData.ABI instead.
+var BindingABI = BindingMetaData.ABI
 
-// Bindings is an auto generated Go binding around an Ethereum contract.
-type Bindings struct {
-	BindingsCaller     // Read-only binding to the contract
-	BindingsTransactor // Write-only binding to the contract
-	BindingsFilterer   // Log filterer for contract events
+// Binding is an auto generated Go binding around an Ethereum contract.
+type Binding struct {
+	BindingCaller     // Read-only binding to the contract
+	BindingTransactor // Write-only binding to the contract
+	BindingFilterer   // Log filterer for contract events
 }
 
-// BindingsCaller is an auto generated read-only Go binding around an Ethereum contract.
-type BindingsCaller struct {
+// BindingCaller is an auto generated read-only Go binding around an Ethereum contract.
+type BindingCaller struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// BindingsTransactor is an auto generated write-only Go binding around an Ethereum contract.
-type BindingsTransactor struct {
+// BindingTransactor is an auto generated write-only Go binding around an Ethereum contract.
+type BindingTransactor struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// BindingsFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
-type BindingsFilterer struct {
+// BindingFilterer is an auto generated log filtering Go binding around an Ethereum contract events.
+type BindingFilterer struct {
 	contract *bind.BoundContract // Generic contract wrapper for the low level calls
 }
 
-// BindingsSession is an auto generated Go binding around an Ethereum contract,
+// BindingSession is an auto generated Go binding around an Ethereum contract,
 // with pre-set call and transact options.
-type BindingsSession struct {
-	Contract     *Bindings         // Generic contract binding to set the session for
+type BindingSession struct {
+	Contract     *Binding          // Generic contract binding to set the session for
 	CallOpts     bind.CallOpts     // Call options to use throughout this session
 	TransactOpts bind.TransactOpts // Transaction auth options to use throughout this session
 }
 
-// BindingsCallerSession is an auto generated read-only Go binding around an Ethereum contract,
+// BindingCallerSession is an auto generated read-only Go binding around an Ethereum contract,
 // with pre-set call options.
-type BindingsCallerSession struct {
-	Contract *BindingsCaller // Generic contract caller binding to set the session for
-	CallOpts bind.CallOpts   // Call options to use throughout this session
+type BindingCallerSession struct {
+	Contract *BindingCaller // Generic contract caller binding to set the session for
+	CallOpts bind.CallOpts  // Call options to use throughout this session
 }
 
-// BindingsTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
+// BindingTransactorSession is an auto generated write-only Go binding around an Ethereum contract,
 // with pre-set transact options.
-type BindingsTransactorSession struct {
-	Contract     *BindingsTransactor // Generic contract transactor binding to set the session for
-	TransactOpts bind.TransactOpts   // Transaction auth options to use throughout this session
+type BindingTransactorSession struct {
+	Contract     *BindingTransactor // Generic contract transactor binding to set the session for
+	TransactOpts bind.TransactOpts  // Transaction auth options to use throughout this session
 }
 
-// BindingsRaw is an auto generated low-level Go binding around an Ethereum contract.
-type BindingsRaw struct {
-	Contract *Bindings // Generic contract binding to access the raw methods on
+// BindingRaw is an auto generated low-level Go binding around an Ethereum contract.
+type BindingRaw struct {
+	Contract *Binding // Generic contract binding to access the raw methods on
 }
 
-// BindingsCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
-type BindingsCallerRaw struct {
-	Contract *BindingsCaller // Generic read-only contract binding to access the raw methods on
+// BindingCallerRaw is an auto generated low-level read-only Go binding around an Ethereum contract.
+type BindingCallerRaw struct {
+	Contract *BindingCaller // Generic read-only contract binding to access the raw methods on
 }
 
-// BindingsTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
-type BindingsTransactorRaw struct {
-	Contract *BindingsTransactor // Generic write-only contract binding to access the raw methods on
+// BindingTransactorRaw is an auto generated low-level write-only Go binding around an Ethereum contract.
+type BindingTransactorRaw struct {
+	Contract *BindingTransactor // Generic write-only contract binding to access the raw methods on
 }
 
-// NewBindings creates a new instance of Bindings, bound to a specific deployed contract.
-func NewBindings(address common.Address, backend bind.ContractBackend) (*Bindings, error) {
-	contract, err := bindBindings(address, backend, backend, backend)
+// NewBinding creates a new instance of Binding, bound to a specific deployed contract.
+func NewBinding(address common.Address, backend bind.ContractBackend) (*Binding, error) {
+	contract, err := bindBinding(address, backend, backend, backend)
 	if err != nil {
 		return nil, err
 	}
-	return &Bindings{BindingsCaller: BindingsCaller{contract: contract}, BindingsTransactor: BindingsTransactor{contract: contract}, BindingsFilterer: BindingsFilterer{contract: contract}}, nil
+	return &Binding{BindingCaller: BindingCaller{contract: contract}, BindingTransactor: BindingTransactor{contract: contract}, BindingFilterer: BindingFilterer{contract: contract}}, nil
 }
 
-// NewBindingsCaller creates a new read-only instance of Bindings, bound to a specific deployed contract.
-func NewBindingsCaller(address common.Address, caller bind.ContractCaller) (*BindingsCaller, error) {
-	contract, err := bindBindings(address, caller, nil, nil)
+// NewBindingCaller creates a new read-only instance of Binding, bound to a specific deployed contract.
+func NewBindingCaller(address common.Address, caller bind.ContractCaller) (*BindingCaller, error) {
+	contract, err := bindBinding(address, caller, nil, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &BindingsCaller{contract: contract}, nil
+	return &BindingCaller{contract: contract}, nil
 }
 
-// NewBindingsTransactor creates a new write-only instance of Bindings, bound to a specific deployed contract.
-func NewBindingsTransactor(address common.Address, transactor bind.ContractTransactor) (*BindingsTransactor, error) {
-	contract, err := bindBindings(address, nil, transactor, nil)
+// NewBindingTransactor creates a new write-only instance of Binding, bound to a specific deployed contract.
+func NewBindingTransactor(address common.Address, transactor bind.ContractTransactor) (*BindingTransactor, error) {
+	contract, err := bindBinding(address, nil, transactor, nil)
 	if err != nil {
 		return nil, err
 	}
-	return &BindingsTransactor{contract: contract}, nil
+	return &BindingTransactor{contract: contract}, nil
 }
 
-// NewBindingsFilterer creates a new log filterer instance of Bindings, bound to a specific deployed contract.
-func NewBindingsFilterer(address common.Address, filterer bind.ContractFilterer) (*BindingsFilterer, error) {
-	contract, err := bindBindings(address, nil, nil, filterer)
+// NewBindingFilterer creates a new log filterer instance of Binding, bound to a specific deployed contract.
+func NewBindingFilterer(address common.Address, filterer bind.ContractFilterer) (*BindingFilterer, error) {
+	contract, err := bindBinding(address, nil, nil, filterer)
 	if err != nil {
 		return nil, err
 	}
-	return &BindingsFilterer{contract: contract}, nil
+	return &BindingFilterer{contract: contract}, nil
 }
 
-// bindBindings binds a generic wrapper to an already deployed contract.
-func bindBindings(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
-	parsed, err := abi.JSON(strings.NewReader(BindingsABI))
+// bindBinding binds a generic wrapper to an already deployed contract.
+func bindBinding(address common.Address, caller bind.ContractCaller, transactor bind.ContractTransactor, filterer bind.ContractFilterer) (*bind.BoundContract, error) {
+	parsed, err := abi.JSON(strings.NewReader(BindingABI))
 	if err != nil {
 		return nil, err
 	}
@@ -145,46 +145,46 @@ func bindBindings(address common.Address, caller bind.ContractCaller, transactor
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_Bindings *BindingsRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
-	return _Bindings.Contract.BindingsCaller.contract.Call(opts, result, method, params...)
+func (_Binding *BindingRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _Binding.Contract.BindingCaller.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_Bindings *BindingsRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Bindings.Contract.BindingsTransactor.contract.Transfer(opts)
+func (_Binding *BindingRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _Binding.Contract.BindingTransactor.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_Bindings *BindingsRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _Bindings.Contract.BindingsTransactor.contract.Transact(opts, method, params...)
+func (_Binding *BindingRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _Binding.Contract.BindingTransactor.contract.Transact(opts, method, params...)
 }
 
 // Call invokes the (constant) contract method with params as input values and
 // sets the output to result. The result type might be a single field for simple
 // returns, a slice of interfaces for anonymous returns and a struct for named
 // returns.
-func (_Bindings *BindingsCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
-	return _Bindings.Contract.contract.Call(opts, result, method, params...)
+func (_Binding *BindingCallerRaw) Call(opts *bind.CallOpts, result *[]interface{}, method string, params ...interface{}) error {
+	return _Binding.Contract.contract.Call(opts, result, method, params...)
 }
 
 // Transfer initiates a plain transaction to move funds to the contract, calling
 // its default method if one is available.
-func (_Bindings *BindingsTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Bindings.Contract.contract.Transfer(opts)
+func (_Binding *BindingTransactorRaw) Transfer(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _Binding.Contract.contract.Transfer(opts)
 }
 
 // Transact invokes the (paid) contract method with params as input values.
-func (_Bindings *BindingsTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
-	return _Bindings.Contract.contract.Transact(opts, method, params...)
+func (_Binding *BindingTransactorRaw) Transact(opts *bind.TransactOpts, method string, params ...interface{}) (*types.Transaction, error) {
+	return _Binding.Contract.contract.Transact(opts, method, params...)
 }
 
 // Count is a free data retrieval call binding the contract method 0x06661abd.
 //
 // Solidity: function count() view returns(uint256)
-func (_Bindings *BindingsCaller) Count(opts *bind.CallOpts) (*big.Int, error) {
+func (_Binding *BindingCaller) Count(opts *bind.CallOpts) (*big.Int, error) {
 	var out []interface{}
-	err := _Bindings.contract.Call(opts, &out, "count")
+	err := _Binding.contract.Call(opts, &out, "count")
 
 	if err != nil {
 		return *new(*big.Int), err
@@ -199,23 +199,23 @@ func (_Bindings *BindingsCaller) Count(opts *bind.CallOpts) (*big.Int, error) {
 // Count is a free data retrieval call binding the contract method 0x06661abd.
 //
 // Solidity: function count() view returns(uint256)
-func (_Bindings *BindingsSession) Count() (*big.Int, error) {
-	return _Bindings.Contract.Count(&_Bindings.CallOpts)
+func (_Binding *BindingSession) Count() (*big.Int, error) {
+	return _Binding.Contract.Count(&_Binding.CallOpts)
 }
 
 // Count is a free data retrieval call binding the contract method 0x06661abd.
 //
 // Solidity: function count() view returns(uint256)
-func (_Bindings *BindingsCallerSession) Count() (*big.Int, error) {
-	return _Bindings.Contract.Count(&_Bindings.CallOpts)
+func (_Binding *BindingCallerSession) Count() (*big.Int, error) {
+	return _Binding.Contract.Count(&_Binding.CallOpts)
 }
 
 // ModuleRegistry is a free data retrieval call binding the contract method 0x082a1051.
 //
 // Solidity: function moduleRegistry(address ) view returns(bool)
-func (_Bindings *BindingsCaller) ModuleRegistry(opts *bind.CallOpts, arg0 common.Address) (bool, error) {
+func (_Binding *BindingCaller) ModuleRegistry(opts *bind.CallOpts, arg0 common.Address) (bool, error) {
 	var out []interface{}
-	err := _Bindings.contract.Call(opts, &out, "moduleRegistry", arg0)
+	err := _Binding.contract.Call(opts, &out, "moduleRegistry", arg0)
 
 	if err != nil {
 		return *new(bool), err
@@ -230,23 +230,23 @@ func (_Bindings *BindingsCaller) ModuleRegistry(opts *bind.CallOpts, arg0 common
 // ModuleRegistry is a free data retrieval call binding the contract method 0x082a1051.
 //
 // Solidity: function moduleRegistry(address ) view returns(bool)
-func (_Bindings *BindingsSession) ModuleRegistry(arg0 common.Address) (bool, error) {
-	return _Bindings.Contract.ModuleRegistry(&_Bindings.CallOpts, arg0)
+func (_Binding *BindingSession) ModuleRegistry(arg0 common.Address) (bool, error) {
+	return _Binding.Contract.ModuleRegistry(&_Binding.CallOpts, arg0)
 }
 
 // ModuleRegistry is a free data retrieval call binding the contract method 0x082a1051.
 //
 // Solidity: function moduleRegistry(address ) view returns(bool)
-func (_Bindings *BindingsCallerSession) ModuleRegistry(arg0 common.Address) (bool, error) {
-	return _Bindings.Contract.ModuleRegistry(&_Bindings.CallOpts, arg0)
+func (_Binding *BindingCallerSession) ModuleRegistry(arg0 common.Address) (bool, error) {
+	return _Binding.Contract.ModuleRegistry(&_Binding.CallOpts, arg0)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
 // Solidity: function owner() view returns(address)
-func (_Bindings *BindingsCaller) Owner(opts *bind.CallOpts) (common.Address, error) {
+func (_Binding *BindingCaller) Owner(opts *bind.CallOpts) (common.Address, error) {
 	var out []interface{}
-	err := _Bindings.contract.Call(opts, &out, "owner")
+	err := _Binding.contract.Call(opts, &out, "owner")
 
 	if err != nil {
 		return *new(common.Address), err
@@ -261,23 +261,23 @@ func (_Bindings *BindingsCaller) Owner(opts *bind.CallOpts) (common.Address, err
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
 // Solidity: function owner() view returns(address)
-func (_Bindings *BindingsSession) Owner() (common.Address, error) {
-	return _Bindings.Contract.Owner(&_Bindings.CallOpts)
+func (_Binding *BindingSession) Owner() (common.Address, error) {
+	return _Binding.Contract.Owner(&_Binding.CallOpts)
 }
 
 // Owner is a free data retrieval call binding the contract method 0x8da5cb5b.
 //
 // Solidity: function owner() view returns(address)
-func (_Bindings *BindingsCallerSession) Owner() (common.Address, error) {
-	return _Bindings.Contract.Owner(&_Bindings.CallOpts)
+func (_Binding *BindingCallerSession) Owner() (common.Address, error) {
+	return _Binding.Contract.Owner(&_Binding.CallOpts)
 }
 
 // TokenList is a free data retrieval call binding the contract method 0x9ead7222.
 //
 // Solidity: function tokenList(uint256 ) view returns(address)
-func (_Bindings *BindingsCaller) TokenList(opts *bind.CallOpts, arg0 *big.Int) (common.Address, error) {
+func (_Binding *BindingCaller) TokenList(opts *bind.CallOpts, arg0 *big.Int) (common.Address, error) {
 	var out []interface{}
-	err := _Bindings.contract.Call(opts, &out, "tokenList", arg0)
+	err := _Binding.contract.Call(opts, &out, "tokenList", arg0)
 
 	if err != nil {
 		return *new(common.Address), err
@@ -292,23 +292,23 @@ func (_Bindings *BindingsCaller) TokenList(opts *bind.CallOpts, arg0 *big.Int) (
 // TokenList is a free data retrieval call binding the contract method 0x9ead7222.
 //
 // Solidity: function tokenList(uint256 ) view returns(address)
-func (_Bindings *BindingsSession) TokenList(arg0 *big.Int) (common.Address, error) {
-	return _Bindings.Contract.TokenList(&_Bindings.CallOpts, arg0)
+func (_Binding *BindingSession) TokenList(arg0 *big.Int) (common.Address, error) {
+	return _Binding.Contract.TokenList(&_Binding.CallOpts, arg0)
 }
 
 // TokenList is a free data retrieval call binding the contract method 0x9ead7222.
 //
 // Solidity: function tokenList(uint256 ) view returns(address)
-func (_Bindings *BindingsCallerSession) TokenList(arg0 *big.Int) (common.Address, error) {
-	return _Bindings.Contract.TokenList(&_Bindings.CallOpts, arg0)
+func (_Binding *BindingCallerSession) TokenList(arg0 *big.Int) (common.Address, error) {
+	return _Binding.Contract.TokenList(&_Binding.CallOpts, arg0)
 }
 
 // TokenMapping is a free data retrieval call binding the contract method 0xba27f50b.
 //
 // Solidity: function tokenMapping(address ) view returns(bool)
-func (_Bindings *BindingsCaller) TokenMapping(opts *bind.CallOpts, arg0 common.Address) (bool, error) {
+func (_Binding *BindingCaller) TokenMapping(opts *bind.CallOpts, arg0 common.Address) (bool, error) {
 	var out []interface{}
-	err := _Bindings.contract.Call(opts, &out, "tokenMapping", arg0)
+	err := _Binding.contract.Call(opts, &out, "tokenMapping", arg0)
 
 	if err != nil {
 		return *new(bool), err
@@ -323,104 +323,104 @@ func (_Bindings *BindingsCaller) TokenMapping(opts *bind.CallOpts, arg0 common.A
 // TokenMapping is a free data retrieval call binding the contract method 0xba27f50b.
 //
 // Solidity: function tokenMapping(address ) view returns(bool)
-func (_Bindings *BindingsSession) TokenMapping(arg0 common.Address) (bool, error) {
-	return _Bindings.Contract.TokenMapping(&_Bindings.CallOpts, arg0)
+func (_Binding *BindingSession) TokenMapping(arg0 common.Address) (bool, error) {
+	return _Binding.Contract.TokenMapping(&_Binding.CallOpts, arg0)
 }
 
 // TokenMapping is a free data retrieval call binding the contract method 0xba27f50b.
 //
 // Solidity: function tokenMapping(address ) view returns(bool)
-func (_Bindings *BindingsCallerSession) TokenMapping(arg0 common.Address) (bool, error) {
-	return _Bindings.Contract.TokenMapping(&_Bindings.CallOpts, arg0)
+func (_Binding *BindingCallerSession) TokenMapping(arg0 common.Address) (bool, error) {
+	return _Binding.Contract.TokenMapping(&_Binding.CallOpts, arg0)
 }
 
 // Create is a paid mutator transaction binding the contract method 0x9eeeaa75.
 //
 // Solidity: function create(address module, string name, string symbol, string uri, bytes data) returns(address)
-func (_Bindings *BindingsTransactor) Create(opts *bind.TransactOpts, module common.Address, name string, symbol string, uri string, data []byte) (*types.Transaction, error) {
-	return _Bindings.contract.Transact(opts, "create", module, name, symbol, uri, data)
+func (_Binding *BindingTransactor) Create(opts *bind.TransactOpts, module common.Address, name string, symbol string, uri string, data []byte) (*types.Transaction, error) {
+	return _Binding.contract.Transact(opts, "create", module, name, symbol, uri, data)
 }
 
 // Create is a paid mutator transaction binding the contract method 0x9eeeaa75.
 //
 // Solidity: function create(address module, string name, string symbol, string uri, bytes data) returns(address)
-func (_Bindings *BindingsSession) Create(module common.Address, name string, symbol string, uri string, data []byte) (*types.Transaction, error) {
-	return _Bindings.Contract.Create(&_Bindings.TransactOpts, module, name, symbol, uri, data)
+func (_Binding *BindingSession) Create(module common.Address, name string, symbol string, uri string, data []byte) (*types.Transaction, error) {
+	return _Binding.Contract.Create(&_Binding.TransactOpts, module, name, symbol, uri, data)
 }
 
 // Create is a paid mutator transaction binding the contract method 0x9eeeaa75.
 //
 // Solidity: function create(address module, string name, string symbol, string uri, bytes data) returns(address)
-func (_Bindings *BindingsTransactorSession) Create(module common.Address, name string, symbol string, uri string, data []byte) (*types.Transaction, error) {
-	return _Bindings.Contract.Create(&_Bindings.TransactOpts, module, name, symbol, uri, data)
+func (_Binding *BindingTransactorSession) Create(module common.Address, name string, symbol string, uri string, data []byte) (*types.Transaction, error) {
+	return _Binding.Contract.Create(&_Binding.TransactOpts, module, name, symbol, uri, data)
 }
 
 // Register is a paid mutator transaction binding the contract method 0xab01b469.
 //
 // Solidity: function register(address module, bool status) returns()
-func (_Bindings *BindingsTransactor) Register(opts *bind.TransactOpts, module common.Address, status bool) (*types.Transaction, error) {
-	return _Bindings.contract.Transact(opts, "register", module, status)
+func (_Binding *BindingTransactor) Register(opts *bind.TransactOpts, module common.Address, status bool) (*types.Transaction, error) {
+	return _Binding.contract.Transact(opts, "register", module, status)
 }
 
 // Register is a paid mutator transaction binding the contract method 0xab01b469.
 //
 // Solidity: function register(address module, bool status) returns()
-func (_Bindings *BindingsSession) Register(module common.Address, status bool) (*types.Transaction, error) {
-	return _Bindings.Contract.Register(&_Bindings.TransactOpts, module, status)
+func (_Binding *BindingSession) Register(module common.Address, status bool) (*types.Transaction, error) {
+	return _Binding.Contract.Register(&_Binding.TransactOpts, module, status)
 }
 
 // Register is a paid mutator transaction binding the contract method 0xab01b469.
 //
 // Solidity: function register(address module, bool status) returns()
-func (_Bindings *BindingsTransactorSession) Register(module common.Address, status bool) (*types.Transaction, error) {
-	return _Bindings.Contract.Register(&_Bindings.TransactOpts, module, status)
+func (_Binding *BindingTransactorSession) Register(module common.Address, status bool) (*types.Transaction, error) {
+	return _Binding.Contract.Register(&_Binding.TransactOpts, module, status)
 }
 
 // RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
 //
 // Solidity: function renounceOwnership() returns()
-func (_Bindings *BindingsTransactor) RenounceOwnership(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _Bindings.contract.Transact(opts, "renounceOwnership")
+func (_Binding *BindingTransactor) RenounceOwnership(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _Binding.contract.Transact(opts, "renounceOwnership")
 }
 
 // RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
 //
 // Solidity: function renounceOwnership() returns()
-func (_Bindings *BindingsSession) RenounceOwnership() (*types.Transaction, error) {
-	return _Bindings.Contract.RenounceOwnership(&_Bindings.TransactOpts)
+func (_Binding *BindingSession) RenounceOwnership() (*types.Transaction, error) {
+	return _Binding.Contract.RenounceOwnership(&_Binding.TransactOpts)
 }
 
 // RenounceOwnership is a paid mutator transaction binding the contract method 0x715018a6.
 //
 // Solidity: function renounceOwnership() returns()
-func (_Bindings *BindingsTransactorSession) RenounceOwnership() (*types.Transaction, error) {
-	return _Bindings.Contract.RenounceOwnership(&_Bindings.TransactOpts)
+func (_Binding *BindingTransactorSession) RenounceOwnership() (*types.Transaction, error) {
+	return _Binding.Contract.RenounceOwnership(&_Binding.TransactOpts)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
 // Solidity: function transferOwnership(address newOwner) returns()
-func (_Bindings *BindingsTransactor) TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error) {
-	return _Bindings.contract.Transact(opts, "transferOwnership", newOwner)
+func (_Binding *BindingTransactor) TransferOwnership(opts *bind.TransactOpts, newOwner common.Address) (*types.Transaction, error) {
+	return _Binding.contract.Transact(opts, "transferOwnership", newOwner)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
 // Solidity: function transferOwnership(address newOwner) returns()
-func (_Bindings *BindingsSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
-	return _Bindings.Contract.TransferOwnership(&_Bindings.TransactOpts, newOwner)
+func (_Binding *BindingSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
+	return _Binding.Contract.TransferOwnership(&_Binding.TransactOpts, newOwner)
 }
 
 // TransferOwnership is a paid mutator transaction binding the contract method 0xf2fde38b.
 //
 // Solidity: function transferOwnership(address newOwner) returns()
-func (_Bindings *BindingsTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
-	return _Bindings.Contract.TransferOwnership(&_Bindings.TransactOpts, newOwner)
+func (_Binding *BindingTransactorSession) TransferOwnership(newOwner common.Address) (*types.Transaction, error) {
+	return _Binding.Contract.TransferOwnership(&_Binding.TransactOpts, newOwner)
 }
 
-// BindingsModuleRegisteredIterator is returned from FilterModuleRegistered and is used to iterate over the raw logs and unpacked data for ModuleRegistered events raised by the Bindings contract.
-type BindingsModuleRegisteredIterator struct {
-	Event *BindingsModuleRegistered // Event containing the contract specifics and raw log
+// BindingModuleRegisteredIterator is returned from FilterModuleRegistered and is used to iterate over the raw logs and unpacked data for ModuleRegistered events raised by the Binding contract.
+type BindingModuleRegisteredIterator struct {
+	Event *BindingModuleRegistered // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -434,7 +434,7 @@ type BindingsModuleRegisteredIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *BindingsModuleRegisteredIterator) Next() bool {
+func (it *BindingModuleRegisteredIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -443,7 +443,7 @@ func (it *BindingsModuleRegisteredIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(BindingsModuleRegistered)
+			it.Event = new(BindingModuleRegistered)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -458,7 +458,7 @@ func (it *BindingsModuleRegisteredIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(BindingsModuleRegistered)
+		it.Event = new(BindingModuleRegistered)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -474,19 +474,19 @@ func (it *BindingsModuleRegisteredIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *BindingsModuleRegisteredIterator) Error() error {
+func (it *BindingModuleRegisteredIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *BindingsModuleRegisteredIterator) Close() error {
+func (it *BindingModuleRegisteredIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// BindingsModuleRegistered represents a ModuleRegistered event raised by the Bindings contract.
-type BindingsModuleRegistered struct {
+// BindingModuleRegistered represents a ModuleRegistered event raised by the Binding contract.
+type BindingModuleRegistered struct {
 	Module common.Address
 	Status bool
 	Raw    types.Log // Blockchain specific contextual infos
@@ -495,31 +495,31 @@ type BindingsModuleRegistered struct {
 // FilterModuleRegistered is a free log retrieval operation binding the contract event 0x30091f391c7fccd6f943ec02ae164c4197ea3e43a67edc2edf908f3efc371876.
 //
 // Solidity: event ModuleRegistered(address indexed module, bool status)
-func (_Bindings *BindingsFilterer) FilterModuleRegistered(opts *bind.FilterOpts, module []common.Address) (*BindingsModuleRegisteredIterator, error) {
+func (_Binding *BindingFilterer) FilterModuleRegistered(opts *bind.FilterOpts, module []common.Address) (*BindingModuleRegisteredIterator, error) {
 
 	var moduleRule []interface{}
 	for _, moduleItem := range module {
 		moduleRule = append(moduleRule, moduleItem)
 	}
 
-	logs, sub, err := _Bindings.contract.FilterLogs(opts, "ModuleRegistered", moduleRule)
+	logs, sub, err := _Binding.contract.FilterLogs(opts, "ModuleRegistered", moduleRule)
 	if err != nil {
 		return nil, err
 	}
-	return &BindingsModuleRegisteredIterator{contract: _Bindings.contract, event: "ModuleRegistered", logs: logs, sub: sub}, nil
+	return &BindingModuleRegisteredIterator{contract: _Binding.contract, event: "ModuleRegistered", logs: logs, sub: sub}, nil
 }
 
 // WatchModuleRegistered is a free log subscription operation binding the contract event 0x30091f391c7fccd6f943ec02ae164c4197ea3e43a67edc2edf908f3efc371876.
 //
 // Solidity: event ModuleRegistered(address indexed module, bool status)
-func (_Bindings *BindingsFilterer) WatchModuleRegistered(opts *bind.WatchOpts, sink chan<- *BindingsModuleRegistered, module []common.Address) (event.Subscription, error) {
+func (_Binding *BindingFilterer) WatchModuleRegistered(opts *bind.WatchOpts, sink chan<- *BindingModuleRegistered, module []common.Address) (event.Subscription, error) {
 
 	var moduleRule []interface{}
 	for _, moduleItem := range module {
 		moduleRule = append(moduleRule, moduleItem)
 	}
 
-	logs, sub, err := _Bindings.contract.WatchLogs(opts, "ModuleRegistered", moduleRule)
+	logs, sub, err := _Binding.contract.WatchLogs(opts, "ModuleRegistered", moduleRule)
 	if err != nil {
 		return nil, err
 	}
@@ -529,8 +529,8 @@ func (_Bindings *BindingsFilterer) WatchModuleRegistered(opts *bind.WatchOpts, s
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(BindingsModuleRegistered)
-				if err := _Bindings.contract.UnpackLog(event, "ModuleRegistered", log); err != nil {
+				event := new(BindingModuleRegistered)
+				if err := _Binding.contract.UnpackLog(event, "ModuleRegistered", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -554,18 +554,18 @@ func (_Bindings *BindingsFilterer) WatchModuleRegistered(opts *bind.WatchOpts, s
 // ParseModuleRegistered is a log parse operation binding the contract event 0x30091f391c7fccd6f943ec02ae164c4197ea3e43a67edc2edf908f3efc371876.
 //
 // Solidity: event ModuleRegistered(address indexed module, bool status)
-func (_Bindings *BindingsFilterer) ParseModuleRegistered(log types.Log) (*BindingsModuleRegistered, error) {
-	event := new(BindingsModuleRegistered)
-	if err := _Bindings.contract.UnpackLog(event, "ModuleRegistered", log); err != nil {
+func (_Binding *BindingFilterer) ParseModuleRegistered(log types.Log) (*BindingModuleRegistered, error) {
+	event := new(BindingModuleRegistered)
+	if err := _Binding.contract.UnpackLog(event, "ModuleRegistered", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// BindingsOwnershipTransferredIterator is returned from FilterOwnershipTransferred and is used to iterate over the raw logs and unpacked data for OwnershipTransferred events raised by the Bindings contract.
-type BindingsOwnershipTransferredIterator struct {
-	Event *BindingsOwnershipTransferred // Event containing the contract specifics and raw log
+// BindingOwnershipTransferredIterator is returned from FilterOwnershipTransferred and is used to iterate over the raw logs and unpacked data for OwnershipTransferred events raised by the Binding contract.
+type BindingOwnershipTransferredIterator struct {
+	Event *BindingOwnershipTransferred // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -579,7 +579,7 @@ type BindingsOwnershipTransferredIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *BindingsOwnershipTransferredIterator) Next() bool {
+func (it *BindingOwnershipTransferredIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -588,7 +588,7 @@ func (it *BindingsOwnershipTransferredIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(BindingsOwnershipTransferred)
+			it.Event = new(BindingOwnershipTransferred)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -603,7 +603,7 @@ func (it *BindingsOwnershipTransferredIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(BindingsOwnershipTransferred)
+		it.Event = new(BindingOwnershipTransferred)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -619,19 +619,19 @@ func (it *BindingsOwnershipTransferredIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *BindingsOwnershipTransferredIterator) Error() error {
+func (it *BindingOwnershipTransferredIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *BindingsOwnershipTransferredIterator) Close() error {
+func (it *BindingOwnershipTransferredIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// BindingsOwnershipTransferred represents a OwnershipTransferred event raised by the Bindings contract.
-type BindingsOwnershipTransferred struct {
+// BindingOwnershipTransferred represents a OwnershipTransferred event raised by the Binding contract.
+type BindingOwnershipTransferred struct {
 	PreviousOwner common.Address
 	NewOwner      common.Address
 	Raw           types.Log // Blockchain specific contextual infos
@@ -640,7 +640,7 @@ type BindingsOwnershipTransferred struct {
 // FilterOwnershipTransferred is a free log retrieval operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
 //
 // Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
-func (_Bindings *BindingsFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*BindingsOwnershipTransferredIterator, error) {
+func (_Binding *BindingFilterer) FilterOwnershipTransferred(opts *bind.FilterOpts, previousOwner []common.Address, newOwner []common.Address) (*BindingOwnershipTransferredIterator, error) {
 
 	var previousOwnerRule []interface{}
 	for _, previousOwnerItem := range previousOwner {
@@ -651,17 +651,17 @@ func (_Bindings *BindingsFilterer) FilterOwnershipTransferred(opts *bind.FilterO
 		newOwnerRule = append(newOwnerRule, newOwnerItem)
 	}
 
-	logs, sub, err := _Bindings.contract.FilterLogs(opts, "OwnershipTransferred", previousOwnerRule, newOwnerRule)
+	logs, sub, err := _Binding.contract.FilterLogs(opts, "OwnershipTransferred", previousOwnerRule, newOwnerRule)
 	if err != nil {
 		return nil, err
 	}
-	return &BindingsOwnershipTransferredIterator{contract: _Bindings.contract, event: "OwnershipTransferred", logs: logs, sub: sub}, nil
+	return &BindingOwnershipTransferredIterator{contract: _Binding.contract, event: "OwnershipTransferred", logs: logs, sub: sub}, nil
 }
 
 // WatchOwnershipTransferred is a free log subscription operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
 //
 // Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
-func (_Bindings *BindingsFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *BindingsOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error) {
+func (_Binding *BindingFilterer) WatchOwnershipTransferred(opts *bind.WatchOpts, sink chan<- *BindingOwnershipTransferred, previousOwner []common.Address, newOwner []common.Address) (event.Subscription, error) {
 
 	var previousOwnerRule []interface{}
 	for _, previousOwnerItem := range previousOwner {
@@ -672,7 +672,7 @@ func (_Bindings *BindingsFilterer) WatchOwnershipTransferred(opts *bind.WatchOpt
 		newOwnerRule = append(newOwnerRule, newOwnerItem)
 	}
 
-	logs, sub, err := _Bindings.contract.WatchLogs(opts, "OwnershipTransferred", previousOwnerRule, newOwnerRule)
+	logs, sub, err := _Binding.contract.WatchLogs(opts, "OwnershipTransferred", previousOwnerRule, newOwnerRule)
 	if err != nil {
 		return nil, err
 	}
@@ -682,8 +682,8 @@ func (_Bindings *BindingsFilterer) WatchOwnershipTransferred(opts *bind.WatchOpt
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(BindingsOwnershipTransferred)
-				if err := _Bindings.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
+				event := new(BindingOwnershipTransferred)
+				if err := _Binding.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -707,18 +707,18 @@ func (_Bindings *BindingsFilterer) WatchOwnershipTransferred(opts *bind.WatchOpt
 // ParseOwnershipTransferred is a log parse operation binding the contract event 0x8be0079c531659141344cd1fd0a4f28419497f9722a3daafe3b4186f6b6457e0.
 //
 // Solidity: event OwnershipTransferred(address indexed previousOwner, address indexed newOwner)
-func (_Bindings *BindingsFilterer) ParseOwnershipTransferred(log types.Log) (*BindingsOwnershipTransferred, error) {
-	event := new(BindingsOwnershipTransferred)
-	if err := _Bindings.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
+func (_Binding *BindingFilterer) ParseOwnershipTransferred(log types.Log) (*BindingOwnershipTransferred, error) {
+	event := new(BindingOwnershipTransferred)
+	if err := _Binding.contract.UnpackLog(event, "OwnershipTransferred", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log
 	return event, nil
 }
 
-// BindingsTokenCreatedIterator is returned from FilterTokenCreated and is used to iterate over the raw logs and unpacked data for TokenCreated events raised by the Bindings contract.
-type BindingsTokenCreatedIterator struct {
-	Event *BindingsTokenCreated // Event containing the contract specifics and raw log
+// BindingTokenCreatedIterator is returned from FilterTokenCreated and is used to iterate over the raw logs and unpacked data for TokenCreated events raised by the Binding contract.
+type BindingTokenCreatedIterator struct {
+	Event *BindingTokenCreated // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -732,7 +732,7 @@ type BindingsTokenCreatedIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *BindingsTokenCreatedIterator) Next() bool {
+func (it *BindingTokenCreatedIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -741,7 +741,7 @@ func (it *BindingsTokenCreatedIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(BindingsTokenCreated)
+			it.Event = new(BindingTokenCreated)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -756,7 +756,7 @@ func (it *BindingsTokenCreatedIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(BindingsTokenCreated)
+		it.Event = new(BindingTokenCreated)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -772,19 +772,19 @@ func (it *BindingsTokenCreatedIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *BindingsTokenCreatedIterator) Error() error {
+func (it *BindingTokenCreatedIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *BindingsTokenCreatedIterator) Close() error {
+func (it *BindingTokenCreatedIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// BindingsTokenCreated represents a TokenCreated event raised by the Bindings contract.
-type BindingsTokenCreated struct {
+// BindingTokenCreated represents a TokenCreated event raised by the Binding contract.
+type BindingTokenCreated struct {
 	Owner common.Address
 	Token common.Address
 	Raw   types.Log // Blockchain specific contextual infos
@@ -793,31 +793,31 @@ type BindingsTokenCreated struct {
 // FilterTokenCreated is a free log retrieval operation binding the contract event 0xd5f9bdf12adf29dab0248c349842c3822d53ae2bb4f36352f301630d018c8139.
 //
 // Solidity: event TokenCreated(address indexed owner, address token)
-func (_Bindings *BindingsFilterer) FilterTokenCreated(opts *bind.FilterOpts, owner []common.Address) (*BindingsTokenCreatedIterator, error) {
+func (_Binding *BindingFilterer) FilterTokenCreated(opts *bind.FilterOpts, owner []common.Address) (*BindingTokenCreatedIterator, error) {
 
 	var ownerRule []interface{}
 	for _, ownerItem := range owner {
 		ownerRule = append(ownerRule, ownerItem)
 	}
 
-	logs, sub, err := _Bindings.contract.FilterLogs(opts, "TokenCreated", ownerRule)
+	logs, sub, err := _Binding.contract.FilterLogs(opts, "TokenCreated", ownerRule)
 	if err != nil {
 		return nil, err
 	}
-	return &BindingsTokenCreatedIterator{contract: _Bindings.contract, event: "TokenCreated", logs: logs, sub: sub}, nil
+	return &BindingTokenCreatedIterator{contract: _Binding.contract, event: "TokenCreated", logs: logs, sub: sub}, nil
 }
 
 // WatchTokenCreated is a free log subscription operation binding the contract event 0xd5f9bdf12adf29dab0248c349842c3822d53ae2bb4f36352f301630d018c8139.
 //
 // Solidity: event TokenCreated(address indexed owner, address token)
-func (_Bindings *BindingsFilterer) WatchTokenCreated(opts *bind.WatchOpts, sink chan<- *BindingsTokenCreated, owner []common.Address) (event.Subscription, error) {
+func (_Binding *BindingFilterer) WatchTokenCreated(opts *bind.WatchOpts, sink chan<- *BindingTokenCreated, owner []common.Address) (event.Subscription, error) {
 
 	var ownerRule []interface{}
 	for _, ownerItem := range owner {
 		ownerRule = append(ownerRule, ownerItem)
 	}
 
-	logs, sub, err := _Bindings.contract.WatchLogs(opts, "TokenCreated", ownerRule)
+	logs, sub, err := _Binding.contract.WatchLogs(opts, "TokenCreated", ownerRule)
 	if err != nil {
 		return nil, err
 	}
@@ -827,8 +827,8 @@ func (_Bindings *BindingsFilterer) WatchTokenCreated(opts *bind.WatchOpts, sink 
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(BindingsTokenCreated)
-				if err := _Bindings.contract.UnpackLog(event, "TokenCreated", log); err != nil {
+				event := new(BindingTokenCreated)
+				if err := _Binding.contract.UnpackLog(event, "TokenCreated", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -852,9 +852,9 @@ func (_Bindings *BindingsFilterer) WatchTokenCreated(opts *bind.WatchOpts, sink 
 // ParseTokenCreated is a log parse operation binding the contract event 0xd5f9bdf12adf29dab0248c349842c3822d53ae2bb4f36352f301630d018c8139.
 //
 // Solidity: event TokenCreated(address indexed owner, address token)
-func (_Bindings *BindingsFilterer) ParseTokenCreated(log types.Log) (*BindingsTokenCreated, error) {
-	event := new(BindingsTokenCreated)
-	if err := _Bindings.contract.UnpackLog(event, "TokenCreated", log); err != nil {
+func (_Binding *BindingFilterer) ParseTokenCreated(log types.Log) (*BindingTokenCreated, error) {
+	event := new(BindingTokenCreated)
+	if err := _Binding.contract.UnpackLog(event, "TokenCreated", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

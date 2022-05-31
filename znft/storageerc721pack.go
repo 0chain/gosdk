@@ -37,7 +37,7 @@ var (
 )
 
 type StorageECR721Pack struct {
-	session *storageerc721pack.BindingsSession
+	session *storageerc721pack.BindingSession
 	ctx     context.Context
 }
 

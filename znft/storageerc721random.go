@@ -39,7 +39,7 @@ var (
 )
 
 type StorageECR721Random struct {
-	session *storageerc721random.BindingsSession
+	session *storageerc721random.BindingSession
 	ctx     context.Context
 }
 

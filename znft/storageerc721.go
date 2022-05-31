@@ -83,7 +83,7 @@ var (
 )
 
 type StorageECR721 struct {
-	session *storageerc721.BindingsSession
+	session *storageerc721.BindingSession
 	ctx     context.Context
 }
 
