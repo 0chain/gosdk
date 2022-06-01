@@ -1,7 +1,6 @@
 package resty
 
 import (
-	"net/http"
 	"time"
 )
 
@@ -12,7 +11,4 @@ var (
 	DefaultRequestTimeout = 10 * time.Second
 	// DefaultRetry retry times if a request is failed with 5xx status code
 	DefaultRetry = 3
-
-	// DefaultTransport default http transport
-	DefaultTransport *http.Transport
 )
