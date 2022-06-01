@@ -825,7 +825,7 @@ func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 		return
 	}
 
-	qr, err := tq.GetInfo(context.TODO(), GetMinShardersVerify(), urlSuffix)
+	qr, err := tq.GetInfo(context.TODO(), urlSuffix)
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
