@@ -441,7 +441,7 @@ func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryRe
 	}
 
 	if consensusesResp.StatusCode != http.StatusOK {
-		return nil, errors.New("zcn: fails to get info " + string(consensusesResp.Content))
+		return nil, errors.New(string(consensusesResp.Content))
 	}
 
 	return &consensusesResp, nil
