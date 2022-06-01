@@ -427,7 +427,7 @@ func GetTotalStoredData() (map[string]int64, error) {
 
 	info := make(map[string]int64)
 	if err = json.Unmarshal(b, info); err != nil {
-		return nil, errors.Wrap(err, "error decoding response:")
+		return nil, errors.Wrap(err, "error decoding response:"+string(b))
 	}
 
 	return info, nil
