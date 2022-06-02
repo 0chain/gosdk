@@ -810,34 +810,20 @@ func getTokenRateByCurrency(currency string) (float64, error) {
 }
 
 func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
-	result := make(chan *util.GetResponse)
-	defer close(result)
-	// getMinShardersVerify()
-	var numSharders = len(_config.chain.Sharders) // overwrite, use all
-	queryFromSharders(numSharders, urlSuffix, result)
-	consensus := float32(0)
-	resultMap := make(map[int]float32)
-	var winresult *util.GetResponse
-	for i := 0; i < numSharders; i++ {
-		rsp := <-result
-		Logger.Debug(rsp.Url, rsp.Status)
-		resultMap[rsp.StatusCode]++
-		if resultMap[rsp.StatusCode] > consensus {
-			consensus = resultMap[rsp.StatusCode]
-			winresult = rsp
-		}
-	}
-	rate := consensus * 100 / float32(len(_config.chain.Sharders))
-	if rate < consensusThresh {
-		newerr := fmt.Sprintf(`{"code": "consensus_failed", "error": "consensus failed on sharders.", "server_error": "%v"}`, winresult.Body)
-		cb.OnInfoAvailable(op, StatusError, "", newerr)
+
+	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders))
+	if err != nil {
+		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
 	}
-	if winresult.StatusCode != http.StatusOK {
-		cb.OnInfoAvailable(op, StatusError, "", winresult.Body)
-	} else {
-		cb.OnInfoAvailable(op, StatusSuccess, winresult.Body, "")
+
+	qr, err := tq.GetInfo(context.TODO(), urlSuffix)
+	if err != nil {
+		cb.OnInfoAvailable(op, StatusError, "", err.Error())
+		return
 	}
+
+	cb.OnInfoAvailable(op, StatusSuccess, string(qr.Content), "")
 }
 
 //GetWallet get a wallet object from a wallet string
@@ -1271,6 +1257,7 @@ func GetBlobbers(cb GetInfoCallback) (err error) {
 		return
 	}
 	var url = STORAGESC_GET_BLOBBERS
+
 	go getInfoFromSharders(url, OpStorageSCGetBlobbers, cb)
 	return
 }
