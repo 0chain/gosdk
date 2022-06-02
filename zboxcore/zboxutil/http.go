@@ -581,7 +581,14 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		}
 	}
 
-	if dominant != 200 {
+	switch dominant {
+	case 200:
+		fallthrough
+	case 204:
+		if handler != nil {
+			handler(entityResult, numSharders, err)
+		}
+	default:
 		var objmap map[string]json.RawMessage
 		err := json.Unmarshal(retObj, &objmap)
 		if err != nil {
@@ -595,10 +602,6 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 		}
 
 		return nil, errors.New("", parsed)
-	}
-
-	if handler != nil {
-		handler(entityResult, numSharders, err)
 	}
 
 	if rate > consensusThresh {
