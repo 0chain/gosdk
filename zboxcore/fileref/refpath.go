@@ -2,6 +2,7 @@ package fileref
 
 import (
 	"github.com/0chain/errors"
+	gosdkError "github.com/0chain/gosdk/core/errors"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -24,11 +25,11 @@ func (rp *ReferencePath) GetRefFromObjectTree(allocationID string) (RefEntity, e
 		}
 		decoder, err := mapstructure.NewDecoder(config)
 		if err != nil {
-			return nil, err
+			return nil, errors.New(gosdkError.DecodeError, err.Error())
 		}
 		err = decoder.Decode(rp.Meta)
 		if err != nil {
-			return nil, err
+			return nil, errors.New(gosdkError.DecodeError, err.Error())
 		}
 		return rootRef, nil
 	}
@@ -49,11 +50,11 @@ func (rp *ReferencePath) GetDirTree(allocationID string) (*Ref, error) {
 		}
 		decoder, err := mapstructure.NewDecoder(config)
 		if err != nil {
-			return nil, err
+			return nil, errors.New(gosdkError.DecodeError, err.Error())
 		}
 		err = decoder.Decode(rp.Meta)
 		if err != nil {
-			return nil, err
+			return nil, errors.New(gosdkError.DecodeError, err.Error())
 		}
 		err = rp.populateChildren(rootRef)
 		if err != nil {
@@ -61,7 +62,7 @@ func (rp *ReferencePath) GetDirTree(allocationID string) (*Ref, error) {
 		}
 		return rootRef, nil
 	}
-	return nil, errors.New("invalid_ref_path", "Invalid reference path. root was not a directory type")
+	return nil, errors.New(gosdkError.InvalidRefPath, "Invalid reference path. root was not a directory type")
 }
 
 func (rp *ReferencePath) populateChildren(ref *Ref) error {
@@ -86,11 +87,11 @@ func (rp *ReferencePath) populateChildren(ref *Ref) error {
 		}
 		decoder, err := mapstructure.NewDecoder(config)
 		if err != nil {
-			return err
+			return errors.New(gosdkError.DecodeError, err.Error())
 		}
 		err = decoder.Decode(rpc.Meta)
 		if err != nil {
-			return err
+			return errors.New(gosdkError.DecodeError, err.Error())
 		}
 		ref.AddChild(childEntity) //append(ref.Children, childEntity)
 		if childEntity.GetType() == DIRECTORY && rpc.List != nil && len(rpc.List) > 0 {

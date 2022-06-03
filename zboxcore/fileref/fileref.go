@@ -9,6 +9,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
+	gosdkError "github.com/0chain/gosdk/core/errors"
 )
 
 const CHUNK_SIZE = 64 * 1024
@@ -50,7 +51,7 @@ func (a *Attributes) IsZero() bool {
 // Validate the Attributes.
 func (a *Attributes) Validate() (err error) {
 	if err = a.WhoPaysForReads.Validate(); err != nil {
-		return errors.Wrap(err, "invalid who_pays_for_reads field")
+		return errors.New(gosdkError.InvalidValue, "invalid who_pays_for_reads field")
 	}
 	return
 }

@@ -2,6 +2,7 @@ package fileref
 
 import (
 	"github.com/0chain/errors"
+	gosdkError "github.com/0chain/gosdk/core/errors"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -13,7 +14,7 @@ type ListResult struct {
 
 func (lr *ListResult) GetDirTree(allocationID string) (*Ref, error) {
 	if lr.Meta == nil {
-		return nil, errors.New("invalid_list_path", "badly formatted list result, nil meta")
+		return nil, errors.New(gosdkError.InvalidListPath, "badly formatted list result, nil meta")
 	}
 	reftype := lr.Meta["type"].(string)
 	if reftype == DIRECTORY {
@@ -27,11 +28,11 @@ func (lr *ListResult) GetDirTree(allocationID string) (*Ref, error) {
 		}
 		decoder, err := mapstructure.NewDecoder(config)
 		if err != nil {
-			return nil, err
+			return nil, errors.New(gosdkError.DecodeError, err.Error())
 		}
 		err = decoder.Decode(lr.Meta)
 		if err != nil {
-			return nil, err
+			return nil, errors.New(gosdkError.DecodeError, err.Error())
 		}
 		err = lr.populateChildren(rootRef)
 		if err != nil {
@@ -39,7 +40,7 @@ func (lr *ListResult) GetDirTree(allocationID string) (*Ref, error) {
 		}
 		return rootRef, nil
 	}
-	return nil, errors.New("invalid_list_path", "Invalid list path. list was not for a directory")
+	return nil, errors.New(gosdkError.InvalidListPath, "Invalid list path. list was not for a directory")
 }
 
 func (lr *ListResult) populateChildren(ref *Ref) error {
@@ -64,11 +65,11 @@ func (lr *ListResult) populateChildren(ref *Ref) error {
 		}
 		decoder, err := mapstructure.NewDecoder(config)
 		if err != nil {
-			return err
+			return errors.New(gosdkError.DecodeError, err.Error())
 		}
 		err = decoder.Decode(rpc)
 		if err != nil {
-			return err
+			return errors.New(gosdkError.DecodeError, err.Error())
 		}
 		ref.Children = append(ref.Children, childEntity)
 	}

@@ -4,6 +4,7 @@ const (
 	TooManyRequests        = "too_many_requests"
 	AttrChangeProcessError = "attributes_change_process"
 	FileNotFound           = "file_not_found"
+	InvalidValue           = "invalid_value"
 	InvalidReferencePath   = "invalid_reference_path"
 	MarshallError          = "marshall_error"
 	UnmarshallError        = "unmarshall_error"
@@ -26,4 +27,8 @@ const (
 	SymmetricDecryptionError = "sym_decryption_error"
 	SymmetricEncryptionError = "sym_encryption_error"
 	InvalidHeaderChecksums   = "invalid_header_checksums"
+
+	//
+	InvalidListPath = "invalid_list_path"
+	InvalidRefPath  = "invalid_ref_path"
 )
