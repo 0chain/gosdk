@@ -3,6 +3,9 @@ package client
 import (
 	"encoding/json"
 
+	"github.com/0chain/errors"
+
+	gosdkError "github.com/0chain/gosdk/core/errors"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
@@ -48,7 +51,7 @@ func PopulateClients(clientJsons []string, signatureScheme string) error {
 	for _, clientJson := range clientJsons {
 		c := new(Client)
 		if err := json.Unmarshal([]byte(clientJson), c); err != nil {
-			return err
+			return errors.New(gosdkError.MarshallError, err.Error())
 		}
 		c.SignatureScheme = signatureScheme
 		clients = append(clients, c)
