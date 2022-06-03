@@ -4,8 +4,9 @@ import (
 	"bufio"
 	"bytes"
 
-	"errors"
+	"github.com/0chain/errors"
 
+	gosdkError "github.com/0chain/gosdk/core/errors"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 
 	"github.com/klauspost/reedsolomon"
@@ -25,7 +26,7 @@ func NewEncoder(iDataShards, iParityShards int) (*StreamEncoder, error) {
 
 	e.erasureCode, err = reedsolomon.New(iDataShards, iParityShards, reedsolomon.WithAutoGoroutines(64*1024))
 	if err != nil {
-		return nil, err
+		return nil, errors.New(gosdkError.ECError, err.Error())
 	}
 	e.iDataShards = iDataShards
 	e.iParityShards = iParityShards
@@ -38,7 +39,7 @@ func (e *StreamEncoder) Encode(in []byte) ([][]byte, error) {
 	e.data, err = e.erasureCode.Split(in)
 	if err != nil {
 		l.Logger.Error("Split failed", err.Error())
-		return [][]byte{}, err
+		return [][]byte{}, errors.New(gosdkError.ECSplitError, err.Error())
 	}
 
 	err = e.erasureCode.Encode(e.data)
@@ -52,18 +53,18 @@ func (e *StreamEncoder) Encode(in []byte) ([][]byte, error) {
 func (e *StreamEncoder) Decode(in [][]byte, shardSize int) ([]byte, error) {
 	// Verify the input
 	if (len(in) < e.iDataShards+e.iParityShards) || (shardSize <= 0) {
-		return []byte{}, errors.New("Invalid input length")
+		return []byte{}, gosdkError.ErrECInvalidInputLength
 	}
 
 	err := e.erasureCode.Reconstruct(in)
 	if err != nil {
 		l.Logger.Error("Reconstruct failed -", err)
-		return []byte{}, err
+		return []byte{}, errors.New(gosdkError.ECReconstructError, err.Error())
 	}
 	_, err = e.erasureCode.Verify(in)
 	if err != nil {
 		l.Logger.Error("Verification failed after reconstruction, data likely corrupted.", err.Error())
-		return []byte{}, err
+		return []byte{}, errors.New(gosdkError.ECVerifyError, err.Error())
 	}
 
 	var bytesBuf bytes.Buffer
@@ -72,8 +73,9 @@ func (e *StreamEncoder) Decode(in [][]byte, shardSize int) ([]byte, error) {
 	err = e.erasureCode.Join(bufWriter, in, (shardSize * e.iDataShards))
 	if err != nil {
 		l.Logger.Error("join failed", err.Error())
-		return []byte{}, err
+		return []byte{}, errors.New(gosdkError.ECJoinError, err.Error())
 	}
+
 	bufWriter.Flush()
 	outBuf := bytesBuf.Bytes()
 	return outBuf, nil
