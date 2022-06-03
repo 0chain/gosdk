@@ -3,6 +3,9 @@ package blockchain
 import (
 	"encoding/json"
 	"sync/atomic"
+
+	"github.com/0chain/errors"
+	gosdkError "github.com/0chain/gosdk/core/errors"
 )
 
 type ChainConfig struct {
@@ -39,7 +42,7 @@ func (sn *StorageNode) IsSkip() bool {
 func PopulateNodes(nodesjson string) ([]string, error) {
 	sharders := make([]string, 0)
 	err := json.Unmarshal([]byte(nodesjson), &sharders)
-	return sharders, err
+	return sharders, errors.New(gosdkError.MarshallError, err.Error())
 }
 
 var chain *ChainConfig

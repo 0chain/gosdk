@@ -6,4 +6,5 @@ var (
 	ErrTooManyRequests      = errors.New(TooManyRequests, "")
 	ErrFileNotFound         = errors.New(FileNotFound, "")
 	ErrInvalidReferencePath = errors.New(InvalidReferencePath, "")
+	ErrMarshall             = errors.New(MarshallError, "")
 )
