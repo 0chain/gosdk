@@ -7,6 +7,8 @@ var (
 	ErrFileNotFound         = errors.New(FileNotFound, "")
 	ErrInvalidReferencePath = errors.New(InvalidReferencePath, "")
 	ErrMarshall             = errors.New(MarshallError, "")
+	ErrUnmarshall           = errors.New(UnmarshallError, "")
+	ErrDecode               = errors.New(DecodeError, "")
 	// Erasure Coding Errors
 	ErrEC                   = errors.New(ECError, "")
 	ErrECSplit              = errors.New(ECSplitError, "")

@@ -11,7 +11,8 @@ import (
 	"encoding/json"
 	"strings"
 
-	"errors"
+	"github.com/0chain/errors"
+	gosdkError "github.com/0chain/gosdk/core/errors"
 
 	"go.dedis.ch/kyber/v3"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
@@ -125,7 +126,7 @@ func (reEncMsg *ReEncryptedMessage) Marshal() ([]byte, error) {
 
 	D4Bytes, err := reEncMsg.D4.MarshalBinary()
 	if err != nil {
-		return nil, err
+		return nil, errors.New(gosdkError.MarshallError, err.Error())
 	}
 
 	D5Bytes, err := reEncMsg.D5.MarshalBinary()
@@ -150,34 +151,34 @@ func (reEncMsg *ReEncryptedMessage) Unmarshal(data []byte) error {
 	headerString := string(headerBytes)
 	headerChecksums := strings.Split(headerString, ",")
 	if len(headerChecksums) != 4 {
-		return errors.New("Invalid data received for unmarsalling of reEncrypted data")
+		return errors.New(gosdkError.InvalidHeaderChecksums, "Invalid data received for unmarsalling of reEncrypted data")
 	}
 
 	d1, d3, d4, d5 := headerChecksums[0], headerChecksums[1], headerChecksums[2], headerChecksums[3]
 
 	d1Bytes, err := base64.StdEncoding.DecodeString(d1)
 	if err != nil {
-		return err
+		return errors.New(gosdkError.DecodeError, err.Error())
 	}
 
 	d3Bytes, err := base64.StdEncoding.DecodeString(d3)
 	if err != nil {
-		return err
+		return errors.New(gosdkError.DecodeError, err.Error())
 	}
 
 	d4Bytes, err := base64.StdEncoding.DecodeString(d4)
 	if err != nil {
-		return err
+		return errors.New(gosdkError.DecodeError, err.Error())
 	}
 
 	d5Bytes, err := base64.StdEncoding.DecodeString(d5)
 	if err != nil {
-		return err
+		return errors.New(gosdkError.DecodeError, err.Error())
 	}
 
 	err = reEncMsg.D1.UnmarshalBinary(d1Bytes)
 	if err != nil {
-		return err
+		return errors.New(gosdkError.UnmarshallError, err.Error())
 	}
 
 	reEncMsg.D2 = encryptedData
@@ -185,12 +186,12 @@ func (reEncMsg *ReEncryptedMessage) Unmarshal(data []byte) error {
 
 	err = reEncMsg.D4.UnmarshalBinary(d4Bytes)
 	if err != nil {
-		return err
+		return errors.New(gosdkError.UnmarshallError, err.Error())
 	}
 
 	err = reEncMsg.D5.UnmarshalBinary(d5Bytes)
 	if err != nil {
-		return err
+		return errors.New(gosdkError.UnmarshallError, err.Error())
 	}
 
 	return nil
@@ -203,7 +204,10 @@ func (pre *PREEncryptionScheme) Initialize(mnemonic string) ([]byte, error) {
 	// Create a public/private keypair (X,x)
 	pre.PrivateKey = suite.Scalar().Pick(rand)
 
-	privateKey, _ := pre.PrivateKey.MarshalBinary()
+	privateKey, err := pre.PrivateKey.MarshalBinary()
+	if err != nil {
+		return nil, errors.New(gosdkError.MarshallError, err.Error())
+	}
 
 	pre.PublicKey = suite.Point().Mul(pre.PrivateKey, nil)
 	pre.SuiteObj = suite
@@ -220,7 +224,7 @@ func (pre *PREEncryptionScheme) InitializeWithPrivateKey(privateKey []byte) erro
 	err := scalar.UnmarshalBinary(privateKey)
 
 	if err != nil {
-		return err
+		return errors.New(gosdkError.UnmarshallError, err.Error())
 	}
 
 	// Create a public/private keypair (X,x)
@@ -246,12 +250,12 @@ func (pre *PREEncryptionScheme) InitForDecryption(tag string, encryptedKey strin
 	var g kyber.Group = pre.SuiteObj
 	keyBytes, err := base64.StdEncoding.DecodeString(encryptedKey)
 	if err != nil {
-		return err
+		return errors.New(gosdkError.DecodeError, err.Error())
 	}
 	p := g.Point()
 	err = p.UnmarshalBinary(keyBytes)
 	if err != nil {
-		return err
+		return errors.New(gosdkError.UnmarshallError, err.Error())
 	}
 	pre.EncryptedKey = p
 	return nil
@@ -328,7 +332,10 @@ func (pre *PREEncryptionScheme) hash6(g kyber.Group, tagA []byte, skA kyber.Scal
 }
 
 //------------------------------------------H7: Maps to Scalar-----------------------------------------------
-func (pre *PREEncryptionScheme) hash7(g kyber.Group, X kyber.Point, D2 []byte, D3 []byte, D4 kyber.Point, D5 kyber.Point) kyber.Scalar {
+func (pre *PREEncryptionScheme) hash7(
+	g kyber.Group, X kyber.Point, D2 []byte,
+	D3 []byte, D4 kyber.Point, D5 kyber.Point) kyber.Scalar {
+
 	h := sha512.New()
 	if _, err := X.MarshalTo(h); err != nil {
 		return nil
@@ -359,7 +366,7 @@ func (pre *PREEncryptionScheme) encrypt(msg []byte) (*PREEncryptedMessage, error
 	C2, err := pre.SymEnc(g, msg, key) // C2  = Sym.Encrypt(msg,key)
 	C.EncryptedData = C2
 	if err != nil {
-		return nil, err
+		return nil, errors.New(gosdkError.SymmetricEncryptionError, err.Error())
 	}
 
 	C.MessageChecksum = pre.hash3(g, msg, T)                                                  // C3  = H3(msg,T)
@@ -426,13 +433,18 @@ func (pre *PREEncryptionScheme) Encrypt(data []byte) (*EncryptedMessage, error) 
 	//condA := []byte("filetype:audio")
 	encryptedMsg, err := pre.encrypt(data)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(gosdkError.EncryptError, err.Error())
 	}
 	// msgData, err := json.Marshal(encryptedMsg)
 	// if err != nil {
 	// 	return nil, err
 	// }
-	return &EncryptedMessage{EncryptedData: encryptedMsg.EncryptedData, EncryptedKey: pre.GetEncryptedKey(), MessageChecksum: hex.EncodeToString(encryptedMsg.MessageChecksum), OverallChecksum: hex.EncodeToString(encryptedMsg.OverallChecksum)}, err
+	return &EncryptedMessage{
+		EncryptedData:   encryptedMsg.EncryptedData,
+		EncryptedKey:    pre.GetEncryptedKey(),
+		MessageChecksum: hex.EncodeToString(encryptedMsg.MessageChecksum),
+		OverallChecksum: hex.EncodeToString(encryptedMsg.OverallChecksum),
+	}, nil
 	//return encryptedMsg.EncryptedData, err
 }
 
@@ -443,13 +455,13 @@ func (pre *PREEncryptionScheme) decrypt(encMsg *EncryptedMessage) ([]byte, error
 	C.EncryptedData = encMsg.EncryptedData
 	decodedChecksum, err := hex.DecodeString(encMsg.MessageChecksum)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(gosdkError.DecodeError, err.Error())
 	}
 	C.MessageChecksum = decodedChecksum
 
 	decodedChecksum, err = hex.DecodeString(encMsg.OverallChecksum)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(gosdkError.DecodeError, err.Error())
 	}
 	C.OverallChecksum = decodedChecksum
 	C.TagA = pre.Tag
@@ -460,7 +472,7 @@ func (pre *PREEncryptionScheme) decrypt(encMsg *EncryptedMessage) ([]byte, error
 	alp := pre.hash6(g, C.TagA, pre.PrivateKey) // alp = H6(tagA,skA)
 	chk1 := pre.hash5(g, C.EncryptedKey, C.EncryptedData, C.MessageChecksum, alp)
 	if !bytes.Equal(chk1, C.OverallChecksum) { // Check if C4 = H5(C1,C2,C3,alp)
-		return nil, errors.New("Invalid Ciphertext in decrypt, C4 != H5")
+		return nil, errors.New(gosdkError.InvalidCipherText, "Invalid Ciphertext in decrypt, C4 != H5")
 	}
 	Ht := pre.hash1(pre.SuiteObj, pre.Tag, pre.PrivateKey) // Ht  = H1(tagA,skA)
 	T := g.Point().Sub(C.EncryptedKey, Ht)                 // T   = C1 - Ht
@@ -469,7 +481,7 @@ func (pre *PREEncryptionScheme) decrypt(encMsg *EncryptedMessage) ([]byte, error
 	if err2 == nil {
 		chk2 := pre.hash3(g, recmsg, T)
 		if !bytes.Equal(chk2, C.MessageChecksum) { // Check if C3 = H3(m,T)
-			return nil, errors.New("Invalid Ciphertext in decrypt, C3 != H3")
+			return nil, errors.New(gosdkError.InvalidCipherText, "Invalid Ciphertext in decrypt, C3 != H3")
 		} else {
 			//fmt.Println("First level ciphertext decrypted successfully")
 			return recmsg, nil
@@ -481,7 +493,7 @@ func (pre *PREEncryptionScheme) decrypt(encMsg *EncryptedMessage) ([]byte, error
 func (pre *PREEncryptionScheme) ReEncrypt(encMsg *EncryptedMessage, reGenKey string, clientPublicKey string) (*ReEncryptedMessage, error) {
 	key, err := UnmarshallPublicKey(clientPublicKey)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(gosdkError.UnmarshallError, err.Error())
 	}
 	return pre.reEncrypt(encMsg, reGenKey, key)
 }
@@ -496,13 +508,13 @@ func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey str
 	C.EncryptedData = encMsg.EncryptedData
 	decodedChecksum, err := hex.DecodeString(encMsg.MessageChecksum)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(gosdkError.DecodeError, err.Error())
 	}
 	C.MessageChecksum = decodedChecksum
 
 	decodedChecksum, err = hex.DecodeString(encMsg.OverallChecksum)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(gosdkError.DecodeError, err.Error())
 	}
 	C.OverallChecksum = decodedChecksum
 	C.TagA = pre.Tag
@@ -513,14 +525,14 @@ func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey str
 	rk.R3 = g.Scalar()
 	err = rk.UnmarshalJSON([]byte(reGenKey))
 	if err != nil {
-		return nil, err
+		return nil, errors.New(gosdkError.UnmarshallError, err.Error())
 	}
 
 	var reEncMsg = new(ReEncryptedMessage)
 
 	chk1 := pre.hash5(g, C.EncryptedKey, C.EncryptedData, C.MessageChecksum, rk.R3)
 	if !bytes.Equal(chk1, C.OverallChecksum) { // Check if C4 = H5(C1,C2,C3,alp)
-		return nil, errors.New("Invalid Ciphertext in reEncrypt, C4 != H5")
+		return nil, errors.New(gosdkError.InvalidCipherText, "Invalid Ciphertext in reEncrypt, C4 != H5")
 	}
 	t := s.Scalar().Pick(s.RandomStream())   // Pick a random integer t
 	reEncMsg.D5 = s.Point().Mul(t, nil)      // D5    = tP
@@ -548,33 +560,33 @@ func (pre *PREEncryptionScheme) ReDecrypt(D *ReEncryptedMessage) ([]byte, error)
 	T := g.Point().Sub(T1, T2) // T     = bet^(-1).D1 - skB^(-1).D4
 	key := pre.hash2(g, T)     // key   = H2(T)
 
-	recmsg, err2 := pre.SymDec(g, D.D2, key) // recover message using Sym.Decrypt(D2,key)
-	if err2 == nil {
+	recmsg, err := pre.SymDec(g, D.D2, key) // recover message using Sym.Decrypt(D2,key)
+	if err == nil {
 		chk2 := pre.hash3(g, recmsg, T)
 		if !bytes.Equal(chk2, D.D3) { // Check if D3 = H3(m,T)
-			return nil, errors.New("Invalid Ciphertext in reDecrypt, D3 != H3")
+			return nil, errors.New(gosdkError.InvalidCipherText, "Invalid Ciphertext in reDecrypt, D3 != H3")
 		} else {
 			return recmsg, nil
 		}
 	}
-	return nil, err2
+	return nil, errors.New(gosdkError.SymmetricDecryptionError, err.Error())
 }
 
 func (pre *PREEncryptionScheme) Decrypt(encMsg *EncryptedMessage) ([]byte, error) {
 	if len(encMsg.ReEncryptionKey) > 0 {
 		reEncMsg, err := pre.reEncrypt(encMsg, encMsg.ReEncryptionKey, pre.PublicKey)
 		if err != nil {
-			return nil, err
+			return nil, errors.New(gosdkError.ReEncryptError, err.Error())
 		}
 		decryptedMessage, err := pre.ReDecrypt(reEncMsg)
 		if err != nil {
-			return nil, err
+			return nil, errors.New(gosdkError.ReDecryptError, err.Error())
 		}
 		return decryptedMessage, nil
 	}
 	decryptedMessage, err := pre.decrypt(encMsg)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(gosdkError.DecryptError, err.Error())
 	}
 	return decryptedMessage, nil
 }
@@ -588,7 +600,7 @@ func (pre *PREEncryptionScheme) GetEncryptedKey() string {
 func (pre *PREEncryptionScheme) GetPublicKey() (string, error) {
 	keyBytes, err := pre.PublicKey.MarshalBinary()
 	if err != nil {
-		return "", err
+		return "", errors.New(gosdkError.MarshallError, err.Error())
 	}
 	keyString := base64.StdEncoding.EncodeToString(keyBytes)
 	return keyString, nil
@@ -597,7 +609,7 @@ func (pre *PREEncryptionScheme) GetPublicKey() (string, error) {
 func (pre *PREEncryptionScheme) GetPrivateKey() (string, error) {
 	keyBytes, err := pre.PrivateKey.MarshalBinary()
 	if err != nil {
-		return "", err
+		return "", errors.New(gosdkError.MarshallError, err.Error())
 	}
 	keyString := base64.StdEncoding.EncodeToString(keyBytes)
 	return keyString, nil
@@ -614,19 +626,19 @@ func (pre *PREEncryptionScheme) GetReGenKey(encPublicKey string, tag string) (st
 
 	keyBytes, err := base64.StdEncoding.DecodeString(encPublicKey)
 	if err != nil {
-		return "", err
+		return "", errors.New(gosdkError.DecodeError, err.Error())
 	}
 	p := g.Point()
 	err = p.UnmarshalBinary(keyBytes)
 	if err != nil {
-		return "", err
+		return "", errors.New(gosdkError.UnmarshallError, err.Error())
 	}
 
 	RK.R2 = pre.SuiteObj.Point().Mul(r, p)      // R2   = r.pkB
 	RK.R3 = pre.hash6(g, condA, pre.PrivateKey) // R3   = H6(condA,skA)
 	rkBytes, err := RK.MarshalJSON()
 	if err != nil {
-		return "", err
+		return "", errors.New(gosdkError.MarshallError, err.Error())
 	}
 	return string(rkBytes), nil
 }
