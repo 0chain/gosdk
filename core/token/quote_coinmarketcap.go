@@ -56,13 +56,15 @@ func (qq *coinmarketcapQuoteQuery) GetRate(ctx context.Context, currency string)
 
 		})
 
+	r.Wait()
+
 	zcn, ok := result.Data[symbol]
 
-	if !ok {
+	if !ok || len(zcn) == 0 {
 		return 0, errors.New("token: " + symbol + " is not provided on coinmarketcap apis")
 	}
 
-	rate, ok := zcn.Quote["USD"]
+	rate, ok := zcn[0].Quote["USD"]
 	if ok {
 		return rate.Price, nil
 	}
@@ -158,7 +160,7 @@ func (qq *coinmarketcapQuoteQuery) GetRate(ctx context.Context, currency string)
 // 	}
 // }
 type coinmarketcapResponse struct {
-	Data map[string]coinmarketcapCurrency `json:"data"`
+	Data map[string][]coinmarketcapCurrency `json:"data"`
 }
 
 type coinmarketcapCurrency struct {

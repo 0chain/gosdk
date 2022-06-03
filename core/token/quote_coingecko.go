@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -18,8 +19,25 @@ func (qq *coingeckoQuoteQuery) GetRate(ctx context.Context, currency string) (fl
 
 	var result coingeckoResponse
 
+	symbol := strings.ToLower(currency)
+	var coinID string
+	//
+	switch symbol {
+	case "zcn":
+		coinID = "0chain"
+	case "eth":
+		coinID = "ethereum"
+	default:
+		id, ok := os.LookupEnv("COINGECKO_COINID_" + strings.ToLower(symbol))
+		if !ok {
+			return 0, errors.New("token: please configurate coinid for " + currency + " first")
+		}
+		coinID = id
+
+	}
+
 	r := resty.New()
-	r.DoGet(ctx, "https://api.coingecko.com/api/v3/coins/0chain?localization=false").
+	r.DoGet(ctx, "https://api.coingecko.com/api/v3/coins/"+coinID+"?localization=false").
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 
 			if err != nil {
@@ -39,8 +57,9 @@ func (qq *coingeckoQuoteQuery) GetRate(ctx context.Context, currency string) (fl
 
 		})
 
-	symbol := strings.ToLower(currency)
-	rate, ok := result.MarketData.CurrentPrice[symbol]
+	r.Wait()
+
+	rate, ok := result.MarketData.CurrentPrice["usd"]
 
 	if ok {
 		return rate, nil

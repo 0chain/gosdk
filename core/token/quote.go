@@ -14,6 +14,7 @@ func init() {
 	quotes = []QuoteQuery{
 		&coingeckoQuoteQuery{},
 		createCoinmarketcapQuoteQuery(),
+		//more query services
 	}
 
 }
