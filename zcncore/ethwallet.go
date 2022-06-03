@@ -169,7 +169,7 @@ func CheckEthHashStatus(hash string) int {
 
 // ConvertZcnTokenToETH - converting Zcn tokens to Eth
 func ConvertZcnTokenToETH(f float64) (float64, error) {
-	ethRate, err := token.GetTokenRate(context.TODO(), "eth")
+	ethRate, err := token.GetTokenUSDRate(context.TODO(), "eth")
 	if err != nil {
 		return 0, err
 	}

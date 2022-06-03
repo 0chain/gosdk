@@ -28,7 +28,7 @@ func createCoinmarketcapQuoteQuery() QuoteQuery {
 	}
 }
 
-func (qq *coinmarketcapQuoteQuery) GetRate(ctx context.Context, currency string) (float64, error) {
+func (qq *coinmarketcapQuoteQuery) GetUSDRate(ctx context.Context, symbol string) (float64, error) {
 
 	var result coinmarketcapResponse
 
@@ -36,9 +36,9 @@ func (qq *coinmarketcapQuoteQuery) GetRate(ctx context.Context, currency string)
 		"X-CMC_PRO_API_KEY": qq.APIKey,
 	}))
 
-	symbol := strings.ToUpper(currency)
+	s := strings.ToUpper(symbol)
 
-	r.DoGet(ctx, "https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol="+symbol).
+	r.DoGet(ctx, "https://pro-api.coinmarketcap.com/v2/cryptocurrency/quotes/latest?symbol="+s).
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 			if err != nil {
 				return err
@@ -58,7 +58,7 @@ func (qq *coinmarketcapQuoteQuery) GetRate(ctx context.Context, currency string)
 
 	r.Wait()
 
-	zcn, ok := result.Data[symbol]
+	zcn, ok := result.Data[s]
 
 	if !ok || len(zcn) == 0 {
 		return 0, errors.New("token: " + symbol + " is not provided on coinmarketcap apis")

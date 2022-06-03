@@ -773,7 +773,7 @@ func ConvertUSDToToken(usd float64) (float64, error) {
 }
 
 func getTokenUSDRate() (float64, error) {
-	return token.GetTokenRate(context.TODO(), "zcn")
+	return token.GetTokenUSDRate(context.TODO(), "zcn")
 }
 
 func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
@@ -843,7 +843,7 @@ func GetWalletClientID(walletStr string) (string, error) {
 
 // GetZcnUSDInfo returns USD value for ZCN token from coinmarketcap.com
 func GetZcnUSDInfo() (float64, error) {
-	return token.GetTokenRate(context.TODO(), "zcn")
+	return token.GetTokenUSDRate(context.TODO(), "zcn")
 }
 
 // SetupAuth prepare auth app with clientid, key and a set of public, private key and local publickey

@@ -19,10 +19,10 @@ func init() {
 
 }
 
-func GetTokenRate(ctx context.Context, currency string) (float64, error) {
+func GetTokenUSDRate(ctx context.Context, symbol string) (float64, error) {
 
 	for _, q := range quotes {
-		r, err := q.GetRate(ctx, currency)
+		r, err := q.GetUSDRate(ctx, symbol)
 		if err == nil {
 			return r, nil
 		}
@@ -33,5 +33,5 @@ func GetTokenRate(ctx context.Context, currency string) (float64, error) {
 }
 
 type QuoteQuery interface {
-	GetRate(ctx context.Context, currency string) (float64, error)
+	GetUSDRate(ctx context.Context, symbol string) (float64, error)
 }

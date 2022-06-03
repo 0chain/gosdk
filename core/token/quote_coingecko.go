@@ -15,22 +15,22 @@ import (
 type coingeckoQuoteQuery struct {
 }
 
-func (qq *coingeckoQuoteQuery) GetRate(ctx context.Context, currency string) (float64, error) {
+func (qq *coingeckoQuoteQuery) GetUSDRate(ctx context.Context, symbol string) (float64, error) {
 
 	var result coingeckoResponse
 
-	symbol := strings.ToLower(currency)
+	s := strings.ToLower(symbol)
 	var coinID string
 	//
-	switch symbol {
+	switch s {
 	case "zcn":
 		coinID = "0chain"
 	case "eth":
 		coinID = "ethereum"
 	default:
-		id, ok := os.LookupEnv("COINGECKO_COINID_" + strings.ToLower(symbol))
+		id, ok := os.LookupEnv("COINGECKO_COINID_" + strings.ToUpper(symbol))
 		if !ok {
-			return 0, errors.New("token: please configurate coinid for " + currency + " first")
+			return 0, errors.New("token: please configurate coinid for " + s + " first")
 		}
 		coinID = id
 
