@@ -5,10 +5,10 @@ import (
 	"os"
 	"path"
 
+	hdw "github.com/0chain/gosdk/zcncore/ethhdwallet"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
-	hdw "github.com/miguelmota/go-ethereum-hdwallet"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
@@ -24,6 +24,7 @@ func ListStorageAccounts(homedir string) []common.Address {
 	return addresses
 }
 
+// DeleteAccount deletes account from wallet
 func DeleteAccount(homedir, address string) bool {
 	keyDir := path.Join(homedir, EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
@@ -42,6 +43,7 @@ func DeleteAccount(homedir, address string) bool {
 	return true
 }
 
+// AccountExists checks if account exists
 func AccountExists(homedir, address string) bool {
 	keyDir := path.Join(homedir, EthereumWalletStorageDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
@@ -78,6 +80,7 @@ func CreateKeyStorage(homedir, password string) error {
 	return nil
 }
 
+// UpdateClientEthereumAddress updates Ethereum address
 func UpdateClientEthereumAddress(homedir, address string) (err error) {
 	configFile := path.Join(homedir, BridgeClientConfigName)
 	buf, err := os.ReadFile(configFile)
@@ -102,6 +105,7 @@ func UpdateClientEthereumAddress(homedir, address string) (err error) {
 	return err
 }
 
+// ImportAccount inmports account using mnemonic
 func ImportAccount(homedir, mnemonic, password string) (string, error) {
 	// 1. Create storage and account if it doesn't exist and add account to it
 

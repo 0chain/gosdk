@@ -42,7 +42,7 @@ set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWal
 set wallet on go
 
 **Input**:
-> clientID,publicKey string
+> clientID, publicKey string
 
 **Output**:
 > N/A
@@ -183,7 +183,7 @@ download your own or a shared file.
 upload file(s)
 
 **Input**:
-> allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, commit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, chunkSize int, isUpdate, isRepair bool
+> allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, commit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, isUpdate, isRepair bool
 
 **Output**:
 > {commandSuccess:bool,commitSuccess:bool, commitTxn:transaction.Transaction, error:string}

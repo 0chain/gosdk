@@ -19,7 +19,7 @@ import (
 
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
@@ -57,25 +57,25 @@ func (req *RenameRequest) renameBlobberObject(blobber *blockchain.StorageNode, b
 	formWriter.Close()
 	httpreq, err := zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationTx, body)
 	if err != nil {
-		Logger.Error(blobber.Baseurl, "Error creating rename request", err)
+		l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 		return nil, err
 	}
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("Rename : ", err)
+			l.Logger.Error("Rename : ", err)
 			return err
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusOK {
 			req.consensus++
 			req.renameMask |= (1 << uint32(blobberIdx)) //Can have race condition
-			Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " renamed.")
+			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " renamed.")
 		} else {
 			resp_body, err := ioutil.ReadAll(resp.Body)
 			if err == nil {
-				Logger.Error(blobber.Baseurl, "Response: ", string(resp_body))
+				l.Logger.Error(blobber.Baseurl, "Response: ", string(resp_body))
 			}
 		}
 		return nil
@@ -96,7 +96,7 @@ func (req *RenameRequest) ProcessRename() error {
 			defer req.wg.Done()
 			refEntity, err := req.renameBlobberObject(req.blobbers[blobberIdx], blobberIdx)
 			if err != nil {
-				Logger.Error(err.Error())
+				l.Logger.Error(err.Error())
 				return
 			}
 			objectTreeRefs[blobberIdx] = refEntity
@@ -148,13 +148,13 @@ func (req *RenameRequest) ProcessRename() error {
 	for _, commitReq := range commitReqs {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
-				Logger.Info("Commit success", commitReq.blobber.Baseurl)
+				l.Logger.Info("Commit success", commitReq.blobber.Baseurl)
 				req.consensus++
 			} else {
-				Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
+				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
 			}
 		} else {
-			Logger.Info("Commit result not set", commitReq.blobber.Baseurl)
+			l.Logger.Info("Commit result not set", commitReq.blobber.Baseurl)
 		}
 	}
 

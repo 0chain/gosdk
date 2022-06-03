@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
-	"github.com/0chain/gosdk/zcnbridge/wallet"
+	"strconv"
+	"strings"
 
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zcnbridge/errors"
@@ -13,74 +13,20 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
+var (
+	_ zcncore.TransactionCallback = (*callback)(nil)
+)
+
 type (
 	// Transaction entity that encapsulates the transaction related data and metadata.
 	Transaction struct {
-		Hash    string `json:"hash,omitempty"`
-		Version string `json:"version,omitempty"`
-		//ClientID          string          `json:"client_id,omitempty"`
-		//PublicKey         string          `json:"public_key,omitempty"`
-		ToClientID        string          `json:"to_client_id,omitempty"`
-		ChainID           string          `json:"chain_id,omitempty"`
-		TransactionData   string          `json:"transaction_data,omitempty"`
-		Value             int64           `json:"transaction_value,omitempty"`
-		Signature         string          `json:"signature,omitempty"`
-		CreationDate      ctime.Timestamp `json:"creation_date,omitempty"`
-		TransactionType   int             `json:"transaction_type,omitempty"`
-		TransactionOutput string          `json:"transaction_output,omitempty"`
-		OutputHash        string          `json:"txn_output_hash"`
-
-		scheme zcncore.TransactionScheme
-
-		callBack *callback
+		Hash              string `json:"hash,omitempty"`
+		Version           string `json:"version,omitempty"`
+		TransactionOutput string `json:"transaction_output,omitempty"`
+		scheme            zcncore.TransactionScheme
+		callBack          *callback
 	}
 )
-
-// NewTransactionEntity creates Transaction with initialized fields.
-// Sets version, client ID, creation date, public key and creates internal zcncore.TransactionScheme.
-func NewTransactionEntity() (*Transaction, error) {
-	txn := &Transaction{
-		Version: "1.0",
-		//ClientID:     clientID,
-		ToClientID:   wallet.ZCNSCSmartContractAddress,
-		CreationDate: ctime.Now(),
-		//ChainID:      chain.GetServerChain().ID,
-		//PublicKey:    publicKey,
-		callBack: newCallBack(),
-	}
-	zcntxn, err := zcncore.NewTransaction(txn.callBack, 0)
-	if err != nil {
-		return nil, err
-	}
-	txn.scheme = zcntxn
-
-	return txn, nil
-}
-
-// ExecuteSmartContract executes function of smart contract with provided address.
-//
-// Returns hash of executed transaction.
-func (t *Transaction) ExecuteSmartContract(ctx context.Context, address, funcName, input string, val int64) (string, error) {
-	const errCode = "transaction_send"
-
-	err := t.scheme.ExecuteSmartContract(address, funcName, input, val)
-	if err != nil {
-		msg := fmt.Sprintf("error while sending txn: %v", err)
-		return "", errors.New(errCode, msg)
-	}
-
-	if err := t.callBack.waitCompleteCall(ctx); err != nil {
-		msg := fmt.Sprintf("error while sending txn: %v", err)
-		return "", errors.New(errCode, msg)
-	}
-
-	t.Hash = t.scheme.GetTransactionHash()
-	if len(t.scheme.GetTransactionError()) > 0 {
-		return "", errors.New(errCode, t.scheme.GetTransactionError())
-	}
-
-	return t.Hash, nil
-}
 
 type (
 	verifyOutput struct {
@@ -106,13 +52,49 @@ type (
 	}
 )
 
-// Verify checks including of transaction in the blockchain.
+// NewTransactionEntity creates Transaction with initialized fields.
+// Sets version, client ID, creation date, public key and creates internal zcncore.TransactionScheme.
+func NewTransactionEntity() (*Transaction, error) {
+	txn := &Transaction{
+		callBack: NewStatus().(*callback),
+	}
+	zcntxn, err := zcncore.NewTransaction(txn.callBack, 0, 0)
+	if err != nil {
+		return nil, err
+	}
+	txn.scheme = zcntxn
+
+	return txn, nil
+}
+
+// ExecuteSmartContract executes function of smart contract with provided address.
+//
+// Returns hash of executed transaction.
+func (t *Transaction) ExecuteSmartContract(ctx context.Context, address, funcName string, input interface{}, val int64) (string, error) {
+	const errCode = "transaction_send"
+
+	err := t.scheme.ExecuteSmartContract(address, funcName, input, val)
+	t.Hash = t.scheme.GetTransactionHash()
+
+	if err != nil {
+		msg := fmt.Sprintf("error while sending txn: %v", err)
+		return "", errors.New(errCode, msg)
+	}
+
+	if err := t.callBack.waitCompleteCall(ctx); err != nil {
+		msg := fmt.Sprintf("error while sending txn: %v", err)
+		return "", errors.New(errCode, msg)
+	}
+
+	if len(t.scheme.GetTransactionError()) > 0 {
+		return "", errors.New(errCode, t.scheme.GetTransactionError())
+	}
+
+	return t.Hash, nil
+}
+
 func (t *Transaction) Verify(ctx context.Context) error {
 	const errCode = "transaction_verify"
-
-	if err := t.scheme.SetTransactionHash(t.Hash); err != nil {
-		return err
-	}
 
 	err := t.scheme.Verify()
 	if err != nil {
@@ -122,6 +104,17 @@ func (t *Transaction) Verify(ctx context.Context) error {
 
 	if err := t.callBack.waitVerifyCall(ctx); err != nil {
 		msg := fmt.Sprintf("error while verifying txn: %v; txn hash: %s", err, t.scheme.GetTransactionHash())
+		return errors.New(errCode, msg)
+	}
+
+	switch t.scheme.GetVerifyConfirmationStatus() {
+	case zcncore.ChargeableError:
+		return errors.New(errCode, strings.Trim(t.scheme.GetVerifyOutput(), "\""))
+	case zcncore.Success:
+		fmt.Println("Executed smart contract successfully with txn: ", t.scheme.GetTransactionHash())
+	default:
+		msg := fmt.Sprint("\nExecute smart contract failed. Unknown status code: " +
+			strconv.Itoa(int(t.scheme.GetVerifyConfirmationStatus())))
 		return errors.New(errCode, msg)
 	}
 
@@ -137,4 +130,20 @@ func (t *Transaction) Verify(ctx context.Context) error {
 	}
 
 	return nil
+}
+
+// Verify checks including of transaction in the blockchain.
+func Verify(ctx context.Context, hash string) (*Transaction, error) {
+	t, err := NewTransactionEntity()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := t.scheme.SetTransactionHash(hash); err != nil {
+		return nil, err
+	}
+
+	err = t.Verify(ctx)
+
+	return t, err
 }

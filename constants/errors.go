@@ -31,6 +31,9 @@ var (
 
 	// ErrBadRequest bad request
 	ErrBadRequest = errors.New("bad request")
+
+	// ErrNotFound ref not found
+	ErrNotFound = errors.New("ref not found")
 )
 
 // zerrors code

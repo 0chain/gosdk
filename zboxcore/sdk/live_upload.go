@@ -15,6 +15,8 @@ type LiveUpload struct {
 	encryptOnUpload bool
 	// chunkSize how much bytes a chunk has. 64KB is default value.
 	chunkSize int64
+	// chunkNumber the number of chunks in a http upload request. 1 is default value
+	chunkNumber int
 
 	clipsIndex int
 
@@ -27,11 +29,11 @@ func CreateLiveUpload(homedir string, allocationObj *Allocation, liveMeta LiveMe
 	u := &LiveUpload{
 		allocationObj: allocationObj,
 		homedir:       homedir,
-		//delay:         5 * time.Second,
-		//clipsSize:    1024 * 1024 * 20, //50M
-		liveMeta:   liveMeta,
-		liveReader: liveReader,
-		clipsIndex: 1,
+		chunkSize:     DefaultChunkSize,
+		chunkNumber:   1,
+		liveMeta:      liveMeta,
+		liveReader:    liveReader,
+		clipsIndex:    1,
 	}
 
 	for _, opt := range opts {
@@ -77,7 +79,6 @@ func (lu *LiveUpload) createClipsUpload(clipsIndex int, reader LiveUploadReader)
 	}
 
 	return CreateChunkedUpload(lu.homedir, lu.allocationObj, fileMeta, reader, false, false,
-		WithChunkSize(lu.chunkSize),
 		WithEncrypt(lu.encryptOnUpload),
 		WithStatusCallback(lu.statusCallback()))
 }

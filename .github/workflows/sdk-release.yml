@@ -1,0 +1,112 @@
+name: GoSDK & WasmSDK 
+
+concurrency:
+  group: "sdk-${{ github.ref }}"
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [ master, staging, qa ]
+    tags:
+      - 'v*.*.*'
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '0Chain SDK version'
+        required: true
+
+env:
+  ACTIONS_ALLOW_UNSECURE_COMMANDS: true
+  
+jobs:
+  build:
+    name: sdk-build
+    runs-on: [self-hosted, build]
+    steps:
+      - name: Set up Go 1.18
+        uses: actions/setup-go@v2
+        with:
+          go-version: ^1.18
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Build
+        id: setup_build
+        run: |
+          tag=$(echo ${GITHUB_REF#refs/tags/})
+          echo ${tag}
+          if [[ -n "${{github.event.inputs.version}}" ]]; then
+            echo "> 0Chain: trigger from workflow_dispatch"
+            echo "::set-output name=PR::true"
+
+            gosdk="{\"gosdk\":\"${{github.event.inputs.version}}\"}"
+            echo "::set-output name=SDK::${gosdk}"
+          elif [[ ${tag} = v*\.*\.* ]] ; then
+            echo "> 0Chain: trigger from git event"
+            echo "::set-output name=PR::true"
+
+            gosdk="{\"gosdk\":\"${tag}\"}"
+            echo "::set-output name=SDK::${gosdk}"
+
+            # upload zcn.wasm on release
+            echo "::set-output name=RELEASE::true"
+            echo "::set-output name=TAG::${tag}"
+          fi
+             
+      - name: Build
+        run: CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -o ./zcn.wasm  ./wasmsdk
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        if:  steps.setup_build.outputs.RELEASE == 'true'
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: zcn.wasm
+          tag: ${{ steps.setup_build.outputs.TAG }}
+          overwrite: true
+          file_glob: true
+
+      - name: 'Upload Artifact'
+        uses: actions/upload-artifact@v2
+        with:
+          name: zcn.wasm
+          path: zcn.wasm
+    outputs:
+      PR: ${{ steps.setup_build.outputs.PR }}
+      SDK: ${{ steps.setup_build.outputs.SDK }}
+      TAG: ${{ steps.setup_build.outputs.TAG }}
+
+  release:
+    name: sdk-release
+    needs: build
+    if: needs.build.outputs.PR == 'true'
+    runs-on: [self-hosted, build]
+    steps:
+      - name: start to create pr
+        run: |
+          echo "GoSDK & WebAssembly SDK should be upgraded"
+  create-pr:
+    name: create-pr
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        repo: [block-explorer, 0nft, 0box, 0dns, 0proxy, zwalletcli, zboxcli, zboxmobile, blobber ]
+    needs: [ build, release ]
+    runs-on: [self-hosted, build]
+    steps:     
+      - name: Create PR on ${{ matrix.repo }}
+        uses: convictional/trigger-workflow-and-wait@v1.3.0
+        if:  needs.build.outputs.PR == 'true'
+        with:
+          owner: 0chain
+          repo: ${{ matrix.repo }}
+          ref: staging
+          github_token: ${{ secrets.GOSDK }}
+          workflow_file_name: gosdk.yml
+          inputs: ${{ needs.build.outputs.SDK }}
+          propagate_failure: true
+          trigger_workflow: true
+          wait_workflow: true    

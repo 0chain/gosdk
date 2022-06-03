@@ -6,7 +6,6 @@ import (
 	"math"
 	"path/filepath"
 	"reflect"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -122,20 +121,15 @@ func (r *Ref) CalculateDirHash(ctx context.Context) (string, error) {
 	if len(r.Children) == 0 && !r.childrenLoaded {
 		return r.Hash, nil
 	}
-	sort.SliceStable(r.Children, func(i, j int) bool {
-		return strings.Compare(r.Children[i].LookupHash, r.Children[j].LookupHash) == -1
-	})
-	for _, childRef := range r.Children {
-		_, err := childRef.CalculateHash(ctx)
-		if err != nil {
-			return "", err
-		}
-	}
 	childHashes := make([]string, len(r.Children))
 	childPathHashes := make([]string, len(r.Children))
 	var refNumBlocks int64
 	var size int64
 	for index, childRef := range r.Children {
+		_, err := childRef.CalculateHash(ctx)
+		if err != nil {
+			return "", err
+		}
 		childHashes[index] = childRef.Hash
 		childPathHashes[index] = childRef.PathHash
 		refNumBlocks += childRef.NumBlocks

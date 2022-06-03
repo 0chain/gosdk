@@ -17,10 +17,18 @@ type TransactionWithAuth struct {
 	t *Transaction
 }
 
-func newTransactionWithAuth(cb TransactionCallback, txnFee int64) (*TransactionWithAuth, error) {
+func (ta *TransactionWithAuth) Hash() string {
+	return ta.t.txnHash
+}
+
+func (ta *TransactionWithAuth) SetTransactionNonce(txnNonce int64) error {
+	return ta.t.SetTransactionNonce(txnNonce)
+}
+
+func newTransactionWithAuth(cb TransactionCallback, txnFee int64, nonce int64) (*TransactionWithAuth, error) {
 	ta := &TransactionWithAuth{}
 	var err error
-	ta.t, err = newTransaction(cb, txnFee)
+	ta.t, err = newTransaction(cb, txnFee, nonce)
 	return ta, err
 }
 
@@ -108,6 +116,14 @@ func (ta *TransactionWithAuth) sign(otherSig string) error {
 }
 
 func (ta *TransactionWithAuth) submitTxn() {
+	nonce := ta.t.txn.TransactionNonce
+	if nonce < 1 {
+		nonce = transaction.Cache.GetNextNonce(ta.t.txn.ClientID)
+	} else {
+		transaction.Cache.Set(ta.t.txn.ClientID, nonce)
+	}
+	ta.t.txn.TransactionNonce = nonce
+
 	authTxn, err := ta.getAuthorize()
 	if err != nil {
 		Logger.Error("get auth error for send.", err.Error())
@@ -158,16 +174,21 @@ func (ta *TransactionWithAuth) ExecuteFaucetSCWallet(walletStr string, methodNam
 		return err
 	}
 	go func() {
+		nonce := ta.t.txn.TransactionNonce
+		if nonce < 1 {
+			nonce = transaction.Cache.GetNextNonce(ta.t.txn.ClientID)
+		} else {
+			transaction.Cache.Set(ta.t.txn.ClientID, nonce)
+		}
+		ta.t.txn.TransactionNonce = nonce
 		ta.t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
 		ta.submitTxn()
 	}()
 	return nil
 }
 
-func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName, jsoninput string, val int64) error {
-	scData := make(map[string]interface{})
-	json.Unmarshal([]byte(jsoninput), &scData)
-	err := ta.t.createSmartContractTxn(address, methodName, scData, val)
+func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, input interface{}, val int64) error {
+	err := ta.t.createSmartContractTxn(address, methodName, input, val)
 	if err != nil {
 		return err
 	}
@@ -207,6 +228,11 @@ func (ta *TransactionWithAuth) GetVerifyError() string {
 
 func (ta *TransactionWithAuth) Output() []byte {
 	return []byte(ta.t.txnOut)
+}
+
+// GetTransactionNonce returns nonce
+func (ta *TransactionWithAuth) GetTransactionNonce() int64 {
+	return ta.t.txn.TransactionNonce
 }
 
 // ========================================================================== //
@@ -367,8 +393,9 @@ func (ta *TransactionWithAuth) MinerSCDeleteSharder(info *MinerSCMinerInfo) (
 	return
 }
 
-func (ta *TransactionWithAuth) MinerSCCollectReward(poolId string, providerType Provider) error {
+func (ta *TransactionWithAuth) MinerSCCollectReward(providerId, poolId string, providerType Provider) error {
 	pr := &SCCollectReward{
+		ProviderId:   providerId,
 		PoolId:       poolId,
 		ProviderType: providerType,
 	}
@@ -398,7 +425,7 @@ func (ta *TransactionWithAuth) MinerSCLock(minerID string,
 	return
 }
 
-func (ta *TransactionWithAuth) MienrSCUnlock(nodeID, poolID string) (
+func (ta *TransactionWithAuth) MinerSCUnlock(nodeID, poolID string) (
 	err error) {
 
 	var mscul MinerSCUnlock
@@ -478,8 +505,9 @@ func (ta *TransactionWithAuth) RegisterMultiSig(walletstr string, mswallet strin
 // Storage SC
 //
 
-func (ta *TransactionWithAuth) StorageSCCollectReward(poolId string, providerType Provider) error {
+func (ta *TransactionWithAuth) StorageSCCollectReward(providerId, poolId string, providerType Provider) error {
 	pr := &SCCollectReward{
+		ProviderId:   providerId,
 		PoolId:       poolId,
 		ProviderType: providerType,
 	}
@@ -755,5 +783,35 @@ func (ta *TransactionWithAuth) WritePoolUnlock(poolID string, fee int64) (
 	}
 	ta.t.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error) {
+	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_GLOBAL_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go ta.submitTxn()
+	return
+}
+
+func (ta *TransactionWithAuth) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error) {
+	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go ta.submitTxn()
+	return
+}
+
+func (ta *TransactionWithAuth) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error) {
+	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go ta.submitTxn()
 	return
 }

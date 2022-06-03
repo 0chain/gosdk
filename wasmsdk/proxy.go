@@ -6,12 +6,12 @@ package main
 import (
 	"errors"
 	"fmt"
+	"time"
 
-	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
 
@@ -22,8 +22,7 @@ import (
 
 func main() {
 	fmt.Printf("0CHAIN - GOSDK (version=%v)\n", version.VERSIONSTR)
-
-	sdk.FS = common.NewMemFS()
+	sys.Files = sys.NewMemFS()
 	sdkLogger = sdk.GetLogger()
 	zcnLogger = zcncore.GetLogger()
 
@@ -38,7 +37,7 @@ func main() {
 			sign := jsProxy.Get("sign")
 
 			if !(sign.IsNull() || sign.IsUndefined()) {
-				signer := func(hash string) (string, error) {
+				signFunc := func(hash string) (string, error) {
 					result, err := jsbridge.Await(sign.Invoke(hash))
 
 					if len(err) > 0 && !err[0].IsNull() {
@@ -48,8 +47,11 @@ func main() {
 				}
 
 				//update sign with js sign
-				zcncrypto.Sign = signer
-				client.Sign = signer
+				zcncrypto.Sign = signFunc
+				sys.Sign = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
+					// js already has signatureScheme and keys
+					return signFunc(hash)
+				}
 			} else {
 				PrintError("__zcn_wasm__.jsProxy.sign is not installed yet")
 			}
@@ -74,6 +76,19 @@ func main() {
 				}
 			} else {
 				PrintError("__zcn_wasm__.jsProxy.createObjectURL is not installed yet")
+			}
+
+			sleep := jsProxy.Get("sleep")
+			if !(sleep.IsNull() || sleep.IsUndefined()) {
+				sys.Sleep = func(d time.Duration) {
+					ms := d.Milliseconds()
+					jsbridge.Await(sleep.Invoke(ms))
+				}
+			} else {
+				sys.Sleep = func(d time.Duration) {
+					PrintInfo("sleep is not bridged to js method. it doesn't work")
+				}
+				PrintError("__zcn_wasm__.jsProxy.sleep is not installed yet")
 			}
 		} else {
 			PrintError("__zcn_wasm__.jsProxy is not installed yet")

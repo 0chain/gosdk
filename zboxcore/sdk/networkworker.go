@@ -3,13 +3,14 @@ package sdk
 import (
 	"context"
 	"encoding/json"
+	"github.com/0chain/gosdk/core/transaction"
 	"io/ioutil"
 	"net/http"
 	"reflect"
 	"strconv"
 	"time"
 
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"go.uber.org/zap"
 
 	"github.com/0chain/errors"
@@ -30,15 +31,15 @@ func UpdateNetworkDetailsWorker(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			Logger.Info("Network stopped by user")
+			l.Logger.Info("Network stopped by user")
 			return
 		case <-ticker.C:
 			err := UpdateNetworkDetails()
 			if err != nil {
-				Logger.Error("Update network detail worker fail", zap.Error(err))
+				l.Logger.Error("Update network detail worker fail", zap.Error(err))
 				return
 			}
-			Logger.Info("Successfully updated network details")
+			l.Logger.Info("Successfully updated network details")
 			return
 		}
 	}
@@ -47,7 +48,7 @@ func UpdateNetworkDetailsWorker(ctx context.Context) {
 func UpdateNetworkDetails() error {
 	networkDetails, err := GetNetworkDetails()
 	if err != nil {
-		Logger.Error("Failed to update network details ", zap.Error(err))
+		l.Logger.Error("Failed to update network details ", zap.Error(err))
 		return err
 	}
 
@@ -56,6 +57,7 @@ func UpdateNetworkDetails() error {
 		sdkInitialized = false
 		blockchain.SetMiners(networkDetails.Miners)
 		blockchain.SetSharders(networkDetails.Sharders)
+		transaction.InitCache(networkDetails.Sharders)
 		conf.InitChainNetwork(&conf.Network{
 			Sharders: networkDetails.Sharders,
 			Miners:   networkDetails.Miners,
@@ -90,7 +92,7 @@ func GetNetworkDetails() (*Network, error) {
 	var networkResponse Network
 	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("Get network error : ", err)
+			l.Logger.Error("Get network error : ", err)
 			return err
 		}
 
@@ -100,7 +102,7 @@ func GetNetworkDetails() (*Network, error) {
 			return errors.Wrap(err, "Error reading response : ")
 		}
 
-		Logger.Debug("Get network result:", string(respBody))
+		l.Logger.Debug("Get network result:", string(respBody))
 		if resp.StatusCode == http.StatusOK {
 			err = json.Unmarshal(respBody, &networkResponse)
 			if err != nil {

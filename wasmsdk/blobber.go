@@ -10,8 +10,10 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -224,7 +226,7 @@ func Move(allocationID, remotePath, destPath string, autoCommit bool) (*FileComm
 }
 
 // Share  generate an authtoken that provides authorization to the holder to the specified file on the remotepath.
-func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expiration int, revoke bool, availableAfter int64) (string, error) {
+func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expiration int, revoke bool, availableAfter string) (string, error) {
 
 	if len(allocationID) == 0 {
 		return "", RequiredArg("allocationID")
@@ -271,7 +273,18 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 		return "", nil
 	}
 
-	ref, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, clientID, encryptionPublicKey, int64(expiration))
+	availableAt := time.Now()
+
+	if len(availableAfter) > 0 {
+		aa, err := common.ParseTime(availableAt, availableAfter)
+		if err != nil {
+			PrintError(err.Error())
+			return "", err
+		}
+		availableAt = *aa
+	}
+
+	ref, err := allocationObj.GetAuthTicket(remotePath, fileName, refType, clientID, encryptionPublicKey, int64(expiration), &availableAt)
 	if err != nil {
 		PrintError(err.Error())
 		return "", err
@@ -305,7 +318,7 @@ func downloadFile(allocationObj *sdk.Allocation, authTicket string, authTicketOb
 		PrintError(err)
 		return "", err
 	}
-	defer sdk.FS.Remove(localPath) //nolint
+	defer sys.Files.Remove(localPath) //nolint
 
 	if len(authTicket) > 0 {
 
@@ -396,7 +409,7 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 		return nil, err
 	}
 
-	defer sdk.FS.Remove(localPath) //nolint
+	defer sys.Files.Remove(localPath) //nolint
 
 	err = downloader.Start(statusBar)
 
@@ -415,9 +428,9 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 		FileName:       fileName,
 	}
 
-	fs, _ := sdk.FS.Open(localPath)
+	fs, _ := sys.Files.Open(localPath)
 
-	mf, _ := fs.(*common.MemFile)
+	mf, _ := fs.(*sys.MemFile)
 
 	resp.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
 
@@ -439,7 +452,7 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 }
 
 // Upload upload file
-func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, autoCommit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, chunkSize int, isUpdate, isRepair bool) (*FileCommandResponse, error) {
+func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, autoCommit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, isUpdate, isRepair bool) (*FileCommandResponse, error) {
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
 	}
@@ -510,7 +523,6 @@ func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 
 	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair,
 		sdk.WithThumbnail(thumbnailBytes),
-		sdk.WithChunkSize(int64(chunkSize)),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
 		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}))

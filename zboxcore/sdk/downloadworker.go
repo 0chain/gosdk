@@ -11,7 +11,7 @@ import (
 
 	"github.com/0chain/errors"
 
-	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encoder"
@@ -28,13 +28,10 @@ const (
 	DOWNLOAD_CONTENT_THUMB = "thumbnail"
 )
 
-var (
-	FS common.FS = common.NewDiskFS()
-)
-
 type DownloadRequest struct {
 	allocationID       string
 	allocationTx       string
+	allocOwnerID       string
 	blobbers           []*blockchain.StorageNode
 	datashards         int
 	parityshards       int
@@ -72,6 +69,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 		blockDownloadReq := &BlockDownloadRequest{}
 		blockDownloadReq.allocationID = req.allocationID
 		blockDownloadReq.allocationTx = req.allocationTx
+		blockDownloadReq.allocOwnerID = req.allocOwnerID
 		blockDownloadReq.authTicket = req.authTicket
 		blockDownloadReq.blobber = req.blobbers[pos]
 		blockDownloadReq.blobberIdx = pos
@@ -116,6 +114,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 		downloadChunks := len(result.BlockChunks)
 		if !result.Success {
 			logger.Logger.Error("Download block : ", req.blobbers[result.idx].Baseurl, " ", result.err)
+			return nil, result.err
 		} else {
 			blockSuccess := false
 			if blockChunksMax < len(result.BlockChunks) {
@@ -191,12 +190,12 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 	}
 	erasureencoder, err := encoder.NewEncoder(req.datashards, req.parityshards)
 	if err != nil {
-		return []byte{}, errors.Wrap(err, "encoder init error")
+		return nil, errors.Wrap(err, "encoder init error")
 	}
 	for blockNum := 0; blockNum < decodeNumBlocks; blockNum++ {
 		data, err := erasureencoder.Decode(shards[blockNum], decodeLen[blockNum])
 		if err != nil {
-			return []byte{}, errors.Wrap(err, "Block decode error")
+			return nil, errors.Wrap(err, "Block decode error")
 		}
 		retData = append(retData, data...)
 	}
@@ -269,7 +268,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		perShard += chunksPerShard * (EncryptedDataPaddingSize + EncryptionHeaderSize)
 	}
 
-	wrFile, err := FS.OpenFile(req.localpath, os.O_CREATE|os.O_WRONLY, 0644)
+	wrFile, err := sys.Files.OpenFile(req.localpath, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		if req.statusCallback != nil {
 			logger.Logger.Error(err.Error())
@@ -285,6 +284,14 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	if req.endBlock == 0 {
 		req.endBlock = chunksPerShard
+	}
+
+	if req.startBlock >= req.endBlock {
+		if req.statusCallback != nil {
+			sys.Files.Remove(req.localpath)
+			req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("invalid_block_num", "start block should be less than end block"))
+		}
+		return
 	}
 
 	logger.Logger.Info("Download Size:", size, " Shard:", perShard, " chunks/shard:", chunksPerShard)
@@ -307,7 +314,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 		data, err := req.downloadBlock(cnt+1, int(numBlocks))
 		if err != nil {
-			FS.Remove(req.localpath)
+			sys.Files.Remove(req.localpath)
 			if req.statusCallback != nil {
 				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", cnt+1)))
 			}
@@ -315,7 +322,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		}
 		if req.isDownloadCanceled {
 			req.isDownloadCanceled = false
-			FS.Remove(req.localpath)
+			sys.Files.Remove(req.localpath)
 			if req.statusCallback != nil {
 				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "Download aborted by user"))
 			}
@@ -326,7 +333,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		_, err = mW.Write(data[:n])
 
 		if err != nil {
-			FS.Remove(req.localpath) //nolint: errcheck
+			sys.Files.Remove(req.localpath) //nolint: errcheck
 			if req.statusCallback != nil {
 				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.Wrap(err, "Write file failed"))
 			}
@@ -358,7 +365,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 		//if calcHash != expectedHash && expectedHash != merkleRoot {
 		if expectedHash != merkleRoot {
-			FS.Remove(req.localpath) //nolint: errcheck
+			sys.Files.Remove(req.localpath) //nolint: errcheck
 			if req.statusCallback != nil {
 				req.statusCallback.Error(req.allocationID, remotePathCallback, OpDownload, errors.New("", "File content didn't match with uploaded file"))
 			}
@@ -368,7 +375,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	wrFile.Sync()
 	wrFile.Close()
-	wrFile, _ = FS.Open(req.localpath)
+	wrFile, _ = sys.Files.Open(req.localpath)
 	defer wrFile.Close()
 	wrFile.Seek(0, 0)
 	mimetype, _ := zboxutil.GetFileContentType(wrFile)

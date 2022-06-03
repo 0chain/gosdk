@@ -10,7 +10,9 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -73,8 +75,9 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *Chunk
 		return err
 	}
 	if resp.StatusCode != http.StatusOK {
-		logger.Logger.Error(sb.blobber.Baseurl, " Upload error response: ", resp.StatusCode, string(respbody))
-		return err
+		msg := string(respbody)
+		logger.Logger.Error(sb.blobber.Baseurl, " Upload error response: ", resp.StatusCode)
+		return errors.Throw(constants.ErrBadRequest, msg)
 	}
 	var r UploadResult
 	err = json.Unmarshal(respbody, &r)
@@ -148,6 +151,11 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 	wm.Timestamp = timestamp
 	wm.ClientID = client.GetClientID()
+
+	wm.LookupHash = fileref.GetReferenceLookup(su.allocationObj.ID, sb.fileRef.Path)
+	wm.Name = sb.fileRef.Name
+	wm.ContentHash = sb.fileRef.ContentHash
+
 	err = wm.Sign()
 	if err != nil {
 		logger.Logger.Error("Signing writemarker failed: ", err)

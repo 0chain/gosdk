@@ -12,11 +12,11 @@ func WithLiveDelay(delaySeconds int) LiveUploadOption {
 	}
 }
 
-// WithLiveChunkSize set custom chunk size. ignore if size <=0
-func WithLiveChunkSize(size int) LiveUploadOption {
+// WithLiveChunkNumber set the number of chunks should be upload in a request. ignore if size <=0
+func WithLiveChunkNumber(num int) LiveUploadOption {
 	return func(lu *LiveUpload) {
-		if size > 0 {
-			lu.chunkSize = int64(size)
+		if num > 0 {
+			lu.chunkNumber = num
 		}
 	}
 }

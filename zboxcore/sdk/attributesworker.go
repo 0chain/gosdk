@@ -19,7 +19,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 )
 
 type AttributesRequest struct {
@@ -67,7 +67,7 @@ func (ar *AttributesRequest) updateBlobberObjectAttributes(
 	httpreq, err = zboxutil.NewAttributesRequest(blobber.Baseurl,
 		ar.allocationTx, &body)
 	if err != nil {
-		Logger.Error(blobber.Baseurl,
+		l.Logger.Error(blobber.Baseurl,
 			"Error creating update attributes request", err)
 		return
 	}
@@ -80,7 +80,7 @@ func (ar *AttributesRequest) updateBlobberObjectAttributes(
 	err = zboxutil.HttpDo(ctx, cncl, httpreq,
 		func(resp *http.Response, err error) error {
 			if err != nil {
-				Logger.Error("Request error: ", err)
+				l.Logger.Error("Request error: ", err)
 				return err
 			}
 			defer resp.Body.Close()
@@ -88,18 +88,18 @@ func (ar *AttributesRequest) updateBlobberObjectAttributes(
 			if resp.StatusCode == http.StatusOK {
 				ar.consensus++
 				ar.attributesMask |= (1 << uint32(blobberIdx))
-				Logger.Info(blobber.Baseurl, " "+ar.remotefilepath,
+				l.Logger.Info(blobber.Baseurl, " "+ar.remotefilepath,
 					" attributes updated.")
 				return nil
 			}
 
 			var respBody []byte
 			if respBody, err = ioutil.ReadAll(resp.Body); err != nil {
-				Logger.Error(blobber.Baseurl, "Reading response: ", err)
+				l.Logger.Error(blobber.Baseurl, "Reading response: ", err)
 				return nil
 			}
 
-			Logger.Error(blobber.Baseurl, "Response error: ",
+			l.Logger.Error(blobber.Baseurl, "Response error: ",
 				string(respBody))
 			return nil
 		})
@@ -123,7 +123,7 @@ func (ar *AttributesRequest) ProcessAttributes() (err error) {
 			var re, err = ar.updateBlobberObjectAttributes(ar.blobbers[bidx],
 				bidx)
 			if err != nil {
-				Logger.Error(err.Error())
+				l.Logger.Error(err.Error())
 				return
 			}
 			objectTreeRefs[bidx] = re
@@ -171,14 +171,14 @@ func (ar *AttributesRequest) ProcessAttributes() (err error) {
 	for _, commitReq := range commitReqs {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
-				Logger.Info("Commit success", commitReq.blobber.Baseurl)
+				l.Logger.Info("Commit success", commitReq.blobber.Baseurl)
 				ar.consensus++
 			} else {
-				Logger.Info("Commit failed", commitReq.blobber.Baseurl,
+				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl,
 					commitReq.result.ErrorMessage)
 			}
 		} else {
-			Logger.Info("Commit result not set", commitReq.blobber.Baseurl)
+			l.Logger.Info("Commit result not set", commitReq.blobber.Baseurl)
 		}
 	}
 

@@ -10,6 +10,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/sys"
 
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
@@ -28,7 +29,7 @@ var (
 var (
 	errNetwork          = errors.New("", "network error. host not reachable")
 	errUserRejected     = errors.New("", "rejected by user")
-	errAuthVerifyFailed = errors.New("", "verfication failed for auth response")
+	errAuthVerifyFailed = errors.New("", "verification failed for auth response")
 	errAuthTimeout      = errors.New("", "auth timed out")
 	errAddSignature     = errors.New("", "error adding signature")
 )
@@ -52,6 +53,7 @@ type confirmation struct {
 	Round                 int64                    `json:"round"`
 	Status                int                      `json:"transaction_status" msgpack:"sot"`
 	RoundRandomSeed       int64                    `json:"round_random_seed"`
+	StateChangesCount     int                      `json:"state_changes_count"`
 	MerkleTreeRoot        string                   `json:"merkle_tree_root"`
 	MerkleTreePath        *util.MTPath             `json:"merkle_tree_path"`
 	ReceiptMerkleTreeRoot string                   `json:"receipt_merkle_tree_root"`
@@ -65,10 +67,19 @@ type blockHeader struct {
 	MinerId               string `json:"miner_id,omitempty"`
 	Round                 int64  `json:"round,omitempty"`
 	RoundRandomSeed       int64  `json:"round_random_seed,omitempty"`
+	StateChangesCount     int    `json:"state_changes_count"`
 	MerkleTreeRoot        string `json:"merkle_tree_root,omitempty"`
 	StateHash             string `json:"state_hash,omitempty"`
 	ReceiptMerkleTreeRoot string `json:"receipt_merkle_tree_root,omitempty"`
 	NumTxns               int64  `json:"num_txns,omitempty"`
+}
+
+func (bh *blockHeader) getCreationDate(defaultTime int64) int64 {
+	if bh == nil {
+		return defaultTime
+	}
+
+	return bh.CreationDate
 }
 
 type Transaction struct {
@@ -99,9 +110,9 @@ type TransactionScheme interface {
 	Send(toClientID string, val int64, desc string) error
 	// StoreData implements store the data to blockchain
 	StoreData(data string) error
-	// ExecuteSmartContract impements the Faucet Smart contract
-	ExecuteSmartContract(address, methodName, jsoninput string, val int64) error
-	// ExecuteFaucetSCWallet impements the Faucet Smart contract for a given wallet
+	// ExecuteSmartContract implements wrapper for smart contract function
+	ExecuteSmartContract(address, methodName string, input interface{}, val int64) error
+	// ExecuteFaucetSCWallet implements the `Faucet Smart contract` for a given wallet
 	ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error
 	// GetTransactionHash implements retrieval of hash of the submitted transaction
 	GetTransactionHash() string
@@ -111,25 +122,33 @@ type TransactionScheme interface {
 	UnlockTokens(poolID string) error
 	//RegisterMultiSig registers a group wallet and subwallets with MultisigSC
 	RegisterMultiSig(walletstr, mswallet string) error
-	// SetTransactionHash implements verify a previous transation status
+	// SetTransactionHash implements verify a previous transaction status
 	SetTransactionHash(hash string) error
 	// SetTransactionFee implements method to set the transaction fee
 	SetTransactionFee(txnFee int64) error
+	// SetTransactionNonce implements method to set the transaction nonce
+	SetTransactionNonce(txnNonce int64) error
 	// Verify implements verify the transaction
 	Verify() error
 	// GetVerifyConfirmationStatus implements the verification status from sharders
 	GetVerifyConfirmationStatus() ConfirmationStatus
-	// GetVerifyOutput implements the verifcation output from sharders
+	// GetVerifyOutput implements the verification output from sharders
 	GetVerifyOutput() string
-	// GetTransactionError implements error string incase of transaction failure
+	// GetTransactionError implements error string in case of transaction failure
 	GetTransactionError() string
-	// GetVerifyError implements error string incase of verify failure error
+	// GetVerifyError implements error string in case of verify failure error
 	GetVerifyError() string
+	// GetTransactionNonce returns nonce
+	GetTransactionNonce() int64
 
 	// Output of transaction.
 	Output() []byte
 
-	// vesting SC
+	// Hash Transaction status regardless of status
+	Hash() string
+
+	// Vesting SC
+
 	VestingTrigger(poolID string) error
 	VestingStop(sr *VestingStopRequest) error
 	VestingUnlock(poolID string) error
@@ -139,11 +158,11 @@ type TransactionScheme interface {
 
 	// Miner SC
 
-	MinerSCCollectReward(string, Provider) error
+	MinerSCCollectReward(string, string, Provider) error
 	MinerSCMinerSettings(*MinerSCMinerInfo) error
 	MinerSCSharderSettings(*MinerSCMinerInfo) error
 	MinerSCLock(minerID string, lock int64) error
-	MienrSCUnlock(minerID, poolID string) error
+	MinerSCUnlock(minerID, poolID string) error
 	MinerScUpdateConfig(*InputMap) error
 	MinerScUpdateGlobals(*InputMap) error
 	MinerSCDeleteMiner(*MinerSCMinerInfo) error
@@ -151,7 +170,7 @@ type TransactionScheme interface {
 
 	// Storage SC
 
-	StorageSCCollectReward(string, Provider) error
+	StorageSCCollectReward(string, string, Provider) error
 	FinalizeAllocation(allocID string, fee int64) error
 	CancelAllocation(allocID string, fee int64) error
 	CreateAllocation(car *CreateAllocationRequest, lock, fee int64) error //
@@ -167,10 +186,39 @@ type TransactionScheme interface {
 	StorageScUpdateConfig(*InputMap) error
 
 	// Interest pool SC
+
 	InterestPoolUpdateConfig(*InputMap) error
 
 	// Faucet
+
 	FaucetUpdateConfig(*InputMap) error
+
+	// ZCNSC Common transactions
+
+	// ZCNSCUpdateGlobalConfig updates global config
+	ZCNSCUpdateGlobalConfig(*InputMap) error
+	// ZCNSCUpdateAuthorizerConfig updates authorizer config by ID
+	ZCNSCUpdateAuthorizerConfig(*AuthorizerNode) error
+	// ZCNSCAddAuthorizer adds authorizer
+	ZCNSCAddAuthorizer(*AddAuthorizerPayload) error
+}
+
+func Sign(hash string) (string, error) {
+	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	err := sigScheme.SetPrivateKey(_config.wallet.Keys[0].PrivateKey)
+	if err != nil {
+		return "", err
+	}
+	return sigScheme.Sign(hash)
+}
+
+func SignWith0Wallet(hash string, w *zcncrypto.Wallet) (string, error) {
+	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	err := sigScheme.SetPrivateKey(w.Keys[0].PrivateKey)
+	if err != nil {
+		return "", err
+	}
+	return sigScheme.Sign(hash)
 }
 
 func signFn(hash string) (string, error) {
@@ -210,6 +258,10 @@ func (t *Transaction) Output() []byte {
 	return []byte(t.txnOut)
 }
 
+func (t *Transaction) Hash() string {
+	return t.txn.Hash
+}
+
 func (t *Transaction) completeTxn(status int, out string, err error) {
 	t.txnStatus = status
 	t.txnOut = out
@@ -228,13 +280,44 @@ func (t *Transaction) completeVerifyWithConStatus(status int, conStatus Confirma
 	t.verifyConfirmationStatus = conStatus
 	t.verifyOut = out
 	t.verifyError = err
+	if status == StatusError {
+		transaction.Cache.Evict(t.txn.ClientID)
+	}
 	if t.txnCb != nil {
 		t.txnCb.OnVerifyComplete(t, t.verifyStatus)
 	}
 }
 
+type getNonceCallBack struct {
+	nonceCh chan int64
+	err     error
+}
+
+func (g getNonceCallBack) OnNonceAvailable(status int, nonce int64, info string) {
+	if status != StatusSuccess {
+		g.err = errors.New("get_nonce", "failed respond nonce")
+	}
+
+	g.nonceCh <- nonce
+}
+
+func (t *Transaction) setNonceAndSubmit() {
+	t.setNonce()
+	t.submitTxn()
+}
+
+func (t *Transaction) setNonce() {
+	nonce := t.txn.TransactionNonce
+	if nonce < 1 {
+		nonce = transaction.Cache.GetNextNonce(t.txn.ClientID)
+	} else {
+		transaction.Cache.Set(t.txn.ClientID, nonce)
+	}
+	t.txn.TransactionNonce = nonce
+}
+
 func (t *Transaction) submitTxn() {
-	// Clear the status, incase transaction object reused
+	// Clear the status, in case transaction object reused
 	t.txnStatus = StatusUnknown
 	t.txnOut = ""
 	t.txnError = nil
@@ -244,6 +327,7 @@ func (t *Transaction) submitTxn() {
 		err := t.txn.ComputeHashAndSign(signFn)
 		if err != nil {
 			t.completeTxn(StatusError, "", err)
+			transaction.Cache.Evict(t.txn.ClientID)
 			return
 		}
 	}
@@ -285,24 +369,29 @@ func (t *Transaction) submitTxn() {
 	rate := consensus * 100 / float32(len(randomMiners))
 	if rate < consensusThresh {
 		t.completeTxn(StatusError, "", fmt.Errorf("submit transaction failed. %s", tFailureRsp))
+		transaction.Cache.Evict(t.txn.ClientID)
 		return
 	}
-	time.Sleep(3 * time.Second)
+	sys.Sleep(3 * time.Second)
 	t.completeTxn(StatusSuccess, tSuccessRsp, nil)
 }
 
-func newTransaction(cb TransactionCallback, txnFee int64) (*Transaction, error) {
+func newTransaction(cb TransactionCallback, txnFee int64, nonce int64) (*Transaction, error) {
 	t := &Transaction{}
-	t.txn = transaction.NewTransactionEntity(_config.wallet.ClientID, _config.chain.ChainID, _config.wallet.ClientKey)
+	if nonce == 0 {
+		nonce = transaction.Cache.GetNextNonce(_config.wallet.ClientID)
+	}
+	t.txn = transaction.NewTransactionEntity(_config.wallet.ClientID, _config.chain.ChainID, _config.wallet.ClientKey, nonce)
 	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
 	t.txnCb = cb
 	t.txn.TransactionFee = txnFee
+	t.txn.TransactionNonce = nonce
 	return t, nil
 }
 
 // NewTransaction allocation new generic transaction object for any operation
-func NewTransaction(cb TransactionCallback, txnFee int64) (TransactionScheme, error) {
-	err := checkConfig()
+func NewTransaction(cb TransactionCallback, txnFee int64, nonce int64) (TransactionScheme, error) {
+	err := CheckConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -311,10 +400,11 @@ func NewTransaction(cb TransactionCallback, txnFee int64) (TransactionScheme, er
 			return nil, errors.New("", "auth url not set")
 		}
 		Logger.Info("New transaction interface with auth")
-		return newTransactionWithAuth(cb, txnFee)
+		return newTransactionWithAuth(cb, txnFee, nonce)
 	}
 	Logger.Info("New transaction interface")
-	return newTransaction(cb, txnFee)
+	t, err := newTransaction(cb, txnFee, nonce)
+	return t, err
 }
 
 func (t *Transaction) SetTransactionCallback(cb TransactionCallback) error {
@@ -332,6 +422,13 @@ func (t *Transaction) SetTransactionFee(txnFee int64) error {
 	t.txn.TransactionFee = txnFee
 	return nil
 }
+func (t *Transaction) SetTransactionNonce(txnNonce int64) error {
+	if t.txnStatus != StatusUnknown {
+		return errors.New("", "transaction already exists. cannot set transaction fee.")
+	}
+	t.txn.TransactionNonce = txnNonce
+	return nil
+}
 
 func (t *Transaction) Send(toClientID string, val int64, desc string) error {
 	txnData, err := json.Marshal(SendTxnData{Note: desc})
@@ -343,7 +440,7 @@ func (t *Transaction) Send(toClientID string, val int64, desc string) error {
 		t.txn.ToClientID = toClientID
 		t.txn.Value = val
 		t.txn.TransactionData = string(txnData)
-		t.submitTxn()
+		t.setNonceAndSubmit()
 	}()
 	return nil
 }
@@ -361,7 +458,7 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val int64, desc s
 		t.txn.TransactionData = string(txnData)
 		t.txn.Signature = sig
 		t.txn.CreationDate = CreationDate
-		t.submitTxn()
+		t.setNonceAndSubmit()
 	}()
 	return nil
 }
@@ -370,7 +467,7 @@ func (t *Transaction) StoreData(data string) error {
 	go func() {
 		t.txn.TransactionType = transaction.TxnTypeData
 		t.txn.TransactionData = data
-		t.submitTxn()
+		t.setNonceAndSubmit()
 	}()
 	return nil
 }
@@ -401,13 +498,20 @@ func (t *Transaction) createFaucetSCWallet(walletStr string, methodName string, 
 	return w, nil
 }
 
-// ExecuteFaucetSCWallet impements the Faucet Smart contract for a given wallet
+// ExecuteFaucetSCWallet implements the Faucet Smart contract for a given wallet
 func (t *Transaction) ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error {
 	w, err := t.createFaucetSCWallet(walletStr, methodName, input)
 	if err != nil {
 		return err
 	}
 	go func() {
+		nonce := t.txn.TransactionNonce
+		if nonce < 1 {
+			nonce = transaction.Cache.GetNextNonce(t.txn.ClientID)
+		} else {
+			transaction.Cache.Set(t.txn.ClientID, nonce)
+		}
+		t.txn.TransactionNonce = nonce
 		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
 		fmt.Printf("submitted transaction\n")
 		t.submitTxn()
@@ -415,15 +519,13 @@ func (t *Transaction) ExecuteFaucetSCWallet(walletStr string, methodName string,
 	return nil
 }
 
-func (t *Transaction) ExecuteSmartContract(address, methodName, jsoninput string, val int64) error {
-	scData := make(map[string]interface{})
-	json.Unmarshal([]byte(jsoninput), &scData)
-	err := t.createSmartContractTxn(address, methodName, scData, val)
+func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val int64) error {
+	err := t.createSmartContractTxn(address, methodName, input, val)
 	if err != nil {
 		return err
 	}
 	go func() {
-		t.submitTxn()
+		t.setNonceAndSubmit()
 	}()
 	return nil
 }
@@ -514,14 +616,15 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 		block.CreationDate = cfm.CreationDate
 		block.Round = cfm.Round
 		block.RoundRandomSeed = cfm.RoundRandomSeed
+		block.StateChangesCount = cfm.StateChangesCount
 		block.MerkleTreeRoot = cfm.MerkleTreeRoot
 		block.ReceiptMerkleTreeRoot = cfm.ReceiptMerkleTreeRoot
 		// Verify the block
 		if isBlockExtends(prevBlockHash, block) {
 			return block, nil
-		} else {
-			return nil, errors.New("", "block hash verification failed in confirmation")
 		}
+
+		return nil, errors.New("", "block hash verification failed in confirmation")
 	}
 	return nil, errors.New("", "txn confirmation not found.")
 }
@@ -532,6 +635,7 @@ func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, 
 
 	numSharders = len(_config.chain.Sharders) // overwrite, use all
 	queryFromSharders(numSharders, fmt.Sprintf("%v%v&content=lfb", TXN_VERIFY_URL, txnHash), result)
+
 	maxConfirmation := int(0)
 	txnConfirmations := make(map[string]int)
 	var blockHdr *blockHeader
@@ -857,8 +961,8 @@ func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHe
 }
 
 func isBlockExtends(prevHash string, block *blockHeader) bool {
-	data := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v", block.MinerId, prevHash, block.CreationDate, block.Round,
-		block.RoundRandomSeed, block.MerkleTreeRoot, block.ReceiptMerkleTreeRoot)
+	data := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v:%v", block.MinerId, prevHash, block.CreationDate, block.Round,
+		block.RoundRandomSeed, block.StateChangesCount, block.MerkleTreeRoot, block.ReceiptMerkleTreeRoot)
 	h := encryption.Hash(data)
 	return block.Hash == h
 }
@@ -872,11 +976,11 @@ func validateChain(confirmBlock *blockHeader) bool {
 		nextBlock, err := getBlockInfoByRound(1, round, "header")
 		if err != nil {
 			Logger.Info(err, " after a second falling thru to ", getMinShardersVerify(), "of ", len(_config.chain.Sharders), "Sharders")
-			time.Sleep(1 * time.Second)
+			sys.Sleep(1 * time.Second)
 			nextBlock, err = getBlockInfoByRound(getMinShardersVerify(), round, "header")
 			if err != nil {
 				Logger.Error(err, " block chain stalled. waiting", defaultWaitSeconds, "...")
-				time.Sleep(defaultWaitSeconds)
+				sys.Sleep(defaultWaitSeconds)
 				continue
 			}
 		}
@@ -904,7 +1008,7 @@ func (t *Transaction) isTransactionExpired(lfbCreationTime, currentTime int64) b
 		return true
 	}
 	// Wait for next retry
-	time.Sleep(defaultWaitSeconds)
+	sys.Sleep(defaultWaitSeconds)
 	return false
 }
 func (t *Transaction) Verify() error {
@@ -914,6 +1018,7 @@ func (t *Transaction) Verify() error {
 	if t.txnHash == "" && t.txnStatus == StatusSuccess {
 		h := t.GetTransactionHash()
 		if h == "" {
+			transaction.Cache.Evict(t.txn.ClientID)
 			return errors.New("", "invalid transaction. cannot be verified.")
 		}
 	}
@@ -922,39 +1027,62 @@ func (t *Transaction) Verify() error {
 		t.txn.CreationDate = int64(common.Now())
 	}
 
+	tq, err := NewTransactionQuery(_config.chain.Sharders)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+
 	go func() {
+
 		for {
-			// Get transaction confirmation from random sharder
-			confirmBlock, confirmation, lfb, err := getTransactionConfirmation(1, t.txnHash)
+
+			tq.Reset()
+			// Get transaction confirmationBlock from a random sharder
+			confirmBlockHeader, confirmationBlock, lfbBlockHeader, err := tq.GetFastConfirmation(context.TODO(), t.txnHash)
+
 			if err != nil {
-				tn := int64(common.Now())
-				Logger.Info(err, " now: ", tn, ", LFB creation time:", lfb.CreationDate)
-				if util.MaxInt64(lfb.CreationDate, tn) < (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
+				now := int64(common.Now())
+
+				// maybe it is a network or server error
+				if lfbBlockHeader == nil {
+					Logger.Info(err, " now: ", now)
+				} else {
+					Logger.Info(err, " now: ", now, ", LFB creation time:", lfbBlockHeader.CreationDate)
+				}
+
+				// transaction is done or expired. it means random sharder might be outdated, try to query it from s/S sharders to confirm it
+				if util.MaxInt64(lfbBlockHeader.getCreationDate(now), now) >= (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
 					Logger.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders")
-					confirmBlock, confirmation, lfb, err = getTransactionConfirmation(getMinShardersVerify(), t.txnHash)
-					if err != nil {
-						if t.isTransactionExpired(lfb.CreationDate, tn) {
-							t.completeVerify(StatusError, "", errors.New("", `{"error": "verify transaction failed"}`))
-							return
-						}
+					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.GetConsensusConfirmation(context.TODO(), getMinShardersVerify(), t.txnHash)
+				}
+
+				// txn not found in fast confirmation/consensus confirmation
+				if err != nil {
+
+					if lfbBlockHeader == nil {
+						// no any valid lfb on all sharders. maybe they are network/server errors. try it again
 						continue
 					}
-				} else {
-					if t.isTransactionExpired(lfb.CreationDate, tn) {
+
+					// it is expired
+					if t.isTransactionExpired(lfbBlockHeader.getCreationDate(now), now) {
 						t.completeVerify(StatusError, "", errors.New("", `{"error": "verify transaction failed"}`))
 						return
 					}
 					continue
 				}
+
 			}
-			valid := validateChain(confirmBlock)
+
+			valid := validateChain(confirmBlockHeader)
 			if valid {
-				output, err := json.Marshal(confirmation)
+				output, err := json.Marshal(confirmationBlock)
 				if err != nil {
 					t.completeVerify(StatusError, "", errors.New("", `{"error": "transaction confirmation json marshal error"`))
 					return
 				}
-				confJson := confirmation["confirmation"]
+				confJson := confirmationBlock["confirmation"]
 
 				var conf map[string]json.RawMessage
 				if err := json.Unmarshal(confJson, &conf); err != nil {
@@ -1009,6 +1137,11 @@ func (t *Transaction) GetVerifyError() string {
 	return ""
 }
 
+// GetTransactionNonce returns nonce
+func (t *Transaction) GetTransactionNonce() int64 {
+	return t.txn.TransactionNonce
+}
+
 // ========================================================================== //
 //                               vesting pool                                 //
 // ========================================================================== //
@@ -1031,7 +1164,7 @@ func (t *Transaction) VestingTrigger(poolID string) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1048,7 +1181,7 @@ func (t *Transaction) VestingStop(sr *VestingStopRequest) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1059,7 +1192,7 @@ func (t *Transaction) VestingUnlock(poolID string) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1084,7 +1217,7 @@ func (t *Transaction) VestingAdd(ar *VestingAddRequest, value int64) (
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1095,7 +1228,7 @@ func (t *Transaction) VestingDelete(poolID string) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1107,7 +1240,7 @@ func (t *Transaction) VestingUpdateConfig(vscc *InputMap) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1121,7 +1254,7 @@ func (t *Transaction) InterestPoolUpdateConfig(ip *InputMap) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1135,7 +1268,7 @@ func (t *Transaction) FaucetUpdateConfig(ip *InputMap) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1150,7 +1283,7 @@ func (t *Transaction) MinerScUpdateConfig(ip *InputMap) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1161,57 +1294,21 @@ func (t *Transaction) MinerScUpdateGlobals(ip *InputMap) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
-type MinerSCPoolStats struct {
-	DelegateID   string         `json:"delegate_id"`
-	High         common.Balance `json:"high"`
-	Low          common.Balance `json:"low"`
-	InterestRate float64        `json:"interest_rate"`
-	TotalPaid    common.Balance `json:"total_paid"`
-	NumRounds    int64          `json:"number_rounds"`
-}
-
-type MinerSCPool struct {
-	ID      string         `json:"id"`
-	Balance common.Balance `json:"balance"`
-}
-
 type MinerSCDelegatePool struct {
-	MinerSCPoolStats `json:"stats"`
-	MinerSCPool      `json:"pool"`
+	Settings StakePoolSettings `json:"settings"`
 }
 
-type MinerSCMinerStat struct {
-	// for miner (totals)
-	BlockReward      common.Balance `json:"block_reward,omitempty"`
-	ServiceCharge    common.Balance `json:"service_charge,omitempty"`
-	UsersFee         common.Balance `json:"users_fee,omitempty"`
-	BlockShardersFee common.Balance `json:"block_sharders_fee,omitempty"`
-	// for sharder (total)
-	SharderRewards common.Balance `json:"sharder_rewards,omitempty"`
+type SimpleMiner struct {
+	ID string `json:"id"`
 }
 
 type MinerSCMinerInfo struct {
-	*SimpleMinerSCMinerInfo `json:"simple_miner"`
-	Pending                 map[string]MinerSCDelegatePool `json:"pending"`
-	Active                  map[string]MinerSCDelegatePool `json:"active"`
-	Deleting                map[string]MinerSCDelegatePool `json:"deleting"`
-}
-
-type SimpleMinerSCMinerInfo struct {
-	ID      string `json:"id"`
-	BaseURL string `json:"url"`
-
-	DelegateWallet    string         `json:"delegate_wallet"`     //
-	ServiceCharge     float64        `json:"service_charge"`      // %
-	NumberOfDelegates int            `json:"number_of_delegates"` //
-	MinStake          common.Balance `json:"min_stake"`           //
-	MaxStake          common.Balance `json:"max_stake"`           //
-
-	Stat MinerSCMinerStat `json:"stat"`
+	SimpleMiner         `json:"simple_miner"`
+	MinerSCDelegatePool `json:"stake_pool"`
 }
 
 func (t *Transaction) MinerSCMinerSettings(info *MinerSCMinerInfo) (err error) {
@@ -1221,7 +1318,7 @@ func (t *Transaction) MinerSCMinerSettings(info *MinerSCMinerInfo) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1232,7 +1329,7 @@ func (t *Transaction) MinerSCSharderSettings(info *MinerSCMinerInfo) (err error)
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1243,7 +1340,7 @@ func (t *Transaction) MinerSCDeleteMiner(info *MinerSCMinerInfo) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1254,7 +1351,7 @@ func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1269,12 +1366,14 @@ const (
 )
 
 type SCCollectReward struct {
+	ProviderId   string   `json:"provider_id"`
 	PoolId       string   `json:"pool_id"`
 	ProviderType Provider `json:"provider_type"`
 }
 
-func (t *Transaction) MinerSCCollectReward(poolId string, providerType Provider) error {
+func (t *Transaction) MinerSCCollectReward(providerId, poolId string, providerType Provider) error {
 	pr := &SCCollectReward{
+		ProviderId:   providerId,
 		PoolId:       poolId,
 		ProviderType: providerType,
 	}
@@ -1284,7 +1383,7 @@ func (t *Transaction) MinerSCCollectReward(poolId string, providerType Provider)
 		Logger.Error(err)
 		return err
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return err
 }
 
@@ -1303,7 +1402,7 @@ func (t *Transaction) MinerSCLock(nodeID string, lock int64) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1312,7 +1411,7 @@ type MinerSCUnlock struct {
 	PoolID string `json:"pool_id"`
 }
 
-func (t *Transaction) MienrSCUnlock(nodeID, poolID string) (err error) {
+func (t *Transaction) MinerSCUnlock(nodeID, poolID string) (err error) {
 	var mscul MinerSCUnlock
 	mscul.ID = nodeID
 	mscul.PoolID = poolID
@@ -1323,7 +1422,7 @@ func (t *Transaction) MienrSCUnlock(nodeID, poolID string) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1345,7 +1444,7 @@ func (t *Transaction) LockTokens(val int64, durationHr int64, durationMin int) e
 		return err
 	}
 	go func() {
-		t.submitTxn()
+		t.setNonceAndSubmit()
 	}()
 	return nil
 }
@@ -1363,7 +1462,7 @@ func (t *Transaction) UnlockTokens(poolID string) error {
 		return err
 	}
 	go func() {
-		t.submitTxn()
+		t.setNonceAndSubmit()
 	}()
 	return nil
 }
@@ -1391,6 +1490,14 @@ func (t *Transaction) RegisterMultiSig(walletstr string, mswallet string) error 
 		t.txn.ToClientID = MultiSigSmartContractAddress
 		t.txn.TransactionData = string(snBytes)
 		t.txn.Value = 0
+		nonce := t.txn.TransactionNonce
+		if nonce < 1 {
+			nonce = transaction.Cache.GetNextNonce(t.txn.ClientID)
+		} else {
+			transaction.Cache.Set(t.txn.ClientID, nonce)
+		}
+		t.txn.TransactionNonce = nonce
+
 		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
 		t.submitTxn()
 	}()
@@ -1405,7 +1512,7 @@ func NewMSTransaction(walletstr string, cb TransactionCallback) (*Transaction, e
 		return nil, err
 	}
 	t := &Transaction{}
-	t.txn = transaction.NewTransactionEntity(w.ClientID, _config.chain.ChainID, w.ClientKey)
+	t.txn = transaction.NewTransactionEntity(w.ClientID, _config.chain.ChainID, w.ClientKey, w.Nonce)
 	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
 	t.txnCb = cb
 	return t, nil
@@ -1436,6 +1543,13 @@ func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error 
 		t.txn.ToClientID = MultiSigSmartContractAddress
 		t.txn.TransactionData = string(snBytes)
 		t.txn.Value = 0
+		nonce := t.txn.TransactionNonce
+		if nonce < 1 {
+			nonce = transaction.Cache.GetNextNonce(t.txn.ClientID)
+		} else {
+			transaction.Cache.Set(t.txn.ClientID, nonce)
+		}
+		t.txn.TransactionNonce = nonce
 		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
 		t.submitTxn()
 	}()
@@ -1468,8 +1582,9 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 // Storage SC transactions
 //
 
-func (t *Transaction) StorageSCCollectReward(poolId string, providerType Provider) error {
+func (t *Transaction) StorageSCCollectReward(providerId, poolId string, providerType Provider) error {
 	pr := &SCCollectReward{
+		ProviderId:   providerId,
 		PoolId:       poolId,
 		ProviderType: providerType,
 	}
@@ -1479,7 +1594,7 @@ func (t *Transaction) StorageSCCollectReward(poolId string, providerType Provide
 		Logger.Error(err)
 		return err
 	}
-	go t.submitTxn()
+	go t.setNonceAndSubmit()
 	return err
 }
 
@@ -1490,7 +1605,7 @@ func (t *Transaction) StorageScUpdateConfig(ip *InputMap) (err error) {
 		Logger.Error(err)
 		return
 	}
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1510,7 +1625,7 @@ func (t *Transaction) FinalizeAllocation(allocID string, fee int64) (
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1530,7 +1645,7 @@ func (t *Transaction) CancelAllocation(allocID string, fee int64) (
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1548,7 +1663,7 @@ type CreateAllocationRequest struct {
 	Expiration                 common.Timestamp `json:"expiration_date"`
 	Owner                      string           `json:"owner_id"`
 	OwnerPublicKey             string           `json:"owner_public_key"`
-	PreferredBlobbers          []string         `json:"preferred_blobbers"`
+	Blobbers                   []string         `json:"blobbers"`
 	ReadPriceRange             PriceRange       `json:"read_price_range"`
 	WritePriceRange            PriceRange       `json:"write_price_range"`
 	MaxChallengeCompletionTime time.Duration    `json:"max_challenge_completion_time"`
@@ -1565,7 +1680,7 @@ func (t *Transaction) CreateAllocation(car *CreateAllocationRequest,
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1579,7 +1694,7 @@ func (t *Transaction) CreateReadPool(fee int64) (err error) {
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1607,7 +1722,7 @@ func (t *Transaction) ReadPoolLock(allocID, blobberID string,
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1625,7 +1740,7 @@ func (t *Transaction) ReadPoolUnlock(poolID string, fee int64) (err error) {
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1647,7 +1762,7 @@ func (t *Transaction) StakePoolLock(blobberID string, lock, fee int64) (
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1664,14 +1779,13 @@ func (t *Transaction) StakePoolUnlock(blobberID, poolID string,
 	spr.BlobberID = blobberID
 	spr.PoolID = poolID
 
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
+	err = t.createSmartContractTxn(StorageSmartContractAddress, transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1680,6 +1794,7 @@ type StakePoolSettings struct {
 	MinStake       common.Balance `json:"min_stake"`
 	MaxStake       common.Balance `json:"max_stake"`
 	NumDelegates   int            `json:"num_delegates"`
+	ServiceCharge  float64        `json:"service_charge"`
 }
 
 type Terms struct {
@@ -1700,6 +1815,29 @@ type Blobber struct {
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
+type AuthorizerStakePoolSettings struct {
+	DelegateWallet string         `json:"delegate_wallet"`
+	MinStake       common.Balance `json:"min_stake"`
+	MaxStake       common.Balance `json:"max_stake"`
+	NumDelegates   int            `json:"num_delegates"`
+	ServiceCharge  float64        `json:"service_charge"`
+}
+
+type AddAuthorizerPayload struct {
+	PublicKey         string                      `json:"public_key"`
+	URL               string                      `json:"url"`
+	StakePoolSettings AuthorizerStakePoolSettings `json:"stake_pool_settings"` // Used to initially create stake pool
+}
+
+type AuthorizerConfig struct {
+	Fee common.Balance `json:"fee"`
+}
+
+type AuthorizerNode struct {
+	ID     string            `json:"id"`
+	Config *AuthorizerConfig `json:"config"`
+}
+
 // UpdateBlobberSettings update settings of a blobber.
 func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee int64) (err error) {
 
@@ -1710,7 +1848,7 @@ func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee int64) (err error) {
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1736,7 +1874,7 @@ func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1764,7 +1902,7 @@ func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64,
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
@@ -1784,6 +1922,40 @@ func (t *Transaction) WritePoolUnlock(poolID string, fee int64) (
 		return
 	}
 	t.SetTransactionFee(fee)
-	go func() { t.submitTxn() }()
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+//
+// ZCNSC transactions
+//
+
+func (t *Transaction) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_GLOBAL_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go t.setNonceAndSubmit()
+	return
+}
+
+func (t *Transaction) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go t.setNonceAndSubmit()
+	return
+}
+
+func (t *Transaction) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go t.setNonceAndSubmit()
 	return
 }

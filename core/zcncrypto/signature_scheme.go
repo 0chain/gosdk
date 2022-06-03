@@ -24,6 +24,7 @@ type Wallet struct {
 	Mnemonic    string    `json:"mnemonics"`
 	Version     string    `json:"version"`
 	DateCreated string    `json:"date_created"`
+	Nonce       int64     `json:"nonce"`
 }
 
 //SignatureScheme - an encryption scheme for signing and verifying messages
@@ -69,6 +70,15 @@ func (w *Wallet) Marshal() (string, error) {
 		return "", errors.New("wallet_marshal", "Invalid Wallet")
 	}
 	return string(ws), nil
+}
+
+func (w *Wallet) Sign(hash, scheme string) (string, error) {
+	sigScheme := NewSignatureScheme(scheme)
+	err := sigScheme.SetPrivateKey(w.Keys[0].PrivateKey)
+	if err != nil {
+		return "", err
+	}
+	return sigScheme.Sign(hash)
 }
 
 func IsMnemonicValid(mnemonic string) bool {
