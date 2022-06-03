@@ -126,7 +126,7 @@ func (reEncMsg *ReEncryptedMessage) Marshal() ([]byte, error) {
 
 	D4Bytes, err := reEncMsg.D4.MarshalBinary()
 	if err != nil {
-		return nil, errors.New(gosdkError.MarshallError, err.Error())
+		return nil, err
 	}
 
 	D5Bytes, err := reEncMsg.D5.MarshalBinary()
