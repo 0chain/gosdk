@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/0chain/errors"
+	gosdkError "github.com/0chain/gosdk/core/errors"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
@@ -48,7 +49,7 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	}
 
 	if dirRef.GetPath() != ch.DestPath || dirRef.GetType() != fileref.DIRECTORY {
-		return errors.New("file_not_found", "Object to copy not found in blobber")
+		return errors.New(gosdkError.FileNotFound, "Object to copy not found in blobber")
 	}
 
 	var affectedRef *fileref.Ref

@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/0chain/errors"
+	gosdkError "github.com/0chain/gosdk/core/errors"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
@@ -39,7 +40,7 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		if found {
 			treelevel++
 		} else {
-			return errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+			return errors.New(gosdkError.InvalidReferencePath, "Invalid reference path from the blobber")
 		}
 	}
 	for i, child := range dirRef.Children {
@@ -49,7 +50,7 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref) error {
 			return nil
 		}
 	}
-	return errors.New("file_not_found", "File to delete not found in blobber")
+	return errors.New(gosdkError.FileNotFound, "File to delete not found in blobber")
 }
 
 func (n *DeleteFileChange) GetAffectedPath() string {
