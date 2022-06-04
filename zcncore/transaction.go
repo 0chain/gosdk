@@ -116,10 +116,6 @@ type TransactionScheme interface {
 	ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error
 	// GetTransactionHash implements retrieval of hash of the submitted transaction
 	GetTransactionHash() string
-	// LockTokens implements the lock token.
-	LockTokens(val int64, durationHr int64, durationMin int) error
-	// UnlockTokens implements unlocking of earlier locked tokens.
-	UnlockTokens(poolID string) error
 	//RegisterMultiSig registers a group wallet and subwallets with MultisigSC
 	RegisterMultiSig(walletstr, mswallet string) error
 	// SetTransactionHash implements verify a previous transaction status
@@ -184,10 +180,6 @@ type TransactionScheme interface {
 	WritePoolLock(allocID string, blobberID string, duration int64, lock, fee int64) error
 	WritePoolUnlock(poolID string, fee int64) error
 	StorageScUpdateConfig(*InputMap) error
-
-	// Interest pool SC
-
-	InterestPoolUpdateConfig(*InputMap) error
 
 	// Faucet
 
@@ -1244,20 +1236,6 @@ func (t *Transaction) VestingUpdateConfig(vscc *InputMap) (err error) {
 	return
 }
 
-// interest pool smart contract
-
-func (t *Transaction) InterestPoolUpdateConfig(ip *InputMap) (err error) {
-
-	err = t.createSmartContractTxn(InterestPoolSmartContractAddress,
-		transaction.INTERESTPOOLSC_UPDATE_SETTINGS, ip, 0)
-	if err != nil {
-		Logger.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
 // faucet smart contract
 
 func (t *Transaction) FaucetUpdateConfig(ip *InputMap) (err error) {
@@ -1424,47 +1402,6 @@ func (t *Transaction) MinerSCUnlock(nodeID, poolID string) (err error) {
 	}
 	go func() { t.setNonceAndSubmit() }()
 	return
-}
-
-//
-// interest pool
-//
-
-func (t *Transaction) createLockTokensTxn(val int64, durationHr int64, durationMin int) error {
-	lockInput := make(map[string]interface{})
-	lockInput["duration"] = fmt.Sprintf("%dh%dm", durationHr, durationMin)
-	err := t.createSmartContractTxn(InterestPoolSmartContractAddress, transaction.LOCK_TOKEN, lockInput, val)
-	return err
-}
-
-func (t *Transaction) LockTokens(val int64, durationHr int64, durationMin int) error {
-	err := t.createLockTokensTxn(val, durationHr, durationMin)
-	if err != nil {
-		Logger.Error(err)
-		return err
-	}
-	go func() {
-		t.setNonceAndSubmit()
-	}()
-	return nil
-}
-
-func (t *Transaction) createUnlockTokensTxn(poolID string) error {
-	unlockInput := make(map[string]interface{})
-	unlockInput["pool_id"] = poolID
-	return t.createSmartContractTxn(InterestPoolSmartContractAddress, transaction.UNLOCK_TOKEN, unlockInput, 0)
-}
-
-func (t *Transaction) UnlockTokens(poolID string) error {
-	err := t.createUnlockTokensTxn(poolID)
-	if err != nil {
-		Logger.Error(err)
-		return err
-	}
-	go func() {
-		t.setNonceAndSubmit()
-	}()
-	return nil
 }
 
 //RegisterMultiSig register a multisig wallet with the SC.
