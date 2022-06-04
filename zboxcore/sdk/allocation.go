@@ -968,9 +968,11 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	return err
 }
 
-func (a *Allocation) GetAuthTicketForShare(path string, filename string, referenceType string, refereeClientID string) (string, error) {
+func (a *Allocation) GetAuthTicketForShare(
+	path, filename, referenceType, refereeClientID string, whoPays int) (string, error) {
+
 	now := time.Now()
-	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "", 0, &now)
+	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "", whoPays, 0, &now)
 }
 
 func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
@@ -1034,7 +1036,8 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 
 func (a *Allocation) GetAuthTicket(path, filename string,
 	referenceType, refereeClientID, refereeEncryptionPublicKey string,
-	expiration int64, availableAfter *time.Time) (string, error) {
+	whoPays int, expiration int64, availableAfter *time.Time) (string, error) {
+
 	if !a.isInitialized() {
 		return "", notInitialized
 	}
@@ -1049,6 +1052,10 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 		return "", errors.New("invalid_path", "Path should be valid and absolute")
 	}
 
+	if whoPays > 1 || whoPays < 0 {
+		return "", errors.New("invalid_attribute", "whoPays should one of [0,1]")
+	}
+
 	shareReq := &ShareRequest{
 		expirationSeconds: expiration,
 		allocationID:      a.ID,
@@ -1057,6 +1064,7 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 		ctx:               a.ctx,
 		remotefilepath:    path,
 		remotefilename:    filename,
+		whoPays:           whoPays,
 	}
 
 	if referenceType == fileref.DIRECTORY {
