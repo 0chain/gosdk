@@ -662,6 +662,14 @@ type Blobber struct {
 	TotalStake        int64             `json:"total_stake"`
 }
 
+type Validator struct {
+	ID                common.Key        `json:"id"`
+	BaseURL           string            `json:"url"`
+	PublicKey         string            `json:"-"`
+	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
+	TotalStake        int64             `json:"total_stake"`
+}
+
 func GetBlobbers() (bs []*Blobber, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
