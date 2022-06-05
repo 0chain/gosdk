@@ -1749,6 +1749,12 @@ type Blobber struct {
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
+type Validator struct {
+	ID                common.Key        `json:"id"`
+	BaseURL           string            `json:"url"`
+	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
+}
+
 type AuthorizerStakePoolSettings struct {
 	DelegateWallet string         `json:"delegate_wallet"`
 	MinStake       common.Balance `json:"min_stake"`
@@ -1777,6 +1783,20 @@ func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee int64) (err error) {
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, b, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	t.SetTransactionFee(fee)
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+// UpdateValidatorSettings update settings of a validator.
+func (t *Transaction) UpdateValidatorSettings(b *Validator, fee int64) (err error) {
+
+	err = t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS, b, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
