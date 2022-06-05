@@ -939,7 +939,11 @@ func getAllocationBlobbers(owner, ownerpublickey string,
 	if err != nil {
 		return nil, err
 	}
+
 	var allocBlobberIDs []string
+	if len(allocBlobber) == 0 {
+		return allocBlobberIDs, nil
+	}
 
 	err = json.Unmarshal(allocBlobber, &allocBlobberIDs)
 	if err != nil {
