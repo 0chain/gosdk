@@ -28,12 +28,6 @@ func WithBlocks(start, end int64, blocksPerMarker int) DownloadOption {
 	}
 }
 
-func WithRxPay(rxPay bool) DownloadOption {
-	return func(do *DownloadOptions) {
-		do.rxPay = rxPay
-	}
-}
-
 func WithOnlyThumbnail(thumbnail bool) DownloadOption {
 	return func(do *DownloadOptions) {
 		do.isThumbnailDownload = thumbnail

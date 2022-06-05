@@ -32,8 +32,6 @@ type DownloadOptions struct {
 	endBlock        int64
 
 	isThumbnailDownload bool
-
-	rxPay bool
 }
 
 // CreateDownloader create a downloander

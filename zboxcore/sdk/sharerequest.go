@@ -58,7 +58,6 @@ func (req *ShareRequest) getAuthTicket(clientID, encPublicKey string) (*marker.A
 		FilePathHash:   fileref.GetReferenceLookup(req.allocationID, req.remotefilepath),
 		RefType:        req.refType,
 		ActualFileHash: fRef.ActualFileHash,
-		WhoPays:        common.WhoPays(req.whoPays),
 	}
 
 	at.Timestamp = int64(common.Now())

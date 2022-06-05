@@ -148,7 +148,7 @@ generate an authtoken that provides authorization to the holder to the specified
 download your own or a shared file.
 
 **Input**:
-> allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly, rxPay, autoCommit bool
+> allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly, autoCommit bool
 
 **Output**:
 >  {commandSuccess:bool,commitSuccess:bool, commitTxn:transaction.Transaction, fileName:string,url:string, error:string}
