@@ -6,7 +6,7 @@ import (
 	"github.com/0chain/errors"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	contractErc20 "github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
-	config "github.com/0chain/gosdk/zcnswap"
+	"github.com/0chain/gosdk/zcnswap/config"
 	"github.com/0chain/gosdk/zcnswap/contracts"
 	"github.com/0chain/gosdk/zcnswap/swapfactory"
 	"github.com/0chain/gosdk/zcnswap/swapfactory/erc20"

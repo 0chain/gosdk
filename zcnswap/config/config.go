@@ -1,4 +1,4 @@
-package zcnswap
+package config
 
 import (
 	"errors"

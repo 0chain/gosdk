@@ -5,6 +5,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/zcncore"
 	hdwallet "github.com/0chain/gosdk/zcncore/ethhdwallet"
+	"github.com/0chain/gosdk/zcnswap/config"
 	"github.com/0chain/gosdk/zcnswap/swapfactory/bancor"
 	"github.com/0chain/gosdk/zcnswap/swapfactory/erc20"
 	"github.com/ethereum/go-ethereum/accounts"
@@ -26,7 +27,7 @@ func Swap(swapAmount int64, tokenSource string) (string, error) {
 		return "", err
 	}
 
-	targetTokenAddress := Configuration.ZcnTokenAddress
+	targetTokenAddress := config.Configuration.ZcnTokenAddress
 	sourceTokenAddress := tokenSource
 
 	amount := new(big.Int).SetInt64(swapAmount)
@@ -57,7 +58,7 @@ func Swap(swapAmount int64, tokenSource string) (string, error) {
 }
 
 func getWallet() (acc *ethAccount, err error) {
-	walletHd, err := hdwallet.NewFromMnemonic(Configuration.WalletMnemonic)
+	walletHd, err := hdwallet.NewFromMnemonic(config.Configuration.WalletMnemonic)
 	if err != nil {
 		return nil, err
 	}
