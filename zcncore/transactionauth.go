@@ -669,6 +669,21 @@ func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber, fee int64) (
 	return
 }
 
+// UpdateValidatorSettings update settings of a blobber.
+func (ta *TransactionWithAuth) UpdateValidatorSettings(blob *Validator, fee int64) (
+	err error) {
+
+	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS, blob, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	ta.t.SetTransactionFee(fee)
+	go func() { ta.submitTxn() }()
+	return
+}
+
 // UpdateAllocation transaction.
 func (ta *TransactionWithAuth) UpdateAllocation(allocID string, sizeDiff int64,
 	expirationDiff int64, lock, fee int64) (err error) {
