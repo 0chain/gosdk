@@ -722,6 +722,30 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 	return
 }
 
+// GetValidator instance.
+func GetValidator(validatorID string) (validator *Validator, err error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+	var b []byte
+	b, err = zboxutil.MakeSCRestAPICall(
+		STORAGE_SCADDRESS,
+		"/get_validator",
+		map[string]string{"validator_id": validatorID},
+		nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "requesting validator:")
+	}
+	if len(b) == 0 {
+		return nil, errors.New("", "empty response from sharders")
+	}
+	validator = new(Validator)
+	if err = json.Unmarshal(b, validator); err != nil {
+		return nil, errors.Wrap(err, "decoding response:")
+	}
+	return
+}
+
 //
 // ---
 //
