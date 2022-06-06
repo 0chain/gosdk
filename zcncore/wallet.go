@@ -49,8 +49,6 @@ const (
 	PUT_TRANSACTION                  = `/v1/transaction/put`
 	TXN_VERIFY_URL                   = `/v1/transaction/get/confirmation?hash=`
 	GET_BALANCE                      = `/v1/client/get/balance?client_id=`
-	GET_LOCK_CONFIG                  = `/v1/screst/` + InterestPoolSmartContractAddress + `/getLockConfig`
-	GET_LOCKED_TOKENS                = `/v1/screst/` + InterestPoolSmartContractAddress + `/getPoolsStats?client_id=`
 	GET_BLOCK_INFO                   = `/v1/block/get?`
 	GET_MAGIC_BLOCK_INFO             = `/v1/block/magic/get?`
 	GET_LATEST_FINALIZED             = `/v1/block/get/latest_finalized`
@@ -64,11 +62,6 @@ const (
 	GET_VESTING_CONFIG       = VESTINGSC_PFX + `/vesting-config`
 	GET_VESTING_POOL_INFO    = VESTINGSC_PFX + `/getPoolInfo`
 	GET_VESTING_CLIENT_POOLS = VESTINGSC_PFX + `/getClientPools`
-
-	// inerest pool SC
-
-	INTERESTPOOLSC_PFX        = `/v1/screst/` + InterestPoolSmartContractAddress
-	GET_INTERESTPOOLSC_CONFIG = INTERESTPOOLSC_PFX + `/getConfig`
 
 	// faucet sc
 
@@ -101,18 +94,18 @@ const (
 	STORAGESC_GET_BLOBBERS             = STORAGESC_PFX + "/getblobbers"
 	STORAGESC_GET_BLOBBER              = STORAGESC_PFX + "/getBlobber"
 	STORAGESC_GET_WRITE_POOL_INFO      = STORAGESC_PFX + "/getWritePoolStat"
+	STORAGE_GET_TOTAL_STORED_DATA      = STORAGESC_PFX + "/total-stored-data"
 )
 
 const (
-	StorageSmartContractAddress      = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7`
-	VestingSmartContractAddress      = `2bba5b05949ea59c80aed3ac3474d7379d3be737e8eb5a968c52295e48333ead`
-	FaucetSmartContractAddress       = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3`
-	InterestPoolSmartContractAddress = `cf8d0df9bd8cc637a4ff4e792ffe3686da6220c45f0e1103baa609f3f1751ef4`
-	MultiSigSmartContractAddress     = `27b5ef7120252b79f9dd9c05505dd28f328c80f6863ee446daede08a84d651a7`
-	MinerSmartContractAddress        = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9`
-	ZCNSCSmartContractAddress        = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712e0`
-	MultiSigRegisterFuncName         = "register"
-	MultiSigVoteFuncName             = "vote"
+	StorageSmartContractAddress  = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7`
+	VestingSmartContractAddress  = `2bba5b05949ea59c80aed3ac3474d7379d3be737e8eb5a968c52295e48333ead`
+	FaucetSmartContractAddress   = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3`
+	MultiSigSmartContractAddress = `27b5ef7120252b79f9dd9c05505dd28f328c80f6863ee446daede08a84d651a7`
+	MinerSmartContractAddress    = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9`
+	ZCNSCSmartContractAddress    = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712e0`
+	MultiSigRegisterFuncName     = "register"
+	MultiSigVoteFuncName         = "vote"
 )
 
 // In percentage
@@ -793,29 +786,6 @@ func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 	cb.OnInfoAvailable(op, StatusSuccess, string(qr.Content), "")
 }
 
-// GetLockConfig returns the lock token configuration information such as interest rate from blockchain
-func GetLockConfig(cb GetInfoCallback) error {
-	err := checkSdkInit()
-	if err != nil {
-		return err
-	}
-	go getInfoFromSharders(GET_LOCK_CONFIG, OpGetTokenLockConfig, cb)
-	return nil
-}
-
-// GetLockedTokens returns the ealier locked token pool stats
-func GetLockedTokens(cb GetInfoCallback) error {
-	err := CheckConfig()
-	if err != nil {
-		return err
-	}
-	go func() {
-		urlSuffix := fmt.Sprintf("%v%v", GET_LOCKED_TOKENS, _config.wallet.ClientID)
-		getInfoFromSharders(urlSuffix, OpGetLockedTokens, cb)
-	}()
-	return nil
-}
-
 //GetWallet get a wallet object from a wallet string
 func GetWallet(walletStr string) (*zcncrypto.Wallet, error) {
 
@@ -975,16 +945,6 @@ func GetVestingSCConfig(cb GetInfoCallback) (err error) {
 		return
 	}
 	go getInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
-	return
-}
-
-// interest pools sc
-
-func GetInterestPoolSCConfig(cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
-		return
-	}
-	go getInfoFromSharders(GET_INTERESTPOOLSC_CONFIG, 0, cb)
 	return
 }
 

@@ -307,21 +307,6 @@ func (ta *TransactionWithAuth) VestingUpdateConfig(
 	return
 }
 
-// Interest pool SC
-
-func (ta *TransactionWithAuth) InterestPoolUpdateConfig(
-	ip *InputMap,
-) (err error) {
-	err = ta.t.createSmartContractTxn(InterestPoolSmartContractAddress,
-		transaction.INTERESTPOOLSC_UPDATE_SETTINGS, ip, 0)
-	if err != nil {
-		Logger.Error(err)
-		return
-	}
-	go func() { ta.submitTxn() }()
-	return
-}
-
 // faucet smart contract
 
 func (ta *TransactionWithAuth) FaucetUpdateConfig(
@@ -466,34 +451,6 @@ func (ta *TransactionWithAuth) MinerScUpdateGlobals(
 	}
 	go func() { ta.submitTxn() }()
 	return
-}
-
-//
-// interest pool
-//
-
-func (ta *TransactionWithAuth) LockTokens(val int64, durationHr int64, durationMin int) error {
-	err := ta.t.createLockTokensTxn(val, durationHr, durationMin)
-	if err != nil {
-		Logger.Error(err)
-		return err
-	}
-	go func() {
-		ta.submitTxn()
-	}()
-	return nil
-}
-
-func (ta *TransactionWithAuth) UnlockTokens(poolID string) error {
-	err := ta.t.createUnlockTokensTxn(poolID)
-	if err != nil {
-		Logger.Error(err)
-		return err
-	}
-	go func() {
-		ta.submitTxn()
-	}()
-	return nil
 }
 
 //RegisterMultiSig register a multisig wallet with the SC.
