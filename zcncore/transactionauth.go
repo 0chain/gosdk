@@ -669,12 +669,12 @@ func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber, fee int64) (
 	return
 }
 
-// UpdateValidatorSettings update settings of a blobber.
-func (ta *TransactionWithAuth) UpdateValidatorSettings(blob *Validator, fee int64) (
+// UpdateValidatorSettings update settings of a validator.
+func (ta *TransactionWithAuth) UpdateValidatorSettings(v *Validator, fee int64) (
 	err error) {
 
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS, blob, 0)
+		transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS, v, 0)
 	if err != nil {
 		Logger.Error(err)
 		return

@@ -176,6 +176,7 @@ type TransactionScheme interface {
 	StakePoolLock(blobberID string, lock, fee int64) error
 	StakePoolUnlock(blobberID string, poolID string, fee int64) error
 	UpdateBlobberSettings(blobber *Blobber, fee int64) error
+	UpdateValidatorSettings(validator *Validator, fee int64) error
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock, fee int64) error
 	WritePoolLock(allocID string, blobberID string, duration int64, lock, fee int64) error
 	WritePoolUnlock(poolID string, fee int64) error
@@ -1793,10 +1794,10 @@ func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee int64) (err error) {
 }
 
 // UpdateValidatorSettings update settings of a validator.
-func (t *Transaction) UpdateValidatorSettings(b *Validator, fee int64) (err error) {
+func (t *Transaction) UpdateValidatorSettings(v *Validator, fee int64) (err error) {
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS, b, 0)
+		transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS, v, 0)
 	if err != nil {
 		Logger.Error(err)
 		return

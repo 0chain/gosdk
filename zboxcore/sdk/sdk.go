@@ -1225,13 +1225,13 @@ func UpdateBlobberSettings(blob *Blobber) (resp string, nonce int64, err error) 
 	return
 }
 
-func UpdateValidatorSettings(blob *Validator) (resp string, nonce int64, err error) {
+func UpdateValidatorSettings(v *Validator) (resp string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS,
-		InputArgs: blob,
+		InputArgs: v,
 	}
 	resp, _, nonce, err = smartContractTxn(sn)
 	return
