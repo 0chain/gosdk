@@ -19,10 +19,8 @@ type ShareRequest struct {
 	remotefilepath    string
 	remotefilename    string
 	refType           string
-	whoPays           int
 	expirationSeconds int64
 	blobbers          []*blockchain.StorageNode
-	authToken         *marker.AuthTicket
 	ctx               context.Context
 }
 

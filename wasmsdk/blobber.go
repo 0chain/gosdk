@@ -451,7 +451,7 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 }
 
 // Upload upload file
-func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, autoCommit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, isUpdate, isRepair bool) (*FileCommandResponse, error) {
+func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, autoCommit bool, isLiveUpload, isSyncUpload bool, isUpdate, isRepair bool) (*FileCommandResponse, error) {
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
 	}
@@ -471,19 +471,6 @@ func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 	wg.Add(1)
 	if strings.HasPrefix(remotePath, "/Encrypted") {
 		encrypt = true
-	}
-
-	var attrs fileref.Attributes
-	if len(attrWhoPaysForReads) > 0 {
-		var (
-			wp common.WhoPays
-		)
-
-		if err := wp.Parse(attrWhoPaysForReads); err != nil {
-			PrintError(err)
-			return nil, err
-		}
-		attrs.WhoPaysForReads = wp // set given value
 	}
 
 	if isLiveUpload {
@@ -517,7 +504,6 @@ func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 		MimeType:   mimeType,
 		RemoteName: fileName,
 		RemotePath: remotePath,
-		Attributes: attrs,
 	}
 
 	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair,

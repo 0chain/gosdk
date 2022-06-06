@@ -41,21 +41,20 @@ type listResponse struct {
 }
 
 type ListResult struct {
-	Name            string             `json:"name"`
-	Path            string             `json:"path,omitempty"`
-	Type            string             `json:"type"`
-	Size            int64              `json:"size"`
-	Hash            string             `json:"hash,omitempty"`
-	MimeType        string             `json:"mimetype,omitempty"`
-	NumBlocks       int64              `json:"num_blocks"`
-	LookupHash      string             `json:"lookup_hash"`
-	EncryptionKey   string             `json:"encryption_key"`
-	Attributes      fileref.Attributes `json:"attributes"`
-	ActualSize      int64              `json:"actual_size"`
-	ActualNumBlocks int64              `json:"actual_num_blocks"`
-	CreatedAt       string             `json:"created_at"`
-	UpdatedAt       string             `json:"updated_at"`
-	Children        []*ListResult      `json:"list"`
+	Name            string        `json:"name"`
+	Path            string        `json:"path,omitempty"`
+	Type            string        `json:"type"`
+	Size            int64         `json:"size"`
+	Hash            string        `json:"hash,omitempty"`
+	MimeType        string        `json:"mimetype,omitempty"`
+	NumBlocks       int64         `json:"num_blocks"`
+	LookupHash      string        `json:"lookup_hash"`
+	EncryptionKey   string        `json:"encryption_key"`
+	ActualSize      int64         `json:"actual_size"`
+	ActualNumBlocks int64         `json:"actual_num_blocks"`
+	CreatedAt       string        `json:"created_at"`
+	UpdatedAt       string        `json:"updated_at"`
+	Children        []*ListResult `json:"list"`
 	Consensus       `json:"-"`
 }
 
@@ -161,7 +160,6 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 		result.CreatedAt = ti.ref.CreatedAt
 		result.UpdatedAt = ti.ref.UpdatedAt
 		result.LookupHash = ti.ref.LookupHash
-		result.Attributes = ti.ref.Attributes
 		result.ActualSize = ti.ref.ActualSize
 		result.ActualNumBlocks = 0
 		if result.Type == fileref.DIRECTORY {
@@ -179,12 +177,11 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 			var childResult *ListResult
 			if _, ok := childResultMap[actualHash]; !ok {
 				childResult = &ListResult{
-					Name:       child.GetName(),
-					Path:       child.GetPath(),
-					Type:       child.GetType(),
-					CreatedAt:  child.GetCreatedAt(),
-					UpdatedAt:  child.GetUpdatedAt(),
-					Attributes: child.GetAttributes(),
+					Name:      child.GetName(),
+					Path:      child.GetPath(),
+					Type:      child.GetType(),
+					CreatedAt: child.GetCreatedAt(),
+					UpdatedAt: child.GetUpdatedAt(),
 				}
 				childResult.LookupHash = child.GetLookupHash()
 				childResult.consensus = 0

@@ -259,8 +259,7 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit128(t *testing.T)
 	allocation.ParityShards = 65
 	allocation.fullconsensus, allocation.consensusThreshold, allocation.consensusOK = allocation.getConsensuses()
 
-	var file fileref.Attributes
-	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false, file)
+	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false)
 
 	var expectedErr = "allocation requires [129] blobbers, which is greater than the maximum permitted number of [128]. reduce number of data or parity shards and try again"
 	if err == nil {
@@ -284,8 +283,7 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanExplicitLimit(t *testing.T) {
 	allocation.ParityShards = 6
 	allocation.fullconsensus, allocation.consensusThreshold, allocation.consensusOK = allocation.getConsensuses()
 
-	var file fileref.Attributes
-	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false, file)
+	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false)
 
 	var expectedErr = "allocation requires [11] blobbers, which is greater than the maximum permitted number of [10]. reduce number of data or parity shards and try again"
 	if err == nil {
@@ -309,8 +307,7 @@ func TestDoNotThrowErrorWhenBlobbersRequiredLessThanLimit(t *testing.T) {
 	allocation.ParityShards = 4
 	allocation.fullconsensus, allocation.consensusThreshold, allocation.consensusOK = allocation.getConsensuses()
 
-	var file fileref.Attributes
-	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false, file)
+	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false)
 
 	if err != nil {
 		t.Errorf("uploadOrUpdateFile() = expected no error but was %v", err)
@@ -974,156 +971,6 @@ func TestAllocation_downloadFile(t *testing.T) {
 				return
 			}
 			require.NoErrorf(err, "Unexpected error: %v", err)
-		})
-	}
-}
-
-func TestAllocation_UpdateObjectAttributes(t *testing.T) {
-	const (
-		mockType = "f"
-	)
-
-	var mockClient = mocks.HttpClient{}
-	zboxutil.Client = &mockClient
-
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
-
-	type parameters struct {
-		path       string
-		attrs      fileref.Attributes
-		statusCode int
-	}
-
-	tests := []struct {
-		name       string
-		parameters parameters
-		setup      func(*testing.T, string, parameters, *Allocation) (teardown func(*testing.T))
-		wantErr    bool
-		errMsg     string
-	}{
-		{
-			name: "Test_Uninitialized_Failed",
-			setup: func(t *testing.T, testCaseName string, p parameters, a *Allocation) (teardown func(t *testing.T)) {
-				a.initialized = false
-				return func(t *testing.T) {
-					a.initialized = true
-				}
-			},
-			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
-		},
-		{
-			name: "Test_Invalid_Path_Failed",
-			parameters: parameters{
-				path:  "",
-				attrs: fileref.Attributes{WhoPaysForReads: common.WhoPaysOwner},
-			},
-			wantErr: true,
-			errMsg:  "update_attrs: Invalid path for the list",
-		},
-		{
-			name: "Test_Invalid_Remote_Abs_Path_Failed",
-			parameters: parameters{
-				path:  "abc",
-				attrs: fileref.Attributes{WhoPaysForReads: common.WhoPaysOwner},
-			},
-			wantErr: true,
-			errMsg:  "update_attrs: Path should be valid and absolute",
-		},
-		{
-			name: "Test_Update_Attributes_Failed",
-			parameters: parameters{
-				path:       "/1.txt",
-				attrs:      fileref.Attributes{WhoPaysForReads: common.WhoPaysOwner},
-				statusCode: 400,
-			},
-			setup: func(t *testing.T, testName string, p parameters, a *Allocation) (teardown func(*testing.T)) {
-				body, err := json.Marshal(&fileref.ReferencePath{
-					Meta: map[string]interface{}{
-						"type": mockType,
-					},
-				})
-				require.NoError(t, err)
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_UpdateObjectAttributes", testName, a, http.MethodGet, http.StatusOK, body)
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_UpdateObjectAttributes", testName, a, http.MethodPost, p.statusCode, []byte(""))
-				setupMockCommitRequest(a)
-				return nil
-			},
-			wantErr: true,
-			errMsg:  "Update attributes failed: request failed, operation failed",
-		},
-		{
-			name: "Test_Who_Pay_For_Read_Owner_Success",
-			parameters: parameters{
-				path:       "/1.txt",
-				attrs:      fileref.Attributes{WhoPaysForReads: common.WhoPaysOwner},
-				statusCode: 200,
-			},
-			setup: func(t *testing.T, testName string, p parameters, a *Allocation) (teardown func(*testing.T)) {
-				body, err := json.Marshal(&fileref.ReferencePath{
-					Meta: map[string]interface{}{
-						"type": mockType,
-					},
-				})
-				require.NoError(t, err)
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_UpdateObjectAttributes", testName, a, http.MethodGet, http.StatusOK, body)
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_UpdateObjectAttributes", testName, a, http.MethodPost, p.statusCode, []byte(""))
-				setupMockCommitRequest(a)
-				return nil
-			},
-		},
-		{
-			name: "Test_Who_Pay_For_Read_3rd_Party_Success",
-			parameters: parameters{
-				path:       "/1.txt",
-				attrs:      fileref.Attributes{WhoPaysForReads: common.WhoPays3rdParty},
-				statusCode: 200,
-			},
-			setup: func(t *testing.T, testName string, p parameters, a *Allocation) (teardown func(*testing.T)) {
-				body, err := json.Marshal(&fileref.ReferencePath{
-					Meta: map[string]interface{}{
-						"type": mockType,
-					},
-				})
-				require.NoError(t, err)
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_UpdateObjectAttributes", testName, a, http.MethodGet, http.StatusOK, body)
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_UpdateObjectAttributes", testName, a, http.MethodPost, p.statusCode, []byte(""))
-				setupMockCommitRequest(a)
-				return nil
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require := require.New(t)
-			a := &Allocation{
-				DataShards:   2,
-				ParityShards: 2,
-			}
-			a.InitAllocation()
-			sdkInitialized = true
-			for i := 0; i < numBlobbers; i++ {
-				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
-					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
-					Baseurl: "TestAllocation_UpdateObjectAttributes" + tt.name + mockBlobberUrl + strconv.Itoa(i),
-				})
-			}
-			if setup := tt.setup; setup != nil {
-				if teardown := setup(t, tt.name, tt.parameters, a); teardown != nil {
-					defer teardown(t)
-				}
-			}
-			err := a.UpdateObjectAttributes(tt.parameters.path, tt.parameters.attrs)
-			require.EqualValues(tt.wantErr, err != nil)
-			if err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(err))
-				return
-			}
-			require.NoErrorf(err, "unexpected error: %v", err)
 		})
 	}
 }

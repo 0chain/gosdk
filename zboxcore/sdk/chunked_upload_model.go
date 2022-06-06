@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
 // FileMeta metadata of stream input/local
@@ -33,8 +32,6 @@ type FileMeta struct {
 	RemoteName string
 	// RemotePath remote path
 	RemotePath string
-	// Attributes file attributes in blockchain
-	Attributes fileref.Attributes
 }
 
 // FileID generate id of progress on local cache
@@ -71,10 +68,9 @@ type UploadFormData struct {
 	// ActualThumbnailHash hash of original thumbnail (un-encoded, un-encrypted)
 	ActualThumbHash string `json:"actual_thumb_hash,omitempty"`
 
-	MimeType     string             `json:"mimetype,omitempty"`
-	CustomMeta   string             `json:"custom_meta,omitempty"`
-	EncryptedKey string             `json:"encrypted_key,omitempty"`
-	Attributes   fileref.Attributes `json:"attributes,omitempty"`
+	MimeType     string `json:"mimetype,omitempty"`
+	CustomMeta   string `json:"custom_meta,omitempty"`
+	EncryptedKey string `json:"encrypted_key,omitempty"`
 
 	IsFinal         bool   `json:"is_final,omitempty"`          // all of chunks are uploaded
 	ChunkHash       string `json:"chunk_hash"`                  // hash of chunks
