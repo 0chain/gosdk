@@ -10,7 +10,7 @@ import (
 	"math/big"
 	"regexp"
 
-	"github.com/0chain/gosdk/core/token"
+	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	hdwallet "github.com/0chain/gosdk/zcncore/ethhdwallet"
 	"github.com/ethereum/go-ethereum"
@@ -169,7 +169,7 @@ func CheckEthHashStatus(hash string) int {
 
 // ConvertZcnTokenToETH - converting Zcn tokens to Eth
 func ConvertZcnTokenToETH(f float64) (float64, error) {
-	ethRate, err := token.GetTokenUSDRate(context.TODO(), "eth")
+	ethRate, err := tokenrate.GetUSD(context.TODO(), "eth")
 	if err != nil {
 		return 0, err
 	}

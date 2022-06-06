@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/0chain/gosdk/core/token"
+	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/transaction"
 
 	"github.com/0chain/errors"
@@ -766,7 +766,7 @@ func ConvertUSDToToken(usd float64) (float64, error) {
 }
 
 func getTokenUSDRate() (float64, error) {
-	return token.GetTokenUSDRate(context.TODO(), "zcn")
+	return tokenrate.GetUSD(context.TODO(), "zcn")
 }
 
 func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
@@ -813,7 +813,7 @@ func GetWalletClientID(walletStr string) (string, error) {
 
 // GetZcnUSDInfo returns USD value for ZCN token from coinmarketcap.com
 func GetZcnUSDInfo() (float64, error) {
-	return token.GetTokenUSDRate(context.TODO(), "zcn")
+	return tokenrate.GetUSD(context.TODO(), "zcn")
 }
 
 // SetupAuth prepare auth app with clientid, key and a set of public, private key and local publickey

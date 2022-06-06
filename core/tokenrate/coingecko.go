@@ -1,4 +1,4 @@
-package token
+package tokenrate
 
 import (
 	"context"
@@ -15,7 +15,7 @@ import (
 type coingeckoQuoteQuery struct {
 }
 
-func (qq *coingeckoQuoteQuery) GetUSDRate(ctx context.Context, symbol string) (float64, error) {
+func (qq *coingeckoQuoteQuery) getUSD(ctx context.Context, symbol string) (float64, error) {
 
 	var result coingeckoResponse
 

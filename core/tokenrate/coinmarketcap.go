@@ -1,4 +1,4 @@
-package token
+package tokenrate
 
 import (
 	"context"
@@ -16,7 +16,7 @@ type coinmarketcapQuoteQuery struct {
 	APIKey string
 }
 
-func createCoinmarketcapQuoteQuery() QuoteQuery {
+func createCoinmarketcapQuoteQuery() quoteQuery {
 
 	coinmarketcapAPIKEY, ok := os.LookupEnv("COINMARKETCAP_API_KEY")
 	if !ok {
@@ -28,7 +28,7 @@ func createCoinmarketcapQuoteQuery() QuoteQuery {
 	}
 }
 
-func (qq *coinmarketcapQuoteQuery) GetUSDRate(ctx context.Context, symbol string) (float64, error) {
+func (qq *coinmarketcapQuoteQuery) getUSD(ctx context.Context, symbol string) (float64, error) {
 
 	var result coinmarketcapResponse
 
