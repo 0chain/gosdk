@@ -483,9 +483,29 @@ func CreateWallet(statusCb WalletCallback) error {
 	return nil
 }
 
+// RecoverOfflineWallet recovers the previously generated wallet using the mnemonic.
+func RecoverOfflineWallet(mnemonic string) (string, error) {
+	if !zcncrypto.IsMnemonicValid(mnemonic) {
+		return "", errors.New("", "Invalid mnemonic")
+	}
+
+	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	wallet, err := sigScheme.RecoverKeys(mnemonic)
+	if err != nil {
+		return "", err
+	}
+
+	walletString, err := wallet.Marshal()
+	if err != nil {
+		return "", err
+	}
+
+	return walletString, nil
+}
+
 // RecoverWallet recovers the previously generated wallet using the mnemonic.
 // It also registers the wallet again to block chain.
-func RecoverWallet(mnemonic string, offline bool, statusCb WalletCallback) error {
+func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
 	if !zcncrypto.IsMnemonicValid(mnemonic) {
 		return errors.New("", "Invalid mnemonic")
 	}
@@ -496,21 +516,11 @@ func RecoverWallet(mnemonic string, offline bool, statusCb WalletCallback) error
 			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
 		}
-		if offline {
-			walletString, err := wallet.Marshal()
-			if err != nil {
-				statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
-				return
-			}
 
-			statusCb.OnWalletCreateComplete(StatusSuccess, walletString, "")
-		} else {
-
-			err = RegisterToMiners(wallet, statusCb)
-			if err != nil {
-				statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
-				return
-			}
+		err = RegisterToMiners(wallet, statusCb)
+		if err != nil {
+			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
+			return
 		}
 
 	}()
