@@ -249,11 +249,15 @@ func (tq *TransactionQuery) FromAll(ctx context.Context, query string, handle Qu
 				Error:      err,
 				StatusCode: http.StatusBadRequest,
 			}
-			Logger.Debug(req.URL.String() + " " + resp.Status)
 
 			if resp != nil {
 				res.StatusCode = resp.StatusCode
+
+				Logger.Debug(req.URL.String() + " " + resp.Status)
 				Logger.Debug(string(respBody))
+			} else {
+				Logger.Debug(req.URL.String())
+
 			}
 
 			if handle != nil {
@@ -398,4 +402,47 @@ func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSha
 	}
 
 	return confirmationBlockHeader, confirmationBlock, lfbBlockHeader, nil
+}
+
+func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryResult, error) {
+
+	consensuses := make(map[int]int)
+	var maxConsensus int
+	var consensusesResp QueryResult
+	// {host}{query}
+	err := tq.FromAll(ctx, query,
+		func(qr QueryResult) bool {
+			//ignore response if it is network error
+			if qr.StatusCode >= 500 {
+				return false
+			}
+
+			consensuses[qr.StatusCode]++
+			if consensuses[qr.StatusCode] >= maxConsensus {
+				maxConsensus = consensuses[qr.StatusCode]
+				consensusesResp = qr
+			}
+
+			return false
+
+		})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if maxConsensus == 0 {
+		return nil, errors.New("zcn: query not found")
+	}
+
+	rate := float32(maxConsensus*100) / float32(tq.max)
+	if rate < consensusThresh {
+		return nil, ErrInvalidConsensus
+	}
+
+	if consensusesResp.StatusCode != http.StatusOK {
+		return nil, errors.New(string(consensusesResp.Content))
+	}
+
+	return &consensusesResp, nil
 }

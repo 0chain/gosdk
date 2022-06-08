@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/gosdk/core/transaction"
 	"log"
 	"math"
 	"net/http"
@@ -15,6 +14,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/0chain/gosdk/core/transaction"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
@@ -47,8 +48,6 @@ const (
 	PUT_TRANSACTION                  = `/v1/transaction/put`
 	TXN_VERIFY_URL                   = `/v1/transaction/get/confirmation?hash=`
 	GET_BALANCE                      = `/v1/client/get/balance?client_id=`
-	GET_LOCK_CONFIG                  = `/v1/screst/` + InterestPoolSmartContractAddress + `/getLockConfig`
-	GET_LOCKED_TOKENS                = `/v1/screst/` + InterestPoolSmartContractAddress + `/getPoolsStats?client_id=`
 	GET_BLOCK_INFO                   = `/v1/block/get?`
 	GET_MAGIC_BLOCK_INFO             = `/v1/block/magic/get?`
 	GET_LATEST_FINALIZED             = `/v1/block/get/latest_finalized`
@@ -59,19 +58,14 @@ const (
 
 	VESTINGSC_PFX = `/v1/screst/` + VestingSmartContractAddress
 
-	GET_VESTING_CONFIG       = VESTINGSC_PFX + `/getConfig`
+	GET_VESTING_CONFIG       = VESTINGSC_PFX + `/vesting-config`
 	GET_VESTING_POOL_INFO    = VESTINGSC_PFX + `/getPoolInfo`
 	GET_VESTING_CLIENT_POOLS = VESTINGSC_PFX + `/getClientPools`
-
-	// inerest pool SC
-
-	INTERESTPOOLSC_PFX        = `/v1/screst/` + InterestPoolSmartContractAddress
-	GET_INTERESTPOOLSC_CONFIG = INTERESTPOOLSC_PFX + `/getConfig`
 
 	// faucet sc
 
 	FAUCETSC_PFX        = `/v1/screst/` + FaucetSmartContractAddress
-	GET_FAUCETSC_CONFIG = FAUCETSC_PFX + `/getConfig`
+	GET_FAUCETSC_CONFIG = FAUCETSC_PFX + `/faucet-config`
 
 	// miner SC
 
@@ -89,7 +83,7 @@ const (
 
 	STORAGESC_PFX = "/v1/screst/" + StorageSmartContractAddress
 
-	STORAGESC_GET_SC_CONFIG            = STORAGESC_PFX + "/getConfig"
+	STORAGESC_GET_SC_CONFIG            = STORAGESC_PFX + "/storage-config"
 	STORAGESC_GET_CHALLENGE_POOL_INFO  = STORAGESC_PFX + "/getChallengePoolStat"
 	STORAGESC_GET_ALLOCATION           = STORAGESC_PFX + "/allocation"
 	STORAGESC_GET_ALLOCATIONS          = STORAGESC_PFX + "/allocations"
@@ -99,18 +93,18 @@ const (
 	STORAGESC_GET_BLOBBERS             = STORAGESC_PFX + "/getblobbers"
 	STORAGESC_GET_BLOBBER              = STORAGESC_PFX + "/getBlobber"
 	STORAGESC_GET_WRITE_POOL_INFO      = STORAGESC_PFX + "/getWritePoolStat"
+	STORAGE_GET_TOTAL_STORED_DATA      = STORAGESC_PFX + "/total-stored-data"
 )
 
 const (
-	StorageSmartContractAddress      = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7`
-	VestingSmartContractAddress      = `2bba5b05949ea59c80aed3ac3474d7379d3be737e8eb5a968c52295e48333ead`
-	FaucetSmartContractAddress       = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3`
-	InterestPoolSmartContractAddress = `cf8d0df9bd8cc637a4ff4e792ffe3686da6220c45f0e1103baa609f3f1751ef4`
-	MultiSigSmartContractAddress     = `27b5ef7120252b79f9dd9c05505dd28f328c80f6863ee446daede08a84d651a7`
-	MinerSmartContractAddress        = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9`
-	ZCNSCSmartContractAddress        = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712e0`
-	MultiSigRegisterFuncName         = "register"
-	MultiSigVoteFuncName             = "vote"
+	StorageSmartContractAddress  = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7`
+	VestingSmartContractAddress  = `2bba5b05949ea59c80aed3ac3474d7379d3be737e8eb5a968c52295e48333ead`
+	FaucetSmartContractAddress   = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3`
+	MultiSigSmartContractAddress = `27b5ef7120252b79f9dd9c05505dd28f328c80f6863ee446daede08a84d651a7`
+	MinerSmartContractAddress    = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9`
+	ZCNSCSmartContractAddress    = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712e0`
+	MultiSigRegisterFuncName     = "register"
+	MultiSigVoteFuncName         = "vote"
 )
 
 // In percentage
@@ -817,57 +811,20 @@ func getTokenRateByCurrency(currency string) (float64, error) {
 }
 
 func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
-	result := make(chan *util.GetResponse)
-	defer close(result)
-	// getMinShardersVerify()
-	var numSharders = len(_config.chain.Sharders) // overwrite, use all
-	queryFromSharders(numSharders, urlSuffix, result)
-	consensus := float32(0)
-	resultMap := make(map[int]float32)
-	var winresult *util.GetResponse
-	for i := 0; i < numSharders; i++ {
-		rsp := <-result
-		Logger.Debug(rsp.Url, rsp.Status)
-		resultMap[rsp.StatusCode]++
-		if resultMap[rsp.StatusCode] > consensus {
-			consensus = resultMap[rsp.StatusCode]
-			winresult = rsp
-		}
-	}
-	rate := consensus * 100 / float32(len(_config.chain.Sharders))
-	if rate < consensusThresh {
-		newerr := fmt.Sprintf(`{"code": "consensus_failed", "error": "consensus failed on sharders.", "server_error": "%v"}`, winresult.Body)
-		cb.OnInfoAvailable(op, StatusError, "", newerr)
+
+	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders))
+	if err != nil {
+		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
 	}
-	if winresult.StatusCode != http.StatusOK {
-		cb.OnInfoAvailable(op, StatusError, "", winresult.Body)
-	} else {
-		cb.OnInfoAvailable(op, StatusSuccess, winresult.Body, "")
-	}
-}
 
-// GetLockConfig returns the lock token configuration information such as interest rate from blockchain
-func GetLockConfig(cb GetInfoCallback) error {
-	err := checkSdkInit()
+	qr, err := tq.GetInfo(context.TODO(), urlSuffix)
 	if err != nil {
-		return err
+		cb.OnInfoAvailable(op, StatusError, "", err.Error())
+		return
 	}
-	go getInfoFromSharders(GET_LOCK_CONFIG, OpGetTokenLockConfig, cb)
-	return nil
-}
 
-// GetLockedTokens returns the ealier locked token pool stats
-func GetLockedTokens(cb GetInfoCallback) error {
-	err := CheckConfig()
-	if err != nil {
-		return err
-	}
-	go func() {
-		urlSuffix := fmt.Sprintf("%v%v", GET_LOCKED_TOKENS, _config.wallet.ClientID)
-		getInfoFromSharders(urlSuffix, OpGetLockedTokens, cb)
-	}()
-	return nil
+	cb.OnInfoAvailable(op, StatusSuccess, string(qr.Content), "")
 }
 
 //GetWallet get a wallet object from a wallet string
@@ -1048,16 +1005,6 @@ func GetVestingSCConfig(cb GetInfoCallback) (err error) {
 		return
 	}
 	go getInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
-	return
-}
-
-// interest pools sc
-
-func GetInterestPoolSCConfig(cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
-		return
-	}
-	go getInfoFromSharders(GET_INTERESTPOOLSC_CONFIG, 0, cb)
 	return
 }
 
@@ -1311,6 +1258,7 @@ func GetBlobbers(cb GetInfoCallback) (err error) {
 		return
 	}
 	var url = STORAGESC_GET_BLOBBERS
+
 	go getInfoFromSharders(url, OpStorageSCGetBlobbers, cb)
 	return
 }

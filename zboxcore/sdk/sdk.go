@@ -77,18 +77,6 @@ func GetLogger() *logger.Logger {
 	return &l.Logger
 }
 
-// InitStorageSDK init storage sdk with walletJSON
-//   {
-//		"client_id":"322d1dadec182effbcbdeef77d84f",
-//		"client_key":"3b6d02a22ec82d4d9aa1402917ca2",
-//		"keys":[{
-//			"public_key":"3b6d02a22ec82d4d9aa1402917ca268",
-//			"private_key":"25f2e1355d3864de01aba0bfec3702"
-//			}],
-//		"mnemonics":"double wink spin mushroom thing notable trumpet chapter",
-//		"version":"1.0",
-//		"date_created":"2021-08-18T08:34:39+08:00"
-//	 }
 func InitStorageSDK(walletJSON string, blockWorker, chainID, signatureScheme string, preferredBlobbers []string, nonce int64) error {
 
 	err := client.PopulateClient(walletJSON, signatureScheme)
@@ -204,9 +192,14 @@ func (aps *AllocationPoolStats) AllocFilter(allocID string) {
 	aps.Pools = aps.Pools[:i]
 }
 
+type ReadPool struct {
+	OwnerBalance   common.Balance `json:"owner_balance"`
+	VisitorBalance common.Balance `json:"visitor_balance"`
+}
+
 // GetReadPoolInfo for given client, or, if the given clientID is empty,
 // for current client of the sdk.
-func GetReadPoolInfo(clientID string) (info *AllocationPoolStats, err error) {
+func GetReadPoolInfo(clientID string) (info *ReadPool, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
 	}
@@ -225,7 +218,7 @@ func GetReadPoolInfo(clientID string) (info *AllocationPoolStats, err error) {
 		return nil, errors.New("", "empty response")
 	}
 
-	info = new(AllocationPoolStats)
+	info = new(ReadPool)
 	if err = json.Unmarshal(b, info); err != nil {
 		return nil, errors.Wrap(err, "error decoding response:")
 	}
@@ -234,22 +227,19 @@ func GetReadPoolInfo(clientID string) (info *AllocationPoolStats, err error) {
 }
 
 // ReadPoolLock locks given number of tokes for given duration in read pool.
-func ReadPoolLock(dur time.Duration, allocID, blobberID string,
-	tokens, fee int64) (hash string, nonce int64, err error) {
+func ReadPoolLock(tokens, fee int64, isOwner bool) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
 
 	type lockRequest struct {
-		Duration     time.Duration `json:"duration"`
-		AllocationID string        `json:"allocation_id"`
-		BlobberID    string        `json:"blobber_id,omitempty"`
+		IsOwner    bool   `json:"is_owner"`
+		//MintTokens bool   `json:"mint_tokens"`
 	}
 
-	var req lockRequest
-	req.Duration = dur
-	req.AllocationID = allocID
-	req.BlobberID = blobberID
+	req := lockRequest{
+		IsOwner: isOwner,
+	}
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_READ_POOL_LOCK,
@@ -260,17 +250,18 @@ func ReadPoolLock(dur time.Duration, allocID, blobberID string,
 }
 
 // ReadPoolUnlock unlocks tokens in expired read pool
-func ReadPoolUnlock(poolID string, fee int64) (hash string, nonce int64, err error) {
+func ReadPoolUnlock(fee int64, isOwner bool) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
 
 	type unlockRequest struct {
-		PoolID string `json:"pool_id"`
+		IsOwner    bool   `json:"is_owner"`
 	}
 
-	var req unlockRequest
-	req.PoolID = poolID
+	req := unlockRequest{
+		IsOwner: isOwner,
+	}
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_READ_POOL_UNLOCK,
@@ -408,6 +399,29 @@ func GetStakePoolUserInfo(clientID string) (info *StakePoolUserInfo, err error) 
 	}
 
 	return
+}
+
+func GetTotalStoredData() (map[string]int64, error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+	var err error
+	var b []byte
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
+		"/total-stored-data", nil, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "error requesting stake pool user info:")
+	}
+	if len(b) == 0 {
+		return nil, errors.New("", "empty response")
+	}
+
+	info := make(map[string]int64)
+	if err = json.Unmarshal(b, &info); err != nil {
+		return nil, errors.Wrap(err, "error decoding response:"+string(b))
+	}
+
+	return info, nil
 }
 
 type stakePoolRequest struct {
@@ -632,7 +646,7 @@ func GetStorageSCConfig() (conf *InputMap, err error) {
 	}
 
 	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getConfig", nil,
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/storage-config", nil,
 		nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting storage SC configs:")

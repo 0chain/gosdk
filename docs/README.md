@@ -171,35 +171,6 @@ http://cala.devb.testnet-0chain.net:7171/v1/scstate/get?sc_address=6dba10422e368
 ```
 ---
 
-## ENDPOINT:  `/v1/screst/` + InterestPoolSmartContractAddress + `/getPoolsStats`
-
-Note: Currently InterestPoolSmartContractAddress is predefined. See sample input for more details.
-
-**Purpose** To get the ealier locked token pool stats
-
-**METHOD** GET
-
-**Send To** Sharder
-
-**Input**
-
-Interest Pool SmartContract Address,
-
-Wallet ID of the wallet that owns the locked tokens
-
-**Output** locked token pool stats or a failure message
-
-***Sample Input***
-```
-http://peda.devb.testnet-0chain.net:7171/v1/screst/6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9/getPoolsStats?client_id=a406e19a179a5bd10b7d3dd5377f699f76967ad10a31d4805a3909e088e3e501
-```
-***Sample Failed Output***
-```
-"failed to get stats: no pools exist"
-```
-
----
-
 ## ENDPOINT : `/v1/screset/` + StorageSmartContractAddress + `getblobbers`
 
 **Purpose** To get the list of blobbers registered in blockchain
