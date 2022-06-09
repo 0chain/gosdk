@@ -25,15 +25,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v3
+        with:
+          go-version: ^1.18
+
       - name: Replace go.mod
         run: |
           sed -i -e 's/\/\/replace github.com\/herumi\/bls-go-binary/replace github.com\/herumi\/bls-go-binary/g' go.mod
           go mod tidy
 
-      - name: Set up Go 1.x
-        uses: actions/setup-go@v3
-        with:
-          go-version: ^1.18
 
       - name: Install Gomobile
         run: |
@@ -89,6 +90,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v3
+        with:
+          go-version: ^1.18
+
       - name: Replace go.mod
         run: |
           sed -i -e 's/\/\/replace github.com\/herumi\/bls-go-binary/replace github.com\/herumi\/bls-go-binary/g' go.mod
@@ -112,10 +118,6 @@ jobs:
         with:
           ndk-version: r21d
 
-      - name: Set up Go 1.x
-        uses: actions/setup-go@v3
-        with:
-          go-version: ^1.18
 
       - name: Install Gomobile
         run: |
