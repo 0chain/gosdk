@@ -383,6 +383,11 @@ func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 	}
 }
 
+// InitSignatureScheme initializes signature scheme only.
+func InitSignatureScheme(scheme string) {
+	_config.chain.SignatureScheme = scheme
+}
+
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
 func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
 	if signscheme != "ed25519" && signscheme != "bls0chain" {
@@ -471,6 +476,26 @@ func CreateWallet(statusCb WalletCallback) error {
 	return nil
 }
 
+// RecoverOfflineWallet recovers the previously generated wallet using the mnemonic.
+func RecoverOfflineWallet(mnemonic string) (string, error) {
+	if !zcncrypto.IsMnemonicValid(mnemonic) {
+		return "", errors.New("", "Invalid mnemonic")
+	}
+
+	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	wallet, err := sigScheme.RecoverKeys(mnemonic)
+	if err != nil {
+		return "", err
+	}
+
+	walletString, err := wallet.Marshal()
+	if err != nil {
+		return "", err
+	}
+
+	return walletString, nil
+}
+
 // RecoverWallet recovers the previously generated wallet using the mnemonic.
 // It also registers the wallet again to block chain.
 func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
@@ -484,11 +509,13 @@ func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
 			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
 		}
+
 		err = RegisterToMiners(wallet, statusCb)
 		if err != nil {
 			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
 		}
+
 	}()
 	return nil
 }
