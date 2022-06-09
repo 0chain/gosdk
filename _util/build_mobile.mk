@@ -17,14 +17,6 @@ $(ANDROIDMOBILESDKDIR):
 
 setup-gomobile: $(IOSMOBILESDKDIR) $(ANDROIDMOBILESDKDIR)
 	@$(PRINT_MAG)
-	@echo "============================================================"
-	@echo "    Initializing gomobile. Please wait it may take a while ..."
-	@echo "------------------------------------------------------------"
-	@go install golang.org/x/mobile/cmd/gomobile
-	@go mod tidy
-	@$(PRINT_NON)
-	@gomobile init
-	@$(PRINT_GRN)
 	@echo "  ___ __  _  _ ____ __   ____ ____ ____ ____  "
 	@echo " / __/  \( \/ (  _ (  ) (  __(_  _(  __(    \ "
 	@echo "( (_(  O / \/ \) __/ (_/\) _)  )(  ) _) ) D ( "
