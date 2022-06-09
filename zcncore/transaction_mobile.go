@@ -1,5 +1,5 @@
-//go:build gomobile
-// +build gomobile
+//go:build mobile
+// +build mobile
 
 package zcncore
 
