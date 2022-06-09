@@ -34,7 +34,7 @@ func (s *StorageECR721Fixed) SetURIFallback(uri string) error {
 		return err
 	}
 
-	Logger.Info("Executed %s, hash %s", "SetURIFallback", evmTr.Hash().Hex())
+	Logger.Info("Executed SetURIFallback, hash: ", evmTr.Hash().Hex())
 
 	return nil
 }
@@ -146,7 +146,7 @@ func (s *StorageECR721Fixed) Mint(amount *big.Int) error {
 		return err
 	}
 
-	Logger.Info("Executed %s, hash %s", Mint, evmTr.Hash())
+	Logger.Info("Executed ", Mint, "hash: ", evmTr.Hash())
 
 	return nil
 }
@@ -170,7 +170,7 @@ func (s *StorageECR721Fixed) MintOwner(amount *big.Int) error {
 		return err
 	}
 
-	Logger.Info("Executed %s, hash %s", MintOwner, evmTr.Hash())
+	Logger.Info("Executed ", MintOwner, "hash: ", evmTr.Hash())
 
 	return nil
 }
@@ -218,7 +218,7 @@ func (s *StorageECR721Fixed) SetURI(uri string) error {
 		return err
 	}
 
-	Logger.Info("Executed %s, hash %s", SetURI, evmTr.Hash())
+	Logger.Info("Executed ", SetURI, " hash: ", evmTr.Hash())
 
 	return nil
 }
@@ -232,7 +232,7 @@ func (s *StorageECR721Fixed) SetAllocation(allocation string) error {
 		return err
 	}
 
-	Logger.Info("Executed %s, hash %s", SetAllocation, evmTr.Hash())
+	Logger.Info("Executed ", SetAllocation, "hash: ", evmTr.Hash())
 
 	return nil
 }
@@ -246,7 +246,7 @@ func (s *StorageECR721Fixed) SetMintable(status bool) error {
 		return err
 	}
 
-	Logger.Info("Executed %s, hash %s", SetMintable, evmTr.Hash())
+	Logger.Info("Executed ", SetMintable, "hash: ", evmTr.Hash())
 
 	return nil
 }
@@ -260,7 +260,7 @@ func (s *StorageECR721Fixed) SetRoyalty(sum *big.Int) error {
 		return err
 	}
 
-	Logger.Info("Executed %s, hash %s", SetRoyalty, evmTr.Hash())
+	Logger.Info("Executed ", SetRoyalty, " hash: ", evmTr.Hash())
 
 	return nil
 }
@@ -276,7 +276,7 @@ func (s *StorageECR721Fixed) SetReceiver(receiver string) error {
 		return err
 	}
 
-	Logger.Info("Executed %s, hash %s", SetReceiver, evmTr.Hash())
+	Logger.Info("Executed ", SetReceiver, " hash: ", evmTr.Hash())
 
 	return nil
 }
@@ -290,7 +290,7 @@ func (s *StorageECR721Fixed) Withdraw() error {
 		return err
 	}
 
-	Logger.Info("Executed %s, hash %s", Withdraw, evmTr.Hash())
+	Logger.Info("Executed ", Withdraw, " hash: ", evmTr.Hash())
 
 	return nil
 }

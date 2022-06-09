@@ -49,7 +49,7 @@ func (s *StorageECR721Random) MintOwner(amount *big.Int) error {
 		return err
 	}
 
-	Logger.Info("Executed %s, hash %s", MintOwner, evmTr.Hash())
+	Logger.Info("Executed ", MintOwner, " hash: ", evmTr.Hash())
 
 	return nil
 }
@@ -62,7 +62,7 @@ func (s *StorageECR721Random) Mint(amount *big.Int) error {
 		return err
 	}
 
-	Logger.Info("Executed %s, hash %s", Mint, evmTr.Hash())
+	Logger.Info("Executed ", Mint, "hash: ", evmTr.Hash())
 
 	return nil
 }
@@ -75,7 +75,7 @@ func (s *StorageECR721Random) Reveal(tokens []*big.Int) error {
 		return err
 	}
 
-	Logger.Info("Executed %s, hash %s", "Reveal", evmTr.Hash())
+	Logger.Info("Executed Reveal, hash: ", evmTr.Hash())
 
 	return nil
 }
@@ -110,7 +110,7 @@ func (s *StorageECR721Random) SetHidden(hidden string) error {
 		return err
 	}
 
-	Logger.Info("Executed %s, hash %s", "SetHidden", evmTr.Hash())
+	Logger.Info("Executed SetHidden, hash: ", evmTr.Hash())
 
 	return nil
 }
@@ -123,7 +123,7 @@ func (s *StorageECR721Random) SetPack(address common.Address) error {
 		return err
 	}
 
-	Logger.Info("Executed %s, hash %s", "SetPack", evmTr.Hash())
+	Logger.Info("Executed SetPack, hash: ", evmTr.Hash())
 
 	return nil
 }
@@ -136,7 +136,7 @@ func (s *StorageECR721Random) SetRevealable(status bool) error {
 		return err
 	}
 
-	Logger.Info("Executed %s, hash %s", "SetRevealable", evmTr.Hash())
+	Logger.Info("Executed SetRevealable, hash: ", evmTr.Hash())
 
 	return nil
 }
