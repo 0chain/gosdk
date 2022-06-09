@@ -1,4 +1,4 @@
-name: build-mobile
+name: MobileSDKs
 
 concurrency:
   group: "build-mobile-${{ github.ref }}"
@@ -41,7 +41,7 @@ jobs:
         env:
           GO111MODULE: "on"
 
-      - name: Install
+      - name: Build zcncore
         run: make build-ios
 
       - name: Compress
@@ -121,7 +121,7 @@ jobs:
         env:
           GO111MODULE: "on"
 
-      - name: Install
+      - name: Build zcncore
         run: make build-android
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
