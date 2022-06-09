@@ -5,7 +5,6 @@ IOSMOBILESDKDIR     := $(OUTDIR)/iossdk
 ANDROIDMOBILESDKDIR := $(OUTDIR)/androidsdk
 IOSBINNAME 		:= zcncore.xcframework
 ANDROIDBINNAME	:= zcncore.aar
-GOPATH := $(shell go env GOPATH)
 
 .PHONY: build-mobilesdk
 
@@ -17,6 +16,13 @@ $(ANDROIDMOBILESDKDIR):
 
 setup-gomobile: $(IOSMOBILESDKDIR) $(ANDROIDMOBILESDKDIR)
 	@$(PRINT_MAG)
+	@echo "============================================================"
+	@echo "    Initializing gomobile. Please wait it may take a while ..."
+	@echo "------------------------------------------------------------"
+	@go get -d golang.org/x/mobile/cmd/gomobile
+	@$(PRINT_NON)
+	@gomobile init
+	@$(PRINT_GRN)
 	@echo "  ___ __  _  _ ____ __   ____ ____ ____ ____  "
 	@echo " / __/  \( \/ (  _ (  ) (  __(_  _(  __(    \ "
 	@echo "( (_(  O / \/ \) __/ (_/\) _)  )(  ) _) ) D ( "
