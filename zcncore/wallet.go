@@ -15,6 +15,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/transaction"
 
 	"github.com/0chain/errors"
@@ -188,14 +189,6 @@ type GetInfoCallback interface {
 	// if status == StatusSuccess then info is valid
 	// is status != StatusSuccess then err will give the reason
 	OnInfoAvailable(op int, status int, info string, err string)
-}
-
-// GetUSDInfoCallback needs to be implemented by the caller of GetZcnUSDInfo()
-type GetUSDInfoCallback interface {
-	// This will be called when GetZcnUSDInfo completes.
-	// if status == StatusSuccess then info is valid
-	// is status != StatusSuccess then err will give the reason
-	OnUSDInfoAvailable(status int, info string, err string)
 }
 
 // AuthCallback needs to be implemented by the caller SetupAuth()
@@ -800,41 +793,7 @@ func ConvertUSDToToken(usd float64) (float64, error) {
 }
 
 func getTokenUSDRate() (float64, error) {
-	return getTokenRateByCurrency("usd")
-}
-
-func getTokenRateByCurrency(currency string) (float64, error) {
-	var CoinGeckoResponse struct {
-		ID         string `json:"id"`
-		Symbol     string `json:"symbol"`
-		MarketData struct {
-			CurrentPrice map[string]float64 `json:"current_price"`
-		} `json:"market_data"`
-	}
-
-	req, err := util.NewHTTPGetRequest("https://api.coingecko.com/api/v3/coins/0chain?localization=false")
-	if err != nil {
-		Logger.Error("new get request failed." + err.Error())
-		return 0, err
-	}
-
-	res, err := req.Get()
-	if err != nil {
-		Logger.Error("get error. ", err.Error())
-		return 0, err
-	}
-
-	if res.StatusCode != http.StatusOK {
-		Logger.Error("Response status not OK. ", res.StatusCode)
-		return 0, errors.New("invalid_res_status_code", "Response status code is not OK")
-	}
-
-	err = json.Unmarshal([]byte(res.Body), &CoinGeckoResponse)
-	if err != nil {
-		return 0, err
-	}
-
-	return CoinGeckoResponse.MarketData.CurrentPrice[currency], nil
+	return tokenrate.GetUSD(context.TODO(), "zcn")
 }
 
 func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
@@ -880,27 +839,8 @@ func GetWalletClientID(walletStr string) (string, error) {
 }
 
 // GetZcnUSDInfo returns USD value for ZCN token from coinmarketcap.com
-func GetZcnUSDInfo(cb GetUSDInfoCallback) error {
-	go func() {
-		req, err := util.NewHTTPGetRequest("https://api.coingecko.com/api/v3/coins/0chain?localization=false")
-		if err != nil {
-			Logger.Error("new get request failed." + err.Error())
-			cb.OnUSDInfoAvailable(StatusError, "", "new get request failed."+err.Error())
-			return
-		}
-		res, err := req.Get()
-		if err != nil {
-			Logger.Error("get error. ", err.Error())
-			cb.OnUSDInfoAvailable(StatusError, "", "get error"+err.Error())
-			return
-		}
-		if res.StatusCode != http.StatusOK {
-			cb.OnUSDInfoAvailable(StatusError, "", fmt.Sprintf("%s: %s", res.Status, res.Body))
-			return
-		}
-		cb.OnUSDInfoAvailable(StatusSuccess, res.Body, "")
-	}()
-	return nil
+func GetZcnUSDInfo() (float64, error) {
+	return tokenrate.GetUSD(context.TODO(), "zcn")
 }
 
 // SetupAuth prepare auth app with clientid, key and a set of public, private key and local publickey
