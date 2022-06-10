@@ -381,21 +381,6 @@ func (t *Transaction) createSmartContractTxn(address, methodName string, input i
 	return nil
 }
 
-func (t *Transaction) createSmartContractTxnWithJSON(address, methodName string, jsonInput string, value int64) error {
-
-	var sn transaction.SmartContractTxnData
-
-	snBytes, err := json.Marshal(sn)
-	if err != nil {
-		return errors.Wrap(err, "create smart contract failed due to invalid data.")
-	}
-	t.txn.TransactionType = transaction.TxnTypeSmartContract
-	t.txn.ToClientID = address
-	t.txn.TransactionData = string(snBytes)
-	t.txn.Value = value
-	return nil
-}
-
 func (t *Transaction) createFaucetSCWallet(walletStr string, methodName string, input []byte) (*zcncrypto.Wallet, error) {
 	w, err := GetWallet(walletStr)
 	if err != nil {

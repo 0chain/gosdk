@@ -4,7 +4,7 @@
 package zcncore
 
 func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, input string, val int64) error {
-	err := ta.t.createSmartContractTxnWithJSON(address, methodName, input, val)
+	err := ta.t.createSmartContractTxn(address, methodName, input, val)
 	if err != nil {
 		return err
 	}
