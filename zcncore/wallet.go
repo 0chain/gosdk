@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/0chain/gosdk/core/transaction"
 	"log"
 	"math"
 	"net/http"
@@ -15,6 +14,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/0chain/gosdk/core/tokenrate"
+	"github.com/0chain/gosdk/core/transaction"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
@@ -47,8 +49,6 @@ const (
 	PUT_TRANSACTION                  = `/v1/transaction/put`
 	TXN_VERIFY_URL                   = `/v1/transaction/get/confirmation?hash=`
 	GET_BALANCE                      = `/v1/client/get/balance?client_id=`
-	GET_LOCK_CONFIG                  = `/v1/screst/` + InterestPoolSmartContractAddress + `/getLockConfig`
-	GET_LOCKED_TOKENS                = `/v1/screst/` + InterestPoolSmartContractAddress + `/getPoolsStats?client_id=`
 	GET_BLOCK_INFO                   = `/v1/block/get?`
 	GET_MAGIC_BLOCK_INFO             = `/v1/block/magic/get?`
 	GET_LATEST_FINALIZED             = `/v1/block/get/latest_finalized`
@@ -59,19 +59,14 @@ const (
 
 	VESTINGSC_PFX = `/v1/screst/` + VestingSmartContractAddress
 
-	GET_VESTING_CONFIG       = VESTINGSC_PFX + `/getConfig`
+	GET_VESTING_CONFIG       = VESTINGSC_PFX + `/vesting-config`
 	GET_VESTING_POOL_INFO    = VESTINGSC_PFX + `/getPoolInfo`
 	GET_VESTING_CLIENT_POOLS = VESTINGSC_PFX + `/getClientPools`
-
-	// inerest pool SC
-
-	INTERESTPOOLSC_PFX        = `/v1/screst/` + InterestPoolSmartContractAddress
-	GET_INTERESTPOOLSC_CONFIG = INTERESTPOOLSC_PFX + `/getConfig`
 
 	// faucet sc
 
 	FAUCETSC_PFX        = `/v1/screst/` + FaucetSmartContractAddress
-	GET_FAUCETSC_CONFIG = FAUCETSC_PFX + `/getConfig`
+	GET_FAUCETSC_CONFIG = FAUCETSC_PFX + `/faucet-config`
 
 	// miner SC
 
@@ -89,7 +84,7 @@ const (
 
 	STORAGESC_PFX = "/v1/screst/" + StorageSmartContractAddress
 
-	STORAGESC_GET_SC_CONFIG            = STORAGESC_PFX + "/getConfig"
+	STORAGESC_GET_SC_CONFIG            = STORAGESC_PFX + "/storage-config"
 	STORAGESC_GET_CHALLENGE_POOL_INFO  = STORAGESC_PFX + "/getChallengePoolStat"
 	STORAGESC_GET_ALLOCATION           = STORAGESC_PFX + "/allocation"
 	STORAGESC_GET_ALLOCATIONS          = STORAGESC_PFX + "/allocations"
@@ -99,18 +94,18 @@ const (
 	STORAGESC_GET_BLOBBERS             = STORAGESC_PFX + "/getblobbers"
 	STORAGESC_GET_BLOBBER              = STORAGESC_PFX + "/getBlobber"
 	STORAGESC_GET_WRITE_POOL_INFO      = STORAGESC_PFX + "/getWritePoolStat"
+	STORAGE_GET_TOTAL_STORED_DATA      = STORAGESC_PFX + "/total-stored-data"
 )
 
 const (
-	StorageSmartContractAddress      = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7`
-	VestingSmartContractAddress      = `2bba5b05949ea59c80aed3ac3474d7379d3be737e8eb5a968c52295e48333ead`
-	FaucetSmartContractAddress       = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3`
-	InterestPoolSmartContractAddress = `cf8d0df9bd8cc637a4ff4e792ffe3686da6220c45f0e1103baa609f3f1751ef4`
-	MultiSigSmartContractAddress     = `27b5ef7120252b79f9dd9c05505dd28f328c80f6863ee446daede08a84d651a7`
-	MinerSmartContractAddress        = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9`
-	ZCNSCSmartContractAddress        = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712e0`
-	MultiSigRegisterFuncName         = "register"
-	MultiSigVoteFuncName             = "vote"
+	StorageSmartContractAddress  = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7`
+	VestingSmartContractAddress  = `2bba5b05949ea59c80aed3ac3474d7379d3be737e8eb5a968c52295e48333ead`
+	FaucetSmartContractAddress   = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d3`
+	MultiSigSmartContractAddress = `27b5ef7120252b79f9dd9c05505dd28f328c80f6863ee446daede08a84d651a7`
+	MinerSmartContractAddress    = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d9`
+	ZCNSCSmartContractAddress    = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712e0`
+	MultiSigRegisterFuncName     = "register"
+	MultiSigVoteFuncName         = "vote"
 )
 
 // In percentage
@@ -194,14 +189,6 @@ type GetInfoCallback interface {
 	// if status == StatusSuccess then info is valid
 	// is status != StatusSuccess then err will give the reason
 	OnInfoAvailable(op int, status int, info string, err string)
-}
-
-// GetUSDInfoCallback needs to be implemented by the caller of GetZcnUSDInfo()
-type GetUSDInfoCallback interface {
-	// This will be called when GetZcnUSDInfo completes.
-	// if status == StatusSuccess then info is valid
-	// is status != StatusSuccess then err will give the reason
-	OnUSDInfoAvailable(status int, info string, err string)
 }
 
 // AuthCallback needs to be implemented by the caller SetupAuth()
@@ -396,6 +383,11 @@ func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 	}
 }
 
+// InitSignatureScheme initializes signature scheme only.
+func InitSignatureScheme(scheme string) {
+	_config.chain.SignatureScheme = scheme
+}
+
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
 func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
 	if signscheme != "ed25519" && signscheme != "bls0chain" {
@@ -484,6 +476,26 @@ func CreateWallet(statusCb WalletCallback) error {
 	return nil
 }
 
+// RecoverOfflineWallet recovers the previously generated wallet using the mnemonic.
+func RecoverOfflineWallet(mnemonic string) (string, error) {
+	if !zcncrypto.IsMnemonicValid(mnemonic) {
+		return "", errors.New("", "Invalid mnemonic")
+	}
+
+	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	wallet, err := sigScheme.RecoverKeys(mnemonic)
+	if err != nil {
+		return "", err
+	}
+
+	walletString, err := wallet.Marshal()
+	if err != nil {
+		return "", err
+	}
+
+	return walletString, nil
+}
+
 // RecoverWallet recovers the previously generated wallet using the mnemonic.
 // It also registers the wallet again to block chain.
 func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
@@ -497,11 +509,13 @@ func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
 			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
 		}
+
 		err = RegisterToMiners(wallet, statusCb)
 		if err != nil {
 			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
 		}
+
 	}()
 	return nil
 }
@@ -779,95 +793,24 @@ func ConvertUSDToToken(usd float64) (float64, error) {
 }
 
 func getTokenUSDRate() (float64, error) {
-	return getTokenRateByCurrency("usd")
-}
-
-func getTokenRateByCurrency(currency string) (float64, error) {
-	var CoinGeckoResponse struct {
-		ID         string `json:"id"`
-		Symbol     string `json:"symbol"`
-		MarketData struct {
-			CurrentPrice map[string]float64 `json:"current_price"`
-		} `json:"market_data"`
-	}
-
-	req, err := util.NewHTTPGetRequest("https://api.coingecko.com/api/v3/coins/0chain?localization=false")
-	if err != nil {
-		Logger.Error("new get request failed." + err.Error())
-		return 0, err
-	}
-
-	res, err := req.Get()
-	if err != nil {
-		Logger.Error("get error. ", err.Error())
-		return 0, err
-	}
-
-	if res.StatusCode != http.StatusOK {
-		Logger.Error("Response status not OK. ", res.StatusCode)
-		return 0, errors.New("invalid_res_status_code", "Response status code is not OK")
-	}
-
-	err = json.Unmarshal([]byte(res.Body), &CoinGeckoResponse)
-	if err != nil {
-		return 0, err
-	}
-
-	return CoinGeckoResponse.MarketData.CurrentPrice[currency], nil
+	return tokenrate.GetUSD(context.TODO(), "zcn")
 }
 
 func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
-	result := make(chan *util.GetResponse)
-	defer close(result)
-	// getMinShardersVerify()
-	var numSharders = len(_config.chain.Sharders) // overwrite, use all
-	queryFromSharders(numSharders, urlSuffix, result)
-	consensus := float32(0)
-	resultMap := make(map[int]float32)
-	var winresult *util.GetResponse
-	for i := 0; i < numSharders; i++ {
-		rsp := <-result
-		Logger.Debug(rsp.Url, rsp.Status)
-		resultMap[rsp.StatusCode]++
-		if resultMap[rsp.StatusCode] > consensus {
-			consensus = resultMap[rsp.StatusCode]
-			winresult = rsp
-		}
-	}
-	rate := consensus * 100 / float32(len(_config.chain.Sharders))
-	if rate < consensusThresh {
-		newerr := fmt.Sprintf(`{"code": "consensus_failed", "error": "consensus failed on sharders.", "server_error": "%v"}`, winresult.Body)
-		cb.OnInfoAvailable(op, StatusError, "", newerr)
+
+	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders))
+	if err != nil {
+		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
 	}
-	if winresult.StatusCode != http.StatusOK {
-		cb.OnInfoAvailable(op, StatusError, "", winresult.Body)
-	} else {
-		cb.OnInfoAvailable(op, StatusSuccess, winresult.Body, "")
-	}
-}
 
-// GetLockConfig returns the lock token configuration information such as interest rate from blockchain
-func GetLockConfig(cb GetInfoCallback) error {
-	err := checkSdkInit()
+	qr, err := tq.GetInfo(context.TODO(), urlSuffix)
 	if err != nil {
-		return err
+		cb.OnInfoAvailable(op, StatusError, "", err.Error())
+		return
 	}
-	go getInfoFromSharders(GET_LOCK_CONFIG, OpGetTokenLockConfig, cb)
-	return nil
-}
 
-// GetLockedTokens returns the ealier locked token pool stats
-func GetLockedTokens(cb GetInfoCallback) error {
-	err := CheckConfig()
-	if err != nil {
-		return err
-	}
-	go func() {
-		urlSuffix := fmt.Sprintf("%v%v", GET_LOCKED_TOKENS, _config.wallet.ClientID)
-		getInfoFromSharders(urlSuffix, OpGetLockedTokens, cb)
-	}()
-	return nil
+	cb.OnInfoAvailable(op, StatusSuccess, string(qr.Content), "")
 }
 
 //GetWallet get a wallet object from a wallet string
@@ -896,27 +839,8 @@ func GetWalletClientID(walletStr string) (string, error) {
 }
 
 // GetZcnUSDInfo returns USD value for ZCN token from coinmarketcap.com
-func GetZcnUSDInfo(cb GetUSDInfoCallback) error {
-	go func() {
-		req, err := util.NewHTTPGetRequest("https://api.coingecko.com/api/v3/coins/0chain?localization=false")
-		if err != nil {
-			Logger.Error("new get request failed." + err.Error())
-			cb.OnUSDInfoAvailable(StatusError, "", "new get request failed."+err.Error())
-			return
-		}
-		res, err := req.Get()
-		if err != nil {
-			Logger.Error("get error. ", err.Error())
-			cb.OnUSDInfoAvailable(StatusError, "", "get error"+err.Error())
-			return
-		}
-		if res.StatusCode != http.StatusOK {
-			cb.OnUSDInfoAvailable(StatusError, "", fmt.Sprintf("%s: %s", res.Status, res.Body))
-			return
-		}
-		cb.OnUSDInfoAvailable(StatusSuccess, res.Body, "")
-	}()
-	return nil
+func GetZcnUSDInfo() (float64, error) {
+	return tokenrate.GetUSD(context.TODO(), "zcn")
 }
 
 // SetupAuth prepare auth app with clientid, key and a set of public, private key and local publickey
@@ -1048,16 +972,6 @@ func GetVestingSCConfig(cb GetInfoCallback) (err error) {
 		return
 	}
 	go getInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
-	return
-}
-
-// interest pools sc
-
-func GetInterestPoolSCConfig(cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
-		return
-	}
-	go getInfoFromSharders(GET_INTERESTPOOLSC_CONFIG, 0, cb)
 	return
 }
 
@@ -1311,6 +1225,7 @@ func GetBlobbers(cb GetInfoCallback) (err error) {
 		return
 	}
 	var url = STORAGESC_GET_BLOBBERS
+
 	go getInfoFromSharders(url, OpStorageSCGetBlobbers, cb)
 	return
 }
