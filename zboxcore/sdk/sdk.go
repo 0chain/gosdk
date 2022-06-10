@@ -233,7 +233,7 @@ func ReadPoolLock(tokens, fee int64, isOwner bool) (hash string, nonce int64, er
 	}
 
 	type lockRequest struct {
-		IsOwner    bool   `json:"is_owner"`
+		IsOwner bool `json:"is_owner"`
 		//MintTokens bool   `json:"mint_tokens"`
 	}
 
@@ -256,7 +256,7 @@ func ReadPoolUnlock(fee int64, isOwner bool) (hash string, nonce int64, err erro
 	}
 
 	type unlockRequest struct {
-		IsOwner    bool   `json:"is_owner"`
+		IsOwner bool `json:"is_owner"`
 	}
 
 	req := unlockRequest{
@@ -669,7 +669,7 @@ type Blobber struct {
 	BaseURL           string            `json:"url"`
 	Terms             Terms             `json:"terms"`
 	Capacity          common.Size       `json:"capacity"`
-	Used              common.Size       `json:"used"`
+	Allocated         common.Size       `json:"allocated"`
 	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
 	PublicKey         string            `json:"-"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
