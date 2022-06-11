@@ -11,6 +11,7 @@ import (
 	storageerc721random "github.com/0chain/gosdk/znft/contracts/dstorageerc721random/binding"
 )
 
+// Solidity Functions
 // function mintOwner(uint256 amount)
 // function mint(uint256 amount)
 // function reveal(uint256[] calldata tokens) external returns (bytes32)

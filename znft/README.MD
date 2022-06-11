@@ -2,12 +2,12 @@
 
 ### Components and legend
 
-`studio client` - UI for creating NFTs
-`nft_factory_contract` - FactoryModuleERC721, FactoryModuleERC721Fixed, FactoryModuleERC721Random
-`nft_contract` - DStorageERC721, DStorageERC721Fixed, DStorageERC721Pack, DStorageERC721Random
-`royalty_contract` - is to handle routing for fee sharing
-`0chain_api` - blobber storage API
-`0nft` - is the service for exposing files on 0chain as a normal public url
+`studio client` - UI for creating NFTs  
+`nft_factory_contract` - FactoryModuleERC721, FactoryModuleERC721Fixed, FactoryModuleERC721Random  
+`nft_contract` - DStorageERC721, DStorageERC721Fixed, DStorageERC721Pack, DStorageERC721Random  
+`royalty_contract` - is to handle routing for fee sharing  
+`0chain_api` - blobber storage API  
+`0nft` - is the service for exposing files on 0chain as a normal public url  
 `auth ticker` - is the auth ticket generated on the 0chain side and passed to the 0nft service
 
 ### Current deployments

@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// Solidity Functions
 // function mint(uint256 amount)
 // function price() public view override returns (uint256)
 

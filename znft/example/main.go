@@ -55,6 +55,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	log.Print(price)
 
 	// ERC721Fixed
 
@@ -69,6 +70,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	log.Print(price)
 
 	// ERC721Pack
 
@@ -83,6 +85,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+	log.Print(price)
 
 	// ERC721
 
@@ -97,6 +100,5 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
 	log.Print(price)
 }

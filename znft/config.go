@@ -50,6 +50,8 @@ func GetConfigDir() string {
 	return configDir
 }
 
+// Functions used by session factories to create session
+
 func (conf *Configuration) constructStorageERC721Random(address string) (*storageerc721random.Binding, *bind.TransactOpts, error) {
 	storage, err := conf.createStorageERC721Random(address)
 	if err != nil {
@@ -94,6 +96,7 @@ func (conf *Configuration) constructStorageERC721(address string) (*storageerc72
 	return storage, transaction, err
 }
 
+// Used to create StorageERC721 with preliminary gas estimation
 func (conf *Configuration) constructWithEstimation(
 	ctx context.Context,
 	address string,
@@ -110,6 +113,7 @@ func (conf *Configuration) constructWithEstimation(
 	return erc721, transaction, err
 }
 
+// Create transaction opts with sender signature
 func (conf *Configuration) createTransactOpts() (*bind.TransactOpts, error) {
 	transaction, err := conf.createTransaction()
 	if err != nil {
@@ -144,17 +148,7 @@ func (conf *Configuration) createTransactOptsWithEstimation(
 	return transaction, nil
 }
 
-func (conf *Configuration) createStorageERC721Pack(address string) (*storageerc721pack.Binding, error) {
-	client, err := conf.CreateEthClient()
-	if err != nil {
-		return nil, err
-	}
-
-	addr := common.HexToAddress(address)
-	instance, err := storageerc721pack.NewBinding(addr, client)
-
-	return instance, err
-}
+// Session factories
 
 func (conf *Configuration) CreateStorageERC721PackSession(ctx context.Context, addr string) (IStorageECR721Pack, error) {
 	contract, transact, err := conf.constructStorageERC721Pack(addr)
@@ -252,6 +246,8 @@ func (conf *Configuration) CreateStorageERC721Session(ctx context.Context, addr 
 	return storage, nil
 }
 
+// Binding factories
+
 func (conf *Configuration) createStorageERC721(address string) (*storageerc721.Binding, error) {
 	client, err := conf.CreateEthClient()
 	if err != nil {
@@ -284,6 +280,18 @@ func (conf *Configuration) createStorageERC721Random(address string) (*storageer
 
 	addr := common.HexToAddress(address)
 	instance, err := storageerc721random.NewBinding(addr, client)
+
+	return instance, err
+}
+
+func (conf *Configuration) createStorageERC721Pack(address string) (*storageerc721pack.Binding, error) {
+	client, err := conf.CreateEthClient()
+	if err != nil {
+		return nil, err
+	}
+
+	addr := common.HexToAddress(address)
+	instance, err := storageerc721pack.NewBinding(addr, client)
 
 	return instance, err
 }

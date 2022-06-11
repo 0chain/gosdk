@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// Solidity
+// Solidity Functions
 // function mintOwner(uint256 amount)
 // function mint(uint256 amount)
 // function reveal(uint256 tokenId) external returns (bytes32)
