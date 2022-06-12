@@ -15,10 +15,7 @@ import (
 
 // ListStorageAccounts List available accounts
 func ListStorageAccounts(homedir string) []common.Address {
-	keyDir := path.Join(homedir, WalletDir)
-	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
-	config := &accounts.Config{InsecureUnlockAllowed: false}
-	am := accounts.NewManager(config, ks)
+	am := getAccountManager(homedir)
 	addresses := am.Accounts()
 
 	return addresses
@@ -26,10 +23,7 @@ func ListStorageAccounts(homedir string) []common.Address {
 
 // DeleteAccount deletes account from wallet
 func DeleteAccount(homedir, address string) bool {
-	keyDir := path.Join(homedir, WalletDir)
-	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
-	config := &accounts.Config{InsecureUnlockAllowed: false}
-	am := accounts.NewManager(config, ks)
+	am := getAccountManager(homedir)
 
 	wallet, err := am.Find(accounts.Account{
 		Address: common.HexToAddress(address),
@@ -43,12 +37,17 @@ func DeleteAccount(homedir, address string) bool {
 	return true
 }
 
-// AccountExists checks if account exists
-func AccountExists(homedir, address string) bool {
+func getAccountManager(homedir string) *accounts.Manager {
 	keyDir := path.Join(homedir, WalletDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	config := &accounts.Config{InsecureUnlockAllowed: false}
 	am := accounts.NewManager(config, ks)
+	return am
+}
+
+// AccountExists checks if account exists
+func AccountExists(homedir, address string) bool {
+	am := getAccountManager(homedir)
 
 	wallet, err := am.Find(accounts.Account{
 		Address: common.HexToAddress(address),
