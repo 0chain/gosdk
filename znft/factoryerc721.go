@@ -4,29 +4,45 @@ import (
 	"context"
 	"math/big"
 
-	factory "github.com/0chain/gosdk/znft/contracts/factory/binding"
+	"github.com/pkg/errors"
+
+	"github.com/ethereum/go-ethereum/common"
+
+	factory "github.com/0chain/gosdk/znft/contracts/factorymoduleerc721/binding"
 )
 
 // Solidity functions
 
-// function create(
-//	address module,
-//	string calldata name,
-//	string calldata symbol,
-//	string calldata uri,
-//	uint256 max,
-//	uint256 price,
-//	uint256 batch,
-//	bytes calldata data) external returns (address) {
-
-// function register(address module, bool status)
+//	function createToken(
+// 		address owner,
+// 		string calldata name,
+// 		string calldata symbol,
+// 		string calldata uri,
+// 		uint256 max,
+// 		uint256,
+// 		uint256,
+// 		bytes calldata
+//) external returns (address) {
 
 type IFactory interface {
-	Create(module, name, symbol, uri string, max, price, batch *big.Int, data string) string
-	Register(address string, status bool)
+	CreateToken(owner, name, symbol, uri string, max *big.Int, data []byte) error
 }
 
 type Factory struct {
 	session *factory.BindingSession
 	ctx     context.Context
+}
+
+func (s *Factory) CreateToken(owner, name, symbol, uri string, max *big.Int, data []byte) error {
+	ownerAddress := common.HexToAddress(owner)
+	evmTr, err := s.session.CreateToken(ownerAddress, name, symbol, uri, max, nil, nil, data)
+	if err != nil {
+		err = errors.Wrapf(err, "failed to execute %s", "CreateToken")
+		Logger.Error(err)
+		return err
+	}
+
+	Logger.Info("Executed CreateToken, hash: ", evmTr.Hash().Hex())
+
+	return nil
 }
