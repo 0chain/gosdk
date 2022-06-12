@@ -6,10 +6,17 @@ import (
 	"os"
 
 	"github.com/0chain/gosdk/core/logger"
+
 	storageerc721 "github.com/0chain/gosdk/znft/contracts/dstorageerc721/binding"
 	storageerc721fixed "github.com/0chain/gosdk/znft/contracts/dstorageerc721fixed/binding"
 	storageerc721pack "github.com/0chain/gosdk/znft/contracts/dstorageerc721pack/binding"
 	storageerc721random "github.com/0chain/gosdk/znft/contracts/dstorageerc721random/binding"
+
+	factoryerc721 "github.com/0chain/gosdk/znft/contracts/factorymoduleerc721/binding"
+	factoryerc721fixed "github.com/0chain/gosdk/znft/contracts/factorymoduleerc721fixed/binding"
+	factoryerc721pack "github.com/0chain/gosdk/znft/contracts/factorymoduleerc721pack/binding"
+	factoryerc721random "github.com/0chain/gosdk/znft/contracts/factorymoduleerc721random/binding"
+
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/pkg/errors"
@@ -51,6 +58,50 @@ func GetConfigDir() string {
 }
 
 // Functions used by session factories to create session
+
+func (conf *Configuration) constructFactoryERC721(address string) (*factoryerc721.Binding, *bind.TransactOpts, error) {
+	storage, err := conf.createFactoryERC721(address)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to construct %s", "FactoryERC721")
+	}
+
+	transaction, err := conf.createTransactOpts()
+
+	return storage, transaction, err
+}
+
+func (conf *Configuration) constructFactoryERC721Fixed(address string) (*factoryerc721fixed.Binding, *bind.TransactOpts, error) {
+	storage, err := conf.createFactoryERC721Fixed(address)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to construct %s", "FactoryERC721Fixed")
+	}
+
+	transaction, err := conf.createTransactOpts()
+
+	return storage, transaction, err
+}
+
+func (conf *Configuration) constructFactoryERC721Pack(address string) (*factoryerc721pack.Binding, *bind.TransactOpts, error) {
+	storage, err := conf.createFactoryERC721Pack(address)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to construct %s", "FactoryERC721Pack")
+	}
+
+	transaction, err := conf.createTransactOpts()
+
+	return storage, transaction, err
+}
+
+func (conf *Configuration) constructFactoryERC721Random(address string) (*factoryerc721random.Binding, *bind.TransactOpts, error) {
+	storage, err := conf.createFactoryERC721Random(address)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to construct %s", "FactoryERC721Random")
+	}
+
+	transaction, err := conf.createTransactOpts()
+
+	return storage, transaction, err
+}
 
 func (conf *Configuration) constructStorageERC721Random(address string) (*storageerc721random.Binding, *bind.TransactOpts, error) {
 	storage, err := conf.createStorageERC721Random(address)
@@ -149,6 +200,106 @@ func (conf *Configuration) createTransactOptsWithEstimation(
 }
 
 // Session factories
+
+// Factory Sessions
+
+func (conf *Configuration) CreateFactoryERC721Session(ctx context.Context, addr string) (IFactoryERC721, error) {
+	contract, transact, err := conf.constructFactoryERC721(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	session := &factoryerc721.BindingSession{
+		Contract: contract,
+		CallOpts: bind.CallOpts{
+			Pending: true,
+			From:    transact.From,
+			Context: ctx,
+		},
+		TransactOpts: *transact,
+	}
+
+	storage := &FactoryERC721{
+		session: session,
+		ctx:     ctx,
+	}
+
+	return storage, nil
+}
+
+func (conf *Configuration) CreateFactoryERC721PackSession(ctx context.Context, addr string) (IFactoryPack, error) {
+	contract, transact, err := conf.constructFactoryERC721Pack(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	session := &factoryerc721pack.BindingSession{
+		Contract: contract,
+		CallOpts: bind.CallOpts{
+			Pending: true,
+			From:    transact.From,
+			Context: ctx,
+		},
+		TransactOpts: *transact,
+	}
+
+	storage := &FactoryPack{
+		session: session,
+		ctx:     ctx,
+	}
+
+	return storage, nil
+}
+
+func (conf *Configuration) CreateFactoryERC721FixedSession(ctx context.Context, addr string) (IFactoryFixed, error) {
+	contract, transact, err := conf.constructFactoryERC721Fixed(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	session := &factoryerc721fixed.BindingSession{
+		Contract: contract,
+		CallOpts: bind.CallOpts{
+			Pending: true,
+			From:    transact.From,
+			Context: ctx,
+		},
+		TransactOpts: *transact,
+	}
+
+	storage := &FactoryFixed{
+		session: session,
+		ctx:     ctx,
+	}
+
+	return storage, nil
+}
+
+func (conf *Configuration) CreateFactoryERC721RandomSession(ctx context.Context, addr string) (IFactoryRandom, error) {
+	contract, transact, err := conf.constructFactoryERC721Random(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	session := &factoryerc721random.BindingSession{
+		Contract: contract,
+		CallOpts: bind.CallOpts{
+			Pending: true,
+			From:    transact.From,
+			Context: ctx,
+		},
+		TransactOpts: *transact,
+	}
+
+	storage := &FactoryRandom{
+		session: session,
+		ctx:     ctx,
+	}
+
+	return storage, nil
+}
+
+// Storage Sessions
 
 func (conf *Configuration) CreateStorageERC721PackSession(ctx context.Context, addr string) (IStorageECR721Pack, error) {
 	contract, transact, err := conf.constructStorageERC721Pack(addr)
@@ -292,6 +443,54 @@ func (conf *Configuration) createStorageERC721Pack(address string) (*storageerc7
 
 	addr := common.HexToAddress(address)
 	instance, err := storageerc721pack.NewBinding(addr, client)
+
+	return instance, err
+}
+
+func (conf *Configuration) createFactoryERC721(address string) (*factoryerc721.Binding, error) {
+	client, err := conf.CreateEthClient()
+	if err != nil {
+		return nil, err
+	}
+
+	addr := common.HexToAddress(address)
+	instance, err := factoryerc721.NewBinding(addr, client)
+
+	return instance, err
+}
+
+func (conf *Configuration) createFactoryERC721Pack(address string) (*factoryerc721pack.Binding, error) {
+	client, err := conf.CreateEthClient()
+	if err != nil {
+		return nil, err
+	}
+
+	addr := common.HexToAddress(address)
+	instance, err := factoryerc721pack.NewBinding(addr, client)
+
+	return instance, err
+}
+
+func (conf *Configuration) createFactoryERC721Random(address string) (*factoryerc721random.Binding, error) {
+	client, err := conf.CreateEthClient()
+	if err != nil {
+		return nil, err
+	}
+
+	addr := common.HexToAddress(address)
+	instance, err := factoryerc721random.NewBinding(addr, client)
+
+	return instance, err
+}
+
+func (conf *Configuration) createFactoryERC721Fixed(address string) (*factoryerc721fixed.Binding, error) {
+	client, err := conf.CreateEthClient()
+	if err != nil {
+		return nil, err
+	}
+
+	addr := common.HexToAddress(address)
+	instance, err := factoryerc721fixed.NewBinding(addr, client)
 
 	return instance, err
 }

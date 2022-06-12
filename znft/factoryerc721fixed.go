@@ -24,7 +24,7 @@ import (
 //) external returns (address) {
 
 type IFactoryFixed interface {
-	Create(owner, name, symbol, uri string, max, price, batch *big.Int, calldata string) error
+	CreateToken(owner, name, symbol, uri string, max, price, batch *big.Int, calldata []byte) error
 }
 
 type FactoryFixed struct {
@@ -32,9 +32,9 @@ type FactoryFixed struct {
 	ctx     context.Context
 }
 
-func (s *FactoryFixed) CreateToken(owner, name, symbol, uri string, max, price, batch *big.Int, data []byte) error {
+func (s *FactoryFixed) CreateToken(owner, name, symbol, uri string, max, price, batch *big.Int, calldata []byte) error {
 	ownerAddress := common.HexToAddress(owner)
-	evmTr, err := s.session.CreateToken(ownerAddress, name, symbol, uri, max, price, batch, data)
+	evmTr, err := s.session.CreateToken(ownerAddress, name, symbol, uri, max, price, batch, calldata)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to execute %s", "CreateToken")
 		Logger.Error(err)

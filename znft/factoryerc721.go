@@ -24,16 +24,16 @@ import (
 // 		bytes calldata
 //) external returns (address) {
 
-type IFactory interface {
+type IFactoryERC721 interface {
 	CreateToken(owner, name, symbol, uri string, max *big.Int, data []byte) error
 }
 
-type Factory struct {
+type FactoryERC721 struct {
 	session *factory.BindingSession
 	ctx     context.Context
 }
 
-func (s *Factory) CreateToken(owner, name, symbol, uri string, max *big.Int, data []byte) error {
+func (s *FactoryERC721) CreateToken(owner, name, symbol, uri string, max *big.Int, data []byte) error {
 	ownerAddress := common.HexToAddress(owner)
 	evmTr, err := s.session.CreateToken(ownerAddress, name, symbol, uri, max, nil, nil, data)
 	if err != nil {
