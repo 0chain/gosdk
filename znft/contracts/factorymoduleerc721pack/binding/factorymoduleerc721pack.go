@@ -30,7 +30,7 @@ var (
 
 // BindingMetaData contains all meta data concerning the Binding contract.
 var BindingMetaData = &bind.MetaData{
-	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"symbol\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"uri\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"max\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"\",\"type\":\"bytes\"}],\"name\":\"createToken\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
+	ABI: "[{\"inputs\":[{\"internalType\":\"address\",\"name\":\"factory_\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"random_\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"inputs\":[{\"internalType\":\"address\",\"name\":\"owner\",\"type\":\"address\"},{\"internalType\":\"string\",\"name\":\"name\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"symbol\",\"type\":\"string\"},{\"internalType\":\"string\",\"name\":\"uri\",\"type\":\"string\"},{\"internalType\":\"uint256\",\"name\":\"max\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"price\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"batch\",\"type\":\"uint256\"},{\"internalType\":\"bytes\",\"name\":\"data\",\"type\":\"bytes\"}],\"name\":\"createToken\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]",
 }
 
 // BindingABI is the input ABI used to generate the binding from.
@@ -181,21 +181,21 @@ func (_Binding *BindingTransactorRaw) Transact(opts *bind.TransactOpts, method s
 
 // CreateToken is a paid mutator transaction binding the contract method 0x3d774115.
 //
-// Solidity: function createToken(address owner, string name, string symbol, string uri, uint256 max, uint256 , uint256 , bytes ) returns(address)
-func (_Binding *BindingTransactor) CreateToken(opts *bind.TransactOpts, owner common.Address, name string, symbol string, uri string, max *big.Int, arg5 *big.Int, arg6 *big.Int, arg7 []byte) (*types.Transaction, error) {
-	return _Binding.contract.Transact(opts, "createToken", owner, name, symbol, uri, max, arg5, arg6, arg7)
+// Solidity: function createToken(address owner, string name, string symbol, string uri, uint256 max, uint256 price, uint256 batch, bytes data) returns(address)
+func (_Binding *BindingTransactor) CreateToken(opts *bind.TransactOpts, owner common.Address, name string, symbol string, uri string, max *big.Int, price *big.Int, batch *big.Int, data []byte) (*types.Transaction, error) {
+	return _Binding.contract.Transact(opts, "createToken", owner, name, symbol, uri, max, price, batch, data)
 }
 
 // CreateToken is a paid mutator transaction binding the contract method 0x3d774115.
 //
-// Solidity: function createToken(address owner, string name, string symbol, string uri, uint256 max, uint256 , uint256 , bytes ) returns(address)
-func (_Binding *BindingSession) CreateToken(owner common.Address, name string, symbol string, uri string, max *big.Int, arg5 *big.Int, arg6 *big.Int, arg7 []byte) (*types.Transaction, error) {
-	return _Binding.Contract.CreateToken(&_Binding.TransactOpts, owner, name, symbol, uri, max, arg5, arg6, arg7)
+// Solidity: function createToken(address owner, string name, string symbol, string uri, uint256 max, uint256 price, uint256 batch, bytes data) returns(address)
+func (_Binding *BindingSession) CreateToken(owner common.Address, name string, symbol string, uri string, max *big.Int, price *big.Int, batch *big.Int, data []byte) (*types.Transaction, error) {
+	return _Binding.Contract.CreateToken(&_Binding.TransactOpts, owner, name, symbol, uri, max, price, batch, data)
 }
 
 // CreateToken is a paid mutator transaction binding the contract method 0x3d774115.
 //
-// Solidity: function createToken(address owner, string name, string symbol, string uri, uint256 max, uint256 , uint256 , bytes ) returns(address)
-func (_Binding *BindingTransactorSession) CreateToken(owner common.Address, name string, symbol string, uri string, max *big.Int, arg5 *big.Int, arg6 *big.Int, arg7 []byte) (*types.Transaction, error) {
-	return _Binding.Contract.CreateToken(&_Binding.TransactOpts, owner, name, symbol, uri, max, arg5, arg6, arg7)
+// Solidity: function createToken(address owner, string name, string symbol, string uri, uint256 max, uint256 price, uint256 batch, bytes data) returns(address)
+func (_Binding *BindingTransactorSession) CreateToken(owner common.Address, name string, symbol string, uri string, max *big.Int, price *big.Int, batch *big.Int, data []byte) (*types.Transaction, error) {
+	return _Binding.Contract.CreateToken(&_Binding.TransactOpts, owner, name, symbol, uri, max, price, batch, data)
 }
