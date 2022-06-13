@@ -233,7 +233,7 @@ func ReadPoolLock(tokens, fee int64, isOwner bool) (hash string, nonce int64, er
 	}
 
 	type lockRequest struct {
-		IsOwner    bool   `json:"is_owner"`
+		IsOwner bool `json:"is_owner"`
 		//MintTokens bool   `json:"mint_tokens"`
 	}
 
@@ -256,7 +256,7 @@ func ReadPoolUnlock(fee int64, isOwner bool) (hash string, nonce int64, err erro
 	}
 
 	type unlockRequest struct {
-		IsOwner    bool   `json:"is_owner"`
+		IsOwner bool `json:"is_owner"`
 	}
 
 	req := unlockRequest{
@@ -499,51 +499,18 @@ func StakePoolUnlock(
 // write pool
 //
 
-// GetWritePoolInfo for given client, or, if the given clientID is empty,
-// for current client of the sdk.
-func GetWritePoolInfo(clientID string) (info *AllocationPoolStats, err error) {
-	if !sdkInitialized {
-		return nil, sdkNotInitialized
-	}
-	if clientID == "" {
-		clientID = client.GetClientID()
-	}
-
-	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getWritePoolStat",
-		map[string]string{"client_id": clientID}, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "error requesting read pool info:")
-	}
-	if len(b) == 0 {
-		return nil, errors.New("", "empty response")
-	}
-
-	info = new(AllocationPoolStats)
-	if err = json.Unmarshal(b, info); err != nil {
-		return nil, errors.Wrap(err, "error decoding response:")
-	}
-
-	return
-}
-
 // WritePoolLock locks given number of tokes for given duration in read pool.
-func WritePoolLock(dur time.Duration, allocID, blobberID string,
-	tokens, fee int64) (hash string, nonce int64, err error) {
+func WritePoolLock(allocID string, tokens, fee int64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
 
 	type lockRequest struct {
-		Duration     time.Duration `json:"duration"`
-		AllocationID string        `json:"allocation_id"`
-		BlobberID    string        `json:"blobber_id,omitempty"`
+		AllocationID string `json:"allocation_id"`
 	}
 
 	var req lockRequest
-	req.Duration = dur
 	req.AllocationID = allocID
-	req.BlobberID = blobberID
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_WRITE_POOL_LOCK,
@@ -554,17 +521,17 @@ func WritePoolLock(dur time.Duration, allocID, blobberID string,
 }
 
 // WritePoolUnlock unlocks tokens in expired read pool
-func WritePoolUnlock(poolID string, fee int64) (hash string, nonce int64, err error) {
+func WritePoolUnlock(allocID string, fee int64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
 
 	type unlockRequest struct {
-		PoolID string `json:"pool_id"`
+		AllocationID string `json:"allocation_id"`
 	}
 
 	var req unlockRequest
-	req.PoolID = poolID
+	req.AllocationID = allocID
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_WRITE_POOL_UNLOCK,
