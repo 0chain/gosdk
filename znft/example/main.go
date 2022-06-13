@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/big"
 	"os"
 
 	"github.com/0chain/gosdk/znft"
@@ -41,8 +42,30 @@ func main() {
 
 	// Create NFT with factory
 	address := "beef"
+	ownerAddress := "beef"
 
-	// ERC721Random
+	// Creating NFTs
+
+	factorySession, err := cfg.CreateFactoryERC721Session(context.Background(), address)
+	if err != nil {
+		panic(err)
+	}
+
+	data := []byte("")
+	max := new(big.Int).SetInt64(10000)
+	err = factorySession.CreateToken(
+		ownerAddress,
+		"TestFixedPriceToken",
+		"dNFT",
+		"https://api.0chain.net/v1/file/abcdefgh/",
+		max,
+		data,
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	// Reading and writing to NFT smart contracts
 
 	// Create session of NFT token
 	sessionRandom, err := cfg.CreateStorageERC721RandomSession(context.Background(), address)
