@@ -258,7 +258,7 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 // amountTokens - ZCN tokens
 // clientID - 0ZCN client
 // ERC20 signature: "burn(uint256,bytes)"
-func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens int64) (*types.Transaction, error) {
+func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*types.Transaction, error) {
 	if DefaultClientIDEncoder == nil {
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
 	}
@@ -268,7 +268,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens int64) (*types
 
 	// 2. Data Parameter (signature)
 	amount := new(big.Int)
-	amount.SetInt64(amountTokens)
+	amount.SetInt64(int64(amountTokens))
 
 	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, "burn", amount, clientID)
 	if err != nil {
