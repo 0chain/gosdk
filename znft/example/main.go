@@ -13,7 +13,7 @@ import (
 var mnemonic string
 
 func main() {
-	mnemonic = "float actor page tip vital solution knock agent cage grant size funny"
+	mnemonic = "use your mnemonic to import account to a local storage"
 
 	// Create this configuration
 	cfg := &znft.Configuration{
