@@ -274,9 +274,6 @@ func (t *Transaction) submitTxn() {
 
 func newTransaction(cb TransactionCallback, txnFee int64, nonce int64) (*Transaction, error) {
 	t := &Transaction{}
-	if nonce == 0 {
-		nonce = transaction.Cache.GetNextNonce(_config.wallet.ClientID)
-	}
 	t.txn = transaction.NewTransactionEntity(_config.wallet.ClientID, _config.chain.ChainID, _config.wallet.ClientKey, nonce)
 	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
 	t.txnCb = cb
