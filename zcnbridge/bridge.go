@@ -329,7 +329,7 @@ func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) 
 }
 
 // BurnZCN burns ZCN tokens before conversion from ZCN to WZCN as a first step
-func (b *BridgeClient) BurnZCN(ctx context.Context, amount int64) (*transaction.Transaction, error) {
+func (b *BridgeClient) BurnZCN(ctx context.Context, amount uint64) (*transaction.Transaction, error) {
 	payload := zcnsc.BurnPayload{
 		Nonce:           b.IncrementNonce(),
 		EthereumAddress: b.EthereumAddress, // TODO: this should be receiver address not the bridge
@@ -344,7 +344,7 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount int64) (*transaction.
 		"Starting BURN smart contract",
 		zap.String("sc address", wallet.ZCNSCSmartContractAddress),
 		zap.String("function", wallet.BurnFunc),
-		zap.Int64("burn amount", amount),
+		zap.Uint64("burn amount", amount),
 	)
 
 	hash, err := trx.ExecuteSmartContract(
@@ -363,8 +363,8 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount int64) (*transaction.
 	Logger.Info(
 		"Burn ZCN transaction",
 		zap.String("hash", hash),
-		zap.Int64("burn amount", amount),
-		zap.Int64("amount", amount),
+		zap.Uint64("burn amount", amount),
+		zap.Uint64("amount", amount),
 	)
 
 	return trx, nil
