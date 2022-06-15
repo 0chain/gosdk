@@ -357,14 +357,6 @@ func TestPriceRange_IsValid(t *testing.T) {
 			true,
 		},
 		{
-			"Test_Invalid_With_Negative_Value",
-			fields{
-				Min: -5,
-				Max: 10,
-			},
-			false,
-		},
-		{
 			"Test_Invalid_InRange",
 			fields{
 				Min: 10,
