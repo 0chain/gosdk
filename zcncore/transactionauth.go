@@ -726,7 +726,7 @@ func (ta *TransactionWithAuth) WritePoolUnlock(allocID string, fee uint64) (
 	}
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_WRITE_POOL_UNLOCK, &unlockRequest{
-			PoolID: poolID,
+			PoolID: allocID,
 		}, 0)
 	if err != nil {
 		Logger.Error(err)
