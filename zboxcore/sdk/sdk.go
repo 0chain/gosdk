@@ -660,6 +660,19 @@ type Validator struct {
 	TotalStake     int64          `json:"stake"`
 }
 
+func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
+	return &blockchain.ValidationNode{
+		ID:      string(v.ID),
+		BaseURL: v.BaseURL,
+		StakePoolSettings: blockchain.StakePoolSettings{
+			DelegateWallet: v.DelegateWallet,
+			MinStake:       v.MinStake,
+			MaxStake:       v.MaxStake,
+			NumDelegates:   v.NumDelegates,
+			ServiceCharge:  v.ServiceCharge,
+		},
+	}
+
 }
 
 func GetBlobbers() (bs []*Blobber, err error) {
@@ -1245,6 +1258,7 @@ func UpdateValidatorSettings(v *Validator) (resp string, nonce int64, err error)
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
+
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS,
 		InputArgs: v,
