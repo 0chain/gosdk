@@ -835,22 +835,22 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 }
 
 func CreateAllocationWithBlobbers(name string, datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, mcct time.Duration, lock int64, blobbers []string) (
+	readPrice, writePrice PriceRange, lock int64, blobbers []string) (
 	string, int64, error) {
 
 	return CreateAllocationForOwner(client.GetClientID(),
 		client.GetClientPublicKey(), name, datashards, parityshards,
-		size, expiry, readPrice, writePrice, mcct, lock,
+		size, expiry, readPrice, writePrice, lock,
 		blobbers)
 }
 
 func CreateAllocation(name string, datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, mcct time.Duration, lock int64) (
+	readPrice, writePrice PriceRange, lock int64) (
 	string, int64, error) {
 
 	return CreateAllocationForOwner(name, client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
-		size, expiry, readPrice, writePrice, mcct, lock,
+		size, expiry, readPrice, writePrice, lock,
 		blockchain.GetPreferredBlobbers())
 }
 
@@ -1360,7 +1360,7 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 }
 
 func GetAllocationMinLock(datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, mcct time.Duration) (int64, error) {
+	readPrice, writePrice PriceRange) (int64, error) {
 
 	preferred, err := getPreferredBlobberIds(blockchain.GetPreferredBlobbers())
 	if err != nil {
@@ -1368,7 +1368,7 @@ func GetAllocationMinLock(datashards, parityshards int, size, expiry int64,
 	}
 
 	return GetAllocationMinLockBlobbers(datashards, parityshards, size, expiry,
-		readPrice, writePrice, mcct, preferred)
+		readPrice, writePrice, preferred)
 }
 
 func GetAllocationMinLockBlobbers(datashards, parityshards int, size, expiry int64,
