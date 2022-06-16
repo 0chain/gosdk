@@ -162,7 +162,7 @@ type AllocationPoolStat struct {
 	ID           string             `json:"id"`
 	Balance      common.Balance     `json:"balance"`
 	ExpireAt     common.Timestamp   `json:"expire_at"`
-	AllocationID common.Key         `json:"allocation_id"`
+	AllocationID common .Key         `json:"allocation_id"`
 	Blobbers     []*BlobberPoolStat `json:"blobbers"`
 	Locked       bool               `json:"locked"`
 }
@@ -172,7 +172,7 @@ type BackPool struct {
 	Balance common.Balance `json:"balance"`
 }
 
-// AllocationPoolsStat represents read or write pool statistic.
+// AllocationPoolStats represents read or write pool statistic.
 type AllocationPoolStats struct {
 	Pools []*AllocationPoolStat `json:"pools"`
 	Back  *BackPool             `json:"back,omitempty"`
@@ -192,9 +192,12 @@ func (aps *AllocationPoolStats) AllocFilter(allocID string) {
 	aps.Pools = aps.Pools[:i]
 }
 
+//
+// read pool
+//
+
 type ReadPool struct {
-	OwnerBalance   common.Balance `json:"owner_balance"`
-	VisitorBalance common.Balance `json:"visitor_balance"`
+	Balance common.Balance `json:"balance"`
 }
 
 // GetReadPoolInfo for given client, or, if the given clientID is empty,
@@ -227,45 +230,28 @@ func GetReadPoolInfo(clientID string) (info *ReadPool, err error) {
 }
 
 // ReadPoolLock locks given number of tokes for given duration in read pool.
-func ReadPoolLock(tokens, fee int64, isOwner bool) (hash string, nonce int64, err error) {
+func ReadPoolLock(tokens, fee int64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
 
-	type lockRequest struct {
-		IsOwner bool `json:"is_owner"`
-		//MintTokens bool   `json:"mint_tokens"`
-	}
-
-	req := lockRequest{
-		IsOwner: isOwner,
-	}
-
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_READ_POOL_LOCK,
-		InputArgs: &req,
+		InputArgs: nil,
 	}
 	hash, _, nonce, err = smartContractTxnValueFee(sn, tokens, fee)
 	return
 }
 
 // ReadPoolUnlock unlocks tokens in expired read pool
-func ReadPoolUnlock(fee int64, isOwner bool) (hash string, nonce int64, err error) {
+func ReadPoolUnlock(fee int64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
 
-	type unlockRequest struct {
-		IsOwner bool `json:"is_owner"`
-	}
-
-	req := unlockRequest{
-		IsOwner: isOwner,
-	}
-
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_READ_POOL_UNLOCK,
-		InputArgs: &req,
+		InputArgs: nil,
 	}
 	hash, _, nonce, err = smartContractTxnValueFee(sn, 0, fee)
 	return
