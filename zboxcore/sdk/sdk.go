@@ -290,20 +290,6 @@ type StakePoolDelegatePoolInfo struct {
 	RoundCreated int64          `json:"round_created"`
 }
 
-// StakePoolSettings information.
-type StakePoolSettings struct {
-	// DelegateWallet for pool owner.
-	DelegateWallet string `json:"delegate_wallet"`
-	// MinStake allowed.
-	MinStake common.Balance `json:"min_stake"`
-	// MaxStake allowed.
-	MaxStake common.Balance `json:"max_stake"`
-	// NumDelegates maximum allowed.
-	NumDelegates int `json:"num_delegates"`
-	// ServiceCharge is blobber service charge.
-	ServiceCharge float64 `json:"service_charge"`
-}
-
 // StakePool full info.
 type StakePoolInfo struct {
 	ID      common.Key     `json:"pool_id"` // pool ID
@@ -323,7 +309,7 @@ type StakePoolInfo struct {
 	Rewards common.Balance `json:"rewards"`
 
 	// Settings of the stake pool
-	Settings StakePoolSettings `json:"settings"`
+	Settings blockchain.StakePoolSettings `json:"settings"`
 }
 
 // GetStakePoolInfo for given client, or, if the given clientID is empty,
@@ -651,15 +637,15 @@ func GetStorageSCConfig() (conf *InputMap, err error) {
 }
 
 type Blobber struct {
-	ID                common.Key        `json:"id"`
-	BaseURL           string            `json:"url"`
-	Terms             Terms             `json:"terms"`
-	Capacity          common.Size       `json:"capacity"`
-	Used              common.Size       `json:"used"`
-	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
-	PublicKey         string            `json:"-"`
-	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
-	TotalStake        int64             `json:"total_stake"`
+	ID                common.Key                   `json:"id"`
+	BaseURL           string                       `json:"url"`
+	Terms             Terms                        `json:"terms"`
+	Capacity          common.Size                  `json:"capacity"`
+	Used              common.Size                  `json:"used"`
+	LastHealthCheck   common.Timestamp             `json:"last_health_check"`
+	PublicKey         string                       `json:"-"`
+	StakePoolSettings blockchain.StakePoolSettings `json:"stake_pool_settings"`
+	TotalStake        int64                        `json:"total_stake"`
 }
 
 type Validator struct {
@@ -674,10 +660,6 @@ type Validator struct {
 	TotalStake     int64          `json:"stake"`
 }
 
-	BaseURL           string            `json:"url"`
-	PublicKey         string            `json:"-"`
-	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
-	TotalStake        int64             `json:"total_stake"`
 }
 
 func GetBlobbers() (bs []*Blobber, err error) {
