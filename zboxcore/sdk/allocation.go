@@ -107,13 +107,13 @@ type AllocationStats struct {
 
 // PriceRange represents a price range allowed by user to filter blobbers.
 type PriceRange struct {
-	Min int64 `json:"min"`
-	Max int64 `json:"max"`
+	Min uint64 `json:"min"`
+	Max uint64 `json:"max"`
 }
 
 // IsValid price range.
 func (pr *PriceRange) IsValid() bool {
-	return 0 <= pr.Min && pr.Min <= pr.Max
+	return pr.Min <= pr.Max
 }
 
 // Terms represents Blobber terms. A Blobber can update its terms,

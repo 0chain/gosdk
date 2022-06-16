@@ -196,7 +196,7 @@ func GetReadPoolInfo(clientID string) (info *ReadPool, err error) {
 }
 
 // ReadPoolLock locks given number of tokes for given duration in read pool.
-func ReadPoolLock(tokens, fee int64) (hash string, nonce int64, err error) {
+func ReadPoolLock(tokens, fee uint64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
@@ -210,7 +210,7 @@ func ReadPoolLock(tokens, fee int64) (hash string, nonce int64, err error) {
 }
 
 // ReadPoolUnlock unlocks tokens in expired read pool
-func ReadPoolUnlock(fee int64) (hash string, nonce int64, err error) {
+func ReadPoolUnlock(fee uint64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
@@ -382,7 +382,7 @@ type stakePoolRequest struct {
 }
 
 // StakePoolLock locks tokens lack in stake pool
-func StakePoolLock(blobberID string, value, fee int64) (poolID string, nonce int64, err error) {
+func StakePoolLock(blobberID string, value, fee uint64) (poolID string, nonce int64, err error) {
 	if !sdkInitialized {
 		return poolID, 0, sdkNotInitialized
 	}
@@ -416,7 +416,7 @@ type StakePoolUnlockUnstake struct {
 // unlock tokens can't be unlocked now, wait the time and unlock them (call
 // this function again).
 func StakePoolUnlock(
-	blobberID, poolID string, fee int64,
+	blobberID, poolID string, fee uint64,
 ) (unstake bool, nonce int64, err error) {
 	if !sdkInitialized {
 		return false, 0, sdkNotInitialized
@@ -452,7 +452,7 @@ func StakePoolUnlock(
 //
 
 // WritePoolLock locks given number of tokes for given duration in read pool.
-func WritePoolLock(allocID string, tokens, fee int64) (hash string, nonce int64, err error) {
+func WritePoolLock(allocID string, tokens, fee uint64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
@@ -473,7 +473,7 @@ func WritePoolLock(allocID string, tokens, fee int64) (hash string, nonce int64,
 }
 
 // WritePoolUnlock unlocks tokens in expired read pool
-func WritePoolUnlock(allocID string, fee int64) (hash string, nonce int64, err error) {
+func WritePoolUnlock(allocID string, fee uint64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
@@ -768,7 +768,7 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 }
 
 func CreateAllocationWithBlobbers(name string, datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, mcct time.Duration, lock int64, blobbers []string) (
+	readPrice, writePrice PriceRange, mcct time.Duration, lock uint64, blobbers []string) (
 	string, int64, error) {
 
 	return CreateAllocationForOwner(client.GetClientID(),
@@ -778,7 +778,7 @@ func CreateAllocationWithBlobbers(name string, datashards, parityshards int, siz
 }
 
 func CreateAllocation(name string, datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, mcct time.Duration, lock int64) (
+	readPrice, writePrice PriceRange, mcct time.Duration, lock uint64) (
 	string, int64, error) {
 
 	return CreateAllocationForOwner(name, client.GetClientID(),
@@ -790,7 +790,7 @@ func CreateAllocation(name string, datashards, parityshards int, size, expiry in
 func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, mcct time.Duration,
-	lock int64, preferredBlobbers []string) (hash string, nonce int64, err error) {
+	lock uint64, preferredBlobbers []string) (hash string, nonce int64, err error) {
 
 	if lock < 0 {
 		return "", 0, errors.New("", "invalid value for lock")
@@ -950,7 +950,7 @@ func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit 
 	return hash, n, err
 }
 
-func CreateFreeAllocation(marker string, value int64) (string, int64, error) {
+func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
@@ -982,7 +982,7 @@ func CreateFreeAllocation(marker string, value int64) (string, int64, error) {
 func UpdateAllocation(name string,
 	size, expiry int64,
 	allocationID string,
-	lock int64,
+	lock uint64,
 	setImmutable, updateTerms bool,
 	addBlobberId, removeBlobberId string,
 ) (hash string, nonce int64, err error) {
@@ -1013,7 +1013,7 @@ func UpdateAllocation(name string,
 	return
 }
 
-func CreateFreeUpdateAllocation(marker, allocationId string, value int64) (string, int64, error) {
+func CreateFreeUpdateAllocation(marker, allocationId string, value uint64) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
@@ -1156,14 +1156,14 @@ func smartContractTxn(sn transaction.SmartContractTxnData) (
 	return smartContractTxnValue(sn, 0)
 }
 
-func smartContractTxnValue(sn transaction.SmartContractTxnData, value int64) (
+func smartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
 	hash, out string, nonce int64, err error) {
 
 	return smartContractTxnValueFee(sn, value, 0)
 }
 
 func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
-	value, fee int64) (hash, out string, nonce int64, err error) {
+	value, fee uint64) (hash, out string, nonce int64, err error) {
 
 	var requestBytes []byte
 	if requestBytes, err = json.Marshal(sn); err != nil {

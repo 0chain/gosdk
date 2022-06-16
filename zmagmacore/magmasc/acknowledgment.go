@@ -74,7 +74,7 @@ func (m *Acknowledgment) Key() []byte {
 }
 
 // PoolBalance implements PoolConfigurator interface.
-func (m *Acknowledgment) PoolBalance() int64 {
+func (m *Acknowledgment) PoolBalance() uint64 {
 	return m.Terms.GetAmount()
 }
 
