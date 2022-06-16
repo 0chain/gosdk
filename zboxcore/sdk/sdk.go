@@ -153,43 +153,9 @@ func CreateReadPool() (hash string, nonce int64, err error) {
 	return
 }
 
-type BlobberPoolStat struct {
-	BlobberID common.Key     `json:"blobber_id"`
-	Balance   common.Balance `json:"balance"`
-}
-
-type AllocationPoolStat struct {
-	ID           string             `json:"id"`
-	Balance      common.Balance     `json:"balance"`
-	ExpireAt     common.Timestamp   `json:"expire_at"`
-	AllocationID common .Key         `json:"allocation_id"`
-	Blobbers     []*BlobberPoolStat `json:"blobbers"`
-	Locked       bool               `json:"locked"`
-}
-
 type BackPool struct {
 	ID      string         `json:"id"`
 	Balance common.Balance `json:"balance"`
-}
-
-// AllocationPoolStats represents read or write pool statistic.
-type AllocationPoolStats struct {
-	Pools []*AllocationPoolStat `json:"pools"`
-	Back  *BackPool             `json:"back,omitempty"`
-}
-
-func (aps *AllocationPoolStats) AllocFilter(allocID string) {
-	if allocID == "" {
-		return
-	}
-	var i int
-	for _, pi := range aps.Pools {
-		if pi.AllocationID != common.Key(allocID) {
-			continue
-		}
-		aps.Pools[i], i = pi, i+1
-	}
-	aps.Pools = aps.Pools[:i]
 }
 
 //
