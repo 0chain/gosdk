@@ -1261,7 +1261,7 @@ func UpdateValidatorSettings(v *Validator) (resp string, nonce int64, err error)
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS,
-		InputArgs: v,
+		InputArgs: v.ConvertToValidationNode(),
 	}
 	resp, _, nonce, err = smartContractTxn(sn)
 	return
