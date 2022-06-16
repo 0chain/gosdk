@@ -332,8 +332,8 @@ func (m MockFile) Size() int64 { return 10 }
 
 func TestPriceRange_IsValid(t *testing.T) {
 	type fields struct {
-		Min int64
-		Max int64
+		Min uint64
+		Max uint64
 	}
 	tests := []struct {
 		name   string
@@ -355,14 +355,6 @@ func TestPriceRange_IsValid(t *testing.T) {
 				Max: 10,
 			},
 			true,
-		},
-		{
-			"Test_Invalid_With_Negative_Value",
-			fields{
-				Min: -5,
-				Max: 10,
-			},
-			false,
 		},
 		{
 			"Test_Invalid_InRange",

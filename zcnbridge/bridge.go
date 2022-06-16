@@ -258,7 +258,7 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 // amountTokens - ZCN tokens
 // clientID - 0ZCN client
 // ERC20 signature: "burn(uint256,bytes)"
-func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens int64) (*types.Transaction, error) {
+func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*types.Transaction, error) {
 	if DefaultClientIDEncoder == nil {
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
 	}
@@ -268,7 +268,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens int64) (*types
 
 	// 2. Data Parameter (signature)
 	amount := new(big.Int)
-	amount.SetInt64(amountTokens)
+	amount.SetInt64(int64(amountTokens))
 
 	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, "burn", amount, clientID)
 	if err != nil {
@@ -329,7 +329,7 @@ func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) 
 }
 
 // BurnZCN burns ZCN tokens before conversion from ZCN to WZCN as a first step
-func (b *BridgeClient) BurnZCN(ctx context.Context, amount int64) (*transaction.Transaction, error) {
+func (b *BridgeClient) BurnZCN(ctx context.Context, amount uint64) (*transaction.Transaction, error) {
 	payload := zcnsc.BurnPayload{
 		Nonce:           b.IncrementNonce(),
 		EthereumAddress: b.EthereumAddress, // TODO: this should be receiver address not the bridge
@@ -344,7 +344,7 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount int64) (*transaction.
 		"Starting BURN smart contract",
 		zap.String("sc address", wallet.ZCNSCSmartContractAddress),
 		zap.String("function", wallet.BurnFunc),
-		zap.Int64("burn amount", amount),
+		zap.Uint64("burn amount", amount),
 	)
 
 	hash, err := trx.ExecuteSmartContract(
@@ -363,8 +363,8 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount int64) (*transaction.
 	Logger.Info(
 		"Burn ZCN transaction",
 		zap.String("hash", hash),
-		zap.Int64("burn amount", amount),
-		zap.Int64("amount", amount),
+		zap.Uint64("burn amount", amount),
+		zap.Uint64("amount", amount),
 	)
 
 	return trx, nil
