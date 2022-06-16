@@ -4,7 +4,7 @@ type (
 	// PoolConfigurator represents a pool config interface.
 	PoolConfigurator interface {
 		// PoolBalance returns the amount value of token pool.
-		PoolBalance() int64
+		PoolBalance() uint64
 
 		// PoolID returns the token pool ID.
 		PoolID() string
