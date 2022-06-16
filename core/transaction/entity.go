@@ -37,12 +37,12 @@ type Transaction struct {
 	ToClientID        string `json:"to_client_id,omitempty"`
 	ChainID           string `json:"chain_id,omitempty"`
 	TransactionData   string `json:"transaction_data"`
-	Value             int64  `json:"transaction_value"`
+	Value             uint64 `json:"transaction_value"`
 	Signature         string `json:"signature,omitempty"`
 	CreationDate      int64  `json:"creation_date,omitempty"`
 	TransactionType   int    `json:"transaction_type"`
 	TransactionOutput string `json:"transaction_output,omitempty"`
-	TransactionFee    int64  `json:"transaction_fee"`
+	TransactionFee    uint64 `json:"transaction_fee"`
 	TransactionNonce  int64  `json:"transaction_nonce"`
 	OutputHash        string `json:"txn_output_hash"`
 	Status            int    `json:"transaction_status"`
