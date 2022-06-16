@@ -102,10 +102,11 @@ func (m *ProviderTerms) Expired() bool {
 }
 
 // GetAmount returns calculated amount value of provider terms.
-func (m *ProviderTerms) GetAmount() (amount int64) {
+func (m *ProviderTerms) GetAmount() (amount uint64) {
 	price := m.GetPrice()
-	if price > 0 {
-		amount = price * m.GetVolume()
+	vol := m.GetVolume()
+	if vol > 0 {
+		amount = price * uint64(vol)
 		if minCost := m.GetMinCost(); amount < minCost {
 			amount = minCost
 		}
@@ -115,9 +116,9 @@ func (m *ProviderTerms) GetAmount() (amount int64) {
 }
 
 // GetMinCost returns calculated min cost value of provider terms.
-func (m *ProviderTerms) GetMinCost() (cost int64) {
+func (m *ProviderTerms) GetMinCost() (cost uint64) {
 	if m.MinCost > 0 {
-		cost = int64(m.MinCost * billion)
+		cost = uint64(m.MinCost * billion)
 	}
 
 	return cost
@@ -125,9 +126,9 @@ func (m *ProviderTerms) GetMinCost() (cost int64) {
 
 // GetPrice returns calculated price value of provider terms.
 // NOTE: the price value will be represented in token units per megabyte.
-func (m *ProviderTerms) GetPrice() (price int64) {
+func (m *ProviderTerms) GetPrice() (price uint64) {
 	if m.Price > 0 {
-		price = int64(m.Price * billion)
+		price = uint64(m.Price * billion)
 	}
 
 	return price
