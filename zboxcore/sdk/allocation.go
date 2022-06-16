@@ -119,11 +119,10 @@ func (pr *PriceRange) IsValid() bool {
 // Terms represents Blobber terms. A Blobber can update its terms,
 // but any existing offer will use terms of offer signing time.
 type Terms struct {
-	ReadPrice               common.Balance `json:"read_price"`  // tokens / GB
-	WritePrice              common.Balance `json:"write_price"` // tokens / GB
-	MinLockDemand           float64        `json:"min_lock_demand"`
-	MaxOfferDuration        time.Duration  `json:"max_offer_duration"`
-	ChallengeCompletionTime time.Duration  `json:"challenge_completion_time"`
+	ReadPrice        common.Balance `json:"read_price"`  // tokens / GB
+	WritePrice       common.Balance `json:"write_price"` // tokens / GB
+	MinLockDemand    float64        `json:"min_lock_demand"`
+	MaxOfferDuration time.Duration  `json:"max_offer_duration"`
 }
 
 type BlobberAllocation struct {
