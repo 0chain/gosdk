@@ -18,13 +18,13 @@ func Test_Billing_CalcAmount(t *testing.T) {
 
 	// data usage summary in megabytes
 	mbps := float64(bill.DataUsage.UploadBytes+bill.DataUsage.DownloadBytes) / million
-	want := int64(mbps * float64(terms.GetPrice()))
+	want := uint64(mbps * float64(terms.GetPrice()))
 
 	tests := [3]struct {
 		name  string
 		bill  Billing
 		terms ProviderTerms
-		want  int64
+		want  uint64
 	}{
 		{
 			name:  "OK",

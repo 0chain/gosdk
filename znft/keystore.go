@@ -1,4 +1,4 @@
-package zcnbridge
+package znft
 
 import (
 	"fmt"
@@ -15,10 +15,7 @@ import (
 
 // ListStorageAccounts List available accounts
 func ListStorageAccounts(homedir string) []common.Address {
-	keyDir := path.Join(homedir, EthereumWalletStorageDir)
-	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
-	config := &accounts.Config{InsecureUnlockAllowed: false}
-	am := accounts.NewManager(config, ks)
+	am := getAccountManager(homedir)
 	addresses := am.Accounts()
 
 	return addresses
@@ -26,10 +23,7 @@ func ListStorageAccounts(homedir string) []common.Address {
 
 // DeleteAccount deletes account from wallet
 func DeleteAccount(homedir, address string) bool {
-	keyDir := path.Join(homedir, EthereumWalletStorageDir)
-	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
-	config := &accounts.Config{InsecureUnlockAllowed: false}
-	am := accounts.NewManager(config, ks)
+	am := getAccountManager(homedir)
 
 	wallet, err := am.Find(accounts.Account{
 		Address: common.HexToAddress(address),
@@ -43,12 +37,17 @@ func DeleteAccount(homedir, address string) bool {
 	return true
 }
 
-// AccountExists checks if account exists
-func AccountExists(homedir, address string) bool {
-	keyDir := path.Join(homedir, EthereumWalletStorageDir)
+func getAccountManager(homedir string) *accounts.Manager {
+	keyDir := path.Join(homedir, WalletDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	config := &accounts.Config{InsecureUnlockAllowed: false}
 	am := accounts.NewManager(config, ks)
+	return am
+}
+
+// AccountExists checks if account exists
+func AccountExists(homedir, address string) bool {
+	am := getAccountManager(homedir)
 
 	wallet, err := am.Find(accounts.Account{
 		Address: common.HexToAddress(address),
@@ -69,7 +68,7 @@ func AccountExists(homedir, address string) bool {
 
 // CreateKeyStorage create, restore or unlock key storage
 func CreateKeyStorage(homedir, password string) error {
-	keyDir := path.Join(homedir, EthereumWalletStorageDir)
+	keyDir := path.Join(homedir, WalletDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	account, err := ks.NewAccount(password)
 	if err != nil {
@@ -82,18 +81,18 @@ func CreateKeyStorage(homedir, password string) error {
 
 // UpdateClientEthereumAddress updates Ethereum address
 func UpdateClientEthereumAddress(homedir, address string) (err error) {
-	configFile := path.Join(homedir, BridgeClientConfigName)
+	configFile := path.Join(homedir, ConfigFile)
 	buf, err := os.ReadFile(configFile)
 	if err != nil {
 		return err
 	}
-	cfg := &Bridge{}
+	cfg := &Configuration{}
 	err = yaml.Unmarshal(buf, cfg)
 	if err != nil {
 		return err
 	}
 
-	cfg.Owner.EthereumAddress = address
+	cfg.WalletAddress = address
 
 	text, err := yaml.Marshal(cfg)
 	if err != nil {
@@ -106,14 +105,13 @@ func UpdateClientEthereumAddress(homedir, address string) (err error) {
 }
 
 // ImportAccount imports account using mnemonic
+// password is used to lock and unlock keystorage before signing transaction
 func ImportAccount(homedir, mnemonic, password string) (string, error) {
 	// 1. Create storage and account if it doesn't exist and add account to it
-
-	keyDir := path.Join(homedir, EthereumWalletStorageDir)
+	keyDir := path.Join(homedir, WalletDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 
 	// 2. Init wallet
-
 	wallet, err := hdw.NewFromMnemonic(mnemonic)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to import from mnemonic")
@@ -131,7 +129,6 @@ func ImportAccount(homedir, mnemonic, password string) (string, error) {
 	}
 
 	// 3. Find key
-
 	acc, err := ks.Find(account)
 	if err == nil {
 		fmt.Printf("Account already exists: %s\nPath: %s\n\n", acc.Address.Hex(), acc.URL.Path)
@@ -139,7 +136,6 @@ func ImportAccount(homedir, mnemonic, password string) (string, error) {
 	}
 
 	// 4. Import the key if it doesn't exist
-
 	acc, err = ks.ImportECDSA(key, password)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to get import private key")
