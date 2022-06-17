@@ -167,7 +167,25 @@ func (ta *TransactionWithAuth) StoreData(data string) error {
 	return nil
 }
 
-package zcncore
+// ExecuteFaucetSCWallet impements the Faucet Smart contract for a given wallet
+func (ta *TransactionWithAuth) ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error {
+	w, err := ta.t.createFaucetSCWallet(walletStr, methodName, input)
+	if err != nil {
+		return err
+	}
+	go func() {
+		nonce := ta.t.txn.TransactionNonce
+		if nonce < 1 {
+			nonce = transaction.Cache.GetNextNonce(ta.t.txn.ClientID)
+		} else {
+			transaction.Cache.Set(ta.t.txn.ClientID, nonce)
+		}
+		ta.t.txn.TransactionNonce = nonce
+		ta.t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
+		ta.submitTxn()
+	}()
+	return nil
+}
 
 func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, input interface{}, val uint64) error {
 	err := ta.t.createSmartContractTxn(address, methodName, input, val)
