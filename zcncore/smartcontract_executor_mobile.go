@@ -19,7 +19,7 @@ func (t *Transaction) ExecuteSmartContract(address, methodName string, input str
 	return nil
 }
 
-func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, input string, val int64) error {
+func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, input string, val uint64) error {
 	err := ta.t.createSmartContractTxn(address, methodName, input, val)
 	if err != nil {
 		return err
