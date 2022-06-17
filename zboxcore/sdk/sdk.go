@@ -835,7 +835,7 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 }
 
 func CreateAllocationWithBlobbers(name string, datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, lock int64, blobbers []string) (
+	readPrice, writePrice PriceRange, lock uint64, blobbers []string) (
 	string, int64, error) {
 
 	return CreateAllocationForOwner(client.GetClientID(),
@@ -845,7 +845,7 @@ func CreateAllocationWithBlobbers(name string, datashards, parityshards int, siz
 }
 
 func CreateAllocation(name string, datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, lock int64) (
+	readPrice, writePrice PriceRange, lock uint64) (
 	string, int64, error) {
 
 	return CreateAllocationForOwner(name, client.GetClientID(),
@@ -857,7 +857,7 @@ func CreateAllocation(name string, datashards, parityshards int, size, expiry in
 func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange,
-	lock int64, preferredBlobbers []string) (hash string, nonce int64, err error) {
+	lock uint64, preferredBlobbers []string) (hash string, nonce int64, err error) {
 
 	if lock < 0 {
 		return "", 0, errors.New("", "invalid value for lock")
