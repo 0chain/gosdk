@@ -103,7 +103,7 @@ type SendTxnData struct {
 //
 // Note: to be buildable on MacOSX all arguments should have names.
 type TransactionScheme interface {
-	SmartContractExecuter
+	SmartContractExecutor
 
 	// SetTransactionCallback implements storing the callback
 	// used to call after the transaction or verification is completed
@@ -504,17 +504,6 @@ func (t *Transaction) ExecuteFaucetSCWallet(walletStr string, methodName string,
 		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
 		fmt.Printf("submitted transaction\n")
 		t.submitTxn()
-	}()
-	return nil
-}
-
-func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val uint64) error {
-	err := t.createSmartContractTxn(address, methodName, input, val)
-	if err != nil {
-		return err
-	}
-	go func() {
-		t.setNonceAndSubmit()
 	}()
 	return nil
 }

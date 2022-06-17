@@ -1,14 +1,14 @@
-//go:!build mobile
-// +!build mobile
+//go:build mobile
+// +build mobile
 
 package zcncore
 
-type SmartContractExecuter interface {
+type SmartContractExecutor interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
-	ExecuteSmartContract(address, methodName string, input interface{}, val uint64) error
+	ExecuteSmartContract(address, methodName string, input string, val uint64) error
 }
 
-func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val uint64) error {
+func (t *Transaction) ExecuteSmartContract(address, methodName string, input string, val uint64) error {
 	err := t.createSmartContractTxn(address, methodName, input, val)
 	if err != nil {
 		return err
@@ -19,7 +19,7 @@ func (t *Transaction) ExecuteSmartContract(address, methodName string, input int
 	return nil
 }
 
-func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, input interface{}, val uint64) error {
+func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, input string, val int64) error {
 	err := ta.t.createSmartContractTxn(address, methodName, input, val)
 	if err != nil {
 		return err
