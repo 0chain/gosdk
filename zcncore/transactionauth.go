@@ -179,8 +179,6 @@ func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, 
 	}()
 	return nil
 }
-<<<<<<< HEAD
-=======
 
 func (ta *TransactionWithAuth) SetTransactionHash(hash string) error {
 	return ta.t.SetTransactionHash(hash)
@@ -755,4 +753,3 @@ func (ta *TransactionWithAuth) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err
 	go ta.submitTxn()
 	return
 }
->>>>>>> staging
