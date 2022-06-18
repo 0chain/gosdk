@@ -107,11 +107,11 @@ type TransactionScheme interface {
 	// used to call after the transaction or verification is completed
 	SetTransactionCallback(cb TransactionCallback) error
 	// Send implements sending token to a given clientid
-	Send(toClientID string, val int64, desc string) error
+	Send(toClientID string, val uint64, desc string) error
 	// StoreData implements store the data to blockchain
 	StoreData(data string) error
 	// ExecuteSmartContract implements wrapper for smart contract function
-	ExecuteSmartContract(address, methodName string, input interface{}, val int64) error
+	ExecuteSmartContract(address, methodName string, input interface{}, val uint64) error
 	// ExecuteFaucetSCWallet implements the `Faucet Smart contract` for a given wallet
 	ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error
 	// GetTransactionHash implements retrieval of hash of the submitted transaction
@@ -121,7 +121,7 @@ type TransactionScheme interface {
 	// SetTransactionHash implements verify a previous transaction status
 	SetTransactionHash(hash string) error
 	// SetTransactionFee implements method to set the transaction fee
-	SetTransactionFee(txnFee int64) error
+	SetTransactionFee(txnFee uint64) error
 	// SetTransactionNonce implements method to set the transaction nonce
 	SetTransactionNonce(txnNonce int64) error
 	// Verify implements verify the transaction
@@ -148,7 +148,7 @@ type TransactionScheme interface {
 	VestingTrigger(poolID string) error
 	VestingStop(sr *VestingStopRequest) error
 	VestingUnlock(poolID string) error
-	VestingAdd(ar *VestingAddRequest, value int64) error
+	VestingAdd(ar *VestingAddRequest, value uint64) error
 	VestingDelete(poolID string) error
 	VestingUpdateConfig(*InputMap) error
 
@@ -157,7 +157,7 @@ type TransactionScheme interface {
 	MinerSCCollectReward(string, string, Provider) error
 	MinerSCMinerSettings(*MinerSCMinerInfo) error
 	MinerSCSharderSettings(*MinerSCMinerInfo) error
-	MinerSCLock(minerID string, lock int64) error
+	MinerSCLock(minerID string, lock uint64) error
 	MinerSCUnlock(minerID, poolID string) error
 	MinerScUpdateConfig(*InputMap) error
 	MinerScUpdateGlobals(*InputMap) error
@@ -167,19 +167,19 @@ type TransactionScheme interface {
 	// Storage SC
 
 	StorageSCCollectReward(string, string, Provider) error
-	FinalizeAllocation(allocID string, fee int64) error
-	CancelAllocation(allocID string, fee int64) error
-	CreateAllocation(car *CreateAllocationRequest, lock, fee int64) error //
-	CreateReadPool(fee int64) error
-	ReadPoolLock(allocID string, blobberID string, duration int64, lock, fee int64) error
-	ReadPoolUnlock(poolID string, fee int64) error
-	StakePoolLock(blobberID string, lock, fee int64) error
-	StakePoolUnlock(blobberID string, poolID string, fee int64) error
-	UpdateBlobberSettings(blobber *Blobber, fee int64) error
-	UpdateValidatorSettings(validator *Validator, fee int64) error
-	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock, fee int64) error
-	WritePoolLock(allocID string, blobberID string, duration int64, lock, fee int64) error
-	WritePoolUnlock(poolID string, fee int64) error
+	FinalizeAllocation(allocID string, fee uint64) error
+	CancelAllocation(allocID string, fee uint64) error
+	CreateAllocation(car *CreateAllocationRequest, lock uint64, fee uint64) error //
+	CreateReadPool(fee uint64) error
+	ReadPoolLock(allocID string, blobberID string, duration int64, lock uint64, fee uint64) error
+	ReadPoolUnlock(poolID string, fee uint64) error
+	StakePoolLock(blobberID string, lock uint64, fee uint64) error
+	StakePoolUnlock(blobberID string, poolID string, fee uint64) error
+	UpdateBlobberSettings(blobber *Blobber, fee uint64) error
+	UpdateValidatorSettings(validator *Validator, fee uint64) error
+	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock uint64, fee uint64) error
+	WritePoolLock(allocID string, blobberID string, duration int64, lock uint64, fee uint64) error
+	WritePoolUnlock(poolID string, fee uint64) error
 	StorageScUpdateConfig(*InputMap) error
 
 	// Faucet
@@ -369,7 +369,7 @@ func (t *Transaction) submitTxn() {
 	t.completeTxn(StatusSuccess, tSuccessRsp, nil)
 }
 
-func newTransaction(cb TransactionCallback, txnFee int64, nonce int64) (*Transaction, error) {
+func newTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (*Transaction, error) {
 	t := &Transaction{}
 	t.txn = transaction.NewTransactionEntity(_config.wallet.ClientID, _config.chain.ChainID, _config.wallet.ClientKey, nonce)
 	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
@@ -380,7 +380,7 @@ func newTransaction(cb TransactionCallback, txnFee int64, nonce int64) (*Transac
 }
 
 // NewTransaction allocation new generic transaction object for any operation
-func NewTransaction(cb TransactionCallback, txnFee int64, nonce int64) (TransactionScheme, error) {
+func NewTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (TransactionScheme, error) {
 	err := CheckConfig()
 	if err != nil {
 		return nil, err
@@ -405,7 +405,7 @@ func (t *Transaction) SetTransactionCallback(cb TransactionCallback) error {
 	return nil
 }
 
-func (t *Transaction) SetTransactionFee(txnFee int64) error {
+func (t *Transaction) SetTransactionFee(txnFee uint64) error {
 	if t.txnStatus != StatusUnknown {
 		return errors.New("", "transaction already exists. cannot set transaction fee.")
 	}
@@ -420,7 +420,7 @@ func (t *Transaction) SetTransactionNonce(txnNonce int64) error {
 	return nil
 }
 
-func (t *Transaction) Send(toClientID string, val int64, desc string) error {
+func (t *Transaction) Send(toClientID string, val uint64, desc string) error {
 	txnData, err := json.Marshal(SendTxnData{Note: desc})
 	if err != nil {
 		return errors.New("", "Could not serialize description to transaction_data")
@@ -435,7 +435,7 @@ func (t *Transaction) Send(toClientID string, val int64, desc string) error {
 	return nil
 }
 
-func (t *Transaction) SendWithSignatureHash(toClientID string, val int64, desc string, sig string, CreationDate int64, hash string) error {
+func (t *Transaction) SendWithSignatureHash(toClientID string, val uint64, desc string, sig string, CreationDate int64, hash string) error {
 	txnData, err := json.Marshal(SendTxnData{Note: desc})
 	if err != nil {
 		return errors.New("", "Could not serialize description to transaction_data")
@@ -462,7 +462,7 @@ func (t *Transaction) StoreData(data string) error {
 	return nil
 }
 
-func (t *Transaction) createSmartContractTxn(address, methodName string, input interface{}, value int64) error {
+func (t *Transaction) createSmartContractTxn(address, methodName string, input interface{}, value uint64) error {
 	sn := transaction.SmartContractTxnData{Name: methodName, InputArgs: input}
 	snBytes, err := json.Marshal(sn)
 	if err != nil {
@@ -509,7 +509,7 @@ func (t *Transaction) ExecuteFaucetSCWallet(walletStr string, methodName string,
 	return nil
 }
 
-func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val int64) error {
+func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val uint64) error {
 	err := t.createSmartContractTxn(address, methodName, input, val)
 	if err != nil {
 		return err
@@ -1141,10 +1141,10 @@ type vestingRequest struct {
 }
 
 func (t *Transaction) vestingPoolTxn(function string, poolID string,
-	value int64) error {
+	value uint64) error {
 
 	return t.createSmartContractTxn(VestingSmartContractAddress,
-		function, vestingRequest{PoolID: common.Key(poolID)}, int64(value))
+		function, vestingRequest{PoolID: common.Key(poolID)}, value)
 }
 
 func (t *Transaction) VestingTrigger(poolID string) (err error) {
@@ -1198,7 +1198,7 @@ type VestingAddRequest struct {
 	Destinations []*VestingDest   `json:"destinations"` //
 }
 
-func (t *Transaction) VestingAdd(ar *VestingAddRequest, value int64) (
+func (t *Transaction) VestingAdd(ar *VestingAddRequest, value uint64) (
 	err error) {
 
 	err = t.createSmartContractTxn(VestingSmartContractAddress,
@@ -1367,7 +1367,7 @@ type MinerSCLock struct {
 	ID string `json:"id"`
 }
 
-func (t *Transaction) MinerSCLock(nodeID string, lock int64) (err error) {
+func (t *Transaction) MinerSCLock(nodeID string, lock uint64) (err error) {
 
 	var mscl MinerSCLock
 	mscl.ID = nodeID
@@ -1545,7 +1545,7 @@ func (t *Transaction) StorageScUpdateConfig(ip *InputMap) (err error) {
 }
 
 // FinalizeAllocation transaction.
-func (t *Transaction) FinalizeAllocation(allocID string, fee int64) (
+func (t *Transaction) FinalizeAllocation(allocID string, fee uint64) (
 	err error) {
 
 	type finiRequest struct {
@@ -1565,7 +1565,7 @@ func (t *Transaction) FinalizeAllocation(allocID string, fee int64) (
 }
 
 // CancelAllocation transaction.
-func (t *Transaction) CancelAllocation(allocID string, fee int64) (
+func (t *Transaction) CancelAllocation(allocID string, fee uint64) (
 	err error) {
 
 	type cancelRequest struct {
@@ -1592,21 +1592,20 @@ type PriceRange struct {
 
 // CreateAllocationRequest is information to create allocation.
 type CreateAllocationRequest struct {
-	DataShards                 int              `json:"data_shards"`
-	ParityShards               int              `json:"parity_shards"`
-	Size                       common.Size      `json:"size"`
-	Expiration                 common.Timestamp `json:"expiration_date"`
-	Owner                      string           `json:"owner_id"`
-	OwnerPublicKey             string           `json:"owner_public_key"`
-	Blobbers                   []string         `json:"blobbers"`
-	ReadPriceRange             PriceRange       `json:"read_price_range"`
-	WritePriceRange            PriceRange       `json:"write_price_range"`
-	MaxChallengeCompletionTime time.Duration    `json:"max_challenge_completion_time"`
+	DataShards      int              `json:"data_shards"`
+	ParityShards    int              `json:"parity_shards"`
+	Size            common.Size      `json:"size"`
+	Expiration      common.Timestamp `json:"expiration_date"`
+	Owner           string           `json:"owner_id"`
+	OwnerPublicKey  string           `json:"owner_public_key"`
+	Blobbers        []string         `json:"blobbers"`
+	ReadPriceRange  PriceRange       `json:"read_price_range"`
+	WritePriceRange PriceRange       `json:"write_price_range"`
 }
 
 // CreateAllocation transaction.
 func (t *Transaction) CreateAllocation(car *CreateAllocationRequest,
-	lock, fee int64) (err error) {
+	lock uint64, fee uint64) (err error) {
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_CREATE_ALLOCATION, car, lock)
@@ -1620,7 +1619,7 @@ func (t *Transaction) CreateAllocation(car *CreateAllocationRequest,
 }
 
 // CreateReadPool for current user.
-func (t *Transaction) CreateReadPool(fee int64) (err error) {
+func (t *Transaction) CreateReadPool(fee uint64) (err error) {
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_CREATE_READ_POOL, nil, 0)
@@ -1637,7 +1636,7 @@ func (t *Transaction) CreateReadPool(fee int64) (err error) {
 // duration. If blobberID is not empty, then tokens will be locked for given
 // allocation->blobber only.
 func (t *Transaction) ReadPoolLock(allocID, blobberID string,
-	duration int64, lock, fee int64) (err error) {
+	duration int64, lock, fee uint64) (err error) {
 
 	type lockRequest struct {
 		Duration     time.Duration `json:"duration"`
@@ -1662,7 +1661,7 @@ func (t *Transaction) ReadPoolLock(allocID, blobberID string,
 }
 
 // ReadPoolUnlock for current user and given pool.
-func (t *Transaction) ReadPoolUnlock(poolID string, fee int64) (err error) {
+func (t *Transaction) ReadPoolUnlock(poolID string, fee uint64) (err error) {
 	type unlockRequest struct {
 		PoolID string `json:"pool_id"`
 	}
@@ -1680,7 +1679,7 @@ func (t *Transaction) ReadPoolUnlock(poolID string, fee int64) (err error) {
 }
 
 // StakePoolLock used to lock tokens in a stake pool of a blobber.
-func (t *Transaction) StakePoolLock(blobberID string, lock, fee int64) (
+func (t *Transaction) StakePoolLock(blobberID string, lock, fee uint64) (
 	err error) {
 
 	type stakePoolRequest struct {
@@ -1703,7 +1702,7 @@ func (t *Transaction) StakePoolLock(blobberID string, lock, fee int64) (
 
 // StakePoolUnlock by blobberID and poolID.
 func (t *Transaction) StakePoolUnlock(blobberID, poolID string,
-	fee int64) (err error) {
+	fee uint64) (err error) {
 
 	type stakePoolRequest struct {
 		BlobberID string `json:"blobber_id"`
@@ -1733,11 +1732,10 @@ type StakePoolSettings struct {
 }
 
 type Terms struct {
-	ReadPrice               common.Balance `json:"read_price"`  // tokens / GB
-	WritePrice              common.Balance `json:"write_price"` // tokens / GB
-	MinLockDemand           float64        `json:"min_lock_demand"`
-	MaxOfferDuration        time.Duration  `json:"max_offer_duration"`
-	ChallengeCompletionTime time.Duration  `json:"challenge_completion_time"`
+	ReadPrice        common.Balance `json:"read_price"`  // tokens / GB
+	WritePrice       common.Balance `json:"write_price"` // tokens / GB
+	MinLockDemand    float64        `json:"min_lock_demand"`
+	MaxOfferDuration time.Duration  `json:"max_offer_duration"`
 }
 
 type Blobber struct {
@@ -1780,7 +1778,7 @@ type AuthorizerNode struct {
 }
 
 // UpdateBlobberSettings update settings of a blobber.
-func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee int64) (err error) {
+func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee uint64) (err error) {
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, b, 0)
@@ -1794,7 +1792,7 @@ func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee int64) (err error) {
 }
 
 // UpdateValidatorSettings update settings of a validator.
-func (t *Transaction) UpdateValidatorSettings(v *Validator, fee int64) (err error) {
+func (t *Transaction) UpdateValidatorSettings(v *Validator, fee uint64) (err error) {
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS, v, 0)
@@ -1809,7 +1807,7 @@ func (t *Transaction) UpdateValidatorSettings(v *Validator, fee int64) (err erro
 
 // UpdateAllocation transaction.
 func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
-	expirationDiff int64, lock, fee int64) (err error) {
+	expirationDiff int64, lock, fee uint64) (err error) {
 
 	type updateAllocationRequest struct {
 		ID         string `json:"id"`              // allocation id
@@ -1837,7 +1835,7 @@ func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
 // duration. If blobberID is not empty, then tokens will be locked for given
 // allocation->blobber only.
 func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64,
-	lock, fee int64) (err error) {
+	lock, fee uint64) (err error) {
 
 	type lockRequest struct {
 		Duration     time.Duration `json:"duration"`
@@ -1862,7 +1860,7 @@ func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64,
 }
 
 // WritePoolUnlock for current user and given pool.
-func (t *Transaction) WritePoolUnlock(poolID string, fee int64) (
+func (t *Transaction) WritePoolUnlock(poolID string, fee uint64) (
 	err error) {
 
 	type unlockRequest struct {

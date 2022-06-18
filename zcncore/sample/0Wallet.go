@@ -1,3 +1,4 @@
+//go:build ignore
 // +build ignore
 
 package main
@@ -93,8 +94,8 @@ func main() {
 	var mnemonic string
 	flag.StringVar(&mnemonic, "mnemonic", "", "Mnemonic used for wallet creation.\nMandatory for -cmd recover")
 
-	var value int64
-	flag.Int64Var(&value, "value", 0, "Value to send")
+	var value uint64
+	flag.Uint64Var(&value, "value", 0, "Value to send")
 
 	var txnhash string
 	flag.StringVar(&txnhash, "txnhash", "", "Transaction hash to verify.\nMandatory for -cmd verify")
@@ -215,7 +216,7 @@ func main() {
 		faucetAddress := "faucet smart contract address"
 		methodName := "pour"
 		jsonInput := "{}"
-		value := int64(0)
+		value = 0
 		err = txn.ExecuteSmartContract(faucetAddress, methodName, jsonInput, value)
 		if err != nil {
 			fmt.Printf("execute faucet smart contract failed: %v\n", err)
