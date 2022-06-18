@@ -752,7 +752,7 @@ func GetValidator(validatorID string) (validator *Validator, err error) {
 }
 
 // List all validators
-func GetValidators() (validators *[]Validator, err error) {
+func GetValidators() (validators []*Validator, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
 	}
@@ -768,7 +768,7 @@ func GetValidators() (validators *[]Validator, err error) {
 	if len(b) == 0 {
 		return nil, errors.New("", "empty response from sharders")
 	}
-	if err = json.Unmarshal(b, validators); err != nil {
+	if err = json.Unmarshal(b, &validators); err != nil {
 		return nil, errors.Wrap(err, "decoding response:")
 	}
 	return
