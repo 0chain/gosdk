@@ -751,6 +751,29 @@ func GetValidator(validatorID string) (validator *Validator, err error) {
 	return
 }
 
+// List all validators
+func GetValidators() (validators *[]Validator, err error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+	var b []byte
+	b, err = zboxutil.MakeSCRestAPICall(
+		STORAGE_SCADDRESS,
+		"/validators",
+		nil,
+		nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "requesting validator list")
+	}
+	if len(b) == 0 {
+		return nil, errors.New("", "empty response from sharders")
+	}
+	if err = json.Unmarshal(b, validators); err != nil {
+		return nil, errors.Wrap(err, "decoding response:")
+	}
+	return
+}
+
 //
 // ---
 //
