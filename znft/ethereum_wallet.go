@@ -19,11 +19,12 @@ func CreateEthClient(ethereumNodeURL string) (*ethclient.Client, error) {
 	client, err := ethclient.Dial(ethereumNodeURL)
 	if err != nil {
 		Logger.Error(err)
+		return nil, err
 	}
 	return client, err
 }
 
-func (app *App) createSignedTransactionFromKeyStore() *bind.TransactOpts {
+func (app *App) createSignedTransactionFromKeyStore() (*bind.TransactOpts, error) {
 	var (
 		signerAddress = common.HexToAddress(app.cfg.WalletAddress)
 		password      = app.cfg.VaultPassword
@@ -32,7 +33,9 @@ func (app *App) createSignedTransactionFromKeyStore() *bind.TransactOpts {
 
 	client, err := CreateEthClient(app.cfg.EthereumNodeURL)
 	if err != nil {
-		Logger.Fatal(errors.Wrap(err, "failed to create ethereum client"))
+		err := errors.Wrap(err, "failed to create ethereum client")
+		Logger.Fatal(err)
+		return nil, err
 	}
 
 	keyDir := path.Join(app.cfg.Homedir, WalletDir)
@@ -42,52 +45,66 @@ func (app *App) createSignedTransactionFromKeyStore() *bind.TransactOpts {
 	}
 	signerAcc, err := ks.Find(signer)
 	if err != nil {
-		Logger.Fatal(errors.Wrapf(err, "signer: %s", signerAddress.Hex()))
+		err := errors.Wrapf(err, "signer: %s", signerAddress.Hex())
+		Logger.Fatal(err)
+		return nil, err
 	}
 
 	chainID, err := client.ChainID(context.Background())
 	if err != nil {
-		Logger.Fatal(errors.Wrap(err, "failed to get chain ID"))
+		err := errors.Wrap(err, "failed to get chain ID")
+		Logger.Fatal(err)
+		return nil, err
 	}
 
 	err = ks.TimedUnlock(signer, password, time.Second*2)
 	if err != nil {
 		Logger.Fatal(err)
+		return nil, err
 	}
 
 	opts, err := bind.NewKeyStoreTransactorWithChainID(ks, signerAcc, chainID)
 	if err != nil {
 		Logger.Fatal(err)
+		return nil, err
 	}
 
 	valueWei := new(big.Int).Mul(big.NewInt(value), big.NewInt(params.Wei))
 
 	opts.Value = valueWei // in wei (= no funds)
 
-	return opts
+	return opts, nil
 }
 
-func (app *App) createSignedTransactionFromKeyStoreWithGasPrice(gasLimitUnits uint64) *bind.TransactOpts {
+func (app *App) createSignedTransactionFromKeyStoreWithGasPrice(gasLimitUnits uint64) (*bind.TransactOpts, error) {
 	client, err := CreateEthClient(app.cfg.EthereumNodeURL)
 	if err != nil {
-		Logger.Fatal(errors.Wrap(err, "failed to create ethereum client"))
+		err := errors.Wrap(err, "failed to create ethereum client")
+		Logger.Fatal(err)
+		return nil, err
 	}
 
 	nonce, err := client.PendingNonceAt(context.Background(), common.HexToAddress(app.cfg.WalletAddress))
 	if err != nil {
 		Logger.Fatal(err)
+		return nil, err
 	}
 
 	gasPriceWei, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
 		Logger.Fatal(err)
+		return nil, err
 	}
 
-	opts := app.createSignedTransactionFromKeyStore()
+	opts, err := app.createSignedTransactionFromKeyStore()
+	if err != nil {
+		Logger.Fatal(err)
+		return nil, err
+	}
 
 	opts.Nonce = big.NewInt(int64(nonce)) // (nil = use pending state), look at bind.CallOpts{Pending: true}
 	opts.GasLimit = gasLimitUnits         // in units  (0 = estimate)
 	opts.GasPrice = gasPriceWei           // wei (nil = gas price oracle)
 
-	return opts
+	return opts, nil
 }

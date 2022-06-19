@@ -15,15 +15,15 @@ func (app *App) createTransactionWithGasPrice(ctx context.Context, address strin
 		return nil, err
 	}
 
-	transactOpts := app.createSignedTransactionFromKeyStoreWithGasPrice(gasLimitUnits)
+	transactOpts, err := app.createSignedTransactionFromKeyStoreWithGasPrice(gasLimitUnits)
 
-	return transactOpts, nil
+	return transactOpts, err
 }
 
 func (app *App) createTransaction() (*bind.TransactOpts, error) {
-	transactOpts := app.createSignedTransactionFromKeyStore()
+	transactOpts, err := app.createSignedTransactionFromKeyStore()
 
-	return transactOpts, nil
+	return transactOpts, err
 }
 
 func (app *App) estimateGas(ctx context.Context, address string, pack []byte) (uint64, error) {
