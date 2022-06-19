@@ -1160,7 +1160,7 @@ func AddCurator(curatorId, allocationId string) (string, int64, error) {
 type ProviderType int
 
 const (
-	ProviderMiner ProviderType = iota
+	ProviderMiner ProviderType = iota + 1
 	ProviderSharder
 	ProviderBlobber
 	ProviderValidator
