@@ -67,90 +67,90 @@ func GetConfigDir() string {
 
 // Functions used by session factories to create session
 
-func (app *App) constructFactoryERC721(address string) (*factoryerc721.Binding, *bind.TransactOpts, error) {
+func (app *App) constructFactoryERC721(ctx context.Context, address string) (*factoryerc721.Binding, *bind.TransactOpts, error) {
 	storage, err := app.createFactoryERC721(address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to construct %s", "FactoryERC721")
 	}
 
-	transaction, err := app.createTransactOpts()
+	transaction, err := app.createTransactOpts(ctx)
 
 	return storage, transaction, err
 }
 
-func (app *App) constructFactoryERC721Fixed(address string) (*factoryerc721fixed.Binding, *bind.TransactOpts, error) {
+func (app *App) constructFactoryERC721Fixed(ctx context.Context, address string) (*factoryerc721fixed.Binding, *bind.TransactOpts, error) {
 	storage, err := app.createFactoryERC721Fixed(address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to construct %s", "FactoryERC721Fixed")
 	}
 
-	transaction, err := app.createTransactOpts()
+	transaction, err := app.createTransactOpts(ctx)
 
 	return storage, transaction, err
 }
 
-func (app *App) constructFactoryERC721Pack(address string) (*factoryerc721pack.Binding, *bind.TransactOpts, error) {
+func (app *App) constructFactoryERC721Pack(ctx context.Context, address string) (*factoryerc721pack.Binding, *bind.TransactOpts, error) {
 	storage, err := app.createFactoryERC721Pack(address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to construct %s", "FactoryERC721Pack")
 	}
 
-	transaction, err := app.createTransactOpts()
+	transaction, err := app.createTransactOpts(ctx)
 
 	return storage, transaction, err
 }
 
-func (app *App) constructFactoryERC721Random(address string) (*factoryerc721random.Binding, *bind.TransactOpts, error) {
+func (app *App) constructFactoryERC721Random(ctx context.Context, address string) (*factoryerc721random.Binding, *bind.TransactOpts, error) {
 	storage, err := app.createFactoryERC721Random(address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to construct %s", "FactoryERC721Random")
 	}
 
-	transaction, err := app.createTransactOpts()
+	transaction, err := app.createTransactOpts(ctx)
 
 	return storage, transaction, err
 }
 
-func (app *App) constructStorageERC721Random(address string) (*storageerc721random.Binding, *bind.TransactOpts, error) {
+func (app *App) constructStorageERC721Random(ctx context.Context, address string) (*storageerc721random.Binding, *bind.TransactOpts, error) {
 	storage, err := app.createStorageERC721Random(address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to construct %s", ContractStorageERC721RandomName)
 	}
 
-	transaction, err := app.createTransactOpts()
+	transaction, err := app.createTransactOpts(ctx)
 
 	return storage, transaction, err
 }
 
-func (app *App) constructStorageERC721Pack(address string) (*storageerc721pack.Binding, *bind.TransactOpts, error) {
+func (app *App) constructStorageERC721Pack(ctx context.Context, address string) (*storageerc721pack.Binding, *bind.TransactOpts, error) {
 	storage, err := app.createStorageERC721Pack(address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to construct %s", ContractStorageERC721PackName)
 	}
 
-	transaction, err := app.createTransactOpts()
+	transaction, err := app.createTransactOpts(ctx)
 
 	return storage, transaction, err
 }
 
-func (app *App) constructStorageERC721Fixed(address string) (*storageerc721fixed.Binding, *bind.TransactOpts, error) {
+func (app *App) constructStorageERC721Fixed(ctx context.Context, address string) (*storageerc721fixed.Binding, *bind.TransactOpts, error) {
 	storage, err := app.createStorageERC721Fixed(address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to construct %s", ContractStorageERC721FixedName)
 	}
 
-	transaction, err := app.createTransactOpts()
+	transaction, err := app.createTransactOpts(ctx)
 
 	return storage, transaction, err
 }
 
-func (app *App) constructStorageERC721(address string) (*storageerc721.Binding, *bind.TransactOpts, error) {
+func (app *App) constructStorageERC721(ctx context.Context, address string) (*storageerc721.Binding, *bind.TransactOpts, error) {
 	storage, err := app.createStorageERC721(address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to construct %s", ContractStorageERC721Name)
 	}
 
-	transaction, err := app.createTransactOpts()
+	transaction, err := app.createTransactOpts(ctx)
 
 	return storage, transaction, err
 }
@@ -173,8 +173,8 @@ func (app *App) constructWithEstimation(
 }
 
 // Create transaction opts with sender signature
-func (app *App) createTransactOpts() (*bind.TransactOpts, error) {
-	transaction, err := app.createTransaction()
+func (app *App) createTransactOpts(ctx context.Context) (*bind.TransactOpts, error) {
+	transaction, err := app.createTransaction(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create createTransactOpts in %s", ContractStorageERC721Name)
 	}
@@ -212,7 +212,7 @@ func (app *App) createTransactOptsWithEstimation(
 // Factory Sessions
 
 func (app *App) CreateFactoryERC721Session(ctx context.Context, addr string) (IFactoryERC721, error) {
-	contract, transact, err := app.constructFactoryERC721(addr)
+	contract, transact, err := app.constructFactoryERC721(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -236,7 +236,7 @@ func (app *App) CreateFactoryERC721Session(ctx context.Context, addr string) (IF
 }
 
 func (app *App) CreateFactoryERC721PackSession(ctx context.Context, addr string) (IFactoryPack, error) {
-	contract, transact, err := app.constructFactoryERC721Pack(addr)
+	contract, transact, err := app.constructFactoryERC721Pack(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -260,7 +260,7 @@ func (app *App) CreateFactoryERC721PackSession(ctx context.Context, addr string)
 }
 
 func (app *App) CreateFactoryERC721FixedSession(ctx context.Context, addr string) (IFactoryFixed, error) {
-	contract, transact, err := app.constructFactoryERC721Fixed(addr)
+	contract, transact, err := app.constructFactoryERC721Fixed(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -284,7 +284,7 @@ func (app *App) CreateFactoryERC721FixedSession(ctx context.Context, addr string
 }
 
 func (app *App) CreateFactoryERC721RandomSession(ctx context.Context, addr string) (IFactoryRandom, error) {
-	contract, transact, err := app.constructFactoryERC721Random(addr)
+	contract, transact, err := app.constructFactoryERC721Random(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +310,7 @@ func (app *App) CreateFactoryERC721RandomSession(ctx context.Context, addr strin
 // Storage Sessions
 
 func (app *App) CreateStorageERC721PackSession(ctx context.Context, addr string) (IStorageECR721Pack, error) {
-	contract, transact, err := app.constructStorageERC721Pack(addr)
+	contract, transact, err := app.constructStorageERC721Pack(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -334,7 +334,7 @@ func (app *App) CreateStorageERC721PackSession(ctx context.Context, addr string)
 }
 
 func (app *App) CreateStorageERC721RandomSession(ctx context.Context, addr string) (IStorageECR721Random, error) {
-	contract, transact, err := app.constructStorageERC721Random(addr)
+	contract, transact, err := app.constructStorageERC721Random(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -358,7 +358,7 @@ func (app *App) CreateStorageERC721RandomSession(ctx context.Context, addr strin
 }
 
 func (app *App) CreateStorageERC721FixedSession(ctx context.Context, addr string) (IStorageECR721Fixed, error) {
-	contract, transact, err := app.constructStorageERC721Fixed(addr)
+	contract, transact, err := app.constructStorageERC721Fixed(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -382,7 +382,7 @@ func (app *App) CreateStorageERC721FixedSession(ctx context.Context, addr string
 }
 
 func (app *App) CreateStorageERC721Session(ctx context.Context, addr string) (IStorageECR721, error) {
-	contract, transact, err := app.constructStorageERC721(addr)
+	contract, transact, err := app.constructStorageERC721(ctx, addr)
 	if err != nil {
 		return nil, err
 	}

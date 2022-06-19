@@ -15,13 +15,13 @@ func (app *App) createTransactionWithGasPrice(ctx context.Context, address strin
 		return nil, err
 	}
 
-	transactOpts, err := app.createSignedTransactionFromKeyStoreWithGasPrice(gasLimitUnits)
+	transactOpts, err := app.createSignedTransactionFromKeyStoreWithGasPrice(ctx, gasLimitUnits)
 
 	return transactOpts, err
 }
 
-func (app *App) createTransaction() (*bind.TransactOpts, error) {
-	transactOpts, err := app.createSignedTransactionFromKeyStore()
+func (app *App) createTransaction(ctx context.Context) (*bind.TransactOpts, error) {
+	transactOpts, err := app.createSignedTransactionFromKeyStore(ctx)
 
 	return transactOpts, err
 }

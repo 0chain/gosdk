@@ -24,7 +24,7 @@ func CreateEthClient(ethereumNodeURL string) (*ethclient.Client, error) {
 	return client, err
 }
 
-func (app *App) createSignedTransactionFromKeyStore() (*bind.TransactOpts, error) {
+func (app *App) createSignedTransactionFromKeyStore(ctx context.Context) (*bind.TransactOpts, error) {
 	var (
 		signerAddress = common.HexToAddress(app.cfg.WalletAddress)
 		password      = app.cfg.VaultPassword
@@ -50,7 +50,7 @@ func (app *App) createSignedTransactionFromKeyStore() (*bind.TransactOpts, error
 		return nil, err
 	}
 
-	chainID, err := client.ChainID(context.Background())
+	chainID, err := client.ChainID(ctx)
 	if err != nil {
 		err := errors.Wrap(err, "failed to get chain ID")
 		Logger.Fatal(err)
@@ -76,7 +76,7 @@ func (app *App) createSignedTransactionFromKeyStore() (*bind.TransactOpts, error
 	return opts, nil
 }
 
-func (app *App) createSignedTransactionFromKeyStoreWithGasPrice(gasLimitUnits uint64) (*bind.TransactOpts, error) {
+func (app *App) createSignedTransactionFromKeyStoreWithGasPrice(ctx context.Context, gasLimitUnits uint64) (*bind.TransactOpts, error) {
 	client, err := CreateEthClient(app.cfg.EthereumNodeURL)
 	if err != nil {
 		err := errors.Wrap(err, "failed to create ethereum client")
@@ -84,19 +84,19 @@ func (app *App) createSignedTransactionFromKeyStoreWithGasPrice(gasLimitUnits ui
 		return nil, err
 	}
 
-	nonce, err := client.PendingNonceAt(context.Background(), common.HexToAddress(app.cfg.WalletAddress))
+	nonce, err := client.PendingNonceAt(ctx, common.HexToAddress(app.cfg.WalletAddress))
 	if err != nil {
 		Logger.Fatal(err)
 		return nil, err
 	}
 
-	gasPriceWei, err := client.SuggestGasPrice(context.Background())
+	gasPriceWei, err := client.SuggestGasPrice(ctx)
 	if err != nil {
 		Logger.Fatal(err)
 		return nil, err
 	}
 
-	opts, err := app.createSignedTransactionFromKeyStore()
+	opts, err := app.createSignedTransactionFromKeyStore(ctx)
 	if err != nil {
 		Logger.Fatal(err)
 		return nil, err
