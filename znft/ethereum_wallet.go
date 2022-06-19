@@ -15,27 +15,27 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (conf *Configuration) CreateEthClient() (*ethclient.Client, error) {
-	client, err := ethclient.Dial(conf.EthereumNodeURL)
+func CreateEthClient(ethereumNodeURL string) (*ethclient.Client, error) {
+	client, err := ethclient.Dial(ethereumNodeURL)
 	if err != nil {
 		Logger.Error(err)
 	}
 	return client, err
 }
 
-func (conf *Configuration) createSignedTransactionFromKeyStore() *bind.TransactOpts {
+func (app *App) createSignedTransactionFromKeyStore() *bind.TransactOpts {
 	var (
-		signerAddress = common.HexToAddress(conf.WalletAddress)
-		password      = conf.VaultPassword
-		value         = conf.Value
+		signerAddress = common.HexToAddress(app.cfg.WalletAddress)
+		password      = app.cfg.VaultPassword
+		value         = app.cfg.Value
 	)
 
-	client, err := conf.CreateEthClient()
+	client, err := CreateEthClient(app.cfg.EthereumNodeURL)
 	if err != nil {
 		Logger.Fatal(errors.Wrap(err, "failed to create ethereum client"))
 	}
 
-	keyDir := path.Join(conf.Homedir, WalletDir)
+	keyDir := path.Join(app.cfg.Homedir, WalletDir)
 	ks := keystore.NewKeyStore(keyDir, keystore.StandardScryptN, keystore.StandardScryptP)
 	signer := accounts.Account{
 		Address: signerAddress,
@@ -67,13 +67,13 @@ func (conf *Configuration) createSignedTransactionFromKeyStore() *bind.TransactO
 	return opts
 }
 
-func (conf *Configuration) createSignedTransactionFromKeyStoreWithGasPrice(gasLimitUnits uint64) *bind.TransactOpts {
-	client, err := conf.CreateEthClient()
+func (app *App) createSignedTransactionFromKeyStoreWithGasPrice(gasLimitUnits uint64) *bind.TransactOpts {
+	client, err := CreateEthClient(app.cfg.EthereumNodeURL)
 	if err != nil {
 		Logger.Fatal(errors.Wrap(err, "failed to create ethereum client"))
 	}
 
-	nonce, err := client.PendingNonceAt(context.Background(), common.HexToAddress(conf.WalletAddress))
+	nonce, err := client.PendingNonceAt(context.Background(), common.HexToAddress(app.cfg.WalletAddress))
 	if err != nil {
 		Logger.Fatal(err)
 	}
@@ -83,7 +83,7 @@ func (conf *Configuration) createSignedTransactionFromKeyStoreWithGasPrice(gasLi
 		Logger.Fatal(err)
 	}
 
-	opts := conf.createSignedTransactionFromKeyStore()
+	opts := app.createSignedTransactionFromKeyStore()
 
 	opts.Nonce = big.NewInt(int64(nonce)) // (nil = use pending state), look at bind.CallOpts{Pending: true}
 	opts.GasLimit = gasLimitUnits         // in units  (0 = estimate)
