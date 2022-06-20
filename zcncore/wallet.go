@@ -1026,22 +1026,32 @@ type MinerSCNodes struct {
 }
 
 // GetMiners obtains list of all active miners.
-func GetMiners(cb GetInfoCallback) (err error) {
+func GetMiners(cb GetInfoCallback, filters map[string]string) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = GET_MINERSC_MINERS
-	go getInfoFromSharders(url, 0, cb)
+	go getInfoFromSharders(WithParams(url, Params{
+		"offset": filters["offset"],
+		"limit":  filters["limit"],
+		"sort":   filters["sort"],
+		"active": filters["active"],
+	}), 0, cb)
 	return
 }
 
 // GetSharders obtains list of all active sharders.
-func GetSharders(cb GetInfoCallback) (err error) {
+func GetSharders(cb GetInfoCallback, filters map[string]string) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = GET_MINERSC_SHARDERS
-	go getInfoFromSharders(url, 0, cb)
+	go getInfoFromSharders(WithParams(url, Params{
+		"offset": filters["offset"],
+		"limit":  filters["limit"],
+		"sort":   filters["sort"],
+		"active": filters["active"],
+	}), 0, cb)
 	return
 }
 
@@ -1054,6 +1064,9 @@ func GetEvents(cb GetInfoCallback, filters map[string]string) (err error) {
 		"tx_hash":      filters["tx_hash"],
 		"type":         filters["type"],
 		"tag":          filters["tag"],
+		"offset":       filters["offset"],
+		"limit":        filters["limit"],
+		"sort":         filters["sort"],
 	}), 0, cb)
 	return
 }
