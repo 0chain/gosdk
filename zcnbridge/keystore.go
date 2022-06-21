@@ -105,7 +105,7 @@ func UpdateClientEthereumAddress(homedir, address string) (err error) {
 	return err
 }
 
-// ImportAccount inmports account using mnemonic
+// ImportAccount imports account using mnemonic
 func ImportAccount(homedir, mnemonic, password string) (string, error) {
 	// 1. Create storage and account if it doesn't exist and add account to it
 

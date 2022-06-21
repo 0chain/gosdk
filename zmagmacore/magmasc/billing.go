@@ -11,7 +11,7 @@ import (
 type (
 	// Billing represents all info about data usage.
 	Billing struct {
-		Amount      int64          `json:"amount"`
+		Amount      uint64         `json:"amount"`
 		DataUsage   DataUsage      `json:"data_usage"`
 		CompletedAt time.Timestamp `json:"completed_at,omitempty"`
 	}
@@ -29,7 +29,7 @@ func (m *Billing) CalcAmount(terms ProviderTerms) {
 	if price > 0 {
 		// data usage summary in megabytes
 		mbps := float64(m.DataUsage.UploadBytes+m.DataUsage.DownloadBytes) / million
-		m.Amount = int64(mbps * price) // rounded amount of megabytes multiplied by price
+		m.Amount = uint64(mbps * price) // rounded amount of megabytes multiplied by price
 	}
 	if minCost := terms.GetMinCost(); m.Amount < minCost {
 		m.Amount = minCost
