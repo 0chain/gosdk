@@ -24,7 +24,7 @@ func CreateEthClient(ethereumNodeURL string) (*ethclient.Client, error) {
 	return client, err
 }
 
-func (app *App) createSignedTransactionFromKeyStore(ctx context.Context) (*bind.TransactOpts, error) {
+func (app *Znft) createSignedTransactionFromKeyStore(ctx context.Context) (*bind.TransactOpts, error) {
 	var (
 		signerAddress = common.HexToAddress(app.cfg.WalletAddress)
 		password      = app.cfg.VaultPassword
@@ -76,7 +76,7 @@ func (app *App) createSignedTransactionFromKeyStore(ctx context.Context) (*bind.
 	return opts, nil
 }
 
-func (app *App) createSignedTransactionFromKeyStoreWithGasPrice(ctx context.Context, gasLimitUnits uint64) (*bind.TransactOpts, error) {
+func (app *Znft) createSignedTransactionFromKeyStoreWithGasPrice(ctx context.Context, gasLimitUnits uint64) (*bind.TransactOpts, error) {
 	client, err := CreateEthClient(app.cfg.EthereumNodeURL)
 	if err != nil {
 		err := errors.Wrap(err, "failed to create ethereum client")
