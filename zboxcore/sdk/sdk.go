@@ -641,7 +641,7 @@ type Blobber struct {
 	BaseURL           string                       `json:"url"`
 	Terms             Terms                        `json:"terms"`
 	Capacity          common.Size                  `json:"capacity"`
-	Used              common.Size                  `json:"used"`
+	Allocated         common.Size                  `json:"allocated"`
 	LastHealthCheck   common.Timestamp             `json:"last_health_check"`
 	PublicKey         string                       `json:"-"`
 	StakePoolSettings blockchain.StakePoolSettings `json:"stake_pool_settings"`
@@ -672,7 +672,6 @@ func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
 			ServiceCharge:  v.ServiceCharge,
 		},
 	}
-
 }
 
 func GetBlobbers() (bs []*Blobber, err error) {
@@ -1220,7 +1219,7 @@ func AddCurator(curatorId, allocationId string) (string, int64, error) {
 type ProviderType int
 
 const (
-	ProviderMiner ProviderType = iota
+	ProviderMiner ProviderType = iota + 1
 	ProviderSharder
 	ProviderBlobber
 	ProviderValidator

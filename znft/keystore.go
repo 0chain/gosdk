@@ -117,6 +117,15 @@ func ImportAccount(homedir, mnemonic, password string) (string, error) {
 		return "", errors.Wrap(err, "failed to import from mnemonic")
 	}
 
+	// DefaultBaseDerivationPath is the base path from which custom derivation endpoints
+	// are incremented. As such, the first account will be at m/44'/60'/0'/0, the second
+	// at m/44'/60'/0'/1, etc
+	// from basic library:
+	// var DefaultBaseDerivationPath = accounts.DefaultBaseDerivationPath
+	// from the BIP44 specification, the HD derivation path is defined as
+	// m / purpose' / coin_type' / account' / change / address_index
+	// https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki
+
 	pathD := hdw.MustParseDerivationPath("m/44'/60'/0'/0/0")
 	account, err := wallet.Derive(pathD, true)
 	if err != nil {
