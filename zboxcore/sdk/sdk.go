@@ -588,7 +588,7 @@ type Blobber struct {
 	BaseURL           string            `json:"url"`
 	Terms             Terms             `json:"terms"`
 	Capacity          common.Size       `json:"capacity"`
-	Used              common.Size       `json:"used"`
+	Allocated         common.Size       `json:"allocated"`
 	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
 	PublicKey         string            `json:"-"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
@@ -1093,7 +1093,7 @@ func AddCurator(curatorId, allocationId string) (string, int64, error) {
 type ProviderType int
 
 const (
-	ProviderMiner ProviderType = iota
+	ProviderMiner ProviderType = iota + 1
 	ProviderSharder
 	ProviderBlobber
 	ProviderValidator

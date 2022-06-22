@@ -15,7 +15,7 @@ var mnemonic string
 func main() {
 	mnemonic = "use your mnemonic to import account to a local storage"
 
-	// Create this configuration
+	// Create this configuration from console app
 	cfg := &znft.Configuration{
 		FactoryAddress:                   "0xD98602749e7f46036d496e8D3deb6eb9F90996a6",
 		FactoryModuleERC721Address:       "",
@@ -46,7 +46,9 @@ func main() {
 
 	// Creating NFTs
 
-	factorySession, err := cfg.CreateFactoryERC721Session(context.Background(), address)
+	app := znft.NewNFTApplication(cfg)
+
+	factorySession, err := app.CreateFactoryERC721Session(context.Background(), address)
 	if err != nil {
 		panic(err)
 	}
@@ -68,7 +70,7 @@ func main() {
 	// Reading and writing to NFT smart contracts
 
 	// Create session of NFT token
-	sessionRandom, err := cfg.CreateStorageERC721RandomSession(context.Background(), address)
+	sessionRandom, err := app.CreateStorageERC721RandomSession(context.Background(), address)
 	if err != nil {
 		panic(err)
 	}
@@ -83,7 +85,7 @@ func main() {
 	// ERC721Fixed
 
 	// Create session of NFT token
-	sessionFixed, err := cfg.CreateStorageERC721FixedSession(context.Background(), address)
+	sessionFixed, err := app.CreateStorageERC721FixedSession(context.Background(), address)
 	if err != nil {
 		panic(err)
 	}
@@ -98,7 +100,7 @@ func main() {
 	// ERC721Pack
 
 	// Create session of NFT token
-	sessionPack, err := cfg.CreateStorageERC721PackSession(context.Background(), address)
+	sessionPack, err := app.CreateStorageERC721PackSession(context.Background(), address)
 	if err != nil {
 		panic(err)
 	}
@@ -113,7 +115,7 @@ func main() {
 	// ERC721
 
 	// Create session of NFT token
-	session, err := cfg.CreateStorageERC721Session(context.Background(), address)
+	session, err := app.CreateStorageERC721Session(context.Background(), address)
 	if err != nil {
 		panic(err)
 	}
