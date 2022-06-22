@@ -42,8 +42,16 @@ type Configuration struct {
 	Value                            int64  // Value to execute Ethereum smart contracts (default = 0)
 }
 
+type Znft struct {
+	cfg *Configuration
+}
+
 func init() {
 	Logger.Init(defaultLogLevel, "0chain-znft-sdk")
+}
+
+func NewNFTApplication(c *Configuration) *Znft {
+	return &Znft{c}
 }
 
 func GetConfigDir() string {
@@ -59,114 +67,114 @@ func GetConfigDir() string {
 
 // Functions used by session factories to create session
 
-func (conf *Configuration) constructFactoryERC721(address string) (*factoryerc721.Binding, *bind.TransactOpts, error) {
-	storage, err := conf.createFactoryERC721(address)
+func (app *Znft) constructFactoryERC721(ctx context.Context, address string) (*factoryerc721.Binding, *bind.TransactOpts, error) {
+	storage, err := app.createFactoryERC721(address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to construct %s", "FactoryERC721")
 	}
 
-	transaction, err := conf.createTransactOpts()
+	transaction, err := app.createTransactOpts(ctx)
 
 	return storage, transaction, err
 }
 
-func (conf *Configuration) constructFactoryERC721Fixed(address string) (*factoryerc721fixed.Binding, *bind.TransactOpts, error) {
-	storage, err := conf.createFactoryERC721Fixed(address)
+func (app *Znft) constructFactoryERC721Fixed(ctx context.Context, address string) (*factoryerc721fixed.Binding, *bind.TransactOpts, error) {
+	storage, err := app.createFactoryERC721Fixed(address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to construct %s", "FactoryERC721Fixed")
 	}
 
-	transaction, err := conf.createTransactOpts()
+	transaction, err := app.createTransactOpts(ctx)
 
 	return storage, transaction, err
 }
 
-func (conf *Configuration) constructFactoryERC721Pack(address string) (*factoryerc721pack.Binding, *bind.TransactOpts, error) {
-	storage, err := conf.createFactoryERC721Pack(address)
+func (app *Znft) constructFactoryERC721Pack(ctx context.Context, address string) (*factoryerc721pack.Binding, *bind.TransactOpts, error) {
+	storage, err := app.createFactoryERC721Pack(address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to construct %s", "FactoryERC721Pack")
 	}
 
-	transaction, err := conf.createTransactOpts()
+	transaction, err := app.createTransactOpts(ctx)
 
 	return storage, transaction, err
 }
 
-func (conf *Configuration) constructFactoryERC721Random(address string) (*factoryerc721random.Binding, *bind.TransactOpts, error) {
-	storage, err := conf.createFactoryERC721Random(address)
+func (app *Znft) constructFactoryERC721Random(ctx context.Context, address string) (*factoryerc721random.Binding, *bind.TransactOpts, error) {
+	storage, err := app.createFactoryERC721Random(address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to construct %s", "FactoryERC721Random")
 	}
 
-	transaction, err := conf.createTransactOpts()
+	transaction, err := app.createTransactOpts(ctx)
 
 	return storage, transaction, err
 }
 
-func (conf *Configuration) constructStorageERC721Random(address string) (*storageerc721random.Binding, *bind.TransactOpts, error) {
-	storage, err := conf.createStorageERC721Random(address)
+func (app *Znft) constructStorageERC721Random(ctx context.Context, address string) (*storageerc721random.Binding, *bind.TransactOpts, error) {
+	storage, err := app.createStorageERC721Random(address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to construct %s", ContractStorageERC721RandomName)
 	}
 
-	transaction, err := conf.createTransactOpts()
+	transaction, err := app.createTransactOpts(ctx)
 
 	return storage, transaction, err
 }
 
-func (conf *Configuration) constructStorageERC721Pack(address string) (*storageerc721pack.Binding, *bind.TransactOpts, error) {
-	storage, err := conf.createStorageERC721Pack(address)
+func (app *Znft) constructStorageERC721Pack(ctx context.Context, address string) (*storageerc721pack.Binding, *bind.TransactOpts, error) {
+	storage, err := app.createStorageERC721Pack(address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to construct %s", ContractStorageERC721PackName)
 	}
 
-	transaction, err := conf.createTransactOpts()
+	transaction, err := app.createTransactOpts(ctx)
 
 	return storage, transaction, err
 }
 
-func (conf *Configuration) constructStorageERC721Fixed(address string) (*storageerc721fixed.Binding, *bind.TransactOpts, error) {
-	storage, err := conf.createStorageERC721Fixed(address)
+func (app *Znft) constructStorageERC721Fixed(ctx context.Context, address string) (*storageerc721fixed.Binding, *bind.TransactOpts, error) {
+	storage, err := app.createStorageERC721Fixed(address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to construct %s", ContractStorageERC721FixedName)
 	}
 
-	transaction, err := conf.createTransactOpts()
+	transaction, err := app.createTransactOpts(ctx)
 
 	return storage, transaction, err
 }
 
-func (conf *Configuration) constructStorageERC721(address string) (*storageerc721.Binding, *bind.TransactOpts, error) {
-	storage, err := conf.createStorageERC721(address)
+func (app *Znft) constructStorageERC721(ctx context.Context, address string) (*storageerc721.Binding, *bind.TransactOpts, error) {
+	storage, err := app.createStorageERC721(address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to construct %s", ContractStorageERC721Name)
 	}
 
-	transaction, err := conf.createTransactOpts()
+	transaction, err := app.createTransactOpts(ctx)
 
 	return storage, transaction, err
 }
 
 // Used to create StorageERC721 with preliminary gas estimation
-func (conf *Configuration) constructWithEstimation(
+func (app *Znft) constructWithEstimation(
 	ctx context.Context,
 	address string,
 	method string,
 	params ...interface{},
 ) (*storageerc721.Binding, *bind.TransactOpts, error) {
-	erc721, err := conf.createStorageERC721(address)
+	erc721, err := app.createStorageERC721(address)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "failed to create %s in method: %s", ContractStorageERC721Name, method)
 	}
 
-	transaction, err := conf.createTransactOptsWithEstimation(ctx, address, method, params)
+	transaction, err := app.createTransactOptsWithEstimation(ctx, address, method, params)
 
 	return erc721, transaction, err
 }
 
 // Create transaction opts with sender signature
-func (conf *Configuration) createTransactOpts() (*bind.TransactOpts, error) {
-	transaction, err := conf.createTransaction()
+func (app *Znft) createTransactOpts(ctx context.Context) (*bind.TransactOpts, error) {
+	transaction, err := app.createTransaction(ctx)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create createTransactOpts in %s", ContractStorageERC721Name)
 	}
@@ -174,7 +182,7 @@ func (conf *Configuration) createTransactOpts() (*bind.TransactOpts, error) {
 	return transaction, nil
 }
 
-func (conf *Configuration) createTransactOptsWithEstimation(
+func (app *Znft) createTransactOptsWithEstimation(
 	ctx context.Context,
 	address, method string,
 	params ...interface{},
@@ -191,7 +199,7 @@ func (conf *Configuration) createTransactOptsWithEstimation(
 		return nil, errors.Wrapf(err, "failed to pack arguments in %s, method: %s", ContractStorageERC721Name, method)
 	}
 
-	transaction, err := conf.createTransactionWithGasPrice(ctx, address, pack)
+	transaction, err := app.createTransactionWithGasPrice(ctx, address, pack)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create createTransaction in %s, method: %s", ContractStorageERC721Name, method)
 	}
@@ -203,8 +211,8 @@ func (conf *Configuration) createTransactOptsWithEstimation(
 
 // Factory Sessions
 
-func (conf *Configuration) CreateFactoryERC721Session(ctx context.Context, addr string) (IFactoryERC721, error) {
-	contract, transact, err := conf.constructFactoryERC721(addr)
+func (app *Znft) CreateFactoryERC721Session(ctx context.Context, addr string) (IFactoryERC721, error) {
+	contract, transact, err := app.constructFactoryERC721(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -227,8 +235,8 @@ func (conf *Configuration) CreateFactoryERC721Session(ctx context.Context, addr 
 	return storage, nil
 }
 
-func (conf *Configuration) CreateFactoryERC721PackSession(ctx context.Context, addr string) (IFactoryPack, error) {
-	contract, transact, err := conf.constructFactoryERC721Pack(addr)
+func (app *Znft) CreateFactoryERC721PackSession(ctx context.Context, addr string) (IFactoryPack, error) {
+	contract, transact, err := app.constructFactoryERC721Pack(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -251,8 +259,8 @@ func (conf *Configuration) CreateFactoryERC721PackSession(ctx context.Context, a
 	return storage, nil
 }
 
-func (conf *Configuration) CreateFactoryERC721FixedSession(ctx context.Context, addr string) (IFactoryFixed, error) {
-	contract, transact, err := conf.constructFactoryERC721Fixed(addr)
+func (app *Znft) CreateFactoryERC721FixedSession(ctx context.Context, addr string) (IFactoryFixed, error) {
+	contract, transact, err := app.constructFactoryERC721Fixed(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -275,8 +283,8 @@ func (conf *Configuration) CreateFactoryERC721FixedSession(ctx context.Context, 
 	return storage, nil
 }
 
-func (conf *Configuration) CreateFactoryERC721RandomSession(ctx context.Context, addr string) (IFactoryRandom, error) {
-	contract, transact, err := conf.constructFactoryERC721Random(addr)
+func (app *Znft) CreateFactoryERC721RandomSession(ctx context.Context, addr string) (IFactoryRandom, error) {
+	contract, transact, err := app.constructFactoryERC721Random(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -301,8 +309,8 @@ func (conf *Configuration) CreateFactoryERC721RandomSession(ctx context.Context,
 
 // Storage Sessions
 
-func (conf *Configuration) CreateStorageERC721PackSession(ctx context.Context, addr string) (IStorageECR721Pack, error) {
-	contract, transact, err := conf.constructStorageERC721Pack(addr)
+func (app *Znft) CreateStorageERC721PackSession(ctx context.Context, addr string) (IStorageECR721Pack, error) {
+	contract, transact, err := app.constructStorageERC721Pack(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -325,8 +333,8 @@ func (conf *Configuration) CreateStorageERC721PackSession(ctx context.Context, a
 	return storage, nil
 }
 
-func (conf *Configuration) CreateStorageERC721RandomSession(ctx context.Context, addr string) (IStorageECR721Random, error) {
-	contract, transact, err := conf.constructStorageERC721Random(addr)
+func (app *Znft) CreateStorageERC721RandomSession(ctx context.Context, addr string) (IStorageECR721Random, error) {
+	contract, transact, err := app.constructStorageERC721Random(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -349,8 +357,8 @@ func (conf *Configuration) CreateStorageERC721RandomSession(ctx context.Context,
 	return storage, nil
 }
 
-func (conf *Configuration) CreateStorageERC721FixedSession(ctx context.Context, addr string) (IStorageECR721Fixed, error) {
-	contract, transact, err := conf.constructStorageERC721Fixed(addr)
+func (app *Znft) CreateStorageERC721FixedSession(ctx context.Context, addr string) (IStorageECR721Fixed, error) {
+	contract, transact, err := app.constructStorageERC721Fixed(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -373,8 +381,8 @@ func (conf *Configuration) CreateStorageERC721FixedSession(ctx context.Context, 
 	return storage, nil
 }
 
-func (conf *Configuration) CreateStorageERC721Session(ctx context.Context, addr string) (IStorageECR721, error) {
-	contract, transact, err := conf.constructStorageERC721(addr)
+func (app *Znft) CreateStorageERC721Session(ctx context.Context, addr string) (IStorageECR721, error) {
+	contract, transact, err := app.constructStorageERC721(ctx, addr)
 	if err != nil {
 		return nil, err
 	}
@@ -399,8 +407,8 @@ func (conf *Configuration) CreateStorageERC721Session(ctx context.Context, addr 
 
 // Binding factories
 
-func (conf *Configuration) createStorageERC721(address string) (*storageerc721.Binding, error) {
-	client, err := conf.CreateEthClient()
+func (app *Znft) createStorageERC721(address string) (*storageerc721.Binding, error) {
+	client, err := CreateEthClient(app.cfg.EthereumNodeURL)
 	if err != nil {
 		return nil, err
 	}
@@ -411,8 +419,8 @@ func (conf *Configuration) createStorageERC721(address string) (*storageerc721.B
 	return instance, err
 }
 
-func (conf *Configuration) createStorageERC721Fixed(address string) (*storageerc721fixed.Binding, error) {
-	client, err := conf.CreateEthClient()
+func (app *Znft) createStorageERC721Fixed(address string) (*storageerc721fixed.Binding, error) {
+	client, err := CreateEthClient(app.cfg.EthereumNodeURL)
 	if err != nil {
 		return nil, err
 	}
@@ -423,8 +431,8 @@ func (conf *Configuration) createStorageERC721Fixed(address string) (*storageerc
 	return instance, err
 }
 
-func (conf *Configuration) createStorageERC721Random(address string) (*storageerc721random.Binding, error) {
-	client, err := conf.CreateEthClient()
+func (app *Znft) createStorageERC721Random(address string) (*storageerc721random.Binding, error) {
+	client, err := CreateEthClient(app.cfg.EthereumNodeURL)
 	if err != nil {
 		return nil, err
 	}
@@ -435,8 +443,8 @@ func (conf *Configuration) createStorageERC721Random(address string) (*storageer
 	return instance, err
 }
 
-func (conf *Configuration) createStorageERC721Pack(address string) (*storageerc721pack.Binding, error) {
-	client, err := conf.CreateEthClient()
+func (app *Znft) createStorageERC721Pack(address string) (*storageerc721pack.Binding, error) {
+	client, err := CreateEthClient(app.cfg.EthereumNodeURL)
 	if err != nil {
 		return nil, err
 	}
@@ -447,8 +455,8 @@ func (conf *Configuration) createStorageERC721Pack(address string) (*storageerc7
 	return instance, err
 }
 
-func (conf *Configuration) createFactoryERC721(address string) (*factoryerc721.Binding, error) {
-	client, err := conf.CreateEthClient()
+func (app *Znft) createFactoryERC721(address string) (*factoryerc721.Binding, error) {
+	client, err := CreateEthClient(app.cfg.EthereumNodeURL)
 	if err != nil {
 		return nil, err
 	}
@@ -459,8 +467,8 @@ func (conf *Configuration) createFactoryERC721(address string) (*factoryerc721.B
 	return instance, err
 }
 
-func (conf *Configuration) createFactoryERC721Pack(address string) (*factoryerc721pack.Binding, error) {
-	client, err := conf.CreateEthClient()
+func (app *Znft) createFactoryERC721Pack(address string) (*factoryerc721pack.Binding, error) {
+	client, err := CreateEthClient(app.cfg.EthereumNodeURL)
 	if err != nil {
 		return nil, err
 	}
@@ -471,8 +479,8 @@ func (conf *Configuration) createFactoryERC721Pack(address string) (*factoryerc7
 	return instance, err
 }
 
-func (conf *Configuration) createFactoryERC721Random(address string) (*factoryerc721random.Binding, error) {
-	client, err := conf.CreateEthClient()
+func (app *Znft) createFactoryERC721Random(address string) (*factoryerc721random.Binding, error) {
+	client, err := CreateEthClient(app.cfg.EthereumNodeURL)
 	if err != nil {
 		return nil, err
 	}
@@ -483,8 +491,8 @@ func (conf *Configuration) createFactoryERC721Random(address string) (*factoryer
 	return instance, err
 }
 
-func (conf *Configuration) createFactoryERC721Fixed(address string) (*factoryerc721fixed.Binding, error) {
-	client, err := conf.CreateEthClient()
+func (app *Znft) createFactoryERC721Fixed(address string) (*factoryerc721fixed.Binding, error) {
+	client, err := CreateEthClient(app.cfg.EthereumNodeURL)
 	if err != nil {
 		return nil, err
 	}
