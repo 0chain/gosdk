@@ -28,9 +28,10 @@ func (qq *coingeckoQuoteQuery) getUSD(ctx context.Context, symbol string) (float
 	case "eth":
 		coinID = "ethereum"
 	default:
-		id, ok := os.LookupEnv("COINGECKO_COINID_" + strings.ToUpper(symbol))
+		envName := "COINGECKO_COINID_" + strings.ToUpper(symbol)
+		id, ok := os.LookupEnv(envName)
 		if !ok {
-			return 0, errors.New("token: please configurate coinid for " + s + " first")
+			return 0, errors.New("token: please configure coinid on environment variable [" + envName + "' first")
 		}
 		coinID = id
 

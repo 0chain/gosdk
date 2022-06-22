@@ -28,9 +28,10 @@ func (qq *bancorQuoteQuery) getUSD(ctx context.Context, symbol string) (float64,
 	case "eth":
 		dltId = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE"
 	default:
-		id, ok := os.LookupEnv("BANCOR_DLTID_" + strings.ToUpper(symbol))
+		evnName := "BANCOR_DLTID_" + strings.ToUpper(symbol)
+		id, ok := os.LookupEnv(evnName)
 		if !ok {
-			return 0, errors.New("token: please configurate dlt_id for " + s + " first")
+			return 0, errors.New("token: please configure dlt_id on environment variable [" + evnName + "] first")
 		}
 		dltId = id
 
