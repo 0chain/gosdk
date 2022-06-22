@@ -59,6 +59,14 @@ func (qq *coingeckoQuoteQuery) getUSD(ctx context.Context, symbol string) (float
 
 	r.Wait()
 
+	h, ok := result.MarketData.High24h["usd"]
+	if ok {
+		l, ok := result.MarketData.Low24h["usd"]
+		if ok {
+			return (h + l) / 2, nil
+		}
+	}
+
 	rate, ok := result.MarketData.CurrentPrice["usd"]
 
 	if ok {
@@ -74,4 +82,6 @@ type coingeckoResponse struct {
 
 type coingeckoMarketData struct {
 	CurrentPrice map[string]float64 `json:"current_price"`
+	High24h      map[string]float64 `json:"high_24h"`
+	Low24h       map[string]float64 `json:"low_24h"`
 }

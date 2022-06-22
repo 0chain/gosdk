@@ -59,7 +59,7 @@ func (qq *bancorQuoteQuery) getUSD(ctx context.Context, symbol string) (float64,
 
 	r.Wait()
 
-	rate, ok := result.Data.Rate["usd"]
+	rate, ok := result.Data.Rate24hAgo["usd"]
 
 	if ok {
 		return rate, nil
@@ -73,5 +73,5 @@ type bancorResponse struct {
 }
 
 type bancorMarketData struct {
-	Rate map[string]float64 `json:"rate"`
+	Rate24hAgo map[string]float64 `json:"rate24hAgo"`
 }
