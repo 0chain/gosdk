@@ -30,7 +30,7 @@ jobs:
         with:
           go-version: ^1.18
 
-      - name: Install Gomobile
+      - name: Install GoMobile
         run: |
           go install golang.org/x/mobile/cmd/gomobile@latest
           go install golang.org/x/mobile/cmd/gobind@latest
@@ -38,7 +38,7 @@ jobs:
         env:
           GO111MODULE: "on"
 
-      - name: Setup Mobile
+      - name: Setup GoMobile
         run:  make setup-gomobile
 
       - name: Build iOS
@@ -91,7 +91,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: zcncore-ios
-          path: 
+          path: |
             zcncore-ios.tar.gz
             zcncore-iossimulator.tar.gz
 
@@ -126,7 +126,7 @@ jobs:
         with:
           go-version: ^1.18
 
-      - name: Install Gomobile
+      - name: Install GoMobile
         run: |
           go install golang.org/x/mobile/cmd/gomobile@latest
           go install golang.org/x/mobile/cmd/gobind@latest
@@ -134,7 +134,7 @@ jobs:
         env:
           GO111MODULE: "on"
 
-      - name: Setup Mobile
+      - name: Setup GoMobile
         run:  make setup-gomobile
 
 
