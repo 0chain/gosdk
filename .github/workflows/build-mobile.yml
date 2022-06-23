@@ -1,4 +1,4 @@
-name: MobileSDKs
+name: build-mobile
 
 concurrency:
   group: "build-mobile-${{ github.ref }}"
