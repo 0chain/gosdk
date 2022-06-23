@@ -3,6 +3,8 @@
 
 package zcncore
 
+import "encoding/json"
+
 type SmartContractExecutor interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
 	ExecuteSmartContract(address, methodName string, input string, val uint64) error
