@@ -11,6 +11,7 @@ var quotes []quoteQuery
 func init() {
 
 	quotes = []quoteQuery{
+		&bancorQuoteQuery{},
 		&coingeckoQuoteQuery{},
 		createCoinmarketcapQuoteQuery(),
 		//more query services
