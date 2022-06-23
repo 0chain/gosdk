@@ -42,15 +42,14 @@ jobs:
         run:  make setup-gomobile
 
       - name: Build iOS
-        run: make build-ios
-      
-      - name: Build iOS Simulator
-        run: make build-iossimulator
+        run: |
+          make build-ios
+          make build-iossimulator
 
       - name: Compress
         run: |
           tar -czvf zcncore-ios.tar.gz out/iossdk/ios/zcncore.xcframework
-          tar -czvf zcncore-ios-simulator.tar.gz out/iossdk/simulator/zcncore.xcframework
+          tar -czvf zcncore-iossimulator.tar.gz out/iossdk/simulator/zcncore.xcframework
 
       - name: Setup Build
         id: setup_build
@@ -78,12 +77,12 @@ jobs:
           overwrite: true
           file_glob: true
 
-       - name: Upload zcncore-ios-iossimulator to release
+      - name: Upload zcncore-iossimulator to release
         if:  steps.setup_build.outputs.RELEASE == 'true'
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: zcncore-ios-iossimulator.tar.gz
+          file: zcncore-iossimulator.tar.gz
           tag: ${{ steps.vars.outputs.TAG }}
           overwrite: true
           file_glob: true
@@ -94,7 +93,7 @@ jobs:
           name: zcncore-ios
           path: 
             zcncore-ios.tar.gz
-            zcncore-ios-iossimulator.tar.gz
+            zcncore-iossimulator.tar.gz
 
   build-android:
     name: Build-android

@@ -6,7 +6,7 @@ ANDROIDMOBILESDKDIR := $(OUTDIR)/androidsdk
 IOSBINNAME 		:= zcncore.xcframework
 ANDROIDBINNAME	:= zcncore.aar
 
-.PHONY: build-mobilesdk
+.PHONY: build-mobilesdk setup-gomobile build-iossimulator build-ios
 
 $(IOSMOBILESDKDIR):
 	$(shell mkdir -p $(IOSMOBILESDKDIR)/lib)
