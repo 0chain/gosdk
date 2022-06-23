@@ -77,7 +77,7 @@ build-iossimulator:
 
 build-ios: 
 	@echo "Building iOS framework. Please wait..."
-	@@gomobile bind -v -ldflags="-s -w" -target=ios/arm64 -tags "ios" -o $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME) $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common
+	@@gomobile bind -v -ldflags="-s -w" -target=ios/arm64,iossimulator/amd64 -tags "ios" -o $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME) $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common
 	@echo "   $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME). - [OK]"	
 
 build-android: 
