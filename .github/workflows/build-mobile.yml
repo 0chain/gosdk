@@ -1,4 +1,4 @@
-name: build-mobile
+name: Android SDK & iOS SDK
 
 concurrency:
   group: "build-mobile-${{ github.ref }}"
@@ -25,13 +25,16 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Replace go.mod
-        run: sed -i -e 's/\/\/replace github.com\/herumi\/bls-go-binary/replace github.com\/herumi\/bls-go-binary/g' go.mod
-
       - name: Set up Go 1.x
         uses: actions/setup-go@v3
         with:
           go-version: ^1.18
+
+      - name: Replace go.mod
+        run: |
+          sed -i -e 's/\/\/replace github.com\/herumi\/bls-go-binary/replace github.com\/herumi\/bls-go-binary/g' go.mod
+          go mod tidy
+
 
       - name: Install Gomobile
         run: |
@@ -41,7 +44,7 @@ jobs:
         env:
           GO111MODULE: "on"
 
-      - name: Install
+      - name: Build zcncore
         run: make build-ios
 
       - name: Compress
@@ -87,8 +90,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v3
+        with:
+          go-version: ^1.18
+
       - name: Replace go.mod
-        run: sed -i -e 's/\/\/replace github.com\/herumi\/bls-go-binary/replace github.com\/herumi\/bls-go-binary/g' go.mod
+        run: |
+          sed -i -e 's/\/\/replace github.com\/herumi\/bls-go-binary/replace github.com\/herumi\/bls-go-binary/g' go.mod
+          go mod tidy
 
       - name: Install Java
         uses: actions/setup-java@v3
@@ -108,10 +118,6 @@ jobs:
         with:
           ndk-version: r21d
 
-      - name: Set up Go 1.x
-        uses: actions/setup-go@v3
-        with:
-          go-version: ^1.18
 
       - name: Install Gomobile
         run: |
@@ -121,7 +127,7 @@ jobs:
         env:
           GO111MODULE: "on"
 
-      - name: Install
+      - name: Build zcncore
         run: make build-android
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
