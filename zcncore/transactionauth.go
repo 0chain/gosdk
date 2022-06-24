@@ -187,17 +187,6 @@ func (ta *TransactionWithAuth) ExecuteFaucetSCWallet(walletStr string, methodNam
 	return nil
 }
 
-func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, input interface{}, val uint64) error {
-	err := ta.t.createSmartContractTxn(address, methodName, input, val)
-	if err != nil {
-		return err
-	}
-	go func() {
-		ta.submitTxn()
-	}()
-	return nil
-}
-
 func (ta *TransactionWithAuth) SetTransactionHash(hash string) error {
 	return ta.t.SetTransactionHash(hash)
 }
