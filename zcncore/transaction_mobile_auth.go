@@ -28,12 +28,7 @@ func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, 
 }
 
 func (ta *TransactionWithAuth) SetTransactionFee(txnFee string) error {
-	v, err := parseCoinStr(txnFee)
-	if err != nil {
-		return err
-	}
-
-	return ta.t.SetTransactionFee(v)
+	return ta.t.SetTransactionFee(txnFee)
 }
 
 func (ta *TransactionWithAuth) Send(toClientID string, val string, desc string) error {
@@ -111,7 +106,7 @@ func (ta *TransactionWithAuth) FinalizeAllocation(allocID string, fee string) (
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(v)
+	ta.t.setTransactionFee(v)
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -135,7 +130,7 @@ func (ta *TransactionWithAuth) CancelAllocation(allocID string, fee string) (
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(v)
+	ta.t.setTransactionFee(v)
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -159,7 +154,7 @@ func (ta *TransactionWithAuth) CreateAllocation(car *CreateAllocationRequest,
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(fv)
+	ta.t.setTransactionFee(fv)
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -177,7 +172,7 @@ func (ta *TransactionWithAuth) CreateReadPool(fee string) (err error) {
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(v)
+	ta.t.setTransactionFee(v)
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -214,7 +209,7 @@ func (ta *TransactionWithAuth) ReadPoolLock(allocID, blobberID string,
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(fv)
+	ta.t.setTransactionFee(fv)
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -238,7 +233,7 @@ func (ta *TransactionWithAuth) ReadPoolUnlock(poolID string, fee string) (
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(v)
+	ta.t.setTransactionFee(v)
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -269,7 +264,7 @@ func (ta *TransactionWithAuth) StakePoolLock(blobberID string,
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(fv)
+	ta.t.setTransactionFee(fv)
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -297,7 +292,7 @@ func (ta *TransactionWithAuth) StakePoolUnlock(blobberID, poolID string,
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(v)
+	ta.t.setTransactionFee(v)
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -316,7 +311,7 @@ func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber, fee string) 
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(v)
+	ta.t.setTransactionFee(v)
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -351,7 +346,7 @@ func (ta *TransactionWithAuth) UpdateAllocation(allocID string, sizeDiff int64,
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(fv)
+	ta.t.setTransactionFee(fv)
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -388,7 +383,7 @@ func (ta *TransactionWithAuth) WritePoolLock(allocID, blobberID string,
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(fv)
+	ta.t.setTransactionFee(fv)
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -412,7 +407,7 @@ func (ta *TransactionWithAuth) WritePoolUnlock(poolID string, fee string) (
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(fv)
+	ta.t.setTransactionFee(v)
 	go func() { ta.submitTxn() }()
 	return
 }

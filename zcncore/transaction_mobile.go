@@ -43,17 +43,22 @@ type TransactionCommon interface {
 func parseCoinStr(vs string) (uint64, error) {
 	v, err := strconv.ParseUint(vs, 10, 64)
 	if err != nil {
-		return nil, fmt.Errorf("invalid token value: %v", vs)
+		return 0, fmt.Errorf("invalid token value: %v", vs)
 	}
 
 	if v/uint64(TOKEN_UNIT) == 0 {
-		return nil, fmt.Errorf("token value must be multiple value of 1e10")
+		return 0, fmt.Errorf("token value must be multiple value of 1e10")
 	}
 	return v, nil
 }
 
 // NewTransaction allocation new generic transaction object for any operation
 func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (TransactionScheme, error) {
+	v, err := parseCoinStr(txnFee)
+	if err != nil {
+		return nil, err
+	}
+
 	err = CheckConfig()
 	if err != nil {
 		return nil, err
@@ -63,10 +68,10 @@ func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (Transac
 			return nil, errors.New("", "auth url not set")
 		}
 		Logger.Info("New transaction interface with auth")
-		return newTransactionWithAuth(cb, fee, nonce)
+		return newTransactionWithAuth(cb, v, nonce)
 	}
 	Logger.Info("New transaction interface")
-	t, err := newTransaction(cb, fee, nonce)
+	t, err := newTransaction(cb, v, nonce)
 	return t, err
 }
 
@@ -92,6 +97,10 @@ func (t *Transaction) SetTransactionFee(txnFee string) error {
 		return err
 	}
 
+	return t.setTransactionFee(fee)
+}
+
+func (t *Transaction) setTransactionFee(fee uint64) error {
 	if t.txnStatus != StatusUnknown {
 		return errors.New("", "transaction already exists. cannot set transaction fee.")
 	}
@@ -198,7 +207,7 @@ func (t *Transaction) FinalizeAllocation(allocID string, fee string) (
 		Logger.Error(err)
 		return
 	}
-	t.SetTransactionFee(v)
+	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return
 }
@@ -222,7 +231,7 @@ func (t *Transaction) CancelAllocation(allocID string, fee string) (
 		Logger.Error(err)
 		return
 	}
-	t.SetTransactionFee(v)
+	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return
 }
@@ -246,7 +255,7 @@ func (t *Transaction) CreateAllocation(car *CreateAllocationRequest,
 		Logger.Error(err)
 		return
 	}
-	t.SetTransactionFee(fv)
+	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
 	return
 }
@@ -264,7 +273,7 @@ func (t *Transaction) CreateReadPool(fee string) (err error) {
 		Logger.Error(err)
 		return
 	}
-	t.SetTransactionFee(v)
+	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return
 }
@@ -301,7 +310,7 @@ func (t *Transaction) ReadPoolLock(allocID, blobberID string,
 		Logger.Error(err)
 		return
 	}
-	t.SetTransactionFee(fv)
+	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
 	return
 }
@@ -324,7 +333,7 @@ func (t *Transaction) ReadPoolUnlock(poolID string, fee string) (err error) {
 		Logger.Error(err)
 		return
 	}
-	t.SetTransactionFee(v)
+	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return
 }
@@ -355,7 +364,7 @@ func (t *Transaction) StakePoolLock(blobberID string, lock, fee string) (
 		Logger.Error(err)
 		return
 	}
-	t.SetTransactionFee(fv)
+	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
 	return
 }
@@ -382,7 +391,7 @@ func (t *Transaction) StakePoolUnlock(blobberID, poolID string,
 		Logger.Error(err)
 		return
 	}
-	t.SetTransactionFee(v)
+	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return
 }
@@ -400,7 +409,7 @@ func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee string) (err error) 
 		Logger.Error(err)
 		return
 	}
-	t.SetTransactionFee(v)
+	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return
 }
@@ -435,7 +444,7 @@ func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
 		Logger.Error(err)
 		return
 	}
-	t.SetTransactionFee(fv)
+	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
 	return
 }
@@ -472,7 +481,7 @@ func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64,
 		Logger.Error(err)
 		return
 	}
-	t.SetTransactionFee(fv)
+	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
 	return
 }
@@ -496,7 +505,7 @@ func (t *Transaction) WritePoolUnlock(poolID string, fee string) (
 		Logger.Error(err)
 		return
 	}
-	t.SetTransactionFee(v)
+	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return
 }
