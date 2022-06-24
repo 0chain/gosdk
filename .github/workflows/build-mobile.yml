@@ -1,4 +1,4 @@
-name: build-mobile
+name: Android SDK & iOS SDK
 
 concurrency:
   group: "build-mobile-${{ github.ref }}"
@@ -121,10 +121,6 @@ jobs:
         with:
           ndk-version: r21d
 
-      - name: Set up Go 1.x
-        uses: actions/setup-go@v3
-        with:
-          go-version: ^1.18
 
       - name: Install GoMobile
         run: |
