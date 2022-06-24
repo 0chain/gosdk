@@ -6,7 +6,7 @@ ANDROIDMOBILESDKDIR := $(OUTDIR)/androidsdk
 IOSBINNAME 		:= zcncore.xcframework
 ANDROIDBINNAME	:= zcncore.aar
 
-.PHONY: build-mobilesdk
+.PHONY: build-mobilesdk setup-gomobile build-iossimulator build-ios
 
 $(IOSMOBILESDKDIR):
 	$(shell mkdir -p $(IOSMOBILESDKDIR)/lib)
@@ -70,12 +70,17 @@ gomobile-install:
 	go install golang.org/x/mobile/cmd/gomobile@latest
 	gomobile init
 
-build-ios: setup-gomobile
-	@echo "Building iOS framework. Please wait..."
-	@@gomobile bind -v -ldflags="-s -w" -target=ios/arm64 -tags mobile -o $(IOSMOBILESDKDIR)/$(IOSBINNAME) $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common
-	@echo "   $(IOSMOBILESDKDIR)/$(IOSBINNAME). - [OK]"
+build-iossimulator: 
+	@echo "Building iOS Simulator framework. Please wait..."
+	@@gomobile bind -v -ldflags="-s -w" -target=iossimulator -tags "ios iossimulator mobile" -o $(IOSMOBILESDKDIR)/simulator/$(IOSBINNAME) $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common
+	@echo "   $(IOSMOBILESDKDIR)/simulator/$(IOSBINNAME). - [OK]"
 
-build-android: setup-gomobile
+build-ios: 
+	@echo "Building iOS framework. Please wait..."
+	@@gomobile bind -v -ldflags="-s -w" -target=ios/arm64,iossimulator/amd64 -tags "ios mobile" -o $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME) $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common
+	@echo "   $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME). - [OK]"	
+
+build-android: 
 	@echo "Building Android framework. Please wait..."
 	@gomobile bind -target=android/arm64 -tags mobile -ldflags=-extldflags=-Wl,-soname,libgojni.so -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common
 	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"
