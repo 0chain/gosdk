@@ -5,10 +5,10 @@ import (
 	"os"
 	"path"
 
+	hdw "github.com/0chain/gosdk/zcncore/ethhdwallet"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 	"github.com/ethereum/go-ethereum/common"
-	hdw "github.com/miguelmota/go-ethereum-hdwallet"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
 )
@@ -105,7 +105,7 @@ func UpdateClientEthereumAddress(homedir, address string) (err error) {
 	return err
 }
 
-// ImportAccount inmports account using mnemonic
+// ImportAccount imports account using mnemonic
 func ImportAccount(homedir, mnemonic, password string) (string, error) {
 	// 1. Create storage and account if it doesn't exist and add account to it
 

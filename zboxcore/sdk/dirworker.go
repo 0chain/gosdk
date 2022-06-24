@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
@@ -28,7 +28,7 @@ type DirRequest struct {
 func (req *DirRequest) ProcessDir(a *Allocation) error {
 	numList := len(a.Blobbers)
 
-	Logger.Info("Start creating dir for blobbers")
+	l.Logger.Info("Start creating dir for blobbers")
 
 	await := make(chan error, numList)
 
@@ -36,7 +36,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 		go func(blobberIdx int) {
 			err := req.createDirInBlobber(a.Blobbers[blobberIdx])
 			if err != nil {
-				Logger.Error(err.Error())
+				l.Logger.Error(err.Error())
 			}
 			await <- err
 		}(i)
@@ -62,13 +62,13 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode) error
 	formWriter := multipart.NewWriter(body)
 	formWriter.WriteField("connection_id", req.connectionID)
 
-	dirPath := filepath.Join("/", filepath.ToSlash(req.name))
+	dirPath := filepath.ToSlash(filepath.Join("/", req.name))
 	formWriter.WriteField("dir_path", dirPath)
 
 	formWriter.Close()
 	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, body)
 	if err != nil {
-		Logger.Error(blobber.Baseurl, "Error creating dir request", err)
+		l.Logger.Error(blobber.Baseurl, "Error creating dir request", err)
 		return err
 	}
 
@@ -77,20 +77,20 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode) error
 
 	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("createdir : ", err)
+			l.Logger.Error("createdir : ", err)
 			return err
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusOK {
 			resp_body, _ := ioutil.ReadAll(resp.Body)
-			Logger.Info("createdir resp:", string(resp_body))
+			l.Logger.Info("createdir resp:", string(resp_body))
 			req.consensus++
-			Logger.Info(blobber.Baseurl, " "+req.name, " created.")
+			l.Logger.Info(blobber.Baseurl, " "+req.name, " created.")
 		} else {
 			resp_body, err := ioutil.ReadAll(resp.Body)
 			if err == nil {
 				msg := strings.TrimSpace(string(resp_body))
-				Logger.Error(blobber.Baseurl, "Response: ", msg)
+				l.Logger.Error(blobber.Baseurl, "Response: ", msg)
 				return errors.New(msg)
 			}
 		}

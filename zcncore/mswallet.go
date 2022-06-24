@@ -96,7 +96,7 @@ func (msw *MSWallet) UnmarshalJSON(data []byte) error {
 type MSTransfer struct {
 	ClientID   string `json:"from"`
 	ToClientID string `json:"to"`
-	Amount     int64  `json:"amount"`
+	Amount     uint64 `json:"amount"`
 }
 
 // Marshal returns json string
@@ -189,7 +189,7 @@ func RegisterWallet(walletString string, cb WalletCallback) {
 }
 
 //CreateMSVote create a vote for multisig
-func CreateMSVote(proposal, grpClientID, signerWalletstr, toClientID string, token int64) (string, error) {
+func CreateMSVote(proposal, grpClientID, signerWalletstr, toClientID string, token uint64) (string, error) {
 
 	if proposal == "" || grpClientID == "" || toClientID == "" || signerWalletstr == "" {
 		return "", errors.New("", "proposal or groupClient or signer wallet or toClientID cannot be empty")

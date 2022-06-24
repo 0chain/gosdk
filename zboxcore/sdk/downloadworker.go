@@ -31,6 +31,7 @@ const (
 type DownloadRequest struct {
 	allocationID       string
 	allocationTx       string
+	allocOwnerID       string
 	blobbers           []*blockchain.StorageNode
 	datashards         int
 	parityshards       int
@@ -68,6 +69,7 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 		blockDownloadReq := &BlockDownloadRequest{}
 		blockDownloadReq.allocationID = req.allocationID
 		blockDownloadReq.allocationTx = req.allocationTx
+		blockDownloadReq.allocOwnerID = req.allocOwnerID
 		blockDownloadReq.authTicket = req.authTicket
 		blockDownloadReq.blobber = req.blobbers[pos]
 		blockDownloadReq.blobberIdx = pos

@@ -11,7 +11,7 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
@@ -55,7 +55,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	oTreeResponses := make([]oTreeResponse, totalBlobbersCount)
 	o.wg.Add(totalBlobbersCount)
 	for i, blob := range o.blobbers {
-		Logger.Info(fmt.Sprintf("Getting file refs for path %v from blobber %v", o.remotefilepath, blob.Baseurl))
+		l.Logger.Info(fmt.Sprintf("Getting file refs for path %v from blobber %v", o.remotefilepath, blob.Baseurl))
 		go o.getFileRefs(&oTreeResponses[i], blob.Baseurl)
 	}
 	o.wg.Wait()
@@ -122,24 +122,24 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 	ctx, cncl := context.WithTimeout(o.ctx, time.Second*30)
 	err = zboxutil.HttpDo(ctx, cncl, oReq, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error(err)
+			l.Logger.Error(err)
 			return err
 		}
 		defer resp.Body.Close()
 		respBody, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			Logger.Error(err)
+			l.Logger.Error(err)
 			return err
 		}
 		if resp.StatusCode == http.StatusOK {
 			err := json.Unmarshal(respBody, &oResult)
 			if err != nil {
-				Logger.Error(err)
+				l.Logger.Error(err)
 				return err
 			}
 			return nil
 		} else {
-			Logger.Error(err)
+			l.Logger.Error(err)
 			return err
 		}
 	})

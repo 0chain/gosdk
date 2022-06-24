@@ -5,11 +5,12 @@ import (
 	"context"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"sync"
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
@@ -51,7 +52,7 @@ func (req *CollaboratorRequest) updateCollaboratorToBlobber(blobber *blockchain.
 	formWriter.Close()
 	httpreq, err := zboxutil.NewCollaboratorRequest(blobber.Baseurl, req.a.Tx, body)
 	if err != nil {
-		Logger.Error("Update collaborator request error: ", err.Error())
+		l.Logger.Error("Update collaborator request error: ", err.Error())
 		return
 	}
 
@@ -59,7 +60,7 @@ func (req *CollaboratorRequest) updateCollaboratorToBlobber(blobber *blockchain.
 	ctx, cncl := context.WithTimeout(req.a.ctx, (time.Second * 30))
 	zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("Update Collaborator : ", err)
+			l.Logger.Error("Update Collaborator : ", err)
 			rspCh <- false
 			return err
 		}
@@ -96,25 +97,23 @@ func (req *CollaboratorRequest) RemoveCollaboratorFromBlobbers() bool {
 func (req *CollaboratorRequest) removeCollaboratorFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- bool) {
 
 	defer req.wg.Done()
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
 
-	formWriter.WriteField("path", req.path)
-	formWriter.WriteField("collab_id", req.collaboratorID)
+	query := &url.Values{}
 
-	formWriter.Close()
-	httpreq, err := zboxutil.DeleteCollaboratorRequest(blobber.Baseurl, req.a.Tx, body)
+	query.Add("path", req.path)
+	query.Add("collab_id", req.collaboratorID)
+
+	httpreq, err := zboxutil.DeleteCollaboratorRequest(blobber.Baseurl, req.a.Tx, query)
 	if err != nil {
-		Logger.Error("Delete collaborator request error: ", err.Error())
+		l.Logger.Error("Delete collaborator request error: ", err.Error())
 		return
 	}
 
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	ctx, cncl := context.WithTimeout(req.a.ctx, (time.Second * 30))
 
 	zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("Delete Collaborator : ", err)
+			l.Logger.Error("Delete Collaborator : ", err)
 			rspCh <- false
 			return err
 		}

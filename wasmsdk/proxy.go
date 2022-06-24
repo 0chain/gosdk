@@ -22,7 +22,6 @@ import (
 
 func main() {
 	fmt.Printf("0CHAIN - GOSDK (version=%v)\n", version.VERSIONSTR)
-
 	sys.Files = sys.NewMemFS()
 	sdkLogger = sdk.GetLogger()
 	zcnLogger = zcncore.GetLogger()

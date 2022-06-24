@@ -14,7 +14,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
@@ -68,7 +68,7 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 	formWriter.Close()
 	httpreq, err := zboxutil.NewFileStatsRequest(blobber.Baseurl, req.allocationTx, body)
 	if err != nil {
-		Logger.Error("File meta info request error: ", err.Error())
+		l.Logger.Error("File meta info request error: ", err.Error())
 		return
 	}
 
@@ -76,7 +76,7 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("GetFileStats : ", err)
+			l.Logger.Error("GetFileStats : ", err)
 			return err
 		}
 		defer resp.Body.Close()

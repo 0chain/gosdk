@@ -23,6 +23,7 @@ type BlockDownloadRequest struct {
 	blobber            *blockchain.StorageNode
 	allocationID       string
 	allocationTx       string
+	allocOwnerID       string
 	blobberIdx         int
 	remotefilepath     string
 	remotefilepathhash string
@@ -111,7 +112,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		rm.ClientPublicKey = client.GetClientPublicKey()
 		rm.BlobberID = req.blobber.ID
 		rm.AllocationID = req.allocationID
-		rm.OwnerID = client.GetClientID()
+		rm.OwnerID = req.allocOwnerID
 		rm.Timestamp = common.Now()
 		rm.ReadCounter = getBlobberReadCtr(req.blobber.ID) + req.numBlocks
 		err = rm.Sign()

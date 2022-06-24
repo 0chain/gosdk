@@ -12,6 +12,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -27,7 +28,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/mitchellh/go-homedir"
@@ -107,23 +108,22 @@ type AllocationStats struct {
 
 // PriceRange represents a price range allowed by user to filter blobbers.
 type PriceRange struct {
-	Min int64 `json:"min"`
-	Max int64 `json:"max"`
+	Min uint64 `json:"min"`
+	Max uint64 `json:"max"`
 }
 
 // IsValid price range.
 func (pr *PriceRange) IsValid() bool {
-	return 0 <= pr.Min && pr.Min <= pr.Max
+	return pr.Min <= pr.Max
 }
 
 // Terms represents Blobber terms. A Blobber can update its terms,
 // but any existing offer will use terms of offer signing time.
 type Terms struct {
-	ReadPrice               common.Balance `json:"read_price"`  // tokens / GB
-	WritePrice              common.Balance `json:"write_price"` // tokens / GB
-	MinLockDemand           float64        `json:"min_lock_demand"`
-	MaxOfferDuration        time.Duration  `json:"max_offer_duration"`
-	ChallengeCompletionTime time.Duration  `json:"challenge_completion_time"`
+	ReadPrice        common.Balance `json:"read_price"`  // tokens / GB
+	WritePrice       common.Balance `json:"write_price"` // tokens / GB
+	MinLockDemand    float64        `json:"min_lock_demand"`
+	MaxOfferDuration time.Duration  `json:"max_offer_duration"`
 }
 
 type BlobberAllocation struct {
@@ -241,19 +241,19 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			Logger.Info("Upload cancelled by the parent")
+			l.Logger.Info("Upload cancelled by the parent")
 			return
 		case uploadReq := <-a.uploadChan:
 
-			Logger.Info(fmt.Sprintf("received a upload request for %v %v\n", uploadReq.filepath, uploadReq.remotefilepath))
+			l.Logger.Info(fmt.Sprintf("received a upload request for %v %v\n", uploadReq.filepath, uploadReq.remotefilepath))
 			go uploadReq.processUpload(ctx, a)
 		case downloadReq := <-a.downloadChan:
 
-			Logger.Info(fmt.Sprintf("received a download request for %v\n", downloadReq.remotefilepath))
+			l.Logger.Info(fmt.Sprintf("received a download request for %v\n", downloadReq.remotefilepath))
 			go downloadReq.processDownload(ctx)
 		case repairReq := <-a.repairChan:
 
-			Logger.Info(fmt.Sprintf("received a repair request for %v\n", repairReq.listDir.Path))
+			l.Logger.Info(fmt.Sprintf("received a repair request for %v\n", repairReq.listDir.Path))
 			go repairReq.processRepair(ctx, a)
 		}
 	}
@@ -592,6 +592,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	downloadReq := &DownloadRequest{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
+	downloadReq.allocOwnerID = a.Owner
 	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
 	downloadReq.localpath = localPath
 	downloadReq.remotefilepath = remotePath
@@ -1010,43 +1011,33 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 	notFound := make(chan int, len(a.Blobbers))
 	wg := &sync.WaitGroup{}
 	for idx := range a.Blobbers {
-		url := a.Blobbers[idx].Baseurl
-		body := new(bytes.Buffer)
-		formWriter := multipart.NewWriter(body)
-		if err := formWriter.WriteField("path", path); err != nil {
-			return err
-		}
-		if err := formWriter.WriteField("refereeClientID", refereeClientID); err != nil {
-			return err
-		}
-		if err := formWriter.Close(); err != nil {
-			return err
-		}
-		httpreq, err := zboxutil.NewRevokeShareRequest(url, a.Tx, body)
+		baseUrl := a.Blobbers[idx].Baseurl
+		query := &url.Values{}
+		query.Add("path", path)
+		query.Add("refereeClientID", refereeClientID)
+
+		httpreq, err := zboxutil.NewRevokeShareRequest(baseUrl, a.Tx, query)
 		if err != nil {
 			return err
 		}
-		httpreq.Header.Set("Content-Type", formWriter.FormDataContentType())
-		if err := formWriter.Close(); err != nil {
-			return err
-		}
+
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
 				if err != nil {
-					Logger.Error("Revoke share : ", err)
+					l.Logger.Error("Revoke share : ", err)
 					return err
 				}
 				defer resp.Body.Close()
 
 				respbody, err := ioutil.ReadAll(resp.Body)
 				if err != nil {
-					Logger.Error("Error: Resp ", err)
+					l.Logger.Error("Error: Resp ", err)
 					return err
 				}
 				if resp.StatusCode != http.StatusOK {
-					Logger.Error(url, " Revoke share error response: ", resp.StatusCode, string(respbody))
+					l.Logger.Error(baseUrl, " Revoke share error response: ", resp.StatusCode, string(respbody))
 					return fmt.Errorf(string(respbody))
 				}
 				data := map[string]interface{}{}
@@ -1167,18 +1158,18 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 			defer wg.Done()
 			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
 				if err != nil {
-					Logger.Error("Insert share info : ", err)
+					l.Logger.Error("Insert share info : ", err)
 					return err
 				}
 				defer resp.Body.Close()
 
 				respbody, err := ioutil.ReadAll(resp.Body)
 				if err != nil {
-					Logger.Error("Error: Resp ", err)
+					l.Logger.Error("Error: Resp ", err)
 					return err
 				}
 				if resp.StatusCode != http.StatusOK {
-					Logger.Error(url, " Insert share info error response: ", resp.StatusCode, string(respbody))
+					l.Logger.Error(url, " Insert share info error response: ", resp.StatusCode, string(respbody))
 					return fmt.Errorf(string(respbody))
 				}
 				return nil
@@ -1371,6 +1362,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq := &DownloadRequest{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
+	downloadReq.allocOwnerID = a.Owner
 	downloadReq.ctx, downloadReq.ctxCncl = context.WithCancel(a.ctx)
 	downloadReq.localpath = localPath
 	downloadReq.remotefilepathhash = remoteLookupHash
@@ -1501,7 +1493,19 @@ func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (
 	}
 	commitFolderDataString := string(commitFolderDataBytes)
 
-	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey())
+	nonce := client.GetClient().Nonce
+	if nonce != 0 {
+		nonce++
+	}
+	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey(), nonce)
+	nonce = txn.TransactionNonce
+	if nonce < 1 {
+		nonce = transaction.Cache.GetNextNonce(txn.ClientID)
+	} else {
+		transaction.Cache.Set(txn.ClientID, nonce)
+	}
+	txn.TransactionNonce = nonce
+
 	txn.TransactionData = commitFolderDataString
 	txn.TransactionType = transaction.TxnTypeData
 	err = txn.ComputeHashAndSign(client.Sign)
@@ -1525,11 +1529,13 @@ func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (
 	}
 
 	if err != nil {
-		Logger.Error("Error verifying the commit transaction", err.Error(), txn.Hash)
+		l.Logger.Error("Error verifying the commit transaction", err.Error(), txn.Hash)
+		transaction.Cache.Evict(txn.ClientID)
 		return "", err
 	}
 	if t == nil {
 		err = errors.New("transaction_validation_failed", "Failed to get the transaction confirmation")
+		transaction.Cache.Evict(txn.ClientID)
 		return "", err
 	}
 
@@ -1540,7 +1546,8 @@ func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (
 
 	commitFolderReponseBytes, err := json.Marshal(commitFolderResponse)
 	if err != nil {
-		Logger.Error("Failed to marshal commitFolderResponse to bytes")
+		l.Logger.Error("Failed to marshal commitFolderResponse to bytes")
+		transaction.Cache.Evict(txn.ClientID)
 		return "", err
 	}
 

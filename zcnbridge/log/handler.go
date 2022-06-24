@@ -41,7 +41,7 @@ func HandleFunc(buffLen int64) func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		// cut broken lines if it exist
+		// cut broken lines if it exists
 		if brokenLines {
 			lbInd := strings.Index(string(buf), "\n")
 			buf = buf[lbInd+1:]

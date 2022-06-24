@@ -14,7 +14,7 @@ import (
 )
 
 type (
-	// Transaction entity that encapsulates the transaction related data and meta data.
+	// Transaction entity that encapsulates the transaction related data and metadata.
 	Transaction struct {
 		Hash              string          `json:"hash,omitempty"`
 		Version           string          `json:"version,omitempty"`
@@ -47,7 +47,7 @@ func NewTransactionEntity() (*Transaction, error) {
 		PublicKey:    node.PublicKey(),
 		callBack:     newCallBack(),
 	}
-	zcntxn, err := zcncore.NewTransaction(txn.callBack, 0)
+	zcntxn, err := zcncore.NewTransaction(txn.callBack, 0, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +59,8 @@ func NewTransactionEntity() (*Transaction, error) {
 // ExecuteSmartContract executes function of smart contract with provided address.
 //
 // Returns hash of executed transaction.
-func (t *Transaction) ExecuteSmartContract(ctx context.Context, address, funcName, input string, val int64) (string, error) {
+func (t *Transaction) ExecuteSmartContract(ctx context.Context, address, funcName, input string,
+	val uint64) (string, error) {
 	const errCode = "transaction_send"
 
 	err := t.scheme.ExecuteSmartContract(address, funcName, input, val)
@@ -86,7 +87,7 @@ type (
 		Confirmation confirmation `json:"confirmation"`
 	}
 
-	// confirmation represents the acceptance that a transaction is included into the block chain.
+	// confirmation represents the acceptance that a transaction is included into the blockchain.
 	confirmation struct {
 		Version               string          `json:"version"`
 		Hash                  string          `json:"hash"`

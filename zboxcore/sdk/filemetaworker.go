@@ -14,7 +14,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	. "github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
@@ -45,7 +45,7 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 	if req.authToken != nil {
 		authTokenBytes, err := json.Marshal(req.authToken)
 		if err != nil {
-			Logger.Error(blobber.Baseurl, " creating auth token bytes", err)
+			l.Logger.Error(blobber.Baseurl, " creating auth token bytes", err)
 			return
 		}
 		formWriter.WriteField("auth_token", string(authTokenBytes))
@@ -54,7 +54,7 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 	formWriter.Close()
 	httpreq, err := zboxutil.NewFileMetaRequest(blobber.Baseurl, req.allocationTx, body)
 	if err != nil {
-		Logger.Error("File meta info request error: ", err.Error())
+		l.Logger.Error("File meta info request error: ", err.Error())
 		return
 	}
 
@@ -62,7 +62,7 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
-			Logger.Error("GetFileMeta : ", err)
+			l.Logger.Error("GetFileMeta : ", err)
 			return err
 		}
 		defer resp.Body.Close()
@@ -70,7 +70,7 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 		if err != nil {
 			return errors.Wrap(err, "Error: Resp")
 		}
-		Logger.Info("File Meta result:", string(resp_body))
+		l.Logger.Info("File Meta result:", string(resp_body))
 		s.WriteString(string(resp_body))
 		if resp.StatusCode == http.StatusOK {
 			err = json.Unmarshal(resp_body, &fileRef)
@@ -125,7 +125,7 @@ func (req *ListRequest) getFileConsensusFromBlobbers() (zboxutil.Uint128, *filer
 		}
 	}
 	if selected == nil {
-		Logger.Error("File consensus not found for ", req.remotefilepath)
+		l.Logger.Error("File consensus not found for ", req.remotefilepath)
 		return foundMask, nil, nil
 	}
 

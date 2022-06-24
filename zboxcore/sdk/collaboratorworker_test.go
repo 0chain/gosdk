@@ -344,26 +344,10 @@ func TestCollaboratorRequest_removeCollaboratorFromBlobber(t *testing.T) {
 			},
 			setup: func(t *testing.T, testName string, p parameters) {
 				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-					mediaType, params, err := mime.ParseMediaType(req.Header.Get("Content-Type"))
-					require.NoError(t, err)
-					require.True(t, strings.HasPrefix(mediaType, "multipart/"))
-					reader := multipart.NewReader(req.Body, params["boundary"])
-
-					err = nil
-					for {
-						var part *multipart.Part
-						part, err = reader.NextPart()
-						if err != nil {
-							break
-						}
-						expected, ok := p.requestFields[part.FormName()]
-						require.True(t, ok)
-						actual, err := ioutil.ReadAll(part)
-						require.NoError(t, err)
-						require.EqualValues(t, expected, string(actual))
+					for k, v := range p.requestFields {
+						q := req.URL.Query().Get(k)
+						require.Equal(t, v, q)
 					}
-					require.Error(t, err)
-					require.EqualValues(t, "EOF", errors.Top(err))
 
 					return strings.HasPrefix(req.URL.Path, testName)
 				})).Return(&http.Response{

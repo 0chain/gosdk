@@ -1,3 +1,4 @@
+//go:build ignore
 // +build ignore
 
 package main
@@ -93,8 +94,8 @@ func main() {
 	var mnemonic string
 	flag.StringVar(&mnemonic, "mnemonic", "", "Mnemonic used for wallet creation.\nMandatory for -cmd recover")
 
-	var value int64
-	flag.Int64Var(&value, "value", 0, "Value to send")
+	var value uint64
+	flag.Uint64Var(&value, "value", 0, "Value to send")
 
 	var txnhash string
 	flag.StringVar(&txnhash, "txnhash", "", "Transaction hash to verify.\nMandatory for -cmd verify")
@@ -174,7 +175,7 @@ func main() {
 		}
 		fmt.Println("**** Mnemonic is Valid ****")
 	case "send":
-		txn, err := zcncore.NewTransaction(s, 0)
+		txn, err := zcncore.NewTransaction(s, 0, 0)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -190,7 +191,7 @@ func main() {
 		txn.Verify()
 		s.wg.Wait()
 	case "store":
-		txn, err := zcncore.NewTransaction(s, 0)
+		txn, err := zcncore.NewTransaction(s, 0, 0)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -206,7 +207,7 @@ func main() {
 		txn.Verify()
 		s.wg.Wait()
 	case "faucet":
-		txn, err := zcncore.NewTransaction(s, 0)
+		txn, err := zcncore.NewTransaction(s, 0, 0)
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -215,7 +216,7 @@ func main() {
 		faucetAddress := "faucet smart contract address"
 		methodName := "pour"
 		jsonInput := "{}"
-		value := int64(0)
+		value = 0
 		err = txn.ExecuteSmartContract(faucetAddress, methodName, jsonInput, value)
 		if err != nil {
 			fmt.Printf("execute faucet smart contract failed: %v\n", err)
@@ -233,8 +234,16 @@ func main() {
 			return
 		}
 		s.wg.Wait()
+	case "getnonce":
+		s.wg.Add(1)
+		err = zcncore.GetNonce(nil)
+		if err != nil {
+			fmt.Println("get balance failed: ", err)
+			return
+		}
+		s.wg.Wait()
 	case "verify":
-		txn, err := zcncore.NewTransaction(s, 0)
+		txn, err := zcncore.NewTransaction(s, 0, 0)
 		if err != nil {
 			fmt.Println(err)
 			return

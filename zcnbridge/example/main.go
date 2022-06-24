@@ -23,6 +23,7 @@ import (
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	"github.com/0chain/gosdk/zcnbridge/log"
 	. "github.com/0chain/gosdk/zcnbridge/log"
+	"github.com/0chain/gosdk/zcncore"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/keystore"
@@ -32,12 +33,13 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 
-	hdw "github.com/miguelmota/go-ethereum-hdwallet"
+	hdw "github.com/0chain/gosdk/zcncore/ethhdwallet"
 	"go.uber.org/zap"
 )
 
 const (
 	ConvertAmountWei = 100
+	ConvertAmountZCN = 1
 )
 
 // ? How should we manage nonce ?
@@ -558,7 +560,7 @@ func TraceRouteZCNToEthereumWith0ChainStab(b *zcnbridge.BridgeClient) {
 func TraceRouteZCNToEthereum(b *zcnbridge.BridgeClient) {
 	// --------------------- This part is executed in client in GOSDK part -------------------------------
 	// Sends {nonce,ethereum_address} payload to burn function
-	tx, err := b.BurnZCN(context.TODO(), ConvertAmountWei)
+	tx, err := b.BurnZCN(context.TODO(), zcncore.ConvertToValue(ConvertAmountZCN))
 	if err != nil {
 		fmt.Print(err)
 		return
@@ -760,7 +762,7 @@ func PrintAuthorizersList() {
 }
 
 func fromZCNtoERC(b *zcnbridge.BridgeClient) {
-	burnTrx, err := b.BurnZCN(context.TODO(), ConvertAmountWei)
+	burnTrx, err := b.BurnZCN(context.TODO(), zcncore.ConvertToValue(ConvertAmountZCN))
 	burnTrxHash := burnTrx.Hash
 	if err != nil {
 		Logger.Fatal("failed to burn in ZCN", zap.Error(err), zap.String("hash", burnTrxHash))
