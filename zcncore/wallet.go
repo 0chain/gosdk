@@ -771,11 +771,6 @@ func ConvertToToken(value int64) float64 {
 	return float64(value) / float64(TOKEN_UNIT)
 }
 
-// ConvertToValue converts ZCN tokens to value
-func ConvertToValue(token float64) uint64 {
-	return uint64(token * float64(TOKEN_UNIT))
-}
-
 func ConvertTokenToUSD(token float64) (float64, error) {
 	zcnRate, err := getTokenUSDRate()
 	if err != nil {
