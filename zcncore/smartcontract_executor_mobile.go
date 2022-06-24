@@ -11,7 +11,7 @@ type SmartContractExecutor interface {
 }
 
 func (t *Transaction) ExecuteSmartContract(address, methodName string, input string, val uint64) error {
-	err := t.createSmartContractTxn(address, methodName, json.RawMessage([]byte(input)), val)
+	err := t.createSmartContractTxn(address, methodName, json.RawMessage(input), val)
 	if err != nil {
 		return err
 	}
@@ -22,7 +22,7 @@ func (t *Transaction) ExecuteSmartContract(address, methodName string, input str
 }
 
 func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, input string, val uint64) error {
-	err := ta.t.createSmartContractTxn(address, methodName, json.RawMessage([]byte(input)), val)
+	err := ta.t.createSmartContractTxn(address, methodName, json.RawMessage(input), val)
 	if err != nil {
 		return err
 	}
