@@ -101,6 +101,18 @@ type AuthorizerConfig struct {
 	Fee int64 `json:"fee"`
 }
 
+type VestingDest struct {
+	ID     string `json:"id"`     // destination ID
+	Amount int64  `json:"amount"` // amount to vest for the destination
+}
+
+type VestingAddRequest struct {
+	Description  string         `json:"description"`  // allow empty
+	StartTime    int64          `json:"start_time"`   //
+	Duration     int64          `json:"duration"`     //
+	Destinations []*VestingDest `json:"destinations"` //
+}
+
 func parseCoinStr(vs string) (uint64, error) {
 	v, err := strconv.ParseUint(vs, 10, 64)
 	if err != nil {
@@ -465,7 +477,7 @@ func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee string) error {
 		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, b, 0)
 	if err != nil {
 		Logger.Error(err)
-		return er
+		return err
 	}
 	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
@@ -576,20 +588,26 @@ type ReqTimeout struct {
 	Milliseconds int64
 }
 
-func GetLatestFinalized(numSharders int, tm *ReqTimeout) (b *block.Header, err error) {
-	var result = make(chan *util.GetResponse, numSharders)
-	defer close(result)
-
+func makeTimeoutContext(tm *ReqTimeout) (context.Context, func()) {
 	var (
 		ctx    context.Context
 		cancel func()
 	)
 
 	if tm != nil && tm.Milliseconds > 0 {
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*tm.Milliseconds)
+		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*time.Duration(tm.Milliseconds))
 	} else {
-		ctx, cancel = context.Background()
+		ctx = context.Background()
 	}
+
+	return ctx, cancel
+}
+
+func GetLatestFinalized(numSharders int, tm *ReqTimeout) (b *block.Header, err error) {
+	var result = make(chan *util.GetResponse, numSharders)
+	defer close(result)
+
+	ctx, cancel := makeTimeoutContext(tm)
 	defer cancel()
 
 	numSharders = len(_config.chain.Sharders) // overwrite, use all
@@ -633,20 +651,11 @@ func GetLatestFinalizedMagicBlock(numSharders int, tm *ReqTimeout) (m *block.Mag
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
+	ctx, cancel := makeTimeoutContext(tm)
+	defer cancel()
+
 	numSharders = len(_config.chain.Sharders) // overwrite, use all
 	queryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED_MAGIC_BLOCK, result)
-
-	var (
-		ctx    context.Context
-		cancel func()
-	)
-
-	if tm != nil && tm.Milliseconds > 0 {
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*tm.Milliseconds)
-	} else {
-		ctx, cancel = context.Background()
-	}
-	defer cancel()
 
 	var (
 		maxConsensus   int
@@ -692,16 +701,7 @@ func GetChainStats(tm *ReqTimeout) (b *block.ChainStats, err error) {
 	var result = make(chan *util.GetResponse, 1)
 	defer close(result)
 
-	var (
-		ctx    context.Context
-		cancel func()
-	)
-
-	if tm != nil && tm.Milliseconds > 0 {
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*tm.Milliseconds)
-	} else {
-		ctx, cancel = context.Background()
-	}
+	ctx, cancel := makeTimeoutContext(tm)
 	defer cancel()
 
 	var numSharders = len(_config.chain.Sharders) // overwrite, use all
@@ -725,20 +725,76 @@ func GetChainStats(tm *ReqTimeout) (b *block.ChainStats, err error) {
 	return
 }
 
-func GetBlockByRound(numSharders int, round int64, tm *ReqTimeout) (b *block.Block, err error) {
+type Block struct {
+	Header            *block.Header `json:"-"`
+	MinerID           string        `json:"miner_id"`
+	Round             int64         `json:"round"`
+	RoundRandomSeed   int64         `json:"round_random_seed"`
+	RoundTimeoutCount int           `json:"round_timeout_count"`
+
+	Hash            string  `json:"hash"`
+	Signature       string  `json:"signature"`
+	ChainID         string  `json:"chain_id"`
+	ChainWeight     float64 `json:"chain_weight"`
+	RunningTxnCount int64   `json:"running_txn_count"`
+
+	Version      string `json:"version"`
+	CreationDate int64  `json:"creation_date"`
+
+	MagicBlockHash string `json:"magic_block_hash"`
+	PrevHash       string `json:"prev_hash"`
+
+	ClientStateHash string               `json:"state_hash"`
+	Txns            []*TransactionMobile `json:"transactions,omitempty"`
+}
+
+func toMobileBlock(b *block.Block) *Block {
+	lb := &Block{
+		Header:            b.Header,
+		MinerID:           string(b.MinerID),
+		Round:             b.Round,
+		RoundRandomSeed:   b.RoundRandomSeed,
+		RoundTimeoutCount: b.RoundTimeoutCount,
+
+		Hash:            string(b.Hash),
+		Signature:       b.Signature,
+		ChainID:         string(b.ChainID),
+		ChainWeight:     b.ChainWeight,
+		RunningTxnCount: b.RunningTxnCount,
+
+		Version:      b.Version,
+		CreationDate: int64(b.CreationDate),
+
+		MagicBlockHash: b.MagicBlockHash,
+		PrevHash:       b.PrevHash,
+
+		ClientStateHash: string(b.ClientStateHash),
+	}
+
+	lb.Txns = make([]*TransactionMobile, len(b.Txns))
+	for i, txn := range b.Txns {
+		lb.Txns[i] = &TransactionMobile{
+			Transaction:    *txn,
+			Value:          strconv.FormatUint(txn.Value, 10),
+			TransactionFee: strconv.FormatUint(txn.TransactionFee, 10),
+		}
+	}
+
+	return lb
+}
+
+//Transaction entity that encapsulates the transaction related data and meta data
+type TransactionMobile struct {
+	transaction.Transaction
+	Value          string `json:"transaction_value"`
+	TransactionFee string `json:"transaction_fee"`
+}
+
+func GetBlockByRound(numSharders int, round int64, tm *ReqTimeout) (b *Block, err error) {
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
-	var (
-		ctx    context.Context
-		cancel func()
-	)
-
-	if tm != nil && tm.Milliseconds > 0 {
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*tm.Milliseconds)
-	} else {
-		ctx, cancel = context.Background()
-	}
+	ctx, cancel := makeTimeoutContext(tm)
 	defer cancel()
 
 	numSharders = len(_config.chain.Sharders) // overwrite, use all
@@ -788,7 +844,7 @@ func GetBlockByRound(numSharders int, round int64, tm *ReqTimeout) (b *block.Blo
 			continue
 		}
 
-		b = respo.Block
+		b = toMobileBlock(respo.Block)
 		b.Header = respo.Header
 
 		var h = encryption.FastHash([]byte(b.Hash))
@@ -808,16 +864,7 @@ func GetMagicBlockByNumber(numSharders int, number int64, tm *ReqTimeout) (m *bl
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
-	var (
-		ctx    context.Context
-		cancel func()
-	)
-
-	if tm != nil && tm.Milliseconds > 0 {
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*tm.Milliseconds)
-	} else {
-		ctx, cancel = context.Background()
-	}
+	ctx, cancel := makeTimeoutContext(tm)
 	defer cancel()
 
 	numSharders = len(_config.chain.Sharders) // overwrite, use all
