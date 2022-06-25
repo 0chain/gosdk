@@ -4,11 +4,18 @@
 package zcncore
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/block"
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
+	"github.com/0chain/gosdk/core/util"
 )
 
 type TransactionCommon interface {
@@ -35,6 +42,62 @@ type TransactionCommon interface {
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock uint64, fee uint64) error
 	WritePoolLock(allocID string, blobberID string, duration int64, lock uint64, fee uint64) error
 	WritePoolUnlock(poolID string, fee uint64) error
+}
+
+// PriceRange represents a price range allowed by user to filter blobbers.
+type PriceRange struct {
+	Min common.Balance `json:"min"`
+	Max common.Balance `json:"max"`
+}
+
+// CreateAllocationRequest is information to create allocation.
+type CreateAllocationRequest struct {
+	DataShards      int              `json:"data_shards"`
+	ParityShards    int              `json:"parity_shards"`
+	Size            common.Size      `json:"size"`
+	Expiration      common.Timestamp `json:"expiration_date"`
+	Owner           string           `json:"owner_id"`
+	OwnerPublicKey  string           `json:"owner_public_key"`
+	Blobbers        []string         `json:"blobbers"`
+	ReadPriceRange  PriceRange       `json:"read_price_range"`
+	WritePriceRange PriceRange       `json:"write_price_range"`
+}
+
+type StakePoolSettings struct {
+	DelegateWallet string         `json:"delegate_wallet"`
+	MinStake       common.Balance `json:"min_stake"`
+	MaxStake       common.Balance `json:"max_stake"`
+	NumDelegates   int            `json:"num_delegates"`
+	ServiceCharge  float64        `json:"service_charge"`
+}
+
+type Terms struct {
+	ReadPrice        common.Balance `json:"read_price"`  // tokens / GB
+	WritePrice       common.Balance `json:"write_price"` // tokens / GB
+	MinLockDemand    float64        `json:"min_lock_demand"`
+	MaxOfferDuration time.Duration  `json:"max_offer_duration"`
+}
+
+type Blobber struct {
+	ID                common.Key        `json:"id"`
+	BaseURL           string            `json:"url"`
+	Terms             Terms             `json:"terms"`
+	Capacity          common.Size       `json:"capacity"`
+	Allocated         common.Size       `json:"allocated"`
+	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
+	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
+}
+
+type AuthorizerStakePoolSettings struct {
+	DelegateWallet string         `json:"delegate_wallet"`
+	MinStake       common.Balance `json:"min_stake"`
+	MaxStake       common.Balance `json:"max_stake"`
+	NumDelegates   int            `json:"num_delegates"`
+	ServiceCharge  float64        `json:"service_charge"`
+}
+
+type AuthorizerConfig struct {
+	Fee common.Balance `json:"fee"`
 }
 
 // NewTransaction allocation new generic transaction object for any operation
@@ -105,6 +168,18 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val uint64, desc 
 		t.setNonceAndSubmit()
 	}()
 	return nil
+}
+
+type VestingDest struct {
+	ID     string         `json:"id"`     // destination ID
+	Amount common.Balance `json:"amount"` // amount to vest for the destination
+}
+
+type VestingAddRequest struct {
+	Description  string         `json:"description"`  // allow empty
+	StartTime    int64          `json:"start_time"`   //
+	Duration     time.Duration  `json:"duration"`     //
+	Destinations []*VestingDest `json:"destinations"` //
 }
 
 func (t *Transaction) VestingAdd(ar *VestingAddRequest, value uint64) (
@@ -386,4 +461,235 @@ func (t *Transaction) WritePoolUnlock(poolID string, fee uint64) (
 // ConvertToValue converts ZCN tokens to value
 func ConvertToValue(token float64) uint64 {
 	return uint64(token * float64(TOKEN_UNIT))
+}
+
+func GetLatestFinalized(ctx context.Context, numSharders int) (b *block.Header, err error) {
+	var result = make(chan *util.GetResponse, numSharders)
+	defer close(result)
+
+	numSharders = len(_config.chain.Sharders) // overwrite, use all
+	queryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED, result)
+
+	var (
+		maxConsensus   int
+		roundConsensus = make(map[string]int)
+	)
+
+	for i := 0; i < numSharders; i++ {
+		var rsp = <-result
+
+		Logger.Debug(rsp.Url, rsp.Status)
+
+		if rsp.StatusCode != http.StatusOK {
+			Logger.Error(rsp.Body)
+			continue
+		}
+
+		if err = json.Unmarshal([]byte(rsp.Body), &b); err != nil {
+			Logger.Error("block parse error: ", err)
+			err = nil
+			continue
+		}
+
+		var h = encryption.FastHash([]byte(b.Hash))
+		if roundConsensus[h]++; roundConsensus[h] > maxConsensus {
+			maxConsensus = roundConsensus[h]
+		}
+	}
+
+	if maxConsensus == 0 {
+		return nil, errors.New("", "block info not found")
+	}
+
+	return
+}
+
+func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *block.MagicBlock, err error) {
+	var result = make(chan *util.GetResponse, numSharders)
+	defer close(result)
+
+	numSharders = len(_config.chain.Sharders) // overwrite, use all
+	queryFromShardersContext(ctx, numSharders, GET_LATEST_FINALIZED_MAGIC_BLOCK, result)
+
+	var (
+		maxConsensus   int
+		roundConsensus = make(map[string]int)
+	)
+
+	type respObj struct {
+		MagicBlock *block.MagicBlock `json:"magic_block"`
+	}
+
+	for i := 0; i < numSharders; i++ {
+		var rsp = <-result
+
+		Logger.Debug(rsp.Url, rsp.Status)
+
+		if rsp.StatusCode != http.StatusOK {
+			Logger.Error(rsp.Body)
+			continue
+		}
+
+		var respo respObj
+		if err = json.Unmarshal([]byte(rsp.Body), &respo); err != nil {
+			Logger.Error(" magic block parse error: ", err)
+			err = nil
+			continue
+		}
+
+		m = respo.MagicBlock
+		var h = encryption.FastHash([]byte(respo.MagicBlock.Hash))
+		if roundConsensus[h]++; roundConsensus[h] > maxConsensus {
+			maxConsensus = roundConsensus[h]
+		}
+	}
+
+	if maxConsensus == 0 {
+		return nil, errors.New("", "magic block info not found")
+	}
+
+	return
+}
+
+func GetChainStats(ctx context.Context) (b *block.ChainStats, err error) {
+	var result = make(chan *util.GetResponse, 1)
+	defer close(result)
+
+	var numSharders = len(_config.chain.Sharders) // overwrite, use all
+	queryFromShardersContext(ctx, numSharders, GET_CHAIN_STATS, result)
+	var rsp *util.GetResponse
+	for i := 0; i < numSharders; i++ {
+		var x = <-result
+		if x.StatusCode != http.StatusOK {
+			continue
+		}
+		rsp = x
+	}
+
+	if rsp == nil {
+		return nil, errors.New("http_request_failed", "Request failed with status not 200")
+	}
+
+	if err = json.Unmarshal([]byte(rsp.Body), &b); err != nil {
+		return nil, err
+	}
+	return
+}
+
+func GetBlockByRound(ctx context.Context, numSharders int, round int64) (b *block.Block, err error) {
+
+	var result = make(chan *util.GetResponse, numSharders)
+	defer close(result)
+
+	numSharders = len(_config.chain.Sharders) // overwrite, use all
+	queryFromShardersContext(ctx, numSharders,
+		fmt.Sprintf("%sround=%d&content=full,header", GET_BLOCK_INFO, round),
+		result)
+
+	var (
+		maxConsensus   int
+		roundConsensus = make(map[string]int)
+	)
+
+	type respObj struct {
+		Block  *block.Block  `json:"block"`
+		Header *block.Header `json:"header"`
+	}
+
+	for i := 0; i < numSharders; i++ {
+		var rsp = <-result
+
+		Logger.Debug(rsp.Url, rsp.Status)
+
+		if rsp.StatusCode != http.StatusOK {
+			Logger.Error(rsp.Body)
+			continue
+		}
+
+		var respo respObj
+		if err = json.Unmarshal([]byte(rsp.Body), &respo); err != nil {
+			Logger.Error("block parse error: ", err)
+			err = nil
+			continue
+		}
+
+		if respo.Block == nil {
+			Logger.Debug(rsp.Url, "no block in response:", rsp.Body)
+			continue
+		}
+
+		if respo.Header == nil {
+			Logger.Debug(rsp.Url, "no block header in response:", rsp.Body)
+			continue
+		}
+
+		if respo.Header.Hash != string(respo.Block.Hash) {
+			Logger.Debug(rsp.Url, "header and block hash mismatch:", rsp.Body)
+			continue
+		}
+
+		b = respo.Block
+		b.Header = respo.Header
+
+		var h = encryption.FastHash([]byte(b.Hash))
+		if roundConsensus[h]++; roundConsensus[h] > maxConsensus {
+			maxConsensus = roundConsensus[h]
+		}
+	}
+
+	if maxConsensus == 0 {
+		return nil, errors.New("", "round info not found")
+	}
+
+	return
+}
+
+func GetMagicBlockByNumber(ctx context.Context, numSharders int, number int64) (m *block.MagicBlock, err error) {
+
+	var result = make(chan *util.GetResponse, numSharders)
+	defer close(result)
+
+	numSharders = len(_config.chain.Sharders) // overwrite, use all
+	queryFromShardersContext(ctx, numSharders,
+		fmt.Sprintf("%smagic_block_number=%d", GET_MAGIC_BLOCK_INFO, number),
+		result)
+
+	var (
+		maxConsensus   int
+		roundConsensus = make(map[string]int)
+	)
+
+	type respObj struct {
+		MagicBlock *block.MagicBlock `json:"magic_block"`
+	}
+
+	for i := 0; i < numSharders; i++ {
+		var rsp = <-result
+
+		Logger.Debug(rsp.Url, rsp.Status)
+
+		if rsp.StatusCode != http.StatusOK {
+			Logger.Error(rsp.Body)
+			continue
+		}
+
+		var respo respObj
+		if err = json.Unmarshal([]byte(rsp.Body), &respo); err != nil {
+			Logger.Error(" magic block parse error: ", err)
+			err = nil
+			continue
+		}
+
+		m = respo.MagicBlock
+		var h = encryption.FastHash([]byte(respo.MagicBlock.Hash))
+		if roundConsensus[h]++; roundConsensus[h] > maxConsensus {
+			maxConsensus = roundConsensus[h]
+		}
+	}
+
+	if maxConsensus == 0 {
+		return nil, errors.New("", "magic block info not found")
+	}
+
+	return
 }
