@@ -28,7 +28,7 @@ const StarredRegistryFilePath = `/.starred`
 
 // StarredFiles defines the contents of starred registry file.
 type StarredFiles struct {
-	UpdatedAt common.Timestamp `json:"-"`
+	UpdatedAt common.Timestamp `json:"-"` // on read of `.starred`, will be populated with `updated_at`, on write the value is ignored
 	Files     []StarredFile    `json:"files"`
 }
 
