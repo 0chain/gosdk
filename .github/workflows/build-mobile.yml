@@ -30,13 +30,7 @@ jobs:
         with:
           go-version: ^1.18
 
-      - name: Replace go.mod
-        run: |
-          sed -i -e 's/\/\/replace github.com\/herumi\/bls-go-binary/replace github.com\/herumi\/bls-go-binary/g' go.mod
-          go mod tidy
-
-
-      - name: Install Gomobile
+      - name: Install GoMobile
         run: |
           go install golang.org/x/mobile/cmd/gomobile@latest
           go install golang.org/x/mobile/cmd/gobind@latest
@@ -44,11 +38,18 @@ jobs:
         env:
           GO111MODULE: "on"
 
-      - name: Build zcncore
-        run: make build-ios
+      - name: Setup GoMobile
+        run:  make setup-gomobile
+
+      - name: Build iOS
+        run: |
+          make build-ios
+          make build-iossimulator
 
       - name: Compress
-        run: tar -czvf zcncore-ios.tar.gz out/iossdk/zcncore.xcframework
+        run: |
+          tar -czvf zcncore-ios.tar.gz out/iossdk/ios/zcncore.xcframework
+          tar -czvf zcncore-iossimulator.tar.gz out/iossdk/simulator/zcncore.xcframework
 
       - name: Setup Build
         id: setup_build
@@ -66,7 +67,7 @@ jobs:
             echo "::set-output name=TAG::${tag}"
           fi
 
-      - name: Upload binaries to release
+      - name: Upload zcncore-ios to release
         if:  steps.setup_build.outputs.RELEASE == 'true'
         uses: svenstaro/upload-release-action@v2
         with:
@@ -76,11 +77,23 @@ jobs:
           overwrite: true
           file_glob: true
 
+      - name: Upload zcncore-iossimulator to release
+        if:  steps.setup_build.outputs.RELEASE == 'true'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: zcncore-iossimulator.tar.gz
+          tag: ${{ steps.vars.outputs.TAG }}
+          overwrite: true
+          file_glob: true
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: zcncore-ios
-          path: zcncore-ios.tar.gz
+          path: |
+            zcncore-ios.tar.gz
+            zcncore-iossimulator.tar.gz
 
   build-android:
     name: Build-android
@@ -94,11 +107,6 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: ^1.18
-
-      - name: Replace go.mod
-        run: |
-          sed -i -e 's/\/\/replace github.com\/herumi\/bls-go-binary/replace github.com\/herumi\/bls-go-binary/g' go.mod
-          go mod tidy
 
       - name: Install Java
         uses: actions/setup-java@v3
@@ -119,7 +127,7 @@ jobs:
           ndk-version: r21d
 
 
-      - name: Install Gomobile
+      - name: Install GoMobile
         run: |
           go install golang.org/x/mobile/cmd/gomobile@latest
           go install golang.org/x/mobile/cmd/gobind@latest
@@ -127,7 +135,11 @@ jobs:
         env:
           GO111MODULE: "on"
 
-      - name: Build zcncore
+      - name: Setup GoMobile
+        run:  make setup-gomobile
+
+
+      - name: Build Android
         run: make build-android
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
