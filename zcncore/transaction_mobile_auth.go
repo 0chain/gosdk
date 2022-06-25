@@ -51,8 +51,7 @@ func (ta *TransactionWithAuth) Send(toClientID string, val string, desc string) 
 	return nil
 }
 
-func (ta *TransactionWithAuth) VestingAdd(ar *VestingAddRequest,
-	value string) (err error) {
+func (ta *TransactionWithAuth) VestingAdd(ar *VestingAddRequest, value string) error {
 	v, err := parseCoinStr(value)
 	if err != nil {
 		return err
@@ -62,13 +61,13 @@ func (ta *TransactionWithAuth) VestingAdd(ar *VestingAddRequest,
 		transaction.VESTING_ADD, ar, v)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	go func() { ta.submitTxn() }()
-	return
+	return nil
 }
 
-func (ta *TransactionWithAuth) MinerSCLock(minerID string, lock string) (err error) {
+func (ta *TransactionWithAuth) MinerSCLock(minerID string, lock string) error {
 	v, err := parseCoinStr(lock)
 	if err != nil {
 		return err
@@ -81,15 +80,14 @@ func (ta *TransactionWithAuth) MinerSCLock(minerID string, lock string) (err err
 		transaction.MINERSC_LOCK, &mscl, v)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	go func() { ta.submitTxn() }()
-	return
+	return nil
 }
 
 // FinalizeAllocation transaction.
-func (ta *TransactionWithAuth) FinalizeAllocation(allocID string, fee string) (
-	err error) {
+func (ta *TransactionWithAuth) FinalizeAllocation(allocID string, fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
@@ -104,16 +102,15 @@ func (ta *TransactionWithAuth) FinalizeAllocation(allocID string, fee string) (
 		}, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	ta.t.setTransactionFee(v)
 	go func() { ta.submitTxn() }()
-	return
+	return nil
 }
 
 // CancelAllocation transaction.
-func (ta *TransactionWithAuth) CancelAllocation(allocID string, fee string) (
-	err error) {
+func (ta *TransactionWithAuth) CancelAllocation(allocID string, fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
@@ -128,16 +125,16 @@ func (ta *TransactionWithAuth) CancelAllocation(allocID string, fee string) (
 		}, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	ta.t.setTransactionFee(v)
 	go func() { ta.submitTxn() }()
-	return
+	return nil
 }
 
 // CreateAllocation transaction.
 func (ta *TransactionWithAuth) CreateAllocation(car *CreateAllocationRequest,
-	lock, fee string) (err error) {
+	lock, fee string) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
@@ -152,15 +149,15 @@ func (ta *TransactionWithAuth) CreateAllocation(car *CreateAllocationRequest,
 		transaction.STORAGESC_CREATE_ALLOCATION, car, lv)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	ta.t.setTransactionFee(fv)
 	go func() { ta.submitTxn() }()
-	return
+	return nil
 }
 
 // CreateReadPool for current user.
-func (ta *TransactionWithAuth) CreateReadPool(fee string) (err error) {
+func (ta *TransactionWithAuth) CreateReadPool(fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
@@ -170,18 +167,18 @@ func (ta *TransactionWithAuth) CreateReadPool(fee string) (err error) {
 		transaction.STORAGESC_CREATE_READ_POOL, nil, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	ta.t.setTransactionFee(v)
 	go func() { ta.submitTxn() }()
-	return
+	return nil
 }
 
 // ReadPoolLock locks tokens for current user and given allocation, using given
 // duration. If blobberID is not empty, then tokens will be locked for given
 // allocation->blobber only.
 func (ta *TransactionWithAuth) ReadPoolLock(allocID, blobberID string,
-	duration int64, lock, fee string) (err error) {
+	duration int64, lock, fee string) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
@@ -207,16 +204,15 @@ func (ta *TransactionWithAuth) ReadPoolLock(allocID, blobberID string,
 		transaction.STORAGESC_READ_POOL_LOCK, &lr, lv)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	ta.t.setTransactionFee(fv)
 	go func() { ta.submitTxn() }()
-	return
+	return nil
 }
 
 // ReadPoolUnlock for current user and given pool.
-func (ta *TransactionWithAuth) ReadPoolUnlock(poolID string, fee string) (
-	err error) {
+func (ta *TransactionWithAuth) ReadPoolUnlock(poolID string, fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
@@ -231,16 +227,16 @@ func (ta *TransactionWithAuth) ReadPoolUnlock(poolID string, fee string) (
 		}, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	ta.t.setTransactionFee(v)
 	go func() { ta.submitTxn() }()
-	return
+	return nil
 }
 
 // StakePoolLock used to lock tokens in a stake pool of a blobber.
 func (ta *TransactionWithAuth) StakePoolLock(blobberID string,
-	lock, fee string) (err error) {
+	lock, fee string) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
@@ -262,16 +258,16 @@ func (ta *TransactionWithAuth) StakePoolLock(blobberID string,
 		transaction.STORAGESC_STAKE_POOL_LOCK, &spr, lv)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	ta.t.setTransactionFee(fv)
 	go func() { ta.submitTxn() }()
-	return
+	return nil
 }
 
 // StakePoolUnlock by blobberID and poolID.
 func (ta *TransactionWithAuth) StakePoolUnlock(blobberID, poolID string,
-	fee string) (err error) {
+	fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
@@ -290,16 +286,15 @@ func (ta *TransactionWithAuth) StakePoolUnlock(blobberID, poolID string,
 		transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	ta.t.setTransactionFee(v)
 	go func() { ta.submitTxn() }()
-	return
+	return nil
 }
 
 // UpdateBlobberSettings update settings of a blobber.
-func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber, fee string) (
-	err error) {
+func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber, fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
@@ -309,16 +304,16 @@ func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber, fee string) 
 		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, blob, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	ta.t.setTransactionFee(v)
 	go func() { ta.submitTxn() }()
-	return
+	return nil
 }
 
 // UpdateAllocation transaction.
 func (ta *TransactionWithAuth) UpdateAllocation(allocID string, sizeDiff int64,
-	expirationDiff int64, lock, fee string) (err error) {
+	expirationDiff int64, lock, fee string) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
@@ -344,18 +339,18 @@ func (ta *TransactionWithAuth) UpdateAllocation(allocID string, sizeDiff int64,
 		transaction.STORAGESC_UPDATE_ALLOCATION, &uar, lv)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	ta.t.setTransactionFee(fv)
 	go func() { ta.submitTxn() }()
-	return
+	return nil
 }
 
 // WritePoolLock locks tokens for current user and given allocation, using given
 // duration. If blobberID is not empty, then tokens will be locked for given
 // allocation->blobber only.
 func (ta *TransactionWithAuth) WritePoolLock(allocID, blobberID string,
-	duration int64, lock, fee string) (err error) {
+	duration int64, lock, fee string) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
@@ -381,16 +376,15 @@ func (ta *TransactionWithAuth) WritePoolLock(allocID, blobberID string,
 		transaction.STORAGESC_WRITE_POOL_LOCK, &lr, lv)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	ta.t.setTransactionFee(fv)
 	go func() { ta.submitTxn() }()
-	return
+	return nil
 }
 
 // WritePoolUnlock for current user and given pool.
-func (ta *TransactionWithAuth) WritePoolUnlock(poolID string, fee string) (
-	err error) {
+func (ta *TransactionWithAuth) WritePoolUnlock(poolID string, fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
@@ -405,9 +399,9 @@ func (ta *TransactionWithAuth) WritePoolUnlock(poolID string, fee string) (
 		}, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	ta.t.setTransactionFee(v)
 	go func() { ta.submitTxn() }()
-	return
+	return nil
 }

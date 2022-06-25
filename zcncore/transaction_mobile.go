@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/transaction"
 )
 
 type TransactionCommon interface {
@@ -213,8 +212,7 @@ func (t *Transaction) FinalizeAllocation(allocID string, fee string) (
 }
 
 // CancelAllocation transaction.
-func (t *Transaction) CancelAllocation(allocID string, fee string) (
-	err error) {
+func (t *Transaction) CancelAllocation(allocID string, fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
@@ -229,16 +227,16 @@ func (t *Transaction) CancelAllocation(allocID string, fee string) (
 		}, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return nil
 }
 
 // CreateAllocation transaction.
 func (t *Transaction) CreateAllocation(car *CreateAllocationRequest,
-	lock, fee string) (err error) {
+	lock, fee string) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
@@ -253,15 +251,15 @@ func (t *Transaction) CreateAllocation(car *CreateAllocationRequest,
 		transaction.STORAGESC_CREATE_ALLOCATION, car, lv)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return nil
 }
 
 // CreateReadPool for current user.
-func (t *Transaction) CreateReadPool(fee string) (err error) {
+func (t *Transaction) CreateReadPool(fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
@@ -271,18 +269,18 @@ func (t *Transaction) CreateReadPool(fee string) (err error) {
 		transaction.STORAGESC_CREATE_READ_POOL, nil, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return nil
 }
 
 // ReadPoolLock locks tokens for current user and given allocation, using given
 // duration. If blobberID is not empty, then tokens will be locked for given
 // allocation->blobber only.
 func (t *Transaction) ReadPoolLock(allocID, blobberID string,
-	duration int64, lock, fee string) (err error) {
+	duration int64, lock, fee string) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
@@ -308,15 +306,15 @@ func (t *Transaction) ReadPoolLock(allocID, blobberID string,
 		transaction.STORAGESC_READ_POOL_LOCK, &lr, lv)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return nil
 }
 
 // ReadPoolUnlock for current user and given pool.
-func (t *Transaction) ReadPoolUnlock(poolID string, fee string) (err error) {
+func (t *Transaction) ReadPoolUnlock(poolID string, fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
@@ -331,16 +329,15 @@ func (t *Transaction) ReadPoolUnlock(poolID string, fee string) (err error) {
 		}, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return nil
 }
 
 // StakePoolLock used to lock tokens in a stake pool of a blobber.
-func (t *Transaction) StakePoolLock(blobberID string, lock, fee string) (
-	err error) {
+func (t *Transaction) StakePoolLock(blobberID string, lock, fee string) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
@@ -362,16 +359,15 @@ func (t *Transaction) StakePoolLock(blobberID string, lock, fee string) (
 		transaction.STORAGESC_STAKE_POOL_LOCK, &spr, lv)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return nil
 }
 
 // StakePoolUnlock by blobberID and poolID.
-func (t *Transaction) StakePoolUnlock(blobberID, poolID string,
-	fee string) (err error) {
+func (t *Transaction) StakePoolUnlock(blobberID, poolID string, fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
@@ -389,15 +385,15 @@ func (t *Transaction) StakePoolUnlock(blobberID, poolID string,
 	err = t.createSmartContractTxn(StorageSmartContractAddress, transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return nil
 }
 
 // UpdateBlobberSettings update settings of a blobber.
-func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee string) (err error) {
+func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
@@ -407,16 +403,16 @@ func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee string) (err error) 
 		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, b, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return er
 	}
 	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return nil
 }
 
 // UpdateAllocation transaction.
 func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
-	expirationDiff int64, lock, fee string) (err error) {
+	expirationDiff int64, lock, fee string) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
@@ -442,18 +438,18 @@ func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
 		transaction.STORAGESC_UPDATE_ALLOCATION, &uar, lv)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return nil
 }
 
 // WritePoolLock locks tokens for current user and given allocation, using given
 // duration. If blobberID is not empty, then tokens will be locked for given
 // allocation->blobber only.
 func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64,
-	lock, fee string) (err error) {
+	lock, fee string) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
@@ -479,16 +475,15 @@ func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64,
 		transaction.STORAGESC_WRITE_POOL_LOCK, &lr, lv)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return nil
 }
 
 // WritePoolUnlock for current user and given pool.
-func (t *Transaction) WritePoolUnlock(poolID string, fee string) (
-	err error) {
+func (t *Transaction) WritePoolUnlock(poolID string, fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
@@ -503,11 +498,11 @@ func (t *Transaction) WritePoolUnlock(poolID string, fee string) (
 		}, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return nil
 }
 
 // ConvertToValue converts ZCN tokens to value
