@@ -2,11 +2,9 @@ package zcncore
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"math/rand"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -177,132 +175,4 @@ func (tq *TransactionQuery) randOne(ctx context.Context) (string, error) {
 
 		return host, nil
 	}
-}
-
-func (tq *TransactionQuery) getConsensusConfirmation(ctx context.Context, numSharders int, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
-	maxConfirmation := int(0)
-	txnConfirmations := make(map[string]int)
-	var confirmationBlockHeader *blockHeader
-	var confirmationBlock map[string]json.RawMessage
-	var lfbBlockHeader *blockHeader
-	maxLfbBlockHeader := int(0)
-	lfbBlockHeaders := make(map[string]int)
-
-	// {host}/v1/transaction/get/confirmation?hash={txnHash}&content=lfb
-	err := tq.FromAll(ctx,
-		tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"),
-		func(qr QueryResult) bool {
-			if qr.StatusCode != http.StatusOK {
-				return false
-			}
-
-			var cfmBlock map[string]json.RawMessage
-			err := json.Unmarshal([]byte(qr.Content), &cfmBlock)
-			if err != nil {
-				Logger.Error("txn confirmation parse error", err)
-				return false
-			}
-
-			// parse `confirmation` section as block header
-			cfmBlockHeader, err := getBlockHeaderFromTransactionConfirmation(txnHash, cfmBlock)
-			if err != nil {
-				Logger.Error("txn confirmation parse header error", err)
-
-				// parse `latest_finalized_block` section
-				if lfbRaw, ok := cfmBlock["latest_finalized_block"]; ok {
-					var lfb blockHeader
-					err := json.Unmarshal([]byte(lfbRaw), &lfb)
-					if err != nil {
-						Logger.Error("round info parse error.", err)
-						return false
-					}
-
-					lfbBlockHeaders[lfb.Hash]++
-					if lfbBlockHeaders[lfb.Hash] > maxLfbBlockHeader {
-						maxLfbBlockHeader = lfbBlockHeaders[lfb.Hash]
-						lfbBlockHeader = &lfb
-					}
-				}
-
-				return false
-			}
-
-			txnConfirmations[cfmBlockHeader.Hash]++
-			if txnConfirmations[cfmBlockHeader.Hash] > maxConfirmation {
-				maxConfirmation = txnConfirmations[cfmBlockHeader.Hash]
-
-				if maxConfirmation >= numSharders {
-					confirmationBlockHeader = cfmBlockHeader
-					confirmationBlock = cfmBlock
-
-					// it is consensus by enough sharders, and latest_finalized_block is valid
-					// return true to cancel other requests
-					return true
-				}
-			}
-
-			return false
-
-		})
-
-	if err != nil {
-		return nil, nil, lfbBlockHeader, err
-	}
-
-	if maxConfirmation == 0 {
-		return nil, nil, lfbBlockHeader, errors.New("zcn: transaction not found")
-	}
-
-	if maxConfirmation < numSharders {
-		return nil, nil, lfbBlockHeader, ErrInvalidConsensus
-	}
-
-	return confirmationBlockHeader, confirmationBlock, lfbBlockHeader, nil
-}
-
-// getFastConfirmation get txn confirmation from a random online sharder
-func (tq *TransactionQuery) getFastConfirmation(ctx context.Context, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
-	var confirmationBlockHeader *blockHeader
-	var confirmationBlock map[string]json.RawMessage
-	var lfbBlockHeader blockHeader
-
-	// {host}/v1/transaction/get/confirmation?hash={txnHash}&content=lfb
-	result, err := tq.FromAny(ctx, tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"))
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	if result.StatusCode == http.StatusOK {
-
-		err = json.Unmarshal(result.Content, &confirmationBlock)
-		if err != nil {
-			Logger.Error("txn confirmation parse error", err)
-			return nil, nil, nil, err
-		}
-
-		// parse `confirmation` section as block header
-		confirmationBlockHeader, err = getBlockHeaderFromTransactionConfirmation(txnHash, confirmationBlock)
-		if err == nil {
-			return confirmationBlockHeader, confirmationBlock, nil, nil
-		}
-
-		Logger.Error("txn confirmation parse header error", err)
-
-		// parse `latest_finalized_block` section
-		lfbRaw, ok := confirmationBlock["latest_finalized_block"]
-		if !ok {
-			return confirmationBlockHeader, confirmationBlock, nil, err
-		}
-
-		err = json.Unmarshal([]byte(lfbRaw), &lfbBlockHeader)
-		if err == nil {
-			return confirmationBlockHeader, confirmationBlock, &lfbBlockHeader, ErrTransactionNotConfirmed
-		}
-
-		Logger.Error("round info parse error.", err)
-		return nil, nil, nil, err
-
-	}
-
-	return nil, nil, nil, thrown.Throw(ErrTransactionNotFound, strconv.Itoa(result.StatusCode))
 }

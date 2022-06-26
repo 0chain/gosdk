@@ -18,7 +18,6 @@ import (
 	"github.com/0chain/gosdk/core/transaction"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
@@ -117,14 +116,6 @@ const (
 
 var defaultLogLevel = logger.DEBUG
 var Logger logger.Logger
-
-type ConfirmationStatus int
-
-const (
-	Undefined ConfirmationStatus = iota
-	Success
-	ChargeableError
-)
 
 const TOKEN_UNIT int64 = 1e10
 
@@ -789,25 +780,6 @@ func GetIdForUrl(url string) string {
 // vesting pool
 //
 
-type VestingDestInfo struct {
-	ID     common.Key       `json:"id"`     // identifier
-	Wanted common.Balance   `json:"wanted"` // wanted amount for entire period
-	Earned common.Balance   `json:"earned"` // can unlock
-	Vested common.Balance   `json:"vested"` // already vested
-	Last   common.Timestamp `json:"last"`   // last time unlocked
-}
-
-type VestingPoolInfo struct {
-	ID           common.Key         `json:"pool_id"`      // pool ID
-	Balance      common.Balance     `json:"balance"`      // real pool balance
-	Left         common.Balance     `json:"left"`         // owner can unlock
-	Description  string             `json:"description"`  // description
-	StartTime    common.Timestamp   `json:"start_time"`   // from
-	ExpireAt     common.Timestamp   `json:"expire_at"`    // until
-	Destinations []*VestingDestInfo `json:"destinations"` // receivers
-	ClientID     common.Key         `json:"client_id"`    // owner
-}
-
 type Params map[string]string
 
 func (p Params) Query() string {
@@ -823,51 +795,6 @@ func (p Params) Query() string {
 
 func WithParams(uri string, params Params) string {
 	return uri + params.Query()
-}
-
-func GetVestingPoolInfo(poolID string, cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
-		return
-	}
-	getInfoFromSharders(WithParams(GET_VESTING_POOL_INFO, Params{
-		"pool_id": poolID,
-	}), 0, cb)
-	return
-}
-
-type VestingClientList struct {
-	Pools []common.Key `json:"pools"`
-}
-
-func GetVestingClientList(clientID string, cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
-		return
-	}
-	if clientID == "" {
-		clientID = _config.wallet.ClientID // if not blank
-	}
-	go getInfoFromSharders(WithParams(GET_VESTING_CLIENT_POOLS, Params{
-		"client_id": clientID,
-	}), 0, cb)
-	return
-}
-
-func GetVestingSCConfig(cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
-		return
-	}
-	go getInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
-	return
-}
-
-// faucet
-
-func GetFaucetSCConfig(cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
-		return
-	}
-	go getInfoFromSharders(GET_FAUCETSC_CONFIG, 0, cb)
-	return
 }
 
 //

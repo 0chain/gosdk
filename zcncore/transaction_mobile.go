@@ -14,7 +14,9 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/block"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/transaction"
@@ -877,6 +879,107 @@ func (t *Transaction) MinerSCDeleteSharder(info MinerSCMinerInfo) (err error) {
 	return
 }
 
+func (t *Transaction) Verify() error {
+	if t.txnHash == "" && t.txnStatus == StatusUnknown {
+		return errors.New("", "invalid transaction. cannot be verified.")
+	}
+	if t.txnHash == "" && t.txnStatus == StatusSuccess {
+		h := t.GetTransactionHash()
+		if h == "" {
+			transaction.Cache.Evict(t.txn.ClientID)
+			return errors.New("", "invalid transaction. cannot be verified.")
+		}
+	}
+	// If transaction is verify only start from current time
+	if t.txn.CreationDate == 0 {
+		t.txn.CreationDate = int64(common.Now())
+	}
+
+	tq, err := NewTransactionQuery(_config.chain.Sharders)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+
+	go func() {
+
+		for {
+
+			tq.Reset()
+			// Get transaction confirmationBlock from a random sharder
+			confirmBlockHeader, confirmationBlock, lfbBlockHeader, err := tq.getFastConfirmation(context.TODO(), t.txnHash)
+
+			if err != nil {
+				now := int64(common.Now())
+
+				// maybe it is a network or server error
+				if lfbBlockHeader == nil {
+					Logger.Info(err, " now: ", now)
+				} else {
+					Logger.Info(err, " now: ", now, ", LFB creation time:", lfbBlockHeader.CreationDate)
+				}
+
+				// transaction is done or expired. it means random sharder might be outdated, try to query it from s/S sharders to confirm it
+				if util.MaxInt64(lfbBlockHeader.getCreationDate(now), now) >= (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
+					Logger.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders")
+					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.getConsensusConfirmation(getMinShardersVerify(), t.txnHash, nil)
+				}
+
+				// txn not found in fast confirmation/consensus confirmation
+				if err != nil {
+
+					if lfbBlockHeader == nil {
+						// no any valid lfb on all sharders. maybe they are network/server errors. try it again
+						continue
+					}
+
+					// it is expired
+					if t.isTransactionExpired(lfbBlockHeader.getCreationDate(now), now) {
+						t.completeVerify(StatusError, "", errors.New("", `{"error": "verify transaction failed"}`))
+						return
+					}
+					continue
+				}
+
+			}
+
+			valid := validateChain(confirmBlockHeader)
+			if valid {
+				output, err := json.Marshal(confirmationBlock)
+				if err != nil {
+					t.completeVerify(StatusError, "", errors.New("", `{"error": "transaction confirmation json marshal error"`))
+					return
+				}
+				confJson := confirmationBlock["confirmation"]
+
+				var conf map[string]json.RawMessage
+				if err := json.Unmarshal(confJson, &conf); err != nil {
+					return
+				}
+				txnJson := conf["txn"]
+
+				var tr map[string]json.RawMessage
+				if err := json.Unmarshal(txnJson, &tr); err != nil {
+					return
+				}
+
+				txStatus := tr["transaction_status"]
+				switch string(txStatus) {
+				case "1":
+					t.completeVerifyWithConStatus(StatusSuccess, Success, string(output), nil)
+				case "2":
+					txOutput := tr["transaction_output"]
+					t.completeVerifyWithConStatus(StatusSuccess, ChargeableError, string(txOutput), nil)
+				default:
+					t.completeVerify(StatusError, string(output), nil)
+				}
+				return
+			}
+		}
+	}()
+	return nil
+}
+
 // ConvertToValue converts ZCN tokens to value
 func ConvertToValue(token float64) string {
 	return strconv.FormatUint(uint64(token*float64(TOKEN_UNIT)), 10)
@@ -1210,7 +1313,19 @@ func GetBlockByRound(numSharders int, round int64, tm *ReqTimeout) (b *Block, er
 		}
 
 		b = toMobileBlock(respo.Block)
-		b.header = respo.Header
+
+		b.header = &BlockHeader{
+			Version:               respo.Header.Version,
+			CreationDate:          respo.Header.CreationDate,
+			Hash:                  respo.Header.Hash,
+			MinerID:               respo.Header.MinerID,
+			Round:                 respo.Header.Round,
+			RoundRandomSeed:       respo.Header.RoundRandomSeed,
+			MerkleTreeRoot:        respo.Header.MerkleTreeRoot,
+			StateHash:             respo.Header.StateHash,
+			ReceiptMerkleTreeRoot: respo.Header.ReceiptMerkleTreeRoot,
+			NumTxns:               respo.Header.NumTxns,
+		}
 
 		var h = encryption.FastHash([]byte(b.Hash))
 		if roundConsensus[h]++; roundConsensus[h] > maxConsensus {
@@ -1385,7 +1500,7 @@ func (tq *TransactionQuery) GetInfo(query string, tm *ReqTimeout) (*QueryResult,
 	var consensusesResp QueryResult
 	// {host}{query}
 
-	err := tq.FromAll(ctx, query,
+	err := tq.FromAll(query,
 		func(qr QueryResult) bool {
 			//ignore response if it is network error
 			if qr.StatusCode >= 500 {
@@ -1420,4 +1535,131 @@ func (tq *TransactionQuery) GetInfo(query string, tm *ReqTimeout) (*QueryResult,
 	}
 
 	return &consensusesResp, nil
+}
+
+func (tq *TransactionQuery) getConsensusConfirmation(numSharders int, txnHash string, tm *ReqTimeout) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
+	maxConfirmation := int(0)
+	txnConfirmations := make(map[string]int)
+	var confirmationBlockHeader *blockHeader
+	var confirmationBlock map[string]json.RawMessage
+	var lfbBlockHeader *blockHeader
+	maxLfbBlockHeader := int(0)
+	lfbBlockHeaders := make(map[string]int)
+
+	// {host}/v1/transaction/get/confirmation?hash={txnHash}&content=lfb
+	err := tq.FromAll(tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"),
+		func(qr QueryResult) bool {
+			if qr.StatusCode != http.StatusOK {
+				return false
+			}
+
+			var cfmBlock map[string]json.RawMessage
+			err := json.Unmarshal([]byte(qr.Content), &cfmBlock)
+			if err != nil {
+				Logger.Error("txn confirmation parse error", err)
+				return false
+			}
+
+			// parse `confirmation` section as block header
+			cfmBlockHeader, err := getBlockHeaderFromTransactionConfirmation(txnHash, cfmBlock)
+			if err != nil {
+				Logger.Error("txn confirmation parse header error", err)
+
+				// parse `latest_finalized_block` section
+				if lfbRaw, ok := cfmBlock["latest_finalized_block"]; ok {
+					var lfb blockHeader
+					err := json.Unmarshal([]byte(lfbRaw), &lfb)
+					if err != nil {
+						Logger.Error("round info parse error.", err)
+						return false
+					}
+
+					lfbBlockHeaders[lfb.Hash]++
+					if lfbBlockHeaders[lfb.Hash] > maxLfbBlockHeader {
+						maxLfbBlockHeader = lfbBlockHeaders[lfb.Hash]
+						lfbBlockHeader = &lfb
+					}
+				}
+
+				return false
+			}
+
+			txnConfirmations[cfmBlockHeader.Hash]++
+			if txnConfirmations[cfmBlockHeader.Hash] > maxConfirmation {
+				maxConfirmation = txnConfirmations[cfmBlockHeader.Hash]
+
+				if maxConfirmation >= numSharders {
+					confirmationBlockHeader = cfmBlockHeader
+					confirmationBlock = cfmBlock
+
+					// it is consensus by enough sharders, and latest_finalized_block is valid
+					// return true to cancel other requests
+					return true
+				}
+			}
+
+			return false
+
+		}, tm)
+
+	if err != nil {
+		return nil, nil, lfbBlockHeader, err
+	}
+
+	if maxConfirmation == 0 {
+		return nil, nil, lfbBlockHeader, errors.New("zcn: transaction not found")
+	}
+
+	if maxConfirmation < numSharders {
+		return nil, nil, lfbBlockHeader, ErrInvalidConsensus
+	}
+
+	return confirmationBlockHeader, confirmationBlock, lfbBlockHeader, nil
+}
+
+// getFastConfirmation get txn confirmation from a random online sharder
+func (tq *TransactionQuery) getFastConfirmation(ctx context.Context, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
+	var confirmationBlockHeader *blockHeader
+	var confirmationBlock map[string]json.RawMessage
+	var lfbBlockHeader blockHeader
+
+	// {host}/v1/transaction/get/confirmation?hash={txnHash}&content=lfb
+	result, err := tq.FromAny(ctx, tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"))
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	if result.StatusCode == http.StatusOK {
+
+		err = json.Unmarshal(result.Content, &confirmationBlock)
+		if err != nil {
+			Logger.Error("txn confirmation parse error", err)
+			return nil, nil, nil, err
+		}
+
+		// parse `confirmation` section as block header
+		confirmationBlockHeader, err = getBlockHeaderFromTransactionConfirmation(txnHash, confirmationBlock)
+		if err == nil {
+			return confirmationBlockHeader, confirmationBlock, nil, nil
+		}
+
+		Logger.Error("txn confirmation parse header error", err)
+
+		// parse `latest_finalized_block` section
+		lfbRaw, ok := confirmationBlock["latest_finalized_block"]
+		if !ok {
+			return confirmationBlockHeader, confirmationBlock, nil, err
+		}
+
+		err = json.Unmarshal([]byte(lfbRaw), &lfbBlockHeader)
+		if err == nil {
+			return confirmationBlockHeader, confirmationBlock, &lfbBlockHeader, ErrTransactionNotConfirmed
+		}
+
+		Logger.Error("round info parse error.", err)
+		return nil, nil, nil, err
+
+	}
+
+	return nil, nil, nil, thrown.Throw(ErrTransactionNotFound, strconv.Itoa(result.StatusCode))
 }
