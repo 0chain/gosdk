@@ -145,11 +145,7 @@ type TransactionScheme interface {
 
 	// Miner SC
 
-	MinerSCMinerSettings(*MinerSCMinerInfo) error
-	MinerSCSharderSettings(*MinerSCMinerInfo) error
 	MinerSCUnlock(minerID, poolID string) error
-	MinerSCDeleteMiner(*MinerSCMinerInfo) error
-	MinerSCDeleteSharder(*MinerSCMinerInfo) error
 
 	// ZCNSCUpdateAuthorizerConfig updates authorizer config by ID
 	ZCNSCUpdateAuthorizerConfig(*AuthorizerNode) error

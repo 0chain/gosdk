@@ -147,6 +147,11 @@ type TransactionCommon interface {
 	FaucetUpdateConfig(*InputMap) error
 	ZCNSCUpdateGlobalConfig(*InputMap) error
 
+	MinerSCMinerSettings(*MinerSCMinerInfo) error
+	MinerSCSharderSettings(*MinerSCMinerInfo) error
+	MinerSCDeleteMiner(*MinerSCMinerInfo) error
+	MinerSCDeleteSharder(*MinerSCMinerInfo) error
+
 	// GetVerifyConfirmationStatus implements the verification status from sharders
 	GetVerifyConfirmationStatus() ConfirmationStatus
 }

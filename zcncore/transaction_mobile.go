@@ -6,6 +6,7 @@ package zcncore
 import (
 	"context"
 	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -76,6 +77,11 @@ type TransactionCommon interface {
 	StorageScUpdateConfig(InputMap) error
 	FaucetUpdateConfig(InputMap) error
 	ZCNSCUpdateGlobalConfig(InputMap) error
+
+	MinerSCMinerSettings(MinerSCMinerInfo) error
+	MinerSCSharderSettings(MinerSCMinerInfo) error
+	MinerSCDeleteMiner(MinerSCMinerInfo) error
+	MinerSCDeleteSharder(MinerSCMinerInfo) error
 
 	GetVerifyConfirmationStatus() int
 }
@@ -783,9 +789,19 @@ type MinerSCMinerInfo interface {
 
 func NewMinerSCMinerInfo(id string, settings StakePoolSettings) MinerSCMinerInfo {
 	return &minerSCMinerInfo{
-		ID:       id,
-		Settings: settings,
+		simpleMiner: simpleMiner{ID: id},
+		minerSCDelegatePool: minerSCDelegatePool{
+			Settings: settings,
+		},
 	}
+}
+
+type minerSCDelegatePool struct {
+	Settings StakePoolSettings `json:"settings"`
+}
+
+type simpleMiner struct {
+	ID string `json:"id"`
 }
 
 type minerSCMinerInfo struct {
@@ -799,14 +815,6 @@ func (mi *minerSCMinerInfo) GetID() string {
 
 func (mi *minerSCMinerInfo) StakingPoolSettings() StakePoolSettings {
 	return mi.Settings
-}
-
-type minerSCDelegatePool struct {
-	Settings StakePoolSettings `json:"settings"`
-}
-
-type simpleMiner struct {
-	ID string `json:"id"`
 }
 
 func (t *Transaction) MinerSCMinerSettings(info MinerSCMinerInfo) (err error) {
@@ -1361,9 +1369,6 @@ func (tq *TransactionQuery) GetInfo(query string, tm *ReqTimeout) (*QueryResult,
 	var consensusesResp QueryResult
 	// {host}{query}
 
-	ctx, cancel := makeTimeoutContext(tm)
-	defer cancel()
-
 	err := tq.FromAll(ctx, query,
 		func(qr QueryResult) bool {
 			//ignore response if it is network error
@@ -1379,7 +1384,7 @@ func (tq *TransactionQuery) GetInfo(query string, tm *ReqTimeout) (*QueryResult,
 
 			return false
 
-		})
+		}, tm)
 
 	if err != nil {
 		return nil, err
@@ -1395,7 +1400,7 @@ func (tq *TransactionQuery) GetInfo(query string, tm *ReqTimeout) (*QueryResult,
 	}
 
 	if consensusesResp.StatusCode != http.StatusOK {
-		return nil, errors.New(string(consensusesResp.Content))
+		return nil, stderrors.New(string(consensusesResp.Content))
 	}
 
 	return &consensusesResp, nil
