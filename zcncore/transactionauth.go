@@ -494,7 +494,10 @@ func (ta *TransactionWithAuth) FinalizeAllocation(allocID string, fee uint64) (
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(fee)
+	if err := ta.t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return
+	}
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -514,7 +517,10 @@ func (ta *TransactionWithAuth) CancelAllocation(allocID string, fee uint64) (
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(fee)
+	if err := ta.t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return
+	}
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -529,7 +535,10 @@ func (ta *TransactionWithAuth) CreateAllocation(car *CreateAllocationRequest,
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(fee)
+	if err := ta.t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return
+	}
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -543,7 +552,10 @@ func (ta *TransactionWithAuth) CreateReadPool(fee uint64) (err error) {
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(fee)
+	if err := ta.t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return
+	}
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -571,7 +583,10 @@ func (ta *TransactionWithAuth) ReadPoolLock(allocID, blobberID string,
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(fee)
+	if err := ta.t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return
+	}
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -591,7 +606,10 @@ func (ta *TransactionWithAuth) ReadPoolUnlock(poolID string, fee uint64) (
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(fee)
+	if err := ta.t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return
+	}
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -613,7 +631,10 @@ func (ta *TransactionWithAuth) StakePoolLock(blobberID string,
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(fee)
+	if err := ta.t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return
+	}
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -637,7 +658,10 @@ func (ta *TransactionWithAuth) StakePoolUnlock(blobberID, poolID string,
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(fee)
+	if err := ta.t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return
+	}
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -652,7 +676,76 @@ func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber, fee uint64) 
 		Logger.Error(err)
 		return
 	}
-	ta.t.SetTransactionFee(fee)
+	if err := ta.t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) KillBlobber(id string, fee uint64) (err error) {
+	pid := ProviderId{
+		ID: id,
+	}
+	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_KILL_BLOBBER, pid, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	if err := ta.t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) KillValidator(id string, fee uint64) (err error) {
+	pid := ProviderId{
+		ID: id,
+	}
+	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_KILL_VALIDATOR, pid, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	if err := ta.t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) ShutDownBlobber(fee uint64) (err error) {
+	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_SHUT_DOWN_BLOBBER, nil, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	if err := ta.t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) ShutDownValidator(fee uint64) (err error) {
+	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_SHUT_DOWN_VALIDATOR, nil, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	if err := ta.t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return
+	}
 	go func() { ta.submitTxn() }()
 	return
 }

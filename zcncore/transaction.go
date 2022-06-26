@@ -180,6 +180,10 @@ type TransactionScheme interface {
 	WritePoolLock(allocID string, blobberID string, duration int64, lock uint64, fee uint64) error
 	WritePoolUnlock(poolID string, fee uint64) error
 	StorageScUpdateConfig(*InputMap) error
+	KillBlobber(id string, fee uint64) error
+	KillValidator(id string, fee uint64) error
+	ShutDownBlobber(fee uint64) error
+	ShutDownValidator(fee uint64) error
 
 	// Faucet
 
@@ -1734,6 +1738,8 @@ type Blobber struct {
 	Allocated         common.Size       `json:"allocated"`
 	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
+	IsShutDown        bool              `json:"is_shut_down"`
+	IsKilled          bool              `json:"is_killed"`
 }
 
 type AuthorizerStakePoolSettings struct {
@@ -1759,6 +1765,10 @@ type AuthorizerNode struct {
 	Config *AuthorizerConfig `json:"config"`
 }
 
+type ProviderId struct {
+	ID string `json:"id"`
+}
+
 // UpdateBlobberSettings update settings of a blobber.
 func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee uint64) (err error) {
 
@@ -1769,6 +1779,72 @@ func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee uint64) (err error) 
 		return
 	}
 	t.SetTransactionFee(fee)
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+func (t *Transaction) KillBlobber(id string, fee uint64) (err error) {
+	pid := ProviderId{
+		ID: id,
+	}
+	err = t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_KILL_BLOBBER, &pid, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	if err := t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+func (t *Transaction) KillValidator(id string, fee uint64) (err error) {
+	pid := ProviderId{
+		ID: id,
+	}
+	err = t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_KILL_VALIDATOR, &pid, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	if err := t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+func (t *Transaction) ShutDownBlobber(fee uint64) (err error) {
+	err = t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_SHUT_DOWN_BLOBBER, nil, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	if err := t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+func (t *Transaction) ShutDownValidator(fee uint64) (err error) {
+	err = t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_SHUT_DOWN_VALIDATOR, nil, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	if err := t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return
+	}
 	go func() { t.setNonceAndSubmit() }()
 	return
 }
