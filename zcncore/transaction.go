@@ -176,6 +176,7 @@ type TransactionScheme interface {
 	StakePoolLock(blobberID string, lock uint64, fee uint64) error
 	StakePoolUnlock(blobberID string, poolID string, fee uint64) error
 	UpdateBlobberSettings(blobber *Blobber, fee uint64) error
+	UpdateValidatorSettings(validator *Validator, fee uint64) error
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock uint64, fee uint64) error
 	WritePoolLock(allocID string, blobberID string, duration int64, lock uint64, fee uint64) error
 	WritePoolUnlock(poolID string, fee uint64) error
@@ -1736,6 +1737,12 @@ type Blobber struct {
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
+type Validator struct {
+	ID                common.Key        `json:"id"`
+	BaseURL           string            `json:"url"`
+	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
+}
+
 type AuthorizerStakePoolSettings struct {
 	DelegateWallet string         `json:"delegate_wallet"`
 	MinStake       common.Balance `json:"min_stake"`
@@ -1764,6 +1771,20 @@ func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee uint64) (err error) 
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, b, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	t.SetTransactionFee(fee)
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+// UpdateValidatorSettings update settings of a validator.
+func (t *Transaction) UpdateValidatorSettings(v *Validator, fee uint64) (err error) {
+
+	err = t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS, v, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
