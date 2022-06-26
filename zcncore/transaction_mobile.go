@@ -52,7 +52,7 @@ type TransactionCommon interface {
 	// SetTransactionFee implements method to set the transaction fee
 	SetTransactionFee(txnFee string) error
 
-	VestingAdd(ar *VestingAddRequest, value string) error
+	VestingAdd(ar VestingAddRequest, value string) error
 
 	MinerSCLock(minerID string, lock string) error
 	MinerSCCollectReward(providerId string, poolId string, providerType int) error
@@ -181,11 +181,27 @@ type VestingDest struct {
 	Amount int64  `json:"amount"` // amount to vest for the destination
 }
 
-type VestingAddRequest struct {
-	Description  string         `json:"description"`  // allow empty
-	StartTime    int64          `json:"start_time"`   //
-	Duration     int64          `json:"duration"`     //
-	Destinations []*VestingDest `json:"destinations"` //
+type VestingAddRequest interface {
+	AddDestinations(dest *VestingDest)
+}
+
+func NewVestingAddRequest(desc string, startTime int64, duration int64) VestingAddRequest {
+	return &vestingAddRequest{
+		description: desc,
+		startTime:   startTime,
+		duration:    duration,
+	}
+}
+
+type vestingAddRequest struct {
+	description  string         `json:"description"`  // allow empty
+	startTime    int64          `json:"start_time"`   //
+	duration     int64          `json:"duration"`     //
+	destinations []*VestingDest `json:"destinations"` //
+}
+
+func (vr *vestingAddRequest) AddDestinations(dest *VestingDest) {
+	vr.destinations = append(vr.destinations, dest)
 }
 
 type InputMap interface {
@@ -317,7 +333,7 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val string, desc 
 	return nil
 }
 
-func (t *Transaction) VestingAdd(ar *VestingAddRequest, value string) (
+func (t *Transaction) VestingAdd(ar VestingAddRequest, value string) (
 	err error) {
 
 	v, err := parseCoinStr(value)

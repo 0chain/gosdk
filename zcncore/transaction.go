@@ -113,8 +113,6 @@ type TransactionScheme interface {
 	ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error
 	// GetTransactionHash implements retrieval of hash of the submitted transaction
 	GetTransactionHash() string
-	//RegisterMultiSig registers a group wallet and subwallets with MultisigSC
-	RegisterMultiSig(walletstr, mswallet string) error
 	// SetTransactionHash implements verify a previous transaction status
 	SetTransactionHash(hash string) error
 	// SetTransactionNonce implements method to set the transaction nonce

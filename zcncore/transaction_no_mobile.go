@@ -120,6 +120,9 @@ type TransactionCommon interface {
 	// SetTransactionFee implements method to set the transaction fee
 	SetTransactionFee(txnFee uint64) error
 
+	//RegisterMultiSig registers a group wallet and subwallets with MultisigSC
+	RegisterMultiSig(walletstr, mswallet string) error
+
 	VestingAdd(ar *VestingAddRequest, value uint64) error
 
 	MinerSCLock(minerID string, lock uint64) error
