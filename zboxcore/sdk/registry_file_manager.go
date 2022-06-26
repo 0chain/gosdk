@@ -23,14 +23,6 @@ type allocationFileStorer interface {
 
 var _ allocationFileStorer = &Allocation{}
 
-// chunkUploader defines the functions expected from ChunkedUpload for uploading file.
-// This interface enables easy mocking of file upload for UT purposes.
-type chunkUploader interface {
-	Start() error
-}
-
-var _ chunkUploader = &ChunkedUpload{}
-
 type RegistryFileManager interface {
 	Update(data []byte) error
 	Get() ([]byte, common.Timestamp, error)
