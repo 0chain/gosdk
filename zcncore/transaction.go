@@ -151,13 +151,6 @@ type TransactionScheme interface {
 	MinerSCDeleteMiner(*MinerSCMinerInfo) error
 	MinerSCDeleteSharder(*MinerSCMinerInfo) error
 
-	// Storage SC
-
-	// Faucet
-
-	// ZCNSC Common transactions
-
-	// ZCNSCUpdateGlobalConfig updates global config
 	// ZCNSCUpdateAuthorizerConfig updates authorizer config by ID
 	ZCNSCUpdateAuthorizerConfig(*AuthorizerNode) error
 	// ZCNSCAddAuthorizer adds authorizer
@@ -946,95 +939,6 @@ func (t *Transaction) MinerSCUnlock(nodeID, poolID string) (err error) {
 	}
 	go func() { t.setNonceAndSubmit() }()
 	return
-}
-
-//RegisterMultiSig register a multisig wallet with the SC.
-func (t *Transaction) RegisterMultiSig(walletstr string, mswallet string) error {
-	w, err := GetWallet(walletstr)
-	if err != nil {
-		fmt.Printf("Error while parsing the wallet. %v\n", err)
-		return err
-	}
-
-	msw, err := GetMultisigPayload(mswallet)
-	if err != nil {
-		fmt.Printf("\nError in registering. %v\n", err)
-		return err
-	}
-	sn := transaction.SmartContractTxnData{Name: MultiSigRegisterFuncName, InputArgs: msw}
-	snBytes, err := json.Marshal(sn)
-	if err != nil {
-		return errors.Wrap(err, "execute multisig register failed due to invalid data.")
-	}
-	go func() {
-		t.txn.TransactionType = transaction.TxnTypeSmartContract
-		t.txn.ToClientID = MultiSigSmartContractAddress
-		t.txn.TransactionData = string(snBytes)
-		t.txn.Value = 0
-		nonce := t.txn.TransactionNonce
-		if nonce < 1 {
-			nonce = transaction.Cache.GetNextNonce(t.txn.ClientID)
-		} else {
-			transaction.Cache.Set(t.txn.ClientID, nonce)
-		}
-		t.txn.TransactionNonce = nonce
-
-		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
-		t.submitTxn()
-	}()
-	return nil
-}
-
-// NewMSTransaction new transaction object for multisig operation
-func NewMSTransaction(walletstr string, cb TransactionCallback) (*Transaction, error) {
-	w, err := GetWallet(walletstr)
-	if err != nil {
-		fmt.Printf("Error while parsing the wallet. %v", err)
-		return nil, err
-	}
-	t := &Transaction{}
-	t.txn = transaction.NewTransactionEntity(w.ClientID, _config.chain.ChainID, w.ClientKey, w.Nonce)
-	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
-	t.txnCb = cb
-	return t, nil
-}
-
-//RegisterVote register a multisig wallet with the SC.
-func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error {
-
-	w, err := GetWallet(signerwalletstr)
-	if err != nil {
-		fmt.Printf("Error while parsing the wallet. %v", err)
-		return err
-	}
-
-	msv, err := GetMultisigVotePayload(msvstr)
-
-	if err != nil {
-		fmt.Printf("\nError in voting. %v\n", err)
-		return err
-	}
-	sn := transaction.SmartContractTxnData{Name: MultiSigVoteFuncName, InputArgs: msv}
-	snBytes, err := json.Marshal(sn)
-	if err != nil {
-		return errors.Wrap(err, "execute multisig vote failed due to invalid data.")
-	}
-	go func() {
-		t.txn.TransactionType = transaction.TxnTypeSmartContract
-		t.txn.ToClientID = MultiSigSmartContractAddress
-		t.txn.TransactionData = string(snBytes)
-		t.txn.Value = 0
-		nonce := t.txn.TransactionNonce
-		if nonce < 1 {
-			nonce = transaction.Cache.GetNextNonce(t.txn.ClientID)
-		} else {
-			transaction.Cache.Set(t.txn.ClientID, nonce)
-		}
-		t.txn.TransactionNonce = nonce
-		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
-		t.submitTxn()
-	}()
-	return nil
 }
 
 func VerifyContentHash(metaTxnDataJSON string) (bool, error) {

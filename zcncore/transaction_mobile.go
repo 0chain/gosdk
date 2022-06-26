@@ -17,7 +17,29 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk/core/zcncrypto"
 )
+
+type chainConfig struct {
+	ChainID                 string   `json:"chain_id,omitempty"`
+	BlockWorker             string   `json:"block_worker"`
+	Miners                  []string `json:"miners"`
+	Sharders                []string `json:"sharders"`
+	SignatureScheme         string   `json:"signature_scheme"`
+	MinSubmit               int      `json:"min_submit"`
+	MinConfirmation         int      `json:"min_confirmation"`
+	ConfirmationChainLength int      `json:"confirmation_chain_length"`
+	EthNode                 string   `json:"eth_node"`
+}
+
+type localConfig struct {
+	chain         chainConfig
+	wallet        zcncrypto.Wallet
+	authUrl       string
+	isConfigured  bool
+	isValidWallet bool
+	isSplitWallet bool
+}
 
 type TransactionCommon interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
@@ -777,7 +799,7 @@ func makeTimeoutContext(tm *ReqTimeout) (context.Context, func()) {
 	return ctx, cancel
 }
 
-func GetLatestFinalized(numSharders int, tm *ReqTimeout) (b *block.Header, err error) {
+func GetLatestFinalized(numSharders int, tm *ReqTimeout) (b *BlockHeader, err error) {
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
@@ -899,12 +921,24 @@ func GetChainStats(tm *ReqTimeout) (b *block.ChainStats, err error) {
 	return
 }
 
+type BlockHeader struct {
+	Version               string `json:"version,omitempty"`
+	CreationDate          int64  `json:"creation_date,omitempty"`
+	Hash                  string `json:"hash,omitempty"`
+	MinerID               string `json:"miner_id,omitempty"`
+	Round                 int64  `json:"round,omitempty"`
+	RoundRandomSeed       int64  `json:"round_random_seed,omitempty"`
+	MerkleTreeRoot        string `json:"merkle_tree_root,omitempty"`
+	StateHash             string `json:"state_hash,omitempty"`
+	ReceiptMerkleTreeRoot string `json:"receipt_merkle_tree_root,omitempty"`
+	NumTxns               int64  `json:"num_txns,omitempty"`
+}
+
 type Block struct {
-	Header            *block.Header `json:"-"`
-	MinerID           string        `json:"miner_id"`
-	Round             int64         `json:"round"`
-	RoundRandomSeed   int64         `json:"round_random_seed"`
-	RoundTimeoutCount int           `json:"round_timeout_count"`
+	MinerID           string `json:"miner_id"`
+	Round             int64  `json:"round"`
+	RoundRandomSeed   int64  `json:"round_random_seed"`
+	RoundTimeoutCount int    `json:"round_timeout_count"`
 
 	Hash            string  `json:"hash"`
 	Signature       string  `json:"signature"`
@@ -918,13 +952,31 @@ type Block struct {
 	MagicBlockHash string `json:"magic_block_hash"`
 	PrevHash       string `json:"prev_hash"`
 
-	ClientStateHash string               `json:"state_hash"`
-	Txns            []*TransactionMobile `json:"transactions,omitempty"`
+	ClientStateHash string `json:"state_hash"`
+
+	// unexported fields
+	header *BlockHeader         `json:"-"`
+	txns   []*TransactionMobile `json:"transactions,omitempty"`
+}
+
+func (b *Block) GetHeader() *BlockHeader {
+	return b.header
+}
+
+type IterTxnFunc func(idx int, txn *TransactionMobile)
+
+// ForEachTxns iterates over all block.Txns as gomobine does not support slices
+// for most of the data struct, so to get the transactions in a block, the caller
+// needs to define the
+func (b *Block) ForEachTxns(tf IterTxnFunc) {
+	for i, t := range b.txns {
+		tf(i, t)
+	}
 }
 
 func toMobileBlock(b *block.Block) *Block {
 	lb := &Block{
-		Header:            b.Header,
+		header:            b.Header,
 		MinerID:           string(b.MinerID),
 		Round:             b.Round,
 		RoundRandomSeed:   b.RoundRandomSeed,
@@ -945,12 +997,25 @@ func toMobileBlock(b *block.Block) *Block {
 		ClientStateHash: string(b.ClientStateHash),
 	}
 
-	lb.Txns = make([]*TransactionMobile, len(b.Txns))
+	lb.txns = make([]*TransactionMobile, len(b.Txns))
 	for i, txn := range b.Txns {
-		lb.Txns[i] = &TransactionMobile{
-			Transaction:    *txn,
-			Value:          strconv.FormatUint(txn.Value, 10),
-			TransactionFee: strconv.FormatUint(txn.TransactionFee, 10),
+		lb.txns[i] = &TransactionMobile{
+			Hash:              txn.Hash,
+			Version:           txn.Version,
+			ClientID:          txn.ClientID,
+			PublicKey:         txn.PublicKey,
+			ToClientID:        txn.ToClientID,
+			ChainID:           txn.ChainID,
+			TransactionData:   txn.TransactionData,
+			Signature:         txn.Signature,
+			CreationDate:      txn.CreationDate,
+			TransactionType:   txn.TransactionType,
+			TransactionOutput: txn.TransactionOutput,
+			TransactionNonce:  txn.TransactionNonce,
+			OutputHash:        txn.OutputHash,
+			Status:            txn.Status,
+			Value:             strconv.FormatUint(txn.Value, 10),
+			TransactionFee:    strconv.FormatUint(txn.TransactionFee, 10),
 		}
 	}
 
@@ -959,9 +1024,22 @@ func toMobileBlock(b *block.Block) *Block {
 
 //Transaction entity that encapsulates the transaction related data and meta data
 type TransactionMobile struct {
-	transaction.Transaction
-	Value          string `json:"transaction_value"`
-	TransactionFee string `json:"transaction_fee"`
+	Hash              string `json:"hash,omitempty"`
+	Version           string `json:"version,omitempty"`
+	ClientID          string `json:"client_id,omitempty"`
+	PublicKey         string `json:"public_key,omitempty"`
+	ToClientID        string `json:"to_client_id,omitempty"`
+	ChainID           string `json:"chain_id,omitempty"`
+	TransactionData   string `json:"transaction_data"`
+	Value             string `json:"transaction_value"`
+	Signature         string `json:"signature,omitempty"`
+	CreationDate      int64  `json:"creation_date,omitempty"`
+	TransactionType   int    `json:"transaction_type"`
+	TransactionOutput string `json:"transaction_output,omitempty"`
+	TransactionFee    string `json:"transaction_fee"`
+	TransactionNonce  int64  `json:"transaction_nonce"`
+	OutputHash        string `json:"txn_output_hash"`
+	Status            int    `json:"transaction_status"`
 }
 
 func GetBlockByRound(numSharders int, round int64, tm *ReqTimeout) (b *Block, err error) {

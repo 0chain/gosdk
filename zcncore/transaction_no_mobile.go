@@ -7,15 +7,20 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk/core/version"
+	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
 const (
@@ -27,6 +32,83 @@ const (
 )
 
 type Provider int
+
+type ChainConfig struct {
+	ChainID                 string   `json:"chain_id,omitempty"`
+	BlockWorker             string   `json:"block_worker"`
+	Miners                  []string `json:"miners"`
+	Sharders                []string `json:"sharders"`
+	SignatureScheme         string   `json:"signature_scheme"`
+	MinSubmit               int      `json:"min_submit"`
+	MinConfirmation         int      `json:"min_confirmation"`
+	ConfirmationChainLength int      `json:"confirmation_chain_length"`
+	EthNode                 string   `json:"eth_node"`
+}
+
+type localConfig struct {
+	chain         ChainConfig
+	wallet        zcncrypto.Wallet
+	authUrl       string
+	isConfigured  bool
+	isValidWallet bool
+	isSplitWallet bool
+}
+
+type Miner struct {
+	ID         string      `json:"id"`
+	N2NHost    string      `json:"n2n_host"`
+	Host       string      `json:"host"`
+	Port       int         `json:"port"`
+	PublicKey  string      `json:"public_key"`
+	ShortName  string      `json:"short_name"`
+	BuildTag   string      `json:"build_tag"`
+	TotalStake int64       `json:"total_stake"`
+	Stat       interface{} `json:"stat"`
+}
+
+type Node struct {
+	Miner     Miner `json:"simple_miner"`
+	StakePool `json:"stake_pool"`
+}
+
+type MinerSCNodes struct {
+	Nodes []Node `json:"Nodes"`
+}
+
+type VestingSCConfig struct {
+	MinLock              common.Balance `json:"min_lock"`
+	MinDuration          time.Duration  `json:"min_duration"`
+	MaxDuration          time.Duration  `json:"max_duration"`
+	MaxDestinations      int            `json:"max_destinations"`
+	MaxDescriptionLength int            `json:"max_description_length"`
+}
+
+type DelegatePool struct {
+	Balance      int64  `json:"balance"`
+	Reward       int64  `json:"reward"`
+	Status       int    `json:"status"`
+	RoundCreated int64  `json:"round_created"` // used for cool down
+	DelegateID   string `json:"delegate_id"`
+}
+
+type StakePool struct {
+	Pools    map[string]*DelegatePool `json:"pools"`
+	Reward   int64                    `json:"rewards"`
+	Settings StakePoolSettings        `json:"settings"`
+	Minter   int                      `json:"minter"`
+}
+
+type MinerSCDelegatePoolInfo struct {
+	ID         common.Key     `json:"id"`
+	Balance    common.Balance `json:"balance"`
+	Reward     common.Balance `json:"reward"`      // uncollected reread
+	RewardPaid common.Balance `json:"reward_paid"` // total reward all time
+	Status     string         `json:"status"`
+}
+
+type MinerSCUserPoolsInfo struct {
+	Pools map[string][]*MinerSCDelegatePoolInfo `json:"pools"`
+}
 
 type TransactionCommon interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
@@ -600,6 +682,95 @@ func (t *Transaction) GetVerifyConfirmationStatus() ConfirmationStatus {
 	return t.verifyConfirmationStatus
 }
 
+//RegisterMultiSig register a multisig wallet with the SC.
+func (t *Transaction) RegisterMultiSig(walletstr string, mswallet string) error {
+	w, err := GetWallet(walletstr)
+	if err != nil {
+		fmt.Printf("Error while parsing the wallet. %v\n", err)
+		return err
+	}
+
+	msw, err := GetMultisigPayload(mswallet)
+	if err != nil {
+		fmt.Printf("\nError in registering. %v\n", err)
+		return err
+	}
+	sn := transaction.SmartContractTxnData{Name: MultiSigRegisterFuncName, InputArgs: msw}
+	snBytes, err := json.Marshal(sn)
+	if err != nil {
+		return errors.Wrap(err, "execute multisig register failed due to invalid data.")
+	}
+	go func() {
+		t.txn.TransactionType = transaction.TxnTypeSmartContract
+		t.txn.ToClientID = MultiSigSmartContractAddress
+		t.txn.TransactionData = string(snBytes)
+		t.txn.Value = 0
+		nonce := t.txn.TransactionNonce
+		if nonce < 1 {
+			nonce = transaction.Cache.GetNextNonce(t.txn.ClientID)
+		} else {
+			transaction.Cache.Set(t.txn.ClientID, nonce)
+		}
+		t.txn.TransactionNonce = nonce
+
+		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
+		t.submitTxn()
+	}()
+	return nil
+}
+
+// NewMSTransaction new transaction object for multisig operation
+func NewMSTransaction(walletstr string, cb TransactionCallback) (*Transaction, error) {
+	w, err := GetWallet(walletstr)
+	if err != nil {
+		fmt.Printf("Error while parsing the wallet. %v", err)
+		return nil, err
+	}
+	t := &Transaction{}
+	t.txn = transaction.NewTransactionEntity(w.ClientID, _config.chain.ChainID, w.ClientKey, w.Nonce)
+	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
+	t.txnCb = cb
+	return t, nil
+}
+
+//RegisterVote register a multisig wallet with the SC.
+func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error {
+
+	w, err := GetWallet(signerwalletstr)
+	if err != nil {
+		fmt.Printf("Error while parsing the wallet. %v", err)
+		return err
+	}
+
+	msv, err := GetMultisigVotePayload(msvstr)
+
+	if err != nil {
+		fmt.Printf("\nError in voting. %v\n", err)
+		return err
+	}
+	sn := transaction.SmartContractTxnData{Name: MultiSigVoteFuncName, InputArgs: msv}
+	snBytes, err := json.Marshal(sn)
+	if err != nil {
+		return errors.Wrap(err, "execute multisig vote failed due to invalid data.")
+	}
+	go func() {
+		t.txn.TransactionType = transaction.TxnTypeSmartContract
+		t.txn.ToClientID = MultiSigSmartContractAddress
+		t.txn.TransactionData = string(snBytes)
+		t.txn.Value = 0
+		nonce := t.txn.TransactionNonce
+		if nonce < 1 {
+			nonce = transaction.Cache.GetNextNonce(t.txn.ClientID)
+		} else {
+			transaction.Cache.Set(t.txn.ClientID, nonce)
+		}
+		t.txn.TransactionNonce = nonce
+		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
+		t.submitTxn()
+	}()
+	return nil
+}
+
 // ConvertToValue converts ZCN tokens to value
 func ConvertToValue(token float64) uint64 {
 	return uint64(token * float64(TOKEN_UNIT))
@@ -834,4 +1005,129 @@ func GetMagicBlockByNumber(ctx context.Context, numSharders int, number int64) (
 	}
 
 	return
+}
+
+type NonceCache struct {
+	cache map[string]int64
+	guard sync.Mutex
+}
+
+func NewNonceCache() *NonceCache {
+	return &NonceCache{cache: make(map[string]int64)}
+}
+
+func (nc *NonceCache) GetNextNonce(clientId string) int64 {
+	nc.guard.Lock()
+	defer nc.guard.Unlock()
+	if _, ok := nc.cache[clientId]; !ok {
+		back := &getNonceCallBack{
+			nonceCh: make(chan int64),
+			err:     nil,
+		}
+		if err := GetNonce(back); err != nil {
+			return 0
+		}
+
+		timeout, _ := context.WithTimeout(context.Background(), time.Second)
+		select {
+		case n := <-back.nonceCh:
+			if back.err != nil {
+				return 0
+			}
+			nc.cache[clientId] = n
+		case <-timeout.Done():
+			return 0
+		}
+	}
+
+	nc.cache[clientId] += 1
+	return nc.cache[clientId]
+}
+
+func (nc *NonceCache) Set(clientId string, nonce int64) {
+	nc.guard.Lock()
+	defer nc.guard.Unlock()
+	nc.cache[clientId] = nonce
+}
+
+func (nc *NonceCache) Evict(clientId string) {
+	nc.guard.Lock()
+	defer nc.guard.Unlock()
+	delete(nc.cache, clientId)
+}
+
+func WithEthereumNode(uri string) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.EthNode = uri
+		return nil
+	}
+}
+
+func WithChainID(id string) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.ChainID = id
+		return nil
+	}
+}
+
+func WithMinSubmit(m int) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.MinSubmit = m
+		return nil
+	}
+}
+
+func WithMinConfirmation(m int) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.MinConfirmation = m
+		return nil
+	}
+}
+
+func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
+	return func(c *ChainConfig) error {
+		c.ConfirmationChainLength = m
+		return nil
+	}
+}
+
+// InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
+func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
+	if signscheme != "ed25519" && signscheme != "bls0chain" {
+		return errors.New("", "invalid/unsupported signature scheme")
+	}
+	_config.chain.BlockWorker = blockWorker
+	_config.chain.SignatureScheme = signscheme
+
+	err := UpdateNetworkDetails()
+	if err != nil {
+		log.Println("UpdateNetworkDetails:", err)
+		return err
+	}
+
+	go UpdateNetworkDetailsWorker(context.Background())
+
+	for _, conf := range configs {
+		err := conf(&_config.chain)
+		if err != nil {
+			return errors.Wrap(err, "invalid/unsupported options.")
+		}
+	}
+	assertConfig()
+	_config.isConfigured = true
+	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (InitZCNSDK)")
+
+	cfg := &conf.Config{
+		BlockWorker:             _config.chain.BlockWorker,
+		MinSubmit:               _config.chain.MinSubmit,
+		MinConfirmation:         _config.chain.MinConfirmation,
+		ConfirmationChainLength: _config.chain.ConfirmationChainLength,
+		SignatureScheme:         _config.chain.SignatureScheme,
+		ChainID:                 _config.chain.ChainID,
+		EthereumNode:            _config.chain.EthNode,
+	}
+
+	conf.InitClientConfig(cfg)
+
+	return nil
 }

@@ -5,43 +5,26 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
+	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/transaction"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
-
-type ChainConfig struct {
-	ChainID                 string   `json:"chain_id,omitempty"`
-	BlockWorker             string   `json:"block_worker"`
-	Miners                  []string `json:"miners"`
-	Sharders                []string `json:"sharders"`
-	SignatureScheme         string   `json:"signature_scheme"`
-	MinSubmit               int      `json:"min_submit"`
-	MinConfirmation         int      `json:"min_confirmation"`
-	ConfirmationChainLength int      `json:"confirmation_chain_length"`
-	EthNode                 string   `json:"eth_node"`
-}
-
-var defaultLogLevel = logger.DEBUG
-var Logger logger.Logger
 
 const (
 	REGISTER_CLIENT                  = `/v1/client/put`
@@ -132,6 +115,9 @@ const (
 	StatusUnknown          int = -1
 )
 
+var defaultLogLevel = logger.DEBUG
+var Logger logger.Logger
+
 type ConfirmationStatus int
 
 const (
@@ -197,21 +183,22 @@ type AuthCallback interface {
 	OnSetupComplete(status int, err string)
 }
 
-type localConfig struct {
-	chain         ChainConfig
-	wallet        zcncrypto.Wallet
-	authUrl       string
-	isConfigured  bool
-	isValidWallet bool
-	isSplitWallet bool
-}
-
 // Singleton
 var _config localConfig
 
 func init() {
 	Logger.Init(defaultLogLevel, "0chain-core-sdk")
 }
+
+func GetLogger() *logger.Logger {
+	return &Logger
+}
+
+// CloseLog closes log file
+func CloseLog() {
+	Logger.Close()
+}
+
 func checkSdkInit() error {
 	if !_config.isConfigured || len(_config.chain.Miners) < 1 || len(_config.chain.Sharders) < 1 {
 		return errors.New("", "SDK not initialized")
@@ -292,15 +279,6 @@ func SetLogFile(logFile string, verbose bool) {
 	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (SetLogFile)")
 }
 
-func GetLogger() *logger.Logger {
-	return &Logger
-}
-
-// CloseLog closes log file
-func CloseLog() {
-	Logger.Close()
-}
-
 // Init inializes the SDK with miner, sharder and signature scheme provided in
 // configuration provided in JSON format
 // It is used for 0proxy, 0box, 0explorer, andorid, ios : walletJSON is ChainConfig
@@ -348,85 +326,9 @@ func Init(chainConfigJSON string) error {
 	return err
 }
 
-func WithEthereumNode(uri string) func(c *ChainConfig) error {
-	return func(c *ChainConfig) error {
-		c.EthNode = uri
-		return nil
-	}
-}
-
-func WithChainID(id string) func(c *ChainConfig) error {
-	return func(c *ChainConfig) error {
-		c.ChainID = id
-		return nil
-	}
-}
-
-func WithMinSubmit(m int) func(c *ChainConfig) error {
-	return func(c *ChainConfig) error {
-		c.MinSubmit = m
-		return nil
-	}
-}
-
-func WithMinConfirmation(m int) func(c *ChainConfig) error {
-	return func(c *ChainConfig) error {
-		c.MinConfirmation = m
-		return nil
-	}
-}
-
-func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
-	return func(c *ChainConfig) error {
-		c.ConfirmationChainLength = m
-		return nil
-	}
-}
-
 // InitSignatureScheme initializes signature scheme only.
 func InitSignatureScheme(scheme string) {
 	_config.chain.SignatureScheme = scheme
-}
-
-// InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
-func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
-	if signscheme != "ed25519" && signscheme != "bls0chain" {
-		return errors.New("", "invalid/unsupported signature scheme")
-	}
-	_config.chain.BlockWorker = blockWorker
-	_config.chain.SignatureScheme = signscheme
-
-	err := UpdateNetworkDetails()
-	if err != nil {
-		log.Println("UpdateNetworkDetails:", err)
-		return err
-	}
-
-	go UpdateNetworkDetailsWorker(context.Background())
-
-	for _, conf := range configs {
-		err := conf(&_config.chain)
-		if err != nil {
-			return errors.Wrap(err, "invalid/unsupported options.")
-		}
-	}
-	assertConfig()
-	_config.isConfigured = true
-	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (InitZCNSDK)")
-
-	cfg := &conf.Config{
-		BlockWorker:             _config.chain.BlockWorker,
-		MinSubmit:               _config.chain.MinSubmit,
-		MinConfirmation:         _config.chain.MinConfirmation,
-		ConfirmationChainLength: _config.chain.ConfirmationChainLength,
-		SignatureScheme:         _config.chain.SignatureScheme,
-		ChainID:                 _config.chain.ChainID,
-		EthereumNode:            _config.chain.EthNode,
-	}
-
-	conf.InitClientConfig(cfg)
-
-	return nil
 }
 
 func GetNetwork() *Network {
@@ -950,14 +852,6 @@ func GetVestingClientList(clientID string, cb GetInfoCallback) (err error) {
 	return
 }
 
-type VestingSCConfig struct {
-	MinLock              common.Balance `json:"min_lock"`
-	MinDuration          time.Duration  `json:"min_duration"`
-	MaxDuration          time.Duration  `json:"max_duration"`
-	MaxDestinations      int            `json:"max_destinations"`
-	MaxDescriptionLength int            `json:"max_description_length"`
-}
-
 func GetVestingSCConfig(cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -979,42 +873,6 @@ func GetFaucetSCConfig(cb GetInfoCallback) (err error) {
 //
 // miner SC
 //
-
-type Miner struct {
-	ID         string      `json:"id"`
-	N2NHost    string      `json:"n2n_host"`
-	Host       string      `json:"host"`
-	Port       int         `json:"port"`
-	PublicKey  string      `json:"public_key"`
-	ShortName  string      `json:"short_name"`
-	BuildTag   string      `json:"build_tag"`
-	TotalStake int64       `json:"total_stake"`
-	Stat       interface{} `json:"stat"`
-}
-
-type DelegatePool struct {
-	Balance      int64  `json:"balance"`
-	Reward       int64  `json:"reward"`
-	Status       int    `json:"status"`
-	RoundCreated int64  `json:"round_created"` // used for cool down
-	DelegateID   string `json:"delegate_id"`
-}
-
-type StakePool struct {
-	Pools    map[string]*DelegatePool `json:"pools"`
-	Reward   int64                    `json:"rewards"`
-	Settings StakePoolSettings        `json:"settings"`
-	Minter   int                      `json:"minter"`
-}
-
-type Node struct {
-	Miner     Miner `json:"simple_miner"`
-	StakePool `json:"stake_pool"`
-}
-
-type MinerSCNodes struct {
-	Nodes []Node `json:"Nodes"`
-}
 
 // GetMiners obtains list of all active miners.
 func GetMiners(cb GetInfoCallback) (err error) {
@@ -1071,18 +929,6 @@ func GetMinerSCNodePool(id, poolID string, cb GetInfoCallback) (err error) {
 	}), 0, cb)
 
 	return
-}
-
-type MinerSCDelegatePoolInfo struct {
-	ID         common.Key     `json:"id"`
-	Balance    common.Balance `json:"balance"`
-	Reward     common.Balance `json:"reward"`      // uncollected reread
-	RewardPaid common.Balance `json:"reward_paid"` // total reward all time
-	Status     string         `json:"status"`
-}
-
-type MinerSCUserPoolsInfo struct {
-	Pools map[string][]*MinerSCDelegatePoolInfo `json:"pools"`
 }
 
 func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error) {
@@ -1267,53 +1113,4 @@ func Decrypt(key, text string) (string, error) {
 		return "", err
 	}
 	return string(response), nil
-}
-
-type NonceCache struct {
-	cache map[string]int64
-	guard sync.Mutex
-}
-
-func NewNonceCache() *NonceCache {
-	return &NonceCache{cache: make(map[string]int64)}
-}
-
-func (nc *NonceCache) GetNextNonce(clientId string) int64 {
-	nc.guard.Lock()
-	defer nc.guard.Unlock()
-	if _, ok := nc.cache[clientId]; !ok {
-		back := &getNonceCallBack{
-			nonceCh: make(chan int64),
-			err:     nil,
-		}
-		if err := GetNonce(back); err != nil {
-			return 0
-		}
-
-		timeout, _ := context.WithTimeout(context.Background(), time.Second)
-		select {
-		case n := <-back.nonceCh:
-			if back.err != nil {
-				return 0
-			}
-			nc.cache[clientId] = n
-		case <-timeout.Done():
-			return 0
-		}
-	}
-
-	nc.cache[clientId] += 1
-	return nc.cache[clientId]
-}
-
-func (nc *NonceCache) Set(clientId string, nonce int64) {
-	nc.guard.Lock()
-	defer nc.guard.Unlock()
-	nc.cache[clientId] = nonce
-}
-
-func (nc *NonceCache) Evict(clientId string) {
-	nc.guard.Lock()
-	defer nc.guard.Unlock()
-	delete(nc.cache, clientId)
 }
