@@ -684,23 +684,6 @@ func getTokenUSDRate() (float64, error) {
 	return tokenrate.GetUSD(context.TODO(), "zcn")
 }
 
-func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
-
-	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders))
-	if err != nil {
-		cb.OnInfoAvailable(op, StatusError, "", err.Error())
-		return
-	}
-
-	qr, err := tq.GetInfo(context.TODO(), urlSuffix)
-	if err != nil {
-		cb.OnInfoAvailable(op, StatusError, "", err.Error())
-		return
-	}
-
-	cb.OnInfoAvailable(op, StatusSuccess, string(qr.Content), "")
-}
-
 //GetWallet get a wallet object from a wallet string
 func GetWallet(walletStr string) (*zcncrypto.Wallet, error) {
 

@@ -26,6 +26,8 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
+type Provider int
+
 const (
 	ProviderMiner Provider = iota + 1
 	ProviderSharder
@@ -34,15 +36,12 @@ const (
 	ProviderAuthorizer
 )
 
+type ConfirmationStatus int
+
 const (
 	Undefined ConfirmationStatus = iota
 	Success
 	ChargeableError
-)
-
-type (
-	ConfirmationStatus int
-	Provider           int
 )
 
 type ChainConfig struct {
@@ -699,7 +698,7 @@ func (t *Transaction) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error) {
 }
 
 func (t *Transaction) GetVerifyConfirmationStatus() ConfirmationStatus {
-	return t.verifyConfirmationStatus
+	return ConfirmationStatus(verifyConfirmationStatus)
 }
 
 //RegisterMultiSig register a multisig wallet with the SC.
@@ -1639,4 +1638,21 @@ func GetFaucetSCConfig(cb GetInfoCallback) (err error) {
 	}
 	go getInfoFromSharders(GET_FAUCETSC_CONFIG, 0, cb)
 	return
+}
+
+func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
+
+	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders))
+	if err != nil {
+		cb.OnInfoAvailable(op, StatusError, "", err.Error())
+		return
+	}
+
+	qr, err := tq.GetInfo(context.TODO(), urlSuffix)
+	if err != nil {
+		cb.OnInfoAvailable(op, StatusError, "", err.Error())
+		return
+	}
+
+	cb.OnInfoAvailable(op, StatusSuccess, string(qr.Content), "")
 }

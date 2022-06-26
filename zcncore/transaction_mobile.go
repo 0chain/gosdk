@@ -24,6 +24,12 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
+const (
+	Undefined int = iota
+	Success
+	ChargeableError
+)
+
 type chainConfig struct {
 	ChainID                 string   `json:"chain_id,omitempty"`
 	BlockWorker             string   `json:"block_worker"`
@@ -802,7 +808,7 @@ func (t *Transaction) GetVerifyConfirmationStatus() int {
 
 type MinerSCMinerInfo interface {
 	GetID() string
-	StakingPoolSettings() StakePoolSettings
+	//GetStakingPoolSettings() StakePoolSettings
 }
 
 func NewMinerSCMinerInfo(id string, settings StakePoolSettings) MinerSCMinerInfo {
@@ -814,14 +820,6 @@ func NewMinerSCMinerInfo(id string, settings StakePoolSettings) MinerSCMinerInfo
 	}
 }
 
-type minerSCDelegatePool struct {
-	Settings StakePoolSettings `json:"settings"`
-}
-
-type simpleMiner struct {
-	ID string `json:"id"`
-}
-
 type minerSCMinerInfo struct {
 	simpleMiner         `json:"simple_miner"`
 	minerSCDelegatePool `json:"stake_pool"`
@@ -831,8 +829,16 @@ func (mi *minerSCMinerInfo) GetID() string {
 	return mi.ID
 }
 
-func (mi *minerSCMinerInfo) StakingPoolSettings() StakePoolSettings {
+func (mi *minerSCMinerInfo) GetStakingPoolSettings() StakePoolSettings {
 	return mi.Settings
+}
+
+type minerSCDelegatePool struct {
+	Settings StakePoolSettings `json:"settings"`
+}
+
+type simpleMiner struct {
+	ID string `json:"id"`
 }
 
 func (t *Transaction) MinerSCMinerSettings(info MinerSCMinerInfo) (err error) {
@@ -907,7 +913,7 @@ func (t *Transaction) Verify() error {
 
 			tq.Reset()
 			// Get transaction confirmationBlock from a random sharder
-			confirmBlockHeader, confirmationBlock, lfbBlockHeader, err := tq.getFastConfirmation(context.TODO(), t.txnHash)
+			confirmBlockHeader, confirmationBlock, lfbBlockHeader, err := tq.getFastConfirmation(t.txnHash, nil)
 
 			if err != nil {
 				now := int64(common.Now())
@@ -1522,7 +1528,7 @@ func (tq *TransactionQuery) GetInfo(query string, tm *ReqTimeout) (*QueryResult,
 	}
 
 	if maxConsensus == 0 {
-		return nil, errors.New("zcn: query not found")
+		return nil, stderrors.New("zcn: query not found")
 	}
 
 	rate := float32(maxConsensus*100) / float32(tq.max)
@@ -1607,7 +1613,7 @@ func (tq *TransactionQuery) getConsensusConfirmation(numSharders int, txnHash st
 	}
 
 	if maxConfirmation == 0 {
-		return nil, nil, lfbBlockHeader, errors.New("zcn: transaction not found")
+		return nil, nil, lfbBlockHeader, stderrors.New("zcn: transaction not found")
 	}
 
 	if maxConfirmation < numSharders {
@@ -1618,13 +1624,13 @@ func (tq *TransactionQuery) getConsensusConfirmation(numSharders int, txnHash st
 }
 
 // getFastConfirmation get txn confirmation from a random online sharder
-func (tq *TransactionQuery) getFastConfirmation(ctx context.Context, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
+func (tq *TransactionQuery) getFastConfirmation(txnHash string, tm *ReqTimeout) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
 	var confirmationBlockHeader *blockHeader
 	var confirmationBlock map[string]json.RawMessage
 	var lfbBlockHeader blockHeader
 
 	// {host}/v1/transaction/get/confirmation?hash={txnHash}&content=lfb
-	result, err := tq.FromAny(ctx, tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"))
+	result, err := tq.FromAny(tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"), tm)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -1662,4 +1668,21 @@ func (tq *TransactionQuery) getFastConfirmation(ctx context.Context, txnHash str
 	}
 
 	return nil, nil, nil, thrown.Throw(ErrTransactionNotFound, strconv.Itoa(result.StatusCode))
+}
+
+func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
+
+	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders))
+	if err != nil {
+		cb.OnInfoAvailable(op, StatusError, "", err.Error())
+		return
+	}
+
+	qr, err := tq.GetInfo(urlSuffix, nil)
+	if err != nil {
+		cb.OnInfoAvailable(op, StatusError, "", err.Error())
+		return
+	}
+
+	cb.OnInfoAvailable(op, StatusSuccess, string(qr.Content), "")
 }

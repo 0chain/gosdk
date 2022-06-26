@@ -51,7 +51,7 @@ func (ta *TransactionWithAuth) Send(toClientID string, val string, desc string) 
 	return nil
 }
 
-func (ta *TransactionWithAuth) VestingAdd(ar *VestingAddRequest, value string) error {
+func (ta *TransactionWithAuth) VestingAdd(ar VestingAddRequest, value string) error {
 	v, err := parseCoinStr(value)
 	if err != nil {
 		return err

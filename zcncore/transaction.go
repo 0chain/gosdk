@@ -89,7 +89,7 @@ type Transaction struct {
 	txnError                 error
 	txnCb                    TransactionCallback
 	verifyStatus             int
-	verifyConfirmationStatus ConfirmationStatus
+	verifyConfirmationStatus int
 	verifyOut                string
 	verifyError              error
 }
@@ -223,7 +223,7 @@ func (t *Transaction) completeVerify(status int, out string, err error) {
 	t.completeVerifyWithConStatus(status, 0, out, err)
 }
 
-func (t *Transaction) completeVerifyWithConStatus(status int, conStatus ConfirmationStatus, out string, err error) {
+func (t *Transaction) completeVerifyWithConStatus(status int, conStatus int, out string, err error) {
 	t.verifyStatus = status
 	t.verifyConfirmationStatus = conStatus
 	t.verifyOut = out
