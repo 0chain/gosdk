@@ -13,12 +13,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/core/tokenrate"
-	"github.com/0chain/gosdk/core/transaction"
-
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
+	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -320,31 +318,6 @@ func Init(chainConfigJSON string) error {
 // InitSignatureScheme initializes signature scheme only.
 func InitSignatureScheme(scheme string) {
 	_config.chain.SignatureScheme = scheme
-}
-
-func GetNetwork() *Network {
-	return &Network{
-		Miners:   _config.chain.Miners,
-		Sharders: _config.chain.Sharders,
-	}
-}
-
-func SetNetwork(miners []string, sharders []string) {
-	_config.chain.Miners = miners
-	_config.chain.Sharders = sharders
-
-	transaction.InitCache(sharders)
-
-	conf.InitChainNetwork(&conf.Network{
-		Miners:   miners,
-		Sharders: sharders,
-	})
-}
-
-func GetNetworkJSON() string {
-	network := GetNetwork()
-	networkBytes, _ := json.Marshal(network)
-	return string(networkBytes)
 }
 
 // CreateWallet creates the wallet for to configure signature scheme.
