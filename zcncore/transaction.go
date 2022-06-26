@@ -821,13 +821,3 @@ func (t *Transaction) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error
 	go t.setNonceAndSubmit()
 	return
 }
-
-func (t *Transaction) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error) {
-	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip, 0)
-	if err != nil {
-		Logger.Error(err)
-		return
-	}
-	go t.setNonceAndSubmit()
-	return
-}

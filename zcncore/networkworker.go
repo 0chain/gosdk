@@ -3,9 +3,10 @@ package zcncore
 import (
 	"context"
 	"encoding/json"
-	"github.com/0chain/gosdk/core/transaction"
 	"reflect"
 	"time"
+
+	"github.com/0chain/gosdk/core/transaction"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
@@ -22,7 +23,7 @@ type Network struct {
 	Sharders []string `json:"sharders"`
 }
 
-func UpdateNetworkDetailsWorker(ctx context.Context) {
+func updateNetworkDetailsWorker(ctx context.Context) {
 	ticker := time.NewTicker(time.Duration(networkWorkerTimerInHours) * time.Hour)
 	for {
 		select {

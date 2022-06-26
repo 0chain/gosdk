@@ -1282,7 +1282,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 		return err
 	}
 
-	go UpdateNetworkDetailsWorker(context.Background())
+	go updateNetworkDetailsWorker(context.Background())
 
 	for _, conf := range configs {
 		err := conf(&_config.chain)
@@ -1655,4 +1655,14 @@ func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 	}
 
 	cb.OnInfoAvailable(op, StatusSuccess, string(qr.Content), "")
+}
+
+func (t *Transaction) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go t.setNonceAndSubmit()
+	return
 }

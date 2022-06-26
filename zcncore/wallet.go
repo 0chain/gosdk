@@ -296,7 +296,7 @@ func Init(chainConfigJSON string) error {
 			return err
 		}
 
-		go UpdateNetworkDetailsWorker(context.Background())
+		go updateNetworkDetailsWorker(context.Background())
 
 		assertConfig()
 		_config.isConfigured = true

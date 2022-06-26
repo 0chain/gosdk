@@ -301,7 +301,7 @@ func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber, fee string) 
 	}
 
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, blob, 0)
+		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, blob.b, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err
@@ -510,7 +510,7 @@ func (ta *TransactionWithAuth) GetVerifyConfirmationStatus() int {
 	return ta.t.GetVerifyConfirmationStatus()
 }
 
-func (ta *TransactionWithAuth) MinerSCMinerSettings(info MinerSCMinerInfo) (
+func (ta *TransactionWithAuth) MinerSCMinerSettings(info *MinerSCMinerInfo) (
 	err error) {
 
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
@@ -523,7 +523,7 @@ func (ta *TransactionWithAuth) MinerSCMinerSettings(info MinerSCMinerInfo) (
 	return
 }
 
-func (ta *TransactionWithAuth) MinerSCSharderSettings(info MinerSCMinerInfo) (
+func (ta *TransactionWithAuth) MinerSCSharderSettings(info *MinerSCMinerInfo) (
 	err error) {
 
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
@@ -536,7 +536,7 @@ func (ta *TransactionWithAuth) MinerSCSharderSettings(info MinerSCMinerInfo) (
 	return
 }
 
-func (ta *TransactionWithAuth) MinerSCDeleteMiner(info MinerSCMinerInfo) (
+func (ta *TransactionWithAuth) MinerSCDeleteMiner(info *MinerSCMinerInfo) (
 	err error) {
 
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
@@ -549,7 +549,7 @@ func (ta *TransactionWithAuth) MinerSCDeleteMiner(info MinerSCMinerInfo) (
 	return
 }
 
-func (ta *TransactionWithAuth) MinerSCDeleteSharder(info MinerSCMinerInfo) (
+func (ta *TransactionWithAuth) MinerSCDeleteSharder(info *MinerSCMinerInfo) (
 	err error) {
 
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,

@@ -86,10 +86,10 @@ type TransactionCommon interface {
 	FaucetUpdateConfig(InputMap) error
 	ZCNSCUpdateGlobalConfig(InputMap) error
 
-	MinerSCMinerSettings(MinerSCMinerInfo) error
-	MinerSCSharderSettings(MinerSCMinerInfo) error
-	MinerSCDeleteMiner(MinerSCMinerInfo) error
-	MinerSCDeleteSharder(MinerSCMinerInfo) error
+	MinerSCMinerSettings(*MinerSCMinerInfo) error
+	MinerSCSharderSettings(*MinerSCMinerInfo) error
+	MinerSCDeleteMiner(*MinerSCMinerInfo) error
+	MinerSCDeleteSharder(*MinerSCMinerInfo) error
 
 	GetVerifyConfirmationStatus() int
 }
@@ -157,16 +157,50 @@ type Terms struct {
 }
 
 type Blobber struct {
+	b blobber
+}
+
+func NewBlobber(id, baseUrl string,
+	capacity, allocated, lastHealthCheck int64,
+	terms Terms, spSettings StakePoolSettings) *Blobber {
+	return &Blobber{
+		b: blobber{
+			ID:                id,
+			BaseURL:           baseUrl,
+			Capacity:          capacity,
+			Allocated:         allocated,
+			LastHealthCheck:   lastHealthCheck,
+			Terms:             terms,
+			StakePoolSettings: spSettings,
+		},
+	}
+}
+
+type blobber struct {
 	ID                string            `json:"id"`
 	BaseURL           string            `json:"url"`
-	Terms             Terms             `json:"terms"`
 	Capacity          int64             `json:"capacity"`
 	Allocated         int64             `json:"allocated"`
 	LastHealthCheck   int64             `json:"last_health_check"`
+	Terms             Terms             `json:"terms"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
 type AddAuthorizerPayload struct {
+	aap addAuthorizerPayload
+}
+
+func NewAddAuthorizerPayload(pubKey, url string, spSettings AuthorizerStakePoolSettings) *AddAuthorizerPayload {
+	return &AddAuthorizerPayload{
+		aap: addAuthorizerPayload{
+			PublicKey:         pubKey,
+			URL:               url,
+			StakePoolSettings: spSettings,
+		},
+	}
+}
+
+type addAuthorizerPayload struct {
 	PublicKey         string                      `json:"public_key"`
 	URL               string                      `json:"url"`
 	StakePoolSettings AuthorizerStakePoolSettings `json:"stake_pool_settings"` // Used to initially create stake pool
@@ -623,7 +657,7 @@ func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee string) error {
 	}
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, b, 0)
+		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, b.b, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err
@@ -806,16 +840,17 @@ func (t *Transaction) GetVerifyConfirmationStatus() int {
 	return int(t.verifyConfirmationStatus)
 }
 
-type MinerSCMinerInfo interface {
-	GetID() string
-	//GetStakingPoolSettings() StakePoolSettings
+type MinerSCMinerInfo struct {
+	info minerSCMinerInfo
 }
 
-func NewMinerSCMinerInfo(id string, settings StakePoolSettings) MinerSCMinerInfo {
-	return &minerSCMinerInfo{
-		simpleMiner: simpleMiner{ID: id},
-		minerSCDelegatePool: minerSCDelegatePool{
-			Settings: settings,
+func NewMinerSCMinerInfo(id string, settings StakePoolSettings) *MinerSCMinerInfo {
+	return &MinerSCMinerInfo{
+		info: minerSCMinerInfo{
+			simpleMiner: simpleMiner{ID: id},
+			minerSCDelegatePool: minerSCDelegatePool{
+				Settings: settings,
+			},
 		},
 	}
 }
@@ -829,10 +864,6 @@ func (mi *minerSCMinerInfo) GetID() string {
 	return mi.ID
 }
 
-func (mi *minerSCMinerInfo) GetStakingPoolSettings() StakePoolSettings {
-	return mi.Settings
-}
-
 type minerSCDelegatePool struct {
 	Settings StakePoolSettings `json:"settings"`
 }
@@ -841,9 +872,9 @@ type simpleMiner struct {
 	ID string `json:"id"`
 }
 
-func (t *Transaction) MinerSCMinerSettings(info MinerSCMinerInfo) (err error) {
+func (t *Transaction) MinerSCMinerSettings(info *MinerSCMinerInfo) (err error) {
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_MINER_SETTINGS, info, 0)
+		transaction.MINERSC_MINER_SETTINGS, info.info, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
@@ -852,9 +883,9 @@ func (t *Transaction) MinerSCMinerSettings(info MinerSCMinerInfo) (err error) {
 	return
 }
 
-func (t *Transaction) MinerSCSharderSettings(info MinerSCMinerInfo) (err error) {
+func (t *Transaction) MinerSCSharderSettings(info *MinerSCMinerInfo) (err error) {
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_SHARDER_SETTINGS, info, 0)
+		transaction.MINERSC_SHARDER_SETTINGS, info.info, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
@@ -863,9 +894,9 @@ func (t *Transaction) MinerSCSharderSettings(info MinerSCMinerInfo) (err error) 
 	return
 }
 
-func (t *Transaction) MinerSCDeleteMiner(info MinerSCMinerInfo) (err error) {
+func (t *Transaction) MinerSCDeleteMiner(info *MinerSCMinerInfo) (err error) {
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_MINER_DELETE, info, 0)
+		transaction.MINERSC_MINER_DELETE, info.info, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
@@ -874,9 +905,9 @@ func (t *Transaction) MinerSCDeleteMiner(info MinerSCMinerInfo) (err error) {
 	return
 }
 
-func (t *Transaction) MinerSCDeleteSharder(info MinerSCMinerInfo) (err error) {
+func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_SHARDER_DELETE, info, 0)
+		transaction.MINERSC_SHARDER_DELETE, info.info, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
@@ -984,6 +1015,16 @@ func (t *Transaction) Verify() error {
 		}
 	}()
 	return nil
+}
+
+func (t *Transaction) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip.aap, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go t.setNonceAndSubmit()
+	return
 }
 
 // ConvertToValue converts ZCN tokens to value
@@ -1176,12 +1217,25 @@ func (b *Block) GetHeader() *BlockHeader {
 
 type IterTxnFunc func(idx int, txn *TransactionMobile)
 
-// ForEachTxns iterates over all block.Txns as gomobine does not support slices
-// for most of the data struct, so to get the transactions in a block, the caller
-// needs to define the
-func (b *Block) ForEachTxns(tf IterTxnFunc) {
-	for i, t := range b.txns {
-		tf(i, t)
+type Transactions struct {
+	txns []*TransactionMobile
+}
+
+func (tm *Transactions) Len() int {
+	return len(tm.txns)
+}
+
+func (tm *Transactions) Get(idx int) (*TransactionMobile, error) {
+	if idx < 0 && idx >= len(tm.txns) {
+		return nil, stderrors.New("index out of bounds")
+	}
+
+	return tm.txns[idx], nil
+}
+
+func (b *Block) GetTxns() *Transactions {
+	return &Transactions{
+		txns: b.txns,
 	}
 }
 
@@ -1244,7 +1298,7 @@ func toMobileBlock(b *block.Block) *Block {
 	return lb
 }
 
-//Transaction entity that encapsulates the transaction related data and meta data
+//TransactionMobile entity that encapsulates the transaction related data and meta data
 type TransactionMobile struct {
 	Hash              string `json:"hash,omitempty"`
 	Version           string `json:"version,omitempty"`
