@@ -6,6 +6,7 @@ package zcncore
 import (
 	"context"
 	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -17,6 +18,7 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
@@ -1130,4 +1132,143 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 	conf.InitClientConfig(cfg)
 
 	return nil
+}
+
+// FromAll query transaction from all sharders whatever it is selected or offline in previous queires, and return consensus result
+func (tq *TransactionQuery) FromAll(ctx context.Context, query string, handle QueryResultHandle) error {
+	if tq == nil || tq.max == 0 {
+		return ErrNoAvailableSharders
+	}
+
+	urls := make([]string, 0, tq.max)
+	for _, host := range tq.sharders {
+		urls = append(urls, tq.buildUrl(host, query))
+	}
+
+	r := resty.New()
+	r.DoGet(ctx, urls...).
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			res := QueryResult{
+				Content:    respBody,
+				Error:      err,
+				StatusCode: http.StatusBadRequest,
+			}
+
+			if resp != nil {
+				res.StatusCode = resp.StatusCode
+
+				Logger.Debug(req.URL.String() + " " + resp.Status)
+				Logger.Debug(string(respBody))
+			} else {
+				Logger.Debug(req.URL.String())
+
+			}
+
+			if handle != nil {
+				if handle(res) {
+
+					cf()
+				}
+			}
+
+			return nil
+		})
+
+	r.Wait()
+
+	return nil
+}
+
+func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryResult, error) {
+
+	consensuses := make(map[int]int)
+	var maxConsensus int
+	var consensusesResp QueryResult
+	// {host}{query}
+	err := tq.FromAll(ctx, query,
+		func(qr QueryResult) bool {
+			//ignore response if it is network error
+			if qr.StatusCode >= 500 {
+				return false
+			}
+
+			consensuses[qr.StatusCode]++
+			if consensuses[qr.StatusCode] >= maxConsensus {
+				maxConsensus = consensuses[qr.StatusCode]
+				consensusesResp = qr
+			}
+
+			return false
+
+		})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if maxConsensus == 0 {
+		return nil, stderrors.New("zcn: query not found")
+	}
+
+	rate := float32(maxConsensus*100) / float32(tq.max)
+	if rate < consensusThresh {
+		return nil, ErrInvalidConsensus
+	}
+
+	if consensusesResp.StatusCode != http.StatusOK {
+		return nil, stderrors.New(string(consensusesResp.Content))
+	}
+
+	return &consensusesResp, nil
+}
+
+// FromAny query transaction from any sharder that is not selected in previous queires. use any used sharder if there is not any unused sharder
+func (tq *TransactionQuery) FromAny(ctx context.Context, query string) (QueryResult, error) {
+
+	res := QueryResult{
+		StatusCode: http.StatusBadRequest,
+	}
+
+	err := tq.validate(1)
+
+	if err != nil {
+		return res, err
+	}
+
+	host, err := tq.randOne(ctx)
+
+	if err != nil {
+		return res, err
+	}
+
+	r := resty.New()
+	requestUrl := tq.buildUrl(host, query)
+
+	Logger.Debug("GET", requestUrl)
+
+	r.DoGet(ctx, requestUrl).
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			res.Error = err
+			if err != nil {
+				return err
+			}
+
+			res.Content = respBody
+			Logger.Debug(string(respBody))
+
+			if resp != nil {
+				res.StatusCode = resp.StatusCode
+			}
+
+			return nil
+		})
+
+	errs := r.Wait()
+
+	if len(errs) > 0 {
+		return res, errs[0]
+	}
+
+	return res, nil
+
 }
