@@ -30,7 +30,7 @@ type StarredFile struct {
 }
 
 // UpdateStarredFiles writes the provided full list of starred files through the registry.
-func UpdateStarredFiles(a *Allocation, files *StarredFiles) error {
+func (a *Allocation) UpdateStarredFiles(files *StarredFiles) error {
 	if files == nil {
 		return errors.New("update_starred_files_failed", "Starred files is nil")
 	}
@@ -49,7 +49,7 @@ func UpdateStarredFiles(a *Allocation, files *StarredFiles) error {
 }
 
 // GetStarredFiles returns the full list of starred files through the registry.
-func GetStarredFiles(a *Allocation) (*StarredFiles, error) {
+func (a *Allocation) GetStarredFiles() (*StarredFiles, error) {
 	data, lastUpdateTime, err := starredFileRegistryManager(a).Get()
 	if err != nil {
 		return nil, errors.New("get_starred_files_failed", "Failed to retrieve starred files: "+err.Error())
@@ -68,7 +68,7 @@ func GetStarredFiles(a *Allocation) (*StarredFiles, error) {
 }
 
 // GetStarredFilesLastUpdateTimestamp retrieves the latest updated timestamp of the starred file registry.
-func GetStarredFilesLastUpdateTimestamp(a *Allocation) (common.Timestamp, error) {
+func (a *Allocation) GetStarredFilesLastUpdateTimestamp() (common.Timestamp, error) {
 	lastUpdateTime, err := starredFileRegistryManager(a).GetLastUpdateTimestamp()
 	if err != nil {
 		return common.Timestamp(0), errors.New("get_starred_files_last_update_timestamp_failed", "Failed to get last update timestamp of registry file for starred files: "+err.Error())

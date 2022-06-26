@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestUpdateStarredFiles(t *testing.T) {
+func TestAllocation_UpdateStarredFiles(t *testing.T) {
 	for _, tc := range []struct {
 		name           string
 		input          *StarredFiles
@@ -47,13 +47,13 @@ func TestUpdateStarredFiles(t *testing.T) {
 				}
 			}
 
-			err := UpdateStarredFiles(dummyAlloc, tt.input)
+			err := dummyAlloc.UpdateStarredFiles(tt.input)
 			assert.Equal(t, tt.wantErr, err)
 		})
 	}
 }
 
-func TestGetStarredFiles(t *testing.T) {
+func TestAllocation_GetStarredFiles(t *testing.T) {
 	for _, tc := range []struct {
 		name            string
 		getResData      []byte
@@ -94,7 +94,7 @@ func TestGetStarredFiles(t *testing.T) {
 				}
 			}
 
-			got, err := GetStarredFiles(dummyAlloc)
+			got, err := dummyAlloc.GetStarredFiles()
 
 			assert.Equal(t, tt.want, got)
 			assert.Equal(t, tt.wantErr, err)
@@ -102,7 +102,7 @@ func TestGetStarredFiles(t *testing.T) {
 	}
 }
 
-func TestGetStarredFilesLastUpdateTimestamp(t *testing.T) {
+func TestAllocation_GetStarredFilesLastUpdateTimestamp(t *testing.T) {
 	for _, tc := range []struct {
 		name            string
 		getResTimestamp common.Timestamp
@@ -134,7 +134,7 @@ func TestGetStarredFilesLastUpdateTimestamp(t *testing.T) {
 				}
 			}
 
-			got, err := GetStarredFilesLastUpdateTimestamp(dummyAlloc)
+			got, err := dummyAlloc.GetStarredFilesLastUpdateTimestamp()
 
 			assert.Equal(t, tt.wantTimestamp, got)
 			assert.Equal(t, tt.wantErr, err)
