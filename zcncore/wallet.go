@@ -958,10 +958,6 @@ type VestingSCConfig struct {
 	MaxDescriptionLength int            `json:"max_description_length"`
 }
 
-type InputMap struct {
-	Fields map[string]string `json:"fields"`
-}
-
 func GetVestingSCConfig(cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return

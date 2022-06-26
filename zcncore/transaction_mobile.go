@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/0chain/errors"
@@ -30,6 +31,8 @@ type TransactionCommon interface {
 	VestingAdd(ar *VestingAddRequest, value string) error
 
 	MinerSCLock(minerID string, lock string) error
+	MinerSCCollectReward(providerId string, poolId string, providerType int) error
+	StorageSCCollectReward(providerId, poolId string, providerType int) error
 
 	FinalizeAllocation(allocID string, fee string) error
 	CancelAllocation(allocID string, fee string) error
@@ -43,16 +46,25 @@ type TransactionCommon interface {
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock, fee string) error
 	WritePoolLock(allocID string, blobberID string, duration int64, lock, fee string) error
 	WritePoolUnlock(poolID string, fee string) error
+
+	VestingUpdateConfig(InputMap) error
+	MinerScUpdateConfig(InputMap) error
+	MinerScUpdateGlobals(InputMap) error
+	StorageScUpdateConfig(InputMap) error
+	FaucetUpdateConfig(InputMap) error
+	ZCNSCUpdateGlobalConfig(InputMap) error
+
+	GetVerifyConfirmationStatus() int
 }
 
-// PriceRange represents a price range allowed by user to filter blobbers.
-type PriceRange struct {
+// priceRange represents a price range allowed by user to filter blobbers.
+type priceRange struct {
 	Min int64 `json:"min"`
 	Max int64 `json:"max"`
 }
 
-// CreateAllocationRequest is information to create allocation.
-type CreateAllocationRequest struct {
+// createAllocationRequest is information to create allocation.
+type createAllocationRequest struct {
 	DataShards      int        `json:"data_shards"`
 	ParityShards    int        `json:"parity_shards"`
 	Size            int64      `json:"size"`
@@ -60,8 +72,36 @@ type CreateAllocationRequest struct {
 	Owner           string     `json:"owner_id"`
 	OwnerPublicKey  string     `json:"owner_public_key"`
 	Blobbers        []string   `json:"blobbers"`
-	ReadPriceRange  PriceRange `json:"read_price_range"`
-	WritePriceRange PriceRange `json:"write_price_range"`
+	ReadPriceRange  priceRange `json:"read_price_range"`
+	WritePriceRange priceRange `json:"write_price_range"`
+}
+
+type CreateAllocationRequest struct {
+	DataShards     int
+	ParityShards   int
+	Size           int64
+	Expiration     int64
+	Owner          string
+	OwnerPublicKey string
+	Blobbers       string // blobber urls combined with ','
+	ReadPriceMin   int64
+	ReadPriceMax   int64
+	WritePriceMin  int64
+	WritePriceMax  int64
+}
+
+func (car *CreateAllocationRequest) toCreateAllocationSCInput() *createAllocationRequest {
+	return &createAllocationRequest{
+		DataShards:      car.DataShards,
+		ParityShards:    car.ParityShards,
+		Size:            car.Size,
+		Expiration:      car.Expiration,
+		Owner:           car.Owner,
+		OwnerPublicKey:  car.OwnerPublicKey,
+		Blobbers:        strings.Split(car.Blobbers, ","),
+		ReadPriceRange:  priceRange{Min: car.ReadPriceMin, Max: car.ReadPriceMax},
+		WritePriceRange: priceRange{Min: car.WritePriceMin, Max: car.WritePriceMax},
+	}
 }
 
 type StakePoolSettings struct {
@@ -89,6 +129,12 @@ type Blobber struct {
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
+type AddAuthorizerPayload struct {
+	PublicKey         string                      `json:"public_key"`
+	URL               string                      `json:"url"`
+	StakePoolSettings AuthorizerStakePoolSettings `json:"stake_pool_settings"` // Used to initially create stake pool
+}
+
 type AuthorizerStakePoolSettings struct {
 	DelegateWallet string  `json:"delegate_wallet"`
 	MinStake       int64   `json:"min_stake"`
@@ -111,6 +157,24 @@ type VestingAddRequest struct {
 	StartTime    int64          `json:"start_time"`   //
 	Duration     int64          `json:"duration"`     //
 	Destinations []*VestingDest `json:"destinations"` //
+}
+
+type InputMap interface {
+	AddField(key, value string)
+}
+
+type inputMap struct {
+	Fields map[string]string `json:"fields"`
+}
+
+func NewInputMap() InputMap {
+	return &inputMap{
+		Fields: make(map[string]string),
+	}
+}
+
+func (im *inputMap) AddField(key, value string) {
+	im.Fields[key] = value
 }
 
 func parseCoinStr(vs string) (uint64, error) {
@@ -261,6 +325,39 @@ func (t *Transaction) MinerSCLock(nodeID string, lock string) (err error) {
 	return
 }
 
+func (t *Transaction) MinerSCCollectReward(providerId, poolId string, providerType int) error {
+	pr := &scCollectReward{
+		ProviderId:   providerId,
+		PoolId:       poolId,
+		ProviderType: providerType,
+	}
+
+	err := t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return err
+}
+
+func (t *Transaction) StorageSCCollectReward(providerId, poolId string, providerType int) error {
+	pr := &scCollectReward{
+		ProviderId:   providerId,
+		PoolId:       poolId,
+		ProviderType: providerType,
+	}
+	err := t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go t.setNonceAndSubmit()
+	return err
+}
+
 // FinalizeAllocation transaction.
 func (t *Transaction) FinalizeAllocation(allocID string, fee string) (
 	err error) {
@@ -309,8 +406,7 @@ func (t *Transaction) CancelAllocation(allocID string, fee string) error {
 }
 
 // CreateAllocation transaction.
-func (t *Transaction) CreateAllocation(car *CreateAllocationRequest,
-	lock, fee string) error {
+func (t *Transaction) CreateAllocation(car *CreateAllocationRequest, lock, fee string) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
@@ -322,7 +418,7 @@ func (t *Transaction) CreateAllocation(car *CreateAllocationRequest,
 	}
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_CREATE_ALLOCATION, car, lv)
+		transaction.STORAGESC_CREATE_ALLOCATION, car.toCreateAllocationSCInput(), lv)
 	if err != nil {
 		Logger.Error(err)
 		return err
@@ -577,6 +673,84 @@ func (t *Transaction) WritePoolUnlock(poolID string, fee string) error {
 	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
+}
+
+func (t *Transaction) VestingUpdateConfig(vscc InputMap) (err error) {
+
+	err = t.createSmartContractTxn(VestingSmartContractAddress,
+		transaction.VESTING_UPDATE_SETTINGS, vscc, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+// faucet smart contract
+
+func (t *Transaction) FaucetUpdateConfig(ip InputMap) (err error) {
+
+	err = t.createSmartContractTxn(FaucetSmartContractAddress,
+		transaction.FAUCETSC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+//
+// miner SC
+//
+
+func (t *Transaction) MinerScUpdateConfig(ip InputMap) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+func (t *Transaction) MinerScUpdateGlobals(ip InputMap) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_UPDATE_GLOBALS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+func (t *Transaction) StorageScUpdateConfig(ip InputMap) (err error) {
+	err = t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+func (t *Transaction) ZCNSCUpdateGlobalConfig(ip InputMap) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress,
+		transaction.ZCNSC_UPDATE_GLOBAL_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go t.setNonceAndSubmit()
+	return
+}
+
+func (t *Transaction) GetVerifyConfirmationStatus() int {
+	return int(t.verifyConfirmationStatus)
 }
 
 // ConvertToValue converts ZCN tokens to value

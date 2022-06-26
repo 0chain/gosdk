@@ -121,8 +121,6 @@ type TransactionScheme interface {
 	SetTransactionNonce(txnNonce int64) error
 	// Verify implements verify the transaction
 	Verify() error
-	// GetVerifyConfirmationStatus implements the verification status from sharders
-	GetVerifyConfirmationStatus() ConfirmationStatus
 	// GetVerifyOutput implements the verification output from sharders
 	GetVerifyOutput() string
 	// GetTransactionError implements error string in case of transaction failure
@@ -144,32 +142,22 @@ type TransactionScheme interface {
 	VestingStop(sr *VestingStopRequest) error
 	VestingUnlock(poolID string) error
 	VestingDelete(poolID string) error
-	VestingUpdateConfig(*InputMap) error
 
 	// Miner SC
 
-	MinerSCCollectReward(string, string, Provider) error
 	MinerSCMinerSettings(*MinerSCMinerInfo) error
 	MinerSCSharderSettings(*MinerSCMinerInfo) error
 	MinerSCUnlock(minerID, poolID string) error
-	MinerScUpdateConfig(*InputMap) error
-	MinerScUpdateGlobals(*InputMap) error
 	MinerSCDeleteMiner(*MinerSCMinerInfo) error
 	MinerSCDeleteSharder(*MinerSCMinerInfo) error
 
 	// Storage SC
 
-	StorageSCCollectReward(string, string, Provider) error
-	StorageScUpdateConfig(*InputMap) error
-
 	// Faucet
-
-	FaucetUpdateConfig(*InputMap) error
 
 	// ZCNSC Common transactions
 
 	// ZCNSCUpdateGlobalConfig updates global config
-	ZCNSCUpdateGlobalConfig(*InputMap) error
 	// ZCNSCUpdateAuthorizerConfig updates authorizer config by ID
 	ZCNSCUpdateAuthorizerConfig(*AuthorizerNode) error
 	// ZCNSCAddAuthorizer adds authorizer
@@ -782,10 +770,6 @@ func (t *Transaction) Verify() error {
 	return nil
 }
 
-func (t *Transaction) GetVerifyConfirmationStatus() ConfirmationStatus {
-	return t.verifyConfirmationStatus
-}
-
 func (t *Transaction) GetVerifyOutput() string {
 	if t.verifyStatus == StatusSuccess {
 		return t.verifyOut
@@ -877,58 +861,6 @@ func (t *Transaction) VestingDelete(poolID string) (err error) {
 	return
 }
 
-func (t *Transaction) VestingUpdateConfig(vscc *InputMap) (err error) {
-
-	err = t.createSmartContractTxn(VestingSmartContractAddress,
-		transaction.VESTING_UPDATE_SETTINGS, vscc, 0)
-	if err != nil {
-		Logger.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-// faucet smart contract
-
-func (t *Transaction) FaucetUpdateConfig(ip *InputMap) (err error) {
-
-	err = t.createSmartContractTxn(FaucetSmartContractAddress,
-		transaction.FAUCETSC_UPDATE_SETTINGS, ip, 0)
-	if err != nil {
-		Logger.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-//
-// miner SC
-//
-
-func (t *Transaction) MinerScUpdateConfig(ip *InputMap) (err error) {
-	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_UPDATE_SETTINGS, ip, 0)
-	if err != nil {
-		Logger.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-func (t *Transaction) MinerScUpdateGlobals(ip *InputMap) (err error) {
-	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_UPDATE_GLOBALS, ip, 0)
-	if err != nil {
-		Logger.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
 type MinerSCDelegatePool struct {
 	Settings StakePoolSettings `json:"settings"`
 }
@@ -986,36 +918,10 @@ func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
 	return
 }
 
-type Provider int
-
-const (
-	ProviderMiner Provider = iota + 1
-	ProviderSharder
-	ProviderBlobber
-	ProviderValidator
-	ProviderAuthorizer
-)
-
-type SCCollectReward struct {
-	ProviderId   string   `json:"provider_id"`
-	PoolId       string   `json:"pool_id"`
-	ProviderType Provider `json:"provider_type"`
-}
-
-func (t *Transaction) MinerSCCollectReward(providerId, poolId string, providerType Provider) error {
-	pr := &SCCollectReward{
-		ProviderId:   providerId,
-		PoolId:       poolId,
-		ProviderType: providerType,
-	}
-	err := t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_COLLECT_REWARD, pr, 0)
-	if err != nil {
-		Logger.Error(err)
-		return err
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return err
+type scCollectReward struct {
+	ProviderId   string `json:"provider_id"`
+	PoolId       string `json:"pool_id"`
+	ProviderType int    `json:"provider_type"`
 }
 
 type MinerSCLock struct {
@@ -1157,39 +1063,6 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 // Storage SC transactions
 //
 
-func (t *Transaction) StorageSCCollectReward(providerId, poolId string, providerType Provider) error {
-	pr := &SCCollectReward{
-		ProviderId:   providerId,
-		PoolId:       poolId,
-		ProviderType: providerType,
-	}
-	err := t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_COLLECT_REWARD, pr, 0)
-	if err != nil {
-		Logger.Error(err)
-		return err
-	}
-	go t.setNonceAndSubmit()
-	return err
-}
-
-func (t *Transaction) StorageScUpdateConfig(ip *InputMap) (err error) {
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_UPDATE_SETTINGS, ip, 0)
-	if err != nil {
-		Logger.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-type AddAuthorizerPayload struct {
-	PublicKey         string                      `json:"public_key"`
-	URL               string                      `json:"url"`
-	StakePoolSettings AuthorizerStakePoolSettings `json:"stake_pool_settings"` // Used to initially create stake pool
-}
-
 type AuthorizerNode struct {
 	ID     string            `json:"id"`
 	Config *AuthorizerConfig `json:"config"`
@@ -1198,16 +1071,6 @@ type AuthorizerNode struct {
 //
 // ZCNSC transactions
 //
-
-func (t *Transaction) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error) {
-	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_GLOBAL_CONFIG, ip, 0)
-	if err != nil {
-		Logger.Error(err)
-		return
-	}
-	go t.setNonceAndSubmit()
-	return
-}
 
 func (t *Transaction) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error) {
 	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG, ip, 0)

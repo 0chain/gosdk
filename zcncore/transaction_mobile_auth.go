@@ -405,3 +405,107 @@ func (ta *TransactionWithAuth) WritePoolUnlock(poolID string, fee string) error 
 	go func() { ta.submitTxn() }()
 	return nil
 }
+
+func (ta *TransactionWithAuth) MinerSCCollectReward(providerId, poolId string, providerType int) error {
+	pr := &scCollectReward{
+		ProviderId:   providerId,
+		PoolId:       poolId,
+		ProviderType: providerType,
+	}
+	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go ta.submitTxn()
+	return err
+}
+
+func (ta *TransactionWithAuth) StorageSCCollectReward(providerId, poolId string, providerType int) error {
+	pr := &scCollectReward{
+		ProviderId:   providerId,
+		PoolId:       poolId,
+		ProviderType: providerType,
+	}
+	err := ta.t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { ta.submitTxn() }()
+	return err
+}
+
+func (ta *TransactionWithAuth) VestingUpdateConfig(ip InputMap) (err error) {
+	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
+		transaction.VESTING_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+// faucet smart contract
+
+func (ta *TransactionWithAuth) FaucetUpdateConfig(ip InputMap) (err error) {
+	err = ta.t.createSmartContractTxn(FaucetSmartContractAddress,
+		transaction.FAUCETSC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) MinerScUpdateConfig(ip InputMap) (err error) {
+	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) MinerScUpdateGlobals(ip InputMap) (err error) {
+	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_UPDATE_GLOBALS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) StorageScUpdateConfig(ip InputMap) (err error) {
+	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) ZCNSCUpdateGlobalConfig(ip InputMap) (err error) {
+	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress,
+		transaction.ZCNSC_UPDATE_GLOBAL_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go ta.submitTxn()
+	return
+}
+
+func (ta *TransactionWithAuth) GetVerifyConfirmationStatus() int {
+	return ta.t.GetVerifyConfirmationStatus()
+}

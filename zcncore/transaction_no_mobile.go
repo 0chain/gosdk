@@ -18,6 +18,16 @@ import (
 	"github.com/0chain/gosdk/core/util"
 )
 
+const (
+	ProviderMiner Provider = iota + 1
+	ProviderSharder
+	ProviderBlobber
+	ProviderValidator
+	ProviderAuthorizer
+)
+
+type Provider int
+
 type TransactionCommon interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
 	ExecuteSmartContract(address, methodName string, input interface{}, val uint64) error
@@ -29,6 +39,9 @@ type TransactionCommon interface {
 	VestingAdd(ar *VestingAddRequest, value uint64) error
 
 	MinerSCLock(minerID string, lock uint64) error
+	MinerSCCollectReward(string, string, Provider) error
+
+	StorageSCCollectReward(string, string, Provider) error
 
 	FinalizeAllocation(allocID string, fee uint64) error
 	CancelAllocation(allocID string, fee uint64) error
@@ -42,6 +55,16 @@ type TransactionCommon interface {
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock uint64, fee uint64) error
 	WritePoolLock(allocID string, blobberID string, duration int64, lock uint64, fee uint64) error
 	WritePoolUnlock(poolID string, fee uint64) error
+
+	VestingUpdateConfig(*InputMap) error
+	MinerScUpdateConfig(*InputMap) error
+	MinerScUpdateGlobals(*InputMap) error
+	StorageScUpdateConfig(*InputMap) error
+	FaucetUpdateConfig(*InputMap) error
+	ZCNSCUpdateGlobalConfig(*InputMap) error
+
+	// GetVerifyConfirmationStatus implements the verification status from sharders
+	GetVerifyConfirmationStatus() ConfirmationStatus
 }
 
 // PriceRange represents a price range allowed by user to filter blobbers.
@@ -88,6 +111,12 @@ type Blobber struct {
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
+type AddAuthorizerPayload struct {
+	PublicKey         string                      `json:"public_key"`
+	URL               string                      `json:"url"`
+	StakePoolSettings AuthorizerStakePoolSettings `json:"stake_pool_settings"` // Used to initially create stake pool
+}
+
 type AuthorizerStakePoolSettings struct {
 	DelegateWallet string         `json:"delegate_wallet"`
 	MinStake       common.Balance `json:"min_stake"`
@@ -98,6 +127,10 @@ type AuthorizerStakePoolSettings struct {
 
 type AuthorizerConfig struct {
 	Fee common.Balance `json:"fee"`
+}
+
+type InputMap struct {
+	Fields map[string]string `json:"Fields"`
 }
 
 // NewTransaction allocation new generic transaction object for any operation
@@ -208,6 +241,38 @@ func (t *Transaction) MinerSCLock(nodeID string, lock uint64) (err error) {
 	}
 	go func() { t.setNonceAndSubmit() }()
 	return
+}
+
+func (t *Transaction) MinerSCCollectReward(providerId, poolId string, providerType Provider) error {
+	pr := &scCollectReward{
+		ProviderId:   providerId,
+		PoolId:       poolId,
+		ProviderType: int(providerType),
+	}
+	err := t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return err
+}
+
+func (t *Transaction) StorageSCCollectReward(providerId, poolId string, providerType Provider) error {
+	pr := &scCollectReward{
+		ProviderId:   providerId,
+		PoolId:       poolId,
+		ProviderType: int(providerType),
+	}
+	err := t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go t.setNonceAndSubmit()
+	return err
 }
 
 // FinalizeAllocation transaction.
@@ -456,6 +521,83 @@ func (t *Transaction) WritePoolUnlock(poolID string, fee uint64) (
 	t.SetTransactionFee(fee)
 	go func() { t.setNonceAndSubmit() }()
 	return
+}
+
+func (t *Transaction) VestingUpdateConfig(vscc *InputMap) (err error) {
+
+	err = t.createSmartContractTxn(VestingSmartContractAddress,
+		transaction.VESTING_UPDATE_SETTINGS, vscc, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+// faucet smart contract
+
+func (t *Transaction) FaucetUpdateConfig(ip *InputMap) (err error) {
+
+	err = t.createSmartContractTxn(FaucetSmartContractAddress,
+		transaction.FAUCETSC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+//
+// miner SC
+//
+
+func (t *Transaction) MinerScUpdateConfig(ip *InputMap) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+func (t *Transaction) MinerScUpdateGlobals(ip *InputMap) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_UPDATE_GLOBALS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+func (t *Transaction) StorageScUpdateConfig(ip *InputMap) (err error) {
+	err = t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_UPDATE_SETTINGS, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+func (t *Transaction) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_GLOBAL_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go t.setNonceAndSubmit()
+	return
+}
+
+func (t *Transaction) GetVerifyConfirmationStatus() ConfirmationStatus {
+	return t.verifyConfirmationStatus
 }
 
 // ConvertToValue converts ZCN tokens to value
