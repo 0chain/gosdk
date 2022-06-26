@@ -854,63 +854,6 @@ func (t *Transaction) VestingDelete(poolID string) (err error) {
 	return
 }
 
-type MinerSCDelegatePool struct {
-	Settings StakePoolSettings `json:"settings"`
-}
-
-type SimpleMiner struct {
-	ID string `json:"id"`
-}
-
-type MinerSCMinerInfo struct {
-	SimpleMiner         `json:"simple_miner"`
-	MinerSCDelegatePool `json:"stake_pool"`
-}
-
-func (t *Transaction) MinerSCMinerSettings(info *MinerSCMinerInfo) (err error) {
-	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_MINER_SETTINGS, info, 0)
-	if err != nil {
-		Logger.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-func (t *Transaction) MinerSCSharderSettings(info *MinerSCMinerInfo) (err error) {
-	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_SHARDER_SETTINGS, info, 0)
-	if err != nil {
-		Logger.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-func (t *Transaction) MinerSCDeleteMiner(info *MinerSCMinerInfo) (err error) {
-	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_MINER_DELETE, info, 0)
-	if err != nil {
-		Logger.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
-func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
-	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_SHARDER_DELETE, info, 0)
-	if err != nil {
-		Logger.Error(err)
-		return
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return
-}
-
 type scCollectReward struct {
 	ProviderId   string `json:"provider_id"`
 	PoolId       string `json:"pool_id"`

@@ -776,6 +776,83 @@ func (t *Transaction) GetVerifyConfirmationStatus() int {
 	return int(t.verifyConfirmationStatus)
 }
 
+type MinerSCMinerInfo interface {
+	GetID() string
+	StakingPoolSettings() StakePoolSettings
+}
+
+func NewMinerSCMinerInfo(id string, settings StakePoolSettings) MinerSCMinerInfo {
+	return &minerSCMinerInfo{
+		ID:       id,
+		Settings: settings,
+	}
+}
+
+type minerSCMinerInfo struct {
+	simpleMiner         `json:"simple_miner"`
+	minerSCDelegatePool `json:"stake_pool"`
+}
+
+func (mi *minerSCMinerInfo) GetID() string {
+	return mi.ID
+}
+
+func (mi *minerSCMinerInfo) StakingPoolSettings() StakePoolSettings {
+	return mi.Settings
+}
+
+type minerSCDelegatePool struct {
+	Settings StakePoolSettings `json:"settings"`
+}
+
+type simpleMiner struct {
+	ID string `json:"id"`
+}
+
+func (t *Transaction) MinerSCMinerSettings(info MinerSCMinerInfo) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_MINER_SETTINGS, info, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+func (t *Transaction) MinerSCSharderSettings(info MinerSCMinerInfo) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_SHARDER_SETTINGS, info, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+func (t *Transaction) MinerSCDeleteMiner(info MinerSCMinerInfo) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_MINER_DELETE, info, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+func (t *Transaction) MinerSCDeleteSharder(info MinerSCMinerInfo) (err error) {
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_SHARDER_DELETE, info, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
 // ConvertToValue converts ZCN tokens to value
 func ConvertToValue(token float64) string {
 	return strconv.FormatUint(uint64(token*float64(TOKEN_UNIT)), 10)
