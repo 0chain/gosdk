@@ -55,6 +55,10 @@ func (a *Allocation) GetStarredFiles() (*StarredFiles, error) {
 		return nil, errors.New("get_starred_files_failed", "Failed to retrieve starred files: "+err.Error())
 	}
 
+	if len(data) == 0 {
+		return &StarredFiles{UpdatedAt: lastUpdateTime, Files: []StarredFile{}}, nil
+	}
+
 	starred := &StarredFiles{}
 
 	err = json.Unmarshal(data, starred)

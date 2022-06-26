@@ -69,6 +69,12 @@ func TestAllocation_GetStarredFiles(t *testing.T) {
 			want:            &StarredFiles{UpdatedAt: common.Timestamp(1642816984), Files: []StarredFile{{Path: "/abc.txt"}, {Path: "/def.txt"}}},
 		},
 		{
+			name:            "get successfully with empty data",
+			getResData:      []byte{},
+			getResTimestamp: common.Timestamp(0),
+			want:            &StarredFiles{UpdatedAt: common.Timestamp(0), Files: []StarredFile{}},
+		},
+		{
 			name:    "get throws error",
 			getErr:  fmt.Errorf("get error"),
 			wantErr: errors.New("get_starred_files_failed", "Failed to retrieve starred files: get error"),
