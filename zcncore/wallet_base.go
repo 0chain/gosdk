@@ -558,10 +558,9 @@ func GetNonce(cb GetNonceCallback) error {
 	return nil
 }
 
-// GetBalance retreives wallet balance from sharders
+// GetBalanceWallet retreives wallet balance from sharders
 func GetBalanceWallet(walletStr string, cb GetBalanceCallback) error {
-
-	w, err := GetWallet(walletStr)
+	w, err := getWallet(walletStr)
 	if err != nil {
 		fmt.Printf("Error while parsing the wallet. %v\n", err)
 		return err
@@ -658,25 +657,21 @@ func getTokenUSDRate() (float64, error) {
 	return tokenrate.GetUSD(context.TODO(), "zcn")
 }
 
-//GetWallet get a wallet object from a wallet string
-func GetWallet(walletStr string) (*zcncrypto.Wallet, error) {
-
+//getWallet get a wallet object from a wallet string
+func getWallet(walletStr string) (*zcncrypto.Wallet, error) {
 	var w zcncrypto.Wallet
-
 	err := json.Unmarshal([]byte(walletStr), &w)
-
 	if err != nil {
 		fmt.Printf("error while parsing wallet string.\n%v\n", err)
 		return nil, err
 	}
 
 	return &w, nil
-
 }
 
 //GetWalletClientID -- given a walletstr return ClientID
 func GetWalletClientID(walletStr string) (string, error) {
-	w, err := GetWallet(walletStr)
+	w, err := getWallet(walletStr)
 	if err != nil {
 		return "", err
 	}
@@ -750,10 +745,6 @@ func (p Params) Query() string {
 	return "?" + params.Encode()
 }
 
-func WithParams(uri string, params Params) string {
-	return uri + params.Query()
-}
-
 //
 // miner SC
 //
@@ -778,13 +769,17 @@ func GetSharders(cb GetInfoCallback) (err error) {
 	return
 }
 
+func withParams(uri string, params Params) string {
+	return uri + params.Query()
+}
+
 func GetMinerSCNodeInfo(id string, cb GetInfoCallback) (err error) {
 
 	if err = CheckConfig(); err != nil {
 		return
 	}
 
-	go getInfoFromSharders(WithParams(GET_MINERSC_NODE, Params{
+	go getInfoFromSharders(withParams(GET_MINERSC_NODE, Params{
 		"id": id,
 	}), 0, cb)
 	return
@@ -794,7 +789,7 @@ func GetMinerSCNodePool(id, poolID string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	go getInfoFromSharders(WithParams(GET_MINERSC_POOL, Params{
+	go getInfoFromSharders(withParams(GET_MINERSC_POOL, Params{
 		"id":      id,
 		"pool_id": poolID,
 	}), 0, cb)
@@ -809,7 +804,7 @@ func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error) {
 	if clientID == "" {
 		clientID = _config.wallet.ClientID
 	}
-	go getInfoFromSharders(WithParams(GET_MINERSC_USER, Params{
+	go getInfoFromSharders(withParams(GET_MINERSC_USER, Params{
 		"client_id": clientID,
 	}), 0, cb)
 
@@ -850,7 +845,7 @@ func GetChallengePoolInfo(allocID string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	var url = WithParams(STORAGESC_GET_CHALLENGE_POOL_INFO, Params{
+	var url = withParams(STORAGESC_GET_CHALLENGE_POOL_INFO, Params{
 		"allocation_id": allocID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetChallengePoolInfo, cb)
@@ -862,7 +857,7 @@ func GetAllocation(allocID string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	var url = WithParams(STORAGESC_GET_ALLOCATION, Params{
+	var url = withParams(STORAGESC_GET_ALLOCATION, Params{
 		"allocation": allocID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetAllocation, cb)
@@ -877,7 +872,7 @@ func GetAllocations(clientID string, cb GetInfoCallback) (err error) {
 	if clientID == "" {
 		clientID = _config.wallet.ClientID
 	}
-	var url = WithParams(STORAGESC_GET_ALLOCATIONS, Params{
+	var url = withParams(STORAGESC_GET_ALLOCATIONS, Params{
 		"client": clientID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetAllocations, cb)
@@ -892,7 +887,7 @@ func GetReadPoolInfo(clientID string, cb GetInfoCallback) (err error) {
 	if clientID == "" {
 		clientID = _config.wallet.ClientID
 	}
-	var url = WithParams(STORAGESC_GET_READ_POOL_INFO, Params{
+	var url = withParams(STORAGESC_GET_READ_POOL_INFO, Params{
 		"client_id": clientID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetReadPoolInfo, cb)
@@ -905,7 +900,7 @@ func GetStakePoolInfo(blobberID string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	var url = WithParams(STORAGESC_GET_STAKE_POOL_INFO, Params{
+	var url = withParams(STORAGESC_GET_STAKE_POOL_INFO, Params{
 		"blobber_id": blobberID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetStakePoolInfo, cb)
@@ -920,7 +915,7 @@ func GetStakePoolUserInfo(clientID string, cb GetInfoCallback) (err error) {
 	if clientID == "" {
 		clientID = _config.wallet.ClientID
 	}
-	var url = WithParams(STORAGESC_GET_STAKE_POOL_USER_INFO, Params{
+	var url = withParams(STORAGESC_GET_STAKE_POOL_USER_INFO, Params{
 		"client_id": clientID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetStakePoolInfo, cb)
@@ -943,7 +938,7 @@ func GetBlobber(blobberID string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	var url = WithParams(STORAGESC_GET_BLOBBER, Params{
+	var url = withParams(STORAGESC_GET_BLOBBER, Params{
 		"blobber_id": blobberID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetBlobber, cb)
@@ -959,7 +954,7 @@ func GetWritePoolInfo(clientID string, cb GetInfoCallback) (err error) {
 	if clientID == "" {
 		clientID = _config.wallet.ClientID
 	}
-	var url = WithParams(STORAGESC_GET_WRITE_POOL_INFO, Params{
+	var url = withParams(STORAGESC_GET_WRITE_POOL_INFO, Params{
 		"client_id": clientID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetWritePoolInfo, cb)

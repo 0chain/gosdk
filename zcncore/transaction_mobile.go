@@ -1211,12 +1211,17 @@ func GetLatestFinalizedMagicBlock(numSharders int, timeout RequestTimeout) ([]by
 
 // GetChainStats gets chain stats with time out
 // timeout in milliseconds
-func GetChainStats(timeout int64) (b *block.ChainStats, err error) {
+func GetChainStats(timeout RequestTimeout) ([]byte, error) {
 	var result = make(chan *util.GetResponse, 1)
 	defer close(result)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Millisecond)
+	ctx, cancel := makeTimeoutContext(timeout)
 	defer cancel()
+
+	var (
+		b *block.ChainStats
+		err error
+	)
 
 	var numSharders = len(_config.chain.Sharders) // overwrite, use all
 	queryFromShardersContext(ctx, numSharders, GET_CHAIN_STATS, result)
@@ -1236,7 +1241,8 @@ func GetChainStats(timeout int64) (b *block.ChainStats, err error) {
 	if err = json.Unmarshal([]byte(rsp.Body), &b); err != nil {
 		return nil, err
 	}
-	return
+
+	return []byte(rsp.Body), nil
 }
 
 type BlockHeader struct {
@@ -1503,7 +1509,7 @@ func GetMagicBlockByNumber(numSharders int, number int64, timeout RequestTimeout
 	var (
 		maxConsensus   int
 		roundConsensus = make(map[string]int)
-		mb             *block.MagicBlock
+		ret []byte
 		err            error
 	)
 
@@ -1528,7 +1534,7 @@ func GetMagicBlockByNumber(numSharders int, number int64, timeout RequestTimeout
 			continue
 		}
 
-		mb = respo.MagicBlock
+		ret = []byte(rsp.Body)
 		var h = encryption.FastHash([]byte(respo.MagicBlock.Hash))
 		if roundConsensus[h]++; roundConsensus[h] > maxConsensus {
 			maxConsensus = roundConsensus[h]
@@ -1539,9 +1545,9 @@ func GetMagicBlockByNumber(numSharders int, number int64, timeout RequestTimeout
 		return nil, errors.New("", "magic block info not found")
 	}
 
-	if mb != nil {
-		return json.Marshal(mb)
+	if err != nil {
+		return nil, err
 	}
 
-	return nil, err
+	return ret, nil
 }

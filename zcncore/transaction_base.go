@@ -155,15 +155,6 @@ func Sign(hash string) (string, error) {
 	return sigScheme.Sign(hash)
 }
 
-func SignWith0Wallet(hash string, w *zcncrypto.Wallet) (string, error) {
-	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
-	err := sigScheme.SetPrivateKey(w.Keys[0].PrivateKey)
-	if err != nil {
-		return "", err
-	}
-	return sigScheme.Sign(hash)
-}
-
 func signFn(hash string) (string, error) {
 	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 	sigScheme.SetPrivateKey(_config.wallet.Keys[0].PrivateKey)
@@ -368,7 +359,7 @@ func (t *Transaction) createSmartContractTxn(address, methodName string, input i
 }
 
 func (t *Transaction) createFaucetSCWallet(walletStr string, methodName string, input []byte) (*zcncrypto.Wallet, error) {
-	w, err := GetWallet(walletStr)
+	w, err := getWallet(walletStr)
 	if err != nil {
 		fmt.Printf("Error while parsing the wallet. %v\n", err)
 		return nil, err
