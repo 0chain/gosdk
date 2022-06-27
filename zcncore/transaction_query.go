@@ -301,8 +301,6 @@ func (tq *TransactionQuery) GetFastConfirmation(ctx context.Context, txnHash str
 			return confirmationBlockHeader, confirmationBlock, nil, nil
 		}
 
-		Logger.Error("txn confirmation parse header error", err)
-
 		// parse `latest_finalized_block` section
 		lfbRaw, ok := confirmationBlock["latest_finalized_block"]
 		if !ok {

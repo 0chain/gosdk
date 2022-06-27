@@ -1362,57 +1362,57 @@ type ProviderId struct {
 	ID string `json:"id"`
 }
 
-func KillBlobber(id string, fee uint64) (resp string, nonce int64, err error) {
+func KillBlobber(id string, fee uint64) (nonce int64, err error) {
 	pid := ProviderId{
 		ID: id,
 	}
 	if !sdkInitialized {
-		return "", 0, sdkNotInitialized
+		return 0, sdkNotInitialized
 	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS,
 		InputArgs: pid,
 	}
-	resp, _, nonce, err = smartContractTxn(sn)
+	_, _, nonce, err = smartContractTxn(sn)
 	return
 }
 
-func KillValidator(id string, fee uint64) (resp string, nonce int64, err error) {
+func KillValidator(id string, fee uint64) (nonce int64, err error) {
 	pid := ProviderId{
 		ID: id,
 	}
 	if !sdkInitialized {
-		return "", 0, sdkNotInitialized
+		return 0, sdkNotInitialized
 	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS,
 		InputArgs: pid,
 	}
-	resp, _, nonce, err = smartContractTxn(sn)
+	_, _, nonce, err = smartContractTxn(sn)
 	return
 }
 
-func ShutDownBlobber(fee uint64) (resp string, nonce int64, err error) {
+func ShutDownBlobber(fee uint64) (nonce int64, err error) {
 	if !sdkInitialized {
-		return "", 0, sdkNotInitialized
+		return 0, sdkNotInitialized
 	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS,
 		InputArgs: nil,
 	}
-	resp, _, nonce, err = smartContractTxn(sn)
+	_, _, nonce, err = smartContractTxn(sn)
 	return
 }
 
-func ShutDownValidator(fee uint64) (resp string, nonce int64, err error) {
+func ShutDownValidator(fee uint64) (nonce int64, err error) {
 	if !sdkInitialized {
-		return "", 0, sdkNotInitialized
+		return 0, sdkNotInitialized
 	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS,
 		InputArgs: nil,
 	}
-	resp, _, nonce, err = smartContractTxn(sn)
+	_, _, nonce, err = smartContractTxn(sn)
 	return
 }
 
