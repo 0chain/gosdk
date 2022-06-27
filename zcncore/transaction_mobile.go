@@ -122,31 +122,30 @@ type CreateAllocationRequest struct {
 	Expiration     int64
 	Owner          string
 	OwnerPublicKey string
-	Blobbers       [][]byte // blobber urls
 	ReadPriceMin   int64
 	ReadPriceMax   int64
 	WritePriceMin  int64
 	WritePriceMax  int64
+
+	blobbers []string
+}
+
+func (car *CreateAllocationRequest) AddBlobber(blobber string) {
+	car.blobbers = append(car.blobbers, blobber)
 }
 
 func (car *CreateAllocationRequest) toCreateAllocationSCInput() *createAllocationRequest {
-	req := &createAllocationRequest{
+	return &createAllocationRequest{
 		DataShards:      car.DataShards,
 		ParityShards:    car.ParityShards,
 		Size:            car.Size,
 		Expiration:      car.Expiration,
 		Owner:           car.Owner,
 		OwnerPublicKey:  car.OwnerPublicKey,
-		Blobbers: make([]string, len(car.Blobbers)),
+		Blobbers:        car.blobbers,
 		ReadPriceRange:  priceRange{Min: car.ReadPriceMin, Max: car.ReadPriceMax},
 		WritePriceRange: priceRange{Min: car.WritePriceMin, Max: car.WritePriceMax},
 	}
-
-	for i, b := range car.Blobbers {
-		req.Blobbers[i] = string(b)
-	}
-
-	return req
 }
 
 type StakePoolSettings struct {
@@ -201,9 +200,9 @@ func (b *blobber) SetStakePoolSettings(delegateWallet string, minStake int64, ma
 
 func (b *blobber) SetTerms(readPrice int64, writePrice int64, minLockDemand float64, maxOfferDuration int64) {
 	b.Terms = Terms{
-		ReadPrice: readPrice,
-		WritePrice: writePrice,
-		MinLockDemand: minLockDemand,
+		ReadPrice:        readPrice,
+		WritePrice:       writePrice,
+		MinLockDemand:    minLockDemand,
 		MaxOfferDuration: maxOfferDuration,
 	}
 }
@@ -228,10 +227,10 @@ type addAuthorizerPayload struct {
 func (a *addAuthorizerPayload) SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64) {
 	a.StakePoolSettings = AuthorizerStakePoolSettings{
 		DelegateWallet: delegateWallet,
-		MinStake: minStake,
-		MaxStake: maxStake,
-		NumDelegates: numDelegates,
-		ServiceCharge: serviceCharge,
+		MinStake:       minStake,
+		MaxStake:       maxStake,
+		NumDelegates:   numDelegates,
+		ServiceCharge:  serviceCharge,
 	}
 }
 
@@ -956,7 +955,7 @@ type AuthorizerNode interface {
 
 func NewAuthorizerNode(id string, fee int64) AuthorizerNode {
 	return &authorizerNode{
-		ID: id,
+		ID:     id,
 		Config: &AuthorizerConfig{Fee: fee},
 	}
 }
@@ -1221,7 +1220,7 @@ func GetChainStats(timeout RequestTimeout) ([]byte, error) {
 	defer cancel()
 
 	var (
-		b *block.ChainStats
+		b   *block.ChainStats
 		err error
 	)
 
@@ -1511,7 +1510,7 @@ func GetMagicBlockByNumber(numSharders int, number int64, timeout RequestTimeout
 	var (
 		maxConsensus   int
 		roundConsensus = make(map[string]int)
-		ret []byte
+		ret            []byte
 		err            error
 	)
 

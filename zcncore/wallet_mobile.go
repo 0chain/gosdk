@@ -72,4 +72,3 @@ func (w *wallet) Sign(hash string) (string, error) {
 	}
 	return sigScheme.Sign(hash)
 }
-
