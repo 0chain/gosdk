@@ -161,6 +161,11 @@ type TransactionCommon interface {
 	MinerSCDeleteMiner(*MinerSCMinerInfo) error
 	MinerSCDeleteSharder(*MinerSCMinerInfo) error
 
+	// ZCNSCUpdateAuthorizerConfig updates authorizer config by ID
+	ZCNSCUpdateAuthorizerConfig(*AuthorizerNode) error
+	// ZCNSCAddAuthorizer adds authorizer
+	ZCNSCAddAuthorizer(*AddAuthorizerPayload) error
+
 	// GetVerifyConfirmationStatus implements the verification status from sharders
 	GetVerifyConfirmationStatus() ConfirmationStatus
 }
@@ -841,6 +846,21 @@ func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
 		return
 	}
 	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+type AuthorizerNode struct {
+	ID     string            `json:"id"`
+	Config *AuthorizerConfig `json:"config"`
+}
+
+func (t *Transaction) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go t.setNonceAndSubmit()
 	return
 }
 

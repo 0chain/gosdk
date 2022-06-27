@@ -294,14 +294,14 @@ func (ta *TransactionWithAuth) StakePoolUnlock(blobberID, poolID string,
 }
 
 // UpdateBlobberSettings update settings of a blobber.
-func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber, fee string) error {
+func (ta *TransactionWithAuth) UpdateBlobberSettings(blob Blobber, fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
 	}
 
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, blob.b, 0)
+		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, blob, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err
@@ -510,7 +510,7 @@ func (ta *TransactionWithAuth) GetVerifyConfirmationStatus() int {
 	return ta.t.GetVerifyConfirmationStatus()
 }
 
-func (ta *TransactionWithAuth) MinerSCMinerSettings(info *MinerSCMinerInfo) (
+func (ta *TransactionWithAuth) MinerSCMinerSettings(info MinerSCMinerInfo) (
 	err error) {
 
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
@@ -523,7 +523,7 @@ func (ta *TransactionWithAuth) MinerSCMinerSettings(info *MinerSCMinerInfo) (
 	return
 }
 
-func (ta *TransactionWithAuth) MinerSCSharderSettings(info *MinerSCMinerInfo) (
+func (ta *TransactionWithAuth) MinerSCSharderSettings(info MinerSCMinerInfo) (
 	err error) {
 
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
@@ -536,7 +536,7 @@ func (ta *TransactionWithAuth) MinerSCSharderSettings(info *MinerSCMinerInfo) (
 	return
 }
 
-func (ta *TransactionWithAuth) MinerSCDeleteMiner(info *MinerSCMinerInfo) (
+func (ta *TransactionWithAuth) MinerSCDeleteMiner(info MinerSCMinerInfo) (
 	err error) {
 
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
@@ -549,7 +549,7 @@ func (ta *TransactionWithAuth) MinerSCDeleteMiner(info *MinerSCMinerInfo) (
 	return
 }
 
-func (ta *TransactionWithAuth) MinerSCDeleteSharder(info *MinerSCMinerInfo) (
+func (ta *TransactionWithAuth) MinerSCDeleteSharder(info MinerSCMinerInfo) (
 	err error) {
 
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
@@ -559,5 +559,25 @@ func (ta *TransactionWithAuth) MinerSCDeleteSharder(info *MinerSCMinerInfo) (
 		return
 	}
 	go func() { ta.submitTxn() }()
+	return
+}
+
+func (ta *TransactionWithAuth) ZCNSCUpdateAuthorizerConfig(ip AuthorizerNode) (err error) {
+	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go ta.submitTxn()
+	return
+}
+
+func (ta *TransactionWithAuth) ZCNSCAddAuthorizer(ip AddAuthorizerPayload) (err error) {
+	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go ta.submitTxn()
 	return
 }

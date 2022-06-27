@@ -72,7 +72,7 @@ type TransactionCommon interface {
 	ReadPoolUnlock(poolID string, fee string) error
 	StakePoolLock(blobberID string, lock, fee string) error
 	StakePoolUnlock(blobberID string, poolID string, fee string) error
-	UpdateBlobberSettings(blobber *Blobber, fee string) error
+	UpdateBlobberSettings(blobber Blobber, fee string) error
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock, fee string) error
 	WritePoolLock(allocID string, blobberID string, duration int64, lock, fee string) error
 	WritePoolUnlock(poolID string, fee string) error
@@ -84,10 +84,15 @@ type TransactionCommon interface {
 	FaucetUpdateConfig(InputMap) error
 	ZCNSCUpdateGlobalConfig(InputMap) error
 
-	MinerSCMinerSettings(*MinerSCMinerInfo) error
-	MinerSCSharderSettings(*MinerSCMinerInfo) error
-	MinerSCDeleteMiner(*MinerSCMinerInfo) error
-	MinerSCDeleteSharder(*MinerSCMinerInfo) error
+	MinerSCMinerSettings(MinerSCMinerInfo) error
+	MinerSCSharderSettings(MinerSCMinerInfo) error
+	MinerSCDeleteMiner(MinerSCMinerInfo) error
+	MinerSCDeleteSharder(MinerSCMinerInfo) error
+
+	// ZCNSCUpdateAuthorizerConfig updates authorizer config by ID
+	ZCNSCUpdateAuthorizerConfig(AuthorizerNode) error
+	// ZCNSCAddAuthorizer adds authorizer
+	ZCNSCAddAuthorizer(AddAuthorizerPayload) error
 
 	GetVerifyConfirmationStatus() int
 }
@@ -154,23 +159,18 @@ type Terms struct {
 	MaxOfferDuration int64   `json:"max_offer_duration"`
 }
 
-type Blobber struct {
-	b blobber
+type Blobber interface {
+	SetTerms(t Terms)
+	SetStakePoolSettings(sps StakePoolSettings)
 }
 
-func NewBlobber(id, baseUrl string,
-	capacity, allocated, lastHealthCheck int64,
-	terms Terms, spSettings StakePoolSettings) *Blobber {
-	return &Blobber{
-		b: blobber{
-			ID:                id,
-			BaseURL:           baseUrl,
-			Capacity:          capacity,
-			Allocated:         allocated,
-			LastHealthCheck:   lastHealthCheck,
-			Terms:             terms,
-			StakePoolSettings: spSettings,
-		},
+func NewBlobber(id, baseUrl string, capacity, allocated, lastHealthCheck int64) Blobber {
+	return &blobber{
+		ID:              id,
+		BaseURL:         baseUrl,
+		Capacity:        capacity,
+		Allocated:       allocated,
+		LastHealthCheck: lastHealthCheck,
 	}
 }
 
@@ -184,17 +184,22 @@ type blobber struct {
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
-type AddAuthorizerPayload struct {
-	aap addAuthorizerPayload
+func (b *blobber) SetStakePoolSettings(sps StakePoolSettings) {
+	b.StakePoolSettings = sps
 }
 
-func NewAddAuthorizerPayload(pubKey, url string, spSettings AuthorizerStakePoolSettings) *AddAuthorizerPayload {
-	return &AddAuthorizerPayload{
-		aap: addAuthorizerPayload{
-			PublicKey:         pubKey,
-			URL:               url,
-			StakePoolSettings: spSettings,
-		},
+func (b *blobber) SetTerms(t Terms) {
+	b.Terms = t
+}
+
+type AddAuthorizerPayload interface {
+	SetStakePoolSettings(sps AuthorizerStakePoolSettings)
+}
+
+func NewAddAuthorizerPayload(pubKey, url string) AddAuthorizerPayload {
+	return &addAuthorizerPayload{
+		PublicKey: pubKey,
+		URL:       url,
 	}
 }
 
@@ -202,6 +207,10 @@ type addAuthorizerPayload struct {
 	PublicKey         string                      `json:"public_key"`
 	URL               string                      `json:"url"`
 	StakePoolSettings AuthorizerStakePoolSettings `json:"stake_pool_settings"` // Used to initially create stake pool
+}
+
+func (a *addAuthorizerPayload) SetStakePoolSettings(sps AuthorizerStakePoolSettings) {
+	a.StakePoolSettings = sps
 }
 
 type AuthorizerStakePoolSettings struct {
@@ -648,14 +657,14 @@ func (t *Transaction) StakePoolUnlock(blobberID, poolID string, fee string) erro
 }
 
 // UpdateBlobberSettings update settings of a blobber.
-func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee string) error {
+func (t *Transaction) UpdateBlobberSettings(b Blobber, fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
 	}
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, b.b, 0)
+		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, b, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err
@@ -838,18 +847,13 @@ func (t *Transaction) GetVerifyConfirmationStatus() int {
 	return int(t.verifyConfirmationStatus)
 }
 
-type MinerSCMinerInfo struct {
-	info minerSCMinerInfo
+type MinerSCMinerInfo interface {
+	SetStakePoolSettings(sps StakePoolSettings)
 }
 
-func NewMinerSCMinerInfo(id string, settings StakePoolSettings) *MinerSCMinerInfo {
-	return &MinerSCMinerInfo{
-		info: minerSCMinerInfo{
-			simpleMiner: simpleMiner{ID: id},
-			minerSCDelegatePool: minerSCDelegatePool{
-				Settings: settings,
-			},
-		},
+func NewMinerSCMinerInfo(id string) MinerSCMinerInfo {
+	return &minerSCMinerInfo{
+		simpleMiner: simpleMiner{ID: id},
 	}
 }
 
@@ -858,8 +862,8 @@ type minerSCMinerInfo struct {
 	minerSCDelegatePool `json:"stake_pool"`
 }
 
-func (mi *minerSCMinerInfo) GetID() string {
-	return mi.ID
+func (mi *minerSCMinerInfo) SetStakePoolSettings(sps StakePoolSettings) {
+	mi.Settings = sps
 }
 
 type minerSCDelegatePool struct {
@@ -870,9 +874,9 @@ type simpleMiner struct {
 	ID string `json:"id"`
 }
 
-func (t *Transaction) MinerSCMinerSettings(info *MinerSCMinerInfo) (err error) {
+func (t *Transaction) MinerSCMinerSettings(info MinerSCMinerInfo) (err error) {
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_MINER_SETTINGS, info.info, 0)
+		transaction.MINERSC_MINER_SETTINGS, info, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
@@ -881,9 +885,9 @@ func (t *Transaction) MinerSCMinerSettings(info *MinerSCMinerInfo) (err error) {
 	return
 }
 
-func (t *Transaction) MinerSCSharderSettings(info *MinerSCMinerInfo) (err error) {
+func (t *Transaction) MinerSCSharderSettings(info MinerSCMinerInfo) (err error) {
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_SHARDER_SETTINGS, info.info, 0)
+		transaction.MINERSC_SHARDER_SETTINGS, info, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
@@ -892,9 +896,9 @@ func (t *Transaction) MinerSCSharderSettings(info *MinerSCMinerInfo) (err error)
 	return
 }
 
-func (t *Transaction) MinerSCDeleteMiner(info *MinerSCMinerInfo) (err error) {
+func (t *Transaction) MinerSCDeleteMiner(info MinerSCMinerInfo) (err error) {
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_MINER_DELETE, info.info, 0)
+		transaction.MINERSC_MINER_DELETE, info, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
@@ -903,14 +907,43 @@ func (t *Transaction) MinerSCDeleteMiner(info *MinerSCMinerInfo) (err error) {
 	return
 }
 
-func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
+func (t *Transaction) MinerSCDeleteSharder(info MinerSCMinerInfo) (err error) {
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_SHARDER_DELETE, info.info, 0)
+		transaction.MINERSC_SHARDER_DELETE, info, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
 	}
 	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+type AuthorizerNode interface {
+	SetConfig(*AuthorizerConfig)
+}
+
+func NewAuthorizerNode(id string) AuthorizerNode {
+	return &authorizerNode{
+		ID: id,
+	}
+}
+
+type authorizerNode struct {
+	ID     string            `json:"id"`
+	Config *AuthorizerConfig `json:"config"`
+}
+
+func (a *authorizerNode) SetConfig(conf *AuthorizerConfig) {
+	a.Config = conf
+}
+
+func (t *Transaction) ZCNSCUpdateAuthorizerConfig(ip AuthorizerNode) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG, ip, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	go t.setNonceAndSubmit()
 	return
 }
 
@@ -1015,8 +1048,8 @@ func (t *Transaction) Verify() error {
 	return nil
 }
 
-func (t *Transaction) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error) {
-	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip.aap, 0)
+func (t *Transaction) ZCNSCAddAuthorizer(ip AddAuthorizerPayload) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
@@ -1030,18 +1063,14 @@ func ConvertToValue(token float64) string {
 	return strconv.FormatUint(uint64(token*float64(TOKEN_UNIT)), 10)
 }
 
-type ReqTimeout struct {
-	Milliseconds int64
-}
-
-func makeTimeoutContext(tm *ReqTimeout) (context.Context, func()) {
+func makeTimeoutContext(tm RequestTimeout) (context.Context, func()) {
 	var (
 		ctx    context.Context
 		cancel func()
 	)
 
-	if tm != nil && tm.Milliseconds > 0 {
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*time.Duration(tm.Milliseconds))
+	if tm != nil && tm.Get() > 0 {
+		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*time.Duration(tm.Get()))
 	} else {
 		ctx = context.Background()
 	}
@@ -1049,11 +1078,11 @@ func makeTimeoutContext(tm *ReqTimeout) (context.Context, func()) {
 	return ctx, cancel
 }
 
-func GetLatestFinalized(numSharders int, tm *ReqTimeout) (b *BlockHeader, err error) {
+func GetLatestFinalized(numSharders int, timeout RequestTimeout) (b *BlockHeader, err error) {
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
-	ctx, cancel := makeTimeoutContext(tm)
+	ctx, cancel := makeTimeoutContext(timeout)
 	defer cancel()
 
 	numSharders = len(_config.chain.Sharders) // overwrite, use all
@@ -1093,11 +1122,11 @@ func GetLatestFinalized(numSharders int, tm *ReqTimeout) (b *BlockHeader, err er
 	return
 }
 
-func GetLatestFinalizedMagicBlock(numSharders int, tm *ReqTimeout) (m *block.MagicBlock, err error) {
+func GetLatestFinalizedMagicBlock(numSharders int, timeout RequestTimeout) ([]byte, error) {
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
-	ctx, cancel := makeTimeoutContext(tm)
+	ctx, cancel := makeTimeoutContext(timeout)
 	defer cancel()
 
 	numSharders = len(_config.chain.Sharders) // overwrite, use all
@@ -1106,6 +1135,8 @@ func GetLatestFinalizedMagicBlock(numSharders int, tm *ReqTimeout) (m *block.Mag
 	var (
 		maxConsensus   int
 		roundConsensus = make(map[string]int)
+		m *block.MagicBlock
+		err error
 	)
 
 	type respObj struct {
@@ -1140,14 +1171,20 @@ func GetLatestFinalizedMagicBlock(numSharders int, tm *ReqTimeout) (m *block.Mag
 		return nil, errors.New("", "magic block info not found")
 	}
 
-	return
+	if m != nil {
+		return json.Marshal(m)
+	}
+
+	return nil, err
 }
 
-func GetChainStats(tm *ReqTimeout) (b *block.ChainStats, err error) {
+// GetChainStats gets chain stats with time out
+// timeout in milliseconds
+func GetChainStats(timeout int64) (b *block.ChainStats, err error) {
 	var result = make(chan *util.GetResponse, 1)
 	defer close(result)
 
-	ctx, cancel := makeTimeoutContext(tm)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Millisecond)
 	defer cancel()
 
 	var numSharders = len(_config.chain.Sharders) // overwrite, use all
@@ -1316,11 +1353,33 @@ type TransactionMobile struct {
 	Status            int    `json:"transaction_status"`
 }
 
-func GetBlockByRound(numSharders int, round int64, tm *ReqTimeout) (b *Block, err error) {
+// RequestTimeout will be used for setting requests with timeout
+type RequestTimeout interface {
+	Set(int64)  // milliseconds
+	Get() int64 // milliseconds
+}
+
+type timeoutCtx struct {
+	millisecond int64
+}
+
+func NewRequestTimeout(timeout int64) RequestTimeout {
+	return &timeoutCtx{millisecond: timeout}
+}
+
+func (t *timeoutCtx) Set(tm int64) {
+	t.millisecond = tm
+}
+
+func (t *timeoutCtx) Get() int64 {
+	return t.millisecond
+}
+
+func GetBlockByRound(numSharders int, round int64, timeout RequestTimeout) (b *Block, err error) {
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
-	ctx, cancel := makeTimeoutContext(tm)
+	ctx, cancel := makeTimeoutContext(timeout)
 	defer cancel()
 
 	numSharders = len(_config.chain.Sharders) // overwrite, use all
@@ -1398,11 +1457,11 @@ func GetBlockByRound(numSharders int, round int64, tm *ReqTimeout) (b *Block, er
 	return
 }
 
-func GetMagicBlockByNumber(numSharders int, number int64, tm *ReqTimeout) (m *block.MagicBlock, err error) {
+func GetMagicBlockByNumber(numSharders int, number int64, timeout RequestTimeout) ([]byte, error) {
 	var result = make(chan *util.GetResponse, numSharders)
 	defer close(result)
 
-	ctx, cancel := makeTimeoutContext(tm)
+	ctx, cancel := makeTimeoutContext(timeout)
 	defer cancel()
 
 	numSharders = len(_config.chain.Sharders) // overwrite, use all
@@ -1413,6 +1472,8 @@ func GetMagicBlockByNumber(numSharders int, number int64, tm *ReqTimeout) (m *bl
 	var (
 		maxConsensus   int
 		roundConsensus = make(map[string]int)
+		mb *block.MagicBlock
+		err error
 	)
 
 	type respObj struct {
@@ -1436,7 +1497,7 @@ func GetMagicBlockByNumber(numSharders int, number int64, tm *ReqTimeout) (m *bl
 			continue
 		}
 
-		m = respo.MagicBlock
+		mb = respo.MagicBlock
 		var h = encryption.FastHash([]byte(respo.MagicBlock.Hash))
 		if roundConsensus[h]++; roundConsensus[h] > maxConsensus {
 			maxConsensus = roundConsensus[h]
@@ -1447,5 +1508,9 @@ func GetMagicBlockByNumber(numSharders int, number int64, tm *ReqTimeout) (m *bl
 		return nil, errors.New("", "magic block info not found")
 	}
 
-	return
+	if mb != nil {
+		return json.Marshal(mb)
+	}
+
+	return nil, err
 }

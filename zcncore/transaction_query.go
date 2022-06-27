@@ -467,3 +467,16 @@ func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 
 	cb.OnInfoAvailable(op, StatusSuccess, string(qr.Content), "")
 }
+
+func GetEvents(cb GetInfoCallback, filters map[string]string) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	go getInfoFromSharders(WithParams(GET_MINERSC_EVENTS, Params{
+		"block_number": filters["block_number"],
+		"tx_hash":      filters["tx_hash"],
+		"type":         filters["type"],
+		"tag":          filters["tag"],
+	}), 0, cb)
+	return
+}
