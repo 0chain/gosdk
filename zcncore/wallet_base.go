@@ -113,7 +113,7 @@ const (
 )
 
 var defaultLogLevel = logger.DEBUG
-var Logger logger.Logger
+var logging logger.Logger
 
 const TOKEN_UNIT int64 = 1e10
 
@@ -176,16 +176,7 @@ type AuthCallback interface {
 var _config localConfig
 
 func init() {
-	Logger.Init(defaultLogLevel, "0chain-core-sdk")
-}
-
-func GetLogger() *logger.Logger {
-	return &Logger
-}
-
-// CloseLog closes log file
-func CloseLog() {
-	Logger.Close()
+	logging.Init(defaultLogLevel, "0chain-core-sdk")
 }
 
 func checkSdkInit() error {
@@ -196,7 +187,7 @@ func checkSdkInit() error {
 }
 func checkWalletConfig() error {
 	if !_config.isValidWallet || _config.wallet.ClientID == "" {
-		Logger.Error("wallet info not found. returning error.")
+		logging.Error("wallet info not found. returning error.")
 		return errors.New("", "wallet info not found. set wallet info")
 	}
 	return nil
@@ -226,7 +217,7 @@ func assertConfig() {
 }
 func getMinMinersSubmit() int {
 	minMiners := util.MaxInt(calculateMinRequired(float64(_config.chain.MinSubmit), float64(len(_config.chain.Miners))/100), 1)
-	Logger.Info("Minimum miners used for submit :", minMiners)
+	logging.Info("Minimum miners used for submit :", minMiners)
 	return minMiners
 }
 
@@ -236,7 +227,7 @@ func GetMinShardersVerify() int {
 
 func getMinShardersVerify() int {
 	minSharders := util.MaxInt(calculateMinRequired(float64(_config.chain.MinConfirmation), float64(len(_config.chain.Sharders))/100), 1)
-	Logger.Info("Minimum sharders used for verify :", minSharders)
+	logging.Info("Minimum sharders used for verify :", minSharders)
 	return minSharders
 }
 func getMinRequiredChainLength() int64 {
@@ -255,7 +246,7 @@ func GetVersion() string {
 // SetLogLevel set the log level.
 // lvl - 0 disabled; higher number (upto 4) more verbosity
 func SetLogLevel(lvl int) {
-	Logger.SetLevel(lvl)
+	logging.SetLevel(lvl)
 }
 
 // SetLogFile - sets file path to write log
@@ -265,8 +256,8 @@ func SetLogFile(logFile string, verbose bool) {
 	if err != nil {
 		return
 	}
-	Logger.SetLogFile(f, verbose)
-	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (SetLogFile)")
+	logging.SetLogFile(f, verbose)
+	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (SetLogFile)")
 }
 
 // Init inializes the SDK with miner, sharder and signature scheme provided in
@@ -312,7 +303,7 @@ func Init(chainConfigJSON string) error {
 
 		conf.InitClientConfig(cfg)
 	}
-	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (Init)")
+	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (Init)")
 	return err
 }
 
@@ -350,19 +341,19 @@ func registerToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 	for _, miner := range _config.chain.Miners {
 		go func(minerurl string) {
 			url := minerurl + REGISTER_CLIENT
-			Logger.Info(url)
+			logging.Info(url)
 			regData := map[string]string{
 				"id":         wallet.ClientID,
 				"public_key": wallet.ClientKey,
 			}
 			req, err := util.NewHTTPPostRequest(url, regData)
 			if err != nil {
-				Logger.Error(minerurl, "new post request failed. ", err.Error())
+				logging.Error(minerurl, "new post request failed. ", err.Error())
 				return
 			}
 			res, err := req.Post()
 			if err != nil {
-				Logger.Error(minerurl, "send error. ", err.Error())
+				logging.Error(minerurl, "send error. ", err.Error())
 			}
 			result <- res
 		}(miner)
@@ -370,12 +361,12 @@ func registerToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 	consensus := float32(0)
 	for range _config.chain.Miners {
 		rsp := <-result
-		Logger.Debug(rsp.Url, rsp.Status)
+		logging.Debug(rsp.Url, rsp.Status)
 
 		if rsp.StatusCode == http.StatusOK {
 			consensus++
 		} else {
-			Logger.Debug(rsp.Body)
+			logging.Debug(rsp.Body)
 		}
 
 	}
@@ -471,12 +462,12 @@ func GetClientDetails(clientID string) (*GetClientResponse, error) {
 	url = fmt.Sprintf("%v?id=%v", url, clientID)
 	req, err := util.NewHTTPGetRequest(url)
 	if err != nil {
-		Logger.Error(minerurl, "new get request failed. ", err.Error())
+		logging.Error(minerurl, "new get request failed. ", err.Error())
 		return nil, err
 	}
 	res, err := req.Get()
 	if err != nil {
-		Logger.Error(minerurl, "send error. ", err.Error())
+		logging.Error(minerurl, "send error. ", err.Error())
 		return nil, err
 	}
 
@@ -528,7 +519,7 @@ func GetBalance(cb GetBalanceCallback) error {
 	go func() {
 		value, info, err := getBalanceFromSharders(_config.wallet.ClientID)
 		if err != nil {
-			Logger.Error(err)
+			logging.Error(err)
 			cb.OnBalanceAvailable(StatusError, 0, info)
 			return
 		}
@@ -549,7 +540,7 @@ func GetNonce(cb GetNonceCallback) error {
 	go func() {
 		value, info, err := getNonceFromSharders(_config.wallet.ClientID)
 		if err != nil {
-			Logger.Error(err)
+			logging.Error(err)
 			cb.OnNonceAvailable(StatusError, 0, info)
 			return
 		}
@@ -569,7 +560,7 @@ func GetBalanceWallet(walletStr string, cb GetBalanceCallback) error {
 	go func() {
 		value, info, err := getBalanceFromSharders(w.ClientID)
 		if err != nil {
-			Logger.Error(err)
+			logging.Error(err)
 			cb.OnBalanceAvailable(StatusError, 0, info)
 			return
 		}
@@ -599,13 +590,13 @@ func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
 	var winError string
 	for i := 0; i < numSharders; i++ {
 		rsp := <-result
-		Logger.Debug(rsp.Url, rsp.Status)
+		logging.Debug(rsp.Url, rsp.Status)
 		if rsp.StatusCode != http.StatusOK {
-			Logger.Error(rsp.Body)
+			logging.Error(rsp.Body)
 			winError = rsp.Body
 			continue
 		}
-		Logger.Debug(rsp.Body)
+		logging.Debug(rsp.Body)
 		var objmap map[string]json.RawMessage
 		err := json.Unmarshal([]byte(rsp.Body), &objmap)
 		if err != nil {
@@ -691,12 +682,12 @@ func SetupAuth(authHost, clientID, clientKey, publicKey, privateKey, localPublic
 		data := map[string]string{"client_id": clientID, "client_key": clientKey, "public_key": publicKey, "private_key": privateKey, "peer_public_key": localPublicKey}
 		req, err := util.NewHTTPPostRequest(authHost+"/setup", data)
 		if err != nil {
-			Logger.Error("new post request failed. ", err.Error())
+			logging.Error("new post request failed. ", err.Error())
 			return
 		}
 		res, err := req.Post()
 		if err != nil {
-			Logger.Error(authHost+"send error. ", err.Error())
+			logging.Error(authHost+"send error. ", err.Error())
 		}
 		if res.StatusCode != http.StatusOK {
 			cb.OnSetupComplete(StatusError, res.Body)
@@ -712,12 +703,12 @@ func GetIdForUrl(url string) string {
 	url = fmt.Sprintf("%v/_nh/whoami", url)
 	req, err := util.NewHTTPGetRequest(url)
 	if err != nil {
-		Logger.Error(url, "new get request failed. ", err.Error())
+		logging.Error(url, "new get request failed. ", err.Error())
 		return ""
 	}
 	res, err := req.Get()
 	if err != nil {
-		Logger.Error(url, "get error. ", err.Error())
+		logging.Error(url, "get error. ", err.Error())
 		return ""
 	}
 

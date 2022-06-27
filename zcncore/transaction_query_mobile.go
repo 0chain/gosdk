@@ -103,7 +103,7 @@ func (tq *transactionQuery) checkHealth(ctx context.Context, host string) error 
 	// check health
 	r := resty.New()
 	requestUrl := tq.buildUrl(host, SharderEndpointHealthCheck)
-	Logger.Info("zcn: check health ", requestUrl)
+	logging.Info("zcn: check health ", requestUrl)
 	r.DoGet(ctx, requestUrl)
 	r.Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 		if err != nil {
@@ -210,10 +210,10 @@ func (tq *transactionQuery) fromAll(query string, handle queryResultHandle, time
 			if resp != nil {
 				res.StatusCode = resp.StatusCode
 
-				Logger.Debug(req.URL.String() + " " + resp.Status)
-				Logger.Debug(string(respBody))
+				logging.Debug(req.URL.String() + " " + resp.Status)
+				logging.Debug(string(respBody))
 			} else {
-				Logger.Debug(req.URL.String())
+				logging.Debug(req.URL.String())
 
 			}
 
@@ -256,7 +256,7 @@ func (tq *transactionQuery) fromAny(query string, timeout RequestTimeout) (Query
 	r := resty.New()
 	requestUrl := tq.buildUrl(host, query)
 
-	Logger.Debug("GET", requestUrl)
+	logging.Debug("GET", requestUrl)
 
 	r.DoGet(ctx, requestUrl).
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
@@ -266,7 +266,7 @@ func (tq *transactionQuery) fromAny(query string, timeout RequestTimeout) (Query
 			}
 
 			res.Content = respBody
-			Logger.Debug(string(respBody))
+			logging.Debug(string(respBody))
 
 			if resp != nil {
 				res.StatusCode = resp.StatusCode
@@ -348,21 +348,21 @@ func (tq *transactionQuery) getConsensusConfirmation(numSharders int, txnHash st
 			var cfmBlock map[string]json.RawMessage
 			err := json.Unmarshal([]byte(qr.Content), &cfmBlock)
 			if err != nil {
-				Logger.Error("txn confirmation parse error", err)
+				logging.Error("txn confirmation parse error", err)
 				return false
 			}
 
 			// parse `confirmation` section as block header
 			cfmBlockHeader, err := getBlockHeaderFromTransactionConfirmation(txnHash, cfmBlock)
 			if err != nil {
-				Logger.Error("txn confirmation parse header error", err)
+				logging.Error("txn confirmation parse header error", err)
 
 				// parse `latest_finalized_block` section
 				if lfbRaw, ok := cfmBlock["latest_finalized_block"]; ok {
 					var lfb blockHeader
 					err := json.Unmarshal([]byte(lfbRaw), &lfb)
 					if err != nil {
-						Logger.Error("round info parse error.", err)
+						logging.Error("round info parse error.", err)
 						return false
 					}
 
@@ -425,7 +425,7 @@ func (tq *transactionQuery) getFastConfirmation(txnHash string, timeout RequestT
 
 		err = json.Unmarshal(result.Content, &confirmationBlock)
 		if err != nil {
-			Logger.Error("txn confirmation parse error", err)
+			logging.Error("txn confirmation parse error", err)
 			return nil, nil, nil, err
 		}
 
@@ -435,7 +435,7 @@ func (tq *transactionQuery) getFastConfirmation(txnHash string, timeout RequestT
 			return confirmationBlockHeader, confirmationBlock, nil, nil
 		}
 
-		Logger.Error("txn confirmation parse header error", err)
+		logging.Error("txn confirmation parse header error", err)
 
 		// parse `latest_finalized_block` section
 		lfbRaw, ok := confirmationBlock["latest_finalized_block"]
@@ -448,7 +448,7 @@ func (tq *transactionQuery) getFastConfirmation(txnHash string, timeout RequestT
 			return confirmationBlockHeader, confirmationBlock, &lfbBlockHeader, ErrTransactionNotConfirmed
 		}
 
-		Logger.Error("round info parse error.", err)
+		logging.Error("round info parse error.", err)
 		return nil, nil, nil, err
 
 	}

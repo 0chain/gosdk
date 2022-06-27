@@ -56,11 +56,11 @@ func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) 
 	if err != nil {
 		return nil, errors.Wrap(err, "invalid json on auth response.")
 	}
-	Logger.Debug(txnResp)
+	logging.Debug(txnResp)
 	// Verify the signature on the result
 	ok, err := txnResp.VerifyTransaction(verifyFn)
 	if err != nil {
-		Logger.Error("verification failed for txn from auth", err.Error())
+		logging.Error("verification failed for txn from auth", err.Error())
 		return nil, errAuthVerifyFailed
 	}
 	if !ok {
@@ -121,7 +121,7 @@ func (ta *TransactionWithAuth) submitTxn() {
 
 	authTxn, err := ta.getAuthorize()
 	if err != nil {
-		Logger.Error("get auth error for send.", err.Error())
+		logging.Error("get auth error for send.", err.Error())
 		ta.completeTxn(StatusAuthError, "", err)
 		return
 	}
@@ -207,7 +207,7 @@ func (ta *TransactionWithAuth) GetTransactionNonce() int64 {
 func (ta *TransactionWithAuth) VestingTrigger(poolID string) (err error) {
 	err = ta.t.vestingPoolTxn(transaction.VESTING_TRIGGER, poolID, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { ta.submitTxn() }()
@@ -218,7 +218,7 @@ func (ta *TransactionWithAuth) VestingStop(sr *VestingStopRequest) (err error) {
 	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
 		transaction.VESTING_STOP, sr, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { ta.submitTxn() }()
@@ -229,7 +229,7 @@ func (ta *TransactionWithAuth) VestingUnlock(poolID string) (err error) {
 
 	err = ta.t.vestingPoolTxn(transaction.VESTING_UNLOCK, poolID, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { ta.submitTxn() }()
@@ -239,7 +239,7 @@ func (ta *TransactionWithAuth) VestingUnlock(poolID string) (err error) {
 func (ta *TransactionWithAuth) VestingDelete(poolID string) (err error) {
 	err = ta.t.vestingPoolTxn(transaction.VESTING_DELETE, poolID, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { ta.submitTxn() }()
@@ -260,7 +260,7 @@ func (ta *TransactionWithAuth) MinerSCUnlock(nodeID, poolID string) (
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_UNLOCK, &mscul, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { ta.submitTxn() }()

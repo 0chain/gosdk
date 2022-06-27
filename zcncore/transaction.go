@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -246,10 +245,10 @@ func NewTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (Transac
 		if _config.authUrl == "" {
 			return nil, errors.New("", "auth url not set")
 		}
-		Logger.Info("New transaction interface with auth")
+		logging.Info("New transaction interface with auth")
 		return newTransactionWithAuth(cb, txnFee, nonce)
 	}
-	Logger.Info("New transaction interface")
+	logging.Info("New transaction interface")
 	t, err := newTransaction(cb, txnFee, nonce)
 	return t, err
 }
@@ -324,7 +323,7 @@ func (t *Transaction) VestingAdd(ar *VestingAddRequest, value uint64) (
 	err = t.createSmartContractTxn(VestingSmartContractAddress,
 		transaction.VESTING_ADD, ar, value)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { t.setNonceAndSubmit() }()
@@ -339,7 +338,7 @@ func (t *Transaction) MinerSCLock(nodeID string, lock uint64) (err error) {
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_LOCK, &mscl, lock)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { t.setNonceAndSubmit() }()
@@ -355,7 +354,7 @@ func (t *Transaction) MinerSCCollectReward(providerId, poolId string, providerTy
 	err := t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_COLLECT_REWARD, pr, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return err
 	}
 	go func() { t.setNonceAndSubmit() }()
@@ -371,7 +370,7 @@ func (t *Transaction) StorageSCCollectReward(providerId, poolId string, provider
 	err := t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_COLLECT_REWARD, pr, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return err
 	}
 	go t.setNonceAndSubmit()
@@ -390,7 +389,7 @@ func (t *Transaction) FinalizeAllocation(allocID string, fee uint64) (
 			AllocationID: allocID,
 		}, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	t.SetTransactionFee(fee)
@@ -410,7 +409,7 @@ func (t *Transaction) CancelAllocation(allocID string, fee uint64) (
 			AllocationID: allocID,
 		}, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	t.SetTransactionFee(fee)
@@ -425,7 +424,7 @@ func (t *Transaction) CreateAllocation(car *CreateAllocationRequest,
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_CREATE_ALLOCATION, car, lock)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	t.SetTransactionFee(fee)
@@ -439,7 +438,7 @@ func (t *Transaction) CreateReadPool(fee uint64) (err error) {
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_CREATE_READ_POOL, nil, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	t.SetTransactionFee(fee)
@@ -467,7 +466,7 @@ func (t *Transaction) ReadPoolLock(allocID, blobberID string,
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_READ_POOL_LOCK, &lr, lock)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	t.SetTransactionFee(fee)
@@ -485,7 +484,7 @@ func (t *Transaction) ReadPoolUnlock(poolID string, fee uint64) (err error) {
 			PoolID: poolID,
 		}, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	t.SetTransactionFee(fee)
@@ -507,7 +506,7 @@ func (t *Transaction) StakePoolLock(blobberID string, lock, fee uint64) (
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_STAKE_POOL_LOCK, &spr, lock)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	t.SetTransactionFee(fee)
@@ -530,7 +529,7 @@ func (t *Transaction) StakePoolUnlock(blobberID, poolID string,
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress, transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	t.SetTransactionFee(fee)
@@ -544,7 +543,7 @@ func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee uint64) (err error) 
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, b, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	t.SetTransactionFee(fee)
@@ -570,7 +569,7 @@ func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_UPDATE_ALLOCATION, &uar, lock)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	t.SetTransactionFee(fee)
@@ -598,7 +597,7 @@ func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64,
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_WRITE_POOL_LOCK, &lr, lock)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	t.SetTransactionFee(fee)
@@ -618,7 +617,7 @@ func (t *Transaction) WritePoolUnlock(poolID string, fee uint64) (
 			PoolID: poolID,
 		}, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	t.SetTransactionFee(fee)
@@ -631,7 +630,7 @@ func (t *Transaction) VestingUpdateConfig(vscc *InputMap) (err error) {
 	err = t.createSmartContractTxn(VestingSmartContractAddress,
 		transaction.VESTING_UPDATE_SETTINGS, vscc, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { t.setNonceAndSubmit() }()
@@ -645,7 +644,7 @@ func (t *Transaction) FaucetUpdateConfig(ip *InputMap) (err error) {
 	err = t.createSmartContractTxn(FaucetSmartContractAddress,
 		transaction.FAUCETSC_UPDATE_SETTINGS, ip, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { t.setNonceAndSubmit() }()
@@ -660,7 +659,7 @@ func (t *Transaction) MinerScUpdateConfig(ip *InputMap) (err error) {
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_UPDATE_SETTINGS, ip, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { t.setNonceAndSubmit() }()
@@ -671,7 +670,7 @@ func (t *Transaction) MinerScUpdateGlobals(ip *InputMap) (err error) {
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_UPDATE_GLOBALS, ip, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { t.setNonceAndSubmit() }()
@@ -682,7 +681,7 @@ func (t *Transaction) StorageScUpdateConfig(ip *InputMap) (err error) {
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_UPDATE_SETTINGS, ip, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { t.setNonceAndSubmit() }()
@@ -692,7 +691,7 @@ func (t *Transaction) StorageScUpdateConfig(ip *InputMap) (err error) {
 func (t *Transaction) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error) {
 	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_GLOBAL_CONFIG, ip, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go t.setNonceAndSubmit()
@@ -809,7 +808,7 @@ func (t *Transaction) MinerSCMinerSettings(info *MinerSCMinerInfo) (err error) {
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_MINER_SETTINGS, info, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { t.setNonceAndSubmit() }()
@@ -820,7 +819,7 @@ func (t *Transaction) MinerSCSharderSettings(info *MinerSCMinerInfo) (err error)
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_SHARDER_SETTINGS, info, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { t.setNonceAndSubmit() }()
@@ -831,7 +830,7 @@ func (t *Transaction) MinerSCDeleteMiner(info *MinerSCMinerInfo) (err error) {
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_MINER_DELETE, info, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { t.setNonceAndSubmit() }()
@@ -842,7 +841,7 @@ func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_SHARDER_DELETE, info, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { t.setNonceAndSubmit() }()
@@ -857,7 +856,7 @@ type AuthorizerNode struct {
 func (t *Transaction) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (err error) {
 	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG, ip, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go t.setNonceAndSubmit()
@@ -882,7 +881,7 @@ func (t *Transaction) Verify() error {
 
 	tq, err := NewTransactionQuery(_config.chain.Sharders)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return err
 	}
 
@@ -899,14 +898,14 @@ func (t *Transaction) Verify() error {
 
 				// maybe it is a network or server error
 				if lfbBlockHeader == nil {
-					Logger.Info(err, " now: ", now)
+					logging.Info(err, " now: ", now)
 				} else {
-					Logger.Info(err, " now: ", now, ", LFB creation time:", lfbBlockHeader.CreationDate)
+					logging.Info(err, " now: ", now, ", LFB creation time:", lfbBlockHeader.CreationDate)
 				}
 
 				// transaction is done or expired. it means random sharder might be outdated, try to query it from s/S sharders to confirm it
 				if util.MaxInt64(lfbBlockHeader.getCreationDate(now), now) >= (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
-					Logger.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders")
+					logging.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders")
 					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.getConsensusConfirmation(context.TODO(), getMinShardersVerify(), t.txnHash)
 				}
 
@@ -985,15 +984,15 @@ func GetLatestFinalized(ctx context.Context, numSharders int) (b *block.Header, 
 	for i := 0; i < numSharders; i++ {
 		var rsp = <-result
 
-		Logger.Debug(rsp.Url, rsp.Status)
+		logging.Debug(rsp.Url, rsp.Status)
 
 		if rsp.StatusCode != http.StatusOK {
-			Logger.Error(rsp.Body)
+			logging.Error(rsp.Body)
 			continue
 		}
 
 		if err = json.Unmarshal([]byte(rsp.Body), &b); err != nil {
-			Logger.Error("block parse error: ", err)
+			logging.Error("block parse error: ", err)
 			err = nil
 			continue
 		}
@@ -1030,16 +1029,16 @@ func GetLatestFinalizedMagicBlock(ctx context.Context, numSharders int) (m *bloc
 	for i := 0; i < numSharders; i++ {
 		var rsp = <-result
 
-		Logger.Debug(rsp.Url, rsp.Status)
+		logging.Debug(rsp.Url, rsp.Status)
 
 		if rsp.StatusCode != http.StatusOK {
-			Logger.Error(rsp.Body)
+			logging.Error(rsp.Body)
 			continue
 		}
 
 		var respo respObj
 		if err = json.Unmarshal([]byte(rsp.Body), &respo); err != nil {
-			Logger.Error(" magic block parse error: ", err)
+			logging.Error(" magic block parse error: ", err)
 			err = nil
 			continue
 		}
@@ -1106,32 +1105,32 @@ func GetBlockByRound(ctx context.Context, numSharders int, round int64) (b *bloc
 	for i := 0; i < numSharders; i++ {
 		var rsp = <-result
 
-		Logger.Debug(rsp.Url, rsp.Status)
+		logging.Debug(rsp.Url, rsp.Status)
 
 		if rsp.StatusCode != http.StatusOK {
-			Logger.Error(rsp.Body)
+			logging.Error(rsp.Body)
 			continue
 		}
 
 		var respo respObj
 		if err = json.Unmarshal([]byte(rsp.Body), &respo); err != nil {
-			Logger.Error("block parse error: ", err)
+			logging.Error("block parse error: ", err)
 			err = nil
 			continue
 		}
 
 		if respo.Block == nil {
-			Logger.Debug(rsp.Url, "no block in response:", rsp.Body)
+			logging.Debug(rsp.Url, "no block in response:", rsp.Body)
 			continue
 		}
 
 		if respo.Header == nil {
-			Logger.Debug(rsp.Url, "no block header in response:", rsp.Body)
+			logging.Debug(rsp.Url, "no block header in response:", rsp.Body)
 			continue
 		}
 
 		if respo.Header.Hash != string(respo.Block.Hash) {
-			Logger.Debug(rsp.Url, "header and block hash mismatch:", rsp.Body)
+			logging.Debug(rsp.Url, "header and block hash mismatch:", rsp.Body)
 			continue
 		}
 
@@ -1173,16 +1172,16 @@ func GetMagicBlockByNumber(ctx context.Context, numSharders int, number int64) (
 	for i := 0; i < numSharders; i++ {
 		var rsp = <-result
 
-		Logger.Debug(rsp.Url, rsp.Status)
+		logging.Debug(rsp.Url, rsp.Status)
 
 		if rsp.StatusCode != http.StatusOK {
-			Logger.Error(rsp.Body)
+			logging.Error(rsp.Body)
 			continue
 		}
 
 		var respo respObj
 		if err = json.Unmarshal([]byte(rsp.Body), &respo); err != nil {
-			Logger.Error(" magic block parse error: ", err)
+			logging.Error(" magic block parse error: ", err)
 			err = nil
 			continue
 		}
@@ -1285,6 +1284,20 @@ func WithConfirmationChainLength(m int) func(c *ChainConfig) error {
 	}
 }
 
+// UpdateValidatorSettings update settings of a validator.
+func (t *Transaction) UpdateValidatorSettings(v *Validator, fee uint64) (err error) {
+
+	err = t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS, v, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	t.SetTransactionFee(fee)
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
 func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
 	if signscheme != "ed25519" && signscheme != "bls0chain" {
@@ -1295,7 +1308,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 
 	err := UpdateNetworkDetails()
 	if err != nil {
-		log.Println("UpdateNetworkDetails:", err)
+		fmt.Println("UpdateNetworkDetails:", err)
 		return err
 	}
 
@@ -1309,7 +1322,7 @@ func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainCon
 	}
 	assertConfig()
 	_config.isConfigured = true
-	Logger.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (InitZCNSDK)")
+	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (InitZCNSDK)")
 
 	cfg := &conf.Config{
 		BlockWorker:             _config.chain.BlockWorker,
@@ -1393,7 +1406,7 @@ func GetFaucetSCConfig(cb GetInfoCallback) (err error) {
 func (t *Transaction) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error) {
 	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go t.setNonceAndSubmit()

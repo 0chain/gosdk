@@ -4,6 +4,7 @@
 package zcncore
 
 import (
+	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
@@ -25,3 +26,13 @@ func SignWith0Wallet(hash string, w *zcncrypto.Wallet) (string, error) {
 	return sigScheme.Sign(hash)
 }
 
+var Logger = &logging
+
+func GetLogger() *logger.Logger {
+	return &logging
+}
+
+// CloseLog closes log file
+func CloseLog() {
+	logging.Close()
+}

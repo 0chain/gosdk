@@ -274,15 +274,15 @@ func (t *Transaction) submitTxn() {
 	for _, miner := range randomMiners {
 		go func(minerurl string) {
 			url := minerurl + PUT_TRANSACTION
-			Logger.Info("Submitting ", txnTypeString(t.txn.TransactionType), " transaction to ", minerurl, " with JSON ", string(t.txn.DebugJSON()))
+			logging.Info("Submitting ", txnTypeString(t.txn.TransactionType), " transaction to ", minerurl, " with JSON ", string(t.txn.DebugJSON()))
 			req, err := util.NewHTTPPostRequest(url, t.txn)
 			if err != nil {
-				Logger.Error(minerurl, " new post request failed. ", err.Error())
+				logging.Error(minerurl, " new post request failed. ", err.Error())
 				return
 			}
 			res, err := req.Post()
 			if err != nil {
-				Logger.Error(minerurl, " submit transaction error. ", err.Error())
+				logging.Error(minerurl, " submit transaction error. ", err.Error())
 			}
 			result <- res
 		}(miner)
@@ -290,12 +290,12 @@ func (t *Transaction) submitTxn() {
 	consensus := float32(0)
 	for range randomMiners {
 		rsp := <-result
-		Logger.Debug(rsp.Url, rsp.Status)
+		logging.Debug(rsp.Url, rsp.Status)
 		if rsp.StatusCode == http.StatusOK {
 			consensus++
 			tSuccessRsp = rsp.Body
 		} else {
-			Logger.Error(rsp.Body)
+			logging.Error(rsp.Body)
 			tFailureRsp = rsp.Body
 		}
 
@@ -415,7 +415,7 @@ func (t *Transaction) GetTransactionHash() string {
 	var entity map[string]interface{}
 	err = json.Unmarshal(txnout["entity"], &entity)
 	if err != nil {
-		Logger.Error("json unmarshal error on GetTransactionHash()")
+		logging.Error("json unmarshal error on GetTransactionHash()")
 		return t.txnHash
 	}
 	if hash, ok := entity["hash"].(string); ok {
@@ -435,16 +435,16 @@ func queryFromShardersContext(ctx context.Context, numSharders int,
 
 	for _, sharder := range util.Shuffle(_config.chain.Sharders) {
 		go func(sharderurl string) {
-			Logger.Info("Query from ", sharderurl+query)
+			logging.Info("Query from ", sharderurl+query)
 			url := fmt.Sprintf("%v%v", sharderurl, query)
 			req, err := util.NewHTTPGetRequestContext(ctx, url)
 			if err != nil {
-				Logger.Error(sharderurl, " new get request failed. ", err.Error())
+				logging.Error(sharderurl, " new get request failed. ", err.Error())
 				return
 			}
 			res, err := req.Get()
 			if err != nil {
-				Logger.Error(sharderurl, " get error. ", err.Error())
+				logging.Error(sharderurl, " get error. ", err.Error())
 			}
 			result <- res
 		}(sharder)
@@ -505,18 +505,18 @@ func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, 
 	var confirmation map[string]json.RawMessage
 	for i := 0; i < numSharders; i++ {
 		rsp := <-result
-		Logger.Debug(rsp.Url + " " + rsp.Status)
-		Logger.Debug(rsp.Body)
+		logging.Debug(rsp.Url + " " + rsp.Status)
+		logging.Debug(rsp.Body)
 		if rsp.StatusCode == http.StatusOK {
 			var cfmLfb map[string]json.RawMessage
 			err := json.Unmarshal([]byte(rsp.Body), &cfmLfb)
 			if err != nil {
-				Logger.Error("txn confirmation parse error", err)
+				logging.Error("txn confirmation parse error", err)
 				continue
 			}
 			bH, err := getBlockHeaderFromTransactionConfirmation(txnHash, cfmLfb)
 			if err != nil {
-				Logger.Error(err)
+				logging.Error(err)
 			}
 			if err == nil {
 				txnConfirmations[bH.Hash]++
@@ -528,7 +528,7 @@ func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, 
 			} else if lfbRaw, ok := cfmLfb["latest_finalized_block"]; ok {
 				err := json.Unmarshal([]byte(lfbRaw), &lfb)
 				if err != nil {
-					Logger.Error("round info parse error.", err)
+					logging.Error("round info parse error.", err)
 					continue
 				}
 			}
@@ -551,18 +551,18 @@ func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHe
 	var blkHdr blockHeader
 	for i := 0; i < numSharders; i++ {
 		rsp := <-result
-		Logger.Debug(rsp.Url, rsp.Status)
+		logging.Debug(rsp.Url, rsp.Status)
 		if rsp.StatusCode == http.StatusOK {
 			var objmap map[string]json.RawMessage
 			err := json.Unmarshal([]byte(rsp.Body), &objmap)
 			if err != nil {
-				Logger.Error("round info parse error. ", err)
+				logging.Error("round info parse error. ", err)
 				continue
 			}
 			if header, ok := objmap["header"]; ok {
 				err := json.Unmarshal([]byte(header), &objmap)
 				if err != nil {
-					Logger.Error("round info parse error. ", err)
+					logging.Error("round info parse error. ", err)
 					continue
 				}
 				if hash, ok := objmap["hash"]; ok {
@@ -572,16 +572,16 @@ func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHe
 						maxConsensus = roundConsensus[h]
 						err := json.Unmarshal([]byte(header), &blkHdr)
 						if err != nil {
-							Logger.Error("round info parse error. ", err)
+							logging.Error("round info parse error. ", err)
 							continue
 						}
 					}
 				}
 			} else {
-				Logger.Debug(rsp.Url, "no round confirmation. Resp:", rsp.Body)
+				logging.Debug(rsp.Url, "no round confirmation. Resp:", rsp.Body)
 			}
 		} else {
-			Logger.Error(rsp.Body)
+			logging.Error(rsp.Body)
 		}
 
 	}
@@ -600,17 +600,17 @@ func isBlockExtends(prevHash string, block *blockHeader) bool {
 
 func validateChain(confirmBlock *blockHeader) bool {
 	confirmRound := confirmBlock.Round
-	Logger.Debug("Confirmation round: ", confirmRound)
+	logging.Debug("Confirmation round: ", confirmRound)
 	currentBlockHash := confirmBlock.Hash
 	round := confirmRound + 1
 	for {
 		nextBlock, err := getBlockInfoByRound(1, round, "header")
 		if err != nil {
-			Logger.Info(err, " after a second falling thru to ", getMinShardersVerify(), "of ", len(_config.chain.Sharders), "Sharders")
+			logging.Info(err, " after a second falling thru to ", getMinShardersVerify(), "of ", len(_config.chain.Sharders), "Sharders")
 			sys.Sleep(1 * time.Second)
 			nextBlock, err = getBlockInfoByRound(getMinShardersVerify(), round, "header")
 			if err != nil {
-				Logger.Error(err, " block chain stalled. waiting", defaultWaitSeconds, "...")
+				logging.Error(err, " block chain stalled. waiting", defaultWaitSeconds, "...")
 				sys.Sleep(defaultWaitSeconds)
 				continue
 			}
@@ -687,7 +687,7 @@ func (t *Transaction) VestingTrigger(poolID string) (err error) {
 
 	err = t.vestingPoolTxn(transaction.VESTING_TRIGGER, poolID, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { t.setNonceAndSubmit() }()
@@ -704,7 +704,7 @@ func (t *Transaction) VestingStop(sr *VestingStopRequest) (err error) {
 	err = t.createSmartContractTxn(VestingSmartContractAddress,
 		transaction.VESTING_STOP, sr, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { t.setNonceAndSubmit() }()
@@ -715,7 +715,7 @@ func (t *Transaction) VestingUnlock(poolID string) (err error) {
 
 	err = t.vestingPoolTxn(transaction.VESTING_UNLOCK, poolID, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { t.setNonceAndSubmit() }()
@@ -726,7 +726,7 @@ func (t *Transaction) VestingDelete(poolID string) (err error) {
 
 	err = t.vestingPoolTxn(transaction.VESTING_DELETE, poolID, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { t.setNonceAndSubmit() }()
@@ -756,7 +756,7 @@ func (t *Transaction) MinerSCUnlock(nodeID, poolID string) (err error) {
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_UNLOCK, &mscul, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { t.setNonceAndSubmit() }()
@@ -778,7 +778,7 @@ func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
 	var metaOperation sdk.CommitMetaData
 	err = json.Unmarshal([]byte(t.TransactionData), &metaOperation)
 	if err != nil {
-		Logger.Error("Unmarshal of transaction data to fileMeta failed, Maybe not a commit meta txn :", t.Hash)
+		logging.Error("Unmarshal of transaction data to fileMeta failed, Maybe not a commit meta txn :", t.Hash)
 		return false, nil
 	}
 

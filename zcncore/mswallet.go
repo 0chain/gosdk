@@ -134,7 +134,7 @@ func CreateMSWallet(t, n int) (string, string, []string, error) {
 		return "", "", nil, err
 	}
 
-	Logger.Info(fmt.Sprintf("Wallet id: %s", wallet.ClientKey))
+	logging.Info(fmt.Sprintf("Wallet id: %s", wallet.ClientKey))
 
 	groupClientID := GetClientID(groupKey.GetPublicKey())
 	//Code modified to directly use BLS0ChainThresholdScheme

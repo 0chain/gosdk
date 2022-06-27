@@ -60,7 +60,7 @@ func (ta *TransactionWithAuth) VestingAdd(ar VestingAddRequest, value string) er
 	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
 		transaction.VESTING_ADD, ar, v)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return err
 	}
 	go func() { ta.submitTxn() }()
@@ -79,7 +79,7 @@ func (ta *TransactionWithAuth) MinerSCLock(minerID string, lock string) error {
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_LOCK, &mscl, v)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return err
 	}
 	go func() { ta.submitTxn() }()
@@ -101,7 +101,7 @@ func (ta *TransactionWithAuth) FinalizeAllocation(allocID string, fee string) er
 			AllocationID: allocID,
 		}, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return err
 	}
 	ta.t.setTransactionFee(v)
@@ -124,7 +124,7 @@ func (ta *TransactionWithAuth) CancelAllocation(allocID string, fee string) erro
 			AllocationID: allocID,
 		}, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return err
 	}
 	ta.t.setTransactionFee(v)
@@ -148,7 +148,7 @@ func (ta *TransactionWithAuth) CreateAllocation(car *CreateAllocationRequest,
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_CREATE_ALLOCATION, car, lv)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return err
 	}
 	ta.t.setTransactionFee(fv)
@@ -166,7 +166,7 @@ func (ta *TransactionWithAuth) CreateReadPool(fee string) error {
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_CREATE_READ_POOL, nil, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return err
 	}
 	ta.t.setTransactionFee(v)
@@ -203,7 +203,7 @@ func (ta *TransactionWithAuth) ReadPoolLock(allocID, blobberID string,
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_READ_POOL_LOCK, &lr, lv)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return err
 	}
 	ta.t.setTransactionFee(fv)
@@ -226,7 +226,7 @@ func (ta *TransactionWithAuth) ReadPoolUnlock(poolID string, fee string) error {
 			PoolID: poolID,
 		}, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return err
 	}
 	ta.t.setTransactionFee(v)
@@ -257,7 +257,7 @@ func (ta *TransactionWithAuth) StakePoolLock(blobberID string,
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_STAKE_POOL_LOCK, &spr, lv)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return err
 	}
 	ta.t.setTransactionFee(fv)
@@ -285,7 +285,7 @@ func (ta *TransactionWithAuth) StakePoolUnlock(blobberID, poolID string,
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return err
 	}
 	ta.t.setTransactionFee(v)
@@ -303,7 +303,7 @@ func (ta *TransactionWithAuth) UpdateBlobberSettings(blob Blobber, fee string) e
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, blob, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return err
 	}
 	ta.t.setTransactionFee(v)
@@ -338,7 +338,7 @@ func (ta *TransactionWithAuth) UpdateAllocation(allocID string, sizeDiff int64,
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_UPDATE_ALLOCATION, &uar, lv)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return err
 	}
 	ta.t.setTransactionFee(fv)
@@ -375,7 +375,7 @@ func (ta *TransactionWithAuth) WritePoolLock(allocID, blobberID string,
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_WRITE_POOL_LOCK, &lr, lv)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return err
 	}
 	ta.t.setTransactionFee(fv)
@@ -398,7 +398,7 @@ func (ta *TransactionWithAuth) WritePoolUnlock(poolID string, fee string) error 
 			PoolID: poolID,
 		}, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return err
 	}
 	ta.t.setTransactionFee(v)
@@ -415,7 +415,7 @@ func (ta *TransactionWithAuth) MinerSCCollectReward(providerId, poolId string, p
 	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_COLLECT_REWARD, pr, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return err
 	}
 	go ta.submitTxn()
@@ -431,7 +431,7 @@ func (ta *TransactionWithAuth) StorageSCCollectReward(providerId, poolId string,
 	err := ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_COLLECT_REWARD, pr, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return err
 	}
 	go func() { ta.submitTxn() }()
@@ -442,7 +442,7 @@ func (ta *TransactionWithAuth) VestingUpdateConfig(ip InputMap) (err error) {
 	err = ta.t.createSmartContractTxn(VestingSmartContractAddress,
 		transaction.VESTING_UPDATE_SETTINGS, ip, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { ta.submitTxn() }()
@@ -455,7 +455,7 @@ func (ta *TransactionWithAuth) FaucetUpdateConfig(ip InputMap) (err error) {
 	err = ta.t.createSmartContractTxn(FaucetSmartContractAddress,
 		transaction.FAUCETSC_UPDATE_SETTINGS, ip, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { ta.submitTxn() }()
@@ -466,7 +466,7 @@ func (ta *TransactionWithAuth) MinerScUpdateConfig(ip InputMap) (err error) {
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_UPDATE_SETTINGS, ip, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { ta.submitTxn() }()
@@ -477,7 +477,7 @@ func (ta *TransactionWithAuth) MinerScUpdateGlobals(ip InputMap) (err error) {
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_UPDATE_GLOBALS, ip, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { ta.submitTxn() }()
@@ -488,7 +488,7 @@ func (ta *TransactionWithAuth) StorageScUpdateConfig(ip InputMap) (err error) {
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_UPDATE_SETTINGS, ip, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { ta.submitTxn() }()
@@ -499,7 +499,7 @@ func (ta *TransactionWithAuth) ZCNSCUpdateGlobalConfig(ip InputMap) (err error) 
 	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress,
 		transaction.ZCNSC_UPDATE_GLOBAL_CONFIG, ip, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go ta.submitTxn()
@@ -516,7 +516,7 @@ func (ta *TransactionWithAuth) MinerSCMinerSettings(info MinerSCMinerInfo) (
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_MINER_SETTINGS, info, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { ta.submitTxn() }()
@@ -529,7 +529,7 @@ func (ta *TransactionWithAuth) MinerSCSharderSettings(info MinerSCMinerInfo) (
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_SHARDER_SETTINGS, info, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { ta.submitTxn() }()
@@ -542,7 +542,7 @@ func (ta *TransactionWithAuth) MinerSCDeleteMiner(info MinerSCMinerInfo) (
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_MINER_DELETE, info, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { ta.submitTxn() }()
@@ -555,7 +555,7 @@ func (ta *TransactionWithAuth) MinerSCDeleteSharder(info MinerSCMinerInfo) (
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_SHARDER_DELETE, info, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go func() { ta.submitTxn() }()
@@ -565,7 +565,7 @@ func (ta *TransactionWithAuth) MinerSCDeleteSharder(info MinerSCMinerInfo) (
 func (ta *TransactionWithAuth) ZCNSCUpdateAuthorizerConfig(ip AuthorizerNode) (err error) {
 	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_UPDATE_AUTHORIZER_CONFIG, ip, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go ta.submitTxn()
@@ -575,7 +575,7 @@ func (ta *TransactionWithAuth) ZCNSCUpdateAuthorizerConfig(ip AuthorizerNode) (e
 func (ta *TransactionWithAuth) ZCNSCAddAuthorizer(ip AddAuthorizerPayload) (err error) {
 	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip, 0)
 	if err != nil {
-		Logger.Error(err)
+		logging.Error(err)
 		return
 	}
 	go ta.submitTxn()
