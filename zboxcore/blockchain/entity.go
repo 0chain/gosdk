@@ -3,6 +3,8 @@ package blockchain
 import (
 	"encoding/json"
 	"sync/atomic"
+
+	"github.com/0chain/gosdk/core/common"
 )
 
 type ChainConfig struct {
@@ -15,6 +17,21 @@ type ChainConfig struct {
 	ChainID           string
 	MaxTxnQuery       int
 	QuerySleepTime    int
+}
+
+// StakePoolSettings information.
+type StakePoolSettings struct {
+	DelegateWallet string         `json:"delegate_wallet"`
+	MinStake       common.Balance `json:"min_stake"`
+	MaxStake       common.Balance `json:"max_stake"`
+	NumDelegates   int            `json:"num_delegates"`
+	ServiceCharge  float64        `json:"service_charge"`
+}
+
+type ValidationNode struct {
+	ID                string            `json:"id"`
+	BaseURL           string            `json:"url"`
+	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
 type StorageNode struct {
