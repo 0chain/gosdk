@@ -32,7 +32,7 @@ var getEthClient = func() (*ethclient.Client, error) {
 		return nil, fmt.Errorf("eth node SDK not initialized")
 	}
 
-	log.Info("requesting from ", _config.chain.EthNode)
+	logging.Info("requesting from ", _config.chain.EthNode)
 	client, err := ethclient.Dial(_config.chain.EthNode)
 	if err != nil {
 		return nil, err
@@ -93,7 +93,7 @@ func GetEthBalance(ethAddr string, cb GetBalanceCallback) error {
 	go func() {
 		value, err := getBalanceFromEthNode(ethAddr)
 		if err != nil {
-			log.Error(err)
+			logging.Error(err)
 			cb.OnBalanceAvailable(StatusError, 0, err.Error())
 			return
 		}
@@ -276,13 +276,13 @@ func TransferEthTokens(fromPrivKey string, amountTokens, gasPrice int64) (string
 func getBalanceFromEthNode(ethAddr string) (int64, error) {
 	if client, err := getEthClient(); err == nil {
 		account := common.HexToAddress(ethAddr)
-		log.Info("for eth address", account)
+		logging.Info("for eth address", account)
 		balance, err := client.BalanceAt(context.Background(), account, nil)
 		if err != nil {
 			return 0, err
 		}
 
-		log.Info("balance", balance.String())
+		logging.Info("balance", balance.String())
 
 		return balance.Int64(), nil
 	} else {
