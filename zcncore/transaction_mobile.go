@@ -160,8 +160,8 @@ type Terms struct {
 }
 
 type Blobber interface {
-	SetTerms(t Terms)
-	SetStakePoolSettings(sps StakePoolSettings)
+	SetTerms(readPrice int64, writePrice int64, minLockDemand float64, maxOfferDuration int64)
+	SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64)
 }
 
 func NewBlobber(id, baseUrl string, capacity, allocated, lastHealthCheck int64) Blobber {
@@ -184,16 +184,27 @@ type blobber struct {
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
-func (b *blobber) SetStakePoolSettings(sps StakePoolSettings) {
-	b.StakePoolSettings = sps
+func (b *blobber) SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64) {
+	b.StakePoolSettings = StakePoolSettings{
+		DelegateWallet: delegateWallet,
+		MinStake:       minStake,
+		MaxStake:       maxStake,
+		NumDelegates:   numDelegates,
+		ServiceCharge:  serviceCharge,
+	}
 }
 
-func (b *blobber) SetTerms(t Terms) {
-	b.Terms = t
+func (b *blobber) SetTerms(readPrice int64, writePrice int64, minLockDemand float64, maxOfferDuration int64) {
+	b.Terms = Terms{
+		ReadPrice: readPrice,
+		WritePrice: writePrice,
+		MinLockDemand: minLockDemand,
+		MaxOfferDuration: maxOfferDuration,
+	}
 }
 
 type AddAuthorizerPayload interface {
-	SetStakePoolSettings(sps AuthorizerStakePoolSettings)
+	SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64)
 }
 
 func NewAddAuthorizerPayload(pubKey, url string) AddAuthorizerPayload {
@@ -209,8 +220,14 @@ type addAuthorizerPayload struct {
 	StakePoolSettings AuthorizerStakePoolSettings `json:"stake_pool_settings"` // Used to initially create stake pool
 }
 
-func (a *addAuthorizerPayload) SetStakePoolSettings(sps AuthorizerStakePoolSettings) {
-	a.StakePoolSettings = sps
+func (a *addAuthorizerPayload) SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64) {
+	a.StakePoolSettings = AuthorizerStakePoolSettings{
+		DelegateWallet: delegateWallet,
+		MinStake: minStake,
+		MaxStake: maxStake,
+		NumDelegates: numDelegates,
+		ServiceCharge: serviceCharge,
+	}
 }
 
 type AuthorizerStakePoolSettings struct {
@@ -231,26 +248,26 @@ type VestingDest struct {
 }
 
 type VestingAddRequest interface {
-	AddDestinations(dest *VestingDest)
+	AddDestinations(id string, amount int64)
 }
 
 func NewVestingAddRequest(desc string, startTime int64, duration int64) VestingAddRequest {
 	return &vestingAddRequest{
-		description: desc,
-		startTime:   startTime,
-		duration:    duration,
+		Description: desc,
+		StartTime:   startTime,
+		Duration:    duration,
 	}
 }
 
 type vestingAddRequest struct {
-	description  string         `json:"description"`  // allow empty
-	startTime    int64          `json:"start_time"`   //
-	duration     int64          `json:"duration"`     //
-	destinations []*VestingDest `json:"destinations"` //
+	Description  string         `json:"description"`  // allow empty
+	StartTime    int64          `json:"start_time"`   //
+	Duration     int64          `json:"duration"`     //
+	Destinations []*VestingDest `json:"destinations"` //
 }
 
-func (vr *vestingAddRequest) AddDestinations(dest *VestingDest) {
-	vr.destinations = append(vr.destinations, dest)
+func (vr *vestingAddRequest) AddDestinations(id string, amount int64) {
+	vr.Destinations = append(vr.Destinations, &VestingDest{ID: id, Amount: amount})
 }
 
 type InputMap interface {
@@ -848,13 +865,27 @@ func (t *Transaction) GetVerifyConfirmationStatus() int {
 }
 
 type MinerSCMinerInfo interface {
-	SetStakePoolSettings(sps StakePoolSettings)
+	GetID() string
 }
 
-func NewMinerSCMinerInfo(id string) MinerSCMinerInfo {
+func NewMinerSCMinerInfo(id string, delegateWallet string,
+	minStake int64, maxStake int64, numDelegates int, serviceCharge float64) MinerSCMinerInfo {
 	return &minerSCMinerInfo{
 		simpleMiner: simpleMiner{ID: id},
+		minerSCDelegatePool: minerSCDelegatePool{
+			Settings: StakePoolSettings{
+				DelegateWallet: delegateWallet,
+				MinStake:       minStake,
+				MaxStake:       maxStake,
+				NumDelegates:   numDelegates,
+				ServiceCharge:  serviceCharge,
+			},
+		},
 	}
+}
+
+func (mi *minerSCMinerInfo) GetID() string {
+	return mi.ID
 }
 
 type minerSCMinerInfo struct {
@@ -919,7 +950,7 @@ func (t *Transaction) MinerSCDeleteSharder(info MinerSCMinerInfo) (err error) {
 }
 
 type AuthorizerNode interface {
-	SetConfig(*AuthorizerConfig)
+	SetConfig(fee int64)
 }
 
 func NewAuthorizerNode(id string) AuthorizerNode {
@@ -933,8 +964,8 @@ type authorizerNode struct {
 	Config *AuthorizerConfig `json:"config"`
 }
 
-func (a *authorizerNode) SetConfig(conf *AuthorizerConfig) {
-	a.Config = conf
+func (a *authorizerNode) SetConfig(fee int64) {
+	a.Config.Fee = fee
 }
 
 func (t *Transaction) ZCNSCUpdateAuthorizerConfig(ip AuthorizerNode) (err error) {
@@ -1135,8 +1166,8 @@ func GetLatestFinalizedMagicBlock(numSharders int, timeout RequestTimeout) ([]by
 	var (
 		maxConsensus   int
 		roundConsensus = make(map[string]int)
-		m *block.MagicBlock
-		err error
+		m              *block.MagicBlock
+		err            error
 	)
 
 	type respObj struct {
@@ -1472,8 +1503,8 @@ func GetMagicBlockByNumber(numSharders int, number int64, timeout RequestTimeout
 	var (
 		maxConsensus   int
 		roundConsensus = make(map[string]int)
-		mb *block.MagicBlock
-		err error
+		mb             *block.MagicBlock
+		err            error
 	)
 
 	type respObj struct {
