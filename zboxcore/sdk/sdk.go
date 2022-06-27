@@ -658,17 +658,17 @@ type ProviderStatus struct {
 }
 
 type Blobber struct {
-	ID                common.Key        `json:"id"`
-	BaseURL           string            `json:"url"`
-	Terms             Terms             `json:"terms"`
-	Capacity          common.Size       `json:"capacity"`
-	Allocated         common.Size       `json:"allocated"`
-	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
-	PublicKey         string            `json:"-"`
+	ID                common.Key                   `json:"id"`
+	BaseURL           string                       `json:"url"`
+	Terms             Terms                        `json:"terms"`
+	Capacity          common.Size                  `json:"capacity"`
+	Allocated         common.Size                  `json:"allocated"`
+	LastHealthCheck   common.Timestamp             `json:"last_health_check"`
+	PublicKey         string                       `json:"-"`
 	StakePoolSettings blockchain.StakePoolSettings `json:"stake_pool_settings"`
-	TotalStake        int64             `json:"total_stake"`
-	IsShutDown        bool              `json:"is_shut_down"`
-	IsKilled          bool              `json:"is_killed"`
+	TotalStake        int64                        `json:"total_stake"`
+	IsShutDown        bool                         `json:"is_shut_down"`
+	IsKilled          bool                         `json:"is_killed"`
 }
 
 type Validator struct {

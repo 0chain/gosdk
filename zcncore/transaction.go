@@ -1804,7 +1804,8 @@ func (t *Transaction) UpdateValidatorSettings(v *Validator, fee uint64) (err err
 	return
 }
 
-func (t *Transaction) KillBlobber(id string, fee uint64) (err error) {
+func (t *Transaction) KillBlobber(id string, fee uint64) error {
+	var err error
 	pid := ProviderId{
 		ID: id,
 	}
@@ -1812,17 +1813,18 @@ func (t *Transaction) KillBlobber(id string, fee uint64) (err error) {
 		transaction.STORAGESC_KILL_BLOBBER, &pid, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	if err := t.SetTransactionFee(fee); err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return err
 }
 
-func (t *Transaction) KillValidator(id string, fee uint64) (err error) {
+func (t *Transaction) KillValidator(id string, fee uint64) error {
+	var err error
 	pid := ProviderId{
 		ID: id,
 	}
@@ -1830,44 +1832,46 @@ func (t *Transaction) KillValidator(id string, fee uint64) (err error) {
 		transaction.STORAGESC_KILL_VALIDATOR, &pid, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	if err := t.SetTransactionFee(fee); err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return err
 }
 
-func (t *Transaction) ShutDownBlobber(fee uint64) (err error) {
+func (t *Transaction) ShutDownBlobber(fee uint64) error {
+	var err error
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_SHUT_DOWN_BLOBBER, nil, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	if err := t.SetTransactionFee(fee); err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return err
 }
 
-func (t *Transaction) ShutDownValidator(fee uint64) (err error) {
+func (t *Transaction) ShutDownValidator(fee uint64) error {
+	var err error
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_SHUT_DOWN_VALIDATOR, nil, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	if err := t.SetTransactionFee(fee); err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return err
 }
 
 // UpdateAllocation transaction.
