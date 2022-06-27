@@ -493,7 +493,7 @@ func (ta *TransactionWithAuth) FinalizeAllocation(allocID string, fee uint64) er
 		Logger.Error(err)
 		return err
 	}
-	if err := ta.t.SetTransactionFee(fee); err != nil {
+	if err = ta.t.SetTransactionFee(fee); err != nil {
 		Logger.Error(err)
 		return err
 	}
@@ -515,7 +515,7 @@ func (ta *TransactionWithAuth) CancelAllocation(allocID string, fee uint64) erro
 		Logger.Error(err)
 		return err
 	}
-	if err := ta.t.SetTransactionFee(fee); err != nil {
+	if err = ta.t.SetTransactionFee(fee); err != nil {
 		Logger.Error(err)
 		return err
 	}
@@ -533,7 +533,7 @@ func (ta *TransactionWithAuth) CreateAllocation(car *CreateAllocationRequest,
 		Logger.Error(err)
 		return err
 	}
-	if err := ta.t.SetTransactionFee(fee); err != nil {
+	if err = ta.t.SetTransactionFee(fee); err != nil {
 		Logger.Error(err)
 		return err
 	}
@@ -550,7 +550,7 @@ func (ta *TransactionWithAuth) CreateReadPool(fee uint64) error {
 		Logger.Error(err)
 		return err
 	}
-	if err := ta.t.SetTransactionFee(fee); err != nil {
+	if err = ta.t.SetTransactionFee(fee); err != nil {
 		Logger.Error(err)
 		return err
 	}
@@ -581,7 +581,7 @@ func (ta *TransactionWithAuth) ReadPoolLock(allocID, blobberID string,
 		Logger.Error(err)
 		return err
 	}
-	if err := ta.t.SetTransactionFee(fee); err != nil {
+	if err = ta.t.SetTransactionFee(fee); err != nil {
 		Logger.Error(err)
 		return err
 	}
@@ -603,7 +603,7 @@ func (ta *TransactionWithAuth) ReadPoolUnlock(poolID string, fee uint64) error {
 		Logger.Error(err)
 		return err
 	}
-	if err := ta.t.SetTransactionFee(fee); err != nil {
+	if err = ta.t.SetTransactionFee(fee); err != nil {
 		Logger.Error(err)
 		return err
 	}
@@ -628,7 +628,7 @@ func (ta *TransactionWithAuth) StakePoolLock(blobberID string,
 		Logger.Error(err)
 		return err
 	}
-	if err := ta.t.SetTransactionFee(fee); err != nil {
+	if err = ta.t.SetTransactionFee(fee); err != nil {
 		Logger.Error(err)
 		return err
 	}
@@ -654,7 +654,7 @@ func (ta *TransactionWithAuth) StakePoolUnlock(blobberID, poolID string, fee uin
 		Logger.Error(err)
 		return err
 	}
-	if err := ta.t.SetTransactionFee(fee); err != nil {
+	if err = ta.t.SetTransactionFee(fee); err != nil {
 		Logger.Error(err)
 		return err
 	}
@@ -671,7 +671,7 @@ func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber, fee uint64) 
 		Logger.Error(err)
 		return err
 	}
-	if err := ta.t.SetTransactionFee(fee); err != nil {
+	if err = ta.t.SetTransactionFee(fee); err != nil {
 		Logger.Error(err)
 		return err
 	}
@@ -690,7 +690,7 @@ func (ta *TransactionWithAuth) KillBlobber(id string, fee uint64) error {
 		Logger.Error(err)
 		return err
 	}
-	if err := ta.t.SetTransactionFee(fee); err != nil {
+	if err = ta.t.SetTransactionFee(fee); err != nil {
 		Logger.Error(err)
 		return err
 	}
@@ -709,7 +709,7 @@ func (ta *TransactionWithAuth) KillValidator(id string, fee uint64) error {
 		Logger.Error(err)
 		return err
 	}
-	if err := ta.t.SetTransactionFee(fee); err != nil {
+	if err = ta.t.SetTransactionFee(fee); err != nil {
 		Logger.Error(err)
 		return err
 	}
@@ -725,7 +725,7 @@ func (ta *TransactionWithAuth) ShutDownBlobber(fee uint64) error {
 		Logger.Error(err)
 		return err
 	}
-	if err := ta.t.SetTransactionFee(fee); err != nil {
+	if err = ta.t.SetTransactionFee(fee); err != nil {
 		Logger.Error(err)
 		return err
 	}
@@ -741,7 +741,7 @@ func (ta *TransactionWithAuth) ShutDownValidator(fee uint64) error {
 		Logger.Error(err)
 		return err
 	}
-	if err := ta.t.SetTransactionFee(fee); err != nil {
+	if err = ta.t.SetTransactionFee(fee); err != nil {
 		Logger.Error(err)
 		return err
 	}
