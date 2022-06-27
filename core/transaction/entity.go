@@ -114,6 +114,7 @@ const (
 	STORAGESC_STAKE_POOL_LOCK         = "stake_pool_lock"
 	STORAGESC_STAKE_POOL_UNLOCK       = "stake_pool_unlock"
 	STORAGESC_UPDATE_BLOBBER_SETTINGS = "update_blobber_settings"
+	STORAGESC_UPDATE_VALIDATOR_SETTINGS = "update_validator_settings"
 	STORAGESC_UPDATE_ALLOCATION       = "update_allocation_request"
 	STORAGESC_WRITE_POOL_LOCK         = "write_pool_lock"
 	STORAGESC_WRITE_POOL_UNLOCK       = "write_pool_unlock"
