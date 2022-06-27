@@ -140,7 +140,7 @@ func CreateWalletFromEthMnemonic(mnemonic, password string, statusCb WalletCallb
 			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
 		}
-		err = RegisterToMiners(wallet, statusCb)
+		err = registerToMiners(wallet, statusCb)
 		if err != nil {
 			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return

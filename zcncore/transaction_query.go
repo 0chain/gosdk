@@ -448,7 +448,7 @@ func (tq *TransactionQuery) getFastConfirmation(ctx context.Context, txnHash str
 
 	}
 
-	return nil, nil, nil, errors.Throw(ErrTransactionNotFound, strconv.Itoa(result.StatusCode))
+	return nil, nil, nil, thrown.Throw(ErrTransactionNotFound, strconv.Itoa(result.StatusCode))
 }
 
 func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {

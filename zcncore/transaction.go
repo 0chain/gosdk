@@ -700,7 +700,7 @@ func (t *Transaction) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error) {
 }
 
 func (t *Transaction) GetVerifyConfirmationStatus() ConfirmationStatus {
-	return ConfirmationStatus(verifyConfirmationStatus)
+	return ConfirmationStatus(t.verifyConfirmationStatus)
 }
 
 //RegisterMultiSig register a multisig wallet with the SC.
@@ -951,10 +951,10 @@ func (t *Transaction) Verify() error {
 				txStatus := tr["transaction_status"]
 				switch string(txStatus) {
 				case "1":
-					t.completeVerifyWithConStatus(StatusSuccess, Success, string(output), nil)
+					t.completeVerifyWithConStatus(StatusSuccess, int(Success), string(output), nil)
 				case "2":
 					txOutput := tr["transaction_output"]
-					t.completeVerifyWithConStatus(StatusSuccess, ChargeableError, string(txOutput), nil)
+					t.completeVerifyWithConStatus(StatusSuccess, int(ChargeableError), string(txOutput), nil)
 				default:
 					t.completeVerify(StatusError, string(output), nil)
 				}
