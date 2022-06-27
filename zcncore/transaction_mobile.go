@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/0chain/errors"
@@ -123,7 +122,7 @@ type CreateAllocationRequest struct {
 	Expiration     int64
 	Owner          string
 	OwnerPublicKey string
-	Blobbers       string // blobber urls combined with ','
+	Blobbers       [][]byte // blobber urls
 	ReadPriceMin   int64
 	ReadPriceMax   int64
 	WritePriceMin  int64
@@ -131,17 +130,23 @@ type CreateAllocationRequest struct {
 }
 
 func (car *CreateAllocationRequest) toCreateAllocationSCInput() *createAllocationRequest {
-	return &createAllocationRequest{
+	req := &createAllocationRequest{
 		DataShards:      car.DataShards,
 		ParityShards:    car.ParityShards,
 		Size:            car.Size,
 		Expiration:      car.Expiration,
 		Owner:           car.Owner,
 		OwnerPublicKey:  car.OwnerPublicKey,
-		Blobbers:        strings.Split(car.Blobbers, ","),
+		Blobbers: make([]string, len(car.Blobbers)),
 		ReadPriceRange:  priceRange{Min: car.ReadPriceMin, Max: car.ReadPriceMax},
 		WritePriceRange: priceRange{Min: car.WritePriceMin, Max: car.WritePriceMax},
 	}
+
+	for i, b := range car.Blobbers {
+		req.Blobbers[i] = string(b)
+	}
+
+	return req
 }
 
 type StakePoolSettings struct {
