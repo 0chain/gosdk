@@ -290,20 +290,6 @@ type StakePoolDelegatePoolInfo struct {
 	RoundCreated int64          `json:"round_created"`
 }
 
-// StakePoolSettings information.
-type StakePoolSettings struct {
-	// DelegateWallet for pool owner.
-	DelegateWallet string `json:"delegate_wallet"`
-	// MinStake allowed.
-	MinStake common.Balance `json:"min_stake"`
-	// MaxStake allowed.
-	MaxStake common.Balance `json:"max_stake"`
-	// NumDelegates maximum allowed.
-	NumDelegates int `json:"num_delegates"`
-	// ServiceCharge is blobber service charge.
-	ServiceCharge float64 `json:"service_charge"`
-}
-
 // StakePool full info.
 type StakePoolInfo struct {
 	ID      common.Key     `json:"pool_id"` // pool ID
@@ -323,7 +309,7 @@ type StakePoolInfo struct {
 	Rewards common.Balance `json:"rewards"`
 
 	// Settings of the stake pool
-	Settings StakePoolSettings `json:"settings"`
+	Settings blockchain.StakePoolSettings `json:"settings"`
 }
 
 // GetStakePoolInfo for given client, or, if the given clientID is empty,
@@ -651,15 +637,41 @@ func GetStorageSCConfig() (conf *InputMap, err error) {
 }
 
 type Blobber struct {
-	ID                common.Key        `json:"id"`
-	BaseURL           string            `json:"url"`
-	Terms             Terms             `json:"terms"`
-	Capacity          common.Size       `json:"capacity"`
-	Allocated         common.Size       `json:"allocated"`
-	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
-	PublicKey         string            `json:"-"`
-	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
-	TotalStake        int64             `json:"total_stake"`
+	ID                common.Key                   `json:"id"`
+	BaseURL           string                       `json:"url"`
+	Terms             Terms                        `json:"terms"`
+	Capacity          common.Size                  `json:"capacity"`
+	Allocated         common.Size                  `json:"allocated"`
+	LastHealthCheck   common.Timestamp             `json:"last_health_check"`
+	PublicKey         string                       `json:"-"`
+	StakePoolSettings blockchain.StakePoolSettings `json:"stake_pool_settings"`
+	TotalStake        int64                        `json:"total_stake"`
+}
+
+type Validator struct {
+	ID             common.Key     `json:"validator_id"`
+	BaseURL        string         `json:"url"`
+	PublicKey      string         `json:"-"`
+	DelegateWallet string         `json:"delegate_wallet"`
+	MinStake       common.Balance `json:"min_stake"`
+	MaxStake       common.Balance `json:"max_stake"`
+	NumDelegates   int            `json:"num_delegates"`
+	ServiceCharge  float64        `json:"service_charge"`
+	TotalStake     int64          `json:"stake"`
+}
+
+func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
+	return &blockchain.ValidationNode{
+		ID:      string(v.ID),
+		BaseURL: v.BaseURL,
+		StakePoolSettings: blockchain.StakePoolSettings{
+			DelegateWallet: v.DelegateWallet,
+			MinStake:       v.MinStake,
+			MaxStake:       v.MaxStake,
+			NumDelegates:   v.NumDelegates,
+			ServiceCharge:  v.ServiceCharge,
+		},
+	}
 }
 
 func GetBlobbers() (bs []*Blobber, err error) {
@@ -709,6 +721,53 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 	}
 	blob = new(Blobber)
 	if err = json.Unmarshal(b, blob); err != nil {
+		return nil, errors.Wrap(err, "decoding response:")
+	}
+	return
+}
+
+// GetValidator instance.
+func GetValidator(validatorID string) (validator *Validator, err error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+	var b []byte
+	b, err = zboxutil.MakeSCRestAPICall(
+		STORAGE_SCADDRESS,
+		"/get_validator",
+		map[string]string{"validator_id": validatorID},
+		nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "requesting validator:")
+	}
+	if len(b) == 0 {
+		return nil, errors.New("", "empty response from sharders")
+	}
+	validator = new(Validator)
+	if err = json.Unmarshal(b, validator); err != nil {
+		return nil, errors.Wrap(err, "decoding response:")
+	}
+	return
+}
+
+// List all validators
+func GetValidators() (validators []*Validator, err error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+	var b []byte
+	b, err = zboxutil.MakeSCRestAPICall(
+		STORAGE_SCADDRESS,
+		"/validators",
+		nil,
+		nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "requesting validator list")
+	}
+	if len(b) == 0 {
+		return nil, errors.New("", "empty response from sharders")
+	}
+	if err = json.Unmarshal(b, &validators); err != nil {
 		return nil, errors.Wrap(err, "decoding response:")
 	}
 	return
@@ -1160,7 +1219,7 @@ func AddCurator(curatorId, allocationId string) (string, int64, error) {
 type ProviderType int
 
 const (
-	ProviderMiner ProviderType = iota
+	ProviderMiner ProviderType = iota + 1
 	ProviderSharder
 	ProviderBlobber
 	ProviderValidator
@@ -1210,6 +1269,19 @@ func UpdateBlobberSettings(blob *Blobber) (resp string, nonce int64, err error) 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS,
 		InputArgs: blob,
+	}
+	resp, _, nonce, err = smartContractTxn(sn)
+	return
+}
+
+func UpdateValidatorSettings(v *Validator) (resp string, nonce int64, err error) {
+	if !sdkInitialized {
+		return "", 0, sdkNotInitialized
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS,
+		InputArgs: v.ConvertToValidationNode(),
 	}
 	resp, _, nonce, err = smartContractTxn(sn)
 	return
