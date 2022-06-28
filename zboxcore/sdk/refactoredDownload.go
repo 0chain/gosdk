@@ -139,7 +139,6 @@ type StreamDownload struct {
 	remotePath         string
 	pathHash           string
 	contentMode        string
-	rxPay              bool  // true--> self pays
 	chunkSize          int64 // total size of a chunk used to split data to datashards numbers of blobbers
 	blockSize          int64 // blockSize, chunkSize/dataShards
 	effectiveChunkSize int64 // effective chunk size is different when file is encrypted
@@ -802,7 +801,6 @@ func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- str
 
 		header := DownloadRequestHeader{
 			PathHash:     bl.sd.pathHash,
-			RxPay:        bl.sd.rxPay,
 			BlockNum:     int64(bl.offsetBlock),
 			NumBlocks:    int64(bl.blocksPerMarker),
 			ReadMarker:   rmData,
@@ -926,7 +924,7 @@ func GetDStorageFileReader(allocation *Allocation, ref *ORef, sdo *StreamDownloa
 	effectiveChunkSize := int64(allocation.DataShards) * ref.ChunkSize
 
 	var encScheme encryption.EncryptionScheme
-	if ref.EncryptedKey != "" {
+	if sdo.ContentMode != DOWNLOAD_CONTENT_THUMB && ref.EncryptedKey != "" {
 		isEncrypted = true
 		effectiveBlockSize = ref.ChunkSize - EncryptionOverHead
 		effectiveChunkSize = effectiveBlockSize * int64(allocation.DataShards)
@@ -941,11 +939,18 @@ func GetDStorageFileReader(allocation *Allocation, ref *ORef, sdo *StreamDownloa
 
 	}
 
+	var fileSize int64
+	if sdo.ContentMode == DOWNLOAD_CONTENT_THUMB {
+		fileSize = ref.ActualThumbnailSize
+	} else {
+		fileSize = ref.ActualFileSize
+	}
+
 	return &StreamDownload{
 		opened:             true,
 		allocationID:       allocation.ID,
 		allocationTx:       allocation.Tx,
-		ownerId:            allocation.Owner, // TODO verify ownerId field
+		ownerId:            allocation.Owner,
 		dataShards:         allocation.DataShards,
 		parityShards:       allocation.ParityShards,
 		blobbers:           allocation.Blobbers,
@@ -957,10 +962,9 @@ func GetDStorageFileReader(allocation *Allocation, ref *ORef, sdo *StreamDownloa
 		encrypted:          isEncrypted,
 		remotePath:         ref.Path,
 		pathHash:           ref.PathHash,
-		fileSize:           ref.ActualFileSize,
+		fileSize:           fileSize,
 		authTicket:         sdo.AuthTicket,
 		contentMode:        sdo.ContentMode,
-		rxPay:              sdo.RxPay,
 		downloadType:       sdo.DownloadType,
 		blocksPerMarker:    int(sdo.BlocksPerMarker),
 		retry:              downloadRetry,
@@ -975,7 +979,6 @@ type StreamDownloadOption struct {
 	ContentMode     string
 	AuthTicket      string
 	DownloadType    string // vertical, horizontail or ""
-	RxPay           bool
 	Retry           int
 	BlocksPerMarker uint // Number of blocks to download per request
 }
