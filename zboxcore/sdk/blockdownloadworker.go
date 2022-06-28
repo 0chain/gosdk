@@ -32,7 +32,6 @@ type BlockDownloadRequest struct {
 	encryptedKey       string
 	contentMode        string
 	numBlocks          int64
-	rxPay              bool
 	authTicket         *marker.AuthTicket
 	wg                 *sync.WaitGroup
 	ctx                context.Context
@@ -140,9 +139,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		header := &DownloadRequestHeader{}
 		header.PathHash = req.remotefilepathhash
 
-		if req.rxPay {
-			header.RxPay = req.rxPay // pay oneself
-		}
 		header.BlockNum = req.blockNum
 		header.NumBlocks = req.numBlocks
 		header.ReadMarker = rmData
