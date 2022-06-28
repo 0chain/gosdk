@@ -1208,7 +1208,10 @@ func (a *Allocation) CancelDownload(remotepath string) error {
 	return errors.New("remote_path_not_found", "Invalid path. No download in progress for the path "+remotepath)
 }
 
-func (a *Allocation) Download(remotePath, localPath, pathHash, authToken, contentMode, downloadType string, rxPay bool, retry int, blocksPerMarker uint) error {
+func (a *Allocation) Download(
+	remotePath, localPath, pathHash, authToken, contentMode, downloadType string,
+	retry int, blocksPerMarker uint) error {
+
 	finfo, err := os.Stat(localPath)
 	if err != nil {
 		return err
@@ -1217,21 +1220,27 @@ func (a *Allocation) Download(remotePath, localPath, pathHash, authToken, conten
 		return errors.New("invalid_path", "local path must be directory")
 	}
 
-	sd, err := a.GetStreamDownloader(remotePath, pathHash, authToken, contentMode, downloadType, rxPay, retry, blocksPerMarker)
+	sd, err := a.GetStreamDownloader(remotePath, pathHash, authToken, contentMode, downloadType, retry, blocksPerMarker)
 	if err != nil {
 		return err
 	}
 
 	fileName := filepath.Base(remotePath)
-	localFPath := filepath.Join(localPath, fileName)
+	var localFPath string
+	if contentMode == DOWNLOAD_CONTENT_THUMB {
+		localFPath = filepath.Join(localPath, fileName, ".thumb")
+	} else {
+		localFPath = filepath.Join(localPath, fileName)
+	}
+
 	finfo, err = os.Stat(localFPath)
 
 	var f *os.File
 	if errors.Is(err, os.ErrNotExist) {
 		f, err = os.Create(localFPath)
 	} else {
-		f, err = os.OpenFile(localFPath, os.O_WRONLY|os.O_APPEND, 0644)
 		sd.SetOffset(finfo.Size())
+		f, err = os.OpenFile(localFPath, os.O_WRONLY|os.O_APPEND, 0644)
 	}
 
 	if err != nil {
@@ -1252,7 +1261,6 @@ func (a *Allocation) GetStreamDownloader(
 	authToken,
 	contentMode,
 	downloadType string,
-	rxPay bool,
 	retry int,
 	blocksPerMarker uint) (*StreamDownload, error) {
 
@@ -1290,7 +1298,6 @@ func (a *Allocation) GetStreamDownloader(
 		ContentMode:     contentMode,
 		AuthTicket:      authToken,
 		DownloadType:    downloadType,
-		RxPay:           rxPay,
 		Retry:           retry,
 		BlocksPerMarker: blocksPerMarker,
 	}
@@ -1376,7 +1383,6 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.startBlock = startBlock - 1
 	downloadReq.endBlock = endBlock
 	downloadReq.numBlocks = int64(numBlocks)
-	downloadReq.rxPay = rxPay
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
 	downloadReq.consensusRequiredForOk = a.consensusOK
