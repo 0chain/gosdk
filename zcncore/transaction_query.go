@@ -27,7 +27,7 @@ var (
 )
 
 const (
-	SharderEndpointHealthCheck = "/_health_check"
+	SharderEndpointHealthCheck = "/v1/healthcheck"
 )
 
 type QueryResult struct {
