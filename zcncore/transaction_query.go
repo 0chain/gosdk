@@ -484,4 +484,3 @@ func GetEvents(cb GetInfoCallback, filters map[string]string) (err error) {
 func WithParams(uri string, params Params) string {
 	return withParams(uri, params)
 }
-

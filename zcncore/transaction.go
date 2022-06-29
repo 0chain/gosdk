@@ -144,6 +144,7 @@ type TransactionCommon interface {
 	StakePoolLock(blobberID string, lock uint64, fee uint64) error
 	StakePoolUnlock(blobberID string, poolID string, fee uint64) error
 	UpdateBlobberSettings(blobber *Blobber, fee uint64) error
+	UpdateValidatorSettings(validator *Validator, fee uint64) error
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock uint64, fee uint64) error
 	WritePoolLock(allocID string, blobberID string, duration int64, lock uint64, fee uint64) error
 	WritePoolUnlock(poolID string, fee uint64) error
@@ -210,6 +211,12 @@ type Blobber struct {
 	Capacity          common.Size       `json:"capacity"`
 	Allocated         common.Size       `json:"allocated"`
 	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
+	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
+}
+
+type Validator struct {
+	ID                common.Key        `json:"id"`
+	BaseURL           string            `json:"url"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
