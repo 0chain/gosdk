@@ -1,3 +1,8 @@
+// Zero bytes padding to make upto minimum of 64KB is considered while
+// writing code for refactored download. Currently we are not sure the direction
+// whether it is going to be with zero padding or without zero padding.
+// Current chunk upload feature has no deliberate zero padding rather
+// has zero bytes upload that is generated with erasure encoding.
 package sdk
 
 import (
