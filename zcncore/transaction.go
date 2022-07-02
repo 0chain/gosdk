@@ -103,6 +103,8 @@ type SendTxnData struct {
 //
 // Note: to be buildable on MacOSX all arguments should have names.
 type TransactionScheme interface {
+	SmartContractExecutor
+
 	// SetTransactionCallback implements storing the callback
 	// used to call after the transaction or verification is completed
 	SetTransactionCallback(cb TransactionCallback) error
@@ -110,8 +112,6 @@ type TransactionScheme interface {
 	Send(toClientID string, val uint64, desc string) error
 	// StoreData implements store the data to blockchain
 	StoreData(data string) error
-	// ExecuteSmartContract implements wrapper for smart contract function
-	ExecuteSmartContract(address, methodName string, input interface{}, val uint64) error
 	// ExecuteFaucetSCWallet implements the `Faucet Smart contract` for a given wallet
 	ExecuteFaucetSCWallet(walletStr string, methodName string, input []byte) error
 	// GetTransactionHash implements retrieval of hash of the submitted transaction
@@ -176,6 +176,7 @@ type TransactionScheme interface {
 	StakePoolLock(blobberID string, lock uint64, fee uint64) error
 	StakePoolUnlock(blobberID string, poolID string, fee uint64) error
 	UpdateBlobberSettings(blobber *Blobber, fee uint64) error
+	UpdateValidatorSettings(validator *Validator, fee uint64) error
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock uint64, fee uint64) error
 	WritePoolLock(allocID string, lock uint64, fee uint64) error
 	WritePoolUnlock(allocID string, fee uint64) error
@@ -504,17 +505,6 @@ func (t *Transaction) ExecuteFaucetSCWallet(walletStr string, methodName string,
 		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
 		fmt.Printf("submitted transaction\n")
 		t.submitTxn()
-	}()
-	return nil
-}
-
-func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val uint64) error {
-	err := t.createSmartContractTxn(address, methodName, input, val)
-	if err != nil {
-		return err
-	}
-	go func() {
-		t.setNonceAndSubmit()
 	}()
 	return nil
 }
@@ -1333,7 +1323,7 @@ func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
 type Provider int
 
 const (
-	ProviderMiner Provider = iota
+	ProviderMiner Provider = iota + 1
 	ProviderSharder
 	ProviderBlobber
 	ProviderValidator
@@ -1742,8 +1732,14 @@ type Blobber struct {
 	BaseURL           string            `json:"url"`
 	Terms             Terms             `json:"terms"`
 	Capacity          common.Size       `json:"capacity"`
-	Used              common.Size       `json:"used"`
+	Allocated         common.Size       `json:"allocated"`
 	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
+	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
+}
+
+type Validator struct {
+	ID                common.Key        `json:"id"`
+	BaseURL           string            `json:"url"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
 
@@ -1775,6 +1771,20 @@ func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee uint64) (err error) 
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, b, 0)
+	if err != nil {
+		Logger.Error(err)
+		return
+	}
+	t.SetTransactionFee(fee)
+	go func() { t.setNonceAndSubmit() }()
+	return
+}
+
+// UpdateValidatorSettings update settings of a validator.
+func (t *Transaction) UpdateValidatorSettings(v *Validator, fee uint64) (err error) {
+
+	err = t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS, v, 0)
 	if err != nil {
 		Logger.Error(err)
 		return
