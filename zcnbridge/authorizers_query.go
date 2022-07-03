@@ -100,6 +100,7 @@ func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereu
 			Amount:     burnTicket.Amount,
 			Nonce:      burnTicket.Nonce,
 			Signatures: sigs,
+			ClientID:   b.ClientID(),
 		}
 
 		return payload, nil
@@ -124,7 +125,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 		values       = u.Values{
 			"eth_burn_hash": []string{ethBurnHash},
 			"address":       []string{wallet.ZCNSCSmartContractAddress},
-			"clientid":      []string{b.ID()},
+			"clientid":      []string{b.ClientID()},
 		}
 	)
 

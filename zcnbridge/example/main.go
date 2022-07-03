@@ -1,6 +1,3 @@
-//go:build ignore
-// +build ignore
-
 package main
 
 import (
@@ -99,9 +96,10 @@ func main() {
 		clientConfig = owner.BridgeClientConfig
 	} else {
 		bridge = zcnbridge.SetupBridgeClientSDK(cfg)
-		//bridge.SetupZCNClient(cfg)
 		clientConfig = bridge.BridgeClientConfig
 	}
+
+	fmt.Println("ClientID: " + bridge.ClientID())
 
 	// Next step is register your account in the key storage if it doesn't exist (mandatory)
 	// This should be done in zwallet cli
@@ -611,7 +609,7 @@ func GenerateBurnTransactionOutput(b *zcnbridge.BridgeClient) []byte {
 
 	// generating transaction hash
 	transactionData, _ := json.Marshal(payload)
-	hashData := fmt.Sprintf("%v:%v:%v:%v:%v", time.Now(), b.ID(), scAddress, 0, encryption.Hash(transactionData))
+	hashData := fmt.Sprintf("%v:%v:%v:%v:%v", time.Now(), b.ClientID(), scAddress, 0, encryption.Hash(transactionData))
 	hash := encryption.Hash(hashData)
 
 	output := &BurnPayloadResponse{
@@ -676,6 +674,7 @@ func TraceEthereumMint(b *zcnbridge.BridgeClient, output string) {
 		Amount:     burnTicket.Amount,
 		Nonce:      burnTicket.Nonce,
 		Signatures: sigs,
+		ClientID:   b.ClientID(),
 	}
 	// --------------- END GOSDK part executed in Client -----------------------------
 

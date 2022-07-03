@@ -204,18 +204,21 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
 	}
 
-	// 1. Data Parameter (amount to burn)
+	// 1. Burned amount parameter
 	amount := new(big.Int)
 	amount.SetInt64(payload.Amount) // wei
 
-	// 2. Data Parameter (zcnTxd string as []byte)
+	// 2. Transaction ID Parameter of burn operation (zcnTxd string as []byte)
 	zcnTxd := DefaultClientIDEncoder(payload.ZCNTxnID)
 
-	// 3. Nonce Parameter
+	// 3. Client ID parameter
+	clientID := DefaultClientIDEncoder(b.ClientID())
+
+	// 4. Nonce Parameter generated during burn operation
 	nonce := new(big.Int)
 	nonce.SetInt64(payload.Nonce)
 
-	// 4. Signature
+	// 5. Signature
 	// For requirements from ERC20 authorizer, the signature length must be 65
 	var sigs []byte
 	for _, signature := range payload.Signatures {
@@ -229,13 +232,13 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 
 	Logger.Info(
 		"Staring Mint WZCN",
-		//zap.String("clientID", b.ID()),
+		zap.String("clientID", b.ClientID()),
 		zap.Int64("amount", amount.Int64()),
 		zap.String("zcnTxd", string(zcnTxd)),
 		zap.String("nonce", nonce.String()),
 	)
 
-	tran, err := bridgeInstance.Mint(transactOpts, amount, zcnTxd, nonce, sigs)
+	tran, err := bridgeInstance.Mint(transactOpts, amount, zcnTxd, clientID, nonce, sigs)
 	if err != nil {
 		Logger.Error("Mint WZCN FAILED", zap.Error(err))
 		msg := "failed to execute MintWZCN transaction, amount = %s, ZCN TrxID = %s"
@@ -245,7 +248,7 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 	Logger.Info(
 		"Posted Mint WZCN",
 		zap.String("hash", tran.Hash().String()),
-		//zap.String("clientID", b.ID()),
+		zap.String("clientID", b.ClientID()),
 		zap.Int64("amount", amount.Int64()),
 		zap.String("zcnTxd", string(zcnTxd)),
 		zap.String("nonce", nonce.String()),
@@ -264,7 +267,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 	}
 
 	// 1. Data Parameter (amount to burn)
-	clientID := DefaultClientIDEncoder(b.ID())
+	clientID := DefaultClientIDEncoder(b.ClientID())
 
 	// 2. Data Parameter (signature)
 	amount := new(big.Int)
@@ -284,12 +287,12 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 	tran, err := bridgeInstance.Burn(transactOpts, amount, clientID)
 	if err != nil {
 		msg := "failed to execute Burn WZCN transaction to ClientID = %s with amount = %s"
-		return nil, errors.Wrapf(err, msg, b.ID(), amount)
+		return nil, errors.Wrapf(err, msg, b.ClientID(), amount)
 	}
 
 	Logger.Info(
 		"Posted Burn WZCN",
-		zap.String("clientID", b.ID()),
+		zap.String("clientID", b.ClientID()),
 		zap.Int64("amount", amount.Int64()),
 	)
 
@@ -331,7 +334,6 @@ func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) 
 // BurnZCN burns ZCN tokens before conversion from ZCN to WZCN as a first step
 func (b *BridgeClient) BurnZCN(ctx context.Context, amount uint64) (*transaction.Transaction, error) {
 	payload := zcnsc.BurnPayload{
-		Nonce:           b.IncrementNonce(),
 		EthereumAddress: b.EthereumAddress, // TODO: this should be receiver address not the bridge
 	}
 
