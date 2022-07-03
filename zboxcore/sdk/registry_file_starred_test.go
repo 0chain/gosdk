@@ -11,34 +11,44 @@ import (
 func TestAllocation_UpdateStarredFiles(t *testing.T) {
 	for _, tc := range []struct {
 		name           string
-		input          *StarredFiles
+		inputPaths     []string
 		updateErr      error
 		wantUpdateData []byte
 		wantErr        error
 	}{
 		{
 			name:           "update successfully",
-			input:          &StarredFiles{UpdatedAt: common.Timestamp(1642816984), Files: []StarredFile{{Path: "/abc.txt"}, {Path: "/def.txt"}}},
-			wantUpdateData: []byte(`{"files":[{"path":"/abc.txt"},{"path":"/def.txt"}]}`),
+			inputPaths:     []string{"/abc.txt", "/def.txt"},
+			wantUpdateData: []byte("/abc.txt\n/def.txt"),
+		},
+		{
+			name:           "update successfully with single-path input",
+			inputPaths:     []string{"/abc.txt"},
+			wantUpdateData: []byte("/abc.txt"),
+		},
+		{
+			name:           "update successfully with empty input",
+			inputPaths:     []string{},
+			wantUpdateData: []byte(""),
+		},
+		{
+			name:           "update successfully with nil input",
+			inputPaths:     nil,
+			wantUpdateData: []byte(""),
 		},
 		{
 			name:           "update error",
-			input:          &StarredFiles{UpdatedAt: common.Timestamp(1642816984), Files: []StarredFile{{Path: "/abc.txt"}, {Path: "/def.txt"}}},
+			inputPaths:     []string{"/abc.txt", "/def.txt"},
 			updateErr:      fmt.Errorf("update error"),
-			wantUpdateData: []byte(`{"files":[{"path":"/abc.txt"},{"path":"/def.txt"}]}`),
+			wantUpdateData: []byte("/abc.txt\n/def.txt"),
 			wantErr:        errors.New("update_starred_files_failed", "Failed to update registry file for starred files: update error"),
-		},
-		{
-			name:    "missing input",
-			input:   nil,
-			wantErr: errors.New("update_starred_files_failed", "Starred files is nil"),
 		},
 	} {
 		tt := tc
 		t.Run(tt.name, func(t *testing.T) {
 			dummyAlloc := &Allocation{}
 
-			starredFileRegistryManager = func(a *Allocation) RegistryFileManager {
+			starredFileRegistryManager = func(a *Allocation) registryFileManager {
 				assert.Equal(t, dummyAlloc, a)
 				return &mockRegistryFileManager{
 					t:              t,
@@ -47,7 +57,7 @@ func TestAllocation_UpdateStarredFiles(t *testing.T) {
 				}
 			}
 
-			err := dummyAlloc.UpdateStarredFiles(tt.input)
+			err := dummyAlloc.UpdateStarredFiles(tt.inputPaths)
 			assert.Equal(t, tt.wantErr, err)
 		})
 	}
@@ -55,42 +65,39 @@ func TestAllocation_UpdateStarredFiles(t *testing.T) {
 
 func TestAllocation_GetStarredFiles(t *testing.T) {
 	for _, tc := range []struct {
-		name            string
-		getResData      []byte
-		getResTimestamp common.Timestamp
-		getErr          error
-		wantErr         error
-		want            *StarredFiles
+		name                string
+		getResData          []byte
+		getResTimestamp     common.Timestamp
+		getErr              error
+		wantErr             error
+		wantPaths           []string
+		wantUpdateTimestamp common.Timestamp
 	}{
 		{
-			name:            "get successfully",
-			getResData:      []byte(`{"files":[{"path":"/abc.txt"},{"path":"/def.txt"}]}`),
-			getResTimestamp: common.Timestamp(1642816984),
-			want:            &StarredFiles{UpdatedAt: common.Timestamp(1642816984), Files: []StarredFile{{Path: "/abc.txt"}, {Path: "/def.txt"}}},
+			name:                "get successfully",
+			getResData:          []byte("/abc.txt\n/def.txt"),
+			getResTimestamp:     common.Timestamp(1642816984),
+			wantPaths:           []string{"/abc.txt", "/def.txt"},
+			wantUpdateTimestamp: common.Timestamp(1642816984),
 		},
 		{
-			name:            "get successfully with empty data",
-			getResData:      []byte{},
-			getResTimestamp: common.Timestamp(0),
-			want:            &StarredFiles{UpdatedAt: common.Timestamp(0), Files: []StarredFile{}},
+			name:                "get successfully with empty data",
+			getResData:          []byte{},
+			getResTimestamp:     common.Timestamp(0),
+			wantPaths:           []string{},
+			wantUpdateTimestamp: common.Timestamp(0),
 		},
 		{
 			name:    "get throws error",
 			getErr:  fmt.Errorf("get error"),
 			wantErr: errors.New("get_starred_files_failed", "Failed to retrieve starred files: get error"),
 		},
-		{
-			name:            "Bad data retrieved",
-			getResData:      []byte(`not a json`),
-			getResTimestamp: common.Timestamp(1642816984),
-			wantErr:         errors.New("get_starred_files_failed", "Failed to parse downloaded registry file for starred files: invalid character 'o' in literal null (expecting 'u')"),
-		},
 	} {
 		tt := tc
 		t.Run(tt.name, func(t *testing.T) {
 			dummyAlloc := &Allocation{}
 
-			starredFileRegistryManager = func(a *Allocation) RegistryFileManager {
+			starredFileRegistryManager = func(a *Allocation) registryFileManager {
 				assert.Equal(t, dummyAlloc, a)
 				return &mockRegistryFileManager{
 					t:               t,
@@ -100,9 +107,10 @@ func TestAllocation_GetStarredFiles(t *testing.T) {
 				}
 			}
 
-			got, err := dummyAlloc.GetStarredFiles()
+			gotPaths, gotTimestamp, err := dummyAlloc.GetStarredFiles()
 
-			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.wantPaths, gotPaths)
+			assert.Equal(t, tt.wantUpdateTimestamp, gotTimestamp)
 			assert.Equal(t, tt.wantErr, err)
 		})
 	}
@@ -131,7 +139,7 @@ func TestAllocation_GetStarredFilesLastUpdateTimestamp(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			dummyAlloc := &Allocation{}
 
-			starredFileRegistryManager = func(a *Allocation) RegistryFileManager {
+			starredFileRegistryManager = func(a *Allocation) registryFileManager {
 				assert.Equal(t, dummyAlloc, a)
 				return &mockRegistryFileManager{
 					t:               t,

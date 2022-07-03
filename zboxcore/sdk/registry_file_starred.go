@@ -1,9 +1,9 @@
 package sdk
 
 import (
-	"encoding/json"
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
+	"strings"
 )
 
 // This file provides helper functions to manage list of starred (or favorited) files on allocations.
@@ -18,29 +18,11 @@ import (
 
 const StarredRegistryFilePath = `/.starred`
 
-// StarredFiles defines the contents of starred registry file.
-type StarredFiles struct {
-	UpdatedAt common.Timestamp `json:"-"` // on read of `.starred`, will be populated with `updated_at`, on write the value is ignored
-	Files     []StarredFile    `json:"files"`
-}
-
-// StarredFile defines the individual entry on starred registry file.
-type StarredFile struct {
-	Path string `json:"path"`
-}
-
 // UpdateStarredFiles writes the provided full list of starred files through the registry.
-func (a *Allocation) UpdateStarredFiles(files *StarredFiles) error {
-	if files == nil {
-		return errors.New("update_starred_files_failed", "Starred files is nil")
-	}
+func (a *Allocation) UpdateStarredFiles(paths []string) error {
+	data := []byte(strings.Join(paths, "\n"))
 
-	bt, err := json.Marshal(files)
-	if err != nil {
-		return errors.New("update_starred_files_failed", "Failed to marshal starred files: "+err.Error())
-	}
-
-	err = starredFileRegistryManager(a).Update(bt)
+	err := starredFileRegistryManager(a).Update(data)
 	if err != nil {
 		return errors.New("update_starred_files_failed", "Failed to update registry file for starred files: "+err.Error())
 	}
@@ -49,26 +31,20 @@ func (a *Allocation) UpdateStarredFiles(files *StarredFiles) error {
 }
 
 // GetStarredFiles returns the full list of starred files through the registry.
-func (a *Allocation) GetStarredFiles() (*StarredFiles, error) {
+func (a *Allocation) GetStarredFiles() ([]string, common.Timestamp, error) {
 	data, lastUpdateTime, err := starredFileRegistryManager(a).Get()
 	if err != nil {
-		return nil, errors.New("get_starred_files_failed", "Failed to retrieve starred files: "+err.Error())
+		return nil, common.Timestamp(0), errors.New("get_starred_files_failed", "Failed to retrieve starred files: "+err.Error())
 	}
 
-	if len(data) == 0 {
-		return &StarredFiles{UpdatedAt: lastUpdateTime, Files: []StarredFile{}}, nil
+	paths := []string{}
+	if strings.TrimSpace(string(data)) == "" {
+		return paths, lastUpdateTime, nil
 	}
 
-	starred := &StarredFiles{}
+	paths = strings.Split(string(data), "\n")
 
-	err = json.Unmarshal(data, starred)
-	if err != nil {
-		return nil, errors.New("get_starred_files_failed", "Failed to parse downloaded registry file for starred files: "+err.Error())
-	}
-
-	starred.UpdatedAt = lastUpdateTime
-
-	return starred, nil
+	return paths, lastUpdateTime, nil
 }
 
 // GetStarredFilesLastUpdateTimestamp retrieves the latest updated timestamp of the starred file registry.
@@ -83,6 +59,6 @@ func (a *Allocation) GetStarredFilesLastUpdateTimestamp() (common.Timestamp, err
 
 // starredFileRegistryManager is the factory method for managing registry file for starred files.
 // this is a variable to easy mocking for UT purposes.
-var starredFileRegistryManager = func(a *Allocation) RegistryFileManager {
+var starredFileRegistryManager = func(a *Allocation) registryFileManager {
 	return newRegistryFileManager(a, StarredRegistryFilePath)
 }

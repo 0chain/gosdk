@@ -50,7 +50,7 @@ func TestRegistryFileManager_Update(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			dummyAlloc := &Allocation{}
 
-			r := registryFileManager{
+			r := registryFileStore{
 				registryFilePath: registryFile,
 				allocation:       dummyAlloc,
 				fileStorer: &mockAllocationFileStorer{
@@ -118,7 +118,7 @@ func TestRegistryFileManager_Get(t *testing.T) {
 	} {
 		tt := tc
 		t.Run(tt.name, func(t *testing.T) {
-			r := registryFileManager{
+			r := registryFileStore{
 				registryFilePath: registryFile,
 				fileStorer: &mockAllocationFileStorer{
 					t:                    t,
@@ -175,7 +175,7 @@ func TestRegistryFileManager_GetLastUpdateTimestamp(t *testing.T) {
 	} {
 		tt := tc
 		t.Run(tt.name, func(t *testing.T) {
-			r := registryFileManager{
+			r := registryFileStore{
 				registryFilePath: registryFile,
 				fileStorer: &mockAllocationFileStorer{
 					t:                    t,
