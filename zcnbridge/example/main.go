@@ -674,7 +674,6 @@ func TraceEthereumMint(b *zcnbridge.BridgeClient, output string) {
 		Amount:     burnTicket.Amount,
 		Nonce:      burnTicket.Nonce,
 		Signatures: sigs,
-		ClientID:   b.ClientID(),
 	}
 	// --------------- END GOSDK part executed in Client -----------------------------
 
