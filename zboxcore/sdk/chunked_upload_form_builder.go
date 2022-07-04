@@ -56,8 +56,7 @@ func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, conn
 		ActualThumbHash: fileMeta.ActualThumbnailHash,
 		ActualThumbSize: fileMeta.ActualThumbnailSize,
 
-		MimeType:   fileMeta.MimeType,
-		Attributes: fileMeta.Attributes,
+		MimeType: fileMeta.MimeType,
 
 		IsFinal:         isFinal,
 		ChunkSize:       chunkSize,

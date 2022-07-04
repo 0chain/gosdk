@@ -16,13 +16,12 @@ import (
 type ShareRequest struct {
 	allocationID      string
 	allocationTx      string
-	blobbers          []*blockchain.StorageNode
 	remotefilepath    string
 	remotefilename    string
-	authToken         *marker.AuthTicket
 	refType           string
-	ctx               context.Context
 	expirationSeconds int64
+	blobbers          []*blockchain.StorageNode
+	ctx               context.Context
 }
 
 func (req *ShareRequest) GetFileRef() (*fileref.FileRef, error) {
