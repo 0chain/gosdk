@@ -45,9 +45,6 @@ type UploadFileMeta struct {
 	ThumbnailSize int64
 	// ThumbnailHash hash code of entire thumbnail
 	ThumbnailHash string
-
-	// Attributes file attributes in blockchain
-	Attributes fileref.Attributes
 }
 
 type uploadFormData struct {
@@ -74,10 +71,9 @@ type uploadFormData struct {
 	// ActualThumbnailHash hash of orignial thumbnail (unencoded, unencrypted)
 	ActualThumbnailHash string `json:"actual_thumb_hash"`
 
-	MimeType     string             `json:"mimetype"`
-	CustomMeta   string             `json:"custom_meta,omitempty"`
-	EncryptedKey string             `json:"encrypted_key,omitempty"`
-	Attributes   fileref.Attributes `json:"attributes,omitempty"`
+	MimeType     string `json:"mimetype"`
+	CustomMeta   string `json:"custom_meta,omitempty"`
+	EncryptedKey string `json:"encrypted_key,omitempty"`
 }
 
 type UploadResult struct {
@@ -266,7 +262,6 @@ func (req *UploadRequest) prepareUpload(
 			ActualThumbnailHash: req.filemeta.ThumbnailHash,
 			ActualThumbnailSize: req.filemeta.ThumbnailSize,
 			MimeType:            req.filemeta.MimeType,
-			Attributes:          req.filemeta.Attributes,
 			Hash:                fileContentHash,
 			ThumbnailHash:       thumbContentHash,
 			MerkleRoot:          fileMerkleRoot,
@@ -355,7 +350,6 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 		req.file[i].Path = req.remotefilepath
 		req.file[i].Type = fileref.FILE
 		req.file[i].AllocationID = a.ID
-		req.file[i].Attributes = req.filemeta.Attributes
 	}
 
 	if !req.isRepair {
@@ -560,7 +554,6 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			newChange.NumBlocks = req.file[c].NumBlocks
 			newChange.Operation = constants.FileOperationUpdate
 			newChange.Size = req.file[c].Size
-			newChange.NewFile.Attributes = req.file[c].Attributes
 			commitReq.changes = append(commitReq.changes, newChange)
 		} else {
 			newChange := &allocationchange.NewFileChange{}
@@ -568,7 +561,6 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			newChange.NumBlocks = req.file[c].NumBlocks
 			newChange.Operation = constants.FileOperationInsert
 			newChange.Size = req.file[c].Size
-			newChange.File.Attributes = req.file[c].Attributes
 			commitReq.changes = append(commitReq.changes, newChange)
 		}
 

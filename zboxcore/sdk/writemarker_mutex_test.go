@@ -212,7 +212,7 @@ func TestGetRootHashnode(t *testing.T) {
 
 	statusOK := mock.Response{
 		StatusCode: http.StatusOK,
-		Body:       []byte(`{"allocation_id":"allocation_nested","type":"D","name":"/","path":"/","attributes":null,"children":[{"allocation_id":"allocation_nested","type":"D","name":"sub1","path":"/sub1","attributes":null,"children":[{"allocation_id":"allocation_nested","type":"D","name":"file1","path":"/sub1/file1","attributes":null}]},{"allocation_id":"allocation_nested","type":"D","name":"sub2","path":"/sub2","attributes":null}]}`),
+		Body:       []byte(`{"allocation_id":"allocation_nested","type":"D","name":"/","path":"/","children":[{"allocation_id":"allocation_nested","type":"D","name":"sub1","path":"/sub1","children":[{"allocation_id":"allocation_nested","type":"D","name":"file1","path":"/sub1/file1"}]},{"allocation_id":"allocation_nested","type":"D","name":"sub2","path":"/sub2"}]}`),
 	}
 
 	m[http.MethodGet+":"+blobber.EndpointRootHashnode+a.Tx] = statusOK

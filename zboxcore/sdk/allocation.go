@@ -91,7 +91,6 @@ type ConsolidatedFileMeta struct {
 	EncryptedKey    string
 	CommitMetaTxns  []fileref.CommitMetaTxn
 	Collaborators   []fileref.Collaborator
-	Attributes      fileref.Attributes
 }
 
 type AllocationStats struct {
@@ -260,16 +259,16 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 
 // UpdateFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UpdateFile(workdir, localpath string, remotepath string,
-	attrs fileref.Attributes, status StatusCallback) error {
+	status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false, "", false, attrs)
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false, "", false)
 }
 
 // UploadFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UploadFile(workdir, localpath string, remotepath string,
-	attrs fileref.Attributes, status StatusCallback) error {
+	status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", false, attrs)
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", false)
 }
 
 func (a *Allocation) CreateDir(dirName string) error {
@@ -298,46 +297,46 @@ func (a *Allocation) RepairFile(localpath string, remotepath string,
 
 	idr, _ := homedir.Dir()
 	return a.StartChunkedUpload(idr, localpath, remotepath, status, false, true,
-		"", false, fileref.Attributes{})
+		"", false)
 }
 
 // UpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UpdateFileWithThumbnail(workdir, localpath string, remotepath string,
-	thumbnailpath string, attrs fileref.Attributes, status StatusCallback) error {
+	thumbnailpath string, status StatusCallback) error {
 
 	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false,
-		thumbnailpath, false, attrs)
+		thumbnailpath, false)
 }
 
 // UploadFileWithThumbnail [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UploadFileWithThumbnail(workdir string, localpath string,
-	remotepath string, thumbnailpath string, attrs fileref.Attributes,
+	remotepath string, thumbnailpath string,
 	status StatusCallback) error {
 
 	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false,
-		thumbnailpath, false, attrs)
+		thumbnailpath, false)
 }
 
 // EncryptAndUpdateFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUpdateFile(workdir string, localpath string, remotepath string,
-	attrs fileref.Attributes, status StatusCallback) error {
+	status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false, "", true, attrs)
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false, "", true)
 }
 
 // EncryptAndUploadFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUploadFile(workdir string, localpath string, remotepath string,
-	attrs fileref.Attributes, status StatusCallback) error {
+	status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", true, attrs)
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", true)
 }
 
 // EncryptAndUpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUpdateFileWithThumbnail(workdir string, localpath string,
-	remotepath string, thumbnailpath string, attrs fileref.Attributes, status StatusCallback) error {
+	remotepath string, thumbnailpath string, status StatusCallback) error {
 
 	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false,
-		thumbnailpath, true, attrs)
+		thumbnailpath, true)
 }
 
 // EncryptAndUploadFileWithThumbnail [Deprecated]please use CreateChunkedUpload
@@ -346,7 +345,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	localpath string,
 	remotepath string,
 	thumbnailpath string,
-	attrs fileref.Attributes,
+
 	status StatusCallback,
 ) error {
 
@@ -358,7 +357,6 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 		false,
 		thumbnailpath,
 		true,
-		attrs,
 	)
 }
 
@@ -369,7 +367,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	isRepair bool,
 	thumbnailPath string,
 	encryption bool,
-	attrs fileref.Attributes,
+
 ) error {
 
 	if !a.isInitialized() {
@@ -408,7 +406,6 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 		MimeType:   mimeType,
 		RemoteName: fileName,
 		RemotePath: remotePath,
-		Attributes: attrs,
 	}
 
 	ChunkedUpload, err := CreateChunkedUpload(workdir, a, fileMeta, fileReader, isUpdate, isRepair,
@@ -430,7 +427,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 	thumbnailpath string,
 	encryption bool,
 	isRepair bool,
-	attrs fileref.Attributes,
+
 ) error {
 
 	if !a.isInitialized() {
@@ -471,7 +468,6 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 	uploadReq.filemeta.Size = fileInfo.Size()
 	uploadReq.filemeta.Path = remotepath
 	uploadReq.filemeta.ThumbnailSize = thumbnailSize
-	uploadReq.filemeta.Attributes = attrs
 	uploadReq.remaining = uploadReq.filemeta.Size
 	uploadReq.thumbRemaining = uploadReq.filemeta.ThumbnailSize
 	uploadReq.isUpdate = isUpdate
@@ -740,7 +736,6 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.EncryptedKey = ref.EncryptedKey
 		result.CommitMetaTxns = ref.CommitMetaTxns
 		result.Collaborators = ref.Collaborators
-		result.Attributes = ref.Attributes
 		result.ActualFileSize = ref.Size
 		result.ActualNumBlocks = ref.NumBlocks
 		return result, nil
@@ -884,47 +879,6 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	return err
 }
 
-func (a *Allocation) UpdateObjectAttributes(path string,
-	attrs fileref.Attributes) (err error) {
-
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	if len(path) == 0 {
-		return errors.New("update_attrs", "Invalid path for the list")
-	}
-
-	path = zboxutil.RemoteClean(path)
-	var isabs = zboxutil.IsRemoteAbs(path)
-	if !isabs {
-		return errors.New("update_attrs",
-			"Path should be valid and absolute")
-	}
-
-	var attrsb []byte
-	if attrsb, err = json.Marshal(attrs); err != nil {
-		panic(err)
-	}
-
-	var ar AttributesRequest
-
-	ar.blobbers = a.Blobbers
-	ar.allocationID = a.ID
-	ar.allocationTx = a.Tx
-	ar.Attributes = attrs
-	ar.attributes = string(attrsb)
-	ar.fullconsensus = a.fullconsensus
-	ar.consensusThresh = a.consensusThreshold
-	ar.consensusRequiredForOk = a.consensusOK
-	ar.ctx = a.ctx
-	ar.remotefilepath = path
-	ar.attributesMask = 0
-	ar.connectionID = zboxutil.NewConnectionId()
-
-	return ar.ProcessAttributes()
-}
-
 func (a *Allocation) MoveObject(path string, destPath string) error {
 	err := a.CopyObject(path, destPath)
 	if err != nil {
@@ -967,7 +921,9 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	return err
 }
 
-func (a *Allocation) GetAuthTicketForShare(path string, filename string, referenceType string, refereeClientID string) (string, error) {
+func (a *Allocation) GetAuthTicketForShare(
+	path, filename, referenceType, refereeClientID string) (string, error) {
+
 	now := time.Now()
 	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "", 0, &now)
 }
@@ -1032,8 +988,8 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 }
 
 func (a *Allocation) GetAuthTicket(path, filename string,
-	referenceType, refereeClientID, refereeEncryptionPublicKey string,
-	expiration int64, availableAfter *time.Time) (string, error) {
+	referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration int64, availableAfter *time.Time) (string, error) {
+
 	if !a.isInitialized() {
 		return "", notInitialized
 	}
@@ -1176,35 +1132,34 @@ func (a *Allocation) CancelDownload(remotepath string) error {
 
 func (a *Allocation) DownloadThumbnailFromAuthTicket(localPath string,
 	authTicket string, remoteLookupHash string, remoteFilename string,
-	rxPay bool, status StatusCallback) error {
-
-	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
-		1, 0, numBlockDownloads, remoteFilename, DOWNLOAD_CONTENT_THUMB,
-		rxPay, status)
-}
-
-func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
-	remoteLookupHash string, remoteFilename string, rxPay bool,
 	status StatusCallback) error {
 
 	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
+		1, 0, numBlockDownloads, remoteFilename, DOWNLOAD_CONTENT_THUMB,
+		status)
+}
+
+func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
+	remoteLookupHash string, remoteFilename string, status StatusCallback) error {
+
+	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
 		1, 0, numBlockDownloads, remoteFilename, DOWNLOAD_CONTENT_FULL,
-		rxPay, status)
+		status)
 }
 
 func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string,
 	authTicket string, startBlock int64, endBlock int64, numBlocks int,
-	remoteLookupHash string, remoteFilename string, rxPay bool,
+	remoteLookupHash string, remoteFilename string,
 	status StatusCallback) error {
 
 	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
 		startBlock, endBlock, numBlocks, remoteFilename, DOWNLOAD_CONTENT_FULL,
-		rxPay, status)
+		status)
 }
 
 func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	remoteLookupHash string, startBlock int64, endBlock int64, numBlocks int,
-	remoteFilename string, contentMode string, rxPay bool,
+	remoteFilename string, contentMode string,
 	status StatusCallback) error {
 
 	if !a.isInitialized() {
@@ -1252,7 +1207,6 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.startBlock = startBlock - 1
 	downloadReq.endBlock = endBlock
 	downloadReq.numBlocks = int64(numBlocks)
-	downloadReq.rxPay = rxPay
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
 	downloadReq.consensusRequiredForOk = a.consensusOK

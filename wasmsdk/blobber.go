@@ -295,7 +295,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 
 }
 
-func downloadFile(allocationObj *sdk.Allocation, authTicket string, authTicketObj *marker.AuthTicket, localPath, remotePath, lookupHash string, downloadThumbnailOnly, rxPay bool) (string, error) {
+func downloadFile(allocationObj *sdk.Allocation, authTicket string, authTicketObj *marker.AuthTicket, localPath, remotePath, lookupHash string, downloadThumbnailOnly bool) (string, error) {
 	var blocksPerMarker, startBlock, endBlock int
 
 	if len(remotePath) == 0 && len(authTicket) == 0 {
@@ -344,15 +344,15 @@ func downloadFile(allocationObj *sdk.Allocation, authTicket string, authTicketOb
 
 		if downloadThumbnailOnly {
 			errE = allocationObj.DownloadThumbnailFromAuthTicket(localPath,
-				authTicket, lookupHash, fileName, rxPay, statusBar)
+				authTicket, lookupHash, fileName, statusBar)
 		} else {
 			if startBlock != 0 || endBlock != 0 {
 				errE = allocationObj.DownloadFromAuthTicketByBlocks(
 					localPath, authTicket, int64(startBlock), int64(endBlock), blocksPerMarker,
-					lookupHash, fileName, rxPay, statusBar)
+					lookupHash, fileName, statusBar)
 			} else {
 				errE = allocationObj.DownloadFromAuthTicket(localPath,
-					authTicket, lookupHash, fileName, rxPay, statusBar)
+					authTicket, lookupHash, fileName, statusBar)
 			}
 		}
 	} else if len(remotePath) > 0 {
@@ -386,7 +386,7 @@ func downloadFile(allocationObj *sdk.Allocation, authTicket string, authTicketOb
 }
 
 // Download download file
-func Download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly, rxPay, autoCommit bool) (*DownloadCommandResponse, error) {
+func Download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly, autoCommit bool) (*DownloadCommandResponse, error) {
 
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, RequiredArg("remotePath/authTicket")
@@ -401,8 +401,7 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 
 	downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
 		sdk.WithAuthticket(authTicket, lookupHash),
-		sdk.WithOnlyThumbnail(downloadThumbnailOnly),
-		sdk.WithRxPay(rxPay))
+		sdk.WithOnlyThumbnail(downloadThumbnailOnly))
 
 	if err != nil {
 		PrintError(err.Error())
@@ -452,7 +451,7 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 }
 
 // Upload upload file
-func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, autoCommit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, isUpdate, isRepair bool) (*FileCommandResponse, error) {
+func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, autoCommit bool, isLiveUpload, isSyncUpload bool, isUpdate, isRepair bool) (*FileCommandResponse, error) {
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
 	}
@@ -472,19 +471,6 @@ func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 	wg.Add(1)
 	if strings.HasPrefix(remotePath, "/Encrypted") {
 		encrypt = true
-	}
-
-	var attrs fileref.Attributes
-	if len(attrWhoPaysForReads) > 0 {
-		var (
-			wp common.WhoPays
-		)
-
-		if err := wp.Parse(attrWhoPaysForReads); err != nil {
-			PrintError(err)
-			return nil, err
-		}
-		attrs.WhoPaysForReads = wp // set given value
 	}
 
 	if isLiveUpload {
@@ -518,7 +504,6 @@ func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 		MimeType:   mimeType,
 		RemoteName: fileName,
 		RemotePath: remotePath,
-		Attributes: attrs,
 	}
 
 	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair,
