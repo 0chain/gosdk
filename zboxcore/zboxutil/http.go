@@ -540,11 +540,11 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 
 				mu.Lock()
 				responses[response.StatusCode]++
-				mu.Unlock()
 				if responses[response.StatusCode] > maxCount {
 					maxCount = responses[response.StatusCode]
 					retObj = entityBytes
 				}
+				mu.Unlock()
 				entityResult[sharder] = retObj
 			}
 		}(sharder)
