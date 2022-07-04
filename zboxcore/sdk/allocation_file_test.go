@@ -69,7 +69,7 @@ func TestAllocation_UpdateFile(t *testing.T) {
 		})
 	}
 	a.uploadChan = make(chan *UploadRequest, 4)
-	err := a.UpdateFile(os.TempDir(), mockLocalPath, "/", fileref.Attributes{}, nil)
+	err := a.UpdateFile(os.TempDir(), mockLocalPath, "/", nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -106,7 +106,7 @@ func TestAllocation_UploadFile(t *testing.T) {
 			Baseurl: server.URL,
 		})
 	}
-	err := a.UploadFile(os.TempDir(), mockLocalPath, "/", fileref.Attributes{}, nil)
+	err := a.UploadFile(os.TempDir(), mockLocalPath, "/", nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -180,7 +180,7 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 					Baseurl: server.URL,
 				})
 			}
-			err := a.UpdateFileWithThumbnail(os.TempDir(), tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.thumbnailPath, fileref.Attributes{}, tt.parameters.status)
+			err := a.UpdateFileWithThumbnail(os.TempDir(), tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.thumbnailPath, tt.parameters.status)
 			if tt.wantErr {
 				require.Errorf(err, "expected error != nil")
 				return
@@ -226,7 +226,7 @@ func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 			Baseurl: server.URL,
 		})
 	}
-	err := a.UploadFileWithThumbnail(mockTmpPath, mockLocalPath, "/", mockThumbnailPath, fileref.Attributes{}, nil)
+	err := a.UploadFileWithThumbnail(mockTmpPath, mockLocalPath, "/", mockThumbnailPath, nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -267,7 +267,7 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 			Baseurl: server.URL,
 		})
 	}
-	err := a.EncryptAndUpdateFile(mockTmpPath, mockLocalPath, "/", fileref.Attributes{}, nil)
+	err := a.EncryptAndUpdateFile(mockTmpPath, mockLocalPath, "/", nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -306,7 +306,7 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 			Baseurl: server.URL,
 		})
 	}
-	err := a.EncryptAndUploadFile(mockTmpPath, mockLocalPath, "/", fileref.Attributes{}, nil)
+	err := a.EncryptAndUploadFile(mockTmpPath, mockLocalPath, "/", nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -346,7 +346,7 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 			Baseurl: server.URL,
 		})
 	}
-	err := a.EncryptAndUpdateFileWithThumbnail(mockTmpPath, mockLocalPath, "/", mockThumbnailPath, fileref.Attributes{}, nil)
+	err := a.EncryptAndUpdateFileWithThumbnail(mockTmpPath, mockLocalPath, "/", mockThumbnailPath, nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -386,7 +386,7 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 			Baseurl: server.URL,
 		})
 	}
-	err := a.EncryptAndUploadFileWithThumbnail(mockTmpPath, mockLocalPath, "/", mockThumbnailPath, fileref.Attributes{}, nil)
+	err := a.EncryptAndUploadFileWithThumbnail(mockTmpPath, mockLocalPath, "/", mockThumbnailPath, nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -459,7 +459,6 @@ func TestAllocation_uploadOrUpdateFile(t *testing.T) {
 		thumbnailPath string
 		encryption    bool
 		isRepair      bool
-		attrs         fileref.Attributes
 		hash          string
 	}
 	tests := []struct {
@@ -482,7 +481,6 @@ func TestAllocation_uploadOrUpdateFile(t *testing.T) {
 				thumbnailPath: "",
 				encryption:    false,
 				isRepair:      false,
-				attrs:         fileref.Attributes{},
 			},
 			wantErr: true,
 			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
@@ -497,7 +495,6 @@ func TestAllocation_uploadOrUpdateFile(t *testing.T) {
 				thumbnailPath: mockThumbnailPath,
 				encryption:    false,
 				isRepair:      false,
-				attrs:         fileref.Attributes{},
 				hash:          mockActualHash,
 			},
 		},
@@ -511,7 +508,6 @@ func TestAllocation_uploadOrUpdateFile(t *testing.T) {
 				thumbnailPath: "",
 				encryption:    false,
 				isRepair:      false,
-				attrs:         fileref.Attributes{},
 			},
 			wantErr: true,
 			errMsg:  "invalid_path: Path should be valid and absolute",
@@ -526,7 +522,6 @@ func TestAllocation_uploadOrUpdateFile(t *testing.T) {
 				thumbnailPath: "",
 				encryption:    false,
 				isRepair:      true,
-				attrs:         fileref.Attributes{},
 			},
 			wantErr: true,
 			errMsg:  "File not found for the given remotepath",
@@ -541,7 +536,6 @@ func TestAllocation_uploadOrUpdateFile(t *testing.T) {
 				thumbnailPath: "",
 				encryption:    false,
 				isRepair:      true,
-				attrs:         fileref.Attributes{},
 				hash:          mockErrorHash,
 			},
 			wantErr: true,
@@ -557,7 +551,6 @@ func TestAllocation_uploadOrUpdateFile(t *testing.T) {
 				thumbnailPath: "",
 				encryption:    false,
 				isRepair:      false,
-				attrs:         fileref.Attributes{},
 				hash:          mockActualHash,
 			},
 		},
@@ -578,7 +571,7 @@ func TestAllocation_uploadOrUpdateFile(t *testing.T) {
 					defer teardown(t)
 				}
 			}
-			err := a.uploadOrUpdateFile(tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.status, tt.parameters.isUpdate, tt.parameters.thumbnailPath, tt.parameters.encryption, tt.parameters.isRepair, tt.parameters.attrs)
+			err := a.uploadOrUpdateFile(tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.status, tt.parameters.isUpdate, tt.parameters.thumbnailPath, tt.parameters.encryption, tt.parameters.isRepair)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 

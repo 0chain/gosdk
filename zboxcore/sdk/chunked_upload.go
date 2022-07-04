@@ -112,7 +112,6 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 			change.NumBlocks = ref.NumBlocks
 			change.Operation = constants.FileOperationUpdate
 			change.Size = ref.Size
-			change.NewFile.Attributes = ref.Attributes
 
 			return change
 		}
@@ -124,7 +123,6 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 			change.NumBlocks = ref.NumBlocks
 			change.Operation = constants.FileOperationInsert
 			change.Size = ref.Size
-			change.File.Attributes = ref.Attributes
 			return change
 		}
 	}
@@ -191,7 +189,6 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 					Type:         fileref.FILE,
 					AllocationID: su.allocationObj.ID,
 				},
-				Attributes: su.fileMeta.Attributes,
 			},
 		}
 	}
