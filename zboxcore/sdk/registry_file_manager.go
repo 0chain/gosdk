@@ -5,7 +5,6 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
-	"github.com/0chain/gosdk/zboxcore/fileref"
 	"io"
 	"os"
 	"path/filepath"
@@ -18,7 +17,7 @@ import (
 type allocationFileStorer interface {
 	ListDir(path string) (*ListResult, error)
 	DownloadFile(localPath string, remotePath string, status StatusCallback) error
-	StartChunkedUpload(workdir, localPath string, remotePath string, status StatusCallback, isUpdate bool, isRepair bool, thumbnailPath string, encryption bool, attrs fileref.Attributes) error
+	StartChunkedUpload(workdir, localPath string, remotePath string, status StatusCallback, isUpdate bool, isRepair bool, thumbnailPath string, encryption bool) error
 }
 
 var _ allocationFileStorer = &Allocation{}
@@ -65,7 +64,7 @@ func (a *registryFileStore) Update(data []byte) error {
 		return errors.New("update_registry_file_failed", "Failed to create file locally for upload: "+err.Error())
 	}
 
-	err = a.fileStorer.StartChunkedUpload(os.TempDir(), tempLocal, a.registryFilePath, nil, isUpdate, false, "", false, fileref.Attributes{})
+	err = a.fileStorer.StartChunkedUpload(os.TempDir(), tempLocal, a.registryFilePath, nil, isUpdate, false, "", false)
 	if err != nil {
 		return errors.New("update_registry_file_failed", "Failed to upload registry file: "+err.Error())
 	}

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -226,7 +225,7 @@ func (a *mockAllocationFileStorer) DownloadFile(localPath string, remotePath str
 	return a.downloadErr
 }
 
-func (a *mockAllocationFileStorer) StartChunkedUpload(workdir, localPath, remotePath string, status StatusCallback, isUpdate, isRepair bool, thumbnailPath string, encryption bool, attrs fileref.Attributes) error {
+func (a *mockAllocationFileStorer) StartChunkedUpload(workdir, localPath, remotePath string, status StatusCallback, isUpdate, isRepair bool, thumbnailPath string, encryption bool) error {
 	assert.Equal(a.t, os.TempDir(), workdir)
 	assert.Equal(a.t, a.wantRegistryFilePath, remotePath)
 	assert.Nil(a.t, status)
@@ -234,7 +233,6 @@ func (a *mockAllocationFileStorer) StartChunkedUpload(workdir, localPath, remote
 	assert.False(a.t, isRepair)
 	assert.False(a.t, encryption)
 	assert.Equal(a.t, "", thumbnailPath)
-	assert.Equal(a.t, fileref.Attributes{}, attrs)
 
 	f, err := os.Open(localPath)
 	require.Nil(a.t, err)
