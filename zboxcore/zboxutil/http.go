@@ -41,7 +41,6 @@ var Client HttpClient
 const (
 	ALLOCATION_ENDPOINT      = "/allocation"
 	UPLOAD_ENDPOINT          = "/v1/file/upload/"
-	ATTRS_ENDPOINT           = "/v1/file/attributes/"
 	RENAME_ENDPOINT          = "/v1/file/rename/"
 	COPY_ENDPOINT            = "/v1/file/copy/"
 	LIST_ENDPOINT            = "/v1/file/list/"
@@ -405,22 +404,6 @@ func NewUploadRequest(baseUrl, allocation string, body io.Reader, update bool) (
 	} else {
 		req, err = http.NewRequest(http.MethodPost, url, body)
 	}
-	if err != nil {
-		return nil, err
-	}
-
-	if err := setClientInfoWithSign(req, allocation); err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
-func NewAttributesRequest(baseUrl, allocation string, body io.Reader) (
-	req *http.Request, err error) {
-
-	var url = fmt.Sprintf("%s%s%s", baseUrl, ATTRS_ENDPOINT, allocation)
-	req, err = http.NewRequest(http.MethodPost, url, body)
 	if err != nil {
 		return nil, err
 	}
