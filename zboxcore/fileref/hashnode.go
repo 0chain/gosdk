@@ -1,7 +1,6 @@
 package fileref
 
 import (
-	"encoding/json"
 	"strconv"
 	"strings"
 
@@ -11,17 +10,16 @@ import (
 // Hashnode ref node in hash tree
 type Hashnode struct {
 	// hash data
-	AllocationID   string          `json:"allocation_id,omitempty"`
-	Type           string          `json:"type,omitempty"`
-	Name           string          `json:"name,omitempty"`
-	Path           string          `json:"path,omitempty"`
-	ContentHash    string          `json:"content_hash,omitempty"`
-	MerkleRoot     string          `json:"merkle_root,omitempty"`
-	ActualFileHash string          `json:"actual_file_hash,omitempty"`
-	Attributes     json.RawMessage `json:"attributes,omitempty"`
-	ChunkSize      int64           `json:"chunk_size,omitempty"`
-	Size           int64           `json:"size,omitempty"`
-	ActualFileSize int64           `json:"actual_file_size,omitempty"`
+	AllocationID   string `json:"allocation_id,omitempty"`
+	Type           string `json:"type,omitempty"`
+	Name           string `json:"name,omitempty"`
+	Path           string `json:"path,omitempty"`
+	ContentHash    string `json:"content_hash,omitempty"`
+	MerkleRoot     string `json:"merkle_root,omitempty"`
+	ActualFileHash string `json:"actual_file_hash,omitempty"`
+	ChunkSize      int64  `json:"chunk_size,omitempty"`
+	Size           int64  `json:"size,omitempty"`
+	ActualFileSize int64  `json:"actual_file_size,omitempty"`
 
 	Children   []*Hashnode `json:"children,omitempty"`
 	lookupHash string      `json:"-"`
@@ -66,13 +64,6 @@ func (n *Hashnode) GetHashCode() string {
 
 	}
 
-	//file
-	if len(n.Attributes) == 0 {
-		n.Attributes = json.RawMessage("{}")
-	}
-
-	attrs, _ := json.Marshal(n.Attributes)
-
 	hashArray := []string{
 		n.AllocationID,
 		n.Type,
@@ -83,7 +74,6 @@ func (n *Hashnode) GetHashCode() string {
 		n.MerkleRoot,
 		strconv.FormatInt(n.ActualFileSize, 10),
 		n.ActualFileHash,
-		string(attrs),
 		strconv.FormatInt(n.ChunkSize, 10),
 	}
 

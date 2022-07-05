@@ -57,7 +57,6 @@ func (p *Player) stop() {
 }
 
 func (p *Player) download(it *sdk.ListResult) {
-	//Download(p.allocationID, remotePath string, authTicket string, lookupHash string, downloadThumbnailOnly bool, rxPay bool, autoCommit bool)
 	wg := &sync.WaitGroup{}
 	statusBar := &StatusBar{wg: wg}
 	wg.Add(1)
