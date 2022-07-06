@@ -212,8 +212,8 @@ type Validator interface {
 }
 
 func NewValidator(id string, baseUrl string) Validator {
-	return &validator {
-		ID: common.Key(id),
+	return &validator{
+		ID:      common.Key(id),
 		BaseURL: baseUrl,
 	}
 }
@@ -227,10 +227,10 @@ type validator struct {
 func (v *validator) SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64) {
 	v.StakePoolSettings = StakePoolSettings{
 		DelegateWallet: delegateWallet,
-		MinStake: minStake,
-		MaxStake: maxStake,
-		NumDelegates: numDelegates,
-		ServiceCharge: serviceCharge,
+		MinStake:       minStake,
+		MaxStake:       maxStake,
+		NumDelegates:   numDelegates,
+		ServiceCharge:  serviceCharge,
 	}
 }
 
@@ -325,9 +325,6 @@ func parseCoinStr(vs string) (uint64, error) {
 		return 0, fmt.Errorf("invalid token value: %v", vs)
 	}
 
-	if v > 0 && v/uint64(TOKEN_UNIT) == 0 {
-		return 0, fmt.Errorf("token value must be multiple value of 1e10")
-	}
 	return v, nil
 }
 
