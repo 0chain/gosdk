@@ -9,7 +9,6 @@ import (
 
 	"github.com/0chain/gosdk/dev"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 )
 
@@ -121,7 +120,6 @@ func BenchmarkChunkedUpload(b *testing.B) {
 					MimeType:   "plain/text",
 					RemoteName: "/test.txt",
 					RemotePath: "/test.txt",
-					Attributes: fileref.Attributes{},
 				}
 
 				chunkedUpload, err := CreateChunkedUpload("/tmp", a, fileMeta, reader, false, false)

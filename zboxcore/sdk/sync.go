@@ -29,18 +29,16 @@ const (
 )
 
 type fileInfo struct {
-	Size       int64              `json:"size"`
-	ActualSize int64              `json:"actual_size"`
-	Hash       string             `json:"hash"`
-	Type       string             `json:"type"`
-	Attributes fileref.Attributes `json:"attributes"`
+	Size       int64  `json:"size"`
+	ActualSize int64  `json:"actual_size"`
+	Hash       string `json:"hash"`
+	Type       string `json:"type"`
 }
 
 type FileDiff struct {
-	Op         string             `json:"operation"`
-	Path       string             `json:"path"`
-	Type       string             `json:"type"`
-	Attributes fileref.Attributes `json:"attributes"`
+	Op   string `json:"operation"`
+	Path string `json:"path"`
+	Type string `json:"type"`
 }
 
 func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]fileInfo, exclMap map[string]int) ([]string, error) {
@@ -54,7 +52,7 @@ func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]fil
 			if _, ok := exclMap[child.Path]; ok {
 				continue
 			}
-			fMap[child.Path] = fileInfo{Size: child.Size, ActualSize: child.ActualSize, Hash: child.Hash, Type: child.Type, Attributes: child.Attributes}
+			fMap[child.Path] = fileInfo{Size: child.Size, ActualSize: child.ActualSize, Hash: child.Hash, Type: child.Type}
 			if child.Type == fileref.DIRECTORY {
 				childDirList = append(childDirList, child.Path)
 			}
@@ -243,7 +241,7 @@ func findDelta(rMap map[string]fileInfo, lMap map[string]fileInfo, prevMap map[s
 				continue
 			}
 		}
-		lFDiff = append(lFDiff, FileDiff{Path: lPath, Op: op, Type: lMap[lPath].Type, Attributes: lMap[lPath].Attributes})
+		lFDiff = append(lFDiff, FileDiff{Path: lPath, Op: op, Type: lMap[lPath].Type})
 	}
 
 	// If there are differences, remove childs if the parent folder is deleted

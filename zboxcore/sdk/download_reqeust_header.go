@@ -13,7 +13,6 @@ type DownloadRequestHeader struct {
 	NumBlocks    int64
 	ReadMarker   []byte
 	AuthToken    []byte
-	RxPay        bool
 	DownloadMode string
 }
 
@@ -44,9 +43,6 @@ func (h *DownloadRequestHeader) ToHeader(req *http.Request) {
 		req.Header.Set("X-Auth-Token", string(h.AuthToken))
 	}
 
-	if h.RxPay {
-		req.Header.Set("X-Rxpay", "true")
-	}
 	if h.DownloadMode != "" {
 		req.Header.Set("X-Mode", h.DownloadMode)
 	}
