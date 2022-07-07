@@ -161,9 +161,10 @@ type TransactionScheme interface {
 	MinerSCUnlock(minerID, poolID string) error
 	MinerScUpdateConfig(*InputMap) error
 	MinerScUpdateGlobals(*InputMap) error
-	MinerSCDeleteMiner(*MinerSCMinerInfo) error
-	MinerSCDeleteSharder(*MinerSCMinerInfo) error
-
+	MinerSCKillMiner(id string) error
+	MinerSCKillSharder(id string) error
+	MinerSCShutDownMiner() error
+	MinerSCShutDownSharder() error
 	// Storage SC
 
 	StorageSCCollectReward(string, string, Provider) error
@@ -1302,26 +1303,54 @@ func (t *Transaction) MinerSCSharderSettings(info *MinerSCMinerInfo) (err error)
 	return
 }
 
-func (t *Transaction) MinerSCDeleteMiner(info *MinerSCMinerInfo) (err error) {
-	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_MINER_DELETE, info, 0)
+func (ta *Transaction) MinerSCKillMiner(id string) error {
+	pid := ProviderId{
+		ID: id,
+	}
+	err := ta.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_KILL_MINER, pid, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
-	go func() { t.setNonceAndSubmit() }()
-	return
+	go func() { ta.submitTxn() }()
+	return nil
 }
 
-func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
-	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_SHARDER_DELETE, info, 0)
+func (ta *Transaction) MinerSCKillSharder(id string) error {
+	pid := ProviderId{
+		ID: id,
+	}
+	err := ta.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_KILL_SHARDER, pid, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
-	go func() { t.setNonceAndSubmit() }()
-	return
+	go func() { ta.submitTxn() }()
+	return nil
+}
+
+func (ta *Transaction) MinerSCShutDownMiner() error {
+	err := ta.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_SHUT_DOWN_MINER, nil, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { ta.submitTxn() }()
+	return nil
+}
+
+func (ta *Transaction) MinerSCShutDownSharder() error {
+	err := ta.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_SHUT_DOWN_SHARDER, nil, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { ta.submitTxn() }()
+	return nil
 }
 
 type Provider int

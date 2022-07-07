@@ -341,30 +341,54 @@ func (ta *TransactionWithAuth) MinerSCSharderSettings(info *MinerSCMinerInfo) (
 	return
 }
 
-func (ta *TransactionWithAuth) MinerSCDeleteMiner(info *MinerSCMinerInfo) (
-	err error) {
-
-	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_MINER_DELETE, info, 0)
+func (ta *TransactionWithAuth) MinerSCKillMiner(id string) error {
+	pid := ProviderId{
+		ID: id,
+	}
+	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_KILL_MINER, pid, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	go func() { ta.submitTxn() }()
-	return
+	return nil
 }
 
-func (ta *TransactionWithAuth) MinerSCDeleteSharder(info *MinerSCMinerInfo) (
-	err error) {
-
-	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_SHARDER_DELETE, info, 0)
+func (ta *TransactionWithAuth) MinerSCKillSharder(id string) error {
+	pid := ProviderId{
+		ID: id,
+	}
+	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_KILL_SHARDER, pid, 0)
 	if err != nil {
 		Logger.Error(err)
-		return
+		return err
 	}
 	go func() { ta.submitTxn() }()
-	return
+	return nil
+}
+
+func (ta *TransactionWithAuth) MinerSCShutDownMiner() error {
+	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_SHUT_DOWN_MINER, nil, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { ta.submitTxn() }()
+	return nil
+}
+
+func (ta *TransactionWithAuth) MinerSCShutDownSharder() error {
+	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_SHUT_DOWN_SHARDER, nil, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { ta.submitTxn() }()
+	return nil
 }
 
 func (ta *TransactionWithAuth) MinerSCCollectReward(providerId, poolId string, providerType Provider) error {
