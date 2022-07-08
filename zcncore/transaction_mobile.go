@@ -1120,18 +1120,13 @@ func ConvertToValue(token float64) string {
 }
 
 func makeTimeoutContext(tm RequestTimeout) (context.Context, func()) {
-	var (
-		ctx    context.Context
-		cancel func()
-	)
 
 	if tm != nil && tm.Get() > 0 {
-		ctx, cancel = context.WithTimeout(context.Background(), time.Millisecond*time.Duration(tm.Get()))
-	} else {
-		ctx = context.Background()
-	}
+		return context.WithTimeout(context.Background(), time.Millisecond*time.Duration(tm.Get()))
 
-	return ctx, cancel
+	}
+	return context.Background(), func() {}
+
 }
 
 func GetLatestFinalized(numSharders int, timeout RequestTimeout) (b *BlockHeader, err error) {
