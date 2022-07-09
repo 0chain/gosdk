@@ -1313,7 +1313,7 @@ func (ta *Transaction) MinerSCKillMiner(id string) error {
 		Logger.Error(err)
 		return err
 	}
-	go func() { ta.submitTxn() }()
+	go func() { ta.setNonceAndSubmit() }()
 	return nil
 }
 
@@ -1327,7 +1327,7 @@ func (ta *Transaction) MinerSCKillSharder(id string) error {
 		Logger.Error(err)
 		return err
 	}
-	go func() { ta.submitTxn() }()
+	go func() { ta.setNonceAndSubmit() }()
 	return nil
 }
 
@@ -1338,7 +1338,7 @@ func (ta *Transaction) MinerSCShutDownMiner() error {
 		Logger.Error(err)
 		return err
 	}
-	go func() { ta.submitTxn() }()
+	go func() { ta.setNonceAndSubmit() }()
 	return nil
 }
 
@@ -1349,7 +1349,7 @@ func (ta *Transaction) MinerSCShutDownSharder() error {
 		Logger.Error(err)
 		return err
 	}
-	go func() { ta.submitTxn() }()
+	go func() { ta.setNonceAndSubmit() }()
 	return nil
 }
 
