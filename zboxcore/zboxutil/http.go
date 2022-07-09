@@ -515,7 +515,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	numSharders := len(blockchain.GetSharders())
 	sharders := blockchain.GetSharders()
 	responses := make(map[int]int)
-	mu        := &sync.Mutex{}
+	mu := &sync.Mutex{}
 	entityResult := make(map[string][]byte)
 	var retObj []byte
 	maxCount := 0
@@ -544,9 +544,8 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 					maxCount = responses[response.StatusCode]
 					retObj = entityBytes
 				}
+				entityResult[sharder] = retObj
 				mu.Unlock()
-entityResult[sharder] = retObj
-mu.Unlock()
 			}
 		}(sharder)
 	}
