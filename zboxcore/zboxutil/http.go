@@ -545,7 +545,8 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 					retObj = entityBytes
 				}
 				mu.Unlock()
-				entityResult[sharder] = retObj
+entityResult[sharder] = retObj
+mu.Unlock()
 			}
 		}(sharder)
 	}
