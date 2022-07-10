@@ -1,11 +1,12 @@
 package allocationchange
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type RenameFileChange struct {
@@ -15,39 +16,40 @@ type RenameFileChange struct {
 }
 
 func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
-	path, _ := filepath.Split(ch.ObjectTree.GetPath())
-	tSubDirs := getSubDirs(path)
+	parentPath := filepath.Dir(ch.ObjectTree.GetPath())
+	fields, err := common.GetPathFields(parentPath)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Fields: %v; Length: %d", fields, len(fields))
 	dirRef := rootRef
-	treelevel := 0
-	for treelevel < len(tSubDirs) {
+	for i := 0; i < len(fields); i++ {
+		fmt.Println("Checking for field: ", fields[i])
 		found := false
 		for _, child := range dirRef.Children {
-			if child.GetType() == fileref.DIRECTORY && treelevel < len(tSubDirs) {
-				if (child.(*fileref.Ref)).Name == tSubDirs[treelevel] {
-					dirRef = child.(*fileref.Ref)
-					found = true
-					break
-				}
+			if child.GetName() == fields[i] {
+				dirRef = child.(*fileref.Ref)
+				found = true
+				break
 			}
 		}
-		if found {
-			treelevel++
-		} else {
+		if !found {
 			return errors.New("invalid_reference_path", "Invalid reference path from the blobber")
 		}
 	}
-	idx := -1
+
+	found := false
 	for i, child := range dirRef.Children {
-		if child.GetPath() == ch.ObjectTree.GetPath() && child.GetHash() == ch.ObjectTree.GetHash() {
-			idx = i
+		if child.GetPath() == ch.ObjectTree.GetPath() {
+			dirRef.Children[i] = ch.ObjectTree
+			found = true
 			break
 		}
 	}
-	if idx < 0 {
+	if !found {
 		return errors.New("file_not_found", "Object to rename not found in blobber")
 	}
-	dirRef.Children[idx] = ch.ObjectTree
-	// Logger.Info("Old name: " + dirRef.Children[idx].GetName())
+
 	var affectedRef *fileref.Ref
 	if ch.ObjectTree.GetType() == fileref.FILE {
 		affectedRef = &(ch.ObjectTree.(*fileref.FileRef)).Ref
@@ -55,15 +57,10 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		affectedRef = ch.ObjectTree.(*fileref.Ref)
 	}
 
-	path, _ = filepath.Split(affectedRef.Path)
-	path = zboxutil.RemoteClean(path)
+	affectedRef.Path = filepath.Join(parentPath, ch.NewName)
 	affectedRef.Name = ch.NewName
-	affectedRef.Path = zboxutil.Join(path, ch.NewName)
-
-	// Logger.Info("Changed name: " + dirRef.Children[idx].GetName())
 
 	ch.processChildren(affectedRef)
-	// Logger.Info("Process hash for renaming")
 	rootRef.CalculateHash()
 	return nil
 }
