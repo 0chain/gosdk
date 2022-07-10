@@ -13,41 +13,29 @@ type NewFileChange struct {
 }
 
 func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref) error {
-	path, _ := filepath.Split(ch.File.Path)
-	tSubDirs := getSubDirs(path)
+	tSubDirs := getSubDirs(filepath.Dir(ch.File.Path))
 	dirRef := rootRef
-	treelevel := 0
-	for {
+	for i := 0; i < len(tSubDirs); i++ {
 		found := false
 		for _, child := range dirRef.Children {
-			if child.GetType() == fileref.DIRECTORY && treelevel < len(tSubDirs) {
-				if (child.(*fileref.Ref)).Name == tSubDirs[treelevel] {
-					dirRef = child.(*fileref.Ref)
-					found = true
-					break
-				}
+			if child.GetType() == fileref.DIRECTORY && child.(*fileref.Ref).Name == tSubDirs[i] {
+				dirRef = child.(*fileref.Ref)
+				found = true
+				break
 			}
 		}
-		if found {
-			treelevel++
-			continue
-		}
-		if len(tSubDirs) > treelevel {
-			newRef := &fileref.Ref{}
-			newRef.Type = fileref.DIRECTORY
-			newRef.AllocationID = dirRef.AllocationID
-			newRef.Path = "/" + strings.Join(tSubDirs[:treelevel+1], "/")
-			newRef.Name = tSubDirs[treelevel]
-			//dirRef.Children = append(dirRef.Children, newRef)
+		if !found {
+			newRef := &fileref.Ref{
+				Type:         fileref.DIRECTORY,
+				AllocationID: dirRef.AllocationID,
+				Path:         filepath.Join("/", strings.Join(tSubDirs[:i+1], "/")),
+				Name:         tSubDirs[i],
+			}
 			dirRef.AddChild(newRef)
 			dirRef = newRef
-			treelevel++
-			continue
-		} else {
-			break
 		}
 	}
-	//dirRef.Children = append(dirRef.Children, ch.File)
+
 	dirRef.AddChild(ch.File)
 	rootRef.CalculateHash()
 	return nil
