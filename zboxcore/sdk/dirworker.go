@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -22,36 +23,33 @@ type DirRequest struct {
 	ctx          context.Context
 	action       string // create, del
 	connectionID string
+	wg           *sync.WaitGroup
 	Consensus
 }
 
 func (req *DirRequest) ProcessDir(a *Allocation) error {
 	numList := len(a.Blobbers)
+	req.wg = &sync.WaitGroup{}
+	req.wg.Add(numList)
 
 	l.Logger.Info("Start creating dir for blobbers")
 
-	await := make(chan error, numList)
-
 	for i := 0; i < numList; i++ {
 		go func(blobberIdx int) {
+			defer req.wg.Done()
+
 			err := req.createDirInBlobber(a.Blobbers[blobberIdx])
 			if err != nil {
 				l.Logger.Error(err.Error())
+				return
 			}
-			await <- err
 		}(i)
 	}
 
-	msgList := make([]string, 0, numList)
-	for i := 0; i < numList; i++ {
-		err := <-await
-		if err != nil {
-			msgList = append(msgList, err.Error())
-		}
-	}
+	req.wg.Wait()
 
-	if len(msgList) > 0 {
-		return errors.New(strings.Join(msgList, ", "))
+	if !req.isConsensusOk() {
+		return errors.New("Directory creation failed due to consensus not met")
 	}
 
 	return nil
