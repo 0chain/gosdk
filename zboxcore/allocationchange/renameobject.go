@@ -1,7 +1,6 @@
 package allocationchange
 
 import (
-	"fmt"
 	"path/filepath"
 
 	"github.com/0chain/errors"
@@ -21,10 +20,8 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	if err != nil {
 		return err
 	}
-	fmt.Printf("Fields: %v; Length: %d", fields, len(fields))
 	dirRef := rootRef
 	for i := 0; i < len(fields); i++ {
-		fmt.Println("Checking for field: ", fields[i])
 		found := false
 		for _, child := range dirRef.Children {
 			if child.GetName() == fields[i] {
