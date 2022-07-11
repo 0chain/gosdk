@@ -188,6 +188,7 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 				childResult.consensus = 0
 				childResult.consensusThresh = req.consensusThresh
 				childResult.fullconsensus = req.fullconsensus
+				childResult.consensusRequiredForOk = req.consensusRequiredForOk
 				childResultMap[actualHash] = childResult
 			}
 			childResult = childResultMap[actualHash]
