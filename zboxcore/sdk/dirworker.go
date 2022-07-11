@@ -4,26 +4,32 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io/ioutil"
+	"math/bits"
 	"mime/multipart"
 	"net/http"
-	"path/filepath"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/client"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type DirRequest struct {
 	allocationID string
-	name         string
+	allocationTx string
+	remotePath   string
+	blobbers     []*blockchain.StorageNode
 	ctx          context.Context
-	action       string // create, del
-	connectionID string
 	wg           *sync.WaitGroup
+	dirMask      uint32
+	maskMu       *sync.Mutex
+	connectionID string
 	Consensus
 }
 
@@ -38,7 +44,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 		go func(blobberIdx int) {
 			defer req.wg.Done()
 
-			err := req.createDirInBlobber(a.Blobbers[blobberIdx])
+			err := req.createDirInBlobber(a.Blobbers[blobberIdx], blobberIdx)
 			if err != nil {
 				l.Logger.Error(err.Error())
 				return
@@ -52,16 +58,65 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 		return errors.New("Directory creation failed due to consensus not met")
 	}
 
+	writeMarkerMU, err := CreateWriteMarkerMutex(client.GetClient(), a)
+	if err != nil {
+		return fmt.Errorf("Directory creation failed. Err: %s", err.Error())
+	}
+	err = writeMarkerMU.Lock(context.TODO(), req.connectionID)
+	defer writeMarkerMU.Unlock(context.TODO(), req.connectionID) //nolint: errcheck
+	if err != nil {
+		return fmt.Errorf("Directory creation failed. Err: %s", err.Error())
+	}
+
+	req.consensus = 0
+	wg := &sync.WaitGroup{}
+	okBlobbers := bits.OnesCount32(req.dirMask)
+	wg.Add(okBlobbers)
+	commitReqs := make([]*CommitRequest, okBlobbers)
+	var c, pos int
+	for i := req.dirMask; i != 0; i &= ^(1 << pos) {
+		pos = bits.TrailingZeros32(i)
+		commitReq := &CommitRequest{}
+		commitReq.allocationID = req.allocationID
+		commitReq.allocationTx = req.allocationTx
+		commitReq.blobber = req.blobbers[pos]
+
+		newChange := &allocationchange.DirCreateChange{}
+		newChange.RemotePath = req.remotePath
+
+		commitReq.changes = append(commitReq.changes, newChange)
+		commitReq.connectionID = req.connectionID
+		commitReq.wg = wg
+		commitReqs[c] = commitReq
+		go AddCommitRequest(commitReq)
+		c++
+	}
+	wg.Wait()
+	for _, commitReq := range commitReqs {
+		if commitReq.result != nil {
+			if commitReq.result.Success {
+				l.Logger.Info("Commit success", commitReq.blobber.Baseurl)
+				req.consensus++
+			} else {
+				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
+			}
+		} else {
+			l.Logger.Info("Commit result not set", commitReq.blobber.Baseurl)
+		}
+
+		if !req.isConsensusOk() {
+			return errors.New("Delete failed: Commit consensus failed")
+		}
+	}
 	return nil
 }
 
-func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode) error {
+func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, blobberIdx int) error {
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
 	formWriter.WriteField("connection_id", req.connectionID)
 
-	dirPath := filepath.ToSlash(filepath.Join("/", req.name))
-	formWriter.WriteField("dir_path", dirPath)
+	formWriter.WriteField("dir_path", req.remotePath)
 
 	formWriter.Close()
 	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, body)
@@ -83,7 +138,10 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode) error
 			resp_body, _ := ioutil.ReadAll(resp.Body)
 			l.Logger.Info("createdir resp:", string(resp_body))
 			req.consensus++
-			l.Logger.Info(blobber.Baseurl, " "+req.name, " created.")
+			req.maskMu.Lock()
+			req.dirMask |= (1 << blobberIdx)
+			req.maskMu.Unlock()
+			l.Logger.Info(blobber.Baseurl, " "+req.remotePath, " created.")
 		} else {
 			resp_body, err := ioutil.ReadAll(resp.Body)
 			if err == nil {

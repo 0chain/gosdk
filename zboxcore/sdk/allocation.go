@@ -271,22 +271,25 @@ func (a *Allocation) UploadFile(workdir, localpath string, remotepath string,
 	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", false)
 }
 
-func (a *Allocation) CreateDir(dirName string) error {
+func (a *Allocation) CreateDir(remotePath string) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
 
-	if len(dirName) == 0 {
+	if remotePath == "" {
 		return errors.New("invalid_name", "Invalid name for dir")
 	}
 
-	dirName = zboxutil.RemoteClean(dirName)
+	remotePath = zboxutil.RemoteClean(remotePath)
 	req := DirRequest{}
-	req.action = "create"
 	req.allocationID = a.ID
+	req.allocationTx = a.Tx
+	req.blobbers = a.Blobbers
+	req.maskMu = &sync.Mutex{}
+	req.dirMask = 0
 	req.connectionID = zboxutil.NewConnectionId()
 	req.ctx = a.ctx
-	req.name = dirName
+	req.remotePath = remotePath
 
 	err := req.ProcessDir(a)
 	return err
@@ -874,6 +877,7 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	req.ctx = a.ctx
 	req.remotefilepath = path
 	req.renameMask = 0
+	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
 	err := req.ProcessRename()
 	return err
