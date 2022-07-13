@@ -28,7 +28,7 @@ type DirRequest struct {
 	ctx          context.Context
 	wg           *sync.WaitGroup
 	dirMask      uint32
-	maskMu       *sync.Mutex
+	mu           *sync.Mutex
 	connectionID string
 	Consensus
 }
@@ -137,10 +137,10 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, blobb
 		if resp.StatusCode == http.StatusOK {
 			resp_body, _ := ioutil.ReadAll(resp.Body)
 			l.Logger.Info("createdir resp:", string(resp_body))
+			req.mu.Lock()
 			req.consensus++
-			req.maskMu.Lock()
 			req.dirMask |= (1 << blobberIdx)
-			req.maskMu.Unlock()
+			req.mu.Unlock()
 			l.Logger.Info(blobber.Baseurl, " "+req.remotePath, " created.")
 		} else {
 			resp_body, err := ioutil.ReadAll(resp.Body)

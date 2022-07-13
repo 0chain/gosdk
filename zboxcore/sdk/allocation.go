@@ -285,7 +285,7 @@ func (a *Allocation) CreateDir(remotePath string) error {
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
 	req.blobbers = a.Blobbers
-	req.maskMu = &sync.Mutex{}
+	req.mu = &sync.Mutex{}
 	req.dirMask = 0
 	req.connectionID = zboxutil.NewConnectionId()
 	req.ctx = a.ctx
