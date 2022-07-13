@@ -20,6 +20,10 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
+const (
+	DirectoryExists = "directory_exists"
+)
+
 type DirRequest struct {
 	allocationID string
 	allocationTx string
@@ -144,11 +148,19 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, blobb
 			l.Logger.Info(blobber.Baseurl, " "+req.remotePath, " created.")
 		} else {
 			resp_body, err := ioutil.ReadAll(resp.Body)
-			if err == nil {
-				msg := strings.TrimSpace(string(resp_body))
-				l.Logger.Error(blobber.Baseurl, "Response: ", msg)
-				return errors.New(msg)
+			if err != nil {
+				return err
 			}
+			msg := string(resp_body)
+			l.Logger.Error(blobber.Baseurl, "Response: ", msg)
+			if strings.Contains(msg, DirectoryExists) {
+				req.mu.Lock()
+				req.consensus++
+				// should not add dirMask because there is not need to commit
+				req.mu.Unlock()
+			}
+			return errors.New(msg)
+
 		}
 		return err
 	})
