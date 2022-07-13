@@ -280,6 +280,10 @@ func (a *Allocation) CreateDir(remotePath string) error {
 		return errors.New("invalid_name", "Invalid name for dir")
 	}
 
+	if !filepath.IsAbs(remotePath) {
+		return errors.New("invalid_path", "Path is not absolute")
+	}
+
 	remotePath = zboxutil.RemoteClean(remotePath)
 	req := DirRequest{}
 	req.allocationID = a.ID
