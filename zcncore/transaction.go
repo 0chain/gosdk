@@ -349,7 +349,7 @@ func (t *Transaction) submitTxn() {
 	consensus := float32(0)
 	for range randomMiners {
 		rsp := <-result
-		Logger.Debug(rsp.Url, rsp.Status)
+		Logger.Debug(rsp.Url, "Status: ", rsp.Status)
 		if rsp.StatusCode == http.StatusOK {
 			consensus++
 			tSuccessRsp = rsp.Body
@@ -357,8 +357,8 @@ func (t *Transaction) submitTxn() {
 			Logger.Error(rsp.Body)
 			tFailureRsp = rsp.Body
 		}
-
 	}
+
 	rate := consensus * 100 / float32(len(randomMiners))
 	if rate < consensusThresh {
 		t.completeTxn(StatusError, "", fmt.Errorf("submit transaction failed. %s", tFailureRsp))

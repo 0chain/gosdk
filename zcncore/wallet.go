@@ -568,15 +568,15 @@ func RegisterToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 	consensus := float32(0)
 	for range _config.chain.Miners {
 		rsp := <-result
-		Logger.Debug(rsp.Url, rsp.Status)
+		Logger.Debug(rsp.Url, "Status: ", rsp.Status)
 
 		if rsp.StatusCode == http.StatusOK {
 			consensus++
 		} else {
 			Logger.Debug(rsp.Body)
 		}
-
 	}
+
 	rate := consensus * 100 / float32(len(_config.chain.Miners))
 	if rate < consensusThresh {
 		statusCb.OnWalletCreateComplete(StatusError, "", "rate is less than consensus")
