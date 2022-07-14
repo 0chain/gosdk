@@ -36,22 +36,19 @@ func TestRegistryFileManager_Update(t *testing.T) {
 		{
 			name:       "ListDir throws error",
 			listDirErr: fmt.Errorf("list error"),
-			wantErr:    errors.New("update_registry_file_failed", "Failed to check existence of registry file: list error"),
+			wantErr:    errors.New("update_registry_file_failed", "failed to check existence of registry file: list error"),
 		},
 		{
 			name:       "Chunk upload error",
 			listDirRes: &ListResult{Children: []*ListResult{}},
 			uploadErr:  fmt.Errorf("upload error"),
-			wantErr:    errors.New("update_registry_file_failed", "Failed to upload registry file: upload error"),
+			wantErr:    errors.New("update_registry_file_failed", "failed to upload registry file: upload error"),
 		},
 	} {
 		tt := tc
 		t.Run(tt.name, func(t *testing.T) {
-			dummyAlloc := &Allocation{}
-
 			r := registryFileStore{
 				registryFilePath: registryFile,
-				allocation:       dummyAlloc,
 				fileStorer: &mockAllocationFileStorer{
 					t:                    t,
 					listDirRes:           tt.listDirRes,
@@ -94,7 +91,7 @@ func TestRegistryFileManager_Get(t *testing.T) {
 		{
 			name:       "ListDir throws error",
 			listDirErr: fmt.Errorf("list error"),
-			wantErr:    errors.New("get_registry_file_failed", "Failed to check existence of registry file: get_last_update_timestamp_failed: Failed to check existence of registry file: list error"),
+			wantErr:    errors.New("get_registry_file_failed", "failed to check existence of registry file: get_last_update_timestamp_failed: failed to get updated timestamp of registry file: list error"),
 		},
 		{
 			name:                    "ListDir returns no registry file",
@@ -106,13 +103,13 @@ func TestRegistryFileManager_Get(t *testing.T) {
 			name:        "Download start error of registry file",
 			listDirRes:  &ListResult{Children: []*ListResult{{Path: registryFile, UpdatedAt: "2022-01-22T02:03:04Z"}}},
 			downloadErr: fmt.Errorf("download error"),
-			wantErr:     errors.New("get_registry_file_failed", "Failed to start download of registry file: download error"),
+			wantErr:     errors.New("get_registry_file_failed", "failed to start download of registry file: download error"),
 		},
 		{
 			name:                "Download callback error of registry file",
 			listDirRes:          &ListResult{Children: []*ListResult{{Path: registryFile, UpdatedAt: "2022-01-22T02:03:04Z"}}},
 			downloadCallbackErr: fmt.Errorf("callback error"),
-			wantErr:             errors.New("get_registry_file_failed", "Failed to download registry file: callback error"),
+			wantErr:             errors.New("get_registry_file_failed", "failed to download registry file: callback error"),
 		},
 	} {
 		tt := tc
@@ -157,7 +154,7 @@ func TestRegistryFileManager_GetLastUpdateTimestamp(t *testing.T) {
 		{
 			name:       "ListDir throws error",
 			listDirErr: fmt.Errorf("server error"),
-			wantErr:    errors.New("get_last_update_timestamp_failed", "Failed to check existence of registry file: server error"),
+			wantErr:    errors.New("get_last_update_timestamp_failed", "failed to get updated timestamp of registry file: server error"),
 			want:       common.Timestamp(0),
 		},
 		{
@@ -168,7 +165,7 @@ func TestRegistryFileManager_GetLastUpdateTimestamp(t *testing.T) {
 		{
 			name:       "registry file has invalid updated_at",
 			listDirRes: &ListResult{Children: []*ListResult{{Path: registryFile, UpdatedAt: "20220122T020304Z"}}},
-			wantErr:    errors.New("get_last_update_timestamp_failed", "Failed to parse last updated timestamp of registry file: parsing time \"20220122T020304Z\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"0122T020304Z\" as \"-\""),
+			wantErr:    errors.New("get_last_update_timestamp_failed", "failed to get updated timestamp of registry file: parsing time \"20220122T020304Z\" as \"2006-01-02T15:04:05Z07:00\": cannot parse \"0122T020304Z\" as \"-\""),
 			want:       common.Timestamp(0),
 		},
 	} {

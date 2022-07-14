@@ -31,7 +31,6 @@ type registryFileManager interface {
 // registryFileStore manages the storing of registry file on allocation.
 type registryFileStore struct {
 	registryFilePath string
-	allocation       *Allocation
 	fileStorer       allocationFileStorer
 }
 
@@ -40,7 +39,6 @@ var _ registryFileManager = &registryFileStore{}
 func newRegistryFileManager(a *Allocation, registryFilePath string) *registryFileStore {
 	return &registryFileStore{
 		registryFilePath: registryFilePath,
-		allocation:       a,
 		fileStorer:       a,
 	}
 }
@@ -48,25 +46,25 @@ func newRegistryFileManager(a *Allocation, registryFilePath string) *registryFil
 // Update writes the registry file with data provided.
 // This overwrites the current copy stored.
 func (a *registryFileStore) Update(data []byte) error {
-	rf, err := a.getRegistryFile()
+	lastUpdate, err := a.getRegistryFileLastUpdate()
 	if err != nil {
-		return errors.New("update_registry_file_failed", "Failed to check existence of registry file: "+err.Error())
+		return errors.New("update_registry_file_failed", "failed to check existence of registry file: "+err.Error())
 	}
 
-	// if no registry yet, upload new registry file.
+	// if last update timestamp is the zero value, it means no registry file ye so will upload.
 	// otherwise, update registry file.
-	isUpdate := rf != nil
+	isUpdate := lastUpdate != common.Timestamp(0)
 
-	tempLocal := filepath.Join(os.TempDir(), fmt.Sprintf("registerfile_ul_%d", time.Now().UnixNano()))
+	tempLocal := filepath.Join(os.TempDir(), fmt.Sprintf("registerfile_ul_%d", time.Now().UTC().UnixNano()))
 
 	err = os.WriteFile(tempLocal, data, 0600)
 	if err != nil {
-		return errors.New("update_registry_file_failed", "Failed to create file locally for upload: "+err.Error())
+		return errors.New("update_registry_file_failed", "failed to create file locally for upload: "+err.Error())
 	}
 
 	err = a.fileStorer.StartChunkedUpload(os.TempDir(), tempLocal, a.registryFilePath, nil, isUpdate, false, "", false)
 	if err != nil {
-		return errors.New("update_registry_file_failed", "Failed to upload registry file: "+err.Error())
+		return errors.New("update_registry_file_failed", "failed to upload registry file: "+err.Error())
 	}
 
 	return nil
@@ -76,7 +74,7 @@ func (a *registryFileStore) Update(data []byte) error {
 func (a *registryFileStore) Get() ([]byte, common.Timestamp, error) {
 	rfLastUpdateTime, err := a.GetLastUpdateTimestamp()
 	if err != nil {
-		return nil, common.Timestamp(0), errors.New("get_registry_file_failed", "Failed to check existence of registry file: "+err.Error())
+		return nil, common.Timestamp(0), errors.New("get_registry_file_failed", "failed to check existence of registry file: "+err.Error())
 	}
 
 	// no registry file yet
@@ -86,22 +84,22 @@ func (a *registryFileStore) Get() ([]byte, common.Timestamp, error) {
 	}
 
 	// download registry file
-	tempLocal := filepath.Join(os.TempDir(), fmt.Sprintf("starred_dl_%d", time.Now().UnixNano()))
+	tempLocal := filepath.Join(os.TempDir(), fmt.Sprintf("starred_dl_%d", time.Now().UTC().UnixNano()))
 	cb := newRegistryFileCB()
 
 	err = a.fileStorer.DownloadFile(tempLocal, a.registryFilePath, cb)
 	if err != nil {
-		return nil, common.Timestamp(0), errors.New("get_registry_file_failed", "Failed to start download of registry file: "+err.Error())
+		return nil, common.Timestamp(0), errors.New("get_registry_file_failed", "failed to start download of registry file: "+err.Error())
 	}
 
 	<-cb.Wait() // wait for download to complete
 	if cb.err != nil {
-		return nil, common.Timestamp(0), errors.New("get_registry_file_failed", "Failed to download registry file: "+cb.err.Error())
+		return nil, common.Timestamp(0), errors.New("get_registry_file_failed", "failed to download registry file: "+cb.err.Error())
 	}
 
 	f, err := os.Open(tempLocal)
 	if err != nil {
-		return nil, common.Timestamp(0), errors.New("get_registry_file_failed", "Failed to open downloaded registry file: "+err.Error())
+		return nil, common.Timestamp(0), errors.New("get_registry_file_failed", "failed to open downloaded registry file: "+err.Error())
 	}
 
 	defer os.Remove(tempLocal)
@@ -109,7 +107,7 @@ func (a *registryFileStore) Get() ([]byte, common.Timestamp, error) {
 
 	bt, err := io.ReadAll(f)
 	if err != nil {
-		return nil, common.Timestamp(0), errors.New("get_registry_file_failed", "Failed to read downloaded registry file: "+err.Error())
+		return nil, common.Timestamp(0), errors.New("get_registry_file_failed", "failed to read downloaded registry file: "+err.Error())
 	}
 
 	return bt, rfLastUpdateTime, nil
@@ -118,41 +116,36 @@ func (a *registryFileStore) Get() ([]byte, common.Timestamp, error) {
 // GetLastUpdateTimestamp retrieves the last update timestamp of the registry file.
 // Returns 0 as timestamp when no registry file exist.
 func (a *registryFileStore) GetLastUpdateTimestamp() (common.Timestamp, error) {
-	rf, err := a.getRegistryFile()
+	lastUpdate, err := a.getRegistryFileLastUpdate()
 	if err != nil {
-		return common.Timestamp(0), errors.New("get_last_update_timestamp_failed", "Failed to check existence of registry file: "+err.Error())
+		return common.Timestamp(0), errors.New("get_last_update_timestamp_failed", "failed to get updated timestamp of registry file: "+err.Error())
 	}
 
-	// when no registry yet, return beginning of epoch as default last update timestamp.
-	if rf == nil {
-		return common.Timestamp(0), nil
-	}
-
-	lastUpdate, err := time.Parse(time.RFC3339, rf.UpdatedAt)
-	if err != nil {
-		return common.Timestamp(0), errors.New("get_last_update_timestamp_failed", "Failed to parse last updated timestamp of registry file: "+err.Error())
-	}
-
-	return common.Timestamp(lastUpdate.Unix()), nil
+	return lastUpdate, nil
 }
 
-func (a *registryFileStore) getRegistryFile() (*ListResult, error) {
+func (a *registryFileStore) getRegistryFileLastUpdate() (common.Timestamp, error) {
 	dir, err := a.fileStorer.ListDir(a.registryFilePath)
 	if err != nil {
-		return nil, err
+		return common.Timestamp(0), err
 	}
 
 	if dir == nil {
-		return nil, nil
+		return common.Timestamp(0), nil
 	}
 
 	for _, f := range dir.Children {
 		if f.Path == a.registryFilePath {
-			return f, nil
+			lastUpdate, err := time.Parse(time.RFC3339, f.UpdatedAt)
+			if err != nil {
+				return common.Timestamp(0), err
+			}
+
+			return common.Timestamp(lastUpdate.Unix()), nil
 		}
 	}
 
-	return nil, nil
+	return common.Timestamp(0), nil
 }
 
 var _ StatusCallback = &registerFileCB{}

@@ -41,7 +41,7 @@ func TestAllocation_UpdateStarredFiles(t *testing.T) {
 			inputPaths:     []string{"/abc.txt", "/def.txt"},
 			updateErr:      fmt.Errorf("update error"),
 			wantUpdateData: []byte("/abc.txt\n/def.txt"),
-			wantErr:        errors.New("update_starred_files_failed", "Failed to update registry file for starred files: update error"),
+			wantErr:        errors.New("update_starred_files_failed", "failed to update registry file for starred files: update error"),
 		},
 	} {
 		tt := tc
@@ -90,7 +90,7 @@ func TestAllocation_GetStarredFiles(t *testing.T) {
 		{
 			name:    "get throws error",
 			getErr:  fmt.Errorf("get error"),
-			wantErr: errors.New("get_starred_files_failed", "Failed to retrieve starred files: get error"),
+			wantErr: errors.New("get_starred_files_failed", "failed to retrieve starred files: get error"),
 		},
 	} {
 		tt := tc
@@ -132,7 +132,7 @@ func TestAllocation_GetStarredFilesLastUpdateTimestamp(t *testing.T) {
 		{
 			name:    "get throws error",
 			getErr:  fmt.Errorf("server error"),
-			wantErr: errors.New("get_starred_files_last_update_timestamp_failed", "Failed to get last update timestamp of registry file for starred files: server error"),
+			wantErr: errors.New("get_starred_files_last_update_timestamp_failed", "failed to get last update timestamp of registry file for starred files: server error"),
 		},
 	} {
 		tt := tc

@@ -24,7 +24,7 @@ func (a *Allocation) UpdateStarredFiles(paths []string) error {
 
 	err := starredFileRegistryManager(a).Update(data)
 	if err != nil {
-		return errors.New("update_starred_files_failed", "Failed to update registry file for starred files: "+err.Error())
+		return errors.New("update_starred_files_failed", "failed to update registry file for starred files: "+err.Error())
 	}
 
 	return nil
@@ -34,7 +34,7 @@ func (a *Allocation) UpdateStarredFiles(paths []string) error {
 func (a *Allocation) GetStarredFiles() ([]string, common.Timestamp, error) {
 	data, lastUpdateTime, err := starredFileRegistryManager(a).Get()
 	if err != nil {
-		return nil, common.Timestamp(0), errors.New("get_starred_files_failed", "Failed to retrieve starred files: "+err.Error())
+		return nil, common.Timestamp(0), errors.New("get_starred_files_failed", "failed to retrieve starred files: "+err.Error())
 	}
 
 	paths := []string{}
@@ -51,7 +51,7 @@ func (a *Allocation) GetStarredFiles() ([]string, common.Timestamp, error) {
 func (a *Allocation) GetStarredFilesLastUpdateTimestamp() (common.Timestamp, error) {
 	lastUpdateTime, err := starredFileRegistryManager(a).GetLastUpdateTimestamp()
 	if err != nil {
-		return common.Timestamp(0), errors.New("get_starred_files_last_update_timestamp_failed", "Failed to get last update timestamp of registry file for starred files: "+err.Error())
+		return common.Timestamp(0), errors.New("get_starred_files_last_update_timestamp_failed", "failed to get last update timestamp of registry file for starred files: "+err.Error())
 	}
 
 	return lastUpdateTime, nil
