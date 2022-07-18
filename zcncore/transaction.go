@@ -163,8 +163,8 @@ type TransactionScheme interface {
 	MinerScUpdateGlobals(*InputMap) error
 	MinerSCKillMiner(id string) error
 	MinerSCKillSharder(id string) error
-	MinerSCShutDownMiner() error
-	MinerSCShutDownSharder() error
+	MinerSCShutDownMiner(id string) error
+	MinerSCShutDownSharder(id string) error
 	// Storage SC
 
 	StorageSCCollectReward(string, string, Provider) error
@@ -184,8 +184,8 @@ type TransactionScheme interface {
 	StorageScUpdateConfig(*InputMap) error
 	KillBlobber(id string, fee uint64) error
 	KillValidator(id string, fee uint64) error
-	ShutDownBlobber(fee uint64) error
-	ShutDownValidator(fee uint64) error
+	ShutDownBlobber(id string, fee uint64) error
+	ShutDownValidator(id string, fee uint64) error
 
 	// Faucet
 
@@ -1331,9 +1331,12 @@ func (ta *Transaction) MinerSCKillSharder(id string) error {
 	return nil
 }
 
-func (ta *Transaction) MinerSCShutDownMiner() error {
+func (ta *Transaction) MinerSCShutDownMiner(id string) error {
+	pid := ProviderId{
+		ID: id,
+	}
 	err := ta.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_SHUT_DOWN_MINER, nil, 0)
+		transaction.MINERSC_SHUT_DOWN_MINER, pid, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err
@@ -1342,9 +1345,12 @@ func (ta *Transaction) MinerSCShutDownMiner() error {
 	return nil
 }
 
-func (ta *Transaction) MinerSCShutDownSharder() error {
+func (ta *Transaction) MinerSCShutDownSharder(id string) error {
+	pid := ProviderId{
+		ID: id,
+	}
 	err := ta.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_SHUT_DOWN_SHARDER, nil, 0)
+		transaction.MINERSC_SHUT_DOWN_SHARDER, pid, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err
@@ -1871,10 +1877,13 @@ func (t *Transaction) KillValidator(id string, fee uint64) error {
 	return err
 }
 
-func (t *Transaction) ShutDownBlobber(fee uint64) error {
+func (t *Transaction) ShutDownBlobber(id string, fee uint64) error {
 	var err error
+	pid := ProviderId{
+		ID: id,
+	}
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_SHUT_DOWN_BLOBBER, nil, 0)
+		transaction.STORAGESC_SHUT_DOWN_BLOBBER, pid, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err
@@ -1887,10 +1896,13 @@ func (t *Transaction) ShutDownBlobber(fee uint64) error {
 	return err
 }
 
-func (t *Transaction) ShutDownValidator(fee uint64) error {
+func (t *Transaction) ShutDownValidator(id string, fee uint64) error {
 	var err error
+	pid := ProviderId{
+		ID: id,
+	}
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_SHUT_DOWN_VALIDATOR, nil, 0)
+		transaction.STORAGESC_SHUT_DOWN_VALIDATOR, pid, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err

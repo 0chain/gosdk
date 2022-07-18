@@ -369,9 +369,12 @@ func (ta *TransactionWithAuth) MinerSCKillSharder(id string) error {
 	return nil
 }
 
-func (ta *TransactionWithAuth) MinerSCShutDownMiner() error {
+func (ta *TransactionWithAuth) MinerSCShutDownMiner(id string) error {
+	pid := ProviderId{
+		ID: id,
+	}
 	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_SHUT_DOWN_MINER, nil, 0)
+		transaction.MINERSC_SHUT_DOWN_MINER, pid, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err
@@ -380,9 +383,12 @@ func (ta *TransactionWithAuth) MinerSCShutDownMiner() error {
 	return nil
 }
 
-func (ta *TransactionWithAuth) MinerSCShutDownSharder() error {
+func (ta *TransactionWithAuth) MinerSCShutDownSharder(id string) error {
+	pid := ProviderId{
+		ID: id,
+	}
 	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_SHUT_DOWN_SHARDER, nil, 0)
+		transaction.MINERSC_SHUT_DOWN_SHARDER, pid, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err
@@ -741,10 +747,13 @@ func (ta *TransactionWithAuth) KillValidator(id string, fee uint64) error {
 	return err
 }
 
-func (ta *TransactionWithAuth) ShutDownBlobber(fee uint64) error {
+func (ta *TransactionWithAuth) ShutDownBlobber(id string, fee uint64) error {
 	var err error
+	pid := ProviderId{
+		ID: id,
+	}
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_SHUT_DOWN_BLOBBER, nil, 0)
+		transaction.STORAGESC_SHUT_DOWN_BLOBBER, pid, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err
@@ -757,10 +766,13 @@ func (ta *TransactionWithAuth) ShutDownBlobber(fee uint64) error {
 	return err
 }
 
-func (ta *TransactionWithAuth) ShutDownValidator(fee uint64) error {
+func (ta *TransactionWithAuth) ShutDownValidator(id string, fee uint64) error {
 	var err error
+	pid := ProviderId{
+		ID: id,
+	}
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_SHUT_DOWN_VALIDATOR, nil, 0)
+		transaction.STORAGESC_SHUT_DOWN_VALIDATOR, pid, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err

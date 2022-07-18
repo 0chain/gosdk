@@ -1415,25 +1415,31 @@ func KillValidator(id string, fee uint64) (nonce int64, err error) {
 	return
 }
 
-func ShutDownBlobber(fee uint64) (nonce int64, err error) {
+func ShutDownBlobber(id string, fee uint64) (nonce int64, err error) {
+	pid := ProviderId{
+		ID: id,
+	}
 	if !sdkInitialized {
 		return 0, sdkNotInitialized
 	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      "shut-down-blobber",
-		InputArgs: nil,
+		InputArgs: pid,
 	}
 	_, _, nonce, err = smartContractTxn(sn)
 	return
 }
 
-func ShutDownValidator(fee uint64) (nonce int64, err error) {
+func ShutDownValidator(id string, fee uint64) (nonce int64, err error) {
+	pid := ProviderId{
+		ID: id,
+	}
 	if !sdkInitialized {
 		return 0, sdkNotInitialized
 	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      "shut-down-validator",
-		InputArgs: nil,
+		InputArgs: pid,
 	}
 	_, _, nonce, err = smartContractTxn(sn)
 	return
