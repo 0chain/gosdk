@@ -288,9 +288,7 @@ type StakePoolDelegatePoolInfo struct {
 	TotalPenalty common.Balance `json:"total_penalty"`
 	Status       string         `json:"status"`
 	RoundCreated int64          `json:"round_created"`
-
-	LockPeriod time.Duration `json:"lock_period"`
-	LockedAt   time.Time     `json:"locked_at"`
+	StakedAt     time.Time      `json:"staked_at"`
 }
 
 // StakePool full info.
@@ -400,13 +398,12 @@ func GetTotalStoredData() (map[string]int64, error) {
 }
 
 type stakePoolRequest struct {
-	BlobberID  string        `json:"blobber_id,omitempty"`
-	PoolID     string        `json:"pool_id,omitempty"`
-	LockPeriod time.Duration `json:"lock_period"`
+	BlobberID string `json:"blobber_id,omitempty"`
+	PoolID    string `json:"pool_id,omitempty"`
 }
 
 // StakePoolLock locks tokens lack in stake pool
-func StakePoolLock(blobberID string, value, fee uint64, lockPeriod time.Duration) (poolID string, nonce int64, err error) {
+func StakePoolLock(blobberID string, value, fee uint64) (poolID string, nonce int64, err error) {
 	if !sdkInitialized {
 		return poolID, 0, sdkNotInitialized
 	}
@@ -416,7 +413,6 @@ func StakePoolLock(blobberID string, value, fee uint64, lockPeriod time.Duration
 
 	var spr stakePoolRequest
 	spr.BlobberID = blobberID
-	spr.LockPeriod = lockPeriod
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_STAKE_POOL_LOCK,
 		InputArgs: &spr,
