@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/0chain/errors"
@@ -514,41 +515,41 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	numSharders := len(blockchain.GetSharders())
 	sharders := blockchain.GetSharders()
 	responses := make(map[int]int)
+	mu := &sync.Mutex{}
 	entityResult := make(map[string][]byte)
 	var retObj []byte
 	maxCount := 0
+	wg := sync.WaitGroup{}
 	for _, sharder := range util.Shuffle(sharders) {
-		urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
-		urlObj, _ := url.Parse(urlString)
-		q := urlObj.Query()
-		for k, v := range params {
-			q.Add(k, v)
-		}
-		urlObj.RawQuery = q.Encode()
-		client := &http.Client{Transport: DefaultTransport}
-
-		response, err := client.Get(urlObj.String())
-		if err != nil {
-			continue
-		} else {
-			defer response.Body.Close()
-			entityBytes, err := ioutil.ReadAll(response.Body)
-			if err != nil {
-				continue
+		wg.Add(1)
+		go func(sharder string) {
+			defer wg.Done()
+			urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
+			urlObj, _ := url.Parse(urlString)
+			q := urlObj.Query()
+			for k, v := range params {
+				q.Add(k, v)
 			}
-			responses[response.StatusCode]++
-			if responses[response.StatusCode] > maxCount {
-				maxCount = responses[response.StatusCode]
-				retObj = entityBytes
-			}
-			entityResult[sharder] = retObj
-		}
+			urlObj.RawQuery = q.Encode()
+			client := &http.Client{Transport: DefaultTransport}
 
-		var rate = float32(maxCount*100) / float32(numSharders)
-		if rate >= consensusThresh {
-			break // got it
-		}
+			response, err := client.Get(urlObj.String())
+			if err == nil {
+				defer response.Body.Close()
+				entityBytes, _ := ioutil.ReadAll(response.Body)
+
+				mu.Lock()
+				responses[response.StatusCode]++
+				if responses[response.StatusCode] > maxCount {
+					maxCount = responses[response.StatusCode]
+					retObj = entityBytes
+				}
+				entityResult[sharder] = retObj
+				mu.Unlock()
+			}
+		}(sharder)
 	}
+	wg.Wait()
 
 	var err error
 	rate := float32(maxCount*100) / float32(numSharders)
