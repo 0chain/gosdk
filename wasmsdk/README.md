@@ -38,11 +38,21 @@ set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWal
 **Output**:
 > N/A
 
+
 ### zcn.sdk.setWallet
 set wallet on go
 
 **Input**:
 > clientID, publicKey string
+
+**Output**:
+> N/A
+
+### zcn.sdk.setZBoxHost
+set 0box host for creating free allocation.
+
+**Input**:
+> host string
 
 **Output**:
 > N/A
@@ -93,6 +103,14 @@ commit folder change to blockchain
 **Output**:
 > [transaction.Transaction](https://github.com/0chain/gosdk/blob/e1e35e084d5c17d6bf233bbe8ac9c91701bdd8fd/core/transaction/entity.go#L32)
 
+
+### zcn.sdk.createFreeAllocation
+create free allocation 
+**Input**:
+> N/A
+
+**Output**:
+> string
 
 
 ## Blobber methods

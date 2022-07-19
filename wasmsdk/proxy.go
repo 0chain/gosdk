@@ -102,6 +102,7 @@ func main() {
 				//sdk
 				"init":                  Init,
 				"setWallet":             SetWallet,
+				"setZBoxHost":           SetZBoxHost,
 				"getEncryptedPublicKey": GetEncryptedPublicKey,
 				"hideLogs":              hideLogs,
 				"showLogs":              showLogs,
@@ -123,6 +124,10 @@ func main() {
 				"play":           Play,
 				"stop":           Stop,
 				"getNextSegment": GetNextSegment,
+
+				//allocation
+				"createAllocation":     CreateAllocation,
+				"createFreeAllocation": CreateFreeAllocation,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")

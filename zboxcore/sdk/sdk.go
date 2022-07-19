@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -917,6 +918,8 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange,
 	lock uint64, preferredBlobbers []string) (hash string, nonce int64, err error) {
+
+	fmt.Println("createAllocation:", name, datashards, parityshards, size, expiry, readPrice, writePrice, lock)
 
 	if lock < 0 {
 		return "", 0, errors.New("", "invalid value for lock")
