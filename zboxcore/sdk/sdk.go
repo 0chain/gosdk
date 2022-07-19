@@ -1012,10 +1012,6 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 	readPrice, writePrice PriceRange,
 	lock uint64, preferredBlobbers []string) (hash string, nonce int64, err error) {
 
-	if lock < 0 {
-		return "", 0, errors.New("", "invalid value for lock")
-	}
-
 	preferred, err := getPreferredBlobberIds(preferredBlobbers)
 	if err != nil {
 		return "", 0, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
@@ -1173,10 +1169,6 @@ func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 		return "", 0, sdkNotInitialized
 	}
 
-	if value < 0 {
-		return "", 0, errors.New("", "invalid value for lock")
-	}
-
 	var input = map[string]interface{}{
 		"recipient_public_key": client.GetClientPublicKey(),
 		"marker":               marker,
@@ -1208,9 +1200,6 @@ func UpdateAllocation(name string,
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
-	if lock < 0 {
-		return "", 0, errors.New("", "invalid value for lock")
-	}
 
 	updateAllocationRequest := make(map[string]interface{})
 	updateAllocationRequest["name"] = name
@@ -1234,9 +1223,6 @@ func UpdateAllocation(name string,
 func CreateFreeUpdateAllocation(marker, allocationId string, value uint64) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
-	}
-	if value < 0 {
-		return "", 0, errors.New("", "invalid value for lock")
 	}
 
 	var input = map[string]interface{}{
@@ -1396,7 +1382,7 @@ func KillBlobber(id string, fee uint64) (nonce int64, err error) {
 		Name:      "kill-blobber",
 		InputArgs: pid,
 	}
-	_, _, nonce, err = smartContractTxn(sn)
+	_, _, nonce, err = smartContractTxnValueFee(sn, 0, fee)
 	return
 }
 
@@ -1411,7 +1397,7 @@ func KillValidator(id string, fee uint64) (nonce int64, err error) {
 		Name:      "kill-validator",
 		InputArgs: pid,
 	}
-	_, _, nonce, err = smartContractTxn(sn)
+	_, _, nonce, err = smartContractTxnValueFee(sn, 0, fee)
 	return
 }
 
@@ -1426,7 +1412,7 @@ func ShutDownBlobber(id string, fee uint64) (nonce int64, err error) {
 		Name:      "shut-down-blobber",
 		InputArgs: pid,
 	}
-	_, _, nonce, err = smartContractTxn(sn)
+	_, _, nonce, err = smartContractTxnValueFee(sn, 0, fee)
 	return
 }
 
@@ -1441,7 +1427,7 @@ func ShutDownValidator(id string, fee uint64) (nonce int64, err error) {
 		Name:      "shut-down-validator",
 		InputArgs: pid,
 	}
-	_, _, nonce, err = smartContractTxn(sn)
+	_, _, nonce, err = smartContractTxnValueFee(sn, 0, fee)
 	return
 }
 
