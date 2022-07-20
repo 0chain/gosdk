@@ -749,29 +749,6 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 	return
 }
 
-func GetBlobberStatus(blobberID string) (blob *Blobber, err error) {
-	if !sdkInitialized {
-		return nil, sdkNotInitialized
-	}
-	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(
-		STORAGE_SCADDRESS,
-		"/getBlobber",
-		map[string]string{"id": blobberID},
-		nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "requesting blobber:")
-	}
-	if len(b) == 0 {
-		return nil, errors.New("", "empty response from sharders")
-	}
-	blob = new(Blobber)
-	if err = json.Unmarshal(b, blob); err != nil {
-		return nil, errors.Wrap(err, "decoding response:")
-	}
-	return
-}
-
 func StorageGetBlobberStatus(id string) (*ProviderStatus, error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
