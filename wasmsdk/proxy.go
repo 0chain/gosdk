@@ -131,7 +131,6 @@ func main() {
 
 				//allocation
 				"createAllocation":      createAllocation,
-				"createFreeAllocation":  CreateFreeAllocation,
 				"getAllocationBlobbers": getAllocationBlobbers,
 
 				//smartcontract

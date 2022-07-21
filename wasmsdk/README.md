@@ -104,13 +104,24 @@ commit folder change to blockchain
 > [transaction.Transaction](https://github.com/0chain/gosdk/blob/e1e35e084d5c17d6bf233bbe8ac9c91701bdd8fd/core/transaction/entity.go#L32)
 
 
-### zcn.sdk.createFreeAllocation
-create free allocation 
+### zcn.sdk.getAllocationBlobbers
+get blobbers with filters for creating allocation
 **Input**:
-> N/A
+> referredBlobberURLs []string,
+	dataShards, parityShards int, size, expiry int64,
+	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64
 
 **Output**:
-> string
+> string array
+
+### zcn.sdk.createAllocation
+create an allocation 
+**Input**:
+> name string, datashards, parityshards int, size, expiry int64,
+	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64
+
+**Output**:
+> [transaction.Transaction](https://github.com/0chain/gosdk/blob/e1e35e084d5c17d6bf233bbe8ac9c91701bdd8fd/core/transaction/entity.go#L32)
 
 
 ## Blobber methods
