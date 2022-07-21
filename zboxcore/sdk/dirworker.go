@@ -109,7 +109,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 		}
 
 		if !req.isConsensusOk() {
-			return errors.New("Delete failed: Commit consensus failed")
+			return errors.New("Directory creation failed due consensus not met")
 		}
 	}
 	return nil
