@@ -949,16 +949,30 @@ func GetTransactions(toClient, fromClient, block_hash, sort string, limit, offse
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	l := strconv.Itoa(limit)
-	o := strconv.Itoa(limit)
-	var u = withParams(STORAGESC_GET_TRANSACTIONS, Params{
-		"block_hash":   block_hash,
-		"client_id":    fromClient,
-		"limit":        l,
-		"to_client_id": toClient,
-		"offset":       o,
-		"sort":         sort,
-	})
+
+	params := Params{}
+	if toClient != "" {
+		params["to_client_id"] = toClient
+	}
+	if fromClient != "" {
+		params["client_id"] = fromClient
+	}
+	if block_hash != "" {
+		params["block_hash"] = block_hash
+	}
+	if sort != "" {
+		params["sort"] = sort
+	}
+	if limit != 0 {
+		l := strconv.Itoa(limit)
+		params["limit"] = l
+	}
+	if offset != 0 {
+		o := strconv.Itoa(offset)
+		params["offset"] = o
+	}
+
+	var u = withParams(STORAGESC_GET_TRANSACTIONS, params)
 	go getInfoFromSharders(u, OpStorageSCGetTransactions, cb)
 	return
 }
