@@ -93,6 +93,7 @@ const (
 	STORAGESC_GET_STAKE_POOL_USER_INFO = STORAGESC_PFX + "/getUserStakePoolStat"
 	STORAGESC_GET_BLOBBERS             = STORAGESC_PFX + "/getblobbers"
 	STORAGESC_GET_BLOBBER              = STORAGESC_PFX + "/getBlobber"
+	STORAGESC_GET_TRANSACTIONS         = STORAGESC_PFX + "/transactions"
 	STORAGESC_GET_WRITE_POOL_INFO      = STORAGESC_PFX + "/getWritePoolStat"
 	STORAGE_GET_TOTAL_STORED_DATA      = STORAGESC_PFX + "/total-stored-data"
 )
@@ -156,6 +157,7 @@ const (
 	OpStorageSCGetStakePoolInfo
 	OpStorageSCGetBlobbers
 	OpStorageSCGetBlobber
+	OpStorageSCGetTransactions
 	OpStorageSCGetWritePoolInfo
 	OpZCNSCGetGlobalConfig
 	OpZCNSCGetAuthorizer
@@ -1239,6 +1241,29 @@ func GetBlobber(blobberID string, cb GetInfoCallback) (err error) {
 		"blobber_id": blobberID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetBlobber, cb)
+	return
+}
+
+// GetTransactions obtains blobber information.
+// block_hash	query	string	string				restrict to transactions in indicated block
+// client_id	query	string	string				restrict to transactions sent by the specified client
+// limit	query	string	string				limit
+// offset	query	string	string				offset
+// sort	query	string	string				desc or asc
+// to_client_id	query	string	string				restrict to transactions sent to a specified client
+func GetTransactions(toClient, fromClient, block_hash, limit, offset, sort string, cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	var u = WithParams(STORAGESC_GET_TRANSACTIONS, Params{
+		"block_hash":   block_hash,
+		"client_id":    fromClient,
+		"limit":        limit,
+		"to_client_id": toClient,
+		"offset":       offset,
+		"sort":         sort,
+	})
+	go getInfoFromSharders(u, OpStorageSCGetTransactions, cb)
 	return
 }
 
