@@ -716,6 +716,29 @@ func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType
 	return oTreeReq.GetRefs()
 }
 
+func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit int) (*RecentlyAddedRefResult, error) {
+	if !a.isInitialized() {
+		return nil, notInitialized
+	}
+
+	offset := int64(page-1) * int64(pageLimit)
+	req := &RecentlyAddedRefRequest{
+		allocationID: a.ID,
+		allocationTx: a.Tx,
+		blobbers:     a.Blobbers,
+		offset:       offset,
+		fromDate:     fromDate,
+		ctx:          a.ctx,
+		wg:           &sync.WaitGroup{},
+		pageLimit:    pageLimit,
+		Consensus: Consensus{
+			fullconsensus:   a.fullconsensus,
+			consensusThresh: float32(a.DataShards) / a.fullconsensus,
+		},
+	}
+	return req.GetRecentlyAddedRefs()
+}
+
 func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized

@@ -54,6 +54,7 @@ const (
 	FILE_STATS_ENDPOINT      = "/v1/file/stats/"
 	OBJECT_TREE_ENDPOINT     = "/v1/file/objecttree/"
 	REFS_ENDPOINT            = "/v1/file/refs/"
+	RECENT_REFS_ENDPOINT     = "/v1/file/recent-refs/"
 	COMMIT_META_TXN_ENDPOINT = "/v1/file/commitmetatxn/"
 	COLLABORATOR_ENDPOINT    = "/v1/file/collaborator/"
 	CALCULATE_HASH_ENDPOINT  = "/v1/file/calculatehash/"
@@ -254,6 +255,31 @@ func NewRefsRequest(baseUrl, allocationID, path, offsetPath, updatedDate, offset
 	}
 
 	if err := setClientInfoWithSign(req, allocationID); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+func NewRecentlyAddedRefsRequest(bUrl, allocID string, fromDate, offset int64, pageLimit int) (*http.Request, error) {
+	nUrl, err := url.Parse(bUrl)
+	if err != nil {
+		return nil, err
+	}
+	nUrl.Path += RECENT_REFS_ENDPOINT + allocID
+
+	params := url.Values{}
+	params.Add("pageLimit", strconv.Itoa(pageLimit))
+	params.Add("offset", strconv.FormatInt(offset, 10))
+	params.Add("from_date", strconv.FormatInt(fromDate, 10))
+
+	nUrl.RawQuery = params.Encode()
+	req, err := http.NewRequest(http.MethodGet, nUrl.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = setClientInfoWithSign(req, allocID); err != nil {
 		return nil, err
 	}
 
