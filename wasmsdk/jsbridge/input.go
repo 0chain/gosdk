@@ -197,14 +197,15 @@ func jsValueToFloat64(jv js.Value) reflect.Value {
 func jsValueToStringSlice(jv js.Value) reflect.Value {
 	var list []string
 
-	if js.Global().Get("Array").Call("isArray", jv).Bool() {
-		list = make([]string, jv.Length())
-		for i := 0; i < len(list); i++ {
-			it := jv.Index(i)
-			if it.Truthy() {
-				list[i] = it.String()
+	if jv.Truthy() {
+		if js.Global().Get("Array").Call("isArray", jv).Bool() {
+			list = make([]string, jv.Length())
+			for i := 0; i < len(list); i++ {
+				it := jv.Index(i)
+				if it.Truthy() {
+					list[i] = it.String()
+				}
 			}
-
 		}
 	}
 
