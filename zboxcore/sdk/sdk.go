@@ -254,6 +254,7 @@ type StakePoolDelegatePoolInfo struct {
 	TotalPenalty common.Balance `json:"total_penalty"`
 	Status       string         `json:"status"`
 	RoundCreated int64          `json:"round_created"`
+	StakedAt     time.Time      `json:"staked_at"`
 }
 
 // StakePool full info.
