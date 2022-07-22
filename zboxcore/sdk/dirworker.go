@@ -115,6 +115,49 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 	return nil
 }
 
+func (req *DirRequest) commitRequest() error {
+	req.consensus = 0
+	wg := &sync.WaitGroup{}
+	activeBlobbersNum := bits.OnesCount32(req.dirMask)
+	wg.Add(activeBlobbersNum)
+
+	commitReqs := make([]*CommitRequest, activeBlobbersNum)
+	for i, blobber := range zboxutil.GetActiveBlobbers(req.dirMask, req.blobbers) {
+		commitReq := &CommitRequest{}
+		commitReq.allocationID = req.allocationID
+		commitReq.allocationTx = req.allocationTx
+		commitReq.blobber = blobber
+
+		newChange := &allocationchange.DirCreateChange{}
+		newChange.RemotePath = req.remotePath
+
+		commitReq.changes = append(commitReq.changes, newChange)
+		commitReq.connectionID = req.connectionID
+		commitReq.wg = wg
+		commitReqs[i] = commitReq
+		go AddCommitRequest(commitReq)
+	}
+	wg.Wait()
+
+	for _, commitReq := range commitReqs {
+		if commitReq.result != nil {
+			if commitReq.result.Success {
+				l.Logger.Info("Commit success", commitReq.blobber.Baseurl)
+				req.consensus++
+			} else {
+				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
+			}
+		} else {
+			l.Logger.Info("Commit result not set", commitReq.blobber.Baseurl)
+		}
+
+		if !req.isConsensusOk() {
+			return errors.New("directory creation failed due consensus not met")
+		}
+	}
+	return nil
+}
+
 func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, blobberIdx int) error {
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
