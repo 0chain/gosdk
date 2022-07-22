@@ -59,17 +59,17 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 	req.wg.Wait()
 
 	if !req.isConsensusOk() {
-		return errors.New("Directory creation failed due to consensus not met")
+		return errors.New("directory creation failed due to consensus not met")
 	}
 
 	writeMarkerMU, err := CreateWriteMarkerMutex(client.GetClient(), a)
 	if err != nil {
-		return fmt.Errorf("Directory creation failed. Err: %s", err.Error())
+		return fmt.Errorf("directory creation failed. Err: %s", err.Error())
 	}
 	err = writeMarkerMU.Lock(context.TODO(), req.connectionID)
 	defer writeMarkerMU.Unlock(context.TODO(), req.connectionID) //nolint: errcheck
 	if err != nil {
-		return fmt.Errorf("Directory creation failed. Err: %s", err.Error())
+		return fmt.Errorf("directory creation failed. Err: %s", err.Error())
 	}
 
 	req.consensus = 0
@@ -109,7 +109,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 		}
 
 		if !req.isConsensusOk() {
-			return errors.New("Directory creation failed due consensus not met")
+			return errors.New("directory creation failed due consensus not met")
 		}
 	}
 	return nil
