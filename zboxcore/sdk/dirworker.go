@@ -72,47 +72,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 		return fmt.Errorf("directory creation failed. Err: %s", err.Error())
 	}
 
-	req.consensus = 0
-	wg := &sync.WaitGroup{}
-	okBlobbers := bits.OnesCount32(req.dirMask)
-	wg.Add(okBlobbers)
-	commitReqs := make([]*CommitRequest, okBlobbers)
-	var c, pos int
-	for i := req.dirMask; i != 0; i &= ^(1 << pos) {
-		pos = bits.TrailingZeros32(i)
-		commitReq := &CommitRequest{}
-		commitReq.allocationID = req.allocationID
-		commitReq.allocationTx = req.allocationTx
-		commitReq.blobber = req.blobbers[pos]
-
-		newChange := &allocationchange.DirCreateChange{}
-		newChange.RemotePath = req.remotePath
-
-		commitReq.changes = append(commitReq.changes, newChange)
-		commitReq.connectionID = req.connectionID
-		commitReq.wg = wg
-		commitReqs[c] = commitReq
-		go AddCommitRequest(commitReq)
-		c++
-	}
-	wg.Wait()
-	for _, commitReq := range commitReqs {
-		if commitReq.result != nil {
-			if commitReq.result.Success {
-				l.Logger.Info("Commit success", commitReq.blobber.Baseurl)
-				req.consensus++
-			} else {
-				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
-			}
-		} else {
-			l.Logger.Info("Commit result not set", commitReq.blobber.Baseurl)
-		}
-
-		if !req.isConsensusOk() {
-			return errors.New("directory creation failed due consensus not met")
-		}
-	}
-	return nil
+	return req.commitRequest()
 }
 
 func (req *DirRequest) commitRequest() error {
