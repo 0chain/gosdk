@@ -74,7 +74,7 @@ func (t *Transaction) ExecuteSmartContract(ctx context.Context, address, funcNam
 	val uint64) (string, error) {
 	const errCode = "transaction_send"
 
-	err := t.scheme.ExecuteSmartContract(address, funcName, input, val)
+	_, err := t.scheme.ExecuteSmartContract(address, funcName, input, val)
 	t.Hash = t.scheme.GetTransactionHash()
 
 	if err != nil {

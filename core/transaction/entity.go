@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -294,12 +293,7 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 		"Access-Control-Allow-Origin": "*",
 	}
 
-	transport := &http.Transport{
-		Dial: (&net.Dialer{
-			Timeout: resty.DefaultDialTimeout,
-		}).Dial,
-		TLSHandshakeTimeout: resty.DefaultDialTimeout,
-	}
+	transport := createTransport(resty.DefaultDialTimeout)
 
 	options := []resty.Option{
 		resty.WithTimeout(resty.DefaultRequestTimeout),
