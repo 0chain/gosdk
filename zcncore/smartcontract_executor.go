@@ -3,29 +3,32 @@
 
 package zcncore
 
+import "github.com/0chain/gosdk/core/transaction"
+
 type SmartContractExecutor interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
-	ExecuteSmartContract(address, methodName string, input interface{}, val uint64) error
+	ExecuteSmartContract(address, methodName string, input interface{}, val uint64) (*transaction.Transaction, error)
 }
 
-func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val uint64) error {
+func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val uint64) (*transaction.Transaction, error) {
 	err := t.createSmartContractTxn(address, methodName, input, val)
 	if err != nil {
-		return err
+		return nil, err
 	}
+
 	go func() {
 		t.setNonceAndSubmit()
 	}()
-	return nil
+	return t.txn, nil
 }
 
-func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, input interface{}, val uint64) error {
+func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, input interface{}, val uint64) (*transaction.Transaction, error) {
 	err := ta.t.createSmartContractTxn(address, methodName, input, val)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	go func() {
 		ta.submitTxn()
 	}()
-	return nil
+	return ta.t.txn, nil
 }

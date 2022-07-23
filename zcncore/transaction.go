@@ -214,7 +214,7 @@ func SignWith0Wallet(hash string, w *zcncrypto.Wallet) (string, error) {
 	return sigScheme.Sign(hash)
 }
 
-func signFn(hash string) (string, error) {
+var SignFn = func(hash string) (string, error) {
 	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 	sigScheme.SetPrivateKey(_config.wallet.Keys[0].PrivateKey)
 	return sigScheme.Sign(hash)
@@ -317,7 +317,7 @@ func (t *Transaction) submitTxn() {
 
 	// If Signature is not passed compute signature
 	if t.txn.Signature == "" {
-		err := t.txn.ComputeHashAndSign(signFn)
+		err := t.txn.ComputeHashAndSign(SignFn)
 		if err != nil {
 			t.completeTxn(StatusError, "", err)
 			transaction.Cache.Evict(t.txn.ClientID)
