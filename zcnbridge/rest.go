@@ -53,6 +53,8 @@ func getAuthorizers() ([]*AuthorizerNode, error) {
 		err         error
 	)
 
+	cb.Begin()
+
 	if err = GetAuthorizers(cb); err != nil {
 		return nil, err
 	}
