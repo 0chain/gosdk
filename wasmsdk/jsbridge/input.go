@@ -72,6 +72,8 @@ func (b *InputBuilder) Build() (InputBinder, error) {
 			b.binders[i] = withRecover(i, jsValueToInt32)
 		case *int64:
 			b.binders[i] = withRecover(i, jsValueToInt64)
+		case *uint64:
+			b.binders[i] = withRecover(i, jsValueToUInt64)
 		case *float32:
 			b.binders[i] = withRecover(i, jsValueToFloat32)
 		case *float64:
@@ -156,6 +158,15 @@ func jsValueToInt64(jv js.Value) reflect.Value {
 	return reflect.ValueOf(int64(i))
 }
 
+func jsValueToUInt64(jv js.Value) reflect.Value {
+	i := 0
+	if jv.Truthy() {
+		i = jv.Int()
+	}
+
+	return reflect.ValueOf(uint64(i))
+}
+
 func jsValueToBool(jv js.Value) reflect.Value {
 	i := false
 	if jv.Truthy() {
@@ -186,14 +197,15 @@ func jsValueToFloat64(jv js.Value) reflect.Value {
 func jsValueToStringSlice(jv js.Value) reflect.Value {
 	var list []string
 
-	if js.Global().Get("Array").Call("isArray", jv).Bool() {
-		list = make([]string, jv.Length())
-		for i := 0; i < len(list); i++ {
-			it := jv.Index(i)
-			if it.Truthy() {
-				list[i] = it.String()
+	if jv.Truthy() {
+		if js.Global().Get("Array").Call("isArray", jv).Bool() {
+			list = make([]string, jv.Length())
+			for i := 0; i < len(list); i++ {
+				it := jv.Index(i)
+				if it.Truthy() {
+					list[i] = it.String()
+				}
 			}
-
 		}
 	}
 
