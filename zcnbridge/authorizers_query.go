@@ -60,7 +60,7 @@ func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereu
 	var (
 		totalWorkers = len(authorizers)
 		values       = u.Values{
-			"zchainBurnHash": []string{zchainBurnHash},
+			"hash": []string{zchainBurnHash},
 		}
 	)
 
@@ -122,9 +122,9 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 	var (
 		totalWorkers = len(authorizers)
 		values       = u.Values{
-			"eth_burn_hash": []string{ethBurnHash},
-			"address":       []string{wallet.ZCNSCSmartContractAddress},
-			"clientid":      []string{b.ID()},
+			"hash":     []string{ethBurnHash},
+			"address":  []string{wallet.ZCNSCSmartContractAddress},
+			"clientid": []string{b.ID()},
 		}
 	)
 
