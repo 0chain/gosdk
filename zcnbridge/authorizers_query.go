@@ -180,7 +180,6 @@ func queryAllAuthorizers(authorizers []*AuthorizerNode, handler *requestHandler)
 		responseChannel = make(responseChannelType, totalWorkers)
 	)
 	defer close(eventsChannel)
-	defer close(responseChannel)
 
 	var wg sync.WaitGroup
 
@@ -192,7 +191,10 @@ func queryAllAuthorizers(authorizers []*AuthorizerNode, handler *requestHandler)
 	go handleResponse(responseChannel, eventsChannel, &wg)
 
 	wg.Wait()
-	return <-eventsChannel
+	close(responseChannel)
+	results := <-eventsChannel
+
+	return results
 }
 
 func handleResponse(responseChannel responseChannelType, eventsChannel eventsChannelType, wg *sync.WaitGroup) {
