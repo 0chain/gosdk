@@ -70,7 +70,7 @@ func (zcn *ZCNStatus) OnVerifyComplete(t *zcncore.Transaction, status int) {
 }
 
 func (zcn *ZCNStatus) OnAuthComplete(_ *zcncore.Transaction, status int) {
-	Logger.Info("Authorization complete with status %v: ", status)
+	Logger.Info("Authorization complete with status: ", status)
 }
 
 func (zcn *ZCNStatus) OnWalletCreateComplete(status int, wallet string, err string) {
@@ -139,13 +139,11 @@ func (zcn *ZCNStatus) OnVoteComplete(status int, proposal string, err string) {
 
 //goland:noinspection ALL
 func PrintError(v ...interface{}) {
-	Logger.Error(os.Stderr)
 	fmt.Fprintln(os.Stderr, v...)
 }
 
 //goland:noinspection ALL
 func ExitWithError(v ...interface{}) {
-	Logger.Error(os.Stderr)
 	fmt.Fprintln(os.Stderr, v...)
 	os.Exit(1)
 }
