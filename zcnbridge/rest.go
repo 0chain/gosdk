@@ -45,10 +45,6 @@ type AuthorizerNode struct {
 
 // Rest endpoints
 
-func init() {
-	Logger.Init(defaultLogLevel, "0chain-zcnbridge-sdk")
-}
-
 // getAuthorizers returns authorizers from smart contract
 func getAuthorizers() ([]*AuthorizerNode, error) {
 	var (
