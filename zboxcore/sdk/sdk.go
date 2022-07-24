@@ -672,15 +672,18 @@ type Blobber struct {
 }
 
 type Validator struct {
-	ID             common.Key     `json:"validator_id"`
-	BaseURL        string         `json:"url"`
-	PublicKey      string         `json:"-"`
-	DelegateWallet string         `json:"delegate_wallet"`
-	MinStake       common.Balance `json:"min_stake"`
-	MaxStake       common.Balance `json:"max_stake"`
-	NumDelegates   int            `json:"num_delegates"`
-	ServiceCharge  float64        `json:"service_charge"`
-	TotalStake     int64          `json:"stake"`
+	ID              common.Key       `json:"validator_id"`
+	BaseURL         string           `json:"url"`
+	PublicKey       string           `json:"-"`
+	DelegateWallet  string           `json:"delegate_wallet"`
+	MinStake        common.Balance   `json:"min_stake"`
+	MaxStake        common.Balance   `json:"max_stake"`
+	NumDelegates    int              `json:"num_delegates"`
+	ServiceCharge   float64          `json:"service_charge"`
+	TotalStake      int64            `json:"stake"`
+	LastHealthCheck common.Timestamp `json:"last_health_check"`
+	IsShutDown      bool             `json:"is_shut_down"`
+	IsKilled        bool             `json:"is_killed"`
 }
 
 func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
