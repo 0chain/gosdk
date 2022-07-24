@@ -76,9 +76,14 @@ func GetAuthorizer(id string, cb zcncore.GetInfoCallback) (err error) {
 		return err
 	}
 
-	go http.MakeSCRestAPICall(zcncore.OpZCNSCGetAuthorizer, http.PathGetAuthorizer, http.Params{
-		"id": id,
-	}, cb)
+	go http.MakeSCRestAPICall(
+		zcncore.OpZCNSCGetAuthorizer,
+		http.PathGetAuthorizer,
+		http.Params{
+			"id": id,
+		},
+		cb,
+	)
 
 	return
 }
