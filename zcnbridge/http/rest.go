@@ -21,8 +21,7 @@ import (
 const (
 	// SCRestAPIPrefix represents base URL path to execute smart contract rest points.
 	SCRestAPIPrefix        = "v1/screst/"
-	SmartContractAddress   = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712e0`
-	RestPrefix             = SCRestAPIPrefix + SmartContractAddress
+	RestPrefix             = SCRestAPIPrefix + zcncore.ZCNSCSmartContractAddress
 	PathGetAuthorizerNodes = "/getAuthorizerNodes"
 	PathGetGlobalConfig    = "/getGlobalConfig"
 	PathGetAuthorizer      = "/getAuthorizer"
