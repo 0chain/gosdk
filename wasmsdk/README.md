@@ -38,11 +38,21 @@ set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWal
 **Output**:
 > N/A
 
+
 ### zcn.sdk.setWallet
 set wallet on go
 
 **Input**:
 > clientID, publicKey string
+
+**Output**:
+> N/A
+
+### zcn.sdk.setZBoxHost
+set 0box host for creating free allocation.
+
+**Input**:
+> host string
 
 **Output**:
 > N/A
@@ -73,7 +83,7 @@ commit file change to blockchain, and update to blobbers
    "client_id":"bec04d9120f56ef4198ad0b75b09e34dbcebd79d77807ff4badf2094c5198090",
    "public_key":"92e88784e6cd8dd2f5328177757704112daa0368f28d599bf76825b5a98fbb02c796358dfe566efeacb96a1108f8851b1b4763d06db44c715e8ac80867322000",
    "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
-   "transaction_data":"{\"CrudType\":\"Delete\",\"MetaData\":{\"Name\":\"scan4.png\",\"Type\":\"f\",\"Path\":\"/scan4.png\",\"LookupHash\":\"507a75dfb031dc3e888be1ffdbd51bb3b520fd5b4df46dbaa660040f8d3494ed\",\"Hash\":\"adab389e89121db0ab94a2b2137a28647851bde2827304a779784017b7c3dca5\",\"MimeType\":\"image/png\",\"Size\":14554,\"ActualFileSize\":14554,\"ActualNumBlocks\":1,\"EncryptedKey\":\"\",\"CommitMetaTxns\":[{\"ref_id\":66,\"txn_id\":\"c81c4772a9ce9e5a1f1c2398ea696be26e3b0e92658920593a79f96489afe395\",\"created_at\":\"2021-12-09T02":"18":15.767812Z\"}],"Collaborators":[],\"Attributes\":{}}}",
+   "transaction_data":"{\"CrudType\":\"Delete\",\"MetaData\":{\"Name\":\"scan4.png\",\"Type\":\"f\",\"Path\":\"/scan4.png\",\"LookupHash\":\"507a75dfb031dc3e888be1ffdbd51bb3b520fd5b4df46dbaa660040f8d3494ed\",\"Hash\":\"adab389e89121db0ab94a2b2137a28647851bde2827304a779784017b7c3dca5\",\"MimeType\":\"image/png\",\"Size\":14554,\"ActualFileSize\":14554,\"ActualNumBlocks\":1,\"EncryptedKey\":\"\",\"CommitMetaTxns\":[{\"ref_id\":66,\"txn_id\":\"c81c4772a9ce9e5a1f1c2398ea696be26e3b0e92658920593a79f96489afe395\",\"created_at\":\"2021-12-09T02":"18":15.767812Z\"}],"Collaborators":[]}}",
    "transaction_value":0,
    "signature":"313fc544caebd89deb2f1b89506cdef39c739b7068c86f399009db6b98eee184",
    "creation_date":1639016421,
@@ -93,6 +103,25 @@ commit folder change to blockchain
 **Output**:
 > [transaction.Transaction](https://github.com/0chain/gosdk/blob/e1e35e084d5c17d6bf233bbe8ac9c91701bdd8fd/core/transaction/entity.go#L32)
 
+
+### zcn.sdk.getAllocationBlobbers
+get blobbers with filters for creating allocation
+**Input**:
+> referredBlobberURLs []string,
+	dataShards, parityShards int, size, expiry int64,
+	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64
+
+**Output**:
+> string array
+
+### zcn.sdk.createAllocation
+create an allocation 
+**Input**:
+> name string, datashards, parityshards int, size, expiry int64,
+	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64
+
+**Output**:
+> [transaction.Transaction](https://github.com/0chain/gosdk/blob/e1e35e084d5c17d6bf233bbe8ac9c91701bdd8fd/core/transaction/entity.go#L32)
 
 
 ## Blobber methods
@@ -148,7 +177,7 @@ generate an authtoken that provides authorization to the holder to the specified
 download your own or a shared file.
 
 **Input**:
-> allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly, rxPay, autoCommit bool
+> allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly, autoCommit bool
 
 **Output**:
 >  {commandSuccess:bool,commitSuccess:bool, commitTxn:transaction.Transaction, fileName:string,url:string, error:string}
@@ -166,7 +195,7 @@ download your own or a shared file.
       "client_id":"bec04d9120f56ef4198ad0b75b09e34dbcebd79d77807ff4badf2094c5198090",
       "public_key":"92e88784e6cd8dd2f5328177757704112daa0368f28d599bf76825b5a98fbb02c796358dfe566efeacb96a1108f8851b1b4763d06db44c715e8ac80867322000",
       "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
-      "transaction_data":"{\"CrudType\":\"Delete\",\"MetaData\":{\"Name\":\"scan4.png\",\"Type\":\"f\",\"Path\":\"/scan4.png\",\"LookupHash\":\"507a75dfb031dc3e888be1ffdbd51bb3b520fd5b4df46dbaa660040f8d3494ed\",\"Hash\":\"adab389e89121db0ab94a2b2137a28647851bde2827304a779784017b7c3dca5\",\"MimeType\":\"image/png\",\"Size\":14554,\"ActualFileSize\":14554,\"ActualNumBlocks\":1,\"EncryptedKey\":\"\",\"CommitMetaTxns\":[{\"ref_id\":66,\"txn_id\":\"c81c4772a9ce9e5a1f1c2398ea696be26e3b0e92658920593a79f96489afe395\",\"created_at\":\"2021-12-09T02":"18":15.767812Z\"}],"Collaborators":[],\"Attributes\":{}}}",
+      "transaction_data":"{\"CrudType\":\"Delete\",\"MetaData\":{\"Name\":\"scan4.png\",\"Type\":\"f\",\"Path\":\"/scan4.png\",\"LookupHash\":\"507a75dfb031dc3e888be1ffdbd51bb3b520fd5b4df46dbaa660040f8d3494ed\",\"Hash\":\"adab389e89121db0ab94a2b2137a28647851bde2827304a779784017b7c3dca5\",\"MimeType\":\"image/png\",\"Size\":14554,\"ActualFileSize\":14554,\"ActualNumBlocks\":1,\"EncryptedKey\":\"\",\"CommitMetaTxns\":[{\"ref_id\":66,\"txn_id\":\"c81c4772a9ce9e5a1f1c2398ea696be26e3b0e92658920593a79f96489afe395\",\"created_at\":\"2021-12-09T02":"18":15.767812Z\"}],"Collaborators":[]}}",
       "transaction_value":0,
       "signature":"313fc544caebd89deb2f1b89506cdef39c739b7068c86f399009db6b98eee184",
       "creation_date":1639016421,
@@ -183,7 +212,7 @@ download your own or a shared file.
 upload file(s)
 
 **Input**:
-> allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, commit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, isUpdate, isRepair bool
+> allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, commit bool, isLiveUpload, isSyncUpload bool, isUpdate, isRepair bool
 
 **Output**:
 > {commandSuccess:bool,commitSuccess:bool, commitTxn:transaction.Transaction, error:string}

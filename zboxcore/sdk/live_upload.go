@@ -75,7 +75,6 @@ func (lu *LiveUpload) createClipsUpload(clipsIndex int, reader LiveUploadReader)
 		MimeType:   lu.liveMeta.MimeType,
 		RemoteName: reader.GetClipsFileName(clipsIndex),
 		RemotePath: lu.liveMeta.RemotePath + "/" + reader.GetClipsFileName(clipsIndex),
-		Attributes: lu.liveMeta.Attributes,
 	}
 
 	return CreateChunkedUpload(lu.homedir, lu.allocationObj, fileMeta, reader, false, false,

@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"sync"
 	"time"
 
 	"github.com/0chain/errors"
@@ -41,7 +42,6 @@ var Client HttpClient
 const (
 	ALLOCATION_ENDPOINT      = "/allocation"
 	UPLOAD_ENDPOINT          = "/v1/file/upload/"
-	ATTRS_ENDPOINT           = "/v1/file/attributes/"
 	RENAME_ENDPOINT          = "/v1/file/rename/"
 	COPY_ENDPOINT            = "/v1/file/copy/"
 	LIST_ENDPOINT            = "/v1/file/list/"
@@ -416,22 +416,6 @@ func NewUploadRequest(baseUrl, allocation string, body io.Reader, update bool) (
 	return req, nil
 }
 
-func NewAttributesRequest(baseUrl, allocation string, body io.Reader) (
-	req *http.Request, err error) {
-
-	var url = fmt.Sprintf("%s%s%s", baseUrl, ATTRS_ENDPOINT, allocation)
-	req, err = http.NewRequest(http.MethodPost, url, body)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := setClientInfoWithSign(req, allocation); err != nil {
-		return nil, err
-	}
-
-	return req, nil
-}
-
 func NewRenameRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, RENAME_ENDPOINT, allocation)
 	req, err := http.NewRequest(http.MethodPost, url, body)
@@ -531,41 +515,41 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	numSharders := len(blockchain.GetSharders())
 	sharders := blockchain.GetSharders()
 	responses := make(map[int]int)
+	mu := &sync.Mutex{}
 	entityResult := make(map[string][]byte)
 	var retObj []byte
 	maxCount := 0
+	wg := sync.WaitGroup{}
 	for _, sharder := range util.Shuffle(sharders) {
-		urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
-		urlObj, _ := url.Parse(urlString)
-		q := urlObj.Query()
-		for k, v := range params {
-			q.Add(k, v)
-		}
-		urlObj.RawQuery = q.Encode()
-		client := &http.Client{Transport: DefaultTransport}
-
-		response, err := client.Get(urlObj.String())
-		if err != nil {
-			continue
-		} else {
-			defer response.Body.Close()
-			entityBytes, err := ioutil.ReadAll(response.Body)
-			if err != nil {
-				continue
+		wg.Add(1)
+		go func(sharder string) {
+			defer wg.Done()
+			urlString := fmt.Sprintf("%v/%v%v%v", sharder, SC_REST_API_URL, scAddress, relativePath)
+			urlObj, _ := url.Parse(urlString)
+			q := urlObj.Query()
+			for k, v := range params {
+				q.Add(k, v)
 			}
-			responses[response.StatusCode]++
-			if responses[response.StatusCode] > maxCount {
-				maxCount = responses[response.StatusCode]
-				retObj = entityBytes
-			}
-			entityResult[sharder] = retObj
-		}
+			urlObj.RawQuery = q.Encode()
+			client := &http.Client{Transport: DefaultTransport}
 
-		var rate = float32(maxCount*100) / float32(numSharders)
-		if rate >= consensusThresh {
-			break // got it
-		}
+			response, err := client.Get(urlObj.String())
+			if err == nil {
+				defer response.Body.Close()
+				entityBytes, _ := ioutil.ReadAll(response.Body)
+
+				mu.Lock()
+				responses[response.StatusCode]++
+				if responses[response.StatusCode] > maxCount {
+					maxCount = responses[response.StatusCode]
+					retObj = entityBytes
+				}
+				entityResult[sharder] = retObj
+				mu.Unlock()
+			}
+		}(sharder)
 	}
+	wg.Wait()
 
 	var err error
 	rate := float32(maxCount*100) / float32(numSharders)

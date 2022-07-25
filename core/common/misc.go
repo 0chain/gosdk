@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"regexp"
 	"strconv"
-	"strings"
 
 	"github.com/0chain/errors"
 )
@@ -32,49 +31,6 @@ func byteCountIEC(b int64) string {
 // String implements fmt.Stringer interface
 func (s Size) String() string {
 	return byteCountIEC(int64(s))
-}
-
-// WhoPays for file downloading.
-type WhoPays int
-
-// possible variants
-const (
-	WhoPaysOwner    WhoPays = iota // 0, file owner pays
-	WhoPays3rdParty                // 1, 3rd party user pays
-)
-
-// String implements fmt.Stringer interface.
-func (wp WhoPays) String() string {
-	switch wp {
-	case WhoPays3rdParty:
-		return "3rd_party"
-	case WhoPaysOwner:
-		return "owner"
-	}
-	return fmt.Sprintf("WhoPays(%d)", int(wp))
-}
-
-// Validate the WhoPays value.
-func (wp WhoPays) Validate() (err error) {
-	switch wp {
-	case WhoPays3rdParty, WhoPaysOwner:
-		return // ok
-	}
-	return errors.New("validate_error", fmt.Sprintf("unknown WhoPays value: %d", int(wp)))
-}
-
-// Parse given string and set the WhoPays by it. Or return parsing error.
-// The given string should be as result of the String method (case insensitive).
-func (wp *WhoPays) Parse(val string) (err error) {
-	switch strings.ToLower(val) {
-	case "owner":
-		(*wp) = WhoPaysOwner
-	case "3rd_party":
-		(*wp) = WhoPays3rdParty
-	default:
-		err = errors.New("parse_error", fmt.Sprintf("empty or unknown 'who_pays' value: %q", val))
-	}
-	return
 }
 
 /* Balance */

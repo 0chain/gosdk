@@ -1,13 +1,10 @@
 package fileref
 
 import (
-	"encoding/json"
 	"math"
 	"strconv"
 	"strings"
 
-	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 )
 
@@ -30,31 +27,6 @@ type Collaborator struct {
 	CreatedAt string `json:"created_at"`
 }
 
-// The Attributes represents file attributes.
-type Attributes struct {
-	// The WhoPaysForReads represents reading payer. It can be allocation owner
-	// or a 3rd party user. It affects read operations only. It requires
-	// blobbers to be trusted.
-	WhoPaysForReads common.WhoPays `json:"who_pays_for_reads,omitempty"`
-
-	// add more file / directory attributes by needs with
-	// 'omitempty' json tag to avoid hash difference for
-	// equal values
-}
-
-// IsZero returns true, if the Attributes is zero.
-func (a *Attributes) IsZero() bool {
-	return (*a) == (Attributes{})
-}
-
-// Validate the Attributes.
-func (a *Attributes) Validate() (err error) {
-	if err = a.WhoPaysForReads.Validate(); err != nil {
-		return errors.Wrap(err, "invalid who_pays_for_reads field")
-	}
-	return
-}
-
 type FileRef struct {
 	Ref                 `mapstructure:",squash"`
 	CustomMeta          string          `json:"custom_meta" mapstructure:"custom_meta"`
@@ -70,7 +42,6 @@ type FileRef struct {
 	EncryptedKey        string          `json:"encrypted_key" mapstructure:"encrypted_key"`
 	CommitMetaTxns      []CommitMetaTxn `json:"commit_meta_txns" mapstructure:"commit_meta_txns"`
 	Collaborators       []Collaborator  `json:"collaborators" mapstructure:"collaborators"`
-	Attributes          Attributes      `json:"attributes" mapstructure:"attributes"`
 }
 
 type RefEntity interface {
@@ -83,24 +54,22 @@ type RefEntity interface {
 	GetLookupHash() string
 	GetPath() string
 	GetName() string
-	GetAttributes() Attributes
 	GetCreatedAt() string
 	GetUpdatedAt() string
 }
 
 type Ref struct {
-	Type           string     `json:"type" mapstructure:"type"`
-	AllocationID   string     `json:"allocation_id" mapstructure:"allocation_id"`
-	Name           string     `json:"name" mapstructure:"name"`
-	Path           string     `json:"path" mapstructure:"path"`
-	Size           int64      `json:"size" mapstructure:"size"`
-	ActualSize     int64      `json:"actual_file_size" mapstructure:"actual_file_size"`
-	Hash           string     `json:"hash" mapstructure:"hash"`
-	ChunkSize      int64      `json:"chunk_size" mapstructure:"chunk_size"`
-	NumBlocks      int64      `json:"num_of_blocks" mapstructure:"num_of_blocks"`
-	PathHash       string     `json:"path_hash" mapstructure:"path_hash"`
-	LookupHash     string     `json:"lookup_hash" mapstructure:"lookup_hash"`
-	Attributes     Attributes `json:"attributes" mapstructure:"attributes"`
+	Type           string `json:"type" mapstructure:"type"`
+	AllocationID   string `json:"allocation_id" mapstructure:"allocation_id"`
+	Name           string `json:"name" mapstructure:"name"`
+	Path           string `json:"path" mapstructure:"path"`
+	Size           int64  `json:"size" mapstructure:"size"`
+	ActualSize     int64  `json:"actual_file_size" mapstructure:"actual_file_size"`
+	Hash           string `json:"hash" mapstructure:"hash"`
+	ChunkSize      int64  `json:"chunk_size" mapstructure:"chunk_size"`
+	NumBlocks      int64  `json:"num_of_blocks" mapstructure:"num_of_blocks"`
+	PathHash       string `json:"path_hash" mapstructure:"path_hash"`
+	LookupHash     string `json:"lookup_hash" mapstructure:"lookup_hash"`
 	childrenLoaded bool
 	Children       []RefEntity `json:"-" mapstructure:"-"`
 	CreatedAt      string      `json:"created_at" mapstructure:"created_at"`
@@ -174,10 +143,6 @@ func (r *Ref) GetName() string {
 	return r.Name
 }
 
-func (r *Ref) GetAttributes() Attributes {
-	return r.Attributes
-}
-
 func (r *Ref) GetCreatedAt() string {
 	return r.CreatedAt
 }
@@ -212,8 +177,6 @@ func (fr *FileRef) GetHashData() string {
 	hashArray = append(hashArray, fr.MerkleRoot)
 	hashArray = append(hashArray, strconv.FormatInt(fr.ActualFileSize, 10))
 	hashArray = append(hashArray, fr.ActualFileHash)
-	var attrs, _ = json.Marshal(&fr.Attributes)
-	hashArray = append(hashArray, string(attrs))
 	hashArray = append(hashArray, strconv.FormatInt(fr.ChunkSize, 10))
 	return strings.Join(hashArray, ":")
 }
@@ -257,10 +220,6 @@ func (fr *FileRef) GetPath() string {
 }
 func (fr *FileRef) GetName() string {
 	return fr.Name
-}
-
-func (fr *FileRef) GetAttributes() Attributes {
-	return fr.Attributes
 }
 
 func (fr *FileRef) GetCreatedAt() string {

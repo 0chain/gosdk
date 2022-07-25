@@ -42,7 +42,6 @@ type DownloadRequest struct {
 	endBlock           int64
 	chunkSize          int
 	numBlocks          int64
-	rxPay              bool
 	statusCallback     StatusCallback
 	ctx                context.Context
 	ctxCncl            context.CancelFunc
@@ -82,7 +81,6 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 		blockDownloadReq.remotefilepath = req.remotefilepath
 		blockDownloadReq.remotefilepathhash = req.remotefilepathhash
 		blockDownloadReq.numBlocks = req.numBlocks
-		blockDownloadReq.rxPay = req.rxPay
 		blockDownloadReq.encryptedKey = req.encryptedKey
 		go AddBlockDownloadReq(blockDownloadReq)
 		//go obj.downloadBlobberBlock(&obj.blobbers[pos], pos, path, blockNum, rspCh, isPathHash, authTicket)
