@@ -35,6 +35,7 @@ func (d *DirCreateChange) ProcessChange(rootRef *fileref.Ref) error {
 				Path:         filepath.Join("/", strings.Join(fields[:i+1], "/")),
 				Name:         fields[i],
 			}
+			newRef.HashToBeComputed = true
 			dirRef.AddChild(newRef)
 			dirRef = newRef
 		}
