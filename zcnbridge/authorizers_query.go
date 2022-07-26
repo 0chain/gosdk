@@ -18,7 +18,6 @@ import (
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
-	"github.com/hashicorp/go-retryablehttp"
 	"go.uber.org/zap"
 )
 
@@ -29,7 +28,7 @@ type (
 		AuthorizerID string
 		// event is server job event
 		event JobResult
-		// error describes an error occurred during event processing on client side
+		// error describes an error occurred during event processing on client side during the call to server
 		error
 	}
 
@@ -44,13 +43,13 @@ type (
 )
 
 var (
-	client *retryablehttp.Client
+	client *http.Client
 )
 
 // QueryEthereumMintPayload gets burn ticket and creates mint payload to be minted in the Ethereum chain
 // zchainBurnHash - Ethereum burn transaction hash
 func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereum.MintPayload, error) {
-	client = h.NewRetryableClient()
+	client = h.CleanClient()
 	authorizers, err := getAuthorizers()
 
 	if err != nil || len(authorizers) == 0 {
@@ -60,7 +59,7 @@ func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereu
 	var (
 		totalWorkers = len(authorizers)
 		values       = u.Values{
-			"zchainBurnHash": []string{zchainBurnHash},
+			"hash": []string{zchainBurnHash},
 		}
 	)
 
@@ -112,7 +111,7 @@ func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereu
 // QueryZChainMintPayload gets burn ticket and creates mint payload to be minted in the ZChain
 // ethBurnHash - Ethereum burn transaction hash
 func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPayload, error) {
-	client = h.NewRetryableClient()
+	client = h.CleanClient()
 	authorizers, err := getAuthorizers()
 
 	if err != nil || len(authorizers) == 0 {
@@ -122,9 +121,9 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 	var (
 		totalWorkers = len(authorizers)
 		values       = u.Values{
-			"eth_burn_hash": []string{ethBurnHash},
-			"address":       []string{wallet.ZCNSCSmartContractAddress},
-			"clientid":      []string{b.ClientID()},
+			"hash":     []string{ethBurnHash},
+			"address":  []string{wallet.ZCNSCSmartContractAddress},
+			"clientid": []string{b.ID()},
 		}
 	)
 
@@ -180,20 +179,22 @@ func queryAllAuthorizers(authorizers []*AuthorizerNode, handler *requestHandler)
 		eventsChannel   = make(eventsChannelType)
 		responseChannel = make(responseChannelType, totalWorkers)
 	)
+	defer close(eventsChannel)
 
 	var wg sync.WaitGroup
-
-	go handleResponse(responseChannel, eventsChannel, &wg)
-	defer close(eventsChannel)
 
 	for _, authorizer := range authorizers {
 		wg.Add(1)
 		go queryAuthorizer(authorizer, handler, responseChannel)
 	}
 
+	go handleResponse(responseChannel, eventsChannel, &wg)
+
 	wg.Wait()
 	close(responseChannel)
-	return <-eventsChannel
+	results := <-eventsChannel
+
+	return results
 }
 
 func handleResponse(responseChannel responseChannelType, eventsChannel eventsChannelType, wg *sync.WaitGroup) {
@@ -210,54 +211,55 @@ func handleResponse(responseChannel responseChannelType, eventsChannel eventsCha
 }
 
 func queryAuthorizer(au *AuthorizerNode, request *requestHandler, responseChannel responseChannelType) {
-	var (
-		ticketURL = strings.TrimSuffix(au.URL, "/") + request.path
-	)
+	log.Logger.Info("Query from authorizer", zap.String("ID", au.ID), zap.String("URL", au.URL))
+	ticketURL := strings.TrimSuffix(au.URL, "/") + request.path
+	resp, body := readResponse(client.PostForm(ticketURL, request.values))
+	resp.AuthorizerID = au.ID
 
-	job, body := processResponse(client.PostForm(ticketURL, request.values))
-	if job.error != nil {
+	if resp.error != nil {
 		log.Logger.Error(
 			"failed to process response",
-			zap.Error(job.error),
+			zap.Error(resp.error),
 			zap.String("node.id", au.ID),
 			zap.String("node.url", au.URL),
 		)
-		return
 	}
 
-	event, err := request.bodyDecoder(body)
-	if err != nil {
-		err := errors.Wrap("decode_message_body", "failed to decode message body", err)
+	event, errEvent := request.bodyDecoder(body)
+	event.SetAuthorizerID(au.ID)
+
+	if errEvent != nil {
+		err := errors.Wrap("decode_message_body", "failed to decode message body", errEvent)
 		log.Logger.Error(
 			"failed to decode event body",
 			zap.Error(err),
 			zap.String("node.id", au.ID),
 			zap.String("node.url", au.URL),
+			zap.String("body", string(body)),
 		)
-		return
 	}
 
-	job.AuthorizerID = au.ID
-	job.event = event
-	responseChannel <- job
+	resp.event = event
+
+	responseChannel <- resp
 }
 
-func processResponse(response *http.Response, err error) (*authorizerResponse, []byte) {
-	var (
-		res = &authorizerResponse{}
-	)
-
+func readResponse(response *http.Response, err error) (res *authorizerResponse, body []byte) {
+	res = &authorizerResponse{}
 	if err != nil {
 		err = errors.Wrap("authorizer_post_process", "failed to call the authorizer", err)
+		Logger.Error("request response error", zap.Error(err))
 	}
 
 	if response == nil {
 		res.error = err
+		Logger.Error("response is empty", zap.Error(err))
 		return res, nil
 	}
 
 	if response.StatusCode >= 400 {
 		err = errors.Wrap("authorizer_post_process", fmt.Sprintf("error %d", response.StatusCode), err)
+		Logger.Error("request response status", zap.Error(err))
 	}
 
 	body, er := ioutil.ReadAll(response.Body)
