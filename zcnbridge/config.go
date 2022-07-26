@@ -1,13 +1,14 @@
 package zcnbridge
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"path"
 
-	"github.com/0chain/gosdk/zcncore"
-
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zcnbridge/log"
 	"github.com/spf13/viper"
 )
@@ -52,9 +53,8 @@ type BridgeClientConfig struct {
 }
 
 type Instance struct {
-	//zcnWallet *wallet.Wallet
+	zcnWallet *zcncrypto.Wallet
 	startTime common.Timestamp
-	nonce     int64
 }
 
 type BridgeClient struct {
@@ -101,6 +101,11 @@ func CreateBridgeOwner(cfg *viper.Viper) *BridgeOwner {
 		ExitWithError("CreateBridgeOwner: homedir is required")
 	}
 
+	wallet, err := loadWallet(homedir)
+	if err != nil {
+		ExitWithError("Error reading the wallet", err)
+	}
+
 	return &BridgeOwner{
 		BridgeClientConfig: &BridgeClientConfig{
 			ContractsRegistry: ContractsRegistry{
@@ -119,6 +124,7 @@ func CreateBridgeOwner(cfg *viper.Viper) *BridgeOwner {
 		},
 		Instance: &Instance{
 			startTime: common.Now(),
+			zcnWallet: wallet,
 		},
 	}
 }
@@ -133,6 +139,11 @@ func CreateBridgeClient(cfg *viper.Viper) *BridgeClient {
 	bridge := cfg.Get(ClientConfigKeyName)
 	if bridge == nil {
 		ExitWithError(fmt.Sprintf("Can't read config with '%s' key", ClientConfigKeyName))
+	}
+
+	wallet, err := loadWallet(homedir)
+	if err != nil {
+		ExitWithError(err)
 	}
 
 	return &BridgeClient{
@@ -156,39 +167,47 @@ func CreateBridgeClient(cfg *viper.Viper) *BridgeClient {
 		},
 		Instance: &Instance{
 			startTime: common.Now(),
+			zcnWallet: wallet,
 		},
 	}
 }
 
-// ID returns id of Node.
-func (b *BridgeClient) ID() string {
-	return zcncore.GetClientWalletID()
+func (b *BridgeClient) ClientID() string {
+	return b.zcnWallet.ClientID
 }
 
-// ID returns id of Node.
-func (b *BridgeOwner) ID() string {
-	return zcncore.GetClientWalletID()
-}
-
-func (b *BridgeClient) IncrementNonce() int64 {
-	b.nonce++
-	return b.nonce
+func (b *BridgeOwner) ClientID() string {
+	return b.zcnWallet.ClientID
 }
 
 // SetupBridgeClientSDK Use this from standalone application
 // 0Chain SDK initialization is required
 func SetupBridgeClientSDK(cfg *BridgeSDKConfig) *BridgeClient {
 	log.InitLogging(*cfg.Development, *cfg.LogPath, *cfg.LogLevel)
-
 	bridgeClient := CreateBridgeClient(initBridgeConfig(cfg))
-
 	return bridgeClient
 }
 
 // SetupBridgeOwnerSDK Use this from standalone application to initialize bridge owner.
 // 0Chain SDK initialization is not required in this case
 func SetupBridgeOwnerSDK(cfg *BridgeSDKConfig) *BridgeOwner {
+	log.InitLogging(*cfg.Development, *cfg.LogPath, *cfg.LogLevel)
 	bridgeOwner := CreateBridgeOwner(initBridgeConfig(cfg))
-
 	return bridgeOwner
+}
+
+func loadWallet(homedir string) (*zcncrypto.Wallet, error) {
+	walletPath := path.Join(homedir, ZChainWalletConfigName)
+	clientBytes, err := ioutil.ReadFile(walletPath)
+	if err != nil {
+		ExitWithError("Error reading the wallet", err)
+	}
+
+	wallet := &zcncrypto.Wallet{}
+	err = json.Unmarshal(clientBytes, &wallet)
+	if err != nil {
+		return nil, err
+	}
+
+	return wallet, nil
 }

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/go-retryablehttp"
 )
 
@@ -37,6 +38,12 @@ func NewClient() *http.Client {
 		Timeout:   clientTimeout,
 		Transport: transport,
 	}
+}
+
+func CleanClient() *http.Client {
+	client := cleanhttp.DefaultPooledClient()
+	client.Timeout = 10 * time.Second
+	return client
 }
 
 // NewRetryableClient creates default retryablehttp.Client with timeouts and embedded NewClient result.

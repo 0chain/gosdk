@@ -563,23 +563,34 @@ func RegisterToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 			result <- res
 		}(miner)
 	}
+
+	var cwData string
+
 	consensus := float32(0)
 	for range _config.chain.Miners {
 		rsp := <-result
-		Logger.Debug(rsp.Url, rsp.Status)
+		Logger.Debug(rsp.Url, "Status: ", rsp.Status)
 
 		if rsp.StatusCode == http.StatusOK {
 			consensus++
+			cwData = rsp.Body
 		} else {
 			Logger.Debug(rsp.Body)
 		}
-
 	}
+
 	rate := consensus * 100 / float32(len(_config.chain.Miners))
 	if rate < consensusThresh {
 		statusCb.OnWalletCreateComplete(StatusError, "", "rate is less than consensus")
 		return fmt.Errorf("Register consensus not met. Consensus: %f, Expected: %f", rate, consensusThresh)
 	}
+
+	cw := &GetClientResponse{}
+	if err := json.Unmarshal([]byte(cwData), cw); err == nil {
+		wallet.Version = cw.Version
+		wallet.DateCreated = strconv.Itoa(cw.CreationDate)
+	}
+
 	w, err := wallet.Marshal()
 	if err != nil {
 		statusCb.OnWalletCreateComplete(StatusError, w, err.Error())
@@ -623,6 +634,19 @@ func GetClientDetails(clientID string) (*GetClientResponse, error) {
 // IsMnemonicValid is an utility function to check the mnemonic valid
 func IsMnemonicValid(mnemonic string) bool {
 	return zcncrypto.IsMnemonicValid(mnemonic)
+}
+
+// SetWallet should be set before any transaction or client specific APIs
+// splitKeyWallet parameter is valid only if SignatureScheme is "BLS0Chain"
+func SetWallet(w zcncrypto.Wallet, splitKeyWallet bool) error {
+	_config.wallet = w
+
+	if _config.chain.SignatureScheme == "bls0chain" {
+		_config.isSplitWallet = splitKeyWallet
+	}
+	_config.isValidWallet = true
+
+	return nil
 }
 
 // SetWalletInfo should be set before any transaction or client specific APIs

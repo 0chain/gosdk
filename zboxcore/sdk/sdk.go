@@ -147,7 +147,7 @@ func CreateReadPool() (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
-	hash, _, nonce, err = smartContractTxn(transaction.SmartContractTxnData{
+	hash, _, nonce, _, err = smartContractTxn(transaction.SmartContractTxnData{
 		Name: transaction.STORAGESC_CREATE_READ_POOL,
 	})
 	return
@@ -205,7 +205,7 @@ func ReadPoolLock(tokens, fee uint64) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_READ_POOL_LOCK,
 		InputArgs: nil,
 	}
-	hash, _, nonce, err = smartContractTxnValueFee(sn, tokens, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFee(sn, tokens, fee)
 	return
 }
 
@@ -219,7 +219,7 @@ func ReadPoolUnlock(fee uint64) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_READ_POOL_UNLOCK,
 		InputArgs: nil,
 	}
-	hash, _, nonce, err = smartContractTxnValueFee(sn, 0, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFee(sn, 0, fee)
 	return
 }
 
@@ -383,7 +383,7 @@ func StakePoolLock(blobberID string, value, fee uint64) (poolID string, nonce in
 		Name:      transaction.STORAGESC_STAKE_POOL_LOCK,
 		InputArgs: &spr,
 	}
-	poolID, _, nonce, err = smartContractTxnValueFee(sn, value, fee)
+	poolID, _, nonce, _, err = smartContractTxnValueFee(sn, value, fee)
 	return
 }
 
@@ -422,7 +422,7 @@ func StakePoolUnlock(
 	}
 
 	var out string
-	if _, out, nonce, err = smartContractTxnValueFee(sn, 0, fee); err != nil {
+	if _, out, nonce, _, err = smartContractTxnValueFee(sn, 0, fee); err != nil {
 		return // an error
 	}
 
@@ -455,7 +455,7 @@ func WritePoolLock(allocID string, tokens, fee uint64) (hash string, nonce int64
 		Name:      transaction.STORAGESC_WRITE_POOL_LOCK,
 		InputArgs: &req,
 	}
-	hash, _, nonce, err = smartContractTxnValueFee(sn, tokens, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFee(sn, tokens, fee)
 	return
 }
 
@@ -476,7 +476,7 @@ func WritePoolUnlock(allocID string, fee uint64) (hash string, nonce int64, err 
 		Name:      transaction.STORAGESC_WRITE_POOL_UNLOCK,
 		InputArgs: &req,
 	}
-	hash, _, nonce, err = smartContractTxnValueFee(sn, 0, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFee(sn, 0, fee)
 	return
 }
 
@@ -829,7 +829,7 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 
 func CreateAllocationWithBlobbers(name string, datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, lock uint64, blobbers []string) (
-	string, int64, error) {
+	string, int64, *transaction.Transaction, error) {
 
 	return CreateAllocationForOwner(client.GetClientID(),
 		client.GetClientPublicKey(), name, datashards, parityshards,
@@ -839,7 +839,7 @@ func CreateAllocationWithBlobbers(name string, datashards, parityshards int, siz
 
 func CreateAllocation(name string, datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, lock uint64) (
-	string, int64, error) {
+	string, int64, *transaction.Transaction, error) {
 
 	return CreateAllocationForOwner(name, client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
@@ -850,22 +850,22 @@ func CreateAllocation(name string, datashards, parityshards int, size, expiry in
 func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange,
-	lock uint64, preferredBlobbers []string) (hash string, nonce int64, err error) {
+	lock uint64, preferredBlobbers []string) (hash string, nonce int64, txn *transaction.Transaction, err error) {
 
 	if lock < 0 {
-		return "", 0, errors.New("", "invalid value for lock")
+		return "", 0, nil, errors.New("", "invalid value for lock")
 	}
 
-	preferred, err := getPreferredBlobberIds(preferredBlobbers)
+	preferred, err := GetBlobberIds(preferredBlobbers)
 	if err != nil {
-		return "", 0, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
+		return "", 0, nil, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
 	}
 
-	allocationBlobbers, err := getAllocationBlobbers(owner, ownerpublickey, datashards,
+	allocationBlobbers, err := GetAllocationBlobbers(owner, ownerpublickey, datashards,
 		parityshards, size, expiry, readPrice,
 		writePrice)
 	if err != nil {
-		return "", 0, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
+		return "", 0, nil, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
 	}
 
 	//filter duplicates
@@ -882,7 +882,7 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 	}
 
 	if !sdkInitialized {
-		return "", 0, sdkNotInitialized
+		return "", 0, nil, sdkNotInitialized
 	}
 
 	var allocationRequest = map[string]interface{}{
@@ -902,11 +902,11 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 		Name:      transaction.NEW_ALLOCATION_REQUEST,
 		InputArgs: allocationRequest,
 	}
-	hash, _, nonce, err = smartContractTxnValue(sn, lock)
+	hash, _, nonce, txn, err = smartContractTxnValue(sn, lock)
 	return
 }
 
-func getAllocationBlobbers(owner, ownerpublickey string,
+func GetAllocationBlobbers(owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange) ([]string, error) {
 
@@ -940,7 +940,7 @@ func getAllocationBlobbers(owner, ownerpublickey string,
 	return allocBlobberIDs, nil
 }
 
-func getPreferredBlobberIds(blobberUrls []string) ([]string, error) {
+func GetBlobberIds(blobberUrls []string) ([]string, error) {
 
 	if len(blobberUrls) == 0 {
 		return make([]string, 0), nil
@@ -1003,7 +1003,7 @@ func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit 
 		Name:      transaction.ADD_FREE_ALLOCATION_ASSIGNER,
 		InputArgs: input,
 	}
-	hash, _, n, err := smartContractTxn(sn)
+	hash, _, n, _, err := smartContractTxn(sn)
 
 	return hash, n, err
 }
@@ -1033,7 +1033,7 @@ func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 		Name:      transaction.NEW_FREE_ALLOCATION,
 		InputArgs: input,
 	}
-	hash, _, n, err := smartContractTxnValue(sn, value)
+	hash, _, n, _, err := smartContractTxnValue(sn, value)
 	return hash, n, err
 }
 
@@ -1067,7 +1067,7 @@ func UpdateAllocation(name string,
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
 		InputArgs: updateAllocationRequest,
 	}
-	hash, _, nonce, err = smartContractTxnValue(sn, lock)
+	hash, _, nonce, _, err = smartContractTxnValue(sn, lock)
 	return
 }
 
@@ -1088,7 +1088,7 @@ func CreateFreeUpdateAllocation(marker, allocationId string, value uint64) (stri
 		Name:      transaction.FREE_UPDATE_ALLOCATION,
 		InputArgs: input,
 	}
-	hash, _, n, err := smartContractTxnValue(sn, value)
+	hash, _, n, _, err := smartContractTxnValue(sn, value)
 	return hash, n, err
 }
 
@@ -1100,7 +1100,7 @@ func FinalizeAllocation(allocID string) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_FINALIZE_ALLOCATION,
 		InputArgs: map[string]interface{}{"allocation_id": allocID},
 	}
-	hash, _, nonce, err = smartContractTxn(sn)
+	hash, _, nonce, _, err = smartContractTxn(sn)
 	return
 }
 
@@ -1112,7 +1112,7 @@ func CancelAllocation(allocID string) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_CANCEL_ALLOCATION,
 		InputArgs: map[string]interface{}{"allocation_id": allocID},
 	}
-	hash, _, nonce, err = smartContractTxn(sn)
+	hash, _, nonce, _, err = smartContractTxn(sn)
 	return
 }
 
@@ -1129,7 +1129,7 @@ func RemoveCurator(curatorId, allocationId string) (string, int64, error) {
 		Name:      transaction.STORAGESC_REMOVE_CURATOR,
 		InputArgs: allocationRequest,
 	}
-	hash, _, n, err := smartContractTxn(sn)
+	hash, _, n, _, err := smartContractTxn(sn)
 	return hash, n, err
 }
 
@@ -1146,7 +1146,7 @@ func AddCurator(curatorId, allocationId string) (string, int64, error) {
 		Name:      transaction.STORAGESC_ADD_CURATOR,
 		InputArgs: allocationRequest,
 	}
-	hash, _, n, err := smartContractTxn(sn)
+	hash, _, n, _, err := smartContractTxn(sn)
 	return hash, n, err
 }
 
@@ -1174,7 +1174,7 @@ func CollectRewards(providerId, poolId string, providerType ProviderType) (strin
 		Name:      transaction.STORAGESC_COLLECT_REWARD,
 		InputArgs: input,
 	}
-	hash, _, n, err := smartContractTxn(sn)
+	hash, _, n, _, err := smartContractTxn(sn)
 	return hash, n, err
 }
 
@@ -1192,7 +1192,7 @@ func CuratorTransferAllocation(allocationId, newOwner, newOwnerPublicKey string)
 		Name:      transaction.STORAGESC_CURATOR_TRANSFER,
 		InputArgs: allocationRequest,
 	}
-	hash, _, n, err := smartContractTxn(sn)
+	hash, _, n, _, err := smartContractTxn(sn)
 	return hash, n, err
 }
 
@@ -1204,7 +1204,7 @@ func UpdateBlobberSettings(blob *Blobber) (resp string, nonce int64, err error) 
 		Name:      transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS,
 		InputArgs: blob,
 	}
-	resp, _, nonce, err = smartContractTxn(sn)
+	resp, _, nonce, _, err = smartContractTxn(sn)
 	return
 }
 
@@ -1217,24 +1217,24 @@ func UpdateValidatorSettings(v *Validator) (resp string, nonce int64, err error)
 		Name:      transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS,
 		InputArgs: v.ConvertToValidationNode(),
 	}
-	resp, _, nonce, err = smartContractTxn(sn)
+	resp, _, nonce, _, err = smartContractTxn(sn)
 	return
 }
 
 func smartContractTxn(sn transaction.SmartContractTxnData) (
-	hash, out string, nonce int64, err error) {
+	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
 	return smartContractTxnValue(sn, 0)
 }
 
 func smartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
-	hash, out string, nonce int64, err error) {
+	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
 	return smartContractTxnValueFee(sn, value, 0)
 }
 
 func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
-	value, fee uint64) (hash, out string, nonce int64, err error) {
+	value, fee uint64) (hash, out string, nonce int64, t *transaction.Transaction, err error) {
 
 	var requestBytes []byte
 	if requestBytes, err = json.Marshal(sn); err != nil {
@@ -1245,7 +1245,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	if nonce != 0 {
 		nonce++
 	}
-	var txn = transaction.NewTransactionEntity(client.GetClientID(),
+	txn := transaction.NewTransactionEntity(client.GetClientID(),
 		blockchain.GetChainID(), client.GetClientPublicKey(), nonce)
 
 	txn.TransactionData = string(requestBytes)
@@ -1266,7 +1266,6 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	var (
 		querySleepTime = time.Duration(blockchain.GetQuerySleepTime()) * time.Second
 		retries        = 0
-		t              *transaction.Transaction
 	)
 
 	sys.Sleep(querySleepTime)
@@ -1287,19 +1286,19 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	}
 
 	if t == nil {
-		return "", "", 0, errors.New("transaction_validation_failed",
+		return "", "", 0, txn, errors.New("transaction_validation_failed",
 			"Failed to get the transaction confirmation")
 	}
 
 	if t.Status == transaction.TxnFail {
-		return t.Hash, t.TransactionOutput, 0, errors.New("", t.TransactionOutput)
+		return t.Hash, t.TransactionOutput, 0, t, errors.New("", t.TransactionOutput)
 	}
 
 	if t.Status == transaction.TxnChargeableError {
-		return t.Hash, t.TransactionOutput, t.TransactionNonce, errors.New("", t.TransactionOutput)
+		return t.Hash, t.TransactionOutput, t.TransactionNonce, t, errors.New("", t.TransactionOutput)
 	}
 
-	return t.Hash, t.TransactionOutput, t.TransactionNonce, nil
+	return t.Hash, t.TransactionOutput, t.TransactionNonce, t, nil
 }
 
 func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
@@ -1368,7 +1367,7 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 func GetAllocationMinLock(datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange) (int64, error) {
 
-	preferred, err := getPreferredBlobberIds(blockchain.GetPreferredBlobbers())
+	preferred, err := GetBlobberIds(blockchain.GetPreferredBlobbers())
 	if err != nil {
 		return -1, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
 	}
