@@ -123,7 +123,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 		values       = u.Values{
 			"hash":     []string{ethBurnHash},
 			"address":  []string{wallet.ZCNSCSmartContractAddress},
-			"clientid": []string{b.ID()},
+			"clientid": []string{b.ClientID()},
 		}
 	)
 
