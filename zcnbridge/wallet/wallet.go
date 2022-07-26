@@ -2,6 +2,8 @@ package wallet
 
 import (
 	//"github.com/0chain/gosdk/zcnbridge/log"
+	"os"
+
 	"github.com/0chain/gosdk/core/logger"
 )
 
@@ -17,5 +19,12 @@ var Logger logger.Logger
 var defaultLogLevel = logger.DEBUG
 
 func init() {
-	Logger.Init(defaultLogLevel, "0chain-zcnbridge-sdk")
+	Logger.Init(defaultLogLevel, "zcnbridge-wallet-sdk")
+
+	Logger.SetLevel(logger.DEBUG)
+	f, err := os.OpenFile("bridge.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return
+	}
+	Logger.SetLogFile(f, true)
 }
