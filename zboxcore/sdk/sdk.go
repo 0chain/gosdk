@@ -1377,7 +1377,7 @@ func KillBlobber(id string, fee uint64) (nonce int64, err error) {
 		Name:      "kill-blobber",
 		InputArgs: pid,
 	}
-	_, _, nonce, err = smartContractTxnValueFee(sn, 0, fee)
+	_, _, nonce, _, err = smartContractTxnValueFee(sn, 0, fee)
 	return
 }
 
@@ -1392,7 +1392,7 @@ func KillValidator(id string, fee uint64) (nonce int64, err error) {
 		Name:      "kill-validator",
 		InputArgs: pid,
 	}
-	_, _, nonce, err = smartContractTxnValueFee(sn, 0, fee)
+	_, _, nonce, _, err = smartContractTxnValueFee(sn, 0, fee)
 	return
 }
 
@@ -1407,7 +1407,7 @@ func ShutDownBlobber(id string, fee uint64) (nonce int64, err error) {
 		Name:      "shut-down-blobber",
 		InputArgs: pid,
 	}
-	_, _, nonce, err = smartContractTxnValueFee(sn, 0, fee)
+	_, _, nonce, _, err = smartContractTxnValueFee(sn, 0, fee)
 	return
 }
 
@@ -1422,7 +1422,7 @@ func ShutDownValidator(id string, fee uint64) (nonce int64, err error) {
 		Name:      "shut-down-validator",
 		InputArgs: pid,
 	}
-	_, _, nonce, err = smartContractTxnValueFee(sn, 0, fee)
+	_, _, nonce, _, err = smartContractTxnValueFee(sn, 0, fee)
 	return
 }
 
