@@ -48,6 +48,7 @@ func main() {
 
 				//update sign with js sign
 				zcncrypto.Sign = signFunc
+				zcncore.SignFn = signFunc
 				sys.Sign = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
 					// js already has signatureScheme and keys
 					return signFunc(hash)
@@ -102,6 +103,7 @@ func main() {
 				//sdk
 				"init":                  Init,
 				"setWallet":             SetWallet,
+				"setZBoxHost":           setZBoxHost,
 				"getEncryptedPublicKey": GetEncryptedPublicKey,
 				"hideLogs":              hideLogs,
 				"showLogs":              showLogs,
@@ -123,6 +125,17 @@ func main() {
 				"play":           Play,
 				"stop":           Stop,
 				"getNextSegment": GetNextSegment,
+
+				// wallet
+				"createWallet": createWallet,
+
+				//allocation
+				"createAllocation":      createAllocation,
+				"getAllocationBlobbers": getAllocationBlobbers,
+				"listAllocations":       listAllocations,
+
+				//smartcontract
+				"executeSmartContract": executeSmartContract,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
