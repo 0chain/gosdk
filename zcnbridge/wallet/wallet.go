@@ -27,5 +27,4 @@ func init() {
 		return
 	}
 	Logger.SetLogFile(f, true)
-	Logger.Info("ZCN Bridge Wallet initialized")
 }

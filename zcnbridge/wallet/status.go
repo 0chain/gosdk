@@ -8,13 +8,7 @@ import (
 	"sync"
 
 	"github.com/0chain/gosdk/zcncore"
-	"gopkg.in/cheggaaa/pb.v1"
 )
-
-type StatusBar struct {
-	b  *pb.ProgressBar
-	wg *sync.WaitGroup
-}
 
 type ZCNStatus struct {
 	walletString string

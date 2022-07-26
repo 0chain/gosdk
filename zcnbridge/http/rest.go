@@ -42,7 +42,6 @@ func init() {
 		return
 	}
 	Logger.SetLogFile(f, true)
-	Logger.Info("ZCN Bridge Http initialized")
 }
 
 // MakeSCRestAPICall calls smart contract with provided address
