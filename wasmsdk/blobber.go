@@ -21,6 +21,16 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
+func listObjects(allocationId string, remotePath string) (*sdk.ListResult, error) {
+	alloc, err := sdk.GetAllocation(allocationId)
+	if err != nil {
+		return nil, err
+	}
+
+	return alloc.ListDir(remotePath)
+
+}
+
 // Delete delete file from blobbers
 func Delete(allocationID, remotePath string, autoCommit bool) (*FileCommandResponse, error) {
 
