@@ -58,3 +58,7 @@ func createAllocation(name string, datashards, parityshards int, size, expiry in
 
 	return txn, err
 }
+
+func listAllocations() ([]*sdk.Allocation, error) {
+	return sdk.GetAllocations()
+}

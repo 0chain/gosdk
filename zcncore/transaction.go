@@ -178,8 +178,8 @@ type TransactionScheme interface {
 	UpdateBlobberSettings(blobber *Blobber, fee uint64) error
 	UpdateValidatorSettings(validator *Validator, fee uint64) error
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock uint64, fee uint64) error
-	WritePoolLock(allocID string, blobberID string, duration int64, lock uint64, fee uint64) error
-	WritePoolUnlock(poolID string, fee uint64) error
+	WritePoolLock(allocID string, lock uint64, fee uint64) error
+	WritePoolUnlock(allocID string, fee uint64) error
 	StorageScUpdateConfig(*InputMap) error
 
 	// Faucet
@@ -349,7 +349,7 @@ func (t *Transaction) submitTxn() {
 	consensus := float32(0)
 	for range randomMiners {
 		rsp := <-result
-		Logger.Debug(rsp.Url, rsp.Status)
+		Logger.Debug(rsp.Url, "Status: ", rsp.Status)
 		if rsp.StatusCode == http.StatusOK {
 			consensus++
 			tSuccessRsp = rsp.Body
@@ -357,8 +357,8 @@ func (t *Transaction) submitTxn() {
 			Logger.Error(rsp.Body)
 			tFailureRsp = rsp.Body
 		}
-
 	}
+
 	rate := consensus * 100 / float32(len(randomMiners))
 	if rate < consensusThresh {
 		t.completeTxn(StatusError, "", fmt.Errorf("submit transaction failed. %s", tFailureRsp))
@@ -1823,20 +1823,14 @@ func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
 // WritePoolLock locks tokens for current user and given allocation, using given
 // duration. If blobberID is not empty, then tokens will be locked for given
 // allocation->blobber only.
-func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64,
-	lock, fee uint64) (err error) {
+func (t *Transaction) WritePoolLock(allocID string, lock, fee uint64) (err error) {
 
 	type lockRequest struct {
-		Duration     time.Duration `json:"duration"`
-		AllocationID string        `json:"allocation_id"`
-		BlobberID    string        `json:"blobber_id,omitempty"`
+		AllocationID string `json:"allocation_id"`
 	}
 
 	var lr lockRequest
-	lr.Duration = time.Duration(duration)
 	lr.AllocationID = allocID
-	lr.BlobberID = blobberID
-
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_WRITE_POOL_LOCK, &lr, lock)
 	if err != nil {
@@ -1849,15 +1843,15 @@ func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64,
 }
 
 // WritePoolUnlock for current user and given pool.
-func (t *Transaction) WritePoolUnlock(poolID string, fee uint64) (
+func (t *Transaction) WritePoolUnlock(allocID string, fee uint64) (
 	err error) {
 
 	type unlockRequest struct {
-		PoolID string `json:"pool_id"`
+		AllocationID string `json:"allocation_id"`
 	}
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_WRITE_POOL_UNLOCK, &unlockRequest{
-			PoolID: poolID,
+			AllocationID: allocID,
 		}, 0)
 	if err != nil {
 		Logger.Error(err)

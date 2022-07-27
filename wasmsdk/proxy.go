@@ -109,13 +109,14 @@ func main() {
 				"showLogs":              showLogs,
 
 				//blobber
-				"delete":   Delete,
-				"rename":   Rename,
-				"copy":     Copy,
-				"move":     Move,
-				"share":    Share,
-				"download": Download,
-				"upload":   Upload,
+				"delete":      Delete,
+				"rename":      Rename,
+				"copy":        Copy,
+				"move":        Move,
+				"share":       Share,
+				"download":    Download,
+				"upload":      Upload,
+				"listObjects": listObjects,
 
 				// zcn txn
 				"commitFileMetaTxn":   CommitFileMetaTxn,
@@ -132,6 +133,7 @@ func main() {
 				//allocation
 				"createAllocation":      createAllocation,
 				"getAllocationBlobbers": getAllocationBlobbers,
+				"listAllocations":       listAllocations,
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,

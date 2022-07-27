@@ -10,7 +10,7 @@ type (
 	JobStatus uint
 	// JobResult = Authorizer task result, it wraps actual result of the query inside authorizer
 	JobResult interface {
-		// Error = Status of Authorizer job
+		// Error = Status of Authorizer job on authorizer server
 		Error() error
 		// Data returns the actual result
 		Data() interface{}
