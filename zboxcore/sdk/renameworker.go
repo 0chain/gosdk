@@ -33,6 +33,7 @@ type RenameRequest struct {
 	ctx            context.Context
 	wg             *sync.WaitGroup
 	renameMask     uint32
+	maskMU         *sync.Mutex
 	connectionID   string
 	Consensus
 }
@@ -70,7 +71,9 @@ func (req *RenameRequest) renameBlobberObject(blobber *blockchain.StorageNode, b
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusOK {
 			req.consensus++
-			req.renameMask |= (1 << uint32(blobberIdx)) //Can have race condition
+			req.maskMU.Lock()
+			req.renameMask |= (1 << uint32(blobberIdx))
+			req.maskMU.Unlock()
 			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " renamed.")
 		} else {
 			resp_body, err := ioutil.ReadAll(resp.Body)
@@ -125,7 +128,6 @@ func (req *RenameRequest) ProcessRename() error {
 	c, pos := 0, 0
 	for i := req.renameMask; i != 0; i &= ^(1 << uint32(pos)) {
 		pos = bits.TrailingZeros32(i)
-		//go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.wg)
 		commitReq := &CommitRequest{}
 		commitReq.allocationID = req.allocationID
 		commitReq.allocationTx = req.allocationTx

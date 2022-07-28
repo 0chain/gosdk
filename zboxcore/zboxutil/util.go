@@ -8,11 +8,13 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"math/bits"
 	"path/filepath"
 	"strings"
 
 	"errors"
 
+	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/h2non/filetype"
 	"github.com/lithammer/shortuuid/v3"
 	"golang.org/x/crypto/sha3"
@@ -209,4 +211,16 @@ func GetRefsHash(r []byte) string {
 	var buf []byte
 	buf = hash.Sum(buf)
 	return string(buf)
+}
+
+func GetActiveBlobbers(dirMask uint32, blobbers []*blockchain.StorageNode) []*blockchain.StorageNode {
+	var c, pos int
+	var r []*blockchain.StorageNode
+	for i := dirMask; i != 0; i &= ^(1 << pos) {
+		pos = bits.TrailingZeros32(i)
+		r = append(r, blobbers[pos])
+		c++
+	}
+
+	return r
 }
