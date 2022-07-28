@@ -124,6 +124,18 @@ create an allocation
 > [transaction.Transaction](https://github.com/0chain/gosdk/blob/e1e35e084d5c17d6bf233bbe8ac9c91701bdd8fd/core/transaction/entity.go#L32)
 
 
+### zcn.sdk.listAllocations
+list all allocations
+**Input**:
+> N/A
+
+**Output**:
+> [sdk.Allocation](https://github.com/0chain/gosdk/blob/a9e504e4a0e8fc76a05679e4ef183bb03b8db8e5/zboxcore/sdk/allocation.go#L140) array
+
+
+
+
+
 ## Blobber methods
 ### zcn.sdk.delete
 delete remote file from blobbers
@@ -236,3 +248,13 @@ stop current play
 
 **Output**:
 > N/A
+
+
+### zcn.sdk.listObjects
+list files with allocationID and remotePath
+
+**Input**:
+> allocationId string, remotePath string
+
+**Output**:
+> sdk.ListResult

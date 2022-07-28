@@ -15,8 +15,8 @@ type CopyFileChange struct {
 }
 
 func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
-	// path, _ := filepath.Split(ch.DestPath)
 	tSubDirs := getSubDirs(ch.DestPath)
+	rootRef.HashToBeComputed = true
 	dirRef := rootRef
 	treelevel := 0
 	for true {
@@ -42,6 +42,7 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		newRef.AllocationID = dirRef.AllocationID
 		newRef.Path = "/" + strings.Join(tSubDirs[:treelevel+1], "/")
 		newRef.Name = tSubDirs[treelevel]
+		newRef.HashToBeComputed = true
 		dirRef.AddChild(newRef)
 		dirRef = newRef
 		treelevel++
