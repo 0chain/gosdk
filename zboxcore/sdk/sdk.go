@@ -702,7 +702,7 @@ func StorageGetBlobberStatus(id string) (*ProviderStatus, error) {
 		return nil, errors.New("", "empty response")
 	}
 
-	var status *ProviderStatus
+	status := new(ProviderStatus)
 	if err = json.Unmarshal(b, status); err != nil {
 		return nil, errors.Wrap(err, "error decoding response:")
 	}
@@ -726,7 +726,7 @@ func StorageGetValidatorStatus(id string) (*ProviderStatus, error) {
 		return nil, errors.New("", "empty response")
 	}
 
-	var status *ProviderStatus
+	status := new(ProviderStatus)
 	if err = json.Unmarshal(b, status); err != nil {
 		return nil, errors.Wrap(err, "error decoding response:")
 	}

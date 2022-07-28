@@ -1303,59 +1303,59 @@ func (t *Transaction) MinerSCSharderSettings(info *MinerSCMinerInfo) (err error)
 	return
 }
 
-func (ta *Transaction) MinerSCKillMiner(id string) error {
+func (t *Transaction) MinerSCKillMiner(id string) error {
 	pid := ProviderId{
 		ID: id,
 	}
-	err := ta.createSmartContractTxn(MinerSmartContractAddress,
+	err := t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_KILL_MINER, pid, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err
 	}
-	go func() { ta.setNonceAndSubmit() }()
+	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
-func (ta *Transaction) MinerSCKillSharder(id string) error {
+func (t *Transaction) MinerSCKillSharder(id string) error {
 	pid := ProviderId{
 		ID: id,
 	}
-	err := ta.createSmartContractTxn(MinerSmartContractAddress,
+	err := t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_KILL_SHARDER, pid, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err
 	}
-	go func() { ta.setNonceAndSubmit() }()
+	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
-func (ta *Transaction) MinerSCShutDownMiner(id string) error {
+func (t *Transaction) MinerSCShutDownMiner(id string) error {
 	pid := ProviderId{
 		ID: id,
 	}
-	err := ta.createSmartContractTxn(MinerSmartContractAddress,
+	err := t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_SHUT_DOWN_MINER, pid, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err
 	}
-	go func() { ta.setNonceAndSubmit() }()
+	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
-func (ta *Transaction) MinerSCShutDownSharder(id string) error {
+func (t *Transaction) MinerSCShutDownSharder(id string) error {
 	pid := ProviderId{
 		ID: id,
 	}
-	err := ta.createSmartContractTxn(MinerSmartContractAddress,
+	err := t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_SHUT_DOWN_SHARDER, pid, 0)
 	if err != nil {
 		Logger.Error(err)
 		return err
 	}
-	go func() { ta.setNonceAndSubmit() }()
+	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
