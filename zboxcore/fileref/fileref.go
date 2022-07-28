@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 )
 
@@ -54,26 +55,27 @@ type RefEntity interface {
 	GetLookupHash() string
 	GetPath() string
 	GetName() string
-	GetCreatedAt() string
-	GetUpdatedAt() string
+	GetCreatedAt() common.Timestamp
+	GetUpdatedAt() common.Timestamp
 }
 
 type Ref struct {
-	Type           string `json:"type" mapstructure:"type"`
-	AllocationID   string `json:"allocation_id" mapstructure:"allocation_id"`
-	Name           string `json:"name" mapstructure:"name"`
-	Path           string `json:"path" mapstructure:"path"`
-	Size           int64  `json:"size" mapstructure:"size"`
-	ActualSize     int64  `json:"actual_file_size" mapstructure:"actual_file_size"`
-	Hash           string `json:"hash" mapstructure:"hash"`
-	ChunkSize      int64  `json:"chunk_size" mapstructure:"chunk_size"`
-	NumBlocks      int64  `json:"num_of_blocks" mapstructure:"num_of_blocks"`
-	PathHash       string `json:"path_hash" mapstructure:"path_hash"`
-	LookupHash     string `json:"lookup_hash" mapstructure:"lookup_hash"`
-	childrenLoaded bool
-	Children       []RefEntity `json:"-" mapstructure:"-"`
-	CreatedAt      string      `json:"created_at" mapstructure:"created_at"`
-	UpdatedAt      string      `json:"updated_at" mapstructure:"updated_at"`
+	Type             string `json:"type" mapstructure:"type"`
+	AllocationID     string `json:"allocation_id" mapstructure:"allocation_id"`
+	Name             string `json:"name" mapstructure:"name"`
+	Path             string `json:"path" mapstructure:"path"`
+	Size             int64  `json:"size" mapstructure:"size"`
+	ActualSize       int64  `json:"actual_file_size" mapstructure:"actual_file_size"`
+	Hash             string `json:"hash" mapstructure:"hash"`
+	ChunkSize        int64  `json:"chunk_size" mapstructure:"chunk_size"`
+	NumBlocks        int64  `json:"num_of_blocks" mapstructure:"num_of_blocks"`
+	PathHash         string `json:"path_hash" mapstructure:"path_hash"`
+	LookupHash       string `json:"lookup_hash" mapstructure:"lookup_hash"`
+	HashToBeComputed bool
+	ChildrenLoaded   bool
+	Children         []RefEntity      `json:"-" mapstructure:"-"`
+	CreatedAt        common.Timestamp `json:"created_at" mapstructure:"created_at"`
+	UpdatedAt        common.Timestamp `json:"updated_at" mapstructure:"updated_at"`
 }
 
 func GetReferenceLookup(allocationID string, path string) string {
@@ -81,32 +83,28 @@ func GetReferenceLookup(allocationID string, path string) string {
 }
 
 func (r *Ref) CalculateHash() string {
-	if len(r.Children) == 0 && !r.childrenLoaded {
+	if len(r.Children) == 0 && !r.ChildrenLoaded && !r.HashToBeComputed {
 		return r.Hash
 	}
-	for _, childRef := range r.Children {
-		childRef.CalculateHash()
-	}
+
 	childHashes := make([]string, len(r.Children))
-	childPathHashes := make([]string, len(r.Children))
+	childPaths := make([]string, len(r.Children))
 	var refNumBlocks int64
 	var size int64
+
 	for index, childRef := range r.Children {
+		childRef.CalculateHash()
 		childHashes[index] = childRef.GetHash()
-		childPathHashes[index] = childRef.GetPathHash()
+		childPaths[index] = childRef.GetPath()
 		refNumBlocks += childRef.GetNumBlocks()
 		size += childRef.GetSize()
 	}
-	// fmt.Println("ref name and path, hash :" + r.Name + " " + r.Path + " " + r.Hash)
-	// fmt.Println("ref hash data: " + strings.Join(childHashes, ":"))
-	r.Hash = encryption.Hash(strings.Join(childHashes, ":"))
-	// fmt.Println("ref hash : " + r.Hash)
 
+	r.Hash = encryption.Hash(strings.Join(childHashes, ":"))
+
+	r.PathHash = encryption.Hash(strings.Join(childPaths, ":"))
 	r.NumBlocks = refNumBlocks
 	r.Size = size
-
-	//fmt.Println("Ref Path hash: " + strings.Join(childPathHashes, ":"))
-	r.PathHash = encryption.Hash(strings.Join(childPathHashes, ":"))
 
 	return r.Hash
 }
@@ -143,11 +141,11 @@ func (r *Ref) GetName() string {
 	return r.Name
 }
 
-func (r *Ref) GetCreatedAt() string {
+func (r *Ref) GetCreatedAt() common.Timestamp {
 	return r.CreatedAt
 }
 
-func (r *Ref) GetUpdatedAt() string {
+func (r *Ref) GetUpdatedAt() common.Timestamp {
 	return r.UpdatedAt
 }
 
@@ -155,8 +153,23 @@ func (r *Ref) AddChild(child RefEntity) {
 	if r.Children == nil {
 		r.Children = make([]RefEntity, 0)
 	}
-	r.Children = append(r.Children, child)
-	r.childrenLoaded = true
+	var index int
+	var ltFound bool // less than found
+	// Add child in sorted fashion
+	for i, ref := range r.Children {
+		if strings.Compare(child.GetPath(), ref.GetPath()) == -1 {
+			index = i
+			ltFound = true
+			break
+		}
+	}
+	if ltFound {
+		r.Children = append(r.Children[:index+1], r.Children[index:]...)
+		r.Children[index] = child
+	} else {
+		r.Children = append(r.Children, child)
+	}
+	r.ChildrenLoaded = true
 }
 
 func (r *Ref) RemoveChild(idx int) {
@@ -167,17 +180,19 @@ func (r *Ref) RemoveChild(idx int) {
 }
 
 func (fr *FileRef) GetHashData() string {
-	hashArray := make([]string, 0)
-	hashArray = append(hashArray, fr.AllocationID)
-	hashArray = append(hashArray, fr.Type)
-	hashArray = append(hashArray, fr.Name)
-	hashArray = append(hashArray, fr.Path)
-	hashArray = append(hashArray, strconv.FormatInt(fr.Size, 10))
-	hashArray = append(hashArray, fr.ContentHash)
-	hashArray = append(hashArray, fr.MerkleRoot)
-	hashArray = append(hashArray, strconv.FormatInt(fr.ActualFileSize, 10))
-	hashArray = append(hashArray, fr.ActualFileHash)
-	hashArray = append(hashArray, strconv.FormatInt(fr.ChunkSize, 10))
+	hashArray := make([]string, 0, 10)
+	hashArray = append(hashArray,
+		fr.AllocationID,
+		fr.Type,
+		fr.Name,
+		fr.Path,
+		strconv.FormatInt(fr.Size, 10),
+		fr.ContentHash,
+		fr.MerkleRoot,
+		strconv.FormatInt(fr.ActualFileSize, 10),
+		fr.ActualFileHash,
+		strconv.FormatInt(fr.ChunkSize, 10),
+	)
 	return strings.Join(hashArray, ":")
 }
 
@@ -186,12 +201,8 @@ func (fr *FileRef) GetHash() string {
 }
 
 func (fr *FileRef) CalculateHash() string {
-	// fmt.Println("fileref name , path, hash", fr.Name, fr.Path, fr.Hash)
-	// fmt.Println("Fileref hash data: " + fr.GetHashData())
 	fr.Hash = encryption.Hash(fr.GetHashData())
-	// fmt.Println("Fileref hash : " + fr.Hash)
 	fr.NumBlocks = int64(math.Ceil(float64(fr.Size*1.0) / CHUNK_SIZE))
-	fr.PathHash = GetReferenceLookup(fr.AllocationID, fr.Path)
 	return fr.Hash
 }
 
@@ -222,10 +233,10 @@ func (fr *FileRef) GetName() string {
 	return fr.Name
 }
 
-func (fr *FileRef) GetCreatedAt() string {
+func (fr *FileRef) GetCreatedAt() common.Timestamp {
 	return fr.CreatedAt
 }
 
-func (fr *FileRef) GetUpdatedAt() string {
+func (fr *FileRef) GetUpdatedAt() common.Timestamp {
 	return fr.UpdatedAt
 }
