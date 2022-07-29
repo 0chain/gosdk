@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/0chain/errors"
@@ -207,6 +208,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 				},
 				ctx:          context.TODO(),
 				renameMask:   0,
+				maskMU:       &sync.Mutex{},
 				connectionID: mockConnectionId,
 				newName:      mockNewName,
 			}
@@ -434,6 +436,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 				},
 				ctx:          context.TODO(),
 				renameMask:   0,
+				maskMU:       &sync.Mutex{},
 				connectionID: mockConnectionId,
 				newName:      mockNewName,
 			}
