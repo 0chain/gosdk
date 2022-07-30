@@ -9,9 +9,9 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/resty"
@@ -151,7 +151,7 @@ func NewTransactionEntity(clientID string, chainID string, publicKey string, non
 	txn := &Transaction{}
 	txn.Version = "1.0"
 	txn.ClientID = clientID
-	txn.CreationDate = int64(common.Now())
+	txn.CreationDate = time.Now().UnixNano()
 	txn.ChainID = chainID
 	txn.PublicKey = publicKey
 	txn.TransactionNonce = nonce
