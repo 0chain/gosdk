@@ -505,12 +505,12 @@ func (_m *TransactionScheme) VestingUpdateConfig(vscc *zcncore.InputMap) error {
 }
 
 // WritePoolLock provides a mock function with given fields: allocID, blobberID, duration, lock, fee
-func (_m *TransactionScheme) WritePoolLock(allocID string, blobberID string, duration int64, lock int64, fee int64) error {
-	ret := _m.Called(allocID, blobberID, duration, lock, fee)
+func (_m *TransactionScheme) WritePoolLock(allocID string, lock int64, fee int64) error {
+	ret := _m.Called(allocID, lock, fee)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(string, string, int64, int64, int64) error); ok {
-		r0 = rf(allocID, blobberID, duration, lock, fee)
+	if rf, ok := ret.Get(0).(func(string, int64, int64) error); ok {
+		r0 = rf(allocID, lock, fee)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -519,12 +519,12 @@ func (_m *TransactionScheme) WritePoolLock(allocID string, blobberID string, dur
 }
 
 // WritePoolUnlock provides a mock function with given fields: poolID, fee
-func (_m *TransactionScheme) WritePoolUnlock(poolID string, fee int64) error {
-	ret := _m.Called(poolID, fee)
+func (_m *TransactionScheme) WritePoolUnlock(allocationId string, fee int64) error {
+	ret := _m.Called(allocationId, fee)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(string, int64) error); ok {
-		r0 = rf(poolID, fee)
+		r0 = rf(allocationId, fee)
 	} else {
 		r0 = ret.Error(0)
 	}

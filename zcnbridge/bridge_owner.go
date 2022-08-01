@@ -72,7 +72,7 @@ func (b *BridgeOwner) AddEthereumAuthorizer(ctx context.Context, address common.
 	tran, err := instance.AddAuthorizers(transactOpts, address)
 	if err != nil {
 		msg := "failed to execute BurnZCN transaction to ClientID = %s with amount = %s"
-		return nil, errors.Wrapf(err, msg, b.ID(), address.String())
+		return nil, errors.Wrapf(err, msg, b.ClientID(), address.String())
 	}
 
 	return tran, err
