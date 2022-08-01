@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -44,7 +45,7 @@ func (qq *coinmarketcapQuoteQuery) getUSD(ctx context.Context, symbol string) (f
 				return err
 			}
 			if resp.StatusCode != http.StatusOK {
-				return errors.New("token: " + strconv.Itoa(resp.StatusCode) + resp.Status)
+				return errors.New("coinmarketcap: " + strconv.Itoa(resp.StatusCode) + resp.Status)
 			}
 
 			err = json.Unmarshal(respBody, &result)
@@ -52,24 +53,33 @@ func (qq *coinmarketcapQuoteQuery) getUSD(ctx context.Context, symbol string) (f
 				return err
 			}
 
+			result.Raw = string(respBody)
+
 			return nil
 
 		})
 
-	r.Wait()
+	errs := r.Wait()
+	if len(errs) > 0 {
+		return 0, errs[0]
+	}
 
 	zcn, ok := result.Data[s]
 
 	if !ok || len(zcn) == 0 {
-		return 0, errors.New("token: " + symbol + " is not provided on coinmarketcap apis")
+		return 0, errors.New("coinmarketcap: " + symbol + " is not provided on coinmarketcap apis")
 	}
 
 	rate, ok := zcn[0].Quote["USD"]
 	if ok {
-		return rate.Price, nil
+		if rate.Price > 0 {
+			return rate.Price, nil
+		}
+
+		return 0, fmt.Errorf("coinmarketcap: invalid response %s", result.Raw)
 	}
 
-	return 0, errors.New("token: " + symbol + " to USD quote is not provided on coinmarketcap apis")
+	return 0, errors.New("coinmarketcap: " + symbol + " to USD quote is not provided on coinmarketcap apis")
 }
 
 // {
@@ -161,6 +171,7 @@ func (qq *coinmarketcapQuoteQuery) getUSD(ctx context.Context, symbol string) (f
 // }
 type coinmarketcapResponse struct {
 	Data map[string][]coinmarketcapCurrency `json:"data"`
+	Raw  string                             `json:"-"`
 }
 
 type coinmarketcapCurrency struct {
