@@ -1,9 +1,14 @@
 package blobber
 
-const (
+import (
+	"github.com/0chain/common/constants/endpoint"
+	"github.com/0chain/common/constants/endpoint/v1_endpoint/blobber_endpoint"
+)
+
+var (
 	// EndpointWriteMarkerLock api endpoint of WriteMarkerLock
-	EndpointWriteMarkerLock = "/v1/writemarker/lock/"
+	EndpointWriteMarkerLock = blobber_endpoint.WriteMarkerLock.FormattedPath(endpoint.LeadingAndTrailingSlash)
 
 	// EndpointRootHashnode api endpoint of getting root hashnode of an allocation
-	EndpointRootHashnode = "/v1/hashnode/root/"
+	EndpointRootHashnode = blobber_endpoint.HashnodeRoot.FormattedPath(endpoint.LeadingAndTrailingSlash)
 )

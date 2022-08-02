@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/0chain/common/constants/endpoint/v1_endpoint/sharder_endpoint"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -26,8 +27,8 @@ var (
 	ErrTransactionNotConfirmed = errors.New("zcn: transaction not confirmed")
 )
 
-const (
-	SharderEndpointHealthCheck = "/v1/healthcheck"
+var (
+	SharderEndpointHealthCheck = sharder_endpoint.HealthCheck.Path()
 )
 
 type QueryResult struct {

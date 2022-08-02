@@ -4,6 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/common/constants/endpoint"
+	"github.com/0chain/common/constants/endpoint/v1_endpoint/miner_endpoint"
+	"github.com/0chain/common/constants/endpoint/v1_endpoint/sharder_endpoint"
 	"math"
 	"net/http"
 	"strconv"
@@ -18,8 +21,8 @@ import (
 	"github.com/0chain/gosdk/core/util"
 )
 
-const TXN_SUBMIT_URL = "v1/transaction/put"
-const TXN_VERIFY_URL = "v1/transaction/get/confirmation?hash="
+var TXN_SUBMIT_URL = miner_endpoint.PutTransaction.FormattedPath(endpoint.NoSlash)
+var TXN_VERIFY_URL = sharder_endpoint.GetTransactionConfirmation.FormattedPath(endpoint.NoSlash) + "?hash="
 
 const (
 	TxnSuccess         = 1 // Indicates the transaction is successful in updating the state or smart contract

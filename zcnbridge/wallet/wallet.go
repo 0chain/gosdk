@@ -1,18 +1,21 @@
 package wallet
 
 import (
+	"github.com/0chain/common/constants/endpoint/v1_endpoint/authorizer_endpoint"
 	//"github.com/0chain/gosdk/zcnbridge/log"
 	"os"
 
 	"github.com/0chain/gosdk/core/logger"
 )
 
+var(
+	BurnWzcnTicketPath        =  authorizer_endpoint.GetBurnEtherTicket.Path()
+	BurnNativeTicketPath      = authorizer_endpoint.GetBurnNativeTicket.Path()
+)
 const (
 	ZCNSCSmartContractAddress = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712e0"
 	MintFunc                  = "mint"
 	BurnFunc                  = "burn"
-	BurnWzcnTicketPath        = "/v1/ether/burnticket/get"
-	BurnNativeTicketPath      = "/v1/0chain/burnticket/get"
 )
 
 var Logger logger.Logger

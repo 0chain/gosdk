@@ -4,6 +4,8 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
+	"github.com/0chain/common/constants/endpoint"
+	"github.com/0chain/common/constants/endpoint/v1_endpoint/sharder_endpoint"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -83,9 +85,9 @@ func extractSharders() []string {
 	return util.GetRandom(network.Sharders, len(network.Sharders))
 }
 
-const (
+var (
 	// ScRestApiUrl represents base URL path to execute smart contract rest points.
-	ScRestApiUrl = "v1/screst/"
+	ScRestApiUrl = sharder_endpoint.SmartContractFunction.FormattedPath(endpoint.TrailingSlash)
 )
 
 // makeScURL creates url.URL to make smart contract request to sharder.

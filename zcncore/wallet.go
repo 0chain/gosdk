@@ -5,6 +5,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/common/constants/endpoint"
+	"github.com/0chain/common/constants/endpoint/v1_endpoint/chain_endpoint"
+	"github.com/0chain/common/constants/endpoint/v1_endpoint/sharder_endpoint"
 	"log"
 	"math"
 	"net/http"
@@ -18,6 +21,7 @@ import (
 	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/transaction"
 
+	"github.com/0chain/common/constants/endpoint/v1_endpoint/miner_endpoint"
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/conf"
@@ -43,21 +47,21 @@ type ChainConfig struct {
 var defaultLogLevel = logger.DEBUG
 var Logger logger.Logger
 
-const (
-	REGISTER_CLIENT                  = `/v1/client/put`
-	GET_CLIENT                       = `/v1/client/get`
-	PUT_TRANSACTION                  = `/v1/transaction/put`
-	TXN_VERIFY_URL                   = `/v1/transaction/get/confirmation?hash=`
-	GET_BALANCE                      = `/v1/client/get/balance?client_id=`
-	GET_BLOCK_INFO                   = `/v1/block/get?`
-	GET_MAGIC_BLOCK_INFO             = `/v1/block/magic/get?`
-	GET_LATEST_FINALIZED             = `/v1/block/get/latest_finalized`
-	GET_LATEST_FINALIZED_MAGIC_BLOCK = `/v1/block/get/latest_finalized_magic_block`
-	GET_CHAIN_STATS                  = `/v1/chain/get/stats`
+var (
+	REGISTER_CLIENT                  = miner_endpoint.PutClient.Path()
+	GET_CLIENT                       = miner_endpoint.GetClient.Path()
+	PUT_TRANSACTION                  = miner_endpoint.PutTransaction.Path()
+	TXN_VERIFY_URL                   = sharder_endpoint.GetTransactionConfirmation.Path() + "?hash="
+	GET_BALANCE                      = miner_endpoint.GetClientBalance.Path() + "?client_id="
+	GET_BLOCK_INFO                   = chain_endpoint.GetBlock.Path() + "?"
+	GET_MAGIC_BLOCK_INFO             = sharder_endpoint.GetMagicBlock.Path() + "?"
+	GET_LATEST_FINALIZED             = chain_endpoint.GetLatestFinalizedBlock.Path()
+	GET_LATEST_FINALIZED_MAGIC_BLOCK = chain_endpoint.GetLatestFinalizedMagicBlock.Path()
+	GET_CHAIN_STATS                  = chain_endpoint.GetChainStats.Path()
 
 	// vesting SC
 
-	VESTINGSC_PFX = `/v1/screst/` + VestingSmartContractAddress
+	VESTINGSC_PFX = sharder_endpoint.SmartContractFunction.FormattedPath(endpoint.LeadingAndTrailingSlash) + VestingSmartContractAddress
 
 	GET_VESTING_CONFIG       = VESTINGSC_PFX + `/vesting-config`
 	GET_VESTING_POOL_INFO    = VESTINGSC_PFX + `/getPoolInfo`
@@ -65,12 +69,12 @@ const (
 
 	// faucet sc
 
-	FAUCETSC_PFX        = `/v1/screst/` + FaucetSmartContractAddress
+	FAUCETSC_PFX        =  sharder_endpoint.SmartContractFunction.FormattedPath(endpoint.LeadingAndTrailingSlash) + FaucetSmartContractAddress
 	GET_FAUCETSC_CONFIG = FAUCETSC_PFX + `/faucet-config`
 
 	// miner SC
 
-	MINERSC_PFX          = `/v1/screst/` + MinerSmartContractAddress
+	MINERSC_PFX          =  sharder_endpoint.SmartContractFunction.FormattedPath(endpoint.LeadingAndTrailingSlash) + MinerSmartContractAddress
 	GET_MINERSC_NODE     = MINERSC_PFX + "/nodeStat"
 	GET_MINERSC_POOL     = MINERSC_PFX + "/nodePoolStat"
 	GET_MINERSC_CONFIG   = MINERSC_PFX + "/configs"
@@ -82,7 +86,7 @@ const (
 
 	// storage SC
 
-	STORAGESC_PFX = "/v1/screst/" + StorageSmartContractAddress
+	STORAGESC_PFX =  sharder_endpoint.SmartContractFunction.FormattedPath(endpoint.LeadingAndTrailingSlash) + StorageSmartContractAddress
 
 	STORAGESC_GET_SC_CONFIG            = STORAGESC_PFX + "/storage-config"
 	STORAGESC_GET_CHALLENGE_POOL_INFO  = STORAGESC_PFX + "/getChallengePoolStat"
@@ -891,7 +895,7 @@ func SetupAuth(authHost, clientID, clientKey, publicKey, privateKey, localPublic
 
 func GetIdForUrl(url string) string {
 	url = strings.TrimRight(url, "/")
-	url = fmt.Sprintf("%v/_nh/whoami", url)
+	url = fmt.Sprintf("%v" + chain_endpoint.WhoAmI.Path(), url)
 	req, err := util.NewHTTPGetRequest(url)
 	if err != nil {
 		Logger.Error(url, "new get request failed. ", err.Error())

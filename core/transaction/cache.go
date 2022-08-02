@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/common/constants/endpoint/v1_endpoint/miner_endpoint"
 	"net/http"
 	"strconv"
 	"sync"
@@ -12,7 +13,7 @@ import (
 	"github.com/0chain/gosdk/core/util"
 )
 
-const GET_BALANCE = `/v1/client/get/balance?client_id=`
+var GET_BALANCE = miner_endpoint.GetClientBalance.Path() + "?client_id="
 const consensusThresh = float32(25.0)
 
 //var defaultLogLevel = logger.DEBUG

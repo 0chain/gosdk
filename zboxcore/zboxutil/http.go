@@ -5,6 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/0chain/common/constants/endpoint"
+	"github.com/0chain/common/constants/endpoint/v1_endpoint/blobber_endpoint"
+	"github.com/0chain/common/constants/endpoint/v1_endpoint/miner_endpoint"
+	"github.com/0chain/common/constants/endpoint/v1_endpoint/sharder_endpoint"
 	"io"
 	"io/ioutil"
 	"net"
@@ -22,8 +26,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/client"
 )
 
-const SC_REST_API_URL = "v1/screst/"
-const REGISTER_CLIENT = "v1/client/put"
+var SC_REST_API_URL = sharder_endpoint.SmartContractFunction.FormattedPath(endpoint.TrailingSlash)
+var REGISTER_CLIENT = miner_endpoint.PutClient.Path()
 
 const MAX_RETRIES = 5
 const SLEEP_BETWEEN_RETRIES = 5
@@ -39,26 +43,26 @@ type HttpClient interface {
 
 var Client HttpClient
 
-const (
-	ALLOCATION_ENDPOINT      = "/allocation"
-	UPLOAD_ENDPOINT          = "/v1/file/upload/"
-	RENAME_ENDPOINT          = "/v1/file/rename/"
-	COPY_ENDPOINT            = "/v1/file/copy/"
-	LIST_ENDPOINT            = "/v1/file/list/"
-	REFERENCE_ENDPOINT       = "/v1/file/referencepath/"
-	CONNECTION_ENDPOINT      = "/v1/connection/details/"
-	COMMIT_ENDPOINT          = "/v1/connection/commit/"
-	DOWNLOAD_ENDPOINT        = "/v1/file/download/"
-	LATEST_READ_MARKER       = "/v1/readmarker/latest"
-	FILE_META_ENDPOINT       = "/v1/file/meta/"
-	FILE_STATS_ENDPOINT      = "/v1/file/stats/"
-	OBJECT_TREE_ENDPOINT     = "/v1/file/objecttree/"
-	REFS_ENDPOINT            = "/v1/file/refs/"
-	COMMIT_META_TXN_ENDPOINT = "/v1/file/commitmetatxn/"
-	COLLABORATOR_ENDPOINT    = "/v1/file/collaborator/"
-	CALCULATE_HASH_ENDPOINT  = "/v1/file/calculatehash/"
-	SHARE_ENDPOINT           = "/v1/marketplace/shareinfo/"
-	DIR_ENDPOINT             = "/v1/dir/"
+var (
+	ALLOCATION_ENDPOINT      = blobber_endpoint.Allocation.FormattedPath(endpoint.LeadingAndTrailingSlash)
+	UPLOAD_ENDPOINT          = blobber_endpoint.FileUpload.FormattedPath(endpoint.LeadingAndTrailingSlash)
+	RENAME_ENDPOINT          = blobber_endpoint.FileRename.FormattedPath(endpoint.LeadingAndTrailingSlash)
+	COPY_ENDPOINT            = blobber_endpoint.FileCopy.FormattedPath(endpoint.LeadingAndTrailingSlash)
+	LIST_ENDPOINT            = blobber_endpoint.FileList.FormattedPath(endpoint.LeadingAndTrailingSlash)
+	REFERENCE_ENDPOINT       = blobber_endpoint.FileReferencePath.FormattedPath(endpoint.LeadingAndTrailingSlash)
+	CONNECTION_ENDPOINT      = blobber_endpoint.ConnectionDetails.FormattedPath(endpoint.LeadingAndTrailingSlash)
+	COMMIT_ENDPOINT          = blobber_endpoint.ConnectionCommit.FormattedPath(endpoint.LeadingAndTrailingSlash)
+	DOWNLOAD_ENDPOINT        = blobber_endpoint.FileDownload.FormattedPath(endpoint.LeadingAndTrailingSlash)
+	LATEST_READ_MARKER       = blobber_endpoint.LatestReadMarker.FormattedPath(endpoint.LeadingAndTrailingSlash)
+	FILE_META_ENDPOINT       = blobber_endpoint.FileMeta.FormattedPath(endpoint.LeadingAndTrailingSlash)
+	FILE_STATS_ENDPOINT      = blobber_endpoint.FileStats.FormattedPath(endpoint.LeadingAndTrailingSlash)
+	OBJECT_TREE_ENDPOINT     = blobber_endpoint.FileObjectTree.FormattedPath(endpoint.LeadingAndTrailingSlash)
+	REFS_ENDPOINT            = blobber_endpoint.FileRefs.FormattedPath(endpoint.LeadingAndTrailingSlash)
+	COMMIT_META_TXN_ENDPOINT = blobber_endpoint.FileCommitMetaTxn.FormattedPath(endpoint.LeadingAndTrailingSlash)
+	COLLABORATOR_ENDPOINT    = blobber_endpoint.FileCollaborator.FormattedPath(endpoint.LeadingAndTrailingSlash)
+	CALCULATE_HASH_ENDPOINT  = blobber_endpoint.FileCalculateHash.FormattedPath(endpoint.LeadingAndTrailingSlash)
+	SHARE_ENDPOINT           = blobber_endpoint.MarketplaceShareInfo.FormattedPath(endpoint.LeadingAndTrailingSlash)
+	DIR_ENDPOINT             = blobber_endpoint.Dir.FormattedPath(endpoint.LeadingAndTrailingSlash)
 
 	// CLIENT_SIGNATURE_HEADER represents http request header contains signature.
 	CLIENT_SIGNATURE_HEADER = "X-App-Client-Signature"

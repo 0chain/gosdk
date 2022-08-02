@@ -4,6 +4,8 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
+	"github.com/0chain/common/constants/endpoint"
+	"github.com/0chain/common/constants/endpoint/v1_endpoint/sharder_endpoint"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -19,10 +21,12 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
-const (
+var (
 	// SCRestAPIPrefix represents base URL path to execute smart contract rest points.
-	SCRestAPIPrefix        = "v1/screst/"
+	SCRestAPIPrefix        = sharder_endpoint.SmartContractFunction.FormattedPath(endpoint.TrailingSlash)
 	RestPrefix             = SCRestAPIPrefix + zcncore.ZCNSCSmartContractAddress
+)
+const (
 	PathGetAuthorizerNodes = "/getAuthorizerNodes"
 	PathGetGlobalConfig    = "/getGlobalConfig"
 	PathGetAuthorizer      = "/getAuthorizer"
