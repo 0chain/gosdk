@@ -44,6 +44,8 @@ github.com/0chain/bls-go-library-zboxmobile v1.26.2 h1:CPVdLtt90FTLQz++u1g2dS9ns
 github.com/0chain/bls-go-library-zboxmobile v1.26.2/go.mod h1:O4Vp1AfR4raRGwFeQpr9X/PQtncEicMoOe6BQt1oX0Y=
 github.com/0chain/common v0.0.2 h1:4bZI8+I0mdltwhx6iL8Z8ZUtdtDli8yQiwuDdjBu1lM=
 github.com/0chain/common v0.0.2/go.mod h1:ihVlBeD02IW8WyBc3LbwTLdFv6ufyWNbZnbvLVGVN0E=
+github.com/0chain/common v0.0.3 h1:2p/BzAPNMs/enA6WNoPJoadEhpQoT8aADXG4+uSdC2U=
+github.com/0chain/common v0.0.3/go.mod h1:ihVlBeD02IW8WyBc3LbwTLdFv6ufyWNbZnbvLVGVN0E=
 github.com/0chain/errors v1.0.3 h1:QQZPFxTfnMcRdt32DXbzRQIfGWmBsKoEdszKQDb0rRM=
 github.com/0chain/errors v1.0.3/go.mod h1:xymD6nVgrbgttWwkpSCfLLEJbFO6iHGQwk/yeSuYkIc=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v0.21.1/go.mod h1:fBF9PQNqB8scdgpZ3ufzaLntG0AG7C1WjPMsiFOmfHM=

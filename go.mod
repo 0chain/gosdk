@@ -3,7 +3,7 @@ module github.com/0chain/gosdk
 go 1.18
 
 require (
-	github.com/0chain/common v0.0.2
+	github.com/0chain/common v0.0.3
 	github.com/0chain/errors v1.0.3
 	github.com/btcsuite/btcd v0.23.1
 	github.com/dgraph-io/badger/v3 v3.2103.2
