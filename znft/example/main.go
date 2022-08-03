@@ -52,15 +52,31 @@ func main() {
 	// CreateFactoryERC721RandomSession
 
 	app := znft.NewNFTApplication(cfg)
+	factory, err := app.CreateFactorySession(context.Background(), cfg.FactoryAddress)
+	if err != nil {
+		panic(err)
+	}
+	count, err := factory.Count()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Total count of tokens: %d\n", count.Int64())
+	tokenAddress, err := factory.GetToken(big.NewInt(0))
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("Token address: %v\n", tokenAddress)
 
-	factorySession, err := app.CreateFactoryERC721Session(context.Background(), cfg.FactoryAddress)
+	// Specific factories
+
+	factoryERC721Session, err := app.CreateFactoryERC721Session(context.Background(), cfg.FactoryModuleERC721Address)
 	if err != nil {
 		panic(err)
 	}
 
 	data := []byte("")
 	max := new(big.Int).SetInt64(10000)
-	err = factorySession.CreateToken(
+	err = factoryERC721Session.CreateToken(
 		cfg.WalletAddress,
 		"TestFixedPriceToken",
 		"dNFT",

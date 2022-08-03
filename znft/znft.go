@@ -12,6 +12,8 @@ import (
 	storageerc721pack "github.com/0chain/gosdk/znft/contracts/dstorageerc721pack/binding"
 	storageerc721random "github.com/0chain/gosdk/znft/contracts/dstorageerc721random/binding"
 
+	factory "github.com/0chain/gosdk/znft/contracts/factory/binding"
+
 	factoryerc721 "github.com/0chain/gosdk/znft/contracts/factorymoduleerc721/binding"
 	factoryerc721fixed "github.com/0chain/gosdk/znft/contracts/factorymoduleerc721fixed/binding"
 	factoryerc721pack "github.com/0chain/gosdk/znft/contracts/factorymoduleerc721pack/binding"
@@ -67,6 +69,17 @@ func GetConfigDir() string {
 }
 
 // Functions used by session factories to create session
+
+func (app *Znft) constructFactory(ctx context.Context, address string) (*factory.Binding, *bind.TransactOpts, error) {
+	storage, err := app.createFactory(address)
+	if err != nil {
+		return nil, nil, errors.Wrapf(err, "failed to construct %s", "Factory")
+	}
+
+	transaction, err := app.createTransactOpts(ctx)
+
+	return storage, transaction, err
+}
 
 func (app *Znft) constructFactoryERC721(ctx context.Context, address string) (*factoryerc721.Binding, *bind.TransactOpts, error) {
 	storage, err := app.createFactoryERC721(address)
@@ -211,6 +224,30 @@ func (app *Znft) createTransactOptsWithEstimation(
 // Session factories
 
 // Factory Sessions
+
+func (app *Znft) CreateFactorySession(ctx context.Context, addr string) (IFactory, error) {
+	contract, transact, err := app.constructFactory(ctx, addr)
+	if err != nil {
+		return nil, err
+	}
+
+	session := &factory.BindingSession{
+		Contract: contract,
+		CallOpts: bind.CallOpts{
+			Pending: true,
+			From:    transact.From,
+			Context: ctx,
+		},
+		TransactOpts: *transact,
+	}
+
+	storage := &Factory{
+		session: session,
+		ctx:     ctx,
+	}
+
+	return storage, nil
+}
 
 func (app *Znft) CreateFactoryERC721Session(ctx context.Context, addr string) (IFactoryERC721, error) {
 	contract, transact, err := app.constructFactoryERC721(ctx, addr)
@@ -452,6 +489,20 @@ func (app *Znft) createStorageERC721Pack(address string) (*storageerc721pack.Bin
 
 	addr := common.HexToAddress(address)
 	instance, err := storageerc721pack.NewBinding(addr, client)
+
+	return instance, err
+}
+
+// Factories
+
+func (app *Znft) createFactory(address string) (*factory.Binding, error) {
+	client, err := CreateEthClient(app.cfg.EthereumNodeURL)
+	if err != nil {
+		return nil, err
+	}
+
+	addr := common.HexToAddress(address)
+	instance, err := factory.NewBinding(addr, client)
 
 	return instance, err
 }
