@@ -1,6 +1,7 @@
 package allocationchange
 
 import (
+	"path"
 	"path/filepath"
 
 	"github.com/0chain/errors"
@@ -15,7 +16,7 @@ type RenameFileChange struct {
 }
 
 func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
-	parentPath := filepath.Dir(ch.ObjectTree.GetPath())
+	parentPath := path.Dir(ch.ObjectTree.GetPath())
 	fields, err := common.GetPathFields(parentPath)
 	if err != nil {
 		return err
