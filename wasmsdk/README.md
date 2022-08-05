@@ -258,3 +258,15 @@ list files with allocationID and remotePath
 
 **Output**:
 > sdk.ListResult
+
+
+## Swap methods
+### zcn.sdk.setSwapWallets
+
+**Input**:
+> usdcTokenAddress, bancorAddress, zcnTokenAddress, ethWalletMnemonic string
+
+**Output**:
+> N/A
+
+

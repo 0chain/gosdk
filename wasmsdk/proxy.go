@@ -137,6 +137,9 @@ func main() {
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,
+
+				//swap
+				"setSwapWallets": setSwapWallets,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
