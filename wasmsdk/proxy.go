@@ -140,6 +140,7 @@ func main() {
 
 				//swap
 				"setSwapWallets": setSwapWallets,
+				"swapToken":      swapToken,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")

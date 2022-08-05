@@ -6,6 +6,7 @@ package main
 import (
 	"fmt"
 
+	"github.com/0chain/gosdk/zcnswap"
 	"github.com/0chain/gosdk/zcnswap/config"
 )
 
@@ -18,4 +19,8 @@ func setSwapWallets(usdcTokenAddress, bancorAddress, zcnTokenAddress, ethWalletM
 	}
 
 	fmt.Println("[swap]wallets are initialized")
+}
+
+func swapToken(swapAmount int64, tokenSource string) (string, error) {
+	return zcnswap.Swap(swapAmount, tokenSource)
 }

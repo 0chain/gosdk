@@ -269,4 +269,11 @@ list files with allocationID and remotePath
 **Output**:
 > N/A
 
+### zcn.sdk.swapToken
+
+**Input**:
+> swapAmount int64, tokenSource string
+
+**Output**:
+> string: txnHash
 
