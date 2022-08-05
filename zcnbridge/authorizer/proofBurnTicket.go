@@ -58,10 +58,24 @@ func (pb *ProofOfBurn) SignWithEthereum(b *zcnbridge.BridgeClient) (err error) {
 	return
 }
 
-func (pb *ProofOfBurn) SignWith0Chain(w *zcncrypto.Wallet) (err error) {
-	sig, err := zcncore.SignWith0Wallet(pb.UnsignedMessage(), w)
+// Sign can sign if chain config is initialized
+func (pb *ProofOfBurn) Sign() (err error) {
+	hash := zcncrypto.Sha3Sum256(pb.UnsignedMessage())
+	sig, err := zcncore.Sign(hash)
 	if err != nil {
-		return errors.Wrap("signature_0chain", "failed to sign proof-of-burn ticket using wallet ID "+w.ClientID, err)
+		return errors.Wrap("signature_0chain", "failed to sign proof-of-burn ticket using walletString ID ", err)
+	}
+	pb.Signature = []byte(sig)
+
+	return
+}
+
+// SignWith0Chain can sign with the provided walletString
+func (pb *ProofOfBurn) SignWith0Chain(w *zcncrypto.Wallet) (err error) {
+	hash := zcncrypto.Sha3Sum256(pb.UnsignedMessage())
+	sig, err := zcncore.SignWith0Wallet(hash, w)
+	if err != nil {
+		return errors.Wrap("signature_0chain", "failed to sign proof-of-burn ticket using walletString ID "+w.ClientID, err)
 	}
 	pb.Signature = []byte(sig)
 

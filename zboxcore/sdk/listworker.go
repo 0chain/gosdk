@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -41,20 +42,20 @@ type listResponse struct {
 }
 
 type ListResult struct {
-	Name            string        `json:"name"`
-	Path            string        `json:"path,omitempty"`
-	Type            string        `json:"type"`
-	Size            int64         `json:"size"`
-	Hash            string        `json:"hash,omitempty"`
-	MimeType        string        `json:"mimetype,omitempty"`
-	NumBlocks       int64         `json:"num_blocks"`
-	LookupHash      string        `json:"lookup_hash"`
-	EncryptionKey   string        `json:"encryption_key"`
-	ActualSize      int64         `json:"actual_size"`
-	ActualNumBlocks int64         `json:"actual_num_blocks"`
-	CreatedAt       string        `json:"created_at"`
-	UpdatedAt       string        `json:"updated_at"`
-	Children        []*ListResult `json:"list"`
+	Name            string           `json:"name"`
+	Path            string           `json:"path,omitempty"`
+	Type            string           `json:"type"`
+	Size            int64            `json:"size"`
+	Hash            string           `json:"hash,omitempty"`
+	MimeType        string           `json:"mimetype,omitempty"`
+	NumBlocks       int64            `json:"num_blocks"`
+	LookupHash      string           `json:"lookup_hash"`
+	EncryptionKey   string           `json:"encryption_key"`
+	ActualSize      int64            `json:"actual_size"`
+	ActualNumBlocks int64            `json:"actual_num_blocks"`
+	CreatedAt       common.Timestamp `json:"created_at"`
+	UpdatedAt       common.Timestamp `json:"updated_at"`
+	Children        []*ListResult    `json:"list"`
 	Consensus       `json:"-"`
 }
 
@@ -187,6 +188,7 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 				childResult.consensus = 0
 				childResult.consensusThresh = req.consensusThresh
 				childResult.fullconsensus = req.fullconsensus
+				childResult.consensusRequiredForOk = req.consensusRequiredForOk
 				childResultMap[actualHash] = childResult
 			}
 			childResult = childResultMap[actualHash]
