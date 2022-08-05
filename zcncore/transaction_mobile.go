@@ -50,7 +50,7 @@ type localConfig struct {
 
 type TransactionCommon interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
-	ExecuteSmartContract(address, methodName string, input string, val string) (*transaction.Transaction, error)
+	ExecuteSmartContract(address, methodName string, input string, val string) error
 
 	// Send implements sending token to a given clientid
 	Send(toClientID string, val string, desc string) error
@@ -355,20 +355,20 @@ func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (Transac
 	return t, err
 }
 
-func (t *Transaction) ExecuteSmartContract(address, methodName string, input string, val string) (*transaction.Transaction, error) {
+func (t *Transaction) ExecuteSmartContract(address, methodName string, input string, val string) error {
 	v, err := parseCoinStr(val)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	err = t.createSmartContractTxn(address, methodName, json.RawMessage(input), v)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	go func() {
 		t.setNonceAndSubmit()
 	}()
-	return t.txn, nil
+	return nil
 }
 
 func (t *Transaction) SetTransactionFee(txnFee string) error {
