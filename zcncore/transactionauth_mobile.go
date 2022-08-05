@@ -349,8 +349,7 @@ func (ta *TransactionWithAuth) UpdateAllocation(allocID string, sizeDiff int64,
 // WritePoolLock locks tokens for current user and given allocation, using given
 // duration. If blobberID is not empty, then tokens will be locked for given
 // allocation->blobber only.
-func (ta *TransactionWithAuth) WritePoolLock(allocID, blobberID string,
-	duration int64, lock, fee string) error {
+func (ta *TransactionWithAuth) WritePoolLock(allocID, lock, fee string) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
@@ -361,16 +360,11 @@ func (ta *TransactionWithAuth) WritePoolLock(allocID, blobberID string,
 		return err
 	}
 
-	type lockRequest struct {
-		Duration     time.Duration `json:"duration"`
+	var lr = struct {
 		AllocationID string        `json:"allocation_id"`
-		BlobberID    string        `json:"blobber_id,omitempty"`
+	} {
+		AllocationID: allocID,
 	}
-
-	var lr lockRequest
-	lr.Duration = time.Duration(duration)
-	lr.AllocationID = allocID
-	lr.BlobberID = blobberID
 
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_WRITE_POOL_LOCK, &lr, lv)
@@ -384,19 +378,20 @@ func (ta *TransactionWithAuth) WritePoolLock(allocID, blobberID string,
 }
 
 // WritePoolUnlock for current user and given pool.
-func (ta *TransactionWithAuth) WritePoolUnlock(poolID string, fee string) error {
+func (ta *TransactionWithAuth) WritePoolUnlock(allocID string, fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
 	}
 
-	type unlockRequest struct {
-		PoolID string `json:"pool_id"`
+	var ur =  struct {
+		AllocationID string `json:"allocation_id"`
+	} {
+		AllocationID: allocID,
 	}
+
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_WRITE_POOL_UNLOCK, &unlockRequest{
-			PoolID: poolID,
-		}, 0)
+		transaction.STORAGESC_WRITE_POOL_UNLOCK, &ur, 0)
 	if err != nil {
 		logging.Error(err)
 		return err

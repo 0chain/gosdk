@@ -74,7 +74,6 @@ const (
 	STORAGESC_GET_BLOBBERS             = STORAGESC_PFX + "/getblobbers"
 	STORAGESC_GET_BLOBBER              = STORAGESC_PFX + "/getBlobber"
 	STORAGESC_GET_TRANSACTIONS         = STORAGESC_PFX + "/transactions"
-	STORAGESC_GET_WRITE_POOL_INFO      = STORAGESC_PFX + "/getWritePoolStat"
 	STORAGE_GET_TOTAL_STORED_DATA      = STORAGESC_PFX + "/total-stored-data"
 )
 
@@ -133,7 +132,6 @@ const (
 	OpStorageSCGetBlobbers
 	OpStorageSCGetBlobber
 	OpStorageSCGetTransactions
-	OpStorageSCGetWritePoolInfo
 	OpZCNSCGetGlobalConfig
 	OpZCNSCGetAuthorizer
 	OpZCNSCGetAuthorizerNodes
@@ -998,22 +996,6 @@ func GetTransactions(toClient, fromClient, block_hash, sort string, limit, offse
 
 	var u = withParams(STORAGESC_GET_TRANSACTIONS, params)
 	go getInfoFromSharders(u, OpStorageSCGetTransactions, cb)
-	return
-}
-
-// GetWritePoolInfo obtains information about all write pools of a user.
-// If given clientID is empty, then current user used.
-func GetWritePoolInfo(clientID string, cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
-		return
-	}
-	if clientID == "" {
-		clientID = _config.wallet.ClientID
-	}
-	var url = withParams(STORAGESC_GET_WRITE_POOL_INFO, Params{
-		"client_id": clientID,
-	})
-	go getInfoFromSharders(url, OpStorageSCGetWritePoolInfo, cb)
 	return
 }
 

@@ -73,8 +73,8 @@ type TransactionCommon interface {
 	StakePoolUnlock(blobberID string, poolID string, fee string) error
 	UpdateBlobberSettings(blobber Blobber, fee string) error
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock, fee string) error
-	WritePoolLock(allocID string, blobberID string, duration int64, lock, fee string) error
-	WritePoolUnlock(poolID string, fee string) error
+	WritePoolLock(allocID string, lock, fee string) error
+	WritePoolUnlock(allocID string, fee string) error
 
 	VestingUpdateConfig(InputMap) error
 	MinerScUpdateConfig(InputMap) error
@@ -761,8 +761,7 @@ func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
 // WritePoolLock locks tokens for current user and given allocation, using given
 // duration. If blobberID is not empty, then tokens will be locked for given
 // allocation->blobber only.
-func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64,
-	lock, fee string) error {
+func (t *Transaction) WritePoolLock(allocID, lock, fee string) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
@@ -773,16 +772,11 @@ func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64,
 		return err
 	}
 
-	type lockRequest struct {
-		Duration     time.Duration `json:"duration"`
+	var lr = struct {
 		AllocationID string        `json:"allocation_id"`
-		BlobberID    string        `json:"blobber_id,omitempty"`
+	} {
+		AllocationID: allocID,
 	}
-
-	var lr lockRequest
-	lr.Duration = time.Duration(duration)
-	lr.AllocationID = allocID
-	lr.BlobberID = blobberID
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_WRITE_POOL_LOCK, &lr, lv)
@@ -796,19 +790,20 @@ func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64,
 }
 
 // WritePoolUnlock for current user and given pool.
-func (t *Transaction) WritePoolUnlock(poolID string, fee string) error {
+func (t *Transaction) WritePoolUnlock(allocID string, fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
 	}
 
-	type unlockRequest struct {
-		PoolID string `json:"pool_id"`
+	var ur = struct {
+		AllocationID string `json:"allocation_id"`
+	} {
+		AllocationID: allocID,
 	}
+
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_WRITE_POOL_UNLOCK, &unlockRequest{
-			PoolID: poolID,
-		}, 0)
+		transaction.STORAGESC_WRITE_POOL_UNLOCK, &ur, 0)
 	if err != nil {
 		logging.Error(err)
 		return err
