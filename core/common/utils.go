@@ -2,20 +2,21 @@ package common
 
 import (
 	"fmt"
-	"path/filepath"
+	"path"
 	"strings"
 )
 
 func GetPathFields(p string) ([]string, error) {
+
 	if p == "" || p == "/" {
 		return nil, nil
 	}
 
-	if !filepath.IsAbs(p) {
+	if !path.IsAbs(p) {
 		return nil, fmt.Errorf("path %s is not absolute", p)
 	}
 
-	p = filepath.Clean(p)
+	p = path.Clean(p)
 	fields := strings.Split(p, "/")
 	return fields[1:], nil
 }
