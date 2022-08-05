@@ -313,15 +313,15 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val uint64, desc 
 }
 
 type VestingDest struct {
-	ID     string         `json:"id"`     // destination ID
+	ID     string     `json:"id"`     // destination ID
 	Amount common.Balance `json:"amount"` // amount to vest for the destination
 }
 
 type VestingAddRequest struct {
-	Description  string         `json:"description"`  // allow empty
-	StartTime    int64          `json:"start_time"`   //
-	Duration     time.Duration  `json:"duration"`     //
-	Destinations []*VestingDest `json:"destinations"` //
+	Description  string           `json:"description"`  // allow empty
+	StartTime    common.Timestamp `json:"start_time"`   //
+	Duration     time.Duration    `json:"duration"`     //
+	Destinations []*VestingDest   `json:"destinations"` //
 }
 
 func (t *Transaction) VestingAdd(ar *VestingAddRequest, value uint64) (
