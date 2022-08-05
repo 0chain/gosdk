@@ -11,15 +11,15 @@ import (
 	"github.com/0chain/gosdk/core/transaction"
 )
 
-func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, input interface{}, val uint64) error {
+func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, input interface{}, val uint64) (*transaction.Transaction, error) {
 	err := ta.t.createSmartContractTxn(address, methodName, input, val)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	go func() {
 		ta.submitTxn()
 	}()
-	return nil
+	return ta.t.txn, nil
 }
 
 func (ta *TransactionWithAuth) SetTransactionFee(txnFee uint64) error {

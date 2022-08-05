@@ -119,7 +119,7 @@ type MinerSCUserPoolsInfo struct {
 
 type TransactionCommon interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
-	ExecuteSmartContract(address, methodName string, input interface{}, val uint64) error
+	ExecuteSmartContract(address, methodName string, input interface{}, val uint64) (*transaction.Transaction, error)
 	// Send implements sending token to a given clientid
 	Send(toClientID string, val uint64, desc string) error
 	// SetTransactionFee implements method to set the transaction fee
@@ -260,15 +260,15 @@ func NewTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (Transac
 	return t, err
 }
 
-func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val uint64) error {
+func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val uint64) (*transaction.Transaction, error) {
 	err := t.createSmartContractTxn(address, methodName, input, val)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	go func() {
 		t.setNonceAndSubmit()
 	}()
-	return nil
+	return t.txn, nil
 }
 
 func (t *Transaction) SetTransactionFee(txnFee uint64) error {

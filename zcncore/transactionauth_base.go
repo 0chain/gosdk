@@ -33,7 +33,7 @@ func newTransactionWithAuth(cb TransactionCallback, txnFee uint64, nonce int64) 
 
 func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) {
 	ta.t.txn.PublicKey = _config.wallet.Keys[0].PublicKey
-	err := ta.t.txn.ComputeHashAndSign(signFn)
+	err := ta.t.txn.ComputeHashAndSign(SignFn)
 	if err != nil {
 		return nil, errors.Wrap(err, "signing error.")
 	}
