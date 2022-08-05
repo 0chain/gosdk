@@ -1,9 +1,11 @@
 package allocationchange
 
 import (
+	"path"
 	"path/filepath"
 	"strings"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
@@ -13,7 +15,11 @@ type NewFileChange struct {
 }
 
 func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref) error {
-	tSubDirs := getSubDirs(filepath.Dir(ch.File.Path))
+	tSubDirs, err := common.GetPathFields(path.Dir(ch.File.Path))
+	if err != nil {
+		return err
+	}
+
 	dirRef := rootRef
 	for i := 0; i < len(tSubDirs); i++ {
 		found := false

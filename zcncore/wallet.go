@@ -93,7 +93,6 @@ const (
 	STORAGESC_GET_STAKE_POOL_USER_INFO = STORAGESC_PFX + "/getUserStakePoolStat"
 	STORAGESC_GET_BLOBBERS             = STORAGESC_PFX + "/getblobbers"
 	STORAGESC_GET_BLOBBER              = STORAGESC_PFX + "/getBlobber"
-	STORAGESC_GET_WRITE_POOL_INFO      = STORAGESC_PFX + "/getWritePoolStat"
 	STORAGE_GET_TOTAL_STORED_DATA      = STORAGESC_PFX + "/total-stored-data"
 )
 
@@ -156,7 +155,6 @@ const (
 	OpStorageSCGetStakePoolInfo
 	OpStorageSCGetBlobbers
 	OpStorageSCGetBlobber
-	OpStorageSCGetWritePoolInfo
 	OpZCNSCGetGlobalConfig
 	OpZCNSCGetAuthorizer
 	OpZCNSCGetAuthorizerNodes
@@ -565,23 +563,34 @@ func RegisterToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 			result <- res
 		}(miner)
 	}
+
+	var cwData string
+
 	consensus := float32(0)
 	for range _config.chain.Miners {
 		rsp := <-result
-		Logger.Debug(rsp.Url, rsp.Status)
+		Logger.Debug(rsp.Url, "Status: ", rsp.Status)
 
 		if rsp.StatusCode == http.StatusOK {
 			consensus++
+			cwData = rsp.Body
 		} else {
 			Logger.Debug(rsp.Body)
 		}
-
 	}
+
 	rate := consensus * 100 / float32(len(_config.chain.Miners))
 	if rate < consensusThresh {
 		statusCb.OnWalletCreateComplete(StatusError, "", "rate is less than consensus")
 		return fmt.Errorf("Register consensus not met. Consensus: %f, Expected: %f", rate, consensusThresh)
 	}
+
+	cw := &GetClientResponse{}
+	if err := json.Unmarshal([]byte(cwData), cw); err == nil {
+		wallet.Version = cw.Version
+		wallet.DateCreated = strconv.Itoa(cw.CreationDate)
+	}
+
 	w, err := wallet.Marshal()
 	if err != nil {
 		statusCb.OnWalletCreateComplete(StatusError, w, err.Error())
@@ -625,6 +634,19 @@ func GetClientDetails(clientID string) (*GetClientResponse, error) {
 // IsMnemonicValid is an utility function to check the mnemonic valid
 func IsMnemonicValid(mnemonic string) bool {
 	return zcncrypto.IsMnemonicValid(mnemonic)
+}
+
+// SetWallet should be set before any transaction or client specific APIs
+// splitKeyWallet parameter is valid only if SignatureScheme is "BLS0Chain"
+func SetWallet(w zcncrypto.Wallet, splitKeyWallet bool) error {
+	_config.wallet = w
+
+	if _config.chain.SignatureScheme == "bls0chain" {
+		_config.isSplitWallet = splitKeyWallet
+	}
+	_config.isValidWallet = true
+
+	return nil
 }
 
 // SetWalletInfo should be set before any transaction or client specific APIs
@@ -1239,22 +1261,6 @@ func GetBlobber(blobberID string, cb GetInfoCallback) (err error) {
 		"blobber_id": blobberID,
 	})
 	go getInfoFromSharders(url, OpStorageSCGetBlobber, cb)
-	return
-}
-
-// GetWritePoolInfo obtains information about all write pools of a user.
-// If given clientID is empty, then current user used.
-func GetWritePoolInfo(clientID string, cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
-		return
-	}
-	if clientID == "" {
-		clientID = _config.wallet.ClientID
-	}
-	var url = WithParams(STORAGESC_GET_WRITE_POOL_INFO, Params{
-		"client_id": clientID,
-	})
-	go getInfoFromSharders(url, OpStorageSCGetWritePoolInfo, cb)
 	return
 }
 

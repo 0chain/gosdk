@@ -59,31 +59,34 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 	req.wg.Wait()
 
 	if !req.isConsensusOk() {
-		return errors.New("Directory creation failed due to consensus not met")
+		return errors.New("directory creation failed due to consensus not met")
 	}
 
 	writeMarkerMU, err := CreateWriteMarkerMutex(client.GetClient(), a)
 	if err != nil {
-		return fmt.Errorf("Directory creation failed. Err: %s", err.Error())
+		return fmt.Errorf("directory creation failed. Err: %s", err.Error())
 	}
 	err = writeMarkerMU.Lock(context.TODO(), req.connectionID)
 	defer writeMarkerMU.Unlock(context.TODO(), req.connectionID) //nolint: errcheck
 	if err != nil {
-		return fmt.Errorf("Directory creation failed. Err: %s", err.Error())
+		return fmt.Errorf("directory creation failed. Err: %s", err.Error())
 	}
 
+	return req.commitRequest()
+}
+
+func (req *DirRequest) commitRequest() error {
 	req.consensus = 0
 	wg := &sync.WaitGroup{}
-	okBlobbers := bits.OnesCount32(req.dirMask)
-	wg.Add(okBlobbers)
-	commitReqs := make([]*CommitRequest, okBlobbers)
-	var c, pos int
-	for i := req.dirMask; i != 0; i &= ^(1 << pos) {
-		pos = bits.TrailingZeros32(i)
+	activeBlobbersNum := bits.OnesCount32(req.dirMask)
+	wg.Add(activeBlobbersNum)
+
+	commitReqs := make([]*CommitRequest, activeBlobbersNum)
+	for i, blobber := range zboxutil.GetActiveBlobbers(req.dirMask, req.blobbers) {
 		commitReq := &CommitRequest{}
 		commitReq.allocationID = req.allocationID
 		commitReq.allocationTx = req.allocationTx
-		commitReq.blobber = req.blobbers[pos]
+		commitReq.blobber = blobber
 
 		newChange := &allocationchange.DirCreateChange{}
 		newChange.RemotePath = req.remotePath
@@ -91,11 +94,11 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReq.connectionID = req.connectionID
 		commitReq.wg = wg
-		commitReqs[c] = commitReq
+		commitReqs[i] = commitReq
 		go AddCommitRequest(commitReq)
-		c++
 	}
 	wg.Wait()
+
 	for _, commitReq := range commitReqs {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
@@ -109,7 +112,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 		}
 
 		if !req.isConsensusOk() {
-			return errors.New("Delete failed: Commit consensus failed")
+			return errors.New("directory creation failed due consensus not met")
 		}
 	}
 	return nil

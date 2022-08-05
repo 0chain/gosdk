@@ -1,7 +1,7 @@
 package allocationchange
 
 import (
-	"path/filepath"
+	"path"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
@@ -20,7 +20,7 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		return nil
 	}
 
-	parentPath := filepath.Dir(ch.ObjectTree.GetPath())
+	parentPath := path.Dir(ch.ObjectTree.GetPath())
 
 	fields, err := common.GetPathFields(parentPath)
 	if err != nil {
