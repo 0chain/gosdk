@@ -366,7 +366,7 @@ func registerToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 	consensus := float32(0)
 	for range _config.chain.Miners {
 		rsp := <-result
-		logging.Debug(rsp.Url, rsp.Status)
+		logging.Debug(rsp.Url, "Status: ",rsp.Status)
 
 		if rsp.StatusCode == http.StatusOK {
 			consensus++

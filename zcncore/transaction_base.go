@@ -290,7 +290,7 @@ func (t *Transaction) submitTxn() {
 	consensus := float32(0)
 	for range randomMiners {
 		rsp := <-result
-		logging.Debug(rsp.Url, rsp.Status)
+		logging.Debug(rsp.Url, "Status: ", rsp.Status)
 		if rsp.StatusCode == http.StatusOK {
 			consensus++
 			tSuccessRsp = rsp.Body
