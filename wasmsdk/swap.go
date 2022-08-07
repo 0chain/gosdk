@@ -7,11 +7,10 @@ import (
 	"fmt"
 
 	"github.com/0chain/gosdk/zcnswap"
-	"github.com/0chain/gosdk/zcnswap/config"
 )
 
 func setSwapWallets(usdcTokenAddress, bancorAddress, zcnTokenAddress, ethWalletMnemonic string) {
-	config.Configuration = config.SwapConfig{
+	zcnswap.Configuration = zcnswap.SwapConfig{
 		UsdcTokenAddress: usdcTokenAddress,
 		BancorAddress:    bancorAddress,
 		ZcnTokenAddress:  zcnTokenAddress,

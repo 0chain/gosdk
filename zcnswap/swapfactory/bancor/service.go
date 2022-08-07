@@ -6,7 +6,7 @@ import (
 	"github.com/0chain/errors"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	contractErc20 "github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
-	"github.com/0chain/gosdk/zcnswap/config"
+	"github.com/0chain/gosdk/zcnswap"
 	"github.com/0chain/gosdk/zcnswap/contracts"
 	"github.com/0chain/gosdk/zcnswap/swapfactory"
 	"github.com/0chain/gosdk/zcnswap/swapfactory/erc20"
@@ -37,8 +37,8 @@ func (s *swapService) SwapWithConversionPath(pair *swapfactory.ExchangePair, fro
 	var affiliateAccount = cmn.HexToAddress("0x0000000000000000000000000000000000000000")
 
 	fromAddress := cmn.HexToAddress(from)
-	spender := cmn.HexToAddress(config.Configuration.BancorAddress)
-	fromToken := cmn.HexToAddress(config.Configuration.UsdcTokenAddress)
+	spender := cmn.HexToAddress(zcnswap.Configuration.BancorAddress)
+	fromToken := cmn.HexToAddress(zcnswap.Configuration.UsdcTokenAddress)
 
 	bancorModule, err := contracts.NewIBancorNetwork(spender, s.Client)
 	if err != nil {
@@ -191,7 +191,7 @@ func (s *swapService) PackConvert(path *[]cmn.Address, amount, minReturn *big.In
 func (s *swapService) EstimateRate(from, to string, amount *big.Int) (*swapfactory.ExchangePair, error) {
 	fromHex := cmn.HexToAddress(from)
 	toHex := cmn.HexToAddress(to)
-	bancorAddr := cmn.HexToAddress(config.Configuration.BancorAddress)
+	bancorAddr := cmn.HexToAddress(zcnswap.Configuration.BancorAddress)
 
 	bancorModule, err := contracts.NewIBancorNetwork(bancorAddr, s.Client)
 	if err != nil {
