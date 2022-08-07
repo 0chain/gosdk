@@ -39,7 +39,8 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	found := false
 	for i, child := range dirRef.Children {
 		if child.GetPath() == ch.ObjectTree.GetPath() {
-			dirRef.Children[i] = ch.ObjectTree
+			dirRef.RemoveChild(i)
+			dirRef.AddChild(ch.ObjectTree)
 			found = true
 			break
 		}
