@@ -14,11 +14,13 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.1
 	github.com/herumi/bls-go-binary v1.0.1-0.20220103075647-4e46f4fe2af2
 	github.com/klauspost/reedsolomon v1.9.16
+	github.com/labstack/echo v3.3.10+incompatible
 	github.com/lithammer/shortuuid/v3 v3.0.7
 	github.com/magma/augmented-networks/accounting/protos v0.1.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pkg/errors v0.9.1
+	github.com/shopspring/decimal v1.3.1
 	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.7.2
 	github.com/tyler-smith/go-bip39 v1.1.0
@@ -59,6 +61,7 @@ require (
 	github.com/holiman/uint256 v1.2.0 // indirect
 	github.com/huin/goupnp v1.0.3 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
+	github.com/labstack/gommon v0.3.0 // indirect
 	github.com/magiconair/properties v1.8.6 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect
 	github.com/mattn/go-isatty v0.0.14 // indirect
@@ -78,6 +81,8 @@ require (
 	github.com/subosito/gotenv v1.4.0 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/tklauser/numcpus v0.5.0 // indirect
+	github.com/valyala/bytebufferpool v1.0.0 // indirect
+	github.com/valyala/fasttemplate v1.2.1 // indirect
 	go.dedis.ch/fixbuf v1.0.3 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/mobile v0.0.0-20220518205345-8578da9835fd // indirect

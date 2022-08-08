@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -31,7 +32,7 @@ func (qq *bancorQuoteQuery) getUSD(ctx context.Context, symbol string) (float64,
 		evnName := "BANCOR_DLTID_" + strings.ToUpper(symbol)
 		id, ok := os.LookupEnv(evnName)
 		if !ok {
-			return 0, errors.New("token: please configure dlt_id on environment variable [" + evnName + "] first")
+			return 0, errors.New("bancor: please configure dlt_id on environment variable [" + evnName + "] first")
 		}
 		dltId = id
 
@@ -46,7 +47,7 @@ func (qq *bancorQuoteQuery) getUSD(ctx context.Context, symbol string) (float64,
 			}
 
 			if resp.StatusCode != http.StatusOK {
-				return errors.New("token: " + strconv.Itoa(resp.StatusCode) + resp.Status)
+				return errors.New("bancor: " + strconv.Itoa(resp.StatusCode) + resp.Status)
 			}
 
 			err = json.Unmarshal(respBody, &result)
@@ -54,25 +55,41 @@ func (qq *bancorQuoteQuery) getUSD(ctx context.Context, symbol string) (float64,
 				return err
 			}
 
+			result.Raw = string(respBody)
+
 			return nil
 
 		})
 
-	r.Wait()
+	errs := r.Wait()
+	if len(errs) > 0 {
+		return 0, errs[0]
+	}
 
 	rate, ok := result.Data.Rate24hAgo["usd"]
 
 	if ok {
+		if rate == 0 {
+			rate, ok = result.Data.Rate["usd"]
+			if ok {
+				if rate == 0 {
+					return 0, fmt.Errorf("bancor: invalid response %s", result.Raw)
+				}
+			}
+		}
+
 		return rate, nil
 	}
 
-	return 0, errors.New("token: " + symbol + " price is not provided on bancor apis")
+	return 0, fmt.Errorf("bancor: %s price is not provided on bancor apis", symbol)
 }
 
 type bancorResponse struct {
 	Data bancorMarketData `json:"data"`
+	Raw  string           `json:"-"`
 }
 
 type bancorMarketData struct {
+	Rate       map[string]float64 `json:"rate"`
 	Rate24hAgo map[string]float64 `json:"rate24hAgo"`
 }

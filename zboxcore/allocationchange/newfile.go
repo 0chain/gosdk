@@ -1,6 +1,7 @@
 package allocationchange
 
 import (
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -14,7 +15,7 @@ type NewFileChange struct {
 }
 
 func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref) error {
-	tSubDirs, err := common.GetPathFields(filepath.Dir(ch.File.Path))
+	tSubDirs, err := common.GetPathFields(path.Dir(ch.File.Path))
 	if err != nil {
 		return err
 	}
