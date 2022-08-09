@@ -54,7 +54,7 @@ const (
 	FILE_STATS_ENDPOINT      = "/v1/file/stats/"
 	OBJECT_TREE_ENDPOINT     = "/v1/file/objecttree/"
 	REFS_ENDPOINT            = "/v1/file/refs/"
-	RECENT_REFS_ENDPOINT     = "/v1/file/recent-refs/"
+	RECENT_REFS_ENDPOINT     = "/v1/file/refs/recent"
 	COMMIT_META_TXN_ENDPOINT = "/v1/file/commitmetatxn/"
 	COLLABORATOR_ENDPOINT    = "/v1/file/collaborator/"
 	CALCULATE_HASH_ENDPOINT  = "/v1/file/calculatehash/"
