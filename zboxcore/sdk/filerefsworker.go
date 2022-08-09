@@ -175,9 +175,8 @@ type RecentlyAddedRefRequest struct {
 }
 
 type RecentlyAddedRefResult struct {
-	TotalPages int    `json:"total_pages"`
-	Offset     int    `json:"offset"`
-	Refs       []ORef `json:"refs"`
+	Offset int    `json:"offset"`
+	Refs   []ORef `json:"refs"`
 }
 
 type RecentlyAddedRefResponse struct {
@@ -249,7 +248,6 @@ func (r *RecentlyAddedRefRequest) getRecentlyAddedRefs(resp *RecentlyAddedRefRes
 		return
 	}
 
-	fmt.Printf("Request url: %s\n", req.URL)
 	result := RecentlyAddedRefResult{}
 	ctx, cncl := context.WithTimeout(r.ctx, time.Second*30)
 	err = zboxutil.HttpDo(ctx, cncl, req, func(hResp *http.Response, err error) error {
