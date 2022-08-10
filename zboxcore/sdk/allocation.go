@@ -721,6 +721,12 @@ func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit in
 		return nil, notInitialized
 	}
 
+	if page < 1 || pageLimit < 1 {
+		return nil, errors.New("invalid_params",
+			fmt.Sprintf("page and pageLimit value should be greater than 1."+
+				"Got page: %d, pageLimit: %d", page, pageLimit))
+	}
+
 	offset := int64(page-1) * int64(pageLimit)
 	req := &RecentlyAddedRefRequest{
 		allocationID: a.ID,
