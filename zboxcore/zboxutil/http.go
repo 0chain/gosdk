@@ -269,9 +269,9 @@ func NewRecentlyAddedRefsRequest(bUrl, allocID string, fromDate, offset int64, p
 	nUrl.Path += RECENT_REFS_ENDPOINT + allocID
 
 	params := url.Values{}
-	params.Add("pageLimit", strconv.Itoa(pageLimit))
+	params.Add("page-limit", strconv.Itoa(pageLimit))
 	params.Add("offset", strconv.FormatInt(offset, 10))
-	params.Add("from_date", strconv.FormatInt(fromDate, 10))
+	params.Add("from-date", strconv.FormatInt(fromDate, 10))
 
 	nUrl.RawQuery = params.Encode()
 	req, err := http.NewRequest(http.MethodGet, nUrl.String(), nil)
