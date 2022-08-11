@@ -1,5 +1,5 @@
-//go:build !mobile
-// +build !mobile
+//go:build mobile
+// +build mobile
 
 package zcncore
 
@@ -22,6 +22,22 @@ const NETWORK_ENDPOINT = "/network"
 var networkWorkerTimerInHours = 1
 
 type Network struct {
+	net network
+}
+
+func NewNetwork() *Network {
+	return &Network{}
+}
+
+func (net *Network) AddMiner(miner string) {
+	net.net.Miners = append(net.net.Miners, miner)
+}
+
+func (net *Network) AddSharder(sharder string) {
+	net.net.Sharders = append(net.net.Sharders, sharder)
+}
+
+type network struct {
 	Miners   []string `json:"miners"`
 	Sharders []string `json:"sharders"`
 }
@@ -55,12 +71,12 @@ func UpdateNetworkDetails() error {
 	shouldUpdate := UpdateRequired(networkDetails)
 	if shouldUpdate {
 		_config.isConfigured = false
-		_config.chain.Miners = networkDetails.Miners
-		_config.chain.Sharders = networkDetails.Sharders
-		transaction.InitCache(networkDetails.Sharders)
+		_config.chain.Miners = networkDetails.net.Miners
+		_config.chain.Sharders = networkDetails.net.Sharders
+		transaction.InitCache(networkDetails.net.Sharders)
 		conf.InitChainNetwork(&conf.Network{
-			Sharders: networkDetails.Sharders,
-			Miners:   networkDetails.Miners,
+			Sharders: networkDetails.net.Sharders,
+			Miners:   networkDetails.net.Miners,
 		})
 		_config.isConfigured = true
 	}
@@ -74,8 +90,8 @@ func UpdateRequired(networkDetails *Network) bool {
 		return true
 	}
 
-	minerSame := reflect.DeepEqual(miners, networkDetails.Miners)
-	sharderSame := reflect.DeepEqual(sharders, networkDetails.Sharders)
+	minerSame := reflect.DeepEqual(miners, networkDetails.net.Miners)
+	sharderSame := reflect.DeepEqual(sharders, networkDetails.net.Sharders)
 
 	if minerSame && sharderSame {
 		return false
@@ -94,31 +110,32 @@ func GetNetworkDetails() (*Network, error) {
 		return nil, errors.New("get_network_details_error", "Unable to get http request with error "+err.Error())
 	}
 
-	var networkResponse Network
+	var networkResponse network
 	err = json.Unmarshal([]byte(res.Body), &networkResponse)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error unmarshaling response :")
 	}
-	return &networkResponse, nil
-
+	return &Network{net: networkResponse}, nil
 }
 
 func GetNetwork() *Network {
 	return &Network{
-		Miners:   _config.chain.Miners,
-		Sharders: _config.chain.Sharders,
+		net: network{
+			Miners:   _config.chain.Miners,
+			Sharders: _config.chain.Sharders,
+		},
 	}
 }
 
-func SetNetwork(miners []string, sharders []string) {
-	_config.chain.Miners = miners
-	_config.chain.Sharders = sharders
+func SetNetwork(net *Network) {
+	_config.chain.Miners = net.net.Miners
+	_config.chain.Sharders = net.net.Sharders
 
-	transaction.InitCache(sharders)
+	transaction.InitCache(net.net.Sharders)
 
 	conf.InitChainNetwork(&conf.Network{
-		Miners:   miners,
-		Sharders: sharders,
+		Miners:   net.net.Miners,
+		Sharders: net.net.Sharders,
 	})
 }
 
