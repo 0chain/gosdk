@@ -137,6 +137,7 @@ func main() {
 				"download":    Download,
 				"upload":      Upload,
 				"listObjects": listObjects,
+				"createDir":   createDir,
 
 				// zcn txn
 				"commitFileMetaTxn":   CommitFileMetaTxn,

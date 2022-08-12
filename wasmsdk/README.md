@@ -260,6 +260,16 @@ list files with allocationID and remotePath
 > sdk.ListResult
 
 
+### zcn.sdk.createDir
+create folder from blobbers
+
+**Input**:
+> allocationID, remotePath string
+
+**Output**:
+> N/A
+
+
 ## Swap methods
 ### zcn.sdk.setSwapWallets
 
