@@ -30,6 +30,8 @@ func init() {
 	Sign = func(hash string) (string, error) {
 		return sys.Sign(hash, client.SignatureScheme, GetClientSysKeys())
 	}
+
+	sys.Verify = VerifySignature
 }
 
 // Populate Single Client
