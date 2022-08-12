@@ -519,6 +519,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	entityResult := make(map[string][]byte)
 	var retObj []byte
 	maxCount := 0
+	dominant := 200
 	wg := sync.WaitGroup{}
 	for _, sharder := range util.Shuffle(sharders) {
 		wg.Add(1)
@@ -542,9 +543,18 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 				responses[response.StatusCode]++
 				if responses[response.StatusCode] > maxCount {
 					maxCount = responses[response.StatusCode]
+				}
+
+				if responses[response.StatusCode] > maxCount {
+					maxCount = responses[response.StatusCode]
+				}
+
+				if isCurrentDominantStatus(response.StatusCode, responses, maxCount) {
+					dominant = response.StatusCode
 					retObj = entityBytes
 				}
-				entityResult[sharder] = retObj
+
+				entityResult[sharder] = entityBytes
 				mu.Unlock()
 			}
 		}(sharder)
@@ -555,14 +565,6 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	rate := float32(maxCount*100) / float32(numSharders)
 	if rate < consensusThresh {
 		err = errors.New("consensus_failed", "consensus failed on sharders")
-	}
-
-	c := 0
-	dominant := 200
-	for code, count := range responses {
-		if count > c {
-			dominant = code
-		}
 	}
 
 	if dominant != 200 {
@@ -605,4 +607,17 @@ func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f f
 	case err := <-c:
 		return err
 	}
+}
+
+// isCurrentDominantStatus determines whether the current response status is the dominant status among responses.
+//
+// The dominant status is where the response status is counted the most.
+// On tie-breakers, 200 will be selected if included.
+//
+// Function assumes runningTotalPerStatus can be accessed safely concurrently.
+func isCurrentDominantStatus(respStatus int, currentTotalPerStatus map[int]int, currentMax int) bool {
+	// mark status as dominant if
+	// - running total for status is the max and response is 200 or
+	// - running total for status is the max and count for 200 is lower
+	return currentTotalPerStatus[respStatus] == currentMax && (respStatus == 200 || currentTotalPerStatus[200] < currentMax)
 }
