@@ -57,7 +57,7 @@ func TestValidEthAddress(t *testing.T) {
 		defer client.Close()
 
 		realClient := ethclient.NewClient(client)
-		GetEthClient = func() (*ethclient.Client, error) {
+		getEthClient = func() (*ethclient.Client, error) {
 			return realClient, nil
 		}
 
@@ -76,7 +76,7 @@ func TestValidEthAddress(t *testing.T) {
 		realClient := ethclient.NewClient(client)
 		sendTransaction(realClient)
 
-		GetEthClient = func() (*ethclient.Client, error) {
+		getEthClient = func() (*ethclient.Client, error) {
 			return realClient, nil
 		}
 
@@ -93,7 +93,7 @@ func TestValidEthAddress(t *testing.T) {
 		defer client.Close()
 
 		realClient := ethclient.NewClient(client)
-		GetEthClient = func() (*ethclient.Client, error) {
+		getEthClient = func() (*ethclient.Client, error) {
 			return realClient, nil
 		}
 
@@ -131,7 +131,7 @@ func TestGetEthBalance(t *testing.T) {
 		realClient := ethclient.NewClient(client)
 		sendTransaction(realClient)
 
-		GetEthClient = func() (*ethclient.Client, error) {
+		getEthClient = func() (*ethclient.Client, error) {
 			return realClient, nil
 		}
 
@@ -162,7 +162,7 @@ func TestCheckEthHashStatus(t *testing.T) {
 		realClient := ethclient.NewClient(client)
 		sendTransaction(realClient)
 
-		GetEthClient = func() (*ethclient.Client, error) {
+		getEthClient = func() (*ethclient.Client, error) {
 			return realClient, nil
 		}
 		result := CheckEthHashStatus("0x05aa8890d4778e292f837dd36b59a50931c175f4648c3d8157525f5454475cf7")
@@ -179,7 +179,7 @@ func TestSuggestEthGasPrice(t *testing.T) {
 		defer client.Close()
 
 		realClient := ethclient.NewClient(client)
-		GetEthClient = func() (*ethclient.Client, error) {
+		getEthClient = func() (*ethclient.Client, error) {
 			return realClient, nil
 		}
 		gas, err := SuggestEthGasPrice()
@@ -197,7 +197,7 @@ func TestTransferEthTokens(t *testing.T) {
 		defer client.Close()
 
 		realClient := ethclient.NewClient(client)
-		GetEthClient = func() (*ethclient.Client, error) {
+		getEthClient = func() (*ethclient.Client, error) {
 			return realClient, nil
 		}
 
