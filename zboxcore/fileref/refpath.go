@@ -73,7 +73,7 @@ func (rp *ReferencePath) populateChildren(ref *Ref) error {
 			dref.AllocationID = ref.AllocationID
 			childEntity = dref
 		} else {
-			fref := &Ref{}
+			fref := &FileRef{}
 			fref.Type = FILE
 			fref.AllocationID = ref.AllocationID
 			childEntity = fref
