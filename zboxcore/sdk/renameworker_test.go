@@ -119,7 +119,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(0), req.renameMask)
-				require.Equal(float32(0), req.consensus)
+				require.Equal(float32(0), req.consensus.consensus)
 			},
 		},
 		{
@@ -189,7 +189,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(1), req.renameMask)
-				require.Equal(float32(1), req.consensus)
+				require.Equal(float32(1), req.consensus.consensus)
 			},
 		},
 	}
@@ -356,7 +356,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(15), req.renameMask)
-				require.Equal(float32(4), req.consensus)
+				require.Equal(float32(4), req.consensus.consensus)
 			},
 		},
 		{
@@ -368,7 +368,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(7), req.renameMask)
-				require.Equal(float32(3), req.consensus)
+				require.Equal(float32(3), req.consensus.consensus)
 			},
 		},
 		{
