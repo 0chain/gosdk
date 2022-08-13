@@ -31,6 +31,23 @@ func listObjects(allocationId string, remotePath string) (*sdk.ListResult, error
 
 }
 
+func createDir(allocationID, remotePath string) error {
+	if len(allocationID) == 0 {
+		return RequiredArg("allocationID")
+	}
+
+	if len(remotePath) == 0 {
+		return RequiredArg("remotePath")
+	}
+
+	allocationObj, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+
+	return allocationObj.CreateDir(remotePath)
+}
+
 // Delete delete file from blobbers
 func Delete(allocationID, remotePath string, autoCommit bool) (*FileCommandResponse, error) {
 
