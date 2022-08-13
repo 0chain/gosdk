@@ -875,9 +875,9 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
 	req.newName = destName
-	req.fullconsensus = a.fullconsensus
-	req.consensusThresh = a.consensusThreshold
-	req.consensusRequiredForOk = a.consensusOK
+	req.consensus.fullconsensus = a.fullconsensus
+	req.consensus.consensusThresh = a.consensusThreshold
+	req.consensus.consensusRequiredForOk = a.consensusOK
 	req.ctx = a.ctx
 	req.remotefilepath = path
 	req.renameMask = 0
