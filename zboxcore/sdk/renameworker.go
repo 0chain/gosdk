@@ -35,7 +35,7 @@ type RenameRequest struct {
 	renameMask     uint32
 	maskMU         *sync.Mutex
 	connectionID   string
-	Consensus
+	consensus      Consensus
 }
 
 func (req *RenameRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
@@ -70,7 +70,7 @@ func (req *RenameRequest) renameBlobberObject(blobber *blockchain.StorageNode, b
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusOK {
-			req.consensus++
+			req.consensus.Done()
 			req.maskMU.Lock()
 			req.renameMask |= (1 << uint32(blobberIdx))
 			req.maskMU.Unlock()
@@ -92,22 +92,32 @@ func (req *RenameRequest) renameBlobberObject(blobber *blockchain.StorageNode, b
 func (req *RenameRequest) ProcessRename() error {
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
+	var renameMutex sync.Mutex
+	removedNum := 0
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numList)
 	for i := 0; i < numList; i++ {
 		go func(blobberIdx int) {
 			defer req.wg.Done()
 			refEntity, err := req.renameBlobberObject(req.blobbers[blobberIdx], blobberIdx)
+			//it was removed from the blobber
+			if errors.Is(err, constants.ErrNotFound) {
+				req.consensus.Done()
+				renameMutex.Lock()
+				removedNum++
+				renameMutex.Unlock()
+
+				return
+			}
 			if err != nil {
 				l.Logger.Error(err.Error())
-				return
 			}
 			objectTreeRefs[blobberIdx] = refEntity
 		}(i)
 	}
 	req.wg.Wait()
 
-	if !req.isConsensusOk() {
+	if !req.consensus.isConsensusOk() {
 		return errors.New("Rename failed: Rename request failed. Operation failed.")
 	}
 
@@ -121,7 +131,7 @@ func (req *RenameRequest) ProcessRename() error {
 		return fmt.Errorf("Rename failed: %s", err.Error())
 	}
 
-	req.consensus = 0
+	req.consensus.consensus = float32(removedNum)
 	wg := &sync.WaitGroup{}
 	wg.Add(bits.OnesCount32(req.renameMask))
 	commitReqs := make([]*CommitRequest, bits.OnesCount32(req.renameMask))
@@ -151,7 +161,7 @@ func (req *RenameRequest) ProcessRename() error {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
 				l.Logger.Info("Commit success", commitReq.blobber.Baseurl)
-				req.consensus++
+				req.consensus.Done()
 			} else {
 				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
 			}
@@ -160,8 +170,8 @@ func (req *RenameRequest) ProcessRename() error {
 		}
 	}
 
-	if !req.isConsensusOk() {
-		return errors.New("Delete failed: Commit consensus failed")
+	if !req.consensus.isConsensusOk() {
+		return errors.New("Rename failed: Commit consensus failed")
 	}
 	return nil
 }
