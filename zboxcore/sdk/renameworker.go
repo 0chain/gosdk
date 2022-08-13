@@ -100,19 +100,23 @@ func (req *RenameRequest) ProcessRename() error {
 		go func(blobberIdx int) {
 			defer req.wg.Done()
 			refEntity, err := req.renameBlobberObject(req.blobbers[blobberIdx], blobberIdx)
+			if err == nil {
+				req.consensus.Done()
+				renameMutex.Lock()
+				objectTreeRefs[blobberIdx] = refEntity
+				renameMutex.Unlock()
+				return
+			}
 			//it was removed from the blobber
 			if errors.Is(err, constants.ErrNotFound) {
 				req.consensus.Done()
 				renameMutex.Lock()
 				removedNum++
 				renameMutex.Unlock()
-
 				return
 			}
-			if err != nil {
-				l.Logger.Error(err.Error())
-			}
-			objectTreeRefs[blobberIdx] = refEntity
+
+			l.Logger.Error(err.Error())
 		}(i)
 	}
 	req.wg.Wait()
