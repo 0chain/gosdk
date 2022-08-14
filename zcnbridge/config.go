@@ -172,6 +172,45 @@ func CreateBridgeClient(cfg *viper.Viper) *BridgeClient {
 	}
 }
 
+type BridgeClientYaml struct {
+	Password           string
+	EthereumAddress    string
+	BridgeAddress      string
+	AuthorizersAddress string
+	WzcnAddress        string
+	EthereumNodeURL    string
+	GasLimit           uint64
+	Value              int64
+	ConsensusThreshold float64
+}
+
+func CreateBridgeClientWithConfig(cfg BridgeClientYaml, wallet *zcncrypto.Wallet) *BridgeClient {
+	return &BridgeClient{
+		BridgeClientConfig: &BridgeClientConfig{
+			ContractsRegistry: ContractsRegistry{
+				BridgeAddress:      cfg.BridgeAddress,
+				WzcnAddress:        cfg.WzcnAddress,
+				AuthorizersAddress: cfg.AuthorizersAddress,
+			},
+			EthereumConfig: EthereumConfig{
+				EthereumNodeURL: cfg.EthereumNodeURL,
+				GasLimit:        cfg.GasLimit,
+				Value:           cfg.Value,
+			},
+			EthereumAddress: cfg.EthereumAddress,
+			Password:        cfg.Password,
+			Homedir:         ".",
+		},
+		BridgeConfig: &BridgeConfig{
+			ConsensusThreshold: cfg.ConsensusThreshold,
+		},
+		Instance: &Instance{
+			startTime: common.Now(),
+			zcnWallet: wallet,
+		},
+	}
+}
+
 func (b *BridgeClient) ClientID() string {
 	return b.zcnWallet.ClientID
 }
