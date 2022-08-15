@@ -92,8 +92,6 @@ func (req *RenameRequest) renameBlobberObject(blobber *blockchain.StorageNode, b
 func (req *RenameRequest) ProcessRename() error {
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
-	var renameMutex sync.Mutex
-	removedNum := 0
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numList)
 	for i := 0; i < numList; i++ {
@@ -102,40 +100,31 @@ func (req *RenameRequest) ProcessRename() error {
 			refEntity, err := req.renameBlobberObject(req.blobbers[blobberIdx], blobberIdx)
 			if err == nil {
 				req.consensus.Done()
-				renameMutex.Lock()
+				req.maskMU.Lock()
 				objectTreeRefs[blobberIdx] = refEntity
-				renameMutex.Unlock()
+				req.maskMU.Unlock()
 				return
 			}
-			//it was removed from the blobber
-			if errors.Is(err, constants.ErrNotFound) {
-				req.consensus.Done()
-				renameMutex.Lock()
-				removedNum++
-				renameMutex.Unlock()
-				return
-			}
-
 			l.Logger.Error(err.Error())
 		}(i)
 	}
 	req.wg.Wait()
 
 	if !req.consensus.isConsensusOk() {
-		return errors.New("Rename failed: Rename request failed. Operation failed.")
+		return errors.New("rename failed: Rename request failed. Operation failed")
 	}
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
 	if err != nil {
-		return fmt.Errorf("Rename failed: %s", err.Error())
+		return fmt.Errorf("rename failed: %s", err.Error())
 	}
 	err = writeMarkerMutex.Lock(context.TODO(), req.connectionID)
 	defer writeMarkerMutex.Unlock(context.TODO(), req.connectionID) //nolint: errcheck
 	if err != nil {
-		return fmt.Errorf("Rename failed: %s", err.Error())
+		return fmt.Errorf("rename failed: %s", err.Error())
 	}
 
-	req.consensus.consensus = float32(removedNum)
+	req.consensus.consensus = float32(0)
 	wg := &sync.WaitGroup{}
 	wg.Add(bits.OnesCount32(req.renameMask))
 	commitReqs := make([]*CommitRequest, bits.OnesCount32(req.renameMask))
@@ -175,7 +164,7 @@ func (req *RenameRequest) ProcessRename() error {
 	}
 
 	if !req.consensus.isConsensusOk() {
-		return errors.New("Rename failed: Commit consensus failed")
+		return errors.New("rename failed: Commit consensus failed")
 	}
 	return nil
 }
