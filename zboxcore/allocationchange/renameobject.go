@@ -1,7 +1,6 @@
 package allocationchange
 
 import (
-	"fmt"
 	"path"
 	"path/filepath"
 
@@ -57,13 +56,6 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
 			break
 		}
 	}
-
-	fmt.Printf("Children of path %s: [", dirRef.Path)
-	for _, c := range dirRef.Children {
-		fmt.Printf("%s\t", c.GetPath())
-	}
-
-	fmt.Printf("]\n\n")
 
 	if !found {
 		return errors.New("file_not_found", "Object to rename not found in blobber")
