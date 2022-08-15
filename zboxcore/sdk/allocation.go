@@ -889,9 +889,14 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 		return notInitialized
 	}
 
-	if len(path) == 0 {
+	if path == "" {
 		return errors.New("invalid_path", "Invalid path for the list")
 	}
+
+	if path == "/" {
+		return errors.New("invalid_operation", "cannot rename root path")
+	}
+
 	path = zboxutil.RemoteClean(path)
 	isabs := zboxutil.IsRemoteAbs(path)
 	if !isabs {
