@@ -86,7 +86,6 @@ func (r *Ref) CalculateHash() string {
 	if len(r.Children) == 0 && !r.ChildrenLoaded && !r.HashToBeComputed {
 		return r.Hash
 	}
-
 	childHashes := make([]string, len(r.Children))
 	childPaths := make([]string, len(r.Children))
 	var refNumBlocks int64
