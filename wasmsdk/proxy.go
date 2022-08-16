@@ -162,6 +162,8 @@ func main() {
 				//swap
 				"setSwapWallets": setSwapWallets,
 				"swapToken":      swapToken,
+				"initBridge":     initBridge,
+				"mintZCN":        mintZCN,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
