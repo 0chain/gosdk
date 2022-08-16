@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zcnbridge"
 	"github.com/0chain/gosdk/zcnbridge/errors"
+	"github.com/0chain/gosdk/zcncore"
 )
 
 //type BridgeSDKConfig struct {
@@ -20,7 +20,16 @@ import (
 
 var client *zcnbridge.BridgeClient
 
-func initBridge(cfg zcnbridge.BridgeClientYaml, wallet zcncrypto.Wallet) {
+func initBridge(walletStr string,
+	password string,
+	ethereumAddress string,
+	bridgeAddress string,
+	authorizersAddress string,
+	wzcnAddress string,
+	ethereumNodeURL string,
+	gasLimit uint64,
+	value int64,
+	consensusThreshold float64) error {
 	// Create bridge client configuration
 	//zcnbridge.CreateInitialClientConfig(
 	//	*cfg.ConfigBridgeFile,
@@ -35,29 +44,26 @@ func initBridge(cfg zcnbridge.BridgeClientYaml, wallet zcncrypto.Wallet) {
 	//	75.0,
 	//)
 	//
-	//yaml := zcnbridge.BridgeClientYaml{
-	//	Password:           "",
-	//	EthereumAddress:    "",
-	//	BridgeAddress:      "",
-	//	AuthorizersAddress: "",
-	//	WzcnAddress:        "",
-	//	EthereumNodeURL:    "",
-	//	GasLimit:           0,
-	//	Value:              0,
-	//	ConsensusThreshold: 0,
-	//}
-	//
-	//*zcncrypto.Wallet{
-	//	ClientID:    "",
-	//	ClientKey:   "",
-	//	Keys:        nil,
-	//	Mnemonic:    "",
-	//	Version:     "",
-	//	DateCreated: "",
-	//	Nonce:       0,
-	//}
+	cfg := zcnbridge.BridgeClientYaml{
+		Password:           password,
+		EthereumAddress:    ethereumAddress,
+		BridgeAddress:      bridgeAddress,
+		AuthorizersAddress: authorizersAddress,
+		WzcnAddress:        wzcnAddress,
+		EthereumNodeURL:    ethereumNodeURL,
+		GasLimit:           gasLimit,
+		Value:              value,
+		ConsensusThreshold: consensusThreshold,
+	}
 
-	client = zcnbridge.CreateBridgeClientWithConfig(cfg, &wallet)
+	wallet, err := zcncore.GetWallet(walletStr)
+	if err != nil {
+		return err
+	}
+
+	client = zcnbridge.CreateBridgeClientWithConfig(cfg, wallet)
+
+	return nil
 }
 
 func mintZCN(burnTrxHash string, timeout int64) (string, error) {
