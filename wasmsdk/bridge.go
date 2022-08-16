@@ -18,7 +18,7 @@ import (
 //	Development      *bool
 //}
 
-var client *zcnbridge.BridgeClient
+var bridge *zcnbridge.BridgeClient
 
 func initBridge(walletStr string,
 	password string,
@@ -61,7 +61,7 @@ func initBridge(walletStr string,
 		return err
 	}
 
-	client = zcnbridge.CreateBridgeClientWithConfig(cfg, wallet)
+	bridge = zcnbridge.CreateBridgeClientWithConfig(cfg, wallet)
 
 	return nil
 }
@@ -69,7 +69,7 @@ func initBridge(walletStr string,
 func mintZCN(burnTrxHash string, timeout int64) (string, error) {
 
 	// ASK authorizers for burn tickets to mint in WZCN
-	mintPayload, err := client.QueryZChainMintPayload(burnTrxHash)
+	mintPayload, err := bridge.QueryZChainMintPayload(burnTrxHash)
 	if err != nil {
 		return "", errors.Wrap("mint", "failed to QueryZChainMintPayload", err)
 	}
@@ -77,7 +77,7 @@ func mintZCN(burnTrxHash string, timeout int64) (string, error) {
 	c, cancel := context.WithTimeout(context.Background(), time.Duration(timeout*time.Second.Nanoseconds()))
 	defer cancel()
 
-	mintTrx, err := client.MintZCN(c, mintPayload)
+	mintTrx, err := bridge.MintZCN(c, mintPayload)
 	if err != nil {
 		return "", errors.Wrap("mint", "failed to MintZCN for txn "+mintTrx.Hash, err)
 	}
