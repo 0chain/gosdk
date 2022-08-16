@@ -147,12 +147,14 @@ func (req *RenameRequest) ProcessRename() error {
 	}
 	wg.Wait()
 
+	var errMessages string
 	for _, commitReq := range commitReqs {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
 				l.Logger.Info("Commit success", commitReq.blobber.Baseurl)
 				req.consensus++
 			} else {
+				errMessages += commitReq.result.ErrorMessage + "\t"
 				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
 			}
 		} else {
@@ -161,7 +163,7 @@ func (req *RenameRequest) ProcessRename() error {
 	}
 
 	if !req.isConsensusOk() {
-		return errors.New("Delete failed: Commit consensus failed")
+		return errors.New("Rename failed: Commit consensus failed. Error: " + errMessages)
 	}
 	return nil
 }
