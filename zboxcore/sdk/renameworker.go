@@ -124,7 +124,7 @@ func (req *RenameRequest) ProcessRename() error {
 		return fmt.Errorf("rename failed: %s", err.Error())
 	}
 
-	req.consensus.consensus = float32(0)
+	req.consensus.consensus = 0
 	wg := &sync.WaitGroup{}
 	wg.Add(bits.OnesCount32(req.renameMask))
 	commitReqs := make([]*CommitRequest, bits.OnesCount32(req.renameMask))
