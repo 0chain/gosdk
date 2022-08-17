@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/tokenrate"
@@ -364,7 +365,7 @@ func registerToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 	consensus := float32(0)
 	for range _config.chain.Miners {
 		rsp := <-result
-		logging.Debug(rsp.Url, "Status: ",rsp.Status)
+		logging.Debug(rsp.Url, "Status: ", rsp.Status)
 
 		if rsp.StatusCode == http.StatusOK {
 			consensus++
@@ -532,6 +533,30 @@ func SetAuthUrl(url string) error {
 	}
 	_config.authUrl = strings.TrimRight(url, "/")
 	return nil
+}
+
+func GetWalletBalance(clientId string) (common.Balance, error) {
+	err := checkSdkInit()
+	if err != nil {
+		return 0, err
+	}
+
+	cb := &walletCallback{}
+	cb.Add(1)
+
+	go func() {
+		value, info, err := getBalanceFromSharders(clientId)
+		if err != nil && strings.TrimSpace(info) != `{"error":"value not present"}` {
+			cb.OnBalanceAvailable(StatusError, value, info)
+			cb.err = err
+			return
+		}
+		cb.OnBalanceAvailable(StatusSuccess, value, info)
+	}()
+
+	cb.Wait()
+
+	return cb.balance, cb.err
 }
 
 // GetBalance retreives wallet balance from sharders
