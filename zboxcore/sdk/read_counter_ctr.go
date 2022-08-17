@@ -2,8 +2,6 @@ package sdk
 
 import (
 	"sync"
-
-	"github.com/0chain/gosdk/zboxcore/blockchain"
 )
 
 type blobberReadCounter struct {
@@ -11,31 +9,36 @@ type blobberReadCounter struct {
 	mu *sync.RWMutex
 }
 
-var brc blobberReadCounter
+var brc *blobberReadCounter
 
 func InitReadCounter() {
-	brc = blobberReadCounter{
-		m:  make(map[string]int64),
-		mu: &sync.RWMutex{},
+	if brc == nil {
+		brc = &blobberReadCounter{
+			m:  make(map[string]int64),
+			mu: &sync.RWMutex{},
+		}
 	}
 
 }
 
-func setBlobberReadCtr(blobber *blockchain.StorageNode, ctr int64) {
+func setBlobberReadCtr(clientID, blobberID string, ctr int64) {
+	key := clientID + blobberID
 	brc.mu.Lock()
-	brc.m[blobber.ID] = ctr
+	brc.m[key] = ctr
 	brc.mu.Unlock()
 }
 
-func getBlobberReadCtr(blobber *blockchain.StorageNode) int64 {
+func getBlobberReadCtr(clientID, blobberID string) int64 {
+	key := clientID + blobberID
 	brc.mu.RLock()
-	c := brc.m[blobber.ID]
+	c := brc.m[key]
 	brc.mu.RUnlock()
 	return c
 }
 
-func incBlobberReadCtr(blobber *blockchain.StorageNode, numBlocks int64) {
+func incBlobberReadCtr(clientID, blobberID string, numBlocks int64) {
+	key := clientID + blobberID
 	brc.mu.Lock()
-	brc.m[blobber.ID] += numBlocks
+	brc.m[key] += numBlocks
 	brc.mu.Unlock()
 }

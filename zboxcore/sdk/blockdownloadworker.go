@@ -113,7 +113,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		rm.AllocationID = req.allocationID
 		rm.OwnerID = req.allocOwnerID
 		rm.Timestamp = common.Now()
-		rm.ReadCounter = getBlobberReadCtr(req.blobber) + req.numBlocks
+		rm.ReadCounter = getBlobberReadCtr(client.GetClientID(), req.blobber.ID) + req.numBlocks
 		err = rm.Sign()
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error: Signing readmarker failed")}
@@ -176,9 +176,9 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 						return err
 					}
 
-					if rspData.LatestRM.ReadCounter >= getBlobberReadCtr(req.blobber) {
+					if rspData.LatestRM.ReadCounter >= getBlobberReadCtr(client.GetClientID(), req.blobber.ID) {
 						zlogger.Logger.Info("Will be retrying download")
-						setBlobberReadCtr(req.blobber, rspData.LatestRM.ReadCounter)
+						setBlobberReadCtr(client.GetClientID(), req.blobber.ID, rspData.LatestRM.ReadCounter)
 						shouldRetry = true
 						return errors.New("stale_read_marker", "readmarker counter is not in sync with latest counter")
 					}
@@ -209,7 +209,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				rspData.BlockChunks = req.splitData(respBody, req.chunkSize)
 			}
 
-			incBlobberReadCtr(req.blobber, req.numBlocks)
+			incBlobberReadCtr(client.GetClientID(), req.blobber.ID, req.numBlocks)
 			req.result <- &rspData
 			return nil
 		})
