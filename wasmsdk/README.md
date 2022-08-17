@@ -133,7 +133,13 @@ list all allocations
 > [sdk.Allocation](https://github.com/0chain/gosdk/blob/a9e504e4a0e8fc76a05679e4ef183bb03b8db8e5/zboxcore/sdk/allocation.go#L140) array
 
 
+### zcn.sdk.getWalletBalance
+get wallet balance
+**Input**:
+> clientId string
 
+**Output**:
+> {zcn:float64, usd: float64}
 
 
 ## Blobber methods
