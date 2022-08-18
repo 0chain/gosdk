@@ -212,7 +212,7 @@ func handleResponse(responseChannel responseChannelType, eventsChannel eventsCha
 
 func queryAuthorizer(au *AuthorizerNode, request *requestHandler, responseChannel responseChannelType) {
 	log.Logger.Info("Query from authorizer", zap.String("ID", au.ID), zap.String("URL", au.URL))
-	ticketURL := strings.TrimSuffix(au.URL, "/") + request.path
+	ticketURL := strings.TrimSuffix("https://dev.0chain.net/authorizer01/", "/") + request.path
 	resp, body := readResponse(client.PostForm(ticketURL, request.values))
 	resp.AuthorizerID = au.ID
 
