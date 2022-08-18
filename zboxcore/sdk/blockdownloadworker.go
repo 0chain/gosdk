@@ -19,6 +19,11 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
+const (
+	NotEnoughTokens = "not_enough_tokens"
+	LockExists      = "LockExists"
+)
+
 type BlockDownloadRequest struct {
 	blobber            *blockchain.StorageNode
 	allocationID       string
@@ -187,11 +192,17 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 				}
 
-				if bytes.Contains(respBody, []byte("not_enough_tokens")) {
+				if bytes.Contains(respBody, []byte(NotEnoughTokens)) {
 					shouldRetry, retry = false, 3 // don't repeat
 					req.blobber.SetSkip(true)
-					return errors.New("not_enough_tokens", "")
+					return errors.New(NotEnoughTokens, "")
 				}
+
+				if bytes.Contains(respBody, []byte(LockExists)) {
+					shouldRetry = true
+					return errors.New(LockExists, string(respBody))
+				}
+
 				return errors.New("response_error", string(respBody))
 			}
 
