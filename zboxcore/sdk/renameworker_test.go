@@ -119,7 +119,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(0), req.renameMask)
-				require.Equal(float32(0), req.consensus)
+				require.Equal(float32(0), req.consensus.consensus)
 			},
 		},
 		{
@@ -189,7 +189,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(1), req.renameMask)
-				require.Equal(float32(1), req.consensus)
+				require.Equal(float32(1), req.consensus.consensus)
 			},
 		},
 	}
@@ -201,7 +201,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
-				Consensus: Consensus{
+				consensus: Consensus{
 					consensusThresh:        50,
 					fullconsensus:          4,
 					consensusRequiredForOk: 60,
@@ -356,7 +356,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(15), req.renameMask)
-				require.Equal(float32(4), req.consensus)
+				require.Equal(float32(4), req.consensus.consensus)
 			},
 		},
 		{
@@ -368,7 +368,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(7), req.renameMask)
-				require.Equal(float32(3), req.consensus)
+				require.Equal(float32(3), req.consensus.consensus)
 			},
 		},
 		{
@@ -377,7 +377,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			numCorrect:  2,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "Rename failed: Rename request failed. Operation failed.",
+			errMsg:      "rename failed: Commit consensus failed. Error: ",
 		},
 		{
 			name:        "Test_All_Blobber_Error_On_Rename_Failure",
@@ -385,7 +385,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			numCorrect:  0,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "Rename failed: Rename request failed. Operation failed.",
+			errMsg:      "rename failed: Commit consensus failed. Error: ",
 		},
 	}
 	for _, tt := range tests {
@@ -429,7 +429,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
-				Consensus: Consensus{
+				consensus: Consensus{
 					consensusThresh:        50,
 					fullconsensus:          4,
 					consensusRequiredForOk: 60,
