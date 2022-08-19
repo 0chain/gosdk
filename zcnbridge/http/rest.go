@@ -70,7 +70,7 @@ func MakeSCRestAPICall(opCode int, relativePath string, params Params, cb zcncor
 		wg.Add(1)
 		go func(sharderUrl string) {
 			defer wg.Done()
-
+			Logger.Info("params ", params)
 			var u = makeURL(params, sharderUrl, relativePath)
 			Logger.Info("Query ", u.String())
 
