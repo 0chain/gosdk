@@ -825,13 +825,13 @@ func GetMinerSCNodeInfo(id string, cb GetInfoCallback) (err error) {
 	return
 }
 
-func GetMinerSCNodePool(id, poolID string, cb GetInfoCallback) (err error) {
+func GetMinerSCNodePool(id string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
 	go getInfoFromSharders(withParams(GET_MINERSC_POOL, Params{
 		"id":      id,
-		"pool_id": poolID,
+		"pool_id": _config.wallet.ClientID,
 	}), 0, cb)
 
 	return
