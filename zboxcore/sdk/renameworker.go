@@ -111,17 +111,17 @@ func (req *RenameRequest) ProcessRename() error {
 	req.wg.Wait()
 
 	if !req.consensus.isConsensusOk() {
-		return errors.New("rename failed: Rename request failed. Operation failed")
+		return errors.New("Rename failed: Rename request failed. Operation failed")
 	}
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
 	if err != nil {
-		return fmt.Errorf("rename failed: %s", err.Error())
+		return fmt.Errorf("Rename failed: %s", err.Error())
 	}
 	err = writeMarkerMutex.Lock(context.TODO(), req.connectionID)
 	defer writeMarkerMutex.Unlock(context.TODO(), req.connectionID) //nolint: errcheck
 	if err != nil {
-		return fmt.Errorf("rename failed: %s", err.Error())
+		return fmt.Errorf("Rename failed: %s", err.Error())
 	}
 
 	req.consensus.consensus = 0
