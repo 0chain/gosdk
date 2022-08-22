@@ -45,16 +45,28 @@ func getAllocationBlobbers(preferredBlobberURLs []string,
 }
 
 func createAllocation(name string, datashards, parityshards int, size, expiry int64,
-	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64) (
+	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64, blobberIds []string) (
 	*transaction.Transaction, error) {
 
-	_, _, txn, err := sdk.CreateAllocation(name, datashards, parityshards, size, expiry, sdk.PriceRange{
-		Min: uint64(minReadPrice),
-		Max: uint64(maxReadPrice),
-	}, sdk.PriceRange{
-		Min: uint64(minWritePrice),
-		Max: uint64(maxWritePrice),
-	}, uint64(lock))
+	options := sdk.CreateAllocationOptions{
+		Name:         name,
+		DataShards:   datashards,
+		ParityShards: parityshards,
+		Size:         size,
+		Expiry:       expiry,
+		ReadPrice: sdk.PriceRange{
+			Min: uint64(minReadPrice),
+			Max: uint64(maxReadPrice),
+		},
+		WritePrice: sdk.PriceRange{
+			Min: uint64(minWritePrice),
+			Max: uint64(maxWritePrice),
+		},
+		Lock:       uint64(lock),
+		BlobberIds: blobberIds,
+	}
+
+	_, _, txn, err := sdk.CreateAllocationWith(options)
 
 	return txn, err
 }
