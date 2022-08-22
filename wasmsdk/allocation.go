@@ -25,6 +25,10 @@ func setZBoxHost(host string) {
 	}
 }
 
+func getBlobberIds(blobberUrls []string) ([]string, error) {
+	return sdk.GetBlobberIds(blobberUrls)
+}
+
 func getAllocationBlobbers(preferredBlobberURLs []string,
 	dataShards, parityShards int, size, expiry int64,
 	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64) ([]string, error) {
