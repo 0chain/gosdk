@@ -1,9 +1,13 @@
+//go:build !mobile
+// +build !mobile
+
 package zcncore
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
+	stderrors "errors"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -12,6 +16,7 @@ import (
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/resty"
+	"github.com/0chain/gosdk/core/util"
 )
 
 var (
@@ -63,6 +68,11 @@ func NewTransactionQuery(sharders []string) (*TransactionQuery, error) {
 	return tq, nil
 }
 
+func (tq *TransactionQuery) Reset() {
+	tq.selected = make(map[string]interface{})
+	tq.offline = make(map[string]interface{})
+}
+
 // validate validate data and input
 func (tq *TransactionQuery) validate(num int) error {
 	if tq == nil || tq.max == 0 {
@@ -83,11 +93,6 @@ func (tq *TransactionQuery) validate(num int) error {
 
 	return nil
 
-}
-
-func (tq *TransactionQuery) Reset() {
-	tq.selected = make(map[string]interface{})
-	tq.offline = make(map[string]interface{})
 }
 
 // buildUrl build url with host and parts
@@ -114,7 +119,7 @@ func (tq *TransactionQuery) checkHealth(ctx context.Context, host string) error 
 	// check health
 	r := resty.New()
 	requestUrl := tq.buildUrl(host, SharderEndpointHealthCheck)
-	Logger.Info("zcn: check health ", requestUrl)
+	logging.Info("zcn: check health ", requestUrl)
 	r.DoGet(ctx, requestUrl)
 	r.Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 		if err != nil {
@@ -179,57 +184,6 @@ func (tq *TransactionQuery) randOne(ctx context.Context) (string, error) {
 	}
 }
 
-// FromAny query transaction from any sharder that is not selected in previous queires. use any used sharder if there is not any unused sharder
-func (tq *TransactionQuery) FromAny(ctx context.Context, query string) (QueryResult, error) {
-
-	res := QueryResult{
-		StatusCode: http.StatusBadRequest,
-	}
-
-	err := tq.validate(1)
-
-	if err != nil {
-		return res, err
-	}
-
-	host, err := tq.randOne(ctx)
-
-	if err != nil {
-		return res, err
-	}
-
-	r := resty.New()
-	requestUrl := tq.buildUrl(host, query)
-
-	Logger.Debug("GET", requestUrl)
-
-	r.DoGet(ctx, requestUrl).
-		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
-			res.Error = err
-			if err != nil {
-				return err
-			}
-
-			res.Content = respBody
-			Logger.Debug(string(respBody))
-
-			if resp != nil {
-				res.StatusCode = resp.StatusCode
-			}
-
-			return nil
-		})
-
-	errs := r.Wait()
-
-	if len(errs) > 0 {
-		return res, errs[0]
-	}
-
-	return res, nil
-
-}
-
 // FromAll query transaction from all sharders whatever it is selected or offline in previous queires, and return consensus result
 func (tq *TransactionQuery) FromAll(ctx context.Context, query string, handle QueryResultHandle) error {
 	if tq == nil || tq.max == 0 {
@@ -253,10 +207,10 @@ func (tq *TransactionQuery) FromAll(ctx context.Context, query string, handle Qu
 			if resp != nil {
 				res.StatusCode = resp.StatusCode
 
-				Logger.Debug(req.URL.String() + " " + resp.Status)
-				Logger.Debug(string(respBody))
+				logging.Debug(req.URL.String() + " " + resp.Status)
+				logging.Debug(string(respBody))
 			} else {
-				Logger.Debug(req.URL.String())
+				logging.Debug(req.URL.String())
 
 			}
 
@@ -275,55 +229,101 @@ func (tq *TransactionQuery) FromAll(ctx context.Context, query string, handle Qu
 	return nil
 }
 
-// GetFastConfirmation get txn confirmation from a random online sharder
-func (tq *TransactionQuery) GetFastConfirmation(ctx context.Context, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
-	var confirmationBlockHeader *blockHeader
-	var confirmationBlock map[string]json.RawMessage
-	var lfbBlockHeader blockHeader
+func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryResult, error) {
 
-	// {host}/v1/transaction/get/confirmation?hash={txnHash}&content=lfb
-	result, err := tq.FromAny(ctx, tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"))
+	consensuses := make(map[int]int)
+	var maxConsensus int
+	var consensusesResp QueryResult
+	// {host}{query}
+	err := tq.FromAll(ctx, query,
+		func(qr QueryResult) bool {
+			//ignore response if it is network error
+			if qr.StatusCode >= 500 {
+				return false
+			}
+
+			consensuses[qr.StatusCode]++
+			if consensuses[qr.StatusCode] >= maxConsensus {
+				maxConsensus = consensuses[qr.StatusCode]
+				consensusesResp = qr
+			}
+
+			return false
+
+		})
+
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, err
 	}
 
-	if result.StatusCode == http.StatusOK {
-
-		err = json.Unmarshal(result.Content, &confirmationBlock)
-		if err != nil {
-			Logger.Error("txn confirmation parse error", err)
-			return nil, nil, nil, err
-		}
-
-		// parse `confirmation` section as block header
-		confirmationBlockHeader, err = getBlockHeaderFromTransactionConfirmation(txnHash, confirmationBlock)
-		if err == nil {
-			return confirmationBlockHeader, confirmationBlock, nil, nil
-		}
-
-		Logger.Error("txn confirmation parse header error", err)
-
-		// parse `latest_finalized_block` section
-		lfbRaw, ok := confirmationBlock["latest_finalized_block"]
-		if !ok {
-			return confirmationBlockHeader, confirmationBlock, nil, err
-		}
-
-		err = json.Unmarshal([]byte(lfbRaw), &lfbBlockHeader)
-		if err == nil {
-			return confirmationBlockHeader, confirmationBlock, &lfbBlockHeader, ErrTransactionNotConfirmed
-		}
-
-		Logger.Error("round info parse error.", err)
-		return nil, nil, nil, err
-
+	if maxConsensus == 0 {
+		return nil, stderrors.New("zcn: query not found")
 	}
 
-	return nil, nil, nil, thrown.Throw(ErrTransactionNotFound, strconv.Itoa(result.StatusCode))
+	rate := float32(maxConsensus*100) / float32(tq.max)
+	if rate < consensusThresh {
+		return nil, ErrInvalidConsensus
+	}
+
+	if consensusesResp.StatusCode != http.StatusOK {
+		return nil, stderrors.New(string(consensusesResp.Content))
+	}
+
+	return &consensusesResp, nil
 }
 
-func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSharders int, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
+// FromAny query transaction from any sharder that is not selected in previous queires. use any used sharder if there is not any unused sharder
+func (tq *TransactionQuery) FromAny(ctx context.Context, query string) (QueryResult, error) {
 
+	res := QueryResult{
+		StatusCode: http.StatusBadRequest,
+	}
+
+	err := tq.validate(1)
+
+	if err != nil {
+		return res, err
+	}
+
+	host, err := tq.randOne(ctx)
+
+	if err != nil {
+		return res, err
+	}
+
+	r := resty.New()
+	requestUrl := tq.buildUrl(host, query)
+
+	logging.Debug("GET", requestUrl)
+
+	r.DoGet(ctx, requestUrl).
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			res.Error = err
+			if err != nil {
+				return err
+			}
+
+			res.Content = respBody
+			logging.Debug(string(respBody))
+
+			if resp != nil {
+				res.StatusCode = resp.StatusCode
+			}
+
+			return nil
+		})
+
+	errs := r.Wait()
+
+	if len(errs) > 0 {
+		return res, errs[0]
+	}
+
+	return res, nil
+
+}
+
+func (tq *TransactionQuery) getConsensusConfirmation(ctx context.Context, numSharders int, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
 	maxConfirmation := int(0)
 	txnConfirmations := make(map[string]int)
 	var confirmationBlockHeader *blockHeader
@@ -343,21 +343,21 @@ func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSha
 			var cfmBlock map[string]json.RawMessage
 			err := json.Unmarshal([]byte(qr.Content), &cfmBlock)
 			if err != nil {
-				Logger.Error("txn confirmation parse error", err)
+				logging.Error("txn confirmation parse error", err)
 				return false
 			}
 
 			// parse `confirmation` section as block header
 			cfmBlockHeader, err := getBlockHeaderFromTransactionConfirmation(txnHash, cfmBlock)
 			if err != nil {
-				Logger.Error("txn confirmation parse header error", err)
+				logging.Error("txn confirmation parse header error", err)
 
 				// parse `latest_finalized_block` section
 				if lfbRaw, ok := cfmBlock["latest_finalized_block"]; ok {
 					var lfb blockHeader
 					err := json.Unmarshal([]byte(lfbRaw), &lfb)
 					if err != nil {
-						Logger.Error("round info parse error.", err)
+						logging.Error("round info parse error.", err)
 						return false
 					}
 
@@ -394,7 +394,7 @@ func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSha
 	}
 
 	if maxConfirmation == 0 {
-		return nil, nil, lfbBlockHeader, errors.New("zcn: transaction not found")
+		return nil, nil, lfbBlockHeader, stderrors.New("zcn: transaction not found")
 	}
 
 	if maxConfirmation < numSharders {
@@ -404,45 +404,83 @@ func (tq *TransactionQuery) GetConsensusConfirmation(ctx context.Context, numSha
 	return confirmationBlockHeader, confirmationBlock, lfbBlockHeader, nil
 }
 
-func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryResult, error) {
+// getFastConfirmation get txn confirmation from a random online sharder
+func (tq *TransactionQuery) getFastConfirmation(ctx context.Context, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
+	var confirmationBlockHeader *blockHeader
+	var confirmationBlock map[string]json.RawMessage
+	var lfbBlockHeader blockHeader
 
-	consensuses := make(map[int]int)
-	var maxConsensus int
-	var consensusesResp QueryResult
-	// {host}{query}
-	err := tq.FromAll(ctx, query,
-		func(qr QueryResult) bool {
-			//ignore response if it is network error
-			if qr.StatusCode >= 500 {
-				return false
-			}
-
-			consensuses[qr.StatusCode]++
-			if consensuses[qr.StatusCode] >= maxConsensus {
-				maxConsensus = consensuses[qr.StatusCode]
-				consensusesResp = qr
-			}
-
-			return false
-
-		})
-
+	// {host}/v1/transaction/get/confirmation?hash={txnHash}&content=lfb
+	result, err := tq.FromAny(ctx, tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"))
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 
-	if maxConsensus == 0 {
-		return nil, errors.New("zcn: query not found")
+	if result.StatusCode == http.StatusOK {
+
+		err = json.Unmarshal(result.Content, &confirmationBlock)
+		if err != nil {
+			logging.Error("txn confirmation parse error", err)
+			return nil, nil, nil, err
+		}
+
+		// parse `confirmation` section as block header
+		confirmationBlockHeader, err = getBlockHeaderFromTransactionConfirmation(txnHash, confirmationBlock)
+		if err == nil {
+			return confirmationBlockHeader, confirmationBlock, nil, nil
+		}
+
+		logging.Error("txn confirmation parse header error", err)
+
+		// parse `latest_finalized_block` section
+		lfbRaw, ok := confirmationBlock["latest_finalized_block"]
+		if !ok {
+			return confirmationBlockHeader, confirmationBlock, nil, err
+		}
+
+		err = json.Unmarshal([]byte(lfbRaw), &lfbBlockHeader)
+		if err == nil {
+			return confirmationBlockHeader, confirmationBlock, &lfbBlockHeader, ErrTransactionNotConfirmed
+		}
+
+		logging.Error("round info parse error.", err)
+		return nil, nil, nil, err
+
 	}
 
-	rate := float32(maxConsensus*100) / float32(tq.max)
-	if rate < consensusThresh {
-		return nil, ErrInvalidConsensus
+	return nil, nil, nil, thrown.Throw(ErrTransactionNotFound, strconv.Itoa(result.StatusCode))
+}
+
+func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
+
+	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders))
+	if err != nil {
+		cb.OnInfoAvailable(op, StatusError, "", err.Error())
+		return
 	}
 
-	if consensusesResp.StatusCode != http.StatusOK {
-		return nil, errors.New(string(consensusesResp.Content))
+	qr, err := tq.GetInfo(context.TODO(), urlSuffix)
+	if err != nil {
+		cb.OnInfoAvailable(op, StatusError, "", err.Error())
+		return
 	}
 
-	return &consensusesResp, nil
+	cb.OnInfoAvailable(op, StatusSuccess, string(qr.Content), "")
+}
+
+func GetEvents(cb GetInfoCallback, filters map[string]string) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	go getInfoFromSharders(WithParams(GET_MINERSC_EVENTS, Params{
+		"block_number": filters["block_number"],
+		"tx_hash":      filters["tx_hash"],
+		"type":         filters["type"],
+		"tag":          filters["tag"],
+	}), 0, cb)
+	return
+}
+
+func WithParams(uri string, params Params) string {
+	return withParams(uri, params)
 }

@@ -1,10 +1,11 @@
+//go:build !mobile
+// +build !mobile
+
 package zcncore
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"time"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
@@ -19,6 +20,13 @@ type MSVote struct {
 	Transfer MSTransfer `json:"transfer"`
 
 	Signature string `json:"signature"`
+}
+
+//MSTransfer - a data structure to hold state transfer from one client to another
+type MSTransfer struct {
+	ClientID   string `json:"from"`
+	ToClientID string `json:"to"`
+	Amount     uint64 `json:"amount"`
 }
 
 // MultisigSCWallet --this should mimic MultisigWallet definition in MultiSig SC
@@ -92,13 +100,6 @@ func (msw *MSWallet) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-//MSTransfer - a data structure to hold state transfer from one client to another
-type MSTransfer struct {
-	ClientID   string `json:"from"`
-	ToClientID string `json:"to"`
-	Amount     uint64 `json:"amount"`
-}
-
 // Marshal returns json string
 func (msw *MSWallet) Marshal() (string, error) {
 	msws, err := json.Marshal(msw)
@@ -106,187 +107,6 @@ func (msw *MSWallet) Marshal() (string, error) {
 		return "", errors.New("", "Invalid Wallet")
 	}
 	return string(msws), nil
-}
-
-//MSVoteCallback callback definition multisig Vote function
-type MSVoteCallback interface {
-	OnVoteComplete(status int, proposal string, err string)
-}
-
-// CreateMSWallet returns multisig wallet information
-func CreateMSWallet(t, n int) (string, string, []string, error) {
-	if t < 1 || t > n {
-		return "", "", nil, errors.New("bls0_generate_threshold_key_shares", fmt.Sprintf("Given threshold (%d) is less than 1 or greater than numsigners (%d)", t, n))
-	}
-
-	id := 0
-	if _config.chain.SignatureScheme != "bls0chain" {
-		return "", "", nil, errors.New("", "encryption scheme for this blockchain is not bls0chain")
-
-	}
-
-	groupKey := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
-	wallet, err := groupKey.GenerateKeys()
-	if err != nil {
-		return "", "", nil, err
-	}
-
-	Logger.Info(fmt.Sprintf("Wallet id: %s", wallet.ClientKey))
-
-	groupClientID := GetClientID(groupKey.GetPublicKey())
-	//Code modified to directly use BLS0ChainThresholdScheme
-	signerKeys, err := zcncrypto.GenerateThresholdKeyShares(t, n, groupKey)
-
-	if err != nil {
-		return "", "", nil, errors.Wrap(err, "Err in generateThresholdKeyShares")
-	}
-	var signerClientIDs []string
-	for _, key := range signerKeys {
-		signerClientIDs = append(signerClientIDs, GetClientID(key.GetPublicKey()))
-	}
-
-	msw := MSWallet{
-		Id:              id,
-		SignatureScheme: _config.chain.SignatureScheme,
-		GroupClientID:   groupClientID,
-		GroupKey:        groupKey,
-		SignerClientIDs: signerClientIDs,
-		SignerKeys:      signerKeys,
-		T:               t,
-		N:               n,
-	}
-
-	wallets, errw := getWallets(msw)
-
-	if errw != nil {
-		return "", "", nil, errw
-
-	}
-	smsw, er := msw.Marshal()
-	if er != nil {
-		return "", "", nil, er
-	}
-	return smsw, groupClientID, wallets, nil
-
-}
-
-//RegisterWallet registers multisig related wallets
-func RegisterWallet(walletString string, cb WalletCallback) {
-	var w zcncrypto.Wallet
-	err := json.Unmarshal([]byte(walletString), &w)
-
-	if err != nil {
-		cb.OnWalletCreateComplete(StatusError, walletString, err.Error())
-	}
-
-	//We do not want to send private key to blockchain
-	w.Keys[0].PrivateKey = ""
-	err = RegisterToMiners(&w, cb)
-	if err != nil {
-		cb.OnWalletCreateComplete(StatusError, "", err.Error())
-	}
-
-}
-
-//CreateMSVote create a vote for multisig
-func CreateMSVote(proposal, grpClientID, signerWalletstr, toClientID string, token uint64) (string, error) {
-
-	if proposal == "" || grpClientID == "" || toClientID == "" || signerWalletstr == "" {
-		return "", errors.New("", "proposal or groupClient or signer wallet or toClientID cannot be empty")
-	}
-
-	if token < 1 {
-		return "", errors.New("", "Token cannot be less than 1")
-	}
-
-	signerWallet, err := GetWallet(signerWalletstr)
-	if err != nil {
-		fmt.Printf("Error while parsing the signer wallet. %v", err)
-		return "", err
-	}
-
-	//Note: Is this honored by multisig sc?
-	transfer := MSTransfer{
-		ClientID:   grpClientID,
-		ToClientID: toClientID,
-		Amount:     token,
-	}
-
-	buff, _ := json.Marshal(transfer)
-	hash := encryption.Hash(buff)
-
-	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
-	sigScheme.SetPrivateKey(signerWallet.Keys[0].PrivateKey)
-	sig, err := sigScheme.Sign(hash)
-	if err != nil {
-		return "", err
-	}
-
-	vote := MSVote{
-		Transfer:   transfer,
-		ProposalID: proposal,
-		Signature:  sig,
-	}
-
-	vbytes, err := json.Marshal(vote)
-	if err != nil {
-		fmt.Printf("error in marshalling vote %v", vote)
-		return "", err
-	}
-	return string(vbytes), nil
-
-}
-func getWallets(msw MSWallet) ([]string, error) {
-
-	wallets := make([]string, 0, (msw.N + 1))
-
-	b0ss := msw.GroupKey
-
-	grw, err := makeWallet(b0ss.GetPrivateKey(), b0ss.GetPublicKey(), b0ss.GetMnemonic())
-
-	if err != nil {
-		return nil, err
-	}
-
-	wallets = append(wallets, grw)
-
-	for _, signer := range msw.SignerKeys {
-		w, err := makeWallet(signer.GetPrivateKey(), signer.GetPublicKey(), "")
-		if err != nil {
-			return nil, err
-		}
-		wallets = append(wallets, w)
-	}
-	return wallets, nil
-
-}
-
-func makeWallet(privateKey, publicKey, mnemonic string) (string, error) {
-	w := &zcncrypto.Wallet{}
-	w.Keys = make([]zcncrypto.KeyPair, 1)
-	w.Keys[0].PrivateKey = privateKey
-	w.Keys[0].PublicKey = publicKey
-	w.ClientID = GetClientID(publicKey) //VerifyThis
-	w.ClientKey = publicKey
-	w.Mnemonic = mnemonic
-	w.Version = zcncrypto.CryptoVersion
-	w.DateCreated = time.Now().Format(time.RFC3339)
-
-	return w.Marshal()
-}
-
-// GetClientID -- computes Client ID from publickey
-func GetClientID(pkey string) string {
-	publicKeyBytes, err := hex.DecodeString(pkey)
-	if err != nil {
-		panic(err)
-	}
-
-	return encryption.Hash(publicKeyBytes)
-}
-
-func GetClientWalletID() string {
-	return _config.wallet.ClientID
 }
 
 //GetMultisigPayload given a multisig wallet as a string, makes a multisig wallet payload to register
@@ -334,4 +154,54 @@ func GetMultisigVotePayload(msvstr string) (interface{}, error) {
 
 	return msv, nil
 
+}
+
+// CreateMSVote create a vote for multisig
+func CreateMSVote(proposal, grpClientID, signerWalletstr, toClientID string, token uint64) (string, error) {
+	if proposal == "" || grpClientID == "" || toClientID == "" || signerWalletstr == "" {
+		return "", errors.New("", "proposal or groupClient or signer wallet or toClientID cannot be empty")
+	}
+
+	if token < 1 {
+		return "", errors.New("", "Token cannot be less than 1")
+	}
+
+	signerWallet, err := getWallet(signerWalletstr)
+	if err != nil {
+		fmt.Printf("Error while parsing the signer wallet. %v", err)
+		return "", err
+	}
+
+	//Note: Is this honored by multisig sc?
+	transfer := MSTransfer{
+		ClientID:   grpClientID,
+		ToClientID: toClientID,
+		Amount:     token,
+	}
+
+	buff, _ := json.Marshal(transfer)
+	hash := encryption.Hash(buff)
+
+	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	if err := sigScheme.SetPrivateKey(signerWallet.Keys[0].PrivateKey); err != nil {
+		return "", err
+	}
+
+	sig, err := sigScheme.Sign(hash)
+	if err != nil {
+		return "", err
+	}
+
+	vote := MSVote{
+		Transfer:   transfer,
+		ProposalID: proposal,
+		Signature:  sig,
+	}
+
+	vbytes, err := json.Marshal(vote)
+	if err != nil {
+		fmt.Printf("error in marshalling vote %v", vote)
+		return "", err
+	}
+	return string(vbytes), nil
 }

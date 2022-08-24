@@ -15,4 +15,7 @@ var (
 
 	// Sign sign method. it should be initialized on different platform.
 	Sign SignFunc
+
+	// Verify verify method. it should be initialized on different platform.
+	Verify VerifyFunc
 )

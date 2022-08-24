@@ -35,7 +35,7 @@ type RenameRequest struct {
 	renameMask     uint32
 	maskMU         *sync.Mutex
 	connectionID   string
-	Consensus
+	consensus      Consensus
 }
 
 func (req *RenameRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
@@ -70,7 +70,7 @@ func (req *RenameRequest) renameBlobberObject(blobber *blockchain.StorageNode, b
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusOK {
-			req.consensus++
+			req.consensus.Done()
 			req.maskMU.Lock()
 			req.renameMask |= (1 << uint32(blobberIdx))
 			req.maskMU.Unlock()
@@ -98,30 +98,33 @@ func (req *RenameRequest) ProcessRename() error {
 		go func(blobberIdx int) {
 			defer req.wg.Done()
 			refEntity, err := req.renameBlobberObject(req.blobbers[blobberIdx], blobberIdx)
-			if err != nil {
-				l.Logger.Error(err.Error())
+			if err == nil {
+				req.consensus.Done()
+				req.maskMU.Lock()
+				objectTreeRefs[blobberIdx] = refEntity
+				req.maskMU.Unlock()
 				return
 			}
-			objectTreeRefs[blobberIdx] = refEntity
+			l.Logger.Error(err.Error())
 		}(i)
 	}
 	req.wg.Wait()
 
-	if !req.isConsensusOk() {
+	if !req.consensus.isConsensusOk() {
 		return errors.New("Rename failed: Rename request failed. Operation failed.")
 	}
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
 	if err != nil {
-		return fmt.Errorf("Rename failed: %s", err.Error())
+		return fmt.Errorf("rename failed: %s", err.Error())
 	}
 	err = writeMarkerMutex.Lock(context.TODO(), req.connectionID)
 	defer writeMarkerMutex.Unlock(context.TODO(), req.connectionID) //nolint: errcheck
 	if err != nil {
-		return fmt.Errorf("Rename failed: %s", err.Error())
+		return fmt.Errorf("rename failed: %s", err.Error())
 	}
 
-	req.consensus = 0
+	req.consensus.consensus = 0
 	wg := &sync.WaitGroup{}
 	wg.Add(bits.OnesCount32(req.renameMask))
 	commitReqs := make([]*CommitRequest, bits.OnesCount32(req.renameMask))
@@ -147,12 +150,14 @@ func (req *RenameRequest) ProcessRename() error {
 	}
 	wg.Wait()
 
+	var errMessages string
 	for _, commitReq := range commitReqs {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
 				l.Logger.Info("Commit success", commitReq.blobber.Baseurl)
-				req.consensus++
+				req.consensus.Done()
 			} else {
+				errMessages += commitReq.result.ErrorMessage + "\t"
 				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
 			}
 		} else {
@@ -160,8 +165,8 @@ func (req *RenameRequest) ProcessRename() error {
 		}
 	}
 
-	if !req.isConsensusOk() {
-		return errors.New("Delete failed: Commit consensus failed")
+	if !req.consensus.isConsensusOk() {
+		return errors.New("rename failed: Commit consensus failed. Error: " + errMessages)
 	}
 	return nil
 }

@@ -57,10 +57,29 @@ func main() {
 				PrintError("__zcn_wasm__.jsProxy.sign is not installed yet")
 			}
 
+			verify := jsProxy.Get("verify")
+
+			if !(verify.IsNull() || sign.IsUndefined()) {
+				verifyFunc := func(signature, hash string) (bool, error) {
+					result, err := jsbridge.Await(verify.Invoke(signature, hash))
+
+					if len(err) > 0 && !err[0].IsNull() {
+						return false, errors.New("verify: " + err[0].String())
+					}
+					return result[0].Bool(), nil
+				}
+
+				//update Verify with js sign
+				sys.Verify = verifyFunc
+			} else {
+				PrintError("__zcn_wasm__.jsProxy.verify is not installed yet")
+			}
+
 			createObjectURL := jsProxy.Get("createObjectURL")
 			if !(createObjectURL.IsNull() || createObjectURL.IsUndefined()) {
 
 				CreateObjectURL = func(buf []byte, mimeType string) string {
+
 					arrayBuffer := js.Global().Get("ArrayBuffer").New(len(buf))
 
 					uint8Array := js.Global().Get("Uint8Array").New(arrayBuffer)
@@ -68,6 +87,7 @@ func main() {
 					js.CopyBytesToJS(uint8Array, buf)
 
 					result, err := jsbridge.Await(createObjectURL.Invoke(uint8Array, mimeType))
+
 					if len(err) > 0 && !err[0].IsNull() {
 						PrintError(err[0].String())
 						return ""
@@ -101,7 +121,7 @@ func main() {
 		if !(sdk.IsNull() || sdk.IsUndefined()) {
 			jsbridge.BindAsyncFuncs(sdk, map[string]interface{}{
 				//sdk
-				"init":                  Init,
+				"init":                  initSDKs,
 				"setWallet":             SetWallet,
 				"setZBoxHost":           setZBoxHost,
 				"getEncryptedPublicKey": GetEncryptedPublicKey,
@@ -117,6 +137,7 @@ func main() {
 				"download":    Download,
 				"upload":      Upload,
 				"listObjects": listObjects,
+				"createDir":   createDir,
 
 				// zcn txn
 				"commitFileMetaTxn":   CommitFileMetaTxn,
@@ -133,10 +154,18 @@ func main() {
 				//allocation
 				"createAllocation":      createAllocation,
 				"getAllocationBlobbers": getAllocationBlobbers,
+				"getBlobberIds":         getBlobberIds,
 				"listAllocations":       listAllocations,
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,
+
+				//swap
+				"setSwapWallets": setSwapWallets,
+				"swapToken":      swapToken,
+
+				//zcn
+				"getWalletBalance": getWalletBalance,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
@@ -147,7 +176,7 @@ func main() {
 
 	}
 
-	hideLogs()
+	showLogs()
 
 	<-make(chan bool)
 

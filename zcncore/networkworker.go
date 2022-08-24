@@ -1,11 +1,15 @@
+//go:build !mobile
+// +build !mobile
+
 package zcncore
 
 import (
 	"context"
 	"encoding/json"
-	"github.com/0chain/gosdk/core/transaction"
 	"reflect"
 	"time"
+
+	"github.com/0chain/gosdk/core/transaction"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
@@ -22,20 +26,20 @@ type Network struct {
 	Sharders []string `json:"sharders"`
 }
 
-func UpdateNetworkDetailsWorker(ctx context.Context) {
+func updateNetworkDetailsWorker(ctx context.Context) {
 	ticker := time.NewTicker(time.Duration(networkWorkerTimerInHours) * time.Hour)
 	for {
 		select {
 		case <-ctx.Done():
-			Logger.Info("Network stopped by user")
+			logging.Info("Network stopped by user")
 			return
 		case <-ticker.C:
 			err := UpdateNetworkDetails()
 			if err != nil {
-				Logger.Error("Update network detail worker fail", zap.Error(err))
+				logging.Error("Update network detail worker fail", zap.Error(err))
 				return
 			}
-			Logger.Info("Successfully updated network details")
+			logging.Info("Successfully updated network details")
 			return
 		}
 	}
@@ -44,7 +48,7 @@ func UpdateNetworkDetailsWorker(ctx context.Context) {
 func UpdateNetworkDetails() error {
 	networkDetails, err := GetNetworkDetails()
 	if err != nil {
-		Logger.Error("Failed to update network details ", zap.Error(err))
+		logging.Error("Failed to update network details ", zap.Error(err))
 		return err
 	}
 
@@ -97,4 +101,29 @@ func GetNetworkDetails() (*Network, error) {
 	}
 	return &networkResponse, nil
 
+}
+
+func GetNetwork() *Network {
+	return &Network{
+		Miners:   _config.chain.Miners,
+		Sharders: _config.chain.Sharders,
+	}
+}
+
+func SetNetwork(miners []string, sharders []string) {
+	_config.chain.Miners = miners
+	_config.chain.Sharders = sharders
+
+	transaction.InitCache(sharders)
+
+	conf.InitChainNetwork(&conf.Network{
+		Miners:   miners,
+		Sharders: sharders,
+	})
+}
+
+func GetNetworkJSON() string {
+	network := GetNetwork()
+	networkBytes, _ := json.Marshal(network)
+	return string(networkBytes)
 }
