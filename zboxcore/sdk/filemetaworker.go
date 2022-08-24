@@ -70,7 +70,7 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 		if err != nil {
 			return errors.Wrap(err, "Error: Resp")
 		}
-		l.Logger.Info("File Meta result:", string(resp_body))
+		l.Logger.Info("File Meta result: from:", blobber.Baseurl, " status:", resp.StatusCode, " body:", string(resp_body))
 		s.WriteString(string(resp_body))
 		if resp.StatusCode == http.StatusOK {
 			err = json.Unmarshal(resp_body, &fileRef)
