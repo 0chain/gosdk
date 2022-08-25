@@ -17,8 +17,8 @@ import (
 
 var CreateObjectURL func(buf []byte, mimeType string) string
 
-// Init init sharder/miners ,
-func Init(chainID, blockWorker, signatureScheme string,
+// initSDKs init sharder/miners ,
+func initSDKs(chainID, blockWorker, signatureScheme string,
 	minConfirmation, minSubmit, confirmationChainLength int) error {
 
 	err := sdk.InitStorageSDK("{}", blockWorker, chainID, signatureScheme, nil, 0)

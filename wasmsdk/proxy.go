@@ -121,7 +121,7 @@ func main() {
 		if !(sdk.IsNull() || sdk.IsUndefined()) {
 			jsbridge.BindAsyncFuncs(sdk, map[string]interface{}{
 				//sdk
-				"init":                  Init,
+				"init":                  initSDKs,
 				"setWallet":             SetWallet,
 				"setZBoxHost":           setZBoxHost,
 				"getEncryptedPublicKey": GetEncryptedPublicKey,
@@ -154,6 +154,7 @@ func main() {
 				//allocation
 				"createAllocation":      createAllocation,
 				"getAllocationBlobbers": getAllocationBlobbers,
+				"getBlobberIds":         getBlobberIds,
 				"listAllocations":       listAllocations,
 
 				//smartcontract
@@ -164,6 +165,9 @@ func main() {
 				"swapToken":      swapToken,
 				"initBridge":     initBridge,
 				"mintZCN":        mintZCN,
+
+				//zcn
+				"getWalletBalance": getWalletBalance,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
@@ -174,7 +178,7 @@ func main() {
 
 	}
 
-	hideLogs()
+	showLogs()
 
 	<-make(chan bool)
 

@@ -118,7 +118,7 @@ get blobbers with filters for creating allocation
 create an allocation 
 **Input**:
 > name string, datashards, parityshards int, size, expiry int64,
-	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64
+	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64,preferredBlobberIds []string
 
 **Output**:
 > [transaction.Transaction](https://github.com/0chain/gosdk/blob/e1e35e084d5c17d6bf233bbe8ac9c91701bdd8fd/core/transaction/entity.go#L32)
@@ -133,7 +133,21 @@ list all allocations
 > [sdk.Allocation](https://github.com/0chain/gosdk/blob/a9e504e4a0e8fc76a05679e4ef183bb03b8db8e5/zboxcore/sdk/allocation.go#L140) array
 
 
+### zcn.sdk.getWalletBalance
+get wallet balance
+**Input**:
+> clientId string
 
+**Output**:
+> {zcn:float64, usd: float64}
+
+### zcn.sdk.getBlobberIds
+convert blobber urls to blobber ids
+**Input**:
+> blobberUrls []string
+
+**Output**:
+> []string
 
 
 ## Blobber methods
