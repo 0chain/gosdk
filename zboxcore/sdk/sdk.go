@@ -1405,7 +1405,7 @@ func GetAllocationMinLock(
 	var response = make(map[string]int64)
 	err = json.Unmarshal(allocationsBytes, &response)
 	if err != nil {
-		return 0, errors.New("allocationmin_lock_decode_error", "Error decoding the response."+err.Error())
+		return 0, errors.New("allocation_min_lock_decode_error", "Error decoding the response."+err.Error())
 	}
 	return response["min_lock_demand"], nil
 }
