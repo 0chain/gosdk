@@ -365,13 +365,12 @@ func GetTotalStoredData() (map[string]int64, error) {
 
 type stakePoolRequest struct {
 	BlobberID string `json:"blobber_id,omitempty"`
-	PoolID    string `json:"pool_id,omitempty"`
 }
 
 // StakePoolLock locks tokens lack in stake pool
-func StakePoolLock(blobberID string, value, fee uint64) (poolID string, nonce int64, err error) {
+func StakePoolLock(blobberID string, value, fee uint64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
-		return poolID, 0, sdkNotInitialized
+		return "", 0, sdkNotInitialized
 	}
 	if blobberID == "" {
 		blobberID = client.GetClientID()
@@ -383,7 +382,7 @@ func StakePoolLock(blobberID string, value, fee uint64) (poolID string, nonce in
 		Name:      transaction.STORAGESC_STAKE_POOL_LOCK,
 		InputArgs: &spr,
 	}
-	poolID, _, nonce, _, err = smartContractTxnValueFee(sn, value, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFee(sn, value, fee)
 	return
 }
 
@@ -403,7 +402,7 @@ type StakePoolUnlockUnstake struct {
 // unlock tokens can't be unlocked now, wait the time and unlock them (call
 // this function again).
 func StakePoolUnlock(
-	blobberID, poolID string, fee uint64,
+	blobberID string, fee uint64,
 ) (unstake bool, nonce int64, err error) {
 	if !sdkInitialized {
 		return false, 0, sdkNotInitialized
@@ -414,7 +413,6 @@ func StakePoolUnlock(
 
 	var spr stakePoolRequest
 	spr.BlobberID = blobberID
-	spr.PoolID = poolID
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_STAKE_POOL_UNLOCK,
@@ -1177,7 +1175,7 @@ const (
 	ProviderAuthorizer
 )
 
-func CollectRewards(providerId, poolId string, providerType ProviderType) (string, int64, error) {
+func CollectRewards(providerId string, providerType ProviderType) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
@@ -1185,7 +1183,6 @@ func CollectRewards(providerId, poolId string, providerType ProviderType) (strin
 	var input = map[string]interface{}{
 		"provider_id":   providerId,
 		"provider_type": providerType,
-		"pool_id":       poolId,
 	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_COLLECT_REWARD,

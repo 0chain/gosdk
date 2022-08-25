@@ -736,7 +736,6 @@ func (t *Transaction) VestingDelete(poolID string) (err error) {
 
 type scCollectReward struct {
 	ProviderId   string `json:"provider_id"`
-	PoolId       string `json:"pool_id"`
 	ProviderType int    `json:"provider_type"`
 }
 
