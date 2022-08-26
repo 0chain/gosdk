@@ -1,7 +1,6 @@
 package sdk
 
 import (
-	"fmt"
 	"sync"
 )
 
@@ -36,8 +35,6 @@ func (req *Consensus) Init(threshConsensus, fullConsensus, consensusOK float32) 
 	req.consensusThresh = threshConsensus
 	req.fullconsensus = fullConsensus
 	req.consensusRequiredForOk = consensusOK
-
-	fmt.Println(threshConsensus, fullConsensus, consensusOK)
 }
 
 func (req *Consensus) getConsensus() float32 {
