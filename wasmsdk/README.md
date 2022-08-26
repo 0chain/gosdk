@@ -132,6 +132,25 @@ list all allocations
 **Output**:
 > [sdk.Allocation](https://github.com/0chain/gosdk/blob/a9e504e4a0e8fc76a05679e4ef183bb03b8db8e5/zboxcore/sdk/allocation.go#L140) array
 
+### zcn.sdk.transferAllocation
+changes the owner of an allocation. Only a curator or the current owner of the allocation, can change an allocation's ownership.
+**Input**:
+> allocationId, newOwnerId, newOwnerPublicKey string
+
+**Output**:
+> N/A
+
+
+### zcn.sdk.freezeAllocation
+freeze allocation so that data can no longer be modified
+**Input**:
+> allocationId string
+
+**Output**:
+> N/A
+
+
+
 
 ### zcn.sdk.getWalletBalance
 get wallet balance
