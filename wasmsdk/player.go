@@ -137,7 +137,7 @@ func (p *Player) reloadList() {
 			list, err := p.loadList()
 
 			if len(list) == 0 {
-				sys.Sleep(1 * time.Second)
+				sys.Sleep(3 * time.Second)
 				go p.nextTodo()
 				continue
 			}
