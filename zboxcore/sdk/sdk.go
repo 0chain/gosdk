@@ -827,38 +827,55 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 	return allocations, nil
 }
 
-func CreateAllocationWithBlobbers(name string, datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, lock uint64, blobbers []string) (
+type CreateAllocationOptions struct {
+	Name         string
+	DataShards   int
+	ParityShards int
+	Size         int64
+	Expiry       int64
+	ReadPrice    PriceRange
+	WritePrice   PriceRange
+	Lock         uint64
+	BlobberIds   []string
+}
+
+func CreateAllocationWith(options CreateAllocationOptions) (
 	string, int64, *transaction.Transaction, error) {
 
-	return CreateAllocationForOwner(client.GetClientID(),
-		client.GetClientPublicKey(), name, datashards, parityshards,
-		size, expiry, readPrice, writePrice, lock,
-		blobbers)
+	if len(options.BlobberIds) > 0 {
+		return CreateAllocationForOwner(client.GetClientID(),
+			client.GetClientPublicKey(), options.Name, options.DataShards, options.ParityShards,
+			options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock,
+			options.BlobberIds)
+	}
+
+	return CreateAllocation(options.Name, options.DataShards, options.ParityShards,
+		options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock)
+
 }
 
 func CreateAllocation(name string, datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, lock uint64) (
 	string, int64, *transaction.Transaction, error) {
 
+	preferredBlobberIds, err := GetBlobberIds(blockchain.GetPreferredBlobbers())
+	if err != nil {
+		return "", 0, nil, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
+	}
+
 	return CreateAllocationForOwner(name, client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
 		size, expiry, readPrice, writePrice, lock,
-		blockchain.GetPreferredBlobbers())
+		preferredBlobberIds)
 }
 
 func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange,
-	lock uint64, preferredBlobbers []string) (hash string, nonce int64, txn *transaction.Transaction, err error) {
+	lock uint64, preferredBlobberIds []string) (hash string, nonce int64, txn *transaction.Transaction, err error) {
 
 	if lock < 0 {
 		return "", 0, nil, errors.New("", "invalid value for lock")
-	}
-
-	preferred, err := GetBlobberIds(preferredBlobbers)
-	if err != nil {
-		return "", 0, nil, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
 	}
 
 	allocationBlobbers, err := GetAllocationBlobbers(owner, ownerpublickey, datashards,
@@ -870,7 +887,7 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 
 	//filter duplicates
 	ids := make(map[string]struct{})
-	for _, id := range preferred {
+	for _, id := range preferredBlobberIds {
 		ids[id] = struct{}{}
 	}
 	for _, id := range allocationBlobbers {

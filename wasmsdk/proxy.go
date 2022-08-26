@@ -154,6 +154,7 @@ func main() {
 				//allocation
 				"createAllocation":      createAllocation,
 				"getAllocationBlobbers": getAllocationBlobbers,
+				"getBlobberIds":         getBlobberIds,
 				"listAllocations":       listAllocations,
 
 				//smartcontract
