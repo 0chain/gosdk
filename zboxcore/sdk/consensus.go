@@ -1,6 +1,9 @@
 package sdk
 
-import "sync"
+import (
+	"fmt"
+	"sync"
+)
 
 type Consensus struct {
 	sync.RWMutex
@@ -33,6 +36,8 @@ func (req *Consensus) Init(threshConsensus, fullConsensus, consensusOK float32) 
 	req.consensusThresh = threshConsensus
 	req.fullconsensus = fullConsensus
 	req.consensusRequiredForOk = consensusOK
+
+	fmt.Println(threshConsensus, fullConsensus, consensusOK)
 }
 
 func (req *Consensus) getConsensus() float32 {

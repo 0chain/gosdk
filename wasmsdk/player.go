@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"path/filepath"
-	"sort"
 	"sync"
 
 	"github.com/0chain/gosdk/core/sys"
@@ -25,9 +24,9 @@ type Player struct {
 	allocationObj *sdk.Allocation
 	authTicketObj *marker.AuthTicket
 
-	todoQueue   chan *sdk.ListResult
-	reloadQueue chan *sdk.ListResult
-	latestTodo  *sdk.ListResult
+	todoQueue   chan sdk.PlaylistFile
+	reloadQueue chan sdk.PlaylistFile
+	latestTodo  sdk.PlaylistFile
 
 	downloadedQueue chan []byte
 	ctx             context.Context
@@ -43,8 +42,8 @@ func (p *Player) start() {
 	}
 
 	p.ctx, p.cancel = context.WithCancel(context.TODO())
-	p.todoQueue = make(chan *sdk.ListResult, 100)
-	p.reloadQueue = make(chan *sdk.ListResult, p.prefetchQty)
+	p.todoQueue = make(chan sdk.PlaylistFile, 100)
+	p.reloadQueue = make(chan sdk.PlaylistFile, p.prefetchQty)
 	p.downloadedQueue = make(chan []byte, p.prefetchQty)
 
 	go p.reloadList()
@@ -56,7 +55,7 @@ func (p *Player) stop() {
 	p.cancel()
 }
 
-func (p *Player) download(it *sdk.ListResult) {
+func (p *Player) download(it sdk.PlaylistFile) {
 	wg := &sync.WaitGroup{}
 	statusBar := &StatusBar{wg: wg}
 	wg.Add(1)
@@ -75,7 +74,7 @@ func (p *Player) download(it *sdk.ListResult) {
 
 	defer sys.Files.Remove(localPath) //nolint
 
-	PrintInfo("downloading [", it.Path, "]")
+	PrintInfo("playlist: downloading [", it.Path, "]")
 	err = downloader.Start(statusBar)
 
 	if err == nil {
@@ -89,7 +88,7 @@ func (p *Player) download(it *sdk.ListResult) {
 		return
 	}
 
-	PrintInfo("downloaded [", it.Path, "]")
+	PrintInfo("playlist: downloaded [", it.Path, "]")
 	fs, _ := sys.Files.Open(localPath)
 
 	mf, _ := fs.(*sys.MemFile)
@@ -104,7 +103,7 @@ func (p *Player) startDownload() {
 	for {
 		select {
 		case <-p.ctx.Done():
-			PrintInfo("cancelled download")
+			PrintInfo("playlist: download is cancelled")
 			close(p.todoQueue)
 			close(p.reloadQueue)
 			return
@@ -119,8 +118,10 @@ func (p *Player) startDownload() {
 
 func (p *Player) nextTodo() {
 	if len(p.todoQueue) < p.prefetchQty {
-		PrintInfo("reload list")
+		PrintInfo("playlist: reload")
+
 		p.reloadQueue <- p.latestTodo
+
 	}
 }
 
@@ -128,9 +129,9 @@ func (p *Player) reloadList() {
 	for {
 		select {
 		case <-p.ctx.Done():
-			PrintInfo("canceled reloadList")
+			PrintInfo("playlist: reload is canceled")
 			return
-		case latestTodo := <-p.reloadQueue:
+		case <-p.reloadQueue:
 
 			list, err := p.loadList()
 
@@ -139,71 +140,36 @@ func (p *Player) reloadList() {
 				continue
 			}
 
-			sort.Sort(SortedListResult(list))
-			PrintInfo("got list ", len(list))
+			PrintInfo("playlist: ", len(list))
 
 			for _, it := range list {
-				if latestTodo == nil || (len(it.Name) > len(latestTodo.Name) || it.Name > latestTodo.Name) {
-					PrintInfo("found [", it.Path, "]")
-					p.latestTodo = it
-					p.todoQueue <- it
-					latestTodo = it
-				}
+				PrintInfo("playlist: +", it.Path)
+				p.latestTodo = it
+				p.todoQueue <- it
 			}
-
 		}
 	}
 
 }
 
-func (p *Player) loadList() ([]*sdk.ListResult, error) {
+func (p *Player) loadList() ([]sdk.PlaylistFile, error) {
+	lookupHash := ""
+
+	if p.latestTodo.Name != "" {
+		lookupHash = p.latestTodo.LookupHash
+	}
 
 	if p.isViewer {
 		//get list from authticket
-		ref, err := p.allocationObj.ListDirFromAuthTicket(p.authTicket, p.lookupHash)
-		if err != nil {
-			return nil, err
-		}
-
-		return ref.Children, nil
+		return sdk.GetPlaylistByAuthTicket(p.ctx, p.allocationObj, p.authTicket, p.lookupHash, lookupHash)
 	}
 
 	//get list from remote allocations's path
-	ref, err := p.allocationObj.ListDir(p.remotePath)
-	if err != nil {
-		return nil, err
-	}
-
-	return ref.Children, nil
+	return sdk.GetPlaylist(p.ctx, p.allocationObj, p.remotePath, lookupHash)
 }
 
 func (p *Player) getNextSegment() []byte {
 	return <-p.downloadedQueue
-}
-
-// SortedListResult sort files order by time
-type SortedListResult []*sdk.ListResult
-
-func (a SortedListResult) Len() int {
-	return len(a)
-}
-func (a SortedListResult) Less(i, j int) bool {
-
-	l := a[i]
-	r := a[j]
-
-	if len(l.Name) < len(r.Name) {
-		return true
-	}
-
-	if len(l.Name) > len(r.Name) {
-		return false
-	}
-
-	return l.Name < r.Name
-}
-func (a SortedListResult) Swap(i, j int) {
-	a[i], a[j] = a[j], a[i]
 }
 
 // createPalyer create player for remotePath

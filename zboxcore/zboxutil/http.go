@@ -60,6 +60,7 @@ const (
 	CALCULATE_HASH_ENDPOINT  = "/v1/file/calculatehash/"
 	SHARE_ENDPOINT           = "/v1/marketplace/shareinfo/"
 	DIR_ENDPOINT             = "/v1/dir/"
+	PLAYLIST_ENDPOINT        = "/v1/playlist/latest/"
 
 	// CLIENT_SIGNATURE_HEADER represents http request header contains signature.
 	CLIENT_SIGNATURE_HEADER = "X-App-Client-Signature"
