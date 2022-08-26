@@ -8,6 +8,7 @@ import (
 	"errors"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -134,6 +135,12 @@ func (p *Player) reloadList() {
 		case <-p.reloadQueue:
 
 			list, err := p.loadList()
+
+			if len(list) == 0 {
+				sys.Sleep(1 * time.Second)
+				go p.nextTodo()
+				continue
+			}
 
 			if err != nil {
 				PrintError(err.Error())
