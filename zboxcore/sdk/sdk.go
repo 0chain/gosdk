@@ -890,7 +890,7 @@ func CreateAllocationForOwner(
 	}
 
 	allocationRequest["name"] = name
-	allocationRequest["owner"] = owner
+	allocationRequest["owner_id"] = owner
 	allocationRequest["owner_public_key"] = ownerpublickey
 
 	var sn = transaction.SmartContractTxnData{
@@ -987,7 +987,7 @@ func getFreeAllocationBlobbers(request map[string]interface{}) ([]string, error)
 	params := make(map[string]string)
 	params["free_allocation_data"] = string(data)
 
-	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/free_alloc_blobbers", params, nil)
+	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/free-alloc-blobbers", params, nil)
 	if err != nil {
 		return nil, err
 	}
