@@ -58,6 +58,9 @@ jobs:
           echo ${tag}
           if [[ "${{github.event_name}}" = "workflow_dispatch" ]]; then
             echo "> 0Chain: trigger from workflow_dispatch"
+
+            echo "::set-output name=RELEASE::false"
+            echo "::set-output name=TAG::none"
          
           elif [[ ${tag} = v*\.*\.* ]] ; then
             echo "> 0Chain: trigger from git event"
@@ -73,7 +76,7 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: zcncore-ios.tar.gz
-          tag: ${{ steps.vars.outputs.TAG }}
+          tag: ${{ steps.setup_build.outputs.TAG }}
           overwrite: true
           file_glob: true
 
@@ -83,7 +86,7 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: zcncore-iossimulator.tar.gz
-          tag: ${{ steps.vars.outputs.TAG }}
+          tag: ${{ steps.setup_build.outputs.TAG }}
           overwrite: true
           file_glob: true
 
@@ -156,6 +159,10 @@ jobs:
     
           if [[ "${{github.event_name}}" = "workflow_dispatch" ]]; then
             echo "> 0Chain: trigger from workflow_dispatch"
+
+            echo "::set-output name=RELEASE::false"
+            echo "::set-output name=TAG::none"
+         
          
           elif [[ ${tag} = v*\.*\.* ]] ; then
             echo "> 0Chain: trigger from git event"
@@ -171,7 +178,7 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: zcncore-android.tar.gz
-          tag: ${{ steps.vars.outputs.TAG }}
+          tag: ${{ steps.setup_build.outputs.TAG }}
           overwrite: true
           file_glob: true
 
