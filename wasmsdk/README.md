@@ -134,6 +134,7 @@ list all allocations
 
 ### zcn.sdk.transferAllocation
 changes the owner of an allocation. Only a curator or the current owner of the allocation, can change an allocation's ownership.
+
 **Input**:
 > allocationId, newOwnerId, newOwnerPublicKey string
 
@@ -143,6 +144,7 @@ changes the owner of an allocation. Only a curator or the current owner of the a
 
 ### zcn.sdk.freezeAllocation
 freeze allocation so that data can no longer be modified
+
 **Input**:
 > allocationId string
 
@@ -154,6 +156,7 @@ freeze allocation so that data can no longer be modified
 
 ### zcn.sdk.getWalletBalance
 get wallet balance
+
 **Input**:
 > clientId string
 
@@ -162,6 +165,7 @@ get wallet balance
 
 ### zcn.sdk.getBlobberIds
 convert blobber urls to blobber ids
+
 **Input**:
 > blobberUrls []string
 
