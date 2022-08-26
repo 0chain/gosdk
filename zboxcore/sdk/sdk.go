@@ -879,7 +879,7 @@ func CreateAllocationForOwner(
 		return "", 0, nil, errors.New("", "invalid value for lock")
 	}
 
-	allocationRequest, err := GetAllocationBlobbers(
+	allocationRequest, err := getNewAllocationBlobbers(
 		datashards, parityshards, size, expiry, readPrice, writePrice, preferredBlobberIds)
 	if err != nil {
 		return "", 0, nil, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
@@ -905,9 +905,8 @@ func GetAllocationBlobbers(
 	datashards, parityshards int,
 	size, expiry int64,
 	readPrice, writePrice PriceRange,
-	preferredBlobberIds []string,
-) (map[string]interface{}, error) {
-	var allocationBlobbersRequest = map[string]interface{}{
+) ([]string, error) {
+	var allocationRequest = map[string]interface{}{
 		"data_shards":       datashards,
 		"parity_shards":     parityshards,
 		"size":              size,
@@ -915,11 +914,13 @@ func GetAllocationBlobbers(
 		"read_price_range":  readPrice,
 		"write_price_range": writePrice,
 	}
-	allocationData, _ := json.Marshal(allocationBlobbersRequest)
+
+	allocationData, _ := json.Marshal(allocationRequest)
+
 	params := make(map[string]string)
 	params["allocation_data"] = string(allocationData)
 
-	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/alloc-blobbers", params, nil)
+	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/alloc_blobbers", params, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -927,7 +928,23 @@ func GetAllocationBlobbers(
 
 	err = json.Unmarshal(allocBlobber, &allocBlobberIDs)
 	if err != nil {
-		return nil, errors.Wrap(err, "unmarshalling blobber IDs")
+		return nil, errors.Wrap(err, "failed to unmarshal blobber IDs")
+	}
+
+	return allocBlobberIDs, nil
+}
+
+func getNewAllocationBlobbers(
+	datashards, parityshards int,
+	size, expiry int64,
+	readPrice, writePrice PriceRange,
+	preferredBlobberIds []string,
+) (map[string]interface{}, error) {
+	allocBlobberIDs, err := GetAllocationBlobbers(
+		datashards, parityshards, size, expiry, readPrice, writePrice,
+	)
+	if err != nil {
+		return nil, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
 	}
 
 	//filter duplicates
@@ -1388,7 +1405,7 @@ func GetAllocationMinLock(
 		return -1, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
 	}
 
-	allocationRequestData, err := GetAllocationBlobbers(
+	allocationRequestData, err := getNewAllocationBlobbers(
 		datashards, parityshards, size, expiry, readPrice, writePrice, preferredBlobberIds)
 	if err != nil {
 		return -1, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())

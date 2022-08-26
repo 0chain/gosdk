@@ -43,7 +43,7 @@ func getAllocationBlobbers(preferredBlobberURLs []string,
 	}, sdk.PriceRange{
 		Min: uint64(minWritePrice),
 		Max: uint64(maxWritePrice),
-	}, nil)
+	})
 }
 
 func createAllocation(name string, datashards, parityshards int, size, expiry int64,
