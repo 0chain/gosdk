@@ -21,7 +21,7 @@ import (
 
 const (
 	NotEnoughTokens = "not_enough_tokens"
-	LockExists      = "LockExists"
+	LockExists      = "lock_exists"
 )
 
 type BlockDownloadRequest struct {
@@ -199,6 +199,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				}
 
 				if bytes.Contains(respBody, []byte(LockExists)) {
+					zlogger.Logger.Debug("Lock exists error.")
 					shouldRetry = true
 					return errors.New(LockExists, string(respBody))
 				}
@@ -229,6 +230,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			if shouldRetry {
 				retry = 0
 				shouldRetry = false
+				zlogger.Logger.Debug("Retrying for Error occurred: ", err)
 				continue
 			}
 			if retry >= 3 {
