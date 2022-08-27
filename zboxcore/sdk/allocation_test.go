@@ -257,7 +257,7 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit128(t *testing.T)
 	allocation.Blobbers = blobbers
 	allocation.DataShards = 64
 	allocation.ParityShards = 65
-	allocation.fullconsensus, allocation.consensusThreshold, allocation.consensusOK = allocation.getConsensuses()
+	allocation.fullconsensus, allocation.consensusThreshold = allocation.getConsensuses()
 
 	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false)
 
@@ -281,7 +281,7 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanExplicitLimit(t *testing.T) {
 	allocation.Blobbers = blobbers
 	allocation.DataShards = 5
 	allocation.ParityShards = 6
-	allocation.fullconsensus, allocation.consensusThreshold, allocation.consensusOK = allocation.getConsensuses()
+	allocation.fullconsensus, allocation.consensusThreshold = allocation.getConsensuses()
 
 	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false)
 
@@ -305,7 +305,7 @@ func TestDoNotThrowErrorWhenBlobbersRequiredLessThanLimit(t *testing.T) {
 	allocation.Blobbers = blobbers
 	allocation.DataShards = 5
 	allocation.ParityShards = 4
-	allocation.fullconsensus, allocation.consensusThreshold, allocation.consensusOK = allocation.getConsensuses()
+	allocation.fullconsensus, allocation.consensusThreshold = allocation.getConsensuses()
 
 	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false)
 
@@ -2691,7 +2691,7 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 	a.mutex = &sync.Mutex{}
 	a.initialized = true
 	if a.DataShards != 0 {
-		a.fullconsensus, a.consensusThreshold, a.consensusOK = a.getConsensuses()
+		a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	}
 	sdkInitialized = true
 	go func() {

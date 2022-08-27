@@ -245,9 +245,8 @@ func TestListRequest_getFileConsensusFromBlobbers(t *testing.T) {
 			name:        "Fail_Consensus",
 			numBlobbers: 10,
 			consensus: Consensus{
-				consensusThresh:        2,
-				fullconsensus:          50,
-				consensusRequiredForOk: 12,
+				consensusThresh: 2,
+				fullconsensus:   50,
 			},
 			numCorrect: 5,
 			setup:      setupHttpResponses,
@@ -257,9 +256,8 @@ func TestListRequest_getFileConsensusFromBlobbers(t *testing.T) {
 			name:        "Pass_Consensus",
 			numBlobbers: 10,
 			consensus: Consensus{
-				consensusThresh:        2,
-				fullconsensus:          50,
-				consensusRequiredForOk: 12,
+				consensusThresh: 2,
+				fullconsensus:   50,
 			},
 			numCorrect: 6,
 			setup:      setupHttpResponses,

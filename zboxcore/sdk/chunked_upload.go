@@ -421,7 +421,7 @@ func (su *ChunkedUpload) Start() error {
 		return su.processCommit()
 	}
 
-	err := fmt.Errorf("Upload failed: Consensus_rate:%f, expected:%f", su.consensus.getConsensusRate(), su.consensus.getConsensusRequiredForOk())
+	err := fmt.Errorf("Upload failed: Consensus:%d, expected:%d", su.consensus.getConsensus(), su.consensus.consensusThresh)
 	if su.statusCallback != nil {
 		su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
 	}

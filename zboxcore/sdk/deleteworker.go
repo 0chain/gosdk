@@ -117,7 +117,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 	req.wg.Wait()
 
 	req.deleteMask = uint32(0)
-	req.consensus.consensus = float32(removedNum)
+	req.consensus.consensus = removedNum
 	numDeletes := bits.OnesCount32(req.listMask)
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numDeletes)
@@ -131,7 +131,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 	req.wg.Wait()
 
 	if !req.consensus.isConsensusOk() {
-		return fmt.Errorf("Delete failed: Success_rate:%2f, expected:%2f", req.consensus.getConsensusRate(), req.consensus.getConsensusRequiredForOk())
+		return fmt.Errorf("Delete failed: Success_rate:%d, expected:%d", req.consensus.getConsensus(), req.consensus.consensusThresh)
 	}
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
@@ -144,7 +144,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 		return fmt.Errorf("Delete failed: %s", err.Error())
 	}
 
-	req.consensus.consensus = float32(removedNum)
+	req.consensus.consensus = removedNum
 	wg := &sync.WaitGroup{}
 	wg.Add(bits.OnesCount32(req.deleteMask))
 	commitReqs := make([]*CommitRequest, bits.OnesCount32(req.deleteMask))

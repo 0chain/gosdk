@@ -164,7 +164,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 			}
 		} else {
 			l.Logger.Info("Repair by delete", zap.Any("path", file.Path))
-			consensus := float32(found.CountOnes())
+			consensus := found.CountOnes()
 			err := a.deleteFile(file.Path, consensus, consensus)
 			if err != nil {
 				l.Logger.Error("repair_file_failed", zap.Error(err))

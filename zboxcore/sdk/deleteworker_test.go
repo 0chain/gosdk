@@ -171,9 +171,8 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
 				consensus: Consensus{
-					consensusThresh:        50,
-					fullconsensus:          4,
-					consensusRequiredForOk: 60,
+					consensusThresh: 50,
+					fullconsensus:   4,
 				},
 				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
@@ -368,9 +367,8 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
 				consensus: Consensus{
-					consensusThresh:        50,
-					fullconsensus:          4,
-					consensusRequiredForOk: 60,
+					consensusThresh: 50,
+					fullconsensus:   4,
 				},
 				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
