@@ -22,7 +22,7 @@ func TestConsensus_isConsensusOk(t *testing.T) {
 			"Test_Is_Consensus_OK_True",
 			fields{
 				consensus:              3,
-				consensusThresh:        50,
+				consensusThresh:        2,
 				fullconsensus:          4,
 				consensusRequiredForOk: 60,
 			},
@@ -32,7 +32,7 @@ func TestConsensus_isConsensusOk(t *testing.T) {
 			"Test_Is_Consensus_OK_False",
 			fields{
 				consensus:              2,
-				consensusThresh:        50,
+				consensusThresh:        3,
 				fullconsensus:          4,
 				consensusRequiredForOk: 60,
 			},

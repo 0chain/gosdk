@@ -104,7 +104,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(0), req.deleteMask)
-				require.Equal(float32(0), req.consensus.consensus)
+				require.Equal(0, req.consensus.consensus)
 			},
 		},
 		{
@@ -158,7 +158,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(1), req.deleteMask)
-				require.Equal(float32(1), req.consensus.consensus)
+				require.Equal(1, req.consensus.consensus)
 			},
 		},
 	}
@@ -171,7 +171,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
 				consensus: Consensus{
-					consensusThresh: 50,
+					consensusThresh: 2,
 					fullconsensus:   4,
 				},
 				ctx:          context.TODO(),
@@ -327,7 +327,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(15), req.deleteMask)
-				require.Equal(float32(4), req.consensus.consensus)
+				require.Equal(4, req.consensus.consensus)
 			},
 		},
 		{
@@ -339,7 +339,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
 				require.Equal(uint32(7), req.deleteMask)
-				require.Equal(float32(3), req.consensus.consensus)
+				require.Equal(3, req.consensus.consensus)
 			},
 		},
 		{
@@ -367,7 +367,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
 				consensus: Consensus{
-					consensusThresh: 50,
+					consensusThresh: 3,
 					fullconsensus:   4,
 				},
 				ctx:          context.TODO(),
