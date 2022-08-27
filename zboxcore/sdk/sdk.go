@@ -920,7 +920,7 @@ func GetAllocationBlobbers(
 	params := make(map[string]string)
 	params["allocation_data"] = string(allocationData)
 
-	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/alloc-blobbers", params, nil)
+	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/alloc_blobbers", params, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1004,7 +1004,7 @@ func getFreeAllocationBlobbers(request map[string]interface{}) ([]string, error)
 	params := make(map[string]string)
 	params["free_allocation_data"] = string(data)
 
-	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/free-alloc-blobbers", params, nil)
+	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/free_alloc_blobbers", params, nil)
 	if err != nil {
 		return nil, err
 	}
