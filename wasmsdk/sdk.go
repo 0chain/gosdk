@@ -14,7 +14,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
-	"github.com/0chain/gosdk/zcncrypto"
 )
 
 var CreateObjectURL func(buf []byte, mimeType string) string
