@@ -65,7 +65,7 @@ func initBridge(
 	return nil
 }
 
-func mintZCN(burnTrxHash string, timeout int64) (string, error) {
+func mintZCN(burnTrxHash string, timeout int) (string, error) {
 
 	// ASK authorizers for burn tickets to mint in WZCN
 	mintPayload, err := bridge.QueryZChainMintPayload(burnTrxHash)
@@ -73,7 +73,7 @@ func mintZCN(burnTrxHash string, timeout int64) (string, error) {
 		return "", errors.Wrap("mint", "failed to QueryZChainMintPayload", err)
 	}
 
-	c, cancel := context.WithTimeout(context.Background(), time.Duration(timeout*time.Second.Nanoseconds()))
+	c, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
 
 	mintTrx, err := bridge.MintZCN(c, mintPayload)
