@@ -7,7 +7,7 @@ require (
 	github.com/btcsuite/btcd v0.23.1
 	github.com/dgraph-io/badger/v3 v3.2103.2
 	github.com/didip/tollbooth v4.0.2+incompatible
-	github.com/ethereum/go-ethereum v1.10.21
+	github.com/ethereum/go-ethereum v1.10.22
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/h2non/filetype v1.1.3
