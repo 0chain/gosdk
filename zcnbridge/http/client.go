@@ -49,10 +49,10 @@ func CleanClient() *http.Client {
 // NewRetryableClient creates default retryablehttp.Client with timeouts and embedded NewClient result.
 func NewRetryableClient() *retryablehttp.Client {
 	client := retryablehttp.NewClient()
-	client.HTTPClient = NewClient()
-	client.RetryWaitMax = RetryWaitMax
-	client.RetryMax = RetryMax
-	client.Logger = nil
+	//client.HTTPClient = NewClient()
+	//client.RetryWaitMax = RetryWaitMax
+	//client.RetryMax = RetryMax
+	//client.Logger = nil
 
 	return client
 }
