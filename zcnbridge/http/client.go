@@ -1,12 +1,10 @@
 package http
 
 import (
-	"net"
 	"net/http"
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/go-retryablehttp"
 )
 
@@ -26,23 +24,15 @@ const (
 
 // NewClient creates default http.Client with timeouts.
 func NewClient() *http.Client {
-	d := &net.Dialer{
-		Timeout: dialTimeout,
-	}
-
-	transport := &http.Transport{
-		TLSHandshakeTimeout: tlsHandshakeTimeout,
-		DialContext:         d.DialContext,
-	}
-
 	return &http.Client{
-		Timeout:   clientTimeout,
-		Transport: transport,
+		Transport: zboxutil.DefaultTransport,
 	}
 }
 
 func CleanClient() *http.Client {
-	client := cleanhttp.DefaultPooledClient()
+	client := &http.Client{
+		Transport: zboxutil.DefaultTransport,
+	}
 	client.Timeout = 10 * time.Second
 	return client
 }
