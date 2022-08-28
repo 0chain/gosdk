@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/go-retryablehttp"
 )
@@ -49,7 +50,9 @@ func CleanClient() *http.Client {
 // NewRetryableClient creates default retryablehttp.Client with timeouts and embedded NewClient result.
 func NewRetryableClient() *retryablehttp.Client {
 	client := retryablehttp.NewClient()
-	//client.HTTPClient = NewClient()
+	client.HTTPClient = &http.Client{
+		Transport: zboxutil.DefaultTransport,
+	}
 	//client.RetryWaitMax = RetryWaitMax
 	//client.RetryMax = RetryMax
 	//client.Logger = nil

@@ -75,6 +75,10 @@ func MakeSCRestAPICall(opCode int, relativePath string, params Params, cb zcncor
 			Logger.Info("Query ", u.String())
 
 			resp, err := client.Get(u.String())
+			if err != nil {
+				Logger.Error("MakeSCRestAPICall - failed to get response from", zap.String("URL", sharderUrl), zap.Any("error", err))
+				return
+			}
 			if resp.StatusCode != http.StatusInternalServerError {
 				//goland:noinspection ALL
 				defer resp.Body.Close()
