@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	"github.com/0chain/gosdk/core/common"
-
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	h "github.com/0chain/gosdk/zcnbridge/http"
@@ -113,6 +112,7 @@ func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereu
 func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPayload, error) {
 	client = h.CleanClient()
 	authorizers, err := getAuthorizers()
+	log.Logger.Info("Got authorizers", zap.Int("amount", len(authorizers)))
 
 	if err != nil || len(authorizers) == 0 {
 		return nil, errors.Wrap("get_authorizers", "failed to get authorizers", err)
