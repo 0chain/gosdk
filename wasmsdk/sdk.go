@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/wasmsdk/zbox"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
