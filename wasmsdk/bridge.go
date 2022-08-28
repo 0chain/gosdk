@@ -20,8 +20,7 @@ import (
 
 var bridge *zcnbridge.BridgeClient
 
-func initBridge(walletStr string,
-	password string,
+func initBridge(
 	ethereumAddress string,
 	bridgeAddress string,
 	authorizersAddress string,
@@ -45,7 +44,7 @@ func initBridge(walletStr string,
 	//)
 	//
 	cfg := zcnbridge.BridgeClientYaml{
-		Password:           password,
+		Password:           "",
 		EthereumAddress:    ethereumAddress,
 		BridgeAddress:      bridgeAddress,
 		AuthorizersAddress: authorizersAddress,
@@ -56,12 +55,12 @@ func initBridge(walletStr string,
 		ConsensusThreshold: consensusThreshold,
 	}
 
-	wallet, err := zcncore.GetWallet(walletStr)
-	if err != nil {
-		return err
+	wallet := zcncore.GetWalletRaw()
+	if len(wallet.ClientID) == 0 {
+		return errors.New("wallet_error", "wallet is not set")
 	}
 
-	bridge = zcnbridge.CreateBridgeClientWithConfig(cfg, wallet)
+	bridge = zcnbridge.CreateBridgeClientWithConfig(cfg, &wallet)
 
 	return nil
 }
