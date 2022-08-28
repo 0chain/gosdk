@@ -261,7 +261,7 @@ func generateTestChain() (*core.Genesis, []*types.Block) {
 		g.OffsetTime(5)
 		g.SetExtra([]byte("test"))
 	}
-	gblock := genesis.ToBlock()
+	gblock := genesis.ToBlock(db)
 	engine := ethash.NewFaker()
 	blocks, _ := core.GenerateChain(config, gblock, engine, db, 1, generate)
 	blocks = append([]*types.Block{gblock}, blocks...)
