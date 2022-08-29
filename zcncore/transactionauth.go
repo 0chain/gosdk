@@ -510,3 +510,13 @@ func (ta *TransactionWithAuth) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err
 	go ta.submitTxn()
 	return
 }
+
+func (ta *TransactionWithAuth) ZCNSCDeleteAuthorizer(dp *DeleteAuthorizerPayload) (err error) {
+	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_DELETE_AUTHORIZER, dp, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go ta.submitTxn()
+	return
+}

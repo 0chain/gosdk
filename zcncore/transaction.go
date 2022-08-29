@@ -165,6 +165,7 @@ type TransactionCommon interface {
 	ZCNSCUpdateAuthorizerConfig(*AuthorizerNode) error
 	// ZCNSCAddAuthorizer adds authorizer
 	ZCNSCAddAuthorizer(*AddAuthorizerPayload) error
+	ZCNSCDeleteAuthorizer(dp *DeleteAuthorizerPayload) (err error)
 
 	// GetVerifyConfirmationStatus implements the verification status from sharders
 	GetVerifyConfirmationStatus() ConfirmationStatus
@@ -224,6 +225,10 @@ type AddAuthorizerPayload struct {
 	PublicKey         string                      `json:"public_key"`
 	URL               string                      `json:"url"`
 	StakePoolSettings AuthorizerStakePoolSettings `json:"stake_pool_settings"` // Used to initially create stake pool
+}
+
+type DeleteAuthorizerPayload struct {
+	ID common.Key `json:"id"`
 }
 
 type AuthorizerStakePoolSettings struct {
@@ -313,7 +318,7 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val uint64, desc 
 }
 
 type VestingDest struct {
-	ID     string     `json:"id"`     // destination ID
+	ID     string         `json:"id"`     // destination ID
 	Amount common.Balance `json:"amount"` // amount to vest for the destination
 }
 
@@ -1417,5 +1422,15 @@ func (t *Transaction) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error) {
 		return
 	}
 	go t.setNonceAndSubmit()
+	return
+}
+
+func (t *Transaction) ZCNSCDeleteAuthorizer(dp *DeleteAuthorizerPayload) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_DELETE_AUTHORIZER, dp, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go t.submitTxn()
 	return
 }
