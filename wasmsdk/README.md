@@ -7,26 +7,29 @@ The 0chain wasm SDK is written in Go programming language, and released with Web
 
 ### zcn.sdk.init
 init wasm sdk 
-  Input:
+
+**Input**:
   > chainID, blockWorker, signatureScheme string, minConfirmation, minSubmit, confirmationChainLength int
 
-  Output:
+**Output**:
   > N/A
 
 ### zcn.sdk.hideLogs
 hide interactive sdk logs. default is hidden.
-  Input:
+
+**Input**:
   > N/A
 
-  Output:
+**Output**:
   > N/A
 
 ### zcn.sdk.showLogs
 show interactive sdk logs. default is hidden.
-  Input:
+
+**Input**:
   > N/A
 
-  Output:
+**Output**:
   > N/A
 
 ### zcn.jsProxy.setWallet 
@@ -59,6 +62,7 @@ set 0box host for creating free allocation.
 
 ### zcn.sdk.getEncryptedPublicKey
 get encrypted public key by mnemonic
+
 **Input**:
 > mnemonic string
 
@@ -106,6 +110,7 @@ commit folder change to blockchain
 
 ### zcn.sdk.getAllocationBlobbers
 get blobbers with filters for creating allocation
+
 **Input**:
 > referredBlobberURLs []string,
 	dataShards, parityShards int, size, expiry int64,
@@ -116,6 +121,7 @@ get blobbers with filters for creating allocation
 
 ### zcn.sdk.createAllocation
 create an allocation 
+
 **Input**:
 > name string, datashards, parityshards int, size, expiry int64,
 	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64,preferredBlobberIds []string
@@ -126,15 +132,38 @@ create an allocation
 
 ### zcn.sdk.listAllocations
 list all allocations
+
 **Input**:
 > N/A
 
 **Output**:
 > [sdk.Allocation](https://github.com/0chain/gosdk/blob/a9e504e4a0e8fc76a05679e4ef183bb03b8db8e5/zboxcore/sdk/allocation.go#L140) array
 
+### zcn.sdk.transferAllocation
+changes the owner of an allocation. Only a curator or the current owner of the allocation, can change an allocation's ownership.
+
+**Input**:
+> allocationId, newOwnerId, newOwnerPublicKey string
+
+**Output**:
+> N/A
+
+
+### zcn.sdk.freezeAllocation
+freeze allocation so that data can no longer be modified
+
+**Input**:
+> allocationId string
+
+**Output**:
+> N/A
+
+
+
 
 ### zcn.sdk.getWalletBalance
 get wallet balance
+
 **Input**:
 > clientId string
 
@@ -143,6 +172,7 @@ get wallet balance
 
 ### zcn.sdk.getBlobberIds
 convert blobber urls to blobber ids
+
 **Input**:
 > blobberUrls []string
 
