@@ -63,6 +63,8 @@ func getPlaylistFromBlobbers(ctx context.Context, alloc *Allocation, query strin
 
 	opts := make([]resty.Option, 0, 3)
 
+	var signErr error
+
 	opts = append(opts, resty.WithRetry(resty.DefaultRetry))
 	opts = append(opts, resty.WithTimeout(resty.DefaultRequestTimeout))
 	opts = append(opts, resty.WithRequestInterceptor(func(req *http.Request) {
@@ -73,6 +75,8 @@ func getPlaylistFromBlobbers(ctx context.Context, alloc *Allocation, query strin
 		sign, err := sys.Sign(hash, client.GetClient().SignatureScheme, client.GetClientSysKeys())
 		if err != nil {
 			logger.Logger.Error("playlist: ", err)
+			signErr = err
+			return
 		}
 
 		// ClientSignatureHeader represents http request header contains signature.
@@ -106,6 +110,10 @@ func getPlaylistFromBlobbers(ctx context.Context, alloc *Allocation, query strin
 		})
 
 	r.DoGet(ctx, urls...)
+
+	if signErr != nil {
+		return nil, signErr
+	}
 
 	r.Wait()
 
