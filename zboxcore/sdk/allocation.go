@@ -223,7 +223,6 @@ func (a *Allocation) InitAllocation() {
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers)
-	InitReadCounter()
 	a.initialized = true
 }
 
@@ -716,6 +715,35 @@ func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType
 	return oTreeReq.GetRefs()
 }
 
+func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit int) (*RecentlyAddedRefResult, error) {
+	if !a.isInitialized() {
+		return nil, notInitialized
+	}
+
+	if page < 1 {
+		return nil, errors.New("invalid_params",
+			fmt.Sprintf("page value should be greater than or equal to 1."+
+				"Got page: %d", page))
+	}
+
+	offset := int64(page-1) * int64(pageLimit)
+	req := &RecentlyAddedRefRequest{
+		allocationID: a.ID,
+		allocationTx: a.Tx,
+		blobbers:     a.Blobbers,
+		offset:       offset,
+		fromDate:     fromDate,
+		ctx:          a.ctx,
+		wg:           &sync.WaitGroup{},
+		pageLimit:    pageLimit,
+		Consensus: Consensus{
+			fullconsensus:   a.fullconsensus,
+			consensusThresh: float32(a.DataShards) / a.fullconsensus,
+		},
+	}
+	return req.GetRecentlyAddedRefs()
+}
+
 func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
@@ -860,9 +888,14 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 		return notInitialized
 	}
 
-	if len(path) == 0 {
+	if path == "" {
 		return errors.New("invalid_path", "Invalid path for the list")
 	}
+
+	if path == "/" {
+		return errors.New("invalid_operation", "cannot rename root path")
+	}
+
 	path = zboxutil.RemoteClean(path)
 	isabs := zboxutil.IsRemoteAbs(path)
 	if !isabs {
@@ -875,9 +908,9 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
 	req.newName = destName
-	req.fullconsensus = a.fullconsensus
-	req.consensusThresh = a.consensusThreshold
-	req.consensusRequiredForOk = a.consensusOK
+	req.consensus.fullconsensus = a.fullconsensus
+	req.consensus.consensusThresh = a.consensusThreshold
+	req.consensus.consensusRequiredForOk = a.consensusOK
 	req.ctx = a.ctx
 	req.remotefilepath = path
 	req.renameMask = 0

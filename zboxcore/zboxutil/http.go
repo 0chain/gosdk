@@ -54,6 +54,7 @@ const (
 	FILE_STATS_ENDPOINT      = "/v1/file/stats/"
 	OBJECT_TREE_ENDPOINT     = "/v1/file/objecttree/"
 	REFS_ENDPOINT            = "/v1/file/refs/"
+	RECENT_REFS_ENDPOINT     = "/v1/file/refs/recent/"
 	COMMIT_META_TXN_ENDPOINT = "/v1/file/commitmetatxn/"
 	COLLABORATOR_ENDPOINT    = "/v1/file/collaborator/"
 	CALCULATE_HASH_ENDPOINT  = "/v1/file/calculatehash/"
@@ -254,6 +255,31 @@ func NewRefsRequest(baseUrl, allocationID, path, offsetPath, updatedDate, offset
 	}
 
 	if err := setClientInfoWithSign(req, allocationID); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+func NewRecentlyAddedRefsRequest(bUrl, allocID string, fromDate, offset int64, pageLimit int) (*http.Request, error) {
+	nUrl, err := url.Parse(bUrl)
+	if err != nil {
+		return nil, err
+	}
+	nUrl.Path += RECENT_REFS_ENDPOINT + allocID
+
+	params := url.Values{}
+	params.Add("limit", strconv.Itoa(pageLimit))
+	params.Add("offset", strconv.FormatInt(offset, 10))
+	params.Add("from-date", strconv.FormatInt(fromDate, 10))
+
+	nUrl.RawQuery = params.Encode()
+	req, err := http.NewRequest(http.MethodGet, nUrl.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = setClientInfoWithSign(req, allocID); err != nil {
 		return nil, err
 	}
 
@@ -519,6 +545,7 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	entityResult := make(map[string][]byte)
 	var retObj []byte
 	maxCount := 0
+	dominant := 200
 	wg := sync.WaitGroup{}
 	for _, sharder := range util.Shuffle(sharders) {
 		wg.Add(1)
@@ -542,9 +569,14 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 				responses[response.StatusCode]++
 				if responses[response.StatusCode] > maxCount {
 					maxCount = responses[response.StatusCode]
+				}
+
+				if isCurrentDominantStatus(response.StatusCode, responses, maxCount) {
+					dominant = response.StatusCode
 					retObj = entityBytes
 				}
-				entityResult[sharder] = retObj
+
+				entityResult[sharder] = entityBytes
 				mu.Unlock()
 			}
 		}(sharder)
@@ -555,14 +587,6 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 	rate := float32(maxCount*100) / float32(numSharders)
 	if rate < consensusThresh {
 		err = errors.New("consensus_failed", "consensus failed on sharders")
-	}
-
-	c := 0
-	dominant := 200
-	for code, count := range responses {
-		if count > c {
-			dominant = code
-		}
 	}
 
 	if dominant != 200 {
@@ -605,4 +629,17 @@ func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f f
 	case err := <-c:
 		return err
 	}
+}
+
+// isCurrentDominantStatus determines whether the current response status is the dominant status among responses.
+//
+// The dominant status is where the response status is counted the most.
+// On tie-breakers, 200 will be selected if included.
+//
+// Function assumes runningTotalPerStatus can be accessed safely concurrently.
+func isCurrentDominantStatus(respStatus int, currentTotalPerStatus map[int]int, currentMax int) bool {
+	// mark status as dominant if
+	// - running total for status is the max and response is 200 or
+	// - running total for status is the max and count for 200 is lower
+	return currentTotalPerStatus[respStatus] == currentMax && (respStatus == 200 || currentTotalPerStatus[200] < currentMax)
 }

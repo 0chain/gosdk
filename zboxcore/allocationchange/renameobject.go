@@ -37,27 +37,29 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	}
 
 	found := false
+	var affectedRef *fileref.Ref
 	for i, child := range dirRef.Children {
 		if child.GetPath() == ch.ObjectTree.GetPath() {
 			dirRef.RemoveChild(i)
+
+			if ch.ObjectTree.GetType() == fileref.FILE {
+				affectedRef = &(ch.ObjectTree.(*fileref.FileRef)).Ref
+			} else {
+				affectedRef = ch.ObjectTree.(*fileref.Ref)
+			}
+
+			affectedRef.Path = filepath.Join(parentPath, ch.NewName)
+			affectedRef.Name = ch.NewName
+
 			dirRef.AddChild(ch.ObjectTree)
 			found = true
 			break
 		}
 	}
+
 	if !found {
 		return errors.New("file_not_found", "Object to rename not found in blobber")
 	}
-
-	var affectedRef *fileref.Ref
-	if ch.ObjectTree.GetType() == fileref.FILE {
-		affectedRef = &(ch.ObjectTree.(*fileref.FileRef)).Ref
-	} else {
-		affectedRef = ch.ObjectTree.(*fileref.Ref)
-	}
-
-	affectedRef.Path = filepath.Join(parentPath, ch.NewName)
-	affectedRef.Name = ch.NewName
 
 	ch.processChildren(affectedRef)
 	rootRef.CalculateHash()
