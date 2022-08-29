@@ -129,15 +129,16 @@ func main() {
 				"showLogs":              showLogs,
 
 				//blobber
-				"delete":      Delete,
-				"rename":      Rename,
-				"copy":        Copy,
-				"move":        Move,
-				"share":       Share,
-				"download":    Download,
-				"upload":      Upload,
-				"listObjects": listObjects,
-				"createDir":   createDir,
+				"delete":         Delete,
+				"rename":         Rename,
+				"copy":           Copy,
+				"move":           Move,
+				"share":          Share,
+				"download":       Download,
+				"upload":         Upload,
+				"listObjects":    listObjects,
+				"createDir":      createDir,
+				"downloadBlocks": downloadBlocks,
 
 				// zcn txn
 				"commitFileMetaTxn":   CommitFileMetaTxn,
