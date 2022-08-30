@@ -114,6 +114,7 @@ func MakeSCRestAPICall(opCode int, relativePath string, params Params, cb zcncor
 
 	select {
 	case result := <-results:
+		Logger.Debug("request_sharders", zap.String("received result", result.hash), zap.String("received body", string(result.body)))
 		hashCounters[result.hash]++
 		if hashCounters[result.hash] > hashMaxCounter {
 			hashMaxCounter = hashCounters[result.hash]
