@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
@@ -35,7 +36,22 @@ type ChunkedUploadBlobber struct {
 	commitResult  *CommitResult
 }
 
-func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *ChunkedUpload, chunkIndex int, isFinal bool, encryptedKey string, body *bytes.Buffer, formData ChunkedUploadFormMetadata) error {
+func (sb *ChunkedUploadBlobber) sendUploadRequest(
+	ctx context.Context, su *ChunkedUpload,
+	chunkIndex int, isFinal bool,
+	encryptedKey string, body *bytes.Buffer,
+	formData ChunkedUploadFormMetadata,
+	pos uint64) (err error) {
+
+	defer func() {
+
+		if err != nil {
+			logger.Logger.Error(err)
+			su.maskMu.Lock()
+			su.uploadMask = su.uploadMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
+			su.maskMu.Unlock()
+		}
+	}()
 
 	if formData.FileBytesLen == 0 {
 		//fixed fileRef in last chunk on stream. io.EOF with nil bytes
@@ -61,75 +77,97 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *Chunk
 
 	req.Header.Add("Content-Type", formData.ContentType)
 
-	resp, err := su.client.Do(req.WithContext(ctx))
+	var resp *http.Response
+	for i := 0; i < 3; i++ {
 
-	if err != nil {
-		logger.Logger.Error("Upload : ", err)
-		return err
-	}
-	defer resp.Body.Close()
+		reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
+		resp, err = su.client.Do(req.WithContext(reqCtx))
+		ctxCncl()
 
-	respbody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		logger.Logger.Error("Error: Resp ", err)
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		msg := string(respbody)
-		logger.Logger.Error(sb.blobber.Baseurl, " Upload error response: ", resp.StatusCode)
-		return errors.Throw(constants.ErrBadRequest, msg)
-	}
-	var r UploadResult
-	err = json.Unmarshal(respbody, &r)
-	if err != nil {
-		logger.Logger.Error(sb.blobber.Baseurl, " Upload response parse error: ", err)
-		return err
-	}
-	if r.Filename != su.fileMeta.RemoteName || r.Hash != formData.ChunkHash {
-		err = fmt.Errorf("%s Unexpected upload response data %s %s %s", sb.blobber.Baseurl, su.fileMeta.RemoteName, formData.ChunkHash, string(respbody))
-		logger.Logger.Error(err)
-		return err
-	}
+		if err != nil {
+			logger.Logger.Error("Upload : ", err)
+			return err
+		}
+		defer resp.Body.Close()
 
-	//logger.Logger.Debug(sb.blobber.Baseurl, su.fileMeta.RemotePath, " uploaded")
-
-	su.consensus.Done()
-
-	//fixed fileRef
-	if err == nil {
-
-		//fixed thumbnail info in first chunk if it has thumbnail
-		if formData.ThumbnailBytesLen > 0 {
-
-			sb.fileRef.ThumbnailSize = int64(formData.ThumbnailBytesLen)
-			sb.fileRef.ThumbnailHash = formData.ThumbnailContentHash
-
-			sb.fileRef.ActualThumbnailSize = su.fileMeta.ActualThumbnailSize
-			sb.fileRef.ActualThumbnailHash = su.fileMeta.ActualThumbnailHash
+		respbody, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			logger.Logger.Error("Error: Resp ", err)
+			return err
 		}
 
-		//fixed fileRef in last chunk on stream
-		if isFinal {
-			sb.fileRef.MerkleRoot = formData.ChallengeHash
-			sb.fileRef.ContentHash = formData.ContentHash
+		if resp.StatusCode == http.StatusTooManyRequests {
+			logger.Logger.Error("Got too many request error")
+			r, err := zboxutil.GetRateLimitValue(resp)
+			if err != nil {
+				return err
+			}
+			time.Sleep(time.Duration(r) * time.Second)
+			continue
+		} else if resp.StatusCode != http.StatusOK {
+			msg := string(respbody)
+			logger.Logger.Error(sb.blobber.Baseurl, " Upload error response: ", resp.StatusCode)
+			return errors.Throw(constants.ErrBadRequest, msg)
+		}
+		var r UploadResult
+		err = json.Unmarshal(respbody, &r)
+		if err != nil {
+			logger.Logger.Error(sb.blobber.Baseurl, " Upload response parse error: ", err)
+			return err
+		}
+		if r.Filename != su.fileMeta.RemoteName || r.Hash != formData.ChunkHash {
+			err = fmt.Errorf("%s Unexpected upload response data %s %s %s", sb.blobber.Baseurl, su.fileMeta.RemoteName, formData.ChunkHash, string(respbody))
+			logger.Logger.Error(err)
+			return err
+		}
 
-			sb.fileRef.ChunkSize = su.chunkSize
-			sb.fileRef.Size = su.shardUploadedSize
-			sb.fileRef.Path = su.fileMeta.RemotePath
-			sb.fileRef.ActualFileHash = su.fileMeta.ActualHash
-			sb.fileRef.ActualFileSize = su.fileMeta.ActualSize
+		su.consensus.Done()
 
-			sb.fileRef.EncryptedKey = encryptedKey
-			sb.fileRef.CalculateHash()
+		//fixed fileRef
+		if err == nil {
+
+			//fixed thumbnail info in first chunk if it has thumbnail
+			if formData.ThumbnailBytesLen > 0 {
+
+				sb.fileRef.ThumbnailSize = int64(formData.ThumbnailBytesLen)
+				sb.fileRef.ThumbnailHash = formData.ThumbnailContentHash
+
+				sb.fileRef.ActualThumbnailSize = su.fileMeta.ActualThumbnailSize
+				sb.fileRef.ActualThumbnailHash = su.fileMeta.ActualThumbnailHash
+			}
+
+			//fixed fileRef in last chunk on stream
+			if isFinal {
+				sb.fileRef.MerkleRoot = formData.ChallengeHash
+				sb.fileRef.ContentHash = formData.ContentHash
+
+				sb.fileRef.ChunkSize = su.chunkSize
+				sb.fileRef.Size = su.shardUploadedSize
+				sb.fileRef.Path = su.fileMeta.RemotePath
+				sb.fileRef.ActualFileHash = su.fileMeta.ActualHash
+				sb.fileRef.ActualFileSize = su.fileMeta.ActualSize
+
+				sb.fileRef.EncryptedKey = encryptedKey
+				sb.fileRef.CalculateHash()
+			}
 		}
 	}
 
-	return err
+	return thrown.New("upload_error",
+		fmt.Sprintf("Upload failed with error: %v and status: %d", err, resp.StatusCode))
 
 }
 
-func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUpload) error {
+func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUpload, pos uint64) (err error) {
+	defer func() {
 
+		if err != nil {
+			logger.Logger.Error(err)
+			su.maskMu.Lock()
+			su.uploadMask = su.uploadMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
+			su.maskMu.Unlock()
+		}
+	}()
 	rootRef, latestWM, size, err := sb.processWriteMarker(ctx, su)
 
 	if err != nil {
@@ -182,38 +220,49 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 	logger.Logger.Info("Committing to blobber." + sb.blobber.Baseurl)
 
-	//for retries := 0; retries < 3; retries++ {
+	var resp *http.Response
+	for retries := 0; retries < 3; retries++ {
 
-	resp, err := su.client.Do(req.WithContext(ctx))
+		resp, err = su.client.Do(req.WithContext(ctx))
 
-	if err != nil {
-		logger.Logger.Error("Commit: ", err)
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusOK {
-		logger.Logger.Info(sb.blobber.Baseurl, su.progress.ConnectionID, " committed")
-	} else {
-		logger.Logger.Error("Commit response: ", resp.StatusCode)
+		if err != nil {
+			logger.Logger.Error("Commit: ", err)
+			return err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode == http.StatusOK {
+			logger.Logger.Info(sb.blobber.Baseurl, su.progress.ConnectionID, " committed")
+			su.consensus.Done()
+			return nil
+
+		} else if resp.StatusCode == http.StatusTooManyRequests {
+			logger.Logger.Info(
+				sb.blobber.Baseurl,
+				su.progress.ConnectionID,
+				" got too many request error. Retrying")
+
+			r, err := zboxutil.GetRateLimitValue(resp)
+			if err != nil {
+				return err
+			}
+
+			time.Sleep(time.Duration(r) * time.Second)
+			continue
+		} else {
+			respBody, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				logger.Logger.Error("Response read: ", err)
+				return err
+			}
+
+			return thrown.New("commit_error",
+				fmt.Sprintf("Got error response %s with status %d", respBody, resp.StatusCode))
+		}
 	}
 
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		logger.Logger.Error("Response read: ", err)
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		logger.Logger.Error(sb.blobber.Baseurl, " Commit response:", string(respBody))
-		return thrown.New("commit_error", string(respBody))
-	}
+	return thrown.New("commit_error", fmt.Sprintf("Commit failed with response status %d", resp.StatusCode))
 
-	if err == nil {
-		su.consensus.Done()
-		return nil
-	}
-	//}
-
-	return nil
 }
 
 func (sb *ChunkedUploadBlobber) processWriteMarker(ctx context.Context, su *ChunkedUpload) (*fileref.Ref, *marker.WriteMarker, int64, error) {
