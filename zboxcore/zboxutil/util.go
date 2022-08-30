@@ -9,7 +9,9 @@ import (
 	"io"
 	"math"
 	"math/bits"
+	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"errors"
@@ -223,4 +225,21 @@ func GetActiveBlobbers(dirMask uint32, blobbers []*blockchain.StorageNode) []*bl
 	}
 
 	return r
+}
+
+func GetRateLimitValue(r *http.Response) (int, error) {
+	rlStr := r.Header.Get("X-Rate-Limit-Limit")
+	durStr := r.Header.Get("X-Rate-Limit-Duration")
+
+	rl, err := strconv.ParseFloat(rlStr, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	dur, err := strconv.ParseFloat(durStr, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return int(math.Ceil(rl / dur)), nil
 }
