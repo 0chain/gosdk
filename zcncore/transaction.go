@@ -1431,6 +1431,6 @@ func (t *Transaction) ZCNSCDeleteAuthorizer(dp *DeleteAuthorizerPayload) (err er
 		logging.Error(err)
 		return
 	}
-	go t.submitTxn()
+	go t.setNonceAndSubmit()
 	return
 }

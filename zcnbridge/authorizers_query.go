@@ -263,12 +263,16 @@ func readResponse(response *http.Response, err error) (res *authorizerResponse, 
 	}
 
 	body, er := ioutil.ReadAll(response.Body)
+	defer response.Body.Close()
+
 	if er != nil || len(body) == 0 {
 		var errstrings []string
 		er = errors.Wrap("authorizer_post_process", "failed to read body", er)
-		errstrings = append(errstrings, err.Error())
+		if err != nil {
+			errstrings = append(errstrings, err.Error())
+		}
 		errstrings = append(errstrings, er.Error())
-		err = fmt.Errorf(strings.Join(errstrings, "\n"))
+		err = fmt.Errorf(strings.Join(errstrings, ":"))
 	}
 
 	res.error = err
