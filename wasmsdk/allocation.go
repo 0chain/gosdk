@@ -76,3 +76,39 @@ func createAllocation(name string, datashards, parityshards int, size, expiry in
 func listAllocations() ([]*sdk.Allocation, error) {
 	return sdk.GetAllocations()
 }
+
+func transferAllocation(allocationId, newOwnerId, newOwnerPublicKey string) error {
+	if allocationId == "" {
+		return RequiredArg("allocationId")
+	}
+
+	if newOwnerId == "" {
+		return RequiredArg("newOwnerId")
+	}
+
+	if newOwnerPublicKey == "" {
+		return RequiredArg("newOwnerPublicKey")
+	}
+
+	_, _, err := sdk.CuratorTransferAllocation(allocationId, newOwnerId, newOwnerPublicKey)
+
+	return err
+}
+
+func freezeAllocation(allocationId string) error {
+
+	_, _, err := sdk.UpdateAllocation(
+		"",           //allocationName,
+		0,            //size,
+		0,            //int64(expiry/time.Second),
+		allocationId, // allocID,
+		0,            //lock,
+		true,         // setImmutable,
+		false,        //updateTerms,
+		"",           //addBlobberId,
+		"",           //removeBlobberId,
+	)
+
+	return err
+
+}
