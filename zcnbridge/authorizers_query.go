@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"math"
 	"net/http"
-	u "net/url"
 	"strings"
 	"sync"
 
@@ -33,7 +32,7 @@ type (
 
 	requestHandler struct {
 		path        string
-		values      u.Values
+		values      map[string]string
 		bodyDecoder func([]byte) (JobResult, error)
 	}
 
@@ -57,8 +56,8 @@ func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereu
 
 	var (
 		totalWorkers = len(authorizers)
-		values       = u.Values{
-			"hash": []string{zchainBurnHash},
+		values       = map[string]string{
+			"hash": zchainBurnHash,
 		}
 	)
 
@@ -120,10 +119,9 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 
 	var (
 		totalWorkers = len(authorizers)
-		values       = u.Values{
-			"hash":     []string{ethBurnHash},
-			"address":  []string{wallet.ZCNSCSmartContractAddress},
-			"clientid": []string{b.ClientID()},
+		values       = map[string]string{
+			"hash":     ethBurnHash,
+			"clientid": "0xc035630d0f02f53984beb28b1a94a80207906fd586f5815715bdc0dd77d5c1b2",
 		}
 	)
 
@@ -213,7 +211,20 @@ func handleResponse(responseChannel responseChannelType, eventsChannel eventsCha
 func queryAuthorizer(au *AuthorizerNode, request *requestHandler, responseChannel responseChannelType) {
 	log.Logger.Info("Query from authorizer", zap.String("ID", au.ID), zap.String("URL", au.URL))
 	ticketURL := strings.TrimSuffix(au.URL, "/") + request.path
-	resp, body := readResponse(client.PostForm(ticketURL, request.values))
+
+	req, err := http.NewRequest("GET", ticketURL, nil)
+	if err != nil {
+		log.Logger.Error("failed to create request", zap.Error(err))
+		return
+	}
+
+	q := req.URL.Query()
+	for k, v := range request.values {
+		q.Add(k, v)
+	}
+	req.URL.RawQuery = q.Encode()
+	log.Logger.Info(req.URL.String())
+	resp, body := readResponse(client.Do(req))
 	resp.AuthorizerID = au.ID
 
 	if resp.error != nil {
@@ -263,6 +274,7 @@ func readResponse(response *http.Response, err error) (res *authorizerResponse, 
 	}
 
 	body, er := ioutil.ReadAll(response.Body)
+	log.Logger.Debug("response", zap.String("response", string(body)))
 	defer response.Body.Close()
 
 	if er != nil || len(body) == 0 {
