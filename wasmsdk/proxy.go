@@ -145,9 +145,9 @@ func main() {
 				"commitFolderMetaTxn": CommitFolderMetaTxn,
 
 				// player
-				"play":           Play,
-				"stop":           Stop,
-				"getNextSegment": GetNextSegment,
+				"play":           play,
+				"stop":           stop,
+				"getNextSegment": getNextSegment,
 
 				// wallet
 				"createWallet": createWallet,

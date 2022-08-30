@@ -584,7 +584,9 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 		}
 	}
 	lPath, _ := filepath.Split(localPath)
-	os.MkdirAll(lPath, 0744)
+	if err := sys.Files.MkdirAll(lPath, 0744); err != nil {
+		return err
+	}
 
 	if len(a.Blobbers) == 0 {
 		return noBLOBBERS

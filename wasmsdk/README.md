@@ -298,7 +298,7 @@ upload file(s)
 play stream video files
 
 **Input**:
-> allocationID, remotePath, authTicket, lookupHash string
+> allocationID, remotePath, authTicket, lookupHash string, isLive bool
 
 **Output**:
 > N/A
