@@ -8,7 +8,8 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
-	"strconv"
+	"sync"
+	"time"
 
 	"errors"
 
@@ -23,6 +24,10 @@ import (
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
+)
+
+const (
+	DefaultUploadTimeOut = time.Minute
 )
 
 var (
@@ -72,12 +77,25 @@ const (
 		}
 
 */
-func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta FileMeta, fileReader io.Reader, isUpdate, isRepair bool, opts ...ChunkedUploadOption) (*ChunkedUpload, error) {
+
+func CreateChunkedUpload(
+	workdir string, allocationObj *Allocation,
+	fileMeta FileMeta, fileReader io.Reader,
+	isUpdate, isRepair bool,
+	opts ...ChunkedUploadOption,
+) (*ChunkedUpload, error) {
+
 	if allocationObj == nil {
 		return nil, thrown.Throw(constants.ErrInvalidParameter, "allocationObj")
 	}
 
-	var uploadMask zboxutil.Uint128 = zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1)
+	consensus := Consensus{
+		mu:              &sync.RWMutex{},
+		consensusThresh: allocationObj.consensusThreshold,
+		fullconsensus:   allocationObj.fullconsensus,
+	}
+
+	uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1)
 	if isRepair {
 		found, repairRequired, _, err := allocationObj.RepairRequired(fileMeta.RemotePath)
 		if err != nil {
@@ -89,6 +107,8 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 		}
 
 		uploadMask = found.Not().And(uploadMask)
+		consensus.fullconsensus = uploadMask.CountOnes()
+		consensus.consensusThresh = 1
 	}
 
 	su := &ChunkedUpload{
@@ -102,6 +122,12 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 		chunkSize:       DefaultChunkSize,
 		chunkNumber:     1,
 		encryptOnUpload: false,
+
+		consensus:     consensus,
+		uploadTimeOut: DefaultUploadTimeOut,
+		commitTimeOut: DefaultUploadTimeOut,
+		maskMu:        &sync.Mutex{},
+		wg:            &sync.WaitGroup{},
 	}
 
 	if isUpdate {
@@ -259,6 +285,11 @@ type ChunkedUpload struct {
 
 	// isRepair identifies if upload is repair operation
 	isRepair bool
+
+	uploadTimeOut time.Duration
+	commitTimeOut time.Duration
+	maskMu        *sync.Mutex
+	wg            *sync.WaitGroup
 }
 
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
@@ -406,28 +437,19 @@ func (su *ChunkedUpload) Start() error {
 		}
 	}
 
-	if su.consensus.isConsensusOk() {
-		logger.Logger.Info("Completed the upload. Submitting for commit")
+	logger.Logger.Info("Completed the upload. Submitting for commit")
 
-		err := su.writeMarkerMutex.Lock(context.TODO(), su.progress.ConnectionID)
-		defer su.writeMarkerMutex.Unlock(context.TODO(), su.progress.ConnectionID) //nolint: errcheck
-		if err != nil {
-			if su.statusCallback != nil {
-				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
-			}
-			return err
+	err := su.writeMarkerMutex.Lock(context.TODO(), su.progress.ConnectionID)
+	defer su.writeMarkerMutex.Unlock(context.TODO(), su.progress.ConnectionID) //nolint: errcheck
+
+	if err != nil {
+		if su.statusCallback != nil {
+			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
 		}
-
-		return su.processCommit()
+		return err
 	}
 
-	err := fmt.Errorf("Upload failed: Consensus:%d, expected:%d", su.consensus.getConsensus(), su.consensus.consensusThresh)
-	if su.statusCallback != nil {
-		su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
-	}
-
-	return err
-
+	return su.processCommit()
 }
 
 func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
@@ -484,21 +506,11 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 }
 
 //processUpload process upload fragment to its blobber
-func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int, fileShards []blobberShards, thumbnailShards blobberShards, isFinal bool, uploadLength int64) error {
+func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
+	fileShards []blobberShards, thumbnailShards blobberShards,
+	isFinal bool, uploadLength int64) error {
 
-	num := len(su.blobbers)
-	if su.isRepair {
-		num = len(su.blobbers) - su.uploadMask.TrailingZeros()
-	} else {
-		consensus := su.allocationObj.DataShards + su.allocationObj.ParityShards
-
-		if num != consensus {
-			return thrown.Throw(constants.ErrInvalidParameter, "len(su.blobbers) requires "+strconv.Itoa(num)+", not "+strconv.Itoa(len(su.blobbers)))
-		}
-	}
-
-	wait := make(chan error, num)
-	defer close(wait)
+	su.consensus.Reset()
 
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
@@ -521,31 +533,32 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int, fileS
 			thumbnailChunkData = thumbnailShards[pos]
 		}
 
-		body, formData, err := su.formBuilder.Build(&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID, su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey, fileShards[pos], thumbnailChunkData)
+		body, formData, err := su.formBuilder.Build(
+			&su.fileMeta, blobber.progress.Hasher, su.progress.ConnectionID,
+			su.chunkSize, chunkStartIndex, chunkEndIndex, isFinal, encryptedKey,
+			fileShards[pos], thumbnailChunkData,
+		)
 
 		if err != nil {
 			return err
 		}
 
-		go func(b *ChunkedUploadBlobber, buf *bytes.Buffer, form ChunkedUploadFormMetadata) {
-			err := b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, buf, form)
-
-			// channel is not closed
-			if ctx.Err() == nil {
-				wait <- err
-			}
-		}(blobber, body, formData)
+		su.wg.Add(1)
+		go func(b *ChunkedUploadBlobber, body *bytes.Buffer, formData ChunkedUploadFormMetadata, pos uint64) {
+			defer su.wg.Done()
+			err := b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
+			_ = err
+		}(blobber, body, formData, pos)
 	}
-	var err error
-	for i := 0; i < num; i++ {
-		err = <-wait
-		if err != nil {
-			return err
-		}
+
+	su.wg.Wait()
+
+	if !su.consensus.isConsensusOk() {
+		return thrown.New("consensus_not_met", fmt.Sprintf("Required consensus atleast %d, got %d",
+			su.consensus.consensusThresh, su.consensus.consensus))
 	}
 
 	return nil
-
 }
 
 // processCommit commit shard upload on its blobber
@@ -563,7 +576,7 @@ func (su *ChunkedUpload) processCommit() error {
 	wait := make(chan error, num)
 	defer close(wait)
 
-	ctx, cancel := context.WithCancel(context.TODO())
+	ctx, cancel := context.WithTimeout(context.TODO(), su.commitTimeOut)
 	defer cancel()
 
 	var pos uint64
@@ -578,30 +591,18 @@ func (su *ChunkedUpload) processCommit() error {
 
 		blobber.commitChanges = append(blobber.commitChanges, su.buildChange(blobber.fileRef))
 
-		go func(b *ChunkedUploadBlobber) {
-			err := b.processCommit(ctx, su)
-
+		su.wg.Add(1)
+		go func(b *ChunkedUploadBlobber, pos uint64) {
+			defer su.wg.Done()
+			err := b.processCommit(ctx, su, pos)
 			if err != nil {
 				b.commitResult = ErrorCommitResult(err.Error())
 			}
 
-			// channel is not closed
-			if ctx.Err() == nil {
-				wait <- err
-			}
-
-		}(blobber)
+		}(blobber, pos)
 	}
 
-	var err error
-	for i := 0; i < num; i++ {
-		err = <-wait
-
-		if err != nil {
-			logger.Logger.Error("Commit: ", err)
-			break
-		}
-	}
+	su.wg.Wait()
 
 	if !su.consensus.isConsensusOk() {
 		if su.consensus.getConsensus() != 0 {
