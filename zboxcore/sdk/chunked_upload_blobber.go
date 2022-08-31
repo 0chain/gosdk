@@ -46,7 +46,6 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	defer func() {
 
 		if err != nil {
-			logger.Logger.Error(err)
 			su.maskMu.Lock()
 			su.uploadMask = su.uploadMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
 			su.maskMu.Unlock()
@@ -124,33 +123,33 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 		su.consensus.Done()
 
 		//fixed fileRef
-		if err == nil {
 
-			//fixed thumbnail info in first chunk if it has thumbnail
-			if formData.ThumbnailBytesLen > 0 {
+		//fixed thumbnail info in first chunk if it has thumbnail
+		if formData.ThumbnailBytesLen > 0 {
 
-				sb.fileRef.ThumbnailSize = int64(formData.ThumbnailBytesLen)
-				sb.fileRef.ThumbnailHash = formData.ThumbnailContentHash
+			sb.fileRef.ThumbnailSize = int64(formData.ThumbnailBytesLen)
+			sb.fileRef.ThumbnailHash = formData.ThumbnailContentHash
 
-				sb.fileRef.ActualThumbnailSize = su.fileMeta.ActualThumbnailSize
-				sb.fileRef.ActualThumbnailHash = su.fileMeta.ActualThumbnailHash
-			}
-
-			//fixed fileRef in last chunk on stream
-			if isFinal {
-				sb.fileRef.MerkleRoot = formData.ChallengeHash
-				sb.fileRef.ContentHash = formData.ContentHash
-
-				sb.fileRef.ChunkSize = su.chunkSize
-				sb.fileRef.Size = su.shardUploadedSize
-				sb.fileRef.Path = su.fileMeta.RemotePath
-				sb.fileRef.ActualFileHash = su.fileMeta.ActualHash
-				sb.fileRef.ActualFileSize = su.fileMeta.ActualSize
-
-				sb.fileRef.EncryptedKey = encryptedKey
-				sb.fileRef.CalculateHash()
-			}
+			sb.fileRef.ActualThumbnailSize = su.fileMeta.ActualThumbnailSize
+			sb.fileRef.ActualThumbnailHash = su.fileMeta.ActualThumbnailHash
 		}
+
+		//fixed fileRef in last chunk on stream
+		if isFinal {
+			sb.fileRef.MerkleRoot = formData.ChallengeHash
+			sb.fileRef.ContentHash = formData.ContentHash
+
+			sb.fileRef.ChunkSize = su.chunkSize
+			sb.fileRef.Size = su.shardUploadedSize
+			sb.fileRef.Path = su.fileMeta.RemotePath
+			sb.fileRef.ActualFileHash = su.fileMeta.ActualHash
+			sb.fileRef.ActualFileSize = su.fileMeta.ActualSize
+
+			sb.fileRef.EncryptedKey = encryptedKey
+			sb.fileRef.CalculateHash()
+		}
+
+		return nil
 	}
 
 	return thrown.New("upload_error",
