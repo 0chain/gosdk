@@ -76,10 +76,10 @@ func mintZCN(burnTrxHash string, timeout int) string {
 	c, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
 	defer cancel()
 
-	mintTrx, err := bridge.MintZCN(c, mintPayload)
+	hash, err := bridge.MintZCN(c, mintPayload)
 	if err != nil {
-		return errors.Wrap("mint", "failed to MintZCN for txn "+mintTrx.Hash, err).Error()
+		return errors.Wrap("mint", "failed to MintZCN for txn "+hash, err).Error()
 	}
 
-	return mintTrx.Hash
+	return hash
 }

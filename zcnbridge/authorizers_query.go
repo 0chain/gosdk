@@ -121,7 +121,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 		totalWorkers = len(authorizers)
 		values       = map[string]string{
 			"hash":     ethBurnHash,
-			"clientid": "0xc035630d0f02f53984beb28b1a94a80207906fd586f5815715bdc0dd77d5c1b2",
+			"clientid": b.ClientID(),
 		}
 	)
 
@@ -140,7 +140,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 	numSuccess := len(results)
 	quorum := math.Ceil((float64(numSuccess) * 100) / float64(totalWorkers))
 
-	if numSuccess > 0 && quorum >= thresh && len(results) > 1 {
+	if numSuccess > 0 && quorum >= thresh {
 		burnTicket, ok := results[0].Data().(*ProofEthereumBurn)
 		if !ok {
 			return nil, errors.Wrap("type_cast", "failed to convert to *proofEthereumBurn", err)
