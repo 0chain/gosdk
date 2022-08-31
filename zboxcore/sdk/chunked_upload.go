@@ -568,14 +568,6 @@ func (su *ChunkedUpload) processCommit() error {
 	logger.Logger.Info("Submitting for commit")
 	su.consensus.Reset()
 
-	num := su.allocationObj.DataShards + su.allocationObj.ParityShards
-	if su.isRepair {
-		num = num - su.uploadMask.TrailingZeros()
-	}
-
-	wait := make(chan error, num)
-	defer close(wait)
-
 	ctx, cancel := context.WithTimeout(context.TODO(), su.commitTimeOut)
 	defer cancel()
 
