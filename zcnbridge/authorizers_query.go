@@ -76,7 +76,7 @@ func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereu
 	numSuccess := len(results)
 	quorum := math.Ceil((float64(numSuccess) * 100) / float64(totalWorkers))
 
-	if numSuccess > 0 && quorum >= thresh && len(results) > 1 {
+	if numSuccess > 0 && quorum >= thresh {
 		burnTicket, ok := results[0].(*ProofZCNBurn)
 		if !ok {
 			return nil, errors.Wrap("type_cast", "failed to convert to *proofEthereumBurn", err)
@@ -209,7 +209,7 @@ func handleResponse(responseChannel responseChannelType, eventsChannel eventsCha
 }
 
 func queryAuthorizer(au *AuthorizerNode, request *requestHandler, responseChannel responseChannelType) {
-	log.Logger.Info("Query from authorizer", zap.String("ID", au.ID), zap.String("URL", au.URL))
+	Logger.Info("Query from authorizer", zap.String("ID", au.ID), zap.String("URL", au.URL))
 	ticketURL := strings.TrimSuffix(au.URL, "/") + request.path
 
 	req, err := http.NewRequest("GET", ticketURL, nil)
@@ -223,12 +223,12 @@ func queryAuthorizer(au *AuthorizerNode, request *requestHandler, responseChanne
 		q.Add(k, v)
 	}
 	req.URL.RawQuery = q.Encode()
-	log.Logger.Info(req.URL.String())
+	Logger.Info(req.URL.String())
 	resp, body := readResponse(client.Do(req))
 	resp.AuthorizerID = au.ID
 
 	if resp.error != nil {
-		log.Logger.Error(
+		Logger.Error(
 			"failed to process response",
 			zap.Error(resp.error),
 			zap.String("node.id", au.ID),
