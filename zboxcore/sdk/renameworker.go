@@ -111,7 +111,7 @@ func (req *RenameRequest) ProcessRename() error {
 	req.wg.Wait()
 
 	if !req.consensus.isConsensusOk() {
-		return errors.New("Rename failed: Rename request failed. Operation failed.")
+		return errors.New("Rename failed: Rename request failed. Consensus not met.")
 	}
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
@@ -124,7 +124,7 @@ func (req *RenameRequest) ProcessRename() error {
 		return fmt.Errorf("rename failed: %s", err.Error())
 	}
 
-	req.consensus.consensus = 0
+	req.consensus.Reset()
 	wg := &sync.WaitGroup{}
 	wg.Add(bits.OnesCount32(req.renameMask))
 	commitReqs := make([]*CommitRequest, bits.OnesCount32(req.renameMask))
