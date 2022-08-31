@@ -222,8 +222,9 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 	var resp *http.Response
 	for retries := 0; retries < 3; retries++ {
-
-		resp, err = su.client.Do(req.WithContext(ctx))
+		reqCtx, ctxCncl := context.WithTimeout(ctx, su.commitTimeOut)
+		resp, err = su.client.Do(req.WithContext(reqCtx))
+		ctxCncl()
 
 		if err != nil {
 			logger.Logger.Error("Commit: ", err)

@@ -568,9 +568,6 @@ func (su *ChunkedUpload) processCommit() error {
 	logger.Logger.Info("Submitting for commit")
 	su.consensus.Reset()
 
-	ctx, cancel := context.WithTimeout(context.TODO(), su.commitTimeOut)
-	defer cancel()
-
 	var pos uint64
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
@@ -586,7 +583,7 @@ func (su *ChunkedUpload) processCommit() error {
 		su.wg.Add(1)
 		go func(b *ChunkedUploadBlobber, pos uint64) {
 			defer su.wg.Done()
-			err := b.processCommit(ctx, su, pos)
+			err := b.processCommit(context.TODO(), su, pos)
 			if err != nil {
 				b.commitResult = ErrorCommitResult(err.Error())
 			}
