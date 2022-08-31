@@ -288,10 +288,15 @@ func (a *Allocation) CreateDir(remotePath string) error {
 	req.allocationTx = a.Tx
 	req.blobbers = a.Blobbers
 	req.mu = &sync.Mutex{}
-	req.dirMask = 0
+	req.dirMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.connectionID = zboxutil.NewConnectionId()
 	req.ctx = a.ctx
 	req.remotePath = remotePath
+	req.Consensus = Consensus{
+		mu:              &sync.RWMutex{},
+		consensusThresh: a.consensusThreshold,
+		fullconsensus:   a.fullconsensus,
+	}
 
 	err := req.ProcessDir(a)
 	return err

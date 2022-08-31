@@ -3,16 +3,15 @@ package sdk
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
-	"math/bits"
 	"mime/multipart"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -31,35 +30,35 @@ type DirRequest struct {
 	blobbers     []*blockchain.StorageNode
 	ctx          context.Context
 	wg           *sync.WaitGroup
-	dirMask      uint32
+	dirMask      zboxutil.Uint128
 	mu           *sync.Mutex
 	connectionID string
 	Consensus
 }
 
 func (req *DirRequest) ProcessDir(a *Allocation) error {
-	numList := len(a.Blobbers)
-	req.wg = &sync.WaitGroup{}
-	req.wg.Add(numList)
-
 	l.Logger.Info("Start creating dir for blobbers")
 
-	for i := 0; i < numList; i++ {
-		go func(blobberIdx int) {
+	var pos uint64
+
+	for i := req.dirMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+
+		req.wg.Add(1)
+		go func(pos uint64) {
 			defer req.wg.Done()
 
-			err := req.createDirInBlobber(a.Blobbers[blobberIdx], blobberIdx)
+			err := req.createDirInBlobber(a.Blobbers[pos], pos)
 			if err != nil {
 				l.Logger.Error(err.Error())
-				return
 			}
-		}(i)
+		}(pos)
 	}
 
 	req.wg.Wait()
 
 	if !req.isConsensusOk() {
-		return errors.New("directory creation failed due to consensus not met")
+		return errors.New("consensus_not_met", "directory creation failed due to consensus not met")
 	}
 
 	writeMarkerMU, err := CreateWriteMarkerMutex(client.GetClient(), a)
@@ -76,17 +75,20 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 }
 
 func (req *DirRequest) commitRequest() error {
-	req.consensus = 0
+	req.Consensus.Reset()
 	wg := &sync.WaitGroup{}
-	activeBlobbersNum := bits.OnesCount32(req.dirMask)
+	activeBlobbersNum := req.dirMask.CountOnes()
 	wg.Add(activeBlobbersNum)
 
 	commitReqs := make([]*CommitRequest, activeBlobbersNum)
-	for i, blobber := range zboxutil.GetActiveBlobbers(req.dirMask, req.blobbers) {
+	var pos uint64
+	var c int
+	for i := req.dirMask; !i.Equals(zboxutil.NewUint128(0)); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
 		commitReq := &CommitRequest{}
 		commitReq.allocationID = req.allocationID
 		commitReq.allocationTx = req.allocationTx
-		commitReq.blobber = blobber
+		commitReq.blobber = req.blobbers[pos]
 
 		newChange := &allocationchange.DirCreateChange{}
 		newChange.RemotePath = req.remotePath
@@ -94,7 +96,8 @@ func (req *DirRequest) commitRequest() error {
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReq.connectionID = req.connectionID
 		commitReq.wg = wg
-		commitReqs[i] = commitReq
+		commitReqs[c] = commitReq
+		c++
 		go AddCommitRequest(commitReq)
 	}
 	wg.Wait()
@@ -103,22 +106,30 @@ func (req *DirRequest) commitRequest() error {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
 				l.Logger.Info("Commit success", commitReq.blobber.Baseurl)
-				req.consensus++
+				req.Consensus.Done()
 			} else {
 				l.Logger.Info("Commit failed", commitReq.blobber.Baseurl, commitReq.result.ErrorMessage)
 			}
 		} else {
 			l.Logger.Info("Commit result not set", commitReq.blobber.Baseurl)
 		}
+	}
 
-		if !req.isConsensusOk() {
-			return errors.New("directory creation failed due consensus not met")
-		}
+	if !req.isConsensusOk() {
+		return errors.New("consensus_not_met", "directory creation failed due consensus not met")
 	}
 	return nil
 }
 
-func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, blobberIdx int) error {
+func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos uint64) (err error) {
+	defer func() {
+		if err != nil {
+			req.mu.Lock()
+			req.dirMask = req.dirMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
+			req.mu.Unlock()
+		}
+	}()
+
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
 	formWriter.WriteField("connection_id", req.connectionID)
@@ -133,44 +144,52 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, blobb
 	}
 
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
+	var resp *http.Response
+	for i := 0; i < 3; i++ {
+		ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
+
+		resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
+		cncl()
 		if err != nil {
-			l.Logger.Error("createdir : ", err)
+			l.Logger.Error(err)
 			return err
 		}
 		defer resp.Body.Close()
+
 		if resp.StatusCode == http.StatusOK {
-			resp_body, _ := ioutil.ReadAll(resp.Body)
-			l.Logger.Info("createdir resp:", string(resp_body))
-			req.mu.Lock()
-			req.consensus++
-			req.dirMask |= (1 << blobberIdx)
-			req.mu.Unlock()
-			l.Logger.Info(blobber.Baseurl, " "+req.remotePath, " created.")
-		} else {
-			resp_body, err := ioutil.ReadAll(resp.Body)
+			l.Logger.Info("Successfully created directory ", req.remotePath)
+			req.Consensus.Done()
+			return nil
+		}
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			var r int
+			r, err = zboxutil.GetRateLimitValue(resp)
 			if err != nil {
 				return err
 			}
-			msg := string(resp_body)
-			l.Logger.Error(blobber.Baseurl, "Response: ", msg)
-			if strings.Contains(msg, DirectoryExists) {
-				req.mu.Lock()
-				req.consensus++
-				// should not add dirMask because there is not need to commit
-				req.mu.Unlock()
-			}
-			return errors.New(msg)
-
+			l.Logger.Debug(fmt.Sprintf("Got too many request error. Retrying after %d seconds", r))
+			time.Sleep(time.Duration(r) * time.Second)
+			continue
 		}
-		return err
-	})
 
-	if err != nil {
-		return err
+		resp_body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return err
+		}
+
+		msg := string(resp_body)
+		l.Logger.Error(blobber.Baseurl, "Response: ", msg)
+		if strings.Contains(msg, DirectoryExists) {
+			req.Consensus.Done()
+			return nil
+		}
+
+		return errors.New("response_error", msg)
+
 	}
 
-	return nil
+	return errors.New("dir_creation_failed",
+		fmt.Sprintf("Directory creation failed with response status: %d", resp.StatusCode))
 }
