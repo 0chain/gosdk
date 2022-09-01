@@ -221,6 +221,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		ctx:                req.ctx,
 	}
 	listReq.authToken = req.authTicket
+	listReq.Consensus.mu = &sync.RWMutex{}
 	listReq.fullconsensus = req.fullconsensus
 	listReq.consensusThresh = req.consensusThresh
 	req.downloadMask, fileRef, _ = listReq.getFileConsensusFromBlobbers()

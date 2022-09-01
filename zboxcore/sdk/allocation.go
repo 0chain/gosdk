@@ -283,19 +283,21 @@ func (a *Allocation) CreateDir(remotePath string) error {
 	}
 
 	remotePath = zboxutil.RemoteClean(remotePath)
-	req := DirRequest{}
-	req.allocationID = a.ID
-	req.allocationTx = a.Tx
-	req.blobbers = a.Blobbers
-	req.mu = &sync.Mutex{}
-	req.dirMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
-	req.connectionID = zboxutil.NewConnectionId()
-	req.ctx = a.ctx
-	req.remotePath = remotePath
-	req.Consensus = Consensus{
-		mu:              &sync.RWMutex{},
-		consensusThresh: a.consensusThreshold,
-		fullconsensus:   a.fullconsensus,
+	req := DirRequest{
+		allocationID: a.ID,
+		allocationTx: a.Tx,
+		blobbers:     a.Blobbers,
+		mu:           &sync.Mutex{},
+		dirMask:      zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
+		connectionID: zboxutil.NewConnectionId(),
+		ctx:          a.ctx,
+		remotePath:   remotePath,
+		wg:           &sync.WaitGroup{},
+		Consensus: Consensus{
+			mu:              &sync.RWMutex{},
+			consensusThresh: a.consensusThreshold,
+			fullconsensus:   a.fullconsensus,
+		},
 	}
 
 	err := req.ProcessDir(a)
@@ -609,6 +611,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	downloadReq.startBlock = startBlock - 1
 	downloadReq.endBlock = endBlock
 	downloadReq.numBlocks = int64(numBlocks)
+	downloadReq.Consensus.mu = &sync.RWMutex{}
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
 	downloadReq.completedCallback = func(remotepath string, remotepathhash string) {
@@ -675,6 +678,7 @@ func (a *Allocation) ListDir(path string) (*ListResult, error) {
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
+	listReq.Consensus.mu = &sync.RWMutex{}
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
 	listReq.ctx = a.ctx
@@ -1250,6 +1254,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.startBlock = startBlock - 1
 	downloadReq.endBlock = endBlock
 	downloadReq.numBlocks = int64(numBlocks)
+	downloadReq.Consensus.mu = &sync.RWMutex{}
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {
