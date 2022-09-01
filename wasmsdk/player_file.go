@@ -125,6 +125,11 @@ func (p *FilePlayer) startDownload() {
 			startBlock += int64(p.numBlocks)
 
 			if startBlock > p.playlistFile.NumBlocks {
+
+				go func() {
+					// trigger js to close stream
+					p.downloadedQueue <- nil
+				}()
 				return
 			}
 
