@@ -86,7 +86,7 @@ func (p *FilePlayer) download(startBlock int64) {
 
 	defer sys.Files.Remove(localPath) //nolint
 
-	PrintInfo("playlist: downloading [", fileName, "]")
+	PrintInfo("playlist: downloading blocks[", p.playlistFile.Name, ":", startBlock, "-", endBlock, "]")
 	err = downloader.Start(statusBar)
 
 	if err == nil {
@@ -100,7 +100,7 @@ func (p *FilePlayer) download(startBlock int64) {
 		return
 	}
 
-	PrintInfo("playlist: downloaded [", fileName, "]")
+	PrintInfo("playlist: downloaded blocks[", p.playlistFile.Name, ":", startBlock, "-", endBlock, "]")
 	fs, _ := sys.Files.Open(localPath)
 
 	mf, _ := fs.(*sys.MemFile)
