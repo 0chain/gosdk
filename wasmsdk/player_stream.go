@@ -121,10 +121,7 @@ func (p *StreamPlayer) startDownload() {
 
 func (p *StreamPlayer) nextTodo() {
 	if len(p.todoQueue) < p.prefetchQty {
-		PrintInfo("playlist: reload")
-
 		p.reloadQueue <- p.latestTodo
-
 	}
 }
 
@@ -139,7 +136,7 @@ func (p *StreamPlayer) reloadList() {
 			list, err := p.loadList()
 
 			if len(list) == 0 {
-				sys.Sleep(3 * time.Second)
+				sys.Sleep(5 * time.Second)
 				go p.nextTodo()
 				continue
 			}
