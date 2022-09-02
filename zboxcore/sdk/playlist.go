@@ -63,24 +63,22 @@ func getPlaylistFromBlobbers(ctx context.Context, alloc *Allocation, query strin
 
 	opts := make([]resty.Option, 0, 3)
 
-	var signErr error
-
 	opts = append(opts, resty.WithRetry(resty.DefaultRetry))
 	opts = append(opts, resty.WithTimeout(resty.DefaultRequestTimeout))
-	opts = append(opts, resty.WithRequestInterceptor(func(req *http.Request) {
+	opts = append(opts, resty.WithRequestInterceptor(func(req *http.Request) error {
 		req.Header.Set("X-App-Client-ID", client.GetClientID())
 		req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
 
 		hash := encryption.Hash(alloc.ID)
 		sign, err := sys.Sign(hash, client.GetClient().SignatureScheme, client.GetClientSysKeys())
 		if err != nil {
-			logger.Logger.Error("playlist: ", err)
-			signErr = err
-			return
+			return err
 		}
 
 		// ClientSignatureHeader represents http request header contains signature.
 		req.Header.Set("X-App-Client-Signature", sign)
+
+		return nil
 	}))
 
 	c := createPlaylistConsensus(alloc.getConsensuses())
