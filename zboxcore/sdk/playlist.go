@@ -158,6 +158,8 @@ func getPlaylistFileFromBlobbers(ctx context.Context, alloc *Allocation, query s
 
 		// ClientSignatureHeader represents http request header contains signature.
 		req.Header.Set("X-App-Client-Signature", sign)
+
+		return nil
 	}))
 
 	c := createPlaylistConsensus(alloc.getConsensuses())
