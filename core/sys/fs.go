@@ -23,6 +23,8 @@ type FS interface {
 	// WriteFile writes data to a file named by filename.
 	WriteFile(name string, data []byte, perm fs.FileMode) error
 
+	Stat(name string) (fs.FileInfo, error)
+
 	// Remove removes the named file or (empty) directory.
 	// If there is an error, it will be of type *PathError.
 	Remove(name string) error
