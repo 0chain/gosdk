@@ -179,7 +179,7 @@ func main() {
 
 	}
 
-	showLogs()
+	hideLogs()
 
 	<-make(chan bool)
 
