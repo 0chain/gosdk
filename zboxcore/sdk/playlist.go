@@ -108,10 +108,6 @@ func getPlaylistFromBlobbers(ctx context.Context, alloc *Allocation, query strin
 
 	r.DoGet(ctx, urls...)
 
-	if signErr != nil {
-		return nil, signErr
-	}
-
 	r.Wait()
 
 	return c.GetConsensusResult(), nil
