@@ -313,7 +313,7 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val uint64, desc 
 }
 
 type VestingDest struct {
-	ID     string     `json:"id"`     // destination ID
+	ID     string         `json:"id"`     // destination ID
 	Amount common.Balance `json:"amount"` // amount to vest for the destination
 }
 
@@ -849,6 +849,7 @@ func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
 
 type AuthorizerNode struct {
 	ID     string            `json:"id"`
+	URL    string            `json:"url"`
 	Config *AuthorizerConfig `json:"config"`
 }
 
