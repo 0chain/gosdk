@@ -46,7 +46,6 @@ type DownloadRequest struct {
 	ctx                context.Context
 	ctxCncl            context.CancelFunc
 	authTicket         *marker.AuthTicket
-	wg                 *sync.WaitGroup
 	downloadMask       zboxutil.Uint128
 	encryptedKey       string
 	isDownloadCanceled bool
@@ -58,8 +57,6 @@ type DownloadRequest struct {
 func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([]byte, error) {
 	req.consensus = 0
 	numDownloads := req.downloadMask.CountOnes()
-	req.wg = &sync.WaitGroup{}
-	req.wg.Add(numDownloads)
 	rspCh := make(chan *downloadBlock, numDownloads)
 	// Download from only specific blobbers
 	var c, pos int
@@ -76,7 +73,6 @@ func (req *DownloadRequest) downloadBlock(blockNum int64, blockChunksMax int) ([
 		blockDownloadReq.blockNum = blockNum
 		blockDownloadReq.contentMode = req.contentMode
 		blockDownloadReq.result = rspCh
-		blockDownloadReq.wg = req.wg
 		blockDownloadReq.ctx = req.ctx
 		blockDownloadReq.remotefilepath = req.remotefilepath
 		blockDownloadReq.remotefilepathhash = req.remotefilepathhash
