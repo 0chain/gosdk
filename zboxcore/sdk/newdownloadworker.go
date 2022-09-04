@@ -22,11 +22,7 @@ import (
 
 type NewDownloadRequest struct {
 	DownloadRequest
-	// If some blobber is returning wrong data then it will increase data processing
-	// more number of requests to the blobber. So its better to find such blobber
-	// and replace it.
 	effectiveChunkSize int
-	findBadBlobber     bool
 	ecEncoder          reedsolomon.Encoder
 	maskMu             *sync.Mutex
 	encScheme          encryption.EncryptionScheme
@@ -39,9 +35,10 @@ func (req *NewDownloadRequest) removeFromMask(pos uint64) {
 }
 
 // comment.
+// use context everywhere
 func (req *NewDownloadRequest) getBlocksData(
 	startBlock, totalBlock int64,
-	mask zboxutil.Uint128, threshold int) ([]byte, error) {
+	mask zboxutil.Uint128, requiredDownloads int) ([]byte, error) {
 
 	shards := make([][][]byte, totalBlock)
 	for i := range shards {
@@ -54,9 +51,9 @@ func (req *NewDownloadRequest) getBlocksData(
 		err           error
 	)
 
-	curThreshold := threshold
+	curReqDownloads := requiredDownloads
 	for {
-		remainingMask, failed, err = req.downloadBlock(startBlock, totalBlock, mask, curThreshold, shards)
+		remainingMask, failed, err = req.downloadBlock(startBlock, totalBlock, mask, curReqDownloads, shards)
 		if err != nil {
 			return nil, err
 		}
@@ -68,7 +65,7 @@ func (req *NewDownloadRequest) getBlocksData(
 			return nil, errors.New("download_failed", "")
 		}
 
-		curThreshold = failed
+		curReqDownloads = failed
 		mask = remainingMask
 	}
 
@@ -145,7 +142,7 @@ func (req *NewDownloadRequest) downloadBlock(
 	activeBlobbers := mask.CountOnes()
 	if activeBlobbers < requiredDownloads {
 		return zboxutil.NewUint128(0), 0, errors.New("insufficient_blobbers",
-			fmt.Sprintf("Required downloads %d, active blobber %d",
+			fmt.Sprintf("Required downloads %d, remaining active blobber %d",
 				req.consensusThresh, activeBlobbers))
 	}
 	rspCh := make(chan *downloadBlock, req.consensusThresh)
@@ -191,8 +188,6 @@ func (req *NewDownloadRequest) downloadBlock(
 			failed++
 		}
 	}
-
-	_ = remainingMask
 
 	return remainingMask, failed, nil
 }
@@ -292,6 +287,7 @@ func (req *NewDownloadRequest) getDecryptedDataForAuthTicket(result *downloadBlo
 	}
 	return decrypted, nil
 }
+
 func (req *NewDownloadRequest) processDownload(ctx context.Context) {
 	if req.completedCallback != nil {
 		defer req.completedCallback(req.remotefilepath, req.remotefilepathhash)
@@ -346,6 +342,9 @@ func (req *NewDownloadRequest) processDownload(ctx context.Context) {
 
 	var downloaded int
 	startBlock, endBlock, numBlocks := req.startBlock, req.endBlock, req.numBlocks
+	// remainingSize should be calculated based on startBlock number
+	// otherwise end data will have null bytes.
+	remainingSize := size - startBlock*int64(req.effectiveChunkSize)
 
 	for startBlock < endBlock {
 		if startBlock+numBlocks > endBlock {
@@ -363,7 +362,7 @@ func (req *NewDownloadRequest) processDownload(ctx context.Context) {
 			return
 		}
 
-		n := int64(math.Min(float64(size), float64(len(data))))
+		n := int64(math.Min(float64(remainingSize), float64(len(data))))
 		_, err = mW.Write(data[:n])
 
 		if err != nil {
@@ -371,7 +370,7 @@ func (req *NewDownloadRequest) processDownload(ctx context.Context) {
 			return
 		}
 		downloaded = downloaded + int(n)
-		size = size - n
+		remainingSize -= n
 
 		if req.statusCallback != nil {
 			req.statusCallback.InProgress(req.allocationID, remotePathCB, OpDownload, downloaded, data)
@@ -403,8 +402,12 @@ func (req *NewDownloadRequest) initEC() error {
 	req.ecEncoder, err = reedsolomon.New(
 		req.datashards, req.parityshards,
 		reedsolomon.WithAutoGoroutines(int(req.effectiveChunkSize)))
-	return errors.New("init_ec",
-		fmt.Sprintf("Got error %s, while initializing erasure encoder", err.Error()))
+	if err != nil {
+
+		return errors.New("init_ec",
+			fmt.Sprintf("Got error %s, while initializing erasure encoder", err.Error()))
+	}
+	return nil
 }
 
 func (req *NewDownloadRequest) initEncryption() {
@@ -461,7 +464,7 @@ func (req *NewDownloadRequest) calculateShardsParams(
 
 	// fRef.ActualFileSize is size of file that does not include encryption bytes.
 	// that is why, actualPerShard will have different value for encrypted file.
-	effectivePerShard := (size + int64(req.datashards) - 1) / int64(req.datashards)
+	effectivePerShardSize := (size + int64(req.datashards) - 1) / int64(req.datashards)
 	effectiveChunkSize := fRef.ChunkSize
 	if fRef.EncryptedKey != "" {
 		effectiveChunkSize -= EncryptionHeaderSize + EncryptedDataPaddingSize
@@ -470,7 +473,7 @@ func (req *NewDownloadRequest) calculateShardsParams(
 	// TODO re-check out this assignment
 	req.effectiveChunkSize = int(effectiveChunkSize)
 
-	chunksPerShard = (effectivePerShard + effectiveChunkSize - 1) / effectiveChunkSize
+	chunksPerShard = (effectivePerShardSize + effectiveChunkSize - 1) / effectiveChunkSize
 	actualPerShard = chunksPerShard * fRef.ChunkSize
 	if req.endBlock == 0 {
 		req.endBlock = chunksPerShard
