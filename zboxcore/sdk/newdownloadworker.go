@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -10,18 +11,287 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/klauspost/reedsolomon"
+	"go.dedis.ch/kyber/v3/group/edwards25519"
 )
 
 type NewDownloadRequest struct {
 	DownloadRequest
+	// If some blobber is returning wrong data then it will increase data processing
+	// more number of requests to the blobber. So its better to find such blobber
+	// and replace it.
+	effectiveChunkSize int
+	findBadBlobber     bool
+	ecEncoder          reedsolomon.Encoder
+	maskMu             *sync.Mutex
+	encScheme          encryption.EncryptionScheme
 }
 
-func (req *NewDownloadRequest) downloadBlock(startBlock int64, totalBlock int) ([]byte, error) {
-	return nil, nil
+func (req *NewDownloadRequest) removeFromMask(pos uint64) {
+	req.maskMu.Lock()
+	req.downloadMask = req.downloadMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
+	req.maskMu.Unlock()
 }
 
+// comment.
+func (req *NewDownloadRequest) getBlocksData(
+	startBlock, totalBlock int64,
+	mask zboxutil.Uint128, threshold int) ([]byte, error) {
+
+	shards := make([][][]byte, totalBlock)
+	for i := range shards {
+		shards[i] = make([][]byte, len(req.blobbers))
+	}
+
+	var (
+		remainingMask zboxutil.Uint128
+		failed        int
+		err           error
+	)
+
+	curThreshold := threshold
+	for {
+		remainingMask, failed, err = req.downloadBlock(startBlock, totalBlock, mask, curThreshold, shards)
+		if err != nil {
+			return nil, err
+		}
+		if failed == 0 {
+			break
+		}
+
+		if failed > remainingMask.CountOnes() {
+			return nil, errors.New("download_failed", "")
+		}
+
+		curThreshold = failed
+		mask = remainingMask
+	}
+
+	// erasure decoding
+	// Can we benefit from goroutine for erasure decoding??
+	c := req.datashards * req.effectiveChunkSize
+	data := make([]byte, req.datashards*req.effectiveChunkSize*int(totalBlock))
+	var isValid bool
+	for i := range shards {
+		var d []byte
+		var err error
+		d, isValid, err = req.decodeEC(shards[i])
+		if err != nil {
+			return nil, err
+		}
+
+		if !isValid {
+			return nil, errors.New("invalid_data", "some blobber responded with wrong data")
+		}
+		index := i * c
+		copy(data[index:index+c], d)
+
+	}
+	return data, nil
+
+	// if isValid {
+	// }
+
+	// data = nil
+	// requiredDownloads := remainingMask.CountOnes()
+	// _, failed, err = req.downloadBlock(startBlock, totalBlock, remainingMask, requiredDownloads, shards)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// if failed == requiredDownloads {
+	// 	return nil, errors.New("download_failed",
+	// 		"Downloading blocks from remaining blobbers all failed")
+	// }
+
+	// data = make([]byte, req.datashards*req.effectiveChunkSize, totalBlock)
+	// for i := range shards {
+	// 	d, isValid, err := req.shuffleAndReconstruct(shards[i])
+	// 	if err != nil {
+	// 		return nil, err
+	// 	}
+
+	// 	if !isValid {
+	// 		return nil, errors.New("too_many_invalid_data",
+	// 			"Too many blobbers returned wrong data than can be handled")
+	// 	}
+
+	// 	index := i * c
+	// 	copy(data[index:index+c], d)
+	// }
+
+	// return data, nil
+
+}
+
+func (req *NewDownloadRequest) shuffleAndReconstruct(shards [][]byte) (
+	data []byte, isValid bool, err error) {
+
+	return
+}
+
+// comment.
+func (req *NewDownloadRequest) downloadBlock(
+	startBlock, totalBlock int64,
+	mask zboxutil.Uint128, requiredDownloads int,
+	shards [][][]byte) (zboxutil.Uint128, int, error) {
+
+	var remainingMask zboxutil.Uint128
+	activeBlobbers := mask.CountOnes()
+	if activeBlobbers < requiredDownloads {
+		return zboxutil.NewUint128(0), 0, errors.New("insufficient_blobbers",
+			fmt.Sprintf("Required downloads %d, active blobber %d",
+				req.consensusThresh, activeBlobbers))
+	}
+	rspCh := make(chan *downloadBlock, req.consensusThresh)
+
+	var pos uint64
+	var c int
+
+	for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		blockDownloadReq := &BlockDownloadRequest{
+			allocationID:       req.allocationID,
+			allocationTx:       req.allocationTx,
+			allocOwnerID:       req.allocOwnerID,
+			authTicket:         req.authTicket,
+			blobber:            req.blobbers[pos],
+			blobberIdx:         int(pos),
+			chunkSize:          req.chunkSize,
+			blockNum:           startBlock,
+			contentMode:        req.contentMode,
+			result:             rspCh,
+			ctx:                req.ctx,
+			remotefilepath:     req.remotefilepath,
+			remotefilepathhash: req.remotefilepathhash,
+			numBlocks:          totalBlock,
+			encryptedKey:       req.encryptedKey,
+		}
+
+		go AddBlockDownloadReq(blockDownloadReq)
+		c++
+		if c == requiredDownloads {
+			remainingMask = i
+			break
+		}
+
+	}
+
+	var failed int
+	for i := 0; i < requiredDownloads; i++ {
+		result := <-rspCh
+		err := req.fillShards(shards, result)
+		if err != nil {
+			logger.Logger.Error(err)
+			failed++
+		}
+	}
+
+	_ = remainingMask
+
+	return remainingMask, failed, nil
+}
+
+func (req *NewDownloadRequest) decodeEC(shards [][]byte) (data []byte, isValid bool, err error) {
+	isValid, err = req.ecEncoder.Verify(shards)
+	if err != nil || !isValid {
+		return
+	}
+
+	err = req.ecEncoder.ReconstructData(shards)
+	if err != nil {
+		return
+	}
+	data = make([]byte, req.datashards*req.effectiveChunkSize)
+	for i := 0; i < req.datashards; i++ {
+		index := i * req.effectiveChunkSize
+		copy(data[index:index+req.effectiveChunkSize], shards[i])
+	}
+	return data, true, nil
+}
+
+func (req *NewDownloadRequest) fillShards(shards [][][]byte, result *downloadBlock) (err error) {
+	defer func() {
+		if err != nil {
+			req.removeFromMask(uint64(result.idx))
+		}
+	}()
+
+	if !result.Success {
+		return result.err
+	}
+
+	for i := 0; i < len(result.BlockChunks); i++ {
+		var data []byte
+		if req.encryptedKey != "" {
+			data, err = req.getDecryptedData(result, i)
+			if err != nil {
+				shards[i] = nil
+				return err
+			}
+		} else {
+			data = result.BlockChunks[i]
+		}
+		shards[i][result.idx] = data
+	}
+	return
+}
+
+func (req *NewDownloadRequest) getDecryptedData(result *downloadBlock, blockNum int) (data []byte, err error) {
+	if req.authTicket != nil {
+		return req.getDecryptedDataForAuthTicket(result, blockNum)
+	}
+
+	headerBytes := result.BlockChunks[blockNum][:EncryptionHeaderSize]
+	headerBytes = bytes.Trim(headerBytes, "\x00")
+
+	if len(headerBytes) != EncryptionHeaderSize {
+		logger.Logger.Error("Block has invalid header", req.blobbers[result.idx].Baseurl)
+		return nil, errors.New(
+			"invalid_header",
+			fmt.Sprintf("Block from %s has invalid header. Required header size: %d, got %d",
+				req.blobbers[result.idx].Baseurl, EncryptionHeaderSize, len(headerBytes)))
+	}
+
+	encMsg := &encryption.EncryptedMessage{}
+	encMsg.EncryptedData = result.BlockChunks[blockNum][EncryptionHeaderSize:]
+	encMsg.MessageChecksum, encMsg.OverallChecksum = string(headerBytes[:128]), string(headerBytes[128:])
+	encMsg.EncryptedKey = req.encScheme.GetEncryptedKey()
+	decryptedBytes, err := req.encScheme.Decrypt(encMsg)
+	if err != nil {
+		logger.Logger.Error("Block decryption failed", req.blobbers[result.idx].Baseurl, err)
+		return nil, errors.New(
+			"decryption_error",
+			fmt.Sprintf("Decryption error %s while decrypting data from %s blobber",
+				err.Error(), req.blobbers[result.idx].Baseurl))
+	}
+	return decryptedBytes, nil
+}
+
+func (req *NewDownloadRequest) getDecryptedDataForAuthTicket(result *downloadBlock, blockNum int) (data []byte, err error) {
+	suite := edwards25519.NewBlakeSHA256Ed25519()
+	reEncMessage := &encryption.ReEncryptedMessage{
+		D1: suite.Point(),
+		D4: suite.Point(),
+		D5: suite.Point(),
+	}
+	err = reEncMessage.Unmarshal(result.BlockChunks[blockNum])
+	if err != nil {
+		logger.Logger.Error("ReEncrypted Block unmarshall failed", req.blobbers[result.idx].Baseurl, err)
+		return nil, err
+	}
+	decrypted, err := req.encScheme.ReDecrypt(reEncMessage)
+	if err != nil {
+		logger.Logger.Error("Block redecryption failed", req.blobbers[result.idx].Baseurl, err)
+		return nil, err
+	}
+	return decrypted, nil
+}
 func (req *NewDownloadRequest) processDownload(ctx context.Context) {
 	if req.completedCallback != nil {
 		defer req.completedCallback(req.remotefilepath, req.remotefilepathhash)
@@ -65,6 +335,15 @@ func (req *NewDownloadRequest) processDownload(ctx context.Context) {
 		mW = io.MultiWriter(f)
 	}
 
+	err = req.initEC()
+	if err != nil {
+		logger.Logger.Error(err)
+		return
+	}
+	if req.encryptedKey != "" {
+		req.initEncryption()
+	}
+
 	var downloaded int
 	startBlock, endBlock, numBlocks := req.startBlock, req.endBlock, req.numBlocks
 
@@ -74,7 +353,7 @@ func (req *NewDownloadRequest) processDownload(ctx context.Context) {
 		}
 		logger.Logger.Info("Downloading block ", startBlock+1, " - ", startBlock+numBlocks)
 
-		data, err := req.downloadBlock(startBlock+1, int(numBlocks))
+		data, err := req.getBlocksData(startBlock+1, numBlocks, req.downloadMask, req.consensusThresh)
 		if err != nil {
 			req.errorCB(errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+1)), remotePathCB)
 			return
@@ -117,6 +396,21 @@ func (req *NewDownloadRequest) processDownload(ctx context.Context) {
 		req.statusCallback.Completed(
 			req.allocationID, remotePathCB, fRef.Name, "", int(fRef.ActualFileSize), OpDownload)
 	}
+}
+
+func (req *NewDownloadRequest) initEC() error {
+	var err error
+	req.ecEncoder, err = reedsolomon.New(
+		req.datashards, req.parityshards,
+		reedsolomon.WithAutoGoroutines(int(req.effectiveChunkSize)))
+	return errors.New("init_ec",
+		fmt.Sprintf("Got error %s, while initializing erasure encoder", err.Error()))
+}
+
+func (req *NewDownloadRequest) initEncryption() {
+	req.encScheme = encryption.NewEncryptionScheme()
+	req.encScheme.Initialize(client.GetClient().Mnemonic)
+	req.encScheme.InitForDecryption("filetype:audio", req.encryptedKey)
 }
 
 func (req *NewDownloadRequest) errorCB(err error, remotePathCB string) {
@@ -172,6 +466,9 @@ func (req *NewDownloadRequest) calculateShardsParams(
 	if fRef.EncryptedKey != "" {
 		effectiveChunkSize -= EncryptionHeaderSize + EncryptedDataPaddingSize
 	}
+
+	// TODO re-check out this assignment
+	req.effectiveChunkSize = int(effectiveChunkSize)
 
 	chunksPerShard = (effectivePerShard + effectiveChunkSize - 1) / effectiveChunkSize
 	actualPerShard = chunksPerShard * fRef.ChunkSize
