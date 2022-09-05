@@ -197,9 +197,8 @@ func (req *NewDownloadRequest) decodeEC(shards [][]byte) (data []byte, isValid b
 		return
 	}
 
-	data = make([]byte, req.datashards*req.effectiveChunkSize)
-
 	c := len(shards[0])
+	data = make([]byte, req.datashards*c)
 	for i := 0; i < req.datashards; i++ {
 		index := i * c
 		copy(data[index:index+c], shards[i])
@@ -403,8 +402,8 @@ func (req *NewDownloadRequest) initEC() error {
 	req.ecEncoder, err = reedsolomon.New(
 		req.datashards, req.parityshards,
 		reedsolomon.WithAutoGoroutines(int(req.effectiveChunkSize)))
-	if err != nil {
 
+	if err != nil {
 		return errors.New("init_ec",
 			fmt.Sprintf("Got error %s, while initializing erasure encoder", err.Error()))
 	}
