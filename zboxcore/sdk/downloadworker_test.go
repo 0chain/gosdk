@@ -13,7 +13,7 @@ import (
 )
 
 func TestRemoveFromMask(t *testing.T) {
-	req := NewDownloadRequest{}
+	req := DownloadRequest{}
 	req.maskMu = &sync.Mutex{}
 	N := 30
 	req.downloadMask = zboxutil.NewUint128(1).Lsh(uint64(30)).Sub64(1)
@@ -32,7 +32,7 @@ func TestRemoveFromMask(t *testing.T) {
 func TestDecodeEC(t *testing.T) {
 	type input struct {
 		name             string
-		req              *NewDownloadRequest
+		req              *DownloadRequest
 		shards           [][]byte
 		wantErr          bool
 		contentHash      string
@@ -49,7 +49,7 @@ func TestDecodeEC(t *testing.T) {
 			wantValid:        false,
 			checkOnlyIsValid: true,
 			setup: func(in *input) {
-				req := NewDownloadRequest{}
+				req := DownloadRequest{}
 				req.datashards = 4
 				req.parityshards = 2
 				req.effectiveChunkSize = 64 * 1024
@@ -77,7 +77,7 @@ func TestDecodeEC(t *testing.T) {
 			wantErr: true,
 			errMsg:  "shard sizes do not match",
 			setup: func(in *input) {
-				req := NewDownloadRequest{}
+				req := DownloadRequest{}
 				req.datashards = 4
 				req.parityshards = 2
 				req.effectiveChunkSize = 64 * 1024
@@ -105,7 +105,7 @@ func TestDecodeEC(t *testing.T) {
 			wantErr:   false,
 			wantValid: true,
 			setup: func(in *input) {
-				req := NewDownloadRequest{}
+				req := DownloadRequest{}
 				req.datashards = 4
 				req.parityshards = 2
 				req.effectiveChunkSize = 64 * 1024
@@ -178,7 +178,7 @@ func TestFillShards(t *testing.T) {
 		totalBlobbers int
 		blobberIdx    int
 		expectedSize  int
-		req           *NewDownloadRequest
+		req           *DownloadRequest
 		setup         func(in *input)
 		shards        [][][]byte
 		result        *downloadBlock
@@ -195,7 +195,7 @@ func TestFillShards(t *testing.T) {
 				in.blobberIdx = 1
 				d, err := getDummyData(in.expectedSize * in.totalBlocks)
 				require.NoError(t, err)
-				in.req = &NewDownloadRequest{}
+				in.req = &DownloadRequest{}
 				in.req.maskMu = &sync.Mutex{}
 				shards := make([][]byte, in.totalBlocks)
 				for i := 0; i < in.totalBlocks; i++ {
@@ -219,7 +219,7 @@ func TestFillShards(t *testing.T) {
 			name:    "should return error and download mask should have blobber removed",
 			wantErr: true,
 			setup: func(in *input) {
-				in.req = &NewDownloadRequest{}
+				in.req = &DownloadRequest{}
 				in.req.downloadMask = zboxutil.NewUint128(1).Lsh(4).Sub64(1)
 				in.req.maskMu = &sync.Mutex{}
 
