@@ -774,7 +774,7 @@ func TestAllocation_DownloadFileByBlock(t *testing.T) {
 
 func TestAllocation_DownloadThumbnail(t *testing.T) {
 	const (
-		mockLocalPath = "./DownloadThumbnail"
+		mockLocalPath = "DownloadThumbnail"
 	)
 	require := require.New(t)
 	a := &Allocation{}

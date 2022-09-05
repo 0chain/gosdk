@@ -181,10 +181,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 						return err
 					}
 
-					latestReadCounter := getBlobberReadCtr(req.allocationID, req.blobber.ID) + req.numBlocks
-
-					if rspData.LatestRM.ReadCounter > latestReadCounter {
-						zlogger.Logger.Info("Will be retrying download.[", req.allocationID, "-", req.blobber.ID, "] ", rspData.LatestRM.ReadCounter, " >= ", latestReadCounter)
+					if rspData.LatestRM.ReadCounter != getBlobberReadCtr(req.allocationID, req.blobber.ID) {
+						zlogger.Logger.Info("Will be retrying download")
 						setBlobberReadCtr(req.allocationID, req.blobber.ID, rspData.LatestRM.ReadCounter)
 						shouldRetry = true
 						return errors.New("stale_read_marker", "readmarker counter is not in sync with latest counter")
