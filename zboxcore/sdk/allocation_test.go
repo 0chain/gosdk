@@ -1580,7 +1580,9 @@ func TestAllocation_CancelDownload(t *testing.T) {
 				remotepath: remotePath,
 			},
 			setup: func(t *testing.T, a *Allocation) (teardown func(t *testing.T)) {
-				a.downloadProgressMap[remotePath] = &DownloadRequest{}
+				req := &DownloadRequest{}
+				req.ctx, req.ctxCncl = context.WithCancel(context.TODO())
+				a.downloadProgressMap[remotePath] = req
 				return nil
 			},
 		},
