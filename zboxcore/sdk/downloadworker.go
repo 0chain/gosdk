@@ -63,8 +63,8 @@ func (req *DownloadRequest) removeFromMask(pos uint64) {
 	req.maskMu.Unlock()
 }
 
-// comment.
-// use context everywhere
+// getBlocksData will get data blocks for some interval from minimal blobers and aggregate them and
+// return to the caller
 func (req *DownloadRequest) getBlocksData(
 	startBlock, totalBlock int64,
 	mask zboxutil.Uint128, requiredDownloads int) ([]byte, error) {
@@ -119,43 +119,12 @@ func (req *DownloadRequest) getBlocksData(
 
 	}
 	return data, nil
-
-	// if isValid {
-	// }
-
-	// data = nil
-	// requiredDownloads := remainingMask.CountOnes()
-	// _, failed, err = req.downloadBlock(startBlock, totalBlock, remainingMask, requiredDownloads, shards)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// if failed == requiredDownloads {
-	// 	return nil, errors.New("download_failed",
-	// 		"Downloading blocks from remaining blobbers all failed")
-	// }
-
-	// data = make([]byte, req.datashards*req.effectiveChunkSize, totalBlock)
-	// for i := range shards {
-	// 	d, isValid, err := req.shuffleAndReconstruct(shards[i])
-	// 	if err != nil {
-	// 		return nil, err
-	// 	}
-
-	// 	if !isValid {
-	// 		return nil, errors.New("too_many_invalid_data",
-	// 			"Too many blobbers returned wrong data than can be handled")
-	// 	}
-
-	// 	index := i * c
-	// 	copy(data[index:index+c], d)
-	// }
-
-	// return data, nil
-
 }
 
-// comment.
+// downloadBlock This function will add download requests to the download channel which picks up
+// download requests and processes it.
+// This function will fill up `shards` in respective position and also return failed number of
+// blobbers along with remainingMask that are the blobbers that are not yet requested.
 func (req *DownloadRequest) downloadBlock(
 	startBlock, totalBlock int64,
 	mask zboxutil.Uint128, requiredDownloads int,
@@ -215,6 +184,7 @@ func (req *DownloadRequest) downloadBlock(
 	return remainingMask, failed, nil
 }
 
+//decodeEC will reconstruct shards and verify it
 func (req *DownloadRequest) decodeEC(shards [][]byte) (data []byte, isValid bool, err error) {
 	err = req.ecEncoder.Reconstruct(shards)
 	if err != nil {
@@ -235,6 +205,10 @@ func (req *DownloadRequest) decodeEC(shards [][]byte) (data []byte, isValid bool
 	return data, true, nil
 }
 
+// fillShards will fill `shards` with data from blobbers that belongs to specific
+// blockNumber and blobber's position index in an allocation
+// This will also remove blobber from downloadMask if any error occurs so this
+// blobber will not be used in subsequent requests
 func (req *DownloadRequest) fillShards(shards [][][]byte, result *downloadBlock) (err error) {
 	defer func() {
 		if err != nil {
@@ -262,6 +236,7 @@ func (req *DownloadRequest) fillShards(shards [][][]byte, result *downloadBlock)
 	return
 }
 
+// getDecryptedData will decrypt encrypted data and return it.
 func (req *DownloadRequest) getDecryptedData(result *downloadBlock, blockNum int) (data []byte, err error) {
 	if req.authTicket != nil {
 		return req.getDecryptedDataForAuthTicket(result, blockNum)
@@ -293,6 +268,8 @@ func (req *DownloadRequest) getDecryptedData(result *downloadBlock, blockNum int
 	return decryptedBytes, nil
 }
 
+// getDecryptedDataForAuthTicket will return decrypt shared encrypted data using re-encryption/re-decryption
+// mechanism
 func (req *DownloadRequest) getDecryptedDataForAuthTicket(result *downloadBlock, blockNum int) (data []byte, err error) {
 	suite := edwards25519.NewBlakeSHA256Ed25519()
 	reEncMessage := &encryption.ReEncryptedMessage{
@@ -313,6 +290,9 @@ func (req *DownloadRequest) getDecryptedDataForAuthTicket(result *downloadBlock,
 	return decrypted, nil
 }
 
+// processDownload will setup download parameters and downloads data with given
+// start block, end block and number of blocks to download in single request.
+// This will also write data to the file and will verify content by calculating content hash.
 func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if req.completedCallback != nil {
 		defer req.completedCallback(req.remotefilepath, req.remotefilepathhash)
@@ -372,6 +352,8 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	remainingSize := size - startBlock*int64(req.effectiveChunkSize)
 
 	if req.statusCallback != nil {
+		// Started will also initialize progress bar. So without calling this function
+		// other callback's call will panic
 		req.statusCallback.Started(req.allocationID, remotePathCB, OpDownload, int(size))
 	}
 
@@ -499,7 +481,6 @@ func (req *DownloadRequest) calculateShardsParams(
 		effectiveChunkSize -= EncryptionHeaderSize + EncryptedDataPaddingSize
 	}
 
-	// TODO re-check out this assignment
 	req.effectiveChunkSize = int(effectiveChunkSize)
 
 	chunksPerShard = (effectivePerShardSize + effectiveChunkSize - 1) / effectiveChunkSize
