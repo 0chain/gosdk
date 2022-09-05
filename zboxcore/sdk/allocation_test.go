@@ -2723,9 +2723,6 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 				if downloadReq.statusCallback != nil {
 					downloadReq.statusCallback.Completed(a.ID, downloadReq.localpath, "1.txt", "application/octet-stream", 3, OpDownload)
 				}
-				if downloadReq.wg != nil {
-					downloadReq.wg.Done()
-				}
 				t.Logf("received a download request for %v\n", downloadReq.remotefilepath)
 			case repairReq := <-a.repairChan:
 				if repairReq.completedCallback != nil {
