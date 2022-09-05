@@ -126,12 +126,6 @@ func (req *NewDownloadRequest) getBlocksData(
 
 }
 
-func (req *NewDownloadRequest) shuffleAndReconstruct(shards [][]byte) (
-	data []byte, isValid bool, err error) {
-
-	return
-}
-
 // comment.
 func (req *NewDownloadRequest) downloadBlock(
 	startBlock, totalBlock int64,
@@ -193,19 +187,22 @@ func (req *NewDownloadRequest) downloadBlock(
 }
 
 func (req *NewDownloadRequest) decodeEC(shards [][]byte) (data []byte, isValid bool, err error) {
+	err = req.ecEncoder.Reconstruct(shards)
+	if err != nil {
+		return
+	}
+
 	isValid, err = req.ecEncoder.Verify(shards)
 	if err != nil || !isValid {
 		return
 	}
 
-	err = req.ecEncoder.ReconstructData(shards)
-	if err != nil {
-		return
-	}
 	data = make([]byte, req.datashards*req.effectiveChunkSize)
+
+	c := len(shards[0])
 	for i := 0; i < req.datashards; i++ {
-		index := i * req.effectiveChunkSize
-		copy(data[index:index+req.effectiveChunkSize], shards[i])
+		index := i * c
+		copy(data[index:index+c], shards[i])
 	}
 	return data, true, nil
 }
@@ -346,6 +343,10 @@ func (req *NewDownloadRequest) processDownload(ctx context.Context) {
 	// otherwise end data will have null bytes.
 	remainingSize := size - startBlock*int64(req.effectiveChunkSize)
 
+	if req.statusCallback != nil {
+		req.statusCallback.Started(req.allocationID, remotePathCB, OpDownload, int(size))
+	}
+
 	for startBlock < endBlock {
 		if startBlock+numBlocks > endBlock {
 			numBlocks = endBlock - startBlock
@@ -383,7 +384,7 @@ func (req *NewDownloadRequest) processDownload(ctx context.Context) {
 	}
 
 	if isFullDownload {
-		err := req.checkContentHash(fRef, *fileHasher, remotePathCB)
+		err := req.checkContentHash(fRef, fileHasher, remotePathCB)
 		if err != nil {
 			logger.Logger.Error(err)
 			return
@@ -426,15 +427,15 @@ func (req *NewDownloadRequest) errorCB(err error, remotePathCB string) {
 }
 
 func (req *NewDownloadRequest) checkContentHash(
-	fRef *fileref.FileRef, fileHasher downloadHasher, remotepathCB string) (err error) {
+	fRef *fileref.FileRef, fileHasher *downloadHasher, remotepathCB string) (err error) {
 
-	merkleRoot := fileHasher.GetMerkleRoot()
+	hash := fileHasher.GetHash()
 	expectedHash := fRef.ActualFileHash
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
 		expectedHash = fRef.ActualThumbnailHash
 	}
 
-	if expectedHash != merkleRoot {
+	if expectedHash != hash {
 		err = errors.New("merkle_root_mismatch", "File content didn't match with uploaded file")
 		req.errorCB(err, remotepathCB)
 		return
