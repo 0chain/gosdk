@@ -170,8 +170,8 @@ func (m *WriteMarkerMutex) lockOne(ctx context.Context, body io.Reader, url stri
 	result := &WMLockResult{}
 
 	options := []resty.Option{
-		resty.WithRequestInterceptor(func(r *http.Request) {
-			m.zbox.SignRequest(r, m.allocationObj.Tx) //nolint
+		resty.WithRequestInterceptor(func(r *http.Request) error {
+			return m.zbox.SignRequest(r, m.allocationObj.Tx) //nolint
 		}),
 		resty.WithHeader(map[string]string{
 			"Content-Type": "application/x-www-form-urlencoded",
@@ -247,8 +247,8 @@ func (m *WriteMarkerMutex) Unlock(ctx context.Context, connectionID string) erro
 	}
 
 	options := []resty.Option{
-		resty.WithRequestInterceptor(func(r *http.Request) {
-			m.zbox.SignRequest(r, m.allocationObj.Tx) //nolint
+		resty.WithRequestInterceptor(func(r *http.Request) error {
+			return m.zbox.SignRequest(r, m.allocationObj.Tx)
 		}),
 	}
 
