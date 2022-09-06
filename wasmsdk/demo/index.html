@@ -1,117 +1,47 @@
 <!DOCTYPE html>
+
 <head>
+  <!-- for zcn.wasm-->
   <script src="https://cdn.jsdelivr.net/gh/herumi/bls-wasm@v1.0.0/browser/bls.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/golang/go@go1.18.5/misc/wasm/wasm_exec.js"></script>
-
   <script src="wasm.js"></script>
 
-  <script>
 
-    const networkConfig = {
-      chainId: '0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe',
-      signatureScheme: 'bls0chain',
-      minConfirmation: 50,
-      minSubmit: 50,
-      confirmationChainLength: 3,
-    }
-    const blockWorker =  `https://demo.0chain.net/dns`
-    const config = [
-      networkConfig.chainId,
-      blockWorker,
-      networkConfig.signatureScheme,
-      networkConfig.minConfirmation,
-      networkConfig.minSubmit,
-      networkConfig.confirmationChainLength
-    ]
+  <!-- for demo -->
+  <script src="dom.js"></script>
 
-    const clientID = '79ff82def0235b16cffecd1c90851975cd7c961a2c6ced6cc6c0bf89a44a4a70'
-    const publicKey = '6ce9c9e17e3b9b7a0c293e0c6523c5dbede55d1831c646e1acdcf5194bb0b40f38db1d3a315754cf7f6a501b4c4be8d4444471d4de420762d5e05ef91790f8a1';
-    const privateKey = '8450a619fc89e57e698d270c9abaa843d689cc37ae161953d73ab74881c1d820'
-
-    const bls = window.bls
-    let goWasm ;
-    createWasm().then(async wasm => {
-      await wasm.sdk.init(...config)
-      await bls.init(bls.BN254)
-      await wasm.setWallet(bls, clientID,privateKey, publicKey)
-
-      goWasm = wasm
-    })
-
-
-   
-    let allocations = []
-    let files = []
-
-    const bindAllocations = ()=> document.getElementById('listAllocations').innerHTML = allocations.map(a=> `<input type="radio"  name="selectedAllocation" value="${a.id}"><label for="${a.id}">${a.id}</label><br>`).join("")
-    const bindFiles = () => document.getElementById('listFiles').innerHTML = files.map(f=>`<input type="radio" name="selectedFile" value="${f.path}"><label for="${f.path}">${f.path}</label><br>`).join("")
-    const readBytes = file => new Promise(resolve => {
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      resolve(new Uint8Array(reader.result))
-    }
-    reader.readAsArrayBuffer(file)
-  })
-
-    document.addEventListener("DOMContentLoaded", ()=> {
-
-      document.getElementById('btnCreateAllocation').onclick = async ()=> {
-        const allocation = await goWasm.sdk.createAllocation()
-        allocations.push(allocation)
-        bindAllocations()
-      }
-
-      document.getElementById('btnListAllocations').onclick = async ()=> {
-        allocations = await goWasm.sdk.listAllocations()
-        bindAllocations()
-      }
-
-
-      document.getElementById('btnListFiles').onclick = async () => {
-        const allocationId = getSelectedAllocation()
-
-        const { list =[] } = await  goWasm.sdk.listObjects(allocationId, '/')
-        files = list || []
-        bindFiles()
-      }
-
-      document.getElementById('btnUploadFile').onclick = async()=> {
-        const { files } = document.getElementById('inputSelectedFile')
-        if (files && files.length>0){
-          const fileBytes = await readBytes(files[0])
-          const allocationId = getSelectedAllocation()
-
-          //allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, commit bool, isLiveUpload, isSyncUpload bool, isUpdate, isRepair bool
-          await goWasm.sdk.upload(
-            allocationId,`/${files[0].name}`,
-            fileBytes,
-            null,
-            false,false,false,false,false,false)
-
-        }
-      }
-      
-    })
-    
-    
-
-    const getSelectedAllocation = ()=>  [...document.getElementsByName('selectedAllocation')].filter(it=>it.checked).map(it=>it.value).find(it=>it != "");
-
-
-  </script>
+  <!-- for player.js -->
+  <script src="https://github.com/videojs/mux.js/releases/latest/download/mux.js"></script>
+  <script src="EBML.js"></script>
+  <script src="player.js"></script>
 
 </head>
 
 <body>
 
-  <fieldset >
+  <h2>please download zcn.wasm from https://github.com/0chain/gosdk/releases/latest first</h2>
+
+  <fieldset>
+    <legend>Wallet</legend>
+    <label for="clientId"> ClientID </label> <input id="clientId" name="clientId" style="width: 600px;"
+      value="79ff82def0235b16cffecd1c90851975cd7c961a2c6ced6cc6c0bf89a44a4a70" /><br>
+    <label for="privateKey">PrivateKey</label> <input id="privateKey" name="privateKey" style="width: 600px;"
+      value="8450a619fc89e57e698d270c9abaa843d689cc37ae161953d73ab74881c1d820" /><br>
+    <label for="publicKey"> PublicKey</label> <input id="publicKey" name="publicKey" style="width: 600px;"
+      value="6ce9c9e17e3b9b7a0c293e0c6523c5dbede55d1831c646e1acdcf5194bb0b40f38db1d3a315754cf7f6a501b4c4be8d4444471d4de420762d5e05ef91790f8a1" /><br>
+
+    <button id="btnSetWallet">Change Wallet</button>
+  </fieldset>
+
+
+  <fieldset>
     <legend>Allocations</legend>
-   
+
     <span>
       <button id="btnListAllocations">List</button>
-      <button id="btnCreateAllocation" >Create</button>
+      <button id="btnCreateAllocation">Create</button>
     </span>
-    
+
     <br>
 
 
@@ -123,13 +53,225 @@
 
 
 
-  <fieldset >
+  <fieldset>
     <legend>Files</legend>
     <button id="btnListFiles">List</button>
-    <span ><input id="inputSelectedFile" type="file"/> <button id="btnUploadFile">Upload</button> </span>
+    <span><input id="inputSelectedFile" type="file" /> <button id="btnUploadFile">Upload</button> </span>
+    <button id="btnDownloadFile">Download</button>
+    <button id="btnViewFile">View</button>
     <br>
+
     <div id="listFiles">
     </div>
 
   </fieldset>
+
+  <fieldset>
+    <legend>Media WebPlayer</legend>
+
+    <video id='player' preload="metadata" controls></video>
+    <div className="controls">
+      <button id="btnPlay">Play</button>
+      <button id="btnPause">Pause</button>
+      <button id="btnStop">Stop</button>
+    </div>
+  </fieldset>
+
+
+  <fieldset>
+    <legend>Image Viewer</legend>
+    <img id="viewer" src="image.png"/>
+  </fieldset>
+
+  <script>
+
+    const getWallet = () => {
+      const clientID = get('clientId').value
+      const publicKey = get('publicKey').value
+      const privateKey = get('privateKey').value
+      return {
+        clientID, publicKey, privateKey
+      }
+    }
+
+    const networkConfig = {
+      chainId: '0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe',
+      signatureScheme: 'bls0chain',
+      minConfirmation: 50,
+      minSubmit: 50,
+      confirmationChainLength: 3,
+    }
+    const blockWorker = `https://demo.0chain.net/dns`
+    const config = [
+      networkConfig.chainId,
+      blockWorker,
+      networkConfig.signatureScheme,
+      networkConfig.minConfirmation,
+      networkConfig.minSubmit,
+      networkConfig.confirmationChainLength
+    ]
+
+
+
+    const bls = window.bls
+    let goWasm;
+    createWasm().then(async wasm => {
+      await wasm.sdk.init(...config)
+      await bls.init(bls.BN254)
+      const { clientID, privateKey, publicKey } = getWallet()
+      await wasm.setWallet(bls, clientID, privateKey, publicKey)
+
+      goWasm = wasm
+    })
+
+    onClick('btnSetWallet', async () => {
+      const { clientID, privateKey, publicKey } = getWallet()
+      await goWasm.setWallet(bls, clientID, privateKey, publicKey)
+    })
+
+
+    let allocations = []
+    let files = []
+
+    const bindAllocations = () => setHtml("listAllocations", allocations.map(a => `<input type="radio"  name="selectedAllocation" value="${a.id}"><label for="${a.id}">${a.id}</label><br>`).join(""))
+    const bindFiles = () => setHtml('listFiles', files.map(f => `<input type="radio" name="selectedFile" value="${f.path}"><label for="${f.path}">${f.path}</label><br>`).join(""))
+    const getSelectedAllocation = () => [...document.getElementsByName('selectedAllocation')].filter(it => it.checked).map(it => it.value).find(it => it != "");
+    const getSelectedFile = () => [...document.getElementsByName('selectedFile')].filter(it => it.checked).map(it => it.value).find(it => it != "");
+
+
+    onClick('btnCreateAllocation', async () => {
+
+      const expiry = new Date()
+      expiry.setDate(expiry.getDate() + 30)
+
+      //name string, datashards, parityshards int, size, expiry int64,minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64,preferredBlobberIds []string
+      const config = {
+        name: "newalloc",
+        datashards: 2,
+        parityshards: 2,
+        size: 2 * 1073741824,
+        expiry: Math.floor(expiry.getTime() / 1000),
+        minReadPrice: 0,
+        maxReadPrice: 184467440737095516,
+        minWritePrice: 0,
+        maxWritePrice: 184467440737095516,
+        lock: 5000000000
+      }
+      const allocation = await goWasm.sdk.createAllocation(config.name, config.datashards, config.parityshards, config.size, config.expiry,
+        config.minReadPrice, config.maxReadPrice, config.minWritePrice, config.maxWritePrice,
+        config.lock, [])
+
+      allocations.push(allocation)
+      bindAllocations()
+    })
+
+    onClick('btnListAllocations', async () => {
+      allocations = await goWasm.sdk.listAllocations()
+      bindAllocations()
+    })
+
+
+    onClick('btnListFiles', async () => {
+      const allocationId = getSelectedAllocation()
+
+      const { list = [] } = await goWasm.sdk.listObjects(allocationId, '/')
+      files = list || []
+      bindFiles()
+    })
+
+    onClick('btnUploadFile', async () => {
+      const { files } = get('inputSelectedFile')
+      if (files && files.length > 0) {
+        const fileBytes = await readBytes(files[0])
+        const allocationId = getSelectedAllocation()
+
+        //allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, commit bool, isLiveUpload, isSyncUpload bool, isUpdate, isRepair bool
+        await goWasm.sdk.upload(
+          allocationId, `/${files[0].name}`,
+          fileBytes,
+          null,
+          false, false, false, false, false, false)
+
+      }
+    })
+
+    onClick('btnDownloadFile', async () => {
+      const path = getSelectedFile()
+      if (path) {
+
+        const allocationId = getSelectedAllocation()
+
+        const file = await goWasm.sdk.download(allocationId, path, '', '', false, false)
+      
+
+        const a = document.createElement('a')
+        document.body.appendChild(a)
+        a.style = 'display: none'
+
+        a.href = file.url
+        a.download = file.fileName
+        a.click()
+        window.URL.revokeObjectURL(file.url)
+        document.body.removeChild(a)
+
+      }
+    })
+
+    onClick('btnViewFile', async()=>{
+      const file = files.find(it => it.path == getSelectedFile())
+      debugger;
+      if(file && file.mimetype.startsWith('image')){
+        const allocationId = getSelectedAllocation()
+        const {url} = await goWasm.sdk.download(allocationId, file.path, '', '', false, false)
+        get('viewer').setAttribute('src',url)
+      }
+    })
+
+    const player = get('player')
+    let isPlayerReady = false
+
+    onClick('btnPlay', async () => {
+
+      if (isPlayerReady) {
+        if (player.paused) {
+          player.play()
+        }
+      } else {
+
+        const file = files.find(it => it.path == getSelectedFile())
+
+        if (file) {
+          console.log(file)
+          const allocationId = getSelectedAllocation()
+          startPlay({
+            goWasm,
+            allocationId,
+            videoElement: player,
+            remotePath: file?.path,
+            authTicket: '',
+            lookupHash: file?.lookup_hash,
+            mimeType: file?.mimetype,
+            isLive: false,
+          })
+          isPlayerReady = true
+        }
+      }
+
+    })
+
+    onClick('btnPause', async () => {
+      player.pause();
+    })
+
+    onClick('btnStop', async () => {
+      if (isPlayerReady) {
+        goWasm.sdk.stop()
+
+        player.pause()
+        player.currentTime = 0
+      }
+    })
+
+
+  </script>
 </body>
