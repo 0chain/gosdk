@@ -424,7 +424,7 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 	wg.Add(1)
 
 	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
-	localPath := filepath.Join(allocationID, fileName)
+	localPath := allocationID + "_" + fileName
 
 	downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
 		sdk.WithAuthticket(authTicket, lookupHash),
