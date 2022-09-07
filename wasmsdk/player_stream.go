@@ -156,7 +156,12 @@ func (p *StreamPlayer) loadList() ([]sdk.PlaylistFile, error) {
 }
 
 func (p *StreamPlayer) GetNext() []byte {
-	return <-p.downloadedFiles
+	b, ok := <-p.downloadedFiles
+	if ok {
+		return b
+	}
+
+	return nil
 }
 
 // createStreamPalyer create player for remotePath
