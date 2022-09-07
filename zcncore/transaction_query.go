@@ -243,7 +243,13 @@ func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryRe
 			}
 
 			consensuses[qr.StatusCode]++
-			if consensuses[qr.StatusCode] >= maxConsensus {
+			if consensuses[qr.StatusCode] > maxConsensus {
+				maxConsensus = consensuses[qr.StatusCode]
+				consensusesResp = qr
+			}
+
+			// If number of 200's is equal to number of some other status codes, use 200's.
+			if qr.StatusCode == http.StatusOK && consensuses[qr.StatusCode] == maxConsensus {
 				maxConsensus = consensuses[qr.StatusCode]
 				consensusesResp = qr
 			}

@@ -1,6 +1,8 @@
 package sdk
 
-import "sync"
+import (
+	"sync"
+)
 
 type Consensus struct {
 	sync.RWMutex
