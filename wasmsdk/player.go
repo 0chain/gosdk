@@ -56,3 +56,16 @@ func getNextSegment() ([]byte, error) {
 
 	return currentPlayer.GetNext(), nil
 }
+
+func withRecover(send func()) (success bool) {
+	defer func() {
+		if recover() != nil {
+			//recover panic from `send on closed channel`
+			success = false
+		}
+	}()
+
+	send()
+
+	return true
+}

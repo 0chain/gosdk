@@ -102,9 +102,11 @@ func (p *StreamPlayer) download(it sdk.PlaylistFile) {
 
 	mf, _ := fs.(*sys.MemFile)
 
-	if p.downloadedFiles != nil {
-		p.downloadedFiles <- mf.Buffer.Bytes()
-	}
+	withRecover(func() {
+		if p.downloadedFiles != nil {
+			p.downloadedFiles <- mf.Buffer.Bytes()
+		}
+	})
 }
 
 func (p *StreamPlayer) startDownload() {
@@ -139,31 +141,18 @@ func (p *StreamPlayer) reloadList() {
 		for _, it := range list {
 			PrintInfo("playlist: +", it.Path)
 
-			// player is stopped
-			if !p.addWaiting(it) {
+			if !withRecover(func() {
+				if p.waitingToDownloadFiles != nil {
+					p.waitingToDownloadFiles <- it
+				}
+			}) {
+				// player is stopped
 				return
 			}
 
 			p.latestWaitingToDownloadFile = it
 		}
 	}
-}
-
-func (p *StreamPlayer) addWaiting(it sdk.PlaylistFile) (success bool) {
-
-	defer func() {
-		if recover() != nil {
-			//recover panic from `send on closed channel`
-			success = false
-		}
-	}()
-	if p.waitingToDownloadFiles != nil {
-		p.waitingToDownloadFiles <- it
-		success = true
-		return
-	}
-
-	return
 }
 
 func (p *StreamPlayer) loadList() ([]sdk.PlaylistFile, error) {
