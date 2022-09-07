@@ -21,6 +21,18 @@
 
   <h2>please download zcn.wasm from https://github.com/0chain/gosdk/releases/latest first</h2>
 
+<fieldset>
+  <legend>logging</legend>
+  <span>
+    <button id="btnShowLogs">Show</button>
+    <button id="btnHideLogs">Hide</button>
+  </span>
+   <br>
+  <textarea id="logs" rows="10" cols="100">
+
+  </textarea>
+</fieldset>
+
   <fieldset>
     <legend>Wallet</legend>
     <label for="clientId"> ClientID </label> <input id="clientId" name="clientId" style="width: 600px;"
@@ -242,7 +254,6 @@
         const isLive = file.type == 'd'
 
         if (file) {
-          console.log(file)
           const allocationId = getSelectedAllocation()
           startPlay({
             goWasm,
@@ -271,6 +282,23 @@
       }
     })
 
+
+    const log = console.log
+    const logs = get('logs')
+    onClick('btnShowLogs',async ()=>{
+      await goWasm.sdk.showLogs()
+      console.log = s => {
+        log(s)
+        logs.value += s
+        logs.scrollLeft = 0;
+        logs.scrollTop = logs.scrollHeight;
+      }
+    })
+
+    onClick('btnHideLogs',async ()=>{
+      await goWasm.sdk.hideLogs()
+      console.log = log
+    })
 
   </script>
 </body>

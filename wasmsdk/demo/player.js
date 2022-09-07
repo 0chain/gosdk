@@ -28,7 +28,7 @@ async function startPlay({
       allocationId, remotePath, authTicket, lookupHash, isLive);
 
   if (isLive) {
-    return playStream({goWasm, videoElement,allocationId,remotePath,authTicket, authTicket});
+    return playStream({goWasm, videoElement,allocationId,remotePath,authTicket, lookupHash});
   }
 
   // first segment
@@ -66,7 +66,7 @@ async function playStream({
   lookupHash
 }) {
   await goWasm.sdk.play(
-      allocationId, remotePath, authTicket, lookupHash, false);
+      allocationId, remotePath, authTicket, lookupHash, true);
 
   const mimeCodecs = 'video/mp4; codecs="mp4a.40.2,avc1.64001f"';
 
