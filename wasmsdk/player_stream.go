@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
@@ -24,14 +25,15 @@ type StreamPlayer struct {
 	allocationObj *sdk.Allocation
 	authTicketObj *marker.AuthTicket
 
-	todoQueue   chan sdk.PlaylistFile
-	reloadQueue chan sdk.PlaylistFile
-	latestTodo  sdk.PlaylistFile
+	waitingToDownloadFiles      chan sdk.PlaylistFile
+	latestWaitingToDownloadFile sdk.PlaylistFile
 
-	downloadedQueue chan []byte
+	downloadedFiles chan []byte
 	ctx             context.Context
 	cancel          context.CancelFunc
 	prefetchQty     int
+
+	timer jsbridge.Timer
 }
 
 func (p *StreamPlayer) Start() error {
@@ -40,19 +42,23 @@ func (p *StreamPlayer) Start() error {
 	}
 
 	p.ctx, p.cancel = context.WithCancel(context.TODO())
-	p.todoQueue = make(chan sdk.PlaylistFile, 100)
-	p.reloadQueue = make(chan sdk.PlaylistFile, p.prefetchQty)
-	p.downloadedQueue = make(chan []byte, p.prefetchQty)
+	p.waitingToDownloadFiles = make(chan sdk.PlaylistFile, 100)
+	p.downloadedFiles = make(chan []byte, p.prefetchQty)
+
+	p.timer = *jsbridge.NewTimer(time.Second, p.reloadList)
+	p.timer.Start()
 
 	go p.reloadList()
 	go p.startDownload()
-	go p.nextTodo()
 
 	return nil
 }
 
 func (p *StreamPlayer) Stop() {
 	if p.cancel != nil {
+		close(p.waitingToDownloadFiles)
+		close(p.downloadedFiles)
+		p.timer.Stop()
 		p.cancel()
 		p.cancel = nil
 	}
@@ -96,9 +102,7 @@ func (p *StreamPlayer) download(it sdk.PlaylistFile) {
 
 	mf, _ := fs.(*sys.MemFile)
 
-	//AppendVideo(mf.Buffer.Bytes())
-
-	p.downloadedQueue <- mf.Buffer.Bytes()
+	p.downloadedFiles <- mf.Buffer.Bytes()
 
 }
 
@@ -107,62 +111,40 @@ func (p *StreamPlayer) startDownload() {
 		select {
 		case <-p.ctx.Done():
 			PrintInfo("playlist: download is cancelled")
-			close(p.todoQueue)
-			close(p.reloadQueue)
+			close(p.downloadedFiles)
 			return
-		case it := <-p.todoQueue:
+		case it := <-p.waitingToDownloadFiles:
 			p.download(it)
-
-			go p.nextTodo()
 		}
-
-	}
-}
-
-func (p *StreamPlayer) nextTodo() {
-	if len(p.todoQueue) < p.prefetchQty {
-		p.reloadQueue <- p.latestTodo
 	}
 }
 
 func (p *StreamPlayer) reloadList() {
-	for {
-		select {
-		case <-p.ctx.Done():
-			PrintInfo("playlist: reload is canceled")
+
+	// `waiting to download files` buffer is too less, try to load latest list from remote
+	if len(p.waitingToDownloadFiles) < p.prefetchQty {
+		list, err := p.loadList()
+
+		if err != nil {
+			PrintError(err.Error())
 			return
-		case <-p.reloadQueue:
+		}
 
-			list, err := p.loadList()
+		PrintInfo("playlist: ", len(list))
 
-			if len(list) == 0 {
-				sys.Sleep(5 * time.Second)
-				go p.nextTodo()
-				continue
-			}
-
-			if err != nil {
-				PrintError(err.Error())
-				continue
-			}
-
-			PrintInfo("playlist: ", len(list))
-
-			for _, it := range list {
-				PrintInfo("playlist: +", it.Path)
-				p.latestTodo = it
-				p.todoQueue <- it
-			}
+		for _, it := range list {
+			PrintInfo("playlist: +", it.Path)
+			p.latestWaitingToDownloadFile = it
+			p.waitingToDownloadFiles <- it
 		}
 	}
-
 }
 
 func (p *StreamPlayer) loadList() ([]sdk.PlaylistFile, error) {
 	lookupHash := ""
 
-	if p.latestTodo.Name != "" {
-		lookupHash = p.latestTodo.LookupHash
+	if p.latestWaitingToDownloadFile.Name != "" {
+		lookupHash = p.latestWaitingToDownloadFile.LookupHash
 	}
 
 	if p.isViewer {
@@ -175,7 +157,7 @@ func (p *StreamPlayer) loadList() ([]sdk.PlaylistFile, error) {
 }
 
 func (p *StreamPlayer) GetNext() []byte {
-	return <-p.downloadedQueue
+	return <-p.downloadedFiles
 }
 
 // createStreamPalyer create player for remotePath

@@ -112,6 +112,7 @@ func (p *FilePlayer) download(startBlock int64) {
 func (p *FilePlayer) startDownload() {
 	if p.playlistFile.NumBlocks < 1 {
 		PrintError("playlist: numBlocks is invalid")
+		return
 	}
 	var startBlock int64 = 1
 	for {
@@ -150,7 +151,12 @@ func (p *FilePlayer) loadPlaylistFile() (*sdk.PlaylistFile, error) {
 }
 
 func (p *FilePlayer) GetNext() []byte {
-	return <-p.downloadedQueue
+	b := <-p.downloadedQueue
+	if(b == nil){
+		close(p.downloadedQueue)
+	}
+
+	return b
 }
 
 // createFilePalyer create player for remotePath

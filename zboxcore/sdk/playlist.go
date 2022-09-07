@@ -91,7 +91,7 @@ func getPlaylistFromBlobbers(ctx context.Context, alloc *Allocation, query strin
 
 			if resp != nil {
 				if resp.StatusCode == http.StatusOK {
-					if e := c.Add(respBody); e != nil {
+					if e := c.AddFiles(respBody); e != nil {
 						logger.Logger.Error("playlist: ", e, resp.Request.URL)
 					}
 

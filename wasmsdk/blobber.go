@@ -679,7 +679,7 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 	}
 
 	resp := &DownloadCommandResponse{
-		CommandSuccess: false,
+		CommandSuccess: true,
 		FileName:       fileName,
 	}
 

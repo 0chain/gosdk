@@ -48,7 +48,7 @@ func (c *playlistConsensus) AddFile(body []byte) error {
 	return nil
 }
 
-func (c *playlistConsensus) Add(body []byte) error {
+func (c *playlistConsensus) AddFiles(body []byte) error {
 	var files []PlaylistFile
 
 	if err := json.Unmarshal([]byte(body), &files); err != nil {
