@@ -1,3 +1,15 @@
+async function stopPlay({goWasm, videoElement}){
+
+  if (!videoElement) {
+    throw new Error('video element is required');
+  }
+
+  videoElement.pause()
+  URL.revokeObjectURL(videoElement.src);
+
+  await goWasm.sdk.stop()
+}
+
 async function startPlay({
   goWasm,
   allocationId,
@@ -16,7 +28,7 @@ async function startPlay({
       allocationId, remotePath, authTicket, lookupHash, isLive);
 
   if (isLive) {
-    return playStream({goWasm, videoElement});
+    return playStream({goWasm, videoElement,allocationId,remotePath,authTicket, authTicket});
   }
 
   // first segment
@@ -48,6 +60,10 @@ async function startPlay({
 async function playStream({
   goWasm,
   videoElement,
+  allocationId,
+  remotePath,
+  authTicket,
+  lookupHash
 }) {
   await goWasm.sdk.play(
       allocationId, remotePath, authTicket, lookupHash, false);

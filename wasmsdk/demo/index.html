@@ -134,7 +134,7 @@
     let files = []
 
     const bindAllocations = () => setHtml("listAllocations", allocations.map(a => `<input type="radio"  name="selectedAllocation" value="${a.id}"><label for="${a.id}">${a.id}</label><br>`).join(""))
-    const bindFiles = () => setHtml('listFiles', files.map(f => `<input type="radio" name="selectedFile" value="${f.path}"><label for="${f.path}">${f.path}</label><br>`).join(""))
+    const bindFiles = () => setHtml('listFiles', files.map(f => `<input type="radio" name="selectedFile" value="${f.path}"><label for="${f.path}">[${f.type}]${f.path}</label><br>`).join(""))
     const getSelectedAllocation = () => [...document.getElementsByName('selectedAllocation')].filter(it => it.checked).map(it => it.value).find(it => it != "");
     const getSelectedFile = () => [...document.getElementsByName('selectedFile')].filter(it => it.checked).map(it => it.value).find(it => it != "");
 
@@ -219,7 +219,6 @@
 
     onClick('btnViewFile', async()=>{
       const file = files.find(it => it.path == getSelectedFile())
-      debugger;
       if(file && file.mimetype.startsWith('image')){
         const allocationId = getSelectedAllocation()
         const {url} = await goWasm.sdk.download(allocationId, file.path, '', '', false, false)
@@ -240,6 +239,8 @@
 
         const file = files.find(it => it.path == getSelectedFile())
 
+        const isLive = file.type == 'd'
+
         if (file) {
           console.log(file)
           const allocationId = getSelectedAllocation()
@@ -251,7 +252,7 @@
             authTicket: '',
             lookupHash: file?.lookup_hash,
             mimeType: file?.mimetype,
-            isLive: false,
+            isLive: isLive,
           })
           isPlayerReady = true
         }
@@ -265,10 +266,8 @@
 
     onClick('btnStop', async () => {
       if (isPlayerReady) {
-        goWasm.sdk.stop()
-
-        player.pause()
-        player.currentTime = 0
+        stopPlay({goWasm, videoElement:player})
+        isPlayerReady = false
       }
     })
 
