@@ -56,7 +56,6 @@ func (p *StreamPlayer) Start() error {
 
 func (p *StreamPlayer) Stop() {
 	if p.cancel != nil {
-		close(p.waitingToDownloadFiles)
 		close(p.downloadedFiles)
 		p.timer.Stop()
 		p.cancel()
@@ -111,7 +110,7 @@ func (p *StreamPlayer) startDownload() {
 		select {
 		case <-p.ctx.Done():
 			PrintInfo("playlist: download is cancelled")
-			close(p.downloadedFiles)
+			close(p.waitingToDownloadFiles)
 			return
 		case it := <-p.waitingToDownloadFiles:
 			p.download(it)
