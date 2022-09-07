@@ -105,8 +105,9 @@ func (p *FilePlayer) download(startBlock int64) {
 
 	mf, _ := fs.(*sys.MemFile)
 
-	p.downloadedChunks <- mf.Buffer.Bytes()
-
+	if p.downloadedChunks != nil {
+		p.downloadedChunks <- mf.Buffer.Bytes()
+	}
 }
 
 func (p *FilePlayer) startDownload() {

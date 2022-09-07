@@ -101,8 +101,9 @@ func (p *StreamPlayer) download(it sdk.PlaylistFile) {
 
 	mf, _ := fs.(*sys.MemFile)
 
-	p.downloadedFiles <- mf.Buffer.Bytes()
-
+	if p.downloadedFiles != nil {
+		p.downloadedFiles <- mf.Buffer.Bytes()
+	}
 }
 
 func (p *StreamPlayer) startDownload() {
