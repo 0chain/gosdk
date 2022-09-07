@@ -42,10 +42,10 @@ func (p *StreamPlayer) Start() error {
 	}
 
 	p.ctx, p.cancel = context.WithCancel(context.TODO())
-	p.waitingToDownloadFiles = make(chan sdk.PlaylistFile, 100)
+	p.waitingToDownloadFiles = make(chan sdk.PlaylistFile, p.prefetchQty)
 	p.downloadedFiles = make(chan []byte, p.prefetchQty)
 
-	p.timer = *jsbridge.NewTimer(time.Second, p.reloadList)
+	p.timer = *jsbridge.NewTimer(5*time.Second, p.reloadList)
 	p.timer.Start()
 
 	go p.reloadList()
@@ -56,11 +56,12 @@ func (p *StreamPlayer) Start() error {
 
 func (p *StreamPlayer) Stop() {
 	if p.cancel != nil {
-		close(p.downloadedFiles)
 		p.timer.Stop()
 		p.cancel()
 		p.cancel = nil
 	}
+
+	close(p.downloadedFiles)
 }
 
 func (p *StreamPlayer) download(it sdk.PlaylistFile) {
@@ -88,11 +89,11 @@ func (p *StreamPlayer) download(it sdk.PlaylistFile) {
 	if err == nil {
 		wg.Wait()
 	} else {
-		PrintError("Download failed.", err.Error())
+		PrintError("playlist: download failed.", err.Error())
 		return
 	}
 	if !statusBar.success {
-		PrintError("Download failed: unknown error")
+		PrintError("playlist: download failed: unknown error")
 		return
 	}
 
@@ -113,8 +114,10 @@ func (p *StreamPlayer) startDownload() {
 			PrintInfo("playlist: download is cancelled")
 			close(p.waitingToDownloadFiles)
 			return
-		case it := <-p.waitingToDownloadFiles:
-			p.download(it)
+		case it, ok := <-p.waitingToDownloadFiles:
+			if ok {
+				p.download(it)
+			}
 		}
 	}
 }
@@ -123,6 +126,7 @@ func (p *StreamPlayer) reloadList() {
 
 	// `waiting to download files` buffer is too less, try to load latest list from remote
 	if len(p.waitingToDownloadFiles) < p.prefetchQty {
+
 		list, err := p.loadList()
 
 		if err != nil {
@@ -134,10 +138,32 @@ func (p *StreamPlayer) reloadList() {
 
 		for _, it := range list {
 			PrintInfo("playlist: +", it.Path)
+
+			// player is stopped
+			if !p.addWaiting(it) {
+				return
+			}
+
 			p.latestWaitingToDownloadFile = it
-			p.waitingToDownloadFiles <- it
 		}
 	}
+}
+
+func (p *StreamPlayer) addWaiting(it sdk.PlaylistFile) (success bool) {
+
+	defer func() {
+		if recover() != nil {
+			//recover panic from `send on closed channel`
+			success = false
+		}
+	}()
+	if p.waitingToDownloadFiles != nil {
+		p.waitingToDownloadFiles <- it
+		success = true
+		return
+	}
+
+	return
 }
 
 func (p *StreamPlayer) loadList() ([]sdk.PlaylistFile, error) {

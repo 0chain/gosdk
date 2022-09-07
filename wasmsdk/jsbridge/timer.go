@@ -29,7 +29,9 @@ func (t *Timer) Start() {
 	defer t.Unlock()
 
 	if !t.enabled {
-		t.id = js.Global().Call("setInterval", js.FuncOf(t.updated), t.interval.Microseconds())
+		cb, _ := promise(t.updated)
+		t.id = js.Global().Call("setInterval", cb, t.interval.Milliseconds())
+		t.enabled = true
 	}
 }
 
@@ -41,7 +43,8 @@ func (t *Timer) Stop() {
 	t.enabled = false
 }
 
-func (t *Timer) updated(this js.Value, args []js.Value) interface{} {
-	go t.callback()
-	return nil
+func (t *Timer) updated() {
+	if t.enabled {
+		t.callback()
+	}
 }
