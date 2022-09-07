@@ -18,7 +18,8 @@ func play(allocationID, remotePath, authTicket, lookupHash string, isLive bool) 
 	var err error
 
 	if currentPlayer != nil {
-		return errors.New("please stop current player first")
+		currentPlayer.Stop()
+		currentPlayer = nil
 	}
 
 	if isLive {
@@ -39,12 +40,10 @@ func play(allocationID, remotePath, authTicket, lookupHash string, isLive bool) 
 }
 
 func stop() error {
-
-	if currentPlayer == nil {
-		return errors.New("No player is available")
+	if currentPlayer != nil {
+		currentPlayer.Stop()
 	}
 
-	currentPlayer.Stop()
 	currentPlayer = nil
 
 	return nil

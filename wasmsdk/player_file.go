@@ -156,10 +156,6 @@ func (p *FilePlayer) GetNext() []byte {
 		return b
 	}
 
-	if b == nil {
-		close(p.downloadedChunks)
-	}
-
 	return nil
 }
 
