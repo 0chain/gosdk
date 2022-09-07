@@ -26,10 +26,10 @@ type FilePlayer struct {
 	authTicketObj *marker.AuthTicket
 	playlistFile  *sdk.PlaylistFile
 
-	downloadedQueue chan []byte
-	ctx             context.Context
-	cancel          context.CancelFunc
-	prefetchQty     int
+	downloadedChunks chan []byte
+	ctx              context.Context
+	cancel           context.CancelFunc
+	prefetchQty      int
 }
 
 func (p *FilePlayer) Start() error {
@@ -46,7 +46,7 @@ func (p *FilePlayer) Start() error {
 
 	p.playlistFile = file
 
-	p.downloadedQueue = make(chan []byte, p.prefetchQty)
+	p.downloadedChunks = make(chan []byte, p.prefetchQty)
 
 	go p.startDownload()
 
@@ -105,7 +105,7 @@ func (p *FilePlayer) download(startBlock int64) {
 
 	mf, _ := fs.(*sys.MemFile)
 
-	p.downloadedQueue <- mf.Buffer.Bytes()
+	p.downloadedChunks <- mf.Buffer.Bytes()
 
 }
 
@@ -129,7 +129,7 @@ func (p *FilePlayer) startDownload() {
 
 				go func() {
 					// trigger js to close stream
-					p.downloadedQueue <- nil
+					p.downloadedChunks <- nil
 				}()
 				return
 			}
@@ -151,13 +151,13 @@ func (p *FilePlayer) loadPlaylistFile() (*sdk.PlaylistFile, error) {
 }
 
 func (p *FilePlayer) GetNext() []byte {
-	b, ok := <-p.downloadedQueue
+	b, ok := <-p.downloadedChunks
 	if ok {
 		return b
 	}
 
 	if b == nil {
-		close(p.downloadedQueue)
+		close(p.downloadedChunks)
 	}
 
 	return nil
