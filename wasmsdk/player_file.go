@@ -151,12 +151,16 @@ func (p *FilePlayer) loadPlaylistFile() (*sdk.PlaylistFile, error) {
 }
 
 func (p *FilePlayer) GetNext() []byte {
-	b := <-p.downloadedQueue
-	if(b == nil){
+	b, ok := <-p.downloadedQueue
+	if ok {
+		return b
+	}
+
+	if b == nil {
 		close(p.downloadedQueue)
 	}
 
-	return b
+	return nil
 }
 
 // createFilePalyer create player for remotePath
