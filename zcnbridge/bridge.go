@@ -308,7 +308,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 }
 
 // MintZCN mints ZCN tokens after receiving proof-of-burn of WZCN tokens
-func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (string, error) {
+func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (*transaction.Transaction, error) {
 	trx, err := transaction.NewTransactionEntity()
 	if err != nil {
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
@@ -328,7 +328,7 @@ func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) 
 		0)
 
 	if err != nil {
-		return "", errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
+		return trx, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
 	}
 
 	Logger.Info(
@@ -336,7 +336,7 @@ func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) 
 		zap.String("hash", hash),
 		zap.Int64("mint amount", int64(payload.Amount)))
 
-	return hash, nil
+	return trx, nil
 }
 
 // BurnZCN burns ZCN tokens before conversion from ZCN to WZCN as a first step

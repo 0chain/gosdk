@@ -6,10 +6,12 @@ import (
 	"io/ioutil"
 	"math"
 	"net/http"
+	u "net/url"
 	"strings"
 	"sync"
 
 	"github.com/0chain/gosdk/core/common"
+
 	"github.com/0chain/gosdk/zcnbridge/errors"
 	"github.com/0chain/gosdk/zcnbridge/ethereum"
 	h "github.com/0chain/gosdk/zcnbridge/http"
@@ -32,7 +34,7 @@ type (
 
 	requestHandler struct {
 		path        string
-		values      map[string]string
+		values      u.Values
 		bodyDecoder func([]byte) (JobResult, error)
 	}
 
@@ -56,8 +58,8 @@ func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereu
 
 	var (
 		totalWorkers = len(authorizers)
-		values       = map[string]string{
-			"hash": zchainBurnHash,
+		values       = u.Values{
+			"hash": []string{zchainBurnHash},
 		}
 	)
 
@@ -76,7 +78,7 @@ func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereu
 	numSuccess := len(results)
 	quorum := math.Ceil((float64(numSuccess) * 100) / float64(totalWorkers))
 
-	if numSuccess > 0 && quorum >= thresh {
+	if numSuccess > 0 && quorum >= thresh && len(results) > 1 {
 		burnTicket, ok := results[0].(*ProofZCNBurn)
 		if !ok {
 			return nil, errors.Wrap("type_cast", "failed to convert to *proofEthereumBurn", err)
@@ -111,7 +113,6 @@ func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereu
 func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPayload, error) {
 	client = h.CleanClient()
 	authorizers, err := getAuthorizers()
-	log.Logger.Info("Got authorizers", zap.Int("amount", len(authorizers)))
 
 	if err != nil || len(authorizers) == 0 {
 		return nil, errors.Wrap("get_authorizers", "failed to get authorizers", err)
@@ -119,9 +120,10 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 
 	var (
 		totalWorkers = len(authorizers)
-		values       = map[string]string{
-			"hash":     ethBurnHash,
-			"clientid": b.ClientID(),
+		values       = u.Values{
+			"hash":     []string{ethBurnHash},
+			"address":  []string{wallet.ZCNSCSmartContractAddress},
+			"clientid": []string{b.ClientID()},
 		}
 	)
 
@@ -140,7 +142,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 	numSuccess := len(results)
 	quorum := math.Ceil((float64(numSuccess) * 100) / float64(totalWorkers))
 
-	if numSuccess > 0 && quorum >= thresh {
+	if numSuccess > 0 && quorum >= thresh && len(results) > 1 {
 		burnTicket, ok := results[0].Data().(*ProofEthereumBurn)
 		if !ok {
 			return nil, errors.Wrap("type_cast", "failed to convert to *proofEthereumBurn", err)
@@ -209,26 +211,13 @@ func handleResponse(responseChannel responseChannelType, eventsChannel eventsCha
 }
 
 func queryAuthorizer(au *AuthorizerNode, request *requestHandler, responseChannel responseChannelType) {
-	Logger.Info("Query from authorizer", zap.String("ID", au.ID), zap.String("URL", au.URL))
+	log.Logger.Info("Query from authorizer", zap.String("ID", au.ID), zap.String("URL", au.URL))
 	ticketURL := strings.TrimSuffix(au.URL, "/") + request.path
-
-	req, err := http.NewRequest("GET", ticketURL, nil)
-	if err != nil {
-		log.Logger.Error("failed to create request", zap.Error(err))
-		return
-	}
-
-	q := req.URL.Query()
-	for k, v := range request.values {
-		q.Add(k, v)
-	}
-	req.URL.RawQuery = q.Encode()
-	Logger.Info(req.URL.String())
-	resp, body := readResponse(client.Do(req))
+	resp, body := readResponse(client.PostForm(ticketURL, request.values))
 	resp.AuthorizerID = au.ID
 
 	if resp.error != nil {
-		Logger.Error(
+		log.Logger.Error(
 			"failed to process response",
 			zap.Error(resp.error),
 			zap.String("node.id", au.ID),
@@ -274,17 +263,12 @@ func readResponse(response *http.Response, err error) (res *authorizerResponse, 
 	}
 
 	body, er := ioutil.ReadAll(response.Body)
-	log.Logger.Debug("response", zap.String("response", string(body)))
-	defer response.Body.Close()
-
 	if er != nil || len(body) == 0 {
 		var errstrings []string
 		er = errors.Wrap("authorizer_post_process", "failed to read body", er)
-		if err != nil {
-			errstrings = append(errstrings, err.Error())
-		}
+		errstrings = append(errstrings, err.Error())
 		errstrings = append(errstrings, er.Error())
-		err = fmt.Errorf(strings.Join(errstrings, ":"))
+		err = fmt.Errorf(strings.Join(errstrings, "\n"))
 	}
 
 	res.error = err

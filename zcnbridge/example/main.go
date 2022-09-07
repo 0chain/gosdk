@@ -846,8 +846,8 @@ func fromERCtoZCN(b *zcnbridge.BridgeClient) {
 		Logger.Fatal("failed to QueryZChainMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
-	hash, err := b.MintZCN(context.TODO(), mintPayload)
+	mintTrx, err := b.MintZCN(context.TODO(), mintPayload)
 	if err != nil {
-		Logger.Fatal("failed to MintZCN", zap.Error(err), zap.String("hash", hash))
+		Logger.Fatal("failed to MintZCN", zap.Error(err), zap.String("hash", mintTrx.Hash))
 	}
 }
