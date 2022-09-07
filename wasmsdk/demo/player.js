@@ -4,10 +4,10 @@ async function stopPlay({goWasm, videoElement}){
     throw new Error('video element is required');
   }
 
+  await goWasm.sdk.stop()
+
   videoElement.pause()
   URL.revokeObjectURL(videoElement.src);
-
-  await goWasm.sdk.stop()
 }
 
 async function startPlay({
@@ -83,9 +83,6 @@ async function playStream({
         if (buf?.length > 0) {
           transmuxer.push(new Uint8Array(buf))
           transmuxer.flush()
-        }
-        else {
-          getNextSegment()
         }
       } catch (err) {
         getNextSegment()
