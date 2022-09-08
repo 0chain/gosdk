@@ -148,7 +148,7 @@ async function setWallet(bls, clientID, sk, pk) {
     bridge.jsProxy.publicKey = bls.deserializeHexStrToPublicKey(pk)
 
     // use proxy.sdk to detect if sdk is ready
-    await bridge.__proxy__.sdk.setWallet(clientID, pk)
+    await bridge.__proxy__.sdk.setWallet(clientID, pk, sk)
     bridge.walletId = clientID
   }
 }
