@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -958,8 +957,6 @@ func GetAllocationBlobbers(owner, ownerpublickey string,
 	}
 
 	allocationData, _ := json.Marshal(allocationRequest)
-
-	fmt.Println(string(allocationData))
 
 	params := make(map[string]string)
 	params["allocation_data"] = string(allocationData)
