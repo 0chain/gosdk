@@ -16,6 +16,7 @@ import (
 )
 
 type StreamPlayer struct {
+	sync.RWMutex
 	allocationID string
 	remotePath   string
 	authTicket   string
@@ -150,7 +151,9 @@ func (p *StreamPlayer) reloadList() {
 				return
 			}
 
+			p.Lock()
 			p.latestWaitingToDownloadFile = it
+			p.Unlock()
 		}
 	}
 }
@@ -158,9 +161,11 @@ func (p *StreamPlayer) reloadList() {
 func (p *StreamPlayer) loadList() ([]sdk.PlaylistFile, error) {
 	lookupHash := ""
 
+	p.RLock()
 	if p.latestWaitingToDownloadFile.Name != "" {
 		lookupHash = p.latestWaitingToDownloadFile.LookupHash
 	}
+	p.RUnlock()
 
 	if p.isViewer {
 		//get list from authticket
