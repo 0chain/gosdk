@@ -987,7 +987,7 @@ func GetBlobberIds(blobberUrls []string) ([]string, error) {
 	}
 
 	params := make(map[string]string)
-	params["blobber_url"] = string(urlsStr)
+	params["blobber_urls"] = string(urlsStr)
 	idsStr, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/blobber_ids", params, nil)
 	if err != nil {
 		return nil, err
