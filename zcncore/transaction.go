@@ -168,6 +168,9 @@ type TransactionCommon interface {
 
 	// GetVerifyConfirmationStatus implements the verification status from sharders
 	GetVerifyConfirmationStatus() ConfirmationStatus
+
+	// ZCNSCDeleteAuthorizer deletes authorizer
+	ZCNSCDeleteAuthorizer(*DeleteAuthorizerPayload) error
 }
 
 // PriceRange represents a price range allowed by user to filter blobbers.
@@ -224,6 +227,9 @@ type AddAuthorizerPayload struct {
 	PublicKey         string                      `json:"public_key"`
 	URL               string                      `json:"url"`
 	StakePoolSettings AuthorizerStakePoolSettings `json:"stake_pool_settings"` // Used to initially create stake pool
+}
+
+type DeleteAuthorizerPayload struct {
 }
 
 type AuthorizerStakePoolSettings struct {
@@ -313,7 +319,7 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val uint64, desc 
 }
 
 type VestingDest struct {
-	ID     string     `json:"id"`     // destination ID
+	ID     string         `json:"id"`     // destination ID
 	Amount common.Balance `json:"amount"` // amount to vest for the destination
 }
 
@@ -1412,6 +1418,16 @@ func GetFaucetSCConfig(cb GetInfoCallback) (err error) {
 
 func (t *Transaction) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error) {
 	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go t.setNonceAndSubmit()
+	return
+}
+
+func (t *Transaction) ZCNSCDeleteAuthorizer(ip *DeleteAuthorizerPayload) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_DELETE_AUTHORIZER, ip, 0)
 	if err != nil {
 		logging.Error(err)
 		return
