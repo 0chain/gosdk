@@ -140,6 +140,7 @@ func (req *CopyRequest) ProcessCopy() error {
 		newChange.Operation = constants.FileOperationCopy
 		newChange.Size = 0
 		commitReq.changes = append(commitReq.changes, newChange)
+		commitReq.operation = constants.FileOperationCopy
 		commitReq.connectionID = req.connectionID
 		commitReq.wg = wg
 		commitReqs[c] = commitReq

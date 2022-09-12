@@ -50,6 +50,7 @@ type CommitRequest struct {
 	allocationID string
 	allocationTx string
 	connectionID string
+	operation    string
 	wg           *sync.WaitGroup
 	result       *CommitResult
 }
@@ -216,6 +217,7 @@ func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.W
 	wm.BlobberID = req.blobber.ID
 	wm.Timestamp = timestamp
 	wm.ClientID = client.GetClientID()
+	wm.Operation = req.operation
 	err := wm.Sign()
 	if err != nil {
 		l.Logger.Error("Signing writemarker failed: ", err)

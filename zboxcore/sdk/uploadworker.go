@@ -555,6 +555,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			newChange.Operation = constants.FileOperationUpdate
 			newChange.Size = req.file[c].Size
 			commitReq.changes = append(commitReq.changes, newChange)
+			commitReq.operation = constants.FileOperationUpdate
 		} else {
 			newChange := &allocationchange.NewFileChange{}
 			newChange.File = req.file[c]
@@ -562,6 +563,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			newChange.Operation = constants.FileOperationInsert
 			newChange.Size = req.file[c].Size
 			commitReq.changes = append(commitReq.changes, newChange)
+			commitReq.operation = constants.FileOperationInsert
 		}
 
 		commitReq.connectionID = req.connectionID

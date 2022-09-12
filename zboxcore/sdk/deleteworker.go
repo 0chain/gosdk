@@ -155,6 +155,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 		commitReq.allocationID = req.allocationID
 		commitReq.allocationTx = req.allocationTx
 		commitReq.blobber = req.blobbers[pos]
+		commitReq.operation = constants.FileOperationDelete
 		newChange := &allocationchange.DeleteFileChange{}
 		newChange.ObjectTree = objectTreeRefs[pos]
 		newChange.NumBlocks = newChange.ObjectTree.GetNumBlocks()

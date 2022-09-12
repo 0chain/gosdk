@@ -142,6 +142,7 @@ func (req *RenameRequest) ProcessRename() error {
 		newChange.Operation = constants.FileOperationRename
 		newChange.Size = 0
 		commitReq.changes = append(commitReq.changes, newChange)
+		commitReq.operation = constants.FileOperationRename
 		commitReq.connectionID = req.connectionID
 		commitReq.wg = wg
 		commitReqs[c] = commitReq
