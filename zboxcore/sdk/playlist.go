@@ -3,7 +3,6 @@ package sdk
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"net/url"
 	"sort"
@@ -118,18 +117,16 @@ type playlistConsensus struct {
 	files       map[string]PlaylistFile
 	consensuses map[string]*Consensus
 
-	threshConsensus float32
-	fullConsensus   float32
-	consensusOK     float32
+	threshConsensus int
+	fullConsensus   int
 }
 
-func createPlaylistConsensus(fullConsensus, threshConsensus, consensusOK float32) *playlistConsensus {
+func createPlaylistConsensus(fullConsensus, threshConsensus int) *playlistConsensus {
 	return &playlistConsensus{
 		files:           make(map[string]PlaylistFile),
 		consensuses:     make(map[string]*Consensus),
 		threshConsensus: threshConsensus,
 		fullConsensus:   fullConsensus,
-		consensusOK:     consensusOK,
 	}
 }
 
@@ -148,7 +145,7 @@ func (c *playlistConsensus) Add(body []byte) error {
 		} else {
 			cons := &Consensus{}
 
-			cons.Init(c.threshConsensus, c.fullConsensus, c.consensusOK)
+			cons.Init(c.threshConsensus, c.fullConsensus)
 			cons.Done()
 
 			c.consensuses[f.LookupHash] = cons
@@ -167,7 +164,6 @@ func (c *playlistConsensus) GetConsensusResult() []PlaylistFile {
 
 	for _, file := range c.files {
 		cons := c.consensuses[file.LookupHash]
-		fmt.Println(file.Name, cons.consensus, cons.getConsensusRate(), cons.getConsensusRequiredForOk())
 		if cons.isConsensusOk() {
 			files = append(files, file)
 		}
