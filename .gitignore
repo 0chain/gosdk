@@ -22,5 +22,5 @@ vendor
 .DS_Store
 _sdkver/*.wasm
 *.wasm
-
+*.log
 zcnbridge/example/logs/

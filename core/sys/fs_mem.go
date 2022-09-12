@@ -87,6 +87,17 @@ func (mfs *MemFS) MkdirAll(path string, perm os.FileMode) error {
 	return nil
 }
 
+// Stat returns a FileInfo describing the named file.
+// If there is an error, it will be of type *PathError.
+func (mfs *MemFS) Stat(name string) (fs.FileInfo, error) {
+	file, ok := mfs.files[name]
+	if ok {
+		return file.Stat()
+	}
+
+	return nil, os.ErrNotExist
+}
+
 type MemFile struct {
 	Name    string
 	Buffer  *bytes.Buffer // file content

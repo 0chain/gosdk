@@ -264,6 +264,26 @@ download your own or a shared file.
 
 ```
 
+### zcn.sdk.downloadBlocks
+download blocks of a file
+
+**Input**:
+> allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64
+
+**Output**:
+>  {commandSuccess:bool,commitSuccess:bool, commitTxn:transaction.Transaction, fileName:string,url:string, error:string}
+
+**Example**
+```json
+{
+   "commandSuccess":true,
+   "fileName":"scan3.png",
+   "url":"blob:http://localhost:3000/42157751-1d33-4448-88c8-7d7e2ad887a5",
+   "commitStatus":false,
+}
+
+```
+
 ### zcn.sdk.upload
 upload file(s)
 
@@ -278,7 +298,7 @@ upload file(s)
 play stream video files
 
 **Input**:
-> allocationID, remotePath, authTicket, lookupHash string
+> allocationID, remotePath, authTicket, lookupHash string, isLive bool
 
 **Output**:
 > N/A
