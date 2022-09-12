@@ -5,7 +5,7 @@ type blockDownloader struct {
 }
 
 func (d *blockDownloader) Start(status StatusCallback) error {
-	if d.options.isBlockDownload {
+	if d.options.isViewer {
 		return d.options.allocationObj.DownloadFromAuthTicketByBlocks(
 			d.options.localPath, d.options.authTicket,
 			d.options.startBlock, d.options.endBlock, d.options.blocksPerMarker,
