@@ -546,15 +546,17 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		su.wg.Add(1)
 		go func(b *ChunkedUploadBlobber, body *bytes.Buffer, formData ChunkedUploadFormMetadata, pos uint64) {
 			defer su.wg.Done()
-			err := b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
-			_ = err
+			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
+			if err != nil {
+				logger.Logger.Error(err)
+			}
 		}(blobber, body, formData, pos)
 	}
 
 	su.wg.Wait()
 
 	if !su.consensus.isConsensusOk() {
-		return thrown.New("consensus_not_met", fmt.Sprintf("Required consensus atleast %d, got %d",
+		return thrown.New("consensus_not_met", fmt.Sprintf("Upload failed. Required consensus atleast %d, got %d",
 			su.consensus.consensusThresh, su.consensus.consensus))
 	}
 
@@ -594,14 +596,18 @@ func (su *ChunkedUpload) processCommit() error {
 	su.wg.Wait()
 
 	if !su.consensus.isConsensusOk() {
+		err := thrown.New("consensus_not_met",
+			fmt.Sprintf("Upload commit failed. Required consensus atleast %d, got %d",
+				su.consensus.consensusThresh, su.consensus.consensus))
+
 		if su.consensus.getConsensus() != 0 {
 			logger.Logger.Info("Commit consensus failed, Deleting remote file....")
 			su.allocationObj.deleteFile(su.fileMeta.RemotePath, su.consensus.getConsensus(), su.consensus.getConsensus()) //nolint
 		}
 		if su.statusCallback != nil {
-			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, OpUpload, thrown.New("commit_consensus_failed", "Upload failed as there was no commit consensus"))
-			return nil
+			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, OpUpload, err)
 		}
+		return err
 	}
 
 	if su.statusCallback != nil {
