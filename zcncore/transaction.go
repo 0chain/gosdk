@@ -230,6 +230,7 @@ type AddAuthorizerPayload struct {
 }
 
 type DeleteAuthorizerPayload struct {
+	ID string `json:"id"` // authorizer ID
 }
 
 type AuthorizerStakePoolSettings struct {
