@@ -129,24 +129,25 @@ func main() {
 				"showLogs":              showLogs,
 
 				//blobber
-				"delete":      Delete,
-				"rename":      Rename,
-				"copy":        Copy,
-				"move":        Move,
-				"share":       Share,
-				"download":    Download,
-				"upload":      Upload,
-				"listObjects": listObjects,
-				"createDir":   createDir,
+				"delete":         Delete,
+				"rename":         Rename,
+				"copy":           Copy,
+				"move":           Move,
+				"share":          Share,
+				"download":       Download,
+				"upload":         Upload,
+				"listObjects":    listObjects,
+				"createDir":      createDir,
+				"downloadBlocks": downloadBlocks,
 
 				// zcn txn
 				"commitFileMetaTxn":   CommitFileMetaTxn,
 				"commitFolderMetaTxn": CommitFolderMetaTxn,
 
 				// player
-				"play":           Play,
-				"stop":           Stop,
-				"getNextSegment": GetNextSegment,
+				"play":           play,
+				"stop":           stop,
+				"getNextSegment": getNextSegment,
 
 				// wallet
 				"createWallet": createWallet,
@@ -180,7 +181,7 @@ func main() {
 
 	}
 
-	showLogs()
+	hideLogs()
 
 	<-make(chan bool)
 

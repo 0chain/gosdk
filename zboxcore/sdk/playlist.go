@@ -2,16 +2,16 @@ package sdk
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
-	"sort"
 	"strings"
 
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
@@ -52,7 +52,7 @@ func getPlaylistFromBlobbers(ctx context.Context, alloc *Allocation, query strin
 	for i, b := range alloc.Blobbers {
 		sb := &strings.Builder{}
 		sb.WriteString(strings.TrimRight(b.Baseurl, "/"))
-		sb.WriteString(zboxutil.PLAYLIST_ENDPOINT)
+		sb.WriteString(zboxutil.PLAYLIST_LATEST_ENDPOINT)
 		sb.WriteString(alloc.ID)
 		sb.WriteString("?")
 		sb.WriteString(query)
@@ -91,7 +91,7 @@ func getPlaylistFromBlobbers(ctx context.Context, alloc *Allocation, query strin
 
 			if resp != nil {
 				if resp.StatusCode == http.StatusOK {
-					if e := c.Add(respBody); e != nil {
+					if e := c.AddFiles(respBody); e != nil {
 						logger.Logger.Error("playlist: ", e, resp.Request.URL)
 					}
 
@@ -113,76 +113,90 @@ func getPlaylistFromBlobbers(ctx context.Context, alloc *Allocation, query strin
 	return c.GetConsensusResult(), nil
 }
 
-type playlistConsensus struct {
-	files       map[string]PlaylistFile
-	consensuses map[string]*Consensus
+func GetPlaylistFile(ctx context.Context, alloc *Allocation, path string) (*PlaylistFile, error) {
+	q := &url.Values{}
+	q.Add("lookup_hash", fileref.GetReferenceLookup(alloc.ID, path))
 
-	threshConsensus int
-	fullConsensus   int
+	return getPlaylistFileFromBlobbers(ctx, alloc, q.Encode())
 }
 
-func createPlaylistConsensus(fullConsensus, threshConsensus int) *playlistConsensus {
-	return &playlistConsensus{
-		files:           make(map[string]PlaylistFile),
-		consensuses:     make(map[string]*Consensus),
-		threshConsensus: threshConsensus,
-		fullConsensus:   fullConsensus,
-	}
+func GetPlaylistFileByAuthTicket(ctx context.Context, alloc *Allocation, authTicket, lookupHash string) (*PlaylistFile, error) {
+	q := &url.Values{}
+	q.Add("auth_token", authTicket)
+	q.Add("lookup_hash", lookupHash)
+
+	return getPlaylistFileFromBlobbers(ctx, alloc, q.Encode())
 }
 
-func (c *playlistConsensus) Add(body []byte) error {
-	var files []PlaylistFile
+func getPlaylistFileFromBlobbers(ctx context.Context, alloc *Allocation, query string) (*PlaylistFile, error) {
 
-	if err := json.Unmarshal([]byte(body), &files); err != nil {
-		return err
+	urls := make([]string, len(alloc.Blobbers))
+	for i, b := range alloc.Blobbers {
+		sb := &strings.Builder{}
+		sb.WriteString(strings.TrimRight(b.Baseurl, "/"))
+		sb.WriteString(zboxutil.PLAYLIST_FILE_ENDPOINT)
+		sb.WriteString(alloc.ID)
+		sb.WriteString("?")
+		sb.WriteString(query)
+
+		urls[i] = sb.String()
 	}
 
-	for _, f := range files {
-		_, ok := c.files[f.LookupHash]
+	opts := make([]resty.Option, 0, 3)
 
-		if ok {
-			c.consensuses[f.LookupHash].Done()
-		} else {
-			cons := &Consensus{}
+	opts = append(opts, resty.WithRetry(resty.DefaultRetry))
+	opts = append(opts, resty.WithTimeout(resty.DefaultRequestTimeout))
+	opts = append(opts, resty.WithRequestInterceptor(func(req *http.Request) error {
+		req.Header.Set("X-App-Client-ID", client.GetClientID())
+		req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
 
-			cons.Init(c.threshConsensus, c.fullConsensus)
-			cons.Done()
-
-			c.consensuses[f.LookupHash] = cons
-			c.files[f.LookupHash] = f
+		hash := encryption.Hash(alloc.ID)
+		sign, err := sys.Sign(hash, client.GetClient().SignatureScheme, client.GetClientSysKeys())
+		if err != nil {
+			return err
 		}
 
+		// ClientSignatureHeader represents http request header contains signature.
+		req.Header.Set("X-App-Client-Signature", sign)
+
+		return nil
+	}))
+
+	c := createPlaylistConsensus(alloc.getConsensuses())
+
+	r := resty.New(opts...).
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			if err != nil {
+				logger.Logger.Error("playlist: ", err)
+				return err
+			}
+
+			if resp != nil {
+				if resp.StatusCode == http.StatusOK {
+					if e := c.AddFile(respBody); e != nil {
+						logger.Logger.Error("playlist: ", e, resp.Request.URL)
+					}
+
+					return nil
+				}
+
+				logger.Logger.Error("playlist: ", resp.Status, resp.Request.URL)
+				return nil
+
+			}
+
+			return nil
+		})
+
+	r.DoGet(ctx, urls...)
+
+	r.Wait()
+
+	files := c.GetConsensusResult()
+
+	if len(files) > 0 {
+		return &files[0], nil
 	}
 
-	return nil
-
-}
-
-func (c *playlistConsensus) GetConsensusResult() []PlaylistFile {
-
-	files := make([]PlaylistFile, 0, len(c.files))
-
-	for _, file := range c.files {
-		cons := c.consensuses[file.LookupHash]
-		if cons.isConsensusOk() {
-			files = append(files, file)
-		}
-	}
-
-	sort.Slice(files, func(i, j int) bool {
-		l := files[i]
-		r := files[j]
-
-		if len(l.Name) < len(r.Name) {
-			return true
-		}
-
-		if len(l.Name) > len(r.Name) {
-			return false
-		}
-
-		return l.Name < r.Name
-	})
-
-	return files
+	return nil, errors.New("playlist: playlist file not found")
 }
