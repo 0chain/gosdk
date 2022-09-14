@@ -1432,7 +1432,7 @@ func GetAllocationMinLock(
 	params := make(map[string]string)
 	params["allocation_data"] = string(allocationRequest)
 
-	allocationsBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation-min-lock", params, nil)
+	allocationsBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation_min_lock", params, nil)
 	if err != nil {
 		return 0, errors.New("allocation_min_lock_fetch_error", "Error fetching the allocation min lock."+err.Error())
 	}
