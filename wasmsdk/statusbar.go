@@ -28,17 +28,15 @@ func (s *StatusBar) Started(allocationID, filePath string, op int, totalBytes in
 
 // InProgress for statusBar
 func (s *StatusBar) InProgress(allocationID, filePath string, op int, completedBytes int, todo_name_var []byte) {
-	if logEnabled {
+	if logEnabled && s.b != nil {
 		s.b.Set(completedBytes)
 	}
 }
 
 // Completed for statusBar
 func (s *StatusBar) Completed(allocationID, filePath string, filename string, mimetype string, size int, op int) {
-	if logEnabled {
-		if s.b != nil {
-			s.b.Finish()
-		}
+	if logEnabled && s.b != nil {
+		s.b.Finish()
 	}
 	s.success = true
 

@@ -49,7 +49,7 @@ const (
 const additionalSuccessRate = (10)
 
 var GetFileInfo = func(localpath string) (os.FileInfo, error) {
-	return os.Stat(localpath)
+	return sys.Files.Stat(localpath)
 }
 
 type BlobberAllocationStats struct {
@@ -446,7 +446,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 	}
 	thumbnailSize := int64(0)
 	if len(thumbnailpath) > 0 {
-		fileInfo, err := os.Stat(thumbnailpath)
+		fileInfo, err := sys.Files.Stat(thumbnailpath)
 		if err != nil {
 			thumbnailSize = 0
 			thumbnailpath = ""
@@ -572,19 +572,23 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	if !a.isInitialized() {
 		return notInitialized
 	}
-	if stat, err := os.Stat(localPath); err == nil {
+	if stat, err := sys.Files.Stat(localPath); err == nil {
 		if !stat.IsDir() {
 			return fmt.Errorf("Local path is not a directory '%s'", localPath)
 		}
 		localPath = strings.TrimRight(localPath, "/")
 		_, rFile := filepath.Split(remotePath)
 		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
-		if _, err := os.Stat(localPath); err == nil {
+		if _, err := sys.Files.Stat(localPath); err == nil {
 			return fmt.Errorf("Local file already exists '%s'", localPath)
 		}
 	}
-	lPath, _ := filepath.Split(localPath)
-	os.MkdirAll(lPath, 0744)
+	dir, _ := filepath.Split(localPath)
+	if dir != "" {
+		if err := sys.Files.MkdirAll(dir, 0744); err != nil {
+			return err
+		}
+	}
 
 	if len(a.Blobbers) == 0 {
 		return noBLOBBERS
@@ -1216,14 +1220,14 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 		return errors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
 	}
 
-	if stat, err := os.Stat(localPath); err == nil {
+	if stat, err := sys.Files.Stat(localPath); err == nil {
 		if !stat.IsDir() {
 			return fmt.Errorf("Local path is not a directory '%s'", localPath)
 		}
 		localPath = strings.TrimRight(localPath, "/")
 		_, rFile := filepath.Split(remoteFilename)
 		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
-		if _, err := os.Stat(localPath); err == nil {
+		if _, err := sys.Files.Stat(localPath); err == nil {
 			return fmt.Errorf("Local file already exists '%s'", localPath)
 		}
 	}
