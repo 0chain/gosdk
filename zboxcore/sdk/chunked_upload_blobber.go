@@ -79,6 +79,10 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	var resp *http.Response
 	for i := 0; i < 3; i++ {
 
+		if resp != nil {
+			// Necessary to re-use connection
+			resp.Body.Close()
+		}
 		reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
 		resp, err = su.client.Do(req.WithContext(reqCtx))
 		ctxCncl()
@@ -221,6 +225,11 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 	var resp *http.Response
 	for retries := 0; retries < 3; retries++ {
+		if resp != nil {
+			// This close is necessary to re-use connection
+			resp.Body.Close()
+		}
+
 		reqCtx, ctxCncl := context.WithTimeout(ctx, su.commitTimeOut)
 		resp, err = su.client.Do(req.WithContext(reqCtx))
 		ctxCncl()
