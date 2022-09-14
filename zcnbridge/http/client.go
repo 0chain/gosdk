@@ -1,11 +1,10 @@
 package http
 
 import (
-	"net"
 	"net/http"
 	"time"
 
-	"github.com/hashicorp/go-cleanhttp"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/hashicorp/go-retryablehttp"
 )
 
@@ -25,23 +24,15 @@ const (
 
 // NewClient creates default http.Client with timeouts.
 func NewClient() *http.Client {
-	d := &net.Dialer{
-		Timeout: dialTimeout,
-	}
-
-	transport := &http.Transport{
-		TLSHandshakeTimeout: tlsHandshakeTimeout,
-		DialContext:         d.DialContext,
-	}
-
 	return &http.Client{
-		Timeout:   clientTimeout,
-		Transport: transport,
+		Transport: zboxutil.DefaultTransport,
 	}
 }
 
 func CleanClient() *http.Client {
-	client := cleanhttp.DefaultPooledClient()
+	client := &http.Client{
+		Transport: zboxutil.DefaultTransport,
+	}
 	client.Timeout = 10 * time.Second
 	return client
 }
@@ -49,10 +40,12 @@ func CleanClient() *http.Client {
 // NewRetryableClient creates default retryablehttp.Client with timeouts and embedded NewClient result.
 func NewRetryableClient() *retryablehttp.Client {
 	client := retryablehttp.NewClient()
-	client.HTTPClient = NewClient()
-	client.RetryWaitMax = RetryWaitMax
-	client.RetryMax = RetryMax
-	client.Logger = nil
+	client.HTTPClient = &http.Client{
+		Transport: zboxutil.DefaultTransport,
+	}
+	//client.RetryWaitMax = RetryWaitMax
+	//client.RetryMax = RetryMax
+	//client.Logger = nil
 
 	return client
 }
