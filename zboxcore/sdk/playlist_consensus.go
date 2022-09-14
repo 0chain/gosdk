@@ -9,18 +9,16 @@ type playlistConsensus struct {
 	files       map[string]PlaylistFile
 	consensuses map[string]*Consensus
 
-	threshConsensus float32
-	fullConsensus   float32
-	consensusOK     float32
+	threshConsensus int
+	fullConsensus   int
 }
 
-func createPlaylistConsensus(fullConsensus, threshConsensus, consensusOK float32) *playlistConsensus {
+func createPlaylistConsensus(fullConsensus, threshConsensus int) *playlistConsensus {
 	return &playlistConsensus{
 		files:           make(map[string]PlaylistFile),
 		consensuses:     make(map[string]*Consensus),
 		threshConsensus: threshConsensus,
 		fullConsensus:   fullConsensus,
-		consensusOK:     consensusOK,
 	}
 }
 
@@ -38,7 +36,7 @@ func (c *playlistConsensus) AddFile(body []byte) error {
 	} else {
 		cons := &Consensus{}
 
-		cons.Init(c.threshConsensus, c.fullConsensus, c.consensusOK)
+		cons.Init(c.threshConsensus, c.fullConsensus)
 		cons.Done()
 
 		c.consensuses[file.LookupHash] = cons
@@ -63,7 +61,7 @@ func (c *playlistConsensus) AddFiles(body []byte) error {
 		} else {
 			cons := &Consensus{}
 
-			cons.Init(c.threshConsensus, c.fullConsensus, c.consensusOK)
+			cons.Init(c.threshConsensus, c.fullConsensus)
 			cons.Done()
 
 			c.consensuses[f.LookupHash] = cons
