@@ -962,7 +962,7 @@ func getNewAllocationBlobbers(
 		datashards, parityshards, size, expiry, readPrice, writePrice,
 	)
 	if err != nil {
-		return nil, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
+		return nil, err
 	}
 
 	//filter duplicates
