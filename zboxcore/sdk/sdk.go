@@ -364,35 +364,25 @@ func GetTotalStoredData() (map[string]int64, error) {
 }
 
 type stakePoolRequest struct {
-	ProviderType ProviderType `json:"provider_type,omitempty"`
-	ProviderID   string       `json:"provider_id,omitempty"`
-	PoolID       string       `json:"pool_id,omitempty"`
+	BlobberID string `json:"blobber_id,omitempty"`
 }
 
 // StakePoolLock locks tokens lack in stake pool
-func StakePoolLock(providerType ProviderType, providerID string, value, fee uint64) (poolID string, nonce int64, err error) {
+func StakePoolLock(blobberID string, value, fee uint64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
-		return poolID, 0, sdkNotInitialized
+		return "", 0, sdkNotInitialized
+	}
+	if blobberID == "" {
+		blobberID = client.GetClientID()
 	}
 
-	if providerType == 0 {
-		return "", 0, errors.New("stake_pool_lock", "provider is required")
-	}
-
-	if providerID == "" {
-		return "", 0, errors.New("stake_pool_lock", "provider_id is required")
-	}
-
-	spr := stakePoolRequest{
-		ProviderType: providerType,
-		ProviderID:   providerID,
-		PoolID:       "",
-	}
+	var spr stakePoolRequest
+	spr.BlobberID = blobberID
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_STAKE_POOL_LOCK,
 		InputArgs: &spr,
 	}
-	poolID, _, nonce, _, err = smartContractTxnValueFee(sn, value, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFee(sn, value, fee)
 	return
 }
 
@@ -411,7 +401,9 @@ type StakePoolUnlockUnstake struct {
 // future. The time is maximal time that can be lesser in some cases. To
 // unlock tokens can't be unlocked now, wait the time and unlock them (call
 // this function again).
-func StakePoolUnlock(providerType ProviderType, providerID string, poolID string, fee uint64) (unstake bool, nonce int64, err error) {
+func StakePoolUnlock(
+	blobberID string, fee uint64,
+) (unstake bool, nonce int64, err error) {
 	if !sdkInitialized {
 		return false, 0, sdkNotInitialized
 	}
@@ -420,19 +412,8 @@ func StakePoolUnlock(providerType ProviderType, providerID string, poolID string
 		return false, 0, errors.New("stake_pool_lock", "provider is required")
 	}
 
-	if providerID == "" {
-		return false, 0, errors.New("stake_pool_lock", "provider_id is required")
-	}
-
-	if poolID == "" {
-		return false, 0, errors.New("stake_pool_lock", "pool_id is required")
-	}
-
-	spr := stakePoolRequest{
-		ProviderType: providerType,
-		ProviderID:   providerID,
-		PoolID:       poolID,
-	}
+	var spr stakePoolRequest
+	spr.BlobberID = blobberID
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_STAKE_POOL_UNLOCK,
@@ -1195,7 +1176,7 @@ const (
 	ProviderAuthorizer
 )
 
-func CollectRewards(providerId, poolId string, providerType ProviderType) (string, int64, error) {
+func CollectRewards(providerId string, providerType ProviderType) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
@@ -1203,7 +1184,6 @@ func CollectRewards(providerId, poolId string, providerType ProviderType) (strin
 	var input = map[string]interface{}{
 		"provider_id":   providerId,
 		"provider_type": providerType,
-		"pool_id":       poolId,
 	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_COLLECT_REWARD,
