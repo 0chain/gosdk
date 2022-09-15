@@ -37,7 +37,7 @@ func WithTimeout(timeout time.Duration) Option {
 }
 
 // WithRequestInterceptor intercept request
-func WithRequestInterceptor(interceptor func(req *http.Request)) Option {
+func WithRequestInterceptor(interceptor func(req *http.Request) error) Option {
 	return func(r *Resty) {
 		r.requestInterceptor = interceptor
 	}

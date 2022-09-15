@@ -72,7 +72,7 @@ func (m *MediaPlaylist) Play() {
 
 		item := <-m.next
 
-		_, err := os.Stat(filepath.Join(m.dir, item))
+		_, err := sys.Files.Stat(filepath.Join(m.dir, item))
 
 		if err == nil {
 			if len(m.wait) < 5 {
