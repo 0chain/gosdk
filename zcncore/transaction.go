@@ -153,6 +153,10 @@ type TransactionCommon interface {
 	MinerScUpdateConfig(*InputMap) error
 	MinerScUpdateGlobals(*InputMap) error
 	StorageScUpdateConfig(*InputMap) error
+	KillBlobber(id string, fee uint64) error
+	KillValidator(id string, fee uint64) error
+	ShutDownBlobber(id string, fee uint64) error
+	ShutDownValidator(id string, fee uint64) error
 	FaucetUpdateConfig(*InputMap) error
 	ZCNSCUpdateGlobalConfig(*InputMap) error
 
@@ -313,7 +317,7 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val uint64, desc 
 }
 
 type VestingDest struct {
-	ID     string     `json:"id"`     // destination ID
+	ID     string         `json:"id"`     // destination ID
 	Amount common.Balance `json:"amount"` // amount to vest for the destination
 }
 
@@ -544,6 +548,10 @@ func (t *Transaction) StakePoolUnlock(blobberID, poolID string,
 	return
 }
 
+type ProviderId struct {
+	ID string `json:"id"`
+}
+
 // UpdateBlobberSettings update settings of a blobber.
 func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee uint64) (err error) {
 
@@ -556,6 +564,82 @@ func (t *Transaction) UpdateBlobberSettings(b *Blobber, fee uint64) (err error) 
 	t.SetTransactionFee(fee)
 	go func() { t.setNonceAndSubmit() }()
 	return
+}
+
+func (t *Transaction) KillBlobber(id string, fee uint64) error {
+	var err error
+	pid := ProviderId{
+		ID: id,
+	}
+	err = t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_KILL_BLOBBER, &pid, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	if err := t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return err
+}
+
+func (t *Transaction) KillValidator(id string, fee uint64) error {
+	var err error
+	pid := ProviderId{
+		ID: id,
+	}
+	err = t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_KILL_VALIDATOR, &pid, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	if err := t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return err
+}
+
+func (t *Transaction) ShutDownBlobber(id string, fee uint64) error {
+	var err error
+	pid := ProviderId{
+		ID: id,
+	}
+	err = t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_SHUT_DOWN_BLOBBER, pid, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	if err := t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return err
+}
+
+func (t *Transaction) ShutDownValidator(id string, fee uint64) error {
+	var err error
+	pid := ProviderId{
+		ID: id,
+	}
+	err = t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_SHUT_DOWN_VALIDATOR, pid, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	if err := t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return err
 }
 
 // UpdateAllocation transaction.

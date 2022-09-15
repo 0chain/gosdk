@@ -588,6 +588,27 @@ func GetStorageSCConfig() (conf *InputMap, err error) {
 	return
 }
 
+type Status int
+
+const (
+	Active Status = iota + 1
+	Inactive
+	ShutDown
+	Killed
+	NonExistent
+)
+
+var statusString = []string{"active", "inactive", "shut_down", "killed", "non_existent"}
+
+func (p Status) String() string {
+	return statusString[p]
+}
+
+type ProviderStatus struct {
+	Status Status `json:"status"`
+	Reason string `json:"reason"`
+}
+
 type Blobber struct {
 	ID                common.Key                   `json:"id"`
 	BaseURL           string                       `json:"url"`
@@ -598,6 +619,8 @@ type Blobber struct {
 	PublicKey         string                       `json:"-"`
 	StakePoolSettings blockchain.StakePoolSettings `json:"stake_pool_settings"`
 	TotalStake        int64                        `json:"total_stake"`
+	IsShutDown        bool                         `json:"is_shut_down"`
+	IsKilled          bool                         `json:"is_killed"`
 }
 
 type Validator struct {
@@ -610,6 +633,8 @@ type Validator struct {
 	NumDelegates   int            `json:"num_delegates"`
 	ServiceCharge  float64        `json:"service_charge"`
 	TotalStake     int64          `json:"stake"`
+	IsShutDown     bool           `json:"is_shut_down"`
+	IsKilled       bool           `json:"is_killed"`
 }
 
 func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
@@ -676,6 +701,54 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 		return nil, errors.Wrap(err, "decoding response:")
 	}
 	return
+}
+
+func StorageGetBlobberStatus(id string) (*ProviderStatus, error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+	var err error
+	var b []byte
+	params := make(map[string]string)
+	params["id"] = id
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/blobber-status", params, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "error requesting blobbers:")
+	}
+	if len(b) == 0 {
+		return nil, errors.New("", "empty response")
+	}
+
+	status := new(ProviderStatus)
+	if err = json.Unmarshal(b, status); err != nil {
+		return nil, errors.Wrap(err, "error decoding response:")
+	}
+
+	return status, nil
+}
+
+func StorageGetValidatorStatus(id string) (*ProviderStatus, error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+	var err error
+	var b []byte
+	params := make(map[string]string)
+	params["id"] = id
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/validator-status", params, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "error requesting validator:")
+	}
+	if len(b) == 0 {
+		return nil, errors.New("", "empty response")
+	}
+
+	status := new(ProviderStatus)
+	if err = json.Unmarshal(b, status); err != nil {
+		return nil, errors.Wrap(err, "error decoding response:")
+	}
+
+	return status, nil
 }
 
 // GetValidator instance.
@@ -1253,6 +1326,70 @@ func UpdateValidatorSettings(v *Validator) (resp string, nonce int64, err error)
 		InputArgs: v.ConvertToValidationNode(),
 	}
 	resp, _, nonce, _, err = smartContractTxn(sn)
+	return
+}
+
+type ProviderId struct {
+	ID string `json:"id"`
+}
+
+func KillBlobber(id string, fee uint64) (nonce int64, err error) {
+	pid := ProviderId{
+		ID: id,
+	}
+	if !sdkInitialized {
+		return 0, sdkNotInitialized
+	}
+	var sn = transaction.SmartContractTxnData{
+		Name:      "kill-blobber",
+		InputArgs: pid,
+	}
+	_, _, nonce, _, err = smartContractTxnValueFee(sn, 0, fee)
+	return
+}
+
+func KillValidator(id string, fee uint64) (nonce int64, err error) {
+	pid := ProviderId{
+		ID: id,
+	}
+	if !sdkInitialized {
+		return 0, sdkNotInitialized
+	}
+	var sn = transaction.SmartContractTxnData{
+		Name:      "kill-validator",
+		InputArgs: pid,
+	}
+	_, _, nonce, _, err = smartContractTxnValueFee(sn, 0, fee)
+	return
+}
+
+func ShutDownBlobber(id string, fee uint64) (nonce int64, err error) {
+	pid := ProviderId{
+		ID: id,
+	}
+	if !sdkInitialized {
+		return 0, sdkNotInitialized
+	}
+	var sn = transaction.SmartContractTxnData{
+		Name:      "shut-down-blobber",
+		InputArgs: pid,
+	}
+	_, _, nonce, _, err = smartContractTxnValueFee(sn, 0, fee)
+	return
+}
+
+func ShutDownValidator(id string, fee uint64) (nonce int64, err error) {
+	pid := ProviderId{
+		ID: id,
+	}
+	if !sdkInitialized {
+		return 0, sdkNotInitialized
+	}
+	var sn = transaction.SmartContractTxnData{
+		Name:      "shut-down-validator",
+		InputArgs: pid,
+	}
+	_, _, nonce, _, err = smartContractTxnValueFee(sn, 0, fee)
 	return
 }
 

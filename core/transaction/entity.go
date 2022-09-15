@@ -122,6 +122,10 @@ const (
 	STORAGESC_CURATOR_TRANSFER          = "curator_transfer_allocation"
 	STORAGESC_UPDATE_SETTINGS           = "update_settings"
 	STORAGESC_COLLECT_REWARD            = "collect_reward"
+	STORAGESC_KILL_BLOBBER              = "kill-blobber"
+	STORAGESC_KILL_VALIDATOR            = "kill-validator"
+	STORAGESC_SHUT_DOWN_BLOBBER         = "shut-down-blobber"
+	STORAGESC_SHUT_DOWN_VALIDATOR       = "shut-down-validator"
 
 	MINERSC_LOCK             = "addToDelegatePool"
 	MINERSC_UNLOCK           = "deleteFromDelegatePool"

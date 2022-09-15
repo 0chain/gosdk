@@ -247,6 +247,82 @@ func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber, fee uint64) 
 	return
 }
 
+func (ta *TransactionWithAuth) KillBlobber(id string, fee uint64) error {
+	var err error
+	pid := ProviderId{
+		ID: id,
+	}
+	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_KILL_BLOBBER, pid, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	if err = ta.t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { ta.submitTxn() }()
+	return err
+}
+
+func (ta *TransactionWithAuth) KillValidator(id string, fee uint64) error {
+	var err error
+	pid := ProviderId{
+		ID: id,
+	}
+	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_KILL_VALIDATOR, pid, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	if err = ta.t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { ta.submitTxn() }()
+	return err
+}
+
+func (ta *TransactionWithAuth) ShutDownBlobber(id string, fee uint64) error {
+	var err error
+	pid := ProviderId{
+		ID: id,
+	}
+	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_SHUT_DOWN_BLOBBER, pid, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	if err = ta.t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { ta.submitTxn() }()
+	return err
+}
+
+func (ta *TransactionWithAuth) ShutDownValidator(id string, fee uint64) error {
+	var err error
+	pid := ProviderId{
+		ID: id,
+	}
+	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_SHUT_DOWN_VALIDATOR, pid, 0)
+	if err != nil {
+		Logger.Error(err)
+		return err
+	}
+	if err = ta.t.SetTransactionFee(fee); err != nil {
+		Logger.Error(err)
+		return err
+	}
+	go func() { ta.submitTxn() }()
+	return err
+}
+
 // UpdateValidatorSettings update settings of a validator.
 func (ta *TransactionWithAuth) UpdateValidatorSettings(v *Validator, fee uint64) (
 	err error) {
