@@ -1,6 +1,7 @@
 package allocationchange
 
 import (
+	"errors"
 	"path/filepath"
 	"strings"
 
@@ -21,7 +22,15 @@ func (d *DirCreateChange) ProcessChange(rootRef *fileref.Ref) error {
 	for i := 0; i < len(fields); i++ {
 		found := false
 		for _, child := range dirRef.Children {
-			ref := child.(*fileref.Ref)
+			ref, ok := child.(*fileref.Ref)
+			if !ok {
+				fr, ok := child.(*fileref.FileRef)
+				if !ok {
+					return errors.New("invalid_ref: child node is not valid *fileref.Ref or *fileref.FileRef ")
+				}
+				ref = &fr.Ref
+			}
+
 			if ref.Name == fields[i] {
 				dirRef = ref
 				found = true

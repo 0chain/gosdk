@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/wasmsdk/zbox"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
@@ -17,8 +18,8 @@ import (
 
 var CreateObjectURL func(buf []byte, mimeType string) string
 
-// Init init sharder/miners ,
-func Init(chainID, blockWorker, signatureScheme string,
+// initSDKs init sharder/miners ,
+func initSDKs(chainID, blockWorker, signatureScheme string,
 	minConfirmation, minSubmit, confirmationChainLength int) error {
 
 	err := sdk.InitStorageSDK("{}", blockWorker, chainID, signatureScheme, nil, 0)
@@ -39,7 +40,7 @@ func Init(chainID, blockWorker, signatureScheme string,
 	return nil
 }
 
-func SetWallet(clientID, publicKey string) {
+func SetWallet(clientID, publicKey, privateKey string) {
 	c := client.GetClient()
 	c.ClientID = clientID
 	c.ClientKey = publicKey
@@ -47,6 +48,21 @@ func SetWallet(clientID, publicKey string) {
 	if len(zboxHost) > 0 {
 		zboxClient = zbox.NewClient(zboxHost, c.ClientID, c.ClientKey)
 	}
+
+	//w.Version = cw.Version
+	//w.DateCreated = cw.Version
+
+	w := &zcncrypto.Wallet{
+		ClientID:  clientID,
+		ClientKey: publicKey,
+		Keys: []zcncrypto.KeyPair{
+			{
+				PrivateKey: privateKey,
+				PublicKey:  publicKey,
+			},
+		},
+	}
+	zcncore.SetWallet(*w, false)
 }
 
 func GetEncryptedPublicKey(mnemonic string) (string, error) {

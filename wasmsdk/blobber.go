@@ -31,6 +31,23 @@ func listObjects(allocationId string, remotePath string) (*sdk.ListResult, error
 
 }
 
+func createDir(allocationID, remotePath string) error {
+	if len(allocationID) == 0 {
+		return RequiredArg("allocationID")
+	}
+
+	if len(remotePath) == 0 {
+		return RequiredArg("remotePath")
+	}
+
+	allocationObj, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+
+	return allocationObj.CreateDir(remotePath)
+}
+
 // Delete delete file from blobbers
 func Delete(allocationID, remotePath string, autoCommit bool) (*FileCommandResponse, error) {
 
@@ -407,7 +424,7 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 	wg.Add(1)
 
 	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
-	localPath := filepath.Join(allocationID, fileName)
+	localPath := allocationID + "_" + fileName
 
 	downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
 		sdk.WithAuthticket(authTicket, lookupHash),
@@ -621,5 +638,57 @@ func CommitFolderMetaTxn(allocationID, commandName, preValue, currValue string) 
 	}
 
 	return txn, nil
+
+}
+
+// download download file blocks
+func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64) (*DownloadCommandResponse, error) {
+
+	if len(remotePath) == 0 && len(authTicket) == 0 {
+		return nil, RequiredArg("remotePath/authTicket")
+	}
+
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	wg.Add(1)
+
+	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
+	localPath := filepath.Join(allocationID, fileName)
+
+	downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
+		sdk.WithAuthticket(authTicket, lookupHash),
+		sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks))
+
+	if err != nil {
+		PrintError(err.Error())
+		return nil, err
+	}
+
+	defer sys.Files.Remove(localPath) //nolint
+
+	err = downloader.Start(statusBar)
+
+	if err == nil {
+		wg.Wait()
+	} else {
+		PrintError("Download failed.", err.Error())
+		return nil, err
+	}
+	if !statusBar.success {
+		return nil, errors.New("Download failed: unknown error")
+	}
+
+	resp := &DownloadCommandResponse{
+		CommandSuccess: true,
+		FileName:       fileName,
+	}
+
+	fs, _ := sys.Files.Open(localPath)
+
+	mf, _ := fs.(*sys.MemFile)
+
+	resp.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
+
+	return resp, nil
 
 }

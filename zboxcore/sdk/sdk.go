@@ -364,21 +364,30 @@ func GetTotalStoredData() (map[string]int64, error) {
 }
 
 type stakePoolRequest struct {
-	BlobberID string `json:"blobber_id,omitempty"`
-	PoolID    string `json:"pool_id,omitempty"`
+	ProviderType ProviderType `json:"provider_type,omitempty"`
+	ProviderID   string       `json:"provider_id,omitempty"`
+	PoolID       string       `json:"pool_id,omitempty"`
 }
 
 // StakePoolLock locks tokens lack in stake pool
-func StakePoolLock(blobberID string, value, fee uint64) (poolID string, nonce int64, err error) {
+func StakePoolLock(providerType ProviderType, providerID string, value, fee uint64) (poolID string, nonce int64, err error) {
 	if !sdkInitialized {
 		return poolID, 0, sdkNotInitialized
 	}
-	if blobberID == "" {
-		blobberID = client.GetClientID()
+
+	if providerType == 0 {
+		return "", 0, errors.New("stake_pool_lock", "provider is required")
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
+	if providerID == "" {
+		return "", 0, errors.New("stake_pool_lock", "provider_id is required")
+	}
+
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerID,
+		PoolID:       "",
+	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_STAKE_POOL_LOCK,
 		InputArgs: &spr,
@@ -402,19 +411,28 @@ type StakePoolUnlockUnstake struct {
 // future. The time is maximal time that can be lesser in some cases. To
 // unlock tokens can't be unlocked now, wait the time and unlock them (call
 // this function again).
-func StakePoolUnlock(
-	blobberID, poolID string, fee uint64,
-) (unstake bool, nonce int64, err error) {
+func StakePoolUnlock(providerType ProviderType, providerID string, poolID string, fee uint64) (unstake bool, nonce int64, err error) {
 	if !sdkInitialized {
 		return false, 0, sdkNotInitialized
 	}
-	if blobberID == "" {
-		blobberID = client.GetClientID()
+
+	if providerType == 0 {
+		return false, 0, errors.New("stake_pool_lock", "provider is required")
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
-	spr.PoolID = poolID
+	if providerID == "" {
+		return false, 0, errors.New("stake_pool_lock", "provider_id is required")
+	}
+
+	if poolID == "" {
+		return false, 0, errors.New("stake_pool_lock", "pool_id is required")
+	}
+
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerID,
+		PoolID:       poolID,
+	}
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_STAKE_POOL_UNLOCK,
@@ -901,38 +919,55 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 	return allocations, nil
 }
 
-func CreateAllocationWithBlobbers(name string, datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, lock uint64, blobbers []string) (
+type CreateAllocationOptions struct {
+	Name         string
+	DataShards   int
+	ParityShards int
+	Size         int64
+	Expiry       int64
+	ReadPrice    PriceRange
+	WritePrice   PriceRange
+	Lock         uint64
+	BlobberIds   []string
+}
+
+func CreateAllocationWith(options CreateAllocationOptions) (
 	string, int64, *transaction.Transaction, error) {
 
-	return CreateAllocationForOwner(client.GetClientID(),
-		client.GetClientPublicKey(), name, datashards, parityshards,
-		size, expiry, readPrice, writePrice, lock,
-		blobbers)
+	if len(options.BlobberIds) > 0 {
+		return CreateAllocationForOwner(client.GetClientID(),
+			client.GetClientPublicKey(), options.Name, options.DataShards, options.ParityShards,
+			options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock,
+			options.BlobberIds)
+	}
+
+	return CreateAllocation(options.Name, options.DataShards, options.ParityShards,
+		options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock)
+
 }
 
 func CreateAllocation(name string, datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, lock uint64) (
 	string, int64, *transaction.Transaction, error) {
 
+	preferredBlobberIds, err := GetBlobberIds(blockchain.GetPreferredBlobbers())
+	if err != nil {
+		return "", 0, nil, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
+	}
+
 	return CreateAllocationForOwner(name, client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
 		size, expiry, readPrice, writePrice, lock,
-		blockchain.GetPreferredBlobbers())
+		preferredBlobberIds)
 }
 
 func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange,
-	lock uint64, preferredBlobbers []string) (hash string, nonce int64, txn *transaction.Transaction, err error) {
+	lock uint64, preferredBlobberIds []string) (hash string, nonce int64, txn *transaction.Transaction, err error) {
 
 	if lock < 0 {
 		return "", 0, nil, errors.New("", "invalid value for lock")
-	}
-
-	preferred, err := GetBlobberIds(preferredBlobbers)
-	if err != nil {
-		return "", 0, nil, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
 	}
 
 	allocationBlobbers, err := GetAllocationBlobbers(owner, ownerpublickey, datashards,
@@ -944,7 +979,7 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 
 	//filter duplicates
 	ids := make(map[string]struct{})
-	for _, id := range preferred {
+	for _, id := range preferredBlobberIds {
 		ids[id] = struct{}{}
 	}
 	for _, id := range allocationBlobbers {

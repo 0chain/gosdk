@@ -49,7 +49,7 @@ const (
 const additionalSuccessRate = (10)
 
 var GetFileInfo = func(localpath string) (os.FileInfo, error) {
-	return os.Stat(localpath)
+	return sys.Files.Stat(localpath)
 }
 
 type BlobberAllocationStats struct {
@@ -223,7 +223,6 @@ func (a *Allocation) InitAllocation() {
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers)
-	InitReadCounter()
 	a.initialized = true
 }
 
@@ -447,7 +446,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 	}
 	thumbnailSize := int64(0)
 	if len(thumbnailpath) > 0 {
-		fileInfo, err := os.Stat(thumbnailpath)
+		fileInfo, err := sys.Files.Stat(thumbnailpath)
 		if err != nil {
 			thumbnailSize = 0
 			thumbnailpath = ""
@@ -573,19 +572,23 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	if !a.isInitialized() {
 		return notInitialized
 	}
-	if stat, err := os.Stat(localPath); err == nil {
+	if stat, err := sys.Files.Stat(localPath); err == nil {
 		if !stat.IsDir() {
 			return fmt.Errorf("Local path is not a directory '%s'", localPath)
 		}
 		localPath = strings.TrimRight(localPath, "/")
 		_, rFile := filepath.Split(remotePath)
 		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
-		if _, err := os.Stat(localPath); err == nil {
+		if _, err := sys.Files.Stat(localPath); err == nil {
 			return fmt.Errorf("Local file already exists '%s'", localPath)
 		}
 	}
-	lPath, _ := filepath.Split(localPath)
-	os.MkdirAll(lPath, 0744)
+	dir, _ := filepath.Split(localPath)
+	if dir != "" {
+		if err := sys.Files.MkdirAll(dir, 0744); err != nil {
+			return err
+		}
+	}
 
 	if len(a.Blobbers) == 0 {
 		return noBLOBBERS
@@ -714,6 +717,35 @@ func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType
 	oTreeReq.consensusThresh = float32(a.DataShards) / oTreeReq.fullconsensus
 
 	return oTreeReq.GetRefs()
+}
+
+func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit int) (*RecentlyAddedRefResult, error) {
+	if !a.isInitialized() {
+		return nil, notInitialized
+	}
+
+	if page < 1 {
+		return nil, errors.New("invalid_params",
+			fmt.Sprintf("page value should be greater than or equal to 1."+
+				"Got page: %d", page))
+	}
+
+	offset := int64(page-1) * int64(pageLimit)
+	req := &RecentlyAddedRefRequest{
+		allocationID: a.ID,
+		allocationTx: a.Tx,
+		blobbers:     a.Blobbers,
+		offset:       offset,
+		fromDate:     fromDate,
+		ctx:          a.ctx,
+		wg:           &sync.WaitGroup{},
+		pageLimit:    pageLimit,
+		Consensus: Consensus{
+			fullconsensus:   a.fullconsensus,
+			consensusThresh: float32(a.DataShards) / a.fullconsensus,
+		},
+	}
+	return req.GetRecentlyAddedRefs()
 }
 
 func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
@@ -860,9 +892,14 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 		return notInitialized
 	}
 
-	if len(path) == 0 {
+	if path == "" {
 		return errors.New("invalid_path", "Invalid path for the list")
 	}
+
+	if path == "/" {
+		return errors.New("invalid_operation", "cannot rename root path")
+	}
+
 	path = zboxutil.RemoteClean(path)
 	isabs := zboxutil.IsRemoteAbs(path)
 	if !isabs {
@@ -875,9 +912,9 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
 	req.newName = destName
-	req.fullconsensus = a.fullconsensus
-	req.consensusThresh = a.consensusThreshold
-	req.consensusRequiredForOk = a.consensusOK
+	req.consensus.fullconsensus = a.fullconsensus
+	req.consensus.consensusThresh = a.consensusThreshold
+	req.consensus.consensusRequiredForOk = a.consensusOK
 	req.ctx = a.ctx
 	req.remotefilepath = path
 	req.renameMask = 0
@@ -1183,14 +1220,14 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 		return errors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
 	}
 
-	if stat, err := os.Stat(localPath); err == nil {
+	if stat, err := sys.Files.Stat(localPath); err == nil {
 		if !stat.IsDir() {
 			return fmt.Errorf("Local path is not a directory '%s'", localPath)
 		}
 		localPath = strings.TrimRight(localPath, "/")
 		_, rFile := filepath.Split(remoteFilename)
 		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
-		if _, err := os.Stat(localPath); err == nil {
+		if _, err := sys.Files.Stat(localPath); err == nil {
 			return fmt.Errorf("Local file already exists '%s'", localPath)
 		}
 	}
