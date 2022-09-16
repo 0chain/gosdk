@@ -32,6 +32,16 @@ show interactive sdk logs. default is hidden.
 **Output**:
   > N/A
 
+
+### zcn.sdk.getUSDRate
+get USD rate by token symbol(eg zcn, eth)
+
+**Input**:
+  > symbol string
+
+**Output**:
+  > float64
+
 ### zcn.jsProxy.setWallet 
 set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWallet` to set wallet on go.
 
