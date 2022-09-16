@@ -26,7 +26,7 @@ type WriteMarker struct {
 }
 
 func (wm *WriteMarker) GetHashData() string {
-	sigData := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v", wm.AllocationRoot, wm.PreviousAllocationRoot, wm.AllocationID, wm.BlobberID, wm.ClientID, wm.Size, wm.Timestamp)
+	sigData := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v:%v", wm.AllocationRoot, wm.PreviousAllocationRoot, wm.AllocationID, wm.BlobberID, wm.ClientID, wm.Size, wm.Timestamp, wm.Operation)
 	return sigData
 }
 
