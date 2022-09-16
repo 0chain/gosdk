@@ -281,7 +281,7 @@ func (b0 *HerumiScheme) generateKeys(password string) (*Wallet, error) {
 	w.DateCreated = time.Now().Format(time.RFC3339)
 
 	// Revert the Random function to default
-	//BlsSignerInstance.SetRandFunc(nil)
+	BlsSignerInstance.SetRandFunc(nil)
 	return w, nil
 }
 
