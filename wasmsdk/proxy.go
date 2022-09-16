@@ -127,6 +127,7 @@ func main() {
 				"getEncryptedPublicKey": GetEncryptedPublicKey,
 				"hideLogs":              hideLogs,
 				"showLogs":              showLogs,
+				"getUSDRate":            getUSDRate,
 
 				//blobber
 				"delete":         Delete,
