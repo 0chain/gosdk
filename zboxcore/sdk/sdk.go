@@ -598,7 +598,7 @@ const (
 	NonExistent
 )
 
-var statusString = []string{"active", "inactive", "shut_down", "killed", "non_existent"}
+var statusString = []string{"unknown", "active", "inactive", "shut_down", "killed", "non_existent"}
 
 func (p Status) String() string {
 	return statusString[p]
@@ -621,6 +621,8 @@ type Blobber struct {
 	TotalStake        int64                        `json:"total_stake"`
 	IsShutDown        bool                         `json:"is_shut_down"`
 	IsKilled          bool                         `json:"is_killed"`
+	Status            Status                       `json:"status"`
+	StatusReason      string                       `json:"status_reason"`
 }
 
 type Validator struct {
@@ -636,6 +638,8 @@ type Validator struct {
 	IsShutDown      bool             `json:"is_shut_down"`
 	IsKilled        bool             `json:"is_killed"`
 	LastHealthCheck common.Timestamp `json:"last_health_check"`
+	Status          Status           `json:"status"`
+	StatusReason    string           `json:"status_reason"`
 }
 
 func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
