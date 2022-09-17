@@ -127,26 +127,28 @@ func main() {
 				"getEncryptedPublicKey": GetEncryptedPublicKey,
 				"hideLogs":              hideLogs,
 				"showLogs":              showLogs,
+				"getUSDRate":            getUSDRate,
 
 				//blobber
-				"delete":      Delete,
-				"rename":      Rename,
-				"copy":        Copy,
-				"move":        Move,
-				"share":       Share,
-				"download":    Download,
-				"upload":      Upload,
-				"listObjects": listObjects,
-				"createDir":   createDir,
+				"delete":         Delete,
+				"rename":         Rename,
+				"copy":           Copy,
+				"move":           Move,
+				"share":          Share,
+				"download":       Download,
+				"upload":         Upload,
+				"listObjects":    listObjects,
+				"createDir":      createDir,
+				"downloadBlocks": downloadBlocks,
 
 				// zcn txn
 				"commitFileMetaTxn":   CommitFileMetaTxn,
 				"commitFolderMetaTxn": CommitFolderMetaTxn,
 
 				// player
-				"play":           Play,
-				"stop":           Stop,
-				"getNextSegment": GetNextSegment,
+				"play":           play,
+				"stop":           stop,
+				"getNextSegment": getNextSegment,
 
 				// wallet
 				"createWallet": createWallet,
@@ -156,6 +158,8 @@ func main() {
 				"getAllocationBlobbers": getAllocationBlobbers,
 				"getBlobberIds":         getBlobberIds,
 				"listAllocations":       listAllocations,
+				"transferAllocation":    transferAllocation,
+				"freezeAllocation":      freezeAllocation,
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,
@@ -163,6 +167,8 @@ func main() {
 				//swap
 				"setSwapWallets": setSwapWallets,
 				"swapToken":      swapToken,
+				"initBridge":     initBridge,
+				"mintZCN":        mintZCN,
 
 				//zcn
 				"getWalletBalance": getWalletBalance,
@@ -176,7 +182,7 @@ func main() {
 
 	}
 
-	showLogs()
+	hideLogs()
 
 	<-make(chan bool)
 

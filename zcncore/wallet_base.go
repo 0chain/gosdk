@@ -510,6 +510,10 @@ func SetWallet(w zcncrypto.Wallet, splitKeyWallet bool) error {
 	return nil
 }
 
+func GetWalletRaw() zcncrypto.Wallet {
+	return _config.wallet
+}
+
 // SetWalletInfo should be set before any transaction or client specific APIs
 // splitKeyWallet parameter is valid only if SignatureScheme is "BLS0Chain"
 func SetWalletInfo(w string, splitKeyWallet bool) error {

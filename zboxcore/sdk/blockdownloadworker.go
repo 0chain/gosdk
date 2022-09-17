@@ -19,6 +19,11 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
+const (
+	NotEnoughTokens = "not_enough_tokens"
+	LockExists      = "lock_exists"
+)
+
 type BlockDownloadRequest struct {
 	blobber            *blockchain.StorageNode
 	allocationID       string
@@ -155,6 +160,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 		header.ToHeader(httpreq)
 
+		lastBlobberReadCounter := getBlobberReadCtr(req.allocationID, req.blobber.ID)
+
 		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 			if err != nil {
 				return err
@@ -176,9 +183,10 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 						return err
 					}
 
-					if rspData.LatestRM.ReadCounter >= getBlobberReadCtr(req.allocationID, req.blobber.ID) {
+					if rspData.LatestRM.ReadCounter != lastBlobberReadCounter {
 						zlogger.Logger.Info("Will be retrying download")
 						setBlobberReadCtr(req.allocationID, req.blobber.ID, rspData.LatestRM.ReadCounter)
+						lastBlobberReadCounter = rspData.LatestRM.ReadCounter
 						shouldRetry = true
 						return errors.New("stale_read_marker", "readmarker counter is not in sync with latest counter")
 					}
@@ -187,11 +195,18 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 				}
 
-				if bytes.Contains(respBody, []byte("not_enough_tokens")) {
+				if bytes.Contains(respBody, []byte(NotEnoughTokens)) {
 					shouldRetry, retry = false, 3 // don't repeat
 					req.blobber.SetSkip(true)
-					return errors.New("not_enough_tokens", "")
+					return errors.New(NotEnoughTokens, "")
 				}
+
+				if bytes.Contains(respBody, []byte(LockExists)) {
+					zlogger.Logger.Debug("Lock exists error.")
+					shouldRetry = true
+					return errors.New(LockExists, string(respBody))
+				}
+
 				return errors.New("response_error", string(respBody))
 			}
 
@@ -209,7 +224,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				rspData.BlockChunks = req.splitData(respBody, req.chunkSize)
 			}
 
-			incBlobberReadCtr(req.allocationID, req.blobber.ID, req.numBlocks)
+			incBlobberReadCtr(req.allocationID, req.blobber.ID, lastBlobberReadCounter+req.numBlocks)
 			req.result <- &rspData
 			return nil
 		})
@@ -218,6 +233,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			if shouldRetry {
 				retry = 0
 				shouldRetry = false
+				zlogger.Logger.Debug("Retrying for Error occurred: ", err)
 				continue
 			}
 			if retry >= 3 {

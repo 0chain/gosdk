@@ -1,6 +1,7 @@
 package sys
 
 import (
+	"io/fs"
 	"io/ioutil"
 	"os"
 )
@@ -45,4 +46,10 @@ func (dfs *DiskFS) Remove(name string) error {
 //MkdirAll creates a directory named path
 func (dfs *DiskFS) MkdirAll(path string, perm os.FileMode) error {
 	return os.MkdirAll(path, perm)
+}
+
+// Stat returns a FileInfo describing the named file.
+// If there is an error, it will be of type *PathError.
+func (dfs *DiskFS) Stat(name string) (fs.FileInfo, error) {
+	return os.Stat(name)
 }

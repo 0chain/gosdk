@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 )
@@ -233,7 +234,7 @@ func findDelta(rMap map[string]fileInfo, lMap map[string]fileInfo, prevMap map[s
 		if op != LocalDelete {
 			// Skip if it is a directory
 			lAbsPath := filepath.Join(localRootPath, lPath)
-			fInfo, err := os.Stat(lAbsPath)
+			fInfo, err := sys.Files.Stat(lAbsPath)
 			if err != nil {
 				continue
 			}
@@ -272,7 +273,7 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath s
 	// 1. Validate localSycnCachePath
 	if len(lastSyncCachePath) > 0 {
 		// Validate cache path
-		fileInfo, err := os.Stat(lastSyncCachePath)
+		fileInfo, err := sys.Files.Stat(lastSyncCachePath)
 		if err == nil {
 			if fileInfo.IsDir() {
 				return lFdiff, errors.Wrap(err, "invalid file cache.")
@@ -315,7 +316,7 @@ func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath s
 func (a *Allocation) SaveRemoteSnapshot(pathToSave string, remoteExcludePath []string) error {
 	bIsFileExists := false
 	// Validate path
-	fileInfo, err := os.Stat(pathToSave)
+	fileInfo, err := sys.Files.Stat(pathToSave)
 	if err == nil {
 		if fileInfo.IsDir() {
 			return errors.Wrap(err, "invalid file path to save.")

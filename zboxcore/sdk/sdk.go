@@ -364,20 +364,28 @@ func GetTotalStoredData() (map[string]int64, error) {
 }
 
 type stakePoolRequest struct {
-	BlobberID string `json:"blobber_id,omitempty"`
+	ProviderType ProviderType `json:"provider_type,omitempty"`
+	ProviderID   string       `json:"provider_id,omitempty"`
 }
 
 // StakePoolLock locks tokens lack in stake pool
-func StakePoolLock(blobberID string, value, fee uint64) (hash string, nonce int64, err error) {
+func StakePoolLock(providerType ProviderType, providerID string, value, fee uint64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
-	if blobberID == "" {
-		blobberID = client.GetClientID()
+
+	if providerType == 0 {
+		return "", 0, errors.New("stake_pool_lock", "provider is required")
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
+	if providerID == "" {
+		return "", 0, errors.New("stake_pool_lock", "provider_id is required")
+	}
+
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerID,
+	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_STAKE_POOL_LOCK,
 		InputArgs: &spr,
@@ -401,18 +409,23 @@ type StakePoolUnlockUnstake struct {
 // future. The time is maximal time that can be lesser in some cases. To
 // unlock tokens can't be unlocked now, wait the time and unlock them (call
 // this function again).
-func StakePoolUnlock(
-	blobberID string, fee uint64,
-) (unstake bool, nonce int64, err error) {
+func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (unstake bool, nonce int64, err error) {
 	if !sdkInitialized {
 		return false, 0, sdkNotInitialized
 	}
-	if blobberID == "" {
-		blobberID = client.GetClientID()
+
+	if providerType == 0 {
+		return false, 0, errors.New("stake_pool_lock", "provider is required")
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
+	if providerID == "" {
+		return false, 0, errors.New("stake_pool_lock", "provider_id is required")
+	}
+
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerID,
+	}
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_STAKE_POOL_UNLOCK,
