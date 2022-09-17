@@ -621,7 +621,7 @@ type Blobber struct {
 	TotalStake        int64                        `json:"total_stake"`
 	IsShutDown        bool                         `json:"is_shut_down"`
 	IsKilled          bool                         `json:"is_killed"`
-	Status            Status                       `json:"status"`
+	Status            string                       `json:"status"`
 	StatusReason      string                       `json:"status_reason"`
 }
 
@@ -638,7 +638,7 @@ type Validator struct {
 	IsShutDown      bool             `json:"is_shut_down"`
 	IsKilled        bool             `json:"is_killed"`
 	LastHealthCheck common.Timestamp `json:"last_health_check"`
-	Status          Status           `json:"status"`
+	Status          string           `json:"status"`
 	StatusReason    string           `json:"status_reason"`
 }
 
