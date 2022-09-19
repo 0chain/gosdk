@@ -33,7 +33,6 @@ var (
 
 	ErrInvalidChunkSize = errors.New("chunk: chunk size is too small. it must greater than 272 if file is uploaded with encryption")
 
-	ErrUploadConsensusFailed = errors.New("upload_consensus_failed: failed as there was no upload consensus")
 	ErrCommitConsensusFailed = errors.New("commit_consensus_failed: failed as there was no commit consensus")
 )
 
@@ -614,7 +613,7 @@ func (su *ChunkedUpload) processCommit() error {
 			su.allocationObj.deleteFile(su.fileMeta.RemotePath, su.consensus.getConsensus(), su.consensus.getConsensus()) //nolint
 		}
 		if su.statusCallback != nil {
-			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, OpUpload, thrown.New("commit_consensus_failed", "Upload failed as there was no commit consensus"))
+			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, OpUpload, ErrCommitConsensusFailed)
 			return nil
 		}
 	}
