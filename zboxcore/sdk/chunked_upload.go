@@ -80,6 +80,7 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	}
 
 	var uploadMask zboxutil.Uint128 = zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1)
+	fullConsensus, threshConsensus, consensusOK := allocationObj.getConsensuses()
 	if isRepair {
 		found, repairRequired, _, err := allocationObj.RepairRequired(fileMeta.RemotePath)
 		if err != nil {
@@ -91,6 +92,10 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 		}
 
 		uploadMask = found.Not().And(uploadMask)
+
+		fullConsensus = float32(uploadMask.CountOnes())
+		threshConsensus = 100
+		consensusOK = 100
 	}
 
 	su := &ChunkedUpload{
@@ -106,8 +111,7 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 		encryptOnUpload: false,
 	}
 
-	fullConsensus, consensusThreshold, consensusOK := allocationObj.getConsensuses()
-	su.consensus.Init(consensusThreshold, fullConsensus, consensusOK)
+	su.consensus.Init(threshConsensus, fullConsensus, consensusOK)
 
 	if isUpdate {
 		su.httpMethod = http.MethodPut
@@ -502,7 +506,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int, fileS
 		}
 	}
 
-	wait := make(chan error, num)
+	wait := make(chan UploadError, num)
 	defer close(wait)
 
 	ctx, cancel := context.WithCancel(context.TODO())
@@ -532,20 +536,25 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int, fileS
 			return err
 		}
 
-		go func(b *ChunkedUploadBlobber, buf *bytes.Buffer, form ChunkedUploadFormMetadata) {
+		go func(idx uint64, b *ChunkedUploadBlobber, buf *bytes.Buffer, form ChunkedUploadFormMetadata) {
 			err := b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, buf, form)
 
 			// channel is not closed
 			if ctx.Err() == nil {
-				wait <- err
+				wait <- UploadError{
+					Error:      err,
+					BlobberIdx: pos,
+				}
 			}
-		}(blobber, body, formData)
+		}(pos, blobber, body, formData)
 	}
-	var err error
+	var err UploadError
 	for i := 0; i < num; i++ {
 		err = <-wait
-		if err != nil {
-			logger.Logger.Error("Upload: ", err)
+		if err.Error != nil {
+			logger.Logger.Error("Upload: ", err.Error)
+			//stop to upload new chunks to failed blobber
+			su.uploadMask = su.uploadMask.Sub64(err.BlobberIdx)
 		}
 	}
 
@@ -604,6 +613,7 @@ func (su *ChunkedUpload) processCommit() error {
 
 		if err != nil {
 			logger.Logger.Error("Commit: ", err)
+
 		}
 	}
 
@@ -623,4 +633,9 @@ func (su *ChunkedUpload) processCommit() error {
 	}
 
 	return nil
+}
+
+type UploadError struct {
+	BlobberIdx uint64
+	Error      error
 }
