@@ -570,9 +570,6 @@ func (su *ChunkedUpload) processCommit() error {
 	su.consensus.Reset()
 
 	num := su.uploadMask.CountOnes()
-	if su.isRepair {
-		num = num - su.uploadMask.TrailingZeros()
-	}
 
 	wait := make(chan error, num)
 	defer close(wait)
