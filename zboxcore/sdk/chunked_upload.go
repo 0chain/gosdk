@@ -33,7 +33,7 @@ var (
 
 	ErrInvalidChunkSize = errors.New("chunk: chunk size is too small. it must greater than 272 if file is uploaded with encryption")
 
-	ErrCommitConsensusFailed = errors.New("commit_consensus_failed: failed as there was no commit consensus")
+	ErrCommitConsensusFailed = errors.New("commit_consensus_failed: Upload failed as there was no commit consensus")
 )
 
 // DefaultChunkSize default chunk size for file and thumbnail
