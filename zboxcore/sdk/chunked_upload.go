@@ -418,15 +418,6 @@ func (su *ChunkedUpload) Start() error {
 	if su.consensus.isConsensusOk() {
 		logger.Logger.Info("Completed the upload. Submitting for commit")
 
-		err := su.writeMarkerMutex.Lock(context.TODO(), su.progress.ConnectionID)
-		defer su.writeMarkerMutex.Unlock(context.TODO(), su.progress.ConnectionID) //nolint: errcheck
-		if err != nil {
-			if su.statusCallback != nil {
-				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
-			}
-			return err
-		}
-
 		return su.processCommit()
 	}
 
@@ -564,6 +555,21 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int, fileS
 
 // processCommit commit shard upload on its blobber
 func (su *ChunkedUpload) processCommit() error {
+	shouldUnlock := true
+	err := su.writeMarkerMutex.Lock(context.TODO(), su.progress.ConnectionID)
+	defer func() {
+		if shouldUnlock {
+			su.writeMarkerMutex.Unlock(context.TODO(), su.progress.ConnectionID) //nolint: errcheck
+		}
+	}()
+
+	if err != nil {
+		if su.statusCallback != nil {
+			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
+		}
+		return err
+	}
+
 	defer su.removeProgress()
 
 	logger.Logger.Info("Submitting for commit")
@@ -603,8 +609,6 @@ func (su *ChunkedUpload) processCommit() error {
 		}(blobber)
 	}
 
-	var err error
-
 	for i := 0; i < num; i++ {
 		err = <-wait
 
@@ -616,6 +620,8 @@ func (su *ChunkedUpload) processCommit() error {
 	if !su.consensus.isConsensusOk() {
 		if su.consensus.getConsensus() != 0 {
 			logger.Logger.Info("Commit consensus failed, Deleting remote file....")
+			su.writeMarkerMutex.Unlock(context.TODO(), su.progress.ConnectionID) //nolint: errcheck
+			shouldUnlock = false
 			su.allocationObj.deleteFile(su.fileMeta.RemotePath, su.consensus.getConsensus(), su.consensus.getConsensus()) //nolint
 		}
 		if su.statusCallback != nil {
