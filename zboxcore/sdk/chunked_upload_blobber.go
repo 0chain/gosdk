@@ -92,10 +92,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *Chunk
 	}
 
 	//logger.Logger.Debug(sb.blobber.Baseurl, su.fileMeta.RemotePath, " uploaded")
-
-	if isFinal {
-		su.consensus.Done()
-	}
+	su.consensus.Done()
 
 	//fixed fileRef
 	if err == nil {

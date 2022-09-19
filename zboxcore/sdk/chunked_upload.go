@@ -414,18 +414,9 @@ func (su *ChunkedUpload) Start() error {
 		}
 	}
 
-	if su.consensus.isConsensusOk() {
-		logger.Logger.Info("Completed the upload. Submitting for commit")
+	logger.Logger.Info("Completed the upload. Submitting for commit")
 
-		return su.processCommit()
-	}
-
-	err := fmt.Errorf("Upload failed: Consensus_rate:%f, expected:%f", su.consensus.getConsensusRate(), su.consensus.getConsensusRequiredForOk())
-	if su.statusCallback != nil {
-		su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, err)
-	}
-
-	return err
+	return su.processCommit()
 
 }
 
@@ -492,6 +483,8 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int, fileS
 	ctx, cancel := context.WithCancel(context.TODO())
 	defer cancel()
 
+	su.consensus.Reset()
+
 	encryptedKey := ""
 	if su.fileEncscheme != nil {
 		encryptedKey = su.fileEncscheme.GetEncryptedKey()
@@ -538,7 +531,21 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int, fileS
 		}
 	}
 
-	return nil
+	if su.consensus.isConsensusOk() {
+		return nil
+	}
+
+	// all of blobber are failed. it should be rejected by rule
+	if su.consensus.getConsensus() == 0 {
+		return err.Error
+	}
+
+	errConsensus := fmt.Errorf("Upload failed: Consensus_rate:%f, expected:%f", su.consensus.getConsensusRate(), su.consensus.getConsensusRequiredForOk())
+	if su.statusCallback != nil {
+		su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, OpUpload, errConsensus)
+	}
+
+	return errConsensus
 
 }
 
