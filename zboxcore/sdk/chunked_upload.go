@@ -32,6 +32,9 @@ var (
 	}
 
 	ErrInvalidChunkSize = errors.New("chunk: chunk size is too small. it must greater than 272 if file is uploaded with encryption")
+
+	ErrUploadConsensusFailed = errors.New("upload_consensus_failed: failed as there was no upload consensus")
+	ErrCommitConsensusFailed = errors.New("commit_consensus_failed: failed as there was no commit consensus")
 )
 
 // DefaultChunkSize default chunk size for file and thumbnail
@@ -103,6 +106,9 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 		chunkNumber:     1,
 		encryptOnUpload: false,
 	}
+
+	fullConsensus, consensusThreshold, consensusOK := allocationObj.getConsensuses()
+	su.consensus.Init(consensusThreshold, fullConsensus, consensusOK)
 
 	if isUpdate {
 		su.httpMethod = http.MethodPut
@@ -468,7 +474,7 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 			data.fileShards = make([]blobberShards, len(chunk.Fragments))
 		}
 
-		// concact blobber's fragments
+		// concat blobber's fragments
 		for i, v := range chunk.Fragments {
 			//blobber i
 			data.fileShards[i] = append(data.fileShards[i], v)
@@ -540,7 +546,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int, fileS
 	for i := 0; i < num; i++ {
 		err = <-wait
 		if err != nil {
-			return err
+			logger.Logger.Error("Upload: ", err)
 		}
 	}
 
@@ -599,7 +605,6 @@ func (su *ChunkedUpload) processCommit() error {
 
 		if err != nil {
 			logger.Logger.Error("Commit: ", err)
-			break
 		}
 	}
 
