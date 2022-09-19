@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"path/filepath"
-	"strconv"
 
 	"errors"
 
@@ -33,7 +32,7 @@ var (
 
 	ErrInvalidChunkSize = errors.New("chunk: chunk size is too small. it must greater than 272 if file is uploaded with encryption")
 
-	ErrCommitConsensusFailed = errors.New("commit_consensus_failed: Upload failed as there was no commit consensus")
+	ErrCommitConsensusFailed = thrown.New("commit_consensus_failed", "Upload failed as there was no commit consensus")
 )
 
 // DefaultChunkSize default chunk size for file and thumbnail
@@ -486,17 +485,7 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 //processUpload process upload fragment to its blobber
 func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int, fileShards []blobberShards, thumbnailShards blobberShards, isFinal bool, uploadLength int64) error {
 
-	num := len(su.blobbers)
-	if su.isRepair {
-		num = len(su.blobbers) - su.uploadMask.TrailingZeros()
-	} else {
-		consensus := su.allocationObj.DataShards + su.allocationObj.ParityShards
-
-		if num != consensus {
-			return thrown.Throw(constants.ErrInvalidParameter, "len(su.blobbers) requires "+strconv.Itoa(num)+", not "+strconv.Itoa(len(su.blobbers)))
-		}
-	}
-
+	num := su.uploadMask.CountOnes()
 	wait := make(chan UploadError, num)
 	defer close(wait)
 
