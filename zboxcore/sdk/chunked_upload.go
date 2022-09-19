@@ -569,7 +569,7 @@ func (su *ChunkedUpload) processCommit() error {
 	logger.Logger.Info("Submitting for commit")
 	su.consensus.Reset()
 
-	num := su.allocationObj.DataShards + su.allocationObj.ParityShards
+	num := su.uploadMask.CountOnes()
 	if su.isRepair {
 		num = num - su.uploadMask.TrailingZeros()
 	}
@@ -585,7 +585,6 @@ func (su *ChunkedUpload) processCommit() error {
 		pos = uint64(i.TrailingZeros())
 
 		blobber := su.blobbers[pos]
-
 		//fixed numBlocks
 		blobber.fileRef.ChunkSize = su.chunkSize
 		blobber.fileRef.NumBlocks = int64(su.progress.ChunkIndex + 1)
@@ -608,12 +607,12 @@ func (su *ChunkedUpload) processCommit() error {
 	}
 
 	var err error
+
 	for i := 0; i < num; i++ {
 		err = <-wait
 
 		if err != nil {
 			logger.Logger.Error("Commit: ", err)
-
 		}
 	}
 
