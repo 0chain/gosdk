@@ -115,7 +115,7 @@ func TestWriteMarkerMutext_Some_Blobbers_Down_Should_Lock(t *testing.T) {
 		ID:           "TestWriteMarkerMutext",
 		Tx:           "TestWriteMarkerMutext",
 		DataShards:   2,
-		ParityShards: 1,
+		ParityShards: 2,
 	}
 	setupMockAllocation(t, a)
 
@@ -137,7 +137,7 @@ func TestWriteMarkerMutext_Some_Blobbers_Down_Should_Lock(t *testing.T) {
 	server := dev.NewBlobberServer(m)
 	defer server.Close()
 
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 4; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 			ID:      "write_marker_mutex_" + strconv.Itoa(i),
 			Baseurl: server.URL,
