@@ -63,7 +63,7 @@ func CreateWriteMarkerMutex(client *client.Client, allocationObj *Allocation) (*
 	}, nil
 }
 
-//the minimum of M blobbers must accpet the marker
+//the minimum of M blobbers must accept the marker
 func (m *WriteMarkerMutex) getMinimumAccept(T int) int {
 
 	//protocol detail is on https://github.com/0chain/blobber/wiki/Features-Upload#upload
