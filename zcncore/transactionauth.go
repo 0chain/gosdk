@@ -167,16 +167,11 @@ func (ta *TransactionWithAuth) ReadPoolLock(allocID, blobberID string,
 }
 
 // ReadPoolUnlock for current user and given pool.
-func (ta *TransactionWithAuth) ReadPoolUnlock(poolID string, fee uint64) (
+func (ta *TransactionWithAuth) ReadPoolUnlock(fee uint64) (
 	err error) {
 
-	type unlockRequest struct {
-		PoolID string `json:"pool_id"`
-	}
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_READ_POOL_UNLOCK, &unlockRequest{
-			PoolID: poolID,
-		}, 0)
+		transaction.STORAGESC_READ_POOL_UNLOCK, nil, 0)
 	if err != nil {
 		logging.Error(err)
 		return
@@ -208,18 +203,15 @@ func (ta *TransactionWithAuth) StakePoolLock(blobberID string,
 	return
 }
 
-// StakePoolUnlock by blobberID and poolID.
-func (ta *TransactionWithAuth) StakePoolUnlock(blobberID, poolID string,
-	fee uint64) (err error) {
+// StakePoolUnlock by blobberID
+func (ta *TransactionWithAuth) StakePoolUnlock(blobberID string, fee uint64) (err error) {
 
 	type stakePoolRequest struct {
 		BlobberID string `json:"blobber_id"`
-		PoolID    string `json:"pool_id"`
 	}
 
 	var spr stakePoolRequest
 	spr.BlobberID = blobberID
-	spr.PoolID = poolID
 
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
@@ -317,15 +309,14 @@ func (ta *TransactionWithAuth) WritePoolLock(allocID, blobberID string,
 }
 
 // WritePoolUnlock for current user and given pool.
-func (ta *TransactionWithAuth) WritePoolUnlock(poolID string, fee uint64) (
-	err error) {
-
+func (ta *TransactionWithAuth) WritePoolUnlock(allocID string, fee uint64) (err error) {
 	type unlockRequest struct {
-		PoolID string `json:"pool_id"`
+		AllocationID string `json:"allocation_id"`
 	}
+
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_WRITE_POOL_UNLOCK, &unlockRequest{
-			PoolID: poolID,
+			AllocationID: allocID,
 		}, 0)
 	if err != nil {
 		logging.Error(err)
@@ -336,10 +327,9 @@ func (ta *TransactionWithAuth) WritePoolUnlock(poolID string, fee uint64) (
 	return
 }
 
-func (ta *TransactionWithAuth) MinerSCCollectReward(providerId, poolId string, providerType Provider) error {
+func (ta *TransactionWithAuth) MinerSCCollectReward(providerId string, providerType Provider) error {
 	pr := &scCollectReward{
 		ProviderId:   providerId,
-		PoolId:       poolId,
 		ProviderType: int(providerType),
 	}
 	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
@@ -352,10 +342,9 @@ func (ta *TransactionWithAuth) MinerSCCollectReward(providerId, poolId string, p
 	return err
 }
 
-func (ta *TransactionWithAuth) StorageSCCollectReward(providerId, poolId string, providerType Provider) error {
+func (ta *TransactionWithAuth) StorageSCCollectReward(providerId string, providerType Provider) error {
 	pr := &scCollectReward{
 		ProviderId:   providerId,
-		PoolId:       poolId,
 		ProviderType: int(providerType),
 	}
 	err := ta.t.createSmartContractTxn(StorageSmartContractAddress,
