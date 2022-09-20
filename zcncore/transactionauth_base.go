@@ -250,12 +250,12 @@ func (ta *TransactionWithAuth) VestingDelete(poolID string) (err error) {
 // miner sc
 //
 
-func (ta *TransactionWithAuth) MinerSCUnlock(nodeID, poolID string) (
+func (ta *TransactionWithAuth) MinerSCUnlock(nodeID string) (
 	err error) {
 
-	var mscul MinerSCUnlock
-	mscul.ID = nodeID
-	mscul.PoolID = poolID
+	mscul := MinerSCUnlock {
+		ID: nodeID,
+	}
 
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_UNLOCK, &mscul, 0)

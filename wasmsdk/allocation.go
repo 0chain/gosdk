@@ -37,9 +37,7 @@ func getAllocationBlobbers(preferredBlobberURLs []string,
 		return sdk.GetBlobberIds(preferredBlobberURLs)
 	}
 
-	c := client.GetClient()
-
-	return sdk.GetAllocationBlobbers(c.ClientID, c.ClientKey, dataShards, parityShards, size, expiry, sdk.PriceRange{
+	return sdk.GetAllocationBlobbers(dataShards, parityShards, size, expiry, sdk.PriceRange{
 		Min: uint64(minReadPrice),
 		Max: uint64(maxReadPrice),
 	}, sdk.PriceRange{

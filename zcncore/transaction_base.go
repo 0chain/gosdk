@@ -78,7 +78,7 @@ type TransactionScheme interface {
 
 	// Miner SC
 
-	MinerSCUnlock(minerID, poolID string) error
+	MinerSCUnlock(minerID string) error
 }
 
 
@@ -736,7 +736,6 @@ func (t *Transaction) VestingDelete(poolID string) (err error) {
 
 type scCollectReward struct {
 	ProviderId   string `json:"provider_id"`
-	PoolId       string `json:"pool_id"`
 	ProviderType int    `json:"provider_type"`
 }
 
@@ -746,13 +745,12 @@ type MinerSCLock struct {
 
 type MinerSCUnlock struct {
 	ID     string `json:"id"`
-	PoolID string `json:"pool_id"`
 }
 
-func (t *Transaction) MinerSCUnlock(nodeID, poolID string) (err error) {
-	var mscul MinerSCUnlock
-	mscul.ID = nodeID
-	mscul.PoolID = poolID
+func (t *Transaction) MinerSCUnlock(nodeID string) (err error) {
+	mscul := MinerSCUnlock {
+		ID: nodeID,
+	}
 
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_UNLOCK, &mscul, 0)
