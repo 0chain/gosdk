@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math"
 	"net"
 	"net/http"
 	"net/url"
@@ -64,6 +63,20 @@ func CreateWriteMarkerMutex(client *client.Client, allocationObj *Allocation) (*
 	}, nil
 }
 
+//the minimum of M blobbers must accpet the marker
+func (m *WriteMarkerMutex) getMinimumAccept(T int) int {
+
+	//protocol detail is on https://github.com/0chain/blobber/wiki/Features-Upload#upload
+	//M := int(math.Ceil(float64(T) / float64(3) * float64(2)))
+
+	if m.allocationObj.ParityShards == 0 {
+		return m.allocationObj.DataShards
+	}
+
+	return m.allocationObj.DataShards + 1
+
+}
+
 // Lock acquire WriteMarker lock from blobbers
 func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error {
 	if m == nil {
@@ -93,8 +106,7 @@ func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error 
 		urls[i] = builder.String()
 	}
 
-	//protocol detail is on https://github.com/0chain/blobber/wiki/Features-Upload#upload
-	M := int(math.Ceil(float64(T) / float64(3) * float64(2))) //the minimum of M blobbers must accpet the marker
+	M := m.getMinimumAccept(T)
 
 	//retry 3 times
 	for retry := 0; ; retry++ {
