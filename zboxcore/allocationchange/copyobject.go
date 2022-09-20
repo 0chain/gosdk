@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
@@ -89,4 +90,8 @@ func (n *CopyFileChange) GetAffectedPath() string {
 
 func (n *CopyFileChange) GetSize() int64 {
 	return n.ObjectTree.GetSize()
+}
+
+func (n *CopyFileChange) GetOperation() string {
+	return constants.FileOperationCopy
 }

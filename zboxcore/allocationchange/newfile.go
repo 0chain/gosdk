@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
@@ -59,4 +60,8 @@ func (n *NewFileChange) GetSize() int64 {
 		return n.File.Size
 	}
 	return int64(0)
+}
+
+func (n *NewFileChange) GetOperation() string {
+	return constants.FileOperationInsert
 }

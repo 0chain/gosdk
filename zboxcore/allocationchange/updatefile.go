@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
@@ -63,4 +64,8 @@ func (n *UpdateFileChange) GetSize() int64 {
 		return n.NewFile.Size - n.OldFile.Size
 	}
 	return int64(0)
+}
+
+func (n *UpdateFileChange) GetOperation() string {
+	return constants.FileOperationUpdate
 }

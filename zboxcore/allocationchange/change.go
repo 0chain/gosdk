@@ -16,6 +16,7 @@ type AllocationChange interface {
 	ProcessChange(rootRef *fileref.Ref) error
 	GetAffectedPath() string
 	GetSize() int64
+	GetOperation() string
 }
 
 func getSubDirs(p string) []string {

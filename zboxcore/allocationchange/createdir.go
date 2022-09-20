@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
@@ -60,4 +61,8 @@ func (d *DirCreateChange) GetAffectedPath() string {
 
 func (d *DirCreateChange) GetSize() int64 {
 	return 0
+}
+
+func (n *DirCreateChange) GetOperation() string {
+	return constants.FileOperationCreateDir
 }

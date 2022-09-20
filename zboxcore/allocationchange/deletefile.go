@@ -4,6 +4,7 @@ import (
 	"path"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
@@ -65,4 +66,8 @@ func (n *DeleteFileChange) GetSize() int64 {
 		return 0 - n.ObjectTree.GetSize()
 	}
 	return int64(0)
+}
+
+func (n *DeleteFileChange) GetOperation() string {
+	return constants.FileOperationDelete
 }

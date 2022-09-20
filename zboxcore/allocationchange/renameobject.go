@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
@@ -90,4 +91,8 @@ func (n *RenameFileChange) GetAffectedPath() string {
 
 func (n *RenameFileChange) GetSize() int64 {
 	return int64(0)
+}
+
+func (n *RenameFileChange) GetOperation() string {
+	return constants.FileOperationRename
 }
