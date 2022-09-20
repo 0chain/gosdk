@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net"
 	"net/http"
 	"net/url"
@@ -67,13 +68,21 @@ func CreateWriteMarkerMutex(client *client.Client, allocationObj *Allocation) (*
 func (m *WriteMarkerMutex) getMinimumAccept(T int) int {
 
 	//protocol detail is on https://github.com/0chain/blobber/wiki/Features-Upload#upload
-	//M := int(math.Ceil(float64(T) / float64(3) * float64(2)))
+	M := int(math.Ceil(float64(T) / float64(3) * float64(2)))
 
 	if m.allocationObj.ParityShards == 0 {
+		if M < m.allocationObj.DataShards {
+			return M
+		}
 		return m.allocationObj.DataShards
 	}
 
-	return m.allocationObj.DataShards + 1
+	d := m.allocationObj.DataShards + 1
+	if M < d {
+		return d
+	}
+
+	return d
 
 }
 
