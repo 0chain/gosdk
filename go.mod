@@ -3,6 +3,7 @@ module github.com/0chain/gosdk
 go 1.18
 
 require (
+	github.com/0chain/common v0.0.5
 	github.com/0chain/errors v1.0.3
 	github.com/0chain/common v0.0.5
 	github.com/btcsuite/btcd v0.23.1
@@ -12,7 +13,6 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/gorilla/mux v1.8.0
 	github.com/h2non/filetype v1.1.3
-	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/go-retryablehttp v0.7.1
 	github.com/herumi/bls-go-binary v1.0.1-0.20220103075647-4e46f4fe2af2
 	github.com/klauspost/reedsolomon v1.10.0
@@ -57,6 +57,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/hashicorp/go-bexpr v0.1.10 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
