@@ -97,6 +97,7 @@ func (req *RenameRequest) renameBlobberObject(
 		}
 
 		if resp.StatusCode == http.StatusOK {
+			req.consensus.Done()
 			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " renamed.")
 			return
 		}
@@ -143,7 +144,7 @@ func (req *RenameRequest) ProcessRename() error {
 	if !req.consensus.isConsensusOk() {
 		return errors.New("consensus_not_met",
 			fmt.Sprintf("Rename failed. Required consensus %d got %d",
-				req.consensus.consensus, req.consensus.consensusThresh))
+				req.consensus.consensusThresh, req.consensus.consensus))
 	}
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)

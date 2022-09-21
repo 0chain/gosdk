@@ -116,9 +116,11 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 				}, nil)
 			},
+			wantErr: true,
+			errMsg:  "response_error: ",
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(0), req.renameMask)
+				require.Equal(0, req.renameMask.CountOnes())
 				require.Equal(0, req.consensus.consensus)
 			},
 		},
@@ -188,7 +190,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			},
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(1), req.renameMask)
+				require.Equal(4, req.renameMask.CountOnes())
 				require.Equal(1, req.consensus.consensus)
 			},
 		},
@@ -207,7 +209,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 					fullconsensus:   4,
 				},
 				ctx:          context.TODO(),
-				renameMask:   zboxutil.NewUint128(0),
+				renameMask:   zboxutil.NewUint128(1).Lsh(uint64(4)).Sub64(1),
 				maskMU:       &sync.Mutex{},
 				connectionID: mockConnectionId,
 				newName:      mockNewName,
@@ -216,7 +218,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 				Baseurl: tt.name,
 			})
 			_, err := req.renameBlobberObject(req.blobbers[0], 0)
-			require.EqualValues(tt.wantErr, err != nil)
+			require.EqualValues(tt.wantErr, err != nil, "Error: ", err)
 			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))
 				return
@@ -287,6 +289,13 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 				}(),
 				Body: ioutil.NopCloser(bytes.NewReader([]byte(""))),
 			}, nil)
+
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return req.Method == "DELETE" &&
+					strings.Contains(req.URL.String(), testName+url)
+			})).Return(&http.Response{
+				StatusCode: http.StatusOK,
+			}, nil)
 		}
 
 		commitChan = make(map[string]chan *CommitRequest)
@@ -355,7 +364,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			wantErr:     false,
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(15), req.renameMask)
+				require.Equal(4, req.renameMask.CountOnes())
 				require.Equal(4, req.consensus.consensus)
 			},
 		},
@@ -367,7 +376,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			wantErr:     false,
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(7), req.renameMask)
+				require.Equal(3, req.renameMask.CountOnes())
 				require.Equal(3, req.consensus.consensus)
 			},
 		},
@@ -377,7 +386,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			numCorrect:  2,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "rename failed: Commit consensus failed. Error: ",
+			errMsg:      "consensus_not_met",
 		},
 		{
 			name:        "Test_All_Blobber_Error_On_Rename_Failure",
@@ -385,7 +394,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			numCorrect:  0,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "rename failed: Commit consensus failed. Error: ",
+			errMsg:      "consensus_not_met",
 		},
 	}
 	for _, tt := range tests {
@@ -435,7 +444,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 					fullconsensus:   4,
 				},
 				ctx:          context.TODO(),
-				renameMask:   zboxutil.NewUint128(0),
+				renameMask:   zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
 				maskMU:       &sync.Mutex{},
 				connectionID: mockConnectionId,
 				newName:      mockNewName,
@@ -445,7 +454,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			err := req.ProcessRename()
 			require.EqualValues(tt.wantErr, err != nil, err)
 			if err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(err))
+				require.Contains(errors.Top(err), tt.errMsg)
 				return
 			}
 			if tt.wantFunc != nil {
