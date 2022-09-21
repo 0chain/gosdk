@@ -18,6 +18,7 @@ import (
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -128,6 +129,7 @@ func CreateChunkedUpload(
 		commitTimeOut: DefaultUploadTimeOut,
 		maskMu:        &sync.Mutex{},
 		wg:            &sync.WaitGroup{},
+		ctx:           allocationObj.ctx,
 	}
 
 	if isUpdate {
@@ -290,6 +292,7 @@ type ChunkedUpload struct {
 	commitTimeOut time.Duration
 	maskMu        *sync.Mutex
 	wg            *sync.WaitGroup
+	ctx           context.Context
 }
 
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
@@ -439,8 +442,18 @@ func (su *ChunkedUpload) Start() error {
 
 	logger.Logger.Info("Completed the upload. Submitting for commit")
 
-	err := su.writeMarkerMutex.Lock(context.TODO(), su.progress.ConnectionID)
-	defer su.writeMarkerMutex.Unlock(context.TODO(), su.progress.ConnectionID) //nolint: errcheck
+	blobbers := make([]*blockchain.StorageNode, len(su.blobbers))
+	for i, b := range su.blobbers {
+		blobbers[i] = b.blobber
+	}
+
+	err := su.writeMarkerMutex.Lock(
+		su.ctx, &su.uploadMask, su.maskMu,
+		blobbers, &su.consensus, su.uploadTimeOut,
+		su.progress.ConnectionID)
+
+	defer su.writeMarkerMutex.Unlock(
+		su.ctx, su.uploadMask, blobbers, su.uploadTimeOut, su.progress.ConnectionID) //nolint: errcheck
 
 	if err != nil {
 		if su.statusCallback != nil {

@@ -2,27 +2,19 @@ package sdk
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
-	"math"
-	"net"
 	"net/http"
-	"net/url"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/resty"
-	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/sdks"
-	"github.com/0chain/gosdk/sdks/blobber"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
-	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 // WMLockStatus
@@ -42,7 +34,6 @@ type WMLockResult struct {
 // WriteMarkerMutex blobber WriteMarkerMutex client
 type WriteMarkerMutex struct {
 	mutex          sync.Mutex
-	zbox           *sdks.ZBox
 	allocationObj  *Allocation
 	lockedBlobbers map[string]bool
 }
@@ -60,257 +51,207 @@ func CreateWriteMarkerMutex(client *client.Client, allocationObj *Allocation) (*
 
 	return &WriteMarkerMutex{
 		allocationObj: allocationObj,
-		zbox:          sdks.New(client.ClientID, client.ClientKey, client.SignatureScheme, client.Wallet),
 	}, nil
 }
 
-// Lock acquire WriteMarker lock from blobbers
-func (m *WriteMarkerMutex) Lock(ctx context.Context, connectionID string) error {
-	if m == nil {
-		return errors.Throw(constants.ErrInvalidParameter, "WriteMarkerMutex")
-	}
-	m.mutex.Lock()
-	defer m.mutex.Unlock()
+func (wmMu *WriteMarkerMutex) Unlock(
+	ctx context.Context, mask zboxutil.Uint128,
+	blobbers []*blockchain.StorageNode,
+	timeOut time.Duration, connID string,
+) {
+	wg := &sync.WaitGroup{}
+	var pos uint64
+	for i := mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
 
-	if m.allocationObj == nil {
-		return errors.Throw(constants.ErrInvalidParameter, "allocationObj")
-	}
+		blobber := blobbers[pos]
 
-	T := len(m.allocationObj.Blobbers)
-
-	if T == 0 {
-		return errors.Throw(constants.ErrInvalidParameter, "blobbers")
+		wg.Add(1)
+		go wmMu.UnlockBlobber(ctx, blobber, connID, timeOut, wg)
 	}
 
-	urls := make([]string, T)
-
-	builder := &strings.Builder{}
-	for i, b := range m.allocationObj.Blobbers {
-		builder.Reset()
-		builder.WriteString(strings.TrimRight(b.Baseurl, "/")) //nolint: errcheck
-		builder.WriteString(blobber.EndpointWriteMarkerLock)
-		builder.WriteString(m.allocationObj.Tx)
-		urls[i] = builder.String()
-	}
-
-	//protocol detail is on https://github.com/0chain/blobber/wiki/Features-Upload#upload
-	M := int(math.Ceil(float64(T) / float64(3) * float64(2))) //the minimum of M blobbers must accpet the marker
-
-	//retry 3 times
-	for retry := 0; ; retry++ {
-		i := 1
-		n := 0
-		m.lockedBlobbers = nil
-
-		body := url.Values{}
-		body.Set("connection_id", connectionID)
-
-		now := time.Now()
-		body.Set("request_time", strconv.FormatInt(now.Unix(), 10))
-
-		form := body.Encode()
-
-		for {
-
-			// M locks are acquired, it is safe to commit write
-			if n >= M {
-				return nil
-			}
-
-			// No more blobber, but n < M
-			if i > T && n < M {
-				//fails, release all locks
-				err := m.Unlock(ctx, connectionID)
-				if err != nil {
-					return err
-				}
-				break
-			}
-
-			blobberIndex := i - 1
-
-			result, err := m.lockOne(ctx, strings.NewReader(form), urls[blobberIndex])
-
-			// current blobber fails or is down, try next blobber
-			if err != nil {
-				// fails on current blobber
-				logger.Logger.Error("lock: ", err.Error())
-				i++
-				continue
-			}
-
-			// it is locked by other session, wait and retry
-			if result.Status == WMLockStatusPending {
-				logger.Logger.Info("WriteMarkerLock is pending, wait and retry")
-				sys.Sleep(1 * time.Second)
-				continue
-			} else if result.Status == WMLockStatusOK {
-				// locked on current blobber, count it and go to next blobber
-				if m.lockedBlobbers == nil {
-					m.lockedBlobbers = make(map[string]bool)
-				}
-
-				m.lockedBlobbers[m.allocationObj.Blobbers[blobberIndex].ID] = true
-				i++
-				n++
-			}
-		}
-
-		if retry >= 2 {
-			return constants.ErrNotLockedWritMarker
-		}
-
-		sys.Sleep(1 * time.Second)
-	}
+	wg.Wait()
 }
 
-// lockOne acquire WriteMarker lock from a blobber
-func (m *WriteMarkerMutex) lockOne(ctx context.Context, body io.Reader, url string) (*WMLockResult, error) {
+// Change status code to 204
+func (wmMu *WriteMarkerMutex) UnlockBlobber(
+	ctx context.Context, b *blockchain.StorageNode,
+	connID string, timeOut time.Duration, wg *sync.WaitGroup,
+) {
 
-	result := &WMLockResult{}
+	defer wg.Done()
 
-	options := []resty.Option{
-		resty.WithRequestInterceptor(func(r *http.Request) error {
-			return m.zbox.SignRequest(r, m.allocationObj.Tx) //nolint
-		}),
-		resty.WithHeader(map[string]string{
-			"Content-Type": "application/x-www-form-urlencoded",
-		})}
+	var err error
 
-	r := resty.New(options...)
+	defer func() {
+		if err != nil {
+			logger.Logger.Error(err)
+		}
+	}()
 
-	r.DoPost(ctx, body, url).
-		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
-			if err != nil {
-				return err
-			}
-
-			if resp.StatusCode != http.StatusOK {
-				return errors.Throw(constants.ErrNotLockedWritMarker, fmt.Sprint(resp.StatusCode, ":", string(respBody)))
-			}
-
-			err = json.Unmarshal(respBody, result)
-
-			if err != nil {
-				return err
-			}
-
-			return nil
-		})
-
-	err := r.Wait()
-	if len(err) > 0 {
-		return nil, err[0]
+	var req *http.Request
+	req, err = zboxutil.NewWriteMarkerLockRequest(
+		b.Baseurl, wmMu.allocationObj.ID, connID, "", http.MethodDelete)
+	if err != nil {
+		return
 	}
 
-	return result, nil
-}
-
-// Unlock release WriteMarker lock on blobbers
-func (m *WriteMarkerMutex) Unlock(ctx context.Context, connectionID string) error {
-	if m == nil {
-		return errors.Throw(constants.ErrInvalidParameter, "WriteMarkerMutex")
-	}
-
-	if m.allocationObj == nil {
-		return errors.Throw(constants.ErrInvalidParameter, "allocationObj")
-	}
-
-	T := len(m.allocationObj.Blobbers)
-
-	// no blobbers, it is unnecessary to release locks
-	if T == 0 {
-		return nil
-	}
-
-	urls := make([]string, 0, T)
-
-	builder := &strings.Builder{}
-	for _, b := range m.allocationObj.Blobbers {
-		builder.Reset()
-		builder.WriteString(strings.TrimRight(b.Baseurl, "/")) //nolint: errcheck
-		builder.WriteString(blobber.EndpointWriteMarkerLock)
-		builder.WriteString(m.allocationObj.Tx)
-		builder.WriteString("/")
-		builder.WriteString(connectionID)
-
-		blobberUrl := builder.String()
-		// only release lock on locked blobbers
-		if m.lockedBlobbers != nil {
-			if m.lockedBlobbers[b.ID] {
-				urls = append(urls, blobberUrl)
-			}
-		} else { // Lock is not called here, try to release all blobbers
-			urls = append(urls, blobberUrl)
+	var resp *http.Response
+	for retry := 0; retry < 3; retry++ {
+		if resp != nil {
+			resp.Body.Close()
 		}
 
+		reqCtx, ctxCncl := context.WithTimeout(ctx, timeOut)
+		resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
+		ctxCncl()
+
+		if err != nil {
+			return
+		}
+		if resp.StatusCode == http.StatusNoContent || resp.StatusCode == http.StatusOK {
+			logger.Logger.Info(b.Baseurl, connID, " unlocked")
+			return
+		}
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			logger.Logger.Info(
+				b.Baseurl, connID,
+				" got too many request error. Retrying")
+
+			var r int
+			r, err = zboxutil.GetRateLimitValue(resp)
+			if err != nil {
+				return
+			}
+
+			time.Sleep(time.Duration(r) * time.Second)
+			continue
+		}
+
+		var data []byte
+		data, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return
+		}
+
+		err = errors.New("unknown_status",
+			fmt.Sprintf("Blobber %s responded with status %d and message %s",
+				b.Baseurl, resp.StatusCode, string(data)))
+		return
 	}
 
-	options := []resty.Option{
-		resty.WithRequestInterceptor(func(r *http.Request) error {
-			return m.zbox.SignRequest(r, m.allocationObj.Tx)
-		}),
-	}
-
-	r := resty.New(options...)
-
-	r.DoDelete(ctx, urls...)
-
-	errs := r.Wait()
-
-	if len(errs) == 0 {
-		return nil
-	}
-
-	msgList := make([]string, 0, len(errs))
-	for _, err := range errs {
-		msgList = append(msgList, err.Error())
-	}
-
-	return errors.Throw(constants.ErrNotUnlockedWritMarker, msgList...)
 }
 
-// GetRootHashnode get root hash node from blobber
-func (m *WriteMarkerMutex) GetRootHashnode(ctx context.Context, blobberBaseUrl string) (*fileref.Hashnode, error) {
-	transport := &http.Transport{
-		Dial: (&net.Dialer{
-			Timeout: resty.DefaultDialTimeout,
-		}).Dial,
-		TLSHandshakeTimeout: resty.DefaultDialTimeout,
+func (wmMu *WriteMarkerMutex) Lock(
+	ctx context.Context, mask *zboxutil.Uint128,
+	maskMu *sync.Mutex, blobbers []*blockchain.StorageNode,
+	consensus *Consensus, timeOut time.Duration, connID string) error {
+
+	wmMu.mutex.Lock()
+	defer wmMu.mutex.Unlock()
+
+	consensus.Reset()
+
+	wg := &sync.WaitGroup{}
+	var pos uint64
+	for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+
+		blobber := blobbers[pos]
+
+		wg.Add(1)
+		go wmMu.LockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, timeOut, wg)
 	}
 
-	root := &fileref.Hashnode{}
+	wg.Wait()
 
-	r := resty.New(resty.WithTransport(transport))
+	if !consensus.isConsensusOk() {
 
-	r.DoGet(ctx, fmt.Sprint(blobberBaseUrl, blobber.EndpointRootHashnode, m.allocationObj.Tx)).
-		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+		return errors.New("lock_consensus_not_met",
+			fmt.Sprintf("Required consensus %d got %d",
+				consensus.consensusThresh, consensus.consensus))
+	}
 
+	return nil
+}
+
+// todo change blobber code as well
+func (wmMu *WriteMarkerMutex) LockBlobber(
+	ctx context.Context, mask *zboxutil.Uint128, maskMu *sync.Mutex,
+	consensus *Consensus, b *blockchain.StorageNode, pos uint64, connID string,
+	timeOut time.Duration, wg *sync.WaitGroup) {
+
+	defer wg.Done()
+
+	var err error
+
+	defer func() {
+		if err != nil {
+			logger.Logger.Error(err)
+			maskMu.Lock()
+			*mask = mask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
+			maskMu.Unlock()
+		}
+	}()
+
+	requestTime := strconv.FormatInt(time.Now().Unix(), 10)
+	var req *http.Request
+	req, err = zboxutil.NewWriteMarkerLockRequest(
+		b.Baseurl, wmMu.allocationObj.ID, connID, requestTime, http.MethodPost)
+	if err != nil {
+		return
+	}
+
+	var resp *http.Response
+	for retry := 0; retry < 3; retry++ {
+		if resp != nil {
+			resp.Body.Close()
+		}
+
+		reqCtx, ctxCncl := context.WithTimeout(ctx, timeOut)
+		resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
+		ctxCncl()
+
+		if err != nil {
+			return
+		}
+		if resp.StatusCode == http.StatusOK {
+			consensus.Done()
+			logger.Logger.Info(b.Baseurl, connID, " locked")
+			return
+		}
+
+		if resp.StatusCode == http.StatusAccepted { // accepted but pending
+			logger.Logger.Info(b.Baseurl, connID, " lock pending. Retrying again")
+			time.Sleep(timeOut * 2) // wait twice the time of timeout
+			continue
+		}
+
+		if resp.StatusCode == http.StatusTooManyRequests {
+			logger.Logger.Info(
+				b.Baseurl, connID,
+				" got too many request error. Retrying")
+
+			var r int
+			r, err = zboxutil.GetRateLimitValue(resp)
 			if err != nil {
-				return errors.Throw(constants.ErrInvalidHashnode, err.Error())
+				return
 			}
 
-			if resp.StatusCode != http.StatusOK {
-				return errors.Throw(constants.ErrBadRequest, resp.Status)
-			}
+			time.Sleep(time.Duration(r) * time.Second)
+			continue
+		}
 
-			if respBody != nil {
-				if err := json.Unmarshal(respBody, root); err != nil {
-					return errors.Throw(constants.ErrInvalidHashnode, err.Error())
-				}
+		var data []byte
+		data, err = io.ReadAll(resp.Body)
+		if err != nil {
+			return
+		}
 
-				return nil
-			}
-
-			return errors.Throw(constants.ErrInvalidHashnode, "no data")
-
-		})
-
-	errs := r.Wait()
-
-	if len(errs) > 0 {
-		return nil, errs[0]
+		err = errors.New("unknown_status",
+			fmt.Sprintf("Blobber %s responded with status %d and message %s",
+				b.Baseurl, resp.StatusCode, string(data)))
+		return
 	}
-
-	return root, nil
 }

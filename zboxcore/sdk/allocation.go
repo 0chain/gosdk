@@ -889,6 +889,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int)
 	req.ctx = a.ctx
 	req.remotefilepath = path
 	req.connectionID = zboxutil.NewConnectionId()
+	req.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	err := req.ProcessDelete()
 	return err
 }
@@ -923,7 +924,7 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	req.consensus.consensusThresh = a.consensusThreshold
 	req.ctx = a.ctx
 	req.remotefilepath = path
-	req.renameMask = 0
+	req.renameMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
 	err := req.ProcessRename()
@@ -966,7 +967,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	req.consensusThresh = a.consensusThreshold
 	req.ctx = a.ctx
 	req.remotefilepath = path
-	req.copyMask = 0
+	req.copyMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.connectionID = zboxutil.NewConnectionId()
 	err := req.ProcessCopy()
 	return err

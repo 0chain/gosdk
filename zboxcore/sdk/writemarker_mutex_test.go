@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"sync"
 	"testing"
 	"time"
 
@@ -50,9 +51,13 @@ func TestWriteMarkerMutext_Should_Lock(t *testing.T) {
 		})
 	}
 
+	mask := zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	mu := &sync.Mutex{}
 	mutex, _ := CreateWriteMarkerMutex(client.GetClient(), a)
+	consensus := Consensus{}
+	consensus.Init(a.consensusThreshold, a.fullconsensus)
 
-	err := mutex.Lock(context.TODO(), zboxutil.NewConnectionId())
+	err := mutex.Lock(context.TODO(), &mask, mu, a.Blobbers, &consensus, time.Minute, zboxutil.NewConnectionId())
 	require.Nil(err)
 
 }
@@ -105,8 +110,11 @@ func TestWriteMarkerMutext_Pending_Should_Lock(t *testing.T) {
 	}()
 
 	mutex, _ := CreateWriteMarkerMutex(client.GetClient(), a)
-
-	err := mutex.Lock(context.TODO(), zboxutil.NewConnectionId())
+	mask := zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	mu := &sync.Mutex{}
+	consensus := Consensus{}
+	consensus.Init(a.consensusThreshold, a.fullconsensus)
+	err := mutex.Lock(context.TODO(), &mask, mu, a.Blobbers, &consensus, time.Minute, zboxutil.NewConnectionId())
 	require.Nil(err)
 }
 
@@ -148,8 +156,11 @@ func TestWriteMarkerMutext_Some_Blobbers_Down_Should_Lock(t *testing.T) {
 	a.Blobbers[0].Baseurl = "http://127.0.0.1:5003"
 
 	mutex, _ := CreateWriteMarkerMutex(client.GetClient(), a)
-
-	err := mutex.Lock(context.TODO(), zboxutil.NewConnectionId())
+	mask := zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	mu := &sync.Mutex{}
+	consensus := Consensus{}
+	consensus.Init(a.consensusThreshold, a.fullconsensus)
+	err := mutex.Lock(context.TODO(), &mask, mu, a.Blobbers, &consensus, time.Minute, zboxutil.NewConnectionId())
 	require.Nil(err)
 }
 
@@ -192,43 +203,10 @@ func TestWriteMarkerMutext_Too_Less_Blobbers_Response_Should_Not_Lock(t *testing
 	a.Blobbers[1].Baseurl = "http://127.0.0.1:5003"
 
 	mutex, _ := CreateWriteMarkerMutex(client.GetClient(), a)
-
-	err := mutex.Lock(context.TODO(), zboxutil.NewConnectionId())
+	mask := zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	mu := &sync.Mutex{}
+	consensus := Consensus{}
+	consensus.Init(a.consensusThreshold, a.fullconsensus)
+	err := mutex.Lock(context.TODO(), &mask, mu, a.Blobbers, &consensus, time.Minute, zboxutil.NewConnectionId())
 	require.ErrorIs(constants.ErrNotLockedWritMarker, err)
-}
-
-func TestGetRootHashnode(t *testing.T) {
-	a := &Allocation{
-		ID:           "TestWriteMarkerMutext",
-		Tx:           "TestWriteMarkerMutext",
-		DataShards:   2,
-		ParityShards: 1,
-	}
-	setupMockAllocation(t, a)
-
-	require := require.New(t)
-
-	m := make(mock.ResponseMap)
-
-	statusOK := mock.Response{
-		StatusCode: http.StatusOK,
-		Body:       []byte(`{"allocation_id":"allocation_nested","type":"D","name":"/","path":"/","children":[{"allocation_id":"allocation_nested","type":"D","name":"sub1","path":"/sub1","children":[{"allocation_id":"allocation_nested","type":"D","name":"file1","path":"/sub1/file1"}]},{"allocation_id":"allocation_nested","type":"D","name":"sub2","path":"/sub2"}]}`),
-	}
-
-	m[http.MethodGet+":"+blobber.EndpointRootHashnode+a.Tx] = statusOK
-
-	server := dev.NewBlobberServer(m)
-	defer server.Close()
-
-	mutex, _ := CreateWriteMarkerMutex(client.GetClient(), a)
-
-	root, err := mutex.GetRootHashnode(context.TODO(), server.URL)
-	require.Nil(err)
-	require.NotNil(root)
-	require.Len(root.Children, 2)
-
-	require.Equal(root.Children[0].Name, "sub1")
-	require.Len(root.Children[0].Children, 1)
-	require.Equal(root.Children[0].Children[0].Name, "file1")
-	require.Equal(root.Children[1].Name, "sub2")
 }
