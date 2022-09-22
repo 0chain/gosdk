@@ -6,7 +6,9 @@ ANDROIDMOBILESDKDIR := $(OUTDIR)/androidsdk
 IOSBINNAME 		:= zcncore.xcframework
 ANDROIDBINNAME	:= zcncore.aar
 
-.PHONY: build-mobilesdk setup-gomobile build-iossimulator build-ios
+PKG_EXPORTS := $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common $(GOSDK_PATH)/mobilesdk/sdk $(GOSDK_PATH)/mobilesdk/zbox $(GOSDK_PATH)/mobilesdk/zcncoremobile
+
+.PHONY: setup-gomobile build-iossimulator build-ios
 
 $(IOSMOBILESDKDIR):
 	$(shell mkdir -p $(IOSMOBILESDKDIR)/lib)
@@ -35,28 +37,6 @@ ifneq ($(GOPATH), )
 	$(shell ln -sf $(ROOT_DIR) $(GOPATH)/src/$(0CHAIN_PATH))
 endif
 
-build-mobilesdk: $(GOPATH)/src/$(GOSDK_PATH)
-ifeq ($(filter-out undefined,$(foreach v, IOS ANDROID,$(origin $(v)))),)
-	@$(PRINT_RED)
-	@echo ""
-	@echo "Usage:"
-	@echo '   For iOS and Android: make build-mobilesdk IOS=1 ANDROID=1'
-	@echo '   For iOS only: make build-mobilesdk IOS=1'
-	@echo '   For Android only: make build-mobilesdk ANDROID=1'
-endif
-	@$(PRINT_CYN)
-ifneq ($(IOS),)
-	@echo "Building iOS framework. Please wait..."
-	@gomobile bind -ldflags="-s -w" -target=ios -tags mobile -o $(IOSMOBILESDKDIR)/$(IOSBINNAME) $(GOSDK_PATH)/zcncore
-	@echo "   $(IOSMOBILESDKDIR)/$(IOSBINNAME). - [OK]"
-endif
-ifneq ($(ANDROID),)
-	@echo "Building Android framework. Please wait..."
-	@gomobile bind -target=android/arm64,android/amd64 -tags mobile -ldflags=-extldflags=-Wl,-soname,libgojni.so -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common
-	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"
-endif
-	@echo ""
-	@$(PRINT_NON)
 
 clean-mobilesdk:
 	@rm -rf $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME)
@@ -72,15 +52,15 @@ gomobile-install:
 
 build-iossimulator: 
 	@echo "Building iOS Simulator framework. Please wait..."
-	@@gomobile bind -v -ldflags="-s -w" -target=iossimulator -tags "ios iossimulator mobile" -o $(IOSMOBILESDKDIR)/simulator/$(IOSBINNAME) $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common $(GOSDK_PATH)/mobilesdk/sdk
+	@@gomobile bind -v -ldflags="-s -w" -target=iossimulator -tags "ios iossimulator mobile" -o $(IOSMOBILESDKDIR)/simulator/$(IOSBINNAME) $(PKG_EXPORTS)
 	@echo "   $(IOSMOBILESDKDIR)/simulator/$(IOSBINNAME). - [OK]"
 
 build-ios: 
 	@echo "Building iOS framework. Please wait..."
-	@@gomobile bind -v -ldflags="-s -w" -target=ios/arm64,iossimulator/amd64 -tags "ios mobile" -o $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME) $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common $(GOSDK_PATH)/mobilesdk/sdk
+	@@gomobile bind -v -ldflags="-s -w" -target=ios/arm64,iossimulator/amd64 -tags "ios mobile" -o $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME) $(PKG_EXPORTS)
 	@echo "   $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME). - [OK]"	
 
 build-android: 
 	@echo "Building Android framework. Please wait..."
-	@gomobile bind -target=android/arm64 -tags mobile -ldflags=-extldflags=-Wl,-soname,libgojni.so -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common $(GOSDK_PATH)/mobilesdk/sdk
+	@gomobile bind -target=android/arm64 -tags mobile -ldflags=-extldflags=-Wl,-soname,libgojni.so -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
 	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"
