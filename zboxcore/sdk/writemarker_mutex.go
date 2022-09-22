@@ -65,10 +65,10 @@ func CreateWriteMarkerMutex(client *client.Client, allocationObj *Allocation) (*
 }
 
 //the minimum of M blobbers must accept the marker
-func (m *WriteMarkerMutex) getMinimumAccept(T int) int {
+func (m *WriteMarkerMutex) getMinimumAccept(total int) int {
 
 	//protocol detail is on https://github.com/0chain/blobber/wiki/Features-Upload#upload
-	M := int(math.Ceil(float64(T) / float64(3) * float64(2)))
+	M := int(math.Ceil(float64(total) / float64(3) * float64(2)))
 
 	if m.allocationObj.ParityShards == 0 {
 		if M < m.allocationObj.DataShards {

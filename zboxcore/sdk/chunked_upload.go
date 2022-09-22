@@ -15,6 +15,7 @@ import (
 	"github.com/0chain/gosdk/constants"
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
@@ -512,18 +513,22 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int, fileS
 		go func(idx uint64, b *ChunkedUploadBlobber, buf *bytes.Buffer, form ChunkedUploadFormMetadata) {
 			err := b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, buf, form)
 
-			// channel is not closed
-			if ctx.Err() == nil {
+			util.WithRecover(func() {
 				wait <- UploadError{
 					Error:      err,
 					BlobberIdx: pos,
 				}
-			}
+			})
+
 		}(pos, blobber, body, formData)
 	}
 	var err UploadError
 	for i := 0; i < num; i++ {
-		err = <-wait
+		err, ok := <-wait
+		//channel is closed
+		if !ok {
+			break
+		}
 		if err.Error != nil {
 			logger.Logger.Error("Upload: ", err.Error)
 			//stop to upload new chunks to failed blobber
@@ -597,16 +602,18 @@ func (su *ChunkedUpload) processCommit() error {
 				b.commitResult = ErrorCommitResult(err.Error())
 			}
 
-			// channel is not closed
-			if ctx.Err() == nil {
+			util.WithRecover(func() {
 				wait <- err
-			}
+			})
 
 		}(blobber)
 	}
 
 	for i := 0; i < num; i++ {
-		err = <-wait
+		err, ok := <-wait
+		if !ok {
+			break
+		}
 
 		if err != nil {
 			logger.Logger.Error("Commit: ", err)
