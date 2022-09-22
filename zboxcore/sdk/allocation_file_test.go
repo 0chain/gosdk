@@ -367,6 +367,7 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 		Tx:           "TestAllocation_EncryptAndUploadFileWithThumbnail",
 		ParityShards: 2,
 		DataShards:   2,
+		ctx:          context.TODO(),
 	}
 
 	resp := &WMLockResult{

@@ -91,7 +91,7 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(
 
 	var req *http.Request
 	req, err = zboxutil.NewWriteMarkerLockRequest(
-		b.Baseurl, wmMu.allocationObj.ID, connID, "", http.MethodDelete)
+		b.Baseurl, wmMu.allocationObj.Tx, connID, "", http.MethodDelete)
 	if err != nil {
 		return
 	}
@@ -198,7 +198,7 @@ func (wmMu *WriteMarkerMutex) LockBlobber(
 	requestTime := strconv.FormatInt(time.Now().Unix(), 10)
 	var req *http.Request
 	req, err = zboxutil.NewWriteMarkerLockRequest(
-		b.Baseurl, wmMu.allocationObj.ID, connID, requestTime, http.MethodPost)
+		b.Baseurl, wmMu.allocationObj.Tx, connID, requestTime, http.MethodPost)
 	if err != nil {
 		return
 	}

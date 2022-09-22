@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"context"
 	"crypto/rand"
 	"fmt"
 	"strings"
@@ -83,6 +84,7 @@ func BenchmarkChunkedUpload(b *testing.B) {
 				Tx:           "1a0190c411f3e742c881b7b84c964dc1bb435d459bd3beca74a6c0ae8ececd92",
 				DataShards:   2,
 				ParityShards: 1,
+				ctx:          context.TODO(),
 			}
 			a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 			for i := 0; i < (a.DataShards + a.ParityShards); i++ {

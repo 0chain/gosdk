@@ -44,6 +44,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 
 	defer func() {
 		if err != nil {
+			logger.Logger.Error(err)
 			req.maskMu.Lock()
 			req.deleteMask = req.deleteMask.And(zboxutil.NewUint128(1).Lsh(uint64(blobberIdx)).Not())
 			req.maskMu.Unlock()
