@@ -522,7 +522,8 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int, fileS
 
 		}(pos, blobber, body, formData)
 	}
-	var err UploadError
+
+	var opError error
 	for i := 0; i < num; i++ {
 		err, ok := <-wait
 		//channel is closed
@@ -533,6 +534,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int, fileS
 			logger.Logger.Error("Upload: ", err.Error)
 			//stop to upload new chunks to failed blobber
 			su.uploadMask = su.uploadMask.Sub64(err.BlobberIdx)
+			opError = err.Error
 		}
 	}
 
@@ -542,7 +544,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int, fileS
 
 	// all of blobber are failed. it should be rejected by rule
 	if su.consensus.getConsensus() == 0 {
-		return err.Error
+		return opError
 	}
 
 	errConsensus := fmt.Errorf("Upload failed: Consensus_rate:%f, expected:%f", su.consensus.getConsensusRate(), su.consensus.getConsensusRequiredForOk())
