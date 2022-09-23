@@ -489,6 +489,9 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 
 		return nil, errors.New("", "block hash verification failed in confirmation")
 	}
+	for k, v := range cfmBlock {
+		logging.Error(k, ": ", v)
+	}
 	return nil, errors.New("", "txn confirmation not found.")
 }
 
