@@ -90,8 +90,8 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(
 	}()
 
 	var req *http.Request
-	req, err = zboxutil.NewWriteMarkerLockRequest(
-		b.Baseurl, wmMu.allocationObj.Tx, connID, "", http.MethodDelete)
+	req, err = zboxutil.NewWriteMarkerUnLockRequest(
+		b.Baseurl, wmMu.allocationObj.Tx, connID, "")
 	if err != nil {
 		return
 	}
@@ -167,6 +167,7 @@ func (wmMu *WriteMarkerMutex) Lock(
 	wg.Wait()
 
 	if !consensus.isConsensusOk() {
+		wmMu.Unlock(ctx, *mask, blobbers, timeOut, connID)
 
 		return errors.New("lock_consensus_not_met",
 			fmt.Sprintf("Required consensus %d got %d",
@@ -198,7 +199,7 @@ func (wmMu *WriteMarkerMutex) LockBlobber(
 	requestTime := strconv.FormatInt(time.Now().Unix(), 10)
 	var req *http.Request
 	req, err = zboxutil.NewWriteMarkerLockRequest(
-		b.Baseurl, wmMu.allocationObj.Tx, connID, requestTime, http.MethodPost)
+		b.Baseurl, wmMu.allocationObj.Tx, connID, requestTime)
 	if err != nil {
 		return
 	}

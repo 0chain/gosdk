@@ -426,7 +426,7 @@ func NewUploadRequestWithMethod(baseURL, allocation string, body io.Reader, meth
 }
 
 func NewWriteMarkerLockRequest(
-	baseURL, allocation, connID, requestTime, method string) (*http.Request, error) {
+	baseURL, allocation, connID, requestTime string) (*http.Request, error) {
 	u, err := url.Parse(baseURL)
 	if err != nil {
 		return nil, err
@@ -439,7 +439,21 @@ func NewWriteMarkerLockRequest(
 	params.Add("request_time", requestTime)
 	u.RawQuery = params.Encode() // Escape Query Parameters
 
-	req, err := http.NewRequest(method, u.String(), nil)
+	req, err := http.NewRequest(http.MethodPost, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	setClientInfoWithSign(req, allocation)
+	return req, nil
+}
+
+func NewWriteMarkerUnLockRequest(
+	baseURL, allocation, connID, requestTime string) (*http.Request, error) {
+
+	u := baseURL + WM_LOCK_ENDPOINT + allocation + "/" + connID
+
+	req, err := http.NewRequest(http.MethodDelete, u, nil)
 	if err != nil {
 		return nil, err
 	}
