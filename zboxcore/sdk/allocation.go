@@ -968,6 +968,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	req.ctx = a.ctx
 	req.remotefilepath = path
 	req.copyMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
 	err := req.ProcessCopy()
 	return err
