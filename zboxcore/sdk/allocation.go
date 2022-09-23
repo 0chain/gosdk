@@ -890,6 +890,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int)
 	req.remotefilepath = path
 	req.connectionID = zboxutil.NewConnectionId()
 	req.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	req.maskMu = &sync.Mutex{}
 	err := req.ProcessDelete()
 	return err
 }
