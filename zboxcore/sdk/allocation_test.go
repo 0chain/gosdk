@@ -53,7 +53,11 @@ const (
 	numBlobbers        = 4
 )
 
-func setupMockHttpResponse(t *testing.T, mockClient *mocks.HttpClient, funcName string, testCaseName string, a *Allocation, httpMethod string, statusCode int, body []byte) {
+func setupMockHttpResponse(
+	t *testing.T, mockClient *mocks.HttpClient, funcName string,
+	testCaseName string, a *Allocation, httpMethod string,
+	statusCode int, body []byte) {
+
 	for i := 0; i < numBlobbers; i++ {
 		url := funcName + testCaseName + mockBlobberUrl + strconv.Itoa(i)
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
