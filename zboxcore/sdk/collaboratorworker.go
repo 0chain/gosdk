@@ -58,7 +58,7 @@ func (req *CollaboratorRequest) updateCollaboratorToBlobber(blobber *blockchain.
 
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	ctx, cncl := context.WithTimeout(req.a.ctx, (time.Second * 30))
-	zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
+	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
 			l.Logger.Error("Update Collaborator : ", err)
 			rspCh <- false
@@ -73,6 +73,10 @@ func (req *CollaboratorRequest) updateCollaboratorToBlobber(blobber *blockchain.
 		}
 		return err
 	})
+
+	if err != nil {
+		l.Logger.Error("Collaborator add error: ", err)
+	}
 }
 
 func (req *CollaboratorRequest) RemoveCollaboratorFromBlobbers() bool {
