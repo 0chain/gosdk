@@ -18,6 +18,7 @@ type CollaboratorRequest struct {
 	a              *Allocation
 	path           string
 	collaboratorID string
+	consensus      Consensus
 	wg             *sync.WaitGroup
 }
 
@@ -30,14 +31,13 @@ func (req *CollaboratorRequest) UpdateCollaboratorToBlobbers() bool {
 		go req.updateCollaboratorToBlobber(req.a.Blobbers[i], i, rspCh)
 	}
 	req.wg.Wait()
-	count := 0
 	for i := 0; i < numList; i++ {
 		resp := <-rspCh
 		if resp {
-			count++
+			req.consensus.Done()
 		}
 	}
-	return count == numList
+	return req.consensus.isConsensusOk()
 }
 
 func (req *CollaboratorRequest) updateCollaboratorToBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- bool) {
