@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -133,6 +134,13 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(
 		data, err = io.ReadAll(resp.Body)
 		if err != nil {
 			return
+		}
+
+		m := string(data)
+		if m == "EOF" || strings.Contains(m, "server closed idle connection") {
+			logger.Logger.Debug(b.Baseurl, connID, " retrying request because "+
+				"server closed connection unexpectedly")
+			continue
 		}
 
 		err = errors.New("unknown_status",
