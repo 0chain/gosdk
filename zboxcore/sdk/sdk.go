@@ -854,8 +854,8 @@ func CreateAllocationWith(options CreateAllocationOptions) (
 	string, int64, *transaction.Transaction, error) {
 
 	if len(options.BlobberIds) > 0 {
-		return CreateAllocationForOwner(client.GetClientID(),
-			client.GetClientPublicKey(), options.Name, options.DataShards, options.ParityShards,
+		return CreateAllocationForOwner(options.Name, client.GetClientID(),
+			client.GetClientPublicKey(), options.DataShards, options.ParityShards,
 			options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock,
 			options.BlobberIds)
 	}
