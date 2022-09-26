@@ -62,6 +62,7 @@ const (
 	DIR_ENDPOINT             = "/v1/dir/"
 	PLAYLIST_LATEST_ENDPOINT = "/v1/playlist/latest/"
 	PLAYLIST_FILE_ENDPOINT   = "/v1/playlist/file/"
+	WM_LOCK_ENDPOINT         = "/v1/writemarker/lock/"
 
 	// CLIENT_SIGNATURE_HEADER represents http request header contains signature.
 	CLIENT_SIGNATURE_HEADER = "X-App-Client-Signature"
@@ -421,6 +422,43 @@ func NewUploadRequestWithMethod(baseURL, allocation string, body io.Reader, meth
 		return nil, err
 	}
 
+	return req, nil
+}
+
+func NewWriteMarkerLockRequest(
+	baseURL, allocation, connID, requestTime string) (*http.Request, error) {
+	u, err := url.Parse(baseURL)
+	if err != nil {
+		return nil, err
+	}
+
+	u.Path += WM_LOCK_ENDPOINT + allocation
+
+	params := url.Values{}
+	params.Add("connection_id", connID)
+	params.Add("request_time", requestTime)
+	u.RawQuery = params.Encode() // Escape Query Parameters
+
+	req, err := http.NewRequest(http.MethodPost, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	setClientInfoWithSign(req, allocation)
+	return req, nil
+}
+
+func NewWriteMarkerUnLockRequest(
+	baseURL, allocation, connID, requestTime string) (*http.Request, error) {
+
+	u := baseURL + WM_LOCK_ENDPOINT + allocation + "/" + connID
+
+	req, err := http.NewRequest(http.MethodDelete, u, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	setClientInfoWithSign(req, allocation)
 	return req, nil
 }
 

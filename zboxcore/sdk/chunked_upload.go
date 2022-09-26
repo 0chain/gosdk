@@ -18,6 +18,7 @@ import (
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -128,6 +129,7 @@ func CreateChunkedUpload(
 		commitTimeOut: DefaultUploadTimeOut,
 		maskMu:        &sync.Mutex{},
 		wg:            &sync.WaitGroup{},
+		ctx:           allocationObj.ctx,
 	}
 
 	if isUpdate {
@@ -290,6 +292,7 @@ type ChunkedUpload struct {
 	commitTimeOut time.Duration
 	maskMu        *sync.Mutex
 	wg            *sync.WaitGroup
+	ctx           context.Context
 }
 
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
@@ -439,8 +442,18 @@ func (su *ChunkedUpload) Start() error {
 
 	logger.Logger.Info("Completed the upload. Submitting for commit")
 
-	err := su.writeMarkerMutex.Lock(context.TODO(), su.progress.ConnectionID)
-	defer su.writeMarkerMutex.Unlock(context.TODO(), su.progress.ConnectionID) //nolint: errcheck
+	blobbers := make([]*blockchain.StorageNode, len(su.blobbers))
+	for i, b := range su.blobbers {
+		blobbers[i] = b.blobber
+	}
+
+	err := su.writeMarkerMutex.Lock(
+		su.ctx, &su.uploadMask, su.maskMu,
+		blobbers, &su.consensus, su.uploadTimeOut,
+		su.progress.ConnectionID)
+
+	defer su.writeMarkerMutex.Unlock(
+		su.ctx, su.uploadMask, blobbers, su.uploadTimeOut, su.progress.ConnectionID) //nolint: errcheck
 
 	if err != nil {
 		if su.statusCallback != nil {
@@ -546,15 +559,17 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		su.wg.Add(1)
 		go func(b *ChunkedUploadBlobber, body *bytes.Buffer, formData ChunkedUploadFormMetadata, pos uint64) {
 			defer su.wg.Done()
-			err := b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
-			_ = err
+			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
+			if err != nil {
+				logger.Logger.Error(err)
+			}
 		}(blobber, body, formData, pos)
 	}
 
 	su.wg.Wait()
 
 	if !su.consensus.isConsensusOk() {
-		return thrown.New("consensus_not_met", fmt.Sprintf("Required consensus atleast %d, got %d",
+		return thrown.New("consensus_not_met", fmt.Sprintf("Upload failed. Required consensus atleast %d, got %d",
 			su.consensus.consensusThresh, su.consensus.consensus))
 	}
 
@@ -594,14 +609,18 @@ func (su *ChunkedUpload) processCommit() error {
 	su.wg.Wait()
 
 	if !su.consensus.isConsensusOk() {
+		err := thrown.New("consensus_not_met",
+			fmt.Sprintf("Upload commit failed. Required consensus atleast %d, got %d",
+				su.consensus.consensusThresh, su.consensus.consensus))
+
 		if su.consensus.getConsensus() != 0 {
 			logger.Logger.Info("Commit consensus failed, Deleting remote file....")
 			su.allocationObj.deleteFile(su.fileMeta.RemotePath, su.consensus.getConsensus(), su.consensus.getConsensus()) //nolint
 		}
 		if su.statusCallback != nil {
-			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, OpUpload, thrown.New("commit_consensus_failed", "Upload failed as there was no commit consensus"))
-			return nil
+			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, OpUpload, err)
 		}
+		return err
 	}
 
 	if su.statusCallback != nil {
