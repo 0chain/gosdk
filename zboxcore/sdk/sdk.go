@@ -799,7 +799,6 @@ func GetAllocationUpdates(allocation *Allocation) error {
 	allocation.BlobberDetails = updatedAllocationObj.BlobberDetails
 	allocation.ReadPriceRange = updatedAllocationObj.ReadPriceRange
 	allocation.WritePriceRange = updatedAllocationObj.WritePriceRange
-	allocation.ChallengeCompletionTime = updatedAllocationObj.ChallengeCompletionTime
 	allocation.StartTime = updatedAllocationObj.StartTime
 	allocation.Finalized = updatedAllocationObj.Finalized
 	allocation.Canceled = updatedAllocationObj.Canceled

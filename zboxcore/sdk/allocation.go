@@ -163,14 +163,13 @@ type Allocation struct {
 	// WritePriceRange is requested writing prices range.
 	WritePriceRange PriceRange `json:"write_price_range"`
 
-	ChallengeCompletionTime time.Duration    `json:"challenge_completion_time"`
-	StartTime               common.Timestamp `json:"start_time"`
-	Finalized               bool             `json:"finalized,omitempty"`
-	Canceled                bool             `json:"canceled,omitempty"`
-	MovedToChallenge        common.Balance   `json:"moved_to_challenge,omitempty"`
-	MovedBack               common.Balance   `json:"moved_back,omitempty"`
-	MovedToValidators       common.Balance   `json:"moved_to_validators,omitempty"`
-	Curators                []string         `json:"curators"`
+	StartTime         common.Timestamp `json:"start_time"`
+	Finalized         bool             `json:"finalized,omitempty"`
+	Canceled          bool             `json:"canceled,omitempty"`
+	MovedToChallenge  common.Balance   `json:"moved_to_challenge,omitempty"`
+	MovedBack         common.Balance   `json:"moved_back,omitempty"`
+	MovedToValidators common.Balance   `json:"moved_to_validators,omitempty"`
+	Curators          []string         `json:"curators"`
 
 	numBlockDownloads       int
 	uploadChan              chan *UploadRequest
