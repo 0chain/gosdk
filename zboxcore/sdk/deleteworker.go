@@ -60,14 +60,11 @@ func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode) err
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode == http.StatusOK {
-			req.consensus.Done()
-
 			l.Logger.Info(blobber.Baseurl, " "+req.remoteFilePath, " deleted.")
 			return nil
 		}
 
 		if resp.StatusCode == http.StatusNoContent {
-			req.consensus.Done()
 			l.Logger.Info(blobber.Baseurl, " "+req.remoteFilePath, " not available in blobber.")
 			return nil
 		}
@@ -103,7 +100,7 @@ func (req *DeleteRequest) deleteFileFromBlobber(b *blockchain.StorageNode) (file
 func (req *DeleteRequest) ProcessDelete() error {
 	num := len(req.blobbers)
 	numNotFound := 0
-	objectTreeRefs := make([]fileref.RefEntity, num, num)
+	objectTreeRefs := make([]fileref.RefEntity, num)
 
 	wait := make(chan DeleteResult, num)
 
@@ -153,6 +150,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 			continue
 		}
 
+		req.consensus.Done()
 		// it was deleted
 		if r.FileRef == nil {
 			numNotFound++
