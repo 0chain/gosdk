@@ -177,10 +177,8 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 				Baseurl: tt.name,
 			})
 
-			objectTreeRefs := make([]fileref.RefEntity, 1)
-			refEntity, _ := req.getObjectTreeFromBlobber(req.blobbers[0])
-			objectTreeRefs[0] = refEntity
-			req.deleteBlobberFile(req.blobbers[0])
+			req.deleteFileFromBlobber(req.blobbers[0]) //nolint: errcheck
+
 			if tt.wantFunc != nil {
 				tt.wantFunc(require, req)
 			}

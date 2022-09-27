@@ -88,13 +88,20 @@ func (req *DeleteRequest) deleteFileFromBlobber(b *blockchain.StorageNode) (file
 	refEntity, err := req.getObjectTreeFromBlobber(b)
 	if err != nil {
 		if errors.Is(err, constants.ErrNotFound) {
+			req.consensus.Done()
 			return nil, nil
 		}
 
 		return nil, err
 	}
 
-	return refEntity, req.deleteBlobberFile(b)
+	err = req.deleteBlobberFile(b)
+	if err != nil {
+		return nil, err
+	}
+
+	req.consensus.Done()
+	return refEntity, nil
 }
 
 func (req *DeleteRequest) ProcessDelete() error {
@@ -150,7 +157,6 @@ func (req *DeleteRequest) ProcessDelete() error {
 			continue
 		}
 
-		req.consensus.Done()
 		// it was deleted
 		if r.FileRef == nil {
 			numNotFound++
