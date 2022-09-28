@@ -4,9 +4,6 @@
 package main
 
 import (
-	"sync"
-
-	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 

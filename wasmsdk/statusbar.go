@@ -4,10 +4,8 @@
 package main
 
 import (
-	"sync"
-
-	"github.com/0chain/gosdk/core/transaction"
 	"gopkg.in/cheggaaa/pb.v1"
+	"sync"
 )
 
 // StatusBar is to check status of any operation
@@ -59,8 +57,6 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 	PrintError("Error in file operation." + err.Error())
 	s.wg.Done()
 }
-
-
 
 // RepairCompleted when repair is completed
 func (s *StatusBar) RepairCompleted(filesRepaired int) {
