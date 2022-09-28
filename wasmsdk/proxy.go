@@ -141,10 +141,6 @@ func main() {
 				"createDir":      createDir,
 				"downloadBlocks": downloadBlocks,
 
-				// zcn txn
-				"commitFileMetaTxn":   CommitFileMetaTxn,
-				"commitFolderMetaTxn": CommitFolderMetaTxn,
-
 				// player
 				"play":           play,
 				"stop":           stop,

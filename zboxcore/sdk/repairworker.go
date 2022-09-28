@@ -5,7 +5,6 @@ import (
 	"sync"
 
 	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"go.uber.org/zap"
@@ -26,10 +25,6 @@ type RepairStatusCB struct {
 	success  bool
 	err      error
 	statusCB StatusCallback
-}
-
-func (cb *RepairStatusCB) CommitMetaCompleted(request, response string, txn *transaction.Transaction, err error) {
-	cb.statusCB.CommitMetaCompleted(request, response, txn, err)
 }
 
 func (cb *RepairStatusCB) Started(allocationId, filePath string, op int, totalBytes int) {

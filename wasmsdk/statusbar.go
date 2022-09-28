@@ -60,11 +60,7 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 	s.wg.Done()
 }
 
-// CommitMetaCompleted when commit meta completes
-func (s *StatusBar) CommitMetaCompleted(request, response string, txn *transaction.Transaction, err error) {
-	setLastMetadataCommitTxn(txn, err)
-	s.wg.Done()
-}
+
 
 // RepairCompleted when repair is completed
 func (s *StatusBar) RepairCompleted(filesRepaired int) {
