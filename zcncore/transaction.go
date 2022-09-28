@@ -856,6 +856,7 @@ func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
 
 type AuthorizerNode struct {
 	ID     string            `json:"id"`
+	URL    string            `json:"url"`
 	Config *AuthorizerConfig `json:"config"`
 }
 
