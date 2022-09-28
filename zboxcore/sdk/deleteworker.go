@@ -12,7 +12,6 @@ import (
 	"errors"
 
 	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -111,47 +110,49 @@ func (req *DeleteRequest) ProcessDelete() error {
 
 	wait := make(chan DeleteResult, num)
 
+	wg := sync.WaitGroup{}
+	wg.Add(num)
+
 	for i := 0; i < num; i++ {
 		go func(blobberIdx int) {
+			defer wg.Done()
 
 			fr, err := req.deleteFileFromBlobber(req.blobbers[blobberIdx])
 			if err == nil {
-				util.WithRecover(func() {
-					wait <- DeleteResult{
-						BlobberIndex: blobberIdx,
-						FileRef:      fr,
-						Deleted:      true,
-					}
-				})
+
+				wait <- DeleteResult{
+					BlobberIndex: blobberIdx,
+					FileRef:      fr,
+					Deleted:      true,
+				}
+
 				return
 			}
 
 			//it was removed from the blobber
 			if errors.Is(err, constants.ErrNotFound) {
-				util.WithRecover(func() {
-					wait <- DeleteResult{
-						BlobberIndex: blobberIdx,
-						FileRef:      nil,
-						Deleted:      true,
-					}
-				})
+
+				wait <- DeleteResult{
+					BlobberIndex: blobberIdx,
+					FileRef:      nil,
+					Deleted:      true,
+				}
+
 				return
 			}
 
-			util.WithRecover(func() {
-				wait <- DeleteResult{
-					BlobberIndex: blobberIdx,
-				}
-			})
+			wait <- DeleteResult{
+				BlobberIndex: blobberIdx,
+			}
+
 			l.Logger.Error(err.Error())
 		}(i)
 	}
 
+	wg.Wait()
+
 	for i := 0; i < num; i++ {
-		r, ok := <-wait
-		if !ok {
-			break
-		}
+		r := <-wait
 
 		if !r.Deleted {
 			continue
@@ -182,7 +183,6 @@ func (req *DeleteRequest) ProcessDelete() error {
 
 	req.consensus.Reset()
 	req.consensus.consensus = float32(numNotFound)
-	wg := &sync.WaitGroup{}
 
 	commitReqs := make([]*CommitRequest, 0, numNotFound)
 
@@ -202,7 +202,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 		newChange.Size = newChange.ObjectTree.GetSize()
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReq.connectionID = req.connectionID
-		commitReq.wg = wg
+		commitReq.wg = &wg
 		commitReqs = append(commitReqs, commitReq)
 		go AddCommitRequest(commitReq)
 	}
