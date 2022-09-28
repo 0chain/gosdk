@@ -366,13 +366,12 @@ func GetTotalStoredData() (map[string]int64, error) {
 type stakePoolRequest struct {
 	ProviderType ProviderType `json:"provider_type,omitempty"`
 	ProviderID   string       `json:"provider_id,omitempty"`
-	PoolID       string       `json:"pool_id,omitempty"`
 }
 
 // StakePoolLock locks tokens lack in stake pool
-func StakePoolLock(providerType ProviderType, providerID string, value, fee uint64) (poolID string, nonce int64, err error) {
+func StakePoolLock(providerType ProviderType, providerID string, value, fee uint64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
-		return poolID, 0, sdkNotInitialized
+		return "", 0, sdkNotInitialized
 	}
 
 	if providerType == 0 {
@@ -386,13 +385,12 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 	spr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerID,
-		PoolID:       "",
 	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_STAKE_POOL_LOCK,
 		InputArgs: &spr,
 	}
-	poolID, _, nonce, _, err = smartContractTxnValueFee(sn, value, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFee(sn, value, fee)
 	return
 }
 
@@ -411,7 +409,7 @@ type StakePoolUnlockUnstake struct {
 // future. The time is maximal time that can be lesser in some cases. To
 // unlock tokens can't be unlocked now, wait the time and unlock them (call
 // this function again).
-func StakePoolUnlock(providerType ProviderType, providerID string, poolID string, fee uint64) (unstake bool, nonce int64, err error) {
+func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (unstake bool, nonce int64, err error) {
 	if !sdkInitialized {
 		return false, 0, sdkNotInitialized
 	}
@@ -424,14 +422,9 @@ func StakePoolUnlock(providerType ProviderType, providerID string, poolID string
 		return false, 0, errors.New("stake_pool_lock", "provider_id is required")
 	}
 
-	if poolID == "" {
-		return false, 0, errors.New("stake_pool_lock", "pool_id is required")
-	}
-
 	spr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerID,
-		PoolID:       poolID,
 	}
 
 	var sn = transaction.SmartContractTxnData{
@@ -861,8 +854,8 @@ func CreateAllocationWith(options CreateAllocationOptions) (
 	string, int64, *transaction.Transaction, error) {
 
 	if len(options.BlobberIds) > 0 {
-		return CreateAllocationForOwner(client.GetClientID(),
-			client.GetClientPublicKey(), options.Name, options.DataShards, options.ParityShards,
+		return CreateAllocationForOwner(options.Name, client.GetClientID(),
+			client.GetClientPublicKey(), options.DataShards, options.ParityShards,
 			options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock,
 			options.BlobberIds)
 	}
@@ -887,51 +880,29 @@ func CreateAllocation(name string, datashards, parityshards int, size, expiry in
 		preferredBlobberIds)
 }
 
-func CreateAllocationForOwner(name string, owner, ownerpublickey string,
+func CreateAllocationForOwner(
+	name string, owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange,
-	lock uint64, preferredBlobberIds []string) (hash string, nonce int64, txn *transaction.Transaction, err error) {
-
+	lock uint64, preferredBlobberIds []string,
+) (hash string, nonce int64, txn *transaction.Transaction, err error) {
 	if lock < 0 {
 		return "", 0, nil, errors.New("", "invalid value for lock")
 	}
 
-	allocationBlobbers, err := GetAllocationBlobbers(owner, ownerpublickey, datashards,
-		parityshards, size, expiry, readPrice,
-		writePrice)
+	allocationRequest, err := getNewAllocationBlobbers(
+		datashards, parityshards, size, expiry, readPrice, writePrice, preferredBlobberIds)
 	if err != nil {
 		return "", 0, nil, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
-	}
-
-	//filter duplicates
-	ids := make(map[string]struct{})
-	for _, id := range preferredBlobberIds {
-		ids[id] = struct{}{}
-	}
-	for _, id := range allocationBlobbers {
-		ids[id] = struct{}{}
-	}
-	blobbers := make([]string, 0, len(ids))
-	for id := range ids {
-		blobbers = append(blobbers, id)
 	}
 
 	if !sdkInitialized {
 		return "", 0, nil, sdkNotInitialized
 	}
 
-	var allocationRequest = map[string]interface{}{
-		"name":              name,
-		"data_shards":       datashards,
-		"parity_shards":     parityshards,
-		"size":              size,
-		"owner_id":          owner,
-		"owner_public_key":  ownerpublickey,
-		"expiration_date":   expiry,
-		"blobbers":          blobbers,
-		"read_price_range":  readPrice,
-		"write_price_range": writePrice,
-	}
+	allocationRequest["name"] = name
+	allocationRequest["owner_id"] = owner
+	allocationRequest["owner_public_key"] = ownerpublickey
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.NEW_ALLOCATION_REQUEST,
@@ -941,16 +912,15 @@ func CreateAllocationForOwner(name string, owner, ownerpublickey string,
 	return
 }
 
-func GetAllocationBlobbers(owner, ownerpublickey string,
-	datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange) ([]string, error) {
-
+func GetAllocationBlobbers(
+	datashards, parityshards int,
+	size, expiry int64,
+	readPrice, writePrice PriceRange,
+) ([]string, error) {
 	var allocationRequest = map[string]interface{}{
 		"data_shards":       datashards,
 		"parity_shards":     parityshards,
 		"size":              size,
-		"owner_id":          owner,
-		"owner_public_key":  ownerpublickey,
 		"expiration_date":   expiry,
 		"read_price_range":  readPrice,
 		"write_price_range": writePrice,
@@ -973,6 +943,43 @@ func GetAllocationBlobbers(owner, ownerpublickey string,
 	}
 
 	return allocBlobberIDs, nil
+}
+
+func getNewAllocationBlobbers(
+	datashards, parityshards int,
+	size, expiry int64,
+	readPrice, writePrice PriceRange,
+	preferredBlobberIds []string,
+) (map[string]interface{}, error) {
+	allocBlobberIDs, err := GetAllocationBlobbers(
+		datashards, parityshards, size, expiry, readPrice, writePrice,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	//filter duplicates
+	ids := make(map[string]struct{})
+	for _, id := range preferredBlobberIds {
+		ids[id] = struct{}{}
+	}
+	for _, id := range allocBlobberIDs {
+		ids[id] = struct{}{}
+	}
+	blobbers := make([]string, 0, len(ids))
+	for id := range ids {
+		blobbers = append(blobbers, id)
+	}
+
+	return map[string]interface{}{
+		"data_shards":       datashards,
+		"parity_shards":     parityshards,
+		"size":              size,
+		"expiration_date":   expiry,
+		"blobbers":          blobbers,
+		"read_price_range":  readPrice,
+		"write_price_range": writePrice,
+	}, nil
 }
 
 func GetBlobberIds(blobberUrls []string) ([]string, error) {
@@ -1195,7 +1202,7 @@ const (
 	ProviderAuthorizer
 )
 
-func CollectRewards(providerId, poolId string, providerType ProviderType) (string, int64, error) {
+func CollectRewards(providerId string, providerType ProviderType) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
@@ -1203,7 +1210,6 @@ func CollectRewards(providerId, poolId string, providerType ProviderType) (strin
 	var input = map[string]interface{}{
 		"provider_id":   providerId,
 		"provider_type": providerType,
-		"pool_id":       poolId,
 	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_COLLECT_REWARD,
@@ -1399,39 +1405,25 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 	return fabricResponse, err
 }
 
-func GetAllocationMinLock(datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange) (int64, error) {
-
-	preferred, err := GetBlobberIds(blockchain.GetPreferredBlobbers())
+func GetAllocationMinLock(
+	datashards, parityshards int,
+	size, expiry int64,
+	readPrice, writePrice PriceRange,
+) (int64, error) {
+	preferredBlobberIds, err := GetBlobberIds(blockchain.GetPreferredBlobbers())
 	if err != nil {
 		return -1, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
 	}
 
-	return GetAllocationMinLockBlobbers(datashards, parityshards, size, expiry,
-		readPrice, writePrice, preferred)
-}
-
-func GetAllocationMinLockBlobbers(datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, blobbers []string) (int64, error) {
-	if !sdkInitialized {
-		return 0, sdkNotInitialized
+	allocationRequestData, err := getNewAllocationBlobbers(
+		datashards, parityshards, size, expiry, readPrice, writePrice, preferredBlobberIds)
+	if err != nil {
+		return -1, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
 	}
-
-	var allocationRequestData = map[string]interface{}{
-		"data_shards":       datashards,
-		"parity_shards":     parityshards,
-		"size":              size,
-		"owner_id":          client.GetClientID(),
-		"owner_public_key":  client.GetClientPublicKey(),
-		"expiration_date":   expiry,
-		"blobbers":          blobbers,
-		"read_price_range":  readPrice,
-		"write_price_range": writePrice,
-	}
-	allocationData, _ := json.Marshal(allocationRequestData)
-
+	allocationRequest, _ := json.Marshal(allocationRequestData)
 	params := make(map[string]string)
-	params["allocation_data"] = string(allocationData)
+	params["allocation_data"] = string(allocationRequest)
+
 	allocationsBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation_min_lock", params, nil)
 	if err != nil {
 		return 0, errors.New("allocation_min_lock_fetch_error", "Error fetching the allocation min lock."+err.Error())
