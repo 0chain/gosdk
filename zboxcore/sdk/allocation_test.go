@@ -16,8 +16,6 @@ import (
 	"testing"
 	"time"
 
-	sdkBlobber "github.com/0chain/gosdk/sdks/blobber"
-
 	"github.com/0chain/gosdk/dev/blobber"
 	"github.com/0chain/gosdk/dev/blobber/model"
 	"github.com/0chain/gosdk/zboxcore/encryption"
@@ -96,7 +94,8 @@ func setupMockCommitRequest(a *Allocation) {
 func setupMockWriteLockRequest(a *Allocation, mockClient *mocks.HttpClient) {
 
 	for _, blobber := range a.Blobbers {
-		url := blobber.Baseurl + sdkBlobber.EndpointWriteMarkerLock
+		url := blobber.Baseurl + zboxutil.WM_LOCK_ENDPOINT
+		url = strings.TrimRight(url, "/")
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return strings.Contains(req.URL.String(), url)
 		})).Return(&http.Response{

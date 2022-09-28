@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/0chain/errors"
 
@@ -137,7 +138,6 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 					require.EqualValues(t, "EOF", errors.Top(err))
 
 					return req.URL.Path == "Test_Success"+zboxutil.FILE_META_ENDPOINT+mockAllocationTxId &&
-						req.URL.RawPath == "Test_Success"+zboxutil.FILE_META_ENDPOINT+mockAllocationTxId &&
 						req.Method == "POST" &&
 						req.Header.Get("X-App-Client-ID") == mockClientId &&
 						req.Header.Get("X-App-Client-Key") == mockClientKey &&
@@ -175,7 +175,14 @@ func TestListRequest_getFileMetaInfoFromBlobber(t *testing.T) {
 			req.wg.Add(1)
 			go req.getFileMetaInfoFromBlobber(blobber, 73, rspCh)
 			req.wg.Wait()
-			resp := <-rspCh
+
+			var resp *fileMetaResponse
+			select {
+			case <-time.After(time.Second * 10):
+				t.Log("Failed after time out of 10 second")
+			case resp = <-rspCh:
+			}
+			// resp := <-rspCh
 			require.EqualValues(t, tt.wantErr, resp.err != nil)
 			if resp.err != nil {
 				require.EqualValues(t, tt.errMsg, errors.Top(resp.err))
