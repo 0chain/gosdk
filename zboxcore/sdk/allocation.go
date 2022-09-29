@@ -879,7 +879,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus floa
 	req.allocationTx = a.Tx
 	req.consensus.Init(threshConsensus, fullConsensus, a.consensusOK)
 	req.ctx = a.ctx
-	req.remotefilepath = path
+	req.remoteFilePath = path
 	req.connectionID = zboxutil.NewConnectionId()
 	err := req.ProcessDelete()
 	return err
