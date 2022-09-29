@@ -960,7 +960,6 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	req.consensusRequiredForOk = a.consensusOK
 	req.ctx = a.ctx
 	req.remotefilepath = path
-	req.copyMask = 0
 	req.connectionID = zboxutil.NewConnectionId()
 	err := req.ProcessCopy()
 	return err

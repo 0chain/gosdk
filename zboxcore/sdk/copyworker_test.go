@@ -116,7 +116,6 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 			},
 			wantFunc: func(require *require.Assertions, req *CopyRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(0), req.copyMask)
 				require.Equal(float32(0), req.consensus)
 			},
 		},
@@ -186,7 +185,6 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 			},
 			wantFunc: func(require *require.Assertions, req *CopyRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(1), req.copyMask)
 				require.Equal(float32(1), req.consensus)
 			},
 		},
@@ -354,7 +352,6 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			wantErr:     false,
 			wantFunc: func(require *require.Assertions, req *CopyRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(15), req.copyMask)
 				require.Equal(float32(4), req.consensus)
 			},
 		},
@@ -366,7 +363,6 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			wantErr:     false,
 			wantFunc: func(require *require.Assertions, req *CopyRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(7), req.copyMask)
 				require.Equal(float32(3), req.consensus)
 			},
 		},
