@@ -209,7 +209,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name,
 			})
-			_, err := req.copyBlobberObject(req.blobbers[0], 0)
+			_, err := req.copyBlobberObject(req.blobbers[0])
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))

@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/0chain/errors"
@@ -118,7 +117,6 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			},
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(0), req.renameMask)
 				require.Equal(float32(0), req.consensus.consensus)
 			},
 		},
@@ -188,7 +186,6 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			},
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(1), req.renameMask)
 				require.Equal(float32(1), req.consensus.consensus)
 			},
 		},
@@ -207,15 +204,13 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 					consensusRequiredForOk: 60,
 				},
 				ctx:          context.TODO(),
-				renameMask:   0,
-				maskMU:       &sync.Mutex{},
 				connectionID: mockConnectionId,
 				newName:      mockNewName,
 			}
 			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name,
 			})
-			_, err := req.renameBlobberObject(req.blobbers[0], 0)
+			_, err := req.renameBlobberObject(req.blobbers[0])
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))
@@ -355,7 +350,6 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			wantErr:     false,
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(15), req.renameMask)
 				require.Equal(float32(4), req.consensus.consensus)
 			},
 		},
@@ -367,7 +361,6 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			wantErr:     false,
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(7), req.renameMask)
 				require.Equal(float32(3), req.consensus.consensus)
 			},
 		},
@@ -435,8 +428,6 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 					consensusRequiredForOk: 60,
 				},
 				ctx:          context.TODO(),
-				renameMask:   0,
-				maskMU:       &sync.Mutex{},
 				connectionID: mockConnectionId,
 				newName:      mockNewName,
 			}

@@ -45,7 +45,7 @@ func (req *CopyRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode
 	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.remotefilepath, blobber)
 }
 
-func (req *CopyRequest) copyBlobberObject(blobber *blockchain.StorageNode, blobberIdx int) (fileref.RefEntity, error) {
+func (req *CopyRequest) copyBlobberObject(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
 	refEntity, err := req.getObjectTreeFromBlobber(blobber)
 	if err != nil {
 		return nil, err
@@ -86,10 +86,10 @@ func (req *CopyRequest) copyBlobberObject(blobber *blockchain.StorageNode, blobb
 		if err == nil {
 			l.Logger.Error(blobber.Baseurl, "Response: ", string(resp_body))
 
-			return fmt.Errorf("copy: %v %s", resp.StatusCode, string(resp_body))
+			return fmt.Errorf("Copy: %v %s", resp.StatusCode, string(resp_body))
 		}
 
-		return fmt.Errorf("copy: %v", resp.StatusCode)
+		return fmt.Errorf("Copy: %v", resp.StatusCode)
 	})
 
 	if err != nil {
@@ -104,13 +104,13 @@ func (req *CopyRequest) ProcessCopy() error {
 
 	wait := make(chan CopyResult, num)
 
-	wg := sync.WaitGroup{}
+	wg := &sync.WaitGroup{}
 	wg.Add(num)
 
 	for i := 0; i < num; i++ {
 		go func(blobberIdx int) {
 			defer wg.Done()
-			refEntity, err := req.copyBlobberObject(req.blobbers[blobberIdx], blobberIdx)
+			refEntity, err := req.copyBlobberObject(req.blobbers[blobberIdx])
 			if err != nil {
 				l.Logger.Error(err.Error())
 				return
@@ -172,7 +172,7 @@ func (req *CopyRequest) ProcessCopy() error {
 		newChange.Size = 0
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReq.connectionID = req.connectionID
-		commitReq.wg = &wg
+		commitReq.wg = wg
 		commitReqs = append(commitReqs, commitReq)
 		go AddCommitRequest(commitReq)
 	}
