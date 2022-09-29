@@ -3,7 +3,6 @@ package sdk
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"math/rand"
 	"sync"
 	"testing"
@@ -215,21 +214,6 @@ func TestFillShards(t *testing.T) {
 				}
 			},
 		},
-		{
-			name:    "should return error and download mask should have blobber removed",
-			wantErr: true,
-			setup: func(in *input) {
-				in.req = &DownloadRequest{}
-				in.req.downloadMask = zboxutil.NewUint128(1).Lsh(4).Sub64(1)
-				in.req.maskMu = &sync.Mutex{}
-
-				in.result = &downloadBlock{
-					Success: false,
-					idx:     1,
-					err:     errors.New("test error"),
-				}
-			},
-		},
 	}
 
 	for _, test := range tests {
@@ -238,11 +222,11 @@ func TestFillShards(t *testing.T) {
 				test.setup(test)
 			}
 
-			maskCount := test.req.downloadMask.CountOnes()
+			// maskCount := test.req.downloadMask.CountOnes()
 			err := test.req.fillShards(test.shards, test.result)
 			if test.wantErr {
 				require.Error(t, err)
-				require.Equal(t, maskCount-1, test.req.downloadMask.CountOnes())
+				// require.Equal(t, maskCount-1, test.req.downloadMask.CountOnes())
 				return
 			}
 
