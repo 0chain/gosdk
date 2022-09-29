@@ -115,6 +115,8 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 				}, nil)
 			},
+			wantErr: true,
+			errMsg:  "Rename: 400",
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
 				require.Equal(float32(0), req.consensus.consensus)
@@ -370,7 +372,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			numCorrect:  2,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "rename failed: Commit consensus failed. Error: ",
+			errMsg:      "Rename failed: Rename request failed. Operation failed.",
 		},
 		{
 			name:        "Test_All_Blobber_Error_On_Rename_Failure",
@@ -378,7 +380,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			numCorrect:  0,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "rename failed: Commit consensus failed. Error: ",
+			errMsg:      "Rename failed: Rename request failed. Operation failed.",
 		},
 	}
 	for _, tt := range tests {

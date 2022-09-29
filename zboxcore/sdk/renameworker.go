@@ -118,6 +118,16 @@ func (req *RenameRequest) ProcessRename() error {
 	}
 	wg.Wait()
 
+	for i := 0; i < num; i++ {
+		r := <-wait
+
+		if !r.Succeed {
+			continue
+		}
+
+		objectTreeRefs[r.BlobberIndex] = r.FileRef
+	}
+
 	if !req.consensus.isConsensusOk() {
 		return errors.New("Rename failed: Rename request failed. Operation failed.")
 	}
