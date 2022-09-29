@@ -465,7 +465,10 @@ func NewWriteMarkerLockRequest(
 		return nil, err
 	}
 
-	setClientInfoWithSign(req, allocation)
+	err = setClientInfoWithSign(req, allocation)
+	if err != nil {
+		return nil, err
+	}
 	return req, nil
 }
 
@@ -482,7 +485,10 @@ func NewWriteMarkerUnLockRequest(
 		return nil, err
 	}
 
-	setClientInfoWithSign(req, allocation)
+	err = setClientInfoWithSign(req, allocation)
+	if err != nil {
+		return nil, err
+	}
 	return req, nil
 }
 
