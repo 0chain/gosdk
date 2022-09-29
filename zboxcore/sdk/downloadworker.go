@@ -334,7 +334,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			"Actual size per blobber: %d", size, req.startBlock, req.endBlock, actualPerShard),
 	)
 
-	f, err := req.getFileHandler(remotePathCB)
+	f, err := req.openFile(remotePathCB)
 	if err != nil {
 		logger.Logger.Error(err)
 		req.errorCB(
@@ -485,7 +485,7 @@ func (req *DownloadRequest) checkContentHash(
 	return nil
 }
 
-func (req *DownloadRequest) getFileHandler(remotePathCB string) (sys.File, error) {
+func (req *DownloadRequest) openFile(remotePathCB string) (sys.File, error) {
 	f, err := sys.Files.OpenFile(req.localpath, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		req.errorCB(errors.Wrap(err, "Can't create local file"), remotePathCB)
