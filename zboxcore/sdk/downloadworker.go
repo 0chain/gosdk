@@ -65,15 +65,15 @@ func (req *DownloadRequest) removeFromMask(pos uint64) {
 
 // getBlocksData will get data blocks for some interval from minimal blobers and aggregate them and
 // return to the caller
-func (req *DownloadRequest) getBlocksData(
-	startBlock, totalBlock int64,
-	mask zboxutil.Uint128, requiredDownloads int) ([]byte, error) {
+func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte, error) {
 
 	shards := make([][][]byte, totalBlock)
 	for i := range shards {
 		shards[i] = make([][]byte, len(req.blobbers))
 	}
 
+	mask := req.downloadMask
+	requiredDownloads := req.consensusThresh
 	var (
 		remainingMask zboxutil.Uint128
 		failed        int
@@ -91,7 +91,9 @@ func (req *DownloadRequest) getBlocksData(
 		}
 
 		if failed > remainingMask.CountOnes() {
-			return nil, errors.New("download_failed", "")
+			return nil, errors.New("download_failed",
+				fmt.Sprintf("%d failed blobbers exceeded %d remaining blobbers",
+					failed, remainingMask.CountOnes()))
 		}
 
 		curReqDownloads = failed
@@ -137,7 +139,7 @@ func (req *DownloadRequest) downloadBlock(
 			fmt.Sprintf("Required downloads %d, remaining active blobber %d",
 				req.consensusThresh, activeBlobbers))
 	}
-	rspCh := make(chan *downloadBlock, req.consensusThresh)
+	rspCh := make(chan *downloadBlock, requiredDownloads)
 
 	var pos uint64
 	var c int
@@ -172,15 +174,33 @@ func (req *DownloadRequest) downloadBlock(
 	}
 
 	var failed int
+	failedMu := &sync.Mutex{}
+	wg := &sync.WaitGroup{}
 	for i := 0; i < requiredDownloads; i++ {
 		result := <-rspCh
-		err := req.fillShards(shards, result)
-		if err != nil {
-			logger.Logger.Error(err)
-			failed++
-		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			var err error
+			defer func() {
+				if err != nil {
+					failedMu.Lock()
+					failed++
+					failedMu.Unlock()
+					req.removeFromMask(uint64(result.idx))
+					logger.Logger.Error(err)
+				}
+			}()
+			if !result.Success {
+				err = fmt.Errorf("Unsuccessful download. Error: %v", result.err)
+				return
+			}
+			err = req.fillShards(shards, result)
+			return
+		}()
 	}
 
+	wg.Wait()
 	return remainingMask, failed, nil
 }
 
@@ -207,19 +227,7 @@ func (req *DownloadRequest) decodeEC(shards [][]byte) (data []byte, isValid bool
 
 // fillShards will fill `shards` with data from blobbers that belongs to specific
 // blockNumber and blobber's position index in an allocation
-// This will also remove blobber from downloadMask if any error occurs so this
-// blobber will not be used in subsequent requests
 func (req *DownloadRequest) fillShards(shards [][][]byte, result *downloadBlock) (err error) {
-	defer func() {
-		if err != nil {
-			req.removeFromMask(uint64(result.idx))
-		}
-	}()
-
-	if !result.Success {
-		return result.err
-	}
-
 	for i := 0; i < len(result.BlockChunks); i++ {
 		var data []byte
 		if req.encryptedKey != "" {
@@ -305,12 +313,19 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	fRef, err := req.getFileRef(remotePathCB)
 	if err != nil {
 		logger.Logger.Error(err.Error())
+		req.errorCB(
+			fmt.Errorf("Error while getting file ref. Error: %v",
+				err), remotePathCB)
+
 		return
 	}
 
 	size, chunksPerShard, actualPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
 	if err != nil {
 		logger.Logger.Error(err.Error())
+		req.errorCB(
+			fmt.Errorf("Error while calculating shard params. Error: %v",
+				err), remotePathCB)
 		return
 	}
 
@@ -322,6 +337,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	f, err := req.getFileHandler(remotePathCB)
 	if err != nil {
 		logger.Logger.Error(err)
+		req.errorCB(
+			fmt.Errorf("Error while getting file handler. Error: %v",
+				err), remotePathCB)
 		return
 	}
 	defer f.Close()
@@ -339,6 +357,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	err = req.initEC()
 	if err != nil {
 		logger.Logger.Error(err)
+		req.errorCB(
+			fmt.Errorf("Error while initializing file ref. Error: %v",
+				err), remotePathCB)
 		return
 	}
 	if req.encryptedKey != "" {
@@ -350,6 +371,13 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	// remainingSize should be calculated based on startBlock number
 	// otherwise end data will have null bytes.
 	remainingSize := size - startBlock*int64(req.effectiveChunkSize)
+	if remainingSize <= 0 {
+		logger.Logger.Error("Nothing to download")
+		req.errorCB(
+			fmt.Errorf("Size to download is %d. Nothing to download", remainingSize), remotePathCB,
+		)
+		return
+	}
 
 	if req.statusCallback != nil {
 		// Started will also initialize progress bar. So without calling this function
@@ -363,7 +391,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		}
 		logger.Logger.Info("Downloading block ", startBlock+1, " - ", startBlock+numBlocks)
 
-		data, err := req.getBlocksData(startBlock+1, numBlocks, req.downloadMask, req.consensusThresh)
+		data, err := req.getBlocksData(startBlock+1, numBlocks)
 		if err != nil {
 			req.errorCB(errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+1)), remotePathCB)
 			return
@@ -397,11 +425,15 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		err := req.checkContentHash(fRef, fileHasher, remotePathCB)
 		if err != nil {
 			logger.Logger.Error(err)
+			req.errorCB(
+				fmt.Errorf("Error while checking content hash. Error: %v",
+					err), remotePathCB)
 			return
 		}
 	}
 
 	f.Sync()
+
 	if req.statusCallback != nil {
 		req.statusCallback.Completed(
 			req.allocationID, remotePathCB, fRef.Name, "", int(fRef.ActualFileSize), OpDownload)
