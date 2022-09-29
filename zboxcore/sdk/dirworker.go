@@ -41,7 +41,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 
 	var pos uint64
 	var existingDirCount int
-
+	countMu := &sync.Mutex{}
 	for i := req.dirMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 
@@ -54,7 +54,9 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 				l.Logger.Error(err.Error())
 			}
 			if alreadyExists {
+				countMu.Lock()
 				existingDirCount++
+				countMu.Unlock()
 			}
 		}(pos)
 	}
