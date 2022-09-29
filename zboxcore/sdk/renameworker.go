@@ -35,12 +35,6 @@ type RenameRequest struct {
 	consensus    Consensus
 }
 
-type RenameResult struct {
-	BlobberIndex int
-	FileRef      fileref.RefEntity
-	Renamed      bool
-}
-
 func (req *RenameRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
 	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.remotefilepath, blobber)
 }
@@ -78,9 +72,9 @@ func (req *RenameRequest) renameBlobberObject(blobber *blockchain.StorageNode) (
 			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " renamed.")
 			return nil
 		}
-		resp_body, err := ioutil.ReadAll(resp.Body)
+		respBody, err := ioutil.ReadAll(resp.Body)
 		if err == nil {
-			msg := string(resp_body)
+			msg := string(respBody)
 			if len(msg) > 0 {
 				l.Logger.Error(blobber.Baseurl, "Response: ", msg)
 
@@ -101,7 +95,7 @@ func (req *RenameRequest) ProcessRename() error {
 	num := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, num)
 
-	wait := make(chan RenameResult, num)
+	wait := make(chan ProcessResult, num)
 
 	wg := &sync.WaitGroup{}
 	wg.Add(num)
@@ -115,10 +109,10 @@ func (req *RenameRequest) ProcessRename() error {
 				l.Logger.Error(err.Error())
 			}
 
-			wait <- RenameResult{
+			wait <- ProcessResult{
 				BlobberIndex: blobberIdx,
 				FileRef:      refEntity,
-				Renamed:      err == nil,
+				Succeed:      err == nil,
 			}
 		}(i)
 	}

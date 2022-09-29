@@ -102,3 +102,9 @@ func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationTx 
 	result.BlobberURL = blobber.Baseurl
 	respCh <- &result
 }
+
+type ProcessResult struct {
+	BlobberIndex int
+	FileRef      fileref.RefEntity
+	Succeed      bool
+}

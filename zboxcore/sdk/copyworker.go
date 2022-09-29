@@ -35,12 +35,6 @@ type CopyRequest struct {
 	Consensus
 }
 
-type CopyResult struct {
-	BlobberIndex int
-	FileRef      fileref.RefEntity
-	Copied       bool
-}
-
 func (req *CopyRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
 	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.remotefilepath, blobber)
 }
@@ -105,7 +99,7 @@ func (req *CopyRequest) ProcessCopy() error {
 	num := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, num)
 
-	wait := make(chan CopyResult, num)
+	wait := make(chan ProcessResult, num)
 
 	wg := &sync.WaitGroup{}
 	wg.Add(num)
@@ -118,10 +112,10 @@ func (req *CopyRequest) ProcessCopy() error {
 				l.Logger.Error(err.Error())
 			}
 
-			wait <- CopyResult{
+			wait <- ProcessResult{
 				BlobberIndex: blobberIdx,
 				FileRef:      refEntity,
-				Copied:       err == nil,
+				Succeed:      err == nil,
 			}
 
 		}(i)
@@ -131,7 +125,7 @@ func (req *CopyRequest) ProcessCopy() error {
 	for i := 0; i < num; i++ {
 		r := <-wait
 
-		if !r.Copied {
+		if !r.Succeed {
 			continue
 		}
 
