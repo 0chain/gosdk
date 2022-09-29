@@ -39,17 +39,17 @@ type TransactionCommon interface {
 	VestingAdd(ar VestingAddRequest, value string) error
 
 	MinerSCLock(minerID string, lock string) error
-	MinerSCCollectReward(providerId string, poolId string, providerType int) error
-	StorageSCCollectReward(providerId, poolId string, providerType int) error
+	MinerSCCollectReward(providerId string, providerType int) error
+	StorageSCCollectReward(providerId string, providerType int) error
 
 	FinalizeAllocation(allocID string, fee string) error
 	CancelAllocation(allocID string, fee string) error
 	CreateAllocation(car *CreateAllocationRequest, lock, fee string) error //
 	CreateReadPool(fee string) error
 	ReadPoolLock(allocID string, blobberID string, duration int64, lock, fee string) error
-	ReadPoolUnlock(poolID string, fee string) error
+	ReadPoolUnlock(fee string) error
 	StakePoolLock(blobberID string, lock, fee string) error
-	StakePoolUnlock(blobberID string, poolID string, fee string) error
+	StakePoolUnlock(blobberID string, fee string) error
 	UpdateBlobberSettings(blobber Blobber, fee string) error
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock, fee string) error
 	WritePoolLock(allocID string, lock, fee string) error
@@ -469,10 +469,9 @@ func (t *Transaction) MinerSCLock(nodeID string, lock string) (err error) {
 	return
 }
 
-func (t *Transaction) MinerSCCollectReward(providerId, poolId string, providerType int) error {
+func (t *Transaction) MinerSCCollectReward(providerId string, providerType int) error {
 	pr := &scCollectReward{
 		ProviderId:   providerId,
-		PoolId:       poolId,
 		ProviderType: providerType,
 	}
 
@@ -486,10 +485,9 @@ func (t *Transaction) MinerSCCollectReward(providerId, poolId string, providerTy
 	return err
 }
 
-func (t *Transaction) StorageSCCollectReward(providerId, poolId string, providerType int) error {
+func (t *Transaction) StorageSCCollectReward(providerId string, providerType int) error {
 	pr := &scCollectReward{
 		ProviderId:   providerId,
-		PoolId:       poolId,
 		ProviderType: providerType,
 	}
 	err := t.createSmartContractTxn(StorageSmartContractAddress,
@@ -628,19 +626,14 @@ func (t *Transaction) ReadPoolLock(allocID, blobberID string,
 }
 
 // ReadPoolUnlock for current user and given pool.
-func (t *Transaction) ReadPoolUnlock(poolID string, fee string) error {
+func (t *Transaction) ReadPoolUnlock(fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
 	}
 
-	type unlockRequest struct {
-		PoolID string `json:"pool_id"`
-	}
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_READ_POOL_UNLOCK, &unlockRequest{
-			PoolID: poolID,
-		}, 0)
+		transaction.STORAGESC_READ_POOL_UNLOCK, nil, 0)
 	if err != nil {
 		logging.Error(err)
 		return err
@@ -680,8 +673,8 @@ func (t *Transaction) StakePoolLock(blobberID string, lock, fee string) error {
 	return nil
 }
 
-// StakePoolUnlock by blobberID and poolID.
-func (t *Transaction) StakePoolUnlock(blobberID, poolID string, fee string) error {
+// StakePoolUnlock by blobberID
+func (t *Transaction) StakePoolUnlock(blobberID string, fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
@@ -689,12 +682,10 @@ func (t *Transaction) StakePoolUnlock(blobberID, poolID string, fee string) erro
 
 	type stakePoolRequest struct {
 		BlobberID string `json:"blobber_id"`
-		PoolID    string `json:"pool_id"`
 	}
 
 	var spr stakePoolRequest
 	spr.BlobberID = blobberID
-	spr.PoolID = poolID
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress, transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
 	if err != nil {

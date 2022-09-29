@@ -160,6 +160,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 		header.ToHeader(httpreq)
 
+		lastBlobberReadCounter := getBlobberReadCtr(req.allocationID, req.blobber.ID)
+
 		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 			if err != nil {
 				return err
@@ -181,9 +183,10 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 						return err
 					}
 
-					if rspData.LatestRM.ReadCounter >= getBlobberReadCtr(req.allocationID, req.blobber.ID) {
+					if rspData.LatestRM.ReadCounter != lastBlobberReadCounter {
 						zlogger.Logger.Info("Will be retrying download")
 						setBlobberReadCtr(req.allocationID, req.blobber.ID, rspData.LatestRM.ReadCounter)
+						lastBlobberReadCounter = rspData.LatestRM.ReadCounter
 						shouldRetry = true
 						return errors.New("stale_read_marker", "readmarker counter is not in sync with latest counter")
 					}

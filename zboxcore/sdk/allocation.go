@@ -23,9 +23,7 @@ import (
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -49,7 +47,7 @@ const (
 const additionalSuccessRate = (10)
 
 var GetFileInfo = func(localpath string) (os.FileInfo, error) {
-	return os.Stat(localpath)
+	return sys.Files.Stat(localpath)
 }
 
 type BlobberAllocationStats struct {
@@ -446,7 +444,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 	}
 	thumbnailSize := int64(0)
 	if len(thumbnailpath) > 0 {
-		fileInfo, err := os.Stat(thumbnailpath)
+		fileInfo, err := sys.Files.Stat(thumbnailpath)
 		if err != nil {
 			thumbnailSize = 0
 			thumbnailpath = ""
@@ -572,19 +570,23 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	if !a.isInitialized() {
 		return notInitialized
 	}
-	if stat, err := os.Stat(localPath); err == nil {
+	if stat, err := sys.Files.Stat(localPath); err == nil {
 		if !stat.IsDir() {
 			return fmt.Errorf("Local path is not a directory '%s'", localPath)
 		}
 		localPath = strings.TrimRight(localPath, "/")
 		_, rFile := filepath.Split(remotePath)
 		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
-		if _, err := os.Stat(localPath); err == nil {
+		if _, err := sys.Files.Stat(localPath); err == nil {
 			return fmt.Errorf("Local file already exists '%s'", localPath)
 		}
 	}
-	lPath, _ := filepath.Split(localPath)
-	os.MkdirAll(lPath, 0744)
+	dir, _ := filepath.Split(localPath)
+	if dir != "" {
+		if err := sys.Files.MkdirAll(dir, 0744); err != nil {
+			return err
+		}
+	}
 
 	if len(a.Blobbers) == 0 {
 		return noBLOBBERS
@@ -877,7 +879,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus floa
 	req.allocationTx = a.Tx
 	req.consensus.Init(threshConsensus, fullConsensus, a.consensusOK)
 	req.ctx = a.ctx
-	req.remotefilepath = path
+	req.remoteFilePath = path
 	req.connectionID = zboxutil.NewConnectionId()
 	err := req.ProcessDelete()
 	return err
@@ -1216,14 +1218,14 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 		return errors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
 	}
 
-	if stat, err := os.Stat(localPath); err == nil {
+	if stat, err := sys.Files.Stat(localPath); err == nil {
 		if !stat.IsDir() {
 			return fmt.Errorf("Local path is not a directory '%s'", localPath)
 		}
 		localPath = strings.TrimRight(localPath, "/")
 		_, rFile := filepath.Split(remoteFilename)
 		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
-		if _, err := os.Stat(localPath); err == nil {
+		if _, err := sys.Files.Stat(localPath); err == nil {
 			return fmt.Errorf("Local file already exists '%s'", localPath)
 		}
 	}
@@ -1265,38 +1267,6 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	return nil
 }
 
-func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, lookupHash string, fileMeta *ConsolidatedFileMeta, status StatusCallback) (err error) {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	if fileMeta == nil {
-		if len(path) > 0 {
-			fileMeta, err = a.GetFileMeta(path)
-			if err != nil {
-				return err
-			}
-		} else if len(authTicket) > 0 {
-			fileMeta, err = a.GetFileMetaFromAuthTicket(authTicket, lookupHash)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	req := &CommitMetaRequest{
-		CommitMetaData: CommitMetaData{
-			CrudType: crudOperation,
-			MetaData: fileMeta,
-		},
-		status:    status,
-		a:         a,
-		authToken: authTicket,
-	}
-	go req.processCommitMetaRequest()
-	return nil
-}
-
 func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB StatusCallback) error {
 	if !a.isInitialized() {
 		return notInitialized
@@ -1334,96 +1304,6 @@ func (a *Allocation) CancelRepair() error {
 		return nil
 	}
 	return errors.New("invalid_cancel_repair_request", "No repair in progress for the allocation")
-}
-
-type CommitFolderData struct {
-	OpType    string
-	PreValue  string
-	CurrValue string
-}
-
-type CommitFolderResponse struct {
-	TxnID string
-	Data  *CommitFolderData
-}
-
-func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (string, error) {
-	if !a.isInitialized() {
-		return "", notInitialized
-	}
-
-	data := &CommitFolderData{
-		OpType:    operation,
-		PreValue:  preValue,
-		CurrValue: currValue,
-	}
-
-	commitFolderDataBytes, err := json.Marshal(data)
-	if err != nil {
-		return "", err
-	}
-	commitFolderDataString := string(commitFolderDataBytes)
-
-	nonce := client.GetClient().Nonce
-	if nonce != 0 {
-		nonce++
-	}
-	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey(), nonce)
-	nonce = txn.TransactionNonce
-	if nonce < 1 {
-		nonce = transaction.Cache.GetNextNonce(txn.ClientID)
-	} else {
-		transaction.Cache.Set(txn.ClientID, nonce)
-	}
-	txn.TransactionNonce = nonce
-
-	txn.TransactionData = commitFolderDataString
-	txn.TransactionType = transaction.TxnTypeData
-	err = txn.ComputeHashAndSign(client.Sign)
-	if err != nil {
-		return "", err
-	}
-
-	transaction.SendTransactionSync(txn, blockchain.GetMiners())
-	querySleepTime := time.Duration(blockchain.GetQuerySleepTime()) * time.Second
-	sys.Sleep(querySleepTime)
-	retries := 0
-	var t *transaction.Transaction
-
-	for retries < blockchain.GetMaxTxnQuery() {
-		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders())
-		if err == nil {
-			break
-		}
-		retries++
-		sys.Sleep(querySleepTime)
-	}
-
-	if err != nil {
-		l.Logger.Error("Error verifying the commit transaction", err.Error(), txn.Hash)
-		transaction.Cache.Evict(txn.ClientID)
-		return "", err
-	}
-	if t == nil {
-		err = errors.New("transaction_validation_failed", "Failed to get the transaction confirmation")
-		transaction.Cache.Evict(txn.ClientID)
-		return "", err
-	}
-
-	commitFolderResponse := &CommitFolderResponse{
-		TxnID: t.Hash,
-		Data:  data,
-	}
-
-	commitFolderReponseBytes, err := json.Marshal(commitFolderResponse)
-	if err != nil {
-		l.Logger.Error("Failed to marshal commitFolderResponse to bytes")
-		transaction.Cache.Evict(txn.ClientID)
-		return "", err
-	}
-
-	commitFolderResponseString := string(commitFolderReponseBytes)
-	return commitFolderResponseString, nil
 }
 
 func (a *Allocation) AddCollaborator(filePath, collaboratorID string) error {

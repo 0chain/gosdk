@@ -4,10 +4,8 @@
 package main
 
 import (
-	"sync"
-
-	"github.com/0chain/gosdk/core/transaction"
 	"gopkg.in/cheggaaa/pb.v1"
+	"sync"
 )
 
 // StatusBar is to check status of any operation
@@ -28,17 +26,15 @@ func (s *StatusBar) Started(allocationID, filePath string, op int, totalBytes in
 
 // InProgress for statusBar
 func (s *StatusBar) InProgress(allocationID, filePath string, op int, completedBytes int, todo_name_var []byte) {
-	if logEnabled {
+	if logEnabled && s.b != nil {
 		s.b.Set(completedBytes)
 	}
 }
 
 // Completed for statusBar
 func (s *StatusBar) Completed(allocationID, filePath string, filename string, mimetype string, size int, op int) {
-	if logEnabled {
-		if s.b != nil {
-			s.b.Finish()
-		}
+	if logEnabled && s.b != nil {
+		s.b.Finish()
 	}
 	s.success = true
 
@@ -59,12 +55,6 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 		}
 	}()
 	PrintError("Error in file operation." + err.Error())
-	s.wg.Done()
-}
-
-// CommitMetaCompleted when commit meta completes
-func (s *StatusBar) CommitMetaCompleted(request, response string, txn *transaction.Transaction, err error) {
-	setLastMetadataCommitTxn(txn, err)
 	s.wg.Done()
 }
 

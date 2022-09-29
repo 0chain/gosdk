@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -45,8 +44,6 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	}
-
-	var wg sync.WaitGroup
 
 	type parameters struct {
 		referencePathToRetrieve fileref.ReferencePath
@@ -103,7 +100,6 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 			},
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(0), req.deleteMask)
 				require.Equal(float32(0), req.consensus.consensus)
 			},
 		},
@@ -157,7 +153,6 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 			},
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(1), req.deleteMask)
 				require.Equal(float32(1), req.consensus.consensus)
 			},
 		},
@@ -169,7 +164,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 			req := &DeleteRequest{
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
-				remotefilepath: mockRemoteFilePath,
+				remoteFilePath: mockRemoteFilePath,
 				consensus: Consensus{
 					consensusThresh:        50,
 					fullconsensus:          4,
@@ -177,16 +172,13 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 				},
 				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
-				wg:           func() *sync.WaitGroup { wg.Add(1); return &wg }(),
 			}
 			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name,
 			})
-			deleteMutex := &sync.Mutex{}
-			objectTreeRefs := make([]fileref.RefEntity, 1)
-			refEntity, _ := req.getObjectTreeFromBlobber(req.blobbers[0])
-			objectTreeRefs[0] = refEntity
-			req.deleteBlobberFile(req.blobbers[0], 0, deleteMutex)
+
+			req.deleteFileFromBlobber(req.blobbers[0]) //nolint: errcheck
+
 			if tt.wantFunc != nil {
 				tt.wantFunc(require, req)
 			}
@@ -327,7 +319,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			wantErr:     false,
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(15), req.deleteMask)
+
 				require.Equal(float32(4), req.consensus.consensus)
 			},
 		},
@@ -339,7 +331,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			wantErr:     false,
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(7), req.deleteMask)
+
 				require.Equal(float32(3), req.consensus.consensus)
 			},
 		},
@@ -366,7 +358,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			req := &DeleteRequest{
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
-				remotefilepath: mockRemoteFilePath,
+				remoteFilePath: mockRemoteFilePath,
 				consensus: Consensus{
 					consensusThresh:        50,
 					fullconsensus:          4,
