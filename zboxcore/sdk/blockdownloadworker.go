@@ -224,7 +224,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				rspData.BlockChunks = req.splitData(respBody, req.chunkSize)
 			}
 
-			incBlobberReadCtr(req.allocationID, req.blobber.ID, lastBlobberReadCounter+req.numBlocks)
+			incBlobberReadCtr(req.allocationID, req.blobber.ID, req.numBlocks)
 			req.result <- &rspData
 			return nil
 		})
