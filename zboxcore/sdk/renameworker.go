@@ -80,9 +80,13 @@ func (req *RenameRequest) renameBlobberObject(blobber *blockchain.StorageNode) (
 		}
 		resp_body, err := ioutil.ReadAll(resp.Body)
 		if err == nil {
-			l.Logger.Error(blobber.Baseurl, "Response: ", string(resp_body))
+			msg := string(resp_body)
+			if len(msg) > 0 {
+				l.Logger.Error(blobber.Baseurl, "Response: ", msg)
 
-			return fmt.Errorf("Rename: %v %s", resp.StatusCode, string(resp_body))
+				return fmt.Errorf("Rename: %v %s", resp.StatusCode, msg)
+			}
+
 		}
 
 		return fmt.Errorf("Rename: %v", resp.StatusCode)
@@ -109,7 +113,6 @@ func (req *RenameRequest) ProcessRename() error {
 
 			if err != nil {
 				l.Logger.Error(err.Error())
-				return
 			}
 
 			wait <- RenameResult{

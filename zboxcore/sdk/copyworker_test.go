@@ -114,6 +114,8 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 				}, nil)
 			},
+			wantErr: true,
+			errMsg:  "Copy: 400",
 			wantFunc: func(require *require.Assertions, req *CopyRequest) {
 				require.NotNil(req)
 				require.Equal(float32(0), req.consensus)
