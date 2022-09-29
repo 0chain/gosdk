@@ -372,7 +372,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			numCorrect:  2,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "Rename failed: Rename request failed. Operation failed.",
+			errMsg:      "rename failed: rename consensus failed.",
 		},
 		{
 			name:        "Test_All_Blobber_Error_On_Rename_Failure",
@@ -380,7 +380,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			numCorrect:  0,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "Rename failed: Rename request failed. Operation failed.",
+			errMsg:      "rename failed: rename consensus failed.",
 		},
 	}
 	for _, tt := range tests {
