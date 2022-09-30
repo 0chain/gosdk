@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 
 	"github.com/0chain/errors"
@@ -116,9 +115,10 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 				}, nil)
 			},
+			wantErr: true,
+			errMsg:  "Rename: 400",
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(0), req.renameMask)
 				require.Equal(float32(0), req.consensus.consensus)
 			},
 		},
@@ -188,7 +188,6 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			},
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(1), req.renameMask)
 				require.Equal(float32(1), req.consensus.consensus)
 			},
 		},
@@ -207,15 +206,13 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 					consensusRequiredForOk: 60,
 				},
 				ctx:          context.TODO(),
-				renameMask:   0,
-				maskMU:       &sync.Mutex{},
 				connectionID: mockConnectionId,
 				newName:      mockNewName,
 			}
 			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name,
 			})
-			_, err := req.renameBlobberObject(req.blobbers[0], 0)
+			_, err := req.renameBlobberObject(req.blobbers[0])
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))
@@ -355,7 +352,6 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			wantErr:     false,
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(15), req.renameMask)
 				require.Equal(float32(4), req.consensus.consensus)
 			},
 		},
@@ -367,7 +363,6 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			wantErr:     false,
 			wantFunc: func(require *require.Assertions, req *RenameRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(7), req.renameMask)
 				require.Equal(float32(3), req.consensus.consensus)
 			},
 		},
@@ -377,7 +372,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			numCorrect:  2,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "rename failed: Commit consensus failed. Error: ",
+			errMsg:      "Rename failed: Rename request failed. Operation failed.",
 		},
 		{
 			name:        "Test_All_Blobber_Error_On_Rename_Failure",
@@ -385,7 +380,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			numCorrect:  0,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "rename failed: Commit consensus failed. Error: ",
+			errMsg:      "Rename failed: Rename request failed. Operation failed.",
 		},
 	}
 	for _, tt := range tests {
@@ -435,8 +430,6 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 					consensusRequiredForOk: 60,
 				},
 				ctx:          context.TODO(),
-				renameMask:   0,
-				maskMU:       &sync.Mutex{},
 				connectionID: mockConnectionId,
 				newName:      mockNewName,
 			}

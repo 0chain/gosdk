@@ -32,12 +32,6 @@ type DeleteRequest struct {
 	consensus    Consensus
 }
 
-type DeleteResult struct {
-	BlobberIndex int
-	FileRef      fileref.RefEntity
-	Deleted      bool
-}
-
 func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode) error {
 
 	query := &url.Values{}
@@ -108,7 +102,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 	numNotFound := 0
 	objectTreeRefs := make([]fileref.RefEntity, num)
 
-	wait := make(chan DeleteResult, num)
+	wait := make(chan ProcessResult, num)
 
 	wg := sync.WaitGroup{}
 	wg.Add(num)
@@ -120,10 +114,10 @@ func (req *DeleteRequest) ProcessDelete() error {
 			fr, err := req.deleteFileFromBlobber(req.blobbers[blobberIdx])
 			if err == nil {
 
-				wait <- DeleteResult{
+				wait <- ProcessResult{
 					BlobberIndex: blobberIdx,
 					FileRef:      fr,
-					Deleted:      true,
+					Succeed:      true,
 				}
 
 				return
@@ -132,16 +126,16 @@ func (req *DeleteRequest) ProcessDelete() error {
 			//it was removed from the blobber
 			if errors.Is(err, constants.ErrNotFound) {
 
-				wait <- DeleteResult{
+				wait <- ProcessResult{
 					BlobberIndex: blobberIdx,
 					FileRef:      nil,
-					Deleted:      true,
+					Succeed:      true,
 				}
 
 				return
 			}
 
-			wait <- DeleteResult{
+			wait <- ProcessResult{
 				BlobberIndex: blobberIdx,
 			}
 
@@ -154,7 +148,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 	for i := 0; i < num; i++ {
 		r := <-wait
 
-		if !r.Deleted {
+		if !r.Succeed {
 			continue
 		}
 

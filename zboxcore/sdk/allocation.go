@@ -915,8 +915,6 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	req.consensus.consensusRequiredForOk = a.consensusOK
 	req.ctx = a.ctx
 	req.remotefilepath = path
-	req.renameMask = 0
-	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
 	err := req.ProcessRename()
 	return err
@@ -958,7 +956,6 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	req.consensusRequiredForOk = a.consensusOK
 	req.ctx = a.ctx
 	req.remotefilepath = path
-	req.copyMask = 0
 	req.connectionID = zboxutil.NewConnectionId()
 	err := req.ProcessCopy()
 	return err
