@@ -63,10 +63,8 @@ func (req *DeleteRequest) deleteBlobberFile(
 	}
 
 	var resp *http.Response
+	var shouldContinue bool
 	for i := 0; i < 3; i++ {
-		if resp != nil {
-			resp.Body.Close()
-		}
 		ctx, cncl := context.WithTimeout(req.ctx, time.Minute)
 		resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
 		cncl()
@@ -76,11 +74,12 @@ func (req *DeleteRequest) deleteBlobberFile(
 			return
 		}
 
-		defer resp.Body.Close()
+		var respBody []byte
+
 		if resp.StatusCode == http.StatusOK {
 			req.consensus.Done()
 			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " deleted.")
-			return
+			goto CL
 		}
 
 		if resp.StatusCode == http.StatusTooManyRequests {
@@ -88,26 +87,36 @@ func (req *DeleteRequest) deleteBlobberFile(
 			var r int
 			r, err = zboxutil.GetRateLimitValue(resp)
 			if err != nil {
-				return
+				logger.Logger.Error(err)
+				goto CL
 			}
 			time.Sleep(time.Duration(r) * time.Second)
-			continue
+			shouldContinue = true
+			goto CL
 		}
 
 		if resp.StatusCode == http.StatusNoContent {
 			req.consensus.Done()
 			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " not available in blobber.")
-			return
+			goto CL
 		}
 
-		var respBody []byte
 		respBody, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
 			l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
-			return
+			goto CL
 		}
 		err = errors.New("response_error", fmt.Sprintf("unexpected response with status code %d, message: %s",
 			resp.StatusCode, string(respBody)))
+
+	CL:
+		if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
+		if shouldContinue {
+			shouldContinue = false
+			continue
+		}
 		return
 	}
 
