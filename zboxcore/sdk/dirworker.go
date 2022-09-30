@@ -184,12 +184,12 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 			continue
 		}
 
-		resp_body, err := ioutil.ReadAll(resp.Body)
+		respBody, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			return err, false
 		}
 
-		msg := string(resp_body)
+		msg := string(respBody)
 		l.Logger.Error(blobber.Baseurl, " Response: ", msg)
 		if strings.Contains(msg, DirectoryExists) {
 			req.Consensus.Done()
