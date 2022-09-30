@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -93,16 +92,14 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(
 	var req *http.Request
 	req, err = zboxutil.NewWriteMarkerUnLockRequest(
 		b.Baseurl, wmMu.allocationObj.Tx, connID, "")
+
 	if err != nil {
 		return
 	}
 
 	var resp *http.Response
+	var shouldContinue bool
 	for retry := 0; retry < 3; retry++ {
-		if resp != nil {
-			resp.Body.Close()
-		}
-
 		reqCtx, ctxCncl := context.WithTimeout(ctx, timeOut)
 		resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
 		ctxCncl()
@@ -110,9 +107,13 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(
 		if err != nil {
 			return
 		}
+		var (
+			msg  string
+			data []byte
+		)
 		if resp.StatusCode == http.StatusNoContent || resp.StatusCode == http.StatusOK {
 			logger.Logger.Info(b.Baseurl, connID, " unlocked")
-			return
+			goto CL
 		}
 
 		if resp.StatusCode == http.StatusTooManyRequests {
@@ -123,29 +124,41 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(
 			var r int
 			r, err = zboxutil.GetRateLimitValue(resp)
 			if err != nil {
-				return
+				logger.Logger.Error(err)
+				goto CL
 			}
-
 			time.Sleep(time.Duration(r) * time.Second)
-			continue
+			shouldContinue = true
+			goto CL
 		}
 
-		var data []byte
 		data, err = io.ReadAll(resp.Body)
 		if err != nil {
-			return
+			logger.Logger.Error(err)
+			goto CL
 		}
 
-		m := string(data)
-		if m == "EOF" || strings.Contains(m, "server closed idle connection") {
+		msg = string(data)
+		if msg == "EOF" {
 			logger.Logger.Debug(b.Baseurl, connID, " retrying request because "+
 				"server closed connection unexpectedly")
-			continue
+			shouldContinue = true
+			goto CL
 		}
 
 		err = errors.New("unknown_status",
 			fmt.Sprintf("Blobber %s responded with status %d and message %s",
 				b.Baseurl, resp.StatusCode, string(data)))
+
+	CL:
+		if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
+
+		if shouldContinue {
+			shouldContinue = false
+			continue
+		}
 		return
 	}
 
@@ -206,18 +219,17 @@ func (wmMu *WriteMarkerMutex) LockBlobber(
 
 	requestTime := strconv.FormatInt(time.Now().Unix(), 10)
 	var req *http.Request
+
 	req, err = zboxutil.NewWriteMarkerLockRequest(
 		b.Baseurl, wmMu.allocationObj.Tx, connID, requestTime)
+
 	if err != nil {
 		return
 	}
 
 	var resp *http.Response
+	var shouldContinue bool
 	for retry := 0; retry < 3; retry++ {
-		if resp != nil {
-			resp.Body.Close()
-		}
-
 		reqCtx, ctxCncl := context.WithTimeout(ctx, timeOut)
 		resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
 		ctxCncl()
@@ -225,16 +237,18 @@ func (wmMu *WriteMarkerMutex) LockBlobber(
 		if err != nil {
 			return
 		}
+		var data []byte
 		if resp.StatusCode == http.StatusOK {
 			consensus.Done()
 			logger.Logger.Info(b.Baseurl, connID, " locked")
-			return
+			goto CL
 		}
 
 		if resp.StatusCode == http.StatusAccepted { // accepted but pending
 			logger.Logger.Info(b.Baseurl, connID, " lock pending. Retrying again")
 			time.Sleep(timeOut * 2) // wait twice the time of timeout
-			continue
+			shouldContinue = true
+			goto CL
 		}
 
 		if resp.StatusCode == http.StatusTooManyRequests {
@@ -245,22 +259,33 @@ func (wmMu *WriteMarkerMutex) LockBlobber(
 			var r int
 			r, err = zboxutil.GetRateLimitValue(resp)
 			if err != nil {
-				return
+				logger.Logger.Error(err)
+				goto CL
 			}
 
 			time.Sleep(time.Duration(r) * time.Second)
-			continue
+			shouldContinue = true
+			goto CL
 		}
 
-		var data []byte
 		data, err = io.ReadAll(resp.Body)
 		if err != nil {
-			return
+			logger.Logger.Error(err)
+			goto CL
 		}
 
 		err = errors.New("unknown_status",
 			fmt.Sprintf("Blobber %s responded with status %d and message %s",
 				b.Baseurl, resp.StatusCode, string(data)))
+
+	CL:
+		if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
+		if shouldContinue {
+			shouldContinue = false
+			continue
+		}
 		return
 	}
 }

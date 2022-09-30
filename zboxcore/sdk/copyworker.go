@@ -61,11 +61,8 @@ func (req *CopyRequest) copyBlobberObject(
 	}
 
 	var resp *http.Response
+	var shouldContinue bool
 	for i := 0; i < 3; i++ {
-		if resp != nil {
-			resp.Body.Close()
-		}
-
 		body := new(bytes.Buffer)
 		formWriter := multipart.NewWriter(body)
 
@@ -74,15 +71,22 @@ func (req *CopyRequest) copyBlobberObject(
 		formWriter.WriteField("dest", req.destPath)
 		formWriter.Close()
 
-		var httpreq *http.Request
+		var (
+			httpreq  *http.Request
+			respBody []byte
+			ctx      context.Context
+			cncl     context.CancelFunc
+		)
+
 		httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationTx, body)
 		if err != nil {
 			l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 			return nil, err
 		}
+
 		httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 		l.Logger.Info(httpreq.URL.Path)
-		ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
+		ctx, cncl = context.WithTimeout(req.ctx, (time.Second * 30))
 		resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
 		cncl()
 
@@ -90,19 +94,17 @@ func (req *CopyRequest) copyBlobberObject(
 			logger.Logger.Error("Copy: ", err)
 			return nil, err
 		}
-		defer resp.Body.Close()
 
-		var respBody []byte
 		respBody, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
 			logger.Logger.Error("Error: Resp ", err)
-			return nil, err
+			goto CL
 		}
 
 		if resp.StatusCode == http.StatusOK {
 			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " copied.")
 			req.Consensus.Done()
-			return
+			goto CL
 		}
 
 		if resp.StatusCode == http.StatusTooManyRequests {
@@ -110,13 +112,30 @@ func (req *CopyRequest) copyBlobberObject(
 			var r int
 			r, err = zboxutil.GetRateLimitValue(resp)
 			if err != nil {
-				return
+				logger.Logger.Error(err)
+				goto CL
 			}
 			time.Sleep(time.Duration(r) * time.Second)
-			continue
+			shouldContinue = true
+			goto CL
 		}
 		l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
 		err = errors.New("response_error", string(respBody))
+
+	CL:
+		if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
+		if shouldContinue {
+			shouldContinue = false
+			continue
+		}
+
+		if err != nil {
+			return nil, err
+		}
+
+		return
 
 	}
 	return

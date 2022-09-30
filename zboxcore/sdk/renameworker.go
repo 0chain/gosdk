@@ -59,11 +59,9 @@ func (req *RenameRequest) renameBlobberObject(
 	}
 
 	var resp *http.Response
-	for i := 0; i < 3; i++ {
-		if resp != nil {
-			resp.Body.Close()
-		}
+	var shouldContinue bool
 
+	for i := 0; i < 3; i++ {
 		body := new(bytes.Buffer)
 		formWriter := multipart.NewWriter(body)
 
@@ -78,6 +76,7 @@ func (req *RenameRequest) renameBlobberObject(
 			l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 			return nil, err
 		}
+
 		httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 		ctx, cncl := context.WithTimeout(req.ctx, time.Minute)
 		resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
@@ -87,19 +86,18 @@ func (req *RenameRequest) renameBlobberObject(
 			logger.Logger.Error("Rename: ", err)
 			return nil, err
 		}
-		defer resp.Body.Close()
 
 		var respBody []byte
 		respBody, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
 			logger.Logger.Error("Error: Resp ", err)
-			return nil, err
+			goto CL
 		}
 
 		if resp.StatusCode == http.StatusOK {
 			req.consensus.Done()
 			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " renamed.")
-			return
+			goto CL
 		}
 
 		if resp.StatusCode == http.StatusTooManyRequests {
@@ -107,13 +105,24 @@ func (req *RenameRequest) renameBlobberObject(
 			var r int
 			r, err = zboxutil.GetRateLimitValue(resp)
 			if err != nil {
-				return
+				logger.Logger.Error(err)
+				goto CL
 			}
 			time.Sleep(time.Duration(r) * time.Second)
-			continue
+			shouldContinue = true
+			goto CL
 		}
 		l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
 		err = errors.New("response_error", string(respBody))
+
+	CL:
+		if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
+		if shouldContinue {
+			shouldContinue = false
+			continue
+		}
 		return
 	}
 
