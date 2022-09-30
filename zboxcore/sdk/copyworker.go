@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"math/bits"
 	"mime/multipart"
 	"net/http"
 	"sync"
@@ -31,9 +30,8 @@ type CopyRequest struct {
 	remotefilepath string
 	destPath       string
 	ctx            context.Context
-	wg             *sync.WaitGroup
-	copyMask       uint32
-	connectionID   string
+
+	connectionID string
 	Consensus
 }
 
@@ -41,8 +39,8 @@ func (req *CopyRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode
 	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.remotefilepath, blobber)
 }
 
-func (req *CopyRequest) copyBlobberObject(blobber *blockchain.StorageNode, blobberIdx int) (fileref.RefEntity, error) {
-	refEntity, err := req.getObjectTreeFromBlobber(req.blobbers[blobberIdx])
+func (req *CopyRequest) copyBlobberObject(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
+	refEntity, err := req.getObjectTreeFromBlobber(blobber)
 	if err != nil {
 		return nil, err
 	}
@@ -72,17 +70,25 @@ func (req *CopyRequest) copyBlobberObject(blobber *blockchain.StorageNode, blobb
 		if resp.StatusCode == http.StatusOK {
 			resp_body, _ := ioutil.ReadAll(resp.Body)
 			l.Logger.Info("copy resp:", string(resp_body))
-			req.consensus++
-			req.copyMask |= (1 << uint32(blobberIdx))
+			req.Done()
+
 			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " copied.")
-		} else {
-			resp_body, err := ioutil.ReadAll(resp.Body)
-			if err == nil {
-				l.Logger.Error(blobber.Baseurl, "Response: ", string(resp_body))
+			return nil
+		}
+
+		resp_body, err := ioutil.ReadAll(resp.Body)
+		if err == nil {
+			msg := string(resp_body)
+
+			if len(msg) > 0 {
+				l.Logger.Error(blobber.Baseurl, "Response: ", msg)
+				return fmt.Errorf("Copy: %v %s", resp.StatusCode, msg)
 			}
 		}
-		return nil
+
+		return fmt.Errorf("Copy: %v", resp.StatusCode)
 	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -90,22 +96,41 @@ func (req *CopyRequest) copyBlobberObject(blobber *blockchain.StorageNode, blobb
 }
 
 func (req *CopyRequest) ProcessCopy() error {
-	numList := len(req.blobbers)
-	objectTreeRefs := make([]fileref.RefEntity, numList)
-	req.wg = &sync.WaitGroup{}
-	req.wg.Add(numList)
-	for i := 0; i < numList; i++ {
+	num := len(req.blobbers)
+	objectTreeRefs := make([]fileref.RefEntity, num)
+
+	wait := make(chan ProcessResult, num)
+
+	wg := &sync.WaitGroup{}
+	wg.Add(num)
+
+	for i := 0; i < num; i++ {
 		go func(blobberIdx int) {
-			defer req.wg.Done()
-			refEntity, err := req.copyBlobberObject(req.blobbers[blobberIdx], blobberIdx)
+			defer wg.Done()
+			refEntity, err := req.copyBlobberObject(req.blobbers[blobberIdx])
 			if err != nil {
 				l.Logger.Error(err.Error())
-				return
 			}
-			objectTreeRefs[blobberIdx] = refEntity
+
+			wait <- ProcessResult{
+				BlobberIndex: blobberIdx,
+				FileRef:      refEntity,
+				Succeed:      err == nil,
+			}
+
 		}(i)
 	}
-	req.wg.Wait()
+	wg.Wait()
+
+	for i := 0; i < num; i++ {
+		r := <-wait
+
+		if !r.Succeed {
+			continue
+		}
+
+		objectTreeRefs[r.BlobberIndex] = r.FileRef
+	}
 
 	if !req.isConsensusOk() {
 		return errors.New("Copy failed: Copy request failed. Operation failed.")
@@ -121,13 +146,15 @@ func (req *CopyRequest) ProcessCopy() error {
 		return fmt.Errorf("Copy failed: %s", err.Error())
 	}
 
-	req.consensus = 0
-	wg := &sync.WaitGroup{}
-	wg.Add(bits.OnesCount32(req.copyMask))
-	commitReqs := make([]*CommitRequest, bits.OnesCount32(req.copyMask))
-	c, pos := 0, 0
-	for i := req.copyMask; i != 0; i &= ^(1 << uint32(pos)) {
-		pos = bits.TrailingZeros32(i)
+	req.Reset()
+	commitReqs := make([]*CommitRequest, 0, num)
+
+	for pos, ref := range objectTreeRefs {
+		if ref == nil {
+			continue
+		}
+
+		wg.Add(1)
 		//go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.wg)
 		commitReq := &CommitRequest{}
 		commitReq.allocationID = req.allocationID
@@ -142,9 +169,8 @@ func (req *CopyRequest) ProcessCopy() error {
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReq.connectionID = req.connectionID
 		commitReq.wg = wg
-		commitReqs[c] = commitReq
+		commitReqs = append(commitReqs, commitReq)
 		go AddCommitRequest(commitReq)
-		c++
 	}
 	wg.Wait()
 
