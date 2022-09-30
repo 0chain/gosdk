@@ -129,7 +129,7 @@ func (req *RenameRequest) ProcessRename() error {
 	}
 
 	if !req.consensus.isConsensusOk() {
-		return errors.New("rename failed: rename consensus failed.")
+		return errors.New("Rename failed: Rename request failed. Operation failed.")
 	}
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
