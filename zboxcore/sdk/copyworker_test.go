@@ -114,9 +114,10 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 					Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 				}, nil)
 			},
+			wantErr: true,
+			errMsg:  "Copy: 400",
 			wantFunc: func(require *require.Assertions, req *CopyRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(0), req.copyMask)
 				require.Equal(float32(0), req.consensus)
 			},
 		},
@@ -186,7 +187,6 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 			},
 			wantFunc: func(require *require.Assertions, req *CopyRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(1), req.copyMask)
 				require.Equal(float32(1), req.consensus)
 			},
 		},
@@ -211,7 +211,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name,
 			})
-			_, err := req.copyBlobberObject(req.blobbers[0], 0)
+			_, err := req.copyBlobberObject(req.blobbers[0])
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))
@@ -354,7 +354,6 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			wantErr:     false,
 			wantFunc: func(require *require.Assertions, req *CopyRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(15), req.copyMask)
 				require.Equal(float32(4), req.consensus)
 			},
 		},
@@ -366,7 +365,6 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			wantErr:     false,
 			wantFunc: func(require *require.Assertions, req *CopyRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(7), req.copyMask)
 				require.Equal(float32(3), req.consensus)
 			},
 		},
