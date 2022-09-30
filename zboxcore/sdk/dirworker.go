@@ -156,21 +156,24 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 
 	var resp *http.Response
+	var shouldContinue bool
 	for i := 0; i < 3; i++ {
 		ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
-
 		resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
 		cncl()
 		if err != nil {
 			l.Logger.Error(err)
 			return err, false
 		}
-		defer resp.Body.Close()
 
+		var (
+			respBody []byte
+			msg      string
+		)
 		if resp.StatusCode == http.StatusOK {
 			l.Logger.Info("Successfully created directory ", req.remotePath)
 			req.Consensus.Done()
-			return nil, false
+			goto CL
 		}
 
 		if resp.StatusCode == http.StatusTooManyRequests {
@@ -181,26 +184,38 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 			}
 			l.Logger.Debug(fmt.Sprintf("Got too many request error. Retrying after %d seconds", r))
 			time.Sleep(time.Duration(r) * time.Second)
-			continue
+			shouldContinue = true
+			goto CL
 		}
 
-		respBody, err := ioutil.ReadAll(resp.Body)
+		respBody, err = ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return err, false
+			l.Logger.Error(err)
+			goto CL
 		}
 
-		msg := string(respBody)
+		msg = string(respBody)
 		l.Logger.Error(blobber.Baseurl, " Response: ", msg)
 		if strings.Contains(msg, DirectoryExists) {
 			req.Consensus.Done()
 			req.mu.Lock()
 			req.dirMask = req.dirMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
 			req.mu.Unlock()
-			return nil, true
+			alreadyExists = true
+			goto CL
 		}
 
-		return errors.New("response_error", msg), false
+		err = errors.New("response_error", msg)
 
+	CL:
+		if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
+		if shouldContinue {
+			shouldContinue = true
+			continue
+		}
+		return
 	}
 
 	return errors.New("dir_creation_failed",
