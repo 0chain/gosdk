@@ -31,7 +31,6 @@ type CopyRequest struct {
 	remotefilepath string
 	destPath       string
 	ctx            context.Context
-	wg             *sync.WaitGroup
 	copyMask       zboxutil.Uint128
 	maskMU         *sync.Mutex
 	connectionID   string
@@ -43,9 +42,9 @@ func (req *CopyRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode
 }
 
 func (req *CopyRequest) copyBlobberObject(
-	blobber *blockchain.StorageNode, blobberIdx int) (refEntity fileref.RefEntity, err error) {
+	blobber *blockchain.StorageNode, blobberIdx int, wg *sync.WaitGroup) (refEntity fileref.RefEntity, err error) {
 
-	defer req.wg.Done()
+	defer wg.Done()
 
 	defer func() {
 		if err != nil {
@@ -144,14 +143,15 @@ func (req *CopyRequest) copyBlobberObject(
 func (req *CopyRequest) ProcessCopy() error {
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
-	req.wg = &sync.WaitGroup{}
-	req.wg.Add(numList)
+	wg := &sync.WaitGroup{}
 
 	var pos uint64
+
 	for i := req.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
+		wg.Add(1)
 		go func(blobberIdx int) {
-			refEntity, err := req.copyBlobberObject(req.blobbers[blobberIdx], blobberIdx)
+			refEntity, err := req.copyBlobberObject(req.blobbers[blobberIdx], blobberIdx, wg)
 			if err != nil {
 				l.Logger.Error(err.Error())
 				return
@@ -160,7 +160,7 @@ func (req *CopyRequest) ProcessCopy() error {
 		}(int(pos))
 	}
 
-	req.wg.Wait()
+	wg.Wait()
 
 	if !req.isConsensusOk() {
 		return errors.New("consensus_not_met",
@@ -179,7 +179,6 @@ func (req *CopyRequest) ProcessCopy() error {
 	}
 
 	req.Consensus.Reset()
-	wg := &sync.WaitGroup{}
 	activeBlobbers := req.copyMask.CountOnes()
 	wg.Add(activeBlobbers)
 	commitReqs := make([]*CommitRequest, activeBlobbers)
