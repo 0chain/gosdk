@@ -58,74 +58,87 @@ func (req *RenameRequest) renameBlobberObject(
 		return nil, err
 	}
 
-	var resp *http.Response
-	var shouldContinue bool
+	var (
+		resp             *http.Response
+		shouldContinue   bool
+		latestRespMsg    string
+		latestStatusCode int
+	)
 
 	for i := 0; i < 3; i++ {
-		body := new(bytes.Buffer)
-		formWriter := multipart.NewWriter(body)
+		err, shouldContinue = func() (err error, shouldContinue bool) {
+			body := new(bytes.Buffer)
+			formWriter := multipart.NewWriter(body)
 
-		formWriter.WriteField("connection_id", req.connectionID)
-		formWriter.WriteField("path", req.remotefilepath)
-		formWriter.WriteField("new_name", req.newName)
-		formWriter.Close()
+			formWriter.WriteField("connection_id", req.connectionID)
+			formWriter.WriteField("path", req.remotefilepath)
+			formWriter.WriteField("new_name", req.newName)
+			formWriter.Close()
 
-		var httpreq *http.Request
-		httpreq, err = zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationTx, body)
-		if err != nil {
-			l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
-			return nil, err
-		}
-
-		httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-		ctx, cncl := context.WithTimeout(req.ctx, time.Minute)
-		resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
-		cncl()
-
-		if err != nil {
-			logger.Logger.Error("Rename: ", err)
-			return nil, err
-		}
-
-		var respBody []byte
-		respBody, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			logger.Logger.Error("Error: Resp ", err)
-			goto CL
-		}
-
-		if resp.StatusCode == http.StatusOK {
-			req.consensus.Done()
-			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " renamed.")
-			goto CL
-		}
-
-		if resp.StatusCode == http.StatusTooManyRequests {
-			logger.Logger.Error("Got too many request error")
-			var r int
-			r, err = zboxutil.GetRateLimitValue(resp)
+			var httpreq *http.Request
+			httpreq, err = zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationTx, body)
 			if err != nil {
-				logger.Logger.Error(err)
-				goto CL
+				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
+				return
 			}
-			time.Sleep(time.Duration(r) * time.Second)
-			shouldContinue = true
-			goto CL
-		}
-		l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
-		err = errors.New("response_error", string(respBody))
 
-	CL:
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
+			httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+			ctx, cncl := context.WithTimeout(req.ctx, time.Minute)
+			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
+			cncl()
+
+			if err != nil {
+				logger.Logger.Error("Rename: ", err)
+				return
+			}
+
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
+			var respBody []byte
+			respBody, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				logger.Logger.Error("Error: Resp ", err)
+				return
+			}
+
+			latestRespMsg = string(respBody)
+			latestStatusCode = resp.StatusCode
+
+			if resp.StatusCode == http.StatusOK {
+				req.consensus.Done()
+				l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " renamed.")
+				return
+			}
+
+			if resp.StatusCode == http.StatusTooManyRequests {
+				logger.Logger.Error("Got too many request error")
+				var r int
+				r, err = zboxutil.GetRateLimitValue(resp)
+				if err != nil {
+					logger.Logger.Error(err)
+					return
+				}
+				time.Sleep(time.Duration(r) * time.Second)
+				shouldContinue = true
+				return
+			}
+			l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
+			err = errors.New("response_error", string(respBody))
+			return
+		}()
+
+		if err != nil {
+			return
 		}
 		if shouldContinue {
-			shouldContinue = false
 			continue
 		}
 		return
 	}
 
+	err = errors.New("unknown_issue",
+		fmt.Sprintf("last status code: %d, last response message: %s", latestStatusCode, latestRespMsg))
 	return
 }
 

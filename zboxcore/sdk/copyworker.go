@@ -61,83 +61,87 @@ func (req *CopyRequest) copyBlobberObject(
 
 	var resp *http.Response
 	var shouldContinue bool
+	var latestRespMsg string
+	var latestStatusCode int
 	for i := 0; i < 3; i++ {
-		body := new(bytes.Buffer)
-		formWriter := multipart.NewWriter(body)
+		err, shouldContinue = func() (err error, shouldContinue bool) {
+			body := new(bytes.Buffer)
+			formWriter := multipart.NewWriter(body)
 
-		formWriter.WriteField("connection_id", req.connectionID)
-		formWriter.WriteField("path", req.remotefilepath)
-		formWriter.WriteField("dest", req.destPath)
-		formWriter.Close()
+			formWriter.WriteField("connection_id", req.connectionID)
+			formWriter.WriteField("path", req.remotefilepath)
+			formWriter.WriteField("dest", req.destPath)
+			formWriter.Close()
 
-		var (
-			httpreq  *http.Request
-			respBody []byte
-			ctx      context.Context
-			cncl     context.CancelFunc
-		)
+			var (
+				httpreq  *http.Request
+				respBody []byte
+				ctx      context.Context
+				cncl     context.CancelFunc
+			)
 
-		httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationTx, body)
-		if err != nil {
-			l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
-			return nil, err
-		}
-
-		httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-		l.Logger.Info(httpreq.URL.Path)
-		ctx, cncl = context.WithTimeout(req.ctx, (time.Second * 30))
-		resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
-		cncl()
-
-		if err != nil {
-			logger.Logger.Error("Copy: ", err)
-			return nil, err
-		}
-
-		respBody, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			logger.Logger.Error("Error: Resp ", err)
-			goto CL
-		}
-
-		if resp.StatusCode == http.StatusOK {
-			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " copied.")
-			req.Consensus.Done()
-			goto CL
-		}
-
-		if resp.StatusCode == http.StatusTooManyRequests {
-			logger.Logger.Error("Got too many request error")
-			var r int
-			r, err = zboxutil.GetRateLimitValue(resp)
+			httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationTx, body)
 			if err != nil {
-				logger.Logger.Error(err)
-				goto CL
+				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
+				return
 			}
-			time.Sleep(time.Duration(r) * time.Second)
-			shouldContinue = true
-			goto CL
-		}
-		l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
-		err = errors.New("response_error", string(respBody))
 
-	CL:
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
+			httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+			l.Logger.Info(httpreq.URL.Path)
+			ctx, cncl = context.WithTimeout(req.ctx, (time.Second * 30))
+			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
+			cncl()
+
+			if err != nil {
+				logger.Logger.Error("Copy: ", err)
+				return
+			}
+
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
+			respBody, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				logger.Logger.Error("Error: Resp ", err)
+				return
+			}
+
+			if resp.StatusCode == http.StatusOK {
+				l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " copied.")
+				req.Consensus.Done()
+				return
+			}
+
+			latestRespMsg = string(respBody)
+			latestStatusCode = resp.StatusCode
+
+			if resp.StatusCode == http.StatusTooManyRequests {
+				logger.Logger.Error("Got too many request error")
+				var r int
+				r, err = zboxutil.GetRateLimitValue(resp)
+				if err != nil {
+					logger.Logger.Error(err)
+					return
+				}
+				time.Sleep(time.Duration(r) * time.Second)
+				shouldContinue = true
+				return
+			}
+			l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
+			err = errors.New("response_error", string(respBody))
+			return
+		}()
+
+		if err != nil {
+			return
 		}
 		if shouldContinue {
-			shouldContinue = false
 			continue
 		}
-
-		if err != nil {
-			return nil, err
-		}
-
 		return
-
 	}
-	return
+	return nil, errors.New("unknown_issue",
+		fmt.Sprintf("last status code: %d, last response message: %s", latestStatusCode, latestRespMsg))
 }
 
 func (req *CopyRequest) ProcessCopy() error {

@@ -76,64 +76,83 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 
 	req.Header.Add("Content-Type", formData.ContentType)
 
-	var resp *http.Response
-	var shouldContinue bool
+	var (
+		resp             *http.Response
+		shouldContinue   bool
+		latestRespMsg    string
+		latestStatusCode int
+	)
+
 	for i := 0; i < 3; i++ {
-		reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
-		resp, err = su.client.Do(req.WithContext(reqCtx))
-		ctxCncl()
+		err, shouldContinue = func() (err error, shouldContinue bool) {
+			reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
+			resp, err = su.client.Do(req.WithContext(reqCtx))
+			ctxCncl()
 
-		var r UploadResult
-		var respbody []byte
-
-		if err != nil {
-			logger.Logger.Error("Upload : ", err)
-			goto CloseResp
-		}
-
-		respbody, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			logger.Logger.Error("Error: Resp ", err)
-			goto CloseResp
-		}
-
-		if resp.StatusCode == http.StatusTooManyRequests {
-			logger.Logger.Error("Got too many request error")
-			r, err := zboxutil.GetRateLimitValue(resp)
 			if err != nil {
-				logger.Logger.Error(err)
-				goto CloseResp
+				logger.Logger.Error("Upload : ", err)
+				return
 			}
-			time.Sleep(time.Duration(r) * time.Second)
-			shouldContinue = true
-			goto CloseResp
-		}
 
-		if resp.StatusCode != http.StatusOK {
-			msg := string(respbody)
-			logger.Logger.Error(sb.blobber.Baseurl,
-				" Upload error response: ", resp.StatusCode,
-				"err message: ", msg)
-			err = errors.Throw(constants.ErrBadRequest, msg)
-			goto CloseResp
-		}
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
+			var r UploadResult
+			var respbody []byte
 
-		err = json.Unmarshal(respbody, &r)
+			respbody, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				logger.Logger.Error("Error: Resp ", err)
+				return
+			}
+
+			latestRespMsg = string(respbody)
+			latestStatusCode = resp.StatusCode
+
+			if resp.StatusCode == http.StatusTooManyRequests {
+				logger.Logger.Error("Got too many request error")
+				var r int
+				r, err = zboxutil.GetRateLimitValue(resp)
+				if err != nil {
+					logger.Logger.Error(err)
+					return
+				}
+				time.Sleep(time.Duration(r) * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				msg := string(respbody)
+				logger.Logger.Error(sb.blobber.Baseurl,
+					" Upload error response: ", resp.StatusCode,
+					"err message: ", msg)
+				err = errors.Throw(constants.ErrBadRequest, msg)
+				return
+			}
+
+			err = json.Unmarshal(respbody, &r)
+			if err != nil {
+				logger.Logger.Error(sb.blobber.Baseurl, " Upload response parse error: ", err)
+				return
+			}
+			if r.Filename != su.fileMeta.RemoteName || r.Hash != formData.ChunkHash {
+				err = fmt.Errorf("%s Unexpected upload response data %s %s %s", sb.blobber.Baseurl, su.fileMeta.RemoteName, formData.ChunkHash, string(respbody))
+				logger.Logger.Error(err)
+				return
+			}
+			return
+		}()
+
 		if err != nil {
-			logger.Logger.Error(sb.blobber.Baseurl, " Upload response parse error: ", err)
-			goto CloseResp
+			return
 		}
-		if r.Filename != su.fileMeta.RemoteName || r.Hash != formData.ChunkHash {
-			err = fmt.Errorf("%s Unexpected upload response data %s %s %s", sb.blobber.Baseurl, su.fileMeta.RemoteName, formData.ChunkHash, string(respbody))
-			logger.Logger.Error(err)
-			goto CloseResp
+		if shouldContinue {
+			continue
 		}
 
 		su.consensus.Done()
 
-		//fixed fileRef
-
-		//fixed thumbnail info in first chunk if it has thumbnail
 		if formData.ThumbnailBytesLen > 0 {
 
 			sb.fileRef.ThumbnailSize = int64(formData.ThumbnailBytesLen)
@@ -157,20 +176,12 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			sb.fileRef.EncryptedKey = encryptedKey
 			sb.fileRef.CalculateHash()
 		}
-
-	CloseResp:
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
-		if shouldContinue {
-			shouldContinue = false
-			continue
-		}
-		return err
+		return
 	}
 
 	return thrown.New("upload_error",
-		fmt.Sprintf("Upload failed with error: %v and status: %d", err, resp.StatusCode))
+		fmt.Sprintf("latest status code: %d, latest response message: %s",
+			latestStatusCode, latestRespMsg))
 
 }
 
@@ -235,60 +246,68 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 	logger.Logger.Info("Committing to blobber." + sb.blobber.Baseurl)
 
-	var resp *http.Response
-	var shouldContinue bool
+	var (
+		resp           *http.Response
+		shouldContinue bool
+	)
 
 	for retries := 0; retries < 3; retries++ {
-		reqCtx, ctxCncl := context.WithTimeout(ctx, su.commitTimeOut)
-		resp, err = su.client.Do(req.WithContext(reqCtx))
-		ctxCncl()
+		err, shouldContinue = func() (err error, shouldContinue bool) {
+			reqCtx, ctxCncl := context.WithTimeout(ctx, su.commitTimeOut)
+			resp, err = su.client.Do(req.WithContext(reqCtx))
+			ctxCncl()
 
-		if err != nil {
-			logger.Logger.Error("Commit: ", err)
-			return err
-		}
-
-		var respBody []byte
-		if resp.StatusCode == http.StatusOK {
-			logger.Logger.Info(sb.blobber.Baseurl, su.progress.ConnectionID, " committed")
-			su.consensus.Done()
-			goto CloseResp
-
-		}
-
-		if resp.StatusCode == http.StatusTooManyRequests {
-			logger.Logger.Info(sb.blobber.Baseurl, su.progress.ConnectionID,
-				" got too many request error. Retrying")
-
-			var r int
-			r, err = zboxutil.GetRateLimitValue(resp)
 			if err != nil {
-				logger.Logger.Error(err)
-				goto CloseResp
+				logger.Logger.Error("Commit: ", err)
+				return
 			}
 
-			time.Sleep(time.Duration(r) * time.Second)
-			goto CloseResp
-		}
-		respBody, err = ioutil.ReadAll(resp.Body)
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
+
+			var respBody []byte
+			if resp.StatusCode == http.StatusOK {
+				logger.Logger.Info(sb.blobber.Baseurl, su.progress.ConnectionID, " committed")
+				su.consensus.Done()
+				return
+			}
+
+			if resp.StatusCode == http.StatusTooManyRequests {
+				logger.Logger.Info(sb.blobber.Baseurl, su.progress.ConnectionID,
+					" got too many request error. Retrying")
+
+				var r int
+				r, err = zboxutil.GetRateLimitValue(resp)
+				if err != nil {
+					logger.Logger.Error(err)
+					return
+				}
+
+				time.Sleep(time.Duration(r) * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			respBody, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				logger.Logger.Error("Response read: ", err)
+				return
+			}
+
+			err = thrown.New("commit_error",
+				fmt.Sprintf("Got error response %s with status %d", respBody, resp.StatusCode))
+			return
+		}()
+
 		if err != nil {
-			logger.Logger.Error("Response read: ", err)
-			goto CloseResp
+			return
 		}
-
-		err = thrown.New("commit_error",
-			fmt.Sprintf("Got error response %s with status %d", respBody, resp.StatusCode))
-
-	CloseResp:
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
-
 		if shouldContinue {
-			shouldContinue = false
 			continue
 		}
-		return err
+		return
+
 	}
 	return thrown.New("commit_error", fmt.Sprintf("Commit failed with response status %d", resp.StatusCode))
 }

@@ -62,64 +62,74 @@ func (req *DeleteRequest) deleteBlobberFile(
 		return
 	}
 
-	var resp *http.Response
-	var shouldContinue bool
+	var (
+		resp           *http.Response
+		shouldContinue bool
+	)
+
 	for i := 0; i < 3; i++ {
-		ctx, cncl := context.WithTimeout(req.ctx, time.Minute)
-		resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
-		cncl()
+		err, shouldContinue = func() (err error, shouldContinue bool) {
+			ctx, cncl := context.WithTimeout(req.ctx, time.Minute)
+			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
+			cncl()
+
+			if err != nil {
+				logger.Logger.Error(blobber.Baseurl, "Delete: ", err)
+				return
+			}
+
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
+			var respBody []byte
+
+			if resp.StatusCode == http.StatusOK {
+				req.consensus.Done()
+				l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " deleted.")
+				return
+			}
+
+			if resp.StatusCode == http.StatusTooManyRequests {
+				logger.Logger.Error("Got too many request error")
+				var r int
+				r, err = zboxutil.GetRateLimitValue(resp)
+				if err != nil {
+					logger.Logger.Error(err)
+					return
+				}
+				time.Sleep(time.Duration(r) * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			if resp.StatusCode == http.StatusNoContent {
+				req.consensus.Done()
+				l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " not available in blobber.")
+				return
+			}
+
+			respBody, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
+				return
+			}
+
+			err = errors.New("response_error", fmt.Sprintf("unexpected response with status code %d, message: %s",
+				resp.StatusCode, string(respBody)))
+			return
+		}()
 
 		if err != nil {
-			logger.Logger.Error(blobber.Baseurl, "Delete: ", err)
 			return
 		}
 
-		var respBody []byte
-
-		if resp.StatusCode == http.StatusOK {
-			req.consensus.Done()
-			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " deleted.")
-			goto CL
-		}
-
-		if resp.StatusCode == http.StatusTooManyRequests {
-			logger.Logger.Error("Got too many request error")
-			var r int
-			r, err = zboxutil.GetRateLimitValue(resp)
-			if err != nil {
-				logger.Logger.Error(err)
-				goto CL
-			}
-			time.Sleep(time.Duration(r) * time.Second)
-			shouldContinue = true
-			goto CL
-		}
-
-		if resp.StatusCode == http.StatusNoContent {
-			req.consensus.Done()
-			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " not available in blobber.")
-			goto CL
-		}
-
-		respBody, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
-			goto CL
-		}
-		err = errors.New("response_error", fmt.Sprintf("unexpected response with status code %d, message: %s",
-			resp.StatusCode, string(respBody)))
-
-	CL:
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
 		if shouldContinue {
-			shouldContinue = false
 			continue
 		}
 		return
 	}
-
+	err = errors.New("unknown_issue",
+		fmt.Sprintf("latest response code: %d", resp.StatusCode))
 }
 
 func (req *DeleteRequest) getObjectTreeFromBlobber(pos uint64) (
