@@ -42,7 +42,6 @@ type StatusCallback interface {
 	InProgress(allocationId, filePath string, op int, completedBytes int, data []byte)
 	Error(allocationID string, filePath string, op int, err error)
 	Completed(allocationId, filePath string, filename string, mimetype string, size int, op int)
-	CommitMetaCompleted(request, response string, txn *transaction.Transaction, err error)
 	RepairCompleted(filesRepaired int)
 }
 
@@ -873,7 +872,6 @@ func CreateAllocation(name string, datashards, parityshards int, size, expiry in
 	if err != nil {
 		return "", 0, nil, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
 	}
-
 	return CreateAllocationForOwner(name, client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
 		size, expiry, readPrice, writePrice, lock,
@@ -994,7 +992,7 @@ func GetBlobberIds(blobberUrls []string) ([]string, error) {
 	}
 
 	params := make(map[string]string)
-	params["blobber_url"] = string(urlsStr)
+	params["blobber_urls"] = string(urlsStr)
 	idsStr, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/blobber_ids", params, nil)
 	if err != nil {
 		return nil, err

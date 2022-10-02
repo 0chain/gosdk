@@ -158,7 +158,6 @@ func (req *CopyRequest) ProcessCopy() error {
 			refEntity, err := req.copyBlobberObject(req.blobbers[blobberIdx], blobberIdx, wg)
 			if err != nil {
 				l.Logger.Error(err.Error())
-				return
 			}
 			objectTreeRefs[blobberIdx] = refEntity
 		}(int(pos))
@@ -208,7 +207,6 @@ func (req *CopyRequest) ProcessCopy() error {
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
-		c++
 	}
 	wg.Wait()
 

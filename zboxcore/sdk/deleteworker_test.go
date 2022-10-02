@@ -46,8 +46,6 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 		ClientKey: mockClientKey,
 	}
 
-	var wg sync.WaitGroup
-
 	type parameters struct {
 		referencePathToRetrieve fileref.ReferencePath
 		requestFields           map[string]string
@@ -169,7 +167,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 			req := &DeleteRequest{
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
-				remotefilepath: mockRemoteFilePath,
+				remoteFilePath: mockRemoteFilePath,
 				consensus: Consensus{
 					mu:              &sync.RWMutex{},
 					consensusThresh: 2,
@@ -178,7 +176,6 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 				maskMu:       &sync.Mutex{},
 				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
-				wg:           func() *sync.WaitGroup { wg.Add(1); return &wg }(),
 			}
 			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name,
@@ -367,7 +364,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			req := &DeleteRequest{
 				allocationID:   mockAllocationId,
 				allocationTx:   mockAllocationTxId,
-				remotefilepath: mockRemoteFilePath,
+				remoteFilePath: mockRemoteFilePath,
 				consensus: Consensus{
 					mu:              &sync.RWMutex{},
 					consensusThresh: 3,

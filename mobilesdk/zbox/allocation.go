@@ -272,20 +272,6 @@ func (a *Allocation) SaveRemoteSnapshot(pathToSave string, remoteExcludePaths st
 	return a.sdkAllocation.SaveRemoteSnapshot(pathToSave, exclPathArray)
 }
 
-// CommitMetaTransaction - authTicket - Optional, Only when you do download using authTicket and lookUpHash.
-// lookupHash - Same as above.
-// fileMeta - Optional, Only when you do delete and have already fetched fileMeta before delete operation.
-func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, lookupHash, fileMeta string, statusCb StatusCallbackMocked) error {
-	var fileMetaData *sdk.ConsolidatedFileMeta
-	if len(fileMeta) > 0 {
-		err := json.Unmarshal([]byte(fileMeta), fileMetaData)
-		if err != nil {
-			return fmt.Errorf("failed to convert fileMeta. %v", err)
-		}
-	}
-	return a.sdkAllocation.CommitMetaTransaction(path, crudOperation, authTicket, lookupHash, fileMetaData, &StatusCallbackWrapped{Callback: statusCb})
-}
-
 // StartRepair - start repair files from path
 func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCb StatusCallbackMocked) error {
 	return a.sdkAllocation.StartRepair(localRootPath, pathToRepair, &StatusCallbackWrapped{Callback: statusCb})

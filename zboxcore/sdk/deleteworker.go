@@ -26,7 +26,7 @@ type DeleteRequest struct {
 	allocationID   string
 	allocationTx   string
 	blobbers       []*blockchain.StorageNode
-	remotefilepath string
+	remoteFilePath string
 	ctx            context.Context
 	wg             *sync.WaitGroup
 	deleteMask     zboxutil.Uint128
@@ -54,12 +54,12 @@ func (req *DeleteRequest) deleteBlobberFile(
 	query := &url.Values{}
 
 	query.Add("connection_id", req.connectionID)
-	query.Add("path", req.remotefilepath)
+	query.Add("path", req.remoteFilePath)
 
 	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationTx, query)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating delete request", err)
-		return
+		return err
 	}
 
 	var (
@@ -177,10 +177,25 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 				return
 			}
 
+			//it was removed from the blobber
+			if errors.Is(err, constants.ErrNotFound) {
+
+				wait <- ProcessResult{
+					BlobberIndex: blobberIdx,
+					FileRef:      nil,
+					Succeed:      true,
+				}
+
+				return
+			}
+
+			wait <- ProcessResult{
+				BlobberIndex: blobberIdx,
+			}
+
 			l.Logger.Error(err.Error())
 		}(pos)
 	}
-	req.wg.Wait()
 
 	req.consensus.consensus = removedNum
 	numDeletes := req.deleteMask.CountOnes()
@@ -191,7 +206,6 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 		pos = uint64(i.TrailingZeros())
 		go req.deleteBlobberFile(req.blobbers[pos], int(pos))
 	}
-	req.wg.Wait()
 
 	if !req.consensus.isConsensusOk() {
 		return errors.New("consensus_not_met",
@@ -221,7 +235,7 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 	for i := req.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		newChange := &allocationchange.DeleteFileChange{}
-		newChange.ObjectTree = objectTreeRefs[pos]
+		newChange.ObjectTree = ref
 		newChange.NumBlocks = newChange.ObjectTree.GetNumBlocks()
 		newChange.Operation = constants.FileOperationDelete
 		newChange.Size = newChange.ObjectTree.GetSize()
@@ -236,7 +250,6 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
-		c++
 	}
 	wg.Wait()
 
