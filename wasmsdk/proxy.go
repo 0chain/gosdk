@@ -6,6 +6,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/0chain/gosdk/core/sys"
@@ -19,6 +20,11 @@ import (
 )
 
 //-----------------------------------------------------------------------------
+
+var (
+	signMutex sync.Mutex
+	signCache = make(map[string]string)
+)
 
 func main() {
 	fmt.Printf("0CHAIN - GOSDK (version=%v)\n", version.VERSIONSTR)
@@ -34,16 +40,28 @@ func main() {
 		jsProxy := zcn.Get("jsProxy")
 		// import functions from js object
 		if !(jsProxy.IsNull() || jsProxy.IsUndefined()) {
-			sign := jsProxy.Get("sign")
+			jsSign := jsProxy.Get("sign")
 
-			if !(sign.IsNull() || sign.IsUndefined()) {
+			if !(jsSign.IsNull() || jsSign.IsUndefined()) {
 				signFunc := func(hash string) (string, error) {
-					result, err := jsbridge.Await(sign.Invoke(hash))
+					signMutex.Lock()
+					defer signMutex.Unlock()
+
+					s, ok := signCache[hash]
+					if ok {
+						return s, nil
+					}
+
+					result, err := jsbridge.Await(jsSign.Invoke(hash))
 
 					if len(err) > 0 && !err[0].IsNull() {
 						return "", errors.New("sign: " + err[0].String())
 					}
-					return result[0].String(), nil
+					s = result[0].String()
+
+					signCache[hash] = s
+
+					return s, nil
 				}
 
 				//update sign with js sign
@@ -57,11 +75,11 @@ func main() {
 				PrintError("__zcn_wasm__.jsProxy.sign is not installed yet")
 			}
 
-			verify := jsProxy.Get("verify")
+			jsVerify := jsProxy.Get("verify")
 
-			if !(verify.IsNull() || sign.IsUndefined()) {
+			if !(jsVerify.IsNull() || jsSign.IsUndefined()) {
 				verifyFunc := func(signature, hash string) (bool, error) {
-					result, err := jsbridge.Await(verify.Invoke(signature, hash))
+					result, err := jsbridge.Await(jsVerify.Invoke(signature, hash))
 
 					if len(err) > 0 && !err[0].IsNull() {
 						return false, errors.New("verify: " + err[0].String())
@@ -75,8 +93,8 @@ func main() {
 				PrintError("__zcn_wasm__.jsProxy.verify is not installed yet")
 			}
 
-			createObjectURL := jsProxy.Get("createObjectURL")
-			if !(createObjectURL.IsNull() || createObjectURL.IsUndefined()) {
+			jsCreateObjectURL := jsProxy.Get("createObjectURL")
+			if !(jsCreateObjectURL.IsNull() || jsCreateObjectURL.IsUndefined()) {
 
 				CreateObjectURL = func(buf []byte, mimeType string) string {
 
@@ -86,7 +104,7 @@ func main() {
 
 					js.CopyBytesToJS(uint8Array, buf)
 
-					result, err := jsbridge.Await(createObjectURL.Invoke(uint8Array, mimeType))
+					result, err := jsbridge.Await(jsCreateObjectURL.Invoke(uint8Array, mimeType))
 
 					if len(err) > 0 && !err[0].IsNull() {
 						PrintError(err[0].String())
@@ -99,17 +117,8 @@ func main() {
 				PrintError("__zcn_wasm__.jsProxy.createObjectURL is not installed yet")
 			}
 
-			sleep := jsProxy.Get("sleep")
-			if !(sleep.IsNull() || sleep.IsUndefined()) {
-				sys.Sleep = func(d time.Duration) {
-					ms := d.Milliseconds()
-					jsbridge.Await(sleep.Invoke(ms))
-				}
-			} else {
-				sys.Sleep = func(d time.Duration) {
-					PrintInfo("sleep is not bridged to js method. it doesn't work")
-				}
-				PrintError("__zcn_wasm__.jsProxy.sleep is not installed yet")
+			sys.Sleep = func(d time.Duration) {
+				<-time.After(d)
 			}
 		} else {
 			PrintError("__zcn_wasm__.jsProxy is not installed yet")
