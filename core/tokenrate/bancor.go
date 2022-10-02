@@ -70,16 +70,17 @@ func (qq *bancorQuoteQuery) getUSD(ctx context.Context, symbol string) (float64,
 
 	if ok {
 
-		if rate.Value == 0 {
-			rate, ok = result.Data.Rate["usd"]
-			if ok {
-				if rate.Value == 0 {
-					return 0, fmt.Errorf("bancor: invalid response %s", result.Raw)
-				}
+		if rate.Value > 0 {
+			return rate.Value, nil
+		}
+
+		rate, ok = result.Data.Rate["usd"]
+		if ok {
+			if rate.Value > 0 {
+				return rate.Value, nil
 			}
 		}
 
-		return rate.Value, nil
 	}
 
 	return 0, fmt.Errorf("bancor: %s price is not provided on bancor apis", symbol)
