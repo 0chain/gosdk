@@ -74,11 +74,10 @@ func (qq *bancorQuoteQuery) getUSD(ctx context.Context, symbol string) (float64,
 			return rate.Value, nil
 		}
 
+		//rate24ago is invalid, try get current rate
 		rate, ok = result.Data.Rate["usd"]
-		if ok {
-			if rate.Value > 0 {
-				return rate.Value, nil
-			}
+		if ok && rate.Value > 0 {
+			return rate.Value, nil
 		}
 
 	}
