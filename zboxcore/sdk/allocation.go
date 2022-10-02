@@ -885,7 +885,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int)
 	req.consensus.mu = &sync.RWMutex{}
 	req.consensus.Init(threshConsensus, fullConsensus)
 	req.ctx = a.ctx
-	req.remoteFilePath = path
+	req.remotefilepath = path
 	req.connectionID = zboxutil.NewConnectionId()
 	req.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMu = &sync.Mutex{}

@@ -143,41 +143,25 @@ func (req *RenameRequest) renameBlobberObject(
 }
 
 func (req *RenameRequest) ProcessRename() error {
-	num := len(req.blobbers)
-	objectTreeRefs := make([]fileref.RefEntity, num)
-
-	wait := make(chan ProcessResult, num)
-
-	wg := &sync.WaitGroup{}
-	wg.Add(num)
-
-	for i := 0; i < num; i++ {
+	numList := len(req.blobbers)
+	objectTreeRefs := make([]fileref.RefEntity, numList)
+	req.wg = &sync.WaitGroup{}
+	req.wg.Add(numList)
+	for i := 0; i < numList; i++ {
 		go func(blobberIdx int) {
-			defer wg.Done()
-			refEntity, err := req.renameBlobberObject(req.blobbers[blobberIdx])
-
-			if err != nil {
-				l.Logger.Error(err.Error())
+			defer req.wg.Done()
+			refEntity, err := req.renameBlobberObject(req.blobbers[blobberIdx], blobberIdx)
+			if err == nil {
+				req.consensus.Done()
+				req.maskMU.Lock()
+				objectTreeRefs[blobberIdx] = refEntity
+				req.maskMU.Unlock()
+				return
 			}
-
-			wait <- ProcessResult{
-				BlobberIndex: blobberIdx,
-				FileRef:      refEntity,
-				Succeed:      err == nil,
-			}
+			l.Logger.Error(err.Error())
 		}(i)
 	}
-	wg.Wait()
-
-	for i := 0; i < num; i++ {
-		r := <-wait
-
-		if !r.Succeed {
-			continue
-		}
-
-		objectTreeRefs[r.BlobberIndex] = r.FileRef
-	}
+	req.wg.Wait()
 
 	if !req.consensus.isConsensusOk() {
 		return errors.New("consensus_not_met",
