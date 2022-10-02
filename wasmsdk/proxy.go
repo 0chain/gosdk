@@ -120,19 +120,6 @@ func main() {
 			sys.Sleep = func(d time.Duration) {
 				<-time.After(d)
 			}
-
-			// jsSleep := jsProxy.Get("sleep")
-			// if !(jsSleep.IsNull() || jsSleep.IsUndefined()) {
-			// 	sys.Sleep = func(d time.Duration) {
-			// 		ms := d.Milliseconds()
-			// 		jsbridge.Await(jsSleep.Invoke(ms))
-			// 	}
-			// } else {
-			// 	sys.Sleep = func(d time.Duration) {
-			// 		PrintInfo("sleep is not bridged to js method. it doesn't work")
-			// 	}
-			// 	PrintError("__zcn_wasm__.jsProxy.sleep is not installed yet")
-			// }
 		} else {
 			PrintError("__zcn_wasm__.jsProxy is not installed yet")
 		}
