@@ -176,7 +176,8 @@ func (req *CopyRequest) ProcessCopy() error {
 	if err != nil {
 		return fmt.Errorf("Copy failed: %s", err.Error())
 	}
-	err = writeMarkerMutex.Lock(req.ctx, &req.copyMask, req.maskMU, req.blobbers, &req.Consensus, time.Minute, req.connectionID)
+	err = writeMarkerMutex.Lock(req.ctx, &req.copyMask, req.maskMU,
+		req.blobbers, &req.Consensus, 0, time.Minute, req.connectionID)
 	defer writeMarkerMutex.Unlock(req.ctx, req.copyMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 	if err != nil {
 		return fmt.Errorf("Copy failed: %s", err.Error())

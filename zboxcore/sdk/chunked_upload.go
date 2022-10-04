@@ -447,7 +447,7 @@ func (su *ChunkedUpload) Start() error {
 
 	err := su.writeMarkerMutex.Lock(
 		su.ctx, &su.uploadMask, su.maskMu,
-		blobbers, &su.consensus, su.uploadTimeOut,
+		blobbers, &su.consensus, 0, su.uploadTimeOut,
 		su.progress.ConnectionID)
 
 	defer su.writeMarkerMutex.Unlock(

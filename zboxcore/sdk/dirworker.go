@@ -53,6 +53,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 			err, alreadyExists := req.createDirInBlobber(a.Blobbers[pos], pos)
 			if err != nil {
 				l.Logger.Error(err.Error())
+				return
 			}
 			if alreadyExists {
 				countMu.Lock()
@@ -74,7 +75,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 	}
 	err = writeMarkerMU.Lock(
 		context.TODO(), &req.dirMask, req.mu,
-		req.blobbers, &req.Consensus, time.Minute, req.connectionID)
+		req.blobbers, &req.Consensus, existingDirCount, time.Minute, req.connectionID)
 	defer writeMarkerMU.Unlock(context.TODO(), req.dirMask,
 		a.Blobbers, time.Minute, req.connectionID) //nolint: errcheck
 	if err != nil {

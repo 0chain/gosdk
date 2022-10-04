@@ -173,13 +173,13 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(
 func (wmMu *WriteMarkerMutex) Lock(
 	ctx context.Context, mask *zboxutil.Uint128,
 	maskMu *sync.Mutex, blobbers []*blockchain.StorageNode,
-	consensus *Consensus, timeOut time.Duration, connID string) error {
+	consensus *Consensus, addConsensus int, timeOut time.Duration, connID string) error {
 
 	wmMu.mutex.Lock()
 	defer wmMu.mutex.Unlock()
 
 	consensus.Reset()
-
+	consensus.consensus = addConsensus
 	wg := &sync.WaitGroup{}
 	var pos uint64
 	for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {

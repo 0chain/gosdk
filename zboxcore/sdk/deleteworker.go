@@ -205,7 +205,7 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 	}
 	err = writeMarkerMutex.Lock(
 		req.ctx, &req.deleteMask, req.maskMu,
-		req.blobbers, &req.consensus, time.Minute, req.connectionID)
+		req.blobbers, &req.consensus, removedNum, time.Minute, req.connectionID)
 
 	defer writeMarkerMutex.Unlock(req.ctx, req.deleteMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 	if err != nil {
