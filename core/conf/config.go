@@ -119,7 +119,6 @@ func LoadConfig(v Reader) (Config, error) {
 	}
 
 	CfmChainLength := v.GetInt("confirmation_chain_length")
-
 	if CfmChainLength < 1 {
 		CfmChainLength = DefaultConfirmationChainLength
 	}
@@ -133,6 +132,10 @@ func LoadConfig(v Reader) (Config, error) {
 	querySleepTime := v.GetInt("query_sleep_time")
 	if querySleepTime < 1 {
 		querySleepTime = DefaultQuerySleepTime
+	}
+	VerifyOptimisticString := v.GetString("verify_optimistic")
+	if VerifyOptimisticString == "true" {
+		cfg.VerifyOptimistic = true
 	}
 
 	cfg.BlockWorker = blockWorker

@@ -376,7 +376,7 @@ func VerifyTransactionTrusted(txnHash string, sharders []string) (*Transaction, 
 			break
 		}
 
-		// pick more one sharder to query transaction
+		// pick one more sharder to query transaction
 		n, err := rand.Next()
 
 		if errors.Is(err, util.ErrNoItem) {
