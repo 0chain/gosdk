@@ -45,6 +45,7 @@ func TestWriteMarkerMutext_Should_Lock(t *testing.T) {
 					}
 					return http.StatusBadRequest
 				}(),
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
 			}, nil)
 
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -110,7 +111,7 @@ func TestWriteMarkerMutext_Some_Blobbers_Down_Should_Lock(t *testing.T) {
 					}
 					return http.StatusBadRequest
 				}(),
-				Body: io.NopCloser(bytes.NewReader([]byte(""))),
+				Body: io.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
 			}, nil)
 
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
