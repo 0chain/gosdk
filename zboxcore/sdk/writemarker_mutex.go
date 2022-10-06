@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -250,8 +251,29 @@ func (wmMu *WriteMarkerMutex) LockBlobber(
 
 			var data []byte
 			if resp.StatusCode == http.StatusOK {
-				consensus.Done()
-				logger.Logger.Info(b.Baseurl, connID, " locked")
+				data, err = io.ReadAll(resp.Body)
+				if err != nil {
+					return
+				}
+				wmLockRes := &WMLockResult{}
+				err = json.Unmarshal(data, wmLockRes)
+				if err != nil {
+					return
+				}
+				if wmLockRes.Status == WMLockStatusOK {
+					consensus.Done()
+					logger.Logger.Info(b.Baseurl, connID, " locked")
+					return
+				}
+
+				if wmLockRes.Status == WMLockStatusPending {
+					logger.Logger.Info("Lock pending for blobber ",
+						b.Baseurl, "with connection id: ", connID, " Retrying again")
+					time.Sleep(timeOut * 2)
+					shouldContinue = true
+					return
+				}
+				err = fmt.Errorf("Lock acquiring failed")
 				return
 			}
 
