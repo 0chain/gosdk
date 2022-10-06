@@ -128,7 +128,6 @@ func CreateChunkedUpload(
 		uploadTimeOut: DefaultUploadTimeOut,
 		commitTimeOut: DefaultUploadTimeOut,
 		maskMu:        &sync.Mutex{},
-		wg:            &sync.WaitGroup{},
 		ctx:           allocationObj.ctx,
 	}
 
@@ -291,7 +290,6 @@ type ChunkedUpload struct {
 	uploadTimeOut time.Duration
 	commitTimeOut time.Duration
 	maskMu        *sync.Mutex
-	wg            *sync.WaitGroup
 	ctx           context.Context
 }
 
@@ -449,7 +447,7 @@ func (su *ChunkedUpload) Start() error {
 
 	err := su.writeMarkerMutex.Lock(
 		su.ctx, &su.uploadMask, su.maskMu,
-		blobbers, &su.consensus, su.uploadTimeOut,
+		blobbers, &su.consensus, 0, su.uploadTimeOut,
 		su.progress.ConnectionID)
 
 	defer su.writeMarkerMutex.Unlock(
@@ -533,6 +531,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		encryptedKey = su.fileEncscheme.GetEncryptedKey()
 	}
 
+	wg := &sync.WaitGroup{}
 	var pos uint64
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
@@ -556,9 +555,9 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			return err
 		}
 
-		su.wg.Add(1)
+		wg.Add(1)
 		go func(b *ChunkedUploadBlobber, body *bytes.Buffer, formData ChunkedUploadFormMetadata, pos uint64) {
-			defer su.wg.Done()
+			defer wg.Done()
 			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
 			if err != nil {
 				logger.Logger.Error(err)
@@ -566,7 +565,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		}(blobber, body, formData, pos)
 	}
 
-	su.wg.Wait()
+	wg.Wait()
 
 	if !su.consensus.isConsensusOk() {
 		return thrown.New("consensus_not_met", fmt.Sprintf("Upload failed. Required consensus atleast %d, got %d",
@@ -583,6 +582,7 @@ func (su *ChunkedUpload) processCommit() error {
 	logger.Logger.Info("Submitting for commit")
 	su.consensus.Reset()
 
+	wg := &sync.WaitGroup{}
 	var pos uint64
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
@@ -595,9 +595,9 @@ func (su *ChunkedUpload) processCommit() error {
 
 		blobber.commitChanges = append(blobber.commitChanges, su.buildChange(blobber.fileRef))
 
-		su.wg.Add(1)
+		wg.Add(1)
 		go func(b *ChunkedUploadBlobber, pos uint64) {
-			defer su.wg.Done()
+			defer wg.Done()
 			err := b.processCommit(context.TODO(), su, pos)
 			if err != nil {
 				b.commitResult = ErrorCommitResult(err.Error())
@@ -606,7 +606,7 @@ func (su *ChunkedUpload) processCommit() error {
 		}(blobber, pos)
 	}
 
-	su.wg.Wait()
+	wg.Wait()
 
 	if !su.consensus.isConsensusOk() {
 		err := thrown.New("consensus_not_met",

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"strconv"
 	"sync"
 	"time"
@@ -158,8 +159,12 @@ func setClientInfoWithSign(req *http.Request, allocation string) error {
 }
 
 func NewCommitRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, COMMIT_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodPost, url, body)
+	u, err := joinUrl(baseUrl, COMMIT_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, u.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -168,11 +173,11 @@ func NewCommitRequest(baseUrl, allocation string, body io.Reader) (*http.Request
 }
 
 func NewReferencePathRequest(baseUrl, allocation string, paths []string) (*http.Request, error) {
-	nurl, err := url.Parse(baseUrl)
+	nurl, err := joinUrl(baseUrl, REFERENCE_ENDPOINT, allocation)
 	if err != nil {
 		return nil, err
 	}
-	nurl.Path += REFERENCE_ENDPOINT + allocation
+
 	pathBytes, err := json.Marshal(paths)
 	if err != nil {
 		return nil, err
@@ -194,11 +199,10 @@ func NewReferencePathRequest(baseUrl, allocation string, paths []string) (*http.
 }
 
 func NewCalculateHashRequest(baseUrl, allocation string, paths []string) (*http.Request, error) {
-	nurl, err := url.Parse(baseUrl)
+	nurl, err := joinUrl(baseUrl, CALCULATE_HASH_ENDPOINT, allocation)
 	if err != nil {
 		return nil, err
 	}
-	nurl.Path += CALCULATE_HASH_ENDPOINT + allocation
 	pathBytes, err := json.Marshal(paths)
 	if err != nil {
 		return nil, err
@@ -215,11 +219,10 @@ func NewCalculateHashRequest(baseUrl, allocation string, paths []string) (*http.
 }
 
 func NewObjectTreeRequest(baseUrl, allocation string, path string) (*http.Request, error) {
-	nurl, err := url.Parse(baseUrl)
+	nurl, err := joinUrl(baseUrl, OBJECT_TREE_ENDPOINT, allocation)
 	if err != nil {
 		return nil, err
 	}
-	nurl.Path += OBJECT_TREE_ENDPOINT + allocation
 	params := url.Values{}
 	params.Add("path", path)
 	//url := fmt.Sprintf("%s%s%s?path=%s", baseUrl, LIST_ENDPOINT, allocation, path)
@@ -237,11 +240,10 @@ func NewObjectTreeRequest(baseUrl, allocation string, path string) (*http.Reques
 }
 
 func NewRefsRequest(baseUrl, allocationID, path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*http.Request, error) {
-	nUrl, err := url.Parse(baseUrl)
+	nUrl, err := joinUrl(baseUrl, REFS_ENDPOINT, allocationID)
 	if err != nil {
 		return nil, err
 	}
-	nUrl.Path += REFS_ENDPOINT + allocationID
 	params := url.Values{}
 	params.Add("path", path)
 	params.Add("offsetPath", offsetPath)
@@ -265,11 +267,10 @@ func NewRefsRequest(baseUrl, allocationID, path, offsetPath, updatedDate, offset
 }
 
 func NewRecentlyAddedRefsRequest(bUrl, allocID string, fromDate, offset int64, pageLimit int) (*http.Request, error) {
-	nUrl, err := url.Parse(bUrl)
+	nUrl, err := joinUrl(bUrl, RECENT_REFS_ENDPOINT, allocID)
 	if err != nil {
 		return nil, err
 	}
-	nUrl.Path += RECENT_REFS_ENDPOINT + allocID
 
 	params := url.Values{}
 	params.Add("limit", strconv.Itoa(pageLimit))
@@ -290,11 +291,10 @@ func NewRecentlyAddedRefsRequest(bUrl, allocID string, fromDate, offset int64, p
 }
 
 func NewAllocationRequest(baseUrl, allocation string) (*http.Request, error) {
-	nurl, err := url.Parse(baseUrl)
+	nurl, err := joinUrl(baseUrl, ALLOCATION_ENDPOINT)
 	if err != nil {
 		return nil, err
 	}
-	nurl.Path += ALLOCATION_ENDPOINT
 	params := url.Values{}
 	params.Add("id", allocation)
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
@@ -307,8 +307,11 @@ func NewAllocationRequest(baseUrl, allocation string) (*http.Request, error) {
 }
 
 func NewCommitMetaTxnRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, COMMIT_META_TXN_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodPost, url, body)
+	u, err := joinUrl(baseUrl, COMMIT_META_TXN_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(http.MethodPost, u.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -317,8 +320,11 @@ func NewCommitMetaTxnRequest(baseUrl string, allocation string, body io.Reader) 
 }
 
 func NewCollaboratorRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, COLLABORATOR_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodPost, url, body)
+	u, err := joinUrl(baseUrl, COLLABORATOR_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(http.MethodPost, u.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -331,8 +337,12 @@ func NewCollaboratorRequest(baseUrl string, allocation string, body io.Reader) (
 }
 
 func GetCollaboratorsRequest(baseUrl string, allocation string, query *url.Values) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s?%s", baseUrl, COLLABORATOR_ENDPOINT, allocation, query.Encode())
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	u, err := joinUrl(baseUrl, COLLABORATOR_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+	u.RawQuery = query.Encode()
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -345,9 +355,13 @@ func GetCollaboratorsRequest(baseUrl string, allocation string, query *url.Value
 }
 
 func DeleteCollaboratorRequest(baseUrl string, allocation string, query *url.Values) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s?%s", baseUrl, COLLABORATOR_ENDPOINT, allocation, query.Encode())
+	u, err := joinUrl(baseUrl, COLLABORATOR_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+	u.RawQuery = query.Encode()
 
-	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	req, err := http.NewRequest(http.MethodDelete, u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -360,11 +374,15 @@ func DeleteCollaboratorRequest(baseUrl string, allocation string, query *url.Val
 }
 
 func NewFileMetaRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, FILE_META_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodPost, url, body)
+	u, err := joinUrl(baseUrl, FILE_META_ENDPOINT, allocation)
 	if err != nil {
 		return nil, err
 	}
+	req, err := http.NewRequest(http.MethodPost, u.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
 	err = setClientInfoWithSign(req, allocation)
 	if err != nil {
 		return nil, err
@@ -373,8 +391,11 @@ func NewFileMetaRequest(baseUrl string, allocation string, body io.Reader) (*htt
 }
 
 func NewFileStatsRequest(baseUrl string, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, FILE_STATS_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodPost, url, body)
+	u, err := joinUrl(baseUrl, FILE_STATS_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(http.MethodPost, u.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -387,16 +408,14 @@ func NewFileStatsRequest(baseUrl string, allocation string, body io.Reader) (*ht
 }
 
 func NewListRequest(baseUrl, allocation string, path, pathHash string, auth_token string) (*http.Request, error) {
-	nurl, err := url.Parse(baseUrl)
+	nurl, err := joinUrl(baseUrl, LIST_ENDPOINT, allocation)
 	if err != nil {
 		return nil, err
 	}
-	nurl.Path += LIST_ENDPOINT + allocation
 	params := url.Values{}
 	params.Add("path", path)
 	params.Add("path_hash", pathHash)
 	params.Add("auth_token", auth_token)
-	//url := fmt.Sprintf("%s%s%s?path=%s", baseUrl, LIST_ENDPOINT, allocation, path)
 	nurl.RawQuery = params.Encode() // Escape Query Parameters
 	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)
 	if err != nil {
@@ -408,11 +427,14 @@ func NewListRequest(baseUrl, allocation string, path, pathHash string, auth_toke
 
 // NewUploadRequestWithMethod create a http reqeust of upload
 func NewUploadRequestWithMethod(baseURL, allocation string, body io.Reader, method string) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseURL, UPLOAD_ENDPOINT, allocation)
-	var req *http.Request
-	var err error
+	u, err := joinUrl(baseURL, UPLOAD_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
 
-	req, err = http.NewRequest(method, url, body)
+	var req *http.Request
+
+	req, err = http.NewRequest(method, u.String(), body)
 
 	if err != nil {
 		return nil, err
@@ -427,12 +449,11 @@ func NewUploadRequestWithMethod(baseURL, allocation string, body io.Reader, meth
 
 func NewWriteMarkerLockRequest(
 	baseURL, allocation, connID, requestTime string) (*http.Request, error) {
-	u, err := url.Parse(baseURL)
+
+	u, err := joinUrl(baseURL, WM_LOCK_ENDPOINT, allocation)
 	if err != nil {
 		return nil, err
 	}
-
-	u.Path += WM_LOCK_ENDPOINT + allocation
 
 	params := url.Values{}
 	params.Add("connection_id", connID)
@@ -444,32 +465,44 @@ func NewWriteMarkerLockRequest(
 		return nil, err
 	}
 
-	setClientInfoWithSign(req, allocation)
+	err = setClientInfoWithSign(req, allocation)
+	if err != nil {
+		return nil, err
+	}
 	return req, nil
 }
 
 func NewWriteMarkerUnLockRequest(
 	baseURL, allocation, connID, requestTime string) (*http.Request, error) {
 
-	u := baseURL + WM_LOCK_ENDPOINT + allocation + "/" + connID
-
-	req, err := http.NewRequest(http.MethodDelete, u, nil)
+	u, err := joinUrl(baseURL, WM_LOCK_ENDPOINT, allocation, connID)
 	if err != nil {
 		return nil, err
 	}
 
-	setClientInfoWithSign(req, allocation)
+	req, err := http.NewRequest(http.MethodDelete, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	err = setClientInfoWithSign(req, allocation)
+	if err != nil {
+		return nil, err
+	}
 	return req, nil
 }
 
 func NewUploadRequest(baseUrl, allocation string, body io.Reader, update bool) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, UPLOAD_ENDPOINT, allocation)
+	u, err := joinUrl(baseUrl, UPLOAD_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+
 	var req *http.Request
-	var err error
 	if update {
-		req, err = http.NewRequest(http.MethodPut, url, body)
+		req, err = http.NewRequest(http.MethodPut, u.String(), body)
 	} else {
-		req, err = http.NewRequest(http.MethodPost, url, body)
+		req, err = http.NewRequest(http.MethodPost, u.String(), body)
 	}
 	if err != nil {
 		return nil, err
@@ -483,8 +516,13 @@ func NewUploadRequest(baseUrl, allocation string, body io.Reader, update bool) (
 }
 
 func NewRenameRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, RENAME_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodPost, url, body)
+	u, err := joinUrl(baseUrl, RENAME_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+
+	// url := fmt.Sprintf("%s%s%s", baseUrl, RENAME_ENDPOINT, allocation)
+	req, err := http.NewRequest(http.MethodPost, u.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -497,8 +535,12 @@ func NewRenameRequest(baseUrl, allocation string, body io.Reader) (*http.Request
 }
 
 func NewCopyRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, COPY_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodPost, url, body)
+	u, err := joinUrl(baseUrl, COPY_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, u.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -511,8 +553,13 @@ func NewCopyRequest(baseUrl, allocation string, body io.Reader) (*http.Request, 
 }
 
 func NewDownloadRequest(baseUrl, allocation string) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, DOWNLOAD_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodGet, url, nil)
+	u, err := joinUrl(baseUrl, DOWNLOAD_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+
+	// url := fmt.Sprintf("%s%s%s", baseUrl, DOWNLOAD_ENDPOINT, allocation)
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -521,9 +568,13 @@ func NewDownloadRequest(baseUrl, allocation string) (*http.Request, error) {
 }
 
 func NewDeleteRequest(baseUrl, allocation string, query *url.Values) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s?%s", baseUrl, UPLOAD_ENDPOINT, allocation, query.Encode())
+	u, err := joinUrl(baseUrl, UPLOAD_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+	u.RawQuery = query.Encode()
 
-	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	req, err := http.NewRequest(http.MethodDelete, u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -536,8 +587,12 @@ func NewDeleteRequest(baseUrl, allocation string, query *url.Values) (*http.Requ
 }
 
 func NewCreateDirRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, DIR_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodPost, url, body)
+	u, err := joinUrl(baseUrl, DIR_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, u.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -550,8 +605,12 @@ func NewCreateDirRequest(baseUrl, allocation string, body io.Reader) (*http.Requ
 }
 
 func NewShareRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s", baseUrl, SHARE_ENDPOINT, allocation)
-	req, err := http.NewRequest(http.MethodPost, url, body)
+	u, err := joinUrl(baseUrl, SHARE_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, u.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -564,8 +623,12 @@ func NewShareRequest(baseUrl, allocation string, body io.Reader) (*http.Request,
 }
 
 func NewRevokeShareRequest(baseUrl, allocation string, query *url.Values) (*http.Request, error) {
-	url := fmt.Sprintf("%s%s%s?%s", baseUrl, SHARE_ENDPOINT, allocation, query.Encode())
-	req, err := http.NewRequest(http.MethodDelete, url, nil)
+	u, err := joinUrl(baseUrl, SHARE_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+	u.RawQuery = query.Encode()
+	req, err := http.NewRequest(http.MethodDelete, u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -682,4 +745,14 @@ func isCurrentDominantStatus(respStatus int, currentTotalPerStatus map[int]int, 
 	// - running total for status is the max and response is 200 or
 	// - running total for status is the max and count for 200 is lower
 	return currentTotalPerStatus[respStatus] == currentMax && (respStatus == 200 || currentTotalPerStatus[200] < currentMax)
+}
+
+func joinUrl(baseURl string, paths ...string) (*url.URL, error) {
+	u, err := url.Parse(baseURl)
+	if err != nil {
+		return nil, err
+	}
+	p := path.Join(paths...)
+	u.Path = path.Join(u.Path, p)
+	return u, nil
 }

@@ -78,7 +78,8 @@ func TestWriteMarkerMutext_Should_Lock(t *testing.T) {
 	}
 	consensus.Init(a.consensusThreshold, a.fullconsensus)
 
-	err := mutex.Lock(context.TODO(), &mask, mu, a.Blobbers, consensus, time.Minute, zboxutil.NewConnectionId())
+	err := mutex.Lock(context.TODO(), &mask, mu, a.Blobbers,
+		consensus, 0, time.Minute, zboxutil.NewConnectionId())
 	require.Nil(t, err)
 
 }
@@ -142,7 +143,8 @@ func TestWriteMarkerMutext_Some_Blobbers_Down_Should_Lock(t *testing.T) {
 		mu: &sync.RWMutex{},
 	}
 	consensus.Init(a.consensusThreshold, a.fullconsensus)
-	err := mutex.Lock(context.TODO(), &mask, mu, a.Blobbers, &consensus, time.Minute, zboxutil.NewConnectionId())
+	err := mutex.Lock(context.TODO(), &mask, mu, a.Blobbers,
+		&consensus, 0, time.Minute, zboxutil.NewConnectionId())
 	require.Nil(err)
 }
 
@@ -205,7 +207,8 @@ func TestWriteMarkerMutext_Too_Less_Blobbers_Response_Should_Not_Lock(t *testing
 		mu: &sync.RWMutex{},
 	}
 	consensus.Init(a.consensusThreshold, a.fullconsensus)
-	err = mutex.Lock(context.TODO(), &mask, mu, a.Blobbers, &consensus, time.Minute, zboxutil.NewConnectionId())
+	err = mutex.Lock(context.TODO(), &mask, mu, a.Blobbers,
+		&consensus, 0, time.Minute, zboxutil.NewConnectionId())
 	if err != nil {
 		require.Contains(t, err.Error(), "lock_consensus_not_met")
 	}

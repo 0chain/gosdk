@@ -717,7 +717,8 @@ func TestAllocation_RepairFile(t *testing.T) {
 				}(frName, hash),
 			}, nil)
 
-			urlLock := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + blobber.EndpointWriteMarkerLock
+			urlLock := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + zboxutil.WM_LOCK_ENDPOINT
+			urlLock = strings.TrimRight(urlLock, "/")
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 				return strings.HasPrefix(req.URL.String(), urlLock)
 			})).Return(&http.Response{

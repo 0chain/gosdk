@@ -62,55 +62,74 @@ func (req *DeleteRequest) deleteBlobberFile(
 		return
 	}
 
-	var resp *http.Response
+	var (
+		resp           *http.Response
+		shouldContinue bool
+	)
+
 	for i := 0; i < 3; i++ {
-		if resp != nil {
-			resp.Body.Close()
-		}
-		ctx, cncl := context.WithTimeout(req.ctx, time.Minute)
-		resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
-		cncl()
+		err, shouldContinue = func() (err error, shouldContinue bool) {
+			ctx, cncl := context.WithTimeout(req.ctx, time.Minute)
+			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
+			cncl()
 
-		if err != nil {
-			logger.Logger.Error(blobber.Baseurl, "Delete: ", err)
-			return
-		}
-
-		defer resp.Body.Close()
-		if resp.StatusCode == http.StatusOK {
-			req.consensus.Done()
-			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " deleted.")
-			return
-		}
-
-		if resp.StatusCode == http.StatusTooManyRequests {
-			logger.Logger.Error("Got too many request error")
-			var r int
-			r, err = zboxutil.GetRateLimitValue(resp)
 			if err != nil {
+				logger.Logger.Error(blobber.Baseurl, "Delete: ", err)
 				return
 			}
-			time.Sleep(time.Duration(r) * time.Second)
+
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
+			var respBody []byte
+
+			if resp.StatusCode == http.StatusOK {
+				req.consensus.Done()
+				l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " deleted.")
+				return
+			}
+
+			if resp.StatusCode == http.StatusTooManyRequests {
+				logger.Logger.Error("Got too many request error")
+				var r int
+				r, err = zboxutil.GetRateLimitValue(resp)
+				if err != nil {
+					logger.Logger.Error(err)
+					return
+				}
+				time.Sleep(time.Duration(r) * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			if resp.StatusCode == http.StatusNoContent {
+				req.consensus.Done()
+				l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " not available in blobber.")
+				return
+			}
+
+			respBody, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
+				return
+			}
+
+			err = errors.New("response_error", fmt.Sprintf("unexpected response with status code %d, message: %s",
+				resp.StatusCode, string(respBody)))
+			return
+		}()
+
+		if err != nil {
+			return
+		}
+
+		if shouldContinue {
 			continue
 		}
-
-		if resp.StatusCode == http.StatusNoContent {
-			req.consensus.Done()
-			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " not available in blobber.")
-			return
-		}
-
-		var respBody []byte
-		respBody, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
-			return
-		}
-		err = errors.New("response_error", fmt.Sprintf("unexpected response with status code %d, message: %s",
-			resp.StatusCode, string(respBody)))
 		return
 	}
-
+	err = errors.New("unknown_issue",
+		fmt.Sprintf("latest response code: %d", resp.StatusCode))
 }
 
 func (req *DeleteRequest) getObjectTreeFromBlobber(pos uint64) (
@@ -186,7 +205,7 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 	}
 	err = writeMarkerMutex.Lock(
 		req.ctx, &req.deleteMask, req.maskMu,
-		req.blobbers, &req.consensus, time.Minute, req.connectionID)
+		req.blobbers, &req.consensus, removedNum, time.Minute, req.connectionID)
 
 	defer writeMarkerMutex.Unlock(req.ctx, req.deleteMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 	if err != nil {

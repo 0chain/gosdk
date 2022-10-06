@@ -24,3 +24,4 @@ _sdkver/*.wasm
 *.wasm
 *.log
 zcnbridge/example/logs/
+*.log

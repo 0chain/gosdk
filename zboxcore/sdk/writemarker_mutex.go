@@ -2,11 +2,11 @@ package sdk
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -93,74 +93,94 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(
 	var req *http.Request
 	req, err = zboxutil.NewWriteMarkerUnLockRequest(
 		b.Baseurl, wmMu.allocationObj.Tx, connID, "")
+
 	if err != nil {
 		return
 	}
 
 	var resp *http.Response
+	var shouldContinue bool
 	for retry := 0; retry < 3; retry++ {
-		if resp != nil {
-			resp.Body.Close()
-		}
 
-		reqCtx, ctxCncl := context.WithTimeout(ctx, timeOut)
-		resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
-		ctxCncl()
+		err, shouldContinue = func() (err error, shouldContinue bool) {
+			reqCtx, ctxCncl := context.WithTimeout(ctx, timeOut)
+			resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
+			ctxCncl()
 
-		if err != nil {
-			return
-		}
-		if resp.StatusCode == http.StatusNoContent || resp.StatusCode == http.StatusOK {
-			logger.Logger.Info(b.Baseurl, connID, " unlocked")
-			return
-		}
-
-		if resp.StatusCode == http.StatusTooManyRequests {
-			logger.Logger.Info(
-				b.Baseurl, connID,
-				" got too many request error. Retrying")
-
-			var r int
-			r, err = zboxutil.GetRateLimitValue(resp)
 			if err != nil {
 				return
 			}
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
+			var (
+				msg  string
+				data []byte
+			)
+			if resp.StatusCode == http.StatusNoContent || resp.StatusCode == http.StatusOK {
+				logger.Logger.Info(b.Baseurl, connID, " unlocked")
+				return
+			}
 
-			time.Sleep(time.Duration(r) * time.Second)
-			continue
-		}
+			if resp.StatusCode == http.StatusTooManyRequests {
+				logger.Logger.Info(
+					b.Baseurl, connID,
+					" got too many request error. Retrying")
 
-		var data []byte
-		data, err = io.ReadAll(resp.Body)
+				var r int
+				r, err = zboxutil.GetRateLimitValue(resp)
+				if err != nil {
+					logger.Logger.Error(err)
+					return
+				}
+				time.Sleep(time.Duration(r) * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			data, err = io.ReadAll(resp.Body)
+			if err != nil {
+				logger.Logger.Error(err)
+				return
+			}
+
+			msg = string(data)
+			if msg == "EOF" {
+				logger.Logger.Debug(b.Baseurl, connID, " retrying request because "+
+					"server closed connection unexpectedly")
+				shouldContinue = true
+				return
+			}
+
+			err = errors.New("unknown_status",
+				fmt.Sprintf("Blobber %s responded with status %d and message %s",
+					b.Baseurl, resp.StatusCode, string(data)))
+
+			return
+		}()
+
 		if err != nil {
 			return
 		}
 
-		m := string(data)
-		if m == "EOF" || strings.Contains(m, "server closed idle connection") {
-			logger.Logger.Debug(b.Baseurl, connID, " retrying request because "+
-				"server closed connection unexpectedly")
+		if shouldContinue {
 			continue
 		}
 
-		err = errors.New("unknown_status",
-			fmt.Sprintf("Blobber %s responded with status %d and message %s",
-				b.Baseurl, resp.StatusCode, string(data)))
 		return
 	}
-
 }
 
 func (wmMu *WriteMarkerMutex) Lock(
 	ctx context.Context, mask *zboxutil.Uint128,
 	maskMu *sync.Mutex, blobbers []*blockchain.StorageNode,
-	consensus *Consensus, timeOut time.Duration, connID string) error {
+	consensus *Consensus, addConsensus int, timeOut time.Duration, connID string) error {
 
 	wmMu.mutex.Lock()
 	defer wmMu.mutex.Unlock()
 
 	consensus.Reset()
-
+	consensus.consensus = addConsensus
 	wg := &sync.WaitGroup{}
 	var pos uint64
 	for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -206,61 +226,98 @@ func (wmMu *WriteMarkerMutex) LockBlobber(
 
 	requestTime := strconv.FormatInt(time.Now().Unix(), 10)
 	var req *http.Request
+
 	req, err = zboxutil.NewWriteMarkerLockRequest(
 		b.Baseurl, wmMu.allocationObj.Tx, connID, requestTime)
+
 	if err != nil {
 		return
 	}
 
 	var resp *http.Response
+	var shouldContinue bool
 	for retry := 0; retry < 3; retry++ {
-		if resp != nil {
-			resp.Body.Close()
-		}
+		err, shouldContinue = func() (err error, shouldContinue bool) {
+			reqCtx, ctxCncl := context.WithTimeout(ctx, timeOut)
+			resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
+			ctxCncl()
 
-		reqCtx, ctxCncl := context.WithTimeout(ctx, timeOut)
-		resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
-		ctxCncl()
-
-		if err != nil {
-			return
-		}
-		if resp.StatusCode == http.StatusOK {
-			consensus.Done()
-			logger.Logger.Info(b.Baseurl, connID, " locked")
-			return
-		}
-
-		if resp.StatusCode == http.StatusAccepted { // accepted but pending
-			logger.Logger.Info(b.Baseurl, connID, " lock pending. Retrying again")
-			time.Sleep(timeOut * 2) // wait twice the time of timeout
-			continue
-		}
-
-		if resp.StatusCode == http.StatusTooManyRequests {
-			logger.Logger.Info(
-				b.Baseurl, connID,
-				" got too many request error. Retrying")
-
-			var r int
-			r, err = zboxutil.GetRateLimitValue(resp)
 			if err != nil {
 				return
 			}
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
 
-			time.Sleep(time.Duration(r) * time.Second)
-			continue
-		}
+			var data []byte
+			if resp.StatusCode == http.StatusOK {
+				data, err = io.ReadAll(resp.Body)
+				if err != nil {
+					return
+				}
+				wmLockRes := &WMLockResult{}
+				err = json.Unmarshal(data, wmLockRes)
+				if err != nil {
+					return
+				}
+				if wmLockRes.Status == WMLockStatusOK {
+					consensus.Done()
+					logger.Logger.Info(b.Baseurl, connID, " locked")
+					return
+				}
 
-		var data []byte
-		data, err = io.ReadAll(resp.Body)
+				if wmLockRes.Status == WMLockStatusPending {
+					logger.Logger.Info("Lock pending for blobber ",
+						b.Baseurl, "with connection id: ", connID, " Retrying again")
+					time.Sleep(timeOut * 2)
+					shouldContinue = true
+					return
+				}
+				err = fmt.Errorf("Lock acquiring failed")
+				return
+			}
+
+			if resp.StatusCode == http.StatusAccepted { // accepted but pending
+				logger.Logger.Info(b.Baseurl, connID, " lock pending. Retrying again")
+				time.Sleep(timeOut * 2) // wait twice the time of timeout
+				shouldContinue = true
+				return
+			}
+
+			if resp.StatusCode == http.StatusTooManyRequests {
+				logger.Logger.Info(
+					b.Baseurl, connID,
+					" got too many request error. Retrying")
+
+				var r int
+				r, err = zboxutil.GetRateLimitValue(resp)
+				if err != nil {
+					logger.Logger.Error(err)
+					return
+				}
+
+				time.Sleep(time.Duration(r) * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			data, err = io.ReadAll(resp.Body)
+			if err != nil {
+				logger.Logger.Error(err)
+				return
+			}
+
+			err = errors.New("unknown_status",
+				fmt.Sprintf("Blobber %s responded with status %d and message %s",
+					b.Baseurl, resp.StatusCode, string(data)))
+			return
+		}()
 		if err != nil {
 			return
 		}
-
-		err = errors.New("unknown_status",
-			fmt.Sprintf("Blobber %s responded with status %d and message %s",
-				b.Baseurl, resp.StatusCode, string(data)))
+		if shouldContinue {
+			continue
+		}
 		return
 	}
 }

@@ -15,6 +15,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
@@ -41,7 +42,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 
 	var pos uint64
 	var existingDirCount int
-
+	countMu := &sync.Mutex{}
 	for i := req.dirMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 
@@ -52,9 +53,12 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 			err, alreadyExists := req.createDirInBlobber(a.Blobbers[pos], pos)
 			if err != nil {
 				l.Logger.Error(err.Error())
+				return
 			}
 			if alreadyExists {
+				countMu.Lock()
 				existingDirCount++
+				countMu.Unlock()
 			}
 		}(pos)
 	}
@@ -71,7 +75,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 	}
 	err = writeMarkerMU.Lock(
 		context.TODO(), &req.dirMask, req.mu,
-		req.blobbers, &req.Consensus, time.Minute, req.connectionID)
+		req.blobbers, &req.Consensus, existingDirCount, time.Minute, req.connectionID)
 	defer writeMarkerMU.Unlock(context.TODO(), req.dirMask,
 		a.Blobbers, time.Minute, req.connectionID) //nolint: errcheck
 	if err != nil {
@@ -153,54 +157,84 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 
-	var resp *http.Response
+	var (
+		resp             *http.Response
+		shouldContinue   bool
+		latestRespMsg    string
+		latestStatusCode int
+	)
+
 	for i := 0; i < 3; i++ {
-		ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
-
-		resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
-		cncl()
-		if err != nil {
-			l.Logger.Error(err)
-			return err, false
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode == http.StatusOK {
-			l.Logger.Info("Successfully created directory ", req.remotePath)
-			req.Consensus.Done()
-			return nil, false
-		}
-
-		if resp.StatusCode == http.StatusTooManyRequests {
-			var r int
-			r, err = zboxutil.GetRateLimitValue(resp)
+		err, shouldContinue = func() (err error, shouldContinue bool) {
+			ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
+			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
+			cncl()
 			if err != nil {
 				return err, false
 			}
-			l.Logger.Debug(fmt.Sprintf("Got too many request error. Retrying after %d seconds", r))
-			time.Sleep(time.Duration(r) * time.Second)
+
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
+
+			var (
+				respBody []byte
+				msg      string
+			)
+			if resp.StatusCode == http.StatusOK {
+				l.Logger.Info("Successfully created directory ", req.remotePath)
+				req.Consensus.Done()
+				return
+			}
+
+			if resp.StatusCode == http.StatusTooManyRequests {
+				var r int
+				r, err = zboxutil.GetRateLimitValue(resp)
+				if err != nil {
+					return
+				}
+				l.Logger.Debug(fmt.Sprintf("Got too many request error. Retrying after %d seconds", r))
+				time.Sleep(time.Duration(r) * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			respBody, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				l.Logger.Error(err)
+				return
+			}
+
+			latestRespMsg = string(respBody)
+			latestStatusCode = resp.StatusCode
+
+			msg = string(respBody)
+			l.Logger.Error(blobber.Baseurl, " Response: ", msg)
+			if strings.Contains(msg, DirectoryExists) {
+				req.Consensus.Done()
+				req.mu.Lock()
+				req.dirMask = req.dirMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
+				req.mu.Unlock()
+				alreadyExists = true
+				return
+			}
+
+			err = errors.New("response_error", msg)
+			return
+		}()
+
+		if err != nil {
+			logger.Logger.Error(err)
+			return
+		}
+		if shouldContinue {
 			continue
 		}
-
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return err, false
-		}
-
-		msg := string(resp_body)
-		l.Logger.Error(blobber.Baseurl, " Response: ", msg)
-		if strings.Contains(msg, DirectoryExists) {
-			req.Consensus.Done()
-			req.mu.Lock()
-			req.dirMask = req.dirMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
-			req.mu.Unlock()
-			return nil, true
-		}
-
-		return errors.New("response_error", msg), false
+		return
 
 	}
 
 	return errors.New("dir_creation_failed",
-		fmt.Sprintf("Directory creation failed with response status: %d", resp.StatusCode)), false
+		fmt.Sprintf("Directory creation failed with latest status: %d and "+
+			"latest message: %s", latestStatusCode, latestRespMsg)), false
 }

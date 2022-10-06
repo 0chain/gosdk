@@ -81,7 +81,6 @@ type TransactionScheme interface {
 	MinerSCUnlock(minerID string) error
 }
 
-
 // TransactionCallback needs to be implemented by the caller for transaction related APIs
 type TransactionCallback interface {
 	OnTransactionComplete(t *Transaction, status int)
@@ -489,9 +488,7 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 
 		return nil, errors.New("", "block hash verification failed in confirmation")
 	}
-	for k, v := range cfmBlock {
-		logging.Error(k, ": ", v)
-	}
+
 	return nil, errors.New("", "txn confirmation not found.")
 }
 
@@ -747,11 +744,11 @@ type MinerSCLock struct {
 }
 
 type MinerSCUnlock struct {
-	ID     string `json:"id"`
+	ID string `json:"id"`
 }
 
 func (t *Transaction) MinerSCUnlock(nodeID string) (err error) {
-	mscul := MinerSCUnlock {
+	mscul := MinerSCUnlock{
 		ID: nodeID,
 	}
 

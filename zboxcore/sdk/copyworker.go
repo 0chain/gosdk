@@ -31,7 +31,6 @@ type CopyRequest struct {
 	remotefilepath string
 	destPath       string
 	ctx            context.Context
-	wg             *sync.WaitGroup
 	copyMask       zboxutil.Uint128
 	maskMU         *sync.Mutex
 	connectionID   string
@@ -43,9 +42,9 @@ func (req *CopyRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode
 }
 
 func (req *CopyRequest) copyBlobberObject(
-	blobber *blockchain.StorageNode, blobberIdx int) (refEntity fileref.RefEntity, err error) {
+	blobber *blockchain.StorageNode, blobberIdx int, wg *sync.WaitGroup) (refEntity fileref.RefEntity, err error) {
 
-	defer req.wg.Done()
+	defer wg.Done()
 
 	defer func() {
 		if err != nil {
@@ -61,78 +60,102 @@ func (req *CopyRequest) copyBlobberObject(
 	}
 
 	var resp *http.Response
+	var shouldContinue bool
+	var latestRespMsg string
+	var latestStatusCode int
 	for i := 0; i < 3; i++ {
-		if resp != nil {
-			resp.Body.Close()
-		}
+		err, shouldContinue = func() (err error, shouldContinue bool) {
+			body := new(bytes.Buffer)
+			formWriter := multipart.NewWriter(body)
 
-		body := new(bytes.Buffer)
-		formWriter := multipart.NewWriter(body)
+			formWriter.WriteField("connection_id", req.connectionID)
+			formWriter.WriteField("path", req.remotefilepath)
+			formWriter.WriteField("dest", req.destPath)
+			formWriter.Close()
 
-		formWriter.WriteField("connection_id", req.connectionID)
-		formWriter.WriteField("path", req.remotefilepath)
-		formWriter.WriteField("dest", req.destPath)
-		formWriter.Close()
+			var (
+				httpreq  *http.Request
+				respBody []byte
+				ctx      context.Context
+				cncl     context.CancelFunc
+			)
 
-		var httpreq *http.Request
-		httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationTx, body)
-		if err != nil {
-			l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
-			return nil, err
-		}
-		httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-		l.Logger.Info(httpreq.URL.Path)
-		ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
-		resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
-		cncl()
-
-		if err != nil {
-			logger.Logger.Error("Copy: ", err)
-			return nil, err
-		}
-		defer resp.Body.Close()
-
-		var respBody []byte
-		respBody, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			logger.Logger.Error("Error: Resp ", err)
-			return nil, err
-		}
-
-		if resp.StatusCode == http.StatusOK {
-			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " copied.")
-			req.Consensus.Done()
-			return
-		}
-
-		if resp.StatusCode == http.StatusTooManyRequests {
-			logger.Logger.Error("Got too many request error")
-			var r int
-			r, err = zboxutil.GetRateLimitValue(resp)
+			httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationTx, body)
 			if err != nil {
+				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
 				return
 			}
-			time.Sleep(time.Duration(r) * time.Second)
+
+			httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+			l.Logger.Info(httpreq.URL.Path)
+			ctx, cncl = context.WithTimeout(req.ctx, (time.Second * 30))
+			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
+			cncl()
+
+			if err != nil {
+				logger.Logger.Error("Copy: ", err)
+				return
+			}
+
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
+			respBody, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				logger.Logger.Error("Error: Resp ", err)
+				return
+			}
+
+			if resp.StatusCode == http.StatusOK {
+				l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " copied.")
+				req.Consensus.Done()
+				return
+			}
+
+			latestRespMsg = string(respBody)
+			latestStatusCode = resp.StatusCode
+
+			if resp.StatusCode == http.StatusTooManyRequests {
+				logger.Logger.Error("Got too many request error")
+				var r int
+				r, err = zboxutil.GetRateLimitValue(resp)
+				if err != nil {
+					logger.Logger.Error(err)
+					return
+				}
+				time.Sleep(time.Duration(r) * time.Second)
+				shouldContinue = true
+				return
+			}
+			l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
+			err = errors.New("response_error", string(respBody))
+			return
+		}()
+
+		if err != nil {
+			return
+		}
+		if shouldContinue {
 			continue
 		}
-		l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
-		err = errors.New("response_error", string(respBody))
-
+		return
 	}
-	return
+	return nil, errors.New("unknown_issue",
+		fmt.Sprintf("last status code: %d, last response message: %s", latestStatusCode, latestRespMsg))
 }
 
 func (req *CopyRequest) ProcessCopy() error {
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
-	req.wg = &sync.WaitGroup{}
-	req.wg.Add(numList)
+	wg := &sync.WaitGroup{}
 
 	var pos uint64
+
 	for i := req.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
+		wg.Add(1)
 		go func(blobberIdx int) {
-			refEntity, err := req.copyBlobberObject(req.blobbers[blobberIdx], blobberIdx)
+			refEntity, err := req.copyBlobberObject(req.blobbers[blobberIdx], blobberIdx, wg)
 			if err != nil {
 				l.Logger.Error(err.Error())
 				return
@@ -141,7 +164,7 @@ func (req *CopyRequest) ProcessCopy() error {
 		}(int(pos))
 	}
 
-	req.wg.Wait()
+	wg.Wait()
 
 	if !req.isConsensusOk() {
 		return errors.New("consensus_not_met",
@@ -153,14 +176,14 @@ func (req *CopyRequest) ProcessCopy() error {
 	if err != nil {
 		return fmt.Errorf("Copy failed: %s", err.Error())
 	}
-	err = writeMarkerMutex.Lock(req.ctx, &req.copyMask, req.maskMU, req.blobbers, &req.Consensus, time.Minute, req.connectionID)
+	err = writeMarkerMutex.Lock(req.ctx, &req.copyMask, req.maskMU,
+		req.blobbers, &req.Consensus, 0, time.Minute, req.connectionID)
 	defer writeMarkerMutex.Unlock(req.ctx, req.copyMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 	if err != nil {
 		return fmt.Errorf("Copy failed: %s", err.Error())
 	}
 
 	req.Consensus.Reset()
-	wg := &sync.WaitGroup{}
 	activeBlobbers := req.copyMask.CountOnes()
 	wg.Add(activeBlobbers)
 	commitReqs := make([]*CommitRequest, activeBlobbers)

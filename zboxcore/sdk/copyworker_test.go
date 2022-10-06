@@ -208,7 +208,6 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 					consensusThresh: 2,
 					fullconsensus:   4,
 				},
-				wg:           &sync.WaitGroup{},
 				maskMU:       &sync.Mutex{},
 				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
@@ -216,9 +215,10 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name,
 			})
-			req.wg.Add(1)
+			wg := &sync.WaitGroup{}
+			wg.Add(1)
 			req.copyMask = zboxutil.NewUint128(1).Lsh(uint64(len(req.blobbers))).Sub64(1)
-			_, err := req.copyBlobberObject(req.blobbers[0], 0)
+			_, err := req.copyBlobberObject(req.blobbers[0], 0, wg)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.Contains(errors.Top(err), tt.errMsg)
@@ -454,7 +454,6 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 					consensusThresh: 3,
 					fullconsensus:   4,
 				},
-				wg:           &sync.WaitGroup{},
 				copyMask:     zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
 				maskMU:       &sync.Mutex{},
 				ctx:          context.TODO(),
