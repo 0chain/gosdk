@@ -28,7 +28,7 @@ import (
 )
 
 const (
-	DefaultUploadTimeOut = time.Minute
+	DefaultUploadTimeOut = 2 * time.Minute
 )
 
 var (
@@ -516,7 +516,7 @@ func (su *ChunkedUpload) readChunks(num int) (*batchChunksData, error) {
 	return data, nil
 }
 
-//processUpload process upload fragment to its blobber
+// processUpload process upload fragment to its blobber
 func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	fileShards []blobberShards, thumbnailShards blobberShards,
 	isFinal bool, uploadLength int64) error {
