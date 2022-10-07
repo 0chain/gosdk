@@ -185,10 +185,10 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 					UpdatedAt: child.GetUpdatedAt(),
 				}
 				childResult.LookupHash = child.GetLookupHash()
+				childResult.Consensus.mu = &sync.RWMutex{}
 				childResult.consensus = 0
 				childResult.consensusThresh = req.consensusThresh
 				childResult.fullconsensus = req.fullconsensus
-				childResult.consensusRequiredForOk = req.consensusRequiredForOk
 				childResultMap[actualHash] = childResult
 			}
 			childResult = childResultMap[actualHash]

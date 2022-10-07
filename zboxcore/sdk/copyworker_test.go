@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/0chain/errors"
@@ -115,10 +116,11 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 				}, nil)
 			},
 			wantErr: true,
-			errMsg:  "Copy: 400",
+			errMsg:  "response_error",
 			wantFunc: func(require *require.Assertions, req *CopyRequest) {
 				require.NotNil(req)
-				require.Equal(float32(0), req.consensus)
+				require.Equal(0, req.copyMask.CountOnes())
+				require.Equal(0, req.consensus)
 			},
 		},
 		{
@@ -187,7 +189,8 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 			},
 			wantFunc: func(require *require.Assertions, req *CopyRequest) {
 				require.NotNil(req)
-				require.Equal(float32(1), req.consensus)
+				require.Equal(1, req.copyMask.CountOnes())
+				require.Equal(1, req.consensus)
 			},
 		},
 	}
@@ -201,20 +204,24 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 				remotefilepath: mockRemoteFilePath,
 				destPath:       mockDestPath,
 				Consensus: Consensus{
-					consensusThresh:        50,
-					fullconsensus:          4,
-					consensusRequiredForOk: 60,
+					mu:              &sync.RWMutex{},
+					consensusThresh: 2,
+					fullconsensus:   4,
 				},
+				maskMU:       &sync.Mutex{},
 				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
 			}
 			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name,
 			})
-			_, err := req.copyBlobberObject(req.blobbers[0])
+			wg := &sync.WaitGroup{}
+			wg.Add(1)
+			req.copyMask = zboxutil.NewUint128(1).Lsh(uint64(len(req.blobbers))).Sub64(1)
+			_, err := req.copyBlobberObject(req.blobbers[0], 0, wg)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(err))
+				require.Contains(errors.Top(err), tt.errMsg)
 				return
 			}
 			require.NoErrorf(err, "expected no error but got %v", err)
@@ -274,8 +281,10 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
 				}(),
 			}, nil)
+
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 				return req.Method == "POST" &&
+					strings.Contains(req.URL.String(), zboxutil.COPY_ENDPOINT) &&
 					strings.Contains(req.URL.String(), testName+url)
 			})).Return(&http.Response{
 				StatusCode: func() int {
@@ -285,6 +294,46 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 					return http.StatusBadRequest
 				}(),
 				Body: ioutil.NopCloser(bytes.NewReader([]byte(""))),
+			}, nil)
+
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return req.Method == "POST" &&
+					strings.Contains(req.URL.String(), zboxutil.WM_LOCK_ENDPOINT) &&
+					strings.Contains(req.URL.String(), testName+url)
+			})).Return(&http.Response{
+				StatusCode: func() int {
+					if i < numCorrect {
+						return http.StatusOK
+					}
+					return http.StatusBadRequest
+				}(),
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
+			}, nil)
+
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return req.Method == "POST" &&
+					strings.Contains(req.URL.String(), zboxutil.COMMIT_ENDPOINT) &&
+					strings.Contains(req.URL.String(), testName+url)
+			})).Return(&http.Response{
+				StatusCode: func() int {
+					if i < numCorrect {
+						return http.StatusOK
+					}
+					return http.StatusBadRequest
+				}(),
+				Body: ioutil.NopCloser(bytes.NewReader([]byte(""))),
+			}, nil)
+
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return req.Method == "DELETE" &&
+					strings.Contains(req.URL.String(), testName+url)
+			})).Return(&http.Response{
+				StatusCode: func() int {
+					if i < numCorrect {
+						return http.StatusOK
+					}
+					return http.StatusBadRequest
+				}(),
 			}, nil)
 		}
 
@@ -354,7 +403,8 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			wantErr:     false,
 			wantFunc: func(require *require.Assertions, req *CopyRequest) {
 				require.NotNil(req)
-				require.Equal(float32(4), req.consensus)
+				require.Equal(4, req.copyMask.CountOnes())
+				require.Equal(4, req.consensus)
 			},
 		},
 		{
@@ -365,7 +415,8 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			wantErr:     false,
 			wantFunc: func(require *require.Assertions, req *CopyRequest) {
 				require.NotNil(req)
-				require.Equal(float32(3), req.consensus)
+				require.Equal(3, req.copyMask.CountOnes())
+				require.Equal(3, req.consensus)
 			},
 		},
 		{
@@ -374,7 +425,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			numCorrect:  2,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "Copy failed: Copy request failed. Operation failed.",
+			errMsg:      "consensus_not_met",
 		},
 		{
 			name:        "Test_All_Blobber_Error_On_Copy_Failure",
@@ -382,7 +433,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			numCorrect:  0,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "Copy failed: Copy request failed. Operation failed.",
+			errMsg:      "consensus_not_met",
 		},
 	}
 	for _, tt := range tests {
@@ -429,10 +480,12 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 				remotefilepath: mockRemoteFilePath,
 				destPath:       mockDestPath,
 				Consensus: Consensus{
-					consensusThresh:        50,
-					fullconsensus:          4,
-					consensusRequiredForOk: 60,
+					mu:              &sync.RWMutex{},
+					consensusThresh: 3,
+					fullconsensus:   4,
 				},
+				copyMask:     zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
+				maskMU:       &sync.Mutex{},
 				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
 			}
@@ -440,7 +493,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect, req)
 			err := req.ProcessCopy()
 			if tt.wantErr {
-				require.EqualValues(tt.errMsg, errors.Top(err))
+				require.Contains(errors.Top(err), tt.errMsg)
 			} else {
 				require.Nil(err)
 			}

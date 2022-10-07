@@ -9,13 +9,14 @@ import (
 	"sync"
 	"time"
 
-	"errors"
+	"github.com/0chain/errors"
 
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
@@ -25,180 +26,217 @@ type DeleteRequest struct {
 	allocationID   string
 	allocationTx   string
 	blobbers       []*blockchain.StorageNode
-	remoteFilePath string
+	remotefilepath string
 	ctx            context.Context
-
-	connectionID string
-	consensus    Consensus
+	wg             *sync.WaitGroup
+	deleteMask     zboxutil.Uint128
+	maskMu         *sync.Mutex
+	connectionID   string
+	consensus      Consensus
 }
 
-func (req *DeleteRequest) deleteBlobberFile(blobber *blockchain.StorageNode) error {
+func (req *DeleteRequest) deleteBlobberFile(
+	blobber *blockchain.StorageNode, blobberIdx int) {
+
+	defer req.wg.Done()
+
+	var err error
+
+	defer func() {
+		if err != nil {
+			logger.Logger.Error(err)
+			req.maskMu.Lock()
+			req.deleteMask = req.deleteMask.And(zboxutil.NewUint128(1).Lsh(uint64(blobberIdx)).Not())
+			req.maskMu.Unlock()
+		}
+	}()
 
 	query := &url.Values{}
 
 	query.Add("connection_id", req.connectionID)
-	query.Add("path", req.remoteFilePath)
+	query.Add("path", req.remotefilepath)
 
 	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationTx, query)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating delete request", err)
-		return err
+		return
 	}
 
-	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
-	return zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			l.Logger.Error("Delete : ", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == http.StatusOK {
-			l.Logger.Info(blobber.Baseurl, " "+req.remoteFilePath, " deleted.")
-			return nil
-		}
+	var (
+		resp           *http.Response
+		shouldContinue bool
+	)
 
-		if resp.StatusCode == http.StatusNoContent {
-			l.Logger.Info(blobber.Baseurl, " "+req.remoteFilePath, " not available in blobber.")
-			return nil
-		}
+	for i := 0; i < 3; i++ {
+		err, shouldContinue = func() (err error, shouldContinue bool) {
+			ctx, cncl := context.WithTimeout(req.ctx, time.Minute)
+			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
+			cncl()
 
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err == nil {
-			l.Logger.Error(blobber.Baseurl, "Response: ", string(resp_body))
-		}
-
-		return fmt.Errorf("delete: %s", resp.Status)
-	})
-
-}
-
-func (req *DeleteRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.remoteFilePath, blobber)
-}
-
-func (req *DeleteRequest) deleteFileFromBlobber(b *blockchain.StorageNode) (fileref.RefEntity, error) {
-
-	refEntity, err := req.getObjectTreeFromBlobber(b)
-	if err != nil {
-		if errors.Is(err, constants.ErrNotFound) {
-			req.consensus.Done()
-			return nil, nil
-		}
-
-		return nil, err
-	}
-
-	err = req.deleteBlobberFile(b)
-	if err != nil {
-		return nil, err
-	}
-
-	req.consensus.Done()
-	return refEntity, nil
-}
-
-func (req *DeleteRequest) ProcessDelete() error {
-	num := len(req.blobbers)
-	numNotFound := 0
-	objectTreeRefs := make([]fileref.RefEntity, num)
-
-	wait := make(chan ProcessResult, num)
-
-	wg := sync.WaitGroup{}
-	wg.Add(num)
-
-	for i := 0; i < num; i++ {
-		go func(blobberIdx int) {
-			defer wg.Done()
-
-			fr, err := req.deleteFileFromBlobber(req.blobbers[blobberIdx])
-			if err == nil {
-
-				wait <- ProcessResult{
-					BlobberIndex: blobberIdx,
-					FileRef:      fr,
-					Succeed:      true,
-				}
-
+			if err != nil {
+				logger.Logger.Error(blobber.Baseurl, "Delete: ", err)
 				return
 			}
 
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
+			var respBody []byte
+
+			if resp.StatusCode == http.StatusOK {
+				req.consensus.Done()
+				l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " deleted.")
+				return
+			}
+
+			if resp.StatusCode == http.StatusTooManyRequests {
+				logger.Logger.Error("Got too many request error")
+				var r int
+				r, err = zboxutil.GetRateLimitValue(resp)
+				if err != nil {
+					logger.Logger.Error(err)
+					return
+				}
+				time.Sleep(time.Duration(r) * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			if resp.StatusCode == http.StatusNoContent {
+				req.consensus.Done()
+				l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " not available in blobber.")
+				return
+			}
+
+			respBody, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
+				return
+			}
+
+			err = errors.New("response_error", fmt.Sprintf("unexpected response with status code %d, message: %s",
+				resp.StatusCode, string(respBody)))
+			return
+		}()
+
+		if err != nil {
+			return
+		}
+
+		if shouldContinue {
+			continue
+		}
+		return
+	}
+	err = errors.New("unknown_issue",
+		fmt.Sprintf("latest response code: %d", resp.StatusCode))
+}
+
+func (req *DeleteRequest) getObjectTreeFromBlobber(pos uint64) (
+	fRefEntity fileref.RefEntity, err error) {
+
+	defer func() {
+		if err != nil {
+			req.maskMu.Lock()
+			req.deleteMask = req.deleteMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
+			req.maskMu.Unlock()
+		}
+	}()
+
+	fRefEntity, err = getObjectTreeFromBlobber(
+		req.ctx, req.allocationID, req.allocationTx,
+		req.remotefilepath, req.blobbers[pos])
+	return
+}
+
+func (req *DeleteRequest) ProcessDelete() (err error) {
+	num := req.deleteMask.CountOnes()
+	objectTreeRefs := make([]fileref.RefEntity, num)
+	var deleteMutex sync.Mutex
+	removedNum := 0
+	req.wg = &sync.WaitGroup{}
+	req.wg.Add(num)
+
+	var pos uint64
+	for i := req.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		go func(blobberIdx uint64) {
+			defer req.wg.Done()
+			refEntity, err := req.getObjectTreeFromBlobber(blobberIdx)
+			if err == nil {
+				req.consensus.Done()
+				objectTreeRefs[blobberIdx] = refEntity
+				return
+			}
 			//it was removed from the blobber
 			if errors.Is(err, constants.ErrNotFound) {
-
-				wait <- ProcessResult{
-					BlobberIndex: blobberIdx,
-					FileRef:      nil,
-					Succeed:      true,
-				}
-
+				req.consensus.Done()
+				deleteMutex.Lock()
+				removedNum++
+				deleteMutex.Unlock()
 				return
-			}
-
-			wait <- ProcessResult{
-				BlobberIndex: blobberIdx,
 			}
 
 			l.Logger.Error(err.Error())
-		}(i)
+		}(pos)
 	}
+	req.wg.Wait()
 
-	wg.Wait()
+	req.consensus.consensus = removedNum
+	numDeletes := req.deleteMask.CountOnes()
 
-	for i := 0; i < num; i++ {
-		r := <-wait
+	req.wg.Add(numDeletes)
 
-		if !r.Succeed {
-			continue
-		}
-
-		// it was deleted
-		if r.FileRef == nil {
-			numNotFound++
-			continue
-		}
-
-		objectTreeRefs[r.BlobberIndex] = r.FileRef
+	for i := req.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		go req.deleteBlobberFile(req.blobbers[pos], int(pos))
 	}
+	req.wg.Wait()
 
 	if !req.consensus.isConsensusOk() {
-		return fmt.Errorf("Delete failed: Success_rate:%2f, expected:%2f", req.consensus.getConsensusRate(), req.consensus.getConsensusRequiredForOk())
+		return errors.New("consensus_not_met",
+			fmt.Sprintf("Consensus on delete failed. Required consensus %d got %d",
+				req.consensus.consensusThresh, req.consensus.consensus))
 	}
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
 	if err != nil {
 		return fmt.Errorf("Delete failed: %s", err.Error())
 	}
-	err = writeMarkerMutex.Lock(context.TODO(), req.connectionID)
-	defer writeMarkerMutex.Unlock(context.TODO(), req.connectionID) //nolint: errcheck
+	err = writeMarkerMutex.Lock(
+		req.ctx, &req.deleteMask, req.maskMu,
+		req.blobbers, &req.consensus, removedNum, time.Minute, req.connectionID)
+
+	defer writeMarkerMutex.Unlock(req.ctx, req.deleteMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 	if err != nil {
 		return fmt.Errorf("Delete failed: %s", err.Error())
 	}
 
-	req.consensus.Reset()
-	req.consensus.consensus = float32(numNotFound)
-
-	commitReqs := make([]*CommitRequest, 0, numNotFound)
-
-	for pos, ref := range objectTreeRefs {
-		if ref == nil {
-			continue
-		}
-		wg.Add(1)
-		commitReq := &CommitRequest{}
-		commitReq.allocationID = req.allocationID
-		commitReq.allocationTx = req.allocationTx
-		commitReq.blobber = req.blobbers[pos]
+	req.consensus.consensus = removedNum
+	wg := &sync.WaitGroup{}
+	activeBlobbers := req.deleteMask.CountOnes()
+	wg.Add(activeBlobbers)
+	commitReqs := make([]*CommitRequest, activeBlobbers)
+	var c int
+	for i := req.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
 		newChange := &allocationchange.DeleteFileChange{}
-		newChange.ObjectTree = ref
+		newChange.ObjectTree = objectTreeRefs[pos]
 		newChange.NumBlocks = newChange.ObjectTree.GetNumBlocks()
 		newChange.Operation = constants.FileOperationDelete
 		newChange.Size = newChange.ObjectTree.GetSize()
+
+		commitReq := &CommitRequest{
+			allocationID: req.allocationID,
+			allocationTx: req.allocationTx,
+			blobber:      req.blobbers[pos],
+			connectionID: req.connectionID,
+			wg:           wg,
+		}
 		commitReq.changes = append(commitReq.changes, newChange)
-		commitReq.connectionID = req.connectionID
-		commitReq.wg = &wg
-		commitReqs = append(commitReqs, commitReq)
+		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
+		c++
 	}
 	wg.Wait()
 
@@ -216,7 +254,9 @@ func (req *DeleteRequest) ProcessDelete() error {
 	}
 
 	if !req.consensus.isConsensusOk() {
-		return errors.New("Delete failed: Commit consensus failed")
+		return errors.New("consensus_not_met",
+			fmt.Sprintf("Consensus on commit not met. Required %d, got %d",
+				req.consensus.consensusThresh, req.consensus.consensus))
 	}
 	return nil
 }

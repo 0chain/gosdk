@@ -10,11 +10,12 @@ import (
 	"sync"
 	"time"
 
-	"errors"
+	"github.com/0chain/errors"
 
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/logger"
 
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -30,8 +31,9 @@ type CopyRequest struct {
 	remotefilepath string
 	destPath       string
 	ctx            context.Context
-
-	connectionID string
+	copyMask       zboxutil.Uint128
+	maskMU         *sync.Mutex
+	connectionID   string
 	Consensus
 }
 
@@ -39,138 +41,175 @@ func (req *CopyRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode
 	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.remotefilepath, blobber)
 }
 
-func (req *CopyRequest) copyBlobberObject(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	refEntity, err := req.getObjectTreeFromBlobber(blobber)
-	if err != nil {
-		return nil, err
-	}
+func (req *CopyRequest) copyBlobberObject(
+	blobber *blockchain.StorageNode, blobberIdx int, wg *sync.WaitGroup) (refEntity fileref.RefEntity, err error) {
 
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
+	defer wg.Done()
 
-	_ = formWriter.WriteField("connection_id", req.connectionID)
-	formWriter.WriteField("path", req.remotefilepath)
-	formWriter.WriteField("dest", req.destPath)
-
-	formWriter.Close()
-	httpreq, err := zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationTx, body)
-	if err != nil {
-		l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
-		return nil, err
-	}
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	l.Logger.Info(httpreq.URL.Path)
-	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
+	defer func() {
 		if err != nil {
-			l.Logger.Error("Copy : ", err)
-			return err
+			req.maskMU.Lock()
+			// Removing blobber from mask
+			req.copyMask = req.copyMask.And(zboxutil.NewUint128(1).Lsh(uint64(blobberIdx)).Not())
+			req.maskMU.Unlock()
 		}
-		defer resp.Body.Close()
-		if resp.StatusCode == http.StatusOK {
-			resp_body, _ := ioutil.ReadAll(resp.Body)
-			l.Logger.Info("copy resp:", string(resp_body))
-			req.Done()
-
-			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " copied.")
-			return nil
-		}
-
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err == nil {
-			msg := string(resp_body)
-
-			if len(msg) > 0 {
-				l.Logger.Error(blobber.Baseurl, "Response: ", msg)
-				return fmt.Errorf("Copy: %v %s", resp.StatusCode, msg)
-			}
-		}
-
-		return fmt.Errorf("Copy: %v", resp.StatusCode)
-	})
-
+	}()
+	refEntity, err = req.getObjectTreeFromBlobber(req.blobbers[blobberIdx])
 	if err != nil {
 		return nil, err
 	}
-	return refEntity, nil
+
+	var resp *http.Response
+	var shouldContinue bool
+	var latestRespMsg string
+	var latestStatusCode int
+	for i := 0; i < 3; i++ {
+		err, shouldContinue = func() (err error, shouldContinue bool) {
+			body := new(bytes.Buffer)
+			formWriter := multipart.NewWriter(body)
+
+			formWriter.WriteField("connection_id", req.connectionID)
+			formWriter.WriteField("path", req.remotefilepath)
+			formWriter.WriteField("dest", req.destPath)
+			formWriter.Close()
+
+			var (
+				httpreq  *http.Request
+				respBody []byte
+				ctx      context.Context
+				cncl     context.CancelFunc
+			)
+
+			httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationTx, body)
+			if err != nil {
+				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
+				return
+			}
+
+			httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+			l.Logger.Info(httpreq.URL.Path)
+			ctx, cncl = context.WithTimeout(req.ctx, (time.Second * 30))
+			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
+			cncl()
+
+			if err != nil {
+				logger.Logger.Error("Copy: ", err)
+				return
+			}
+
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
+			respBody, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				logger.Logger.Error("Error: Resp ", err)
+				return
+			}
+
+			if resp.StatusCode == http.StatusOK {
+				l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " copied.")
+				req.Consensus.Done()
+				return
+			}
+
+			latestRespMsg = string(respBody)
+			latestStatusCode = resp.StatusCode
+
+			if resp.StatusCode == http.StatusTooManyRequests {
+				logger.Logger.Error("Got too many request error")
+				var r int
+				r, err = zboxutil.GetRateLimitValue(resp)
+				if err != nil {
+					logger.Logger.Error(err)
+					return
+				}
+				time.Sleep(time.Duration(r) * time.Second)
+				shouldContinue = true
+				return
+			}
+			l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
+			err = errors.New("response_error", string(respBody))
+			return
+		}()
+
+		if err != nil {
+			return
+		}
+		if shouldContinue {
+			continue
+		}
+		return
+	}
+	return nil, errors.New("unknown_issue",
+		fmt.Sprintf("last status code: %d, last response message: %s", latestStatusCode, latestRespMsg))
 }
 
 func (req *CopyRequest) ProcessCopy() error {
-	num := len(req.blobbers)
-	objectTreeRefs := make([]fileref.RefEntity, num)
-
-	wait := make(chan ProcessResult, num)
-
+	numList := len(req.blobbers)
+	objectTreeRefs := make([]fileref.RefEntity, numList)
 	wg := &sync.WaitGroup{}
-	wg.Add(num)
 
-	for i := 0; i < num; i++ {
+	var pos uint64
+
+	for i := req.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		wg.Add(1)
 		go func(blobberIdx int) {
-			defer wg.Done()
-			refEntity, err := req.copyBlobberObject(req.blobbers[blobberIdx])
+			refEntity, err := req.copyBlobberObject(req.blobbers[blobberIdx], blobberIdx, wg)
 			if err != nil {
 				l.Logger.Error(err.Error())
+				return
 			}
-
-			wait <- ProcessResult{
-				BlobberIndex: blobberIdx,
-				FileRef:      refEntity,
-				Succeed:      err == nil,
-			}
-
-		}(i)
+			objectTreeRefs[blobberIdx] = refEntity
+		}(int(pos))
 	}
+
 	wg.Wait()
 
-	for i := 0; i < num; i++ {
-		r := <-wait
-
-		if !r.Succeed {
-			continue
-		}
-
-		objectTreeRefs[r.BlobberIndex] = r.FileRef
-	}
-
 	if !req.isConsensusOk() {
-		return errors.New("Copy failed: Copy request failed. Operation failed.")
+		return errors.New("consensus_not_met",
+			fmt.Sprintf("Copy failed. Required consensus %d, got %d",
+				req.Consensus.consensusThresh, req.Consensus.consensus))
 	}
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
 	if err != nil {
 		return fmt.Errorf("Copy failed: %s", err.Error())
 	}
-	err = writeMarkerMutex.Lock(context.TODO(), req.connectionID)
-	defer writeMarkerMutex.Unlock(context.TODO(), req.connectionID) //nolint: errcheck
+	err = writeMarkerMutex.Lock(req.ctx, &req.copyMask, req.maskMU,
+		req.blobbers, &req.Consensus, 0, time.Minute, req.connectionID)
+	defer writeMarkerMutex.Unlock(req.ctx, req.copyMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 	if err != nil {
 		return fmt.Errorf("Copy failed: %s", err.Error())
 	}
 
-	req.Reset()
-	commitReqs := make([]*CommitRequest, 0, num)
+	req.Consensus.Reset()
+	activeBlobbers := req.copyMask.CountOnes()
+	wg.Add(activeBlobbers)
+	commitReqs := make([]*CommitRequest, activeBlobbers)
 
-	for pos, ref := range objectTreeRefs {
-		if ref == nil {
-			continue
+	var c int
+	for i := req.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+
+		newChange := &allocationchange.CopyFileChange{
+			DestPath:   req.destPath,
+			ObjectTree: objectTreeRefs[pos],
 		}
-
-		wg.Add(1)
-		//go req.prepareUpload(a, a.Blobbers[pos], req.file[c], req.uploadDataCh[c], req.wg)
-		commitReq := &CommitRequest{}
-		commitReq.allocationID = req.allocationID
-		commitReq.allocationTx = req.allocationTx
-		commitReq.blobber = req.blobbers[pos]
-		newChange := &allocationchange.CopyFileChange{}
-		newChange.DestPath = req.destPath
-		newChange.ObjectTree = objectTreeRefs[pos]
 		newChange.NumBlocks = 0
 		newChange.Operation = constants.FileOperationCopy
 		newChange.Size = 0
+		commitReq := &CommitRequest{
+			allocationID: req.allocationID,
+			allocationTx: req.allocationTx,
+			blobber:      req.blobbers[pos],
+			connectionID: req.connectionID,
+			wg:           wg,
+		}
 		commitReq.changes = append(commitReq.changes, newChange)
-		commitReq.connectionID = req.connectionID
-		commitReq.wg = wg
-		commitReqs = append(commitReqs, commitReq)
+		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
+		c++
 	}
 	wg.Wait()
 
@@ -188,7 +227,9 @@ func (req *CopyRequest) ProcessCopy() error {
 	}
 
 	if !req.isConsensusOk() {
-		return errors.New("Copy failed: Commit consensus failed")
+		return errors.New("consensus_not_met",
+			fmt.Sprintf("Commit on copy failed. Required consensus %d, got %d",
+				req.Consensus.consensusThresh, req.Consensus.consensus))
 	}
 	return nil
 }
