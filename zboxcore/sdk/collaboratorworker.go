@@ -113,7 +113,7 @@ func (req *CollaboratorRequest) removeCollaboratorFromBlobber(blobber *blockchai
 		return
 	}
 
-	ctx, cncl := context.WithTimeout(req.a.ctx, (time.Second * 30))
+	ctx, cncl := context.WithTimeout(req.a.ctx, DefaultUploadTimeOut)
 
 	zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
