@@ -83,9 +83,9 @@ func (req *RenameRequest) renameBlobberObject(
 			}
 
 			httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-			ctx, cncl := context.WithTimeout(req.ctx, time.Minute)
-			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
-			cncl()
+			// ctx, cncl := context.WithTimeout(req.ctx, time.Minute)
+			resp, err = zboxutil.Client.Do(httpreq.WithContext(req.ctx))
+			// cncl()
 
 			if err != nil {
 				logger.Logger.Error("Rename: ", err)

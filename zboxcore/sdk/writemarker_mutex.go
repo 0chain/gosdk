@@ -238,9 +238,9 @@ func (wmMu *WriteMarkerMutex) LockBlobber(
 	var shouldContinue bool
 	for retry := 0; retry < 3; retry++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
-			reqCtx, ctxCncl := context.WithTimeout(ctx, timeOut)
-			resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
-			ctxCncl()
+			// reqCtx, ctxCncl := context.WithTimeout(ctx, timeOut)
+			resp, err = zboxutil.Client.Do(req.WithContext(ctx))
+			// ctxCncl()
 
 			if err != nil {
 				return

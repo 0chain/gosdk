@@ -76,8 +76,6 @@ func (req *CopyRequest) copyBlobberObject(
 			var (
 				httpreq  *http.Request
 				respBody []byte
-				ctx      context.Context
-				cncl     context.CancelFunc
 			)
 
 			httpreq, err = zboxutil.NewCopyRequest(blobber.Baseurl, req.allocationTx, body)
@@ -88,9 +86,9 @@ func (req *CopyRequest) copyBlobberObject(
 
 			httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 			l.Logger.Info(httpreq.URL.Path)
-			ctx, cncl = context.WithTimeout(req.ctx, (time.Second * 30))
-			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
-			cncl()
+			// ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
+			resp, err = zboxutil.Client.Do(httpreq.WithContext(req.ctx))
+			// cncl()
 
 			if err != nil {
 				logger.Logger.Error("Copy: ", err)
