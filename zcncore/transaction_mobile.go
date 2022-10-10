@@ -1105,7 +1105,7 @@ func (t *Transaction) ZCNSCAddAuthorizer(ip AddAuthorizerPayload) (err error) {
 }
 
 // ConvertToTokenValue converts ZCN tokens to value
-func ConvertToTokenValue(token float64) string {
+func ConvertToTokenValue(token float64) uint64 {
 	return uint64(token * float64(TOKEN_UNIT))
 }
 
