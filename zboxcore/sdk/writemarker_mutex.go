@@ -240,7 +240,7 @@ func (wmMu *WriteMarkerMutex) LockBlobber(
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, timeOut)
 			resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
-			ctxCncl()
+			defer ctxCncl()
 
 			if err != nil {
 				return

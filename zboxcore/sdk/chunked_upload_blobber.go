@@ -87,7 +87,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
 			resp, err = su.client.Do(req.WithContext(reqCtx))
-			ctxCncl()
+			defer ctxCncl()
 
 			if err != nil {
 				logger.Logger.Error("Upload : ", err)
@@ -255,7 +255,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, su.commitTimeOut)
 			resp, err = su.client.Do(req.WithContext(reqCtx))
-			ctxCncl()
+			defer ctxCncl()
 
 			if err != nil {
 				logger.Logger.Error("Commit: ", err)
