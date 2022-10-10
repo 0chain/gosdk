@@ -1057,10 +1057,6 @@ func CreateFreeAllocationFor(recipientPublicKey string, marker string, value uin
 		return "", 0, sdkNotInitialized
 	}
 
-	// if value < 0 {
-	// 	return "", 0, errors.New("", "invalid value for lock")
-	// }
-
 	var input = map[string]interface{}{
 		"recipient_public_key": recipientPublicKey,
 		"marker":               marker,
