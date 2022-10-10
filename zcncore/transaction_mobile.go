@@ -75,7 +75,6 @@ type TransactionCommon interface {
 	GetVerifyConfirmationStatus() int
 }
 
-
 type chainConfig struct {
 	ChainID                 string   `json:"chain_id,omitempty"`
 	BlockWorker             string   `json:"block_worker"`
@@ -765,8 +764,8 @@ func (t *Transaction) WritePoolLock(allocID, lock, fee string) error {
 	}
 
 	var lr = struct {
-		AllocationID string        `json:"allocation_id"`
-	} {
+		AllocationID string `json:"allocation_id"`
+	}{
 		AllocationID: allocID,
 	}
 
@@ -790,7 +789,7 @@ func (t *Transaction) WritePoolUnlock(allocID string, fee string) error {
 
 	var ur = struct {
 		AllocationID string `json:"allocation_id"`
-	} {
+	}{
 		AllocationID: allocID,
 	}
 
@@ -1110,10 +1109,9 @@ func ConvertToTokenValue(token float64) string {
 	return uint64(token * float64(TOKEN_UNIT))
 }
 
-
 // ConvertToValue converts ZCN tokens to value
 func ConvertToValue(token float64) string {
-	return strconv.FormatUint(ConvertToTokenValue(token))
+	return strconv.FormatUint(ConvertToTokenValue(token), 10)
 }
 
 func makeTimeoutContext(tm RequestTimeout) (context.Context, func()) {
