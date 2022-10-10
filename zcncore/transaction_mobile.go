@@ -1105,9 +1105,15 @@ func (t *Transaction) ZCNSCAddAuthorizer(ip AddAuthorizerPayload) (err error) {
 	return
 }
 
+// ConvertToTokenValue converts ZCN tokens to value
+func ConvertToTokenValue(token float64) string {
+	return uint64(token * float64(TOKEN_UNIT))
+}
+
+
 // ConvertToValue converts ZCN tokens to value
 func ConvertToValue(token float64) string {
-	return strconv.FormatUint(uint64(token*float64(TOKEN_UNIT)), 10)
+	return strconv.FormatUint(ConvertToTokenValue(token))
 }
 
 func makeTimeoutContext(tm RequestTimeout) (context.Context, func()) {

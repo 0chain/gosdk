@@ -1,3 +1,6 @@
+//go:build mobile
+// +build mobile
+
 package sdk
 
 import (
@@ -226,8 +229,8 @@ func (s *StorageSDK) GetReadPoolInfo(clientID string) (string, error) {
 func (s *StorageSDK) WritePoolLock(durInSeconds int64, tokens, fee float64, allocID string) error {
 	_, _, err := sdk.WritePoolLock(
 		allocID,
-		zcn.ConvertToValue(tokens),
-		zcn.ConvertToValue(fee))
+		zcn.ConvertToTokenValue(tokens),
+		zcn.ConvertToTokenValue(fee))
 	return err
 }
 
@@ -312,5 +315,5 @@ func decodeTicket(ticket string) (string, string, uint64, error) {
 	markerStr, _ := json.Marshal(markerInput)
 
 	s, _ := strconv.ParseFloat(string(fmt.Sprintf("%v", lock)), 64)
-	return string(recipientPublicKey), string(markerStr), zcn.ConvertToValue(s), nil
+	return string(recipientPublicKey), string(markerStr), zcn.ConvertToTokenValue(s), nil
 }
