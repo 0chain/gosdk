@@ -7,22 +7,16 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"sync"
 
-	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/zboxcore/client"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	zcn "github.com/0chain/gosdk/zcncore"
 
 	"github.com/0chain/gosdk/mobilesdk/zbox"
 	"github.com/0chain/gosdk/mobilesdk/zcncore"
-	"github.com/0chain/gosdk/mobilesdk/zcncoremobile"
 	"github.com/0chain/gosdk/mobilesdk/zcncrypto"
-	"go.uber.org/zap"
 )
 
 var nonce = int64(0)
@@ -232,8 +226,8 @@ func (s *StorageSDK) GetReadPoolInfo(clientID string) (string, error) {
 func (s *StorageSDK) WritePoolLock(durInSeconds int64, tokens, fee float64, allocID string) error {
 	_, _, err := sdk.WritePoolLock(
 		allocID,
-		uint64(zcncoremobile.ConvertToValue(tokens)),
-		uint64(zcncoremobile.ConvertToValue(fee)))
+		uint64(zcn.ConvertToValue(tokens)),
+		uint64(zcn.ConvertToValue(fee)))
 	return err
 }
 
@@ -282,149 +276,41 @@ func GetAllocations() (string, error) {
 }
 
 func (s *StorageSDK) RedeemFreeStorage(ticket string) (string, error) {
-	input, err, lock := decodeTicket(ticket)
+	recipientPublicKey, marker, lock, err := decodeTicket(ticket)
 	if err != nil {
 		return "", err
 	}
 
-	blobbers, err := getFreeAllocationBlobbers(input)
-	if err != nil {
-		return "", err
-	}
-	if len(blobbers) == 0 {
-		return "", fmt.Errorf("unable to get free blobbers for allocation")
-	}
-
-	input["blobbers"] = blobbers
-
-	payload, err := json.Marshal(input)
-	if err != nil {
-		return "", err
-	}
-
-	return smartContractTxn(
-		zcncore.StorageSmartContractAddress,
-		transaction.NEW_FREE_ALLOCATION,
-		string(payload),
-		lock,
-	)
+	hash, _, err := sdk.CreateFreeAllocationFor(recipientPublicKey, marker, lock)
+	return hash, err
 }
 
-func decodeTicket(ticket string) (map[string]interface{}, error, uint64) {
+func decodeTicket(ticket string) (string, string, uint64, error) {
 	decoded, err := base64.StdEncoding.DecodeString(ticket)
 	if err != nil {
-		return nil, err, 0
+		return "", "", 0, err
 	}
 
 	input := make(map[string]interface{})
 	if err = json.Unmarshal(decoded, &input); err != nil {
-		return nil, err, 0
+		return "", "", 0, err
 	}
 
 	str := fmt.Sprintf("%v", input["marker"])
 	decodedMarker, _ := base64.StdEncoding.DecodeString(str)
 	markerInput := make(map[string]interface{})
 	if err = json.Unmarshal(decodedMarker, &markerInput); err != nil {
-		return nil, err, 0
+		return "", "", 0, err
 	}
 
-	result := make(map[string]interface{})
-	result["recipient_public_key"] = input["recipient_public_key"]
+	recipientPublicKey, ok := input["recipient_public_key"].(string)
+	if !ok {
+		return "", "", 0, fmt.Errorf("recipient_public_key is required")
+	}
 
 	lock := markerInput["free_tokens"]
 	markerStr, _ := json.Marshal(markerInput)
-	result["marker"] = string(markerStr)
 
 	s, _ := strconv.ParseFloat(string(fmt.Sprintf("%v", lock)), 64)
-	return result, nil, uint64(zcncoremobile.ConvertToValue(s))
+	return string(recipientPublicKey), string(markerStr), uint64(zcn.ConvertToValue(s)), nil
 }
-
-func getFreeAllocationBlobbers(request map[string]interface{}) ([]string, error) {
-	data, _ := json.Marshal(request)
-
-	params := make(map[string]string)
-	params["free_allocation_data"] = string(data)
-
-	allocBlobber, err := zboxutil.MakeSCRestAPICall(sdk.STORAGE_SCADDRESS, "/free_alloc_blobbers", params, nil)
-	if err != nil {
-		return nil, err
-	}
-	var allocBlobberIDs []string
-
-	err = json.Unmarshal(allocBlobber, &allocBlobberIDs)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal blobber IDs")
-	}
-
-	return allocBlobberIDs, nil
-}
-
-type TransactionCallback struct {
-	wg      *sync.WaitGroup
-	success bool
-	balance int64
-}
-
-func smartContractTxn(address, method, input string, value uint64) (string, error) {
-	tcb := &TransactionCallback{}
-	tcb.wg = &sync.WaitGroup{}
-	tcb.wg.Add(1)
-
-	zcntxn, err := zcncore.NewTransaction(tcb, 0, 1)
-	if err != nil {
-		return "", err
-	}
-
-	l.Logger.Info("Calling SC txn with values :", zap.Any("method", method), zap.Any("input", input), zap.Any("value", value))
-	err = zcntxn.ExecuteSmartContract(address, method, input, value)
-	if err != nil {
-		tcb.wg.Done()
-		return "", err
-	}
-	tcb.wg.Wait()
-	if len(zcntxn.GetTransactionError()) > 0 {
-		return "", errors.New("smart_contract_txn_get_error", zcntxn.GetTransactionError())
-	}
-	tcb.wg.Add(1)
-	err = zcntxn.Verify()
-	if err != nil {
-		tcb.wg.Done()
-		return "", errors.New("smart_contract_txn_verify_error", err.Error())
-	}
-	tcb.wg.Wait()
-
-	if len(zcntxn.GetVerifyError()) > 0 {
-		return "", errors.New("smart_contract_txn_verify_error", zcntxn.GetVerifyError())
-	}
-	return zcntxn.GetTransactionHash(), nil
-}
-
-func (t *TransactionCallback) OnBalanceAvailable(status int, value int64, info string) {
-	defer t.wg.Done()
-	if status == zcncore.StatusSuccess {
-		t.success = true
-	} else {
-		t.success = false
-	}
-	t.balance = value
-}
-
-func (t *TransactionCallback) OnTransactionComplete(zcntxn *zcncore.Transaction, status int) {
-	defer t.wg.Done()
-	if status == zcncore.StatusSuccess {
-		t.success = true
-	} else {
-		t.success = false
-	}
-}
-
-func (t *TransactionCallback) OnVerifyComplete(zcntxn *zcncore.Transaction, status int) {
-	defer t.wg.Done()
-	if status == zcncore.StatusSuccess {
-		t.success = true
-	} else {
-		t.success = false
-	}
-}
-
-func (t *TransactionCallback) OnAuthComplete(zcntxn *zcncore.Transaction, status int) {}
