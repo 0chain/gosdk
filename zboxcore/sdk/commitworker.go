@@ -26,7 +26,8 @@ import (
 
 type ReferencePathResult struct {
 	*fileref.ReferencePath
-	LatestWM *marker.WriteMarker `json:"latest_write_marker"`
+	LatestWM    *marker.WriteMarker `json:"latest_write_marker"`
+	LatestInode *marker.Inode       `json:"latest_inode"`
 }
 
 type CommitResult struct {
@@ -99,6 +100,8 @@ func startCommitWorker(blobberChan chan *CommitRequest, blobberID string) {
 }
 
 func (commitreq *CommitRequest) processCommit() {
+	defer commitreq.wg.Done()
+
 	l.Logger.Info("received a commit request")
 	paths := make([]string, 0)
 	for _, change := range commitreq.changes {
@@ -111,6 +114,7 @@ func (commitreq *CommitRequest) processCommit() {
 		l.Logger.Error("Creating ref path req", err)
 		return
 	}
+
 	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 30))
 	err = zboxutil.HttpDo(ctx, cncl, req, func(resp *http.Response, err error) error {
 		if err != nil {
@@ -127,60 +131,55 @@ func (commitreq *CommitRequest) processCommit() {
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
-			return errors.New(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Reference path error response: Status: %d - %s ", resp.StatusCode, string(resp_body)))
-
-		} else {
-			//Logger.Info("Reference path:", string(resp_body))
-			err = json.Unmarshal(resp_body, &lR)
-			if err != nil {
-				l.Logger.Error("Reference path json decode error: ", err)
-				return err
-			}
+			return errors.New(
+				strconv.Itoa(resp.StatusCode),
+				fmt.Sprintf("Reference path error response: Status: %d - %s ",
+					resp.StatusCode, string(resp_body)))
+		}
+		err = json.Unmarshal(resp_body, &lR)
+		if err != nil {
+			l.Logger.Error("Reference path json decode error: ", err)
+			return err
 		}
 		return nil
 	})
-	//process the commit request for the blobber here
+
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
-		commitreq.wg.Done()
 		return
 	}
+	var latestInode int64
 	rootRef, err := lR.GetDirTree(commitreq.allocationID)
-	if lR.LatestWM != nil {
-		//Can not verify signature due to collaborator flow
-		// //TODO: Verify the writemarker
-		// err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
-		// if err != nil {
-		// 	commitreq.result = ErrorCommitResult(err.Error())
-		// 	commitreq.wg.Done()
-		// 	return
-		// }
+	if err != nil {
+		commitreq.result = ErrorCommitResult(err.Error())
+		return
+	}
 
+	if lR.LatestWM != nil {
 		rootRef.CalculateHash()
 		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
-			// Removing this check for testing purpose as per the convo with Saswata
 			l.Logger.Info("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
-			// err = commitreq.calculateHashRequest(ctx, paths)
-			// if err != nil {
-			// 	commitreq.result = ErrorCommitResult("Failed to call blobber to recalculate the hash. URL: " + commitreq.blobber.Baseurl + ", Err : " + err.Error())
-			// 	commitreq.wg.Done()
-			// 	return
-			// }
-			// Logger.Info("Recalculate hash call to blobber successfull")
-			// commitreq.result = ErrorCommitResult("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
-			// commitreq.wg.Done()
-			// return
+		}
+		if lR.LatestInode == nil {
+			errStr := fmt.Sprintf(
+				"Blobber %s responded with non-nil writemarker but nil Inode", commitreq.blobber.Baseurl)
+			commitreq.result = ErrorCommitResult(errStr)
+			return
+		}
+		latestInode, err = lR.LatestInode.GetLatestInode()
+		if err != nil {
+			commitreq.result = ErrorCommitResult(err.Error())
+			return
 		}
 	}
-	if err != nil {
-		commitreq.result = ErrorCommitResult(err.Error())
-		commitreq.wg.Done()
-		return
-	}
-	size := int64(0)
+
+	var size int64
 	for _, change := range commitreq.changes {
-		err = change.ProcessChange(rootRef)
+		inodesMeta, latestInode, err := change.ProcessChange(rootRef, latestInode)
+		_ = inodesMeta
+		_ = latestInode
+
 		if err != nil {
 			break
 		}
@@ -188,17 +187,14 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
-		commitreq.wg.Done()
 		return
 	}
 	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
-		commitreq.wg.Done()
 		return
 	}
 	commitreq.result = SuccessCommitResult()
-	commitreq.wg.Done()
 }
 
 func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.WriteMarker, size int64) error {

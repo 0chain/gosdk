@@ -13,7 +13,10 @@ type UpdateFileChange struct {
 	NewFile *fileref.FileRef
 }
 
-func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) error {
+func (ch *UpdateFileChange) ProcessChange(
+	rootRef *fileref.Ref, latestFileID int64) (
+	map[string]int64, int64, error) {
+
 	path, _ := filepath.Split(ch.NewFile.Path)
 	tSubDirs := getSubDirs(path)
 	dirRef := rootRef
@@ -32,7 +35,7 @@ func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		if found {
 			treelevel++
 		} else {
-			return errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+			return nil, 0, errors.New("invalid_reference_path", "Invalid reference path from the blobber")
 		}
 	}
 	idx := -1
@@ -44,11 +47,11 @@ func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		}
 	}
 	if idx < 0 || ch.OldFile == nil {
-		return errors.New("file_not_found", "File to update not found in blobber")
+		return nil, 0, errors.New("file_not_found", "File to update not found in blobber")
 	}
 	dirRef.Children[idx] = ch.NewFile
 	rootRef.CalculateHash()
-	return nil
+	return nil, 0, nil
 }
 
 func (n *UpdateFileChange) GetAffectedPath() string {

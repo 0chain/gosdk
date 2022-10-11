@@ -71,6 +71,7 @@ type Ref struct {
 	NumBlocks        int64  `json:"num_of_blocks" mapstructure:"num_of_blocks"`
 	PathHash         string `json:"path_hash" mapstructure:"path_hash"`
 	LookupHash       string `json:"lookup_hash" mapstructure:"lookup_hash"`
+	FileID           int64  `json:"file_id" mapstructure:"file_id"`
 	HashToBeComputed bool
 	ChildrenLoaded   bool
 	Children         []RefEntity      `json:"-" mapstructure:"-"`

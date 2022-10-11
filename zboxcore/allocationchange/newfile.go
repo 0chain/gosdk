@@ -14,10 +14,14 @@ type NewFileChange struct {
 	File *fileref.FileRef
 }
 
-func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref) error {
+func (ch *NewFileChange) ProcessChange(
+	rootRef *fileref.Ref, latestFileID int64) (
+	inodesMeta map[string]int64, latestInode int64, err error) {
+
+	inodesMeta = make(map[string]int64)
 	tSubDirs, err := common.GetPathFields(path.Dir(ch.File.Path))
 	if err != nil {
-		return err
+		return
 	}
 
 	dirRef := rootRef
@@ -31,20 +35,24 @@ func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref) error {
 			}
 		}
 		if !found {
+			latestFileID++
 			newRef := &fileref.Ref{
 				Type:         fileref.DIRECTORY,
 				AllocationID: dirRef.AllocationID,
 				Path:         filepath.Join("/", strings.Join(tSubDirs[:i+1], "/")),
 				Name:         tSubDirs[i],
+				FileID:       latestFileID,
 			}
+			inodesMeta[newRef.Path] = latestFileID
 			dirRef.AddChild(newRef)
 			dirRef = newRef
 		}
 	}
 
+	latestInode = latestFileID
 	dirRef.AddChild(ch.File)
 	rootRef.CalculateHash()
-	return nil
+	return
 }
 
 func (n *NewFileChange) GetAffectedPath() string {

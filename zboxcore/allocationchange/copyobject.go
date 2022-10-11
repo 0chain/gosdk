@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
@@ -14,42 +15,45 @@ type CopyFileChange struct {
 	DestPath   string
 }
 
-func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
-	tSubDirs := getSubDirs(ch.DestPath)
+func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref, latestFileID int64) (
+	inodesMeta map[string]int64, latestInode int64, err error) {
+
+	inodesMeta = make(map[string]int64)
+	var fields []string
+	fields, err = common.GetPathFields(ch.DestPath)
+	if err != nil {
+		return
+	}
 	rootRef.HashToBeComputed = true
 	dirRef := rootRef
-	treelevel := 0
-	for true {
+
+	for i := 0; i < len(fields); i++ {
 		found := false
 		for _, child := range dirRef.Children {
-			if child.GetType() == fileref.DIRECTORY && treelevel < len(tSubDirs) {
-				if (child.(*fileref.Ref)).Name == tSubDirs[treelevel] {
-					dirRef = child.(*fileref.Ref)
-					found = true
-					break
-				}
+			if child.GetName() == fields[i] {
+				dirRef = child.(*fileref.Ref)
+				found = true
+				break
 			}
 		}
-		if found {
-			treelevel++
-			continue
+		if !found {
+			latestFileID++
+			newRef := &fileref.Ref{}
+			newRef.Type = fileref.DIRECTORY
+			newRef.AllocationID = dirRef.AllocationID
+			newRef.Path = "/" + strings.Join(fields[:i+1], "/")
+			newRef.Name = fields[i]
+			newRef.HashToBeComputed = true
+
+			inodesMeta[newRef.Path] = latestFileID
+			dirRef.AddChild(newRef)
+			dirRef = newRef
 		}
-		if len(tSubDirs) <= treelevel {
-			break
-		}
-		newRef := &fileref.Ref{}
-		newRef.Type = fileref.DIRECTORY
-		newRef.AllocationID = dirRef.AllocationID
-		newRef.Path = "/" + strings.Join(tSubDirs[:treelevel+1], "/")
-		newRef.Name = tSubDirs[treelevel]
-		newRef.HashToBeComputed = true
-		dirRef.AddChild(newRef)
-		dirRef = newRef
-		treelevel++
 	}
 
 	if dirRef.GetPath() != ch.DestPath || dirRef.GetType() != fileref.DIRECTORY {
-		return errors.New("file_not_found", "Object to copy not found in blobber")
+		err = errors.New("file_not_found", "Object to copy not found in blobber")
+		return
 	}
 
 	var affectedRef *fileref.Ref
@@ -60,15 +64,17 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	}
 
 	affectedRef.Path = zboxutil.Join(dirRef.GetPath(), affectedRef.Name)
-	ch.processChildren(affectedRef)
+	latestInode = ch.processChildren(affectedRef, inodesMeta, latestFileID)
 
 	dirRef.AddChild(ch.ObjectTree)
 
 	rootRef.CalculateHash()
-	return nil
+	return
 }
 
-func (ch *CopyFileChange) processChildren(curRef *fileref.Ref) {
+func (ch *CopyFileChange) processChildren(
+	curRef *fileref.Ref, inodesMeta map[string]int64, latestFileID int64) int64 {
+
 	for _, childRefEntity := range curRef.Children {
 		var childRef *fileref.Ref
 		if childRefEntity.GetType() == fileref.FILE {
@@ -76,11 +82,18 @@ func (ch *CopyFileChange) processChildren(curRef *fileref.Ref) {
 		} else {
 			childRef = childRefEntity.(*fileref.Ref)
 		}
+
 		childRef.Path = zboxutil.Join(curRef.Path, childRef.Name)
+		latestFileID++
+		childRef.FileID = latestFileID
+		inodesMeta[childRef.Path] = latestFileID
+
 		if childRefEntity.GetType() == fileref.DIRECTORY {
-			ch.processChildren(childRef)
+			latestFileID = ch.processChildren(childRef, inodesMeta, latestFileID)
 		}
 	}
+
+	return latestFileID
 }
 
 func (n *CopyFileChange) GetAffectedPath() string {

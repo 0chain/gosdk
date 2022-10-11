@@ -105,6 +105,15 @@ func CreateChunkedUpload(workdir string, allocationObj *Allocation, fileMeta Fil
 	}
 
 	if isUpdate {
+		otr, err := allocationObj.GetRefs(fileMeta.RemotePath, "", "", "", fileref.FILE, "regular", 0, 1)
+		if err != nil {
+			logger.Logger.Error(err)
+			return nil, thrown.New("chunk_upload", err.Error())
+		}
+		if len(otr.Refs) != 1 {
+			return nil, thrown.New("chunk_upload", fmt.Sprintf("Expected refs 1, got %d", len(otr.Refs)))
+		}
+		su.fileID = otr.Refs[0].FileID
 		su.httpMethod = http.MethodPut
 		su.buildChange = func(ref *fileref.FileRef) allocationchange.AllocationChange {
 			change := &allocationchange.UpdateFileChange{}
@@ -259,6 +268,9 @@ type ChunkedUpload struct {
 
 	// isRepair identifies if upload is repair operation
 	isRepair bool
+	// fileID to put into writemarker. This is the ID for which the operation was
+	// done
+	fileID int64
 }
 
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
