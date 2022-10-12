@@ -1682,6 +1682,8 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 					a.Blobbers = nil
 				}
 			},
+			wantErr: true,
+			errMsg:  "error from server list response: ",
 		},
 		{
 			name: "Test_Success",
@@ -1738,8 +1740,10 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 			setupMockGetFileInfoResponse(t, &mockClient)
 			a.InitAllocation()
 			sdkInitialized = true
-			for i := 0; i < numBlobbers; i++ {
-				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
+			if len(a.Blobbers) == 0 {
+				for i := 0; i < numBlobbers; i++ {
+					a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
+				}
 			}
 
 			got, err := a.ListDirFromAuthTicket(authTicket, tt.parameters.lookupHash)
