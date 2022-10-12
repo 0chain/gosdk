@@ -46,7 +46,7 @@ func SuccessCommitResult() *CommitResult {
 }
 
 type CommitRequest struct {
-	changes      []allocationchange.AllocationChange
+	change       allocationchange.AllocationChange
 	blobber      *blockchain.StorageNode
 	allocationID string
 	allocationTx string
@@ -59,17 +59,6 @@ var commitChan map[string]chan *CommitRequest
 var initCommitMutex sync.Mutex
 
 func InitCommitWorker(blobbers []*blockchain.StorageNode) {
-	// if commitChan != nil {
-	// 	for _, v := range commitChan {
-	// 		close(v)
-	// 	}
-	// }
-	// commitChan = make(map[string]chan *CommitRequest)
-	// for _, blobber := range blobbers {
-	// 	Logger.Info("Atempting to start the commit worker for ", blobber.Baseurl)
-	// 	commitChan[blobber.ID] = make(chan *CommitRequest, 1)
-	// 	go startCommitWorker(blobber)
-	// }
 	initCommitMutex.Lock()
 	defer initCommitMutex.Unlock()
 	if commitChan == nil {
@@ -104,9 +93,7 @@ func (commitreq *CommitRequest) processCommit() {
 
 	l.Logger.Info("received a commit request")
 	paths := make([]string, 0)
-	for _, change := range commitreq.changes {
-		paths = append(paths, change.GetAffectedPath())
-	}
+	paths = append(paths, commitreq.change.GetAffectedPath())
 	var req *http.Request
 	var lR ReferencePathResult
 	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
@@ -175,21 +162,14 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 
 	var size int64
-	for _, change := range commitreq.changes {
-		inodesMeta, latestInode, err := change.ProcessChange(rootRef, latestInode)
-		_ = inodesMeta
-		_ = latestInode
+	inodesMeta, latestInode, err := commitreq.change.ProcessChange(rootRef, latestInode)
 
-		if err != nil {
-			break
-		}
-		size += change.GetSize()
-	}
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
 	}
-	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size)
+	size += commitreq.change.GetSize()
+	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size, inodesMeta, latestInode)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
@@ -197,7 +177,29 @@ func (commitreq *CommitRequest) processCommit() {
 	commitreq.result = SuccessCommitResult()
 }
 
-func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.WriteMarker, size int64) error {
+func (req *CommitRequest) commitBlobber(
+	rootRef *fileref.Ref, latestWM *marker.WriteMarker, size int64,
+	inodesMeta map[string]int64, latestInode int64) error {
+
+	inode := marker.Inode{
+		LatestFileID: latestInode,
+	}
+	err := inode.Sign()
+	if err != nil {
+		l.Logger.Error("Signing latest inode failed: ", err)
+		return err
+	}
+
+	inodeMeta := marker.InodeMeta{
+		MetaData:    inodesMeta,
+		LatestInode: inode,
+	}
+	inodeMetaData, err := json.Marshal(inodeMeta)
+	if err != nil {
+		l.Logger.Error("Marshalling inode metadata failed: ", err)
+		return err
+	}
+
 	wm := &marker.WriteMarker{}
 	timestamp := int64(common.Now())
 	wm.AllocationRoot = encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10))
@@ -212,7 +214,7 @@ func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.W
 	wm.BlobberID = req.blobber.ID
 	wm.Timestamp = timestamp
 	wm.ClientID = client.GetClientID()
-	err := wm.Sign()
+	err = wm.Sign()
 	if err != nil {
 		l.Logger.Error("Signing writemarker failed: ", err)
 		return err
@@ -226,6 +228,7 @@ func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.W
 	}
 	formWriter.WriteField("connection_id", req.connectionID)
 	formWriter.WriteField("write_marker", string(wmData))
+	formWriter.WriteField("inodes_meta", string(inodeMetaData))
 
 	formWriter.Close()
 
