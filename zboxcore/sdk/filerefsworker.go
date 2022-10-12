@@ -58,7 +58,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 		go o.getFileRefs(&oTreeResponses[i], blob.Baseurl)
 	}
 	o.wg.Wait()
-	hashCount := make(map[string]uint8)
+	hashCount := make(map[string]int)
 	hashRefsMap := make(map[string]*ObjectTreeResult)
 
 	for _, oTreeResponse := range oTreeResponses {
@@ -85,7 +85,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 
 	var selected *ObjectTreeResult
 	for k, v := range hashCount {
-		if float32(v)/o.fullconsensus >= o.consensusThresh {
+		if v >= o.consensusThresh {
 			selected = hashRefsMap[k]
 			break
 		}
@@ -197,7 +197,7 @@ func (r *RecentlyAddedRefRequest) GetRecentlyAddedRefs() (*RecentlyAddedRefResul
 	}
 	r.wg.Wait()
 
-	hashCount := make(map[string]uint8)
+	hashCount := make(map[string]int)
 	hashRefsMap := make(map[string]*RecentlyAddedRefResult)
 
 	for _, response := range responses {
@@ -228,7 +228,7 @@ func (r *RecentlyAddedRefRequest) GetRecentlyAddedRefs() (*RecentlyAddedRefResul
 
 	var selected *RecentlyAddedRefResult
 	for k, v := range hashCount {
-		if float32(v)/r.fullconsensus >= r.consensusThresh {
+		if v >= r.consensusThresh {
 			selected = hashRefsMap[k]
 			break
 		}

@@ -179,7 +179,7 @@ func TestAllocation_deleteFile(t *testing.T) {
 				}
 			}
 			err := a.DeleteFile(tt.parameters.path)
-			require.EqualValues(tt.wantErr, err != nil)
+			require.EqualValues(tt.wantErr, err != nil, "Message: ", err)
 			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))
 				return

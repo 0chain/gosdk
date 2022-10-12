@@ -18,6 +18,7 @@ type CollaboratorRequest struct {
 	a              *Allocation
 	path           string
 	collaboratorID string
+	consensus      Consensus
 	wg             *sync.WaitGroup
 }
 
@@ -30,14 +31,13 @@ func (req *CollaboratorRequest) UpdateCollaboratorToBlobbers() bool {
 		go req.updateCollaboratorToBlobber(req.a.Blobbers[i], i, rspCh)
 	}
 	req.wg.Wait()
-	count := 0
 	for i := 0; i < numList; i++ {
 		resp := <-rspCh
 		if resp {
-			count++
+			req.consensus.Done()
 		}
 	}
-	return count == numList
+	return req.consensus.isConsensusOk()
 }
 
 func (req *CollaboratorRequest) updateCollaboratorToBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- bool) {
@@ -58,7 +58,7 @@ func (req *CollaboratorRequest) updateCollaboratorToBlobber(blobber *blockchain.
 
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	ctx, cncl := context.WithTimeout(req.a.ctx, (time.Second * 30))
-	zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
+	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {
 			l.Logger.Error("Update Collaborator : ", err)
 			rspCh <- false
@@ -73,6 +73,10 @@ func (req *CollaboratorRequest) updateCollaboratorToBlobber(blobber *blockchain.
 		}
 		return err
 	})
+
+	if err != nil {
+		l.Logger.Error("Collaborator add error: ", err)
+	}
 }
 
 func (req *CollaboratorRequest) RemoveCollaboratorFromBlobbers() bool {
@@ -109,7 +113,7 @@ func (req *CollaboratorRequest) removeCollaboratorFromBlobber(blobber *blockchai
 		return
 	}
 
-	ctx, cncl := context.WithTimeout(req.a.ctx, (time.Second * 30))
+	ctx, cncl := context.WithTimeout(req.a.ctx, DefaultUploadTimeOut)
 
 	zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 		if err != nil {

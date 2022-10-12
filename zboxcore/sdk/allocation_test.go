@@ -14,9 +14,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
-
-	sdkBlobber "github.com/0chain/gosdk/sdks/blobber"
 
 	"github.com/0chain/gosdk/dev/blobber"
 	"github.com/0chain/gosdk/dev/blobber/model"
@@ -24,11 +21,7 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/core/resty"
 
-	"github.com/0chain/gosdk/core/transaction"
-	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	zclient "github.com/0chain/gosdk/zboxcore/client"
@@ -53,7 +46,11 @@ const (
 	numBlobbers        = 4
 )
 
-func setupMockHttpResponse(t *testing.T, mockClient *mocks.HttpClient, funcName string, testCaseName string, a *Allocation, httpMethod string, statusCode int, body []byte) {
+func setupMockHttpResponse(
+	t *testing.T, mockClient *mocks.HttpClient, funcName string,
+	testCaseName string, a *Allocation, httpMethod string,
+	statusCode int, body []byte) {
+
 	for i := 0; i < numBlobbers; i++ {
 		url := funcName + testCaseName + mockBlobberUrl + strconv.Itoa(i)
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -92,7 +89,8 @@ func setupMockCommitRequest(a *Allocation) {
 func setupMockWriteLockRequest(a *Allocation, mockClient *mocks.HttpClient) {
 
 	for _, blobber := range a.Blobbers {
-		url := blobber.Baseurl + sdkBlobber.EndpointWriteMarkerLock
+		url := blobber.Baseurl + zboxutil.WM_LOCK_ENDPOINT
+		url = strings.TrimRight(url, "/")
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return strings.Contains(req.URL.String(), url)
 		})).Return(&http.Response{
@@ -257,7 +255,7 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit128(t *testing.T)
 	allocation.Blobbers = blobbers
 	allocation.DataShards = 64
 	allocation.ParityShards = 65
-	allocation.fullconsensus, allocation.consensusThreshold, allocation.consensusOK = allocation.getConsensuses()
+	allocation.fullconsensus, allocation.consensusThreshold = allocation.getConsensuses()
 
 	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false)
 
@@ -281,7 +279,7 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanExplicitLimit(t *testing.T) {
 	allocation.Blobbers = blobbers
 	allocation.DataShards = 5
 	allocation.ParityShards = 6
-	allocation.fullconsensus, allocation.consensusThreshold, allocation.consensusOK = allocation.getConsensuses()
+	allocation.fullconsensus, allocation.consensusThreshold = allocation.getConsensuses()
 
 	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false)
 
@@ -305,7 +303,7 @@ func TestDoNotThrowErrorWhenBlobbersRequiredLessThanLimit(t *testing.T) {
 	allocation.Blobbers = blobbers
 	allocation.DataShards = 5
 	allocation.ParityShards = 4
-	allocation.fullconsensus, allocation.consensusThreshold, allocation.consensusOK = allocation.getConsensuses()
+	allocation.fullconsensus, allocation.consensusThreshold = allocation.getConsensuses()
 
 	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false)
 
@@ -394,7 +392,12 @@ func TestAllocation_dispatchWork(t *testing.T) {
 	})
 	t.Run("Test_Cover_Upload_Request", func(t *testing.T) {
 		go a.dispatchWork(context.Background())
-		a.uploadChan <- &UploadRequest{file: []*fileref.FileRef{}, filemeta: &UploadFileMeta{}}
+		a.uploadChan <- &UploadRequest{
+			file:     []*fileref.FileRef{},
+			filemeta: &UploadFileMeta{},
+			Consensus: Consensus{
+				mu: &sync.RWMutex{},
+			}}
 	})
 	t.Run("Test_Cover_Download_Request", func(t *testing.T) {
 		ctx, ctxCncl := context.WithCancel(context.Background())
@@ -1601,157 +1604,6 @@ func TestAllocation_CancelDownload(t *testing.T) {
 	}
 }
 
-func TestAllocation_CommitFolderChange(t *testing.T) {
-	const (
-		mockHash      = "mock hash"
-		mockSignature = "mock signature"
-	)
-
-	var mockClient = mocks.HttpClient{}
-	util.Client = &mockClient
-	createClient := resty.CreateClient
-	resty.CreateClient = func(t *http.Transport, timeout time.Duration) resty.Client {
-		return &mockClient
-	}
-	defer func() {
-		resty.CreateClient = createClient
-	}()
-
-	conf.InitClientConfig(&conf.Config{
-		MinConfirmation: 50,
-	})
-
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
-
-	setupHttpResponse := func(t *testing.T, name string, httpMethod string, statusCode int, body []byte) {
-		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-			return req.Method == httpMethod &&
-				strings.Contains(req.URL.String(), name)
-		})).Return(&http.Response{
-			StatusCode: statusCode,
-			Body:       ioutil.NopCloser(bytes.NewReader([]byte(body))),
-		}, nil)
-	}
-
-	type parameters struct {
-		operation, preValue, currValue string
-	}
-	blockchain.SetQuerySleepTime(1)
-
-	tests := []struct {
-		name          string
-		parameters    parameters
-		setup         func(*testing.T, string, *Allocation) (teardown func(*testing.T))
-		wantErr       bool
-		errMsg        string
-		exceptedError error
-	}{
-		{
-			name: "Test_Uninitialized_Failed",
-			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
-				a.initialized = false
-
-				return func(t *testing.T) {
-					a.initialized = true
-				}
-			},
-			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
-		},
-		{
-			name: "Test_Sharder_Verify_Txn_Failed",
-			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
-
-				body, err := json.Marshal(&transaction.Transaction{
-					Hash: mockHash,
-				})
-				require.NoError(t, err)
-				setupHttpResponse(t, testCaseName+"mockMiners", http.MethodPost, http.StatusOK, body)
-				setupHttpResponse(t, testCaseName+"mockSharders", http.MethodGet, http.StatusBadRequest, []byte(""))
-				return nil
-			},
-			wantErr:       true,
-			exceptedError: transaction.ErrTooLessConfirmation,
-			errMsg:        "transaction_not_found: Transaction was not found on any of the sharders",
-		},
-		{
-			name: "Test_Max_Retried_Failed",
-			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
-				setupHttpResponse(t, testCaseName+"mockMiners", http.MethodPost, http.StatusBadRequest, []byte(""))
-				maxTxnQuery := blockchain.GetMaxTxnQuery()
-				blockchain.SetMaxTxnQuery(0)
-				return func(t *testing.T) {
-					blockchain.SetMaxTxnQuery(maxTxnQuery)
-				}
-			},
-			wantErr: true,
-			errMsg:  "transaction_validation_failed: Failed to get the transaction confirmation",
-		},
-		{
-			name: "Test_Success",
-			parameters: parameters{
-				operation: "Move",
-				preValue:  "/1.txt",
-				currValue: "/d/1.txt",
-			},
-			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
-				body, err := json.Marshal(&transaction.Transaction{
-					Hash: mockHash,
-				})
-				require.NoError(t, err)
-				setupHttpResponse(t, testCaseName+"mockMiners", http.MethodPost, http.StatusOK, body)
-				setupHttpResponse(t, testCaseName+"mockSharders", http.MethodGet, http.StatusOK, []byte(`{
-					"txn": {
-						"hash": "`+mockHash+`",
-						"signature": "`+mockSignature+`"
-					}
-				}`))
-				return nil
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require := require.New(t)
-			a := &Allocation{
-				ID:           mockAllocationId,
-				Tx:           mockAllocationTxId,
-				DataShards:   2,
-				ParityShards: 2,
-			}
-			a.InitAllocation()
-			sdkInitialized = true
-			blockchain.SetMiners([]string{"http://" + tt.name + "mockMiners"})
-			blockchain.SetSharders([]string{"http://" + tt.name + "mockSharders"})
-			if tt.setup != nil {
-				if teardown := tt.setup(t, tt.name, a); teardown != nil {
-					defer teardown(t)
-				}
-			}
-
-			_, err := a.CommitFolderChange(tt.parameters.operation, tt.parameters.preValue, tt.parameters.currValue)
-			require.EqualValues(tt.wantErr, err != nil)
-			if err != nil {
-
-				// test it by predefined error variable instead of error message
-				if tt.exceptedError != nil {
-					require.ErrorIs(err, tt.exceptedError)
-				} else {
-					require.EqualValues(tt.errMsg, errors.Top(err))
-				}
-
-				return
-			}
-			require.NoErrorf(err, "unexpected error: %v", err)
-			// require.Equal(string(expectedBytes), got)
-		})
-	}
-}
-
 func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 	const (
 		mockLookupHash = "mock lookup hash"
@@ -2434,124 +2286,6 @@ func TestAllocation_DownloadFromAuthTicketByBlocks(t *testing.T) {
 	require.NoErrorf(err, "unexpected error: %v", err)
 }
 
-func TestAllocation_CommitMetaTransaction(t *testing.T) {
-	const (
-		mockLookupHash = "mock lookup hash"
-		mockType       = "d"
-	)
-
-	var authTicket = getMockAuthTicket(t)
-
-	var mockClient = mocks.HttpClient{}
-	zboxutil.Client = &mockClient
-
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
-
-	a := &Allocation{}
-	a.InitAllocation()
-	sdkInitialized = true
-
-	type parameters struct {
-		path          string
-		crudOperation string
-		authTicket    string
-		lookupHash    string
-		fileMeta      func(t *testing.T, testCaseName string) *ConsolidatedFileMeta
-		status        func(t *testing.T) StatusCallback
-	}
-	tests := []struct {
-		name       string
-		parameters parameters
-		setup      func(*testing.T, string) (teardown func(*testing.T))
-		wantErr    bool
-		errMsg     string
-	}{
-		{
-			name: "Test_Uninitialized_Failed",
-			setup: func(t *testing.T, testCaseName string) (teardown func(t *testing.T)) {
-				a.initialized = false
-				return func(t *testing.T) {
-					a.initialized = true
-				}
-			},
-			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
-		},
-		{
-			name: "Test_No_File_Meta_With_Path_parameters_Failed",
-			parameters: parameters{
-				path:          "/1.txt",
-				crudOperation: "",
-				authTicket:    "",
-				lookupHash:    mockLookupHash,
-				fileMeta:      nil,
-			},
-			wantErr: true,
-			errMsg:  "file_meta_error: Error getting the file meta data from blobbers",
-		},
-		{
-			name: "Test_No_File_Meta_With_Auth_Ticket_parameters_Failed",
-			parameters: parameters{
-				path:          "",
-				crudOperation: "",
-				authTicket:    authTicket,
-				lookupHash:    mockLookupHash,
-				fileMeta:      nil,
-			},
-			wantErr: true,
-			errMsg:  "file_meta_error: Error getting the file meta data from blobbers",
-		},
-		{
-			name: "Test_No_File_Meta_With_No_Path_And_No_Auth_Ticket_parameters_Coverage",
-			parameters: parameters{
-				path:          "",
-				crudOperation: "",
-				authTicket:    "",
-				lookupHash:    mockLookupHash,
-				fileMeta:      nil,
-				status: func(t *testing.T) StatusCallback {
-					scm := &mocks.StatusCallback{}
-					scm.On("CommitMetaCompleted", mock.Anything, mock.Anything, mock.Anything, mock.Anything).Maybe()
-					return scm
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require := require.New(t)
-			if tt.setup != nil {
-				if teardown := tt.setup(t, tt.name); teardown != nil {
-					defer teardown(t)
-				}
-			}
-			var fileMeta *ConsolidatedFileMeta
-			if tt.parameters.fileMeta != nil {
-				fileMeta = tt.parameters.fileMeta(t, tt.name)
-			}
-			var status StatusCallback
-			if tt.parameters.status != nil {
-				status = tt.parameters.status(t)
-			}
-			err := a.CommitMetaTransaction(tt.parameters.path, tt.parameters.crudOperation, tt.parameters.authTicket, tt.parameters.lookupHash, fileMeta, status)
-			if st, ok := status.(*mocks.StatusCallback); ok {
-				st.Test(t)
-				st.AssertExpectations(t)
-			}
-			require.EqualValues(tt.wantErr, err != nil)
-			if err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(err))
-				return
-			}
-			require.NoErrorf(err, "unexpected error: %v", err)
-		})
-	}
-}
-
 func TestAllocation_StartRepair(t *testing.T) {
 	const (
 		mockLookupHash   = "mock lookup hash"
@@ -2691,7 +2425,7 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 	a.mutex = &sync.Mutex{}
 	a.initialized = true
 	if a.DataShards != 0 {
-		a.fullconsensus, a.consensusThreshold, a.consensusOK = a.getConsensuses()
+		a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	}
 	sdkInitialized = true
 	go func() {
