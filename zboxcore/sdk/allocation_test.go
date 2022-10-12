@@ -1981,6 +1981,8 @@ func TestAllocation_listDir(t *testing.T) {
 				setupMockHttpResponse(t, mockClient, "TestAllocation_listDir", testCaseName, a, http.MethodGet, http.StatusBadRequest, []byte(""))
 				return nil
 			},
+			wantErr: true,
+			errMsg:  "error from server list response: ",
 		},
 		{
 			name: "Test_Success",
