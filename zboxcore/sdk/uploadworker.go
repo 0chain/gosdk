@@ -554,14 +554,14 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			newChange.NumBlocks = req.file[c].NumBlocks
 			newChange.Operation = constants.FileOperationUpdate
 			newChange.Size = req.file[c].Size
-			commitReq.changes = append(commitReq.changes, newChange)
+			commitReq.change = newChange
 		} else {
 			newChange := &allocationchange.NewFileChange{}
 			newChange.File = req.file[c]
 			newChange.NumBlocks = req.file[c].NumBlocks
 			newChange.Operation = constants.FileOperationInsert
 			newChange.Size = req.file[c].Size
-			commitReq.changes = append(commitReq.changes, newChange)
+			commitReq.change = newChange
 		}
 
 		commitReq.connectionID = req.connectionID

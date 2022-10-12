@@ -91,7 +91,7 @@ func (req *DirRequest) commitRequest() error {
 		newChange := &allocationchange.DirCreateChange{}
 		newChange.RemotePath = req.remotePath
 
-		commitReq.changes = append(commitReq.changes, newChange)
+		commitReq.change = newChange
 		commitReq.connectionID = req.connectionID
 		commitReq.wg = wg
 		commitReqs[i] = commitReq

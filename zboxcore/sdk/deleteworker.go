@@ -160,7 +160,7 @@ func (req *DeleteRequest) ProcessDelete() error {
 		newChange.NumBlocks = newChange.ObjectTree.GetNumBlocks()
 		newChange.Operation = constants.FileOperationDelete
 		newChange.Size = newChange.ObjectTree.GetSize()
-		commitReq.changes = append(commitReq.changes, newChange)
+		commitReq.change = newChange
 		commitReq.connectionID = req.connectionID
 		commitReq.wg = wg
 		commitReqs[c] = commitReq

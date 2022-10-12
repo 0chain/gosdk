@@ -125,8 +125,7 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 			}
 			return nil
 		} else {
-			l.Logger.Error(err)
-			return err
+			return errors.New("response_error", fmt.Sprintf("got status %d", resp.StatusCode))
 		}
 	})
 	if err != nil {

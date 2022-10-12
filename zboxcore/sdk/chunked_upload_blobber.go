@@ -291,22 +291,20 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 		return nil, nil, 0, nil, 0, err
 	}
 	rootRef, err := lR.GetDirTree(su.allocationObj.ID)
+	if err != nil {
+		return nil, nil, 0, nil, 0, err
+	}
+	var latestFileID int64
 	if lR.LatestWM != nil {
-
 		rootRef.CalculateHash()
 		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
-		// TODO: it is a concurrent change conflict on database.  check concurrent write for allocation
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
 			logger.Logger.Info("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
 		}
-	}
-	if err != nil {
-
-		return nil, nil, 0, nil, 0, err
-	}
-	latestFileID, err := lR.LatestInode.GetLatestInode()
-	if err != nil {
-		return nil, nil, 0, nil, 0, err
+		latestFileID, err = lR.LatestInode.GetLatestInode()
+		if err != nil {
+			return nil, nil, 0, nil, 0, err
+		}
 	}
 
 	var size int64
