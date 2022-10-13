@@ -287,7 +287,7 @@ func (t *Transaction) submitTxn() {
 			result <- res
 		}(miner)
 	}
-	consensus := float32(0)
+	consensus := 0
 	for range randomMiners {
 		rsp := <-result
 		logging.Debug(rsp.Url, "Status: ", rsp.Status)
@@ -300,7 +300,7 @@ func (t *Transaction) submitTxn() {
 		}
 
 	}
-	rate := consensus * 100 / float32(len(randomMiners))
+	rate := consensus * 100 / len(randomMiners)
 	if rate < consensusThresh {
 		t.completeTxn(StatusError, "", fmt.Errorf("submit transaction failed. %s", tFailureRsp))
 		transaction.Cache.Evict(t.txn.ClientID)

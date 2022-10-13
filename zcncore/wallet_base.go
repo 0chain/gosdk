@@ -90,7 +90,7 @@ const (
 )
 
 // In percentage
-const consensusThresh = float32(25.0)
+const consensusThresh = 25
 
 const (
 	defaultMinSubmit               = int(50)
@@ -378,7 +378,7 @@ func registerToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 	rate := consensus * 100 / float32(len(_config.chain.Miners))
 	if rate < consensusThresh {
 		statusCb.OnWalletCreateComplete(StatusError, "", "rate is less than consensus")
-		return fmt.Errorf("Register consensus not met. Consensus: %f, Expected: %f", rate, consensusThresh)
+		return fmt.Errorf("Register consensus not met. Consensus: %f, Expected: %v", rate, consensusThresh)
 	}
 
 	cw := &GetClientResponse{}
@@ -636,44 +636,41 @@ func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
 	// getMinShardersVerify
 	var numSharders = len(_config.chain.Sharders) // overwrite, use all
 	queryFromSharders(numSharders, fmt.Sprintf("%v%v", GET_BALANCE, clientID), result)
-	consensus := float32(0)
-	balMap := make(map[int64]float32)
-	winBalance := int64(0)
-	var winInfo string
-	var winError string
+
+	consensusMaps := NewHttpConsensusMaps(consensusThresh)
+
 	for i := 0; i < numSharders; i++ {
 		rsp := <-result
+
 		logging.Debug(rsp.Url, rsp.Status)
 		if rsp.StatusCode != http.StatusOK {
 			logging.Error(rsp.Body)
-			winError = rsp.Body
-			continue
-		}
-		logging.Debug(rsp.Body)
-		var objmap map[string]json.RawMessage
-		err := json.Unmarshal([]byte(rsp.Body), &objmap)
-		if err != nil {
-			continue
-		}
-		if v, ok := objmap[name]; ok {
-			bal, err := strconv.ParseInt(string(v), 10, 64)
-			if err != nil {
-				continue
-			}
-			balMap[bal]++
-			if balMap[bal] > consensus {
-				consensus = balMap[bal]
-				winBalance = bal
-				winInfo = rsp.Body
-			}
+
+		} else {
+			logging.Debug(rsp.Body)
 		}
 
+		if err := consensusMaps.Add(rsp.StatusCode, rsp.Body); err != nil {
+			logging.Error(rsp.Body)
+		}
 	}
-	rate := consensus * 100 / float32(len(_config.chain.Sharders))
+
+	rate := consensusMaps.MaxConsensus * 100 / len(_config.chain.Sharders)
 	if rate < consensusThresh {
-		return 0, winError, errors.New("", "get balance failed. consensus not reached")
+		return 0, consensusMaps.WinError, errors.New("", "get balance failed. consensus not reached")
 	}
-	return winBalance, winInfo, nil
+
+	winValue, ok := consensusMaps.GetValue(name)
+	if ok {
+		winBalance, err := strconv.ParseInt(string(winValue), 10, 64)
+		if err != nil {
+			return 0, "", fmt.Errorf("get balance failed. %w", err)
+		}
+
+		return winBalance, consensusMaps.WinInfo, nil
+	}
+
+	return 0, consensusMaps.WinInfo, errors.New("", "get balance failed. balance field is missed")
 }
 
 // ConvertToToken converts the value to ZCN tokens

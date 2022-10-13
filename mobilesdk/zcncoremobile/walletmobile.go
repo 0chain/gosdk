@@ -60,11 +60,6 @@ func RecoverWallet(mnemonic string, statusCb models.WalletCallback) error {
 	return nil
 }
 
-// ConvertToValue converts ZCN tokens to value
-func ConvertToValue(token float64) int64 {
-	return int64(token * float64(zcncore.TOKEN_UNIT))
-}
-
 // ConvertToToken converts the value to ZCN tokens
 func ConvertToToken(value int64) float64 {
 	return float64(value) / float64(zcncore.TOKEN_UNIT)
