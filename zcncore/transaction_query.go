@@ -266,7 +266,7 @@ func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryRe
 		return nil, stderrors.New("zcn: query not found")
 	}
 
-	rate := float32(maxConsensus*100) / float32(tq.max)
+	rate := maxConsensus * 100 / tq.max
 	if rate < consensusThresh {
 		return nil, ErrInvalidConsensus
 	}
