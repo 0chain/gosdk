@@ -13,7 +13,7 @@ import (
 var ErrNilHttpConsensusMaps = errors.New("nil_httpconsensusmaps")
 
 type HttpConsensusMaps struct {
-	ConsensusThresh float32
+	ConsensusThresh int
 	MaxConsensus    int
 
 	WinMap          map[string]json.RawMessage
@@ -23,7 +23,7 @@ type HttpConsensusMaps struct {
 	WinInfo  string
 }
 
-func NewHttpConsensusMaps(consensusThresh float32) *HttpConsensusMaps {
+func NewHttpConsensusMaps(consensusThresh int) *HttpConsensusMaps {
 	return &HttpConsensusMaps{
 		ConsensusThresh: consensusThresh,
 		WinMapConsensus: make(map[string]int),
@@ -52,11 +52,10 @@ func (c *HttpConsensusMaps) Add(statusCode int, respBody string) error {
 		return err
 	}
 
-	consensus := c.WinMapConsensus[hash]
-	consensus++
-	c.WinMapConsensus[hash] = consensus
-	if consensus > c.MaxConsensus {
-		c.MaxConsensus = consensus
+	c.WinMapConsensus[hash]++
+
+	if c.WinMapConsensus[hash] > c.MaxConsensus {
+		c.MaxConsensus = c.WinMapConsensus[hash]
 		c.WinMap = m
 		c.WinInfo = respBody
 	}

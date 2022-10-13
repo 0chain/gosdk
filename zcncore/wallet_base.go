@@ -90,7 +90,7 @@ const (
 )
 
 // In percentage
-const consensusThresh = float32(25.0)
+const consensusThresh = 25
 
 const (
 	defaultMinSubmit               = int(50)
@@ -378,7 +378,7 @@ func registerToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 	rate := consensus * 100 / float32(len(_config.chain.Miners))
 	if rate < consensusThresh {
 		statusCb.OnWalletCreateComplete(StatusError, "", "rate is less than consensus")
-		return fmt.Errorf("Register consensus not met. Consensus: %f, Expected: %f", rate, consensusThresh)
+		return fmt.Errorf("Register consensus not met. Consensus: %f, Expected: %v", rate, consensusThresh)
 	}
 
 	cw := &GetClientResponse{}
@@ -645,21 +645,17 @@ func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
 		logging.Debug(rsp.Url, rsp.Status)
 		if rsp.StatusCode != http.StatusOK {
 			logging.Error(rsp.Body)
-			if err := consensusMaps.Add(rsp.StatusCode, rsp.Body); err != nil {
-				logging.Error(rsp.Body)
-			}
 
-			continue
+		} else {
+			logging.Debug(rsp.Body)
 		}
-		logging.Debug(rsp.Body)
 
 		if err := consensusMaps.Add(rsp.StatusCode, rsp.Body); err != nil {
 			logging.Error(rsp.Body)
 		}
-
 	}
 
-	rate := float32(consensusMaps.MaxConsensus) * 100 / float32(len(_config.chain.Sharders))
+	rate := consensusMaps.MaxConsensus * 100 / len(_config.chain.Sharders)
 	if rate < consensusThresh {
 		return 0, consensusMaps.WinError, errors.New("", "get balance failed. consensus not reached")
 	}
