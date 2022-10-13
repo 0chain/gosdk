@@ -88,14 +88,13 @@ func (req *CollaboratorRequest) RemoveCollaboratorFromBlobbers() bool {
 		go req.removeCollaboratorFromBlobber(req.a.Blobbers[i], i, rspCh)
 	}
 	req.wg.Wait()
-	count := 0
 	for i := 0; i < numList; i++ {
 		resp := <-rspCh
 		if resp {
-			count++
+			req.consensus.Done()
 		}
 	}
-	return count == numList
+	return req.consensus.isConsensusOk()
 }
 
 func (req *CollaboratorRequest) removeCollaboratorFromBlobber(blobber *blockchain.StorageNode, blobberIdx int, rspCh chan<- bool) {
