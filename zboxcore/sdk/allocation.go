@@ -1346,6 +1346,11 @@ func (a *Allocation) RemoveCollaborator(filePath, collaboratorID string) error {
 		path:           filePath,
 		collaboratorID: collaboratorID,
 		a:              a,
+		consensus: Consensus{
+			mu:              &sync.RWMutex{},
+			fullconsensus:   a.fullconsensus,
+			consensusThresh: a.consensusThreshold,
+		},
 	}
 
 	if req.RemoveCollaboratorFromBlobbers() {
