@@ -42,7 +42,6 @@ type StatusCallback interface {
 	InProgress(allocationId, filePath string, op int, completedBytes int, data []byte)
 	Error(allocationID string, filePath string, op int, err error)
 	Completed(allocationId, filePath string, filename string, mimetype string, size int, op int)
-	CommitMetaCompleted(request, response string, txn *transaction.Transaction, err error)
 	RepairCompleted(filesRepaired int)
 }
 
@@ -366,13 +365,12 @@ func GetTotalStoredData() (map[string]int64, error) {
 type stakePoolRequest struct {
 	ProviderType ProviderType `json:"provider_type,omitempty"`
 	ProviderID   string       `json:"provider_id,omitempty"`
-	PoolID       string       `json:"pool_id,omitempty"`
 }
 
 // StakePoolLock locks tokens lack in stake pool
-func StakePoolLock(providerType ProviderType, providerID string, value, fee uint64) (poolID string, nonce int64, err error) {
+func StakePoolLock(providerType ProviderType, providerID string, value, fee uint64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
-		return poolID, 0, sdkNotInitialized
+		return "", 0, sdkNotInitialized
 	}
 
 	if providerType == 0 {
@@ -386,13 +384,12 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 	spr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerID,
-		PoolID:       "",
 	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_STAKE_POOL_LOCK,
 		InputArgs: &spr,
 	}
-	poolID, _, nonce, _, err = smartContractTxnValueFee(sn, value, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFee(sn, value, fee)
 	return
 }
 
@@ -411,7 +408,7 @@ type StakePoolUnlockUnstake struct {
 // future. The time is maximal time that can be lesser in some cases. To
 // unlock tokens can't be unlocked now, wait the time and unlock them (call
 // this function again).
-func StakePoolUnlock(providerType ProviderType, providerID string, poolID string, fee uint64) (unstake bool, nonce int64, err error) {
+func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (unstake bool, nonce int64, err error) {
 	if !sdkInitialized {
 		return false, 0, sdkNotInitialized
 	}
@@ -424,14 +421,9 @@ func StakePoolUnlock(providerType ProviderType, providerID string, poolID string
 		return false, 0, errors.New("stake_pool_lock", "provider_id is required")
 	}
 
-	if poolID == "" {
-		return false, 0, errors.New("stake_pool_lock", "pool_id is required")
-	}
-
 	spr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerID,
-		PoolID:       poolID,
 	}
 
 	var sn = transaction.SmartContractTxnData{
@@ -861,8 +853,8 @@ func CreateAllocationWith(options CreateAllocationOptions) (
 	string, int64, *transaction.Transaction, error) {
 
 	if len(options.BlobberIds) > 0 {
-		return CreateAllocationForOwner(client.GetClientID(),
-			client.GetClientPublicKey(), options.Name, options.DataShards, options.ParityShards,
+		return CreateAllocationForOwner(options.Name, client.GetClientID(),
+			client.GetClientPublicKey(), options.DataShards, options.ParityShards,
 			options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock,
 			options.BlobberIds)
 	}
@@ -880,7 +872,6 @@ func CreateAllocation(name string, datashards, parityshards int, size, expiry in
 	if err != nil {
 		return "", 0, nil, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
 	}
-
 	return CreateAllocationForOwner(name, client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
 		size, expiry, readPrice, writePrice, lock,
@@ -1001,7 +992,7 @@ func GetBlobberIds(blobberUrls []string) ([]string, error) {
 	}
 
 	params := make(map[string]string)
-	params["blobber_url"] = string(urlsStr)
+	params["blobber_urls"] = string(urlsStr)
 	idsStr, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/blobber_ids", params, nil)
 	if err != nil {
 		return nil, err
@@ -1058,16 +1049,16 @@ func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit 
 }
 
 func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
+	return CreateFreeAllocationFor(client.GetClientPublicKey(), marker, value)
+}
+
+func CreateFreeAllocationFor(recipientPublicKey string, marker string, value uint64) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
 
-	if value < 0 {
-		return "", 0, errors.New("", "invalid value for lock")
-	}
-
 	var input = map[string]interface{}{
-		"recipient_public_key": client.GetClientPublicKey(),
+		"recipient_public_key": recipientPublicKey,
 		"marker":               marker,
 	}
 
@@ -1209,7 +1200,7 @@ const (
 	ProviderAuthorizer
 )
 
-func CollectRewards(providerId, poolId string, providerType ProviderType) (string, int64, error) {
+func CollectRewards(providerId string, providerType ProviderType) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
@@ -1217,7 +1208,6 @@ func CollectRewards(providerId, poolId string, providerType ProviderType) (strin
 	var input = map[string]interface{}{
 		"provider_id":   providerId,
 		"provider_type": providerType,
-		"pool_id":       poolId,
 	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_COLLECT_REWARD,

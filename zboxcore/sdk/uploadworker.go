@@ -439,7 +439,7 @@ func (req *UploadRequest) completePush() error {
 	}
 	req.wg.Wait()
 	if !req.isConsensusOk() {
-		return fmt.Errorf("Upload failed: Consensus_rate:%f, expected:%f", req.getConsensusRate(), req.getConsensusRequiredForOk())
+		return fmt.Errorf("Upload failed: Consensus:%d, expected:%d", req.getConsensus(), req.consensusThresh)
 	}
 	return nil
 }
@@ -627,7 +627,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 	}
 
 	if req.statusCallback != nil {
-		sizeInCallback := int64(float32(perShard) * req.consensus)
+		sizeInCallback := perShard * int64(req.consensus)
 		OpID := OpUpload
 		if req.isUpdate {
 			OpID = OpUpdate

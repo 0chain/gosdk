@@ -106,7 +106,7 @@ func (req *ListRequest) getFileConsensusFromBlobbers() (zboxutil.Uint128, *filer
 	var selected *fileMetaResponse
 	foundMask := zboxutil.NewUint128(0)
 	req.consensus = 0
-	retMap := make(map[string]float32)
+	retMap := make(map[string]int)
 	for i := 0; i < len(lR); i++ {
 		ti := lR[i]
 		if ti.err != nil || ti.fileref == nil {

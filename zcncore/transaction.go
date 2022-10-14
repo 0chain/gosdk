@@ -131,23 +131,23 @@ type TransactionCommon interface {
 	VestingAdd(ar *VestingAddRequest, value uint64) error
 
 	MinerSCLock(minerID string, lock uint64) error
-	MinerSCCollectReward(string, string, Provider) error
+	MinerSCCollectReward(providerID string, providerType Provider) error
 
-	StorageSCCollectReward(string, string, Provider) error
+	StorageSCCollectReward(providerID string, providerType Provider) error
 
 	FinalizeAllocation(allocID string, fee uint64) error
 	CancelAllocation(allocID string, fee uint64) error
 	CreateAllocation(car *CreateAllocationRequest, lock uint64, fee uint64) error //
 	CreateReadPool(fee uint64) error
 	ReadPoolLock(allocID string, blobberID string, duration int64, lock uint64, fee uint64) error
-	ReadPoolUnlock(poolID string, fee uint64) error
+	ReadPoolUnlock(fee uint64) error
 	StakePoolLock(blobberID string, lock uint64, fee uint64) error
-	StakePoolUnlock(blobberID string, poolID string, fee uint64) error
+	StakePoolUnlock(blobberID string, fee uint64) error
 	UpdateBlobberSettings(blobber *Blobber, fee uint64) error
 	UpdateValidatorSettings(validator *Validator, fee uint64) error
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock uint64, fee uint64) error
 	WritePoolLock(allocID string, blobberID string, duration int64, lock uint64, fee uint64) error
-	WritePoolUnlock(poolID string, fee uint64) error
+	WritePoolUnlock(allocID string, fee uint64) error
 
 	VestingUpdateConfig(*InputMap) error
 	MinerScUpdateConfig(*InputMap) error
@@ -168,6 +168,9 @@ type TransactionCommon interface {
 
 	// GetVerifyConfirmationStatus implements the verification status from sharders
 	GetVerifyConfirmationStatus() ConfirmationStatus
+
+	// ZCNSCDeleteAuthorizer deletes authorizer
+	ZCNSCDeleteAuthorizer(*DeleteAuthorizerPayload) error
 }
 
 // PriceRange represents a price range allowed by user to filter blobbers.
@@ -224,6 +227,10 @@ type AddAuthorizerPayload struct {
 	PublicKey         string                      `json:"public_key"`
 	URL               string                      `json:"url"`
 	StakePoolSettings AuthorizerStakePoolSettings `json:"stake_pool_settings"` // Used to initially create stake pool
+}
+
+type DeleteAuthorizerPayload struct {
+	ID string `json:"id"` // authorizer ID
 }
 
 type AuthorizerStakePoolSettings struct {
@@ -313,7 +320,7 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val uint64, desc 
 }
 
 type VestingDest struct {
-	ID     string     `json:"id"`     // destination ID
+	ID     string         `json:"id"`     // destination ID
 	Amount common.Balance `json:"amount"` // amount to vest for the destination
 }
 
@@ -352,10 +359,9 @@ func (t *Transaction) MinerSCLock(nodeID string, lock uint64) (err error) {
 	return
 }
 
-func (t *Transaction) MinerSCCollectReward(providerId, poolId string, providerType Provider) error {
+func (t *Transaction) MinerSCCollectReward(providerId string, providerType Provider) error {
 	pr := &scCollectReward{
 		ProviderId:   providerId,
-		PoolId:       poolId,
 		ProviderType: int(providerType),
 	}
 	err := t.createSmartContractTxn(MinerSmartContractAddress,
@@ -368,10 +374,9 @@ func (t *Transaction) MinerSCCollectReward(providerId, poolId string, providerTy
 	return err
 }
 
-func (t *Transaction) StorageSCCollectReward(providerId, poolId string, providerType Provider) error {
+func (t *Transaction) StorageSCCollectReward(providerId string, providerType Provider) error {
 	pr := &scCollectReward{
 		ProviderId:   providerId,
-		PoolId:       poolId,
 		ProviderType: int(providerType),
 	}
 	err := t.createSmartContractTxn(StorageSmartContractAddress,
@@ -482,14 +487,9 @@ func (t *Transaction) ReadPoolLock(allocID, blobberID string,
 }
 
 // ReadPoolUnlock for current user and given pool.
-func (t *Transaction) ReadPoolUnlock(poolID string, fee uint64) (err error) {
-	type unlockRequest struct {
-		PoolID string `json:"pool_id"`
-	}
+func (t *Transaction) ReadPoolUnlock(fee uint64) (err error) {
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_READ_POOL_UNLOCK, &unlockRequest{
-			PoolID: poolID,
-		}, 0)
+		transaction.STORAGESC_READ_POOL_UNLOCK, nil, 0)
 	if err != nil {
 		logging.Error(err)
 		return
@@ -522,17 +522,15 @@ func (t *Transaction) StakePoolLock(blobberID string, lock, fee uint64) (
 }
 
 // StakePoolUnlock by blobberID and poolID.
-func (t *Transaction) StakePoolUnlock(blobberID, poolID string,
+func (t *Transaction) StakePoolUnlock(blobberID string,
 	fee uint64) (err error) {
 
 	type stakePoolRequest struct {
 		BlobberID string `json:"blobber_id"`
-		PoolID    string `json:"pool_id"`
 	}
 
 	var spr stakePoolRequest
 	spr.BlobberID = blobberID
-	spr.PoolID = poolID
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress, transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
 	if err != nil {
@@ -613,16 +611,17 @@ func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64,
 }
 
 // WritePoolUnlock for current user and given pool.
-func (t *Transaction) WritePoolUnlock(poolID string, fee uint64) (
+func (t *Transaction) WritePoolUnlock(allocID string, fee uint64) (
 	err error) {
 
-	type unlockRequest struct {
-		PoolID string `json:"pool_id"`
+	var ur =  struct {
+		AllocationID string `json:"allocation_id"`
+	} {
+		AllocationID: allocID,
 	}
+
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_WRITE_POOL_UNLOCK, &unlockRequest{
-			PoolID: poolID,
-		}, 0)
+		transaction.STORAGESC_WRITE_POOL_UNLOCK, &ur, 0)
 	if err != nil {
 		logging.Error(err)
 		return
@@ -857,6 +856,7 @@ func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
 
 type AuthorizerNode struct {
 	ID     string            `json:"id"`
+	URL    string            `json:"url"`
 	Config *AuthorizerConfig `json:"config"`
 }
 
@@ -1412,6 +1412,16 @@ func GetFaucetSCConfig(cb GetInfoCallback) (err error) {
 
 func (t *Transaction) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error) {
 	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go t.setNonceAndSubmit()
+	return
+}
+
+func (t *Transaction) ZCNSCDeleteAuthorizer(ip *DeleteAuthorizerPayload) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_DELETE_AUTHORIZER, ip, 0)
 	if err != nil {
 		logging.Error(err)
 		return

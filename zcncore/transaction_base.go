@@ -78,9 +78,8 @@ type TransactionScheme interface {
 
 	// Miner SC
 
-	MinerSCUnlock(minerID, poolID string) error
+	MinerSCUnlock(minerID string) error
 }
-
 
 // TransactionCallback needs to be implemented by the caller for transaction related APIs
 type TransactionCallback interface {
@@ -288,7 +287,7 @@ func (t *Transaction) submitTxn() {
 			result <- res
 		}(miner)
 	}
-	consensus := float32(0)
+	consensus := 0
 	for range randomMiners {
 		rsp := <-result
 		logging.Debug(rsp.Url, "Status: ", rsp.Status)
@@ -301,7 +300,7 @@ func (t *Transaction) submitTxn() {
 		}
 
 	}
-	rate := consensus * 100 / float32(len(randomMiners))
+	rate := consensus * 100 / len(randomMiners)
 	if rate < consensusThresh {
 		t.completeTxn(StatusError, "", fmt.Errorf("submit transaction failed. %s", tFailureRsp))
 		transaction.Cache.Evict(t.txn.ClientID)
@@ -489,6 +488,7 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 
 		return nil, errors.New("", "block hash verification failed in confirmation")
 	}
+
 	return nil, errors.New("", "txn confirmation not found.")
 }
 
@@ -736,7 +736,6 @@ func (t *Transaction) VestingDelete(poolID string) (err error) {
 
 type scCollectReward struct {
 	ProviderId   string `json:"provider_id"`
-	PoolId       string `json:"pool_id"`
 	ProviderType int    `json:"provider_type"`
 }
 
@@ -745,14 +744,13 @@ type MinerSCLock struct {
 }
 
 type MinerSCUnlock struct {
-	ID     string `json:"id"`
-	PoolID string `json:"pool_id"`
+	ID string `json:"id"`
 }
 
-func (t *Transaction) MinerSCUnlock(nodeID, poolID string) (err error) {
-	var mscul MinerSCUnlock
-	mscul.ID = nodeID
-	mscul.PoolID = poolID
+func (t *Transaction) MinerSCUnlock(nodeID string) (err error) {
+	mscul := MinerSCUnlock{
+		ID: nodeID,
+	}
 
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_UNLOCK, &mscul, 0)

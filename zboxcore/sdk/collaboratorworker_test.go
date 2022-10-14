@@ -83,6 +83,11 @@ func TestCollaboratorRequest_UpdateCollaboratorToBlobbers(t *testing.T) {
 					Tx:  mockAllocationTxId,
 					ctx: context.TODO(),
 				},
+				consensus: Consensus{
+					mu:              &sync.RWMutex{},
+					fullconsensus:   tt.numBlobbers,
+					consensusThresh: tt.numBlobbers,
+				},
 				path:           mockRemoteFilePath,
 				collaboratorID: mockCollaboratorID,
 			}
@@ -193,6 +198,11 @@ func TestCollaboratorRequest_updateCollaboratorToBlobber(t *testing.T) {
 					Tx:  mockAllocationTxId,
 					ctx: context.TODO(),
 				},
+				consensus: Consensus{
+					mu:              &sync.RWMutex{},
+					fullconsensus:   1,
+					consensusThresh: 1,
+				},
 				path:           mockRemoteFilePath,
 				collaboratorID: mockCollaboratorID,
 				wg:             func() *sync.WaitGroup { wg.Add(1); return &wg }(),
@@ -275,6 +285,11 @@ func TestCollaboratorRequest_RemoveCollaboratorFromBlobbers(t *testing.T) {
 				},
 				path:           mockRemoteFilePath,
 				collaboratorID: mockCollaboratorID,
+				consensus: Consensus{
+					mu:              &sync.RWMutex{},
+					consensusThresh: 2,
+					fullconsensus:   4,
+				},
 			}
 			for i := 0; i < tt.numBlobbers; i++ {
 				req.a.Blobbers = append(req.a.Blobbers, &blockchain.StorageNode{
@@ -367,7 +382,12 @@ func TestCollaboratorRequest_removeCollaboratorFromBlobber(t *testing.T) {
 					Tx:  mockAllocationTxId,
 					ctx: context.TODO(),
 				},
-				path:           mockRemoteFilePath,
+				path: mockRemoteFilePath,
+				consensus: Consensus{
+					mu:              &sync.RWMutex{},
+					fullconsensus:   1,
+					consensusThresh: 1,
+				},
 				collaboratorID: mockCollaboratorID,
 				wg:             func() *sync.WaitGroup { wg.Add(1); return &wg }(),
 			}
