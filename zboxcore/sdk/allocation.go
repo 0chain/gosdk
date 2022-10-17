@@ -77,18 +77,18 @@ type BlobberAllocationStats struct {
 }
 
 type ConsolidatedFileMeta struct {
-	Name            string
-	Type            string
-	Path            string
-	LookupHash      string
-	Hash            string
-	MimeType        string
-	Size            int64
-	ActualFileSize  int64
-	ActualNumBlocks int64
-	EncryptedKey    string
-	CommitMetaTxns  []fileref.CommitMetaTxn
-	Collaborators   []fileref.Collaborator
+	Name            string                  `json:"name"`
+	Type            string                  `json:"type"`
+	Path            string                  `json:"path"`
+	LookupHash      string                  `json:"lookup_hash"`
+	Hash            string                  `json:"hash"`
+	MimeType        string                  `json:"mime_type"`
+	Size            int64                   `json:"size"`
+	ActualFileSize  int64                   `json:"actual_file_size"`
+	ActualNumBlocks int64                   `json:"actual_num_blocks"`
+	EncryptedKey    string                  `json:"encrypted_key"`
+	CommitMetaTxns  []fileref.CommitMetaTxn `json:"commit_meta_txns"`
+	Collaborators   []fileref.Collaborator  `json:"collaborators"`
 }
 
 type AllocationStats struct {
