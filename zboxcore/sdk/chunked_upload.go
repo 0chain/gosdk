@@ -560,7 +560,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			defer wg.Done()
 			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
 			if err != nil {
-				logger.Logger.Error(err)
+				logger.Logger.Error("error during sendUploadRequest", err)
 			}
 		}(blobber, body, formData, pos)
 	}
@@ -569,7 +569,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	if !su.consensus.isConsensusOk() {
 		return thrown.New("consensus_not_met", fmt.Sprintf("Upload failed. Required consensus atleast %d, got %d",
-			su.consensus.consensusThresh, su.consensus.consensus))
+			su.consensus.consensusThresh, su.consensus.getConsensus()))
 	}
 
 	return nil
