@@ -31,6 +31,11 @@ jobs:
 
 
     steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v3
+      with:
+        go-version: ^1.18
+        
     - name: Checkout repository
       uses: actions/checkout@v3
 
