@@ -199,7 +199,7 @@ func (wmMu *WriteMarkerMutex) Lock(
 
 		return errors.New("lock_consensus_not_met",
 			fmt.Sprintf("Required consensus %d got %d",
-				consensus.consensusThresh, consensus.consensus))
+				consensus.consensusThresh, consensus.getConsensus()))
 	}
 
 	return nil
