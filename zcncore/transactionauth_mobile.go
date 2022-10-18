@@ -230,7 +230,7 @@ func (ta *TransactionWithAuth) ReadPoolUnlock(fee string) error {
 }
 
 // StakePoolLock used to lock tokens in a stake pool of a blobber.
-func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType uint64, lock uint64, fee uint64) error {
+func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType Provider, lock uint64, fee uint64) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
@@ -242,8 +242,8 @@ func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType uin
 	}
 
 	type stakePoolRequest struct {
-		ProviderType uint64 `json:"provider_type,omitempty"`
-		ProviderID   string `json:"provider_id,omitempty"`
+		ProviderType Provider `json:"provider_type,omitempty"`
+		ProviderID   string   `json:"provider_id,omitempty"`
 	}
 
 	spr := stakePoolRequest{
@@ -262,15 +262,15 @@ func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType uin
 }
 
 // StakePoolUnlock by blobberID
-func (ta *Transaction) StakePoolUnlock(providerId string, providerType uint64, fee uint64) error {
+func (ta *Transaction) StakePoolUnlock(providerId string, providerType Provider, fee uint64) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
 	}
 
 	type stakePoolRequest struct {
-		ProviderType uint64 `json:"provider_type,omitempty"`
-		ProviderID   string `json:"provider_id,omitempty"`
+		ProviderType Provider `json:"provider_type,omitempty"`
+		ProviderID   string   `json:"provider_id,omitempty"`
 	}
 
 	spr := stakePoolRequest{
