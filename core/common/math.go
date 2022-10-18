@@ -1,23 +1,33 @@
 package common
 
-import "math"
+import (
+	"errors"
+	"math"
+)
 
-func MustAddInt(a, b int) int {
-
+func TryAddInt(a, b int) (int, error) {
 	if a > 0 && b > 0 {
-
-		if math.MaxInt-a > b {
-			panic("math: integer overflow")
+		if math.MaxInt-a < b {
+			return 0, errors.New("math: integer overflow")
 		}
 
-		return a + b
 	}
 
 	if a < 0 && b < 0 {
-		if math.MaxInt-(-a) > -b {
-			panic("math: integer underflow")
+		if math.MinInt-a > b {
+			return 0, errors.New("math: integer underflow")
 		}
+
 	}
 
-	return a + b
+	return a + b, nil
+}
+
+func MustAddInt(a, b int) int {
+	i, err := TryAddInt(a, b)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	return i
 }
