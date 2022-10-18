@@ -102,7 +102,7 @@ func GetNetworkDetails() (*Network, error) {
 	var networkResponse Network
 	err = json.Unmarshal([]byte(res.Body), &networkResponse)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error unmarshaling response :")
+		return nil, errors.Wrap(err, "Error unmarshaling response :"+res.Body)
 	}
 	return &networkResponse, nil
 
