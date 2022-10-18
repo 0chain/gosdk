@@ -206,24 +206,27 @@ func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType Pro
 }
 
 // StakePoolUnlock by blobberID
-func (ta *TransactionWithAuth) StakePoolUnlock(blobberID string, fee uint64) (err error) {
+func (ta *TransactionWithAuth) StakePoolUnlock(providerId string, providerType Provider, fee uint64) error {
 
 	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
+		ProviderType Provider `json:"provider_type,omitempty"`
+		ProviderID   string   `json:"provider_id,omitempty"`
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
 
-	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+	err := ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
 	if err != nil {
 		logging.Error(err)
-		return
+		return err
 	}
 	ta.t.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
-	return
+	return nil
 }
 
 // UpdateBlobberSettings update settings of a blobber.

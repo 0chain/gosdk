@@ -142,7 +142,7 @@ type TransactionCommon interface {
 	ReadPoolLock(allocID string, blobberID string, duration int64, lock uint64, fee uint64) error
 	ReadPoolUnlock(fee uint64) error
 	StakePoolLock(providerId string, providerType Provider, lock uint64, fee uint64) error
-	StakePoolUnlock(blobberID string, fee uint64) error
+	StakePoolUnlock(providerId string, providerType Provider, fee uint64) error
 	UpdateBlobberSettings(blobber *Blobber, fee uint64) error
 	UpdateValidatorSettings(validator *Validator, fee uint64) error
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock uint64, fee uint64) error
@@ -524,24 +524,26 @@ func (t *Transaction) StakePoolLock(providerId string, providerType Provider, lo
 }
 
 // StakePoolUnlock by blobberID and poolID.
-func (t *Transaction) StakePoolUnlock(blobberID string,
-	fee uint64) (err error) {
+func (t *Transaction) StakePoolUnlock(providerId string, providerType Provider, fee uint64) error {
 
 	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
+		ProviderType Provider `json:"provider_type,omitempty"`
+		ProviderID   string   `json:"provider_id,omitempty"`
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
 
-	err = t.createSmartContractTxn(StorageSmartContractAddress, transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
+	err := t.createSmartContractTxn(StorageSmartContractAddress, transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
 	if err != nil {
 		logging.Error(err)
-		return
+		return err
 	}
 	t.SetTransactionFee(fee)
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return nil
 }
 
 // UpdateBlobberSettings update settings of a blobber.
