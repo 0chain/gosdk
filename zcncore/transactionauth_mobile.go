@@ -243,8 +243,8 @@ func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType uin
 	}
 
 	type stakePoolRequest struct {
-		ProviderType Provider `json:"provider_type,omitempty"`
-		ProviderID   string   `json:"provider_id,omitempty"`
+		ProviderType uint64 `json:"provider_type,omitempty"`
+		ProviderID   string `json:"provider_id,omitempty"`
 	}
 
 	spr := stakePoolRequest{
@@ -270,8 +270,8 @@ func (ta *TransactionWithAuth) StakePoolUnlock(providerId string, providerType u
 	}
 
 	type stakePoolRequest struct {
-		ProviderType Provider `json:"provider_type,omitempty"`
-		ProviderID   string   `json:"provider_id,omitempty"`
+		ProviderType uint64 `json:"provider_type,omitempty"`
+		ProviderID   string `json:"provider_id,omitempty"`
 	}
 
 	spr := stakePoolRequest{
