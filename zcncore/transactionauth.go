@@ -182,25 +182,27 @@ func (ta *TransactionWithAuth) ReadPoolUnlock(fee uint64) (
 }
 
 // StakePoolLock used to lock tokens in a stake pool of a blobber.
-func (ta *TransactionWithAuth) StakePoolLock(blobberID string,
-	lock, fee uint64) (err error) {
+func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType Provider, lock uint64, fee uint64) error {
 
 	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
+		ProviderType Provider `json:"provider_type,omitempty"`
+		ProviderID   string   `json:"provider_id,omitempty"`
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
 
-	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+	err := ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_STAKE_POOL_LOCK, &spr, lock)
 	if err != nil {
 		logging.Error(err)
-		return
+		return err
 	}
 	ta.t.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
-	return
+	return nil
 }
 
 // StakePoolUnlock by blobberID

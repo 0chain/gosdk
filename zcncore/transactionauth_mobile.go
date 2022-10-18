@@ -230,8 +230,7 @@ func (ta *TransactionWithAuth) ReadPoolUnlock(fee string) error {
 }
 
 // StakePoolLock used to lock tokens in a stake pool of a blobber.
-func (ta *TransactionWithAuth) StakePoolLock(blobberID string,
-	lock, fee string) error {
+func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType uint64, lock uint64, fee uint64) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
@@ -243,12 +242,14 @@ func (ta *TransactionWithAuth) StakePoolLock(blobberID string,
 	}
 
 	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
+		ProviderType uint64 `json:"provider_type,omitempty"`
+		ProviderID   string `json:"provider_id,omitempty"`
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
-
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_STAKE_POOL_LOCK, &spr, lv)
 	if err != nil {
@@ -353,8 +354,8 @@ func (ta *TransactionWithAuth) WritePoolLock(allocID, lock, fee string) error {
 	}
 
 	var lr = struct {
-		AllocationID string        `json:"allocation_id"`
-	} {
+		AllocationID string `json:"allocation_id"`
+	}{
 		AllocationID: allocID,
 	}
 
@@ -376,9 +377,9 @@ func (ta *TransactionWithAuth) WritePoolUnlock(allocID string, fee string) error
 		return err
 	}
 
-	var ur =  struct {
+	var ur = struct {
 		AllocationID string `json:"allocation_id"`
-	} {
+	}{
 		AllocationID: allocID,
 	}
 
