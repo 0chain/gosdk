@@ -84,7 +84,7 @@ func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest) {
 
 func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
 	var chunk []byte
-	chunks := make([][]byte, 0, len(buf)/lim+1)
+	chunks := make([][]byte, 0, common.MustAddInt(len(buf)/lim, 1))
 	for len(buf) >= lim {
 		chunk, buf = buf[:lim], buf[lim:]
 		chunks = append(chunks, chunk)
