@@ -262,7 +262,7 @@ func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType Pro
 }
 
 // StakePoolUnlock by blobberID
-func (ta *Transaction) StakePoolUnlock(providerId string, providerType Provider, fee uint64) error {
+func (ta *TransactionWithAuth) StakePoolUnlock(providerId string, providerType Provider, fee uint64) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
