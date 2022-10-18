@@ -230,7 +230,7 @@ func (ta *TransactionWithAuth) ReadPoolUnlock(fee string) error {
 }
 
 // StakePoolLock used to lock tokens in a stake pool of a blobber.
-func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType uint64,
+func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType int,
 	lock, fee string) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
@@ -263,7 +263,7 @@ func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType uin
 }
 
 // StakePoolUnlock by blobberID
-func (ta *TransactionWithAuth) StakePoolUnlock(providerId string, providerType uint64, fee string) error {
+func (ta *TransactionWithAuth) StakePoolUnlock(providerId string, providerType int, fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
