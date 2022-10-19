@@ -244,7 +244,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	}
 	req.Header.Add("Content-Type", formWriter.FormDataContentType())
 
-	logger.Logger.Info("Committing to blobber." + sb.blobber.Baseurl)
+	logger.Logger.Info("Committing to blobber. " + sb.blobber.Baseurl)
 
 	var (
 		resp           *http.Response

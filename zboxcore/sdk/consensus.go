@@ -42,5 +42,5 @@ func (c *Consensus) isConsensusOk() bool {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
-	return (c.getConsensus() >= c.consensusThresh)
+	return c.getConsensus() >= c.consensusThresh
 }

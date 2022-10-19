@@ -692,8 +692,8 @@ func (a *Allocation) ListDir(path string) (*ListResult, error) {
 	return nil, errors.New("list_request_failed", "Failed to get list response from the blobbers")
 }
 
-//This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
-//TODO use allocation context
+// This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
+// TODO use allocation context
 func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
 	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
 		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
