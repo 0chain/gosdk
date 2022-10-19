@@ -624,7 +624,7 @@ func GetBlobbers() (bs []*Blobber, err error) {
 	}
 
 	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getblobbers", nil,
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getblobbers?active=true", nil,
 		nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting blobbers:")
