@@ -633,13 +633,14 @@ func (su *ChunkedUpload) processCommit() error {
 	wg.Wait()
 
 	if !su.consensus.isConsensusOk() {
+		consensus := su.consensus.getConsensus()
 		err := thrown.New("consensus_not_met",
 			fmt.Sprintf("Upload commit failed. Required consensus atleast %d, got %d",
-				su.consensus.consensusThresh, su.consensus.consensus))
+				su.consensus.consensusThresh, consensus))
 
-		if su.consensus.getConsensus() != 0 {
+		if consensus != 0 {
 			logger.Logger.Info("Commit consensus failed, Deleting remote file....")
-			su.allocationObj.deleteFile(su.fileMeta.RemotePath, su.consensus.getConsensus(), su.consensus.getConsensus()) //nolint
+			su.allocationObj.deleteFile(su.fileMeta.RemotePath, consensus, consensus) //nolint
 		}
 		if su.statusCallback != nil {
 			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
