@@ -38,6 +38,8 @@ func (b *BridgeOwner) prepareAuthorizers(ctx context.Context, method string, par
 
 	from := common.HexToAddress(b.EthereumAddress)
 
+	fmt.Println(from)
+
 	// Gas limits in units
 	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
 		To:   &contractAddress,
@@ -71,7 +73,7 @@ func (b *BridgeOwner) AddEthereumAuthorizer(ctx context.Context, address common.
 
 	tran, err := instance.AddAuthorizers(transactOpts, address)
 	if err != nil {
-		msg := "failed to execute BurnZCN transaction to ClientID = %s with amount = %s"
+		msg := "failed to execute AddAuthorizers transaction to ClientID = %s with amount = %s"
 		return nil, errors.Wrapf(err, msg, b.ClientID(), address.String())
 	}
 
@@ -109,7 +111,7 @@ func (b *BridgeOwner) AddEthereumAuthorizers(configDir string) {
 			continue
 		}
 
-		status, err := ConfirmEthereumTransaction(transaction.Hash().String(), 5, time.Second*5)
+		status, err := ConfirmEthereumTransaction(transaction.Hash().String(), 100, time.Second*10)
 		if err != nil {
 			fmt.Println(err)
 		}

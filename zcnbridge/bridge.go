@@ -63,8 +63,9 @@ var (
 // The contract will transfer some amount from owner address to the pool.
 // So the owner must call IncreaseAllowance of the WZCN token with 2 parameters:
 // spender address which is the bridge contract and amount to be burned (transferred)
-//nolint:funlen
 // ERC20 signature: "increaseAllowance(address,uint256)"
+//
+//nolint:funlen
 func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei Wei) (*types.Transaction, error) {
 	etherClient, err := b.CreateEthClient()
 	if err != nil {
@@ -228,12 +229,12 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 
 	// 5. Signature
 	// For requirements from ERC20 authorizer, the signature length must be 65
-	var sigs []byte
+	var sigs [][]byte
 	for _, signature := range payload.Signatures {
-		sigs = append(sigs, signature.Signature...)
+		sigs = append(sigs, signature.Signature)
 	}
 
-	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, "mint", amount, zcnTxd, nonce, sigs)
+	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, "mint", amount, zcnTxd, clientID, nonce, sigs)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare bridge")
 	}
