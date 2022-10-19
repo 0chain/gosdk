@@ -166,7 +166,7 @@ func (req *RenameRequest) ProcessRename() error {
 	if !req.consensus.isConsensusOk() {
 		return errors.New("consensus_not_met",
 			fmt.Sprintf("Rename failed. Required consensus %d got %d",
-				req.consensus.consensusThresh, req.consensus.consensus))
+				req.consensus.consensusThresh, req.consensus.getConsensus()))
 	}
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
