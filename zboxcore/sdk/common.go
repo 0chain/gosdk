@@ -110,7 +110,7 @@ type ProcessResult struct {
 	Succeed      bool
 }
 
-var ErrFileNameTooLong = errors.New("filename is longer than 100 characters")
+var ErrFileNameTooLong = errors.New("invalid_parameter", "filename is longer than 100 characters")
 
 func ValidateRemoteFileName(remotePath string) error {
 	_, fileName := path.Split(remotePath)

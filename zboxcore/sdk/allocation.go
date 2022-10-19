@@ -931,8 +931,7 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	req.renameMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
-	err := req.ProcessRename()
-	return err
+	return req.ProcessRename()
 }
 
 func (a *Allocation) MoveObject(path string, destPath string) error {
@@ -979,8 +978,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	req.copyMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
-	err := req.ProcessCopy()
-	return err
+	return req.ProcessCopy()
 }
 
 func (a *Allocation) GetAuthTicketForShare(
