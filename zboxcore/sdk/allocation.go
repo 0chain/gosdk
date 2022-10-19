@@ -912,6 +912,11 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 		return errors.New("invalid_path", "Path should be valid and absolute")
 	}
 
+	err := ValidateRemoteFileName(destName)
+	if err != nil {
+		return err
+	}
+
 	req := &RenameRequest{}
 	req.allocationObj = a
 	req.blobbers = a.Blobbers
@@ -950,6 +955,11 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	isabs := zboxutil.IsRemoteAbs(path)
 	if !isabs {
 		return errors.New("invalid_path", "Path should be valid and absolute")
+	}
+
+	err := ValidateRemoteFileName(destPath)
+	if err != nil {
+		return err
 	}
 
 	req := &CopyRequest{}

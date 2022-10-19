@@ -91,6 +91,11 @@ func CreateChunkedUpload(
 		return nil, thrown.Throw(constants.ErrInvalidParameter, "allocationObj")
 	}
 
+	err := ValidateRemoteFileName(fileMeta.RemoteName)
+	if err != nil {
+		return nil, err
+	}
+
 	opCode := OpUpload
 	spaceLeft := allocationObj.Size
 	if allocationObj.Stats != nil {
@@ -179,7 +184,7 @@ func CreateChunkedUpload(
 	su.workdir = filepath.Join(workdir, ".zcn")
 
 	//create upload folder to save progress
-	err := sys.Files.MkdirAll(filepath.Join(su.workdir, "upload"), 0744)
+	err = sys.Files.MkdirAll(filepath.Join(su.workdir, "upload"), 0744)
 	if err != nil {
 		return nil, err
 	}
