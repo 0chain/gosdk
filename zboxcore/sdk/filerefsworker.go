@@ -242,7 +242,7 @@ func (r *RecentlyAddedRefRequest) GetRecentlyAddedRefs() (*RecentlyAddedRefResul
 
 func (r *RecentlyAddedRefRequest) getRecentlyAddedRefs(resp *RecentlyAddedRefResponse, bUrl string) {
 	defer r.wg.Done()
-	req, err := zboxutil.NewRecentlyAddedRefsRequest(bUrl, r.allocationID, r.fromDate, r.offset, r.pageLimit)
+	req, err := zboxutil.NewRecentlyAddedRefsRequest(bUrl, r.allocationTx, r.fromDate, r.offset, r.pageLimit)
 	if err != nil {
 		resp.err = err
 		return

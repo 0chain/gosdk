@@ -266,8 +266,8 @@ func NewRefsRequest(baseUrl, allocationID, path, offsetPath, updatedDate, offset
 	return req, nil
 }
 
-func NewRecentlyAddedRefsRequest(bUrl, allocID string, fromDate, offset int64, pageLimit int) (*http.Request, error) {
-	nUrl, err := joinUrl(bUrl, RECENT_REFS_ENDPOINT, allocID)
+func NewRecentlyAddedRefsRequest(bUrl, allocTx string, fromDate, offset int64, pageLimit int) (*http.Request, error) {
+	nUrl, err := joinUrl(bUrl, RECENT_REFS_ENDPOINT, allocTx)
 	if err != nil {
 		return nil, err
 	}
@@ -283,7 +283,7 @@ func NewRecentlyAddedRefsRequest(bUrl, allocID string, fromDate, offset int64, p
 		return nil, err
 	}
 
-	if err = setClientInfoWithSign(req, allocID); err != nil {
+	if err = setClientInfoWithSign(req, allocTx); err != nil {
 		return nil, err
 	}
 
