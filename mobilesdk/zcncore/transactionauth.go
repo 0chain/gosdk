@@ -597,15 +597,18 @@ func (ta *TransactionWithAuth) ReadPoolUnlock(poolID string, fee uint64) (
 }
 
 // StakePoolLock used to lock tokens in a stake pool of a blobber.
-func (ta *TransactionWithAuth) StakePoolLock(blobberID string,
+func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType int,
 	lock, fee uint64) (err error) {
 
 	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
+		ProviderType int    `json:"provider_type,omitempty"`
+		ProviderID   string `json:"provider_id,omitempty"`
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
 
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_STAKE_POOL_LOCK, &spr, lock)
@@ -619,17 +622,18 @@ func (ta *TransactionWithAuth) StakePoolLock(blobberID string,
 }
 
 // StakePoolUnlock by blobberID and poolID.
-func (ta *TransactionWithAuth) StakePoolUnlock(blobberID, poolID string,
+func (ta *TransactionWithAuth) StakePoolUnlock(providerId string, providerType int,
 	fee uint64) (err error) {
 
 	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
-		PoolID    string `json:"pool_id"`
+		ProviderType int    `json:"provider_type,omitempty"`
+		ProviderID   string `json:"provider_id,omitempty"`
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
-	spr.PoolID = poolID
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
 
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)

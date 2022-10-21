@@ -425,7 +425,7 @@ func NewListRequest(baseUrl, allocation string, path, pathHash string, auth_toke
 	return req, nil
 }
 
-// NewUploadRequestWithMethod create a http reqeust of upload
+// NewUploadRequestWithMethod create a http request of upload
 func NewUploadRequestWithMethod(baseURL, allocation string, body io.Reader, method string) (*http.Request, error) {
 	u, err := joinUrl(baseURL, UPLOAD_ENDPOINT, allocation)
 	if err != nil {
@@ -440,6 +440,7 @@ func NewUploadRequestWithMethod(baseURL, allocation string, body io.Reader, meth
 		return nil, err
 	}
 
+	// set header: X-App-Client-Signature
 	if err := setClientInfoWithSign(req, allocation); err != nil {
 		return nil, err
 	}

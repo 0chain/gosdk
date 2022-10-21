@@ -133,7 +133,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 
 			err = json.Unmarshal(respbody, &r)
 			if err != nil {
-				logger.Logger.Error(sb.blobber.Baseurl, " Upload response parse error: ", err)
+				logger.Logger.Error(sb.blobber.Baseurl, "Upload response parse error: ", err)
 				return
 			}
 			if r.Filename != su.fileMeta.RemoteName || r.Hash != formData.ChunkHash {
@@ -162,7 +162,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			sb.fileRef.ActualThumbnailHash = su.fileMeta.ActualThumbnailHash
 		}
 
-		//fixed fileRef in last chunk on stream
+		// fixed fileRef in last chunk on stream
 		if isFinal {
 			sb.fileRef.MerkleRoot = formData.ChallengeHash
 			sb.fileRef.ContentHash = formData.ContentHash
@@ -244,7 +244,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	}
 	req.Header.Add("Content-Type", formWriter.FormDataContentType())
 
-	logger.Logger.Info("Committing to blobber." + sb.blobber.Baseurl)
+	logger.Logger.Info("Committing to blobber. " + sb.blobber.Baseurl)
 
 	var (
 		resp           *http.Response

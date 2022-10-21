@@ -174,8 +174,8 @@ type TransactionScheme interface {
 	CreateReadPool(fee uint64) error
 	ReadPoolLock(allocID string, blobberID string, duration int64, lock uint64, fee uint64) error
 	ReadPoolUnlock(poolID string, fee uint64) error
-	StakePoolLock(blobberID string, lock uint64, fee uint64) error
-	StakePoolUnlock(blobberID string, poolID string, fee uint64) error
+	StakePoolLock(providerId string, providerType int, lock uint64, fee uint64) error
+	StakePoolUnlock(providerId string, providerType int, fee uint64) error
 	UpdateBlobberSettings(blobber *Blobber, fee uint64) error
 	UpdateValidatorSettings(validator *Validator, fee uint64) error
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock uint64, fee uint64) error
@@ -1670,15 +1670,18 @@ func (t *Transaction) ReadPoolUnlock(poolID string, fee uint64) (err error) {
 }
 
 // StakePoolLock used to lock tokens in a stake pool of a blobber.
-func (t *Transaction) StakePoolLock(blobberID string, lock, fee uint64) (
+func (t *Transaction) StakePoolLock(providerId string, providerType int, lock, fee uint64) (
 	err error) {
 
 	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
+		ProviderType int    `json:"provider_type,omitempty"`
+		ProviderID   string `json:"provider_id,omitempty"`
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_STAKE_POOL_LOCK, &spr, lock)
@@ -1692,17 +1695,18 @@ func (t *Transaction) StakePoolLock(blobberID string, lock, fee uint64) (
 }
 
 // StakePoolUnlock by blobberID and poolID.
-func (t *Transaction) StakePoolUnlock(blobberID, poolID string,
+func (t *Transaction) StakePoolUnlock(providerId string, providerType int,
 	fee uint64) (err error) {
 
 	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
-		PoolID    string `json:"pool_id"`
+		ProviderType int    `json:"provider_type,omitempty"`
+		ProviderID   string `json:"provider_id,omitempty"`
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
-	spr.PoolID = poolID
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress, transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
 	if err != nil {

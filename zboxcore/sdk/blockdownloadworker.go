@@ -202,6 +202,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				if bytes.Contains(respBody, []byte(LockExists)) {
 					zlogger.Logger.Debug("Lock exists error.")
 					shouldRetry = true
+					time.Sleep(time.Second * 1)
 					return errors.New(LockExists, string(respBody))
 				}
 
