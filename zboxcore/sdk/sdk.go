@@ -285,7 +285,7 @@ func GetStakePoolInfo(blobberID string) (info *StakePoolInfo, err error) {
 		return nil, sdkNotInitialized
 	}
 	if blobberID == "" {
-		blobberID = client.GetClientID()
+		return nil, errors.New("", "blobber_id is required")
 	}
 
 	var b []byte

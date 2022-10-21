@@ -39,6 +39,7 @@ func TestAllocation_UpdateFile(t *testing.T) {
 		Tx:           "TestAllocation_UpdateFile",
 		ParityShards: 2,
 		DataShards:   2,
+		Size:         2 * GB,
 	}
 	setupMockAllocation(t, a)
 
@@ -56,6 +57,10 @@ func TestAllocation_UpdateFile(t *testing.T) {
 	respMap[http.MethodPost+":"+blobber.EndpointWriteMarkerLock+a.Tx] = devmock.Response{
 		StatusCode: http.StatusOK,
 		Body:       respBuf,
+	}
+	respMap[http.MethodPost+":"+blobber.EndpointFileMeta+a.Tx] = devmock.Response{
+		StatusCode: http.StatusOK,
+		Body:       []byte("{\"actual_file_size\":1}"),
 	}
 
 	server := dev.NewBlobberServer(respMap)
@@ -83,6 +88,7 @@ func TestAllocation_UploadFile(t *testing.T) {
 		Tx:           "TestAllocation_UploadFile",
 		ParityShards: 2,
 		DataShards:   2,
+		Size:         2 * GB,
 	}
 
 	resp := &WMLockResult{
@@ -94,6 +100,10 @@ func TestAllocation_UploadFile(t *testing.T) {
 	respMap[http.MethodPost+":"+blobber.EndpointWriteMarkerLock+a.Tx] = devmock.Response{
 		StatusCode: http.StatusOK,
 		Body:       respBuf,
+	}
+	respMap[http.MethodPost+":"+blobber.EndpointFileMeta+a.Tx] = devmock.Response{
+		StatusCode: http.StatusOK,
+		Body:       []byte("{\"actual_file_size\":1}"),
 	}
 
 	server := dev.NewBlobberServer(respMap)
@@ -146,6 +156,11 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 		StatusCode: http.StatusOK,
 		Body:       respBuf,
 	}
+	respMap[http.MethodPost+":"+blobber.EndpointFileMeta+"TestAllocation_UpdateFileWithThumbnail"] = devmock.Response{
+		StatusCode: http.StatusOK,
+		Body:       []byte("{\"actual_file_size\":1}"),
+	}
+
 	server := dev.NewBlobberServer(respMap)
 	defer server.Close()
 
@@ -158,6 +173,7 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 				Tx:           "TestAllocation_UpdateFileWithThumbnail",
 				ParityShards: 2,
 				DataShards:   2,
+				Size:         2 * GB,
 			}
 
 			if teardown := setupMockFileAndReferencePathResult(t, a.ID, mockLocalPath); teardown != nil {
@@ -204,6 +220,7 @@ func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 		Tx:           "TestAllocation_UploadFileWithThumbnail",
 		ParityShards: 2,
 		DataShards:   2,
+		Size:         2 * GB,
 	}
 
 	resp := &WMLockResult{
@@ -216,6 +233,11 @@ func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 		StatusCode: http.StatusOK,
 		Body:       respBuf,
 	}
+	respMap[http.MethodPost+":"+blobber.EndpointFileMeta+a.Tx] = devmock.Response{
+		StatusCode: http.StatusOK,
+		Body:       []byte("{\"actual_file_size\":1}"),
+	}
+
 	server := dev.NewBlobberServer(respMap)
 	defer server.Close()
 
@@ -241,6 +263,7 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 		Tx:           "TestAllocation_EncryptAndUpdateFile",
 		ParityShards: 2,
 		DataShards:   2,
+		Size:         2 * GB,
 	}
 
 	if teardown := setupMockFileAndReferencePathResult(t, a.Tx, mockLocalPath); teardown != nil {
@@ -257,6 +280,11 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 		StatusCode: http.StatusOK,
 		Body:       respBuf,
 	}
+	respMap[http.MethodPost+":"+blobber.EndpointFileMeta+a.Tx] = devmock.Response{
+		StatusCode: http.StatusOK,
+		Body:       []byte("{\"actual_file_size\":1}"),
+	}
+
 	server := dev.NewBlobberServer(respMap)
 	defer server.Close()
 
@@ -284,6 +312,7 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 		Tx:           "TestAllocation_EncryptAndUploadFile",
 		ParityShards: 2,
 		DataShards:   2,
+		Size:         2 * GB,
 	}
 
 	resp := &WMLockResult{
@@ -296,6 +325,11 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 		StatusCode: http.StatusOK,
 		Body:       respBuf,
 	}
+	respMap[http.MethodPost+":"+blobber.EndpointFileMeta+a.Tx] = devmock.Response{
+		StatusCode: http.StatusOK,
+		Body:       []byte("{\"actual_file_size\":1}"),
+	}
+
 	server := dev.NewBlobberServer(respMap)
 	defer server.Close()
 
@@ -367,6 +401,7 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 		Tx:           "TestAllocation_EncryptAndUploadFileWithThumbnail",
 		ParityShards: 2,
 		DataShards:   2,
+		Size:         2 * GB,
 		ctx:          context.TODO(),
 	}
 
@@ -783,6 +818,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 			a := &Allocation{
 				ParityShards: tt.numBlobbers / 2,
 				DataShards:   tt.numBlobbers / 2,
+				Size:         2 * GB,
 			}
 			a.uploadChan = make(chan *UploadRequest, 10)
 			a.downloadChan = make(chan *DownloadRequest, 10)
