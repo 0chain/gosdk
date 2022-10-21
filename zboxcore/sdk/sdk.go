@@ -1069,6 +1069,8 @@ func CreateFreeAllocationFor(recipientPublicKey string, marker string, value uin
 
 	input["blobbers"] = blobbers
 
+	l.Logger.Info("free ticket ", input)
+
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.NEW_FREE_ALLOCATION,
 		InputArgs: input,
