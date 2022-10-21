@@ -86,7 +86,7 @@ type ConsolidatedFileMeta struct {
 	Size            int64                   `json:"size"`
 	ActualFileSize  int64                   `json:"actual_file_size"`
 	ActualNumBlocks int64                   `json:"actual_num_blocks"`
-	EncryptedKey    string                  `json:"encrypted_key"`
+	EncrypionKey    string                  `json:"encryption_key"`
 	CommitMetaTxns  []fileref.CommitMetaTxn `json:"commit_meta_txns"`
 	Collaborators   []fileref.Collaborator  `json:"collaborators"`
 }
@@ -776,7 +776,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.MimeType = ref.MimeType
 		result.Path = ref.Path
 		result.Size = ref.ActualFileSize
-		result.EncryptedKey = ref.EncryptedKey
+		result.EncrypionKey = ref.EncryptedKey
 		result.CommitMetaTxns = ref.CommitMetaTxns
 		result.Collaborators = ref.Collaborators
 		result.ActualFileSize = ref.Size
