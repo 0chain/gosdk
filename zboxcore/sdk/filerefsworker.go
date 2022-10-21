@@ -242,8 +242,10 @@ func (r *RecentlyAddedRefRequest) GetRecentlyAddedRefs() (*RecentlyAddedRefResul
 
 func (r *RecentlyAddedRefRequest) getRecentlyAddedRefs(resp *RecentlyAddedRefResponse, bUrl string) {
 	defer r.wg.Done()
+	l.Logger.Info("Getting recently added refs from ", bUrl)
 	req, err := zboxutil.NewRecentlyAddedRefsRequest(bUrl, r.allocationTx, r.fromDate, r.offset, r.pageLimit)
 	if err != nil {
+		l.Logger.Error(err)
 		resp.err = err
 		return
 	}
@@ -252,27 +254,21 @@ func (r *RecentlyAddedRefRequest) getRecentlyAddedRefs(resp *RecentlyAddedRefRes
 	ctx, cncl := context.WithTimeout(r.ctx, time.Second*30)
 	err = zboxutil.HttpDo(ctx, cncl, req, func(hResp *http.Response, err error) error {
 		if err != nil {
-			l.Logger.Error(err)
 			return err
 		}
 		defer hResp.Body.Close()
 		body, err := ioutil.ReadAll(hResp.Body)
 		if err != nil {
-			l.Logger.Error(err)
 			return err
 		}
 		if hResp.StatusCode != http.StatusOK {
-			return fmt.Errorf("Want code %d, got %d. Message: %s",
+			return fmt.Errorf("want code %d, got %d. Message: %s",
 				http.StatusOK, hResp.StatusCode, string(body))
 		}
-		err = json.Unmarshal(body, &result)
-		if err != nil {
-			l.Logger.Error(err)
-		}
-		return err
-
+		return json.Unmarshal(body, &result)
 	})
 	if err != nil {
+		l.Logger.Error(err)
 		resp.err = err
 		return
 	}
