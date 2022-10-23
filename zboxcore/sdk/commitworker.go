@@ -210,6 +210,7 @@ func (req *CommitRequest) commitBlobber(
 		wm.PreviousAllocationRoot = ""
 	}
 
+	wm.FileMetaRoot = rootRef.FileMetaHash
 	wm.AllocationID = req.allocationID
 	wm.Size = size
 	wm.BlobberID = req.blobber.ID
