@@ -194,7 +194,8 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 			su.maskMu.Unlock()
 		}
 	}()
-	rootRef, latestWM, size, inodesMetaData, latestFileID, err := sb.processWriteMarker(ctx, su)
+
+	rootRef, latestWM, size, commitParams, err := sb.processWriteMarker(ctx, su)
 
 	if err != nil {
 		return err
@@ -215,15 +216,8 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 	wm.Timestamp = timestamp
 	wm.ClientID = client.GetClientID()
-	if su.httpMethod == http.MethodPut {
-		wm.Operation = marker.Update
-		wm.FileID = su.fileID
-	} else {
-		wm.Operation = marker.Upload
-		wm.FileID = latestFileID
-		su.fileID = latestFileID
-	}
-
+	wm.FileID = commitParams.WmFileID
+	wm.Operation = commitParams.Operation
 	err = wm.Sign()
 	if err != nil {
 		logger.Logger.Error("Signing writemarker failed: ", err)
@@ -239,7 +233,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 	if su.httpMethod == http.MethodPost {
 		inode := marker.Inode{
-			LatestFileID: latestFileID,
+			LatestFileID: commitParams.LatestFileID,
 		}
 		err = inode.Sign()
 		if err != nil {
@@ -248,7 +242,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 		}
 
 		inodeMeta := marker.InodeMeta{
-			MetaData:    inodesMetaData,
+			MetaData:    commitParams.InodesMeta,
 			LatestInode: inode,
 		}
 		inodeBytes, err := json.Marshal(inodeMeta)
@@ -341,7 +335,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 func (sb *ChunkedUploadBlobber) processWriteMarker(
 	ctx context.Context, su *ChunkedUpload) (
-	*fileref.Ref, *marker.WriteMarker, int64, map[string]int64, int64, error) {
+	*fileref.Ref, *marker.WriteMarker, int64, *allocationchange.CommitParams, error) {
 
 	logger.Logger.Info("received a commit request")
 	paths := make([]string, 0)
@@ -353,14 +347,14 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 	req, err := zboxutil.NewReferencePathRequest(sb.blobber.Baseurl, su.allocationObj.Tx, paths)
 	if err != nil || len(paths) == 0 {
 		logger.Logger.Error("Creating ref path req", err)
-		return nil, nil, 0, nil, 0, err
+		return nil, nil, 0, nil, err
 	}
 
 	resp, err := su.client.Do(req)
 
 	if err != nil {
 		logger.Logger.Error("Ref path error:", err)
-		return nil, nil, 0, nil, 0, err
+		return nil, nil, 0, nil, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
@@ -369,27 +363,23 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		logger.Logger.Error("Ref path: Resp", err)
-		return nil, nil, 0, nil, 0, err
+		return nil, nil, 0, nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, nil, 0, nil, 0, fmt.Errorf("Reference path error response: Status: %d - %s ", resp.StatusCode, string(body))
+		return nil, nil, 0, nil, fmt.Errorf("Reference path error response: Status: %d - %s ", resp.StatusCode, string(body))
 	}
 
 	err = json.Unmarshal(body, &lR)
 	if err != nil {
 		logger.Logger.Error("Reference path json decode error: ", err)
-		return nil, nil, 0, nil, 0, err
+		return nil, nil, 0, nil, err
 	}
 
-	//process the commit request for the blobber here
-	if err != nil {
-
-		return nil, nil, 0, nil, 0, err
-	}
 	rootRef, err := lR.GetDirTree(su.allocationObj.ID)
 	if err != nil {
-		return nil, nil, 0, nil, 0, err
+		return nil, nil, 0, nil, err
 	}
+
 	var latestFileID int64
 	if lR.LatestWM != nil {
 		rootRef.CalculateHash()
@@ -399,19 +389,19 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 		}
 		latestFileID, err = lR.LatestInode.GetLatestInode()
 		if err != nil {
-			return nil, nil, 0, nil, 0, err
+			return nil, nil, 0, nil, err
 		}
 	}
 
 	var size int64
-	var inodesMeta map[string]int64
+	var commitParams allocationchange.CommitParams
 	for _, change := range sb.commitChanges {
-		inodesMeta, latestFileID, err = change.ProcessChange(rootRef, latestFileID)
+		commitParams, err = change.ProcessChange(rootRef, latestFileID)
 		if err != nil {
-			return nil, nil, 0, nil, 0, err
+			return nil, nil, 0, nil, err
 		}
 		size += change.GetSize()
 	}
 
-	return rootRef, lR.LatestWM, size, inodesMeta, latestFileID, nil
+	return rootRef, lR.LatestWM, size, &commitParams, nil
 }

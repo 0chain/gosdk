@@ -1,12 +1,12 @@
 package allocationchange
 
 import (
-	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/marker"
 )
 
 type NewFileChange struct {
@@ -16,10 +16,10 @@ type NewFileChange struct {
 
 func (ch *NewFileChange) ProcessChange(
 	rootRef *fileref.Ref, latestFileID int64) (
-	inodesMeta map[string]int64, latestInode int64, err error) {
+	commitParams CommitParams, err error) {
 
-	inodesMeta = make(map[string]int64)
-	tSubDirs, err := common.GetPathFields(path.Dir(ch.File.Path))
+	inodesMeta := make(map[string]int64)
+	tSubDirs, err := common.GetPathFields(filepath.Dir(ch.File.Path))
 	if err != nil {
 		return
 	}
@@ -48,8 +48,14 @@ func (ch *NewFileChange) ProcessChange(
 			dirRef = newRef
 		}
 	}
+	latestFileID++
+	inodesMeta[ch.File.GetPath()] = latestFileID
 
-	latestInode = latestFileID
+	ch.File.FileID = latestFileID
+	commitParams.WmFileID = latestFileID
+	commitParams.LatestFileID = latestFileID
+	commitParams.Operation = marker.Upload
+	commitParams.InodesMeta = inodesMeta
 	dirRef.AddChild(ch.File)
 	rootRef.CalculateHash()
 	return

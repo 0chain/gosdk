@@ -6,6 +6,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
@@ -16,9 +17,9 @@ type CopyFileChange struct {
 }
 
 func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref, latestFileID int64) (
-	inodesMeta map[string]int64, latestInode int64, err error) {
+	commitParam CommitParams, err error) {
 
-	inodesMeta = make(map[string]int64)
+	inodesMeta := make(map[string]int64)
 	var fields []string
 	fields, err = common.GetPathFields(ch.DestPath)
 	if err != nil {
@@ -39,6 +40,7 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref, latestFileID int64
 		if !found {
 			latestFileID++
 			newRef := &fileref.Ref{}
+			newRef.FileID = latestFileID
 			newRef.Type = fileref.DIRECTORY
 			newRef.AllocationID = dirRef.AllocationID
 			newRef.Path = "/" + strings.Join(fields[:i+1], "/")
@@ -55,7 +57,7 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref, latestFileID int64
 		err = errors.New("file_not_found", "Object to copy not found in blobber")
 		return
 	}
-
+	commitParam.WmFileID = dirRef.FileID
 	var affectedRef *fileref.Ref
 	if ch.ObjectTree.GetType() == fileref.FILE {
 		affectedRef = &(ch.ObjectTree.(*fileref.FileRef)).Ref
@@ -64,8 +66,9 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref, latestFileID int64
 	}
 
 	affectedRef.Path = zboxutil.Join(dirRef.GetPath(), affectedRef.Name)
-	latestInode = ch.processChildren(affectedRef, inodesMeta, latestFileID)
-
+	commitParam.LatestFileID = ch.processChildren(affectedRef, inodesMeta, latestFileID)
+	commitParam.InodesMeta = inodesMeta
+	commitParam.Operation = marker.Copy
 	dirRef.AddChild(ch.ObjectTree)
 
 	rootRef.CalculateHash()

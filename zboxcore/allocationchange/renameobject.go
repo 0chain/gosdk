@@ -7,6 +7,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/marker"
 )
 
 type RenameFileChange struct {
@@ -17,12 +18,12 @@ type RenameFileChange struct {
 
 func (ch *RenameFileChange) ProcessChange(
 	rootRef *fileref.Ref, latestFileID int64) (
-	map[string]int64, int64, error) {
+	commitParams CommitParams, err error) {
 
 	parentPath := path.Dir(ch.ObjectTree.GetPath())
 	fields, err := common.GetPathFields(parentPath)
 	if err != nil {
-		return nil, 0, err
+		return
 	}
 	dirRef := rootRef
 	for i := 0; i < len(fields); i++ {
@@ -35,7 +36,8 @@ func (ch *RenameFileChange) ProcessChange(
 			}
 		}
 		if !found {
-			return nil, 0, errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+			err = errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+			return
 		}
 	}
 
@@ -53,6 +55,7 @@ func (ch *RenameFileChange) ProcessChange(
 
 			affectedRef.Path = filepath.Join(parentPath, ch.NewName)
 			affectedRef.Name = ch.NewName
+			commitParams.WmFileID = affectedRef.FileID
 
 			dirRef.AddChild(ch.ObjectTree)
 			found = true
@@ -61,12 +64,13 @@ func (ch *RenameFileChange) ProcessChange(
 	}
 
 	if !found {
-		return nil, 0, errors.New("file_not_found", "Object to rename not found in blobber")
+		err = errors.New("file_not_found", "Object to rename not found in blobber")
+		return
 	}
-
+	commitParams.Operation = marker.Rename
 	ch.processChildren(affectedRef)
 	rootRef.CalculateHash()
-	return nil, 0, nil
+	return
 }
 
 func (ch *RenameFileChange) processChildren(curRef *fileref.Ref) {

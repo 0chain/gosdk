@@ -162,14 +162,14 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 
 	var size int64
-	inodesMeta, latestInode, err := commitreq.change.ProcessChange(rootRef, latestInode)
+	commitParams, err := commitreq.change.ProcessChange(rootRef, latestInode)
 
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
 	}
 	size += commitreq.change.GetSize()
-	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size, inodesMeta, latestInode)
+	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size, &commitParams)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
@@ -179,10 +179,11 @@ func (commitreq *CommitRequest) processCommit() {
 
 func (req *CommitRequest) commitBlobber(
 	rootRef *fileref.Ref, latestWM *marker.WriteMarker, size int64,
-	inodesMeta map[string]int64, latestInode int64) error {
+	commitParams *allocationchange.CommitParams, // wmFileID is fileID to assign to writemarker
+) error {
 
 	inode := marker.Inode{
-		LatestFileID: latestInode,
+		LatestFileID: commitParams.LatestFileID,
 	}
 	err := inode.Sign()
 	if err != nil {
@@ -191,7 +192,7 @@ func (req *CommitRequest) commitBlobber(
 	}
 
 	inodeMeta := marker.InodeMeta{
-		MetaData:    inodesMeta,
+		MetaData:    commitParams.InodesMeta,
 		LatestInode: inode,
 	}
 	inodeMetaData, err := json.Marshal(inodeMeta)
@@ -213,6 +214,8 @@ func (req *CommitRequest) commitBlobber(
 	wm.Size = size
 	wm.BlobberID = req.blobber.ID
 	wm.Timestamp = timestamp
+	wm.FileID = commitParams.WmFileID
+	wm.Operation = commitParams.Operation
 	wm.ClientID = client.GetClientID()
 	err = wm.Sign()
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/marker"
 )
 
 type DirCreateChange struct {
@@ -15,9 +16,9 @@ type DirCreateChange struct {
 
 func (d *DirCreateChange) ProcessChange(
 	rootRef *fileref.Ref, latestFileID int64) (
-	inodesMeta map[string]int64, latestInode int64, err error) {
+	commitParams CommitParams, err error) {
 
-	inodesMeta = make(map[string]int64)
+	inodesMeta := make(map[string]int64)
 	fields, err := common.GetPathFields(d.RemotePath)
 	if err != nil {
 		return
@@ -28,12 +29,8 @@ func (d *DirCreateChange) ProcessChange(
 		for _, child := range dirRef.Children {
 			ref, ok := child.(*fileref.Ref)
 			if !ok {
-				fr, ok := child.(*fileref.FileRef)
-				if !ok {
-					err = errors.New("invalid_ref: child node is not valid *fileref.Ref or *fileref.FileRef ")
-					return
-				}
-				ref = &fr.Ref
+				err = errors.New("invalid_ref: child node is not valid *fileref.Ref")
+				return
 			}
 
 			if ref.Name == fields[i] {
@@ -58,6 +55,10 @@ func (d *DirCreateChange) ProcessChange(
 		}
 	}
 
+	commitParams.InodesMeta = inodesMeta
+	commitParams.LatestFileID = latestFileID
+	commitParams.WmFileID = inodesMeta[d.RemotePath]
+	commitParams.Operation = marker.NewDir
 	rootRef.CalculateHash()
 	return
 }

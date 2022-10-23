@@ -4,7 +4,16 @@ import (
 	"strings"
 
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/marker"
 )
+
+// TODO use commit params instead
+type CommitParams struct {
+	InodesMeta   map[string]int64
+	LatestFileID int64
+	WmFileID     int64
+	Operation    marker.FileOp
+}
 
 type change struct {
 	Size      int64  `json:"size"`
@@ -13,7 +22,7 @@ type change struct {
 }
 
 type AllocationChange interface {
-	ProcessChange(rootRef *fileref.Ref, latestInode int64) (map[string]int64, int64, error)
+	ProcessChange(rootRef *fileref.Ref, latestInode int64) (CommitParams, error)
 	GetAffectedPath() string
 	GetSize() int64
 }

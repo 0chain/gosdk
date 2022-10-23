@@ -6,6 +6,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/marker"
 )
 
 type DeleteFileChange struct {
@@ -15,19 +16,21 @@ type DeleteFileChange struct {
 
 func (ch *DeleteFileChange) ProcessChange(
 	rootRef *fileref.Ref, _ int64) (
-	map[string]int64, int64, error) {
+	commitParams CommitParams, err error) {
 
 	if ch.ObjectTree.GetPath() == "/" {
 		rootRef.Children = nil
 		rootRef.CalculateHash()
-		return nil, 0, nil
+		commitParams.WmFileID = rootRef.FileID
+		commitParams.Operation = marker.Delete
+		return
 	}
 
 	parentPath := path.Dir(ch.ObjectTree.GetPath())
 
 	fields, err := common.GetPathFields(parentPath)
 	if err != nil {
-		return nil, 0, err
+		return
 	}
 
 	dirRef := rootRef
@@ -42,7 +45,8 @@ func (ch *DeleteFileChange) ProcessChange(
 		}
 
 		if !found {
-			return nil, 0, errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+			err = errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+			return
 		}
 	}
 
@@ -50,10 +54,14 @@ func (ch *DeleteFileChange) ProcessChange(
 		if child.GetName() == ch.ObjectTree.GetName() {
 			dirRef.RemoveChild(i)
 			rootRef.CalculateHash()
-			return nil, 0, nil
+			commitParams.WmFileID = child.GetFileID()
+			commitParams.Operation = marker.Delete
+			return
 		}
 	}
-	return nil, 0, errors.New("file_not_found", "File to delete not found in blobber")
+
+	err = errors.New("file_not_found", "File to delete not found in blobber")
+	return
 }
 
 func (n *DeleteFileChange) GetAffectedPath() string {

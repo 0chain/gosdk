@@ -4,7 +4,9 @@ import (
 	"path/filepath"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/marker"
 )
 
 type UpdateFileChange struct {
@@ -15,27 +17,32 @@ type UpdateFileChange struct {
 
 func (ch *UpdateFileChange) ProcessChange(
 	rootRef *fileref.Ref, latestFileID int64) (
-	map[string]int64, int64, error) {
+	commitParams CommitParams, err error) {
 
-	path, _ := filepath.Split(ch.NewFile.Path)
-	tSubDirs := getSubDirs(path)
+	fields, err := common.GetPathFields(filepath.Dir(ch.NewFile.Path))
+	if err != nil {
+		return
+	}
+
 	dirRef := rootRef
-	treelevel := 0
-	for treelevel < len(tSubDirs) {
+	for i := 0; i < len(fields); i++ {
 		found := false
 		for _, child := range dirRef.Children {
-			if child.GetType() == fileref.DIRECTORY && treelevel < len(tSubDirs) {
-				if (child.(*fileref.Ref)).Name == tSubDirs[treelevel] {
-					dirRef = child.(*fileref.Ref)
-					found = true
-					break
+			if child.GetName() == fields[i] {
+				var ok bool
+				dirRef, ok = child.(*fileref.Ref)
+				if !ok {
+					err = errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+					return
 				}
+				found = true
+				break
 			}
 		}
-		if found {
-			treelevel++
-		} else {
-			return nil, 0, errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+
+		if !found {
+			err = errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+			return
 		}
 	}
 	idx := -1
@@ -43,15 +50,18 @@ func (ch *UpdateFileChange) ProcessChange(
 		if child.GetType() == fileref.FILE && child.GetPath() == ch.NewFile.Path {
 			ch.OldFile = child.(*fileref.FileRef)
 			idx = i
+			commitParams.WmFileID = child.GetFileID()
 			break
 		}
 	}
 	if idx < 0 || ch.OldFile == nil {
-		return nil, 0, errors.New("file_not_found", "File to update not found in blobber")
+		err = errors.New("file_not_found", "File to update not found in blobber")
+		return
 	}
 	dirRef.Children[idx] = ch.NewFile
 	rootRef.CalculateHash()
-	return nil, 0, nil
+	commitParams.Operation = marker.Update
+	return
 }
 
 func (n *UpdateFileChange) GetAffectedPath() string {
