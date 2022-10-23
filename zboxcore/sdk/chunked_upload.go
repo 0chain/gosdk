@@ -140,7 +140,6 @@ func CreateChunkedUpload(
 		if len(otr.Refs) != 1 {
 			return nil, thrown.New("chunk_upload", fmt.Sprintf("Expected refs 1, got %d", len(otr.Refs)))
 		}
-		su.fileID = otr.Refs[0].FileID
 		su.httpMethod = http.MethodPut
 		su.buildChange = func(ref *fileref.FileRef) allocationchange.AllocationChange {
 			change := &allocationchange.UpdateFileChange{}
@@ -295,9 +294,6 @@ type ChunkedUpload struct {
 
 	// isRepair identifies if upload is repair operation
 	isRepair bool
-	// fileID to put into writemarker. This is the ID for which the operation was
-	// done
-	fileID int64
 
 	uploadTimeOut time.Duration
 	commitTimeOut time.Duration
