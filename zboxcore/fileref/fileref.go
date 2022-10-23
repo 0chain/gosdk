@@ -57,6 +57,7 @@ type RefEntity interface {
 	GetLookupHash() string
 	GetPath() string
 	GetName() string
+	GetFileID() int64
 	GetCreatedAt() common.Timestamp
 	GetUpdatedAt() common.Timestamp
 }
@@ -150,6 +151,10 @@ func (r *Ref) GetPath() string {
 
 func (r *Ref) GetName() string {
 	return r.Name
+}
+
+func (r *Ref) GetFileID() int64 {
+	return r.FileID
 }
 
 func (r *Ref) GetCreatedAt() common.Timestamp {
@@ -251,8 +256,13 @@ func (fr *FileRef) GetLookupHash() string {
 func (fr *FileRef) GetPath() string {
 	return fr.Path
 }
+
 func (fr *FileRef) GetName() string {
 	return fr.Name
+}
+
+func (fr *FileRef) GetFileID() int64 {
+	return fr.FileID
 }
 
 func (fr *FileRef) GetCreatedAt() common.Timestamp {
