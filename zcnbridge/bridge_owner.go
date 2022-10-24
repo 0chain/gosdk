@@ -38,8 +38,6 @@ func (b *BridgeOwner) prepareAuthorizers(ctx context.Context, method string, par
 
 	from := common.HexToAddress(b.EthereumAddress)
 
-	fmt.Println(from)
-
 	// Gas limits in units
 	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
 		To:   &contractAddress,

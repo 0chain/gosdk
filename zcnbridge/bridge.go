@@ -390,31 +390,31 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params 
 	contractAddress := common.HexToAddress(b.BridgeAddress)
 
 	// Get ABI of the contract
-	//abi, err := binding.BridgeMetaData.GetAbi()
-	//if err != nil {
-	//	return nil, nil, errors.Wrap(err, "failed to get ABI")
-	//}
+	abi, err := binding.BridgeMetaData.GetAbi()
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to get ABI")
+	}
 
 	// Pack the method argument
-	//pack, err := abi.Pack(method, params...)
-	//if err != nil {
-	//	return nil, nil, errors.Wrap(err, "failed to pack arguments")
-	//}
+	pack, err := abi.Pack(method, params...)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to pack arguments")
+	}
 
 	// Gas limits in units
-	//fromAddress := common.HexToAddress(b.EthereumAddress)
+	fromAddress := common.HexToAddress(b.EthereumAddress)
 
-	//gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
-	//	To:   &contractAddress,
-	//	From: fromAddress,
-	//	Data: pack,
-	//})
-	//if err != nil {
-	//	return nil, nil, errors.Wrap(err, "failed to estimate gas")
-	//}
+	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
+		To:   &contractAddress,
+		From: fromAddress,
+		Data: pack,
+	})
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to estimate gas")
+	}
 
 	// Update gas limits + 10%
-	gasLimitUnits := addPercents(300000, 10).Uint64()
+	gasLimitUnits = addPercents(300000, 10).Uint64()
 
 	transactOpts := b.CreateSignedTransactionFromKeyStore(etherClient, gasLimitUnits)
 
