@@ -71,7 +71,7 @@ func (b *BridgeOwner) AddEthereumAuthorizer(ctx context.Context, address common.
 
 	tran, err := instance.AddAuthorizers(transactOpts, address)
 	if err != nil {
-		msg := "failed to execute AddAuthorizers transaction to ClientID = %s with amount = %s"
+		msg := "failed to execute AddAuthorizer transaction to ClientID = %s with amount = %s"
 		return nil, errors.Wrapf(err, msg, b.ClientID(), address.String())
 	}
 
