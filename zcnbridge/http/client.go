@@ -33,7 +33,7 @@ func CleanClient() *http.Client {
 	client := &http.Client{
 		Transport: zboxutil.DefaultTransport,
 	}
-	client.Timeout = 30 * time.Second
+	client.Timeout = 120 * time.Second
 	return client
 }
 
