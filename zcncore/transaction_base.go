@@ -17,6 +17,8 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/core/conf"
+	"github.com/0chain/gosdk/core/version"
 )
 
 // compiler time check
