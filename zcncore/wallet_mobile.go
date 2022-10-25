@@ -21,3 +21,8 @@ func (w *wallet) Sign(hash string) (string, error) {
 	}
 	return sigScheme.Sign(hash)
 }
+
+func RegisterToMiners(clientId, pubKey string, callback WalletCallback) error {
+	wallet := zcncrypto.Wallet{ClientID: clientId, ClientKey: pubKey}
+	return registerToMiners(&wallet, callback)
+}

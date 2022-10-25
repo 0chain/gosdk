@@ -15,11 +15,10 @@ import (
 	"github.com/0chain/gosdk/zboxcore/client"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
-	zcn "github.com/0chain/gosdk/zcncore"
 
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/mobilesdk/zbox"
 	"github.com/0chain/gosdk/zcncore"
+	"github.com/0chain/gosdk/mobilesdk/zbox"
 )
 
 var nonce = int64(0)
@@ -258,10 +257,8 @@ func (s *StorageSDK) GetBlobbersList() (string, error) {
 	return string(retBytes), nil
 }
 
-//GetReadPoolInfo is to get information about the read pool for the allocation
-func RegisterToMiners(clientId, pubKey string, callback zcn.WalletCallback) error {
-	wallet := zcncrypto.Wallet{ClientID: clientId, ClientKey: pubKey}
-	return zcncore.RegisterToMiners(&wallet, callback)
+func RegisterToMiners(clientId, pubKey string, callback zcncore.WalletCallback) error {
+	return zcncore.RegisterToMiners(clientId, pubKey, callback)
 }
 
 // GetAllocations return back list of allocations for the wallet
@@ -315,5 +312,5 @@ func decodeTicket(ticket string) (string, string, uint64, error) {
 	markerStr, _ := json.Marshal(markerInput)
 
 	s, _ := strconv.ParseFloat(string(fmt.Sprintf("%v", lock)), 64)
-	return string(recipientPublicKey), string(markerStr), zcn.ConvertTokenToSAS(s), nil
+	return string(recipientPublicKey), string(markerStr), zcncore.ConvertTokenToSAS(s), nil
 }
