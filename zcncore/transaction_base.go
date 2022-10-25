@@ -90,6 +90,18 @@ type TransactionCallback interface {
 	OnAuthComplete(t *Transaction, status int)
 }
 
+type ChainConfig struct {
+	ChainID                 string   `json:"chain_id,omitempty"`
+	BlockWorker             string   `json:"block_worker"`
+	Miners                  []string `json:"miners"`
+	Sharders                []string `json:"sharders"`
+	SignatureScheme         string   `json:"signature_scheme"`
+	MinSubmit               int      `json:"min_submit"`
+	MinConfirmation         int      `json:"min_confirmation"`
+	ConfirmationChainLength int      `json:"confirmation_chain_length"`
+	EthNode                 string   `json:"eth_node"`
+}
+
 // InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
 func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
 	if signscheme != "ed25519" && signscheme != "bls0chain" {
