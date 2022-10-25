@@ -16,9 +16,8 @@ import (
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 
-	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zcncore"
 	"github.com/0chain/gosdk/mobilesdk/zbox"
+	"github.com/0chain/gosdk/zcncore"
 )
 
 var nonce = int64(0)
@@ -228,8 +227,8 @@ func (s *StorageSDK) GetReadPoolInfo(clientID string) (string, error) {
 func (s *StorageSDK) WritePoolLock(durInSeconds int64, tokens, fee float64, allocID string) error {
 	_, _, err := sdk.WritePoolLock(
 		allocID,
-		zcn.ConvertTokenToSAS(tokens),
-		zcn.ConvertTokenToSAS(fee))
+		zcncore.ConvertTokenToSAS(tokens),
+		zcncore.ConvertTokenToSAS(fee))
 	return err
 }
 
