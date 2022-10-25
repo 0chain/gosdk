@@ -75,27 +75,6 @@ type TransactionCommon interface {
 	GetVerifyConfirmationStatus() int
 }
 
-type chainConfig struct {
-	ChainID                 string   `json:"chain_id,omitempty"`
-	BlockWorker             string   `json:"block_worker"`
-	Miners                  []string `json:"miners"`
-	Sharders                []string `json:"sharders"`
-	SignatureScheme         string   `json:"signature_scheme"`
-	MinSubmit               int      `json:"min_submit"`
-	MinConfirmation         int      `json:"min_confirmation"`
-	ConfirmationChainLength int      `json:"confirmation_chain_length"`
-	EthNode                 string   `json:"eth_node"`
-}
-
-type localConfig struct {
-	chain         chainConfig
-	wallet        zcncrypto.Wallet
-	authUrl       string
-	isConfigured  bool
-	isValidWallet bool
-	isSplitWallet bool
-}
-
 // priceRange represents a price range allowed by user to filter blobbers.
 type priceRange struct {
 	Min int64 `json:"min"`
