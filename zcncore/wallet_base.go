@@ -244,10 +244,6 @@ func GetVersion() string {
 	return version.VERSIONSTR
 }
 
-func GetChainConfig() ChainConfig {
-	return _config.chain
-}
-
 // SetLogLevel set the log level.
 // lvl - 0 disabled; higher number (upto 4) more verbosity
 func SetLogLevel(lvl int) {
