@@ -17,7 +17,6 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
 type Provider int
@@ -37,17 +36,6 @@ const (
 	Success
 	ChargeableError
 )
-
-
-
-type localConfig struct {
-	chain         ChainConfig
-	wallet        zcncrypto.Wallet
-	authUrl       string
-	isConfigured  bool
-	isValidWallet bool
-	isSplitWallet bool
-}
 
 type Miner struct {
 	ID         string      `json:"id"`
@@ -1296,8 +1284,6 @@ func (t *Transaction) UpdateValidatorSettings(v *Validator, fee uint64) (err err
 	go func() { t.setNonceAndSubmit() }()
 	return
 }
-
-
 
 type VestingClientList struct {
 	Pools []common.Key `json:"pools"`

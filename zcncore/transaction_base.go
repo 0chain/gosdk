@@ -11,14 +11,14 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
 
+	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/sdk"
-	"github.com/0chain/gosdk/core/conf"
-	"github.com/0chain/gosdk/core/version"
 )
 
 // compiler time check
@@ -88,6 +88,15 @@ type TransactionCallback interface {
 	OnTransactionComplete(t *Transaction, status int)
 	OnVerifyComplete(t *Transaction, status int)
 	OnAuthComplete(t *Transaction, status int)
+}
+
+type localConfig struct {
+	chain         ChainConfig
+	wallet        zcncrypto.Wallet
+	authUrl       string
+	isConfigured  bool
+	isValidWallet bool
+	isSplitWallet bool
 }
 
 type ChainConfig struct {
