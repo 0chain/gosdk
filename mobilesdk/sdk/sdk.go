@@ -17,8 +17,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	zcn "github.com/0chain/gosdk/zcncore"
 
+	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/mobilesdk/zbox"
-	"github.com/0chain/gosdk/mobilesdk/zcncrypto"
 	"github.com/0chain/gosdk/zcncore"
 )
 
