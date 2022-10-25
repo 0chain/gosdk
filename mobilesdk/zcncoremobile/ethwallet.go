@@ -10,10 +10,11 @@ import (
 	"math/big"
 	"regexp"
 
-	"github.com/0chain/gosdk/mobilesdk/zcncore"
+	"github.com/0chain/gosdk/zcncore"
 
+	"github.com/0chain/gosdk/core/tokenrate"
+	"github.com/0chain/gosdk/core/zcncrypto"
 	models "github.com/0chain/gosdk/mobilesdk/zbox"
-	"github.com/0chain/gosdk/mobilesdk/zcncrypto"
 	hdwallet "github.com/0chain/gosdk/zcncore/ethhdwallet"
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -28,19 +29,6 @@ import (
 // TODO change to real wallets
 const walletAddr = "0xb9EF770B6A5e12E45983C5D80545258aA38F3B78"
 const tokenAddress = "0x28b149020d2152179873ec60bed6bf7cd705775d"
-
-var GetEthClient = func() (*ethclient.Client, error) {
-	if len(zcncore.GetConfig().GetChain().EthNode) == 0 {
-		return nil, fmt.Errorf("eth node SDK not initialized")
-	}
-
-	zcncore.Logger.Info("requesting from ", zcncore.GetConfig().GetChain().EthNode)
-	client, err := ethclient.Dial(zcncore.GetConfig().GetChain().EthNode)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
-}
 
 // TokensToEth - converting wei to eth tokens
 func TokensToEth(tokens int64) float64 {
@@ -106,7 +94,7 @@ func GetEthBalance(ethAddr string, cb models.GetBalanceCallback) error {
 
 // IsValidEthAddress - multiple checks for valid ETH address
 func IsValidEthAddress(ethAddr string) (bool, error) {
-	client, err := GetEthClient()
+	client, err := zcncore.GetEthClient()
 	if err != nil {
 		return false, err
 	}
@@ -132,11 +120,12 @@ func isValidEthAddress(ethAddr string, client *ethclient.Client) (bool, error) {
 
 // CreateWalletFromEthMnemonic - creating new wallet from Eth mnemonics
 func CreateWalletFromEthMnemonic(mnemonic, password string, statusCb models.WalletCallback) error {
-	if len(zcncore.GetConfig().GetChain().Miners) < 1 || len(zcncore.GetConfig().GetChain().Sharders) < 1 {
+	cc := zcncore.GetChainConfig()
+	if len(cc.Miners) < 1 || len(cc.Sharders) < 1 {
 		return fmt.Errorf("SDK not initialized")
 	}
 	go func() {
-		sigScheme := zcncrypto.NewSignatureScheme(zcncore.GetConfig().GetChain().SignatureScheme)
+		sigScheme := zcncrypto.NewSignatureScheme(cc.SignatureScheme)
 		wallet, err := sigScheme.GenerateKeysWithEth(mnemonic, password)
 		if err != nil {
 			statusCb.OnWalletCreateComplete(zcncore.StatusError, "", err.Error())
@@ -158,7 +147,7 @@ func CheckEthHashStatus(hash string) int {
 
 	var client *ethclient.Client
 	var err error
-	if client, err = GetEthClient(); err != nil {
+	if client, err = zcncore.GetEthClient(); err != nil {
 		return -1
 	}
 
@@ -171,7 +160,7 @@ func CheckEthHashStatus(hash string) int {
 
 // ConvertZcnTokenToETH - converting Zcn tokens to Eth
 func ConvertZcnTokenToETH(token float64) (float64, error) {
-	ethRate, err := zcncore.GetTokenRateByCurrency("eth")
+	ethRate, err := tokenrate.GetUSD(context.TODO(), "eth") // mzcncore.GetTokenRateByCurrency("eth")
 	if err != nil {
 		return 0, err
 	}
@@ -182,7 +171,7 @@ func ConvertZcnTokenToETH(token float64) (float64, error) {
 func SuggestEthGasPrice() (int64, error) {
 	var client *ethclient.Client
 	var err error
-	if client, err = GetEthClient(); err != nil {
+	if client, err = zcncore.GetEthClient(); err != nil {
 		return 0, err
 	}
 
@@ -198,7 +187,7 @@ func SuggestEthGasPrice() (int64, error) {
 func TransferEthTokens(fromPrivKey string, amountTokens, gasPrice int64) (string, error) {
 	var client *ethclient.Client
 	var err error
-	if client, err = GetEthClient(); err != nil {
+	if client, err = zcncore.GetEthClient(); err != nil {
 		return "", err
 	}
 
@@ -276,7 +265,7 @@ func TransferEthTokens(fromPrivKey string, amountTokens, gasPrice int64) (string
 }
 
 func getBalanceFromEthNode(ethAddr string) (int64, error) {
-	if client, err := GetEthClient(); err == nil {
+	if client, err := zcncore.GetEthClient(); err == nil {
 		account := common.HexToAddress(ethAddr)
 		zcncore.Logger.Info("for eth address", account)
 		balance, err := client.BalanceAt(context.Background(), account, nil)

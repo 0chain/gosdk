@@ -1361,7 +1361,7 @@ func GetVestingClientList(clientID string, cb GetInfoCallback) (err error) {
 	if clientID == "" {
 		clientID = _config.wallet.ClientID // if not blank
 	}
-	go getInfoFromSharders(WithParams(GET_VESTING_CLIENT_POOLS, Params{
+	go GetInfoFromSharders(WithParams(GET_VESTING_CLIENT_POOLS, Params{
 		"client_id": clientID,
 	}), 0, cb)
 	return
@@ -1390,7 +1390,7 @@ func GetVestingPoolInfo(poolID string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	getInfoFromSharders(WithParams(GET_VESTING_POOL_INFO, Params{
+	GetInfoFromSharders(WithParams(GET_VESTING_POOL_INFO, Params{
 		"pool_id": poolID,
 	}), 0, cb)
 	return
@@ -1400,7 +1400,7 @@ func GetVestingSCConfig(cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	go getInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
+	go GetInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
 	return
 }
 
@@ -1410,7 +1410,7 @@ func GetFaucetSCConfig(cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	go getInfoFromSharders(GET_FAUCETSC_CONFIG, 0, cb)
+	go GetInfoFromSharders(GET_FAUCETSC_CONFIG, 0, cb)
 	return
 }
 
