@@ -18,7 +18,6 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
 const (
