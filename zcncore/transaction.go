@@ -1309,46 +1309,7 @@ func (t *Transaction) UpdateValidatorSettings(v *Validator, fee uint64) (err err
 	return
 }
 
-// InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
-func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
-	if signscheme != "ed25519" && signscheme != "bls0chain" {
-		return errors.New("", "invalid/unsupported signature scheme")
-	}
-	_config.chain.BlockWorker = blockWorker
-	_config.chain.SignatureScheme = signscheme
 
-	err := UpdateNetworkDetails()
-	if err != nil {
-		fmt.Println("UpdateNetworkDetails:", err)
-		return err
-	}
-
-	go updateNetworkDetailsWorker(context.Background())
-
-	for _, conf := range configs {
-		err := conf(&_config.chain)
-		if err != nil {
-			return errors.Wrap(err, "invalid/unsupported options.")
-		}
-	}
-	assertConfig()
-	_config.isConfigured = true
-	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (InitZCNSDK)")
-
-	cfg := &conf.Config{
-		BlockWorker:             _config.chain.BlockWorker,
-		MinSubmit:               _config.chain.MinSubmit,
-		MinConfirmation:         _config.chain.MinConfirmation,
-		ConfirmationChainLength: _config.chain.ConfirmationChainLength,
-		SignatureScheme:         _config.chain.SignatureScheme,
-		ChainID:                 _config.chain.ChainID,
-		EthereumNode:            _config.chain.EthNode,
-	}
-
-	conf.InitClientConfig(cfg)
-
-	return nil
-}
 
 type VestingClientList struct {
 	Pools []common.Key `json:"pools"`
