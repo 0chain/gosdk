@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/0chain/gosdk/zcnbridge"
@@ -67,7 +68,7 @@ func initBridge(
 
 func mintZCN(burnTrxHash string, timeout int) string {
 
-	// ASK authorizers for burn tickets to mint in WZCN
+	// ASK authorizers for burn tickets to mint in ZCN
 	mintPayload, err := bridge.QueryZChainMintPayload(burnTrxHash)
 	if err != nil {
 		return errors.Wrap("mint", "failed to QueryZChainMintPayload", err).Error()
@@ -82,4 +83,23 @@ func mintZCN(burnTrxHash string, timeout int) string {
 	}
 
 	return hash
+}
+
+func mintWZCN(burnTrxHash string, timeout int) string {
+	
+	// ASK authorizers for burn tickets to mint in WZCN
+	mintPayload, err := bridge.QueryEthereumMintPayload(burnTrxHash)
+	if err != nil {
+		return errors.Wrap("mint", "failed to QueryZChainMintPayload", err).Error()
+	}
+
+	c, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
+	defer cancel()
+
+	tx, err := bridge.MintWZCN(c, mintPayload)
+	if err != nil {
+		return errors.Wrap("mint", fmt.Sprintf("failed to MintWZCN for txn %s", tx.Hash().String()), err).Error()
+	}
+
+	return tx.Hash().String()
 }
