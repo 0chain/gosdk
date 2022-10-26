@@ -138,7 +138,7 @@ const (
 	OpZCNSCGetAuthorizerNodes
 )
 
-// WalletCallback needs to be implmented for wallet creation.
+// WalletCallback needs to be implemented for wallet creation.
 type WalletCallback interface {
 	OnWalletCreateComplete(status int, wallet string, err string)
 }
