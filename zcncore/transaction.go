@@ -32,6 +32,16 @@ const (
 	ProviderAuthorizer
 )
 
+type TransactionVelocity = float64
+
+// Transaction velocity vs cost factor
+// TODO: Pass it to miner to calculate real time factor
+const (
+	RegularTransaction TransactionVelocity = 1.0
+	FastTransaction    TransactionVelocity = 1.3
+	FasterTransaction  TransactionVelocity = 1.6
+)
+
 type ConfirmationStatus int
 
 const (
@@ -104,7 +114,7 @@ type TransactionCommon interface {
 	// SetTransactionFee implements method to set the transaction fee
 	SetTransactionFee(txnFee uint64) error
 	// SuggestTransactionFee estimates transaction fee, returns next round off fee (if received float from miner)
-	SuggestTransactionFee() (uint64, error)
+	SuggestTransactionFee(TransactionVelocity) (uint64, error)
 
 	//RegisterMultiSig registers a group wallet and subwallets with MultisigSC
 	RegisterMultiSig(walletstr, mswallet string) error
@@ -267,7 +277,7 @@ func (t *Transaction) SetTransactionFee(txnFee uint64) error {
 	return nil
 }
 
-func (t *Transaction) SuggestTransactionFee() (uint64, error) {
+func (t *Transaction) SuggestTransactionFee(velocityFactor TransactionVelocity) (uint64, error) {
 	// average out random miners result (prevent trust from rogue miner)
 	const numMinersToCheck = 2
 
@@ -317,7 +327,7 @@ func (t *Transaction) SuggestTransactionFee() (uint64, error) {
 		return 0, errors.New("", "failed to calculate suggested fee, failed to fetch data from miners")
 	}
 
-	return uint64(math.Ceil(cumCost / float64(costCnt))), nil
+	return uint64(math.Ceil((cumCost * velocityFactor) / float64(costCnt))), nil
 }
 
 func (t *Transaction) Send(toClientID string, val uint64, desc string) error {
