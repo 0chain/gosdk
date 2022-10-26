@@ -51,7 +51,6 @@ jobs:
       - name: Compress
         run: |
           tar -czvf zcncore-ios.tar.gz out/iossdk/ios/zcncore.xcframework
-          tar -czvf zcncore-iossimulator.tar.gz out/iossdk/simulator/zcncore.xcframework
 
       - name: Setup Build
         id: setup_build
@@ -88,7 +87,6 @@ jobs:
           name: zcncore-ios
           path: |
             zcncore-ios.tar.gz
-            zcncore-iossimulator.tar.gz
 
   build-android:
     name: Build-android
