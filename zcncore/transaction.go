@@ -116,6 +116,9 @@ type TransactionCommon interface {
 	// SuggestTransactionFee estimates transaction fee, returns next round off fee (if received float from miner)
 	SuggestTransactionFee(TransactionVelocity) (uint64, error)
 
+	// AdjustTransactionFee adjusts transaction fee based on preset fee with the suggested fee from the miner
+	AdjustTransactionFee(TransactionVelocity) error
+
 	//RegisterMultiSig registers a group wallet and subwallets with MultisigSC
 	RegisterMultiSig(walletstr, mswallet string) error
 
@@ -328,6 +331,18 @@ func (t *Transaction) SuggestTransactionFee(velocityFactor TransactionVelocity) 
 	}
 
 	return uint64(math.Ceil((cumCost * velocityFactor) / float64(costCnt))), nil
+}
+
+func (t *Transaction) AdjustTransactionFee(velocity TransactionVelocity) error {
+	fee, err := t.SuggestTransactionFee(velocity)
+	if err != nil {
+		return err
+	}
+
+	if fee > t.txn.TransactionFee {
+		t.txn.TransactionFee = fee
+	}
+	return nil
 }
 
 func (t *Transaction) Send(toClientID string, val uint64, desc string) error {
