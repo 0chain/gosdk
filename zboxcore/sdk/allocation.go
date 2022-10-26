@@ -657,7 +657,12 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string)
 	listReq.ctx = a.ctx
 	listReq.remotefilepathhash = lookupHash
 	listReq.authToken = at
-	ref := listReq.GetListFromBlobbers()
+	ref, err := listReq.GetListFromBlobbers()
+
+	if err != nil {
+		return nil, err
+	}
+
 	if ref != nil {
 		return ref, nil
 	}
@@ -685,7 +690,11 @@ func (a *Allocation) ListDir(path string) (*ListResult, error) {
 	listReq.consensusThresh = a.consensusThreshold
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
-	ref := listReq.GetListFromBlobbers()
+	ref, err := listReq.GetListFromBlobbers()
+	if err != nil {
+		return nil, err
+	}
+
 	if ref != nil {
 		return ref, nil
 	}
