@@ -47,7 +47,6 @@ jobs:
       - name: Build iOS
         run: |
           make build-ios
-          make build-iossimulator
 
       - name: Compress
         run: |
@@ -79,16 +78,6 @@ jobs:
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: zcncore-ios.tar.gz
-          tag: ${{ steps.setup_build.outputs.TAG }}
-          overwrite: true
-          file_glob: true
-
-      - name: Upload zcncore-iossimulator to release
-        if:  steps.setup_build.outputs.RELEASE == 'true'
-        uses: svenstaro/upload-release-action@v2
-        with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: zcncore-iossimulator.tar.gz
           tag: ${{ steps.setup_build.outputs.TAG }}
           overwrite: true
           file_glob: true
