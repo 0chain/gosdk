@@ -6,7 +6,7 @@ ANDROIDMOBILESDKDIR := $(OUTDIR)/androidsdk
 IOSBINNAME 		:= zcncore.xcframework
 ANDROIDBINNAME	:= zcncore.aar
 
-PKG_EXPORTS := $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common $(GOSDK_PATH)/mobilesdk/sdk $(GOSDK_PATH)/mobilesdk/zbox $(GOSDK_PATH)/mobilesdk/zcncoremobile
+PKG_EXPORTS := $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common $(GOSDK_PATH)/mobilesdk/sdk $(GOSDK_PATH)/mobilesdk/zbox
 
 .PHONY: setup-gomobile build-iossimulator build-ios
 
