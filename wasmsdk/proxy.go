@@ -137,6 +137,7 @@ func main() {
 				"hideLogs":              hideLogs,
 				"showLogs":              showLogs,
 				"getUSDRate":            getUSDRate,
+				"isWalletID":            isWalletID,
 
 				//blobber
 				"delete":         Delete,
