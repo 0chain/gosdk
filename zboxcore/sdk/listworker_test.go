@@ -293,7 +293,7 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 					Baseurl: tt.name + mockBlobberUrl + strconv.Itoa(i),
 				})
 			}
-			got := req.GetListFromBlobbers()
+			got, _ := req.GetListFromBlobbers()
 			expectedResult := &ListResult{
 				Type: mockType,
 				Size: -1,
