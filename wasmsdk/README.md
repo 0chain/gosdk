@@ -42,6 +42,15 @@ get USD rate by token symbol(eg zcn, eth)
 **Output**:
   > float64
 
+### zcn.sdk.isWalletID
+valid wallet id
+
+**Input**:
+  > clientID string
+
+**Output**:
+  > bool
+
 ### zcn.jsProxy.setWallet 
 set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWallet` to set wallet on go.
 
