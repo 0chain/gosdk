@@ -14,12 +14,9 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/core/version"
-	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
 type Provider int
@@ -39,27 +36,6 @@ const (
 	Success
 	ChargeableError
 )
-
-type ChainConfig struct {
-	ChainID                 string   `json:"chain_id,omitempty"`
-	BlockWorker             string   `json:"block_worker"`
-	Miners                  []string `json:"miners"`
-	Sharders                []string `json:"sharders"`
-	SignatureScheme         string   `json:"signature_scheme"`
-	MinSubmit               int      `json:"min_submit"`
-	MinConfirmation         int      `json:"min_confirmation"`
-	ConfirmationChainLength int      `json:"confirmation_chain_length"`
-	EthNode                 string   `json:"eth_node"`
-}
-
-type localConfig struct {
-	chain         ChainConfig
-	wallet        zcncrypto.Wallet
-	authUrl       string
-	isConfigured  bool
-	isValidWallet bool
-	isSplitWallet bool
-}
 
 type Miner struct {
 	ID         string      `json:"id"`
@@ -1309,47 +1285,6 @@ func (t *Transaction) UpdateValidatorSettings(v *Validator, fee uint64) (err err
 	return
 }
 
-// InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
-func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
-	if signscheme != "ed25519" && signscheme != "bls0chain" {
-		return errors.New("", "invalid/unsupported signature scheme")
-	}
-	_config.chain.BlockWorker = blockWorker
-	_config.chain.SignatureScheme = signscheme
-
-	err := UpdateNetworkDetails()
-	if err != nil {
-		fmt.Println("UpdateNetworkDetails:", err)
-		return err
-	}
-
-	go updateNetworkDetailsWorker(context.Background())
-
-	for _, conf := range configs {
-		err := conf(&_config.chain)
-		if err != nil {
-			return errors.Wrap(err, "invalid/unsupported options.")
-		}
-	}
-	assertConfig()
-	_config.isConfigured = true
-	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (InitZCNSDK)")
-
-	cfg := &conf.Config{
-		BlockWorker:             _config.chain.BlockWorker,
-		MinSubmit:               _config.chain.MinSubmit,
-		MinConfirmation:         _config.chain.MinConfirmation,
-		ConfirmationChainLength: _config.chain.ConfirmationChainLength,
-		SignatureScheme:         _config.chain.SignatureScheme,
-		ChainID:                 _config.chain.ChainID,
-		EthereumNode:            _config.chain.EthNode,
-	}
-
-	conf.InitClientConfig(cfg)
-
-	return nil
-}
-
 type VestingClientList struct {
 	Pools []common.Key `json:"pools"`
 }
@@ -1361,7 +1296,7 @@ func GetVestingClientList(clientID string, cb GetInfoCallback) (err error) {
 	if clientID == "" {
 		clientID = _config.wallet.ClientID // if not blank
 	}
-	go getInfoFromSharders(WithParams(GET_VESTING_CLIENT_POOLS, Params{
+	go GetInfoFromSharders(WithParams(GET_VESTING_CLIENT_POOLS, Params{
 		"client_id": clientID,
 	}), 0, cb)
 	return
@@ -1390,7 +1325,7 @@ func GetVestingPoolInfo(poolID string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	getInfoFromSharders(WithParams(GET_VESTING_POOL_INFO, Params{
+	GetInfoFromSharders(WithParams(GET_VESTING_POOL_INFO, Params{
 		"pool_id": poolID,
 	}), 0, cb)
 	return
@@ -1400,7 +1335,7 @@ func GetVestingSCConfig(cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	go getInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
+	go GetInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
 	return
 }
 
@@ -1410,7 +1345,7 @@ func GetFaucetSCConfig(cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	go getInfoFromSharders(GET_FAUCETSC_CONFIG, 0, cb)
+	go GetInfoFromSharders(GET_FAUCETSC_CONFIG, 0, cb)
 	return
 }
 
