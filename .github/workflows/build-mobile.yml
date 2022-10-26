@@ -41,6 +41,9 @@ jobs:
       - name: Setup GoMobile
         run:  make setup-gomobile
 
+      - name: Clean build
+        run: make cleanall-gomobile
+
       - name: Build iOS
         run: |
           make build-ios
@@ -141,6 +144,8 @@ jobs:
       - name: Setup GoMobile
         run:  make setup-gomobile
 
+      - name: Clean build
+        run: make cleanall-gomobile
 
       - name: Build Android
         run: make build-android
