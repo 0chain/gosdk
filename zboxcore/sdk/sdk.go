@@ -24,7 +24,6 @@ import (
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"github.com/0chain/gosdk/zcncore"
 )
 
 const STORAGE_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
@@ -1297,7 +1296,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 
 	if fee == 0 {
 		// adjust zero fees
-		if txn.TransactionFee, err = zcncore.SuggestTransactionFeeFromMiners(txn); err != nil {
+		if txn.TransactionFee, err = txn.SuggestTransactionFeeFromMiners(blockchain.GetMiners(), 2); err != nil {
 			return
 		}
 	}

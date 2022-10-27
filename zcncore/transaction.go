@@ -12,8 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"go.uber.org/zap"
-
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/common"
@@ -279,7 +277,9 @@ func (t *Transaction) SetTransactionFee(txnFee uint64) error {
 }
 
 func (t *Transaction) AdjustTransactionFee(velocity TransactionVelocity) error {
-	fee, err := SuggestTransactionFeeFromMiners(t.txn)
+	const numMinersToCheck = 2
+
+	fee, err := t.txn.SuggestTransactionFeeFromMiners(_config.chain.Miners, numMinersToCheck)
 	if err != nil {
 		return err
 	}
@@ -1395,58 +1395,4 @@ func (t *Transaction) ZCNSCDeleteAuthorizer(ip *DeleteAuthorizerPayload) (err er
 	}
 	go t.setNonceAndSubmit()
 	return
-}
-
-// SuggestTransactionFeeFromMiners estimates transaction fee, returns next round off fee (if received float from miner)
-func SuggestTransactionFeeFromMiners(t *transaction.Transaction) (uint64, error) {
-	// average out random miners result (prevent trust from rogue miner)
-	const numMinersToCheck = 2
-
-	result := make(chan *util.PostResponse, numMinersToCheck)
-	defer close(result)
-	randomMiners := util.GetRandom(_config.chain.Miners, numMinersToCheck)
-
-	for _, miner := range randomMiners {
-		go func(minerurl string) {
-			url := minerurl + ESTIMATE_TRANSACTION_COST
-			req, err := util.NewHTTPPostRequest(url, t)
-			if err != nil {
-				logging.Error(minerurl, " failed to make request. ", err.Error())
-				return
-			}
-			res, err := req.Post()
-			if err != nil {
-				logging.Error(minerurl, " estimate transaction cost error. ", err.Error())
-			}
-			result <- res
-		}(miner)
-	}
-
-	cumCost, costCnt := 0.0, 0
-
-	for range randomMiners {
-		rsp := <-result
-		logging.Debug(rsp.Url, "Status: ", rsp.Status)
-		if rsp.StatusCode == http.StatusOK {
-
-			rspfee := struct {
-				Fee float64 `json:"fee"`
-			}{}
-
-			if err := json.Unmarshal([]byte(rsp.Body), &rspfee); err != nil {
-				logging.Error("failed to unmarshal suggested fee: ", zap.Error(err), zap.String("url", rsp.Url))
-			}
-
-			cumCost += rspfee.Fee
-			costCnt += 1
-		} else {
-			logging.Error(rsp.Body)
-		}
-	}
-
-	if costCnt == 0 {
-		return 0, errors.New("", "failed to calculate suggested fee, failed to fetch data from miners")
-	}
-
-	return uint64(math.Ceil(cumCost / float64(costCnt))), nil
 }
