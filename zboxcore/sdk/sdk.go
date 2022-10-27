@@ -24,6 +24,7 @@ import (
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/0chain/gosdk/zcncore"
 )
 
 const STORAGE_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
@@ -1269,6 +1270,8 @@ func smartContractTxn(sn transaction.SmartContractTxnData) (
 func smartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
+	// Fee is unknown, passing zero value - it will be autofilled in this case
+	// based on chain history.
 	return smartContractTxnValueFee(sn, value, 0)
 }
 
@@ -1291,6 +1294,14 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	txn.ToClientID = STORAGE_SCADDRESS
 	txn.Value = value
 	txn.TransactionFee = fee
+
+	if fee == 0 {
+		// adjust zero fees
+		if txn.TransactionFee, err = zcncore.SuggestTransactionFeeFromMiners(txn); err != nil {
+			return
+		}
+	}
+
 	txn.TransactionType = transaction.TxnTypeSmartContract
 	if txn.TransactionNonce == 0 {
 		txn.TransactionNonce = transaction.Cache.GetNextNonce(txn.ClientID)
