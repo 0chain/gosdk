@@ -4,6 +4,7 @@
 package main
 
 import (
+	"encoding/hex"
 	"io"
 	"os"
 
@@ -96,4 +97,24 @@ func hideLogs() {
 	sdkLogger.SetLogFile(io.Discard, false)
 
 	logEnabled = false
+}
+
+func isWalletID(clientID string) bool {
+	if clientID == "" {
+		return false
+	}
+
+	if !isHash(clientID) {
+		return false
+	}
+
+	return true
+
+}
+
+const HASH_LENGTH = 32
+
+func isHash(str string) bool {
+	bytes, err := hex.DecodeString(str)
+	return err == nil && len(bytes) == HASH_LENGTH
 }
