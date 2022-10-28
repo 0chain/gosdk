@@ -335,6 +335,20 @@ func CreateWallet(statusCb WalletCallback) error {
 	return nil
 }
 
+// CreateWalletOffline creates the wallet for the config signature scheme.
+func CreateWalletOffline() (string, error) {
+	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	wallet, err := sigScheme.GenerateKeys()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to generate keys")
+	}
+	w, err := wallet.Marshal()
+	if err != nil {
+		return "", errors.Wrap(err, "wallet encoding failed")
+	}
+	return w, nil
+}
+
 // registerToMiners can be used to register the wallet.
 func registerToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 	result := make(chan *util.PostResponse)
