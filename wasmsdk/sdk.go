@@ -66,15 +66,6 @@ func SetWallet(clientID, publicKey, privateKey string) {
 	zcncore.SetWallet(*w, false)
 }
 
-func getPublicEncryptionKey(mnemonic string) (string, error) {
-	encScheme := encryption.NewEncryptionScheme()
-	_, err := encScheme.Initialize(mnemonic)
-	if err != nil {
-		return "", err
-	}
-	return encScheme.GetPublicKey()
-}
-
 var sdkLogger *logger.Logger
 var zcnLogger *logger.Logger
 var logEnabled = false
