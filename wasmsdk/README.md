@@ -79,8 +79,8 @@ set 0box host for creating free allocation.
 **Output**:
 > N/A
 
-### zcn.sdk.getEncryptedPublicKey
-get encrypted public key by mnemonic
+### zcn.sdk.getPublicEncryptionKey
+get public encryption key by mnemonic
 
 **Input**:
 > mnemonic string

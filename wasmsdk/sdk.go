@@ -66,7 +66,7 @@ func SetWallet(clientID, publicKey, privateKey string) {
 	zcncore.SetWallet(*w, false)
 }
 
-func GetEncryptedPublicKey(mnemonic string) (string, error) {
+func getPublicEncryptionKey(mnemonic string) (string, error) {
 	encScheme := encryption.NewEncryptionScheme()
 	_, err := encScheme.Initialize(mnemonic)
 	if err != nil {
