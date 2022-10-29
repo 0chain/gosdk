@@ -335,7 +335,8 @@ func (t *Transaction) submitTxn() {
 	var tSuccessRsp string
 	var tFailureRsp string
 	randomMiners := util.GetRandom(_config.chain.Miners, getMinMinersSubmit())
-	for _, miner := range randomMiners {
+	allMiners := _config.chain.Miners
+	for _, miner := range allMiners {
 		go func(minerurl string) {
 			url := minerurl + PUT_TRANSACTION
 			logging.Info("Submitting ", txnTypeString(t.txn.TransactionType), " transaction to ", minerurl, " with JSON ", string(t.txn.DebugJSON()))
