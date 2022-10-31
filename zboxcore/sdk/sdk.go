@@ -76,13 +76,14 @@ func GetLogger() *logger.Logger {
 	return &l.Logger
 }
 
-func InitStorageSDK(walletJSON string, blockWorker, chainID, signatureScheme string, preferredBlobbers []string, nonce int64) error {
+func InitStorageSDK(walletJSON string, blockWorker, chainID, signatureScheme string, preferredBlobbers []string, nonce int64, fee uint64) error {
 
 	err := client.PopulateClient(walletJSON, signatureScheme)
 	if err != nil {
 		return err
 	}
 	client.SetClientNonce(nonce)
+	client.SetTxFee(fee)
 
 	blockchain.SetChainID(chainID)
 	blockchain.SetPreferredBlobbers(preferredBlobbers)
@@ -1269,9 +1270,8 @@ func smartContractTxn(sn transaction.SmartContractTxnData) (
 func smartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
-	// Fee is unknown, passing zero value - it will be autofilled in this case
-	// based on chain history.
-	return smartContractTxnValueFee(sn, value, 0)
+	// Fee is set during sdk initialization.
+	return smartContractTxnValueFee(sn, value, client.TxFee())
 }
 
 func smartContractTxnValueFee(sn transaction.SmartContractTxnData,

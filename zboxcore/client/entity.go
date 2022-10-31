@@ -12,6 +12,7 @@ type SignFunc func(hash string) (string, error)
 type Client struct {
 	*zcncrypto.Wallet
 	SignatureScheme string
+	providedFee     uint64
 }
 
 var (
@@ -43,6 +44,14 @@ func PopulateClient(clientjson string, signatureScheme string) error {
 
 func SetClientNonce(nonce int64) {
 	client.Nonce = nonce
+}
+
+func SetTxFee(fee uint64) {
+	client.providedFee = fee
+}
+
+func TxFee() uint64 {
+	return client.providedFee
 }
 
 // PopulateClients This is a workaround for blobber tests that requires multiple clients to test authticket functionality
