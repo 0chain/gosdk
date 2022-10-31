@@ -116,8 +116,6 @@ const (
 var defaultLogLevel = logger.DEBUG
 var logging logger.Logger
 
-const TOKEN_UNIT int64 = 1e10
-
 const (
 	OpGetTokenLockConfig int = iota
 	OpGetLockedTokens
@@ -675,7 +673,7 @@ func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
 
 // ConvertToToken converts the value to ZCN tokens
 func ConvertToToken(value int64) float64 {
-	return float64(value) / float64(TOKEN_UNIT)
+	return float64(value) / float64(common.TokenUnit)
 }
 
 func ConvertTokenToUSD(token float64) (float64, error) {

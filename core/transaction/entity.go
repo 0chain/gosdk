@@ -392,7 +392,7 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 }
 
 // SuggestTransactionFeeFromMiners estimates transaction fee, returns next round off fee (if received float from miner)
-func (t *Transaction) SuggestTransactionFeeFromMiners(miners []string, numMinersToCheck int) (uint64, error) {
+func (t *Transaction) SuggestTransactionFeeFromMiners(miners []string, numMinersToCheck int) (float64, error) {
 	// average out random miners result (prevent trust from rogue miners
 	randomMiners := util.GetRandom(miners, numMinersToCheck)
 
@@ -441,5 +441,5 @@ func (t *Transaction) SuggestTransactionFeeFromMiners(miners []string, numMiners
 		return 0, errors.New("", "failed to calculate suggested fee, failed to fetch data from miners")
 	}
 
-	return uint64(math.Ceil(cumCost / float64(costCnt))), nil
+	return cumCost / float64(costCnt), nil
 }

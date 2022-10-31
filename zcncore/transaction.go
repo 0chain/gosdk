@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math"
 	"net/http"
 	"sync"
 	"time"
@@ -284,8 +283,9 @@ func (t *Transaction) AdjustTransactionFee(velocity TransactionVelocity) error {
 		return err
 	}
 
-	if fee > t.txn.TransactionFee {
-		return t.SetTransactionFee(uint64(math.Ceil(float64(fee) * velocity)))
+	newFee := ConvertToValue(fee * velocity)
+	if newFee > t.txn.TransactionFee {
+		return t.SetTransactionFee(newFee)
 	}
 	return nil
 }
@@ -981,7 +981,7 @@ func (t *Transaction) Verify() error {
 
 // ConvertToValue converts ZCN tokens to value
 func ConvertToValue(token float64) uint64 {
-	return uint64(token * float64(TOKEN_UNIT))
+	return uint64(token * common.TokenUnit)
 }
 
 func GetLatestFinalized(ctx context.Context, numSharders int) (b *block.Header, err error) {

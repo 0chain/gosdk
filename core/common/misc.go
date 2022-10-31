@@ -35,8 +35,8 @@ func (s Size) String() string {
 
 /* Balance */
 
-// minimum token unit (sas)
-const tokenUnit = 1e10
+// TokenUnit represents the minimum token unit (sas)
+const TokenUnit = 1e10
 
 // reParseToken is a regexp to parse string representation of token
 var reParseToken = regexp.MustCompile(`^((?:\d*\.)?\d+)\s+(SAS|sas|uZCN|uzcn|mZCN|mzcn|ZCN|zcn)$`)
@@ -45,7 +45,7 @@ var reParseToken = regexp.MustCompile(`^((?:\d*\.)?\d+)\s+(SAS|sas|uZCN|uzcn|mZC
 type Balance int64
 
 func (b Balance) ToToken() float64 {
-	return float64(b) / tokenUnit
+	return float64(b) / TokenUnit
 }
 
 // String implements fmt.Stringer interface.
@@ -82,7 +82,7 @@ func (b Balance) AutoFormat() string {
 
 // ToBalance converts ZCN tokens to Balance.
 func ToBalance(token float64) Balance {
-	return Balance(token * tokenUnit)
+	return Balance(token * TokenUnit)
 }
 
 func FormatBalance(b Balance, unit BalanceUnit) string {
