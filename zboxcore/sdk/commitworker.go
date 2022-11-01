@@ -152,13 +152,14 @@ func (commitreq *CommitRequest) processCommit() {
 		return
 	}
 
-	if err := lR.LatestWM.VerifySignature(client.GetClientPublicKey()); err != nil {
-		e := errors.New("signature_verification_failed", err.Error())
-		commitreq.result = ErrorCommitResult(e.Error())
-		return
-	}
-
 	if lR.LatestWM != nil {
+		err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
+		if err != nil {
+			e := errors.New("signature_verification_failed", err.Error())
+			commitreq.result = ErrorCommitResult(e.Error())
+			return
+		}
+
 		rootRef.CalculateHash()
 		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
