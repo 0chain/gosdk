@@ -146,51 +146,42 @@ func (commitreq *CommitRequest) processCommit() {
 		return
 	}
 	rootRef, err := lR.GetDirTree(commitreq.allocationID)
-	if lR.LatestWM != nil {
-		//Can not verify signature due to collaborator flow
-		// //TODO: Verify the writemarker
-		// err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
-		// if err != nil {
-		// 	commitreq.result = ErrorCommitResult(err.Error())
-		// 	commitreq.wg.Done()
-		// 	return
-		// }
+	if err != nil {
+		commitreq.result = ErrorCommitResult(err.Error())
+		commitreq.wg.Done()
+		return
+	}
 
+	if err := lR.LatestWM.VerifySignature(client.GetClientPublicKey()); err != nil {
+		e := errors.New("signature_verification_failed", err.Error())
+		commitreq.result = ErrorCommitResult(e.Error())
+		return
+	}
+
+	if lR.LatestWM != nil {
 		rootRef.CalculateHash()
 		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
-			// Removing this check for testing purpose as per the convo with Saswata
 			l.Logger.Info("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
-			// err = commitreq.calculateHashRequest(ctx, paths)
-			// if err != nil {
-			// 	commitreq.result = ErrorCommitResult("Failed to call blobber to recalculate the hash. URL: " + commitreq.blobber.Baseurl + ", Err : " + err.Error())
-			// 	commitreq.wg.Done()
-			// 	return
-			// }
-			// Logger.Info("Recalculate hash call to blobber successfull")
-			// commitreq.result = ErrorCommitResult("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
-			// commitreq.wg.Done()
-			// return
+			errMsg := fmt.Sprintf(
+				"calculated allocation root mismatch from blobber %s. Expected: %s, Got: %s",
+				commitreq.blobber.Baseurl, prevAllocationRoot, lR.LatestWM.AllocationRoot)
+			commitreq.result = ErrorCommitResult(errMsg)
+			return
 		}
 	}
-	if err != nil {
-		commitreq.result = ErrorCommitResult(err.Error())
-		commitreq.wg.Done()
-		return
-	}
-	size := int64(0)
+
+	var size int64
 	for _, change := range commitreq.changes {
 		err = change.ProcessChange(rootRef)
 		if err != nil {
-			break
+			commitreq.result = ErrorCommitResult(err.Error())
+			commitreq.wg.Done()
+			return
 		}
 		size += change.GetSize()
 	}
-	if err != nil {
-		commitreq.result = ErrorCommitResult(err.Error())
-		commitreq.wg.Done()
-		return
-	}
+
 	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
