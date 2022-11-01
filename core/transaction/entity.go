@@ -9,8 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-
-	"go.uber.org/zap"
+	"sync/atomic"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
@@ -399,27 +398,41 @@ func (t *Transaction) SuggestTransactionFeeFromMiners(miners []string, numMiners
 	result := make(chan *util.PostResponse, len(randomMiners))
 	defer close(result)
 
+	wg := &sync.WaitGroup{}
+	wg.Add(len(randomMiners))
+
+	counter := int32(0)
+
 	for _, miner := range randomMiners {
-		go func(minerurl string) {
-			url := minerurl + ESTIMATE_TRANSACTION_COST
+		go func(minerUrl string) {
+			defer wg.Done()
+
+			url := minerUrl + ESTIMATE_TRANSACTION_COST
 			req, err := util.NewHTTPPostRequest(url, t)
 			if err != nil {
-				zap.S().Error(minerurl, " failed to make request. ", err.Error())
+				Logger.Error(minerUrl, " failed to make request. ", err.Error())
 				return
 			}
 			res, err := req.Post()
 			if err != nil {
-				zap.S().Error(minerurl, " estimate transaction cost error. ", err.Error())
+				Logger.Error(minerUrl, " estimate transaction cost error. ", err.Error())
+				return
 			}
+
+			atomic.AddInt32(&counter, 1)
 			result <- res
 		}(miner)
 	}
 
-	cumCost, costCnt := 0.0, 0
+	// wait for requests to complete
+	wg.Wait()
 
-	for range randomMiners {
+	cumulativeCost := 0.0
+
+	for r := 0; r < int(counter); r++ {
 		rsp := <-result
-		zap.S().Debug(rsp.Url, "Status: ", rsp.Status)
+		Logger.Debug(rsp.Url, "Status: ", rsp.Status)
+
 		if rsp.StatusCode == http.StatusOK {
 
 			rspfee := struct {
@@ -427,19 +440,20 @@ func (t *Transaction) SuggestTransactionFeeFromMiners(miners []string, numMiners
 			}{}
 
 			if err := json.Unmarshal([]byte(rsp.Body), &rspfee); err != nil {
-				zap.S().Error("failed to unmarshal suggested fee: ", zap.Error(err), zap.String("url", rsp.Url))
+				Logger.Error("failed to unmarshal suggested fee: ", err, "url: ", rsp.Url)
 			}
 
-			cumCost += rspfee.Fee
-			costCnt += 1
+			cumulativeCost += rspfee.Fee
 		} else {
-			zap.S().Error(rsp.Body)
+			Logger.Error(rsp.Body)
+			// decrease one failed count, thought to be a successful request
+			counter--
 		}
 	}
 
-	if costCnt == 0 {
+	if counter == 0 {
 		return 0, errors.New("", "failed to calculate suggested fee, failed to fetch data from miners")
 	}
 
-	return cumCost / float64(costCnt), nil
+	return cumulativeCost / float64(counter), nil
 }
