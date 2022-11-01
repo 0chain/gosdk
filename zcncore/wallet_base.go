@@ -21,6 +21,7 @@ import (
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
@@ -262,16 +263,17 @@ func SetLogFile(logFile string, verbose bool) {
 // Init inializes the SDK with miner, sharder and signature scheme provided in
 // configuration provided in JSON format
 // It is used for 0proxy, 0box, 0explorer, andorid, ios : walletJSON is ChainConfig
-//	 {
-//      "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
-//		"signature_scheme" : "bls0chain",
-//		"block_worker" : "http://localhost/dns",
-// 		"min_submit" : 50,
-//		"min_confirmation" : 50,
-//		"confirmation_chain_length" : 3,
-//		"num_keys" : 1,
-//		"eth_node" : "https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx"
-//	 }
+//
+//		 {
+//	     "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
+//			"signature_scheme" : "bls0chain",
+//			"block_worker" : "http://localhost/dns",
+//			"min_submit" : 50,
+//			"min_confirmation" : 50,
+//			"confirmation_chain_length" : 3,
+//			"num_keys" : 1,
+//			"eth_node" : "https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx"
+//		 }
 func Init(chainConfigJSON string) error {
 	err := json.Unmarshal([]byte(chainConfigJSON), &_config.chain)
 	if err == nil {
@@ -331,6 +333,20 @@ func CreateWallet(statusCb WalletCallback) error {
 		}
 	}()
 	return nil
+}
+
+// CreateWalletOffline creates the wallet for the config signature scheme.
+func CreateWalletOffline() (string, error) {
+	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	wallet, err := sigScheme.GenerateKeys()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to generate keys")
+	}
+	w, err := wallet.Marshal()
+	if err != nil {
+		return "", errors.Wrap(err, "wallet encoding failed")
+	}
+	return w, nil
 }
 
 // registerToMiners can be used to register the wallet.
@@ -696,7 +712,7 @@ func getTokenUSDRate() (float64, error) {
 	return tokenrate.GetUSD(context.TODO(), "zcn")
 }
 
-//getWallet get a wallet object from a wallet string
+// getWallet get a wallet object from a wallet string
 func getWallet(walletStr string) (*zcncrypto.Wallet, error) {
 	var w zcncrypto.Wallet
 	err := json.Unmarshal([]byte(walletStr), &w)
@@ -708,7 +724,7 @@ func getWallet(walletStr string) (*zcncrypto.Wallet, error) {
 	return &w, nil
 }
 
-//GetWalletClientID -- given a walletstr return ClientID
+// GetWalletClientID -- given a walletstr return ClientID
 func GetWalletClientID(walletStr string) (string, error) {
 	w, err := getWallet(walletStr)
 	if err != nil {
@@ -1041,4 +1057,13 @@ func Decrypt(key, text string) (string, error) {
 		return "", err
 	}
 	return string(response), nil
+}
+
+func GetPublicEncryptionKey(mnemonic string) (string, error) {
+	encScheme := encryption.NewEncryptionScheme()
+	_, err := encScheme.Initialize(mnemonic)
+	if err != nil {
+		return "", err
+	}
+	return encScheme.GetPublicKey()
 }

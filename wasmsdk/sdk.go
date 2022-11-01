@@ -12,7 +12,6 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/wasmsdk/zbox"
 	"github.com/0chain/gosdk/zboxcore/client"
-	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
 )
@@ -64,15 +63,6 @@ func SetWallet(clientID, publicKey, privateKey string) {
 		},
 	}
 	zcncore.SetWallet(*w, false)
-}
-
-func GetEncryptedPublicKey(mnemonic string) (string, error) {
-	encScheme := encryption.NewEncryptionScheme()
-	_, err := encScheme.Initialize(mnemonic)
-	if err != nil {
-		return "", err
-	}
-	return encScheme.GetPublicKey()
 }
 
 var sdkLogger *logger.Logger
