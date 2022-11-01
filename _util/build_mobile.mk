@@ -3,6 +3,7 @@ GOSDK_PATH :=  $(0CHAIN_PATH)/gosdk
 OUTDIR := $(ROOT_DIR)/out
 IOSMOBILESDKDIR     := $(OUTDIR)/iossdk
 ANDROIDMOBILESDKDIR := $(OUTDIR)/androidsdk
+MACSDKDIR	:= $(OUTDIR)/macossdk
 IOSBINNAME 		:= zcncore.xcframework
 ANDROIDBINNAME	:= zcncore.aar
 
@@ -64,3 +65,8 @@ build-android:
 	@echo "Building Android framework. Please wait..."
 	@gomobile bind -target=android/arm64 -tags mobile -ldflags=-extldflags=-Wl,-soname,libgojni.so -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
 	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"
+
+build-macos: 
+	@echo "Building MAC framework. Please wait..."
+	@gomobile bind -v -ldflags="-s -w" -target=macos -tags mobile -o $(MACSDKDIR)/$(IOSBINNAME) $(PKG_EXPORTS)
+	@echo "   $(MACSDKDIR)/$(IOSBINNAME). - [OK]"
