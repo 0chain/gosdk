@@ -179,7 +179,7 @@ jobs:
           name: zcncore-android
           path: zcncore-android.tar.gz
 
-build-macos:
+  build-macos:
     name: Build-macos
     runs-on: macos-11
 
