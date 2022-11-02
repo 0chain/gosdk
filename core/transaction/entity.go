@@ -429,7 +429,7 @@ func (t *Transaction) SuggestTransactionFeeFromMiners(miners []string, numMiners
 
 	cumulativeCost := 0.0
 
-	for r := 0; r < int(counter); r++ {
+	for lc := counter; lc > 0; lc-- {
 		rsp := <-result
 		Logger.Debug(rsp.Url, "Status: ", rsp.Status)
 
