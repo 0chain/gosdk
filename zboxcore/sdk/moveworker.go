@@ -192,10 +192,6 @@ func (req *MoveRequest) ProcessMove() error {
 	for i := req.moveMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 
-		deleteChange := &allocationchange.DeleteFileChange{
-			ObjectTree: objectTreeRefs[pos],
-		}
-
 		moveChange := &allocationchange.MoveFileChange{
 			DestPath:   req.destPath,
 			ObjectTree: objectTreeRefs[pos],
@@ -211,7 +207,6 @@ func (req *MoveRequest) ProcessMove() error {
 			wg:           wg,
 		}
 		commitReq.changes = append(commitReq.changes, moveChange)
-		commitReq.changes = append(commitReq.changes, deleteChange)
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
 		c++
