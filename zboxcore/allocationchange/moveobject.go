@@ -124,5 +124,5 @@ func (n *MoveFileChange) GetAffectedPath() []string {
 }
 
 func (n *MoveFileChange) GetSize() int64 {
-	return n.ObjectTree.GetSize()
+	return 0
 }
