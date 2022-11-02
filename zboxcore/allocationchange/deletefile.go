@@ -53,11 +53,11 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	return errors.New("file_not_found", "File to delete not found in blobber")
 }
 
-func (n *DeleteFileChange) GetAffectedPath() string {
+func (n *DeleteFileChange) GetAffectedPath() []string {
 	if n.ObjectTree != nil {
-		return n.ObjectTree.GetPath()
+		return []string{n.ObjectTree.GetPath()}
 	}
-	return ""
+	return nil
 }
 
 func (n *DeleteFileChange) GetSize() int64 {

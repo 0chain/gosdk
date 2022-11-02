@@ -102,7 +102,7 @@ func (commitreq *CommitRequest) processCommit() {
 	l.Logger.Info("received a commit request")
 	paths := make([]string, 0)
 	for _, change := range commitreq.changes {
-		paths = append(paths, change.GetAffectedPath())
+		paths = append(paths, change.GetAffectedPath()...)
 	}
 	var req *http.Request
 	var lR ReferencePathResult

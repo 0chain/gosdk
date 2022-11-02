@@ -84,8 +84,8 @@ func (ch *MoveFileChange) processChildren(curRef *fileref.Ref) {
 	}
 }
 
-func (n *MoveFileChange) GetAffectedPath() string {
-	return n.DestPath
+func (n *MoveFileChange) GetAffectedPath() []string {
+	return []string{n.DestPath}
 }
 
 func (n *MoveFileChange) GetSize() int64 {
