@@ -281,7 +281,7 @@ func (s *StorageSDK) RedeemFreeStorage(ticket string) (string, error) {
 	}
 
 	if recipientPublicKey != client.GetClientPublicKey() {
-		return "", fmt.Errorf("invalid_public_key: free marker is not assigned to your wallet")
+		return "", fmt.Errorf("invalid_free_marker: free marker is not assigned to your wallet")
 	}
 
 	hash, _, err := sdk.CreateFreeAllocation(marker, lock)
@@ -314,9 +314,6 @@ func decodeTicket(ticket string) (string, string, uint64, error) {
 
 	lock := markerInput["free_tokens"]
 	markerStr, _ := json.Marshal(markerInput)
-
-	fmt.Println("free-allocation:", ticket, string(decoded))
-	fmt.Println("free-allocation.marker:", string(decodedMarker), client.GetClientPublicKey())
 
 	s, _ := strconv.ParseFloat(string(fmt.Sprintf("%v", lock)), 64)
 	return string(recipientPublicKey), string(markerStr), zcncore.ConvertTokenToSAS(s), nil
