@@ -289,7 +289,6 @@ func (s *StorageSDK) RedeemFreeStorage(ticket string) (string, error) {
 }
 
 func decodeTicket(ticket string) (string, string, uint64, error) {
-
 	decoded, err := base64.StdEncoding.DecodeString(ticket)
 	if err != nil {
 		return "", "", 0, err

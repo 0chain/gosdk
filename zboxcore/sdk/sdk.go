@@ -1049,11 +1049,11 @@ func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit 
 }
 
 func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
-	recipientPublicKey := client.GetClientPublicKey()
-
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
+
+	recipientPublicKey := client.GetClientPublicKey()
 
 	var input = map[string]interface{}{
 		"recipient_public_key": recipientPublicKey,
