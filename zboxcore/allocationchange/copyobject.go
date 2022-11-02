@@ -3,7 +3,7 @@ package allocationchange
 import (
 	"strings"
 
-	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
@@ -15,42 +15,36 @@ type CopyFileChange struct {
 }
 
 func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
-	tSubDirs := getSubDirs(ch.DestPath)
-	rootRef.HashToBeComputed = true
-	dirRef := rootRef
-	treelevel := 0
-	for true {
-		found := false
-		for _, child := range dirRef.Children {
-			if child.GetType() == fileref.DIRECTORY && treelevel < len(tSubDirs) {
-				if (child.(*fileref.Ref)).Name == tSubDirs[treelevel] {
-					dirRef = child.(*fileref.Ref)
-					found = true
-					break
-				}
-			}
-		}
-		if found {
-			treelevel++
-			continue
-		}
-		if len(tSubDirs) <= treelevel {
-			break
-		}
-		newRef := &fileref.Ref{}
-		newRef.Type = fileref.DIRECTORY
-		newRef.AllocationID = dirRef.AllocationID
-		newRef.Path = "/" + strings.Join(tSubDirs[:treelevel+1], "/")
-		newRef.Name = tSubDirs[treelevel]
-		newRef.HashToBeComputed = true
-		dirRef.AddChild(newRef)
-		dirRef = newRef
-		treelevel++
+
+	fields, err := common.GetPathFields(ch.DestPath)
+	if err != nil {
+		return err
 	}
 
-	if dirRef.GetPath() != ch.DestPath || dirRef.GetType() != fileref.DIRECTORY {
-		return errors.New("file_not_found", "Object to copy not found in blobber")
+	dirRef := rootRef
+
+	for i := 0; i < len(fields); i++ {
+		found := false
+		for _, child := range dirRef.Children {
+			if child.GetName() == fields[i] {
+				dirRef = child.(*fileref.Ref)
+				found = true
+				break
+			}
+		}
+		if !found {
+			newRef := &fileref.Ref{}
+			newRef.Type = fileref.DIRECTORY
+			newRef.AllocationID = dirRef.AllocationID
+			newRef.Path = "/" + strings.Join(fields[:i+1], "/")
+			newRef.Name = fields[i]
+			newRef.HashToBeComputed = true
+			dirRef.AddChild(newRef)
+			dirRef = newRef
+		}
 	}
+
+	rootRef.HashToBeComputed = true
 
 	var affectedRef *fileref.Ref
 	if ch.ObjectTree.GetType() == fileref.FILE {
@@ -61,8 +55,7 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
 
 	affectedRef.Path = zboxutil.Join(dirRef.GetPath(), affectedRef.Name)
 	ch.processChildren(affectedRef)
-
-	dirRef.AddChild(ch.ObjectTree)
+	dirRef.AddChild(affectedRef)
 
 	rootRef.CalculateHash()
 	return nil
