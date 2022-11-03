@@ -78,6 +78,22 @@ func (b *BridgeOwner) AddEthereumAuthorizer(ctx context.Context, address common.
 	return tran, err
 }
 
+// RemoveEthereumAuthorizer Adds authorizer to Ethereum bridge. Only contract deployer can call this method
+func (b *BridgeOwner) RemoveEthereumAuthorizer(ctx context.Context, address common.Address) (*types.Transaction, error) {
+	instance, transactOpts, err := b.prepareAuthorizers(ctx, "removeAuthorizers", address)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare bridge")
+	}
+
+	tran, err := instance.RemoveAuthorizers(transactOpts, address)
+	if err != nil {
+		msg := "failed to execute RemoveAuthorizers transaction to ClientID = %s with amount = %s"
+		return nil, errors.Wrapf(err, msg, b.ClientID(), address.String())
+	}
+
+	return tran, err
+}
+
 func (b *BridgeOwner) AddEthereumAuthorizers(configDir string) {
 	cfg := viper.New()
 	cfg.AddConfigPath(configDir)
