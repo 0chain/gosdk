@@ -5,6 +5,7 @@ import "encoding/json"
 // MintPayload Payload to submit to the ethereum bridge contract
 type MintPayload struct {
 	ZCNTxnID   string                 `json:"zcn_txn_id"`
+	ClientID   string                 `json:"client_id"`
 	Amount     int64                  `json:"amount"`
 	Nonce      int64                  `json:"nonce"`
 	Signatures []*AuthorizerSignature `json:"signatures"`

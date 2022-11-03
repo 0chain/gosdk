@@ -221,7 +221,7 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 	zcnTxd := DefaultClientIDEncoder(payload.ZCNTxnID)
 
 	// 3. Client ID parameter
-	clientID := DefaultClientIDEncoder(b.ClientID())
+	clientID := DefaultClientIDEncoder(payload.ClientID)
 
 	// 4. Nonce Parameter generated during burn operation
 	nonce := new(big.Int)
@@ -395,13 +395,13 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params 
 		return nil, nil, errors.Wrap(err, "failed to get ABI")
 	}
 
-	// Pack the method argument
+	//Pack the method argument
 	pack, err := abi.Pack(method, params...)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to pack arguments")
 	}
 
-	// Gas limits in units
+	//Gas limits in units
 	fromAddress := common.HexToAddress(b.EthereumAddress)
 
 	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
@@ -413,8 +413,8 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params 
 		return nil, nil, errors.Wrap(err, "failed to estimate gas")
 	}
 
-	// Update gas limits + 10%
-	gasLimitUnits = addPercents(300000, 10).Uint64()
+	//Update gas limits + 10%
+	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 
 	transactOpts := b.CreateSignedTransactionFromKeyStore(etherClient, gasLimitUnits)
 
