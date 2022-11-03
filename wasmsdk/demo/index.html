@@ -213,8 +213,8 @@
 
         const allocationId = getSelectedAllocation()
 
-        //allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool
-        const file = await goWasm.sdk.download(allocationId, path, '', '', false)
+        //allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int
+        const file = await goWasm.sdk.download(allocationId, path, '', '', false,10)
       
 
         const a = document.createElement('a')
@@ -234,7 +234,7 @@
       const file = files.find(it => it.path == getSelectedFile())
       if(file && file.mimetype.startsWith('image')){
         const allocationId = getSelectedAllocation()
-        const {url} = await goWasm.sdk.download(allocationId, file.path, '', '', false)
+        const {url} = await goWasm.sdk.download(allocationId, file.path, '', '', false, 10)
         get('viewer').setAttribute('src',url)
       }
     })
