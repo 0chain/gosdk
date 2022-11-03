@@ -15,6 +15,7 @@ import (
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/common"
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -89,6 +90,11 @@ func CreateChunkedUpload(
 
 	if allocationObj == nil {
 		return nil, thrown.Throw(constants.ErrInvalidParameter, "allocationObj")
+	}
+
+	err := ValidateRemoteFileName(fileMeta.RemoteName)
+	if err != nil {
+		return nil, err
 	}
 
 	opCode := OpUpload
@@ -179,7 +185,7 @@ func CreateChunkedUpload(
 	su.workdir = filepath.Join(workdir, ".zcn")
 
 	//create upload folder to save progress
-	err := sys.Files.MkdirAll(filepath.Join(su.workdir, "upload"), 0744)
+	err = sys.Files.MkdirAll(filepath.Join(su.workdir, "upload"), 0744)
 	if err != nil {
 		return nil, err
 	}
@@ -358,7 +364,7 @@ func (su *ChunkedUpload) createUploadProgress() UploadProgress {
 		ChunkIndex:   -1,
 		ChunkSize:    su.chunkSize,
 		UploadLength: 0,
-		Blobbers:     make([]*UploadBlobberStatus, su.allocationObj.DataShards+su.allocationObj.ParityShards),
+		Blobbers:     make([]*UploadBlobberStatus, common.MustAddInt(su.allocationObj.DataShards, su.allocationObj.ParityShards)),
 	}
 
 	for i := 0; i < len(progress.Blobbers); i++ {
@@ -632,13 +638,14 @@ func (su *ChunkedUpload) processCommit() error {
 	wg.Wait()
 
 	if !su.consensus.isConsensusOk() {
+		consensus := su.consensus.getConsensus()
 		err := thrown.New("consensus_not_met",
 			fmt.Sprintf("Upload commit failed. Required consensus atleast %d, got %d",
-				su.consensus.consensusThresh, su.consensus.consensus))
+				su.consensus.consensusThresh, consensus))
 
-		if su.consensus.getConsensus() != 0 {
+		if consensus != 0 {
 			logger.Logger.Info("Commit consensus failed, Deleting remote file....")
-			su.allocationObj.deleteFile(su.fileMeta.RemotePath, su.consensus.getConsensus(), su.consensus.getConsensus()) //nolint
+			su.allocationObj.deleteFile(su.fileMeta.RemotePath, consensus, consensus) //nolint
 		}
 		if su.statusCallback != nil {
 			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)

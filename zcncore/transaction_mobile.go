@@ -18,7 +18,6 @@ import (
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
 const (
@@ -48,8 +47,8 @@ type TransactionCommon interface {
 	CreateReadPool(fee string) error
 	ReadPoolLock(allocID string, blobberID string, duration int64, lock, fee string) error
 	ReadPoolUnlock(fee string) error
-	StakePoolLock(blobberID string, lock, fee string) error
-	StakePoolUnlock(blobberID string, fee string) error
+	StakePoolLock(providerId string, providerType int, lock string, fee string) error
+	StakePoolUnlock(providerId string, providerType int, fee string) error
 	UpdateBlobberSettings(blobber Blobber, fee string) error
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock, fee string) error
 	WritePoolLock(allocID string, lock, fee string) error
@@ -73,27 +72,6 @@ type TransactionCommon interface {
 	ZCNSCAddAuthorizer(AddAuthorizerPayload) error
 
 	GetVerifyConfirmationStatus() int
-}
-
-type chainConfig struct {
-	ChainID                 string   `json:"chain_id,omitempty"`
-	BlockWorker             string   `json:"block_worker"`
-	Miners                  []string `json:"miners"`
-	Sharders                []string `json:"sharders"`
-	SignatureScheme         string   `json:"signature_scheme"`
-	MinSubmit               int      `json:"min_submit"`
-	MinConfirmation         int      `json:"min_confirmation"`
-	ConfirmationChainLength int      `json:"confirmation_chain_length"`
-	EthNode                 string   `json:"eth_node"`
-}
-
-type localConfig struct {
-	chain         chainConfig
-	wallet        zcncrypto.Wallet
-	authUrl       string
-	isConfigured  bool
-	isValidWallet bool
-	isSplitWallet bool
 }
 
 // priceRange represents a price range allowed by user to filter blobbers.
@@ -643,7 +621,7 @@ func (t *Transaction) ReadPoolUnlock(fee string) error {
 }
 
 // StakePoolLock used to lock tokens in a stake pool of a blobber.
-func (t *Transaction) StakePoolLock(blobberID string, lock, fee string) error {
+func (t *Transaction) StakePoolLock(providerId string, providerType int, lock, fee string) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
@@ -655,11 +633,14 @@ func (t *Transaction) StakePoolLock(blobberID string, lock, fee string) error {
 	}
 
 	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
+		ProviderType int    `json:"provider_type,omitempty"`
+		ProviderID   string `json:"provider_id,omitempty"`
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_STAKE_POOL_LOCK, &spr, lv)
@@ -673,18 +654,21 @@ func (t *Transaction) StakePoolLock(blobberID string, lock, fee string) error {
 }
 
 // StakePoolUnlock by blobberID
-func (t *Transaction) StakePoolUnlock(blobberID string, fee string) error {
+func (t *Transaction) StakePoolUnlock(providerId string, providerType int, fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
 	}
 
 	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
+		ProviderType int    `json:"provider_type,omitempty"`
+		ProviderID   string `json:"provider_id,omitempty"`
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
 
 	err = t.createSmartContractTxn(StorageSmartContractAddress, transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
 	if err != nil {

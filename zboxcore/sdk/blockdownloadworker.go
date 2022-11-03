@@ -11,6 +11,7 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -84,7 +85,7 @@ func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest) {
 
 func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
 	var chunk []byte
-	chunks := make([][]byte, 0, len(buf)/lim+1)
+	chunks := make([][]byte, 0, common.MustAddInt(len(buf)/lim, 1))
 	for len(buf) >= lim {
 		chunk, buf = buf[:lim], buf[lim:]
 		chunks = append(chunks, chunk)
@@ -204,6 +205,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				if bytes.Contains(respBody, []byte(LockExists)) {
 					zlogger.Logger.Debug("Lock exists error.")
 					shouldRetry = true
+					sys.Sleep(time.Second * 1)
 					return errors.New(LockExists, string(respBody))
 				}
 

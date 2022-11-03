@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path"
 	"strconv"
 	"sync"
 	"time"
@@ -107,4 +108,16 @@ type ProcessResult struct {
 	BlobberIndex int
 	FileRef      fileref.RefEntity
 	Succeed      bool
+}
+
+var ErrFileNameTooLong = errors.New("invalid_parameter", "filename is longer than 100 characters")
+
+func ValidateRemoteFileName(remotePath string) error {
+	_, fileName := path.Split(remotePath)
+
+	if len(fileName) > 100 {
+		return ErrFileNameTooLong
+	}
+
+	return nil
 }
