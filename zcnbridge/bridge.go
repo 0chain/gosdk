@@ -221,7 +221,7 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 	zcnTxd := DefaultClientIDEncoder(payload.ZCNTxnID)
 
 	// 3. Client ID parameter
-	clientID := DefaultClientIDEncoder(payload.ClientID)
+	clientID := DefaultClientIDEncoder(b.EthereumAddress)
 
 	// 4. Nonce Parameter generated during burn operation
 	nonce := new(big.Int)
