@@ -38,10 +38,10 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
 			newRef.AllocationID = dirRef.AllocationID
 			newRef.Path = "/" + strings.Join(fields[:i+1], "/")
 			newRef.Name = fields[i]
-			newRef.HashToBeComputed = true
 			dirRef.AddChild(newRef)
 			dirRef = newRef
 		}
+		dirRef.HashToBeComputed = true
 	}
 
 	rootRef.HashToBeComputed = true
@@ -55,7 +55,7 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
 
 	affectedRef.Path = zboxutil.Join(dirRef.GetPath(), affectedRef.Name)
 	ch.processChildren(affectedRef)
-	dirRef.AddChild(affectedRef)
+	dirRef.AddChild(ch.ObjectTree)
 
 	rootRef.CalculateHash()
 	return nil

@@ -43,14 +43,14 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref) error {
 				Path:         filepath.Join("/", strings.Join(fields[:i+1], "/")),
 				Name:         fields[i],
 			}
-			newRef.HashToBeComputed = true
 			dirRef.AddChild(newRef)
 			dirRef = newRef
 		}
+		dirRef.HashToBeComputed = true
 	}
 
 	if dirRef.GetPath() != ch.DestPath || dirRef.GetType() != fileref.DIRECTORY {
-		return errors.New("file_not_found", "Object to copy not found in blobber")
+		return errors.New("file_not_found", "Object to m9ve not found in blobber")
 	}
 
 	var affectedRef *fileref.Ref
@@ -60,13 +60,13 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		affectedRef = ch.ObjectTree.(*fileref.Ref)
 	}
 
+	oldParentPath, oldFileName := filepath.Split(ch.ObjectTree.GetPath())
 	affectedRef.Path = zboxutil.Join(dirRef.GetPath(), affectedRef.Name)
 	ch.processChildren(affectedRef)
 
-	dirRef.AddChild(affectedRef)
+	dirRef.AddChild(ch.ObjectTree)
 
-	delParentPath, delFileName := filepath.Split(ch.ObjectTree.GetPath())
-	fields, err = common.GetPathFields(delParentPath)
+	fields, err = common.GetPathFields(oldParentPath)
 	if err != nil {
 		return err
 	}
@@ -77,6 +77,7 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		for _, child := range delRef.Children {
 			if child.GetName() == fields[i] {
 				delRef = child.(*fileref.Ref)
+				delRef.HashToBeComputed = true
 				found = true
 				break
 			}
@@ -89,7 +90,7 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref) error {
 
 	var removed bool
 	for i, child := range delRef.Children {
-		if child.GetName() == delFileName {
+		if child.GetName() == oldFileName {
 			delRef.RemoveChild(i)
 			removed = true
 			break
