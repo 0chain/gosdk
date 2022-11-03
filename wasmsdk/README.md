@@ -252,7 +252,7 @@ download blocks of a file
 upload file(s)
 
 **Input**:
-> allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt bool, isLiveUpload, isSyncUpload bool, isUpdate, isRepair bool
+> allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt bool, isUpdate, isRepair bool, numBlocks int
 
 **Output**:
 > {commandSuccess:bool, error:string}

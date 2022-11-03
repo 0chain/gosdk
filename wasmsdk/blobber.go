@@ -395,7 +395,7 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 }
 
 // Upload upload file
-func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, isLiveUpload, isSyncUpload bool, isUpdate, isRepair bool) (*FileCommandResponse, error) {
+func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, isUpdate, isRepair bool, numBlocks int) (*FileCommandResponse, error) {
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
 	}
@@ -415,12 +415,6 @@ func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 	wg.Add(1)
 	if strings.HasPrefix(remotePath, "/Encrypted") {
 		encrypt = true
-	}
-
-	if isLiveUpload {
-		return nil, errors.New("live upload is not supported yet")
-	} else if isSyncUpload {
-		return nil, errors.New("sync upload is not supported yet")
 	}
 
 	fileReader := bytes.NewReader(fileBytes)
@@ -450,11 +444,16 @@ func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 		RemotePath: remotePath,
 	}
 
+	if numBlocks < 1 {
+		numBlocks = 100
+	}
+
 	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair,
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
-		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}))
+		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
+		sdk.WithChunkNumber(numBlocks))
 	if err != nil {
 		return nil, err
 	}
