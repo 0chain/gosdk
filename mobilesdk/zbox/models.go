@@ -40,13 +40,3 @@ func (c *StatusCallbackWrapped) CommitMetaCompleted(request, response string, tx
 func (c *StatusCallbackWrapped) RepairCompleted(filesRepaired int) {
 	c.Callback.RepairCompleted(filesRepaired)
 }
-
-// WalletCallback needs to be implemented for wallet creation.
-type WalletCallback interface {
-	OnWalletCreateComplete(status int, wallet string, err string)
-}
-
-// GetBalanceCallback needs to be implemented by the caller of GetBalance() to get the status
-type GetBalanceCallback interface {
-	OnBalanceAvailable(status int, value int64, info string)
-}

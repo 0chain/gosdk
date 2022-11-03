@@ -42,6 +42,15 @@ get USD rate by token symbol(eg zcn, eth)
 **Output**:
   > float64
 
+### zcn.sdk.isWalletID
+valid wallet id
+
+**Input**:
+  > clientID string
+
+**Output**:
+  > bool
+
 ### zcn.jsProxy.setWallet 
 set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWallet` to set wallet on go.
 
@@ -70,8 +79,8 @@ set 0box host for creating free allocation.
 **Output**:
 > N/A
 
-### zcn.sdk.getEncryptedPublicKey
-get encrypted public key by mnemonic
+### zcn.sdk.getPublicEncryptionKey
+get public encryption key by mnemonic
 
 **Input**:
 > mnemonic string
