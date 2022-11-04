@@ -42,9 +42,7 @@ func (req *MoveRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode
 }
 
 func (req *MoveRequest) moveBlobberObject(
-	blobber *blockchain.StorageNode, blobberIdx int, wg *sync.WaitGroup) (refEntity fileref.RefEntity, err error) {
-
-	defer wg.Done()
+	blobber *blockchain.StorageNode, blobberIdx int) (refEntity fileref.RefEntity, err error) {
 
 	defer func() {
 		if err != nil {
@@ -155,7 +153,8 @@ func (req *MoveRequest) ProcessMove() error {
 		pos = uint64(i.TrailingZeros())
 		wg.Add(1)
 		go func(blobberIdx int) {
-			refEntity, err := req.moveBlobberObject(req.blobbers[blobberIdx], blobberIdx, wg)
+			defer wg.Done()
+			refEntity, err := req.moveBlobberObject(req.blobbers[blobberIdx], blobberIdx)
 			if err != nil {
 				l.Logger.Error(err.Error())
 				return
