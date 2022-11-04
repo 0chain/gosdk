@@ -79,8 +79,8 @@ set 0box host for creating free allocation.
 **Output**:
 > N/A
 
-### zcn.sdk.getEncryptedPublicKey
-get encrypted public key by mnemonic
+### zcn.sdk.getPublicEncryptionKey
+get public encryption key by mnemonic
 
 **Input**:
 > mnemonic string
@@ -214,7 +214,7 @@ generate an authtoken that provides authorization to the holder to the specified
 download your own or a shared file.
 
 **Input**:
-> allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool
+> allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int
 
 **Output**:
 >  {commandSuccess:bool, fileName:string,url:string, error:string}
@@ -252,7 +252,7 @@ download blocks of a file
 upload file(s)
 
 **Input**:
-> allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt bool, isLiveUpload, isSyncUpload bool, isUpdate, isRepair bool
+> allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt bool, isUpdate, isRepair bool, numBlocks int
 
 **Output**:
 > {commandSuccess:bool, error:string}

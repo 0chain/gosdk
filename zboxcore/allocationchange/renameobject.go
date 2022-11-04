@@ -81,11 +81,11 @@ func (ch *RenameFileChange) processChildren(curRef *fileref.Ref) {
 	}
 }
 
-func (n *RenameFileChange) GetAffectedPath() string {
+func (n *RenameFileChange) GetAffectedPath() []string {
 	if n.ObjectTree != nil {
-		return n.ObjectTree.GetPath()
+		return []string{n.ObjectTree.GetPath()}
 	}
-	return ""
+	return nil
 }
 
 func (n *RenameFileChange) GetSize() int64 {

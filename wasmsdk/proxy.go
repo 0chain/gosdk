@@ -130,14 +130,14 @@ func main() {
 		if !(sdk.IsNull() || sdk.IsUndefined()) {
 			jsbridge.BindAsyncFuncs(sdk, map[string]interface{}{
 				//sdk
-				"init":                  initSDKs,
-				"setWallet":             SetWallet,
-				"setZBoxHost":           setZBoxHost,
-				"getEncryptedPublicKey": GetEncryptedPublicKey,
-				"hideLogs":              hideLogs,
-				"showLogs":              showLogs,
-				"getUSDRate":            getUSDRate,
-				"isWalletID":            isWalletID,
+				"init":                   initSDKs,
+				"setWallet":              SetWallet,
+				"setZBoxHost":            setZBoxHost,
+				"getPublicEncryptionKey": zcncore.GetPublicEncryptionKey,
+				"hideLogs":               hideLogs,
+				"showLogs":               showLogs,
+				"getUSDRate":             getUSDRate,
+				"isWalletID":             isWalletID,
 
 				//blobber
 				"delete":         Delete,
@@ -145,8 +145,8 @@ func main() {
 				"copy":           Copy,
 				"move":           Move,
 				"share":          Share,
-				"download":       Download,
-				"upload":         Upload,
+				"download":       download,
+				"upload":         upload,
 				"listObjects":    listObjects,
 				"createDir":      createDir,
 				"downloadBlocks": downloadBlocks,

@@ -54,8 +54,8 @@ func (d *DirCreateChange) ProcessChange(rootRef *fileref.Ref) error {
 	return nil
 }
 
-func (d *DirCreateChange) GetAffectedPath() string {
-	return d.RemotePath
+func (d *DirCreateChange) GetAffectedPath() []string {
+	return []string{d.RemotePath}
 }
 
 func (d *DirCreateChange) GetSize() int64 {
