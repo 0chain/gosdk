@@ -25,7 +25,7 @@ func WithBlocks(start, end int64, blocksPerMarker int) DownloadOption {
 			do.blocksPerMarker = DefaultBlocksPerMarker
 		}
 
-		SetNumBlockDownloads(blocksPerMarker)
+		SetNumBlockDownloads(do.blocksPerMarker)
 	}
 }
 
