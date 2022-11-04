@@ -50,7 +50,7 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	}
 
 	if dirRef.GetPath() != ch.DestPath || dirRef.GetType() != fileref.DIRECTORY {
-		return errors.New("file_not_found", "Object to m9ve not found in blobber")
+		return errors.New("file_not_found", "Object to move not found in blobber")
 	}
 
 	var affectedRef *fileref.Ref
