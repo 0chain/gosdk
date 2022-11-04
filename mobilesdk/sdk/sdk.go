@@ -93,7 +93,7 @@ func (s *StorageSDK) CreateAllocation(name string, datashards, parityshards int,
 	if err != nil {
 		return nil, err
 	}
-	return &zbox.Allocation{ID: sdkAllocation.ID, DataShards: sdkAllocation.DataShards, ParityShards: sdkAllocation.ParityShards, Size: sdkAllocation.Size, Expiration: sdkAllocation.Expiration}, nil
+	return zbox.ToAllocation(sdkAllocation), nil
 }
 
 // CreateAllocationWithBlobbers - creating new allocation with list of blobbers
@@ -163,7 +163,7 @@ func (s *StorageSDK) GetAllocations() (string, error) {
 	}
 	result := make([]*zbox.Allocation, len(sdkAllocations))
 	for i, sdkAllocation := range sdkAllocations {
-		allocationObj := &zbox.Allocation{ID: sdkAllocation.ID, DataShards: sdkAllocation.DataShards, ParityShards: sdkAllocation.ParityShards, Size: sdkAllocation.Size, Expiration: sdkAllocation.Expiration}
+		allocationObj := zbox.ToAllocation(sdkAllocation)
 		result[i] = allocationObj
 	}
 	retBytes, err := json.Marshal(result)
@@ -179,7 +179,7 @@ func (s *StorageSDK) GetAllocationFromAuthTicket(authTicket string) (*zbox.Alloc
 	if err != nil {
 		return nil, err
 	}
-	return &zbox.Allocation{ID: sdkAllocation.ID, DataShards: sdkAllocation.DataShards, ParityShards: sdkAllocation.ParityShards, Size: sdkAllocation.Size, Expiration: sdkAllocation.Expiration}, nil
+	return zbox.ToAllocation(sdkAllocation), nil
 }
 
 // GetAllocationStats - get allocation stats by allocation ID
