@@ -45,6 +45,7 @@ const (
 	UPLOAD_ENDPOINT          = "/v1/file/upload/"
 	RENAME_ENDPOINT          = "/v1/file/rename/"
 	COPY_ENDPOINT            = "/v1/file/copy/"
+	MOVE_ENDPOINT            = "/v1/file/move/"
 	LIST_ENDPOINT            = "/v1/file/list/"
 	REFERENCE_ENDPOINT       = "/v1/file/referencepath/"
 	CONNECTION_ENDPOINT      = "/v1/connection/details/"
@@ -537,6 +538,24 @@ func NewRenameRequest(baseUrl, allocation string, body io.Reader) (*http.Request
 
 func NewCopyRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, COPY_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, u.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+func NewMoveRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
+	u, err := joinUrl(baseUrl, MOVE_ENDPOINT, allocation)
 	if err != nil {
 		return nil, err
 	}

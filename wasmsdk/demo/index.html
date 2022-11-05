@@ -113,7 +113,7 @@
       minSubmit: 50,
       confirmationChainLength: 3,
     }
-    const blockWorker = `https://demo.0chain.net/dns`
+    const blockWorker = `https://demo.devnet-0chain.net/dns`
     const config = [
       networkConfig.chainId,
       blockWorker,
@@ -197,12 +197,12 @@
         const fileBytes = await readBytes(files[0])
         const allocationId = getSelectedAllocation()
 
-        //allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, commit bool, isLiveUpload, isSyncUpload bool, isUpdate, isRepair bool
+        //allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, isUpdate, isRepair bool, numBlocks int
         await goWasm.sdk.upload(
           allocationId, `/${files[0].name}`,
           fileBytes,
           null,
-          false, false, false, false, false)
+          false, false, false, 100)
 
       }
     })
@@ -213,7 +213,8 @@
 
         const allocationId = getSelectedAllocation()
 
-        const file = await goWasm.sdk.download(allocationId, path, '', '', false, false)
+        //allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int
+        const file = await goWasm.sdk.download(allocationId, path, '', '', false,10)
       
 
         const a = document.createElement('a')
@@ -233,7 +234,7 @@
       const file = files.find(it => it.path == getSelectedFile())
       if(file && file.mimetype.startsWith('image')){
         const allocationId = getSelectedAllocation()
-        const {url} = await goWasm.sdk.download(allocationId, file.path, '', '', false, false)
+        const {url} = await goWasm.sdk.download(allocationId, file.path, '', '', false, 10)
         get('viewer').setAttribute('src',url)
       }
     })
