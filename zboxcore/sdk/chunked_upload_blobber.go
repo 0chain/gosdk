@@ -318,7 +318,7 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 	logger.Logger.Info("received a commit request")
 	paths := make([]string, 0)
 	for _, change := range sb.commitChanges {
-		paths = append(paths, change.GetAffectedPath())
+		paths = append(paths, change.GetAffectedPath()...)
 	}
 
 	var lR ReferencePathResult

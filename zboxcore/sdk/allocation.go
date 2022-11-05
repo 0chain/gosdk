@@ -943,12 +943,43 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	return req.ProcessRename()
 }
 
-func (a *Allocation) MoveObject(path string, destPath string) error {
-	err := a.CopyObject(path, destPath)
+func (a *Allocation) MoveObject(srcPath string, destPath string) error {
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	if len(srcPath) == 0 || len(destPath) == 0 {
+		return errors.New("invalid_path", "Invalid path for copy")
+	}
+	srcPath = zboxutil.RemoteClean(srcPath)
+	isabs := zboxutil.IsRemoteAbs(srcPath)
+	if !isabs {
+		return errors.New("invalid_path", "Path should be valid and absolute")
+	}
+
+	err := ValidateRemoteFileName(destPath)
 	if err != nil {
 		return err
 	}
-	return a.DeleteFile(path)
+
+	req := &MoveRequest{}
+	req.allocationObj = a
+	req.blobbers = a.Blobbers
+	req.allocationID = a.ID
+	req.allocationTx = a.Tx
+	if destPath != "/" {
+		destPath = strings.TrimSuffix(destPath, "/")
+	}
+	req.destPath = destPath
+	req.Consensus.mu = &sync.RWMutex{}
+	req.fullconsensus = a.fullconsensus
+	req.consensusThresh = a.consensusThreshold
+	req.ctx = a.ctx
+	req.remotefilepath = srcPath
+	req.moveMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	req.maskMU = &sync.Mutex{}
+	req.connectionID = zboxutil.NewConnectionId()
+	return req.ProcessMove()
 }
 
 func (a *Allocation) CopyObject(path string, destPath string) error {
