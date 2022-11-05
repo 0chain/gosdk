@@ -78,7 +78,7 @@ func (b *BridgeOwner) AddEthereumAuthorizer(ctx context.Context, address common.
 	return tran, err
 }
 
-// RemoveEthereumAuthorizer Adds authorizer to Ethereum bridge. Only contract deployer can call this method
+// RemoveEthereumAuthorizer Removes authorizer from Ethereum bridge. Only contract deployer can call this method
 func (b *BridgeOwner) RemoveEthereumAuthorizer(ctx context.Context, address common.Address) (*types.Transaction, error) {
 	instance, transactOpts, err := b.prepareAuthorizers(ctx, "removeAuthorizers", address)
 	if err != nil {
