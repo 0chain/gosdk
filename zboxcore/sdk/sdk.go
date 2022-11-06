@@ -1277,13 +1277,14 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	txn.Value = value
 	txn.TransactionFee = fee
 
-	// adjust fees if it's less
-	suggestedFee, err := txn.SuggestTransactionFeeFromMiners(blockchain.GetMiners(), 2)
-	if err != nil {
-		return
-	}
-	if uint64(suggestedFee*common.TokenUnit) > txn.TransactionFee {
-		txn.TransactionFee = uint64(suggestedFee * common.TokenUnit)
+	// adjust fees if not set
+	if fee == 0 {
+		var feef float64
+		feef, err = txn.SuggestTransactionFeeFromMiners(blockchain.GetMiners(), 2)
+		if err != nil {
+			return
+		}
+		txn.TransactionFee = uint64(feef * common.TokenUnit)
 	}
 
 	txn.TransactionType = transaction.TxnTypeSmartContract
