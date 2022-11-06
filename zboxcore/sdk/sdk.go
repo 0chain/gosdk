@@ -259,19 +259,12 @@ type StakePoolDelegatePoolInfo struct {
 
 // StakePool full info.
 type StakePoolInfo struct {
-	ID      common.Key     `json:"pool_id"` // pool ID
-	Balance common.Balance `json:"balance"` // total balance
-	Unstake common.Balance `json:"unstake"` // total unstake amount
-
-	Free       int64          `json:"free"`        // free staked space
-	Capacity   int64          `json:"capacity"`    // blobber bid
-	WritePrice common.Balance `json:"write_price"` // its write price
-
-	OffersTotal  common.Balance `json:"offers_total"` //
+	ID           common.Key     `json:"pool_id"` // pool ID
+	Balance      common.Balance `json:"balance"` // total balance
+	StakeTotal   common.Balance `json:"stake_total"`
 	UnstakeTotal common.Balance `json:"unstake_total"`
 	// delegate pools
 	Delegate []StakePoolDelegatePoolInfo `json:"delegate"`
-	Penalty  common.Balance              `json:"penalty"` // total for all
 	// rewards
 	Rewards common.Balance `json:"rewards"`
 
@@ -281,17 +274,14 @@ type StakePoolInfo struct {
 
 // GetStakePoolInfo for given client, or, if the given clientID is empty,
 // for current client of the sdk.
-func GetStakePoolInfo(blobberID string) (info *StakePoolInfo, err error) {
+func GetStakePoolInfo(providerType ProviderType, providerID string) (info *StakePoolInfo, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
-	}
-	if blobberID == "" {
-		return nil, errors.New("", "blobber_id is required")
 	}
 
 	var b []byte
 	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getStakePoolStat",
-		map[string]string{"blobber_id": blobberID}, nil)
+		map[string]string{"provider_type": strconv.Itoa(int(providerType)), "provider_id": providerID}, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting stake pool info:")
 	}
@@ -602,7 +592,8 @@ type Validator struct {
 	MaxStake       common.Balance `json:"max_stake"`
 	NumDelegates   int            `json:"num_delegates"`
 	ServiceCharge  float64        `json:"service_charge"`
-	TotalStake     int64          `json:"stake"`
+	StakeTotal     int64          `json:"stake_total"`
+	UnstakeTotal   int64          `json:"unstake_total"`
 }
 
 func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
@@ -625,7 +616,7 @@ func GetBlobbers() (bs []*Blobber, err error) {
 	}
 
 	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getblobbers", nil,
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getblobbers?active=true", nil,
 		nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting blobbers:")
