@@ -15,11 +15,9 @@ import (
 	"github.com/0chain/gosdk/zboxcore/client"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
-	zcn "github.com/0chain/gosdk/zcncore"
 
 	"github.com/0chain/gosdk/mobilesdk/zbox"
-	"github.com/0chain/gosdk/mobilesdk/zcncore"
-	"github.com/0chain/gosdk/mobilesdk/zcncrypto"
+	"github.com/0chain/gosdk/zcncore"
 )
 
 var nonce = int64(0)
@@ -73,7 +71,7 @@ func InitStorageSDK(clientjson string, configjson string) (*StorageSDK, error) {
 	l.Logger.Info(configObj.ChainID)
 	l.Logger.Info(configObj.SignatureScheme)
 	l.Logger.Info(configObj.PreferredBlobbers)
-	err = sdk.InitStorageSDK(clientjson, configObj.BlockWorker, configObj.ChainID, configObj.SignatureScheme, configObj.PreferredBlobbers, 1)
+	err = sdk.InitStorageSDK(clientjson, configObj.BlockWorker, configObj.ChainID, configObj.SignatureScheme, configObj.PreferredBlobbers, 0)
 	if err != nil {
 		l.Logger.Error(err)
 		return nil, err
@@ -95,7 +93,7 @@ func (s *StorageSDK) CreateAllocation(name string, datashards, parityshards int,
 	if err != nil {
 		return nil, err
 	}
-	return &zbox.Allocation{ID: sdkAllocation.ID, DataShards: sdkAllocation.DataShards, ParityShards: sdkAllocation.ParityShards, Size: sdkAllocation.Size, Expiration: sdkAllocation.Expiration}, nil
+	return zbox.ToAllocation(sdkAllocation), nil
 }
 
 // CreateAllocationWithBlobbers - creating new allocation with list of blobbers
@@ -165,7 +163,7 @@ func (s *StorageSDK) GetAllocations() (string, error) {
 	}
 	result := make([]*zbox.Allocation, len(sdkAllocations))
 	for i, sdkAllocation := range sdkAllocations {
-		allocationObj := &zbox.Allocation{ID: sdkAllocation.ID, DataShards: sdkAllocation.DataShards, ParityShards: sdkAllocation.ParityShards, Size: sdkAllocation.Size, Expiration: sdkAllocation.Expiration}
+		allocationObj := zbox.ToAllocation(sdkAllocation)
 		result[i] = allocationObj
 	}
 	retBytes, err := json.Marshal(result)
@@ -181,7 +179,7 @@ func (s *StorageSDK) GetAllocationFromAuthTicket(authTicket string) (*zbox.Alloc
 	if err != nil {
 		return nil, err
 	}
-	return &zbox.Allocation{ID: sdkAllocation.ID, DataShards: sdkAllocation.DataShards, ParityShards: sdkAllocation.ParityShards, Size: sdkAllocation.Size, Expiration: sdkAllocation.Expiration}, nil
+	return zbox.ToAllocation(sdkAllocation), nil
 }
 
 // GetAllocationStats - get allocation stats by allocation ID
@@ -210,7 +208,7 @@ func (s *StorageSDK) CancelAllocation(allocationID string) (string, error) {
 	return hash, err
 }
 
-//GetReadPoolInfo is to get information about the read pool for the allocation
+// GetReadPoolInfo is to get information about the read pool for the allocation
 func (s *StorageSDK) GetReadPoolInfo(clientID string) (string, error) {
 	readPool, err := sdk.GetReadPoolInfo(clientID)
 	if err != nil {
@@ -229,8 +227,8 @@ func (s *StorageSDK) GetReadPoolInfo(clientID string) (string, error) {
 func (s *StorageSDK) WritePoolLock(durInSeconds int64, tokens, fee float64, allocID string) error {
 	_, _, err := sdk.WritePoolLock(
 		allocID,
-		zcn.ConvertTokenToSAS(tokens),
-		zcn.ConvertTokenToSAS(fee))
+		zcncore.ConvertTokenToSAS(tokens),
+		zcncore.ConvertTokenToSAS(fee))
 	return err
 }
 
@@ -258,10 +256,8 @@ func (s *StorageSDK) GetBlobbersList() (string, error) {
 	return string(retBytes), nil
 }
 
-//GetReadPoolInfo is to get information about the read pool for the allocation
-func RegisterToMiners(clientId, pubKey string, callback zcn.WalletCallback) error {
-	wallet := zcncrypto.Wallet{ClientID: clientId, ClientKey: pubKey}
-	return zcncore.RegisterToMiners(&wallet, callback)
+func RegisterToMiners(clientId, pubKey string, callback zcncore.WalletCallback) error {
+	return zcncore.RegisterToMiners(clientId, pubKey, callback)
 }
 
 // GetAllocations return back list of allocations for the wallet
@@ -284,7 +280,11 @@ func (s *StorageSDK) RedeemFreeStorage(ticket string) (string, error) {
 		return "", err
 	}
 
-	hash, _, err := sdk.CreateFreeAllocationFor(recipientPublicKey, marker, lock)
+	if recipientPublicKey != client.GetClientPublicKey() {
+		return "", fmt.Errorf("invalid_free_marker: free marker is not assigned to your wallet")
+	}
+
+	hash, _, err := sdk.CreateFreeAllocation(marker, lock)
 	return hash, err
 }
 
@@ -315,5 +315,5 @@ func decodeTicket(ticket string) (string, string, uint64, error) {
 	markerStr, _ := json.Marshal(markerInput)
 
 	s, _ := strconv.ParseFloat(string(fmt.Sprintf("%v", lock)), 64)
-	return string(recipientPublicKey), string(markerStr), zcn.ConvertTokenToSAS(s), nil
+	return string(recipientPublicKey), string(markerStr), zcncore.ConvertTokenToSAS(s), nil
 }

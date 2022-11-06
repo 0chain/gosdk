@@ -62,6 +62,7 @@ func NewTransactionEntity() (*Transaction, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	txn.scheme = zcntxn
 
 	return txn, nil
