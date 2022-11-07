@@ -47,6 +47,12 @@ func (in *Inode) Sign() error {
 	if in.LatestFileID <= 0 {
 		return fmt.Errorf("invalid latest file id")
 	}
+	hash := encryption.Hash(strconv.FormatInt(in.LatestFileID, 10))
+	sign, err := client.Sign(hash)
+	if err != nil {
+		return err
+	}
+	in.OwnerSignature = sign
 	return nil
 }
 
