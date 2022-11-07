@@ -24,6 +24,7 @@ func (ch *NewFileChange) ProcessChange(
 		return
 	}
 
+	rootRef.HashToBeComputed = true
 	dirRef := rootRef
 	for i := 0; i < len(tSubDirs); i++ {
 		found := false
@@ -47,11 +48,14 @@ func (ch *NewFileChange) ProcessChange(
 			dirRef.AddChild(newRef)
 			dirRef = newRef
 		}
+		dirRef.HashToBeComputed = true
 	}
 	latestFileID++
 	inodesMeta[ch.File.GetPath()] = latestFileID
 
 	ch.File.FileID = latestFileID
+	ch.File.HashToBeComputed = true
+
 	commitParams.WmFileID = latestFileID
 	commitParams.LatestFileID = latestFileID
 	commitParams.Operation = marker.Upload

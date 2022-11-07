@@ -40,17 +40,17 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref, latestFileID int64
 		if !found {
 			latestFileID++
 			newRef := &fileref.Ref{}
+			newRef.Path = "/" + strings.Join(fields[:i+1], "/")
 			newRef.FileID = latestFileID
+			inodesMeta[newRef.Path] = latestFileID
 			newRef.Type = fileref.DIRECTORY
 			newRef.AllocationID = dirRef.AllocationID
-			newRef.Path = "/" + strings.Join(fields[:i+1], "/")
 			newRef.Name = fields[i]
-			newRef.HashToBeComputed = true
 
-			inodesMeta[newRef.Path] = latestFileID
 			dirRef.AddChild(newRef)
 			dirRef = newRef
 		}
+		dirRef.HashToBeComputed = true
 	}
 
 	if dirRef.GetPath() != ch.DestPath || dirRef.GetType() != fileref.DIRECTORY {
@@ -66,6 +66,10 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref, latestFileID int64
 	}
 
 	affectedRef.Path = zboxutil.Join(dirRef.GetPath(), affectedRef.Name)
+	latestFileID++
+	affectedRef.FileID = latestFileID
+	affectedRef.HashToBeComputed = true
+	inodesMeta[affectedRef.Path] = latestFileID
 	commitParam.LatestFileID = ch.processChildren(affectedRef, inodesMeta, latestFileID)
 	commitParam.InodesMeta = inodesMeta
 	commitParam.Operation = marker.Copy
@@ -86,6 +90,7 @@ func (ch *CopyFileChange) processChildren(
 			childRef = childRefEntity.(*fileref.Ref)
 		}
 
+		childRef.HashToBeComputed = true
 		childRef.Path = zboxutil.Join(curRef.Path, childRef.Name)
 		latestFileID++
 		childRef.FileID = latestFileID
