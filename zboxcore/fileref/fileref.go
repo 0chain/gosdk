@@ -3,7 +3,6 @@ package fileref
 import (
 	"fmt"
 	"math"
-	"strconv"
 	"strings"
 
 	"github.com/0chain/gosdk/core/common"
@@ -206,20 +205,20 @@ func (fr *FileRef) GetFileMetaHashData() string {
 }
 
 func (fr *FileRef) GetHashData() string {
-	hashArray := make([]string, 0, 10)
-	hashArray = append(hashArray,
+	return fmt.Sprintf(
+		"%s:%s:%s:%s:%d:%s:%s:%d:%s:%d:%d",
 		fr.AllocationID,
-		fr.Type,
-		fr.Name,
+		fr.Type, // don't need to add it as well
+		fr.Name, // don't see any utility as fr.Path below has name in it
 		fr.Path,
-		strconv.FormatInt(fr.Size, 10),
+		fr.Size,
 		fr.ContentHash,
 		fr.MerkleRoot,
-		strconv.FormatInt(fr.ActualFileSize, 10),
+		fr.ActualFileSize,
 		fr.ActualFileHash,
-		strconv.FormatInt(fr.ChunkSize, 10),
+		fr.ChunkSize,
+		fr.FileID,
 	)
-	return strings.Join(hashArray, ":")
 }
 
 func (fr *FileRef) GetHash() string {
