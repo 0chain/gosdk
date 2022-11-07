@@ -275,13 +275,16 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 	}
 
 	// 1. Data Parameter (amount to burn)
-	clientID := DefaultClientIDEncoder(b.ClientID())
+	//clientID := DefaultClientIDEncoder(b.ClientID())
+	//clientID = []byte(hex.EncodeToString(clientID))
+	//fmt.Println(b.ClientID())
+	//return nil, nil
 
 	// 2. Data Parameter (signature)
 	amount := new(big.Int)
 	amount.SetInt64(int64(amountTokens))
 
-	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, "burn", amount, clientID)
+	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, "burn", amount, b.ClientID())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare bridge")
 	}
@@ -292,7 +295,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 		zap.Int64("amount", amount.Int64()),
 	)
 
-	tran, err := bridgeInstance.Burn(transactOpts, amount, clientID)
+	tran, err := bridgeInstance.Burn(transactOpts, amount, []byte(b.ClientID()))
 	if err != nil {
 		msg := "failed to execute Burn WZCN transaction to ClientID = %s with amount = %s"
 		return nil, errors.Wrapf(err, msg, b.ClientID(), amount)
