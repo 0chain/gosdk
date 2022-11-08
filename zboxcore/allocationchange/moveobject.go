@@ -7,6 +7,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
@@ -16,10 +17,12 @@ type MoveFileChange struct {
 	DestPath   string
 }
 
-func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref) error {
+func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref, _ int64) (
+	commitParam CommitParams, err error) {
+
 	fields, err := common.GetPathFields(ch.DestPath)
 	if err != nil {
-		return err
+		return
 	}
 	rootRef.HashToBeComputed = true
 	dirRef := rootRef
@@ -28,7 +31,8 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		for _, child := range dirRef.Children {
 			if child.GetName() == fields[i] {
 				if child.GetType() != fileref.DIRECTORY {
-					return errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+					err = errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+					return
 				}
 				dirRef = child.(*fileref.Ref)
 				found = true
@@ -50,8 +54,12 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	}
 
 	if dirRef.GetPath() != ch.DestPath || dirRef.GetType() != fileref.DIRECTORY {
-		return errors.New("file_not_found", "Object to move not found in blobber")
+		err = errors.New("file_not_found", "Object to move not found in blobber")
+		return
 	}
+
+	commitParam.WmFileID = dirRef.FileID
+	commitParam.Operation = marker.Move
 
 	var affectedRef *fileref.Ref
 	if ch.ObjectTree.GetType() == fileref.FILE {
@@ -68,7 +76,7 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref) error {
 
 	fields, err = common.GetPathFields(oldParentPath)
 	if err != nil {
-		return err
+		return
 	}
 
 	delRef := rootRef
@@ -84,7 +92,8 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		}
 
 		if !found {
-			return errors.New("invalid_reference_path", "Ref not found in root reference object")
+			err = errors.New("invalid_reference_path", "Ref not found in root reference object")
+			return
 		}
 	}
 
@@ -98,11 +107,12 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	}
 
 	if !removed {
-		return errors.New("incomplete_move", "could not remove ref from source path")
+		err = errors.New("incomplete_move", "could not remove ref from source path")
+		return
 	}
 
 	rootRef.CalculateHash()
-	return nil
+	return
 }
 
 func (ch *MoveFileChange) processChildren(curRef *fileref.Ref) {

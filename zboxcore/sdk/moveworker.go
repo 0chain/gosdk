@@ -205,7 +205,7 @@ func (req *MoveRequest) ProcessMove() error {
 			connectionID: req.connectionID,
 			wg:           wg,
 		}
-		commitReq.changes = append(commitReq.changes, moveChange)
+		commitReq.change = moveChange
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
 		c++
