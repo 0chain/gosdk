@@ -32,15 +32,29 @@ import (
 
 func setupHttpResponses(
 	t *testing.T, mockClient *mocks.HttpClient, allocID string,
-	refsInput []byte, hashes []string,
+	refsInput, fileMetaInput []byte, hashes []string,
 	numBlobbers, numCorrect int, isUpdate bool) {
 
 	for i := 0; i < numBlobbers; i++ {
+		metaBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.FILE_META_ENDPOINT
 		refsBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.REFS_ENDPOINT
 		uploadBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.UPLOAD_ENDPOINT
 		wmBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.WM_LOCK_ENDPOINT
 		commitBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.COMMIT_ENDPOINT
 		refPathBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.REFERENCE_ENDPOINT
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return req.Method == "POST" &&
+				strings.Contains(req.URL.String(), metaBlobberBase)
+		})).Return(&http.Response{
+			StatusCode: func() int {
+				if i < numCorrect {
+					return http.StatusOK
+				}
+				return http.StatusBadRequest
+			}(),
+			Body: ioutil.NopCloser(bytes.NewReader(fileMetaInput)),
+		}, nil)
 
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return req.Method == "GET" &&
@@ -148,6 +162,7 @@ func TestAllocation_UpdateFile(t *testing.T) {
 		Tx:           "TestAllocation_UpdateFile",
 		ParityShards: 2,
 		DataShards:   2,
+		Size:         2 * GB,
 	}
 	setupMockAllocation(t, a)
 
@@ -187,13 +202,15 @@ func TestAllocation_UpdateFile(t *testing.T) {
 	resfsIn, err := json.Marshal(refsInput)
 	require.NoError(t, err)
 
+	fileMetaIn := []byte("{\"actual_file_size\":1}")
+
 	hashes := []string{
 		"5c84c73878159775992d20425c13bafc8bc10515c40e0365dde068626918fceb",
 		"f8d78ca33bd3c532f4d9c56bcd969944b61350c1be64df22f9353f359e3a8ba4",
 		"f435a42af309218e88196d4ed2e0c1977a701641b06434be0bb0263099f3faa9",
 		"6b3e932bfd2b2c09e39d35e7c4928c42b73bee194045e545560229234d695669",
 	}
-	setupHttpResponses(t, &mockClient, a.ID, resfsIn, hashes, len(a.Blobbers), len(a.Blobbers), true)
+	setupHttpResponses(t, &mockClient, a.ID, resfsIn, fileMetaIn, hashes, len(a.Blobbers), len(a.Blobbers), true)
 
 	err = a.UpdateFile(os.TempDir(), mockLocalPath, "/", nil)
 	require.NoErrorf(t, err, "Unexpected error %v", err)
@@ -212,6 +229,7 @@ func TestAllocation_UploadFile(t *testing.T) {
 		Tx:           "TestAllocation_UploadFile",
 		ParityShards: 2,
 		DataShards:   2,
+		Size:         2 * GB,
 	}
 
 	setupMockAllocation(t, a)
@@ -227,7 +245,7 @@ func TestAllocation_UploadFile(t *testing.T) {
 		"f435a42af309218e88196d4ed2e0c1977a701641b06434be0bb0263099f3faa9",
 		"6b3e932bfd2b2c09e39d35e7c4928c42b73bee194045e545560229234d695669",
 	}
-	setupHttpResponses(t, &mockClient, a.ID, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
+	setupHttpResponses(t, &mockClient, a.ID, nil, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
 
 	err := a.UploadFile(os.TempDir(), mockLocalPath, "/", nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
@@ -247,110 +265,9 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 		Tx:           "TestAllocation_UpdateFile_WithThumbNail",
 		ParityShards: 2,
 		DataShards:   2,
+		Size:         2 * GB,
 	}
 	setupMockAllocation(t, a)
-
-	setupHttpResponses := func(
-		t *testing.T, testName string,
-		refsInput []byte, hashes []string,
-		numBlobbers, numCorrect int) {
-
-		for i := 0; i < numBlobbers; i++ {
-			refsBlobberBase := testName + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.REFS_ENDPOINT
-			uploadBlobberBase := testName + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.UPLOAD_ENDPOINT
-			wmBlobberBase := testName + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.WM_LOCK_ENDPOINT
-			commitBlobberBase := testName + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.COMMIT_ENDPOINT
-			refPathBlobberBase := testName + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.REFERENCE_ENDPOINT
-
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return req.Method == "GET" &&
-					strings.Contains(req.URL.String(), refsBlobberBase)
-			})).Return(&http.Response{
-				StatusCode: func() int {
-					if i < numCorrect {
-						return http.StatusOK
-					}
-					return http.StatusBadRequest
-				}(),
-				Body: ioutil.NopCloser(bytes.NewReader(refsInput)),
-			}, nil)
-
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return req.Method == "PUT" &&
-					strings.Contains(req.URL.String(), uploadBlobberBase)
-			})).Return(&http.Response{
-				StatusCode: func() int {
-					if i < numCorrect {
-						return http.StatusOK
-					}
-					return http.StatusBadRequest
-				}(),
-				Body: func() io.ReadCloser {
-					hash := hashes[i]
-					r := UploadResult{
-						Filename: "1.txt",
-						Hash:     hash,
-					}
-					b, _ := json.Marshal(r)
-					return io.NopCloser(bytes.NewReader(b))
-				}(),
-			}, nil)
-
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return req.Method == "POST" &&
-					strings.Contains(req.URL.String(), wmBlobberBase)
-			})).Return(&http.Response{
-				StatusCode: func() int {
-					if i < numCorrect {
-						return http.StatusOK
-					}
-					return http.StatusBadRequest
-				}(),
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
-			}, nil)
-
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return req.Method == "GET" &&
-					strings.Contains(req.URL.String(), refPathBlobberBase)
-			})).Return(&http.Response{
-				StatusCode: func() int {
-					if i < numCorrect {
-						return http.StatusOK
-					}
-					return http.StatusBadRequest
-				}(),
-				Body: func() io.ReadCloser {
-					s := `{"meta_data":{"chunk_size":0,"created_at":0,"hash":"","lookup_hash":"","name":"/","num_of_blocks":0,"path":"/","path_hash":"","size":0,"type":"d","updated_at":0},"Ref":{"ID":0,"Type":"d","AllocationID":"` + a.ID + `","LookupHash":"","Name":"/","Path":"/","Hash":"","NumBlocks":0,"PathHash":"","ParentPath":"","PathLevel":1,"CustomMeta":"","ContentHash":"","Size":0,"MerkleRoot":"","ActualFileSize":0,"ActualFileHash":"","MimeType":"","WriteMarker":"","ThumbnailSize":0,"ThumbnailHash":"","ActualThumbnailSize":0,"ActualThumbnailHash":"","EncryptedKey":"","Children":null,"OnCloud":false,"CommitMetaTxns":null,"CreatedAt":0,"UpdatedAt":0,"ChunkSize":0},"list":[{"meta_data":{"chunk_size":0,"created_at":0,"hash":"","lookup_hash":"","name":"1.txt","num_of_blocks":0,"path":"/1.txt","path_hash":"","size":0,"type":"f","updated_at":0},"Ref":{"ID":0,"Type":"f","AllocationID":"` + a.ID + `","LookupHash":"","Name":"1.txt","Path":"/1.txt","Hash":"","NumBlocks":0,"PathHash":"","ParentPath":"/","PathLevel":1,"CustomMeta":"","ContentHash":"","Size":0,"MerkleRoot":"","ActualFileSize":0,"ActualFileHash":"","MimeType":"","WriteMarker":"","ThumbnailSize":0,"ThumbnailHash":"","ActualThumbnailSize":0,"ActualThumbnailHash":"","EncryptedKey":"","Children":null,"OnCloud":false,"CommitMetaTxns":null,"CreatedAt":0,"UpdatedAt":0,"ChunkSize":0}}],"latest_write_marker":null}`
-					return ioutil.NopCloser(bytes.NewReader([]byte(s)))
-				}(),
-			}, nil)
-
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return req.Method == "POST" &&
-					strings.Contains(req.URL.String(), commitBlobberBase)
-			})).Return(&http.Response{
-				StatusCode: func() int {
-					if i < numCorrect {
-						return http.StatusOK
-					}
-					return http.StatusBadRequest
-				}(),
-				Body: ioutil.NopCloser(bytes.NewReader(nil)),
-			}, nil)
-
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return req.Method == "DELETE" &&
-					strings.Contains(req.URL.String(), wmBlobberBase)
-			})).Return(&http.Response{
-				StatusCode: func() int {
-					if i < numCorrect {
-						return http.StatusOK
-					}
-					return http.StatusBadRequest
-				}(),
-			}, nil)
-		}
-	}
 
 	for i := 0; i < numBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
@@ -390,13 +307,15 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 	resfsIn, err := json.Marshal(refsInput)
 	require.NoError(t, err)
 
+	fileMetaIn := []byte("{\"actual_file_size\":1}")
+
 	hashes := []string{
 		"5c84c73878159775992d20425c13bafc8bc10515c40e0365dde068626918fceb",
 		"f8d78ca33bd3c532f4d9c56bcd969944b61350c1be64df22f9353f359e3a8ba4",
 		"f435a42af309218e88196d4ed2e0c1977a701641b06434be0bb0263099f3faa9",
 		"6b3e932bfd2b2c09e39d35e7c4928c42b73bee194045e545560229234d695669",
 	}
-	setupHttpResponses(t, t.Name(), resfsIn, hashes, len(a.Blobbers), len(a.Blobbers))
+	setupHttpResponses(t, &mockClient, a.ID, resfsIn, fileMetaIn, hashes, len(a.Blobbers), len(a.Blobbers), true)
 
 	err = a.UpdateFileWithThumbnail(os.TempDir(), mockLocalPath, "/", mockThumbnailPath, nil)
 	require.NoErrorf(t, err, "Unexpected error %v", err)
@@ -419,6 +338,7 @@ func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 		Tx:           "TestAllocation_UploadFileWithThumbnail",
 		ParityShards: 2,
 		DataShards:   2,
+		Size:         2 * GB,
 	}
 
 	setupMockAllocation(t, a)
@@ -434,7 +354,7 @@ func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 		"f435a42af309218e88196d4ed2e0c1977a701641b06434be0bb0263099f3faa9",
 		"6b3e932bfd2b2c09e39d35e7c4928c42b73bee194045e545560229234d695669",
 	}
-	setupHttpResponses(t, &mockClient, a.ID, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
+	setupHttpResponses(t, &mockClient, a.ID, nil, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
 
 	err := a.UploadFileWithThumbnail(mockTmpPath, mockLocalPath, "/", mockThumbnailPath, nil)
 	require.NoErrorf(t, err, "Unexpected error %v", err)
@@ -451,6 +371,7 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 		Tx:           "TestAllocation_Encrypt_And_UpdateFile",
 		ParityShards: 2,
 		DataShards:   2,
+		Size:         2 * GB,
 	}
 	setupMockAllocation(t, a)
 
@@ -490,13 +411,14 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 	resfsIn, err := json.Marshal(refsInput)
 	require.NoError(t, err)
 
+	fileMetaIn := []byte("{\"actual_file_size\":1}")
 	hashes := []string{
 		"a9ad93057a092ebeeab2e34f16cd6c1135d08b5a165708d072e6d2da75b47e81",
 		"bf116d80708522b6e006e818c05e1de4d6197e5882f17cd806702c4396100176",
 		"3c4f6a43748f6b7cefee11216540414cb9b2563c294a5f7d633c2e9cda26f7bc",
 		"249684daaeef1a8d38d0be0ea38777886e0b3ddf3deaef2eabe4117cc6e67256",
 	}
-	setupHttpResponses(t, &mockClient, a.ID, resfsIn, hashes, len(a.Blobbers), len(a.Blobbers), true)
+	setupHttpResponses(t, &mockClient, a.ID, resfsIn, fileMetaIn, hashes, len(a.Blobbers), len(a.Blobbers), true)
 
 	err = a.EncryptAndUpdateFile(os.TempDir(), mockLocalPath, "/", nil)
 	// Actually this test should be require.NoError
@@ -526,6 +448,7 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 		Tx:           "TestAllocation_EncryptAndUploadFile",
 		ParityShards: 2,
 		DataShards:   2,
+		Size:         2 * GB,
 	}
 
 	setupMockAllocation(t, a)
@@ -542,7 +465,7 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 		"f435a42af309218e88196d4ed2e0c1977a701641b06434be0bb0263099f3faa9",
 		"6b3e932bfd2b2c09e39d35e7c4928c42b73bee194045e545560229234d695669",
 	}
-	setupHttpResponses(t, &mockClient, a.ID, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
+	setupHttpResponses(t, &mockClient, a.ID, nil, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
 
 	err := a.EncryptAndUploadFile(mockTmpPath, mockLocalPath, "/", nil)
 	require.Errorf(err, "Unexpected error %v", err)
@@ -566,6 +489,7 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 		Tx:           "TestAllocation_EncryptAndUpdateFileWithThumbnail",
 		ParityShards: 2,
 		DataShards:   2,
+		Size:         2 * GB,
 	}
 
 	setupMockAllocation(t, a)
@@ -602,13 +526,15 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 	resfsIn, err := json.Marshal(refsInput)
 	require.NoError(t, err)
 
+	fileMetaIn := []byte("{\"actual_file_size\":1}")
+
 	hashes := []string{
 		"a9ad93057a092ebeeab2e34f16cd6c1135d08b5a165708d072e6d2da75b47e81",
 		"bf116d80708522b6e006e818c05e1de4d6197e5882f17cd806702c4396100176",
 		"3c4f6a43748f6b7cefee11216540414cb9b2563c294a5f7d633c2e9cda26f7bc",
 		"249684daaeef1a8d38d0be0ea38777886e0b3ddf3deaef2eabe4117cc6e67256",
 	}
-	setupHttpResponses(t, &mockClient, a.ID, resfsIn, hashes, len(a.Blobbers), len(a.Blobbers), true)
+	setupHttpResponses(t, &mockClient, a.ID, resfsIn, fileMetaIn, hashes, len(a.Blobbers), len(a.Blobbers), true)
 	err = a.EncryptAndUpdateFileWithThumbnail(mockTmpPath, mockLocalPath, "/", mockThumbnailPath, nil)
 
 	// Actually this test should be require.NoError
@@ -638,6 +564,7 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 		Tx:           "TestAllocation_EncryptAndUploadFileWithThumbnail",
 		ParityShards: 2,
 		DataShards:   2,
+		Size:         2 * GB,
 		ctx:          context.TODO(),
 	}
 
@@ -656,7 +583,7 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 		"6b3e932bfd2b2c09e39d35e7c4928c42b73bee194045e545560229234d695669",
 	}
 
-	setupHttpResponses(t, &mockClient, a.ID, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
+	setupHttpResponses(t, &mockClient, a.ID, nil, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
 
 	err := a.EncryptAndUploadFileWithThumbnail(mockTmpPath, mockLocalPath, "/", mockThumbnailPath, nil)
 	// Actually this test should be require.NoError
@@ -1058,6 +985,7 @@ func TestAllocation_RepairFile(t *testing.T) {
 			a := &Allocation{
 				ParityShards: tt.numBlobbers / 2,
 				DataShards:   tt.numBlobbers / 2,
+				Size:         2 * GB,
 			}
 			a.uploadChan = make(chan *UploadRequest, 10)
 			a.downloadChan = make(chan *DownloadRequest, 10)
