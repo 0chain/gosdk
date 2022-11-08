@@ -63,8 +63,8 @@ func (d *DirCreateChange) ProcessChange(
 	return
 }
 
-func (d *DirCreateChange) GetAffectedPath() string {
-	return d.RemotePath
+func (d *DirCreateChange) GetAffectedPath() []string {
+	return []string{d.RemotePath}
 }
 
 func (d *DirCreateChange) GetSize() int64 {

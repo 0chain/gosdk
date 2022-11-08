@@ -45,6 +45,7 @@ const (
 	UPLOAD_ENDPOINT          = "/v1/file/upload/"
 	RENAME_ENDPOINT          = "/v1/file/rename/"
 	COPY_ENDPOINT            = "/v1/file/copy/"
+	MOVE_ENDPOINT            = "/v1/file/move/"
 	LIST_ENDPOINT            = "/v1/file/list/"
 	REFERENCE_ENDPOINT       = "/v1/file/referencepath/"
 	CONNECTION_ENDPOINT      = "/v1/connection/details/"
@@ -425,7 +426,7 @@ func NewListRequest(baseUrl, allocation string, path, pathHash string, auth_toke
 	return req, nil
 }
 
-// NewUploadRequestWithMethod create a http reqeust of upload
+// NewUploadRequestWithMethod create a http request of upload
 func NewUploadRequestWithMethod(baseURL, allocation string, body io.Reader, method string) (*http.Request, error) {
 	u, err := joinUrl(baseURL, UPLOAD_ENDPOINT, allocation)
 	if err != nil {
@@ -440,6 +441,7 @@ func NewUploadRequestWithMethod(baseURL, allocation string, body io.Reader, meth
 		return nil, err
 	}
 
+	// set header: X-App-Client-Signature
 	if err := setClientInfoWithSign(req, allocation); err != nil {
 		return nil, err
 	}
@@ -536,6 +538,24 @@ func NewRenameRequest(baseUrl, allocation string, body io.Reader) (*http.Request
 
 func NewCopyRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, COPY_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, u.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+func NewMoveRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
+	u, err := joinUrl(baseUrl, MOVE_ENDPOINT, allocation)
 	if err != nil {
 		return nil, err
 	}

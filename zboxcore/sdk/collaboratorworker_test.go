@@ -285,6 +285,11 @@ func TestCollaboratorRequest_RemoveCollaboratorFromBlobbers(t *testing.T) {
 				},
 				path:           mockRemoteFilePath,
 				collaboratorID: mockCollaboratorID,
+				consensus: Consensus{
+					mu:              &sync.RWMutex{},
+					consensusThresh: 2,
+					fullconsensus:   4,
+				},
 			}
 			for i := 0; i < tt.numBlobbers; i++ {
 				req.a.Blobbers = append(req.a.Blobbers, &blockchain.StorageNode{

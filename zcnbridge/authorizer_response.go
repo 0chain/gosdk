@@ -40,7 +40,7 @@ type (
 		Nonce           int64  `json:"nonce"`
 		Amount          int64  `json:"amount"`
 		EthereumAddress string `json:"ethereum_address"`
-		Signature       []byte `json:"signatures"`
+		Signature       []byte `json:"signature"`
 	}
 )
 

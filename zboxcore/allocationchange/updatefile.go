@@ -64,11 +64,11 @@ func (ch *UpdateFileChange) ProcessChange(
 	return
 }
 
-func (n *UpdateFileChange) GetAffectedPath() string {
+func (n *UpdateFileChange) GetAffectedPath() []string {
 	if n.NewFile != nil {
-		return n.NewFile.Path
+		return []string{n.NewFile.Path}
 	}
-	return ""
+	return nil
 }
 
 func (n *UpdateFileChange) GetSize() int64 {

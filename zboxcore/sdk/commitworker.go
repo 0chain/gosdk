@@ -93,7 +93,7 @@ func (commitreq *CommitRequest) processCommit() {
 
 	l.Logger.Info("received a commit request")
 	paths := make([]string, 0)
-	paths = append(paths, commitreq.change.GetAffectedPath())
+	paths = append(paths, commitreq.change.GetAffectedPath()...)
 	var req *http.Request
 	var lR ReferencePathResult
 	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
@@ -139,14 +139,27 @@ func (commitreq *CommitRequest) processCommit() {
 	rootRef, err := lR.GetDirTree(commitreq.allocationID)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
+		commitreq.wg.Done()
 		return
 	}
 
 	if lR.LatestWM != nil {
+		err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
+		if err != nil {
+			e := errors.New("signature_verification_failed", err.Error())
+			commitreq.result = ErrorCommitResult(e.Error())
+			return
+		}
+
 		rootRef.CalculateHash()
 		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
 			l.Logger.Info("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
+			errMsg := fmt.Sprintf(
+				"calculated allocation root mismatch from blobber %s. Expected: %s, Got: %s",
+				commitreq.blobber.Baseurl, prevAllocationRoot, lR.LatestWM.AllocationRoot)
+			commitreq.result = ErrorCommitResult(errMsg)
+			return
 		}
 		if lR.LatestInode == nil {
 			errStr := fmt.Sprintf(

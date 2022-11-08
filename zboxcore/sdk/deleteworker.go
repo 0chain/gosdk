@@ -196,7 +196,7 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 	if !req.consensus.isConsensusOk() {
 		return errors.New("consensus_not_met",
 			fmt.Sprintf("Consensus on delete failed. Required consensus %d got %d",
-				req.consensus.consensusThresh, req.consensus.consensus))
+				req.consensus.consensusThresh, req.consensus.getConsensus()))
 	}
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
@@ -256,7 +256,7 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 	if !req.consensus.isConsensusOk() {
 		return errors.New("consensus_not_met",
 			fmt.Sprintf("Consensus on commit not met. Required %d, got %d",
-				req.consensus.consensusThresh, req.consensus.consensus))
+				req.consensus.consensusThresh, req.consensus.getConsensus()))
 	}
 	return nil
 }

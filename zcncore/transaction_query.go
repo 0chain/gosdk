@@ -266,7 +266,7 @@ func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryRe
 		return nil, stderrors.New("zcn: query not found")
 	}
 
-	rate := float32(maxConsensus*100) / float32(tq.max)
+	rate := maxConsensus * 100 / tq.max
 	if rate < consensusThresh {
 		return nil, ErrInvalidConsensus
 	}
@@ -457,7 +457,7 @@ func (tq *TransactionQuery) getFastConfirmation(ctx context.Context, txnHash str
 	return nil, nil, nil, thrown.Throw(ErrTransactionNotFound, strconv.Itoa(result.StatusCode))
 }
 
-func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
+func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 
 	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders))
 	if err != nil {
@@ -478,7 +478,7 @@ func GetEvents(cb GetInfoCallback, filters map[string]string) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	go getInfoFromSharders(WithParams(GET_MINERSC_EVENTS, Params{
+	go GetInfoFromSharders(WithParams(GET_MINERSC_EVENTS, Params{
 		"block_number": filters["block_number"],
 		"tx_hash":      filters["tx_hash"],
 		"type":         filters["type"],

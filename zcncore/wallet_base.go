@@ -21,6 +21,7 @@ import (
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
@@ -90,7 +91,7 @@ const (
 )
 
 // In percentage
-const consensusThresh = float32(25.0)
+const consensusThresh = 25
 
 const (
 	defaultMinSubmit               = int(50)
@@ -138,7 +139,7 @@ const (
 	OpZCNSCGetAuthorizerNodes
 )
 
-// WalletCallback needs to be implmented for wallet creation.
+// WalletCallback needs to be implemented for wallet creation.
 type WalletCallback interface {
 	OnWalletCreateComplete(status int, wallet string, err string)
 }
@@ -264,16 +265,17 @@ func SetLogFile(logFile string, verbose bool) {
 // Init inializes the SDK with miner, sharder and signature scheme provided in
 // configuration provided in JSON format
 // It is used for 0proxy, 0box, 0explorer, andorid, ios : walletJSON is ChainConfig
-//	 {
-//      "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
-//		"signature_scheme" : "bls0chain",
-//		"block_worker" : "http://localhost/dns",
-// 		"min_submit" : 50,
-//		"min_confirmation" : 50,
-//		"confirmation_chain_length" : 3,
-//		"num_keys" : 1,
-//		"eth_node" : "https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx"
-//	 }
+//
+//		 {
+//	     "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
+//			"signature_scheme" : "bls0chain",
+//			"block_worker" : "http://localhost/dns",
+//			"min_submit" : 50,
+//			"min_confirmation" : 50,
+//			"confirmation_chain_length" : 3,
+//			"num_keys" : 1,
+//			"eth_node" : "https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx"
+//		 }
 func Init(chainConfigJSON string) error {
 	err := json.Unmarshal([]byte(chainConfigJSON), &_config.chain)
 	if err == nil {
@@ -335,6 +337,20 @@ func CreateWallet(statusCb WalletCallback) error {
 	return nil
 }
 
+// CreateWalletOffline creates the wallet for the config signature scheme.
+func CreateWalletOffline() (string, error) {
+	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
+	wallet, err := sigScheme.GenerateKeys()
+	if err != nil {
+		return "", errors.Wrap(err, "failed to generate keys")
+	}
+	w, err := wallet.Marshal()
+	if err != nil {
+		return "", errors.Wrap(err, "wallet encoding failed")
+	}
+	return w, nil
+}
+
 // registerToMiners can be used to register the wallet.
 func registerToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 	result := make(chan *util.PostResponse)
@@ -378,7 +394,7 @@ func registerToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 	rate := consensus * 100 / float32(len(_config.chain.Miners))
 	if rate < consensusThresh {
 		statusCb.OnWalletCreateComplete(StatusError, "", "rate is less than consensus")
-		return fmt.Errorf("Register consensus not met. Consensus: %f, Expected: %f", rate, consensusThresh)
+		return fmt.Errorf("Register consensus not met. Consensus: %f, Expected: %v", rate, consensusThresh)
 	}
 
 	cw := &GetClientResponse{}
@@ -636,44 +652,41 @@ func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
 	// getMinShardersVerify
 	var numSharders = len(_config.chain.Sharders) // overwrite, use all
 	queryFromSharders(numSharders, fmt.Sprintf("%v%v", GET_BALANCE, clientID), result)
-	consensus := float32(0)
-	balMap := make(map[int64]float32)
-	winBalance := int64(0)
-	var winInfo string
-	var winError string
+
+	consensusMaps := NewHttpConsensusMaps(consensusThresh)
+
 	for i := 0; i < numSharders; i++ {
 		rsp := <-result
+
 		logging.Debug(rsp.Url, rsp.Status)
 		if rsp.StatusCode != http.StatusOK {
 			logging.Error(rsp.Body)
-			winError = rsp.Body
-			continue
-		}
-		logging.Debug(rsp.Body)
-		var objmap map[string]json.RawMessage
-		err := json.Unmarshal([]byte(rsp.Body), &objmap)
-		if err != nil {
-			continue
-		}
-		if v, ok := objmap[name]; ok {
-			bal, err := strconv.ParseInt(string(v), 10, 64)
-			if err != nil {
-				continue
-			}
-			balMap[bal]++
-			if balMap[bal] > consensus {
-				consensus = balMap[bal]
-				winBalance = bal
-				winInfo = rsp.Body
-			}
+
+		} else {
+			logging.Debug(rsp.Body)
 		}
 
+		if err := consensusMaps.Add(rsp.StatusCode, rsp.Body); err != nil {
+			logging.Error(rsp.Body)
+		}
 	}
-	rate := consensus * 100 / float32(len(_config.chain.Sharders))
+
+	rate := consensusMaps.MaxConsensus * 100 / len(_config.chain.Sharders)
 	if rate < consensusThresh {
-		return 0, winError, errors.New("", "get balance failed. consensus not reached")
+		return 0, consensusMaps.WinError, errors.New("", "get balance failed. consensus not reached")
 	}
-	return winBalance, winInfo, nil
+
+	winValue, ok := consensusMaps.GetValue(name)
+	if ok {
+		winBalance, err := strconv.ParseInt(string(winValue), 10, 64)
+		if err != nil {
+			return 0, "", fmt.Errorf("get balance failed. %w", err)
+		}
+
+		return winBalance, consensusMaps.WinInfo, nil
+	}
+
+	return 0, consensusMaps.WinInfo, errors.New("", "get balance failed. balance field is missed")
 }
 
 // ConvertToToken converts the value to ZCN tokens
@@ -701,7 +714,7 @@ func getTokenUSDRate() (float64, error) {
 	return tokenrate.GetUSD(context.TODO(), "zcn")
 }
 
-//getWallet get a wallet object from a wallet string
+// getWallet get a wallet object from a wallet string
 func getWallet(walletStr string) (*zcncrypto.Wallet, error) {
 	var w zcncrypto.Wallet
 	err := json.Unmarshal([]byte(walletStr), &w)
@@ -713,7 +726,7 @@ func getWallet(walletStr string) (*zcncrypto.Wallet, error) {
 	return &w, nil
 }
 
-//GetWalletClientID -- given a walletstr return ClientID
+// GetWalletClientID -- given a walletstr return ClientID
 func GetWalletClientID(walletStr string) (string, error) {
 	w, err := getWallet(walletStr)
 	if err != nil {
@@ -799,7 +812,7 @@ func GetMiners(cb GetInfoCallback) (err error) {
 		return
 	}
 	var url = GET_MINERSC_MINERS
-	go getInfoFromSharders(url, 0, cb)
+	go GetInfoFromSharders(url, 0, cb)
 	return
 }
 
@@ -809,7 +822,7 @@ func GetSharders(cb GetInfoCallback) (err error) {
 		return
 	}
 	var url = GET_MINERSC_SHARDERS
-	go getInfoFromSharders(url, 0, cb)
+	go GetInfoFromSharders(url, 0, cb)
 	return
 }
 
@@ -823,7 +836,7 @@ func GetMinerSCNodeInfo(id string, cb GetInfoCallback) (err error) {
 		return
 	}
 
-	go getInfoFromSharders(withParams(GET_MINERSC_NODE, Params{
+	go GetInfoFromSharders(withParams(GET_MINERSC_NODE, Params{
 		"id": id,
 	}), 0, cb)
 	return
@@ -833,7 +846,7 @@ func GetMinerSCNodePool(id string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	go getInfoFromSharders(withParams(GET_MINERSC_POOL, Params{
+	go GetInfoFromSharders(withParams(GET_MINERSC_POOL, Params{
 		"id":      id,
 		"pool_id": _config.wallet.ClientID,
 	}), 0, cb)
@@ -848,7 +861,7 @@ func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error) {
 	if clientID == "" {
 		clientID = _config.wallet.ClientID
 	}
-	go getInfoFromSharders(withParams(GET_MINERSC_USER, Params{
+	go GetInfoFromSharders(withParams(GET_MINERSC_USER, Params{
 		"client_id": clientID,
 	}), 0, cb)
 
@@ -859,7 +872,7 @@ func GetMinerSCConfig(cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	go getInfoFromSharders(GET_MINERSC_CONFIG, 0, cb)
+	go GetInfoFromSharders(GET_MINERSC_CONFIG, 0, cb)
 	return
 }
 
@@ -867,7 +880,7 @@ func GetMinerSCGlobals(cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	go getInfoFromSharders(GET_MINERSC_GLOBALS, 0, cb)
+	go GetInfoFromSharders(GET_MINERSC_GLOBALS, 0, cb)
 	return
 }
 
@@ -880,7 +893,7 @@ func GetStorageSCConfig(cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	go getInfoFromSharders(STORAGESC_GET_SC_CONFIG, OpStorageSCGetConfig, cb)
+	go GetInfoFromSharders(STORAGESC_GET_SC_CONFIG, OpStorageSCGetConfig, cb)
 	return
 }
 
@@ -892,7 +905,7 @@ func GetChallengePoolInfo(allocID string, cb GetInfoCallback) (err error) {
 	var url = withParams(STORAGESC_GET_CHALLENGE_POOL_INFO, Params{
 		"allocation_id": allocID,
 	})
-	go getInfoFromSharders(url, OpStorageSCGetChallengePoolInfo, cb)
+	go GetInfoFromSharders(url, OpStorageSCGetChallengePoolInfo, cb)
 	return
 }
 
@@ -904,7 +917,7 @@ func GetAllocation(allocID string, cb GetInfoCallback) (err error) {
 	var url = withParams(STORAGESC_GET_ALLOCATION, Params{
 		"allocation": allocID,
 	})
-	go getInfoFromSharders(url, OpStorageSCGetAllocation, cb)
+	go GetInfoFromSharders(url, OpStorageSCGetAllocation, cb)
 	return
 }
 
@@ -919,7 +932,7 @@ func GetAllocations(clientID string, cb GetInfoCallback) (err error) {
 	var url = withParams(STORAGESC_GET_ALLOCATIONS, Params{
 		"client": clientID,
 	})
-	go getInfoFromSharders(url, OpStorageSCGetAllocations, cb)
+	go GetInfoFromSharders(url, OpStorageSCGetAllocations, cb)
 	return
 }
 
@@ -934,7 +947,7 @@ func GetReadPoolInfo(clientID string, cb GetInfoCallback) (err error) {
 	var url = withParams(STORAGESC_GET_READ_POOL_INFO, Params{
 		"client_id": clientID,
 	})
-	go getInfoFromSharders(url, OpStorageSCGetReadPoolInfo, cb)
+	go GetInfoFromSharders(url, OpStorageSCGetReadPoolInfo, cb)
 	return
 }
 
@@ -947,7 +960,7 @@ func GetStakePoolInfo(blobberID string, cb GetInfoCallback) (err error) {
 	var url = withParams(STORAGESC_GET_STAKE_POOL_INFO, Params{
 		"blobber_id": blobberID,
 	})
-	go getInfoFromSharders(url, OpStorageSCGetStakePoolInfo, cb)
+	go GetInfoFromSharders(url, OpStorageSCGetStakePoolInfo, cb)
 	return
 }
 
@@ -962,7 +975,7 @@ func GetStakePoolUserInfo(clientID string, cb GetInfoCallback) (err error) {
 	var url = withParams(STORAGESC_GET_STAKE_POOL_USER_INFO, Params{
 		"client_id": clientID,
 	})
-	go getInfoFromSharders(url, OpStorageSCGetStakePoolInfo, cb)
+	go GetInfoFromSharders(url, OpStorageSCGetStakePoolInfo, cb)
 	return
 }
 
@@ -973,7 +986,7 @@ func GetBlobbers(cb GetInfoCallback) (err error) {
 	}
 	var url = STORAGESC_GET_BLOBBERS
 
-	go getInfoFromSharders(url, OpStorageSCGetBlobbers, cb)
+	go GetInfoFromSharders(url, OpStorageSCGetBlobbers, cb)
 	return
 }
 
@@ -985,7 +998,7 @@ func GetBlobber(blobberID string, cb GetInfoCallback) (err error) {
 	var url = withParams(STORAGESC_GET_BLOBBER, Params{
 		"blobber_id": blobberID,
 	})
-	go getInfoFromSharders(url, OpStorageSCGetBlobber, cb)
+	go GetInfoFromSharders(url, OpStorageSCGetBlobber, cb)
 	return
 }
 
@@ -1024,7 +1037,7 @@ func GetTransactions(toClient, fromClient, block_hash, sort string, limit, offse
 	}
 
 	var u = withParams(STORAGESC_GET_TRANSACTIONS, params)
-	go getInfoFromSharders(u, OpStorageSCGetTransactions, cb)
+	go GetInfoFromSharders(u, OpStorageSCGetTransactions, cb)
 	return
 }
 
@@ -1046,4 +1059,13 @@ func Decrypt(key, text string) (string, error) {
 		return "", err
 	}
 	return string(response), nil
+}
+
+func GetPublicEncryptionKey(mnemonic string) (string, error) {
+	encScheme := encryption.NewEncryptionScheme()
+	_, err := encScheme.Initialize(mnemonic)
+	if err != nil {
+		return "", err
+	}
+	return encScheme.GetPublicKey()
 }
