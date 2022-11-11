@@ -637,7 +637,7 @@ func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err err
 }
 
 type GetBlobbersOptions struct {
-	Active bool
+	Active bool // set this to true to get only active blobber
 }
 
 func GetBlobbers(options ...GetBlobbersOptions) (bs []*Blobber, err error) {
@@ -645,7 +645,13 @@ func GetBlobbers(options ...GetBlobbersOptions) (bs []*Blobber, err error) {
 		return nil, sdkNotInitialized
 	}
 
-	active, limit, offset := true, 20, 0
+	var active bool
+	if len(options) > 0 {
+		for _, option := range options {
+			active = option.Active
+		}
+	}
+	limit, offset := 20, 0
 
 	blobbers, err := getBlobbersInternal(active, limit, offset)
 	if err != nil {
