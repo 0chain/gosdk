@@ -71,7 +71,7 @@ func InitStorageSDK(clientjson string, configjson string) (*StorageSDK, error) {
 	l.Logger.Info(configObj.ChainID)
 	l.Logger.Info(configObj.SignatureScheme)
 	l.Logger.Info(configObj.PreferredBlobbers)
-	err = sdk.InitStorageSDK(clientjson, configObj.BlockWorker, configObj.ChainID, configObj.SignatureScheme, configObj.PreferredBlobbers, 1)
+	err = sdk.InitStorageSDK(clientjson, configObj.BlockWorker, configObj.ChainID, configObj.SignatureScheme, configObj.PreferredBlobbers, 0)
 	if err != nil {
 		l.Logger.Error(err)
 		return nil, err
@@ -93,7 +93,7 @@ func (s *StorageSDK) CreateAllocation(name string, datashards, parityshards int,
 	if err != nil {
 		return nil, err
 	}
-	return &zbox.Allocation{ID: sdkAllocation.ID, DataShards: sdkAllocation.DataShards, ParityShards: sdkAllocation.ParityShards, Size: sdkAllocation.Size, Expiration: sdkAllocation.Expiration}, nil
+	return zbox.ToAllocation(sdkAllocation), nil
 }
 
 // CreateAllocationWithBlobbers - creating new allocation with list of blobbers
@@ -163,7 +163,7 @@ func (s *StorageSDK) GetAllocations() (string, error) {
 	}
 	result := make([]*zbox.Allocation, len(sdkAllocations))
 	for i, sdkAllocation := range sdkAllocations {
-		allocationObj := &zbox.Allocation{ID: sdkAllocation.ID, DataShards: sdkAllocation.DataShards, ParityShards: sdkAllocation.ParityShards, Size: sdkAllocation.Size, Expiration: sdkAllocation.Expiration}
+		allocationObj := zbox.ToAllocation(sdkAllocation)
 		result[i] = allocationObj
 	}
 	retBytes, err := json.Marshal(result)
@@ -179,7 +179,7 @@ func (s *StorageSDK) GetAllocationFromAuthTicket(authTicket string) (*zbox.Alloc
 	if err != nil {
 		return nil, err
 	}
-	return &zbox.Allocation{ID: sdkAllocation.ID, DataShards: sdkAllocation.DataShards, ParityShards: sdkAllocation.ParityShards, Size: sdkAllocation.Size, Expiration: sdkAllocation.Expiration}, nil
+	return zbox.ToAllocation(sdkAllocation), nil
 }
 
 // GetAllocationStats - get allocation stats by allocation ID
@@ -208,7 +208,7 @@ func (s *StorageSDK) CancelAllocation(allocationID string) (string, error) {
 	return hash, err
 }
 
-//GetReadPoolInfo is to get information about the read pool for the allocation
+// GetReadPoolInfo is to get information about the read pool for the allocation
 func (s *StorageSDK) GetReadPoolInfo(clientID string) (string, error) {
 	readPool, err := sdk.GetReadPoolInfo(clientID)
 	if err != nil {
@@ -280,7 +280,11 @@ func (s *StorageSDK) RedeemFreeStorage(ticket string) (string, error) {
 		return "", err
 	}
 
-	hash, _, err := sdk.CreateFreeAllocationFor(recipientPublicKey, marker, lock)
+	if recipientPublicKey != client.GetClientPublicKey() {
+		return "", fmt.Errorf("invalid_free_marker: free marker is not assigned to your wallet")
+	}
+
+	hash, _, err := sdk.CreateFreeAllocation(marker, lock)
 	return hash, err
 }
 
