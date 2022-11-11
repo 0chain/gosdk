@@ -610,12 +610,13 @@ func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
 	}
 }
 
-func getBlobbersInternal(limit, offset int) (bs []*Blobber, err error) {
+func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err error) {
 	type nodes struct {
 		Nodes []*Blobber
 	}
 
-	url := fmt.Sprintf("/getblobbers?limit=%d&offset=%d",
+	url := fmt.Sprintf("/getblobbers?active=%s&limit=%d&offset=%d",
+		strconv.FormatBool(active),
 		limit,
 		offset,
 	)
@@ -635,36 +636,38 @@ func getBlobbersInternal(limit, offset int) (bs []*Blobber, err error) {
 	return wrap.Nodes, nil
 }
 
-func GetBlobbers() (bs []*Blobber, err error) {
+type GetBlobbersOptions struct {
+	Active bool
+}
+
+func GetBlobbers(options ...GetBlobbersOptions) (bs []*Blobber, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
 	}
 
-	limit, offset := 20, 0
+	active, limit, offset := true, 20, 0
 
-	blobbers, err := getBlobbersInternal(limit, offset)
+	blobbers, err := getBlobbersInternal(active, limit, offset)
 	if err != nil {
 		return blobbers, nil
 	}
 
 	var blobbersSl []*Blobber
 	blobbersSl = append(blobbersSl, blobbers...)
-	fmt.Println(blobbersSl)
 	for {
 		// if the len of output returned is less than the limit it means this is the last round of pagination
-		if len(blobbers) < limit {
-			fmt.Println(len(blobbers))
-			fmt.Println("Blobbers list")
+		if len(blobbers) <= limit {
 			break
 		}
+
+		// get the next set of blobbers
 		offset += 20
-		blobbers, err = getBlobbersInternal(limit, offset)
+		blobbers, err = getBlobbersInternal(active, limit, offset)
 		if err != nil {
 			return blobbers, err
 		}
 		blobbersSl = append(blobbersSl, blobbers...)
 
-		// get the next set of blobbers
 	}
 	return blobbersSl, nil
 }
