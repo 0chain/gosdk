@@ -549,20 +549,17 @@ func (req *DownloadRequest) getFileRef(remotePathCB string) (fRef *fileref.FileR
 	req.downloadMask, fRef, _ = listReq.getFileConsensusFromBlobbers()
 	if req.downloadMask.Equals64(0) || fRef == nil {
 		err = errors.New("consensus_not_met", "No minimum consensus for file meta data of file")
-		req.errorCB(err, remotePathCB)
 		return
 	}
 
 	if fRef.Type == fileref.DIRECTORY {
 		err = errors.New("invalid_operation", "cannot downoad directory")
-		req.errorCB(err, remotePathCB)
 		return
 	}
 
 	// the ChunkSize value can't be less than 0kb
 	if fRef.ChunkSize <= 0 {
 		err = errors.New("invalid_chunk_size", "File ChunkSize value is not permitted")
-		req.errorCB(err, remotePathCB)
 		return
 	}
 
