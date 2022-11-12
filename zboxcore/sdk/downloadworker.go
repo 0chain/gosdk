@@ -7,6 +7,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/0chain/errors"
@@ -75,14 +76,16 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte,
 	mask := req.downloadMask
 	requiredDownloads := req.consensusThresh
 	var (
-		remainingMask zboxutil.Uint128
-		failed        int
-		err           error
+		remainingMask  zboxutil.Uint128
+		failed         int
+		err            error
+		downloadErrors []string
 	)
 
 	curReqDownloads := requiredDownloads
 	for {
-		remainingMask, failed, err = req.downloadBlock(startBlock, totalBlock, mask, curReqDownloads, shards)
+		remainingMask, failed, downloadErrors, err = req.downloadBlock(
+			startBlock, totalBlock, mask, curReqDownloads, shards)
 		if err != nil {
 			return nil, err
 		}
@@ -92,8 +95,9 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte,
 
 		if failed > remainingMask.CountOnes() {
 			return nil, errors.New("download_failed",
-				fmt.Sprintf("%d failed blobbers exceeded %d remaining blobbers",
-					failed, remainingMask.CountOnes()))
+				fmt.Sprintf("%d failed blobbers exceeded %d remaining blobbers."+
+					" Download errors: %s",
+					failed, remainingMask.CountOnes(), strings.Join(downloadErrors, " ")))
 		}
 
 		curReqDownloads = failed
@@ -130,12 +134,12 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte,
 func (req *DownloadRequest) downloadBlock(
 	startBlock, totalBlock int64,
 	mask zboxutil.Uint128, requiredDownloads int,
-	shards [][][]byte) (zboxutil.Uint128, int, error) {
+	shards [][][]byte) (zboxutil.Uint128, int, []string, error) {
 
 	var remainingMask zboxutil.Uint128
 	activeBlobbers := mask.CountOnes()
 	if activeBlobbers < requiredDownloads {
-		return zboxutil.NewUint128(0), 0, errors.New("insufficient_blobbers",
+		return zboxutil.NewUint128(0), 0, nil, errors.New("insufficient_blobbers",
 			fmt.Sprintf("Required downloads %d, remaining active blobber %d",
 				req.consensusThresh, activeBlobbers))
 	}
@@ -174,12 +178,13 @@ func (req *DownloadRequest) downloadBlock(
 	}
 
 	var failed int
+	downloadErrors := make([]string, requiredDownloads)
 	failedMu := &sync.Mutex{}
 	wg := &sync.WaitGroup{}
 	for i := 0; i < requiredDownloads; i++ {
 		result := <-rspCh
 		wg.Add(1)
-		go func() {
+		go func(i int) {
 			defer wg.Done()
 			var err error
 			defer func() {
@@ -188,6 +193,8 @@ func (req *DownloadRequest) downloadBlock(
 					failed++
 					failedMu.Unlock()
 					req.removeFromMask(uint64(result.idx))
+					downloadErrors[i] = fmt.Sprintf("Error %s from %s",
+						err.Error(), req.blobbers[result.idx].Baseurl)
 					logger.Logger.Error(err)
 				}
 			}()
@@ -197,11 +204,11 @@ func (req *DownloadRequest) downloadBlock(
 			}
 			err = req.fillShards(shards, result)
 			return
-		}()
+		}(i)
 	}
 
 	wg.Wait()
-	return remainingMask, failed, nil
+	return remainingMask, failed, downloadErrors, nil
 }
 
 //decodeEC will reconstruct shards and verify it
