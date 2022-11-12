@@ -486,7 +486,6 @@ func (req *DownloadRequest) checkContentHash(
 
 	if expectedHash != hash {
 		err = errors.New("merkle_root_mismatch", "File content didn't match with uploaded file")
-		req.errorCB(err, remotepathCB)
 		return
 	}
 	return nil
@@ -495,8 +494,7 @@ func (req *DownloadRequest) checkContentHash(
 func (req *DownloadRequest) openFile(remotePathCB string) (sys.File, error) {
 	f, err := sys.Files.OpenFile(req.localpath, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
-		req.errorCB(errors.Wrap(err, "Can't create local file"), remotePathCB)
-		return nil, err
+		return nil, errors.Wrap(err, "Can't create local file")
 	}
 	return f, nil
 }
@@ -530,7 +528,6 @@ func (req *DownloadRequest) calculateShardsParams(
 
 	if req.startBlock >= req.endBlock {
 		err = errors.New("invalid_block_num", "start block should be less than end block")
-		req.errorCB(err, remotePathCB)
 		return 0, 0, 0, err
 	}
 
