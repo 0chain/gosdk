@@ -9,7 +9,7 @@ ANDROIDBINNAME	:= zcncore.aar
 
 PKG_EXPORTS := $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common $(GOSDK_PATH)/mobilesdk/sdk $(GOSDK_PATH)/mobilesdk/zbox
 
-.PHONY: setup-gomobile build-iossimulator build-ios
+.PHONY: setup-gomobile build-iossimulator build-ios build-android build-android-debug
 
 $(IOSMOBILESDKDIR):
 	$(shell mkdir -p $(IOSMOBILESDKDIR)/lib)
@@ -63,7 +63,12 @@ build-ios:
 
 build-android: 
 	@echo "Building Android framework. Please wait..."
-	@gomobile bind -target=android/arm64 -tags mobile -ldflags=-extldflags=-Wl,-soname,libgojni.so -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
+	@gomobile bind -v -ldflags="-s -w -extldflags=-Wl,-soname,libgojni.so" -target=android/arm64,android/amd64 -tags mobile  -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
+	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"
+
+build-android-debug: 
+	@echo "Building Android framework. Please wait..."
+	@gomobile bind -v -ldflags="-extldflags=-Wl" -gcflags '-N -l' -target=android/arm64,android/amd64 -tags mobile  -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
 	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"
 
 build-macos: 
