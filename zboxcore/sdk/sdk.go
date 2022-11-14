@@ -636,11 +636,7 @@ func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err err
 	return wrap.Nodes, nil
 }
 
-type GetBlobbersOptions struct {
-	Active bool // set this to true to get only active blobber
-}
-
-func GetBlobbers(options ...GetBlobbersOptions) (bs []*Blobber, err error) {
+func GetBlobbers(options ...bool) (bs []*Blobber, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
 	}
@@ -648,9 +644,10 @@ func GetBlobbers(options ...GetBlobbersOptions) (bs []*Blobber, err error) {
 	var active bool
 	if len(options) > 0 {
 		for _, option := range options {
-			active = option.Active
+			active = option
 		}
 	}
+
 	limit, offset := 20, 0
 
 	blobbers, err := getBlobbersInternal(active, limit, offset)
