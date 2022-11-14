@@ -39,7 +39,6 @@ type BlockDownloadRequest struct {
 	contentMode        string
 	numBlocks          int64
 	authTicket         *marker.AuthTicket
-	wg                 *sync.WaitGroup
 	ctx                context.Context
 	result             chan *downloadBlock
 }
@@ -97,7 +96,6 @@ func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
 }
 
 func (req *BlockDownloadRequest) downloadBlobberBlock() {
-	defer req.wg.Done()
 	if req.numBlocks <= 0 {
 		req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.New("invalid_request", "Invalid number of blocks for download")}
 		return
