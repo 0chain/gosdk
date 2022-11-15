@@ -193,19 +193,6 @@ func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
 	return signature, nil
 }
 
-// SignWithZCNChain signs the digest with ZCN chain signer
-//func (b *BridgeClient) SignWithZCNChain(hash string) (string, error) {
-//	signScheme := zcncrypto.NewSignatureScheme(scheme)
-//	if signScheme != nil {
-//		err := signScheme.SetPrivateKey(b.PrivateKey())
-//		if err != nil {
-//			return "", err
-//		}
-//		return signScheme.SignWithEthereum(hash)
-//	}
-//	return "", commonErr.NewError("invalid_signature_scheme", "Invalid signature scheme. Please check configuration")
-//}
-
 // MintWZCN Mint ZCN tokens on behalf of the 0ZCN client
 // payload: received from authorizers
 func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPayload) (*types.Transaction, error) {
@@ -275,16 +262,13 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 	}
 
 	// 1. Data Parameter (amount to burn)
-	//clientID := DefaultClientIDEncoder(b.ClientID())
-	//clientID = []byte(hex.EncodeToString(clientID))
-	//fmt.Println(b.ClientID())
-	//return nil, nil
+	clientID := DefaultClientIDEncoder(b.ClientID())
 
 	// 2. Data Parameter (signature)
 	amount := new(big.Int)
 	amount.SetInt64(int64(amountTokens))
 
-	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, "burn", amount, b.ClientID())
+	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, "burn", amount, clientID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare bridge")
 	}
@@ -295,7 +279,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 		zap.Int64("amount", amount.Int64()),
 	)
 
-	tran, err := bridgeInstance.Burn(transactOpts, amount, []byte(b.ClientID()))
+	tran, err := bridgeInstance.Burn(transactOpts, amount, clientID)
 	if err != nil {
 		msg := "failed to execute Burn WZCN transaction to ClientID = %s with amount = %s"
 		return nil, errors.Wrapf(err, msg, b.ClientID(), amount)
