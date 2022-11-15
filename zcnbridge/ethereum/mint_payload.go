@@ -6,6 +6,7 @@ import "encoding/json"
 type MintPayload struct {
 	ZCNTxnID        string                 `json:"zcn_txn_id"`
 	EthereumAddress string                 `json:"ethereum_address"`
+	ClientID        string                 `json:"client_id"`
 	Amount          int64                  `json:"amount"`
 	Nonce           int64                  `json:"nonce"`
 	Signatures      []*AuthorizerSignature `json:"signatures"`
