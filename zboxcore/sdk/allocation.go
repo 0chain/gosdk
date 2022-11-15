@@ -599,6 +599,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	}
 
 	downloadReq := &DownloadRequest{}
+	downloadReq.maskMu = &sync.Mutex{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
 	downloadReq.allocOwnerID = a.Owner
@@ -1225,6 +1226,7 @@ func (a *Allocation) CancelUpload(localpath string) error {
 func (a *Allocation) CancelDownload(remotepath string) error {
 	if downloadReq, ok := a.downloadProgressMap[remotepath]; ok {
 		downloadReq.isDownloadCanceled = true
+		downloadReq.ctxCncl()
 		return nil
 	}
 	return errors.New("remote_path_not_found", "Invalid path. No download in progress for the path "+remotepath)
@@ -1291,6 +1293,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	}
 
 	downloadReq := &DownloadRequest{}
+	downloadReq.maskMu = &sync.Mutex{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
 	downloadReq.allocOwnerID = a.Owner
