@@ -1578,7 +1578,9 @@ func TestAllocation_CancelDownload(t *testing.T) {
 				remotepath: remotePath,
 			},
 			setup: func(t *testing.T, a *Allocation) (teardown func(t *testing.T)) {
-				a.downloadProgressMap[remotePath] = &DownloadRequest{}
+				req := &DownloadRequest{}
+				req.ctx, req.ctxCncl = context.WithCancel(context.TODO())
+				a.downloadProgressMap[remotePath] = req
 				return nil
 			},
 		},
@@ -1682,6 +1684,8 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 					a.Blobbers = nil
 				}
 			},
+			wantErr: true,
+			errMsg:  "error from server list response: ",
 		},
 		{
 			name: "Test_Success",
@@ -1738,8 +1742,10 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 			setupMockGetFileInfoResponse(t, &mockClient)
 			a.InitAllocation()
 			sdkInitialized = true
-			for i := 0; i < numBlobbers; i++ {
-				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
+			if len(a.Blobbers) == 0 {
+				for i := 0; i < numBlobbers; i++ {
+					a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
+				}
 			}
 
 			got, err := a.ListDirFromAuthTicket(authTicket, tt.parameters.lookupHash)
@@ -1977,6 +1983,8 @@ func TestAllocation_listDir(t *testing.T) {
 				setupMockHttpResponse(t, mockClient, "TestAllocation_listDir", testCaseName, a, http.MethodGet, http.StatusBadRequest, []byte(""))
 				return nil
 			},
+			wantErr: true,
+			errMsg:  "error from server list response: ",
 		},
 		{
 			name: "Test_Success",
@@ -2451,9 +2459,6 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 				}
 				if downloadReq.statusCallback != nil {
 					downloadReq.statusCallback.Completed(a.ID, downloadReq.localpath, "1.txt", "application/octet-stream", 3, OpDownload)
-				}
-				if downloadReq.wg != nil {
-					downloadReq.wg.Done()
 				}
 				t.Logf("received a download request for %v\n", downloadReq.remotefilepath)
 			case repairReq := <-a.repairChan:

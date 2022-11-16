@@ -244,7 +244,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	}
 	req.Header.Add("Content-Type", formWriter.FormDataContentType())
 
-	logger.Logger.Info("Committing to blobber." + sb.blobber.Baseurl)
+	logger.Logger.Info("Committing to blobber. " + sb.blobber.Baseurl)
 
 	var (
 		resp           *http.Response
@@ -318,7 +318,7 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 	logger.Logger.Info("received a commit request")
 	paths := make([]string, 0)
 	for _, change := range sb.commitChanges {
-		paths = append(paths, change.GetAffectedPath())
+		paths = append(paths, change.GetAffectedPath()...)
 	}
 
 	var lR ReferencePathResult

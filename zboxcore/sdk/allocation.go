@@ -599,6 +599,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	}
 
 	downloadReq := &DownloadRequest{}
+	downloadReq.maskMu = &sync.Mutex{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
 	downloadReq.allocOwnerID = a.Owner
@@ -657,7 +658,12 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string)
 	listReq.ctx = a.ctx
 	listReq.remotefilepathhash = lookupHash
 	listReq.authToken = at
-	ref := listReq.GetListFromBlobbers()
+	ref, err := listReq.GetListFromBlobbers()
+
+	if err != nil {
+		return nil, err
+	}
+
 	if ref != nil {
 		return ref, nil
 	}
@@ -685,15 +691,19 @@ func (a *Allocation) ListDir(path string) (*ListResult, error) {
 	listReq.consensusThresh = a.consensusThreshold
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
-	ref := listReq.GetListFromBlobbers()
+	ref, err := listReq.GetListFromBlobbers()
+	if err != nil {
+		return nil, err
+	}
+
 	if ref != nil {
 		return ref, nil
 	}
 	return nil, errors.New("list_request_failed", "Failed to get list response from the blobbers")
 }
 
-//This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
-//TODO use allocation context
+// This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
+// TODO use allocation context
 func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
 	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
 		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
@@ -912,6 +922,11 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 		return errors.New("invalid_path", "Path should be valid and absolute")
 	}
 
+	err := ValidateRemoteFileName(destName)
+	if err != nil {
+		return err
+	}
+
 	req := &RenameRequest{}
 	req.allocationObj = a
 	req.blobbers = a.Blobbers
@@ -926,16 +941,46 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	req.renameMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
-	err := req.ProcessRename()
-	return err
+	return req.ProcessRename()
 }
 
-func (a *Allocation) MoveObject(path string, destPath string) error {
-	err := a.CopyObject(path, destPath)
+func (a *Allocation) MoveObject(srcPath string, destPath string) error {
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	if len(srcPath) == 0 || len(destPath) == 0 {
+		return errors.New("invalid_path", "Invalid path for copy")
+	}
+	srcPath = zboxutil.RemoteClean(srcPath)
+	isabs := zboxutil.IsRemoteAbs(srcPath)
+	if !isabs {
+		return errors.New("invalid_path", "Path should be valid and absolute")
+	}
+
+	err := ValidateRemoteFileName(destPath)
 	if err != nil {
 		return err
 	}
-	return a.DeleteFile(path)
+
+	req := &MoveRequest{}
+	req.allocationObj = a
+	req.blobbers = a.Blobbers
+	req.allocationID = a.ID
+	req.allocationTx = a.Tx
+	if destPath != "/" {
+		destPath = strings.TrimSuffix(destPath, "/")
+	}
+	req.destPath = destPath
+	req.Consensus.mu = &sync.RWMutex{}
+	req.fullconsensus = a.fullconsensus
+	req.consensusThresh = a.consensusThreshold
+	req.ctx = a.ctx
+	req.remotefilepath = srcPath
+	req.moveMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	req.maskMU = &sync.Mutex{}
+	req.connectionID = zboxutil.NewConnectionId()
+	return req.ProcessMove()
 }
 
 func (a *Allocation) CopyObject(path string, destPath string) error {
@@ -950,6 +995,11 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	isabs := zboxutil.IsRemoteAbs(path)
 	if !isabs {
 		return errors.New("invalid_path", "Path should be valid and absolute")
+	}
+
+	err := ValidateRemoteFileName(destPath)
+	if err != nil {
+		return err
 	}
 
 	req := &CopyRequest{}
@@ -969,8 +1019,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	req.copyMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
-	err := req.ProcessCopy()
-	return err
+	return req.ProcessCopy()
 }
 
 func (a *Allocation) GetAuthTicketForShare(
@@ -1177,6 +1226,7 @@ func (a *Allocation) CancelUpload(localpath string) error {
 func (a *Allocation) CancelDownload(remotepath string) error {
 	if downloadReq, ok := a.downloadProgressMap[remotepath]; ok {
 		downloadReq.isDownloadCanceled = true
+		downloadReq.ctxCncl()
 		return nil
 	}
 	return errors.New("remote_path_not_found", "Invalid path. No download in progress for the path "+remotepath)
@@ -1243,6 +1293,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	}
 
 	downloadReq := &DownloadRequest{}
+	downloadReq.maskMu = &sync.Mutex{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
 	downloadReq.allocOwnerID = a.Owner
