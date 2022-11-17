@@ -60,6 +60,7 @@ func (ch *UpdateFileChange) ProcessChange(
 	}
 	dirRef.Children[idx] = ch.NewFile
 	rootRef.CalculateHash()
+	commitParams.LatestFileID = latestFileID
 	commitParams.Operation = marker.Update
 	return
 }

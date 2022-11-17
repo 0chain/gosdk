@@ -15,9 +15,10 @@ type DeleteFileChange struct {
 }
 
 func (ch *DeleteFileChange) ProcessChange(
-	rootRef *fileref.Ref, _ int64) (
+	rootRef *fileref.Ref, latestFileID int64) (
 	commitParams CommitParams, err error) {
 
+	commitParams.LatestFileID = latestFileID
 	if ch.ObjectTree.GetPath() == "/" {
 		rootRef.Children = nil
 		rootRef.CalculateHash()

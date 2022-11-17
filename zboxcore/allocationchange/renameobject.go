@@ -68,6 +68,7 @@ func (ch *RenameFileChange) ProcessChange(
 		return
 	}
 	commitParams.Operation = marker.Rename
+	commitParams.LatestFileID = latestFileID
 	ch.processChildren(affectedRef)
 	rootRef.CalculateHash()
 	return

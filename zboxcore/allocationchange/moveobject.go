@@ -17,7 +17,7 @@ type MoveFileChange struct {
 	DestPath   string
 }
 
-func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref, _ int64) (
+func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref, latestFileID int64) (
 	commitParam CommitParams, err error) {
 
 	fields, err := common.GetPathFields(ch.DestPath)
@@ -59,6 +59,7 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref, _ int64) (
 	}
 
 	commitParam.WmFileID = dirRef.FileID
+	commitParam.LatestFileID = latestFileID
 	commitParam.Operation = marker.Move
 
 	var affectedRef *fileref.Ref
