@@ -4,9 +4,17 @@ GOMODCORE           := $(GOMODBASE)/zcncore
 VERSION_FILE        := $(ROOT_DIR)/core/version/version.go
 MAJOR_VERSION       := "1.0"
 
-PLATFORM:=$(shell uname -s | tr "[:upper:]" "[:lower:]")
+
 
 include _util/printer.mk
+
+PLATFORM:=$(shell uname -s | tr "[:upper:]" "[:lower:]")
+ifneq ($(filter $(GCC_MINOR),linux darwin),)
+
+else
+	PLATFORM:=windows
+endif
+
 include _util/build_$(PLATFORM).mk
 include _util/build_mobile.mk
 
