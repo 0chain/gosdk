@@ -267,12 +267,11 @@ jobs:
 
       - name: Build windows
         run: |
-
           make build-windows
 
       - name: Compress
         run: |
-            sudo apt install zip -y
+          sudo apt install zip -y
           zip zcn-windows.zip ./winsdk/zcn.windows.dll ./winsdk/zcn.windows.h
 
       - name: Setup Build
