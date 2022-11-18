@@ -69,6 +69,12 @@ lint-wasm:
 lint: lint-wasm
 	golangci-lint run --skip-dirs wasmsdk
 
+
+build-windows: 
+	@echo "Building 0Chain Windows SDK. Please wait..."
+	@go build --buildmode=c-shared -ldflags="-s -w" -o ./winsdk/zcn.windows.dll ./winsdk
+	@echo "  ./winsdk/zcn.windows.dll - [OK]"
+
 help:
 	@echo "Environment: "
 	@echo "\tPLATFORM.......: $(PLATFORM)"
