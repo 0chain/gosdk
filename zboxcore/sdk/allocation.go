@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -276,7 +277,7 @@ func (a *Allocation) CreateDir(remotePath string) error {
 		return errors.New("invalid_name", "Invalid name for dir")
 	}
 
-	if !filepath.IsAbs(remotePath) {
+	if !path.IsAbs(remotePath) {
 		return errors.New("invalid_path", "Path is not absolute")
 	}
 
