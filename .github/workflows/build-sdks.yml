@@ -251,7 +251,7 @@ jobs:
             zcncore-macos.tar.gz
 
 
- build-windows:
+  build-windows:
     name: Build-windows
     runs-on:  [self-hosted, build]
 
@@ -285,10 +285,10 @@ jobs:
 
             echo "::set-output name=RELEASE::false"
             echo "::set-output name=TAG::none"
-         
+        
           elif [[ ${tag} = v*\.*\.* ]] ; then
             echo "> 0Chain: trigger from git event"
-       
+      
             # upload output on release
             echo "::set-output name=RELEASE::true"
             echo "::set-output name=TAG::${tag}"
