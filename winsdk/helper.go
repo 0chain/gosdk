@@ -20,17 +20,21 @@ func getHomeDir() string {
 }
 
 type JsonResult struct {
-	Error  string      `json:"error,omitempty"`
-	Result interface{} `json:"result,omitempty"`
+	Error  string `json:"error,omitempty"`
+	Result string `json:"result,omitempty"`
 }
 
 func WithJSON(obj interface{}, err error) *C.char {
 
-	r := &JsonResult{
-		Result: obj,
-	}
+	r := &JsonResult{}
+
 	if err != nil {
 		r.Error = err.Error()
+	}
+
+	if obj != nil {
+		result, _ := json.Marshal(obj)
+		r.Result = string(result)
 	}
 
 	js, _ := json.Marshal(r)
