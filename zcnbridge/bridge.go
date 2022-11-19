@@ -193,19 +193,6 @@ func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
 	return signature, nil
 }
 
-// SignWithZCNChain signs the digest with ZCN chain signer
-//func (b *BridgeClient) SignWithZCNChain(hash string) (string, error) {
-//	signScheme := zcncrypto.NewSignatureScheme(scheme)
-//	if signScheme != nil {
-//		err := signScheme.SetPrivateKey(b.PrivateKey())
-//		if err != nil {
-//			return "", err
-//		}
-//		return signScheme.SignWithEthereum(hash)
-//	}
-//	return "", commonErr.NewError("invalid_signature_scheme", "Invalid signature scheme. Please check configuration")
-//}
-
 // MintWZCN Mint ZCN tokens on behalf of the 0ZCN client
 // payload: received from authorizers
 func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPayload) (*types.Transaction, error) {
@@ -221,7 +208,7 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 	zcnTxd := DefaultClientIDEncoder(payload.ZCNTxnID)
 
 	// 3. Client ID parameter
-	clientID := DefaultClientIDEncoder(b.EthereumAddress)
+	clientID := DefaultClientIDEncoder(payload.ClientID)
 
 	// 4. Nonce Parameter generated during burn operation
 	nonce := new(big.Int)
