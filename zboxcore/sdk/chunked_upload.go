@@ -560,6 +560,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		encryptedKey = su.fileEncscheme.GetEncryptedKey()
 	}
 
+	var recentErr error // capture the most recent error
 	wg := &sync.WaitGroup{}
 	var pos uint64
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -590,6 +591,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
 			if err != nil {
 				logger.Logger.Error("error during sendUploadRequest", err)
+				recentErr = err
 			}
 		}(blobber, body, formData, pos)
 	}
@@ -597,8 +599,8 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	wg.Wait()
 
 	if !su.consensus.isConsensusOk() {
-		return thrown.New("consensus_not_met", fmt.Sprintf("Upload failed. Required consensus atleast %d, got %d",
-			su.consensus.consensusThresh, su.consensus.getConsensus()))
+		return thrown.New("consensus_not_met", fmt.Sprintf("Upload failed. Required consensus atleast %d, got %d: %v",
+			su.consensus.consensusThresh, su.consensus.getConsensus(), recentErr))
 	}
 
 	return nil

@@ -149,6 +149,7 @@ func (req *CopyRequest) ProcessCopy() error {
 
 	var pos uint64
 
+	var recentError error
 	for i := req.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		wg.Add(1)
@@ -156,6 +157,7 @@ func (req *CopyRequest) ProcessCopy() error {
 			defer wg.Done()
 			refEntity, err := req.copyBlobberObject(req.blobbers[blobberIdx], blobberIdx)
 			if err != nil {
+				recentError = err
 				l.Logger.Error(err.Error())
 				return
 			}
@@ -167,8 +169,8 @@ func (req *CopyRequest) ProcessCopy() error {
 
 	if !req.isConsensusOk() {
 		return errors.New("consensus_not_met",
-			fmt.Sprintf("Copy failed. Required consensus %d, got %d",
-				req.Consensus.consensusThresh, req.Consensus.consensus))
+			fmt.Sprintf("Copy failed. Required consensus %d, got %d: %v",
+				req.Consensus.consensusThresh, req.Consensus.getConsensus(), recentError))
 	}
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
