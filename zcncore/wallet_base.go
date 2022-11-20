@@ -22,6 +22,7 @@ import (
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/encryption"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
@@ -980,14 +981,42 @@ func GetStakePoolUserInfo(clientID string, cb GetInfoCallback) (err error) {
 }
 
 // GetBlobbers obtains list of all active blobbers.
-func GetBlobbers(cb GetInfoCallback) (err error) {
+func GetBlobbers(cb GetInfoCallback, options ...bool) (bs []*sdk.Blobber, err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	var url = STORAGESC_GET_BLOBBERS
+	var active bool
+	if len(options) > 0 {
+		for _, option := range options {
+			active = option
+		}
+	}
 
-	go GetInfoFromSharders(url, OpStorageSCGetBlobbers, cb)
-	return
+	limit, offset := 20, 0
+
+	blobbers, err := sdk.GetBlobbersInternal(active, limit, offset)
+	if err != nil {
+		return blobbers, nil
+	}
+
+	var blobbersSl []*sdk.Blobber
+	blobbersSl = append(blobbersSl, blobbers...)
+	for {
+		// if the len of output returned is less than the limit it means this is the last round of pagination
+		if len(blobbers) <= limit {
+			break
+		}
+
+		// get the next set of blobbers
+		offset += 20
+		blobbers, err = sdk.GetBlobbersInternal(active, limit, offset)
+		if err != nil {
+			return blobbers, err
+		}
+		blobbersSl = append(blobbersSl, blobbers...)
+
+	}
+	return blobbersSl, err
 }
 
 // GetBlobber obtains blobber information.
