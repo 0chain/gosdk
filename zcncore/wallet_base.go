@@ -981,7 +981,7 @@ func GetStakePoolUserInfo(clientID string, cb GetInfoCallback) (err error) {
 }
 
 // GetBlobbers obtains list of all active blobbers.
-func GetBlobbers(cb GetInfoCallback, options ...bool) (bs []*sdk.Blobber, err error) {
+func GetBlobbers(options ...bool) (bs []*sdk.Blobber, err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
