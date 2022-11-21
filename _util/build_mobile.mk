@@ -53,12 +53,12 @@ gomobile-install:
 
 build-iossimulator: 
 	@echo "Building iOS Simulator framework. Please wait..."
-	@@gomobile bind -v -ldflags="-s -w" -target=iossimulator -tags "ios iossimulator mobile" CGO_CFLAGS="-mios-version-min=10 -mios-simulator-version-min=10" -o $(IOSMOBILESDKDIR)/simulator/$(IOSBINNAME) $(PKG_EXPORTS)
+	@CGO_CFLAGS="-miphoneos-version-min=7.0" gomobile bind -v -ldflags="-s -w" -target=iossimulator -tags "ios iossimulator mobile" -o $(IOSMOBILESDKDIR)/simulator/$(IOSBINNAME) $(PKG_EXPORTS)
 	@echo "   $(IOSMOBILESDKDIR)/simulator/$(IOSBINNAME). - [OK]"
 
 build-ios: 
 	@echo "Building iOS framework. Please wait..."
-	@@gomobile bind -v -ldflags="-s -w" -target=ios/arm64,iossimulator/amd64 -tags "ios mobile" CGO_CFLAGS="-mios-version-min=10 -mios-simulator-version-min=10" -o $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME) $(PKG_EXPORTS)
+	@CGO_CFLAGS="-miphoneos-version-min=7.0" gomobile bind -v -ldflags="-s -w" -target=ios/arm64,iossimulator/amd64 -tags "ios mobile" -o $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME) $(PKG_EXPORTS)
 	@echo "   $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME). - [OK]"	
 
 build-android: 
