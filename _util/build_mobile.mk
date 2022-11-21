@@ -73,5 +73,5 @@ build-android-debug:
 
 build-macos: 
 	@echo "Building MAC framework. Please wait..."
-	@gomobile bind -v -ldflags="-s -w" -target=macos -tags mobile -o $(MACSDKDIR)/$(IOSBINNAME) $(PKG_EXPORTS)
+	@CGO_CFLAGS="-miphoneos-version-min=7.0"  gomobile bind -v -ldflags="-s -w" -target=macos -tags mobile -o $(MACSDKDIR)/$(IOSBINNAME) $(PKG_EXPORTS)
 	@echo "   $(MACSDKDIR)/$(IOSBINNAME). - [OK]"
