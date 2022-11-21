@@ -178,6 +178,7 @@ func main() {
 
 				//zcn
 				"getWalletBalance": getWalletBalance,
+				"createReadPool":   createReadPool,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")

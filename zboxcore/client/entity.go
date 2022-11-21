@@ -112,7 +112,7 @@ func SignHash(hash string, signatureScheme string, keys []sys.KeyPair) (string, 
 
 func VerifySignature(signature string, msg string) (bool, error) {
 	ss := zcncrypto.NewSignatureScheme(client.SignatureScheme)
-	if err := ss.SetPublicKey(client.Keys[0].PublicKey); err != nil {
+	if err := ss.SetPublicKey(client.ClientKey); err != nil {
 		return false, err
 	}
 
