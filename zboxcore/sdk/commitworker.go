@@ -99,6 +99,8 @@ func startCommitWorker(blobberChan chan *CommitRequest, blobberID string) {
 }
 
 func (commitreq *CommitRequest) processCommit() {
+	defer commitreq.wg.Done()
+
 	l.Logger.Info("received a commit request")
 	paths := make([]string, 0)
 	for _, change := range commitreq.changes {
@@ -142,13 +144,11 @@ func (commitreq *CommitRequest) processCommit() {
 	//process the commit request for the blobber here
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
-		commitreq.wg.Done()
 		return
 	}
 	rootRef, err := lR.GetDirTree(commitreq.allocationID)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
-		commitreq.wg.Done()
 		return
 	}
 
@@ -177,7 +177,6 @@ func (commitreq *CommitRequest) processCommit() {
 		err = change.ProcessChange(rootRef)
 		if err != nil {
 			commitreq.result = ErrorCommitResult(err.Error())
-			commitreq.wg.Done()
 			return
 		}
 		size += change.GetSize()
@@ -186,11 +185,9 @@ func (commitreq *CommitRequest) processCommit() {
 	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
-		commitreq.wg.Done()
 		return
 	}
 	commitreq.result = SuccessCommitResult()
-	commitreq.wg.Done()
 }
 
 func (req *CommitRequest) commitBlobber(rootRef *fileref.Ref, latestWM *marker.WriteMarker, size int64) error {
