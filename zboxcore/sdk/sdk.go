@@ -652,14 +652,14 @@ func GetBlobbers(options ...bool) (bs []*Blobber, err error) {
 
 	blobbers, err := GetBlobbersInternal(active, limit, offset)
 	if err != nil {
-		return blobbers, nil
+		return nil, err
 	}
 
 	var blobbersSl []*Blobber
 	blobbersSl = append(blobbersSl, blobbers...)
 	for {
 		// if the len of output returned is less than the limit it means this is the last round of pagination
-		if len(blobbers) <= limit {
+		if len(blobbers) < limit {
 			break
 		}
 
