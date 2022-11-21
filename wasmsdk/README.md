@@ -161,6 +161,16 @@ convert blobber urls to blobber ids
 > []string
 
 
+### zcn.sdk.createReadPool
+create readpool in storage SC if the pool is missing.
+
+**Input**:
+> N/A
+
+**Output**:
+> string
+
+
 ## Blobber methods
 ### zcn.sdk.delete
 delete remote file from blobbers
