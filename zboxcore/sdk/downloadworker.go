@@ -522,7 +522,7 @@ func (req *DownloadRequest) calculateShardsParams(
 
 	chunksPerShard = (effectivePerShardSize + effectiveChunkSize - 1) / effectiveChunkSize
 	actualPerShard = chunksPerShard * fRef.ChunkSize
-	if req.endBlock == 0 {
+	if req.endBlock == 0 || req.endBlock > chunksPerShard {
 		req.endBlock = chunksPerShard
 	}
 
