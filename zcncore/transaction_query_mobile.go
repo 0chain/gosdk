@@ -481,7 +481,7 @@ func GetInfoFromAnySharder(urlSuffix string, op int, cb GetInfoCallback) {
 		return
 	}
 
-	qr, err := tq.fromAny(context.TODO(), urlSuffix)
+	qr, err := tq.fromAny(urlSuffix, nil)
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
