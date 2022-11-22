@@ -474,7 +474,7 @@ func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 	cb.OnInfoAvailable(op, StatusSuccess, string(qr.Content), "")
 }
 
-func getInfoFromAnySharder(urlSuffix string, op int, cb GetInfoCallback) {
+func GetInfoFromAnySharder(urlSuffix string, op int, cb GetInfoCallback) {
 
 	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders))
 	if err != nil {

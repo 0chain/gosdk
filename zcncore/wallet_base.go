@@ -949,7 +949,7 @@ func GetSnapshots(offset int64, cb GetInfoCallback) (err error) {
 	var url = withParams(STORAGE_GET_SNAPSHOT, Params{
 		"offset": strconv.FormatInt(offset, 10),
 	})
-	go getInfoFromAnySharder(url, OpStorageSCGetSnapshots, cb)
+	go GetInfoFromAnySharder(url, OpStorageSCGetSnapshots, cb)
 	return
 }
 
@@ -961,7 +961,7 @@ func GetBlobberSnapshots(offset int64, cb GetInfoCallback) (err error) {
 	var url = withParams(STORAGE_GET_BLOBBER_SNAPSHOT, Params{
 		"offset": strconv.FormatInt(offset, 10),
 	})
-	go getInfoFromAnySharder(url, OpStorageSCGetBlobberSnapshots, cb)
+	go GetInfoFromAnySharder(url, OpStorageSCGetBlobberSnapshots, cb)
 	return
 }
 
