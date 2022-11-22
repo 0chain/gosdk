@@ -475,13 +475,13 @@ func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 
 func GetInfoFromAnySharder(urlSuffix string, op int, cb GetInfoCallback) {
 
-	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders))
+	tq, err := newTransactionQuery(util.Shuffle(_config.chain.Sharders))
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
 	}
 
-	qr, err := tq.FromAny(context.TODO(), urlSuffix)
+	qr, err := tq.fromAny(context.TODO(), urlSuffix)
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
