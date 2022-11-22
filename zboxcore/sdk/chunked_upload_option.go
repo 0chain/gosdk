@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"io/ioutil"
 	"math"
+	"time"
 
 	"github.com/klauspost/reedsolomon"
 )
@@ -69,5 +70,17 @@ func WithStatusCallback(callback StatusCallback) ChunkedUploadOption {
 func WithProgressStorer(progressStorer ChunkedUploadProgressStorer) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
 		su.progressStorer = progressStorer
+	}
+}
+
+func WithUploadTimeout(t time.Duration) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
+		su.uploadTimeOut = t
+	}
+}
+
+func WithCommitTimeout(t time.Duration) ChunkedUploadOption {
+	return func(su *ChunkedUpload) {
+		su.commitTimeOut = t
 	}
 }

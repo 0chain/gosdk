@@ -15,8 +15,6 @@ import (
 	"sync"
 	"testing"
 
-	sdkBlobber "github.com/0chain/gosdk/sdks/blobber"
-
 	"github.com/0chain/gosdk/dev/blobber"
 	"github.com/0chain/gosdk/dev/blobber/model"
 	"github.com/0chain/gosdk/zboxcore/encryption"
@@ -48,7 +46,11 @@ const (
 	numBlobbers        = 4
 )
 
-func setupMockHttpResponse(t *testing.T, mockClient *mocks.HttpClient, funcName string, testCaseName string, a *Allocation, httpMethod string, statusCode int, body []byte) {
+func setupMockHttpResponse(
+	t *testing.T, mockClient *mocks.HttpClient, funcName string,
+	testCaseName string, a *Allocation, httpMethod string,
+	statusCode int, body []byte) {
+
 	for i := 0; i < numBlobbers; i++ {
 		url := funcName + testCaseName + mockBlobberUrl + strconv.Itoa(i)
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -87,7 +89,8 @@ func setupMockCommitRequest(a *Allocation) {
 func setupMockWriteLockRequest(a *Allocation, mockClient *mocks.HttpClient) {
 
 	for _, blobber := range a.Blobbers {
-		url := blobber.Baseurl + sdkBlobber.EndpointWriteMarkerLock
+		url := blobber.Baseurl + zboxutil.WM_LOCK_ENDPOINT
+		url = strings.TrimRight(url, "/")
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return strings.Contains(req.URL.String(), url)
 		})).Return(&http.Response{
@@ -252,7 +255,7 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit128(t *testing.T)
 	allocation.Blobbers = blobbers
 	allocation.DataShards = 64
 	allocation.ParityShards = 65
-	allocation.fullconsensus, allocation.consensusThreshold, allocation.consensusOK = allocation.getConsensuses()
+	allocation.fullconsensus, allocation.consensusThreshold = allocation.getConsensuses()
 
 	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false)
 
@@ -276,7 +279,7 @@ func TestThrowErrorWhenBlobbersRequiredGreaterThanExplicitLimit(t *testing.T) {
 	allocation.Blobbers = blobbers
 	allocation.DataShards = 5
 	allocation.ParityShards = 6
-	allocation.fullconsensus, allocation.consensusThreshold, allocation.consensusOK = allocation.getConsensuses()
+	allocation.fullconsensus, allocation.consensusThreshold = allocation.getConsensuses()
 
 	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false)
 
@@ -300,7 +303,7 @@ func TestDoNotThrowErrorWhenBlobbersRequiredLessThanLimit(t *testing.T) {
 	allocation.Blobbers = blobbers
 	allocation.DataShards = 5
 	allocation.ParityShards = 4
-	allocation.fullconsensus, allocation.consensusThreshold, allocation.consensusOK = allocation.getConsensuses()
+	allocation.fullconsensus, allocation.consensusThreshold = allocation.getConsensuses()
 
 	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false)
 
@@ -389,7 +392,12 @@ func TestAllocation_dispatchWork(t *testing.T) {
 	})
 	t.Run("Test_Cover_Upload_Request", func(t *testing.T) {
 		go a.dispatchWork(context.Background())
-		a.uploadChan <- &UploadRequest{file: []*fileref.FileRef{}, filemeta: &UploadFileMeta{}}
+		a.uploadChan <- &UploadRequest{
+			file:     []*fileref.FileRef{},
+			filemeta: &UploadFileMeta{},
+			Consensus: Consensus{
+				mu: &sync.RWMutex{},
+			}}
 	})
 	t.Run("Test_Cover_Download_Request", func(t *testing.T) {
 		ctx, ctxCncl := context.WithCancel(context.Background())
@@ -1570,7 +1578,9 @@ func TestAllocation_CancelDownload(t *testing.T) {
 				remotepath: remotePath,
 			},
 			setup: func(t *testing.T, a *Allocation) (teardown func(t *testing.T)) {
-				a.downloadProgressMap[remotePath] = &DownloadRequest{}
+				req := &DownloadRequest{}
+				req.ctx, req.ctxCncl = context.WithCancel(context.TODO())
+				a.downloadProgressMap[remotePath] = req
 				return nil
 			},
 		},
@@ -1674,6 +1684,8 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 					a.Blobbers = nil
 				}
 			},
+			wantErr: true,
+			errMsg:  "error from server list response: ",
 		},
 		{
 			name: "Test_Success",
@@ -1730,8 +1742,10 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 			setupMockGetFileInfoResponse(t, &mockClient)
 			a.InitAllocation()
 			sdkInitialized = true
-			for i := 0; i < numBlobbers; i++ {
-				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
+			if len(a.Blobbers) == 0 {
+				for i := 0; i < numBlobbers; i++ {
+					a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
+				}
 			}
 
 			got, err := a.ListDirFromAuthTicket(authTicket, tt.parameters.lookupHash)
@@ -1969,6 +1983,8 @@ func TestAllocation_listDir(t *testing.T) {
 				setupMockHttpResponse(t, mockClient, "TestAllocation_listDir", testCaseName, a, http.MethodGet, http.StatusBadRequest, []byte(""))
 				return nil
 			},
+			wantErr: true,
+			errMsg:  "error from server list response: ",
 		},
 		{
 			name: "Test_Success",
@@ -2417,7 +2433,7 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 	a.mutex = &sync.Mutex{}
 	a.initialized = true
 	if a.DataShards != 0 {
-		a.fullconsensus, a.consensusThreshold, a.consensusOK = a.getConsensuses()
+		a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	}
 	sdkInitialized = true
 	go func() {
@@ -2443,9 +2459,6 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 				}
 				if downloadReq.statusCallback != nil {
 					downloadReq.statusCallback.Completed(a.ID, downloadReq.localpath, "1.txt", "application/octet-stream", 3, OpDownload)
-				}
-				if downloadReq.wg != nil {
-					downloadReq.wg.Done()
 				}
 				t.Logf("received a download request for %v\n", downloadReq.remotefilepath)
 			case repairReq := <-a.repairChan:

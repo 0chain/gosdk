@@ -5,6 +5,7 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/client"
 )
 
@@ -43,7 +44,7 @@ func (wm *WriteMarker) Sign() error {
 func (wm *WriteMarker) VerifySignature(clientPublicKey string) error {
 	hashData := wm.GetHashData()
 	signatureHash := encryption.Hash(hashData)
-	sigOK, err := client.VerifySignature(wm.Signature, signatureHash)
+	sigOK, err := sys.Verify(wm.Signature, signatureHash)
 	if err != nil {
 		return errors.New("write_marker_validation_failed", "Error during verifying signature. "+err.Error())
 	}

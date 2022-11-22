@@ -10,11 +10,12 @@ import (
 	"sync"
 	"time"
 
-	"errors"
+	"github.com/0chain/errors"
 
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/logger"
 
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -30,144 +31,189 @@ type RenameRequest struct {
 	remotefilepath string
 	newName        string
 	ctx            context.Context
-
-	connectionID string
-	consensus    Consensus
+	wg             *sync.WaitGroup
+	renameMask     zboxutil.Uint128
+	maskMU         *sync.Mutex
+	connectionID   string
+	consensus      Consensus
 }
 
 func (req *RenameRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
 	return getObjectTreeFromBlobber(req.ctx, req.allocationID, req.allocationTx, req.remotefilepath, blobber)
 }
 
-func (req *RenameRequest) renameBlobberObject(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	refEntity, err := req.getObjectTreeFromBlobber(blobber)
-	if err != nil {
-		return nil, err
-	}
+func (req *RenameRequest) renameBlobberObject(
+	blobber *blockchain.StorageNode, blobberIdx int) (refEntity fileref.RefEntity, err error) {
 
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
-
-	_ = formWriter.WriteField("connection_id", req.connectionID)
-	formWriter.WriteField("path", req.remotefilepath)
-	formWriter.WriteField("new_name", req.newName)
-
-	formWriter.Close()
-	httpreq, err := zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationTx, body)
-	if err != nil {
-		l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
-		return nil, err
-	}
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
+	defer func() {
 		if err != nil {
-			l.Logger.Error("Rename : ", err)
-			return err
+			req.maskMU.Lock()
+			req.renameMask = req.renameMask.And(zboxutil.NewUint128(1).Lsh(uint64(blobberIdx)).Not())
+			req.maskMU.Unlock()
 		}
-		defer resp.Body.Close()
-		if resp.StatusCode == http.StatusOK {
-			req.consensus.Done()
+	}()
 
-			l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " renamed.")
-			return nil
-		}
-		respBody, err := ioutil.ReadAll(resp.Body)
-		if err == nil {
-			msg := string(respBody)
-			if len(msg) > 0 {
-				l.Logger.Error(blobber.Baseurl, "Response: ", msg)
+	refEntity, err = req.getObjectTreeFromBlobber(req.blobbers[blobberIdx])
+	if err != nil {
+		return nil, err
+	}
 
-				return fmt.Errorf("Rename: %v %s", resp.StatusCode, msg)
+	var (
+		resp             *http.Response
+		shouldContinue   bool
+		latestRespMsg    string
+		latestStatusCode int
+	)
+
+	for i := 0; i < 3; i++ {
+		err, shouldContinue = func() (err error, shouldContinue bool) {
+			body := new(bytes.Buffer)
+			formWriter := multipart.NewWriter(body)
+
+			formWriter.WriteField("connection_id", req.connectionID)
+			formWriter.WriteField("path", req.remotefilepath)
+			formWriter.WriteField("new_name", req.newName)
+			formWriter.Close()
+
+			var httpreq *http.Request
+			httpreq, err = zboxutil.NewRenameRequest(blobber.Baseurl, req.allocationTx, body)
+			if err != nil {
+				l.Logger.Error(blobber.Baseurl, "Error creating rename request", err)
+				return
 			}
 
-		}
+			httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+			ctx, cncl := context.WithTimeout(req.ctx, DefaultUploadTimeOut)
+			resp, err = zboxutil.Client.Do(httpreq.WithContext(ctx))
+			defer cncl()
 
-		return fmt.Errorf("Rename: %v", resp.StatusCode)
-	})
-	if err != nil {
-		return nil, err
+			if err != nil {
+				logger.Logger.Error("Rename: ", err)
+				return
+			}
+
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
+			var respBody []byte
+			respBody, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				logger.Logger.Error("Error: Resp ", err)
+				return
+			}
+
+			latestRespMsg = string(respBody)
+			latestStatusCode = resp.StatusCode
+
+			if resp.StatusCode == http.StatusOK {
+				req.consensus.Done()
+				l.Logger.Info(blobber.Baseurl, " "+req.remotefilepath, " renamed.")
+				return
+			}
+
+			if resp.StatusCode == http.StatusTooManyRequests {
+				logger.Logger.Error("Got too many request error")
+				var r int
+				r, err = zboxutil.GetRateLimitValue(resp)
+				if err != nil {
+					logger.Logger.Error(err)
+					return
+				}
+				time.Sleep(time.Duration(r) * time.Second)
+				shouldContinue = true
+				return
+			}
+			l.Logger.Error(blobber.Baseurl, "Response: ", string(respBody))
+			err = errors.New("response_error", string(respBody))
+			return
+		}()
+
+		if err != nil {
+			return
+		}
+		if shouldContinue {
+			continue
+		}
+		return
 	}
-	return refEntity, nil
+
+	err = errors.New("unknown_issue",
+		fmt.Sprintf("last status code: %d, last response message: %s", latestStatusCode, latestRespMsg))
+	return
 }
 
 func (req *RenameRequest) ProcessRename() error {
-	num := len(req.blobbers)
-	objectTreeRefs := make([]fileref.RefEntity, num)
-
-	wait := make(chan ProcessResult, num)
-
-	wg := &sync.WaitGroup{}
-	wg.Add(num)
-
-	for i := 0; i < num; i++ {
+	numList := len(req.blobbers)
+	objectTreeRefs := make([]fileref.RefEntity, numList)
+	req.wg = &sync.WaitGroup{}
+	req.wg.Add(numList)
+	for i := 0; i < numList; i++ {
 		go func(blobberIdx int) {
-			defer wg.Done()
-			refEntity, err := req.renameBlobberObject(req.blobbers[blobberIdx])
-
-			if err != nil {
-				l.Logger.Error(err.Error())
+			defer req.wg.Done()
+			refEntity, err := req.renameBlobberObject(req.blobbers[blobberIdx], blobberIdx)
+			if err == nil {
+				req.consensus.Done()
+				req.maskMU.Lock()
+				objectTreeRefs[blobberIdx] = refEntity
+				req.maskMU.Unlock()
+				return
 			}
-
-			wait <- ProcessResult{
-				BlobberIndex: blobberIdx,
-				FileRef:      refEntity,
-				Succeed:      err == nil,
-			}
+			l.Logger.Error(err.Error())
 		}(i)
 	}
-	wg.Wait()
-
-	for i := 0; i < num; i++ {
-		r := <-wait
-
-		if !r.Succeed {
-			continue
-		}
-
-		objectTreeRefs[r.BlobberIndex] = r.FileRef
-	}
+	req.wg.Wait()
 
 	if !req.consensus.isConsensusOk() {
-		return errors.New("Rename failed: Rename request failed. Operation failed.")
+		return errors.New("consensus_not_met",
+			fmt.Sprintf("Rename failed. Required consensus %d got %d",
+				req.consensus.consensusThresh, req.consensus.getConsensus()))
 	}
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
 	if err != nil {
 		return fmt.Errorf("rename failed: %s", err.Error())
 	}
-	err = writeMarkerMutex.Lock(context.TODO(), req.connectionID)
-	defer writeMarkerMutex.Unlock(context.TODO(), req.connectionID) //nolint: errcheck
+
+	err = writeMarkerMutex.Lock(req.ctx, &req.renameMask,
+		req.maskMU, req.blobbers, &req.consensus, 0, time.Minute, req.connectionID)
+	defer writeMarkerMutex.Unlock(req.ctx, req.renameMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 	if err != nil {
 		return fmt.Errorf("rename failed: %s", err.Error())
 	}
 
 	req.consensus.Reset()
+	activeBlobbers := req.renameMask.CountOnes()
+	wg := &sync.WaitGroup{}
+	wg.Add(activeBlobbers)
+	commitReqs := make([]*CommitRequest, activeBlobbers)
 
-	commitReqs := make([]*CommitRequest, 0, num)
+	var pos uint64
+	var c int
+	for i := req.renameMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
 
-	for pos, ref := range objectTreeRefs {
-		if ref == nil {
-			continue
+		newChange := &allocationchange.RenameFileChange{
+			NewName:    req.newName,
+			ObjectTree: objectTreeRefs[pos],
 		}
-
-		wg.Add(1)
-		commitReq := &CommitRequest{}
-		commitReq.allocationID = req.allocationID
-		commitReq.allocationTx = req.allocationTx
-		commitReq.blobber = req.blobbers[pos]
-		newChange := &allocationchange.RenameFileChange{}
-		newChange.NewName = req.newName
-		newChange.ObjectTree = objectTreeRefs[pos]
-		newChange.NumBlocks = 0
 		newChange.Operation = constants.FileOperationRename
 		newChange.Size = 0
+
+		commitReq := &CommitRequest{
+			allocationID: req.allocationID,
+			allocationTx: req.allocationTx,
+			blobber:      req.blobbers[pos],
+			connectionID: req.connectionID,
+			wg:           wg,
+		}
 		commitReq.changes = append(commitReq.changes, newChange)
-		commitReq.connectionID = req.connectionID
-		commitReq.wg = wg
-		commitReqs = append(commitReqs, commitReq)
+		commitReqs[c] = commitReq
+
 		go AddCommitRequest(commitReq)
+
+		c++
 	}
+
 	wg.Wait()
 
 	var errMessages string
@@ -186,7 +232,9 @@ func (req *RenameRequest) ProcessRename() error {
 	}
 
 	if !req.consensus.isConsensusOk() {
-		return errors.New("rename failed: Commit consensus failed. Error: " + errMessages)
+		return errors.New("consensus_not_met",
+			fmt.Sprintf("Required consensus %d got %d. Error: %s",
+				req.consensus.consensusThresh, req.consensus.consensus, errMessages))
 	}
 	return nil
 }

@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -183,9 +184,8 @@ type Allocation struct {
 	initialized             bool
 
 	// conseususes
-	consensusThreshold float32
-	consensusOK        float32
-	fullconsensus      float32
+	consensusThreshold int
+	fullconsensus      int
 }
 
 func (a *Allocation) GetStats() *AllocationStats {
@@ -217,7 +217,7 @@ func (a *Allocation) InitAllocation() {
 	a.uploadProgressMap = make(map[string]*UploadRequest)
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
 	a.mutex = &sync.Mutex{}
-	a.fullconsensus, a.consensusThreshold, a.consensusOK = a.getConsensuses()
+	a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers)
@@ -277,20 +277,27 @@ func (a *Allocation) CreateDir(remotePath string) error {
 		return errors.New("invalid_name", "Invalid name for dir")
 	}
 
-	if !filepath.IsAbs(remotePath) {
+	if !path.IsAbs(remotePath) {
 		return errors.New("invalid_path", "Path is not absolute")
 	}
 
 	remotePath = zboxutil.RemoteClean(remotePath)
-	req := DirRequest{}
-	req.allocationID = a.ID
-	req.allocationTx = a.Tx
-	req.blobbers = a.Blobbers
-	req.mu = &sync.Mutex{}
-	req.dirMask = 0
-	req.connectionID = zboxutil.NewConnectionId()
-	req.ctx = a.ctx
-	req.remotePath = remotePath
+	req := DirRequest{
+		allocationID: a.ID,
+		allocationTx: a.Tx,
+		blobbers:     a.Blobbers,
+		mu:           &sync.Mutex{},
+		dirMask:      zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
+		connectionID: zboxutil.NewConnectionId(),
+		ctx:          a.ctx,
+		remotePath:   remotePath,
+		wg:           &sync.WaitGroup{},
+		Consensus: Consensus{
+			mu:              &sync.RWMutex{},
+			consensusThresh: a.consensusThreshold,
+			fullconsensus:   a.fullconsensus,
+		},
+	}
 
 	err := req.ProcessDir(a)
 	return err
@@ -481,9 +488,9 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 	uploadReq.datashards = a.DataShards
 	uploadReq.parityshards = a.ParityShards
 	uploadReq.setUploadMask(len(a.Blobbers))
+	uploadReq.Consensus.mu = &sync.RWMutex{}
 	uploadReq.fullconsensus = a.fullconsensus
 	uploadReq.consensusThresh = a.consensusThreshold
-	uploadReq.consensusRequiredForOk = a.consensusOK
 	uploadReq.isEncrypted = encryption
 	uploadReq.completedCallback = func(filepath string) {
 		a.mutex.Lock()
@@ -512,7 +519,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 
 		uploadReq.filemeta.Hash = fileRef.ActualFileHash
 		uploadReq.uploadMask = found.Not().And(uploadReq.uploadMask)
-		uploadReq.fullconsensus = float32(uploadReq.uploadMask.Add64(1).TrailingZeros())
+		uploadReq.fullconsensus = uploadReq.uploadMask.Add64(1).TrailingZeros()
 	}
 
 	if !uploadReq.IsFullConsensusSupported() {
@@ -537,9 +544,9 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, 
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
+	listReq.Consensus.mu = &sync.RWMutex{}
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
-	listReq.consensusRequiredForOk = a.consensusOK
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = remotepath
 	found, fileRef, _ := listReq.getFileConsensusFromBlobbers()
@@ -593,6 +600,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	}
 
 	downloadReq := &DownloadRequest{}
+	downloadReq.maskMu = &sync.Mutex{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
 	downloadReq.allocOwnerID = a.Owner
@@ -607,9 +615,9 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	downloadReq.startBlock = startBlock - 1
 	downloadReq.endBlock = endBlock
 	downloadReq.numBlocks = int64(numBlocks)
+	downloadReq.Consensus.mu = &sync.RWMutex{}
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
-	downloadReq.consensusRequiredForOk = a.consensusOK
 	downloadReq.completedCallback = func(remotepath string, remotepathhash string) {
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
@@ -648,11 +656,15 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string)
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
-	listReq.consensusRequiredForOk = a.consensusOK
 	listReq.ctx = a.ctx
 	listReq.remotefilepathhash = lookupHash
 	listReq.authToken = at
-	ref := listReq.GetListFromBlobbers()
+	ref, err := listReq.GetListFromBlobbers()
+
+	if err != nil {
+		return nil, err
+	}
+
 	if ref != nil {
 		return ref, nil
 	}
@@ -675,20 +687,24 @@ func (a *Allocation) ListDir(path string) (*ListResult, error) {
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
+	listReq.Consensus.mu = &sync.RWMutex{}
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
-	listReq.consensusRequiredForOk = a.consensusOK
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
-	ref := listReq.GetListFromBlobbers()
+	ref, err := listReq.GetListFromBlobbers()
+	if err != nil {
+		return nil, err
+	}
+
 	if ref != nil {
 		return ref, nil
 	}
 	return nil, errors.New("list_request_failed", "Failed to get list response from the blobbers")
 }
 
-//This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
-//TODO use allocation context
+// This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
+// TODO use allocation context
 func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
 	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
 		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
@@ -712,7 +728,7 @@ func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType
 		ctx:            a.ctx,
 	}
 	oTreeReq.fullconsensus = a.fullconsensus
-	oTreeReq.consensusThresh = float32(a.DataShards) / oTreeReq.fullconsensus
+	oTreeReq.consensusThresh = a.consensusThreshold
 
 	return oTreeReq.GetRefs()
 }
@@ -739,8 +755,9 @@ func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit in
 		wg:           &sync.WaitGroup{},
 		pageLimit:    pageLimit,
 		Consensus: Consensus{
+			mu:              &sync.RWMutex{},
 			fullconsensus:   a.fullconsensus,
-			consensusThresh: float32(a.DataShards) / a.fullconsensus,
+			consensusThresh: a.consensusThreshold,
 		},
 	}
 	return req.GetRecentlyAddedRefs()
@@ -756,9 +773,9 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
+	listReq.Consensus.mu = &sync.RWMutex{}
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
-	listReq.consensusRequiredForOk = a.consensusOK
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
 	_, ref, _ := listReq.getFileConsensusFromBlobbers()
@@ -803,9 +820,9 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
+	listReq.Consensus.mu = &sync.RWMutex{}
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
-	listReq.consensusRequiredForOk = a.consensusOK
 	listReq.ctx = a.ctx
 	listReq.remotefilepathhash = lookupHash
 	listReq.authToken = at
@@ -844,7 +861,6 @@ func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error) {
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
-	listReq.consensusRequiredForOk = a.consensusOK
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
 	ref := listReq.getFileStatsFromBlobbers()
@@ -858,7 +874,7 @@ func (a *Allocation) DeleteFile(path string) error {
 	return a.deleteFile(path, a.consensusThreshold, a.fullconsensus)
 }
 
-func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus float32) error {
+func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
@@ -877,10 +893,13 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus floa
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
-	req.consensus.Init(threshConsensus, fullConsensus, a.consensusOK)
+	req.consensus.mu = &sync.RWMutex{}
+	req.consensus.Init(threshConsensus, fullConsensus)
 	req.ctx = a.ctx
-	req.remoteFilePath = path
+	req.remotefilepath = path
 	req.connectionID = zboxutil.NewConnectionId()
+	req.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	req.maskMu = &sync.Mutex{}
 	err := req.ProcessDelete()
 	return err
 }
@@ -904,28 +923,65 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 		return errors.New("invalid_path", "Path should be valid and absolute")
 	}
 
+	err := ValidateRemoteFileName(destName)
+	if err != nil {
+		return err
+	}
+
 	req := &RenameRequest{}
 	req.allocationObj = a
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
 	req.newName = destName
+	req.consensus.mu = &sync.RWMutex{}
 	req.consensus.fullconsensus = a.fullconsensus
 	req.consensus.consensusThresh = a.consensusThreshold
-	req.consensus.consensusRequiredForOk = a.consensusOK
 	req.ctx = a.ctx
 	req.remotefilepath = path
+	req.renameMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
-	err := req.ProcessRename()
-	return err
+	return req.ProcessRename()
 }
 
-func (a *Allocation) MoveObject(path string, destPath string) error {
-	err := a.CopyObject(path, destPath)
+func (a *Allocation) MoveObject(srcPath string, destPath string) error {
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	if len(srcPath) == 0 || len(destPath) == 0 {
+		return errors.New("invalid_path", "Invalid path for copy")
+	}
+	srcPath = zboxutil.RemoteClean(srcPath)
+	isabs := zboxutil.IsRemoteAbs(srcPath)
+	if !isabs {
+		return errors.New("invalid_path", "Path should be valid and absolute")
+	}
+
+	err := ValidateRemoteFileName(destPath)
 	if err != nil {
 		return err
 	}
-	return a.DeleteFile(path)
+
+	req := &MoveRequest{}
+	req.allocationObj = a
+	req.blobbers = a.Blobbers
+	req.allocationID = a.ID
+	req.allocationTx = a.Tx
+	if destPath != "/" {
+		destPath = strings.TrimSuffix(destPath, "/")
+	}
+	req.destPath = destPath
+	req.Consensus.mu = &sync.RWMutex{}
+	req.fullconsensus = a.fullconsensus
+	req.consensusThresh = a.consensusThreshold
+	req.ctx = a.ctx
+	req.remotefilepath = srcPath
+	req.moveMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	req.maskMU = &sync.Mutex{}
+	req.connectionID = zboxutil.NewConnectionId()
+	return req.ProcessMove()
 }
 
 func (a *Allocation) CopyObject(path string, destPath string) error {
@@ -942,6 +998,11 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 		return errors.New("invalid_path", "Path should be valid and absolute")
 	}
 
+	err := ValidateRemoteFileName(destPath)
+	if err != nil {
+		return err
+	}
+
 	req := &CopyRequest{}
 	req.allocationObj = a
 	req.blobbers = a.Blobbers
@@ -951,14 +1012,15 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 		destPath = strings.TrimSuffix(destPath, "/")
 	}
 	req.destPath = destPath
+	req.Consensus.mu = &sync.RWMutex{}
 	req.fullconsensus = a.fullconsensus
 	req.consensusThresh = a.consensusThreshold
-	req.consensusRequiredForOk = a.consensusOK
 	req.ctx = a.ctx
 	req.remotefilepath = path
+	req.copyMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
-	err := req.ProcessCopy()
-	return err
+	return req.ProcessCopy()
 }
 
 func (a *Allocation) GetAuthTicketForShare(
@@ -1143,10 +1205,10 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 	}
 	wg.Wait()
 	consensus := Consensus{
-		consensus:              float32(len(success)),
-		consensusThresh:        a.consensusThreshold,
-		fullconsensus:          a.fullconsensus,
-		consensusRequiredForOk: a.consensusOK,
+		mu:              &sync.RWMutex{},
+		consensus:       len(success),
+		consensusThresh: a.consensusThreshold,
+		fullconsensus:   a.fullconsensus,
 	}
 	if !consensus.isConsensusOk() {
 		return errors.New("", "consensus not reached")
@@ -1165,6 +1227,7 @@ func (a *Allocation) CancelUpload(localpath string) error {
 func (a *Allocation) CancelDownload(remotepath string) error {
 	if downloadReq, ok := a.downloadProgressMap[remotepath]; ok {
 		downloadReq.isDownloadCanceled = true
+		downloadReq.ctxCncl()
 		return nil
 	}
 	return errors.New("remote_path_not_found", "Invalid path. No download in progress for the path "+remotepath)
@@ -1231,6 +1294,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	}
 
 	downloadReq := &DownloadRequest{}
+	downloadReq.maskMu = &sync.Mutex{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
 	downloadReq.allocOwnerID = a.Owner
@@ -1247,9 +1311,9 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.startBlock = startBlock - 1
 	downloadReq.endBlock = endBlock
 	downloadReq.numBlocks = int64(numBlocks)
+	downloadReq.Consensus.mu = &sync.RWMutex{}
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
-	downloadReq.consensusRequiredForOk = a.consensusOK
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
@@ -1312,6 +1376,11 @@ func (a *Allocation) AddCollaborator(filePath, collaboratorID string) error {
 		path:           filePath,
 		collaboratorID: collaboratorID,
 		a:              a,
+		consensus: Consensus{
+			mu:              &sync.RWMutex{},
+			fullconsensus:   a.fullconsensus,
+			consensusThresh: a.consensusThreshold,
+		},
 	}
 
 	if req.UpdateCollaboratorToBlobbers() {
@@ -1329,6 +1398,11 @@ func (a *Allocation) RemoveCollaborator(filePath, collaboratorID string) error {
 		path:           filePath,
 		collaboratorID: collaboratorID,
 		a:              a,
+		consensus: Consensus{
+			mu:              &sync.RWMutex{},
+			fullconsensus:   a.fullconsensus,
+			consensusThresh: a.consensusThreshold,
+		},
 	}
 
 	if req.RemoveCollaboratorFromBlobbers() {
@@ -1439,17 +1513,14 @@ func (a *Allocation) sizeInGB(size int64) float64 {
 	return float64(size) / GB
 }
 
-func (a *Allocation) getConsensuses() (fullConsensus float32, consensusThreshold float32, consensusOK float32) {
+func (a *Allocation) getConsensuses() (fullConsensus, consensusThreshold int) {
 	if a.DataShards == 0 {
-		return 0, 0, 0
+		return 0, 0
 	}
 
 	if a.ParityShards == 0 {
-		return float32(a.DataShards), 100, 100
+		return a.DataShards, a.DataShards
 	}
 
-	fullConsensus = float32(a.DataShards + a.ParityShards)
-	consensusThreshold = (float32(a.DataShards) * 100) / fullConsensus
-	consensusOK = consensusThreshold + additionalSuccessRate
-	return
+	return a.DataShards + a.ParityShards, a.DataShards + 1
 }

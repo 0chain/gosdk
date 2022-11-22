@@ -63,8 +63,9 @@ var (
 // The contract will transfer some amount from owner address to the pool.
 // So the owner must call IncreaseAllowance of the WZCN token with 2 parameters:
 // spender address which is the bridge contract and amount to be burned (transferred)
-//nolint:funlen
 // ERC20 signature: "increaseAllowance(address,uint256)"
+//
+//nolint:funlen
 func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei Wei) (*types.Transaction, error) {
 	etherClient, err := b.CreateEthClient()
 	if err != nil {
@@ -192,19 +193,6 @@ func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
 	return signature, nil
 }
 
-// SignWithZCNChain signs the digest with ZCN chain signer
-//func (b *BridgeClient) SignWithZCNChain(hash string) (string, error) {
-//	signScheme := zcncrypto.NewSignatureScheme(scheme)
-//	if signScheme != nil {
-//		err := signScheme.SetPrivateKey(b.PrivateKey())
-//		if err != nil {
-//			return "", err
-//		}
-//		return signScheme.SignWithEthereum(hash)
-//	}
-//	return "", commonErr.NewError("invalid_signature_scheme", "Invalid signature scheme. Please check configuration")
-//}
-
 // MintWZCN Mint ZCN tokens on behalf of the 0ZCN client
 // payload: received from authorizers
 func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPayload) (*types.Transaction, error) {
@@ -220,7 +208,7 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 	zcnTxd := DefaultClientIDEncoder(payload.ZCNTxnID)
 
 	// 3. Client ID parameter
-	clientID := DefaultClientIDEncoder(b.ClientID())
+	clientID := DefaultClientIDEncoder(b.EthereumAddress)
 
 	// 4. Nonce Parameter generated during burn operation
 	nonce := new(big.Int)
@@ -228,12 +216,12 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 
 	// 5. Signature
 	// For requirements from ERC20 authorizer, the signature length must be 65
-	var sigs []byte
+	var sigs [][]byte
 	for _, signature := range payload.Signatures {
-		sigs = append(sigs, signature.Signature...)
+		sigs = append(sigs, signature.Signature)
 	}
 
-	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, "mint", amount, zcnTxd, nonce, sigs)
+	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, "mint", amount, zcnTxd, clientID, nonce, sigs)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare bridge")
 	}
@@ -243,8 +231,7 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 		zap.String("clientID", b.ClientID()),
 		zap.Int64("amount", amount.Int64()),
 		zap.String("zcnTxd", string(zcnTxd)),
-		zap.String("nonce", nonce.String()),
-	)
+		zap.String("nonce", nonce.String()))
 
 	tran, err := bridgeInstance.Mint(transactOpts, amount, zcnTxd, clientID, nonce, sigs)
 	if err != nil {
@@ -395,13 +382,13 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params 
 		return nil, nil, errors.Wrap(err, "failed to get ABI")
 	}
 
-	// Pack the method argument
+	//Pack the method argument
 	pack, err := abi.Pack(method, params...)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to pack arguments")
 	}
 
-	// Gas limits in units
+	//Gas limits in units
 	fromAddress := common.HexToAddress(b.EthereumAddress)
 
 	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
@@ -413,7 +400,7 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params 
 		return nil, nil, errors.Wrap(err, "failed to estimate gas")
 	}
 
-	// Update gas limits + 10%
+	//Update gas limits + 10%
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 
 	transactOpts := b.CreateSignedTransactionFromKeyStore(etherClient, gasLimitUnits)

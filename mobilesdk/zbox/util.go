@@ -92,7 +92,7 @@ func Sign(hash string) (string, error) {
 	return client.Sign(hash)
 }
 
-// VerifySignature - verify message with signature
+// VerifySignatxure - verify message with signature
 func VerifySignature(signature string, msg string) (bool, error) {
 	return client.VerifySignature(signature, msg)
 }
