@@ -139,7 +139,6 @@ func (commitreq *CommitRequest) processCommit() {
 	rootRef, err := lR.GetDirTree(commitreq.allocationID)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
-		commitreq.wg.Done()
 		return
 	}
 
