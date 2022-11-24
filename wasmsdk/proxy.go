@@ -171,13 +171,15 @@ func main() {
 				"executeSmartContract": executeSmartContract,
 
 				//swap
-				"setSwapWallets": setSwapWallets,
-				"swapToken":      swapToken,
-				"initBridge":     initBridge,
-				"mintZCN":        mintZCN,
+				"setSwapWallets":     setSwapWallets,
+				"swapToken":          swapToken,
+				"initBridge":         initBridge,
+				"mintZCN":            mintZCN,
+				"getMintWZCNPayload": getMintWZCNPayload,
 
 				//zcn
 				"getWalletBalance": getWalletBalance,
+				"createReadPool":   createReadPool,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
