@@ -46,6 +46,23 @@ func createDir(allocationID, remotePath string) error {
 	return allocationObj.CreateDir(remotePath)
 }
 
+func lisBlobbersForFile(allocationID, remotePath string) ([]string, error) {
+	if len(allocationID) == 0 {
+		return RequiredArg("allocationID")
+	}
+
+	if len(remotePath) == 0 {
+		return RequiredArg("remotePath")
+	}
+
+	allocationObj, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+
+	return allocationObj.LisBlobbersForFile(remotePath)
+}
+
 // Delete delete file from blobbers
 func Delete(allocationID, remotePath string) (*FileCommandResponse, error) {
 

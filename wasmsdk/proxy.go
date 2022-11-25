@@ -140,16 +140,17 @@ func main() {
 				"isWalletID":             isWalletID,
 
 				//blobber
-				"delete":         Delete,
-				"rename":         Rename,
-				"copy":           Copy,
-				"move":           Move,
-				"share":          Share,
-				"download":       download,
-				"upload":         upload,
-				"listObjects":    listObjects,
-				"createDir":      createDir,
-				"downloadBlocks": downloadBlocks,
+				"delete":             Delete,
+				"rename":             Rename,
+				"copy":               Copy,
+				"move":               Move,
+				"share":              Share,
+				"download":           download,
+				"upload":             upload,
+				"listObjects":        listObjects,
+				"createDir":          createDir,
+				"downloadBlocks":     downloadBlocks,
+				"lisBlobbersForFile": lisBlobbersForFile,
 
 				// player
 				"play":           play,
