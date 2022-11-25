@@ -610,7 +610,7 @@ func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
 	}
 }
 
-func GetBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err error) {
+func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err error) {
 	type nodes struct {
 		Nodes []*Blobber
 	}
@@ -650,7 +650,7 @@ func GetBlobbers(options ...bool) (bs []*Blobber, err error) {
 
 	limit, offset := 20, 0
 
-	blobbers, err := GetBlobbersInternal(active, limit, offset)
+	blobbers, err := getBlobbersInternal(active, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -665,7 +665,7 @@ func GetBlobbers(options ...bool) (bs []*Blobber, err error) {
 
 		// get the next set of blobbers
 		offset += 20
-		blobbers, err = GetBlobbersInternal(active, limit, offset)
+		blobbers, err = getBlobbersInternal(active, limit, offset)
 		if err != nil {
 			return blobbers, err
 		}
