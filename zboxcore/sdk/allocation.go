@@ -1524,3 +1524,36 @@ func (a *Allocation) getConsensuses() (fullConsensus, consensusThreshold int) {
 
 	return a.DataShards + a.ParityShards, a.DataShards + 1
 }
+
+func (a *Allocation) LisBlobbersForFile(remotefilepath string) []string {
+
+	var blobbers []string
+	for _, blobber := range a.Blobbers {
+		l.Logger.Info("making request to: ", blobber.Baseurl)
+		remotefilepathhash := fileref.GetReferenceLookup(a.ID, remotefilepath)
+
+		authTokenBytes := make([]byte, 0)
+
+		httpreq, err := zboxutil.NewListRequest(blobber.Baseurl, a.ID, remotefilepath, remotefilepathhash, string(authTokenBytes))
+		if err != nil {
+			l.Logger.Error("List info request error: ", err.Error())
+			continue
+		}
+
+		ctx, cncl := context.WithTimeout(context.TODO(), (time.Second * 30))
+		zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
+			if err != nil {
+				l.Logger.Error("List : ", err)
+				return err
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				// if status is OK, then the given file is present in that blobber
+				blobbers = append(blobbers, blobber.ID)
+			}
+			return nil
+		})
+	}
+
+	return blobbers
+}
