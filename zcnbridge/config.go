@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path"
 
 	"github.com/0chain/gosdk/core/common"
@@ -89,7 +89,7 @@ func ReadClientConfigFromCmd() *BridgeSDKConfig {
 	return cmd
 }
 
-func CreateBridgeOwner(cfg *viper.Viper, walletFile string) *BridgeOwner {
+func CreateBridgeOwner(cfg *viper.Viper, walletFile ...string) *BridgeOwner {
 	owner := cfg.Get(OwnerConfigKeyName)
 	if owner == nil {
 		ExitWithError("CreateBridgeOwner: can't read config with `owner` key")
@@ -101,7 +101,7 @@ func CreateBridgeOwner(cfg *viper.Viper, walletFile string) *BridgeOwner {
 		ExitWithError("CreateBridgeOwner: homedir is required")
 	}
 
-	wallet, err := loadWallet(homedir, walletFile)
+	wallet, err := loadWallet(homedir, walletFile...)
 	if err != nil {
 		ExitWithError("Error reading the wallet", err)
 	}
@@ -129,7 +129,7 @@ func CreateBridgeOwner(cfg *viper.Viper, walletFile string) *BridgeOwner {
 	}
 }
 
-func CreateBridgeClient(cfg *viper.Viper, walletFile string) *BridgeClient {
+func CreateBridgeClient(cfg *viper.Viper, walletFile ...string) *BridgeClient {
 	fileUsed := cfg.ConfigFileUsed()
 	homedir := path.Dir(fileUsed)
 	if homedir == "" {
@@ -141,7 +141,7 @@ func CreateBridgeClient(cfg *viper.Viper, walletFile string) *BridgeClient {
 		ExitWithError(fmt.Sprintf("Can't read config with '%s' key", ClientConfigKeyName))
 	}
 
-	wallet, err := loadWallet(homedir, walletFile)
+	wallet, err := loadWallet(homedir, walletFile...)
 	if err != nil {
 		ExitWithError(err)
 	}
@@ -235,18 +235,16 @@ func SetupBridgeOwnerSDK(cfg *BridgeSDKConfig, walletFile string) *BridgeOwner {
 	return bridgeOwner
 }
 
-func loadWallet(homedir, fileName string) (*zcncrypto.Wallet, error) {
+func loadWallet(homedir string, fileName ...string) (*zcncrypto.Wallet, error) {
 	var walletPath string
 
-	if fileName != "" {
-		walletPath = path.Join(homedir, fileName)
+	if len(fileName) != 0 {
+		walletPath = path.Join(homedir, fileName[0])
 	} else {
 		walletPath = path.Join(homedir, ZChainWalletConfigName)
 	}
 
-	fmt.Println(walletPath)
-
-	clientBytes, err := ioutil.ReadFile(walletPath)
+	clientBytes, err := os.ReadFile(walletPath)
 	if err != nil {
 		ExitWithError("Error reading the wallet", err)
 	}
