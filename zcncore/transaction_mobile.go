@@ -37,7 +37,7 @@ type TransactionCommon interface {
 
 	VestingAdd(ar VestingAddRequest, value string) error
 
-	MinerSCLock(minerID string, lock string) error
+	MinerSCLock(providerId string, providerType Provider, lock string) error
 	MinerSCCollectReward(providerId string, providerType int) error
 	StorageSCCollectReward(providerId string, providerType int) error
 
@@ -427,23 +427,19 @@ func (t *Transaction) VestingAdd(ar VestingAddRequest, value string) (
 	return
 }
 
-func (t *Transaction) MinerSCLock(nodeID string, lock string) (err error) {
-	v, err := parseCoinStr(lock)
-	if err != nil {
-		return err
+func (t *Transaction) MinerSCLock(providerId string, providerType Provider, lock uint64) error {
+	pr := &stakePoolRequest{
+		ProviderID:   providerId,
+		ProviderType: providerType,
 	}
-
-	var mscl MinerSCLock
-	mscl.ID = nodeID
-
-	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_LOCK, &mscl, v)
+	err := t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_LOCK, pr, lock)
 	if err != nil {
 		logging.Error(err)
-		return
+		return err
 	}
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return err
 }
 
 func (t *Transaction) MinerSCCollectReward(providerId string, providerType int) error {

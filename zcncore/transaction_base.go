@@ -80,7 +80,7 @@ type TransactionScheme interface {
 
 	// Miner SC
 
-	MinerSCUnlock(minerID string) error
+	MinerSCUnlock(providerId string, providerType Provider) error
 }
 
 // TransactionCallback needs to be implemented by the caller for transaction related APIs
@@ -811,19 +811,19 @@ type MinerSCUnlock struct {
 	ID string `json:"id"`
 }
 
-func (t *Transaction) MinerSCUnlock(nodeID string) (err error) {
-	mscul := MinerSCUnlock{
-		ID: nodeID,
+func (t *Transaction) MinerSCUnlock(providerId string, providerType Provider) error {
+	pr := &stakePoolRequest{
+		ProviderID:   providerId,
+		ProviderType: providerType,
 	}
-
-	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_UNLOCK, &mscul, 0)
+	err := t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_UNLOCK, pr, 0)
 	if err != nil {
 		logging.Error(err)
-		return
+		return err
 	}
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return err
 }
 
 func VerifyContentHash(metaTxnDataJSON string) (bool, error) {

@@ -81,6 +81,11 @@ type StakePool struct {
 	Minter   int                      `json:"minter"`
 }
 
+type stakePoolRequest struct {
+	ProviderType Provider `json:"provider_type,omitempty"`
+	ProviderID   string   `json:"provider_id,omitempty"`
+}
+
 type MinerSCDelegatePoolInfo struct {
 	ID         common.Key     `json:"id"`
 	Balance    common.Balance `json:"balance"`
@@ -106,7 +111,7 @@ type TransactionCommon interface {
 
 	VestingAdd(ar *VestingAddRequest, value uint64) error
 
-	MinerSCLock(minerID string, lock uint64) error
+	MinerSCLock(providerId string, providerType Provider, lock uint64) error
 	MinerSCCollectReward(providerID string, providerType Provider) error
 
 	StorageSCCollectReward(providerID string, providerType Provider) error
@@ -320,19 +325,19 @@ func (t *Transaction) VestingAdd(ar *VestingAddRequest, value uint64) (
 	return
 }
 
-func (t *Transaction) MinerSCLock(nodeID string, lock uint64) (err error) {
-
-	var mscl MinerSCLock
-	mscl.ID = nodeID
-
-	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_LOCK, &mscl, lock)
+func (t *Transaction) MinerSCLock(providerId string, providerType Provider, lock uint64) error {
+	pr := &stakePoolRequest{
+		ProviderID:   providerId,
+		ProviderType: providerType,
+	}
+	err := t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_LOCK, pr, lock)
 	if err != nil {
 		logging.Error(err)
-		return
+		return err
 	}
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return err
 }
 
 func (t *Transaction) MinerSCCollectReward(providerId string, providerType Provider) error {

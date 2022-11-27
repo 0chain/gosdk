@@ -67,17 +67,13 @@ func (ta *TransactionWithAuth) VestingAdd(ar VestingAddRequest, value string) er
 	return nil
 }
 
-func (ta *TransactionWithAuth) MinerSCLock(minerID string, lock string) error {
-	v, err := parseCoinStr(lock)
-	if err != nil {
-		return err
+func (ta *TransactionWithAuth) MinerSCLock(providerId string, providerType Provider, lock uint64) error {
+	pr := &stakePoolRequest{
+		ProviderID:   providerId,
+		ProviderType: providerType,
 	}
-
-	var mscl MinerSCLock
-	mscl.ID = minerID
-
-	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_LOCK, &mscl, v)
+	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_LOCK, pr, lock)
 	if err != nil {
 		logging.Error(err)
 		return err
