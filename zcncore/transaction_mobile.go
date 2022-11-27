@@ -36,6 +36,11 @@ const (
 	ProviderAuthorizer
 )
 
+type stakePoolRequest struct {
+	ProviderType int    `json:"provider_type,omitempty"`
+	ProviderID   string `json:"provider_id,omitempty"`
+}
+
 type TransactionCommon interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
 	ExecuteSmartContract(address, methodName string, input string, val string) error
