@@ -1526,7 +1526,7 @@ func (a *Allocation) getConsensuses() (fullConsensus, consensusThreshold int) {
 }
 
 // LisBlobbersForFile take a file path and returns the list of blobber IDs that has that file
-func (a *Allocation) LisBlobbersForFile(remotefilepath string) []string {
+func (a *Allocation) LisBlobbersForFile(remotefilepath string) ([]string, error) {
 
 	var blobbers []string
 	for _, blobber := range a.Blobbers {
@@ -1556,5 +1556,5 @@ func (a *Allocation) LisBlobbersForFile(remotefilepath string) []string {
 		})
 	}
 
-	return blobbers
+	return blobbers, nil
 }

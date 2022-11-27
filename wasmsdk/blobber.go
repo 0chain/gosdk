@@ -48,16 +48,16 @@ func createDir(allocationID, remotePath string) error {
 
 func lisBlobbersForFile(allocationID, remotePath string) ([]string, error) {
 	if len(allocationID) == 0 {
-		return RequiredArg("allocationID")
+		return []string{}, RequiredArg("allocationID")
 	}
 
 	if len(remotePath) == 0 {
-		return RequiredArg("remotePath")
+		return []string{}, RequiredArg("remotePath")
 	}
 
 	allocationObj, err := sdk.GetAllocation(allocationID)
 	if err != nil {
-		return err
+		return []string{}, err
 	}
 
 	return allocationObj.LisBlobbersForFile(remotePath)
