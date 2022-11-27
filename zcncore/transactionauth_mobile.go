@@ -68,10 +68,16 @@ func (ta *TransactionWithAuth) VestingAdd(ar VestingAddRequest, value string) er
 }
 
 func (ta *TransactionWithAuth) MinerSCLock(providerId string, providerType int, lock uint64) error {
-	pr := &stakePoolRequest{
-		ProviderID:   providerId,
-		ProviderType: providerType,
+	type stakePoolRequest struct {
+		ProviderType int    `json:"provider_type,omitempty"`
+		ProviderID   string `json:"provider_id,omitempty"`
 	}
+
+	pr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
+
 	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_LOCK, pr, lock)
 	if err != nil {
