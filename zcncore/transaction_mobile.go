@@ -26,6 +26,16 @@ const (
 	ChargeableError
 )
 
+type Provider int
+
+const (
+	ProviderMiner Provider = iota + 1
+	ProviderSharder
+	ProviderBlobber
+	ProviderValidator
+	ProviderAuthorizer
+)
+
 type TransactionCommon interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
 	ExecuteSmartContract(address, methodName string, input string, val string) error
