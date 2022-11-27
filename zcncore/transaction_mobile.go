@@ -37,7 +37,7 @@ type TransactionCommon interface {
 
 	VestingAdd(ar VestingAddRequest, value string) error
 
-	MinerSCLock(providerId string, providerType int, lock string) error
+	MinerSCLock(providerId string, providerType int, lock uint64) error
 	MinerSCCollectReward(providerId string, providerType int) error
 	StorageSCCollectReward(providerId string, providerType int) error
 
