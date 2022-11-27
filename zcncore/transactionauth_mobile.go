@@ -67,7 +67,7 @@ func (ta *TransactionWithAuth) VestingAdd(ar VestingAddRequest, value string) er
 	return nil
 }
 
-func (ta *TransactionWithAuth) MinerSCLock(providerId string, providerType Provider, lock uint64) error {
+func (ta *TransactionWithAuth) MinerSCLock(providerId string, providerType int, lock uint64) error {
 	pr := &stakePoolRequest{
 		ProviderID:   providerId,
 		ProviderType: providerType,
