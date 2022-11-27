@@ -443,11 +443,6 @@ func (t *Transaction) VestingAdd(ar VestingAddRequest, value string) (
 }
 
 func (t *Transaction) MinerSCLock(providerId string, providerType int, lock uint64) error {
-	type stakePoolRequest struct {
-		ProviderType int    `json:"provider_type,omitempty"`
-		ProviderID   string `json:"provider_id,omitempty"`
-	}
-
 	pr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerId,
@@ -647,12 +642,6 @@ func (t *Transaction) StakePoolLock(providerId string, providerType int, lock, f
 	if err != nil {
 		return err
 	}
-
-	type stakePoolRequest struct {
-		ProviderType int    `json:"provider_type,omitempty"`
-		ProviderID   string `json:"provider_id,omitempty"`
-	}
-
 	spr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerId,
@@ -674,11 +663,6 @@ func (t *Transaction) StakePoolUnlock(providerId string, providerType int, fee s
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
-	}
-
-	type stakePoolRequest struct {
-		ProviderType int    `json:"provider_type,omitempty"`
-		ProviderID   string `json:"provider_id,omitempty"`
 	}
 
 	spr := stakePoolRequest{
