@@ -1009,13 +1009,30 @@ func GetStakePoolUserInfo(clientID string, cb GetInfoCallback) (err error) {
 }
 
 // GetBlobbers obtains list of all active blobbers.
-func GetBlobbers(cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
+func GetBlobbers(cb GetInfoCallback, limit, offset int, options ...bool) {
+	var active bool
+	if len(options) > 0 {
+		for _, option := range options {
+			active = option
+		}
+	}
+
+	getBlobbersInternal(cb, active, limit, offset)
+}
+
+func getBlobbersInternal(cb GetInfoCallback, active bool, limit, offset int) {
+	if err := CheckConfig(); err != nil {
 		return
 	}
-	var url = STORAGESC_GET_BLOBBERS
+
+	var url = withParams(STORAGESC_GET_BLOBBERS, Params{
+		"active": strconv.FormatBool(active),
+		"offset": strconv.FormatInt(int64(offset), 10),
+		"limit":  strconv.FormatInt(int64(limit), 10),
+	})
 
 	go GetInfoFromSharders(url, OpStorageSCGetBlobbers, cb)
+
 	return
 }
 
