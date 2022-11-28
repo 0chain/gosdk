@@ -313,7 +313,7 @@ create folder from blobbers
 > allocationID string, remotePath string
 
 **Output**:
-> string: sdk.map[string]*FileStats
+> string: []sdk.FileStats
 
 
 ## Swap methods
