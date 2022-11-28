@@ -459,6 +459,21 @@ func (t *Transaction) MinerSCLock(providerId string, providerType int, lock uint
 	return err
 }
 
+func (t *Transaction) MinerSCUnlock(providerId string, providerType int) error {
+	pr := &stakePoolRequest{
+		ProviderID:   providerId,
+		ProviderType: providerType,
+	}
+	err := t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_LOCK, pr, 0)
+	if err != nil {
+		logging.Error(err)
+		return err
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return err
+}
+
 func (t *Transaction) MinerSCCollectReward(providerId string, providerType int) error {
 	pr := &scCollectReward{
 		ProviderId:   providerId,
