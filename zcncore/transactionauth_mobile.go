@@ -88,6 +88,21 @@ func (ta *TransactionWithAuth) MinerSCLock(providerId string, providerType int, 
 	return nil
 }
 
+func (ta *TransactionWithAuth) MinerSCUnlock(providerId string, providerType int) error {
+	pr := &stakePoolRequest{
+		ProviderID:   providerId,
+		ProviderType: providerType,
+	}
+	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_LOCK, pr, 0)
+	if err != nil {
+		logging.Error(err)
+		return err
+	}
+	go func() { ta.submitTxn() }()
+	return err
+}
+
 // FinalizeAllocation transaction.
 func (ta *TransactionWithAuth) FinalizeAllocation(allocID string, fee string) error {
 	v, err := parseCoinStr(fee)

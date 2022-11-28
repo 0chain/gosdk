@@ -79,8 +79,6 @@ type TransactionScheme interface {
 	VestingDelete(poolID string) error
 
 	// Miner SC
-
-	MinerSCUnlock(providerId string, providerType Provider) error
 }
 
 // TransactionCallback needs to be implemented by the caller for transaction related APIs
@@ -809,21 +807,6 @@ type MinerSCLock struct {
 
 type MinerSCUnlock struct {
 	ID string `json:"id"`
-}
-
-func (t *Transaction) MinerSCUnlock(providerId string, providerType Provider) error {
-	pr := &stakePoolRequest{
-		ProviderID:   providerId,
-		ProviderType: providerType,
-	}
-	err := t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_UNLOCK, pr, 0)
-	if err != nil {
-		logging.Error(err)
-		return err
-	}
-	go func() { t.setNonceAndSubmit() }()
-	return err
 }
 
 func VerifyContentHash(metaTxnDataJSON string) (bool, error) {

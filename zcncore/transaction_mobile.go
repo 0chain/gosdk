@@ -53,6 +53,7 @@ type TransactionCommon interface {
 	VestingAdd(ar VestingAddRequest, value string) error
 
 	MinerSCLock(providerId string, providerType int, lock uint64) error
+	MinerSCUnlock(providerId string, providerType int) error
 	MinerSCCollectReward(providerId string, providerType int) error
 	StorageSCCollectReward(providerId string, providerType int) error
 
@@ -443,6 +444,7 @@ func (t *Transaction) VestingAdd(ar VestingAddRequest, value string) (
 }
 
 func (t *Transaction) MinerSCLock(providerId string, providerType int, lock uint64) error {
+
 	pr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerId,
