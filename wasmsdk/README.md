@@ -1,12 +1,12 @@
 # 0chain/wasmsdk
-The 0chain wasm SDK is written in Go programming language, and released with WebAssembly binary format 
+The 0chain wasm SDK is written in Go programming language, and released with WebAssembly binary format
 
 *NOTE* please use `try{await zcn.sdk.[method];}catch(err){...}` to handle any error from wasm sdk in js
 
 ## ZCN methods
 
 ### zcn.sdk.init
-init wasm sdk 
+init wasm sdk
 
 **Input**:
   > chainID, blockWorker, signatureScheme string, minConfirmation, minSubmit, confirmationChainLength int
@@ -51,7 +51,7 @@ valid wallet id
 **Output**:
   > bool
 
-### zcn.jsProxy.setWallet 
+### zcn.jsProxy.setWallet
 set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWallet` to set wallet on go.
 
 **Input**:
@@ -101,7 +101,7 @@ get blobbers with filters for creating allocation
 > string array
 
 ### zcn.sdk.createAllocation
-create an allocation 
+create an allocation
 
 **Input**:
 > name string, datashards, parityshards int, size, expiry int64,
@@ -306,6 +306,14 @@ create folder from blobbers
 
 **Output**:
 > N/A
+
+### zcn.sdk.getFileStats
+
+**Input**:
+> allocationID string, remotePath string
+
+**Output**:
+> string: sdk.map[string]*FileStats
 
 
 ## Swap methods
