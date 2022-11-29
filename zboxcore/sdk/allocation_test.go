@@ -1578,7 +1578,9 @@ func TestAllocation_CancelDownload(t *testing.T) {
 				remotepath: remotePath,
 			},
 			setup: func(t *testing.T, a *Allocation) (teardown func(t *testing.T)) {
-				a.downloadProgressMap[remotePath] = &DownloadRequest{}
+				req := &DownloadRequest{}
+				req.ctx, req.ctxCncl = context.WithCancel(context.TODO())
+				a.downloadProgressMap[remotePath] = req
 				return nil
 			},
 		},
@@ -2457,9 +2459,6 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 				}
 				if downloadReq.statusCallback != nil {
 					downloadReq.statusCallback.Completed(a.ID, downloadReq.localpath, "1.txt", "application/octet-stream", 3, OpDownload)
-				}
-				if downloadReq.wg != nil {
-					downloadReq.wg.Done()
 				}
 				t.Logf("received a download request for %v\n", downloadReq.remotefilepath)
 			case repairReq := <-a.repairChan:
