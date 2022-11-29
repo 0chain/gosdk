@@ -39,7 +39,6 @@ type (
 		TxnID        string `json:"0chain_txn_id"`
 		Nonce        int64  `json:"nonce"`
 		Amount       int64  `json:"amount"`
-		ClientID     string `json:"client_id"`
 		Signature    []byte `json:"signature"`
 	}
 )

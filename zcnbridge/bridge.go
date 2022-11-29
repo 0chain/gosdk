@@ -207,21 +207,18 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 	// 2. Transaction ID Parameter of burn operation (zcnTxd string as []byte)
 	zcnTxd := DefaultClientIDEncoder(payload.ZCNTxnID)
 
-	// 3. Client ID parameter
-	clientID := DefaultClientIDEncoder(payload.ClientID)
-
-	// 4. Nonce Parameter generated during burn operation
+	// 3. Nonce Parameter generated during burn operation
 	nonce := new(big.Int)
 	nonce.SetInt64(payload.Nonce)
 
-	// 5. Signature
+	// 4. Signature
 	// For requirements from ERC20 authorizer, the signature length must be 65
 	var sigs [][]byte
 	for _, signature := range payload.Signatures {
 		sigs = append(sigs, signature.Signature)
 	}
 
-	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, "mint", amount, zcnTxd, clientID, nonce, sigs)
+	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, "mint", amount, zcnTxd, nonce, sigs)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare bridge")
 	}
@@ -233,7 +230,8 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 		zap.String("zcnTxd", string(zcnTxd)),
 		zap.String("nonce", nonce.String()))
 
-	tran, err := bridgeInstance.Mint(transactOpts, amount, zcnTxd, clientID, nonce, sigs)
+	var tran *types.Transaction
+	tran, err = bridgeInstance.Mint(transactOpts, amount, zcnTxd, nonce, sigs)
 	if err != nil {
 		Logger.Error("Mint WZCN FAILED", zap.Error(err))
 		msg := "failed to execute MintWZCN transaction, amount = %s, ZCN TrxID = %s"
@@ -243,7 +241,6 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 	Logger.Info(
 		"Posted Mint WZCN",
 		zap.String("hash", tran.Hash().String()),
-		zap.String("clientID", b.ClientID()),
 		zap.Int64("amount", amount.Int64()),
 		zap.String("zcnTxd", string(zcnTxd)),
 		zap.String("nonce", nonce.String()),
