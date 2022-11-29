@@ -66,6 +66,11 @@ func initBridge(
 	return nil
 }
 
+func burnZCN(amount uint64) string {
+	tx, err := bridge.BurnZCN(context.Background(), amount)
+
+}
+
 func mintZCN(burnTrxHash string, timeout int) string {
 
 	// ASK authorizers for burn tickets to mint in ZCN
