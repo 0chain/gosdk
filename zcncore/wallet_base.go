@@ -77,6 +77,9 @@ const (
 	STORAGESC_GET_BLOBBER              = STORAGESC_PFX + "/getBlobber"
 	STORAGESC_GET_TRANSACTIONS         = STORAGESC_PFX + "/transactions"
 	STORAGE_GET_TOTAL_STORED_DATA      = STORAGESC_PFX + "/total-stored-data"
+
+	STORAGE_GET_SNAPSHOT         = STORAGESC_PFX + "/replicate-snapshots"
+	STORAGE_GET_BLOBBER_SNAPSHOT = STORAGESC_PFX + "/replicate-blobber-aggregates"
 )
 
 const (
@@ -134,6 +137,8 @@ const (
 	OpStorageSCGetBlobbers
 	OpStorageSCGetBlobber
 	OpStorageSCGetTransactions
+	OpStorageSCGetSnapshots
+	OpStorageSCGetBlobberSnapshots
 	OpZCNSCGetGlobalConfig
 	OpZCNSCGetAuthorizer
 	OpZCNSCGetAuthorizerNodes
@@ -936,6 +941,30 @@ func GetAllocations(clientID string, cb GetInfoCallback) (err error) {
 	return
 }
 
+// GetSnapshot obtains list of allocations of a user.
+func GetSnapshots(offset int64, cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	var url = withParams(STORAGE_GET_SNAPSHOT, Params{
+		"offset": strconv.FormatInt(offset, 10),
+	})
+	go GetInfoFromAnySharder(url, OpStorageSCGetSnapshots, cb)
+	return
+}
+
+// GetSnapshot obtains list of allocations of a user.
+func GetBlobberSnapshots(offset int64, cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	var url = withParams(STORAGE_GET_BLOBBER_SNAPSHOT, Params{
+		"offset": strconv.FormatInt(offset, 10),
+	})
+	go GetInfoFromAnySharder(url, OpStorageSCGetBlobberSnapshots, cb)
+	return
+}
+
 // GetReadPoolInfo obtains information about read pool of a user.
 func GetReadPoolInfo(clientID string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
@@ -980,13 +1009,30 @@ func GetStakePoolUserInfo(clientID string, cb GetInfoCallback) (err error) {
 }
 
 // GetBlobbers obtains list of all active blobbers.
-func GetBlobbers(cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
+func GetBlobbers(cb GetInfoCallback, limit, offset int, options ...bool) {
+	var active bool
+	if len(options) > 0 {
+		for _, option := range options {
+			active = option
+		}
+	}
+
+	getBlobbersInternal(cb, active, limit, offset)
+}
+
+func getBlobbersInternal(cb GetInfoCallback, active bool, limit, offset int) {
+	if err := CheckConfig(); err != nil {
 		return
 	}
-	var url = STORAGESC_GET_BLOBBERS
+
+	var url = withParams(STORAGESC_GET_BLOBBERS, Params{
+		"active": strconv.FormatBool(active),
+		"offset": strconv.FormatInt(int64(offset), 10),
+		"limit":  strconv.FormatInt(int64(limit), 10),
+	})
 
 	go GetInfoFromSharders(url, OpStorageSCGetBlobbers, cb)
+
 	return
 }
 

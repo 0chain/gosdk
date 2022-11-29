@@ -1,4 +1,4 @@
-name: Android/iOS/MacOS SDKs
+name: Build SDKs
 
 concurrency:
   group: "build-mobile-${{ github.ref }}"
@@ -181,7 +181,7 @@ jobs:
 
   build-macos:
     name: Build-macos
-    runs-on: macos-11
+    runs-on:  macos-11
 
     steps:
       - name: Checkout code
@@ -249,3 +249,63 @@ jobs:
           name: zcncore-macos
           path: |
             zcncore-macos.tar.gz
+
+
+  build-windows:
+    name: Build-windows
+    runs-on:  [self-hosted, build]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v3
+        with:
+          go-version: ^1.19
+
+
+      - name: Build windows
+        run: |
+          make build-windows
+
+      - name: Compress
+        run: |
+          sudo apt install zip -y
+          zip zcn-windows.zip ./winsdk/zcn.windows.dll ./winsdk/zcn.windows.h
+
+      - name: Setup Build
+        id: setup_build
+        run: |
+          tag=$(echo ${GITHUB_REF#refs/tags/})
+          echo ${tag}
+          if [[ "${{github.event_name}}" = "workflow_dispatch" ]]; then
+            echo "> 0Chain: trigger from workflow_dispatch"
+
+            echo "::set-output name=RELEASE::false"
+            echo "::set-output name=TAG::none"
+        
+          elif [[ ${tag} = v*\.*\.* ]] ; then
+            echo "> 0Chain: trigger from git event"
+      
+            # upload output on release
+            echo "::set-output name=RELEASE::true"
+            echo "::set-output name=TAG::${tag}"
+          fi
+
+      - name: Upload zcn-windows to release
+        if:  steps.setup_build.outputs.RELEASE == 'true'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: zcn-windows.zip
+          tag: ${{ steps.setup_build.outputs.TAG }}
+          overwrite: true
+          file_glob: true
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: zcn-windows
+          path: |
+            zcn-windows.zip

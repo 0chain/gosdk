@@ -3,7 +3,10 @@
 
 package main
 
-import "github.com/0chain/gosdk/zcncore"
+import (
+	"github.com/0chain/gosdk/zboxcore/sdk"
+	"github.com/0chain/gosdk/zcncore"
+)
 
 type Balance struct {
 	ZCN float64 `json:"zcn"`
@@ -26,4 +29,9 @@ func getWalletBalance(clientId string) (*Balance, error) {
 		ZCN: zcn.ToToken(),
 		USD: usd,
 	}, nil
+}
+
+func createReadPool() (string, error) {
+	hash, _, err := sdk.CreateReadPool()
+	return hash, err
 }
