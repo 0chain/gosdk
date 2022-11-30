@@ -94,7 +94,7 @@ func Init(configJson *C.char, clientJson *C.char) error {
 	}
 	l.Logger.Info("InitStorageSDK success")
 
-	zboxApiClient = zboxapi.NewClient(configObj.ZboxApi, configObj.ZboxAppType, client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey())
+	zboxApiClient = zboxapi.NewClient(configObj.ZboxHost, configObj.ZboxAppType, client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey())
 	l.Logger.Info("InitZboxApiClient success")
 
 	l.Logger.Info("Init successful")
