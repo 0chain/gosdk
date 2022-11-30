@@ -8,7 +8,7 @@ IOSBINNAME 		:= zcncore.xcframework
 ANDROIDBINNAME	:= zcncore.aar
 MINIOSVERSIONMIN := "-mmacosx-version-min=10.12 -miphoneos-version-min=7.0=7.0 -mios-version-min=7.0 -mios-simulator-version-min=7.0"
 
-PKG_EXPORTS := $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common $(GOSDK_PATH)/mobilesdk/sdk $(GOSDK_PATH)/mobilesdk/zbox
+PKG_EXPORTS := $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common $(GOSDK_PATH)/mobilesdk/sdk $(GOSDK_PATH)/mobilesdk/zbox $(GOSDK_PATH)/mobilesdk/zboxapi
 
 .PHONY: setup-gomobile build-iossimulator build-ios build-android build-android-debug
 

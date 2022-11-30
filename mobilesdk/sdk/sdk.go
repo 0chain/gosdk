@@ -28,6 +28,10 @@ type ChainConfig struct {
 	PreferredBlobbers []string `json:"preferred_blobbers"`
 	BlockWorker       string   `json:"block_worker"`
 	SignatureScheme   string   `json:"signature_scheme"`
+	// ZboxApi 0box api host host: "https://0box.dev.0chain.net"
+	ZboxApi string `json:"zbox_api"`
+	// ZboxAppType app type name
+	ZboxAppType string `json:"zbox_app_type"`
 }
 
 // StorageSDK - storage SDK config

@@ -25,8 +25,6 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
-var zboxApiClient *zboxapi.Client
-
 func main() {
 	sdk.SetLogFile(filepath.Join(getHomeDir(), ".zcn", "zbox.log"), true)
 	zcncore.SetLogFile(filepath.Join(getHomeDir(), ".zcn", "zcn.log"), true)
