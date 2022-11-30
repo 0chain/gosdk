@@ -21,7 +21,7 @@ var (
 	ErrZboxApiNotInitialized = errors.New("0box: zboxapi client is not initialized")
 )
 
-func InitZboxApi(baseUrl, appType string) {
+func Init(baseUrl, appType string) {
 	zboxApiClient = zboxapi.NewClient(baseUrl, appType, client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey())
 }
 

@@ -59,7 +59,7 @@ func main() {
 //     "preferred_blobbers": ["https://dev.0chain.net/blobber02","https://dev.0chain.net/blobber03"],
 //     "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
 //     "ethereum_node":"https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx",
-//     "zbox_api":"https://0box.dev.0chain.net",
+//     "zbox_host":"https://0box.dev.0chain.net",
 //     "zbox_app_type":"vult",
 //     }
 //

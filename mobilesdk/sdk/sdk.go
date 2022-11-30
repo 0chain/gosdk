@@ -29,8 +29,8 @@ type ChainConfig struct {
 	PreferredBlobbers []string `json:"preferred_blobbers"`
 	BlockWorker       string   `json:"block_worker"`
 	SignatureScheme   string   `json:"signature_scheme"`
-	// ZboxApi 0box api host host: "https://0box.dev.0chain.net"
-	ZboxApi string `json:"zbox_api"`
+	// ZboxHost 0box api host host: "https://0box.dev.0chain.net"
+	ZboxHost string `json:"zbox_host"`
 	// ZboxAppType app type name
 	ZboxAppType string `json:"zbox_app_type"`
 }
@@ -84,7 +84,7 @@ func Init(chainConfigJson string) error {
 //     "preferred_blobbers": ["https://dev.0chain.net/blobber02","https://dev.0chain.net/blobber03"],
 //     "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
 //     "ethereum_node":"https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx",
-//     "zbox_api":"https://0box.dev.0chain.net",
+//     "zbox_host":"https://0box.dev.0chain.net",
 //     "zbox_app_type":"vult",
 //     }
 func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
@@ -112,8 +112,8 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 	}
 	l.Logger.Info("InitStorageSDK success")
 
-	zboxapi.InitZboxApi(configObj.ZboxApi, configObj.ZboxAppType)
-	l.Logger.Info("InitZboxApiClient success")
+	zboxapi.Init(configObj.ZboxHost, configObj.ZboxAppType)
+	l.Logger.Info("InitZboxApi success")
 
 	l.Logger.Info("Init successful")
 
