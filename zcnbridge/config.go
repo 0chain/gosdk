@@ -221,17 +221,17 @@ func (b *BridgeOwner) ClientID() string {
 
 // SetupBridgeClientSDK Use this from standalone application
 // 0Chain SDK initialization is required
-func SetupBridgeClientSDK(cfg *BridgeSDKConfig, walletFile string) *BridgeClient {
+func SetupBridgeClientSDK(cfg *BridgeSDKConfig, walletFile ...string) *BridgeClient {
 	log.InitLogging(*cfg.Development, *cfg.LogPath, *cfg.LogLevel)
-	bridgeClient := CreateBridgeClient(initBridgeConfig(cfg), walletFile)
+	bridgeClient := CreateBridgeClient(initBridgeConfig(cfg), walletFile...)
 	return bridgeClient
 }
 
 // SetupBridgeOwnerSDK Use this from standalone application to initialize bridge owner.
 // 0Chain SDK initialization is not required in this case
-func SetupBridgeOwnerSDK(cfg *BridgeSDKConfig, walletFile string) *BridgeOwner {
+func SetupBridgeOwnerSDK(cfg *BridgeSDKConfig, walletFile ...string) *BridgeOwner {
 	log.InitLogging(*cfg.Development, *cfg.LogPath, *cfg.LogLevel)
-	bridgeOwner := CreateBridgeOwner(initBridgeConfig(cfg), walletFile)
+	bridgeOwner := CreateBridgeOwner(initBridgeConfig(cfg), walletFile...)
 	return bridgeOwner
 }
 
