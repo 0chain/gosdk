@@ -180,6 +180,12 @@ func main() {
 				//zcn
 				"getWalletBalance": getWalletBalance,
 				"createReadPool":   createReadPool,
+
+				//0box api
+				"getCsrfToken":     getCsrfToken,
+				"createJwtSession": createJwtSession,
+				"createJwtToken":   createJwtToken,
+				"refreshJwtToken":  refreshJwtToken,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")

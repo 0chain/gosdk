@@ -20,7 +20,9 @@ var CreateObjectURL func(buf []byte, mimeType string) string
 
 // initSDKs init sharder/miners ,
 func initSDKs(chainID, blockWorker, signatureScheme string,
-	minConfirmation, minSubmit, confirmationChainLength int) error {
+	minConfirmation, minSubmit, confirmationChainLength int, zboxApi string) error {
+
+	zboxApiBaseUrl = zboxApi
 
 	err := sdk.InitStorageSDK("{}", blockWorker, chainID, signatureScheme, nil, 0)
 	if err != nil {
@@ -40,17 +42,10 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 	return nil
 }
 
-func SetWallet(clientID, publicKey, privateKey string) {
+func SetWallet(clientID, publicKey, privateKey string, zboxBaseUrl, zboxAppType string) {
 	c := client.GetClient()
 	c.ClientID = clientID
 	c.ClientKey = publicKey
-
-	if len(zboxHost) > 0 {
-		zboxClient = zbox.NewClient(zboxHost, c.ClientID, c.ClientKey)
-	}
-
-	//w.Version = cw.Version
-	//w.DateCreated = cw.Version
 
 	w := &zcncrypto.Wallet{
 		ClientID:  clientID,
@@ -63,6 +58,8 @@ func SetWallet(clientID, publicKey, privateKey string) {
 		},
 	}
 	zcncore.SetWallet(*w, false)
+
+	zboxApiClient = zboxapi.NewClient(zboxBaseUrl, zboxAppType, clientID, privateKey, publicKey)
 }
 
 var sdkLogger *logger.Logger

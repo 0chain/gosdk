@@ -63,6 +63,11 @@ type Config struct {
 
 	// Ethereum node: "https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx"
 	EthereumNode string `json:"ethereum_node,omitempty"`
+
+	// ZboxApi 0box api host host: "https://0box.dev.0chain.net"
+	ZboxApi string `json:"zbox_api"`
+	// ZboxAppType app type name
+	ZboxAppType string `json:"zbox_app_type"`
 }
 
 // LoadConfigFile load and parse Config from file

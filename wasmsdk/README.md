@@ -55,7 +55,7 @@ valid wallet id
 set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWallet` to set wallet on go.
 
 **Input**:
-> bls, clientID, sk, pk string
+> bls, clientID, sk, pk string, ,zboxBaseUrl, zboxAppType string
 
 **Output**:
 > N/A
@@ -65,7 +65,7 @@ set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWal
 set wallet on go
 
 **Input**:
-> clientID, publicKey string
+> clientID, publicKey, privateKey string, zboxBaseUrl, zboxAppType string
 
 **Output**:
 > N/A
@@ -324,4 +324,41 @@ create folder from blobbers
 
 **Output**:
 > string: txnHash
+
+
+
+## 0Box API methods
+### zcn.sdk.getCsrfToken
+get a fresh CSRF token
+
+**Input**:
+> N/A
+
+**Output**:
+> string
+
+### zcn.sdk.createJwtSession
+create a jwt session with phone number
+**Input**:
+> phoneNumber string
+
+**Output**:
+> sessionID int64
+
+### zcn.sdk.createJwtToken
+create a jwt token with jwt session id and otp
+**Input**:
+> phoneNumber string, jwtSessionID int64, otp string
+
+**Output**:
+> token string
+
+
+### zcn.sdk.refreshJwtToken
+refresh jwt token
+**Input**:
+> phoneNumber string, token string
+
+**Output**:
+> token string
 

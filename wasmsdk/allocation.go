@@ -10,21 +10,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
-var (
-	zboxHost   string
-	zboxClient *zbox.Client
-)
-
-func setZBoxHost(host string) {
-	zboxHost = host
-
-	c := client.GetClient()
-
-	if len(c.ClientID) > 0 {
-		zboxClient = zbox.NewClient(zboxHost, c.ClientID, c.ClientKey)
-	}
-}
-
 func getBlobberIds(blobberUrls []string) ([]string, error) {
 	return sdk.GetBlobberIds(blobberUrls)
 }

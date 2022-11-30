@@ -53,10 +53,10 @@ func Init(chainConfigJson string) error {
 }
 
 // InitStorageSDK - init storage sdk from config
-func InitStorageSDK(clientjson string, configjson string) (*StorageSDK, error) {
+func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 	l.Logger.Info("Start InitStorageSDK")
 	configObj := &ChainConfig{}
-	err := json.Unmarshal([]byte(configjson), configObj)
+	err := json.Unmarshal([]byte(configJson), configObj)
 	if err != nil {
 		l.Logger.Error(err)
 		return nil, err
@@ -71,13 +71,18 @@ func InitStorageSDK(clientjson string, configjson string) (*StorageSDK, error) {
 	l.Logger.Info(configObj.ChainID)
 	l.Logger.Info(configObj.SignatureScheme)
 	l.Logger.Info(configObj.PreferredBlobbers)
-	err = sdk.InitStorageSDK(clientjson, configObj.BlockWorker, configObj.ChainID, configObj.SignatureScheme, configObj.PreferredBlobbers, 0)
+	err = sdk.InitStorageSDK(clientJson, configObj.BlockWorker, configObj.ChainID, configObj.SignatureScheme, configObj.PreferredBlobbers, 0)
 	if err != nil {
 		l.Logger.Error(err)
 		return nil, err
 	}
 	l.Logger.Info("InitStorageSDK success")
+
+	zboxapi.InitZboxApi(configObj.ZboxApi, configObj.ZboxAppType)
+	l.Logger.Info("InitZboxApiClient success")
+
 	l.Logger.Info("Init successful")
+
 	return &StorageSDK{client: client.GetClient(), chainconfig: configObj}, nil
 }
 
