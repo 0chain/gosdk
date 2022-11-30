@@ -37,7 +37,7 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 		return err
 	}
 
-	zboxApiClient = zboxapi.NewClient(zboxBaseUrl, zboxAppType)
+	zboxApiClient = zboxapi.NewClient(zboxHost, zboxAppType)
 
 	return nil
 }

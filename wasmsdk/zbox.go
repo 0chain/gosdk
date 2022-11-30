@@ -15,6 +15,10 @@ var (
 	ErrZboxApiNotInitialized = errors.New("0box: please call setWallet to create 0box api client")
 )
 
+func setZbox(host, appType string) {
+
+}
+
 func getCsrfToken() (string, error) {
 	if zboxApiClient == nil {
 		return "", ErrZboxApiNotInitialized
