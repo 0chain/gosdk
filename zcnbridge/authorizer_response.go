@@ -37,9 +37,9 @@ type (
 	ProofZCNBurn struct {
 		AuthorizerID string `json:"authorizer_id,omitempty"`
 		TxnID        string `json:"0chain_txn_id"`
+		To           string `json:"to"`
 		Nonce        int64  `json:"nonce"`
 		Amount       int64  `json:"amount"`
-		ClientID     string `json:"client_id"`
 		Signature    []byte `json:"signature"`
 	}
 )

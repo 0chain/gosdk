@@ -95,8 +95,8 @@ func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereu
 		payload := &ethereum.MintPayload{
 			ZCNTxnID:   burnTicket.TxnID,
 			Amount:     burnTicket.Amount,
+			To:         burnTicket.To,
 			Nonce:      burnTicket.Nonce,
-			ClientID:   burnTicket.ClientID,
 			Signatures: sigs,
 		}
 
