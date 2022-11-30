@@ -9,7 +9,7 @@ The 0chain wasm SDK is written in Go programming language, and released with Web
 init wasm sdk
 
 **Input**:
-  > chainID, blockWorker, signatureScheme string, minConfirmation, minSubmit, confirmationChainLength int
+  > chainID, blockWorker, signatureScheme string, minConfirmation, minSubmit, confirmationChainLength int,zboxBaseUrl, zboxAppType string
 
 **Output**:
   > N/A
@@ -55,7 +55,7 @@ valid wallet id
 set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWallet` to set wallet on go.
 
 **Input**:
-> bls, clientID, sk, pk string, ,zboxBaseUrl, zboxAppType string
+> bls, clientID, sk, pk string, ,zboxBaseUrl
 
 **Output**:
 > N/A
@@ -65,7 +65,7 @@ set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWal
 set wallet on go
 
 **Input**:
-> clientID, publicKey, privateKey string, zboxBaseUrl, zboxAppType string
+> clientID, publicKey, privateKey string
 
 **Output**:
 > N/A

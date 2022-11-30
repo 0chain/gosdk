@@ -22,7 +22,8 @@ var (
 )
 
 func Init(baseUrl, appType string) {
-	zboxApiClient = zboxapi.NewClient(baseUrl, appType, client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey())
+	zboxApiClient = zboxapi.NewClient(baseUrl, appType)
+	zboxApiClient.SetWallet(client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey())
 }
 
 // GetCsrfToken create a fresh CSRF token

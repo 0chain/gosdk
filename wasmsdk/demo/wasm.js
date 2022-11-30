@@ -136,7 +136,7 @@ async function blsVerify(signature, hash) {
   return bridge.jsProxy.publicKey.verify(sig, bytes)
 }
 
-async function setWallet(bls, clientID, sk, pk, zboxBaseUrl, zboxAppType) {
+async function setWallet(bls, clientID, sk, pk) {
   if (!bls) throw new Error('bls is undefined, on wasm setWallet fn')
   if (!sk) throw new Error('secret key is undefined, on wasm setWallet fn')
   if (!pk) throw new Error('public key is undefined, on wasm setWallet fn')
@@ -148,7 +148,7 @@ async function setWallet(bls, clientID, sk, pk, zboxBaseUrl, zboxAppType) {
     bridge.jsProxy.publicKey = bls.deserializeHexStrToPublicKey(pk)
 
     // use proxy.sdk to detect if sdk is ready
-    await bridge.__proxy__.sdk.setWallet(clientID, pk, sk,zboxBaseUrl, zboxAppType)
+    await bridge.__proxy__.sdk.setWallet(clientID, pk, sk)
     bridge.walletId = clientID
   }
 }

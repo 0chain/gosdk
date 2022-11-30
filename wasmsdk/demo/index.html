@@ -114,15 +114,15 @@
       confirmationChainLength: 3,
     }
     const blockWorker = 'https://demo.devnet-0chain.net/dns';
-    var zboxBaseUrl = 'https://0box.demo.devnet-0chain.net';
-    var zboxAppType = 'vult';
     const config = [
       networkConfig.chainId,
       blockWorker,
       networkConfig.signatureScheme,
       networkConfig.minConfirmation,
       networkConfig.minSubmit,
-      networkConfig.confirmationChainLength
+      networkConfig.confirmationChainLength,
+      'zboxBaseUrl'= 'https://0box.demo.devnet-0chain.net',
+      'zboxAppType'= 'vult',
     ]
 
 
@@ -133,14 +133,14 @@
       await wasm.sdk.init(...config)
       await bls.init(bls.BN254)
       const { clientID, privateKey, publicKey } = getWallet()
-      await wasm.setWallet(bls, clientID, privateKey, publicKey,zboxBaseUrl,zboxAppType)
+      await wasm.setWallet(bls, clientID, privateKey, publicKey)
 
       goWasm = wasm
     })
 
     onClick('btnSetWallet', async () => {
       const { clientID, privateKey, publicKey } = getWallet()
-      await goWasm.setWallet(bls, clientID, privateKey, publicKey,zboxBaseUrl,zboxAppType)
+      await goWasm.setWallet(bls, clientID, privateKey, publicKey)
     })
 
 

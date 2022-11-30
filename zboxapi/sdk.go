@@ -26,14 +26,17 @@ type Client struct {
 }
 
 // NewClient create a zbox api client with wallet info
-func NewClient(baseUrl string, appType, clientID, clientPrivateKey, clientPublicKey string) *Client {
+func NewClient(baseUrl, appType string) *Client {
 	return &Client{
-		baseUrl:          strings.TrimRight(baseUrl, "/"),
-		appType:          appType,
-		clientID:         clientID,
-		clientPublicKey:  clientPublicKey,
-		clientPrivateKey: clientPrivateKey,
+		baseUrl: strings.TrimRight(baseUrl, "/"),
+		appType: appType,
 	}
+}
+
+func (c *Client) SetWallet(clientID, clientPrivateKey, clientPublicKey string) {
+	c.clientID = clientID
+	c.clientPrivateKey = clientPrivateKey
+	c.clientPublicKey = clientPublicKey
 }
 
 func (c *Client) parseResponse(resp *http.Response, respBody []byte, result interface{}) error {
@@ -80,15 +83,17 @@ func (c *Client) createResty(ctx context.Context, csrfToken, phoneNumber string,
 	h["X-App-Client-Key"] = c.clientPublicKey
 	h["X-App-Phone-Number"] = phoneNumber
 
-	data := fmt.Sprintf("%v:%v:%v", c.clientID, phoneNumber, c.clientPublicKey)
-	hash := encryption.Hash(data)
-	sign, err := client.SignHash(hash, "bls0chain", []sys.KeyPair{{
-		PrivateKey: c.clientPrivateKey,
-	}})
-	if err != nil {
-		return nil, err
+	if c.clientPrivateKey != "" {
+		data := fmt.Sprintf("%v:%v:%v", c.clientID, phoneNumber, c.clientPublicKey)
+		hash := encryption.Hash(data)
+		sign, err := client.SignHash(hash, "bls0chain", []sys.KeyPair{{
+			PrivateKey: c.clientPrivateKey,
+		}})
+		if err != nil {
+			return nil, err
+		}
+		h["X-App-Client-Signature"] = sign
 	}
-	h["X-App-Client-Signature"] = sign
 
 	h["X-CSRF-TOKEN"] = csrfToken
 	h["X-App-Timestamp"] = strconv.FormatInt(time.Now().Unix(), 10)
