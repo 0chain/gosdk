@@ -57,6 +57,35 @@ func Init(chainConfigJson string) error {
 }
 
 // InitStorageSDK - init storage sdk from config
+//   - clientJson
+//     {
+//     "client_id":"8f6ce6457fc04cfb4eb67b5ce3162fe2b85f66ef81db9d1a9eaa4ffe1d2359e0",
+//     "client_key":"c8c88854822a1039c5a74bdb8c025081a64b17f52edd463fbecb9d4a42d15608f93b5434e926d67a828b88e63293b6aedbaf0042c7020d0a96d2e2f17d3779a4",
+//     "keys":[
+//     {
+//     "public_key":"c8c88854822a1039c5a74bdb8c025081a64b17f52edd463fbecb9d4a42d15608f93b5434e926d67a828b88e63293b6aedbaf0042c7020d0a96d2e2f17d3779a4",
+//     "private_key":"72f480d4b1e7fb76e04327b7c2348a99a64f0ff2c5ebc3334a002aa2e66e8506"
+//     }],
+//     "mnemonics":"abandon mercy into make powder fashion butter ignore blade vanish plastic shock learn nephew matrix indoor surge document motor group barely offer pottery antenna",
+//     "version":"1.0",
+//     "date_created":"1668667145",
+//     "nonce":0
+//     }
+//   - configJson
+//     {
+//     "block_worker": "https://dev.0chain.net/dns",
+//     "signature_scheme": "bls0chain",
+//     "min_submit": 50,
+//     "min_confirmation": 50,
+//     "confirmation_chain_length": 3,
+//     "max_txn_query": 5,
+//     "query_sleep_time": 5,
+//     "preferred_blobbers": ["https://dev.0chain.net/blobber02","https://dev.0chain.net/blobber03"],
+//     "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
+//     "ethereum_node":"https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx",
+//     "zbox_api":"https://0box.dev.0chain.net",
+//     "zbox_app_type":"vult",
+//     }
 func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 	l.Logger.Info("Start InitStorageSDK")
 	configObj := &ChainConfig{}
