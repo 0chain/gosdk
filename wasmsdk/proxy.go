@@ -149,6 +149,7 @@ func main() {
 				"listObjects":    listObjects,
 				"createDir":      createDir,
 				"downloadBlocks": downloadBlocks,
+				"getFileStats":   getFileStats,
 
 				// player
 				"play":           play,
