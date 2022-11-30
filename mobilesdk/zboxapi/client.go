@@ -1,21 +1,5 @@
 package zboxapi
 
-import (
-	"github.com/0chain/gosdk/zboxapi"
-	"github.com/0chain/gosdk/zboxcore/client"
-)
-
-var zboxApiClient *zboxapi.Client
-
-func InitZboxApi(baseUrl, appType string) {
-	zboxApiClient = zboxapi.NewClient(baseUrl, appType, client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey())
-}
-
-
-
-
-package main
-
 /*
 #include <stdlib.h>
 */
@@ -29,6 +13,7 @@ import (
 	"errors"
 
 	"github.com/0chain/gosdk/zboxapi"
+	"github.com/0chain/gosdk/zboxcore/client"
 )
 
 var (
@@ -36,6 +21,9 @@ var (
 	ErrZboxApiNotInitialized = errors.New("0box: zboxapi client is not initialized")
 )
 
+func InitZboxApi(baseUrl, appType string) {
+	zboxApiClient = zboxapi.NewClient(baseUrl, appType, client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey())
+}
 
 // GetCsrfToken create a fresh CSRF token
 func GetCsrfToken() (string, error) {
@@ -44,10 +32,11 @@ func GetCsrfToken() (string, error) {
 	}
 	return zboxApiClient.GetCsrfToken(context.TODO())
 }
+
 // CreateJwtSession create a jwt session
 func CreateJwtSession(phoneNumber string) (int64, error) {
 	if zboxApiClient == nil {
-		return "", ErrZboxApiNotInitialized
+		return 0, ErrZboxApiNotInitialized
 	}
 	return zboxApiClient.CreateJwtSession(context.TODO(), phoneNumber)
 }
