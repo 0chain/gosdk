@@ -218,14 +218,13 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 		sigs = append(sigs, signature.Signature)
 	}
 
-	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, "mint", amount, zcnTxd, nonce, sigs)
+	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, payload.To, "mint", amount, zcnTxd, nonce, sigs)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare bridge")
 	}
 
 	Logger.Info(
 		"Staring Mint WZCN",
-		zap.String("clientID", b.ClientID()),
 		zap.Int64("amount", amount.Int64()),
 		zap.String("zcnTxd", string(zcnTxd)),
 		zap.String("nonce", nonce.String()))
@@ -265,7 +264,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 	amount := new(big.Int)
 	amount.SetInt64(int64(amountTokens))
 
-	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, "burn", amount, clientID)
+	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, b.EthereumAddress, "burn", amount, clientID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare bridge")
 	}
@@ -364,7 +363,7 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount uint64) (*transaction
 	return trx, nil
 }
 
-func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params ...interface{}) (*binding.Bridge, *bind.TransactOpts, error) {
+func (b *BridgeClient) prepareBridge(ctx context.Context, ethereumAddress, method string, params ...interface{}) (*binding.Bridge, *bind.TransactOpts, error) {
 	etherClient, err := b.CreateEthClient()
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to create etherClient")
@@ -373,7 +372,7 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params 
 	// To (contract)
 	contractAddress := common.HexToAddress(b.BridgeAddress)
 
-	// Get ABI of the contract
+	//Get ABI of the contract
 	abi, err := binding.BridgeMetaData.GetAbi()
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to get ABI")
@@ -386,7 +385,7 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params 
 	}
 
 	//Gas limits in units
-	fromAddress := common.HexToAddress(b.EthereumAddress)
+	fromAddress := common.HexToAddress(ethereumAddress)
 
 	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
 		To:   &contractAddress,
