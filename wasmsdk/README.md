@@ -70,8 +70,6 @@ set wallet on go
 **Output**:
 > N/A
 
-### zcn.sdk.setZBoxHost
-set 0box host for creating free allocation.
 
 **Input**:
 > host string

@@ -5,7 +5,6 @@ package main
 
 import (
 	"github.com/0chain/gosdk/core/transaction"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 

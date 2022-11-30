@@ -132,7 +132,6 @@ func main() {
 				//sdk
 				"init":                   initSDKs,
 				"setWallet":              SetWallet,
-				"setZBoxHost":            setZBoxHost,
 				"getPublicEncryptionKey": zcncore.GetPublicEncryptionKey,
 				"hideLogs":               hideLogs,
 				"showLogs":               showLogs,

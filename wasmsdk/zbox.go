@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"errors"
 
 	"github.com/0chain/gosdk/zboxapi"
 )
@@ -23,7 +24,7 @@ func getCsrfToken() (string, error) {
 
 func createJwtSession(phoneNumber string) (int64, error) {
 	if zboxApiClient == nil {
-		return "", ErrZboxApiNotInitialized
+		return 0, ErrZboxApiNotInitialized
 	}
 	return zboxApiClient.CreateJwtSession(context.TODO(), phoneNumber)
 }

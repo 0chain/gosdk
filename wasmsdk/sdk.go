@@ -10,6 +10,7 @@ import (
 
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxapi"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
@@ -19,9 +20,7 @@ var CreateObjectURL func(buf []byte, mimeType string) string
 
 // initSDKs init sharder/miners ,
 func initSDKs(chainID, blockWorker, signatureScheme string,
-	minConfirmation, minSubmit, confirmationChainLength int, zboxApi string) error {
-
-	zboxApiBaseUrl = zboxApi
+	minConfirmation, minSubmit, confirmationChainLength int) error {
 
 	err := sdk.InitStorageSDK("{}", blockWorker, chainID, signatureScheme, nil, 0)
 	if err != nil {
