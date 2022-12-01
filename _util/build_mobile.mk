@@ -6,9 +6,10 @@ ANDROIDMOBILESDKDIR := $(OUTDIR)/androidsdk
 MACSDKDIR	:= $(OUTDIR)/macossdk
 IOSBINNAME 		:= zcncore.xcframework
 ANDROIDBINNAME	:= zcncore.aar
-MINIOSVERSIONMIN := "-mmacosx-version-min=10.12 -miphoneos-version-min=7.0=7.0 -mios-version-min=7.0 -mios-simulator-version-min=7.0"
+MINIOSVERSIONMIN := "-miphoneos-version-min=7.0=7.0 -mios-version-min=7.0 -mios-simulator-version-min=7.0"
+MINMACOSVERSIONMIN := "-mmacosx-version-min=10.12"
 
-PKG_EXPORTS := $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common $(GOSDK_PATH)/mobilesdk/sdk $(GOSDK_PATH)/mobilesdk/zbox
+PKG_EXPORTS := $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common $(GOSDK_PATH)/mobilesdk/sdk $(GOSDK_PATH)/mobilesdk/zbox $(GOSDK_PATH)/mobilesdk/zboxapi
 
 .PHONY: setup-gomobile build-iossimulator build-ios build-android build-android-debug
 
@@ -74,5 +75,5 @@ build-android-debug:
 
 build-macos: 
 	@echo "Building MAC framework. Please wait..."
-	@CGO_CFLAGS=$(MINIOSVERSIONMIN)  gomobile bind -v -ldflags="-s -w" -target=macos -tags mobile -o $(MACSDKDIR)/$(IOSBINNAME) $(PKG_EXPORTS)
+	@CGO_CFLAGS=$(MINMACOSVERSIONMIN)  gomobile bind -v -ldflags="-s -w" -target=macos -tags mobile -o $(MACSDKDIR)/$(IOSBINNAME) $(PKG_EXPORTS)
 	@echo "   $(MACSDKDIR)/$(IOSBINNAME). - [OK]"

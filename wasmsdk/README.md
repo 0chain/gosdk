@@ -9,7 +9,7 @@ The 0chain wasm SDK is written in Go programming language, and released with Web
 init wasm sdk
 
 **Input**:
-  > chainID, blockWorker, signatureScheme string, minConfirmation, minSubmit, confirmationChainLength int
+  > chainID, blockWorker, signatureScheme string, minConfirmation, minSubmit, confirmationChainLength int,zboxHost, zboxAppType string
 
 **Output**:
   > N/A
@@ -65,13 +65,11 @@ set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWal
 set wallet on go
 
 **Input**:
-> clientID, publicKey string
+> clientID, publicKey, privateKey string
 
 **Output**:
 > N/A
 
-### zcn.sdk.setZBoxHost
-set 0box host for creating free allocation.
 
 **Input**:
 > host string
@@ -332,4 +330,41 @@ create folder from blobbers
 
 **Output**:
 > string: txnHash
+
+
+
+## 0Box API methods
+### zcn.sdk.getCsrfToken
+get a fresh CSRF token
+
+**Input**:
+> N/A
+
+**Output**:
+> string
+
+### zcn.sdk.createJwtSession
+create a jwt session with phone number
+**Input**:
+> phoneNumber string
+
+**Output**:
+> sessionID int64
+
+### zcn.sdk.createJwtToken
+create a jwt token with jwt session id and otp
+**Input**:
+> phoneNumber string, jwtSessionID int64, otp string
+
+**Output**:
+> token string
+
+
+### zcn.sdk.refreshJwtToken
+refresh jwt token
+**Input**:
+> phoneNumber string, token string
+
+**Output**:
+> token string
 

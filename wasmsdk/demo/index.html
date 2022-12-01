@@ -21,17 +21,17 @@
 
   <h2>please download zcn.wasm from https://github.com/0chain/gosdk/releases/latest first</h2>
 
-<fieldset>
-  <legend>logging</legend>
-  <span>
-    <button id="btnShowLogs">Show</button>
-    <button id="btnHideLogs">Hide</button>
-  </span>
-   <br>
-  <textarea id="logs" rows="10" cols="100">
+  <fieldset>
+    <legend>logging</legend>
+    <span>
+      <button id="btnShowLogs">Show</button>
+      <button id="btnHideLogs">Hide</button>
+    </span>
+    <br>
+    <textarea id="logs" rows="10" cols="100">
 
   </textarea>
-</fieldset>
+  </fieldset>
 
   <fieldset>
     <legend>Wallet</legend>
@@ -92,7 +92,7 @@
 
   <fieldset>
     <legend>Image Viewer</legend>
-    <img id="viewer" src="image.png" width="600"/>
+    <img id="viewer" src="image.png" width="600" />
   </fieldset>
 
   <script>
@@ -113,14 +113,16 @@
       minSubmit: 50,
       confirmationChainLength: 3,
     }
-    const blockWorker = `https://demo.devnet-0chain.net/dns`
+    const blockWorker = 'https://demo.devnet-0chain.net/dns';
     const config = [
       networkConfig.chainId,
       blockWorker,
       networkConfig.signatureScheme,
       networkConfig.minConfirmation,
       networkConfig.minSubmit,
-      networkConfig.confirmationChainLength
+      networkConfig.confirmationChainLength,
+      'zboxHost' = 'https://0box.demo.devnet-0chain.net',
+      'zboxAppType' = 'vult',
     ]
 
 
@@ -214,8 +216,8 @@
         const allocationId = getSelectedAllocation()
 
         //allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int
-        const file = await goWasm.sdk.download(allocationId, path, '', '', false,10)
-      
+        const file = await goWasm.sdk.download(allocationId, path, '', '', false, 10)
+
 
         const a = document.createElement('a')
         document.body.appendChild(a)
@@ -230,12 +232,12 @@
       }
     })
 
-    onClick('btnViewFile', async()=>{
+    onClick('btnViewFile', async () => {
       const file = files.find(it => it.path == getSelectedFile())
-      if(file && file.mimetype.startsWith('image')){
+      if (file && file.mimetype.startsWith('image')) {
         const allocationId = getSelectedAllocation()
-        const {url} = await goWasm.sdk.download(allocationId, file.path, '', '', false, 10)
-        get('viewer').setAttribute('src',url)
+        const { url } = await goWasm.sdk.download(allocationId, file.path, '', '', false, 10)
+        get('viewer').setAttribute('src', url)
       }
     })
 
@@ -278,7 +280,7 @@
 
     onClick('btnStop', async () => {
       if (isPlayerReady) {
-        stopPlay({goWasm, videoElement:player})
+        stopPlay({ goWasm, videoElement: player })
         isPlayerReady = false
       }
     })
@@ -286,7 +288,7 @@
 
     const log = console.log
     const logs = get('logs')
-    onClick('btnShowLogs',async ()=>{
+    onClick('btnShowLogs', async () => {
       await goWasm.sdk.showLogs()
       console.log = s => {
         log(s)
@@ -296,7 +298,7 @@
       }
     })
 
-    onClick('btnHideLogs',async ()=>{
+    onClick('btnHideLogs', async () => {
       await goWasm.sdk.hideLogs()
       console.log = log
     })
