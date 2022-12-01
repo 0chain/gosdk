@@ -174,6 +174,7 @@ func main() {
 				"setSwapWallets":     setSwapWallets,
 				"swapToken":          swapToken,
 				"initBridge":         initBridge,
+				"burnZCN":            burnZCN,
 				"mintZCN":            mintZCN,
 				"getMintWZCNPayload": getMintWZCNPayload,
 
