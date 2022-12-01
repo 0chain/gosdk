@@ -21,8 +21,6 @@ func New(opts ...Option) *Resty {
 		header:  make(map[string]string),
 	}
 
-	r.header["js.fetch:mode"] = "cors"
-
 	for _, option := range opts {
 		option(r)
 	}
