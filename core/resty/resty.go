@@ -18,7 +18,10 @@ func New(opts ...Option) *Resty {
 	r := &Resty{
 		timeout: DefaultRequestTimeout,
 		retry:   DefaultRetry,
+		header:  make(map[string]string),
 	}
+
+	r.header["js.fetch:mode"] = "cors"
 
 	for _, option := range opts {
 		option(r)
@@ -36,21 +39,11 @@ func New(opts ...Option) *Resty {
 		r.transport = DefaultTransport
 	}
 
-	r.client = CreateClient(r.transport, r.timeout)
+	if r.client == nil {
+		r.client = CreateClient(r.transport, r.timeout)
+	}
 
 	return r
-}
-
-// CreateClient a function that create a client instance
-var CreateClient = func(t *http.Transport, timeout time.Duration) Client {
-	client := &http.Client{
-		Transport: t,
-	}
-	if timeout > 0 {
-		client.Timeout = timeout
-	}
-
-	return client
 }
 
 // Client http client

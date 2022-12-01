@@ -61,7 +61,10 @@ func (c *Client) parseResponse(resp *http.Response, respBody []byte, result inte
 
 // GetCsrfToken obtain a fresh csrf token from 0box api server
 func (c *Client) GetCsrfToken(ctx context.Context) (string, error) {
-	r := resty.New()
+	r, err := c.createResty(ctx, "", "", nil)
+	if err != nil {
+		return "", err
+	}
 	result := &CsrfTokenResponse{}
 	r.DoGet(ctx, c.baseUrl+"/v2/csrftoken").Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 		if err != nil {
@@ -136,8 +139,7 @@ func (c *Client) CreateJwtSession(ctx context.Context, phoneNumber string) (int6
 		return 0, errs[0]
 	}
 
-	return 0, nil
-
+	return sessionID, nil
 }
 
 // CreateJwtToken create a jwt token with jwt session id and otp
