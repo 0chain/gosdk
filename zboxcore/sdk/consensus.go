@@ -26,7 +26,7 @@ func (c *Consensus) Reset() {
 func (c *Consensus) Init(threshConsensus, fullConsensus int) {
 	c.Lock()
 	c.consensusThresh = threshConsensus
-	c.fullconsensus = fullConsensuRWMutex
+	c.fullconsensus = fullConsensus
 	c.Unlock()
 }
 
