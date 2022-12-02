@@ -47,7 +47,7 @@ func createDir(allocationID, remotePath string) error {
 }
 
 // lisBlobbersForFile returns details about
-func getFileStats(allocationID, remotePath string) ([]sdk.FileStats, error) {
+func getFileStats(allocationID, remotePath string) ([]*sdk.FileStats, error) {
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
 	}
@@ -66,9 +66,9 @@ func getFileStats(allocationID, remotePath string) ([]sdk.FileStats, error) {
 		return nil, err
 	}
 
-	var output []sdk.FileStats
+	var output []*sdk.FileStats
 	for _, stats := range fileStats {
-		output = append(output, *stats)
+		output = append(output, stats)
 	}
 
 	return output, nil
