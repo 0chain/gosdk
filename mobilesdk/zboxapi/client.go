@@ -24,7 +24,11 @@ var (
 
 func Init(baseUrl, appType string) {
 	zboxApiClient = zboxapi.NewClient(baseUrl, appType)
-	SetWallet(client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey()) //nolint: errcheck
+
+	c := client.GetClient()
+	if c != nil {
+		SetWallet(client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey()) //nolint: errcheck
+	}
 }
 
 func SetWallet(clientID, clientPrivateKey, clientPublicKey string) error {
