@@ -112,8 +112,12 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 	}
 	l.Logger.Info("InitStorageSDK success")
 
-	zboxapi.Init(configObj.ZboxHost, configObj.ZboxAppType)
-	l.Logger.Info("InitZboxApi success")
+	if configObj.ZboxHost != "" && configObj.ZboxAppType != "" {
+		zboxapi.Init(configObj.ZboxHost, configObj.ZboxAppType)
+		l.Logger.Info("InitZboxApi success")
+	} else {
+		l.Logger.Info("InitZboxApi skipped")
+	}
 
 	l.Logger.Info("Init successful")
 
