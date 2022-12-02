@@ -3,7 +3,6 @@ package sdk
 import (
 	"encoding/json"
 	"sort"
-	"sync"
 )
 
 type playlistConsensus struct {
@@ -35,9 +34,7 @@ func (c *playlistConsensus) AddFile(body []byte) error {
 	if ok {
 		c.consensuses[file.LookupHash].Done()
 	} else {
-		cons := &Consensus{
-			mu: &sync.RWMutex{},
-		}
+		cons := &Consensus{}
 
 		cons.Init(c.threshConsensus, c.fullConsensus)
 		cons.Done()
