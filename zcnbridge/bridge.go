@@ -193,6 +193,32 @@ func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
 	return signature, nil
 }
 
+// GetUserNonceMinted Returns nonce for a specified Ethereum address
+func (b *BridgeClient) GetUserNonceMinted(ctx context.Context, rawEthereumAddress string) (*big.Int, error) {
+	ethereumAddress := common.HexToAddress(rawEthereumAddress)
+	etherClient, err := b.CreateEthClient()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create etherClient")
+	}
+
+	contractAddress := common.HexToAddress(b.BridgeAddress)
+
+	var bridgeInstance *binding.Bridge
+	bridgeInstance, err = binding.NewBridge(contractAddress, etherClient)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create bridge instance")
+	}
+
+	var nonce *big.Int
+	nonce, err = bridgeInstance.GetUserNonceMinted(nil, ethereumAddress)
+	if err != nil {
+		Logger.Error("GetUserNonceMinted FAILED", zap.Error(err))
+		msg := "failed to execute GetUserNonceMinted call, ethereumAddress = %s"
+		return nil, errors.Wrapf(err, msg, rawEthereumAddress)
+	}
+	return nonce, err
+}
+
 // MintWZCN Mint ZCN tokens on behalf of the 0ZCN client
 // payload: received from authorizers
 func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPayload) (*types.Transaction, error) {
