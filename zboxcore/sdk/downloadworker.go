@@ -211,7 +211,7 @@ func (req *DownloadRequest) downloadBlock(
 	return remainingMask, failed, downloadErrors, nil
 }
 
-//decodeEC will reconstruct shards and verify it
+// decodeEC will reconstruct shards and verify it
 func (req *DownloadRequest) decodeEC(shards [][]byte) (data []byte, isValid bool, err error) {
 	err = req.ecEncoder.Reconstruct(shards)
 	if err != nil {
@@ -543,7 +543,6 @@ func (req *DownloadRequest) getFileRef(remotePathCB string) (fRef *fileref.FileR
 		blobbers:           req.blobbers,
 		authToken:          req.authTicket,
 		Consensus: Consensus{
-			mu:              &sync.RWMutex{},
 			fullconsensus:   req.fullconsensus,
 			consensusThresh: req.consensusThresh,
 		},
