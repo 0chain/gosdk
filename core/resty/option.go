@@ -49,3 +49,10 @@ func WithTransport(transport *http.Transport) Option {
 		r.transport = transport
 	}
 }
+
+// WithClient set client
+func WithClient(c Client) Option {
+	return func(r *Resty) {
+		r.client = c
+	}
+}
