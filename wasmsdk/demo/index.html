@@ -21,26 +21,26 @@
 
   <h2>please download zcn.wasm from https://github.com/0chain/gosdk/releases/latest first</h2>
 
-<fieldset>
-  <legend>logging</legend>
-  <span>
-    <button id="btnShowLogs">Show</button>
-    <button id="btnHideLogs">Hide</button>
-  </span>
-   <br>
-  <textarea id="logs" rows="10" cols="100">
+  <fieldset>
+    <legend>logging</legend>
+    <span>
+      <button id="btnShowLogs">Show</button>
+      <button id="btnHideLogs">Hide</button>
+    </span>
+    <br>
+    <textarea id="logs" rows="10" cols="100">
 
   </textarea>
-</fieldset>
+  </fieldset>
 
   <fieldset>
     <legend>Wallet</legend>
     <label for="clientId"> ClientID </label> <input id="clientId" name="clientId" style="width: 600px;"
-      value="30764bcba73216b67c36b05a17b4dd076bfdc5bb0ed84856f27622188c377269" /><br>
+      value="24727a58421bc90e08fcd61138b60bb7e25c7df18b310b5bf48fcdd7862b88b3" /><br>
     <label for="privateKey">PrivateKey</label> <input id="privateKey" name="privateKey" style="width: 600px;"
-      value="41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122" /><br>
+      value="79a8fb8a20812254c208417a29e72a2083192f21008e30e9f545d82edd4e6806" /><br>
     <label for="publicKey"> PublicKey</label> <input id="publicKey" name="publicKey" style="width: 600px;"
-      value="1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c" /><br>
+      value="ca36b840be3f8f020a849f9be4cecdb2d11a9b4042851f88b1125cedf23e9a23049b56acff20fab01e16ce777b535c22cf8de5714858a3abdb4ac9962d170f07" /><br>
 
     <button id="btnSetWallet">Change Wallet</button>
   </fieldset>
@@ -92,7 +92,7 @@
 
   <fieldset>
     <legend>Image Viewer</legend>
-    <img id="viewer" src="image.png" width="600"/>
+    <img id="viewer" src="image.png" width="600" />
   </fieldset>
 
   <script>
@@ -113,14 +113,16 @@
       minSubmit: 50,
       confirmationChainLength: 3,
     }
-    const blockWorker = `https://demo.devnet-0chain.net/dns`
+    const blockWorker = 'https://demo.devnet-0chain.net/dns';
     const config = [
       networkConfig.chainId,
       blockWorker,
       networkConfig.signatureScheme,
       networkConfig.minConfirmation,
       networkConfig.minSubmit,
-      networkConfig.confirmationChainLength
+      networkConfig.confirmationChainLength,
+      'https://0box.demo.devnet-0chain.net', //zboxHost
+      'vult', //zboxAppType
     ]
 
 
@@ -214,8 +216,8 @@
         const allocationId = getSelectedAllocation()
 
         //allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int
-        const file = await goWasm.sdk.download(allocationId, path, '', '', false,10)
-      
+        const file = await goWasm.sdk.download(allocationId, path, '', '', false, 10)
+
 
         const a = document.createElement('a')
         document.body.appendChild(a)
@@ -230,12 +232,12 @@
       }
     })
 
-    onClick('btnViewFile', async()=>{
+    onClick('btnViewFile', async () => {
       const file = files.find(it => it.path == getSelectedFile())
-      if(file && file.mimetype.startsWith('image')){
+      if (file && file.mimetype.startsWith('image')) {
         const allocationId = getSelectedAllocation()
-        const {url} = await goWasm.sdk.download(allocationId, file.path, '', '', false, 10)
-        get('viewer').setAttribute('src',url)
+        const { url } = await goWasm.sdk.download(allocationId, file.path, '', '', false, 10)
+        get('viewer').setAttribute('src', url)
       }
     })
 
@@ -278,7 +280,7 @@
 
     onClick('btnStop', async () => {
       if (isPlayerReady) {
-        stopPlay({goWasm, videoElement:player})
+        stopPlay({ goWasm, videoElement: player })
         isPlayerReady = false
       }
     })
@@ -286,7 +288,7 @@
 
     const log = console.log
     const logs = get('logs')
-    onClick('btnShowLogs',async ()=>{
+    onClick('btnShowLogs', async () => {
       await goWasm.sdk.showLogs()
       console.log = s => {
         log(s)
@@ -296,7 +298,7 @@
       }
     })
 
-    onClick('btnHideLogs',async ()=>{
+    onClick('btnHideLogs', async () => {
       await goWasm.sdk.hideLogs()
       console.log = log
     })

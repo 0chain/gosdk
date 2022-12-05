@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -276,7 +277,7 @@ func (a *Allocation) CreateDir(remotePath string) error {
 		return errors.New("invalid_name", "Invalid name for dir")
 	}
 
-	if !filepath.IsAbs(remotePath) {
+	if !path.IsAbs(remotePath) {
 		return errors.New("invalid_path", "Path is not absolute")
 	}
 
@@ -292,7 +293,6 @@ func (a *Allocation) CreateDir(remotePath string) error {
 		remotePath:   remotePath,
 		wg:           &sync.WaitGroup{},
 		Consensus: Consensus{
-			mu:              &sync.RWMutex{},
 			consensusThresh: a.consensusThreshold,
 			fullconsensus:   a.fullconsensus,
 		},
@@ -487,7 +487,6 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 	uploadReq.datashards = a.DataShards
 	uploadReq.parityshards = a.ParityShards
 	uploadReq.setUploadMask(len(a.Blobbers))
-	uploadReq.Consensus.mu = &sync.RWMutex{}
 	uploadReq.fullconsensus = a.fullconsensus
 	uploadReq.consensusThresh = a.consensusThreshold
 	uploadReq.isEncrypted = encryption
@@ -543,7 +542,6 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, 
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
-	listReq.Consensus.mu = &sync.RWMutex{}
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
 	listReq.ctx = a.ctx
@@ -614,7 +612,6 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	downloadReq.startBlock = startBlock - 1
 	downloadReq.endBlock = endBlock
 	downloadReq.numBlocks = int64(numBlocks)
-	downloadReq.Consensus.mu = &sync.RWMutex{}
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
 	downloadReq.completedCallback = func(remotepath string, remotepathhash string) {
@@ -686,7 +683,6 @@ func (a *Allocation) ListDir(path string) (*ListResult, error) {
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
-	listReq.Consensus.mu = &sync.RWMutex{}
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
 	listReq.ctx = a.ctx
@@ -754,7 +750,6 @@ func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit in
 		wg:           &sync.WaitGroup{},
 		pageLimit:    pageLimit,
 		Consensus: Consensus{
-			mu:              &sync.RWMutex{},
 			fullconsensus:   a.fullconsensus,
 			consensusThresh: a.consensusThreshold,
 		},
@@ -772,7 +767,6 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
-	listReq.Consensus.mu = &sync.RWMutex{}
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
 	listReq.ctx = a.ctx
@@ -819,7 +813,6 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 	listReq.allocationID = a.ID
 	listReq.allocationTx = a.Tx
 	listReq.blobbers = a.Blobbers
-	listReq.Consensus.mu = &sync.RWMutex{}
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
 	listReq.ctx = a.ctx
@@ -892,7 +885,6 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int)
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
-	req.consensus.mu = &sync.RWMutex{}
 	req.consensus.Init(threshConsensus, fullConsensus)
 	req.ctx = a.ctx
 	req.remotefilepath = path
@@ -933,7 +925,6 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
 	req.newName = destName
-	req.consensus.mu = &sync.RWMutex{}
 	req.consensus.fullconsensus = a.fullconsensus
 	req.consensus.consensusThresh = a.consensusThreshold
 	req.ctx = a.ctx
@@ -972,7 +963,6 @@ func (a *Allocation) MoveObject(srcPath string, destPath string) error {
 		destPath = strings.TrimSuffix(destPath, "/")
 	}
 	req.destPath = destPath
-	req.Consensus.mu = &sync.RWMutex{}
 	req.fullconsensus = a.fullconsensus
 	req.consensusThresh = a.consensusThreshold
 	req.ctx = a.ctx
@@ -1011,7 +1001,6 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 		destPath = strings.TrimSuffix(destPath, "/")
 	}
 	req.destPath = destPath
-	req.Consensus.mu = &sync.RWMutex{}
 	req.fullconsensus = a.fullconsensus
 	req.consensusThresh = a.consensusThreshold
 	req.ctx = a.ctx
@@ -1204,7 +1193,6 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 	}
 	wg.Wait()
 	consensus := Consensus{
-		mu:              &sync.RWMutex{},
 		consensus:       len(success),
 		consensusThresh: a.consensusThreshold,
 		fullconsensus:   a.fullconsensus,
@@ -1310,7 +1298,6 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.startBlock = startBlock - 1
 	downloadReq.endBlock = endBlock
 	downloadReq.numBlocks = int64(numBlocks)
-	downloadReq.Consensus.mu = &sync.RWMutex{}
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {
@@ -1376,7 +1363,6 @@ func (a *Allocation) AddCollaborator(filePath, collaboratorID string) error {
 		collaboratorID: collaboratorID,
 		a:              a,
 		consensus: Consensus{
-			mu:              &sync.RWMutex{},
 			fullconsensus:   a.fullconsensus,
 			consensusThresh: a.consensusThreshold,
 		},
@@ -1398,7 +1384,6 @@ func (a *Allocation) RemoveCollaborator(filePath, collaboratorID string) error {
 		collaboratorID: collaboratorID,
 		a:              a,
 		consensus: Consensus{
-			mu:              &sync.RWMutex{},
 			fullconsensus:   a.fullconsensus,
 			consensusThresh: a.consensusThreshold,
 		},

@@ -96,7 +96,7 @@ func (zcn *ZCNStatus) OnInfoAvailable(_ int, status int, info string, err string
 
 	var errm error
 	if errm = json.Unmarshal([]byte(info), zcn.value); errm != nil {
-		zcn.Err = fmt.Errorf("decoding response: %v", err)
+		zcn.Err = fmt.Errorf("decoding response: %v", errm)
 		zcn.Success = false
 		return
 	}

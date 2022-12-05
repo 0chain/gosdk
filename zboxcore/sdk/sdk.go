@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -616,14 +617,18 @@ func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
 	}
 }
 
-func GetBlobbers() (bs []*Blobber, err error) {
-	if !sdkInitialized {
-		return nil, sdkNotInitialized
+func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err error) {
+	type nodes struct {
+		Nodes []*Blobber
 	}
 
-	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getblobbers?active=true", nil,
-		nil)
+	url := fmt.Sprintf("/getblobbers?active=%s&limit=%d&offset=%d",
+		strconv.FormatBool(active),
+		limit,
+		offset,
+	)
+	b, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, url, nil, nil)
+	var wrap nodes
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting blobbers:")
 	}
@@ -631,17 +636,50 @@ func GetBlobbers() (bs []*Blobber, err error) {
 		return nil, errors.New("", "empty response")
 	}
 
-	type nodes struct {
-		Nodes []*Blobber
-	}
-
-	var wrap nodes
-
 	if err = json.Unmarshal(b, &wrap); err != nil {
 		return nil, errors.Wrap(err, "error decoding response:")
 	}
 
 	return wrap.Nodes, nil
+}
+
+func GetBlobbers(options ...bool) (bs []*Blobber, err error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+
+	var active bool
+	if len(options) > 0 {
+		for _, option := range options {
+			active = option
+		}
+	}
+
+	limit, offset := 20, 0
+
+	blobbers, err := getBlobbersInternal(active, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	var blobbersSl []*Blobber
+	blobbersSl = append(blobbersSl, blobbers...)
+	for {
+		// if the len of output returned is less than the limit it means this is the last round of pagination
+		if len(blobbers) < limit {
+			break
+		}
+
+		// get the next set of blobbers
+		offset += 20
+		blobbers, err = getBlobbersInternal(active, limit, offset)
+		if err != nil {
+			return blobbers, err
+		}
+		blobbersSl = append(blobbersSl, blobbers...)
+
+	}
+	return blobbersSl, nil
 }
 
 // GetBlobber instance.
