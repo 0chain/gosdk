@@ -47,12 +47,11 @@ func createDir(allocationID, remotePath string) error {
 }
 
 type FilesDetails struct {
-	RemotePath string           `json:"remote_path"`
-	Stats      []*sdk.FileStats `json:"stats"`
+	RemotePath string `json:"remote_path"`
 }
 
 // lisBlobbersForFile returns details about
-func getFileStats(allocationID, remotePath string) (*FilesDetails, error) {
+func getFileStats(allocationID, remotePath string) ([]*sdk.FileStats, error) {
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
 	}
@@ -71,15 +70,13 @@ func getFileStats(allocationID, remotePath string) (*FilesDetails, error) {
 		return nil, err
 	}
 
-	output := FilesDetails{
-		RemotePath: remotePath,
+	var stats []*sdk.FileStats
+
+	for _, it := range fileStats {
+		stats = append(stats, it)
 	}
 
-	for _, stats := range fileStats {
-		output.Stats = append(output.Stats, stats)
-	}
-
-	return &output, nil
+	return stats, nil
 }
 
 // Delete delete file from blobbers
