@@ -12,14 +12,17 @@ import (
 	"context"
 	"errors"
 
+	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/zboxapi"
 	"github.com/0chain/gosdk/zboxcore/client"
+	"go.uber.org/zap"
 )
 
 var (
 	zboxApiClient            *zboxapi.Client
 	ErrZboxApiNotInitialized = errors.New("zboxapi: zboxapi client is not initialized")
 	ErrZboxApiInvalidWallet  = errors.New("zboxapi: invalid wallet")
+	logging                  logger.Logger
 )
 
 func Init(baseUrl, appType string) {
@@ -27,7 +30,12 @@ func Init(baseUrl, appType string) {
 
 	c := client.GetClient()
 	if c != nil {
-		SetWallet(client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey()) //nolint: errcheck
+		err := SetWallet(client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey()) //nolint: errcheck
+		if err != nil {
+			logging.Error("SetWallet", zap.Error(err))
+		}
+	} else {
+		logging.Info("SetWallet: skipped")
 	}
 }
 
@@ -40,7 +48,7 @@ func SetWallet(clientID, clientPrivateKey, clientPublicKey string) error {
 		return nil
 	}
 
-	return nil
+	return ErrZboxApiInvalidWallet
 }
 
 // GetCsrfToken create a fresh CSRF token
