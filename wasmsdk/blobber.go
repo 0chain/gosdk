@@ -50,7 +50,7 @@ type FilesDetails struct {
 	RemotePath string `json:"remote_path"`
 }
 
-// lisBlobbersForFile returns details about
+// getFileStats get file stats from blobbers
 func getFileStats(allocationID, remotePath string) ([]*sdk.FileStats, error) {
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
