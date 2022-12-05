@@ -9,15 +9,12 @@ import (
 	"sync"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/util"
 )
 
 const GET_BALANCE = `/v1/client/get/balance?client_id=`
 const consensusThresh = float32(25.0)
 
-var defaultLogLevel = logger.DEBUG
-var Logger logger.Logger
 var Cache *NonceCache
 var once sync.Once
 
@@ -32,7 +29,6 @@ func InitCache(sharders []string) {
 }
 
 func init() {
-	Logger.Init(defaultLogLevel, "0chain-core-tx")
 	once.Do(func() {
 		Cache = &NonceCache{
 			cache: make(map[string]int64),

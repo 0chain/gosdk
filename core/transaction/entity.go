@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"sync/atomic"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
@@ -144,7 +143,7 @@ const (
 	ZCNSC_ADD_AUTHORIZER           = "add-authorizer"
 	ZCNSC_DELETE_AUTHORIZER        = "delete-authorizer"
 
-	ESTIMATE_TRANSACTION_COST = `/v1/estimate_tx_cost`
+	ESTIMATE_TRANSACTION_COST = `/v1/estimate_txn_fee`
 )
 
 type SignFunc = func(msg string) (string, error)
@@ -390,18 +389,26 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 
 }
 
-// SuggestTransactionFeeFromMiners estimates transaction fee, returns next round off fee (if received float from miner)
-func (t *Transaction) SuggestTransactionFeeFromMiners(miners []string, numMinersToCheck int) (float64, error) {
-	// average out random miners result (prevent trust from rogue miners
-	randomMiners := util.GetRandom(miners, numMinersToCheck)
+// EstimateFee estimates transaction fee
+func (t *Transaction) EstimateFee(miners []string, reqPercent ...float32) (uint64, error) {
+	const minReqNum = 3
+	var reqN int
 
-	result := make(chan *util.PostResponse, len(randomMiners))
-	defer close(result)
+	if len(reqPercent) > 0 {
+		reqN = int(reqPercent[0] * float32(len(miners)))
+	}
+
+	reqN = util.MaxInt(minReqNum, reqN)
+	reqN = util.MinInt(reqN, len(miners))
+	randomMiners := util.Shuffle(miners)[:reqN]
+
+	var (
+		feeC      = make(chan uint64, reqN)
+		errC      = make(chan error, reqN)
+	)
 
 	wg := &sync.WaitGroup{}
 	wg.Add(len(randomMiners))
-
-	counter := int32(0)
 
 	for _, miner := range randomMiners {
 		go func(minerUrl string) {
@@ -410,50 +417,62 @@ func (t *Transaction) SuggestTransactionFeeFromMiners(miners []string, numMiners
 			url := minerUrl + ESTIMATE_TRANSACTION_COST
 			req, err := util.NewHTTPPostRequest(url, t)
 			if err != nil {
-				Logger.Error(minerUrl, " failed to make request. ", err.Error())
-				return
-			}
-			res, err := req.Post()
-			if err != nil {
-				Logger.Error(minerUrl, " estimate transaction cost error. ", err.Error())
+				errC <- fmt.Errorf("ceate request failed, url: %s, err: %v", url, err)
 				return
 			}
 
-			atomic.AddInt32(&counter, 1)
-			result <- res
+			res, err := req.Post()
+			if err != nil {
+				errC <- fmt.Errorf("request failed, url: %s, err: %v", url, err)
+				return
+			}
+
+			rspFee := struct {
+				Fee uint64 `json:"fee"`
+			}{}
+
+			if err := json.Unmarshal([]byte(res.Body), &rspFee); err != nil {
+				errC <- fmt.Errorf("decode response failed, url: %s, err: %v", url, err)
+                return
+			}
+
+			feeC <- rspFee.Fee
 		}(miner)
 	}
 
 	// wait for requests to complete
 	wg.Wait()
+	close(feeC)
+	close(errC)
 
-	cumulativeCost := 0.0
-
-	for lc := counter; lc > 0; lc-- {
-		rsp := <-result
-		Logger.Debug(rsp.Url, "Status: ", rsp.Status)
-
-		if rsp.StatusCode == http.StatusOK {
-
-			rspfee := struct {
-				Fee float64 `json:"fee"`
-			}{}
-
-			if err := json.Unmarshal([]byte(rsp.Body), &rspfee); err != nil {
-				Logger.Error("failed to unmarshal suggested fee: ", err, "url: ", rsp.Url)
-			}
-
-			cumulativeCost += rspfee.Fee
-		} else {
-			Logger.Error(rsp.Body)
-			// decrease one failed count, thought to be a successful request
-			counter--
+	feesCount := make(map[uint64]int, reqN)
+	for fee := range feeC {
+		if fee > 0 {
+			feesCount[fee]++
 		}
 	}
 
-	if counter == 0 {
-		return 0, errors.New("", "failed to calculate suggested fee, failed to fetch data from miners")
+	if len(feesCount) > 0 {
+		// return the fee with the highest count, if all has the same count, then return the first one
+		var (
+			max int
+			fee uint64
+		)
+
+        for f, count := range feesCount {
+            if count > max {
+                max = count
+				fee = f
+            }
+        }
+
+		return fee, nil
 	}
 
-	return cumulativeCost / float64(counter), nil
+	errs := make([]string, 0, reqN)
+	for err := range errC {
+		errs = append(errs, err.Error())
+	}
+
+	return 0, errors.New("failed to estimate transaction fee", strings.Join(errs, ","))
 }

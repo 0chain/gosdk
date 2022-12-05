@@ -76,14 +76,20 @@ func GetLogger() *logger.Logger {
 	return &l.Logger
 }
 
-func InitStorageSDK(walletJSON string, blockWorker, chainID, signatureScheme string, preferredBlobbers []string, nonce int64, fee uint64) error {
-
+func InitStorageSDK(walletJSON string,
+	blockWorker, chainID, signatureScheme string,
+	preferredBlobbers []string,
+	nonce int64,
+	fee ...uint64) error {
 	err := client.PopulateClient(walletJSON, signatureScheme)
 	if err != nil {
 		return err
 	}
+
 	client.SetClientNonce(nonce)
-	client.SetTxFee(fee)
+	if len(fee) > 0 {
+		client.SetTxnFee(fee[0])
+	}
 
 	blockchain.SetChainID(chainID)
 	blockchain.SetPreferredBlobbers(preferredBlobbers)
@@ -1254,7 +1260,7 @@ func smartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
 	// Fee is set during sdk initialization.
-	return smartContractTxnValueFee(sn, value, client.TxFee())
+	return smartContractTxnValueFee(sn, value, client.TxnFee())
 }
 
 func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
@@ -1279,12 +1285,11 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 
 	// adjust fees if not set
 	if fee == 0 {
-		var feef float64
-		feef, err = txn.SuggestTransactionFeeFromMiners(blockchain.GetMiners(), 2)
+		fee, err = txn.EstimateFee(blockchain.GetMiners(), 0.2)
 		if err != nil {
 			return
 		}
-		txn.TransactionFee = uint64(feef * common.TokenUnit)
+		txn.TransactionFee = fee
 	}
 
 	txn.TransactionType = transaction.TxnTypeSmartContract

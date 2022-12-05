@@ -22,7 +22,7 @@ var CreateObjectURL func(buf []byte, mimeType string) string
 func initSDKs(chainID, blockWorker, signatureScheme string,
 	minConfirmation, minSubmit, confirmationChainLength int) error {
 
-	err := sdk.InitStorageSDK("{}", blockWorker, chainID, signatureScheme, nil, 0, 0)
+	err := sdk.InitStorageSDK("{}", blockWorker, chainID, signatureScheme, nil, 0)
 	if err != nil {
 		return err
 	}

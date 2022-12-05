@@ -111,8 +111,8 @@ type TransactionCommon interface {
 	// SetTransactionFee implements method to set the transaction fee
 	SetTransactionFee(txnFee uint64) error
 
-	// AdjustTransactionFee adjusts transaction fee based on preset fee with the suggested fee from the miner
-	AdjustTransactionFee(TransactionVelocity) error
+	// AdjustTransactionFee adjusts transaction fee based on preset fee with the suggested fee
+	AdjustTransactionFee() error
 
 	//RegisterMultiSig registers a group wallet and subwallets with MultisigSC
 	RegisterMultiSig(walletstr, mswallet string) error
@@ -275,17 +275,14 @@ func (t *Transaction) SetTransactionFee(txnFee uint64) error {
 	return nil
 }
 
-func (t *Transaction) AdjustTransactionFee(velocity TransactionVelocity) error {
-	const numMinersToCheck = 2
-
-	fee, err := t.txn.SuggestTransactionFeeFromMiners(_config.chain.Miners, numMinersToCheck)
+func (t *Transaction) AdjustTransactionFee() error {
+	fee, err := t.txn.EstimateFee(_config.chain.Miners, 0.2)
 	if err != nil {
 		return err
 	}
 
-	newFee := ConvertToValue(fee * velocity)
-	if newFee > t.txn.TransactionFee {
-		return t.SetTransactionFee(newFee)
+	if fee > t.txn.TransactionFee {
+		return t.SetTransactionFee(fee)
 	}
 	return nil
 }
