@@ -111,9 +111,6 @@ type TransactionCommon interface {
 	// SetTransactionFee implements method to set the transaction fee
 	SetTransactionFee(txnFee uint64) error
 
-	// AdjustTransactionFee adjusts transaction fee based on preset fee with the suggested fee
-	AdjustTransactionFee() error
-
 	//RegisterMultiSig registers a group wallet and subwallets with MultisigSC
 	RegisterMultiSig(walletstr, mswallet string) error
 
@@ -252,8 +249,7 @@ func NewTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (Transac
 		return newTransactionWithAuth(cb, txnFee, nonce)
 	}
 	logging.Info("New transaction interface")
-	t, err := newTransaction(cb, txnFee, nonce)
-	return t, err
+	return newTransaction(cb, txnFee, nonce)
 }
 
 func (t *Transaction) ExecuteSmartContract(address, methodName string, input interface{}, val uint64) (*transaction.Transaction, error) {
@@ -272,18 +268,6 @@ func (t *Transaction) SetTransactionFee(txnFee uint64) error {
 		return errors.New("", "transaction already exists. cannot set transaction fee.")
 	}
 	t.txn.TransactionFee = txnFee
-	return nil
-}
-
-func (t *Transaction) AdjustTransactionFee() error {
-	fee, err := t.txn.EstimateFee(_config.chain.Miners, 0.2)
-	if err != nil {
-		return err
-	}
-
-	if fee > t.txn.TransactionFee {
-		return t.SetTransactionFee(fee)
-	}
 	return nil
 }
 

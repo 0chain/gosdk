@@ -379,8 +379,18 @@ func newTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (*Transa
 	t.txn = transaction.NewTransactionEntity(_config.wallet.ClientID, _config.chain.ChainID, _config.wallet.ClientKey, nonce)
 	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
 	t.txnCb = cb
-	t.txn.TransactionFee = txnFee
 	t.txn.TransactionNonce = nonce
+	t.txn.TransactionFee = txnFee
+	if txnFee > 0 {
+		return t, nil
+	}
+
+	fee, err := t.txn.EstimateFee(_config.chain.Miners, 0.2)
+	if err != nil {
+		return nil, err
+	}
+	t.txn.TransactionFee = fee
+
 	return t, nil
 }
 
