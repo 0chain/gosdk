@@ -84,7 +84,6 @@ func TestCollaboratorRequest_UpdateCollaboratorToBlobbers(t *testing.T) {
 					ctx: context.TODO(),
 				},
 				consensus: Consensus{
-					mu:              &sync.RWMutex{},
 					fullconsensus:   tt.numBlobbers,
 					consensusThresh: tt.numBlobbers,
 				},
@@ -199,7 +198,6 @@ func TestCollaboratorRequest_updateCollaboratorToBlobber(t *testing.T) {
 					ctx: context.TODO(),
 				},
 				consensus: Consensus{
-					mu:              &sync.RWMutex{},
 					fullconsensus:   1,
 					consensusThresh: 1,
 				},
@@ -286,7 +284,6 @@ func TestCollaboratorRequest_RemoveCollaboratorFromBlobbers(t *testing.T) {
 				path:           mockRemoteFilePath,
 				collaboratorID: mockCollaboratorID,
 				consensus: Consensus{
-					mu:              &sync.RWMutex{},
 					consensusThresh: 2,
 					fullconsensus:   4,
 				},
@@ -384,7 +381,6 @@ func TestCollaboratorRequest_removeCollaboratorFromBlobber(t *testing.T) {
 				},
 				path: mockRemoteFilePath,
 				consensus: Consensus{
-					mu:              &sync.RWMutex{},
 					fullconsensus:   1,
 					consensusThresh: 1,
 				},

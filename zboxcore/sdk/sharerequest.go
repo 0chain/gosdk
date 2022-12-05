@@ -2,7 +2,6 @@ package sdk
 
 import (
 	"context"
-	"sync"
 
 	"github.com/0chain/errors"
 
@@ -35,9 +34,7 @@ func (req *ShareRequest) GetFileRef() (*fileref.FileRef, error) {
 		allocationTx:       req.allocationTx,
 		blobbers:           req.blobbers,
 		ctx:                req.ctx,
-		Consensus: Consensus{
-			mu: &sync.RWMutex{},
-		},
+		Consensus:          Consensus{},
 	}
 	_, fileRef, _ = listReq.getFileConsensusFromBlobbers()
 	if fileRef == nil {
