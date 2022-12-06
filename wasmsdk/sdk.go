@@ -77,7 +77,7 @@ func showLogs() {
 	zcnLogger.SetLevel(logger.DEBUG)
 	sdkLogger.SetLevel(logger.DEBUG)
 
-	zcncore.GetLogger().SetLogFile(os.Stdout, true)
+	zcnLogger.SetLogFile(os.Stdout, true)
 	sdkLogger.SetLogFile(os.Stdout, true)
 
 	logEnabled = true
