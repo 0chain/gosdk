@@ -1323,7 +1323,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 
 	// adjust fees if not set
 	if fee == 0 {
-		fee, err = txn.EstimateFee(blockchain.GetMiners(), 0.2)
+		fee, err = transaction.EstimateFee(txn, blockchain.GetMiners(), 0.2)
 		if err != nil {
 			return
 		}
