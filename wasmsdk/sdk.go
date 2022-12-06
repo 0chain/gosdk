@@ -5,6 +5,7 @@ package main
 
 import (
 	"encoding/hex"
+	"fmt"
 	"io"
 	"os"
 
@@ -26,6 +27,7 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 
 	err := sdk.InitStorageSDK("{}", blockWorker, chainID, signatureScheme, nil, 0)
 	if err != nil {
+		fmt.Println("wasm: InitStorageSDK ", err)
 		return err
 	}
 
@@ -36,6 +38,7 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 		zcncore.WithConfirmationChainLength(confirmationChainLength))
 
 	if err != nil {
+		fmt.Println("wasm: InitZCNSDK ", err)
 		return err
 	}
 
