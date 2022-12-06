@@ -390,7 +390,7 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 }
 
 // EstimateFee estimates transaction fee
-func (t *Transaction) EstimateFee(miners []string, reqPercent ...float32) (uint64, error) {
+func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint64, error) {
 	const minReqNum = 3
 	var reqN int
 
@@ -415,7 +415,7 @@ func (t *Transaction) EstimateFee(miners []string, reqPercent ...float32) (uint6
 			defer wg.Done()
 
 			url := minerUrl + ESTIMATE_TRANSACTION_COST
-			req, err := util.NewHTTPPostRequest(url, t)
+			req, err := util.NewHTTPPostRequest(url, txn)
 			if err != nil {
 				errC <- fmt.Errorf("ceate request failed, url: %s, err: %v", url, err)
 				return

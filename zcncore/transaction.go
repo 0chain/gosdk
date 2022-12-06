@@ -266,11 +266,20 @@ func (t *Transaction) Send(toClientID string, val uint64, desc string) error {
 	if err != nil {
 		return errors.New("", "Could not serialize description to transaction_data")
 	}
+
+	t.txn.TransactionType = transaction.TxnTypeSend
+	t.txn.ToClientID = toClientID
+	t.txn.Value = val
+	t.txn.TransactionData = string(txnData)
+	if t.txn.TransactionFee == 0 {
+		fee, err := transaction.EstimateFee(t.txn,_config.chain.Miners, 0.2)
+		if err != nil {
+			return err
+		}
+		t.txn.TransactionFee = fee
+	}
+
 	go func() {
-		t.txn.TransactionType = transaction.TxnTypeSend
-		t.txn.ToClientID = toClientID
-		t.txn.Value = val
-		t.txn.TransactionData = string(txnData)
 		t.setNonceAndSubmit()
 	}()
 	return nil
@@ -281,14 +290,22 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val uint64, desc 
 	if err != nil {
 		return errors.New("", "Could not serialize description to transaction_data")
 	}
+	t.txn.TransactionType = transaction.TxnTypeSend
+	t.txn.ToClientID = toClientID
+	t.txn.Value = val
+	t.txn.Hash = hash
+	t.txn.TransactionData = string(txnData)
+	t.txn.Signature = sig
+	t.txn.CreationDate = CreationDate
+	if t.txn.TransactionFee == 0 {
+		fee, err := transaction.EstimateFee(t.txn,_config.chain.Miners, 0.2)
+		if err != nil {
+			return err
+		}
+		t.txn.TransactionFee = fee
+	}
+
 	go func() {
-		t.txn.TransactionType = transaction.TxnTypeSend
-		t.txn.ToClientID = toClientID
-		t.txn.Value = val
-		t.txn.Hash = hash
-		t.txn.TransactionData = string(txnData)
-		t.txn.Signature = sig
-		t.txn.CreationDate = CreationDate
 		t.setNonceAndSubmit()
 	}()
 	return nil

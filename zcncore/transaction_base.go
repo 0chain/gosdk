@@ -451,7 +451,7 @@ func (t *Transaction) createSmartContractTxn(address, methodName string, input i
 	}
 
 	// TODO: check if transaction is exempt to avoid unnecessary fee estimation
-	minFee, err := t.txn.EstimateFee(_config.chain.Miners, 0.2)
+	minFee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
 	if err!= nil {
 		return err
 	}
