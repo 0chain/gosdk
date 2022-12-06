@@ -11,8 +11,9 @@ import (
 	"github.com/0chain/gosdk/core/transaction"
 )
 
-func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, input interface{}, val uint64) (*transaction.Transaction, error) {
-	err := ta.createSmartContractTxn(address, methodName, input, val)
+func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string,
+	input interface{}, val uint64, feeOpts ...FeeOption) (*transaction.Transaction, error) {
+	err := ta.createSmartContractTxn(address, methodName, input, val, feeOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -22,9 +23,9 @@ func (ta *TransactionWithAuth) ExecuteSmartContract(address, methodName string, 
 	return ta.txn, nil
 }
 
-func (ta *TransactionWithAuth) SetTransactionFee(txnFee uint64) error {
-	return ta.SetTransactionFee(txnFee)
-}
+//func (ta *TransactionWithAuth) SetTransactionFee(txnFee uint64) error {
+//	return ta.SetTransactionFee(txnFee)
+//}
 
 func (ta *TransactionWithAuth) Send(toClientID string, val uint64, desc string) error {
 	txnData, err := json.Marshal(SendTxnData{Note: desc})
@@ -70,7 +71,7 @@ func (ta *TransactionWithAuth) MinerSCLock(minerID string, lock uint64) (err err
 }
 
 // FinalizeAllocation transaction.
-func (ta *TransactionWithAuth) FinalizeAllocation(allocID string, fee uint64) (
+func (ta *TransactionWithAuth) FinalizeAllocation(allocID string) (
 	err error) {
 
 	type finiRequest struct {
@@ -84,13 +85,12 @@ func (ta *TransactionWithAuth) FinalizeAllocation(allocID string, fee uint64) (
 		logging.Error(err)
 		return
 	}
-	ta.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
 	return
 }
 
 // CancelAllocation transaction.
-func (ta *TransactionWithAuth) CancelAllocation(allocID string, fee uint64) (
+func (ta *TransactionWithAuth) CancelAllocation(allocID string) (
 	err error) {
 
 	type cancelRequest struct {
@@ -104,14 +104,13 @@ func (ta *TransactionWithAuth) CancelAllocation(allocID string, fee uint64) (
 		logging.Error(err)
 		return
 	}
-	ta.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
 	return
 }
 
 // CreateAllocation transaction.
 func (ta *TransactionWithAuth) CreateAllocation(car *CreateAllocationRequest,
-	lock uint64, fee uint64) (err error) {
+	lock uint64) (err error) {
 
 	err = ta.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_CREATE_ALLOCATION, car, lock)
@@ -119,13 +118,12 @@ func (ta *TransactionWithAuth) CreateAllocation(car *CreateAllocationRequest,
 		logging.Error(err)
 		return
 	}
-	ta.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
 	return
 }
 
 // CreateReadPool for current user.
-func (ta *TransactionWithAuth) CreateReadPool(fee uint64) (err error) {
+func (ta *TransactionWithAuth) CreateReadPool() (err error) {
 
 	err = ta.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_CREATE_READ_POOL, nil, 0)
@@ -133,7 +131,6 @@ func (ta *TransactionWithAuth) CreateReadPool(fee uint64) (err error) {
 		logging.Error(err)
 		return
 	}
-	ta.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -142,7 +139,7 @@ func (ta *TransactionWithAuth) CreateReadPool(fee uint64) (err error) {
 // duration. If blobberID is not empty, then tokens will be locked for given
 // allocation->blobber only.
 func (ta *TransactionWithAuth) ReadPoolLock(allocID, blobberID string,
-	duration int64, lock, fee uint64) (err error) {
+	duration int64, lock uint64) (err error) {
 
 	type lockRequest struct {
 		Duration     time.Duration `json:"duration"`
@@ -161,13 +158,12 @@ func (ta *TransactionWithAuth) ReadPoolLock(allocID, blobberID string,
 		logging.Error(err)
 		return
 	}
-	ta.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
 	return
 }
 
 // ReadPoolUnlock for current user and given pool.
-func (ta *TransactionWithAuth) ReadPoolUnlock(fee uint64) (
+func (ta *TransactionWithAuth) ReadPoolUnlock() (
 	err error) {
 
 	err = ta.createSmartContractTxn(StorageSmartContractAddress,
@@ -176,13 +172,12 @@ func (ta *TransactionWithAuth) ReadPoolUnlock(fee uint64) (
 		logging.Error(err)
 		return
 	}
-	ta.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
 	return
 }
 
 // StakePoolLock used to lock tokens in a stake pool of a blobber.
-func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType Provider, lock uint64, fee uint64) error {
+func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType Provider, lock uint64) error {
 
 	type stakePoolRequest struct {
 		ProviderType Provider `json:"provider_type,omitempty"`
@@ -200,13 +195,12 @@ func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType Pro
 		logging.Error(err)
 		return err
 	}
-	ta.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
 	return nil
 }
 
 // StakePoolUnlock by blobberID
-func (ta *TransactionWithAuth) StakePoolUnlock(providerId string, providerType Provider, fee uint64) error {
+func (ta *TransactionWithAuth) StakePoolUnlock(providerId string, providerType Provider) error {
 
 	type stakePoolRequest struct {
 		ProviderType Provider `json:"provider_type,omitempty"`
@@ -224,13 +218,12 @@ func (ta *TransactionWithAuth) StakePoolUnlock(providerId string, providerType P
 		logging.Error(err)
 		return err
 	}
-	ta.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
 	return nil
 }
 
 // UpdateBlobberSettings update settings of a blobber.
-func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber, fee uint64) (
+func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber) (
 	err error) {
 
 	err = ta.createSmartContractTxn(StorageSmartContractAddress,
@@ -239,13 +232,12 @@ func (ta *TransactionWithAuth) UpdateBlobberSettings(blob *Blobber, fee uint64) 
 		logging.Error(err)
 		return
 	}
-	ta.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
 	return
 }
 
 // UpdateValidatorSettings update settings of a validator.
-func (ta *TransactionWithAuth) UpdateValidatorSettings(v *Validator, fee uint64) (
+func (ta *TransactionWithAuth) UpdateValidatorSettings(v *Validator) (
 	err error) {
 
 	err = ta.createSmartContractTxn(StorageSmartContractAddress,
@@ -254,14 +246,13 @@ func (ta *TransactionWithAuth) UpdateValidatorSettings(v *Validator, fee uint64)
 		logging.Error(err)
 		return
 	}
-	ta.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
 	return
 }
 
 // UpdateAllocation transaction.
 func (ta *TransactionWithAuth) UpdateAllocation(allocID string, sizeDiff int64,
-	expirationDiff int64, lock, fee uint64) (err error) {
+	expirationDiff int64, lock uint64) (err error) {
 
 	type updateAllocationRequest struct {
 		ID         string `json:"id"`              // allocation id
@@ -280,7 +271,6 @@ func (ta *TransactionWithAuth) UpdateAllocation(allocID string, sizeDiff int64,
 		logging.Error(err)
 		return
 	}
-	ta.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
 	return
 }
@@ -289,7 +279,7 @@ func (ta *TransactionWithAuth) UpdateAllocation(allocID string, sizeDiff int64,
 // duration. If blobberID is not empty, then tokens will be locked for given
 // allocation->blobber only.
 func (ta *TransactionWithAuth) WritePoolLock(allocID, blobberID string,
-	duration int64, lock, fee uint64) (err error) {
+	duration int64, lock uint64) (err error) {
 
 	type lockRequest struct {
 		Duration     time.Duration `json:"duration"`
@@ -308,13 +298,12 @@ func (ta *TransactionWithAuth) WritePoolLock(allocID, blobberID string,
 		logging.Error(err)
 		return
 	}
-	ta.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
 	return
 }
 
 // WritePoolUnlock for current user and given pool.
-func (ta *TransactionWithAuth) WritePoolUnlock(allocID string, fee uint64) (err error) {
+func (ta *TransactionWithAuth) WritePoolUnlock(allocID string) (err error) {
 	type unlockRequest struct {
 		AllocationID string `json:"allocation_id"`
 	}
@@ -327,7 +316,6 @@ func (ta *TransactionWithAuth) WritePoolUnlock(allocID string, fee uint64) (err 
 		logging.Error(err)
 		return
 	}
-	ta.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
 	return
 }

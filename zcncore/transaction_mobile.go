@@ -478,13 +478,7 @@ func (t *Transaction) StorageSCCollectReward(providerId string, providerType int
 }
 
 // FinalizeAllocation transaction.
-func (t *Transaction) FinalizeAllocation(allocID string, fee string) (
-	err error) {
-	v, err := parseCoinStr(fee)
-	if err != nil {
-		return err
-	}
-
+func (t *Transaction) FinalizeAllocation(allocID string) (err error) {
 	type finiRequest struct {
 		AllocationID string `json:"allocation_id"`
 	}
@@ -496,18 +490,12 @@ func (t *Transaction) FinalizeAllocation(allocID string, fee string) (
 		logging.Error(err)
 		return
 	}
-	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
 // CancelAllocation transaction.
-func (t *Transaction) CancelAllocation(allocID string, fee string) error {
-	v, err := parseCoinStr(fee)
-	if err != nil {
-		return err
-	}
-
+func (t *Transaction) CancelAllocation(allocID string) error {
 	type cancelRequest struct {
 		AllocationID string `json:"allocation_id"`
 	}
@@ -519,19 +507,13 @@ func (t *Transaction) CancelAllocation(allocID string, fee string) error {
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
 // CreateAllocation transaction.
-func (t *Transaction) CreateAllocation(car *CreateAllocationRequest, lock, fee string) error {
+func (t *Transaction) CreateAllocation(car *CreateAllocationRequest, lock string) error {
 	lv, err := parseCoinStr(lock)
-	if err != nil {
-		return err
-	}
-
-	fv, err := parseCoinStr(fee)
 	if err != nil {
 		return err
 	}
@@ -542,25 +524,18 @@ func (t *Transaction) CreateAllocation(car *CreateAllocationRequest, lock, fee s
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
 // CreateReadPool for current user.
-func (t *Transaction) CreateReadPool(fee string) error {
-	v, err := parseCoinStr(fee)
-	if err != nil {
-		return err
-	}
-
+func (t *Transaction) CreateReadPool() error {
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_CREATE_READ_POOL, nil, 0)
 	if err != nil {
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
@@ -569,13 +544,8 @@ func (t *Transaction) CreateReadPool(fee string) error {
 // duration. If blobberID is not empty, then tokens will be locked for given
 // allocation->blobber only.
 func (t *Transaction) ReadPoolLock(allocID, blobberID string,
-	duration int64, lock, fee string) error {
+	duration int64, lock string) error {
 	lv, err := parseCoinStr(lock)
-	if err != nil {
-		return err
-	}
-
-	fv, err := parseCoinStr(fee)
 	if err != nil {
 		return err
 	}
@@ -597,37 +567,25 @@ func (t *Transaction) ReadPoolLock(allocID, blobberID string,
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
 // ReadPoolUnlock for current user and given pool.
-func (t *Transaction) ReadPoolUnlock(fee string) error {
-	v, err := parseCoinStr(fee)
-	if err != nil {
-		return err
-	}
-
+func (t *Transaction) ReadPoolUnlock() error {
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_READ_POOL_UNLOCK, nil, 0)
 	if err != nil {
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
 // StakePoolLock used to lock tokens in a stake pool of a blobber.
-func (t *Transaction) StakePoolLock(providerId string, providerType int, lock, fee string) error {
+func (t *Transaction) StakePoolLock(providerId string, providerType int, lock string) error {
 	lv, err := parseCoinStr(lock)
-	if err != nil {
-		return err
-	}
-
-	fv, err := parseCoinStr(fee)
 	if err != nil {
 		return err
 	}
@@ -648,18 +606,12 @@ func (t *Transaction) StakePoolLock(providerId string, providerType int, lock, f
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
 // StakePoolUnlock by blobberID
-func (t *Transaction) StakePoolUnlock(providerId string, providerType int, fee string) error {
-	v, err := parseCoinStr(fee)
-	if err != nil {
-		return err
-	}
-
+func (t *Transaction) StakePoolUnlock(providerId string, providerType int) error {
 	type stakePoolRequest struct {
 		ProviderType int    `json:"provider_type,omitempty"`
 		ProviderID   string `json:"provider_id,omitempty"`
@@ -675,38 +627,26 @@ func (t *Transaction) StakePoolUnlock(providerId string, providerType int, fee s
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
 // UpdateBlobberSettings update settings of a blobber.
-func (t *Transaction) UpdateBlobberSettings(b Blobber, fee string) error {
-	v, err := parseCoinStr(fee)
-	if err != nil {
-		return err
-	}
-
+func (t *Transaction) UpdateBlobberSettings(b Blobber) error {
 	err = t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, b, 0)
 	if err != nil {
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
 // UpdateAllocation transaction.
 func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
-	expirationDiff int64, lock, fee string) error {
+	expirationDiff int64, lock string) error {
 	lv, err := parseCoinStr(lock)
-	if err != nil {
-		return err
-	}
-
-	fv, err := parseCoinStr(fee)
 	if err != nil {
 		return err
 	}
@@ -728,7 +668,6 @@ func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
@@ -736,13 +675,8 @@ func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
 // WritePoolLock locks tokens for current user and given allocation, using given
 // duration. If blobberID is not empty, then tokens will be locked for given
 // allocation->blobber only.
-func (t *Transaction) WritePoolLock(allocID, lock, fee string) error {
+func (t *Transaction) WritePoolLock(allocID, lock string) error {
 	lv, err := parseCoinStr(lock)
-	if err != nil {
-		return err
-	}
-
-	fv, err := parseCoinStr(fee)
 	if err != nil {
 		return err
 	}
@@ -759,18 +693,12 @@ func (t *Transaction) WritePoolLock(allocID, lock, fee string) error {
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
 // WritePoolUnlock for current user and given pool.
-func (t *Transaction) WritePoolUnlock(allocID string, fee string) error {
-	v, err := parseCoinStr(fee)
-	if err != nil {
-		return err
-	}
-
+func (t *Transaction) WritePoolUnlock(allocID string) error {
 	var ur = struct {
 		AllocationID string `json:"allocation_id"`
 	}{
@@ -783,7 +711,6 @@ func (t *Transaction) WritePoolUnlock(allocID string, fee string) error {
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }

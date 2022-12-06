@@ -447,9 +447,7 @@ func (t *Transaction) EstimateFee(miners []string, reqPercent ...float32) (uint6
 
 	feesCount := make(map[uint64]int, reqN)
 	for fee := range feeC {
-		if fee > 0 {
-			feesCount[fee]++
-		}
+		feesCount[fee]++
 	}
 
 	if len(feesCount) > 0 {
