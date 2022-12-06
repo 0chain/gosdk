@@ -46,10 +46,6 @@ func createDir(allocationID, remotePath string) error {
 	return allocationObj.CreateDir(remotePath)
 }
 
-type FilesDetails struct {
-	RemotePath string `json:"remote_path"`
-}
-
 // getFileStats get file stats from blobbers
 func getFileStats(allocationID, remotePath string) ([]*sdk.FileStats, error) {
 	if len(allocationID) == 0 {
