@@ -77,11 +77,6 @@ func burnZCN(amount uint64) string {
 		return errors.Wrap("burnZCN", "failed to burn ZCN tokens", err).Error()
 	}
 
-	err = tx.Verify(context.Background())
-	if err != nil {
-		return errors.Wrap("burnZCN", "failed to verify burn ZCN tokens", err).Error()
-	}
-
 	return tx.Hash
 }
 
