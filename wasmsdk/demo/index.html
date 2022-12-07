@@ -71,12 +71,21 @@
     <span><input id="inputSelectedFile" type="file" /> <button id="btnUploadFile">Upload</button> </span>
     <button id="btnDownloadFile">Download</button>
     <button id="btnViewFile">View</button>
+    <button id="btnGetFileStats">GetFileStats</button>
     <br>
 
     <div id="listFiles">
     </div>
 
   </fieldset>
+
+
+  <fieldset>
+    <legend>Output</legend>
+    <pre id="txtOutput" style="font-size: 20px; font-weight: bold;">
+    </pre>
+  </fieldset>
+
 
   <fieldset>
     <legend>Media WebPlayer</legend>
@@ -113,7 +122,7 @@
       minSubmit: 50,
       confirmationChainLength: 3,
     }
-    const blockWorker = 'https://demo.devnet-0chain.net/dns';
+    const blockWorker = 'https://dev.0chain.net/dns';
     const config = [
       networkConfig.chainId,
       blockWorker,
@@ -121,7 +130,7 @@
       networkConfig.minConfirmation,
       networkConfig.minSubmit,
       networkConfig.confirmationChainLength,
-      'https://0box.demo.devnet-0chain.net', //zboxHost
+      'https://0box.dev.0chain.net', //zboxHost
       'vult', //zboxAppType
     ]
 
@@ -302,6 +311,19 @@
       await goWasm.sdk.hideLogs()
       console.log = log
     })
+
+
+
+    onClick('btnGetFileStats', async () => {
+      const file = files.find(it => it.path == getSelectedFile())
+      if (file){
+        const allocationId = getSelectedAllocation()
+        const stats = await goWasm.sdk.getFileStats(allocationId,file?.path)
+        txtOutput.innerHTML = JSON.stringify(stats,null,2)
+      }
+
+    })
+
 
   </script>
 </body>
