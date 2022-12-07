@@ -68,11 +68,15 @@ func initBridge(
 
 // Burns ZCN tokens and returns a hash of the burn transaction
 func burnZCN(amount uint64) string {
+	if bridge == nil {
+		return errors.New("burnZCN", "bridge is not initialized").Error()
+	}
+
 	tx, err := bridge.BurnZCN(context.Background(), amount)
 	if err != nil {
 		return errors.Wrap("burnZCN", "failed to burn ZCN tokens", err).Error()
 	}
-	
+
 	return tx.Hash
 }
 

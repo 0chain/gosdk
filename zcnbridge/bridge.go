@@ -366,7 +366,8 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount uint64) (*transaction
 		zap.Uint64("burn amount", amount),
 	)
 
-	hash, err := trx.ExecuteSmartContract(
+	var hash string
+	hash, err = trx.ExecuteSmartContract(
 		ctx,
 		wallet.ZCNSCSmartContractAddress,
 		wallet.BurnFunc,
@@ -377,6 +378,11 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount uint64) (*transaction
 	if err != nil {
 		Logger.Error("Burn ZCN transaction FAILED", zap.Error(err))
 		return trx, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
+	}
+
+	err = trx.Verify(context.Background())
+	if err != nil {
+		return trx, errors.Wrap(err, fmt.Sprintf("failed to verify smart contract, hash = %s", hash))
 	}
 
 	Logger.Info(
