@@ -340,7 +340,8 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount uint64) (*transaction
 		zap.Uint64("burn amount", amount),
 	)
 
-	hash, err := trx.ExecuteSmartContract(
+	var hash string
+	hash, err = trx.ExecuteSmartContract(
 		ctx,
 		wallet.ZCNSCSmartContractAddress,
 		wallet.BurnFunc,
