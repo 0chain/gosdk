@@ -1320,6 +1320,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	txn.ToClientID = STORAGE_SCADDRESS
 	txn.Value = value
 	txn.TransactionFee = fee
+	txn.TransactionType = transaction.TxnTypeSmartContract
 
 	// adjust fees if not set
 	if fee == 0 {
@@ -1330,7 +1331,6 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 		txn.TransactionFee = fee
 	}
 
-	txn.TransactionType = transaction.TxnTypeSmartContract
 	if txn.TransactionNonce == 0 {
 		txn.TransactionNonce = transaction.Cache.GetNextNonce(txn.ClientID)
 	}
