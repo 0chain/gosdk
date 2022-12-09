@@ -271,6 +271,7 @@ jobs:
 
       - name: Build windows
         run: |
+          go version
           make build-windows
 
       - name: Compress
