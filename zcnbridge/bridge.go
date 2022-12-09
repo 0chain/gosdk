@@ -53,8 +53,11 @@ func init() {
 
 var (
 	DefaultClientIDEncoder = func(id string) []byte {
-		r, _ := hex.DecodeString(id)
-		return r
+		result, err := hex.DecodeString(id)
+		if err != nil {
+			Logger.Fatal(err)
+		}
+		return result
 	}
 )
 
