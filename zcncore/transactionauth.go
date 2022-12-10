@@ -54,19 +54,34 @@ func (ta *TransactionWithAuth) VestingAdd(ar *VestingAddRequest,
 	return
 }
 
-func (ta *TransactionWithAuth) MinerSCLock(minerID string, lock uint64) (err error) {
-
-	var mscl MinerSCLock
-	mscl.ID = minerID
-
-	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_LOCK, &mscl, lock)
+func (ta *TransactionWithAuth) MinerSCLock(providerId string, providerType Provider, lock uint64) error {
+	pr := &stakePoolRequest{
+		ProviderID:   providerId,
+		ProviderType: providerType,
+	}
+	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_LOCK, pr, lock)
 	if err != nil {
 		logging.Error(err)
-		return
+		return err
 	}
 	go func() { ta.submitTxn() }()
-	return
+	return nil
+}
+
+func (ta *TransactionWithAuth) MinerSCUnlock(providerId string, providerType Provider) error {
+	pr := &stakePoolRequest{
+		ProviderID:   providerId,
+		ProviderType: providerType,
+	}
+	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_LOCK, pr, 0)
+	if err != nil {
+		logging.Error(err)
+		return err
+	}
+	go func() { ta.submitTxn() }()
+	return err
 }
 
 // FinalizeAllocation transaction.
