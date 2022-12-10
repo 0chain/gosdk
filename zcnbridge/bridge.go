@@ -2,6 +2,7 @@ package zcnbridge
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"os"
@@ -52,7 +53,11 @@ func init() {
 
 var (
 	DefaultClientIDEncoder = func(id string) []byte {
-		return []byte(id)
+		result, err := hex.DecodeString(id)
+		if err != nil {
+			Logger.Fatal(err)
+		}
+		return result
 	}
 )
 
@@ -191,6 +196,32 @@ func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
 	}
 
 	return signature, nil
+}
+
+// GetUserNonceMinted Returns nonce for a specified Ethereum address
+func (b *BridgeClient) GetUserNonceMinted(ctx context.Context, rawEthereumAddress string) (*big.Int, error) {
+	ethereumAddress := common.HexToAddress(rawEthereumAddress)
+	etherClient, err := b.CreateEthClient()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create etherClient")
+	}
+
+	contractAddress := common.HexToAddress(b.BridgeAddress)
+
+	var bridgeInstance *binding.Bridge
+	bridgeInstance, err = binding.NewBridge(contractAddress, etherClient)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create bridge instance")
+	}
+
+	var nonce *big.Int
+	nonce, err = bridgeInstance.GetUserNonceMinted(nil, ethereumAddress)
+	if err != nil {
+		Logger.Error("GetUserNonceMinted FAILED", zap.Error(err))
+		msg := "failed to execute GetUserNonceMinted call, ethereumAddress = %s"
+		return nil, errors.Wrapf(err, msg, rawEthereumAddress)
+	}
+	return nonce, err
 }
 
 // MintWZCN Mint ZCN tokens on behalf of the 0ZCN client
@@ -340,7 +371,8 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount uint64) (*transaction
 		zap.Uint64("burn amount", amount),
 	)
 
-	hash, err := trx.ExecuteSmartContract(
+	var hash string
+	hash, err = trx.ExecuteSmartContract(
 		ctx,
 		wallet.ZCNSCSmartContractAddress,
 		wallet.BurnFunc,
@@ -351,6 +383,11 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount uint64) (*transaction
 	if err != nil {
 		Logger.Error("Burn ZCN transaction FAILED", zap.Error(err))
 		return trx, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
+	}
+
+	err = trx.Verify(context.Background())
+	if err != nil {
+		return trx, errors.Wrap(err, fmt.Sprintf("failed to verify smart contract, hash = %s", hash))
 	}
 
 	Logger.Info(

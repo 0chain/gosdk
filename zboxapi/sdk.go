@@ -195,7 +195,7 @@ func (c *Client) RefreshJwtToken(ctx context.Context, phoneNumber string, token 
 
 	var jwtToken string
 
-	r.DoPost(ctx, nil, c.baseUrl+"/v2/jwt/token").
+	r.DoPut(ctx, nil, c.baseUrl+"/v2/jwt/token").
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 			if err != nil {
 				return err

@@ -5,6 +5,7 @@ package main
 
 import (
 	"encoding/hex"
+	"fmt"
 	"io"
 	"os"
 
@@ -22,8 +23,11 @@ var CreateObjectURL func(buf []byte, mimeType string) string
 func initSDKs(chainID, blockWorker, signatureScheme string,
 	minConfirmation, minSubmit, confirmationChainLength int, zboxHost, zboxAppType string) error {
 
+	zboxApiClient = zboxapi.NewClient(zboxHost, zboxAppType)
+
 	err := sdk.InitStorageSDK("{}", blockWorker, chainID, signatureScheme, nil, 0)
 	if err != nil {
+		fmt.Println("wasm: InitStorageSDK ", err)
 		return err
 	}
 
@@ -34,15 +38,14 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 		zcncore.WithConfirmationChainLength(confirmationChainLength))
 
 	if err != nil {
+		fmt.Println("wasm: InitZCNSDK ", err)
 		return err
 	}
-
-	zboxApiClient = zboxapi.NewClient(zboxHost, zboxAppType)
 
 	return nil
 }
 
-func SetWallet(clientID, publicKey, privateKey string) {
+func SetWallet(clientID, publicKey, privateKey string) error {
 	c := client.GetClient()
 	c.ClientID = clientID
 	c.ClientKey = publicKey
@@ -57,8 +60,13 @@ func SetWallet(clientID, publicKey, privateKey string) {
 			},
 		},
 	}
-	zcncore.SetWallet(*w, false)
+	err := zcncore.SetWallet(*w, false)
+	if err != nil {
+		return err
+	}
 	zboxApiClient.SetWallet(clientID, privateKey, publicKey)
+
+	return nil
 }
 
 var sdkLogger *logger.Logger
@@ -69,7 +77,7 @@ func showLogs() {
 	zcnLogger.SetLevel(logger.DEBUG)
 	sdkLogger.SetLevel(logger.DEBUG)
 
-	zcncore.GetLogger().SetLogFile(os.Stdout, true)
+	zcnLogger.SetLogFile(os.Stdout, true)
 	sdkLogger.SetLogFile(os.Stdout, true)
 
 	logEnabled = true

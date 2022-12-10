@@ -32,7 +32,7 @@ func main() {
 	sdk.GetLogger().Info("0Chain Windows SDK is ready")
 }
 
-// Init - init zbox/zcn sdk from config
+// InitSDK - init zbox/zcn sdk from config
 //   - clientJson
 //     {
 //     "client_id":"8f6ce6457fc04cfb4eb67b5ce3162fe2b85f66ef81db9d1a9eaa4ffe1d2359e0",
@@ -63,8 +63,8 @@ func main() {
 //     "zbox_app_type":"vult",
 //     }
 //
-//export Init
-func Init(configJson *C.char, clientJson *C.char) error {
+//export InitSDK
+func InitSDK(configJson *C.char, clientJson *C.char) error {
 
 	l.Logger.Info("Start InitStorageSDK")
 	configObj := &conf.Config{}
@@ -95,8 +95,13 @@ func Init(configJson *C.char, clientJson *C.char) error {
 	l.Logger.Info("InitStorageSDK success")
 
 	zboxApiClient = zboxapi.NewClient(configObj.ZboxHost, configObj.ZboxAppType)
-	zboxApiClient.SetWallet(client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey())
-	l.Logger.Info("InitZboxApiClient success")
+	c := client.GetClient()
+	if c != nil {
+		zboxApiClient.SetWallet(client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey())
+		l.Logger.Info("InitZboxApiClient success")
+	} else {
+		l.Logger.Info("InitZboxApiClient skipped")
+	}
 
 	l.Logger.Info("Init successful")
 	return nil
