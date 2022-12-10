@@ -386,11 +386,11 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 
 // StakePoolUnlockUnstake is stake pool unlock response in case where tokens
 // can't be unlocked due to opened offers.
-type StakePoolUnlockUnstake struct {
-	// one of the fields is set in a response, the Unstake if can't unstake
-	// for now and the TokenPoolTransferResponse if has a pool had unlocked
-	Unstake bool  `json:"unstake"` // max time to wait to unstake
-	Balance int64 `json:"balance"`
+type stakePoolLock struct {
+	Client       string       `json:"client"`
+	ProviderId   string       `json:"provider_id"`
+	ProviderType ProviderType `json:"provider_type"`
+	Amount       int64        `json:"amount"`
 }
 
 // StakePoolUnlock unlocks a stake pool tokens. If tokens can't be unlocked due
@@ -399,17 +399,17 @@ type StakePoolUnlockUnstake struct {
 // future. The time is maximal time that can be lesser in some cases. To
 // unlock tokens can't be unlocked now, wait the time and unlock them (call
 // this function again).
-func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (unstake bool, nonce int64, err error) {
+func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (unstake int64, nonce int64, err error) {
 	if !sdkInitialized {
-		return false, 0, sdkNotInitialized
+		return 0, 0, sdkNotInitialized
 	}
 
 	if providerType == 0 {
-		return false, 0, errors.New("stake_pool_lock", "provider is required")
+		return 0, 0, errors.New("stake_pool_lock", "provider is required")
 	}
 
 	if providerID == "" {
-		return false, 0, errors.New("stake_pool_lock", "provider_id is required")
+		return 0, 0, errors.New("stake_pool_lock", "provider_id is required")
 	}
 
 	spr := stakePoolRequest{
@@ -427,12 +427,12 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (
 		return // an error
 	}
 
-	var spuu StakePoolUnlockUnstake
+	var spuu stakePoolLock
 	if err = json.Unmarshal([]byte(out), &spuu); err != nil {
 		return
 	}
 
-	return spuu.Unstake, nonce, nil
+	return spuu.Amount, nonce, nil
 }
 
 //
