@@ -132,7 +132,6 @@ func main() {
 				//sdk
 				"init":                   initSDKs,
 				"setWallet":              SetWallet,
-				"setZBoxHost":            setZBoxHost,
 				"getPublicEncryptionKey": zcncore.GetPublicEncryptionKey,
 				"hideLogs":               hideLogs,
 				"showLogs":               showLogs,
@@ -150,6 +149,7 @@ func main() {
 				"listObjects":    listObjects,
 				"createDir":      createDir,
 				"downloadBlocks": downloadBlocks,
+				"getFileStats":   getFileStats,
 
 				// player
 				"play":           play,
@@ -171,13 +171,22 @@ func main() {
 				"executeSmartContract": executeSmartContract,
 
 				//swap
-				"setSwapWallets": setSwapWallets,
-				"swapToken":      swapToken,
-				"initBridge":     initBridge,
-				"mintZCN":        mintZCN,
+				"setSwapWallets":     setSwapWallets,
+				"swapToken":          swapToken,
+				"initBridge":         initBridge,
+				"burnZCN":            burnZCN,
+				"mintZCN":            mintZCN,
+				"getMintWZCNPayload": getMintWZCNPayload,
 
 				//zcn
 				"getWalletBalance": getWalletBalance,
+				"createReadPool":   createReadPool,
+
+				//0box api
+				"getCsrfToken":     getCsrfToken,
+				"createJwtSession": createJwtSession,
+				"createJwtToken":   createJwtToken,
+				"refreshJwtToken":  refreshJwtToken,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")

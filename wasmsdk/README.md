@@ -1,15 +1,15 @@
 # 0chain/wasmsdk
-The 0chain wasm SDK is written in Go programming language, and released with WebAssembly binary format 
+The 0chain wasm SDK is written in Go programming language, and released with WebAssembly binary format
 
 *NOTE* please use `try{await zcn.sdk.[method];}catch(err){...}` to handle any error from wasm sdk in js
 
 ## ZCN methods
 
 ### zcn.sdk.init
-init wasm sdk 
+init wasm sdk
 
 **Input**:
-  > chainID, blockWorker, signatureScheme string, minConfirmation, minSubmit, confirmationChainLength int
+  > chainID, blockWorker, signatureScheme string, minConfirmation, minSubmit, confirmationChainLength int,zboxHost, zboxAppType string
 
 **Output**:
   > N/A
@@ -51,7 +51,7 @@ valid wallet id
 **Output**:
   > bool
 
-### zcn.jsProxy.setWallet 
+### zcn.jsProxy.setWallet
 set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWallet` to set wallet on go.
 
 **Input**:
@@ -65,13 +65,11 @@ set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWal
 set wallet on go
 
 **Input**:
-> clientID, publicKey string
+> clientID, publicKey, privateKey string
 
 **Output**:
 > N/A
 
-### zcn.sdk.setZBoxHost
-set 0box host for creating free allocation.
 
 **Input**:
 > host string
@@ -101,7 +99,7 @@ get blobbers with filters for creating allocation
 > string array
 
 ### zcn.sdk.createAllocation
-create an allocation 
+create an allocation
 
 **Input**:
 > name string, datashards, parityshards int, size, expiry int64,
@@ -159,6 +157,16 @@ convert blobber urls to blobber ids
 
 **Output**:
 > []string
+
+
+### zcn.sdk.createReadPool
+create readpool in storage SC if the pool is missing.
+
+**Input**:
+> N/A
+
+**Output**:
+> string
 
 
 ## Blobber methods
@@ -297,6 +305,14 @@ create folder from blobbers
 **Output**:
 > N/A
 
+### zcn.sdk.getFileStats
+
+**Input**:
+> allocationID string, remotePath string
+
+**Output**:
+> string: []sdk.FileStats
+
 
 ## Swap methods
 ### zcn.sdk.setSwapWallets
@@ -314,4 +330,41 @@ create folder from blobbers
 
 **Output**:
 > string: txnHash
+
+
+
+## 0Box API methods
+### zcn.sdk.getCsrfToken
+get a fresh CSRF token
+
+**Input**:
+> N/A
+
+**Output**:
+> string
+
+### zcn.sdk.createJwtSession
+create a jwt session with phone number
+**Input**:
+> phoneNumber string
+
+**Output**:
+> sessionID int64
+
+### zcn.sdk.createJwtToken
+create a jwt token with jwt session id and otp
+**Input**:
+> phoneNumber string, jwtSessionID int64, otp string
+
+**Output**:
+> token string
+
+
+### zcn.sdk.refreshJwtToken
+refresh jwt token
+**Input**:
+> phoneNumber string, token string
+
+**Output**:
+> token string
 
