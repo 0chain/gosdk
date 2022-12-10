@@ -74,6 +74,14 @@ func GetClientPublicKey() string {
 	return client.ClientKey
 }
 
+func GetClientPrivateKey() string {
+	for _, kv := range client.Keys {
+		return kv.PrivateKey
+	}
+
+	return ""
+}
+
 // GetClientSysKeys convert client.KeyPair to sys.KeyPair
 func GetClientSysKeys() []sys.KeyPair {
 	var keys []sys.KeyPair

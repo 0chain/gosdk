@@ -117,7 +117,6 @@ func CreateChunkedUpload(
 	}
 
 	consensus := Consensus{
-		mu:              &sync.RWMutex{},
 		consensusThresh: allocationObj.consensusThreshold,
 		fullconsensus:   allocationObj.fullconsensus,
 	}
