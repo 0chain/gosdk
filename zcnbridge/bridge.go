@@ -2,6 +2,7 @@ package zcnbridge
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"os"
@@ -52,7 +53,11 @@ func init() {
 
 var (
 	DefaultClientIDEncoder = func(id string) []byte {
-		return []byte(id)
+		result, err := hex.DecodeString(id)
+		if err != nil {
+			Logger.Fatal(err)
+		}
+		return result
 	}
 )
 
