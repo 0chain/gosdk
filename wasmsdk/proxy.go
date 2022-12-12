@@ -157,7 +157,8 @@ func main() {
 				"getNextSegment": getNextSegment,
 
 				// wallet
-				"createWallet": createWallet,
+				"createWallet":  createWallet,
+				"recoverWallet": recoverWallet,
 
 				//allocation
 				"createAllocation":      createAllocation,

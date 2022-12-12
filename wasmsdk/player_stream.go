@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -119,7 +120,9 @@ func (p *StreamPlayer) startDownload() {
 			return
 		case it, ok := <-p.waitingToDownloadFiles:
 			if ok {
-				p.download(it)
+				if strings.HasSuffix(it.Name, ".ts") {
+					p.download(it)
+				}
 			}
 		}
 	}
@@ -213,6 +216,7 @@ func createStreamPalyer(allocationID, remotePath, authTicket, lookupHash string)
 		player.isViewer = true
 		player.allocationObj = allocationObj
 		player.authTicketObj = at
+		player.lookupHash = at.FilePathHash
 
 		return player, nil
 
