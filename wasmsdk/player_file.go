@@ -191,6 +191,7 @@ func createFilePalyer(allocationID, remotePath, authTicket, lookupHash string) (
 		player.isViewer = true
 		player.allocationObj = allocationObj
 		player.authTicketObj = at
+		player.lookupHash = at.FilePathHash
 
 		return player, nil
 

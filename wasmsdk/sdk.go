@@ -5,12 +5,13 @@ package main
 
 import (
 	"encoding/hex"
+	"fmt"
 	"io"
 	"os"
 
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/wasmsdk/zbox"
+	"github.com/0chain/gosdk/zboxapi"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
@@ -20,10 +21,13 @@ var CreateObjectURL func(buf []byte, mimeType string) string
 
 // initSDKs init sharder/miners ,
 func initSDKs(chainID, blockWorker, signatureScheme string,
-	minConfirmation, minSubmit, confirmationChainLength int) error {
+	minConfirmation, minSubmit, confirmationChainLength int, zboxHost, zboxAppType string) error {
+
+	zboxApiClient = zboxapi.NewClient(zboxHost, zboxAppType)
 
 	err := sdk.InitStorageSDK("{}", blockWorker, chainID, signatureScheme, nil, 0)
 	if err != nil {
+		fmt.Println("wasm: InitStorageSDK ", err)
 		return err
 	}
 
@@ -34,23 +38,17 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 		zcncore.WithConfirmationChainLength(confirmationChainLength))
 
 	if err != nil {
+		fmt.Println("wasm: InitZCNSDK ", err)
 		return err
 	}
 
 	return nil
 }
 
-func SetWallet(clientID, publicKey, privateKey string) {
+func SetWallet(clientID, publicKey, privateKey string) error {
 	c := client.GetClient()
 	c.ClientID = clientID
 	c.ClientKey = publicKey
-
-	if len(zboxHost) > 0 {
-		zboxClient = zbox.NewClient(zboxHost, c.ClientID, c.ClientKey)
-	}
-
-	//w.Version = cw.Version
-	//w.DateCreated = cw.Version
 
 	w := &zcncrypto.Wallet{
 		ClientID:  clientID,
@@ -62,7 +60,13 @@ func SetWallet(clientID, publicKey, privateKey string) {
 			},
 		},
 	}
-	zcncore.SetWallet(*w, false)
+	err := zcncore.SetWallet(*w, false)
+	if err != nil {
+		return err
+	}
+	zboxApiClient.SetWallet(clientID, privateKey, publicKey)
+
+	return nil
 }
 
 var sdkLogger *logger.Logger
@@ -73,7 +77,7 @@ func showLogs() {
 	zcnLogger.SetLevel(logger.DEBUG)
 	sdkLogger.SetLevel(logger.DEBUG)
 
-	zcncore.GetLogger().SetLogFile(os.Stdout, true)
+	zcnLogger.SetLogFile(os.Stdout, true)
 	sdkLogger.SetLogFile(os.Stdout, true)
 
 	logEnabled = true
