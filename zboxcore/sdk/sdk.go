@@ -876,6 +876,14 @@ type CreateAllocationOptions struct {
 	WritePrice   PriceRange
 	Lock         uint64
 	BlobberIds   []string
+	IsImmutable	 bool
+	ThirdPartyExtendable	 bool
+	ForbidUpload bool
+	ForbidDelete bool
+	ForbidUpdate bool
+	ForbidMove 	 bool
+	ForbidCopy   bool
+	ForbidRename bool
 }
 
 func CreateAllocationWith(options CreateAllocationOptions) (
@@ -885,16 +893,19 @@ func CreateAllocationWith(options CreateAllocationOptions) (
 		return CreateAllocationForOwner(options.Name, client.GetClientID(),
 			client.GetClientPublicKey(), options.DataShards, options.ParityShards,
 			options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock,
-			options.BlobberIds)
+			options.BlobberIds, options.IsImmutable, options.ThirdPartyExtendable, options.ForbidUpload,
+			options.ForbidDelete, options.ForbidUpdate, options.ForbidMove, options.ForbidCopy, options.ForbidRename)
 	}
 
 	return CreateAllocation(options.Name, options.DataShards, options.ParityShards,
-		options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock)
+		options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock, options.IsImmutable, options.ThirdPartyExtendable, options.ForbidUpload,
+		options.ForbidDelete, options.ForbidUpdate, options.ForbidMove, options.ForbidCopy, options.ForbidRename)
 
 }
 
 func CreateAllocation(name string, datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, lock uint64) (
+	readPrice, writePrice PriceRange, lock uint64, isImmutable, thirdPartyExtendable, forbidUpload,
+	forbidDelete, forbidUpdate, forbidMove, forbidCopy, forbidRename bool) (
 	string, int64, *transaction.Transaction, error) {
 
 	preferredBlobberIds, err := GetBlobberIds(blockchain.GetPreferredBlobbers())
@@ -904,14 +915,16 @@ func CreateAllocation(name string, datashards, parityshards int, size, expiry in
 	return CreateAllocationForOwner(name, client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
 		size, expiry, readPrice, writePrice, lock,
-		preferredBlobberIds)
+		preferredBlobberIds, isImmutable, thirdPartyExtendable, forbidUpload,
+		forbidDelete, forbidUpdate, forbidMove, forbidCopy, forbidRename)
 }
 
 func CreateAllocationForOwner(
 	name string, owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange,
-	lock uint64, preferredBlobberIds []string,
+	lock uint64, preferredBlobberIds []string, isImmutable, thirdPartyExtendable, forbidUpload,
+	forbidDelete, forbidUpdate, forbidMove, forbidCopy, forbidRename bool,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
 	if lock < 0 {
 		return "", 0, nil, errors.New("", "invalid value for lock")
@@ -930,6 +943,10 @@ func CreateAllocationForOwner(
 	allocationRequest["name"] = name
 	allocationRequest["owner_id"] = owner
 	allocationRequest["owner_public_key"] = ownerpublickey
+	allocationRequest["is_immutable"] = isImmutable
+	allocationRequest["third_party_extendable"] = thirdPartyExtendable
+	allocationRequest["file_options"] = calculateAllocationFileOptions(forbidUpload, forbidDelete,
+	forbidUpdate, forbidMove, forbidCopy, forbidRename)
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.NEW_ALLOCATION_REQUEST,
@@ -1454,4 +1471,18 @@ func GetAllocationMinLock(
 		return 0, errors.New("allocation_min_lock_decode_error", "Error decoding the response."+err.Error())
 	}
 	return response["min_lock_demand"], nil
+}
+
+func calculateAllocationFileOptions(forbidUpload, forbidDelete, forbidUpdate,
+forbidMove, forbidCopy, forbidRename bool) uint8 {
+	mask := uint8(63) // 0011 1111
+
+	if forbidUpload { mask &= ^uint8(1) }
+	if forbidDelete { mask &= ^uint8(2) }
+	if forbidUpdate { mask &= ^uint8(4) }
+	if forbidMove 	{ mask &= ^uint8(8) }
+	if forbidCopy 	{ mask &= ^uint8(16) }
+	if forbidRename { mask &= ^uint8(32) }
+
+	return mask
 }
