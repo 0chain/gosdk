@@ -35,12 +35,22 @@ import (
 var (
 	noBLOBBERS     = errors.New("", "No Blobbers set in this allocation")
 	notInitialized = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
+	fileOptionNotPermitted = errors.New("prohibited_allocation_file_options", "This options for this file is not permitted for this allocation")
 )
 
 const (
 	KB = 1024
 	MB = 1024 * KB
 	GB = 1024 * MB
+)
+
+const (
+	CAN_UPLOAD_MASK		= uint8(1) // 0000 0001
+	CAN_DELETE_MASK		= uint8(2) // 0000 0010
+	CAN_UPDATE_MASK		= uint8(4) // 0000 0100
+	CAN_MOVE_MASK		= uint8(8) // 0000 1000
+	CAN_COPY_MASK		= uint8(16)// 0001 0000 
+	CAN_RENAME_MASK 	= uint8(32)// 0010 0000
 )
 
 // Expected success rate is calculated (NumDataShards)*100/(NumDataShards+NumParityShards)
@@ -169,6 +179,8 @@ type Allocation struct {
 	MovedToChallenge        common.Balance   `json:"moved_to_challenge,omitempty"`
 	MovedBack               common.Balance   `json:"moved_back,omitempty"`
 	MovedToValidators       common.Balance   `json:"moved_to_validators,omitempty"`
+	FileOptions				uint8			 `json:"file_options"`
+	ThirdPartyExtendable	bool			 `json:"third_party_extendable"`
 	Curators                []string         `json:"curators"`
 
 	numBlockDownloads       int
@@ -253,6 +265,32 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 		}
 	}
 }
+
+func (a *Allocation) CanUpload() bool {
+	return (a.FileOptions & CAN_UPLOAD_MASK) > 0 
+}
+
+func (a *Allocation) CanDelete() bool {
+	return (a.FileOptions & CAN_DELETE_MASK) > 0 
+	
+}
+
+func (a *Allocation) CanUpdate() bool {
+	return (a.FileOptions & CAN_UPDATE_MASK) > 0 
+}
+
+func (a *Allocation) CanMove() bool {
+	return (a.FileOptions & CAN_MOVE_MASK) > 0 
+}
+
+func (a *Allocation) CanCopy() bool {
+	return (a.FileOptions & CAN_COPY_MASK) > 0 
+}
+
+func (a *Allocation) CanRename() bool {
+	return (a.FileOptions & CAN_RENAME_MASK) > 0 
+}
+
 
 // UpdateFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UpdateFile(workdir, localpath string, remotepath string,
@@ -382,6 +420,10 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 
 	if !a.isInitialized() {
 		return notInitialized
+	}
+
+	if (!isUpdate && !a.CanUpload()) || (isUpdate && !a.CanUpdate()) {
+		return fileOptionNotPermitted
 	}
 
 	fileReader, err := os.Open(localPath)
@@ -871,6 +913,10 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int)
 		return notInitialized
 	}
 
+	if !a.CanDelete() {
+		return fileOptionNotPermitted
+	}
+
 	if len(path) == 0 {
 		return errors.New("invalid_path", "Invalid path for the list")
 	}
@@ -898,6 +944,10 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int)
 func (a *Allocation) RenameObject(path string, destName string) error {
 	if !a.isInitialized() {
 		return notInitialized
+	}
+
+	if !a.CanRename() {
+		return fileOptionNotPermitted
 	}
 
 	if path == "" {
@@ -940,6 +990,10 @@ func (a *Allocation) MoveObject(srcPath string, destPath string) error {
 		return notInitialized
 	}
 
+	if !a.CanMove() {
+		return fileOptionNotPermitted
+	}
+
 	if len(srcPath) == 0 || len(destPath) == 0 {
 		return errors.New("invalid_path", "Invalid path for copy")
 	}
@@ -976,6 +1030,10 @@ func (a *Allocation) MoveObject(srcPath string, destPath string) error {
 func (a *Allocation) CopyObject(path string, destPath string) error {
 	if !a.isInitialized() {
 		return notInitialized
+	}
+
+	if !a.CanCopy() {
+		return fileOptionNotPermitted
 	}
 
 	if len(path) == 0 || len(destPath) == 0 {
