@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/0chain/errors v1.0.3
+	github.com/Luzifer/go-openssl/v4 v4.1.0
 	github.com/btcsuite/btcd v0.23.2
 	github.com/dgraph-io/badger/v3 v3.2103.3
 	github.com/didip/tollbooth v4.0.2+incompatible
