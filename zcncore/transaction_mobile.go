@@ -52,7 +52,7 @@ type TransactionCommon interface {
 
 	VestingAdd(ar VestingAddRequest, value string) error
 
-	MinerSCLock(providerId string, providerType int, lock uint64) error
+	MinerSCLock(providerId string, providerType int, lock string) error
 	MinerSCUnlock(providerId string, providerType int) error
 	MinerSCCollectReward(providerId string, providerType int) error
 	StorageSCCollectReward(providerId string, providerType int) error
@@ -443,14 +443,19 @@ func (t *Transaction) VestingAdd(ar VestingAddRequest, value string) (
 	return
 }
 
-func (t *Transaction) MinerSCLock(providerId string, providerType int, lock uint64) error {
+func (t *Transaction) MinerSCLock(providerId string, providerType int, lock string) error {
+
+	lv, err := parseCoinStr(lock)
+	if err != nil {
+		return err
+	}
 
 	pr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerId,
 	}
-	err := t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_LOCK, pr, lock)
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_LOCK, pr, lv)
 	if err != nil {
 		logging.Error(err)
 		return err
@@ -1386,7 +1391,7 @@ func toMobileBlock(b *block.Block) *Block {
 	return lb
 }
 
-//TransactionMobile entity that encapsulates the transaction related data and meta data
+// TransactionMobile entity that encapsulates the transaction related data and meta data
 type TransactionMobile struct {
 	Hash              string `json:"hash,omitempty"`
 	Version           string `json:"version,omitempty"`
