@@ -1009,14 +1009,7 @@ func GetStakePoolUserInfo(clientID string, cb GetInfoCallback) (err error) {
 }
 
 // GetBlobbers obtains list of all active blobbers.
-func GetBlobbers(cb GetInfoCallback, limit, offset int, options ...bool) {
-	var active bool
-	if len(options) > 0 {
-		for _, option := range options {
-			active = option
-		}
-	}
-
+func GetBlobbers(cb GetInfoCallback, limit, offset int, active bool) {
 	getBlobbersInternal(cb, active, limit, offset)
 }
 
