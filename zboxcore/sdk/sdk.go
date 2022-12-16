@@ -636,16 +636,9 @@ func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err err
 	return wrap.Nodes, nil
 }
 
-func GetBlobbers(options ...bool) (bs []*Blobber, err error) {
+func GetBlobbers(active bool) (bs []*Blobber, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
-	}
-
-	var active bool
-	if len(options) > 0 {
-		for _, option := range options {
-			active = option
-		}
 	}
 
 	limit, offset := 20, 0
