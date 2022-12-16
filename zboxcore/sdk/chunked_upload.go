@@ -121,6 +121,7 @@ func CreateChunkedUpload(
 		fullconsensus:   allocationObj.fullconsensus,
 	}
 
+	// 111 --> 000 +
 	uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1)
 	if isRepair {
 		opCode = OpUpdate
@@ -134,6 +135,7 @@ func CreateChunkedUpload(
 		}
 
 		uploadMask = found.Not().And(uploadMask)
+		fmt.Println("upload mask", uploadMask)
 		consensus.fullconsensus = uploadMask.CountOnes()
 		consensus.consensusThresh = 1
 	}
@@ -446,7 +448,7 @@ func (su *ChunkedUpload) Start() error {
 			}
 		}
 
-		//chunk has not be uploaded yet
+		// chunk has not be uploaded yet
 		if chunks.chunkEndIndex > su.progress.ChunkIndex {
 
 			err = su.processUpload(chunks.chunkStartIndex, chunks.chunkEndIndex, chunks.fileShards, chunks.thumbnailShards, chunks.isFinal, chunks.totalReadSize)

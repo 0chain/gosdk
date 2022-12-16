@@ -44,6 +44,7 @@ type listResponse struct {
 type ListResult struct {
 	Name            string           `json:"name"`
 	Path            string           `json:"path,omitempty"`
+	FileID          int64            `json:"file_id,omitempty"`
 	Type            string           `json:"type"`
 	Size            int64            `json:"size"`
 	Hash            string           `json:"hash,omitempty"`
@@ -164,6 +165,7 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 
 		result.Name = ti.ref.Name
 		result.Path = ti.ref.Path
+		result.FileID = ti.ref.FileID
 		result.Type = ti.ref.Type
 		result.CreatedAt = ti.ref.CreatedAt
 		result.UpdatedAt = ti.ref.UpdatedAt
