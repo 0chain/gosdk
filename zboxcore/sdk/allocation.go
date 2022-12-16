@@ -234,6 +234,9 @@ func (a *Allocation) InitAllocation() {
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers)
 	a.initialized = true
+	if a.FileOptions == 0 {
+		a.FileOptions = uint8(255) // 0011 1111
+	}
 }
 
 func (a *Allocation) isInitialized() bool {

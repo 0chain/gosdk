@@ -1477,5 +1477,6 @@ forbidMove, forbidCopy, forbidRename bool) uint8 {
 	if forbidCopy 	{ mask &= ^uint8(16) }
 	if forbidRename { mask &= ^uint8(32) }
 
+	mask |= uint8(192) // Add 2 ones at the MSB to differentiate from the uninitialized FileOptions 
 	return mask
 }
