@@ -249,7 +249,11 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 		sigs = append(sigs, signature.Signature)
 	}
 
-	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, payload.To, "mint", amount, zcnTxd, nonce, sigs)
+	// 5. To Ethereum address
+
+	toAddress := common.HexToAddress(payload.To)
+
+	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, payload.To, "mint", toAddress, amount, zcnTxd, nonce, sigs)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare bridge")
 	}
@@ -261,7 +265,7 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 		zap.String("nonce", nonce.String()))
 
 	var tran *types.Transaction
-	tran, err = bridgeInstance.Mint(transactOpts, amount, zcnTxd, nonce, sigs)
+	tran, err = bridgeInstance.Mint(transactOpts, toAddress, amount, zcnTxd, nonce, sigs)
 	if err != nil {
 		Logger.Error("Mint WZCN FAILED", zap.Error(err))
 		msg := "failed to execute MintWZCN transaction, amount = %s, ZCN TrxID = %s"
