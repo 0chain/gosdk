@@ -1120,6 +1120,10 @@ func UpdateAllocation(name string,
 	lock uint64,
 	setImmutable, updateTerms bool,
 	addBlobberId, removeBlobberId string,
+	thirdPartyExtendable, forbidUpload,
+	forbidDelete, forbidUpdate,
+	forbidMove, forbidCopy,
+	forbidRename bool,
 ) (hash string, nonce int64, err error) {
 
 	if !sdkInitialized {
@@ -1136,6 +1140,15 @@ func UpdateAllocation(name string,
 	updateAllocationRequest["update_terms"] = updateTerms
 	updateAllocationRequest["add_blobber_id"] = addBlobberId
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
+	updateAllocationRequest["third_party_extendable"] = thirdPartyExtendable
+	updateAllocationRequest["file_options"] = calculateAllocationFileOptions(
+		forbidUpload,
+		forbidDelete,
+		forbidUpdate,
+		forbidMove,
+		forbidCopy,
+		forbidRename,
+	)
 
 	sn := transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
