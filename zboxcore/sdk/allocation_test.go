@@ -2434,6 +2434,9 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 		a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	}
 	sdkInitialized = true
+	if a.FileOptions == 0 {
+		a.FileOptions = uint8(255) // 1111 1111 
+	}
 	go func() {
 		for {
 			select {
