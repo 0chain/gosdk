@@ -13,7 +13,6 @@ import (
 	"github.com/0chain/errors"
 
 	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 
@@ -169,7 +168,7 @@ func (req *RenameRequest) ProcessRename() error {
 				req.consensus.consensusThresh, req.consensus.getConsensus()))
 	}
 
-	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), req.allocationObj)
+	writeMarkerMutex, err := CreateWriteMarkerMutex(req.allocationObj)
 	if err != nil {
 		return fmt.Errorf("rename failed: %s", err.Error())
 	}

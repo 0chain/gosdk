@@ -334,6 +334,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	return thrown.New("commit_error", fmt.Sprintf("Commit failed with response status %d", resp.StatusCode))
 }
 
+// processWriteMarker makes a request to blobber referencepath endpoint and returns rootRef, latest WriteMarker, size of the change to be commited, and the commit parameters
 func (sb *ChunkedUploadBlobber) processWriteMarker(
 	ctx context.Context, su *ChunkedUpload) (
 	*fileref.Ref, *marker.WriteMarker, int64, *allocationchange.CommitParams, error) {

@@ -889,7 +889,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int)
 	req.ctx = a.ctx
 	req.remotefilepath = path
 	req.connectionID = zboxutil.NewConnectionId()
-	req.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers) - 1)).Sub64(1)
+	req.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMu = &sync.Mutex{}
 	err := req.ProcessDelete()
 	return err
@@ -1314,24 +1314,28 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	return nil
 }
 
-func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB StatusCallback) error {
+func (a *Allocation) StartRepair(localRootPath, fileID string, statusCB StatusCallback) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
 
-	listDir, err := a.ListDir(pathToRepair)
-	if err != nil {
+	// listDir, err := a.ListDir(fileid)
+	// if err != nil {
+	// 	return err
+	// }
+
+	n, err := strconv.ParseInt(fileID, 10, 64)
+	if err == nil {
 		return err
 	}
 
 	repairReq := &RepairRequest{
-		listDir:       listDir,
 		localRootPath: localRootPath,
+		fileID:        n,
 		statusCB:      statusCB,
 	}
 
 	// TODO: fix this
-	repairReq.fileID = 1
 	repairReq.completedCallback = func() {
 		a.mutex.Lock()
 		defer a.mutex.Unlock()

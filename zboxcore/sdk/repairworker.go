@@ -281,7 +281,6 @@ func (r *RepairRequest) FindRepairsNeeded(a *Allocation) ([]repair, error) {
 			req.blobbers = a.Blobbers
 			req.allocationID = a.ID
 			req.allocationTx = a.Tx
-			req.consensus.mu = &sync.RWMutex{}
 			req.consensus.Init(1, repairMask.CountOnes())
 			req.ctx = a.ctx
 			req.remotefilepath = path
@@ -289,8 +288,8 @@ func (r *RepairRequest) FindRepairsNeeded(a *Allocation) ([]repair, error) {
 			// use full allocation mask
 			req.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 			req.maskMu = &sync.Mutex{}
-			req.ProcessDelete()
-			break
+			err := req.ProcessDelete()
+			return nil, err
 		}
 	}
 	return []repair{}, nil

@@ -14,7 +14,6 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -69,7 +68,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 		return errors.New("consensus_not_met", "directory creation failed due to consensus not met")
 	}
 
-	writeMarkerMU, err := CreateWriteMarkerMutex(client.GetClient(), a)
+	writeMarkerMU, err := CreateWriteMarkerMutex(a)
 	if err != nil {
 		return fmt.Errorf("directory creation failed. Err: %s", err.Error())
 	}

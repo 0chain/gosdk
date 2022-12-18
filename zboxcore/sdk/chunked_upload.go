@@ -121,7 +121,6 @@ func CreateChunkedUpload(
 		fullconsensus:   allocationObj.fullconsensus,
 	}
 
-	// 111 --> 000 +
 	uploadMask := zboxutil.NewUint128(1).Lsh(uint64(len(allocationObj.Blobbers))).Sub64(1)
 	if isRepair {
 		opCode = OpUpdate
@@ -211,7 +210,7 @@ func CreateChunkedUpload(
 
 	su.fileHasher = CreateHasher(int(su.chunkSize))
 
-	// encrypt option has been chaned.upload it from scratch
+	// encrypt option has been changed. upload it from scratch
 	// chunkSize has been changed. upload it from scratch
 	if su.progress.EncryptOnUpload != su.encryptOnUpload || su.progress.ChunkSize != su.chunkSize {
 		su.progress = su.createUploadProgress()
@@ -228,7 +227,7 @@ func CreateChunkedUpload(
 
 	}
 
-	su.writeMarkerMutex, err = CreateWriteMarkerMutex(client.GetClient(), su.allocationObj)
+	su.writeMarkerMutex, err = CreateWriteMarkerMutex(su.allocationObj)
 	if err != nil {
 		return nil, err
 	}

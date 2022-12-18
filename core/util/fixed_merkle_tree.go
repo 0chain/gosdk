@@ -7,7 +7,7 @@ import (
 	"github.com/0chain/errors"
 )
 
-// FixedMerkleTree A trusted mekerl tree for outsourcing attack protection. see section 1.8 on whitepager
+// FixedMerkleTree A trusted merkle tree for outsourcing attack protection. see section 1.8 on whitepager
 // see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-fixedmerkletree
 type FixedMerkleTree struct {
 	// ChunkSize size of chunk
