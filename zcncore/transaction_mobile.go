@@ -26,6 +26,21 @@ const (
 	ChargeableError
 )
 
+type Provider int
+
+const (
+	ProviderMiner Provider = iota + 1
+	ProviderSharder
+	ProviderBlobber
+	ProviderValidator
+	ProviderAuthorizer
+)
+
+type stakePoolRequest struct {
+	ProviderType int    `json:"provider_type,omitempty"`
+	ProviderID   string `json:"provider_id,omitempty"`
+}
+
 type TransactionCommon interface {
 	// ExecuteSmartContract implements wrapper for smart contract function
 	ExecuteSmartContract(address, methodName string, input string, val string) error
@@ -37,7 +52,8 @@ type TransactionCommon interface {
 
 	VestingAdd(ar VestingAddRequest, value string) error
 
-	MinerSCLock(minerID string, lock string) error
+	MinerSCLock(providerId string, providerType int, lock string) error
+	MinerSCUnlock(providerId string, providerType int) error
 	MinerSCCollectReward(providerId string, providerType int) error
 	StorageSCCollectReward(providerId string, providerType int) error
 
@@ -427,23 +443,40 @@ func (t *Transaction) VestingAdd(ar VestingAddRequest, value string) (
 	return
 }
 
-func (t *Transaction) MinerSCLock(nodeID string, lock string) (err error) {
-	v, err := parseCoinStr(lock)
+func (t *Transaction) MinerSCLock(providerId string, providerType int, lock string) error {
+
+	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
 	}
 
-	var mscl MinerSCLock
-	mscl.ID = nodeID
-
+	pr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
 	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_LOCK, &mscl, v)
+		transaction.MINERSC_LOCK, pr, lv)
 	if err != nil {
 		logging.Error(err)
-		return
+		return err
 	}
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return err
+}
+
+func (t *Transaction) MinerSCUnlock(providerId string, providerType int) error {
+	pr := &stakePoolRequest{
+		ProviderID:   providerId,
+		ProviderType: providerType,
+	}
+	err := t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_LOCK, pr, 0)
+	if err != nil {
+		logging.Error(err)
+		return err
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return err
 }
 
 func (t *Transaction) MinerSCCollectReward(providerId string, providerType int) error {
@@ -631,12 +664,6 @@ func (t *Transaction) StakePoolLock(providerId string, providerType int, lock, f
 	if err != nil {
 		return err
 	}
-
-	type stakePoolRequest struct {
-		ProviderType int    `json:"provider_type,omitempty"`
-		ProviderID   string `json:"provider_id,omitempty"`
-	}
-
 	spr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerId,
@@ -658,11 +685,6 @@ func (t *Transaction) StakePoolUnlock(providerId string, providerType int, fee s
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
-	}
-
-	type stakePoolRequest struct {
-		ProviderType int    `json:"provider_type,omitempty"`
-		ProviderID   string `json:"provider_id,omitempty"`
 	}
 
 	spr := stakePoolRequest{
@@ -1369,7 +1391,7 @@ func toMobileBlock(b *block.Block) *Block {
 	return lb
 }
 
-//TransactionMobile entity that encapsulates the transaction related data and meta data
+// TransactionMobile entity that encapsulates the transaction related data and meta data
 type TransactionMobile struct {
 	Hash              string `json:"hash,omitempty"`
 	Version           string `json:"version,omitempty"`

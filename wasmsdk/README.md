@@ -71,11 +71,6 @@ set wallet on go
 > N/A
 
 
-**Input**:
-> host string
-
-**Output**:
-> N/A
 
 ### zcn.sdk.getPublicEncryptionKey
 get public encryption key by mnemonic

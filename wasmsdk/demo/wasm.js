@@ -19,7 +19,6 @@
 
 const g =  window
 
-
 function hexStringToByte(str) {
   if (!str) return new Uint8Array()
 
@@ -32,8 +31,6 @@ function hexStringToByte(str) {
 }
 
 function blsSign(hash) {
-  console.log('blsSign: ', hash)
-
   const { jsProxy } = g.__zcn_wasm__
 
   if (!jsProxy || !jsProxy.secretKey) {

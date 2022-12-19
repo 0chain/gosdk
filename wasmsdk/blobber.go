@@ -320,7 +320,7 @@ func download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 
 	resp := &DownloadCommandResponse{
 		CommandSuccess: true,
-		FileName:       fileName,
+		FileName:       downloader.GetFileName(),
 	}
 
 	fs, _ := sys.Files.Open(localPath)
