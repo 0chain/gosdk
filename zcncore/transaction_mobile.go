@@ -470,7 +470,7 @@ func (t *Transaction) MinerSCUnlock(providerId string, providerType int) error {
 		ProviderType: providerType,
 	}
 	err := t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_LOCK, pr, 0)
+		transaction.MINERSC_UNLOCK, pr, 0)
 	if err != nil {
 		logging.Error(err)
 		return err
