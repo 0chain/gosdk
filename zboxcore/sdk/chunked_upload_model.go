@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"hash/fnv"
 	"strconv"
-
-	"github.com/0chain/gosdk/core/encryption"
 )
 
 // FileMeta metadata of stream input/local
@@ -126,12 +124,7 @@ func (s *UploadBlobberStatus) UnmarshalJSON(b []byte) error {
 	}
 
 	status.Hasher.File = sha256.New()
-	if status.Hasher.Content != nil {
-
-		status.Hasher.Content.Hash = func(left, right string) string {
-			return encryption.Hash(left + right)
-		}
-	}
+	status.Hasher.Content = sha256.New()
 
 	s.Hasher = &status.Hasher
 	s.UploadLength = status.UploadLength

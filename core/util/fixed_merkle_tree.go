@@ -2,6 +2,9 @@ package util
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"hash"
 	"io"
 
 	"github.com/0chain/errors"
@@ -13,7 +16,7 @@ type FixedMerkleTree struct {
 	// ChunkSize size of chunk
 	ChunkSize int `json:"chunk_size,omitempty"`
 	// Leaves a leaf is a CompactMerkleTree for 1/1024 shard data
-	Leaves []*CompactMerkleTree `json:"leaves,omitempty"`
+	Leaves []hash.Hash `json:"-"`
 }
 
 // NewFixedMerkleTree create a FixedMerkleTree with specify hash method
@@ -29,9 +32,9 @@ func NewFixedMerkleTree(chunkSize int) *FixedMerkleTree {
 }
 
 func (fmt *FixedMerkleTree) initLeaves() {
-	fmt.Leaves = make([]*CompactMerkleTree, 1024)
+	fmt.Leaves = make([]hash.Hash, 1024)
 	for n := 0; n < 1024; n++ {
-		fmt.Leaves[n] = NewCompactMerkleTree(nil)
+		fmt.Leaves[n] = sha256.New()
 	}
 }
 
@@ -56,8 +59,8 @@ func (fmt *FixedMerkleTree) Write(buf []byte, chunkIndex int) error {
 			fmt.initLeaves()
 		}
 
-		err := fmt.Leaves[offset].AddDataBlocks(buf[i:end], chunkIndex)
-		if errors.Is(err, ErrLeafNoSequenced) {
+		_, err := fmt.Leaves[offset].Write(buf[i:end])
+		if err != nil {
 			return err
 		}
 
@@ -76,7 +79,7 @@ func (fmt *FixedMerkleTree) GetMerkleTree() MerkleTreeI {
 
 	for idx, leaf := range fmt.Leaves {
 
-		merkleLeaves[idx] = NewStringHashable(leaf.GetMerkleRoot())
+		merkleLeaves[idx] = NewStringHashable(hex.EncodeToString(leaf.Sum(nil)))
 	}
 	var mt MerkleTreeI = &MerkleTree{}
 

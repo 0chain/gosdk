@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"path/filepath"
 	"sync"
@@ -440,7 +441,7 @@ func (su *ChunkedUpload) Start() error {
 
 		//chunk has not be uploaded yet
 		if chunks.chunkEndIndex > su.progress.ChunkIndex {
-
+			log.Println("upload: upload chunk #", chunks.chunkEndIndex, su.progress.ChunkIndex)
 			err = su.processUpload(chunks.chunkStartIndex, chunks.chunkEndIndex, chunks.fileShards, chunks.thumbnailShards, chunks.isFinal, chunks.totalReadSize)
 			if err != nil {
 				if su.statusCallback != nil {
@@ -448,17 +449,20 @@ func (su *ChunkedUpload) Start() error {
 				}
 				return err
 			}
+
+			// last chunk might 0 with io.EOF
+			// https://stackoverflow.com/questions/41208359/how-to-test-eof-on-io-reader-in-go
+			if chunks.totalReadSize > 0 {
+				su.progress.ChunkIndex = chunks.chunkEndIndex
+				su.saveProgress()
+			}
+
+		} else {
+			log.Println("upload: skip chunk #", chunks.chunkEndIndex, su.progress.ChunkIndex)
 		}
 
-		// last chunk might 0 with io.EOF
-		// https://stackoverflow.com/questions/41208359/how-to-test-eof-on-io-reader-in-go
-		if chunks.totalReadSize > 0 {
-			su.progress.ChunkIndex = chunks.chunkEndIndex
-			su.saveProgress()
-
-			if su.statusCallback != nil {
-				su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.progress.UploadLength), nil)
-			}
+		if su.statusCallback != nil {
+			su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.progress.UploadLength), nil)
 		}
 
 		if chunks.isFinal {
