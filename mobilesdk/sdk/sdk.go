@@ -42,6 +42,10 @@ type StorageSDK struct {
 }
 
 // SetLogFile - setting up log level for core libraries
+//
+//	# Inputs
+//	- logFile: the output file of logs
+//	- verbose: output detail logs
 func SetLogFile(logFile string, verbose bool) {
 	zcncore.SetLogFile(logFile, verbose)
 	sdk.SetLogFile(logFile, verbose)
