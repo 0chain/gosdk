@@ -30,6 +30,7 @@ import (
 const STORAGE_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
 
 var sdkNotInitialized = errors.New("sdk_not_initialized", "SDK is not initialised")
+var allocationNotFound = errors.New("couldnt_find_allocation", "Couldn't find the allocation requiredfor update")
 
 const (
 	OpUpload   int = 0
@@ -938,7 +939,7 @@ func CreateAllocationForOwner(
 	allocationRequest["owner_public_key"] = ownerpublickey
 	allocationRequest["is_immutable"] = isImmutable
 	allocationRequest["third_party_extendable"] = thirdPartyExtendable
-	allocationRequest["file_options"] = calculateAllocationFileOptions(forbidUpload, forbidDelete,
+	allocationRequest["file_options"] = calculateAllocationFileOptions(63/*0011 1111*/, forbidUpload, forbidDelete,
 	forbidUpdate, forbidMove, forbidCopy, forbidRename)
 
 	var sn = transaction.SmartContractTxnData{
@@ -1130,6 +1131,11 @@ func UpdateAllocation(name string,
 		return "", 0, sdkNotInitialized
 	}
 
+	alloc, err := GetAllocation(allocationID)
+	if err != nil {
+		return "",0, allocationNotFound 
+	}
+	
 	updateAllocationRequest := make(map[string]interface{})
 	updateAllocationRequest["name"] = name
 	updateAllocationRequest["owner_id"] = client.GetClientID()
@@ -1142,6 +1148,7 @@ func UpdateAllocation(name string,
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
 	updateAllocationRequest["third_party_extendable"] = thirdPartyExtendable
 	updateAllocationRequest["file_options"] = calculateAllocationFileOptions(
+		alloc.FileOptions,
 		forbidUpload,
 		forbidDelete,
 		forbidUpdate,
@@ -1479,9 +1486,9 @@ func GetAllocationMinLock(
 	return response["min_lock_demand"], nil
 }
 
-func calculateAllocationFileOptions(forbidUpload, forbidDelete, forbidUpdate,
+func calculateAllocationFileOptions(initial uint8, forbidUpload, forbidDelete, forbidUpdate,
 forbidMove, forbidCopy, forbidRename bool) uint8 {
-	mask := uint8(63) // 0011 1111
+	mask := initial
 
 	if forbidUpload { mask &= ^uint8(1) }
 	if forbidDelete { mask &= ^uint8(2) }
@@ -1490,6 +1497,5 @@ forbidMove, forbidCopy, forbidRename bool) uint8 {
 	if forbidCopy 	{ mask &= ^uint8(16) }
 	if forbidRename { mask &= ^uint8(32) }
 
-	mask |= uint8(192) // Add 2 ones at the MSB to differentiate from the uninitialized FileOptions 
 	return mask
 }
