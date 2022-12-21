@@ -1041,13 +1041,15 @@ func GetBlobber(blobberID string, cb GetInfoCallback) (err error) {
 	return
 }
 
-// GetTransactions obtains blobber information.
-// block_hash	query	string	string				restrict to transactions in indicated block
-// client_id	query	string	string				restrict to transactions sent by the specified client
-// limit	query	string	string				limit
-// offset	query	string	string				offset
-// sort	query	string	string				desc or asc
-// to_client_id	query	string	string				restrict to transactions sent to a specified client
+// GetTransactions query transactions from sharders
+// # Inputs
+//   - toClient:   	receiver
+//   - fromClient: 	sender
+//   - block_hash: 	block hash
+//   - sort:				desc or asc
+//   - limit: 			how many transactions should be fetched
+//   - offset:			how many transactions should be skipped
+//   - cb: 					callback to get result
 func GetTransactions(toClient, fromClient, block_hash, sort string, limit, offset int, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return

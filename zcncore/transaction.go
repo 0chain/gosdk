@@ -708,7 +708,7 @@ func (t *Transaction) GetVerifyConfirmationStatus() ConfirmationStatus {
 	return ConfirmationStatus(t.verifyConfirmationStatus)
 }
 
-//RegisterMultiSig register a multisig wallet with the SC.
+// RegisterMultiSig register a multisig wallet with the SC.
 func (t *Transaction) RegisterMultiSig(walletstr string, mswallet string) error {
 	w, err := GetWallet(walletstr)
 	if err != nil {
@@ -759,7 +759,7 @@ func NewMSTransaction(walletstr string, cb TransactionCallback) (*Transaction, e
 	return t, nil
 }
 
-//RegisterVote register a multisig wallet with the SC.
+// RegisterVote register a multisig wallet with the SC.
 func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error {
 
 	w, err := GetWallet(signerwalletstr)
@@ -971,7 +971,9 @@ func (t *Transaction) Verify() error {
 	return nil
 }
 
-// ConvertToValue converts ZCN tokens to value
+// ConvertToValue converts ZCN tokens to SAS tokens
+// # Inputs
+//   - token: ZCN tokens
 func ConvertToValue(token float64) uint64 {
 	return uint64(token * float64(TOKEN_UNIT))
 }
