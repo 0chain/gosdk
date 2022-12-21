@@ -128,7 +128,7 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 func (s *StorageSDK) CreateAllocation(name string, datashards, parityshards int, size, expiration int64, lock uint64) (*zbox.Allocation, error) {
 	readPrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 	writePrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
-	sdkAllocationID, _, _, err := sdk.CreateAllocation(name, datashards, parityshards, size, expiration, readPrice, writePrice, lock, false, false, false, false, false, false, false, false)
+	sdkAllocationID, _, _, err := sdk.CreateAllocation(name, datashards, parityshards, size, expiration, readPrice, writePrice, lock, false, false)
 	if err != nil {
 		return nil, err
 	}
@@ -282,7 +282,7 @@ func (s *StorageSDK) GetVersion() string {
 
 // UpdateAllocation with new expiry and size
 func (s *StorageSDK) UpdateAllocation(name string, size, expiry int64, allocationID string, lock uint64) (hash string, err error) {
-	hash, _, err = sdk.UpdateAllocation(name, size, expiry, allocationID, lock, false, true, "", "", false, false, false, false, false, false, false)
+	hash, _, err = sdk.UpdateAllocation(name, size, expiry, allocationID, lock, false, true, "", "", false)
 	return hash, err
 }
 

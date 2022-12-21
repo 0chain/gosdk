@@ -860,6 +860,34 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 	return allocations, nil
 }
 
+// Q : Why do you have "Forbid" and "Allow" version of every option ?
+//
+// A : In Go, you cannot tell if the variable is initialized or not, it must have a value. For booleans,
+// the default value if "false". So if I decided to leave just the "forbid" versions, where if forbidX = 1, X is forbidden and v.v., 
+// the "false" value of the fobidX option will mean that the option X is allowed, however, it may be just that the user didn't even
+// set a value for it, so there's confusion between if the user has deliberaly set "false" to forbidX to "allow" the X option v.s. if
+// the user didn't give any value at all. Now for the "create" request, this confusion will not harm, since the two confused cases will
+// lead to the same result which is to "allow" the option X. However, for the "update" request, this confusion will lead to corrupted results.
+// Lets say the user wants to allow the option X in an update request, if there's only the "forbid" version then the user will send "forbidX=false".
+// However, since the user didn't touch the other options in their request, they're all considered "false", thus ALLOWED, even if another option Y
+// was dissallowed in the "create" request. That's why it's important to have a separate "allow" option so if the user wants to allow X they should
+// just send "allowX=true" which will affect the state of "X" only, where the others will stay unchanged.
+// In a nutshell, the idea is always using "true" as a sign of user's input and "false" as a sign of being unchanged or unset by the user.
+type FileOptionsParameters struct {
+	ForbidUpload bool
+	ForbidDelete bool
+	ForbidUpdate bool
+	ForbidMove 	 bool
+	ForbidCopy   bool
+	ForbidRename bool
+	AllowUpload bool
+	AllowDelete bool
+	AllowUpdate bool
+	AllowMove 	bool
+	AllowCopy   bool
+	AllowRename bool
+}
+
 type CreateAllocationOptions struct {
 	Name         string
 	DataShards   int
@@ -872,12 +900,7 @@ type CreateAllocationOptions struct {
 	BlobberIds   []string
 	IsImmutable	 bool
 	ThirdPartyExtendable	 bool
-	ForbidUpload bool
-	ForbidDelete bool
-	ForbidUpdate bool
-	ForbidMove 	 bool
-	ForbidCopy   bool
-	ForbidRename bool
+	FileOptionsParams *FileOptionsParameters
 }
 
 func CreateAllocationWith(options CreateAllocationOptions) (
@@ -887,19 +910,17 @@ func CreateAllocationWith(options CreateAllocationOptions) (
 		return CreateAllocationForOwner(options.Name, client.GetClientID(),
 			client.GetClientPublicKey(), options.DataShards, options.ParityShards,
 			options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock,
-			options.BlobberIds, options.IsImmutable, options.ThirdPartyExtendable, options.ForbidUpload,
-			options.ForbidDelete, options.ForbidUpdate, options.ForbidMove, options.ForbidCopy, options.ForbidRename)
+			options.BlobberIds, options.IsImmutable, options.ThirdPartyExtendable, options.FileOptionsParams)
 	}
 
 	return CreateAllocation(options.Name, options.DataShards, options.ParityShards,
-		options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock, options.IsImmutable, options.ThirdPartyExtendable, options.ForbidUpload,
-		options.ForbidDelete, options.ForbidUpdate, options.ForbidMove, options.ForbidCopy, options.ForbidRename)
+		options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock, options.IsImmutable,
+		options.ThirdPartyExtendable, options.FileOptionsParams)
 
 }
 
 func CreateAllocation(name string, datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, lock uint64, isImmutable, thirdPartyExtendable, forbidUpload,
-	forbidDelete, forbidUpdate, forbidMove, forbidCopy, forbidRename bool) (
+	readPrice, writePrice PriceRange, lock uint64, isImmutable, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters) (
 	string, int64, *transaction.Transaction, error) {
 
 	preferredBlobberIds, err := GetBlobberIds(blockchain.GetPreferredBlobbers())
@@ -909,16 +930,14 @@ func CreateAllocation(name string, datashards, parityshards int, size, expiry in
 	return CreateAllocationForOwner(name, client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
 		size, expiry, readPrice, writePrice, lock,
-		preferredBlobberIds, isImmutable, thirdPartyExtendable, forbidUpload,
-		forbidDelete, forbidUpdate, forbidMove, forbidCopy, forbidRename)
+		preferredBlobberIds, isImmutable, thirdPartyExtendable, fileOptionsParams)
 }
 
 func CreateAllocationForOwner(
 	name string, owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange,
-	lock uint64, preferredBlobberIds []string, isImmutable, thirdPartyExtendable, forbidUpload,
-	forbidDelete, forbidUpdate, forbidMove, forbidCopy, forbidRename bool,
+	lock uint64, preferredBlobberIds []string, isImmutable, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
 	if lock < 0 {
 		return "", 0, nil, errors.New("", "invalid value for lock")
@@ -939,8 +958,7 @@ func CreateAllocationForOwner(
 	allocationRequest["owner_public_key"] = ownerpublickey
 	allocationRequest["is_immutable"] = isImmutable
 	allocationRequest["third_party_extendable"] = thirdPartyExtendable
-	allocationRequest["file_options"] = calculateAllocationFileOptions(63/*0011 1111*/, forbidUpload, forbidDelete,
-	forbidUpdate, forbidMove, forbidCopy, forbidRename)
+	allocationRequest["file_options"] = calculateAllocationFileOptions(63/*0011 1111*/, fileOptionsParams)
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.NEW_ALLOCATION_REQUEST,
@@ -1121,10 +1139,7 @@ func UpdateAllocation(name string,
 	lock uint64,
 	setImmutable, updateTerms bool,
 	addBlobberId, removeBlobberId string,
-	thirdPartyExtendable, forbidUpload,
-	forbidDelete, forbidUpdate,
-	forbidMove, forbidCopy,
-	forbidRename bool,
+	thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, err error) {
 
 	if !sdkInitialized {
@@ -1147,15 +1162,7 @@ func UpdateAllocation(name string,
 	updateAllocationRequest["add_blobber_id"] = addBlobberId
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
 	updateAllocationRequest["third_party_extendable"] = thirdPartyExtendable
-	updateAllocationRequest["file_options"] = calculateAllocationFileOptions(
-		alloc.FileOptions,
-		forbidUpload,
-		forbidDelete,
-		forbidUpdate,
-		forbidMove,
-		forbidCopy,
-		forbidRename,
-	)
+	updateAllocationRequest["file_options"] = calculateAllocationFileOptions(alloc.FileOptions, fileOptionsParams)
 
 	sn := transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
@@ -1486,16 +1493,29 @@ func GetAllocationMinLock(
 	return response["min_lock_demand"], nil
 }
 
-func calculateAllocationFileOptions(initial uint8, forbidUpload, forbidDelete, forbidUpdate,
-forbidMove, forbidCopy, forbidRename bool) uint8 {
+//calculateAllocationFileOptions calculates the FileOptions 8-bit mask given the user input
+func calculateAllocationFileOptions(initial uint8, fop *FileOptionsParameters) uint8 {	
+	if fop == nil {
+		return initial
+	}
+
 	mask := initial
 
-	if forbidUpload { mask &= ^uint8(1) }
-	if forbidDelete { mask &= ^uint8(2) }
-	if forbidUpdate { mask &= ^uint8(4) }
-	if forbidMove 	{ mask &= ^uint8(8) }
-	if forbidCopy 	{ mask &= ^uint8(16) }
-	if forbidRename { mask &= ^uint8(32) }
+	// Forbid
+	if fop.ForbidUpload { mask &= ^uint8(1) }
+	if fop.ForbidDelete { mask &= ^uint8(2) }
+	if fop.ForbidUpdate { mask &= ^uint8(4) }
+	if fop.ForbidMove 	{ mask &= ^uint8(8) }
+	if fop.ForbidCopy 	{ mask &= ^uint8(16) }
+	if fop.ForbidRename { mask &= ^uint8(32) }
+
+	// Allow
+	if fop.AllowUpload { mask |= uint8(1) }
+	if fop.AllowDelete { mask |= uint8(2) }
+	if fop.AllowUpdate { mask |= uint8(4) }
+	if fop.AllowMove   { mask |= uint8(8) }
+	if fop.AllowCopy   { mask |= uint8(16) }
+	if fop.AllowRename { mask |= uint8(32) }
 
 	return mask
 }
