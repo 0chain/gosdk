@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"path/filepath"
 	"sync"
@@ -441,7 +440,6 @@ func (su *ChunkedUpload) Start() error {
 
 		//chunk has not be uploaded yet
 		if chunks.chunkEndIndex > su.progress.ChunkIndex {
-			log.Println("upload: upload chunk #", chunks.chunkEndIndex, su.progress.ChunkIndex)
 			err = su.processUpload(chunks.chunkStartIndex, chunks.chunkEndIndex, chunks.fileShards, chunks.thumbnailShards, chunks.isFinal, chunks.totalReadSize)
 			if err != nil {
 				if su.statusCallback != nil {
@@ -456,9 +454,6 @@ func (su *ChunkedUpload) Start() error {
 				su.progress.ChunkIndex = chunks.chunkEndIndex
 				su.saveProgress()
 			}
-
-		} else {
-			log.Println("upload: skip chunk #", chunks.chunkEndIndex, su.progress.ChunkIndex)
 		}
 
 		if su.statusCallback != nil {
