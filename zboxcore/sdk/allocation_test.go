@@ -404,7 +404,7 @@ func TestAllocation_dispatchWork(t *testing.T) {
 	})
 	t.Run("Test_Cover_Repair_Request", func(t *testing.T) {
 		go a.dispatchWork(context.Background())
-		a.repairChan <- &RepairRequest{listDir: &ListResult{}}
+		a.repairChan <- &RepairRequest{}
 	})
 }
 
@@ -2466,7 +2466,7 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 				if repairReq.wg != nil {
 					repairReq.wg.Done()
 				}
-				t.Logf("received a repair request for %v\n", repairReq.listDir.Path)
+				t.Logf("received a repair request for fileID %v\n", repairReq.fileID)
 			}
 		}
 	}()

@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -17,13 +16,12 @@ import (
 )
 
 type RepairRequest struct {
-	listDir           *ListResult
 	isRepairCanceled  bool
-	localRootPath     string
+	localPath     string // local path of the file to be repaired
 	statusCB          StatusCallback
 	completedCallback func()
 	filesRepaired     int
-	fileID            int64
+	fileID            int64 // fileID associated with a given file
 	wg                *sync.WaitGroup
 }
 
@@ -124,51 +122,14 @@ func (r *RepairRequest) processRepair(ctx context.Context, a *Allocation) {
 		return
 	}
 
-	_, err := r.FindRepairsNeeded(a)
+	err := r.FindRepairsNeeded(a)
 	if err != nil {
 		r.statusCB.Error(a.ID, r.localRootPath, 0, err)
 	}
 
-	// for _, repair := range repairs {
-	// 	r.repairFile(a, r.localRootPath)
-	// }
-
-	// r.iterateDir(a, r.listDir)
-
 	if r.statusCB != nil {
 		r.statusCB.RepairCompleted(r.filesRepaired)
 	}
-}
-
-func (r *RepairRequest) iterateDir(a *Allocation, dir *ListResult) {
-	switch dir.Type {
-	case fileref.DIRECTORY:
-		if len(dir.Children) == 0 {
-			var err error
-			dir, err = a.ListDir(dir.Path)
-			if err != nil {
-				l.Logger.Error("Failed to get listDir for path ", zap.Any("path", dir.Path), zap.Error(err))
-				return
-			}
-		}
-		for _, childDir := range dir.Children {
-			if r.checkForCancel(a) {
-				return
-			}
-			r.iterateDir(a, childDir)
-		}
-
-	case fileref.FILE:
-		r.repairFile(a, dir)
-
-	default:
-		l.Logger.Info("Invalid directory type", zap.Any("type", dir.Type))
-	}
-}
-
-type repair struct {
-	op   FileOp
-	mask bool
 }
 
 // getMajorityWriteMarker returns writeMarker which is majorly applied among blobbers
@@ -206,7 +167,7 @@ func getBlobbersNeedingRepair(a *Allocation, majorityWm *WriteMarker, allocBlobb
 	return repairMask, !found.Equals(mask)
 }
 
-func (r *RepairRequest) FindRepairsNeeded(a *Allocation) ([]repair, error) {
+func (r *RepairRequest) FindRepairsNeeded(a *Allocation) error {
 
 	wms := GetWriteMarkers(a.ID, strconv.FormatInt(r.fileID, 10))
 
@@ -289,87 +250,72 @@ func (r *RepairRequest) FindRepairsNeeded(a *Allocation) ([]repair, error) {
 			req.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 			req.maskMu = &sync.Mutex{}
 			err := req.ProcessDelete()
-			return nil, err
+			return err
 		}
-	}
-	return []repair{}, nil
-}
 
-func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
-	if r.checkForCancel(a) {
-		return
-	}
-	l.Logger.Info("Checking file for the path :", zap.Any("path", file.Path))
-	found, repairRequired, _, err := a.RepairRequired(file.Path)
-	if err != nil {
-		l.Logger.Error("repair_required_failed", zap.Error(err))
-		return
-	}
-
-	if repairRequired {
-		l.Logger.Info("Repair required for the path :", zap.Any("path", file.Path))
-		if found.CountOnes() >= a.DataShards {
-			l.Logger.Info("Repair by upload", zap.Any("path", file.Path))
-			var wg sync.WaitGroup
-			statusCB := &RepairStatusCB{
-				wg:       &wg,
-				statusCB: r.statusCB,
-			}
-
-			localPath := r.getLocalPath(file)
-
-			if !checkFileExists(localPath) {
-				if r.checkForCancel(a) {
-					return
+		if majorityWM.Operation == WMUpload {
+			l.Logger.Info("Repair required for the path")
+			if repairMask.CountOnes() >= a.DataShards {
+				l.Logger.Info("Repair by upload")
+				var wg sync.WaitGroup
+				statusCB := &RepairStatusCB{
+					wg:       &wg,
+					statusCB: r.statusCB,
 				}
-				l.Logger.Info("Downloading file for the path :", zap.Any("path", file.Path))
+
+				if !checkFileExists(r.localPath) {
+					if r.checkForCancel(a) {
+						return nil
+					}
+					l.Logger.Info("Downloading file for the path :")
+					wg.Add(1)
+					err := a.DownloadFile(localPath, file.Path, statusCB)
+					if err != nil {
+						l.Logger.Error("download_file_failed", zap.Error(err))
+						return nil
+					}
+					wg.Wait()
+					if !statusCB.success {
+						l.Logger.Error("Failed to download file for repair, Status call back success failed",
+							zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
+						return  nil
+					}
+					l.Logger.Info("Download file success for repair", zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
+					statusCB.success = false
+				} else {
+					l.Logger.Info("FILE EXISTS", zap.Any("bool", true))
+				}
+
+				if r.checkForCancel(a) {
+					return nil
+				}
+
 				wg.Add(1)
-				err = a.DownloadFile(localPath, file.Path, statusCB)
+				err = a.RepairFile(localPath, file.Path, statusCB)
 				if err != nil {
-					l.Logger.Error("download_file_failed", zap.Error(err))
+					l.Logger.Error("repair_file_failed", zap.Error(err))
 					return
 				}
 				wg.Wait()
 				if !statusCB.success {
-					l.Logger.Error("Failed to download file for repair, Status call back success failed",
+					l.Logger.Error("Failed to repair file, Status call back success failed",
 						zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
 					return
 				}
-				l.Logger.Info("Download file success for repair", zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
-				statusCB.success = false
 			} else {
-				l.Logger.Info("FILE EXISTS", zap.Any("bool", true))
+				l.Logger.Info("Repair by delete", zap.Any("path", file.Path))
+				consensus := found.CountOnes()
+				err := a.deleteFile(file.Path, consensus, consensus)
+				if err != nil {
+					l.Logger.Error("repair_file_failed", zap.Error(err))
+					return
+				}
 			}
-
-			if r.checkForCancel(a) {
-				return
-			}
-
-			l.Logger.Info("Repairing file for the path :", zap.Any("path", file.Path))
-			wg.Add(1)
-			err = a.RepairFile(localPath, file.Path, statusCB)
-			if err != nil {
-				l.Logger.Error("repair_file_failed", zap.Error(err))
-				return
-			}
-			wg.Wait()
-			if !statusCB.success {
-				l.Logger.Error("Failed to repair file, Status call back success failed",
-					zap.Any("localpath", localPath), zap.Any("remotepath", file.Path))
-				return
-			}
-		} else {
-			l.Logger.Info("Repair by delete", zap.Any("path", file.Path))
-			consensus := found.CountOnes()
-			err := a.deleteFile(file.Path, consensus, consensus)
-			if err != nil {
-				l.Logger.Error("repair_file_failed", zap.Error(err))
-				return
-			}
+			l.Logger.Info("Repair file success", zap.Any("remotepath", file.Path))
+			r.filesRepaired++
 		}
-		l.Logger.Info("Repair file success", zap.Any("remotepath", file.Path))
-		r.filesRepaired++
 	}
+	return nil
 }
 
 func (r *RepairRequest) getLocalPath(file *ListResult) string {

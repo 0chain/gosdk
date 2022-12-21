@@ -248,7 +248,7 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 			go downloadReq.processDownload(ctx)
 		case repairReq := <-a.repairChan:
 
-			l.Logger.Info(fmt.Sprintf("received a repair request for %v\n", repairReq.listDir.Path))
+			l.Logger.Info(fmt.Sprintf("received a repair request for fileID %v\n", repairReq.fileID))
 			go repairReq.processRepair(ctx, a)
 		}
 	}
@@ -1314,28 +1314,18 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	return nil
 }
 
-func (a *Allocation) StartRepair(localRootPath, fileID string, statusCB StatusCallback) error {
+func (a *Allocation) StartRepair(localPath string, fileID int64, statusCB StatusCallback) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
 
-	// listDir, err := a.ListDir(fileid)
-	// if err != nil {
-	// 	return err
-	// }
-
-	n, err := strconv.ParseInt(fileID, 10, 64)
-	if err == nil {
-		return err
-	}
-
+	// TODO: validate if the given fileID is valid (not a folder) and exists in atleast one of the blobbers
 	repairReq := &RepairRequest{
-		localRootPath: localRootPath,
-		fileID:        n,
-		statusCB:      statusCB,
+		localPath: localPath,
+		fileID:    fileID,
+		statusCB:  statusCB,
 	}
 
-	// TODO: fix this
 	repairReq.completedCallback = func() {
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
