@@ -112,6 +112,26 @@ func IsValidEthAddress(ethAddr string) (bool, error) {
 	return isValidEthAddress(ethAddr, client)
 }
 
+// IsEthTransactionVerified - checks if the transaction is verified
+// with a help of the given transaction hash
+func IsEthTransactionVerified(txHash string) (bool, error) {
+	client, err := getEthClient()
+	if err != nil {
+		return false, err
+	}
+
+	var (
+		tx      *types.Transaction
+		pending bool
+	)
+
+	tx, pending, err = client.TransactionByHash(context.Background(), common.HexToHash(txHash))
+	if err != nil {
+		return false, err
+	}
+	return tx != nil && !pending, nil
+}
+
 func isValidEthAddress(ethAddr string, client *ethclient.Client) (bool, error) {
 	re := regexp.MustCompile("^0x[0-9a-fA-F]{40}$")
 	if !re.MatchString(ethAddr) {
