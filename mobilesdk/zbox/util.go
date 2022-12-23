@@ -72,7 +72,7 @@ func GetNetwork() (string, error) {
 
 // GetBlobbers - get list of blobbers
 func GetBlobbers() (string, error) {
-	blobbers, err := sdk.GetBlobbers()
+	blobbers, err := sdk.GetBlobbers(true)
 	if err != nil {
 		return "", err
 	}
@@ -92,7 +92,7 @@ func Sign(hash string) (string, error) {
 	return client.Sign(hash)
 }
 
-// VerifySignature - verify message with signature
+// VerifySignatxure - verify message with signature
 func VerifySignature(signature string, msg string) (bool, error) {
 	return client.VerifySignature(signature, msg)
 }

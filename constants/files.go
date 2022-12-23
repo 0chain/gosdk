@@ -7,5 +7,6 @@ const (
 	FileOperationUpdate    = "update"
 	FileOperationRename    = "rename"
 	FileOperationCopy      = "copy"
+	FileOperationMove      = "move"
 	FileOperationCreateDir = "createdir"
 )

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -42,7 +43,6 @@ type StatusCallback interface {
 	InProgress(allocationId, filePath string, op int, completedBytes int, data []byte)
 	Error(allocationID string, filePath string, op int, err error)
 	Completed(allocationId, filePath string, filename string, mimetype string, size int, op int)
-	CommitMetaCompleted(request, response string, txn *transaction.Transaction, err error)
 	RepairCompleted(filesRepaired int)
 }
 
@@ -259,19 +259,12 @@ type StakePoolDelegatePoolInfo struct {
 
 // StakePool full info.
 type StakePoolInfo struct {
-	ID      common.Key     `json:"pool_id"` // pool ID
-	Balance common.Balance `json:"balance"` // total balance
-	Unstake common.Balance `json:"unstake"` // total unstake amount
-
-	Free       int64          `json:"free"`        // free staked space
-	Capacity   int64          `json:"capacity"`    // blobber bid
-	WritePrice common.Balance `json:"write_price"` // its write price
-
-	OffersTotal  common.Balance `json:"offers_total"` //
+	ID           common.Key     `json:"pool_id"` // pool ID
+	Balance      common.Balance `json:"balance"` // total balance
+	StakeTotal   common.Balance `json:"stake_total"`
 	UnstakeTotal common.Balance `json:"unstake_total"`
 	// delegate pools
 	Delegate []StakePoolDelegatePoolInfo `json:"delegate"`
-	Penalty  common.Balance              `json:"penalty"` // total for all
 	// rewards
 	Rewards common.Balance `json:"rewards"`
 
@@ -281,17 +274,14 @@ type StakePoolInfo struct {
 
 // GetStakePoolInfo for given client, or, if the given clientID is empty,
 // for current client of the sdk.
-func GetStakePoolInfo(blobberID string) (info *StakePoolInfo, err error) {
+func GetStakePoolInfo(providerType ProviderType, providerID string) (info *StakePoolInfo, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
-	}
-	if blobberID == "" {
-		blobberID = client.GetClientID()
 	}
 
 	var b []byte
 	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getStakePoolStat",
-		map[string]string{"blobber_id": blobberID}, nil)
+		map[string]string{"provider_type": strconv.Itoa(int(providerType)), "provider_id": providerID}, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting stake pool info:")
 	}
@@ -396,11 +386,11 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 
 // StakePoolUnlockUnstake is stake pool unlock response in case where tokens
 // can't be unlocked due to opened offers.
-type StakePoolUnlockUnstake struct {
-	// one of the fields is set in a response, the Unstake if can't unstake
-	// for now and the TokenPoolTransferResponse if has a pool had unlocked
-	Unstake bool  `json:"unstake"` // max time to wait to unstake
-	Balance int64 `json:"balance"`
+type stakePoolLock struct {
+	Client       string       `json:"client"`
+	ProviderId   string       `json:"provider_id"`
+	ProviderType ProviderType `json:"provider_type"`
+	Amount       int64        `json:"amount"`
 }
 
 // StakePoolUnlock unlocks a stake pool tokens. If tokens can't be unlocked due
@@ -409,17 +399,17 @@ type StakePoolUnlockUnstake struct {
 // future. The time is maximal time that can be lesser in some cases. To
 // unlock tokens can't be unlocked now, wait the time and unlock them (call
 // this function again).
-func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (unstake bool, nonce int64, err error) {
+func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (unstake int64, nonce int64, err error) {
 	if !sdkInitialized {
-		return false, 0, sdkNotInitialized
+		return 0, 0, sdkNotInitialized
 	}
 
 	if providerType == 0 {
-		return false, 0, errors.New("stake_pool_lock", "provider is required")
+		return 0, 0, errors.New("stake_pool_lock", "provider is required")
 	}
 
 	if providerID == "" {
-		return false, 0, errors.New("stake_pool_lock", "provider_id is required")
+		return 0, 0, errors.New("stake_pool_lock", "provider_id is required")
 	}
 
 	spr := stakePoolRequest{
@@ -437,12 +427,12 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (
 		return // an error
 	}
 
-	var spuu StakePoolUnlockUnstake
+	var spuu stakePoolLock
 	if err = json.Unmarshal([]byte(out), &spuu); err != nil {
 		return
 	}
 
-	return spuu.Unstake, nonce, nil
+	return spuu.Amount, nonce, nil
 }
 
 //
@@ -602,7 +592,8 @@ type Validator struct {
 	MaxStake       common.Balance `json:"max_stake"`
 	NumDelegates   int            `json:"num_delegates"`
 	ServiceCharge  float64        `json:"service_charge"`
-	TotalStake     int64          `json:"stake"`
+	StakeTotal     int64          `json:"stake_total"`
+	UnstakeTotal   int64          `json:"unstake_total"`
 }
 
 func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
@@ -619,14 +610,18 @@ func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
 	}
 }
 
-func GetBlobbers() (bs []*Blobber, err error) {
-	if !sdkInitialized {
-		return nil, sdkNotInitialized
+func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err error) {
+	type nodes struct {
+		Nodes []*Blobber
 	}
 
-	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getblobbers", nil,
-		nil)
+	url := fmt.Sprintf("/getblobbers?active=%s&limit=%d&offset=%d",
+		strconv.FormatBool(active),
+		limit,
+		offset,
+	)
+	b, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, url, nil, nil)
+	var wrap nodes
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting blobbers:")
 	}
@@ -634,17 +629,43 @@ func GetBlobbers() (bs []*Blobber, err error) {
 		return nil, errors.New("", "empty response")
 	}
 
-	type nodes struct {
-		Nodes []*Blobber
-	}
-
-	var wrap nodes
-
 	if err = json.Unmarshal(b, &wrap); err != nil {
 		return nil, errors.Wrap(err, "error decoding response:")
 	}
 
 	return wrap.Nodes, nil
+}
+
+func GetBlobbers(active bool) (bs []*Blobber, err error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+
+	limit, offset := 20, 0
+
+	blobbers, err := getBlobbersInternal(active, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	var blobbersSl []*Blobber
+	blobbersSl = append(blobbersSl, blobbers...)
+	for {
+		// if the len of output returned is less than the limit it means this is the last round of pagination
+		if len(blobbers) < limit {
+			break
+		}
+
+		// get the next set of blobbers
+		offset += 20
+		blobbers, err = getBlobbersInternal(active, limit, offset)
+		if err != nil {
+			return blobbers, err
+		}
+		blobbersSl = append(blobbersSl, blobbers...)
+
+	}
+	return blobbersSl, nil
 }
 
 // GetBlobber instance.
@@ -873,7 +894,6 @@ func CreateAllocation(name string, datashards, parityshards int, size, expiry in
 	if err != nil {
 		return "", 0, nil, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
 	}
-
 	return CreateAllocationForOwner(name, client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
 		size, expiry, readPrice, writePrice, lock,
@@ -994,7 +1014,7 @@ func GetBlobberIds(blobberUrls []string) ([]string, error) {
 	}
 
 	params := make(map[string]string)
-	params["blobber_url"] = string(urlsStr)
+	params["blobber_urls"] = string(urlsStr)
 	idsStr, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/blobber_ids", params, nil)
 	if err != nil {
 		return nil, err
@@ -1055,12 +1075,10 @@ func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 		return "", 0, sdkNotInitialized
 	}
 
-	if value < 0 {
-		return "", 0, errors.New("", "invalid value for lock")
-	}
+	recipientPublicKey := client.GetClientPublicKey()
 
 	var input = map[string]interface{}{
-		"recipient_public_key": client.GetClientPublicKey(),
+		"recipient_public_key": recipientPublicKey,
 		"marker":               marker,
 	}
 
@@ -1090,9 +1108,6 @@ func UpdateAllocation(name string,
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
-	if lock < 0 {
-		return "", 0, errors.New("", "invalid value for lock")
-	}
 
 	updateAllocationRequest := make(map[string]interface{})
 	updateAllocationRequest["name"] = name
@@ -1116,9 +1131,6 @@ func UpdateAllocation(name string,
 func CreateFreeUpdateAllocation(marker, allocationId string, value uint64) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
-	}
-	if value < 0 {
-		return "", 0, errors.New("", "invalid value for lock")
 	}
 
 	var input = map[string]interface{}{

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 
 	"github.com/0chain/gosdk/zcnbridge"
@@ -65,12 +66,26 @@ func initBridge(
 	return nil
 }
 
+// Burns ZCN tokens and returns a hash of the burn transaction
+func burnZCN(amount uint64) string {
+	if bridge == nil {
+		return errors.New("burnZCN", "bridge is not initialized").Error()
+	}
+
+	tx, err := bridge.BurnZCN(context.Background(), amount)
+	if err != nil {
+		return errors.Wrap("burnZCN", "failed to burn ZCN tokens", err).Error()
+	}
+
+	return tx.Hash
+}
+
+// Mints ZCN tokens and returns a hash of the mint transaction
 func mintZCN(burnTrxHash string, timeout int) string {
 
-	// ASK authorizers for burn tickets to mint in WZCN
 	mintPayload, err := bridge.QueryZChainMintPayload(burnTrxHash)
 	if err != nil {
-		return errors.Wrap("mint", "failed to QueryZChainMintPayload", err).Error()
+		return errors.Wrap("mintZCN", "failed to QueryZChainMintPayload", err).Error()
 	}
 
 	c, cancel := context.WithTimeout(context.Background(), time.Duration(timeout)*time.Second)
@@ -78,8 +93,23 @@ func mintZCN(burnTrxHash string, timeout int) string {
 
 	hash, err := bridge.MintZCN(c, mintPayload)
 	if err != nil {
-		return errors.Wrap("mint", "failed to MintZCN for txn "+hash, err).Error()
+		return errors.Wrap("mintZCN", "failed to MintZCN for txn "+hash, err).Error()
 	}
 
 	return hash
+}
+
+// Returns a payload used to perform minting of WZCN tokens
+func getMintWZCNPayload(burnTrxHash string) string {
+	mintPayload, err := bridge.QueryEthereumMintPayload(burnTrxHash)
+	if err != nil {
+		return errors.Wrap("getMintWZCNPayload", "failed to query ethereum mint payload", err).Error()
+	}
+	var result []byte
+	result, err = json.Marshal(mintPayload)
+	if err != nil {
+		return errors.Wrap("getMintWZCNPayload", "failed to query ethereum mint payload", err).Error()
+	}
+
+	return string(result)
 }

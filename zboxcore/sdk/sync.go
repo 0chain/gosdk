@@ -30,10 +30,12 @@ const (
 )
 
 type fileInfo struct {
-	Size       int64  `json:"size"`
-	ActualSize int64  `json:"actual_size"`
-	Hash       string `json:"hash"`
-	Type       string `json:"type"`
+	Size         int64  `json:"size"`
+	ActualSize   int64  `json:"actual_size"`
+	Hash         string `json:"hash"`
+	Type         string `json:"type"`
+	EncryptedKey string `json:"encrypted_key"`
+	LookupHash   string `json:"lookup_hash"`
 }
 
 type FileDiff struct {
@@ -53,7 +55,14 @@ func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]fil
 			if _, ok := exclMap[child.Path]; ok {
 				continue
 			}
-			fMap[child.Path] = fileInfo{Size: child.Size, ActualSize: child.ActualSize, Hash: child.Hash, Type: child.Type}
+			fMap[child.Path] = fileInfo{
+				Size:         child.Size,
+				ActualSize:   child.ActualSize,
+				Hash:         child.Hash,
+				Type:         child.Type,
+				EncryptedKey: child.EncryptionKey,
+				LookupHash:   child.LookupHash,
+			}
 			if child.Type == fileref.DIRECTORY {
 				childDirList = append(childDirList, child.Path)
 			}
@@ -180,7 +189,7 @@ func findDelta(rMap map[string]fileInfo, lMap map[string]fileInfo, prevMap map[s
 	// Create a local hash map and find modification
 	lMod := make(map[string]fileInfo)
 	for lFile, lInfo := range lMap {
-		if pm, ok := prevMap[lFile]; ok {
+		if pm, ok := rMap[lFile]; ok {
 			// Local file existed in previous sync also
 			if pm.Hash != lInfo.Hash {
 				// File modified in local

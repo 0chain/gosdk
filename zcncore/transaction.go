@@ -14,12 +14,9 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/core/version"
-	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
 type Provider int
@@ -39,27 +36,6 @@ const (
 	Success
 	ChargeableError
 )
-
-type ChainConfig struct {
-	ChainID                 string   `json:"chain_id,omitempty"`
-	BlockWorker             string   `json:"block_worker"`
-	Miners                  []string `json:"miners"`
-	Sharders                []string `json:"sharders"`
-	SignatureScheme         string   `json:"signature_scheme"`
-	MinSubmit               int      `json:"min_submit"`
-	MinConfirmation         int      `json:"min_confirmation"`
-	ConfirmationChainLength int      `json:"confirmation_chain_length"`
-	EthNode                 string   `json:"eth_node"`
-}
-
-type localConfig struct {
-	chain         ChainConfig
-	wallet        zcncrypto.Wallet
-	authUrl       string
-	isConfigured  bool
-	isValidWallet bool
-	isSplitWallet bool
-}
 
 type Miner struct {
 	ID         string      `json:"id"`
@@ -105,6 +81,11 @@ type StakePool struct {
 	Minter   int                      `json:"minter"`
 }
 
+type stakePoolRequest struct {
+	ProviderType Provider `json:"provider_type,omitempty"`
+	ProviderID   string   `json:"provider_id,omitempty"`
+}
+
 type MinerSCDelegatePoolInfo struct {
 	ID         common.Key     `json:"id"`
 	Balance    common.Balance `json:"balance"`
@@ -130,7 +111,8 @@ type TransactionCommon interface {
 
 	VestingAdd(ar *VestingAddRequest, value uint64) error
 
-	MinerSCLock(minerID string, lock uint64) error
+	MinerSCLock(providerId string, providerType Provider, lock uint64) error
+	MinerSCUnlock(providerId string, providerType Provider) error
 	MinerSCCollectReward(providerID string, providerType Provider) error
 
 	StorageSCCollectReward(providerID string, providerType Provider) error
@@ -141,8 +123,8 @@ type TransactionCommon interface {
 	CreateReadPool(fee uint64) error
 	ReadPoolLock(allocID string, blobberID string, duration int64, lock uint64, fee uint64) error
 	ReadPoolUnlock(fee uint64) error
-	StakePoolLock(blobberID string, lock uint64, fee uint64) error
-	StakePoolUnlock(blobberID string, fee uint64) error
+	StakePoolLock(providerId string, providerType Provider, lock uint64, fee uint64) error
+	StakePoolUnlock(providerId string, providerType Provider, fee uint64) error
 	UpdateBlobberSettings(blobber *Blobber, fee uint64) error
 	UpdateValidatorSettings(validator *Validator, fee uint64) error
 	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock uint64, fee uint64) error
@@ -168,6 +150,9 @@ type TransactionCommon interface {
 
 	// GetVerifyConfirmationStatus implements the verification status from sharders
 	GetVerifyConfirmationStatus() ConfirmationStatus
+
+	// ZCNSCDeleteAuthorizer deletes authorizer
+	ZCNSCDeleteAuthorizer(*DeleteAuthorizerPayload) error
 }
 
 // PriceRange represents a price range allowed by user to filter blobbers.
@@ -224,6 +209,10 @@ type AddAuthorizerPayload struct {
 	PublicKey         string                      `json:"public_key"`
 	URL               string                      `json:"url"`
 	StakePoolSettings AuthorizerStakePoolSettings `json:"stake_pool_settings"` // Used to initially create stake pool
+}
+
+type DeleteAuthorizerPayload struct {
+	ID string `json:"id"` // authorizer ID
 }
 
 type AuthorizerStakePoolSettings struct {
@@ -313,7 +302,7 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val uint64, desc 
 }
 
 type VestingDest struct {
-	ID     string     `json:"id"`     // destination ID
+	ID     string         `json:"id"`     // destination ID
 	Amount common.Balance `json:"amount"` // amount to vest for the destination
 }
 
@@ -337,19 +326,33 @@ func (t *Transaction) VestingAdd(ar *VestingAddRequest, value uint64) (
 	return
 }
 
-func (t *Transaction) MinerSCLock(nodeID string, lock uint64) (err error) {
-
-	var mscl MinerSCLock
-	mscl.ID = nodeID
-
-	err = t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_LOCK, &mscl, lock)
+func (t *Transaction) MinerSCLock(providerId string, providerType Provider, lock uint64) error {
+	pr := &stakePoolRequest{
+		ProviderID:   providerId,
+		ProviderType: providerType,
+	}
+	err := t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_LOCK, pr, lock)
 	if err != nil {
 		logging.Error(err)
-		return
+		return err
 	}
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return err
+}
+func (t *Transaction) MinerSCUnlock(providerId string, providerType Provider) error {
+	pr := &stakePoolRequest{
+		ProviderID:   providerId,
+		ProviderType: providerType,
+	}
+	err := t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_UNLOCK, pr, 0)
+	if err != nil {
+		logging.Error(err)
+		return err
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return err
 }
 
 func (t *Transaction) MinerSCCollectReward(providerId string, providerType Provider) error {
@@ -493,46 +496,50 @@ func (t *Transaction) ReadPoolUnlock(fee uint64) (err error) {
 }
 
 // StakePoolLock used to lock tokens in a stake pool of a blobber.
-func (t *Transaction) StakePoolLock(blobberID string, lock, fee uint64) (
-	err error) {
+func (t *Transaction) StakePoolLock(providerId string, providerType Provider, lock uint64, fee uint64) error {
 
 	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
+		ProviderType Provider `json:"provider_type,omitempty"`
+		ProviderID   string   `json:"provider_id,omitempty"`
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
 
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
+	err := t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_STAKE_POOL_LOCK, &spr, lock)
 	if err != nil {
 		logging.Error(err)
-		return
+		return err
 	}
 	t.SetTransactionFee(fee)
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return nil
 }
 
 // StakePoolUnlock by blobberID and poolID.
-func (t *Transaction) StakePoolUnlock(blobberID string,
-	fee uint64) (err error) {
+func (t *Transaction) StakePoolUnlock(providerId string, providerType Provider, fee uint64) error {
 
 	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
+		ProviderType Provider `json:"provider_type,omitempty"`
+		ProviderID   string   `json:"provider_id,omitempty"`
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
 
-	err = t.createSmartContractTxn(StorageSmartContractAddress, transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
+	err := t.createSmartContractTxn(StorageSmartContractAddress, transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
 	if err != nil {
 		logging.Error(err)
-		return
+		return err
 	}
 	t.SetTransactionFee(fee)
 	go func() { t.setNonceAndSubmit() }()
-	return
+	return nil
 }
 
 // UpdateBlobberSettings update settings of a blobber.
@@ -607,9 +614,9 @@ func (t *Transaction) WritePoolLock(allocID, blobberID string, duration int64,
 func (t *Transaction) WritePoolUnlock(allocID string, fee uint64) (
 	err error) {
 
-	var ur =  struct {
+	var ur = struct {
 		AllocationID string `json:"allocation_id"`
-	} {
+	}{
 		AllocationID: allocID,
 	}
 
@@ -849,6 +856,7 @@ func (t *Transaction) MinerSCDeleteSharder(info *MinerSCMinerInfo) (err error) {
 
 type AuthorizerNode struct {
 	ID     string            `json:"id"`
+	URL    string            `json:"url"`
 	Config *AuthorizerConfig `json:"config"`
 }
 
@@ -1297,47 +1305,6 @@ func (t *Transaction) UpdateValidatorSettings(v *Validator, fee uint64) (err err
 	return
 }
 
-// InitZCNSDK initializes the SDK with miner, sharder and signature scheme provided.
-func InitZCNSDK(blockWorker string, signscheme string, configs ...func(*ChainConfig) error) error {
-	if signscheme != "ed25519" && signscheme != "bls0chain" {
-		return errors.New("", "invalid/unsupported signature scheme")
-	}
-	_config.chain.BlockWorker = blockWorker
-	_config.chain.SignatureScheme = signscheme
-
-	err := UpdateNetworkDetails()
-	if err != nil {
-		fmt.Println("UpdateNetworkDetails:", err)
-		return err
-	}
-
-	go updateNetworkDetailsWorker(context.Background())
-
-	for _, conf := range configs {
-		err := conf(&_config.chain)
-		if err != nil {
-			return errors.Wrap(err, "invalid/unsupported options.")
-		}
-	}
-	assertConfig()
-	_config.isConfigured = true
-	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (InitZCNSDK)")
-
-	cfg := &conf.Config{
-		BlockWorker:             _config.chain.BlockWorker,
-		MinSubmit:               _config.chain.MinSubmit,
-		MinConfirmation:         _config.chain.MinConfirmation,
-		ConfirmationChainLength: _config.chain.ConfirmationChainLength,
-		SignatureScheme:         _config.chain.SignatureScheme,
-		ChainID:                 _config.chain.ChainID,
-		EthereumNode:            _config.chain.EthNode,
-	}
-
-	conf.InitClientConfig(cfg)
-
-	return nil
-}
-
 type VestingClientList struct {
 	Pools []common.Key `json:"pools"`
 }
@@ -1349,7 +1316,7 @@ func GetVestingClientList(clientID string, cb GetInfoCallback) (err error) {
 	if clientID == "" {
 		clientID = _config.wallet.ClientID // if not blank
 	}
-	go getInfoFromSharders(WithParams(GET_VESTING_CLIENT_POOLS, Params{
+	go GetInfoFromSharders(WithParams(GET_VESTING_CLIENT_POOLS, Params{
 		"client_id": clientID,
 	}), 0, cb)
 	return
@@ -1378,7 +1345,7 @@ func GetVestingPoolInfo(poolID string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	getInfoFromSharders(WithParams(GET_VESTING_POOL_INFO, Params{
+	GetInfoFromSharders(WithParams(GET_VESTING_POOL_INFO, Params{
 		"pool_id": poolID,
 	}), 0, cb)
 	return
@@ -1388,7 +1355,7 @@ func GetVestingSCConfig(cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	go getInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
+	go GetInfoFromSharders(GET_VESTING_CONFIG, 0, cb)
 	return
 }
 
@@ -1398,12 +1365,22 @@ func GetFaucetSCConfig(cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
-	go getInfoFromSharders(GET_FAUCETSC_CONFIG, 0, cb)
+	go GetInfoFromSharders(GET_FAUCETSC_CONFIG, 0, cb)
 	return
 }
 
 func (t *Transaction) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error) {
 	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go t.setNonceAndSubmit()
+	return
+}
+
+func (t *Transaction) ZCNSCDeleteAuthorizer(ip *DeleteAuthorizerPayload) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_DELETE_AUTHORIZER, ip, 0)
 	if err != nil {
 		logging.Error(err)
 		return

@@ -256,7 +256,7 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 			setup: nil,
 			wantFunc: func(require *require.Assertions, req *ListRequest) {
 				require.NotNil(req)
-				require.Equal(float32(0), req.consensus)
+				require.Equal(0, req.consensus)
 			},
 			wantErr: true,
 		},
@@ -283,9 +283,8 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 				blobbers:     []*blockchain.StorageNode{},
 				wg:           &sync.WaitGroup{},
 				Consensus: Consensus{
-					consensusThresh:        50,
-					fullconsensus:          4,
-					consensusRequiredForOk: 60,
+					consensusThresh: 2,
+					fullconsensus:   4,
 				},
 			}
 			for i := 0; i < tt.numBlobbers; i++ {
@@ -293,7 +292,7 @@ func TestListRequest_GetListFromBlobbers(t *testing.T) {
 					Baseurl: tt.name + mockBlobberUrl + strconv.Itoa(i),
 				})
 			}
-			got := req.GetListFromBlobbers()
+			got, _ := req.GetListFromBlobbers()
 			expectedResult := &ListResult{
 				Type: mockType,
 				Size: -1,

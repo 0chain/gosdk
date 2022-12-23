@@ -156,6 +156,7 @@ const (
 	ZCNSC_UPDATE_GLOBAL_CONFIG     = "update-global-config"
 	ZCNSC_UPDATE_AUTHORIZER_CONFIG = "update-authorizer-config"
 	ZCNSC_ADD_AUTHORIZER           = "add-authorizer"
+	ZCNSC_DELETE_AUTHORIZER        = "delete-authorizer"
 )
 
 type SignFunc = func(msg string) (string, error)

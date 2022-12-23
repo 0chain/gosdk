@@ -456,7 +456,7 @@ func (tq *transactionQuery) getFastConfirmation(txnHash string, timeout RequestT
 	return nil, nil, nil, thrown.Throw(ErrTransactionNotFound, strconv.Itoa(result.StatusCode))
 }
 
-func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
+func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 
 	tq, err := newTransactionQuery(util.Shuffle(_config.chain.Sharders))
 	if err != nil {
@@ -465,6 +465,23 @@ func getInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 	}
 
 	qr, err := tq.getInfo(urlSuffix, nil)
+	if err != nil {
+		cb.OnInfoAvailable(op, StatusError, "", err.Error())
+		return
+	}
+
+	cb.OnInfoAvailable(op, StatusSuccess, string(qr.Content), "")
+}
+
+func GetInfoFromAnySharder(urlSuffix string, op int, cb GetInfoCallback) {
+
+	tq, err := newTransactionQuery(util.Shuffle(_config.chain.Sharders))
+	if err != nil {
+		cb.OnInfoAvailable(op, StatusError, "", err.Error())
+		return
+	}
+
+	qr, err := tq.fromAny(urlSuffix, nil)
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return

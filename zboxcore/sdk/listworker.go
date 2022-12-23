@@ -143,15 +143,22 @@ func (req *ListRequest) getlistFromBlobbers() []*listResponse {
 	return listInfos
 }
 
-func (req *ListRequest) GetListFromBlobbers() *ListResult {
+func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 	lR := req.getlistFromBlobbers()
 	result := &ListResult{}
 	selected := make(map[string]*ListResult)
 	childResultMap := make(map[string]*ListResult)
+	var err error
+	var errNum int
 	for i := 0; i < len(lR); i++ {
 		req.consensus = 0
 		ti := lR[i]
-		if ti.err != nil || ti.ref == nil {
+		if ti.err != nil {
+			err = ti.err
+			errNum++
+			continue
+		}
+		if ti.ref == nil {
 			continue
 		}
 
@@ -188,7 +195,6 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 				childResult.consensus = 0
 				childResult.consensusThresh = req.consensusThresh
 				childResult.fullconsensus = req.fullconsensus
-				childResult.consensusRequiredForOk = req.consensusRequiredForOk
 				childResultMap[actualHash] = childResult
 			}
 			childResult = childResultMap[actualHash]
@@ -217,5 +223,10 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 			result.Size += child.Size
 		}
 	}
-	return result
+
+	if errNum == len(lR) {
+		return nil, err
+	}
+
+	return result, nil
 }

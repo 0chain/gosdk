@@ -4,9 +4,17 @@ GOMODCORE           := $(GOMODBASE)/zcncore
 VERSION_FILE        := $(ROOT_DIR)/core/version/version.go
 MAJOR_VERSION       := "1.0"
 
-PLATFORM:=$(shell uname -s | tr "[:upper:]" "[:lower:]")
+
 
 include _util/printer.mk
+
+PLATFORM:=$(shell uname -s | tr "[:upper:]" "[:lower:]")
+ifneq ($(filter $(GCC_MINOR),linux darwin),)
+
+else
+	PLATFORM:=windows
+endif
+
 include _util/build_$(PLATFORM).mk
 include _util/build_mobile.mk
 
@@ -68,6 +76,12 @@ lint-wasm:
 
 lint: lint-wasm
 	golangci-lint run --skip-dirs wasmsdk
+
+
+build-windows: 
+	@echo "Building 0Chain Windows SDK. Please wait..."
+	@go build --buildmode=c-shared -ldflags="-s -w" -o ./winsdk/zcn.windows.dll ./winsdk
+	@echo "  ./winsdk/zcn.windows.dll - [OK]"
 
 help:
 	@echo "Environment: "

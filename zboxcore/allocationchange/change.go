@@ -14,7 +14,7 @@ type change struct {
 
 type AllocationChange interface {
 	ProcessChange(rootRef *fileref.Ref) error
-	GetAffectedPath() string
+	GetAffectedPath() []string
 	GetSize() int64
 }
 

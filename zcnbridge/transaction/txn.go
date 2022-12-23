@@ -62,6 +62,7 @@ func NewTransactionEntity() (*Transaction, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	txn.scheme = zcntxn
 
 	return txn, nil
@@ -125,6 +126,7 @@ func (t *Transaction) Verify(ctx context.Context) error {
 	}
 
 	if vo.Confirmation.Transaction != nil {
+		t.Hash = vo.Confirmation.Transaction.Hash
 		t.TransactionOutput = vo.Confirmation.Transaction.TransactionOutput
 	} else {
 		return errors.New(errCode, "got invalid confirmation (missing transaction)")

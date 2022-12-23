@@ -54,19 +54,34 @@ func (ta *TransactionWithAuth) VestingAdd(ar *VestingAddRequest,
 	return
 }
 
-func (ta *TransactionWithAuth) MinerSCLock(minerID string, lock uint64) (err error) {
-
-	var mscl MinerSCLock
-	mscl.ID = minerID
-
-	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_LOCK, &mscl, lock)
+func (ta *TransactionWithAuth) MinerSCLock(providerId string, providerType Provider, lock uint64) error {
+	pr := &stakePoolRequest{
+		ProviderID:   providerId,
+		ProviderType: providerType,
+	}
+	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_LOCK, pr, lock)
 	if err != nil {
 		logging.Error(err)
-		return
+		return err
 	}
 	go func() { ta.submitTxn() }()
-	return
+	return nil
+}
+
+func (ta *TransactionWithAuth) MinerSCUnlock(providerId string, providerType Provider) error {
+	pr := &stakePoolRequest{
+		ProviderID:   providerId,
+		ProviderType: providerType,
+	}
+	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_LOCK, pr, 0)
+	if err != nil {
+		logging.Error(err)
+		return err
+	}
+	go func() { ta.submitTxn() }()
+	return err
 }
 
 // FinalizeAllocation transaction.
@@ -182,46 +197,51 @@ func (ta *TransactionWithAuth) ReadPoolUnlock(fee uint64) (
 }
 
 // StakePoolLock used to lock tokens in a stake pool of a blobber.
-func (ta *TransactionWithAuth) StakePoolLock(blobberID string,
-	lock, fee uint64) (err error) {
+func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType Provider, lock uint64, fee uint64) error {
 
 	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
+		ProviderType Provider `json:"provider_type,omitempty"`
+		ProviderID   string   `json:"provider_id,omitempty"`
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
 
-	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+	err := ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_STAKE_POOL_LOCK, &spr, lock)
 	if err != nil {
 		logging.Error(err)
-		return
+		return err
 	}
 	ta.t.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
-	return
+	return nil
 }
 
 // StakePoolUnlock by blobberID
-func (ta *TransactionWithAuth) StakePoolUnlock(blobberID string, fee uint64) (err error) {
+func (ta *TransactionWithAuth) StakePoolUnlock(providerId string, providerType Provider, fee uint64) error {
 
 	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
+		ProviderType Provider `json:"provider_type,omitempty"`
+		ProviderID   string   `json:"provider_id,omitempty"`
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
 
-	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
+	err := ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
 	if err != nil {
 		logging.Error(err)
-		return
+		return err
 	}
 	ta.t.SetTransactionFee(fee)
 	go func() { ta.submitTxn() }()
-	return
+	return nil
 }
 
 // UpdateBlobberSettings update settings of a blobber.
@@ -492,6 +512,16 @@ func (ta *TransactionWithAuth) ZCNSCUpdateAuthorizerConfig(ip *AuthorizerNode) (
 
 func (ta *TransactionWithAuth) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error) {
 	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go ta.submitTxn()
+	return
+}
+
+func (ta *TransactionWithAuth) ZCNSCDeleteAuthorizer(ip *DeleteAuthorizerPayload) (err error) {
+	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_DELETE_AUTHORIZER, ip, 0)
 	if err != nil {
 		logging.Error(err)
 		return

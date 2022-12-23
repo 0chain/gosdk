@@ -1,3 +1,6 @@
+//go:build mobile
+// +build mobile
+
 package sdk
 
 import (
@@ -7,22 +10,15 @@ import (
 	"math"
 	"strconv"
 	"strings"
-	"sync"
 
-	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/zboxcore/client"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/sdk"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	zcn "github.com/0chain/gosdk/zcncore"
 
 	"github.com/0chain/gosdk/mobilesdk/zbox"
-	"github.com/0chain/gosdk/mobilesdk/zcncore"
-	"github.com/0chain/gosdk/mobilesdk/zcncoremobile"
-	"github.com/0chain/gosdk/mobilesdk/zcncrypto"
-	"go.uber.org/zap"
+	"github.com/0chain/gosdk/mobilesdk/zboxapi"
+	"github.com/0chain/gosdk/zcncore"
 )
 
 var nonce = int64(0)
@@ -33,6 +29,10 @@ type ChainConfig struct {
 	PreferredBlobbers []string `json:"preferred_blobbers"`
 	BlockWorker       string   `json:"block_worker"`
 	SignatureScheme   string   `json:"signature_scheme"`
+	// ZboxHost 0box api host host: "https://0box.dev.0chain.net"
+	ZboxHost string `json:"zbox_host"`
+	// ZboxAppType app type name
+	ZboxAppType string `json:"zbox_app_type"`
 }
 
 // StorageSDK - storage SDK config
@@ -58,10 +58,39 @@ func Init(chainConfigJson string) error {
 }
 
 // InitStorageSDK - init storage sdk from config
-func InitStorageSDK(clientjson string, configjson string) (*StorageSDK, error) {
+//   - clientJson
+//     {
+//     "client_id":"8f6ce6457fc04cfb4eb67b5ce3162fe2b85f66ef81db9d1a9eaa4ffe1d2359e0",
+//     "client_key":"c8c88854822a1039c5a74bdb8c025081a64b17f52edd463fbecb9d4a42d15608f93b5434e926d67a828b88e63293b6aedbaf0042c7020d0a96d2e2f17d3779a4",
+//     "keys":[
+//     {
+//     "public_key":"c8c88854822a1039c5a74bdb8c025081a64b17f52edd463fbecb9d4a42d15608f93b5434e926d67a828b88e63293b6aedbaf0042c7020d0a96d2e2f17d3779a4",
+//     "private_key":"72f480d4b1e7fb76e04327b7c2348a99a64f0ff2c5ebc3334a002aa2e66e8506"
+//     }],
+//     "mnemonics":"abandon mercy into make powder fashion butter ignore blade vanish plastic shock learn nephew matrix indoor surge document motor group barely offer pottery antenna",
+//     "version":"1.0",
+//     "date_created":"1668667145",
+//     "nonce":0
+//     }
+//   - configJson
+//     {
+//     "block_worker": "https://dev.0chain.net/dns",
+//     "signature_scheme": "bls0chain",
+//     "min_submit": 50,
+//     "min_confirmation": 50,
+//     "confirmation_chain_length": 3,
+//     "max_txn_query": 5,
+//     "query_sleep_time": 5,
+//     "preferred_blobbers": ["https://dev.0chain.net/blobber02","https://dev.0chain.net/blobber03"],
+//     "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
+//     "ethereum_node":"https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx",
+//     "zbox_host":"https://0box.dev.0chain.net",
+//     "zbox_app_type":"vult",
+//     }
+func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 	l.Logger.Info("Start InitStorageSDK")
 	configObj := &ChainConfig{}
-	err := json.Unmarshal([]byte(configjson), configObj)
+	err := json.Unmarshal([]byte(configJson), configObj)
 	if err != nil {
 		l.Logger.Error(err)
 		return nil, err
@@ -76,13 +105,22 @@ func InitStorageSDK(clientjson string, configjson string) (*StorageSDK, error) {
 	l.Logger.Info(configObj.ChainID)
 	l.Logger.Info(configObj.SignatureScheme)
 	l.Logger.Info(configObj.PreferredBlobbers)
-	err = sdk.InitStorageSDK(clientjson, configObj.BlockWorker, configObj.ChainID, configObj.SignatureScheme, configObj.PreferredBlobbers, 1)
+	err = sdk.InitStorageSDK(clientJson, configObj.BlockWorker, configObj.ChainID, configObj.SignatureScheme, configObj.PreferredBlobbers, 0)
 	if err != nil {
 		l.Logger.Error(err)
 		return nil, err
 	}
 	l.Logger.Info("InitStorageSDK success")
+
+	if configObj.ZboxHost != "" && configObj.ZboxAppType != "" {
+		zboxapi.Init(configObj.ZboxHost, configObj.ZboxAppType)
+		l.Logger.Info("InitZboxApi success")
+	} else {
+		l.Logger.Info("InitZboxApi skipped")
+	}
+
 	l.Logger.Info("Init successful")
+
 	return &StorageSDK{client: client.GetClient(), chainconfig: configObj}, nil
 }
 
@@ -98,7 +136,7 @@ func (s *StorageSDK) CreateAllocation(name string, datashards, parityshards int,
 	if err != nil {
 		return nil, err
 	}
-	return &zbox.Allocation{ID: sdkAllocation.ID, DataShards: sdkAllocation.DataShards, ParityShards: sdkAllocation.ParityShards, Size: sdkAllocation.Size, Expiration: sdkAllocation.Expiration}, nil
+	return zbox.ToAllocation(sdkAllocation), nil
 }
 
 // CreateAllocationWithBlobbers - creating new allocation with list of blobbers
@@ -168,7 +206,7 @@ func (s *StorageSDK) GetAllocations() (string, error) {
 	}
 	result := make([]*zbox.Allocation, len(sdkAllocations))
 	for i, sdkAllocation := range sdkAllocations {
-		allocationObj := &zbox.Allocation{ID: sdkAllocation.ID, DataShards: sdkAllocation.DataShards, ParityShards: sdkAllocation.ParityShards, Size: sdkAllocation.Size, Expiration: sdkAllocation.Expiration}
+		allocationObj := zbox.ToAllocation(sdkAllocation)
 		result[i] = allocationObj
 	}
 	retBytes, err := json.Marshal(result)
@@ -184,7 +222,7 @@ func (s *StorageSDK) GetAllocationFromAuthTicket(authTicket string) (*zbox.Alloc
 	if err != nil {
 		return nil, err
 	}
-	return &zbox.Allocation{ID: sdkAllocation.ID, DataShards: sdkAllocation.DataShards, ParityShards: sdkAllocation.ParityShards, Size: sdkAllocation.Size, Expiration: sdkAllocation.Expiration}, nil
+	return zbox.ToAllocation(sdkAllocation), nil
 }
 
 // GetAllocationStats - get allocation stats by allocation ID
@@ -213,7 +251,7 @@ func (s *StorageSDK) CancelAllocation(allocationID string) (string, error) {
 	return hash, err
 }
 
-//GetReadPoolInfo is to get information about the read pool for the allocation
+// GetReadPoolInfo is to get information about the read pool for the allocation
 func (s *StorageSDK) GetReadPoolInfo(clientID string) (string, error) {
 	readPool, err := sdk.GetReadPoolInfo(clientID)
 	if err != nil {
@@ -232,8 +270,8 @@ func (s *StorageSDK) GetReadPoolInfo(clientID string) (string, error) {
 func (s *StorageSDK) WritePoolLock(durInSeconds int64, tokens, fee float64, allocID string) error {
 	_, _, err := sdk.WritePoolLock(
 		allocID,
-		uint64(zcncoremobile.ConvertToValue(tokens)),
-		uint64(zcncoremobile.ConvertToValue(fee)))
+		zcncore.ConvertTokenToSAS(tokens),
+		zcncore.ConvertTokenToSAS(fee))
 	return err
 }
 
@@ -250,7 +288,7 @@ func (s *StorageSDK) UpdateAllocation(name string, size, expiry int64, allocatio
 
 // GetBlobbersList get list of blobbers in string
 func (s *StorageSDK) GetBlobbersList() (string, error) {
-	blobbs, err := sdk.GetBlobbers()
+	blobbs, err := sdk.GetBlobbers(true)
 	if err != nil {
 		return "", err
 	}
@@ -261,10 +299,8 @@ func (s *StorageSDK) GetBlobbersList() (string, error) {
 	return string(retBytes), nil
 }
 
-//GetReadPoolInfo is to get information about the read pool for the allocation
-func RegisterToMiners(clientId, pubKey string, callback zcn.WalletCallback) error {
-	wallet := zcncrypto.Wallet{ClientID: clientId, ClientKey: pubKey}
-	return zcncore.RegisterToMiners(&wallet, callback)
+func RegisterToMiners(clientId, pubKey string, callback zcncore.WalletCallback) error {
+	return zcncore.RegisterToMiners(clientId, pubKey, callback)
 }
 
 // GetAllocations return back list of allocations for the wallet
@@ -282,149 +318,45 @@ func GetAllocations() (string, error) {
 }
 
 func (s *StorageSDK) RedeemFreeStorage(ticket string) (string, error) {
-	input, err, lock := decodeTicket(ticket)
+	recipientPublicKey, marker, lock, err := decodeTicket(ticket)
 	if err != nil {
 		return "", err
 	}
 
-	blobbers, err := getFreeAllocationBlobbers(input)
-	if err != nil {
-		return "", err
-	}
-	if len(blobbers) == 0 {
-		return "", fmt.Errorf("unable to get free blobbers for allocation")
+	if recipientPublicKey != client.GetClientPublicKey() {
+		return "", fmt.Errorf("invalid_free_marker: free marker is not assigned to your wallet")
 	}
 
-	input["blobbers"] = blobbers
-
-	payload, err := json.Marshal(input)
-	if err != nil {
-		return "", err
-	}
-
-	return smartContractTxn(
-		zcncore.StorageSmartContractAddress,
-		transaction.NEW_FREE_ALLOCATION,
-		string(payload),
-		lock,
-	)
+	hash, _, err := sdk.CreateFreeAllocation(marker, lock)
+	return hash, err
 }
 
-func decodeTicket(ticket string) (map[string]interface{}, error, uint64) {
+func decodeTicket(ticket string) (string, string, uint64, error) {
 	decoded, err := base64.StdEncoding.DecodeString(ticket)
 	if err != nil {
-		return nil, err, 0
+		return "", "", 0, err
 	}
 
 	input := make(map[string]interface{})
 	if err = json.Unmarshal(decoded, &input); err != nil {
-		return nil, err, 0
+		return "", "", 0, err
 	}
 
 	str := fmt.Sprintf("%v", input["marker"])
 	decodedMarker, _ := base64.StdEncoding.DecodeString(str)
 	markerInput := make(map[string]interface{})
 	if err = json.Unmarshal(decodedMarker, &markerInput); err != nil {
-		return nil, err, 0
+		return "", "", 0, err
 	}
 
-	result := make(map[string]interface{})
-	result["recipient_public_key"] = input["recipient_public_key"]
+	recipientPublicKey, ok := input["recipient_public_key"].(string)
+	if !ok {
+		return "", "", 0, fmt.Errorf("recipient_public_key is required")
+	}
 
 	lock := markerInput["free_tokens"]
 	markerStr, _ := json.Marshal(markerInput)
-	result["marker"] = string(markerStr)
 
 	s, _ := strconv.ParseFloat(string(fmt.Sprintf("%v", lock)), 64)
-	return result, nil, uint64(zcncoremobile.ConvertToValue(s))
+	return string(recipientPublicKey), string(markerStr), zcncore.ConvertTokenToSAS(s), nil
 }
-
-func getFreeAllocationBlobbers(request map[string]interface{}) ([]string, error) {
-	data, _ := json.Marshal(request)
-
-	params := make(map[string]string)
-	params["free_allocation_data"] = string(data)
-
-	allocBlobber, err := zboxutil.MakeSCRestAPICall(sdk.STORAGE_SCADDRESS, "/free_alloc_blobbers", params, nil)
-	if err != nil {
-		return nil, err
-	}
-	var allocBlobberIDs []string
-
-	err = json.Unmarshal(allocBlobber, &allocBlobberIDs)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal blobber IDs")
-	}
-
-	return allocBlobberIDs, nil
-}
-
-type TransactionCallback struct {
-	wg      *sync.WaitGroup
-	success bool
-	balance int64
-}
-
-func smartContractTxn(address, method, input string, value uint64) (string, error) {
-	tcb := &TransactionCallback{}
-	tcb.wg = &sync.WaitGroup{}
-	tcb.wg.Add(1)
-
-	zcntxn, err := zcncore.NewTransaction(tcb, 0, 1)
-	if err != nil {
-		return "", err
-	}
-
-	l.Logger.Info("Calling SC txn with values :", zap.Any("method", method), zap.Any("input", input), zap.Any("value", value))
-	err = zcntxn.ExecuteSmartContract(address, method, input, value)
-	if err != nil {
-		tcb.wg.Done()
-		return "", err
-	}
-	tcb.wg.Wait()
-	if len(zcntxn.GetTransactionError()) > 0 {
-		return "", errors.New("smart_contract_txn_get_error", zcntxn.GetTransactionError())
-	}
-	tcb.wg.Add(1)
-	err = zcntxn.Verify()
-	if err != nil {
-		tcb.wg.Done()
-		return "", errors.New("smart_contract_txn_verify_error", err.Error())
-	}
-	tcb.wg.Wait()
-
-	if len(zcntxn.GetVerifyError()) > 0 {
-		return "", errors.New("smart_contract_txn_verify_error", zcntxn.GetVerifyError())
-	}
-	return zcntxn.GetTransactionHash(), nil
-}
-
-func (t *TransactionCallback) OnBalanceAvailable(status int, value int64, info string) {
-	defer t.wg.Done()
-	if status == zcncore.StatusSuccess {
-		t.success = true
-	} else {
-		t.success = false
-	}
-	t.balance = value
-}
-
-func (t *TransactionCallback) OnTransactionComplete(zcntxn *zcncore.Transaction, status int) {
-	defer t.wg.Done()
-	if status == zcncore.StatusSuccess {
-		t.success = true
-	} else {
-		t.success = false
-	}
-}
-
-func (t *TransactionCallback) OnVerifyComplete(zcntxn *zcncore.Transaction, status int) {
-	defer t.wg.Done()
-	if status == zcncore.StatusSuccess {
-		t.success = true
-	} else {
-		t.success = false
-	}
-}
-
-func (t *TransactionCallback) OnAuthComplete(zcntxn *zcncore.Transaction, status int) {}

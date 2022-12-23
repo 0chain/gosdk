@@ -67,23 +67,45 @@ func (ta *TransactionWithAuth) VestingAdd(ar VestingAddRequest, value string) er
 	return nil
 }
 
-func (ta *TransactionWithAuth) MinerSCLock(minerID string, lock string) error {
-	v, err := parseCoinStr(lock)
+func (ta *TransactionWithAuth) MinerSCLock(providerId string, providerType int, lock string) error {
+	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
 	}
 
-	var mscl MinerSCLock
-	mscl.ID = minerID
+	type stakePoolRequest struct {
+		ProviderType int    `json:"provider_type,omitempty"`
+		ProviderID   string `json:"provider_id,omitempty"`
+	}
+
+	pr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
 
 	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_LOCK, &mscl, v)
+		transaction.MINERSC_LOCK, pr, lv)
 	if err != nil {
 		logging.Error(err)
 		return err
 	}
 	go func() { ta.submitTxn() }()
 	return nil
+}
+
+func (ta *TransactionWithAuth) MinerSCUnlock(providerId string, providerType int) error {
+	pr := &stakePoolRequest{
+		ProviderID:   providerId,
+		ProviderType: providerType,
+	}
+	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_LOCK, pr, 0)
+	if err != nil {
+		logging.Error(err)
+		return err
+	}
+	go func() { ta.submitTxn() }()
+	return err
 }
 
 // FinalizeAllocation transaction.
@@ -230,7 +252,7 @@ func (ta *TransactionWithAuth) ReadPoolUnlock(fee string) error {
 }
 
 // StakePoolLock used to lock tokens in a stake pool of a blobber.
-func (ta *TransactionWithAuth) StakePoolLock(blobberID string,
+func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType int,
 	lock, fee string) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
@@ -243,12 +265,14 @@ func (ta *TransactionWithAuth) StakePoolLock(blobberID string,
 	}
 
 	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
+		ProviderType int    `json:"provider_type,omitempty"`
+		ProviderID   string `json:"provider_id,omitempty"`
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
-
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_STAKE_POOL_LOCK, &spr, lv)
 	if err != nil {
@@ -261,18 +285,21 @@ func (ta *TransactionWithAuth) StakePoolLock(blobberID string,
 }
 
 // StakePoolUnlock by blobberID
-func (ta *TransactionWithAuth) StakePoolUnlock(blobberID string, fee string) error {
+func (ta *TransactionWithAuth) StakePoolUnlock(providerId string, providerType int, fee string) error {
 	v, err := parseCoinStr(fee)
 	if err != nil {
 		return err
 	}
 
 	type stakePoolRequest struct {
-		BlobberID string `json:"blobber_id"`
+		ProviderType int    `json:"provider_type,omitempty"`
+		ProviderID   string `json:"provider_id,omitempty"`
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
 
 	err = ta.t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
@@ -353,8 +380,8 @@ func (ta *TransactionWithAuth) WritePoolLock(allocID, lock, fee string) error {
 	}
 
 	var lr = struct {
-		AllocationID string        `json:"allocation_id"`
-	} {
+		AllocationID string `json:"allocation_id"`
+	}{
 		AllocationID: allocID,
 	}
 
@@ -376,9 +403,9 @@ func (ta *TransactionWithAuth) WritePoolUnlock(allocID string, fee string) error
 		return err
 	}
 
-	var ur =  struct {
+	var ur = struct {
 		AllocationID string `json:"allocation_id"`
-	} {
+	}{
 		AllocationID: allocID,
 	}
 
