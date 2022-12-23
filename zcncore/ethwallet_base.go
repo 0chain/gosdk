@@ -27,7 +27,13 @@ import (
 const walletAddr = "0xb9EF770B6A5e12E45983C5D80545258aA38F3B78"
 const tokenAddress = "0x28b149020d2152179873ec60bed6bf7cd705775d"
 
+var ethClient *ethclient.Client
+
 var getEthClient = func() (*ethclient.Client, error) {
+	if ethClient != nil {
+		return ethClient, nil
+	}
+
 	if len(_config.chain.EthNode) == 0 {
 		return nil, fmt.Errorf("eth node SDK not initialized")
 	}
@@ -37,7 +43,8 @@ var getEthClient = func() (*ethclient.Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return client, nil
+	ethClient = client
+	return ethClient, nil
 }
 
 // TokensToEth - converting wei to eth tokens
