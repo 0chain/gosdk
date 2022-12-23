@@ -9,6 +9,7 @@ import (
 	"math"
 	"math/big"
 	"regexp"
+	"sync"
 
 	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -27,24 +28,24 @@ import (
 const walletAddr = "0xb9EF770B6A5e12E45983C5D80545258aA38F3B78"
 const tokenAddress = "0x28b149020d2152179873ec60bed6bf7cd705775d"
 
+var once sync.Once
+
 var ethClient *ethclient.Client
 
 var getEthClient = func() (*ethclient.Client, error) {
-	if ethClient != nil {
-		return ethClient, nil
-	}
+	var err error
 
-	if len(_config.chain.EthNode) == 0 {
-		return nil, fmt.Errorf("eth node SDK not initialized")
-	}
+	once.Do(func() {
+		if len(_config.chain.EthNode) == 0 {
+			err = fmt.Errorf("eth node SDK not initialized")
+			return
+		}
 
-	logging.Info("requesting from ", _config.chain.EthNode)
-	client, err := ethclient.Dial(_config.chain.EthNode)
-	if err != nil {
-		return nil, err
-	}
-	ethClient = client
-	return ethClient, nil
+		logging.Info("requesting from ", _config.chain.EthNode)
+		ethClient, err = ethclient.Dial(_config.chain.EthNode)
+	})
+
+	return ethClient, err
 }
 
 // TokensToEth - converting wei to eth tokens
