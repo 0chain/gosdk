@@ -3,7 +3,11 @@
 
 package zcncore
 
-import "github.com/0chain/gosdk/core/zcncrypto"
+import (
+	"strconv"
+
+	"github.com/0chain/gosdk/core/zcncrypto"
+)
 
 type Wallet interface {
 	Sign(hash string) (string, error)
@@ -20,6 +24,14 @@ func (w *wallet) Sign(hash string) (string, error) {
 		return "", err
 	}
 	return sigScheme.Sign(hash)
+}
+
+func GetWalletBalanceMobile(id string) (string, error) {
+	balance, err := GetWalletBalance(id)
+	if err != nil {
+		return "", err
+	}
+	return strconv.FormatInt(int64(balance), 10), nil
 }
 
 func RegisterToMiners(clientId, pubKey string, callback WalletCallback) error {
