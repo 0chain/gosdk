@@ -6,7 +6,6 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/marker"
 )
 
 type UpdateFileChange struct {
@@ -15,8 +14,7 @@ type UpdateFileChange struct {
 	NewFile *fileref.FileRef
 }
 
-func (ch *UpdateFileChange) ProcessChange(
-	rootRef *fileref.Ref, latestFileID int64) (
+func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) (
 	commitParams CommitParams, err error) {
 
 	fields, err := common.GetPathFields(filepath.Dir(ch.NewFile.Path))
@@ -50,7 +48,6 @@ func (ch *UpdateFileChange) ProcessChange(
 		if child.GetType() == fileref.FILE && child.GetPath() == ch.NewFile.Path {
 			ch.OldFile = child.(*fileref.FileRef)
 			idx = i
-			commitParams.WmFileID = child.GetFileID()
 			break
 		}
 	}
@@ -60,8 +57,7 @@ func (ch *UpdateFileChange) ProcessChange(
 	}
 	dirRef.Children[idx] = ch.NewFile
 	rootRef.CalculateHash()
-	commitParams.LatestFileID = latestFileID
-	commitParams.Operation = marker.Update
+	commitParams.Timestamp = ch.Timestamp
 	return
 }
 

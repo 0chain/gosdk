@@ -1,67 +1,76 @@
 package allocationchange
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/marker"
+	"github.com/google/uuid"
 )
 
 type NewFileChange struct {
 	change
 	File *fileref.FileRef
+	Uuid uuid.UUID
 }
 
-func (ch *NewFileChange) ProcessChange(
-	rootRef *fileref.Ref, latestFileID int64) (
+func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref) (
 	commitParams CommitParams, err error) {
 
-	inodesMeta := make(map[string]int64)
-	tSubDirs, err := common.GetPathFields(filepath.Dir(ch.File.Path))
+	fileIDMeta := make(map[string]string)
+	fields, err := common.GetPathFields(filepath.Dir(ch.File.Path))
 	if err != nil {
 		return
 	}
 
 	rootRef.HashToBeComputed = true
 	dirRef := rootRef
-	for i := 0; i < len(tSubDirs); i++ {
+	for i := 0; i < len(fields); i++ {
 		found := false
 		for _, child := range dirRef.Children {
-			if child.GetType() == fileref.DIRECTORY && child.(*fileref.Ref).Name == tSubDirs[i] {
-				dirRef = child.(*fileref.Ref)
-				found = true
-				break
+			if child.GetName() == fields[i] {
+				if child.GetType() == fileref.DIRECTORY {
+					dirRef = child.(*fileref.Ref)
+					found = true
+					break
+				}
+				err = errors.New("invalid_file_path",
+					fmt.Sprintf("type of %s is required to be directory", child.GetPath()))
+				return
 			}
 		}
+
 		if !found {
-			latestFileID++
+			uid := util.GetSHA1Uuid(ch.Uuid, fields[i])
+			ch.Uuid = uid
 			newRef := &fileref.Ref{
 				Type:         fileref.DIRECTORY,
 				AllocationID: dirRef.AllocationID,
-				Path:         filepath.Join("/", strings.Join(tSubDirs[:i+1], "/")),
-				Name:         tSubDirs[i],
-				FileID:       latestFileID,
+				Path:         filepath.Join("/", strings.Join(fields[:i+1], "/")),
+				Name:         fields[i],
+				FileID:       uid.String(),
 			}
-			inodesMeta[newRef.Path] = latestFileID
+			fileIDMeta[newRef.Path] = newRef.FileID
 			dirRef.AddChild(newRef)
 			dirRef = newRef
 		}
 		dirRef.HashToBeComputed = true
 	}
-	latestFileID++
-	inodesMeta[ch.File.GetPath()] = latestFileID
+	uid := util.GetSHA1Uuid(ch.Uuid, ch.File.Name)
+	ch.Uuid = uid
 
-	ch.File.FileID = latestFileID
+	ch.File.FileID = uid.String()
 	ch.File.HashToBeComputed = true
+	fileIDMeta[ch.File.GetPath()] = ch.File.FileID
 
-	commitParams.WmFileID = latestFileID
-	commitParams.LatestFileID = latestFileID
-	commitParams.Operation = marker.Upload
-	commitParams.InodesMeta = inodesMeta
 	dirRef.AddChild(ch.File)
 	rootRef.CalculateHash()
+	commitParams.FileIDMeta = fileIDMeta
+	commitParams.Timestamp = ch.Timestamp
 	return
 }
 

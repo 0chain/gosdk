@@ -18,6 +18,7 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -25,6 +26,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/google/uuid"
 	"github.com/klauspost/reedsolomon"
 )
 
@@ -168,23 +170,25 @@ func CreateChunkedUpload(
 			return nil, thrown.New("chunk_upload", fmt.Sprintf("Expected refs 1, got %d", len(otr.Refs)))
 		}
 		su.httpMethod = http.MethodPut
-		su.buildChange = func(ref *fileref.FileRef) allocationchange.AllocationChange {
+		su.buildChange = func(ref *fileref.FileRef, _ uuid.UUID, ts common.Timestamp) allocationchange.AllocationChange {
 			change := &allocationchange.UpdateFileChange{}
 			change.NewFile = ref
 			change.NumBlocks = ref.NumBlocks
 			change.Operation = constants.FileOperationUpdate
 			change.Size = ref.Size
-
+			change.Timestamp = ts
 			return change
 		}
 	} else {
 		su.httpMethod = http.MethodPost
-		su.buildChange = func(ref *fileref.FileRef) allocationchange.AllocationChange {
+		su.buildChange = func(ref *fileref.FileRef, uid uuid.UUID, ts common.Timestamp) allocationchange.AllocationChange {
 			change := &allocationchange.NewFileChange{}
 			change.File = ref
 			change.NumBlocks = ref.NumBlocks
 			change.Operation = constants.FileOperationInsert
 			change.Size = ref.Size
+			change.Uuid = uid
+			change.Timestamp = ts
 			return change
 		}
 	}
@@ -286,7 +290,8 @@ type ChunkedUpload struct {
 
 	// httpMethod POST = Upload File / PUT = Update file
 	httpMethod  string
-	buildChange func(ref *fileref.FileRef) allocationchange.AllocationChange
+	buildChange func(ref *fileref.FileRef,
+		uid uuid.UUID, timestamp common.Timestamp) allocationchange.AllocationChange
 
 	fileMeta           FileMeta
 	fileReader         io.Reader
@@ -620,6 +625,8 @@ func (su *ChunkedUpload) processCommit() error {
 
 	wg := &sync.WaitGroup{}
 	var pos uint64
+	uid := util.GetNewUUID()
+	timestamp := common.Now()
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 
@@ -629,7 +636,8 @@ func (su *ChunkedUpload) processCommit() error {
 		blobber.fileRef.ChunkSize = su.chunkSize
 		blobber.fileRef.NumBlocks = int64(su.progress.ChunkIndex + 1)
 
-		blobber.commitChanges = append(blobber.commitChanges, su.buildChange(blobber.fileRef))
+		blobber.commitChanges = append(blobber.commitChanges,
+			su.buildChange(blobber.fileRef, uid, timestamp))
 
 		wg.Add(1)
 		go func(b *ChunkedUploadBlobber, pos uint64) {

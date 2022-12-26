@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -26,8 +25,7 @@ import (
 
 type ReferencePathResult struct {
 	*fileref.ReferencePath
-	LatestWM    *marker.WriteMarker `json:"latest_write_marker"`
-	LatestInode *marker.Inode       `json:"latest_inode"`
+	LatestWM *marker.WriteMarker `json:"latest_write_marker"`
 }
 
 type CommitResult struct {
@@ -135,7 +133,6 @@ func (commitreq *CommitRequest) processCommit() {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
 	}
-	var latestInode int64
 	rootRef, err := lR.GetDirTree(commitreq.allocationID)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
@@ -160,21 +157,10 @@ func (commitreq *CommitRequest) processCommit() {
 			commitreq.result = ErrorCommitResult(errMsg)
 			return
 		}
-		if lR.LatestInode == nil {
-			errStr := fmt.Sprintf(
-				"Blobber %s responded with non-nil writemarker but nil Inode", commitreq.blobber.Baseurl)
-			commitreq.result = ErrorCommitResult(errStr)
-			return
-		}
-		latestInode, err = lR.LatestInode.GetLatestInode()
-		if err != nil {
-			commitreq.result = ErrorCommitResult(err.Error())
-			return
-		}
 	}
 
 	var size int64
-	commitParams, err := commitreq.change.ProcessChange(rootRef, latestInode)
+	commitParams, err := commitreq.change.ProcessChange(rootRef)
 
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
@@ -191,30 +177,16 @@ func (commitreq *CommitRequest) processCommit() {
 
 func (req *CommitRequest) commitBlobber(
 	rootRef *fileref.Ref, latestWM *marker.WriteMarker, size int64,
-	commitParams *allocationchange.CommitParams, // wmFileID is fileID to assign to writemarker
-) error {
+	commitParams *allocationchange.CommitParams) error {
 
-	inode := marker.Inode{
-		LatestFileID: commitParams.LatestFileID,
-	}
-	err := inode.Sign()
-	if err != nil {
-		l.Logger.Error("Signing latest inode failed: ", err)
-		return err
-	}
-
-	inodeMeta := marker.InodeMeta{
-		MetaData:    commitParams.InodesMeta,
-		LatestInode: inode,
-	}
-	inodeMetaData, err := json.Marshal(inodeMeta)
+	fileIDMetaData, err := json.Marshal(commitParams.FileIDMeta)
 	if err != nil {
 		l.Logger.Error("Marshalling inode metadata failed: ", err)
 		return err
 	}
 
 	wm := &marker.WriteMarker{}
-	timestamp := int64(common.Now())
+	timestamp := int64(commitParams.Timestamp)
 	wm.AllocationRoot = encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10))
 	if latestWM != nil {
 		wm.PreviousAllocationRoot = latestWM.AllocationRoot
@@ -227,8 +199,6 @@ func (req *CommitRequest) commitBlobber(
 	wm.Size = size
 	wm.BlobberID = req.blobber.ID
 	wm.Timestamp = timestamp
-	wm.FileID = commitParams.WmFileID
-	wm.Operation = commitParams.Operation
 	wm.ClientID = client.GetClientID()
 	err = wm.Sign()
 	if err != nil {
@@ -244,7 +214,7 @@ func (req *CommitRequest) commitBlobber(
 	}
 	formWriter.WriteField("connection_id", req.connectionID)
 	formWriter.WriteField("write_marker", string(wmData))
-	formWriter.WriteField("inodes_meta", string(inodeMetaData))
+	formWriter.WriteField("file_id_meta", string(fileIDMetaData))
 
 	formWriter.Close()
 

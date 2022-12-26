@@ -6,7 +6,6 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/marker"
 )
 
 type DeleteFileChange struct {
@@ -14,16 +13,11 @@ type DeleteFileChange struct {
 	ObjectTree fileref.RefEntity
 }
 
-func (ch *DeleteFileChange) ProcessChange(
-	rootRef *fileref.Ref, latestFileID int64) (
-	commitParams CommitParams, err error) {
+func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref) (commitParams CommitParams, err error) {
 
-	commitParams.LatestFileID = latestFileID
 	if ch.ObjectTree.GetPath() == "/" {
 		rootRef.Children = nil
 		rootRef.CalculateHash()
-		commitParams.WmFileID = rootRef.FileID
-		commitParams.Operation = marker.Delete
 		return
 	}
 
@@ -55,8 +49,7 @@ func (ch *DeleteFileChange) ProcessChange(
 		if child.GetName() == ch.ObjectTree.GetName() {
 			dirRef.RemoveChild(i)
 			rootRef.CalculateHash()
-			commitParams.WmFileID = child.GetFileID()
-			commitParams.Operation = marker.Delete
+			commitParams.Timestamp = ch.Timestamp
 			return
 		}
 	}

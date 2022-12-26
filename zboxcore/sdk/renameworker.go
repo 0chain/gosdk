@@ -13,6 +13,7 @@ import (
 	"github.com/0chain/errors"
 
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
@@ -186,7 +187,7 @@ func (req *RenameRequest) ProcessRename() error {
 	wg := &sync.WaitGroup{}
 	wg.Add(activeBlobbers)
 	commitReqs := make([]*CommitRequest, activeBlobbers)
-
+	timestamp := common.Now()
 	var pos uint64
 	var c int
 	for i := req.renameMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -198,6 +199,7 @@ func (req *RenameRequest) ProcessRename() error {
 		}
 		newChange.Operation = constants.FileOperationRename
 		newChange.Size = 0
+		newChange.Timestamp = timestamp
 
 		commitReq := &CommitRequest{
 			allocationID: req.allocationID,

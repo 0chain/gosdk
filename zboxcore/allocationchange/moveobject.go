@@ -7,7 +7,6 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
@@ -17,7 +16,7 @@ type MoveFileChange struct {
 	DestPath   string
 }
 
-func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref, latestFileID int64) (
+func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref) (
 	commitParam CommitParams, err error) {
 
 	fields, err := common.GetPathFields(ch.DestPath)
@@ -57,10 +56,6 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref, latestFileID int64
 		err = errors.New("file_not_found", "Object to move not found in blobber")
 		return
 	}
-
-	commitParam.WmFileID = dirRef.FileID
-	commitParam.LatestFileID = latestFileID
-	commitParam.Operation = marker.Move
 
 	var affectedRef *fileref.Ref
 	if ch.ObjectTree.GetType() == fileref.FILE {
@@ -113,6 +108,7 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref, latestFileID int64
 	}
 
 	rootRef.CalculateHash()
+	commitParam.Timestamp = ch.Timestamp
 	return
 }
 

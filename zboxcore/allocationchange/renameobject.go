@@ -7,7 +7,6 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/marker"
 )
 
 type RenameFileChange struct {
@@ -16,8 +15,7 @@ type RenameFileChange struct {
 	NewName    string
 }
 
-func (ch *RenameFileChange) ProcessChange(
-	rootRef *fileref.Ref, latestFileID int64) (
+func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) (
 	commitParams CommitParams, err error) {
 
 	parentPath := path.Dir(ch.ObjectTree.GetPath())
@@ -55,7 +53,6 @@ func (ch *RenameFileChange) ProcessChange(
 
 			affectedRef.Path = filepath.Join(parentPath, ch.NewName)
 			affectedRef.Name = ch.NewName
-			commitParams.WmFileID = affectedRef.FileID
 
 			dirRef.AddChild(ch.ObjectTree)
 			found = true
@@ -67,10 +64,9 @@ func (ch *RenameFileChange) ProcessChange(
 		err = errors.New("file_not_found", "Object to rename not found in blobber")
 		return
 	}
-	commitParams.Operation = marker.Rename
-	commitParams.LatestFileID = latestFileID
 	ch.processChildren(affectedRef)
 	rootRef.CalculateHash()
+	commitParams.Timestamp = ch.Timestamp
 	return
 }
 

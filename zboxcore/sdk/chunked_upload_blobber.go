@@ -14,7 +14,6 @@ import (
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -202,7 +201,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	}
 
 	wm := &marker.WriteMarker{}
-	timestamp := int64(common.Now())
+	timestamp := int64(commitParams.Timestamp)
 	wm.AllocationRoot = encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10))
 	if latestWM != nil {
 		wm.PreviousAllocationRoot = latestWM.AllocationRoot
@@ -217,8 +216,6 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 	wm.Timestamp = timestamp
 	wm.ClientID = client.GetClientID()
-	wm.FileID = commitParams.WmFileID
-	wm.Operation = commitParams.Operation
 	err = wm.Sign()
 	if err != nil {
 		logger.Logger.Error("Signing writemarker failed: ", err)
@@ -232,28 +229,12 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 		return err
 	}
 
-	if su.httpMethod == http.MethodPost {
-		inode := marker.Inode{
-			LatestFileID: commitParams.LatestFileID,
-		}
-		err = inode.Sign()
-		if err != nil {
-			logger.Logger.Error("Error signing inode: ", err)
-			return err
-		}
-
-		inodeMeta := marker.InodeMeta{
-			MetaData:    commitParams.InodesMeta,
-			LatestInode: inode,
-		}
-		inodeBytes, err := json.Marshal(inodeMeta)
-		if err != nil {
-			logger.Logger.Error("Error marshalling inode: ", err)
-			return err
-		}
-		formWriter.WriteField("inodes_meta", string(inodeBytes))
+	fileIDMeta, err := json.Marshal(commitParams.FileIDMeta)
+	if err != nil {
+		logger.Logger.Error("Error marshalling file ID Meta: ", err)
 	}
 
+	formWriter.WriteField("file_id_meta", string(fileIDMeta))
 	formWriter.WriteField("connection_id", su.progress.ConnectionID)
 	formWriter.WriteField("write_marker", string(wmData))
 
@@ -381,23 +362,18 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 		return nil, nil, 0, nil, err
 	}
 
-	var latestFileID int64
 	if lR.LatestWM != nil {
 		rootRef.CalculateHash()
 		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
 			logger.Logger.Info("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
 		}
-		latestFileID, err = lR.LatestInode.GetLatestInode()
-		if err != nil {
-			return nil, nil, 0, nil, err
-		}
 	}
 
 	var size int64
 	var commitParams allocationchange.CommitParams
 	for _, change := range sb.commitChanges {
-		commitParams, err = change.ProcessChange(rootRef, latestFileID)
+		commitParams, err = change.ProcessChange(rootRef)
 		if err != nil {
 			return nil, nil, 0, nil, err
 		}

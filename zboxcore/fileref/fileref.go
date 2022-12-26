@@ -56,7 +56,7 @@ type RefEntity interface {
 	GetLookupHash() string
 	GetPath() string
 	GetName() string
-	GetFileID() int64
+	GetFileID() string
 	GetCreatedAt() common.Timestamp
 	GetUpdatedAt() common.Timestamp
 }
@@ -73,7 +73,7 @@ type Ref struct {
 	NumBlocks        int64  `json:"num_of_blocks" mapstructure:"num_of_blocks"`
 	PathHash         string `json:"path_hash" mapstructure:"path_hash"`
 	LookupHash       string `json:"lookup_hash" mapstructure:"lookup_hash"`
-	FileID           int64  `json:"file_id" mapstructure:"file_id"`
+	FileID           string `json:"file_id" mapstructure:"file_id"`
 	FileMetaHash     string `json:"file_meta_hash" mapstructure:"file_meta_hash"`
 	HashToBeComputed bool
 	ChildrenLoaded   bool
@@ -152,7 +152,7 @@ func (r *Ref) GetName() string {
 	return r.Name
 }
 
-func (r *Ref) GetFileID() int64 {
+func (r *Ref) GetFileID() string {
 	return r.FileID
 }
 
@@ -199,14 +199,14 @@ func (fr *FileRef) GetFileMetaHash() string {
 }
 func (fr *FileRef) GetFileMetaHashData() string {
 	return fmt.Sprintf(
-		"%s:%d:%d:%d:%s",
+		"%s:%d:%s:%d:%s",
 		fr.Path, fr.Size, fr.FileID,
 		fr.ActualFileSize, fr.ActualFileHash)
 }
 
 func (fr *FileRef) GetHashData() string {
 	return fmt.Sprintf(
-		"%s:%s:%s:%s:%d:%s:%s:%d:%s:%d:%d",
+		"%s:%s:%s:%s:%d:%s:%s:%d:%s:%d:%s",
 		fr.AllocationID,
 		fr.Type, // don't need to add it as well
 		fr.Name, // don't see any utility as fr.Path below has name in it
@@ -260,7 +260,7 @@ func (fr *FileRef) GetName() string {
 	return fr.Name
 }
 
-func (fr *FileRef) GetFileID() int64 {
+func (fr *FileRef) GetFileID() string {
 	return fr.FileID
 }
 

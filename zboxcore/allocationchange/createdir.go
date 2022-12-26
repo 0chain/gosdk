@@ -6,23 +6,24 @@ import (
 	"strings"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/marker"
+	"github.com/google/uuid"
 )
 
 type DirCreateChange struct {
+	Timestamp  common.Timestamp
 	RemotePath string
+	Uuid       uuid.UUID
 }
 
-func (d *DirCreateChange) ProcessChange(
-	rootRef *fileref.Ref, latestFileID int64) (
-	commitParams CommitParams, err error) {
-
-	inodesMeta := make(map[string]int64)
+func (d *DirCreateChange) ProcessChange(rootRef *fileref.Ref) (commitParams CommitParams, err error) {
+	inodesMeta := make(map[string]string)
 	fields, err := common.GetPathFields(d.RemotePath)
 	if err != nil {
 		return
 	}
+
 	dirRef := rootRef
 	for i := 0; i < len(fields); i++ {
 		found := false
@@ -40,25 +41,25 @@ func (d *DirCreateChange) ProcessChange(
 			}
 		}
 		if !found {
-			latestFileID++
+			uid := util.GetSHA1Uuid(d.Uuid, fields[i])
+			d.Uuid = uid
+
 			newRef := &fileref.Ref{
 				Type:         fileref.DIRECTORY,
 				AllocationID: dirRef.AllocationID,
 				Path:         filepath.Join("/", strings.Join(fields[:i+1], "/")),
 				Name:         fields[i],
-				FileID:       latestFileID,
+				FileID:       uid.String(),
 			}
-			inodesMeta[newRef.Path] = latestFileID
+			inodesMeta[newRef.Path] = newRef.FileID
 			newRef.HashToBeComputed = true
 			dirRef.AddChild(newRef)
 			dirRef = newRef
 		}
 	}
 
-	commitParams.InodesMeta = inodesMeta
-	commitParams.LatestFileID = latestFileID
-	commitParams.WmFileID = inodesMeta[d.RemotePath]
-	commitParams.Operation = marker.NewDir
+	commitParams.FileIDMeta = inodesMeta
+	commitParams.Timestamp = d.Timestamp
 	rootRef.CalculateHash()
 	return
 }
