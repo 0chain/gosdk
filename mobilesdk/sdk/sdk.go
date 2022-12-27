@@ -288,7 +288,7 @@ func (s *StorageSDK) UpdateAllocation(name string, size, expiry int64, allocatio
 
 // GetBlobbersList get list of blobbers in string
 func (s *StorageSDK) GetBlobbersList() (string, error) {
-	blobbs, err := sdk.GetBlobbers()
+	blobbs, err := sdk.GetBlobbers(true)
 	if err != nil {
 		return "", err
 	}

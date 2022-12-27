@@ -23,6 +23,7 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	openssl "github.com/Luzifer/go-openssl/v4"
 )
 
 const (
@@ -1009,14 +1010,7 @@ func GetStakePoolUserInfo(clientID string, cb GetInfoCallback) (err error) {
 }
 
 // GetBlobbers obtains list of all active blobbers.
-func GetBlobbers(cb GetInfoCallback, limit, offset int, options ...bool) {
-	var active bool
-	if len(options) > 0 {
-		for _, option := range options {
-			active = option
-		}
-	}
-
+func GetBlobbers(cb GetInfoCallback, limit, offset int, active bool) {
 	getBlobbersInternal(cb, active, limit, offset)
 }
 
@@ -1105,6 +1099,27 @@ func Decrypt(key, text string) (string, error) {
 		return "", err
 	}
 	return string(response), nil
+}
+
+func CryptoJsEncrypt(passphrase, message string) (string, error) {
+	o := openssl.New()
+
+	enc, err := o.EncryptBytes(passphrase, []byte(message), openssl.BytesToKeyMD5)
+	if err != nil {
+		return "", err
+	}
+
+	return string(enc), nil
+}
+
+func CryptoJsDecrypt(passphrase, encryptedMessage string) (string, error) {
+	o := openssl.New()
+	dec, err := o.DecryptBytes(passphrase, []byte(encryptedMessage), openssl.BytesToKeyMD5)
+	if err != nil {
+		return "", err
+	}
+
+	return string(dec), nil
 }
 
 func GetPublicEncryptionKey(mnemonic string) (string, error) {
