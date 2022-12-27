@@ -39,30 +39,35 @@ const (
 // #   - http://one.devnet-0chain.net:31053
 type Config struct {
 	// BlockWorker the url of 0dns's network api
-	BlockWorker string
+	BlockWorker string `json:"block_worker,omitempty"`
 	// PreferredBlobbers preferred blobbers on new allocation
-	PreferredBlobbers []string
+	PreferredBlobbers []string `json:"preferred_blobbers,omitempty"`
 
 	// MinSubmit mininal submit from blobber
-	MinSubmit int
+	MinSubmit int `json:"min_submit,omitempty"`
 	// MinConfirmation mininal confirmation from sharders
-	MinConfirmation int
+	MinConfirmation int `json:"min_confirmation,omitempty"`
 	// CconfirmationChainLength minial confirmation chain length
-	ConfirmationChainLength int
+	ConfirmationChainLength int `json:"confirmation_chain_length,omitempty"`
 
 	// additional settings depending network latency
 	// MaxTxnQuery maximum transcation query from sharders
-	MaxTxnQuery int
+	MaxTxnQuery int `json:"max_txn_query,omitempty"`
 	// QuerySleepTime sleep time before transcation query
-	QuerySleepTime int
+	QuerySleepTime int `json:"query_sleep_time,omitempty"`
 
 	// SignatureScheme signature scheme
-	SignatureScheme string
+	SignatureScheme string `json:"signature_scheme,omitempty"`
 	// ChainID which blockchain it is working
-	ChainID string
+	ChainID string `json:"chain_id,omitempty"`
 
 	// Ethereum node: "https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx"
-	EthereumNode string
+	EthereumNode string `json:"ethereum_node,omitempty"`
+
+	// ZboxHost 0box api host host: "https://0box.dev.0chain.net"
+	ZboxHost string `json:"zbox_host"`
+	// ZboxAppType app type name
+	ZboxAppType string `json:"zbox_app_type"`
 }
 
 // LoadConfigFile load and parse Config from file

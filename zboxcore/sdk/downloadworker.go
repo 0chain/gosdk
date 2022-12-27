@@ -211,7 +211,7 @@ func (req *DownloadRequest) downloadBlock(
 	return remainingMask, failed, downloadErrors, nil
 }
 
-//decodeEC will reconstruct shards and verify it
+// decodeEC will reconstruct shards and verify it
 func (req *DownloadRequest) decodeEC(shards [][]byte) (data []byte, isValid bool, err error) {
 	err = req.ecEncoder.Reconstruct(shards)
 	if err != nil {
@@ -341,7 +341,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			"Actual size per blobber: %d", size, req.startBlock, req.endBlock, actualPerShard),
 	)
 
-	f, err := req.openFile(remotePathCB)
+	f, err := req.openFile()
 	if err != nil {
 		logger.Logger.Error(err)
 		req.errorCB(
@@ -491,7 +491,7 @@ func (req *DownloadRequest) checkContentHash(
 	return nil
 }
 
-func (req *DownloadRequest) openFile(remotePathCB string) (sys.File, error) {
+func (req *DownloadRequest) openFile() (sys.File, error) {
 	f, err := sys.Files.OpenFile(req.localpath, os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return nil, errors.Wrap(err, "Can't create local file")
@@ -522,7 +522,7 @@ func (req *DownloadRequest) calculateShardsParams(
 
 	chunksPerShard = (effectivePerShardSize + effectiveChunkSize - 1) / effectiveChunkSize
 	actualPerShard = chunksPerShard * fRef.ChunkSize
-	if req.endBlock == 0 {
+	if req.endBlock == 0 || req.endBlock > chunksPerShard {
 		req.endBlock = chunksPerShard
 	}
 
@@ -543,7 +543,6 @@ func (req *DownloadRequest) getFileRef(remotePathCB string) (fRef *fileref.FileR
 		blobbers:           req.blobbers,
 		authToken:          req.authTicket,
 		Consensus: Consensus{
-			mu:              &sync.RWMutex{},
 			fullconsensus:   req.fullconsensus,
 			consensusThresh: req.consensusThresh,
 		},

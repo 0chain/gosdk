@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/0chain/errors v1.0.3
+	github.com/Luzifer/go-openssl/v4 v4.1.0
 	github.com/btcsuite/btcd v0.23.2
 	github.com/dgraph-io/badger/v3 v3.2103.3
 	github.com/didip/tollbooth v4.0.2+incompatible
@@ -104,7 +105,7 @@ require (
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	go.dedis.ch/fixbuf v1.0.3 // indirect
 	go.opencensus.io v0.23.0 // indirect
-	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
+	golang.org/x/sync v0.0.0-20220819030929-7fc1605a5dde // indirect
 	golang.org/x/sys v0.1.0 // indirect
 	golang.org/x/text v0.4.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect

@@ -72,7 +72,7 @@ func GetNetwork() (string, error) {
 
 // GetBlobbers - get list of blobbers
 func GetBlobbers() (string, error) {
-	blobbers, err := sdk.GetBlobbers()
+	blobbers, err := sdk.GetBlobbers(true)
 	if err != nil {
 		return "", err
 	}

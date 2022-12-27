@@ -46,6 +46,35 @@ func createDir(allocationID, remotePath string) error {
 	return allocationObj.CreateDir(remotePath)
 }
 
+// getFileStats get file stats from blobbers
+func getFileStats(allocationID, remotePath string) ([]*sdk.FileStats, error) {
+	if len(allocationID) == 0 {
+		return nil, RequiredArg("allocationID")
+	}
+
+	if len(remotePath) == 0 {
+		return nil, RequiredArg("remotePath")
+	}
+
+	allocationObj, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return nil, err
+	}
+
+	fileStats, err := allocationObj.GetFileStats(remotePath)
+	if err != nil {
+		return nil, err
+	}
+
+	var stats []*sdk.FileStats
+
+	for _, it := range fileStats {
+		stats = append(stats, it)
+	}
+
+	return stats, nil
+}
+
 // Delete delete file from blobbers
 func Delete(allocationID, remotePath string) (*FileCommandResponse, error) {
 
@@ -291,7 +320,7 @@ func download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 
 	resp := &DownloadCommandResponse{
 		CommandSuccess: true,
-		FileName:       fileName,
+		FileName:       downloader.GetFileName(),
 	}
 
 	fs, _ := sys.Files.Open(localPath)
