@@ -2,10 +2,43 @@ package util
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"encoding/hex"
+	"hash"
 	"io"
+	"sync"
+
+	goError "errors"
 
 	"github.com/0chain/errors"
 )
+
+const (
+	merkleChunkSize     = 64
+	MaxMerkleLeavesSize = 64 * 1024
+)
+
+type leaf struct {
+	h hash.Hash
+}
+
+func (l *leaf) GetHashBytes() []byte {
+	return l.h.Sum(nil)
+}
+
+func (l *leaf) GetHash() string {
+	return hex.EncodeToString(l.h.Sum(nil))
+}
+
+func (l *leaf) Write(b []byte) (int, error) {
+	return l.h.Write(b)
+}
+
+func getNewLeaf() *leaf {
+	return &leaf{
+		h: sha256.New(),
+	}
+}
 
 // FixedMerkleTree A trusted mekerl tree for outsourcing attack protection. see section 1.8 on whitepager
 // see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-fixedmerkletree
@@ -13,14 +46,31 @@ type FixedMerkleTree struct {
 	// ChunkSize size of chunk
 	ChunkSize int `json:"chunk_size,omitempty"`
 	// Leaves a leaf is a CompactMerkleTree for 1/1024 shard data
-	Leaves []*CompactMerkleTree `json:"leaves,omitempty"`
+	Leaves []Hashable `json:"leaves,omitempty"`
+
+	writeLock  *sync.Mutex
+	isFinal    bool
+	writeCount int
+	writeBytes []byte
+}
+
+func (fmt *FixedMerkleTree) Finalize() error {
+	fmt.writeLock.Lock()
+	if fmt.isFinal {
+		return goError.New("already finalized")
+	}
+	fmt.isFinal = true
+	fmt.writeLock.Unlock()
+
+	return fmt.writeToLeaves(fmt.writeBytes[:fmt.writeCount])
 }
 
 // NewFixedMerkleTree create a FixedMerkleTree with specify hash method
 func NewFixedMerkleTree(chunkSize int) *FixedMerkleTree {
 
 	t := &FixedMerkleTree{
-		ChunkSize: chunkSize,
+		ChunkSize:  chunkSize,
+		writeBytes: make([]byte, MaxMerkleLeavesSize),
 	}
 	t.initLeaves()
 
@@ -29,44 +79,62 @@ func NewFixedMerkleTree(chunkSize int) *FixedMerkleTree {
 }
 
 func (fmt *FixedMerkleTree) initLeaves() {
-	fmt.Leaves = make([]*CompactMerkleTree, 1024)
-	for n := 0; n < 1024; n++ {
-		fmt.Leaves[n] = NewCompactMerkleTree(nil)
+	fmt.Leaves = make([]Hashable, 1024)
+	for i := 0; i < 1024; i++ {
+		fmt.Leaves[i] = getNewLeaf()
 	}
 }
 
-func (fmt *FixedMerkleTree) Write(buf []byte, chunkIndex int) error {
-	//split chunk into 1024 parts for challenge hash
-	merkleChunkSize := fmt.ChunkSize / 1024
-
-	// chunksize is less than 1024
-	if merkleChunkSize == 0 {
-		merkleChunkSize = 1
+func (fmt *FixedMerkleTree) writeToLeaves(b []byte) error {
+	if len(b) > MaxMerkleLeavesSize {
+		return goError.New("data size greater than maximum required size")
 	}
 
-	total := len(buf)
-	offset := 0
-	for i := 0; i < total; i += merkleChunkSize {
-		end := i + merkleChunkSize
-		if end > len(buf) {
-			end = len(buf)
-		}
-
-		if len(fmt.Leaves) != 1024 {
-			fmt.initLeaves()
-		}
-
-		err := fmt.Leaves[offset].AddDataBlocks(buf[i:end], chunkIndex)
-		if errors.Is(err, ErrLeafNoSequenced) {
-			return err
-		}
-
-		offset++
-		if offset >= 1024 {
-			offset = 0
-		}
+	if len(b) < MaxMerkleLeavesSize && !fmt.isFinal {
+		return goError.New("invalid merkle leaf write")
 	}
 
+	dataLen := len(b)
+	shouldContinue := true
+	leafInd := 0
+	for i, j := 0, merkleChunkSize; shouldContinue; i, j = j, j+merkleChunkSize {
+		if j > dataLen {
+			j = dataLen
+			shouldContinue = false
+		}
+		fmt.Leaves[leafInd].Write(b[i:j])
+	}
+
+	return nil
+}
+
+func (fmt *FixedMerkleTree) Write(b []byte, chunkIndex int) error {
+
+	fmt.writeLock.Lock()
+	defer fmt.writeLock.Unlock()
+	if fmt.isFinal {
+		return goError.New("cannot write. Tree is already finalized")
+	}
+
+	byteLen := int64(len(b))
+	shouldContinue := true
+
+	for i, j := int64(0), MaxMerkleLeavesSize-int64(fmt.writeCount); shouldContinue; i, j = j, j+MaxMerkleLeavesSize {
+		if j > byteLen {
+			j = byteLen
+			shouldContinue = false
+		}
+		prevWriteCount := fmt.writeCount
+		fmt.writeCount += int(j - i)
+		copy(fmt.writeBytes[prevWriteCount:fmt.writeCount], b[i:j])
+		if fmt.writeCount == MaxMerkleLeavesSize {
+			err := fmt.writeToLeaves(fmt.writeBytes)
+			if err != nil {
+				return err
+			}
+			fmt.writeCount = 0
+		}
+	}
 	return nil
 }
 
@@ -76,12 +144,11 @@ func (fmt *FixedMerkleTree) GetMerkleTree() MerkleTreeI {
 
 	for idx, leaf := range fmt.Leaves {
 
-		merkleLeaves[idx] = NewStringHashable(leaf.GetMerkleRoot())
+		merkleLeaves[idx] = leaf
 	}
 	var mt MerkleTreeI = &MerkleTree{}
 
 	mt.ComputeTree(merkleLeaves)
-
 	return mt
 }
 
