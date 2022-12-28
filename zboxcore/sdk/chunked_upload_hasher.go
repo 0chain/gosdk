@@ -24,8 +24,8 @@ type Hasher interface {
 
 	// GetContentHash get content hash
 	GetContentHash() (string, error)
-	// WriteHashToContent write hash leaf to content hasher
-	WriteHashToContent(hash string, chunkIndex int) error
+	// WriteToContent write bytes to content hasher
+	WriteToContent(hash []byte, chunkIndex int) error
 }
 
 // see more detail about hash on  https://github.com/0chain/blobber/wiki/Protocols#file-hash
@@ -113,8 +113,8 @@ func (h *hasher) GetContentHash() (string, error) {
 	return hex.EncodeToString(h.Content.Sum(nil)), nil
 }
 
-// WriteHashToContent write hash leaf to content hasher
-func (h *hasher) WriteHashToContent(hash string, chunkIndex int) error {
+// WriteToContent write bytes to content hasher
+func (h *hasher) WriteToContent(buf []byte, chunkIndex int) error {
 	if h == nil {
 		return errors.Throw(constants.ErrInvalidParameter, "h")
 	}
@@ -123,7 +123,7 @@ func (h *hasher) WriteHashToContent(hash string, chunkIndex int) error {
 		return errors.Throw(constants.ErrInvalidParameter, "h.Content")
 	}
 
-	_, err := h.Content.Write([]byte(hash))
+	_, err := h.Content.Write(buf)
 
 	return err
 }

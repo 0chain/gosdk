@@ -73,9 +73,8 @@ func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, conn
 		return nil, metadata, err
 	}
 
-	chunkHashWriter := sha256.New()
 	chunksHashWriter := sha256.New()
-	chunksWriters := io.MultiWriter(uploadFile, chunkHashWriter, chunksHashWriter)
+	chunksWriters := io.MultiWriter(uploadFile, chunksHashWriter)
 
 	for i, chunkBytes := range fileChunksData {
 		_, err = chunksWriters.Write(chunkBytes)
@@ -88,13 +87,12 @@ func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, conn
 			return nil, metadata, err
 		}
 
-		err = hasher.WriteHashToContent(hex.EncodeToString(chunkHashWriter.Sum(nil)), chunkStartIndex+i)
+		err = hasher.WriteToContent(chunkBytes, chunkStartIndex+i)
 		if err != nil {
 			return nil, metadata, err
 		}
 
 		metadata.FileBytesLen += len(chunkBytes)
-		chunkHashWriter.Reset()
 	}
 
 	formData.ChunkHash = hex.EncodeToString(chunksHashWriter.Sum(nil))
