@@ -19,7 +19,8 @@ var (
 func TestGetCsrfToken(t *testing.T) {
 	t.Skip("Only for local debugging")
 
-	c := NewClient(BaseURL, AppType)
+	c := NewClient()
+	c.SetRequest(BaseURL, AppType)
 	c.SetWallet(ClientID, ClientPrivateKey, ClientPublicKey)
 
 	token, err := c.GetCsrfToken(context.TODO())
