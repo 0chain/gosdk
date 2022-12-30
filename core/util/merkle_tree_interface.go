@@ -51,3 +51,7 @@ func (sh *StringHashable) GetHash() string {
 func (sh *StringHashable) GetHashBytes() []byte {
 	return []byte(sh.Hash)
 }
+
+func (StringHashable) Write(_ []byte) (int, error) {
+	return 0, nil
+}

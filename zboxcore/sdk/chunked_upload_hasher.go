@@ -40,7 +40,7 @@ type hasher struct {
 func CreateHasher(chunkSize int) Hasher {
 	h := &hasher{
 		File:      sha256.New(),
-		Challenge: &util.FixedMerkleTree{ChunkSize: chunkSize},
+		Challenge: util.NewFixedMerkleTree(chunkSize),
 		Content: util.NewCompactMerkleTree(func(left, right string) string {
 			return encryption.Hash(left + right)
 		}),

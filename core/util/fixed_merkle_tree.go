@@ -71,6 +71,7 @@ func NewFixedMerkleTree(chunkSize int) *FixedMerkleTree {
 	t := &FixedMerkleTree{
 		ChunkSize:  chunkSize,
 		writeBytes: make([]byte, MaxMerkleLeavesSize),
+		writeLock:  &sync.Mutex{},
 	}
 	t.initLeaves()
 
