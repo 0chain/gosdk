@@ -32,7 +32,8 @@ func TestGetCsrfToken(t *testing.T) {
 func TestJwtToken(t *testing.T) {
 	t.Skip("Only for local debugging")
 
-	c := NewClient(BaseURL, AppType)
+	c := NewClient()
+	c.SetRequest(BaseURL, AppType)
 	c.SetWallet(ClientID, ClientPrivateKey, ClientPublicKey)
 	sessionID, err := c.CreateJwtSession(context.TODO(), PhoneNumber)
 
