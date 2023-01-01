@@ -153,3 +153,35 @@ func VerifySignature(publicKey, signatureScheme string, data string, signature s
 	}
 	return WithJSON(false, ErrInvalidSignatureScheme)
 }
+
+// CryptoJsEncrypt encrypt message with AES+CCB
+//
+//	return
+//		{
+//			"error":"",
+//			"result":"xxx",
+//		}
+//
+//export CryptoJsEncrypt
+func CryptoJsEncrypt(passphrase, message *C.char) *C.char {
+	pass := C.GoString(passphrase)
+	msg := C.GoString(message)
+
+	return WithJSON(zcncore.CryptoJsEncrypt(pass, msg))
+}
+
+// CryptoJsDecrypt decrypt message with AES+CCB
+//
+//	return
+//		{
+//			"error":"",
+//			"result":"xxx",
+//		}
+//
+//export CryptoJsDecrypt
+func CryptoJsDecrypt(passphrase, encryptedMessage *C.char) *C.char {
+	pass := C.GoString(passphrase)
+	msg := C.GoString(encryptedMessage)
+
+	return WithJSON(zcncore.CryptoJsDecrypt(pass, msg))
+}
