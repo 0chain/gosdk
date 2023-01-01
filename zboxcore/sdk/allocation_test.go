@@ -2439,6 +2439,7 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 	a.uploadProgressMap = make(map[string]*UploadRequest)
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
 	a.mutex = &sync.Mutex{}
+	a.FileOptions = uint8(63) // 0011 1111 All allowed
 	a.initialized = true
 	if a.DataShards != 0 {
 		a.fullconsensus, a.consensusThreshold = a.getConsensuses()
