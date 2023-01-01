@@ -90,13 +90,8 @@ func freezeAllocation(allocationId string) error {
 		false,        //updateTerms,
 		"",           //addBlobberId,
 		"",           //removeBlobberId,
-		false,		  //thirdPartyExtendable,		  
-		false,		  //forbidUpload,
-		false,		  //forbidDelete,
-		false,		  //forbidUpdate,
-		false,		  //forbidMove,
-		false,		  //forbidCopy,
-		false,		  //forbidRename,
+		false,		  //thirdPartyExtendable,
+		&sdk.FileOptionsParameters,
 	)
 
 	return err
