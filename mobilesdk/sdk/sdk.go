@@ -184,19 +184,22 @@ func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parit
 		ReadPrice:    readPrice,
 	}
 
-	urls := strings.Split(blobberUrls, ",")
-	if len(urls) > 0 {
-		ids, err := sdk.GetBlobberIds(urls)
-		if err != nil {
-			return nil, err
+	if blobberUrls != "" {
+		urls := strings.Split(blobberUrls, ",")
+		if len(urls) > 0 {
+			ids, err := sdk.GetBlobberIds(urls)
+			if err != nil {
+				return nil, err
+			}
+			options.BlobberIds = ids
 		}
-
-		options.BlobberIds = ids
 	}
 
-	ids := strings.Split(blobberIds, ",")
-	if len(ids) > 0 {
-		options.BlobberIds = ids
+	if blobberIds != "" {
+		ids := strings.Split(blobberIds, ",")
+		if len(ids) > 0 {
+			options.BlobberIds = ids
+		}
 	}
 
 	sdkAllocationID, _, _, err := sdk.CreateAllocationWith(options)
