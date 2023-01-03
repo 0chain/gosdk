@@ -57,6 +57,23 @@ async function createObjectURL(buf, mimeType) {
   return URL.createObjectURL(blob)
 }
 
+const readChunk = (offset, chunkSize, file) => 
+  new Promise((res,rej) => {
+    const fileReader = new FileReader()
+    const blob = file.slice(offset, chunkSize+offset)
+    fileReader.onload = e => {
+      const t = e.target
+      if (t.error == null) {
+        res(t.result)
+      }else{
+        rej(t.error)
+      }
+    }
+
+    fileReader.readAsArrayBuffer(blob)
+  })
+
+
 /**
  * Sleep is used when awaiting for Go Wasm to initialize.
  * It uses the lowest possible sane delay time (via requestAnimationFrame).

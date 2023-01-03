@@ -210,15 +210,30 @@
     onClick('btnUploadFile', async () => {
       const { files } = get('inputSelectedFile')
       if (files && files.length > 0) {
-        const fileBytes = await readBytes(files[0])
-        const allocationId = getSelectedAllocation()
 
-        //allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, isUpdate, isRepair bool, numBlocks int
-        await goWasm.sdk.upload(
-          allocationId, `/${files[0].name}`,
-          fileBytes,
-          null,
-          false, false, false, 100)
+        const file = files[0]
+        const fileSize = file.size
+        const chunkSize = 64 * 1024
+        const offset =0
+        while(offset<fileSize) {
+          const chunk = await readChunk(offset, chunkSize, file)
+          debugger;
+          console.log(chunk)
+          offset+= chunk.byteLength
+        }
+
+
+
+
+        // const fileBytes = await readBytes(files[0])
+        // const allocationId = getSelectedAllocation()
+
+        // //allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, isUpdate, isRepair bool, numBlocks int
+        // await goWasm.sdk.upload(
+        //   allocationId, `/${files[0].name}`,
+        //   fileBytes,
+        //   null,
+        //   false, false, false, 100)
 
       }
     })
