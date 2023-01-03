@@ -327,6 +327,10 @@ func parseCoinStr(vs string) (uint64, error) {
 }
 
 // NewTransaction allocation new generic transaction object for any operation
+// # Inputs
+//   - cb: callback for transaction state
+//   - txnFee: ZCN tokens
+//   - nonce: latest nonce of current wallet. please set it with 0 if you don't know the latest value
 func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (TransactionScheme, error) {
 	v, err := parseCoinStr(txnFee)
 	if err != nil {
@@ -1110,12 +1114,16 @@ func (t *Transaction) ZCNSCAddAuthorizer(ip AddAuthorizerPayload) (err error) {
 	return
 }
 
-// ConvertTokenToSAS converts ZCN tokens to value
+// ConvertTokenToSAS converts ZCN tokens to SAS tokens
+// # Inputs
+//   - token: ZCN tokens
 func ConvertTokenToSAS(token float64) uint64 {
 	return uint64(token * float64(TOKEN_UNIT))
 }
 
-// ConvertToValue converts ZCN tokens to value
+// ConvertToValue converts ZCN tokens to SAS tokens with string format
+// # Inputs
+//   - token: ZCN tokens
 func ConvertToValue(token float64) string {
 	return strconv.FormatUint(ConvertTokenToSAS(token), 10)
 }
