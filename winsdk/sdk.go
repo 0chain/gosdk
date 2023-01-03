@@ -195,7 +195,7 @@ func CryptoJsDecrypt(passphrase, encryptedMessage *C.char) *C.char {
 //		}
 //
 //export GetPublicEncryptionKey
-func GetPublicEncryptionKey(mnemonic *C.char) *C.char {
-	m := C.GoString(mnemonic)
+func GetPublicEncryptionKey(mnemonics *C.char) *C.char {
+	m := C.GoString(mnemonics)
 	return WithJSON(zcncore.GetPublicEncryptionKey(m))
 }
