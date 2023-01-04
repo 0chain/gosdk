@@ -64,7 +64,10 @@ const readChunk = (offset, chunkSize, file) =>
     fileReader.onload = e => {
       const t = e.target
       if (t.error == null) {
-        res(t.result)
+        res({ 
+          size: t.result.byteLength, 
+          buffer: new Uint8Array(t.result)
+        })
       }else{
         rej(t.error)
       }

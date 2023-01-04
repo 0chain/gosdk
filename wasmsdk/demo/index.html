@@ -127,7 +127,7 @@
       minSubmit: 50,
       confirmationChainLength: 3,
     }
-    const blockWorker = 'https://dev.0chain.net/dns';
+    const blockWorker = 'https://beta.0chain.net/dns';
     const config = [
       networkConfig.chainId,
       blockWorker,
@@ -135,7 +135,7 @@
       networkConfig.minConfirmation,
       networkConfig.minSubmit,
       networkConfig.confirmationChainLength,
-      'https://0box.dev.0chain.net', //zboxHost
+      'https://0box.beta.0chain.net', //zboxHost
       'vult', //zboxAppType
     ]
 
@@ -214,16 +214,15 @@
         const file = files[0]
         const fileSize = file.size
         const chunkSize = 64 * 1024
-        const offset =0
+        let offset =0
         while(offset<fileSize) {
           const chunk = await readChunk(offset, chunkSize, file)
           debugger;
           console.log(chunk)
-          offset+= chunk.byteLength
+          offset+= chunk.size
         }
 
-
-
+        debugger
 
         // const fileBytes = await readBytes(files[0])
         // const allocationId = getSelectedAllocation()
