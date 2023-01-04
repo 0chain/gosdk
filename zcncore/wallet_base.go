@@ -79,8 +79,12 @@ const (
 	STORAGESC_GET_TRANSACTIONS         = STORAGESC_PFX + "/transactions"
 	STORAGE_GET_TOTAL_STORED_DATA      = STORAGESC_PFX + "/total-stored-data"
 
-	STORAGE_GET_SNAPSHOT         = STORAGESC_PFX + "/replicate-snapshots"
-	STORAGE_GET_BLOBBER_SNAPSHOT = STORAGESC_PFX + "/replicate-blobber-aggregates"
+	STORAGE_GET_SNAPSHOT            = STORAGESC_PFX + "/replicate-snapshots"
+	STORAGE_GET_BLOBBER_SNAPSHOT    = STORAGESC_PFX + "/replicate-blobber-aggregates"
+	STORAGE_GET_MINER_SNAPSHOT      = STORAGESC_PFX + "/replicate-miner-aggregates"
+	STORAGE_GET_SHARDER_SNAPSHOT    = STORAGESC_PFX + "/replicate-sharder-aggregates"
+	STORAGE_GET_AUTHORIZER_SNAPSHOT = STORAGESC_PFX + "/replicate-authorizer-aggregates"
+	STORAGE_GET_VALIDATOR_SNAPSHOT  = STORAGESC_PFX + "/replicate-validator-aggregates"
 )
 
 const (
@@ -140,6 +144,10 @@ const (
 	OpStorageSCGetTransactions
 	OpStorageSCGetSnapshots
 	OpStorageSCGetBlobberSnapshots
+	OpStorageSCGetMinerSnapshots
+	OpStorageSCGetSharderSnapshots
+	OpStorageSCGetAuthorizerSnapshots
+	OpStorageSCGetValidatorSnapshots
 	OpZCNSCGetGlobalConfig
 	OpZCNSCGetAuthorizer
 	OpZCNSCGetAuthorizerNodes
@@ -984,7 +992,7 @@ func GetAllocations(clientID string, cb GetInfoCallback) (err error) {
 	return
 }
 
-// GetSnapshot obtains list of allocations of a user.
+// GetSnapshots obtains list of allocations of a user.
 func GetSnapshots(offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -996,7 +1004,7 @@ func GetSnapshots(offset int64, cb GetInfoCallback) (err error) {
 	return
 }
 
-// GetSnapshot obtains list of allocations of a user.
+// GetBlobberSnapshots obtains list of allocations of a blobber.
 func GetBlobberSnapshots(offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -1005,6 +1013,54 @@ func GetBlobberSnapshots(offset int64, cb GetInfoCallback) (err error) {
 		"offset": strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetBlobberSnapshots, cb)
+	return
+}
+
+// GetMinerSnapshots obtains list of allocations of a miner.
+func GetMinerSnapshots(offset int64, cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	var url = withParams(STORAGE_GET_MINER_SNAPSHOT, Params{
+		"offset": strconv.FormatInt(offset, 10),
+	})
+	go GetInfoFromAnySharder(url, OpStorageSCGetMinerSnapshots, cb)
+	return
+}
+
+// GetSharderSnapshots obtains list of allocations of a sharder.
+func GetSharderSnapshots(offset int64, cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	var url = withParams(STORAGE_GET_SHARDER_SNAPSHOT, Params{
+		"offset": strconv.FormatInt(offset, 10),
+	})
+	go GetInfoFromAnySharder(url, OpStorageSCGetSharderSnapshots, cb)
+	return
+}
+
+// GetValidatorSnapshots obtains list of allocations of a validator.
+func GetValidatorSnapshots(offset int64, cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	var url = withParams(STORAGE_GET_VALIDATOR_SNAPSHOT, Params{
+		"offset": strconv.FormatInt(offset, 10),
+	})
+	go GetInfoFromAnySharder(url, OpStorageSCGetValidatorSnapshots, cb)
+	return
+}
+
+// GetAuthorizerSnapshots obtains list of allocations of an authorizer.
+func GetAuthorizerSnapshots(offset int64, cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	var url = withParams(STORAGE_GET_AUTHORIZER_SNAPSHOT, Params{
+		"offset": strconv.FormatInt(offset, 10),
+	})
+	go GetInfoFromAnySharder(url, OpStorageSCGetAuthorizerSnapshots, cb)
 	return
 }
 
