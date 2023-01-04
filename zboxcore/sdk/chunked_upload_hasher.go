@@ -40,7 +40,7 @@ type hasher struct {
 func CreateHasher(chunkSize int) Hasher {
 	h := &hasher{
 		File:      sha256.New(),
-		Challenge: util.NewFixedMerkleTree(chunkSize),
+		Challenge: util.NewFixedMerkleTree(),
 		Content: util.NewCompactMerkleTree(func(left, right string) string {
 			return encryption.Hash(left + right)
 		}),
@@ -99,8 +99,8 @@ func (h *hasher) WriteToChallenge(buf []byte, chunkIndex int) error {
 	if h.Challenge == nil {
 		return errors.Throw(constants.ErrInvalidParameter, "h.Challenge")
 	}
-
-	return h.Challenge.Write(buf, chunkIndex)
+	_, err := h.Challenge.Write(buf)
+	return err
 }
 
 // GetContentHash get content hash
