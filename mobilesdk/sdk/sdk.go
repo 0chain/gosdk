@@ -42,6 +42,10 @@ type StorageSDK struct {
 }
 
 // SetLogFile - setting up log level for core libraries
+//
+//	# Inputs
+//	- logFile: the output file of logs
+//	- verbose: output detail logs
 func SetLogFile(logFile string, verbose bool) {
 	zcncore.SetLogFile(logFile, verbose)
 	sdk.SetLogFile(logFile, verbose)
@@ -286,7 +290,7 @@ func (s *StorageSDK) UpdateAllocation(name string, size, expiry int64, allocatio
 	return hash, err
 }
 
-// GetBlobbersList get list of blobbers in string
+// GetBlobbersList get list of active blobbers, and format them as array json string
 func (s *StorageSDK) GetBlobbersList() (string, error) {
 	blobbs, err := sdk.GetBlobbers(true)
 	if err != nil {
