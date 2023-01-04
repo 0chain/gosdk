@@ -14,8 +14,10 @@ import (
 )
 
 const (
-	merkleChunkSize     = 64
+	MerkleChunkSize     = 64
 	MaxMerkleLeavesSize = 64 * 1024
+	FixedMerkleLeaves   = 1024
+	FixedMTDepth        = 11
 )
 
 type leaf struct {
@@ -80,8 +82,8 @@ func NewFixedMerkleTree(chunkSize int) *FixedMerkleTree {
 }
 
 func (fmt *FixedMerkleTree) initLeaves() {
-	fmt.Leaves = make([]Hashable, 1024)
-	for i := 0; i < 1024; i++ {
+	fmt.Leaves = make([]Hashable, FixedMerkleLeaves)
+	for i := 0; i < FixedMerkleLeaves; i++ {
 		fmt.Leaves[i] = getNewLeaf()
 	}
 }
@@ -95,26 +97,26 @@ func (fmt *FixedMerkleTree) writeToLeaves(b []byte) error {
 		return goError.New("invalid merkle leaf write")
 	}
 
-	dataLen := len(b)
-	shouldContinue := true
 	leafInd := 0
-	for i, j := 0, merkleChunkSize; shouldContinue; i, j = j, j+merkleChunkSize {
-		if j > dataLen {
-			j = dataLen
-			shouldContinue = false
+	for i := 0; i < len(b); i += MerkleChunkSize {
+		j := i + MerkleChunkSize
+		if j > len(b) {
+			j = len(b)
 		}
+
 		fmt.Leaves[leafInd].Write(b[i:j])
+		leafInd++
 	}
 
 	return nil
 }
 
-func (fmt *FixedMerkleTree) Write(b []byte, chunkIndex int) error {
+func (fmt *FixedMerkleTree) Write(b []byte) (int, error) {
 
 	fmt.writeLock.Lock()
 	defer fmt.writeLock.Unlock()
 	if fmt.isFinal {
-		return goError.New("cannot write. Tree is already finalized")
+		return 0, goError.New("cannot write. Tree is already finalized")
 	}
 
 	byteLen := int64(len(b))
@@ -131,24 +133,19 @@ func (fmt *FixedMerkleTree) Write(b []byte, chunkIndex int) error {
 		if fmt.writeCount == MaxMerkleLeavesSize {
 			err := fmt.writeToLeaves(fmt.writeBytes)
 			if err != nil {
-				return err
+				return 0, err
 			}
 			fmt.writeCount = 0
 		}
 	}
-	return nil
+	return int(byteLen), nil
 }
 
 // GetMerkleRoot get merkle tree
 func (fmt *FixedMerkleTree) GetMerkleTree() MerkleTreeI {
-	merkleLeaves := make([]Hashable, 1024)
-
-	for idx, leaf := range fmt.Leaves {
-
-		merkleLeaves[idx] = leaf
-	}
-	var mt MerkleTreeI = &MerkleTree{}
-
+	merkleLeaves := make([]Hashable, FixedMerkleLeaves)
+	copy(merkleLeaves, fmt.Leaves)
+	mt := &MerkleTree{}
 	mt.ComputeTree(merkleLeaves)
 	return mt
 }
@@ -168,7 +165,7 @@ func (fmt *FixedMerkleTree) Reload(reader io.Reader) error {
 		written, err := io.CopyN(bytesBuf, reader, int64(fmt.ChunkSize))
 
 		if written > 0 {
-			err = fmt.Write(bytesBuf.Bytes(), i)
+			_, err = fmt.Write(bytesBuf.Bytes())
 			bytesBuf.Reset()
 
 			if err != nil {
