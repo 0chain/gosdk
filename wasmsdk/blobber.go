@@ -6,6 +6,7 @@ package main
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"path"
 	"path/filepath"
 	"strings"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -331,6 +333,89 @@ func download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 
 	return resp, nil
 
+}
+
+func uploadWithReader(allocationID, remotePath string, readChunkFuncName string, fileSize int64, thumbnailBytes []byte, encrypt, isUpdate, isRepair bool, numBlocks int, callbackFuncName string) (*FileCommandResponse, error) {
+	fmt.Print("upload_with_reader:", allocationID, remotePath, readChunkFuncName, fileSize, callbackFuncName)
+
+	if len(allocationID) == 0 {
+		return nil, RequiredArg("allocationID")
+	}
+
+	if len(remotePath) == 0 {
+		return nil, RequiredArg("remotePath")
+	}
+
+	allocationObj, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return nil, err
+	}
+
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	wg.Add(1)
+	if strings.HasPrefix(remotePath, "/Encrypted") {
+		encrypt = true
+	}
+
+	fileReader := jsbridge.NewFileReader(readChunkFuncName, fileSize)
+
+	mimeType, err := zboxutil.GetFileContentType(fileReader)
+	if err != nil {
+		return nil, err
+	}
+
+	localPath := remotePath
+
+	remotePath = zboxutil.RemoteClean(remotePath)
+	isabs := zboxutil.IsRemoteAbs(remotePath)
+	if !isabs {
+		err = errors.New("invalid_path: Path should be valid and absolute")
+		return nil, err
+	}
+	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
+
+	_, fileName := filepath.Split(remotePath)
+
+	fileMeta := sdk.FileMeta{
+		Path:       localPath,
+		ActualSize: fileSize,
+		MimeType:   mimeType,
+		RemoteName: fileName,
+		RemotePath: remotePath,
+	}
+
+	if numBlocks < 1 {
+		numBlocks = 100
+	}
+
+	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair,
+		sdk.WithThumbnail(thumbnailBytes),
+		sdk.WithEncrypt(encrypt),
+		sdk.WithStatusCallback(statusBar),
+		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
+		sdk.WithChunkNumber(numBlocks))
+	if err != nil {
+		return nil, err
+	}
+
+	err = ChunkedUpload.Start()
+
+	if err != nil {
+		PrintError("Upload failed.", err)
+		return nil, err
+	}
+	wg.Wait()
+	if !statusBar.success {
+		return nil, errors.New("upload failed: unknown")
+	}
+
+	resp := &FileCommandResponse{
+		CommandSuccess: true,
+	}
+
+	return resp, nil
 }
 
 // upload upload file

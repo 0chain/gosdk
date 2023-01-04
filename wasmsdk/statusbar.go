@@ -4,8 +4,9 @@
 package main
 
 import (
-	"gopkg.in/cheggaaa/pb.v1"
 	"sync"
+
+	"gopkg.in/cheggaaa/pb.v1"
 )
 
 // StatusBar is to check status of any operation
@@ -14,6 +15,9 @@ type StatusBar struct {
 	wg      *sync.WaitGroup
 	success bool
 	err     error
+
+	totalBytes     int
+	completedBytes int
 }
 
 // Started for statusBar
@@ -22,6 +26,8 @@ func (s *StatusBar) Started(allocationID, filePath string, op int, totalBytes in
 		s.b = pb.StartNew(totalBytes)
 		s.b.Set(0)
 	}
+
+	s.totalBytes = totalBytes
 }
 
 // InProgress for statusBar
@@ -29,6 +35,8 @@ func (s *StatusBar) InProgress(allocationID, filePath string, op int, completedB
 	if logEnabled && s.b != nil {
 		s.b.Set(completedBytes)
 	}
+
+	s.completedBytes = completedBytes
 }
 
 // Completed for statusBar
@@ -37,6 +45,8 @@ func (s *StatusBar) Completed(allocationID, filePath string, filename string, mi
 		s.b.Finish()
 	}
 	s.success = true
+
+	s.completedBytes = s.totalBytes
 
 	defer s.wg.Done()
 	sdkLogger.Info("Status completed callback. Type = " + mimetype + ". Name = " + filename)

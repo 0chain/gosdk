@@ -57,6 +57,7 @@ async function createObjectURL(buf, mimeType) {
   return URL.createObjectURL(blob)
 }
 
+
 const readChunk = (offset, chunkSize, file) => 
   new Promise((res,rej) => {
     const fileReader = new FileReader()
@@ -105,6 +106,9 @@ const maxTime = 10 * 1000
 
 // Initialize __zcn_wasm__
 g.__zcn_wasm__ = g.__zcn_wasm_ || {
+  glob:{
+    index:0,
+  },
   jsProxy: {
     secretKey: null,
     publicKey: null,
@@ -120,6 +124,61 @@ g.__zcn_wasm__ = g.__zcn_wasm_ || {
  * bridge is an easier way to refer to the Go WASM object.
  */
 const bridge = g.__zcn_wasm__
+
+// upload upload files with FileReader
+// objects: the array of upload object
+//  - allocationId: string
+//  - remotePath: string
+//  - file: File
+//  - thumbnailBytes: []byte
+//  - encrypt: bool
+//  - isUpdate: bool
+//  - isRepair: bool
+//  - numBlocks: int
+//  - callback: function(totalBytes,completedBytes,error)
+async function upload(objects) {
+  for(const obj of objects){
+    const i = bridge.glob.index;
+    const readChunkFuncName = "__zcn_upload_reader_"+i.toString()
+    const callbackFuncName = "__zcn_upload_callback_"+i.toString()
+    g[readChunkFuncName] = function(file){
+      return async (offset,chunkSize) => {
+        const chunk = await readChunk(offset,chunkSize,file)
+        return chunk.buffer
+      } 
+    }(obj.file)
+
+    if(obj.callback) {
+      g[callbackFuncName] = function(callback){
+        return async (totalBytes,completedBytes,error)=> callback(totalBytes,completedBytes,error)
+      }(obj.callback)
+    }
+
+    const fileSize = obj.file.size;
+  
+      bridge.__proxy__.sdk.uploadWithReader(obj.allocationId, 
+        obj.remotePath, 
+        readChunkFuncName, 
+        fileSize, 
+        obj.thumbnailBytes, 
+        obj.encrypt, 
+        obj.isUpdate, 
+        obj.isRepair, 
+        obj.numBlocks, 
+        callbackFuncName)
+        .catch(err=> obj.callback && obj.callback(fileSize,0, err))
+        .finally(() => {
+          debugger
+          g[readChunkFuncName] = null;
+          g[callbackFuncName] = null;
+        })
+   
+    
+
+    bridge.glob.index++
+  }
+} 
+
 
 async function blsSign(hash) {
   if (!bridge.jsProxy && !bridge.jsProxy.secretKey) {
@@ -266,6 +325,7 @@ async function createWasm() {
   )
 
   const proxy = {
+    upload,
     setWallet: setWallet,
     sdk: sdkProxy, //expose sdk methods for js
     jsProxy, //expose js methods for go

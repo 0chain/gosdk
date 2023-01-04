@@ -4,7 +4,7 @@
   <!-- for zcn.wasm-->
   <script src="https://cdn.jsdelivr.net/gh/herumi/bls-wasm@v1.0.0/browser/bls.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/golang/go@go1.18.5/misc/wasm/wasm_exec.js"></script>
-  <script src="wasm.js"></script>
+  <script src="zcn.js"></script>
 
 
   <!-- for demo -->
@@ -73,7 +73,7 @@
   <fieldset>
     <legend>Files</legend>
     <button id="btnListFiles">List</button>
-    <span><input id="inputSelectedFile" type="file" /> <button id="btnUploadFile">Upload</button> </span>
+    <span><input id="inputSelectedFile" type="file" multiple /> <button id="btnUploadFile">Upload</button> </span>
     [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button> ]
     <button id="btnViewFile">View</button>
     <button id="btnGetFileStats">GetFileStats</button>
@@ -211,18 +211,35 @@
       const { files } = get('inputSelectedFile')
       if (files && files.length > 0) {
 
-        const file = files[0]
-        const fileSize = file.size
-        const chunkSize = 64 * 1024
-        let offset =0
-        while(offset<fileSize) {
-          const chunk = await readChunk(offset, chunkSize, file)
-          debugger;
-          console.log(chunk)
-          offset+= chunk.size
+        const objects = []
+        const allocationId = getSelectedAllocation()
+        for(const file of files){
+        objects.push({allocationId:allocationId,
+                  remotePath:`/${file.name}`,
+                  file:file,
+                  thumbnailBytes:null,
+                  encrypt:false, 
+                  isUpdate:false, 
+                  isRepair:false, 
+                  numBlocks:100,
+                  callback: function(totalBytes, completedBytes, error) {
+                    debugger
+                    console.log(file.name, completedBytes/totalBytes*100, error)
+                  }
+                })
         }
 
-        debugger
+        goWasm.upload(objects)
+
+        //  - allocationID: string
+//  - remotePath: string
+//  - file: File
+//  - thumbnailBytes: []byte
+//  - encrypt: bool
+//  - isUpdate: bool
+//  - isRepair: bool
+//  - numBlocks: int
+//  - callback: function(totalBytes,completedBytes,error)
 
         // const fileBytes = await readBytes(files[0])
         // const allocationId = getSelectedAllocation()
