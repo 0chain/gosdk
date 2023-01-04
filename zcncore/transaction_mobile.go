@@ -52,7 +52,7 @@ type TransactionCommon interface {
 
 	VestingAdd(ar VestingAddRequest, value string) error
 
-	MinerSCLock(providerId string, providerType int, lock uint64) error
+	MinerSCLock(providerId string, providerType int, lock string) error
 	MinerSCUnlock(providerId string, providerType int) error
 	MinerSCCollectReward(providerId string, providerType int) error
 	StorageSCCollectReward(providerId string, providerType int) error
@@ -327,6 +327,10 @@ func parseCoinStr(vs string) (uint64, error) {
 }
 
 // NewTransaction allocation new generic transaction object for any operation
+// # Inputs
+//   - cb: callback for transaction state
+//   - txnFee: ZCN tokens
+//   - nonce: latest nonce of current wallet. please set it with 0 if you don't know the latest value
 func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (TransactionScheme, error) {
 	v, err := parseCoinStr(txnFee)
 	if err != nil {
@@ -443,14 +447,19 @@ func (t *Transaction) VestingAdd(ar VestingAddRequest, value string) (
 	return
 }
 
-func (t *Transaction) MinerSCLock(providerId string, providerType int, lock uint64) error {
+func (t *Transaction) MinerSCLock(providerId string, providerType int, lock string) error {
+
+	lv, err := parseCoinStr(lock)
+	if err != nil {
+		return err
+	}
 
 	pr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerId,
 	}
-	err := t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_LOCK, pr, lock)
+	err = t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_LOCK, pr, lv)
 	if err != nil {
 		logging.Error(err)
 		return err
@@ -465,7 +474,7 @@ func (t *Transaction) MinerSCUnlock(providerId string, providerType int) error {
 		ProviderType: providerType,
 	}
 	err := t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_LOCK, pr, 0)
+		transaction.MINERSC_UNLOCK, pr, 0)
 	if err != nil {
 		logging.Error(err)
 		return err
@@ -1105,12 +1114,16 @@ func (t *Transaction) ZCNSCAddAuthorizer(ip AddAuthorizerPayload) (err error) {
 	return
 }
 
-// ConvertTokenToSAS converts ZCN tokens to value
+// ConvertTokenToSAS converts ZCN tokens to SAS tokens
+// # Inputs
+//   - token: ZCN tokens
 func ConvertTokenToSAS(token float64) uint64 {
 	return uint64(token * float64(TOKEN_UNIT))
 }
 
-// ConvertToValue converts ZCN tokens to value
+// ConvertToValue converts ZCN tokens to SAS tokens with string format
+// # Inputs
+//   - token: ZCN tokens
 func ConvertToValue(token float64) string {
 	return strconv.FormatUint(ConvertTokenToSAS(token), 10)
 }
@@ -1386,7 +1399,7 @@ func toMobileBlock(b *block.Block) *Block {
 	return lb
 }
 
-//TransactionMobile entity that encapsulates the transaction related data and meta data
+// TransactionMobile entity that encapsulates the transaction related data and meta data
 type TransactionMobile struct {
 	Hash              string `json:"hash,omitempty"`
 	Version           string `json:"version,omitempty"`

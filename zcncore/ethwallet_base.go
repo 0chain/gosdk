@@ -9,6 +9,7 @@ import (
 	"math"
 	"math/big"
 	"regexp"
+	"sync"
 
 	"github.com/0chain/gosdk/core/tokenrate"
 	"github.com/0chain/gosdk/core/zcncrypto"
@@ -27,17 +28,24 @@ import (
 const walletAddr = "0xb9EF770B6A5e12E45983C5D80545258aA38F3B78"
 const tokenAddress = "0x28b149020d2152179873ec60bed6bf7cd705775d"
 
-var getEthClient = func() (*ethclient.Client, error) {
-	if len(_config.chain.EthNode) == 0 {
-		return nil, fmt.Errorf("eth node SDK not initialized")
-	}
+var once sync.Once
 
-	logging.Info("requesting from ", _config.chain.EthNode)
-	client, err := ethclient.Dial(_config.chain.EthNode)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
+var ethClient *ethclient.Client
+
+var getEthClient = func() (*ethclient.Client, error) {
+	var err error
+
+	once.Do(func() {
+		if len(_config.chain.EthNode) == 0 {
+			err = fmt.Errorf("eth node SDK not initialized")
+			return
+		}
+
+		logging.Info("requesting from ", _config.chain.EthNode)
+		ethClient, err = ethclient.Dial(_config.chain.EthNode)
+	})
+
+	return ethClient, err
 }
 
 // TokensToEth - converting wei to eth tokens
@@ -110,6 +118,26 @@ func IsValidEthAddress(ethAddr string) (bool, error) {
 	}
 
 	return isValidEthAddress(ethAddr, client)
+}
+
+// IsEthTransactionVerified - checks if the transaction is verified
+// with a help of the given transaction hash
+func IsEthTransactionVerified(txHash string) (bool, error) {
+	client, err := getEthClient()
+	if err != nil {
+		return false, err
+	}
+
+	var (
+		tx      *types.Transaction
+		pending bool
+	)
+
+	tx, pending, err = client.TransactionByHash(context.Background(), common.HexToHash(txHash))
+	if err != nil {
+		return false, err
+	}
+	return tx != nil && !pending, nil
 }
 
 func isValidEthAddress(ethAddr string, client *ethclient.Client) (bool, error) {
