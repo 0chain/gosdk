@@ -46,8 +46,6 @@ func getNewLeaf() *leaf {
 // see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-fixedmerkletree
 type FixedMerkleTree struct {
 	// ChunkSize size of chunk
-	ChunkSize int `json:"chunk_size,omitempty"`
-	// Leaves a leaf is a CompactMerkleTree for 1/1024 shard data
 	Leaves []Hashable `json:"leaves,omitempty"`
 
 	writeLock  *sync.Mutex
@@ -63,15 +61,16 @@ func (fmt *FixedMerkleTree) Finalize() error {
 	}
 	fmt.isFinal = true
 	fmt.writeLock.Unlock()
-
-	return fmt.writeToLeaves(fmt.writeBytes[:fmt.writeCount])
+	if fmt.writeCount > 0 {
+		return fmt.writeToLeaves(fmt.writeBytes[:fmt.writeCount])
+	}
+	return nil
 }
 
 // NewFixedMerkleTree create a FixedMerkleTree with specify hash method
-func NewFixedMerkleTree(chunkSize int) *FixedMerkleTree {
+func NewFixedMerkleTree() *FixedMerkleTree {
 
 	t := &FixedMerkleTree{
-		ChunkSize:  chunkSize,
 		writeBytes: make([]byte, MaxMerkleLeavesSize),
 		writeLock:  &sync.Mutex{},
 	}
@@ -119,13 +118,9 @@ func (fmt *FixedMerkleTree) Write(b []byte) (int, error) {
 		return 0, goError.New("cannot write. Tree is already finalized")
 	}
 
-	byteLen := int64(len(b))
-	shouldContinue := true
-
-	for i, j := int64(0), MaxMerkleLeavesSize-int64(fmt.writeCount); shouldContinue; i, j = j, j+MaxMerkleLeavesSize {
-		if j > byteLen {
-			j = byteLen
-			shouldContinue = false
+	for i, j := 0, MaxMerkleLeavesSize-fmt.writeCount; i < len(b); i, j = j, j+MaxMerkleLeavesSize {
+		if j > len(b) {
+			j = len(b)
 		}
 		prevWriteCount := fmt.writeCount
 		fmt.writeCount += int(j - i)
@@ -138,7 +133,7 @@ func (fmt *FixedMerkleTree) Write(b []byte) (int, error) {
 			fmt.writeCount = 0
 		}
 	}
-	return int(byteLen), nil
+	return len(b), nil
 }
 
 // GetMerkleRoot get merkle tree
@@ -160,9 +155,9 @@ func (fmt *FixedMerkleTree) Reload(reader io.Reader) error {
 
 	fmt.initLeaves()
 
-	bytesBuf := bytes.NewBuffer(make([]byte, 0, fmt.ChunkSize))
+	bytesBuf := bytes.NewBuffer(make([]byte, 0, MaxMerkleLeavesSize))
 	for i := 0; ; i++ {
-		written, err := io.CopyN(bytesBuf, reader, int64(fmt.ChunkSize))
+		written, err := io.CopyN(bytesBuf, reader, MaxMerkleLeavesSize)
 
 		if written > 0 {
 			_, err = fmt.Write(bytesBuf.Bytes())
