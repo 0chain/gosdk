@@ -6,8 +6,11 @@ package jsbridge
 import (
 	"errors"
 	"io"
+	"sync"
 	"syscall/js"
 )
+
+var jsFileReaderMutex sync.Mutex
 
 type FileReader struct {
 	size      int64
@@ -26,13 +29,15 @@ func NewFileReader(readChunkFuncName string, fileSize int64) *FileReader {
 }
 
 func (r *FileReader) Read(p []byte) (int, error) {
-
+	//js.Value doesn't work in parallel invoke
+	jsFileReaderMutex.Lock()
+	defer jsFileReaderMutex.Unlock()
 	size := len(p)
 
 	result, err := Await(r.readChunk.Invoke(r.offset, size))
 
 	if len(err) > 0 && !err[0].IsNull() {
-		return 0, errors.New("read_chunk: " + err[0].String())
+		return 0, errors.New("file_reader: " + err[0].String())
 	}
 
 	chunk := result[0]

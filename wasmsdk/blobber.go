@@ -5,12 +5,13 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
-	"fmt"
 	"path"
 	"path/filepath"
 	"strings"
 	"sync"
+	"syscall/js"
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
@@ -22,7 +23,7 @@ import (
 )
 
 func listObjects(allocationId string, remotePath string) (*sdk.ListResult, error) {
-	alloc, err := sdk.GetAllocation(allocationId)
+	alloc, err := getAllocation(allocationId)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +41,7 @@ func createDir(allocationID, remotePath string) error {
 		return RequiredArg("remotePath")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		return err
 	}
@@ -58,7 +59,7 @@ func getFileStats(allocationID, remotePath string) ([]*sdk.FileStats, error) {
 		return nil, RequiredArg("remotePath")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +89,7 @@ func Delete(allocationID, remotePath string) (*FileCommandResponse, error) {
 		return nil, RequiredArg("remotePath")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +122,7 @@ func Rename(allocationID, remotePath, destName string) (*FileCommandResponse, er
 		return nil, RequiredArg("destName")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return nil, err
@@ -156,7 +157,7 @@ func Copy(allocationID, remotePath, destPath string) (*FileCommandResponse, erro
 		return nil, RequiredArg("destPath")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return nil, err
@@ -191,7 +192,7 @@ func Move(allocationID, remotePath, destPath string) (*FileCommandResponse, erro
 		return nil, RequiredArg("destPath")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return nil, err
@@ -223,7 +224,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 		return "", RequiredArg("remotePath")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return "", err
@@ -335,25 +336,93 @@ func download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 
 }
 
-func uploadWithReader(allocationID, remotePath string, readChunkFuncName string, fileSize int64, thumbnailBytes []byte, encrypt, isUpdate, isRepair bool, numBlocks int, callbackFuncName string) (*FileCommandResponse, error) {
-	fmt.Print("upload_with_reader:", allocationID, remotePath, readChunkFuncName, fileSize, callbackFuncName)
+type BulkUploadOption struct {
+	AllocationID string `json:"allocationID,omitempty"`
+	RemotePath   string `json:"remotePath,omitempty"`
+
+	ThumbnailBytes []byte `json:"thumbnailBytes,omitempty"`
+	Encrypt        bool   `json:"encrypt,omitempty"`
+	IsUpdate       bool   `json:"isUpdate,omitempty"`
+	IsRepair       bool   `json:"isRepair,omitempty"`
+
+	NumBlocks         int    `json:"numBlocks,omitempty"`
+	FileSize          int64  `json:"fileSize,omitempty"`
+	ReadChunkFuncName string `json:"readChunkFuncName,omitempty"`
+	CallbackFuncName  string `json:"callbackFuncName,omitempty"`
+}
+
+type BulkUploadResult struct {
+	RemotePath string `json:"remotePath,omitempty"`
+	Success    bool   `json:"success,omitempty"`
+	Error      string `json:"error,omitempty"`
+}
+
+func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
+	var options []BulkUploadOption
+	err := json.Unmarshal([]byte(jsonBulkUploadOptions), &options)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, option := range options {
+		go func(o BulkUploadOption) {
+			ok, err := uploadWithJsFuncs(o.AllocationID, o.RemotePath,
+				o.ReadChunkFuncName,
+				o.FileSize,
+				o.ThumbnailBytes,
+				o.Encrypt,
+				o.IsUpdate,
+				o.IsRepair,
+				o.NumBlocks,
+				o.CallbackFuncName)
+			result := BulkUploadResult{
+				RemotePath: o.RemotePath,
+				Success:    ok,
+			}
+			if err != nil {
+				result.Error = err.Error()
+				result.Success = false
+			}
+		}(option)
+
+	}
+
+	n := len(options)
+	results := make([]BulkUploadResult, 0, n)
+	wait := make(chan BulkUploadResult, 1)
+
+	for i := 0; i < n; i++ {
+		result := <-wait
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string, fileSize int64, thumbnailBytes []byte, encrypt, isUpdate, isRepair bool, numBlocks int, callbackFuncName string) (bool, error) {
 
 	if len(allocationID) == 0 {
-		return nil, RequiredArg("allocationID")
+		return false, RequiredArg("allocationID")
 	}
 
 	if len(remotePath) == 0 {
-		return nil, RequiredArg("remotePath")
+		return false, RequiredArg("remotePath")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
-		return nil, err
+		return false, err
 	}
 
 	wg := &sync.WaitGroup{}
 	statusBar := &StatusBar{wg: wg}
+	if callbackFuncName != "" {
+		callback := js.Global().Get(callbackFuncName)
+		statusBar.callback = func(totalBytes, completedBytes int, err string) {
+			callback.Invoke(totalBytes, completedBytes, err)
+		}
+	}
 	wg.Add(1)
 	if strings.HasPrefix(remotePath, "/Encrypted") {
 		encrypt = true
@@ -363,7 +432,7 @@ func uploadWithReader(allocationID, remotePath string, readChunkFuncName string,
 
 	mimeType, err := zboxutil.GetFileContentType(fileReader)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	localPath := remotePath
@@ -372,7 +441,7 @@ func uploadWithReader(allocationID, remotePath string, readChunkFuncName string,
 	isabs := zboxutil.IsRemoteAbs(remotePath)
 	if !isabs {
 		err = errors.New("invalid_path: Path should be valid and absolute")
-		return nil, err
+		return false, err
 	}
 	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
 
@@ -397,25 +466,22 @@ func uploadWithReader(allocationID, remotePath string, readChunkFuncName string,
 		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
 		sdk.WithChunkNumber(numBlocks))
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	err = ChunkedUpload.Start()
 
 	if err != nil {
 		PrintError("Upload failed.", err)
-		return nil, err
+		return false, err
 	}
+
 	wg.Wait()
 	if !statusBar.success {
-		return nil, errors.New("upload failed: unknown")
+		return false, errors.New("upload failed: unknown")
 	}
 
-	resp := &FileCommandResponse{
-		CommandSuccess: true,
-	}
-
-	return resp, nil
+	return true, nil
 }
 
 // upload upload file
@@ -428,7 +494,7 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 		return nil, RequiredArg("remotePath")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return nil, err

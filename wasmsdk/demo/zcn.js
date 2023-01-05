@@ -125,8 +125,8 @@ g.__zcn_wasm__ = g.__zcn_wasm_ || {
  */
 const bridge = g.__zcn_wasm__
 
-// upload upload files with FileReader
-// objects: the array of upload object
+// bulk upload files with FileReader
+// objects: the list of upload object
 //  - allocationId: string
 //  - remotePath: string
 //  - file: File
@@ -136,47 +136,45 @@ const bridge = g.__zcn_wasm__
 //  - isRepair: bool
 //  - numBlocks: int
 //  - callback: function(totalBytes,completedBytes,error)
-async function upload(objects) {
-  for(const obj of objects){
+async function bulkUpload(options) {
+  const start = bridge.glob.index
+  const opts = options.map(obj=>{
     const i = bridge.glob.index;
+    bridge.glob.index++
     const readChunkFuncName = "__zcn_upload_reader_"+i.toString()
     const callbackFuncName = "__zcn_upload_callback_"+i.toString()
-    g[readChunkFuncName] = function(file){
-      return async (offset,chunkSize) => {
-        const chunk = await readChunk(offset,chunkSize,file)
-        return chunk.buffer
-      } 
-    }(obj.file)
+    g[readChunkFuncName] =  async (offset,chunkSize) => {
+      console.log("bulk_upload: read chunk remotePath:"+ obj.remotePath + " offset:"+offset+" chunkSize:"+chunkSize)
+      const chunk = await readChunk(offset,chunkSize,obj.file)
+      return chunk.buffer
+    } 
 
     if(obj.callback) {
-      g[callbackFuncName] = function(callback){
-        return async (totalBytes,completedBytes,error)=> callback(totalBytes,completedBytes,error)
-      }(obj.callback)
+      g[callbackFuncName] =  async (totalBytes,completedBytes,error)=> obj.callback(totalBytes,completedBytes,error)
     }
 
-    const fileSize = obj.file.size;
-  
-      bridge.__proxy__.sdk.uploadWithReader(obj.allocationId, 
-        obj.remotePath, 
-        readChunkFuncName, 
-        fileSize, 
-        obj.thumbnailBytes, 
-        obj.encrypt, 
-        obj.isUpdate, 
-        obj.isRepair, 
-        obj.numBlocks, 
-        callbackFuncName)
-        .catch(err=> obj.callback && obj.callback(fileSize,0, err))
-        .finally(() => {
-          debugger
-          g[readChunkFuncName] = null;
-          g[callbackFuncName] = null;
-        })
-   
-    
+    return {
+      allocationId:obj.allocationId, 
+      remotePath:obj.remotePath, 
+      readChunkFuncName:readChunkFuncName, 
+      fileSize: obj.file.size, 
+      thumbnailBytes:obj.thumbnailBytes, 
+      encrypt:obj.encrypt, 
+      isUpdate:obj.isUpdate, 
+      isRepair:obj.isRepair, 
+      numBlocks:obj.numBlocks, 
+      callbackFuncName:callbackFuncName
+    } 
+  })
 
-    bridge.glob.index++
+  const end =  bridge.glob.index
+
+  const result = await bridge.__proxy__.sdk.bulkUpload(JSON.stringify(opts))
+  for (let i=start; i<end;i++){
+    g["__zcn_upload_reader_"+i.toString()] = null;
+    g["__zcn_upload_callback_"+i.toString()] =null;
   }
+  return result
 } 
 
 
@@ -308,7 +306,9 @@ async function createWasm() {
       })
 
   const sdkProxy = new Proxy(
-    {},
+    {
+    
+    },
     {
       get: sdkGet,
     }
@@ -325,7 +325,7 @@ async function createWasm() {
   )
 
   const proxy = {
-    upload,
+    bulkUpload: bulkUpload,
     setWallet: setWallet,
     sdk: sdkProxy, //expose sdk methods for js
     jsProxy, //expose js methods for go

@@ -18,6 +18,7 @@ type StatusBar struct {
 
 	totalBytes     int
 	completedBytes int
+	callback       func(totalBytes int, completedBytes int, err string)
 }
 
 // Started for statusBar
@@ -28,6 +29,9 @@ func (s *StatusBar) Started(allocationID, filePath string, op int, totalBytes in
 	}
 
 	s.totalBytes = totalBytes
+	if s.callback != nil {
+		s.callback(s.totalBytes, s.completedBytes, "")
+	}
 }
 
 // InProgress for statusBar
@@ -37,6 +41,9 @@ func (s *StatusBar) InProgress(allocationID, filePath string, op int, completedB
 	}
 
 	s.completedBytes = completedBytes
+	if s.callback != nil {
+		s.callback(s.totalBytes, s.completedBytes, "")
+	}
 }
 
 // Completed for statusBar
@@ -47,6 +54,9 @@ func (s *StatusBar) Completed(allocationID, filePath string, filename string, mi
 	s.success = true
 
 	s.completedBytes = s.totalBytes
+	if s.callback != nil {
+		s.callback(s.totalBytes, s.completedBytes, "")
+	}
 
 	defer s.wg.Done()
 	sdkLogger.Info("Status completed callback. Type = " + mimetype + ". Name = " + filename)
@@ -65,6 +75,9 @@ func (s *StatusBar) Error(allocationID string, filePath string, op int, err erro
 		}
 	}()
 	PrintError("Error in file operation." + err.Error())
+	if s.callback != nil {
+		s.callback(s.totalBytes, s.completedBytes, err.Error())
+	}
 	s.wg.Done()
 }
 

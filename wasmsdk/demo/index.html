@@ -77,6 +77,7 @@
     [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button> ]
     <button id="btnViewFile">View</button>
     <button id="btnGetFileStats">GetFileStats</button>
+    <button id="btnDelete">Delete</button>
     <br>
 
     <div id="listFiles">
@@ -127,7 +128,7 @@
       minSubmit: 50,
       confirmationChainLength: 3,
     }
-    const blockWorker = 'https://beta.0chain.net/dns';
+    const blockWorker = 'https://dev.0chain.net/dns';
     const config = [
       networkConfig.chainId,
       blockWorker,
@@ -135,7 +136,7 @@
       networkConfig.minConfirmation,
       networkConfig.minSubmit,
       networkConfig.confirmationChainLength,
-      'https://0box.beta.0chain.net', //zboxHost
+      'https://0box.dev.0chain.net', //zboxHost
       'vult', //zboxAppType
     ]
 
@@ -223,13 +224,16 @@
                   isRepair:false, 
                   numBlocks:100,
                   callback: function(totalBytes, completedBytes, error) {
-                    debugger
-                    console.log(file.name, completedBytes/totalBytes*100, error)
+                    console.log(file.name + " "+ completedBytes+"/"+totalBytes +" err:"+ error)
                   }
                 })
         }
 
-        goWasm.upload(objects)
+
+        const results =  await goWasm.bulkUpload(objects)
+
+        console.log(results)
+        
 
         //  - allocationID: string
 //  - remotePath: string
@@ -410,6 +414,14 @@
         txtOutput.innerHTML = JSON.stringify(stats, null, 2)
       }
 
+    })
+
+    onClick('btnDelete', async () => {
+      const file = files.find(it => it.path == getSelectedFile())
+      if (file) {
+        const allocationId = getSelectedAllocation()
+        await goWasm.sdk.delete(allocationId, file?.path)
+      }
     })
 
 
