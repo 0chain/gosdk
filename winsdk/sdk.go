@@ -94,7 +94,8 @@ func InitSDK(configJson *C.char, clientJson *C.char) error {
 	}
 	l.Logger.Info("InitStorageSDK success")
 
-	zboxApiClient = zboxapi.NewClient(configObj.ZboxHost, configObj.ZboxAppType)
+	zboxApiClient = zboxapi.NewClient()
+	zboxApiClient.SetRequest(configObj.ZboxHost, configObj.ZboxAppType)
 	c := client.GetClient()
 	if c != nil {
 		zboxApiClient.SetWallet(client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey())
@@ -184,4 +185,18 @@ func CryptoJsDecrypt(passphrase, encryptedMessage *C.char) *C.char {
 	msg := C.GoString(encryptedMessage)
 
 	return WithJSON(zcncore.CryptoJsDecrypt(pass, msg))
+}
+
+// GetPublicEncryptionKey get public encryption key by mnemonic
+//
+//	return
+//		{
+//			"error":"",
+//			"result":"xxxx",
+//		}
+//
+//export GetPublicEncryptionKey
+func GetPublicEncryptionKey(mnemonics *C.char) *C.char {
+	m := C.GoString(mnemonics)
+	return WithJSON(zcncore.GetPublicEncryptionKey(m))
 }
