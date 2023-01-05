@@ -52,6 +52,7 @@ type FixedMerkleTree struct {
 	isFinal    bool
 	writeCount int
 	writeBytes []byte
+	merkleRoot []byte
 }
 
 func (fmt *FixedMerkleTree) Finalize() error {
@@ -143,6 +144,54 @@ func (fmt *FixedMerkleTree) GetMerkleTree() MerkleTreeI {
 	mt := &MerkleTree{}
 	mt.ComputeTree(merkleLeaves)
 	return mt
+}
+
+func (fmt *FixedMerkleTree) CalculateMerkleRoot() {
+	nodes := make([][]byte, len(fmt.Leaves))
+	for i := 0; i < len(nodes); i++ {
+		nodes[i] = fmt.Leaves[i].GetHashBytes()
+	}
+
+	for i := 0; i < FixedMTDepth; i++ {
+
+		newNodes := make([][]byte, (len(nodes)+1)/2)
+		if len(nodes)&1 == 1 {
+			nodes = append(nodes, nodes[len(nodes)-1])
+		}
+
+		nodeInd := 0
+		for j := 0; j < len(nodes); j += 2 {
+			newNodes[nodeInd] = MHashBytes(nodes[j], nodes[j+1])
+			nodeInd++
+		}
+		nodes = newNodes
+		if len(nodes) == 1 {
+			break
+		}
+	}
+
+	fmt.merkleRoot = nodes[0]
+}
+
+type FixedMerklePath struct {
+	LeafHash []byte   `json:"leaf_hash"`
+	RootHash []byte   `json:"root_hash"`
+	Nodes    [][]byte `json:"nodes"`
+	LeafInd  int
+}
+
+func (fp FixedMerklePath) VerifyMerklePath() bool {
+	leafInd := fp.LeafInd
+	hash := fp.LeafHash
+	for i := 0; i < len(fp.Nodes); i++ {
+		if leafInd&1 == 0 {
+			hash = MHashBytes(hash, fp.Nodes[i])
+		} else {
+			hash = MHashBytes(fp.Nodes[i], hash)
+		}
+		leafInd = leafInd / 2
+	}
+	return bytes.Equal(hash, fp.RootHash)
 }
 
 // GetMerkleRoot get merkle root
