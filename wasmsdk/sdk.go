@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxapi"
@@ -111,4 +112,9 @@ const HASH_LENGTH = 32
 func isHash(str string) bool {
 	bytes, err := hex.DecodeString(str)
 	return err == nil && len(bytes) == HASH_LENGTH
+}
+
+// getLookupHash get lookup hash with allocation id and path
+func getLookupHash(allocationID string, path string) string {
+	return encryption.Hash(allocationID + ":" + path)
 }

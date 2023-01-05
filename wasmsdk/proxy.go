@@ -137,6 +137,7 @@ func main() {
 				"showLogs":               showLogs,
 				"getUSDRate":             getUSDRate,
 				"isWalletID":             isWalletID,
+				"getLookupHash":          getLookupHash,
 
 				//blobber
 				"delete":         Delete,
