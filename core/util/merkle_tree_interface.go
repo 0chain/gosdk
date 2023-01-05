@@ -32,6 +32,13 @@ func Hash(text string) string {
 	return encryption.Hash(text)
 }
 
+func MHashBytes(h1, h2 []byte) []byte {
+	buf := make([]byte, len(h1)+len(h2))
+	copy(buf, h1)
+	copy(buf[len(h1):], h2)
+	return encryption.RawHash(buf)
+}
+
 /*MHash - merkle hashing of a pair of child hashes */
 func MHash(h1 string, h2 string) string {
 	return Hash(h1 + h2)
