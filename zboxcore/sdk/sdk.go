@@ -669,6 +669,9 @@ func GetBlobbers(active bool) (bs []*Blobber, err error) {
 }
 
 // GetBlobber instance.
+//
+//	# Inputs
+//	-	blobberID: the id of blobber
 func GetBlobber(blobberID string) (blob *Blobber, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
