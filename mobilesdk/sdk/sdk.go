@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/zboxcore/client"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -42,6 +43,10 @@ type StorageSDK struct {
 }
 
 // SetLogFile - setting up log level for core libraries
+//
+//	# Inputs
+//	- logFile: the output file of logs
+//	- verbose: output detail logs
 func SetLogFile(logFile string, verbose bool) {
 	zcncore.SetLogFile(logFile, verbose)
 	sdk.SetLogFile(logFile, verbose)
@@ -125,10 +130,23 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 }
 
 // CreateAllocation - creating new allocation
-func (s *StorageSDK) CreateAllocation(name string, datashards, parityshards int, size, expiration int64, lock uint64) (*zbox.Allocation, error) {
+// ## Inputs
+//   - name: allocation name
+//   - datashards: number of data shards, effects upload and download speeds
+//   - parityshards: number of parity shards, effects availability
+//   - size: size of space reserved on blobbers
+//   - expiration: duration to allocation expiration
+//   - lock: lock write pool with given number of tokens
+func (s *StorageSDK) CreateAllocation(name string, datashards, parityshards int, size, expiration int64, lock string) (*zbox.Allocation, error) {
 	readPrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 	writePrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
-	sdkAllocationID, _, _, err := sdk.CreateAllocation(name, datashards, parityshards, size, expiration, readPrice, writePrice, lock, false, false, &sdk.FileOptionsParameters{})
+
+	l, err := util.ParseCoinStr(lock)
+	if err != nil {
+		return nil, err
+	}
+
+	sdkAllocationID, _, _, err := sdk.CreateAllocation(name, datashards, parityshards, size, expiration, readPrice, writePrice, l, false, false, &sdk.FileOptionsParameters{})
 	if err != nil {
 		return nil, err
 	}
@@ -140,9 +158,24 @@ func (s *StorageSDK) CreateAllocation(name string, datashards, parityshards int,
 }
 
 // CreateAllocationWithBlobbers - creating new allocation with list of blobbers
-func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parityshards int, size, expiration int64, lock uint64, blobbersRaw string) (*zbox.Allocation, error) {
+//
+//		## Inputs
+//	  - name: allocation name
+//	  - datashards: number of data shards, effects upload and download speeds
+//	  - parityshards: number of parity shards, effects availability
+//	  - size: size of space reserved on blobbers
+//	  - expiration: duration to allocation expiration
+//		- lock: lock write pool with given number of tokens
+//		- blobberUrls: concat blobber urls with comma. leave it as empty if you don't have any preferred blobbers
+//		- blobberIds: concat blobber ids with comma. leave it as empty if you don't have any preferred blobbers
+func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parityshards int, size, expiration int64, lock string, blobberUrls, blobberIds string) (*zbox.Allocation, error) {
 	readPrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 	writePrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
+
+	l, err := util.ParseCoinStr(lock)
+	if err != nil {
+		return nil, err
+	}
 
 	options := sdk.CreateAllocationOptions{
 		Name:         name,
@@ -150,20 +183,27 @@ func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parit
 		ParityShards: parityshards,
 		Size:         size,
 		Expiry:       expiration,
-		Lock:         lock,
+		Lock:         l,
 		WritePrice:   writePrice,
 		ReadPrice:    readPrice,
 	}
 
-	blobberUrls := strings.Split(blobbersRaw, "/n")
-	if len(blobberUrls) > 0 {
-		blobberIds, err := sdk.GetBlobberIds(blobberUrls)
-		if err != nil {
-			return nil, err
+	if blobberUrls != "" {
+		urls := strings.Split(blobberUrls, ",")
+		if len(urls) > 0 {
+			ids, err := sdk.GetBlobberIds(urls)
+			if err != nil {
+				return nil, err
+			}
+			options.BlobberIds = ids
 		}
+	}
 
-		options.BlobberIds = blobberIds
-
+	if blobberIds != "" {
+		ids := strings.Split(blobberIds, ",")
+		if len(ids) > 0 {
+			options.BlobberIds = ids
+		}
 	}
 
 	sdkAllocationID, _, _, err := sdk.CreateAllocationWith(options)
@@ -286,7 +326,7 @@ func (s *StorageSDK) UpdateAllocation(name string, size, expiry int64, allocatio
 	return hash, err
 }
 
-// GetBlobbersList get list of blobbers in string
+// GetBlobbersList get list of active blobbers, and format them as array json string
 func (s *StorageSDK) GetBlobbersList() (string, error) {
 	blobbs, err := sdk.GetBlobbers(true)
 	if err != nil {

@@ -29,7 +29,8 @@ var (
 //export InitZBox
 func InitZBox(zboxHost, zboxAppType *C.char) {
 
-	zboxApiClient = zboxapi.NewClient(C.GoString(zboxHost), C.GoString(zboxAppType))
+	zboxApiClient = zboxapi.NewClient()
+	zboxApiClient.SetRequest(C.GoString(zboxHost), C.GoString(zboxAppType))
 
 	c := client.GetClient()
 	if c != nil {
