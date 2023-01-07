@@ -1144,7 +1144,7 @@ func UpdateAllocation(name string,
 	lock uint64,
 	setImmutable, updateTerms bool,
 	addBlobberId, removeBlobberId string,
-	thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
+	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, err error) {
 
 	if !sdkInitialized {
@@ -1155,6 +1155,8 @@ func UpdateAllocation(name string,
 	if err != nil {
 		return "",0, allocationNotFound 
 	}
+
+	fmt.Printf("FileOptions before = %v\n", alloc.FileOptions)
 	
 	updateAllocationRequest := make(map[string]interface{})
 	updateAllocationRequest["name"] = name
@@ -1166,8 +1168,10 @@ func UpdateAllocation(name string,
 	updateAllocationRequest["update_terms"] = updateTerms
 	updateAllocationRequest["add_blobber_id"] = addBlobberId
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
-	updateAllocationRequest["third_party_extendable"] = thirdPartyExtendable
+	updateAllocationRequest["set_third_party_extendable"] = setThirdPartyExtendable
 	updateAllocationRequest["file_options"] = calculateAllocationFileOptions(alloc.FileOptions, fileOptionsParams)
+
+	fmt.Printf("FileOptions after = %v\n", updateAllocationRequest["file_options"])
 
 	sn := transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
