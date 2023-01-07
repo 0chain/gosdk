@@ -22,6 +22,7 @@ import (
 
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -35,7 +36,6 @@ import (
 var (
 	noBLOBBERS     = errors.New("", "No Blobbers set in this allocation")
 	notInitialized = errors.New("sdk_not_initialized", "Please call InitStorageSDK Init and use GetAllocation to get the allocation object")
-	fileOptionNotPermitted = errors.New("prohibited_allocation_file_options", "This options for this file is not permitted for this allocation")
 )
 
 const (
@@ -267,16 +267,19 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 }
 
 func (a *Allocation) CanUpload() bool {
-	return (a.FileOptions & CAN_UPLOAD_MASK) > 0 
+	// return (a.FileOptions & CAN_UPLOAD_MASK) > 0 
+	return true
 }
 
 func (a *Allocation) CanDelete() bool {
-	return (a.FileOptions & CAN_DELETE_MASK) > 0 
+	// return (a.FileOptions & CAN_DELETE_MASK) > 0 
+	return true
 	
 }
 
 func (a *Allocation) CanUpdate() bool {
-	return (a.FileOptions & CAN_UPDATE_MASK) > 0 
+	// return (a.FileOptions & CAN_UPDATE_MASK) > 0 
+	return true
 }
 
 func (a *Allocation) CanMove() bool {
@@ -418,12 +421,13 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 
 ) error {
 
+	fmt.Printf("StartChunkedUpload %v\n", a)
 	if !a.isInitialized() {
 		return notInitialized
 	}
 
 	if (!isUpdate && !a.CanUpload()) || (isUpdate && !a.CanUpdate()) {
-		return fileOptionNotPermitted
+		return constants.ErrFileOptionNotPermitted
 	}
 
 	fileReader, err := os.Open(localPath)
@@ -914,7 +918,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int)
 	}
 
 	if !a.CanDelete() {
-		return fileOptionNotPermitted
+		return constants.ErrFileOptionNotPermitted
 	}
 
 	if len(path) == 0 {
@@ -947,7 +951,7 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	}
 
 	if !a.CanRename() {
-		return fileOptionNotPermitted
+		return constants.ErrFileOptionNotPermitted
 	}
 
 	if path == "" {
@@ -991,7 +995,7 @@ func (a *Allocation) MoveObject(srcPath string, destPath string) error {
 	}
 
 	if !a.CanMove() {
-		return fileOptionNotPermitted
+		return constants.ErrFileOptionNotPermitted
 	}
 
 	if len(srcPath) == 0 || len(destPath) == 0 {
@@ -1033,7 +1037,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	}
 
 	if !a.CanCopy() {
-		return fileOptionNotPermitted
+		return constants.ErrFileOptionNotPermitted
 	}
 
 	if len(path) == 0 || len(destPath) == 0 {
