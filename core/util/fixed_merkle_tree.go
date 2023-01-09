@@ -2,7 +2,6 @@ package util
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/hex"
 	"hash"
 	"io"
@@ -11,6 +10,7 @@ import (
 	goError "errors"
 
 	"github.com/0chain/errors"
+	"golang.org/x/crypto/sha3"
 )
 
 const (
@@ -38,7 +38,7 @@ func (l *leaf) Write(b []byte) (int, error) {
 
 func getNewLeaf() *leaf {
 	return &leaf{
-		h: sha256.New(),
+		h: sha3.New256(),
 	}
 }
 
@@ -139,11 +139,7 @@ func (fmt *FixedMerkleTree) Write(b []byte) (int, error) {
 
 // GetMerkleRoot get merkle tree
 func (fmt *FixedMerkleTree) GetMerkleTree() MerkleTreeI {
-	merkleLeaves := make([]Hashable, FixedMerkleLeaves)
-	copy(merkleLeaves, fmt.Leaves)
-	mt := &MerkleTree{}
-	mt.ComputeTree(merkleLeaves)
-	return mt
+	return nil
 }
 
 func (fmt *FixedMerkleTree) CalculateMerkleRoot() {
@@ -196,7 +192,11 @@ func (fp FixedMerklePath) VerifyMerklePath() bool {
 
 // GetMerkleRoot get merkle root
 func (fmt *FixedMerkleTree) GetMerkleRoot() string {
-	return fmt.GetMerkleTree().GetRoot()
+	if fmt.merkleRoot != nil {
+		return hex.EncodeToString(fmt.merkleRoot)
+	}
+	fmt.CalculateMerkleRoot()
+	return hex.EncodeToString(fmt.merkleRoot)
 }
 
 // Reload reset and reload leaves from io.Reader
