@@ -88,6 +88,8 @@ func (fmt *FixedMerkleTree) initLeaves() {
 	}
 }
 
+// writeToLeaves will divide the data with MerkleChunkSize(64 bytes) and write to
+// each leaf hasher
 func (fmt *FixedMerkleTree) writeToLeaves(b []byte) error {
 	if len(b) > MaxMerkleLeavesSize {
 		return goError.New("data size greater than maximum required size")
@@ -111,6 +113,9 @@ func (fmt *FixedMerkleTree) writeToLeaves(b []byte) error {
 	return nil
 }
 
+// Write will write data to the leaves once MaxMerkleLeavesSize(64 KB) is reached.
+// This can be used to write stream of data as well.
+// fmt.Finalize() is required if data is not exact multiple of 64KB.
 func (fmt *FixedMerkleTree) Write(b []byte) (int, error) {
 
 	fmt.writeLock.Lock()
@@ -137,7 +142,7 @@ func (fmt *FixedMerkleTree) Write(b []byte) (int, error) {
 	return len(b), nil
 }
 
-// GetMerkleRoot get merkle tree
+// GetMerkleRoot is only for interface compliance.
 func (fmt *FixedMerkleTree) GetMerkleTree() MerkleTreeI {
 	return nil
 }
@@ -169,6 +174,7 @@ func (fmt *FixedMerkleTree) CalculateMerkleRoot() {
 	fmt.merkleRoot = nodes[0]
 }
 
+// FixedMerklePath is used to verify existence of leaf hash for fixed merkle tree
 type FixedMerklePath struct {
 	LeafHash []byte   `json:"leaf_hash"`
 	RootHash []byte   `json:"root_hash"`
@@ -190,7 +196,7 @@ func (fp FixedMerklePath) VerifyMerklePath() bool {
 	return bytes.Equal(hash, fp.RootHash)
 }
 
-// GetMerkleRoot get merkle root
+// GetMerkleRoot get merkle root.
 func (fmt *FixedMerkleTree) GetMerkleRoot() string {
 	if fmt.merkleRoot != nil {
 		return hex.EncodeToString(fmt.merkleRoot)
