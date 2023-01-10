@@ -77,6 +77,30 @@ func TestGetAggregates(t *testing.T) {
 		t.Error(err)
 		return
 	}
+
+	err = zcncore.GetSharderSnapshots(int64(587), statusBar)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	err = zcncore.GetMinerSnapshots(int64(587), statusBar)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	err = zcncore.GetAuthorizerSnapshots(int64(587), statusBar)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	err = zcncore.GetValidatorSnapshots(int64(587), statusBar)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 	wg.Wait()
 	if !statusBar.Success {
 		t.Error(statusBar.Err)
