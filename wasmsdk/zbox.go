@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	zboxApiClient            *zboxapi.Client
+	zboxApiClient            = zboxapi.NewClient()
 	ErrZboxApiNotInitialized = errors.New("0box: please call setWallet to create 0box api client")
 )
 
