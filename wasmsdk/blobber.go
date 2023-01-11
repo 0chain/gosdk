@@ -366,6 +366,11 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 
 	for _, option := range options {
 		go func(o BulkUploadOption) {
+			result := BulkUploadResult{
+				RemotePath: o.RemotePath,
+			}
+			defer func() { wait <- result }()
+
 			ok, err := uploadWithJsFuncs(o.AllocationID, o.RemotePath,
 				o.ReadChunkFuncName,
 				o.FileSize,
@@ -375,14 +380,12 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 				o.IsRepair,
 				o.NumBlocks,
 				o.CallbackFuncName)
-			result := BulkUploadResult{
-				RemotePath: o.RemotePath,
-				Success:    ok,
-			}
+			result.Success = ok
 			if err != nil {
 				result.Error = err.Error()
 				result.Success = false
 			}
+
 		}(option)
 
 	}

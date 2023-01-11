@@ -232,29 +232,7 @@
 
         const results =  await goWasm.bulkUpload(objects)
 
-        console.log(results)
-        
-
-        //  - allocationID: string
-//  - remotePath: string
-//  - file: File
-//  - thumbnailBytes: []byte
-//  - encrypt: bool
-//  - isUpdate: bool
-//  - isRepair: bool
-//  - numBlocks: int
-//  - callback: function(totalBytes,completedBytes,error)
-
-        // const fileBytes = await readBytes(files[0])
-        // const allocationId = getSelectedAllocation()
-
-        // //allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, isUpdate, isRepair bool, numBlocks int
-        // await goWasm.sdk.upload(
-        //   allocationId, `/${files[0].name}`,
-        //   fileBytes,
-        //   null,
-        //   false, false, false, 100)
-
+        console.log(JSON.stringify(results))
       }
     })
 
