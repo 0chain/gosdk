@@ -364,6 +364,9 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 		return nil, err
 	}
 
+	n := len(options)
+	wait := make(chan BulkUploadResult, 1)
+
 	for _, option := range options {
 		go func(o BulkUploadOption) {
 			result := BulkUploadResult{
@@ -390,10 +393,7 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 
 	}
 
-	n := len(options)
 	results := make([]BulkUploadResult, 0, n)
-	wait := make(chan BulkUploadResult, 1)
-
 	for i := 0; i < n; i++ {
 		result := <-wait
 		results = append(results, result)
