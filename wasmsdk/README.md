@@ -165,6 +165,16 @@ create readpool in storage SC if the pool is missing.
 
 
 ## Blobber methods
+
+### zcn.sdk.getLookupHash
+get lookup hash by allocation id and path
+
+**Input**:
+> allocationID string, path string
+
+**Output**:
+> string
+
 ### zcn.sdk.delete
 delete remote file from blobbers
 
