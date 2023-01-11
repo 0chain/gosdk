@@ -418,10 +418,23 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 		RemotePath: remotePath,
 	}
 
-	ChunkedUpload, err := CreateChunkedUpload(workdir, a, fileMeta, fileReader, isUpdate, isRepair,
-		WithThumbnailFile(thumbnailPath),
+	options := []ChunkedUploadOption{
 		WithEncrypt(encryption),
-		WithStatusCallback(status))
+		WithStatusCallback(status),
+	}
+
+	if thumbnailPath != "" {
+		buf, err := os.ReadFile(fileName)
+		if err != nil {
+			return err
+		}
+		options = append(options, WithThumbnail(buf))
+	}
+
+	ChunkedUpload, err := CreateChunkedUpload(workdir,
+		a, fileMeta, fileReader,
+		isUpdate, isRepair,
+		options...)
 	if err != nil {
 		return err
 	}
