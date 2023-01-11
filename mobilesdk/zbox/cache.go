@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/sdk"
+	lru "github.com/hashicorp/golang-lru/v2"
 )
 
 type cachedAllocation struct {
@@ -13,7 +14,7 @@ type cachedAllocation struct {
 }
 
 var (
-	cachedAllocations      = make(map[string]*cachedAllocation)
+	cachedAllocations, _   = lru.New[string, *cachedAllocation](100)
 	cachedAllocationsMutex sync.Mutex
 )
 
@@ -21,23 +22,25 @@ func getAllocation(allocationID string) (*sdk.Allocation, error) {
 	cachedAllocationsMutex.Lock()
 	defer cachedAllocationsMutex.Unlock()
 
-	it, ok := cachedAllocations[allocationID]
+	it, ok := cachedAllocations.Get(allocationID)
 
-	if !ok || it.Expiration.Before(time.Now()) {
-
-		a, err := sdk.GetAllocation(allocationID)
-		if err != nil {
-			return nil, err
+	if ok {
+		if ok && it.Expiration.After(time.Now()) {
+			return it.Allocation, nil
 		}
-
-		it = &cachedAllocation{
-			Allocation: a,
-			Expiration: time.Now().Add(5 * time.Minute),
-		}
-
-		cachedAllocations[allocationID] = it
-
 	}
+
+	a, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return nil, err
+	}
+
+	it = &cachedAllocation{
+		Allocation: a,
+		Expiration: time.Now().Add(5 * time.Minute),
+	}
+
+	cachedAllocations.Add(allocationID, it)
 
 	return it.Allocation, nil
 }
