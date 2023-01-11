@@ -1,7 +1,6 @@
 package zbox
 
 import (
-	"sync"
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/sdk"
@@ -14,14 +13,10 @@ type cachedAllocation struct {
 }
 
 var (
-	cachedAllocations, _   = lru.New[string, *cachedAllocation](100)
-	cachedAllocationsMutex sync.Mutex
+	cachedAllocations, _ = lru.New[string, *cachedAllocation](100)
 )
 
 func getAllocation(allocationID string) (*sdk.Allocation, error) {
-	cachedAllocationsMutex.Lock()
-	defer cachedAllocationsMutex.Unlock()
-
 	it, ok := cachedAllocations.Get(allocationID)
 
 	if ok {
