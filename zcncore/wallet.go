@@ -4,6 +4,7 @@
 package zcncore
 
 import (
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
