@@ -4,11 +4,9 @@
 package main
 
 import (
-	"sync"
-	"time"
-
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	lru "github.com/hashicorp/golang-lru/v2"
+	"time"
 )
 
 type cachedAllocation struct {
