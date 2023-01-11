@@ -4,8 +4,6 @@
 package zcncore
 
 import (
-	"strconv"
-
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
@@ -26,12 +24,12 @@ func (w *wallet) Sign(hash string) (string, error) {
 	return sigScheme.Sign(hash)
 }
 
-func GetWalletBalanceMobile(id string) (string, error) {
-	balance, err := GetWalletBalance(id)
+func GetWalletBalance(id string) (int64, error) {
+	balance, err := getWalletBalance(id)
 	if err != nil {
-		return "", err
+		return 0, err
 	}
-	return strconv.FormatInt(int64(balance), 10), nil
+	return int64(balance), nil
 }
 
 func RegisterToMiners(clientId, pubKey string, callback WalletCallback) error {

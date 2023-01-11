@@ -17,6 +17,10 @@ func GetWallet(walletStr string) (*zcncrypto.Wallet, error) {
 	return getWallet(walletStr)
 }
 
+func GetWalletBalance(clientId string) (common.Balance, error) {
+	return getWalletBalance(clientId)
+}
+
 func SignWith0Wallet(hash string, w *zcncrypto.Wallet) (string, error) {
 	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 	err := sigScheme.SetPrivateKey(w.Keys[0].PrivateKey)
