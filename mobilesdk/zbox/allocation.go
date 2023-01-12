@@ -317,14 +317,6 @@ func (a *Allocation) CancelDownload(remotepath string) error {
 	return a.sdkAllocation.CancelDownload(remotepath)
 }
 
-// CancelUpload - cancel file upload
-func (a *Allocation) CancelUpload(localpath string) error {
-	if a == nil || a.sdkAllocation == nil {
-		return ErrInvalidAllocation
-	}
-	return a.sdkAllocation.CancelUpload(localpath)
-}
-
 // GetDiff - cancel file diff
 func (a *Allocation) GetDiff(lastSyncCachePath string, localRootPath string, localFileFilters string, remoteExcludePaths string) (string, error) {
 	if a == nil || a.sdkAllocation == nil {

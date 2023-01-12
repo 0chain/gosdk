@@ -3,9 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -172,13 +170,11 @@ type Allocation struct {
 	Curators                []string         `json:"curators"`
 
 	numBlockDownloads       int
-	uploadChan              chan *UploadRequest
 	downloadChan            chan *DownloadRequest
 	repairChan              chan *RepairRequest
 	ctx                     context.Context
 	ctxCancelF              context.CancelFunc
 	mutex                   *sync.Mutex
-	uploadProgressMap       map[string]*UploadRequest
 	downloadProgressMap     map[string]*DownloadRequest
 	repairRequestInProgress *RepairRequest
 	initialized             bool
@@ -210,11 +206,9 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 }
 
 func (a *Allocation) InitAllocation() {
-	a.uploadChan = make(chan *UploadRequest, 10)
 	a.downloadChan = make(chan *DownloadRequest, 10)
 	a.repairChan = make(chan *RepairRequest, 1)
 	a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
-	a.uploadProgressMap = make(map[string]*UploadRequest)
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
 	a.mutex = &sync.Mutex{}
 	a.fullconsensus, a.consensusThreshold = a.getConsensuses()
@@ -238,10 +232,6 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 		case <-ctx.Done():
 			l.Logger.Info("Upload cancelled by the parent")
 			return
-		case uploadReq := <-a.uploadChan:
-
-			l.Logger.Info(fmt.Sprintf("received a upload request for %v %v\n", uploadReq.filepath, uploadReq.remotefilepath))
-			go uploadReq.processUpload(ctx, a)
 		case downloadReq := <-a.downloadChan:
 
 			l.Logger.Info(fmt.Sprintf("received a download request for %v\n", downloadReq.remotefilepath))
@@ -427,110 +417,6 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	}
 
 	return ChunkedUpload.Start()
-}
-
-// uploadOrUpdateFile [Deprecated]please use CreateChunkedUpload
-func (a *Allocation) uploadOrUpdateFile(localpath string,
-	remotepath string,
-	status StatusCallback,
-	isUpdate bool,
-	thumbnailpath string,
-	encryption bool,
-	isRepair bool,
-
-) error {
-
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	fileInfo, err := GetFileInfo(localpath)
-	if err != nil {
-		return errors.Wrap(err, "Local file error")
-	}
-	thumbnailSize := int64(0)
-	if len(thumbnailpath) > 0 {
-		fileInfo, err := sys.Files.Stat(thumbnailpath)
-		if err != nil {
-			thumbnailSize = 0
-			thumbnailpath = ""
-		} else {
-			thumbnailSize = fileInfo.Size()
-		}
-
-	}
-
-	remotepath = zboxutil.RemoteClean(remotepath)
-	isabs := zboxutil.IsRemoteAbs(remotepath)
-	if !isabs {
-		return errors.New("invalid_path", "Path should be valid and absolute")
-	}
-	remotepath = zboxutil.GetFullRemotePath(localpath, remotepath)
-
-	var fileName string
-	_, fileName = filepath.Split(remotepath)
-	uploadReq := &UploadRequest{}
-	uploadReq.remotefilepath = remotepath
-	uploadReq.thumbnailpath = thumbnailpath
-	uploadReq.filepath = localpath
-	uploadReq.filemeta = &UploadFileMeta{}
-	uploadReq.filemeta.Name = fileName
-	uploadReq.filemeta.Size = fileInfo.Size()
-	uploadReq.filemeta.Path = remotepath
-	uploadReq.filemeta.ThumbnailSize = thumbnailSize
-	uploadReq.remaining = uploadReq.filemeta.Size
-	uploadReq.thumbRemaining = uploadReq.filemeta.ThumbnailSize
-	uploadReq.isUpdate = isUpdate
-	uploadReq.isRepair = isRepair
-	uploadReq.connectionID = zboxutil.NewConnectionId()
-	uploadReq.statusCallback = status
-	uploadReq.datashards = a.DataShards
-	uploadReq.parityshards = a.ParityShards
-	uploadReq.setUploadMask(len(a.Blobbers))
-	uploadReq.fullconsensus = a.fullconsensus
-	uploadReq.consensusThresh = a.consensusThreshold
-	uploadReq.isEncrypted = encryption
-	uploadReq.completedCallback = func(filepath string) {
-		a.mutex.Lock()
-		defer a.mutex.Unlock()
-		delete(a.uploadProgressMap, filepath)
-	}
-
-	if uploadReq.isRepair {
-		found, repairRequired, fileRef, err := a.RepairRequired(remotepath)
-		if err != nil {
-			return err
-		}
-
-		if !repairRequired {
-			return errors.New("", "Repair not required")
-		}
-
-		file, _ := ioutil.ReadFile(localpath)
-		hash := sha256.New()
-		hash.Write(file)
-		contentHash := hex.EncodeToString(hash.Sum(nil))
-		print(contentHash)
-		if contentHash != fileRef.ActualFileHash {
-			return errors.New("", "Content hash doesn't match")
-		}
-
-		uploadReq.filemeta.Hash = fileRef.ActualFileHash
-		uploadReq.uploadMask = found.Not().And(uploadReq.uploadMask)
-		uploadReq.fullconsensus = uploadReq.uploadMask.Add64(1).TrailingZeros()
-	}
-
-	if !uploadReq.IsFullConsensusSupported() {
-		return fmt.Errorf("allocation requires [%v] blobbers, which is greater than the maximum permitted number of [%v]. reduce number of data or parity shards and try again", uploadReq.fullconsensus, uploadReq.GetMaxBlobbersSupported())
-	}
-
-	go func() {
-		a.uploadChan <- uploadReq
-		a.mutex.Lock()
-		defer a.mutex.Unlock()
-		a.uploadProgressMap[localpath] = uploadReq
-	}()
-	return nil
 }
 
 func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, *fileref.FileRef, error) {
@@ -1201,14 +1087,6 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 		return errors.New("", "consensus not reached")
 	}
 	return nil
-}
-
-func (a *Allocation) CancelUpload(localpath string) error {
-	if uploadReq, ok := a.uploadProgressMap[localpath]; ok {
-		uploadReq.isUploadCanceled = true
-		return nil
-	}
-	return errors.New("local_path_not_found", "Invalid path. No upload in progress for the path "+localpath)
 }
 
 func (a *Allocation) CancelDownload(remotepath string) error {

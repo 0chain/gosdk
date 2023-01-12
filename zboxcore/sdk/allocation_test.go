@@ -243,75 +243,6 @@ func newBlobbersDetails() (blobbers []*BlobberAllocation) {
 	return blobberDetails
 }
 
-func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit128(t *testing.T) {
-	setupMocks()
-
-	var maxNumOfBlobbers = 129
-
-	var allocation = &Allocation{}
-	var blobbers = make([]*blockchain.StorageNode, maxNumOfBlobbers)
-	allocation.initialized = true
-	sdkInitialized = true
-	allocation.Blobbers = blobbers
-	allocation.DataShards = 64
-	allocation.ParityShards = 65
-	allocation.fullconsensus, allocation.consensusThreshold = allocation.getConsensuses()
-
-	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false)
-
-	var expectedErr = "allocation requires [129] blobbers, which is greater than the maximum permitted number of [128]. reduce number of data or parity shards and try again"
-	if err == nil {
-		t.Errorf("uploadOrUpdateFile() = expected error  but was %v", nil)
-	} else if errors.Top(err) != expectedErr {
-		t.Errorf("uploadOrUpdateFile() = expected error message to be %v  but was %v", expectedErr, errors.Top(err))
-	}
-}
-
-func TestThrowErrorWhenBlobbersRequiredGreaterThanExplicitLimit(t *testing.T) {
-	setupMocks()
-
-	var maxNumOfBlobbers = 10
-
-	var allocation = &Allocation{}
-	var blobbers = make([]*blockchain.StorageNode, maxNumOfBlobbers)
-	allocation.initialized = true
-	sdkInitialized = true
-	allocation.Blobbers = blobbers
-	allocation.DataShards = 5
-	allocation.ParityShards = 6
-	allocation.fullconsensus, allocation.consensusThreshold = allocation.getConsensuses()
-
-	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false)
-
-	var expectedErr = "allocation requires [11] blobbers, which is greater than the maximum permitted number of [10]. reduce number of data or parity shards and try again"
-	if err == nil {
-		t.Errorf("uploadOrUpdateFile() = expected error  but was %v", nil)
-	} else if errors.Top(err) != expectedErr {
-		t.Errorf("uploadOrUpdateFile() = expected error message to be %v  but was %v", expectedErr, errors.Top(err))
-	}
-}
-
-func TestDoNotThrowErrorWhenBlobbersRequiredLessThanLimit(t *testing.T) {
-	setupMocks()
-
-	var maxNumOfBlobbers = 10
-
-	var allocation = &Allocation{}
-	var blobbers = make([]*blockchain.StorageNode, maxNumOfBlobbers)
-	allocation.initialized = true
-	sdkInitialized = true
-	allocation.Blobbers = blobbers
-	allocation.DataShards = 5
-	allocation.ParityShards = 4
-	allocation.fullconsensus, allocation.consensusThreshold = allocation.getConsensuses()
-
-	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false)
-
-	if err != nil {
-		t.Errorf("uploadOrUpdateFile() = expected no error but was %v", err)
-	}
-}
-
 func setupMocks() {
 	GetFileInfo = func(localpath string) (os.FileInfo, error) {
 		return new(MockFile), nil
@@ -384,19 +315,13 @@ func TestAllocation_InitAllocation(t *testing.T) {
 }
 
 func TestAllocation_dispatchWork(t *testing.T) {
-	a := Allocation{DataShards: 2, ParityShards: 2, uploadChan: make(chan *UploadRequest), downloadChan: make(chan *DownloadRequest), repairChan: make(chan *RepairRequest)}
+	a := Allocation{DataShards: 2, ParityShards: 2, downloadChan: make(chan *DownloadRequest), repairChan: make(chan *RepairRequest)}
 	t.Run("Test_Cover_Context_Canceled", func(t *testing.T) {
 		ctx, cancelFn := context.WithCancel(context.Background())
 		go a.dispatchWork(ctx)
 		cancelFn()
 	})
-	t.Run("Test_Cover_Upload_Request", func(t *testing.T) {
-		go a.dispatchWork(context.Background())
-		a.uploadChan <- &UploadRequest{
-			file:      []*fileref.FileRef{},
-			filemeta:  &UploadFileMeta{},
-			Consensus: Consensus{}}
-	})
+
 	t.Run("Test_Cover_Download_Request", func(t *testing.T) {
 		ctx, ctxCncl := context.WithCancel(context.Background())
 		go a.dispatchWork(context.Background())
@@ -937,11 +862,9 @@ func TestAllocation_downloadFile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			a := &Allocation{}
-			a.uploadChan = make(chan *UploadRequest, 10)
 			a.downloadChan = make(chan *DownloadRequest, 10)
 			a.repairChan = make(chan *RepairRequest, 1)
 			a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
-			a.uploadProgressMap = make(map[string]*UploadRequest)
 			a.downloadProgressMap = make(map[string]*DownloadRequest)
 			a.mutex = &sync.Mutex{}
 			a.initialized = true
@@ -1499,56 +1422,6 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
 			require.NotEmptyf(at, "unexpected empty auth ticket")
-		})
-	}
-}
-
-func TestAllocation_CancelUpload(t *testing.T) {
-	const localPath = "alloc"
-	type parameters struct {
-		localpath string
-	}
-	tests := []struct {
-		name       string
-		parameters parameters
-		setup      func(*testing.T, *Allocation) (teardown func(*testing.T))
-		wantErr    bool
-		errMsg     string
-	}{
-		{
-			name:    "Test_Failed",
-			wantErr: true,
-			errMsg:  "local_path_not_found: Invalid path. No upload in progress for the path",
-		},
-		{
-			name: "Test_Success",
-			parameters: parameters{
-				localpath: localPath,
-			},
-			setup: func(t *testing.T, a *Allocation) (teardown func(t *testing.T)) {
-				a.uploadProgressMap[localPath] = &UploadRequest{}
-				return nil
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require := require.New(t)
-			a := &Allocation{}
-			a.InitAllocation()
-			sdkInitialized = true
-			if tt.setup != nil {
-				if teardown := tt.setup(t, a); teardown != nil {
-					defer teardown(t)
-				}
-			}
-			err := a.CancelUpload(tt.parameters.localpath)
-			require.EqualValues(tt.wantErr, err != nil)
-			if err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(err))
-				return
-			}
-			require.NoErrorf(err, "unexpected error: %v", err)
 		})
 	}
 }
@@ -2422,11 +2295,9 @@ func TestAllocation_CancelRepair(t *testing.T) {
 }
 
 func setupMockAllocation(t *testing.T, a *Allocation) {
-	a.uploadChan = make(chan *UploadRequest, 10)
 	a.downloadChan = make(chan *DownloadRequest, 10)
 	a.repairChan = make(chan *RepairRequest, 1)
 	a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
-	a.uploadProgressMap = make(map[string]*UploadRequest)
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
 	a.mutex = &sync.Mutex{}
 	a.initialized = true
@@ -2440,17 +2311,6 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 			case <-a.ctx.Done():
 				t.Log("Upload cancelled by the parent")
 				return
-			case uploadReq := <-a.uploadChan:
-				if uploadReq.completedCallback != nil {
-					uploadReq.completedCallback(uploadReq.filepath)
-				}
-				if uploadReq.statusCallback != nil {
-					uploadReq.statusCallback.Completed(a.ID, uploadReq.filepath, uploadReq.filemeta.Name, uploadReq.filemeta.MimeType, int(uploadReq.filemeta.Size), OpUpload)
-				}
-				if uploadReq.wg != nil {
-					uploadReq.wg.Done()
-				}
-				t.Logf("received a upload request for %v %v\n", uploadReq.filepath, uploadReq.remotefilepath)
 			case downloadReq := <-a.downloadChan:
 				if downloadReq.completedCallback != nil {
 					downloadReq.completedCallback(downloadReq.remotefilepath, downloadReq.remotefilepathhash)

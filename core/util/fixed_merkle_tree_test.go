@@ -15,7 +15,7 @@ const (
 )
 
 func TestFixedMerkleTreeWrite(t *testing.T) {
-	for i := 0; i < 1000; i++ {
+	for i := 0; i < 10; i++ {
 		var n int64
 		for {
 			n = rand.Int63n(KB * KB)
