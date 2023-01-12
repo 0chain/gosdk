@@ -3,8 +3,10 @@ package zcncore
 import (
 	"context"
 	"encoding/json"
+	stdErrors "errors"
 	"fmt"
 	"net/http"
+	"sync/atomic"
 	"time"
 
 	"github.com/0chain/errors"
@@ -20,6 +22,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
+
+const consensusThreshold = 25
 
 // compiler time check
 var (
@@ -328,11 +332,16 @@ func (t *Transaction) submitTxn() {
 		}
 	}
 
-	result := make(chan *util.PostResponse, len(_config.chain.Miners))
-	defer close(result)
-	var tSuccessRsp string
-	var tFailureRsp string
-	randomMiners := util.GetRandom(_config.chain.Miners, getMinMinersSubmit())
+
+	var (
+		randomMiners = util.GetRandom(_config.chain.Miners, getMinMinersSubmit())
+		minersN     = len(randomMiners)
+		failedCount int32
+		failC       = make(chan struct{})
+		resultC = make(chan *util.PostResponse, minersN)
+	)
+
+
 	for _, miner := range randomMiners {
 		go func(minerurl string) {
 			url := minerurl + PUT_TRANSACTION
@@ -340,36 +349,36 @@ func (t *Transaction) submitTxn() {
 			req, err := util.NewHTTPPostRequest(url, t.txn)
 			if err != nil {
 				logging.Error(minerurl, " new post request failed. ", err.Error())
+
+				if int(atomic.AddInt32(&failedCount, 1)) == minersN {
+					close(failC)
+				}
 				return
 			}
+
 			res, err := req.Post()
 			if err != nil {
 				logging.Error(minerurl, " submit transaction error. ", err.Error())
+				if int(atomic.AddInt32(&failedCount, 1)) == minersN {
+					close(failC)
+				}
+				return
 			}
-			result <- res
+
+			resultC <- res
 		}(miner)
 	}
-	consensus := 0
-	for range randomMiners {
-		rsp := <-result
-		logging.Debug(rsp.Url, "Status: ", rsp.Status)
-		if rsp.StatusCode == http.StatusOK {
-			consensus++
-			tSuccessRsp = rsp.Body
-		} else {
-			logging.Error(rsp.Body)
-			tFailureRsp = rsp.Body
-		}
 
-	}
-	rate := consensus * 100 / len(randomMiners)
-	if rate < consensusThresh {
-		t.completeTxn(StatusError, "", fmt.Errorf("submit transaction failed. %s", tFailureRsp))
-		transaction.Cache.Evict(t.txn.ClientID)
+	select {
+	case <-failC:
+		logging.Error("failed to submit transaction")
+		t.completeTxn(StatusError, "", fmt.Errorf("failed to submit transaction to all miners"))
 		return
+	case ret := <-resultC:
+			logging.Debug(ret.Url, "Status: ", ret.Status)
+			tSuccessRsp := ret.Body
+		t.completeTxn(StatusSuccess, tSuccessRsp, nil)
 	}
-	sys.Sleep(3 * time.Second)
-	t.completeTxn(StatusSuccess, tSuccessRsp, nil)
 }
 
 func newTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (*Transaction, error) {
@@ -555,103 +564,111 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 }
 
 func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
-	result := make(chan *util.GetResponse)
-	defer close(result)
-
 	numSharders = len(_config.chain.Sharders) // overwrite, use all
+	result := make(chan *util.GetResponse, numSharders)
+
 	queryFromSharders(numSharders, fmt.Sprintf("%v%v&content=lfb", TXN_VERIFY_URL, txnHash), result)
 
 	maxConfirmation := int(0)
 	txnConfirmations := make(map[string]int)
-	var blockHdr *blockHeader
-	var lfb blockHeader
-	var confirmation map[string]json.RawMessage
+	waitTime := time.NewTimer(10 * time.Second)
 	for i := 0; i < numSharders; i++ {
-		rsp := <-result
-		logging.Debug(rsp.Url + " " + rsp.Status)
-		logging.Debug(rsp.Body)
-		if rsp.StatusCode == http.StatusOK {
+		select {
+		case <-waitTime.C:
+			return nil, nil, nil, stdErrors.New("failed to confirm transaction")
+		case rsp := <-result:
+			logging.Debug(rsp.Url + " " + rsp.Status)
+			logging.Debug(rsp.Body)
+			if rsp.StatusCode != http.StatusOK {
+				continue
+			}
+
 			var cfmLfb map[string]json.RawMessage
 			err := json.Unmarshal([]byte(rsp.Body), &cfmLfb)
 			if err != nil {
 				logging.Error("txn confirmation parse error", err)
 				continue
 			}
+
 			bH, err := getBlockHeaderFromTransactionConfirmation(txnHash, cfmLfb)
 			if err != nil {
 				logging.Error(err)
+				continue
 			}
-			if err == nil {
-				txnConfirmations[bH.Hash]++
-				if txnConfirmations[bH.Hash] > maxConfirmation {
-					maxConfirmation = txnConfirmations[bH.Hash]
-					blockHdr = bH
-					confirmation = cfmLfb
-				}
-			} else if lfbRaw, ok := cfmLfb["latest_finalized_block"]; ok {
-				err := json.Unmarshal([]byte(lfbRaw), &lfb)
-				if err != nil {
-					logging.Error("round info parse error.", err)
-					continue
+
+			lfbRaw, ok := cfmLfb["latest_finalized_block"]
+			if !ok {
+				continue
+			}
+
+			var lfb blockHeader
+			err = json.Unmarshal([]byte(lfbRaw), &lfb)
+			if err != nil {
+				logging.Error("round info parse error.", err)
+				continue
+			}
+
+			txnConfirmations[bH.Hash]++
+			if txnConfirmations[bH.Hash] > maxConfirmation {
+				maxConfirmation = txnConfirmations[bH.Hash]
+				if maxConfirmation * 100 / numSharders >= consensusThreshold {
+					return bH, cfmLfb, &lfb, nil
 				}
 			}
 		}
+	}
 
-	}
-	if maxConfirmation == 0 {
-		return nil, confirmation, &lfb, errors.New("", "transaction not found")
-	}
-	return blockHdr, confirmation, &lfb, nil
+	return nil, nil, nil, stdErrors.New("failed to confirm transaction")
 }
 
 func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHeader, error) {
-	result := make(chan *util.GetResponse)
-	defer close(result)
 	numSharders = len(_config.chain.Sharders) // overwrite, use all
-	queryFromSharders(numSharders, fmt.Sprintf("%vround=%v&content=%v", GET_BLOCK_INFO, round, content), result)
-	maxConsensus := int(0)
-	roundConsensus := make(map[string]int)
-	var blkHdr blockHeader
+	resultC := make(chan *util.GetResponse, numSharders)
+	queryFromSharders(numSharders, fmt.Sprintf("%vround=%v&content=%v", GET_BLOCK_INFO, round, content), resultC)
+	var (
+		maxConsensus int
+		roundConsensus = make(map[string]int)
+		waitTime = time.NewTimer(10 * time.Second)
+	)
+
+	type blockRound struct {
+		Header blockHeader `json:"header"`
+	}
+
 	for i := 0; i < numSharders; i++ {
-		rsp := <-result
-		logging.Debug(rsp.Url, rsp.Status)
-		if rsp.StatusCode == http.StatusOK {
-			var objmap map[string]json.RawMessage
-			err := json.Unmarshal([]byte(rsp.Body), &objmap)
+		select {
+		case <-waitTime.C:
+			return nil, stdErrors.New("failed to get block info by round with consensus")
+		case rsp := <-resultC:
+			logging.Debug(rsp.Url, rsp.Status)
+			if rsp.StatusCode != http.StatusOK {
+				logging.Debug(rsp.Url, "no round confirmation. Resp:", rsp.Body)
+				continue
+			}
+
+			var br blockRound
+			err := json.Unmarshal([]byte(rsp.Body), &br)
 			if err != nil {
 				logging.Error("round info parse error. ", err)
 				continue
 			}
-			if header, ok := objmap["header"]; ok {
-				err := json.Unmarshal([]byte(header), &objmap)
-				if err != nil {
-					logging.Error("round info parse error. ", err)
-					continue
-				}
-				if hash, ok := objmap["hash"]; ok {
-					h := encryption.FastHash([]byte(hash))
-					roundConsensus[h]++
-					if roundConsensus[h] > maxConsensus {
-						maxConsensus = roundConsensus[h]
-						err := json.Unmarshal([]byte(header), &blkHdr)
-						if err != nil {
-							logging.Error("round info parse error. ", err)
-							continue
-						}
-					}
-				}
-			} else {
-				logging.Debug(rsp.Url, "no round confirmation. Resp:", rsp.Body)
-			}
-		} else {
-			logging.Error(rsp.Body)
-		}
 
+			if len(br.Header.Hash) == 0 {
+				continue
+			}
+
+			h := br.Header.Hash
+			roundConsensus[h]++
+			if roundConsensus[h] > maxConsensus {
+				maxConsensus = roundConsensus[h]
+				if maxConsensus*100/numSharders >= consensusThreshold {
+					return &br.Header, nil
+				}
+			}
+		}
 	}
-	if maxConsensus == 0 {
-		return nil, errors.New("", "round info not found.")
-	}
-	return &blkHdr, nil
+
+	return nil, stdErrors.New("failed to get block info by round with consensus")
 }
 
 func isBlockExtends(prevHash string, block *blockHeader) bool {
