@@ -909,9 +909,6 @@ func CreateAllocationForOwner(
 	readPrice, writePrice PriceRange,
 	lock uint64, preferredBlobberIds []string,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
-	if lock < 0 {
-		return "", 0, nil, errors.New("", "invalid value for lock")
-	}
 
 	allocationRequest, err := getNewAllocationBlobbers(
 		datashards, parityshards, size, expiry, readPrice, writePrice, preferredBlobberIds)
@@ -1008,7 +1005,7 @@ func getNewAllocationBlobbers(
 func GetBlobberIds(blobberUrls []string) ([]string, error) {
 
 	if len(blobberUrls) == 0 {
-		return make([]string, 0), nil
+		return nil, nil
 	}
 
 	urlsStr, err := json.Marshal(blobberUrls)

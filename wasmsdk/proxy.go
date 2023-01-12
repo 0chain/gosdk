@@ -131,7 +131,7 @@ func main() {
 			jsbridge.BindAsyncFuncs(sdk, map[string]interface{}{
 				//sdk
 				"init":                   initSDKs,
-				"setWallet":              SetWallet,
+				"setWallet":              setWallet,
 				"getPublicEncryptionKey": zcncore.GetPublicEncryptionKey,
 				"hideLogs":               hideLogs,
 				"showLogs":               showLogs,
@@ -200,6 +200,8 @@ func main() {
 	}
 
 	hideLogs()
+
+	go startRefreshWalletNonce()
 
 	<-make(chan bool)
 

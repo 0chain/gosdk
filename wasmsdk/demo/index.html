@@ -185,12 +185,17 @@
         maxWritePrice: 184467440737095516,
         lock: 5000000000
       }
-      const allocation = await goWasm.sdk.createAllocation(config.name, config.datashards, config.parityshards, config.size, config.expiry,
+      try{
+        const allocation = await goWasm.sdk.createAllocation(config.name, config.datashards, config.parityshards, config.size, config.expiry,
         config.minReadPrice, config.maxReadPrice, config.minWritePrice, config.maxWritePrice,
         config.lock, [])
 
-      allocations.push(allocation)
-      bindAllocations()
+        allocations = await goWasm.sdk.listAllocations()
+        bindAllocations()
+      }catch(e){
+        alert(e)
+      }
+      
     })
 
     onClick('btnListAllocations', async () => {
