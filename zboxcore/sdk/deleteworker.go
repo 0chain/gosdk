@@ -12,7 +12,6 @@ import (
 	"github.com/0chain/errors"
 
 	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -218,7 +217,6 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 	activeBlobbers := req.deleteMask.CountOnes()
 	wg.Add(activeBlobbers)
 	commitReqs := make([]*CommitRequest, activeBlobbers)
-	timestamp := common.Now()
 	var c int
 	for i := req.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
@@ -227,7 +225,6 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 		newChange.NumBlocks = newChange.ObjectTree.GetNumBlocks()
 		newChange.Operation = constants.FileOperationDelete
 		newChange.Size = newChange.ObjectTree.GetSize()
-		newChange.Timestamp = timestamp
 		commitReq := &CommitRequest{
 			allocationID: req.allocationID,
 			allocationTx: req.allocationTx,

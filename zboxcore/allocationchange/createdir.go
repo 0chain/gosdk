@@ -59,7 +59,6 @@ func (d *DirCreateChange) ProcessChange(rootRef *fileref.Ref) (commitParams Comm
 	}
 
 	commitParams.FileIDMeta = inodesMeta
-	commitParams.Timestamp = d.Timestamp
 	rootRef.CalculateHash()
 	return
 }

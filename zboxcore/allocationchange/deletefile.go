@@ -49,7 +49,6 @@ func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref) (commitParams Co
 		if child.GetName() == ch.ObjectTree.GetName() {
 			dirRef.RemoveChild(i)
 			rootRef.CalculateHash()
-			commitParams.Timestamp = ch.Timestamp
 			return
 		}
 	}

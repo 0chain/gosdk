@@ -57,7 +57,6 @@ func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) (
 	}
 	dirRef.Children[idx] = ch.NewFile
 	rootRef.CalculateHash()
-	commitParams.Timestamp = ch.Timestamp
 	return
 }
 

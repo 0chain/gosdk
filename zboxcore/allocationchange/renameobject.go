@@ -66,7 +66,6 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) (
 	}
 	ch.processChildren(affectedRef)
 	rootRef.CalculateHash()
-	commitParams.Timestamp = ch.Timestamp
 	return
 }
 

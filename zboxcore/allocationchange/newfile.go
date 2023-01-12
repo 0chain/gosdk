@@ -70,7 +70,6 @@ func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref) (
 	dirRef.AddChild(ch.File)
 	rootRef.CalculateHash()
 	commitParams.FileIDMeta = fileIDMeta
-	commitParams.Timestamp = ch.Timestamp
 	return
 }
 

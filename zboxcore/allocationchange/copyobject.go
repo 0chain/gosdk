@@ -80,7 +80,6 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) (
 
 	rootRef.CalculateHash()
 	commitParam.FileIDMeta = fileIDMeta
-	commitParam.Timestamp = ch.Timestamp
 	return
 }
 

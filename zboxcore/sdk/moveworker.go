@@ -13,7 +13,6 @@ import (
 	"github.com/0chain/errors"
 
 	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
@@ -187,7 +186,6 @@ func (req *MoveRequest) ProcessMove() error {
 	activeBlobbers := req.moveMask.CountOnes()
 	wg.Add(activeBlobbers)
 	commitReqs := make([]*CommitRequest, activeBlobbers)
-	timestamp := common.Now()
 	var c int
 	for i := req.moveMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
@@ -199,7 +197,6 @@ func (req *MoveRequest) ProcessMove() error {
 		moveChange.NumBlocks = 0
 		moveChange.Operation = constants.FileOperationMove
 		moveChange.Size = 0
-		moveChange.Timestamp = timestamp
 		commitReq := &CommitRequest{
 			allocationID: req.allocationID,
 			allocationTx: req.allocationTx,

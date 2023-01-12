@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -186,7 +187,7 @@ func (req *CommitRequest) commitBlobber(
 	}
 
 	wm := &marker.WriteMarker{}
-	timestamp := int64(commitParams.Timestamp)
+	timestamp := int64(common.Now())
 	wm.AllocationRoot = encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10))
 	if latestWM != nil {
 		wm.PreviousAllocationRoot = latestWM.AllocationRoot

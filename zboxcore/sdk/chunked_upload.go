@@ -176,7 +176,6 @@ func CreateChunkedUpload(
 			change.NumBlocks = ref.NumBlocks
 			change.Operation = constants.FileOperationUpdate
 			change.Size = ref.Size
-			change.Timestamp = ts
 			return change
 		}
 	} else {
@@ -188,7 +187,6 @@ func CreateChunkedUpload(
 			change.Operation = constants.FileOperationInsert
 			change.Size = ref.Size
 			change.Uuid = uid
-			change.Timestamp = ts
 			return change
 		}
 	}

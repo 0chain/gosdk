@@ -3,20 +3,17 @@ package allocationchange
 import (
 	"strings"
 
-	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
 type CommitParams struct {
 	FileIDMeta map[string]string
-	Timestamp  common.Timestamp
 }
 
 type change struct {
-	Size      int64            `json:"size"`
-	NumBlocks int64            `json:"num_of_blocks"`
-	Operation string           `json:"operation"`
-	Timestamp common.Timestamp `json:"timestamp"`
+	Size      int64  `json:"size"`
+	NumBlocks int64  `json:"num_of_blocks"`
+	Operation string `json:"operation"`
 }
 
 type AllocationChange interface {

@@ -14,7 +14,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
@@ -191,7 +190,6 @@ func (req *CopyRequest) ProcessCopy() error {
 
 	var uid uuid.UUID
 	var c int
-	timestamp := common.Now()
 	for i := req.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 
@@ -203,7 +201,6 @@ func (req *CopyRequest) ProcessCopy() error {
 		newChange.NumBlocks = 0
 		newChange.Operation = constants.FileOperationCopy
 		newChange.Size = 0
-		newChange.Timestamp = timestamp
 		commitReq := &CommitRequest{
 			allocationID: req.allocationID,
 			allocationTx: req.allocationTx,

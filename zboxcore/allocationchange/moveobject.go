@@ -108,7 +108,6 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref) (
 	}
 
 	rootRef.CalculateHash()
-	commitParam.Timestamp = ch.Timestamp
 	return
 }
 

@@ -14,6 +14,7 @@ import (
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -201,7 +202,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	}
 
 	wm := &marker.WriteMarker{}
-	timestamp := int64(commitParams.Timestamp)
+	timestamp := int64(common.Now())
 	wm.AllocationRoot = encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10))
 	if latestWM != nil {
 		wm.PreviousAllocationRoot = latestWM.AllocationRoot
