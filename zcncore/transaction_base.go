@@ -375,7 +375,7 @@ func (t *Transaction) submitTxn() {
 		t.completeTxn(StatusError, "", fmt.Errorf("failed to submit transaction to all miners"))
 		return
 	case ret := <-resultC:
-			logging.Debug(ret.Url, "Status: ", ret.Status)
+			logging.Debug("finish txn submitting, ", ret.Url, ", Status: ", ret.Status)
 			tSuccessRsp := ret.Body
 		t.completeTxn(StatusSuccess, tSuccessRsp, nil)
 	}
@@ -564,15 +564,22 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 }
 
 func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
-	numSharders = len(_config.chain.Sharders) // overwrite, use all
 	result := make(chan *util.GetResponse, numSharders)
 
-	queryFromSharders(numSharders, fmt.Sprintf("%v%v&content=lfb", TXN_VERIFY_URL, txnHash), result)
+	queryFromSharders(5, fmt.Sprintf("%v%v&content=lfb", TXN_VERIFY_URL, txnHash), result)
 
-	maxConfirmation := int(0)
-	txnConfirmations := make(map[string]int)
-	waitTime := time.NewTimer(10 * time.Second)
+	var (
+		maxConfirmation int
+		failedCount int
+		txnConfirmations = make(map[string]int)
+		waitTime = time.NewTimer(10 * time.Second)
+	)
+
 	for i := 0; i < numSharders; i++ {
+		if failedCount * 100 / numSharders > 100 - consensusThreshold {
+			return nil, nil, nil, errors.New("", fmt.Sprintf("failed to confirm txn %s", txnHash))
+		}
+
 		select {
 		case <-waitTime.C:
 			return nil, nil, nil, stdErrors.New("failed to confirm transaction")
@@ -580,12 +587,14 @@ func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, 
 			logging.Debug(rsp.Url + " " + rsp.Status)
 			logging.Debug(rsp.Body)
 			if rsp.StatusCode != http.StatusOK {
+				failedCount++
 				continue
 			}
 
 			var cfmLfb map[string]json.RawMessage
 			err := json.Unmarshal([]byte(rsp.Body), &cfmLfb)
 			if err != nil {
+				failedCount++
 				logging.Error("txn confirmation parse error", err)
 				continue
 			}
@@ -593,11 +602,13 @@ func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, 
 			bH, err := getBlockHeaderFromTransactionConfirmation(txnHash, cfmLfb)
 			if err != nil {
 				logging.Error(err)
+				failedCount++
 				continue
 			}
 
 			lfbRaw, ok := cfmLfb["latest_finalized_block"]
 			if !ok {
+				failedCount++
 				continue
 			}
 
@@ -605,6 +616,7 @@ func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, 
 			err = json.Unmarshal([]byte(lfbRaw), &lfb)
 			if err != nil {
 				logging.Error("round info parse error.", err)
+				failedCount++
 				continue
 			}
 
@@ -629,6 +641,7 @@ func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHe
 		maxConsensus int
 		roundConsensus = make(map[string]int)
 		waitTime = time.NewTimer(10 * time.Second)
+		failedCount int
 	)
 
 	type blockRound struct {
@@ -638,22 +651,29 @@ func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHe
 	for i := 0; i < numSharders; i++ {
 		select {
 		case <-waitTime.C:
-			return nil, stdErrors.New("failed to get block info by round with consensus")
+			return nil, stdErrors.New("failed to get block info by round with consensus, timeout")
 		case rsp := <-resultC:
 			logging.Debug(rsp.Url, rsp.Status)
+			if failedCount * 100 / numSharders > 100 - consensusThreshold {
+				return nil, stdErrors.New("failed to get block info by round with consensus, too many failures")
+			}
+
 			if rsp.StatusCode != http.StatusOK {
 				logging.Debug(rsp.Url, "no round confirmation. Resp:", rsp.Body)
-				continue
+				failedCount++
+                continue
 			}
 
 			var br blockRound
 			err := json.Unmarshal([]byte(rsp.Body), &br)
 			if err != nil {
 				logging.Error("round info parse error. ", err)
+				failedCount++
 				continue
 			}
 
 			if len(br.Header.Hash) == 0 {
+				failedCount++
 				continue
 			}
 
