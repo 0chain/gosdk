@@ -79,8 +79,12 @@ const (
 	STORAGESC_GET_TRANSACTIONS         = STORAGESC_PFX + "/transactions"
 	STORAGE_GET_TOTAL_STORED_DATA      = STORAGESC_PFX + "/total-stored-data"
 
-	STORAGE_GET_SNAPSHOT         = STORAGESC_PFX + "/replicate-snapshots"
-	STORAGE_GET_BLOBBER_SNAPSHOT = STORAGESC_PFX + "/replicate-blobber-aggregates"
+	STORAGE_GET_SNAPSHOT            = STORAGESC_PFX + "/replicate-snapshots"
+	STORAGE_GET_BLOBBER_SNAPSHOT    = STORAGESC_PFX + "/replicate-blobber-aggregates"
+	STORAGE_GET_MINER_SNAPSHOT      = STORAGESC_PFX + "/replicate-miner-aggregates"
+	STORAGE_GET_SHARDER_SNAPSHOT    = STORAGESC_PFX + "/replicate-sharder-aggregates"
+	STORAGE_GET_AUTHORIZER_SNAPSHOT = STORAGESC_PFX + "/replicate-authorizer-aggregates"
+	STORAGE_GET_VALIDATOR_SNAPSHOT  = STORAGESC_PFX + "/replicate-validator-aggregates"
 )
 
 const (
@@ -140,6 +144,10 @@ const (
 	OpStorageSCGetTransactions
 	OpStorageSCGetSnapshots
 	OpStorageSCGetBlobberSnapshots
+	OpStorageSCGetMinerSnapshots
+	OpStorageSCGetSharderSnapshots
+	OpStorageSCGetAuthorizerSnapshots
+	OpStorageSCGetValidatorSnapshots
 	OpZCNSCGetGlobalConfig
 	OpZCNSCGetAuthorizer
 	OpZCNSCGetAuthorizerNodes
@@ -268,20 +276,23 @@ func SetLogFile(logFile string, verbose bool) {
 	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (SetLogFile)")
 }
 
-// Init inializes the SDK with miner, sharder and signature scheme provided in
-// configuration provided in JSON format
-// It is used for 0proxy, 0box, 0explorer, andorid, ios : walletJSON is ChainConfig
-//
-//		 {
-//	     "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
-//			"signature_scheme" : "bls0chain",
-//			"block_worker" : "http://localhost/dns",
-//			"min_submit" : 50,
-//			"min_confirmation" : 50,
-//			"confirmation_chain_length" : 3,
-//			"num_keys" : 1,
-//			"eth_node" : "https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx"
-//		 }
+// Init initialize the SDK with miner, sharder and signature scheme provided in configuration provided in JSON format
+// # Inputs
+//   - chainConfigJSON: json format of zcn config
+//     {
+//     "block_worker": "https://dev.0chain.net/dns",
+//     "signature_scheme": "bls0chain",
+//     "min_submit": 50,
+//     "min_confirmation": 50,
+//     "confirmation_chain_length": 3,
+//     "max_txn_query": 5,
+//     "query_sleep_time": 5,
+//     "preferred_blobbers": ["https://dev.0chain.net/blobber02","https://dev.0chain.net/blobber03"],
+//     "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
+//     "ethereum_node":"https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx",
+//     "zbox_host":"https://0box.dev.0chain.net",
+//     "zbox_app_type":"vult",
+//     }
 func Init(chainConfigJSON string) error {
 	err := json.Unmarshal([]byte(chainConfigJSON), &_config.chain)
 	if err == nil {
@@ -515,6 +526,9 @@ func GetClientDetails(clientID string) (*GetClientResponse, error) {
 }
 
 // IsMnemonicValid is an utility function to check the mnemonic valid
+//
+//	# Inputs
+//	-	mnemonic: mnemonics
 func IsMnemonicValid(mnemonic string) bool {
 	return zcncrypto.IsMnemonicValid(mnemonic)
 }
@@ -538,8 +552,24 @@ func GetWalletRaw() zcncrypto.Wallet {
 
 // SetWalletInfo should be set before any transaction or client specific APIs
 // splitKeyWallet parameter is valid only if SignatureScheme is "BLS0Chain"
-func SetWalletInfo(w string, splitKeyWallet bool) error {
-	err := json.Unmarshal([]byte(w), &_config.wallet)
+//
+//	# Inputs
+//	- jsonWallet: json format of wallet
+//	{
+//	"client_id":"30764bcba73216b67c36b05a17b4dd076bfdc5bb0ed84856f27622188c377269",
+//	"client_key":"1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c",
+//	"keys":[
+//		{"public_key":"1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c","private_key":"41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122"}
+//	],
+//	"mnemonics":"glare mistake gun joke bid spare across diagram wrap cube swear cactus cave repeat you brave few best wild lion pitch pole original wasp",
+//	"version":"1.0",
+//	"date_created":"1662534022",
+//	"nonce":0
+//	}
+//
+// - splitKeyWallet: if wallet keys is split
+func SetWalletInfo(jsonWallet string, splitKeyWallet bool) error {
+	err := json.Unmarshal([]byte(jsonWallet), &_config.wallet)
 	if err == nil {
 		if _config.chain.SignatureScheme == "bls0chain" {
 			_config.isSplitWallet = splitKeyWallet
@@ -550,6 +580,8 @@ func SetWalletInfo(w string, splitKeyWallet bool) error {
 }
 
 // SetAuthUrl will be called by app to set zauth URL to SDK.
+// # Inputs
+//   - url: the url of zAuth server
 func SetAuthUrl(url string) error {
 	if !_config.isSplitWallet {
 		return errors.New("", "wallet type is not split key")
@@ -586,6 +618,9 @@ func GetWalletBalance(clientId string) (common.Balance, error) {
 }
 
 // GetBalance retreives wallet balance from sharders
+//
+//	# Inputs
+//	-	cb: callback for checking result
 func GetBalance(cb GetBalanceCallback) error {
 	err := CheckConfig()
 	if err != nil {
@@ -695,9 +730,11 @@ func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
 	return 0, consensusMaps.WinInfo, errors.New("", "get balance failed. balance field is missed")
 }
 
-// ConvertToToken converts the value to ZCN tokens
-func ConvertToToken(value int64) float64 {
-	return float64(value) / float64(TOKEN_UNIT)
+// ConvertToToken converts the SAS tokens to ZCN tokens
+// # Inputs
+//   - token: SAS tokens
+func ConvertToToken(token int64) float64 {
+	return float64(token) / float64(TOKEN_UNIT)
 }
 
 func ConvertTokenToUSD(token float64) (float64, error) {
@@ -741,7 +778,7 @@ func GetWalletClientID(walletStr string) (string, error) {
 	return w.ClientID, nil
 }
 
-// GetZcnUSDInfo returns USD value for ZCN token from coinmarketcap.com
+// GetZcnUSDInfo returns USD value for ZCN token by tokenrate
 func GetZcnUSDInfo() (float64, error) {
 	return tokenrate.GetUSD(context.TODO(), "zcn")
 }
@@ -813,6 +850,9 @@ func (p Params) Query() string {
 //
 
 // GetMiners obtains list of all active miners.
+//
+//	# Inputs
+//		-	cb: callback for checking result
 func GetMiners(cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -823,6 +863,8 @@ func GetMiners(cb GetInfoCallback) (err error) {
 }
 
 // GetSharders obtains list of all active sharders.
+// # Inputs
+//   - cb: callback for checking result
 func GetSharders(cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -836,6 +878,10 @@ func withParams(uri string, params Params) string {
 	return uri + params.Query()
 }
 
+// GetMinerSCNodeInfo get miner information from sharders
+// # Inputs
+//   - id: the id of miner
+//   - cb: callback for checking result
 func GetMinerSCNodeInfo(id string, cb GetInfoCallback) (err error) {
 
 	if err = CheckConfig(); err != nil {
@@ -860,6 +906,10 @@ func GetMinerSCNodePool(id string, cb GetInfoCallback) (err error) {
 	return
 }
 
+// GetMinerSCUserInfo get user pool
+// # Inputs
+//   - clientID: the id of wallet
+//   - cb: callback for checking result
 func GetMinerSCUserInfo(clientID string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -942,7 +992,7 @@ func GetAllocations(clientID string, cb GetInfoCallback) (err error) {
 	return
 }
 
-// GetSnapshot obtains list of allocations of a user.
+// GetSnapshots obtains list of allocations of a user.
 func GetSnapshots(offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -954,7 +1004,7 @@ func GetSnapshots(offset int64, cb GetInfoCallback) (err error) {
 	return
 }
 
-// GetSnapshot obtains list of allocations of a user.
+// GetBlobberSnapshots obtains list of allocations of a blobber.
 func GetBlobberSnapshots(offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -963,6 +1013,54 @@ func GetBlobberSnapshots(offset int64, cb GetInfoCallback) (err error) {
 		"offset": strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetBlobberSnapshots, cb)
+	return
+}
+
+// GetMinerSnapshots obtains list of allocations of a miner.
+func GetMinerSnapshots(offset int64, cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	var url = withParams(STORAGE_GET_MINER_SNAPSHOT, Params{
+		"offset": strconv.FormatInt(offset, 10),
+	})
+	go GetInfoFromAnySharder(url, OpStorageSCGetMinerSnapshots, cb)
+	return
+}
+
+// GetSharderSnapshots obtains list of allocations of a sharder.
+func GetSharderSnapshots(offset int64, cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	var url = withParams(STORAGE_GET_SHARDER_SNAPSHOT, Params{
+		"offset": strconv.FormatInt(offset, 10),
+	})
+	go GetInfoFromAnySharder(url, OpStorageSCGetSharderSnapshots, cb)
+	return
+}
+
+// GetValidatorSnapshots obtains list of allocations of a validator.
+func GetValidatorSnapshots(offset int64, cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	var url = withParams(STORAGE_GET_VALIDATOR_SNAPSHOT, Params{
+		"offset": strconv.FormatInt(offset, 10),
+	})
+	go GetInfoFromAnySharder(url, OpStorageSCGetValidatorSnapshots, cb)
+	return
+}
+
+// GetAuthorizerSnapshots obtains list of allocations of an authorizer.
+func GetAuthorizerSnapshots(offset int64, cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	var url = withParams(STORAGE_GET_AUTHORIZER_SNAPSHOT, Params{
+		"offset": strconv.FormatInt(offset, 10),
+	})
+	go GetInfoFromAnySharder(url, OpStorageSCGetAuthorizerSnapshots, cb)
 	return
 }
 
@@ -995,6 +1093,9 @@ func GetStakePoolInfo(blobberID string, cb GetInfoCallback) (err error) {
 }
 
 // GetStakePoolUserInfo for a user.
+// # Inputs
+//   - clientID: the id of wallet
+//   - cb: callback for checking result
 func GetStakePoolUserInfo(clientID string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
@@ -1010,6 +1111,11 @@ func GetStakePoolUserInfo(clientID string, cb GetInfoCallback) (err error) {
 }
 
 // GetBlobbers obtains list of all active blobbers.
+// # Inputs
+//   - cb: callback for checking result
+//   - limit: how many blobbers should be fetched
+//   - offset: how many blobbers should be skipped
+//   - active: only fetch active blobbers
 func GetBlobbers(cb GetInfoCallback, limit, offset int, active bool) {
 	getBlobbersInternal(cb, active, limit, offset)
 }
@@ -1042,13 +1148,15 @@ func GetBlobber(blobberID string, cb GetInfoCallback) (err error) {
 	return
 }
 
-// GetTransactions obtains blobber information.
-// block_hash	query	string	string				restrict to transactions in indicated block
-// client_id	query	string	string				restrict to transactions sent by the specified client
-// limit	query	string	string				limit
-// offset	query	string	string				offset
-// sort	query	string	string				desc or asc
-// to_client_id	query	string	string				restrict to transactions sent to a specified client
+// GetTransactions query transactions from sharders
+// # Inputs
+//   - toClient:   	receiver
+//   - fromClient: 	sender
+//   - block_hash: 	block hash
+//   - sort:				desc or asc
+//   - limit: 			how many transactions should be fetched
+//   - offset:			how many transactions should be skipped
+//   - cb: 					callback to get result
 func GetTransactions(toClient, fromClient, block_hash, sort string, limit, offset int, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
