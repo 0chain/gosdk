@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	stderrors "errors"
+	"fmt"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -252,6 +253,11 @@ func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryRe
 			if qr.StatusCode == http.StatusOK && consensuses[qr.StatusCode] == maxConsensus {
 				maxConsensus = consensuses[qr.StatusCode]
 				consensusesResp = qr
+
+				// consensus has been reached, don't waiting for other requests
+				if maxConsensus*100/tq.max >= consensusThresh {
+					return true
+				}
 			}
 
 			return false
@@ -455,6 +461,24 @@ func (tq *TransactionQuery) getFastConfirmation(ctx context.Context, txnHash str
 	}
 
 	return nil, nil, nil, thrown.Throw(ErrTransactionNotFound, strconv.Itoa(result.StatusCode))
+}
+
+func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string) ([]byte, error) {
+
+	path := fmt.Sprintf("/v1/screst/%v/%v", scAddress, relativePath)
+	query := withParams(path, Params(params))
+
+	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders))
+	if err != nil {
+		return nil, err
+	}
+
+	qr, err := tq.GetInfo(context.TODO(), query)
+	if err != nil {
+		return nil, err
+	}
+
+	return qr.Content, nil
 }
 
 func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
