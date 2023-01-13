@@ -18,15 +18,14 @@ type WriteMarker struct {
 	Timestamp              int64  `json:"timestamp"`
 	ClientID               string `json:"client_id"`
 	Signature              string `json:"signature"`
-
-	// file info
-	LookupHash  string `json:"lookup_hash"`
-	Name        string `json:"name"`
-	ContentHash string `json:"content_hash"`
 }
 
 func (wm *WriteMarker) GetHashData() string {
-	sigData := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v", wm.AllocationRoot, wm.PreviousAllocationRoot, wm.AllocationID, wm.BlobberID, wm.ClientID, wm.Size, wm.Timestamp)
+	sigData := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v",
+		wm.AllocationRoot, wm.PreviousAllocationRoot,
+		wm.AllocationID, wm.BlobberID, wm.ClientID,
+		wm.Size, wm.Timestamp,
+	)
 	return sigData
 }
 
