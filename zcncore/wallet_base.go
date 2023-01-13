@@ -602,7 +602,7 @@ func SetAuthUrl(url string) error {
 	return nil
 }
 
-func GetWalletBalance(clientId string) (common.Balance, error) {
+func getWalletBalance(clientId string) (common.Balance, error) {
 	err := checkSdkInit()
 	if err != nil {
 		return 0, err

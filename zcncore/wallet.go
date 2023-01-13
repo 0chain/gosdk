@@ -4,6 +4,7 @@
 package zcncore
 
 import (
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
@@ -15,6 +16,10 @@ func RegisterToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
 // GetWallet get a wallet object from a wallet string
 func GetWallet(walletStr string) (*zcncrypto.Wallet, error) {
 	return getWallet(walletStr)
+}
+
+func GetWalletBalance(clientId string) (common.Balance, error) {
+	return getWalletBalance(clientId)
 }
 
 func SignWith0Wallet(hash string, w *zcncrypto.Wallet) (string, error) {
