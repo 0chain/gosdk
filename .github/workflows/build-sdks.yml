@@ -121,7 +121,7 @@ jobs:
           ndk-version: r21d
       
       - name: Install make
-        run: sudo apt update && sudo apt upgrade -y sudo apt install build-essential -y
+        run: sudo apt update && sudo apt upgrade && -y sudo apt install build-essential -y
 
       - name: Clean build
         run: make clean-mobilesdk
@@ -272,7 +272,7 @@ jobs:
           go-version: 1.19.4
 
       - name: Install make
-        run: sudo apt update && sudo apt upgrade -y sudo apt install build-essential -y
+        run: sudo apt update && sudo apt upgrade && -y sudo apt install build-essential -y
 
       - name: Build windows
         run: |

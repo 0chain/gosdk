@@ -43,7 +43,7 @@ jobs:
           node-version: '14'
       
       - name: Install make
-        run: sudo apt update && sudo apt upgrade -y sudo apt install build-essential wget -y
+        run: sudo apt update && sudo apt upgrade && -y sudo apt install build-essential wget -y
 
       - name: Install herumi's libraries
         run: sudo make install-herumi-ubuntu
@@ -144,7 +144,7 @@ jobs:
         run: echo "${{env.GOROOT}}/misc/wasm" >> $GITHUB_PATH
       
       - name: Install make & wget
-        run: sudo apt update && sudo apt upgrade -y sudo apt install build-essential wget -y
+        run: sudo apt update && sudo apt upgrade && -y sudo apt install build-essential wget -y
 
       - name: Install herumi's libraries
         run: sudo make install-herumi-ubuntu
