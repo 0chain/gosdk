@@ -50,13 +50,12 @@ jobs:
           #do
           #  sudo echo "deb $line bionic-updates multiverse" >> /etc/apt/sources.list.d/gitaction.list
           #done < ./mirrors.txt
-          sudo echo "deb http://mirror.enzu.com/ubuntu/ bionic-updates multiverse"
-          sudo echo "deb http://mirror.genesisadaptive.com/ubuntu/ bionic-updates multiverse"
-          sudo echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ bionic-updates multiverse"
-          sudo echo "deb http://mirror.pit.teraswitch.com/ubuntu/ bionic-updates multiverse"
-          sudo echo "deb  bionic-updates multiverse"
-          sudo echo "deb  bionic-updates multiverse"
-          sudo echo "deb  bionic-updates multiverse"
+          cat /etc/apt/sources.list
+          sudo echo "deb http://mirror.enzu.com/ubuntu/ bionic-updates multiverse" > /etc/apt/sources.list.d/gitaction.list
+          sudo echo "deb http://mirror.genesisadaptive.com/ubuntu/ bionic-updates multiverse" >> /etc/apt/sources.list.d/gitaction.list
+          sudo echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ bionic-updates multiverse" >> /etc/apt/sources.list.d/gitaction.list
+          sudo echo "deb http://mirror.pit.teraswitch.com/ubuntu/ bionic-updates multiverse" >> /etc/apt/sources.list.d/gitaction.list
+      
           sudo apt-get update -y && sudo apt-get install build-essential -y
 
       - name: Install herumi's libraries
