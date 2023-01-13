@@ -4,7 +4,6 @@ import (
 	"math/rand"
 	"testing"
 
-	"crypto/sha256"
 	"fmt"
 
 	"github.com/stretchr/testify/require"
@@ -15,7 +14,7 @@ const (
 )
 
 func TestFixedMerkleTreeWrite(t *testing.T) {
-	for i := 0; i < 10; i++ {
+	for i := 0; i < 100; i++ {
 		var n int64
 		for {
 			n = rand.Int63n(KB * KB)
@@ -31,9 +30,7 @@ func TestFixedMerkleTreeWrite(t *testing.T) {
 
 			leaves := make([]Hashable, FixedMerkleLeaves)
 			for i := 0; i < len(leaves); i++ {
-				leaves[i] = &leaf{
-					h: sha256.New(),
-				}
+				leaves[i] = getNewLeaf()
 			}
 
 			for i := 0; i < len(b); i += MaxMerkleLeavesSize {

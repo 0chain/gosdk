@@ -1,6 +1,10 @@
 package util
 
-import "github.com/0chain/gosdk/core/encryption"
+import (
+	"encoding/hex"
+
+	"github.com/0chain/gosdk/core/encryption"
+)
 
 /*MerkleTreeI - a merkle tree interface required for constructing and providing verification */
 type MerkleTreeI interface {
@@ -42,6 +46,18 @@ func MHashBytes(h1, h2 []byte) []byte {
 /*MHash - merkle hashing of a pair of child hashes */
 func MHash(h1 string, h2 string) string {
 	return Hash(h1 + h2)
+}
+
+// DecodeAndMHash will decode hex-encoded string to []byte format.
+// This function should only be used with hex-encoded string otherwise the result will
+// be obsolute.
+func DecodeAndMHash(h1, h2 string) string {
+	b1, _ := hex.DecodeString(h1)
+
+	b2, _ := hex.DecodeString(h2)
+
+	b3 := MHashBytes(b1, b2)
+	return hex.EncodeToString(b3)
 }
 
 type StringHashable struct {
