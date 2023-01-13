@@ -30,9 +30,6 @@ jobs:
         with:
           go-version: 1.19.4
 
-      - name: Install deps
-        run: sudo apt update -y && sudo apt upgrade -y && sudo apt install build-essential -y
-
       - name: Clean build
         run: make clean-mobilesdk
 
@@ -200,9 +197,6 @@ jobs:
         uses: actions/setup-go@v3
         with:
           go-version: 1.19.4
-
-      - name: Install deps
-        run: sudo apt update -y && sudo apt upgrade -y && sudo apt install build-essential -y
 
       - name: Clean build
         run: make clean-mobilesdk
