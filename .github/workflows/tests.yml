@@ -43,7 +43,7 @@ jobs:
           node-version: '14'
 
       - name: Install deps
-        run: sudo apt update -y && sudo apt upgrade -y && sudo apt install build-essential -y
+        run: sudo apt-get update -y && sudo apt-get install build-essential -y
 
       - name: Install herumi's libraries
         run: sudo make install-herumi-ubuntu
@@ -141,7 +141,7 @@ jobs:
           node-version: '14'
 
       - name: Install deps
-        run: sudo apt update -y && sudo apt upgrade -y && sudo apt install build-essential -y
+        run: sudo apt-get update -y && sudo apt-get install build-essential -y
 
       - name: Setup PATH for wasm
         run: echo "${{env.GOROOT}}/misc/wasm" >> $GITHUB_PATH
