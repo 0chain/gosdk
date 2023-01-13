@@ -45,10 +45,10 @@ jobs:
       - name: Install deps
         run: |
           curl http://mirrors.ubuntu.com/mirrors.txt --output ./mirrors.txt
-          echo "# mirrors" > /etc/apt/sources.list.d/gitaction.list
+          sudo echo "# mirrors" > /etc/apt/sources.list.d/gitaction.list
           while read -r line
           do
-            echo "$line bionic-updates main restricted" >> /etc/apt/sources.list.d/gitaction.list
+            sudo echo "$line bionic-updates main restricted" >> /etc/apt/sources.list.d/gitaction.list
           done < ./mirrors.txt
           
           sudo apt-get update -y && sudo apt-get install build-essential -y
