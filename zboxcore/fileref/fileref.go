@@ -31,8 +31,8 @@ type Collaborator struct {
 type FileRef struct {
 	Ref                 `mapstructure:",squash"`
 	CustomMeta          string          `json:"custom_meta" mapstructure:"custom_meta"`
-	ContentHash         string          `json:"content_hash" mapstructure:"content_hash"`
-	MerkleRoot          string          `json:"merkle_root" mapstructure:"merkle_root"`
+	ValidationRoot      string          `json:"validation_root" mapstructure:"validation_root"`
+	FixedMerkleRoot     string          `json:"fixed_merkle_root" mapstructure:"fixed_merkle_root"`
 	ThumbnailSize       int64           `json:"thumbnail_size" mapstructure:"thumbnail_size"`
 	ThumbnailHash       string          `json:"thumbnail_hash" mapstructure:"thumbnail_hash"`
 	ActualFileSize      int64           `json:"actual_file_size" mapstructure:"actual_file_size"`
@@ -186,8 +186,8 @@ func (fr *FileRef) GetHashData() string {
 		fr.Name,
 		fr.Path,
 		strconv.FormatInt(fr.Size, 10),
-		fr.ContentHash,
-		fr.MerkleRoot,
+		fr.ValidationRoot,
+		fr.FixedMerkleRoot,
 		strconv.FormatInt(fr.ActualFileSize, 10),
 		fr.ActualFileHash,
 		strconv.FormatInt(fr.ChunkSize, 10),

@@ -57,7 +57,7 @@ func BenchmarkChunkedUploadFormBuilder(b *testing.B) {
 
 				isFinal := false
 
-				hasher := CreateHasher(bm.ChunkSize)
+				hasher := CreateHasher(getShardSize(fileMeta.ActualSize, 1, false))
 				for chunkIndex := 0; ; chunkIndex++ {
 					begin := int64(chunkIndex * bm.ChunkSize)
 					end := int64(chunkIndex*bm.ChunkSize + bm.ChunkSize)

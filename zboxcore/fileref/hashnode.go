@@ -10,16 +10,16 @@ import (
 // Hashnode ref node in hash tree
 type Hashnode struct {
 	// hash data
-	AllocationID   string `json:"allocation_id,omitempty"`
-	Type           string `json:"type,omitempty"`
-	Name           string `json:"name,omitempty"`
-	Path           string `json:"path,omitempty"`
-	ContentHash    string `json:"content_hash,omitempty"`
-	MerkleRoot     string `json:"merkle_root,omitempty"`
-	ActualFileHash string `json:"actual_file_hash,omitempty"`
-	ChunkSize      int64  `json:"chunk_size,omitempty"`
-	Size           int64  `json:"size,omitempty"`
-	ActualFileSize int64  `json:"actual_file_size,omitempty"`
+	AllocationID    string `json:"allocation_id,omitempty"`
+	Type            string `json:"type,omitempty"`
+	Name            string `json:"name,omitempty"`
+	Path            string `json:"path,omitempty"`
+	ValidationRoot  string `json:"validation_root,omitempty"`
+	FixedMerkleRoot string `json:"fixed_merkle_root,omitempty"`
+	ActualFileHash  string `json:"actual_file_hash,omitempty"`
+	ChunkSize       int64  `json:"chunk_size,omitempty"`
+	Size            int64  `json:"size,omitempty"`
+	ActualFileSize  int64  `json:"actual_file_size,omitempty"`
 
 	Children   []*Hashnode `json:"children,omitempty"`
 	lookupHash string      `json:"-"`
@@ -70,8 +70,8 @@ func (n *Hashnode) GetHashCode() string {
 		n.Name,
 		n.Path,
 		strconv.FormatInt(n.Size, 10),
-		n.ContentHash,
-		n.MerkleRoot,
+		n.ValidationRoot,
+		n.FixedMerkleRoot,
 		strconv.FormatInt(n.ActualFileSize, 10),
 		n.ActualFileHash,
 		strconv.FormatInt(n.ChunkSize, 10),

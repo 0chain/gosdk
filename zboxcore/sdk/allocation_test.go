@@ -1172,7 +1172,7 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 }
 
 func TestAllocation_GetAuthTicketForShare(t *testing.T) {
-	const mockContentHash = "mock content hash"
+	const mockValidationRoot = "mock validation root"
 	const numberBlobbers = 10
 
 	var mockClient = mocks.HttpClient{}
@@ -1183,7 +1183,7 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 				Ref: fileref.Ref{
 					Name: mockFileRefName,
 				},
-				ContentHash: mockContentHash,
+				ValidationRoot: mockValidationRoot,
 			})
 			require.NoError(t, err)
 			return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
@@ -1238,7 +1238,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							Ref: fileref.Ref{
 								Name: mockFileRefName,
 							},
-							ContentHash: "mock content hash",
+							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
 						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
@@ -1270,7 +1270,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							Ref: fileref.Ref{
 								Name: mockFileRefName,
 							},
-							ContentHash: "mock content hash",
+							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
 						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
@@ -1314,7 +1314,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							Ref: fileref.Ref{
 								Name: mockFileRefName,
 							},
-							ContentHash: "mock content hash",
+							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
 						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
@@ -1347,7 +1347,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							Ref: fileref.Ref{
 								Name: mockFileRefName,
 							},
-							ContentHash: "mock content hash",
+							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
 						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
@@ -1404,7 +1404,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 					Baseurl: "TestAllocation_GetAuthTicket" + tt.name + mockBlobberUrl + strconv.Itoa(i),
 				})
 			}
-			const mockContentHash = "mock content hash"
+			const mockValidationRoot = "mock validation root"
 			const numberBlobbers = 10
 
 			zboxutil.Client = &mockClient
@@ -2340,7 +2340,7 @@ func setupMockGetFileInfoResponse(t *testing.T, mockClient *mocks.HttpClient) {
 				Ref: fileref.Ref{
 					Name: mockFileRefName,
 				},
-				ContentHash: "mock content hash",
+				ValidationRoot: "mock validation root",
 			})
 			require.NoError(t, err)
 			return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
@@ -2383,7 +2383,7 @@ func getMockAuthTicket(t *testing.T) string {
 				Ref: fileref.Ref{
 					Name: mockFileRefName,
 				},
-				ContentHash: "mock content hash",
+				ValidationRoot: "mock validation root",
 			})
 			require.NoError(t, err)
 			return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))

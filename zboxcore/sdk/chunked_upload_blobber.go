@@ -136,11 +136,6 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				logger.Logger.Error(sb.blobber.Baseurl, "Upload response parse error: ", err)
 				return
 			}
-			if r.Filename != su.fileMeta.RemoteName || r.Hash != formData.ChunkHash {
-				err = fmt.Errorf("%s Unexpected upload response data %s %s %s", sb.blobber.Baseurl, su.fileMeta.RemoteName, formData.ChunkHash, string(respbody))
-				logger.Logger.Error(err)
-				return
-			}
 			return
 		}()
 
@@ -164,8 +159,8 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 
 		// fixed fileRef in last chunk on stream
 		if isFinal {
-			sb.fileRef.MerkleRoot = formData.ChallengeHash
-			sb.fileRef.ContentHash = formData.ContentHash
+			sb.fileRef.FixedMerkleRoot = formData.FixedMerkleRoot
+			sb.fileRef.ValidationRoot = formData.ValidationRoot
 
 			sb.fileRef.ChunkSize = su.chunkSize
 			sb.fileRef.Size = su.shardUploadedSize
@@ -215,10 +210,6 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 	wm.Timestamp = timestamp
 	wm.ClientID = client.GetClientID()
-
-	wm.LookupHash = fileref.GetReferenceLookup(su.allocationObj.ID, sb.fileRef.Path)
-	wm.Name = sb.fileRef.Name
-	wm.ContentHash = sb.fileRef.ContentHash
 
 	err = wm.Sign()
 	if err != nil {
