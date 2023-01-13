@@ -44,7 +44,7 @@ jobs:
 
       - name: Install deps
         run: |
-          wget http://mirrors.ubuntu.com/mirrors.txt
+          curl http://mirrors.ubuntu.com/mirrors.txt --output ./mirrors.txt
           echo "# mirrors" > /etc/apt/sources.list.d/gitaction.list
           while read -r line
           do
