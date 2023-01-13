@@ -29,20 +29,24 @@ type Collaborator struct {
 }
 
 type FileRef struct {
-	Ref                 `mapstructure:",squash"`
-	CustomMeta          string          `json:"custom_meta" mapstructure:"custom_meta"`
-	ValidationRoot      string          `json:"validation_root" mapstructure:"validation_root"`
-	FixedMerkleRoot     string          `json:"fixed_merkle_root" mapstructure:"fixed_merkle_root"`
-	ThumbnailSize       int64           `json:"thumbnail_size" mapstructure:"thumbnail_size"`
-	ThumbnailHash       string          `json:"thumbnail_hash" mapstructure:"thumbnail_hash"`
-	ActualFileSize      int64           `json:"actual_file_size" mapstructure:"actual_file_size"`
-	ActualFileHash      string          `json:"actual_file_hash" mapstructure:"actual_file_hash"`
-	ActualThumbnailSize int64           `json:"actual_thumbnail_size" mapstructure:"actual_thumbnail_size"`
-	ActualThumbnailHash string          `json:"actual_thumbnail_hash" mapstructure:"actual_thumbnail_hash"`
-	MimeType            string          `json:"mimetype" mapstructure:"mimetype"`
-	EncryptedKey        string          `json:"encrypted_key" mapstructure:"encrypted_key"`
-	CommitMetaTxns      []CommitMetaTxn `json:"commit_meta_txns" mapstructure:"commit_meta_txns"`
-	Collaborators       []Collaborator  `json:"collaborators" mapstructure:"collaborators"`
+	Ref            `mapstructure:",squash"`
+	CustomMeta     string `json:"custom_meta" mapstructure:"custom_meta"`
+	ValidationRoot string `json:"validation_root" mapstructure:"validation_root"`
+	// ValidationRootSignature is signature signed by client for hash_of(ActualFileHashSignature + ValidationRoot)
+	ValidationRootSignature string `json:"validation_root_signature" mapstructure:"validation_root_signature"`
+	FixedMerkleRoot         string `json:"fixed_merkle_root" mapstructure:"fixed_merkle_root"`
+	ThumbnailSize           int64  `json:"thumbnail_size" mapstructure:"thumbnail_size"`
+	ThumbnailHash           string `json:"thumbnail_hash" mapstructure:"thumbnail_hash"`
+	ActualFileSize          int64  `json:"actual_file_size" mapstructure:"actual_file_size"`
+	ActualFileHash          string `json:"actual_file_hash" mapstructure:"actual_file_hash"`
+	// ActualFileHashSignature is signature signed by client for ActualFileHash
+	ActualFileHashSignature string          `json:"actual_file_hash_signature" mapstructure:"actual_file_hash_signature"`
+	ActualThumbnailSize     int64           `json:"actual_thumbnail_size" mapstructure:"actual_thumbnail_size"`
+	ActualThumbnailHash     string          `json:"actual_thumbnail_hash" mapstructure:"actual_thumbnail_hash"`
+	MimeType                string          `json:"mimetype" mapstructure:"mimetype"`
+	EncryptedKey            string          `json:"encrypted_key" mapstructure:"encrypted_key"`
+	CommitMetaTxns          []CommitMetaTxn `json:"commit_meta_txns" mapstructure:"commit_meta_txns"`
+	Collaborators           []Collaborator  `json:"collaborators" mapstructure:"collaborators"`
 }
 
 type RefEntity interface {

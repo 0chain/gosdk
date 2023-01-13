@@ -1,9 +1,11 @@
 package allocationchange
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
@@ -14,6 +16,27 @@ type UpdateFileChange struct {
 }
 
 func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) error {
+	if ch.NewFile.ActualFileHash == "" {
+		return fmt.Errorf("empty actual file hash field")
+	}
+
+	if ch.NewFile.ValidationRoot == "" {
+		return fmt.Errorf("empty validation root field")
+	}
+
+	fileHashSign, err := client.Sign(ch.NewFile.ActualFileHash)
+	if err != nil {
+		return err
+	}
+
+	validationRootSign, err := client.Sign(fileHashSign + ch.NewFile.ValidationRoot)
+	if err != nil {
+		return err
+	}
+
+	ch.NewFile.ActualFileHashSignature = fileHashSign
+	ch.NewFile.ValidationRootSignature = validationRootSign
+
 	path, _ := filepath.Split(ch.NewFile.Path)
 	tSubDirs := getSubDirs(path)
 	dirRef := rootRef
@@ -46,6 +69,7 @@ func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	if idx < 0 || ch.OldFile == nil {
 		return errors.New("file_not_found", "File to update not found in blobber")
 	}
+
 	dirRef.Children[idx] = ch.NewFile
 	rootRef.CalculateHash()
 	return nil

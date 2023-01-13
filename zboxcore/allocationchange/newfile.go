@@ -1,11 +1,13 @@
 package allocationchange
 
 import (
+	"errors"
 	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
@@ -19,6 +21,27 @@ func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	if err != nil {
 		return err
 	}
+
+	if ch.File.ActualFileHash == "" {
+		return errors.New("empty actual file hash field")
+	}
+
+	if ch.File.ValidationRoot == "" {
+		return errors.New("empty validation root field")
+	}
+
+	fileHashSign, err := client.Sign(ch.File.ActualFileHash)
+	if err != nil {
+		return err
+	}
+
+	validationRootSign, err := client.Sign(fileHashSign + ch.File.ValidationRoot)
+	if err != nil {
+		return err
+	}
+
+	ch.File.ActualFileHashSignature = fileHashSign
+	ch.File.ValidationRootSignature = validationRootSign
 
 	dirRef := rootRef
 	for i := 0; i < len(tSubDirs); i++ {
