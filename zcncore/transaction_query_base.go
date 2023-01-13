@@ -480,13 +480,13 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 
 func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 
-	tq, err := newTransactionQuery(util.Shuffle(_config.chain.Sharders))
+	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders))
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
 	}
 
-	qr, err := tq.getInfo(urlSuffix, nil)
+	qr, err := tq.GetInfo(context.TODO(), urlSuffix)
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
