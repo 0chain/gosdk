@@ -50,12 +50,14 @@ jobs:
           #do
           #  sudo echo "deb $line bionic-updates multiverse" >> /etc/apt/sources.list.d/gitaction.list
           #done < ./mirrors.txt
-          
+
           sudo cat /etc/apt/sources.list
-          sudo echo "deb http://mirror.enzu.com/ubuntu/ jammy main restricted" > /etc/apt/sources.list.d/gitaction.list
-          sudo echo "deb http://mirror.genesisadaptive.com/ubuntu/ jammy main restricted" >> /etc/apt/sources.list.d/gitaction.list
-          sudo echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ jammy main restricted" >> /etc/apt/sources.list.d/gitaction.list
-          sudo echo "deb http://mirror.pit.teraswitch.com/ubuntu/ jammy main restricted" >> /etc/apt/sources.list.d/gitaction.list
+          echo "deb http://mirror.enzu.com/ubuntu/ jammy main restricted" > ./gitaction.list
+          echo "deb http://mirror.genesisadaptive.com/ubuntu/ jammy main restricted" >> ./gitaction.list
+          echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ jammy main restricted" ./gitaction.list
+          echo "deb http://mirror.pit.teraswitch.com/ubuntu/ jammy main restricted" >> ./gitaction.list
+
+          sudo mv -rf ./gitaction.list /etc/apt/sources.list.d/
       
           sudo apt-get update -y && sudo apt-get install build-essential -y
 
