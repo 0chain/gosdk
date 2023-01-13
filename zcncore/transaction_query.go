@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	stderrors "errors"
-	"fmt"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -35,44 +34,6 @@ var (
 const (
 	SharderEndpointHealthCheck = "/v1/healthcheck"
 )
-
-type QueryResult struct {
-	Content    []byte
-	StatusCode int
-	Error      error
-}
-
-// QueryResultHandle handle query response, return true if it is a consensus-result
-type QueryResultHandle func(result QueryResult) bool
-
-type TransactionQuery struct {
-	max      int
-	sharders []string
-
-	selected map[string]interface{}
-	offline  map[string]interface{}
-}
-
-func NewTransactionQuery(sharders []string) (*TransactionQuery, error) {
-
-	if len(sharders) == 0 {
-		return nil, ErrNoAvailableSharders
-	}
-
-	tq := &TransactionQuery{
-		max:      len(sharders),
-		sharders: sharders,
-	}
-	tq.selected = make(map[string]interface{})
-	tq.offline = make(map[string]interface{})
-
-	return tq, nil
-}
-
-func (tq *TransactionQuery) Reset() {
-	tq.selected = make(map[string]interface{})
-	tq.offline = make(map[string]interface{})
-}
 
 // validate validate data and input
 func (tq *TransactionQuery) validate(num int) error {
@@ -155,7 +116,7 @@ func (tq *TransactionQuery) randOne(ctx context.Context) (string, error) {
 
 		// reset selected if all sharders were selected
 		if len(tq.selected) >= tq.max {
-			tq.selected = make(map[string]interface{})
+			tq.selected = make(map[string]bool)
 		}
 
 		i := randGen.Intn(len(tq.sharders))
@@ -461,24 +422,6 @@ func (tq *TransactionQuery) getFastConfirmation(ctx context.Context, txnHash str
 	}
 
 	return nil, nil, nil, thrown.Throw(ErrTransactionNotFound, strconv.Itoa(result.StatusCode))
-}
-
-func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string) ([]byte, error) {
-
-	path := fmt.Sprintf("/v1/screst/%v/%v", scAddress, relativePath)
-	query := withParams(path, Params(params))
-
-	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders))
-	if err != nil {
-		return nil, err
-	}
-
-	qr, err := tq.GetInfo(context.TODO(), query)
-	if err != nil {
-		return nil, err
-	}
-
-	return qr.Content, nil
 }
 
 func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
