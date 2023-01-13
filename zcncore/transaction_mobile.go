@@ -1019,7 +1019,7 @@ func (t *Transaction) Verify() error {
 		t.txn.CreationDate = int64(common.Now())
 	}
 
-	tq, err := newTransactionQuery(_config.chain.Sharders)
+	tq, err := NewTransactionQuery(_config.chain.Sharders)
 	if err != nil {
 		logging.Error(err)
 		return err
