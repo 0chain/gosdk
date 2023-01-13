@@ -44,13 +44,15 @@ jobs:
 
       - name: Install deps
         run: |
+          codename=$(lsb_release -c | awk '{print $2}')
+          echo $codename
           sudo cat /etc/apt/sources.list
-          echo "deb http://mirror.enzu.com/ubuntu/ jammy main" > ./gitaction.list
-          echo "deb http://mirror.genesisadaptive.com/ubuntu/ jammy main" >> ./gitaction.list
-          echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ jammy main" ./gitaction.list
-          echo "deb http://mirror.pit.teraswitch.com/ubuntu/ jammy main" >> ./gitaction.list
+          echo "deb http://mirror.enzu.com/ubuntu/ $codename main" > ./gitaction.list
+          echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" >> ./gitaction.list
+          echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
+          echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
 
-          sudo mv -rf ./gitaction.list /etc/apt/sources.list.d/
+          sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
       
           sudo apt-get update -y && sudo apt-get install build-essential -y
 
