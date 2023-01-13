@@ -119,6 +119,9 @@ jobs:
         id: setup-ndk
         with:
           ndk-version: r21d
+      
+      - name: Install make
+        run: sudo apt-get update && sudo apt install build-essential -y
 
       - name: Clean build
         run: make clean-mobilesdk
@@ -268,7 +271,9 @@ jobs:
         with:
           go-version: 1.19.4
 
-
+      - name: Install make
+        run: sudo apt-get update && sudo apt install build-essential -y
+        
       - name: Build windows
         run: |
           go version
