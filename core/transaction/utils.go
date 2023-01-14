@@ -17,29 +17,15 @@ import (
 	"github.com/0chain/gosdk/core/util"
 )
 
-func VerifyTransactionOptimistic(txnHash string, sharders []string) (*Transaction, error) {
-	cfg, err := conf.GetClientConfig()
-	if err != nil {
+const retriesCount = 30
 
-		return nil, err
-	}
+type OptimisticVerifier struct {
+	allSharders []string
+	sharders    []string
+	options     []resty.Option
+}
 
-	//amount of sharders to query
-	minNumConfirmation := int(math.Ceil(float64(cfg.MinConfirmation*len(sharders)) / 100))
-	if minNumConfirmation > len(sharders) {
-		return nil, errors.New("verify_optimistic", "wrong number of min_confirmations")
-	}
-	shuffled := util.Shuffle(sharders)[:minNumConfirmation]
-
-	//prepare urls for confirmation request
-	urls := make([]string, 0, len(shuffled))
-	mappedSharders := make(map[string]string)
-	for _, sharder := range shuffled {
-		url := fmt.Sprintf("%v/%v%v", sharder, TXN_VERIFY_URL, txnHash)
-		urls = append(urls, url)
-		mappedSharders[url] = sharder
-	}
-
+func NewOptimisticVerifier(sharders []string) *OptimisticVerifier {
 	//initialize resty
 	header := map[string]string{
 		"Content-Type":                "application/json; charset=utf-8",
@@ -55,10 +41,42 @@ func VerifyTransactionOptimistic(txnHash string, sharders []string) (*Transactio
 		resty.WithTransport(transport),
 	}
 
+	return &OptimisticVerifier{
+		allSharders: sharders,
+		options:     options,
+	}
+}
+
+func (v *OptimisticVerifier) VerifyTransactionOptimistic(txnHash string) (*Transaction, error) {
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
+
+		return nil, err
+	}
+
+	//refresh sharders
+	v.sharders = v.allSharders
+
+	//amount of sharders to query
+	minNumConfirmation := int(math.Ceil(float64(cfg.MinConfirmation*len(v.sharders)) / 100))
+	if minNumConfirmation > len(v.sharders) {
+		return nil, errors.New("verify_optimistic", "wrong number of min_confirmations")
+	}
+	shuffled := util.Shuffle(v.sharders)[:minNumConfirmation]
+
+	//prepare urls for confirmation request
+	urls := make([]string, 0, len(shuffled))
+	mappedSharders := make(map[string]string)
+	for _, sharder := range shuffled {
+		url := fmt.Sprintf("%v/%v%v", sharder, TXN_VERIFY_URL, txnHash)
+		urls = append(urls, url)
+		mappedSharders[url] = sharder
+	}
+
 	var url string
 	var chain []*RoundBlockHeader
 	var txn *Transaction
-	r := resty.New(options...).Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+	r := resty.New(v.options...).Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 		if err != nil { //network issue
 			return err
 		}
@@ -110,7 +128,7 @@ func VerifyTransactionOptimistic(txnHash string, sharders []string) (*Transactio
 	ticker := time.NewTicker(time.Second)
 L:
 	//loop query confirmation
-	for retries < 30 {
+	for retries < retriesCount {
 		select {
 		case <-ticker.C:
 			retries++
@@ -124,21 +142,36 @@ L:
 	}
 
 	if len(chain) == 0 {
-		return nil, errors.New("verify", "can't get confirmation after 10 retries")
+		return nil, errors.Newf("verify", "can't get confirmation after %v retries", retriesCount)
 	}
 
 	//remove current sharder from the list to avoid building chain with it
 	toDelete := mappedSharders[url]
-	for i, s := range sharders {
+	for i, s := range v.sharders {
 		if s == toDelete {
-			sharders = append(sharders[:i], sharders[i+1:]...)
+			v.sharders = append(v.sharders[:i], v.sharders[i+1:]...)
 			break
 		}
 	}
 
+	err = v.checkConfirmation(chain)
+	if err != nil {
+		return nil, err
+	}
+
+	return txn, err
+}
+
+func (v *OptimisticVerifier) checkConfirmation(chain []*RoundBlockHeader) error {
+	cfg, err := conf.GetClientConfig()
+	if err != nil {
+
+		return err
+	}
+
 	//build blockchain starting from confirmation block
 	curRound := chain[0].Round
-	rb := resty.New(options...).Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+	rb := resty.New(v.options...).Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 		if err != nil { //network issue
 			return err
 		}
@@ -165,7 +198,7 @@ L:
 				Round:                 curBlock.Round,
 				RoundRandomSeed:       curBlock.RoundRandomSeed,
 				MerkleTreeRoot:        curBlock.MerkleTreeRoot,
-				StateChangesCount:     0,
+				StateChangesCount:     curBlock.StateChangesCount,
 				StateHash:             curBlock.StateHash,
 				ReceiptMerkleTreeRoot: curBlock.ReceiptMerkleTreeRoot,
 				NumberOfTxns:          int64(curBlock.NumTxns),
@@ -182,17 +215,17 @@ L:
 	})
 
 	//query for blocks until ConfirmationChainLength is built or every sharder is queried
-	for len(chain) < cfg.ConfirmationChainLength && len(sharders) > 0 {
+	for len(chain) < cfg.ConfirmationChainLength && len(v.sharders) > 0 {
 		//for every new block create sharder list to query
-		rand := util.NewRand(len(sharders))
+		rand := util.NewRand(len(v.sharders))
 		//iterate through all sharders sequentially to get next block
 		for {
 			next, err := rand.Next()
 			if err != nil {
-				return nil, errors.New("get_round_block", "can't get round block, blockchain might be stuck")
+				return errors.New("get_round_block", "can't get round block, blockchain might be stuck")
 			}
 
-			cur := sharders[next]
+			cur := v.sharders[next]
 			burl := fmt.Sprintf("%v/%v%v", cur, BLOCK_BY_ROUND_URL, curRound+1)
 			rb.DoGet(context.TODO(), burl)
 
@@ -201,13 +234,13 @@ L:
 				continue
 			}
 			//exclude sharder if it gave block, we do it to avoid building blockchain from single sharder
-			sharders = append(sharders[:next], sharders[next+1:]...)
+			v.sharders = append(v.sharders[:next], v.sharders[next+1:]...)
 			curRound++
 			break
 		}
 	}
 
-	return txn, nil
+	return nil
 }
 
 func verifyMerklePath(err error, merklePathRawJSON json.RawMessage, txnHash string, merkleRoot string) error {
@@ -253,7 +286,8 @@ func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) 
 	}
 
 	if cfg.VerifyOptimistic {
-		return VerifyTransactionOptimistic(txnHash, sharders)
+		ov := NewOptimisticVerifier(sharders)
+		return ov.VerifyTransactionOptimistic(txnHash)
 	} else {
 		return VerifyTransactionTrusted(txnHash, sharders)
 	}

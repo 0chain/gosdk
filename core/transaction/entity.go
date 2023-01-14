@@ -96,6 +96,7 @@ type Block struct {
 	PrevHash              string `json:"prev_hash"`
 	Signature             string `json:"signature"`
 	ChainId               string `json:"chain_id"`
+	StateChangesCount     int    `json:"state_changes_count"`
 	RunningTxnCount       string `json:"running_txn_count"`
 	RoundTimeoutCount     int    `json:"round_timeout_count"`
 }

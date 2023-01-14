@@ -21,8 +21,8 @@ func TestOptimisticVerificationLearning(t *testing.T) {
 		ChainID:                 "",
 		EthereumNode:            "",
 	})
-	_, err := VerifyTransactionOptimistic("156ba2ee26818513622fcde4b1a7be9e74e81fe5b5370f3451f8e5a12132dfb3",
-		[]string{"http://localhost:7171", "http://localhost:7171"})
+	ov := NewOptimisticVerifier([]string{"https://dev.0chain.net/sharder01", "https://dev.0chain.net/sharder02"})
+	_, err := ov.VerifyTransactionOptimistic("a20360964c067b319d52b5cad71d771b0e1d2a80e76001da73009899b09ffa31")
 
 	assert.NoError(t, err)
 
