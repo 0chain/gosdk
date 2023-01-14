@@ -23,8 +23,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
-const consensusThreshold = 25
-
 // compiler time check
 var (
 	_ TransactionScheme = (*Transaction)(nil)
@@ -564,73 +562,53 @@ func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[stri
 }
 
 func getTransactionConfirmation(numSharders int, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
-	result := make(chan *util.GetResponse, numSharders)
+	result := make(chan *util.GetResponse)
+	defer close(result)
 
-	queryFromSharders(5, fmt.Sprintf("%v%v&content=lfb", TXN_VERIFY_URL, txnHash), result)
+	numSharders = len(_config.chain.Sharders) // overwrite, use all
+	queryFromSharders(numSharders, fmt.Sprintf("%v%v&content=lfb", TXN_VERIFY_URL, txnHash), result)
 
-	var (
-		maxConfirmation int
-		failedCount int
-		txnConfirmations = make(map[string]int)
-		waitTime = time.NewTimer(10 * time.Second)
-	)
-
+	maxConfirmation := int(0)
+	txnConfirmations := make(map[string]int)
+	var blockHdr *blockHeader
+	var lfb blockHeader
+	var confirmation map[string]json.RawMessage
 	for i := 0; i < numSharders; i++ {
-		if failedCount * 100 / numSharders > 100 - consensusThreshold {
-			return nil, nil, nil, errors.New("", fmt.Sprintf("failed to confirm txn %s", txnHash))
-		}
-
-		select {
-		case <-waitTime.C:
-			return nil, nil, nil, stdErrors.New("failed to confirm transaction")
-		case rsp := <-result:
-			logging.Debug(rsp.Url + " " + rsp.Status)
-			logging.Debug(rsp.Body)
-			if rsp.StatusCode != http.StatusOK {
-				failedCount++
-				continue
-			}
-
+		rsp := <-result
+		logging.Debug(rsp.Url + " " + rsp.Status)
+		logging.Debug(rsp.Body)
+		if rsp.StatusCode == http.StatusOK {
 			var cfmLfb map[string]json.RawMessage
 			err := json.Unmarshal([]byte(rsp.Body), &cfmLfb)
 			if err != nil {
-				failedCount++
 				logging.Error("txn confirmation parse error", err)
 				continue
 			}
-
 			bH, err := getBlockHeaderFromTransactionConfirmation(txnHash, cfmLfb)
 			if err != nil {
 				logging.Error(err)
-				failedCount++
-				continue
 			}
-
-			lfbRaw, ok := cfmLfb["latest_finalized_block"]
-			if !ok {
-				failedCount++
-				continue
-			}
-
-			var lfb blockHeader
-			err = json.Unmarshal([]byte(lfbRaw), &lfb)
-			if err != nil {
-				logging.Error("round info parse error.", err)
-				failedCount++
-				continue
-			}
-
-			txnConfirmations[bH.Hash]++
-			if txnConfirmations[bH.Hash] > maxConfirmation {
-				maxConfirmation = txnConfirmations[bH.Hash]
-				if maxConfirmation * 100 / numSharders >= consensusThreshold {
-					return bH, cfmLfb, &lfb, nil
+			if err == nil {
+				txnConfirmations[bH.Hash]++
+				if txnConfirmations[bH.Hash] > maxConfirmation {
+					maxConfirmation = txnConfirmations[bH.Hash]
+					blockHdr = bH
+					confirmation = cfmLfb
+				}
+			} else if lfbRaw, ok := cfmLfb["latest_finalized_block"]; ok {
+				err := json.Unmarshal([]byte(lfbRaw), &lfb)
+				if err != nil {
+					logging.Error("round info parse error.", err)
+					continue
 				}
 			}
 		}
-	}
 
-	return nil, nil, nil, stdErrors.New("failed to confirm transaction")
+	}
+	if maxConfirmation == 0 {
+		return nil, confirmation, &lfb, errors.New("", "transaction not found")
+	}
+	return blockHdr, confirmation, &lfb, nil
 }
 
 func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHeader, error) {
@@ -654,7 +632,7 @@ func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHe
 			return nil, stdErrors.New("failed to get block info by round with consensus, timeout")
 		case rsp := <-resultC:
 			logging.Debug(rsp.Url, rsp.Status)
-			if failedCount * 100 / numSharders > 100 - consensusThreshold {
+			if failedCount * 100 / numSharders > 100 - consensusThresh {
 				return nil, stdErrors.New("failed to get block info by round with consensus, too many failures")
 			}
 
@@ -681,7 +659,7 @@ func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHe
 			roundConsensus[h]++
 			if roundConsensus[h] > maxConsensus {
 				maxConsensus = roundConsensus[h]
-				if maxConsensus*100/numSharders >= consensusThreshold {
+				if maxConsensus*100/numSharders >= consensusThresh {
 					return &br.Header, nil
 				}
 			}

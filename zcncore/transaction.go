@@ -15,7 +15,6 @@ import (
 	"github.com/0chain/gosdk/core/block"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
 )
@@ -899,8 +898,7 @@ func (t *Transaction) Verify() error {
 
 			tq.Reset()
 			// Get transaction confirmationBlock from a random sharder
-			//confirmBlockHeader, confirmationBlock, lfbBlockHeader, err := tq.getFastConfirmation(context.TODO(), t.txnHash)
-			confirmBlockHeader, confirmationBlock, lfbBlockHeader, err := getTransactionConfirmation(getMinShardersVerify(), t.txnHash)
+			confirmBlockHeader, confirmationBlock, lfbBlockHeader, err := tq.getFastConfirmation(context.TODO(), t.txnHash)
 			if err != nil {
 				now := int64(common.Now())
 
@@ -922,8 +920,6 @@ func (t *Transaction) Verify() error {
 
 					if lfbBlockHeader == nil {
 						// no any valid lfb on all sharders. maybe they are network/server errors. try it again
-						// retry after 2 seconds
-						sys.Sleep(2 * time.Second)
 						continue
 					}
 
@@ -932,8 +928,6 @@ func (t *Transaction) Verify() error {
 						t.completeVerify(StatusError, "", errors.New("", `{"error": "verify transaction failed"}`))
 						return
 					}
-					// retry after 2 seconds
-					sys.Sleep(2 * time.Second)
 					continue
 				}
 			}

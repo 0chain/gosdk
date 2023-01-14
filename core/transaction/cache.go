@@ -3,13 +3,13 @@ package transaction
 import (
 	"context"
 	"encoding/json"
+	stdErrors "errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/util"
 )
 
@@ -86,12 +86,11 @@ func getBalanceFieldFromSharders(clientID, name string, sharders []string) (int6
 	balMap := make(map[int64]float32)
 	nonce := int64(0)
 	var winInfo string
-	//var winError string
 	waitTimeC := time.After(10 * time.Second)
 	for i := 0; i < numSharders; i++ {
 		select {
 		case <- waitTimeC:
-			return 0, "", errors.New("", "get balance failed. consensus not reached")
+			return 0, "", stdErrors.New("get balance failed. consensus not reached")
 		case rsp := <-result:
 				if rsp.StatusCode != http.StatusOK {
 					continue
@@ -122,7 +121,7 @@ func getBalanceFieldFromSharders(clientID, name string, sharders []string) (int6
 		}
 	}
 
-	return 0, "", errors.New("", "get balance failed. consensus not reached")
+	return 0, "", stdErrors.New("get balance failed, consensus not reached")
 }
 
 func queryFromShardersContext(ctx context.Context, sharders []string,
