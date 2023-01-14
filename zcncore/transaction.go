@@ -7,7 +7,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -901,11 +900,9 @@ func (t *Transaction) Verify() error {
 			tq.Reset()
 			// Get transaction confirmationBlock from a random sharder
 			//confirmBlockHeader, confirmationBlock, lfbBlockHeader, err := tq.getFastConfirmation(context.TODO(), t.txnHash)
-			log.Println(common.Now(), " confirm txn...")
 			confirmBlockHeader, confirmationBlock, lfbBlockHeader, err := getTransactionConfirmation(getMinShardersVerify(), t.txnHash)
 			if err != nil {
 				now := int64(common.Now())
-				log.Println(common.Now(), "confirm txn failed", err)
 
 				// maybe it is a network or server error
 				if lfbBlockHeader == nil {
@@ -925,6 +922,7 @@ func (t *Transaction) Verify() error {
 
 					if lfbBlockHeader == nil {
 						// no any valid lfb on all sharders. maybe they are network/server errors. try it again
+						// retry after 2 seconds
 						sys.Sleep(2 * time.Second)
 						continue
 					}
@@ -934,6 +932,7 @@ func (t *Transaction) Verify() error {
 						t.completeVerify(StatusError, "", errors.New("", `{"error": "verify transaction failed"}`))
 						return
 					}
+					// retry after 2 seconds
 					sys.Sleep(2 * time.Second)
 					continue
 				}
