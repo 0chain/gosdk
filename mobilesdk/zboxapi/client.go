@@ -26,7 +26,8 @@ var (
 )
 
 func Init(baseUrl, appType string) {
-	zboxApiClient = zboxapi.NewClient(baseUrl, appType)
+	zboxApiClient = zboxapi.NewClient()
+	zboxApiClient.SetRequest(baseUrl, appType)
 
 	c := client.GetClient()
 	if c != nil {
