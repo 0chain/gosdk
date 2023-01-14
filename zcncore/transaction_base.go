@@ -373,9 +373,13 @@ func (t *Transaction) submitTxn() {
 		t.completeTxn(StatusError, "", fmt.Errorf("failed to submit transaction to all miners"))
 		return
 	case ret := <-resultC:
-			logging.Debug("finish txn submitting, ", ret.Url, ", Status: ", ret.Status)
-			tSuccessRsp := ret.Body
-		t.completeTxn(StatusSuccess, tSuccessRsp, nil)
+			logging.Debug("finish txn submitting, ", ret.Url, ", Status: ", ret.Status, ", output:", ret.Body)
+		if ret.StatusCode == http.StatusOK {
+			t.completeTxn(StatusSuccess, ret.Body, nil)
+		} else {
+			t.completeTxn(StatusError, "", fmt.Errorf("submit transaction failed. %s", ret.Body))
+			transaction.Cache.Evict(t.txn.ClientID)
+		}
 	}
 }
 
