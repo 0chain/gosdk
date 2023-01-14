@@ -3,6 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"math"
@@ -17,6 +18,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
@@ -42,6 +44,7 @@ type DownloadRequest struct {
 	endBlock           int64
 	chunkSize          int
 	numBlocks          int64
+	validationRootMap  map[string]*blobberFile
 	statusCallback     StatusCallback
 	ctx                context.Context
 	ctxCncl            context.CancelFunc
@@ -167,6 +170,9 @@ func (req *DownloadRequest) downloadBlock(
 			numBlocks:          totalBlock,
 			encryptedKey:       req.encryptedKey,
 		}
+
+		bf := req.validationRootMap[blockDownloadReq.blobber.ID]
+		blockDownloadReq.blobberFile = bf
 
 		go AddBlockDownloadReq(blockDownloadReq)
 		c++
@@ -398,7 +404,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		}
 		logger.Logger.Info("Downloading block ", startBlock+1, " - ", startBlock+numBlocks)
 
-		data, err := req.getBlocksData(startBlock+1, numBlocks)
+		data, err := req.getBlocksData(startBlock, numBlocks)
 		if err != nil {
 			req.errorCB(errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+1)), remotePathCB)
 			return
@@ -534,6 +540,11 @@ func (req *DownloadRequest) calculateShardsParams(
 	return
 }
 
+type blobberFile struct {
+	validationRoot []byte
+	size           int64
+}
+
 func (req *DownloadRequest) getFileRef(remotePathCB string) (fRef *fileref.FileRef, err error) {
 	listReq := &ListRequest{
 		remotefilepath:     req.remotefilepath,
@@ -549,22 +560,95 @@ func (req *DownloadRequest) getFileRef(remotePathCB string) (fRef *fileref.FileR
 		ctx: req.ctx,
 	}
 
-	req.downloadMask, fRef, _ = listReq.getFileConsensusFromBlobbers()
-	if req.downloadMask.Equals64(0) || fRef == nil {
-		err = errors.New("consensus_not_met", "No minimum consensus for file meta data of file")
+	fMetaResp := listReq.getFileMetaFromBlobbers()
+
+	fRef, err = req.getFileMetaConsensus(fMetaResp)
+	if err != nil {
 		return
 	}
 
 	if fRef.Type == fileref.DIRECTORY {
 		err = errors.New("invalid_operation", "cannot downoad directory")
-		return
+		return nil, err
 	}
-
-	// the ChunkSize value can't be less than 0kb
-	if fRef.ChunkSize <= 0 {
-		err = errors.New("invalid_chunk_size", "File ChunkSize value is not permitted")
-		return
-	}
-
 	return
+}
+
+// getFileMetaConsensus will verify actual file hash signature and take consensus in it.
+// Then it will use the signature to calculation validation root signature and verify signature
+// of validation root send by the blobber.
+func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) (*fileref.FileRef, error) {
+	var selected *fileMetaResponse
+	foundMask := zboxutil.NewUint128(0)
+	req.consensus = 0
+	retMap := make(map[string]int)
+	for _, fmr := range fMetaResp {
+		if fmr.err != nil || fmr.fileref == nil {
+			continue
+		}
+		actualHash := fmr.fileref.ActualFileHash
+		actualFileHashSignature := fmr.fileref.ActualFileHashSignature
+
+		isValid, err := client.VerifySignature(actualFileHashSignature, actualHash)
+		if err != nil {
+			l.Logger.Error(err)
+			continue
+		}
+		if !isValid {
+			l.Logger.Error("invalid signature")
+			continue
+		}
+
+		retMap[actualFileHashSignature]++
+		if retMap[actualFileHashSignature] > req.consensus {
+			req.consensus = retMap[actualHash]
+		}
+		if req.isConsensusOk() {
+			selected = fmr
+			break
+		}
+	}
+
+	if selected == nil {
+		l.Logger.Error("File consensus not found for ", req.remotefilepath)
+		return nil, fmt.Errorf("consensus not met")
+	}
+
+	for i := 0; i < len(fMetaResp); i++ {
+		fmr := fMetaResp[i]
+		if fmr.err != nil {
+			continue
+		}
+		fRef := fmr.fileref
+
+		if selected.fileref.ActualFileHashSignature != fRef.ActualFileHashSignature {
+			continue
+		}
+
+		isValid, err := client.VerifySignature(
+			fRef.ValidationRootSignature, fRef.ActualFileHashSignature+fRef.ValidationRoot)
+		if err != nil {
+			l.Logger.Error(err)
+			continue
+		}
+		if !isValid {
+			l.Logger.Error("invalid validation root signature")
+			continue
+		}
+
+		blobber := req.blobbers[fmr.blobberIdx]
+		vr, _ := hex.DecodeString(fmr.fileref.ValidationRoot)
+		req.validationRootMap[blobber.ID] = &blobberFile{
+			size:           fmr.fileref.Size,
+			validationRoot: vr,
+		}
+		shift := zboxutil.NewUint128(1).Lsh(uint64(fmr.blobberIdx))
+		foundMask = foundMask.Or(shift)
+	}
+	req.consensus = foundMask.CountOnes()
+	if !req.isConsensusOk() {
+		return nil, fmt.Errorf("consensus_not_met")
+	}
+	req.downloadMask = foundMask
+	return selected.fileref, nil
 }

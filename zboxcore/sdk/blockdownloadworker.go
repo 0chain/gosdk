@@ -12,6 +12,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -27,6 +28,7 @@ const (
 
 type BlockDownloadRequest struct {
 	blobber            *blockchain.StorageNode
+	blobberFile        *blobberFile
 	allocationID       string
 	allocationTx       string
 	allocOwnerID       string
@@ -43,14 +45,18 @@ type BlockDownloadRequest struct {
 	result             chan *downloadBlock
 }
 
+type downloadResponse struct {
+	Nodes   [][][]byte
+	Indexes [][]int
+	Data    []byte
+}
+
 type downloadBlock struct {
-	RawData     []byte `json:"data"`
 	BlockChunks [][]byte
 	Success     bool               `json:"success"`
 	LatestRM    *marker.ReadMarker `json:"latest_rm"`
 	idx         int
 	err         error
-	NumBlocks   int64 `json:"num_of_blocks"`
 }
 
 var downloadBlockChan map[string]chan *BlockDownloadRequest
@@ -208,6 +214,23 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				}
 
 				return errors.New("response_error", string(respBody))
+			}
+
+			dR := downloadResponse{}
+			err = json.Unmarshal(respBody, &dR)
+			if err != nil {
+				return err
+			}
+
+			vmp := util.MerklePathForMultiLeafVerification{
+				Nodes:    dR.Nodes,
+				Index:    dR.Indexes,
+				RootHash: req.blobberFile.validationRoot,
+				DataSize: req.blobberFile.size,
+			}
+			err = vmp.VerifyMultipleBlocks(dR.Data)
+			if err != nil {
+				return errors.New("merkle_path_verification_error", err.Error())
 			}
 
 			rspData.idx = req.blobberIdx
