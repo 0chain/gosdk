@@ -60,7 +60,7 @@ build-iossimulator:
 
 build-ios: 
 	@echo "Building iOS framework. Please wait..."
-	@CGO_CFLAGS=$(MINIOSVERSIONMIN) gomobile bind -v -ldflags="-s -w" -target=ios/arm64,iossimulator/amd64 -tags "ios mobile" -o $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME) $(PKG_EXPORTS)
+	@CGO_CFLAGS=$(MINIOSVERSIONMIN) gomobile bind -v -ldflags="-s -w" -target=ios,iossimulator -tags "ios mobile" -o $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME) $(PKG_EXPORTS)
 	@echo "   $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME). - [OK]"	
 
 build-android: 
