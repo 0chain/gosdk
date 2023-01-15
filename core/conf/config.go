@@ -61,6 +61,8 @@ type Config struct {
 	// ChainID which blockchain it is working
 	ChainID string `json:"chain_id,omitempty"`
 
+	VerifyOptimistic bool
+
 	// Ethereum node: "https://ropsten.infura.io/v3/xxxxxxxxxxxxxxx"
 	EthereumNode string `json:"ethereum_node,omitempty"`
 
@@ -137,6 +139,10 @@ func LoadConfig(v Reader) (Config, error) {
 	querySleepTime := v.GetInt("query_sleep_time")
 	if querySleepTime < 1 {
 		querySleepTime = DefaultQuerySleepTime
+	}
+	VerifyOptimisticString := v.GetString("verify_optimistic")
+	if VerifyOptimisticString == "true" {
+		cfg.VerifyOptimistic = true
 	}
 
 	cfg.BlockWorker = blockWorker
