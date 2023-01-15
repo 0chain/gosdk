@@ -20,6 +20,7 @@ func TestLoadConfig(t *testing.T) {
 		reader.On("GetStringSlice", "preferred_blobbers").Return(nil)
 		reader.On("GetString", "signature_scheme").Return("")
 		reader.On("GetString", "chain_id").Return("")
+		reader.On("GetString", "verify_optimistic").Return("true")
 
 		return reader
 
@@ -47,6 +48,7 @@ func TestLoadConfig(t *testing.T) {
 				reader.On("GetStringSlice", "preferred_blobbers").Return(nil)
 				reader.On("GetString", "signature_scheme").Return("")
 				reader.On("GetString", "chain_id").Return("")
+				reader.On("GetString", "verify_optimistic").Return("true")
 
 				return reader
 			},
@@ -89,6 +91,7 @@ func TestLoadConfig(t *testing.T) {
 				reader.On("GetStringSlice", "preferred_blobbers").Return(nil)
 				reader.On("GetString", "signature_scheme").Return("")
 				reader.On("GetString", "chain_id").Return("")
+				reader.On("GetString", "verify_optimistic").Return("true")
 
 				return reader
 			},
@@ -121,6 +124,7 @@ func TestLoadConfig(t *testing.T) {
 				reader.On("GetStringSlice", "preferred_blobbers").Return(nil)
 				reader.On("GetString", "signature_scheme").Return("")
 				reader.On("GetString", "chain_id").Return("")
+				reader.On("GetString", "verify_optimistic").Return("false")
 
 				return reader
 			},
