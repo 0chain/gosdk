@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"io"
 	"math"
 	"os"
 	"strings"
@@ -333,7 +332,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 
-	size, chunksPerShard, actualPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
+	size, _, actualPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
 	if err != nil {
 		logger.Logger.Error(err.Error())
 		req.errorCB(
@@ -356,16 +355,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 	defer f.Close()
-
-	var isFullDownload bool
-	fileHasher := createDownloadHasher(req.chunkSize, req.datashards, fRef.EncryptedKey != "")
-	var mW io.Writer
-	if req.startBlock == 0 && req.endBlock == chunksPerShard {
-		isFullDownload = true
-		mW = io.MultiWriter(fileHasher, f)
-	} else {
-		mW = io.MultiWriter(f)
-	}
 
 	err = req.initEC()
 	if err != nil {
@@ -402,7 +391,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		if startBlock+numBlocks > endBlock {
 			numBlocks = endBlock - startBlock
 		}
-		logger.Logger.Info("Downloading block ", startBlock+1, " - ", startBlock+numBlocks)
+		logger.Logger.Info("Downloading block ", startBlock, " - ", startBlock+numBlocks)
 
 		data, err := req.getBlocksData(startBlock, numBlocks)
 		if err != nil {
@@ -415,7 +404,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		}
 
 		n := int64(math.Min(float64(remainingSize), float64(len(data))))
-		_, err = mW.Write(data[:n])
+		_, err = f.Write(data[:n])
 
 		if err != nil {
 			req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
@@ -431,17 +420,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			startBlock += endBlock - startBlock
 		} else {
 			startBlock += numBlocks
-		}
-	}
-
-	if isFullDownload {
-		err := req.checkContentHash(fRef, fileHasher, remotePathCB)
-		if err != nil {
-			logger.Logger.Error(err)
-			req.errorCB(
-				fmt.Errorf("Error while checking content hash. Error: %v",
-					err), remotePathCB)
-			return
 		}
 	}
 
@@ -479,22 +457,6 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 			req.allocationID, remotePathCB, OpDownload, err)
 	}
 	return
-}
-
-func (req *DownloadRequest) checkContentHash(
-	fRef *fileref.FileRef, fileHasher *downloadHasher, remotepathCB string) (err error) {
-
-	hash := fileHasher.GetHash()
-	expectedHash := fRef.ActualFileHash
-	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
-		expectedHash = fRef.ActualThumbnailHash
-	}
-
-	if expectedHash != hash {
-		err = errors.New("merkle_root_mismatch", "File content didn't match with uploaded file")
-		return
-	}
-	return nil
 }
 
 func (req *DownloadRequest) openFile() (sys.File, error) {
@@ -601,7 +563,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 
 		retMap[actualFileHashSignature]++
 		if retMap[actualFileHashSignature] > req.consensus {
-			req.consensus = retMap[actualHash]
+			req.consensus = retMap[actualFileHashSignature]
 		}
 		if req.isConsensusOk() {
 			selected = fmr
@@ -614,6 +576,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		return nil, fmt.Errorf("consensus not met")
 	}
 
+	req.validationRootMap = make(map[string]*blobberFile)
 	for i := 0; i < len(fMetaResp); i++ {
 		fmr := fMetaResp[i]
 		if fmr.err != nil {
