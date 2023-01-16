@@ -26,7 +26,7 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	openssl "github.com/Luzifer/go-openssl/v4"
+	openssl "github.com/Luzifer/go-openssl/v3"
 )
 
 const (
@@ -1254,7 +1254,7 @@ func Decrypt(key, text string) (string, error) {
 func CryptoJsEncrypt(passphrase, message string) (string, error) {
 	o := openssl.New()
 
-	enc, err := o.EncryptBytes(passphrase, []byte(message), openssl.BytesToKeyMD5)
+	enc, err := o.EncryptBytes(passphrase, []byte(message), openssl.DigestMD5Sum)
 	if err != nil {
 		return "", err
 	}
@@ -1264,7 +1264,7 @@ func CryptoJsEncrypt(passphrase, message string) (string, error) {
 
 func CryptoJsDecrypt(passphrase, encryptedMessage string) (string, error) {
 	o := openssl.New()
-	dec, err := o.DecryptBytes(passphrase, []byte(encryptedMessage), openssl.BytesToKeyMD5)
+	dec, err := o.DecryptBytes(passphrase, []byte(encryptedMessage), openssl.DigestMD5Sum)
 	if err != nil {
 		return "", err
 	}
