@@ -147,6 +147,7 @@ func main() {
 				"share":          Share,
 				"download":       download,
 				"upload":         upload,
+				"bulkUpload":     bulkUpload,
 				"listObjects":    listObjects,
 				"createDir":      createDir,
 				"downloadBlocks": downloadBlocks,

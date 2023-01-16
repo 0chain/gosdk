@@ -4,7 +4,7 @@
   <!-- for zcn.wasm-->
   <script src="https://cdn.jsdelivr.net/gh/herumi/bls-wasm@v1.0.0/browser/bls.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/golang/go@go1.18.5/misc/wasm/wasm_exec.js"></script>
-  <script src="wasm.js"></script>
+  <script src="zcn.js"></script>
 
 
   <!-- for demo -->
@@ -73,10 +73,11 @@
   <fieldset>
     <legend>Files</legend>
     <button id="btnListFiles">List</button>
-    <span><input id="inputSelectedFile" type="file" /> <button id="btnUploadFile">Upload</button> </span>
+    <span><input id="inputSelectedFile" type="file" multiple /> <button id="btnUploadFile">Upload</button> </span>
     [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button> ]
     <button id="btnViewFile">View</button>
     <button id="btnGetFileStats">GetFileStats</button>
+    <button id="btnDelete">Delete</button>
     <br>
 
     <div id="listFiles">
@@ -215,16 +216,28 @@
     onClick('btnUploadFile', async () => {
       const { files } = get('inputSelectedFile')
       if (files && files.length > 0) {
-        const fileBytes = await readBytes(files[0])
+
+        const objects = []
         const allocationId = getSelectedAllocation()
+        for(const file of files){
+        objects.push({allocationId:allocationId,
+                  remotePath:`/${file.name}`,
+                  file:file,
+                  thumbnailBytes:null,
+                  encrypt:false, 
+                  isUpdate:false, 
+                  isRepair:false, 
+                  numBlocks:100,
+                  callback: function(totalBytes, completedBytes, error) {
+                    console.log(file.name + " "+ completedBytes+"/"+totalBytes +" err:"+ error)
+                  }
+                })
+        }
 
-        //allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, isUpdate, isRepair bool, numBlocks int
-        await goWasm.sdk.upload(
-          allocationId, `/${files[0].name}`,
-          fileBytes,
-          null,
-          false, false, false, 100)
 
+        const results =  await goWasm.bulkUpload(objects)
+
+        console.log(JSON.stringify(results))
       }
     })
 
@@ -384,6 +397,14 @@
         txtOutput.innerHTML = JSON.stringify(stats, null, 2)
       }
 
+    })
+
+    onClick('btnDelete', async () => {
+      const file = files.find(it => it.path == getSelectedFile())
+      if (file) {
+        const allocationId = getSelectedAllocation()
+        await goWasm.sdk.delete(allocationId, file?.path)
+      }
     })
 
 
