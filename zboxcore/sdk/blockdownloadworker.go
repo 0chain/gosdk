@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"sync"
@@ -124,6 +125,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		rm.OwnerID = req.allocOwnerID
 		rm.Timestamp = common.Now()
 		rm.ReadCounter = getBlobberReadCtr(req.allocationID, req.blobber.ID) + req.numBlocks
+		setBlobberReadCtr(req.allocationID, req.blobber.ID, rm.ReadCounter)
 		err = rm.Sign()
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error: Signing readmarker failed")}
@@ -193,7 +195,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 						setBlobberReadCtr(req.allocationID, req.blobber.ID, rspData.LatestRM.ReadCounter)
 						lastBlobberReadCounter = rspData.LatestRM.ReadCounter
 						shouldRetry = true
-						return errors.New("stale_read_marker", "readmarker counter is not in sync with latest counter")
+						return errors.New("stale_read_marker",
+							fmt.Sprintf("readmarker counter is not in sync with latest counter. Last blobber read counter: %d", lastBlobberReadCounter))
 					}
 
 					return nil
