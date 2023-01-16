@@ -44,7 +44,7 @@ func (tq *TransactionQuery) fromAll(query string, handle QueryResultHandle, time
 			}
 
 			if handle != nil {
-				if handle(res) {
+				if _, consensus := handle(res); consensus {
 					cf()
 				}
 			}
