@@ -252,3 +252,54 @@ func (r *Resty) Wait() []error {
 
 	}
 }
+
+// First successful result or errors
+func (r *Resty) First() []error {
+	defer func() {
+		// call cancelFunc, avoid to memory leak issue
+		if r.cancelFunc != nil {
+			r.cancelFunc()
+		}
+	}()
+
+	errs := make([]error, 0, r.qty)
+	done := 0
+
+	// no urls
+	if r.qty == 0 {
+		return errs
+	}
+
+	for {
+		select {
+		case <-r.ctx.Done():
+			return errs
+
+		case result := <-r.done:
+
+			if r.handle != nil {
+				err := r.handle(result.Request, result.Response, result.ResponseBody, r.cancelFunc, result.Err)
+
+				if err != nil {
+					errs = append(errs, err)
+				} else {
+					return nil
+				}
+			} else {
+				if result.Err != nil {
+					errs = append(errs, result.Err)
+				} else {
+					return nil
+				}
+
+			}
+		}
+
+		done++
+
+		if done >= r.qty {
+			return errs
+		}
+
+	}
+}
