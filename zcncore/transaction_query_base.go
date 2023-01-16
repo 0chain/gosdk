@@ -40,7 +40,7 @@ type QueryResult struct {
 }
 
 // QueryResultHandle handle query response, return true if it is a consensus-result
-type QueryResultHandle func(result QueryResult) bool
+type QueryResultHandle func(result QueryResult) (status, consensus bool)
 
 type TransactionQuery struct {
 	max      int
@@ -182,6 +182,84 @@ func (tq *TransactionQuery) randOne(ctx context.Context) (string, error) {
 	}
 }
 
+func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, handle QueryResultHandle) error {
+
+	min := getMinShardersVerify()
+	next := make(chan string, 1)
+	result := make(chan QueryResult, min)
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				break
+			case sharder := <-next:
+				go func(sharder string) {
+					url := tq.buildUrl(sharder, query)
+					r := resty.New()
+					r.DoGet(ctx, url).
+						Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+							res := QueryResult{
+								Content:    respBody,
+								Error:      err,
+								StatusCode: http.StatusBadRequest,
+							}
+
+							if resp != nil {
+								res.StatusCode = resp.StatusCode
+
+								logging.Debug(req.URL.String() + " " + resp.Status)
+								logging.Debug(string(respBody))
+							} else {
+								logging.Debug(req.URL.String())
+							}
+
+							result <- res
+
+							return nil
+						})
+
+					r.Wait()
+
+				}(sharder)
+			}
+		}
+	}()
+
+	// send requests to min sharders first
+	for i := 0; i < min; i++ {
+		next <- tq.sharders[i]
+	}
+
+	var (
+		failedCount int
+	)
+
+	for {
+		select {
+		case <-ctx.Done():
+		case res := <-result:
+			status, consensus := handle(res)
+			if status {
+				if consensus {
+					return nil
+				}
+
+				// query success, but doesn't reach consensus, waiting for other sharder's response
+				continue
+			}
+
+			// query failed, push an additional sharder to query
+			failedCount++
+			if failedCount+min < tq.max {
+				next <- tq.sharders[failedCount+min]
+			}
+		}
+	}
+
+	return nil
+}
+
 // FromAll query transaction from all sharders whatever it is selected or offline in previous queires, and return consensus result
 func (tq *TransactionQuery) FromAll(ctx context.Context, query string, handle QueryResultHandle) error {
 	if tq == nil || tq.max == 0 {
@@ -213,7 +291,7 @@ func (tq *TransactionQuery) FromAll(ctx context.Context, query string, handle Qu
 			}
 
 			if handle != nil {
-				if handle(res) {
+				if _, consensus := handle(res); consensus {
 
 					cf()
 				}
@@ -290,16 +368,16 @@ func (tq *TransactionQuery) getConsensusConfirmation(ctx context.Context, numSha
 	// {host}/v1/transaction/get/confirmation?hash={txnHash}&content=lfb
 	err := tq.FromAll(ctx,
 		tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"),
-		func(qr QueryResult) bool {
+		func(qr QueryResult) (bool, bool) {
 			if qr.StatusCode != http.StatusOK {
-				return false
+				return false, false
 			}
 
 			var cfmBlock map[string]json.RawMessage
 			err := json.Unmarshal([]byte(qr.Content), &cfmBlock)
 			if err != nil {
 				logging.Error("txn confirmation parse error", err)
-				return false
+				return false, false
 			}
 
 			// parse `confirmation` section as block header
@@ -313,7 +391,7 @@ func (tq *TransactionQuery) getConsensusConfirmation(ctx context.Context, numSha
 					err := json.Unmarshal([]byte(lfbRaw), &lfb)
 					if err != nil {
 						logging.Error("round info parse error.", err)
-						return false
+						return false, false
 					}
 
 					lfbBlockHeaders[lfb.Hash]++
@@ -323,7 +401,7 @@ func (tq *TransactionQuery) getConsensusConfirmation(ctx context.Context, numSha
 					}
 				}
 
-				return false
+				return false, false
 			}
 
 			txnConfirmations[cfmBlockHeader.Hash]++
@@ -336,11 +414,11 @@ func (tq *TransactionQuery) getConsensusConfirmation(ctx context.Context, numSha
 
 					// it is consensus by enough sharders, and latest_finalized_block is valid
 					// return true to cancel other requests
-					return true
+					return true, true
 				}
 			}
 
-			return false
+			return true, false
 
 		})
 
@@ -412,11 +490,11 @@ func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryRe
 	var maxConsensus int
 	var consensusesResp QueryResult
 	// {host}{query}
-	err := tq.FromAll(ctx, query,
-		func(qr QueryResult) bool {
+	err := tq.FromConsensus(ctx, query,
+		func(qr QueryResult) (bool, bool) {
 			//ignore response if it is network error
 			if qr.StatusCode >= 500 {
-				return false
+				return false, false
 			}
 
 			consensuses[qr.StatusCode]++
@@ -425,18 +503,25 @@ func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryRe
 				consensusesResp = qr
 			}
 
-			// If number of 200's is equal to number of some other status codes, use 200's.
-			if qr.StatusCode == http.StatusOK && consensuses[qr.StatusCode] == maxConsensus {
-				maxConsensus = consensuses[qr.StatusCode]
-				consensusesResp = qr
+			// If number of 200's is equal to number of some other status codes, use 200's response. it fixes the random issue about 50% failed and 50% success on 2 sharders
+			if qr.StatusCode == http.StatusOK {
+
+				if consensuses[http.StatusOK] == maxConsensus {
+					maxConsensus = consensuses[qr.StatusCode]
+					consensusesResp = qr
+				}
 
 				// consensus has been reached, don't waiting for other requests
 				if maxConsensus*100/tq.max >= consensusThresh {
-					return true
+					return true, true
 				}
+
+				// query success, but doesn't reach consensus
+				return true, false
 			}
 
-			return false
+			// query fails
+			return false, false
 
 		})
 
