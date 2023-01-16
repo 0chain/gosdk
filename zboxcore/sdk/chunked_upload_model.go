@@ -51,7 +51,8 @@ type UploadFormData struct {
 	Path string `json:"filepath,omitempty"`
 
 	// ValidationRoot is merkle root of sha256 of 64KB as leaf
-	ValidationRoot string `json:"validation_root,omitempty"`
+	ValidationRoot          string `json:"validation_root,omitempty"`
+	ValidationRootSignature string `json:"validation_root_signature,omitempty"`
 	// Hash hash of shard thumbnail  (encoded,encrypted)
 	ThumbnailContentHash string `json:"thumbnail_content_hash,omitempty"`
 
@@ -59,7 +60,8 @@ type UploadFormData struct {
 	FixedMerkleRoot string `json:"fixed_merkle_root,omitempty"`
 
 	// ActualHash hash of original file (un-encoded, un-encrypted)
-	ActualHash string `json:"actual_hash,omitempty"`
+	ActualHash              string `json:"actual_hash,omitempty"`
+	ActualFileHashSignature string `json:"actual_file_hash_signature,omitempty"`
 	// ActualSize total bytes of original file (un-encoded, un-encrypted)
 	ActualSize int64 `json:"actual_size,omitempty"`
 	// ActualThumbnailSize total bytes of original thumbnail (un-encoded, un-encrypted)

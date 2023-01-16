@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"io"
 	"mime/multipart"
+
+	"github.com/0chain/gosdk/zboxcore/client"
 )
 
 // ChunkedUploadFormBuilder build form data for uploading
@@ -88,7 +90,7 @@ func (b *chunkedUploadFormBuilder) Build(
 			return nil, metadata, err
 		}
 
-		err = hasher.WriteToFile(chunkBytes)
+		err = hasher.WriteToFixedMT(chunkBytes)
 		if err != nil {
 			return nil, metadata, err
 		}
@@ -107,7 +109,6 @@ func (b *chunkedUploadFormBuilder) Build(
 			return nil, metadata, err
 		}
 
-		//fixed shard data's info in last chunk for stream
 		formData.FixedMerkleRoot, err = hasher.GetFixedMerkleRoot()
 		if err != nil {
 			return nil, metadata, err
@@ -117,8 +118,19 @@ func (b *chunkedUploadFormBuilder) Build(
 			return nil, metadata, err
 		}
 
-		//fixed original file's info in last chunk for stream
+		actualHashSignature, err := client.Sign(fileMeta.ActualHash)
+		if err != nil {
+			return nil, metadata, err
+		}
+
+		validationRootSignature, err := client.Sign(actualHashSignature + formData.ValidationRoot)
+		if err != nil {
+			return nil, metadata, err
+		}
+
 		formData.ActualHash = fileMeta.ActualHash
+		formData.ActualFileHashSignature = actualHashSignature
+		formData.ValidationRootSignature = validationRootSignature
 		formData.ActualSize = fileMeta.ActualSize
 
 	}
