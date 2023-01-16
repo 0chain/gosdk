@@ -11,8 +11,6 @@ import (
 
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
 )
@@ -41,31 +39,6 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 		fmt.Println("wasm: InitZCNSDK ", err)
 		return err
 	}
-
-	return nil
-}
-
-func SetWallet(clientID, publicKey, privateKey string) error {
-	c := client.GetClient()
-	c.ClientID = clientID
-	c.ClientKey = publicKey
-
-	w := &zcncrypto.Wallet{
-		ClientID:  clientID,
-		ClientKey: publicKey,
-		Keys: []zcncrypto.KeyPair{
-			{
-				PrivateKey: privateKey,
-				PublicKey:  publicKey,
-			},
-		},
-	}
-	err := zcncore.SetWallet(*w, false)
-	if err != nil {
-		return err
-	}
-
-	zboxApiClient.SetWallet(clientID, privateKey, publicKey)
 
 	return nil
 }

@@ -11,7 +11,10 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	stdErrors "errors"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
@@ -169,9 +172,15 @@ type GetNonceCallback interface {
 }
 
 type GetNonceCallbackStub struct {
+	status int
+	nonce  int64
+	info   string
 }
 
 func (g *GetNonceCallbackStub) OnNonceAvailable(status int, nonce int64, info string) {
+	g.status = status
+	g.nonce = nonce
+	g.info = info
 }
 
 // GetInfoCallback needs to be implemented by the caller of GetLockTokenConfig() and GetLockedTokens()
@@ -617,7 +626,7 @@ func getWalletBalance(clientId string) (common.Balance, error) {
 	return cb.balance, cb.err
 }
 
-// GetBalance retreives wallet balance from sharders
+// GetBalance retrieve wallet balance from sharders
 //
 //	# Inputs
 //	-	cb: callback for checking result
@@ -638,15 +647,17 @@ func GetBalance(cb GetBalanceCallback) error {
 	return nil
 }
 
-// GetBalance retreives wallet nonce from sharders
+// GetBalance retrieve wallet nonce from sharders
 func GetNonce(cb GetNonceCallback) error {
 	if cb == nil {
 		cb = &GetNonceCallbackStub{}
 	}
+
 	err := CheckConfig()
 	if err != nil {
 		return err
 	}
+
 	go func() {
 		value, info, err := getNonceFromSharders(_config.wallet.ClientID)
 		if err != nil {
@@ -656,7 +667,38 @@ func GetNonce(cb GetNonceCallback) error {
 		}
 		cb.OnNonceAvailable(StatusSuccess, value, info)
 	}()
+
 	return nil
+}
+
+// GetWalletBalance retrieve wallet nonce from sharders
+func GetWalletNonce(clientID string) (int64, error) {
+	cb := &GetNonceCallbackStub{}
+
+	err := CheckConfig()
+	if err != nil {
+		return 0, err
+	}
+	wait := &sync.WaitGroup{}
+	wait.Add(1)
+	go func() {
+		defer wait.Done()
+		value, info, err := getNonceFromSharders(clientID)
+		if err != nil {
+			logging.Error(err)
+			cb.OnNonceAvailable(StatusError, 0, info)
+			return
+		}
+		cb.OnNonceAvailable(StatusSuccess, value, info)
+	}()
+
+	wait.Wait()
+
+	if cb.status == StatusSuccess {
+		return cb.nonce, nil
+	}
+
+	return 0, stdErrors.New(cb.info)
 }
 
 // GetBalanceWallet retreives wallet balance from sharders
