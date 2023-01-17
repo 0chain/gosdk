@@ -169,6 +169,8 @@ func main() {
 				"listAllocations":       listAllocations,
 				"transferAllocation":    transferAllocation,
 				"freezeAllocation":      freezeAllocation,
+				"cancelAllocation":      cancelAllocation,
+				"updateAllocation":      updateAllocation,
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,

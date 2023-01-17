@@ -142,7 +142,25 @@ freeze allocation so that data can no longer be modified
 > allocationId string
 
 **Output**:
-> N/A
+> hash: string
+
+### zcn.sdk.cancelAllocation
+immediately return all remaining tokens from challenge pool back to the allocation's owner and cancels the allocation. If blobbers already got some tokens, the tokens will not be returned. Remaining min lock payment to the blobber will be funded from the allocation's write pools.
+
+**Input**:
+> allocationId string
+
+**Output**:
+> hash: string
+
+### zcn.sdk.updateAllocation
+updates allocation settings
+
+**Input**:
+> allocationId string, name string,size, expiry int64,lock int64,setImmutable, updateTerms bool,addBlobberId, removeBlobberId string
+
+**Output**:
+> hash: string
 
 
 ### zcn.sdk.getWalletBalance

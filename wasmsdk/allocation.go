@@ -78,9 +78,9 @@ func transferAllocation(allocationId, newOwnerId, newOwnerPublicKey string) erro
 	return err
 }
 
-func freezeAllocation(allocationId string) error {
+func freezeAllocation(allocationId string) (string, error) {
 
-	_, _, err := sdk.UpdateAllocation(
+	hash, _, err := sdk.UpdateAllocation(
 		"",           //allocationName,
 		0,            //size,
 		0,            //int64(expiry/time.Second),
@@ -92,6 +92,21 @@ func freezeAllocation(allocationId string) error {
 		"",           //removeBlobberId,
 	)
 
-	return err
+	return hash, err
 
+}
+
+func cancelAllocation(allocationId string) (string, error) {
+	hash, _, err := sdk.CancelAllocation(allocationId)
+
+	return hash, err
+}
+
+func updateAllocation(allocationId string, name string,
+	size, expiry int64,
+	lock int64,
+	setImmutable, updateTerms bool,
+	addBlobberId, removeBlobberId string) (string, error) {
+	hash, _, err := sdk.UpdateAllocation(name, size, expiry, allocationId, uint64(lock), setImmutable, updateTerms, addBlobberId, removeBlobberId)
+	return hash, err
 }
