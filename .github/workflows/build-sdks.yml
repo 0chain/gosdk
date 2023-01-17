@@ -131,6 +131,17 @@ jobs:
         id: setup-ndk
         with:
           ndk-version: r21d
+      
+      - name: Install deps
+        run: |
+          codename=$(lsb_release -c | awk '{print $2}')
+          echo "deb http://mirror.enzu.com/ubuntu/ $codename main" > ./gitaction.list
+          echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" >> ./gitaction.list
+          echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
+          echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
+          sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
+      
+          sudo apt-get update -y && sudo apt-get install build-essential wget -y
 
       - name: Clean build
         run: make clean-mobilesdk
@@ -287,10 +298,9 @@ jobs:
           echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" >> ./gitaction.list
           echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
           echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
-
           sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
       
-          sudo apt-get update -y && sudo apt-get install build-essential -y
+          sudo apt-get update -y && sudo apt-get install build-essential wget -y
 
       - name: Build windows
         run: |
