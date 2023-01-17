@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	thrown "github.com/0chain/errors"
@@ -43,6 +44,7 @@ type QueryResult struct {
 type QueryResultHandle func(result QueryResult) (status, consensus bool)
 
 type TransactionQuery struct {
+	sync.RWMutex
 	max      int
 	sharders []string
 
@@ -109,13 +111,15 @@ func (tq *TransactionQuery) buildUrl(host string, parts ...string) string {
 // checkHealth check health
 func (tq *TransactionQuery) checkHealth(ctx context.Context, host string) error {
 
+	tq.RLock()
 	_, ok := tq.offline[host]
+	tq.RUnlock()
 	if ok {
 		return ErrSharderOffline
 	}
 
 	// check health
-	r := resty.New()
+	r := resty.New(resty.WithTimeout(5 * time.Second))
 	requestUrl := tq.buildUrl(host, SharderEndpointHealthCheck)
 	logging.Info("zcn: check health ", requestUrl)
 	r.DoGet(ctx, requestUrl)
@@ -134,7 +138,9 @@ func (tq *TransactionQuery) checkHealth(ctx context.Context, host string) error 
 	errs := r.Wait()
 
 	if len(errs) > 0 {
+		tq.Lock()
 		tq.offline[host] = true
+		tq.Unlock()
 
 		if len(tq.offline) >= tq.max {
 			return ErrNoOnlineSharders
