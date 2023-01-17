@@ -245,10 +245,10 @@ func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, han
 	for {
 		select {
 		case <-ctx.Done():
+			return nil
 		case res := <-result:
 			status, consensus := handle(res)
 			if status {
-				sentCount++
 				if consensus {
 					return nil
 				}
@@ -261,16 +261,16 @@ func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, han
 				continue
 			}
 
-			if sentCount+1 >= tq.max {
+			sentCount++
+			if sentCount >= tq.max {
 				return nil
 			}
 
 			// query failed: 5xx,timeout, push an additional sharder to query
-			next <- tq.sharders[sentCount+1]
+			next <- tq.sharders[sentCount]
 		}
 	}
 
-	return nil
 }
 
 // FromAll query transaction from all sharders whatever it is selected or offline in previous queires, and return consensus result
