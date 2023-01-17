@@ -198,8 +198,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 						return errors.New("stale_read_marker",
 							fmt.Sprintf("readmarker counter is not in sync with latest counter. Last blobber read counter: %d", lastBlobberReadCounter))
 					}
-
-					return nil
+					return errors.New("download_error", fmt.Sprintf("Response status: %d", resp.StatusCode))
 
 				}
 
@@ -224,16 +223,18 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			if err != nil {
 				return err
 			}
-
-			vmp := util.MerklePathForMultiLeafVerification{
-				Nodes:    dR.Nodes,
-				Index:    dR.Indexes,
-				RootHash: req.blobberFile.validationRoot,
-				DataSize: req.blobberFile.size,
-			}
-			err = vmp.VerifyMultipleBlocks(dR.Data)
-			if err != nil {
-				return errors.New("merkle_path_verification_error", err.Error())
+			if req.contentMode == DOWNLOAD_CONTENT_FULL {
+				vmp := util.MerklePathForMultiLeafVerification{
+					Nodes:    dR.Nodes,
+					Index:    dR.Indexes,
+					RootHash: req.blobberFile.validationRoot,
+					DataSize: req.blobberFile.size,
+				}
+				zlogger.Logger.Info("verifying multiple blocks")
+				err = vmp.VerifyMultipleBlocks(dR.Data)
+				if err != nil {
+					return errors.New("merkle_path_verification_error", err.Error())
+				}
 			}
 
 			rspData.idx = req.blobberIdx
@@ -242,12 +243,12 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			if req.encryptedKey != "" {
 				if req.authTicket != nil {
 					// ReEncryptionHeaderSize for the additional header bytes for ReEncrypt,  where chunk_size - EncryptionHeaderSize is the encrypted data size
-					rspData.BlockChunks = req.splitData(respBody, req.chunkSize-EncryptionHeaderSize+ReEncryptionHeaderSize)
+					rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize-EncryptionHeaderSize+ReEncryptionHeaderSize)
 				} else {
-					rspData.BlockChunks = req.splitData(respBody, req.chunkSize)
+					rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
 				}
 			} else {
-				rspData.BlockChunks = req.splitData(respBody, req.chunkSize)
+				rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
 			}
 
 			incBlobberReadCtr(req.allocationID, req.blobber.ID, req.numBlocks)
