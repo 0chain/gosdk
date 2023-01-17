@@ -2,13 +2,13 @@ package sdk
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"io"
 	"mime/multipart"
 
 	"github.com/0chain/gosdk/zboxcore/client"
+	"golang.org/x/crypto/sha3"
 )
 
 // ChunkedUploadFormBuilder build form data for uploading
@@ -144,7 +144,7 @@ func (b *chunkedUploadFormBuilder) Build(
 			return nil, metadata, err
 		}
 
-		thumbnailHash := sha256.New()
+		thumbnailHash := sha3.New256()
 		thumbnailWriters := io.MultiWriter(uploadThumbnailFile, thumbnailHash)
 		_, err = thumbnailWriters.Write(thumbnailChunkData)
 		if err != nil {
