@@ -4,7 +4,7 @@ The 0chain wasm SDK is written in Go programming language, and released with Web
 *NOTE* please use `try{await zcn.sdk.[method];}catch(err){...}` to handle any error from wasm sdk in js
 
 
-## ZCN global methods
+## ZCN global js methods
 ### zcn.setWallet
 set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWallet` to set wallet on go.
 
@@ -172,6 +172,25 @@ create readpool in storage SC if the pool is missing.
 
 **Output**:
 > string
+
+### zcn.sdk.executeSmartContract
+send raw SmartContract transaction, and verify result
+
+**Input**:
+> address, methodName, input string, value uint64
+
+**Output**:
+> > [transaction.Transaction](https://github.com/0chain/gosdk/blob/e1e35e084d5c17d6bf233bbe8ac9c91701bdd8fd/core/transaction/entity.go#L32)
+
+
+### zcn.sdk.faucet
+faucet SmartContract
+
+**Input**:
+> methodName, input string, token float64
+
+**Output**:
+> > [transaction.Transaction](https://github.com/0chain/gosdk/blob/e1e35e084d5c17d6bf233bbe8ac9c91701bdd8fd/core/transaction/entity.go#L32)
 
 
 ## Blobber methods
