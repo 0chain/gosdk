@@ -572,28 +572,34 @@ func GetStorageSCConfig() (conf *InputMap, err error) {
 }
 
 type Blobber struct {
-	ID                common.Key                   `json:"id"`
-	BaseURL           string                       `json:"url"`
-	Terms             Terms                        `json:"terms"`
-	Capacity          common.Size                  `json:"capacity"`
-	Allocated         common.Size                  `json:"allocated"`
-	LastHealthCheck   common.Timestamp             `json:"last_health_check"`
-	PublicKey         string                       `json:"-"`
-	StakePoolSettings blockchain.StakePoolSettings `json:"stake_pool_settings"`
-	TotalStake        int64                        `json:"total_stake"`
+	ID                       common.Key                   `json:"id"`
+	BaseURL                  string                       `json:"url"`
+	Terms                    Terms                        `json:"terms"`
+	Capacity                 common.Size                  `json:"capacity"`
+	Allocated                common.Size                  `json:"allocated"`
+	LastHealthCheck          common.Timestamp             `json:"last_health_check"`
+	PublicKey                string                       `json:"-"`
+	StakePoolSettings        blockchain.StakePoolSettings `json:"stake_pool_settings"`
+	TotalStake               int64                        `json:"total_stake"`
+	UsedAllocation           int64                        `json:"used_allocation"`
+	TotalOffers              int64                        `json:"total_offers"`
+	TotalServiceCharge       int64                        `json:"total_service_charge"`
+	UncollectedServiceCharge int64                        `json:"uncollected_service_charge"`
 }
 
 type Validator struct {
-	ID             common.Key     `json:"validator_id"`
-	BaseURL        string         `json:"url"`
-	PublicKey      string         `json:"-"`
-	DelegateWallet string         `json:"delegate_wallet"`
-	MinStake       common.Balance `json:"min_stake"`
-	MaxStake       common.Balance `json:"max_stake"`
-	NumDelegates   int            `json:"num_delegates"`
-	ServiceCharge  float64        `json:"service_charge"`
-	StakeTotal     int64          `json:"stake_total"`
-	UnstakeTotal   int64          `json:"unstake_total"`
+	ID                       common.Key     `json:"validator_id"`
+	BaseURL                  string         `json:"url"`
+	PublicKey                string         `json:"-"`
+	DelegateWallet           string         `json:"delegate_wallet"`
+	MinStake                 common.Balance `json:"min_stake"`
+	MaxStake                 common.Balance `json:"max_stake"`
+	NumDelegates             int            `json:"num_delegates"`
+	ServiceCharge            float64        `json:"service_charge"`
+	StakeTotal               int64          `json:"stake_total"`
+	UnstakeTotal             int64          `json:"unstake_total"`
+	TotalServiceCharge       int64          `json:"total_service_charge"`
+	UncollectedServiceCharge int64          `json:"uncollected_service_charge"`
 }
 
 func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
@@ -669,6 +675,9 @@ func GetBlobbers(active bool) (bs []*Blobber, err error) {
 }
 
 // GetBlobber instance.
+//
+//	# Inputs
+//	-	blobberID: the id of blobber
 func GetBlobber(blobberID string) (blob *Blobber, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
@@ -906,9 +915,6 @@ func CreateAllocationForOwner(
 	readPrice, writePrice PriceRange,
 	lock uint64, preferredBlobberIds []string,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
-	if lock < 0 {
-		return "", 0, nil, errors.New("", "invalid value for lock")
-	}
 
 	allocationRequest, err := getNewAllocationBlobbers(
 		datashards, parityshards, size, expiry, readPrice, writePrice, preferredBlobberIds)
@@ -1005,7 +1011,7 @@ func getNewAllocationBlobbers(
 func GetBlobberIds(blobberUrls []string) ([]string, error) {
 
 	if len(blobberUrls) == 0 {
-		return make([]string, 0), nil
+		return nil, nil
 	}
 
 	urlsStr, err := json.Marshal(blobberUrls)

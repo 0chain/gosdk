@@ -3,6 +3,28 @@ The 0chain wasm SDK is written in Go programming language, and released with Web
 
 *NOTE* please use `try{await zcn.sdk.[method];}catch(err){...}` to handle any error from wasm sdk in js
 
+
+## ZCN global methods
+### zcn.setWallet
+set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWallet` to set wallet on go.
+
+**Input**:
+> bls, clientID, sk, pk string
+
+**Output**:
+> N/A
+>
+ 
+### zcn.bulkUpload
+bulk upload files. it will wrap options, and call `zcn.sdk.bulkUpload` to process upload
+
+**Input**:
+> bulkOptions:  [ { allocationId:string,remotePath:string,file:FileReader, thumbnailBytes:[]byte, encrypt:bool,isUpdate:bool,isRepair:bool,numBlocks:int,callback:function(totalBytes, completedBytes, error) } ]
+
+**Output**:
+> [ {remotePath:"/d.png", success:true,error:""} ]
+
+
 ## ZCN methods
 
 ### zcn.sdk.init
@@ -51,15 +73,6 @@ valid wallet id
 **Output**:
   > bool
 
-### zcn.jsProxy.setWallet
-set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWallet` to set wallet on go.
-
-**Input**:
-> bls, clientID, sk, pk string
-
-**Output**:
-> N/A
-
 
 ### zcn.sdk.setWallet
 set wallet on go
@@ -69,7 +82,6 @@ set wallet on go
 
 **Output**:
 > N/A
-
 
 
 ### zcn.sdk.getPublicEncryptionKey
@@ -133,8 +145,6 @@ freeze allocation so that data can no longer be modified
 > N/A
 
 
-
-
 ### zcn.sdk.getWalletBalance
 get wallet balance
 
@@ -165,6 +175,16 @@ create readpool in storage SC if the pool is missing.
 
 
 ## Blobber methods
+
+### zcn.sdk.getLookupHash
+get lookup hash by allocation id and path
+
+**Input**:
+> allocationID string, path string
+
+**Output**:
+> string
+
 ### zcn.sdk.delete
 delete remote file from blobbers
 
@@ -252,13 +272,24 @@ download blocks of a file
 ```
 
 ### zcn.sdk.upload
-upload file(s)
+upload file
 
 **Input**:
 > allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt bool, isUpdate, isRepair bool, numBlocks int
 
 **Output**:
 > {commandSuccess:bool, error:string}
+>
+
+### zcn.sdk.bulkUpload
+bulk upload files with json options
+
+**Input**:
+> jsonBulkOptions string: 
+>  BulkOption: { allocationId,remotePath,readChunkFuncName, fileSize, thumbnailBytes, encrypt,isUpdate,isRepair,numBlocks,callbackFuncName:callbackFuncName }
+
+**Output**:
+> [ {remotePath:"/d.png", success:true,error:""} ]
 
 
 ### zcn.sdk.play
