@@ -196,7 +196,7 @@ func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, han
 			case sharder := <-next:
 				go func(sharder string) {
 					url := tq.buildUrl(sharder, query)
-					r := resty.New()
+					r := resty.New(resty.WithTimeout(15 * time.Second))
 					r.DoGet(ctx, url).
 						Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 							res := QueryResult{
@@ -255,7 +255,7 @@ func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, han
 				return nil
 			}
 
-			// query failed, push an additional sharder to query
+			// query failed: 5xx,timeout, push an additional sharder to query
 			next <- tq.sharders[sentCount+1]
 		}
 	}
