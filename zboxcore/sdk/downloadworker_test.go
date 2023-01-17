@@ -1,7 +1,6 @@
 package sdk
 
 import (
-	"crypto/sha256"
 	"encoding/hex"
 	"math/rand"
 	"sync"
@@ -9,6 +8,7 @@ import (
 
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/sha3"
 )
 
 func TestRemoveFromMask(t *testing.T) {
@@ -115,7 +115,7 @@ func TestDecodeEC(t *testing.T) {
 				d, err := getDummyData(64 * 1024 * 4)
 				require.NoError(t, err)
 
-				h := sha256.New()
+				h := sha3.New256()
 				n, err := h.Write(d)
 				require.NoError(t, err)
 				require.Equal(t, len(d), n)
@@ -157,7 +157,7 @@ func TestDecodeEC(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			h := sha256.New()
+			h := sha3.New256()
 			n, err := h.Write(data)
 			require.NoError(t, err)
 			require.Equal(t, len(data), n)

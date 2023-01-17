@@ -3,7 +3,6 @@ package sdk
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"io"
@@ -18,6 +17,7 @@ import (
 	"github.com/0chain/gosdk/dev/blobber"
 	"github.com/0chain/gosdk/dev/blobber/model"
 	"github.com/0chain/gosdk/zboxcore/encryption"
+	"golang.org/x/crypto/sha3"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
@@ -116,7 +116,7 @@ func setupMockFile(t *testing.T, path string) (teardown func(t *testing.T)) {
 
 func setupMockFileAndReferencePathResult(t *testing.T, allocationID, name string) (teardown func(t *testing.T)) {
 	var buf = []byte("mockActualHash")
-	h := sha256.New()
+	h := sha3.New256()
 	f, _ := os.Create(name)
 	w := io.MultiWriter(h, f)
 	//nolint: errcheck

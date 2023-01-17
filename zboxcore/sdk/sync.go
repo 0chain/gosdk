@@ -1,7 +1,6 @@
 package sdk
 
 import (
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"io"
@@ -17,6 +16,7 @@ import (
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
+	"golang.org/x/crypto/sha3"
 )
 
 // For sync app
@@ -97,7 +97,7 @@ func calcFileHash(filePath string) string {
 	}
 	defer fp.Close()
 
-	h := sha256.New()
+	h := sha3.New256()
 	if _, err := io.Copy(h, fp); err != nil {
 		log.Fatal(err)
 	}
