@@ -195,6 +195,16 @@ func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, han
 				break
 			case sharder := <-next:
 				go func(sharder string) {
+
+					err := tq.checkHealth(ctx, sharder)
+					if err != nil {
+						result <- QueryResult{
+							Error:      err,
+							StatusCode: http.StatusServiceUnavailable,
+						}
+						return
+					}
+
 					url := tq.buildUrl(sharder, query)
 					r := resty.New(resty.WithTimeout(15 * time.Second))
 					r.DoGet(ctx, url).
