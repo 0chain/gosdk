@@ -1223,6 +1223,10 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 	return nil
 }
 
+func (a *Allocation) CancelUpload(localpath string) error {
+	return nil
+}
+
 func (a *Allocation) CancelRepair() error {
 	if a.repairRequestInProgress != nil {
 		a.repairRequestInProgress.isRepairCanceled = true
