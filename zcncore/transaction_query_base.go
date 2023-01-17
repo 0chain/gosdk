@@ -231,17 +231,19 @@ func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, han
 		next <- tq.sharders[i]
 	}
 
-	var (
-		failedCount int
-	)
-
+	sentCount := min
 	for {
 		select {
 		case <-ctx.Done():
 		case res := <-result:
 			status, consensus := handle(res)
 			if status {
+				sentCount++
 				if consensus {
+					return nil
+				}
+
+				if sentCount >= tq.max {
 					return nil
 				}
 
@@ -249,11 +251,12 @@ func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, han
 				continue
 			}
 
-			// query failed, push an additional sharder to query
-			failedCount++
-			if failedCount+min < tq.max {
-				next <- tq.sharders[failedCount+min]
+			if sentCount+1 >= tq.max {
+				return nil
 			}
+
+			// query failed, push an additional sharder to query
+			next <- tq.sharders[sentCount+1]
 		}
 	}
 
@@ -547,7 +550,7 @@ func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryRe
 
 func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string) ([]byte, error) {
 
-	path := fmt.Sprintf("/v1/screst/%v/%v", scAddress, relativePath)
+	path := fmt.Sprintf("/v1/screst/%v%v", scAddress, relativePath)
 	query := withParams(path, Params(params))
 
 	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders))
