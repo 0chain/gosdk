@@ -386,7 +386,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 
 	fileReader, err := os.Open(localPath)
 	if err != nil {
-		return err
+		return errors.Throw(err, "localPath: "+localPath)
 	}
 	defer fileReader.Close()
 
