@@ -533,7 +533,7 @@ func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryRe
 	}
 
 	if maxConsensus == 0 {
-		return nil, stderrors.New("zcn: query not found")
+		return nil, stderrors.New("zcn: object not found")
 	}
 
 	rate := maxConsensus * 100 / tq.max
