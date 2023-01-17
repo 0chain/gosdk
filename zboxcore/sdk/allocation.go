@@ -22,6 +22,7 @@ import (
 
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
+
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -386,7 +387,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 
 	fileReader, err := os.Open(localPath)
 	if err != nil {
-		return errors.Throw(err, "localPath: "+localPath)
+		return fmt.Errorf("localPath: %s %w", localPath, err)
 	}
 	defer fileReader.Close()
 
