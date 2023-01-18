@@ -176,6 +176,7 @@ func main() {
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,
+				"faucet":               faucet,
 
 				//swap
 				"setSwapWallets":     setSwapWallets,
