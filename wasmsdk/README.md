@@ -124,6 +124,16 @@ list all allocations
 
 **Output**:
 > [sdk.Allocation](https://github.com/0chain/gosdk/blob/a9e504e4a0e8fc76a05679e4ef183bb03b8db8e5/zboxcore/sdk/allocation.go#L140) array
+>
+
+### zcn.sdk.getAllocation
+get allocation detail
+
+**Input**:
+> N/A
+
+**Output**:
+> [sdk.Allocation](https://github.com/0chain/gosdk/blob/a9e504e4a0e8fc76a05679e4ef183bb03b8db8e5/zboxcore/sdk/allocation.go#L140)
 
 ### zcn.sdk.transferAllocation
 changes the owner of an allocation. Only a curator or the current owner of the allocation, can change an allocation's ownership.

@@ -167,6 +167,7 @@ func main() {
 				"getAllocationBlobbers": getAllocationBlobbers,
 				"getBlobberIds":         getBlobberIds,
 				"listAllocations":       listAllocations,
+				"getAllocation":         getAllocation,
 				"transferAllocation":    transferAllocation,
 				"freezeAllocation":      freezeAllocation,
 				"cancelAllocation":      cancelAllocation,
