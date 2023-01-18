@@ -22,8 +22,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
-func listObjects(allocationId string, remotePath string) (*sdk.ListResult, error) {
-	alloc, err := getAllocation(allocationId)
+func listObjects(allocationID string, remotePath string) (*sdk.ListResult, error) {
+	alloc, err := getAllocation(allocationID)
 	if err != nil {
 		return nil, err
 	}
@@ -337,7 +337,7 @@ func download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 }
 
 type BulkUploadOption struct {
-	AllocationID string `json:"allocationID,omitempty"`
+	allocationID string `json:"allocationID,omitempty"`
 	RemotePath   string `json:"remotePath,omitempty"`
 
 	ThumbnailBytes []byte `json:"thumbnailBytes,omitempty"`
@@ -374,7 +374,7 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 			}
 			defer func() { wait <- result }()
 
-			ok, err := uploadWithJsFuncs(o.AllocationID, o.RemotePath,
+			ok, err := uploadWithJsFuncs(o.allocationID, o.RemotePath,
 				o.ReadChunkFuncName,
 				o.FileSize,
 				o.ThumbnailBytes,

@@ -167,8 +167,12 @@ func main() {
 				"getAllocationBlobbers": getAllocationBlobbers,
 				"getBlobberIds":         getBlobberIds,
 				"listAllocations":       listAllocations,
+				"getAllocation":         getAllocation,
+				"reloadAllocation":      reloadAllocation,
 				"transferAllocation":    transferAllocation,
 				"freezeAllocation":      freezeAllocation,
+				"cancelAllocation":      cancelAllocation,
+				"updateAllocation":      updateAllocation,
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,
