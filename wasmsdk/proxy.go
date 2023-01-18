@@ -168,6 +168,7 @@ func main() {
 				"getBlobberIds":         getBlobberIds,
 				"listAllocations":       listAllocations,
 				"getAllocation":         getAllocation,
+				"reloadAllocation":      reloadAllocation,
 				"transferAllocation":    transferAllocation,
 				"freezeAllocation":      freezeAllocation,
 				"cancelAllocation":      cancelAllocation,
