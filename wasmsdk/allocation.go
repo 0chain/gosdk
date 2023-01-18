@@ -75,6 +75,10 @@ func transferAllocation(allocationID, newOwnerId, newOwnerPublicKey string) erro
 
 	_, _, err := sdk.CuratorTransferAllocation(allocationID, newOwnerId, newOwnerPublicKey)
 
+	if err == nil {
+		clearAllocation(allocationID)
+	}
+
 	return err
 }
 
@@ -92,12 +96,20 @@ func freezeAllocation(allocationID string) (string, error) {
 		"",           //removeBlobberId,
 	)
 
+	if err == nil {
+		clearAllocation(allocationID)
+	}
+
 	return hash, err
 
 }
 
 func cancelAllocation(allocationID string) (string, error) {
 	hash, _, err := sdk.CancelAllocation(allocationID)
+
+	if err == nil {
+		clearAllocation(allocationID)
+	}
 
 	return hash, err
 }
@@ -108,5 +120,10 @@ func updateAllocation(allocationID string, name string,
 	setImmutable, updateTerms bool,
 	addBlobberId, removeBlobberId string) (string, error) {
 	hash, _, err := sdk.UpdateAllocation(name, size, expiry, allocationID, uint64(lock), setImmutable, updateTerms, addBlobberId, removeBlobberId)
+
+	if err == nil {
+		clearAllocation(allocationID)
+	}
+
 	return hash, err
 }

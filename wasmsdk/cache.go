@@ -47,6 +47,11 @@ func getAllocation(allocationId string) (*sdk.Allocation, error) {
 	return it.Allocation, nil
 }
 
+// clearAllocation remove allocation from caching
+func clearAllocation(allocationID string) {
+	cachedAllocations.Remove(allocationID)
+}
+
 func reloadAllocation(allocationID string) (*sdk.Allocation, error) {
 	a, err := sdk.GetAllocation(allocationID)
 	if err != nil {
