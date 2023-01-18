@@ -191,13 +191,25 @@ func (tq *TransactionQuery) randOne(ctx context.Context) (string, error) {
 func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, handle QueryResultHandle) error {
 
 	min := getMinShardersVerify()
+
+	if err := tq.validate(min); err != nil {
+		return err
+	}
+
 	next := make(chan string, 1)
 	result := make(chan QueryResult, min)
+	done := make(chan bool, 1)
+	defer func() {
+		// cancel next
+		done <- true
+	}()
 
 	go func() {
 		for {
 			select {
 			case <-ctx.Done():
+				break
+			case <-done:
 				break
 			case sharder := <-next:
 				go func(sharder string) {
@@ -248,6 +260,7 @@ func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, han
 	}
 
 	sentCount := min
+	var successCount int
 	for {
 		select {
 		case <-ctx.Done():
@@ -255,11 +268,18 @@ func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, han
 		case res := <-result:
 			status, consensus := handle(res)
 			if status {
+				successCount++
 				if consensus {
 					return nil
 				}
 
-				if sentCount >= tq.max {
+				// all sharders respond data without 5xx status
+				if sentCount+1 >= tq.max {
+					return nil
+				}
+
+				// minimal sharders respond data without 5xx status
+				if successCount > min {
 					return nil
 				}
 
