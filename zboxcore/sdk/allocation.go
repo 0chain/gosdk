@@ -424,7 +424,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	}
 
 	if thumbnailPath != "" {
-		buf, err := os.ReadFile(fileName)
+		buf, err := os.ReadFile(thumbnailPath)
 		if err != nil {
 			return err
 		}
