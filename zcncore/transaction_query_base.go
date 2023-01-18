@@ -192,10 +192,6 @@ func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, han
 
 	min := getMinShardersVerify()
 
-	if err := tq.validate(min); err != nil {
-		return err
-	}
-
 	next := make(chan string, 1)
 	result := make(chan QueryResult, min)
 	done := make(chan bool, 1)
@@ -213,18 +209,8 @@ func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, han
 				return
 			case sharder := <-next:
 				go func(sharder string) {
-
-					err := tq.checkHealth(ctx, sharder)
-					if err != nil {
-						result <- QueryResult{
-							Error:      err,
-							StatusCode: http.StatusServiceUnavailable,
-						}
-						return
-					}
-
 					url := tq.buildUrl(sharder, query)
-					r := resty.New(resty.WithTimeout(15 * time.Second))
+					r := resty.New(resty.WithTimeout(10 * time.Second))
 					r.DoGet(ctx, url).
 						Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 							res := QueryResult{
@@ -297,51 +283,6 @@ func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, han
 		}
 	}
 
-}
-
-// FromAll query transaction from all sharders whatever it is selected or offline in previous queires, and return consensus result
-func (tq *TransactionQuery) FromAll(ctx context.Context, query string, handle QueryResultHandle) error {
-	if tq == nil || tq.max == 0 {
-		return ErrNoAvailableSharders
-	}
-
-	urls := make([]string, 0, tq.max)
-	for _, host := range tq.sharders {
-		urls = append(urls, tq.buildUrl(host, query))
-	}
-
-	r := resty.New()
-	r.DoGet(ctx, urls...).
-		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
-			res := QueryResult{
-				Content:    respBody,
-				Error:      err,
-				StatusCode: http.StatusBadRequest,
-			}
-
-			if resp != nil {
-				res.StatusCode = resp.StatusCode
-
-				logging.Debug(req.URL.String() + " " + resp.Status)
-				logging.Debug(string(respBody))
-			} else {
-				logging.Debug(req.URL.String())
-
-			}
-
-			if handle != nil {
-				if _, consensus := handle(res); consensus {
-
-					cf()
-				}
-			}
-
-			return nil
-		})
-
-	r.Wait()
-
-	return nil
 }
 
 // FromAny query transaction from any sharder that is not selected in previous queires. use any used sharder if there is not any unused sharder
