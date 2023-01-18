@@ -23,7 +23,7 @@ import (
 )
 
 func listObjects(allocationId string, remotePath string) (*sdk.ListResult, error) {
-	alloc, err := getAllocation(allocationId)
+	alloc, err := getAllocation(allocationId, false)
 	if err != nil {
 		return nil, err
 	}
@@ -32,16 +32,16 @@ func listObjects(allocationId string, remotePath string) (*sdk.ListResult, error
 
 }
 
-func createDir(allocationID, remotePath string) error {
-	if len(allocationID) == 0 {
-		return RequiredArg("allocationID")
+func createDir(allocationId, remotePath string) error {
+	if len(allocationId) == 0 {
+		return RequiredArg("allocationId")
 	}
 
 	if len(remotePath) == 0 {
 		return RequiredArg("remotePath")
 	}
 
-	allocationObj, err := getAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationId, false)
 	if err != nil {
 		return err
 	}
@@ -50,16 +50,16 @@ func createDir(allocationID, remotePath string) error {
 }
 
 // getFileStats get file stats from blobbers
-func getFileStats(allocationID, remotePath string) ([]*sdk.FileStats, error) {
-	if len(allocationID) == 0 {
-		return nil, RequiredArg("allocationID")
+func getFileStats(allocationId, remotePath string) ([]*sdk.FileStats, error) {
+	if len(allocationId) == 0 {
+		return nil, RequiredArg("allocationId")
 	}
 
 	if len(remotePath) == 0 {
 		return nil, RequiredArg("remotePath")
 	}
 
-	allocationObj, err := getAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationId, false)
 	if err != nil {
 		return nil, err
 	}
@@ -79,17 +79,17 @@ func getFileStats(allocationID, remotePath string) ([]*sdk.FileStats, error) {
 }
 
 // Delete delete file from blobbers
-func Delete(allocationID, remotePath string) (*FileCommandResponse, error) {
+func Delete(allocationId, remotePath string) (*FileCommandResponse, error) {
 
-	if len(allocationID) == 0 {
-		return nil, RequiredArg("allocationID")
+	if len(allocationId) == 0 {
+		return nil, RequiredArg("allocationId")
 	}
 
 	if len(remotePath) == 0 {
 		return nil, RequiredArg("remotePath")
 	}
 
-	allocationObj, err := getAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationId, false)
 	if err != nil {
 		return nil, err
 	}
@@ -109,9 +109,9 @@ func Delete(allocationID, remotePath string) (*FileCommandResponse, error) {
 }
 
 // Rename rename a file existing already on dStorage. Only the allocation's owner can rename a file.
-func Rename(allocationID, remotePath, destName string) (*FileCommandResponse, error) {
-	if len(allocationID) == 0 {
-		return nil, RequiredArg("allocationID")
+func Rename(allocationId, remotePath, destName string) (*FileCommandResponse, error) {
+	if len(allocationId) == 0 {
+		return nil, RequiredArg("allocationId")
 	}
 
 	if len(remotePath) == 0 {
@@ -122,7 +122,7 @@ func Rename(allocationID, remotePath, destName string) (*FileCommandResponse, er
 		return nil, RequiredArg("destName")
 	}
 
-	allocationObj, err := getAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationId, false)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return nil, err
@@ -143,10 +143,10 @@ func Rename(allocationID, remotePath, destName string) (*FileCommandResponse, er
 }
 
 // Copy copy file to another folder path on blobbers
-func Copy(allocationID, remotePath, destPath string) (*FileCommandResponse, error) {
+func Copy(allocationId, remotePath, destPath string) (*FileCommandResponse, error) {
 
-	if len(allocationID) == 0 {
-		return nil, RequiredArg("allocationID")
+	if len(allocationId) == 0 {
+		return nil, RequiredArg("allocationId")
 	}
 
 	if len(remotePath) == 0 {
@@ -157,7 +157,7 @@ func Copy(allocationID, remotePath, destPath string) (*FileCommandResponse, erro
 		return nil, RequiredArg("destPath")
 	}
 
-	allocationObj, err := getAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationId, false)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return nil, err
@@ -179,9 +179,9 @@ func Copy(allocationID, remotePath, destPath string) (*FileCommandResponse, erro
 }
 
 // Move move file to another remote folder path on dStorage. Only the owner of the allocation can copy an object.
-func Move(allocationID, remotePath, destPath string) (*FileCommandResponse, error) {
-	if len(allocationID) == 0 {
-		return nil, RequiredArg("allocationID")
+func Move(allocationId, remotePath, destPath string) (*FileCommandResponse, error) {
+	if len(allocationId) == 0 {
+		return nil, RequiredArg("allocationId")
 	}
 
 	if len(remotePath) == 0 {
@@ -192,7 +192,7 @@ func Move(allocationID, remotePath, destPath string) (*FileCommandResponse, erro
 		return nil, RequiredArg("destPath")
 	}
 
-	allocationObj, err := getAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationId, false)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return nil, err
@@ -214,17 +214,17 @@ func Move(allocationID, remotePath, destPath string) (*FileCommandResponse, erro
 }
 
 // Share  generate an authtoken that provides authorization to the holder to the specified file on the remotepath.
-func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expiration int, revoke bool, availableAfter string) (string, error) {
+func Share(allocationId, remotePath, clientID, encryptionPublicKey string, expiration int, revoke bool, availableAfter string) (string, error) {
 
-	if len(allocationID) == 0 {
-		return "", RequiredArg("allocationID")
+	if len(allocationId) == 0 {
+		return "", RequiredArg("allocationId")
 	}
 
 	if len(remotePath) == 0 {
 		return "", RequiredArg("remotePath")
 	}
 
-	allocationObj, err := getAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationId, false)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return "", err
@@ -284,7 +284,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 }
 
 // download download file
-func download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int) (*DownloadCommandResponse, error) {
+func download(allocationId, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int) (*DownloadCommandResponse, error) {
 
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, RequiredArg("remotePath/authTicket")
@@ -295,9 +295,9 @@ func download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 	wg.Add(1)
 
 	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
-	localPath := allocationID + "_" + fileName
+	localPath := allocationId + "_" + fileName
 
-	downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
+	downloader, err := sdk.CreateDownloader(allocationId, localPath, remotePath,
 		sdk.WithAuthticket(authTicket, lookupHash),
 		sdk.WithOnlyThumbnail(downloadThumbnailOnly),
 		sdk.WithBlocks(0, 0, numBlocks))
@@ -337,7 +337,7 @@ func download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 }
 
 type BulkUploadOption struct {
-	AllocationID string `json:"allocationID,omitempty"`
+	allocationId string `json:"allocationId,omitempty"`
 	RemotePath   string `json:"remotePath,omitempty"`
 
 	ThumbnailBytes []byte `json:"thumbnailBytes,omitempty"`
@@ -374,7 +374,7 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 			}
 			defer func() { wait <- result }()
 
-			ok, err := uploadWithJsFuncs(o.AllocationID, o.RemotePath,
+			ok, err := uploadWithJsFuncs(o.allocationId, o.RemotePath,
 				o.ReadChunkFuncName,
 				o.FileSize,
 				o.ThumbnailBytes,
@@ -402,17 +402,17 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 	return results, nil
 }
 
-func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string, fileSize int64, thumbnailBytes []byte, encrypt, isUpdate, isRepair bool, numBlocks int, callbackFuncName string) (bool, error) {
+func uploadWithJsFuncs(allocationId, remotePath string, readChunkFuncName string, fileSize int64, thumbnailBytes []byte, encrypt, isUpdate, isRepair bool, numBlocks int, callbackFuncName string) (bool, error) {
 
-	if len(allocationID) == 0 {
-		return false, RequiredArg("allocationID")
+	if len(allocationId) == 0 {
+		return false, RequiredArg("allocationId")
 	}
 
 	if len(remotePath) == 0 {
 		return false, RequiredArg("remotePath")
 	}
 
-	allocationObj, err := getAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationId, false)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return false, err
@@ -488,16 +488,16 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 }
 
 // upload upload file
-func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, isUpdate, isRepair bool, numBlocks int) (*FileCommandResponse, error) {
-	if len(allocationID) == 0 {
-		return nil, RequiredArg("allocationID")
+func upload(allocationId, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, isUpdate, isRepair bool, numBlocks int) (*FileCommandResponse, error) {
+	if len(allocationId) == 0 {
+		return nil, RequiredArg("allocationId")
 	}
 
 	if len(remotePath) == 0 {
 		return nil, RequiredArg("remotePath")
 	}
 
-	allocationObj, err := getAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationId, false)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return nil, err
@@ -570,7 +570,7 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 }
 
 // download download file blocks
-func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64) (*DownloadCommandResponse, error) {
+func downloadBlocks(allocationId, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64) (*DownloadCommandResponse, error) {
 
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, RequiredArg("remotePath/authTicket")
@@ -581,9 +581,9 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 	wg.Add(1)
 
 	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
-	localPath := filepath.Join(allocationID, fileName)
+	localPath := filepath.Join(allocationId, fileName)
 
-	downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
+	downloader, err := sdk.CreateDownloader(allocationId, localPath, remotePath,
 		sdk.WithAuthticket(authTicket, lookupHash),
 		sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks))
 

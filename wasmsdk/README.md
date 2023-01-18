@@ -130,7 +130,7 @@ list all allocations
 get allocation detail
 
 **Input**:
-> N/A
+> allocationId string, refresh bool
 
 **Output**:
 > [sdk.Allocation](https://github.com/0chain/gosdk/blob/a9e504e4a0e8fc76a05679e4ef183bb03b8db8e5/zboxcore/sdk/allocation.go#L140)

@@ -4,9 +4,10 @@
 package main
 
 import (
+	"time"
+
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	lru "github.com/hashicorp/golang-lru/v2"
-	"time"
 )
 
 type cachedAllocation struct {
@@ -18,16 +19,23 @@ var (
 	cachedAllocations, _ = lru.New[string, *cachedAllocation](100)
 )
 
-func getAllocation(allocationID string) (*sdk.Allocation, error) {
-	it, ok := cachedAllocations.Get(allocationID)
+func getAllocation(allocationId string, refresh bool) (*sdk.Allocation, error) {
 
-	if ok {
-		if ok && it.Expiration.After(time.Now()) {
-			return it.Allocation, nil
+	var it *cachedAllocation
+	var ok bool
+
+	if !refresh {
+
+		it, ok = cachedAllocations.Get(allocationId)
+
+		if ok {
+			if ok && it.Expiration.After(time.Now()) {
+				return it.Allocation, nil
+			}
 		}
 	}
 
-	a, err := sdk.GetAllocation(allocationID)
+	a, err := sdk.GetAllocation(allocationId)
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +45,7 @@ func getAllocation(allocationID string) (*sdk.Allocation, error) {
 		Expiration: time.Now().Add(5 * time.Minute),
 	}
 
-	cachedAllocations.Add(allocationID, it)
+	cachedAllocations.Add(allocationId, it)
 
 	return it.Allocation, nil
 }
