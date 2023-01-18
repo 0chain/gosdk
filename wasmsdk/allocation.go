@@ -60,9 +60,9 @@ func listAllocations() ([]*sdk.Allocation, error) {
 	return sdk.GetAllocations()
 }
 
-func transferAllocation(allocationId, newOwnerId, newOwnerPublicKey string) error {
-	if allocationId == "" {
-		return RequiredArg("allocationId")
+func transferAllocation(allocationID, newOwnerId, newOwnerPublicKey string) error {
+	if allocationID == "" {
+		return RequiredArg("allocationID")
 	}
 
 	if newOwnerId == "" {
@@ -73,18 +73,22 @@ func transferAllocation(allocationId, newOwnerId, newOwnerPublicKey string) erro
 		return RequiredArg("newOwnerPublicKey")
 	}
 
-	_, _, err := sdk.CuratorTransferAllocation(allocationId, newOwnerId, newOwnerPublicKey)
+	_, _, err := sdk.CuratorTransferAllocation(allocationID, newOwnerId, newOwnerPublicKey)
+
+	if err == nil {
+		clearAllocation(allocationID)
+	}
 
 	return err
 }
 
-func freezeAllocation(allocationId string) error {
+func freezeAllocation(allocationID string) (string, error) {
 
-	_, _, err := sdk.UpdateAllocation(
+	hash, _, err := sdk.UpdateAllocation(
 		"",           //allocationName,
 		0,            //size,
 		0,            //int64(expiry/time.Second),
-		allocationId, // allocID,
+		allocationID, // allocID,
 		0,            //lock,
 		true,         // setImmutable,
 		false,        //updateTerms,
@@ -92,6 +96,34 @@ func freezeAllocation(allocationId string) error {
 		"",           //removeBlobberId,
 	)
 
-	return err
+	if err == nil {
+		clearAllocation(allocationID)
+	}
 
+	return hash, err
+
+}
+
+func cancelAllocation(allocationID string) (string, error) {
+	hash, _, err := sdk.CancelAllocation(allocationID)
+
+	if err == nil {
+		clearAllocation(allocationID)
+	}
+
+	return hash, err
+}
+
+func updateAllocation(allocationID string, name string,
+	size, expiry int64,
+	lock int64,
+	setImmutable, updateTerms bool,
+	addBlobberId, removeBlobberId string) (string, error) {
+	hash, _, err := sdk.UpdateAllocation(name, size, expiry, allocationID, uint64(lock), setImmutable, updateTerms, addBlobberId, removeBlobberId)
+
+	if err == nil {
+		clearAllocation(allocationID)
+	}
+
+	return hash, err
 }
