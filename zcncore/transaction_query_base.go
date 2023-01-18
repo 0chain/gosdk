@@ -188,7 +188,8 @@ func (tq *TransactionQuery) randOne(ctx context.Context) (string, error) {
 	}
 }
 
-func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, handle QueryResultHandle) error {
+// FromMin  get consensus result from multiple sharders as less as possible
+func (tq *TransactionQuery) FromMin(ctx context.Context, query string, handle QueryResultHandle) error {
 
 	min := getMinShardersVerify()
 
@@ -346,7 +347,7 @@ func (tq *TransactionQuery) getConsensusConfirmation(ctx context.Context, numSha
 	lfbBlockHeaders := make(map[string]int)
 
 	// {host}/v1/transaction/get/confirmation?hash={txnHash}&content=lfb
-	err := tq.FromAll(ctx,
+	err := tq.FromMin(ctx,
 		tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"),
 		func(qr QueryResult) (bool, bool) {
 			if qr.StatusCode != http.StatusOK {
@@ -470,7 +471,7 @@ func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryRe
 	var maxConsensus int
 	var consensusesResp QueryResult
 	// {host}{query}
-	err := tq.FromConsensus(ctx, query,
+	err := tq.FromMin(ctx, query,
 		func(qr QueryResult) (bool, bool) {
 			//ignore response if it is network error
 			if qr.StatusCode >= 500 {
