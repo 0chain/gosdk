@@ -200,7 +200,7 @@ func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, han
 	result := make(chan QueryResult, min)
 	done := make(chan bool, 1)
 	defer func() {
-		// cancel next
+		// cancel next channel
 		done <- true
 	}()
 
@@ -208,9 +208,9 @@ func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, han
 		for {
 			select {
 			case <-ctx.Done():
-				break
+				return
 			case <-done:
-				break
+				return
 			case sharder := <-next:
 				go func(sharder string) {
 
@@ -292,7 +292,7 @@ func (tq *TransactionQuery) FromConsensus(ctx context.Context, query string, han
 				return nil
 			}
 
-			// query failed: 5xx,timeout, push an additional sharder to query
+			// if query fails with 5xx or timeout, push next sharder to send query
 			next <- tq.sharders[sentCount]
 		}
 	}
