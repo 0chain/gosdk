@@ -60,9 +60,9 @@ func listAllocations() ([]*sdk.Allocation, error) {
 	return sdk.GetAllocations()
 }
 
-func transferAllocation(allocationId, newOwnerId, newOwnerPublicKey string) error {
-	if allocationId == "" {
-		return RequiredArg("allocationId")
+func transferAllocation(allocationID, newOwnerId, newOwnerPublicKey string) error {
+	if allocationID == "" {
+		return RequiredArg("allocationID")
 	}
 
 	if newOwnerId == "" {
@@ -73,18 +73,18 @@ func transferAllocation(allocationId, newOwnerId, newOwnerPublicKey string) erro
 		return RequiredArg("newOwnerPublicKey")
 	}
 
-	_, _, err := sdk.CuratorTransferAllocation(allocationId, newOwnerId, newOwnerPublicKey)
+	_, _, err := sdk.CuratorTransferAllocation(allocationID, newOwnerId, newOwnerPublicKey)
 
 	return err
 }
 
-func freezeAllocation(allocationId string) (string, error) {
+func freezeAllocation(allocationID string) (string, error) {
 
 	hash, _, err := sdk.UpdateAllocation(
 		"",           //allocationName,
 		0,            //size,
 		0,            //int64(expiry/time.Second),
-		allocationId, // allocID,
+		allocationID, // allocID,
 		0,            //lock,
 		true,         // setImmutable,
 		false,        //updateTerms,
@@ -96,17 +96,17 @@ func freezeAllocation(allocationId string) (string, error) {
 
 }
 
-func cancelAllocation(allocationId string) (string, error) {
-	hash, _, err := sdk.CancelAllocation(allocationId)
+func cancelAllocation(allocationID string) (string, error) {
+	hash, _, err := sdk.CancelAllocation(allocationID)
 
 	return hash, err
 }
 
-func updateAllocation(allocationId string, name string,
+func updateAllocation(allocationID string, name string,
 	size, expiry int64,
 	lock int64,
 	setImmutable, updateTerms bool,
 	addBlobberId, removeBlobberId string) (string, error) {
-	hash, _, err := sdk.UpdateAllocation(name, size, expiry, allocationId, uint64(lock), setImmutable, updateTerms, addBlobberId, removeBlobberId)
+	hash, _, err := sdk.UpdateAllocation(name, size, expiry, allocationID, uint64(lock), setImmutable, updateTerms, addBlobberId, removeBlobberId)
 	return hash, err
 }

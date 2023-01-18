@@ -19,19 +19,16 @@ var (
 	cachedAllocations, _ = lru.New[string, *cachedAllocation](100)
 )
 
-func getAllocation(allocationId string, refresh bool) (*sdk.Allocation, error) {
+func getAllocation(allocationId string) (*sdk.Allocation, error) {
 
 	var it *cachedAllocation
 	var ok bool
 
-	if !refresh {
+	it, ok = cachedAllocations.Get(allocationId)
 
-		it, ok = cachedAllocations.Get(allocationId)
-
-		if ok {
-			if ok && it.Expiration.After(time.Now()) {
-				return it.Allocation, nil
-			}
+	if ok {
+		if ok && it.Expiration.After(time.Now()) {
+			return it.Allocation, nil
 		}
 	}
 
@@ -46,6 +43,22 @@ func getAllocation(allocationId string, refresh bool) (*sdk.Allocation, error) {
 	}
 
 	cachedAllocations.Add(allocationId, it)
+
+	return it.Allocation, nil
+}
+
+func reloadAllocation(allocationID string) (*sdk.Allocation, error) {
+	a, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return nil, err
+	}
+
+	it := &cachedAllocation{
+		Allocation: a,
+		Expiration: time.Now().Add(5 * time.Minute),
+	}
+
+	cachedAllocations.Add(allocationID, it)
 
 	return it.Allocation, nil
 }

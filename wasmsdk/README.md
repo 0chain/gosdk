@@ -130,7 +130,17 @@ list all allocations
 get allocation detail
 
 **Input**:
-> allocationId string, refresh bool
+> allocationID string
+
+**Output**:
+> [sdk.Allocation](https://github.com/0chain/gosdk/blob/a9e504e4a0e8fc76a05679e4ef183bb03b8db8e5/zboxcore/sdk/allocation.go#L140)
+
+
+### zcn.sdk.reloadAllocation
+clean cache, and get allocation detail from blockchain
+
+**Input**:
+> allocationID string
 
 **Output**:
 > [sdk.Allocation](https://github.com/0chain/gosdk/blob/a9e504e4a0e8fc76a05679e4ef183bb03b8db8e5/zboxcore/sdk/allocation.go#L140)
