@@ -33,6 +33,7 @@ type DownloadRequest struct {
 	allocationID       string
 	allocationTx       string
 	allocOwnerID       string
+	allocOwnerPubKey   string
 	blobbers           []*blockchain.StorageNode
 	datashards         int
 	parityshards       int
@@ -551,7 +552,11 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		actualHash := fmr.fileref.ActualFileHash
 		actualFileHashSignature := fmr.fileref.ActualFileHashSignature
 
-		isValid, err := client.VerifySignature(actualFileHashSignature, actualHash)
+		isValid, err := client.VerifySignatureWithPubKey(
+			req.allocOwnerPubKey,
+			actualFileHashSignature,
+			actualHash,
+		)
 		if err != nil {
 			l.Logger.Error(err)
 			continue
@@ -588,8 +593,11 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 			continue
 		}
 
-		isValid, err := client.VerifySignature(
-			fRef.ValidationRootSignature, fRef.ActualFileHashSignature+fRef.ValidationRoot)
+		isValid, err := client.VerifySignatureWithPubKey(
+			req.allocOwnerPubKey,
+			fRef.ValidationRootSignature,
+			fRef.ActualFileHashSignature+fRef.ValidationRoot,
+		)
 		if err != nil {
 			l.Logger.Error(err)
 			continue
