@@ -250,7 +250,7 @@ func (tq *TransactionQuery) FromAll(ctx context.Context, query string, handle Qu
 		urls = append(urls, tq.buildUrl(host, query))
 	}
 
-	r := resty.New()
+	r := resty.New(resty.WithTimeout(10 * time.Second))
 	r.DoGet(ctx, urls...).
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 			res := QueryResult{
