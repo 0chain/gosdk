@@ -1137,16 +1137,6 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 		return "", err
 	}
 
-	aTicket.ReEncryptionKey = ""
-	if err := aTicket.Sign(); err != nil {
-		return "", err
-	}
-
-	atBytes, err = json.Marshal(aTicket)
-	if err != nil {
-		return "", err
-	}
-
 	return base64.StdEncoding.EncodeToString(atBytes), nil
 }
 
@@ -1157,9 +1147,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 		url := a.Blobbers[idx].Baseurl
 		body := new(bytes.Buffer)
 		formWriter := multipart.NewWriter(body)
-		if err := formWriter.WriteField("encryption_public_key", clientEncPubKey); err != nil {
-			return err
-		}
+
 		if err := formWriter.WriteField("auth_ticket", authTicket); err != nil {
 			return err
 		}

@@ -48,6 +48,7 @@ type DownloadRequest struct {
 	authTicket         *marker.AuthTicket
 	downloadMask       zboxutil.Uint128
 	encryptedKey       string
+	encryptionPubKey   string
 	isDownloadCanceled bool
 	completedCallback  func(remotepath string, remotepathhash string)
 	contentMode        string
@@ -56,6 +57,7 @@ type DownloadRequest struct {
 	ecEncoder          reedsolomon.Encoder
 	maskMu             *sync.Mutex
 	encScheme          encryption.EncryptionScheme
+	reEncScheme        encryption.EncryptionScheme
 }
 
 func (req *DownloadRequest) removeFromMask(pos uint64) {
@@ -283,16 +285,39 @@ func (req *DownloadRequest) getDecryptedData(result *downloadBlock, blockNum int
 	return decryptedBytes, nil
 }
 
+func (req *DownloadRequest) getReEncryptedData(encData []byte) (reEncData []byte, err error) {
+	encMsg := &encryption.EncryptedMessage{
+		EncryptedData:   encData[EncryptionHeaderSize:],
+		MessageChecksum: string(encData[:CheckSumSize]),
+		OverallChecksum: string(encData[CheckSumSize:EncryptionHeaderSize]),
+		EncryptedKey:    req.encryptedKey,
+	}
+
+	reEncMsg, err := req.reEncScheme.ReEncrypt(
+		encMsg, req.authTicket.ReEncryptionKey, req.encryptionPubKey)
+	if err != nil {
+		return
+	}
+
+	encData, err = reEncMsg.Marshal()
+	return
+}
+
 // getDecryptedDataForAuthTicket will return decrypt shared encrypted data using re-encryption/re-decryption
 // mechanism
 func (req *DownloadRequest) getDecryptedDataForAuthTicket(result *downloadBlock, blockNum int) (data []byte, err error) {
+	reEncData, err := req.getReEncryptedData(result.BlockChunks[blockNum])
+	if err != nil {
+		return nil, err
+	}
+
 	suite := edwards25519.NewBlakeSHA256Ed25519()
 	reEncMessage := &encryption.ReEncryptedMessage{
 		D1: suite.Point(),
 		D4: suite.Point(),
 		D5: suite.Point(),
 	}
-	err = reEncMessage.Unmarshal(result.BlockChunks[blockNum])
+	err = reEncMessage.Unmarshal(reEncData)
 	if err != nil {
 		logger.Logger.Error("ReEncrypted Block unmarshall failed", req.blobbers[result.idx].Baseurl, err)
 		return nil, err
@@ -370,7 +395,14 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 	if req.encryptedKey != "" {
-		req.initEncryption()
+		err = req.initEncryption()
+		if err != nil {
+			logger.Logger.Error(err)
+			req.errorCB(
+				fmt.Errorf("Error while initializing encryption scheme. Error: %s",
+					err.Error()), remotePathCB)
+			return
+		}
 	}
 
 	var downloaded int
@@ -460,10 +492,30 @@ func (req *DownloadRequest) initEC() error {
 	return nil
 }
 
-func (req *DownloadRequest) initEncryption() {
+func (req *DownloadRequest) initEncryption() (err error) {
 	req.encScheme = encryption.NewEncryptionScheme()
-	req.encScheme.Initialize(client.GetClient().Mnemonic)
+	_, err = req.encScheme.Initialize(client.GetClient().Mnemonic)
+	if err != nil {
+		return
+	}
+	req.encryptionPubKey, err = req.encScheme.GetPublicKey()
+	if err != nil {
+		return
+	}
+
 	req.encScheme.InitForDecryption("filetype:audio", req.encryptedKey)
+	if req.authTicket != nil {
+		req.reEncScheme = encryption.NewEncryptionScheme()
+		_, err = req.reEncScheme.Initialize("")
+		if err != nil {
+			return
+		}
+		err = req.reEncScheme.InitForDecryption("filetype:audio", req.encryptedKey)
+		if err != nil {
+			return
+		}
+	}
+	return nil
 }
 
 func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
