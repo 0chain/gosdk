@@ -283,15 +283,18 @@ func (a *Allocation) CanUpdate() bool {
 }
 
 func (a *Allocation) CanMove() bool {
-	return (a.FileOptions & CAN_MOVE_MASK) > 0 
+	// return (a.FileOptions & CAN_MOVE_MASK) > 0 
+	return true
 }
 
 func (a *Allocation) CanCopy() bool {
-	return (a.FileOptions & CAN_COPY_MASK) > 0 
+	// return (a.FileOptions & CAN_COPY_MASK) > 0 
+	return true
 }
 
 func (a *Allocation) CanRename() bool {
-	return (a.FileOptions & CAN_RENAME_MASK) > 0 
+	// return (a.FileOptions & CAN_RENAME_MASK) > 0 
+	return true
 }
 
 
