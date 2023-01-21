@@ -267,34 +267,27 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 }
 
 func (a *Allocation) CanUpload() bool {
-	// return (a.FileOptions & CAN_UPLOAD_MASK) > 0 
-	return true
+	return (a.FileOptions & CAN_UPLOAD_MASK) > 0 
 }
 
 func (a *Allocation) CanDelete() bool {
-	// return (a.FileOptions & CAN_DELETE_MASK) > 0 
-	return true
-	
+	return (a.FileOptions & CAN_DELETE_MASK) > 0 	
 }
 
 func (a *Allocation) CanUpdate() bool {
-	// return (a.FileOptions & CAN_UPDATE_MASK) > 0 
-	return true
+	return (a.FileOptions & CAN_UPDATE_MASK) > 0 
 }
 
 func (a *Allocation) CanMove() bool {
-	// return (a.FileOptions & CAN_MOVE_MASK) > 0 
-	return true
+	return (a.FileOptions & CAN_MOVE_MASK) > 0 
 }
 
 func (a *Allocation) CanCopy() bool {
-	// return (a.FileOptions & CAN_COPY_MASK) > 0 
-	return true
+	return (a.FileOptions & CAN_COPY_MASK) > 0 
 }
 
 func (a *Allocation) CanRename() bool {
-	// return (a.FileOptions & CAN_RENAME_MASK) > 0 
-	return true
+	return (a.FileOptions & CAN_RENAME_MASK) > 0 
 }
 
 
