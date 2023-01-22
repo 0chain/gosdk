@@ -966,8 +966,6 @@ func CreateAllocationForOwner(
 	allocationRequest["third_party_extendable"] = thirdPartyExtendable
 	allocationRequest["file_options"] = calculateAllocationFileOptions(63/*0011 1111*/, fileOptionsParams)
 
-	fmt.Printf("allocation : %v\n", allocationRequest)
-
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.NEW_ALLOCATION_REQUEST,
 		InputArgs: allocationRequest,
