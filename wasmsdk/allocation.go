@@ -121,7 +121,7 @@ func updateAllocation(allocationID string, name string,
 	lock int64,
 	setImmutable, updateTerms bool,
 	addBlobberId, removeBlobberId string) (string, error) {
-	hash, _, err := sdk.UpdateAllocation(name, size, expiry, allocationID, uint64(lock), setImmutable, updateTerms, addBlobberId, removeBlobberId)
+	hash, _, err := sdk.UpdateAllocation(name, size, expiry, allocationID, uint64(lock), setImmutable, updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{})
 
 	if err == nil {
 		clearAllocation(allocationID)
