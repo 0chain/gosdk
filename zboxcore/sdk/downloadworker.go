@@ -327,6 +327,14 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if remotePathCB == "" {
 		remotePathCB = req.remotefilepathhash
 	}
+
+	if req.startBlock < 0 || req.endBlock < 0 {
+		req.errorCB(
+			fmt.Errorf("start block or end block or both cannot be negative."), remotePathCB,
+		)
+		return
+	}
+
 	fRef, err := req.getFileRef(remotePathCB)
 	if err != nil {
 		logger.Logger.Error(err.Error())
@@ -605,7 +613,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 
 	if selected == nil {
 		l.Logger.Error("File consensus not found for ", req.remotefilepath)
-		return nil, fmt.Errorf("consensus not met")
+		return nil, errors.New("consensus_not_met", "")
 	}
 
 	req.validationRootMap = make(map[string]*blobberFile)
