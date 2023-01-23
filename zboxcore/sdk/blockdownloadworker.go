@@ -102,6 +102,10 @@ func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
 	return chunks
 }
 
+func (req *BlockDownloadRequest) shouldVerify() bool {
+	return req.authTicket == nil || req.encryptedKey == ""
+}
+
 func (req *BlockDownloadRequest) downloadBlobberBlock() {
 	if req.numBlocks <= 0 {
 		req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.New("invalid_request", "Invalid number of blocks for download")}
@@ -223,7 +227,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			if err != nil {
 				return err
 			}
-			if req.contentMode == DOWNLOAD_CONTENT_FULL {
+			if req.contentMode == DOWNLOAD_CONTENT_FULL && req.shouldVerify() {
+
 				vmp := util.MerklePathForMultiLeafVerification{
 					Nodes:    dR.Nodes,
 					Index:    dR.Indexes,
