@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"hash"
 	"math"
 	"os"
 	"strings"
@@ -22,6 +23,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
+	"golang.org/x/crypto/sha3"
 )
 
 const (
@@ -59,6 +61,7 @@ type DownloadRequest struct {
 	ecEncoder          reedsolomon.Encoder
 	maskMu             *sync.Mutex
 	encScheme          encryption.EncryptionScheme
+	shouldVerify       bool
 }
 
 func (req *DownloadRequest) removeFromMask(pos uint64) {
@@ -169,6 +172,7 @@ func (req *DownloadRequest) downloadBlock(
 			remotefilepathhash: req.remotefilepathhash,
 			numBlocks:          totalBlock,
 			encryptedKey:       req.encryptedKey,
+			shouldVerify:       req.shouldVerify,
 		}
 
 		bf := req.validationRootMap[blockDownloadReq.blobber.ID]
@@ -333,7 +337,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 
-	size, _, actualPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
+	size, chunkPerShard, actualPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
 	if err != nil {
 		logger.Logger.Error(err.Error())
 		req.errorCB(
@@ -388,6 +392,16 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		req.statusCallback.Started(req.allocationID, remotePathCB, OpDownload, int(size))
 	}
 
+	if req.authTicket == nil || req.encryptedKey == "" {
+		req.shouldVerify = true
+	}
+	var actualFileHasher hash.Hash
+	var isPREAndWholeFile bool
+	if !req.shouldVerify && (startBlock == 0 && endBlock == chunkPerShard) {
+		actualFileHasher = sha3.New256()
+		isPREAndWholeFile = true
+	}
+
 	for startBlock < endBlock {
 		if startBlock+numBlocks > endBlock {
 			numBlocks = endBlock - startBlock
@@ -411,6 +425,10 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 			return
 		}
+		if isPREAndWholeFile {
+			actualFileHasher.Write(data[:n])
+		}
+
 		downloaded = downloaded + int(n)
 		remainingSize -= n
 
@@ -425,6 +443,15 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 
 	f.Sync()
+
+	if isPREAndWholeFile {
+		actualFileHash := hex.EncodeToString(actualFileHasher.Sum(nil))
+		if actualFileHash != fRef.ActualFileHash {
+			req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
+				fRef.ActualFileHash, actualFileHash), remotePathCB)
+			return
+		}
+	}
 
 	if req.statusCallback != nil {
 		req.statusCallback.Completed(

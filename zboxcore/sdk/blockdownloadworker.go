@@ -44,6 +44,7 @@ type BlockDownloadRequest struct {
 	authTicket         *marker.AuthTicket
 	ctx                context.Context
 	result             chan *downloadBlock
+	shouldVerify       bool
 }
 
 type downloadResponse struct {
@@ -100,10 +101,6 @@ func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
 		chunks = append(chunks, buf[:])
 	}
 	return chunks
-}
-
-func (req *BlockDownloadRequest) shouldVerify() bool {
-	return req.authTicket == nil || req.encryptedKey == ""
 }
 
 func (req *BlockDownloadRequest) downloadBlobberBlock() {
@@ -227,7 +224,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			if err != nil {
 				return err
 			}
-			if req.contentMode == DOWNLOAD_CONTENT_FULL && req.shouldVerify() {
+			if req.contentMode == DOWNLOAD_CONTENT_FULL && req.shouldVerify {
 
 				vmp := util.MerklePathForMultiLeafVerification{
 					Nodes:    dR.Nodes,
