@@ -51,7 +51,7 @@ jobs:
           echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
           sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
       
-          sudo apt-get update && sudo apt-get install build-essential wget -y
+          sudo apt update && sudo apt install build-essential wget -y
 
       - name: Install herumi's libraries
         run: sudo make install-herumi-ubuntu
@@ -160,7 +160,7 @@ jobs:
           echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
           sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
       
-          sudo apt-get update && sudo apt-get install build-essential wget -y
+          sudo apt update && sudo apt install build-essential wget -y
 
       - name: Install herumi's libraries
         run: sudo make install-herumi-ubuntu
