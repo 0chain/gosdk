@@ -337,7 +337,7 @@ func download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 }
 
 type BulkUploadOption struct {
-	allocationID string `json:"allocationID,omitempty"`
+	AllocationID string `json:"allocationId,omitempty"`
 	RemotePath   string `json:"remotePath,omitempty"`
 
 	ThumbnailBytes []byte `json:"thumbnailBytes,omitempty"`
@@ -374,7 +374,7 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 			}
 			defer func() { wait <- result }()
 
-			ok, err := uploadWithJsFuncs(o.allocationID, o.RemotePath,
+			ok, err := uploadWithJsFuncs(o.AllocationID, o.RemotePath,
 				o.ReadChunkFuncName,
 				o.FileSize,
 				o.ThumbnailBytes,
