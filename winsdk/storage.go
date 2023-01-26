@@ -40,16 +40,5 @@ func GetFileStats(allocationID, remotePath *C.char) *C.char {
 		return WithJSON(nil, err)
 	}
 
-	fileStats, err := allocationObj.GetFileStats(path)
-	if err != nil {
-		return WithJSON(nil, err)
-	}
-
-	var stats []*sdk.FileStats
-
-	for _, it := range fileStats {
-		stats = append(stats, it)
-	}
-
-	return WithJSON(stats, nil)
+	return WithJSON(allocationObj.GetFileStats(path))
 }
