@@ -180,6 +180,10 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 				defer teardown(t)
 			}
 
+			if teardown := setupMockFile(t, tt.parameters.thumbnailPath); teardown != nil {
+				defer teardown(t)
+			}
+
 			a.uploadChan = make(chan *UploadRequest, 10)
 			a.downloadChan = make(chan *DownloadRequest, 10)
 			a.repairChan = make(chan *RepairRequest, 1)
@@ -214,6 +218,10 @@ func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 	)
 	require := require.New(t)
 	if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
+		defer teardown(t)
+	}
+
+	if teardown := setupMockFile(t, mockThumbnailPath); teardown != nil {
 		defer teardown(t)
 	}
 	a := &Allocation{
@@ -397,6 +405,11 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 	if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
 		defer teardown(t)
 	}
+
+	if teardown := setupMockFile(t, mockThumbnailPath); teardown != nil {
+		defer teardown(t)
+	}
+
 	a := &Allocation{
 		Tx:           "TestAllocation_EncryptAndUploadFileWithThumbnail",
 		ParityShards: 2,
