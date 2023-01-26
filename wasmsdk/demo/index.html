@@ -44,6 +44,7 @@
  
     <button id="btnSetWallet">Change Wallet</button>
     <button id="btnSendMeTokens">Send Me Tokens</button>
+    <button id="btnGetBalance">Get Balance</button>
   </fieldset>
 
   <fieldset>
@@ -58,6 +59,7 @@
     <span>
       <button id="btnListAllocations">List</button>
       <button id="btnCreateAllocation">Create</button>
+      <button id="btnGetAllocation">Get</button>
     </span>
 
     <br>
@@ -65,6 +67,8 @@
 
     <div id="listAllocations">
     </div>
+
+
 
 
   </fieldset>
@@ -129,7 +133,7 @@
       minSubmit: 50,
       confirmationChainLength: 3,
     }
-    const blockWorker = 'https://dev.0chain.net/dns';
+    const blockWorker = 'https://beta.0chain.net/dns';
     const config = [
       networkConfig.chainId,
       blockWorker,
@@ -161,8 +165,13 @@
 
 
     onClick('btnSendMeTokens', async () => {
-     
       await goWasm.sdk.faucet("pour", JSON.stringify("{Pay day}"),0)
+    })
+
+    onClick('btnGetBalance', async () => {
+      const {clientID }= getWallet()
+      const wallet = await goWasm.sdk.getWalletBalance(clientID)
+      txtOutput.innerHTML = JSON.stringify(wallet, null, 2)
     })
 
 
@@ -209,6 +218,16 @@
     onClick('btnListAllocations', async () => {
       allocations = await goWasm.sdk.listAllocations()
       bindAllocations()
+    })
+
+    onClick('btnGetAllocation', async () => {
+      const allocationId = getSelectedAllocation()
+      if(!allocationId){
+        alert("please select allocation")
+        return
+      }
+      const alloc = await goWasm.sdk.getAllocation(allocationId)
+      txtOutput.innerHTML = JSON.stringify(alloc, null, 2)
     })
 
 

@@ -21,10 +21,7 @@ var (
 
 func getAllocation(allocationId string) (*sdk.Allocation, error) {
 
-	var it *cachedAllocation
-	var ok bool
-
-	it, ok = cachedAllocations.Get(allocationId)
+	it, ok := cachedAllocations.Get(allocationId)
 
 	if ok {
 		if ok && it.Expiration.After(time.Now()) {
@@ -43,7 +40,6 @@ func getAllocation(allocationId string) (*sdk.Allocation, error) {
 	}
 
 	cachedAllocations.Add(allocationId, it)
-
 	return it.Allocation, nil
 }
 
