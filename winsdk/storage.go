@@ -10,8 +10,6 @@ import (
 
 import (
 	"errors"
-
-	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
 // GetFileStats get file stats of blobbers
