@@ -8,38 +8,36 @@ import (
 )
 
 type cachedAllocation struct {
-	Expiration time.Time
-	Allocation *sdk.Allocation
+	RefreshTime time.Time
+	Allocation  *sdk.Allocation
 }
 
 var (
 	cachedAllocations, _ = lru.New[string, *cachedAllocation](100)
 )
 
-func getAllocation(allocationId string) (*sdk.Allocation, error) {
+func getAllocation(allocationID string) (*sdk.Allocation, error) {
 
 	var it *cachedAllocation
 	var ok bool
 
-	it, ok = cachedAllocations.Get(allocationId)
+	it, ok = cachedAllocations.Get(allocationID)
 
-	if ok {
-		if ok && it.Expiration.After(time.Now()) {
-			return it.Allocation, nil
-		}
+	if ok && it.RefreshTime.After(time.Now()) {
+		return it.Allocation, nil
 	}
 
-	a, err := sdk.GetAllocation(allocationId)
+	a, err := sdk.GetAllocation(allocationID)
 	if err != nil {
 		return nil, err
 	}
 
 	it = &cachedAllocation{
-		Allocation: a,
-		Expiration: time.Now().Add(5 * time.Minute),
+		Allocation:  a,
+		RefreshTime: time.Now().Add(5 * time.Minute),
 	}
 
-	cachedAllocations.Add(allocationId, it)
+	cachedAllocations.Add(allocationID, it)
 
 	return it.Allocation, nil
 }
@@ -50,17 +48,7 @@ func clearAllocation(allocationID string) {
 }
 
 func reloadAllocation(allocationID string) (*sdk.Allocation, error) {
-	a, err := sdk.GetAllocation(allocationID)
-	if err != nil {
-		return nil, err
-	}
 
-	it := &cachedAllocation{
-		Allocation: a,
-		Expiration: time.Now().Add(5 * time.Minute),
-	}
-
-	cachedAllocations.Add(allocationID, it)
-
-	return it.Allocation, nil
+	clearAllocation(allocationID)
+	return getAllocation(allocationID)
 }
