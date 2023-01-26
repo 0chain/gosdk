@@ -8,8 +8,8 @@ import (
 )
 
 type cachedAllocation struct {
-	RefreshTime time.Time
-	Allocation  *sdk.Allocation
+	CacheExpiresAt time.Time
+	Allocation     *sdk.Allocation
 }
 
 var (
@@ -23,7 +23,7 @@ func getAllocation(allocationID string) (*sdk.Allocation, error) {
 
 	it, ok = cachedAllocations.Get(allocationID)
 
-	if ok && it.RefreshTime.After(time.Now()) {
+	if ok && it.CacheExpiresAt.After(time.Now()) {
 		return it.Allocation, nil
 	}
 
@@ -33,8 +33,8 @@ func getAllocation(allocationID string) (*sdk.Allocation, error) {
 	}
 
 	it = &cachedAllocation{
-		Allocation:  a,
-		RefreshTime: time.Now().Add(5 * time.Minute),
+		Allocation:     a,
+		CacheExpiresAt: time.Now().Add(5 * time.Minute),
 	}
 
 	cachedAllocations.Add(allocationID, it)
