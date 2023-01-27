@@ -131,12 +131,13 @@ func main() {
 			jsbridge.BindAsyncFuncs(sdk, map[string]interface{}{
 				//sdk
 				"init":                   initSDKs,
-				"setWallet":              SetWallet,
+				"setWallet":              setWallet,
 				"getPublicEncryptionKey": zcncore.GetPublicEncryptionKey,
 				"hideLogs":               hideLogs,
 				"showLogs":               showLogs,
 				"getUSDRate":             getUSDRate,
 				"isWalletID":             isWalletID,
+				"getLookupHash":          getLookupHash,
 
 				//blobber
 				"delete":         Delete,
@@ -146,6 +147,7 @@ func main() {
 				"share":          Share,
 				"download":       download,
 				"upload":         upload,
+				"bulkUpload":     bulkUpload,
 				"listObjects":    listObjects,
 				"createDir":      createDir,
 				"downloadBlocks": downloadBlocks,
@@ -157,18 +159,24 @@ func main() {
 				"getNextSegment": getNextSegment,
 
 				// wallet
-				"createWallet": createWallet,
+				"createWallet":  createWallet,
+				"recoverWallet": recoverWallet,
 
 				//allocation
 				"createAllocation":      createAllocation,
 				"getAllocationBlobbers": getAllocationBlobbers,
 				"getBlobberIds":         getBlobberIds,
 				"listAllocations":       listAllocations,
+				"getAllocation":         getAllocation,
+				"reloadAllocation":      reloadAllocation,
 				"transferAllocation":    transferAllocation,
 				"freezeAllocation":      freezeAllocation,
+				"cancelAllocation":      cancelAllocation,
+				"updateAllocation":      updateAllocation,
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,
+				"faucet":               faucet,
 
 				//swap
 				"setSwapWallets":     setSwapWallets,
@@ -198,6 +206,8 @@ func main() {
 	}
 
 	hideLogs()
+
+	go startRefreshWalletNonce()
 
 	<-make(chan bool)
 

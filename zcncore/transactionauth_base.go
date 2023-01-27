@@ -222,28 +222,7 @@ func (ta *TransactionWithAuth) VestingDelete(poolID string) (err error) {
 	return
 }
 
-//
-// miner sc
-//
-
-func (ta *TransactionWithAuth) MinerSCUnlock(nodeID string) (
-	err error) {
-
-	mscul := MinerSCUnlock{
-		ID: nodeID,
-	}
-
-	err = ta.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_UNLOCK, &mscul, 0)
-	if err != nil {
-		logging.Error(err)
-		return
-	}
-	go func() { ta.submitTxn() }()
-	return
-}
-
-//RegisterMultiSig register a multisig wallet with the SC.
+// RegisterMultiSig register a multisig wallet with the SC.
 func (ta *TransactionWithAuth) RegisterMultiSig(walletstr string, mswallet string) error {
 	return errors.New("", "not implemented")
 }

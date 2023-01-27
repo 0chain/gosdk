@@ -4,7 +4,7 @@
   <!-- for zcn.wasm-->
   <script src="https://cdn.jsdelivr.net/gh/herumi/bls-wasm@v1.0.0/browser/bls.js"></script>
   <script src="https://cdn.jsdelivr.net/gh/golang/go@go1.18.5/misc/wasm/wasm_exec.js"></script>
-  <script src="wasm.js"></script>
+  <script src="zcn.js"></script>
 
 
   <!-- for demo -->
@@ -36,15 +36,22 @@
   <fieldset>
     <legend>Wallet</legend>
     <label for="clientId"> ClientID </label> <input id="clientId" name="clientId" style="width: 600px;"
-      value="24727a58421bc90e08fcd61138b60bb7e25c7df18b310b5bf48fcdd7862b88b3" /><br>
+      value="30764bcba73216b67c36b05a17b4dd076bfdc5bb0ed84856f27622188c377269" /><br>
     <label for="privateKey">PrivateKey</label> <input id="privateKey" name="privateKey" style="width: 600px;"
-      value="79a8fb8a20812254c208417a29e72a2083192f21008e30e9f545d82edd4e6806" /><br>
+      value="41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122" /><br>
     <label for="publicKey"> PublicKey</label> <input id="publicKey" name="publicKey" style="width: 600px;"
-      value="ca36b840be3f8f020a849f9be4cecdb2d11a9b4042851f88b1125cedf23e9a23049b56acff20fab01e16ce777b535c22cf8de5714858a3abdb4ac9962d170f07" /><br>
-
+      value="1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c" /><br>
+ 
     <button id="btnSetWallet">Change Wallet</button>
+    <button id="btnSendMeTokens">Send Me Tokens</button>
+    <button id="btnGetBalance">Get Balance</button>
   </fieldset>
 
+  <fieldset>
+    <legend>Sharing</legend>
+    <label for="authTicket"> AuthTicket </label> <input id="authTicket" name="authTicket" style="width: 600px;"
+      value="eyJjbGllbnRfaWQiOiIiLCJvd25lcl9pZCI6Ijk1Mjc4ZWI1ZmU2YmQxMzg4OWEzYWEwOWYxZGI2OWYwZGIyZGY0NzMxNGZmZjFlMmFjY2UzZjBhOWZkNzk2NzYiLCJhbGxvY2F0aW9uX2lkIjoiODc1OGIyYzAwMTQzN2JlOGU1MGVlMzM4YzUyOTM0YWI0YjlkNDc4YjhiNDVjMjE5MzgwYTJlNDYxNDdkZDA5ZCIsImZpbGVfcGF0aF9oYXNoIjoiYTJkNTcxYjNlMzY5NzNlM2Q5MDZmYjA4YTdjZDVkMzg3YzA5MDAyZGNkMjE4NTQ1YTJmMTI1ZGZjMjgxN2MyMSIsImFjdHVhbF9maWxlX2hhc2giOiIxNzY4ZGFlZDQ4YmM1NjYzOWVjYWE2YTFlYzJiMzg3ZTcwYzRlOTljMjM0NWY2YWQyNDk1MTIyZWQ4OTg2OTU4IiwiZmlsZV9uYW1lIjoidGVzdC53ZWJtIiwicmVmZXJlbmNlX3R5cGUiOiJmIiwiZXhwaXJhdGlvbiI6MCwidGltZXN0YW1wIjoxNjcwODE0MDAzLCJlbmNyeXB0ZWQiOmZhbHNlLCJzaWduYXR1cmUiOiIxOGYzMTczYmJmYTBjYzQzMzI1MzRkOTJmNTBlMjgxZjczNTM4NGJlZjUyMTgyYTBmZTIxYzM2MTkwNzJhYmEyIn0=" /><br>
+  </fieldset>
 
   <fieldset>
     <legend>Allocations</legend>
@@ -52,6 +59,7 @@
     <span>
       <button id="btnListAllocations">List</button>
       <button id="btnCreateAllocation">Create</button>
+      <button id="btnGetAllocation">Get</button>
     </span>
 
     <br>
@@ -61,6 +69,8 @@
     </div>
 
 
+
+
   </fieldset>
 
 
@@ -68,9 +78,11 @@
   <fieldset>
     <legend>Files</legend>
     <button id="btnListFiles">List</button>
-    <span><input id="inputSelectedFile" type="file" /> <button id="btnUploadFile">Upload</button> </span>
-    <button id="btnDownloadFile">Download</button>
+    <span><input id="inputSelectedFile" type="file" multiple /> <button id="btnUploadFile">Upload</button> </span>
+    [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button> ]
     <button id="btnViewFile">View</button>
+    <button id="btnGetFileStats">GetFileStats</button>
+    <button id="btnDelete">Delete</button>
     <br>
 
     <div id="listFiles">
@@ -78,14 +90,22 @@
 
   </fieldset>
 
+
+  <fieldset>
+    <legend>Output</legend>
+    <pre id="txtOutput" style="font-size: 20px; font-weight: bold;">
+    </pre>
+  </fieldset>
+
+
   <fieldset>
     <legend>Media WebPlayer</legend>
 
     <video id='player' preload="metadata" controls></video>
     <div className="controls">
-      <button id="btnPlay">Play</button>
-      <button id="btnPause">Pause</button>
-      <button id="btnStop">Stop</button>
+      [ <button id="btnPlay">Play</button> | <button id="btnPlayShared">Play with auth ticket</button> ]
+        <button id="btnPause">Pause</button>
+        <button id="btnStop">Stop</button>
     </div>
   </fieldset>
 
@@ -113,7 +133,7 @@
       minSubmit: 50,
       confirmationChainLength: 3,
     }
-    const blockWorker = 'https://demo.devnet-0chain.net/dns';
+    const blockWorker = 'https://beta.0chain.net/dns';
     const config = [
       networkConfig.chainId,
       blockWorker,
@@ -121,7 +141,7 @@
       networkConfig.minConfirmation,
       networkConfig.minSubmit,
       networkConfig.confirmationChainLength,
-      'https://0box.demo.devnet-0chain.net', //zboxHost
+      'https://0box.dev.0chain.net', //zboxHost
       'vult', //zboxAppType
     ]
 
@@ -141,6 +161,17 @@
     onClick('btnSetWallet', async () => {
       const { clientID, privateKey, publicKey } = getWallet()
       await goWasm.setWallet(bls, clientID, privateKey, publicKey)
+    })
+
+
+    onClick('btnSendMeTokens', async () => {
+      await goWasm.sdk.faucet("pour", JSON.stringify("{Pay day}"),0)
+    })
+
+    onClick('btnGetBalance', async () => {
+      const {clientID }= getWallet()
+      const wallet = await goWasm.sdk.getWalletBalance(clientID)
+      txtOutput.innerHTML = JSON.stringify(wallet, null, 2)
     })
 
 
@@ -171,17 +202,32 @@
         maxWritePrice: 184467440737095516,
         lock: 5000000000
       }
-      const allocation = await goWasm.sdk.createAllocation(config.name, config.datashards, config.parityshards, config.size, config.expiry,
+      try{
+        const allocation = await goWasm.sdk.createAllocation(config.name, config.datashards, config.parityshards, config.size, config.expiry,
         config.minReadPrice, config.maxReadPrice, config.minWritePrice, config.maxWritePrice,
         config.lock, [])
 
-      allocations.push(allocation)
-      bindAllocations()
+        allocations = await goWasm.sdk.listAllocations()
+        bindAllocations()
+      }catch(e){
+        alert(e)
+      }
+      
     })
 
     onClick('btnListAllocations', async () => {
       allocations = await goWasm.sdk.listAllocations()
       bindAllocations()
+    })
+
+    onClick('btnGetAllocation', async () => {
+      const allocationId = getSelectedAllocation()
+      if(!allocationId){
+        alert("please select allocation")
+        return
+      }
+      const alloc = await goWasm.sdk.getAllocation(allocationId)
+      txtOutput.innerHTML = JSON.stringify(alloc, null, 2)
     })
 
 
@@ -196,16 +242,28 @@
     onClick('btnUploadFile', async () => {
       const { files } = get('inputSelectedFile')
       if (files && files.length > 0) {
-        const fileBytes = await readBytes(files[0])
+
+        const objects = []
         const allocationId = getSelectedAllocation()
+        for(const file of files){
+        objects.push({allocationId:allocationId,
+                  remotePath:`/${file.name}`,
+                  file:file,
+                  thumbnailBytes:null,
+                  encrypt:false, 
+                  isUpdate:false, 
+                  isRepair:false, 
+                  numBlocks:100,
+                  callback: function(totalBytes, completedBytes, error) {
+                    console.log(file.name + " "+ completedBytes+"/"+totalBytes +" err:"+ error)
+                  }
+                })
+        }
 
-        //allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, isUpdate, isRepair bool, numBlocks int
-        await goWasm.sdk.upload(
-          allocationId, `/${files[0].name}`,
-          fileBytes,
-          null,
-          false, false, false, 100)
 
+        const results =  await goWasm.bulkUpload(objects)
+
+        console.log(JSON.stringify(results))
       }
     })
 
@@ -223,6 +281,28 @@
         document.body.appendChild(a)
         a.style = 'display: none'
 
+        a.href = file.url
+        a.download = file.fileName
+        a.click()
+        window.URL.revokeObjectURL(file.url)
+        document.body.removeChild(a)
+
+      }
+    })
+
+    onClick('btnDownloadShared', async () => {
+
+      const authTicket = get('authTicket').value
+      if (authTicket) {
+
+        //allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int
+        const file = await goWasm.sdk.download('', '', authTicket, '', false, 10)
+
+
+        const a = document.createElement('a')
+        document.body.appendChild(a)
+        a.style = 'display: none'
+        debugger
         a.href = file.url
         a.download = file.fileName
         a.click()
@@ -274,6 +354,36 @@
 
     })
 
+    onClick('btnPlayShared', async () => {
+
+      if (isPlayerReady) {
+        if (player.paused) {
+          player.play()
+        }
+      } else {
+
+        const authTicket =  get('authTicket').value
+
+        const isLive = false
+
+        if (authTicket) {
+          const allocationId = getSelectedAllocation()
+          startPlay({
+            goWasm,
+            allocationId,
+            videoElement: player,
+            remotePath: '',
+            authTicket: authTicket,
+            lookupHash: '',
+            mimeType: '',
+            isLive: isLive,
+          })
+          isPlayerReady = true
+        }
+      }
+
+    })
+
     onClick('btnPause', async () => {
       player.pause();
     })
@@ -302,6 +412,27 @@
       await goWasm.sdk.hideLogs()
       console.log = log
     })
+
+
+
+    onClick('btnGetFileStats', async () => {
+      const file = files.find(it => it.path == getSelectedFile())
+      if (file) {
+        const allocationId = getSelectedAllocation()
+        const stats = await goWasm.sdk.getFileStats(allocationId, file?.path)
+        txtOutput.innerHTML = JSON.stringify(stats, null, 2)
+      }
+
+    })
+
+    onClick('btnDelete', async () => {
+      const file = files.find(it => it.path == getSelectedFile())
+      if (file) {
+        const allocationId = getSelectedAllocation()
+        await goWasm.sdk.delete(allocationId, file?.path)
+      }
+    })
+
 
   </script>
 </body>

@@ -3,8 +3,8 @@ package sdk
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"io/ioutil"
 	"math"
+	"os"
 	"time"
 
 	"github.com/klauspost/reedsolomon"
@@ -39,7 +39,7 @@ func WithThumbnail(buf []byte) ChunkedUploadOption {
 // WithThumbnailFile add thumbnail from file. stream mode is unnecessary for thumbnail
 func WithThumbnailFile(fileName string) ChunkedUploadOption {
 
-	buf, _ := ioutil.ReadFile(fileName)
+	buf, _ := os.ReadFile(fileName)
 
 	return WithThumbnail(buf)
 }
@@ -53,10 +53,10 @@ func WithChunkNumber(num int) ChunkedUploadOption {
 	}
 }
 
-// WithEncrypt trun on/off encrypt on upload. It is turn off as default.
-func WithEncrypt(status bool) ChunkedUploadOption {
+// WithEncrypt turn on/off encrypt on upload. It is turn off as default.
+func WithEncrypt(on bool) ChunkedUploadOption {
 	return func(su *ChunkedUpload) {
-		su.encryptOnUpload = status
+		su.encryptOnUpload = on
 	}
 }
 

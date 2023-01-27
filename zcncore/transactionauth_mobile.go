@@ -63,23 +63,50 @@ func (ta *TransactionWithAuth) VestingAdd(ar VestingAddRequest, value string) er
 	return nil
 }
 
-func (ta *TransactionWithAuth) MinerSCLock(minerID string, lock string) error {
-	v, err := parseCoinStr(lock)
+func (ta *TransactionWithAuth) MinerSCLock(providerId string, providerType int, lock string) error {
+	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
 	}
 
-	var mscl MinerSCLock
-	mscl.ID = minerID
+	type stakePoolRequest struct {
+		ProviderType int    `json:"provider_type,omitempty"`
+		ProviderID   string `json:"provider_id,omitempty"`
+	}
 
+	pr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerId,
+	}
+
+<<<<<<< HEAD
 	err = ta.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_LOCK, &mscl, v)
+=======
+	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_LOCK, pr, lv)
+>>>>>>> staging
 	if err != nil {
 		logging.Error(err)
 		return err
 	}
 	go func() { ta.submitTxn() }()
 	return nil
+}
+
+func (ta *TransactionWithAuth) MinerSCUnlock(providerId string, providerType int) error {
+	pr := &stakePoolRequest{
+		ProviderID:   providerId,
+		ProviderType: providerType,
+	}
+	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
+		transaction.MINERSC_LOCK, pr, 0)
+	if err != nil {
+		logging.Error(err)
+		return err
+	}
+	go func() { ta.submitTxn() }()
+	return err
 }
 
 // FinalizeAllocation transaction.

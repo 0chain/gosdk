@@ -393,11 +393,11 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 
 // StakePoolUnlockUnstake is stake pool unlock response in case where tokens
 // can't be unlocked due to opened offers.
-type StakePoolUnlockUnstake struct {
-	// one of the fields is set in a response, the Unstake if can't unstake
-	// for now and the TokenPoolTransferResponse if has a pool had unlocked
-	Unstake bool  `json:"unstake"` // max time to wait to unstake
-	Balance int64 `json:"balance"`
+type stakePoolLock struct {
+	Client       string       `json:"client"`
+	ProviderId   string       `json:"provider_id"`
+	ProviderType ProviderType `json:"provider_type"`
+	Amount       int64        `json:"amount"`
 }
 
 // StakePoolUnlock unlocks a stake pool tokens. If tokens can't be unlocked due
@@ -406,17 +406,17 @@ type StakePoolUnlockUnstake struct {
 // future. The time is maximal time that can be lesser in some cases. To
 // unlock tokens can't be unlocked now, wait the time and unlock them (call
 // this function again).
-func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (unstake bool, nonce int64, err error) {
+func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (unstake int64, nonce int64, err error) {
 	if !sdkInitialized {
-		return false, 0, sdkNotInitialized
+		return 0, 0, sdkNotInitialized
 	}
 
 	if providerType == 0 {
-		return false, 0, errors.New("stake_pool_lock", "provider is required")
+		return 0, 0, errors.New("stake_pool_lock", "provider is required")
 	}
 
 	if providerID == "" {
-		return false, 0, errors.New("stake_pool_lock", "provider_id is required")
+		return 0, 0, errors.New("stake_pool_lock", "provider_id is required")
 	}
 
 	spr := stakePoolRequest{
@@ -434,12 +434,12 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (
 		return // an error
 	}
 
-	var spuu StakePoolUnlockUnstake
+	var spuu stakePoolLock
 	if err = json.Unmarshal([]byte(out), &spuu); err != nil {
 		return
 	}
 
-	return spuu.Unstake, nonce, nil
+	return spuu.Amount, nonce, nil
 }
 
 //
@@ -579,28 +579,34 @@ func GetStorageSCConfig() (conf *InputMap, err error) {
 }
 
 type Blobber struct {
-	ID                common.Key                   `json:"id"`
-	BaseURL           string                       `json:"url"`
-	Terms             Terms                        `json:"terms"`
-	Capacity          common.Size                  `json:"capacity"`
-	Allocated         common.Size                  `json:"allocated"`
-	LastHealthCheck   common.Timestamp             `json:"last_health_check"`
-	PublicKey         string                       `json:"-"`
-	StakePoolSettings blockchain.StakePoolSettings `json:"stake_pool_settings"`
-	TotalStake        int64                        `json:"total_stake"`
+	ID                       common.Key                   `json:"id"`
+	BaseURL                  string                       `json:"url"`
+	Terms                    Terms                        `json:"terms"`
+	Capacity                 common.Size                  `json:"capacity"`
+	Allocated                common.Size                  `json:"allocated"`
+	LastHealthCheck          common.Timestamp             `json:"last_health_check"`
+	PublicKey                string                       `json:"-"`
+	StakePoolSettings        blockchain.StakePoolSettings `json:"stake_pool_settings"`
+	TotalStake               int64                        `json:"total_stake"`
+	UsedAllocation           int64                        `json:"used_allocation"`
+	TotalOffers              int64                        `json:"total_offers"`
+	TotalServiceCharge       int64                        `json:"total_service_charge"`
+	UncollectedServiceCharge int64                        `json:"uncollected_service_charge"`
 }
 
 type Validator struct {
-	ID             common.Key     `json:"validator_id"`
-	BaseURL        string         `json:"url"`
-	PublicKey      string         `json:"-"`
-	DelegateWallet string         `json:"delegate_wallet"`
-	MinStake       common.Balance `json:"min_stake"`
-	MaxStake       common.Balance `json:"max_stake"`
-	NumDelegates   int            `json:"num_delegates"`
-	ServiceCharge  float64        `json:"service_charge"`
-	StakeTotal     int64          `json:"stake_total"`
-	UnstakeTotal   int64          `json:"unstake_total"`
+	ID                       common.Key     `json:"validator_id"`
+	BaseURL                  string         `json:"url"`
+	PublicKey                string         `json:"-"`
+	DelegateWallet           string         `json:"delegate_wallet"`
+	MinStake                 common.Balance `json:"min_stake"`
+	MaxStake                 common.Balance `json:"max_stake"`
+	NumDelegates             int            `json:"num_delegates"`
+	ServiceCharge            float64        `json:"service_charge"`
+	StakeTotal               int64          `json:"stake_total"`
+	UnstakeTotal             int64          `json:"unstake_total"`
+	TotalServiceCharge       int64          `json:"total_service_charge"`
+	UncollectedServiceCharge int64          `json:"uncollected_service_charge"`
 }
 
 func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
@@ -643,16 +649,9 @@ func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err err
 	return wrap.Nodes, nil
 }
 
-func GetBlobbers(options ...bool) (bs []*Blobber, err error) {
+func GetBlobbers(active bool) (bs []*Blobber, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
-	}
-
-	var active bool
-	if len(options) > 0 {
-		for _, option := range options {
-			active = option
-		}
 	}
 
 	limit, offset := 20, 0
@@ -683,6 +682,9 @@ func GetBlobbers(options ...bool) (bs []*Blobber, err error) {
 }
 
 // GetBlobber instance.
+//
+//	# Inputs
+//	-	blobberID: the id of blobber
 func GetBlobber(blobberID string) (blob *Blobber, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
@@ -920,9 +922,6 @@ func CreateAllocationForOwner(
 	readPrice, writePrice PriceRange,
 	lock uint64, preferredBlobberIds []string,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
-	if lock < 0 {
-		return "", 0, nil, errors.New("", "invalid value for lock")
-	}
 
 	allocationRequest, err := getNewAllocationBlobbers(
 		datashards, parityshards, size, expiry, readPrice, writePrice, preferredBlobberIds)
@@ -1019,7 +1018,7 @@ func getNewAllocationBlobbers(
 func GetBlobberIds(blobberUrls []string) ([]string, error) {
 
 	if len(blobberUrls) == 0 {
-		return make([]string, 0), nil
+		return nil, nil
 	}
 
 	urlsStr, err := json.Marshal(blobberUrls)

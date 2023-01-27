@@ -28,7 +28,7 @@ jobs:
       - name: Set up Go 1.x
         uses: actions/setup-go@v3
         with:
-          go-version: ^1.19
+          go-version: 1.19.4
 
       - name: Clean build
         run: make clean-mobilesdk
@@ -46,6 +46,7 @@ jobs:
 
       - name: Build iOS
         run: |
+          go version
           make build-ios
 
       - name: Compress
@@ -99,7 +100,17 @@ jobs:
       - name: Set up Go 1.x
         uses: actions/setup-go@v3
         with:
-          go-version: ^1.19
+          go-version: 1.19.4
+
+      - name: Install deps
+        run: |
+          codename=$(lsb_release -c | awk '{print $2}')
+          echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" > ./gitaction.list
+          echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
+          echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
+          sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
+      
+          sudo apt-get update -y && sudo apt-get install build-essential wget unzip -y
 
       - name: Install Java
         uses: actions/setup-java@v3
@@ -118,6 +129,8 @@ jobs:
         id: setup-ndk
         with:
           ndk-version: r21d
+      
+
 
       - name: Clean build
         run: make clean-mobilesdk
@@ -134,7 +147,9 @@ jobs:
         run:  make setup-gomobile
 
       - name: Build Android
-        run: make build-android
+        run: |
+          go version
+          make build-android
         env:
           ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
           ANDROID_NDK_TOOLCHAIN: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin
@@ -190,7 +205,7 @@ jobs:
       - name: Set up Go 1.x
         uses: actions/setup-go@v3
         with:
-          go-version: ^1.19
+          go-version: 1.19.4
 
       - name: Clean build
         run: make clean-mobilesdk
@@ -208,6 +223,7 @@ jobs:
 
       - name: Build MacOS
         run: |
+          go version
           make build-macos
 
       - name: Compress
@@ -262,11 +278,21 @@ jobs:
       - name: Set up Go 1.x
         uses: actions/setup-go@v3
         with:
-          go-version: ^1.19
+          go-version: 1.19.4
 
+      - name: Install deps
+        run: |
+          codename=$(lsb_release -c | awk '{print $2}')
+          echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" > ./gitaction.list
+          echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
+          echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
+          sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
+      
+          sudo apt-get update -y && sudo apt-get install build-essential wget -y
 
       - name: Build windows
         run: |
+          go version
           make build-windows
 
       - name: Compress
