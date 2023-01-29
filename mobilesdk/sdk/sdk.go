@@ -131,13 +131,12 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 
 // CreateAllocation - creating new allocation
 // ## Inputs
-//   - name: allocation name
 //   - datashards: number of data shards, effects upload and download speeds
 //   - parityshards: number of parity shards, effects availability
 //   - size: size of space reserved on blobbers
 //   - expiration: duration to allocation expiration
 //   - lock: lock write pool with given number of tokens
-func (s *StorageSDK) CreateAllocation(name string, datashards, parityshards int, size, expiration int64, lock string) (*zbox.Allocation, error) {
+func (s *StorageSDK) CreateAllocation(datashards, parityshards int, size, expiration int64, lock string) (*zbox.Allocation, error) {
 	readPrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 	writePrice := sdk.PriceRange{Min: 0, Max: math.MaxInt64}
 
@@ -146,7 +145,7 @@ func (s *StorageSDK) CreateAllocation(name string, datashards, parityshards int,
 		return nil, err
 	}
 
-	sdkAllocationID, _, _, err := sdk.CreateAllocation(name, datashards, parityshards, size, expiration, readPrice, writePrice, l)
+	sdkAllocationID, _, _, err := sdk.CreateAllocation(datashards, parityshards, size, expiration, readPrice, writePrice, l)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +177,6 @@ func (s *StorageSDK) CreateAllocationWithBlobbers(name string, datashards, parit
 	}
 
 	options := sdk.CreateAllocationOptions{
-		Name:         name,
 		DataShards:   datashards,
 		ParityShards: parityshards,
 		Size:         size,
@@ -321,8 +319,8 @@ func (s *StorageSDK) GetVersion() string {
 }
 
 // UpdateAllocation with new expiry and size
-func (s *StorageSDK) UpdateAllocation(name string, size, expiry int64, allocationID string, lock uint64) (hash string, err error) {
-	hash, _, err = sdk.UpdateAllocation(name, size, expiry, allocationID, lock, false, true, "", "")
+func (s *StorageSDK) UpdateAllocation(size, expiry int64, allocationID string, lock uint64) (hash string, err error) {
+	hash, _, err = sdk.UpdateAllocation(size, expiry, allocationID, lock, false, true, "", "")
 	return hash, err
 }
 
