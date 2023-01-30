@@ -289,7 +289,6 @@ func (a *Allocation) CreateDir(remotePath string) error {
 		mu:           &sync.Mutex{},
 		dirMask:      zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
 		connectionID: zboxutil.NewConnectionId(),
-		ctx:          a.ctx,
 		remotePath:   remotePath,
 		wg:           &sync.WaitGroup{},
 		Consensus: Consensus{
@@ -297,6 +296,7 @@ func (a *Allocation) CreateDir(remotePath string) error {
 			fullconsensus:   a.fullconsensus,
 		},
 	}
+	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 
 	err := req.ProcessDir(a)
 	return err
@@ -900,7 +900,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int)
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
 	req.consensus.Init(threshConsensus, fullConsensus)
-	req.ctx = a.ctx
+	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 	req.remotefilepath = path
 	req.connectionID = zboxutil.NewConnectionId()
 	req.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
@@ -941,7 +941,7 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	req.newName = destName
 	req.consensus.fullconsensus = a.fullconsensus
 	req.consensus.consensusThresh = a.consensusThreshold
-	req.ctx = a.ctx
+	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 	req.remotefilepath = path
 	req.renameMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
@@ -979,7 +979,7 @@ func (a *Allocation) MoveObject(srcPath string, destPath string) error {
 	req.destPath = destPath
 	req.fullconsensus = a.fullconsensus
 	req.consensusThresh = a.consensusThreshold
-	req.ctx = a.ctx
+	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 	req.remotefilepath = srcPath
 	req.moveMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
@@ -1017,7 +1017,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	req.destPath = destPath
 	req.fullconsensus = a.fullconsensus
 	req.consensusThresh = a.consensusThreshold
-	req.ctx = a.ctx
+	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 	req.remotefilepath = path
 	req.copyMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
