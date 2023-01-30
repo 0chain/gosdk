@@ -18,7 +18,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
-// WMLockStatus
 type WMLockStatus int
 
 const (
@@ -36,22 +35,23 @@ type WMLockResult struct {
 type WriteMarkerMutex struct {
 	mutex          sync.Mutex
 	allocationObj  *Allocation
-	lockedBlobbers map[string]bool
+	lockedBlobbers map[string]chan struct{}
 }
 
 // CreateWriteMarkerMutex create WriteMarkerMutex for allocation
 func CreateWriteMarkerMutex(client *client.Client, allocationObj *Allocation) (*WriteMarkerMutex, error) {
-
-	if client == nil {
-		return nil, errors.Throw(constants.ErrInvalidParameter, "client")
-	}
-
 	if allocationObj == nil {
 		return nil, errors.Throw(constants.ErrInvalidParameter, "allocationObj")
 	}
 
+	lockedBlobbers := make(map[string]chan struct{})
+	for _, b := range allocationObj.Blobbers {
+		lockedBlobbers[b.ID] = make(chan struct{}, 1)
+	}
+
 	return &WriteMarkerMutex{
-		allocationObj: allocationObj,
+		allocationObj:  allocationObj,
+		lockedBlobbers: lockedBlobbers,
 	}, nil
 }
 
@@ -82,6 +82,7 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(
 
 	defer wg.Done()
 
+	wmMu.lockedBlobbers[b.ID] <- struct{}{}
 	var err error
 
 	defer func() {
@@ -205,13 +206,26 @@ func (wmMu *WriteMarkerMutex) Lock(
 	return nil
 }
 
-// todo change blobber code as well
 func (wmMu *WriteMarkerMutex) LockBlobber(
 	ctx context.Context, mask *zboxutil.Uint128, maskMu *sync.Mutex,
 	consensus *Consensus, b *blockchain.StorageNode, pos uint64, connID string,
 	timeOut time.Duration, wg *sync.WaitGroup) {
 
-	defer wg.Done()
+	if wg != nil {
+		defer wg.Done()
+	}
+
+	select {
+	case <-ctx.Done():
+		return
+	default:
+	}
+
+	wmMu.lockedBlobbers[b.ID] <- struct{}{}
+
+	defer func() {
+		<-wmMu.lockedBlobbers[b.ID]
+	}()
 
 	var err error
 
@@ -224,11 +238,12 @@ func (wmMu *WriteMarkerMutex) LockBlobber(
 		}
 	}()
 
-	requestTime := strconv.FormatInt(time.Now().Unix(), 10)
+	requestTime := time.Now()
+	rT := strconv.FormatInt(requestTime.Unix(), 10)
 	var req *http.Request
 
 	req, err = zboxutil.NewWriteMarkerLockRequest(
-		b.Baseurl, wmMu.allocationObj.Tx, connID, requestTime)
+		b.Baseurl, wmMu.allocationObj.Tx, connID, rT)
 
 	if err != nil {
 		return
@@ -315,9 +330,19 @@ func (wmMu *WriteMarkerMutex) LockBlobber(
 		if err != nil {
 			return
 		}
-		if shouldContinue {
-			continue
+		if !shouldContinue {
+			break
 		}
-		return
 	}
+
+	go func() {
+		for {
+			d := time.Since(requestTime)
+			if d > time.Second*20 {
+				go wmMu.LockBlobber(ctx, mask, maskMu, consensus, b, pos, connID, timeOut, nil)
+				return
+			}
+			time.Sleep(time.Second*20 - d)
+		}
+	}()
 }
