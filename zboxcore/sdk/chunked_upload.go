@@ -154,9 +154,9 @@ func CreateChunkedUpload(
 		uploadTimeOut: DefaultUploadTimeOut,
 		commitTimeOut: DefaultUploadTimeOut,
 		maskMu:        &sync.Mutex{},
-		ctx:           allocationObj.ctx,
 		opCode:        opCode,
 	}
+	su.ctx, su.ctxCncl = context.WithCancel(allocationObj.ctx)
 
 	if isUpdate {
 		su.httpMethod = http.MethodPut
@@ -326,6 +326,7 @@ type ChunkedUpload struct {
 	commitTimeOut time.Duration
 	maskMu        *sync.Mutex
 	ctx           context.Context
+	ctxCncl       context.CancelFunc
 }
 
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
@@ -410,6 +411,7 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 
 // Start start/resume upload
 func (su *ChunkedUpload) Start() error {
+	defer su.ctxCncl()
 
 	if su.statusCallback != nil {
 		su.statusCallback.Started(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.fileMeta.ActualSize)+int(su.fileMeta.ActualThumbnailSize))
@@ -489,15 +491,15 @@ func (su *ChunkedUpload) Start() error {
 		blobbers, &su.consensus, 0, su.uploadTimeOut,
 		su.progress.ConnectionID)
 
-	defer su.writeMarkerMutex.Unlock(
-		su.ctx, su.uploadMask, blobbers, su.uploadTimeOut, su.progress.ConnectionID) //nolint: errcheck
-
 	if err != nil {
 		if su.statusCallback != nil {
 			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, su.opCode, err)
 		}
 		return err
 	}
+
+	defer su.writeMarkerMutex.Unlock(
+		su.ctx, su.uploadMask, blobbers, su.uploadTimeOut, su.progress.ConnectionID) //nolint: errcheck
 
 	return su.processCommit()
 }
