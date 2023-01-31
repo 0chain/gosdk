@@ -20,10 +20,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 )
 
+var l = zcncore.GetLogger()
+
 func (b *EthereumConfig) CreateEthClient() (*ethclient.Client, error) {
 	client, err := ethclient.Dial(b.EthereumNodeURL)
 	if err != nil {
-		zcncore.Logger.Error(err)
+		l.Error(err)
 	}
 	return client, err
 }
@@ -40,7 +42,7 @@ func CreateSignedTransaction(
 ) *bind.TransactOpts {
 	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
-		zcncore.Logger.Fatal(err)
+		l.Fatal(err)
 	}
 
 	// eth_estimateGas
@@ -55,12 +57,12 @@ func CreateSignedTransaction(
 
 	gasPriceWei, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
-		zcncore.Logger.Fatal(err)
+		l.Fatal(err)
 	}
 
 	opts, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
 	if err != nil {
-		zcncore.Logger.Fatal(err)
+		l.Fatal(err)
 	}
 
 	valueWei := new(big.Int).Mul(big.NewInt(0), big.NewInt(params.Wei))
@@ -87,32 +89,32 @@ func (b *BridgeClientConfig) CreateSignedTransactionFromKeyStore(client *ethclie
 	}
 	signerAcc, err := ks.Find(signer)
 	if err != nil {
-		zcncore.Logger.Fatal(errors.Wrapf(err, "signer: %s", signerAddress.Hex()))
+		l.Fatal(errors.Wrapf(err, "signer: %s", signerAddress.Hex()))
 	}
 
 	chainID, err := client.ChainID(context.Background())
 	if err != nil {
-		zcncore.Logger.Fatal(errors.Wrap(err, "failed to get chain ID"))
+		l.Fatal(errors.Wrap(err, "failed to get chain ID"))
 	}
 
 	nonce, err := client.PendingNonceAt(context.Background(), signerAddress)
 	if err != nil {
-		zcncore.Logger.Fatal(err)
+		l.Fatal(err)
 	}
 
 	gasPriceWei, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
-		zcncore.Logger.Fatal(err)
+		l.Fatal(err)
 	}
 
 	err = ks.TimedUnlock(signer, password, time.Second*2)
 	if err != nil {
-		zcncore.Logger.Fatal(err)
+		l.Fatal(err)
 	}
 
 	opts, err := bind.NewKeyStoreTransactorWithChainID(ks, signerAcc, chainID)
 	if err != nil {
-		zcncore.Logger.Fatal(err)
+		l.Fatal(err)
 	}
 
 	valueWei := new(big.Int).Mul(big.NewInt(value), big.NewInt(params.Wei))
