@@ -9,7 +9,7 @@ ANDROIDBINNAME	:= zcncore.aar
 MINIOSVERSIONMIN := "-miphoneos-version-min=7.0=7.0 -mios-version-min=7.0 -mios-simulator-version-min=7.0"
 MINMACOSVERSIONMIN := "-mmacosx-version-min=10.12"
 
-PKG_EXPORTS := $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common $(GOSDK_PATH)/mobilesdk/sdk $(GOSDK_PATH)/mobilesdk/zbox $(GOSDK_PATH)/mobilesdk/zboxapi
+PKG_EXPORTS := $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common $(GOSDK_PATH)/mobilesdk/sdk $(GOSDK_PATH)/mobilesdk/zbox $(GOSDK_PATH)/mobilesdk/zboxapi $(GOSDK_PATH)/mobilesdk/zcn
 
 .PHONY: setup-gomobile build-iossimulator build-ios build-android build-android-debug
 
