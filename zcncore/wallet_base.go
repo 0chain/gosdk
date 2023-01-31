@@ -132,6 +132,11 @@ func GetLogger() *logger.Logger {
 	return &logging
 }
 
+// CloseLog closes log file
+func CloseLog() {
+	logging.Close()
+}
+
 const TOKEN_UNIT int64 = 1e10
 
 const (
