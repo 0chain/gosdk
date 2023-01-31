@@ -1,60 +1,64 @@
-package main
+//go:build mobile
+// +build mobile
+
+package zcn
 
 import (
 	"encoding/json"
 	"fmt"
 	"sync"
 
-	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zcncore"
 )
 
-func faucet(methodName, input string, token float64) (*transaction.Transaction, error) {
-	return executeSmartContract(zcncore.FaucetSmartContractAddress, methodName, input, zcncore.ConvertToValue(token))
+// Faucet
+func Faucet(methodName, jsonInput string, zcnToken float64) (string, error) {
+	return ExecuteSmartContract(zcncore.FaucetSmartContractAddress, methodName, jsonInput, zcncore.ConvertToValue(zcnToken))
 }
 
-func executeSmartContract(address, methodName, input string, value uint64) (*transaction.Transaction, error) {
+func ExecuteSmartContract(address, methodName, input string, sasToken string) (string, error) {
 	wg := &sync.WaitGroup{}
 	cb := &transactionCallback{wg: wg}
-	txn, err := zcncore.NewTransaction(cb, 0, 0)
+	txn, err := zcncore.NewTransaction(cb, "0", 0)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	wg.Add(1)
-	t, err := txn.ExecuteSmartContract(address, methodName, json.RawMessage([]byte(input)), value)
+	err = txn.ExecuteSmartContract(address, methodName, input, sasToken)
 	if err != nil {
-		return nil, err
+		return "", err
 
 	}
 
 	wg.Wait()
 
 	if !cb.success {
-		return nil, fmt.Errorf("smartcontract: %s", cb.errMsg)
+		return "", fmt.Errorf("smartcontract: %s", cb.errMsg)
 	}
 
 	cb.success = false
 	wg.Add(1)
 	err = txn.Verify()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	wg.Wait()
 
 	if !cb.success {
-		return nil, fmt.Errorf("smartcontract: %s", cb.errMsg)
+		return "", fmt.Errorf("smartcontract: %s", cb.errMsg)
 	}
 
 	switch txn.GetVerifyConfirmationStatus() {
 	case zcncore.ChargeableError:
-		return nil, fmt.Errorf("smartcontract: %s", txn.GetVerifyOutput())
+		return "", fmt.Errorf("smartcontract: %s", txn.GetVerifyOutput())
 	case zcncore.Success:
-		return t, nil
+		js, _ := json.Marshal(cb.txn)
+		return string(js), nil
 	}
 
-	return nil, fmt.Errorf("smartcontract: %v", txn.GetVerifyConfirmationStatus())
+	return "", fmt.Errorf("smartcontract: %v", txn.GetVerifyConfirmationStatus())
 }
 
 type transactionCallback struct {

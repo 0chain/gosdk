@@ -3,8 +3,9 @@ module github.com/0chain/gosdk
 go 1.18
 
 require (
+	github.com/0chain/common v0.0.5
 	github.com/0chain/errors v1.0.3
-	github.com/Luzifer/go-openssl/v4 v4.1.0
+	github.com/Luzifer/go-openssl/v3 v3.1.0
 	github.com/btcsuite/btcd v0.23.2
 	github.com/dgraph-io/badger/v3 v3.2103.3
 	github.com/didip/tollbooth v4.0.2+incompatible
@@ -13,6 +14,7 @@ require (
 	github.com/gorilla/mux v1.8.0
 	github.com/h2non/filetype v1.1.3
 	github.com/hashicorp/go-retryablehttp v0.7.1
+	github.com/hashicorp/golang-lru/v2 v2.0.1
 	github.com/herumi/bls-go-binary v1.0.1-0.20220103075647-4e46f4fe2af2
 	github.com/influxdata/influxdb v1.8.3
 	github.com/klauspost/reedsolomon v1.11.1

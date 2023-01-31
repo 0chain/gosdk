@@ -9,10 +9,8 @@ import (
 	"io"
 	"os"
 
+	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zboxapi"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zcncore"
 )
@@ -23,7 +21,7 @@ var CreateObjectURL func(buf []byte, mimeType string) string
 func initSDKs(chainID, blockWorker, signatureScheme string,
 	minConfirmation, minSubmit, confirmationChainLength int, zboxHost, zboxAppType string) error {
 
-	zboxApiClient = zboxapi.NewClient(zboxHost, zboxAppType)
+	zboxApiClient.SetRequest(zboxHost, zboxAppType)
 
 	err := sdk.InitStorageSDK("{}", blockWorker, chainID, signatureScheme, nil, 0)
 	if err != nil {
@@ -41,30 +39,6 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 		fmt.Println("wasm: InitZCNSDK ", err)
 		return err
 	}
-
-	return nil
-}
-
-func SetWallet(clientID, publicKey, privateKey string) error {
-	c := client.GetClient()
-	c.ClientID = clientID
-	c.ClientKey = publicKey
-
-	w := &zcncrypto.Wallet{
-		ClientID:  clientID,
-		ClientKey: publicKey,
-		Keys: []zcncrypto.KeyPair{
-			{
-				PrivateKey: privateKey,
-				PublicKey:  publicKey,
-			},
-		},
-	}
-	err := zcncore.SetWallet(*w, false)
-	if err != nil {
-		return err
-	}
-	zboxApiClient.SetWallet(clientID, privateKey, publicKey)
 
 	return nil
 }
@@ -111,4 +85,9 @@ const HASH_LENGTH = 32
 func isHash(str string) bool {
 	bytes, err := hex.DecodeString(str)
 	return err == nil && len(bytes) == HASH_LENGTH
+}
+
+// getLookupHash get lookup hash with allocation id and path
+func getLookupHash(allocationID string, path string) string {
+	return encryption.Hash(allocationID + ":" + path)
 }
