@@ -43,15 +43,15 @@ type ProviderBase struct {
 }
 
 type Miner struct {
-	ProviderBase
-	N2NHost    string      `json:"n2n_host"`
-	Host       string      `json:"host"`
-	Port       int         `json:"port"`
-	PublicKey  string      `json:"public_key"`
-	ShortName  string      `json:"short_name"`
-	BuildTag   string      `json:"build_tag"`
-	TotalStake int64       `json:"total_stake"`
-	Stat       interface{} `json:"stat"`
+	ProviderBase `json:"provider"`
+	N2NHost      string      `json:"n2n_host"`
+	Host         string      `json:"host"`
+	Port         int         `json:"port"`
+	PublicKey    string      `json:"public_key"`
+	ShortName    string      `json:"short_name"`
+	BuildTag     string      `json:"build_tag"`
+	TotalStake   int64       `json:"total_stake"`
+	Stat         interface{} `json:"stat"`
 }
 
 type Node struct {
@@ -195,7 +195,7 @@ type Terms struct {
 }
 
 type Blobber struct {
-	ProviderBase
+	ProviderBase      `json:"provider"`
 	BaseURL           string            `json:"url"`
 	Terms             Terms             `json:"terms"`
 	Capacity          common.Size       `json:"capacity"`
@@ -205,7 +205,7 @@ type Blobber struct {
 }
 
 type Validator struct {
-	ProviderBase
+	ProviderBase      `json:"provider"`
 	BaseURL           string            `json:"url"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
