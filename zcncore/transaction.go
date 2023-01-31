@@ -37,8 +37,13 @@ const (
 	ChargeableError
 )
 
+type ProviderBase struct {
+	ID           string   `json:"id"`
+	ProviderType Provider `json:"provider_type"`
+}
+
 type Miner struct {
-	ID         string      `json:"id"`
+	ProviderBase
 	N2NHost    string      `json:"n2n_host"`
 	Host       string      `json:"host"`
 	Port       int         `json:"port"`
@@ -190,7 +195,7 @@ type Terms struct {
 }
 
 type Blobber struct {
-	ID                common.Key        `json:"id"`
+	ProviderBase
 	BaseURL           string            `json:"url"`
 	Terms             Terms             `json:"terms"`
 	Capacity          common.Size       `json:"capacity"`
@@ -200,7 +205,7 @@ type Blobber struct {
 }
 
 type Validator struct {
-	ID                common.Key        `json:"id"`
+	ProviderBase
 	BaseURL           string            `json:"url"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
 }
