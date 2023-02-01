@@ -619,7 +619,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 	req.validationRootMap = make(map[string]*blobberFile)
 	for i := 0; i < len(fMetaResp); i++ {
 		fmr := fMetaResp[i]
-		if fmr.err != nil {
+		if fmr.err != nil || fmr.fileref == nil {
 			continue
 		}
 		fRef := fmr.fileref

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -80,7 +81,8 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 			}
 			return nil
 		}
-		return err
+		return fmt.Errorf("unexpected response. status code: %d, response: %s",
+			resp.StatusCode, s.String())
 	})
 }
 
