@@ -3,7 +3,6 @@ package zcncore
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 
@@ -109,8 +108,6 @@ func (ta *TransactionWithAuth) sign(otherSig string) error {
 
 	var err error
 	ta.t.txn.Signature, err = sig.Add(otherSig, ta.t.txn.Hash)
-	log.Println("sign: 1", ta.t.txn.Hash, otherSig)
-	log.Println("sign: 2", ta.t.txn.Hash, ta.t.txn.Signature)
 	return err
 }
 
