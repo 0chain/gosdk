@@ -45,12 +45,12 @@ const (
 )
 
 const (
-	CanUploadMask = uint8(1)  // 0000 0001
-	CanDeleteMask = uint8(2)  // 0000 0010
-	CanUpdateMask = uint8(4)  // 0000 0100
-	CanMoveMask   = uint8(8)  // 0000 1000
-	CanCopyMask   = uint8(16) // 0001 0000
-	CanRenameMask = uint8(32) // 0010 0000
+	CanUploadMask = uint16(1)  // 0000 0001
+	CanDeleteMask = uint16(2)  // 0000 0010
+	CanUpdateMask = uint16(4)  // 0000 0100
+	CanMoveMask   = uint16(8)  // 0000 1000
+	CanCopyMask   = uint16(16) // 0001 0000
+	CanRenameMask = uint16(32) // 0010 0000
 )
 
 // Expected success rate is calculated (NumDataShards)*100/(NumDataShards+NumParityShards)
@@ -179,7 +179,7 @@ type Allocation struct {
 	MovedToChallenge        common.Balance   `json:"moved_to_challenge,omitempty"`
 	MovedBack               common.Balance   `json:"moved_back,omitempty"`
 	MovedToValidators       common.Balance   `json:"moved_to_validators,omitempty"`
-	FileOptions             uint8            `json:"file_options"`
+	FileOptions             uint16           `json:"file_options"`
 	ThirdPartyExtendable    bool             `json:"third_party_extendable"`
 	Curators                []string         `json:"curators"`
 

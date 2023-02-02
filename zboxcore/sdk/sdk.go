@@ -1493,8 +1493,8 @@ func GetAllocationMinLock(
 	return response["min_lock_demand"], nil
 }
 
-// calculateAllocationFileOptions calculates the FileOptions 8-bit mask given the user input
-func calculateAllocationFileOptions(initial uint8, fop *FileOptionsParameters) uint8 {
+// calculateAllocationFileOptions calculates the FileOptions 16-bit mask given the user input
+func calculateAllocationFileOptions(initial uint16, fop *FileOptionsParameters) uint16 {
 	if fop == nil {
 		return initial
 	}
@@ -1529,10 +1529,10 @@ func calculateAllocationFileOptions(initial uint8, fop *FileOptionsParameters) u
 }
 
 // updateMaskBit Set/Clear (based on `value`) bit value of the bit of `mask` at `index` (starting with LSB as 0) and return the updated mask
-func updateMaskBit(mask uint8, index uint8, value bool) uint8 {
+func updateMaskBit(mask uint16, index uint8, value bool) uint16 {
 	if value {
-		return mask | uint8(1<<index)
+		return mask | uint16(1<<index)
 	} else {
-		return mask & ^uint8(1<<index)
+		return mask & ^uint16(1<<index)
 	}
 }
