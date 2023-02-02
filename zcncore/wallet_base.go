@@ -128,6 +128,15 @@ const (
 var defaultLogLevel = logger.DEBUG
 var logging logger.Logger
 
+func GetLogger() *logger.Logger {
+	return &logging
+}
+
+// CloseLog closes log file
+func CloseLog() {
+	logging.Close()
+}
+
 const TOKEN_UNIT int64 = 1e10
 
 const (
@@ -332,7 +341,8 @@ func Init(chainConfigJSON string) error {
 
 		conf.InitClientConfig(cfg)
 	}
-	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (Init)")
+	logging.Info("0chain: test logging")
+	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (Init) Test")
 	return err
 }
 
