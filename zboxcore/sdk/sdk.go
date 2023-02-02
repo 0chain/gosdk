@@ -867,7 +867,7 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 // Q : Why do you have "Forbid" and "Allow" version of every option ?
 //
 // A : In Go, you cannot tell if the variable is initialized or not, it must have a value. For booleans,
-// the default value if "false". So if I decided to leave just the "forbid" versions, where if forbidX = 1, X is forbidden and v.v., 
+// the default value if "false". So if I decided to leave just the "forbid" versions, where if forbidX = 1, X is forbidden and v.v.,
 // the "false" value of the fobidX option will mean that the option X is allowed, however, it may be just that the user didn't even
 // set a value for it, so there's confusion between if the user has deliberaly set "false" to forbidX to "allow" the X option v.s. if
 // the user didn't give any value at all. Now for the "create" request, this confusion will not harm, since the two confused cases will
@@ -877,34 +877,33 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 // was dissallowed in the "create" request. That's why it's important to have a separate "allow" option so if the user wants to allow X they should
 // just send "allowX=true" which will affect the state of "X" only, where the others will stay unchanged.
 // In a nutshell, the idea is always using "true" as a sign of user's input and "false" as a sign of being unchanged or unset by the user.
+type FileOptionParam struct {
+	Changed bool
+	Value   bool
+}
+
 type FileOptionsParameters struct {
-	ForbidUpload bool
-	ForbidDelete bool
-	ForbidUpdate bool
-	ForbidMove 	 bool
-	ForbidCopy   bool
-	ForbidRename bool
-	AllowUpload bool
-	AllowDelete bool
-	AllowUpdate bool
-	AllowMove 	bool
-	AllowCopy   bool
-	AllowRename bool
+	ForbidUpload FileOptionParam
+	ForbidDelete FileOptionParam
+	ForbidUpdate FileOptionParam
+	ForbidMove   FileOptionParam
+	ForbidCopy   FileOptionParam
+	ForbidRename FileOptionParam
 }
 
 type CreateAllocationOptions struct {
-	Name         string
-	DataShards   int
-	ParityShards int
-	Size         int64
-	Expiry       int64
-	ReadPrice    PriceRange
-	WritePrice   PriceRange
-	Lock         uint64
-	BlobberIds   []string
-	IsImmutable	 bool
-	ThirdPartyExtendable	 bool
-	FileOptionsParams *FileOptionsParameters
+	Name                 string
+	DataShards           int
+	ParityShards         int
+	Size                 int64
+	Expiry               int64
+	ReadPrice            PriceRange
+	WritePrice           PriceRange
+	Lock                 uint64
+	BlobberIds           []string
+	IsImmutable          bool
+	ThirdPartyExtendable bool
+	FileOptionsParams    *FileOptionsParameters
 }
 
 func CreateAllocationWith(options CreateAllocationOptions) (
@@ -959,7 +958,7 @@ func CreateAllocationForOwner(
 	allocationRequest["owner_public_key"] = ownerpublickey
 	allocationRequest["is_immutable"] = isImmutable
 	allocationRequest["third_party_extendable"] = thirdPartyExtendable
-	allocationRequest["file_options"] = calculateAllocationFileOptions(63/*0011 1111*/, fileOptionsParams)
+	allocationRequest["file_options"] = calculateAllocationFileOptions(63 /*0011 1111*/, fileOptionsParams)
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.NEW_ALLOCATION_REQUEST,
@@ -1149,9 +1148,9 @@ func UpdateAllocation(name string,
 
 	alloc, err := GetAllocation(allocationID)
 	if err != nil {
-		return "",0, allocationNotFound 
+		return "", 0, allocationNotFound
 	}
-	
+
 	updateAllocationRequest := make(map[string]interface{})
 	updateAllocationRequest["name"] = name
 	updateAllocationRequest["owner_id"] = client.GetClientID()
@@ -1494,29 +1493,46 @@ func GetAllocationMinLock(
 	return response["min_lock_demand"], nil
 }
 
-//calculateAllocationFileOptions calculates the FileOptions 8-bit mask given the user input
-func calculateAllocationFileOptions(initial uint8, fop *FileOptionsParameters) uint8 {	
+// calculateAllocationFileOptions calculates the FileOptions 8-bit mask given the user input
+func calculateAllocationFileOptions(initial uint8, fop *FileOptionsParameters) uint8 {
 	if fop == nil {
 		return initial
 	}
 
 	mask := initial
 
-	// Forbid
-	if fop.ForbidUpload { mask &= ^uint8(1) }
-	if fop.ForbidDelete { mask &= ^uint8(2) }
-	if fop.ForbidUpdate { mask &= ^uint8(4) }
-	if fop.ForbidMove 	{ mask &= ^uint8(8) }
-	if fop.ForbidCopy 	{ mask &= ^uint8(16) }
-	if fop.ForbidRename { mask &= ^uint8(32) }
+	if fop.ForbidUpload.Changed {
+		mask = updateMaskBit(mask, 0, !fop.ForbidUpload.Value)
+	}
 
-	// Allow
-	if fop.AllowUpload { mask |= uint8(1) }
-	if fop.AllowDelete { mask |= uint8(2) }
-	if fop.AllowUpdate { mask |= uint8(4) }
-	if fop.AllowMove   { mask |= uint8(8) }
-	if fop.AllowCopy   { mask |= uint8(16) }
-	if fop.AllowRename { mask |= uint8(32) }
+	if fop.ForbidDelete.Changed {
+		mask = updateMaskBit(mask, 1, !fop.ForbidDelete.Value)
+	}
+
+	if fop.ForbidUpdate.Changed {
+		mask = updateMaskBit(mask, 2, !fop.ForbidUpdate.Value)
+	}
+
+	if fop.ForbidMove.Changed {
+		mask = updateMaskBit(mask, 3, !fop.ForbidMove.Value)
+	}
+
+	if fop.ForbidCopy.Changed {
+		mask = updateMaskBit(mask, 4, !fop.ForbidCopy.Value)
+	}
+
+	if fop.ForbidRename.Changed {
+		mask = updateMaskBit(mask, 5, !fop.ForbidRename.Value)
+	}
 
 	return mask
+}
+
+// updateMaskBit Set/Clear (based on `value`) bit value of the bit of `mask` at `index` (starting with LSB as 0) and return the updated mask
+func updateMaskBit(mask uint8, index uint8, value bool) uint8 {
+	if value {
+		return mask | uint8(1<<index)
+	} else {
+		return mask & ^uint8(1<<index)
+	}
 }

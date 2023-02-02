@@ -686,7 +686,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 			a := &Allocation{
 				DataShards:   2,
 				ParityShards: 2,
-				FileOptions: 63,
+				FileOptions:  63,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -1035,7 +1035,7 @@ func TestAllocation_AddCollaborator(t *testing.T) {
 			a := &Allocation{
 				DataShards:   2,
 				ParityShards: 2,
-				FileOptions: 63,
+				FileOptions:  63,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -1124,7 +1124,7 @@ func TestAllocation_RemoveCollaborator(t *testing.T) {
 			a := &Allocation{
 				DataShards:   2,
 				ParityShards: 2,
-				FileOptions: 63,
+				FileOptions:  63,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -1224,7 +1224,7 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 			a := &Allocation{
 				DataShards:   2,
 				ParityShards: 2,
-				FileOptions: 63,
+				FileOptions:  63,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -1477,7 +1477,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 			a := &Allocation{
 				DataShards:   1,
 				ParityShards: 1,
-				FileOptions: 63,
+				FileOptions:  63,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -1734,8 +1734,8 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 				ClientKey: mockClientKey,
 			}
 			a := &Allocation{
-				ID: mockAllocationId,
-				Tx: mockAllocationTxId,
+				ID:          mockAllocationId,
+				Tx:          mockAllocationTxId,
 				FileOptions: 63,
 			}
 
@@ -2028,8 +2028,8 @@ func TestAllocation_listDir(t *testing.T) {
 
 			require := require.New(t)
 			a := &Allocation{
-				ID: mockAllocationId,
-				Tx: mockAllocationTxId,
+				ID:          mockAllocationId,
+				Tx:          mockAllocationTxId,
 				FileOptions: 63,
 			}
 			a.InitAllocation()
@@ -2160,7 +2160,7 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 				Tx:           mockAllocationTxId,
 				DataShards:   2,
 				ParityShards: 2,
-				FileOptions: 63,
+				FileOptions:  63,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -2517,7 +2517,7 @@ func getMockAuthTicket(t *testing.T) string {
 		Tx:           mockAllocationTxId,
 		DataShards:   1,
 		ParityShards: 1,
-		FileOptions: 63,
+		FileOptions:  63,
 	}
 	setupMockGetFileInfoResponse(t, &mockClient)
 	a.InitAllocation()

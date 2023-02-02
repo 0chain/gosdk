@@ -50,7 +50,7 @@ func TestAllocation_DeleteFile(t *testing.T) {
 	a := &Allocation{
 		DataShards:   2,
 		ParityShards: 2,
-		FileOptions: 63,
+		FileOptions:  63,
 	}
 	a.InitAllocation()
 	sdkInitialized = true
@@ -165,7 +165,7 @@ func TestAllocation_deleteFile(t *testing.T) {
 			a := &Allocation{
 				DataShards:   2,
 				ParityShards: 2,
-				FileOptions: 63,
+				FileOptions:  63,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
