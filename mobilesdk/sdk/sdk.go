@@ -146,7 +146,7 @@ func (s *StorageSDK) CreateAllocation(name string, datashards, parityshards int,
 		return nil, err
 	}
 
-	sdkAllocationID, _, _, err := sdk.CreateAllocation(name, datashards, parityshards, size, expiration, readPrice, writePrice, l, false, false, &sdk.FileOptionsParameters{})
+	sdkAllocationID, _, _, err := sdk.CreateAllocation(name, datashards, parityshards, size, expiration, readPrice, writePrice, l, false, &sdk.FileOptionsParameters{})
 	if err != nil {
 		return nil, err
 	}
@@ -322,7 +322,7 @@ func (s *StorageSDK) GetVersion() string {
 
 // UpdateAllocation with new expiry and size
 func (s *StorageSDK) UpdateAllocation(name string, size, expiry int64, allocationID string, lock uint64) (hash string, err error) {
-	hash, _, err = sdk.UpdateAllocation(name, size, expiry, allocationID, lock, false, true, "", "", false, &sdk.FileOptionsParameters{})
+	hash, _, err = sdk.UpdateAllocation(name, size, expiry, allocationID, lock, true, "", "", false, &sdk.FileOptionsParameters{})
 	return hash, err
 }
 

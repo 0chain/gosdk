@@ -160,7 +160,6 @@ type Allocation struct {
 	Blobbers       []*blockchain.StorageNode `json:"blobbers"`
 	Stats          *AllocationStats          `json:"stats"`
 	TimeUnit       time.Duration             `json:"time_unit"`
-	IsImmutable    bool                      `json:"is_immutable"`
 	WritePool      common.Balance            `json:"write_pool"`
 	// BlobberDetails contains real terms used for the allocation.
 	// If the allocation has updated, then terms calculated using

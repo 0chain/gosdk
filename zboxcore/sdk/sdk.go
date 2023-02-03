@@ -821,7 +821,6 @@ func GetAllocationUpdates(allocation *Allocation) error {
 	allocation.Blobbers = updatedAllocationObj.Blobbers
 	allocation.Stats = updatedAllocationObj.Stats
 	allocation.TimeUnit = updatedAllocationObj.TimeUnit
-	allocation.IsImmutable = updatedAllocationObj.IsImmutable
 	allocation.BlobberDetails = updatedAllocationObj.BlobberDetails
 	allocation.ReadPriceRange = updatedAllocationObj.ReadPriceRange
 	allocation.WritePriceRange = updatedAllocationObj.WritePriceRange
@@ -833,6 +832,7 @@ func GetAllocationUpdates(allocation *Allocation) error {
 	allocation.MovedBack = updatedAllocationObj.MovedBack
 	allocation.MovedToValidators = updatedAllocationObj.MovedToValidators
 	allocation.Curators = updatedAllocationObj.Curators
+	allocation.FileOptions = updatedAllocationObj.FileOptions
 	return nil
 }
 
@@ -864,19 +864,6 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 	return allocations, nil
 }
 
-// Q : Why do you have "Forbid" and "Allow" version of every option ?
-//
-// A : In Go, you cannot tell if the variable is initialized or not, it must have a value. For booleans,
-// the default value if "false". So if I decided to leave just the "forbid" versions, where if forbidX = 1, X is forbidden and v.v.,
-// the "false" value of the fobidX option will mean that the option X is allowed, however, it may be just that the user didn't even
-// set a value for it, so there's confusion between if the user has deliberaly set "false" to forbidX to "allow" the X option v.s. if
-// the user didn't give any value at all. Now for the "create" request, this confusion will not harm, since the two confused cases will
-// lead to the same result which is to "allow" the option X. However, for the "update" request, this confusion will lead to corrupted results.
-// Lets say the user wants to allow the option X in an update request, if there's only the "forbid" version then the user will send "forbidX=false".
-// However, since the user didn't touch the other options in their request, they're all considered "false", thus ALLOWED, even if another option Y
-// was dissallowed in the "create" request. That's why it's important to have a separate "allow" option so if the user wants to allow X they should
-// just send "allowX=true" which will affect the state of "X" only, where the others will stay unchanged.
-// In a nutshell, the idea is always using "true" as a sign of user's input and "false" as a sign of being unchanged or unset by the user.
 type FileOptionParam struct {
 	Changed bool
 	Value   bool
@@ -901,7 +888,6 @@ type CreateAllocationOptions struct {
 	WritePrice           PriceRange
 	Lock                 uint64
 	BlobberIds           []string
-	IsImmutable          bool
 	ThirdPartyExtendable bool
 	FileOptionsParams    *FileOptionsParameters
 }
@@ -913,17 +899,17 @@ func CreateAllocationWith(options CreateAllocationOptions) (
 		return CreateAllocationForOwner(options.Name, client.GetClientID(),
 			client.GetClientPublicKey(), options.DataShards, options.ParityShards,
 			options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock,
-			options.BlobberIds, options.IsImmutable, options.ThirdPartyExtendable, options.FileOptionsParams)
+			options.BlobberIds, options.ThirdPartyExtendable, options.FileOptionsParams)
 	}
 
 	return CreateAllocation(options.Name, options.DataShards, options.ParityShards,
-		options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock, options.IsImmutable,
+		options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock,
 		options.ThirdPartyExtendable, options.FileOptionsParams)
 
 }
 
 func CreateAllocation(name string, datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, lock uint64, isImmutable, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters) (
+	readPrice, writePrice PriceRange, lock uint64, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters) (
 	string, int64, *transaction.Transaction, error) {
 
 	preferredBlobberIds, err := GetBlobberIds(blockchain.GetPreferredBlobbers())
@@ -933,14 +919,14 @@ func CreateAllocation(name string, datashards, parityshards int, size, expiry in
 	return CreateAllocationForOwner(name, client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
 		size, expiry, readPrice, writePrice, lock,
-		preferredBlobberIds, isImmutable, thirdPartyExtendable, fileOptionsParams)
+		preferredBlobberIds, thirdPartyExtendable, fileOptionsParams)
 }
 
 func CreateAllocationForOwner(
 	name string, owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange,
-	lock uint64, preferredBlobberIds []string, isImmutable, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
+	lock uint64, preferredBlobberIds []string, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, txn *transaction.Transaction, err error) {
 
 	allocationRequest, err := getNewAllocationBlobbers(
@@ -956,7 +942,6 @@ func CreateAllocationForOwner(
 	allocationRequest["name"] = name
 	allocationRequest["owner_id"] = owner
 	allocationRequest["owner_public_key"] = ownerpublickey
-	allocationRequest["is_immutable"] = isImmutable
 	allocationRequest["third_party_extendable"] = thirdPartyExtendable
 	allocationRequest["file_options"] = calculateAllocationFileOptions(63 /*0011 1111*/, fileOptionsParams)
 
@@ -1137,7 +1122,7 @@ func UpdateAllocation(name string,
 	size, expiry int64,
 	allocationID string,
 	lock uint64,
-	setImmutable, updateTerms bool,
+	updateTerms bool,
 	addBlobberId, removeBlobberId string,
 	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, err error) {
@@ -1157,7 +1142,6 @@ func UpdateAllocation(name string,
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
 	updateAllocationRequest["expiration_date"] = expiry
-	updateAllocationRequest["set_immutable"] = setImmutable
 	updateAllocationRequest["update_terms"] = updateTerms
 	updateAllocationRequest["add_blobber_id"] = addBlobberId
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId

@@ -90,12 +90,18 @@ func freezeAllocation(allocationID string) (string, error) {
 		0,            //int64(expiry/time.Second),
 		allocationID, // allocID,
 		0,            //lock,
-		true,         // setImmutable,
 		false,        //updateTerms,
 		"",           //addBlobberId,
 		"",           //removeBlobberId,
 		false,		  //thirdPartyExtendable,
-		&sdk.FileOptionsParameters{},
+		&sdk.FileOptionsParameters{
+			ForbidUpload:  FileOptionParam{ true, true }
+			ForbidDelete:  FileOptionParam{ true, true }
+			ForbidUpdate:  FileOptionParam{ true, true }
+			ForbidMove:    FileOptionParam{ true, true }
+			ForbidCopy:    FileOptionParam{ true, true }
+			ForbidRename:  FileOptionParam{ true, true }
+		},
 	)
 
 	if err == nil {
@@ -119,9 +125,9 @@ func cancelAllocation(allocationID string) (string, error) {
 func updateAllocation(allocationID string, name string,
 	size, expiry int64,
 	lock int64,
-	setImmutable, updateTerms bool,
+	updateTerms bool,
 	addBlobberId, removeBlobberId string) (string, error) {
-	hash, _, err := sdk.UpdateAllocation(name, size, expiry, allocationID, uint64(lock), setImmutable, updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{})
+	hash, _, err := sdk.UpdateAllocation(name, size, expiry, allocationID, uint64(lock), updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{})
 
 	if err == nil {
 		clearAllocation(allocationID)
