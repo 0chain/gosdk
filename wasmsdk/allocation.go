@@ -95,12 +95,12 @@ func freezeAllocation(allocationID string) (string, error) {
 		"",           //removeBlobberId,
 		false,        //thirdPartyExtendable,
 		&sdk.FileOptionsParameters{
-			ForbidUpload: FileOptionParam{true, true},
-			ForbidDelete: FileOptionParam{true, true},
-			ForbidUpdate: FileOptionParam{true, true},
-			ForbidMove:   FileOptionParam{true, true},
-			ForbidCopy:   FileOptionParam{true, true},
-			ForbidRename: FileOptionParam{true, true},
+			ForbidUpload: sdk.FileOptionParam{true, true},
+			ForbidDelete: sdk.FileOptionParam{true, true},
+			ForbidUpdate: sdk.FileOptionParam{true, true},
+			ForbidMove:   sdk.FileOptionParam{true, true},
+			ForbidCopy:   sdk.FileOptionParam{true, true},
+			ForbidRename: sdk.FileOptionParam{true, true},
 		},
 	)
 
