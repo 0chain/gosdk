@@ -48,7 +48,6 @@ func Shuffle(in []string) (shuffle []string) {
 // If n > len(in), then this will return a shuffled version of in
 func GetRandom(in []string, n int) []string {
 	n = MinInt(len(in), n)
-	n = MaxInt(1, n)
 	out := make([]string, 0)
 
 	rand.Seed(time.Now().UnixNano())
