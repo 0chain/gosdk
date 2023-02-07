@@ -149,7 +149,6 @@ type BlobberAllocation struct {
 type Allocation struct {
 	ID             string                    `json:"id"`
 	Tx             string                    `json:"tx"`
-	Name           string                    `json:"name"`
 	DataShards     int                       `json:"data_shards"`
 	ParityShards   int                       `json:"parity_shards"`
 	Size           int64                     `json:"size"`

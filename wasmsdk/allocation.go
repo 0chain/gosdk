@@ -34,7 +34,6 @@ func createAllocation(name string, datashards, parityshards int, size, expiry in
 	*transaction.Transaction, error) {
 
 	options := sdk.CreateAllocationOptions{
-		Name:         name,
 		DataShards:   datashards,
 		ParityShards: parityshards,
 		Size:         size,
@@ -85,7 +84,6 @@ func transferAllocation(allocationID, newOwnerId, newOwnerPublicKey string) erro
 func freezeAllocation(allocationID string) (string, error) {
 
 	hash, _, err := sdk.UpdateAllocation(
-		"",           //allocationName,
 		0,            //size,
 		0,            //int64(expiry/time.Second),
 		allocationID, // allocID,
@@ -122,12 +120,12 @@ func cancelAllocation(allocationID string) (string, error) {
 	return hash, err
 }
 
-func updateAllocation(allocationID string, name string,
+func updateAllocation(allocationID string,
 	size, expiry int64,
 	lock int64,
 	updateTerms bool,
 	addBlobberId, removeBlobberId string) (string, error) {
-	hash, _, err := sdk.UpdateAllocation(name, size, expiry, allocationID, uint64(lock), updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{})
+	hash, _, err := sdk.UpdateAllocation(size, expiry, allocationID, uint64(lock), updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{})
 
 	if err == nil {
 		clearAllocation(allocationID)
