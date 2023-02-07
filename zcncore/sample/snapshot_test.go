@@ -71,7 +71,7 @@ func TestGetAggregates(t *testing.T) {
 	var snaps []BlobberAggregate
 	statusBar := wallet.NewZCNStatus(&snaps)
 	statusBar.Wg = wg
-	wg.Add(1)
+	wg.Add(5)
 	err = zcncore.GetBlobberSnapshots(int64(587), statusBar)
 	if err != nil {
 		t.Error(err)
