@@ -16,6 +16,8 @@ import (
 // New create a Resty instance.
 func New(opts ...Option) *Resty {
 	r := &Resty{
+		// Default timeout to use for HTTP requests when either the parent context doesn't have a timeout set
+		// or the context's timeout is longer than DefaultRequestTimeout.
 		timeout: DefaultRequestTimeout,
 		retry:   DefaultRetry,
 		header:  make(map[string]string),
