@@ -952,7 +952,7 @@ func (t *Transaction) Verify() error {
 		t.txn.CreationDate = int64(common.Now())
 	}
 
-	tq, err := newTransactionQuery(_config.chain.Sharders)
+	tq, err := NewTransactionQuery(_config.chain.Sharders)
 	if err != nil {
 		logging.Error(err)
 		return err
@@ -964,7 +964,7 @@ func (t *Transaction) Verify() error {
 
 			tq.Reset()
 			// Get transaction confirmationBlock from a random sharder
-			confirmBlockHeader, confirmationBlock, lfbBlockHeader, err := tq.getFastConfirmation(t.txnHash, nil)
+			confirmBlockHeader, confirmationBlock, lfbBlockHeader, err := tq.getFastConfirmation(context.TODO(), t.txnHash)
 
 			if err != nil {
 				now := int64(common.Now())
@@ -979,7 +979,7 @@ func (t *Transaction) Verify() error {
 				// transaction is done or expired. it means random sharder might be outdated, try to query it from s/S sharders to confirm it
 				if util.MaxInt64(lfbBlockHeader.getCreationDate(now), now) >= (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
 					logging.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders")
-					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.getConsensusConfirmation(getMinShardersVerify(), t.txnHash, nil)
+					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.getConsensusConfirmation(context.TODO(), getMinShardersVerify(), t.txnHash)
 				}
 
 				// txn not found in fast confirmation/consensus confirmation

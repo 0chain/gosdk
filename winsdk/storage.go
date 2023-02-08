@@ -10,6 +10,8 @@ import (
 
 import (
 	"errors"
+
+	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
 // GetFileStats get file stats of blobbers
@@ -38,5 +40,17 @@ func GetFileStats(allocationID, remotePath *C.char) *C.char {
 		return WithJSON(nil, err)
 	}
 
-	return WithJSON(allocationObj.GetFileStats(path))
+	stats, err := allocationObj.GetFileStats(path)
+	if err != nil {
+		return WithJSON(nil, err)
+	}
+
+	result := make([]*sdk.FileStats, 0, len(stats))
+
+	//convert map[string]*sdk.FileStats to []*sdk.FileStats
+	for _, v := range stats {
+		result = append(result, v)
+	}
+
+	return WithJSON(result, nil)
 }
