@@ -879,7 +879,6 @@ type FileOptionsParameters struct {
 }
 
 type CreateAllocationOptions struct {
-	Name                 string
 	DataShards           int
 	ParityShards         int
 	Size                 int64
@@ -896,19 +895,19 @@ func CreateAllocationWith(options CreateAllocationOptions) (
 	string, int64, *transaction.Transaction, error) {
 
 	if len(options.BlobberIds) > 0 {
-		return CreateAllocationForOwner(options.Name, client.GetClientID(),
+		return CreateAllocationForOwner(client.GetClientID(),
 			client.GetClientPublicKey(), options.DataShards, options.ParityShards,
 			options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock,
 			options.BlobberIds, options.ThirdPartyExtendable, options.FileOptionsParams)
 	}
 
-	return CreateAllocation(options.Name, options.DataShards, options.ParityShards,
+	return CreateAllocation(options.DataShards, options.ParityShards,
 		options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock,
 		options.ThirdPartyExtendable, options.FileOptionsParams)
 
 }
 
-func CreateAllocation(name string, datashards, parityshards int, size, expiry int64,
+func CreateAllocation(datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange, lock uint64, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters) (
 	string, int64, *transaction.Transaction, error) {
 
@@ -916,14 +915,14 @@ func CreateAllocation(name string, datashards, parityshards int, size, expiry in
 	if err != nil {
 		return "", 0, nil, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
 	}
-	return CreateAllocationForOwner(name, client.GetClientID(),
+	return CreateAllocationForOwner(client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
 		size, expiry, readPrice, writePrice, lock,
 		preferredBlobberIds, thirdPartyExtendable, fileOptionsParams)
 }
 
 func CreateAllocationForOwner(
-	name string, owner, ownerpublickey string,
+	owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange,
 	lock uint64, preferredBlobberIds []string, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
@@ -939,7 +938,6 @@ func CreateAllocationForOwner(
 		return "", 0, nil, sdkNotInitialized
 	}
 
-	allocationRequest["name"] = name
 	allocationRequest["owner_id"] = owner
 	allocationRequest["owner_public_key"] = ownerpublickey
 	allocationRequest["third_party_extendable"] = thirdPartyExtendable
@@ -1118,7 +1116,7 @@ func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 	return hash, n, err
 }
 
-func UpdateAllocation(name string,
+func UpdateAllocation(
 	size, expiry int64,
 	allocationID string,
 	lock uint64,
@@ -1137,7 +1135,6 @@ func UpdateAllocation(name string,
 	}
 
 	updateAllocationRequest := make(map[string]interface{})
-	updateAllocationRequest["name"] = name
 	updateAllocationRequest["owner_id"] = client.GetClientID()
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
