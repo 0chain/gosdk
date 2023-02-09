@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	thrown "github.com/0chain/errors"
@@ -45,6 +46,7 @@ type QueryResult struct {
 type QueryResultHandle func(result QueryResult) bool
 
 type TransactionQuery struct {
+	sync.RWMutex
 	max      int
 	sharders []string
 
@@ -108,9 +110,12 @@ func (tq *TransactionQuery) buildUrl(host string, parts ...string) string {
 	return sb.String()
 }
 
-// checkHealth check health
-func (tq *TransactionQuery) checkHealth(ctx context.Context, host string, errCh chan error) {
+// checkSharderHealth checks the health of a sharder (denoted by host) and returns if it is healthy
+// or ErrNoOnlineSharders if no sharders are healthy/up at the moment.
+func (tq *TransactionQuery) checkSharderHealth(ctx context.Context, host string, errCh chan error) {
+	tq.RLock()
 	_, ok := tq.offline[host]
+	tq.RUnlock()
 	if ok {
 		errCh <- ErrSharderOffline
 		return
@@ -138,8 +143,9 @@ func (tq *TransactionQuery) checkHealth(ctx context.Context, host string, errCh 
 	errs := r.Wait()
 
 	if len(errs) > 0 {
+		tq.Lock()
 		tq.offline[host] = true
-
+		tq.Unlock()
 		if len(tq.offline) >= tq.max {
 			errCh <- ErrNoOnlineSharders
 			return
@@ -151,7 +157,6 @@ func (tq *TransactionQuery) checkHealth(ctx context.Context, host string, errCh 
 
 // getRandomSharder returns a random healthy sharder
 func (tq *TransactionQuery) getRandomSharder(ctx context.Context) (string, error) {
-	log.Printf("Getting random sharder....")
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	finalErrCh := make(chan error)
@@ -159,7 +164,7 @@ func (tq *TransactionQuery) getRandomSharder(ctx context.Context) (string, error
 	for _, sharder := range tq.sharders {
 		go func(sharder string) {
 			errCh := make(chan error)
-			go tq.checkHealth(ctx, sharder, errCh)
+			go tq.checkSharderHealth(ctx, sharder, errCh)
 			select {
 			case <-ctx.Done():
 				finalErrCh <- ctx.Err()
@@ -186,7 +191,7 @@ func (tq *TransactionQuery) getRandomSharder(ctx context.Context) (string, error
 	case e := <-finalErrCh:
 		return "", e
 	case s := <-onlineSharderCh:
-		log.Printf("Found online sharder: %v", s)
+		log.Printf("Found a healthy sharder: %v", s)
 		return s, nil
 	}
 }
@@ -285,7 +290,8 @@ func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryRe
 	return &consensusesResp, nil
 }
 
-// FromAny query transaction from any sharder that is not selected in previous queires. use any used sharder if there is not any unused sharder
+// FromAny queries transaction from any sharder that is not selected in previous queries.
+// use any used sharder if there is not any unused sharder
 func (tq *TransactionQuery) FromAny(ctx context.Context, query string) (QueryResult, error) {
 
 	res := QueryResult{
