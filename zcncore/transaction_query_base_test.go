@@ -33,7 +33,7 @@ type SharderHealthStatus struct {
 	HealthStatus string `json:"health"`
 }
 
-func SetupTest(t *testing.T) {
+func Setup(t *testing.T) {
 	numSharders = 4
 	var sharderPorts []string
 	for i := 0; i < numSharders; i++ {
@@ -52,36 +52,28 @@ func SetupTest(t *testing.T) {
 }
 
 func TestGetRandomSharder(t *testing.T) {
-	SetupTest(t)
-
-	done := make(chan struct{})
-	go startAndStopShardersRandomly(done)
-	go waitSignal(done)
-	fetchRandomSharderAndBenchmark(t)
-	<-done
-}
-
-func TestGetRandomSharderDeterministic(t *testing.T) {
-	SetupTest(t)
+	Setup(t)
 	for _, tc := range []struct {
 		name            string
 		offlineSharders []string
-		expectErr       error
+		expectErr       bool
+		error           error
 	}{
 		{
 			name:            "all sharders online",
 			offlineSharders: []string{},
-			expectErr:       nil,
+			expectErr:       false,
 		},
 		{
 			name:            "only one sharder online",
 			offlineSharders: []string{"http://localhost:6000", "http://localhost:6002", "http://localhost:6003"},
-			expectErr:       nil,
+			expectErr:       false,
 		},
 		{
 			name:            "all sharders offline",
 			offlineSharders: sharders,
-			expectErr:       ErrNoOnlineSharders,
+			expectErr:       true,
+			error:           ErrNoOnlineSharders,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -94,16 +86,25 @@ func TestGetRandomSharderDeterministic(t *testing.T) {
 					onlineSharders = append(onlineSharders, s)
 				}
 			}
-			t.Logf("tq: %v", tq)
-			t.Logf("Online sharders: %v", onlineSharders)
 			sharder, err := tq.getRandomSharder(context.Background())
-			if err != nil {
-				t.Fatalf("Failed to get a random sharder err: %v", err)
+			if !tc.expectErr {
+				require.NoError(t, err)
+				require.Subset(t, onlineSharders, []string{sharder})
+			} else {
+				require.EqualError(t, err, tc.error.Error())
 			}
-			require.Equal(t, tc.expectErr, err)
-			require.Subset(t, onlineSharders, []string{sharder})
 		})
 	}
+}
+
+func TestGetRandomSharderAndBenchmark(t *testing.T) {
+	Setup(t)
+
+	done := make(chan struct{})
+	go startAndStopShardersRandomly(done)
+	go waitSignal(done)
+	fetchRandomSharderAndBenchmark(t)
+	<-done
 }
 
 func startMockSharderServers(sharders []string) {

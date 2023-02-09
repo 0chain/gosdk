@@ -165,9 +165,13 @@ func (tq *TransactionQuery) getRandomSharder(ctx context.Context) (string, error
 				finalErrCh <- ctx.Err()
 				return
 			case e := <-errCh:
-				if errors.Is(e, ErrNoOnlineSharders) {
-					finalErrCh <- e
-					cancel()
+				if errors.Is(e, ErrSharderOffline) {
+					tq.RLock()
+					defer tq.RUnlock()
+					if len(tq.offline) >= tq.max {
+						finalErrCh <- ErrNoOnlineSharders
+						cancel()
+					}
 				} else if e == nil {
 					onlineSharderCh <- sharder
 					cancel()
