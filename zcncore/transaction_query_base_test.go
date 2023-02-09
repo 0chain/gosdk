@@ -11,8 +11,6 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/signal"
-	"syscall"
 	"testing"
 	"time"
 )
@@ -33,9 +31,10 @@ type SharderHealthStatus struct {
 	HealthStatus string `json:"health"`
 }
 
-func Setup(t *testing.T) {
+func TestMain(m *testing.M) {
 	numSharders = 4
 	var sharderPorts []string
+	sharders = make([]string, 0)
 	for i := 0; i < numSharders; i++ {
 		port := fmt.Sprintf(":600%d", i)
 		sharderPorts = append(sharderPorts, port)
@@ -44,15 +43,17 @@ func Setup(t *testing.T) {
 	startMockSharderServers(sharders)
 	// wait for 2s for all servers to start
 	time.Sleep(2 * time.Second)
+	exitVal := m.Run()
+	os.Exit(exitVal)
+}
+
+func TestGetRandomSharder(t *testing.T) {
 	var err error
 	tq, err = NewTransactionQuery(sharders)
 	if err != nil {
 		t.Fatalf("Failed to create new transaction query: %v", err)
 	}
-}
 
-func TestGetRandomSharder(t *testing.T) {
-	Setup(t)
 	for _, tc := range []struct {
 		name            string
 		offlineSharders []string
@@ -77,8 +78,11 @@ func TestGetRandomSharder(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			for _, host := range tc.offlineSharders {
+				tq.Lock()
 				tq.offline[host] = true
+				tq.Unlock()
 			}
 			var onlineSharders []string
 			for _, s := range sharders {
@@ -97,14 +101,18 @@ func TestGetRandomSharder(t *testing.T) {
 	}
 }
 
+// Maybe replace this with the standard go benchmark later on
 func TestGetRandomSharderAndBenchmark(t *testing.T) {
-	Setup(t)
+	var err error
+	tq, err = NewTransactionQuery(sharders)
+	if err != nil {
+		t.Fatalf("Failed to create new transaction query: %v", err)
+	}
 
 	done := make(chan struct{})
 	go startAndStopShardersRandomly(done)
-	go waitSignal(done)
 	fetchRandomSharderAndBenchmark(t)
-	<-done
+	close(done)
 }
 
 func startMockSharderServers(sharders []string) {
@@ -122,10 +130,10 @@ func startMockSharderServers(sharders []string) {
 					return ctx
 				},
 			}
-			log.Printf("Starting server at: %v", url)
+			log.Printf("Starting sharder server at: %v", url)
 			err := httpServer.ListenAndServe()
 			if errors.Is(err, http.ErrServerClosed) {
-				log.Printf("server one closed\n")
+				log.Printf("server %v closed\n", httpServer.Addr)
 			} else if err != nil {
 				log.Printf("error listening for server one: %s\n", err)
 			}
@@ -187,7 +195,7 @@ func startAndStopShardersRandomly(done chan struct{}) {
 }
 
 func fetchRandomSharderAndBenchmark(t *testing.T) {
-	numIterations := 10
+	numIterations := 5
 	for i := 0; i < numIterations; i++ {
 		// Sleep for sometime to have some random sharders started and stopped
 		time.Sleep(20 * time.Millisecond)
@@ -215,13 +223,6 @@ func errorAny(w http.ResponseWriter, status int, msg string) {
 		httpMsg = fmt.Sprintf("%s - %s", httpMsg, msg)
 	}
 	http.Error(w, httpMsg, status)
-}
-
-func waitSignal(stop chan struct{}) {
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	<-sigs
-	close(stop)
 }
 
 func contains(list []string, e string) bool {

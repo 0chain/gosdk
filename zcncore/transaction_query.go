@@ -181,7 +181,6 @@ func (tq *TransactionQuery) getRandomSharder(ctx context.Context) (string, error
 					onlineSharderCh <- sharder
 					cancel()
 				}
-				// simply return in case this sharder is offline (err: ErrSharderOffline)
 				return
 			}
 		}(sharder)
