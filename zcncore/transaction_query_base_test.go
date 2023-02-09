@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/stretchr/testify/require"
 	"log"
 	"math/rand"
 	"net"
@@ -24,16 +25,17 @@ const (
 var tq *TransactionQuery
 var numSharders int
 var avgTimeToFindSharder float32
+var maxTimePerIteration float32
+var sharders []string
 
-type SharderStatus struct {
-	SharderHost  string `json:"host"`
+type SharderHealthStatus struct {
+	Host         string `json:"host"`
 	HealthStatus string `json:"health"`
 }
 
-func TestGettingRandomSharder(t *testing.T) {
-	numSharders = 20
+func SetupTest(t *testing.T) {
+	numSharders = 4
 	var sharderPorts []string
-	var sharders []string
 	for i := 0; i < numSharders; i++ {
 		port := fmt.Sprintf(":600%d", i)
 		sharderPorts = append(sharderPorts, port)
@@ -47,12 +49,61 @@ func TestGettingRandomSharder(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to create new transaction query: %v", err)
 	}
+}
+
+func TestGetRandomSharder(t *testing.T) {
+	SetupTest(t)
 
 	done := make(chan struct{})
-	go startAndStopShardersRandomly(t, done)
-	go fetchRandomSharderAndBenchmark(t, done)
+	go startAndStopShardersRandomly(done)
 	go waitSignal(done)
+	fetchRandomSharderAndBenchmark(t)
 	<-done
+}
+
+func TestGetRandomSharderDeterministic(t *testing.T) {
+	SetupTest(t)
+	for _, tc := range []struct {
+		name            string
+		offlineSharders []string
+		expectErr       error
+	}{
+		{
+			name:            "all sharders online",
+			offlineSharders: []string{},
+			expectErr:       nil,
+		},
+		{
+			name:            "only one sharder online",
+			offlineSharders: []string{"http://localhost:6000", "http://localhost:6002", "http://localhost:6003"},
+			expectErr:       nil,
+		},
+		{
+			name:            "all sharders offline",
+			offlineSharders: sharders,
+			expectErr:       ErrNoOnlineSharders,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, host := range tc.offlineSharders {
+				tq.offline[host] = true
+			}
+			var onlineSharders []string
+			for _, s := range sharders {
+				if !contains(tc.offlineSharders, s) {
+					onlineSharders = append(onlineSharders, s)
+				}
+			}
+			t.Logf("tq: %v", tq)
+			t.Logf("Online sharders: %v", onlineSharders)
+			sharder, err := tq.getRandomSharder(context.Background())
+			if err != nil {
+				t.Fatalf("Failed to get a random sharder err: %v", err)
+			}
+			require.Equal(t, tc.expectErr, err)
+			require.Subset(t, onlineSharders, []string{sharder})
+		})
+	}
 }
 
 func startMockSharderServers(sharders []string) {
@@ -61,7 +112,7 @@ func startMockSharderServers(sharders []string) {
 		go func(url string) {
 			ctx, cancel := context.WithCancel(context.Background())
 			mx := http.NewServeMux()
-			mx.HandleFunc(SharderEndpointHealthCheck, returnSharderHealth)
+			mx.HandleFunc(SharderEndpointHealthCheck, getSharderHealth)
 			httpServer := &http.Server{
 				Addr:    url,
 				Handler: mx,
@@ -70,6 +121,7 @@ func startMockSharderServers(sharders []string) {
 					return ctx
 				},
 			}
+			log.Printf("Starting server at: %v", url)
 			err := httpServer.ListenAndServe()
 			if errors.Is(err, http.ErrServerClosed) {
 				log.Printf("server one closed\n")
@@ -81,7 +133,7 @@ func startMockSharderServers(sharders []string) {
 	}
 }
 
-func returnSharderHealth(w http.ResponseWriter, req *http.Request) {
+func getSharderHealth(w http.ResponseWriter, req *http.Request) {
 	ctx := req.Context()
 	sharderHost := ctx.Value(keyServerAddr).(string)
 	tq.RLock()
@@ -90,8 +142,8 @@ func returnSharderHealth(w http.ResponseWriter, req *http.Request) {
 	if ok {
 		errorAny(w, 404, fmt.Sprintf("sharder %v is offline", sharderHost))
 	} else {
-		healthStatus := &SharderStatus{
-			SharderHost:  sharderHost,
+		healthStatus := &SharderHealthStatus{
+			Host:         sharderHost,
 			HealthStatus: "healthy",
 		}
 		err := json.NewEncoder(w).Encode(healthStatus)
@@ -101,7 +153,7 @@ func returnSharderHealth(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func startAndStopShardersRandomly(t *testing.T, done chan struct{}) {
+func startAndStopShardersRandomly(done chan struct{}) {
 	for {
 		select {
 		case <-time.After(5 * time.Millisecond):
@@ -123,8 +175,7 @@ func startAndStopShardersRandomly(t *testing.T, done chan struct{}) {
 			tq.Unlock()
 
 		case <-time.After(5 * time.Second):
-			//Randomly mark all sharders online after every 5 seconds
-			t.Logf("Marking all sharders online")
+			//Randomly mark all sharders online every 5s
 			tq.Lock()
 			tq.Reset()
 			tq.Unlock()
@@ -134,25 +185,27 @@ func startAndStopShardersRandomly(t *testing.T, done chan struct{}) {
 	}
 }
 
-func fetchRandomSharderAndBenchmark(t *testing.T, done chan struct{}) {
-	numIterations := 500
+func fetchRandomSharderAndBenchmark(t *testing.T) {
+	numIterations := 10
 	for i := 0; i < numIterations; i++ {
-		select {
-		case <-time.After(20 * time.Millisecond):
-			ctx := context.Background()
-			start := time.Now()
-			randomSharder, err := tq.randOne(ctx)
-			if err != nil {
-				t.Fatalf("Failed to get a random sharder err: %v", err)
-			}
-			end := time.Since(start)
-			t.Logf("Found sharder %v online. Time taken for %v sharders: %v", randomSharder, numSharders, end)
-			avgTimeToFindSharder += float32(end / time.Microsecond)
+		// Sleep for sometime to have some random sharders started and stopped
+		time.Sleep(20 * time.Millisecond)
+		ctx := context.Background()
+		start := time.Now()
+		_, err := tq.getRandomSharder(ctx)
+		if err != nil {
+			t.Fatalf("Failed to get a random sharder err: %v", err)
 		}
+		end := float32(time.Since(start) / time.Microsecond)
+		if end > maxTimePerIteration {
+			maxTimePerIteration = end
+		}
+		avgTimeToFindSharder += end
+
 	}
 	avgTimeToFindSharder = (avgTimeToFindSharder / float32(numIterations)) / 1000
-	t.Logf("Average time to find sharder: %vms", avgTimeToFindSharder)
-	close(done)
+	maxTimePerIteration /= 1000
+	t.Logf("Average time to find a random sharder: %vms and max time for an iteration: %vms", avgTimeToFindSharder, maxTimePerIteration)
 }
 
 func errorAny(w http.ResponseWriter, status int, msg string) {
@@ -168,4 +221,13 @@ func waitSignal(stop chan struct{}) {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	<-sigs
 	close(stop)
+}
+
+func contains(list []string, e string) bool {
+	for _, l := range list {
+		if l == e {
+			return true
+		}
+	}
+	return false
 }

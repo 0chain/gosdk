@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	stderrors "errors"
-	"math/rand"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -109,11 +109,11 @@ func (tq *TransactionQuery) buildUrl(host string, parts ...string) string {
 }
 
 // checkHealth check health
-func (tq *TransactionQuery) checkHealth(ctx context.Context, host string) error {
-
+func (tq *TransactionQuery) checkHealth(ctx context.Context, host string, errCh chan error) {
 	_, ok := tq.offline[host]
 	if ok {
-		return ErrSharderOffline
+		errCh <- ErrSharderOffline
+		return
 	}
 
 	// check health
@@ -141,48 +141,49 @@ func (tq *TransactionQuery) checkHealth(ctx context.Context, host string) error 
 		tq.offline[host] = true
 
 		if len(tq.offline) >= tq.max {
-			return ErrNoOnlineSharders
+			errCh <- ErrNoOnlineSharders
+			return
 		}
 	}
-
-	return nil
+	errCh <- nil
+	return
 }
 
-// randOne random one health sharder
-func (tq *TransactionQuery) randOne(ctx context.Context) (string, error) {
-
-	randGen := rand.New(rand.NewSource(time.Now().UnixNano()))
-	for {
-
-		// reset selected if all sharders were selected
-		if len(tq.selected) >= tq.max {
-			tq.selected = make(map[string]interface{})
-		}
-
-		i := randGen.Intn(len(tq.sharders))
-		host := tq.sharders[i]
-
-		_, ok := tq.selected[host]
-
-		// it was selected, try next
-		if ok {
-			continue
-		}
-
-		tq.selected[host] = true
-
-		err := tq.checkHealth(ctx, host)
-
-		if err != nil {
-			if errors.Is(err, ErrNoOnlineSharders) {
-				return "", err
+// getRandomSharder returns a random healthy sharder
+func (tq *TransactionQuery) getRandomSharder(ctx context.Context) (string, error) {
+	log.Printf("Getting random sharder....")
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	finalErrCh := make(chan error)
+	onlineSharderCh := make(chan string)
+	for _, sharder := range tq.sharders {
+		go func(sharder string) {
+			errCh := make(chan error)
+			go tq.checkHealth(ctx, sharder, errCh)
+			select {
+			case <-ctx.Done():
+				finalErrCh <- ctx.Err()
+				return
+			case e := <-errCh:
+				if errors.Is(e, ErrNoOnlineSharders) {
+					finalErrCh <- e
+					cancel()
+				} else if e == nil {
+					onlineSharderCh <- sharder
+					cancel()
+				}
+				// simply return in case this sharder is offline (err: ErrSharderOffline)
+				return
 			}
+		}(sharder)
+	}
 
-			// it is offline, try next one
-			continue
-		}
-
-		return host, nil
+	select {
+	case e := <-finalErrCh:
+		return "", e
+	case s := <-onlineSharderCh:
+		log.Printf("Found online sharder: %v", s)
+		return s, nil
 	}
 }
 
@@ -293,7 +294,7 @@ func (tq *TransactionQuery) FromAny(ctx context.Context, query string) (QueryRes
 		return res, err
 	}
 
-	host, err := tq.randOne(ctx)
+	host, err := tq.getRandomSharder(ctx)
 
 	if err != nil {
 		return res, err
