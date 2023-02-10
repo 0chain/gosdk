@@ -18,7 +18,7 @@ const (
 )
 
 type ValidationTree struct {
-	writeLock      *sync.Mutex
+	writeLock      sync.Mutex
 	writeCount     int
 	dataSize       int64
 	writtenSize    int64
@@ -59,6 +59,10 @@ func (v *ValidationTree) Write(b []byte) (int, error) {
 
 	byteLen := len(b)
 	shouldContinue := true
+	// j is initialized to MaxMerkleLeavesSize - writeCount so as to make up MaxMerkleLeavesSize with previouly
+	// read bytes. If previously it had written MaxMerkleLeavesSize - 1, then j will be initialized to 1 so
+	// in first iteration it will only read 1 byte and write it to v.h after which hash of v.h will be calculated
+	// and stored in v.Leaves and v.h will be reset.
 	for i, j := 0, MaxMerkleLeavesSize-v.writeCount; shouldContinue; i, j = j, j+MaxMerkleLeavesSize {
 		if j > byteLen {
 			j = byteLen
@@ -66,12 +70,12 @@ func (v *ValidationTree) Write(b []byte) (int, error) {
 		}
 
 		n, _ := v.h.Write(b[i:j])
-		v.writeCount += n
+		v.writeCount += n // update write count
 		if v.writeCount == MaxMerkleLeavesSize {
 			v.leaves[v.leafIndex] = v.h.Sum(nil)
 			v.leafIndex++
-			v.writeCount = 0
-			v.h.Reset()
+			v.writeCount = 0 // reset writeCount
+			v.h.Reset()      // reset hasher
 		}
 	}
 	v.writtenSize += int64(byteLen)
@@ -139,7 +143,7 @@ func NewValidationTree(dataSize int64) *ValidationTree {
 	totalLeaves := (dataSize + MaxMerkleLeavesSize - 1) / MaxMerkleLeavesSize
 
 	return &ValidationTree{
-		writeLock: &sync.Mutex{},
+		writeLock: sync.Mutex{},
 		dataSize:  dataSize,
 		h:         sha3.New256(),
 		leaves:    make([][]byte, totalLeaves),
@@ -172,7 +176,7 @@ type MerklePathForMultiLeafVerification struct {
 /*
 VerifyMultipleBlocks will verify merkle path for continuous data which is multiple of 64KB blocks
 
-There can be at most 2 hashes in the input i.e. of the format below:
+There can be at most 2 hashes in the input for each depth i.e. of the format below:
 h1, data1, data2, data3, data4, h2
 Note that data1, data2, data3,... should be continuous data
 
@@ -182,6 +186,14 @@ i#2       h12             h13
 i#1    h7      h8      h9    h10
 i#0  h0, h1, h2, h3, h4, h5, h6
 
+Consider there are 7 leaves(0...6) as shown above. Now if client wants data from
+1-3 then blobber needs to provide:
+
+1. One node from i#0, [h0]; data1 will generate h1,data2 will generate h2 and so on...
+2. Zero node from i#1; h0 and h1 will generate h7 and h2 and h3 will generate h8
+3. One node from i#2, h[13]; h7 and h8 will generate h12. Now to get h14, we need h13
+which will be provided by blobber
+
 i#5                                                  h37
 i#4                                 h35                                       h36
 i#3                h32                               h33                      h34
@@ -189,7 +201,7 @@ i#2        h27             h28             h29                 h30            h3
 i#1    h18     h19     h20     h21     h22      h23       h24       h25,      h26
 i#0  h0, h1, h2, h3, h4, h5, h6, h7, h8, h9, h10, h11, h12, h13, h14, h15, h16, h17
 
-Consider there are 16 leaves(0..15) with total data = 16*64KB.
+Consider there are 16 leaves(0..15) with total data = 16*64KB as shown above.
 If client wants data from 3-10 then blobber needs to provide:
 1. Two nodes from i#0, [h2, h11]
 2. One node from i#1, [h16]
@@ -204,6 +216,7 @@ func (m *MerklePathForMultiLeafVerification) VerifyMultipleBlocks(data []byte) e
 
 	hashes := make([][]byte, 0)
 	h := sha3.New256()
+	// Calculate hashes from the data responded from the blobber.
 	for i := 0; i < len(data); i += MaxMerkleLeavesSize {
 		endIndex := i + MaxMerkleLeavesSize
 		if endIndex > len(data) {
@@ -219,11 +232,11 @@ func (m *MerklePathForMultiLeafVerification) VerifyMultipleBlocks(data []byte) e
 	}
 	for i := 0; i < m.requiredDepth-1; i++ {
 		if len(m.Nodes) > i {
-			if len(m.Index[i]) == 2 {
+			if len(m.Index[i]) == 2 { // has both nodes to append for
 				hashes = append([][]byte{m.Nodes[i][0]}, hashes...)
 				hashes = append(hashes, m.Nodes[i][1])
-			} else if len(m.Index[i]) == 1 {
-				if m.Index[i][0] == Right {
+			} else if len(m.Index[i]) == 1 { // hash single node to append for
+				if m.Index[i][0] == Right { // append to right
 					hashes = append(hashes, m.Nodes[i][0])
 				} else {
 					hashes = append([][]byte{m.Nodes[i][0]}, hashes...)
