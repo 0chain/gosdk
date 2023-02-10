@@ -378,7 +378,9 @@ func TestPriceRange_IsValid(t *testing.T) {
 }
 
 func TestAllocation_InitAllocation(t *testing.T) {
-	a := Allocation{}
+	a := Allocation{
+		FileOptions: 63,
+	}
 	a.InitAllocation()
 	require.New(t).NotZero(a)
 }
@@ -684,6 +686,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 			a := &Allocation{
 				DataShards:   2,
 				ParityShards: 2,
+				FileOptions:  63,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -1043,6 +1046,7 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 			a := &Allocation{
 				DataShards:   2,
 				ParityShards: 2,
+				FileOptions:  63,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -1101,7 +1105,7 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 		ClientKey: mockClientKey,
 	}
 	require := require.New(t)
-	a := &Allocation{DataShards: 1, ParityShards: 1}
+	a := &Allocation{DataShards: 1, ParityShards: 1, FileOptions: 63}
 	a.InitAllocation()
 	for i := 0; i < numberBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
@@ -1295,6 +1299,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 			a := &Allocation{
 				DataShards:   1,
 				ParityShards: 1,
+				FileOptions:  63,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -1358,7 +1363,7 @@ func TestAllocation_CancelUpload(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			a := &Allocation{}
+			a := &Allocation{FileOptions: 63}
 			a.InitAllocation()
 			sdkInitialized = true
 			if tt.setup != nil {
@@ -1410,7 +1415,7 @@ func TestAllocation_CancelDownload(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			a := &Allocation{}
+			a := &Allocation{FileOptions: 63}
 			a.InitAllocation()
 			sdkInitialized = true
 			if tt.setup != nil {
@@ -1551,8 +1556,9 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 				ClientKey: mockClientKey,
 			}
 			a := &Allocation{
-				ID: mockAllocationId,
-				Tx: mockAllocationTxId,
+				ID:          mockAllocationId,
+				Tx:          mockAllocationTxId,
+				FileOptions: 63,
 			}
 
 			if tt.setup != nil {
@@ -1844,8 +1850,9 @@ func TestAllocation_listDir(t *testing.T) {
 
 			require := require.New(t)
 			a := &Allocation{
-				ID: mockAllocationId,
-				Tx: mockAllocationTxId,
+				ID:          mockAllocationId,
+				Tx:          mockAllocationTxId,
+				FileOptions: 63,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -1975,6 +1982,7 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 				Tx:           mockAllocationTxId,
 				DataShards:   2,
 				ParityShards: 2,
+				FileOptions:  63,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -2253,11 +2261,13 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 	a.uploadProgressMap = make(map[string]*UploadRequest)
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
 	a.mutex = &sync.Mutex{}
+	a.FileOptions = uint16(63) // 0011 1111 All allowed
 	a.initialized = true
 	if a.DataShards != 0 {
 		a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	}
 	sdkInitialized = true
+
 	go func() {
 		for {
 			select {
@@ -2329,6 +2339,7 @@ func getMockAuthTicket(t *testing.T) string {
 		Tx:           mockAllocationTxId,
 		DataShards:   1,
 		ParityShards: 1,
+		FileOptions:  63,
 	}
 	setupMockGetFileInfoResponse(t, &mockClient)
 	a.InitAllocation()
