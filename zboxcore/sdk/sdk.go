@@ -1481,39 +1481,32 @@ func calculateAllocationFileOptions(initial uint16, fop *FileOptionsParameters) 
 	}
 
 	mask := initial
-	changed := false
 
 	if fop.ForbidUpload.Changed {
-		changed = true
 		mask = updateMaskBit(mask, 0, !fop.ForbidUpload.Value)
 	}
 
 	if fop.ForbidDelete.Changed {
-		changed = true
 		mask = updateMaskBit(mask, 1, !fop.ForbidDelete.Value)
 	}
 
 	if fop.ForbidUpdate.Changed {
-		changed = true
 		mask = updateMaskBit(mask, 2, !fop.ForbidUpdate.Value)
 	}
 
 	if fop.ForbidMove.Changed {
-		changed = true
 		mask = updateMaskBit(mask, 3, !fop.ForbidMove.Value)
 	}
 
 	if fop.ForbidCopy.Changed {
-		changed = true
 		mask = updateMaskBit(mask, 4, !fop.ForbidCopy.Value)
 	}
 
 	if fop.ForbidRename.Changed {
-		changed = true
 		mask = updateMaskBit(mask, 5, !fop.ForbidRename.Value)
 	}
 
-	return changed, mask
+	return mask != initial, mask
 }
 
 // updateMaskBit Set/Clear (based on `value`) bit value of the bit of `mask` at `index` (starting with LSB as 0) and return the updated mask
