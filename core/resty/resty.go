@@ -225,11 +225,14 @@ func (r *Resty) Wait() []error {
 				err := r.handle(result.Request, result.Response, result.ResponseBody, r.cancelFunc, result.Err)
 				if err != nil {
 					errs = append(errs, err)
+				} else if result.Err != nil {
+					// if r.handle doesn't return any error, then append result.Err if it is not nil
+					errs = append(errs, result.Err)
 				}
-			}
-			// needs to be done anyhow to catch cases where r.handle == nil and result.Err != nil.
-			if result.Err != nil {
-				errs = append(errs, result.Err)
+			} else {
+				if result.Err != nil {
+					errs = append(errs, result.Err)
+				}
 			}
 		}
 		done++

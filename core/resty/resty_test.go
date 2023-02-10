@@ -38,6 +38,12 @@ func TestResty(t *testing.T) {
 			setup:       getSetupFuncForAllSuccessTest(),
 		},
 		{
+			name:        "Test_Resty_Failed_Due_To_Handler_Failing",
+			expectedErr: fmt.Errorf("handler returned error"),
+			urls:        []string{"http://Test_Resty_Failure_1", "http://Test_Resty_Failure_2"},
+			setup:       getSetupFuncForHandlerErrorTest(),
+		},
+		{
 			name:        "Test_Resty_Failed_Due_To_Interceptor_Error",
 			expectedErr: fmt.Errorf("interceptor returned with error"),
 			urls:        []string{"http://Test_Resty_Failure_1", "http://Test_Resty_Failure_2"},
@@ -102,13 +108,32 @@ func getSetupFuncForAllSuccessTest() func(ra *require.Assertions, name string, s
 	}
 }
 
+func getSetupFuncForHandlerErrorTest() func(ra *require.Assertions, name string, statusCode int, urls []string) (context.Context, *Resty) {
+	return func(ra *require.Assertions, name string, statusCode int, urls []string) (context.Context, *Resty) {
+		resty := New().Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			return fmt.Errorf("handler returned error")
+		})
+
+		client := &mocks.Client{}
+		setupMockClient(client, urls, statusCode, name)
+		resty.client = client
+
+		ctx, cancel := context.WithTimeout(context.TODO(), 3*time.Second)
+		go func() {
+			<-ctx.Done()
+			cancel()
+		}()
+		return context.TODO(), resty
+	}
+}
+
 func getSetupFuncForInterceptorErrorTest() func(ra *require.Assertions, name string, statusCode int, urls []string) (context.Context, *Resty) {
 	return func(ra *require.Assertions, name string, statusCode int, urls []string) (context.Context, *Resty) {
 		opts := make([]Option, 0)
 		opts = append(opts, WithRequestInterceptor(func(r *http.Request) error {
 			return fmt.Errorf("interceptor returned with error") //nolint
 		}))
-		// create a resty object with an interceptor which returns an error
+		// create a resty object with an interceptor which returns an error, but the handler doesn't return any error
 		resty := New(opts...).Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 			return nil
 		})
