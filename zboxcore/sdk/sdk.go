@@ -941,7 +941,7 @@ func CreateAllocationForOwner(
 	allocationRequest["owner_id"] = owner
 	allocationRequest["owner_public_key"] = ownerpublickey
 	allocationRequest["third_party_extendable"] = thirdPartyExtendable
-	allocationRequest["file_options"] = calculateAllocationFileOptions(63 /*0011 1111*/, fileOptionsParams)
+	allocationRequest["file_options_changed"], allocationRequest["file_options"] = calculateAllocationFileOptions(63 /*0011 1111*/, fileOptionsParams)
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.NEW_ALLOCATION_REQUEST,
@@ -1143,7 +1143,7 @@ func UpdateAllocation(
 	updateAllocationRequest["add_blobber_id"] = addBlobberId
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
 	updateAllocationRequest["set_third_party_extendable"] = setThirdPartyExtendable
-	updateAllocationRequest["file_options"] = calculateAllocationFileOptions(alloc.FileOptions, fileOptionsParams)
+	updateAllocationRequest["file_options_changed"], updateAllocationRequest["file_options"] = calculateAllocationFileOptions(alloc.FileOptions, fileOptionsParams)
 
 	sn := transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
@@ -1475,38 +1475,45 @@ func GetAllocationMinLock(
 }
 
 // calculateAllocationFileOptions calculates the FileOptions 16-bit mask given the user input
-func calculateAllocationFileOptions(initial uint16, fop *FileOptionsParameters) uint16 {
+func calculateAllocationFileOptions(initial uint16, fop *FileOptionsParameters) (bool, uint16) {
 	if fop == nil {
-		return initial
+		return false, initial
 	}
 
 	mask := initial
+	changed := false
 
 	if fop.ForbidUpload.Changed {
+		changed = true
 		mask = updateMaskBit(mask, 0, !fop.ForbidUpload.Value)
 	}
 
 	if fop.ForbidDelete.Changed {
+		changed = true
 		mask = updateMaskBit(mask, 1, !fop.ForbidDelete.Value)
 	}
 
 	if fop.ForbidUpdate.Changed {
+		changed = true
 		mask = updateMaskBit(mask, 2, !fop.ForbidUpdate.Value)
 	}
 
 	if fop.ForbidMove.Changed {
+		changed = true
 		mask = updateMaskBit(mask, 3, !fop.ForbidMove.Value)
 	}
 
 	if fop.ForbidCopy.Changed {
+		changed = true
 		mask = updateMaskBit(mask, 4, !fop.ForbidCopy.Value)
 	}
 
 	if fop.ForbidRename.Changed {
+		changed = true
 		mask = updateMaskBit(mask, 5, !fop.ForbidRename.Value)
 	}
 
-	return mask
+	return changed, mask
 }
 
 // updateMaskBit Set/Clear (based on `value`) bit value of the bit of `mask` at `index` (starting with LSB as 0) and return the updated mask
