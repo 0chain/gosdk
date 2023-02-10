@@ -42,26 +42,33 @@ func getNewLeaf() *leaf {
 	}
 }
 
-// FixedMerkleTree A trusted mekerl tree for outsourcing attack protection. see section 1.8 on whitepager
+// FixedMerkleTree A trusted mekerle tree for outsourcing attack protection. see section 1.8 on whitepager
 // see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-fixedmerkletree
 type FixedMerkleTree struct {
-	// ChunkSize size of chunk
+	// Leaves will store hash digester that calculates sha256 hash of the leaf content
 	Leaves []Hashable `json:"leaves,omitempty"`
 
-	writeLock  *sync.Mutex
-	isFinal    bool
+	writeLock sync.Mutex
+	// isFinal is set to true once Finalize() is called.
+	// After it is set to true, there will be no any writes to writeBytes field
+	isFinal bool
+	// writeCount will track count of bytes written to writeBytes field
 	writeCount int
+	// writeBytes will store bytes upto MaxMerkleLeavesSize. For the last bytes that
+	// does not make upto MaxMerkleLeavesSize, it will be sliced with writeCount field.
 	writeBytes []byte
 	merkleRoot []byte
 }
 
+// Finalize will set isFinal to true and sends remaining bytes for leaf hash calculation
 func (fmt *FixedMerkleTree) Finalize() error {
 	fmt.writeLock.Lock()
+	defer fmt.writeLock.Unlock()
+
 	if fmt.isFinal {
 		return goError.New("already finalized")
 	}
 	fmt.isFinal = true
-	fmt.writeLock.Unlock()
 	if fmt.writeCount > 0 {
 		return fmt.writeToLeaves(fmt.writeBytes[:fmt.writeCount])
 	}
@@ -73,7 +80,6 @@ func NewFixedMerkleTree() *FixedMerkleTree {
 
 	t := &FixedMerkleTree{
 		writeBytes: make([]byte, MaxMerkleLeavesSize),
-		writeLock:  &sync.Mutex{},
 	}
 	t.initLeaves()
 
@@ -114,8 +120,11 @@ func (fmt *FixedMerkleTree) writeToLeaves(b []byte) error {
 }
 
 // Write will write data to the leaves once MaxMerkleLeavesSize(64 KB) is reached.
+// Since each 64KB is divided into 1024 pieces with 64 bytes each, once data len reaches
+// 64KB then it will be written to leaf hashes. The remaining data that is not multiple of
+// 64KB will be written to leaf hashes by Finalize() function.
 // This can be used to write stream of data as well.
-// fmt.Finalize() is required if data is not exact multiple of 64KB.
+// fmt.Finalize() is required after data write is complete.
 func (fmt *FixedMerkleTree) Write(b []byte) (int, error) {
 
 	fmt.writeLock.Lock()
@@ -131,12 +140,14 @@ func (fmt *FixedMerkleTree) Write(b []byte) (int, error) {
 		prevWriteCount := fmt.writeCount
 		fmt.writeCount += int(j - i)
 		copy(fmt.writeBytes[prevWriteCount:fmt.writeCount], b[i:j])
+
 		if fmt.writeCount == MaxMerkleLeavesSize {
+			// data fragment reached 64KB, so send this slice to write to leaf hashes
 			err := fmt.writeToLeaves(fmt.writeBytes)
 			if err != nil {
 				return 0, err
 			}
-			fmt.writeCount = 0
+			fmt.writeCount = 0 // reset writeCount
 		}
 	}
 	return len(b), nil
@@ -156,10 +167,6 @@ func (fmt *FixedMerkleTree) CalculateMerkleRoot() {
 	for i := 0; i < FixedMTDepth; i++ {
 
 		newNodes := make([][]byte, (len(nodes)+1)/2)
-		if len(nodes)&1 == 1 {
-			nodes = append(nodes, nodes[len(nodes)-1])
-		}
-
 		nodeInd := 0
 		for j := 0; j < len(nodes); j += 2 {
 			newNodes[nodeInd] = MHashBytes(nodes[j], nodes[j+1])
