@@ -283,6 +283,22 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 
 }
 
+type DownloadOptions struct {
+	AllocationID     string
+	RemotePath       string
+	AuthTicket       string
+	LookupHash       string
+	ThumbnailOnly    bool
+	NumBlocks        int
+	CallbackFuncName string
+	Callback         StatusBar
+}
+
+func downloadWith(options DownloadOptions) (*DownloadCommandResponse, error) {
+
+	return nil, nil
+}
+
 // download download file
 func download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int) (*DownloadCommandResponse, error) {
 
