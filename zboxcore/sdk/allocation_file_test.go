@@ -179,6 +179,10 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 				defer teardown(t)
 			}
 
+			if teardown := setupMockFile(t, tt.parameters.thumbnailPath); teardown != nil {
+				defer teardown(t)
+			}
+
 			a.downloadChan = make(chan *DownloadRequest, 10)
 			a.repairChan = make(chan *RepairRequest, 1)
 			a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
