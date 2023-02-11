@@ -203,7 +203,7 @@
         lock: 5000000000
       }
       try{
-        const allocation = await goWasm.sdk.createAllocation(config.name, config.datashards, config.parityshards, config.size, config.expiry,
+        const allocation = await goWasm.sdk.createAllocation(config.datashards, config.parityshards, config.size, config.expiry,
         config.minReadPrice, config.maxReadPrice, config.minWritePrice, config.maxWritePrice,
         config.lock, [])
 
