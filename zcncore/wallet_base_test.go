@@ -21,8 +21,8 @@ func TestCFBEncryption(t *testing.T) {
 }
 
 func TestCBCEncryption(t *testing.T) {
-	passphrase := "abcabc11111111111111111111111111"
-	mnemonics := "dog peanut knee mule crouch mushroom easy climb good grid squeeze naive enter genuine bone file talent topic robust long siren depth suspect wide"
+	passphrase := "12345611111111111111111111111111"
+	mnemonics := "cube reward february gym summer peanut marble slow puppy picnic cart waste aspect either anchor vacant horse north border wonder stamp mansion steak magic"
 
 	enc, err := CryptoJsEncrypt(passphrase, mnemonics)
 	require.Nil(t, err)
@@ -30,8 +30,7 @@ func TestCBCEncryption(t *testing.T) {
 	dec, err := CryptoJsDecrypt(passphrase, string(enc))
 	require.Nil(t, err)
 	require.Equal(t, mnemonics, string(dec))
-
-	encryptedMnemonics := "U2FsdGVkX1/1vVZfJJOqBRInSChGhVr3YQ3gnQFpCGNB0cXAVM2900GCiQZRLIibgJZZKNqAlopo1jT4LCe9qLRVS0CyTWhblPjk/XchhJENoGRdbGK0vtWBVtFbXaAvMV55ssinpdMLnKphgLOpH4wVHSkPIAMVGrMviNcycAtpKBhJTaSM2UtF5M9mjkLZ0hdCV7Ho+yqHi6ZXhGnJdsVM/yJBAAyG1PzdRfAHiys="
+	encryptedMnemonics := "U2FsdGVkX1/Dz58HfdXjHGJioPZ8bnEWIfa0dZcz0JuizI/Tu1+1ncVv60f4w53VimvKG0dC5zhVFQC8dt7K7Lydutu/pquTCDfKt3AUK2iJ5mjN1n4rCvp5IMG+5fKuVyY0z+PbH5MgyJdAF1Fbsi3X+ccfd/ZB9jg6deHpneHDMxhRzuGKcKUuWA6+D/peQTGCmHCLbAPYswFUeF0Elcmgi1mx69UYeM1qgfumuFs="
 	dec, err = CryptoJsDecrypt(passphrase, encryptedMnemonics)
 	require.Nil(t, err)
 	require.Equal(t, mnemonics, string(dec))

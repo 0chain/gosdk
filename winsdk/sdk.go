@@ -64,20 +64,24 @@ func main() {
 //     }
 //
 //export InitSDK
-func InitSDK(configJson *C.char, clientJson *C.char) error {
+func InitSDK(configJson *C.char, clientJson *C.char) *C.char {
 
 	l.Logger.Info("Start InitStorageSDK")
-	configObj := &conf.Config{}
+
 	configJs := C.GoString(configJson)
+	clientJs := C.GoString(clientJson)
+
+	configObj := &conf.Config{}
+
 	err := json.Unmarshal([]byte(configJs), configObj)
 	if err != nil {
 		l.Logger.Error(err)
-		return err
+		return WithJSON(false, err)
 	}
 	err = zcncore.InitZCNSDK(configObj.BlockWorker, configObj.SignatureScheme)
 	if err != nil {
-		l.Logger.Error(err)
-		return err
+		l.Logger.Error(err, configJs, clientJs)
+		return WithJSON(false, err)
 	}
 	l.Logger.Info("InitZCNSDK success")
 	l.Logger.Info(configObj.BlockWorker)
@@ -85,16 +89,15 @@ func InitSDK(configJson *C.char, clientJson *C.char) error {
 	l.Logger.Info(configObj.SignatureScheme)
 	l.Logger.Info(configObj.PreferredBlobbers)
 
-	clientJs := C.GoString(clientJson)
-
 	err = sdk.InitStorageSDK(clientJs, configObj.BlockWorker, configObj.ChainID, configObj.SignatureScheme, configObj.PreferredBlobbers, 0)
 	if err != nil {
-		l.Logger.Error(err)
-		return err
+		l.Logger.Error(err, configJs, clientJs)
+		return WithJSON(false, err)
 	}
 	l.Logger.Info("InitStorageSDK success")
 
-	zboxApiClient = zboxapi.NewClient(configObj.ZboxHost, configObj.ZboxAppType)
+	zboxApiClient = zboxapi.NewClient()
+	zboxApiClient.SetRequest(configObj.ZboxHost, configObj.ZboxAppType)
 	c := client.GetClient()
 	if c != nil {
 		zboxApiClient.SetWallet(client.GetClientID(), client.GetClientPrivateKey(), client.GetClientPublicKey())
@@ -104,7 +107,7 @@ func InitSDK(configJson *C.char, clientJson *C.char) error {
 	}
 
 	l.Logger.Info("Init successful")
-	return nil
+	return WithJSON(true, nil)
 }
 
 var ErrInvalidSignatureScheme = errors.New("invalid_signature_scheme")
@@ -184,4 +187,18 @@ func CryptoJsDecrypt(passphrase, encryptedMessage *C.char) *C.char {
 	msg := C.GoString(encryptedMessage)
 
 	return WithJSON(zcncore.CryptoJsDecrypt(pass, msg))
+}
+
+// GetPublicEncryptionKey get public encryption key by mnemonic
+//
+//	return
+//		{
+//			"error":"",
+//			"result":"xxxx",
+//		}
+//
+//export GetPublicEncryptionKey
+func GetPublicEncryptionKey(mnemonics *C.char) *C.char {
+	m := C.GoString(mnemonics)
+	return WithJSON(zcncore.GetPublicEncryptionKey(m))
 }

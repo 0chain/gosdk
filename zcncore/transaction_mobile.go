@@ -327,6 +327,10 @@ func parseCoinStr(vs string) (uint64, error) {
 }
 
 // NewTransaction allocation new generic transaction object for any operation
+// # Inputs
+//   - cb: callback for transaction state
+//   - txnFee: ZCN tokens
+//   - nonce: latest nonce of current wallet. please set it with 0 if you don't know the latest value
 func NewTransaction(cb TransactionCallback, txnFee string, nonce int64) (TransactionScheme, error) {
 	v, err := parseCoinStr(txnFee)
 	if err != nil {
@@ -1015,7 +1019,7 @@ func (t *Transaction) Verify() error {
 		t.txn.CreationDate = int64(common.Now())
 	}
 
-	tq, err := newTransactionQuery(_config.chain.Sharders)
+	tq, err := NewTransactionQuery(_config.chain.Sharders)
 	if err != nil {
 		logging.Error(err)
 		return err
@@ -1027,7 +1031,7 @@ func (t *Transaction) Verify() error {
 
 			tq.Reset()
 			// Get transaction confirmationBlock from a random sharder
-			confirmBlockHeader, confirmationBlock, lfbBlockHeader, err := tq.getFastConfirmation(t.txnHash, nil)
+			confirmBlockHeader, confirmationBlock, lfbBlockHeader, err := tq.getFastConfirmation(context.TODO(), t.txnHash)
 
 			if err != nil {
 				now := int64(common.Now())
@@ -1042,7 +1046,7 @@ func (t *Transaction) Verify() error {
 				// transaction is done or expired. it means random sharder might be outdated, try to query it from s/S sharders to confirm it
 				if util.MaxInt64(lfbBlockHeader.getCreationDate(now), now) >= (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
 					logging.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders")
-					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.getConsensusConfirmation(getMinShardersVerify(), t.txnHash, nil)
+					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.getConsensusConfirmation(context.TODO(), getMinShardersVerify(), t.txnHash)
 				}
 
 				// txn not found in fast confirmation/consensus confirmation
@@ -1110,12 +1114,16 @@ func (t *Transaction) ZCNSCAddAuthorizer(ip AddAuthorizerPayload) (err error) {
 	return
 }
 
-// ConvertTokenToSAS converts ZCN tokens to value
+// ConvertTokenToSAS converts ZCN tokens to SAS tokens
+// # Inputs
+//   - token: ZCN tokens
 func ConvertTokenToSAS(token float64) uint64 {
 	return uint64(token * float64(TOKEN_UNIT))
 }
 
-// ConvertToValue converts ZCN tokens to value
+// ConvertToValue converts ZCN tokens to SAS tokens with string format
+// # Inputs
+//   - token: ZCN tokens
 func ConvertToValue(token float64) string {
 	return strconv.FormatUint(ConvertTokenToSAS(token), 10)
 }

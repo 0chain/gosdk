@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"sort"
+	"time"
 
 	"os"
 	"path/filepath"
@@ -30,12 +31,14 @@ const (
 )
 
 type fileInfo struct {
-	Size         int64  `json:"size"`
-	ActualSize   int64  `json:"actual_size"`
-	Hash         string `json:"hash"`
-	Type         string `json:"type"`
-	EncryptedKey string `json:"encrypted_key"`
-	LookupHash   string `json:"lookup_hash"`
+	Size         int64     `json:"size"`
+	ActualSize   int64     `json:"actual_size"`
+	Hash         string    `json:"hash"`
+	Type         string    `json:"type"`
+	EncryptedKey string    `json:"encrypted_key"`
+	LookupHash   string    `json:"lookup_hash"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 type FileDiff struct {
@@ -62,6 +65,8 @@ func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]fil
 				Type:         child.Type,
 				EncryptedKey: child.EncryptionKey,
 				LookupHash:   child.LookupHash,
+				CreatedAt:    child.CreatedAt.ToTime(),
+				UpdatedAt:    child.UpdatedAt.ToTime(),
 			}
 			if child.Type == fileref.DIRECTORY {
 				childDirList = append(childDirList, child.Path)

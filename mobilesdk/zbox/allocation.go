@@ -134,76 +134,50 @@ func (a *Allocation) DownloadThumbnail(remotePath, localPath string, statusCb St
 	return a.sdkAllocation.DownloadThumbnail(localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb})
 }
 
-// UploadFile - start upload file thumbnail from localpath to remote path
-func (a *Allocation) UploadFile(workdir, localPath, remotePath, fileAttrs string, statusCb StatusCallbackMocked) error {
+// RepairFile - repair file if it exists in remote path
+// ## Inputs
+//   - workdir: set a workdir as ~/.zcn on mobile apps
+//   - localPath: the local full path of file. eg /usr/local/files/zcn.png
+//   - remotePath:
+//   - thumbnailPath: the local full path of thumbnail
+//   - encrypt: the file should be ecnrypted or not on uploading
+//   - statusCb: callback of status
+func (a *Allocation) RepairFile(workdir, localPath, remotePath, thumbnailPath string, encrypt bool, statusCb StatusCallbackMocked) error {
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
 	}
-	return a.sdkAllocation.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, false, false, "", false)
+	return a.sdkAllocation.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, true, true, thumbnailPath, encrypt)
 }
 
-// RepairFile - repairing file if it's exist in remote path
-func (a *Allocation) RepairFile(localPath, remotePath string, statusCb StatusCallbackMocked) error {
+// UploadFile - upload file/thumbnail from local path to remote path
+// ## Inputs
+//   - workdir: set a workdir as ~/.zcn on mobile apps
+//   - localPath: the local full path of file. eg /usr/local/files/zcn.png
+//   - remotePath:
+//   - thumbnailPath: the local full path of thumbnail
+//   - encrypt: the file should be ecnrypted or not on uploading
+//   - statusCb: callback of status
+func (a *Allocation) UploadFile(workdir, localPath, remotePath, thumbnailPath string, encrypt bool, statusCb StatusCallbackMocked) error {
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
 	}
-	return a.sdkAllocation.RepairFile(localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb})
+	return a.sdkAllocation.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, false, false, thumbnailPath, encrypt)
 }
 
-// UploadFileWithThumbnail - start upload file with thumbnail
-func (a *Allocation) UploadFileWithThumbnail(tmpPath, localPath, remotePath, fileAttrs string, thumbnailpath string, statusCb StatusCallbackMocked) error {
+// UploadFile - update file/thumbnail from local path to remote path
+// ## Inputs
+//   - workdir: set a workdir as ~/.zcn on mobile apps
+//   - localPath: the local full path of file. eg /usr/local/files/zcn.png
+//   - remotePath:
+//   - thumbnailPath: the local full path of thumbnail
+//   - encrypt: the file should be ecnrypted or not on uploading
+//   - statusCb: callback of status
+func (a *Allocation) UpdateFile(workdir, localPath, remotePath, thumbnailPath string, encrypt bool, statusCb StatusCallbackMocked) error {
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
 	}
-	return a.sdkAllocation.UploadFileWithThumbnail(tmpPath, localPath, remotePath, thumbnailpath, &StatusCallbackWrapped{Callback: statusCb})
-}
 
-// EncryptAndUploadFile - start upload encrypted file
-func (a *Allocation) EncryptAndUploadFile(tmpPath, localPath, remotePath, fileAttrs string, statusCb StatusCallbackMocked) error {
-	if a == nil || a.sdkAllocation == nil {
-		return ErrInvalidAllocation
-	}
-	return a.sdkAllocation.EncryptAndUploadFile(tmpPath, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb})
-}
-
-// EncryptAndUploadFileWithThumbnail - start upload encrypted file with thumbnail
-func (a *Allocation) EncryptAndUploadFileWithThumbnail(tmpPath, localPath, remotePath, fileAttrs string, thumbnailpath string, statusCb StatusCallbackMocked) error {
-	if a == nil || a.sdkAllocation == nil {
-		return ErrInvalidAllocation
-	}
-	return a.sdkAllocation.EncryptAndUploadFileWithThumbnail(tmpPath, localPath, remotePath, thumbnailpath, &StatusCallbackWrapped{Callback: statusCb})
-}
-
-// UpdateFile - update file from local path to remote path
-func (a *Allocation) UpdateFile(workDir, localPath, remotePath, fileAttrs string, statusCb StatusCallbackMocked) error {
-	if a == nil || a.sdkAllocation == nil {
-		return ErrInvalidAllocation
-	}
-	return a.sdkAllocation.UpdateFile(workDir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb})
-}
-
-// UpdateFileWithThumbnail - update file from local path to remote path with Thumbnail
-func (a *Allocation) UpdateFileWithThumbnail(workDir, localPath, remotePath, fileAttrs string, thumbnailpath string, statusCb StatusCallbackMocked) error {
-	if a == nil || a.sdkAllocation == nil {
-		return ErrInvalidAllocation
-	}
-	return a.sdkAllocation.UpdateFileWithThumbnail(workDir, localPath, remotePath, thumbnailpath, &StatusCallbackWrapped{Callback: statusCb})
-}
-
-// EncryptAndUpdateFile - update file from local path to remote path from encrypted folder
-func (a *Allocation) EncryptAndUpdateFile(tmpPath, localPath, remotePath, fileAttrs string, statusCb StatusCallbackMocked) error {
-	if a == nil || a.sdkAllocation == nil {
-		return ErrInvalidAllocation
-	}
-	return a.sdkAllocation.EncryptAndUpdateFile(tmpPath, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb})
-}
-
-// EncryptAndUpdateFileWithThumbnail - update file from local path to remote path from encrypted folder with Thumbnail
-func (a *Allocation) EncryptAndUpdateFileWithThumbnail(tmpPath, localPath, remotePath, fileAttrs string, thumbnailpath string, statusCb StatusCallbackMocked) error {
-	if a == nil || a.sdkAllocation == nil {
-		return ErrInvalidAllocation
-	}
-	return a.sdkAllocation.EncryptAndUpdateFileWithThumbnail(tmpPath, localPath, remotePath, thumbnailpath, &StatusCallbackWrapped{Callback: statusCb})
+	return a.sdkAllocation.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, true, false, thumbnailPath, encrypt)
 }
 
 // DeleteFile - delete file from remote path

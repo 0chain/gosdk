@@ -92,6 +92,10 @@ func CreateChunkedUpload(
 		return nil, thrown.Throw(constants.ErrInvalidParameter, "allocationObj")
 	}
 
+	if !isUpdate && !allocationObj.CanUpload() || isUpdate && !allocationObj.CanUpdate() {
+		return nil, thrown.Throw(constants.ErrFileOptionNotPermitted, "file_option_not_permitted ")
+	}
+
 	err := ValidateRemoteFileName(fileMeta.RemoteName)
 	if err != nil {
 		return nil, err
