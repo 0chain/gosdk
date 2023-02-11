@@ -24,7 +24,7 @@ type ValidationTree struct {
 	writtenSize    int64
 	leafIndex      int
 	leaves         [][]byte
-	isFinal        bool
+	isFinalized    bool
 	h              hash.Hash
 	validationRoot []byte
 }
@@ -52,6 +52,14 @@ func (v *ValidationTree) GetValidationRoot() []byte {
 func (v *ValidationTree) Write(b []byte) (int, error) {
 	v.writeLock.Lock()
 	defer v.writeLock.Unlock()
+
+	if v.isFinalized {
+		return 0, fmt.Errorf("tree is already finalized")
+	}
+
+	if len(b) == 0 {
+		return 0, nil
+	}
 
 	if v.writtenSize+int64(len(b)) > v.dataSize {
 		return 0, fmt.Errorf("data size overflow. expected %d, got %d", v.dataSize, v.writtenSize+int64(len(b)))
@@ -126,12 +134,14 @@ func (v *ValidationTree) Finalize() error {
 	v.writeLock.Lock()
 	defer v.writeLock.Unlock()
 
-	if v.isFinal {
+	if v.isFinalized {
 		return errors.New("already finalized")
 	}
 	if v.writtenSize != v.dataSize {
 		return fmt.Errorf("invalid size. Expected %d got %d", v.dataSize, v.writtenSize)
 	}
+
+	v.isFinalized = true
 
 	if v.writeCount > 0 {
 		v.leaves[v.leafIndex] = v.h.Sum(nil)
@@ -143,10 +153,9 @@ func NewValidationTree(dataSize int64) *ValidationTree {
 	totalLeaves := (dataSize + MaxMerkleLeavesSize - 1) / MaxMerkleLeavesSize
 
 	return &ValidationTree{
-		writeLock: sync.Mutex{},
-		dataSize:  dataSize,
-		h:         sha3.New256(),
-		leaves:    make([][]byte, totalLeaves),
+		dataSize: dataSize,
+		h:        sha3.New256(),
+		leaves:   make([][]byte, totalLeaves),
 	}
 }
 
