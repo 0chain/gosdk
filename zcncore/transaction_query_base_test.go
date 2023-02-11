@@ -57,24 +57,22 @@ func TestGetRandomSharder(t *testing.T) {
 	for _, tc := range []struct {
 		name            string
 		offlineSharders []string
-		expectErr       bool
-		error           error
+		expectedErr     error
 	}{
 		{
 			name:            "all sharders online",
 			offlineSharders: []string{},
-			expectErr:       false,
+			expectedErr:     nil,
 		},
 		{
 			name:            "only one sharder online",
 			offlineSharders: []string{"http://localhost:6000", "http://localhost:6002", "http://localhost:6003"},
-			expectErr:       false,
+			expectedErr:     nil,
 		},
 		{
 			name:            "all sharders offline",
 			offlineSharders: sharders,
-			expectErr:       true,
-			error:           ErrNoOnlineSharders,
+			expectedErr:     ErrNoOnlineSharders,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -91,11 +89,11 @@ func TestGetRandomSharder(t *testing.T) {
 				}
 			}
 			sharder, err := tq.getRandomSharder(context.Background())
-			if !tc.expectErr {
+			if tc.expectedErr == nil {
 				require.NoError(t, err)
 				require.Subset(t, onlineSharders, []string{sharder})
 			} else {
-				require.EqualError(t, err, tc.error.Error())
+				require.EqualError(t, err, tc.expectedErr.Error())
 			}
 		})
 	}
