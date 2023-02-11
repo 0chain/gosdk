@@ -175,11 +175,9 @@ func (tq *TransactionQuery) getRandomSharder(ctx context.Context) (string, error
 					defer tq.RUnlock()
 					if len(tq.offline) >= tq.max {
 						finalErrCh <- ErrNoOnlineSharders
-						cancel()
 					}
 				} else if e == nil {
 					onlineSharderCh <- sharder
-					cancel()
 				}
 				return
 			}
