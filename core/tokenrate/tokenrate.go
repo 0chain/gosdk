@@ -41,7 +41,6 @@ func GetUSD(ctx context.Context, symbol string) (float64, error) {
 				if ctx.Err() == context.DeadlineExceeded {
 					finalErrCh <- ctx.Err()
 				}
-				cancel()
 				return
 			case e := <-errCh:
 				mu.Lock()
@@ -49,7 +48,6 @@ func GetUSD(ctx context.Context, symbol string) (float64, error) {
 				mu.Unlock()
 				if len(errs) >= len(quotes) {
 					finalErrCh <- fmt.Errorf("%w: %s", ErrNoAvailableQuoteQuery, errs)
-					cancel()
 					return
 				}
 			}
