@@ -28,7 +28,9 @@ func GetUSD(ctx context.Context, symbol string) (float64, error) {
 	resultCh := make(chan float64)
 
 	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+	defer func() {
+		cancel()
+	}()
 
 	for _, q := range quotes {
 		go func(q quoteQuery) {
@@ -36,6 +38,9 @@ func GetUSD(ctx context.Context, symbol string) (float64, error) {
 			go q.getUSD(ctx, symbol, errCh, resultCh)
 			select {
 			case <-ctx.Done():
+				if ctx.Err() == context.DeadlineExceeded {
+					finalErrCh <- ctx.Err()
+				}
 				cancel()
 				return
 			case e := <-errCh:
