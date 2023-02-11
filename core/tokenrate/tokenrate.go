@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 )
 
 var ErrNoAvailableQuoteQuery = errors.New("token: no available quote query service")
@@ -21,20 +22,43 @@ func init() {
 }
 
 func GetUSD(ctx context.Context, symbol string) (float64, error) {
-
+	mu := &sync.RWMutex{}
 	errs := make([]error, 0, len(quotes))
-	for _, q := range quotes {
-		r, err := q.getUSD(ctx, symbol)
-		if err == nil {
-			return r, nil
-		}
+	finalErrCh := make(chan error)
+	resultCh := make(chan float64)
 
-		errs = append(errs, err)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
+	for _, q := range quotes {
+		go func(q quoteQuery) {
+			errCh := make(chan error)
+			go q.getUSD(ctx, symbol, errCh, resultCh)
+			select {
+			case <-ctx.Done():
+				cancel()
+				return
+			case e := <-errCh:
+				mu.Lock()
+				errs = append(errs, e)
+				mu.Unlock()
+				if len(errs) >= len(quotes) {
+					finalErrCh <- fmt.Errorf("%w: %s", ErrNoAvailableQuoteQuery, errs)
+					cancel()
+					return
+				}
+			}
+		}(q)
 	}
 
-	return 0, fmt.Errorf("%w: %s", ErrNoAvailableQuoteQuery, errs)
+	select {
+	case e := <-finalErrCh:
+		return 0, e
+	case r := <-resultCh:
+		return r, nil
+	}
 }
 
 type quoteQuery interface {
-	getUSD(ctx context.Context, symbol string) (float64, error)
+	getUSD(ctx context.Context, symbol string, errCh chan error, resultCh chan float64)
 }

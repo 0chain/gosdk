@@ -16,7 +16,7 @@ import (
 type bancorQuoteQuery struct {
 }
 
-func (qq *bancorQuoteQuery) getUSD(ctx context.Context, symbol string) (float64, error) {
+func (qq *bancorQuoteQuery) getUSD(ctx context.Context, symbol string, errCh chan error, resultCh chan float64) {
 
 	var result bancorResponse
 
@@ -32,10 +32,10 @@ func (qq *bancorQuoteQuery) getUSD(ctx context.Context, symbol string) (float64,
 		evnName := "BANCOR_DLTID_" + strings.ToUpper(symbol)
 		id, ok := os.LookupEnv(evnName)
 		if !ok {
-			return 0, errors.New("bancor: please configure dlt_id on environment variable [" + evnName + "] first")
+			errCh <- errors.New("bancor: please configure dlt_id on environment variable [" + evnName + "] first")
+			return
 		}
 		dltId = id
-
 	}
 
 	r := resty.New()
@@ -63,7 +63,8 @@ func (qq *bancorQuoteQuery) getUSD(ctx context.Context, symbol string) (float64,
 
 	errs := r.Wait()
 	if len(errs) > 0 {
-		return 0, errs[0]
+		errCh <- errs[0]
+		return
 	}
 
 	rate, ok := result.Data.Rate24hAgo["usd"]
@@ -71,18 +72,19 @@ func (qq *bancorQuoteQuery) getUSD(ctx context.Context, symbol string) (float64,
 	if ok {
 
 		if rate.Value > 0 {
-			return rate.Value, nil
+			resultCh <- rate.Value
+			return
 		}
 
 		//rate24ago is invalid, try get current rate
 		rate, ok = result.Data.Rate["usd"]
 		if ok && rate.Value > 0 {
-			return rate.Value, nil
+			resultCh <- rate.Value
+			return
 		}
-
 	}
 
-	return 0, fmt.Errorf("bancor: %s price is not provided on bancor apis", symbol)
+	errCh <- fmt.Errorf("bancor: %s price is not provided on bancor apis", symbol)
 }
 
 // {

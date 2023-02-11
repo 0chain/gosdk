@@ -16,7 +16,7 @@ import (
 type coingeckoQuoteQuery struct {
 }
 
-func (qq *coingeckoQuoteQuery) getUSD(ctx context.Context, symbol string) (float64, error) {
+func (qq *coingeckoQuoteQuery) getUSD(ctx context.Context, symbol string, errCh chan error, resultCh chan float64) {
 
 	var result coingeckoResponse
 
@@ -32,7 +32,8 @@ func (qq *coingeckoQuoteQuery) getUSD(ctx context.Context, symbol string) (float
 		envName := "COINGECKO_COINID_" + strings.ToUpper(symbol)
 		id, ok := os.LookupEnv(envName)
 		if !ok {
-			return 0, errors.New("coingecko: please configure coinid on environment variable [" + envName + "' first")
+			errCh <- errors.New("coingecko: please configure coinid on environment variable [" + envName + "' first")
+			return
 		}
 		coinID = id
 
@@ -62,7 +63,8 @@ func (qq *coingeckoQuoteQuery) getUSD(ctx context.Context, symbol string) (float
 
 	errs := r.Wait()
 	if len(errs) > 0 {
-		return 0, errs[0]
+		errCh <- errs[0]
+		return
 	}
 
 	var rate float64
@@ -73,7 +75,8 @@ func (qq *coingeckoQuoteQuery) getUSD(ctx context.Context, symbol string) (float
 		if ok {
 			rate = (h + l) / 2
 			if rate > 0 {
-				return rate, nil
+				resultCh <- rate
+				return
 			}
 		}
 	}
@@ -82,13 +85,15 @@ func (qq *coingeckoQuoteQuery) getUSD(ctx context.Context, symbol string) (float
 
 	if ok {
 		if rate > 0 {
-			return rate, nil
+			resultCh <- rate
+			return
 		}
 
-		return 0, fmt.Errorf("coingecko: invalid response %s", result.Raw)
+		errCh <- fmt.Errorf("coingecko: invalid response %s", result.Raw)
+		return
 	}
 
-	return 0, fmt.Errorf("coingecko: %s price is not provided on coingecko apis", symbol)
+	errCh <- fmt.Errorf("coingecko: %s price is not provided on coingecko apis", symbol)
 }
 
 type coingeckoResponse struct {
