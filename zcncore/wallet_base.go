@@ -35,6 +35,7 @@ const (
 	PUT_TRANSACTION                  = `/v1/transaction/put`
 	TXN_VERIFY_URL                   = `/v1/transaction/get/confirmation?hash=`
 	GET_BALANCE                      = `/v1/client/get/balance?client_id=`
+	GET_BURN_TICKETS                 = `/v1/client/get/burn_tickets?client_id=%s&nonce=%d`
 	GET_BLOCK_INFO                   = `/v1/block/get?`
 	GET_MAGIC_BLOCK_INFO             = `/v1/block/magic/get?`
 	GET_LATEST_FINALIZED             = `/v1/block/get/latest_finalized`
@@ -175,6 +176,17 @@ type WalletCallback interface {
 // GetBalanceCallback needs to be implemented by the caller of GetBalance() to get the status
 type GetBalanceCallback interface {
 	OnBalanceAvailable(status int, value int64, info string)
+}
+
+// BurnTicket model used for deserialization of the response received from sharders
+type BurnTicket struct {
+	Hash  string `json:"hash"`
+	Nonce int64  `json:"nonce"`
+}
+
+// GetBurnTicketsCallback needs to be implemented by the caller of GetBurnTickets() to get the status
+type GetBurnTicketsCallback interface {
+	OnBalanceAvailable(status int, value []BurnTicket, info string)
 }
 
 // GetNonceCallback needs to be implemented by the caller of GetNonce() to get the status
@@ -659,6 +671,24 @@ func GetBalance(cb GetBalanceCallback) error {
 	return nil
 }
 
+// GetBurnTickets retrieve wallet burn tickets from sharders
+func GetBurnTickets(cb GetBurnTicketsCallback) error {
+	err := CheckConfig()
+	if err != nil {
+		return err
+	}
+	go func() {
+		value, info, err := getBurnTicketsFromSharders(_config.wallet.ClientID, _config.wallet.ClientID)
+		if err != nil {
+			logging.Error(err)
+			cb.OnBalanceAvailable(StatusError, nil, info)
+			return
+		}
+		cb.OnBalanceAvailable(StatusSuccess, value, info)
+	}()
+	return nil
+}
+
 // GetBalance retrieve wallet nonce from sharders
 func GetNonce(cb GetNonceCallback) error {
 	if cb == nil {
@@ -677,6 +707,7 @@ func GetNonce(cb GetNonceCallback) error {
 			cb.OnNonceAvailable(StatusError, 0, info)
 			return
 		}
+
 		cb.OnNonceAvailable(StatusSuccess, value, info)
 	}()
 
@@ -782,6 +813,48 @@ func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
 	}
 
 	return 0, consensusMaps.WinInfo, errors.New("", "get balance failed. balance field is missed")
+}
+
+func getBurnTicketsFromSharders(clientID string, startNonce int64) ([]BurnTicket, string, error) {
+	result := make(chan *util.GetResponse)
+	defer close(result)
+	// getMinShardersVerify
+	var numSharders = len(_config.chain.Sharders) // overwrite, use all
+	queryFromSharders(numSharders, fmt.Sprintf(GET_BURN_TICKETS, clientID, startNonce), result)
+
+	consensusMaps := NewHttpConsensusMaps(consensusThresh)
+
+	for i := 0; i < numSharders; i++ {
+		rsp := <-result
+
+		logging.Debug(rsp.Url, rsp.Status)
+		if rsp.StatusCode != http.StatusOK {
+			logging.Error(rsp.Body)
+
+		} else {
+			logging.Debug(rsp.Body)
+		}
+
+		if err := consensusMaps.Add(rsp.StatusCode, rsp.Body); err != nil {
+			logging.Error(rsp.Body)
+		}
+	}
+
+	rate := consensusMaps.MaxConsensus * 100 / len(_config.chain.Sharders)
+	if rate < consensusThresh {
+		return nil, consensusMaps.WinError, errors.New("", "get burn tickets failed. consensus not reached")
+	}
+
+	winValue, ok := consensusMaps.GetValue(name)
+	if ok {
+		var winBurnTickets []BurnTicket
+		if err := json.Unmarshal(winValue, &winBurnTickets); err != nil {
+			return nil, consensusMaps.WinError, err
+		}
+		return winBurnTickets, consensusMaps.WinInfo, nil
+	}
+
+	return nil, consensusMaps.WinInfo, errors.New("", "get burn tickets failed. balance field is missed")
 }
 
 // ConvertToToken converts the SAS tokens to ZCN tokens
