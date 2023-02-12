@@ -76,7 +76,6 @@ func TestGetRandomSharder(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
 			for _, host := range tc.offlineSharders {
 				tq.Lock()
 				tq.offline[host] = true

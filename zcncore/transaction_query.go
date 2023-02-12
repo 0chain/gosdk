@@ -112,13 +112,12 @@ func (tq *TransactionQuery) buildUrl(host string, parts ...string) string {
 
 // checkSharderHealth checks the health of a sharder (denoted by host) and returns if it is healthy
 // or ErrNoOnlineSharders if no sharders are healthy/up at the moment.
-func (tq *TransactionQuery) checkSharderHealth(ctx context.Context, host string, errCh chan error) {
+func (tq *TransactionQuery) checkSharderHealth(ctx context.Context, host string) error {
 	tq.RLock()
 	_, ok := tq.offline[host]
 	tq.RUnlock()
 	if ok {
-		errCh <- ErrSharderOffline
-		return
+		return ErrSharderOffline
 	}
 
 	// check health
@@ -147,49 +146,53 @@ func (tq *TransactionQuery) checkSharderHealth(ctx context.Context, host string,
 		tq.offline[host] = true
 		tq.Unlock()
 		if len(tq.offline) >= tq.max {
-			errCh <- ErrNoOnlineSharders
-			return
+			return ErrNoOnlineSharders
 		}
 	}
-	errCh <- nil
-	return
+	return nil
 }
 
 // getRandomSharder returns a random healthy sharder
 func (tq *TransactionQuery) getRandomSharder(ctx context.Context) (string, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	finalErrCh := make(chan error)
-	onlineSharderCh := make(chan string)
+	var mu sync.Mutex
+	done := false
+	errCh := make(chan error, len(tq.sharders))
+	successCh := make(chan string)
+
 	for _, sharder := range tq.sharders {
 		go func(sharder string) {
-			errCh := make(chan error)
-			go tq.checkSharderHealth(ctx, sharder, errCh)
-			select {
-			case <-ctx.Done():
-				finalErrCh <- ctx.Err()
-				return
-			case e := <-errCh:
-				if errors.Is(e, ErrSharderOffline) {
-					tq.RLock()
-					defer tq.RUnlock()
-					if len(tq.offline) >= tq.max {
-						finalErrCh <- ErrNoOnlineSharders
-					}
-				} else if e == nil {
-					onlineSharderCh <- sharder
+			err := tq.checkSharderHealth(ctx, sharder)
+			if err != nil {
+				errCh <- err
+			} else {
+				mu.Lock()
+				if !done {
+					successCh <- sharder
+					done = true
 				}
-				return
+				mu.Unlock()
 			}
 		}(sharder)
 	}
 
-	select {
-	case e := <-finalErrCh:
-		return "", e
-	case s := <-onlineSharderCh:
-		log.Printf("Found a healthy sharder: %v", s)
-		return s, nil
+	for {
+		select {
+		case e := <-errCh:
+			if errors.Is(e, ErrSharderOffline) {
+				tq.RLock()
+				if len(tq.offline) >= tq.max {
+					return "", ErrNoOnlineSharders
+				}
+				tq.RUnlock()
+			} else if errors.Is(e, context.DeadlineExceeded) {
+				return "", e
+			}
+		case s := <-successCh:
+			log.Printf("Found a healthy sharder: %v", s)
+			return s, nil
+		}
 	}
 }
 
