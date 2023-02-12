@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 	"sync"
 )
 
@@ -22,10 +23,12 @@ func init() {
 }
 
 func GetUSD(ctx context.Context, symbol string) (float64, error) {
-	mu := &sync.RWMutex{}
+	var mu sync.Mutex
+	done := false
+
 	errs := make([]error, 0, len(quotes))
-	finalErrCh := make(chan error)
-	resultCh := make(chan float64)
+	errCh := make(chan error, len(quotes))
+	successCh := make(chan float64)
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer func() {
@@ -34,34 +37,40 @@ func GetUSD(ctx context.Context, symbol string) (float64, error) {
 
 	for _, q := range quotes {
 		go func(q quoteQuery) {
-			errCh := make(chan error)
-			go q.getUSD(ctx, symbol, errCh, resultCh)
-			select {
-			case <-ctx.Done():
-				if ctx.Err() == context.DeadlineExceeded {
-					finalErrCh <- ctx.Err()
-				}
-				return
-			case e := <-errCh:
+			val, err := q.getUSD(ctx, symbol)
+			if err != nil {
+				errCh <- err
+			} else {
 				mu.Lock()
-				errs = append(errs, e)
-				mu.Unlock()
-				if len(errs) >= len(quotes) {
-					finalErrCh <- fmt.Errorf("%w: %s", ErrNoAvailableQuoteQuery, errs)
-					return
+				if !done {
+					// we don't want to send result again if it has already been sent
+					successCh <- val
+					done = true
 				}
+				mu.Unlock()
 			}
 		}(q)
 	}
 
-	select {
-	case e := <-finalErrCh:
-		return 0, e
-	case r := <-resultCh:
-		return r, nil
+	for {
+		select {
+		case e := <-errCh:
+			errs = append(errs, e)
+			if len(errs) >= len(quotes) {
+				if errs[0] == context.DeadlineExceeded {
+					return 0, context.DeadlineExceeded
+				}
+				sort.Slice(errs, func(i, j int) bool {
+					return errs[i].Error() < errs[j].Error()
+				})
+				return 0, fmt.Errorf("%w: %s", ErrNoAvailableQuoteQuery, errs)
+			}
+		case r := <-successCh:
+			return r, nil
+		}
 	}
 }
 
 type quoteQuery interface {
-	getUSD(ctx context.Context, symbol string, errCh chan error, resultCh chan float64)
+	getUSD(ctx context.Context, symbol string) (float64, error)
 }

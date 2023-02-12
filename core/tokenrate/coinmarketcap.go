@@ -5,12 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/0chain/gosdk/core/resty"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
-
-	"github.com/0chain/gosdk/core/resty"
 )
 
 type coinmarketcapQuoteQuery struct {
@@ -29,7 +28,7 @@ func createCoinmarketcapQuoteQuery() quoteQuery {
 	}
 }
 
-func (qq *coinmarketcapQuoteQuery) getUSD(ctx context.Context, symbol string, errCh chan error, resultCh chan float64) {
+func (qq *coinmarketcapQuoteQuery) getUSD(ctx context.Context, symbol string) (float64, error) {
 
 	var result coinmarketcapResponse
 
@@ -61,29 +60,25 @@ func (qq *coinmarketcapQuoteQuery) getUSD(ctx context.Context, symbol string, er
 
 	errs := r.Wait()
 	if len(errs) > 0 {
-		errCh <- errs[0]
-		return
+		return 0, errs[0]
 	}
 
 	zcn, ok := result.Data[s]
 
 	if !ok || len(zcn) == 0 {
-		errCh <- errors.New("coinmarketcap: " + symbol + " is not provided on coinmarketcap apis")
-		return
+		return 0, errors.New("coinmarketcap: " + symbol + " is not provided on coinmarketcap apis")
 	}
 
 	rate, ok := zcn[0].Quote["USD"]
 	if ok {
 		if rate.Price > 0 {
-			resultCh <- rate.Price
-			return
+			return rate.Price, nil
 		}
 
-		errCh <- fmt.Errorf("coinmarketcap: invalid response %s", result.Raw)
-		return
+		return 0, fmt.Errorf("coinmarketcap: invalid response %s", result.Raw)
 	}
 
-	errCh <- errors.New("coinmarketcap: " + symbol + " to USD quote is not provided on coinmarketcap apis")
+	return 0, errors.New("coinmarketcap: " + symbol + " to USD quote is not provided on coinmarketcap apis")
 }
 
 //	{
