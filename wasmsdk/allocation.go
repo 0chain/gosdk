@@ -29,7 +29,7 @@ func getAllocationBlobbers(preferredBlobberURLs []string,
 	})
 }
 
-func createAllocation(name string, datashards, parityshards int, size, expiry int64,
+func createAllocation(datashards, parityshards int, size, expiry int64,
 	minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64, blobberIds []string) (
 	*transaction.Transaction, error) {
 
