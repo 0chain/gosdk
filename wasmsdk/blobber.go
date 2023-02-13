@@ -283,32 +283,22 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 
 }
 
-type DownloadOptions struct {
-	AllocationID     string
-	RemotePath       string
-	AuthTicket       string
-	LookupHash       string
-	ThumbnailOnly    bool
-	NumBlocks        int
-	CallbackFuncName string
-	Callback         StatusBar
-}
-
-func downloadWith(options DownloadOptions) (*DownloadCommandResponse, error) {
-
-	return nil, nil
-}
-
 // download download file
-func download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int) (*DownloadCommandResponse, error) {
+func download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int, callbackFuncName string) (*DownloadCommandResponse, error) {
+
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	if callbackFuncName != "" {
+		callback := js.Global().Get(callbackFuncName)
+		statusBar.callback = func(totalBytes, completedBytes int, err string) {
+			callback.Invoke(totalBytes, completedBytes, err)
+		}
+	}
+	wg.Add(1)
 
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, RequiredArg("remotePath/authTicket")
 	}
-
-	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg}
-	wg.Add(1)
 
 	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
 	localPath := allocationID + "_" + fileName

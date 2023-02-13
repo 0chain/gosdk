@@ -294,7 +294,7 @@ generate an authtoken that provides authorization to the holder to the specified
 download your own or a shared file.
 
 **Input**:
-> allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int
+> allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int,callbackFuncName string
 
 **Output**:
 >  {commandSuccess:bool, fileName:string,url:string, error:string}
