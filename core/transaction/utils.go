@@ -35,7 +35,6 @@ func NewOptimisticVerifier(sharders []string) *OptimisticVerifier {
 	transport := createTransport(resty.DefaultDialTimeout)
 
 	options := []resty.Option{
-		resty.WithTimeout(resty.DefaultRequestTimeout),
 		resty.WithRetry(resty.DefaultRetry),
 		resty.WithHeader(header),
 		resty.WithTransport(transport),
@@ -346,7 +345,6 @@ func VerifyTransactionTrusted(txnHash string, sharders []string) (*Transaction, 
 	transport := createTransport(resty.DefaultDialTimeout)
 
 	options := []resty.Option{
-		resty.WithTimeout(resty.DefaultRequestTimeout),
 		resty.WithRetry(resty.DefaultRetry),
 		resty.WithHeader(header),
 		resty.WithTransport(transport),
