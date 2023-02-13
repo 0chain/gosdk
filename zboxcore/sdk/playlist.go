@@ -63,7 +63,6 @@ func getPlaylistFromBlobbers(ctx context.Context, alloc *Allocation, query strin
 	opts := make([]resty.Option, 0, 3)
 
 	opts = append(opts, resty.WithRetry(resty.DefaultRetry))
-	opts = append(opts, resty.WithTimeout(resty.DefaultRequestTimeout))
 	opts = append(opts, resty.WithRequestInterceptor(func(req *http.Request) error {
 		req.Header.Set("X-App-Client-ID", client.GetClientID())
 		req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
@@ -145,7 +144,6 @@ func getPlaylistFileFromBlobbers(ctx context.Context, alloc *Allocation, query s
 	opts := make([]resty.Option, 0, 3)
 
 	opts = append(opts, resty.WithRetry(resty.DefaultRetry))
-	opts = append(opts, resty.WithTimeout(resty.DefaultRequestTimeout))
 	opts = append(opts, resty.WithRequestInterceptor(func(req *http.Request) error {
 		req.Header.Set("X-App-Client-ID", client.GetClientID())
 		req.Header.Set("X-App-Client-Key", client.GetClientPublicKey())
