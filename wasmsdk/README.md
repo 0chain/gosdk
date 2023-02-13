@@ -313,7 +313,7 @@ download your own or a shared file.
 download blocks of a file
 
 **Input**:
-> allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64
+> allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64, callbackFuncName string
 
 **Output**:
 >  {commandSuccess:bool, fileName:string,url:string, error:string}
