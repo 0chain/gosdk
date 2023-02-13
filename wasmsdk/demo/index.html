@@ -117,6 +117,10 @@
 
   <script>
 
+    window.downloadCallback =function(totalBytes, completedBytes, error) {
+      console.log("download: "+completedBytes+"/"+totalBytes +" err:"+ error)
+    }
+
     const getWallet = () => {
       const clientID = get('clientId').value
       const publicKey = get('publicKey').value
@@ -133,7 +137,7 @@
       minSubmit: 50,
       confirmationChainLength: 3,
     }
-    const blockWorker = 'https://beta.0chain.net/dns';
+    const blockWorker = 'https://dev.zus.network/dns';
     const config = [
       networkConfig.chainId,
       blockWorker,
@@ -165,7 +169,7 @@
 
 
     onClick('btnSendMeTokens', async () => {
-      await goWasm.sdk.faucet("pour", JSON.stringify("{Pay day}"),0)
+      await goWasm.sdk.faucet("pour", JSON.stringify("{Pay day}"),10)
     })
 
     onClick('btnGetBalance', async () => {
@@ -274,7 +278,7 @@
         const allocationId = getSelectedAllocation()
 
         //allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int
-        const file = await goWasm.sdk.download(allocationId, path, '', '', false, 10)
+        const file = await goWasm.sdk.download(allocationId, path, '', '', false, 10,"downloadCallback")
 
 
         const a = document.createElement('a')
@@ -316,7 +320,7 @@
       const file = files.find(it => it.path == getSelectedFile())
       if (file && file.mimetype.startsWith('image')) {
         const allocationId = getSelectedAllocation()
-        const { url } = await goWasm.sdk.download(allocationId, file.path, '', '', false, 10)
+        const { url } = await goWasm.sdk.download(allocationId, file.path, '', '', false, 10,)
         get('viewer').setAttribute('src', url)
       }
     })
