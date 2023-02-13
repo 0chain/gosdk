@@ -119,7 +119,9 @@ func (tq *TransactionQuery) checkHealth(ctx context.Context, host string) error 
 	}
 
 	// check health
-	r := resty.New(resty.WithTimeout(5 * time.Second))
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	r := resty.New()
 	requestUrl := tq.buildUrl(host, SharderEndpointHealthCheck)
 	logging.Info("zcn: check health ", requestUrl)
 	r.DoGet(ctx, requestUrl)
@@ -250,7 +252,9 @@ func (tq *TransactionQuery) FromAll(ctx context.Context, query string, handle Qu
 		urls = append(urls, tq.buildUrl(host, query))
 	}
 
-	r := resty.New(resty.WithTimeout(10 * time.Second))
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	r := resty.New()
 	r.DoGet(ctx, urls...).
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 			res := QueryResult{
