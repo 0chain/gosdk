@@ -30,7 +30,7 @@ func TestGetCsrfToken(t *testing.T) {
 }
 
 func TestJwtToken(t *testing.T) {
-	//	t.Skip("Only for local debugging")
+	t.Skip("Only for local debugging")
 
 	c := NewClient()
 	c.SetRequest(BaseURL, AppType)
