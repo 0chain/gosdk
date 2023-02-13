@@ -30,4 +30,7 @@ var (
 
 	// ErrNotFound ref not found
 	ErrNotFound = errors.New("ref not found")
+
+	// ErrFileOptionNotPermitted requested operation is not allowed on this allocation (file_options)
+	ErrFileOptionNotPermitted = errors.New("this options for this file is not permitted for this allocation")
 )

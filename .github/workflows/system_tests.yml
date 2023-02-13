@@ -8,11 +8,11 @@ on:
         default: 'master'
         required: true
       zbox_cli_branch:
-        description: '0Box CLI branch which the tests will use'
+        description: 'zbox CLI branch which the tests will use'
         default: 'staging'
         required: true
       zwallet_cli_branch:
-        description: '0wallet CLI branch which the tests will use'
+        description: 'zwallet CLI branch which the tests will use'
         default: 'staging'
         required: true
       miner_branch:
