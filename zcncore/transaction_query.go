@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	stderrors "errors"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -47,8 +46,9 @@ type QueryResultHandle func(result QueryResult) bool
 
 type TransactionQuery struct {
 	sync.RWMutex
-	max      int
-	sharders []string
+	max                int
+	sharders           []string
+	numShardersToBatch int
 
 	selected map[string]interface{}
 	offline  map[string]interface{}
@@ -61,8 +61,9 @@ func NewTransactionQuery(sharders []string) (*TransactionQuery, error) {
 	}
 
 	tq := &TransactionQuery{
-		max:      len(sharders),
-		sharders: sharders,
+		max:                len(sharders),
+		sharders:           sharders,
+		numShardersToBatch: 3,
 	}
 	tq.selected = make(map[string]interface{})
 	tq.offline = make(map[string]interface{})
@@ -142,12 +143,13 @@ func (tq *TransactionQuery) checkSharderHealth(ctx context.Context, host string)
 	errs := r.Wait()
 
 	if len(errs) > 0 {
+		if errors.Is(errs[0], context.DeadlineExceeded) {
+			return context.DeadlineExceeded
+		}
 		tq.Lock()
 		tq.offline[host] = true
 		tq.Unlock()
-		if len(tq.offline) >= tq.max {
-			return ErrNoOnlineSharders
-		}
+		return ErrSharderOffline
 	}
 	return nil
 }
@@ -156,44 +158,62 @@ func (tq *TransactionQuery) checkSharderHealth(ctx context.Context, host string)
 func (tq *TransactionQuery) getRandomSharder(ctx context.Context) (string, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	var mu sync.Mutex
-	done := false
-	errCh := make(chan error, len(tq.sharders))
-	successCh := make(chan string)
+	for i := 0; i < len(tq.sharders); i += tq.numShardersToBatch {
+		var mu sync.Mutex
+		done := false
+		errCh := make(chan error, tq.numShardersToBatch)
+		successCh := make(chan string)
+		last := i + tq.numShardersToBatch - 1
 
-	for _, sharder := range tq.sharders {
-		go func(sharder string) {
-			err := tq.checkSharderHealth(ctx, sharder)
-			if err != nil {
-				errCh <- err
-			} else {
-				mu.Lock()
-				if !done {
-					successCh <- sharder
-					done = true
+		if last > len(tq.sharders)-1 {
+			last = len(tq.sharders) - 1
+		}
+		numShardersOffline := 0
+		for j := i; j <= last; j++ {
+			sharder := tq.sharders[j]
+			go func(sharder string) {
+				err := tq.checkSharderHealth(ctx, sharder)
+				if err != nil {
+					errCh <- err
+				} else {
+					mu.Lock()
+					if !done {
+						successCh <- sharder
+						done = true
+					}
+					mu.Unlock()
 				}
-				mu.Unlock()
-			}
-		}(sharder)
-	}
-
-	for {
-		select {
-		case e := <-errCh:
-			if errors.Is(e, ErrSharderOffline) {
-				tq.RLock()
-				if len(tq.offline) >= tq.max {
-					return "", ErrNoOnlineSharders
+			}(sharder)
+		}
+	innerLoop:
+		for {
+			select {
+			case e := <-errCh:
+				switch e {
+				case ErrSharderOffline:
+					tq.RLock()
+					if len(tq.offline) >= tq.max {
+						tq.RUnlock()
+						return "", ErrNoOnlineSharders
+					}
+					tq.RUnlock()
+					numShardersOffline++
+					if numShardersOffline >= tq.numShardersToBatch {
+						break innerLoop
+					}
+				case context.DeadlineExceeded:
+					return "", e
 				}
-				tq.RUnlock()
-			} else if errors.Is(e, context.DeadlineExceeded) {
-				return "", e
+			case s := <-successCh:
+				return s, nil
+			case <-ctx.Done():
+				if ctx.Err() == context.DeadlineExceeded {
+					return "", context.DeadlineExceeded
+				}
 			}
-		case s := <-successCh:
-			log.Printf("Found a healthy sharder: %v", s)
-			return s, nil
 		}
 	}
+	return "", ErrNoOnlineSharders
 }
 
 // FromAll query transaction from all sharders whatever it is selected or offline in previous queires, and return consensus result

@@ -32,7 +32,7 @@ type SharderHealthStatus struct {
 }
 
 func TestMain(m *testing.M) {
-	numSharders = 4
+	numSharders = 10
 	var sharderPorts []string
 	sharders = make([]string, 0)
 	for i := 0; i < numSharders; i++ {
@@ -55,42 +55,63 @@ func TestGetRandomSharder(t *testing.T) {
 	}
 
 	for _, tc := range []struct {
-		name            string
-		offlineSharders []string
-		expectedErr     error
+		name           string
+		onlineSharders []string
+		expectedErr    error
+		setupContext   func(ctx context.Context) context.Context
 	}{
 		{
-			name:            "all sharders online",
-			offlineSharders: []string{},
-			expectedErr:     nil,
+			name:           "context deadline exceeded",
+			onlineSharders: []string{"http://localhost:6009"},
+			expectedErr:    context.DeadlineExceeded,
+			setupContext: func(ct context.Context) context.Context {
+				ctx, cancel := context.WithTimeout(ct, 100*time.Microsecond)
+				go func() {
+					<-ctx.Done()
+					cancel()
+				}()
+				return ctx
+			},
 		},
 		{
-			name:            "only one sharder online",
-			offlineSharders: []string{"http://localhost:6000", "http://localhost:6002", "http://localhost:6003"},
-			expectedErr:     nil,
+			name:           "all sharders online",
+			onlineSharders: sharders,
+			expectedErr:    nil,
 		},
 		{
-			name:            "all sharders offline",
-			offlineSharders: sharders,
-			expectedErr:     ErrNoOnlineSharders,
+			name:           "only one sharder online",
+			onlineSharders: []string{"http://localhost:6000"},
+			expectedErr:    nil,
+		},
+		{
+			name:           "few sharders online",
+			onlineSharders: []string{"http://localhost:6001", "http://localhost:6006", "http://localhost:6009"},
+			expectedErr:    nil,
+		},
+		{
+			name:           "all sharders offline",
+			onlineSharders: []string{},
+			expectedErr:    ErrNoOnlineSharders,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			for _, host := range tc.offlineSharders {
-				tq.Lock()
-				tq.offline[host] = true
-				tq.Unlock()
-			}
-			var onlineSharders []string
+			tq.Reset()
+
 			for _, s := range sharders {
-				if !contains(tc.offlineSharders, s) {
-					onlineSharders = append(onlineSharders, s)
+				if !contains(tc.onlineSharders, s) {
+					tq.Lock()
+					tq.offline[s] = true
+					tq.Unlock()
 				}
 			}
-			sharder, err := tq.getRandomSharder(context.Background())
+			ctx := context.Background()
+			if tc.setupContext != nil {
+				ctx = tc.setupContext(ctx)
+			}
+			sharder, err := tq.getRandomSharder(ctx)
 			if tc.expectedErr == nil {
 				require.NoError(t, err)
-				require.Subset(t, onlineSharders, []string{sharder})
+				require.Subset(t, tc.onlineSharders, []string{sharder})
 			} else {
 				require.EqualError(t, err, tc.expectedErr.Error())
 			}
