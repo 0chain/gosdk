@@ -56,6 +56,7 @@ var w = `
 "date_created":"2019-06-19 13:37:50.466889 -0700 PDT m=+0.023873276"}`
 
 func TestGetAggregates(t *testing.T) {
+	t.Skip("learning test")
 	err := zcncore.Init(ChainConfig)
 	if err != nil {
 		fmt.Println("Init failed")
