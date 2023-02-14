@@ -1047,12 +1047,12 @@ func GetAllocations(clientID string, cb GetInfoCallback) (err error) {
 }
 
 // GetSnapshots obtains list of allocations of a user.
-func GetSnapshots(offset int64, cb GetInfoCallback) (err error) {
+func GetSnapshots(round int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = withParams(STORAGE_GET_SNAPSHOT, Params{
-		"offset": strconv.FormatInt(offset, 10),
+		"round": strconv.FormatInt(round, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetSnapshots, cb)
 	return
