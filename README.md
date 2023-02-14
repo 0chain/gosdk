@@ -47,8 +47,6 @@ It is possible to support the sdk for other variations of Linux as well.
         go get golang.org/x/mobile/bind
 - Use below commands in the root folder of the repo to build Mobile SDK
 
-        For iOS and Android:
-                make build-mobilesdk IOS=1 ANDROID=1
         For iOS only:
                 make build-ios
         For Android only:
