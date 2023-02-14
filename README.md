@@ -51,7 +51,7 @@ It is possible to support the sdk for other variations of Linux as well.
         For iOS only:
                 make build-mobilesdk IOS=1
         For Android only:
-                make build-mobilesdk ANDROID=1
+                make build-android
 
 ## How to export a gosdk function to WebAssembly ##
 
