@@ -168,7 +168,6 @@ async function bulkUpload(options) {
   })
 
   const end =  bridge.glob.index
-console.log(JSON.stringify(opts))
   const result = await bridge.__proxy__.sdk.bulkUpload(JSON.stringify(opts))
   for (let i=start; i<end;i++){
     g["__zcn_upload_reader_"+i.toString()] = null;
