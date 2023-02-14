@@ -253,7 +253,7 @@
         objects.push({allocationId:allocationId,
                   remotePath:`/${file.name}`,
                   file:file,
-                  thumbnailBytes:null,
+                  thumbnailBytes:await readBytes(file),
                   encrypt:false, 
                   isUpdate:false, 
                   isRepair:false, 
