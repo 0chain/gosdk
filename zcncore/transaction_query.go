@@ -1,3 +1,6 @@
+//go:build !mobile
+// +build !mobile
+
 package zcncore
 
 import (
@@ -5,12 +8,10 @@ import (
 	"encoding/json"
 	"errors"
 	stderrors "errors"
-	"fmt"
 	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	thrown "github.com/0chain/errors"
@@ -44,12 +45,11 @@ type QueryResult struct {
 type QueryResultHandle func(result QueryResult) bool
 
 type TransactionQuery struct {
-	sync.RWMutex
 	max      int
 	sharders []string
 
-	selected map[string]bool
-	offline  map[string]bool
+	selected map[string]interface{}
+	offline  map[string]interface{}
 }
 
 func NewTransactionQuery(sharders []string) (*TransactionQuery, error) {
@@ -62,15 +62,15 @@ func NewTransactionQuery(sharders []string) (*TransactionQuery, error) {
 		max:      len(sharders),
 		sharders: sharders,
 	}
-	tq.selected = make(map[string]bool)
-	tq.offline = make(map[string]bool)
+	tq.selected = make(map[string]interface{})
+	tq.offline = make(map[string]interface{})
 
 	return tq, nil
 }
 
 func (tq *TransactionQuery) Reset() {
-	tq.selected = make(map[string]bool)
-	tq.offline = make(map[string]bool)
+	tq.selected = make(map[string]interface{})
+	tq.offline = make(map[string]interface{})
 }
 
 // validate validate data and input
@@ -111,9 +111,7 @@ func (tq *TransactionQuery) buildUrl(host string, parts ...string) string {
 // checkHealth check health
 func (tq *TransactionQuery) checkHealth(ctx context.Context, host string) error {
 
-	tq.RLock()
 	_, ok := tq.offline[host]
-	tq.RUnlock()
 	if ok {
 		return ErrSharderOffline
 	}
@@ -140,9 +138,7 @@ func (tq *TransactionQuery) checkHealth(ctx context.Context, host string) error 
 	errs := r.Wait()
 
 	if len(errs) > 0 {
-		tq.Lock()
 		tq.offline[host] = true
-		tq.Unlock()
 
 		if len(tq.offline) >= tq.max {
 			return ErrNoOnlineSharders
@@ -160,7 +156,7 @@ func (tq *TransactionQuery) randOne(ctx context.Context) (string, error) {
 
 		// reset selected if all sharders were selected
 		if len(tq.selected) >= tq.max {
-			tq.selected = make(map[string]bool)
+			tq.selected = make(map[string]interface{})
 		}
 
 		i := randGen.Intn(len(tq.sharders))
@@ -188,6 +184,100 @@ func (tq *TransactionQuery) randOne(ctx context.Context) (string, error) {
 
 		return host, nil
 	}
+}
+
+// FromAll query transaction from all sharders whatever it is selected or offline in previous queires, and return consensus result
+func (tq *TransactionQuery) FromAll(ctx context.Context, query string, handle QueryResultHandle) error {
+	if tq == nil || tq.max == 0 {
+		return ErrNoAvailableSharders
+	}
+
+	urls := make([]string, 0, tq.max)
+	for _, host := range tq.sharders {
+		urls = append(urls, tq.buildUrl(host, query))
+	}
+
+	r := resty.New()
+	r.DoGet(ctx, urls...).
+		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			res := QueryResult{
+				Content:    respBody,
+				Error:      err,
+				StatusCode: http.StatusBadRequest,
+			}
+
+			if resp != nil {
+				res.StatusCode = resp.StatusCode
+
+				logging.Debug(req.URL.String() + " " + resp.Status)
+				logging.Debug(string(respBody))
+			} else {
+				logging.Debug(req.URL.String())
+
+			}
+
+			if handle != nil {
+				if handle(res) {
+
+					cf()
+				}
+			}
+
+			return nil
+		})
+
+	r.Wait()
+
+	return nil
+}
+
+func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryResult, error) {
+
+	consensuses := make(map[int]int)
+	var maxConsensus int
+	var consensusesResp QueryResult
+	// {host}{query}
+	err := tq.FromAll(ctx, query,
+		func(qr QueryResult) bool {
+			//ignore response if it is network error
+			if qr.StatusCode >= 500 {
+				return false
+			}
+
+			consensuses[qr.StatusCode]++
+			if consensuses[qr.StatusCode] > maxConsensus {
+				maxConsensus = consensuses[qr.StatusCode]
+				consensusesResp = qr
+			}
+
+			// If number of 200's is equal to number of some other status codes, use 200's.
+			if qr.StatusCode == http.StatusOK && consensuses[qr.StatusCode] == maxConsensus {
+				maxConsensus = consensuses[qr.StatusCode]
+				consensusesResp = qr
+			}
+
+			return false
+
+		})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if maxConsensus == 0 {
+		return nil, stderrors.New("zcn: query not found")
+	}
+
+	rate := maxConsensus * 100 / tq.max
+	if rate < consensusThresh {
+		return nil, ErrInvalidConsensus
+	}
+
+	if consensusesResp.StatusCode != http.StatusOK {
+		return nil, stderrors.New(string(consensusesResp.Content))
+	}
+
+	return &consensusesResp, nil
 }
 
 // FromAny query transaction from any sharder that is not selected in previous queires. use any used sharder if there is not any unused sharder
@@ -239,53 +329,6 @@ func (tq *TransactionQuery) FromAny(ctx context.Context, query string) (QueryRes
 
 	return res, nil
 
-}
-
-// FromAll query transaction from all sharders whatever it is selected or offline in previous queires, and return consensus result
-func (tq *TransactionQuery) FromAll(ctx context.Context, query string, handle QueryResultHandle) error {
-	if tq == nil || tq.max == 0 {
-		return ErrNoAvailableSharders
-	}
-
-	urls := make([]string, 0, tq.max)
-	for _, host := range tq.sharders {
-		urls = append(urls, tq.buildUrl(host, query))
-	}
-
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	r := resty.New()
-	r.DoGet(ctx, urls...).
-		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
-			res := QueryResult{
-				Content:    respBody,
-				Error:      err,
-				StatusCode: http.StatusBadRequest,
-			}
-
-			if resp != nil {
-				res.StatusCode = resp.StatusCode
-
-				logging.Debug(req.URL.String() + " " + resp.Status)
-				logging.Debug(string(respBody))
-			} else {
-				logging.Debug(req.URL.String())
-
-			}
-
-			if handle != nil {
-				if handle(res) {
-
-					cf()
-				}
-			}
-
-			return nil
-		})
-
-	r.Wait()
-
-	return nil
 }
 
 func (tq *TransactionQuery) getConsensusConfirmation(ctx context.Context, numSharders int, txnHash string) (*blockHeader, map[string]json.RawMessage, *blockHeader, error) {
@@ -416,96 +459,9 @@ func (tq *TransactionQuery) getFastConfirmation(ctx context.Context, txnHash str
 	return nil, nil, nil, thrown.Throw(ErrTransactionNotFound, strconv.Itoa(result.StatusCode))
 }
 
-func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryResult, error) {
-
-	consensuses := make(map[int]int)
-	var maxConsensus int
-	var consensusesResp QueryResult
-	// {host}{query}
-	err := tq.FromAll(ctx, query,
-		func(qr QueryResult) bool {
-			//ignore response if it is network error
-			if qr.StatusCode >= 500 {
-				return false
-			}
-
-			consensuses[qr.StatusCode]++
-			if consensuses[qr.StatusCode] > maxConsensus {
-				maxConsensus = consensuses[qr.StatusCode]
-				consensusesResp = qr
-			}
-
-			// If number of 200's is equal to number of some other status codes, use 200's response. it fixes the random issue about 50% failed and 50% success on 2 sharders
-			if qr.StatusCode == http.StatusOK {
-
-				if consensuses[http.StatusOK] == maxConsensus {
-					maxConsensus = consensuses[qr.StatusCode]
-					consensusesResp = qr
-				}
-
-				// consensus has been reached, don't waiting for other requests
-				if maxConsensus*100/tq.max >= consensusThresh {
-					return true
-				}
-
-				// query success, but doesn't reach consensus
-				return false
-			}
-
-			// query fails
-			return false
-
-		})
-
-	if err != nil {
-		return nil, err
-	}
-
-	if maxConsensus == 0 {
-		return nil, stderrors.New("zcn: object not found")
-	}
-
-	rate := maxConsensus * 100 / tq.max
-	if rate < consensusThresh {
-		return nil, ErrInvalidConsensus
-	}
-
-	if consensusesResp.StatusCode != http.StatusOK {
-		return nil, stderrors.New(string(consensusesResp.Content))
-	}
-
-	return &consensusesResp, nil
-}
-
-func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]string) ([]byte, error) {
-
-	path := fmt.Sprintf("/v1/screst/%v%v", scAddress, relativePath)
-	query := withParams(path, Params(params))
-
-	sharders := util.Shuffle(util.Shuffle(_config.chain.Sharders))
-
-	min := util.MinInt(10, len(sharders))
-
-	tq, err := NewTransactionQuery(sharders[:min])
-	if err != nil {
-		return nil, err
-	}
-
-	qr, err := tq.GetInfo(context.TODO(), query)
-	if err != nil {
-		return nil, err
-	}
-
-	return qr.Content, nil
-}
-
 func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 
-	sharders := util.Shuffle(util.Shuffle(_config.chain.Sharders))
-
-	min := util.MinInt(10, len(sharders))
-
-	tq, err := NewTransactionQuery(sharders[:min])
+	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders))
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
