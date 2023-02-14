@@ -43,13 +43,14 @@ It is possible to support the sdk for other variations of Linux as well.
 - Run below command for the first time to setup gomobile environment
 
         make setup-gomobile
-
+- Incase Go package not found in golang.org/x/mobile/bind, run the command
+        go get golang.org/x/mobile/bind
 - Use below commands in the root folder of the repo to build Mobile SDK
 
         For iOS and Android:
                 make build-mobilesdk IOS=1 ANDROID=1
         For iOS only:
-                make build-mobilesdk IOS=1
+                make build-ios
         For Android only:
                 make build-android
 
