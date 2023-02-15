@@ -15,7 +15,6 @@ import (
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/zcncore"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
@@ -180,8 +179,8 @@ func GetReadPoolInfo(clientID string) (info *ReadPool, err error) {
 	}
 
 	var b []byte
-	b, err = zcncore.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getReadPoolStat",
-		map[string]string{"client_id": clientID})
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getReadPoolStat",
+		map[string]string{"client_id": clientID}, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting read pool info")
 	}
@@ -282,8 +281,8 @@ func GetStakePoolInfo(providerType ProviderType, providerID string) (info *Stake
 	}
 
 	var b []byte
-	b, err = zcncore.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getStakePoolStat",
-		map[string]string{"provider_type": strconv.Itoa(int(providerType)), "provider_id": providerID})
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getStakePoolStat",
+		map[string]string{"provider_type": strconv.Itoa(int(providerType)), "provider_id": providerID}, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting stake pool info:")
 	}
@@ -315,8 +314,8 @@ func GetStakePoolUserInfo(clientID string) (info *StakePoolUserInfo, err error) 
 	}
 
 	var b []byte
-	b, err = zcncore.MakeSCRestAPICall(STORAGE_SCADDRESS,
-		"/getUserStakePoolStat", map[string]string{"client_id": clientID})
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
+		"/getUserStakePoolStat", map[string]string{"client_id": clientID}, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting stake pool user info:")
 	}
@@ -338,8 +337,8 @@ func GetTotalStoredData() (map[string]int64, error) {
 	}
 	var err error
 	var b []byte
-	b, err = zcncore.MakeSCRestAPICall(STORAGE_SCADDRESS,
-		"/total-stored-data", nil)
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
+		"/total-stored-data", nil, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting stake pool user info:")
 	}
@@ -503,8 +502,8 @@ func GetChallengePoolInfo(allocID string) (info *ChallengePoolInfo, err error) {
 	}
 
 	var b []byte
-	b, err = zcncore.MakeSCRestAPICall(STORAGE_SCADDRESS,
-		"/getChallengePoolStat", map[string]string{"allocation_id": allocID})
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
+		"/getChallengePoolStat", map[string]string{"allocation_id": allocID}, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting challenge pool info:")
 	}
@@ -526,8 +525,8 @@ func GetMptData(key string) ([]byte, error) {
 	}
 
 	var b []byte
-	b, err := zcncore.MakeSCRestAPICall(STORAGE_SCADDRESS,
-		"/get_mpt_key", map[string]string{"key": key})
+	b, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
+		"/get_mpt_key", map[string]string{"key": key}, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting mpt key data:")
 	}
@@ -552,7 +551,7 @@ func GetStorageSCConfig() (conf *InputMap, err error) {
 	}
 
 	var b []byte
-	b, err = zcncore.MakeSCRestAPICall(STORAGE_SCADDRESS, "/storage-config", nil)
+	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/storage-config", nil, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting storage SC configs:")
 	}
@@ -625,7 +624,7 @@ func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err err
 		offset,
 	)
 
-	b, err := zcncore.MakeSCRestAPICall(STORAGE_SCADDRESS, url, nil)
+	b, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, url, nil, nil)
 	var wrap nodes
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting blobbers:")
@@ -682,10 +681,10 @@ func GetBlobber(blobberID string) (blob *Blobber, err error) {
 		return nil, sdkNotInitialized
 	}
 	var b []byte
-	b, err = zcncore.MakeSCRestAPICall(
+	b, err = zboxutil.MakeSCRestAPICall(
 		STORAGE_SCADDRESS,
 		"/getBlobber",
-		map[string]string{"blobber_id": blobberID})
+		map[string]string{"blobber_id": blobberID}, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting blobber:")
 	}
@@ -705,10 +704,10 @@ func GetValidator(validatorID string) (validator *Validator, err error) {
 		return nil, sdkNotInitialized
 	}
 	var b []byte
-	b, err = zcncore.MakeSCRestAPICall(
+	b, err = zboxutil.MakeSCRestAPICall(
 		STORAGE_SCADDRESS,
 		"/get_validator",
-		map[string]string{"validator_id": validatorID})
+		map[string]string{"validator_id": validatorID}, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting validator:")
 	}
@@ -728,10 +727,10 @@ func GetValidators() (validators []*Validator, err error) {
 		return nil, sdkNotInitialized
 	}
 	var b []byte
-	b, err = zcncore.MakeSCRestAPICall(
+	b, err = zboxutil.MakeSCRestAPICall(
 		STORAGE_SCADDRESS,
 		"/validators",
-		nil)
+		nil, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "requesting validator list")
 	}
@@ -782,7 +781,7 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 	}
 	params := make(map[string]string)
 	params["allocation"] = allocationID
-	allocationBytes, err := zcncore.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params)
+	allocationBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params, nil)
 	if err != nil {
 		return nil, errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
@@ -803,7 +802,7 @@ func GetAllocationUpdates(allocation *Allocation) error {
 
 	params := make(map[string]string)
 	params["allocation"] = allocation.ID
-	allocationBytes, err := zcncore.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params)
+	allocationBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params, nil)
 	if err != nil {
 		return errors.New("allocation_fetch_error", "Error fetching the allocation."+err.Error())
 	}
@@ -852,7 +851,7 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 	}
 	params := make(map[string]string)
 	params["client"] = clientID
-	allocationsBytes, err := zcncore.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocations", params)
+	allocationsBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocations", params, nil)
 	if err != nil {
 		return nil, errors.New("allocations_fetch_error", "Error fetching the allocations."+err.Error())
 	}
@@ -970,7 +969,7 @@ func GetAllocationBlobbers(
 	params := make(map[string]string)
 	params["allocation_data"] = string(allocationData)
 
-	allocBlobber, err := zcncore.MakeSCRestAPICall(STORAGE_SCADDRESS, "/alloc_blobbers", params)
+	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/alloc_blobbers", params, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1034,7 +1033,7 @@ func GetBlobberIds(blobberUrls []string) ([]string, error) {
 
 	params := make(map[string]string)
 	params["blobber_urls"] = string(urlsStr)
-	idsStr, err := zcncore.MakeSCRestAPICall(STORAGE_SCADDRESS, "/blobber_ids", params)
+	idsStr, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/blobber_ids", params, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1054,7 +1053,7 @@ func getFreeAllocationBlobbers(request map[string]interface{}) ([]string, error)
 	params := make(map[string]string)
 	params["free_allocation_data"] = string(data)
 
-	allocBlobber, err := zcncore.MakeSCRestAPICall(STORAGE_SCADDRESS, "/free_alloc_blobbers", params)
+	allocBlobber, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/free_alloc_blobbers", params, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1461,7 +1460,7 @@ func GetAllocationMinLock(
 	params := make(map[string]string)
 	params["allocation_data"] = string(allocationRequest)
 
-	allocationsBytes, err := zcncore.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation_min_lock", params)
+	allocationsBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation_min_lock", params, nil)
 	if err != nil {
 		return 0, errors.New("allocation_min_lock_fetch_error", "Error fetching the allocation min lock."+err.Error())
 	}
