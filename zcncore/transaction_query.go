@@ -158,19 +158,21 @@ func (tq *TransactionQuery) checkSharderHealth(ctx context.Context, host string)
 func (tq *TransactionQuery) getRandomSharder(ctx context.Context) (string, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	for i := 0; i < len(tq.sharders); i += tq.numShardersToBatch {
+	shardersDeepCopy := make([]string, len(tq.sharders))
+	copy(shardersDeepCopy, tq.sharders)
+	for i := 0; i < tq.max; i += tq.numShardersToBatch {
 		var mu sync.Mutex
 		done := false
 		errCh := make(chan error, tq.numShardersToBatch)
 		successCh := make(chan string)
-		last := i + tq.numShardersToBatch - 1
-
-		if last > len(tq.sharders)-1 {
-			last = len(tq.sharders) - 1
+		shuffled := util.Shuffle(shardersDeepCopy)
+		last := tq.numShardersToBatch - 1
+		if last > len(shardersDeepCopy)-1 {
+			last = len(shardersDeepCopy) - 1
 		}
 		numShardersOffline := 0
-		for j := i; j <= last; j++ {
-			sharder := tq.sharders[j]
+		for j := 0; j <= last; j++ {
+			sharder := shuffled[j]
 			go func(sharder string) {
 				err := tq.checkSharderHealth(ctx, sharder)
 				if err != nil {
@@ -184,6 +186,9 @@ func (tq *TransactionQuery) getRandomSharder(ctx context.Context) (string, error
 					mu.Unlock()
 				}
 			}(sharder)
+		}
+		if last < len(shuffled)-1 {
+			shardersDeepCopy = shuffled[last+1:]
 		}
 	innerLoop:
 		for {
