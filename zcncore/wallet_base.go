@@ -1059,78 +1059,78 @@ func GetSnapshots(round int64, cb GetInfoCallback) (err error) {
 }
 
 // GetBlobberSnapshots obtains list of allocations of a blobber.
-func GetBlobberSnapshots(previousRound int64, previousHash string, cb GetInfoCallback) (err error) {
+func GetBlobberSnapshots(previousRound int64, offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = withParams(STORAGE_GET_BLOBBER_SNAPSHOT, Params{
 		"prev_round": strconv.FormatInt(previousRound, 10),
-		"prev_hash":  previousHash,
+		"offset":     strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetBlobberSnapshots, cb)
 	return
 }
 
 // GetMinerSnapshots obtains list of allocations of a miner.
-func GetMinerSnapshots(previousRound int64, previousHash string, cb GetInfoCallback) (err error) {
+func GetMinerSnapshots(previousRound int64, offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = withParams(STORAGE_GET_MINER_SNAPSHOT, Params{
 		"prev_round": strconv.FormatInt(previousRound, 10),
-		"prev_hash":  previousHash,
+		"offset":     strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetMinerSnapshots, cb)
 	return
 }
 
 // GetSharderSnapshots obtains list of allocations of a sharder.
-func GetSharderSnapshots(previousRound int64, previousHash string, cb GetInfoCallback) (err error) {
+func GetSharderSnapshots(previousRound int64, offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = withParams(STORAGE_GET_SHARDER_SNAPSHOT, Params{
 		"prev_round": strconv.FormatInt(previousRound, 10),
-		"prev_hash":  previousHash,
+		"offset":     strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetSharderSnapshots, cb)
 	return
 }
 
 // GetValidatorSnapshots obtains list of allocations of a validator.
-func GetValidatorSnapshots(previousRound int64, previousHash string, cb GetInfoCallback) (err error) {
+func GetValidatorSnapshots(previousRound int64, offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = withParams(STORAGE_GET_VALIDATOR_SNAPSHOT, Params{
 		"prev_round": strconv.FormatInt(previousRound, 10),
-		"prev_hash":  previousHash,
+		"offset":     strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetValidatorSnapshots, cb)
 	return
 }
 
 // GetAuthorizerSnapshots obtains list of allocations of an authorizer.
-func GetAuthorizerSnapshots(previousRound int64, previousHash string, cb GetInfoCallback) (err error) {
+func GetAuthorizerSnapshots(previousRound int64, offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = withParams(STORAGE_GET_AUTHORIZER_SNAPSHOT, Params{
 		"prev_round": strconv.FormatInt(previousRound, 10),
-		"prev_hash":  previousHash,
+		"offset":     strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetAuthorizerSnapshots, cb)
 	return
 }
 
 // GetUserSnapshots replicates user aggregates from events_db.
-func GetUserSnapshots(previousRound int64, previousHash string, cb GetInfoCallback) (err error) {
+func GetUserSnapshots(previousRound int64, offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = withParams(STORAGE_GET_USER_SNAPSHOT, Params{
 		"prev_round": strconv.FormatInt(previousRound, 10),
-		"prev_hash":  previousHash,
+		"offset":     strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetUserSnapshots, cb)
 	return
