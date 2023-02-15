@@ -252,11 +252,11 @@ type StakePoolDelegatePoolInfo struct {
 	Rewards    common.Balance `json:"rewards"`     // current
 	UnStake    bool           `json:"unstake"`     // want to unstake
 
-	TotalReward  common.Balance `json:"total_reward"`
-	TotalPenalty common.Balance `json:"total_penalty"`
-	Status       string         `json:"status"`
-	RoundCreated int64          `json:"round_created"`
-	StakedAt     time.Time      `json:"staked_at"`
+	TotalReward  common.Balance   `json:"total_reward"`
+	TotalPenalty common.Balance   `json:"total_penalty"`
+	Status       string           `json:"status"`
+	RoundCreated int64            `json:"round_created"`
+	StakedAt     common.Timestamp `json:"staked_at"`
 }
 
 // StakePool full info.
@@ -941,7 +941,7 @@ func CreateAllocationForOwner(
 	allocationRequest["owner_id"] = owner
 	allocationRequest["owner_public_key"] = ownerpublickey
 	allocationRequest["third_party_extendable"] = thirdPartyExtendable
-	allocationRequest["file_options"] = calculateAllocationFileOptions(63 /*0011 1111*/, fileOptionsParams)
+	allocationRequest["file_options_changed"], allocationRequest["file_options"] = calculateAllocationFileOptions(63 /*0011 1111*/, fileOptionsParams)
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.NEW_ALLOCATION_REQUEST,
@@ -1143,7 +1143,7 @@ func UpdateAllocation(
 	updateAllocationRequest["add_blobber_id"] = addBlobberId
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
 	updateAllocationRequest["set_third_party_extendable"] = setThirdPartyExtendable
-	updateAllocationRequest["file_options"] = calculateAllocationFileOptions(alloc.FileOptions, fileOptionsParams)
+	updateAllocationRequest["file_options_changed"], updateAllocationRequest["file_options"] = calculateAllocationFileOptions(alloc.FileOptions, fileOptionsParams)
 
 	sn := transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
@@ -1475,9 +1475,9 @@ func GetAllocationMinLock(
 }
 
 // calculateAllocationFileOptions calculates the FileOptions 16-bit mask given the user input
-func calculateAllocationFileOptions(initial uint16, fop *FileOptionsParameters) uint16 {
+func calculateAllocationFileOptions(initial uint16, fop *FileOptionsParameters) (bool, uint16) {
 	if fop == nil {
-		return initial
+		return false, initial
 	}
 
 	mask := initial
@@ -1506,7 +1506,7 @@ func calculateAllocationFileOptions(initial uint16, fop *FileOptionsParameters) 
 		mask = updateMaskBit(mask, 5, !fop.ForbidRename.Value)
 	}
 
-	return mask
+	return mask != initial, mask
 }
 
 // updateMaskBit Set/Clear (based on `value`) bit value of the bit of `mask` at `index` (starting with LSB as 0) and return the updated mask
