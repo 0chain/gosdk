@@ -252,11 +252,11 @@ type StakePoolDelegatePoolInfo struct {
 	Rewards    common.Balance `json:"rewards"`     // current
 	UnStake    bool           `json:"unstake"`     // want to unstake
 
-	TotalReward  common.Balance `json:"total_reward"`
-	TotalPenalty common.Balance `json:"total_penalty"`
-	Status       string         `json:"status"`
-	RoundCreated int64          `json:"round_created"`
-	StakedAt     time.Time      `json:"staked_at"`
+	TotalReward  common.Balance   `json:"total_reward"`
+	TotalPenalty common.Balance   `json:"total_penalty"`
+	Status       string           `json:"status"`
+	RoundCreated int64            `json:"round_created"`
+	StakedAt     common.Timestamp `json:"staked_at"`
 }
 
 // StakePool full info.
