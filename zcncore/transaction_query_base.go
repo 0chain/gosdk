@@ -424,11 +424,6 @@ func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryRe
 	// {host}{query}
 	err := tq.FromAll(ctx, query,
 		func(qr QueryResult) bool {
-			//ignore response if it is network error
-			if qr.StatusCode >= 500 {
-				return false
-			}
-
 			consensuses[qr.StatusCode]++
 			if consensuses[qr.StatusCode] > maxConsensus {
 				maxConsensus = consensuses[qr.StatusCode]
