@@ -1064,8 +1064,8 @@ func GetBlobberSnapshots(round int64, offset int64, cb GetInfoCallback) (err err
 		return
 	}
 	var url = withParams(STORAGE_GET_BLOBBER_SNAPSHOT, Params{
-		"prev_round": strconv.FormatInt(round, 10),
-		"offset":     strconv.FormatInt(offset, 10),
+		"round":  strconv.FormatInt(round, 10),
+		"offset": strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetBlobberSnapshots, cb)
 	return
@@ -1077,8 +1077,8 @@ func GetMinerSnapshots(round int64, offset int64, cb GetInfoCallback) (err error
 		return
 	}
 	var url = withParams(STORAGE_GET_MINER_SNAPSHOT, Params{
-		"prev_round": strconv.FormatInt(round, 10),
-		"offset":     strconv.FormatInt(offset, 10),
+		"round":  strconv.FormatInt(round, 10),
+		"offset": strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetMinerSnapshots, cb)
 	return
@@ -1090,8 +1090,8 @@ func GetSharderSnapshots(round int64, offset int64, cb GetInfoCallback) (err err
 		return
 	}
 	var url = withParams(STORAGE_GET_SHARDER_SNAPSHOT, Params{
-		"prev_round": strconv.FormatInt(round, 10),
-		"offset":     strconv.FormatInt(offset, 10),
+		"round":  strconv.FormatInt(round, 10),
+		"offset": strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetSharderSnapshots, cb)
 	return
@@ -1103,8 +1103,8 @@ func GetValidatorSnapshots(round int64, offset int64, cb GetInfoCallback) (err e
 		return
 	}
 	var url = withParams(STORAGE_GET_VALIDATOR_SNAPSHOT, Params{
-		"prev_round": strconv.FormatInt(round, 10),
-		"offset":     strconv.FormatInt(offset, 10),
+		"round":  strconv.FormatInt(round, 10),
+		"offset": strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetValidatorSnapshots, cb)
 	return
@@ -1116,8 +1116,8 @@ func GetAuthorizerSnapshots(round int64, offset int64, cb GetInfoCallback) (err 
 		return
 	}
 	var url = withParams(STORAGE_GET_AUTHORIZER_SNAPSHOT, Params{
-		"prev_round": strconv.FormatInt(round, 10),
-		"offset":     strconv.FormatInt(offset, 10),
+		"round":  strconv.FormatInt(round, 10),
+		"offset": strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetAuthorizerSnapshots, cb)
 	return
@@ -1129,8 +1129,8 @@ func GetUserSnapshots(round int64, offset int64, cb GetInfoCallback) (err error)
 		return
 	}
 	var url = withParams(STORAGE_GET_USER_SNAPSHOT, Params{
-		"prev_round": strconv.FormatInt(round, 10),
-		"offset":     strconv.FormatInt(offset, 10),
+		"round":  strconv.FormatInt(round, 10),
+		"offset": strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetUserSnapshots, cb)
 	return
