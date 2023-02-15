@@ -1305,48 +1305,6 @@ func (a *Allocation) CancelRepair() error {
 	return errors.New("invalid_cancel_repair_request", "No repair in progress for the allocation")
 }
 
-func (a *Allocation) AddCollaborator(filePath, collaboratorID string) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	req := &CollaboratorRequest{
-		path:           filePath,
-		collaboratorID: collaboratorID,
-		a:              a,
-		consensus: Consensus{
-			fullconsensus:   a.fullconsensus,
-			consensusThresh: a.consensusThreshold,
-		},
-	}
-
-	if req.UpdateCollaboratorToBlobbers() {
-		return nil
-	}
-	return errors.New("add_collaborator_failed", "Failed to add collaborator on all blobbers.")
-}
-
-func (a *Allocation) RemoveCollaborator(filePath, collaboratorID string) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	req := &CollaboratorRequest{
-		path:           filePath,
-		collaboratorID: collaboratorID,
-		a:              a,
-		consensus: Consensus{
-			fullconsensus:   a.fullconsensus,
-			consensusThresh: a.consensusThreshold,
-		},
-	}
-
-	if req.RemoveCollaboratorFromBlobbers() {
-		return nil
-	}
-	return errors.New("remove_collaborator_failed", "Failed to remove collaborator on all blobbers.")
-}
-
 func (a *Allocation) GetMaxWriteReadFromBlobbers(blobbers []*BlobberAllocation) (maxW float64, maxR float64, err error) {
 	if !a.isInitialized() {
 		return 0, 0, notInitialized

@@ -284,15 +284,21 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 }
 
 // download download file
-func download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int) (*DownloadCommandResponse, error) {
+func download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int, callbackFuncName string) (*DownloadCommandResponse, error) {
+
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	if callbackFuncName != "" {
+		callback := js.Global().Get(callbackFuncName)
+		statusBar.callback = func(totalBytes, completedBytes int, err string) {
+			callback.Invoke(totalBytes, completedBytes, err)
+		}
+	}
+	wg.Add(1)
 
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, RequiredArg("remotePath/authTicket")
 	}
-
-	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg}
-	wg.Add(1)
 
 	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
 	localPath := allocationID + "_" + fileName
@@ -570,7 +576,7 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 }
 
 // download download file blocks
-func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64) (*DownloadCommandResponse, error) {
+func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64, callbackFuncName string) (*DownloadCommandResponse, error) {
 
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, RequiredArg("remotePath/authTicket")
@@ -578,6 +584,12 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 
 	wg := &sync.WaitGroup{}
 	statusBar := &StatusBar{wg: wg}
+	if callbackFuncName != "" {
+		callback := js.Global().Get(callbackFuncName)
+		statusBar.callback = func(totalBytes, completedBytes int, err string) {
+			callback.Invoke(totalBytes, completedBytes, err)
+		}
+	}
 	wg.Add(1)
 
 	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
