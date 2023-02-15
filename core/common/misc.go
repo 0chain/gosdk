@@ -82,7 +82,7 @@ func (b Balance) AutoFormat() string {
 
 // ToBalance converts ZCN tokens to Balance.
 func ToBalance(token float64) Balance {
-	return Balance(token * tokenUnit)
+	return Balance(token*tokenUnit + 0.5)
 }
 
 func FormatBalance(b Balance, unit BalanceUnit) string {

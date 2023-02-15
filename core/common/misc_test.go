@@ -62,3 +62,22 @@ func TestParseBalance(t *testing.T) {
 	_, err = ParseBalance(" 10 zcn ")
 	require.EqualError(t, err, "invalid input:  10 zcn ")
 }
+
+func TestToBalance(t *testing.T) {
+	expectedBalance := Balance(20100000000)
+	balance := ToBalance(2.01)
+	require.Equal(t, expectedBalance, balance)
+
+	// before https://github.com/0chain/gosdk/pull/777, this used to return 30099999998
+	expectedBalance = Balance(30099999999)
+	balance = ToBalance(3.0099999999)
+	require.Equal(t, expectedBalance, balance)
+}
+
+func TestToToken(t *testing.T) {
+	b := Balance(12.938 * 1e12)
+	require.Equal(t, 1293.8, b.ToToken())
+
+	b = Balance(12.938 * 1e5)
+	require.Equal(t, 0.00012938, b.ToToken())
+}
