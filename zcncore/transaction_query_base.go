@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	stderrors "errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -359,7 +358,7 @@ func (tq *TransactionQuery) getConsensusConfirmation(ctx context.Context, numSha
 	}
 
 	if maxConfirmation == 0 {
-		return nil, nil, lfbBlockHeader, stderrors.New("zcn: transaction not found")
+		return nil, nil, lfbBlockHeader, errors.New("zcn: transaction not found")
 	}
 
 	if maxConfirmation < numSharders {
@@ -442,14 +441,22 @@ func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryRe
 				if maxConsensus*100/tq.max >= consensusThresh {
 					return true
 				}
-
-				// query success, but doesn't reach consensus
-				return false
 			}
 
+			if maxConsensus*100/tq.max >= consensusThresh {
+				if maxConsensus != http.StatusOK {
+				// query fails
+				return false
+				} else {
+					return false
+				}
+			}
+
+
+			// query fails
+			
 			// query fails
 			return false
-
 		})
 
 	if err != nil {
@@ -457,7 +464,7 @@ func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryRe
 	}
 
 	if maxConsensus == 0 {
-		return nil, stderrors.New("zcn: object not found")
+		return nil, errors.New("zcn: object not found")
 	}
 
 	rate := maxConsensus * 100 / tq.max
@@ -466,7 +473,7 @@ func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryRe
 	}
 
 	if consensusesResp.StatusCode != http.StatusOK {
-		return nil, stderrors.New(string(consensusesResp.Content))
+		return nil, errors.New(string(consensusesResp.Content))
 	}
 
 	return &consensusesResp, nil
@@ -581,7 +588,7 @@ func GetUserLockedTotal(clientID string) (int64, error) {
 		return total, nil
 	}
 
-	return 0, stderrors.New("invalid result")
+	return 0, errors.New("invalid result")
 
 }
 
@@ -619,5 +626,5 @@ func (cb *getInfoCallback) Wait() (string, error) {
 		return cb.info, nil
 	}
 
-	return "", stderrors.New(cb.err)
+	return "", errors.New(cb.err)
 }
