@@ -253,7 +253,7 @@
         objects.push({allocationId:allocationId,
                   remotePath:`/${file.name}`,
                   file:file,
-                  thumbnailBytes:null,
+                  thumbnailBytes:await readBytes(file),//only for demo, don't upload original file as thumbnail in production
                   encrypt:false, 
                   isUpdate:false, 
                   isRepair:false, 

@@ -158,7 +158,7 @@ async function bulkUpload(options) {
       remotePath:obj.remotePath, 
       readChunkFuncName:readChunkFuncName, 
       fileSize: obj.file.size, 
-      thumbnailBytes:obj.thumbnailBytes, 
+      thumbnailBytes:obj.thumbnailBytes?obj.thumbnailBytes.toString():"", 
       encrypt:obj.encrypt, 
       isUpdate:obj.isUpdate, 
       isRepair:obj.isRepair, 
@@ -168,7 +168,6 @@ async function bulkUpload(options) {
   })
 
   const end =  bridge.glob.index
-
   const result = await bridge.__proxy__.sdk.bulkUpload(JSON.stringify(opts))
   for (let i=start; i<end;i++){
     g["__zcn_upload_reader_"+i.toString()] = null;
