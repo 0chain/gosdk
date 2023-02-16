@@ -16,6 +16,17 @@ func TestGetRandomSlice(t *testing.T) {
 	if len(ns) != 3 {
 		t.Fatalf("Getrandom() failed")
 	}
+	// Tests for when either len(in) = 0 or n = 0
+	s = []string{}
+	ns = GetRandom(s, 2)
+	if len(ns) != 0 {
+		t.Fatalf("Getrandom() failed")
+	}
+	s = append(s, "hello")
+	ns = GetRandom(s, 0)
+	if len(ns) != 0 {
+		t.Fatalf("Getrandom() failed")
+	}
 }
 
 func TestRand(t *testing.T) {

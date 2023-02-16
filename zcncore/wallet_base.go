@@ -77,6 +77,7 @@ const (
 	STORAGESC_GET_READ_POOL_INFO       = STORAGESC_PFX + "/getReadPoolStat"
 	STORAGESC_GET_STAKE_POOL_INFO      = STORAGESC_PFX + "/getStakePoolStat"
 	STORAGESC_GET_STAKE_POOL_USER_INFO = STORAGESC_PFX + "/getUserStakePoolStat"
+	STORAGESC_GET_USER_LOCKED_TOTAL    = STORAGESC_PFX + "/getUserLockedTotal"
 	STORAGESC_GET_BLOBBERS             = STORAGESC_PFX + "/getblobbers"
 	STORAGESC_GET_BLOBBER              = STORAGESC_PFX + "/getBlobber"
 	STORAGESC_GET_TRANSACTIONS         = STORAGESC_PFX + "/transactions"
@@ -88,6 +89,7 @@ const (
 	STORAGE_GET_SHARDER_SNAPSHOT    = STORAGESC_PFX + "/replicate-sharder-aggregates"
 	STORAGE_GET_AUTHORIZER_SNAPSHOT = STORAGESC_PFX + "/replicate-authorizer-aggregates"
 	STORAGE_GET_VALIDATOR_SNAPSHOT  = STORAGESC_PFX + "/replicate-validator-aggregates"
+	STORAGE_GET_USER_SNAPSHOT       = STORAGESC_PFX + "/replicate-user-aggregates"
 )
 
 const (
@@ -160,6 +162,7 @@ const (
 	OpStorageSCGetSharderSnapshots
 	OpStorageSCGetAuthorizerSnapshots
 	OpStorageSCGetValidatorSnapshots
+	OpStorageSCGetUserSnapshots
 	OpZCNSCGetGlobalConfig
 	OpZCNSCGetAuthorizer
 	OpZCNSCGetAuthorizerNodes
@@ -1113,6 +1116,18 @@ func GetAuthorizerSnapshots(offset int64, cb GetInfoCallback) (err error) {
 		"offset": strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetAuthorizerSnapshots, cb)
+	return
+}
+
+// GetUserSnapshots replicates user aggregates from events_db.
+func GetUserSnapshots(offset int64, cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	var url = withParams(STORAGE_GET_USER_SNAPSHOT, Params{
+		"offset": strconv.FormatInt(offset, 10),
+	})
+	go GetInfoFromAnySharder(url, OpStorageSCGetUserSnapshots, cb)
 	return
 }
 
