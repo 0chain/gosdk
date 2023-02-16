@@ -488,6 +488,11 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 	if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
 		defer teardown(t)
 	}
+
+	if teardown := setupMockFile(t, mockThumbnailPath); teardown != nil {
+		defer teardown(t)
+	}
+
 	a := &Allocation{
 		ID:           "TestAllocation_EncryptAndUpdateFileWithThumbnail",
 		Tx:           "TestAllocation_EncryptAndUpdateFileWithThumbnail",
