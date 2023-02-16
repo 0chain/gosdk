@@ -22,7 +22,6 @@ import (
 	"github.com/0chain/gosdk/zcnbridge/transaction"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
-	"github.com/0chain/gosdk/zcncore"
 	eth "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -184,7 +183,7 @@ func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
 
 	signerAcc, err := ks.Find(signer)
 	if err != nil {
-		zcncore.Logger.Fatal(err)
+		Logger.Fatal(err)
 	}
 
 	signature, err := ks.SignHash(signerAcc, hash.Bytes())

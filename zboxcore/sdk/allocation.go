@@ -22,6 +22,7 @@ import (
 
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -41,6 +42,15 @@ const (
 	KB = 1024
 	MB = 1024 * KB
 	GB = 1024 * MB
+)
+
+const (
+	CanUploadMask = uint16(1)  // 0000 0001
+	CanDeleteMask = uint16(2)  // 0000 0010
+	CanUpdateMask = uint16(4)  // 0000 0100
+	CanMoveMask   = uint16(8)  // 0000 1000
+	CanCopyMask   = uint16(16) // 0001 0000
+	CanRenameMask = uint16(32) // 0010 0000
 )
 
 // Expected success rate is calculated (NumDataShards)*100/(NumDataShards+NumParityShards)
@@ -139,7 +149,6 @@ type BlobberAllocation struct {
 type Allocation struct {
 	ID             string                    `json:"id"`
 	Tx             string                    `json:"tx"`
-	Name           string                    `json:"name"`
 	DataShards     int                       `json:"data_shards"`
 	ParityShards   int                       `json:"parity_shards"`
 	Size           int64                     `json:"size"`
@@ -150,7 +159,6 @@ type Allocation struct {
 	Blobbers       []*blockchain.StorageNode `json:"blobbers"`
 	Stats          *AllocationStats          `json:"stats"`
 	TimeUnit       time.Duration             `json:"time_unit"`
-	IsImmutable    bool                      `json:"is_immutable"`
 	WritePool      common.Balance            `json:"write_pool"`
 	// BlobberDetails contains real terms used for the allocation.
 	// If the allocation has updated, then terms calculated using
@@ -169,6 +177,8 @@ type Allocation struct {
 	MovedToChallenge        common.Balance   `json:"moved_to_challenge,omitempty"`
 	MovedBack               common.Balance   `json:"moved_back,omitempty"`
 	MovedToValidators       common.Balance   `json:"moved_to_validators,omitempty"`
+	FileOptions             uint16           `json:"file_options"`
+	ThirdPartyExtendable    bool             `json:"third_party_extendable"`
 	Curators                []string         `json:"curators"`
 
 	numBlockDownloads       int
@@ -252,6 +262,30 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 			go repairReq.processRepair(ctx, a)
 		}
 	}
+}
+
+func (a *Allocation) CanUpload() bool {
+	return (a.FileOptions & CanUploadMask) > 0
+}
+
+func (a *Allocation) CanDelete() bool {
+	return (a.FileOptions & CanDeleteMask) > 0
+}
+
+func (a *Allocation) CanUpdate() bool {
+	return (a.FileOptions & CanUpdateMask) > 0
+}
+
+func (a *Allocation) CanMove() bool {
+	return (a.FileOptions & CanMoveMask) > 0
+}
+
+func (a *Allocation) CanCopy() bool {
+	return (a.FileOptions & CanCopyMask) > 0
+}
+
+func (a *Allocation) CanRename() bool {
+	return (a.FileOptions & CanRenameMask) > 0
 }
 
 // UpdateFile [Deprecated]please use CreateChunkedUpload
@@ -384,6 +418,10 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 		return notInitialized
 	}
 
+	if (!isUpdate && !a.CanUpload()) || (isUpdate && !a.CanUpdate()) {
+		return constants.ErrFileOptionNotPermitted
+	}
+
 	fileReader, err := os.Open(localPath)
 	if err != nil {
 		return err
@@ -424,10 +462,11 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	}
 
 	if thumbnailPath != "" {
-		buf, err := os.ReadFile(fileName)
+		buf, err := sys.Files.ReadFile(thumbnailPath)
 		if err != nil {
 			return err
 		}
+
 		options = append(options, WithThumbnail(buf))
 	}
 
@@ -884,6 +923,10 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int)
 		return notInitialized
 	}
 
+	if !a.CanDelete() {
+		return constants.ErrFileOptionNotPermitted
+	}
+
 	if len(path) == 0 {
 		return errors.New("invalid_path", "Invalid path for the list")
 	}
@@ -911,6 +954,10 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int)
 func (a *Allocation) RenameObject(path string, destName string) error {
 	if !a.isInitialized() {
 		return notInitialized
+	}
+
+	if !a.CanRename() {
+		return constants.ErrFileOptionNotPermitted
 	}
 
 	if path == "" {
@@ -953,6 +1000,10 @@ func (a *Allocation) MoveObject(srcPath string, destPath string) error {
 		return notInitialized
 	}
 
+	if !a.CanMove() {
+		return constants.ErrFileOptionNotPermitted
+	}
+
 	if len(srcPath) == 0 || len(destPath) == 0 {
 		return errors.New("invalid_path", "Invalid path for copy")
 	}
@@ -989,6 +1040,10 @@ func (a *Allocation) MoveObject(srcPath string, destPath string) error {
 func (a *Allocation) CopyObject(path string, destPath string) error {
 	if !a.isInitialized() {
 		return notInitialized
+	}
+
+	if !a.CanCopy() {
+		return constants.ErrFileOptionNotPermitted
 	}
 
 	if len(path) == 0 || len(destPath) == 0 {
@@ -1364,48 +1419,6 @@ func (a *Allocation) CancelRepair() error {
 		return nil
 	}
 	return errors.New("invalid_cancel_repair_request", "No repair in progress for the allocation")
-}
-
-func (a *Allocation) AddCollaborator(filePath, collaboratorID string) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	req := &CollaboratorRequest{
-		path:           filePath,
-		collaboratorID: collaboratorID,
-		a:              a,
-		consensus: Consensus{
-			fullconsensus:   a.fullconsensus,
-			consensusThresh: a.consensusThreshold,
-		},
-	}
-
-	if req.UpdateCollaboratorToBlobbers() {
-		return nil
-	}
-	return errors.New("add_collaborator_failed", "Failed to add collaborator on all blobbers.")
-}
-
-func (a *Allocation) RemoveCollaborator(filePath, collaboratorID string) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	req := &CollaboratorRequest{
-		path:           filePath,
-		collaboratorID: collaboratorID,
-		a:              a,
-		consensus: Consensus{
-			fullconsensus:   a.fullconsensus,
-			consensusThresh: a.consensusThreshold,
-		},
-	}
-
-	if req.RemoveCollaboratorFromBlobbers() {
-		return nil
-	}
-	return errors.New("remove_collaborator_failed", "Failed to remove collaborator on all blobbers.")
 }
 
 func (a *Allocation) GetMaxWriteReadFromBlobbers(blobbers []*BlobberAllocation) (maxW float64, maxR float64, err error) {

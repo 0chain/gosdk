@@ -334,6 +334,10 @@ func TestAllocation_UploadFileWithThumbnail(t *testing.T) {
 	if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
 		defer teardown(t)
 	}
+
+	if teardown := setupMockFile(t, mockThumbnailPath); teardown != nil {
+		defer teardown(t)
+	}
 	a := &Allocation{
 		Tx:           "TestAllocation_UploadFileWithThumbnail",
 		ParityShards: 2,
@@ -560,6 +564,11 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 	if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
 		defer teardown(t)
 	}
+
+	if teardown := setupMockFile(t, mockThumbnailPath); teardown != nil {
+		defer teardown(t)
+	}
+
 	a := &Allocation{
 		Tx:           "TestAllocation_EncryptAndUploadFileWithThumbnail",
 		ParityShards: 2,

@@ -1,25 +1,19 @@
 package transaction
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"math"
-	"net/http"
-	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/util"
 )
 
 const TXN_SUBMIT_URL = "v1/transaction/put"
 const TXN_VERIFY_URL = "v1/transaction/get/confirmation?hash="
+const BLOCK_BY_ROUND_URL = "v1/screst/6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7/block?round="
 
 const (
 	TxnSuccess         = 1 // Indicates the transaction is successful in updating the state or smart contract
@@ -74,15 +68,37 @@ type Ratio struct {
 }
 type RoundBlockHeader struct {
 	Version               string `json:"version"`
-	CreationData          int64  `json:"creation_date"`
-	Hash                  string `json:"hash"`
+	CreationDate          int64  `json:"creation_date"`
+	Hash                  string `json:"block_hash"`
+	PreviousBlockHash     string `json:"previous_block_hash"`
 	MinerID               string `json:"miner_id"`
 	Round                 int64  `json:"round"`
 	RoundRandomSeed       int64  `json:"round_random_seed"`
 	MerkleTreeRoot        string `json:"merkle_tree_root"`
+	StateChangesCount     int    `json:"state_changes_count"`
 	StateHash             string `json:"state_hash"`
 	ReceiptMerkleTreeRoot string `json:"receipt_merkle_tree_root"`
 	NumberOfTxns          int64  `json:"num_txns"`
+}
+
+type Block struct {
+	Hash                  string `json:"hash" gorm:"uniqueIndex:idx_bhash"`
+	Version               string `json:"version"`
+	CreationDate          int64  `json:"creation_date" gorm:"index:idx_bcreation_date"`
+	Round                 int64  `json:"round" gorm:"index:idx_bround"`
+	MinerID               string `json:"miner_id"`
+	RoundRandomSeed       int64  `json:"round_random_seed"`
+	MerkleTreeRoot        string `json:"merkle_tree_root"`
+	StateHash             string `json:"state_hash"`
+	ReceiptMerkleTreeRoot string `json:"receipt_merkle_tree_root"`
+	NumTxns               int    `json:"num_txns"`
+	MagicBlockHash        string `json:"magic_block_hash"`
+	PrevHash              string `json:"prev_hash"`
+	Signature             string `json:"signature"`
+	ChainId               string `json:"chain_id"`
+	StateChangesCount     int    `json:"state_changes_count"`
+	RunningTxnCount       string `json:"running_txn_count"`
+	RoundTimeoutCount     int    `json:"round_timeout_count"`
 }
 
 const (
@@ -242,147 +258,4 @@ func sendTransactionToURL(url string, txn *Transaction, wg *sync.WaitGroup) ([]b
 		return []byte(postResponse.Body), nil
 	}
 	return nil, errors.Wrap(err, errors.New("transaction_send_error", postResponse.Body))
-}
-
-// VerifyTransaction query transaction status from sharders, and verify it by mininal confirmation
-func VerifyTransaction(txnHash string, sharders []string) (*Transaction, error) {
-
-	cfg, err := conf.GetClientConfig()
-	if err != nil {
-
-		return nil, err
-	}
-
-	numSharders := len(sharders)
-
-	if numSharders == 0 {
-		return nil, ErrNoAvailableSharder
-	}
-
-	minNumConfirmation := int(math.Ceil(float64(cfg.MinConfirmation*numSharders) / 100))
-
-	rand := util.NewRand(numSharders)
-
-	selectedSharders := make([]string, 0, minNumConfirmation+1)
-
-	// random pick minNumConfirmation+1 first
-	for i := 0; i <= minNumConfirmation; i++ {
-		n, err := rand.Next()
-
-		if err != nil {
-			break
-		}
-
-		selectedSharders = append(selectedSharders, sharders[n])
-	}
-
-	numSuccess := 0
-
-	var retTxn *Transaction
-
-	//leave first item for ErrTooLessConfirmation
-	var msgList = make([]string, 1, numSharders)
-
-	urls := make([]string, 0, len(selectedSharders))
-
-	for _, sharder := range selectedSharders {
-		urls = append(urls, fmt.Sprintf("%v/%v%v", sharder, TXN_VERIFY_URL, txnHash))
-	}
-
-	header := map[string]string{
-		"Content-Type":                "application/json; charset=utf-8",
-		"Access-Control-Allow-Origin": "*",
-	}
-
-	transport := createTransport(resty.DefaultDialTimeout)
-
-	options := []resty.Option{
-		resty.WithTimeout(resty.DefaultRequestTimeout),
-		resty.WithRetry(resty.DefaultRetry),
-		resty.WithHeader(header),
-		resty.WithTransport(transport),
-	}
-
-	r := resty.New(options...).
-		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
-			url := req.URL.String()
-
-			if err != nil { //network issue
-				msgList = append(msgList, err.Error())
-				return err
-			}
-
-			if resp.StatusCode != 200 {
-				msgList = append(msgList, url+": ["+strconv.Itoa(resp.StatusCode)+"] "+string(respBody))
-				return errors.Throw(ErrInvalidRequest, strconv.Itoa(resp.StatusCode)+": "+resp.Status)
-			}
-
-			var objmap map[string]json.RawMessage
-			err = json.Unmarshal(respBody, &objmap)
-			if err != nil {
-				msgList = append(msgList, "json: "+string(respBody))
-				return err
-			}
-			txnRawJSON, ok := objmap["txn"]
-
-			// txn data is found, success
-			if ok {
-				txn := &Transaction{}
-				err = json.Unmarshal(txnRawJSON, txn)
-				if err != nil {
-					msgList = append(msgList, "json: "+string(txnRawJSON))
-					return err
-				}
-				if len(txn.Signature) > 0 {
-					retTxn = txn
-				}
-				numSuccess++
-
-			} else {
-				// txn data is not found, but get block_hash, success
-				if _, ok := objmap["block_hash"]; ok {
-					numSuccess++
-				} else {
-					// txn and block_hash
-					msgList = append(msgList, fmt.Sprintf("Sharder does not have the block summary with url: %s, contents: %s", url, string(respBody)))
-				}
-
-			}
-
-			return nil
-		})
-
-	for {
-		r.DoGet(context.TODO(), urls...)
-
-		r.Wait()
-
-		if numSuccess >= minNumConfirmation {
-			break
-		}
-
-		// pick more one sharder to query transaction
-		n, err := rand.Next()
-
-		if errors.Is(err, util.ErrNoItem) {
-			break
-		}
-
-		urls = []string{fmt.Sprintf("%v/%v%v", sharders[n], TXN_VERIFY_URL, txnHash)}
-
-	}
-
-	if numSuccess > 0 && numSuccess >= minNumConfirmation {
-
-		if retTxn == nil {
-			return nil, errors.Throw(ErrNoTxnDetail, strings.Join(msgList, "\r\n"))
-		}
-
-		return retTxn, nil
-	}
-
-	msgList[0] = fmt.Sprintf("min_confirmation is %v%%, but got %v/%v sharders", cfg.MinConfirmation, numSuccess, numSharders)
-
-	return nil, errors.Throw(ErrTooLessConfirmation, strings.Join(msgList, "\r\n"))
-
 }

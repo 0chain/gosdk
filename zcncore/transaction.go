@@ -899,7 +899,6 @@ func (t *Transaction) Verify() error {
 			tq.Reset()
 			// Get transaction confirmationBlock from a random sharder
 			confirmBlockHeader, confirmationBlock, lfbBlockHeader, err := tq.getFastConfirmation(context.TODO(), t.txnHash)
-
 			if err != nil {
 				now := int64(common.Now())
 
@@ -931,7 +930,6 @@ func (t *Transaction) Verify() error {
 					}
 					continue
 				}
-
 			}
 
 			valid := validateChain(confirmBlockHeader)

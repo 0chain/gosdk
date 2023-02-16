@@ -8,10 +8,10 @@ import (
 	"encoding/json"
 	"errors"
 	stderrors "errors"
-	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	thrown "github.com/0chain/errors"
@@ -45,8 +45,10 @@ type QueryResult struct {
 type QueryResultHandle func(result QueryResult) bool
 
 type TransactionQuery struct {
-	max      int
-	sharders []string
+	sync.RWMutex
+	max                int
+	sharders           []string
+	numShardersToBatch int
 
 	selected map[string]interface{}
 	offline  map[string]interface{}
@@ -59,8 +61,9 @@ func NewTransactionQuery(sharders []string) (*TransactionQuery, error) {
 	}
 
 	tq := &TransactionQuery{
-		max:      len(sharders),
-		sharders: sharders,
+		max:                len(sharders),
+		sharders:           sharders,
+		numShardersToBatch: 3,
 	}
 	tq.selected = make(map[string]interface{})
 	tq.offline = make(map[string]interface{})
@@ -108,15 +111,19 @@ func (tq *TransactionQuery) buildUrl(host string, parts ...string) string {
 	return sb.String()
 }
 
-// checkHealth check health
-func (tq *TransactionQuery) checkHealth(ctx context.Context, host string) error {
-
+// checkSharderHealth checks the health of a sharder (denoted by host) and returns if it is healthy
+// or ErrNoOnlineSharders if no sharders are healthy/up at the moment.
+func (tq *TransactionQuery) checkSharderHealth(ctx context.Context, host string) error {
+	tq.RLock()
 	_, ok := tq.offline[host]
+	tq.RUnlock()
 	if ok {
 		return ErrSharderOffline
 	}
 
 	// check health
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
 	r := resty.New()
 	requestUrl := tq.buildUrl(host, SharderEndpointHealthCheck)
 	logging.Info("zcn: check health ", requestUrl)
@@ -136,52 +143,78 @@ func (tq *TransactionQuery) checkHealth(ctx context.Context, host string) error 
 	errs := r.Wait()
 
 	if len(errs) > 0 {
-		tq.offline[host] = true
-
-		if len(tq.offline) >= tq.max {
-			return ErrNoOnlineSharders
+		if errors.Is(errs[0], context.DeadlineExceeded) {
+			return context.DeadlineExceeded
 		}
+		tq.Lock()
+		tq.offline[host] = true
+		tq.Unlock()
+		return ErrSharderOffline
 	}
-
 	return nil
 }
 
-// randOne random one health sharder
-func (tq *TransactionQuery) randOne(ctx context.Context) (string, error) {
+// getRandomSharder returns a random healthy sharder
+func (tq *TransactionQuery) getRandomSharder(ctx context.Context) (string, error) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	shuffledSharders := util.Shuffle(tq.sharders)
+	for i := 0; i < len(shuffledSharders); i += tq.numShardersToBatch {
+		var mu sync.Mutex
+		done := false
+		errCh := make(chan error, tq.numShardersToBatch)
+		successCh := make(chan string)
+		last := i + tq.numShardersToBatch - 1
 
-	randGen := rand.New(rand.NewSource(time.Now().UnixNano()))
-	for {
-
-		// reset selected if all sharders were selected
-		if len(tq.selected) >= tq.max {
-			tq.selected = make(map[string]interface{})
+		if last > len(shuffledSharders)-1 {
+			last = len(shuffledSharders) - 1
 		}
-
-		i := randGen.Intn(len(tq.sharders))
-		host := tq.sharders[i]
-
-		_, ok := tq.selected[host]
-
-		// it was selected, try next
-		if ok {
-			continue
+		numShardersOffline := 0
+		for j := i; j <= last; j++ {
+			sharder := shuffledSharders[j]
+			go func(sharder string) {
+				err := tq.checkSharderHealth(ctx, sharder)
+				if err != nil {
+					errCh <- err
+				} else {
+					mu.Lock()
+					if !done {
+						successCh <- sharder
+						done = true
+					}
+					mu.Unlock()
+				}
+			}(sharder)
 		}
-
-		tq.selected[host] = true
-
-		err := tq.checkHealth(ctx, host)
-
-		if err != nil {
-			if errors.Is(err, ErrNoOnlineSharders) {
-				return "", err
+	innerLoop:
+		for {
+			select {
+			case e := <-errCh:
+				switch e {
+				case ErrSharderOffline:
+					tq.RLock()
+					if len(tq.offline) >= tq.max {
+						tq.RUnlock()
+						return "", ErrNoOnlineSharders
+					}
+					tq.RUnlock()
+					numShardersOffline++
+					if numShardersOffline >= tq.numShardersToBatch {
+						break innerLoop
+					}
+				case context.DeadlineExceeded:
+					return "", e
+				}
+			case s := <-successCh:
+				return s, nil
+			case <-ctx.Done():
+				if ctx.Err() == context.DeadlineExceeded {
+					return "", context.DeadlineExceeded
+				}
 			}
-
-			// it is offline, try next one
-			continue
 		}
-
-		return host, nil
 	}
+	return "", ErrNoOnlineSharders
 }
 
 // FromAll query transaction from all sharders whatever it is selected or offline in previous queires, and return consensus result
@@ -278,7 +311,8 @@ func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryRe
 	return &consensusesResp, nil
 }
 
-// FromAny query transaction from any sharder that is not selected in previous queires. use any used sharder if there is not any unused sharder
+// FromAny queries transaction from any sharder that is not selected in previous queries.
+// use any used sharder if there is not any unused sharder
 func (tq *TransactionQuery) FromAny(ctx context.Context, query string) (QueryResult, error) {
 
 	res := QueryResult{
@@ -291,7 +325,7 @@ func (tq *TransactionQuery) FromAny(ctx context.Context, query string) (QueryRes
 		return res, err
 	}
 
-	host, err := tq.randOne(ctx)
+	host, err := tq.getRandomSharder(ctx)
 
 	if err != nil {
 		return res, err
@@ -506,4 +540,77 @@ func GetEvents(cb GetInfoCallback, filters map[string]string) (err error) {
 
 func WithParams(uri string, params Params) string {
 	return withParams(uri, params)
+}
+
+// GetUserLockedTotal get total token user locked
+// # Inputs
+//   - clientID wallet id
+func GetUserLockedTotal(clientID string) (int64, error) {
+
+	err := checkSdkInit()
+	if err != nil {
+		return 0, err
+	}
+
+	var url = withParams(STORAGESC_GET_USER_LOCKED_TOTAL, Params{
+		"client_id": clientID,
+	})
+	cb := createGetInfoCallback()
+	go GetInfoFromSharders(url, OpStorageSCGetStakePoolInfo, cb)
+	info, err := cb.Wait()
+	if err != nil {
+		return 0, err
+	}
+
+	result := make(map[string]int64)
+
+	err = json.Unmarshal([]byte(info), &result)
+	if err != nil {
+		return 0, thrown.Throw(err, "invalid json format")
+	}
+
+	total, ok := result["total"]
+	if ok {
+		return total, nil
+	}
+
+	return 0, stderrors.New("invalid result")
+
+}
+
+func createGetInfoCallback() *getInfoCallback {
+	return &getInfoCallback{
+		callback: make(chan bool),
+	}
+}
+
+type getInfoCallback struct {
+	callback chan bool
+	status   int
+	info     string
+	err      string
+}
+
+func (cb *getInfoCallback) OnInfoAvailable(op int, status int, info string, err string) {
+
+	// if status == StatusSuccess then info is valid
+	// is status != StatusSuccess then err will give the reason
+
+	cb.status = status
+	if status == StatusSuccess {
+		cb.info = info
+	} else {
+		cb.err = err
+	}
+
+	cb.callback <- true
+}
+
+func (cb *getInfoCallback) Wait() (string, error) {
+	<-cb.callback
+	if cb.err == "" {
+		return cb.info, nil
+	}
+
+	return "", stderrors.New(cb.err)
 }

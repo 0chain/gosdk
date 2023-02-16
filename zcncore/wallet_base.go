@@ -11,7 +11,10 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	stdErrors "errors"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
@@ -23,7 +26,7 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	openssl "github.com/Luzifer/go-openssl/v4"
+	openssl "github.com/Luzifer/go-openssl/v3"
 )
 
 const (
@@ -74,6 +77,7 @@ const (
 	STORAGESC_GET_READ_POOL_INFO       = STORAGESC_PFX + "/getReadPoolStat"
 	STORAGESC_GET_STAKE_POOL_INFO      = STORAGESC_PFX + "/getStakePoolStat"
 	STORAGESC_GET_STAKE_POOL_USER_INFO = STORAGESC_PFX + "/getUserStakePoolStat"
+	STORAGESC_GET_USER_LOCKED_TOTAL    = STORAGESC_PFX + "/getUserLockedTotal"
 	STORAGESC_GET_BLOBBERS             = STORAGESC_PFX + "/getblobbers"
 	STORAGESC_GET_BLOBBER              = STORAGESC_PFX + "/getBlobber"
 	STORAGESC_GET_TRANSACTIONS         = STORAGESC_PFX + "/transactions"
@@ -85,6 +89,7 @@ const (
 	STORAGE_GET_SHARDER_SNAPSHOT    = STORAGESC_PFX + "/replicate-sharder-aggregates"
 	STORAGE_GET_AUTHORIZER_SNAPSHOT = STORAGESC_PFX + "/replicate-authorizer-aggregates"
 	STORAGE_GET_VALIDATOR_SNAPSHOT  = STORAGESC_PFX + "/replicate-validator-aggregates"
+	STORAGE_GET_USER_SNAPSHOT       = STORAGESC_PFX + "/replicate-user-aggregates"
 )
 
 const (
@@ -125,6 +130,15 @@ const (
 var defaultLogLevel = logger.DEBUG
 var logging logger.Logger
 
+func GetLogger() *logger.Logger {
+	return &logging
+}
+
+// CloseLog closes log file
+func CloseLog() {
+	logging.Close()
+}
+
 const TOKEN_UNIT int64 = 1e10
 
 const (
@@ -148,6 +162,7 @@ const (
 	OpStorageSCGetSharderSnapshots
 	OpStorageSCGetAuthorizerSnapshots
 	OpStorageSCGetValidatorSnapshots
+	OpStorageSCGetUserSnapshots
 	OpZCNSCGetGlobalConfig
 	OpZCNSCGetAuthorizer
 	OpZCNSCGetAuthorizerNodes
@@ -169,9 +184,15 @@ type GetNonceCallback interface {
 }
 
 type GetNonceCallbackStub struct {
+	status int
+	nonce  int64
+	info   string
 }
 
 func (g *GetNonceCallbackStub) OnNonceAvailable(status int, nonce int64, info string) {
+	g.status = status
+	g.nonce = nonce
+	g.info = info
 }
 
 // GetInfoCallback needs to be implemented by the caller of GetLockTokenConfig() and GetLockedTokens()
@@ -323,7 +344,8 @@ func Init(chainConfigJSON string) error {
 
 		conf.InitClientConfig(cfg)
 	}
-	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (Init)")
+	logging.Info("0chain: test logging")
+	logging.Info("******* Wallet SDK Version:", version.VERSIONSTR, " ******* (Init) Test")
 	return err
 }
 
@@ -593,7 +615,7 @@ func SetAuthUrl(url string) error {
 	return nil
 }
 
-func GetWalletBalance(clientId string) (common.Balance, error) {
+func getWalletBalance(clientId string) (common.Balance, error) {
 	err := checkSdkInit()
 	if err != nil {
 		return 0, err
@@ -617,7 +639,7 @@ func GetWalletBalance(clientId string) (common.Balance, error) {
 	return cb.balance, cb.err
 }
 
-// GetBalance retreives wallet balance from sharders
+// GetBalance retrieve wallet balance from sharders
 //
 //	# Inputs
 //	-	cb: callback for checking result
@@ -638,15 +660,17 @@ func GetBalance(cb GetBalanceCallback) error {
 	return nil
 }
 
-// GetBalance retreives wallet nonce from sharders
+// GetBalance retrieve wallet nonce from sharders
 func GetNonce(cb GetNonceCallback) error {
 	if cb == nil {
 		cb = &GetNonceCallbackStub{}
 	}
+
 	err := CheckConfig()
 	if err != nil {
 		return err
 	}
+
 	go func() {
 		value, info, err := getNonceFromSharders(_config.wallet.ClientID)
 		if err != nil {
@@ -656,7 +680,38 @@ func GetNonce(cb GetNonceCallback) error {
 		}
 		cb.OnNonceAvailable(StatusSuccess, value, info)
 	}()
+
 	return nil
+}
+
+// GetWalletBalance retrieve wallet nonce from sharders
+func GetWalletNonce(clientID string) (int64, error) {
+	cb := &GetNonceCallbackStub{}
+
+	err := CheckConfig()
+	if err != nil {
+		return 0, err
+	}
+	wait := &sync.WaitGroup{}
+	wait.Add(1)
+	go func() {
+		defer wait.Done()
+		value, info, err := getNonceFromSharders(clientID)
+		if err != nil {
+			logging.Error(err)
+			cb.OnNonceAvailable(StatusError, 0, info)
+			return
+		}
+		cb.OnNonceAvailable(StatusSuccess, value, info)
+	}()
+
+	wait.Wait()
+
+	if cb.status == StatusSuccess {
+		return cb.nonce, nil
+	}
+
+	return 0, stdErrors.New(cb.info)
 }
 
 // GetBalanceWallet retreives wallet balance from sharders
@@ -1064,6 +1119,18 @@ func GetAuthorizerSnapshots(offset int64, cb GetInfoCallback) (err error) {
 	return
 }
 
+// GetUserSnapshots replicates user aggregates from events_db.
+func GetUserSnapshots(offset int64, cb GetInfoCallback) (err error) {
+	if err = CheckConfig(); err != nil {
+		return
+	}
+	var url = withParams(STORAGE_GET_USER_SNAPSHOT, Params{
+		"offset": strconv.FormatInt(offset, 10),
+	})
+	go GetInfoFromAnySharder(url, OpStorageSCGetUserSnapshots, cb)
+	return
+}
+
 // GetReadPoolInfo obtains information about read pool of a user.
 func GetReadPoolInfo(clientID string, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
@@ -1212,7 +1279,7 @@ func Decrypt(key, text string) (string, error) {
 func CryptoJsEncrypt(passphrase, message string) (string, error) {
 	o := openssl.New()
 
-	enc, err := o.EncryptBytes(passphrase, []byte(message), openssl.BytesToKeyMD5)
+	enc, err := o.EncryptBytes(passphrase, []byte(message), openssl.DigestMD5Sum)
 	if err != nil {
 		return "", err
 	}
@@ -1222,7 +1289,7 @@ func CryptoJsEncrypt(passphrase, message string) (string, error) {
 
 func CryptoJsDecrypt(passphrase, encryptedMessage string) (string, error) {
 	o := openssl.New()
-	dec, err := o.DecryptBytes(passphrase, []byte(encryptedMessage), openssl.BytesToKeyMD5)
+	dec, err := o.DecryptBytes(passphrase, []byte(encryptedMessage), openssl.DigestMD5Sum)
 	if err != nil {
 		return "", err
 	}
