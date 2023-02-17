@@ -113,3 +113,25 @@ func getMintWZCNPayload(burnTrxHash string) string {
 
 	return string(result)
 }
+
+// Returns all not processed 0chain burn tickets burned for ethereum address given as a param
+func getNotProcessedBurnTickets(ethereumAddress string) string {
+	userNonce, err := bridge.GetUserNonceMinted(context.Background(), ethereumAddress)
+	if err != nil {
+		return errors.Wrap("getNotProcessedBurnTickets", "failed to retrieve user nonce", err).Error()
+	}
+
+	var cb zcncore.GetBurnTicketsCallbackStub
+	err = zcncore.GetBurnTickets(userNonce.Int64(), &cb)
+	if err != nil {
+		return errors.Wrap("getNotProcessedBurnTickets", "failed to retrieve burn tickets", err).Error()
+	}
+
+	var result []byte
+	result, err = json.Marshal(cb.Value)
+	if err != nil {
+		return errors.Wrap("getNotProcessedBurnTickets", "failed to marshal", err).Error()
+	}
+
+	return string(result)
+}

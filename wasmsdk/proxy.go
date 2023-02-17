@@ -179,12 +179,13 @@ func main() {
 				"faucet":               faucet,
 
 				//swap
-				"setSwapWallets":     setSwapWallets,
-				"swapToken":          swapToken,
-				"initBridge":         initBridge,
-				"burnZCN":            burnZCN,
-				"mintZCN":            mintZCN,
-				"getMintWZCNPayload": getMintWZCNPayload,
+				"setSwapWallets":             setSwapWallets,
+				"swapToken":                  swapToken,
+				"initBridge":                 initBridge,
+				"burnZCN":                    burnZCN,
+				"mintZCN":                    mintZCN,
+				"getMintWZCNPayload":         getMintWZCNPayload,
+				"getNotProcessedBurnTickets": getNotProcessedBurnTickets,
 
 				//zcn
 				"getWalletBalance": getWalletBalance,

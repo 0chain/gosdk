@@ -189,6 +189,19 @@ type GetBurnTicketsCallback interface {
 	OnBalanceAvailable(status int, value []BurnTicket, info string)
 }
 
+// Implementation of GetBurnTicketsCallback
+type GetBurnTicketsCallbackStub struct {
+	Status int
+	Value  []BurnTicket
+	Info   string
+}
+
+func (cb *GetBurnTicketsCallbackStub) OnBalanceAvailable(status int, value []BurnTicket, info string) {
+	cb.Status = status
+	cb.Value = value
+	cb.Info = info
+}
+
 // GetNonceCallback needs to be implemented by the caller of GetNonce() to get the status
 type GetNonceCallback interface {
 	OnNonceAvailable(status int, nonce int64, info string)
@@ -672,13 +685,13 @@ func GetBalance(cb GetBalanceCallback) error {
 }
 
 // GetBurnTickets retrieve wallet burn tickets from sharders
-func GetBurnTickets(cb GetBurnTicketsCallback) error {
+func GetBurnTickets(startNonce int64, cb GetBurnTicketsCallback) error {
 	err := CheckConfig()
 	if err != nil {
 		return err
 	}
 	go func() {
-		value, info, err := getBurnTicketsFromSharders(_config.wallet.ClientID, _config.wallet.ClientID)
+		value, info, err := getBurnTicketsFromSharders(_config.wallet.ClientID, startNonce)
 		if err != nil {
 			logging.Error(err)
 			cb.OnBalanceAvailable(StatusError, nil, info)
@@ -818,11 +831,11 @@ func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
 func getBurnTicketsFromSharders(clientID string, startNonce int64) ([]BurnTicket, string, error) {
 	result := make(chan *util.GetResponse)
 	defer close(result)
-	// getMinShardersVerify
-	var numSharders = len(_config.chain.Sharders) // overwrite, use all
+
+	var numSharders = len(_config.chain.Sharders)
 	queryFromSharders(numSharders, fmt.Sprintf(GET_BURN_TICKETS, clientID, startNonce), result)
 
-	consensusMaps := NewHttpConsensusMaps(consensusThresh)
+	consensusMaps := NewHttpConsensusObjects(consensusThresh)
 
 	for i := 0; i < numSharders; i++ {
 		rsp := <-result
@@ -845,7 +858,7 @@ func getBurnTicketsFromSharders(clientID string, startNonce int64) ([]BurnTicket
 		return nil, consensusMaps.WinError, errors.New("", "get burn tickets failed. consensus not reached")
 	}
 
-	winValue, ok := consensusMaps.GetValue(name)
+	winValue, ok := consensusMaps.GetValue()
 	if ok {
 		var winBurnTickets []BurnTicket
 		if err := json.Unmarshal(winValue, &winBurnTickets); err != nil {
