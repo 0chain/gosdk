@@ -16,6 +16,7 @@ import (
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
@@ -76,6 +77,15 @@ func getFileStats(allocationID, remotePath string) ([]*sdk.FileStats, error) {
 	}
 
 	return stats, nil
+}
+
+func updateBlobberSettings(blob *sdk.Blobber) (resp string, nonce int64, err error) {
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS,
+		InputArgs: blob,
+	}
+	resp, _, nonce, _, err = sdk.SmartContractTxn(sn)
+	return
 }
 
 // Delete delete file from blobbers
