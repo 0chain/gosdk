@@ -74,37 +74,37 @@ func TestGetAggregates(t *testing.T) {
 	statusBar := wallet.NewZCNStatus(&snaps)
 	statusBar.Wg = wg
 	wg.Add(5)
-	err = zcncore.GetBlobberSnapshots(int64(587), 0, statusBar)
+	err = zcncore.GetBlobberSnapshots(int64(587), 20, 0, statusBar)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	err = zcncore.GetSharderSnapshots(int64(587), 0, statusBar)
+	err = zcncore.GetSharderSnapshots(int64(587), 20, 0, statusBar)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	err = zcncore.GetMinerSnapshots(int64(587), 0, statusBar)
+	err = zcncore.GetMinerSnapshots(int64(587), 20, 0, statusBar)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	err = zcncore.GetAuthorizerSnapshots(int64(587), 0, statusBar)
+	err = zcncore.GetAuthorizerSnapshots(int64(587), 20, 0, statusBar)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	err = zcncore.GetValidatorSnapshots(int64(587), 0, statusBar)
+	err = zcncore.GetValidatorSnapshots(int64(587), 20, 0, statusBar)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	err = zcncore.GetUserSnapshots(int64(587), 0, statusBar)
+	err = zcncore.GetUserSnapshots(int64(587), 20, 0, statusBar)
 	if err != nil {
 		t.Error(err)
 		return
