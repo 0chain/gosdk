@@ -211,9 +211,7 @@ func (wmMu *WriteMarkerMutex) LockBlobber(
 	consensus *Consensus, b *blockchain.StorageNode, pos uint64, connID string,
 	timeOut time.Duration, wg *sync.WaitGroup) {
 
-	if wg != nil {
-		defer wg.Done()
-	}
+	defer wg.Done()
 
 	select {
 	case <-ctx.Done():
@@ -335,14 +333,4 @@ func (wmMu *WriteMarkerMutex) LockBlobber(
 		}
 	}
 
-	go func() {
-		for {
-			d := time.Since(requestTime)
-			if d > time.Second*20 {
-				go wmMu.LockBlobber(ctx, mask, maskMu, consensus, b, pos, connID, timeOut, nil)
-				return
-			}
-			time.Sleep(time.Second*20 - d)
-		}
-	}()
 }
