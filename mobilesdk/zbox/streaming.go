@@ -314,7 +314,7 @@ func (d *M3u8Downloader) download(item MediaItem) (string, error) {
 	remotePath := item.Path
 
 	if len(d.remotePath) > 0 {
-		err := d.allocationObj.DownloadFile(localPath, remotePath, statusBar)
+		err := d.allocationObj.DownloadFile(localPath, remotePath, false, statusBar)
 		if err != nil {
 			return "", err
 		}

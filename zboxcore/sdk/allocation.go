@@ -494,20 +494,26 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, 
 	return found, !found.Equals(uploadMask), fileRef, nil
 }
 
-func (a *Allocation) DownloadFile(localPath string, remotePath string, status StatusCallback) error {
-	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, status)
+func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDownload bool, status StatusCallback) error {
+	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload, status)
 }
 
-func (a *Allocation) DownloadFileByBlock(localPath string, remotePath string, startBlock int64, endBlock int64, numBlocks int, status StatusCallback) error {
-	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_FULL, startBlock, endBlock, numBlocks, status)
+func (a *Allocation) DownloadFileByBlock(
+	localPath string, remotePath string, startBlock int64, endBlock int64,
+	numBlocks int, verifyDownload bool, status StatusCallback) error {
+
+	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_FULL, startBlock, endBlock,
+		numBlocks, verifyDownload, status)
 }
 
-func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, status StatusCallback) error {
-	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_THUMB, 1, 0, numBlockDownloads, status)
+func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, verifyDownload bool, status StatusCallback) error {
+
+	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_THUMB, 1, 0,
+		numBlockDownloads, verifyDownload, status)
 }
 
 func (a *Allocation) downloadFile(localPath string, remotePath string, contentMode string,
-	startBlock int64, endBlock int64, numBlocks int,
+	startBlock int64, endBlock int64, numBlocks int, verifyDownload bool,
 	status StatusCallback) error {
 	if !a.isInitialized() {
 		return notInitialized
@@ -551,6 +557,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	downloadReq.startBlock = startBlock - 1
 	downloadReq.endBlock = endBlock
 	downloadReq.numBlocks = int64(numBlocks)
+	downloadReq.shouldVerify = verifyDownload
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
 	downloadReq.completedCallback = func(remotepath string, remotepathhash string) {
@@ -1168,35 +1175,35 @@ func (a *Allocation) CancelDownload(remotepath string) error {
 }
 
 func (a *Allocation) DownloadThumbnailFromAuthTicket(localPath string,
-	authTicket string, remoteLookupHash string, remoteFilename string,
+	authTicket string, remoteLookupHash string, remoteFilename string, verifyDownload bool,
 	status StatusCallback) error {
 
 	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
 		1, 0, numBlockDownloads, remoteFilename, DOWNLOAD_CONTENT_THUMB,
-		status)
+		verifyDownload, status)
 }
 
 func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
-	remoteLookupHash string, remoteFilename string, status StatusCallback) error {
+	remoteLookupHash string, remoteFilename string, verifyDownload bool, status StatusCallback) error {
 
 	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
 		1, 0, numBlockDownloads, remoteFilename, DOWNLOAD_CONTENT_FULL,
-		status)
+		verifyDownload, status)
 }
 
 func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string,
 	authTicket string, startBlock int64, endBlock int64, numBlocks int,
-	remoteLookupHash string, remoteFilename string,
+	remoteLookupHash string, remoteFilename string, verifyDownload bool,
 	status StatusCallback) error {
 
 	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
 		startBlock, endBlock, numBlocks, remoteFilename, DOWNLOAD_CONTENT_FULL,
-		status)
+		verifyDownload, status)
 }
 
 func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	remoteLookupHash string, startBlock int64, endBlock int64, numBlocks int,
-	remoteFilename string, contentMode string,
+	remoteFilename string, contentMode string, verifyDownload bool,
 	status StatusCallback) error {
 
 	if !a.isInitialized() {
@@ -1246,6 +1253,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.startBlock = startBlock - 1
 	downloadReq.endBlock = endBlock
 	downloadReq.numBlocks = int64(numBlocks)
+	downloadReq.shouldVerify = verifyDownload
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {

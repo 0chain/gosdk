@@ -155,6 +155,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		header.BlockNum = req.blockNum
 		header.NumBlocks = req.numBlocks
 		header.ReadMarker = rmData
+		header.VerifyDownload = req.shouldVerify
 
 		if req.authTicket != nil {
 			header.AuthToken, _ = json.Marshal(req.authTicket) //nolint: errcheck

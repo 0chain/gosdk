@@ -7,8 +7,8 @@ type thumbnailDownloader struct {
 func (d *thumbnailDownloader) Start(status StatusCallback) error {
 	if d.options.isViewer {
 		return d.options.allocationObj.DownloadThumbnailFromAuthTicket(d.options.localPath,
-			d.options.authTicket, d.options.lookupHash, d.options.fileName, status)
+			d.options.authTicket, d.options.lookupHash, d.options.fileName, d.options.verifyDownload, status)
 
 	}
-	return d.options.allocationObj.DownloadThumbnail(d.options.localPath, d.options.remotePath, status)
+	return d.options.allocationObj.DownloadThumbnail(d.options.localPath, d.options.remotePath, d.options.verifyDownload, status)
 }

@@ -400,8 +400,10 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		req.statusCallback.Started(req.allocationID, remotePathCB, OpDownload, int(size))
 	}
 
-	if req.authTicket == nil || req.encryptedKey == "" {
-		req.shouldVerify = true
+	if req.shouldVerify {
+		if req.authTicket != nil && req.encryptedKey != "" {
+			req.shouldVerify = false
+		}
 	}
 	var actualFileHasher hash.Hash
 	var isPREAndWholeFile bool
