@@ -63,16 +63,19 @@ build-iossimulator: $(IOSMOBILESDKDIR)
 
 build-ios: $(IOSMOBILESDKDIR)
 	@echo "Building iOS framework. Please wait..."
+	@go get golang.org/x/mobile/bind
 	@CGO_CFLAGS=$(MINIOSVERSIONMIN) gomobile bind -v -ldflags="-s -w" -target=ios,iossimulator -tags "ios mobile" -o $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME) $(PKG_EXPORTS)
 	@echo "   $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME). - [OK]"	
 
 build-android: $(ANDROIDMOBILESDKDIR)
 	@echo "Building Android framework. Please wait..."
+	@go get golang.org/x/mobile/bind
 	@gomobile bind -v -ldflags="-s -w -extldflags=-Wl,-soname,libgojni.so" -target=android/arm64,android/amd64 -androidapi 19 -tags mobile  -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
 	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"
 
 build-android-debug: $(ANDROIDMOBILESDKDIR)
 	@echo "Building Android framework. Please wait..."
+	@go get golang.org/x/mobile/bind
 	@gomobile bind -v -ldflags="-s -w -extldflags=-Wl,-soname,libgojni.so" -gcflags '-N -l' -target=android/arm64,android/amd64 -tags mobile  -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
 	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"
 
