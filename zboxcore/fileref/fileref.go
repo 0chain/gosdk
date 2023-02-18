@@ -76,6 +76,7 @@ type Ref struct {
 	Children         []RefEntity      `json:"-" mapstructure:"-"`
 	CreatedAt        common.Timestamp `json:"created_at" mapstructure:"created_at"`
 	UpdatedAt        common.Timestamp `json:"updated_at" mapstructure:"updated_at"`
+	AllocationRoot   string           `json:"WriteMarker"`
 }
 
 func GetReferenceLookup(allocationID string, path string) string {
