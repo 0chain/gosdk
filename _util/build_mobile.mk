@@ -81,5 +81,6 @@ build-android-debug: $(ANDROIDMOBILESDKDIR)
 
 build-macos: $(MACSDKDIR)
 	@echo "Building MAC framework. Please wait..."
+	@go get golang.org/x/mobile/bind
 	@CGO_CFLAGS=$(MINMACOSVERSIONMIN)  gomobile bind -v -ldflags="-s -w" -target=macos -tags mobile -o $(MACSDKDIR)/$(IOSBINNAME) $(PKG_EXPORTS)
 	@echo "   $(MACSDKDIR)/$(IOSBINNAME). - [OK]"
