@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
@@ -232,19 +231,12 @@ func (a *Allocation) GetShareAuthToken(path string, filename string, referenceTy
 }
 
 // GetAuthToken - get auth token from refereeClientID
-func (a *Allocation) GetAuthToken(path string, filename string, referenceType string, refereeClientID string, refereeEncryptionPublicKey string, expiration int64, availableAfter string) (string, error) {
+func (a *Allocation) GetAuthToken(path string, filename string, referenceType string, refereeClientID string, refereeEncryptionPublicKey string, expiration int64) (string, error) {
 	if a == nil || a.sdkAllocation == nil {
 		return "", ErrInvalidAllocation
 	}
-	availableAt := time.Now()
-	if len(availableAfter) > 0 {
-		aa, err := common.ParseTime(availableAt, availableAfter)
-		if err != nil {
-			return "", err
-		}
-		availableAt = *aa
-	}
-	return a.sdkAllocation.GetAuthTicket(path, filename, referenceType, refereeClientID, refereeEncryptionPublicKey, expiration, &availableAt)
+	availableAfter := time.Now()
+	return a.sdkAllocation.GetAuthTicket(path, filename, referenceType, refereeClientID, refereeEncryptionPublicKey, expiration, &availableAfter)
 }
 
 // DownloadFromAuthTicket - download file from Auth ticket
