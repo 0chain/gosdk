@@ -64,20 +64,24 @@ func main() {
 //     }
 //
 //export InitSDK
-func InitSDK(configJson *C.char, clientJson *C.char) error {
+func InitSDK(configJson *C.char, clientJson *C.char) *C.char {
 
 	l.Logger.Info("Start InitStorageSDK")
-	configObj := &conf.Config{}
+
 	configJs := C.GoString(configJson)
+	clientJs := C.GoString(clientJson)
+
+	configObj := &conf.Config{}
+
 	err := json.Unmarshal([]byte(configJs), configObj)
 	if err != nil {
 		l.Logger.Error(err)
-		return err
+		return WithJSON(false, err)
 	}
 	err = zcncore.InitZCNSDK(configObj.BlockWorker, configObj.SignatureScheme)
 	if err != nil {
-		l.Logger.Error(err)
-		return err
+		l.Logger.Error(err, configJs, clientJs)
+		return WithJSON(false, err)
 	}
 	l.Logger.Info("InitZCNSDK success")
 	l.Logger.Info(configObj.BlockWorker)
@@ -85,12 +89,10 @@ func InitSDK(configJson *C.char, clientJson *C.char) error {
 	l.Logger.Info(configObj.SignatureScheme)
 	l.Logger.Info(configObj.PreferredBlobbers)
 
-	clientJs := C.GoString(clientJson)
-
 	err = sdk.InitStorageSDK(clientJs, configObj.BlockWorker, configObj.ChainID, configObj.SignatureScheme, configObj.PreferredBlobbers, 0)
 	if err != nil {
-		l.Logger.Error(err)
-		return err
+		l.Logger.Error(err, configJs, clientJs)
+		return WithJSON(false, err)
 	}
 	l.Logger.Info("InitStorageSDK success")
 
@@ -105,7 +107,7 @@ func InitSDK(configJson *C.char, clientJson *C.char) error {
 	}
 
 	l.Logger.Info("Init successful")
-	return nil
+	return WithJSON(true, nil)
 }
 
 var ErrInvalidSignatureScheme = errors.New("invalid_signature_scheme")

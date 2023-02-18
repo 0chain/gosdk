@@ -378,7 +378,9 @@ func TestPriceRange_IsValid(t *testing.T) {
 }
 
 func TestAllocation_InitAllocation(t *testing.T) {
-	a := Allocation{}
+	a := Allocation{
+		FileOptions: 63,
+	}
 	a.InitAllocation()
 	require.New(t).NotZero(a)
 }
@@ -684,6 +686,7 @@ func TestAllocation_RepairRequired(t *testing.T) {
 			a := &Allocation{
 				DataShards:   2,
 				ParityShards: 2,
+				FileOptions:  63,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -969,182 +972,6 @@ func TestAllocation_downloadFile(t *testing.T) {
 	}
 }
 
-func TestAllocation_AddCollaborator(t *testing.T) {
-	var mockClient = mocks.HttpClient{}
-	zboxutil.Client = &mockClient
-
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
-
-	type parameters struct {
-		filePath       string
-		collaboratorID string
-	}
-	tests := []struct {
-		name       string
-		parameters parameters
-		setup      func(*testing.T, string, *Allocation) (teardown func(*testing.T))
-		wantErr    bool
-		errMsg     string
-	}{
-		{
-			name: "Test_Uninitialized_Failed",
-			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
-				a.initialized = false
-				return func(t *testing.T) {
-					a.initialized = true
-				}
-			},
-			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
-		},
-		{
-			name: "Test_Add_Collaborator_Error_Response_Failed",
-			parameters: parameters{
-				filePath:       "/1.txt",
-				collaboratorID: "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
-			},
-			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_AddCollaborator", testCaseName, a, http.MethodPost, http.StatusBadRequest, []byte(""))
-				return nil
-			},
-			wantErr: true,
-			errMsg:  "add_collaborator_failed: Failed to add collaborator on all blobbers.",
-		},
-		{
-			name: "Test_Success",
-			parameters: parameters{
-				filePath:       "/1.txt",
-				collaboratorID: "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
-			},
-			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_AddCollaborator", testCaseName, a, http.MethodPost, http.StatusOK, []byte(""))
-				return nil
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require := require.New(t)
-			a := &Allocation{
-				DataShards:   2,
-				ParityShards: 2,
-			}
-			a.InitAllocation()
-			sdkInitialized = true
-			for i := 0; i < numBlobbers; i++ {
-				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
-					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
-					Baseurl: "TestAllocation_AddCollaborator" + tt.name + mockBlobberUrl + strconv.Itoa(i),
-				})
-			}
-			if tt.setup != nil {
-				if teardown := tt.setup(t, tt.name, a); teardown != nil {
-					defer teardown(t)
-				}
-			}
-			err := a.AddCollaborator(tt.parameters.filePath, tt.parameters.collaboratorID)
-			require.EqualValues(tt.wantErr, err != nil)
-			if err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(err))
-				return
-			}
-			require.NoErrorf(err, "unexpected error: %v", err)
-		})
-	}
-}
-
-func TestAllocation_RemoveCollaborator(t *testing.T) {
-	var mockClient = mocks.HttpClient{}
-	zboxutil.Client = &mockClient
-
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
-
-	type parameters struct {
-		filePath       string
-		collaboratorID string
-	}
-	tests := []struct {
-		name       string
-		parameters parameters
-		setup      func(*testing.T, string, *Allocation) (teardown func(*testing.T))
-		wantErr    bool
-		errMsg     string
-	}{
-		{
-			name: "Test_Uninitialized_Failed",
-			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
-				a.initialized = false
-				return func(t *testing.T) {
-					a.initialized = true
-				}
-			},
-			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
-		},
-		{
-			name: "Test_Remove_Collaborator_Error_Response_Failed",
-			parameters: parameters{
-				filePath:       "/1.txt",
-				collaboratorID: "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
-			},
-			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_RemoveCollaborator", testCaseName, a, http.MethodDelete, http.StatusBadRequest, []byte(""))
-				return nil
-			},
-			wantErr: true,
-			errMsg:  "remove_collaborator_failed: Failed to remove collaborator on all blobbers.",
-		},
-		{
-			name: "Test_Success",
-			parameters: parameters{
-				filePath:       "/1.txt",
-				collaboratorID: "9bf430d6f086f1bdc2d26ad7a708a0e7958aa9ae20efbc6778450739fb1ca468",
-			},
-			setup: func(t *testing.T, testCaseName string, a *Allocation) (teardown func(t *testing.T)) {
-				setupMockHttpResponse(t, &mockClient, "TestAllocation_RemoveCollaborator", testCaseName, a, http.MethodDelete, http.StatusOK, []byte(""))
-				return nil
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require := require.New(t)
-			a := &Allocation{
-				DataShards:   2,
-				ParityShards: 2,
-			}
-			a.InitAllocation()
-			sdkInitialized = true
-			for i := 0; i < numBlobbers; i++ {
-				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
-					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
-					Baseurl: "TestAllocation_RemoveCollaborator" + tt.name + mockBlobberUrl + strconv.Itoa(i),
-				})
-			}
-			if tt.setup != nil {
-				if teardown := tt.setup(t, tt.name, a); teardown != nil {
-					defer teardown(t)
-				}
-			}
-			err := a.RemoveCollaborator(tt.parameters.filePath, tt.parameters.collaboratorID)
-			require.EqualValues(tt.wantErr, err != nil)
-			if err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(err))
-				return
-			}
-			require.NoErrorf(err, "unexpected error: %v", err)
-		})
-	}
-}
-
 func TestAllocation_GetFileMeta(t *testing.T) {
 	const (
 		mockType       = "f"
@@ -1219,6 +1046,7 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 			a := &Allocation{
 				DataShards:   2,
 				ParityShards: 2,
+				FileOptions:  63,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -1277,7 +1105,7 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 		ClientKey: mockClientKey,
 	}
 	require := require.New(t)
-	a := &Allocation{DataShards: 1, ParityShards: 1}
+	a := &Allocation{DataShards: 1, ParityShards: 1, FileOptions: 63}
 	a.InitAllocation()
 	for i := 0; i < numberBlobbers; i++ {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
@@ -1471,6 +1299,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 			a := &Allocation{
 				DataShards:   1,
 				ParityShards: 1,
+				FileOptions:  63,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -1534,7 +1363,7 @@ func TestAllocation_CancelUpload(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			a := &Allocation{}
+			a := &Allocation{FileOptions: 63}
 			a.InitAllocation()
 			sdkInitialized = true
 			if tt.setup != nil {
@@ -1586,7 +1415,7 @@ func TestAllocation_CancelDownload(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
-			a := &Allocation{}
+			a := &Allocation{FileOptions: 63}
 			a.InitAllocation()
 			sdkInitialized = true
 			if tt.setup != nil {
@@ -1727,8 +1556,9 @@ func TestAllocation_ListDirFromAuthTicket(t *testing.T) {
 				ClientKey: mockClientKey,
 			}
 			a := &Allocation{
-				ID: mockAllocationId,
-				Tx: mockAllocationTxId,
+				ID:          mockAllocationId,
+				Tx:          mockAllocationTxId,
+				FileOptions: 63,
 			}
 
 			if tt.setup != nil {
@@ -2020,8 +1850,9 @@ func TestAllocation_listDir(t *testing.T) {
 
 			require := require.New(t)
 			a := &Allocation{
-				ID: mockAllocationId,
-				Tx: mockAllocationTxId,
+				ID:          mockAllocationId,
+				Tx:          mockAllocationTxId,
+				FileOptions: 63,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -2151,6 +1982,7 @@ func TestAllocation_GetFileMetaFromAuthTicket(t *testing.T) {
 				Tx:           mockAllocationTxId,
 				DataShards:   2,
 				ParityShards: 2,
+				FileOptions:  63,
 			}
 			a.InitAllocation()
 			sdkInitialized = true
@@ -2429,11 +2261,13 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 	a.uploadProgressMap = make(map[string]*UploadRequest)
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
 	a.mutex = &sync.Mutex{}
+	a.FileOptions = uint16(63) // 0011 1111 All allowed
 	a.initialized = true
 	if a.DataShards != 0 {
 		a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	}
 	sdkInitialized = true
+
 	go func() {
 		for {
 			select {
@@ -2505,6 +2339,7 @@ func getMockAuthTicket(t *testing.T) string {
 		Tx:           mockAllocationTxId,
 		DataShards:   1,
 		ParityShards: 1,
+		FileOptions:  63,
 	}
 	setupMockGetFileInfoResponse(t, &mockClient)
 	a.InitAllocation()

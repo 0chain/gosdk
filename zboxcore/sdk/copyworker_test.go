@@ -440,6 +440,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			a := &Allocation{
 				Tx:         "TestCopyRequest_ProcessCopy",
 				DataShards: numBlobbers,
+				FileOptions: 63,
 			}
 			a.InitAllocation()
 
