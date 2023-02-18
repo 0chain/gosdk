@@ -68,7 +68,7 @@ build-ios: $(IOSMOBILESDKDIR)
 
 build-android: $(ANDROIDMOBILESDKDIR)
 	@echo "Building Android framework. Please wait..."
-	@gomobile bind -v -ldflags="-s -w -extldflags=-Wl,-soname,libgojni.so" -target=android/arm64,android/amd64 -androidapi 19 -tags mobile  -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
+	@gomobile bind -v -ldflags="-s -w -extldflags=-Wl,-soname,libgojni.so" -target=android/arm64,android/amd64 -tags mobile  -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
 	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"
 
 build-android-debug: $(ANDROIDMOBILESDKDIR)
