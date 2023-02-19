@@ -350,10 +350,10 @@ type BulkUploadOption struct {
 	AllocationID string `json:"allocationId,omitempty"`
 	RemotePath   string `json:"remotePath,omitempty"`
 
-	ThumbnailBytes []byte `json:"thumbnailBytes,omitempty"`
-	Encrypt        bool   `json:"encrypt,omitempty"`
-	IsUpdate       bool   `json:"isUpdate,omitempty"`
-	IsRepair       bool   `json:"isRepair,omitempty"`
+	ThumbnailBytes jsbridge.Bytes `json:"thumbnailBytes,omitempty"`
+	Encrypt        bool           `json:"encrypt,omitempty"`
+	IsUpdate       bool           `json:"isUpdate,omitempty"`
+	IsRepair       bool           `json:"isRepair,omitempty"`
 
 	NumBlocks         int    `json:"numBlocks,omitempty"`
 	FileSize          int64  `json:"fileSize,omitempty"`
@@ -387,7 +387,7 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 			ok, err := uploadWithJsFuncs(o.AllocationID, o.RemotePath,
 				o.ReadChunkFuncName,
 				o.FileSize,
-				o.ThumbnailBytes,
+				o.ThumbnailBytes.Buffer,
 				o.Encrypt,
 				o.IsUpdate,
 				o.IsRepair,
