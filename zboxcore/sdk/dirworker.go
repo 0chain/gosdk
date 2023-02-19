@@ -32,6 +32,7 @@ type DirRequest struct {
 	remotePath   string
 	blobbers     []*blockchain.StorageNode
 	ctx          context.Context
+	ctxCncl      context.CancelFunc
 	wg           *sync.WaitGroup
 	dirMask      zboxutil.Uint128
 	mu           *sync.Mutex
@@ -42,6 +43,7 @@ type DirRequest struct {
 func (req *DirRequest) ProcessDir(a *Allocation) error {
 	l.Logger.Info("Start creating dir for blobbers")
 
+	defer req.ctxCncl()
 	var pos uint64
 	var existingDirCount int
 	countMu := &sync.Mutex{}
@@ -78,11 +80,11 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 	err = writeMarkerMU.Lock(
 		context.TODO(), &req.dirMask, req.mu,
 		req.blobbers, &req.Consensus, existingDirCount, time.Minute, req.connectionID)
-	defer writeMarkerMU.Unlock(context.TODO(), req.dirMask,
-		a.Blobbers, time.Minute, req.connectionID) //nolint: errcheck
 	if err != nil {
 		return fmt.Errorf("directory creation failed. Err: %s", err.Error())
 	}
+	defer writeMarkerMU.Unlock(context.TODO(), req.dirMask,
+		a.Blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	return req.commitRequest(existingDirCount)
 }

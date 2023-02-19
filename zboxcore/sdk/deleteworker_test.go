@@ -372,9 +372,9 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 					fullconsensus:   4,
 				},
 				maskMu:       &sync.Mutex{},
-				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
 			}
+			req.ctx, req.ctxCncl = context.WithCancel(context.TODO())
 
 			a := &Allocation{
 				DataShards: numBlobbers,
