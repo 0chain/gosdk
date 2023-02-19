@@ -33,10 +33,11 @@ var sdkNotInitialized = errors.New("sdk_not_initialized", "SDK is not initialise
 var allocationNotFound = errors.New("couldnt_find_allocation", "Couldn't find the allocation required for update")
 
 const (
-	OpUpload   int = 0
-	OpDownload int = 1
-	OpRepair   int = 2
-	OpUpdate   int = 3
+	OpUpload            int = 0
+	OpDownload          int = 1
+	OpRepair            int = 2
+	OpUpdate            int = 3
+	opThumbnailDownload int = 4
 )
 
 type StatusCallback interface {
