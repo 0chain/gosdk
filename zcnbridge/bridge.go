@@ -306,7 +306,6 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 
 	Logger.Info(
 		"Staring Burn WZCN",
-		//zap.String("clientID", b.ID()),
 		zap.Int64("amount", amount.Int64()),
 	)
 
@@ -323,6 +322,60 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 	)
 
 	return tran, err
+}
+
+// GetNotProcessedWZCNBurnTickets returns all not processed WZCN burn tickets burned for ethereum address given as a param
+func (b *BridgeClient) GetNotProcessedWZCNBurnTickets(ctx context.Context) ([]zcnsc.BurnTicket, error) {
+	if DefaultClientIDEncoder == nil {
+		return nil, errors.New("DefaultClientIDEncoder must be setup")
+	}
+
+	clientID := DefaultClientIDEncoder(b.ClientID())
+
+	var result []zcnsc.BurnTicket
+
+	query := fmt.Sprintf(`query {
+    	burneds(where: {clientId: "%s", nonce_in: %v}) {
+      	transactionHash
+      	nonce
+    	}
+	}`, clientID)
+
+	var queryResult zcnsc.BurnEvent
+
+	err := b.graphQlClient.Exec(ctx, query, &queryResult, nil)
+	if err != nil {
+		return result, err
+	}
+
+	if len(queryResult.Burneds) == 0 {
+		return result, errors.New("timeout happened during the process of transaction")
+	}
+
+	for _, burn := range queryResult.Burneds {
+		result = append(result, zcnsc.BurnTicket{
+			TransactionHash: burn.TransactionHash,
+			Nonce:           burn.Nonce,
+		})
+	}
+
+	// var amountInt int64
+	// amountInt, err = strconv.ParseInt(queryResult.Burneds[0].Amount, 10, 64)
+	// if err != nil {
+	// 	return result, err
+	// }
+
+	// result.Amount = amountInt
+
+	// var nonceInt int64
+	// nonceInt, err = strconv.ParseInt(queryResult.Burneds[0].Nonce, 10, 64)
+	// if err != nil {
+	// 	return result, err
+	// }
+
+	// result.Nonce = nonceInt
+
+	return result, nil
 }
 
 // MintZCN mints ZCN tokens after receiving proof-of-burn of WZCN tokens
