@@ -1,8 +1,6 @@
 package util
 
 import (
-	"github.com/0chain/gosdk/zboxcore/logger"
-
 	"github.com/google/uuid"
 )
 
@@ -16,19 +14,9 @@ func GetSHA1Uuid(u uuid.UUID, name string) uuid.UUID {
 	return uuid.NewSHA1(u, []byte(name))
 }
 
-// GetNewUUID will give new version1 uuid. It will ignore first error if any but will panic
-// if there is error twice.
+// GetNewUUID will give new version1 uuid. It will panic if any error occurred
 func GetNewUUID() uuid.UUID {
-	var uid uuid.UUID
-	var err error
-	for i := 0; i < 2; i++ {
-		uid, err = uuid.NewUUID()
-		if err == nil {
-			break
-		}
-		logger.Logger.Error(err)
-
-	}
+	uid, err := uuid.NewUUID()
 	if err != nil {
 		panic("could not get new uuid. Error: " + err.Error())
 	}
