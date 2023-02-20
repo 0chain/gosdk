@@ -31,6 +31,7 @@ type CopyRequest struct {
 	remotefilepath string
 	destPath       string
 	ctx            context.Context
+	ctxCncl        context.CancelFunc
 	copyMask       zboxutil.Uint128
 	maskMU         *sync.Mutex
 	connectionID   string
@@ -143,6 +144,8 @@ func (req *CopyRequest) copyBlobberObject(
 }
 
 func (req *CopyRequest) ProcessCopy() error {
+	defer req.ctxCncl()
+
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	wg := &sync.WaitGroup{}
@@ -177,10 +180,10 @@ func (req *CopyRequest) ProcessCopy() error {
 	}
 	err = writeMarkerMutex.Lock(req.ctx, &req.copyMask, req.maskMU,
 		req.blobbers, &req.Consensus, 0, time.Minute, req.connectionID)
-	defer writeMarkerMutex.Unlock(req.ctx, req.copyMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 	if err != nil {
 		return fmt.Errorf("Copy failed: %s", err.Error())
 	}
+	defer writeMarkerMutex.Unlock(req.ctx, req.copyMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	req.Consensus.Reset()
 	activeBlobbers := req.copyMask.CountOnes()
