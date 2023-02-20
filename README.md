@@ -52,6 +52,19 @@ It is possible to support the sdk for other variations of Linux as well.
         For Android only:
                 make build-android
 
+## How to expose a gosdk function to mobilesdk ##
+Examples:
+* `mobilesdk/sdk/common.go` which exports the functions in `core/encryption/hash.go`.
+
+Steps:
+
+1. If you are exposing:
+
+    - a new function from an existing file like `zboxcore/sdk/allocation.go`, you should add a function to `mobilesdksdk/zbox/allocation.go` which should call the gosdk function you intend to expose.
+    - a function from a new file, you should create a new `<filename>.go` file for it, in the same style as `mobilesdksdk/zbox/allocation.go` & in the file created, you should call the gosdk function you intend to expose.
+
+2. Build the Mobile SDK as mentioned in the 'Mobile Builds' section of this file to build the aar file used in the mobile application you are developing.
+
 ## How to export a gosdk function to WebAssembly ##
 
 Examples:
