@@ -31,6 +31,7 @@ type RenameRequest struct {
 	remotefilepath string
 	newName        string
 	ctx            context.Context
+	ctxCncl        context.CancelFunc
 	wg             *sync.WaitGroup
 	renameMask     zboxutil.Uint128
 	maskMU         *sync.Mutex
@@ -143,6 +144,8 @@ func (req *RenameRequest) renameBlobberObject(
 }
 
 func (req *RenameRequest) ProcessRename() error {
+	defer req.ctxCncl()
+
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	req.wg = &sync.WaitGroup{}
@@ -176,10 +179,10 @@ func (req *RenameRequest) ProcessRename() error {
 
 	err = writeMarkerMutex.Lock(req.ctx, &req.renameMask,
 		req.maskMU, req.blobbers, &req.consensus, 0, time.Minute, req.connectionID)
-	defer writeMarkerMutex.Unlock(req.ctx, req.renameMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 	if err != nil {
 		return fmt.Errorf("rename failed: %s", err.Error())
 	}
+	defer writeMarkerMutex.Unlock(req.ctx, req.renameMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	req.consensus.Reset()
 	activeBlobbers := req.renameMask.CountOnes()
