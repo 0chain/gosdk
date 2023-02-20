@@ -114,6 +114,11 @@ func getMintWZCNPayload(burnTrxHash string) string {
 	return string(result)
 }
 
+// Returns all not processed WZCN burn tickets burned for client id given as a param
+func getNotProcessedWZCNBurnTickets(clientId, ethereumAddress string) string {
+
+}
+
 // Returns all not processed ZCN burn tickets burned for ethereum address given as a param
 func getNotProcessedZCNBurnTickets(ethereumAddress string) string {
 	userNonce, err := bridge.GetUserNonceMinted(context.Background(), ethereumAddress)

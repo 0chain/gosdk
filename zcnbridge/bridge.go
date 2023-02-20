@@ -9,6 +9,7 @@ import (
 	"path"
 
 	"github.com/0chain/gosdk/core/logger"
+	"github.com/0chain/gosdk/zcncore"
 
 	//"github.com/0chain/gosdk/core/zcncrypto"
 	//"github.com/0chain/gosdk/zcnbridge/chain"
@@ -332,50 +333,26 @@ func (b *BridgeClient) GetNotProcessedWZCNBurnTickets(ctx context.Context) ([]zc
 
 	clientID := DefaultClientIDEncoder(b.ClientID())
 
-	var result []zcnsc.BurnTicket
+	var cb zcncore.GetZCNProcessedMintNoncesCallbackStub
+	if err := zcncore.GetZCNProcessedMintNonces(&cb); err != nil {
+		return nil, err
+	}
 
 	query := fmt.Sprintf(`query {
-    	burneds(where: {clientId: "%s", nonce_in: %v}) {
+    	burneds(where: {clientId: "%s", nonce_nin: %v}) {
       	transactionHash
       	nonce
     	}
-	}`, clientID)
+	}`, clientID, cb.Value)
 
 	var queryResult zcnsc.BurnEvent
 
 	err := b.graphQlClient.Exec(ctx, query, &queryResult, nil)
 	if err != nil {
-		return result, err
+		return nil, err
 	}
 
-	if len(queryResult.Burneds) == 0 {
-		return result, errors.New("timeout happened during the process of transaction")
-	}
-
-	for _, burn := range queryResult.Burneds {
-		result = append(result, zcnsc.BurnTicket{
-			TransactionHash: burn.TransactionHash,
-			Nonce:           burn.Nonce,
-		})
-	}
-
-	// var amountInt int64
-	// amountInt, err = strconv.ParseInt(queryResult.Burneds[0].Amount, 10, 64)
-	// if err != nil {
-	// 	return result, err
-	// }
-
-	// result.Amount = amountInt
-
-	// var nonceInt int64
-	// nonceInt, err = strconv.ParseInt(queryResult.Burneds[0].Nonce, 10, 64)
-	// if err != nil {
-	// 	return result, err
-	// }
-
-	// result.Nonce = nonceInt
-
-	return result, nil
+	return queryResult.Burneds, nil
 }
 
 // MintZCN mints ZCN tokens after receiving proof-of-burn of WZCN tokens
