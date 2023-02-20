@@ -9,7 +9,6 @@ import (
 	"path"
 
 	"github.com/0chain/gosdk/core/logger"
-	"github.com/0chain/gosdk/zcncore"
 
 	//"github.com/0chain/gosdk/core/zcncrypto"
 	//"github.com/0chain/gosdk/zcnbridge/chain"
@@ -326,24 +325,19 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 }
 
 // GetNotProcessedWZCNBurnTickets returns all not processed WZCN burn tickets burned for ethereum address given as a param
-func (b *BridgeClient) GetNotProcessedWZCNBurnTickets(ctx context.Context) ([]zcnsc.BurnTicket, error) {
+func (b *BridgeClient) GetNotProcessedWZCNBurnTickets(ctx context.Context, processedMintNonces []int64) ([]zcnsc.BurnTicket, error) {
 	if DefaultClientIDEncoder == nil {
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
 	}
 
 	clientID := DefaultClientIDEncoder(b.ClientID())
 
-	var cb zcncore.GetZCNProcessedMintNoncesCallbackStub
-	if err := zcncore.GetZCNProcessedMintNonces(&cb); err != nil {
-		return nil, err
-	}
-
 	query := fmt.Sprintf(`query {
     	burneds(where: {clientId: "%s", nonce_nin: %v}) {
       	transactionHash
       	nonce
     	}
-	}`, clientID, cb.Value)
+	}`, clientID, processedMintNonces)
 
 	var queryResult zcnsc.BurnEvent
 
