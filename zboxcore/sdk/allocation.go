@@ -835,7 +835,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.EncryptedKey = ref.EncryptedKey
 		result.CommitMetaTxns = ref.CommitMetaTxns
 		result.Collaborators = ref.Collaborators
-		result.ActualFileSize = ref.Size
+		result.ActualFileSize = ref.ActualSize
 		result.ActualNumBlocks = ref.NumBlocks
 		return result, nil
 	}
