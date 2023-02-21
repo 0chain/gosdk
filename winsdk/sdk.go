@@ -25,6 +25,9 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
+const STORAGE_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
+var numBlockDownloads = 10
+
 func main() {
 	sdk.SetLogFile(filepath.Join(getHomeDir(), ".zcn", "zbox.log"), true)
 	zcncore.SetLogFile(filepath.Join(getHomeDir(), ".zcn", "zcn.log"), true)
@@ -201,4 +204,34 @@ func CryptoJsDecrypt(passphrase, encryptedMessage *C.char) *C.char {
 func GetPublicEncryptionKey(mnemonics *C.char) *C.char {
 	m := C.GoString(mnemonics)
 	return WithJSON(zcncore.GetPublicEncryptionKey(m))
+}
+
+	// GetAllocation is to get allocation details
+//
+//	return
+//		{
+//			"error":"",
+//			"result":"xxx",
+//		}
+//
+//export GetAllocation
+func GetAllocation(allocationID string) (*C.char) {
+	
+	params := make(map[string]string)
+	params["allocation"] = allocationID
+	allocationBytes, err := zcncore.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation", params)
+	if err != nil {
+		return WithJSON(nil, errors.New("allocation_fetch_error, Error fetching the allocation."))
+	}
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		return WithJSON(nil, err)
+	}
+	err = json.Unmarshal(allocationBytes, allocationObj)
+	if err != nil {
+		return WithJSON(nil, errors.New("allocation_decode_error, Error decoding the allocation."))
+	}
+	
+	allocationObj.InitAllocation()
+	return WithJSON(allocationObj, nil)
 }

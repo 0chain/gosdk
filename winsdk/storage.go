@@ -54,3 +54,42 @@ func GetFileStats(allocationID, remotePath *C.char) *C.char {
 
 	return WithJSON(result, nil)
 }
+
+// Rename to rename the file
+//
+//	return
+//		{
+//			"error":"",
+//			"result":"xxx",
+//		}
+//
+//export Rename
+func Rename(allocationID, remotePath, destName *C.char) *C.char{
+	allocID := C.GoString(allocationID)
+	remotepath := C.GoString(remotePath)
+    destname := C.GoString(destName)
+	if len(allocID) == 0 {
+		return WithJSON(nil, errors.New("allocationID is required"))
+	}
+
+	if len(remotepath) == 0 {
+		return WithJSON(nil, errors.New("remotePath is required"))
+	}
+
+	if len(destname) == 0 {
+		return WithJSON(nil, errors.New("destPath is required"))
+	}
+
+	allocationObj, err := getAllocation(allocID)
+	if err != nil {
+		return WithJSON(nil, err)
+	}
+
+	err = allocationObj.RenameObject(remotepath, destname)
+	if err != nil {
+		return WithJSON(nil, err)
+	}
+    
+	result := (remotepath + " renamed")
+
+	return WithJSON(result, nil)}
