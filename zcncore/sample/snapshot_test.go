@@ -34,7 +34,7 @@ const ChainConfig = `
 	 {
         "chain_id":"0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe",
 		"signature_scheme" : "bls0chain",
-		"block_worker" : "http://dev.0chain.net/dns",
+		"block_worker" : "http://dev.zus.network/dns",
 		"min_submit" : 50,
 		"min_confirmation" : 50,
 		"confirmation_chain_length" : 3,
