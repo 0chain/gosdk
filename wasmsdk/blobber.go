@@ -79,11 +79,19 @@ func getFileStats(allocationID, remotePath string) ([]*sdk.FileStats, error) {
 	return stats, nil
 }
 
-func updateBlobberSettings(blob *sdk.Blobber) (resp string, nonce int64, err error) {
+// updateBlobberSettings expects settings JSON of type sdk.Blobber
+func updateBlobberSettings(settings string) (resp string, nonce int64, err error) {
+	// check if the input json marshalls into sdk.Blobber
+	var blobberSettings sdk.Blobber
+	err = json.Unmarshal([]byte(settings), &blobberSettings)
+	if err != nil {
+		return
+	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS,
-		InputArgs: blob,
+		InputArgs: settings,
 	}
+
 	resp, _, nonce, _, err = sdk.SmartContractTxn(sn)
 	return
 }
