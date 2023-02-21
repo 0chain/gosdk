@@ -80,20 +80,20 @@ func getFileStats(allocationID, remotePath string) ([]*sdk.FileStats, error) {
 }
 
 // updateBlobberSettings expects settings JSON of type sdk.Blobber
-func updateBlobberSettings(settings string) (resp string, nonce int64, err error) {
+func updateBlobberSettings(settings string) (*transaction.Transaction, error) {
 	// check if the input json marshalls into sdk.Blobber
 	var blobberSettings sdk.Blobber
-	err = json.Unmarshal([]byte(settings), &blobberSettings)
+	err := json.Unmarshal([]byte(settings), &blobberSettings)
 	if err != nil {
-		return
+		return nil, err
 	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS,
 		InputArgs: settings,
 	}
 
-	resp, _, nonce, _, err = sdk.SmartContractTxn(sn)
-	return
+	_, _, _, txn, err := sdk.SmartContractTxn(sn)
+	return txn, err
 }
 
 // Delete delete file from blobbers

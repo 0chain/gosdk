@@ -196,7 +196,6 @@
 
       //name string, datashards, parityshards int, size, expiry int64,minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64,preferredBlobberIds []string
       const config = {
-        name: "newalloc",
         datashards: 2,
         parityshards: 2,
         size: 2 * 1073741824,
@@ -212,6 +211,7 @@
           config.minReadPrice, config.maxReadPrice, config.minWritePrice, config.maxWritePrice,
           config.lock, [])
 
+          console.log(allocation)
         allocations = await goWasm.sdk.listAllocations()
         bindAllocations()
       } catch (e) {
