@@ -11,9 +11,9 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
-	"github.com/google/uuid"
 
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
@@ -191,7 +191,7 @@ func (req *CopyRequest) ProcessCopy() error {
 	wg.Add(activeBlobbers)
 	commitReqs := make([]*CommitRequest, activeBlobbers)
 
-	var uid uuid.UUID
+	uid := util.GetNewUUID()
 	var c int
 	for i := req.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
