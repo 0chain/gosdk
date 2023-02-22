@@ -57,18 +57,18 @@ type TransactionCommon interface {
 	MinerSCCollectReward(providerId string, providerType int) error
 	StorageSCCollectReward(providerId string, providerType int) error
 
-	FinalizeAllocation(allocID string, fee string) error
-	CancelAllocation(allocID string, fee string) error
-	CreateAllocation(car *CreateAllocationRequest, lock, fee string) error //
-	CreateReadPool(fee string) error
-	ReadPoolLock(allocID string, blobberID string, duration int64, lock, fee string) error
-	ReadPoolUnlock(fee string) error
-	StakePoolLock(providerId string, providerType int, lock string, fee string) error
-	StakePoolUnlock(providerId string, providerType int, fee string) error
-	UpdateBlobberSettings(blobber Blobber, fee string) error
-	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock, fee string) error
-	WritePoolLock(allocID string, lock, fee string) error
-	WritePoolUnlock(allocID string, fee string) error
+	FinalizeAllocation(allocID string) error
+	CancelAllocation(allocID string) error
+	CreateAllocation(car *CreateAllocationRequest, lock string) error //
+	CreateReadPool() error
+	ReadPoolLock(allocID string, blobberID string, duration int64, lock string) error
+	ReadPoolUnlock() error
+	StakePoolLock(providerId string, providerType int, lock string) error
+	StakePoolUnlock(providerId string, providerType int) error
+	UpdateBlobberSettings(blobber Blobber) error
+	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock string) error
+	WritePoolLock(allocID string, lock string) error
+	WritePoolUnlock(allocID string) error
 
 	VestingUpdateConfig(InputMap) error
 	MinerScUpdateConfig(InputMap) error
@@ -536,7 +536,7 @@ func (t *Transaction) CancelAllocation(allocID string) error {
 	type cancelRequest struct {
 		AllocationID string `json:"allocation_id"`
 	}
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
+	err := t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_CANCEL_ALLOCATION, &cancelRequest{
 			AllocationID: allocID,
 		}, 0)
@@ -567,7 +567,7 @@ func (t *Transaction) CreateAllocation(car *CreateAllocationRequest, lock string
 
 // CreateReadPool for current user.
 func (t *Transaction) CreateReadPool() error {
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
+	err := t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_CREATE_READ_POOL, nil, 0)
 	if err != nil {
 		logging.Error(err)
@@ -610,7 +610,7 @@ func (t *Transaction) ReadPoolLock(allocID, blobberID string,
 
 // ReadPoolUnlock for current user and given pool.
 func (t *Transaction) ReadPoolUnlock() error {
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
+	err := t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_READ_POOL_UNLOCK, nil, 0)
 	if err != nil {
 		logging.Error(err)
@@ -643,18 +643,13 @@ func (t *Transaction) StakePoolLock(providerId string, providerType int, lock st
 }
 
 // StakePoolUnlock by blobberID
-func (t *Transaction) StakePoolUnlock(providerId string, providerType int, fee string) error {
-	v, err := parseCoinStr(fee)
-	if err != nil {
-		return err
-	}
-
+func (t *Transaction) StakePoolUnlock(providerId string, providerType int) error {
 	spr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerId,
 	}
 
-	err = t.createSmartContractTxn(StorageSmartContractAddress, transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
+	err := t.createSmartContractTxn(StorageSmartContractAddress, transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
 	if err != nil {
 		logging.Error(err)
 		return err
@@ -665,7 +660,7 @@ func (t *Transaction) StakePoolUnlock(providerId string, providerType int, fee s
 
 // UpdateBlobberSettings update settings of a blobber.
 func (t *Transaction) UpdateBlobberSettings(b Blobber) error {
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
+	err := t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, b, 0)
 	if err != nil {
 		logging.Error(err)
@@ -737,7 +732,7 @@ func (t *Transaction) WritePoolUnlock(allocID string) error {
 		AllocationID: allocID,
 	}
 
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
+	err := t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_WRITE_POOL_UNLOCK, &ur, 0)
 	if err != nil {
 		logging.Error(err)

@@ -69,23 +69,13 @@ func (ta *TransactionWithAuth) MinerSCLock(providerId string, providerType int, 
 		return err
 	}
 
-	type stakePoolRequest struct {
-		ProviderType int    `json:"provider_type,omitempty"`
-		ProviderID   string `json:"provider_id,omitempty"`
-	}
-
 	pr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerId,
 	}
 
-<<<<<<< HEAD
 	err = ta.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_LOCK, &mscl, v)
-=======
-	err = ta.t.createSmartContractTxn(MinerSmartContractAddress,
-		transaction.MINERSC_LOCK, pr, lv)
->>>>>>> staging
+		transaction.MINERSC_LOCK, &pr, lv)
 	if err != nil {
 		logging.Error(err)
 		return err
@@ -99,7 +89,7 @@ func (ta *TransactionWithAuth) MinerSCUnlock(providerId string, providerType int
 		ProviderID:   providerId,
 		ProviderType: providerType,
 	}
-	err := ta.t.createSmartContractTxn(MinerSmartContractAddress,
+	err := ta.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_LOCK, pr, 0)
 	if err != nil {
 		logging.Error(err)
@@ -114,7 +104,7 @@ func (ta *TransactionWithAuth) FinalizeAllocation(allocID string) error {
 	type finiRequest struct {
 		AllocationID string `json:"allocation_id"`
 	}
-	err = ta.createSmartContractTxn(StorageSmartContractAddress,
+	err := ta.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_FINALIZE_ALLOCATION, &finiRequest{
 			AllocationID: allocID,
 		}, 0)
@@ -131,7 +121,7 @@ func (ta *TransactionWithAuth) CancelAllocation(allocID string) error {
 	type cancelRequest struct {
 		AllocationID string `json:"allocation_id"`
 	}
-	err = ta.createSmartContractTxn(StorageSmartContractAddress,
+	err := ta.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_CANCEL_ALLOCATION, &cancelRequest{
 			AllocationID: allocID,
 		}, 0)
@@ -163,9 +153,8 @@ func (ta *TransactionWithAuth) CreateAllocation(car *CreateAllocationRequest,
 
 // CreateReadPool for current user.
 func (ta *TransactionWithAuth) CreateReadPool() error {
-	err = ta.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_CREATE_READ_POOL, nil, 0)
-	if err != nil {
+	if err := ta.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_CREATE_READ_POOL, nil, 0);  err != nil {
 		logging.Error(err)
 		return err
 	}
@@ -206,9 +195,8 @@ func (ta *TransactionWithAuth) ReadPoolLock(allocID, blobberID string,
 
 // ReadPoolUnlock for current user and given pool.
 func (ta *TransactionWithAuth) ReadPoolUnlock() error {
-	err = ta.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_READ_POOL_UNLOCK, nil, 0)
-	if err != nil {
+	if err := ta.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_READ_POOL_UNLOCK, nil, 0); err != nil {
 		logging.Error(err)
 		return err
 	}
@@ -245,19 +233,13 @@ func (ta *TransactionWithAuth) StakePoolLock(providerId string, providerType int
 
 // StakePoolUnlock by blobberID
 func (ta *TransactionWithAuth) StakePoolUnlock(providerId string, providerType int) error {
-	type stakePoolRequest struct {
-		ProviderType int    `json:"provider_type,omitempty"`
-		ProviderID   string `json:"provider_id,omitempty"`
-	}
-
 	spr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerId,
 	}
 
-	err = ta.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
-	if err != nil {
+	if err := ta.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0); err != nil {
 		logging.Error(err)
 		return err
 	}
@@ -267,9 +249,8 @@ func (ta *TransactionWithAuth) StakePoolUnlock(providerId string, providerType i
 
 // UpdateBlobberSettings update settings of a blobber.
 func (ta *TransactionWithAuth) UpdateBlobberSettings(blob Blobber) error {
-	err = ta.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, blob, 0)
-	if err != nil {
+	if err := ta.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, blob, 0); err != nil {
 		logging.Error(err)
 		return err
 	}
@@ -339,9 +320,8 @@ func (ta *TransactionWithAuth) WritePoolUnlock(allocID string) error {
 		AllocationID: allocID,
 	}
 
-	err = ta.createSmartContractTxn(StorageSmartContractAddress,
-		transaction.STORAGESC_WRITE_POOL_UNLOCK, &ur, 0)
-	if err != nil {
+	if err := ta.createSmartContractTxn(StorageSmartContractAddress,
+		transaction.STORAGESC_WRITE_POOL_UNLOCK, &ur, 0); err != nil {
 		logging.Error(err)
 		return err
 	}
