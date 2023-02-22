@@ -233,6 +233,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	fileIDMeta, err := json.Marshal(commitParams.FileIDMeta)
 	if err != nil {
 		logger.Logger.Error("Error marshalling file ID Meta: ", err)
+		return err
 	}
 
 	formWriter.WriteField("file_id_meta", string(fileIDMeta))
@@ -367,7 +368,11 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 		rootRef.CalculateHash()
 		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
-			logger.Logger.Info("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
+			logger.Logger.Info("Allocation root from latest writemarker mismatch. Expected: " +
+				prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
+			return nil, nil, 0, nil, fmt.Errorf(
+				"calculated allocation root mismatch from blobber %s. Expected: %s, Got: %s",
+				sb.blobber.Baseurl, prevAllocationRoot, lR.LatestWM.AllocationRoot)
 		}
 	}
 
