@@ -1,12 +1,11 @@
 package common
 
 import (
+	"errors"
 	"fmt"
 	"math"
 	"regexp"
 	"strconv"
-
-	"github.com/0chain/errors"
 
 	"github.com/shopspring/decimal"
 )
@@ -17,15 +16,15 @@ const (
 
 var (
 	// ErrNegativeValue is returned if a float value is a negative number
-	ErrNegativeValue = errors.New("", "negative coin value")
+	ErrNegativeValue = errors.New("negative coin value")
 	// ErrTooManyDecimals is returned if a value has more than 10 decimal places
-	ErrTooManyDecimals = errors.New("", "too many decimal places")
+	ErrTooManyDecimals = errors.New("too many decimal places")
 	// ErrTooLarge is returned if a value is greater than math.MaxInt64
-	ErrTooLarge = errors.New("", "value is too large")
+	ErrTooLarge = errors.New("value is too large")
 	// ErrUint64OverflowsFloat64 is returned if when converting a uint64 to a float64 overflow float64
-	ErrUint64OverflowsFloat64 = errors.New("", "uint64 overflows float64")
+	ErrUint64OverflowsFloat64 = errors.New("uint64 overflows float64")
 	// ErrUint64AddOverflow is returned if when adding uint64 values overflow uint64
-	ErrUint64AddOverflow = errors.New("", "uint64 addition overflow")
+	ErrUint64AddOverflow = errors.New("uint64 addition overflow")
 )
 
 // A Key represents an identifier. It can be a pool ID, client ID, smart
@@ -93,7 +92,7 @@ func (b Balance) Format(unit BalanceUnit) (string, error) {
 	case ZCN:
 		v /= 1e10
 	default:
-		return "", errors.New("", fmt.Sprintf("undefined balance unit: %d", unit))
+		return "", errors.New(fmt.Sprintf("undefined balance unit: %d", unit))
 	}
 	return fmt.Sprintf("%.3f %v", v, unit), nil
 }
@@ -223,7 +222,7 @@ func (unit *BalanceUnit) Parse(s string) error {
 	case "ZCN", "zcn":
 		*unit = ZCN
 	default:
-		return errors.New("", "undefined balance unit: "+s)
+		return errors.New("undefined balance unit: " + s)
 	}
 	return nil
 }
