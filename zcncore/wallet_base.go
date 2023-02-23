@@ -1176,15 +1176,18 @@ func GetStakePoolInfo(blobberID string, cb GetInfoCallback) (err error) {
 // # Inputs
 //   - clientID: the id of wallet
 //   - cb: callback for checking result
-func GetStakePoolUserInfo(clientID string, cb GetInfoCallback) (err error) {
+func GetStakePoolUserInfo(clientID string, offset, limit int, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
 	if clientID == "" {
 		clientID = _config.wallet.ClientID
 	}
+
 	var url = withParams(STORAGESC_GET_STAKE_POOL_USER_INFO, Params{
 		"client_id": clientID,
+		"offset":    strconv.FormatInt(int64(offset), 10),
+		"limit":     strconv.FormatInt(int64(limit), 10),
 	})
 	go GetInfoFromSharders(url, OpStorageSCGetStakePoolInfo, cb)
 	return
