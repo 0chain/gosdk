@@ -31,6 +31,7 @@ type MoveRequest struct {
 	remotefilepath string
 	destPath       string
 	ctx            context.Context
+	ctxCncl        context.CancelFunc
 	moveMask       zboxutil.Uint128
 	maskMU         *sync.Mutex
 	connectionID   string
@@ -143,6 +144,8 @@ func (req *MoveRequest) moveBlobberObject(
 }
 
 func (req *MoveRequest) ProcessMove() error {
+	defer req.ctxCncl()
+
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	wg := &sync.WaitGroup{}
@@ -177,10 +180,10 @@ func (req *MoveRequest) ProcessMove() error {
 	}
 	err = writeMarkerMutex.Lock(req.ctx, &req.moveMask, req.maskMU,
 		req.blobbers, &req.Consensus, 0, time.Minute, req.connectionID)
-	defer writeMarkerMutex.Unlock(req.ctx, req.moveMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 	if err != nil {
 		return fmt.Errorf("Move failed: %s", err.Error())
 	}
+	defer writeMarkerMutex.Unlock(req.ctx, req.moveMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	req.Consensus.Reset()
 	activeBlobbers := req.moveMask.CountOnes()

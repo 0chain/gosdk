@@ -505,6 +505,9 @@ func (req *DownloadRequest) calculateShardsParams(
 
 	size = fRef.ActualFileSize
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
+		if fRef.ActualThumbnailSize == 0 {
+			return 0, 0, 0, errors.New("invalid_request", "Thumbnail does not exist")
+		}
 		size = fRef.ActualThumbnailSize
 	}
 	req.encryptedKey = fRef.EncryptedKey
