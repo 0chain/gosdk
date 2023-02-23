@@ -116,8 +116,8 @@ func getMintWZCNPayload(burnTrxHash string) string {
 
 // Returns all not processed WZCN burn tickets burned for client id given as a param
 func getNotProcessedWZCNBurnTickets() string {
-	var cb zcncore.GetZCNProcessedMintNoncesCallbackStub
-	if err := zcncore.GetZCNProcessedMintNonces(&cb); err != nil {
+	var cb zcncore.GetMintNonceCallbackStub
+	if err := zcncore.GetMintNonce(&cb); err != nil {
 		return errors.Wrap("getNotProcessedWZCNBurnTickets", "failed to retreive ZCN processed mint nonces", err).Error()
 	}
 

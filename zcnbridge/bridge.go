@@ -325,7 +325,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 }
 
 // GetNotProcessedWZCNBurnTickets returns all not processed WZCN burn tickets burned for ethereum address given as a param
-func (b *BridgeClient) GetNotProcessedWZCNBurnTickets(ctx context.Context, processedMintNonces []int64) ([]zcnsc.BurnTicket, error) {
+func (b *BridgeClient) GetNotProcessedWZCNBurnTickets(ctx context.Context, mintNonce int64) ([]zcnsc.BurnTicket, error) {
 	if DefaultClientIDEncoder == nil {
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
 	}
@@ -333,11 +333,11 @@ func (b *BridgeClient) GetNotProcessedWZCNBurnTickets(ctx context.Context, proce
 	clientID := DefaultClientIDEncoder(b.ClientID())
 
 	query := fmt.Sprintf(`query {
-    	burneds(where: {clientId: "%s", nonce_nin: %v}) {
-      	transactionHash
-      	nonce
-    	}
-	}`, clientID, processedMintNonces)
+		burneds(where: {clientId: "%x", from: "%s", nonce_gt: %d}) {
+	  	transactionHash
+	  	nonce
+		}
+	}`, string(clientID), b.EthereumAddress, mintNonce)
 
 	var queryResult zcnsc.BurnEvent
 

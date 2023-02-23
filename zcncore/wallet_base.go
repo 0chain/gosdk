@@ -36,7 +36,6 @@ const (
 	TXN_VERIFY_URL                   = `/v1/transaction/get/confirmation?hash=`
 	GET_BALANCE                      = `/v1/client/get/balance?client_id=`
 	GET_NOT_PROCESSED_BURN_TICKETS   = `/v1/client/get/not_processed_burn_tickets?ethereum_address=%s&client_id=%s&nonce=%d`
-	GET_PROCESSED_MINT_NONCES        = `/v1/client/get/processed_mint_nonces?client_id=`
 	GET_BLOCK_INFO                   = `/v1/block/get?`
 	GET_MAGIC_BLOCK_INFO             = `/v1/block/magic/get?`
 	GET_LATEST_FINALIZED             = `/v1/block/get/latest_finalized`
@@ -179,19 +178,23 @@ type GetBalanceCallback interface {
 	OnBalanceAvailable(status int, value int64, info string)
 }
 
-// GetZCNProcessedMintNoncesCallback needs to be implemented by the caller of GetZCNProcessedMintNonces() to get the status
-type GetZCNProcessedMintNoncesCallback interface {
-	OnBalanceAvailable(status int, value []int64, info string)
+// GetMintNonceCallback needs to be implemented by the caller of GetMintNonce() to get the status
+type GetMintNonceCallback interface {
+	OnBalanceAvailable(status int, value int64, info string)
 }
 
 // Implementation of GetZCNProcessedMintNoncesCallback
-type GetZCNProcessedMintNoncesCallbackStub struct {
+type GetMintNonceCallbackStub struct {
+	sync.WaitGroup
+
 	Status int
-	Value  []int64
+	Value  int64
 	Info   string
 }
 
-func (cb *GetZCNProcessedMintNoncesCallbackStub) OnBalanceAvailable(status int, value []int64, info string) {
+func (cb *GetMintNonceCallbackStub) OnBalanceAvailable(status int, value int64, info string) {
+	defer cb.Done()
+
 	cb.Status = status
 	cb.Value = value
 	cb.Info = info
@@ -210,12 +213,16 @@ type GetZCNNotProcessedBurnTicketsCallback interface {
 
 // Implementation of GetZCNNotProcessedBurnTicketsCallback
 type GetZCNNotProcessedBurnTicketsCallbackStub struct {
+	sync.WaitGroup
+
 	Status int
 	Value  []BurnTicket
 	Info   string
 }
 
 func (cb *GetZCNNotProcessedBurnTicketsCallbackStub) OnBalanceAvailable(status int, value []BurnTicket, info string) {
+	defer cb.Done()
+
 	cb.Status = status
 	cb.Value = value
 	cb.Info = info
@@ -721,24 +728,6 @@ func GetZCNNotProcessedBurnTickets(ethereumAddress string, startNonce int64, cb 
 	return nil
 }
 
-// GetZCNNotProcessedBurnTickets retrieve wallet burn tickets from sharders
-func GetZCNProcessedMintNonces(cb GetZCNProcessedMintNoncesCallback) error {
-	err := CheckConfig()
-	if err != nil {
-		return err
-	}
-	go func() {
-		value, info, err := getZCNProcessedMintNoncesFromSharders(_config.wallet.ClientID)
-		if err != nil {
-			logging.Error(err)
-			cb.OnBalanceAvailable(StatusError, nil, info)
-			return
-		}
-		cb.OnBalanceAvailable(StatusSuccess, value, info)
-	}()
-	return nil
-}
-
 // GetBalance retrieve wallet nonce from sharders
 func GetNonce(cb GetNonceCallback) error {
 	if cb == nil {
@@ -761,6 +750,25 @@ func GetNonce(cb GetNonceCallback) error {
 		cb.OnNonceAvailable(StatusSuccess, value, info)
 	}()
 
+	return nil
+}
+
+// GetBalanceWallet retreives wallet balance from sharders
+func GetMintNonce(cb GetMintNonceCallback) error {
+	err := CheckConfig()
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		value, info, err := getMintNonceFromSharders(_config.wallet.ClientID)
+		if err != nil {
+			logging.Error(err)
+			cb.OnBalanceAvailable(StatusError, 0, info)
+			return
+		}
+		cb.OnBalanceAvailable(StatusSuccess, value, info)
+	}()
 	return nil
 }
 
@@ -812,6 +820,10 @@ func GetBalanceWallet(walletStr string, cb GetBalanceCallback) error {
 		cb.OnBalanceAvailable(StatusSuccess, value, info)
 	}()
 	return nil
+}
+
+func getMintNonceFromSharders(clientID string) (int64, string, error) {
+	return getBalanceFieldFromSharders(clientID, "mint_nonce")
 }
 
 func getBalanceFromSharders(clientID string) (int64, string, error) {
@@ -901,47 +913,6 @@ func getZCNNotProcessedBurnTicketsFromSharders(ethereumAddress, clientID string,
 			return nil, consensusMaps.WinError, err
 		}
 		return winBurnTickets, consensusMaps.WinInfo, nil
-	}
-
-	return nil, consensusMaps.WinInfo, errors.New("", "get burn tickets failed. balance field is missed")
-}
-
-func getZCNProcessedMintNoncesFromSharders(clientID string) ([]int64, string, error) {
-	result := make(chan *util.GetResponse)
-	defer close(result)
-
-	var numSharders = len(_config.chain.Sharders)
-	queryFromSharders(numSharders, fmt.Sprintf("%v%v", GET_PROCESSED_MINT_NONCES, clientID), result)
-
-	consensusMaps := NewHttpConsensusObjects(consensusThresh)
-
-	for i := 0; i < numSharders; i++ {
-		rsp := <-result
-
-		logging.Debug(rsp.Url, rsp.Status)
-		if rsp.StatusCode != http.StatusOK {
-			logging.Error(rsp.Body)
-		} else {
-			logging.Debug(rsp.Body)
-		}
-
-		if err := consensusMaps.Add(rsp.StatusCode, rsp.Body); err != nil {
-			logging.Error(rsp.Body)
-		}
-	}
-
-	rate := consensusMaps.MaxConsensus * 100 / len(_config.chain.Sharders)
-	if rate < consensusThresh {
-		return nil, consensusMaps.WinError, errors.New("", "get burn tickets failed. consensus not reached")
-	}
-
-	winValue, ok := consensusMaps.GetValue()
-	if ok {
-		var winMintNonces []int64
-		if err := json.Unmarshal(winValue, &winMintNonces); err != nil {
-			return nil, consensusMaps.WinError, err
-		}
-		return winMintNonces, consensusMaps.WinInfo, nil
 	}
 
 	return nil, consensusMaps.WinInfo, errors.New("", "get burn tickets failed. balance field is missed")
