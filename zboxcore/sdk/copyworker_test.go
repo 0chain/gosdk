@@ -483,9 +483,9 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 				},
 				copyMask:     zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
 				maskMU:       &sync.Mutex{},
-				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
 			}
+			req.ctx, req.ctxCncl = context.WithCancel(context.TODO())
 
 			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect, req)
 			err := req.ProcessCopy()
