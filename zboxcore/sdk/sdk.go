@@ -1249,6 +1249,54 @@ const (
 	ProviderAuthorizer
 )
 
+func KillProvider(providerId string, providerType ProviderType) (string, int64, error) {
+	if !sdkInitialized {
+		return "", 0, sdkNotInitialized
+	}
+
+	var input = map[string]interface{}{
+		"provider_id":   providerId,
+		"provider_type": providerType,
+	}
+	var sn = transaction.SmartContractTxnData{
+		InputArgs: input,
+	}
+	switch providerType {
+	case ProviderBlobber:
+		sn.Name = transaction.STORAGESC_KILL_BLOBBER
+	case ProviderValidator:
+		sn.Name = transaction.STORAGESC_KILL_VALIDATOR
+	default:
+		return "", 0, fmt.Errorf("kill provider type %v not implimented", providerType)
+	}
+	hash, _, n, _, err := smartContractTxn(sn)
+	return hash, n, err
+}
+
+func ShutdwonProvider(providerId string, providerType ProviderType) (string, int64, error) {
+	if !sdkInitialized {
+		return "", 0, sdkNotInitialized
+	}
+
+	var input = map[string]interface{}{
+		"provider_id":   providerId,
+		"provider_type": providerType,
+	}
+	var sn = transaction.SmartContractTxnData{
+		InputArgs: input,
+	}
+	switch providerType {
+	case ProviderBlobber:
+		sn.Name = transaction.STORAGESC_SHUTDOWN_BLOBBER
+	case ProviderValidator:
+		sn.Name = transaction.STORAGESC_SHUTDOWN_VALIDATOR
+	default:
+		return "", 0, fmt.Errorf("shutdown provider type %v not implimented", providerType)
+	}
+	hash, _, n, _, err := smartContractTxn(sn)
+	return hash, n, err
+}
+
 func CollectRewards(providerId string, providerType ProviderType) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
