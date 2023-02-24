@@ -81,7 +81,6 @@ const (
 	STORAGESC_GET_BLOBBERS             = STORAGESC_PFX + "/getblobbers"
 	STORAGESC_GET_BLOBBER              = STORAGESC_PFX + "/getBlobber"
 	STORAGESC_GET_TRANSACTIONS         = STORAGESC_PFX + "/transactions"
-	STORAGE_GET_TOTAL_STORED_DATA      = STORAGESC_PFX + "/total-stored-data"
 
 	STORAGE_GET_SNAPSHOT            = STORAGESC_PFX + "/replicate-snapshots"
 	STORAGE_GET_BLOBBER_SNAPSHOT    = STORAGESC_PFX + "/replicate-blobber-aggregates"
