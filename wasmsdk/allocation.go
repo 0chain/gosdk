@@ -50,6 +50,7 @@ func createAllocation(datashards, parityshards int, size, expiry int64,
 		BlobberIds: blobberIds,
 	}
 
+	sdkLogger.Info(options)
 	_, _, txn, err := sdk.CreateAllocationWith(options)
 
 	return txn, err

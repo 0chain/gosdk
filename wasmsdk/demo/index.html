@@ -64,16 +64,26 @@
 
     <br>
 
-
     <div id="listAllocations">
     </div>
 
-
-
-
   </fieldset>
 
+  <fieldset>
+    <legend>Blobbers</legend>
 
+    <span>
+      <button id="btnListBlobbers">List</button>
+      <button id="btnListBlobberSettings">Get</button>
+      <button id="updateBlobberSettings">Update</button>
+    </span>
+
+    <br>
+
+    <div id="listBlobbers">
+    </div>
+
+  </fieldset>
 
   <fieldset>
     <legend>Files</legend>
@@ -146,7 +156,7 @@
       networkConfig.minConfirmation,
       networkConfig.minSubmit,
       networkConfig.confirmationChainLength,
-      'https://0box.dev.0chain.net', //zboxHost
+      'https://dev.zus.network', //zboxHost
       'vult', //zboxAppType
     ]
 
@@ -181,13 +191,17 @@
 
 
     let allocations = []
+    let blobbers = []
     let files = []
 
     const bindAllocations = () => setHtml("listAllocations", allocations.map(a => `<input type="radio"  name="selectedAllocation" value="${a.id}"><label for="${a.id}">${a.id}</label><br>`).join(""))
-    const bindFiles = () => setHtml('listFiles', files.map(f => `<input type="radio" name="selectedFile" value="${f.path}"><label for="${f.path}">[${f.type}]${f.path}</label><br>`).join(""))
     const getSelectedAllocation = () => [...document.getElementsByName('selectedAllocation')].filter(it => it.checked).map(it => it.value).find(it => it != "");
+
+    const bindFiles = () => setHtml('listFiles', files.map(f => `<input type="radio" name="selectedFile" value="${f.path}"><label for="${f.path}">[${f.type}]${f.path}</label><br>`).join(""))
     const getSelectedFile = () => [...document.getElementsByName('selectedFile')].filter(it => it.checked).map(it => it.value).find(it => it != "");
 
+    const bindBlobbers = () => setHtml("listBlobbers", blobbers.map(a => `<input type="radio"  name="selectedBlobbers" value="${a.id}"><label for="${a.id}">${a.id}</label><br>`).join(""))
+    const getSelectedBlobbers = () => [...document.getElementsByName('selectedBlobbers')].filter(it => it.checked).map(it => it.value).find(it => it != "");
 
     onClick('btnCreateAllocation', async () => {
 
@@ -223,6 +237,13 @@
     onClick('btnListAllocations', async () => {
       allocations = await goWasm.sdk.listAllocations()
       bindAllocations()
+    })
+
+    onClick('btnListBlobbers', async () => {
+      // list active blobbers
+      // blobbers = await getBlobbersFromNetwork()
+      console.log(blobbers)
+      bindBlobbers()
     })
 
     onClick('btnGetAllocation', async () => {
