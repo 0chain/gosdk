@@ -303,9 +303,39 @@ type StakePoolUserInfo struct {
 	Pools map[common.Key][]*StakePoolDelegatePoolInfo `json:"pools"`
 }
 
+func GetStakePoolUserInfo(clientID string) (info *StakePoolUserInfo, err error) {
+	// get paginated results
+	limit, offset := 20, 0
+
+	info, err = GetStakePoolUserInfoInternal(clientID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	for {
+		// if the len of output returned is less than the limit it means this is the last round of pagination
+		if len(info.Pools) < limit {
+			break
+		}
+
+		// get the next set of blobbers
+		offset += 20
+		poolsInfo, err := GetStakePoolUserInfoInternal(clientID, limit, offset)
+		if err != nil {
+			return nil, err
+		}
+
+		// merge pools
+		for key, value := range poolsInfo.Pools {
+			info.Pools[key] = value
+		}
+	}
+	return
+}
+
 // GetStakePoolUserInfo obtains blobbers/validators delegate pools statistic
 // for a user. If given clientID is empty string, then current client used.
-func GetStakePoolUserInfo(clientID string, offset, limit int) (info *StakePoolUserInfo, err error) {
+func GetStakePoolUserInfoInternal(clientID string, offset, limit int) (info *StakePoolUserInfo, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
 	}
