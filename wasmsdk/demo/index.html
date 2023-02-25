@@ -141,6 +141,25 @@
       }
     }
 
+    // get active blobbers from network
+    async function getBlobbersFromNetwork() {
+      const GET_BLOBBERS = `/v1/screst/6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7/getblobbers`
+      const randomsharder = " https://dev1.zus.network/sharder01" // todo: get this randomly from network
+      url = randomsharder+GET_BLOBBERS
+      let response = await fetch(url);
+      let data = await response.json();
+      return data;
+    }
+
+    async function getBlobberDetails(blobberID) {
+      const GET_BLOBBER = `/v1/screst/6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7/getBlobber?blobber_id=`
+      const randomsharder = " https://dev1.zus.network/sharder01" // todo: get this randomly from network
+      url = randomsharder+GET_BLOBBER+blobberID
+      let response = await fetch(url);
+      let data = await response.json();
+      return data;
+    }
+
     const networkConfig = {
       chainId: '0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe',
       signatureScheme: 'bls0chain',
@@ -225,7 +244,7 @@
           config.minReadPrice, config.maxReadPrice, config.minWritePrice, config.maxWritePrice,
           config.lock, [])
 
-          console.log(allocation)
+        console.log(allocation)
         allocations = await goWasm.sdk.listAllocations()
         bindAllocations()
       } catch (e) {
@@ -241,7 +260,8 @@
 
     onClick('btnListBlobbers', async () => {
       // list active blobbers
-      // blobbers = await getBlobbersFromNetwork()
+      let blobbersResp = await getBlobbersFromNetwork()
+      blobbers = blobbersResp.Nodes
       console.log(blobbers)
       bindBlobbers()
     })
@@ -256,6 +276,15 @@
       txtOutput.innerHTML = JSON.stringify(alloc, null, 2)
     })
 
+    onClick('btnListBlobberSettings', async () => {
+      const blobberID = getSelectedBlobbers()
+      if (!blobberID) {
+        alert("please select blobber")
+        return
+      }
+      const alloc = await getBlobberDetails(blobberID)
+      txtOutput.innerHTML = JSON.stringify(alloc, null, 2)
+    })
 
     onClick('btnListFiles', async () => {
       const allocationId = getSelectedAllocation()
