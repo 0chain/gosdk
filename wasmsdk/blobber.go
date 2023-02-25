@@ -85,11 +85,13 @@ func updateBlobberSettings(settings string) (*transaction.Transaction, error) {
 	var blobberSettings sdk.Blobber
 	err := json.Unmarshal([]byte(settings), &blobberSettings)
 	if err != nil {
+		sdkLogger.Error(err)
 		return nil, err
 	}
+
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS,
-		InputArgs: settings,
+		InputArgs: blobberSettings,
 	}
 
 	_, _, _, txn, err := sdk.SmartContractTxn(sn)
