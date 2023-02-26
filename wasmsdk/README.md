@@ -413,12 +413,12 @@ create folder from blobbers
 > int: min_lock_demand
 
 ### zcn.sdk.getRemoteFileMap
-
+takes allocation ID and returns all the files/directories in allocation as JSON
 **Input**:
 > allocationID string
 
 **Output**:
-> map[string]sdk.FileInfo
+> jsonString
 
 
 ## Swap methods
