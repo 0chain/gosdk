@@ -80,10 +80,9 @@ func getFileStats(allocationID, remotePath string) ([]*sdk.FileStats, error) {
 }
 
 // updateBlobberSettings expects settings JSON of type sdk.Blobber
-func updateBlobberSettings(settings string) (*transaction.Transaction, error) {
-	// check if the input json marshalls into sdk.Blobber
+func updateBlobberSettings(blobberSettingsJson string) (*transaction.Transaction, error) {
 	var blobberSettings sdk.Blobber
-	err := json.Unmarshal([]byte(settings), &blobberSettings)
+	err := json.Unmarshal([]byte(blobberSettingsJson), &blobberSettings)
 	if err != nil {
 		sdkLogger.Error(err)
 		return nil, err

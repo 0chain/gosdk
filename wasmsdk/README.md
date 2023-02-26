@@ -342,7 +342,7 @@ upload file
 bulk upload files with json options
 
 **Input**:
-> jsonBulkOptions string:
+> jsonBulkUploadOptions string:
 >  BulkOption: { allocationId,remotePath,readChunkFuncName, fileSize, thumbnailBytes, encrypt,isUpdate,isRepair,numBlocks,callbackFuncName:callbackFuncName }
 
 **Output**:
@@ -399,7 +399,8 @@ create folder from blobbers
 ### zcn.sdk.updateBlobberSettings
 
  **Input**:
- > blob *Blobber
+ > blobberSettingsJson string
+ blobberSettings: fetch blobber settings by calling /getBlobber on sharder and modify them (see demo for usage)
  **Output**:
  > string: resp
 
