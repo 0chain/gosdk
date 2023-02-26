@@ -81,7 +81,6 @@ const (
 	STORAGESC_GET_BLOBBERS             = STORAGESC_PFX + "/getblobbers"
 	STORAGESC_GET_BLOBBER              = STORAGESC_PFX + "/getBlobber"
 	STORAGESC_GET_TRANSACTIONS         = STORAGESC_PFX + "/transactions"
-	STORAGE_GET_TOTAL_STORED_DATA      = STORAGESC_PFX + "/total-stored-data"
 
 	STORAGE_GET_SNAPSHOT            = STORAGESC_PFX + "/replicate-snapshots"
 	STORAGE_GET_BLOBBER_SNAPSHOT    = STORAGESC_PFX + "/replicate-blobber-aggregates"
@@ -1048,23 +1047,26 @@ func GetAllocations(clientID string, cb GetInfoCallback) (err error) {
 }
 
 // GetSnapshots obtains list of allocations of a user.
-func GetSnapshots(offset int64, cb GetInfoCallback) (err error) {
+func GetSnapshots(round int64, limit int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = withParams(STORAGE_GET_SNAPSHOT, Params{
-		"offset": strconv.FormatInt(offset, 10),
+		"round": strconv.FormatInt(round, 10),
+		"limit": strconv.FormatInt(limit, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetSnapshots, cb)
 	return
 }
 
 // GetBlobberSnapshots obtains list of allocations of a blobber.
-func GetBlobberSnapshots(offset int64, cb GetInfoCallback) (err error) {
+func GetBlobberSnapshots(round int64, limit int64, offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = withParams(STORAGE_GET_BLOBBER_SNAPSHOT, Params{
+		"round":  strconv.FormatInt(round, 10),
+		"limit":  strconv.FormatInt(limit, 10),
 		"offset": strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetBlobberSnapshots, cb)
@@ -1072,11 +1074,13 @@ func GetBlobberSnapshots(offset int64, cb GetInfoCallback) (err error) {
 }
 
 // GetMinerSnapshots obtains list of allocations of a miner.
-func GetMinerSnapshots(offset int64, cb GetInfoCallback) (err error) {
+func GetMinerSnapshots(round int64, limit int64, offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = withParams(STORAGE_GET_MINER_SNAPSHOT, Params{
+		"round":  strconv.FormatInt(round, 10),
+		"limit":  strconv.FormatInt(limit, 10),
 		"offset": strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetMinerSnapshots, cb)
@@ -1084,11 +1088,13 @@ func GetMinerSnapshots(offset int64, cb GetInfoCallback) (err error) {
 }
 
 // GetSharderSnapshots obtains list of allocations of a sharder.
-func GetSharderSnapshots(offset int64, cb GetInfoCallback) (err error) {
+func GetSharderSnapshots(round int64, limit int64, offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = withParams(STORAGE_GET_SHARDER_SNAPSHOT, Params{
+		"round":  strconv.FormatInt(round, 10),
+		"limit":  strconv.FormatInt(limit, 10),
 		"offset": strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetSharderSnapshots, cb)
@@ -1096,11 +1102,13 @@ func GetSharderSnapshots(offset int64, cb GetInfoCallback) (err error) {
 }
 
 // GetValidatorSnapshots obtains list of allocations of a validator.
-func GetValidatorSnapshots(offset int64, cb GetInfoCallback) (err error) {
+func GetValidatorSnapshots(round int64, limit int64, offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = withParams(STORAGE_GET_VALIDATOR_SNAPSHOT, Params{
+		"round":  strconv.FormatInt(round, 10),
+		"limit":  strconv.FormatInt(limit, 10),
 		"offset": strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetValidatorSnapshots, cb)
@@ -1108,11 +1116,13 @@ func GetValidatorSnapshots(offset int64, cb GetInfoCallback) (err error) {
 }
 
 // GetAuthorizerSnapshots obtains list of allocations of an authorizer.
-func GetAuthorizerSnapshots(offset int64, cb GetInfoCallback) (err error) {
+func GetAuthorizerSnapshots(round int64, limit int64, offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = withParams(STORAGE_GET_AUTHORIZER_SNAPSHOT, Params{
+		"round":  strconv.FormatInt(round, 10),
+		"limit":  strconv.FormatInt(limit, 10),
 		"offset": strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetAuthorizerSnapshots, cb)
@@ -1120,11 +1130,13 @@ func GetAuthorizerSnapshots(offset int64, cb GetInfoCallback) (err error) {
 }
 
 // GetUserSnapshots replicates user aggregates from events_db.
-func GetUserSnapshots(offset int64, cb GetInfoCallback) (err error) {
+func GetUserSnapshots(round int64, limit int64, offset int64, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
 	var url = withParams(STORAGE_GET_USER_SNAPSHOT, Params{
+		"round":  strconv.FormatInt(round, 10),
+		"limit":  strconv.FormatInt(limit, 10),
 		"offset": strconv.FormatInt(offset, 10),
 	})
 	go GetInfoFromAnySharder(url, OpStorageSCGetUserSnapshots, cb)
@@ -1163,15 +1175,18 @@ func GetStakePoolInfo(blobberID string, cb GetInfoCallback) (err error) {
 // # Inputs
 //   - clientID: the id of wallet
 //   - cb: callback for checking result
-func GetStakePoolUserInfo(clientID string, cb GetInfoCallback) (err error) {
+func GetStakePoolUserInfo(clientID string, offset, limit int, cb GetInfoCallback) (err error) {
 	if err = CheckConfig(); err != nil {
 		return
 	}
 	if clientID == "" {
 		clientID = _config.wallet.ClientID
 	}
+
 	var url = withParams(STORAGESC_GET_STAKE_POOL_USER_INFO, Params{
 		"client_id": clientID,
+		"offset":    strconv.FormatInt(int64(offset), 10),
+		"limit":     strconv.FormatInt(int64(limit), 10),
 	})
 	go GetInfoFromSharders(url, OpStorageSCGetStakePoolInfo, cb)
 	return
@@ -1199,7 +1214,6 @@ func getBlobbersInternal(cb GetInfoCallback, active bool, limit, offset int) {
 	})
 
 	go GetInfoFromSharders(url, OpStorageSCGetBlobbers, cb)
-
 	return
 }
 

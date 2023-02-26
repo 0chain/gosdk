@@ -44,7 +44,8 @@ const ChainConfig = `
 `
 
 var w = `
-{"client_id":"0bc96a0980170045863d826f9eb579d8144013210602e88426408e9f83c236f6",
+{
+	"client_id":"0bc96a0980170045863d826f9eb579d8144013210602e88426408e9f83c236f6",
 "client_key":"a4e58c66b072d27288b650db9a476fe66a1a4f69e0f8fb11499f9ec3a579e21e5dc0298b8c5ae5baa205730d06bc04b07a31943ab3bd620e8427c15d5c413b9e",
 "keys":[
 	{
@@ -53,9 +54,11 @@ var w = `
 	}],
 "mnemonics":"snake mixed bird cream cotton trouble small fee finger catalog measure spoon private second canal pact unable close predict dream mask delay path inflict",
 "version":"1.0",
-"date_created":"2019-06-19 13:37:50.466889 -0700 PDT m=+0.023873276"}`
+"date_created":"2019-06-19 13:37:50.466889 -0700 PDT m=+0.023873276"
+}`
 
 func TestGetAggregates(t *testing.T) {
+	t.Skip("learning test")
 	err := zcncore.Init(ChainConfig)
 	if err != nil {
 		fmt.Println("Init failed")
@@ -72,37 +75,37 @@ func TestGetAggregates(t *testing.T) {
 	statusBar := wallet.NewZCNStatus(&snaps)
 	statusBar.Wg = wg
 	wg.Add(5)
-	err = zcncore.GetBlobberSnapshots(int64(587), statusBar)
+	err = zcncore.GetBlobberSnapshots(int64(587), 20, 0, statusBar)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	err = zcncore.GetSharderSnapshots(int64(587), statusBar)
+	err = zcncore.GetSharderSnapshots(int64(587), 20, 0, statusBar)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	err = zcncore.GetMinerSnapshots(int64(587), statusBar)
+	err = zcncore.GetMinerSnapshots(int64(587), 20, 0, statusBar)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	err = zcncore.GetAuthorizerSnapshots(int64(587), statusBar)
+	err = zcncore.GetAuthorizerSnapshots(int64(587), 20, 0, statusBar)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	err = zcncore.GetValidatorSnapshots(int64(587), statusBar)
+	err = zcncore.GetValidatorSnapshots(int64(587), 20, 0, statusBar)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	err = zcncore.GetUserSnapshots(int64(587), statusBar)
+	err = zcncore.GetUserSnapshots(int64(587), 20, 0, statusBar)
 	if err != nil {
 		t.Error(err)
 		return
