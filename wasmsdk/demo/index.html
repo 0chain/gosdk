@@ -41,7 +41,7 @@
       value="41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122" /><br>
     <label for="publicKey"> PublicKey</label> <input id="publicKey" name="publicKey" style="width: 600px;"
       value="1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c" /><br>
- 
+
     <button id="btnSetWallet">Change Wallet</button>
     <button id="btnSendMeTokens">Send Me Tokens</button>
     <button id="btnGetBalance">Get Balance</button>
@@ -79,10 +79,13 @@
     <legend>Files</legend>
     <button id="btnListFiles">List</button>
     <span><input id="inputSelectedFile" type="file" multiple /> <button id="btnUploadFile">Upload</button> </span>
-    [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button> ]
+    <button id="btnUploadEncryptFile">EncryptedUpload</button> </span>
+    [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button>
+    ]
     <button id="btnViewFile">View</button>
     <button id="btnGetFileStats">GetFileStats</button>
     <button id="btnDelete">Delete</button>
+    <button id="btnShare">Share</button>
     <br>
 
     <div id="listFiles">
@@ -104,8 +107,8 @@
     <video id='player' preload="metadata" controls></video>
     <div className="controls">
       [ <button id="btnPlay">Play</button> | <button id="btnPlayShared">Play with auth ticket</button> ]
-        <button id="btnPause">Pause</button>
-        <button id="btnStop">Stop</button>
+      <button id="btnPause">Pause</button>
+      <button id="btnStop">Stop</button>
     </div>
   </fieldset>
 
@@ -117,8 +120,8 @@
 
   <script>
 
-    window.downloadCallback =function(totalBytes, completedBytes, error) {
-      console.log("download: "+completedBytes+"/"+totalBytes +" err:"+ error)
+    window.downloadCallback = function (totalBytes, completedBytes, error) {
+      console.log("download: " + completedBytes + "/" + totalBytes + " err:" + error)
     }
 
     const getWallet = () => {
@@ -169,11 +172,11 @@
 
 
     onClick('btnSendMeTokens', async () => {
-      await goWasm.sdk.faucet("pour", JSON.stringify("{Pay day}"),10)
+      await goWasm.sdk.faucet("pour", JSON.stringify("{Pay day}"), 10)
     })
 
     onClick('btnGetBalance', async () => {
-      const {clientID }= getWallet()
+      const { clientID } = getWallet()
       const wallet = await goWasm.sdk.getWalletBalance(clientID)
       txtOutput.innerHTML = JSON.stringify(wallet, null, 2)
     })
@@ -206,17 +209,17 @@
         maxWritePrice: 184467440737095516,
         lock: 5000000000
       }
-      try{
+      try {
         const allocation = await goWasm.sdk.createAllocation(config.datashards, config.parityshards, config.size, config.expiry,
-        config.minReadPrice, config.maxReadPrice, config.minWritePrice, config.maxWritePrice,
-        config.lock, [])
+          config.minReadPrice, config.maxReadPrice, config.minWritePrice, config.maxWritePrice,
+          config.lock, [])
 
         allocations = await goWasm.sdk.listAllocations()
         bindAllocations()
-      }catch(e){
+      } catch (e) {
         alert(e)
       }
-      
+
     })
 
     onClick('btnListAllocations', async () => {
@@ -226,7 +229,7 @@
 
     onClick('btnGetAllocation', async () => {
       const allocationId = getSelectedAllocation()
-      if(!allocationId){
+      if (!allocationId) {
         alert("please select allocation")
         return
       }
@@ -237,7 +240,10 @@
 
     onClick('btnListFiles', async () => {
       const allocationId = getSelectedAllocation()
-
+      if (!allocationId) {
+        alert("please selection allocationID")
+        return
+      }
       const { list = [] } = await goWasm.sdk.listObjects(allocationId, '/')
       files = list || []
       bindFiles()
@@ -249,23 +255,90 @@
 
         const objects = []
         const allocationId = getSelectedAllocation()
-        for(const file of files){
-        objects.push({allocationId:allocationId,
-                  remotePath:`/${file.name}`,
-                  file:file,
-                  thumbnailBytes:await readBytes(file),//only for demo, don't upload original file as thumbnail in production
-                  encrypt:false, 
-                  isUpdate:false, 
-                  isRepair:false, 
-                  numBlocks:100,
-                  callback: function(totalBytes, completedBytes, error) {
-                    console.log(file.name + " "+ completedBytes+"/"+totalBytes +" err:"+ error)
-                  }
-                })
+        for (const file of files) {
+          objects.push({
+            allocationId: allocationId,
+            remotePath: `/${file.name}`,
+            file: file,
+            thumbnailBytes: await readBytes(file),//only for demo, don't upload original file as thumbnail in production
+            encrypt: false,
+            isUpdate: false,
+            isRepair: false,
+            numBlocks: 100,
+            callback: function (totalBytes, completedBytes, error) {
+              console.log(file.name + " " + completedBytes + "/" + totalBytes + " err:" + error)
+            }
+          })
         }
 
+        const results = await goWasm.bulkUpload(objects)
 
-        const results =  await goWasm.bulkUpload(objects)
+        console.log(JSON.stringify(results))
+      }
+    })
+
+    onClick('btnShare', async () => {
+      let clientID = "7838eedbf2add6dc590a5ee95643e9a872ec7a9ae6c5efc452f2fa9c6971eb3a"
+      // let encryptionPublicKey = "b0h8PCKsg3exMzR3SOHsXk0Uwx0BiY50deZVYuWq8VY="
+
+      const { files } = get('inputSelectedFile')
+
+      if (!files) {
+        alert("please select a file")
+        return
+      }
+
+      if (files.length > 1) {
+        alert("can only share file at time")
+        return
+      }
+
+      const allocationId = getSelectedAllocation()
+      if (!allocationId) {
+        alert("please provide allocationId")
+        return
+      }
+
+      let remotePath = `/${files[0].name}`
+      console.log("shareing file", remotePath)
+      let time = Date.now()
+      let expiration = time+=3600 // after 1 hour
+      let availableAfter = 0
+      try {
+        const result = await goWasm.sdk.share(allocationId, remotePath, clientID, "", expiration, false, availableAfter)
+        console.log("output of share", result)
+        txtOutput.innerHTML = JSON.stringify(result, null, 2)
+      } catch (e) {
+        alert(e)
+      }
+    })
+
+    onClick('btnUploadEncryptFile', async () => {
+      const { files } = get('inputSelectedFile')
+      if (files && files.length > 0) {
+
+        const objects = []
+        const allocationId = getSelectedAllocation()
+        if (!allocationId) {
+          alert("please provide allocationId")
+        }
+        for (const file of files) {
+          objects.push({
+            allocationId: allocationId,
+            remotePath: `/${file.name}`,
+            file: file,
+            thumbnailBytes: await readBytes(file),//only for demo, don't upload original file as thumbnail in production
+            encrypt: true,
+            isUpdate: false,
+            isRepair: false,
+            numBlocks: 100,
+            callback: function (totalBytes, completedBytes, error) {
+              console.log(file.name + " " + completedBytes + "/" + totalBytes + " err:" + error)
+            }
+          })
+        }
+
+        const results = await goWasm.bulkUpload(objects)
 
         console.log(JSON.stringify(results))
       }
@@ -278,7 +351,7 @@
         const allocationId = getSelectedAllocation()
 
         //allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int
-        const file = await goWasm.sdk.download(allocationId, path, '', '', false, 10,"downloadCallback")
+        const file = await goWasm.sdk.download(allocationId, path, '', '', false, 10, "downloadCallback")
 
 
         const a = document.createElement('a')
@@ -300,13 +373,11 @@
       if (authTicket) {
 
         //allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int
-        const file = await goWasm.sdk.download('', '', authTicket, '', false, 10)
-
+        const file = await goWasm.sdk.download('', '', authTicket, '', false, 10, "downloadCallback")
 
         const a = document.createElement('a')
         document.body.appendChild(a)
         a.style = 'display: none'
-        debugger
         a.href = file.url
         a.download = file.fileName
         a.click()
@@ -366,7 +437,7 @@
         }
       } else {
 
-        const authTicket =  get('authTicket').value
+        const authTicket = get('authTicket').value
 
         const isLive = false
 
