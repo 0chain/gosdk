@@ -183,8 +183,6 @@
       'vult', //zboxAppType
     ]
 
-
-
     const bls = window.bls
     let goWasm;
     createWasm().then(async wasm => {
@@ -377,38 +375,29 @@
 
     onClick('btnShare', async () => {
       let clientID = "7838eedbf2add6dc590a5ee95643e9a872ec7a9ae6c5efc452f2fa9c6971eb3a"
-      // let encryptionPublicKey = "b0h8PCKsg3exMzR3SOHsXk0Uwx0BiY50deZVYuWq8VY="
+      let encryptionPublicKey = "b0h8PCKsg3exMzR3SOHsXk0Uwx0BiY50deZVYuWq8VY="
 
-      const { files } = get('inputSelectedFile')
+      const file = files.find(it => it.path == getSelectedFile())
+      if (file) {
+        const allocationId = getSelectedAllocation()
+        if (!allocationId) {
+          alert("please provide allocationId")
+          return
+        }
 
-      if (!files) {
-        alert("please select a file")
-        return
+        console.log("sharing file", file?.path)
+        let time = Date.now()
+        let expiration = time += 3600 // after 1 hour
+        let availableAfter = 0
+        try {
+          const result = await goWasm.sdk.share(allocationId, file?.path, clientID, encryptionPublicKey, expiration, false, availableAfter)
+          console.log("output of share", result)
+          txtOutput.innerHTML = JSON.stringify(result, null, 2)
+        } catch (e) {
+          alert(e)
+        }
       }
 
-      if (files.length > 1) {
-        alert("can only share file at time")
-        return
-      }
-
-      const allocationId = getSelectedAllocation()
-      if (!allocationId) {
-        alert("please provide allocationId")
-        return
-      }
-
-      let remotePath = `/${files[0].name}`
-      console.log("shareing file", remotePath)
-      let time = Date.now()
-      let expiration = time+=3600 // after 1 hour
-      let availableAfter = 0
-      try {
-        const result = await goWasm.sdk.share(allocationId, remotePath, clientID, "", expiration, false, availableAfter)
-        console.log("output of share", result)
-        txtOutput.innerHTML = JSON.stringify(result, null, 2)
-      } catch (e) {
-        alert(e)
-      }
     })
 
     onClick('btnUploadEncryptFile', async () => {
