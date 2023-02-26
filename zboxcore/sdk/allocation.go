@@ -1086,6 +1086,72 @@ func (a *Allocation) GetAuthTicketForShare(
 	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "", 0, &now)
 }
 
+
+func (a *Allocation) ListShare() ([]ListShareOut, error) {
+	success := make(chan int, len(a.Blobbers))
+	notFound := make(chan int, len(a.Blobbers))
+	results := make(chan ListShareOut, len(a.Blobbers))
+
+	wg := &sync.WaitGroup{}
+	for idx := range a.Blobbers {
+		baseUrl := a.Blobbers[idx].Baseurl
+		blobberID := a.Blobbers[idx].ID
+		httpreq, err := zboxutil.NewListShareRequest(baseUrl, a.Tx)
+		if err != nil {
+			return nil, err
+		}
+
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := zboxutil.HttpDo(a.ctx, a.ctxCancelF, httpreq, func(resp *http.Response, err error) error {
+				if err != nil {
+					l.Logger.Error("List share : ", err)
+					return err
+				}
+				defer resp.Body.Close()
+
+				respbody, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					l.Logger.Error("Error: Resp ", err)
+					return err
+				}
+				if resp.StatusCode != http.StatusOK {
+					l.Logger.Error(baseUrl, " List share error response: ", resp.StatusCode, string(respbody))
+					return fmt.Errorf(string(respbody))
+				}
+				var data []ListShareResp
+				err = json.Unmarshal(respbody, &data)
+				if err != nil {
+					l.Logger.Error(baseUrl, "Failed to unmarshal", err)
+					return err
+				}
+				var shares ListShareOut
+				shares.Shares = data
+				shares.BlobberID = blobberID
+				results <- shares
+				return nil
+			})
+			if err == nil {
+				success <- 1
+			}
+		}()
+	}
+	wg.Wait()
+	if len(success) == len(a.Blobbers) {
+		if len(notFound) == len(a.Blobbers) {
+			return nil, errors.New("", "share not found")
+		}
+		close(results)
+		var shares []ListShareOut
+		for share := range results {
+			shares = append(shares, share)
+		}
+		return shares, nil
+	}
+	return nil, errors.New("", "consensus not reached")
+}
+
 func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 	success := make(chan int, len(a.Blobbers))
 	notFound := make(chan int, len(a.Blobbers))

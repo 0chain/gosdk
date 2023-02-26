@@ -642,6 +642,24 @@ func NewShareRequest(baseUrl, allocation string, body io.Reader) (*http.Request,
 	return req, nil
 }
 
+func NewListShareRequest(baseUrl, allocation string) (*http.Request, error) {
+	u, err := joinUrl(baseUrl, SHARE_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func NewRevokeShareRequest(baseUrl, allocation string, query *url.Values) (*http.Request, error) {
 	u, err := joinUrl(baseUrl, SHARE_ENDPOINT, allocation)
 	if err != nil {

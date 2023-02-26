@@ -24,6 +24,23 @@ type ShareRequest struct {
 	ctx               context.Context
 }
 
+type ListShareResp struct {
+	BlobberID                 int    `json:"blobber_id"`
+	OwnerID                   string `json:"owner_id"`
+	ClientID                  string `json:"client_id"`
+	FilePathHash              string `json:"file_path_hash"`
+	ReEncryptionKey           string `json:"re_encryption_key"`
+	ClientEncryptionPublicKey string `json:"client_encryption_public_key"`
+	Revoked                   bool   `json:"revoked"`
+	ExpiryAt                  string `json:"expiry_at"`
+	AvailableAt               string `json:"available_at"`
+}
+
+type ListShareOut struct {
+	Shares    []ListShareResp `json:"shares"`
+	BlobberID string          `json:"blobber_id"`
+}
+
 func (req *ShareRequest) GetFileRef() (*fileref.FileRef, error) {
 	filePathHash := fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 
