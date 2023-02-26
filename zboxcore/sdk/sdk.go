@@ -336,29 +336,6 @@ func GetStakePoolUserInfo(clientID string, offset, limit int) (info *StakePoolUs
 	return
 }
 
-func GetTotalStoredData() (map[string]int64, error) {
-	if !sdkInitialized {
-		return nil, sdkNotInitialized
-	}
-	var err error
-	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
-		"/total-stored-data", nil, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "error requesting stake pool user info:")
-	}
-	if len(b) == 0 {
-		return nil, errors.New("", "empty response")
-	}
-
-	info := make(map[string]int64)
-	if err = json.Unmarshal(b, &info); err != nil {
-		return nil, errors.Wrap(err, "error decoding response:"+string(b))
-	}
-
-	return info, nil
-}
-
 type stakePoolRequest struct {
 	ProviderType ProviderType `json:"provider_type,omitempty"`
 	ProviderID   string       `json:"provider_id,omitempty"`
