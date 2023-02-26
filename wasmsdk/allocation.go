@@ -134,3 +134,13 @@ func updateAllocation(allocationID string,
 
 	return hash, err
 }
+
+func getAllocationMinLock(datashards, parityshards int,
+	size, expiry int64,
+	maxreadPrice, maxwritePrice uint64,
+) (int64, error) {
+	readPrice := sdk.PriceRange{Min: 0, Max: maxreadPrice}
+	writePrice := sdk.PriceRange{Min: 0, Max: maxwritePrice}
+
+	return sdk.GetAllocationMinLock(datashards, parityshards, size, expiry, readPrice, writePrice)
+}

@@ -404,6 +404,15 @@ create folder from blobbers
  **Output**:
  > string: resp
 
+### zcn.sdk.getAllocationMinLock
+
+**Input**:
+> datashards int, parityshards int, size int, expiry int, maxreadPrice int, maxwritePrice int
+
+**Output**:
+> int: min_lock_demand
+
+
 ## Swap methods
 ### zcn.sdk.setSwapWallets
 

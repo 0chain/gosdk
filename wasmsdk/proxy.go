@@ -174,6 +174,7 @@ func main() {
 				"freezeAllocation":      freezeAllocation,
 				"cancelAllocation":      cancelAllocation,
 				"updateAllocation":      updateAllocation,
+				"getAllocationMinLock":  getAllocationMinLock,
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,
