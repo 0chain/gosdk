@@ -153,6 +153,7 @@ func main() {
 				"downloadBlocks":        downloadBlocks,
 				"getFileStats":          getFileStats,
 				"updateBlobberSettings": updateBlobberSettings,
+				"getRemoteFileMap":      getRemoteFileMap,
 
 				// player
 				"play":           play,

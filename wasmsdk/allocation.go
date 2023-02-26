@@ -144,3 +144,15 @@ func getAllocationMinLock(datashards, parityshards int,
 
 	return sdk.GetAllocationMinLock(datashards, parityshards, size, expiry, readPrice, writePrice)
 }
+
+func getRemoteFileMap(allocationID string) (map[string]sdk.FileInfo, error) {
+	if len(allocationID) == 0 {
+		return nil, RequiredArg("allocationID")
+	}
+	allocationObj, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return nil, err
+	}
+
+	return allocationObj.GetRemoteFileMap(nil)
+}
