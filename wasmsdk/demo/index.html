@@ -91,11 +91,13 @@
     <legend>Files</legend>
     <button id="btnListFiles">List</button>
     <span><input id="inputSelectedFile" type="file" multiple /> <button id="btnUploadFile">Upload</button> </span>
+    <button id="btnUploadEncryptFile">EncryptedUpload</button> </span>
     [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button>
     ]
     <button id="btnViewFile">View</button>
     <button id="btnGetFileStats">GetFileStats</button>
     <button id="btnDelete">Delete</button>
+    <button id="btnShare">Share</button>
     <br>
 
     <div id="listFiles">
@@ -336,7 +338,10 @@
 
     onClick('btnListFiles', async () => {
       const allocationId = getSelectedAllocation()
-
+      if (!allocationId) {
+        alert("please selection allocationID")
+        return
+      }
       const { list = [] } = await goWasm.sdk.listObjects(allocationId, '/')
       files = list || []
       bindFiles()
@@ -364,6 +369,72 @@
           })
         }
 
+        const results = await goWasm.bulkUpload(objects)
+
+        console.log(JSON.stringify(results))
+      }
+    })
+
+    onClick('btnShare', async () => {
+      let clientID = "7838eedbf2add6dc590a5ee95643e9a872ec7a9ae6c5efc452f2fa9c6971eb3a"
+      // let encryptionPublicKey = "b0h8PCKsg3exMzR3SOHsXk0Uwx0BiY50deZVYuWq8VY="
+
+      const { files } = get('inputSelectedFile')
+
+      if (!files) {
+        alert("please select a file")
+        return
+      }
+
+      if (files.length > 1) {
+        alert("can only share file at time")
+        return
+      }
+
+      const allocationId = getSelectedAllocation()
+      if (!allocationId) {
+        alert("please provide allocationId")
+        return
+      }
+
+      let remotePath = `/${files[0].name}`
+      console.log("shareing file", remotePath)
+      let time = Date.now()
+      let expiration = time+=3600 // after 1 hour
+      let availableAfter = 0
+      try {
+        const result = await goWasm.sdk.share(allocationId, remotePath, clientID, "", expiration, false, availableAfter)
+        console.log("output of share", result)
+        txtOutput.innerHTML = JSON.stringify(result, null, 2)
+      } catch (e) {
+        alert(e)
+      }
+    })
+
+    onClick('btnUploadEncryptFile', async () => {
+      const { files } = get('inputSelectedFile')
+      if (files && files.length > 0) {
+
+        const objects = []
+        const allocationId = getSelectedAllocation()
+        if (!allocationId) {
+          alert("please provide allocationId")
+        }
+        for (const file of files) {
+          objects.push({
+            allocationId: allocationId,
+            remotePath: `/${file.name}`,
+            file: file,
+            thumbnailBytes: await readBytes(file),//only for demo, don't upload original file as thumbnail in production
+            encrypt: true,
+            isUpdate: false,
+            isRepair: false,
+            numBlocks: 100,
+            callback: function (totalBytes, completedBytes, error) {
+              console.log(file.name + " " + completedBytes + "/" + totalBytes + " err:" + error)
+            }
+          })
+        }
 
         const results = await goWasm.bulkUpload(objects)
 
@@ -400,13 +471,11 @@
       if (authTicket) {
 
         //allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int
-        const file = await goWasm.sdk.download('', '', authTicket, '', false, 10)
-
+        const file = await goWasm.sdk.download('', '', authTicket, '', false, 10, "downloadCallback")
 
         const a = document.createElement('a')
         document.body.appendChild(a)
         a.style = 'display: none'
-        debugger
         a.href = file.url
         a.download = file.fileName
         a.click()
