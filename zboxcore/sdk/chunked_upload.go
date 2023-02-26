@@ -598,7 +598,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
 			if err != nil {
 				wgErrors <- err
-				logger.Logger.Error("error during sendUploadRequesti", err)
+				logger.Logger.Error("error during sendUploadRequest", err)
 			}
 		}(blobber, body, formData, pos)
 	}
@@ -608,16 +608,11 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		close(wgDone)
 	}()
 	
-	// sendUploadRequestErr := nil
-
 	select {
 		case <-wgDone:
-			// isSendUploadRequestSuccessful = true;
-			logger.Logger.Error("working fine")
 			break
 		case err := <-wgErrors:
 			close(wgErrors)
-			logger.Logger.Error("Not working")
 			return thrown.New("upload_request_failed", fmt.Sprintf("Upload failed. %s", err))
 	}
 
