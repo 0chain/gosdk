@@ -569,6 +569,8 @@ type Blobber struct {
 	TotalOffers              int64                        `json:"total_offers"`
 	TotalServiceCharge       int64                        `json:"total_service_charge"`
 	UncollectedServiceCharge int64                        `json:"uncollected_service_charge"`
+	IsKilled                 bool                         `json:"is_killed"`
+	IsShutdown               bool                         `json:"is_shutdown"`
 }
 
 type Validator struct {
@@ -584,6 +586,8 @@ type Validator struct {
 	UnstakeTotal             int64          `json:"unstake_total"`
 	TotalServiceCharge       int64          `json:"total_service_charge"`
 	UncollectedServiceCharge int64          `json:"uncollected_service_charge"`
+	IsKilled                 bool           `json:"is_killed"`
+	IsShutdown               bool           `json:"is_shutdown"`
 }
 
 func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
