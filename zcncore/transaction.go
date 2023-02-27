@@ -215,6 +215,10 @@ type DeleteAuthorizerPayload struct {
 	ID string `json:"id"` // authorizer ID
 }
 
+type AuthorizerHealthCheckPayload struct {
+	ID string `json:"id"` // authorizer ID
+}
+
 type AuthorizerStakePoolSettings struct {
 	DelegateWallet string         `json:"delegate_wallet"`
 	MinStake       common.Balance `json:"min_stake"`
