@@ -574,20 +574,21 @@ type Blobber struct {
 }
 
 type Validator struct {
-	ID                       common.Key     `json:"validator_id"`
-	BaseURL                  string         `json:"url"`
-	PublicKey                string         `json:"-"`
-	DelegateWallet           string         `json:"delegate_wallet"`
-	MinStake                 common.Balance `json:"min_stake"`
-	MaxStake                 common.Balance `json:"max_stake"`
-	NumDelegates             int            `json:"num_delegates"`
-	ServiceCharge            float64        `json:"service_charge"`
-	StakeTotal               int64          `json:"stake_total"`
-	UnstakeTotal             int64          `json:"unstake_total"`
-	TotalServiceCharge       int64          `json:"total_service_charge"`
-	UncollectedServiceCharge int64          `json:"uncollected_service_charge"`
-	IsKilled                 bool           `json:"is_killed"`
-	IsShutdown               bool           `json:"is_shutdown"`
+	ID                       common.Key       `json:"validator_id"`
+	BaseURL                  string           `json:"url"`
+	PublicKey                string           `json:"-"`
+	DelegateWallet           string           `json:"delegate_wallet"`
+	MinStake                 common.Balance   `json:"min_stake"`
+	MaxStake                 common.Balance   `json:"max_stake"`
+	NumDelegates             int              `json:"num_delegates"`
+	ServiceCharge            float64          `json:"service_charge"`
+	StakeTotal               int64            `json:"stake_total"`
+	UnstakeTotal             int64            `json:"unstake_total"`
+	TotalServiceCharge       int64            `json:"total_service_charge"`
+	UncollectedServiceCharge int64            `json:"uncollected_service_charge"`
+	LastHealthCheck          common.Timestamp `json:"last_health_check"`
+	IsKilled                 bool             `json:"is_killed"`
+	IsShutdown               bool             `json:"is_shutdown"`
 }
 
 func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
