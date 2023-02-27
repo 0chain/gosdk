@@ -597,6 +597,10 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			defer wg.Done()
 			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
 			if err != nil {
+				select {
+					case wgErrors <- err:
+					default:
+				}
 				wgErrors <- err
 				logger.Logger.Error("error during sendUploadRequest", err)
 			}
@@ -612,7 +616,6 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		case <-wgDone:
 			break
 		case err := <-wgErrors:
-			close(wgErrors)
 			return thrown.New("upload_request_failed", fmt.Sprintf("Upload failed. %s", err))
 	}
 
