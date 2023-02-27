@@ -222,6 +222,14 @@ func (a *Allocation) GetBlobberStats() (string, error) {
 	return string(retBytes), nil
 }
 
+// RevokeShare - revokes authTicket from refereeClientID
+func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
+	if a == nil || a.sdkAllocation == nil {
+		return ErrInvalidAllocation
+	}
+	return a.sdkAllocation.RevokeShare(path, refereeClientID)
+}
+
 // GetShareAuthToken - get auth ticket from refereeClientID
 func (a *Allocation) GetShareAuthToken(path string, filename string, referenceType string, refereeClientID string) (string, error) {
 	if a == nil || a.sdkAllocation == nil {
