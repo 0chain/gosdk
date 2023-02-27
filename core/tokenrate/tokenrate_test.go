@@ -72,6 +72,18 @@ func TestGetUSD(t *testing.T) {
 			response: getCoinmarketcapResponse(),
 		},
 		{
+			name:          "TestCoingeckoCorrectSymbol",
+			expectedErr:   nil,
+			expectedValue: 0.218343,
+			timeout:       10 * time.Second,
+			symbol:        "0chain",
+			provider:      "coingecko",
+			setup: func(testCaseName, symbol, provider string) {
+				setupMockHttpResponse(&mockClient, provider, mockProviderUrl, "TestGetUSD", testCaseName, "GET", symbol, http.StatusOK, getProviderJsonResponse(t, provider))
+			},
+			response: getCoinGeckoResponse(),
+		},
+		{
 			name:        "TestCoinmarketcapWrongSymbol",
 			expectedErr: fmt.Errorf("429, failed to get coin data from provider coinmarketcap for symbol \"wrong\""),
 			timeout:     10 * time.Second,
@@ -185,6 +197,39 @@ func getCoinmarketcapResponse() func(testCaseName, mockProviderURL, providerName
 		}
 		val := cr.Data[strings.ToUpper(symbol)][0].Quote["USD"].Price
 		return val, nil
+	}
+}
+
+func getCoinGeckoResponse() func(testCaseName, mockProviderURL, providerName, symbol string, timeout time.Duration) (float64, error) {
+	return func(testCaseName, mockProviderURL, providerName, symbol string, timeout time.Duration) (float64, error) {
+		var cg coingeckoResponse
+		ctx, cancel := context.WithTimeout(context.TODO(), timeout)
+		go func() {
+			<-ctx.Done()
+			cancel()
+		}()
+
+		reqUrl := "TestGetUSD" + testCaseName + mockProviderURL + providerName + "?symbol=" + symbol
+		r := resty.New(resty.WithRetry(1))
+		r.DoGet(ctx, reqUrl).Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
+			if err != nil {
+				return err
+			}
+			if resp.StatusCode != http.StatusOK {
+				return fmt.Errorf("failed to get coin data from provider %v for symbol \"%v\"", providerName, symbol)
+			}
+			err = json.Unmarshal(respBody, &cg)
+			if err != nil {
+				return err
+			}
+			cg.Raw = string(respBody)
+			return nil
+		})
+		errs := r.Wait()
+		if len(errs) != 0 {
+			return 0.0, errs[0]
+		}
+		return cg.MarketData.CurrentPrice["usd"], nil
 	}
 }
 
