@@ -397,7 +397,7 @@ func TestAllocation_dispatchWork(t *testing.T) {
 		a.uploadChan <- &UploadRequest{
 			file:      []*fileref.FileRef{},
 			filemeta:  &UploadFileMeta{},
-			Consensus: Consensus{}}
+			Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	})
 	t.Run("Test_Cover_Download_Request", func(t *testing.T) {
 		ctx, ctxCncl := context.WithCancel(context.Background())

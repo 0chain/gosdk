@@ -204,6 +204,7 @@ func TestCopyRequest_copyBlobberObject(t *testing.T) {
 				remotefilepath: mockRemoteFilePath,
 				destPath:       mockDestPath,
 				Consensus: Consensus{
+					RWMutex:         &sync.RWMutex{},
 					consensusThresh: 2,
 					fullconsensus:   4,
 				},
@@ -438,8 +439,8 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			require := require.New(t)
 
 			a := &Allocation{
-				Tx:         "TestCopyRequest_ProcessCopy",
-				DataShards: numBlobbers,
+				Tx:          "TestCopyRequest_ProcessCopy",
+				DataShards:  numBlobbers,
 				FileOptions: 63,
 			}
 			a.InitAllocation()
@@ -478,6 +479,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 				remotefilepath: mockRemoteFilePath,
 				destPath:       mockDestPath,
 				Consensus: Consensus{
+					RWMutex:         &sync.RWMutex{},
 					consensusThresh: 3,
 					fullconsensus:   4,
 				},

@@ -326,6 +326,7 @@ func (a *Allocation) CreateDir(remotePath string) error {
 		remotePath:   remotePath,
 		wg:           &sync.WaitGroup{},
 		Consensus: Consensus{
+			RWMutex:         &sync.RWMutex{},
 			consensusThresh: a.consensusThreshold,
 			fullconsensus:   a.fullconsensus,
 		},
@@ -802,6 +803,7 @@ func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit in
 		wg:           &sync.WaitGroup{},
 		pageLimit:    pageLimit,
 		Consensus: Consensus{
+			RWMutex:         &sync.RWMutex{},
 			fullconsensus:   a.fullconsensus,
 			consensusThresh: a.consensusThreshold,
 		},
@@ -1261,6 +1263,7 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 	}
 	wg.Wait()
 	consensus := Consensus{
+		RWMutex:         &sync.RWMutex{},
 		consensus:       len(success),
 		consensusThresh: a.consensusThreshold,
 		fullconsensus:   a.fullconsensus,
