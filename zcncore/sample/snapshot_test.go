@@ -58,6 +58,7 @@ var w = `
 }`
 
 func TestGetAggregates(t *testing.T) {
+	t.Skip("learning test")
 	err := zcncore.Init(ChainConfig)
 	if err != nil {
 		fmt.Println("Init failed")
