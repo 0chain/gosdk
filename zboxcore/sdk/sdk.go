@@ -33,10 +33,11 @@ var sdkNotInitialized = errors.New("sdk_not_initialized", "SDK is not initialise
 var allocationNotFound = errors.New("couldnt_find_allocation", "Couldn't find the allocation required for update")
 
 const (
-	OpUpload   int = 0
-	OpDownload int = 1
-	OpRepair   int = 2
-	OpUpdate   int = 3
+	OpUpload            int = 0
+	OpDownload          int = 1
+	OpRepair            int = 2
+	OpUpdate            int = 3
+	opThumbnailDownload int = 4
 )
 
 type StatusCallback interface {
@@ -312,7 +313,7 @@ type StakePoolUserInfo struct {
 
 // GetStakePoolUserInfo obtains blobbers/validators delegate pools statistic
 // for a user. If given clientID is empty string, then current client used.
-func GetStakePoolUserInfo(clientID string) (info *StakePoolUserInfo, err error) {
+func GetStakePoolUserInfo(clientID string, offset, limit int) (info *StakePoolUserInfo, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
 	}
@@ -321,8 +322,13 @@ func GetStakePoolUserInfo(clientID string) (info *StakePoolUserInfo, err error) 
 	}
 
 	var b []byte
+	params := map[string]string{
+		"client_id": clientID,
+		"offset":    strconv.FormatInt(int64(offset), 10),
+		"limit":     strconv.FormatInt(int64(limit), 10),
+	}
 	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
-		"/getUserStakePoolStat", map[string]string{"client_id": clientID}, nil)
+		"/getUserStakePoolStat", params, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting stake pool user info:")
 	}
@@ -336,29 +342,6 @@ func GetStakePoolUserInfo(clientID string) (info *StakePoolUserInfo, err error) 
 	}
 
 	return
-}
-
-func GetTotalStoredData() (map[string]int64, error) {
-	if !sdkInitialized {
-		return nil, sdkNotInitialized
-	}
-	var err error
-	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
-		"/total-stored-data", nil, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "error requesting stake pool user info:")
-	}
-	if len(b) == 0 {
-		return nil, errors.New("", "empty response")
-	}
-
-	info := make(map[string]int64)
-	if err = json.Unmarshal(b, &info); err != nil {
-		return nil, errors.Wrap(err, "error decoding response:"+string(b))
-	}
-
-	return info, nil
 }
 
 type stakePoolRequest struct {
@@ -1309,6 +1292,12 @@ func UpdateValidatorSettings(v *Validator) (resp string, nonce int64, err error)
 	}
 	resp, _, nonce, _, err = smartContractTxn(sn)
 	return
+}
+
+func SmartContractTxn(sn transaction.SmartContractTxnData) (
+	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+
+	return smartContractTxnValue(sn, 0)
 }
 
 func smartContractTxn(sn transaction.SmartContractTxnData) (

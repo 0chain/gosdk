@@ -58,15 +58,15 @@ async function createObjectURL(buf, mimeType) {
 }
 
 
-const readChunk = (offset, chunkSize, file) => 
+const readChunk = (offset, chunkSize, file) =>
   new Promise((res,rej) => {
     const fileReader = new FileReader()
     const blob = file.slice(offset, chunkSize+offset)
     fileReader.onload = e => {
       const t = e.target
       if (t.error == null) {
-        res({ 
-          size: t.result.byteLength, 
+        res({
+          size: t.result.byteLength,
           buffer: new Uint8Array(t.result)
         })
       }else{
@@ -147,24 +147,24 @@ async function bulkUpload(options) {
       console.log("bulk_upload: read chunk remotePath:"+ obj.remotePath + " offset:"+offset+" chunkSize:"+chunkSize)
       const chunk = await readChunk(offset,chunkSize,obj.file)
       return chunk.buffer
-    } 
+    }
 
     if(obj.callback) {
       g[callbackFuncName] =  async (totalBytes,completedBytes,error)=> obj.callback(totalBytes,completedBytes,error)
     }
 
     return {
-      allocationId:obj.allocationId, 
-      remotePath:obj.remotePath, 
-      readChunkFuncName:readChunkFuncName, 
-      fileSize: obj.file.size, 
-      thumbnailBytes:obj.thumbnailBytes?obj.thumbnailBytes.toString():"", 
-      encrypt:obj.encrypt, 
-      isUpdate:obj.isUpdate, 
-      isRepair:obj.isRepair, 
-      numBlocks:obj.numBlocks, 
+      allocationId:obj.allocationId,
+      remotePath:obj.remotePath,
+      readChunkFuncName:readChunkFuncName,
+      fileSize: obj.file.size,
+      thumbnailBytes:obj.thumbnailBytes?obj.thumbnailBytes.toString():"",
+      encrypt:obj.encrypt,
+      isUpdate:obj.isUpdate,
+      isRepair:obj.isRepair,
+      numBlocks:obj.numBlocks,
       callbackFuncName:callbackFuncName
-    } 
+    }
   })
 
   const end =  bridge.glob.index
@@ -174,7 +174,7 @@ async function bulkUpload(options) {
     g["__zcn_upload_callback_"+i.toString()] =null;
   }
   return result
-} 
+}
 
 
 async function blsSign(hash) {
@@ -306,7 +306,7 @@ async function createWasm() {
 
   const sdkProxy = new Proxy(
     {
-    
+
     },
     {
       get: sdkGet,

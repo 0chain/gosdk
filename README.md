@@ -43,15 +43,15 @@ It is possible to support the sdk for other variations of Linux as well.
 - Run below command for the first time to setup gomobile environment
 
         make setup-gomobile
-
+- Incase Go package not found in golang.org/x/mobile/bind, run the command
+        go get golang.org/x/mobile/bind
 - Use below commands in the root folder of the repo to build Mobile SDK
 
-        For iOS and Android:
-                make build-mobilesdk IOS=1 ANDROID=1
         For iOS only:
-                make build-mobilesdk IOS=1
+                make build-ios
         For Android only:
-                make build-mobilesdk ANDROID=1
+                make build-android
+
 ## How to expose a gosdk function to mobilesdk ##
 Examples:
 * `mobilesdk/sdk/common.go` which exports the functions in `core/encryption/hash.go`.
@@ -64,7 +64,6 @@ Steps:
     - a function from a new file, you should create a new `<filename>.go` file for it, in the same style as `mobilesdksdk/zbox/allocation.go` & in the file created, you should call the gosdk function you intend to expose.
 
 2. Build the Mobile SDK as mentioned in the 'Mobile Builds' section of this file to build the aar file used in the mobile application you are developing.
-
 
 ## How to export a gosdk function to WebAssembly ##
 
