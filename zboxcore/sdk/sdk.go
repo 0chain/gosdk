@@ -1255,7 +1255,7 @@ func KillProvider(providerId string, providerType ProviderType) (string, int64, 
 	return hash, n, err
 }
 
-func ShutdownProvider(providerId string, providerType ProviderType) (string, int64, error) {
+func ShutdownProvider(providerType ProviderType) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
