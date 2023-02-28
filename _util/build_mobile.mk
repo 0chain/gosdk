@@ -27,7 +27,7 @@ setup-gomobile: $(IOSMOBILESDKDIR) $(ANDROIDMOBILESDKDIR) $(MACSDKDIR)
 	@echo "============================================================"
 	@echo "    Initializing gomobile. Please wait it may take a while ..."
 	@echo "------------------------------------------------------------"
-	@go get -d golang.org/x/mobile/cmd/gomobile
+	@go install golang.org/x/mobile/cmd/gomobile@latest
 	@$(PRINT_NON)
 	@gomobile init
 	@$(PRINT_GRN)
@@ -63,20 +63,24 @@ build-iossimulator: $(IOSMOBILESDKDIR)
 
 build-ios: $(IOSMOBILESDKDIR)
 	@echo "Building iOS framework. Please wait..."
+	@go get golang.org/x/mobile/bind
 	@CGO_CFLAGS=$(MINIOSVERSIONMIN) gomobile bind -v -ldflags="-s -w" -target=ios,iossimulator -tags "ios mobile" -o $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME) $(PKG_EXPORTS)
 	@echo "   $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME). - [OK]"	
 
 build-android: $(ANDROIDMOBILESDKDIR)
 	@echo "Building Android framework. Please wait..."
-	@gomobile bind -v -ldflags="-s -w -extldflags=-Wl,-soname,libgojni.so" -target=android/arm64,android/amd64 -tags mobile  -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
+	@go get golang.org/x/mobile/bind
+	@gomobile bind -v -ldflags="-s -w -extldflags=-Wl,-soname,libgojni.so" -target=android/arm64,android/amd64 -androidapi 19 -tags mobile  -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
 	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"
 
 build-android-debug: $(ANDROIDMOBILESDKDIR)
 	@echo "Building Android framework. Please wait..."
+	@go get golang.org/x/mobile/bind
 	@gomobile bind -v -ldflags="-s -w -extldflags=-Wl,-soname,libgojni.so" -gcflags '-N -l' -target=android/arm64,android/amd64 -tags mobile  -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
 	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"
 
 build-macos: $(MACSDKDIR)
 	@echo "Building MAC framework. Please wait..."
+	@go get golang.org/x/mobile/bind
 	@CGO_CFLAGS=$(MINMACOSVERSIONMIN)  gomobile bind -v -ldflags="-s -w" -target=macos -tags mobile -o $(MACSDKDIR)/$(IOSBINNAME) $(PKG_EXPORTS)
 	@echo "   $(MACSDKDIR)/$(IOSBINNAME). - [OK]"
