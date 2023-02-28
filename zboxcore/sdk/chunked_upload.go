@@ -601,7 +601,6 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 					case wgErrors <- err:
 					default:
 				}
-				wgErrors <- err
 				logger.Logger.Error("error during sendUploadRequest", err)
 			}
 		}(blobber, body, formData, pos)
