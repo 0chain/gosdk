@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
@@ -222,6 +223,14 @@ func (a *Allocation) GetBlobberStats() (string, error) {
 	return string(retBytes), nil
 }
 
+// RevokeShare - revokes authTicket from refereeClientID
+func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
+	if a == nil || a.sdkAllocation == nil {
+		return ErrInvalidAllocation
+	}
+	return a.sdkAllocation.RevokeShare(path, refereeClientID)
+}
+
 // GetShareAuthToken - get auth ticket from refereeClientID
 func (a *Allocation) GetShareAuthToken(path string, filename string, referenceType string, refereeClientID string) (string, error) {
 	if a == nil || a.sdkAllocation == nil {
@@ -231,12 +240,19 @@ func (a *Allocation) GetShareAuthToken(path string, filename string, referenceTy
 }
 
 // GetAuthToken - get auth token from refereeClientID
-func (a *Allocation) GetAuthToken(path string, filename string, referenceType string, refereeClientID string, refereeEncryptionPublicKey string, expiration int64) (string, error) {
+func (a *Allocation) GetAuthToken(path string, filename string, referenceType string, refereeClientID string, refereeEncryptionPublicKey string, expiration int64, availableAfter string) (string, error) {
 	if a == nil || a.sdkAllocation == nil {
 		return "", ErrInvalidAllocation
 	}
-	availableAfter := time.Now()
-	return a.sdkAllocation.GetAuthTicket(path, filename, referenceType, refereeClientID, refereeEncryptionPublicKey, expiration, &availableAfter)
+	availableAt := time.Now()
+	if len(availableAfter) > 0 {
+		aa, err := common.ParseTime(availableAt, availableAfter)
+		if err != nil {
+			return "", err
+		}
+		availableAt = *aa
+	}
+	return a.sdkAllocation.GetAuthTicket(path, filename, referenceType, refereeClientID, refereeEncryptionPublicKey, expiration, &availableAt)
 }
 
 // DownloadFromAuthTicket - download file from Auth ticket
