@@ -1287,6 +1287,12 @@ func UpdateValidatorSettings(v *Validator) (resp string, nonce int64, err error)
 	return
 }
 
+func SmartContractTxn(sn transaction.SmartContractTxnData) (
+	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+
+	return smartContractTxnValue(sn, 0)
+}
+
 func smartContractTxn(sn transaction.SmartContractTxnData) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
