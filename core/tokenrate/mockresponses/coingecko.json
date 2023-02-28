@@ -1,0 +1,21 @@
+{
+  "id": "0chain",
+  "symbol": "zcn",
+  "name": "Zus",
+  "asset_platform_id": "ethereum",
+  "market_data": {
+    "current_price": {
+      "aed": 0.801944,
+      "ars": 42.97,
+      "usd": 0.218343
+    },
+    "high_24h": {
+      "aed": 0.813634,
+      "ars": 43.39
+    },
+    "low_24h": {
+      "aed": 0.770675,
+      "ars": 41.13
+    }
+  }
+}
