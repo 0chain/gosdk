@@ -54,3 +54,17 @@ func GetFileStats(allocationID, remotePath *C.char) *C.char {
 
 	return WithJSON(result, nil)
 }
+
+// GetAllocation get allocation info
+//
+//	return
+//		{
+//			"error":"",
+//			"result":"xxx",
+//		}
+//
+//export GetAllocation
+func GetAllocation(allocationID *C.char) *C.char {
+	allocID := C.GoString(allocationID)
+	return WithJSON(getAllocation(allocID))
+}
