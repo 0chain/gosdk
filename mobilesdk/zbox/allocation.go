@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
@@ -239,12 +240,19 @@ func (a *Allocation) GetShareAuthToken(path string, filename string, referenceTy
 }
 
 // GetAuthToken - get auth token from refereeClientID
-func (a *Allocation) GetAuthToken(path string, filename string, referenceType string, refereeClientID string, refereeEncryptionPublicKey string, expiration int64) (string, error) {
+func (a *Allocation) GetAuthToken(path string, filename string, referenceType string, refereeClientID string, refereeEncryptionPublicKey string, expiration int64, availableAfter string) (string, error) {
 	if a == nil || a.sdkAllocation == nil {
 		return "", ErrInvalidAllocation
 	}
-	availableAfter := time.Now()
-	return a.sdkAllocation.GetAuthTicket(path, filename, referenceType, refereeClientID, refereeEncryptionPublicKey, expiration, &availableAfter)
+	availableAt := time.Now()
+	if len(availableAfter) > 0 {
+		aa, err := common.ParseTime(availableAt, availableAfter)
+		if err != nil {
+			return "", err
+		}
+		availableAt = *aa
+	}
+	return a.sdkAllocation.GetAuthTicket(path, filename, referenceType, refereeClientID, refereeEncryptionPublicKey, expiration, &availableAt)
 }
 
 // DownloadFromAuthTicket - download file from Auth ticket
@@ -384,8 +392,14 @@ func (a *Allocation) GetMinWriteRead() (string, error) {
 	if a == nil || a.sdkAllocation == nil {
 		return "", ErrInvalidAllocation
 	}
-	minW, minR, _ := a.sdkAllocation.GetMinWriteRead()
-	maxW, maxR, _ := a.sdkAllocation.GetMaxWriteRead()
+	minW, minR, err := a.sdkAllocation.GetMinWriteRead()
+	if err != nil {
+		return "", err
+	}
+	maxW, maxR, err := a.sdkAllocation.GetMaxWriteRead()
+	if err != nil {
+		return "", err
+	}
 
 	minMaxCost := &MinMaxCost{}
 	minMaxCost.maxR = maxR
@@ -448,7 +462,6 @@ func (a *Allocation) CreateDir(dirName string) error {
 
 var currentPlayback StreamingImpl
 
-// GetMinStorageCost - getting back min cost for allocation
 func (a *Allocation) PlayStreaming(localPath, remotePath, authTicket, lookupHash, initSegment string, delay int, statusCb StatusCallbackWrapped) error {
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
