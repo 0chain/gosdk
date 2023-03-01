@@ -392,8 +392,14 @@ func (a *Allocation) GetMinWriteRead() (string, error) {
 	if a == nil || a.sdkAllocation == nil {
 		return "", ErrInvalidAllocation
 	}
-	minW, minR, _ := a.sdkAllocation.GetMinWriteRead()
-	maxW, maxR, _ := a.sdkAllocation.GetMaxWriteRead()
+	minW, minR, err := a.sdkAllocation.GetMinWriteRead()
+	if err != nil {
+		return "", err
+	}
+	maxW, maxR, err := a.sdkAllocation.GetMaxWriteRead()
+	if err != nil {
+		return "", err
+	}
 
 	minMaxCost := &MinMaxCost{}
 	minMaxCost.maxR = maxR
@@ -456,7 +462,6 @@ func (a *Allocation) CreateDir(dirName string) error {
 
 var currentPlayback StreamingImpl
 
-// GetMinStorageCost - getting back min cost for allocation
 func (a *Allocation) PlayStreaming(localPath, remotePath, authTicket, lookupHash, initSegment string, delay int, statusCb StatusCallbackWrapped) error {
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
