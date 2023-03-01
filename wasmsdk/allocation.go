@@ -50,6 +50,7 @@ func createAllocation(datashards, parityshards int, size, expiry int64,
 		BlobberIds: blobberIds,
 	}
 
+	sdkLogger.Info(options)
 	_, _, txn, err := sdk.CreateAllocationWith(options)
 
 	return txn, err
@@ -93,12 +94,12 @@ func freezeAllocation(allocationID string) (string, error) {
 		"",           //removeBlobberId,
 		false,        //thirdPartyExtendable,
 		&sdk.FileOptionsParameters{
-			ForbidUpload: sdk.FileOptionParam{true, true},
-			ForbidDelete: sdk.FileOptionParam{true, true},
-			ForbidUpdate: sdk.FileOptionParam{true, true},
-			ForbidMove:   sdk.FileOptionParam{true, true},
-			ForbidCopy:   sdk.FileOptionParam{true, true},
-			ForbidRename: sdk.FileOptionParam{true, true},
+			ForbidUpload: sdk.FileOptionParam{Changed: true, Value: true},
+			ForbidDelete: sdk.FileOptionParam{Changed: true, Value: true},
+			ForbidUpdate: sdk.FileOptionParam{Changed: true, Value: true},
+			ForbidMove:   sdk.FileOptionParam{Changed: true, Value: true},
+			ForbidCopy:   sdk.FileOptionParam{Changed: true, Value: true},
+			ForbidRename: sdk.FileOptionParam{Changed: true, Value: true},
 		},
 	)
 
