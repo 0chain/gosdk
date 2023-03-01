@@ -11,6 +11,12 @@ import (
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
+type fileResp struct {
+	sdk.FileInfo
+	Name string `json:"name"`
+	Path string `json:"path"`
+}
+
 func getBlobberIds(blobberUrls []string) ([]string, error) {
 	return sdk.GetBlobberIds(blobberUrls)
 }
@@ -148,28 +154,22 @@ func getAllocationMinLock(datashards, parityshards int,
 	return sdk.GetAllocationMinLock(datashards, parityshards, size, expiry, readPrice, writePrice)
 }
 
-func getRemoteFileMap(allocationID string) (string, error) {
+func getRemoteFileMap(allocationID string) ([]*fileResp, error) {
 	if len(allocationID) == 0 {
-		return "", RequiredArg("allocationID")
+		return nil, RequiredArg("allocationID")
 	}
 	allocationObj, err := sdk.GetAllocation(allocationID)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	ref, err := allocationObj.GetRemoteFileMap(nil)
 	if err != nil {
 		sdkLogger.Error(err)
-		return "", err
+		return nil, err
 	}
 
-	type fileResp struct {
-		sdk.FileInfo
-		Name string `json:"name"`
-		Path string `json:"path"`
-	}
-
-	fileResps := make([]fileResp, 0)
+	fileResps := make([]*fileResp, 0)
 	for path, data := range ref {
 		paths := strings.SplitAfter(path, "/")
 		var resp = fileResp{
@@ -186,10 +186,10 @@ func getRemoteFileMap(allocationID string) (string, error) {
 				UpdatedAt:    data.UpdatedAt,
 			},
 		}
-		fileResps = append(fileResps, resp)
+		fileResps = append(fileResps, &resp)
 	}
 
-	return getJSON(fileResps)
+	return fileResps, nil
 }
 
 func getJSON(v interface{}) (string, error) {
