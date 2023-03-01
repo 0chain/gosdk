@@ -615,7 +615,7 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		case <-wgDone:
 			break
 		case err := <-wgErrors:
-			return thrown.New("duplicate_file", fmt.Sprintf("Upload failed. %s", err))
+			return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
 	}
 
 	if !su.consensus.isConsensusOk() {
