@@ -418,7 +418,7 @@ takes allocation ID and returns all the files/directories in allocation as JSON
 > allocationID string
 
 **Output**:
-> jsonString
+> []*fileResp
 
 
 ## Swap methods
