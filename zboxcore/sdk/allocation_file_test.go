@@ -424,14 +424,7 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 	setupHttpResponses(t, &mockClient, a.ID, resfsIn, fileMetaIn, hashes, len(a.Blobbers), len(a.Blobbers), true)
 
 	err = a.EncryptAndUpdateFile(os.TempDir(), mockLocalPath, "/", nil)
-	// Actually this test should be require.NoError
-	// While data is encrypted, even with same wallet it outputs different data each time.
-	// So we cannot have pre-defined hashes to return from mock client.
-	// We also cannot dynamically set response. So mock client cannot provide correct hash.
-	// We should replace mock client with net/httptest package instead.
-	// Mock library is very limiting when it comes to testing with http endpoints
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "upload_failed")
+	require.NoError(t, err)
 }
 
 func TestAllocation_EncryptAndUploadFile(t *testing.T) {
@@ -443,7 +436,6 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 		mockTmpPath   = "/tmp"
 	)
 
-	require := require.New(t)
 	if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
 		defer teardown(t)
 	}
@@ -471,7 +463,7 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 	setupHttpResponses(t, &mockClient, a.ID, nil, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
 
 	err := a.EncryptAndUploadFile(mockTmpPath, mockLocalPath, "/", nil)
-	require.Errorf(err, "Unexpected error %v", err)
+	require.NoError(t, err)
 }
 
 func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
@@ -545,14 +537,7 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 	setupHttpResponses(t, &mockClient, a.ID, resfsIn, fileMetaIn, hashes, len(a.Blobbers), len(a.Blobbers), true)
 	err = a.EncryptAndUpdateFileWithThumbnail(mockTmpPath, mockLocalPath, "/", mockThumbnailPath, nil)
 
-	// Actually this test should be require.NoError
-	// While data is encrypted, even with same wallet it outputs different data each time.
-	// So we cannot have pre-defined hashes to return from mock client.
-	// We also cannot dynamically set response. So mock client cannot provide correct hash.
-	// We should replace mock client with net/httptest package instead.
-	// Mock library is very limiting when it comes to testing with http endpoints
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "upload_failed")
+	require.NoError(t, err)
 }
 
 func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
@@ -599,14 +584,7 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 	setupHttpResponses(t, &mockClient, a.ID, nil, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
 
 	err := a.EncryptAndUploadFileWithThumbnail(mockTmpPath, mockLocalPath, "/", mockThumbnailPath, nil)
-	// Actually this test should be require.NoError
-	// While data is encrypted, even with same wallet it outputs different data each time.
-	// So we cannot have pre-defined hashes to return from mock client.
-	// We also cannot dynamically set response. So mock client cannot provide correct hash.
-	// We should replace mock client with net/httptest package instead.
-	// Mock library is very limiting when it comes to testing with http endpoints
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "upload_failed")
+	require.NoError(t, err)
 }
 
 func TestAllocation_RepairFile(t *testing.T) {
