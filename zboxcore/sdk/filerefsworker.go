@@ -125,8 +125,7 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 			}
 			return nil
 		} else {
-			l.Logger.Error(err)
-			return err
+			return errors.New("response_error", fmt.Sprintf("got status %d", resp.StatusCode))
 		}
 	})
 	if err != nil {
@@ -144,6 +143,7 @@ type ORef struct {
 }
 
 type SimilarField struct {
+	FileID              string           `json:"file_id"`
 	Type                string           `json:"type"`
 	AllocationID        string           `json:"allocation_id"`
 	LookupHash          string           `json:"lookup_hash"`

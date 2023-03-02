@@ -404,6 +404,23 @@ create folder from blobbers
  **Output**:
  > string: resp
 
+### zcn.sdk.getAllocationMinLock
+
+**Input**:
+> datashards int, parityshards int, size int, expiry int, maxreadPrice int, maxwritePrice int
+
+**Output**:
+> int: min_lock_demand
+
+### zcn.sdk.getRemoteFileMap
+takes allocation ID and returns all the files/directories in allocation as JSON
+**Input**:
+> allocationID string
+
+**Output**:
+> []*fileResp
+
+
 ## Swap methods
 ### zcn.sdk.setSwapWallets
 
