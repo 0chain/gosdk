@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -97,6 +99,10 @@ func (req *DirRequest) commitRequest(existingDirCount int) error {
 	commitReqs := make([]*CommitRequest, activeBlobbersNum)
 	var pos uint64
 	var c int
+
+	timestamp := common.Now()
+	uid := util.GetNewUUID()
+
 	for i := req.dirMask; !i.Equals(zboxutil.NewUint128(0)); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		commitReq := &CommitRequest{}
@@ -104,10 +110,13 @@ func (req *DirRequest) commitRequest(existingDirCount int) error {
 		commitReq.allocationTx = req.allocationTx
 		commitReq.blobber = req.blobbers[pos]
 
-		newChange := &allocationchange.DirCreateChange{}
-		newChange.RemotePath = req.remotePath
+		newChange := &allocationchange.DirCreateChange{
+			RemotePath: req.remotePath,
+			Uuid:       uid,
+			Timestamp:  timestamp,
+		}
 
-		commitReq.changes = append(commitReq.changes, newChange)
+		commitReq.change = newChange
 		commitReq.connectionID = req.connectionID
 		commitReq.wg = wg
 		commitReqs[c] = commitReq
