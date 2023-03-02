@@ -60,11 +60,96 @@ func GetFileStats(allocationID, remotePath *C.char) *C.char {
 //	return
 //		{
 //			"error":"",
-//			"result":"xxx",
+//			"result":"{}",
 //		}
 //
 //export GetAllocation
 func GetAllocation(allocationID *C.char) *C.char {
 	allocID := C.GoString(allocationID)
 	return WithJSON(getAllocation(allocID))
+}
+
+// Rename rename path
+//
+//	return
+//		{
+//			"error":"",
+//			"result":"true",
+//		}
+//
+//export Rename
+func Rename(allocationID, path, destName *C.char) *C.char {
+	allocID := C.GoString(allocationID)
+
+	alloc, err := getAllocation(allocID)
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	s := C.GoString(path)
+	d := C.GoString(destName)
+	err = alloc.RenameObject(s, d)
+
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	return WithJSON(true, nil)
+
+}
+
+// Delete delete path
+//
+//	return
+//		{
+//			"error":"",
+//			"result":"true",
+//		}
+//
+//export Delete
+func Delete(allocationID, path *C.char) *C.char {
+	allocID := C.GoString(allocationID)
+
+	alloc, err := getAllocation(allocID)
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	s := C.GoString(path)
+
+	err = alloc.DeleteFile(s)
+
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	return WithJSON(true, nil)
+}
+
+// GetFileMeta get metadata by path
+//
+//	return
+//		{
+//			"error":"",
+//			"result":"true",
+//		}
+//
+//export GetFileMeta
+func GetFileMeta(allocationID, path *C.char) *C.char {
+	allocID := C.GoString(allocationID)
+
+	alloc, err := getAllocation(allocID)
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	s := C.GoString(path)
+
+	f, err := alloc.GetFileMeta(s)
+
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	return WithJSON(f, nil)
 }
