@@ -189,7 +189,6 @@ func (req *MoveRequest) ProcessMove() error {
 	activeBlobbers := req.moveMask.CountOnes()
 	wg.Add(activeBlobbers)
 	commitReqs := make([]*CommitRequest, activeBlobbers)
-
 	var c int
 	for i := req.moveMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
@@ -208,7 +207,7 @@ func (req *MoveRequest) ProcessMove() error {
 			connectionID: req.connectionID,
 			wg:           wg,
 		}
-		commitReq.changes = append(commitReq.changes, moveChange)
+		commitReq.change = moveChange
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
 		c++

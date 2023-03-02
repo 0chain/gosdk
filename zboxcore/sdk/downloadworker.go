@@ -335,6 +335,10 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 
+	var op = OpDownload
+	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
+		op = opThumbnailDownload
+	}
 	fRef, err := req.getFileRef(remotePathCB)
 	if err != nil {
 		logger.Logger.Error(err.Error())
@@ -397,7 +401,8 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if req.statusCallback != nil {
 		// Started will also initialize progress bar. So without calling this function
 		// other callback's call will panic
-		req.statusCallback.Started(req.allocationID, remotePathCB, OpDownload, int(size))
+
+		req.statusCallback.Started(req.allocationID, remotePathCB, op, int(size))
 	}
 
 	if req.shouldVerify {
@@ -443,7 +448,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		remainingSize -= n
 
 		if req.statusCallback != nil {
-			req.statusCallback.InProgress(req.allocationID, remotePathCB, OpDownload, downloaded, data)
+			req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, data)
 		}
 		if (startBlock + numBlocks) > endBlock {
 			startBlock += endBlock - startBlock
@@ -465,7 +470,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	if req.statusCallback != nil {
 		req.statusCallback.Completed(
-			req.allocationID, remotePathCB, fRef.Name, "", int(fRef.ActualFileSize), OpDownload)
+			req.allocationID, remotePathCB, fRef.Name, "", int(fRef.ActualFileSize), op)
 	}
 }
 
@@ -489,10 +494,14 @@ func (req *DownloadRequest) initEncryption() {
 }
 
 func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
+	var op = OpDownload
+	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
+		op = opThumbnailDownload
+	}
 	sys.Files.Remove(req.localpath) //nolint: errcheck
 	if req.statusCallback != nil {
 		req.statusCallback.Error(
-			req.allocationID, remotePathCB, OpDownload, err)
+			req.allocationID, remotePathCB, op, err)
 	}
 	return
 }

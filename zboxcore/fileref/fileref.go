@@ -1,8 +1,8 @@
 package fileref
 
 import (
+	"fmt"
 	"math"
-	"strconv"
 	"strings"
 
 	"github.com/0chain/gosdk/core/common"
@@ -52,6 +52,7 @@ type FileRef struct {
 type RefEntity interface {
 	GetNumBlocks() int64
 	GetSize() int64
+	GetFileMetaHash() string
 	GetHash() string
 	CalculateHash() string
 	GetType() string
@@ -59,6 +60,7 @@ type RefEntity interface {
 	GetLookupHash() string
 	GetPath() string
 	GetName() string
+	GetFileID() string
 	GetCreatedAt() common.Timestamp
 	GetUpdatedAt() common.Timestamp
 }
@@ -75,6 +77,8 @@ type Ref struct {
 	NumBlocks        int64  `json:"num_of_blocks" mapstructure:"num_of_blocks"`
 	PathHash         string `json:"path_hash" mapstructure:"path_hash"`
 	LookupHash       string `json:"lookup_hash" mapstructure:"lookup_hash"`
+	FileID           string `json:"file_id" mapstructure:"file_id"`
+	FileMetaHash     string `json:"file_meta_hash" mapstructure:"file_meta_hash"`
 	HashToBeComputed bool
 	ChildrenLoaded   bool
 	Children         []RefEntity      `json:"-" mapstructure:"-"`
@@ -90,19 +94,23 @@ func (r *Ref) CalculateHash() string {
 	if len(r.Children) == 0 && !r.ChildrenLoaded && !r.HashToBeComputed {
 		return r.Hash
 	}
+
 	childHashes := make([]string, len(r.Children))
+	childFileMetaHashes := make([]string, len(r.Children))
 	childPaths := make([]string, len(r.Children))
 	var refNumBlocks int64
 	var size int64
 
 	for index, childRef := range r.Children {
 		childRef.CalculateHash()
+		childFileMetaHashes[index] = childRef.GetFileMetaHash()
 		childHashes[index] = childRef.GetHash()
 		childPaths[index] = childRef.GetPath()
 		refNumBlocks += childRef.GetNumBlocks()
 		size += childRef.GetSize()
 	}
 
+	r.FileMetaHash = encryption.Hash(strings.Join(childFileMetaHashes, ":"))
 	r.Hash = encryption.Hash(strings.Join(childHashes, ":"))
 
 	r.PathHash = encryption.Hash(strings.Join(childPaths, ":"))
@@ -110,6 +118,10 @@ func (r *Ref) CalculateHash() string {
 	r.Size = size
 
 	return r.Hash
+}
+
+func (r *Ref) GetFileMetaHash() string {
+	return r.FileMetaHash
 }
 
 func (r *Ref) GetHash() string {
@@ -142,6 +154,10 @@ func (r *Ref) GetPath() string {
 
 func (r *Ref) GetName() string {
 	return r.Name
+}
+
+func (r *Ref) GetFileID() string {
+	return r.FileID
 }
 
 func (r *Ref) GetCreatedAt() common.Timestamp {
@@ -182,21 +198,31 @@ func (r *Ref) RemoveChild(idx int) {
 	r.Children = append(r.Children[:idx], r.Children[idx+1:]...)
 }
 
+func (fr *FileRef) GetFileMetaHash() string {
+	return fr.FileMetaHash
+}
+func (fr *FileRef) GetFileMetaHashData() string {
+	return fmt.Sprintf(
+		"%s:%d:%s:%d:%s",
+		fr.Path, fr.Size, fr.FileID,
+		fr.ActualFileSize, fr.ActualFileHash)
+}
+
 func (fr *FileRef) GetHashData() string {
-	hashArray := make([]string, 0, 10)
-	hashArray = append(hashArray,
+	return fmt.Sprintf(
+		"%s:%s:%s:%s:%d:%s:%s:%d:%s:%d:%s",
 		fr.AllocationID,
-		fr.Type,
-		fr.Name,
+		fr.Type, // don't need to add it as well
+		fr.Name, // don't see any utility as fr.Path below has name in it
 		fr.Path,
-		strconv.FormatInt(fr.Size, 10),
+		fr.Size,
 		fr.ValidationRoot,
 		fr.FixedMerkleRoot,
-		strconv.FormatInt(fr.ActualFileSize, 10),
+		fr.ActualFileSize,
 		fr.ActualFileHash,
-		strconv.FormatInt(fr.ChunkSize, 10),
+		fr.ChunkSize,
+		fr.FileID,
 	)
-	return strings.Join(hashArray, ":")
 }
 
 func (fr *FileRef) GetHash() string {
@@ -205,6 +231,7 @@ func (fr *FileRef) GetHash() string {
 
 func (fr *FileRef) CalculateHash() string {
 	fr.Hash = encryption.Hash(fr.GetHashData())
+	fr.FileMetaHash = encryption.Hash(fr.GetFileMetaHashData())
 	fr.NumBlocks = int64(math.Ceil(float64(fr.Size*1.0) / CHUNK_SIZE))
 	return fr.Hash
 }
@@ -232,8 +259,13 @@ func (fr *FileRef) GetLookupHash() string {
 func (fr *FileRef) GetPath() string {
 	return fr.Path
 }
+
 func (fr *FileRef) GetName() string {
 	return fr.Name
+}
+
+func (fr *FileRef) GetFileID() string {
+	return fr.FileID
 }
 
 func (fr *FileRef) GetCreatedAt() common.Timestamp {
