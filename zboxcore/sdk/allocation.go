@@ -1062,7 +1062,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 		return err
 	}
 
-	req := &CopyRequest{}
+	req := &CopyRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	req.allocationObj = a
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
