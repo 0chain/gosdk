@@ -189,7 +189,6 @@ func (req *RenameRequest) ProcessRename() error {
 	wg := &sync.WaitGroup{}
 	wg.Add(activeBlobbers)
 	commitReqs := make([]*CommitRequest, activeBlobbers)
-
 	var pos uint64
 	var c int
 	for i := req.renameMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -209,7 +208,7 @@ func (req *RenameRequest) ProcessRename() error {
 			connectionID: req.connectionID,
 			wg:           wg,
 		}
-		commitReq.changes = append(commitReq.changes, newChange)
+		commitReq.change = newChange
 		commitReqs[c] = commitReq
 
 		go AddCommitRequest(commitReq)
