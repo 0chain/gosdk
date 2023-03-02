@@ -4,9 +4,18 @@
 package main
 
 import (
+	"encoding/json"
+	"strings"
+
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
+
+type fileResp struct {
+	sdk.FileInfo
+	Name string `json:"name"`
+	Path string `json:"path"`
+}
 
 func getBlobberIds(blobberUrls []string) ([]string, error) {
 	return sdk.GetBlobberIds(blobberUrls)
@@ -133,4 +142,61 @@ func updateAllocation(allocationID string,
 	}
 
 	return hash, err
+}
+
+func getAllocationMinLock(datashards, parityshards int,
+	size, expiry int64,
+	maxreadPrice, maxwritePrice uint64,
+) (int64, error) {
+	readPrice := sdk.PriceRange{Min: 0, Max: maxreadPrice}
+	writePrice := sdk.PriceRange{Min: 0, Max: maxwritePrice}
+
+	return sdk.GetAllocationMinLock(datashards, parityshards, size, expiry, readPrice, writePrice)
+}
+
+func getRemoteFileMap(allocationID string) ([]*fileResp, error) {
+	if len(allocationID) == 0 {
+		return nil, RequiredArg("allocationID")
+	}
+	allocationObj, err := sdk.GetAllocation(allocationID)
+	if err != nil {
+		return nil, err
+	}
+
+	ref, err := allocationObj.GetRemoteFileMap(nil)
+	if err != nil {
+		sdkLogger.Error(err)
+		return nil, err
+	}
+
+	fileResps := make([]*fileResp, 0)
+	for path, data := range ref {
+		paths := strings.SplitAfter(path, "/")
+		var resp = fileResp{
+			Name: paths[len(paths)-1],
+			Path: path,
+			FileInfo: sdk.FileInfo{
+				Type:         data.Type,
+				Size:         data.Size,
+				ActualSize:   data.ActualSize,
+				Hash:         data.Hash,
+				EncryptedKey: data.EncryptedKey,
+				LookupHash:   data.LookupHash,
+				CreatedAt:    data.CreatedAt,
+				UpdatedAt:    data.UpdatedAt,
+			},
+		}
+		fileResps = append(fileResps, &resp)
+	}
+
+	return fileResps, nil
+}
+
+func getJSON(v interface{}) (string, error) {
+	b, err := json.Marshal(v)
+	if err != nil {
+		sdkLogger.Error("Failed to convert data to json format : %v", err)
+		return "", err
+	}
+	return string(b), nil
 }
