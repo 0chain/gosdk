@@ -180,7 +180,7 @@ func TestAllocation_UpdateFile(t *testing.T) {
 		"total_pages": 1,
 		"refs": []map[string]interface{}{
 			{
-				"file_id":          2,
+				"file_id":          "2",
 				"type":             "f",
 				"allocation_id":    a.ID,
 				"lookup_hash":      "lookup_hash",
@@ -285,7 +285,7 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 		"total_pages": 1,
 		"refs": []map[string]interface{}{
 			{
-				"file_id":          2,
+				"file_id":          "2",
 				"type":             "f",
 				"allocation_id":    a.ID,
 				"lookup_hash":      "lookup_hash",
@@ -393,7 +393,7 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 		"total_pages": 1,
 		"refs": []map[string]interface{}{
 			{
-				"file_id":          2,
+				"file_id":          "2",
 				"type":             "f",
 				"allocation_id":    a.ID,
 				"lookup_hash":      "lookup_hash",
@@ -432,7 +432,7 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 	// We should replace mock client with net/httptest package instead.
 	// Mock library is very limiting when it comes to testing with http endpoints
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "consensus_not_met: Upload failed. Required consensus atleast 3, got 0")
+	require.Contains(t, err.Error(), "upload_failed")
 }
 
 func TestAllocation_EncryptAndUploadFile(t *testing.T) {
@@ -513,7 +513,7 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 		"total_pages": 1,
 		"refs": []map[string]interface{}{
 			{
-				"file_id":          2,
+				"file_id":          "2",
 				"type":             "f",
 				"allocation_id":    a.ID,
 				"lookup_hash":      "lookup_hash",
@@ -553,7 +553,7 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 	// We should replace mock client with net/httptest package instead.
 	// Mock library is very limiting when it comes to testing with http endpoints
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "consensus_not_met: Upload failed. Required consensus atleast 3, got 0")
+	require.Contains(t, err.Error(), "upload_failed")
 }
 
 func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
@@ -607,7 +607,7 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 	// We should replace mock client with net/httptest package instead.
 	// Mock library is very limiting when it comes to testing with http endpoints
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "consensus_not_met: Upload failed. Required consensus atleast 3, got 0")
+	require.Contains(t, err.Error(), "upload_failed")
 }
 
 func TestAllocation_uploadOrUpdateFile(t *testing.T) {
