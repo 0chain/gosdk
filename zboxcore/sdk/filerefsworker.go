@@ -143,7 +143,7 @@ type ORef struct {
 }
 
 type SimilarField struct {
-	FileID              int64            `json:"file_id"`
+	FileID              string           `json:"file_id"`
 	Type                string           `json:"type"`
 	AllocationID        string           `json:"allocation_id"`
 	LookupHash          string           `json:"lookup_hash"`
