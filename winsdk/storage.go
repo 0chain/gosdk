@@ -69,6 +69,34 @@ func GetAllocation(allocationID *C.char) *C.char {
 	return WithJSON(getAllocation(allocID))
 }
 
+// CreateDir create directory
+//
+//	return
+//		{
+//			"error":"",
+//			"result":"true",
+//		}
+//
+//export CreateDir
+func CreateDir(allocationID, path *C.char) *C.char {
+	allocID := C.GoString(allocationID)
+
+	alloc, err := getAllocation(allocID)
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	s := C.GoString(path)
+	err = alloc.CreateDir(s)
+
+	if err != nil {
+		return WithJSON(false, err)
+	}
+
+	return WithJSON(true, nil)
+
+}
+
 // Rename rename path
 //
 //	return
@@ -140,7 +168,7 @@ func GetFileMeta(allocationID, path *C.char) *C.char {
 
 	alloc, err := getAllocation(allocID)
 	if err != nil {
-		return WithJSON(false, err)
+		return WithJSON(nil, err)
 	}
 
 	s := C.GoString(path)
@@ -148,7 +176,7 @@ func GetFileMeta(allocationID, path *C.char) *C.char {
 	f, err := alloc.GetFileMeta(s)
 
 	if err != nil {
-		return WithJSON(false, err)
+		return WithJSON(nil, err)
 	}
 
 	return WithJSON(f, nil)
