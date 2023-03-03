@@ -1093,6 +1093,44 @@ func GetChainStats(ctx context.Context) (b *block.ChainStats, err error) {
 	return
 }
 
+func GetFeeStats(ctx context.Context) (b *block.FeeStats, err error) {
+
+	var numMiners = 4
+
+	if numMiners > len(_config.chain.Miners) {
+		numMiners = len(_config.chain.Miners)
+	}
+
+	var result = make(chan *util.GetResponse, numMiners)
+
+	queryFromMinersContext(ctx, numMiners, GET_FEE_STATS, result)
+	var rsp *util.GetResponse
+
+loop:
+	for i := 0; i < numMiners; i++ {
+		select {
+		case x := <-result:
+			if x.StatusCode != http.StatusOK {
+				continue
+			}
+			rsp = x
+			if rsp != nil {
+				break loop
+			}
+		case <-ctx.Done():
+			err = ctx.Err()
+			return nil, err
+		}
+	}
+	if rsp == nil {
+		return nil, errors.New("http_request_failed", "Request failed with status not 200")
+	}
+	if err = json.Unmarshal([]byte(rsp.Body), &b); err != nil {
+		return nil, err
+	}
+	return
+}
+
 func GetBlockByRound(ctx context.Context, numSharders int, round int64) (b *block.Block, err error) {
 
 	var result = make(chan *util.GetResponse, numSharders)
