@@ -1284,6 +1284,9 @@ func GetFeeStats(timeout RequestTimeout) ([]byte, error) {
 
 	var result = make(chan *util.GetResponse, numMiners)
 
+	ctx, cancel := makeTimeoutContext(timeout)
+	defer cancel()
+
 	queryFromMinersContext(ctx, numMiners, GET_FEE_STATS, result)
 	var rsp *util.GetResponse
 
