@@ -1432,11 +1432,19 @@ func (a *Allocation) GetMaxWriteReadFromBlobbers(blobbers []*BlobberAllocation) 
 
 	maxWritePrice, maxReadPrice := 0.0, 0.0
 	for _, v := range blobbers {
-		if v.Terms.WritePrice.ToToken() > maxWritePrice {
-			maxWritePrice = v.Terms.WritePrice.ToToken()
+		writePrice, err := v.Terms.WritePrice.ToToken()
+		if err != nil {
+			return 0, 0, err
 		}
-		if v.Terms.ReadPrice.ToToken() > maxReadPrice {
-			maxReadPrice = v.Terms.ReadPrice.ToToken()
+		if writePrice > maxWritePrice {
+			maxWritePrice = writePrice
+		}
+		readPrice, err := v.Terms.ReadPrice.ToToken()
+		if err != nil {
+			return 0, 0, err
+		}
+		if readPrice > maxReadPrice {
+			maxReadPrice = readPrice
 		}
 	}
 
@@ -1459,11 +1467,19 @@ func (a *Allocation) GetMinWriteRead() (minW float64, minR float64, err error) {
 
 	minWritePrice, minReadPrice := -1.0, -1.0
 	for _, v := range blobbersCopy {
-		if v.Terms.WritePrice.ToToken() < minWritePrice || minWritePrice < 0 {
-			minWritePrice = v.Terms.WritePrice.ToToken()
+		writePrice, err := v.Terms.WritePrice.ToToken()
+		if err != nil {
+			return 0, 0, err
 		}
-		if v.Terms.ReadPrice.ToToken() < minReadPrice || minReadPrice < 0 {
-			minReadPrice = v.Terms.ReadPrice.ToToken()
+		if writePrice < minWritePrice || minWritePrice < 0 {
+			minWritePrice = writePrice
+		}
+		readPrice, err := v.Terms.ReadPrice.ToToken()
+		if err != nil {
+			return 0, 0, err
+		}
+		if readPrice < minReadPrice || minReadPrice < 0 {
+			minReadPrice = readPrice
 		}
 	}
 
@@ -1474,11 +1490,15 @@ func (a *Allocation) GetMaxStorageCostFromBlobbers(size int64, blobbers []*Blobb
 	var cost common.Balance // total price for size / duration
 
 	for _, d := range blobbers {
-		cost += a.uploadCostForBlobber(float64(d.Terms.WritePrice), size,
-			a.DataShards, a.ParityShards)
+		var err error
+		cost, err = common.AddBalance(cost, a.uploadCostForBlobber(float64(d.Terms.WritePrice), size,
+			a.DataShards, a.ParityShards))
+		if err != nil {
+			return 0.0, err
+		}
 	}
 
-	return cost.ToToken(), nil
+	return cost.ToToken()
 }
 
 func (a *Allocation) GetMaxStorageCost(size int64) (float64, error) {
@@ -1488,19 +1508,21 @@ func (a *Allocation) GetMaxStorageCost(size int64) (float64, error) {
 		fmt.Printf("write price for blobber %f datashards %d parity %d\n",
 			float64(d.Terms.WritePrice), a.DataShards, a.ParityShards)
 
-		cost += a.uploadCostForBlobber(float64(d.Terms.WritePrice), size,
-			a.DataShards, a.ParityShards)
-
-		fmt.Printf("Total cost %d\n", cost)
+		var err error
+		cost, err = common.AddBalance(cost, a.uploadCostForBlobber(float64(d.Terms.WritePrice), size,
+			a.DataShards, a.ParityShards))
+		if err != nil {
+			return 0.0, err
+		}
 	}
-
-	return cost.ToToken(), nil
+	fmt.Printf("Total cost %d\n", cost)
+	return cost.ToToken()
 }
 
 func (a *Allocation) GetMinStorageCost(size int64) (common.Balance, error) {
 	minW, _, err := a.GetMinWriteRead()
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	return a.uploadCostForBlobber(minW, size, a.DataShards, a.ParityShards), nil
@@ -1510,7 +1532,7 @@ func (a *Allocation) uploadCostForBlobber(price float64, size int64, data, parit
 	cost common.Balance) {
 
 	if data == 0 || parity == 0 {
-		return -1.0
+		return 0.0
 	}
 
 	var ps = (size + int64(data) - 1) / int64(data)

@@ -228,7 +228,6 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 		newChange.NumBlocks = newChange.ObjectTree.GetNumBlocks()
 		newChange.Operation = constants.FileOperationDelete
 		newChange.Size = newChange.ObjectTree.GetSize()
-
 		commitReq := &CommitRequest{
 			allocationID: req.allocationID,
 			allocationTx: req.allocationTx,
@@ -236,7 +235,7 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 			connectionID: req.connectionID,
 			wg:           wg,
 		}
-		commitReq.changes = append(commitReq.changes, newChange)
+		commitReq.change = newChange
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
 		c++
