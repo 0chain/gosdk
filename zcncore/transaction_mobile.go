@@ -1287,6 +1287,11 @@ func GetFeeStats(timeout RequestTimeout) ([]byte, error) {
 	ctx, cancel := makeTimeoutContext(timeout)
 	defer cancel()
 
+	var (
+		b   *block.FeeStats
+		err error
+	)
+
 	queryFromMinersContext(ctx, numMiners, GET_FEE_STATS, result)
 	var rsp *util.GetResponse
 
@@ -1308,9 +1313,11 @@ loop:
 	if rsp == nil {
 		return nil, errors.New("http_request_failed", "Request failed with status not 200")
 	}
+
 	if err = json.Unmarshal([]byte(rsp.Body), &b); err != nil {
 		return nil, err
 	}
+
 	return []byte(rsp.Body), nil
 }
 
