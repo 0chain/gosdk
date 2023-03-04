@@ -13,6 +13,7 @@ import (
 	"github.com/0chain/errors"
 
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
@@ -190,12 +191,14 @@ func (req *CopyRequest) ProcessCopy() error {
 	wg.Add(activeBlobbers)
 	commitReqs := make([]*CommitRequest, activeBlobbers)
 
+	uid := util.GetNewUUID()
 	var c int
 	for i := req.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 
 		newChange := &allocationchange.CopyFileChange{
 			DestPath:   req.destPath,
+			Uuid:       uid,
 			ObjectTree: objectTreeRefs[pos],
 		}
 		newChange.NumBlocks = 0
@@ -208,7 +211,7 @@ func (req *CopyRequest) ProcessCopy() error {
 			connectionID: req.connectionID,
 			wg:           wg,
 		}
-		commitReq.changes = append(commitReq.changes, newChange)
+		commitReq.change = newChange
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
 		c++

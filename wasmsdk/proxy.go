@@ -140,18 +140,20 @@ func main() {
 				"getLookupHash":          getLookupHash,
 
 				//blobber
-				"delete":         Delete,
-				"rename":         Rename,
-				"copy":           Copy,
-				"move":           Move,
-				"share":          Share,
-				"download":       download,
-				"upload":         upload,
-				"bulkUpload":     bulkUpload,
-				"listObjects":    listObjects,
-				"createDir":      createDir,
-				"downloadBlocks": downloadBlocks,
-				"getFileStats":   getFileStats,
+				"delete":                Delete,
+				"rename":                Rename,
+				"copy":                  Copy,
+				"move":                  Move,
+				"share":                 Share,
+				"download":              download,
+				"upload":                upload,
+				"bulkUpload":            bulkUpload,
+				"listObjects":           listObjects,
+				"createDir":             createDir,
+				"downloadBlocks":        downloadBlocks,
+				"getFileStats":          getFileStats,
+				"updateBlobberSettings": updateBlobberSettings,
+				"getRemoteFileMap":      getRemoteFileMap,
 
 				// player
 				"play":           play,
@@ -173,6 +175,7 @@ func main() {
 				"freezeAllocation":      freezeAllocation,
 				"cancelAllocation":      cancelAllocation,
 				"updateAllocation":      updateAllocation,
+				"getAllocationMinLock":  getAllocationMinLock,
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,
