@@ -28,6 +28,7 @@ type DeleteRequest struct {
 	blobbers       []*blockchain.StorageNode
 	remotefilepath string
 	ctx            context.Context
+	ctxCncl        context.CancelFunc
 	wg             *sync.WaitGroup
 	deleteMask     zboxutil.Uint128
 	maskMu         *sync.Mutex
@@ -150,6 +151,8 @@ func (req *DeleteRequest) getObjectTreeFromBlobber(pos uint64) (
 }
 
 func (req *DeleteRequest) ProcessDelete() (err error) {
+	defer req.ctxCncl()
+
 	num := req.deleteMask.CountOnes()
 	objectTreeRefs := make([]fileref.RefEntity, num)
 	var deleteMutex sync.Mutex
@@ -207,10 +210,10 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 		req.ctx, &req.deleteMask, req.maskMu,
 		req.blobbers, &req.consensus, removedNum, time.Minute, req.connectionID)
 
-	defer writeMarkerMutex.Unlock(req.ctx, req.deleteMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 	if err != nil {
 		return fmt.Errorf("Delete failed: %s", err.Error())
 	}
+	defer writeMarkerMutex.Unlock(req.ctx, req.deleteMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	req.consensus.consensus = removedNum
 	wg := &sync.WaitGroup{}
@@ -225,7 +228,6 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 		newChange.NumBlocks = newChange.ObjectTree.GetNumBlocks()
 		newChange.Operation = constants.FileOperationDelete
 		newChange.Size = newChange.ObjectTree.GetSize()
-
 		commitReq := &CommitRequest{
 			allocationID: req.allocationID,
 			allocationTx: req.allocationTx,
@@ -233,7 +235,7 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 			connectionID: req.connectionID,
 			wg:           wg,
 		}
-		commitReq.changes = append(commitReq.changes, newChange)
+		commitReq.change = newChange
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
 		c++

@@ -31,6 +31,7 @@ type MoveRequest struct {
 	remotefilepath string
 	destPath       string
 	ctx            context.Context
+	ctxCncl        context.CancelFunc
 	moveMask       zboxutil.Uint128
 	maskMU         *sync.Mutex
 	connectionID   string
@@ -143,6 +144,8 @@ func (req *MoveRequest) moveBlobberObject(
 }
 
 func (req *MoveRequest) ProcessMove() error {
+	defer req.ctxCncl()
+
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	wg := &sync.WaitGroup{}
@@ -177,16 +180,15 @@ func (req *MoveRequest) ProcessMove() error {
 	}
 	err = writeMarkerMutex.Lock(req.ctx, &req.moveMask, req.maskMU,
 		req.blobbers, &req.Consensus, 0, time.Minute, req.connectionID)
-	defer writeMarkerMutex.Unlock(req.ctx, req.moveMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 	if err != nil {
 		return fmt.Errorf("Move failed: %s", err.Error())
 	}
+	defer writeMarkerMutex.Unlock(req.ctx, req.moveMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	req.Consensus.Reset()
 	activeBlobbers := req.moveMask.CountOnes()
 	wg.Add(activeBlobbers)
 	commitReqs := make([]*CommitRequest, activeBlobbers)
-
 	var c int
 	for i := req.moveMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
@@ -205,7 +207,7 @@ func (req *MoveRequest) ProcessMove() error {
 			connectionID: req.connectionID,
 			wg:           wg,
 		}
-		commitReq.changes = append(commitReq.changes, moveChange)
+		commitReq.change = moveChange
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
 		c++

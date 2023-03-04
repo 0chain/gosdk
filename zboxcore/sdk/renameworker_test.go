@@ -471,13 +471,12 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 					consensusThresh: 3,
 					fullconsensus:   4,
 				},
-				ctx:          context.TODO(),
 				renameMask:   zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
 				maskMU:       &sync.Mutex{},
 				connectionID: mockConnectionId,
 				newName:      mockNewName,
 			}
-
+			req.ctx, req.ctxCncl = context.WithCancel(context.TODO())
 			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect, req)
 			err := req.ProcessRename()
 			require.EqualValues(tt.wantErr, err != nil, err)

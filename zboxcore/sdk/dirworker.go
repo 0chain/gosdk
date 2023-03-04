@@ -12,6 +12,8 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -30,6 +32,7 @@ type DirRequest struct {
 	remotePath   string
 	blobbers     []*blockchain.StorageNode
 	ctx          context.Context
+	ctxCncl      context.CancelFunc
 	wg           *sync.WaitGroup
 	dirMask      zboxutil.Uint128
 	mu           *sync.Mutex
@@ -40,6 +43,7 @@ type DirRequest struct {
 func (req *DirRequest) ProcessDir(a *Allocation) error {
 	l.Logger.Info("Start creating dir for blobbers")
 
+	defer req.ctxCncl()
 	var pos uint64
 	var existingDirCount int
 	countMu := &sync.Mutex{}
@@ -76,11 +80,11 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 	err = writeMarkerMU.Lock(
 		context.TODO(), &req.dirMask, req.mu,
 		req.blobbers, &req.Consensus, existingDirCount, time.Minute, req.connectionID)
-	defer writeMarkerMU.Unlock(context.TODO(), req.dirMask,
-		a.Blobbers, time.Minute, req.connectionID) //nolint: errcheck
 	if err != nil {
 		return fmt.Errorf("directory creation failed. Err: %s", err.Error())
 	}
+	defer writeMarkerMU.Unlock(context.TODO(), req.dirMask,
+		a.Blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	return req.commitRequest(existingDirCount)
 }
@@ -95,6 +99,10 @@ func (req *DirRequest) commitRequest(existingDirCount int) error {
 	commitReqs := make([]*CommitRequest, activeBlobbersNum)
 	var pos uint64
 	var c int
+
+	timestamp := common.Now()
+	uid := util.GetNewUUID()
+
 	for i := req.dirMask; !i.Equals(zboxutil.NewUint128(0)); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		commitReq := &CommitRequest{}
@@ -102,10 +110,13 @@ func (req *DirRequest) commitRequest(existingDirCount int) error {
 		commitReq.allocationTx = req.allocationTx
 		commitReq.blobber = req.blobbers[pos]
 
-		newChange := &allocationchange.DirCreateChange{}
-		newChange.RemotePath = req.remotePath
+		newChange := &allocationchange.DirCreateChange{
+			RemotePath: req.remotePath,
+			Uuid:       uid,
+			Timestamp:  timestamp,
+		}
 
-		commitReq.changes = append(commitReq.changes, newChange)
+		commitReq.change = newChange
 		commitReq.connectionID = req.connectionID
 		commitReq.wg = wg
 		commitReqs[c] = commitReq

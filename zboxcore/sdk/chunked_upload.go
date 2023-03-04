@@ -18,6 +18,7 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	coreEncryption "github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -25,6 +26,7 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/google/uuid"
 	"github.com/klauspost/reedsolomon"
 )
 
@@ -158,29 +160,38 @@ func CreateChunkedUpload(
 		uploadTimeOut: DefaultUploadTimeOut,
 		commitTimeOut: DefaultUploadTimeOut,
 		maskMu:        &sync.Mutex{},
-		ctx:           allocationObj.ctx,
 		opCode:        opCode,
 	}
 
+	su.ctx, su.ctxCncl = context.WithCancel(allocationObj.ctx)
+
 	if isUpdate {
+		otr, err := allocationObj.GetRefs(fileMeta.RemotePath, "", "", "", fileref.FILE, "regular", 0, 1)
+		if err != nil {
+			logger.Logger.Error(err)
+			return nil, thrown.New("chunk_upload", err.Error())
+		}
+		if len(otr.Refs) != 1 {
+			return nil, thrown.New("chunk_upload", fmt.Sprintf("Expected refs 1, got %d", len(otr.Refs)))
+		}
 		su.httpMethod = http.MethodPut
-		su.buildChange = func(ref *fileref.FileRef) allocationchange.AllocationChange {
+		su.buildChange = func(ref *fileref.FileRef, _ uuid.UUID, ts common.Timestamp) allocationchange.AllocationChange {
 			change := &allocationchange.UpdateFileChange{}
 			change.NewFile = ref
 			change.NumBlocks = ref.NumBlocks
 			change.Operation = constants.FileOperationUpdate
 			change.Size = ref.Size
-
 			return change
 		}
 	} else {
 		su.httpMethod = http.MethodPost
-		su.buildChange = func(ref *fileref.FileRef) allocationchange.AllocationChange {
+		su.buildChange = func(ref *fileref.FileRef, uid uuid.UUID, ts common.Timestamp) allocationchange.AllocationChange {
 			change := &allocationchange.NewFileChange{}
 			change.File = ref
 			change.NumBlocks = ref.NumBlocks
 			change.Operation = constants.FileOperationInsert
 			change.Size = ref.Size
+			change.Uuid = uid
 			return change
 		}
 	}
@@ -282,7 +293,8 @@ type ChunkedUpload struct {
 
 	// httpMethod POST = Upload File / PUT = Update file
 	httpMethod  string
-	buildChange func(ref *fileref.FileRef) allocationchange.AllocationChange
+	buildChange func(ref *fileref.FileRef,
+		uid uuid.UUID, timestamp common.Timestamp) allocationchange.AllocationChange
 
 	fileMeta           FileMeta
 	fileReader         io.Reader
@@ -323,6 +335,7 @@ type ChunkedUpload struct {
 	commitTimeOut time.Duration
 	maskMu        *sync.Mutex
 	ctx           context.Context
+	ctxCncl       context.CancelFunc
 }
 
 // progressID build local progress id with [allocationid]_[Hash(LocalPath+"_"+RemotePath)]_[RemoteName] format
@@ -411,6 +424,7 @@ func (su *ChunkedUpload) Start() error {
 	if su.statusCallback != nil {
 		su.statusCallback.Started(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.fileMeta.ActualSize)+int(su.fileMeta.ActualThumbnailSize))
 	}
+	defer su.ctxCncl()
 
 	for {
 
@@ -482,15 +496,14 @@ func (su *ChunkedUpload) Start() error {
 		blobbers, &su.consensus, 0, su.uploadTimeOut,
 		su.progress.ConnectionID)
 
-	defer su.writeMarkerMutex.Unlock(
-		su.ctx, su.uploadMask, blobbers, su.uploadTimeOut, su.progress.ConnectionID) //nolint: errcheck
-
 	if err != nil {
 		if su.statusCallback != nil {
 			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, su.opCode, err)
 		}
 		return err
 	}
+	defer su.writeMarkerMutex.Unlock(
+		su.ctx, su.uploadMask, blobbers, su.uploadTimeOut, su.progress.ConnectionID) //nolint: errcheck
 
 	return su.processCommit()
 }
@@ -563,6 +576,9 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		encryptedKey = su.fileEncscheme.GetEncryptedKey()
 	}
 
+	wgErrors := make(chan error)
+	wgDone := make(chan bool)
+
 	wg := &sync.WaitGroup{}
 	var pos uint64
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -592,12 +608,26 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			defer wg.Done()
 			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
 			if err != nil {
+				select {
+					case wgErrors <- err:
+					default:
+				}
 				logger.Logger.Error("error during sendUploadRequest", err)
 			}
 		}(blobber, body, formData, pos)
 	}
 
-	wg.Wait()
+	go func() {
+		wg.Wait()
+		close(wgDone)
+	}()
+	
+	select {
+		case <-wgDone:
+			break
+		case err := <-wgErrors:
+			return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
+	}
 
 	if !su.consensus.isConsensusOk() {
 		return thrown.New("consensus_not_met", fmt.Sprintf("Upload failed. Required consensus atleast %d, got %d",
@@ -616,6 +646,8 @@ func (su *ChunkedUpload) processCommit() error {
 
 	wg := &sync.WaitGroup{}
 	var pos uint64
+	uid := util.GetNewUUID()
+	timestamp := common.Now()
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 
@@ -625,7 +657,8 @@ func (su *ChunkedUpload) processCommit() error {
 		blobber.fileRef.ChunkSize = su.chunkSize
 		blobber.fileRef.NumBlocks = int64(su.progress.ChunkIndex + 1)
 
-		blobber.commitChanges = append(blobber.commitChanges, su.buildChange(blobber.fileRef))
+		blobber.commitChanges = append(blobber.commitChanges,
+			su.buildChange(blobber.fileRef, uid, timestamp))
 
 		wg.Add(1)
 		go func(b *ChunkedUploadBlobber, pos uint64) {
