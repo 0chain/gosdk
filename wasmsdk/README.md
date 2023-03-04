@@ -14,7 +14,7 @@ set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWal
 **Output**:
 > N/A
 >
- 
+
 ### zcn.bulkUpload
 bulk upload files. it will wrap options, and call `zcn.sdk.bulkUpload` to process upload
 
@@ -342,7 +342,7 @@ upload file
 bulk upload files with json options
 
 **Input**:
-> jsonBulkOptions string: 
+> jsonBulkUploadOptions string:
 >  BulkOption: { allocationId,remotePath,readChunkFuncName, fileSize, thumbnailBytes, encrypt,isUpdate,isRepair,numBlocks,callbackFuncName:callbackFuncName }
 
 **Output**:
@@ -395,6 +395,30 @@ create folder from blobbers
 
 **Output**:
 > string: []sdk.FileStats
+
+### zcn.sdk.updateBlobberSettings
+
+ **Input**:
+ > blobberSettingsJson string
+ blobberSettings: fetch blobber settings by calling /getBlobber on sharder and modify them (see demo for usage)
+ **Output**:
+ > string: resp
+
+### zcn.sdk.getAllocationMinLock
+
+**Input**:
+> datashards int, parityshards int, size int, expiry int, maxreadPrice int, maxwritePrice int
+
+**Output**:
+> int: min_lock_demand
+
+### zcn.sdk.getRemoteFileMap
+takes allocation ID and returns all the files/directories in allocation as JSON
+**Input**:
+> allocationID string
+
+**Output**:
+> []*fileResp
 
 
 ## Swap methods
