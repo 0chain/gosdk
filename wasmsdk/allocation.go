@@ -156,7 +156,7 @@ func getAllocationMinLock(datashards, parityshards int,
 		sdkLogger.Error(err)
 		return 0, err
 	}
-	sdkLogger.Info("returned value", value)
+	sdkLogger.Info("allocation Minlock value", value)
 	return value, nil
 }
 
