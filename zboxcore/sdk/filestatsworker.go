@@ -34,7 +34,7 @@ type FileStats struct {
 	BlobberURL               string    `json:"blobber_url"`
 	BlockchainAware          bool      `json:"blockchain_aware"`
 	CreatedAt                time.Time `json:"CreatedAt"`
-	AllocationRoot           string    `json:"allocation_root"`
+	FileID                   string    `json:"file_id"`
 }
 
 type fileStatsBlobberResponse struct {
@@ -99,7 +99,7 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 				return errors.Wrap(err, "file stats response parse error")
 			}
 			fileStats = &fileStatsblobberResp.FileStats
-			fileStats.AllocationRoot = fileStatsblobberResp.Ref.AllocationRoot
+			fileStats.FileID = fileStatsblobberResp.Ref.FileID
 			if len(fileStats.WriteMarkerRedeemTxn) > 0 {
 				fileStats.BlockchainAware = true
 			} else {
