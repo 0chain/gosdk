@@ -1,7 +1,7 @@
 package allocationchange
 
 import (
-	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -28,18 +28,20 @@ func (d *DirCreateChange) ProcessChange(rootRef *fileref.Ref) (commitParams Comm
 	for i := 0; i < len(fields); i++ {
 		found := false
 		for _, child := range dirRef.Children {
-			ref, ok := child.(*fileref.FileRef)
-			if !ok {
-				err = errors.New("invalid_ref: child node is not valid *fileref.Ref")
-				return
-			}
-
-			if ref.Name == fields[i] {
-
-				dirRef = &ref.Ref
+			if child.GetName() == fields[i] {
+				ref, ok := child.(*fileref.Ref)
+				if !ok {
+					err = fmt.Errorf(
+						"invalid_ref: Expected type *fileref.Ref but got %T for"+
+							" file name: %s, file path: %s, file type: %s",
+						child, child.GetName(), child.GetPath(), child.GetType())
+					return
+				}
+				dirRef = ref
 				found = true
 				break
 			}
+
 		}
 		if !found {
 			uid := util.GetSHA1Uuid(d.Uuid, fields[i])
