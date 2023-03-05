@@ -725,7 +725,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.LookupHash = ref.LookupHash
 		result.MimeType = ref.MimeType
 		result.Path = ref.Path
-		result.Size = ref.ActualFileSize
+		result.Size = ref.Size
 		result.EncryptedKey = ref.EncryptedKey
 		result.CommitMetaTxns = ref.CommitMetaTxns
 		result.Collaborators = ref.Collaborators
