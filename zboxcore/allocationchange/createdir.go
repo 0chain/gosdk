@@ -28,14 +28,15 @@ func (d *DirCreateChange) ProcessChange(rootRef *fileref.Ref) (commitParams Comm
 	for i := 0; i < len(fields); i++ {
 		found := false
 		for _, child := range dirRef.Children {
-			ref, ok := child.(*fileref.Ref)
+			ref, ok := child.(*fileref.FileRef)
 			if !ok {
 				err = errors.New("invalid_ref: child node is not valid *fileref.Ref")
 				return
 			}
 
 			if ref.Name == fields[i] {
-				dirRef = ref
+
+				dirRef = &ref.Ref
 				found = true
 				break
 			}
