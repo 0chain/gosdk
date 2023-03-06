@@ -39,7 +39,7 @@ type FileStats struct {
 
 type fileStatsBlobberResponse struct {
 	FileStats
-	Ref fileref.Ref `json:"Ref"`
+	// Ref fileref.Ref `json:"Ref"`
 }
 
 type fileStatsResponse struct {
@@ -91,15 +91,12 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 			return errors.Wrap(err, "Error: Resp")
 		}
 		s.WriteString(string(resp_body))
-		var fileStatsblobberResp *fileStatsBlobberResponse
 
 		if resp.StatusCode == http.StatusOK {
-			err = json.Unmarshal(resp_body, &fileStatsblobberResp)
+			err = json.Unmarshal(resp_body, &fileStats)
 			if err != nil {
 				return errors.Wrap(err, "file stats response parse error")
 			}
-			fileStats = &fileStatsblobberResp.FileStats
-			fileStats.FileID = fileStatsblobberResp.Ref.FileID
 			if len(fileStats.WriteMarkerRedeemTxn) > 0 {
 				fileStats.BlockchainAware = true
 			} else {

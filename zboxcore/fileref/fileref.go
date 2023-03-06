@@ -73,7 +73,7 @@ type Ref struct {
 	NumBlocks        int64  `json:"num_of_blocks" mapstructure:"num_of_blocks"`
 	PathHash         string `json:"path_hash" mapstructure:"path_hash"`
 	LookupHash       string `json:"lookup_hash" mapstructure:"lookup_hash"`
-	FileID           string `json:"FileID" mapstructure:"file_id"`
+	FileID           string `json:"file_id" mapstructure:"file_id"`
 	FileMetaHash     string `json:"file_meta_hash" mapstructure:"file_meta_hash"`
 	HashToBeComputed bool
 	ChildrenLoaded   bool
