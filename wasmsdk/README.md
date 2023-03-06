@@ -183,6 +183,34 @@ updates allocation settings
 > hash: string
 
 
+### zcn.sdk.getAllocationFromAuthTicket
+returns allocation from authToken
+
+**Input**:
+> authTicket string
+
+**Output**:
+> [sdk.Allocation](https://github.com/0chain/gosdk/blob/a9e504e4a0e8fc76a05679e4ef183bb03b8db8e5/zboxcore/sdk/allocation.go#L140)
+
+### zcn.sdk.getReadPoolInfo
+gets information about the read pool for the allocation
+
+**Input**:
+> clientID string
+
+**Output**:
+> [sdk.ReadPool](https://github.com/0chain/gosdk/blob/6878504e4e4d7cb25b2ac819c3c578228b3d3e30/zboxcore/sdk/sdk.go#L167-L169)
+
+
+### zcn.sdk.writePoolLock
+locks given number of tokes for given duration in read pool
+
+**Input**:
+> allocationId string, tokens string, fee string
+
+**Output**:
+> hash: string
+
 ### zcn.sdk.getWalletBalance
 get wallet balance
 

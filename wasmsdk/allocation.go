@@ -4,10 +4,10 @@
 package main
 
 import (
-	"encoding/json"
 	"strings"
 
 	"github.com/0chain/gosdk/core/transaction"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
@@ -192,11 +192,40 @@ func getRemoteFileMap(allocationID string) ([]*fileResp, error) {
 	return fileResps, nil
 }
 
-func getJSON(v interface{}) (string, error) {
-	b, err := json.Marshal(v)
+// WritePoolLock locks given number of tokes for given duration in read pool.
+// ## Inputs
+//   - allocID: allocation id
+//   - tokens:  sas tokens
+//   - fee: sas tokens
+func writePoolLock(allocID, tokens, fee string) (string, error) {
+	t, err := util.ParseCoinStr(tokens)
 	if err != nil {
-		sdkLogger.Error("Failed to convert data to json format : %v", err)
 		return "", err
 	}
-	return string(b), nil
+
+	f, err := util.ParseCoinStr(fee)
+	if err != nil {
+		return "", err
+	}
+	hash, _, err := sdk.WritePoolLock(allocID, t, f)
+	return hash, err
+}
+
+// GetReadPoolInfo is to get information about the read pool for the allocation
+func getReadPoolInfo(clientID string) (*sdk.ReadPool, error) {
+	readPool, err := sdk.GetReadPoolInfo(clientID)
+	if err != nil {
+		return nil, err
+	}
+
+	return readPool, nil
+}
+
+// GetAllocationFromAuthTicket - get allocation from Auth ticket
+func getAllocationFromAuthTicket(authTicket string) (*sdk.Allocation, error) {
+	sdkAllocation, err := sdk.GetAllocationFromAuthTicket(authTicket)
+	if err != nil {
+		return nil, err
+	}
+	return sdkAllocation, err
 }
