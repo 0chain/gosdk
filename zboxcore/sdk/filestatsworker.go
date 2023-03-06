@@ -37,11 +37,6 @@ type FileStats struct {
 	FileID                   string    `json:"file_id"`
 }
 
-type fileStatsBlobberResponse struct {
-	FileStats
-	// Ref fileref.Ref `json:"Ref"`
-}
-
 type fileStatsResponse struct {
 	filestats   *FileStats
 	responseStr string
@@ -91,7 +86,6 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 			return errors.Wrap(err, "Error: Resp")
 		}
 		s.WriteString(string(resp_body))
-
 		if resp.StatusCode == http.StatusOK {
 			err = json.Unmarshal(resp_body, &fileStats)
 			if err != nil {
