@@ -651,3 +651,12 @@ func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, num
 	return resp, nil
 
 }
+
+// GetBlobbersList get list of active blobbers, and format them as array json string
+func getBlobbersList() ([]*sdk.Blobber, error) {
+	blobbs, err := sdk.GetBlobbers(true)
+	if err != nil {
+		return nil, err
+	}
+	return blobbs, err
+}

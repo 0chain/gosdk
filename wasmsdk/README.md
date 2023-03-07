@@ -246,6 +246,13 @@ convert blobber urls to blobber ids
 **Output**:
 > []string
 
+### zcn.sdk.getBlobbersList
+get blobbers from the network
+
+**Input**:
+
+**Output**:
+> array of [sdk.Blobber](https://github.com/0chain/gosdk/blob/6878504e4e4d7cb25b2ac819c3c578228b3d3e30/zboxcore/sdk/sdk.go#L558-L572)
 
 ### zcn.sdk.createReadPool
 create readpool in storage SC if the pool is missing.

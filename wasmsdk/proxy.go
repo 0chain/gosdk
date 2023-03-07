@@ -154,6 +154,7 @@ func main() {
 				"getFileStats":          getFileStats,
 				"updateBlobberSettings": updateBlobberSettings,
 				"getRemoteFileMap":      getRemoteFileMap,
+				"getBlobbersList":       getBlobbersList,
 
 				// player
 				"play":           play,
