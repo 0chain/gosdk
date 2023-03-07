@@ -4,12 +4,19 @@
 package main
 
 import (
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
+
+const TOKEN_UNIT int64 = 1e10
 
 type fileResp struct {
 	sdk.FileInfo
@@ -228,4 +235,52 @@ func getAllocationFromAuthTicket(authTicket string) (*sdk.Allocation, error) {
 		return nil, err
 	}
 	return sdkAllocation, err
+}
+
+func redeemFreeStorage(ticket string) (string, error) {
+	recipientPublicKey, marker, lock, err := decodeTicket(ticket)
+	if err != nil {
+		return "", err
+	}
+
+	if recipientPublicKey != client.GetClientPublicKey() {
+		return "", fmt.Errorf("invalid_free_marker: free marker is not assigned to your wallet")
+	}
+
+	hash, _, err := sdk.CreateFreeAllocation(marker, lock)
+	return hash, err
+}
+
+func decodeTicket(ticket string) (string, string, uint64, error) {
+	decoded, err := base64.StdEncoding.DecodeString(ticket)
+	if err != nil {
+		return "", "", 0, err
+	}
+
+	input := make(map[string]interface{})
+	if err = json.Unmarshal(decoded, &input); err != nil {
+		return "", "", 0, err
+	}
+
+	str := fmt.Sprintf("%v", input["marker"])
+	decodedMarker, _ := base64.StdEncoding.DecodeString(str)
+	markerInput := make(map[string]interface{})
+	if err = json.Unmarshal(decodedMarker, &markerInput); err != nil {
+		return "", "", 0, err
+	}
+
+	recipientPublicKey, ok := input["recipient_public_key"].(string)
+	if !ok {
+		return "", "", 0, fmt.Errorf("recipient_public_key is required")
+	}
+
+	lock := markerInput["free_tokens"]
+	markerStr, _ := json.Marshal(markerInput)
+
+	s, _ := strconv.ParseFloat(string(fmt.Sprintf("%v", lock)), 64)
+	return string(recipientPublicKey), string(markerStr), convertTokenToSAS(s), nil
+}
+
+func convertTokenToSAS(token float64) uint64 {
+	return uint64(token * float64(TOKEN_UNIT))
 }

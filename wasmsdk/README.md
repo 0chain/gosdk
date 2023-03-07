@@ -202,6 +202,23 @@ gets information about the read pool for the allocation
 > [sdk.ReadPool](https://github.com/0chain/gosdk/blob/6878504e4e4d7cb25b2ac819c3c578228b3d3e30/zboxcore/sdk/sdk.go#L167-L169)
 
 
+### zcn.sdk.redeemFreeStorage
+
+**Input**:
+> ticket string
+
+**Output**:
+> hash string
+
+### zcn.sdk.decodeTicket
+
+**Input**:
+> ticket string
+
+**Output**:
+> recipientPublicKey string, markerStr string, tokensInSAS uint64
+
+
 ### zcn.sdk.writePoolLock
 locks given number of tokes for given duration in read pool
 

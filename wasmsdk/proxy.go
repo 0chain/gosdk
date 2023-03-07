@@ -179,6 +179,8 @@ func main() {
 				"getAllocationFromAuthTicket": getAllocationFromAuthTicket,
 				"getReadPoolInfo":             getReadPoolInfo,
 				"writePoolLock":               writePoolLock,
+				"redeemFreeStorage":           redeemFreeStorage,
+				"decodeTicket":                decodeTicket,
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,
