@@ -158,7 +158,13 @@ func getAllocationMinLock(datashards, parityshards int,
 	readPrice := sdk.PriceRange{Min: 0, Max: maxreadPrice}
 	writePrice := sdk.PriceRange{Min: 0, Max: maxwritePrice}
 
-	return sdk.GetAllocationMinLock(datashards, parityshards, size, expiry, readPrice, writePrice)
+	value, err := sdk.GetAllocationMinLock(datashards, parityshards, size, expiry, readPrice, writePrice)
+	if err != nil {
+		sdkLogger.Error(err)
+		return 0, err
+	}
+	sdkLogger.Info("allocation Minlock value", value)
+	return value, nil
 }
 
 func getRemoteFileMap(allocationID string) ([]*fileResp, error) {
@@ -180,18 +186,9 @@ func getRemoteFileMap(allocationID string) ([]*fileResp, error) {
 	for path, data := range ref {
 		paths := strings.SplitAfter(path, "/")
 		var resp = fileResp{
-			Name: paths[len(paths)-1],
-			Path: path,
-			FileInfo: sdk.FileInfo{
-				Type:         data.Type,
-				Size:         data.Size,
-				ActualSize:   data.ActualSize,
-				Hash:         data.Hash,
-				EncryptedKey: data.EncryptedKey,
-				LookupHash:   data.LookupHash,
-				CreatedAt:    data.CreatedAt,
-				UpdatedAt:    data.UpdatedAt,
-			},
+			Name:     paths[len(paths)-1],
+			Path:     path,
+			FileInfo: data,
 		}
 		fileResps = append(fileResps, &resp)
 	}
