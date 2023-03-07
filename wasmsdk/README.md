@@ -183,7 +183,7 @@ updates allocation settings
 > hash: string
 
 
-### zcn.sdk.getAllocationFromAuthTicket
+### zcn.sdk.getAllocationWith
 returns allocation from authToken
 
 **Input**:

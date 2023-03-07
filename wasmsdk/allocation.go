@@ -226,7 +226,7 @@ func getReadPoolInfo(clientID string) (*sdk.ReadPool, error) {
 }
 
 // GetAllocationFromAuthTicket - get allocation from Auth ticket
-func getAllocationFromAuthTicket(authTicket string) (*sdk.Allocation, error) {
+func getAllocationWith(authTicket string) (*sdk.Allocation, error) {
 	sdkAllocation, err := sdk.GetAllocationFromAuthTicket(authTicket)
 	if err != nil {
 		return nil, err
