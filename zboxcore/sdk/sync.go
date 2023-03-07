@@ -7,13 +7,13 @@ import (
 	"io/ioutil"
 	"log"
 	"sort"
-	"time"
 
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -31,14 +31,15 @@ const (
 )
 
 type FileInfo struct {
-	Size         int64     `json:"size"`
-	ActualSize   int64     `json:"actual_size"`
-	Hash         string    `json:"hash"`
-	Type         string    `json:"type"`
-	EncryptedKey string    `json:"encrypted_key"`
-	LookupHash   string    `json:"lookup_hash"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	Size         int64            `json:"size"`
+	MimeType     string           `json:"mimetype"`
+	ActualSize   int64            `json:"actual_size"`
+	Hash         string           `json:"hash"`
+	Type         string           `json:"type"`
+	EncryptedKey string           `json:"encrypted_key"`
+	LookupHash   string           `json:"lookup_hash"`
+	CreatedAt    common.Timestamp `json:"created_at"`
+	UpdatedAt    common.Timestamp `json:"updated_at"`
 }
 
 type FileDiff struct {
@@ -62,11 +63,12 @@ func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]Fil
 				Size:         child.Size,
 				ActualSize:   child.ActualSize,
 				Hash:         child.Hash,
+				MimeType:     child.MimeType,
 				Type:         child.Type,
 				EncryptedKey: child.EncryptionKey,
 				LookupHash:   child.LookupHash,
-				CreatedAt:    child.CreatedAt.ToTime(),
-				UpdatedAt:    child.UpdatedAt.ToTime(),
+				CreatedAt:    child.CreatedAt,
+				UpdatedAt:    child.UpdatedAt,
 			}
 			if child.Type == fileref.DIRECTORY {
 				childDirList = append(childDirList, child.Path)
