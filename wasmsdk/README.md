@@ -210,7 +210,7 @@ gets information about the read pool for the allocation
 **Output**:
 > hash string
 
-### zcn.sdk.decodeTicket
+### zcn.sdk.decodeAuthTicket
 
 **Input**:
 > ticket string
@@ -219,8 +219,8 @@ gets information about the read pool for the allocation
 > recipientPublicKey string, markerStr string, tokensInSAS uint64
 
 
-### zcn.sdk.writePoolLock
-locks given number of tokes for given duration in read pool
+### zcn.sdk.lockWritePool
+locks given number of tokes for given duration in write pool
 
 **Input**:
 > allocationId string, tokens string, fee string
@@ -246,7 +246,7 @@ convert blobber urls to blobber ids
 **Output**:
 > []string
 
-### zcn.sdk.getBlobbersList
+### zcn.sdk.getBlobbers
 get blobbers from the network
 
 **Input**:

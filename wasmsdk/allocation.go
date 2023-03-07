@@ -196,12 +196,12 @@ func getRemoteFileMap(allocationID string) ([]*fileResp, error) {
 	return fileResps, nil
 }
 
-// WritePoolLock locks given number of tokes for given duration in read pool.
+// lockWritePool locks given number of tokes for given duration in write pool.
 // ## Inputs
 //   - allocID: allocation id
 //   - tokens:  sas tokens
 //   - fee: sas tokens
-func writePoolLock(allocID, tokens, fee string) (string, error) {
+func lockWritePool(allocID, tokens, fee string) (string, error) {
 	t, err := util.ParseCoinStr(tokens)
 	if err != nil {
 		return "", err
@@ -235,7 +235,7 @@ func getAllocationFromAuthTicket(authTicket string) (*sdk.Allocation, error) {
 }
 
 func redeemFreeStorage(ticket string) (string, error) {
-	recipientPublicKey, marker, lock, err := decodeTicket(ticket)
+	recipientPublicKey, marker, lock, err := decodeAuthTicket(ticket)
 	if err != nil {
 		return "", err
 	}
@@ -248,7 +248,7 @@ func redeemFreeStorage(ticket string) (string, error) {
 	return hash, err
 }
 
-func decodeTicket(ticket string) (string, string, uint64, error) {
+func decodeAuthTicket(ticket string) (string, string, uint64, error) {
 	decoded, err := base64.StdEncoding.DecodeString(ticket)
 	if err != nil {
 		return "", "", 0, err
