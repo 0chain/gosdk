@@ -180,7 +180,6 @@ func main() {
 				"getAllocationWith":     getAllocationWith,
 				"getReadPoolInfo":       getReadPoolInfo,
 				"lockWritePool":         lockWritePool,
-				"redeemFreeStorage":     redeemFreeStorage,
 				"decodeAuthTicket":      decodeAuthTicket,
 
 				//smartcontract

@@ -201,15 +201,6 @@ gets information about the read pool for the allocation
 **Output**:
 > [sdk.ReadPool](https://github.com/0chain/gosdk/blob/6878504e4e4d7cb25b2ac819c3c578228b3d3e30/zboxcore/sdk/sdk.go#L167-L169)
 
-
-### zcn.sdk.redeemFreeStorage
-
-**Input**:
-> ticket string
-
-**Output**:
-> hash string
-
 ### zcn.sdk.decodeAuthTicket
 
 **Input**:

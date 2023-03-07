@@ -12,7 +12,6 @@ import (
 
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/core/util"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
@@ -232,20 +231,6 @@ func getAllocationWith(authTicket string) (*sdk.Allocation, error) {
 		return nil, err
 	}
 	return sdkAllocation, err
-}
-
-func redeemFreeStorage(ticket string) (string, error) {
-	recipientPublicKey, marker, lock, err := decodeAuthTicket(ticket)
-	if err != nil {
-		return "", err
-	}
-
-	if recipientPublicKey != client.GetClientPublicKey() {
-		return "", fmt.Errorf("invalid_free_marker: free marker is not assigned to your wallet")
-	}
-
-	hash, _, err := sdk.CreateFreeAllocation(marker, lock)
-	return hash, err
 }
 
 func decodeAuthTicket(ticket string) (string, string, uint64, error) {
