@@ -460,10 +460,17 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	f.Sync()
 
 	if isPREAndWholeFile {
-		actualFileHash := hex.EncodeToString(actualFileHasher.Sum(nil))
-		if actualFileHash != fRef.ActualFileHash {
+		calculatedFileHash := hex.EncodeToString(actualFileHasher.Sum(nil))
+		var actualHash string
+		if req.contentMode == DOWNLOAD_CONTENT_THUMB {
+			actualHash = fRef.ActualThumbnailHash
+		} else {
+			actualHash = fRef.ActualFileHash
+		}
+
+		if calculatedFileHash != actualHash {
 			req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
-				fRef.ActualFileHash, actualFileHash), remotePathCB)
+				fRef.ActualFileHash, calculatedFileHash), remotePathCB)
 			return
 		}
 	}
