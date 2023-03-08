@@ -154,6 +154,7 @@ func main() {
 				"getFileStats":          getFileStats,
 				"updateBlobberSettings": updateBlobberSettings,
 				"getRemoteFileMap":      getRemoteFileMap,
+				"getBlobbers":           getBlobbers,
 
 				// player
 				"play":           play,
@@ -176,6 +177,10 @@ func main() {
 				"cancelAllocation":      cancelAllocation,
 				"updateAllocation":      updateAllocation,
 				"getAllocationMinLock":  getAllocationMinLock,
+				"getAllocationWith":     getAllocationWith,
+				"getReadPoolInfo":       getReadPoolInfo,
+				"lockWritePool":         lockWritePool,
+				"decodeAuthTicket":      decodeAuthTicket,
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,
