@@ -4,12 +4,18 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/0chain/gosdk/core/transaction"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
+
+const TOKEN_UNIT int64 = 1e10
 
 type fileResp struct {
 	sdk.FileInfo
@@ -189,11 +195,74 @@ func getRemoteFileMap(allocationID string) ([]*fileResp, error) {
 	return fileResps, nil
 }
 
-func getJSON(v interface{}) (string, error) {
-	b, err := json.Marshal(v)
+// lockWritePool locks given number of tokes for given duration in write pool.
+// ## Inputs
+//   - allocID: allocation id
+//   - tokens:  sas tokens
+//   - fee: sas tokens
+func lockWritePool(allocID, tokens, fee string) (string, error) {
+	t, err := util.ParseCoinStr(tokens)
 	if err != nil {
-		sdkLogger.Error("Failed to convert data to json format : %v", err)
 		return "", err
 	}
-	return string(b), nil
+
+	f, err := util.ParseCoinStr(fee)
+	if err != nil {
+		return "", err
+	}
+	hash, _, err := sdk.WritePoolLock(allocID, t, f)
+	return hash, err
+}
+
+// GetReadPoolInfo is to get information about the read pool for the allocation
+func getReadPoolInfo(clientID string) (*sdk.ReadPool, error) {
+	readPool, err := sdk.GetReadPoolInfo(clientID)
+	if err != nil {
+		return nil, err
+	}
+
+	return readPool, nil
+}
+
+// GetAllocationFromAuthTicket - get allocation from Auth ticket
+func getAllocationWith(authTicket string) (*sdk.Allocation, error) {
+	sdkAllocation, err := sdk.GetAllocationFromAuthTicket(authTicket)
+	if err != nil {
+		return nil, err
+	}
+	return sdkAllocation, err
+}
+
+func decodeAuthTicket(ticket string) (string, string, uint64, error) {
+	decoded, err := base64.StdEncoding.DecodeString(ticket)
+	if err != nil {
+		return "", "", 0, err
+	}
+
+	input := make(map[string]interface{})
+	if err = json.Unmarshal(decoded, &input); err != nil {
+		return "", "", 0, err
+	}
+
+	str := fmt.Sprintf("%v", input["marker"])
+	decodedMarker, _ := base64.StdEncoding.DecodeString(str)
+	markerInput := make(map[string]interface{})
+	if err = json.Unmarshal(decodedMarker, &markerInput); err != nil {
+		return "", "", 0, err
+	}
+
+	recipientPublicKey, ok := input["recipient_public_key"].(string)
+	if !ok {
+		return "", "", 0, fmt.Errorf("recipient_public_key is required")
+	}
+
+	lock := markerInput["free_tokens"]
+	markerStr, _ := json.Marshal(markerInput)
+
+	s, _ := strconv.ParseFloat(string(fmt.Sprintf("%v", lock)), 64)
+	return string(recipientPublicKey), string(markerStr), convertTokenToSAS(s), nil
+}
+
+func convertTokenToSAS(token float64) uint64 {
+	return uint64(token * float64(TOKEN_UNIT))
 }
