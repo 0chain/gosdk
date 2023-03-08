@@ -1,8 +1,6 @@
 package allocationchange
 
 import (
-	"path/filepath"
-
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -17,7 +15,7 @@ type UpdateFileChange struct {
 func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) (
 	commitParams CommitParams, err error) {
 
-	fields, err := common.GetPathFields(filepath.Dir(ch.NewFile.Path))
+	fields, err := common.GetPathFields(common.GetPathDir(ch.NewFile.Path))
 	if err != nil {
 		return
 	}
