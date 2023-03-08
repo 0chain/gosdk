@@ -5,10 +5,10 @@ type thumbnailDownloader struct {
 }
 
 func (d *thumbnailDownloader) Start(status StatusCallback) error {
-	if d.options.isViewer {
-		return d.options.allocationObj.DownloadThumbnailFromAuthTicket(d.options.localPath,
-			d.options.authTicket, d.options.lookupHash, d.options.fileName, status)
+	if d.isViewer {
+		return d.allocationObj.DownloadThumbnailFromAuthTicket(d.localPath,
+			d.authTicket, d.lookupHash, d.fileName, status)
 
 	}
-	return d.options.allocationObj.DownloadThumbnail(d.options.localPath, d.options.remotePath, status)
+	return d.allocationObj.DownloadThumbnail(d.localPath, d.remotePath, status)
 }

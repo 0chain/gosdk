@@ -9,7 +9,7 @@ The 0chain wasm SDK is written in Go programming language, and released with Web
 set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWallet` to set wallet on go.
 
 **Input**:
-> bls, clientID, sk, pk string
+> bls, clientID, sk, pk, mnemonic string
 
 **Output**:
 > N/A

@@ -3,6 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"math"
@@ -374,7 +375,13 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 	if req.encryptedKey != "" {
-		req.initEncryption()
+		err = req.initEncryption()
+		if err != nil {
+			req.errorCB(
+				fmt.Errorf("Error while initializing encryption"), remotePathCB,
+			)
+			return
+		}
 	}
 
 	var downloaded int
@@ -465,10 +472,24 @@ func (req *DownloadRequest) initEC() error {
 	return nil
 }
 
-func (req *DownloadRequest) initEncryption() {
+func (req *DownloadRequest) initEncryption() error {
 	req.encScheme = encryption.NewEncryptionScheme()
-	req.encScheme.Initialize(client.GetClient().Mnemonic)
+	mnemonic := client.GetClient().Mnemonic
+	if mnemonic != "" {
+		_, err := req.encScheme.Initialize(client.GetClient().Mnemonic)
+		if err != nil {
+			return err
+		}
+	} else {
+		key, err := hex.DecodeString(client.GetClientPrivateKey())
+		if err != nil {
+			return err
+		}
+		req.encScheme.InitializeWithPrivateKey(key)
+	}
+
 	req.encScheme.InitForDecryption("filetype:audio", req.encryptedKey)
+	return nil
 }
 
 func (req *DownloadRequest) errorCB(err error, remotePathCB string) {

@@ -1,7 +1,6 @@
 package sdk
 
 import (
-	"fmt"
 	"path"
 
 	"errors"
@@ -38,7 +37,7 @@ type DownloadOptions struct {
 
 // CreateDownloader create a downloander
 func CreateDownloader(allocationID, localPath, remotePath string, opts ...DownloadOption) (Downloader, error) {
-	do := &DownloadOptions{
+	do := DownloadOptions{
 		localPath:  localPath,
 		remotePath: remotePath,
 	}
@@ -48,7 +47,7 @@ func CreateDownloader(allocationID, localPath, remotePath string, opts ...Downlo
 	}
 
 	for _, option := range opts {
-		option(do)
+		option(&do)
 	}
 
 	var err error
@@ -95,44 +94,42 @@ func CreateDownloader(allocationID, localPath, remotePath string, opts ...Downlo
 		}
 	}
 
-	fmt.Println("download: ", do.isViewer, do.allocationObj.ID, do.fileName, do.lookupHash)
-
 	if do.isThumbnailDownload {
 		return &thumbnailDownloader{
 			baseDownloader: baseDownloader{
-				options: do,
+				DownloadOptions: do,
 			},
 		}, nil
 	} else if do.isBlockDownload {
 		return &blockDownloader{
 			baseDownloader: baseDownloader{
-				options: do,
+				DownloadOptions: do,
 			},
 		}, nil
 	}
 
 	return &fileDownloader{
 		baseDownloader: baseDownloader{
-			options: do,
+			DownloadOptions: do,
 		},
 	}, nil
 }
 
 type baseDownloader struct {
-	options *DownloadOptions
+	DownloadOptions
 }
 
 func (d *baseDownloader) GetAllocation() *Allocation {
-	if d == nil || d.options == nil {
+	if d == nil {
 		return nil
 	}
-	return d.options.allocationObj
+	return d.allocationObj
 }
 
 func (d *baseDownloader) GetFileName() string {
-	if d == nil || d.options == nil {
+	if d == nil {
 		return ""
 	}
 
-	return d.options.fileName
+	return d.fileName
 }
