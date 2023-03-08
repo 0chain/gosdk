@@ -34,6 +34,7 @@ type FileStats struct {
 	BlobberURL               string    `json:"blobber_url"`
 	BlockchainAware          bool      `json:"blockchain_aware"`
 	CreatedAt                time.Time `json:"CreatedAt"`
+	FileID                   string    `json:"file_id"`
 }
 
 type fileStatsResponse struct {
