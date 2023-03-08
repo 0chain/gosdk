@@ -161,10 +161,6 @@ func main() {
 				"stop":           stop,
 				"getNextSegment": getNextSegment,
 
-				// wallet
-				"createWallet":  createWallet,
-				"recoverWallet": recoverWallet,
-
 				//allocation
 				"createAllocation":      createAllocation,
 				"getAllocationBlobbers": getAllocationBlobbers,
