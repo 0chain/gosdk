@@ -78,12 +78,12 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 		return fmt.Errorf("directory creation failed. Err: %s", err.Error())
 	}
 	err = writeMarkerMU.Lock(
-		context.TODO(), &req.dirMask, req.mu,
+		req.ctx, &req.dirMask, req.mu,
 		req.blobbers, &req.Consensus, existingDirCount, time.Minute, req.connectionID)
 	if err != nil {
 		return fmt.Errorf("directory creation failed. Err: %s", err.Error())
 	}
-	defer writeMarkerMU.Unlock(context.TODO(), req.dirMask,
+	defer writeMarkerMU.Unlock(req.ctx, req.dirMask,
 		a.Blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	return req.commitRequest(existingDirCount)
