@@ -896,13 +896,13 @@ func CreateAllocationWith(options CreateAllocationOptions) (
 }
 
 func CreateAllocation(datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, lock uint64, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters, preferredBlobbers ...string) (
+	readPrice, writePrice PriceRange, lock uint64, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters, preferredBlobbers ...[]string) (
 	string, int64, *transaction.Transaction, error) {
 
 	var preferredBlobberIds []string
 
 	if len(preferredBlobbers) > 0 {
-		preferredBlobberIds = preferredBlobberIds
+		preferredBlobberIds = preferredBlobbers[0]
 	} else {
 		preferredBlobberIds, _ = GetBlobberIds(blockchain.GetPreferredBlobbers())
 	}
