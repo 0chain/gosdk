@@ -21,7 +21,7 @@ const (
 	TxnFail            = 3 // Indicates a transaction has failed to update the state or smart contract
 )
 
-//Transaction entity that encapsulates the transaction related data and meta data
+// Transaction entity that encapsulates the transaction related data and meta data
 type Transaction struct {
 	Hash              string `json:"hash,omitempty"`
 	Version           string `json:"version,omitempty"`
@@ -41,7 +41,7 @@ type Transaction struct {
 	Status            int    `json:"transaction_status"`
 }
 
-//TxnReceipt - a transaction receipt is a processed transaction that contains the output
+// TxnReceipt - a transaction receipt is a processed transaction that contains the output
 type TxnReceipt struct {
 	Transaction *Transaction
 }
@@ -154,6 +154,7 @@ const (
 	ZCNSC_UPDATE_GLOBAL_CONFIG     = "update-global-config"
 	ZCNSC_UPDATE_AUTHORIZER_CONFIG = "update-authorizer-config"
 	ZCNSC_ADD_AUTHORIZER           = "add-authorizer"
+	ZCNSC_AUTHORIZER_HEALTH_CHECK  = "authorizer-health-check"
 	ZCNSC_DELETE_AUTHORIZER        = "delete-authorizer"
 )
 
@@ -206,7 +207,7 @@ func (t *Transaction) DebugJSON() []byte {
 	return jsonByte
 }
 
-//GetHash - implement interface
+// GetHash - implement interface
 func (rh *TxnReceipt) GetHash() string {
 	return rh.Transaction.OutputHash
 }
@@ -216,7 +217,7 @@ func (rh *TxnReceipt) GetHashBytes() []byte {
 	return util.HashStringToBytes(rh.Transaction.OutputHash)
 }
 
-//NewTransactionReceipt - create a new transaction receipt
+// NewTransactionReceipt - create a new transaction receipt
 func NewTransactionReceipt(t *Transaction) *TxnReceipt {
 	return &TxnReceipt{Transaction: t}
 }
