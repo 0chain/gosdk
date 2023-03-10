@@ -158,6 +158,7 @@ const (
 	ZCNSC_UPDATE_GLOBAL_CONFIG     = "update-global-config"
 	ZCNSC_UPDATE_AUTHORIZER_CONFIG = "update-authorizer-config"
 	ZCNSC_ADD_AUTHORIZER           = "add-authorizer"
+	ZCNSC_AUTHORIZER_HEALTH_CHECK  = "authorizer-health-check"
 	ZCNSC_DELETE_AUTHORIZER        = "delete-authorizer"
 
 	ESTIMATE_TRANSACTION_COST = `/v1/estimate_txn_fee`

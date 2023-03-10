@@ -502,3 +502,13 @@ func (ta *TransactionWithAuth) ZCNSCAddAuthorizer(ip AddAuthorizerPayload) (err 
 	go ta.submitTxn()
 	return
 }
+
+func (ta *TransactionWithAuth) ZCNSCAuthorizerHealthCheck(ip *AuthorizerHealthCheckPayload) (err error) {
+	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_AUTHORIZER_HEALTH_CHECK, ip, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go ta.t.setNonceAndSubmit()
+	return
+}

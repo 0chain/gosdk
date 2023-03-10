@@ -508,6 +508,16 @@ func (ta *TransactionWithAuth) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err
 	return
 }
 
+func (ta *TransactionWithAuth) ZCNSCAuthorizerHealthCheck(ip *AuthorizerHealthCheckPayload) (err error) {
+	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_AUTHORIZER_HEALTH_CHECK, ip, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go ta.t.setNonceAndSubmit()
+	return
+}
+
 func (ta *TransactionWithAuth) ZCNSCDeleteAuthorizer(ip *DeleteAuthorizerPayload) (err error) {
 	err = ta.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_DELETE_AUTHORIZER, ip, 0)
 	if err != nil {
