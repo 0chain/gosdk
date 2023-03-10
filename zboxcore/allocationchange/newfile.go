@@ -2,7 +2,7 @@ package allocationchange
 
 import (
 	"fmt"
-	"path/filepath"
+	"path"
 	"strings"
 
 	"github.com/0chain/errors"
@@ -50,7 +50,7 @@ func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref) (
 			newRef := &fileref.Ref{
 				Type:         fileref.DIRECTORY,
 				AllocationID: dirRef.AllocationID,
-				Path:         filepath.Join("/", strings.Join(fields[:i+1], "/")),
+				Path:         path.Join("/", strings.Join(fields[:i+1], "/")),
 				Name:         fields[i],
 				FileID:       uid.String(),
 			}
