@@ -20,10 +20,6 @@ func (ta *TransactionWithAuth) Hash() string {
 	return ta.txnHash
 }
 
-func (ta *TransactionWithAuth) SetTransactionNonce(txnNonce int64) error {
-	return ta.SetTransactionNonce(txnNonce)
-}
-
 func newTransactionWithAuth(cb TransactionCallback, txnFee uint64, nonce int64) (*TransactionWithAuth, error) {
 	ta := &TransactionWithAuth{}
 	var err error
