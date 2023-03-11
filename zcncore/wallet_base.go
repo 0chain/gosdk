@@ -51,10 +51,13 @@ const (
 
 	// faucet sc
 
-	FAUCETSC_PFX                   = `/v1/screst/` + FaucetSmartContractAddress
-	GET_FAUCETSC_CONFIG            = FAUCETSC_PFX + `/faucet-config`
-	GET_MINT_NONCE                 = FAUCETSC_PFX + `/v1/mint_nonce?client_id=%s`
-	GET_NOT_PROCESSED_BURN_TICKETS = FAUCETSC_PFX + `/v1/not_processed_burn_tickets?ethereum_address=%s&nonce=%d`
+	FAUCETSC_PFX        = `/v1/screst/` + FaucetSmartContractAddress
+	GET_FAUCETSC_CONFIG = FAUCETSC_PFX + `/faucet-config`
+
+	// zcn sc
+	ZCNSC_PFX                      = `/v1/screst/` + ZCNSCSmartContractAddress
+	GET_MINT_NONCE                 = ZCNSC_PFX + `/v1/mint_nonce?client_id=%s`
+	GET_NOT_PROCESSED_BURN_TICKETS = ZCNSC_PFX + `/v1/not_processed_burn_tickets?ethereum_address=%s&nonce=%d`
 
 	// miner SC
 
@@ -711,6 +714,24 @@ func GetBalance(cb GetBalanceCallback) error {
 	return nil
 }
 
+// GetMintNonce retrieve mint nonce from sharders
+func GetMintNonce(cb GetMintNonceCallback) error {
+	err := CheckConfig()
+	if err != nil {
+		return err
+	}
+	go func() {
+		value, info, err := getZCNMintNonceFromSharders(_config.wallet.ClientID)
+		if err != nil {
+			logging.Error(err)
+			cb.OnBalanceAvailable(StatusError, 0, info)
+			return
+		}
+		cb.OnBalanceAvailable(StatusSuccess, value, info)
+	}()
+	return nil
+}
+
 // GetNotProcessedZCNBurnTickets retrieve wallet burn tickets from sharders
 func GetNotProcessedZCNBurnTickets(ethereumAddress string, startNonce int64, cb GetNotProcessedZCNBurnTicketsCallback) error {
 	err := CheckConfig()
@@ -724,6 +745,7 @@ func GetNotProcessedZCNBurnTickets(ethereumAddress string, startNonce int64, cb 
 			cb.OnBalanceAvailable(StatusError, nil, info)
 			return
 		}
+
 		cb.OnBalanceAvailable(StatusSuccess, value, info)
 	}()
 	return nil
