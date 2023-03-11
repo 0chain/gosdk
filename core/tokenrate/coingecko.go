@@ -5,12 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/0chain/gosdk/core/resty"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
-
-	"github.com/0chain/gosdk/core/resty"
 )
 
 type coingeckoQuoteQuery struct {
@@ -32,7 +31,7 @@ func (qq *coingeckoQuoteQuery) getUSD(ctx context.Context, symbol string) (float
 		envName := "COINGECKO_COINID_" + strings.ToUpper(symbol)
 		id, ok := os.LookupEnv(envName)
 		if !ok {
-			return 0, errors.New("coingecko: please configure coinid on environment variable [" + envName + "' first")
+			return 0, errors.New("coingecko: please configure coinid on environment variable [" + envName + "] first")
 		}
 		coinID = id
 

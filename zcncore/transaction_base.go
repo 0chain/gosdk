@@ -19,6 +19,8 @@ import (
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/core/version"
 	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
 // compiler time check
@@ -823,3 +825,29 @@ type MinerSCLock struct {
 type MinerSCUnlock struct {
 	ID string `json:"id"`
 }
+
+func VerifyContentHash(metaTxnDataJSON string) (bool, error) {
+	var metaTxnData sdk.CommitMetaResponse
+	err := json.Unmarshal([]byte(metaTxnDataJSON), &metaTxnData)
+	if err != nil {
+		return false, errors.New("metaTxnData_decode_error", "Unable to decode metaTxnData json")
+	}
+
+	t, err := transaction.VerifyTransaction(metaTxnData.TxnID, blockchain.GetSharders())
+	if err != nil {
+		return false, errors.New("fetch_txm_details", "Unable to fetch txn details")
+	}
+
+	var metaOperation sdk.CommitMetaData
+	err = json.Unmarshal([]byte(t.TransactionData), &metaOperation)
+	if err != nil {
+		logging.Error("Unmarshal of transaction data to fileMeta failed, Maybe not a commit meta txn :", t.Hash)
+		return false, nil
+	}
+
+	return metaOperation.MetaData.Hash == metaTxnData.MetaData.Hash, nil
+}
+
+//
+// Storage SC transactions
+//

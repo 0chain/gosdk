@@ -218,6 +218,9 @@ func (r *Resty) Wait() []error {
 	for {
 		select {
 		case <-r.ctx.Done():
+			if r.ctx.Err() == context.DeadlineExceeded {
+				return []error{r.ctx.Err()}
+			}
 			return errs
 
 		case result := <-r.done:

@@ -255,6 +255,10 @@ func (a *addAuthorizerPayload) SetStakePoolSettings(delegateWallet string, minSt
 	}
 }
 
+type AuthorizerHealthCheckPayload struct {
+	ID string `json:"id"` // authorizer ID
+}
+
 type AuthorizerStakePoolSettings struct {
 	DelegateWallet string  `json:"delegate_wallet"`
 	MinStake       int64   `json:"min_stake"`
@@ -1019,7 +1023,7 @@ func (t *Transaction) Verify() error {
 		t.txn.CreationDate = int64(common.Now())
 	}
 
-	tq, err := NewTransactionQuery(_config.chain.Sharders)
+	tq, err := newTransactionQuery(_config.chain.Sharders)
 	if err != nil {
 		logging.Error(err)
 		return err
@@ -1031,7 +1035,7 @@ func (t *Transaction) Verify() error {
 
 			tq.Reset()
 			// Get transaction confirmationBlock from a random sharder
-			confirmBlockHeader, confirmationBlock, lfbBlockHeader, err := tq.getFastConfirmation(context.TODO(), t.txnHash)
+			confirmBlockHeader, confirmationBlock, lfbBlockHeader, err := tq.getFastConfirmation(t.txnHash, nil)
 
 			if err != nil {
 				now := int64(common.Now())
@@ -1046,7 +1050,7 @@ func (t *Transaction) Verify() error {
 				// transaction is done or expired. it means random sharder might be outdated, try to query it from s/S sharders to confirm it
 				if util.MaxInt64(lfbBlockHeader.getCreationDate(now), now) >= (t.txn.CreationDate + int64(defaultTxnExpirationSeconds)) {
 					logging.Info("falling back to ", getMinShardersVerify(), " of ", len(_config.chain.Sharders), " Sharders")
-					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.getConsensusConfirmation(context.TODO(), getMinShardersVerify(), t.txnHash)
+					confirmBlockHeader, confirmationBlock, lfbBlockHeader, err = tq.getConsensusConfirmation(getMinShardersVerify(), t.txnHash, nil)
 				}
 
 				// txn not found in fast confirmation/consensus confirmation

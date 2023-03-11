@@ -148,6 +148,9 @@ type TransactionCommon interface {
 	// ZCNSCAddAuthorizer adds authorizer
 	ZCNSCAddAuthorizer(*AddAuthorizerPayload) error
 
+	// ZCNSCAuthorizerHealthCheck provides health check for authorizer
+	ZCNSCAuthorizerHealthCheck(*AuthorizerHealthCheckPayload) error
+
 	// GetVerifyConfirmationStatus implements the verification status from sharders
 	GetVerifyConfirmationStatus() ConfirmationStatus
 
@@ -212,6 +215,10 @@ type AddAuthorizerPayload struct {
 }
 
 type DeleteAuthorizerPayload struct {
+	ID string `json:"id"` // authorizer ID
+}
+
+type AuthorizerHealthCheckPayload struct {
 	ID string `json:"id"` // authorizer ID
 }
 
@@ -1371,6 +1378,16 @@ func GetFaucetSCConfig(cb GetInfoCallback) (err error) {
 
 func (t *Transaction) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error) {
 	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go t.setNonceAndSubmit()
+	return
+}
+
+func (t *Transaction) ZCNSCAuthorizerHealthCheck(ip *AuthorizerHealthCheckPayload) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_AUTHORIZER_HEALTH_CHECK, ip, 0)
 	if err != nil {
 		logging.Error(err)
 		return

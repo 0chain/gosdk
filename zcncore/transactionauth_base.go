@@ -32,7 +32,7 @@ func newTransactionWithAuth(cb TransactionCallback, txnFee uint64, nonce int64) 
 }
 
 func (ta *TransactionWithAuth) getAuthorize() (*transaction.Transaction, error) {
-	ta.t.txn.PublicKey = _config.wallet.Keys[0].PublicKey
+	ta.t.txn.PublicKey = _config.wallet.ClientKey
 	err := ta.t.txn.ComputeHashAndSign(SignFn)
 	if err != nil {
 		return nil, errors.Wrap(err, "signing error.")
@@ -105,6 +105,7 @@ func (ta *TransactionWithAuth) sign(otherSig string) error {
 	ta.t.txn.ComputeHashData()
 	sig := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
 	sig.SetPrivateKey(_config.wallet.Keys[0].PrivateKey)
+
 	var err error
 	ta.t.txn.Signature, err = sig.Add(otherSig, ta.t.txn.Hash)
 	return err
@@ -250,7 +251,7 @@ func (ta *TransactionWithAuth) VestingDelete(poolID string) (err error) {
 // miner sc
 //
 
-//RegisterMultiSig register a multisig wallet with the SC.
+// RegisterMultiSig register a multisig wallet with the SC.
 func (ta *TransactionWithAuth) RegisterMultiSig(walletstr string, mswallet string) error {
 	return errors.New("", "not implemented")
 }

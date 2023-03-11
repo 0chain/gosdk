@@ -140,27 +140,26 @@ func main() {
 				"getLookupHash":          getLookupHash,
 
 				//blobber
-				"delete":         Delete,
-				"rename":         Rename,
-				"copy":           Copy,
-				"move":           Move,
-				"share":          Share,
-				"download":       download,
-				"upload":         upload,
-				"bulkUpload":     bulkUpload,
-				"listObjects":    listObjects,
-				"createDir":      createDir,
-				"downloadBlocks": downloadBlocks,
-				"getFileStats":   getFileStats,
+				"delete":                Delete,
+				"rename":                Rename,
+				"copy":                  Copy,
+				"move":                  Move,
+				"share":                 Share,
+				"download":              download,
+				"upload":                upload,
+				"bulkUpload":            bulkUpload,
+				"listObjects":           listObjects,
+				"createDir":             createDir,
+				"downloadBlocks":        downloadBlocks,
+				"getFileStats":          getFileStats,
+				"updateBlobberSettings": updateBlobberSettings,
+				"getRemoteFileMap":      getRemoteFileMap,
+				"getBlobbers":           getBlobbers,
 
 				// player
 				"play":           play,
 				"stop":           stop,
 				"getNextSegment": getNextSegment,
-
-				// wallet
-				"createWallet":  createWallet,
-				"recoverWallet": recoverWallet,
 
 				//allocation
 				"createAllocation":      createAllocation,
@@ -173,6 +172,11 @@ func main() {
 				"freezeAllocation":      freezeAllocation,
 				"cancelAllocation":      cancelAllocation,
 				"updateAllocation":      updateAllocation,
+				"getAllocationMinLock":  getAllocationMinLock,
+				"getAllocationWith":     getAllocationWith,
+				"getReadPoolInfo":       getReadPoolInfo,
+				"lockWritePool":         lockWritePool,
+				"decodeAuthTicket":      decodeAuthTicket,
 
 				//smartcontract
 				"executeSmartContract": executeSmartContract,

@@ -323,7 +323,6 @@ func (a *Allocation) CreateDir(remotePath string) error {
 		mu:           &sync.Mutex{},
 		dirMask:      zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
 		connectionID: zboxutil.NewConnectionId(),
-		ctx:          a.ctx,
 		remotePath:   remotePath,
 		wg:           &sync.WaitGroup{},
 		Consensus: Consensus{
@@ -331,6 +330,7 @@ func (a *Allocation) CreateDir(remotePath string) error {
 			fullconsensus:   a.fullconsensus,
 		},
 	}
+	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 
 	err := req.ProcessDir(a)
 	return err
@@ -835,7 +835,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.EncryptedKey = ref.EncryptedKey
 		result.CommitMetaTxns = ref.CommitMetaTxns
 		result.Collaborators = ref.Collaborators
-		result.ActualFileSize = ref.Size
+		result.ActualFileSize = ref.ActualSize
 		result.ActualNumBlocks = ref.NumBlocks
 		return result, nil
 	}
@@ -942,7 +942,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int)
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
 	req.consensus.Init(threshConsensus, fullConsensus)
-	req.ctx = a.ctx
+	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 	req.remotefilepath = path
 	req.connectionID = zboxutil.NewConnectionId()
 	req.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
@@ -987,7 +987,7 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	req.newName = destName
 	req.consensus.fullconsensus = a.fullconsensus
 	req.consensus.consensusThresh = a.consensusThreshold
-	req.ctx = a.ctx
+	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 	req.remotefilepath = path
 	req.renameMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
@@ -1029,7 +1029,7 @@ func (a *Allocation) MoveObject(srcPath string, destPath string) error {
 	req.destPath = destPath
 	req.fullconsensus = a.fullconsensus
 	req.consensusThresh = a.consensusThreshold
-	req.ctx = a.ctx
+	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 	req.remotefilepath = srcPath
 	req.moveMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
@@ -1071,7 +1071,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	req.destPath = destPath
 	req.fullconsensus = a.fullconsensus
 	req.consensusThresh = a.consensusThreshold
-	req.ctx = a.ctx
+	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 	req.remotefilepath = path
 	req.copyMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
@@ -1421,48 +1421,6 @@ func (a *Allocation) CancelRepair() error {
 	return errors.New("invalid_cancel_repair_request", "No repair in progress for the allocation")
 }
 
-func (a *Allocation) AddCollaborator(filePath, collaboratorID string) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	req := &CollaboratorRequest{
-		path:           filePath,
-		collaboratorID: collaboratorID,
-		a:              a,
-		consensus: Consensus{
-			fullconsensus:   a.fullconsensus,
-			consensusThresh: a.consensusThreshold,
-		},
-	}
-
-	if req.UpdateCollaboratorToBlobbers() {
-		return nil
-	}
-	return errors.New("add_collaborator_failed", "Failed to add collaborator on all blobbers.")
-}
-
-func (a *Allocation) RemoveCollaborator(filePath, collaboratorID string) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	req := &CollaboratorRequest{
-		path:           filePath,
-		collaboratorID: collaboratorID,
-		a:              a,
-		consensus: Consensus{
-			fullconsensus:   a.fullconsensus,
-			consensusThresh: a.consensusThreshold,
-		},
-	}
-
-	if req.RemoveCollaboratorFromBlobbers() {
-		return nil
-	}
-	return errors.New("remove_collaborator_failed", "Failed to remove collaborator on all blobbers.")
-}
-
 func (a *Allocation) GetMaxWriteReadFromBlobbers(blobbers []*BlobberAllocation) (maxW float64, maxR float64, err error) {
 	if !a.isInitialized() {
 		return 0, 0, notInitialized
@@ -1474,11 +1432,19 @@ func (a *Allocation) GetMaxWriteReadFromBlobbers(blobbers []*BlobberAllocation) 
 
 	maxWritePrice, maxReadPrice := 0.0, 0.0
 	for _, v := range blobbers {
-		if v.Terms.WritePrice.ToToken() > maxWritePrice {
-			maxWritePrice = v.Terms.WritePrice.ToToken()
+		writePrice, err := v.Terms.WritePrice.ToToken()
+		if err != nil {
+			return 0, 0, err
 		}
-		if v.Terms.ReadPrice.ToToken() > maxReadPrice {
-			maxReadPrice = v.Terms.ReadPrice.ToToken()
+		if writePrice > maxWritePrice {
+			maxWritePrice = writePrice
+		}
+		readPrice, err := v.Terms.ReadPrice.ToToken()
+		if err != nil {
+			return 0, 0, err
+		}
+		if readPrice > maxReadPrice {
+			maxReadPrice = readPrice
 		}
 	}
 
@@ -1501,11 +1467,19 @@ func (a *Allocation) GetMinWriteRead() (minW float64, minR float64, err error) {
 
 	minWritePrice, minReadPrice := -1.0, -1.0
 	for _, v := range blobbersCopy {
-		if v.Terms.WritePrice.ToToken() < minWritePrice || minWritePrice < 0 {
-			minWritePrice = v.Terms.WritePrice.ToToken()
+		writePrice, err := v.Terms.WritePrice.ToToken()
+		if err != nil {
+			return 0, 0, err
 		}
-		if v.Terms.ReadPrice.ToToken() < minReadPrice || minReadPrice < 0 {
-			minReadPrice = v.Terms.ReadPrice.ToToken()
+		if writePrice < minWritePrice || minWritePrice < 0 {
+			minWritePrice = writePrice
+		}
+		readPrice, err := v.Terms.ReadPrice.ToToken()
+		if err != nil {
+			return 0, 0, err
+		}
+		if readPrice < minReadPrice || minReadPrice < 0 {
+			minReadPrice = readPrice
 		}
 	}
 
@@ -1516,11 +1490,15 @@ func (a *Allocation) GetMaxStorageCostFromBlobbers(size int64, blobbers []*Blobb
 	var cost common.Balance // total price for size / duration
 
 	for _, d := range blobbers {
-		cost += a.uploadCostForBlobber(float64(d.Terms.WritePrice), size,
-			a.DataShards, a.ParityShards)
+		var err error
+		cost, err = common.AddBalance(cost, a.uploadCostForBlobber(float64(d.Terms.WritePrice), size,
+			a.DataShards, a.ParityShards))
+		if err != nil {
+			return 0.0, err
+		}
 	}
 
-	return cost.ToToken(), nil
+	return cost.ToToken()
 }
 
 func (a *Allocation) GetMaxStorageCost(size int64) (float64, error) {
@@ -1530,19 +1508,21 @@ func (a *Allocation) GetMaxStorageCost(size int64) (float64, error) {
 		fmt.Printf("write price for blobber %f datashards %d parity %d\n",
 			float64(d.Terms.WritePrice), a.DataShards, a.ParityShards)
 
-		cost += a.uploadCostForBlobber(float64(d.Terms.WritePrice), size,
-			a.DataShards, a.ParityShards)
-
-		fmt.Printf("Total cost %d\n", cost)
+		var err error
+		cost, err = common.AddBalance(cost, a.uploadCostForBlobber(float64(d.Terms.WritePrice), size,
+			a.DataShards, a.ParityShards))
+		if err != nil {
+			return 0.0, err
+		}
 	}
-
-	return cost.ToToken(), nil
+	fmt.Printf("Total cost %d\n", cost)
+	return cost.ToToken()
 }
 
 func (a *Allocation) GetMinStorageCost(size int64) (common.Balance, error) {
 	minW, _, err := a.GetMinWriteRead()
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	return a.uploadCostForBlobber(minW, size, a.DataShards, a.ParityShards), nil
@@ -1552,7 +1532,7 @@ func (a *Allocation) uploadCostForBlobber(price float64, size int64, data, parit
 	cost common.Balance) {
 
 	if data == 0 || parity == 0 {
-		return -1.0
+		return 0.0
 	}
 
 	var ps = (size + int64(data) - 1) / int64(data)

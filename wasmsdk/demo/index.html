@@ -41,7 +41,7 @@
       value="41729ed8d82f782646d2d30b9719acfd236842b9b6e47fee12b7bdbd05b35122" /><br>
     <label for="publicKey"> PublicKey</label> <input id="publicKey" name="publicKey" style="width: 600px;"
       value="1f495df9605a4479a7dd6e5c7a78caf9f9d54e3a40f62a3dd68ed377115fe614d8acf0c238025f67a85163b9fbf31d10fbbb4a551d1cf00119897edf18b1841c" /><br>
- 
+
     <button id="btnSetWallet">Change Wallet</button>
     <button id="btnSendMeTokens">Send Me Tokens</button>
     <button id="btnGetBalance">Get Balance</button>
@@ -60,26 +60,39 @@
       <button id="btnListAllocations">List</button>
       <button id="btnCreateAllocation">Create</button>
       <button id="btnGetAllocation">Get</button>
+      <button id="btnGetAllocationMinLock">AllocationMinLock</button>
+      <button id="btnRemoteFileMap">RemoteFileMap</button>
     </span>
 
     <br>
 
-
     <div id="listAllocations">
     </div>
 
-
-
-
   </fieldset>
 
+  <fieldset>
+    <legend>Blobbers</legend>
 
+    <span>
+      <button id="btnListBlobbers">List</button>
+      <button id="btnListBlobberSettings">Get</button>
+      <button id="updateBlobberSettings">Update</button>
+    </span>
+
+    <br>
+
+    <div id="listBlobbers">
+    </div>
+
+  </fieldset>
 
   <fieldset>
     <legend>Files</legend>
     <button id="btnListFiles">List</button>
     <span><input id="inputSelectedFile" type="file" multiple /> <button id="btnUploadFile">Upload</button> </span>
-    [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button> ]
+    [ <button id="btnDownloadFile">Download</button> | <button id="btnDownloadShared">Download with AuthTicket</button>
+    ]
     <button id="btnViewFile">View</button>
     <button id="btnGetFileStats">GetFileStats</button>
     <button id="btnDelete">Delete</button>
@@ -104,8 +117,8 @@
     <video id='player' preload="metadata" controls></video>
     <div className="controls">
       [ <button id="btnPlay">Play</button> | <button id="btnPlayShared">Play with auth ticket</button> ]
-        <button id="btnPause">Pause</button>
-        <button id="btnStop">Stop</button>
+      <button id="btnPause">Pause</button>
+      <button id="btnStop">Stop</button>
     </div>
   </fieldset>
 
@@ -117,6 +130,10 @@
 
   <script>
 
+    window.downloadCallback = function (totalBytes, completedBytes, error) {
+      console.log("download: " + completedBytes + "/" + totalBytes + " err:" + error)
+    }
+
     const getWallet = () => {
       const clientID = get('clientId').value
       const publicKey = get('publicKey').value
@@ -126,6 +143,25 @@
       }
     }
 
+    // get active blobbers from network
+    async function getBlobbersFromNetwork() {
+      const GET_BLOBBERS = `/v1/screst/6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7/getblobbers`
+      const randomsharder = " https://dev1.zus.network/sharder01" // todo: get this randomly from network
+      url = randomsharder + GET_BLOBBERS
+      let response = await fetch(url);
+      let data = await response.json();
+      return data;
+    }
+
+    async function getBlobberDetails(blobberID) {
+      const GET_BLOBBER = `/v1/screst/6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7/getBlobber?blobber_id=`
+      const randomsharder = " https://dev1.zus.network/sharder01" // todo: get this randomly from network
+      url = randomsharder + GET_BLOBBER + blobberID
+      let response = await fetch(url);
+      let data = await response.json();
+      return data;
+    }
+
     const networkConfig = {
       chainId: '0afc093ffb509f059c55478bc1a60351cef7b4e9c008a53a6cc8241ca8617dfe',
       signatureScheme: 'bls0chain',
@@ -133,7 +169,7 @@
       minSubmit: 50,
       confirmationChainLength: 3,
     }
-    const blockWorker = 'https://beta.0chain.net/dns';
+    const blockWorker = 'https://dev.zus.network/dns';
     const config = [
       networkConfig.chainId,
       blockWorker,
@@ -141,7 +177,7 @@
       networkConfig.minConfirmation,
       networkConfig.minSubmit,
       networkConfig.confirmationChainLength,
-      'https://0box.dev.0chain.net', //zboxHost
+      'https://0box.dev.zus.network', //zboxHost
       'vult', //zboxAppType
     ]
 
@@ -165,24 +201,28 @@
 
 
     onClick('btnSendMeTokens', async () => {
-      await goWasm.sdk.faucet("pour", JSON.stringify("{Pay day}"),0)
+      await goWasm.sdk.faucet("pour", JSON.stringify("{Pay day}"), 10)
     })
 
     onClick('btnGetBalance', async () => {
-      const {clientID }= getWallet()
+      const { clientID } = getWallet()
       const wallet = await goWasm.sdk.getWalletBalance(clientID)
       txtOutput.innerHTML = JSON.stringify(wallet, null, 2)
     })
 
 
     let allocations = []
+    let blobbers = []
     let files = []
 
     const bindAllocations = () => setHtml("listAllocations", allocations.map(a => `<input type="radio"  name="selectedAllocation" value="${a.id}"><label for="${a.id}">${a.id}</label><br>`).join(""))
-    const bindFiles = () => setHtml('listFiles', files.map(f => `<input type="radio" name="selectedFile" value="${f.path}"><label for="${f.path}">[${f.type}]${f.path}</label><br>`).join(""))
     const getSelectedAllocation = () => [...document.getElementsByName('selectedAllocation')].filter(it => it.checked).map(it => it.value).find(it => it != "");
+
+    const bindFiles = () => setHtml('listFiles', files.map(f => `<input type="radio" name="selectedFile" value="${f.path}"><label for="${f.path}">[${f.type}]${f.path}</label><br>`).join(""))
     const getSelectedFile = () => [...document.getElementsByName('selectedFile')].filter(it => it.checked).map(it => it.value).find(it => it != "");
 
+    const bindBlobbers = () => setHtml("listBlobbers", blobbers.map(a => `<input type="radio"  name="selectedBlobbers" value="${a.id}"><label for="${a.id}">${a.id}</label><br>`).join(""))
+    const getSelectedBlobbers = () => [...document.getElementsByName('selectedBlobbers')].filter(it => it.checked).map(it => it.value).find(it => it != "");
 
     onClick('btnCreateAllocation', async () => {
 
@@ -191,7 +231,6 @@
 
       //name string, datashards, parityshards int, size, expiry int64,minReadPrice, maxReadPrice, minWritePrice, maxWritePrice int64, lock int64,preferredBlobberIds []string
       const config = {
-        name: "newalloc",
         datashards: 2,
         parityshards: 2,
         size: 2 * 1073741824,
@@ -202,17 +241,18 @@
         maxWritePrice: 184467440737095516,
         lock: 5000000000
       }
-      try{
+      try {
         const allocation = await goWasm.sdk.createAllocation(config.datashards, config.parityshards, config.size, config.expiry,
-        config.minReadPrice, config.maxReadPrice, config.minWritePrice, config.maxWritePrice,
-        config.lock, [])
+          config.minReadPrice, config.maxReadPrice, config.minWritePrice, config.maxWritePrice,
+          config.lock, [])
 
+        console.log(allocation)
         allocations = await goWasm.sdk.listAllocations()
         bindAllocations()
-      }catch(e){
+      } catch (e) {
         alert(e)
       }
-      
+
     })
 
     onClick('btnListAllocations', async () => {
@@ -220,9 +260,31 @@
       bindAllocations()
     })
 
+    onClick('btnRemoteFileMap', async () => {
+      const allocationID = getSelectedAllocation()
+      if (!allocationID) {
+        alert("please select allocation")
+        return
+      }
+      try {
+        let resp = await goWasm.sdk.getRemoteFileMap(allocationID)
+        console.log(resp)
+        txtOutput.innerHTML = JSON.stringify(resp, null, 2)
+      }catch(e){
+        alert(e)
+      }
+    })
+
+    onClick('btnListBlobbers', async () => {
+      // list active blobbers
+      let blobbersResp = await getBlobbersFromNetwork()
+      blobbers = blobbersResp.Nodes
+      bindBlobbers()
+    })
+
     onClick('btnGetAllocation', async () => {
       const allocationId = getSelectedAllocation()
-      if(!allocationId){
+      if (!allocationId) {
         alert("please select allocation")
         return
       }
@@ -230,6 +292,47 @@
       txtOutput.innerHTML = JSON.stringify(alloc, null, 2)
     })
 
+    onClick('btnGetAllocationMinLock', async () => {
+      let dataShards = 2
+      let parityShards = 2
+      let size = 100000
+      let expiry = 1680408725
+      let maxReadPrice = 10000000000
+      let maxWritePrice = 1000000000
+      try{
+        const price = await goWasm.sdk.getAllocationMinLock(dataShards, parityShards, size, expiry, maxReadPrice, maxWritePrice)
+        txtOutput.innerHTML = price
+      }catch(e) {
+        alert(e)
+      }
+    })
+
+    onClick('btnListBlobberSettings', async () => {
+      const blobberID = getSelectedBlobbers()
+      if (!blobberID) {
+        alert("please select blobber")
+        return
+      }
+      const details = await getBlobberDetails(blobberID)
+      txtOutput.innerHTML = JSON.stringify(details, null, 2)
+    })
+
+    // increases readprice of blobber by 1 unit
+    onClick('updateBlobberSettings', async () => {
+      const blobberID = getSelectedBlobbers()
+      if (!blobberID) {
+        alert("please select blobber")
+        return
+      }
+      let details = await getBlobberDetails(blobberID)
+      details.terms.read_price+=1
+      try {
+      const txn = await goWasm.sdk.updateBlobberSettings(JSON.stringify(details))
+    } catch (e) {
+      alert(e)
+    }
+      // txtOutput.innerHTML = JSON.stringify(alloc, null, 2)
+    })
 
     onClick('btnListFiles', async () => {
       const allocationId = getSelectedAllocation()
@@ -245,23 +348,24 @@
 
         const objects = []
         const allocationId = getSelectedAllocation()
-        for(const file of files){
-        objects.push({allocationId:allocationId,
-                  remotePath:`/${file.name}`,
-                  file:file,
-                  thumbnailBytes:null,
-                  encrypt:false, 
-                  isUpdate:false, 
-                  isRepair:false, 
-                  numBlocks:100,
-                  callback: function(totalBytes, completedBytes, error) {
-                    console.log(file.name + " "+ completedBytes+"/"+totalBytes +" err:"+ error)
-                  }
-                })
+        for (const file of files) {
+          objects.push({
+            allocationId: allocationId,
+            remotePath: `/${file.name}`,
+            file: file,
+            thumbnailBytes: await readBytes(file),//only for demo, don't upload original file as thumbnail in production
+            encrypt: false,
+            isUpdate: false,
+            isRepair: false,
+            numBlocks: 100,
+            callback: function (totalBytes, completedBytes, error) {
+              console.log(file.name + " " + completedBytes + "/" + totalBytes + " err:" + error)
+            }
+          })
         }
 
 
-        const results =  await goWasm.bulkUpload(objects)
+        const results = await goWasm.bulkUpload(objects)
 
         console.log(JSON.stringify(results))
       }
@@ -274,7 +378,7 @@
         const allocationId = getSelectedAllocation()
 
         //allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int
-        const file = await goWasm.sdk.download(allocationId, path, '', '', false, 10)
+        const file = await goWasm.sdk.download(allocationId, path, '', '', false, 10, "downloadCallback")
 
 
         const a = document.createElement('a')
@@ -316,7 +420,7 @@
       const file = files.find(it => it.path == getSelectedFile())
       if (file && file.mimetype.startsWith('image')) {
         const allocationId = getSelectedAllocation()
-        const { url } = await goWasm.sdk.download(allocationId, file.path, '', '', false, 10)
+        const { url } = await goWasm.sdk.download(allocationId, file.path, '', '', false, 10,)
         get('viewer').setAttribute('src', url)
       }
     })
@@ -362,7 +466,7 @@
         }
       } else {
 
-        const authTicket =  get('authTicket').value
+        const authTicket = get('authTicket').value
 
         const isLive = false
 

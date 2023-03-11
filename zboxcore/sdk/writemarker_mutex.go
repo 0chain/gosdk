@@ -18,7 +18,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
-// WMLockStatus
 type WMLockStatus int
 
 const (
@@ -36,22 +35,23 @@ type WMLockResult struct {
 type WriteMarkerMutex struct {
 	mutex          sync.Mutex
 	allocationObj  *Allocation
-	lockedBlobbers map[string]bool
+	lockedBlobbers map[string]chan struct{}
 }
 
 // CreateWriteMarkerMutex create WriteMarkerMutex for allocation
 func CreateWriteMarkerMutex(client *client.Client, allocationObj *Allocation) (*WriteMarkerMutex, error) {
-
-	if client == nil {
-		return nil, errors.Throw(constants.ErrInvalidParameter, "client")
-	}
-
 	if allocationObj == nil {
 		return nil, errors.Throw(constants.ErrInvalidParameter, "allocationObj")
 	}
 
+	lockedBlobbers := make(map[string]chan struct{})
+	for _, b := range allocationObj.Blobbers {
+		lockedBlobbers[b.ID] = make(chan struct{}, 1)
+	}
+
 	return &WriteMarkerMutex{
-		allocationObj: allocationObj,
+		allocationObj:  allocationObj,
+		lockedBlobbers: lockedBlobbers,
 	}, nil
 }
 
@@ -82,6 +82,7 @@ func (wmMu *WriteMarkerMutex) UnlockBlobber(
 
 	defer wg.Done()
 
+	wmMu.lockedBlobbers[b.ID] <- struct{}{}
 	var err error
 
 	defer func() {
@@ -183,13 +184,16 @@ func (wmMu *WriteMarkerMutex) Lock(
 	consensus.consensus = addConsensus
 	wg := &sync.WaitGroup{}
 	var pos uint64
+	requestTime := time.Now()
+	rT := strconv.FormatInt(requestTime.Unix(), 10)
+
 	for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 
 		blobber := blobbers[pos]
 
 		wg.Add(1)
-		go wmMu.LockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, timeOut, wg)
+		go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, rT, timeOut, wg)
 	}
 
 	wg.Wait()
@@ -202,16 +206,57 @@ func (wmMu *WriteMarkerMutex) Lock(
 				consensus.consensusThresh, consensus.getConsensus()))
 	}
 
+	/*
+		This goroutine will refresh lock after 20 seconds have passed. It will only complete if context is
+		completed, that is why, the caller should make proper use of context and cancel it when work is done.
+	*/
+	go func() {
+		for {
+			<-time.After(time.Second*20 - time.Since(requestTime))
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
+			wg := &sync.WaitGroup{}
+			requestTime = time.Now()
+			rT = strconv.FormatInt(requestTime.Unix(), 10)
+
+			for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+				pos = uint64(i.TrailingZeros())
+
+				blobber := blobbers[pos]
+
+				wg.Add(1)
+				go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, rT, timeOut, wg)
+			}
+
+			wg.Wait()
+		}
+	}()
+
 	return nil
 }
 
-// todo change blobber code as well
-func (wmMu *WriteMarkerMutex) LockBlobber(
+func (wmMu *WriteMarkerMutex) lockBlobber(
 	ctx context.Context, mask *zboxutil.Uint128, maskMu *sync.Mutex,
 	consensus *Consensus, b *blockchain.StorageNode, pos uint64, connID string,
-	timeOut time.Duration, wg *sync.WaitGroup) {
+	requestTime string, timeOut time.Duration, wg *sync.WaitGroup) {
 
 	defer wg.Done()
+
+	select {
+	case <-ctx.Done():
+		return
+	default:
+	}
+
+	wmMu.lockedBlobbers[b.ID] <- struct{}{}
+
+	defer func() {
+		<-wmMu.lockedBlobbers[b.ID]
+	}()
 
 	var err error
 
@@ -224,7 +269,6 @@ func (wmMu *WriteMarkerMutex) LockBlobber(
 		}
 	}()
 
-	requestTime := strconv.FormatInt(time.Now().Unix(), 10)
 	var req *http.Request
 
 	req, err = zboxutil.NewWriteMarkerLockRequest(
@@ -315,9 +359,9 @@ func (wmMu *WriteMarkerMutex) LockBlobber(
 		if err != nil {
 			return
 		}
-		if shouldContinue {
-			continue
+		if !shouldContinue {
+			break
 		}
-		return
 	}
+
 }

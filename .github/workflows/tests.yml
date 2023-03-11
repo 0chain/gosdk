@@ -103,6 +103,8 @@ jobs:
           zbox_cli_branch: staging
           zwallet_cli_branch: staging
           custom_go_sdk_version: staging
+          SUBGRAPH_API_URL: ${{ secrets.SUBGRAPH_API_URL }}
+          TENDERLY_FORK_ID: ${{ secrets.TENDERLY_FORK_ID }}
 
       - name: "Run System tests"
         uses: 0chain/actions/run-system-tests@master
@@ -117,6 +119,7 @@ jobs:
           archive_results: true
           run_flaky_tests: false
           retry_failures: true
+          TENDERLY_FORK_ID: ${{ secrets.TENDERLY_FORK_ID }}
           DEVOPS_CHANNEL_WEBHOOK_URL: ${{ secrets.DEVOPS_CHANNEL_WEBHOOK_URL }}
 
       - name: "Set PR status as ${{ job.status }}"
@@ -146,18 +149,6 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '14'
-
-      - name: Install deps
-        run: |
-          codename=$(lsb_release -c | awk '{print $2}')
-          echo "deb http://mirror.enzu.com/ubuntu/ $codename main" > ./gitaction.list
-          echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" >> ./gitaction.list
-          echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
-          echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
-
-          sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
-      
-          sudo apt-get update -y && sudo apt-get install build-essential -y
 
       - name: Setup PATH for wasm
         run: echo "${{env.GOROOT}}/misc/wasm" >> $GITHUB_PATH

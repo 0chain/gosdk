@@ -14,7 +14,7 @@ set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWal
 **Output**:
 > N/A
 >
- 
+
 ### zcn.bulkUpload
 bulk upload files. it will wrap options, and call `zcn.sdk.bulkUpload` to process upload
 
@@ -183,6 +183,42 @@ updates allocation settings
 > hash: string
 
 
+### zcn.sdk.getAllocationWith
+returns allocation from authToken
+
+**Input**:
+> authTicket string
+
+**Output**:
+> [sdk.Allocation](https://github.com/0chain/gosdk/blob/a9e504e4a0e8fc76a05679e4ef183bb03b8db8e5/zboxcore/sdk/allocation.go#L140)
+
+### zcn.sdk.getReadPoolInfo
+gets information about the read pool for the allocation
+
+**Input**:
+> clientID string
+
+**Output**:
+> [sdk.ReadPool](https://github.com/0chain/gosdk/blob/6878504e4e4d7cb25b2ac819c3c578228b3d3e30/zboxcore/sdk/sdk.go#L167-L169)
+
+### zcn.sdk.decodeAuthTicket
+
+**Input**:
+> ticket string
+
+**Output**:
+> recipientPublicKey string, markerStr string, tokensInSAS uint64
+
+
+### zcn.sdk.lockWritePool
+locks given number of tokes for given duration in write pool
+
+**Input**:
+> allocationId string, tokens string, fee string
+
+**Output**:
+> hash: string
+
 ### zcn.sdk.getWalletBalance
 get wallet balance
 
@@ -201,6 +237,13 @@ convert blobber urls to blobber ids
 **Output**:
 > []string
 
+### zcn.sdk.getBlobbers
+get blobbers from the network
+
+**Input**:
+
+**Output**:
+> array of [sdk.Blobber](https://github.com/0chain/gosdk/blob/6878504e4e4d7cb25b2ac819c3c578228b3d3e30/zboxcore/sdk/sdk.go#L558-L572)
 
 ### zcn.sdk.createReadPool
 create readpool in storage SC if the pool is missing.
@@ -294,7 +337,7 @@ generate an authtoken that provides authorization to the holder to the specified
 download your own or a shared file.
 
 **Input**:
-> allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int
+> allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int,callbackFuncName string
 
 **Output**:
 >  {commandSuccess:bool, fileName:string,url:string, error:string}
@@ -313,7 +356,7 @@ download your own or a shared file.
 download blocks of a file
 
 **Input**:
-> allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64
+> allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64, callbackFuncName string
 
 **Output**:
 >  {commandSuccess:bool, fileName:string,url:string, error:string}
@@ -342,7 +385,7 @@ upload file
 bulk upload files with json options
 
 **Input**:
-> jsonBulkOptions string: 
+> jsonBulkUploadOptions string:
 >  BulkOption: { allocationId,remotePath,readChunkFuncName, fileSize, thumbnailBytes, encrypt,isUpdate,isRepair,numBlocks,callbackFuncName:callbackFuncName }
 
 **Output**:
@@ -395,6 +438,30 @@ create folder from blobbers
 
 **Output**:
 > string: []sdk.FileStats
+
+### zcn.sdk.updateBlobberSettings
+
+ **Input**:
+ > blobberSettingsJson string
+ blobberSettings: fetch blobber settings by calling /getBlobber on sharder and modify them (see demo for usage)
+ **Output**:
+ > string: resp
+
+### zcn.sdk.getAllocationMinLock
+
+**Input**:
+> datashards int, parityshards int, size int, expiry int, maxreadPrice int, maxwritePrice int
+
+**Output**:
+> int: min_lock_demand
+
+### zcn.sdk.getRemoteFileMap
+takes allocation ID and returns all the files/directories in allocation as JSON
+**Input**:
+> allocationID string
+
+**Output**:
+> []*fileResp
 
 
 ## Swap methods

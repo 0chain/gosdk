@@ -35,7 +35,6 @@ func (qq *bancorQuoteQuery) getUSD(ctx context.Context, symbol string) (float64,
 			return 0, errors.New("bancor: please configure dlt_id on environment variable [" + evnName + "] first")
 		}
 		dltId = id
-
 	}
 
 	r := resty.New()
@@ -79,7 +78,6 @@ func (qq *bancorQuoteQuery) getUSD(ctx context.Context, symbol string) (float64,
 		if ok && rate.Value > 0 {
 			return rate.Value, nil
 		}
-
 	}
 
 	return 0, fmt.Errorf("bancor: %s price is not provided on bancor apis", symbol)
