@@ -142,8 +142,8 @@ func getNotProcessedZCNBurnTickets() string {
 		return errors.Wrap("getNotProcessedZCNBurnTickets", "failed to retreive user nonce", err).Error()
 	}
 
-	var cb zcncore.GetZCNNotProcessedBurnTicketsCallbackStub
-	err = zcncore.GetZCNNotProcessedBurnTickets(bridge.EthereumAddress, userNonce.Int64(), &cb)
+	var cb zcncore.GetNotProcessedZCNBurnTicketsCallbackStub
+	err = zcncore.GetNotProcessedZCNBurnTickets(bridge.EthereumAddress, userNonce.Int64(), &cb)
 	if err != nil {
 		return errors.Wrap("getNotProcessedZCNBurnTickets", "failed to retreive ZCN burn tickets", err).Error()
 	}
