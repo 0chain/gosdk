@@ -303,7 +303,11 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 }
 
 // download download file
-func download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int, callbackFuncName string) (*DownloadCommandResponse, error) {
+func download(
+	allocationID, remotePath, authTicket, lookupHash string,
+	downloadThumbnailOnly bool, numBlocks int, callbackFuncName string,
+) (
+	*DownloadCommandResponse, error) {
 
 	wg := &sync.WaitGroup{}
 	statusBar := &StatusBar{wg: wg}
