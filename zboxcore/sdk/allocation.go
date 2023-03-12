@@ -177,7 +177,6 @@ type Allocation struct {
 	MovedToValidators       common.Balance   `json:"moved_to_validators,omitempty"`
 	FileOptions             uint16           `json:"file_options"`
 	ThirdPartyExtendable    bool             `json:"third_party_extendable"`
-	Curators                []string         `json:"curators"`
 
 	numBlockDownloads       int
 	downloadChan            chan *DownloadRequest
