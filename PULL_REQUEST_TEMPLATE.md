@@ -1,5 +1,6 @@
 ### Version
-Please run `make getrev` to update gosdk version info. This will help us to debug with ease.
+- [ ] Ensure to run `make getrev` to update gosdk version info.
+
 
 ### Changes
 -
