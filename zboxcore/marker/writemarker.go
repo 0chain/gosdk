@@ -5,27 +5,29 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/client"
 )
 
 type WriteMarker struct {
 	AllocationRoot         string `json:"allocation_root"`
 	PreviousAllocationRoot string `json:"prev_allocation_root"`
+	FileMetaRoot           string `json:"file_meta_root"`
 	AllocationID           string `json:"allocation_id"`
 	Size                   int64  `json:"size"`
 	BlobberID              string `json:"blobber_id"`
 	Timestamp              int64  `json:"timestamp"`
 	ClientID               string `json:"client_id"`
 	Signature              string `json:"signature"`
-
-	// file info
-	LookupHash  string `json:"lookup_hash"`
-	Name        string `json:"name"`
-	ContentHash string `json:"content_hash"`
 }
 
 func (wm *WriteMarker) GetHashData() string {
-	sigData := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v", wm.AllocationRoot, wm.PreviousAllocationRoot, wm.AllocationID, wm.BlobberID, wm.ClientID, wm.Size, wm.Timestamp)
+	sigData := fmt.Sprintf(
+		"%s:%s:%s:%s:%s:%s:%d:%d",
+		wm.AllocationRoot, wm.PreviousAllocationRoot,
+		wm.FileMetaRoot, wm.AllocationID,
+		wm.BlobberID, wm.ClientID, wm.Size,
+		wm.Timestamp)
 	return sigData
 }
 
@@ -43,7 +45,7 @@ func (wm *WriteMarker) Sign() error {
 func (wm *WriteMarker) VerifySignature(clientPublicKey string) error {
 	hashData := wm.GetHashData()
 	signatureHash := encryption.Hash(hashData)
-	sigOK, err := client.VerifySignature(wm.Signature, signatureHash)
+	sigOK, err := sys.Verify(wm.Signature, signatureHash)
 	if err != nil {
 		return errors.New("write_marker_validation_failed", "Error during verifying signature. "+err.Error())
 	}

@@ -139,7 +139,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		FragmentSize: 0,
 	}
 
-	chunkBytes := make([]byte, r.chunkDataSizePerRead)
+	chunkBytes := make([]byte, r.chunkDataSizePerRead, r.chunkDataSizePerRead*2)
 	readLen, err := r.fileReader.Read(chunkBytes)
 
 	if err != nil {

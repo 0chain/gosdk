@@ -2,10 +2,9 @@ package sdk
 
 import (
 	"context"
-	"os"
 	"sync"
 
-	"github.com/0chain/gosdk/core/transaction"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"go.uber.org/zap"
@@ -26,10 +25,6 @@ type RepairStatusCB struct {
 	success  bool
 	err      error
 	statusCB StatusCallback
-}
-
-func (cb *RepairStatusCB) CommitMetaCompleted(request, response string, txn *transaction.Transaction, err error) {
-	cb.statusCB.CommitMetaCompleted(request, response, txn, err)
 }
 
 func (cb *RepairStatusCB) Started(allocationId, filePath string, op int, totalBytes int) {
@@ -164,7 +159,7 @@ func (r *RepairRequest) repairFile(a *Allocation, file *ListResult) {
 			}
 		} else {
 			l.Logger.Info("Repair by delete", zap.Any("path", file.Path))
-			consensus := float32(found.CountOnes())
+			consensus := found.CountOnes()
 			err := a.deleteFile(file.Path, consensus, consensus)
 			if err != nil {
 				l.Logger.Error("repair_file_failed", zap.Error(err))
@@ -182,7 +177,7 @@ func (r *RepairRequest) getLocalPath(file *ListResult) string {
 }
 
 func checkFileExists(localPath string) bool {
-	info, err := os.Stat(localPath)
+	info, err := sys.Files.Stat(localPath)
 	if err != nil {
 		return false
 	}

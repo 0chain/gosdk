@@ -3,11 +3,11 @@ package zcnbridge
 import (
 	"context"
 	"fmt"
+	eth "github.com/ethereum/go-ethereum"
 	"time"
 
 	"github.com/0chain/gosdk/zcnbridge/ethereum/authorizers"
 	hdw "github.com/0chain/gosdk/zcncore/ethhdwallet"
-	eth "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -71,8 +71,24 @@ func (b *BridgeOwner) AddEthereumAuthorizer(ctx context.Context, address common.
 
 	tran, err := instance.AddAuthorizers(transactOpts, address)
 	if err != nil {
-		msg := "failed to execute BurnZCN transaction to ClientID = %s with amount = %s"
-		return nil, errors.Wrapf(err, msg, b.ID(), address.String())
+		msg := "failed to execute AddAuthorizers transaction to ClientID = %s with amount = %s"
+		return nil, errors.Wrapf(err, msg, b.ClientID(), address.String())
+	}
+
+	return tran, err
+}
+
+// RemoveEthereumAuthorizer Removes authorizer from Ethereum bridge. Only contract deployer can call this method
+func (b *BridgeOwner) RemoveEthereumAuthorizer(ctx context.Context, address common.Address) (*types.Transaction, error) {
+	instance, transactOpts, err := b.prepareAuthorizers(ctx, "removeAuthorizers", address)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to prepare bridge")
+	}
+
+	tran, err := instance.RemoveAuthorizers(transactOpts, address)
+	if err != nil {
+		msg := "failed to execute RemoveAuthorizers transaction to ClientID = %s with amount = %s"
+		return nil, errors.Wrapf(err, msg, b.ClientID(), address.String())
 	}
 
 	return tran, err
@@ -109,7 +125,7 @@ func (b *BridgeOwner) AddEthereumAuthorizers(configDir string) {
 			continue
 		}
 
-		status, err := ConfirmEthereumTransaction(transaction.Hash().String(), 5, time.Second*5)
+		status, err := ConfirmEthereumTransaction(transaction.Hash().String(), 100, time.Second*10)
 		if err != nil {
 			fmt.Println(err)
 		}

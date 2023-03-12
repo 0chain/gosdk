@@ -4,6 +4,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/0chain/gosdk/core/sys"
 )
 
 // HandleFunc returns handle function that writes logs to http.ResponseWriter with provided buffer size.
@@ -19,7 +21,7 @@ func HandleFunc(buffLen int64) func(http.ResponseWriter, *http.Request) {
 			_ = file.Close()
 		}()
 
-		stat, err := os.Stat(logName)
+		stat, err := sys.Files.Stat(logName)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return

@@ -3,7 +3,6 @@ participant "<size:20><&terminal></size> ./zbox update" as cli
 collections gosdk
 collections blobber
 
-cli -> cli: get remote file attributes
 cli -> gosdk: uploadOrUpdateFile()
 
 gosdk -> gosdk: check initialized allocation

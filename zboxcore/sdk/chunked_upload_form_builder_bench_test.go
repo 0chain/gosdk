@@ -2,8 +2,6 @@ package sdk
 
 import (
 	"testing"
-
-	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
 func BenchmarkChunkedUploadFormBuilder(b *testing.B) {
@@ -50,7 +48,6 @@ func BenchmarkChunkedUploadFormBuilder(b *testing.B) {
 				MimeType:   "plain/text",
 				RemoteName: "/test.txt",
 				RemotePath: "/test.txt",
-				Attributes: fileref.Attributes{},
 			}
 			b.ResetTimer()
 

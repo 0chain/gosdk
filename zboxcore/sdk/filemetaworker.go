@@ -71,6 +71,7 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 			return errors.Wrap(err, "Error: Resp")
 		}
 		l.Logger.Info("File Meta result:", string(resp_body))
+		l.Logger.Debug("File meta response status: ", resp.Status)
 		s.WriteString(string(resp_body))
 		if resp.StatusCode == http.StatusOK {
 			err = json.Unmarshal(resp_body, &fileRef)
@@ -105,7 +106,7 @@ func (req *ListRequest) getFileConsensusFromBlobbers() (zboxutil.Uint128, *filer
 	var selected *fileMetaResponse
 	foundMask := zboxutil.NewUint128(0)
 	req.consensus = 0
-	retMap := make(map[string]float32)
+	retMap := make(map[string]int)
 	for i := 0; i < len(lR); i++ {
 		ti := lR[i]
 		if ti.err != nil || ti.fileref == nil {

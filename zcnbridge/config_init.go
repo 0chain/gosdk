@@ -10,13 +10,13 @@ import (
 )
 
 const (
-	BridgeClientConfigName         = "bridge.yaml"
-	OwnerClientConfigName          = "owner.yaml"
-	ZChainsClientConfigName        = "config.yaml"
-	EthereumWalletClientConfigName = "wallet.json"
-	EthereumWalletStorageDir       = "wallets"
-	ClientConfigKeyName            = "bridge"
-	OwnerConfigKeyName             = "owner"
+	BridgeClientConfigName   = "bridge.yaml"
+	OwnerClientConfigName    = "owner.yaml"
+	ZChainsClientConfigName  = "config.yaml"
+	ZChainWalletConfigName   = "wallet.json"
+	EthereumWalletStorageDir = "wallets"
+	ClientConfigKeyName      = "bridge"
+	OwnerConfigKeyName       = "owner"
 	//DefaultHomeDir                 = "" // By default (~/.zcn)
 )
 

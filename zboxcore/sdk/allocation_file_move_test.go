@@ -8,9 +8,6 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/dev"
-	"github.com/0chain/gosdk/dev/mock"
-	"github.com/0chain/gosdk/sdks/blobber"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	zclient "github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -20,6 +17,7 @@ import (
 )
 
 func TestAllocation_MoveObject(t *testing.T) {
+
 	const (
 		mockType = "f"
 	)
@@ -82,7 +80,11 @@ func TestAllocation_MoveObject(t *testing.T) {
 				require.NoError(t, err)
 				setupMockHttpResponse(t, &mockClient, "TestAllocation_MoveObject", testCaseName, a, http.MethodGet, http.StatusOK, body)
 				setupMockHttpResponse(t, &mockClient, "TestAllocation_MoveObject", testCaseName, a, http.MethodPost, http.StatusOK, []byte(""))
+				setupMockHttpResponse(t, &mockClient, "TestAllocation_MoveObject", testCaseName, a, http.MethodPost, http.StatusOK, []byte(`{"status":2}`))
+				setupMockHttpResponse(t, &mockClient, "TestAllocation_MoveObject", testCaseName, a, http.MethodPost, http.StatusOK, []byte(`{"status":2}`))
 				setupMockHttpResponse(t, &mockClient, "TestAllocation_MoveObject", testCaseName, a, http.MethodGet, http.StatusOK, body)
+				setupMockHttpResponse(t, &mockClient, "TestAllocation_MoveObject", testCaseName, a, http.MethodDelete, http.StatusOK, []byte(""))
+				setupMockHttpResponse(t, &mockClient, "TestAllocation_MoveObject", testCaseName, a, http.MethodDelete, http.StatusOK, []byte(""))
 				setupMockHttpResponse(t, &mockClient, "TestAllocation_MoveObject", testCaseName, a, http.MethodDelete, http.StatusOK, []byte(""))
 				setupMockCommitRequest(a)
 				return nil
@@ -100,28 +102,13 @@ func TestAllocation_MoveObject(t *testing.T) {
 
 			setupMockAllocation(t, a)
 
-			resp := &WMLockResult{
-				Status: WMLockStatusOK,
-			}
-
-			respBuf, _ := json.Marshal(resp)
-			m := make(mock.ResponseMap)
-
-			server := dev.NewBlobberServer(m)
-			defer server.Close()
-
 			for i := 0; i < numBlobbers; i++ {
 
 				path := "/TestAllocation_MoveObject" + tt.name + mockBlobberUrl + strconv.Itoa(i)
 
-				m[http.MethodPost+":"+path+blobber.EndpointWriteMarkerLock+a.Tx] = mock.Response{
-					StatusCode: http.StatusOK,
-					Body:       respBuf,
-				}
-
 				a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
 					ID:      tt.name + mockBlobberId + strconv.Itoa(i),
-					Baseurl: server.URL + path,
+					Baseurl: path,
 				})
 			}
 			if tt.setup != nil {

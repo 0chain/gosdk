@@ -3,7 +3,6 @@
 package mocks
 
 import (
-	fileref "github.com/0chain/gosdk/zboxcore/fileref"
 	mock "github.com/stretchr/testify/mock"
 )
 
@@ -26,19 +25,7 @@ func (_m *RefEntity) CalculateHash() string {
 	return r0
 }
 
-// GetAttributes provides a mock function with given fields:
-func (_m *RefEntity) GetAttributes() fileref.Attributes {
-	ret := _m.Called()
 
-	var r0 fileref.Attributes
-	if rf, ok := ret.Get(0).(func() fileref.Attributes); ok {
-		r0 = rf()
-	} else {
-		r0 = ret.Get(0).(fileref.Attributes)
-	}
-
-	return r0
-}
 
 // GetCreatedAt provides a mock function with given fields:
 func (_m *RefEntity) GetCreatedAt() string {

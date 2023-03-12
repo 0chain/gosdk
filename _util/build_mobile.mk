@@ -3,23 +3,31 @@ GOSDK_PATH :=  $(0CHAIN_PATH)/gosdk
 OUTDIR := $(ROOT_DIR)/out
 IOSMOBILESDKDIR     := $(OUTDIR)/iossdk
 ANDROIDMOBILESDKDIR := $(OUTDIR)/androidsdk
+MACSDKDIR	:= $(OUTDIR)/macossdk
 IOSBINNAME 		:= zcncore.xcframework
 ANDROIDBINNAME	:= zcncore.aar
+MINIOSVERSIONMIN := "-miphoneos-version-min=7.0=7.0 -mios-version-min=7.0 -mios-simulator-version-min=7.0"
+MINMACOSVERSIONMIN := "-mmacosx-version-min=10.12"
 
-.PHONY: build-mobilesdk setup-gomobile build-iossimulator build-ios
+PKG_EXPORTS := $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common $(GOSDK_PATH)/mobilesdk/sdk $(GOSDK_PATH)/mobilesdk/zbox $(GOSDK_PATH)/mobilesdk/zboxapi $(GOSDK_PATH)/mobilesdk/zcn
+
+.PHONY: setup-gomobile build-iossimulator build-ios build-android build-android-debug
 
 $(IOSMOBILESDKDIR):
-	$(shell mkdir -p $(IOSMOBILESDKDIR)/lib)
+	$(shell mkdir -p $(IOSMOBILESDKDIR))
 
 $(ANDROIDMOBILESDKDIR):
-	$(shell mkdir -p $(ANDROIDMOBILESDKDIR)/lib)
+	$(shell mkdir -p $(ANDROIDMOBILESDKDIR))
 
-setup-gomobile: $(IOSMOBILESDKDIR) $(ANDROIDMOBILESDKDIR)
+$(MACSDKDIR):
+	$(shell mkdir -p $(MACSDKDIR))
+
+setup-gomobile: $(IOSMOBILESDKDIR) $(ANDROIDMOBILESDKDIR) $(MACSDKDIR)
 	@$(PRINT_MAG)
 	@echo "============================================================"
 	@echo "    Initializing gomobile. Please wait it may take a while ..."
 	@echo "------------------------------------------------------------"
-	@go get -d golang.org/x/mobile/cmd/gomobile
+	@go install golang.org/x/mobile/cmd/gomobile@latest
 	@$(PRINT_NON)
 	@gomobile init
 	@$(PRINT_GRN)
@@ -35,28 +43,6 @@ ifneq ($(GOPATH), )
 	$(shell ln -sf $(ROOT_DIR) $(GOPATH)/src/$(0CHAIN_PATH))
 endif
 
-build-mobilesdk: $(GOPATH)/src/$(GOSDK_PATH)
-ifeq ($(filter-out undefined,$(foreach v, IOS ANDROID,$(origin $(v)))),)
-	@$(PRINT_RED)
-	@echo ""
-	@echo "Usage:"
-	@echo '   For iOS and Android: make build-mobilesdk IOS=1 ANDROID=1'
-	@echo '   For iOS only: make build-mobilesdk IOS=1'
-	@echo '   For Android only: make build-mobilesdk ANDROID=1'
-endif
-	@$(PRINT_CYN)
-ifneq ($(IOS),)
-	@echo "Building iOS framework. Please wait..."
-	@gomobile bind -ldflags="-s -w" -target=ios -tags mobile -o $(IOSMOBILESDKDIR)/$(IOSBINNAME) $(GOSDK_PATH)/zcncore
-	@echo "   $(IOSMOBILESDKDIR)/$(IOSBINNAME). - [OK]"
-endif
-ifneq ($(ANDROID),)
-	@echo "Building Android framework. Please wait..."
-	@gomobile bind -target=android/arm64,android/amd64 -tags mobile -ldflags=-extldflags=-Wl,-soname,libgojni.so -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common
-	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"
-endif
-	@echo ""
-	@$(PRINT_NON)
 
 clean-mobilesdk:
 	@rm -rf $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME)
@@ -70,17 +56,31 @@ gomobile-install:
 	go install golang.org/x/mobile/cmd/gomobile@latest
 	gomobile init
 
-build-iossimulator: 
+build-iossimulator: $(IOSMOBILESDKDIR)
 	@echo "Building iOS Simulator framework. Please wait..."
-	@@gomobile bind -v -ldflags="-s -w" -target=iossimulator -tags "ios iossimulator mobile" -o $(IOSMOBILESDKDIR)/simulator/$(IOSBINNAME) $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common
+	@CGO_CFLAGS=$(MINIOSVERSIONMIN) gomobile bind -v -ldflags="-s -w" -target=iossimulator -tags "ios iossimulator mobile" -o $(IOSMOBILESDKDIR)/simulator/$(IOSBINNAME) $(PKG_EXPORTS)
 	@echo "   $(IOSMOBILESDKDIR)/simulator/$(IOSBINNAME). - [OK]"
 
-build-ios: 
+build-ios: $(IOSMOBILESDKDIR)
 	@echo "Building iOS framework. Please wait..."
-	@@gomobile bind -v -ldflags="-s -w" -target=ios/arm64,iossimulator/amd64 -tags "ios mobile" -o $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME) $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common
+	@go get golang.org/x/mobile/bind
+	@CGO_CFLAGS=$(MINIOSVERSIONMIN) gomobile bind -v -ldflags="-s -w" -target=ios,iossimulator -tags "ios mobile" -o $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME) $(PKG_EXPORTS)
 	@echo "   $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME). - [OK]"	
 
-build-android: 
+build-android: $(ANDROIDMOBILESDKDIR)
 	@echo "Building Android framework. Please wait..."
-	@gomobile bind -target=android/arm64 -tags mobile -ldflags=-extldflags=-Wl,-soname,libgojni.so -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(GOSDK_PATH)/zcncore $(GOSDK_PATH)/core/common
+	@go get golang.org/x/mobile/bind
+	@gomobile bind -v -ldflags="-s -w -extldflags=-Wl,-soname,libgojni.so" -target=android/arm64,android/amd64 -androidapi 19 -tags mobile  -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
 	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"
+
+build-android-debug: $(ANDROIDMOBILESDKDIR)
+	@echo "Building Android framework. Please wait..."
+	@go get golang.org/x/mobile/bind
+	@gomobile bind -v -ldflags="-s -w -extldflags=-Wl,-soname,libgojni.so" -gcflags '-N -l' -target=android/arm64,android/amd64 -tags mobile  -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
+	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"
+
+build-macos: $(MACSDKDIR)
+	@echo "Building MAC framework. Please wait..."
+	@go get golang.org/x/mobile/bind
+	@CGO_CFLAGS=$(MINMACOSVERSIONMIN)  gomobile bind -v -ldflags="-s -w" -target=macos -tags mobile -o $(MACSDKDIR)/$(IOSBINNAME) $(PKG_EXPORTS)
+	@echo "   $(MACSDKDIR)/$(IOSBINNAME). - [OK]"

@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"sync"
 
 	"go.uber.org/zap"
@@ -21,8 +22,7 @@ import (
 const (
 	// SCRestAPIPrefix represents base URL path to execute smart contract rest points.
 	SCRestAPIPrefix        = "v1/screst/"
-	SmartContractAddress   = `6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7`
-	RestPrefix             = SCRestAPIPrefix + SmartContractAddress
+	RestPrefix             = SCRestAPIPrefix + zcncore.ZCNSCSmartContractAddress
 	PathGetAuthorizerNodes = "/getAuthorizerNodes"
 	PathGetGlobalConfig    = "/getGlobalConfig"
 	PathGetAuthorizer      = "/getAuthorizer"
@@ -34,7 +34,14 @@ var Logger logger.Logger
 var defaultLogLevel = logger.DEBUG
 
 func init() {
-	Logger.Init(defaultLogLevel, "0chain-zcnbridge-sdk")
+	Logger.Init(defaultLogLevel, "zcnbridge-http-sdk")
+
+	Logger.SetLevel(logger.DEBUG)
+	f, err := os.OpenFile("bridge.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return
+	}
+	Logger.SetLogFile(f, true)
 }
 
 // MakeSCRestAPICall calls smart contract with provided address
@@ -65,11 +72,17 @@ func MakeSCRestAPICall(opCode int, relativePath string, params Params, cb zcncor
 			defer wg.Done()
 
 			var u = makeURL(params, sharderUrl, relativePath)
-			Logger.Info(fmt.Sprintf("Query %s", u.String()))
+			Logger.Info("Query ", u.String())
 
 			resp, err := client.Get(u.String())
-			//goland:noinspection ALL
-			defer resp.Body.Close()
+			if err != nil {
+				Logger.Error("MakeSCRestAPICall - failed to get response from", zap.String("URL", sharderUrl), zap.Any("error", err))
+				return
+			}
+			if resp.StatusCode != http.StatusInternalServerError {
+				//goland:noinspection ALL
+				defer resp.Body.Close()
+			}
 
 			if err != nil {
 				Logger.Error("MakeSCRestAPICall - failed to get response from", zap.String("URL", sharderUrl), zap.Any("error", err))
@@ -81,21 +94,27 @@ func MakeSCRestAPICall(opCode int, relativePath string, params Params, cb zcncor
 				return
 			}
 
+			Logger.Info("MakeSCRestAPICall successful query")
+
 			hash, body, err := hashAndBytesOfReader(resp.Body)
 			if err != nil {
 				Logger.Error("MakeSCRestAPICall - error while reading response body", zap.String("URL", sharderUrl), zap.Any("error", err))
 				return
 			}
 
+			Logger.Info("MakeSCRestAPICall push body to results: ", string(body))
+
 			results <- &queryResult{hash: hash, body: body}
 		}(sharder)
 	}
 
+	Logger.Info("MakeSCRestAPICall waiting for response from all sharders")
 	wg.Wait()
-	close(results)
+	Logger.Info("MakeSCRestAPICall closing results")
 
 	select {
 	case result := <-results:
+		Logger.Debug("request_sharders", zap.String("received result", result.hash), zap.String("received body", string(result.body)))
 		hashCounters[result.hash]++
 		if hashCounters[result.hash] > hashMaxCounter {
 			hashMaxCounter = hashCounters[result.hash]

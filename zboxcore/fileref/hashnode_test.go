@@ -1,7 +1,6 @@
 package fileref
 
 import (
-	"encoding/json"
 	"strconv"
 	"strings"
 	"testing"
@@ -35,7 +34,6 @@ func TestHashnode_GetHashcode(t *testing.T) {
 				ContentHash:    "content_hash",
 				MerkleRoot:     "merkle_root",
 				ActualFileHash: "actual_file_hash",
-				Attributes:     json.RawMessage("{}"),
 				ChunkSize:      1024,
 				Size:           10240,
 				ActualFileSize: 10240,
@@ -48,7 +46,6 @@ func TestHashnode_GetHashcode(t *testing.T) {
 						ContentHash:    "content_hash",
 						MerkleRoot:     "merkle_root",
 						ActualFileHash: "actual_file_hash",
-						Attributes:     json.RawMessage("{}"),
 						ChunkSize:      1024,
 						Size:           10240,
 						ActualFileSize: 10240,
@@ -63,7 +60,6 @@ func TestHashnode_GetHashcode(t *testing.T) {
 								ContentHash:    "content_hash",
 								MerkleRoot:     "merkle_root",
 								ActualFileHash: "actual_file_hash",
-								Attributes:     json.RawMessage("{}"),
 								ChunkSize:      1024,
 								Size:           10240,
 								ActualFileSize: 10240,
@@ -79,7 +75,6 @@ func TestHashnode_GetHashcode(t *testing.T) {
 						ContentHash:    "content_hash",
 						MerkleRoot:     "merkle_root",
 						ActualFileHash: "actual_file_hash",
-						Attributes:     json.RawMessage("{}"),
 						ChunkSize:      0,
 						Size:           0,
 						ActualFileSize: 0,
@@ -95,7 +90,6 @@ func TestHashnode_GetHashcode(t *testing.T) {
 				ContentHash:    "content_hash",
 				MerkleRoot:     "merkle_root",
 				ActualFileHash: "actual_file_hash",
-				Attributes:     json.RawMessage("{}"),
 				ChunkSize:      1024,
 				Size:           10240,
 				ActualFileSize: 10240,
@@ -108,7 +102,6 @@ func TestHashnode_GetHashcode(t *testing.T) {
 						ContentHash:    "content_hash",
 						MerkleRoot:     "merkle_root",
 						ActualFileHash: "actual_file_hash",
-						Attributes:     json.RawMessage("{}"),
 						ChunkSize:      1024,
 						Size:           10240,
 						ActualFileSize: 10240,
@@ -121,7 +114,6 @@ func TestHashnode_GetHashcode(t *testing.T) {
 								ContentHash:    "content_hash",
 								MerkleRoot:     "merkle_root",
 								ActualFileHash: "actual_file_hash",
-								Attributes:     json.RawMessage("{}"),
 								ChunkSize:      1024,
 								Size:           10240,
 								ActualFileSize: 10240,
@@ -136,7 +128,6 @@ func TestHashnode_GetHashcode(t *testing.T) {
 						ContentHash:    "content_hash",
 						MerkleRoot:     "merkle_root",
 						ActualFileHash: "actual_file_hash",
-						Attributes:     json.RawMessage("{}"),
 						ChunkSize:      0,
 						Size:           0,
 						ActualFileSize: 0,
@@ -171,17 +162,13 @@ type blobberRef struct {
 	ActualFileSize int64  `gorm:"column:actual_file_size" filelist:"actual_file_size"`
 	ActualFileHash string `gorm:"column:actual_file_hash" filelist:"actual_file_hash"`
 
-	Attributes     json.RawMessage `gorm:"column:attributes" filelist:"attributes"`
-	Children       []*blobberRef   `gorm:"-"`
+	Children       []*blobberRef `gorm:"-"`
 	childrenLoaded bool
 
 	ChunkSize int64 `gorm:"column:chunk_size" dirlist:"chunk_size" filelist:"chunk_size"`
 }
 
 func (fr *blobberRef) GetFileHashData() string {
-	if len(fr.Attributes) == 0 {
-		fr.Attributes = json.RawMessage("{}")
-	}
 	hashArray := make([]string, 0, 11)
 	hashArray = append(hashArray,
 		fr.AllocationID,
@@ -193,7 +180,6 @@ func (fr *blobberRef) GetFileHashData() string {
 		fr.MerkleRoot,
 		strconv.FormatInt(fr.ActualFileSize, 10),
 		fr.ActualFileHash,
-		string(fr.Attributes),
 		strconv.FormatInt(fr.ChunkSize, 10),
 	)
 

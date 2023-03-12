@@ -5,11 +5,11 @@ type blockDownloader struct {
 }
 
 func (d *blockDownloader) Start(status StatusCallback) error {
-	if d.options.isBlockDownload {
+	if d.options.isViewer {
 		return d.options.allocationObj.DownloadFromAuthTicketByBlocks(
 			d.options.localPath, d.options.authTicket,
 			d.options.startBlock, d.options.endBlock, d.options.blocksPerMarker,
-			d.options.lookupHash, d.options.fileName, d.options.rxPay, status)
+			d.options.lookupHash, d.options.fileName, status)
 	}
 
 	return d.options.allocationObj.DownloadFileByBlock(d.options.localPath, d.options.remotePath,

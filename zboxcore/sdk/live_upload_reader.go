@@ -40,7 +40,7 @@ type liveUploadReaderBase struct {
 	// clipsIndex current clips index
 	clipsIndex int
 	// clipsReader file reader of current clips
-	clipsReader *os.File
+	clipsReader sys.File
 	// clipsOffset how much bytes is read
 	clipsOffset int64
 }
@@ -204,11 +204,11 @@ func (r *liveUploadReaderBase) initClipsReader() error {
 			}
 
 			// file content is less than bytes want to read, check whether current clips file is ended
-			_, err := os.Stat(nextClips)
+			_, err := sys.Files.Stat(nextClips)
 
 			if err == nil {
 				if r.clipsReader == nil {
-					r.clipsReader, err = os.Open(r.GetClipsFile(r.clipsIndex))
+					r.clipsReader, err = sys.Files.Open(r.GetClipsFile(r.clipsIndex))
 
 					if err != nil {
 						return err

@@ -1,12 +1,30 @@
 package common
 
 import (
+	"errors"
 	"fmt"
+	"math"
 	"regexp"
 	"strconv"
-	"strings"
 
-	"github.com/0chain/errors"
+	"github.com/shopspring/decimal"
+)
+
+const (
+	ZCNExponent = 10
+)
+
+var (
+	// ErrNegativeValue is returned if a float value is a negative number
+	ErrNegativeValue = errors.New("negative coin value")
+	// ErrTooManyDecimals is returned if a value has more than 10 decimal places
+	ErrTooManyDecimals = errors.New("too many decimal places")
+	// ErrTooLarge is returned if a value is greater than math.MaxInt64
+	ErrTooLarge = errors.New("value is too large")
+	// ErrUint64OverflowsFloat64 is returned if when converting a uint64 to a float64 overflow float64
+	ErrUint64OverflowsFloat64 = errors.New("uint64 overflows float64")
+	// ErrUint64AddOverflow is returned if when adding uint64 values overflow uint64
+	ErrUint64AddOverflow = errors.New("uint64 addition overflow")
 )
 
 // A Key represents an identifier. It can be a pool ID, client ID, smart
@@ -34,85 +52,52 @@ func (s Size) String() string {
 	return byteCountIEC(int64(s))
 }
 
-// WhoPays for file downloading.
-type WhoPays int
-
-// possible variants
-const (
-	WhoPaysOwner    WhoPays = iota // 0, file owner pays
-	WhoPays3rdParty                // 1, 3rd party user pays
-)
-
-// String implements fmt.Stringer interface.
-func (wp WhoPays) String() string {
-	switch wp {
-	case WhoPays3rdParty:
-		return "3rd_party"
-	case WhoPaysOwner:
-		return "owner"
-	}
-	return fmt.Sprintf("WhoPays(%d)", int(wp))
-}
-
-// Validate the WhoPays value.
-func (wp WhoPays) Validate() (err error) {
-	switch wp {
-	case WhoPays3rdParty, WhoPaysOwner:
-		return // ok
-	}
-	return errors.New("validate_error", fmt.Sprintf("unknown WhoPays value: %d", int(wp)))
-}
-
-// Parse given string and set the WhoPays by it. Or return parsing error.
-// The given string should be as result of the String method (case insensitive).
-func (wp *WhoPays) Parse(val string) (err error) {
-	switch strings.ToLower(val) {
-	case "owner":
-		(*wp) = WhoPaysOwner
-	case "3rd_party":
-		(*wp) = WhoPays3rdParty
-	default:
-		err = errors.New("parse_error", fmt.Sprintf("empty or unknown 'who_pays' value: %q", val))
-	}
-	return
-}
-
 /* Balance */
-
-// minimum token unit (sas)
-const tokenUnit = 1e10
 
 // reParseToken is a regexp to parse string representation of token
 var reParseToken = regexp.MustCompile(`^((?:\d*\.)?\d+)\s+(SAS|sas|uZCN|uzcn|mZCN|mzcn|ZCN|zcn)$`)
 
 // Balance represents 0chain native token
-type Balance int64
+type Balance uint64
 
-func (b Balance) ToToken() float64 {
-	return float64(b) / tokenUnit
+func (b Balance) ToToken() (float64, error) {
+	if b > math.MaxInt64 {
+		return 0.0, ErrTooLarge
+	}
+
+	f, _ := decimal.New(int64(b), -ZCNExponent).Float64()
+	return f, nil
 }
 
 // String implements fmt.Stringer interface.
 func (b Balance) String() string {
-	return b.AutoFormat()
+	if val, err := b.AutoFormat(); err == nil {
+		return val
+	}
+	return ""
 }
 
-func (b Balance) Format(unit BalanceUnit) string {
+func (b Balance) Format(unit BalanceUnit) (string, error) {
 	v := float64(b)
+	if v < 0 {
+		return "", ErrUint64OverflowsFloat64
+	}
 	switch unit {
 	case SAS:
-		return fmt.Sprintf("%d %v", b, unit)
+		return fmt.Sprintf("%d %v", b, unit), nil
 	case UZCN:
 		v /= 1e4
 	case MZCN:
 		v /= 1e7
 	case ZCN:
 		v /= 1e10
+	default:
+		return "", errors.New(fmt.Sprintf("undefined balance unit: %d", unit))
 	}
-	return fmt.Sprintf("%.3f %v", v, unit)
+	return fmt.Sprintf("%.3f %v", v, unit), nil
 }
 
-func (b Balance) AutoFormat() string {
+func (b Balance) AutoFormat() (string, error) {
 	switch {
 	case b/1e10 > 0:
 		return b.Format(ZCN)
@@ -125,15 +110,49 @@ func (b Balance) AutoFormat() string {
 }
 
 // ToBalance converts ZCN tokens to Balance.
-func ToBalance(token float64) Balance {
-	return Balance(token * tokenUnit)
+func ToBalance(token float64) (Balance, error) {
+	d := decimal.NewFromFloat(token)
+	if d.Sign() == -1 {
+		return 0, ErrNegativeValue
+	}
+
+	// ZCN have a maximum of 10 decimal places
+	if d.Exponent() < -ZCNExponent {
+		return 0, ErrTooManyDecimals
+	}
+
+	// Multiply the coin balance by 1e10 to obtain coin amount
+	e := d.Shift(ZCNExponent)
+
+	// Check that there are no decimal places remaining. This error should not
+	// occur, because of the earlier check of ZCNExponent()
+	if e.Exponent() < 0 {
+		return 0, ErrTooManyDecimals
+	}
+
+	maxDecimal := decimal.NewFromInt(math.MaxInt64)
+	// Values greater than math.MaxInt64 will overflow after conversion to int64
+	if e.GreaterThan(maxDecimal) {
+		return 0, ErrTooLarge
+	}
+
+	return Balance(e.IntPart()), nil
 }
 
-func FormatBalance(b Balance, unit BalanceUnit) string {
+// AddBalance adds c and b, returning an error if the values overflow
+func AddBalance(c, b Balance) (Balance, error) {
+	sum := c + b
+	if sum < c || sum < b {
+		return 0, ErrUint64AddOverflow
+	}
+	return sum, nil
+}
+
+func FormatBalance(b Balance, unit BalanceUnit) (string, error) {
 	return b.Format(unit)
 }
 
-func AutoFormatBalance(b Balance) string {
+func AutoFormatBalance(b Balance) (string, error) {
 	return b.AutoFormat()
 }
 
@@ -203,7 +222,7 @@ func (unit *BalanceUnit) Parse(s string) error {
 	case "ZCN", "zcn":
 		*unit = ZCN
 	default:
-		return errors.New("", "undefined balance unit: "+s)
+		return errors.New("undefined balance unit: " + s)
 	}
 	return nil
 }
@@ -213,7 +232,7 @@ func ParseBalanceStatic(str string) (int64, error) {
 	return int64(bal), err
 }
 
-func FormatStatic(amount int64, unit string) string {
+func FormatStatic(amount int64, unit string) (string, error) {
 	token := Balance(amount)
 
 	var unitB BalanceUnit
@@ -222,7 +241,7 @@ func FormatStatic(amount int64, unit string) string {
 	return token.Format(unitB)
 }
 
-func AutoFormatStatic(amount int64) string {
+func AutoFormatStatic(amount int64) (string, error) {
 	token := Balance(amount)
 	return token.AutoFormat()
 }

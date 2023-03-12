@@ -6,4 +6,7 @@ const (
 
 	// EndpointRootHashnode api endpoint of getting root hashnode of an allocation
 	EndpointRootHashnode = "/v1/hashnode/root/"
+
+	// EndpointFileMeta api endpoint of file meta
+	EndpointFileMeta = "/v1/file/meta/"
 )

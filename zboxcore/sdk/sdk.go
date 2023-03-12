@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -29,12 +30,14 @@ import (
 const STORAGE_SCADDRESS = "6dba10422e368813802877a85039d3985d96760ed844092319743fb3a76712d7"
 
 var sdkNotInitialized = errors.New("sdk_not_initialized", "SDK is not initialised")
+var allocationNotFound = errors.New("couldnt_find_allocation", "Couldn't find the allocation required for update")
 
 const (
-	OpUpload   int = 0
-	OpDownload int = 1
-	OpRepair   int = 2
-	OpUpdate   int = 3
+	OpUpload            int = 0
+	OpDownload          int = 1
+	OpRepair            int = 2
+	OpUpdate            int = 3
+	opThumbnailDownload int = 4
 )
 
 type StatusCallback interface {
@@ -42,7 +45,6 @@ type StatusCallback interface {
 	InProgress(allocationId, filePath string, op int, completedBytes int, data []byte)
 	Error(allocationID string, filePath string, op int, err error)
 	Completed(allocationId, filePath string, filename string, mimetype string, size int, op int)
-	CommitMetaCompleted(request, response string, txn *transaction.Transaction, err error)
 	RepairCompleted(filesRepaired int)
 }
 
@@ -147,49 +149,15 @@ func CreateReadPool() (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
-	hash, _, nonce, err = smartContractTxn(transaction.SmartContractTxnData{
+	hash, _, nonce, _, err = smartContractTxn(transaction.SmartContractTxnData{
 		Name: transaction.STORAGESC_CREATE_READ_POOL,
 	})
 	return
 }
 
-type BlobberPoolStat struct {
-	BlobberID common.Key     `json:"blobber_id"`
-	Balance   common.Balance `json:"balance"`
-}
-
-type AllocationPoolStat struct {
-	ID           string             `json:"id"`
-	Balance      common.Balance     `json:"balance"`
-	ExpireAt     common.Timestamp   `json:"expire_at"`
-	AllocationID common.Key         `json:"allocation_id"`
-	Blobbers     []*BlobberPoolStat `json:"blobbers"`
-	Locked       bool               `json:"locked"`
-}
-
 type BackPool struct {
 	ID      string         `json:"id"`
 	Balance common.Balance `json:"balance"`
-}
-
-// AllocationPoolStats represents read or write pool statistic.
-type AllocationPoolStats struct {
-	Pools []*AllocationPoolStat `json:"pools"`
-	Back  *BackPool             `json:"back,omitempty"`
-}
-
-func (aps *AllocationPoolStats) AllocFilter(allocID string) {
-	if allocID == "" {
-		return
-	}
-	var i int
-	for _, pi := range aps.Pools {
-		if pi.AllocationID != common.Key(allocID) {
-			continue
-		}
-		aps.Pools[i], i = pi, i+1
-	}
-	aps.Pools = aps.Pools[:i]
 }
 
 //
@@ -239,7 +207,7 @@ func ReadPoolLock(tokens, fee uint64) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_READ_POOL_LOCK,
 		InputArgs: nil,
 	}
-	hash, _, nonce, err = smartContractTxnValueFee(sn, tokens, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFee(sn, tokens, fee)
 	return
 }
 
@@ -253,7 +221,7 @@ func ReadPoolUnlock(fee uint64) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_READ_POOL_UNLOCK,
 		InputArgs: nil,
 	}
-	hash, _, nonce, err = smartContractTxnValueFee(sn, 0, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFee(sn, 0, fee)
 	return
 }
 
@@ -284,27 +252,21 @@ type StakePoolDelegatePoolInfo struct {
 	Rewards    common.Balance `json:"rewards"`     // current
 	UnStake    bool           `json:"unstake"`     // want to unstake
 
-	TotalReward  common.Balance `json:"total_reward"`
-	TotalPenalty common.Balance `json:"total_penalty"`
-	Status       string         `json:"status"`
-	RoundCreated int64          `json:"round_created"`
+	TotalReward  common.Balance   `json:"total_reward"`
+	TotalPenalty common.Balance   `json:"total_penalty"`
+	Status       string           `json:"status"`
+	RoundCreated int64            `json:"round_created"`
+	StakedAt     common.Timestamp `json:"staked_at"`
 }
 
 // StakePool full info.
 type StakePoolInfo struct {
-	ID      common.Key     `json:"pool_id"` // pool ID
-	Balance common.Balance `json:"balance"` // total balance
-	Unstake common.Balance `json:"unstake"` // total unstake amount
-
-	Free       int64          `json:"free"`        // free staked space
-	Capacity   int64          `json:"capacity"`    // blobber bid
-	WritePrice common.Balance `json:"write_price"` // its write price
-
-	OffersTotal  common.Balance `json:"offers_total"` //
+	ID           common.Key     `json:"pool_id"` // pool ID
+	Balance      common.Balance `json:"balance"` // total balance
+	StakeTotal   common.Balance `json:"stake_total"`
 	UnstakeTotal common.Balance `json:"unstake_total"`
 	// delegate pools
 	Delegate []StakePoolDelegatePoolInfo `json:"delegate"`
-	Penalty  common.Balance              `json:"penalty"` // total for all
 	// rewards
 	Rewards common.Balance `json:"rewards"`
 
@@ -314,17 +276,14 @@ type StakePoolInfo struct {
 
 // GetStakePoolInfo for given client, or, if the given clientID is empty,
 // for current client of the sdk.
-func GetStakePoolInfo(blobberID string) (info *StakePoolInfo, err error) {
+func GetStakePoolInfo(providerType ProviderType, providerID string) (info *StakePoolInfo, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
-	}
-	if blobberID == "" {
-		blobberID = client.GetClientID()
 	}
 
 	var b []byte
 	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getStakePoolStat",
-		map[string]string{"blobber_id": blobberID}, nil)
+		map[string]string{"provider_type": strconv.Itoa(int(providerType)), "provider_id": providerID}, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting stake pool info:")
 	}
@@ -347,7 +306,7 @@ type StakePoolUserInfo struct {
 
 // GetStakePoolUserInfo obtains blobbers/validators delegate pools statistic
 // for a user. If given clientID is empty string, then current client used.
-func GetStakePoolUserInfo(clientID string) (info *StakePoolUserInfo, err error) {
+func GetStakePoolUserInfo(clientID string, offset, limit int) (info *StakePoolUserInfo, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
 	}
@@ -356,8 +315,13 @@ func GetStakePoolUserInfo(clientID string) (info *StakePoolUserInfo, err error) 
 	}
 
 	var b []byte
+	params := map[string]string{
+		"client_id": clientID,
+		"offset":    strconv.FormatInt(int64(offset), 10),
+		"limit":     strconv.FormatInt(int64(limit), 10),
+	}
 	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
-		"/getUserStakePoolStat", map[string]string{"client_id": clientID}, nil)
+		"/getUserStakePoolStat", params, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting stake pool user info:")
 	}
@@ -373,60 +337,44 @@ func GetStakePoolUserInfo(clientID string) (info *StakePoolUserInfo, err error) 
 	return
 }
 
-func GetTotalStoredData() (map[string]int64, error) {
-	if !sdkInitialized {
-		return nil, sdkNotInitialized
-	}
-	var err error
-	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS,
-		"/total-stored-data", nil, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "error requesting stake pool user info:")
-	}
-	if len(b) == 0 {
-		return nil, errors.New("", "empty response")
-	}
-
-	info := make(map[string]int64)
-	if err = json.Unmarshal(b, &info); err != nil {
-		return nil, errors.Wrap(err, "error decoding response:"+string(b))
-	}
-
-	return info, nil
-}
-
 type stakePoolRequest struct {
-	BlobberID string `json:"blobber_id,omitempty"`
-	PoolID    string `json:"pool_id,omitempty"`
+	ProviderType ProviderType `json:"provider_type,omitempty"`
+	ProviderID   string       `json:"provider_id,omitempty"`
 }
 
 // StakePoolLock locks tokens lack in stake pool
-func StakePoolLock(blobberID string, value, fee uint64) (poolID string, nonce int64, err error) {
+func StakePoolLock(providerType ProviderType, providerID string, value, fee uint64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
-		return poolID, 0, sdkNotInitialized
-	}
-	if blobberID == "" {
-		blobberID = client.GetClientID()
+		return "", 0, sdkNotInitialized
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
+	if providerType == 0 {
+		return "", 0, errors.New("stake_pool_lock", "provider is required")
+	}
+
+	if providerID == "" {
+		return "", 0, errors.New("stake_pool_lock", "provider_id is required")
+	}
+
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerID,
+	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_STAKE_POOL_LOCK,
 		InputArgs: &spr,
 	}
-	poolID, _, nonce, err = smartContractTxnValueFee(sn, value, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFee(sn, value, fee)
 	return
 }
 
 // StakePoolUnlockUnstake is stake pool unlock response in case where tokens
 // can't be unlocked due to opened offers.
-type StakePoolUnlockUnstake struct {
-	// one of the fields is set in a response, the Unstake if can't unstake
-	// for now and the TokenPoolTransferResponse if has a pool had unlocked
-	Unstake bool  `json:"unstake"` // max time to wait to unstake
-	Balance int64 `json:"balance"`
+type stakePoolLock struct {
+	Client       string       `json:"client"`
+	ProviderId   string       `json:"provider_id"`
+	ProviderType ProviderType `json:"provider_type"`
+	Amount       int64        `json:"amount"`
 }
 
 // StakePoolUnlock unlocks a stake pool tokens. If tokens can't be unlocked due
@@ -435,19 +383,23 @@ type StakePoolUnlockUnstake struct {
 // future. The time is maximal time that can be lesser in some cases. To
 // unlock tokens can't be unlocked now, wait the time and unlock them (call
 // this function again).
-func StakePoolUnlock(
-	blobberID, poolID string, fee uint64,
-) (unstake bool, nonce int64, err error) {
+func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (unstake int64, nonce int64, err error) {
 	if !sdkInitialized {
-		return false, 0, sdkNotInitialized
-	}
-	if blobberID == "" {
-		blobberID = client.GetClientID()
+		return 0, 0, sdkNotInitialized
 	}
 
-	var spr stakePoolRequest
-	spr.BlobberID = blobberID
-	spr.PoolID = poolID
+	if providerType == 0 {
+		return 0, 0, errors.New("stake_pool_lock", "provider is required")
+	}
+
+	if providerID == "" {
+		return 0, 0, errors.New("stake_pool_lock", "provider_id is required")
+	}
+
+	spr := stakePoolRequest{
+		ProviderType: providerType,
+		ProviderID:   providerID,
+	}
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_STAKE_POOL_UNLOCK,
@@ -455,94 +407,61 @@ func StakePoolUnlock(
 	}
 
 	var out string
-	if _, out, nonce, err = smartContractTxnValueFee(sn, 0, fee); err != nil {
+	if _, out, nonce, _, err = smartContractTxnValueFee(sn, 0, fee); err != nil {
 		return // an error
 	}
 
-	var spuu StakePoolUnlockUnstake
+	var spuu stakePoolLock
 	if err = json.Unmarshal([]byte(out), &spuu); err != nil {
 		return
 	}
 
-	return spuu.Unstake, nonce, nil
+	return spuu.Amount, nonce, nil
 }
 
 //
 // write pool
 //
 
-// GetWritePoolInfo for given client, or, if the given clientID is empty,
-// for current client of the sdk.
-func GetWritePoolInfo(clientID string) (info *AllocationPoolStats, err error) {
-	if !sdkInitialized {
-		return nil, sdkNotInitialized
-	}
-	if clientID == "" {
-		clientID = client.GetClientID()
-	}
-
-	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getWritePoolStat",
-		map[string]string{"client_id": clientID}, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "error requesting read pool info:")
-	}
-	if len(b) == 0 {
-		return nil, errors.New("", "empty response")
-	}
-
-	info = new(AllocationPoolStats)
-	if err = json.Unmarshal(b, info); err != nil {
-		return nil, errors.Wrap(err, "error decoding response:")
-	}
-
-	return
-}
-
 // WritePoolLock locks given number of tokes for given duration in read pool.
-func WritePoolLock(dur time.Duration, allocID, blobberID string,
-	tokens, fee uint64) (hash string, nonce int64, err error) {
+func WritePoolLock(allocID string, tokens, fee uint64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
 
 	type lockRequest struct {
-		Duration     time.Duration `json:"duration"`
-		AllocationID string        `json:"allocation_id"`
-		BlobberID    string        `json:"blobber_id,omitempty"`
+		AllocationID string `json:"allocation_id"`
 	}
 
 	var req lockRequest
-	req.Duration = dur
 	req.AllocationID = allocID
-	req.BlobberID = blobberID
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_WRITE_POOL_LOCK,
 		InputArgs: &req,
 	}
-	hash, _, nonce, err = smartContractTxnValueFee(sn, tokens, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFee(sn, tokens, fee)
 	return
 }
 
 // WritePoolUnlock unlocks tokens in expired read pool
-func WritePoolUnlock(poolID string, fee uint64) (hash string, nonce int64, err error) {
+func WritePoolUnlock(allocID string, fee uint64) (hash string, nonce int64, err error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
 
 	type unlockRequest struct {
-		PoolID string `json:"pool_id"`
+		AllocationID string `json:"allocation_id"`
 	}
 
 	var req unlockRequest
-	req.PoolID = poolID
+	req.AllocationID = allocID
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_WRITE_POOL_UNLOCK,
 		InputArgs: &req,
 	}
-	hash, _, nonce, err = smartContractTxnValueFee(sn, 0, fee)
+	hash, _, nonce, _, err = smartContractTxnValueFee(sn, 0, fee)
 	return
 }
 
@@ -637,27 +556,34 @@ func GetStorageSCConfig() (conf *InputMap, err error) {
 }
 
 type Blobber struct {
-	ID                common.Key                   `json:"id"`
-	BaseURL           string                       `json:"url"`
-	Terms             Terms                        `json:"terms"`
-	Capacity          common.Size                  `json:"capacity"`
-	Allocated         common.Size                  `json:"allocated"`
-	LastHealthCheck   common.Timestamp             `json:"last_health_check"`
-	PublicKey         string                       `json:"-"`
-	StakePoolSettings blockchain.StakePoolSettings `json:"stake_pool_settings"`
-	TotalStake        int64                        `json:"total_stake"`
+	ID                       common.Key                   `json:"id"`
+	BaseURL                  string                       `json:"url"`
+	Terms                    Terms                        `json:"terms"`
+	Capacity                 common.Size                  `json:"capacity"`
+	Allocated                common.Size                  `json:"allocated"`
+	LastHealthCheck          common.Timestamp             `json:"last_health_check"`
+	PublicKey                string                       `json:"-"`
+	StakePoolSettings        blockchain.StakePoolSettings `json:"stake_pool_settings"`
+	TotalStake               int64                        `json:"total_stake"`
+	UsedAllocation           int64                        `json:"used_allocation"`
+	TotalOffers              int64                        `json:"total_offers"`
+	TotalServiceCharge       int64                        `json:"total_service_charge"`
+	UncollectedServiceCharge int64                        `json:"uncollected_service_charge"`
 }
 
 type Validator struct {
-	ID             common.Key     `json:"validator_id"`
-	BaseURL        string         `json:"url"`
-	PublicKey      string         `json:"-"`
-	DelegateWallet string         `json:"delegate_wallet"`
-	MinStake       common.Balance `json:"min_stake"`
-	MaxStake       common.Balance `json:"max_stake"`
-	NumDelegates   int            `json:"num_delegates"`
-	ServiceCharge  float64        `json:"service_charge"`
-	TotalStake     int64          `json:"stake"`
+	ID                       common.Key     `json:"validator_id"`
+	BaseURL                  string         `json:"url"`
+	PublicKey                string         `json:"-"`
+	DelegateWallet           string         `json:"delegate_wallet"`
+	MinStake                 common.Balance `json:"min_stake"`
+	MaxStake                 common.Balance `json:"max_stake"`
+	NumDelegates             int            `json:"num_delegates"`
+	ServiceCharge            float64        `json:"service_charge"`
+	StakeTotal               int64          `json:"stake_total"`
+	UnstakeTotal             int64          `json:"unstake_total"`
+	TotalServiceCharge       int64          `json:"total_service_charge"`
+	UncollectedServiceCharge int64          `json:"uncollected_service_charge"`
 }
 
 func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
@@ -674,26 +600,24 @@ func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
 	}
 }
 
-func GetBlobbers() (bs []*Blobber, err error) {
-	if !sdkInitialized {
-		return nil, sdkNotInitialized
+func getBlobbersInternal(active bool, limit, offset int) (bs []*Blobber, err error) {
+	type nodes struct {
+		Nodes []*Blobber
 	}
 
-	var b []byte
-	b, err = zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/getblobbers", nil,
-		nil)
+	url := fmt.Sprintf("/getblobbers?active=%s&limit=%d&offset=%d",
+		strconv.FormatBool(active),
+		limit,
+		offset,
+	)
+	b, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, url, nil, nil)
+	var wrap nodes
 	if err != nil {
 		return nil, errors.Wrap(err, "error requesting blobbers:")
 	}
 	if len(b) == 0 {
 		return nil, errors.New("", "empty response")
 	}
-
-	type nodes struct {
-		Nodes []*Blobber
-	}
-
-	var wrap nodes
 
 	if err = json.Unmarshal(b, &wrap); err != nil {
 		return nil, errors.Wrap(err, "error decoding response:")
@@ -702,7 +626,42 @@ func GetBlobbers() (bs []*Blobber, err error) {
 	return wrap.Nodes, nil
 }
 
+func GetBlobbers(active bool) (bs []*Blobber, err error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+
+	limit, offset := 20, 0
+
+	blobbers, err := getBlobbersInternal(active, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	var blobbersSl []*Blobber
+	blobbersSl = append(blobbersSl, blobbers...)
+	for {
+		// if the len of output returned is less than the limit it means this is the last round of pagination
+		if len(blobbers) < limit {
+			break
+		}
+
+		// get the next set of blobbers
+		offset += 20
+		blobbers, err = getBlobbersInternal(active, limit, offset)
+		if err != nil {
+			return blobbers, err
+		}
+		blobbersSl = append(blobbersSl, blobbers...)
+
+	}
+	return blobbersSl, nil
+}
+
 // GetBlobber instance.
+//
+//	# Inputs
+//	-	blobberID: the id of blobber
 func GetBlobber(blobberID string) (blob *Blobber, err error) {
 	if !sdkInitialized {
 		return nil, sdkNotInitialized
@@ -850,7 +809,6 @@ func GetAllocationUpdates(allocation *Allocation) error {
 	allocation.Blobbers = updatedAllocationObj.Blobbers
 	allocation.Stats = updatedAllocationObj.Stats
 	allocation.TimeUnit = updatedAllocationObj.TimeUnit
-	allocation.IsImmutable = updatedAllocationObj.IsImmutable
 	allocation.BlobberDetails = updatedAllocationObj.BlobberDetails
 	allocation.ReadPriceRange = updatedAllocationObj.ReadPriceRange
 	allocation.WritePriceRange = updatedAllocationObj.WritePriceRange
@@ -861,7 +819,7 @@ func GetAllocationUpdates(allocation *Allocation) error {
 	allocation.MovedToChallenge = updatedAllocationObj.MovedToChallenge
 	allocation.MovedBack = updatedAllocationObj.MovedBack
 	allocation.MovedToValidators = updatedAllocationObj.MovedToValidators
-	allocation.Curators = updatedAllocationObj.Curators
+	allocation.FileOptions = updatedAllocationObj.FileOptions
 	return nil
 }
 
@@ -893,95 +851,102 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 	return allocations, nil
 }
 
-func CreateAllocationWithBlobbers(name string, datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, lock uint64, blobbers []string) (
-	string, int64, error) {
-
-	return CreateAllocationForOwner(client.GetClientID(),
-		client.GetClientPublicKey(), name, datashards, parityshards,
-		size, expiry, readPrice, writePrice, lock,
-		blobbers)
+type FileOptionParam struct {
+	Changed bool
+	Value   bool
 }
 
-func CreateAllocation(name string, datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, lock uint64) (
-	string, int64, error) {
+type FileOptionsParameters struct {
+	ForbidUpload FileOptionParam
+	ForbidDelete FileOptionParam
+	ForbidUpdate FileOptionParam
+	ForbidMove   FileOptionParam
+	ForbidCopy   FileOptionParam
+	ForbidRename FileOptionParam
+}
 
-	return CreateAllocationForOwner(name, client.GetClientID(),
+type CreateAllocationOptions struct {
+	DataShards           int
+	ParityShards         int
+	Size                 int64
+	Expiry               int64
+	ReadPrice            PriceRange
+	WritePrice           PriceRange
+	Lock                 uint64
+	BlobberIds           []string
+	ThirdPartyExtendable bool
+	FileOptionsParams    *FileOptionsParameters
+}
+
+func CreateAllocationWith(options CreateAllocationOptions) (
+	string, int64, *transaction.Transaction, error) {
+
+	if len(options.BlobberIds) > 0 {
+		return CreateAllocationForOwner(client.GetClientID(),
+			client.GetClientPublicKey(), options.DataShards, options.ParityShards,
+			options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock,
+			options.BlobberIds, options.ThirdPartyExtendable, options.FileOptionsParams)
+	}
+
+	return CreateAllocation(options.DataShards, options.ParityShards,
+		options.Size, options.Expiry, options.ReadPrice, options.WritePrice, options.Lock,
+		options.ThirdPartyExtendable, options.FileOptionsParams)
+
+}
+
+func CreateAllocation(datashards, parityshards int, size, expiry int64,
+	readPrice, writePrice PriceRange, lock uint64, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters) (
+	string, int64, *transaction.Transaction, error) {
+
+	preferredBlobberIds, err := GetBlobberIds(blockchain.GetPreferredBlobbers())
+	if err != nil {
+		return "", 0, nil, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
+	}
+	return CreateAllocationForOwner(client.GetClientID(),
 		client.GetClientPublicKey(), datashards, parityshards,
 		size, expiry, readPrice, writePrice, lock,
-		blockchain.GetPreferredBlobbers())
+		preferredBlobberIds, thirdPartyExtendable, fileOptionsParams)
 }
 
-func CreateAllocationForOwner(name string, owner, ownerpublickey string,
+func CreateAllocationForOwner(
+	owner, ownerpublickey string,
 	datashards, parityshards int, size, expiry int64,
 	readPrice, writePrice PriceRange,
-	lock uint64, preferredBlobbers []string) (hash string, nonce int64, err error) {
+	lock uint64, preferredBlobberIds []string, thirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
+) (hash string, nonce int64, txn *transaction.Transaction, err error) {
 
-	if lock < 0 {
-		return "", 0, errors.New("", "invalid value for lock")
-	}
-
-	preferred, err := getPreferredBlobberIds(preferredBlobbers)
+	allocationRequest, err := getNewAllocationBlobbers(
+		datashards, parityshards, size, expiry, readPrice, writePrice, preferredBlobberIds)
 	if err != nil {
-		return "", 0, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
-	}
-
-	allocationBlobbers, err := getAllocationBlobbers(owner, ownerpublickey, datashards,
-		parityshards, size, expiry, readPrice,
-		writePrice)
-	if err != nil {
-		return "", 0, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
-	}
-
-	//filter duplicates
-	ids := make(map[string]struct{})
-	for _, id := range preferred {
-		ids[id] = struct{}{}
-	}
-	for _, id := range allocationBlobbers {
-		ids[id] = struct{}{}
-	}
-	blobbers := make([]string, 0, len(ids))
-	for id := range ids {
-		blobbers = append(blobbers, id)
+		return "", 0, nil, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
 	}
 
 	if !sdkInitialized {
-		return "", 0, sdkNotInitialized
+		return "", 0, nil, sdkNotInitialized
 	}
 
-	var allocationRequest = map[string]interface{}{
-		"name":              name,
-		"data_shards":       datashards,
-		"parity_shards":     parityshards,
-		"size":              size,
-		"owner_id":          owner,
-		"owner_public_key":  ownerpublickey,
-		"expiration_date":   expiry,
-		"blobbers":          blobbers,
-		"read_price_range":  readPrice,
-		"write_price_range": writePrice,
-	}
+	allocationRequest["owner_id"] = owner
+	allocationRequest["owner_public_key"] = ownerpublickey
+	allocationRequest["third_party_extendable"] = thirdPartyExtendable
+	allocationRequest["file_options_changed"], allocationRequest["file_options"] = calculateAllocationFileOptions(63 /*0011 1111*/, fileOptionsParams)
 
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.NEW_ALLOCATION_REQUEST,
 		InputArgs: allocationRequest,
 	}
-	hash, _, nonce, err = smartContractTxnValue(sn, lock)
+	hash, _, nonce, txn, err = smartContractTxnValue(sn, lock)
 	return
 }
 
-func getAllocationBlobbers(owner, ownerpublickey string,
-	datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange) ([]string, error) {
-
+func GetAllocationBlobbers(
+	datashards, parityshards int,
+	size, expiry int64,
+	readPrice, writePrice PriceRange,
+) ([]string, error) {
 	var allocationRequest = map[string]interface{}{
 		"data_shards":       datashards,
 		"parity_shards":     parityshards,
 		"size":              size,
-		"owner_id":          owner,
-		"owner_public_key":  ownerpublickey,
 		"expiration_date":   expiry,
 		"read_price_range":  readPrice,
 		"write_price_range": writePrice,
@@ -1006,10 +971,47 @@ func getAllocationBlobbers(owner, ownerpublickey string,
 	return allocBlobberIDs, nil
 }
 
-func getPreferredBlobberIds(blobberUrls []string) ([]string, error) {
+func getNewAllocationBlobbers(
+	datashards, parityshards int,
+	size, expiry int64,
+	readPrice, writePrice PriceRange,
+	preferredBlobberIds []string,
+) (map[string]interface{}, error) {
+	allocBlobberIDs, err := GetAllocationBlobbers(
+		datashards, parityshards, size, expiry, readPrice, writePrice,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	//filter duplicates
+	ids := make(map[string]struct{})
+	for _, id := range preferredBlobberIds {
+		ids[id] = struct{}{}
+	}
+	for _, id := range allocBlobberIDs {
+		ids[id] = struct{}{}
+	}
+	blobbers := make([]string, 0, len(ids))
+	for id := range ids {
+		blobbers = append(blobbers, id)
+	}
+
+	return map[string]interface{}{
+		"data_shards":       datashards,
+		"parity_shards":     parityshards,
+		"size":              size,
+		"expiration_date":   expiry,
+		"blobbers":          blobbers,
+		"read_price_range":  readPrice,
+		"write_price_range": writePrice,
+	}, nil
+}
+
+func GetBlobberIds(blobberUrls []string) ([]string, error) {
 
 	if len(blobberUrls) == 0 {
-		return make([]string, 0), nil
+		return nil, nil
 	}
 
 	urlsStr, err := json.Marshal(blobberUrls)
@@ -1018,7 +1020,7 @@ func getPreferredBlobberIds(blobberUrls []string) ([]string, error) {
 	}
 
 	params := make(map[string]string)
-	params["blobber_url"] = string(urlsStr)
+	params["blobber_urls"] = string(urlsStr)
 	idsStr, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/blobber_ids", params, nil)
 	if err != nil {
 		return nil, err
@@ -1069,7 +1071,7 @@ func AddFreeStorageAssigner(name, publicKey string, individualLimit, totalLimit 
 		Name:      transaction.ADD_FREE_ALLOCATION_ASSIGNER,
 		InputArgs: input,
 	}
-	hash, _, n, err := smartContractTxn(sn)
+	hash, _, n, _, err := smartContractTxn(sn)
 
 	return hash, n, err
 }
@@ -1079,12 +1081,10 @@ func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 		return "", 0, sdkNotInitialized
 	}
 
-	if value < 0 {
-		return "", 0, errors.New("", "invalid value for lock")
-	}
+	recipientPublicKey := client.GetClientPublicKey()
 
 	var input = map[string]interface{}{
-		"recipient_public_key": client.GetClientPublicKey(),
+		"recipient_public_key": recipientPublicKey,
 		"marker":               marker,
 	}
 
@@ -1099,50 +1099,51 @@ func CreateFreeAllocation(marker string, value uint64) (string, int64, error) {
 		Name:      transaction.NEW_FREE_ALLOCATION,
 		InputArgs: input,
 	}
-	hash, _, n, err := smartContractTxnValue(sn, value)
+	hash, _, n, _, err := smartContractTxnValue(sn, value)
 	return hash, n, err
 }
 
-func UpdateAllocation(name string,
+func UpdateAllocation(
 	size, expiry int64,
 	allocationID string,
 	lock uint64,
-	setImmutable, updateTerms bool,
+	updateTerms bool,
 	addBlobberId, removeBlobberId string,
+	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
 ) (hash string, nonce int64, err error) {
 
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
-	if lock < 0 {
-		return "", 0, errors.New("", "invalid value for lock")
+
+	alloc, err := GetAllocation(allocationID)
+	if err != nil {
+		return "", 0, allocationNotFound
 	}
 
 	updateAllocationRequest := make(map[string]interface{})
-	updateAllocationRequest["name"] = name
 	updateAllocationRequest["owner_id"] = client.GetClientID()
+	updateAllocationRequest["owner_public_key"] = ""
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
 	updateAllocationRequest["expiration_date"] = expiry
-	updateAllocationRequest["set_immutable"] = setImmutable
 	updateAllocationRequest["update_terms"] = updateTerms
 	updateAllocationRequest["add_blobber_id"] = addBlobberId
 	updateAllocationRequest["remove_blobber_id"] = removeBlobberId
+	updateAllocationRequest["set_third_party_extendable"] = setThirdPartyExtendable
+	updateAllocationRequest["file_options_changed"], updateAllocationRequest["file_options"] = calculateAllocationFileOptions(alloc.FileOptions, fileOptionsParams)
 
 	sn := transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
 		InputArgs: updateAllocationRequest,
 	}
-	hash, _, nonce, err = smartContractTxnValue(sn, lock)
+	hash, _, nonce, _, err = smartContractTxnValue(sn, lock)
 	return
 }
 
 func CreateFreeUpdateAllocation(marker, allocationId string, value uint64) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
-	}
-	if value < 0 {
-		return "", 0, errors.New("", "invalid value for lock")
 	}
 
 	var input = map[string]interface{}{
@@ -1154,7 +1155,7 @@ func CreateFreeUpdateAllocation(marker, allocationId string, value uint64) (stri
 		Name:      transaction.FREE_UPDATE_ALLOCATION,
 		InputArgs: input,
 	}
-	hash, _, n, err := smartContractTxnValue(sn, value)
+	hash, _, n, _, err := smartContractTxnValue(sn, value)
 	return hash, n, err
 }
 
@@ -1166,7 +1167,7 @@ func FinalizeAllocation(allocID string) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_FINALIZE_ALLOCATION,
 		InputArgs: map[string]interface{}{"allocation_id": allocID},
 	}
-	hash, _, nonce, err = smartContractTxn(sn)
+	hash, _, nonce, _, err = smartContractTxn(sn)
 	return
 }
 
@@ -1178,42 +1179,8 @@ func CancelAllocation(allocID string) (hash string, nonce int64, err error) {
 		Name:      transaction.STORAGESC_CANCEL_ALLOCATION,
 		InputArgs: map[string]interface{}{"allocation_id": allocID},
 	}
-	hash, _, nonce, err = smartContractTxn(sn)
+	hash, _, nonce, _, err = smartContractTxn(sn)
 	return
-}
-
-func RemoveCurator(curatorId, allocationId string) (string, int64, error) {
-	if !sdkInitialized {
-		return "", 0, sdkNotInitialized
-	}
-
-	var allocationRequest = map[string]interface{}{
-		"curator_id":    curatorId,
-		"allocation_id": allocationId,
-	}
-	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_REMOVE_CURATOR,
-		InputArgs: allocationRequest,
-	}
-	hash, _, n, err := smartContractTxn(sn)
-	return hash, n, err
-}
-
-func AddCurator(curatorId, allocationId string) (string, int64, error) {
-	if !sdkInitialized {
-		return "", 0, sdkNotInitialized
-	}
-
-	var allocationRequest = map[string]interface{}{
-		"curator_id":    curatorId,
-		"allocation_id": allocationId,
-	}
-	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_ADD_CURATOR,
-		InputArgs: allocationRequest,
-	}
-	hash, _, n, err := smartContractTxn(sn)
-	return hash, n, err
 }
 
 type ProviderType int
@@ -1226,7 +1193,7 @@ const (
 	ProviderAuthorizer
 )
 
-func CollectRewards(providerId, poolId string, providerType ProviderType) (string, int64, error) {
+func CollectRewards(providerId string, providerType ProviderType) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
@@ -1234,31 +1201,43 @@ func CollectRewards(providerId, poolId string, providerType ProviderType) (strin
 	var input = map[string]interface{}{
 		"provider_id":   providerId,
 		"provider_type": providerType,
-		"pool_id":       poolId,
 	}
 	var sn = transaction.SmartContractTxnData{
 		Name:      transaction.STORAGESC_COLLECT_REWARD,
 		InputArgs: input,
 	}
-	hash, _, n, err := smartContractTxn(sn)
+	hash, _, n, _, err := smartContractTxn(sn)
 	return hash, n, err
 }
 
-func CuratorTransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (string, int64, error) {
+func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
 
+	alloc, err := GetAllocation(allocationId)
+	if err != nil {
+		return "", 0, allocationNotFound
+	}
+
 	var allocationRequest = map[string]interface{}{
-		"allocation_id":        allocationId,
-		"new_owner_id":         newOwner,
-		"new_owner_public_key": newOwnerPublicKey,
+		"id":                         allocationId,
+		"owner_id":                   newOwner,
+		"owner_public_key":           newOwnerPublicKey,
+		"size":                       0,
+		"expiration_date":            0,
+		"update_terms":               false,
+		"add_blobber_id":             "",
+		"remove_blobber_id":          "",
+		"set_third_party_extendable": alloc.ThirdPartyExtendable,
+		"file_options_changed":       false,
+		"file_options":               alloc.FileOptions,
 	}
 	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_CURATOR_TRANSFER,
+		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
 		InputArgs: allocationRequest,
 	}
-	hash, _, n, err := smartContractTxn(sn)
+	hash, _, n, _, err := smartContractTxn(sn)
 	return hash, n, err
 }
 
@@ -1270,7 +1249,7 @@ func UpdateBlobberSettings(blob *Blobber) (resp string, nonce int64, err error) 
 		Name:      transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS,
 		InputArgs: blob,
 	}
-	resp, _, nonce, err = smartContractTxn(sn)
+	resp, _, nonce, _, err = smartContractTxn(sn)
 	return
 }
 
@@ -1283,24 +1262,30 @@ func UpdateValidatorSettings(v *Validator) (resp string, nonce int64, err error)
 		Name:      transaction.STORAGESC_UPDATE_VALIDATOR_SETTINGS,
 		InputArgs: v.ConvertToValidationNode(),
 	}
-	resp, _, nonce, err = smartContractTxn(sn)
+	resp, _, nonce, _, err = smartContractTxn(sn)
 	return
 }
 
+func SmartContractTxn(sn transaction.SmartContractTxnData) (
+	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
+
+	return smartContractTxnValue(sn, 0)
+}
+
 func smartContractTxn(sn transaction.SmartContractTxnData) (
-	hash, out string, nonce int64, err error) {
+	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
 	return smartContractTxnValue(sn, 0)
 }
 
 func smartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
-	hash, out string, nonce int64, err error) {
+	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
 	return smartContractTxnValueFee(sn, value, 0)
 }
 
 func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
-	value, fee uint64) (hash, out string, nonce int64, err error) {
+	value, fee uint64) (hash, out string, nonce int64, t *transaction.Transaction, err error) {
 
 	var requestBytes []byte
 	if requestBytes, err = json.Marshal(sn); err != nil {
@@ -1311,7 +1296,7 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	if nonce != 0 {
 		nonce++
 	}
-	var txn = transaction.NewTransactionEntity(client.GetClientID(),
+	txn := transaction.NewTransactionEntity(client.GetClientID(),
 		blockchain.GetChainID(), client.GetClientPublicKey(), nonce)
 
 	txn.TransactionData = string(requestBytes)
@@ -1332,7 +1317,6 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	var (
 		querySleepTime = time.Duration(blockchain.GetQuerySleepTime()) * time.Second
 		retries        = 0
-		t              *transaction.Transaction
 	)
 
 	sys.Sleep(querySleepTime)
@@ -1353,19 +1337,19 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	}
 
 	if t == nil {
-		return "", "", 0, errors.New("transaction_validation_failed",
+		return "", "", 0, txn, errors.New("transaction_validation_failed",
 			"Failed to get the transaction confirmation")
 	}
 
 	if t.Status == transaction.TxnFail {
-		return t.Hash, t.TransactionOutput, 0, errors.New("", t.TransactionOutput)
+		return t.Hash, t.TransactionOutput, 0, t, errors.New("", t.TransactionOutput)
 	}
 
 	if t.Status == transaction.TxnChargeableError {
-		return t.Hash, t.TransactionOutput, t.TransactionNonce, errors.New("", t.TransactionOutput)
+		return t.Hash, t.TransactionOutput, t.TransactionNonce, t, errors.New("", t.TransactionOutput)
 	}
 
-	return t.Hash, t.TransactionOutput, t.TransactionNonce, nil
+	return t.Hash, t.TransactionOutput, t.TransactionNonce, t, nil
 }
 
 func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
@@ -1431,39 +1415,25 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 	return fabricResponse, err
 }
 
-func GetAllocationMinLock(datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange) (int64, error) {
-
-	preferred, err := getPreferredBlobberIds(blockchain.GetPreferredBlobbers())
+func GetAllocationMinLock(
+	datashards, parityshards int,
+	size, expiry int64,
+	readPrice, writePrice PriceRange,
+) (int64, error) {
+	preferredBlobberIds, err := GetBlobberIds(blockchain.GetPreferredBlobbers())
 	if err != nil {
 		return -1, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
 	}
 
-	return GetAllocationMinLockBlobbers(datashards, parityshards, size, expiry,
-		readPrice, writePrice, preferred)
-}
-
-func GetAllocationMinLockBlobbers(datashards, parityshards int, size, expiry int64,
-	readPrice, writePrice PriceRange, blobbers []string) (int64, error) {
-	if !sdkInitialized {
-		return 0, sdkNotInitialized
+	allocationRequestData, err := getNewAllocationBlobbers(
+		datashards, parityshards, size, expiry, readPrice, writePrice, preferredBlobberIds)
+	if err != nil {
+		return -1, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
 	}
-
-	var allocationRequestData = map[string]interface{}{
-		"data_shards":       datashards,
-		"parity_shards":     parityshards,
-		"size":              size,
-		"owner_id":          client.GetClientID(),
-		"owner_public_key":  client.GetClientPublicKey(),
-		"expiration_date":   expiry,
-		"blobbers":          blobbers,
-		"read_price_range":  readPrice,
-		"write_price_range": writePrice,
-	}
-	allocationData, _ := json.Marshal(allocationRequestData)
-
+	allocationRequest, _ := json.Marshal(allocationRequestData)
 	params := make(map[string]string)
-	params["allocation_data"] = string(allocationData)
+	params["allocation_data"] = string(allocationRequest)
+
 	allocationsBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation_min_lock", params, nil)
 	if err != nil {
 		return 0, errors.New("allocation_min_lock_fetch_error", "Error fetching the allocation min lock."+err.Error())
@@ -1475,4 +1445,48 @@ func GetAllocationMinLockBlobbers(datashards, parityshards int, size, expiry int
 		return 0, errors.New("allocation_min_lock_decode_error", "Error decoding the response."+err.Error())
 	}
 	return response["min_lock_demand"], nil
+}
+
+// calculateAllocationFileOptions calculates the FileOptions 16-bit mask given the user input
+func calculateAllocationFileOptions(initial uint16, fop *FileOptionsParameters) (bool, uint16) {
+	if fop == nil {
+		return false, initial
+	}
+
+	mask := initial
+
+	if fop.ForbidUpload.Changed {
+		mask = updateMaskBit(mask, 0, !fop.ForbidUpload.Value)
+	}
+
+	if fop.ForbidDelete.Changed {
+		mask = updateMaskBit(mask, 1, !fop.ForbidDelete.Value)
+	}
+
+	if fop.ForbidUpdate.Changed {
+		mask = updateMaskBit(mask, 2, !fop.ForbidUpdate.Value)
+	}
+
+	if fop.ForbidMove.Changed {
+		mask = updateMaskBit(mask, 3, !fop.ForbidMove.Value)
+	}
+
+	if fop.ForbidCopy.Changed {
+		mask = updateMaskBit(mask, 4, !fop.ForbidCopy.Value)
+	}
+
+	if fop.ForbidRename.Changed {
+		mask = updateMaskBit(mask, 5, !fop.ForbidRename.Value)
+	}
+
+	return mask != initial, mask
+}
+
+// updateMaskBit Set/Clear (based on `value`) bit value of the bit of `mask` at `index` (starting with LSB as 0) and return the updated mask
+func updateMaskBit(mask uint16, index uint8, value bool) uint16 {
+	if value {
+		return mask | uint16(1<<index)
+	} else {
+		return mask & ^uint16(1<<index)
+	}
 }

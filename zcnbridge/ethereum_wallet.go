@@ -11,7 +11,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/keystore"
 
-	"github.com/0chain/gosdk/zcncore"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/ethereum/go-ethereum/params"
@@ -23,7 +22,7 @@ import (
 func (b *EthereumConfig) CreateEthClient() (*ethclient.Client, error) {
 	client, err := ethclient.Dial(b.EthereumNodeURL)
 	if err != nil {
-		zcncore.Logger.Error(err)
+		Logger.Error(err)
 	}
 	return client, err
 }
@@ -40,7 +39,7 @@ func CreateSignedTransaction(
 ) *bind.TransactOpts {
 	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
-		zcncore.Logger.Fatal(err)
+		Logger.Fatal(err)
 	}
 
 	// eth_estimateGas
@@ -55,12 +54,12 @@ func CreateSignedTransaction(
 
 	gasPriceWei, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
-		zcncore.Logger.Fatal(err)
+		Logger.Fatal(err)
 	}
 
 	opts, err := bind.NewKeyedTransactorWithChainID(privateKey, chainID)
 	if err != nil {
-		zcncore.Logger.Fatal(err)
+		Logger.Fatal(err)
 	}
 
 	valueWei := new(big.Int).Mul(big.NewInt(0), big.NewInt(params.Wei))
@@ -87,32 +86,32 @@ func (b *BridgeClientConfig) CreateSignedTransactionFromKeyStore(client *ethclie
 	}
 	signerAcc, err := ks.Find(signer)
 	if err != nil {
-		zcncore.Logger.Fatal(errors.Wrapf(err, "signer: %s", signerAddress.Hex()))
+		Logger.Fatal(errors.Wrapf(err, "signer: %s", signerAddress.Hex()))
 	}
 
 	chainID, err := client.ChainID(context.Background())
 	if err != nil {
-		zcncore.Logger.Fatal(errors.Wrap(err, "failed to get chain ID"))
+		Logger.Fatal(errors.Wrap(err, "failed to get chain ID"))
 	}
 
 	nonce, err := client.PendingNonceAt(context.Background(), signerAddress)
 	if err != nil {
-		zcncore.Logger.Fatal(err)
+		Logger.Fatal(err)
 	}
 
 	gasPriceWei, err := client.SuggestGasPrice(context.Background())
 	if err != nil {
-		zcncore.Logger.Fatal(err)
+		Logger.Fatal(err)
 	}
 
 	err = ks.TimedUnlock(signer, password, time.Second*2)
 	if err != nil {
-		zcncore.Logger.Fatal(err)
+		Logger.Fatal(err)
 	}
 
 	opts, err := bind.NewKeyStoreTransactorWithChainID(ks, signerAcc, chainID)
 	if err != nil {
-		zcncore.Logger.Fatal(err)
+		Logger.Fatal(err)
 	}
 
 	valueWei := new(big.Int).Mul(big.NewInt(value), big.NewInt(params.Wei))

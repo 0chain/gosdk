@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"path"
 	"strconv"
 	"sync"
 	"time"
@@ -18,8 +19,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
-func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx string, remotefilepath string, blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
-	httpreq, err := zboxutil.NewObjectTreeRequest(blobber.Baseurl, allocationTx, remotefilepath)
+func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx string, remoteFilePath string, blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
+	httpreq, err := zboxutil.NewObjectTreeRequest(blobber.Baseurl, allocationTx, remoteFilePath)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating object tree request", err)
 		return nil, err
@@ -42,7 +43,7 @@ func getObjectTreeFromBlobber(ctx context.Context, allocationID, allocationTx st
 		}
 		if resp.StatusCode != http.StatusOK {
 			if resp.StatusCode == http.StatusNotFound {
-				return errors.Throw(constants.ErrNotFound, remotefilepath)
+				return errors.Throw(constants.ErrNotFound, remoteFilePath)
 			}
 			return errors.New(strconv.Itoa(resp.StatusCode), fmt.Sprintf("Object tree error response: Body: %s ", string(resp_body)))
 		} else {
@@ -101,4 +102,22 @@ func getAllocationDataFromBlobber(blobber *blockchain.StorageNode, allocationTx 
 	result.BlobberID = blobber.ID
 	result.BlobberURL = blobber.Baseurl
 	respCh <- &result
+}
+
+type ProcessResult struct {
+	BlobberIndex int
+	FileRef      fileref.RefEntity
+	Succeed      bool
+}
+
+var ErrFileNameTooLong = errors.New("invalid_parameter", "filename is longer than 100 characters")
+
+func ValidateRemoteFileName(remotePath string) error {
+	_, fileName := path.Split(remotePath)
+
+	if len(fileName) > 100 {
+		return ErrFileNameTooLong
+	}
+
+	return nil
 }

@@ -10,7 +10,7 @@ type (
 	JobStatus uint
 	// JobResult = Authorizer task result, it wraps actual result of the query inside authorizer
 	JobResult interface {
-		// Error = Status of Authorizer job
+		// Error = Status of Authorizer job on authorizer server
 		Error() error
 		// Data returns the actual result
 		Data() interface{}
@@ -35,12 +35,12 @@ type (
 
 	// ProofZCNBurn Authorizer returns this type for ZCN transaction
 	ProofZCNBurn struct {
-		AuthorizerID    string `json:"authorizer_id,omitempty"`
-		TxnID           string `json:"0chain_txn_id"`
-		Nonce           int64  `json:"nonce"`
-		Amount          int64  `json:"amount"`
-		EthereumAddress string `json:"ethereum_address"`
-		Signature       []byte `json:"signatures"`
+		AuthorizerID string `json:"authorizer_id,omitempty"`
+		TxnID        string `json:"0chain_txn_id"`
+		To           string `json:"to"`
+		Nonce        int64  `json:"nonce"`
+		Amount       int64  `json:"amount"`
+		Signature    []byte `json:"signature"`
 	}
 )
 

@@ -4,53 +4,62 @@ import (
 	"strings"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/google/uuid"
 )
 
 type CopyFileChange struct {
 	change
 	ObjectTree fileref.RefEntity
 	DestPath   string
+	Uuid       uuid.UUID
 }
 
-func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
-	// path, _ := filepath.Split(ch.DestPath)
-	tSubDirs := getSubDirs(ch.DestPath)
+func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) (
+	commitParam CommitParams, err error) {
+
+	fileIDMeta := make(map[string]string)
+	var fields []string
+	fields, err = common.GetPathFields(ch.DestPath)
+	if err != nil {
+		return
+	}
+	rootRef.HashToBeComputed = true
 	dirRef := rootRef
-	treelevel := 0
-	for true {
+
+	for i := 0; i < len(fields); i++ {
 		found := false
 		for _, child := range dirRef.Children {
-			if child.GetType() == fileref.DIRECTORY && treelevel < len(tSubDirs) {
-				if (child.(*fileref.Ref)).Name == tSubDirs[treelevel] {
-					dirRef = child.(*fileref.Ref)
-					found = true
-					break
-				}
+			if child.GetName() == fields[i] {
+				dirRef = child.(*fileref.Ref)
+				found = true
+				break
 			}
 		}
-		if found {
-			treelevel++
-			continue
+		if !found {
+			newRef := &fileref.Ref{}
+			uid := util.GetSHA1Uuid(ch.Uuid, fields[i])
+			ch.Uuid = uid
+			newRef.FileID = uid.String()
+			newRef.Path = "/" + strings.Join(fields[:i+1], "/")
+			fileIDMeta[newRef.Path] = newRef.FileID
+			newRef.Type = fileref.DIRECTORY
+			newRef.AllocationID = dirRef.AllocationID
+			newRef.Name = fields[i]
+
+			dirRef.AddChild(newRef)
+			dirRef = newRef
 		}
-		if len(tSubDirs) <= treelevel {
-			break
-		}
-		newRef := &fileref.Ref{}
-		newRef.Type = fileref.DIRECTORY
-		newRef.AllocationID = dirRef.AllocationID
-		newRef.Path = "/" + strings.Join(tSubDirs[:treelevel+1], "/")
-		newRef.Name = tSubDirs[treelevel]
-		dirRef.AddChild(newRef)
-		dirRef = newRef
-		treelevel++
+		dirRef.HashToBeComputed = true
 	}
 
 	if dirRef.GetPath() != ch.DestPath || dirRef.GetType() != fileref.DIRECTORY {
-		return errors.New("file_not_found", "Object to copy not found in blobber")
+		err = errors.New("file_not_found", "Object to copy not found in blobber")
+		return
 	}
-
 	var affectedRef *fileref.Ref
 	if ch.ObjectTree.GetType() == fileref.FILE {
 		affectedRef = &(ch.ObjectTree.(*fileref.FileRef)).Ref
@@ -59,15 +68,22 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	}
 
 	affectedRef.Path = zboxutil.Join(dirRef.GetPath(), affectedRef.Name)
-	ch.processChildren(affectedRef)
+	uid := util.GetSHA1Uuid(ch.Uuid, affectedRef.Name)
+	ch.Uuid = uid
+	affectedRef.FileID = uid.String()
 
+	affectedRef.HashToBeComputed = true
+	fileIDMeta[affectedRef.Path] = affectedRef.FileID
+
+	ch.processChildren(affectedRef, fileIDMeta)
 	dirRef.AddChild(ch.ObjectTree)
 
 	rootRef.CalculateHash()
-	return nil
+	commitParam.FileIDMeta = fileIDMeta
+	return
 }
 
-func (ch *CopyFileChange) processChildren(curRef *fileref.Ref) {
+func (ch *CopyFileChange) processChildren(curRef *fileref.Ref, fileIDMeta map[string]string) {
 	for _, childRefEntity := range curRef.Children {
 		var childRef *fileref.Ref
 		if childRefEntity.GetType() == fileref.FILE {
@@ -75,15 +91,22 @@ func (ch *CopyFileChange) processChildren(curRef *fileref.Ref) {
 		} else {
 			childRef = childRefEntity.(*fileref.Ref)
 		}
+
+		childRef.HashToBeComputed = true
 		childRef.Path = zboxutil.Join(curRef.Path, childRef.Name)
+		uid := util.GetSHA1Uuid(ch.Uuid, childRef.Name)
+		ch.Uuid = uid
+		childRef.FileID = uid.String()
+		fileIDMeta[childRef.Path] = childRef.FileID
+
 		if childRefEntity.GetType() == fileref.DIRECTORY {
-			ch.processChildren(childRef)
+			ch.processChildren(childRef, fileIDMeta)
 		}
 	}
 }
 
-func (n *CopyFileChange) GetAffectedPath() string {
-	return n.DestPath
+func (n *CopyFileChange) GetAffectedPath() []string {
+	return []string{n.DestPath}
 }
 
 func (n *CopyFileChange) GetSize() int64 {

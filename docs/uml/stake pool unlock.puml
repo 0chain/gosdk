@@ -2,7 +2,7 @@
 participant "<size:20><&terminal></size> ./zbox sp-unlock" as cli
 collections gosdk
 
-cli -> gosdk: StakePoolUnlock(blobberID, poolID, fee)
+cli -> gosdk: StakePoolUnlock(blobberID, fee)
 
 gosdk -> gosdk: check initialized sdk
 alt empty blobber id
@@ -11,6 +11,6 @@ end
 
 gosdk -> gosdk: create stake pool request
 gosdk -> gosdk: create smart contract txn data
-gosdk -> gosdk: send smart contract txn value fee 
+gosdk -> gosdk: send smart contract txn value fee
 gosdk -> cli: return result
 @enduml

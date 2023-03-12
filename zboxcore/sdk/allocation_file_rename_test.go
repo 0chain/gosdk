@@ -111,6 +111,7 @@ func TestAllocation_RenameObject(t *testing.T) {
 			a := &Allocation{
 				DataShards:   2,
 				ParityShards: 2,
+				FileOptions:  63,
 			}
 			a.InitAllocation()
 			sdkInitialized = true

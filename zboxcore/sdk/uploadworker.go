@@ -45,9 +45,6 @@ type UploadFileMeta struct {
 	ThumbnailSize int64
 	// ThumbnailHash hash code of entire thumbnail
 	ThumbnailHash string
-
-	// Attributes file attributes in blockchain
-	Attributes fileref.Attributes
 }
 
 type uploadFormData struct {
@@ -74,10 +71,9 @@ type uploadFormData struct {
 	// ActualThumbnailHash hash of orignial thumbnail (unencoded, unencrypted)
 	ActualThumbnailHash string `json:"actual_thumb_hash"`
 
-	MimeType     string             `json:"mimetype"`
-	CustomMeta   string             `json:"custom_meta,omitempty"`
-	EncryptedKey string             `json:"encrypted_key,omitempty"`
-	Attributes   fileref.Attributes `json:"attributes,omitempty"`
+	MimeType     string `json:"mimetype"`
+	CustomMeta   string `json:"custom_meta,omitempty"`
+	EncryptedKey string `json:"encrypted_key,omitempty"`
 }
 
 type UploadResult struct {
@@ -266,7 +262,6 @@ func (req *UploadRequest) prepareUpload(
 			ActualThumbnailHash: req.filemeta.ThumbnailHash,
 			ActualThumbnailSize: req.filemeta.ThumbnailSize,
 			MimeType:            req.filemeta.MimeType,
-			Attributes:          req.filemeta.Attributes,
 			Hash:                fileContentHash,
 			ThumbnailHash:       thumbContentHash,
 			MerkleRoot:          fileMerkleRoot,
@@ -355,7 +350,6 @@ func (req *UploadRequest) setupUpload(a *Allocation) error {
 		req.file[i].Path = req.remotefilepath
 		req.file[i].Type = fileref.FILE
 		req.file[i].AllocationID = a.ID
-		req.file[i].Attributes = req.filemeta.Attributes
 	}
 
 	if !req.isRepair {
@@ -445,32 +439,32 @@ func (req *UploadRequest) completePush() error {
 	}
 	req.wg.Wait()
 	if !req.isConsensusOk() {
-		return fmt.Errorf("Upload failed: Consensus_rate:%f, expected:%f", req.getConsensusRate(), req.getConsensusRequiredForOk())
+		return fmt.Errorf("Upload failed: Consensus:%d, expected:%d", req.getConsensus(), req.consensusThresh)
 	}
 	return nil
 }
 
 func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 	if req.completedCallback != nil {
-		defer req.completedCallback(req.filepath)
+		defer req.completedCallback(req.remotefilepath)
 	}
 
 	var inFile *os.File
 	inFile, err := os.Open(req.filepath)
 	if err != nil && req.statusCallback != nil {
-		req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("open_file_failed", err.Error()))
+		req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, errors.New("open_file_failed", err.Error()))
 		return
 	}
 	defer inFile.Close()
 	mimetype, err := zboxutil.GetFileContentType(inFile)
 	if err != nil && req.statusCallback != nil {
-		req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("mime_type_error", err.Error()))
+		req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, errors.New("mime_type_error", err.Error()))
 		return
 	}
 	req.filemeta.MimeType = mimetype
 	err = req.setupUpload(a)
 	if err != nil && req.statusCallback != nil {
-		req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("setup_upload_failed", err.Error()))
+		req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, errors.New("setup_upload_failed", err.Error()))
 		return
 	}
 	size := req.filemeta.Size
@@ -504,7 +498,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			b1 := make([]byte, remaining*int64(a.DataShards))
 			_, err = dataReader.Read(b1)
 			if err != nil && req.statusCallback != nil {
-				req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("read_failed", err.Error()))
+				req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, errors.New("read_failed", err.Error()))
 				return
 			}
 			if req.isUploadCanceled {
@@ -513,13 +507,13 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 					go a.DeleteFile(req.remotefilepath)
 				}
 				if req.statusCallback != nil {
-					req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("user_aborted", "Upload aborted by user"))
+					req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, errors.New("user_aborted", "Upload aborted by user"))
 				}
 				return
 			}
 			err = req.pushData(b1)
 			if err != nil {
-				req.statusCallback.Error(a.ID, req.filepath, OpUpload, errors.New("push_error", err.Error()))
+				req.statusCallback.Error(a.ID, req.remotefilepath, OpUpload, errors.New("push_error", err.Error()))
 				return
 			}
 
@@ -560,16 +554,14 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 			newChange.NumBlocks = req.file[c].NumBlocks
 			newChange.Operation = constants.FileOperationUpdate
 			newChange.Size = req.file[c].Size
-			newChange.NewFile.Attributes = req.file[c].Attributes
-			commitReq.changes = append(commitReq.changes, newChange)
+			commitReq.change = newChange
 		} else {
 			newChange := &allocationchange.NewFileChange{}
 			newChange.File = req.file[c]
 			newChange.NumBlocks = req.file[c].NumBlocks
 			newChange.Operation = constants.FileOperationInsert
 			newChange.Size = req.file[c].Size
-			newChange.File.Attributes = req.file[c].Attributes
-			commitReq.changes = append(commitReq.changes, newChange)
+			commitReq.change = newChange
 		}
 
 		commitReq.connectionID = req.connectionID
@@ -635,7 +627,7 @@ func (req *UploadRequest) processUpload(ctx context.Context, a *Allocation) {
 	}
 
 	if req.statusCallback != nil {
-		sizeInCallback := int64(float32(perShard) * req.consensus)
+		sizeInCallback := perShard * int64(req.consensus)
 		OpID := OpUpload
 		if req.isUpdate {
 			OpID = OpUpdate

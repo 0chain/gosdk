@@ -2,8 +2,10 @@ package zcnbridge
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"math/big"
+	"os"
 	"path"
 
 	"github.com/0chain/gosdk/core/logger"
@@ -20,7 +22,6 @@ import (
 	"github.com/0chain/gosdk/zcnbridge/transaction"
 	"github.com/0chain/gosdk/zcnbridge/wallet"
 	"github.com/0chain/gosdk/zcnbridge/zcnsc"
-	"github.com/0chain/gosdk/zcncore"
 	eth "github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -39,12 +40,23 @@ var Logger logger.Logger
 var defaultLogLevel = logger.DEBUG
 
 func init() {
-	Logger.Init(defaultLogLevel, "0chain-zcnbridge-sdk")
+	Logger.Init(defaultLogLevel, "zcnbridge-sdk")
+
+	Logger.SetLevel(logger.DEBUG)
+	f, err := os.OpenFile("bridge.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return
+	}
+	Logger.SetLogFile(f, true)
 }
 
 var (
 	DefaultClientIDEncoder = func(id string) []byte {
-		return []byte(id)
+		result, err := hex.DecodeString(id)
+		if err != nil {
+			Logger.Fatal(err)
+		}
+		return result
 	}
 )
 
@@ -55,8 +67,9 @@ var (
 // The contract will transfer some amount from owner address to the pool.
 // So the owner must call IncreaseAllowance of the WZCN token with 2 parameters:
 // spender address which is the bridge contract and amount to be burned (transferred)
-//nolint:funlen
 // ERC20 signature: "increaseAllowance(address,uint256)"
+//
+//nolint:funlen
 func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei Wei) (*types.Transaction, error) {
 	etherClient, err := b.CreateEthClient()
 	if err != nil {
@@ -170,7 +183,7 @@ func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
 
 	signerAcc, err := ks.Find(signer)
 	if err != nil {
-		zcncore.Logger.Fatal(err)
+		Logger.Fatal(err)
 	}
 
 	signature, err := ks.SignHash(signerAcc, hash.Bytes())
@@ -184,18 +197,31 @@ func (b *BridgeClient) SignWithEthereumChain(message string) ([]byte, error) {
 	return signature, nil
 }
 
-// SignWithZCNChain signs the digest with ZCN chain signer
-//func (b *BridgeClient) SignWithZCNChain(hash string) (string, error) {
-//	signScheme := zcncrypto.NewSignatureScheme(scheme)
-//	if signScheme != nil {
-//		err := signScheme.SetPrivateKey(b.PrivateKey())
-//		if err != nil {
-//			return "", err
-//		}
-//		return signScheme.SignWithEthereum(hash)
-//	}
-//	return "", commonErr.NewError("invalid_signature_scheme", "Invalid signature scheme. Please check configuration")
-//}
+// GetUserNonceMinted Returns nonce for a specified Ethereum address
+func (b *BridgeClient) GetUserNonceMinted(ctx context.Context, rawEthereumAddress string) (*big.Int, error) {
+	ethereumAddress := common.HexToAddress(rawEthereumAddress)
+	etherClient, err := b.CreateEthClient()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create etherClient")
+	}
+
+	contractAddress := common.HexToAddress(b.BridgeAddress)
+
+	var bridgeInstance *binding.Bridge
+	bridgeInstance, err = binding.NewBridge(contractAddress, etherClient)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create bridge instance")
+	}
+
+	var nonce *big.Int
+	nonce, err = bridgeInstance.GetUserNonceMinted(nil, ethereumAddress)
+	if err != nil {
+		Logger.Error("GetUserNonceMinted FAILED", zap.Error(err))
+		msg := "failed to execute GetUserNonceMinted call, ethereumAddress = %s"
+		return nil, errors.Wrapf(err, msg, rawEthereumAddress)
+	}
+	return nonce, err
+}
 
 // MintWZCN Mint ZCN tokens on behalf of the 0ZCN client
 // payload: received from authorizers
@@ -204,38 +230,41 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
 	}
 
-	// 1. Data Parameter (amount to burn)
+	// 1. Burned amount parameter
 	amount := new(big.Int)
 	amount.SetInt64(payload.Amount) // wei
 
-	// 2. Data Parameter (zcnTxd string as []byte)
+	// 2. Transaction ID Parameter of burn operation (zcnTxd string as []byte)
 	zcnTxd := DefaultClientIDEncoder(payload.ZCNTxnID)
 
-	// 3. Nonce Parameter
+	// 3. Nonce Parameter generated during burn operation
 	nonce := new(big.Int)
 	nonce.SetInt64(payload.Nonce)
 
 	// 4. Signature
 	// For requirements from ERC20 authorizer, the signature length must be 65
-	var sigs []byte
+	var sigs [][]byte
 	for _, signature := range payload.Signatures {
-		sigs = append(sigs, signature.Signature...)
+		sigs = append(sigs, signature.Signature)
 	}
 
-	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, "mint", amount, zcnTxd, nonce, sigs)
+	// 5. To Ethereum address
+
+	toAddress := common.HexToAddress(payload.To)
+
+	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, payload.To, "mint", toAddress, amount, zcnTxd, nonce, sigs)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare bridge")
 	}
 
 	Logger.Info(
 		"Staring Mint WZCN",
-		//zap.String("clientID", b.ID()),
 		zap.Int64("amount", amount.Int64()),
 		zap.String("zcnTxd", string(zcnTxd)),
-		zap.String("nonce", nonce.String()),
-	)
+		zap.String("nonce", nonce.String()))
 
-	tran, err := bridgeInstance.Mint(transactOpts, amount, zcnTxd, nonce, sigs)
+	var tran *types.Transaction
+	tran, err = bridgeInstance.Mint(transactOpts, toAddress, amount, zcnTxd, nonce, sigs)
 	if err != nil {
 		Logger.Error("Mint WZCN FAILED", zap.Error(err))
 		msg := "failed to execute MintWZCN transaction, amount = %s, ZCN TrxID = %s"
@@ -245,7 +274,6 @@ func (b *BridgeClient) MintWZCN(ctx context.Context, payload *ethereum.MintPaylo
 	Logger.Info(
 		"Posted Mint WZCN",
 		zap.String("hash", tran.Hash().String()),
-		//zap.String("clientID", b.ID()),
 		zap.Int64("amount", amount.Int64()),
 		zap.String("zcnTxd", string(zcnTxd)),
 		zap.String("nonce", nonce.String()),
@@ -264,13 +292,13 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 	}
 
 	// 1. Data Parameter (amount to burn)
-	clientID := DefaultClientIDEncoder(b.ID())
+	clientID := DefaultClientIDEncoder(b.ClientID())
 
 	// 2. Data Parameter (signature)
 	amount := new(big.Int)
 	amount.SetInt64(int64(amountTokens))
 
-	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, "burn", amount, clientID)
+	bridgeInstance, transactOpts, err := b.prepareBridge(ctx, b.EthereumAddress, "burn", amount, clientID)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to prepare bridge")
 	}
@@ -284,12 +312,12 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 	tran, err := bridgeInstance.Burn(transactOpts, amount, clientID)
 	if err != nil {
 		msg := "failed to execute Burn WZCN transaction to ClientID = %s with amount = %s"
-		return nil, errors.Wrapf(err, msg, b.ID(), amount)
+		return nil, errors.Wrapf(err, msg, b.ClientID(), amount)
 	}
 
 	Logger.Info(
 		"Posted Burn WZCN",
-		zap.String("clientID", b.ID()),
+		zap.String("clientID", b.ClientID()),
 		zap.Int64("amount", amount.Int64()),
 	)
 
@@ -297,7 +325,7 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 }
 
 // MintZCN mints ZCN tokens after receiving proof-of-burn of WZCN tokens
-func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (*transaction.Transaction, error) {
+func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) (string, error) {
 	trx, err := transaction.NewTransactionEntity()
 	if err != nil {
 		log.Logger.Fatal("failed to create new transaction", zap.Error(err))
@@ -317,7 +345,7 @@ func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) 
 		0)
 
 	if err != nil {
-		return trx, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
+		return "", errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
 	}
 
 	Logger.Info(
@@ -325,13 +353,12 @@ func (b *BridgeClient) MintZCN(ctx context.Context, payload *zcnsc.MintPayload) 
 		zap.String("hash", hash),
 		zap.Int64("mint amount", int64(payload.Amount)))
 
-	return trx, nil
+	return hash, nil
 }
 
 // BurnZCN burns ZCN tokens before conversion from ZCN to WZCN as a first step
 func (b *BridgeClient) BurnZCN(ctx context.Context, amount uint64) (*transaction.Transaction, error) {
 	payload := zcnsc.BurnPayload{
-		Nonce:           b.IncrementNonce(),
 		EthereumAddress: b.EthereumAddress, // TODO: this should be receiver address not the bridge
 	}
 
@@ -347,7 +374,8 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount uint64) (*transaction
 		zap.Uint64("burn amount", amount),
 	)
 
-	hash, err := trx.ExecuteSmartContract(
+	var hash string
+	hash, err = trx.ExecuteSmartContract(
 		ctx,
 		wallet.ZCNSCSmartContractAddress,
 		wallet.BurnFunc,
@@ -360,6 +388,11 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount uint64) (*transaction
 		return trx, errors.Wrap(err, fmt.Sprintf("failed to execute smart contract, hash = %s", hash))
 	}
 
+	err = trx.Verify(context.Background())
+	if err != nil {
+		return trx, errors.Wrap(err, fmt.Sprintf("failed to verify smart contract, hash = %s", hash))
+	}
+
 	Logger.Info(
 		"Burn ZCN transaction",
 		zap.String("hash", hash),
@@ -370,7 +403,7 @@ func (b *BridgeClient) BurnZCN(ctx context.Context, amount uint64) (*transaction
 	return trx, nil
 }
 
-func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params ...interface{}) (*binding.Bridge, *bind.TransactOpts, error) {
+func (b *BridgeClient) prepareBridge(ctx context.Context, ethereumAddress, method string, params ...interface{}) (*binding.Bridge, *bind.TransactOpts, error) {
 	etherClient, err := b.CreateEthClient()
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to create etherClient")
@@ -379,20 +412,20 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params 
 	// To (contract)
 	contractAddress := common.HexToAddress(b.BridgeAddress)
 
-	// Get ABI of the contract
+	//Get ABI of the contract
 	abi, err := binding.BridgeMetaData.GetAbi()
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to get ABI")
 	}
 
-	// Pack the method argument
+	//Pack the method argument
 	pack, err := abi.Pack(method, params...)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to pack arguments")
 	}
 
-	// Gas limits in units
-	fromAddress := common.HexToAddress(b.EthereumAddress)
+	//Gas limits in units
+	fromAddress := common.HexToAddress(ethereumAddress)
 
 	gasLimitUnits, err := etherClient.EstimateGas(ctx, eth.CallMsg{
 		To:   &contractAddress,
@@ -403,7 +436,7 @@ func (b *BridgeClient) prepareBridge(ctx context.Context, method string, params 
 		return nil, nil, errors.Wrap(err, "failed to estimate gas")
 	}
 
-	// Update gas limits + 10%
+	//Update gas limits + 10%
 	gasLimitUnits = addPercents(gasLimitUnits, 10).Uint64()
 
 	transactOpts := b.CreateSignedTransactionFromKeyStore(etherClient, gasLimitUnits)

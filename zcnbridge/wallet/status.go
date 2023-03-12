@@ -8,13 +8,7 @@ import (
 	"sync"
 
 	"github.com/0chain/gosdk/zcncore"
-	"gopkg.in/cheggaaa/pb.v1"
 )
-
-type StatusBar struct {
-	b  *pb.ProgressBar
-	wg *sync.WaitGroup
-}
 
 type ZCNStatus struct {
 	walletString string
@@ -70,7 +64,7 @@ func (zcn *ZCNStatus) OnVerifyComplete(t *zcncore.Transaction, status int) {
 }
 
 func (zcn *ZCNStatus) OnAuthComplete(_ *zcncore.Transaction, status int) {
-	fmt.Println("Authorization complete.", status)
+	Logger.Info("Authorization complete with status: ", status)
 }
 
 func (zcn *ZCNStatus) OnWalletCreateComplete(status int, wallet string, err string) {
@@ -102,7 +96,7 @@ func (zcn *ZCNStatus) OnInfoAvailable(_ int, status int, info string, err string
 
 	var errm error
 	if errm = json.Unmarshal([]byte(info), zcn.value); errm != nil {
-		zcn.Err = fmt.Errorf("decoding response: %v", err)
+		zcn.Err = fmt.Errorf("decoding response: %v", errm)
 		zcn.Success = false
 		return
 	}
@@ -117,9 +111,10 @@ func (zcn *ZCNStatus) OnSetupComplete(_ int, _ string) {
 
 func (zcn *ZCNStatus) OnAuthorizeSendComplete(status int, _ string, _ int64, _ string, creationDate int64, signature string) {
 	defer zcn.Wg.Done()
-	fmt.Println("Status:", status)
-	fmt.Println("Timestamp:", creationDate)
-	fmt.Println("Signature:", signature)
+
+	Logger.Info("Status: ", status)
+	Logger.Info("Timestamp:", creationDate)
+	Logger.Info("Signature:", signature)
 }
 
 // OnVoteComplete callback when a multisig vote is completed
@@ -136,13 +131,13 @@ func (zcn *ZCNStatus) OnVoteComplete(status int, proposal string, err string) {
 	zcn.walletString = proposal
 }
 
-//goland:noinspection GoUnusedExportedFunction
+//goland:noinspection ALL
 func PrintError(v ...interface{}) {
-	_, _ = fmt.Fprintln(os.Stderr, v...)
+	fmt.Fprintln(os.Stderr, v...)
 }
 
-//goland:noinspection GoUnusedExportedFunction
+//goland:noinspection ALL
 func ExitWithError(v ...interface{}) {
-	_, _ = fmt.Fprintln(os.Stderr, v...)
+	fmt.Fprintln(os.Stderr, v...)
 	os.Exit(1)
 }

@@ -19,7 +19,7 @@ func init() {
 
 }
 
-//HerumiScheme - a signature scheme for BLS0Chain Signature
+// HerumiScheme - a signature scheme for BLS0Chain Signature
 type HerumiScheme struct {
 	PublicKey  string `json:"public_key"`
 	PrivateKey string `json:"private_key"`
@@ -29,7 +29,7 @@ type HerumiScheme struct {
 	Ids string `json:"threshold_scheme_id"`
 }
 
-//NewHerumiScheme - create a MiraclScheme object
+// NewHerumiScheme - create a MiraclScheme object
 func NewHerumiScheme() *HerumiScheme {
 	return &HerumiScheme{
 		id: BlsSignerInstance.NewID(),
@@ -76,7 +76,7 @@ func (b0 *HerumiScheme) GetMnemonic() string {
 	return b0.Mnemonic
 }
 
-//SetPrivateKey  set private key to sign
+// SetPrivateKey  set private key to sign
 func (b0 *HerumiScheme) SetPrivateKey(privateKey string) error {
 	if b0.PublicKey != "" {
 		return errors.New("set_private_key", "cannot set private key when there is a public key")
@@ -151,7 +151,7 @@ func (b0 *HerumiScheme) SplitKeys(numSplits int) (*Wallet, error) {
 	return w, nil
 }
 
-//Sign sign message
+// Sign sign message
 func (b0 *HerumiScheme) Sign(hash string) (string, error) {
 	sig, err := b0.rawSign(hash)
 	if err != nil {
@@ -160,7 +160,7 @@ func (b0 *HerumiScheme) Sign(hash string) (string, error) {
 	return sig.SerializeToHexStr(), nil
 }
 
-//SetPublicKey - implement interface
+// SetPublicKey - implement interface
 func (b0 *HerumiScheme) SetPublicKey(publicKey string) error {
 	if b0.PrivateKey != "" {
 		return errors.New("set_public_key", "cannot set public key when there is a private key")
@@ -172,12 +172,12 @@ func (b0 *HerumiScheme) SetPublicKey(publicKey string) error {
 	return nil
 }
 
-//GetPublicKey - implement interface
+// GetPublicKey - implement interface
 func (b0 *HerumiScheme) GetPublicKey() string {
 	return b0.PublicKey
 }
 
-//Verify - implement interface
+// Verify - implement interface
 func (b0 *HerumiScheme) Verify(signature, msg string) (bool, error) {
 	if b0.PublicKey == "" {
 		return false, errors.New("verify", "public key does not exists for verification")
@@ -229,7 +229,7 @@ func (b0 *HerumiScheme) GetPrivateKeyAsByteArray() ([]byte, error) {
 	return privateKeyBytes, nil
 }
 
-//SetID sets ID in HexString format
+// SetID sets ID in HexString format
 func (b0 *HerumiScheme) SetID(id string) error {
 	if b0.id == nil {
 		b0.id = BlsSignerInstance.NewID()
@@ -238,7 +238,7 @@ func (b0 *HerumiScheme) SetID(id string) error {
 	return b0.id.SetHexString(id)
 }
 
-//GetID gets ID in hex string format
+// GetID gets ID in hex string format
 func (b0 *HerumiScheme) GetID() string {
 	if b0.id == nil {
 		b0.id = BlsSignerInstance.NewID()

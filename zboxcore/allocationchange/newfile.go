@@ -1,63 +1,83 @@
 package allocationchange
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 
+	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/google/uuid"
 )
 
 type NewFileChange struct {
 	change
 	File *fileref.FileRef
+	Uuid uuid.UUID
 }
 
-func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref) error {
-	path, _ := filepath.Split(ch.File.Path)
-	tSubDirs := getSubDirs(path)
+func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref) (
+	commitParams CommitParams, err error) {
+
+	fileIDMeta := make(map[string]string)
+	fields, err := common.GetPathFields(filepath.Dir(ch.File.Path))
+	if err != nil {
+		return
+	}
+
+	rootRef.HashToBeComputed = true
 	dirRef := rootRef
-	treelevel := 0
-	for {
+	for i := 0; i < len(fields); i++ {
 		found := false
 		for _, child := range dirRef.Children {
-			if child.GetType() == fileref.DIRECTORY && treelevel < len(tSubDirs) {
-				if (child.(*fileref.Ref)).Name == tSubDirs[treelevel] {
+			if child.GetName() == fields[i] {
+				if child.GetType() == fileref.DIRECTORY {
 					dirRef = child.(*fileref.Ref)
 					found = true
 					break
 				}
+				err = errors.New("invalid_file_path",
+					fmt.Sprintf("type of %s is required to be directory", child.GetPath()))
+				return
 			}
 		}
-		if found {
-			treelevel++
-			continue
-		}
-		if len(tSubDirs) > treelevel {
-			newRef := &fileref.Ref{}
-			newRef.Type = fileref.DIRECTORY
-			newRef.AllocationID = dirRef.AllocationID
-			newRef.Path = "/" + strings.Join(tSubDirs[:treelevel+1], "/")
-			newRef.Name = tSubDirs[treelevel]
-			//dirRef.Children = append(dirRef.Children, newRef)
+
+		if !found {
+			uid := util.GetSHA1Uuid(ch.Uuid, fields[i])
+			ch.Uuid = uid
+			newRef := &fileref.Ref{
+				Type:         fileref.DIRECTORY,
+				AllocationID: dirRef.AllocationID,
+				Path:         filepath.Join("/", strings.Join(fields[:i+1], "/")),
+				Name:         fields[i],
+				FileID:       uid.String(),
+			}
+			fileIDMeta[newRef.Path] = newRef.FileID
 			dirRef.AddChild(newRef)
 			dirRef = newRef
-			treelevel++
-			continue
-		} else {
-			break
 		}
+		dirRef.HashToBeComputed = true
 	}
-	//dirRef.Children = append(dirRef.Children, ch.File)
+	uid := util.GetSHA1Uuid(ch.Uuid, ch.File.Name)
+	ch.Uuid = uid
+
+	ch.File.FileID = uid.String()
+	ch.File.HashToBeComputed = true
+	fileIDMeta[ch.File.GetPath()] = ch.File.FileID
+
 	dirRef.AddChild(ch.File)
 	rootRef.CalculateHash()
-	return nil
+	commitParams.FileIDMeta = fileIDMeta
+	return
 }
 
-func (n *NewFileChange) GetAffectedPath() string {
+func (n *NewFileChange) GetAffectedPath() []string {
 	if n.File != nil {
-		return n.File.Path
+		return []string{n.File.Path}
 	}
-	return ""
+	return nil
 }
 
 func (n *NewFileChange) GetSize() int64 {

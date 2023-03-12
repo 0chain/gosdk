@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"os"
 	"strconv"
@@ -31,10 +32,9 @@ func (qq *bancorQuoteQuery) getUSD(ctx context.Context, symbol string) (float64,
 		evnName := "BANCOR_DLTID_" + strings.ToUpper(symbol)
 		id, ok := os.LookupEnv(evnName)
 		if !ok {
-			return 0, errors.New("token: please configure dlt_id on environment variable [" + evnName + "] first")
+			return 0, errors.New("bancor: please configure dlt_id on environment variable [" + evnName + "] first")
 		}
 		dltId = id
-
 	}
 
 	r := resty.New()
@@ -46,7 +46,7 @@ func (qq *bancorQuoteQuery) getUSD(ctx context.Context, symbol string) (float64,
 			}
 
 			if resp.StatusCode != http.StatusOK {
-				return errors.New("token: " + strconv.Itoa(resp.StatusCode) + resp.Status)
+				return errors.New("bancor: " + strconv.Itoa(resp.StatusCode) + resp.Status)
 			}
 
 			err = json.Unmarshal(respBody, &result)
@@ -54,25 +54,90 @@ func (qq *bancorQuoteQuery) getUSD(ctx context.Context, symbol string) (float64,
 				return err
 			}
 
+			result.Raw = string(respBody)
+
 			return nil
 
 		})
 
-	r.Wait()
+	errs := r.Wait()
+	if len(errs) > 0 {
+		return 0, errs[0]
+	}
 
 	rate, ok := result.Data.Rate24hAgo["usd"]
 
 	if ok {
-		return rate, nil
+
+		if rate.Value > 0 {
+			return rate.Value, nil
+		}
+
+		//rate24ago is invalid, try get current rate
+		rate, ok = result.Data.Rate["usd"]
+		if ok && rate.Value > 0 {
+			return rate.Value, nil
+		}
 	}
 
-	return 0, errors.New("token: " + symbol + " price is not provided on bancor apis")
+	return 0, fmt.Errorf("bancor: %s price is not provided on bancor apis", symbol)
 }
+
+// {
+// 	"data": {
+// 			"dltId": "0xb9EF770B6A5e12E45983C5D80545258aA38F3B78",
+// 			"symbol": "ZCN",
+// 			"decimals": 10,
+// 			"rate": {
+// 					"bnt": "0.271257342312491431",
+// 					"usd": "0.118837",
+// 					"eur": "0.121062",
+// 					"eth": "0.000089243665620809"
+// 			},
+// 			"rate24hAgo": {
+// 					"bnt": "0.273260935543748855",
+// 					"usd": "0.120972",
+// 					"eur": "0.126301",
+// 					"eth": "0.000094001761827049"
+// 			}
+// 	},
+// 	"timestamp": {
+// 			"ethereum": {
+// 					"block": 15644407,
+// 					"timestamp": 1664519843
+// 			}
+// 	}
+// }
 
 type bancorResponse struct {
 	Data bancorMarketData `json:"data"`
+	Raw  string           `json:"-"`
 }
 
 type bancorMarketData struct {
-	Rate24hAgo map[string]float64 `json:"rate24hAgo"`
+	Rate       map[string]Float64 `json:"rate"`
+	Rate24hAgo map[string]Float64 `json:"rate24hAgo"`
+}
+
+type Float64 struct {
+	Value float64
+}
+
+func (s *Float64) UnmarshalJSON(data []byte) error {
+
+	if data == nil {
+		s.Value = 0
+		return nil
+	}
+
+	js := strings.Trim(string(data), "\"")
+
+	v, err := strconv.ParseFloat(js, 10)
+	if err != nil {
+		return err
+	}
+
+	s.Value = v
+	return nil
+
 }

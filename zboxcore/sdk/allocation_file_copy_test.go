@@ -111,6 +111,7 @@ func TestAllocation_CopyObject(t *testing.T) {
 			require := require.New(t)
 			a := &Allocation{
 				DataShards: numBlobbers,
+				FileOptions: 63,
 			}
 			a.InitAllocation()
 

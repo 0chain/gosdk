@@ -2,7 +2,6 @@ package model
 
 import (
 	"context"
-	"encoding/json"
 	"math"
 	"path/filepath"
 	"reflect"
@@ -39,8 +38,7 @@ type Ref struct {
 	ActualFileSize int64  `gorm:"column:actual_file_size" filelist:"actual_file_size"`
 	ActualFileHash string `gorm:"column:actual_file_hash" filelist:"actual_file_hash"`
 
-	Attributes     json.RawMessage `gorm:"column:attributes" filelist:"attributes"`
-	Children       []*Ref          `gorm:"-"`
+	Children       []*Ref `gorm:"-"`
 	childrenLoaded bool
 
 	ChunkSize int64 `gorm:"column:chunk_size" dirlist:"chunk_size" filelist:"chunk_size"`
@@ -162,9 +160,6 @@ func (fr *Ref) CalculateFileHash(ctx context.Context) (string, error) {
 }
 
 func (fr *Ref) GetFileHashData() string {
-	if len(fr.Attributes) == 0 {
-		fr.Attributes = json.RawMessage([]byte("{}"))
-	}
 	hashArray := make([]string, 0, 11)
 	hashArray = append(hashArray, fr.AllocationID)
 	hashArray = append(hashArray, fr.Type)
@@ -175,7 +170,6 @@ func (fr *Ref) GetFileHashData() string {
 	hashArray = append(hashArray, fr.MerkleRoot)
 	hashArray = append(hashArray, strconv.FormatInt(fr.ActualFileSize, 10))
 	hashArray = append(hashArray, fr.ActualFileHash)
-	hashArray = append(hashArray, string(fr.Attributes))
 	hashArray = append(hashArray, strconv.FormatInt(fr.ChunkSize, 10))
 
 	return strings.Join(hashArray, ":")

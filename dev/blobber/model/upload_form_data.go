@@ -1,7 +1,5 @@
 package model
 
-import "github.com/0chain/gosdk/zboxcore/fileref"
-
 // UploadFormData form data of upload
 type UploadFormData struct {
 	ConnectionID string `json:"connection_id,omitempty"`
@@ -27,10 +25,9 @@ type UploadFormData struct {
 	// ActualThumbnailHash hash of orignial thumbnail (unencoded, unencrypted)
 	ActualThumbHash string `json:"actual_thumb_hash,omitempty"`
 
-	MimeType     string             `json:"mimetype,omitempty"`
-	CustomMeta   string             `json:"custom_meta,omitempty"`
-	EncryptedKey string             `json:"encrypted_key,omitempty"`
-	Attributes   fileref.Attributes `json:"attributes,omitempty"`
+	MimeType     string `json:"mimetype,omitempty"`
+	CustomMeta   string `json:"custom_meta,omitempty"`
+	EncryptedKey string `json:"encrypted_key,omitempty"`
 
 	IsFinal      bool   `json:"is_final,omitempty"`      // current chunk is last or not
 	ChunkHash    string `json:"chunk_hash"`              // hash of current chunk

@@ -1,3 +1,6 @@
+//go:build ignore
+// +build ignore
+
 package main
 
 import (
@@ -21,6 +24,7 @@ func main() {
 		FactoryModuleERC721Address:       "",
 		FactoryModuleERC721FixedAddress:  "",
 		FactoryModuleERC721RandomAddress: "",
+		FactoryModuleERC721PackedAddress: "",
 		EthereumNodeURL:                  "https://rinkeby.infura.io/v3/22cb2849f5f74b8599f3dc2a23085bd4",
 		WalletAddress:                    "0x860FA46F170a87dF44D7bB867AA4a5D2813127c1",
 		VaultPassword:                    "pass",
@@ -40,15 +44,16 @@ func main() {
 		}
 	}
 
-	// Create NFT with factory
-	address := "beef"
-	ownerAddress := "beef"
-
-	// Creating NFTs
+	// Creating NFTs with factories:
+	// --------------------------------
+	// CreateFactoryERC721Session
+	// CreateFactoryERC721PackSession
+	// CreateFactoryERC721FixedSession
+	// CreateFactoryERC721RandomSession
 
 	app := znft.NewNFTApplication(cfg)
 
-	factorySession, err := app.CreateFactoryERC721Session(context.Background(), address)
+	factorySession, err := app.CreateFactoryERC721Session(context.Background(), cfg.FactoryAddress)
 	if err != nil {
 		panic(err)
 	}
@@ -56,7 +61,7 @@ func main() {
 	data := []byte("")
 	max := new(big.Int).SetInt64(10000)
 	err = factorySession.CreateToken(
-		ownerAddress,
+		cfg.WalletAddress,
 		"TestFixedPriceToken",
 		"dNFT",
 		"https://api.0chain.net/v1/file/abcdefgh/",
@@ -67,10 +72,16 @@ func main() {
 		panic(err)
 	}
 
-	// Reading and writing to NFT smart contracts
+	// When addresses are received after deployment with factories...
+	// Reading and writing to NFT smart contracts using DStorageSessions
+	// --------------------------------
+	// CreateStorageERC721Session
+	// CreateStorageERC721PackSession
+	// CreateStorageERC721RandomSession
+	// CreateStorageERC721FixedSession
 
 	// Create session of NFT token
-	sessionRandom, err := app.CreateStorageERC721RandomSession(context.Background(), address)
+	sessionRandom, err := app.CreateStorageERC721RandomSession(context.Background(), "received from deployment")
 	if err != nil {
 		panic(err)
 	}
@@ -85,7 +96,7 @@ func main() {
 	// ERC721Fixed
 
 	// Create session of NFT token
-	sessionFixed, err := app.CreateStorageERC721FixedSession(context.Background(), address)
+	sessionFixed, err := app.CreateStorageERC721FixedSession(context.Background(), "received from deployment")
 	if err != nil {
 		panic(err)
 	}
@@ -100,7 +111,7 @@ func main() {
 	// ERC721Pack
 
 	// Create session of NFT token
-	sessionPack, err := app.CreateStorageERC721PackSession(context.Background(), address)
+	sessionPack, err := app.CreateStorageERC721PackSession(context.Background(), "received from deployment")
 	if err != nil {
 		panic(err)
 	}
@@ -115,7 +126,7 @@ func main() {
 	// ERC721
 
 	// Create session of NFT token
-	session, err := app.CreateStorageERC721Session(context.Background(), address)
+	session, err := app.CreateStorageERC721Session(context.Background(), "received from deployment")
 	if err != nil {
 		panic(err)
 	}

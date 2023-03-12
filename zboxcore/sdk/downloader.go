@@ -1,6 +1,7 @@
 package sdk
 
 import (
+	"fmt"
 	"path"
 
 	"errors"
@@ -11,6 +12,7 @@ import (
 // Downloader downloader for file, blocks and thumbnail
 type Downloader interface {
 	GetAllocation() *Allocation
+	GetFileName() string
 	Start(status StatusCallback) error
 }
 
@@ -32,8 +34,6 @@ type DownloadOptions struct {
 	endBlock        int64
 
 	isThumbnailDownload bool
-
-	rxPay bool
 }
 
 // CreateDownloader create a downloander
@@ -41,7 +41,10 @@ func CreateDownloader(allocationID, localPath, remotePath string, opts ...Downlo
 	do := &DownloadOptions{
 		localPath:  localPath,
 		remotePath: remotePath,
-		fileName:   path.Base(remotePath),
+	}
+
+	if len(remotePath) > 0 {
+		do.fileName = path.Base(remotePath)
 	}
 
 	for _, option := range opts {
@@ -63,7 +66,7 @@ func CreateDownloader(allocationID, localPath, remotePath string, opts ...Downlo
 		}
 	}
 
-	// fixed fileName if only authticket/lookup are known
+	// fixed fileName if only auth ticket/lookup are known
 	if len(do.fileName) == 0 {
 		if do.isViewer {
 			at, err := InitAuthTicket(do.authTicket).Unmarshall()
@@ -90,8 +93,9 @@ func CreateDownloader(allocationID, localPath, remotePath string, opts ...Downlo
 		} else {
 			return nil, errors.New("remotepath is required")
 		}
-
 	}
+
+	fmt.Println("download: ", do.isViewer, do.allocationObj.ID, do.fileName, do.lookupHash)
 
 	if do.isThumbnailDownload {
 		return &thumbnailDownloader{
@@ -123,4 +127,12 @@ func (d *baseDownloader) GetAllocation() *Allocation {
 		return nil
 	}
 	return d.options.allocationObj
+}
+
+func (d *baseDownloader) GetFileName() string {
+	if d == nil || d.options == nil {
+		return ""
+	}
+
+	return d.options.fileName
 }

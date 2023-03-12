@@ -22,14 +22,26 @@ type AuthTicket struct {
 	Signature       string `json:"signature"`
 }
 
-func (rm *AuthTicket) GetHashData() string {
-	hashData := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v:%v:%v:%v:%v", rm.AllocationID, rm.ClientID, rm.OwnerID, rm.FilePathHash, rm.FileName, rm.RefType, rm.ReEncryptionKey, rm.Expiration, rm.Timestamp, rm.ActualFileHash, rm.Encrypted)
+func (at *AuthTicket) GetHashData() string {
+	hashData := fmt.Sprintf("%v:%v:%v:%v:%v:%v:%v:%v:%v:%v:%v",
+		at.AllocationID,
+		at.ClientID,
+		at.OwnerID,
+		at.FilePathHash,
+		at.FileName,
+		at.RefType,
+		at.ReEncryptionKey,
+		at.Expiration,
+		at.Timestamp,
+		at.ActualFileHash,
+		at.Encrypted,
+	)
 	return hashData
 }
 
-func (rm *AuthTicket) Sign() error {
+func (at *AuthTicket) Sign() error {
 	var err error
-	hash := encryption.Hash(rm.GetHashData())
-	rm.Signature, err = client.Sign(hash)
+	hash := encryption.Hash(at.GetHashData())
+	at.Signature, err = client.Sign(hash)
 	return err
 }

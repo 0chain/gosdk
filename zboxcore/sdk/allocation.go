@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -22,11 +23,10 @@ import (
 
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
-	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -45,12 +45,21 @@ const (
 	GB = 1024 * MB
 )
 
+const (
+	CanUploadMask = uint16(1)  // 0000 0001
+	CanDeleteMask = uint16(2)  // 0000 0010
+	CanUpdateMask = uint16(4)  // 0000 0100
+	CanMoveMask   = uint16(8)  // 0000 1000
+	CanCopyMask   = uint16(16) // 0001 0000
+	CanRenameMask = uint16(32) // 0010 0000
+)
+
 // Expected success rate is calculated (NumDataShards)*100/(NumDataShards+NumParityShards)
 // Additional success percentage on top of expected success rate
 const additionalSuccessRate = (10)
 
 var GetFileInfo = func(localpath string) (os.FileInfo, error) {
-	return os.Stat(localpath)
+	return sys.Files.Stat(localpath)
 }
 
 type BlobberAllocationStats struct {
@@ -92,7 +101,6 @@ type ConsolidatedFileMeta struct {
 	EncryptedKey    string
 	CommitMetaTxns  []fileref.CommitMetaTxn
 	Collaborators   []fileref.Collaborator
-	Attributes      fileref.Attributes
 }
 
 type AllocationStats struct {
@@ -142,7 +150,6 @@ type BlobberAllocation struct {
 type Allocation struct {
 	ID             string                    `json:"id"`
 	Tx             string                    `json:"tx"`
-	Name           string                    `json:"name"`
 	DataShards     int                       `json:"data_shards"`
 	ParityShards   int                       `json:"parity_shards"`
 	Size           int64                     `json:"size"`
@@ -153,8 +160,7 @@ type Allocation struct {
 	Blobbers       []*blockchain.StorageNode `json:"blobbers"`
 	Stats          *AllocationStats          `json:"stats"`
 	TimeUnit       time.Duration             `json:"time_unit"`
-	IsImmutable    bool                      `json:"is_immutable"`
-
+	WritePool      common.Balance            `json:"write_pool"`
 	// BlobberDetails contains real terms used for the allocation.
 	// If the allocation has updated, then terms calculated using
 	// weighted average values.
@@ -172,7 +178,8 @@ type Allocation struct {
 	MovedToChallenge        common.Balance   `json:"moved_to_challenge,omitempty"`
 	MovedBack               common.Balance   `json:"moved_back,omitempty"`
 	MovedToValidators       common.Balance   `json:"moved_to_validators,omitempty"`
-	Curators                []string         `json:"curators"`
+	FileOptions             uint16           `json:"file_options"`
+	ThirdPartyExtendable    bool             `json:"third_party_extendable"`
 
 	numBlockDownloads       int
 	uploadChan              chan *UploadRequest
@@ -187,9 +194,8 @@ type Allocation struct {
 	initialized             bool
 
 	// conseususes
-	consensusThreshold float32
-	consensusOK        float32
-	fullconsensus      float32
+	consensusThreshold int
+	fullconsensus      int
 }
 
 func (a *Allocation) GetStats() *AllocationStats {
@@ -221,11 +227,10 @@ func (a *Allocation) InitAllocation() {
 	a.uploadProgressMap = make(map[string]*UploadRequest)
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
 	a.mutex = &sync.Mutex{}
-	a.fullconsensus, a.consensusThreshold, a.consensusOK = a.getConsensuses()
+	a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
 	InitBlockDownloader(a.Blobbers)
-	InitReadCounter()
 	a.initialized = true
 }
 
@@ -259,36 +264,73 @@ func (a *Allocation) dispatchWork(ctx context.Context) {
 	}
 }
 
+func (a *Allocation) CanUpload() bool {
+	return (a.FileOptions & CanUploadMask) > 0
+}
+
+func (a *Allocation) CanDelete() bool {
+	return (a.FileOptions & CanDeleteMask) > 0
+}
+
+func (a *Allocation) CanUpdate() bool {
+	return (a.FileOptions & CanUpdateMask) > 0
+}
+
+func (a *Allocation) CanMove() bool {
+	return (a.FileOptions & CanMoveMask) > 0
+}
+
+func (a *Allocation) CanCopy() bool {
+	return (a.FileOptions & CanCopyMask) > 0
+}
+
+func (a *Allocation) CanRename() bool {
+	return (a.FileOptions & CanRenameMask) > 0
+}
+
 // UpdateFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UpdateFile(workdir, localpath string, remotepath string,
-	attrs fileref.Attributes, status StatusCallback) error {
+	status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false, "", false, attrs)
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false, "", false)
 }
 
 // UploadFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UploadFile(workdir, localpath string, remotepath string,
-	attrs fileref.Attributes, status StatusCallback) error {
+	status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", false, attrs)
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", false)
 }
 
-func (a *Allocation) CreateDir(dirName string) error {
+func (a *Allocation) CreateDir(remotePath string) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
 
-	if len(dirName) == 0 {
+	if remotePath == "" {
 		return errors.New("invalid_name", "Invalid name for dir")
 	}
 
-	dirName = zboxutil.RemoteClean(dirName)
-	req := DirRequest{}
-	req.action = "create"
-	req.allocationID = a.ID
-	req.connectionID = zboxutil.NewConnectionId()
-	req.ctx = a.ctx
-	req.name = dirName
+	if !path.IsAbs(remotePath) {
+		return errors.New("invalid_path", "Path is not absolute")
+	}
+
+	remotePath = zboxutil.RemoteClean(remotePath)
+	req := DirRequest{
+		allocationID: a.ID,
+		allocationTx: a.Tx,
+		blobbers:     a.Blobbers,
+		mu:           &sync.Mutex{},
+		dirMask:      zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
+		connectionID: zboxutil.NewConnectionId(),
+		remotePath:   remotePath,
+		wg:           &sync.WaitGroup{},
+		Consensus: Consensus{
+			consensusThresh: a.consensusThreshold,
+			fullconsensus:   a.fullconsensus,
+		},
+	}
+	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 
 	err := req.ProcessDir(a)
 	return err
@@ -299,46 +341,46 @@ func (a *Allocation) RepairFile(localpath string, remotepath string,
 
 	idr, _ := homedir.Dir()
 	return a.StartChunkedUpload(idr, localpath, remotepath, status, false, true,
-		"", false, fileref.Attributes{})
+		"", false)
 }
 
 // UpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UpdateFileWithThumbnail(workdir, localpath string, remotepath string,
-	thumbnailpath string, attrs fileref.Attributes, status StatusCallback) error {
+	thumbnailpath string, status StatusCallback) error {
 
 	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false,
-		thumbnailpath, false, attrs)
+		thumbnailpath, false)
 }
 
 // UploadFileWithThumbnail [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UploadFileWithThumbnail(workdir string, localpath string,
-	remotepath string, thumbnailpath string, attrs fileref.Attributes,
+	remotepath string, thumbnailpath string,
 	status StatusCallback) error {
 
 	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false,
-		thumbnailpath, false, attrs)
+		thumbnailpath, false)
 }
 
 // EncryptAndUpdateFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUpdateFile(workdir string, localpath string, remotepath string,
-	attrs fileref.Attributes, status StatusCallback) error {
+	status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false, "", true, attrs)
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false, "", true)
 }
 
 // EncryptAndUploadFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUploadFile(workdir string, localpath string, remotepath string,
-	attrs fileref.Attributes, status StatusCallback) error {
+	status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", true, attrs)
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", true)
 }
 
 // EncryptAndUpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUpdateFileWithThumbnail(workdir string, localpath string,
-	remotepath string, thumbnailpath string, attrs fileref.Attributes, status StatusCallback) error {
+	remotepath string, thumbnailpath string, status StatusCallback) error {
 
 	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false,
-		thumbnailpath, true, attrs)
+		thumbnailpath, true)
 }
 
 // EncryptAndUploadFileWithThumbnail [Deprecated]please use CreateChunkedUpload
@@ -347,7 +389,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	localpath string,
 	remotepath string,
 	thumbnailpath string,
-	attrs fileref.Attributes,
+
 	status StatusCallback,
 ) error {
 
@@ -359,7 +401,6 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 		false,
 		thumbnailpath,
 		true,
-		attrs,
 	)
 }
 
@@ -370,11 +411,15 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	isRepair bool,
 	thumbnailPath string,
 	encryption bool,
-	attrs fileref.Attributes,
+
 ) error {
 
 	if !a.isInitialized() {
 		return notInitialized
+	}
+
+	if (!isUpdate && !a.CanUpload()) || (isUpdate && !a.CanUpdate()) {
+		return constants.ErrFileOptionNotPermitted
 	}
 
 	fileReader, err := os.Open(localPath)
@@ -409,13 +454,26 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 		MimeType:   mimeType,
 		RemoteName: fileName,
 		RemotePath: remotePath,
-		Attributes: attrs,
 	}
 
-	ChunkedUpload, err := CreateChunkedUpload(workdir, a, fileMeta, fileReader, isUpdate, isRepair,
-		WithThumbnailFile(thumbnailPath),
+	options := []ChunkedUploadOption{
 		WithEncrypt(encryption),
-		WithStatusCallback(status))
+		WithStatusCallback(status),
+	}
+
+	if thumbnailPath != "" {
+		buf, err := sys.Files.ReadFile(thumbnailPath)
+		if err != nil {
+			return err
+		}
+
+		options = append(options, WithThumbnail(buf))
+	}
+
+	ChunkedUpload, err := CreateChunkedUpload(workdir,
+		a, fileMeta, fileReader,
+		isUpdate, isRepair,
+		options...)
 	if err != nil {
 		return err
 	}
@@ -431,7 +489,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 	thumbnailpath string,
 	encryption bool,
 	isRepair bool,
-	attrs fileref.Attributes,
+
 ) error {
 
 	if !a.isInitialized() {
@@ -444,7 +502,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 	}
 	thumbnailSize := int64(0)
 	if len(thumbnailpath) > 0 {
-		fileInfo, err := os.Stat(thumbnailpath)
+		fileInfo, err := sys.Files.Stat(thumbnailpath)
 		if err != nil {
 			thumbnailSize = 0
 			thumbnailpath = ""
@@ -472,7 +530,6 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 	uploadReq.filemeta.Size = fileInfo.Size()
 	uploadReq.filemeta.Path = remotepath
 	uploadReq.filemeta.ThumbnailSize = thumbnailSize
-	uploadReq.filemeta.Attributes = attrs
 	uploadReq.remaining = uploadReq.filemeta.Size
 	uploadReq.thumbRemaining = uploadReq.filemeta.ThumbnailSize
 	uploadReq.isUpdate = isUpdate
@@ -484,7 +541,6 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 	uploadReq.setUploadMask(len(a.Blobbers))
 	uploadReq.fullconsensus = a.fullconsensus
 	uploadReq.consensusThresh = a.consensusThreshold
-	uploadReq.consensusRequiredForOk = a.consensusOK
 	uploadReq.isEncrypted = encryption
 	uploadReq.completedCallback = func(filepath string) {
 		a.mutex.Lock()
@@ -513,7 +569,7 @@ func (a *Allocation) uploadOrUpdateFile(localpath string,
 
 		uploadReq.filemeta.Hash = fileRef.ActualFileHash
 		uploadReq.uploadMask = found.Not().And(uploadReq.uploadMask)
-		uploadReq.fullconsensus = float32(uploadReq.uploadMask.Add64(1).TrailingZeros())
+		uploadReq.fullconsensus = uploadReq.uploadMask.Add64(1).TrailingZeros()
 	}
 
 	if !uploadReq.IsFullConsensusSupported() {
@@ -540,7 +596,6 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, 
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
-	listReq.consensusRequiredForOk = a.consensusOK
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = remotepath
 	found, fileRef, _ := listReq.getFileConsensusFromBlobbers()
@@ -571,25 +626,30 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	if !a.isInitialized() {
 		return notInitialized
 	}
-	if stat, err := os.Stat(localPath); err == nil {
+	if stat, err := sys.Files.Stat(localPath); err == nil {
 		if !stat.IsDir() {
 			return fmt.Errorf("Local path is not a directory '%s'", localPath)
 		}
 		localPath = strings.TrimRight(localPath, "/")
 		_, rFile := filepath.Split(remotePath)
 		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
-		if _, err := os.Stat(localPath); err == nil {
+		if _, err := sys.Files.Stat(localPath); err == nil {
 			return fmt.Errorf("Local file already exists '%s'", localPath)
 		}
 	}
-	lPath, _ := filepath.Split(localPath)
-	os.MkdirAll(lPath, 0744)
+	dir, _ := filepath.Split(localPath)
+	if dir != "" {
+		if err := sys.Files.MkdirAll(dir, 0744); err != nil {
+			return err
+		}
+	}
 
 	if len(a.Blobbers) == 0 {
 		return noBLOBBERS
 	}
 
 	downloadReq := &DownloadRequest{}
+	downloadReq.maskMu = &sync.Mutex{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
 	downloadReq.allocOwnerID = a.Owner
@@ -606,7 +666,6 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	downloadReq.numBlocks = int64(numBlocks)
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
-	downloadReq.consensusRequiredForOk = a.consensusOK
 	downloadReq.completedCallback = func(remotepath string, remotepathhash string) {
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
@@ -645,11 +704,15 @@ func (a *Allocation) ListDirFromAuthTicket(authTicket string, lookupHash string)
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
-	listReq.consensusRequiredForOk = a.consensusOK
 	listReq.ctx = a.ctx
 	listReq.remotefilepathhash = lookupHash
 	listReq.authToken = at
-	ref := listReq.GetListFromBlobbers()
+	ref, err := listReq.GetListFromBlobbers()
+
+	if err != nil {
+		return nil, err
+	}
+
 	if ref != nil {
 		return ref, nil
 	}
@@ -674,10 +737,13 @@ func (a *Allocation) ListDir(path string) (*ListResult, error) {
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
-	listReq.consensusRequiredForOk = a.consensusOK
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
-	ref := listReq.GetListFromBlobbers()
+	ref, err := listReq.GetListFromBlobbers()
+	if err != nil {
+		return nil, err
+	}
+
 	if ref != nil {
 		return ref, nil
 	}
@@ -707,7 +773,7 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 		ctx:            a.ctx,
 	}
 	oTreeReq.fullconsensus = a.fullconsensus
-	oTreeReq.consensusThresh = float32(a.DataShards) / oTreeReq.fullconsensus
+	oTreeReq.consensusThresh = a.consensusThreshold
 	return oTreeReq.GetRefs()
 }
 
@@ -745,6 +811,36 @@ func (a *Allocation) GetRefsFromLookupHash(pathHash, offsetPath, updatedDate, of
 	}
 
 	return a.getRefs("", pathHash, "", offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
+
+}
+
+func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit int) (*RecentlyAddedRefResult, error) {
+	if !a.isInitialized() {
+		return nil, notInitialized
+	}
+
+	if page < 1 {
+		return nil, errors.New("invalid_params",
+			fmt.Sprintf("page value should be greater than or equal to 1."+
+				"Got page: %d", page))
+	}
+
+	offset := int64(page-1) * int64(pageLimit)
+	req := &RecentlyAddedRefRequest{
+		allocationID: a.ID,
+		allocationTx: a.Tx,
+		blobbers:     a.Blobbers,
+		offset:       offset,
+		fromDate:     fromDate,
+		ctx:          a.ctx,
+		wg:           &sync.WaitGroup{},
+		pageLimit:    pageLimit,
+		Consensus: Consensus{
+			fullconsensus:   a.fullconsensus,
+			consensusThresh: a.consensusThreshold,
+		},
+	}
+	return req.GetRecentlyAddedRefs()
 }
 
 func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
@@ -759,7 +855,6 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
-	listReq.consensusRequiredForOk = a.consensusOK
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
 	_, ref, _ := listReq.getFileConsensusFromBlobbers()
@@ -774,8 +869,7 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.EncryptedKey = ref.EncryptedKey
 		result.CommitMetaTxns = ref.CommitMetaTxns
 		result.Collaborators = ref.Collaborators
-		result.Attributes = ref.Attributes
-		result.ActualFileSize = ref.Size
+		result.ActualFileSize = ref.ActualSize
 		result.ActualNumBlocks = ref.NumBlocks
 		return result, nil
 	}
@@ -807,7 +901,6 @@ func (a *Allocation) GetFileMetaFromAuthTicket(authTicket string, lookupHash str
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
-	listReq.consensusRequiredForOk = a.consensusOK
 	listReq.ctx = a.ctx
 	listReq.remotefilepathhash = lookupHash
 	listReq.authToken = at
@@ -846,7 +939,6 @@ func (a *Allocation) GetFileStats(path string) (map[string]*FileStats, error) {
 	listReq.blobbers = a.Blobbers
 	listReq.fullconsensus = a.fullconsensus
 	listReq.consensusThresh = a.consensusThreshold
-	listReq.consensusRequiredForOk = a.consensusOK
 	listReq.ctx = a.ctx
 	listReq.remotefilepath = path
 	ref := listReq.getFileStatsFromBlobbers()
@@ -860,9 +952,13 @@ func (a *Allocation) DeleteFile(path string) error {
 	return a.deleteFile(path, a.consensusThreshold, a.fullconsensus)
 }
 
-func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus float32) error {
+func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int) error {
 	if !a.isInitialized() {
 		return notInitialized
+	}
+
+	if !a.CanDelete() {
+		return constants.ErrFileOptionNotPermitted
 	}
 
 	if len(path) == 0 {
@@ -879,10 +975,12 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus floa
 	req.blobbers = a.Blobbers
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
-	req.consensus.Init(threshConsensus, fullConsensus, a.consensusOK)
-	req.ctx = a.ctx
+	req.consensus.Init(threshConsensus, fullConsensus)
+	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 	req.remotefilepath = path
 	req.connectionID = zboxutil.NewConnectionId()
+	req.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	req.maskMu = &sync.Mutex{}
 	err := req.ProcessDelete()
 	return err
 }
@@ -892,13 +990,27 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 		return notInitialized
 	}
 
-	if len(path) == 0 {
+	if !a.CanRename() {
+		return constants.ErrFileOptionNotPermitted
+	}
+
+	if path == "" {
 		return errors.New("invalid_path", "Invalid path for the list")
 	}
+
+	if path == "/" {
+		return errors.New("invalid_operation", "cannot rename root path")
+	}
+
 	path = zboxutil.RemoteClean(path)
 	isabs := zboxutil.IsRemoteAbs(path)
 	if !isabs {
 		return errors.New("invalid_path", "Path should be valid and absolute")
+	}
+
+	err := ValidateRemoteFileName(destName)
+	if err != nil {
+		return err
 	}
 
 	req := &RenameRequest{}
@@ -907,69 +1019,65 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	req.allocationID = a.ID
 	req.allocationTx = a.Tx
 	req.newName = destName
-	req.fullconsensus = a.fullconsensus
-	req.consensusThresh = a.consensusThreshold
-	req.consensusRequiredForOk = a.consensusOK
-	req.ctx = a.ctx
+	req.consensus.fullconsensus = a.fullconsensus
+	req.consensus.consensusThresh = a.consensusThreshold
+	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 	req.remotefilepath = path
-	req.renameMask = 0
+	req.renameMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
-	err := req.ProcessRename()
-	return err
+	return req.ProcessRename()
 }
 
-func (a *Allocation) UpdateObjectAttributes(path string,
-	attrs fileref.Attributes) (err error) {
-
+func (a *Allocation) MoveObject(srcPath string, destPath string) error {
 	if !a.isInitialized() {
 		return notInitialized
 	}
 
-	if len(path) == 0 {
-		return errors.New("update_attrs", "Invalid path for the list")
+	if !a.CanMove() {
+		return constants.ErrFileOptionNotPermitted
 	}
 
-	path = zboxutil.RemoteClean(path)
-	var isabs = zboxutil.IsRemoteAbs(path)
+	if len(srcPath) == 0 || len(destPath) == 0 {
+		return errors.New("invalid_path", "Invalid path for copy")
+	}
+	srcPath = zboxutil.RemoteClean(srcPath)
+	isabs := zboxutil.IsRemoteAbs(srcPath)
 	if !isabs {
-		return errors.New("update_attrs",
-			"Path should be valid and absolute")
+		return errors.New("invalid_path", "Path should be valid and absolute")
 	}
 
-	var attrsb []byte
-	if attrsb, err = json.Marshal(attrs); err != nil {
-		panic(err)
-	}
-
-	var ar AttributesRequest
-
-	ar.blobbers = a.Blobbers
-	ar.allocationID = a.ID
-	ar.allocationTx = a.Tx
-	ar.Attributes = attrs
-	ar.attributes = string(attrsb)
-	ar.fullconsensus = a.fullconsensus
-	ar.consensusThresh = a.consensusThreshold
-	ar.consensusRequiredForOk = a.consensusOK
-	ar.ctx = a.ctx
-	ar.remotefilepath = path
-	ar.attributesMask = 0
-	ar.connectionID = zboxutil.NewConnectionId()
-
-	return ar.ProcessAttributes()
-}
-
-func (a *Allocation) MoveObject(path string, destPath string) error {
-	err := a.CopyObject(path, destPath)
+	err := ValidateRemoteFileName(destPath)
 	if err != nil {
 		return err
 	}
-	return a.DeleteFile(path)
+
+	req := &MoveRequest{}
+	req.allocationObj = a
+	req.blobbers = a.Blobbers
+	req.allocationID = a.ID
+	req.allocationTx = a.Tx
+	if destPath != "/" {
+		destPath = strings.TrimSuffix(destPath, "/")
+	}
+	req.destPath = destPath
+	req.fullconsensus = a.fullconsensus
+	req.consensusThresh = a.consensusThreshold
+	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
+	req.remotefilepath = srcPath
+	req.moveMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	req.maskMU = &sync.Mutex{}
+	req.connectionID = zboxutil.NewConnectionId()
+	return req.ProcessMove()
 }
 
 func (a *Allocation) CopyObject(path string, destPath string) error {
 	if !a.isInitialized() {
 		return notInitialized
+	}
+
+	if !a.CanCopy() {
+		return constants.ErrFileOptionNotPermitted
 	}
 
 	if len(path) == 0 || len(destPath) == 0 {
@@ -979,6 +1087,11 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	isabs := zboxutil.IsRemoteAbs(path)
 	if !isabs {
 		return errors.New("invalid_path", "Path should be valid and absolute")
+	}
+
+	err := ValidateRemoteFileName(destPath)
+	if err != nil {
+		return err
 	}
 
 	req := &CopyRequest{}
@@ -992,16 +1105,17 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	req.destPath = destPath
 	req.fullconsensus = a.fullconsensus
 	req.consensusThresh = a.consensusThreshold
-	req.consensusRequiredForOk = a.consensusOK
-	req.ctx = a.ctx
+	req.ctx, req.ctxCncl = context.WithCancel(a.ctx)
 	req.remotefilepath = path
-	req.copyMask = 0
+	req.copyMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
-	err := req.ProcessCopy()
-	return err
+	return req.ProcessCopy()
 }
 
-func (a *Allocation) GetAuthTicketForShare(path string, filename string, referenceType string, refereeClientID string) (string, error) {
+func (a *Allocation) GetAuthTicketForShare(
+	path, filename, referenceType, refereeClientID string) (string, error) {
+
 	now := time.Now()
 	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "", 0, &now)
 }
@@ -1066,8 +1180,8 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 }
 
 func (a *Allocation) GetAuthTicket(path, filename string,
-	referenceType, refereeClientID, refereeEncryptionPublicKey string,
-	expiration int64, availableAfter *time.Time) (string, error) {
+	referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration int64, availableAfter *time.Time) (string, error) {
+
 	if !a.isInitialized() {
 		return "", notInitialized
 	}
@@ -1181,10 +1295,9 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 	}
 	wg.Wait()
 	consensus := Consensus{
-		consensus:              float32(len(success)),
-		consensusThresh:        a.consensusThreshold,
-		fullconsensus:          a.fullconsensus,
-		consensusRequiredForOk: a.consensusOK,
+		consensus:       len(success),
+		consensusThresh: a.consensusThreshold,
+		fullconsensus:   a.fullconsensus,
 	}
 	if !consensus.isConsensusOk() {
 		return errors.New("", "consensus not reached")
@@ -1203,6 +1316,7 @@ func (a *Allocation) CancelUpload(localpath string) error {
 func (a *Allocation) CancelDownload(remotepath string) error {
 	if downloadReq, ok := a.downloadProgressMap[remotepath]; ok {
 		downloadReq.isDownloadCanceled = true
+		downloadReq.ctxCncl()
 		return nil
 	}
 	return errors.New("remote_path_not_found", "Invalid path. No download in progress for the path "+remotepath)
@@ -1307,35 +1421,34 @@ func (a *Allocation) GetStreamDownloader(
 
 func (a *Allocation) DownloadThumbnailFromAuthTicket(localPath string,
 	authTicket string, remoteLookupHash string, remoteFilename string,
-	rxPay bool, status StatusCallback) error {
-
-	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
-		1, 0, numBlockDownloads, remoteFilename, DOWNLOAD_CONTENT_THUMB,
-		rxPay, status)
-}
-
-func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
-	remoteLookupHash string, remoteFilename string, rxPay bool,
 	status StatusCallback) error {
 
 	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
+		1, 0, numBlockDownloads, remoteFilename, DOWNLOAD_CONTENT_THUMB,
+		status)
+}
+
+func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
+	remoteLookupHash string, remoteFilename string, status StatusCallback) error {
+
+	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
 		1, 0, numBlockDownloads, remoteFilename, DOWNLOAD_CONTENT_FULL,
-		rxPay, status)
+		status)
 }
 
 func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string,
 	authTicket string, startBlock int64, endBlock int64, numBlocks int,
-	remoteLookupHash string, remoteFilename string, rxPay bool,
+	remoteLookupHash string, remoteFilename string,
 	status StatusCallback) error {
 
 	return a.downloadFromAuthTicket(localPath, authTicket, remoteLookupHash,
 		startBlock, endBlock, numBlocks, remoteFilename, DOWNLOAD_CONTENT_FULL,
-		rxPay, status)
+		status)
 }
 
 func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	remoteLookupHash string, startBlock int64, endBlock int64, numBlocks int,
-	remoteFilename string, contentMode string, rxPay bool,
+	remoteFilename string, contentMode string,
 	status StatusCallback) error {
 
 	if !a.isInitialized() {
@@ -1351,14 +1464,14 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 		return errors.New("auth_ticket_decode_error", "Error unmarshaling the auth ticket."+err.Error())
 	}
 
-	if stat, err := os.Stat(localPath); err == nil {
+	if stat, err := sys.Files.Stat(localPath); err == nil {
 		if !stat.IsDir() {
 			return fmt.Errorf("Local path is not a directory '%s'", localPath)
 		}
 		localPath = strings.TrimRight(localPath, "/")
 		_, rFile := filepath.Split(remoteFilename)
 		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
-		if _, err := os.Stat(localPath); err == nil {
+		if _, err := sys.Files.Stat(localPath); err == nil {
 			return fmt.Errorf("Local file already exists '%s'", localPath)
 		}
 	}
@@ -1367,6 +1480,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	}
 
 	downloadReq := &DownloadRequest{}
+	downloadReq.maskMu = &sync.Mutex{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
 	downloadReq.allocOwnerID = a.Owner
@@ -1385,7 +1499,6 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.numBlocks = int64(numBlocks)
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
-	downloadReq.consensusRequiredForOk = a.consensusOK
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
@@ -1397,38 +1510,6 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 		defer a.mutex.Unlock()
 		a.downloadProgressMap[remoteLookupHash] = downloadReq
 	}()
-	return nil
-}
-
-func (a *Allocation) CommitMetaTransaction(path, crudOperation, authTicket, lookupHash string, fileMeta *ConsolidatedFileMeta, status StatusCallback) (err error) {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	if fileMeta == nil {
-		if len(path) > 0 {
-			fileMeta, err = a.GetFileMeta(path)
-			if err != nil {
-				return err
-			}
-		} else if len(authTicket) > 0 {
-			fileMeta, err = a.GetFileMetaFromAuthTicket(authTicket, lookupHash)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	req := &CommitMetaRequest{
-		CommitMetaData: CommitMetaData{
-			CrudType: crudOperation,
-			MetaData: fileMeta,
-		},
-		status:    status,
-		a:         a,
-		authToken: authTicket,
-	}
-	go req.processCommitMetaRequest()
 	return nil
 }
 
@@ -1471,130 +1552,6 @@ func (a *Allocation) CancelRepair() error {
 	return errors.New("invalid_cancel_repair_request", "No repair in progress for the allocation")
 }
 
-type CommitFolderData struct {
-	OpType    string
-	PreValue  string
-	CurrValue string
-}
-
-type CommitFolderResponse struct {
-	TxnID string
-	Data  *CommitFolderData
-}
-
-func (a *Allocation) CommitFolderChange(operation, preValue, currValue string) (string, error) {
-	if !a.isInitialized() {
-		return "", notInitialized
-	}
-
-	data := &CommitFolderData{
-		OpType:    operation,
-		PreValue:  preValue,
-		CurrValue: currValue,
-	}
-
-	commitFolderDataBytes, err := json.Marshal(data)
-	if err != nil {
-		return "", err
-	}
-	commitFolderDataString := string(commitFolderDataBytes)
-
-	nonce := client.GetClient().Nonce
-	if nonce != 0 {
-		nonce++
-	}
-	txn := transaction.NewTransactionEntity(client.GetClientID(), blockchain.GetChainID(), client.GetClientPublicKey(), nonce)
-	nonce = txn.TransactionNonce
-	if nonce < 1 {
-		nonce = transaction.Cache.GetNextNonce(txn.ClientID)
-	} else {
-		transaction.Cache.Set(txn.ClientID, nonce)
-	}
-	txn.TransactionNonce = nonce
-
-	txn.TransactionData = commitFolderDataString
-	txn.TransactionType = transaction.TxnTypeData
-	err = txn.ComputeHashAndSign(client.Sign)
-	if err != nil {
-		return "", err
-	}
-
-	transaction.SendTransactionSync(txn, blockchain.GetMiners())
-	querySleepTime := time.Duration(blockchain.GetQuerySleepTime()) * time.Second
-	sys.Sleep(querySleepTime)
-	retries := 0
-	var t *transaction.Transaction
-
-	for retries < blockchain.GetMaxTxnQuery() {
-		t, err = transaction.VerifyTransaction(txn.Hash, blockchain.GetSharders())
-		if err == nil {
-			break
-		}
-		retries++
-		sys.Sleep(querySleepTime)
-	}
-
-	if err != nil {
-		l.Logger.Error("Error verifying the commit transaction", err.Error(), txn.Hash)
-		transaction.Cache.Evict(txn.ClientID)
-		return "", err
-	}
-	if t == nil {
-		err = errors.New("transaction_validation_failed", "Failed to get the transaction confirmation")
-		transaction.Cache.Evict(txn.ClientID)
-		return "", err
-	}
-
-	commitFolderResponse := &CommitFolderResponse{
-		TxnID: t.Hash,
-		Data:  data,
-	}
-
-	commitFolderReponseBytes, err := json.Marshal(commitFolderResponse)
-	if err != nil {
-		l.Logger.Error("Failed to marshal commitFolderResponse to bytes")
-		transaction.Cache.Evict(txn.ClientID)
-		return "", err
-	}
-
-	commitFolderResponseString := string(commitFolderReponseBytes)
-	return commitFolderResponseString, nil
-}
-
-func (a *Allocation) AddCollaborator(filePath, collaboratorID string) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	req := &CollaboratorRequest{
-		path:           filePath,
-		collaboratorID: collaboratorID,
-		a:              a,
-	}
-
-	if req.UpdateCollaboratorToBlobbers() {
-		return nil
-	}
-	return errors.New("add_collaborator_failed", "Failed to add collaborator on all blobbers.")
-}
-
-func (a *Allocation) RemoveCollaborator(filePath, collaboratorID string) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
-
-	req := &CollaboratorRequest{
-		path:           filePath,
-		collaboratorID: collaboratorID,
-		a:              a,
-	}
-
-	if req.RemoveCollaboratorFromBlobbers() {
-		return nil
-	}
-	return errors.New("remove_collaborator_failed", "Failed to remove collaborator on all blobbers.")
-}
-
 func (a *Allocation) GetMaxWriteReadFromBlobbers(blobbers []*BlobberAllocation) (maxW float64, maxR float64, err error) {
 	if !a.isInitialized() {
 		return 0, 0, notInitialized
@@ -1606,11 +1563,19 @@ func (a *Allocation) GetMaxWriteReadFromBlobbers(blobbers []*BlobberAllocation) 
 
 	maxWritePrice, maxReadPrice := 0.0, 0.0
 	for _, v := range blobbers {
-		if v.Terms.WritePrice.ToToken() > maxWritePrice {
-			maxWritePrice = v.Terms.WritePrice.ToToken()
+		writePrice, err := v.Terms.WritePrice.ToToken()
+		if err != nil {
+			return 0, 0, err
 		}
-		if v.Terms.ReadPrice.ToToken() > maxReadPrice {
-			maxReadPrice = v.Terms.ReadPrice.ToToken()
+		if writePrice > maxWritePrice {
+			maxWritePrice = writePrice
+		}
+		readPrice, err := v.Terms.ReadPrice.ToToken()
+		if err != nil {
+			return 0, 0, err
+		}
+		if readPrice > maxReadPrice {
+			maxReadPrice = readPrice
 		}
 	}
 
@@ -1633,11 +1598,19 @@ func (a *Allocation) GetMinWriteRead() (minW float64, minR float64, err error) {
 
 	minWritePrice, minReadPrice := -1.0, -1.0
 	for _, v := range blobbersCopy {
-		if v.Terms.WritePrice.ToToken() < minWritePrice || minWritePrice < 0 {
-			minWritePrice = v.Terms.WritePrice.ToToken()
+		writePrice, err := v.Terms.WritePrice.ToToken()
+		if err != nil {
+			return 0, 0, err
 		}
-		if v.Terms.ReadPrice.ToToken() < minReadPrice || minReadPrice < 0 {
-			minReadPrice = v.Terms.ReadPrice.ToToken()
+		if writePrice < minWritePrice || minWritePrice < 0 {
+			minWritePrice = writePrice
+		}
+		readPrice, err := v.Terms.ReadPrice.ToToken()
+		if err != nil {
+			return 0, 0, err
+		}
+		if readPrice < minReadPrice || minReadPrice < 0 {
+			minReadPrice = readPrice
 		}
 	}
 
@@ -1648,11 +1621,15 @@ func (a *Allocation) GetMaxStorageCostFromBlobbers(size int64, blobbers []*Blobb
 	var cost common.Balance // total price for size / duration
 
 	for _, d := range blobbers {
-		cost += a.uploadCostForBlobber(float64(d.Terms.WritePrice), size,
-			a.DataShards, a.ParityShards)
+		var err error
+		cost, err = common.AddBalance(cost, a.uploadCostForBlobber(float64(d.Terms.WritePrice), size,
+			a.DataShards, a.ParityShards))
+		if err != nil {
+			return 0.0, err
+		}
 	}
 
-	return cost.ToToken(), nil
+	return cost.ToToken()
 }
 
 func (a *Allocation) GetMaxStorageCost(size int64) (float64, error) {
@@ -1662,19 +1639,21 @@ func (a *Allocation) GetMaxStorageCost(size int64) (float64, error) {
 		fmt.Printf("write price for blobber %f datashards %d parity %d\n",
 			float64(d.Terms.WritePrice), a.DataShards, a.ParityShards)
 
-		cost += a.uploadCostForBlobber(float64(d.Terms.WritePrice), size,
-			a.DataShards, a.ParityShards)
-
-		fmt.Printf("Total cost %d\n", cost)
+		var err error
+		cost, err = common.AddBalance(cost, a.uploadCostForBlobber(float64(d.Terms.WritePrice), size,
+			a.DataShards, a.ParityShards))
+		if err != nil {
+			return 0.0, err
+		}
 	}
-
-	return cost.ToToken(), nil
+	fmt.Printf("Total cost %d\n", cost)
+	return cost.ToToken()
 }
 
 func (a *Allocation) GetMinStorageCost(size int64) (common.Balance, error) {
 	minW, _, err := a.GetMinWriteRead()
 	if err != nil {
-		return -1, err
+		return 0, err
 	}
 
 	return a.uploadCostForBlobber(minW, size, a.DataShards, a.ParityShards), nil
@@ -1684,7 +1663,7 @@ func (a *Allocation) uploadCostForBlobber(price float64, size int64, data, parit
 	cost common.Balance) {
 
 	if data == 0 || parity == 0 {
-		return -1.0
+		return 0.0
 	}
 
 	var ps = (size + int64(data) - 1) / int64(data)
@@ -1697,17 +1676,14 @@ func (a *Allocation) sizeInGB(size int64) float64 {
 	return float64(size) / GB
 }
 
-func (a *Allocation) getConsensuses() (fullConsensus float32, consensusThreshold float32, consensusOK float32) {
+func (a *Allocation) getConsensuses() (fullConsensus, consensusThreshold int) {
 	if a.DataShards == 0 {
-		return 0, 0, 0
+		return 0, 0
 	}
 
 	if a.ParityShards == 0 {
-		return float32(a.DataShards), 100, 100
+		return a.DataShards, a.DataShards
 	}
 
-	fullConsensus = float32(a.DataShards + a.ParityShards)
-	consensusThreshold = (float32(a.DataShards) * 100) / fullConsensus
-	consensusOK = consensusThreshold + additionalSuccessRate
-	return
+	return a.DataShards + a.ParityShards, a.DataShards + 1
 }

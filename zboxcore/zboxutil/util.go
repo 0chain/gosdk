@@ -8,11 +8,15 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"math/bits"
+	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"errors"
 
+	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/h2non/filetype"
 	"github.com/lithammer/shortuuid/v3"
 	"golang.org/x/crypto/sha3"
@@ -209,4 +213,33 @@ func GetRefsHash(r []byte) string {
 	var buf []byte
 	buf = hash.Sum(buf)
 	return string(buf)
+}
+
+func GetActiveBlobbers(dirMask uint32, blobbers []*blockchain.StorageNode) []*blockchain.StorageNode {
+	var c, pos int
+	var r []*blockchain.StorageNode
+	for i := dirMask; i != 0; i &= ^(1 << pos) {
+		pos = bits.TrailingZeros32(i)
+		r = append(r, blobbers[pos])
+		c++
+	}
+
+	return r
+}
+
+func GetRateLimitValue(r *http.Response) (int, error) {
+	rlStr := r.Header.Get("X-Rate-Limit-Limit")
+	durStr := r.Header.Get("X-Rate-Limit-Duration")
+
+	rl, err := strconv.ParseFloat(rlStr, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	dur, err := strconv.ParseFloat(durStr, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return int(math.Ceil(rl / dur)), nil
 }

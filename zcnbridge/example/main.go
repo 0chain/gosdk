@@ -99,9 +99,10 @@ func main() {
 		clientConfig = owner.BridgeClientConfig
 	} else {
 		bridge = zcnbridge.SetupBridgeClientSDK(cfg)
-		//bridge.SetupZCNClient(cfg)
 		clientConfig = bridge.BridgeClientConfig
 	}
+
+	fmt.Println("ClientID: " + bridge.ClientID())
 
 	// Next step is register your account in the key storage if it doesn't exist (mandatory)
 	// This should be done in zwallet cli
@@ -611,7 +612,7 @@ func GenerateBurnTransactionOutput(b *zcnbridge.BridgeClient) []byte {
 
 	// generating transaction hash
 	transactionData, _ := json.Marshal(payload)
-	hashData := fmt.Sprintf("%v:%v:%v:%v:%v", time.Now(), b.ID(), scAddress, 0, encryption.Hash(transactionData))
+	hashData := fmt.Sprintf("%v:%v:%v:%v:%v", time.Now(), b.ClientID(), scAddress, 0, encryption.Hash(transactionData))
 	hash := encryption.Hash(hashData)
 
 	output := &BurnPayloadResponse{
@@ -845,8 +846,8 @@ func fromERCtoZCN(b *zcnbridge.BridgeClient) {
 		Logger.Fatal("failed to QueryZChainMintPayload", zap.Error(err), zap.String("hash", burnTrxHash))
 	}
 
-	mintTrx, err := b.MintZCN(context.TODO(), mintPayload)
+	hash, err := b.MintZCN(context.TODO(), mintPayload)
 	if err != nil {
-		Logger.Fatal("failed to MintZCN", zap.Error(err), zap.String("hash", mintTrx.Hash))
+		Logger.Fatal("failed to MintZCN", zap.Error(err), zap.String("hash", hash))
 	}
 }

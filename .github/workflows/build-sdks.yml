@@ -1,0 +1,337 @@
+name: Build SDKs
+
+concurrency:
+  group: "build-mobile-${{ github.ref }}"
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [ master, staging, qa ]
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches: [ master, staging, qa ]
+  workflow_dispatch:
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GOSDK }}
+
+jobs:
+  build-ios:
+    name: Build-ios
+    runs-on: macos-runner
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.4
+
+      - name: Clean build
+        run: make clean-mobilesdk
+
+      - name: Install GoMobile
+        run: |
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          go install golang.org/x/mobile/cmd/gobind@latest
+          gomobile init
+        env:
+          GO111MODULE: "on"
+
+      - name: Setup GoMobile
+        run:  make setup-gomobile
+
+      - name: Build iOS
+        run: |
+          go version
+          make build-ios
+
+      - name: Compress
+        run: |
+          tar -czvf zcncore-ios.tar.gz out/iossdk/ios/zcncore.xcframework
+
+      - name: Setup Build
+        id: setup_build
+        run: |
+          tag=$(echo ${GITHUB_REF#refs/tags/})
+          echo ${tag}
+          if [[ "${{github.event_name}}" = "workflow_dispatch" ]]; then
+            echo "> 0Chain: trigger from workflow_dispatch"
+
+            echo "::set-output name=RELEASE::false"
+            echo "::set-output name=TAG::none"
+         
+          elif [[ ${tag} = v*\.*\.* ]] ; then
+            echo "> 0Chain: trigger from git event"
+       
+            # upload output on release
+            echo "::set-output name=RELEASE::true"
+            echo "::set-output name=TAG::${tag}"
+          fi
+
+      - name: Upload zcncore-ios to release
+        if:  steps.setup_build.outputs.RELEASE == 'true'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: zcncore-ios.tar.gz
+          tag: ${{ steps.setup_build.outputs.TAG }}
+          overwrite: true
+          file_glob: true
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: zcncore-ios
+          path: |
+            zcncore-ios.tar.gz
+
+  build-android:
+    name: Build-android
+    runs-on: [self-hosted, build]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.4
+
+      - name: Install deps
+        run: |
+          codename=$(lsb_release -c | awk '{print $2}')
+          echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" > ./gitaction.list
+          echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
+          echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
+          sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
+      
+          sudo apt-get update -y && sudo apt-get install build-essential wget unzip -y
+
+      - name: Install Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '8'
+
+      - uses: android-actions/setup-android@v2
+
+      - name: Install Android Platform
+        run: |
+          sdkmanager "platform-tools"
+          sdkmanager "platforms;android-29"
+          sdkmanager "build-tools;29.0.2"
+      - uses: nttld/setup-ndk@v1
+        id: setup-ndk
+        with:
+          ndk-version: r21d
+      
+
+
+      - name: Clean build
+        run: make clean-mobilesdk
+
+      - name: Install GoMobile
+        run: |
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          go install golang.org/x/mobile/cmd/gobind@latest
+          gomobile init
+        env:
+          GO111MODULE: "on"
+
+      - name: Setup GoMobile
+        run:  make setup-gomobile
+
+      - name: Build Android
+        run: |
+          go version
+          make build-android
+        env:
+          ANDROID_NDK_HOME: ${{ steps.setup-ndk.outputs.ndk-path }}
+          ANDROID_NDK_TOOLCHAIN: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin
+
+      - name: Compress
+        run: tar -czvf zcncore-android.tar.gz out/androidsdk/zcncore.aar
+
+      - name: Setup Build
+        id: setup_build
+        run: |
+          tag=$(echo ${GITHUB_REF#refs/tags/})
+          echo ${tag}
+    
+          if [[ "${{github.event_name}}" = "workflow_dispatch" ]]; then
+            echo "> 0Chain: trigger from workflow_dispatch"
+
+            echo "::set-output name=RELEASE::false"
+            echo "::set-output name=TAG::none"
+         
+         
+          elif [[ ${tag} = v*\.*\.* ]] ; then
+            echo "> 0Chain: trigger from git event"
+       
+            # upload output on release
+            echo "::set-output name=RELEASE::true"
+            echo "::set-output name=TAG::${tag}"
+          fi
+
+      - name: Upload binaries to release
+        if:  steps.setup_build.outputs.RELEASE == 'true'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: zcncore-android.tar.gz
+          tag: ${{ steps.setup_build.outputs.TAG }}
+          overwrite: true
+          file_glob: true
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: zcncore-android
+          path: zcncore-android.tar.gz
+
+  build-macos:
+    name: Build-macos
+    runs-on:  macos-runner
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.4
+
+      - name: Clean build
+        run: make clean-mobilesdk
+
+      - name: Install GoMobile
+        run: |
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          go install golang.org/x/mobile/cmd/gobind@latest
+          gomobile init
+        env:
+          GO111MODULE: "on"
+
+      - name: Setup GoMobile
+        run:  make setup-gomobile
+
+      - name: Build MacOS
+        run: |
+          go version
+          make build-macos
+
+      - name: Compress
+        run: |
+          tar -czvf zcncore-macos.tar.gz out/macossdk/zcncore.xcframework
+
+      - name: Setup Build
+        id: setup_build
+        run: |
+          tag=$(echo ${GITHUB_REF#refs/tags/})
+          echo ${tag}
+          if [[ "${{github.event_name}}" = "workflow_dispatch" ]]; then
+            echo "> 0Chain: trigger from workflow_dispatch"
+
+            echo "::set-output name=RELEASE::false"
+            echo "::set-output name=TAG::none"
+         
+          elif [[ ${tag} = v*\.*\.* ]] ; then
+            echo "> 0Chain: trigger from git event"
+       
+            # upload output on release
+            echo "::set-output name=RELEASE::true"
+            echo "::set-output name=TAG::${tag}"
+          fi
+
+      - name: Upload zcncore-macos to release
+        if:  steps.setup_build.outputs.RELEASE == 'true'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: zcncore-macos.tar.gz
+          tag: ${{ steps.setup_build.outputs.TAG }}
+          overwrite: true
+          file_glob: true
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: zcncore-macos
+          path: |
+            zcncore-macos.tar.gz
+
+
+  build-windows:
+    name: Build-windows
+    runs-on:  [self-hosted, build]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Go 1.x
+        uses: actions/setup-go@v3
+        with:
+          go-version: 1.19.4
+
+      - name: Install deps
+        run: |
+          codename=$(lsb_release -c | awk '{print $2}')
+          echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" > ./gitaction.list
+          echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
+          echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
+          sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
+      
+          sudo apt-get update -y && sudo apt-get install build-essential wget -y
+
+      - name: Build windows
+        run: |
+          go version
+          make build-windows
+
+      - name: Compress
+        run: |
+          sudo apt install zip -y
+          zip zcn-windows.zip ./winsdk/zcn.windows.dll ./winsdk/zcn.windows.h
+
+      - name: Setup Build
+        id: setup_build
+        run: |
+          tag=$(echo ${GITHUB_REF#refs/tags/})
+          echo ${tag}
+          if [[ "${{github.event_name}}" = "workflow_dispatch" ]]; then
+            echo "> 0Chain: trigger from workflow_dispatch"
+
+            echo "::set-output name=RELEASE::false"
+            echo "::set-output name=TAG::none"
+        
+          elif [[ ${tag} = v*\.*\.* ]] ; then
+            echo "> 0Chain: trigger from git event"
+      
+            # upload output on release
+            echo "::set-output name=RELEASE::true"
+            echo "::set-output name=TAG::${tag}"
+          fi
+
+      - name: Upload zcn-windows to release
+        if:  steps.setup_build.outputs.RELEASE == 'true'
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: zcn-windows.zip
+          tag: ${{ steps.setup_build.outputs.TAG }}
+          overwrite: true
+          file_glob: true
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: zcn-windows
+          path: |
+            zcn-windows.zip

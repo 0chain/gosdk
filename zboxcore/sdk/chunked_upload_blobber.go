@@ -9,6 +9,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
@@ -35,7 +36,21 @@ type ChunkedUploadBlobber struct {
 	commitResult  *CommitResult
 }
 
-func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *ChunkedUpload, chunkIndex int, isFinal bool, encryptedKey string, body *bytes.Buffer, formData ChunkedUploadFormMetadata) error {
+func (sb *ChunkedUploadBlobber) sendUploadRequest(
+	ctx context.Context, su *ChunkedUpload,
+	chunkIndex int, isFinal bool,
+	encryptedKey string, body *bytes.Buffer,
+	formData ChunkedUploadFormMetadata,
+	pos uint64) (err error) {
+
+	defer func() {
+
+		if err != nil {
+			su.maskMu.Lock()
+			su.uploadMask = su.uploadMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
+			su.maskMu.Unlock()
+		}
+	}()
 
 	if formData.FileBytesLen == 0 {
 		//fixed fileRef in last chunk on stream. io.EOF with nil bytes
@@ -61,44 +76,83 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *Chunk
 
 	req.Header.Add("Content-Type", formData.ContentType)
 
-	resp, err := su.client.Do(req.WithContext(ctx))
+	var (
+		resp             *http.Response
+		shouldContinue   bool
+		latestRespMsg    string
+		latestStatusCode int
+	)
 
-	if err != nil {
-		logger.Logger.Error("Upload : ", err)
-		return err
-	}
-	defer resp.Body.Close()
+	for i := 0; i < 3; i++ {
+		err, shouldContinue = func() (err error, shouldContinue bool) {
+			reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
+			resp, err = su.client.Do(req.WithContext(reqCtx))
+			defer ctxCncl()
 
-	respbody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		logger.Logger.Error("Error: Resp ", err)
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		msg := string(respbody)
-		logger.Logger.Error(sb.blobber.Baseurl, " Upload error response: ", resp.StatusCode)
-		return errors.Throw(constants.ErrBadRequest, msg)
-	}
-	var r UploadResult
-	err = json.Unmarshal(respbody, &r)
-	if err != nil {
-		logger.Logger.Error(sb.blobber.Baseurl, " Upload response parse error: ", err)
-		return err
-	}
-	if r.Filename != su.fileMeta.RemoteName || r.Hash != formData.ChunkHash {
-		err = fmt.Errorf("%s Unexpected upload response data %s %s %s", sb.blobber.Baseurl, su.fileMeta.RemoteName, formData.ChunkHash, string(respbody))
-		logger.Logger.Error(err)
-		return err
-	}
+			if err != nil {
+				logger.Logger.Error("Upload : ", err)
+				return
+			}
 
-	//logger.Logger.Debug(sb.blobber.Baseurl, su.fileMeta.RemotePath, " uploaded")
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
+			var r UploadResult
+			var respbody []byte
 
-	su.consensus.Done()
+			respbody, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				logger.Logger.Error("Error: Resp ", err)
+				return
+			}
 
-	//fixed fileRef
-	if err == nil {
+			latestRespMsg = string(respbody)
+			latestStatusCode = resp.StatusCode
 
-		//fixed thumbnail info in first chunk if it has thumbnail
+			if resp.StatusCode == http.StatusTooManyRequests {
+				logger.Logger.Error("Got too many request error")
+				var r int
+				r, err = zboxutil.GetRateLimitValue(resp)
+				if err != nil {
+					logger.Logger.Error(err)
+					return
+				}
+				time.Sleep(time.Duration(r) * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			if resp.StatusCode != http.StatusOK {
+				msg := string(respbody)
+				logger.Logger.Error(sb.blobber.Baseurl,
+					" Upload error response: ", resp.StatusCode,
+					"err message: ", msg)
+				err = errors.Throw(constants.ErrBadRequest, msg)
+				return
+			}
+
+			err = json.Unmarshal(respbody, &r)
+			if err != nil {
+				logger.Logger.Error(sb.blobber.Baseurl, "Upload response parse error: ", err)
+				return
+			}
+			if r.Filename != su.fileMeta.RemoteName || r.Hash != formData.ChunkHash {
+				err = fmt.Errorf("%s Unexpected upload response data %s %s %s", sb.blobber.Baseurl, su.fileMeta.RemoteName, formData.ChunkHash, string(respbody))
+				logger.Logger.Error(err)
+				return
+			}
+			return
+		}()
+
+		if err != nil {
+			return
+		}
+		if shouldContinue {
+			continue
+		}
+
+		su.consensus.Done()
+
 		if formData.ThumbnailBytesLen > 0 {
 
 			sb.fileRef.ThumbnailSize = int64(formData.ThumbnailBytesLen)
@@ -108,7 +162,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *Chunk
 			sb.fileRef.ActualThumbnailHash = su.fileMeta.ActualThumbnailHash
 		}
 
-		//fixed fileRef in last chunk on stream
+		// fixed fileRef in last chunk on stream
 		if isFinal {
 			sb.fileRef.MerkleRoot = formData.ChallengeHash
 			sb.fileRef.ContentHash = formData.ContentHash
@@ -122,15 +176,26 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(ctx context.Context, su *Chunk
 			sb.fileRef.EncryptedKey = encryptedKey
 			sb.fileRef.CalculateHash()
 		}
+		return
 	}
 
-	return err
+	return thrown.New("upload_error",
+		fmt.Sprintf("latest status code: %d, latest response message: %s",
+			latestStatusCode, latestRespMsg))
 
 }
 
-func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUpload) error {
+func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUpload, pos uint64) (err error) {
+	defer func() {
+		if err != nil {
+			logger.Logger.Error(err)
+			su.maskMu.Lock()
+			su.uploadMask = su.uploadMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
+			su.maskMu.Unlock()
+		}
+	}()
 
-	rootRef, latestWM, size, err := sb.processWriteMarker(ctx, su)
+	rootRef, latestWM, size, commitParams, err := sb.processWriteMarker(ctx, su)
 
 	if err != nil {
 		return err
@@ -145,17 +210,13 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 		wm.PreviousAllocationRoot = ""
 	}
 
+	wm.FileMetaRoot = rootRef.FileMetaHash
 	wm.AllocationID = su.allocationObj.ID
 	wm.Size = size
 	wm.BlobberID = sb.blobber.ID
 
 	wm.Timestamp = timestamp
 	wm.ClientID = client.GetClientID()
-
-	wm.LookupHash = fileref.GetReferenceLookup(su.allocationObj.ID, sb.fileRef.Path)
-	wm.Name = sb.fileRef.Name
-	wm.ContentHash = sb.fileRef.ContentHash
-
 	err = wm.Sign()
 	if err != nil {
 		logger.Logger.Error("Signing writemarker failed: ", err)
@@ -168,6 +229,14 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 		logger.Logger.Error("Creating writemarker failed: ", err)
 		return err
 	}
+
+	fileIDMeta, err := json.Marshal(commitParams.FileIDMeta)
+	if err != nil {
+		logger.Logger.Error("Error marshalling file ID Meta: ", err)
+		return err
+	}
+
+	formWriter.WriteField("file_id_meta", string(fileIDMeta))
 	formWriter.WriteField("connection_id", su.progress.ConnectionID)
 	formWriter.WriteField("write_marker", string(wmData))
 
@@ -180,61 +249,96 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	}
 	req.Header.Add("Content-Type", formWriter.FormDataContentType())
 
-	logger.Logger.Info("Committing to blobber." + sb.blobber.Baseurl)
+	logger.Logger.Info("Committing to blobber. " + sb.blobber.Baseurl)
 
-	//for retries := 0; retries < 3; retries++ {
+	var (
+		resp           *http.Response
+		shouldContinue bool
+	)
 
-	resp, err := su.client.Do(req.WithContext(ctx))
+	for retries := 0; retries < 3; retries++ {
+		err, shouldContinue = func() (err error, shouldContinue bool) {
+			reqCtx, ctxCncl := context.WithTimeout(ctx, su.commitTimeOut)
+			resp, err = su.client.Do(req.WithContext(reqCtx))
+			defer ctxCncl()
 
-	if err != nil {
-		logger.Logger.Error("Commit: ", err)
-		return err
+			if err != nil {
+				logger.Logger.Error("Commit: ", err)
+				return
+			}
+
+			if resp.Body != nil {
+				defer resp.Body.Close()
+			}
+
+			var respBody []byte
+			if resp.StatusCode == http.StatusOK {
+				logger.Logger.Info(sb.blobber.Baseurl, su.progress.ConnectionID, " committed")
+				su.consensus.Done()
+				return
+			}
+
+			if resp.StatusCode == http.StatusTooManyRequests {
+				logger.Logger.Info(sb.blobber.Baseurl, su.progress.ConnectionID,
+					" got too many request error. Retrying")
+
+				var r int
+				r, err = zboxutil.GetRateLimitValue(resp)
+				if err != nil {
+					logger.Logger.Error(err)
+					return
+				}
+
+				time.Sleep(time.Duration(r) * time.Second)
+				shouldContinue = true
+				return
+			}
+
+			respBody, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				logger.Logger.Error("Response read: ", err)
+				return
+			}
+
+			err = thrown.New("commit_error",
+				fmt.Sprintf("Got error response %s with status %d", respBody, resp.StatusCode))
+			return
+		}()
+
+		if err != nil {
+			return
+		}
+		if shouldContinue {
+			continue
+		}
+		return
+
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode == http.StatusOK {
-		logger.Logger.Info(sb.blobber.Baseurl, su.progress.ConnectionID, " committed")
-	} else {
-		logger.Logger.Error("Commit response: ", resp.StatusCode)
-	}
-
-	respBody, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		logger.Logger.Error("Response read: ", err)
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		logger.Logger.Error(sb.blobber.Baseurl, " Commit response:", string(respBody))
-		return thrown.New("commit_error", string(respBody))
-	}
-
-	if err == nil {
-		su.consensus.Done()
-		return nil
-	}
-	//}
-
-	return nil
+	return thrown.New("commit_error", fmt.Sprintf("Commit failed with response status %d", resp.StatusCode))
 }
 
-func (sb *ChunkedUploadBlobber) processWriteMarker(ctx context.Context, su *ChunkedUpload) (*fileref.Ref, *marker.WriteMarker, int64, error) {
+func (sb *ChunkedUploadBlobber) processWriteMarker(
+	ctx context.Context, su *ChunkedUpload) (
+	*fileref.Ref, *marker.WriteMarker, int64, *allocationchange.CommitParams, error) {
+
 	logger.Logger.Info("received a commit request")
 	paths := make([]string, 0)
 	for _, change := range sb.commitChanges {
-		paths = append(paths, change.GetAffectedPath())
+		paths = append(paths, change.GetAffectedPath()...)
 	}
 
 	var lR ReferencePathResult
 	req, err := zboxutil.NewReferencePathRequest(sb.blobber.Baseurl, su.allocationObj.Tx, paths)
 	if err != nil || len(paths) == 0 {
 		logger.Logger.Error("Creating ref path req", err)
-		return nil, nil, 0, err
+		return nil, nil, 0, nil, err
 	}
 
 	resp, err := su.client.Do(req)
 
 	if err != nil {
 		logger.Logger.Error("Ref path error:", err)
-		return nil, nil, 0, err
+		return nil, nil, 0, nil, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
@@ -243,49 +347,44 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(ctx context.Context, su *Chun
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		logger.Logger.Error("Ref path: Resp", err)
-		return nil, nil, 0, err
+		return nil, nil, 0, nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, nil, 0, fmt.Errorf("Reference path error response: Status: %d - %s ", resp.StatusCode, string(body))
+		return nil, nil, 0, nil, fmt.Errorf("Reference path error response: Status: %d - %s ", resp.StatusCode, string(body))
 	}
 
 	err = json.Unmarshal(body, &lR)
 	if err != nil {
 		logger.Logger.Error("Reference path json decode error: ", err)
-		return nil, nil, 0, err
+		return nil, nil, 0, nil, err
 	}
 
-	//process the commit request for the blobber here
-	if err != nil {
-
-		return nil, nil, 0, err
-	}
 	rootRef, err := lR.GetDirTree(su.allocationObj.ID)
-	if lR.LatestWM != nil {
+	if err != nil {
+		return nil, nil, 0, nil, err
+	}
 
+	if lR.LatestWM != nil {
 		rootRef.CalculateHash()
 		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
-		// TODO: it is a concurrent change conflict on database.  check concurrent write for allocation
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
-			logger.Logger.Info("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
+			logger.Logger.Info("Allocation root from latest writemarker mismatch. Expected: " +
+				prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
+			return nil, nil, 0, nil, fmt.Errorf(
+				"calculated allocation root mismatch from blobber %s. Expected: %s, Got: %s",
+				sb.blobber.Baseurl, prevAllocationRoot, lR.LatestWM.AllocationRoot)
 		}
 	}
-	if err != nil {
 
-		return nil, nil, 0, err
-	}
-	size := int64(0)
+	var size int64
+	var commitParams allocationchange.CommitParams
 	for _, change := range sb.commitChanges {
-		err = change.ProcessChange(rootRef)
+		commitParams, err = change.ProcessChange(rootRef)
 		if err != nil {
-			break
+			return nil, nil, 0, nil, err
 		}
 		size += change.GetSize()
 	}
-	if err != nil {
 
-		return nil, nil, 0, err
-	}
-
-	return rootRef, lR.LatestWM, size, nil
+	return rootRef, lR.LatestWM, size, &commitParams, nil
 }

@@ -114,9 +114,8 @@ func (z *ZBox) DoPost(req *Request, handle resty.Handle) *resty.Resty {
 	opts := make([]resty.Option, 0, 5)
 
 	opts = append(opts, resty.WithRetry(resty.DefaultRetry))
-	opts = append(opts, resty.WithTimeout(resty.DefaultRequestTimeout))
-	opts = append(opts, resty.WithRequestInterceptor(func(r *http.Request) {
-		z.SignRequest(r, req.AllocationID) //nolint
+	opts = append(opts, resty.WithRequestInterceptor(func(r *http.Request) error {
+		return z.SignRequest(r, req.AllocationID) //nolint
 	}))
 
 	if len(req.ContentType) > 0 {

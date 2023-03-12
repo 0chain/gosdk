@@ -8,3 +8,5 @@ type KeyPair struct {
 
 // SignFunc sign method for request verification
 type SignFunc func(hash string, signatureScheme string, keys []KeyPair) (string, error)
+
+type VerifyFunc func(signature string, msg string) (bool, error)

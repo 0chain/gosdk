@@ -5,24 +5,100 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"path"
 	"path/filepath"
 	"strings"
 	"sync"
+	"syscall/js"
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/transaction"
+	"github.com/0chain/gosdk/wasmsdk/jsbridge"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
+func listObjects(allocationID string, remotePath string) (*sdk.ListResult, error) {
+	alloc, err := getAllocation(allocationID)
+	if err != nil {
+		return nil, err
+	}
+
+	return alloc.ListDir(remotePath)
+
+}
+
+func createDir(allocationID, remotePath string) error {
+	if len(allocationID) == 0 {
+		return RequiredArg("allocationID")
+	}
+
+	if len(remotePath) == 0 {
+		return RequiredArg("remotePath")
+	}
+
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+
+	return allocationObj.CreateDir(remotePath)
+}
+
+// getFileStats get file stats from blobbers
+func getFileStats(allocationID, remotePath string) ([]*sdk.FileStats, error) {
+	if len(allocationID) == 0 {
+		return nil, RequiredArg("allocationID")
+	}
+
+	if len(remotePath) == 0 {
+		return nil, RequiredArg("remotePath")
+	}
+
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		return nil, err
+	}
+
+	fileStats, err := allocationObj.GetFileStats(remotePath)
+	if err != nil {
+		return nil, err
+	}
+
+	var stats []*sdk.FileStats
+
+	for _, it := range fileStats {
+		stats = append(stats, it)
+	}
+
+	return stats, nil
+}
+
+// updateBlobberSettings expects settings JSON of type sdk.Blobber
+func updateBlobberSettings(blobberSettingsJson string) (*transaction.Transaction, error) {
+	var blobberSettings sdk.Blobber
+	err := json.Unmarshal([]byte(blobberSettingsJson), &blobberSettings)
+	if err != nil {
+		sdkLogger.Error(err)
+		return nil, err
+	}
+
+	var sn = transaction.SmartContractTxnData{
+		Name:      transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS,
+		InputArgs: blobberSettings,
+	}
+
+	_, _, _, txn, err := sdk.SmartContractTxn(sn)
+	return txn, err
+}
+
 // Delete delete file from blobbers
-func Delete(allocationID, remotePath string, autoCommit bool) (*FileCommandResponse, error) {
+func Delete(allocationID, remotePath string) (*FileCommandResponse, error) {
 
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
@@ -32,12 +108,7 @@ func Delete(allocationID, remotePath string, autoCommit bool) (*FileCommandRespo
 		return nil, RequiredArg("remotePath")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
-	if err != nil {
-		return nil, err
-	}
-
-	fileMeta, isFile, err := getFileMeta(allocationObj, remotePath, autoCommit)
+	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		return nil, err
 	}
@@ -53,23 +124,11 @@ func Delete(allocationID, remotePath string, autoCommit bool) (*FileCommandRespo
 		CommandSuccess: true,
 	}
 
-	if autoCommit {
-		txn, err := commitTxn(allocationObj, remotePath, "", "", "", "Delete", fileMeta, isFile)
-		if err != nil {
-			resp.Error = err.Error()
-
-			return resp, nil
-		}
-
-		resp.CommitSuccess = true
-		resp.CommitTxn = txn
-	}
-
 	return resp, nil
 }
 
 // Rename rename a file existing already on dStorage. Only the allocation's owner can rename a file.
-func Rename(allocationID, remotePath, destName string, autoCommit bool) (*FileCommandResponse, error) {
+func Rename(allocationID, remotePath, destName string) (*FileCommandResponse, error) {
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
 	}
@@ -82,14 +141,9 @@ func Rename(allocationID, remotePath, destName string, autoCommit bool) (*FileCo
 		return nil, RequiredArg("destName")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
-		return nil, err
-	}
-
-	fileMeta, isFile, err := getFileMeta(allocationObj, remotePath, autoCommit)
-	if err != nil {
 		return nil, err
 	}
 
@@ -104,23 +158,11 @@ func Rename(allocationID, remotePath, destName string, autoCommit bool) (*FileCo
 		CommandSuccess: true,
 	}
 
-	if autoCommit {
-		txn, err := commitTxn(allocationObj, remotePath, destName, "", "", "Rename", fileMeta, isFile)
-		if err != nil {
-			resp.Error = err.Error()
-
-			return resp, nil
-		}
-
-		resp.CommitSuccess = true
-		resp.CommitTxn = txn
-	}
-
 	return resp, nil
 }
 
 // Copy copy file to another folder path on blobbers
-func Copy(allocationID, remotePath, destPath string, autoCommit bool) (*FileCommandResponse, error) {
+func Copy(allocationID, remotePath, destPath string) (*FileCommandResponse, error) {
 
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
@@ -134,14 +176,9 @@ func Copy(allocationID, remotePath, destPath string, autoCommit bool) (*FileComm
 		return nil, RequiredArg("destPath")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
-		return nil, err
-	}
-
-	fileMeta, isFile, err := getFileMeta(allocationObj, remotePath, autoCommit)
-	if err != nil {
 		return nil, err
 	}
 
@@ -157,24 +194,11 @@ func Copy(allocationID, remotePath, destPath string, autoCommit bool) (*FileComm
 		CommandSuccess: true,
 	}
 
-	if autoCommit {
-
-		txn, err := commitTxn(allocationObj, remotePath, destPath, "", "", "Copy", fileMeta, isFile)
-		if err != nil {
-			resp.Error = err.Error()
-
-			return resp, nil
-		}
-
-		resp.CommitSuccess = true
-		resp.CommitTxn = txn
-	}
-
 	return resp, nil
 }
 
 // Move move file to another remote folder path on dStorage. Only the owner of the allocation can copy an object.
-func Move(allocationID, remotePath, destPath string, autoCommit bool) (*FileCommandResponse, error) {
+func Move(allocationID, remotePath, destPath string) (*FileCommandResponse, error) {
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
 	}
@@ -187,14 +211,9 @@ func Move(allocationID, remotePath, destPath string, autoCommit bool) (*FileComm
 		return nil, RequiredArg("destPath")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
-		return nil, err
-	}
-
-	fileMeta, isFile, err := getFileMeta(allocationObj, remotePath, autoCommit)
-	if err != nil {
 		return nil, err
 	}
 
@@ -208,18 +227,6 @@ func Move(allocationID, remotePath, destPath string, autoCommit bool) (*FileComm
 
 	resp := &FileCommandResponse{
 		CommandSuccess: true,
-	}
-
-	if autoCommit {
-		txn, err := commitTxn(allocationObj, remotePath, destPath, "", "", "Move", fileMeta, isFile)
-		if err != nil {
-			resp.Error = err.Error()
-
-			return resp, nil
-		}
-
-		resp.CommitSuccess = true
-		resp.CommitTxn = txn
 	}
 
 	return resp, nil
@@ -236,7 +243,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 		return "", RequiredArg("remotePath")
 	}
 
-	allocationObj, err := sdk.GetAllocation(allocationID)
+	allocationObj, err := getAllocation(allocationID)
 	if err != nil {
 		PrintError("Error fetching the allocation", err)
 		return "", err
@@ -295,98 +302,300 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 
 }
 
-func downloadFile(allocationObj *sdk.Allocation, authTicket string, authTicketObj *marker.AuthTicket, localPath, remotePath, lookupHash string, downloadThumbnailOnly, rxPay bool) (string, error) {
-	var blocksPerMarker, startBlock, endBlock int
+// download download file
+func download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int, callbackFuncName string) (*DownloadCommandResponse, error) {
+
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	if callbackFuncName != "" {
+		callback := js.Global().Get(callbackFuncName)
+		statusBar.callback = func(totalBytes, completedBytes int, err string) {
+			callback.Invoke(totalBytes, completedBytes, err)
+		}
+	}
+	wg.Add(1)
 
 	if len(remotePath) == 0 && len(authTicket) == 0 {
-		return "", RequiredArg("remotePath/authTicket")
+		return nil, RequiredArg("remotePath/authTicket")
 	}
 
-	if blocksPerMarker == 0 {
-		blocksPerMarker = 10
+	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
+	localPath := allocationID + "_" + fileName
+
+	downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
+		sdk.WithAuthticket(authTicket, lookupHash),
+		sdk.WithOnlyThumbnail(downloadThumbnailOnly),
+		sdk.WithBlocks(0, 0, numBlocks))
+
+	if err != nil {
+		PrintError(err.Error())
+		return nil, err
 	}
 
-	sdk.SetNumBlockDownloads(blocksPerMarker)
+	defer sys.Files.Remove(localPath) //nolint
+
+	err = downloader.Start(statusBar)
+
+	if err == nil {
+		wg.Wait()
+	} else {
+		PrintError("Download failed.", err.Error())
+		return nil, err
+	}
+	if !statusBar.success {
+		return nil, errors.New("Download failed: unknown error")
+	}
+
+	resp := &DownloadCommandResponse{
+		CommandSuccess: true,
+		FileName:       downloader.GetFileName(),
+	}
+
+	fs, _ := sys.Files.Open(localPath)
+
+	mf, _ := fs.(*sys.MemFile)
+
+	resp.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
+
+	return resp, nil
+
+}
+
+type BulkUploadOption struct {
+	AllocationID string `json:"allocationId,omitempty"`
+	RemotePath   string `json:"remotePath,omitempty"`
+
+	ThumbnailBytes jsbridge.Bytes `json:"thumbnailBytes,omitempty"`
+	Encrypt        bool           `json:"encrypt,omitempty"`
+	IsUpdate       bool           `json:"isUpdate,omitempty"`
+	IsRepair       bool           `json:"isRepair,omitempty"`
+
+	NumBlocks         int    `json:"numBlocks,omitempty"`
+	FileSize          int64  `json:"fileSize,omitempty"`
+	ReadChunkFuncName string `json:"readChunkFuncName,omitempty"`
+	CallbackFuncName  string `json:"callbackFuncName,omitempty"`
+}
+
+type BulkUploadResult struct {
+	RemotePath string `json:"remotePath,omitempty"`
+	Success    bool   `json:"success,omitempty"`
+	Error      string `json:"error,omitempty"`
+}
+
+func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
+	var options []BulkUploadOption
+	err := json.Unmarshal([]byte(jsonBulkUploadOptions), &options)
+	if err != nil {
+		return nil, err
+	}
+
+	n := len(options)
+	wait := make(chan BulkUploadResult, 1)
+
+	for _, option := range options {
+		go func(o BulkUploadOption) {
+			result := BulkUploadResult{
+				RemotePath: o.RemotePath,
+			}
+			defer func() { wait <- result }()
+
+			ok, err := uploadWithJsFuncs(o.AllocationID, o.RemotePath,
+				o.ReadChunkFuncName,
+				o.FileSize,
+				o.ThumbnailBytes.Buffer,
+				o.Encrypt,
+				o.IsUpdate,
+				o.IsRepair,
+				o.NumBlocks,
+				o.CallbackFuncName)
+			result.Success = ok
+			if err != nil {
+				result.Error = err.Error()
+				result.Success = false
+			}
+
+		}(option)
+
+	}
+
+	results := make([]BulkUploadResult, 0, n)
+	for i := 0; i < n; i++ {
+		result := <-wait
+		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string, fileSize int64, thumbnailBytes []byte, encrypt, isUpdate, isRepair bool, numBlocks int, callbackFuncName string) (bool, error) {
+
+	if len(allocationID) == 0 {
+		return false, RequiredArg("allocationID")
+	}
+
+	if len(remotePath) == 0 {
+		return false, RequiredArg("remotePath")
+	}
+
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return false, err
+	}
+
+	wg := &sync.WaitGroup{}
+	statusBar := &StatusBar{wg: wg}
+	if callbackFuncName != "" {
+		callback := js.Global().Get(callbackFuncName)
+		statusBar.callback = func(totalBytes, completedBytes int, err string) {
+			callback.Invoke(totalBytes, completedBytes, err)
+		}
+	}
+	wg.Add(1)
+	if strings.HasPrefix(remotePath, "/Encrypted") {
+		encrypt = true
+	}
+
+	fileReader := jsbridge.NewFileReader(readChunkFuncName, fileSize)
+
+	mimeType, err := zboxutil.GetFileContentType(fileReader)
+	if err != nil {
+		return false, err
+	}
+
+	localPath := remotePath
+
+	remotePath = zboxutil.RemoteClean(remotePath)
+	isabs := zboxutil.IsRemoteAbs(remotePath)
+	if !isabs {
+		err = errors.New("invalid_path: Path should be valid and absolute")
+		return false, err
+	}
+	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
+
+	_, fileName := filepath.Split(remotePath)
+
+	fileMeta := sdk.FileMeta{
+		Path:       localPath,
+		ActualSize: fileSize,
+		MimeType:   mimeType,
+		RemoteName: fileName,
+		RemotePath: remotePath,
+	}
+
+	if numBlocks < 1 {
+		numBlocks = 100
+	}
+
+	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair,
+		sdk.WithThumbnail(thumbnailBytes),
+		sdk.WithEncrypt(encrypt),
+		sdk.WithStatusCallback(statusBar),
+		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
+		sdk.WithChunkNumber(numBlocks))
+	if err != nil {
+		return false, err
+	}
+
+	err = ChunkedUpload.Start()
+
+	if err != nil {
+		PrintError("Upload failed.", err)
+		return false, err
+	}
+
+	wg.Wait()
+	if !statusBar.success {
+		return false, errors.New("upload failed: unknown")
+	}
+
+	return true, nil
+}
+
+// upload upload file
+func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, isUpdate, isRepair bool, numBlocks int) (*FileCommandResponse, error) {
+	if len(allocationID) == 0 {
+		return nil, RequiredArg("allocationID")
+	}
+
+	if len(remotePath) == 0 {
+		return nil, RequiredArg("remotePath")
+	}
+
+	allocationObj, err := getAllocation(allocationID)
+	if err != nil {
+		PrintError("Error fetching the allocation", err)
+		return nil, err
+	}
+
 	wg := &sync.WaitGroup{}
 	statusBar := &StatusBar{wg: wg}
 	wg.Add(1)
-	var errE, err error
+	if strings.HasPrefix(remotePath, "/Encrypted") {
+		encrypt = true
+	}
 
-	fileName := filepath.Base(remotePath)
+	fileReader := bytes.NewReader(fileBytes)
+
+	mimeType, err := zboxutil.GetFileContentType(fileReader)
+	if err != nil {
+		return nil, err
+	}
+
+	localPath := remotePath
+
+	remotePath = zboxutil.RemoteClean(remotePath)
+	isabs := zboxutil.IsRemoteAbs(remotePath)
+	if !isabs {
+		err = errors.New("invalid_path: Path should be valid and absolute")
+		return nil, err
+	}
+	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
+
+	_, fileName := filepath.Split(remotePath)
+
+	fileMeta := sdk.FileMeta{
+		Path:       localPath,
+		ActualSize: int64(len(fileBytes)),
+		MimeType:   mimeType,
+		RemoteName: fileName,
+		RemotePath: remotePath,
+	}
+
+	if numBlocks < 1 {
+		numBlocks = 100
+	}
+
+	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair,
+		sdk.WithThumbnail(thumbnailBytes),
+		sdk.WithEncrypt(encrypt),
+		sdk.WithStatusCallback(statusBar),
+		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}),
+		sdk.WithChunkNumber(numBlocks))
+	if err != nil {
+		return nil, err
+	}
+
+	err = ChunkedUpload.Start()
 
 	if err != nil {
-		PrintError(err)
-		return "", err
+		PrintError("Upload failed.", err)
+		return nil, err
 	}
-	defer sys.Files.Remove(localPath) //nolint
-
-	if len(authTicket) > 0 {
-
-		if authTicketObj.RefType == fileref.FILE {
-			fileName = authTicketObj.FileName
-			lookupHash = authTicketObj.FilePathHash
-		} else if len(lookupHash) > 0 {
-			fileMeta, err := allocationObj.GetFileMetaFromAuthTicket(authTicket, lookupHash)
-			if err != nil {
-				PrintError("Either remotepath or lookuphash is required when using authticket of directory type")
-				return "", err
-			}
-			fileName = fileMeta.Name
-		} else if len(remotePath) > 0 {
-			lookupHash = fileref.GetReferenceLookup(allocationObj.Tx, remotePath)
-
-			pathnames := strings.Split(remotePath, "/")
-			fileName = pathnames[len(pathnames)-1]
-		} else {
-			PrintError("Either remotepath or lookuphash is required when using authticket of directory type")
-			return "", errors.New("Either remotepath or lookuphash is required when using authticket of directory type")
-		}
-
-		if downloadThumbnailOnly {
-			errE = allocationObj.DownloadThumbnailFromAuthTicket(localPath,
-				authTicket, lookupHash, fileName, rxPay, statusBar)
-		} else {
-			if startBlock != 0 || endBlock != 0 {
-				errE = allocationObj.DownloadFromAuthTicketByBlocks(
-					localPath, authTicket, int64(startBlock), int64(endBlock), blocksPerMarker,
-					lookupHash, fileName, rxPay, statusBar)
-			} else {
-				errE = allocationObj.DownloadFromAuthTicket(localPath,
-					authTicket, lookupHash, fileName, rxPay, statusBar)
-			}
-		}
-	} else if len(remotePath) > 0 {
-
-		if err != nil {
-			PrintError("Error fetching the allocation", err)
-			return "", err
-		}
-		if downloadThumbnailOnly {
-			errE = allocationObj.DownloadThumbnail(localPath, remotePath, statusBar)
-		} else {
-			if startBlock != 0 || endBlock != 0 {
-				errE = allocationObj.DownloadFileByBlock(localPath, remotePath, int64(startBlock), int64(endBlock), blocksPerMarker, statusBar)
-			} else {
-				errE = allocationObj.DownloadFile(localPath, remotePath, statusBar)
-			}
-		}
-	}
-
-	if errE == nil {
-		wg.Wait()
-	} else {
-		PrintError("Download failed.", errE.Error())
-		return "", errE
-	}
+	wg.Wait()
 	if !statusBar.success {
-		return "", errors.New("Download failed: unknown error")
+		return nil, errors.New("upload failed: unknown")
 	}
 
-	return fileName, nil
+	resp := &FileCommandResponse{
+		CommandSuccess: true,
+	}
+
+	return resp, nil
 }
 
-// Download download file
-func Download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly, rxPay, autoCommit bool) (*DownloadCommandResponse, error) {
+// download download file blocks
+func downloadBlocks(allocationID, remotePath, authTicket, lookupHash string, numBlocks int, startBlockNumber, endBlockNumber int64, callbackFuncName string) (*DownloadCommandResponse, error) {
 
 	if len(remotePath) == 0 && len(authTicket) == 0 {
 		return nil, RequiredArg("remotePath/authTicket")
@@ -394,6 +603,12 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 
 	wg := &sync.WaitGroup{}
 	statusBar := &StatusBar{wg: wg}
+	if callbackFuncName != "" {
+		callback := js.Global().Get(callbackFuncName)
+		statusBar.callback = func(totalBytes, completedBytes int, err string) {
+			callback.Invoke(totalBytes, completedBytes, err)
+		}
+	}
 	wg.Add(1)
 
 	fileName := strings.Replace(path.Base(remotePath), "/", "-", -1)
@@ -401,8 +616,7 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 
 	downloader, err := sdk.CreateDownloader(allocationID, localPath, remotePath,
 		sdk.WithAuthticket(authTicket, lookupHash),
-		sdk.WithOnlyThumbnail(downloadThumbnailOnly),
-		sdk.WithRxPay(rxPay))
+		sdk.WithBlocks(startBlockNumber, endBlockNumber, numBlocks))
 
 	if err != nil {
 		PrintError(err.Error())
@@ -434,197 +648,15 @@ func Download(allocationID, remotePath, authTicket, lookupHash string, downloadT
 
 	resp.Url = CreateObjectURL(mf.Buffer.Bytes(), "application/octet-stream")
 
-	if autoCommit {
-
-		txn, err := commitTxn(downloader.GetAllocation(), remotePath, "", authTicket, lookupHash, "Download", nil, true)
-		if err != nil {
-			resp.Error = err.Error()
-
-			return resp, nil
-		}
-
-		resp.CommitSuccess = true
-		resp.CommitTxn = txn
-	}
-
 	return resp, nil
 
 }
 
-// Upload upload file
-func Upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, autoCommit bool, attrWhoPaysForReads string, isLiveUpload, isSyncUpload bool, isUpdate, isRepair bool) (*FileCommandResponse, error) {
-	if len(allocationID) == 0 {
-		return nil, RequiredArg("allocationID")
-	}
-
-	if len(remotePath) == 0 {
-		return nil, RequiredArg("remotePath")
-	}
-
-	allocationObj, err := sdk.GetAllocation(allocationID)
-	if err != nil {
-		PrintError("Error fetching the allocation", err)
-		return nil, err
-	}
-
-	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg}
-	wg.Add(1)
-	if strings.HasPrefix(remotePath, "/Encrypted") {
-		encrypt = true
-	}
-
-	var attrs fileref.Attributes
-	if len(attrWhoPaysForReads) > 0 {
-		var (
-			wp common.WhoPays
-		)
-
-		if err := wp.Parse(attrWhoPaysForReads); err != nil {
-			PrintError(err)
-			return nil, err
-		}
-		attrs.WhoPaysForReads = wp // set given value
-	}
-
-	if isLiveUpload {
-		return nil, errors.New("live upload is not supported yet")
-	} else if isSyncUpload {
-		return nil, errors.New("sync upload is not supported yet")
-	}
-
-	fileReader := bytes.NewReader(fileBytes)
-
-	mimeType, err := zboxutil.GetFileContentType(fileReader)
+// GetBlobbersList get list of active blobbers, and format them as array json string
+func getBlobbers() ([]*sdk.Blobber, error) {
+	blobbs, err := sdk.GetBlobbers(true)
 	if err != nil {
 		return nil, err
 	}
-
-	localPath := remotePath
-
-	remotePath = zboxutil.RemoteClean(remotePath)
-	isabs := zboxutil.IsRemoteAbs(remotePath)
-	if !isabs {
-		err = errors.New("invalid_path: Path should be valid and absolute")
-		return nil, err
-	}
-	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
-
-	_, fileName := filepath.Split(remotePath)
-
-	fileMeta := sdk.FileMeta{
-		Path:       localPath,
-		ActualSize: int64(len(fileBytes)),
-		MimeType:   mimeType,
-		RemoteName: fileName,
-		RemotePath: remotePath,
-		Attributes: attrs,
-	}
-
-	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair,
-		sdk.WithThumbnail(thumbnailBytes),
-		sdk.WithEncrypt(encrypt),
-		sdk.WithStatusCallback(statusBar),
-		sdk.WithProgressStorer(&chunkedUploadProgressStorer{list: make(map[string]*sdk.UploadProgress)}))
-	if err != nil {
-		return nil, err
-	}
-
-	err = ChunkedUpload.Start()
-
-	if err != nil {
-		PrintError("Upload failed.", err)
-		return nil, err
-	}
-	wg.Wait()
-	if !statusBar.success {
-		return nil, errors.New("upload failed: unknown")
-	}
-
-	resp := &FileCommandResponse{
-		CommandSuccess: true,
-	}
-
-	if autoCommit {
-		txn, err := commitTxn(allocationObj, remotePath, "", "", "", "Upload", nil, true)
-
-		if err != nil {
-			resp.Error = err.Error()
-
-			return resp, nil
-		}
-
-		resp.CommitSuccess = true
-		resp.CommitTxn = txn
-	}
-
-	return resp, nil
-}
-
-// CommitFileMetaTxn commit file changes to blockchain, and update to blobbers
-func CommitFileMetaTxn(allocationID, commandName, remotePath, authTicket, lookupHash string) (*transaction.Transaction, error) {
-	sdkLogger.Info("Commiting changes to blockchain ...")
-
-	if len(allocationID) == 0 {
-		return nil, RequiredArg("allocationID")
-	}
-
-	allocationObj, err := sdk.GetAllocation(allocationID)
-	if err != nil {
-		PrintError("Error fetching the allocation", err)
-		return nil, err
-	}
-
-	wg := &sync.WaitGroup{}
-	statusBar := &StatusBar{wg: wg}
-	wg.Add(1)
-
-	err = allocationObj.CommitMetaTransaction(remotePath, commandName, authTicket, lookupHash, nil, statusBar)
-	if err != nil {
-		PrintError("Commit failed.", err)
-		return nil, err
-	}
-
-	wg.Wait()
-
-	txn, err := getLastMetadataCommitTxn()
-
-	if err != nil {
-		return nil, err
-	}
-
-	sdkLogger.Info("Commit Metadata successful")
-	return txn, nil
-}
-
-// CommitFolderMetaTxn commit folder changes to blockchain
-func CommitFolderMetaTxn(allocationID, commandName, preValue, currValue string) (*transaction.Transaction, error) {
-	sdkLogger.Info("Commiting changes to blockchain ...")
-
-	if len(allocationID) == 0 {
-		return nil, RequiredArg("allocationID")
-	}
-
-	allocationObj, err := sdk.GetAllocation(allocationID)
-	if err != nil {
-		PrintError("Error fetching the allocation", err)
-		return nil, err
-	}
-
-	resp, err := allocationObj.CommitFolderChange(commandName, preValue, currValue)
-	if err != nil {
-		PrintError("Commit failed.", err)
-		return nil, err
-	}
-
-	sdkLogger.Info("Commit Metadata successful, Response :", resp)
-
-	txn, err := getLastMetadataCommitTxn()
-
-	if err != nil {
-		return nil, err
-	}
-
-	return txn, nil
-
+	return blobbs, err
 }

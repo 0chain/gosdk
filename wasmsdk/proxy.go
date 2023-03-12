@@ -6,6 +6,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/0chain/gosdk/core/sys"
@@ -19,6 +20,11 @@ import (
 )
 
 //-----------------------------------------------------------------------------
+
+var (
+	signMutex sync.Mutex
+	signCache = make(map[string]string)
+)
 
 func main() {
 	fmt.Printf("0CHAIN - GOSDK (version=%v)\n", version.VERSIONSTR)
@@ -34,20 +40,33 @@ func main() {
 		jsProxy := zcn.Get("jsProxy")
 		// import functions from js object
 		if !(jsProxy.IsNull() || jsProxy.IsUndefined()) {
-			sign := jsProxy.Get("sign")
+			jsSign := jsProxy.Get("sign")
 
-			if !(sign.IsNull() || sign.IsUndefined()) {
+			if !(jsSign.IsNull() || jsSign.IsUndefined()) {
 				signFunc := func(hash string) (string, error) {
-					result, err := jsbridge.Await(sign.Invoke(hash))
+					signMutex.Lock()
+					defer signMutex.Unlock()
+
+					s, ok := signCache[hash]
+					if ok {
+						return s, nil
+					}
+
+					result, err := jsbridge.Await(jsSign.Invoke(hash))
 
 					if len(err) > 0 && !err[0].IsNull() {
 						return "", errors.New("sign: " + err[0].String())
 					}
-					return result[0].String(), nil
+					s = result[0].String()
+
+					signCache[hash] = s
+
+					return s, nil
 				}
 
 				//update sign with js sign
 				zcncrypto.Sign = signFunc
+				zcncore.SignFn = signFunc
 				sys.Sign = func(hash, signatureScheme string, keys []sys.KeyPair) (string, error) {
 					// js already has signatureScheme and keys
 					return signFunc(hash)
@@ -56,17 +75,37 @@ func main() {
 				PrintError("__zcn_wasm__.jsProxy.sign is not installed yet")
 			}
 
-			createObjectURL := jsProxy.Get("createObjectURL")
-			if !(createObjectURL.IsNull() || createObjectURL.IsUndefined()) {
+			jsVerify := jsProxy.Get("verify")
+
+			if !(jsVerify.IsNull() || jsSign.IsUndefined()) {
+				verifyFunc := func(signature, hash string) (bool, error) {
+					result, err := jsbridge.Await(jsVerify.Invoke(signature, hash))
+
+					if len(err) > 0 && !err[0].IsNull() {
+						return false, errors.New("verify: " + err[0].String())
+					}
+					return result[0].Bool(), nil
+				}
+
+				//update Verify with js sign
+				sys.Verify = verifyFunc
+			} else {
+				PrintError("__zcn_wasm__.jsProxy.verify is not installed yet")
+			}
+
+			jsCreateObjectURL := jsProxy.Get("createObjectURL")
+			if !(jsCreateObjectURL.IsNull() || jsCreateObjectURL.IsUndefined()) {
 
 				CreateObjectURL = func(buf []byte, mimeType string) string {
+
 					arrayBuffer := js.Global().Get("ArrayBuffer").New(len(buf))
 
 					uint8Array := js.Global().Get("Uint8Array").New(arrayBuffer)
 
 					js.CopyBytesToJS(uint8Array, buf)
 
-					result, err := jsbridge.Await(createObjectURL.Invoke(uint8Array, mimeType))
+					result, err := jsbridge.Await(jsCreateObjectURL.Invoke(uint8Array, mimeType))
+
 					if len(err) > 0 && !err[0].IsNull() {
 						PrintError(err[0].String())
 						return ""
@@ -78,17 +117,8 @@ func main() {
 				PrintError("__zcn_wasm__.jsProxy.createObjectURL is not installed yet")
 			}
 
-			sleep := jsProxy.Get("sleep")
-			if !(sleep.IsNull() || sleep.IsUndefined()) {
-				sys.Sleep = func(d time.Duration) {
-					ms := d.Milliseconds()
-					jsbridge.Await(sleep.Invoke(ms))
-				}
-			} else {
-				sys.Sleep = func(d time.Duration) {
-					PrintInfo("sleep is not bridged to js method. it doesn't work")
-				}
-				PrintError("__zcn_wasm__.jsProxy.sleep is not installed yet")
+			sys.Sleep = func(d time.Duration) {
+				<-time.After(d)
 			}
 		} else {
 			PrintError("__zcn_wasm__.jsProxy is not installed yet")
@@ -100,29 +130,75 @@ func main() {
 		if !(sdk.IsNull() || sdk.IsUndefined()) {
 			jsbridge.BindAsyncFuncs(sdk, map[string]interface{}{
 				//sdk
-				"init":                  Init,
-				"setWallet":             SetWallet,
-				"getEncryptedPublicKey": GetEncryptedPublicKey,
-				"hideLogs":              hideLogs,
-				"showLogs":              showLogs,
+				"init":                   initSDKs,
+				"setWallet":              setWallet,
+				"getPublicEncryptionKey": zcncore.GetPublicEncryptionKey,
+				"hideLogs":               hideLogs,
+				"showLogs":               showLogs,
+				"getUSDRate":             getUSDRate,
+				"isWalletID":             isWalletID,
+				"getLookupHash":          getLookupHash,
 
 				//blobber
-				"delete":   Delete,
-				"rename":   Rename,
-				"copy":     Copy,
-				"move":     Move,
-				"share":    Share,
-				"download": Download,
-				"upload":   Upload,
-
-				// zcn txn
-				"commitFileMetaTxn":   CommitFileMetaTxn,
-				"commitFolderMetaTxn": CommitFolderMetaTxn,
+				"delete":                Delete,
+				"rename":                Rename,
+				"copy":                  Copy,
+				"move":                  Move,
+				"share":                 Share,
+				"download":              download,
+				"upload":                upload,
+				"bulkUpload":            bulkUpload,
+				"listObjects":           listObjects,
+				"createDir":             createDir,
+				"downloadBlocks":        downloadBlocks,
+				"getFileStats":          getFileStats,
+				"updateBlobberSettings": updateBlobberSettings,
+				"getRemoteFileMap":      getRemoteFileMap,
+				"getBlobbers":           getBlobbers,
 
 				// player
-				"play":           Play,
-				"stop":           Stop,
-				"getNextSegment": GetNextSegment,
+				"play":           play,
+				"stop":           stop,
+				"getNextSegment": getNextSegment,
+
+				//allocation
+				"createAllocation":      createAllocation,
+				"getAllocationBlobbers": getAllocationBlobbers,
+				"getBlobberIds":         getBlobberIds,
+				"listAllocations":       listAllocations,
+				"getAllocation":         getAllocation,
+				"reloadAllocation":      reloadAllocation,
+				"transferAllocation":    transferAllocation,
+				"freezeAllocation":      freezeAllocation,
+				"cancelAllocation":      cancelAllocation,
+				"updateAllocation":      updateAllocation,
+				"getAllocationMinLock":  getAllocationMinLock,
+				"getAllocationWith":     getAllocationWith,
+				"getReadPoolInfo":       getReadPoolInfo,
+				"lockWritePool":         lockWritePool,
+				"decodeAuthTicket":      decodeAuthTicket,
+
+				//smartcontract
+				"executeSmartContract": executeSmartContract,
+				"faucet":               faucet,
+
+				//swap
+				"setSwapWallets":     setSwapWallets,
+				"swapToken":          swapToken,
+				"initBridge":         initBridge,
+				"burnZCN":            burnZCN,
+				"mintZCN":            mintZCN,
+				"getMintWZCNPayload": getMintWZCNPayload,
+
+				//zcn
+				"getWalletBalance": getWalletBalance,
+				"createReadPool":   createReadPool,
+
+				//0box api
+				"getCsrfToken":     getCsrfToken,
+				"createJwtSession": createJwtSession,
+				"createJwtToken":   createJwtToken,
+				"refreshJwtToken":  refreshJwtToken,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
@@ -134,6 +210,8 @@ func main() {
 	}
 
 	hideLogs()
+
+	go startRefreshWalletNonce()
 
 	<-make(chan bool)
 

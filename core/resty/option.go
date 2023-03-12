@@ -2,7 +2,6 @@ package resty
 
 import (
 	"net/http"
-	"time"
 )
 
 // WithRetry set retry times if request is failure with 5xx status code. retry is ingore if it is less than 1.
@@ -27,17 +26,8 @@ func WithHeader(header map[string]string) Option {
 	}
 }
 
-// WithTimeout set timeout of http request.
-func WithTimeout(timeout time.Duration) Option {
-	return func(r *Resty) {
-		if timeout > 0 {
-			r.timeout = timeout
-		}
-	}
-}
-
 // WithRequestInterceptor intercept request
-func WithRequestInterceptor(interceptor func(req *http.Request)) Option {
+func WithRequestInterceptor(interceptor func(req *http.Request) error) Option {
 	return func(r *Resty) {
 		r.requestInterceptor = interceptor
 	}
@@ -47,5 +37,12 @@ func WithRequestInterceptor(interceptor func(req *http.Request)) Option {
 func WithTransport(transport *http.Transport) Option {
 	return func(r *Resty) {
 		r.transport = transport
+	}
+}
+
+// WithClient set client
+func WithClient(c Client) Option {
+	return func(r *Resty) {
+		r.client = c
 	}
 }

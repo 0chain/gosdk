@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -41,21 +42,20 @@ type listResponse struct {
 }
 
 type ListResult struct {
-	Name            string             `json:"name"`
-	Path            string             `json:"path,omitempty"`
-	Type            string             `json:"type"`
-	Size            int64              `json:"size"`
-	Hash            string             `json:"hash,omitempty"`
-	MimeType        string             `json:"mimetype,omitempty"`
-	NumBlocks       int64              `json:"num_blocks"`
-	LookupHash      string             `json:"lookup_hash"`
-	EncryptionKey   string             `json:"encryption_key"`
-	Attributes      fileref.Attributes `json:"attributes"`
-	ActualSize      int64              `json:"actual_size"`
-	ActualNumBlocks int64              `json:"actual_num_blocks"`
-	CreatedAt       string             `json:"created_at"`
-	UpdatedAt       string             `json:"updated_at"`
-	Children        []*ListResult      `json:"list"`
+	Name            string           `json:"name"`
+	Path            string           `json:"path,omitempty"`
+	Type            string           `json:"type"`
+	Size            int64            `json:"size"`
+	Hash            string           `json:"hash,omitempty"`
+	MimeType        string           `json:"mimetype,omitempty"`
+	NumBlocks       int64            `json:"num_blocks"`
+	LookupHash      string           `json:"lookup_hash"`
+	EncryptionKey   string           `json:"encryption_key"`
+	ActualSize      int64            `json:"actual_size"`
+	ActualNumBlocks int64            `json:"actual_num_blocks"`
+	CreatedAt       common.Timestamp `json:"created_at"`
+	UpdatedAt       common.Timestamp `json:"updated_at"`
+	Children        []*ListResult    `json:"list"`
 	Consensus       `json:"-"`
 }
 
@@ -143,15 +143,22 @@ func (req *ListRequest) getlistFromBlobbers() []*listResponse {
 	return listInfos
 }
 
-func (req *ListRequest) GetListFromBlobbers() *ListResult {
+func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 	lR := req.getlistFromBlobbers()
 	result := &ListResult{}
 	selected := make(map[string]*ListResult)
 	childResultMap := make(map[string]*ListResult)
+	var err error
+	var errNum int
 	for i := 0; i < len(lR); i++ {
 		req.consensus = 0
 		ti := lR[i]
-		if ti.err != nil || ti.ref == nil {
+		if ti.err != nil {
+			err = ti.err
+			errNum++
+			continue
+		}
+		if ti.ref == nil {
 			continue
 		}
 
@@ -161,7 +168,6 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 		result.CreatedAt = ti.ref.CreatedAt
 		result.UpdatedAt = ti.ref.UpdatedAt
 		result.LookupHash = ti.ref.LookupHash
-		result.Attributes = ti.ref.Attributes
 		result.ActualSize = ti.ref.ActualSize
 		result.ActualNumBlocks = 0
 		if result.Type == fileref.DIRECTORY {
@@ -179,12 +185,11 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 			var childResult *ListResult
 			if _, ok := childResultMap[actualHash]; !ok {
 				childResult = &ListResult{
-					Name:       child.GetName(),
-					Path:       child.GetPath(),
-					Type:       child.GetType(),
-					CreatedAt:  child.GetCreatedAt(),
-					UpdatedAt:  child.GetUpdatedAt(),
-					Attributes: child.GetAttributes(),
+					Name:      child.GetName(),
+					Path:      child.GetPath(),
+					Type:      child.GetType(),
+					CreatedAt: child.GetCreatedAt(),
+					UpdatedAt: child.GetUpdatedAt(),
 				}
 				childResult.LookupHash = child.GetLookupHash()
 				childResult.consensus = 0
@@ -218,5 +223,34 @@ func (req *ListRequest) GetListFromBlobbers() *ListResult {
 			result.Size += child.Size
 		}
 	}
-	return result
+
+	if errNum == len(lR) {
+		return nil, err
+	}
+
+	if result.Type == fileref.DIRECTORY {
+		result.ActualSize = calculateDirSize(result.Children)
+		if result.ActualSize != 0 {
+			result.NumBlocks = result.ActualSize / CHUNK_SIZE
+		}
+	}
+
+	return result, nil
+}
+
+func calculateDirSize(list []*ListResult) int64 {
+	var size int64
+	for _, item := range list {
+		if item.Type == fileref.FILE {
+			size += item.ActualSize
+		}
+		if item.Type == fileref.DIRECTORY {
+			item.ActualSize = calculateDirSize(item.Children)
+			if item.ActualSize != 0 {
+				item.NumBlocks = item.ActualSize / CHUNK_SIZE
+			}
+			size += item.ActualSize
+		}
+	}
+	return size
 }

@@ -5,6 +5,8 @@ __debug_bin
 *.dll
 *.so
 *.dylib
+/winsdk/zcn.windows.dll
+/winsdk/zcn.windows.h
 
 # Test binary, build with `go test -c`
 *.test
@@ -22,5 +24,7 @@ vendor
 .DS_Store
 _sdkver/*.wasm
 *.wasm
-
+*.log
 zcnbridge/example/logs/
+*.log
+winsdk/zcn.windows.h

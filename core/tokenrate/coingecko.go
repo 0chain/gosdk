@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"github.com/0chain/gosdk/core/resty"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
-
-	"github.com/0chain/gosdk/core/resty"
 )
 
 type coingeckoQuoteQuery struct {
@@ -31,7 +31,7 @@ func (qq *coingeckoQuoteQuery) getUSD(ctx context.Context, symbol string) (float
 		envName := "COINGECKO_COINID_" + strings.ToUpper(symbol)
 		id, ok := os.LookupEnv(envName)
 		if !ok {
-			return 0, errors.New("token: please configure coinid on environment variable [" + envName + "' first")
+			return 0, errors.New("coingecko: please configure coinid on environment variable [" + envName + "] first")
 		}
 		coinID = id
 
@@ -46,39 +46,53 @@ func (qq *coingeckoQuoteQuery) getUSD(ctx context.Context, symbol string) (float
 			}
 
 			if resp.StatusCode != http.StatusOK {
-				return errors.New("token: " + strconv.Itoa(resp.StatusCode) + resp.Status)
+				return errors.New("coingecko: " + strconv.Itoa(resp.StatusCode) + resp.Status)
 			}
 
 			err = json.Unmarshal(respBody, &result)
 			if err != nil {
 				return err
 			}
+			result.Raw = string(respBody)
 
 			return nil
 
 		})
 
-	r.Wait()
+	errs := r.Wait()
+	if len(errs) > 0 {
+		return 0, errs[0]
+	}
+
+	var rate float64
 
 	h, ok := result.MarketData.High24h["usd"]
 	if ok {
 		l, ok := result.MarketData.Low24h["usd"]
 		if ok {
-			return (h + l) / 2, nil
+			rate = (h + l) / 2
+			if rate > 0 {
+				return rate, nil
+			}
 		}
 	}
 
-	rate, ok := result.MarketData.CurrentPrice["usd"]
+	rate, ok = result.MarketData.CurrentPrice["usd"]
 
 	if ok {
-		return rate, nil
+		if rate > 0 {
+			return rate, nil
+		}
+
+		return 0, fmt.Errorf("coingecko: invalid response %s", result.Raw)
 	}
 
-	return 0, errors.New("token: " + symbol + " price is not provided on coingecko apis")
+	return 0, fmt.Errorf("coingecko: %s price is not provided on coingecko apis", symbol)
 }
 
 type coingeckoResponse struct {
 	MarketData coingeckoMarketData `json:"market_data"`
+	Raw        string              `json:"-"`
 }
 
 type coingeckoMarketData struct {

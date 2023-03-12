@@ -15,22 +15,17 @@ func WithBlocks(start, end int64, blocksPerMarker int) DownloadOption {
 	return func(do *DownloadOptions) {
 		if start > 0 && end > 0 && end >= start {
 			do.isBlockDownload = true
-			do.blocksPerMarker = blocksPerMarker
-			if do.blocksPerMarker < 1 {
-				do.blocksPerMarker = DefaultBlocksPerMarker
-			}
-
-			SetNumBlockDownloads(blocksPerMarker)
 
 			do.startBlock = start
 			do.endBlock = end
 		}
-	}
-}
 
-func WithRxPay(rxPay bool) DownloadOption {
-	return func(do *DownloadOptions) {
-		do.rxPay = rxPay
+		do.blocksPerMarker = blocksPerMarker
+		if do.blocksPerMarker < 1 {
+			do.blocksPerMarker = DefaultBlocksPerMarker
+		}
+
+		SetNumBlockDownloads(do.blocksPerMarker)
 	}
 }
 

@@ -45,10 +45,6 @@ type AuthorizerNode struct {
 
 // Rest endpoints
 
-func init() {
-	Logger.Init(defaultLogLevel, "0chain-zcnbridge-sdk")
-}
-
 // getAuthorizers returns authorizers from smart contract
 func getAuthorizers() ([]*AuthorizerNode, error) {
 	var (
@@ -56,6 +52,8 @@ func getAuthorizers() ([]*AuthorizerNode, error) {
 		cb          = wallet.NewZCNStatus(authorizers)
 		err         error
 	)
+
+	cb.Begin()
 
 	if err = GetAuthorizers(cb); err != nil {
 		return nil, err
@@ -80,9 +78,14 @@ func GetAuthorizer(id string, cb zcncore.GetInfoCallback) (err error) {
 		return err
 	}
 
-	go http.MakeSCRestAPICall(zcncore.OpZCNSCGetAuthorizer, http.PathGetAuthorizer, http.Params{
-		"id": id,
-	}, cb)
+	go http.MakeSCRestAPICall(
+		zcncore.OpZCNSCGetAuthorizer,
+		http.PathGetAuthorizer,
+		http.Params{
+			"id": id,
+		},
+		cb,
+	)
 
 	return
 }

@@ -11,12 +11,17 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	zlogger "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+)
+
+const (
+	LockExists = "lock_exists"
 )
 
 type BlockDownloadRequest struct {
@@ -33,7 +38,6 @@ type BlockDownloadRequest struct {
 	contentMode        string
 	numBlocks          int64
 	authTicket         *marker.AuthTicket
-	wg                 *sync.WaitGroup
 	ctx                context.Context
 	result             chan *downloadBlock
 }
@@ -79,7 +83,7 @@ func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest) {
 
 func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
 	var chunk []byte
-	chunks := make([][]byte, 0, len(buf)/lim+1)
+	chunks := make([][]byte, 0, common.MustAddInt(len(buf)/lim, 1))
 	for len(buf) >= lim {
 		chunk, buf = buf[:lim], buf[lim:]
 		chunks = append(chunks, chunk)
@@ -91,7 +95,6 @@ func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
 }
 
 func (req *BlockDownloadRequest) downloadBlobberBlock() {
-	defer req.wg.Done()
 	if req.numBlocks <= 0 {
 		req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.New("invalid_request", "Invalid number of blocks for download")}
 		return
@@ -113,7 +116,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		rm.AllocationID = req.allocationID
 		rm.OwnerID = req.allocOwnerID
 		rm.Timestamp = common.Now()
-		rm.ReadCounter = getBlobberReadCtr(req.blobber.ID) + req.numBlocks
+		rm.ReadCounter = getBlobberReadCtr(req.allocationID, req.blobber.ID) + req.numBlocks
 		err = rm.Sign()
 		if err != nil {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error: Signing readmarker failed")}
@@ -155,6 +158,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 		header.ToHeader(httpreq)
 
+		lastBlobberReadCounter := getBlobberReadCtr(req.allocationID, req.blobber.ID)
+
 		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 			if err != nil {
 				return err
@@ -176,9 +181,10 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 						return err
 					}
 
-					if rspData.LatestRM.ReadCounter >= getBlobberReadCtr(req.blobber.ID) {
+					if rspData.LatestRM.ReadCounter != lastBlobberReadCounter {
 						zlogger.Logger.Info("Will be retrying download")
-						setBlobberReadCtr(req.blobber.ID, rspData.LatestRM.ReadCounter)
+						setBlobberReadCtr(req.allocationID, req.blobber.ID, rspData.LatestRM.ReadCounter)
+						lastBlobberReadCounter = rspData.LatestRM.ReadCounter
 						shouldRetry = true
 						return errors.New("stale_read_marker", "readmarker counter is not in sync with latest counter")
 					}
@@ -186,11 +192,19 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 				}
 
-				if bytes.Contains(respBody, []byte("not_enough_tokens")) {
+				if bytes.Contains(respBody, []byte(NotEnoughTokens)) {
 					shouldRetry, retry = false, 3 // don't repeat
 					req.blobber.SetSkip(true)
-					return errors.New("not_enough_tokens", "")
+					return errors.New(NotEnoughTokens, "")
 				}
+
+				if bytes.Contains(respBody, []byte(LockExists)) {
+					zlogger.Logger.Debug("Lock exists error.")
+					shouldRetry = true
+					sys.Sleep(time.Second * 1)
+					return errors.New(LockExists, string(respBody))
+				}
+
 				return errors.New("response_error", string(respBody))
 			}
 
@@ -208,7 +222,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				rspData.BlockChunks = req.splitData(respBody, req.chunkSize)
 			}
 
-			incBlobberReadCtr(req.blobber.ID, req.numBlocks)
+			incBlobberReadCtr(req.allocationID, req.blobber.ID, req.numBlocks)
 			req.result <- &rspData
 			return nil
 		})
@@ -217,6 +231,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			if shouldRetry {
 				retry = 0
 				shouldRetry = false
+				zlogger.Logger.Debug("Retrying for Error occurred: ", err)
 				continue
 			}
 			if retry >= 3 {

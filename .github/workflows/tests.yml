@@ -41,6 +41,16 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '14'
+      
+      - name: Install deps
+        run: |
+          codename=$(lsb_release -c | awk '{print $2}')
+          echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" > ./gitaction.list
+          echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
+          echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
+          sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
+      
+          sudo apt-get update -y && sudo apt-get install build-essential wget -y
 
       - name: Install herumi's libraries
         run: sudo make install-herumi-ubuntu
@@ -59,17 +69,16 @@ jobs:
           github-token: ${{ github.token }}
 
       - name: "Set PR status as pending"
-        uses: niteoweb/pull_request_status_action@v1.0.0
+        uses: 0chain/actions/set-pr-status@master
         if: steps.findPr.outputs.number
         with:
           pr_number: ${{ steps.findPr.outputs.pr }}
           description: "System tests running with default config..."
           state: "pending"
           repository: ${{ github.repository }}
-          context: "0Chain System Tests"
+          status_name: "0Chain System Tests"
           target_url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+          github_token: ${{ github.token }}
 
       - name: "Setup"
         run: |
@@ -90,11 +99,12 @@ jobs:
           zblock_image: staging
           zdns_image: staging
           explorer_image: latest
-          zproxy_image: staging
           zsearch_image: staging
           zbox_cli_branch: staging
           zwallet_cli_branch: staging
           custom_go_sdk_version: staging
+          SUBGRAPH_API_URL: ${{ secrets.SUBGRAPH_API_URL }}
+          TENDERLY_FORK_ID: ${{ secrets.TENDERLY_FORK_ID }}
 
       - name: "Run System tests"
         uses: 0chain/actions/run-system-tests@master
@@ -109,19 +119,20 @@ jobs:
           archive_results: true
           run_flaky_tests: false
           retry_failures: true
+          TENDERLY_FORK_ID: ${{ secrets.TENDERLY_FORK_ID }}
+          DEVOPS_CHANNEL_WEBHOOK_URL: ${{ secrets.DEVOPS_CHANNEL_WEBHOOK_URL }}
 
       - name: "Set PR status as ${{ job.status }}"
         if: ${{ (success() || failure()) && steps.findPr.outputs.number }}
-        uses: niteoweb/pull_request_status_action@v1.0.0
+        uses: 0chain/actions/set-pr-status@master
         with:
           pr_number: ${{ steps.findPr.outputs.pr }}
           description: "System tests with default config ${{ job.status }}"
           state: ${{ job.status }}
           repository: ${{ github.repository }}
-          context: "0Chain System Tests"
+          status_name: "0Chain System Tests"
           target_url: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+          github_token: ${{ github.token }}
 
   wasm-test:
     runs-on: [self-hosted, build]
@@ -141,6 +152,16 @@ jobs:
 
       - name: Setup PATH for wasm
         run: echo "${{env.GOROOT}}/misc/wasm" >> $GITHUB_PATH
+      
+      - name: Install deps
+        run: |
+          codename=$(lsb_release -c | awk '{print $2}')
+          echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" > ./gitaction.list
+          echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
+          echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
+          sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
+      
+          sudo apt-get update -y && sudo apt-get install build-essential wget -y
 
       - name: Install herumi's libraries
         run: sudo make install-herumi-ubuntu

@@ -8,11 +8,11 @@ on:
         default: 'master'
         required: true
       zbox_cli_branch:
-        description: '0Box CLI branch which the tests will use'
+        description: 'zbox CLI branch which the tests will use'
         default: 'staging'
         required: true
       zwallet_cli_branch:
-        description: '0wallet CLI branch which the tests will use'
+        description: 'zwallet CLI branch which the tests will use'
         default: 'staging'
         required: true
       miner_branch:
@@ -59,7 +59,6 @@ jobs:
       zblock_branch: staging
       zdns_branch: staging
       explorer_branch: staging
-      zproxy_branch: staging
       zsearch_branch: staging
       test_file_filter: ${{ github.event.inputs.test_file_filter }}
       skip_tests: ${{ github.event.inputs.skip_tests }}
@@ -74,3 +73,6 @@ jobs:
       DEV7KC: ${{ secrets.DEV7KC }}
       DEV8KC: ${{ secrets.DEV8KC }}
       DEV9KC: ${{ secrets.DEV9KC }}
+      SUBGRAPH_API_URL: ${{ secrets.SUBGRAPH_API_URL }}
+      TENDERLY_FORK_ID: ${{ secrets.TENDERLY_FORK_ID }}
+      DEVOPS_CHANNEL_WEBHOOK_URL: ${{ secrets.DEVOPS_CHANNEL_WEBHOOK_URL }}

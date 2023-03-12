@@ -103,8 +103,8 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 			},
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(0), req.deleteMask)
-				require.Equal(float32(0), req.consensus.consensus)
+				require.Equal(0, req.deleteMask.CountOnes())
+				require.Equal(0, req.consensus.consensus)
 			},
 		},
 		{
@@ -157,8 +157,8 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 			},
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(1), req.deleteMask)
-				require.Equal(float32(1), req.consensus.consensus)
+				require.Equal(1, req.deleteMask.CountOnes())
+				require.Equal(1, req.consensus.consensus)
 			},
 		},
 	}
@@ -171,10 +171,10 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
 				consensus: Consensus{
-					consensusThresh:        50,
-					fullconsensus:          4,
-					consensusRequiredForOk: 60,
+					consensusThresh: 2,
+					fullconsensus:   4,
 				},
+				maskMu:       &sync.Mutex{},
 				ctx:          context.TODO(),
 				connectionID: mockConnectionId,
 				wg:           func() *sync.WaitGroup { wg.Add(1); return &wg }(),
@@ -182,11 +182,11 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 			req.blobbers = append(req.blobbers, &blockchain.StorageNode{
 				Baseurl: tt.name,
 			})
-			deleteMutex := &sync.Mutex{}
+			req.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(len(req.blobbers))).Sub64(1)
 			objectTreeRefs := make([]fileref.RefEntity, 1)
-			refEntity, _ := req.getObjectTreeFromBlobber(req.blobbers[0])
+			refEntity, _ := req.getObjectTreeFromBlobber(0)
 			objectTreeRefs[0] = refEntity
-			req.deleteBlobberFile(req.blobbers[0], 0, deleteMutex)
+			req.deleteBlobberFile(req.blobbers[0], 0)
 			if tt.wantFunc != nil {
 				tt.wantFunc(require, req)
 			}
@@ -327,8 +327,8 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			wantErr:     false,
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(15), req.deleteMask)
-				require.Equal(float32(4), req.consensus.consensus)
+				require.Equal(4, req.deleteMask.CountOnes())
+				require.Equal(4, req.consensus.consensus)
 			},
 		},
 		{
@@ -339,8 +339,8 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			wantErr:     false,
 			wantFunc: func(require *require.Assertions, req *DeleteRequest) {
 				require.NotNil(req)
-				require.Equal(uint32(7), req.deleteMask)
-				require.Equal(float32(3), req.consensus.consensus)
+				require.Equal(3, req.deleteMask.CountOnes())
+				require.Equal(3, req.consensus.consensus)
 			},
 		},
 		{
@@ -349,7 +349,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			numCorrect:  2,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "Delete failed",
+			errMsg:      "consensus_not_met",
 		},
 		{
 			name:        "Test_All_Blobber_Error_On_Delete_Attribute_Failure",
@@ -357,7 +357,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			numCorrect:  0,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "Delete failed",
+			errMsg:      "consensus_not_met",
 		},
 	}
 	for _, tt := range tests {
@@ -368,13 +368,13 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 				allocationTx:   mockAllocationTxId,
 				remotefilepath: mockRemoteFilePath,
 				consensus: Consensus{
-					consensusThresh:        50,
-					fullconsensus:          4,
-					consensusRequiredForOk: 60,
+					consensusThresh: 3,
+					fullconsensus:   4,
 				},
-				ctx:          context.TODO(),
+				maskMu:       &sync.Mutex{},
 				connectionID: mockConnectionId,
 			}
+			req.ctx, req.ctxCncl = context.WithCancel(context.TODO())
 
 			a := &Allocation{
 				DataShards: numBlobbers,
@@ -386,6 +386,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 					Baseurl: "http://" + tt.name + mockBlobberUrl + strconv.Itoa(i),
 				})
 			}
+			req.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 
 			setupMockAllocation(t, a)
 			setupMockWriteLockRequest(a, &mockClient)

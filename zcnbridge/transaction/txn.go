@@ -62,6 +62,7 @@ func NewTransactionEntity() (*Transaction, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	txn.scheme = zcntxn
 
 	return txn, nil
@@ -74,8 +75,8 @@ func (t *Transaction) ExecuteSmartContract(ctx context.Context, address, funcNam
 	val uint64) (string, error) {
 	const errCode = "transaction_send"
 
-	err := t.scheme.ExecuteSmartContract(address, funcName, input, val)
-	t.Hash = t.scheme.GetTransactionHash()
+	tran, err := t.scheme.ExecuteSmartContract(address, funcName, input, val)
+	t.Hash = tran.Hash
 
 	if err != nil {
 		msg := fmt.Sprintf("error while sending txn: %v", err)
@@ -91,7 +92,7 @@ func (t *Transaction) ExecuteSmartContract(ctx context.Context, address, funcNam
 		return "", errors.New(errCode, t.scheme.GetTransactionError())
 	}
 
-	return t.Hash, nil
+	return t.scheme.Hash(), nil
 }
 
 func (t *Transaction) Verify(ctx context.Context) error {
@@ -125,6 +126,7 @@ func (t *Transaction) Verify(ctx context.Context) error {
 	}
 
 	if vo.Confirmation.Transaction != nil {
+		t.Hash = vo.Confirmation.Transaction.Hash
 		t.TransactionOutput = vo.Confirmation.Transaction.TransactionOutput
 	} else {
 		return errors.New(errCode, "got invalid confirmation (missing transaction)")

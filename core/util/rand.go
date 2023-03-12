@@ -34,15 +34,6 @@ func MaxInt64(x, y int64) int64 {
 	return y
 }
 
-func checkExists(c string, sl []string) bool {
-	for _, s := range sl {
-		if s == c {
-			return true
-		}
-	}
-	return false
-}
-
 func Shuffle(in []string) (shuffle []string) {
 	shuffle = make([]string, len(in))
 	copy(shuffle, in)
@@ -53,20 +44,16 @@ func Shuffle(in []string) (shuffle []string) {
 	return
 }
 
-//GetRandom returns n random slice from in
+// GetRandom returns n random slice from in
+// If n > len(in), then this will return a shuffled version of in
 func GetRandom(in []string, n int) []string {
+	n = MinInt(len(in), n)
 	out := make([]string, 0)
-	nOut := MinInt(len(in), n)
-	nOut = MaxInt(1, nOut)
-	randGen := rand.New(rand.NewSource(time.Now().UnixNano()))
-	for {
-		i := randGen.Intn(len(in))
-		if !checkExists(in[i], out) {
-			out = append(out, in[i])
-		}
-		if len(out) >= nOut {
-			break
-		}
+
+	rand.Seed(time.Now().UnixNano())
+	perm := rand.Perm(len(in))
+	for i := 0; i < n; i++ {
+		out = append(out, in[perm[i]])
 	}
 	return out
 }

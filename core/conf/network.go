@@ -5,6 +5,7 @@ import (
 	"os"
 
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/spf13/viper"
 )
 
@@ -27,7 +28,7 @@ func LoadNetworkFile(file string) (Network, error) {
 	var network Network
 	var err error
 
-	_, err = os.Stat(file)
+	_, err = sys.Files.Stat(file)
 
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {

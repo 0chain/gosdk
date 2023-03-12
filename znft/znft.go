@@ -33,6 +33,7 @@ const (
 type Configuration struct {
 	FactoryAddress                   string // FactoryAddress address
 	FactoryModuleERC721Address       string // FactoryModuleERC721Address address
+	FactoryModuleERC721PackedAddress string // FactoryModuleERC721PackedAddress address
 	FactoryModuleERC721FixedAddress  string // FactoryModuleERC721FixedAddress address
 	FactoryModuleERC721RandomAddress string // FactoryModuleERC721RandomAddress address
 	EthereumNodeURL                  string // EthereumNodeURL URL of ethereum RPC node (infura or alchemy)

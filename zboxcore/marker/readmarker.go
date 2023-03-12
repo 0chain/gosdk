@@ -6,7 +6,7 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/encryption"
-	"github.com/0chain/gosdk/core/zcncrypto"
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/client"
 )
 
@@ -41,16 +41,8 @@ func (rm *ReadMarker) ValidateWithOtherRM(rm1 *ReadMarker) error {
 	}
 
 	signatureHash := rm1.GetHash()
-	scheme := zcncrypto.NewSignatureScheme(client.GetClient().SignatureScheme)
-	if scheme == nil {
-		return errors.New("validate_rm", "scheme is nil")
-	}
 
-	if err := scheme.SetPublicKey(rm1.ClientPublicKey); err != nil {
-		return errors.New("validate_rm", err.Error())
-	}
-
-	signOK, err := scheme.Verify(rm1.Signature, signatureHash)
+	signOK, err := sys.Verify(rm1.Signature, signatureHash)
 	if err != nil {
 		return errors.New("validate_rm", err.Error())
 	}

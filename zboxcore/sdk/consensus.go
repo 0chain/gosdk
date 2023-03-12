@@ -4,70 +4,41 @@ import "sync"
 
 type Consensus struct {
 	sync.RWMutex
-	consensus       float32 // Total successful and valid response from blobbers
-	consensusThresh float32 // Consensus threshold percentage
-	fullconsensus   float32 // Total number of blobbers in allocation
-	// Total successful and valid responses required from blobbers. Usually its a.DataShards + 1 but if number of parity-shards is 0 then
-	// it is a.DataShards. Current implements adds 10 percent as additional percentage to consensusThreshold
-	consensusRequiredForOk float32
+	consensus       int // Total successful and valid response from blobbers
+	consensusThresh int // Consensus threshold percentage
+	fullconsensus   int // Total number of blobbers in allocation
 }
 
 // Done increase consensus by 1
-func (req *Consensus) Done() {
-	req.Lock()
-	defer req.Unlock()
-	req.consensus++
-
+func (c *Consensus) Done() {
+	c.Lock()
+	c.consensus++
+	c.Unlock()
 }
 
 // Reset reset consensus to 0
-func (req *Consensus) Reset() {
-	req.Lock()
-	defer req.Unlock()
-	req.consensus = 0
+func (c *Consensus) Reset() {
+	c.Lock()
+	c.consensus = 0
+	c.Unlock()
 }
 
-func (req *Consensus) Init(threshConsensus, fullConsensus, consensusOK float32) {
-	req.Lock()
-	defer req.Unlock()
-	req.consensusThresh = threshConsensus
-	req.fullconsensus = fullConsensus
-	req.consensusRequiredForOk = consensusOK
+func (c *Consensus) Init(threshConsensus, fullConsensus int) {
+	c.Lock()
+	c.consensusThresh = threshConsensus
+	c.fullconsensus = fullConsensus
+	c.Unlock()
 }
 
-func (req *Consensus) getConsensus() float32 {
-	req.RLock()
-	defer req.RUnlock()
-	return req.consensus
+func (c *Consensus) getConsensus() int {
+	c.RLock()
+	defer c.RUnlock()
+	return c.consensus
 }
 
-func (req *Consensus) getConsensusRate() float32 {
-	req.RLock()
-	defer req.RUnlock()
-	return (req.consensus * 100) / req.fullconsensus
-}
+func (c *Consensus) isConsensusOk() bool {
+	c.RLock()
+	defer c.RUnlock()
 
-func (req *Consensus) getConsensusRequiredForOk() float32 {
-	req.RLock()
-	defer req.RUnlock()
-
-	//TODO This if block can be removed if consensus issue is fixed/considered in chunked upload
-	if req.consensusRequiredForOk == 0 {
-		return req.consensusThresh + 10
-	}
-	return (req.consensusRequiredForOk)
-}
-
-func (req *Consensus) isConsensusOk() bool {
-	req.RLock()
-	defer req.RUnlock()
-
-	return (req.getConsensusRate() >= req.getConsensusRequiredForOk())
-}
-
-func (req *Consensus) isConsensusMin() bool {
-	req.RLock()
-	defer req.RUnlock()
-
-	return (req.getConsensusRate() >= req.consensusThresh)
+	return c.getConsensus() >= c.consensusThresh
 }
