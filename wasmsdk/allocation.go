@@ -214,6 +214,32 @@ func lockWritePool(allocID, tokens, fee string) (string, error) {
 	return hash, err
 }
 
+func lockStakePool(providerType int, tokens, providerID, fee string) (string, error) {
+	t, err := util.ParseCoinStr(tokens)
+	if err != nil {
+		return "", err
+	}
+
+	f, err := util.ParseCoinStr(fee)
+	if err != nil {
+		return "", err
+	}
+
+	hash, _, err := sdk.StakePoolLock(sdk.ProviderType(providerType), providerID,
+		t, f)
+	return hash, err
+}
+
+func unlockStakePool(providerType int, providerID, fee string) (int64, error) {
+	f, err := util.ParseCoinStr(fee)
+	if err != nil {
+		return 0, err
+	}
+
+	unstake, _, err := sdk.StakePoolUnlock(sdk.ProviderType(providerType), providerID, f)
+	return unstake, err
+}
+
 // GetReadPoolInfo is to get information about the read pool for the allocation
 func getReadPoolInfo(clientID string) (*sdk.ReadPool, error) {
 	readPool, err := sdk.GetReadPoolInfo(clientID)

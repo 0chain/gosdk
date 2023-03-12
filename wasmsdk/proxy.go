@@ -175,7 +175,9 @@ func main() {
 				"getAllocationMinLock":  getAllocationMinLock,
 				"getAllocationWith":     getAllocationWith,
 				"getReadPoolInfo":       getReadPoolInfo,
+				"lockStakePool":         lockStakePool,
 				"lockWritePool":         lockWritePool,
+				"unlockStakePool":       unlockStakePool,
 				"decodeAuthTicket":      decodeAuthTicket,
 
 				//smartcontract
