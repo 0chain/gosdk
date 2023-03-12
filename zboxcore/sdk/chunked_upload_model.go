@@ -1,12 +1,11 @@
 package sdk
 
 import (
-	"crypto/sha256"
 	"encoding/json"
 	"hash/fnv"
 	"strconv"
 
-	"github.com/0chain/gosdk/core/encryption"
+	"golang.org/x/crypto/sha3"
 )
 
 // FileMeta metadata of stream input/local
@@ -51,16 +50,18 @@ type UploadFormData struct {
 	// Path remote path
 	Path string `json:"filepath,omitempty"`
 
-	// ContentHash hash of shard data (encoded,encrypted) when it is last chunk. it is ChunkHash if it is not last chunk.
-	ContentHash string `json:"content_hash,omitempty"`
+	// ValidationRoot is merkle root of sha256 of 64KB as leaf
+	ValidationRoot          string `json:"validation_root,omitempty"`
+	ValidationRootSignature string `json:"validation_root_signature,omitempty"`
 	// Hash hash of shard thumbnail  (encoded,encrypted)
 	ThumbnailContentHash string `json:"thumbnail_content_hash,omitempty"`
 
 	// ChallengeHash challenge hash of shard data (encoded, encrypted)
-	ChallengeHash string `json:"merkle_root,omitempty"`
+	FixedMerkleRoot string `json:"fixed_merkle_root,omitempty"`
 
 	// ActualHash hash of original file (un-encoded, un-encrypted)
-	ActualHash string `json:"actual_hash,omitempty"`
+	ActualHash              string `json:"actual_hash,omitempty"`
+	ActualFileHashSignature string `json:"actual_file_hash_signature,omitempty"`
 	// ActualSize total bytes of original file (un-encoded, un-encrypted)
 	ActualSize int64 `json:"actual_size,omitempty"`
 	// ActualThumbnailSize total bytes of original thumbnail (un-encoded, un-encrypted)
@@ -72,12 +73,11 @@ type UploadFormData struct {
 	CustomMeta   string `json:"custom_meta,omitempty"`
 	EncryptedKey string `json:"encrypted_key,omitempty"`
 
-	IsFinal         bool   `json:"is_final,omitempty"`          // all of chunks are uploaded
-	ChunkHash       string `json:"chunk_hash"`                  // hash of chunks
-	ChunkStartIndex int    `json:"chunk_start_index,omitempty"` // start index of chunks.
-	ChunkEndIndex   int    `json:"chunk_end_index,omitempty"`   // end index of chunks. all chunks MUST be uploaded one by one because of streaming merkle hash
-	ChunkSize       int64  `json:"chunk_size,omitempty"`        // the size of a chunk. 64*1024 is default
-	UploadOffset    int64  `json:"upload_offset,omitempty"`     // It is next position that new incoming chunk should be append to
+	IsFinal         bool  `json:"is_final,omitempty"`          // all of chunks are uploaded
+	ChunkStartIndex int   `json:"chunk_start_index,omitempty"` // start index of chunks.
+	ChunkEndIndex   int   `json:"chunk_end_index,omitempty"`   // end index of chunks. all chunks MUST be uploaded one by one because of streaming merkle hash
+	ChunkSize       int64 `json:"chunk_size,omitempty"`        // the size of a chunk. 64*1024 is default
+	UploadOffset    int64 `json:"upload_offset,omitempty"`     // It is next position that new incoming chunk should be append to
 
 }
 
@@ -125,13 +125,7 @@ func (s *UploadBlobberStatus) UnmarshalJSON(b []byte) error {
 		return err
 	}
 
-	status.Hasher.File = sha256.New()
-	if status.Hasher.Content != nil {
-
-		status.Hasher.Content.Hash = func(left, right string) string {
-			return encryption.Hash(left + right)
-		}
-	}
+	status.Hasher.File = sha3.New256()
 
 	s.Hasher = &status.Hasher
 	s.UploadLength = status.UploadLength

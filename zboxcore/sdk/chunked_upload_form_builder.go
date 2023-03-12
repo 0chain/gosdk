@@ -2,17 +2,24 @@ package sdk
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"io"
 	"mime/multipart"
+
+	"github.com/0chain/gosdk/zboxcore/client"
+	"golang.org/x/crypto/sha3"
 )
 
 // ChunkedUploadFormBuilder build form data for uploading
 type ChunkedUploadFormBuilder interface {
 	// build form data
-	Build(fileMeta *FileMeta, hasher Hasher, connectionID string, chunkSize int64, chunkStartIndex, chunkEndIndex int, isFinal bool, encryptedKey string, fileChunksData [][]byte, thumbnailChunkData []byte) (*bytes.Buffer, ChunkedUploadFormMetadata, error)
+	Build(
+		fileMeta *FileMeta, hasher Hasher, connectionID string,
+		chunkSize int64, chunkStartIndex, chunkEndIndex int,
+		isFinal bool, encryptedKey string, fileChunksData [][]byte,
+		thumbnailChunkData []byte,
+	) (*bytes.Buffer, ChunkedUploadFormMetadata, error)
 }
 
 // ChunkedUploadFormMetadata upload form metadata
@@ -20,9 +27,8 @@ type ChunkedUploadFormMetadata struct {
 	FileBytesLen         int
 	ThumbnailBytesLen    int
 	ContentType          string
-	ChunkHash            string
-	ChallengeHash        string
-	ContentHash          string
+	FixedMerkleRoot      string
+	ValidationRoot       string
 	ThumbnailContentHash string
 }
 
@@ -34,7 +40,12 @@ func CreateChunkedUploadFormBuilder() ChunkedUploadFormBuilder {
 type chunkedUploadFormBuilder struct {
 }
 
-func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, connectionID string, chunkSize int64, chunkStartIndex, chunkEndIndex int, isFinal bool, encryptedKey string, fileChunksData [][]byte, thumbnailChunkData []byte) (*bytes.Buffer, ChunkedUploadFormMetadata, error) {
+func (b *chunkedUploadFormBuilder) Build(
+	fileMeta *FileMeta, hasher Hasher, connectionID string,
+	chunkSize int64, chunkStartIndex, chunkEndIndex int,
+	isFinal bool, encryptedKey string, fileChunksData [][]byte,
+	thumbnailChunkData []byte,
+) (*bytes.Buffer, ChunkedUploadFormMetadata, error) {
 
 	metadata := ChunkedUploadFormMetadata{
 		ThumbnailBytesLen: len(thumbnailChunkData),
@@ -73,47 +84,53 @@ func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, conn
 		return nil, metadata, err
 	}
 
-	chunkHashWriter := sha256.New()
-	chunksHashWriter := sha256.New()
-	chunksWriters := io.MultiWriter(uploadFile, chunkHashWriter, chunksHashWriter)
-
-	for i, chunkBytes := range fileChunksData {
-		_, err = chunksWriters.Write(chunkBytes)
+	for _, chunkBytes := range fileChunksData {
+		_, err = uploadFile.Write(chunkBytes)
 		if err != nil {
 			return nil, metadata, err
 		}
 
-		err = hasher.WriteToChallenge(chunkBytes, chunkStartIndex+i)
+		err = hasher.WriteToFixedMT(chunkBytes)
 		if err != nil {
 			return nil, metadata, err
 		}
 
-		err = hasher.WriteHashToContent(hex.EncodeToString(chunkHashWriter.Sum(nil)), chunkStartIndex+i)
+		err = hasher.WriteToValidationMT(chunkBytes)
 		if err != nil {
 			return nil, metadata, err
 		}
 
 		metadata.FileBytesLen += len(chunkBytes)
-		chunkHashWriter.Reset()
 	}
 
-	formData.ChunkHash = hex.EncodeToString(chunksHashWriter.Sum(nil))
-	formData.ContentHash = formData.ChunkHash
-
 	if isFinal {
-
-		//fixed shard data's info in last chunk for stream
-		formData.ChallengeHash, err = hasher.GetChallengeHash()
-		if err != nil {
-			return nil, metadata, err
-		}
-		formData.ContentHash, err = hasher.GetContentHash()
+		err = hasher.Finalize()
 		if err != nil {
 			return nil, metadata, err
 		}
 
-		//fixed original file's info in last chunk for stream
+		formData.FixedMerkleRoot, err = hasher.GetFixedMerkleRoot()
+		if err != nil {
+			return nil, metadata, err
+		}
+		formData.ValidationRoot, err = hasher.GetValidationRoot()
+		if err != nil {
+			return nil, metadata, err
+		}
+
+		actualHashSignature, err := client.Sign(fileMeta.ActualHash)
+		if err != nil {
+			return nil, metadata, err
+		}
+
+		validationRootSignature, err := client.Sign(actualHashSignature + formData.ValidationRoot)
+		if err != nil {
+			return nil, metadata, err
+		}
+
 		formData.ActualHash = fileMeta.ActualHash
+		formData.ActualFileHashSignature = actualHashSignature
+		formData.ValidationRootSignature = validationRootSignature
 		formData.ActualSize = fileMeta.ActualSize
 
 	}
@@ -127,7 +144,7 @@ func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, conn
 			return nil, metadata, err
 		}
 
-		thumbnailHash := sha256.New()
+		thumbnailHash := sha3.New256()
 		thumbnailWriters := io.MultiWriter(uploadThumbnailFile, thumbnailHash)
 		_, err = thumbnailWriters.Write(thumbnailChunkData)
 		if err != nil {
@@ -156,9 +173,8 @@ func (b *chunkedUploadFormBuilder) Build(fileMeta *FileMeta, hasher Hasher, conn
 		return nil, metadata, err
 	}
 	metadata.ContentType = formWriter.FormDataContentType()
-	metadata.ChunkHash = formData.ChunkHash
-	metadata.ChallengeHash = formData.ChallengeHash
-	metadata.ContentHash = formData.ContentHash
+	metadata.FixedMerkleRoot = formData.FixedMerkleRoot
+	metadata.ValidationRoot = formData.ValidationRoot
 	metadata.ThumbnailContentHash = formData.ThumbnailContentHash
 
 	return body, metadata, nil
