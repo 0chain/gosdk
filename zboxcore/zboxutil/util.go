@@ -1,10 +1,7 @@
 package zboxutil
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rand"
-	"encoding/base64"
 	"fmt"
 	"io"
 	"math"
@@ -19,6 +16,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/h2non/filetype"
 	"github.com/lithammer/shortuuid/v3"
+	"golang.org/x/crypto/chacha20poly1305"
+	"golang.org/x/crypto/scrypt"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -164,39 +163,66 @@ func RemoteClean(path string) string {
 	return out.string() //(FromSlash(out.string())
 }
 
+const (
+	keySize      = 32
+	nonceSize    = 12
+	saltSize     = 32
+	tagSize      = 16
+	scryptN      = 32768
+	scryptR      = 8
+	scryptP      = 1
+	scryptKeyLen = 32
+)
+
 func Encrypt(key, text []byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
+	salt := make([]byte, saltSize)
+	if _, err := rand.Read(salt); err != nil {
+		return nil, err
+	}
+
+	derivedKey, err := scrypt.Key(key, salt, scryptN, scryptR, scryptP, scryptKeyLen)
 	if err != nil {
 		return nil, err
 	}
-	b := base64.StdEncoding.EncodeToString(text)
-	ciphertext := make([]byte, aes.BlockSize+len(b))
-	iv := ciphertext[:aes.BlockSize]
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
+	nonce := make([]byte, nonceSize)
+	if _, err := rand.Read(nonce); err != nil {
 		return nil, err
 	}
-	cfb := cipher.NewCFBEncrypter(block, iv)
-	cfb.XORKeyStream(ciphertext[aes.BlockSize:], []byte(b))
+	aead, err := chacha20poly1305.New(derivedKey)
+	if err != nil {
+		return nil, err
+	}
+
+	ciphertext := aead.Seal(nil, nonce, text, nil)
+	ciphertext = append(salt, ciphertext...)
+	ciphertext = append(nonce, ciphertext...)
+
 	return ciphertext, nil
 }
 
-func Decrypt(key, text []byte) ([]byte, error) {
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
-	if len(text) < aes.BlockSize {
+func Decrypt(key, ciphertext []byte) ([]byte, error) {
+	if len(ciphertext) < saltSize+nonceSize+tagSize {
 		return nil, errors.New("ciphertext too short")
 	}
-	iv := text[:aes.BlockSize]
-	text = text[aes.BlockSize:]
-	cfb := cipher.NewCFBDecrypter(block, iv)
-	cfb.XORKeyStream(text, text)
-	data, err := base64.StdEncoding.DecodeString(string(text))
+
+	nonce := ciphertext[:nonceSize]
+	salt := ciphertext[nonceSize : nonceSize+saltSize]
+	text := ciphertext[saltSize+nonceSize:]
+
+	derivedKey, err := scrypt.Key(key, salt, scryptN, scryptR, scryptP, scryptKeyLen)
 	if err != nil {
 		return nil, err
 	}
-	return data, nil
+	aead, err := chacha20poly1305.New(derivedKey)
+	if err != nil {
+		return nil, err
+	}
+	plaintext, err := aead.Open(nil, nonce, text, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return plaintext, nil
 }
 
 func calculateMinRequired(minRequired, percent float64) int {
