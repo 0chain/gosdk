@@ -10,7 +10,7 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zcnbridge/log"
-	"github.com/hasura/go-graphql-client"
+	"github.com/machinebox/graphql"
 
 	"github.com/spf13/viper"
 )
@@ -177,7 +177,7 @@ func CreateBridgeClient(cfg *viper.Viper, walletFile ...string) *BridgeClient {
 			zcnWallet: wallet,
 		},
 		StandaloneClientsSet: &StandaloneClientsSet{
-			graphQlClient: graphql.NewClient(cfg.GetString(fmt.Sprintf("%s.SubgraphAPIURL", ClientConfigKeyName)), nil),
+			graphQlClient: graphql.NewClient(cfg.GetString(fmt.Sprintf("%s.SubgraphAPIURL", ClientConfigKeyName))),
 		},
 	}
 }

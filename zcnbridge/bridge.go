@@ -31,6 +31,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+
+	"github.com/machinebox/graphql"
 )
 
 type (
@@ -332,16 +334,16 @@ func (b *BridgeClient) GetNotProcessedWZCNBurnTickets(ctx context.Context, mintN
 
 	clientID := DefaultClientIDEncoder(b.ClientID())
 
-	query := fmt.Sprintf(`query {
+	query := graphql.NewRequest(fmt.Sprintf(`query {
 		burneds(where: {clientId: "%x", from: "%s", nonce_gt: %d}) {
 	  	transactionHash
 	  	nonce
 		}
-	}`, string(clientID), b.EthereumAddress, mintNonce)
+	}`, string(clientID), b.EthereumAddress, mintNonce))
 
 	var queryResult zcnsc.BurnEvent
 
-	err := b.graphQlClient.Exec(ctx, query, &queryResult, nil)
+	err := b.graphQlClient.Run(ctx, query, &queryResult)
 	if err != nil {
 		return nil, err
 	}
