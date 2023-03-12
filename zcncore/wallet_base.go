@@ -210,6 +210,13 @@ type BurnTicket struct {
 	Nonce int64  `json:"nonce"`
 }
 
+func NewBurnTicket(hash string, nonce int64) *BurnTicket {
+	return &BurnTicket{
+		Hash:  hash,
+		Nonce: nonce,
+	}
+}
+
 // GetNotProcessedZCNBurnTicketsCallback needs to be implemented by the caller of GetNotProcessedZCNBurnTickets() to get the status
 type GetNotProcessedZCNBurnTicketsCallback interface {
 	OnBalanceAvailable(status int, value []*BurnTicket, info string)
