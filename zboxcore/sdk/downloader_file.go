@@ -6,7 +6,7 @@ type fileDownloader struct {
 
 func (d *fileDownloader) Start(status StatusCallback) error {
 	if d.isViewer {
-		return d.allocationObj.DownloadFromAuthTicket(d.options.localPath,
+		return d.allocationObj.DownloadFromAuthTicket(d.localPath,
 			d.authTicket, d.lookupHash, d.fileName, d.verifyDownload, status)
 	}
 
