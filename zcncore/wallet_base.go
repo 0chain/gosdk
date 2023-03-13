@@ -189,7 +189,7 @@ type GetMintNonceCallback interface {
 
 // Implementation of GetMintNonceCallback
 type GetMintNonceCallbackStub struct {
-	sync.WaitGroup
+	Wg *sync.WaitGroup
 
 	Status int
 	Value  int64
@@ -197,7 +197,7 @@ type GetMintNonceCallbackStub struct {
 }
 
 func (cb *GetMintNonceCallbackStub) OnResponseAvailable(status int, value int64, info string) {
-	defer cb.Done()
+	defer cb.Wg.Done()
 
 	cb.Status = status
 	cb.Value = value
@@ -218,7 +218,7 @@ type GetNotProcessedZCNBurnTicketsCallback interface {
 
 // Implementation of GetNotProcessedZCNBurnTicketsCallback
 type GetNotProcessedZCNBurnTicketsCallbackStub struct {
-	sync.WaitGroup
+	Wg *sync.WaitGroup
 
 	Status int
 	Value  []*BurnTicket
@@ -230,7 +230,7 @@ func (cb *GetNotProcessedZCNBurnTicketsCallbackStub) OnAddBurnTicket(value *Burn
 }
 
 func (cb *GetNotProcessedZCNBurnTicketsCallbackStub) OnResponseAvailable(status int, info string) {
-	defer cb.Done()
+	defer cb.Wg.Done()
 
 	cb.Status = status
 	cb.Info = info

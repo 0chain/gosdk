@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"sync"
 	"time"
 
 	"github.com/0chain/gosdk/zcnbridge"
@@ -116,10 +117,14 @@ func getMintWZCNPayload(burnTrxHash string) string {
 
 // Returns all not processed WZCN burn tickets burned for client id given as a param
 func getNotProcessedWZCNBurnTickets() string {
-	var cb zcncore.GetMintNonceCallbackStub
+	cb := zcncore.GetMintNonceCallbackStub{
+		Wg: new(sync.WaitGroup),
+	}
+	cb.Wg.Add(1)
 	if err := zcncore.GetMintNonce(&cb); err != nil {
 		return errors.Wrap("getNotProcessedWZCNBurnTickets", "failed to retreive ZCN processed mint nonces", err).Error()
 	}
+	cb.Wg.Done()
 
 	burnTickets, err := bridge.GetNotProcessedWZCNBurnTickets(context.Background(), cb.Value)
 	if err != nil {
@@ -142,11 +147,15 @@ func getNotProcessedZCNBurnTickets() string {
 		return errors.Wrap("getNotProcessedZCNBurnTickets", "failed to retreive user nonce", err).Error()
 	}
 
-	var cb zcncore.GetNotProcessedZCNBurnTicketsCallbackStub
+	cb := zcncore.GetNotProcessedZCNBurnTicketsCallbackStub{
+		Wg: new(sync.WaitGroup),
+	}
+	cb.Wg.Add(1)
 	err = zcncore.GetNotProcessedZCNBurnTickets(bridge.EthereumAddress, userNonce.Int64(), &cb)
 	if err != nil {
 		return errors.Wrap("getNotProcessedZCNBurnTickets", "failed to retreive ZCN burn tickets", err).Error()
 	}
+	cb.Wg.Done()
 
 	var result []byte
 	result, err = json.Marshal(cb.Value)
