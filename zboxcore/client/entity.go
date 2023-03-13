@@ -137,3 +137,12 @@ func VerifySignature(signature string, msg string) (bool, error) {
 
 	return ss.Verify(signature, msg)
 }
+
+func VerifySignatureWithPubKey(pubKey, signature, hash string) (bool, error) {
+	sch := zcncrypto.NewSignatureScheme(client.SignatureScheme)
+	err := sch.SetPublicKey(pubKey)
+	if err != nil {
+		return false, err
+	}
+	return sch.Verify(signature, hash)
+}
