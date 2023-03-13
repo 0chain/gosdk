@@ -368,9 +368,9 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 	return
 }
 
-// StakePoolUnlockUnstake is stake pool unlock response in case where tokens
+// stakePoolLock is stake pool unlock response in case where tokens
 // can't be unlocked due to opened offers.
-type stakePoolUnlockUnstake struct {
+type stakePoolLock struct {
 	Client       string       `json:"client"`
 	ProviderId   string       `json:"provider_id"`
 	ProviderType ProviderType `json:"provider_type"`
@@ -411,7 +411,7 @@ func StakePoolUnlock(providerType ProviderType, providerID string, fee uint64) (
 		return // an error
 	}
 
-	var spuu stakePoolUnlockUnstake
+	var spuu stakePoolLock
 	if err = json.Unmarshal([]byte(out), &spuu); err != nil {
 		return
 	}
