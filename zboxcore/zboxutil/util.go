@@ -1,7 +1,10 @@
 package zboxutil
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"math"
@@ -163,66 +166,39 @@ func RemoteClean(path string) string {
 	return out.string() //(FromSlash(out.string())
 }
 
-const (
-	keySize      = 32
-	nonceSize    = 12
-	saltSize     = 32
-	tagSize      = 16
-	scryptN      = 32768
-	scryptR      = 8
-	scryptP      = 1
-	scryptKeyLen = 32
-)
-
 func Encrypt(key, text []byte) ([]byte, error) {
-	salt := make([]byte, saltSize)
-	if _, err := rand.Read(salt); err != nil {
-		return nil, err
-	}
-
-	derivedKey, err := scrypt.Key(key, salt, scryptN, scryptR, scryptP, scryptKeyLen)
+	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
 	}
-	nonce := make([]byte, nonceSize)
-	if _, err := rand.Read(nonce); err != nil {
+	b := base64.StdEncoding.EncodeToString(text)
+	ciphertext := make([]byte, aes.BlockSize+len(b))
+	iv := ciphertext[:aes.BlockSize]
+	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
 		return nil, err
 	}
-	aead, err := chacha20poly1305.New(derivedKey)
-	if err != nil {
-		return nil, err
-	}
-
-	ciphertext := aead.Seal(nil, nonce, text, nil)
-	ciphertext = append(salt, ciphertext...)
-	ciphertext = append(nonce, ciphertext...)
-
+	cfb := cipher.NewCFBEncrypter(block, iv)
+	cfb.XORKeyStream(ciphertext[aes.BlockSize:], []byte(b))
 	return ciphertext, nil
 }
 
-func Decrypt(key, ciphertext []byte) ([]byte, error) {
-	if len(ciphertext) < saltSize+nonceSize+tagSize {
+func Decrypt(key, text []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+	if len(text) < aes.BlockSize {
 		return nil, errors.New("ciphertext too short")
 	}
-
-	nonce := ciphertext[:nonceSize]
-	salt := ciphertext[nonceSize : nonceSize+saltSize]
-	text := ciphertext[saltSize+nonceSize:]
-
-	derivedKey, err := scrypt.Key(key, salt, scryptN, scryptR, scryptP, scryptKeyLen)
+	iv := text[:aes.BlockSize]
+	text = text[aes.BlockSize:]
+	cfb := cipher.NewCFBDecrypter(block, iv)
+	cfb.XORKeyStream(text, text)
+	data, err := base64.StdEncoding.DecodeString(string(text))
 	if err != nil {
 		return nil, err
 	}
-	aead, err := chacha20poly1305.New(derivedKey)
-	if err != nil {
-		return nil, err
-	}
-	plaintext, err := aead.Open(nil, nonce, text, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	return plaintext, nil
+	return data, nil
 }
 
 func calculateMinRequired(minRequired, percent float64) int {
@@ -268,4 +244,66 @@ func GetRateLimitValue(r *http.Response) (int, error) {
 	}
 
 	return int(math.Ceil(rl / dur)), nil
+}
+
+const (
+	keySize      = 32
+	nonceSize    = 12
+	saltSize     = 32
+	tagSize      = 16
+	scryptN      = 32768
+	scryptR      = 8
+	scryptP      = 1
+	scryptKeyLen = 32
+)
+
+func ScryptEncrypt(key, text []byte) ([]byte, error) {
+	salt := make([]byte, saltSize)
+	if _, err := rand.Read(salt); err != nil {
+		return nil, err
+	}
+
+	derivedKey, err := scrypt.Key(key, salt, scryptN, scryptR, scryptP, scryptKeyLen)
+	if err != nil {
+		return nil, err
+	}
+	nonce := make([]byte, nonceSize)
+	if _, err := rand.Read(nonce); err != nil {
+		return nil, err
+	}
+	aead, err := chacha20poly1305.New(derivedKey)
+	if err != nil {
+		return nil, err
+	}
+
+	ciphertext := aead.Seal(nil, nonce, text, nil)
+	ciphertext = append(salt, ciphertext...)
+	ciphertext = append(nonce, ciphertext...)
+
+	return ciphertext, nil
+}
+
+func ScryptDecrypt(key, ciphertext []byte) ([]byte, error) {
+	if len(ciphertext) < saltSize+nonceSize+tagSize {
+		return nil, errors.New("ciphertext too short")
+	}
+
+	nonce := ciphertext[:nonceSize]
+	salt := ciphertext[nonceSize : nonceSize+saltSize]
+	text := ciphertext[saltSize+nonceSize:]
+
+	derivedKey, err := scrypt.Key(key, salt, scryptN, scryptR, scryptP, scryptKeyLen)
+	if err != nil {
+		return nil, err
+	}
+	aead, err := chacha20poly1305.New(derivedKey)
+	if err != nil {
+		return nil, err
+	}
+	plaintext, err := aead.Open(nil, nonce, text, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return plaintext, nil
 }

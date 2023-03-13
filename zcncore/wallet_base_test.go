@@ -6,17 +6,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestScryptEncryption(t *testing.T) {
+func TestCFBEncryption(t *testing.T) {
 	key := "passphrase1111111111111111111111"
-	text := "glare mistake gun joke bid spare across diagram wrap cube swear cactus cave repeat you brave few best wild lion pitch pole original wasp"
+	mnemonics := "glare mistake gun joke bid spare across diagram wrap cube swear cactus cave repeat you brave few best wild lion pitch pole original wasp"
 
-	encryptedText, err := Encrypt(key, text)
-	require.Nil(t, err)
-	require.NotEmpty(t, encryptedText)
+	encryptedMnemonics, err := Encrypt(key, mnemonics)
 
-	decryptedText, err := Decrypt(key, encryptedText)
 	require.Nil(t, err)
-	require.Equal(t, text, decryptedText)
+	require.NotEmpty(t, encryptedMnemonics)
+
+	decryptedMnemonics, err := Decrypt(key, encryptedMnemonics)
+	require.Nil(t, err)
+	require.Equal(t, mnemonics, decryptedMnemonics)
 }
 
 func TestCBCEncryption(t *testing.T) {
@@ -33,4 +34,17 @@ func TestCBCEncryption(t *testing.T) {
 	dec, err = CryptoJsDecrypt(passphrase, encryptedMnemonics)
 	require.Nil(t, err)
 	require.Equal(t, mnemonics, string(dec))
+}
+
+func TestScryptEncryption(t *testing.T) {
+	key := "passphrase1111111111111111111111"
+	text := "glare mistake gun joke bid spare across diagram wrap cube swear cactus cave repeat you brave few best wild lion pitch pole original wasp"
+
+	encryptedText, err := ScryptEncrypt(key, text)
+	require.Nil(t, err)
+	require.NotEmpty(t, encryptedText)
+
+	decryptedText, err := ScryptDecrypt(key, encryptedText)
+	require.Nil(t, err)
+	require.Equal(t, text, decryptedText)
 }
