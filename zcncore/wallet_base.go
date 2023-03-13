@@ -212,7 +212,7 @@ type BurnTickets []struct {
 
 // GetNotProcessedZCNBurnTicketsCallback needs to be implemented by the caller of GetNotProcessedZCNBurnTickets() to get the status
 type GetNotProcessedZCNBurnTicketsCallback interface {
-	OnBalanceAvailable(status int, value *BurnTickets, info string)
+	OnBalanceAvailable(status int, value BurnTickets, info string)
 }
 
 // Implementation of GetNotProcessedZCNBurnTicketsCallback
@@ -220,11 +220,11 @@ type GetNotProcessedZCNBurnTicketsCallbackStub struct {
 	sync.WaitGroup
 
 	Status int
-	Value  *BurnTickets
+	Value  BurnTickets
 	Info   string
 }
 
-func (cb *GetNotProcessedZCNBurnTicketsCallbackStub) OnBalanceAvailable(status int, value *BurnTickets, info string) {
+func (cb *GetNotProcessedZCNBurnTicketsCallbackStub) OnBalanceAvailable(status int, value BurnTickets, info string) {
 	defer cb.Done()
 
 	cb.Status = status
@@ -918,7 +918,7 @@ func getZCNMintNonceFromSharders(clientId string) (int64, string, error) {
 	return 0, consensusMaps.WinInfo, errors.New("", "get mint nonce failed")
 }
 
-func getNotProcessedZCNBurnTicketsFromSharders(ethereumAddress string, startNonce int64) (*BurnTickets, string, error) {
+func getNotProcessedZCNBurnTicketsFromSharders(ethereumAddress string, startNonce int64) (BurnTickets, string, error) {
 	result := make(chan *util.GetResponse)
 	defer close(result)
 
@@ -949,7 +949,7 @@ func getNotProcessedZCNBurnTicketsFromSharders(ethereumAddress string, startNonc
 
 	winValue, ok := consensusMaps.GetValue()
 	if ok {
-		var winBurnTickets *BurnTickets
+		var winBurnTickets BurnTickets
 		if err := json.Unmarshal(winValue, &winBurnTickets); err != nil {
 			return nil, consensusMaps.WinError, err
 		}
