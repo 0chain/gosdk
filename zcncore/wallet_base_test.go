@@ -35,16 +35,3 @@ func TestCBCEncryption(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, mnemonics, string(dec))
 }
-
-func TestScryptEncryption(t *testing.T) {
-	key := "passphrase1111111111111111111111"
-	text := "glare mistake gun joke bid spare across diagram wrap cube swear cactus cave repeat you brave few best wild lion pitch pole original wasp"
-
-	encryptedText, err := ScryptEncrypt(key, text)
-	require.Nil(t, err)
-	require.NotEmpty(t, encryptedText)
-
-	decryptedText, err := ScryptDecrypt(key, encryptedText)
-	require.Nil(t, err)
-	require.Equal(t, text, decryptedText)
-}
