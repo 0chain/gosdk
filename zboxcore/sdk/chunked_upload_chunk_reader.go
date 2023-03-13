@@ -53,7 +53,7 @@ type chunkedUploadChunkReader struct {
 	erasureEncoder reedsolomon.Encoder
 	// encscheme encryption scheme
 	encscheme encryption.EncryptionScheme
-	// hash for actual file hash, content hash and challenge hash
+	// hasher to calculate actual file hash, validation root and fixed merkle root
 	hasher Hasher
 }
 
@@ -139,7 +139,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		FragmentSize: 0,
 	}
 
-	chunkBytes := make([]byte, r.chunkDataSizePerRead, r.chunkDataSizePerRead*2)
+	chunkBytes := make([]byte, r.chunkDataSizePerRead)
 	readLen, err := r.fileReader.Read(chunkBytes)
 
 	if err != nil {
@@ -172,7 +172,7 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 		}
 	}
 
-	err = r.hasher.WriteToFile(chunkBytes, chunk.Index)
+	err = r.hasher.WriteToFile(chunkBytes)
 	if err != nil {
 		return chunk, err
 	}
@@ -195,9 +195,9 @@ func (r *chunkedUploadChunkReader) Next() (*ChunkData, error) {
 			if err != nil {
 				return nil, err
 			}
-			header := make([]byte, EncryptionHeaderSize)
-			copy(header[:], encMsg.MessageChecksum+encMsg.OverallChecksum)
-			fragments[pos] = append(header, encMsg.EncryptedData...)
+			fragments[pos] = make([]byte, len(encMsg.EncryptedData)+EncryptionHeaderSize)
+			n := copy(fragments[pos], encMsg.MessageChecksum+encMsg.OverallChecksum)
+			copy(fragments[pos][n:], encMsg.EncryptedData)
 		}
 	}
 

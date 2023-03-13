@@ -5,6 +5,12 @@ const DefaultBlocksPerMarker int = 10
 // DownloadOption set download option
 type DownloadOption func(do *DownloadOptions)
 
+func WithVerifyDownload(shouldVerify bool) DownloadOption {
+	return func(do *DownloadOptions) {
+		do.verifyDownload = shouldVerify
+	}
+}
+
 func WithAllocation(obj *Allocation) DownloadOption {
 	return func(do *DownloadOptions) {
 		do.allocationObj = obj

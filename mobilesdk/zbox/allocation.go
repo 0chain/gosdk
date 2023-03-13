@@ -116,7 +116,7 @@ func (a *Allocation) DownloadFile(remotePath, localPath string, statusCb StatusC
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
 	}
-	return a.sdkAllocation.DownloadFile(localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb})
+	return a.sdkAllocation.DownloadFile(localPath, remotePath, false, &StatusCallbackWrapped{Callback: statusCb})
 }
 
 // DownloadFileByBlock - start download file from remote path to localpath by blocks number
@@ -124,7 +124,7 @@ func (a *Allocation) DownloadFileByBlock(remotePath, localPath string, startBloc
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
 	}
-	return a.sdkAllocation.DownloadFileByBlock(localPath, remotePath, startBlock, endBlock, numBlocks, &StatusCallbackWrapped{Callback: statusCb})
+	return a.sdkAllocation.DownloadFileByBlock(localPath, remotePath, startBlock, endBlock, numBlocks, false, &StatusCallbackWrapped{Callback: statusCb})
 }
 
 // DownloadThumbnail - start download file thumbnail from remote path to localpath
@@ -132,7 +132,7 @@ func (a *Allocation) DownloadThumbnail(remotePath, localPath string, statusCb St
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
 	}
-	return a.sdkAllocation.DownloadThumbnail(localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb})
+	return a.sdkAllocation.DownloadThumbnail(localPath, remotePath, false, &StatusCallbackWrapped{Callback: statusCb})
 }
 
 // RepairFile - repair file if it exists in remote path
@@ -260,7 +260,7 @@ func (a *Allocation) DownloadFromAuthTicket(localPath string, authTicket string,
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
 	}
-	return a.sdkAllocation.DownloadFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, &StatusCallbackWrapped{Callback: status})
+	return a.sdkAllocation.DownloadFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status})
 }
 
 // DownloadFromAuthTicketByBlocks - download file from Auth ticket by blocks number
@@ -268,7 +268,7 @@ func (a *Allocation) DownloadFromAuthTicketByBlocks(localPath string, authTicket
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
 	}
-	return a.sdkAllocation.DownloadFromAuthTicketByBlocks(localPath, authTicket, startBlock, endBlock, numBlocks, remoteLookupHash, remoteFilename, &StatusCallbackWrapped{Callback: status})
+	return a.sdkAllocation.DownloadFromAuthTicketByBlocks(localPath, authTicket, startBlock, endBlock, numBlocks, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status})
 }
 
 // DownloadThumbnailFromAuthTicket - downloadThumbnail from Auth ticket
@@ -276,7 +276,7 @@ func (a *Allocation) DownloadThumbnailFromAuthTicket(localPath string, authTicke
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
 	}
-	return a.sdkAllocation.DownloadThumbnailFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, &StatusCallbackWrapped{Callback: status})
+	return a.sdkAllocation.DownloadThumbnailFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status})
 }
 
 // GetFileStats - get file stats from path
@@ -305,14 +305,6 @@ func (a *Allocation) CancelDownload(remotepath string) error {
 		return ErrInvalidAllocation
 	}
 	return a.sdkAllocation.CancelDownload(remotepath)
-}
-
-// CancelUpload - cancel file upload
-func (a *Allocation) CancelUpload(localpath string) error {
-	if a == nil || a.sdkAllocation == nil {
-		return ErrInvalidAllocation
-	}
-	return a.sdkAllocation.CancelUpload(localpath)
 }
 
 // GetDiff - cancel file diff

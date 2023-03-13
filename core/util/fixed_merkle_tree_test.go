@@ -4,53 +4,68 @@ import (
 	"math/rand"
 	"testing"
 
+	"fmt"
+
 	"github.com/stretchr/testify/require"
 )
 
-func TestFixedMerkleTreeWithChunkSize(t *testing.T) {
+const (
+	KB = 1024
+)
 
-	tests := []struct {
-		Name       string
-		MerkleTree FixedMerkleTree
-		Data       []byte
-	}{
-		{
-			Name:       "ChunkSize < 1024",
-			MerkleTree: *NewFixedMerkleTree(1024),
-			Data:       GenerateRandomBytes(1023),
-		},
-		{
-			Name:       "ChunkSize = 1024",
-			MerkleTree: *NewFixedMerkleTree(1024),
-			Data:       GenerateRandomBytes(1024),
-		},
-		{
-			Name:       "ChunkSize > 1024",
-			MerkleTree: *NewFixedMerkleTree(1024),
-			Data:       GenerateRandomBytes(1025),
-		},
-	}
+func TestFixedMerkleTreeWrite(t *testing.T) {
+	for i := 0; i < 100; i++ {
+		var n int64
+		for {
+			n = rand.Int63n(KB * KB)
+			if n != 0 {
+				break
+			}
+		}
 
-	for _, test := range tests {
-		t.Run(test.Name, func(t *testing.T) {
-			require := require.New(t)
-			require.Nil(test.MerkleTree.Write(test.Data, 0))
+		t.Run(fmt.Sprintf("Fmt test with dataSize: %d", n), func(t *testing.T) {
+
+			b := make([]byte, n)
+			rand.Read(b)
+
+			leaves := make([]Hashable, FixedMerkleLeaves)
+			for i := 0; i < len(leaves); i++ {
+				leaves[i] = getNewLeaf()
+			}
+
+			for i := 0; i < len(b); i += MaxMerkleLeavesSize {
+				leafCount := 0
+				endInd := i + MaxMerkleLeavesSize
+				if endInd > len(b) {
+					endInd = len(b)
+				}
+
+				d := b[i:endInd]
+				for j := 0; j < len(d); j += MerkleChunkSize {
+					endInd := j + MerkleChunkSize
+					if endInd > len(d) {
+						endInd = len(d)
+					}
+
+					_, err := leaves[leafCount].Write(d[j:endInd])
+					require.NoError(t, err)
+					leafCount++
+				}
+			}
+
+			mt := MerkleTree{}
+			mt.ComputeTree(leaves)
+
+			root := mt.GetRoot()
+
+			ft := NewFixedMerkleTree()
+			_, err := ft.Write(b)
+			require.NoError(t, err)
+			err = ft.Finalize()
+			require.NoError(t, err)
+
+			root1 := ft.GetMerkleRoot()
+			require.Equal(t, root, root1)
 		})
 	}
-
-}
-
-// GenerateRandomBytes returns securely generated random bytes.
-// It will return an error if the system's secure random
-// number generator fails to function correctly, in which
-// case the caller should not continue.
-func GenerateRandomBytes(n int) []byte {
-	b := make([]byte, n)
-	_, err := rand.Read(b)
-	// Note that err == nil only if we read len(b) bytes.
-	if err != nil {
-		return nil
-	}
-
-	return b
 }
