@@ -768,6 +768,9 @@ func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
 
 	rate := consensusMaps.MaxConsensus * 100 / len(_config.chain.Sharders)
 	if rate < consensusThresh {
+		if strings.TrimSpace(consensusMaps.WinError) == `{"error":"value not present"}` {
+			return 0, consensusMaps.WinError, nil
+		}
 		return 0, consensusMaps.WinError, errors.New("", "get balance failed. consensus not reached")
 	}
 
