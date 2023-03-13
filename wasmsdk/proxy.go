@@ -177,6 +177,7 @@ func main() {
 				"getReadPoolInfo":       getReadPoolInfo,
 				"lockStakePool":         lockStakePool,
 				"lockWritePool":         lockWritePool,
+				"getSkatePoolInfo":      getSkatePoolInfo,
 				"unlockStakePool":       unlockStakePool,
 				"decodeAuthTicket":      decodeAuthTicket,
 

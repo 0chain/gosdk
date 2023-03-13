@@ -299,6 +299,17 @@ unlocks tokens on a provider
 
 > returns time where the tokens can be unlocked
 
+### zcn.sdk.getSkatePoolInfo
+
+get the details of the stakepool associated with provider
+**Input**:
+
+> [providerType](https://github.com/0chain/gosdk/blob/bc96f54e68a68ef5d757428b9c4153405ebe4163/zboxcore/sdk/sdk.go#L1186-L1194) int, providerID string
+
+**Output**:
+
+> [sdk.StakePoolInfo](https://github.com/0chain/gosdk/blob/2ec97a9bb116db166e31c0207971282e7008d22c/zboxcore/sdk/sdk.go#L263-L275), err
+
 ### zcn.sdk.getWalletBalance
 
 get wallet balance

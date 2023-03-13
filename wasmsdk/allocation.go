@@ -240,6 +240,16 @@ func unlockStakePool(providerType int, providerID, fee string) (int64, error) {
 	return unstake, err
 }
 
+func getSkatePoolInfo(providerType int, providerID string) (*sdk.StakePoolInfo, error) {
+
+	info, err := sdk.GetStakePoolInfo(sdk.ProviderType(providerType), providerID)
+
+	if err != nil {
+		return nil, err
+	}
+	return info, err
+}
+
 // GetReadPoolInfo is to get information about the read pool for the allocation
 func getReadPoolInfo(clientID string) (*sdk.ReadPool, error) {
 	readPool, err := sdk.GetReadPoolInfo(clientID)
