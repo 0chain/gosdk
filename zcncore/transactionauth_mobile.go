@@ -38,10 +38,10 @@ func (ta *TransactionWithAuth) Send(toClientID string, val string, desc string) 
 		return errors.New("", "Could not serialize description to transaction_data")
 	}
 	go func() {
-		ta.txn.TransactionType = transaction.TxnTypeSend
-		ta.txn.ToClientID = toClientID
-		ta.txn.Value = v
-		ta.txn.TransactionData = string(txnData)
+		ta.TransactionType = transaction.TxnTypeSend
+		ta.ToClientID = toClientID
+		ta.Value = v
+		ta.TransactionData = string(txnData)
 		ta.submitTxn()
 	}()
 	return nil
@@ -504,11 +504,11 @@ func (ta *TransactionWithAuth) ZCNSCAddAuthorizer(ip AddAuthorizerPayload) (err 
 }
 
 func (ta *TransactionWithAuth) ZCNSCAuthorizerHealthCheck(ip *AuthorizerHealthCheckPayload) (err error) {
-	err = ta.t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_AUTHORIZER_HEALTH_CHECK, ip, 0)
+	err = ta.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_AUTHORIZER_HEALTH_CHECK, ip, 0)
 	if err != nil {
 		logging.Error(err)
 		return
 	}
-	go ta.t.setNonceAndSubmit()
+	go ta.setNonceAndSubmit()
 	return
 }
