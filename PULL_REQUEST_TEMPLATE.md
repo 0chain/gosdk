@@ -1,3 +1,7 @@
+### Version
+- [ ] Ensure to run `make getrev` to update gosdk version info.
+
+
 ### Changes
 -
 
