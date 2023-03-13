@@ -1,13 +1,13 @@
 package sdk
 
 import (
-	"crypto/sha256"
 	"encoding/hex"
 	"math"
 	"os"
 	"time"
 
 	"github.com/klauspost/reedsolomon"
+	"golang.org/x/crypto/sha3"
 )
 
 // ChunkedUploadOption set stream option
@@ -25,7 +25,7 @@ func WithThumbnail(buf []byte) ChunkedUploadOption {
 			su.thumbnailBytes = buf
 			su.fileMeta.ActualThumbnailSize = int64(len(buf))
 
-			thumbnailHasher := sha256.New()
+			thumbnailHasher := sha3.New256()
 			thumbnailHasher.Write(buf)
 
 			su.fileMeta.ActualThumbnailHash = hex.EncodeToString(thumbnailHasher.Sum(nil))

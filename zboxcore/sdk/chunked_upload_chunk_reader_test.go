@@ -78,7 +78,13 @@ func TestReadChunks(t *testing.T) {
 
 			buf := generateRandomBytes(test.Size)
 
-			reader, err := createChunkReader(bytes.NewReader(buf), int64(test.Size), int64(test.ChunkSize), test.DataShards, test.EncryptOnUpload, uploadMask, erasureEncoder, encscheme, CreateHasher(int(test.ChunkSize)))
+			reader, err := createChunkReader(
+				bytes.NewReader(buf), int64(test.Size),
+				int64(test.ChunkSize), test.DataShards,
+				test.EncryptOnUpload, uploadMask,
+				erasureEncoder, encscheme,
+				CreateHasher(getShardSize(test.Size, test.DataShards, test.EncryptOnUpload)),
+			)
 			require.Nil(err)
 
 			lastChunkIndex := 0

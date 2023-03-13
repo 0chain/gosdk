@@ -22,21 +22,21 @@ const (
 )
 
 type Ref struct {
-	Type           string `gorm:"column:type" dirlist:"type" filelist:"type"`
-	AllocationID   string `gorm:"column:allocation_id"`
-	LookupHash     string `gorm:"column:lookup_hash" dirlist:"lookup_hash" filelist:"lookup_hash"`
-	Name           string `gorm:"column:name" dirlist:"name" filelist:"name"`
-	Path           string `gorm:"column:path" dirlist:"path" filelist:"path"`
-	Hash           string `gorm:"column:hash" dirlist:"hash" filelist:"hash"`
-	NumBlocks      int64  `gorm:"column:num_of_blocks" dirlist:"num_of_blocks" filelist:"num_of_blocks"`
-	PathHash       string `gorm:"column:path_hash" dirlist:"path_hash" filelist:"path_hash"`
-	ParentPath     string `gorm:"column:parent_path"`
-	PathLevel      int    `gorm:"column:level"`
-	ContentHash    string `gorm:"column:content_hash" filelist:"content_hash"`
-	Size           int64  `gorm:"column:size" dirlist:"size" filelist:"size"`
-	MerkleRoot     string `gorm:"column:merkle_root" filelist:"merkle_root"`
-	ActualFileSize int64  `gorm:"column:actual_file_size" filelist:"actual_file_size"`
-	ActualFileHash string `gorm:"column:actual_file_hash" filelist:"actual_file_hash"`
+	Type            string `gorm:"column:type" dirlist:"type" filelist:"type"`
+	AllocationID    string `gorm:"column:allocation_id"`
+	LookupHash      string `gorm:"column:lookup_hash" dirlist:"lookup_hash" filelist:"lookup_hash"`
+	Name            string `gorm:"column:name" dirlist:"name" filelist:"name"`
+	Path            string `gorm:"column:path" dirlist:"path" filelist:"path"`
+	Hash            string `gorm:"column:hash" dirlist:"hash" filelist:"hash"`
+	NumBlocks       int64  `gorm:"column:num_of_blocks" dirlist:"num_of_blocks" filelist:"num_of_blocks"`
+	PathHash        string `gorm:"column:path_hash" dirlist:"path_hash" filelist:"path_hash"`
+	ParentPath      string `gorm:"column:parent_path"`
+	PathLevel       int    `gorm:"column:level"`
+	ValidationRoot  string `gorm:"column:validation_root" filelist:"validation_root"`
+	Size            int64  `gorm:"column:size" dirlist:"size" filelist:"size"`
+	FixedMerkleRoot string `gorm:"column:fixed_merkle_root" filelist:"fixed_merkle_root"`
+	ActualFileSize  int64  `gorm:"column:actual_file_size" filelist:"actual_file_size"`
+	ActualFileHash  string `gorm:"column:actual_file_hash" filelist:"actual_file_hash"`
 
 	Children       []*Ref `gorm:"-"`
 	childrenLoaded bool
@@ -166,8 +166,8 @@ func (fr *Ref) GetFileHashData() string {
 	hashArray = append(hashArray, fr.Name)
 	hashArray = append(hashArray, fr.Path)
 	hashArray = append(hashArray, strconv.FormatInt(fr.Size, 10))
-	hashArray = append(hashArray, fr.ContentHash)
-	hashArray = append(hashArray, fr.MerkleRoot)
+	hashArray = append(hashArray, fr.ValidationRoot)
+	hashArray = append(hashArray, fr.FixedMerkleRoot)
 	hashArray = append(hashArray, strconv.FormatInt(fr.ActualFileSize, 10))
 	hashArray = append(hashArray, fr.ActualFileHash)
 	hashArray = append(hashArray, strconv.FormatInt(fr.ChunkSize, 10))
