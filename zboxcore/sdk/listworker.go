@@ -228,5 +228,29 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 		return nil, err
 	}
 
+	if result.Type == fileref.DIRECTORY {
+		result.ActualSize = calculateDirSize(result.Children)
+		if result.ActualSize != 0 {
+			result.NumBlocks = result.ActualSize / CHUNK_SIZE
+		}
+	}
+
 	return result, nil
+}
+
+func calculateDirSize(list []*ListResult) int64 {
+	var size int64
+	for _, item := range list {
+		if item.Type == fileref.FILE {
+			size += item.ActualSize
+		}
+		if item.Type == fileref.DIRECTORY {
+			item.ActualSize = calculateDirSize(item.Children)
+			if item.ActualSize != 0 {
+				item.NumBlocks = item.ActualSize / CHUNK_SIZE
+			}
+			size += item.ActualSize
+		}
+	}
+	return size
 }

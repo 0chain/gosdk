@@ -9,10 +9,10 @@ func (d *blockDownloader) Start(status StatusCallback) error {
 		return d.options.allocationObj.DownloadFromAuthTicketByBlocks(
 			d.options.localPath, d.options.authTicket,
 			d.options.startBlock, d.options.endBlock, d.options.blocksPerMarker,
-			d.options.lookupHash, d.options.fileName, status)
+			d.options.lookupHash, d.options.fileName, d.options.verifyDownload, status)
 	}
 
 	return d.options.allocationObj.DownloadFileByBlock(d.options.localPath, d.options.remotePath,
-		d.options.startBlock, d.options.endBlock, d.options.blocksPerMarker,
+		d.options.startBlock, d.options.endBlock, d.options.blocksPerMarker, d.options.verifyDownload,
 		status)
 }

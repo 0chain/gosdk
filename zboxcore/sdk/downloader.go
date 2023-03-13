@@ -34,6 +34,7 @@ type DownloadOptions struct {
 	endBlock        int64
 
 	isThumbnailDownload bool
+	verifyDownload      bool
 }
 
 // CreateDownloader create a downloander
