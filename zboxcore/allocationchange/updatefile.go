@@ -1,8 +1,10 @@
 package allocationchange
 
 import (
+	"fmt"
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
@@ -15,11 +17,36 @@ type UpdateFileChange struct {
 func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) (
 	commitParams CommitParams, err error) {
 
-	fields, err := common.GetPathFields(common.GetPathDir(ch.NewFile.Path))
+	if ch.NewFile.ActualFileHash == "" {
+		err = fmt.Errorf("empty actual file hash field")
+		return
+	}
+
+	if ch.NewFile.ValidationRoot == "" {
+		err = fmt.Errorf("empty validation root field")
+		return
+	}
+
+	fileHashSign, err := client.Sign(ch.NewFile.ActualFileHash)
 	if err != nil {
 		return
 	}
 
+	validationRootSign, err := client.Sign(fileHashSign + ch.NewFile.ValidationRoot)
+	if err != nil {
+		return
+	}
+
+	ch.NewFile.ActualFileHashSignature = fileHashSign
+	ch.NewFile.ValidationRootSignature = validationRootSign
+
+	fields, err := common.GetPathFields(common.GetPathDir(ch.NewFile.Path))
+
+	if err != nil {
+		return
+	}
+
+	rootRef.HashToBeComputed = true
 	dirRef := rootRef
 	for i := 0; i < len(fields); i++ {
 		found := false
@@ -31,6 +58,7 @@ func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) (
 					err = errors.New("invalid_reference_path", "Invalid reference path from the blobber")
 					return
 				}
+				dirRef.HashToBeComputed = true
 				found = true
 				break
 			}
@@ -53,6 +81,8 @@ func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) (
 		err = errors.New("file_not_found", "File to update not found in blobber")
 		return
 	}
+
+	ch.NewFile.HashToBeComputed = true
 	dirRef.Children[idx] = ch.NewFile
 	rootRef.CalculateHash()
 	return

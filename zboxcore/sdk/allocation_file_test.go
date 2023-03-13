@@ -19,7 +19,6 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/sdks/blobber"
 
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	zclient "github.com/0chain/gosdk/zboxcore/client"
@@ -425,14 +424,7 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 	setupHttpResponses(t, &mockClient, a.ID, resfsIn, fileMetaIn, hashes, len(a.Blobbers), len(a.Blobbers), true)
 
 	err = a.EncryptAndUpdateFile(os.TempDir(), mockLocalPath, "/", nil)
-	// Actually this test should be require.NoError
-	// While data is encrypted, even with same wallet it outputs different data each time.
-	// So we cannot have pre-defined hashes to return from mock client.
-	// We also cannot dynamically set response. So mock client cannot provide correct hash.
-	// We should replace mock client with net/httptest package instead.
-	// Mock library is very limiting when it comes to testing with http endpoints
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "upload_failed")
+	require.NoError(t, err)
 }
 
 func TestAllocation_EncryptAndUploadFile(t *testing.T) {
@@ -444,7 +436,6 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 		mockTmpPath   = "/tmp"
 	)
 
-	require := require.New(t)
 	if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
 		defer teardown(t)
 	}
@@ -472,7 +463,7 @@ func TestAllocation_EncryptAndUploadFile(t *testing.T) {
 	setupHttpResponses(t, &mockClient, a.ID, nil, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
 
 	err := a.EncryptAndUploadFile(mockTmpPath, mockLocalPath, "/", nil)
-	require.Errorf(err, "Unexpected error %v", err)
+	require.NoError(t, err)
 }
 
 func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
@@ -546,14 +537,7 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 	setupHttpResponses(t, &mockClient, a.ID, resfsIn, fileMetaIn, hashes, len(a.Blobbers), len(a.Blobbers), true)
 	err = a.EncryptAndUpdateFileWithThumbnail(mockTmpPath, mockLocalPath, "/", mockThumbnailPath, nil)
 
-	// Actually this test should be require.NoError
-	// While data is encrypted, even with same wallet it outputs different data each time.
-	// So we cannot have pre-defined hashes to return from mock client.
-	// We also cannot dynamically set response. So mock client cannot provide correct hash.
-	// We should replace mock client with net/httptest package instead.
-	// Mock library is very limiting when it comes to testing with http endpoints
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "upload_failed")
+	require.NoError(t, err)
 }
 
 func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
@@ -600,207 +584,7 @@ func TestAllocation_EncryptAndUploadFileWithThumbnail(t *testing.T) {
 	setupHttpResponses(t, &mockClient, a.ID, nil, nil, hashes, len(a.Blobbers), len(a.Blobbers), false)
 
 	err := a.EncryptAndUploadFileWithThumbnail(mockTmpPath, mockLocalPath, "/", mockThumbnailPath, nil)
-	// Actually this test should be require.NoError
-	// While data is encrypted, even with same wallet it outputs different data each time.
-	// So we cannot have pre-defined hashes to return from mock client.
-	// We also cannot dynamically set response. So mock client cannot provide correct hash.
-	// We should replace mock client with net/httptest package instead.
-	// Mock library is very limiting when it comes to testing with http endpoints
-	require.Error(t, err)
-	require.Contains(t, err.Error(), "upload_failed")
-}
-
-func TestAllocation_uploadOrUpdateFile(t *testing.T) {
-	const (
-		mockFileRefName   = "mock file ref name"
-		mockLocalPath     = "1.txt"
-		mockActualHash    = "4041e3eeb170751544a47af4e4f9d374e76cee1d"
-		mockErrorHash     = "1041e3eeb170751544a47af4e4f9d374e76cee1d"
-		mockThumbnailPath = "thumbnail_alloc"
-	)
-
-	var mockClient = mocks.HttpClient{}
-	zboxutil.Client = &mockClient
-
-	client := zclient.GetClient()
-	client.Wallet = &zcncrypto.Wallet{
-		ClientID:  mockClientId,
-		ClientKey: mockClientKey,
-	}
-
-	setupHttpResponses := func(t *testing.T, testCaseName string, a *Allocation, hash string) (teardown func(t *testing.T)) {
-		for i := 0; i < numBlobbers; i++ {
-			var hash string
-			if i < numBlobbers-1 {
-				hash = mockErrorHash
-			}
-			frName := mockFileRefName + strconv.Itoa(i)
-			url := "TestAllocation_uploadOrUpdateFile" + testCaseName + mockBlobberUrl + strconv.Itoa(i)
-			a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
-				Baseurl: url,
-			})
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return strings.HasPrefix(req.URL.Path, url)
-			})).Return(&http.Response{
-				StatusCode: http.StatusOK,
-				Body: func(fileRefName, hash string) io.ReadCloser {
-					jsonFR, err := json.Marshal(&fileref.FileRef{
-						ActualFileHash: hash,
-						Ref: fileref.Ref{
-							Name: fileRefName,
-						},
-					})
-					require.NoError(t, err)
-					return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
-				}(frName, hash),
-			}, nil)
-
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return strings.Contains(req.URL.Path, blobber.EndpointWriteMarkerLock)
-			})).Return(&http.Response{
-				StatusCode: http.StatusOK,
-				Body: func(fileRefName, hash string) io.ReadCloser {
-					resp := &WMLockResult{
-						Status: WMLockStatusOK,
-					}
-					respBuf, _ := json.Marshal(resp)
-					return ioutil.NopCloser(bytes.NewReader(respBuf))
-				}(frName, hash),
-			}, nil)
-		}
-		return nil
-	}
-
-	type parameters struct {
-		localPath     string
-		remotePath    string
-		status        StatusCallback
-		isUpdate      bool
-		thumbnailPath string
-		encryption    bool
-		isRepair      bool
-		hash          string
-	}
-	tests := []struct {
-		name       string
-		setup      func(*testing.T, string, *Allocation, string) (teardown func(*testing.T))
-		parameters parameters
-		wantErr    bool
-		errMsg     string
-	}{
-		{
-			name: "Test_Not_Initialize_Failed",
-			setup: func(t *testing.T, testCaseName string, a *Allocation, hash string) (teardown func(t *testing.T)) {
-				a.initialized = false
-				return func(t *testing.T) { a.initialized = true }
-			},
-			parameters: parameters{
-				localPath:     mockLocalPath,
-				remotePath:    "/",
-				isUpdate:      false,
-				thumbnailPath: "",
-				encryption:    false,
-				isRepair:      false,
-			},
-			wantErr: true,
-			errMsg:  "sdk_not_initialized: Please call InitStorageSDK Init and use GetAllocation to get the allocation object",
-		},
-		{
-			name:  "Test_Thumbnail_File_Error_Success",
-			setup: setupHttpResponses,
-			parameters: parameters{
-				localPath:     mockLocalPath,
-				remotePath:    "/",
-				isUpdate:      false,
-				thumbnailPath: mockThumbnailPath,
-				encryption:    false,
-				isRepair:      false,
-				hash:          mockActualHash,
-			},
-		},
-		{
-			name:  "Test_Invalid_Remote_Abs_Path_Failed",
-			setup: nil,
-			parameters: parameters{
-				localPath:     mockLocalPath,
-				remotePath:    "",
-				isUpdate:      false,
-				thumbnailPath: "",
-				encryption:    false,
-				isRepair:      false,
-			},
-			wantErr: true,
-			errMsg:  "invalid_path: Path should be valid and absolute",
-		},
-		{
-			name:  "Test_Repair_Remote_File_Not_Found_Failed",
-			setup: nil,
-			parameters: parameters{
-				localPath:     mockLocalPath,
-				remotePath:    "/x.txt",
-				isUpdate:      false,
-				thumbnailPath: "",
-				encryption:    false,
-				isRepair:      true,
-			},
-			wantErr: true,
-			errMsg:  "File not found for the given remotepath",
-		},
-		{
-			name:  "Test_Repair_Content_Hash_Not_Matches_Failed",
-			setup: setupHttpResponses,
-			parameters: parameters{
-				localPath:     mockLocalPath,
-				remotePath:    "/",
-				isUpdate:      false,
-				thumbnailPath: "",
-				encryption:    false,
-				isRepair:      true,
-				hash:          mockErrorHash,
-			},
-			wantErr: true,
-			errMsg:  "Content hash doesn't match",
-		},
-		{
-			name:  "Test_Upload_Success",
-			setup: setupHttpResponses,
-			parameters: parameters{
-				localPath:     mockLocalPath,
-				remotePath:    "/",
-				isUpdate:      false,
-				thumbnailPath: "",
-				encryption:    false,
-				isRepair:      false,
-				hash:          mockActualHash,
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require := require.New(t)
-			if teardown := setupMockFile(t, mockLocalPath); teardown != nil {
-				defer teardown(t)
-			}
-			a := &Allocation{
-				DataShards:   2,
-				ParityShards: 2,
-			}
-			setupMockAllocation(t, a)
-			if tt.setup != nil {
-				if teardown := tt.setup(t, tt.name, a, tt.parameters.hash); teardown != nil {
-					defer teardown(t)
-				}
-			}
-			err := a.uploadOrUpdateFile(tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.status, tt.parameters.isUpdate, tt.parameters.thumbnailPath, tt.parameters.encryption, tt.parameters.isRepair)
-			require.EqualValues(tt.wantErr, err != nil)
-			if err != nil {
-
-				require.EqualValues(tt.errMsg, errors.Top(err))
-				return
-			}
-			require.NoErrorf(err, "Unexpected error %v", err)
-		})
-	}
+	require.NoError(t, err)
 }
 
 func TestAllocation_RepairFile(t *testing.T) {
@@ -1001,11 +785,9 @@ func TestAllocation_RepairFile(t *testing.T) {
 				DataShards:   tt.numBlobbers / 2,
 				Size:         2 * GB,
 			}
-			a.uploadChan = make(chan *UploadRequest, 10)
 			a.downloadChan = make(chan *DownloadRequest, 10)
 			a.repairChan = make(chan *RepairRequest, 1)
 			a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
-			a.uploadProgressMap = make(map[string]*UploadRequest)
 			a.downloadProgressMap = make(map[string]*DownloadRequest)
 			a.mutex = &sync.Mutex{}
 			a.initialized = true
