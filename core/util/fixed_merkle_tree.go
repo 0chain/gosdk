@@ -2,25 +2,84 @@ package util
 
 import (
 	"bytes"
+	"encoding/hex"
+	"hash"
 	"io"
+	"sync"
+
+	goError "errors"
 
 	"github.com/0chain/errors"
+	"golang.org/x/crypto/sha3"
 )
 
-// FixedMerkleTree A trusted mekerl tree for outsourcing attack protection. see section 1.8 on whitepager
+const (
+	MerkleChunkSize     = 64
+	MaxMerkleLeavesSize = 64 * 1024
+	FixedMerkleLeaves   = 1024
+	FixedMTDepth        = 11
+)
+
+type leaf struct {
+	h hash.Hash
+}
+
+func (l *leaf) GetHashBytes() []byte {
+	return l.h.Sum(nil)
+}
+
+func (l *leaf) GetHash() string {
+	return hex.EncodeToString(l.h.Sum(nil))
+}
+
+func (l *leaf) Write(b []byte) (int, error) {
+	return l.h.Write(b)
+}
+
+func getNewLeaf() *leaf {
+	return &leaf{
+		h: sha3.New256(),
+	}
+}
+
+// FixedMerkleTree A trusted mekerle tree for outsourcing attack protection. see section 1.8 on whitepager
 // see detail on https://github.com/0chain/blobber/wiki/Protocols#what-is-fixedmerkletree
 type FixedMerkleTree struct {
-	// ChunkSize size of chunk
-	ChunkSize int `json:"chunk_size,omitempty"`
-	// Leaves a leaf is a CompactMerkleTree for 1/1024 shard data
-	Leaves []*CompactMerkleTree `json:"leaves,omitempty"`
+	// Leaves will store hash digester that calculates sha256 hash of the leaf content
+	Leaves []Hashable `json:"leaves,omitempty"`
+
+	writeLock sync.Mutex
+	// isFinal is set to true once Finalize() is called.
+	// After it is set to true, there will be no any writes to writeBytes field
+	isFinal bool
+	// writeCount will track count of bytes written to writeBytes field
+	writeCount int
+	// writeBytes will store bytes upto MaxMerkleLeavesSize. For the last bytes that
+	// does not make upto MaxMerkleLeavesSize, it will be sliced with writeCount field.
+	writeBytes []byte
+	merkleRoot []byte
+}
+
+// Finalize will set isFinal to true and sends remaining bytes for leaf hash calculation
+func (fmt *FixedMerkleTree) Finalize() error {
+	fmt.writeLock.Lock()
+	defer fmt.writeLock.Unlock()
+
+	if fmt.isFinal {
+		return goError.New("already finalized")
+	}
+	fmt.isFinal = true
+	if fmt.writeCount > 0 {
+		return fmt.writeToLeaves(fmt.writeBytes[:fmt.writeCount])
+	}
+	return nil
 }
 
 // NewFixedMerkleTree create a FixedMerkleTree with specify hash method
-func NewFixedMerkleTree(chunkSize int) *FixedMerkleTree {
+func NewFixedMerkleTree() *FixedMerkleTree {
 
 	t := &FixedMerkleTree{
-		ChunkSize: chunkSize,
+		writeBytes: make([]byte, MaxMerkleLeavesSize),
 	}
 	t.initLeaves()
 
@@ -29,65 +88,128 @@ func NewFixedMerkleTree(chunkSize int) *FixedMerkleTree {
 }
 
 func (fmt *FixedMerkleTree) initLeaves() {
-	fmt.Leaves = make([]*CompactMerkleTree, 1024)
-	for n := 0; n < 1024; n++ {
-		fmt.Leaves[n] = NewCompactMerkleTree(nil)
+	fmt.Leaves = make([]Hashable, FixedMerkleLeaves)
+	for i := 0; i < FixedMerkleLeaves; i++ {
+		fmt.Leaves[i] = getNewLeaf()
 	}
 }
 
-func (fmt *FixedMerkleTree) Write(buf []byte, chunkIndex int) error {
-	//split chunk into 1024 parts for challenge hash
-	merkleChunkSize := fmt.ChunkSize / 1024
-
-	// chunksize is less than 1024
-	if merkleChunkSize == 0 {
-		merkleChunkSize = 1
+// writeToLeaves will divide the data with MerkleChunkSize(64 bytes) and write to
+// each leaf hasher
+func (fmt *FixedMerkleTree) writeToLeaves(b []byte) error {
+	if len(b) > MaxMerkleLeavesSize {
+		return goError.New("data size greater than maximum required size")
 	}
 
-	total := len(buf)
-	offset := 0
-	for i := 0; i < total; i += merkleChunkSize {
-		end := i + merkleChunkSize
-		if end > len(buf) {
-			end = len(buf)
+	if len(b) < MaxMerkleLeavesSize && !fmt.isFinal {
+		return goError.New("invalid merkle leaf write")
+	}
+
+	leafInd := 0
+	for i := 0; i < len(b); i += MerkleChunkSize {
+		j := i + MerkleChunkSize
+		if j > len(b) {
+			j = len(b)
 		}
 
-		if len(fmt.Leaves) != 1024 {
-			fmt.initLeaves()
-		}
-
-		err := fmt.Leaves[offset].AddDataBlocks(buf[i:end], chunkIndex)
-		if errors.Is(err, ErrLeafNoSequenced) {
-			return err
-		}
-
-		offset++
-		if offset >= 1024 {
-			offset = 0
-		}
+		fmt.Leaves[leafInd].Write(b[i:j])
+		leafInd++
 	}
 
 	return nil
 }
 
-// GetMerkleRoot get merkle tree
-func (fmt *FixedMerkleTree) GetMerkleTree() MerkleTreeI {
-	merkleLeaves := make([]Hashable, 1024)
+// Write will write data to the leaves once MaxMerkleLeavesSize(64 KB) is reached.
+// Since each 64KB is divided into 1024 pieces with 64 bytes each, once data len reaches
+// 64KB then it will be written to leaf hashes. The remaining data that is not multiple of
+// 64KB will be written to leaf hashes by Finalize() function.
+// This can be used to write stream of data as well.
+// fmt.Finalize() is required after data write is complete.
+func (fmt *FixedMerkleTree) Write(b []byte) (int, error) {
 
-	for idx, leaf := range fmt.Leaves {
-
-		merkleLeaves[idx] = NewStringHashable(leaf.GetMerkleRoot())
+	fmt.writeLock.Lock()
+	defer fmt.writeLock.Unlock()
+	if fmt.isFinal {
+		return 0, goError.New("cannot write. Tree is already finalized")
 	}
-	var mt MerkleTreeI = &MerkleTree{}
 
-	mt.ComputeTree(merkleLeaves)
+	for i, j := 0, MaxMerkleLeavesSize-fmt.writeCount; i < len(b); i, j = j, j+MaxMerkleLeavesSize {
+		if j > len(b) {
+			j = len(b)
+		}
+		prevWriteCount := fmt.writeCount
+		fmt.writeCount += int(j - i)
+		copy(fmt.writeBytes[prevWriteCount:fmt.writeCount], b[i:j])
 
-	return mt
+		if fmt.writeCount == MaxMerkleLeavesSize {
+			// data fragment reached 64KB, so send this slice to write to leaf hashes
+			err := fmt.writeToLeaves(fmt.writeBytes)
+			if err != nil {
+				return 0, err
+			}
+			fmt.writeCount = 0 // reset writeCount
+		}
+	}
+	return len(b), nil
 }
 
-// GetMerkleRoot get merkle root
+// GetMerkleRoot is only for interface compliance.
+func (fmt *FixedMerkleTree) GetMerkleTree() MerkleTreeI {
+	return nil
+}
+
+func (fmt *FixedMerkleTree) CalculateMerkleRoot() {
+	nodes := make([][]byte, len(fmt.Leaves))
+	for i := 0; i < len(nodes); i++ {
+		nodes[i] = fmt.Leaves[i].GetHashBytes()
+	}
+
+	for i := 0; i < FixedMTDepth; i++ {
+
+		newNodes := make([][]byte, (len(nodes)+1)/2)
+		nodeInd := 0
+		for j := 0; j < len(nodes); j += 2 {
+			newNodes[nodeInd] = MHashBytes(nodes[j], nodes[j+1])
+			nodeInd++
+		}
+		nodes = newNodes
+		if len(nodes) == 1 {
+			break
+		}
+	}
+
+	fmt.merkleRoot = nodes[0]
+}
+
+// FixedMerklePath is used to verify existence of leaf hash for fixed merkle tree
+type FixedMerklePath struct {
+	LeafHash []byte   `json:"leaf_hash"`
+	RootHash []byte   `json:"root_hash"`
+	Nodes    [][]byte `json:"nodes"`
+	LeafInd  int
+}
+
+func (fp FixedMerklePath) VerifyMerklePath() bool {
+	leafInd := fp.LeafInd
+	hash := fp.LeafHash
+	for i := 0; i < len(fp.Nodes); i++ {
+		if leafInd&1 == 0 {
+			hash = MHashBytes(hash, fp.Nodes[i])
+		} else {
+			hash = MHashBytes(fp.Nodes[i], hash)
+		}
+		leafInd = leafInd / 2
+	}
+	return bytes.Equal(hash, fp.RootHash)
+}
+
+// GetMerkleRoot get merkle root.
 func (fmt *FixedMerkleTree) GetMerkleRoot() string {
-	return fmt.GetMerkleTree().GetRoot()
+	if fmt.merkleRoot != nil {
+		return hex.EncodeToString(fmt.merkleRoot)
+	}
+	fmt.CalculateMerkleRoot()
+	return hex.EncodeToString(fmt.merkleRoot)
 }
 
 // Reload reset and reload leaves from io.Reader
@@ -95,12 +217,12 @@ func (fmt *FixedMerkleTree) Reload(reader io.Reader) error {
 
 	fmt.initLeaves()
 
-	bytesBuf := bytes.NewBuffer(make([]byte, 0, fmt.ChunkSize))
+	bytesBuf := bytes.NewBuffer(make([]byte, 0, MaxMerkleLeavesSize))
 	for i := 0; ; i++ {
-		written, err := io.CopyN(bytesBuf, reader, int64(fmt.ChunkSize))
+		written, err := io.CopyN(bytesBuf, reader, MaxMerkleLeavesSize)
 
 		if written > 0 {
-			err = fmt.Write(bytesBuf.Bytes(), i)
+			_, err = fmt.Write(bytesBuf.Bytes())
 			bytesBuf.Reset()
 
 			if err != nil {

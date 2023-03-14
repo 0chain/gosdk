@@ -88,7 +88,7 @@ func transferAllocation(allocationID, newOwnerId, newOwnerPublicKey string) erro
 		return RequiredArg("newOwnerPublicKey")
 	}
 
-	_, _, err := sdk.CuratorTransferAllocation(allocationID, newOwnerId, newOwnerPublicKey)
+	_, _, err := sdk.TransferAllocation(allocationID, newOwnerId, newOwnerPublicKey)
 
 	if err == nil {
 		clearAllocation(allocationID)
