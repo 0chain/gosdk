@@ -257,7 +257,7 @@ func (pre *PREEncryptionScheme) InitForDecryption(tag string, encryptedKey strin
 	return nil
 }
 
-//--------------------------------H1: Maps to Point on Elliptic Curve---------------------------------------
+// --------------------------------H1: Maps to Point on Elliptic Curve---------------------------------------
 func (pre *PREEncryptionScheme) hash1(s Suite, tagA []byte, skA kyber.Scalar) kyber.Point {
 	var g kyber.Group = s
 	h := sha256.New()
@@ -272,7 +272,7 @@ func (pre *PREEncryptionScheme) hash1(s Suite, tagA []byte, skA kyber.Scalar) ky
 	return p1
 }
 
-//------------------------------------------H2: Maps to string-----------------------------------------------
+// ------------------------------------------H2: Maps to string-----------------------------------------------
 func (pre *PREEncryptionScheme) hash2(g kyber.Group, T kyber.Point) []byte {
 	h := sha512.New()
 	if _, err := T.MarshalTo(h); err != nil {
@@ -282,7 +282,7 @@ func (pre *PREEncryptionScheme) hash2(g kyber.Group, T kyber.Point) []byte {
 	return h1
 }
 
-//------------------------------------------H3: Maps to string-----------------------------------------------
+// ------------------------------------------H3: Maps to string-----------------------------------------------
 func (pre *PREEncryptionScheme) hash3(g kyber.Group, msg []byte, T kyber.Point) []byte {
 	h := sha512.New()
 	if _, err := T.MarshalTo(h); err != nil {
@@ -295,7 +295,7 @@ func (pre *PREEncryptionScheme) hash3(g kyber.Group, msg []byte, T kyber.Point) 
 	return h1
 }
 
-//------------------------------------------H4: Maps to string-----------------------------------------------
+// ------------------------------------------H4: Maps to string-----------------------------------------------
 func (pre *PREEncryptionScheme) hash5(g kyber.Group, C1 kyber.Point, C2 []byte, C3 []byte, alp kyber.Scalar) []byte {
 	h := sha512.New()
 	if _, err := C1.MarshalTo(h); err != nil {
@@ -315,7 +315,7 @@ func (pre *PREEncryptionScheme) hash5(g kyber.Group, C1 kyber.Point, C2 []byte, 
 
 }
 
-//------------------------------------------H6: Maps to Scalar-----------------------------------------------
+// ------------------------------------------H6: Maps to Scalar-----------------------------------------------
 func (pre *PREEncryptionScheme) hash6(g kyber.Group, tagA []byte, skA kyber.Scalar) kyber.Scalar {
 	h := sha512.New()
 	if _, err := skA.MarshalTo(h); err != nil {
@@ -327,7 +327,7 @@ func (pre *PREEncryptionScheme) hash6(g kyber.Group, tagA []byte, skA kyber.Scal
 	return g.Scalar().SetBytes(h.Sum(nil))
 }
 
-//------------------------------------------H7: Maps to Scalar-----------------------------------------------
+// ------------------------------------------H7: Maps to Scalar-----------------------------------------------
 func (pre *PREEncryptionScheme) hash7(g kyber.Group, X kyber.Point, D2 []byte, D3 []byte, D4 kyber.Point, D5 kyber.Point) kyber.Scalar {
 	h := sha512.New()
 	if _, err := X.MarshalTo(h); err != nil {
@@ -368,7 +368,7 @@ func (pre *PREEncryptionScheme) encrypt(msg []byte) (*PREEncryptedMessage, error
 	return C, nil                                                                             // return C = (C1,C2,C3,C4,tagA)
 }
 
-//---------------------------------Symmetric Encryption using AES with GCM mode---------------------------------
+// ---------------------------------Symmetric Encryption using AES with GCM mode---------------------------------
 func (pre *PREEncryptionScheme) SymEnc(group kyber.Group, message []byte, keyhash []byte) ([]byte, error) {
 	len := 32 + 12
 	key := keyhash[:32]
@@ -404,7 +404,7 @@ func UnmarshallPublicKey(publicKey string) (kyber.Point, error) {
 	return point, nil
 }
 
-//---------------------------------Symmetric Decryption using AES with GCM mode---------------------------------
+// ---------------------------------Symmetric Decryption using AES with GCM mode---------------------------------
 func (pre *PREEncryptionScheme) SymDec(group kyber.Group, ctx []byte, keyhash []byte) ([]byte, error) {
 	len := 32 + 12
 	key := keyhash[:32]
@@ -486,8 +486,8 @@ func (pre *PREEncryptionScheme) ReEncrypt(encMsg *EncryptedMessage, reGenKey str
 	return pre.reEncrypt(encMsg, reGenKey, key)
 }
 
-//-----------------------------------------------ReEncryption-------------------------------------------------
-//reencrypt the data, cancelling the previous encryption by using the new regenkey
+// -----------------------------------------------ReEncryption-------------------------------------------------
+// reencrypt the data, cancelling the previous encryption by using the new regenkey
 func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey string, clientPublicKey kyber.Point) (*ReEncryptedMessage, error) {
 	var g kyber.Group = pre.SuiteObj
 	s := pre.SuiteObj
@@ -534,7 +534,7 @@ func (pre *PREEncryptionScheme) reEncrypt(encMsg *EncryptedMessage, reGenKey str
 	return reEncMsg, nil                                                         // Return D = (D1,D2,D3,D4,D5)
 }
 
-//-----------------------------------------------ReDecryption-------------------------------------------------
+// -----------------------------------------------ReDecryption-------------------------------------------------
 func (pre *PREEncryptionScheme) ReDecrypt(D *ReEncryptedMessage) ([]byte, error) {
 	s := pre.SuiteObj
 	tXj := s.Point().Mul(pre.PrivateKey, D.D5) // tXj   = skB.D5
