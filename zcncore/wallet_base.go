@@ -1088,26 +1088,54 @@ func (p Params) Query() string {
 
 // GetMiners obtains list of all active miners.
 //
-//	# Inputs
-//		-	cb: callback for checking result
-func GetMiners(cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
+//		# Inputs
+//	  - cb: callback for checking result
+//	  - limit: how many miners should be fetched
+//	  - offset: how many miners should be skipped
+//	  - active: only fetch active miners
+func GetMiners(cb GetInfoCallback, limit, offset int, active bool) {
+	getMinersInternal(cb, active, limit, offset)
+}
+
+func getMinersInternal(cb GetInfoCallback, active bool, limit, offset int) {
+	if err := CheckConfig(); err != nil {
 		return
 	}
-	var url = GET_MINERSC_MINERS
+
+	var url = withParams(GET_MINERSC_MINERS, Params{
+		"active": strconv.FormatBool(active),
+		"offset": strconv.FormatInt(int64(offset), 10),
+		"limit":  strconv.FormatInt(int64(limit), 10),
+	})
+
 	go GetInfoFromSharders(url, 0, cb)
+
 	return
 }
 
 // GetSharders obtains list of all active sharders.
 // # Inputs
 //   - cb: callback for checking result
-func GetSharders(cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
+//   - limit: how many sharders should be fetched
+//   - offset: how many sharders should be skipped
+//   - active: only fetch active sharders
+func GetSharders(cb GetInfoCallback, limit, offset int, active bool) {
+	getShardersInternal(cb, active, limit, offset)
+}
+
+func getShardersInternal(cb GetInfoCallback, active bool, limit, offset int) {
+	if err := CheckConfig(); err != nil {
 		return
 	}
-	var url = GET_MINERSC_SHARDERS
+
+	var url = withParams(GET_MINERSC_SHARDERS, Params{
+		"active": strconv.FormatBool(active),
+		"offset": strconv.FormatInt(int64(offset), 10),
+		"limit":  strconv.FormatInt(int64(limit), 10),
+	})
+
 	go GetInfoFromSharders(url, 0, cb)
+
 	return
 }
 
