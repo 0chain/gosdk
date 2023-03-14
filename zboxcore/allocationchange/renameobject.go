@@ -15,11 +15,13 @@ type RenameFileChange struct {
 	NewName    string
 }
 
-func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
+func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) (
+	commitParams CommitParams, err error) {
+
 	parentPath := path.Dir(ch.ObjectTree.GetPath())
 	fields, err := common.GetPathFields(parentPath)
 	if err != nil {
-		return err
+		return
 	}
 	dirRef := rootRef
 	for i := 0; i < len(fields); i++ {
@@ -32,7 +34,8 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
 			}
 		}
 		if !found {
-			return errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+			err = errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+			return
 		}
 	}
 
@@ -58,12 +61,12 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	}
 
 	if !found {
-		return errors.New("file_not_found", "Object to rename not found in blobber")
+		err = errors.New("file_not_found", "Object to rename not found in blobber")
+		return
 	}
-
 	ch.processChildren(affectedRef)
 	rootRef.CalculateHash()
-	return nil
+	return
 }
 
 func (ch *RenameFileChange) processChildren(curRef *fileref.Ref) {

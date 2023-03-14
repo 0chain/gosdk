@@ -8,13 +8,13 @@ type UploadFormData struct {
 	// Path remote path
 	Path string `json:"filepath,omitempty"`
 
-	// ContentHash hash of shard data (encoded,encrypted) when it is last chunk. it is ChunkHash if it is not last chunk.
-	ContentHash string `json:"content_hash,omitempty"`
+	// ValidationRoot of shard data (encoded,encrypted) where leaf is sha256 hash of 64KB data
+	ValidationRoot string `json:"validation_root,omitempty"`
 	// Hash hash of shard thumbnail  (encoded,encrypted)
 	ThumbnailContentHash string `json:"thumbnail_content_hash,omitempty"`
 
-	// MerkleRoot challenge hash of shard data (encoded, encrypted)
-	MerkleRoot string `json:"merkle_root,omitempty"`
+	// FixedMerkleRoot merkle root of shard data (encoded, encrypted)
+	FixedMerkleRoot string `json:"fixed_merkle_root,omitempty"`
 
 	// ActualHash hash of orignial file (unencoded, unencrypted)
 	ActualHash string `json:"actual_hash,omitempty"`

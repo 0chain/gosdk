@@ -1,23 +1,23 @@
 package sdk
 
 import (
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"io"
 	"io/ioutil"
 	"log"
 	"sort"
-	"time"
 
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
+	"golang.org/x/crypto/sha3"
 )
 
 // For sync app
@@ -30,15 +30,16 @@ const (
 	LocalDelete = "LocalDelete"
 )
 
-type fileInfo struct {
-	Size         int64     `json:"size"`
-	ActualSize   int64     `json:"actual_size"`
-	Hash         string    `json:"hash"`
-	Type         string    `json:"type"`
-	EncryptedKey string    `json:"encrypted_key"`
-	LookupHash   string    `json:"lookup_hash"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+type FileInfo struct {
+	Size         int64            `json:"size"`
+	MimeType     string           `json:"mimetype"`
+	ActualSize   int64            `json:"actual_size"`
+	Hash         string           `json:"hash"`
+	Type         string           `json:"type"`
+	EncryptedKey string           `json:"encrypted_key"`
+	LookupHash   string           `json:"lookup_hash"`
+	CreatedAt    common.Timestamp `json:"created_at"`
+	UpdatedAt    common.Timestamp `json:"updated_at"`
 }
 
 type FileDiff struct {
@@ -47,7 +48,7 @@ type FileDiff struct {
 	Type string `json:"type"`
 }
 
-func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]fileInfo, exclMap map[string]int) ([]string, error) {
+func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]FileInfo, exclMap map[string]int) ([]string, error) {
 	childDirList := make([]string, 0)
 	for _, dir := range dirList {
 		ref, err := a.ListDir(dir)
@@ -58,15 +59,16 @@ func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]fil
 			if _, ok := exclMap[child.Path]; ok {
 				continue
 			}
-			fMap[child.Path] = fileInfo{
+			fMap[child.Path] = FileInfo{
 				Size:         child.Size,
 				ActualSize:   child.ActualSize,
 				Hash:         child.Hash,
+				MimeType:     child.MimeType,
 				Type:         child.Type,
 				EncryptedKey: child.EncryptionKey,
 				LookupHash:   child.LookupHash,
-				CreatedAt:    child.CreatedAt.ToTime(),
-				UpdatedAt:    child.UpdatedAt.ToTime(),
+				CreatedAt:    child.CreatedAt,
+				UpdatedAt:    child.UpdatedAt,
 			}
 			if child.Type == fileref.DIRECTORY {
 				childDirList = append(childDirList, child.Path)
@@ -76,9 +78,9 @@ func (a *Allocation) getRemoteFilesAndDirs(dirList []string, fMap map[string]fil
 	return childDirList, nil
 }
 
-func (a *Allocation) GetRemoteFileMap(exclMap map[string]int) (map[string]fileInfo, error) {
+func (a *Allocation) GetRemoteFileMap(exclMap map[string]int) (map[string]FileInfo, error) {
 	// 1. Iteratively get dir and files separately till no more dirs left
-	remoteList := make(map[string]fileInfo)
+	remoteList := make(map[string]FileInfo)
 	dirs := []string{"/"}
 	var err error
 	for {
@@ -102,7 +104,7 @@ func calcFileHash(filePath string) string {
 	}
 	defer fp.Close()
 
-	h := sha256.New()
+	h := sha3.New256()
 	if _, err := io.Copy(h, fp); err != nil {
 		log.Fatal(err)
 	}
@@ -117,7 +119,7 @@ func getRemoteExcludeMap(exclPath []string) map[string]int {
 	return exclMap
 }
 
-func addLocalFileList(root string, fMap map[string]fileInfo, dirList *[]string, filter map[string]bool, exclMap map[string]int) filepath.WalkFunc {
+func addLocalFileList(root string, fMap map[string]FileInfo, dirList *[]string, filter map[string]bool, exclMap map[string]int) filepath.WalkFunc {
 	return func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			l.Logger.Error("Local file list error for path", path, err.Error())
@@ -140,14 +142,14 @@ func addLocalFileList(root string, fMap map[string]fileInfo, dirList *[]string, 
 		if info.IsDir() {
 			*dirList = append(*dirList, lPath)
 		} else {
-			fMap[lPath] = fileInfo{Size: info.Size(), Hash: calcFileHash(path), Type: fileref.FILE}
+			fMap[lPath] = FileInfo{Size: info.Size(), Hash: calcFileHash(path), Type: fileref.FILE}
 		}
 		return nil
 	}
 }
 
-func getLocalFileMap(rootPath string, filters []string, exclMap map[string]int) (map[string]fileInfo, error) {
-	localMap := make(map[string]fileInfo)
+func getLocalFileMap(rootPath string, filters []string, exclMap map[string]int) (map[string]FileInfo, error) {
+	localMap := make(map[string]FileInfo)
 	var dirList []string
 	filterMap := make(map[string]bool)
 	for _, f := range filters {
@@ -156,7 +158,7 @@ func getLocalFileMap(rootPath string, filters []string, exclMap map[string]int) 
 	err := filepath.Walk(rootPath, addLocalFileList(rootPath, localMap, &dirList, filterMap, exclMap))
 	// Add the dirs at the end of the list for dir deletiion after all file deletion
 	for _, d := range dirList {
-		localMap[d] = fileInfo{Type: fileref.DIRECTORY}
+		localMap[d] = FileInfo{Type: fileref.DIRECTORY}
 	}
 	l.Logger.Debug("Local List: ", localMap)
 	return localMap, err
@@ -176,11 +178,11 @@ func isParentFolderExists(lFDiff []FileDiff, path string) bool {
 	return false
 }
 
-func findDelta(rMap map[string]fileInfo, lMap map[string]fileInfo, prevMap map[string]fileInfo, localRootPath string) []FileDiff {
+func findDelta(rMap map[string]FileInfo, lMap map[string]FileInfo, prevMap map[string]FileInfo, localRootPath string) []FileDiff {
 	var lFDiff []FileDiff
 
 	// Create a remote hash map and find modifications
-	rMod := make(map[string]fileInfo)
+	rMod := make(map[string]FileInfo)
 	for rFile, rInfo := range rMap {
 		if pm, ok := prevMap[rFile]; ok {
 			// Remote file existed in previous sync also
@@ -192,7 +194,7 @@ func findDelta(rMap map[string]fileInfo, lMap map[string]fileInfo, prevMap map[s
 	}
 
 	// Create a local hash map and find modification
-	lMod := make(map[string]fileInfo)
+	lMod := make(map[string]FileInfo)
 	for lFile, lInfo := range lMap {
 		if pm, ok := rMap[lFile]; ok {
 			// Local file existed in previous sync also
@@ -283,7 +285,7 @@ func findDelta(rMap map[string]fileInfo, lMap map[string]fileInfo, prevMap map[s
 
 func (a *Allocation) GetAllocationDiff(lastSyncCachePath string, localRootPath string, localFileFilters []string, remoteExcludePath []string) ([]FileDiff, error) {
 	var lFdiff []FileDiff
-	prevRemoteFileMap := make(map[string]fileInfo)
+	prevRemoteFileMap := make(map[string]FileInfo)
 	// 1. Validate localSycnCachePath
 	if len(lastSyncCachePath) > 0 {
 		// Validate cache path
