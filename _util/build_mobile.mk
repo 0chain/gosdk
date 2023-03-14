@@ -56,30 +56,30 @@ gomobile-install:
 	go install golang.org/x/mobile/cmd/gomobile@latest
 	gomobile init
 
-build-iossimulator: $(IOSMOBILESDKDIR)
+build-iossimulator: $(IOSMOBILESDKDIR) getrev
 	@echo "Building iOS Simulator framework. Please wait..."
 	@CGO_CFLAGS=$(MINIOSVERSIONMIN) gomobile bind -v -ldflags="-s -w" -target=iossimulator -tags "ios iossimulator mobile" -o $(IOSMOBILESDKDIR)/simulator/$(IOSBINNAME) $(PKG_EXPORTS)
 	@echo "   $(IOSMOBILESDKDIR)/simulator/$(IOSBINNAME). - [OK]"
 
-build-ios: $(IOSMOBILESDKDIR)
+build-ios: $(IOSMOBILESDKDIR) getrev
 	@echo "Building iOS framework. Please wait..."
 	@go get golang.org/x/mobile/bind
 	@CGO_CFLAGS=$(MINIOSVERSIONMIN) gomobile bind -v -ldflags="-s -w" -target=ios,iossimulator -tags "ios mobile" -o $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME) $(PKG_EXPORTS)
 	@echo "   $(IOSMOBILESDKDIR)/ios/$(IOSBINNAME). - [OK]"	
 
-build-android: $(ANDROIDMOBILESDKDIR)
+build-android: $(ANDROIDMOBILESDKDIR) getrev
 	@echo "Building Android framework. Please wait..."
 	@go get golang.org/x/mobile/bind
 	@gomobile bind -v -ldflags="-s -w -extldflags=-Wl,-soname,libgojni.so" -target=android/arm64,android/amd64 -androidapi 19 -tags mobile  -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
 	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"
 
-build-android-debug: $(ANDROIDMOBILESDKDIR)
+build-android-debug: $(ANDROIDMOBILESDKDIR) getrev
 	@echo "Building Android framework. Please wait..."
 	@go get golang.org/x/mobile/bind
 	@gomobile bind -v -ldflags="-s -w -extldflags=-Wl,-soname,libgojni.so" -gcflags '-N -l' -target=android/arm64,android/amd64 -tags mobile  -o $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME) $(PKG_EXPORTS)
 	@echo "   $(ANDROIDMOBILESDKDIR)/$(ANDROIDBINNAME). - [OK]"
 
-build-macos: $(MACSDKDIR)
+build-macos: $(MACSDKDIR) getrev
 	@echo "Building MAC framework. Please wait..."
 	@go get golang.org/x/mobile/bind
 	@CGO_CFLAGS=$(MINMACOSVERSIONMIN)  gomobile bind -v -ldflags="-s -w" -target=macos -tags mobile -o $(MACSDKDIR)/$(IOSBINNAME) $(PKG_EXPORTS)
