@@ -440,7 +440,7 @@ func (su *ChunkedUpload) Start() error {
 		// chunk, err := su.chunkReader.Next()
 		if err != nil {
 			if su.statusCallback != nil {
-				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, su.opCode, err)
+				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 			}
 			return err
 		}
@@ -453,7 +453,7 @@ func (su *ChunkedUpload) Start() error {
 			su.fileMeta.ActualHash, err = su.fileHasher.GetFileHash()
 			if err != nil {
 				if su.statusCallback != nil {
-					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, su.opCode, err)
+					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 				}
 				return err
 			}
@@ -473,7 +473,7 @@ func (su *ChunkedUpload) Start() error {
 			)
 			if err != nil {
 				if su.statusCallback != nil {
-					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, su.opCode, err)
+					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 				}
 				return err
 			}
@@ -509,7 +509,7 @@ func (su *ChunkedUpload) Start() error {
 
 	if err != nil {
 		if su.statusCallback != nil {
-			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, su.opCode, err)
+			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 		}
 		return err
 	}
@@ -620,8 +620,8 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
 			if err != nil {
 				select {
-					case wgErrors <- err:
-					default:
+				case wgErrors <- err:
+				default:
 				}
 				logger.Logger.Error("error during sendUploadRequest", err)
 			}
@@ -632,12 +632,12 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		wg.Wait()
 		close(wgDone)
 	}()
-	
+
 	select {
-		case <-wgDone:
-			break
-		case err := <-wgErrors:
-			return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
+	case <-wgDone:
+		break
+	case err := <-wgErrors:
+		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
 	}
 
 	if !su.consensus.isConsensusOk() {
