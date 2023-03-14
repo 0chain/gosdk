@@ -269,7 +269,7 @@ locks given number of tokes for given duration in write pool
 
 **Input**:
 
-> allocationId string, tokens string, fee string
+> allocationId string, tokens uint64, fee uint64
 
 **Output**:
 
@@ -281,7 +281,7 @@ locks given number of tokens on a provider
 
 **Input**:
 
-> [providerType](https://github.com/0chain/gosdk/blob/bc96f54e68a68ef5d757428b9c4153405ebe4163/zboxcore/sdk/sdk.go#L1186-L1194) int, providerID string, tokens string, fee string
+> [providerType](https://github.com/0chain/gosdk/blob/bc96f54e68a68ef5d757428b9c4153405ebe4163/zboxcore/sdk/sdk.go#L1186-L1194) uint64, tokens uint64, fee uint64, providerID string,
 
 **Output**:
 
@@ -293,7 +293,7 @@ unlocks tokens on a provider
 
 **Input**:
 
-> [providerType](https://github.com/0chain/gosdk/blob/bc96f54e68a68ef5d757428b9c4153405ebe4163/zboxcore/sdk/sdk.go#L1186-L1194) int, providerID string, fee string
+> [providerType](https://github.com/0chain/gosdk/blob/bc96f54e68a68ef5d757428b9c4153405ebe4163/zboxcore/sdk/sdk.go#L1186-L1194) uint64, fee uint64, providerID string,
 
 **Output**:
 
