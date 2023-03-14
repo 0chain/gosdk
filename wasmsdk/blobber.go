@@ -251,6 +251,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 
 	refType := fileref.FILE
 
+	sdkLogger.Info("getting filestats")
 	statsMap, err := allocationObj.GetFileStats(remotePath)
 	if err != nil {
 		PrintError("Error in getting information about the object." + err.Error())
