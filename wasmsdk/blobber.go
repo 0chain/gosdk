@@ -251,6 +251,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 
 	refType := fileref.FILE
 
+	sdkLogger.Info("getting filestats")
 	statsMap, err := allocationObj.GetFileStats(remotePath)
 	if err != nil {
 		PrintError("Error in getting information about the object." + err.Error())
@@ -303,7 +304,11 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 }
 
 // download download file
-func download(allocationID, remotePath, authTicket, lookupHash string, downloadThumbnailOnly bool, numBlocks int, callbackFuncName string) (*DownloadCommandResponse, error) {
+func download(
+	allocationID, remotePath, authTicket, lookupHash string,
+	downloadThumbnailOnly bool, numBlocks int, callbackFuncName string,
+) (
+	*DownloadCommandResponse, error) {
 
 	wg := &sync.WaitGroup{}
 	statusBar := &StatusBar{wg: wg}
