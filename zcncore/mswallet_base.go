@@ -5,7 +5,6 @@ package zcncore
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -14,7 +13,7 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
-//MSVoteCallback callback definition multisig Vote function
+// MSVoteCallback callback definition multisig Vote function
 type MSVoteCallback interface {
 	OnVoteComplete(status int, proposal string, err string)
 }
@@ -77,21 +76,21 @@ func CreateMSWallet(t, n int) (string, string, []string, error) {
 }
 
 //RegisterWallet registers multisig related wallets
-func RegisterWallet(walletString string, cb WalletCallback) {
-	var w zcncrypto.Wallet
-	err := json.Unmarshal([]byte(walletString), &w)
+// func RegisterWallet(walletString string, cb WalletCallback) {
+// 	var w zcncrypto.Wallet
+// 	err := json.Unmarshal([]byte(walletString), &w)
 
-	if err != nil {
-		cb.OnWalletCreateComplete(StatusError, walletString, err.Error())
-	}
+// 	if err != nil {
+// 		cb.OnWalletCreateComplete(StatusError, walletString, err.Error())
+// 	}
 
-	//We do not want to send private key to blockchain
-	w.Keys[0].PrivateKey = ""
-	err = RegisterToMiners(&w, cb)
-	if err != nil {
-		cb.OnWalletCreateComplete(StatusError, "", err.Error())
-	}
-}
+// 	//We do not want to send private key to blockchain
+// 	w.Keys[0].PrivateKey = ""
+// 	err = RegisterToMiners(&w, cb)
+// 	if err != nil {
+// 		cb.OnWalletCreateComplete(StatusError, "", err.Error())
+// 	}
+// }
 
 func getWallets(msw MSWallet) ([]string, error) {
 

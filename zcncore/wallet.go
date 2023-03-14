@@ -8,9 +8,9 @@ import (
 	"github.com/0chain/gosdk/core/zcncrypto"
 )
 
-func RegisterToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
-	return registerToMiners(wallet, statusCb)
-}
+// func RegisterToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
+// 	return registerToMiners(wallet, statusCb)
+// }
 
 // GetWallet get a wallet object from a wallet string
 func GetWallet(walletStr string) (*zcncrypto.Wallet, error) {

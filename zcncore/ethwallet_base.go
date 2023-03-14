@@ -168,11 +168,17 @@ func CreateWalletFromEthMnemonic(mnemonic, password string, statusCb WalletCallb
 			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
 		}
-		err = registerToMiners(wallet, statusCb)
+		w, err := wallet.Marshal()
 		if err != nil {
-			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
-			return
+			statusCb.OnWalletCreateComplete(StatusError, w, err.Error())
 		}
+		statusCb.OnWalletCreateComplete(StatusSuccess, w, "")
+
+		// err = registerToMiners(wallet, statusCb)
+		// if err != nil {
+		// 	statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
+		// 	return
+		// }
 	}()
 	return nil
 }
