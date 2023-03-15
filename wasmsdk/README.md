@@ -269,11 +269,46 @@ locks given number of tokes for given duration in write pool
 
 **Input**:
 
-> allocationId string, tokens string, fee string
+> allocationId string, tokens uint64, fee uint64
 
 **Output**:
 
 > hash: string
+
+### zcn.sdk.lockStakePool
+
+locks given number of tokens on a provider
+
+**Input**:
+
+> [providerType](https://github.com/0chain/gosdk/blob/bc96f54e68a68ef5d757428b9c4153405ebe4163/zboxcore/sdk/sdk.go#L1186-L1194) uint64, tokens uint64, fee uint64, providerID string,
+
+**Output**:
+
+> hash: string
+
+### zcn.sdk.unlockStakePool
+
+unlocks tokens on a provider
+
+**Input**:
+
+> [providerType](https://github.com/0chain/gosdk/blob/bc96f54e68a68ef5d757428b9c4153405ebe4163/zboxcore/sdk/sdk.go#L1186-L1194) uint64, fee uint64, providerID string,
+
+**Output**:
+
+> returns time where the tokens can be unlocked
+
+### zcn.sdk.getSkatePoolInfo
+
+get the details of the stakepool associated with provider
+**Input**:
+
+> [providerType](https://github.com/0chain/gosdk/blob/bc96f54e68a68ef5d757428b9c4153405ebe4163/zboxcore/sdk/sdk.go#L1186-L1194) int, providerID string
+
+**Output**:
+
+> [sdk.StakePoolInfo](https://github.com/0chain/gosdk/blob/2ec97a9bb116db166e31c0207971282e7008d22c/zboxcore/sdk/sdk.go#L263-L275), err
 
 ### zcn.sdk.getWalletBalance
 
