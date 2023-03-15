@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"github.com/0chain/gosdk/core/transaction"
-	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
@@ -200,18 +199,31 @@ func getRemoteFileMap(allocationID string) ([]*fileResp, error) {
 //   - allocID: allocation id
 //   - tokens:  sas tokens
 //   - fee: sas tokens
-func lockWritePool(allocID, tokens, fee string) (string, error) {
-	t, err := util.ParseCoinStr(tokens)
-	if err != nil {
-		return "", err
-	}
-
-	f, err := util.ParseCoinStr(fee)
-	if err != nil {
-		return "", err
-	}
-	hash, _, err := sdk.WritePoolLock(allocID, t, f)
+func lockWritePool(allocID string, tokens, fee uint64) (string, error) {
+	hash, _, err := sdk.WritePoolLock(allocID, tokens, fee)
 	return hash, err
+}
+
+func lockStakePool(providerType, tokens, fee uint64, providerID string) (string, error) {
+
+	hash, _, err := sdk.StakePoolLock(sdk.ProviderType(providerType), providerID,
+		tokens, fee)
+	return hash, err
+}
+
+func unlockStakePool(providerType, fee uint64, providerID string) (int64, error) {
+	unstake, _, err := sdk.StakePoolUnlock(sdk.ProviderType(providerType), providerID, fee)
+	return unstake, err
+}
+
+func getSkatePoolInfo(providerType int, providerID string) (*sdk.StakePoolInfo, error) {
+
+	info, err := sdk.GetStakePoolInfo(sdk.ProviderType(providerType), providerID)
+
+	if err != nil {
+		return nil, err
+	}
+	return info, err
 }
 
 // GetReadPoolInfo is to get information about the read pool for the allocation
