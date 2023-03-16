@@ -183,7 +183,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUpload, pos uint64) (err error) {
 	defer func() {
 		if err != nil {
-			logger.Logger.Error(err)
+
 			su.maskMu.Lock()
 			su.uploadMask = su.uploadMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
 			su.maskMu.Unlock()
@@ -193,6 +193,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	rootRef, latestWM, size, commitParams, err := sb.processWriteMarker(ctx, su)
 
 	if err != nil {
+		logger.Logger.Error(err)
 		return err
 	}
 
@@ -301,6 +302,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 		}()
 
 		if err != nil {
+			logger.Logger.Error(err)
 			return
 		}
 		if shouldContinue {
@@ -376,6 +378,7 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 	for _, change := range sb.commitChanges {
 		commitParams, err = change.ProcessChange(rootRef)
 		if err != nil {
+			logger.Logger.Error(err)
 			return nil, nil, 0, nil, err
 		}
 		size += change.GetSize()
