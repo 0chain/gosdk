@@ -628,7 +628,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 		actualHash := fmr.fileref.ActualFileHash
 		actualFileHashSignature := fmr.fileref.ActualFileHashSignature
 
-		isValid, err := client.VerifySignatureWithPubKey(
+		isValid, err := sys.VerifyWith(
 			req.allocOwnerPubKey,
 			actualFileHashSignature,
 			actualHash,
@@ -669,7 +669,7 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 			continue
 		}
 
-		isValid, err := client.VerifySignatureWithPubKey(
+		isValid, err := sys.VerifyWith(
 			req.allocOwnerPubKey,
 			fRef.ValidationRootSignature,
 			fRef.ActualFileHashSignature+fRef.ValidationRoot,

@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 
+	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -94,7 +95,7 @@ func Sign(hash string) (string, error) {
 
 // VerifySignatxure - verify message with signature
 func VerifySignature(signature string, msg string) (bool, error) {
-	return client.VerifySignature(signature, msg)
+	return sys.Verify(signature, msg)
 }
 
 func GetNumber(value string) int {
