@@ -217,7 +217,7 @@ async function blsVerify(signature, hash) {
   return bridge.jsProxy.publicKey.verify(sig, bytes)
 }
 
-async function setWallet(bls, clientID, sk, pk) {
+async function setWallet(bls, clientID, sk, pk,mnemonic) {
   if (!bls) throw new Error('bls is undefined, on wasm setWallet fn')
   if (!sk) throw new Error('secret key is undefined, on wasm setWallet fn')
   if (!pk) throw new Error('public key is undefined, on wasm setWallet fn')
@@ -229,7 +229,7 @@ async function setWallet(bls, clientID, sk, pk) {
     bridge.jsProxy.publicKey = bls.deserializeHexStrToPublicKey(pk)
 
     // use proxy.sdk to detect if sdk is ready
-    await bridge.__proxy__.sdk.setWallet(clientID, pk, sk)
+    await bridge.__proxy__.sdk.setWallet(clientID, pk, sk, mnemonic)
     bridge.walletId = clientID
   }
 }

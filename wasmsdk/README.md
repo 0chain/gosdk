@@ -12,7 +12,7 @@ set bls.SecretKey on runtime env(browser,nodejs...etc), and call `zcn.sdk.setWal
 
 **Input**:
 
-> bls, clientID, sk, pk string
+> bls, clientID, sk, pk, mnemonic string
 
 **Output**:
 
