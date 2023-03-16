@@ -20,5 +20,5 @@ var (
 	Verify VerifyFunc
 
 	// Verify verify method. it should be initialized on different platform.
-	VerifyWith VerifyFuncWith
+	VerifyWith VerifyWithFunc
 )

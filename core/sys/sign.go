@@ -11,4 +11,4 @@ type SignFunc func(hash string, signatureScheme string, keys []KeyPair) (string,
 
 type VerifyFunc func(signature string, msg string) (bool, error)
 
-type VerifyFuncWith func(pk, signature string, msg string) (bool, error)
+type VerifyWithFunc func(pk, signature string, msg string) (bool, error)
