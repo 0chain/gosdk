@@ -108,7 +108,7 @@ func main() {
 				//update Verify with js sign
 				sys.VerifyWith = verifyFuncWith
 			} else {
-				PrintError("__zcn_wasm__.jsProxy.verify is not installed yet")
+				PrintError("__zcn_wasm__.jsProxy.verifyWith is not installed yet")
 			}
 
 			jsCreateObjectURL := jsProxy.Get("createObjectURL")
