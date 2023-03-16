@@ -114,6 +114,7 @@ g.__zcn_wasm__ = g.__zcn_wasm_ || {
     publicKey: null,
     sign: blsSign,
     verify: blsVerify,
+    verifyWith: blsVerifyWith,
     createObjectURL,
     sleep,
   },
@@ -195,6 +196,13 @@ async function blsSign(hash) {
   }
 
   return sig.serializeToHexStr()
+}
+
+async function blsVerifyWith(pk, signature, hash) {
+  const publicKey = bls.deserializeHexStrToPublicKey(pk);
+  const bytes = hexStringToByte(hash)
+  const sig = bls.deserializeHexStrToSignature(signature)
+  return publicKey.verify(sig, bytes)
 }
 
 async function blsVerify(signature, hash) {
