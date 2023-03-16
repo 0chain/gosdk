@@ -77,7 +77,7 @@ func main() {
 
 			jsVerify := jsProxy.Get("verify")
 
-			if !(jsVerify.IsNull() || jsSign.IsUndefined()) {
+			if !(jsVerify.IsNull() || jsVerify.IsUndefined()) {
 				verifyFunc := func(signature, hash string) (bool, error) {
 					result, err := jsbridge.Await(jsVerify.Invoke(signature, hash))
 
@@ -91,6 +91,24 @@ func main() {
 				sys.Verify = verifyFunc
 			} else {
 				PrintError("__zcn_wasm__.jsProxy.verify is not installed yet")
+			}
+
+			jsVerifyWith := jsProxy.Get("verifyWith")
+
+			if !(jsVerifyWith.IsNull() || jsVerifyWith.IsUndefined()) {
+				verifyFuncWith := func(pk, signature, hash string) (bool, error) {
+					result, err := jsbridge.Await(jsVerifyWith.Invoke(pk, signature, hash))
+
+					if len(err) > 0 && !err[0].IsNull() {
+						return false, errors.New("verify: " + err[0].String())
+					}
+					return result[0].Bool(), nil
+				}
+
+				//update Verify with js sign
+				sys.VerifyWith = verifyFuncWith
+			} else {
+				PrintError("__zcn_wasm__.jsProxy.verifyWith is not installed yet")
 			}
 
 			jsCreateObjectURL := jsProxy.Get("createObjectURL")
@@ -175,7 +193,10 @@ func main() {
 				"getAllocationMinLock":  getAllocationMinLock,
 				"getAllocationWith":     getAllocationWith,
 				"getReadPoolInfo":       getReadPoolInfo,
+				"lockStakePool":         lockStakePool,
 				"lockWritePool":         lockWritePool,
+				"getSkatePoolInfo":      getSkatePoolInfo,
+				"unlockStakePool":       unlockStakePool,
 				"decodeAuthTicket":      decodeAuthTicket,
 
 				//smartcontract
