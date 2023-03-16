@@ -56,8 +56,8 @@ const (
 
 	// zcn sc
 	ZCNSC_PFX                      = `/v1/screst/` + ZCNSCSmartContractAddress
-	GET_MINT_NONCE                 = ZCNSC_PFX + `/v1/mint_nonce?client_id=%s`
-	GET_NOT_PROCESSED_BURN_TICKETS = ZCNSC_PFX + `/v1/not_processed_burn_tickets?ethereum_address=%s&nonce=%d`
+	GET_MINT_NONCE                 = ZCNSC_PFX + `/v1/mint_nonce`
+	GET_NOT_PROCESSED_BURN_TICKETS = ZCNSC_PFX + `/v1/not_processed_burn_tickets`
 
 	// miner SC
 
@@ -150,6 +150,8 @@ const (
 	OpGetLockedTokens
 	OpGetUserPools
 	OpGetUserPoolDetail
+	OpGetNotProcessedBurnTickets
+	OpGetMintNonce
 	// storage SC ops
 	OpStorageSCGetConfig
 	OpStorageSCGetChallengePoolInfo
@@ -182,58 +184,10 @@ type GetBalanceCallback interface {
 	OnBalanceAvailable(status int, value int64, info string)
 }
 
-// GetMintNonceCallback needs to be implemented by the caller of GetMintNonce() to get the status
-type GetMintNonceCallback interface {
-	OnResponseAvailable(status int, value int64, info string)
-}
-
-// Implementation of GetMintNonceCallback
-type GetMintNonceCallbackStub struct {
-	Wg *sync.WaitGroup
-
-	Status int
-	Value  int64
-	Info   string
-}
-
-func (cb *GetMintNonceCallbackStub) OnResponseAvailable(status int, value int64, info string) {
-	defer cb.Wg.Done()
-
-	cb.Status = status
-	cb.Value = value
-	cb.Info = info
-}
-
 // BurnTicket model used for deserialization of the response received from sharders
 type BurnTicket struct {
 	Hash  string `json:"hash"`
 	Nonce int64  `json:"nonce"`
-}
-
-// GetNotProcessedZCNBurnTicketsCallback needs to be implemented by the caller of GetNotProcessedZCNBurnTickets() to get the status
-type GetNotProcessedZCNBurnTicketsCallback interface {
-	OnAddBurnTicket(value *BurnTicket)
-	OnResponseAvailable(status int, info string)
-}
-
-// Implementation of GetNotProcessedZCNBurnTicketsCallback
-type GetNotProcessedZCNBurnTicketsCallbackStub struct {
-	Wg *sync.WaitGroup
-
-	Status int
-	Value  []*BurnTicket
-	Info   string
-}
-
-func (cb *GetNotProcessedZCNBurnTicketsCallbackStub) OnAddBurnTicket(value *BurnTicket) {
-	cb.Value = append(cb.Value, value)
-}
-
-func (cb *GetNotProcessedZCNBurnTicketsCallbackStub) OnResponseAvailable(status int, info string) {
-	defer cb.Wg.Done()
-
-	cb.Status = status
-	cb.Info = info
 }
 
 // GetNonceCallback needs to be implemented by the caller of GetNonce() to get the status
@@ -719,43 +673,30 @@ func GetBalance(cb GetBalanceCallback) error {
 }
 
 // GetMintNonce retrieve mint nonce from sharders
-func GetMintNonce(cb GetMintNonceCallback) error {
+func GetMintNonce(cb GetInfoCallback) error {
 	err := CheckConfig()
 	if err != nil {
 		return err
 	}
-	go func() {
-		value, info, err := getZCNMintNonceFromSharders(_config.wallet.ClientID)
-		if err != nil {
-			logging.Error(err)
-			cb.OnResponseAvailable(StatusError, 0, info)
-			return
-		}
-		cb.OnResponseAvailable(StatusSuccess, value, info)
-	}()
+
+	go GetInfoFromSharders(withParams(GET_MINT_NONCE, Params{
+		"client_id": _config.wallet.ClientID,
+	}), OpGetMintNonce, cb)
 	return nil
 }
 
 // GetNotProcessedZCNBurnTickets retrieve wallet burn tickets from sharders
-func GetNotProcessedZCNBurnTickets(ethereumAddress string, startNonce int64, cb GetNotProcessedZCNBurnTicketsCallback) error {
+func GetNotProcessedZCNBurnTickets(ethereumAddress, startNonce string, cb GetInfoCallback) error {
 	err := CheckConfig()
 	if err != nil {
 		return err
 	}
-	go func() {
-		value, info, err := getNotProcessedZCNBurnTicketsFromSharders(ethereumAddress, startNonce)
-		if err != nil {
-			logging.Error(err)
-			cb.OnResponseAvailable(StatusError, info)
-			return
-		}
 
-		for _, burnTicket := range value {
-			cb.OnAddBurnTicket(burnTicket)
-		}
+	go GetInfoFromSharders(withParams(GET_NOT_PROCESSED_BURN_TICKETS, Params{
+		"ethereum_address": ethereumAddress,
+		"nonce":            startNonce,
+	}), OpGetNotProcessedBurnTickets, cb)
 
-		cb.OnResponseAvailable(StatusSuccess, info)
-	}()
 	return nil
 }
 
@@ -883,88 +824,6 @@ func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
 	}
 
 	return 0, consensusMaps.WinInfo, errors.New("", "get balance failed. balance field is missed")
-}
-
-func getZCNMintNonceFromSharders(clientId string) (int64, string, error) {
-	result := make(chan *util.GetResponse)
-	defer close(result)
-
-	var numSharders = len(_config.chain.Sharders)
-	queryFromSharders(numSharders, fmt.Sprintf(GET_MINT_NONCE, clientId), result)
-
-	consensusMaps := NewHttpConsensusObjects(consensusThresh)
-
-	for i := 0; i < numSharders; i++ {
-		rsp := <-result
-
-		logging.Debug(rsp.Url, rsp.Status)
-		if rsp.StatusCode != http.StatusOK {
-			logging.Error(rsp.Body)
-		} else {
-			logging.Debug(rsp.Body)
-		}
-
-		if err := consensusMaps.Add(rsp.StatusCode, rsp.Body); err != nil {
-			logging.Error(rsp.Body)
-		}
-	}
-
-	rate := consensusMaps.MaxConsensus * 100 / len(_config.chain.Sharders)
-	if rate < consensusThresh {
-		return 0, consensusMaps.WinError, errors.New("", "get mint nonce failed. consensus not reached")
-	}
-
-	winValue, ok := consensusMaps.GetValue()
-	if ok {
-		var winMintNonce int64
-		if err := json.Unmarshal(winValue, &winMintNonce); err != nil {
-			return 0, consensusMaps.WinError, err
-		}
-		return winMintNonce, consensusMaps.WinInfo, nil
-	}
-
-	return 0, consensusMaps.WinInfo, errors.New("", "get mint nonce failed")
-}
-
-func getNotProcessedZCNBurnTicketsFromSharders(ethereumAddress string, startNonce int64) ([]*BurnTicket, string, error) {
-	result := make(chan *util.GetResponse)
-	defer close(result)
-
-	var numSharders = len(_config.chain.Sharders)
-	queryFromSharders(numSharders, fmt.Sprintf(GET_NOT_PROCESSED_BURN_TICKETS, ethereumAddress, startNonce), result)
-
-	consensusMaps := NewHttpConsensusObjects(consensusThresh)
-
-	for i := 0; i < numSharders; i++ {
-		rsp := <-result
-
-		logging.Debug(rsp.Url, rsp.Status)
-		if rsp.StatusCode != http.StatusOK {
-			logging.Error(rsp.Body)
-		} else {
-			logging.Debug(rsp.Body)
-		}
-
-		if err := consensusMaps.Add(rsp.StatusCode, rsp.Body); err != nil {
-			logging.Error(rsp.Body)
-		}
-	}
-
-	rate := consensusMaps.MaxConsensus * 100 / len(_config.chain.Sharders)
-	if rate < consensusThresh {
-		return nil, consensusMaps.WinError, errors.New("", "get burn tickets failed. consensus not reached")
-	}
-
-	winValue, ok := consensusMaps.GetValue()
-	if ok {
-		var winBurnTickets []*BurnTicket
-		if err := json.Unmarshal(winValue, &winBurnTickets); err != nil {
-			return nil, consensusMaps.WinError, err
-		}
-		return winBurnTickets, consensusMaps.WinInfo, nil
-	}
-
-	return nil, consensusMaps.WinInfo, errors.New("", "get burn tickets failed. balance field is missed")
 }
 
 // ConvertToToken converts the SAS tokens to ZCN tokens
