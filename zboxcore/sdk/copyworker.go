@@ -149,6 +149,10 @@ func (req *CopyRequest) ProcessCopy() error {
 
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
+
+	wgErrors := make(chan error)
+	wgDone := make(chan bool)
+
 	wg := &sync.WaitGroup{}
 
 	var pos uint64
@@ -160,14 +164,29 @@ func (req *CopyRequest) ProcessCopy() error {
 			defer wg.Done()
 			refEntity, err := req.copyBlobberObject(req.blobbers[blobberIdx], blobberIdx)
 			if err != nil {
+				select {
+					case wgErrors <- err:
+					default:
+				}
 				l.Logger.Error(err.Error())
 				return
 			}
 			objectTreeRefs[blobberIdx] = refEntity
 		}(int(pos))
 	}
+	go func() {
+		wg.Wait()
+		close(wgDone)
+	}()
 
-	wg.Wait()
+	select {
+		case <-wgDone:
+			break
+		case err := <-wgErrors:
+			if !req.isConsensusOk() {
+				return errors.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
+			}
+	}
 
 	if !req.isConsensusOk() {
 		return errors.New("consensus_not_met",

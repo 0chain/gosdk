@@ -430,7 +430,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			numCorrect:  0,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "consensus_not_met",
+			errMsg:      "copy_failed",
 		},
 	}
 	for _, tt := range tests {
