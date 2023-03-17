@@ -330,15 +330,13 @@ func (t *Transaction) submitTxn() {
 		}
 	}
 
-
 	var (
 		randomMiners = util.GetRandom(_config.chain.Miners, getMinMinersSubmit())
-		minersN     = len(randomMiners)
-		failedCount int32
-		failC       = make(chan struct{})
-		resultC = make(chan *util.PostResponse, minersN)
+		minersN      = len(randomMiners)
+		failedCount  int32
+		failC        = make(chan struct{})
+		resultC      = make(chan *util.PostResponse, minersN)
 	)
-
 
 	for _, miner := range randomMiners {
 		go func(minerurl string) {
@@ -373,7 +371,7 @@ func (t *Transaction) submitTxn() {
 		t.completeTxn(StatusError, "", fmt.Errorf("failed to submit transaction to all miners"))
 		return
 	case ret := <-resultC:
-			logging.Debug("finish txn submitting, ", ret.Url, ", Status: ", ret.Status, ", output:", ret.Body)
+		logging.Debug("finish txn submitting, ", ret.Url, ", Status: ", ret.Status, ", output:", ret.Body)
 		if ret.StatusCode == http.StatusOK {
 			t.completeTxn(StatusSuccess, ret.Body, nil)
 		} else {
@@ -620,10 +618,10 @@ func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHe
 	resultC := make(chan *util.GetResponse, numSharders)
 	queryFromSharders(numSharders, fmt.Sprintf("%vround=%v&content=%v", GET_BLOCK_INFO, round, content), resultC)
 	var (
-		maxConsensus int
+		maxConsensus   int
 		roundConsensus = make(map[string]int)
-		waitTime = time.NewTimer(10 * time.Second)
-		failedCount int
+		waitTime       = time.NewTimer(10 * time.Second)
+		failedCount    int
 	)
 
 	type blockRound struct {
@@ -636,14 +634,14 @@ func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHe
 			return nil, stdErrors.New("failed to get block info by round with consensus, timeout")
 		case rsp := <-resultC:
 			logging.Debug(rsp.Url, rsp.Status)
-			if failedCount * 100 / numSharders > 100 - consensusThresh {
+			if failedCount*100/numSharders > 100-consensusThresh {
 				return nil, stdErrors.New("failed to get block info by round with consensus, too many failures")
 			}
 
 			if rsp.StatusCode != http.StatusOK {
 				logging.Debug(rsp.Url, "no round confirmation. Resp:", rsp.Body)
 				failedCount++
-                continue
+				continue
 			}
 
 			var br blockRound
