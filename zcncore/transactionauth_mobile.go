@@ -38,10 +38,10 @@ func (ta *TransactionWithAuth) Send(toClientID string, val string, desc string) 
 		return errors.New("", "Could not serialize description to transaction_data")
 	}
 	go func() {
-		ta.TransactionType = transaction.TxnTypeSend
-		ta.ToClientID = toClientID
-		ta.Value = v
-		ta.TransactionData = string(txnData)
+		ta.txn.TransactionType = transaction.TxnTypeSend
+		ta.txn.ToClientID = toClientID
+		ta.txn.Value = v
+		ta.txn.TransactionData = string(txnData)
 		ta.submitTxn()
 	}()
 	return nil
