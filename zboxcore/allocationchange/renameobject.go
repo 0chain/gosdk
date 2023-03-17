@@ -50,7 +50,7 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) (
 				affectedRef = ch.ObjectTree.(*fileref.Ref)
 			}
 
-			affectedRef.Path = common.Join(parentPath, ch.NewName)
+			affectedRef.Path = pathutil.Join(parentPath, ch.NewName)
 			affectedRef.Name = ch.NewName
 
 			dirRef.AddChild(ch.ObjectTree)
@@ -76,7 +76,7 @@ func (ch *RenameFileChange) processChildren(curRef *fileref.Ref) {
 		} else {
 			childRef = childRefEntity.(*fileref.Ref)
 		}
-		childRef.Path = common.Join(curRef.Path, childRef.Name)
+		childRef.Path = pathutil.Join(curRef.Path, childRef.Name)
 		if childRefEntity.GetType() == fileref.DIRECTORY {
 			ch.processChildren(childRef)
 		}

@@ -1,4 +1,4 @@
-package common
+package pathutil
 
 import (
 	"strings"
@@ -59,15 +59,4 @@ func Join(elem ...string) string {
 		return ""
 	}
 	return "/" + strings.Join(items, "/")
-}
-
-// Clean returns the shortest path name equivalent to path
-// by purely lexical processing. It applies the following rules
-// iteratively until no further processing can be done:
-//
-//  1. Replace multiple slash elements with a single one..
-//
-// The returned path ends in a slash only if it represents a root directory, such as "/".
-func Clean(path string) string {
-	return Join(path)
 }

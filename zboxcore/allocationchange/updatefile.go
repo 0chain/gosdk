@@ -41,7 +41,7 @@ func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) (
 	ch.NewFile.ActualFileHashSignature = fileHashSign
 	ch.NewFile.ValidationRootSignature = validationRootSign
 
-	fields, err := common.GetPathFields(common.Dir(ch.NewFile.Path))
+	fields, err := common.GetPathFields(pathutil.Dir(ch.NewFile.Path))
 
 	if err != nil {
 		return

@@ -66,7 +66,7 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) (
 		affectedRef = ch.ObjectTree.(*fileref.Ref)
 	}
 
-	affectedRef.Path = common.Join(dirRef.GetPath(), affectedRef.Name)
+	affectedRef.Path = pathutil.Join(dirRef.GetPath(), affectedRef.Name)
 	uid := util.GetSHA1Uuid(ch.Uuid, affectedRef.Name)
 	ch.Uuid = uid
 	affectedRef.FileID = uid.String()
@@ -92,7 +92,7 @@ func (ch *CopyFileChange) processChildren(curRef *fileref.Ref, fileIDMeta map[st
 		}
 
 		childRef.HashToBeComputed = true
-		childRef.Path = common.Join(curRef.Path, childRef.Name)
+		childRef.Path = pathutil.Join(curRef.Path, childRef.Name)
 		uid := util.GetSHA1Uuid(ch.Uuid, childRef.Name)
 		ch.Uuid = uid
 		childRef.FileID = uid.String()

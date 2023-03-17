@@ -63,8 +63,8 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref) (
 		affectedRef = ch.ObjectTree.(*fileref.Ref)
 	}
 
-	oldParentPath, oldFileName := common.Split(ch.ObjectTree.GetPath())
-	affectedRef.Path = common.Join(dirRef.GetPath(), affectedRef.Name)
+	oldParentPath, oldFileName := pathutil.Split(ch.ObjectTree.GetPath())
+	affectedRef.Path = pathutil.Join(dirRef.GetPath(), affectedRef.Name)
 	ch.processChildren(affectedRef)
 
 	dirRef.AddChild(ch.ObjectTree)
@@ -118,7 +118,7 @@ func (ch *MoveFileChange) processChildren(curRef *fileref.Ref) {
 		} else {
 			childRef = childRefEntity.(*fileref.Ref)
 		}
-		childRef.Path = common.Join(curRef.Path, childRef.Name)
+		childRef.Path = pathutil.Join(curRef.Path, childRef.Name)
 		if childRefEntity.GetType() == fileref.DIRECTORY {
 			ch.processChildren(childRef)
 		}
@@ -126,7 +126,7 @@ func (ch *MoveFileChange) processChildren(curRef *fileref.Ref) {
 }
 
 func (n *MoveFileChange) GetAffectedPath() []string {
-	return []string{n.DestPath, common.Dir(n.ObjectTree.GetPath())}
+	return []string{n.DestPath, pathutil.Dir(n.ObjectTree.GetPath())}
 }
 
 func (n *MoveFileChange) GetSize() int64 {

@@ -24,7 +24,7 @@ func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref) (
 	commitParams CommitParams, err error) {
 
 	fileIDMeta := make(map[string]string)
-	fields, err := common.GetPathFields(common.Dir(ch.File.Path))
+	fields, err := common.GetPathFields(pathutil.Dir(ch.File.Path))
 	if err != nil {
 		return
 	}

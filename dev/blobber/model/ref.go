@@ -99,16 +99,14 @@ func GetListingFieldsMap(refEntity interface{}, tagName string) map[string]inter
 
 func GetSubDirsFromPath(p string) []string {
 	path := p
-	parent, cur := common.Split(path)
-	parent = common.Clean(parent)
+	parent, cur := pathutil.Split(path)
 	subDirs := make([]string, 0)
 	for len(cur) > 0 {
 		if cur == "." {
 			break
 		}
 		subDirs = append([]string{cur}, subDirs...)
-		parent, cur = common.Split(parent)
-		parent = path.Clean(parent)
+		parent, cur = pathutil.Split(parent)
 	}
 	return subDirs
 }
