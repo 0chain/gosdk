@@ -178,13 +178,17 @@ func (req *RenameRequest) ProcessRename() error {
 		close(wgDone)
 	}()
 
+	wgErrorsList := []error{}
+
 	select {
 		case <-wgDone:
 			break
 		case err := <-wgErrors:
-			if !req.consensus.isConsensusOk() {
-				return errors.New("rename_failed", fmt.Sprintf("Rename failed. %s", err.Error()))
-			}
+			wgErrorsList = append(wgErrorsList, err)
+	}
+
+	if !req.consensus.isConsensusOk() && len(wgErrorsList) >=1 {
+		return errors.New("rename_failed", fmt.Sprintf("Rename failed. %s", wgErrorsList[0]))
 	}
 
 	if !req.consensus.isConsensusOk() {
