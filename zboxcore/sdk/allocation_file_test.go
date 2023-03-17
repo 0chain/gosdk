@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -184,7 +183,7 @@ func TestAllocation_UpdateFile(t *testing.T) {
 				"allocation_id":    a.ID,
 				"lookup_hash":      "lookup_hash",
 				"name":             mockLocalPath,
-				"path":             filepath.Join("/", mockLocalPath),
+				"path":             common.Join("/", mockLocalPath),
 				"path_hash":        "path_hash",
 				"parent_path":      "/",
 				"level":            1,
@@ -289,7 +288,7 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 				"allocation_id":    a.ID,
 				"lookup_hash":      "lookup_hash",
 				"name":             mockLocalPath,
-				"path":             filepath.Join("/", mockLocalPath),
+				"path":             common.Join("/", mockLocalPath),
 				"path_hash":        "path_hash",
 				"parent_path":      "/",
 				"level":            1,
@@ -397,7 +396,7 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 				"allocation_id":    a.ID,
 				"lookup_hash":      "lookup_hash",
 				"name":             mockLocalPath,
-				"path":             filepath.Join("/", mockLocalPath),
+				"path":             common.Join("/", mockLocalPath),
 				"path_hash":        "path_hash",
 				"parent_path":      "/",
 				"level":            1,
@@ -509,7 +508,7 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 				"allocation_id":    a.ID,
 				"lookup_hash":      "lookup_hash",
 				"name":             mockLocalPath,
-				"path":             filepath.Join("/", mockLocalPath),
+				"path":             common.Join("/", mockLocalPath),
 				"path_hash":        "path_hash",
 				"parent_path":      "/",
 				"level":            1,

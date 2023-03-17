@@ -3,7 +3,6 @@ package model
 import (
 	"context"
 	"math"
-	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -100,16 +99,16 @@ func GetListingFieldsMap(refEntity interface{}, tagName string) map[string]inter
 
 func GetSubDirsFromPath(p string) []string {
 	path := p
-	parent, cur := filepath.Split(path)
-	parent = filepath.Clean(parent)
+	parent, cur := common.Split(path)
+	parent = common.Clean(parent)
 	subDirs := make([]string, 0)
 	for len(cur) > 0 {
 		if cur == "." {
 			break
 		}
 		subDirs = append([]string{cur}, subDirs...)
-		parent, cur = filepath.Split(parent)
-		parent = filepath.Clean(parent)
+		parent, cur = common.Split(parent)
+		parent = path.Clean(parent)
 	}
 	return subDirs
 }

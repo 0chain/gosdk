@@ -1,13 +1,12 @@
 package allocationchange
 
 import (
-	"path/filepath"
+	"path"
 	"strings"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type MoveFileChange struct {
@@ -43,7 +42,7 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref) (
 			newRef := &fileref.Ref{
 				Type:         fileref.DIRECTORY,
 				AllocationID: dirRef.AllocationID,
-				Path:         filepath.Join("/", strings.Join(fields[:i+1], "/")),
+				Path:         path.Join("/", strings.Join(fields[:i+1], "/")),
 				Name:         fields[i],
 			}
 			dirRef.AddChild(newRef)
@@ -64,8 +63,8 @@ func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref) (
 		affectedRef = ch.ObjectTree.(*fileref.Ref)
 	}
 
-	oldParentPath, oldFileName := filepath.Split(ch.ObjectTree.GetPath())
-	affectedRef.Path = zboxutil.Join(dirRef.GetPath(), affectedRef.Name)
+	oldParentPath, oldFileName := common.Split(ch.ObjectTree.GetPath())
+	affectedRef.Path = common.Join(dirRef.GetPath(), affectedRef.Name)
 	ch.processChildren(affectedRef)
 
 	dirRef.AddChild(ch.ObjectTree)
@@ -119,7 +118,7 @@ func (ch *MoveFileChange) processChildren(curRef *fileref.Ref) {
 		} else {
 			childRef = childRefEntity.(*fileref.Ref)
 		}
-		childRef.Path = zboxutil.Join(curRef.Path, childRef.Name)
+		childRef.Path = common.Join(curRef.Path, childRef.Name)
 		if childRefEntity.GetType() == fileref.DIRECTORY {
 			ch.processChildren(childRef)
 		}
@@ -127,7 +126,7 @@ func (ch *MoveFileChange) processChildren(curRef *fileref.Ref) {
 }
 
 func (n *MoveFileChange) GetAffectedPath() []string {
-	return []string{n.DestPath, filepath.Dir(n.ObjectTree.GetPath())}
+	return []string{n.DestPath, common.Dir(n.ObjectTree.GetPath())}
 }
 
 func (n *MoveFileChange) GetSize() int64 {

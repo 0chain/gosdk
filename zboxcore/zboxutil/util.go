@@ -203,10 +203,6 @@ func calculateMinRequired(minRequired, percent float64) int {
 	return int(math.Ceil(minRequired * percent))
 }
 
-func Join(a, b string) string {
-	return strings.ReplaceAll(filepath.Join(a, b), "\\", "/")
-}
-
 func GetRefsHash(r []byte) string {
 	hash := sha3.New256()
 	hash.Write(r)

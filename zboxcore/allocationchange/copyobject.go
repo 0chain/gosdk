@@ -7,7 +7,6 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
 )
 
@@ -67,7 +66,7 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref) (
 		affectedRef = ch.ObjectTree.(*fileref.Ref)
 	}
 
-	affectedRef.Path = zboxutil.Join(dirRef.GetPath(), affectedRef.Name)
+	affectedRef.Path = common.Join(dirRef.GetPath(), affectedRef.Name)
 	uid := util.GetSHA1Uuid(ch.Uuid, affectedRef.Name)
 	ch.Uuid = uid
 	affectedRef.FileID = uid.String()
@@ -93,7 +92,7 @@ func (ch *CopyFileChange) processChildren(curRef *fileref.Ref, fileIDMeta map[st
 		}
 
 		childRef.HashToBeComputed = true
-		childRef.Path = zboxutil.Join(curRef.Path, childRef.Name)
+		childRef.Path = common.Join(curRef.Path, childRef.Name)
 		uid := util.GetSHA1Uuid(ch.Uuid, childRef.Name)
 		ch.Uuid = uid
 		childRef.FileID = uid.String()

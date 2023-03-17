@@ -435,7 +435,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	}
 	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
 
-	_, fileName := filepath.Split(remotePath)
+	_, fileName := common.Split(remotePath)
 
 	fileMeta := FileMeta{
 		Path:       localPath,
@@ -522,7 +522,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 			return fmt.Errorf("Local path is not a directory '%s'", localPath)
 		}
 		localPath = strings.TrimRight(localPath, "/")
-		_, rFile := filepath.Split(remotePath)
+		_, rFile := common.Split(remotePath)
 		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
 		if _, err := sys.Files.Stat(localPath); err == nil {
 			return fmt.Errorf("Local file already exists '%s'", localPath)
@@ -1223,7 +1223,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 			return fmt.Errorf("Local path is not a directory '%s'", localPath)
 		}
 		localPath = strings.TrimRight(localPath, "/")
-		_, rFile := filepath.Split(remoteFilename)
+		_, rFile := common.Split(remoteFilename)
 		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
 		if _, err := sys.Files.Stat(localPath); err == nil {
 			return fmt.Errorf("Local file already exists '%s'", localPath)
