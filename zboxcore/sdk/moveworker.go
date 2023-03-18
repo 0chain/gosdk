@@ -181,14 +181,18 @@ func (req *MoveRequest) ProcessMove() error {
 		wg.Wait()
 		close(wgDone)
 	}()
+	
+	wgErrorsList := []error{}
 
 	select {
 		case <-wgDone:
 			break
 		case err := <-wgErrors:
-			if !req.isConsensusOk() {
-				return errors.New("move_failed", fmt.Sprintf("Move failed. %s", err.Error()))
-			}
+			wgErrorsList = append(wgErrorsList, err)
+	}
+
+	if !req.isConsensusOk() && len(wgErrorsList) >=1 {
+		return errors.New("move_failed", fmt.Sprintf("Move failed. %s", wgErrorsList[0].Error()))
 	}
 
 	if !req.isConsensusOk() {

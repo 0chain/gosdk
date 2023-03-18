@@ -179,13 +179,17 @@ func (req *CopyRequest) ProcessCopy() error {
 		close(wgDone)
 	}()
 
+	wgErrorsList := []error{}
+
 	select {
 		case <-wgDone:
 			break
 		case err := <-wgErrors:
-			if !req.isConsensusOk() {
-				return errors.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
-			}
+			wgErrorsList = append(wgErrorsList, err)
+	}
+
+	if !req.isConsensusOk() && len(wgErrorsList) >=1 {
+		return errors.New("copy_failed", fmt.Sprintf("Copy failed. %s", wgErrorsList[0].Error()))
 	}
 
 	if !req.isConsensusOk() {

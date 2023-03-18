@@ -124,10 +124,6 @@ func (req *DirRequest) commitRequest(existingDirCount int) error {
 		go AddCommitRequest(commitReq)
 	}
 	wg.Wait()
-
-	if len(commitReqs) == 0 {
-		return errors.New("directory_exists", "Directory already exists")
-	}
 	
 	for _, commitReq := range commitReqs {
 		if commitReq.result != nil {
