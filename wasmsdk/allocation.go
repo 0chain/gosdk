@@ -22,6 +22,12 @@ type fileResp struct {
 	Path string `json:"path"`
 }
 
+type decodeAuthTokenResp struct {
+	recipientPublicKey string
+	marker             string
+	tokens             uint64
+}
+
 func getBlobberIds(blobberUrls []string) ([]string, error) {
 	return sdk.GetBlobberIds(blobberUrls)
 }
@@ -245,34 +251,40 @@ func getAllocationWith(authTicket string) (*sdk.Allocation, error) {
 	return sdkAllocation, err
 }
 
-func decodeAuthTicket(ticket string) (string, string, uint64, error) {
+func decodeAuthTicket(ticket string) (*decodeAuthTokenResp, error) {
+	resp := &decodeAuthTokenResp{}
+
 	decoded, err := base64.StdEncoding.DecodeString(ticket)
 	if err != nil {
-		return "", "", 0, err
+		return resp, err
 	}
 
 	input := make(map[string]interface{})
 	if err = json.Unmarshal(decoded, &input); err != nil {
-		return "", "", 0, err
+		return resp, err
 	}
 
 	str := fmt.Sprintf("%v", input["marker"])
 	decodedMarker, _ := base64.StdEncoding.DecodeString(str)
 	markerInput := make(map[string]interface{})
 	if err = json.Unmarshal(decodedMarker, &markerInput); err != nil {
-		return "", "", 0, err
+		return resp, err
 	}
 
 	recipientPublicKey, ok := input["recipient_public_key"].(string)
 	if !ok {
-		return "", "", 0, fmt.Errorf("recipient_public_key is required")
+		return resp, fmt.Errorf("recipient_public_key is required")
 	}
 
 	lock := markerInput["free_tokens"]
 	markerStr, _ := json.Marshal(markerInput)
 
 	s, _ := strconv.ParseFloat(string(fmt.Sprintf("%v", lock)), 64)
-	return string(recipientPublicKey), string(markerStr), convertTokenToSAS(s), nil
+
+	resp.recipientPublicKey = string(recipientPublicKey)
+	resp.marker = string(markerStr)
+	resp.tokens = convertTokenToSAS(s)
+	return resp, nil
 }
 
 func convertTokenToSAS(token float64) uint64 {
