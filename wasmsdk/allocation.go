@@ -23,9 +23,9 @@ type fileResp struct {
 }
 
 type decodeAuthTokenResp struct {
-	recipientPublicKey string
-	marker             string
-	tokens             uint64
+	RecipientPublicKey string `json:"recipient_public_key"`
+	Marker             string `json:"marker"`
+	Tokens             uint64 `json:"tokens"`
 }
 
 func getBlobberIds(blobberUrls []string) ([]string, error) {
@@ -256,34 +256,39 @@ func decodeAuthTicket(ticket string) (*decodeAuthTokenResp, error) {
 
 	decoded, err := base64.StdEncoding.DecodeString(ticket)
 	if err != nil {
+		sdkLogger.Error("error decoding", err.Error())
 		return resp, err
 	}
 
 	input := make(map[string]interface{})
 	if err = json.Unmarshal(decoded, &input); err != nil {
+		sdkLogger.Error("error unmarshalling json", err.Error())
 		return resp, err
 	}
 
-	str := fmt.Sprintf("%v", input["marker"])
-	decodedMarker, _ := base64.StdEncoding.DecodeString(str)
-	markerInput := make(map[string]interface{})
-	if err = json.Unmarshal(decodedMarker, &markerInput); err != nil {
-		return resp, err
+	if marker, ok := input["marker"]; ok {
+		str := fmt.Sprintf("%v", marker)
+		decodedMarker, _ := base64.StdEncoding.DecodeString(str)
+		markerInput := make(map[string]interface{})
+		if err = json.Unmarshal(decodedMarker, &markerInput); err != nil {
+			sdkLogger.Error("error unmarshaling markerInput", err.Error())
+			return resp, err
+		}
+		lock := markerInput["free_tokens"]
+		markerStr, _ := json.Marshal(markerInput)
+		resp.Marker = string(markerStr)
+		s, _ := strconv.ParseFloat(string(fmt.Sprintf("%v", lock)), 64)
+		resp.Tokens = convertTokenToSAS(s)
 	}
 
-	recipientPublicKey, ok := input["recipient_public_key"].(string)
-	if !ok {
-		return resp, fmt.Errorf("recipient_public_key is required")
+	if public_key, ok := input["recipient_public_key"]; ok {
+		recipientPublicKey, ok := public_key.(string)
+		if !ok {
+			return resp, fmt.Errorf("recipient_public_key is required")
+		}
+		resp.RecipientPublicKey = string(recipientPublicKey)
 	}
 
-	lock := markerInput["free_tokens"]
-	markerStr, _ := json.Marshal(markerInput)
-
-	s, _ := strconv.ParseFloat(string(fmt.Sprintf("%v", lock)), 64)
-
-	resp.recipientPublicKey = string(recipientPublicKey)
-	resp.marker = string(markerStr)
-	resp.tokens = convertTokenToSAS(s)
 	return resp, nil
 }
 
