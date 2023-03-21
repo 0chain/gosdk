@@ -150,8 +150,6 @@ func (req *MoveRequest) ProcessMove() error {
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 
 	wgErrors := make(chan error)
-	wgDone := make(chan bool)
-
 	wg := &sync.WaitGroup{}
 
 	var pos uint64
@@ -163,36 +161,31 @@ func (req *MoveRequest) ProcessMove() error {
 			defer wg.Done()
 			refEntity, err := req.moveBlobberObject(req.blobbers[blobberIdx], blobberIdx)
 
-			if err == nil {
-				objectTreeRefs[blobberIdx] = refEntity
-				return 
+			if err != nil {
+				select {
+					case wgErrors <- err:
+					default:
+				}
+				l.Logger.Error(err.Error())
+				return
 			}
 			
-			select {
-				case wgErrors <- err:
-				default:
-			}
-			l.Logger.Error(err.Error())
+			objectTreeRefs[blobberIdx] = refEntity
 			
 		}(int(pos))
 	}
-
-	go func() {
-		wg.Wait()
-		close(wgDone)
-	}()
+	wg.Wait()
 	
-	wgErrorsList := []error{}
-
+	var recentErr *error
 	select {
-		case <-wgDone:
-			break
 		case err := <-wgErrors:
-			wgErrorsList = append(wgErrorsList, err)
+			recentErr = new(error)
+			*recentErr = err
+		default:
 	}
 
-	if !req.isConsensusOk() && len(wgErrorsList) >=1 {
-		return errors.New("move_failed", fmt.Sprintf("Move failed. %s", wgErrorsList[0].Error()))
+	if !req.isConsensusOk() && recentErr!=nil {
+		return errors.New("move_failed", fmt.Sprintf("Move failed. %s", (*recentErr).Error()))
 	}
 
 	if !req.isConsensusOk() {
