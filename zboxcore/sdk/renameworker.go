@@ -149,8 +149,7 @@ func (req *RenameRequest) ProcessRename() error {
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 
-	wgErrors := make(chan error)
-	wgDone := make(chan bool)
+	wgErrors := make(chan error, 1)
 
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numList)
@@ -158,37 +157,32 @@ func (req *RenameRequest) ProcessRename() error {
 		go func(blobberIdx int) {
 			defer req.wg.Done()
 			refEntity, err := req.renameBlobberObject(req.blobbers[blobberIdx], blobberIdx)
-			if err == nil {
-				req.consensus.Done()
-				req.maskMU.Lock()
-				objectTreeRefs[blobberIdx] = refEntity
-				req.maskMU.Unlock()
+			if err != nil {
+				select {
+					case wgErrors <- err:
+					default:
+				}
+				l.Logger.Error(err.Error())
 				return
 			}
-			select {
-				case wgErrors <- err:
-				default:
-			}
-			l.Logger.Error(err.Error())
+			req.consensus.Done()
+			req.maskMU.Lock()
+			objectTreeRefs[blobberIdx] = refEntity
+			req.maskMU.Unlock()
 		}(i)
 	}
+	req.wg.Wait()
 
-	go func() {
-		req.wg.Wait()
-		close(wgDone)
-	}()
-
-	wgErrorsList := []error{}
-
+	var recentErr *error
 	select {
-		case <-wgDone:
-			break
 		case err := <-wgErrors:
-			wgErrorsList = append(wgErrorsList, err)
+			recentErr = new(error)
+			*recentErr = err
+		default:
 	}
 
-	if !req.consensus.isConsensusOk() && len(wgErrorsList) >=1 {
-		return errors.New("rename_failed", fmt.Sprintf("Rename failed. %s", wgErrorsList[0]))
+	if !req.consensus.isConsensusOk() && recentErr!=nil {
+		return errors.New("rename_failed", fmt.Sprintf("Rename failed. %s", (*recentErr).Error()))
 	}
 
 	if !req.consensus.isConsensusOk() {

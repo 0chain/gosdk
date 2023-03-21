@@ -149,7 +149,7 @@ func (req *MoveRequest) ProcessMove() error {
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 
-	wgErrors := make(chan error)
+	wgErrors := make(chan error, 1)
 	wg := &sync.WaitGroup{}
 
 	var pos uint64
@@ -169,7 +169,7 @@ func (req *MoveRequest) ProcessMove() error {
 				l.Logger.Error(err.Error())
 				return
 			}
-			
+
 			objectTreeRefs[blobberIdx] = refEntity
 			
 		}(int(pos))
