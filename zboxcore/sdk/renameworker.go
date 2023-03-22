@@ -165,7 +165,6 @@ func (req *RenameRequest) ProcessRename() error {
 				l.Logger.Error(err.Error())
 				return
 			}
-			req.consensus.Done()
 			req.maskMU.Lock()
 			objectTreeRefs[blobberIdx] = refEntity
 			req.maskMU.Unlock()
