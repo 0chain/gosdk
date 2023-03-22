@@ -15,6 +15,7 @@ import (
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/sys"
+	"go.uber.org/zap"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
@@ -1317,8 +1318,14 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	if fee == 0 {
 		fee, err = transaction.EstimateFee(txn, blockchain.GetMiners(), 0.2)
 		if err != nil {
+			l.Logger.Error("failed to estimate txn fee",
+				zap.Error(err),
+				zap.Any("txn", txn))
 			return
 		}
+		l.Logger.Info("estimate txn fee",
+			zap.Uint64("fee", fee),
+			zap.Any("txn", txn))
 		txn.TransactionFee = fee
 	}
 
