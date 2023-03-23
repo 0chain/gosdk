@@ -423,7 +423,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			numCorrect:  0,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "consensus_not_met",
+			errMsg:      "rename_failed",
 		},
 	}
 	for _, tt := range tests {

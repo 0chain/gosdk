@@ -150,7 +150,9 @@ func (req *RenameRequest) ProcessRename() error {
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 
 	wgErrors := make(chan error, numList)
-	wgDone := make(chan bool, numList)
+	defer func() {
+		close(wgErrors)
+	}()
 
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numList)
@@ -165,31 +167,18 @@ func (req *RenameRequest) ProcessRename() error {
 				req.maskMU.Unlock()
 				return
 			}
-			select {
-			case wgErrors <- err:
-			default:
-			}
+
+			wgErrors <- err
 			l.Logger.Error(err.Error())
 		}(i)
 	}
 
-	go func() {
-		req.wg.Wait()
-		close(wgDone)
-	}()
-
-	wgErrorsList := []error{}
-
-	select {
-	case <-wgDone:
-		break
-	case err := <-wgErrors:
-		wgErrorsList = append(wgErrorsList, err)
-	}
+	req.wg.Wait()
 
 	if !req.consensus.isConsensusOk() {
-		if req.consensus.getConsensus() == 0 && len(wgErrorsList) > 1 {
-			return errors.New("rename_failed", fmt.Sprintf("Rename failed. %s", wgErrorsList[0]))
+		if req.consensus.getConsensus() == 0 && len(wgErrors) > 0 {
+			err := <-wgErrors
+			return errors.New("rename_failed", fmt.Sprintf("Rename failed. %s", err))
 		}
 
 		return errors.New("consensus_not_met",
