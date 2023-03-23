@@ -42,7 +42,11 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 	)
 
 	var mockClient = mocks.HttpClient{}
+	rawClient := zboxutil.Client
 	zboxutil.Client = &mockClient
+	defer func() {
+		zboxutil.Client = rawClient
+	}()
 
 	client := zclient.GetClient()
 	client.Wallet = &zcncrypto.Wallet{
@@ -244,19 +248,18 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 		mockNewName        = "mock new name"
 	)
 
-	rawClient := zboxutil.Client
-
 	var mockClient = mocks.HttpClient{}
+	rawClient := zboxutil.Client
 	zboxutil.Client = &mockClient
+	defer func() {
+		zboxutil.Client = rawClient
+	}()
 
 	client := zclient.GetClient()
 	client.Wallet = &zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	}
-	defer func() {
-		zboxutil.Client = rawClient
-	}()
 
 	setupHttpResponses := func(t *testing.T, testName string, numBlobbers int, numCorrect int, req *RenameRequest) {
 		for i := 0; i < numBlobbers; i++ {
