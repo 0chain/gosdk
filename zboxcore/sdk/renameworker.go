@@ -149,8 +149,8 @@ func (req *RenameRequest) ProcessRename() error {
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 
-	wgErrors := make(chan error)
-	wgDone := make(chan bool)
+	wgErrors := make(chan error, numList)
+	wgDone := make(chan bool, numList)
 
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numList)
