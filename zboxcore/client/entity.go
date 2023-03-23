@@ -31,7 +31,8 @@ func init() {
 		return sys.Sign(hash, client.SignatureScheme, GetClientSysKeys())
 	}
 
-	sys.Verify = VerifySignature
+	sys.Verify = verifySignature
+	sys.VerifyWith = verifySignatureWith
 }
 
 // Populate Single Client
@@ -118,7 +119,7 @@ func SignHash(hash string, signatureScheme string, keys []sys.KeyPair) (string, 
 	return retSignature, nil
 }
 
-func VerifySignature(signature string, msg string) (bool, error) {
+func verifySignature(signature string, msg string) (bool, error) {
 	ss := zcncrypto.NewSignatureScheme(client.SignatureScheme)
 	if err := ss.SetPublicKey(client.ClientKey); err != nil {
 		return false, err
@@ -127,7 +128,7 @@ func VerifySignature(signature string, msg string) (bool, error) {
 	return ss.Verify(signature, msg)
 }
 
-func VerifySignatureWithPubKey(pubKey, signature, hash string) (bool, error) {
+func verifySignatureWith(pubKey, signature, hash string) (bool, error) {
 	sch := zcncrypto.NewSignatureScheme(client.SignatureScheme)
 	err := sch.SetPublicKey(pubKey)
 	if err != nil {
