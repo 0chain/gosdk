@@ -19,6 +19,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/h2non/filetype"
 	"github.com/lithammer/shortuuid/v3"
+	"golang.org/x/crypto/chacha20poly1305"
+	"golang.org/x/crypto/scrypt"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -238,4 +240,72 @@ func GetRateLimitValue(r *http.Response) (int, error) {
 	}
 
 	return int(math.Ceil(rl / dur)), nil
+}
+
+const (
+	keySize      = 32
+	nonceSize    = 12
+	saltSize     = 32
+	tagSize      = 16
+	scryptN      = 32768
+	scryptR      = 8
+	scryptP      = 1
+	scryptKeyLen = 32
+)
+
+func ScryptEncrypt(key, text []byte) ([]byte, error) {
+	if len(key) != keySize {
+		return nil, errors.New("scrypt: invalid key size" + strconv.Itoa(len(key)))
+	}
+	if len(text) == 0 {
+		return nil, errors.New("scrypt: plaintext cannot be empty")
+	}
+	salt := make([]byte, saltSize)
+	if _, err := rand.Read(salt); err != nil {
+		return nil, err
+	}
+
+	derivedKey, err := scrypt.Key(key, salt, scryptN, scryptR, scryptP, scryptKeyLen)
+	if err != nil {
+		return nil, err
+	}
+	nonce := make([]byte, nonceSize)
+	if _, err := rand.Read(nonce); err != nil {
+		return nil, err
+	}
+	aead, err := chacha20poly1305.New(derivedKey)
+	if err != nil {
+		return nil, err
+	}
+
+	ciphertext := aead.Seal(nil, nonce, text, nil)
+	ciphertext = append(salt, ciphertext...)
+	ciphertext = append(nonce, ciphertext...)
+
+	return ciphertext, nil
+}
+
+func ScryptDecrypt(key, ciphertext []byte) ([]byte, error) {
+	if len(ciphertext) < saltSize+nonceSize+tagSize {
+		return nil, errors.New("ciphertext too short")
+	}
+
+	nonce := ciphertext[:nonceSize]
+	salt := ciphertext[nonceSize : nonceSize+saltSize]
+	text := ciphertext[saltSize+nonceSize:]
+
+	derivedKey, err := scrypt.Key(key, salt, scryptN, scryptR, scryptP, scryptKeyLen)
+	if err != nil {
+		return nil, err
+	}
+	aead, err := chacha20poly1305.New(derivedKey)
+	if err != nil {
+		return nil, err
+	}
+	plaintext, err := aead.Open(nil, nonce, text, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return plaintext, nil
 }
