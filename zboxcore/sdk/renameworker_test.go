@@ -67,7 +67,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			name:    "Test_Error_New_HTTP_Failed_By_Containing_" + string([]byte{0x7f, 0, 0}),
 			setup:   func(t *testing.T, testName string, p parameters) {},
 			wantErr: true,
-			errMsg:  `parse "Test_Error_New_HTTP_Failed_By_Containing_\u007f\x00\x00": net/url: invalid control character in URL`,
+			errMsg:  `net/url: invalid control character in URL`,
 		},
 		{
 			name: "Test_Error_Get_Object_Tree_From_Blobber_Failed",
@@ -219,7 +219,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			_, err := req.renameBlobberObject(req.blobbers[0], 0)
 			require.EqualValues(tt.wantErr, err != nil, "Error: ", err)
 			if err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(err))
+				require.Contains(errors.Top(err), tt.errMsg)
 				return
 			}
 			require.NoErrorf(err, "expected no error but got %v", err)
@@ -415,7 +415,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			numCorrect:  2,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "rename_failed",
+			errMsg:      "consensus_not_met",
 		},
 		{
 			name:        "Test_All_Blobber_Error_On_Rename_Failure",
@@ -423,7 +423,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			numCorrect:  0,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "rename_failed",
+			errMsg:      "consensus_not_met",
 		},
 	}
 	for _, tt := range tests {

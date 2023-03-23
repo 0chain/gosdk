@@ -187,11 +187,11 @@ func (req *RenameRequest) ProcessRename() error {
 		wgErrorsList = append(wgErrorsList, err)
 	}
 
-	if !req.consensus.isConsensusOk() && req.consensus.getConsensus() == 0 && len(wgErrorsList) > 1 {
-		return errors.New("rename_failed", fmt.Sprintf("Rename failed. %s", wgErrorsList[0]))
-	}
-
 	if !req.consensus.isConsensusOk() {
+		if req.consensus.getConsensus() == 0 && len(wgErrorsList) > 1 {
+			return errors.New("rename_failed", fmt.Sprintf("Rename failed. %s", wgErrorsList[0]))
+		}
+
 		return errors.New("consensus_not_met",
 			fmt.Sprintf("Rename failed. Required consensus %d got %d",
 				req.consensus.consensusThresh, req.consensus.getConsensus()))
