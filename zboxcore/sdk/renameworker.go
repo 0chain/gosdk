@@ -187,7 +187,7 @@ func (req *RenameRequest) ProcessRename() error {
 		wgErrorsList = append(wgErrorsList, err)
 	}
 
-	if !req.consensus.isConsensusOk() && req.consensus.getConsensus() == 0 && len(wgErrorsList) >= 1 {
+	if !req.consensus.isConsensusOk() && req.consensus.getConsensus() == 0 && len(wgErrorsList) > 1 {
 		return errors.New("rename_failed", fmt.Sprintf("Rename failed. %s", wgErrorsList[0]))
 	}
 
