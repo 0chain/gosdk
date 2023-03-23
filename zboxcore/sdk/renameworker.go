@@ -166,8 +166,8 @@ func (req *RenameRequest) ProcessRename() error {
 				return
 			}
 			select {
-				case wgErrors <- err:
-				default:
+			case wgErrors <- err:
+			default:
 			}
 			l.Logger.Error(err.Error())
 		}(i)
@@ -181,13 +181,13 @@ func (req *RenameRequest) ProcessRename() error {
 	wgErrorsList := []error{}
 
 	select {
-		case <-wgDone:
-			break
-		case err := <-wgErrors:
-			wgErrorsList = append(wgErrorsList, err)
+	case <-wgDone:
+		break
+	case err := <-wgErrors:
+		wgErrorsList = append(wgErrorsList, err)
 	}
 
-	if !req.consensus.isConsensusOk() && len(wgErrorsList) >=1 {
+	if !req.consensus.isConsensusOk() && req.consensus.getConsensus() == 0 && len(wgErrorsList) >= 1 {
 		return errors.New("rename_failed", fmt.Sprintf("Rename failed. %s", wgErrorsList[0]))
 	}
 

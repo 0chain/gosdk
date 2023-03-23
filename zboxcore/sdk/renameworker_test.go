@@ -67,7 +67,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			name:    "Test_Error_New_HTTP_Failed_By_Containing_" + string([]byte{0x7f, 0, 0}),
 			setup:   func(t *testing.T, testName string, p parameters) {},
 			wantErr: true,
-			errMsg:  `parse "Test_Error_New_HTTP_Failed_By_Containing_\u007f\x00\x00": net/url: invalid control character in URL`,
+			errMsg:  `parse "Test_Error_New_HTTP_Failed_By_Containing_\\x7f\\x00\\x00": net/url: invalid control character in URL`,
 		},
 		{
 			name: "Test_Error_Get_Object_Tree_From_Blobber_Failed",
