@@ -291,33 +291,35 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 				Body: ioutil.NopCloser(bytes.NewReader([]byte(""))),
 			}, nil)
 
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return req.Method == "POST" &&
-					strings.Contains(req.URL.String(), zboxutil.WM_LOCK_ENDPOINT) &&
-					strings.Contains(req.URL.String(), testName+url)
-			})).Return(&http.Response{
-				StatusCode: func() int {
-					if i < numCorrect {
-						return http.StatusOK
-					}
-					return http.StatusBadRequest
-				}(),
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
-			}, nil)
+			if i < numCorrect {
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return req.Method == "POST" &&
+						strings.Contains(req.URL.String(), zboxutil.WM_LOCK_ENDPOINT) &&
+						strings.Contains(req.URL.String(), testName+url)
+				})).Return(&http.Response{
+					StatusCode: func() int {
+						if i < numCorrect {
+							return http.StatusOK
+						}
+						return http.StatusBadRequest
+					}(),
+					Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
+				}, nil)
 
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return req.Method == "POST" &&
-					strings.Contains(req.URL.String(), zboxutil.COMMIT_ENDPOINT) &&
-					strings.Contains(req.URL.String(), testName+url)
-			})).Return(&http.Response{
-				StatusCode: func() int {
-					if i < numCorrect {
-						return http.StatusOK
-					}
-					return http.StatusBadRequest
-				}(),
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(""))),
-			}, nil)
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return req.Method == "POST" &&
+						strings.Contains(req.URL.String(), zboxutil.COMMIT_ENDPOINT) &&
+						strings.Contains(req.URL.String(), testName+url)
+				})).Return(&http.Response{
+					StatusCode: func() int {
+						if i < numCorrect {
+							return http.StatusOK
+						}
+						return http.StatusBadRequest
+					}(),
+					Body: ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				}, nil)
+			}
 
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 				return req.Method == "DELETE" &&
