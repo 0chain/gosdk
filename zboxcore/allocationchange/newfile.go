@@ -8,6 +8,7 @@ import (
 
 	zError "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
@@ -24,7 +25,7 @@ func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref) (
 	commitParams CommitParams, err error) {
 
 	fileIDMeta := make(map[string]string)
-	fields, err := common.GetPathFields(common.GetPathDir(ch.File.Path))
+	fields, err := common.GetPathFields(pathutil.Dir(ch.File.Path))
 	if err != nil {
 		return
 	}
