@@ -41,13 +41,10 @@ func Dir(path string) string {
 // an empty string.
 func Join(elem ...string) string {
 	var items []string
+	var hasElements bool
 	for _, e := range elem {
 		if e != "" {
-			if e == "/" && len(items) == 0 {
-				items = append(items, "")
-				continue
-			}
-
+			hasElements = true
 			for _, it := range strings.Split(e, "/") {
 				if it != "" {
 					items = append(items, it)
@@ -55,8 +52,10 @@ func Join(elem ...string) string {
 			}
 		}
 	}
-	if len(items) == 0 {
+	if !hasElements {
 		return ""
 	}
+
 	return "/" + strings.Join(items, "/")
+
 }

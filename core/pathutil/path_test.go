@@ -57,6 +57,7 @@ func TestJoin(t *testing.T) {
 	}{
 		{name: "empty", elem: []string{"", ""}, path: ""},
 		{name: "only slash", elem: []string{"/", "/"}, path: "/"},
+		{name: "multiple slashes", elem: []string{"/", "/images"}, path: "/images"},
 		{name: "one path without slash", elem: []string{"only_path"}, path: "/only_path"},
 		{name: "multiple paths without slash", elem: []string{"path1", "path2"}, path: "/path1/path2"},
 		{name: "multiple paths", elem: []string{"path1", "path2", "/path3", "path4/"}, path: "/path1/path2/path3/path4"},
