@@ -38,6 +38,18 @@ func TestSplit(t *testing.T) {
 			dir:  "/",
 			file: "",
 		},
+		{
+			name: "single dir and file",
+			path: "/file",
+			dir:  "/",
+			file: "file",
+		},
+		{
+			name: "multiple dirs and file",
+			path: "/dir/file",
+			dir:  "/dir",
+			file: "file",
+		},
 	}
 
 	for _, test := range tests {

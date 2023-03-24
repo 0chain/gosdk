@@ -24,6 +24,10 @@ func Split(path string) (dir, file string) {
 		return "", path
 	}
 
+	if i == 0 {
+		return "/", string(path[i+1:])
+	}
+
 	return string(path[:i]), string(path[i+1:])
 }
 
