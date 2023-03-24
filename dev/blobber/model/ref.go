@@ -3,12 +3,12 @@ package model
 import (
 	"context"
 	"math"
-	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
 
 	"github.com/0chain/gosdk/core/encryption"
+	"github.com/0chain/gosdk/core/pathutil"
 )
 
 const (
@@ -100,16 +100,14 @@ func GetListingFieldsMap(refEntity interface{}, tagName string) map[string]inter
 
 func GetSubDirsFromPath(p string) []string {
 	path := p
-	parent, cur := filepath.Split(path)
-	parent = filepath.Clean(parent)
+	parent, cur := pathutil.Split(path)
 	subDirs := make([]string, 0)
 	for len(cur) > 0 {
 		if cur == "." {
 			break
 		}
 		subDirs = append([]string{cur}, subDirs...)
-		parent, cur = filepath.Split(parent)
-		parent = filepath.Clean(parent)
+		parent, cur = pathutil.Split(parent)
 	}
 	return subDirs
 }
