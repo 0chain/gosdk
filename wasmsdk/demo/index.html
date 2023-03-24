@@ -45,7 +45,7 @@
       value="glare mistake gun joke bid spare across diagram wrap cube swear cactus cave repeat you brave few best wild lion pitch pole original wasp" /><br>
 
 
-      
+
 
     <button id="btnSetWallet">Change Wallet</button>
     <button id="btnSendMeTokens">Send Me Tokens</button>
@@ -55,7 +55,9 @@
   <fieldset>
     <legend>Sharing</legend>
     <label for="authTicket"> AuthTicket </label> <input id="authTicket" name="authTicket" style="width: 600px;"
-      value="eyJjbGllbnRfaWQiOiI1NDUzMzMzNTExNTM2MjhmY2Q5ZTRhNjgxYTc5ZjBkNjUyM2I3ZmQzMDVhYzkwMDlmNzdjZjVhM2JkNjQxMGVmIiwib3duZXJfaWQiOiJhMGRmODI4YTBhYjkwZGIyNGVmM2NkZmI1OWYzYWYwMTgwOWI2NWQ1ZjkxOWQxYzRkOGMxYzI3MjY4MDMyNDdhIiwiYWxsb2NhdGlvbl9pZCI6ImMwNDUxMzJkYWJjOTFlYjIxMDJhNzI2N2I2NjAxOWEzNzk2MjNlODMzNGViODFhNWJhMGY0ZjkyNDc3NWQzMGUiLCJmaWxlX3BhdGhfaGFzaCI6Ijc3Mjc0NzQ4MjVkZGI5ODI2OTVlZDI4N2UxNDAzNDEwODRiNDNjMjkyYjEzOWZiMmI1ZWQ4YzNlYjdjZTE5NzIiLCJhY3R1YWxfZmlsZV9oYXNoIjoiYzJlM2RmMTM5YTcyZTY0MDViYWU5MDVjYTM3ZTBlMTU5NTcyMDM5OTM4ZDlmOTljYjhlMWIxZWM3NGI3MjQzOCIsImZpbGVfbmFtZSI6IjIgKDEpLmpwZyIsInJlZmVyZW5jZV90eXBlIjoiZiIsImV4cGlyYXRpb24iOjE2NzgyNjQyNjMsInRpbWVzdGFtcCI6MTY3ODE3Nzg2MywiZW5jcnlwdGVkIjp0cnVlLCJzaWduYXR1cmUiOiIyNGVjNDBlM2ZiNDlmMThmNDcwZDIyZWMyOTAxOTRjM2NkMjUwYjA3ODVmZjFiYTQ1NmRkZTc0ZjQyYmQwZDg4In0=" /><br>
+      value="eyJjbGllbnRfaWQiOiIiLCJvd25lcl9pZCI6IjdkMzVhNmMzYmE1MDY2ZTYyOTg5ZDM0Y2VlN2RkNDM0ZDA4MzNkNWVhOWZmMDA5MjhhYTg5OTk0ZDgwZTQ3MDAiLCJhbGxvY2F0aW9uX2lkIjoiOTBlY2E3ZjJiZjRiOWQyZjJjZTViYzViNjU5NjdiZmNiZDJmYmIxNmJmM2E5N2RjMDkzNGYyNDgxMjQxZGRlNyIsImZpbGVfcGF0aF9oYXNoIjoiMWRmZjRjZDRkNjUwYTE1YmQxNDhmNWMxNzZmYTBjNDI5MDI0NmRmNzM1ZTMyZTFmYzkwMGQ5NjI5NjVhZTE2MiIsImFjdHVhbF9maWxlX2hhc2giOiI4MDg2YzdkN2RiN2FmYjk3YjFmYzliNDBhZTAxMmEzNTczMDc4YmQ2MTQwNTczMWFiZTI2ZDYyNzQ2MDJmM2FhIiwiZmlsZV9uYW1lIjoiMS5wbmciLCJyZWZlcmVuY2VfdHlwZSI6ImYiLCJleHBpcmF0aW9uIjowLCJ0aW1lc3RhbXAiOjE2Nzg4OTg1MjUsImVuY3J5cHRlZCI6ZmFsc2UsInNpZ25hdHVyZSI6IjhlYjc2YTNhODllMjY0YWI0NTQ5ZTQwYmE1OGFmN2ZhMzU0Mjk5YWZhMWZkYjJhMTMxYzBhNmNiOGM0NDJjOWEifQ==
+      " /><br>
+      <button id="decodeAuthticket">DecodeAuthTicket</button>
   </fieldset>
 
   <fieldset>
@@ -478,6 +480,19 @@
         window.URL.revokeObjectURL(file.url)
         document.body.removeChild(a)
 
+      }
+    })
+
+    onClick('decodeAuthticket', async () => {
+      const authTicket = get('authTicket').value
+      if (authTicket) {
+        try{
+          const output = await goWasm.sdk.decodeAuthTicket(authTicket);
+        console.log(output)
+        txtOutput.innerHTML = JSON.stringify(output, null, 2)
+        } catch (e) {
+          alert(e)
+        }
       }
     })
 
