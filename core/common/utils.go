@@ -6,14 +6,6 @@ import (
 	"strings"
 )
 
-func GetPathDir(path string) string {
-
-	i := strings.LastIndex(path, "/")
-
-	return string(path[:i])
-
-}
-
 func GetPathFields(p string) ([]string, error) {
 	if p == "" || p == "/" {
 		return nil, nil
