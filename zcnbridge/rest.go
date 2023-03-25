@@ -90,7 +90,7 @@ func GetAuthorizer(id string, cb zcncore.GetInfoCallback) (err error) {
 	return
 }
 
-// GetAuthorizers Returns authorizers
+// GetAuthorizers Returns all or only active authorizers
 func GetAuthorizers(active bool, cb zcncore.GetInfoCallback) (err error) {
 	err = zcncore.CheckConfig()
 	if err != nil {
