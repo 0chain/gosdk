@@ -46,7 +46,7 @@ type AuthorizerNode struct {
 // Rest endpoints
 
 // getAuthorizers returns authorizers from smart contract
-func getAuthorizers() ([]*AuthorizerNode, error) {
+func getAuthorizers(active bool) ([]*AuthorizerNode, error) {
 	var (
 		authorizers = new(AuthorizerNodesResponse)
 		cb          = wallet.NewZCNStatus(authorizers)
@@ -55,7 +55,7 @@ func getAuthorizers() ([]*AuthorizerNode, error) {
 
 	cb.Begin()
 
-	if err = GetAuthorizers(cb); err != nil {
+	if err = GetAuthorizers(active, cb); err != nil {
 		return nil, err
 	}
 
@@ -91,12 +91,12 @@ func GetAuthorizer(id string, cb zcncore.GetInfoCallback) (err error) {
 }
 
 // GetAuthorizers Returns authorizers
-func GetAuthorizers(cb zcncore.GetInfoCallback) (err error) {
+func GetAuthorizers(active bool, cb zcncore.GetInfoCallback) (err error) {
 	err = zcncore.CheckConfig()
 	if err != nil {
 		return err
 	}
-	go http.MakeSCRestAPICall(zcncore.OpZCNSCGetAuthorizerNodes, http.PathGetAuthorizerNodes, nil, cb)
+	go http.MakeSCRestAPICall(zcncore.OpZCNSCGetAuthorizerNodes, fmt.Sprintf(http.PathGetAuthorizerNodes, active), nil, cb)
 	return
 }
 
