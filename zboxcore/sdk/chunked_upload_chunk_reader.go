@@ -227,7 +227,7 @@ func (r *chunkedUploadChunkReader) Read(buf []byte) ([][]byte, error) {
 		return nil, err
 	}
 
-	var c, pos uint64
+	var pos uint64
 	if r.encryptOnUpload {
 		for i := r.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 			pos = uint64(i.TrailingZeros())
@@ -235,10 +235,9 @@ func (r *chunkedUploadChunkReader) Read(buf []byte) ([][]byte, error) {
 			if err != nil {
 				return nil, err
 			}
-			header := make([]byte, EncryptionHeaderSize)
-			copy(header[:], encMsg.MessageChecksum+encMsg.OverallChecksum)
-			fragments[pos] = append(header, encMsg.EncryptedData...)
-			c++
+			fragments[pos] = make([]byte, len(encMsg.EncryptedData)+EncryptionHeaderSize)
+			n := copy(fragments[pos], encMsg.MessageChecksum+encMsg.OverallChecksum)
+			copy(fragments[pos][n:], encMsg.EncryptedData)
 		}
 	}
 
