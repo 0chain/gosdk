@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/core/resty"
 	"github.com/0chain/gosdk/core/zcncrypto"
 
@@ -184,7 +184,7 @@ func TestAllocation_UpdateFile(t *testing.T) {
 				"allocation_id":    a.ID,
 				"lookup_hash":      "lookup_hash",
 				"name":             mockLocalPath,
-				"path":             filepath.Join("/", mockLocalPath),
+				"path":             pathutil.Join("/", mockLocalPath),
 				"path_hash":        "path_hash",
 				"parent_path":      "/",
 				"level":            1,
@@ -289,7 +289,7 @@ func TestAllocation_UpdateFileWithThumbnail(t *testing.T) {
 				"allocation_id":    a.ID,
 				"lookup_hash":      "lookup_hash",
 				"name":             mockLocalPath,
-				"path":             filepath.Join("/", mockLocalPath),
+				"path":             pathutil.Join("/", mockLocalPath),
 				"path_hash":        "path_hash",
 				"parent_path":      "/",
 				"level":            1,
@@ -397,7 +397,7 @@ func TestAllocation_EncryptAndUpdateFile(t *testing.T) {
 				"allocation_id":    a.ID,
 				"lookup_hash":      "lookup_hash",
 				"name":             mockLocalPath,
-				"path":             filepath.Join("/", mockLocalPath),
+				"path":             pathutil.Join("/", mockLocalPath),
 				"path_hash":        "path_hash",
 				"parent_path":      "/",
 				"level":            1,
@@ -509,7 +509,7 @@ func TestAllocation_EncryptAndUpdateFileWithThumbnail(t *testing.T) {
 				"allocation_id":    a.ID,
 				"lookup_hash":      "lookup_hash",
 				"name":             mockLocalPath,
-				"path":             filepath.Join("/", mockLocalPath),
+				"path":             pathutil.Join("/", mockLocalPath),
 				"path_hash":        "path_hash",
 				"parent_path":      "/",
 				"level":            1,

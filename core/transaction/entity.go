@@ -136,6 +136,10 @@ const (
 	STORAGESC_WRITE_POOL_UNLOCK         = "write_pool_unlock"
 	STORAGESC_UPDATE_SETTINGS           = "update_settings"
 	STORAGESC_COLLECT_REWARD            = "collect_reward"
+	STORAGESC_KILL_BLOBBER              = "kill_blobber"
+	STORAGESC_KILL_VALIDATOR            = "kill_validator"
+	STORAGESC_SHUTDOWN_BLOBBER          = "shutdown_blobber"
+	STORAGESC_SHUTDOWN_VALIDATOR        = "shutdown_validator"
 
 	MINERSC_LOCK             = "addToDelegatePool"
 	MINERSC_UNLOCK           = "deleteFromDelegatePool"
