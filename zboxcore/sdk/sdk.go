@@ -1198,6 +1198,22 @@ const (
 	ProviderAuthorizer
 )
 
+func BlobberAvailability(isAvailable bool) (string, int64, error) {
+	if !sdkInitialized {
+		return "", 0, sdkNotInitialized
+	}
+
+	var input = map[string]interface{}{
+		"is_available": isAvailable,
+	}
+	var sn = transaction.SmartContractTxnData{
+		InputArgs: input,
+	}
+	sn.Name = transaction.STORAGESC_BLOBBER_AVAILABILITY
+	hash, _, n, _, err := smartContractTxn(sn)
+	return hash, n, err
+}
+
 func KillProvider(providerId string, providerType ProviderType) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized

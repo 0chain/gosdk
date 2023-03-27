@@ -139,6 +139,7 @@ const (
 	STORAGESC_KILL_VALIDATOR            = "kill_validator"
 	STORAGESC_SHUTDOWN_BLOBBER          = "shutdown_blobber"
 	STORAGESC_SHUTDOWN_VALIDATOR        = "shutdown_validator"
+	STORAGESC_BLOBBER_AVAILABILITY      = "blobber_availability"
 
 	MINERSC_LOCK             = "addToDelegatePool"
 	MINERSC_UNLOCK           = "deleteFromDelegatePool"
