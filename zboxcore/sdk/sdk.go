@@ -569,21 +569,26 @@ type Blobber struct {
 	TotalOffers              int64                        `json:"total_offers"`
 	TotalServiceCharge       int64                        `json:"total_service_charge"`
 	UncollectedServiceCharge int64                        `json:"uncollected_service_charge"`
+	IsKilled                 bool                         `json:"is_killed"`
+	IsShutdown               bool                         `json:"is_shutdown"`
 }
 
 type Validator struct {
-	ID                       common.Key     `json:"validator_id"`
-	BaseURL                  string         `json:"url"`
-	PublicKey                string         `json:"-"`
-	DelegateWallet           string         `json:"delegate_wallet"`
-	MinStake                 common.Balance `json:"min_stake"`
-	MaxStake                 common.Balance `json:"max_stake"`
-	NumDelegates             int            `json:"num_delegates"`
-	ServiceCharge            float64        `json:"service_charge"`
-	StakeTotal               int64          `json:"stake_total"`
-	UnstakeTotal             int64          `json:"unstake_total"`
-	TotalServiceCharge       int64          `json:"total_service_charge"`
-	UncollectedServiceCharge int64          `json:"uncollected_service_charge"`
+	ID                       common.Key       `json:"validator_id"`
+	BaseURL                  string           `json:"url"`
+	PublicKey                string           `json:"-"`
+	DelegateWallet           string           `json:"delegate_wallet"`
+	MinStake                 common.Balance   `json:"min_stake"`
+	MaxStake                 common.Balance   `json:"max_stake"`
+	NumDelegates             int              `json:"num_delegates"`
+	ServiceCharge            float64          `json:"service_charge"`
+	StakeTotal               int64            `json:"stake_total"`
+	UnstakeTotal             int64            `json:"unstake_total"`
+	TotalServiceCharge       int64            `json:"total_service_charge"`
+	UncollectedServiceCharge int64            `json:"uncollected_service_charge"`
+	LastHealthCheck          common.Timestamp `json:"last_health_check"`
+	IsKilled                 bool             `json:"is_killed"`
+	IsShutdown               bool             `json:"is_shutdown"`
 }
 
 func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
@@ -1192,6 +1197,50 @@ const (
 	ProviderValidator
 	ProviderAuthorizer
 )
+
+func KillProvider(providerId string, providerType ProviderType) (string, int64, error) {
+	if !sdkInitialized {
+		return "", 0, sdkNotInitialized
+	}
+
+	var input = map[string]interface{}{
+		"provider_id": providerId,
+	}
+	var sn = transaction.SmartContractTxnData{
+		InputArgs: input,
+	}
+	switch providerType {
+	case ProviderBlobber:
+		sn.Name = transaction.STORAGESC_KILL_BLOBBER
+	case ProviderValidator:
+		sn.Name = transaction.STORAGESC_KILL_VALIDATOR
+	default:
+		return "", 0, fmt.Errorf("kill provider type %v not implimented", providerType)
+	}
+	hash, _, n, _, err := smartContractTxn(sn)
+	return hash, n, err
+}
+
+func ShutdownProvider(providerType ProviderType) (string, int64, error) {
+	if !sdkInitialized {
+		return "", 0, sdkNotInitialized
+	}
+
+	var input = map[string]interface{}{}
+	var sn = transaction.SmartContractTxnData{
+		InputArgs: input,
+	}
+	switch providerType {
+	case ProviderBlobber:
+		sn.Name = transaction.STORAGESC_SHUTDOWN_BLOBBER
+	case ProviderValidator:
+		sn.Name = transaction.STORAGESC_SHUTDOWN_VALIDATOR
+	default:
+		return "", 0, fmt.Errorf("shutdown provider type %v not implimented", providerType)
+	}
+	hash, _, n, _, err := smartContractTxn(sn)
+	return hash, n, err
+}
 
 func CollectRewards(providerId string, providerType ProviderType) (string, int64, error) {
 	if !sdkInitialized {
