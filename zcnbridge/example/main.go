@@ -745,7 +745,7 @@ func PrintAuthorizersList() {
 		cb       = NewJSONInfoCB(response)
 		err      error
 	)
-	err = zcnbridge.GetAuthorizers(cb)
+	err = zcnbridge.GetAuthorizers(true, cb)
 	if err != nil {
 		fmt.Print(err)
 	}
