@@ -108,6 +108,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.New("invalid_request", "Invalid number of blocks for download")}
 		return
 	}
+	fmt.Println("inside downloadBlobberBlock")
+	fmt.Println(req.blobber)
 	retry := 0
 	var err error
 	for retry < 3 {
@@ -251,6 +253,9 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
 				}
 			} else {
+				if req.chunkSize == 0 {
+					req.chunkSize = CHUNK_SIZE
+				}
 				rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
 			}
 

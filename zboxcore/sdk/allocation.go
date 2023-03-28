@@ -512,32 +512,32 @@ func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, veri
 		numBlockDownloads, verifyDownload, status)
 }
 
-func (a *Allocation) downloadFile(localPath string, remotePath string, contentMode string,
+func (a *Allocation) generateDownloadRequest(localPath string, remotePath string, contentMode string,
 	startBlock int64, endBlock int64, numBlocks int, verifyDownload bool,
-	status StatusCallback) error {
+	status StatusCallback) (*DownloadRequest, error) {
 	if !a.isInitialized() {
-		return notInitialized
+		return nil, notInitialized
 	}
 	if stat, err := sys.Files.Stat(localPath); err == nil {
 		if !stat.IsDir() {
-			return fmt.Errorf("Local path is not a directory '%s'", localPath)
+			return nil, fmt.Errorf("Local path is not a directory '%s'", localPath)
 		}
 		localPath = strings.TrimRight(localPath, "/")
 		_, rFile := pathutil.Split(remotePath)
 		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
 		if _, err := sys.Files.Stat(localPath); err == nil {
-			return fmt.Errorf("Local file already exists '%s'", localPath)
+			return nil, fmt.Errorf("Local file already exists '%s'", localPath)
 		}
 	}
 	dir, _ := filepath.Split(localPath)
 	if dir != "" {
 		if err := sys.Files.MkdirAll(dir, 0744); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	if len(a.Blobbers) == 0 {
-		return noBLOBBERS
+		return nil, noBLOBBERS
 	}
 
 	downloadReq := &DownloadRequest{}
@@ -566,6 +566,21 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 		delete(a.downloadProgressMap, remotepath)
 	}
 	downloadReq.contentMode = contentMode
+	return downloadReq, nil
+}
+
+func (a *Allocation) downloadFile(localPath string, remotePath string, contentMode string,
+	startBlock int64, endBlock int64, numBlocks int, verifyDownload bool,
+	status StatusCallback) error {
+
+	downloadReq, err := a.generateDownloadRequest(
+		localPath, remotePath, contentMode,
+		startBlock, endBlock, numBlocks, verifyDownload, status,
+	)
+
+	if err != nil {
+		return err
+	}
 	go func() {
 		a.downloadChan <- downloadReq
 		a.mutex.Lock()
@@ -672,6 +687,64 @@ func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType
 	oTreeReq.consensusThresh = a.consensusThreshold
 
 	return oTreeReq.GetRefs()
+}
+
+func (a *Allocation) getDownloadMaskForBlobber(blobberID string) (zboxutil.Uint128, []*blockchain.StorageNode) {
+
+	blobberIdx := 0
+	for idx, b := range a.Blobbers {
+		if b.ID == blobberID {
+			blobberIdx = idx
+		}
+	}
+
+	x := zboxutil.NewUint128(1).Lsh(uint64(1)).Sub64(1)
+	return x, a.Blobbers[blobberIdx : blobberIdx+1]
+}
+
+func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string, status StatusCallback) error {
+
+	verifyDownload := false // should be set to false
+	downloadReq, err := a.generateDownloadRequest(
+		localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, 392, verifyDownload, status,
+	)
+	if err != nil {
+		l.Logger.Error(err)
+		return err
+	}
+	mask, blobbers := a.getDownloadMaskForBlobber(blobberID)
+	downloadReq.downloadMask = mask
+	downloadReq.blobbers = blobbers
+	downloadReq.fullconsensus = 1
+	downloadReq.consensusThresh = 1
+
+	fRef, err := downloadReq.getFileRef(remotePath)
+	if err != nil {
+		l.Logger.Error(err.Error())
+		downloadReq.errorCB(
+			fmt.Errorf("Error while getting file ref. Error: %v",
+				err), remotePath)
+
+		return err
+	}
+
+	_, _, _, err = downloadReq.calculateShardsParams(fRef, remotePath)
+	if err != nil {
+		l.Logger.Error(err.Error())
+		downloadReq.errorCB(
+			fmt.Errorf("Error while calculating shard params. Error: %v",
+				err), remotePath)
+		return err
+	}
+
+	if err != nil {
+		return err
+	}
+	_, err = downloadReq.getBlocksDataFromBlobbers(
+		downloadReq.startBlock,
+		downloadReq.numBlocks,
+	)
+	return err
 }
 
 func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit int) (*RecentlyAddedRefResult, error) {
