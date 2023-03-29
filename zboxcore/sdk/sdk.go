@@ -1341,10 +1341,10 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 		return
 	}
 
-	nonce = client.GetClient().Nonce
-	if nonce != 0 {
-		nonce++
-	}
+	//nonce = client.GetClient().Nonce
+	//if nonce != 0 {
+	//	nonce++
+	//}
 	txn := transaction.NewTransactionEntity(client.GetClientID(),
 		blockchain.GetChainID(), client.GetClientPublicKey(), nonce)
 

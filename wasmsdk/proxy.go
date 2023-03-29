@@ -234,8 +234,6 @@ func main() {
 
 	hideLogs()
 
-	go startRefreshWalletNonce()
-
 	<-make(chan bool)
 
 	jsbridge.Close()
