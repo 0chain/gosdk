@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/core/transaction"
 	"github.com/0chain/gosdk/wasmsdk/jsbridge"
@@ -269,7 +270,7 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 	}
 
 	var fileName string
-	_, fileName = filepath.Split(remotePath)
+	_, fileName = pathutil.Split(remotePath)
 
 	if revoke {
 		err := allocationObj.RevokeShare(remotePath, clientID)
@@ -478,7 +479,7 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 	}
 	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
 
-	_, fileName := filepath.Split(remotePath)
+	_, fileName := pathutil.Split(remotePath)
 
 	fileMeta := sdk.FileMeta{
 		Path:       localPath,
@@ -557,7 +558,7 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 	}
 	remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
 
-	_, fileName := filepath.Split(remotePath)
+	_, fileName := pathutil.Split(remotePath)
 
 	fileMeta := sdk.FileMeta{
 		Path:       localPath,
