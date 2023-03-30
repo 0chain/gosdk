@@ -1301,6 +1301,16 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 	return nil
 }
 
+// RepairAlloc repairs all the files in allocation
+func (a *Allocation) RepairAlloc(statusCB StatusCallback) error {
+	// todo: will this work in wasm?
+	dir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	return a.StartRepair(dir, "/", statusCB)
+}
+
 func (a *Allocation) CancelUpload(localpath string) error {
 	return nil
 }
@@ -1447,4 +1457,31 @@ func (a *Allocation) getConsensuses() (fullConsensus, consensusThreshold int) {
 	}
 
 	return a.DataShards + a.ParityShards, a.DataShards + 1
+}
+
+func (a *Allocation) UpdateWithRepair(
+	size, expiry int64,
+	lock uint64,
+	updateTerms bool,
+	addBlobberId, removeBlobberId string,
+	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
+	statusCB StatusCallback,
+) (string, error) {
+
+	hash, _, err := UpdateAllocation(size, expiry, a.ID, lock, updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
+	if err != nil {
+		return "", err
+	}
+
+	// if a blobber is being added, then repair is needed
+	shouldRepair := false
+	if addBlobberId != "" {
+		shouldRepair = true
+	}
+
+	if shouldRepair {
+		a.RepairAlloc(statusCB)
+	}
+
+	return hash, nil
 }
