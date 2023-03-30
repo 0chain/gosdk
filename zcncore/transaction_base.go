@@ -543,7 +543,7 @@ func queryFromSharders(numSharders int, query string,
 func queryFromShardersContext(ctx context.Context, numSharders int,
 	query string, result chan *util.GetResponse) {
 
-	for _, sharder := range util.Shuffle(_config.chain.Sharders) {
+	for _, sharder := range util.Shuffle(_config.chain.Sharders)[:numSharders] {
 		go func(sharderurl string) {
 			logging.Info("Query from ", sharderurl+query)
 			url := fmt.Sprintf("%v%v", sharderurl, query)
@@ -559,6 +559,28 @@ func queryFromShardersContext(ctx context.Context, numSharders int,
 			result <- res
 		}(sharder)
 	}
+}
+
+func queryFromMinersContext(ctx context.Context, numMiners int, query string, result chan *util.GetResponse) {
+
+	randomMiners := util.Shuffle(_config.chain.Miners)[:numMiners]
+	for _, miner := range randomMiners {
+		go func(minerurl string) {
+			logging.Info("Query from ", minerurl+query)
+			url := fmt.Sprintf("%v%v", minerurl, query)
+			req, err := util.NewHTTPGetRequestContext(ctx, url)
+			if err != nil {
+				logging.Error(minerurl, " new get request failed. ", err.Error())
+				return
+			}
+			res, err := req.Get()
+			if err != nil {
+				logging.Error(minerurl, " get error. ", err.Error())
+			}
+			result <- res
+		}(miner)
+	}
+
 }
 
 func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[string]json.RawMessage) (*blockHeader, error) {
