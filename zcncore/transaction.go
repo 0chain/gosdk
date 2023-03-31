@@ -200,6 +200,7 @@ type Blobber struct {
 	Allocated         common.Size       `json:"allocated"`
 	LastHealthCheck   common.Timestamp  `json:"last_health_check"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
+	IsAvailable       bool              `json:"is_available"`
 }
 
 type Validator struct {
