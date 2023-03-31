@@ -242,6 +242,24 @@ func GetRateLimitValue(r *http.Response) (int, error) {
 	return int(math.Ceil(rl / dur)), nil
 }
 
+func majorError(errors []error) (error) {
+	countError := make(map[error]int)
+	for _, value := range errors {
+		if value != nil {
+			countError[value] += 1
+		}
+	}
+	maxFreq := 0
+	var maxKey error
+	for key, value := range countError {
+		if value > maxFreq {
+			maxKey = key
+			maxFreq = value
+		}
+	}
+	return maxKey
+}
+
 const (
 	keySize      = 32
 	nonceSize    = 12

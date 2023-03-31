@@ -148,20 +148,17 @@ func (req *RenameRequest) ProcessRename() error {
 
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
-
-	wgErrors := make(chan error, 1)
+	blobberErrors := make([]error, numList)
 
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numList)
+
 	for i := 0; i < numList; i++ {
 		go func(blobberIdx int) {
 			defer req.wg.Done()
 			refEntity, err := req.renameBlobberObject(req.blobbers[blobberIdx], blobberIdx)
 			if err != nil {
-				select {
-					case wgErrors <- err:
-					default:
-				}
+				blobberErrors[blobberIdx] = err
 				l.Logger.Error(err.Error())
 				return
 			}
@@ -172,24 +169,13 @@ func (req *RenameRequest) ProcessRename() error {
 	}
 	req.wg.Wait()
 
-	var recentErr *error
-	select {
-		case err := <-wgErrors:
-			recentErr = new(error)
-			*recentErr = err
-		default:
-	}
-
-	if !req.consensus.isConsensusOk() && recentErr!=nil {
-		return errors.New("rename_failed", fmt.Sprintf("Rename failed. %s", (*recentErr).Error()))
-	}
-
 	if !req.consensus.isConsensusOk() {
-		if req.consensus.getConsensus() == 0 && len(wgErrors) > 0 {
-			err := <-wgErrors
-			return errors.New("rename_failed", fmt.Sprintf("Rename failed. %s", err))
+		err := zboxutil.majorError(blobberErrors)
+		if err != nil {
+			return errors.New("rename_failed", 
+				fmt.Sprintf("Rename failed. %s", err.Error()))
 		}
-
+		
 		return errors.New("consensus_not_met",
 			fmt.Sprintf("Rename failed. Required consensus %d got %d",
 				req.consensus.consensusThresh, req.consensus.getConsensus()))
