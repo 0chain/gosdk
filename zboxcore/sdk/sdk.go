@@ -571,6 +571,7 @@ type Blobber struct {
 	UncollectedServiceCharge int64                        `json:"uncollected_service_charge"`
 	IsKilled                 bool                         `json:"is_killed"`
 	IsShutdown               bool                         `json:"is_shutdown"`
+	IsAvailable              bool                         `json:"is_available"`
 }
 
 type Validator struct {
