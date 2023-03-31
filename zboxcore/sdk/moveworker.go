@@ -172,7 +172,7 @@ func (req *MoveRequest) ProcessMove() error {
 	wg.Wait()
 	
 	if !req.isConsensusOk() {
-		err := zboxutil.majorError(blobberErrors)
+		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
 			return errors.New("move_failed", fmt.Sprintf("Move failed. %s", err.Error()))
 		}

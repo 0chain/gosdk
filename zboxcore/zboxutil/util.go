@@ -242,7 +242,7 @@ func GetRateLimitValue(r *http.Response) (int, error) {
 	return int(math.Ceil(rl / dur)), nil
 }
 
-func majorError(errors []error) (error) {
+func MajorError(errors []error) (error) {
 	countError := make(map[error]int)
 	for _, value := range errors {
 		if value != nil {

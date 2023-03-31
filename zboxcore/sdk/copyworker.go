@@ -171,7 +171,7 @@ func (req *CopyRequest) ProcessCopy() error {
 	wg.Wait()
 
 	if !req.isConsensusOk() {
-		err := zboxutil.majorError(blobberErrors)
+		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
 			return errors.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
 		}

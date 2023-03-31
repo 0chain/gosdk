@@ -170,7 +170,7 @@ func (req *RenameRequest) ProcessRename() error {
 	req.wg.Wait()
 
 	if !req.consensus.isConsensusOk() {
-		err := zboxutil.majorError(blobberErrors)
+		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
 			return errors.New("rename_failed", 
 				fmt.Sprintf("Rename failed. %s", err.Error()))
