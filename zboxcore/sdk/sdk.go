@@ -368,7 +368,7 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 	return
 }
 
-// StakePoolUnlockUnstake is stake pool unlock response in case where tokens
+// stakePoolLock is stake pool unlock response in case where tokens
 // can't be unlocked due to opened offers.
 type stakePoolLock struct {
 	Client       string       `json:"client"`
@@ -569,21 +569,26 @@ type Blobber struct {
 	TotalOffers              int64                        `json:"total_offers"`
 	TotalServiceCharge       int64                        `json:"total_service_charge"`
 	UncollectedServiceCharge int64                        `json:"uncollected_service_charge"`
+	IsKilled                 bool                         `json:"is_killed"`
+	IsShutdown               bool                         `json:"is_shutdown"`
 }
 
 type Validator struct {
-	ID                       common.Key     `json:"validator_id"`
-	BaseURL                  string         `json:"url"`
-	PublicKey                string         `json:"-"`
-	DelegateWallet           string         `json:"delegate_wallet"`
-	MinStake                 common.Balance `json:"min_stake"`
-	MaxStake                 common.Balance `json:"max_stake"`
-	NumDelegates             int            `json:"num_delegates"`
-	ServiceCharge            float64        `json:"service_charge"`
-	StakeTotal               int64          `json:"stake_total"`
-	UnstakeTotal             int64          `json:"unstake_total"`
-	TotalServiceCharge       int64          `json:"total_service_charge"`
-	UncollectedServiceCharge int64          `json:"uncollected_service_charge"`
+	ID                       common.Key       `json:"validator_id"`
+	BaseURL                  string           `json:"url"`
+	PublicKey                string           `json:"-"`
+	DelegateWallet           string           `json:"delegate_wallet"`
+	MinStake                 common.Balance   `json:"min_stake"`
+	MaxStake                 common.Balance   `json:"max_stake"`
+	NumDelegates             int              `json:"num_delegates"`
+	ServiceCharge            float64          `json:"service_charge"`
+	StakeTotal               int64            `json:"stake_total"`
+	UnstakeTotal             int64            `json:"unstake_total"`
+	TotalServiceCharge       int64            `json:"total_service_charge"`
+	UncollectedServiceCharge int64            `json:"uncollected_service_charge"`
+	LastHealthCheck          common.Timestamp `json:"last_health_check"`
+	IsKilled                 bool             `json:"is_killed"`
+	IsShutdown               bool             `json:"is_shutdown"`
 }
 
 func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
@@ -819,7 +824,6 @@ func GetAllocationUpdates(allocation *Allocation) error {
 	allocation.MovedToChallenge = updatedAllocationObj.MovedToChallenge
 	allocation.MovedBack = updatedAllocationObj.MovedBack
 	allocation.MovedToValidators = updatedAllocationObj.MovedToValidators
-	allocation.Curators = updatedAllocationObj.Curators
 	allocation.FileOptions = updatedAllocationObj.FileOptions
 	return nil
 }
@@ -1124,6 +1128,7 @@ func UpdateAllocation(
 
 	updateAllocationRequest := make(map[string]interface{})
 	updateAllocationRequest["owner_id"] = client.GetClientID()
+	updateAllocationRequest["owner_public_key"] = ""
 	updateAllocationRequest["id"] = allocationID
 	updateAllocationRequest["size"] = size
 	updateAllocationRequest["expiration_date"] = expiry
@@ -1183,40 +1188,6 @@ func CancelAllocation(allocID string) (hash string, nonce int64, err error) {
 	return
 }
 
-func RemoveCurator(curatorId, allocationId string) (string, int64, error) {
-	if !sdkInitialized {
-		return "", 0, sdkNotInitialized
-	}
-
-	var allocationRequest = map[string]interface{}{
-		"curator_id":    curatorId,
-		"allocation_id": allocationId,
-	}
-	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_REMOVE_CURATOR,
-		InputArgs: allocationRequest,
-	}
-	hash, _, n, _, err := smartContractTxn(sn)
-	return hash, n, err
-}
-
-func AddCurator(curatorId, allocationId string) (string, int64, error) {
-	if !sdkInitialized {
-		return "", 0, sdkNotInitialized
-	}
-
-	var allocationRequest = map[string]interface{}{
-		"curator_id":    curatorId,
-		"allocation_id": allocationId,
-	}
-	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_ADD_CURATOR,
-		InputArgs: allocationRequest,
-	}
-	hash, _, n, _, err := smartContractTxn(sn)
-	return hash, n, err
-}
-
 type ProviderType int
 
 const (
@@ -1226,6 +1197,50 @@ const (
 	ProviderValidator
 	ProviderAuthorizer
 )
+
+func KillProvider(providerId string, providerType ProviderType) (string, int64, error) {
+	if !sdkInitialized {
+		return "", 0, sdkNotInitialized
+	}
+
+	var input = map[string]interface{}{
+		"provider_id": providerId,
+	}
+	var sn = transaction.SmartContractTxnData{
+		InputArgs: input,
+	}
+	switch providerType {
+	case ProviderBlobber:
+		sn.Name = transaction.STORAGESC_KILL_BLOBBER
+	case ProviderValidator:
+		sn.Name = transaction.STORAGESC_KILL_VALIDATOR
+	default:
+		return "", 0, fmt.Errorf("kill provider type %v not implimented", providerType)
+	}
+	hash, _, n, _, err := smartContractTxn(sn)
+	return hash, n, err
+}
+
+func ShutdownProvider(providerType ProviderType) (string, int64, error) {
+	if !sdkInitialized {
+		return "", 0, sdkNotInitialized
+	}
+
+	var input = map[string]interface{}{}
+	var sn = transaction.SmartContractTxnData{
+		InputArgs: input,
+	}
+	switch providerType {
+	case ProviderBlobber:
+		sn.Name = transaction.STORAGESC_SHUTDOWN_BLOBBER
+	case ProviderValidator:
+		sn.Name = transaction.STORAGESC_SHUTDOWN_VALIDATOR
+	default:
+		return "", 0, fmt.Errorf("shutdown provider type %v not implimented", providerType)
+	}
+	hash, _, n, _, err := smartContractTxn(sn)
+	return hash, n, err
+}
 
 func CollectRewards(providerId string, providerType ProviderType) (string, int64, error) {
 	if !sdkInitialized {
@@ -1244,18 +1259,31 @@ func CollectRewards(providerId string, providerType ProviderType) (string, int64
 	return hash, n, err
 }
 
-func CuratorTransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (string, int64, error) {
+func TransferAllocation(allocationId, newOwner, newOwnerPublicKey string) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
 	}
 
+	alloc, err := GetAllocation(allocationId)
+	if err != nil {
+		return "", 0, allocationNotFound
+	}
+
 	var allocationRequest = map[string]interface{}{
-		"allocation_id":        allocationId,
-		"new_owner_id":         newOwner,
-		"new_owner_public_key": newOwnerPublicKey,
+		"id":                         allocationId,
+		"owner_id":                   newOwner,
+		"owner_public_key":           newOwnerPublicKey,
+		"size":                       0,
+		"expiration_date":            0,
+		"update_terms":               false,
+		"add_blobber_id":             "",
+		"remove_blobber_id":          "",
+		"set_third_party_extendable": alloc.ThirdPartyExtendable,
+		"file_options_changed":       false,
+		"file_options":               alloc.FileOptions,
 	}
 	var sn = transaction.SmartContractTxnData{
-		Name:      transaction.STORAGESC_CURATOR_TRANSFER,
+		Name:      transaction.STORAGESC_UPDATE_ALLOCATION,
 		InputArgs: allocationRequest,
 	}
 	hash, _, n, _, err := smartContractTxn(sn)

@@ -2,10 +2,10 @@ package allocationchange
 
 import (
 	"path"
-	"path/filepath"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
@@ -15,11 +15,13 @@ type RenameFileChange struct {
 	NewName    string
 }
 
-func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
+func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) (
+	commitParams CommitParams, err error) {
+
 	parentPath := path.Dir(ch.ObjectTree.GetPath())
 	fields, err := common.GetPathFields(parentPath)
 	if err != nil {
-		return err
+		return
 	}
 	dirRef := rootRef
 	for i := 0; i < len(fields); i++ {
@@ -32,7 +34,8 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
 			}
 		}
 		if !found {
-			return errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+			err = errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+			return
 		}
 	}
 
@@ -48,7 +51,7 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
 				affectedRef = ch.ObjectTree.(*fileref.Ref)
 			}
 
-			affectedRef.Path = filepath.Join(parentPath, ch.NewName)
+			affectedRef.Path = pathutil.Join(parentPath, ch.NewName)
 			affectedRef.Name = ch.NewName
 
 			dirRef.AddChild(ch.ObjectTree)
@@ -58,12 +61,12 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) error {
 	}
 
 	if !found {
-		return errors.New("file_not_found", "Object to rename not found in blobber")
+		err = errors.New("file_not_found", "Object to rename not found in blobber")
+		return
 	}
-
 	ch.processChildren(affectedRef)
 	rootRef.CalculateHash()
-	return nil
+	return
 }
 
 func (ch *RenameFileChange) processChildren(curRef *fileref.Ref) {
@@ -74,7 +77,7 @@ func (ch *RenameFileChange) processChildren(curRef *fileref.Ref) {
 		} else {
 			childRef = childRefEntity.(*fileref.Ref)
 		}
-		childRef.Path = filepath.Join(curRef.Path, childRef.Name)
+		childRef.Path = pathutil.Join(curRef.Path, childRef.Name)
 		if childRefEntity.GetType() == fileref.DIRECTORY {
 			ch.processChildren(childRef)
 		}

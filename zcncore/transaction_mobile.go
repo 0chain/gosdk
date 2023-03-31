@@ -255,6 +255,10 @@ func (a *addAuthorizerPayload) SetStakePoolSettings(delegateWallet string, minSt
 	}
 }
 
+type AuthorizerHealthCheckPayload struct {
+	ID string `json:"id"` // authorizer ID
+}
+
 type AuthorizerStakePoolSettings struct {
 	DelegateWallet string  `json:"delegate_wallet"`
 	MinStake       int64   `json:"min_stake"`
@@ -1263,6 +1267,53 @@ func GetChainStats(timeout RequestTimeout) ([]byte, error) {
 		rsp = x
 	}
 
+	if rsp == nil {
+		return nil, errors.New("http_request_failed", "Request failed with status not 200")
+	}
+
+	if err = json.Unmarshal([]byte(rsp.Body), &b); err != nil {
+		return nil, err
+	}
+
+	return []byte(rsp.Body), nil
+}
+
+func GetFeeStats(timeout RequestTimeout) ([]byte, error) {
+
+	var numMiners = 4
+
+	if numMiners > len(_config.chain.Miners) {
+		numMiners = len(_config.chain.Miners)
+	}
+
+	var result = make(chan *util.GetResponse, numMiners)
+
+	ctx, cancel := makeTimeoutContext(timeout)
+	defer cancel()
+
+	var (
+		b   *block.FeeStats
+		err error
+	)
+
+	queryFromMinersContext(ctx, numMiners, GET_FEE_STATS, result)
+	var rsp *util.GetResponse
+
+loop:
+	for i := 0; i < numMiners; i++ {
+		select {
+		case x := <-result:
+			if x.StatusCode != http.StatusOK {
+				continue
+			}
+			rsp = x
+			if rsp != nil {
+				break loop
+			}
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
 	if rsp == nil {
 		return nil, errors.New("http_request_failed", "Request failed with status not 200")
 	}

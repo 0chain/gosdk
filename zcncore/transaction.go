@@ -148,6 +148,9 @@ type TransactionCommon interface {
 	// ZCNSCAddAuthorizer adds authorizer
 	ZCNSCAddAuthorizer(*AddAuthorizerPayload) error
 
+	// ZCNSCAuthorizerHealthCheck provides health check for authorizer
+	ZCNSCAuthorizerHealthCheck(*AuthorizerHealthCheckPayload) error
+
 	// GetVerifyConfirmationStatus implements the verification status from sharders
 	GetVerifyConfirmationStatus() ConfirmationStatus
 
@@ -890,7 +893,7 @@ func (t *Transaction) Verify() error {
 		t.txn.CreationDate = int64(common.Now())
 	}
 
-	tq, err := NewTransactionQuery(_config.chain.Sharders)
+	tq, err := NewTransactionQuery(_config.chain.Sharders, _config.chain.Miners)
 	if err != nil {
 		logging.Error(err)
 		return err
@@ -1087,6 +1090,44 @@ func GetChainStats(ctx context.Context) (b *block.ChainStats, err error) {
 		return nil, errors.New("http_request_failed", "Request failed with status not 200")
 	}
 
+	if err = json.Unmarshal([]byte(rsp.Body), &b); err != nil {
+		return nil, err
+	}
+	return
+}
+
+func GetFeeStats(ctx context.Context) (b *block.FeeStats, err error) {
+
+	var numMiners = 4
+
+	if numMiners > len(_config.chain.Miners) {
+		numMiners = len(_config.chain.Miners)
+	}
+
+	var result = make(chan *util.GetResponse, numMiners)
+
+	queryFromMinersContext(ctx, numMiners, GET_FEE_STATS, result)
+	var rsp *util.GetResponse
+
+loop:
+	for i := 0; i < numMiners; i++ {
+		select {
+		case x := <-result:
+			if x.StatusCode != http.StatusOK {
+				continue
+			}
+			rsp = x
+			if rsp != nil {
+				break loop
+			}
+		case <-ctx.Done():
+			err = ctx.Err()
+			return nil, err
+		}
+	}
+	if rsp == nil {
+		return nil, errors.New("http_request_failed", "Request failed with status not 200")
+	}
 	if err = json.Unmarshal([]byte(rsp.Body), &b); err != nil {
 		return nil, err
 	}
@@ -1375,6 +1416,16 @@ func GetFaucetSCConfig(cb GetInfoCallback) (err error) {
 
 func (t *Transaction) ZCNSCAddAuthorizer(ip *AddAuthorizerPayload) (err error) {
 	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_ADD_AUTHORIZER, ip, 0)
+	if err != nil {
+		logging.Error(err)
+		return
+	}
+	go t.setNonceAndSubmit()
+	return
+}
+
+func (t *Transaction) ZCNSCAuthorizerHealthCheck(ip *AuthorizerHealthCheckPayload) (err error) {
+	err = t.createSmartContractTxn(ZCNSCSmartContractAddress, transaction.ZCNSC_AUTHORIZER_HEALTH_CHECK, ip, 0)
 	if err != nil {
 		logging.Error(err)
 		return

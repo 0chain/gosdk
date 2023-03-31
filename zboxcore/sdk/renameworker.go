@@ -148,6 +148,12 @@ func (req *RenameRequest) ProcessRename() error {
 
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
+
+	wgErrors := make(chan error, numList)
+	defer func() {
+		close(wgErrors)
+	}()
+
 	req.wg = &sync.WaitGroup{}
 	req.wg.Add(numList)
 	for i := 0; i < numList; i++ {
@@ -161,12 +167,20 @@ func (req *RenameRequest) ProcessRename() error {
 				req.maskMU.Unlock()
 				return
 			}
+
+			wgErrors <- err
 			l.Logger.Error(err.Error())
 		}(i)
 	}
+
 	req.wg.Wait()
 
 	if !req.consensus.isConsensusOk() {
+		if req.consensus.getConsensus() == 0 && len(wgErrors) > 0 {
+			err := <-wgErrors
+			return errors.New("rename_failed", fmt.Sprintf("Rename failed. %s", err))
+		}
+
 		return errors.New("consensus_not_met",
 			fmt.Sprintf("Rename failed. Required consensus %d got %d",
 				req.consensus.consensusThresh, req.consensus.getConsensus()))
@@ -189,7 +203,6 @@ func (req *RenameRequest) ProcessRename() error {
 	wg := &sync.WaitGroup{}
 	wg.Add(activeBlobbers)
 	commitReqs := make([]*CommitRequest, activeBlobbers)
-
 	var pos uint64
 	var c int
 	for i := req.renameMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -209,7 +222,7 @@ func (req *RenameRequest) ProcessRename() error {
 			connectionID: req.connectionID,
 			wg:           wg,
 		}
-		commitReq.changes = append(commitReq.changes, newChange)
+		commitReq.change = newChange
 		commitReqs[c] = commitReq
 
 		go AddCommitRequest(commitReq)

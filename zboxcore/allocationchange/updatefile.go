@@ -1,9 +1,12 @@
 package allocationchange
 
 import (
-	"path/filepath"
+	"fmt"
 
 	"github.com/0chain/errors"
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/pathutil"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
@@ -13,26 +16,59 @@ type UpdateFileChange struct {
 	NewFile *fileref.FileRef
 }
 
-func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) error {
-	path, _ := filepath.Split(ch.NewFile.Path)
-	tSubDirs := getSubDirs(path)
+func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) (
+	commitParams CommitParams, err error) {
+
+	if ch.NewFile.ActualFileHash == "" {
+		err = fmt.Errorf("empty actual file hash field")
+		return
+	}
+
+	if ch.NewFile.ValidationRoot == "" {
+		err = fmt.Errorf("empty validation root field")
+		return
+	}
+
+	fileHashSign, err := client.Sign(ch.NewFile.ActualFileHash)
+	if err != nil {
+		return
+	}
+
+	validationRootSign, err := client.Sign(fileHashSign + ch.NewFile.ValidationRoot)
+	if err != nil {
+		return
+	}
+
+	ch.NewFile.ActualFileHashSignature = fileHashSign
+	ch.NewFile.ValidationRootSignature = validationRootSign
+
+	fields, err := common.GetPathFields(pathutil.Dir(ch.NewFile.Path))
+
+	if err != nil {
+		return
+	}
+
+	rootRef.HashToBeComputed = true
 	dirRef := rootRef
-	treelevel := 0
-	for treelevel < len(tSubDirs) {
+	for i := 0; i < len(fields); i++ {
 		found := false
 		for _, child := range dirRef.Children {
-			if child.GetType() == fileref.DIRECTORY && treelevel < len(tSubDirs) {
-				if (child.(*fileref.Ref)).Name == tSubDirs[treelevel] {
-					dirRef = child.(*fileref.Ref)
-					found = true
-					break
+			if child.GetName() == fields[i] {
+				var ok bool
+				dirRef, ok = child.(*fileref.Ref)
+				if !ok {
+					err = errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+					return
 				}
+				dirRef.HashToBeComputed = true
+				found = true
+				break
 			}
 		}
-		if found {
-			treelevel++
-		} else {
-			return errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+
+		if !found {
+			err = errors.New("invalid_reference_path", "Invalid reference path from the blobber")
+			return
 		}
 	}
 	idx := -1
@@ -44,11 +80,14 @@ func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) error {
 		}
 	}
 	if idx < 0 || ch.OldFile == nil {
-		return errors.New("file_not_found", "File to update not found in blobber")
+		err = errors.New("file_not_found", "File to update not found in blobber")
+		return
 	}
+
+	ch.NewFile.HashToBeComputed = true
 	dirRef.Children[idx] = ch.NewFile
 	rootRef.CalculateHash()
-	return nil
+	return
 }
 
 func (n *UpdateFileChange) GetAffectedPath() []string {

@@ -11,28 +11,25 @@ import (
 	"github.com/0chain/gosdk/zcncore"
 )
 
-func createWallet() (string, error) {
-	return zcncore.CreateWalletOffline()
-}
+func setWallet(clientID, publicKey, privateKey, mnemonic string) error {
+	keys := []zcncrypto.KeyPair{
+		{
+			PrivateKey: privateKey,
+			PublicKey:  publicKey,
+		},
+	}
 
-func recoverWallet(mnemonics string) (string, error) {
-	return zcncore.RecoverOfflineWallet(mnemonics)
-}
-
-func setWallet(clientID, publicKey, privateKey string) error {
 	c := client.GetClient()
+	c.Mnemonic = mnemonic
 	c.ClientID = clientID
 	c.ClientKey = publicKey
+	c.Keys = keys
 
 	w := &zcncrypto.Wallet{
 		ClientID:  clientID,
 		ClientKey: publicKey,
-		Keys: []zcncrypto.KeyPair{
-			{
-				PrivateKey: privateKey,
-				PublicKey:  publicKey,
-			},
-		},
+		Mnemonic:  mnemonic,
+		Keys:      keys,
 	}
 	err := zcncore.SetWallet(*w, false)
 	if err != nil {

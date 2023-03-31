@@ -35,7 +35,7 @@ gosdk-build: gomod-download
 	go build -x -v -tags bn256 ./...
 
 wasm-build: getrev
-	CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -o sdk.wasm github.com/0chain/gosdk/wasmsdk
+	CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -o ./zcn.wasm  ./wasmsdk
      
 wasm-test: wasm-build
 	env -i $(shell go env) PATH="$(shell go env GOROOT)/misc/wasm:$(PATH)" CGO_ENABLED=0 GOOS=js GOARCH=wasm go test -v github.com/0chain/gosdk/wasmsdk/jsbridge/...
@@ -44,7 +44,7 @@ gosdk-mocks:
 	./generate_mocks.sh
 
 gosdk-test:
-	go test -v -tags bn256 ./...
+	go test -v -tags bn256 -count 1 ./...
 
 install-gosdk: | gosdk-build wasm-build
 
@@ -78,7 +78,7 @@ lint: lint-wasm
 	golangci-lint run --skip-dirs wasmsdk
 
 
-build-windows: 
+build-windows: getrev
 	@echo "Building 0Chain Windows SDK. Please wait..."
 	@go build --buildmode=c-shared -ldflags="-s -w" -o ./winsdk/zcn.windows.dll ./winsdk
 	@echo "  ./winsdk/zcn.windows.dll - [OK]"

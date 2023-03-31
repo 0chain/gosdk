@@ -136,11 +136,6 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				logger.Logger.Error(sb.blobber.Baseurl, "Upload response parse error: ", err)
 				return
 			}
-			if r.Filename != su.fileMeta.RemoteName || r.Hash != formData.ChunkHash {
-				err = fmt.Errorf("%s Unexpected upload response data %s %s %s", sb.blobber.Baseurl, su.fileMeta.RemoteName, formData.ChunkHash, string(respbody))
-				logger.Logger.Error(err)
-				return
-			}
 			return
 		}()
 
@@ -164,8 +159,8 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 
 		// fixed fileRef in last chunk on stream
 		if isFinal {
-			sb.fileRef.MerkleRoot = formData.ChallengeHash
-			sb.fileRef.ContentHash = formData.ContentHash
+			sb.fileRef.FixedMerkleRoot = formData.FixedMerkleRoot
+			sb.fileRef.ValidationRoot = formData.ValidationRoot
 
 			sb.fileRef.ChunkSize = su.chunkSize
 			sb.fileRef.Size = su.shardUploadedSize
@@ -188,15 +183,17 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUpload, pos uint64) (err error) {
 	defer func() {
 		if err != nil {
-			logger.Logger.Error(err)
+
 			su.maskMu.Lock()
 			su.uploadMask = su.uploadMask.And(zboxutil.NewUint128(1).Lsh(pos).Not())
 			su.maskMu.Unlock()
 		}
 	}()
-	rootRef, latestWM, size, err := sb.processWriteMarker(ctx, su)
+
+	rootRef, latestWM, size, commitParams, err := sb.processWriteMarker(ctx, su)
 
 	if err != nil {
+		logger.Logger.Error(err)
 		return err
 	}
 
@@ -209,17 +206,13 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 		wm.PreviousAllocationRoot = ""
 	}
 
+	wm.FileMetaRoot = rootRef.FileMetaHash
 	wm.AllocationID = su.allocationObj.ID
 	wm.Size = size
 	wm.BlobberID = sb.blobber.ID
 
 	wm.Timestamp = timestamp
 	wm.ClientID = client.GetClientID()
-
-	wm.LookupHash = fileref.GetReferenceLookup(su.allocationObj.ID, sb.fileRef.Path)
-	wm.Name = sb.fileRef.Name
-	wm.ContentHash = sb.fileRef.ContentHash
-
 	err = wm.Sign()
 	if err != nil {
 		logger.Logger.Error("Signing writemarker failed: ", err)
@@ -232,6 +225,14 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 		logger.Logger.Error("Creating writemarker failed: ", err)
 		return err
 	}
+
+	fileIDMeta, err := json.Marshal(commitParams.FileIDMeta)
+	if err != nil {
+		logger.Logger.Error("Error marshalling file ID Meta: ", err)
+		return err
+	}
+
+	formWriter.WriteField("file_id_meta", string(fileIDMeta))
 	formWriter.WriteField("connection_id", su.progress.ConnectionID)
 	formWriter.WriteField("write_marker", string(wmData))
 
@@ -301,6 +302,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 		}()
 
 		if err != nil {
+			logger.Logger.Error(err)
 			return
 		}
 		if shouldContinue {
@@ -313,7 +315,8 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 }
 
 func (sb *ChunkedUploadBlobber) processWriteMarker(
-	ctx context.Context, su *ChunkedUpload) (*fileref.Ref, *marker.WriteMarker, int64, error) {
+	ctx context.Context, su *ChunkedUpload) (
+	*fileref.Ref, *marker.WriteMarker, int64, *allocationchange.CommitParams, error) {
 
 	logger.Logger.Info("received a commit request")
 	paths := make([]string, 0)
@@ -325,14 +328,14 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 	req, err := zboxutil.NewReferencePathRequest(sb.blobber.Baseurl, su.allocationObj.Tx, paths)
 	if err != nil || len(paths) == 0 {
 		logger.Logger.Error("Creating ref path req", err)
-		return nil, nil, 0, err
+		return nil, nil, 0, nil, err
 	}
 
 	resp, err := su.client.Do(req)
 
 	if err != nil {
 		logger.Logger.Error("Ref path error:", err)
-		return nil, nil, 0, err
+		return nil, nil, 0, nil, err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
@@ -341,49 +344,45 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		logger.Logger.Error("Ref path: Resp", err)
-		return nil, nil, 0, err
+		return nil, nil, 0, nil, err
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, nil, 0, fmt.Errorf("Reference path error response: Status: %d - %s ", resp.StatusCode, string(body))
+		return nil, nil, 0, nil, fmt.Errorf("Reference path error response: Status: %d - %s ", resp.StatusCode, string(body))
 	}
 
 	err = json.Unmarshal(body, &lR)
 	if err != nil {
 		logger.Logger.Error("Reference path json decode error: ", err)
-		return nil, nil, 0, err
+		return nil, nil, 0, nil, err
 	}
 
-	//process the commit request for the blobber here
-	if err != nil {
-
-		return nil, nil, 0, err
-	}
 	rootRef, err := lR.GetDirTree(su.allocationObj.ID)
-	if lR.LatestWM != nil {
+	if err != nil {
+		return nil, nil, 0, nil, err
+	}
 
+	if lR.LatestWM != nil {
 		rootRef.CalculateHash()
 		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
-		// TODO: it is a concurrent change conflict on database.  check concurrent write for allocation
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
-			logger.Logger.Info("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
+			logger.Logger.Info("Allocation root from latest writemarker mismatch. Expected: " +
+				prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
+			return nil, nil, 0, nil, fmt.Errorf(
+				"calculated allocation root mismatch from blobber %s. Expected: %s, Got: %s",
+				sb.blobber.Baseurl, prevAllocationRoot, lR.LatestWM.AllocationRoot)
 		}
 	}
-	if err != nil {
 
-		return nil, nil, 0, err
-	}
-	size := int64(0)
+	var size int64
+	var commitParams allocationchange.CommitParams
 	for _, change := range sb.commitChanges {
-		err = change.ProcessChange(rootRef)
+		commitParams, err = change.ProcessChange(rootRef)
 		if err != nil {
-			break
+			logger.Logger.Error(err)
+			return nil, nil, 0, nil, err
 		}
 		size += change.GetSize()
 	}
-	if err != nil {
 
-		return nil, nil, 0, err
-	}
-
-	return rootRef, lR.LatestWM, size, nil
+	return rootRef, lR.LatestWM, size, &commitParams, nil
 }
