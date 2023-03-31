@@ -160,6 +160,7 @@ type Terms struct {
 type Blobber interface {
 	SetTerms(readPrice int64, writePrice int64, minLockDemand float64, maxOfferDuration int64)
 	SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64)
+	SetAvailable(bool)
 }
 
 func NewBlobber(id, baseUrl string, capacity, allocated, lastHealthCheck int64) Blobber {
@@ -180,6 +181,7 @@ type blobber struct {
 	LastHealthCheck   int64             `json:"last_health_check"`
 	Terms             Terms             `json:"terms"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
+	IsAvailable       bool              `json:"is_available"`
 }
 
 func (b *blobber) SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64) {
@@ -199,6 +201,10 @@ func (b *blobber) SetTerms(readPrice int64, writePrice int64, minLockDemand floa
 		MinLockDemand:    minLockDemand,
 		MaxOfferDuration: maxOfferDuration,
 	}
+}
+
+func (b *blobber) SetAvailable(availability bool) {
+	b.IsAvailable = availability
 }
 
 type Validator interface {
