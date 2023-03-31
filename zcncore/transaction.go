@@ -894,7 +894,7 @@ func (t *Transaction) Verify() error {
 		t.txn.CreationDate = int64(common.Now())
 	}
 
-	tq, err := NewTransactionQuery(_config.chain.Sharders)
+	tq, err := NewTransactionQuery(_config.chain.Sharders, _config.chain.Miners)
 	if err != nil {
 		logging.Error(err)
 		return err
@@ -1091,6 +1091,44 @@ func GetChainStats(ctx context.Context) (b *block.ChainStats, err error) {
 		return nil, errors.New("http_request_failed", "Request failed with status not 200")
 	}
 
+	if err = json.Unmarshal([]byte(rsp.Body), &b); err != nil {
+		return nil, err
+	}
+	return
+}
+
+func GetFeeStats(ctx context.Context) (b *block.FeeStats, err error) {
+
+	var numMiners = 4
+
+	if numMiners > len(_config.chain.Miners) {
+		numMiners = len(_config.chain.Miners)
+	}
+
+	var result = make(chan *util.GetResponse, numMiners)
+
+	queryFromMinersContext(ctx, numMiners, GET_FEE_STATS, result)
+	var rsp *util.GetResponse
+
+loop:
+	for i := 0; i < numMiners; i++ {
+		select {
+		case x := <-result:
+			if x.StatusCode != http.StatusOK {
+				continue
+			}
+			rsp = x
+			if rsp != nil {
+				break loop
+			}
+		case <-ctx.Done():
+			err = ctx.Err()
+			return nil, err
+		}
+	}
+	if rsp == nil {
+		return nil, errors.New("http_request_failed", "Request failed with status not 200")
+	}
 	if err = json.Unmarshal([]byte(rsp.Body), &b); err != nil {
 		return nil, err
 	}
