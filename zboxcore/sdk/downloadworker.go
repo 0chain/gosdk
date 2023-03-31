@@ -2,11 +2,11 @@ package sdk
 
 import (
 	"bytes"
+	"container/heap"
 	"context"
 	"encoding/hex"
 	"fmt"
 	"hash"
-	"math"
 	"os"
 	"strings"
 	"sync"
@@ -53,7 +53,6 @@ type DownloadRequest struct {
 	authTicket         *marker.AuthTicket
 	downloadMask       zboxutil.Uint128
 	encryptedKey       string
-	isDownloadCanceled bool
 	completedCallback  func(remotepath string, remotepathhash string)
 	contentMode        string
 	Consensus
@@ -62,6 +61,48 @@ type DownloadRequest struct {
 	maskMu             *sync.Mutex
 	encScheme          encryption.EncryptionScheme
 	shouldVerify       bool
+}
+
+type blockResult struct {
+	startBlock int64
+	data       []byte
+	err        error
+}
+
+type blockBufferItem struct {
+	startBlock int64
+	data       []byte
+	index      int
+}
+
+type blockBufferQueue []*blockBufferItem
+
+func (pq blockBufferQueue) Len() int { return len(pq) }
+
+func (pq blockBufferQueue) Less(i, j int) bool {
+	return pq[i].startBlock < pq[j].startBlock
+}
+
+func (pq blockBufferQueue) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+	pq[i].index = i
+	pq[j].index = j
+}
+
+func (pq *blockBufferQueue) Push(x interface{}) {
+	n := len(*pq)
+	item := x.(*blockBufferItem)
+	item.index = n
+	*pq = append(*pq, item)
+}
+
+func (pq *blockBufferQueue) Pop() interface{} {
+	old := *pq
+	n := len(old)
+	item := old[n-1]
+	item.index = -1
+	*pq = old[0 : n-1]
+	return item
 }
 
 func (req *DownloadRequest) removeFromMask(pos uint64) {
@@ -407,7 +448,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if req.statusCallback != nil {
 		// Started will also initialize progress bar. So without calling this function
 		// other callback's call will panic
-
 		req.statusCallback.Started(req.allocationID, remotePathCB, op, int(size))
 	}
 
@@ -423,47 +463,117 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		isPREAndWholeFile = true
 	}
 
-	for startBlock < endBlock {
-		if startBlock+numBlocks > endBlock {
-			numBlocks = endBlock - startBlock
-		}
-		logger.Logger.Info("Downloading block ", startBlock, " - ", startBlock+numBlocks)
+	const maxConcurrentDownloads = 10
 
-		data, err := req.getBlocksData(startBlock, numBlocks)
-		if err != nil {
-			req.errorCB(errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+1)), remotePathCB)
-			return
-		}
-		if req.isDownloadCanceled {
-			req.errorCB(errors.New("download_abort", "Download aborted by user"), remotePathCB)
-			return
-		}
+	blockChan := make(chan int64, maxConcurrentDownloads)
+	resultChan := make(chan *blockResult)
+	var wg sync.WaitGroup
 
-		n := int64(math.Min(float64(remainingSize), float64(len(data))))
-		_, err = f.Write(data[:n])
-
-		if err != nil {
-			req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
-			return
-		}
-		if isPREAndWholeFile {
-			actualFileHasher.Write(data[:n])
-		}
-
-		downloaded = downloaded + int(n)
-		remainingSize -= n
-
-		if req.statusCallback != nil {
-			req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, data)
-		}
-		if (startBlock + numBlocks) > endBlock {
-			startBlock += endBlock - startBlock
-		} else {
-			startBlock += numBlocks
-		}
+	for i := 0; i < maxConcurrentDownloads; i++ {
+		go func(req *DownloadRequest, blockChan <-chan int64, resultChan chan<- *blockResult) {
+			for startBlock := range blockChan {
+				if startBlock+numBlocks > req.endBlock {
+					numBlocks = req.endBlock - startBlock
+				}
+				logger.Logger.Info("Downloading block ", startBlock, " - ", startBlock+numBlocks)
+				data, err := req.getBlocksData(startBlock, numBlocks)
+				resultChan <- &blockResult{startBlock: startBlock, data: data, err: err}
+				wg.Done()
+			}
+		}(req, blockChan, resultChan)
 	}
 
-	f.Sync()
+	go func() {
+		for startBlock := req.startBlock; startBlock < req.endBlock; {
+			blockChan <- startBlock
+			if startBlock+numBlocks > req.endBlock {
+				startBlock += req.endBlock - startBlock
+			} else {
+				startBlock += numBlocks
+			}
+			wg.Add(1)
+		}
+		close(blockChan)
+	}()
+
+	var processedBlocks int
+	blockBuffer := &blockBufferQueue{}
+	heap.Init(blockBuffer)
+	totalBlocks := int((req.endBlock - req.startBlock + req.numBlocks - 1) / req.numBlocks)
+
+	for processedBlocks < totalBlocks {
+		select {
+		case <-ctx.Done():
+			req.errorCB(errors.New("download_abort", "Download aborted by user"), remotePathCB)
+			return
+		case res := <-resultChan:
+			if res.err != nil {
+				req.errorCB(errors.Wrap(res.err, fmt.Sprintf("Download failed for block %d. ", res.startBlock+1)), remotePathCB)
+				return
+			}
+
+			// Write the block if it's the next expected one
+			if res.startBlock == req.startBlock {
+				written := 0
+				for written < len(res.data) {
+					n, err := f.Write(res.data[written:])
+					if err != nil {
+						req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
+						return
+					}
+					written += n
+				}
+				if isPREAndWholeFile {
+					actualFileHasher.Write(res.data[:written])
+				}
+
+				downloaded += written
+				req.startBlock += req.numBlocks
+				processedBlocks++
+
+				// Check if any subsequent blocks are available in the buffer
+				for {
+					if blockBuffer.Len() > 0 && (*blockBuffer)[0].startBlock == req.startBlock {
+						res := heap.Pop(blockBuffer).(*blockResult)
+						data := res.data
+
+						written := 0
+						for written < len(data) {
+							n, err := f.Write(data[written:])
+							if err != nil {
+								req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
+								return
+							}
+							written += n
+						}
+
+						if isPREAndWholeFile {
+							actualFileHasher.Write(data[:written])
+						}
+
+						downloaded += written
+						req.startBlock += req.numBlocks
+						processedBlocks++
+					} else {
+						break
+					}
+				}
+			} else {
+				heap.Push(blockBuffer, &blockBufferItem{startBlock: res.startBlock, data: res.data})
+			}
+
+			if req.statusCallback != nil {
+				req.statusCallback.InProgress(req.allocationID, remotePathCB, op, downloaded, res.data)
+			}
+		}
+	}
+	wg.Wait()
+	close(resultChan)
+
+	if err := f.Sync(); err != nil {
+		req.errorCB(errors.Wrap(err, "File sync failed"), remotePathCB)
+		return
+	}
 
 	if isPREAndWholeFile {
 		calculatedFileHash := hex.EncodeToString(actualFileHasher.Sum(nil))
@@ -475,7 +585,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		}
 
 		if calculatedFileHash != actualHash {
-			req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
+			req.errorCB(fmt.Errorf("expected actual file hash %s, calculated file hash %s",
 				fRef.ActualFileHash, calculatedFileHash), remotePathCB)
 			return
 		}

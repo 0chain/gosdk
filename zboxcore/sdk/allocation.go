@@ -1167,7 +1167,6 @@ func (a *Allocation) UploadAuthTicketToBlobber(authTicket string, clientEncPubKe
 
 func (a *Allocation) CancelDownload(remotepath string) error {
 	if downloadReq, ok := a.downloadProgressMap[remotepath]; ok {
-		downloadReq.isDownloadCanceled = true
 		downloadReq.ctxCncl()
 		return nil
 	}
