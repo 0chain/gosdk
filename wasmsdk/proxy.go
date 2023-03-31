@@ -211,7 +211,7 @@ func main() {
 				"mintZCN":                        mintZCN,
 				"getMintWZCNPayload":             getMintWZCNPayload,
 				"getNotProcessedWZCNBurnTickets": getNotProcessedWZCNBurnTickets,
-				"getNotProcessedBurnTickets":     getNotProcessedZCNBurnTickets,
+				"getNotProcessedZCNBurnTickets":  getNotProcessedZCNBurnTickets,
 
 				//zcn
 				"getWalletBalance": getWalletBalance,
