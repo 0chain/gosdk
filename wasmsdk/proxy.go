@@ -211,7 +211,7 @@ func main() {
 				"mintZCN":                        mintZCN,
 				"getMintWZCNPayload":             getMintWZCNPayload,
 				"getNotProcessedWZCNBurnTickets": getNotProcessedWZCNBurnTickets,
-				"getNotProcessedBurnTickets":     getNotProcessedZCNBurnTickets,
+				"getNotProcessedZCNBurnTickets":  getNotProcessedZCNBurnTickets,
 
 				//zcn
 				"getWalletBalance": getWalletBalance,
@@ -233,8 +233,6 @@ func main() {
 	}
 
 	hideLogs()
-
-	go startRefreshWalletNonce()
 
 	<-make(chan bool)
 

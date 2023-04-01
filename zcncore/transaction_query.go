@@ -29,6 +29,7 @@ var (
 	ErrInvalidConsensus        = errors.New("zcn: invalid consensus")
 	ErrTransactionNotFound     = errors.New("zcn: transaction not found")
 	ErrTransactionNotConfirmed = errors.New("zcn: transaction not confirmed")
+	ErrNoAvailableMiners       = errors.New("zcn: no available miners")
 )
 
 const (
@@ -48,13 +49,14 @@ type TransactionQuery struct {
 	sync.RWMutex
 	max                int
 	sharders           []string
+	miners             []string
 	numShardersToBatch int
 
 	selected map[string]interface{}
 	offline  map[string]interface{}
 }
 
-func NewTransactionQuery(sharders []string) (*TransactionQuery, error) {
+func NewTransactionQuery(sharders []string, miners []string) (*TransactionQuery, error) {
 
 	if len(sharders) == 0 {
 		return nil, ErrNoAvailableSharders
@@ -217,6 +219,18 @@ func (tq *TransactionQuery) getRandomSharder(ctx context.Context) (string, error
 	return "", ErrNoOnlineSharders
 }
 
+//getRandomMiner returns a random miner
+func (tq *TransactionQuery) getRandomMiner(ctx context.Context) (string, error) {
+
+	if tq.miners == nil || len(tq.miners) == 0 {
+		return "", ErrNoAvailableMiners
+	}
+
+	shuffledMiners := util.Shuffle(tq.miners)
+
+	return shuffledMiners[0], nil
+}
+
 // FromAll query transaction from all sharders whatever it is selected or offline in previous queires, and return consensus result
 func (tq *TransactionQuery) FromAll(ctx context.Context, query string, handle QueryResultHandle) error {
 	if tq == nil || tq.max == 0 {
@@ -313,7 +327,7 @@ func (tq *TransactionQuery) GetInfo(ctx context.Context, query string) (*QueryRe
 
 // FromAny queries transaction from any sharder that is not selected in previous queries.
 // use any used sharder if there is not any unused sharder
-func (tq *TransactionQuery) FromAny(ctx context.Context, query string) (QueryResult, error) {
+func (tq *TransactionQuery) FromAny(ctx context.Context, query string, provider Provider) (QueryResult, error) {
 
 	res := QueryResult{
 		StatusCode: http.StatusBadRequest,
@@ -325,7 +339,16 @@ func (tq *TransactionQuery) FromAny(ctx context.Context, query string) (QueryRes
 		return res, err
 	}
 
-	host, err := tq.getRandomSharder(ctx)
+	var host string
+
+	// host, err := tq.getRandomSharder(ctx)
+
+	switch provider {
+	case ProviderMiner:
+		host, err = tq.getRandomMiner(ctx)
+	case ProviderSharder:
+		host, err = tq.getRandomSharder(ctx)
+	}
 
 	if err != nil {
 		return res, err
@@ -451,7 +474,7 @@ func (tq *TransactionQuery) getFastConfirmation(ctx context.Context, txnHash str
 	var lfbBlockHeader blockHeader
 
 	// {host}/v1/transaction/get/confirmation?hash={txnHash}&content=lfb
-	result, err := tq.FromAny(ctx, tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"))
+	result, err := tq.FromAny(ctx, tq.buildUrl("", TXN_VERIFY_URL, txnHash, "&content=lfb"), ProviderSharder)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -493,7 +516,7 @@ func (tq *TransactionQuery) getFastConfirmation(ctx context.Context, txnHash str
 
 func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 
-	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders))
+	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders), []string{})
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
@@ -510,18 +533,35 @@ func GetInfoFromSharders(urlSuffix string, op int, cb GetInfoCallback) {
 
 func GetInfoFromAnySharder(urlSuffix string, op int, cb GetInfoCallback) {
 
-	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders))
+	tq, err := NewTransactionQuery(util.Shuffle(_config.chain.Sharders), []string{})
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
 	}
 
-	qr, err := tq.FromAny(context.TODO(), urlSuffix)
+	qr, err := tq.FromAny(context.TODO(), urlSuffix, ProviderSharder)
 	if err != nil {
 		cb.OnInfoAvailable(op, StatusError, "", err.Error())
 		return
 	}
 
+	cb.OnInfoAvailable(op, StatusSuccess, string(qr.Content), "")
+}
+
+func GetInfoFromAnyMiner(urlSuffix string, op int, cb getInfoCallback) {
+
+	tq, err := NewTransactionQuery([]string{}, util.Shuffle(_config.chain.Miners))
+
+	if err != nil {
+		cb.OnInfoAvailable(op, StatusError, "", err.Error())
+		return
+	}
+	qr, err := tq.FromAny(context.TODO(), urlSuffix, ProviderMiner)
+
+	if err != nil {
+		cb.OnInfoAvailable(op, StatusError, "", err.Error())
+		return
+	}
 	cb.OnInfoAvailable(op, StatusSuccess, string(qr.Content), "")
 }
 
