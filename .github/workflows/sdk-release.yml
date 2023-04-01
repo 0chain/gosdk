@@ -22,7 +22,7 @@ env:
 jobs:
   build:
     name: sdk-build
-    runs-on: [self-hosted, build]
+    runs-on: [self-hosted, arc-runner]
     steps:
       - name: Set up Go 1.18
         uses: actions/setup-go@v2
@@ -31,6 +31,11 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
 
       - name: Setup Build
         id: setup_build
