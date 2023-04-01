@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"hash"
+	"math"
 	"os"
 	"strings"
 	"sync"
@@ -426,7 +427,8 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		isPREAndWholeFile = true
 	}
 
-	const maxConcurrentDownloads = 10
+	totalBlocks := int((req.endBlock - req.startBlock + req.numBlocks - 1) / req.numBlocks)
+	maxConcurrentDownloads := int(math.Min(10, float64(totalBlocks)))
 
 	blockChan := make(chan int64, maxConcurrentDownloads)
 	resultChan := make(chan *blockResult)
@@ -461,7 +463,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	var processedBlocks int
 	blockBuffer := make(map[int64]*blockResult)
-	totalBlocks := int((req.endBlock - req.startBlock + req.numBlocks - 1) / req.numBlocks)
 
 	for processedBlocks < totalBlocks {
 		select {
