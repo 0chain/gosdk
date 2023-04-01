@@ -218,10 +218,12 @@ func main() {
 				"createReadPool":   createReadPool,
 
 				//0box api
-				"getCsrfToken":     getCsrfToken,
-				"createJwtSession": createJwtSession,
-				"createJwtToken":   createJwtToken,
-				"refreshJwtToken":  refreshJwtToken,
+				"getCsrfToken":              getCsrfToken,
+				"createJwtSession":          createJwtSession,
+				"createJwtToken":            createJwtToken,
+				"refreshJwtToken":           refreshJwtToken,
+				"generateBlimpScript":       generateBlimpScript,
+				"generates3MigrationScript": generates3MigrationScript,
 			})
 
 			fmt.Println("__wasm_initialized__ = true;")
