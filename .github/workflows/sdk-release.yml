@@ -1,4 +1,4 @@
-name: GoSDK & WasmSDK 
+name: GoSDK & WasmSDK
 
 concurrency:
   group: "sdk-${{ github.ref }}"
@@ -18,11 +18,11 @@ on:
 
 env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
-  
+
 jobs:
   build:
     name: sdk-build
-    runs-on: [self-hosted, build]
+    runs-on: [self-hosted, arc-runner]
     steps:
       - name: Set up Go 1.18
         uses: actions/setup-go@v2
@@ -35,7 +35,11 @@ jobs:
       - name: Install Make Command
         run: |
           sudo apt-get update
-          sudo apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev 
+          sudo apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev wget
 
       - name: Setup Build
         id: setup_build
@@ -59,7 +63,7 @@ jobs:
             echo "::set-output name=RELEASE::true"
             echo "::set-output name=TAG::${tag}"
           fi
-             
+
       - name: Build
         run: make wasm-build
 
@@ -101,7 +105,7 @@ jobs:
         repo: [0nft, 0box, 0dns, zwalletcli, zboxcli, blobber, zs3server, s3-migration, token_bridge_authserver ]
     needs: [ build, release ]
     runs-on: [self-hosted, build]
-    steps:     
+    steps:
       - name: Create PR on ${{ matrix.repo }}
         uses: convictional/trigger-workflow-and-wait@v1.3.0
         if:  needs.build.outputs.PR == 'true'
@@ -114,4 +118,4 @@ jobs:
           inputs: ${{ needs.build.outputs.SDK }}
           propagate_failure: true
           trigger_workflow: true
-          wait_workflow: true    
+          wait_workflow: true
