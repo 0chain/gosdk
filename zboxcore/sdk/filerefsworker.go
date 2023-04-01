@@ -43,8 +43,9 @@ type ObjectTreeRequest struct {
 }
 
 type oTreeResponse struct {
-	oTResult *ObjectTreeResult
-	err      error
+	oTResult   *ObjectTreeResult
+	err        error
+	statusCode int
 }
 
 //Paginated tree should not be collected as this will stall the client
@@ -61,7 +62,11 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	hashCount := make(map[string]int)
 	hashRefsMap := make(map[string]*ObjectTreeResult)
 
+	found := false
 	for _, oTreeResponse := range oTreeResponses {
+		if oTreeResponse.statusCode != http.StatusBadRequest { //It should be http.StatusNotFound, but the blobber is returning 400, if the file not found
+			found = true
+		}
 		if oTreeResponse.err != nil {
 			continue
 		}
@@ -82,7 +87,10 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 			hashRefsMap[hash] = oTreeResponse.oTResult
 		}
 	}
-
+	// If no blobber found the file, we return ref slice of length 0
+	if !found {
+		return &ObjectTreeResult{}, nil
+	}
 	var selected *ObjectTreeResult
 	for k, v := range hashCount {
 		if v >= o.consensusThresh {
@@ -106,6 +114,7 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 	}
 	oResult := ObjectTreeResult{}
 	ctx, cncl := context.WithTimeout(o.ctx, time.Second*30)
+	respStatusCode := 500
 	err = zboxutil.HttpDo(ctx, cncl, oReq, func(resp *http.Response, err error) error {
 		if err != nil {
 			l.Logger.Error(err)
@@ -113,6 +122,7 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 		}
 		defer resp.Body.Close()
 		respBody, err := ioutil.ReadAll(resp.Body)
+		respStatusCode = resp.StatusCode
 		if err != nil {
 			l.Logger.Error(err)
 			return err
@@ -130,6 +140,7 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 	})
 	if err != nil {
 		oTR.err = err
+		oTR.statusCode = respStatusCode
 		return
 	}
 	oTR.oTResult = &oResult
