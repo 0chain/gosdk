@@ -2,7 +2,6 @@ package sdk
 
 import (
 	"bytes"
-	"container/heap"
 	"context"
 	"encoding/hex"
 	"fmt"
@@ -67,42 +66,6 @@ type blockResult struct {
 	startBlock int64
 	data       []byte
 	err        error
-}
-
-type blockBufferItem struct {
-	startBlock int64
-	data       []byte
-	index      int
-}
-
-type blockBufferQueue []*blockBufferItem
-
-func (pq blockBufferQueue) Len() int { return len(pq) }
-
-func (pq blockBufferQueue) Less(i, j int) bool {
-	return pq[i].startBlock < pq[j].startBlock
-}
-
-func (pq blockBufferQueue) Swap(i, j int) {
-	pq[i], pq[j] = pq[j], pq[i]
-	pq[i].index = i
-	pq[j].index = j
-}
-
-func (pq *blockBufferQueue) Push(x interface{}) {
-	n := len(*pq)
-	item := x.(*blockBufferItem)
-	item.index = n
-	*pq = append(*pq, item)
-}
-
-func (pq *blockBufferQueue) Pop() interface{} {
-	old := *pq
-	n := len(old)
-	item := old[n-1]
-	item.index = -1
-	*pq = old[0 : n-1]
-	return item
 }
 
 func (req *DownloadRequest) removeFromMask(pos uint64) {
@@ -497,8 +460,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}()
 
 	var processedBlocks int
-	blockBuffer := &blockBufferQueue{}
-	heap.Init(blockBuffer)
+	blockBuffer := make(map[int64]*blockResult)
 	totalBlocks := int((req.endBlock - req.startBlock + req.numBlocks - 1) / req.numBlocks)
 
 	for processedBlocks < totalBlocks {
@@ -533,10 +495,8 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 				// Check if any subsequent blocks are available in the buffer
 				for {
-					if blockBuffer.Len() > 0 && (*blockBuffer)[0].startBlock == req.startBlock {
-						res := heap.Pop(blockBuffer).(*blockResult)
+					if res, ok := blockBuffer[req.startBlock]; ok {
 						data := res.data
-
 						written := 0
 						for written < len(data) {
 							n, err := f.Write(data[written:])
@@ -554,12 +514,15 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 						downloaded += written
 						req.startBlock += req.numBlocks
 						processedBlocks++
+
+						// Remove the block from the buffer
+						delete(blockBuffer, req.startBlock)
 					} else {
 						break
 					}
 				}
 			} else {
-				heap.Push(blockBuffer, &blockBufferItem{startBlock: res.startBlock, data: res.data})
+				blockBuffer[res.startBlock] = res
 			}
 
 			if req.statusCallback != nil {
@@ -717,7 +680,7 @@ func (req *DownloadRequest) getFileRef(remotePathCB string) (fRef *fileref.FileR
 	}
 
 	if fRef.Type == fileref.DIRECTORY {
-		err = errors.New("invalid_operation", "cannot downoad directory")
+		err = errors.New("invalid_operation", "cannot download directory")
 		return nil, err
 	}
 	return
