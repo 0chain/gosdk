@@ -124,7 +124,7 @@ func (req *DirRequest) commitRequest(existingDirCount int) error {
 		go AddCommitRequest(commitReq)
 	}
 	wg.Wait()
-
+	
 	for _, commitReq := range commitReqs {
 		if commitReq.result != nil {
 			if commitReq.result.Success {

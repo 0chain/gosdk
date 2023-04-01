@@ -80,3 +80,9 @@ type ChainStats struct {
 	StdDev               float64 `json:"std_dev"`
 	TotalTxns            int     `json:"total_txns"`
 }
+
+type FeeStats struct {
+	MaxFees  common.Balance `json:"max_fees"`
+	MinFees  common.Balance `json:"min_fees"`
+	MeanFees common.Balance `json:"mean_fees"`
+}
