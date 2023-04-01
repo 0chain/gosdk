@@ -422,7 +422,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			numCorrect:  2,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "consensus_not_met",
+			errMsg:      "copy_failed",
 		},
 		{
 			name:        "Test_All_Blobber_Error_On_Copy_Failure",
@@ -430,7 +430,7 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			numCorrect:  0,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "consensus_not_met",
+			errMsg:      "copy_failed",
 		},
 	}
 	for _, tt := range tests {
