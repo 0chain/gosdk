@@ -103,8 +103,6 @@ func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
 	return chunks
 }
 
-const maxRetries = 5
-
 func (req *BlockDownloadRequest) downloadBlobberBlock() {
 	if req.numBlocks <= 0 {
 		req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.New("invalid_request", "Invalid number of blocks for download")}
@@ -112,7 +110,9 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 	}
 	retry := 0
 	var err error
-	for retry < maxRetries {
+	for retry < 3 {
+
+		zlogger.Logger.Debug(fmt.Sprintf("Retry attempt %d", retry+1))
 
 		if req.blobber.IsSkip() {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx,
@@ -190,7 +190,11 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			if resp.StatusCode != http.StatusOK {
 				if err = json.Unmarshal(respBody, &rspData); err == nil && rspData.LatestRM != nil {
 					if err := rm.ValidateWithOtherRM(rspData.LatestRM); err != nil {
-						retry = maxRetries
+						zlogger.Logger.Error("Readmarker validation failed:",
+							"client_readmarker", rm,
+							"blobber_readmarker", rspData.LatestRM,
+							"error", err)
+						retry = 3
 						return err
 					}
 
@@ -207,7 +211,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				}
 
 				if bytes.Contains(respBody, []byte(NotEnoughTokens)) {
-					shouldRetry, retry = false, maxRetries // don't repeat
+					shouldRetry, retry = false, 3 // don't repeat
 					req.blobber.SetSkip(true)
 					return errors.New(NotEnoughTokens, "")
 				}
