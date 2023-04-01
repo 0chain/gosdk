@@ -420,7 +420,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			numCorrect:  2,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "consensus_not_met",
+			errMsg:      "rename_failed",
 		},
 		{
 			name:        "Test_All_Blobber_Error_On_Rename_Failure",
