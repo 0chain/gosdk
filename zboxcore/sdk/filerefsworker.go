@@ -61,12 +61,10 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	o.wg.Wait()
 	hashCount := make(map[string]int)
 	hashRefsMap := make(map[string]*ObjectTreeResult)
+	oTreeResponseStatusCodes := make([]int, totalBlobbersCount)
 
-	found := false
-	for _, oTreeResponse := range oTreeResponses {
-		if oTreeResponse.statusCode != http.StatusBadRequest { //It should be http.StatusNotFound, but the blobber is returning 400, if the file not found
-			found = true
-		}
+	for idx, oTreeResponse := range oTreeResponses {
+		oTreeResponseStatusCodes[idx] = oTreeResponse.statusCode
 		if oTreeResponse.err != nil {
 			continue
 		}
@@ -87,8 +85,8 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 			hashRefsMap[hash] = oTreeResponse.oTResult
 		}
 	}
-	// If no blobber found the file, we return ref slice of length 0
-	if !found {
+	
+	if zboxutil.MajorStatusCode(oTreeResponseStatusCodes) == http.StatusBadRequest { //It should be http.StatusNotFound, but the blobber is returning 400 if the file not found
 		return &ObjectTreeResult{}, nil
 	}
 	var selected *ObjectTreeResult
@@ -114,15 +112,15 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 	}
 	oResult := ObjectTreeResult{}
 	ctx, cncl := context.WithTimeout(o.ctx, time.Second*30)
-	respStatusCode := 500
+	respStatusCode := 200
 	err = zboxutil.HttpDo(ctx, cncl, oReq, func(resp *http.Response, err error) error {
 		if err != nil {
 			l.Logger.Error(err)
 			return err
 		}
 		defer resp.Body.Close()
-		respBody, err := ioutil.ReadAll(resp.Body)
 		respStatusCode = resp.StatusCode
+		respBody, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			l.Logger.Error(err)
 			return err
@@ -138,9 +136,9 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 			return errors.New("response_error", fmt.Sprintf("got status %d", resp.StatusCode))
 		}
 	})
+	oTR.statusCode = respStatusCode
 	if err != nil {
 		oTR.err = err
-		oTR.statusCode = respStatusCode
 		return
 	}
 	oTR.oTResult = &oResult

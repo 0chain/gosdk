@@ -309,3 +309,21 @@ func ScryptDecrypt(key, ciphertext []byte) ([]byte, error) {
 
 	return plaintext, nil
 }
+
+func MajorStatusCode(statusCodes []int) int {
+	statusCodeCount := make(map[int]int)
+	// Count frequency of each status code
+	for _, value := range statusCodes {
+		statusCodeCount[value] += 1
+	}
+	maxFreq := 0
+	var maxStatusCode int
+	// Iterate through the map and find the status code having highest frequency.
+	for statusCode, statusCodeFreq := range statusCodeCount {
+		if statusCodeFreq > maxFreq {
+			maxStatusCode = statusCode
+			maxFreq = statusCodeFreq
+		}
+	}
+	return maxStatusCode
+}
