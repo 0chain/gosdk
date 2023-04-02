@@ -431,10 +431,11 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		wg.Add(1)
 		j := i
 		go func() {
-			if startBlock+numBlocks > req.endBlock {
-				numBlocks = req.endBlock - startBlock
+			blocksToDownload := numBlocks
+			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
+				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
 			}
-			data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, numBlocks)
+			data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
 			if err != nil {
 				req.errorCB(errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+1)), remotePathCB)
 				return
