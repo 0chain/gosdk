@@ -571,6 +571,7 @@ type Blobber struct {
 	UncollectedServiceCharge int64                        `json:"uncollected_service_charge"`
 	IsKilled                 bool                         `json:"is_killed"`
 	IsShutdown               bool                         `json:"is_shutdown"`
+	IsAvailable              bool                         `json:"is_available"`
 }
 
 type Validator struct {
@@ -838,12 +839,11 @@ func GetAllocations() ([]*Allocation, error) {
 	return GetAllocationsForClient(client.GetClientID())
 }
 
-func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
-	if !sdkInitialized {
-		return nil, sdkNotInitialized
-	}
+func getAllocationsInternal(clientID string, limit, offset int) ([]*Allocation, error) {
 	params := make(map[string]string)
 	params["client"] = clientID
+	params["limit"] = fmt.Sprint(limit)
+	params["offset"] = fmt.Sprint(offset)
 	allocationsBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocations", params, nil)
 	if err != nil {
 		return nil, errors.New("allocations_fetch_error", "Error fetching the allocations."+err.Error())
@@ -854,6 +854,38 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 		return nil, errors.New("allocations_decode_error", "Error decoding the allocations."+err.Error())
 	}
 	return allocations, nil
+}
+
+// get paginated results
+func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+	limit, offset := 20, 0
+
+	allocations, err := getAllocationsInternal(clientID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	var allocationsFin []*Allocation
+	allocationsFin = append(allocationsFin, allocations...)
+	for {
+		// if the len of output returned is less than the limit it means this is the last round of pagination
+		if len(allocations) < limit {
+			break
+		}
+
+		// get the next set of blobbers
+		offset += 20
+		allocations, err = getAllocationsInternal(clientID, limit, offset)
+		if err != nil {
+			return allocations, err
+		}
+		allocationsFin = append(allocationsFin, allocations...)
+
+	}
+	return allocationsFin, nil
 }
 
 type FileOptionParam struct {
@@ -1341,10 +1373,10 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 		return
 	}
 
-	nonce = client.GetClient().Nonce
-	if nonce != 0 {
-		nonce++
-	}
+	//nonce = client.GetClient().Nonce
+	//if nonce != 0 {
+	//	nonce++
+	//}
 	txn := transaction.NewTransactionEntity(client.GetClientID(),
 		blockchain.GetChainID(), client.GetClientPublicKey(), nonce)
 

@@ -148,8 +148,9 @@ func (req *MoveRequest) ProcessMove() error {
 
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
-	wg := &sync.WaitGroup{}
+	blobberErrors := make([]error, numList)
 
+	wg := &sync.WaitGroup{}
 	var pos uint64
 
 	for i := req.moveMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -158,17 +159,24 @@ func (req *MoveRequest) ProcessMove() error {
 		go func(blobberIdx int) {
 			defer wg.Done()
 			refEntity, err := req.moveBlobberObject(req.blobbers[blobberIdx], blobberIdx)
+
 			if err != nil {
+				blobberErrors[blobberIdx] = err
 				l.Logger.Error(err.Error())
 				return
 			}
 			objectTreeRefs[blobberIdx] = refEntity
+
 		}(int(pos))
 	}
-
 	wg.Wait()
-
+	
 	if !req.isConsensusOk() {
+		err := zboxutil.MajorError(blobberErrors)
+		if err != nil {
+			return errors.New("move_failed", fmt.Sprintf("Move failed. %s", err.Error()))
+		}
+		
 		return errors.New("consensus_not_met",
 			fmt.Sprintf("Move failed. Required consensus %d, got %d",
 				req.Consensus.consensusThresh, req.Consensus.consensus))
