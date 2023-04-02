@@ -111,9 +111,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 	retry := 0
 	var err error
 	for retry < 3 {
-
-		zlogger.Logger.Debug(fmt.Sprintf("Retry attempt %d", retry+1))
-
 		if req.blobber.IsSkip() {
 			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx,
 				err: errors.New("", "skip blobber by previous errors")}
