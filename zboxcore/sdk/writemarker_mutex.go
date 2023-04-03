@@ -24,8 +24,9 @@ const (
 	WMLockStatusFailed WMLockStatus = iota
 	WMLockStatusPending
 	WMLockStatusOK
+	
 )
-
+const WMLockWaitTime int = 5;
 type WMLockResult struct {
 	Status    WMLockStatus `json:"status,omitempty"`
 	CreatedAt int64        `json:"created_at,omitempty"`
@@ -313,7 +314,7 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 				if wmLockRes.Status == WMLockStatusPending {
 					logger.Logger.Info("Lock pending for blobber ",
 						b.Baseurl, "with connection id: ", connID, " Retrying again")
-					time.Sleep(5 * time.Second)  // sleep for 5 seconds
+					time.Sleep(time.Duration(WMLockWaitTime) * time.Second)  
 					shouldContinue = true
 					return
 				}
