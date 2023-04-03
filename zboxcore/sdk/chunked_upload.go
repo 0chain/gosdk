@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"errors"
@@ -587,6 +588,8 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		encryptedKey = su.fileEncscheme.GetEncryptedKey()
 	}
 
+	var errCount int32
+
 	wgErrors := make(chan error)
 	wgDone := make(chan bool)
 
@@ -619,11 +622,12 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			defer wg.Done()
 			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
 			if err != nil {
-				select {
-				case wgErrors <- err:
-				default:
-				}
 				logger.Logger.Error("error during sendUploadRequest", err)
+				errC := atomic.AddInt32(&errCount, 1)
+				if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
+					wgErrors <- err
+				}
+
 			}
 		}(blobber, body, formData, pos)
 	}

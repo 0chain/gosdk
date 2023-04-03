@@ -95,6 +95,7 @@ type ConsolidatedFileMeta struct {
 	MimeType        string
 	Size            int64
 	ActualFileSize  int64
+	ActualSize      int64
 	ActualNumBlocks int64
 	EncryptedKey    string
 	CommitMetaTxns  []fileref.CommitMetaTxn
@@ -725,11 +726,12 @@ func (a *Allocation) GetFileMeta(path string) (*ConsolidatedFileMeta, error) {
 		result.LookupHash = ref.LookupHash
 		result.MimeType = ref.MimeType
 		result.Path = ref.Path
-		result.Size = ref.ActualFileSize
+		result.Size = ref.Size
 		result.EncryptedKey = ref.EncryptedKey
 		result.CommitMetaTxns = ref.CommitMetaTxns
 		result.Collaborators = ref.Collaborators
 		result.ActualFileSize = ref.ActualFileSize
+		result.ActualSize = ref.ActualSize
 		result.ActualNumBlocks = ref.NumBlocks
 		return result, nil
 	}
