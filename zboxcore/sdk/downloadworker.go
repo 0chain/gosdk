@@ -427,7 +427,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	n := int((endBlock - startBlock + numBlocks - 1) / numBlocks)
 	res := make([][]byte, n)
 
-	g, ctx := errgroup.WithContext(ctx)
+	g, _ := errgroup.WithContext(ctx)
 
 	for i := 0; i < n; i++ {
 		j := i
