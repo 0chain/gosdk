@@ -313,7 +313,7 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 				if wmLockRes.Status == WMLockStatusPending {
 					logger.Logger.Info("Lock pending for blobber ",
 						b.Baseurl, "with connection id: ", connID, " Retrying again")
-					time.Sleep(timeOut * 2)
+					time.Sleep(5 * time.Second)  // sleep for 5 seconds
 					shouldContinue = true
 					return
 				}
