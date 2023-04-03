@@ -435,11 +435,10 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
 				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
 			}
-			data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
+			res[j], err = req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
 			if err != nil {
 				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+1))
 			}
-			res[j] = data
 			return nil
 		})
 	}
