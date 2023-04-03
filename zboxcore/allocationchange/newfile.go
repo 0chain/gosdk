@@ -1,13 +1,15 @@
 package allocationchange
 
 import (
+	"errors"
 	"fmt"
-	"path/filepath"
+	"path"
 	"strings"
 
-	"github.com/0chain/errors"
+	zError "github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/google/uuid"
 )
@@ -22,10 +24,33 @@ func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref) (
 	commitParams CommitParams, err error) {
 
 	fileIDMeta := make(map[string]string)
-	fields, err := common.GetPathFields(filepath.Dir(ch.File.Path))
+	fields, err := common.GetPathFields(common.GetPathDir(ch.File.Path))
 	if err != nil {
 		return
 	}
+
+	if ch.File.ActualFileHash == "" {
+		err = errors.New("empty actual file hash field")
+		return
+	}
+
+	if ch.File.ValidationRoot == "" {
+		err = errors.New("empty validation root field")
+		return
+	}
+
+	fileHashSign, err := client.Sign(ch.File.ActualFileHash)
+	if err != nil {
+		return
+	}
+
+	validationRootSign, err := client.Sign(fileHashSign + ch.File.ValidationRoot)
+	if err != nil {
+		return
+	}
+
+	ch.File.ActualFileHashSignature = fileHashSign
+	ch.File.ValidationRootSignature = validationRootSign
 
 	rootRef.HashToBeComputed = true
 	dirRef := rootRef
@@ -38,7 +63,7 @@ func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref) (
 					found = true
 					break
 				}
-				err = errors.New("invalid_file_path",
+				err = zError.New("invalid_file_path",
 					fmt.Sprintf("type of %s is required to be directory", child.GetPath()))
 				return
 			}
@@ -50,7 +75,7 @@ func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref) (
 			newRef := &fileref.Ref{
 				Type:         fileref.DIRECTORY,
 				AllocationID: dirRef.AllocationID,
-				Path:         filepath.Join("/", strings.Join(fields[:i+1], "/")),
+				Path:         path.Join("/", strings.Join(fields[:i+1], "/")),
 				Name:         fields[i],
 				FileID:       uid.String(),
 			}

@@ -122,7 +122,7 @@ func DownloadFile(allocationID, remotePath, localPath string, statusCb StatusCal
 	if err != nil {
 		return err
 	}
-	return a.DownloadFile(localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb})
+	return a.DownloadFile(localPath, remotePath, false, &StatusCallbackWrapped{Callback: statusCb})
 }
 
 // DownloadFileByBlock - start download file from remote path to localpath by blocks number
@@ -144,7 +144,7 @@ func DownloadFileByBlock(allocationID, remotePath, localPath string, startBlock,
 	if err != nil {
 		return err
 	}
-	return a.DownloadFileByBlock(localPath, remotePath, startBlock, endBlock, numBlocks, &StatusCallbackWrapped{Callback: statusCb})
+	return a.DownloadFileByBlock(localPath, remotePath, startBlock, endBlock, numBlocks, false, &StatusCallbackWrapped{Callback: statusCb})
 }
 
 // DownloadThumbnail - start download file thumbnail from remote path to localpath
@@ -162,7 +162,7 @@ func DownloadThumbnail(allocationID, remotePath, localPath string, statusCb Stat
 		return err
 	}
 
-	return a.DownloadThumbnail(localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb})
+	return a.DownloadThumbnail(localPath, remotePath, false, &StatusCallbackWrapped{Callback: statusCb})
 }
 
 // RepairFile - repair file if it exists in remote path
@@ -336,7 +336,7 @@ func DownloadFromAuthTicket(allocationID, localPath string, authTicket string, r
 	if err != nil {
 		return err
 	}
-	return a.DownloadFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, &StatusCallbackWrapped{Callback: status})
+	return a.DownloadFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status})
 }
 
 // DownloadFromAuthTicketByBlocks - download file from Auth ticket by blocks number
@@ -355,7 +355,7 @@ func DownloadFromAuthTicketByBlocks(allocationID, localPath string, authTicket s
 	if err != nil {
 		return err
 	}
-	return a.DownloadFromAuthTicketByBlocks(localPath, authTicket, startBlock, endBlock, numBlocks, remoteLookupHash, remoteFilename, &StatusCallbackWrapped{Callback: status})
+	return a.DownloadFromAuthTicketByBlocks(localPath, authTicket, startBlock, endBlock, numBlocks, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status})
 }
 
 // DownloadThumbnailFromAuthTicket - downloadThumbnail from Auth ticket
@@ -371,7 +371,7 @@ func DownloadThumbnailFromAuthTicket(allocationID, localPath string, authTicket 
 	if err != nil {
 		return err
 	}
-	return a.DownloadThumbnailFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, &StatusCallbackWrapped{Callback: status})
+	return a.DownloadThumbnailFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status})
 }
 
 // GetFileStats - get file stats from path

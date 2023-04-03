@@ -11,6 +11,7 @@ import (
 type Hashable interface {
 	GetHash() string
 	GetHashBytes() []byte
+	Write(b []byte) (int, error)
 }
 
 /*Serializable interface */

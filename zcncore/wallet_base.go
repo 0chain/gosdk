@@ -54,6 +54,11 @@ const (
 	FAUCETSC_PFX        = `/v1/screst/` + FaucetSmartContractAddress
 	GET_FAUCETSC_CONFIG = FAUCETSC_PFX + `/faucet-config`
 
+	// zcn sc
+	ZCNSC_PFX                      = `/v1/screst/` + ZCNSCSmartContractAddress
+	GET_MINT_NONCE                 = ZCNSC_PFX + `/v1/mint_nonce`
+	GET_NOT_PROCESSED_BURN_TICKETS = ZCNSC_PFX + `/v1/not_processed_burn_tickets`
+
 	// miner SC
 
 	MINERSC_PFX          = `/v1/screst/` + MinerSmartContractAddress
@@ -145,6 +150,8 @@ const (
 	OpGetLockedTokens
 	OpGetUserPools
 	OpGetUserPoolDetail
+	OpGetNotProcessedBurnTickets
+	OpGetMintNonce
 	// storage SC ops
 	OpStorageSCGetConfig
 	OpStorageSCGetChallengePoolInfo
@@ -175,6 +182,12 @@ type WalletCallback interface {
 // GetBalanceCallback needs to be implemented by the caller of GetBalance() to get the status
 type GetBalanceCallback interface {
 	OnBalanceAvailable(status int, value int64, info string)
+}
+
+// BurnTicket model used for deserialization of the response received from sharders
+type BurnTicket struct {
+	Hash  string `json:"hash"`
+	Nonce int64  `json:"nonce"`
 }
 
 // GetNonceCallback needs to be implemented by the caller of GetNonce() to get the status
@@ -659,6 +672,34 @@ func GetBalance(cb GetBalanceCallback) error {
 	return nil
 }
 
+// GetMintNonce retrieve mint nonce from sharders
+func GetMintNonce(cb GetInfoCallback) error {
+	err := CheckConfig()
+	if err != nil {
+		return err
+	}
+
+	go GetInfoFromSharders(withParams(GET_MINT_NONCE, Params{
+		"client_id": _config.wallet.ClientID,
+	}), OpGetMintNonce, cb)
+	return nil
+}
+
+// GetNotProcessedZCNBurnTickets retrieve wallet burn tickets from sharders
+func GetNotProcessedZCNBurnTickets(ethereumAddress, startNonce string, cb GetInfoCallback) error {
+	err := CheckConfig()
+	if err != nil {
+		return err
+	}
+
+	go GetInfoFromSharders(withParams(GET_NOT_PROCESSED_BURN_TICKETS, Params{
+		"ethereum_address": ethereumAddress,
+		"nonce":            startNonce,
+	}), OpGetNotProcessedBurnTickets, cb)
+
+	return nil
+}
+
 // GetBalance retrieve wallet nonce from sharders
 func GetNonce(cb GetNonceCallback) error {
 	if cb == nil {
@@ -677,6 +718,7 @@ func GetNonce(cb GetNonceCallback) error {
 			cb.OnNonceAvailable(StatusError, 0, info)
 			return
 		}
+
 		cb.OnNonceAvailable(StatusSuccess, value, info)
 	}()
 
@@ -905,26 +947,54 @@ func (p Params) Query() string {
 
 // GetMiners obtains list of all active miners.
 //
-//	# Inputs
-//		-	cb: callback for checking result
-func GetMiners(cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
+//		# Inputs
+//	  - cb: callback for checking result
+//	  - limit: how many miners should be fetched
+//	  - offset: how many miners should be skipped
+//	  - active: only fetch active miners
+func GetMiners(cb GetInfoCallback, limit, offset int, active bool) {
+	getMinersInternal(cb, active, limit, offset)
+}
+
+func getMinersInternal(cb GetInfoCallback, active bool, limit, offset int) {
+	if err := CheckConfig(); err != nil {
 		return
 	}
-	var url = GET_MINERSC_MINERS
+
+	var url = withParams(GET_MINERSC_MINERS, Params{
+		"active": strconv.FormatBool(active),
+		"offset": strconv.FormatInt(int64(offset), 10),
+		"limit":  strconv.FormatInt(int64(limit), 10),
+	})
+
 	go GetInfoFromSharders(url, 0, cb)
+
 	return
 }
 
 // GetSharders obtains list of all active sharders.
 // # Inputs
 //   - cb: callback for checking result
-func GetSharders(cb GetInfoCallback) (err error) {
-	if err = CheckConfig(); err != nil {
+//   - limit: how many sharders should be fetched
+//   - offset: how many sharders should be skipped
+//   - active: only fetch active sharders
+func GetSharders(cb GetInfoCallback, limit, offset int, active bool) {
+	getShardersInternal(cb, active, limit, offset)
+}
+
+func getShardersInternal(cb GetInfoCallback, active bool, limit, offset int) {
+	if err := CheckConfig(); err != nil {
 		return
 	}
-	var url = GET_MINERSC_SHARDERS
+
+	var url = withParams(GET_MINERSC_SHARDERS, Params{
+		"active": strconv.FormatBool(active),
+		"offset": strconv.FormatInt(int64(offset), 10),
+		"limit":  strconv.FormatInt(int64(limit), 10),
+	})
+
 	go GetInfoFromSharders(url, 0, cb)
+
 	return
 }
 

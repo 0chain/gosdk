@@ -214,7 +214,7 @@ func CreateChunkedUpload(
 
 	su.loadProgress()
 
-	su.fileHasher = CreateHasher(int(su.chunkSize))
+	su.fileHasher = CreateHasher(getShardSize(su.fileMeta.ActualSize, su.allocationObj.DataShards, su.encryptOnUpload))
 
 	// encrypt option has been chaned.upload it from scratch
 	// chunkSize has been changed. upload it from scratch
@@ -222,7 +222,14 @@ func CreateChunkedUpload(
 		su.progress = su.createUploadProgress()
 	}
 
-	su.fileErasureEncoder, _ = reedsolomon.New(su.allocationObj.DataShards, su.allocationObj.ParityShards, reedsolomon.WithAutoGoroutines(int(su.chunkSize)))
+	su.fileErasureEncoder, err = reedsolomon.New(
+		su.allocationObj.DataShards,
+		su.allocationObj.ParityShards,
+		reedsolomon.WithAutoGoroutines(int(su.chunkSize)),
+	)
+	if err != nil {
+		return nil, err
+	}
 
 	if su.encryptOnUpload {
 		su.fileEncscheme = su.createEncscheme()
@@ -385,7 +392,7 @@ func (su *ChunkedUpload) createUploadProgress() UploadProgress {
 
 	for i := 0; i < len(progress.Blobbers); i++ {
 		progress.Blobbers[i] = &UploadBlobberStatus{
-			Hasher: CreateHasher(int(su.chunkSize)),
+			Hasher: CreateHasher(getShardSize(su.fileMeta.ActualSize, su.allocationObj.DataShards, su.encryptOnUpload)),
 		}
 	}
 
@@ -433,7 +440,7 @@ func (su *ChunkedUpload) Start() error {
 		// chunk, err := su.chunkReader.Next()
 		if err != nil {
 			if su.statusCallback != nil {
-				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, su.opCode, err)
+				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 			}
 			return err
 		}
@@ -446,7 +453,7 @@ func (su *ChunkedUpload) Start() error {
 			su.fileMeta.ActualHash, err = su.fileHasher.GetFileHash()
 			if err != nil {
 				if su.statusCallback != nil {
-					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, su.opCode, err)
+					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 				}
 				return err
 			}
@@ -459,10 +466,14 @@ func (su *ChunkedUpload) Start() error {
 		//chunk has not be uploaded yet
 		if chunks.chunkEndIndex > su.progress.ChunkIndex {
 
-			err = su.processUpload(chunks.chunkStartIndex, chunks.chunkEndIndex, chunks.fileShards, chunks.thumbnailShards, chunks.isFinal, chunks.totalReadSize)
+			err = su.processUpload(
+				chunks.chunkStartIndex, chunks.chunkEndIndex,
+				chunks.fileShards, chunks.thumbnailShards,
+				chunks.isFinal, chunks.totalReadSize,
+			)
 			if err != nil {
 				if su.statusCallback != nil {
-					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, su.opCode, err)
+					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 				}
 				return err
 			}
@@ -498,7 +509,7 @@ func (su *ChunkedUpload) Start() error {
 
 	if err != nil {
 		if su.statusCallback != nil {
-			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, su.opCode, err)
+			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 		}
 		return err
 	}
@@ -609,8 +620,8 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
 			if err != nil {
 				select {
-					case wgErrors <- err:
-					default:
+				case wgErrors <- err:
+				default:
 				}
 				logger.Logger.Error("error during sendUploadRequest", err)
 			}
@@ -621,12 +632,12 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		wg.Wait()
 		close(wgDone)
 	}()
-	
+
 	select {
-		case <-wgDone:
-			break
-		case err := <-wgErrors:
-			return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
+	case <-wgDone:
+		break
+	case err := <-wgErrors:
+		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
 	}
 
 	if !su.consensus.isConsensusOk() {
@@ -694,4 +705,26 @@ func (su *ChunkedUpload) processCommit() error {
 	}
 
 	return nil
+}
+
+// getShardSize will return the size of data of a file each blobber is getting.
+func getShardSize(dataSize int64, dataShards int, isEncrypted bool) int64 {
+	chunkSize := int64(DefaultChunkSize)
+	if isEncrypted {
+		chunkSize -= (EncryptedDataPaddingSize + EncryptionHeaderSize)
+	}
+
+	totalChunkSize := chunkSize * int64(dataShards)
+
+	n := dataSize / totalChunkSize
+	r := dataSize % totalChunkSize
+
+	var remainderShards int64
+	if isEncrypted {
+		remainderShards = (r+int64(dataShards)-1)/int64(dataShards) + EncryptedDataPaddingSize + EncryptionHeaderSize
+	} else {
+		remainderShards = (r + int64(dataShards) - 1) / int64(dataShards)
+	}
+
+	return n*DefaultChunkSize + remainderShards
 }
