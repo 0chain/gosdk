@@ -24,6 +24,7 @@ import (
 	"github.com/klauspost/reedsolomon"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 	"golang.org/x/crypto/sha3"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -422,29 +423,35 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		actualFileHasher = sha3.New256()
 		isPREAndWholeFile = true
 	}
-	var wg sync.WaitGroup
+	var resMutex sync.Mutex
 	n := int((endBlock - startBlock + numBlocks - 1) / numBlocks)
-
 	res := make([][]byte, n)
 
+	g, ctx := errgroup.WithContext(ctx)
+
 	for i := 0; i < n; i++ {
-		wg.Add(1)
 		j := i
-		go func() {
+		g.Go(func() error {
 			blocksToDownload := numBlocks
 			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
 				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
 			}
 			data, err := req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
 			if err != nil {
-				req.errorCB(errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+1)), remotePathCB)
-				return
+				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+1))
 			}
+
+			resMutex.Lock()
 			res[j] = data
-			wg.Done()
-		}()
+			resMutex.Unlock()
+
+			return nil
+		})
 	}
-	wg.Wait()
+	if err := g.Wait(); err != nil {
+		req.errorCB(err, remotePathCB)
+		return
+	}
 
 	for _, data := range res {
 		if req.isDownloadCanceled {
