@@ -423,15 +423,14 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		actualFileHasher = sha3.New256()
 		isPREAndWholeFile = true
 	}
-	var resMutex sync.Mutex
 	n := int((endBlock - startBlock + numBlocks - 1) / numBlocks)
 	res := make([][]byte, n)
 
-	g, _ := errgroup.WithContext(ctx)
+	eg, _ := errgroup.WithContext(ctx)
 
 	for i := 0; i < n; i++ {
 		j := i
-		g.Go(func() error {
+		eg.Go(func() error {
 			blocksToDownload := numBlocks
 			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
 				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
@@ -440,15 +439,11 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			if err != nil {
 				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+1))
 			}
-
-			resMutex.Lock()
 			res[j] = data
-			resMutex.Unlock()
-
 			return nil
 		})
 	}
-	if err := g.Wait(); err != nil {
+	if err := eg.Wait(); err != nil {
 		req.errorCB(err, remotePathCB)
 		return
 	}
