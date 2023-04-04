@@ -12,6 +12,8 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/zboxcore/logger"
+	"go.uber.org/zap"
 
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
@@ -460,9 +462,15 @@ func (t *Transaction) createSmartContractTxn(address, methodName string, input i
 	// TODO: check if transaction is exempt to avoid unnecessary fee estimation
 	minFee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
 	if err != nil {
+		logger.Logger.Error("failed estimate txn fee",
+			zap.Any("txn", t.txn.Hash),
+			zap.Error(err))
 		return err
 	}
 
+	logger.Logger.Info("estimate txn fee",
+		zap.Uint64("fee", minFee),
+		zap.Any("txn", t.txn.Hash))
 	t.txn.TransactionFee = minFee
 
 	return nil
