@@ -928,9 +928,6 @@ func TestAllocation_GetRefs(t *testing.T) {
 				Baseurl: functionName + testCaseName + mockBlobberUrl + strconv.Itoa(i),
 			})
 		}
-
-		var mockClient = mocks.HttpClient{}
-		zboxutil.Client = &mockClient
 		for i := 0; i < numBlobbers; i++ {
 			body, err := json.Marshal(map[string]string{
 				"code":  "invalid_path",
