@@ -66,6 +66,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	for idx, oTreeResponse := range oTreeResponses {
 		oTreeResponseStatusCodes[idx] = oTreeResponse.statusCode
 		if oTreeResponse.err != nil {
+			l.Logger.Error("Error while getting file refs from blobber:", oTreeResponse.err)
 			continue
 		}
 		var similarFieldRefs []SimilarField
@@ -85,7 +86,7 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 			hashRefsMap[hash] = oTreeResponse.oTResult
 		}
 	}
-	
+
 	if zboxutil.MajorStatusCode(oTreeResponseStatusCodes) == http.StatusBadRequest { //It should be http.StatusNotFound, but the blobber is returning 400 if the file not found
 		return &ObjectTreeResult{}, nil
 	}
@@ -133,7 +134,7 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 			}
 			return nil
 		} else {
-			return errors.New("response_error", fmt.Sprintf("got status %d", resp.StatusCode))
+			return errors.New("response_error", fmt.Sprintf("got status %d, err: %s", resp.StatusCode, respBody))
 		}
 	})
 	oTR.statusCode = respStatusCode
