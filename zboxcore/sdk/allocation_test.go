@@ -913,33 +913,31 @@ func TestAllocation_GetRefs(t *testing.T) {
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	}
+	functionName := "TestAllocation_GetRefs"
 	t.Run("Test_Get_Refs_Returns_Slice_Of_Length_0_When_File_Not_Present", func(t *testing.T) {
 		a := &Allocation{
 			DataShards:   2,
 			ParityShards: 2,
 		}
-		tname := "Test_Get_Refs_Returns_Slice_Of_Length_0_When_File_Not_Present"
+		testCaseName := "Test_Get_Refs_Returns_Slice_Of_Length_0_When_File_Not_Present"
 		a.InitAllocation()
 		sdkInitialized = true
 		for i := 0; i < numBlobbers; i++ {
 			a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
-				ID:      tname + mockBlobberId + strconv.Itoa(i),
-				Baseurl: "TestAllocation_GetRefs" + tname + mockBlobberUrl + strconv.Itoa(i),
+				ID:      testCaseName + mockBlobberId + strconv.Itoa(i),
+				Baseurl: functionName + testCaseName + mockBlobberUrl + strconv.Itoa(i),
 			})
 		}
 
 		var mockClient = mocks.HttpClient{}
-		httpResponse := http.Response{
-			StatusCode: http.StatusBadRequest,
-			Body: func() io.ReadCloser {
-				jsonFR, err := json.Marshal("")
-				require.NoError(t, err)
-				return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
-			}(),
-		}
 		zboxutil.Client = &mockClient
 		for i := 0; i < numBlobbers; i++ {
-			mockClient.On("Do", mock.Anything).Return(&httpResponse, nil)
+			body, err := json.Marshal(map[string]string{
+				"code":  "invalid_path",
+				"error": "invalid_path: ",
+			})
+			require.NoError(t, err)
+			setupMockHttpResponse(t, &mockClient, functionName, testCaseName, a, http.MethodGet, http.StatusBadRequest, body)
 		}
 		path := "/any_random_path.txt"
 		otr, err := a.GetRefs(path, "", "", "", "f", "regular", 0, 5)

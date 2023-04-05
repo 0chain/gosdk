@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math"
@@ -16,6 +17,7 @@ import (
 
 	"errors"
 
+	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/h2non/filetype"
 	"github.com/lithammer/shortuuid/v3"
@@ -242,7 +244,7 @@ func GetRateLimitValue(r *http.Response) (int, error) {
 	return int(math.Ceil(rl / dur)), nil
 }
 
-func MajorError(errors []error) (error) {
+func MajorError(errors []error) error {
 	countError := make(map[error]int)
 	for _, value := range errors {
 		if value != nil {
@@ -328,20 +330,24 @@ func ScryptDecrypt(key, ciphertext []byte) ([]byte, error) {
 	return plaintext, nil
 }
 
-func MajorStatusCode(statusCodes []int) int {
-	statusCodeCount := make(map[int]int)
-	// Count frequency of each status code
-	for _, value := range statusCodes {
-		statusCodeCount[value] += 1
+// Returns the error message code, message should be strictly of the
+// format: ".... err: {"code" : <return_this>, ...}, ..."
+func GetErrorMessageCode(errorMsg string) (string, error) {
+	// find index of "err"
+	targetWord := `err:`
+	idx := strings.Index(errorMsg, targetWord)
+	if idx == -1 {
+		return "", thrown.New("invalid_params", "message doesn't contain `err` field")
+
 	}
-	maxFreq := 0
-	var maxStatusCode int
-	// Iterate through the map and find the status code having highest frequency.
-	for statusCode, statusCodeFreq := range statusCodeCount {
-		if statusCodeFreq > maxFreq {
-			maxStatusCode = statusCode
-			maxFreq = statusCodeFreq
-		}
+	var a = make(map[string]string)
+	if idx + 5 >= len(errorMsg) {
+		return "", thrown.New("invalid_format", "err field is not proper json")
 	}
-	return maxStatusCode
+	err := json.Unmarshal([]byte(errorMsg[idx+5:]), &a)
+	if err != nil {
+		return "", thrown.New("invalid_format", "err field is not proper json")
+	}
+	return a["code"], nil
+
 }

@@ -25,6 +25,8 @@ type ObjectTreeResult struct {
 	LatestWM   *marker.WriteMarker `json:"latest_write_marker"`
 }
 
+const INVALID_PATH = "invalid_path"
+
 type ObjectTreeRequest struct {
 	allocationID   string
 	allocationTx   string
@@ -43,9 +45,8 @@ type ObjectTreeRequest struct {
 }
 
 type oTreeResponse struct {
-	oTResult   *ObjectTreeResult
-	err        error
-	statusCode int
+	oTResult *ObjectTreeResult
+	err      error
 }
 
 //Paginated tree should not be collected as this will stall the client
@@ -61,10 +62,10 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	o.wg.Wait()
 	hashCount := make(map[string]int)
 	hashRefsMap := make(map[string]*ObjectTreeResult)
-	oTreeResponseStatusCodes := make([]int, totalBlobbersCount)
+	oTreeResponseErrors := make([]error, totalBlobbersCount)
 
 	for idx, oTreeResponse := range oTreeResponses {
-		oTreeResponseStatusCodes[idx] = oTreeResponse.statusCode
+		oTreeResponseErrors[idx] = oTreeResponse.err
 		if oTreeResponse.err != nil {
 			l.Logger.Error("Error while getting file refs from blobber:", oTreeResponse.err)
 			continue
@@ -86,8 +87,12 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 			hashRefsMap[hash] = oTreeResponse.oTResult
 		}
 	}
-
-	if zboxutil.MajorStatusCode(oTreeResponseStatusCodes) == http.StatusBadRequest { //It should be http.StatusNotFound, but the blobber is returning 400 if the file not found
+	majorError := zboxutil.MajorError(oTreeResponseErrors)
+	majorErrorMsg := ""
+	if majorError != nil {
+		majorErrorMsg = majorError.Error()
+	}
+	if code, _ := zboxutil.GetErrorMessageCode(majorErrorMsg); code == INVALID_PATH {
 		return &ObjectTreeResult{}, nil
 	}
 	var selected *ObjectTreeResult
@@ -113,14 +118,12 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 	}
 	oResult := ObjectTreeResult{}
 	ctx, cncl := context.WithTimeout(o.ctx, time.Second*30)
-	respStatusCode := 200
 	err = zboxutil.HttpDo(ctx, cncl, oReq, func(resp *http.Response, err error) error {
 		if err != nil {
 			l.Logger.Error(err)
 			return err
 		}
 		defer resp.Body.Close()
-		respStatusCode = resp.StatusCode
 		respBody, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			l.Logger.Error(err)
@@ -137,7 +140,6 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 			return errors.New("response_error", fmt.Sprintf("got status %d, err: %s", resp.StatusCode, respBody))
 		}
 	})
-	oTR.statusCode = respStatusCode
 	if err != nil {
 		oTR.err = err
 		return
