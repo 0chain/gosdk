@@ -1209,8 +1209,8 @@ func (a *Allocation) CancelDownload(remotepath string) error {
 }
 
 func (a *Allocation) Download(
-	remotePath, localPath, pathHash, authToken, contentMode, downloadType string,
-	retry int, blocksPerMarker uint) error {
+	remotePath, localPath, pathHash, authToken, contentMode string,
+	verifyDownload bool, retry int, blocksPerMarker uint) error {
 
 	finfo, err := os.Stat(localPath)
 	if err != nil {
@@ -1220,7 +1220,8 @@ func (a *Allocation) Download(
 		return errors.New("invalid_path", "local path must be directory")
 	}
 
-	sd, err := a.GetStreamDownloader(remotePath, pathHash, authToken, contentMode, downloadType, retry, blocksPerMarker)
+	sd, err := a.GetStreamDownloader(
+		remotePath, pathHash, authToken, contentMode, verifyDownload, retry, blocksPerMarker)
 	if err != nil {
 		return err
 	}
@@ -1259,8 +1260,8 @@ func (a *Allocation) GetStreamDownloader(
 	remotePath,
 	pathHash,
 	authToken,
-	contentMode,
-	downloadType string,
+	contentMode string,
+	verifyDownload bool,
 	retry int,
 	blocksPerMarker uint) (*StreamDownload, error) {
 
@@ -1297,7 +1298,7 @@ func (a *Allocation) GetStreamDownloader(
 	sdo := &StreamDownloadOption{
 		ContentMode:     contentMode,
 		AuthTicket:      authToken,
-		DownloadType:    downloadType,
+		VerifyDownload:  verifyDownload,
 		Retry:           retry,
 		BlocksPerMarker: blocksPerMarker,
 	}

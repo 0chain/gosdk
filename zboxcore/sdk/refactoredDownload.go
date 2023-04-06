@@ -45,12 +45,10 @@ const (
 	EncryptionOverHead = 272
 	ChecksumSize       = 256
 	HeaderSize         = 128
+	BlockSize          = int64(64 * KB)
 
 	// TooManyRequestWaitTime wait for this time to re-request when too_many_requests errors ocucurs
 	TooManyRequestWaitTime = time.Millisecond * 100
-
-	Vertical   = "vertical"
-	Horizontal = "horizontal"
 )
 
 // error codes
@@ -133,10 +131,8 @@ type StreamDownload struct {
 	// Offset Where to start to read from
 	offset int64
 	// File is whether opened
-	opened     bool
-	eofReached bool // whether end of file is reached
-	//downloadType horizontal --> one block per blobber, vertical --> multiple blocks per blobber
-	downloadType    string // vertical or horizontal
+	opened          bool
+	eofReached      bool // whether end of file is reached
 	blocksPerMarker int
 
 	authTicket         string
@@ -144,8 +140,6 @@ type StreamDownload struct {
 	remotePath         string
 	pathHash           string
 	contentMode        string
-	chunkSize          int64 // total size of a chunk used to split data to datashards numbers of blobbers
-	blockSize          int64 // blockSize, chunkSize/dataShards
 	effectiveChunkSize int64 // effective chunk size is different when file is encrypted
 	effectiveBlockSize int64 // effective block size is different when file is encrypted
 	fileSize           int64 // Actual file size
@@ -289,22 +283,6 @@ func (sd *StreamDownload) SetOffset(offset int64) {
 	sd.offset = offset
 }
 
-// getDownloadType get download type and blocks per marker that fits the download requirement in optimal way
-// It tries to get at max 100MB data per request
-func (sd *StreamDownload) getDownloadType(wantSize int) (downloadType string, bpm int) {
-	if sd.blockSize >= 100*MB {
-		return Horizontal, 1
-	}
-
-	startingIdx := sd.getBlobberStartingIdx()
-	chunksRequired := sd.getChunksRequired(startingIdx, wantSize)
-	if chunksRequired == 1 {
-		return Horizontal, 1
-	}
-
-	return Vertical, int(100 * MB / (sd.blockSize))
-}
-
 // Read io.Reader implementation
 func (sd *StreamDownload) Read(p []byte) (n int, err error) {
 	if !sd.opened {
@@ -324,20 +302,8 @@ func (sd *StreamDownload) Read(p []byte) (n int, err error) {
 		return 0, ErrInvalidRead
 	}
 
-	downloadType := sd.downloadType
-	if downloadType == "" {
-		downloadType, sd.blocksPerMarker = sd.getDownloadType(wantSize)
-	}
-
 	var data []byte
-	switch downloadType {
-	case Vertical:
-		data, err = sd.getDataVertical(wantSize)
-	case Horizontal:
-		data, err = sd.getDataHorizontal(wantSize)
-	default:
-		return 0, ErrInvalidDownloadType(downloadType)
-	}
+	data, err = sd.getData(wantSize)
 
 	n = len(data)
 	copy(p[:n], data)
@@ -410,7 +376,7 @@ func (sd *StreamDownload) getStartOffsetChunkIndex() int {
 	return int(sd.offset/sd.effectiveBlockSize/int64(sd.dataShards)) + 1
 }
 
-func (sd *StreamDownload) getDataVertical(wantSize int) (data []byte, err error) {
+func (sd *StreamDownload) getData(wantSize int) (data []byte, err error) {
 	startOffsetBlock := sd.getStartOffsetChunkIndex()
 	endOffsetBlock := sd.getEndOffsetChunkIndex(wantSize)
 
@@ -465,7 +431,7 @@ func (sd *StreamDownload) getDataVertical(wantSize int) (data []byte, err error)
 				return data, ErrExceedingFailedBlobber(requiredParityShards, sd.parityShards)
 			}
 
-			err = sd.reconstructVertical(results, requiredParityShards, startOffsetBlock, bpm)
+			err = sd.reconstruct(results, requiredParityShards, startOffsetBlock, bpm)
 			if err != nil {
 				return
 			}
@@ -493,101 +459,7 @@ func (sd *StreamDownload) getDataVertical(wantSize int) (data []byte, err error)
 	return
 }
 
-func (sd *StreamDownload) getDataHorizontal(wantSize int) (data []byte, err error) {
-	startingBlobberIdx := sd.getBlobberStartingIdx()
-	offsetBlock := sd.getStartOffsetChunkIndex()
-	totalBlocksRequired := sd.getBlocksRequired(wantSize)
-
-	chunkNums := sd.getChunksRequired(startingBlobberIdx, wantSize)
-	var blocksRequested int
-	for i := 0; i < chunkNums; i++ {
-		results := make([]*blobberStreamDownloadRequest, sd.dataShards)
-		reconstructionRequiredCh := make(chan struct{}, sd.dataShards)
-		downloadCompletedCh := make(chan struct{}, sd.dataShards)
-		var count int
-		for j := startingBlobberIdx; j < sd.dataShards; j++ {
-			blobber := sd.blobbers[j]
-			if _, ok := sd.failedBlobbers[j]; ok {
-				reconstructionRequiredCh <- struct{}{}
-				continue
-			}
-
-			bsdl := blobberStreamDownloadRequest{
-				blobberID:       blobber.ID,
-				blobberIdx:      j,
-				blobberUrl:      blobber.Baseurl,
-				sd:              sd,
-				offsetBlock:     offsetBlock,
-				blocksPerMarker: 1,
-			}
-
-			go bsdl.downloadData(reconstructionRequiredCh, downloadCompletedCh)
-
-			results[j] = &bsdl
-			count++
-			blocksRequested++
-			if blocksRequested == totalBlocksRequired {
-				break
-			}
-		}
-
-		var isReconstructionRequired bool
-		for k := 0; k < count; k++ { //Wait for all goroutines to complete
-			select {
-			case <-downloadCompletedCh:
-			case <-reconstructionRequiredCh:
-				isReconstructionRequired = true
-			}
-		}
-
-		if len(sd.failedBlobbers) > sd.parityShards {
-			return nil, ErrExceedingFailedBlobber(len(sd.failedBlobbers), sd.parityShards)
-		}
-
-		rawData := make([][]byte, sd.dataShards+sd.parityShards)
-		var dataShardsCount int
-		for k := startingBlobberIdx; k < sd.dataShards; k++ {
-			res := results[k]
-			if res == nil || res.result.err != nil {
-				continue
-			}
-
-			rawData[k] = res.result.data[0]
-			dataShardsCount++
-		}
-
-		if isReconstructionRequired {
-			err = sd.reconstructHorizontal(rawData, dataShardsCount)
-			if err != nil {
-				return
-			}
-		}
-
-		for i := startingBlobberIdx; i < sd.dataShards; i++ {
-			data = append(data, rawData[i]...)
-		}
-
-		startingBlobberIdx = 0 //Only first chunk requires initial value other than 0
-
-	}
-
-	// Put block below in Read method; Calculate dataOffset, new offset, etc.
-	dataOffset := sd.getDataOffset()
-	newOffset := sd.offset + int64(wantSize)
-
-	data = data[dataOffset:]
-	if newOffset >= sd.fileSize {
-		sd.eofReached = true
-	}
-	lastIdx := int(math.Min(float64(len(data)), float64(wantSize)))
-	data = data[:lastIdx]
-
-	sd.SetOffset(newOffset)
-
-	return
-}
-
-func (sd *StreamDownload) reconstructVertical(results []*blobberStreamDownloadRequest, reqParity, offsetBlock, bpm int) error {
+func (sd *StreamDownload) reconstruct(results []*blobberStreamDownloadRequest, reqParity, offsetBlock, bpm int) error {
 	ctx, ctxCncl := context.WithCancel(context.Background())
 	defer ctxCncl()
 
@@ -680,92 +552,6 @@ outerloop:
 	return ErrNoRequiredShards
 }
 
-func (sd *StreamDownload) reconstructHorizontal(rawData [][]byte, dataShardsCount int) error {
-	ctx, ctxCncl := context.WithCancel(context.Background())
-	defer ctxCncl()
-
-	var requestedShards int
-	requiredShards := sd.dataShards - dataShardsCount
-	nextBlobberRequiredChan := make(chan struct{}, requiredShards)
-	downloadCompletedChan := make(chan struct{}, requiredShards)
-	breakLoopCh := make(chan struct{})
-	results := make([]*blobberStreamDownloadRequest, sd.dataShards+sd.parityShards)
-
-	var gotRequiredShards bool
-
-	go func() {
-		i := 0
-	outerloop:
-		for {
-			select {
-			case <-downloadCompletedChan:
-				i++
-				if i == requiredShards {
-					gotRequiredShards = true
-					breakLoopCh <- struct{}{}
-					break outerloop
-				}
-			case <-ctx.Done():
-				break outerloop
-			}
-		}
-	}()
-
-outerloop:
-	for i := sd.dataShards + sd.parityShards - 1; i >= 0; i-- { //Give priority to parity blobbers for reconstruction
-		blobber := sd.blobbers[i]
-
-		if _, ok := sd.failedBlobbers[i]; ok || rawData[i] != nil {
-			continue
-		}
-		bsdl := &blobberStreamDownloadRequest{
-			blobberID:       blobber.ID,
-			blobberIdx:      i,
-			blobberUrl:      blobber.Baseurl,
-			sd:              sd,
-			blocksPerMarker: 1,
-		}
-
-		go bsdl.downloadData(nextBlobberRequiredChan, downloadCompletedChan)
-
-		results[i] = bsdl
-
-		requestedShards++
-		if requestedShards == requiredShards {
-			select {
-			case <-breakLoopCh:
-				break outerloop
-			case <-nextBlobberRequiredChan:
-				requestedShards--
-			}
-		}
-	}
-
-	if gotRequiredShards {
-		for _, res := range results {
-			if res == nil || res.result.err != nil {
-				continue
-			}
-
-			rawData[res.blobberIdx] = res.result.data[0]
-		}
-
-		enc, err := reedsolomon.New(sd.dataShards, sd.parityShards, reedsolomon.WithAutoGoroutines(int(sd.effectiveBlockSize)))
-		if err != nil {
-			return errors.New(ReedSolomonEndocerError, err.Error())
-		}
-
-		err = enc.ReconstructData(rawData)
-		if err != nil {
-			return errors.New(ErasureReconstructError, err.Error())
-		}
-
-		return nil
-	}
-
-	return ErrNoRequiredShards
-}
-
 func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- struct{}) {
 	for retry := 0; retry < bl.sd.retry; retry++ {
 		select {
@@ -781,7 +567,7 @@ func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- str
 			AllocationID:    bl.sd.allocationID,
 			OwnerID:         bl.sd.ownerId,
 			Timestamp:       common.Now(),
-			ReadCounter:     int64(bl.sd.blocksPerMarker) + getBlobberReadCtr(bl.blobberID),
+			ReadCounter:     int64(bl.sd.blocksPerMarker) + getBlobberReadCtr(bl.sd.allocationID, bl.blobberID),
 		}
 
 		if err := rm.Sign(); err != nil {
@@ -837,7 +623,7 @@ func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- str
 			case http.StatusOK:
 				downloadedBlock.idx = bl.blobberIdx
 				downloadedBlock.Success = true
-				bl.result.data, err = bl.split(response, bl.sd.blockSize)
+				bl.result.data, err = bl.split(response, BlockSize)
 				return err
 
 			default:
@@ -847,9 +633,9 @@ func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- str
 						return errors.New(InvalidReadMarker, err.Error())
 					}
 
-					if downloadedBlock.LatestRM.ReadCounter >= getBlobberReadCtr(bl.blobberID) {
+					if downloadedBlock.LatestRM.ReadCounter >= getBlobberReadCtr(bl.sd.allocationID, bl.blobberID) {
 						zlogger.Logger.Info("Will be retrying download")
-						setBlobberReadCtr(bl.blobberID, downloadedBlock.LatestRM.ReadCounter)
+						setBlobberReadCtr(bl.sd.allocationID, bl.blobberID, downloadedBlock.LatestRM.ReadCounter)
 						retry = 0
 						return errors.New(StaleReadMarker, "readmarker counter is not in sync with latest counter")
 					}
@@ -909,14 +695,9 @@ func (bl *blobberStreamDownloadRequest) downloadData(errCh, successCh chan<- str
 
 // GetDStorageFileReader Get a reader that provides io.Reader interface
 func GetDStorageFileReader(allocation *Allocation, ref *ORef, sdo *StreamDownloadOption) (*StreamDownload, error) {
-	switch sdo.DownloadType {
-	case Horizontal, "":
-	case Vertical:
-		if sdo.BlocksPerMarker == 0 {
-			return nil, errors.New(InvalidBlocksPerMarker, "blocks per marker value should be greater than 0")
-		}
-	default:
-		return nil, ErrInvalidDownloadType(sdo.DownloadType)
+
+	if sdo.BlocksPerMarker == 0 {
+		return nil, errors.New(InvalidBlocksPerMarker, "blocks per marker value should be greater than 0")
 	}
 
 	downloadRetry := Retry
@@ -925,13 +706,13 @@ func GetDStorageFileReader(allocation *Allocation, ref *ORef, sdo *StreamDownloa
 	}
 
 	var isEncrypted bool
-	effectiveBlockSize := ref.ChunkSize
-	effectiveChunkSize := int64(allocation.DataShards) * ref.ChunkSize
+	effectiveBlockSize := BlockSize
+	effectiveChunkSize := int64(allocation.DataShards) * effectiveBlockSize
 
 	var encScheme encryption.EncryptionScheme
 	if sdo.ContentMode != DOWNLOAD_CONTENT_THUMB && ref.EncryptedKey != "" {
 		isEncrypted = true
-		effectiveBlockSize = ref.ChunkSize - EncryptionOverHead
+		effectiveBlockSize -= EncryptionOverHead
 		effectiveChunkSize = effectiveBlockSize * int64(allocation.DataShards)
 		encScheme = encryption.NewEncryptionScheme()
 		if _, err := encScheme.Initialize(client.GetClient().Mnemonic); err != nil {
@@ -960,8 +741,6 @@ func GetDStorageFileReader(allocation *Allocation, ref *ORef, sdo *StreamDownloa
 		parityShards:       allocation.ParityShards,
 		blobbers:           allocation.Blobbers,
 		encScheme:          encScheme,
-		chunkSize:          ref.ChunkSize * int64(allocation.DataShards),
-		blockSize:          ref.ChunkSize,
 		effectiveChunkSize: effectiveChunkSize,
 		effectiveBlockSize: effectiveBlockSize,
 		encrypted:          isEncrypted,
@@ -970,7 +749,6 @@ func GetDStorageFileReader(allocation *Allocation, ref *ORef, sdo *StreamDownloa
 		fileSize:           fileSize,
 		authTicket:         sdo.AuthTicket,
 		contentMode:        sdo.ContentMode,
-		downloadType:       sdo.DownloadType,
 		blocksPerMarker:    int(sdo.BlocksPerMarker),
 		retry:              downloadRetry,
 		fbMu:               &sync.Mutex{},
@@ -983,7 +761,7 @@ func GetDStorageFileReader(allocation *Allocation, ref *ORef, sdo *StreamDownloa
 type StreamDownloadOption struct {
 	ContentMode     string
 	AuthTicket      string
-	DownloadType    string // vertical, horizontail or ""
 	Retry           int
 	BlocksPerMarker uint // Number of blocks to download per request
+	VerifyDownload  bool // Verify downloaded data against ValidaitonRoot.
 }

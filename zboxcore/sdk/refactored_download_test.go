@@ -10,7 +10,6 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
-	"sync"
 	"testing"
 
 	"github.com/0chain/errors"
@@ -58,17 +57,8 @@ func TestGetDstorageFileReader(t *testing.T) {
 
 	tests := []input{
 		{
-			name: "Unknown download type",
-			sdo: &StreamDownloadOption{
-				DownloadType: "unknown",
-			},
-			wantErr: true,
-			errMsg:  InvalidDownloadType,
-		},
-		{
 			name: "Blocks per marker set to 0",
 			sdo: &StreamDownloadOption{
-				DownloadType:    "vertical",
 				BlocksPerMarker: 0,
 			},
 			wantErr: true,
@@ -646,7 +636,6 @@ func TestDownloadBlock(t *testing.T) {
 		client         *mockClient
 		sd             StreamDownload
 		wantSize       int
-		downloadType   string
 		wantDataLength int
 		wantErr        bool
 		errMsg         string
@@ -654,13 +643,12 @@ func TestDownloadBlock(t *testing.T) {
 
 	tests := []input{
 		{
-			name:   "OK Vertical Download",
+			name:   "OK Download",
 			client: &mockClient{},
 			sd: StreamDownload{
 				dataShards:         10,
 				parityShards:       5,
 				fileSize:           65536 * 10 * 10,
-				blockSize:          65536,
 				effectiveBlockSize: 65536,
 				effectiveChunkSize: 65536 * 10,
 				opened:             true,
@@ -671,27 +659,6 @@ func TestDownloadBlock(t *testing.T) {
 			},
 			wantSize:       65536 * 10 * 5,
 			wantDataLength: 65536 * 10 * 5,
-			downloadType:   "vertical",
-		},
-		{
-			name:   "OK Horizontal Download",
-			client: &mockClient{},
-			sd: StreamDownload{
-				dataShards:         10,
-				parityShards:       5,
-				fileSize:           65536 * 10 * 10,
-				blockSize:          65536,
-				effectiveBlockSize: 65536,
-				effectiveChunkSize: 65536 * 10,
-				opened:             true,
-				blobbers:           getBlobbers(15),
-				blocksPerMarker:    1,
-				retry:              3,
-				ctx:                context.Background(),
-			},
-			wantSize:       65536 * 10 * 5,
-			wantDataLength: 65536 * 10 * 5,
-			downloadType:   "horizontal",
 		},
 	}
 	for _, test := range tests {
@@ -708,12 +675,7 @@ func TestDownloadBlock(t *testing.T) {
 				err  error
 			)
 
-			if test.downloadType == "vertical" {
-				t.Log("Download type is vertical")
-				data, err = test.sd.getDataVertical(test.wantSize)
-			} else {
-				data, err = test.sd.getDataHorizontal(test.wantSize)
-			}
+			data, err = test.sd.getData(test.wantSize)
 
 			if test.wantErr {
 				require.NotNil(t, err)
@@ -743,105 +705,7 @@ func (mc reconstructionMockClient) NilData(indexes []string) {
 	}
 }
 
-func TestHorizontalReconstruction(t *testing.T) {
-	type input struct {
-		name               string
-		client             *reconstructionMockClient
-		sd                 StreamDownload
-		dataShardsCount    int
-		rawData            [][]byte
-		failedBlobbersList []int
-		wantErr            bool
-		errMsg             string
-	}
-
-	tests := []input{
-		{
-			name:   "OK Horizontal Reconstruction",
-			client: &reconstructionMockClient{},
-			sd: StreamDownload{
-				dataShards:         10,
-				parityShards:       5,
-				fileSize:           65536 * 10,
-				blockSize:          65536,
-				effectiveBlockSize: 65536,
-				effectiveChunkSize: 65536 * 10,
-				opened:             true,
-				blobbers:           getBlobbers(15),
-				blocksPerMarker:    1,
-				retry:              3,
-				fbMu:               &sync.Mutex{},
-				failedBlobbers:     make(map[int]*blockchain.StorageNode),
-				ctx:                context.Background(),
-			},
-			failedBlobbersList: []int{3, 5, 7},
-		},
-		{
-			name:   "Fail Horizontal Reconstruction",
-			client: &reconstructionMockClient{},
-			sd: StreamDownload{
-				dataShards:         10,
-				parityShards:       5,
-				fileSize:           65536 * 10,
-				blockSize:          65536,
-				effectiveBlockSize: 65536,
-				effectiveChunkSize: 65536 * 10,
-				opened:             true,
-				blobbers:           getBlobbers(15),
-				blocksPerMarker:    1,
-				retry:              3,
-				fbMu:               &sync.Mutex{},
-				failedBlobbers:     make(map[int]*blockchain.StorageNode),
-				ctx:                context.Background(),
-			},
-			failedBlobbersList: []int{3, 4, 5, 6, 7, 8, 9},
-			wantErr:            true,
-			errMsg:             ErrNoRequiredShards.Code,
-		},
-	}
-
-	for _, test := range tests {
-		test.client.data = getErasureEncodedData(
-			t, test.sd.blobbers, int(test.sd.fileSize), test.sd.dataShards, test.sd.parityShards)
-
-		var blList []string
-		for _, i := range test.failedBlobbersList {
-			blb := test.sd.blobbers[i]
-			blList = append(blList, blb.ID)
-		}
-
-		test.client.NilData(blList)
-
-		rawData := make([][]byte, test.sd.dataShards+test.sd.parityShards)
-
-		var count int
-		for i, blb := range test.sd.blobbers {
-			if count == 10 {
-				break
-			}
-			rawData[i] = test.client.data[blb.ID]
-			count++
-		}
-
-		t.Run(test.name, func(t *testing.T) {
-			t.Logf("Running test: %s", test.name)
-			zboxutil.Client = test.client
-
-			err := test.sd.reconstructHorizontal(rawData, test.sd.dataShards-len(test.failedBlobbersList))
-
-			if test.wantErr {
-				require.NotNil(t, err)
-				require.Contains(t, err.Error(), test.errMsg)
-				return
-			}
-
-			require.Nil(t, err)
-		})
-	}
-
-}
-
-func TestVerticalReconstruction(t *testing.T) {
+func TestReconstruction(t *testing.T) {
 	type input struct {
 		name               string
 		sd                 StreamDownload
@@ -854,13 +718,12 @@ func TestVerticalReconstruction(t *testing.T) {
 
 	tests := []input{
 		{
-			name:   "OK Vertical Reconstruction",
+			name:   "OK Reconstruction",
 			client: &reconstructionMockClient{},
 			sd: StreamDownload{
 				dataShards:         10,
 				parityShards:       5,
 				fileSize:           65536 * 10 * 10,
-				blockSize:          65536,
 				effectiveBlockSize: 65536,
 				effectiveChunkSize: 65536 * 10,
 				opened:             true,
@@ -872,13 +735,12 @@ func TestVerticalReconstruction(t *testing.T) {
 			failedBlobbersList: []int{0, 3, 5},
 		},
 		{
-			name:   "Fail Vertical Reconstruction",
+			name:   "Fail Reconstruction",
 			client: &reconstructionMockClient{},
 			sd: StreamDownload{
 				dataShards:         10,
 				parityShards:       5,
 				fileSize:           65536 * 10 * 10,
-				blockSize:          65536,
 				effectiveBlockSize: 65536,
 				effectiveChunkSize: 65536 * 10,
 				opened:             true,
@@ -938,7 +800,7 @@ func TestVerticalReconstruction(t *testing.T) {
 		}
 
 		t.Run(test.name, func(t *testing.T) {
-			err := test.sd.reconstructVertical(results, len(test.failedBlobbersList), test.offsetBlock, test.sd.blocksPerMarker)
+			err := test.sd.reconstruct(results, len(test.failedBlobbersList), test.offsetBlock, test.sd.blocksPerMarker)
 
 			if test.wantErr {
 				require.NotNil(t, err)
