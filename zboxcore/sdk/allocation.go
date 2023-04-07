@@ -1208,7 +1208,7 @@ func (a *Allocation) CancelDownload(remotepath string) error {
 	return errors.New("remote_path_not_found", "Invalid path. No download in progress for the path "+remotepath)
 }
 
-func (a *Allocation) Download(
+func (a *Allocation) DownloadFromReader(
 	remotePath, localPath, pathHash, authToken, contentMode string,
 	verifyDownload bool, retry int, blocksPerMarker uint) error {
 
