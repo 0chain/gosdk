@@ -5,6 +5,7 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math"
@@ -16,6 +17,7 @@ import (
 
 	"errors"
 
+	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/h2non/filetype"
 	"github.com/lithammer/shortuuid/v3"
@@ -205,10 +207,6 @@ func calculateMinRequired(minRequired, percent float64) int {
 	return int(math.Ceil(minRequired * percent))
 }
 
-func Join(a, b string) string {
-	return strings.ReplaceAll(filepath.Join(a, b), "\\", "/")
-}
-
 func GetRefsHash(r []byte) string {
 	hash := sha3.New256()
 	hash.Write(r)
@@ -244,6 +242,24 @@ func GetRateLimitValue(r *http.Response) (int, error) {
 	}
 
 	return int(math.Ceil(rl / dur)), nil
+}
+
+func MajorError(errors []error) error {
+	countError := make(map[error]int)
+	for _, value := range errors {
+		if value != nil {
+			countError[value] += 1
+		}
+	}
+	maxFreq := 0
+	var maxKey error
+	for key, value := range countError {
+		if value > maxFreq {
+			maxKey = key
+			maxFreq = value
+		}
+	}
+	return maxKey
 }
 
 const (
@@ -312,4 +328,26 @@ func ScryptDecrypt(key, ciphertext []byte) ([]byte, error) {
 	}
 
 	return plaintext, nil
+}
+
+// Returns the error message code, message should be strictly of the
+// format: ".... err: {"code" : <return_this>, ...}, ..."
+func GetErrorMessageCode(errorMsg string) (string, error) {
+	// find index of "err"
+	targetWord := `err:`
+	idx := strings.Index(errorMsg, targetWord)
+	if idx == -1 {
+		return "", thrown.New("invalid_params", "message doesn't contain `err` field")
+
+	}
+	var a = make(map[string]string)
+	if idx + 5 >= len(errorMsg) {
+		return "", thrown.New("invalid_format", "err field is not proper json")
+	}
+	err := json.Unmarshal([]byte(errorMsg[idx+5:]), &a)
+	if err != nil {
+		return "", thrown.New("invalid_format", "err field is not proper json")
+	}
+	return a["code"], nil
+
 }

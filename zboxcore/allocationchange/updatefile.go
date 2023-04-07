@@ -2,8 +2,10 @@ package allocationchange
 
 import (
 	"fmt"
+
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
@@ -40,7 +42,7 @@ func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) (
 	ch.NewFile.ActualFileHashSignature = fileHashSign
 	ch.NewFile.ValidationRootSignature = validationRootSign
 
-	fields, err := common.GetPathFields(common.GetPathDir(ch.NewFile.Path))
+	fields, err := common.GetPathFields(pathutil.Dir(ch.NewFile.Path))
 
 	if err != nil {
 		return

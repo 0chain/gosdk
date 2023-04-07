@@ -25,6 +25,8 @@ type ObjectTreeResult struct {
 	LatestWM   *marker.WriteMarker `json:"latest_write_marker"`
 }
 
+const INVALID_PATH = "invalid_path"
+
 type ObjectTreeRequest struct {
 	allocationID   string
 	allocationTx   string
@@ -62,9 +64,12 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 	o.wg.Wait()
 	hashCount := make(map[string]int)
 	hashRefsMap := make(map[string]*ObjectTreeResult)
+	oTreeResponseErrors := make([]error, totalBlobbersCount)
 
-	for _, oTreeResponse := range oTreeResponses {
+	for idx, oTreeResponse := range oTreeResponses {
+		oTreeResponseErrors[idx] = oTreeResponse.err
 		if oTreeResponse.err != nil {
+			l.Logger.Error("Error while getting file refs from blobber:", oTreeResponse.err)
 			continue
 		}
 		var similarFieldRefs []SimilarField
@@ -84,7 +89,14 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 			hashRefsMap[hash] = oTreeResponse.oTResult
 		}
 	}
-
+	majorError := zboxutil.MajorError(oTreeResponseErrors)
+	majorErrorMsg := ""
+	if majorError != nil {
+		majorErrorMsg = majorError.Error()
+	}
+	if code, _ := zboxutil.GetErrorMessageCode(majorErrorMsg); code == INVALID_PATH {
+		return &ObjectTreeResult{}, nil
+	}
 	var selected *ObjectTreeResult
 	for k, v := range hashCount {
 		if v >= o.consensusThresh {
@@ -140,7 +152,7 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 			}
 			return nil
 		} else {
-			return errors.New("response_error", fmt.Sprintf("got status %d", resp.StatusCode))
+			return errors.New("response_error", fmt.Sprintf("got status %d, err: %s", resp.StatusCode, respBody))
 		}
 	})
 	if err != nil {

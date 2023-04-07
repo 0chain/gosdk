@@ -160,6 +160,7 @@ type Terms struct {
 type Blobber interface {
 	SetTerms(readPrice int64, writePrice int64, minLockDemand float64, maxOfferDuration int64)
 	SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64)
+	SetAvailable(bool)
 }
 
 func NewBlobber(id, baseUrl string, capacity, allocated, lastHealthCheck int64) Blobber {
@@ -180,6 +181,7 @@ type blobber struct {
 	LastHealthCheck   int64             `json:"last_health_check"`
 	Terms             Terms             `json:"terms"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
+	IsAvailable       bool              `json:"is_available"`
 }
 
 func (b *blobber) SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64) {
@@ -199,6 +201,10 @@ func (b *blobber) SetTerms(readPrice int64, writePrice int64, minLockDemand floa
 		MinLockDemand:    minLockDemand,
 		MaxOfferDuration: maxOfferDuration,
 	}
+}
+
+func (b *blobber) SetAvailable(availability bool) {
+	b.IsAvailable = availability
 }
 
 type Validator interface {
@@ -1267,6 +1273,53 @@ func GetChainStats(timeout RequestTimeout) ([]byte, error) {
 		rsp = x
 	}
 
+	if rsp == nil {
+		return nil, errors.New("http_request_failed", "Request failed with status not 200")
+	}
+
+	if err = json.Unmarshal([]byte(rsp.Body), &b); err != nil {
+		return nil, err
+	}
+
+	return []byte(rsp.Body), nil
+}
+
+func GetFeeStats(timeout RequestTimeout) ([]byte, error) {
+
+	var numMiners = 4
+
+	if numMiners > len(_config.chain.Miners) {
+		numMiners = len(_config.chain.Miners)
+	}
+
+	var result = make(chan *util.GetResponse, numMiners)
+
+	ctx, cancel := makeTimeoutContext(timeout)
+	defer cancel()
+
+	var (
+		b   *block.FeeStats
+		err error
+	)
+
+	queryFromMinersContext(ctx, numMiners, GET_FEE_STATS, result)
+	var rsp *util.GetResponse
+
+loop:
+	for i := 0; i < numMiners; i++ {
+		select {
+		case x := <-result:
+			if x.StatusCode != http.StatusOK {
+				continue
+			}
+			rsp = x
+			if rsp != nil {
+				break loop
+			}
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
 	if rsp == nil {
 		return nil, errors.New("http_request_failed", "Request failed with status not 200")
 	}
