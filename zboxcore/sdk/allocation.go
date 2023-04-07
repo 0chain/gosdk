@@ -1468,12 +1468,35 @@ func (a *Allocation) UpdateWithRepair(
 	statusCB StatusCallback,
 ) (string, error) {
 
+	l.Logger.Info("Uploadating allocation")
 	hash, _, err := UpdateAllocation(size, expiry, a.ID, lock, updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
 	if err != nil {
 		return "", err
 	}
 
-	// if a blobber is being added, then repair is needed
+	l.Logger.Info(fmt.Sprintf("allocation updated with hash: %s", hash))
+	l.Logger.Info("waiting for the blobber to be added to network")
+
+	for {
+		alloc, err := GetAllocation(a.ID)
+		if err != nil {
+			l.Logger.Error("failed to get allocation")
+			return hash, err
+		}
+
+		for _, blobber := range alloc.Blobbers {
+			if addBlobberId == blobber.ID {
+				l.Logger.Info("allocation updated successfully")
+				a = alloc
+				goto repair
+			}
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+repair:
+	l.Logger.Info("starting repair")
+
 	shouldRepair := false
 	if addBlobberId != "" {
 		shouldRepair = true
