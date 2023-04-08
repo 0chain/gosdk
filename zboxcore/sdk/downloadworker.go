@@ -57,7 +57,7 @@ type DownloadRequest struct {
 	completedCallback  func(remotepath string, remotepathhash string)
 	contentMode        string
 	Consensus
-	effectiveBlockSize int
+	effectiveBlockSize int // blocksize - encryptionOverHead
 	ecEncoder          reedsolomon.Encoder
 	maskMu             *sync.Mutex
 	encScheme          encryption.EncryptionScheme
@@ -487,6 +487,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 }
 
+// initEC will initialize erasure encoder/decoder
 func (req *DownloadRequest) initEC() error {
 	var err error
 	req.ecEncoder, err = reedsolomon.New(
@@ -500,6 +501,7 @@ func (req *DownloadRequest) initEC() error {
 	return nil
 }
 
+// initEncryption will initialize encScheme with client's keys
 func (req *DownloadRequest) initEncryption() error {
 	req.encScheme = encryption.NewEncryptionScheme()
 	mnemonic := client.GetClient().Mnemonic
