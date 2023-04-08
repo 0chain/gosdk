@@ -689,30 +689,42 @@ func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType
 	return oTreeReq.GetRefs()
 }
 
-func (a *Allocation) getDownloadMaskForBlobber(blobberID string) (zboxutil.Uint128, []*blockchain.StorageNode) {
+func (a *Allocation) getDownloadMaskForBlobber(blobberID string) (zboxutil.Uint128, []*blockchain.StorageNode, error) {
 
+	x := zboxutil.NewUint128(1).Lsh(uint64(1)).Sub64(1)
 	blobberIdx := 0
+	found := false
 	for idx, b := range a.Blobbers {
 		if b.ID == blobberID {
+			found = true
 			blobberIdx = idx
 		}
 	}
 
-	x := zboxutil.NewUint128(1).Lsh(uint64(1)).Sub64(1)
-	return x, a.Blobbers[blobberIdx : blobberIdx+1]
+	if !found {
+		return x, nil, fmt.Errorf("no blobber found with the given ID")
+	}
+
+	return x, a.Blobbers[blobberIdx : blobberIdx+1], nil
 }
 
 func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string, status StatusCallback) error {
 
+	mask, blobbers, err := a.getDownloadMaskForBlobber(blobberID)
+	if err != nil {
+		l.Logger.Error(err)
+		return err
+	}
+
 	verifyDownload := false // should be set to false
 	downloadReq, err := a.generateDownloadRequest(
-		localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, 392, verifyDownload, status,
+		localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload, status,
 	)
 	if err != nil {
 		l.Logger.Error(err)
 		return err
 	}
-	mask, blobbers := a.getDownloadMaskForBlobber(blobberID)
+
 	downloadReq.downloadMask = mask
 	downloadReq.blobbers = blobbers
 	downloadReq.fullconsensus = 1
@@ -728,14 +740,7 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 		return err
 	}
 
-	_, _, _, err = downloadReq.calculateShardsParams(fRef, remotePath)
-	if err != nil {
-		l.Logger.Error(err.Error())
-		downloadReq.errorCB(
-			fmt.Errorf("Error while calculating shard params. Error: %v",
-				err), remotePath)
-		return err
-	}
+	downloadReq.numBlocks = fRef.NumBlocks
 
 	if err != nil {
 		return err
