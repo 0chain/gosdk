@@ -27,7 +27,6 @@ import (
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
-	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -1222,11 +1221,13 @@ func (a *Allocation) DownloadFromReader(
 		return errors.New("invalid_path", "local path must be directory")
 	}
 
-	sd, err := a.GetStreamDownloader(
+	r, err := a.GetAllocationFileReader(
 		remotePath, pathHash, authToken, contentMode, verifyDownload, blocksPerMarker)
 	if err != nil {
 		return err
 	}
+
+	sd := r.(*StreamDownload)
 
 	fileName := filepath.Base(sd.remotefilepath)
 	var localFPath string
@@ -1242,7 +1243,7 @@ func (a *Allocation) DownloadFromReader(
 	if errors.Is(err, os.ErrNotExist) {
 		f, err = os.Create(localFPath)
 	} else {
-		sd.SetOffset(finfo.Size())
+		r.Seek(finfo.Size(), io.SeekStart)
 		f, err = os.OpenFile(localFPath, os.O_WRONLY|os.O_APPEND, 0644)
 	}
 
@@ -1253,7 +1254,7 @@ func (a *Allocation) DownloadFromReader(
 
 	buf := make([]byte, 1024*KB)
 	for {
-		n, err := sd.Read(buf)
+		n, err := r.Read(buf)
 		if err != nil && errors.Is(err, io.EOF) {
 			_, err = f.Write(buf[:n])
 			if err != nil {
@@ -1266,21 +1267,19 @@ func (a *Allocation) DownloadFromReader(
 			return err
 		}
 	}
-	logger.Logger.Info("Buffer length: ", fmt.Sprint(len(buf)))
-	_, err = io.CopyBuffer(f, sd, buf)
-	if err != nil {
-		return err
-	}
+
 	return nil
 }
 
-func (a *Allocation) GetStreamDownloader(
+// GetStreamDownloader will check file ref existence and returns an instance that provides
+// io.ReadSeekerCloser interface
+func (a *Allocation) GetAllocationFileReader(
 	remotePath,
 	pathHash,
 	authToken,
 	contentMode string,
 	verifyDownload bool,
-	blocksPerMarker uint) (*StreamDownload, error) {
+	blocksPerMarker uint) (io.ReadSeekCloser, error) {
 
 	if !a.isInitialized() {
 		return nil, notInitialized

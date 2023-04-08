@@ -39,29 +39,32 @@ const (
 
 // error codes
 const (
-	LessThan67Percent       = "less_than_67_percent"
-	ExceedingFailedBlobber  = "exceeding_failed_blobber"
-	ReadCounterUpdate       = "rc_update"
-	TooManyRequests         = "too_many_requests"
-	ContextCancelled        = "context_cancelled"
-	MarshallError           = "marshall_error"
-	SigningError            = "error_while_signing"
-	ReedSolomonEndocerError = "reedsolomon_endocer_error"
-	ErasureReconstructError = "erasure_reconstruct_error"
-	ResponseError           = "response_error"
-	NoRequiredShards        = "no_required_shards"
-	NotEnoughTokens         = "not_enough_tokens"
-	Panic                   = "code_panicked"
-	InvalidHeader           = "invalid_header"
-	DecryptionError         = "decryption_error"
-	UnknownDownloadType     = "unknown_download_type"
-	InvalidBlocksPerMarker  = "invalid_blocks_per_marker"
-	ReDecryptUnmarshallFail = "redecrypt_unmarshall_fail"
-	ReDecryptionFail        = "redecryption_fail"
-	InvalidRead             = "invalid_read"
-	InvalidDownloadType     = "invalid_download_type"
-	StaleReadMarker         = "stale_read_marker"
-	InvalidReadMarker       = "invalid_read_marker"
+	LessThan67Percent            = "less_than_67_percent"
+	ExceedingFailedBlobber       = "exceeding_failed_blobber"
+	ReadCounterUpdate            = "rc_update"
+	TooManyRequests              = "too_many_requests"
+	ContextCancelled             = "context_cancelled"
+	MarshallError                = "marshall_error"
+	SigningError                 = "error_while_signing"
+	ReedSolomonEndocerError      = "reedsolomon_endocer_error"
+	ErasureReconstructError      = "erasure_reconstruct_error"
+	ResponseError                = "response_error"
+	NoRequiredShards             = "no_required_shards"
+	NotEnoughTokens              = "not_enough_tokens"
+	Panic                        = "code_panicked"
+	InvalidHeader                = "invalid_header"
+	DecryptionError              = "decryption_error"
+	UnknownDownloadType          = "unknown_download_type"
+	InvalidBlocksPerMarker       = "invalid_blocks_per_marker"
+	ReDecryptUnmarshallFail      = "redecrypt_unmarshall_fail"
+	ReDecryptionFail             = "redecryption_fail"
+	InvalidRead                  = "invalid_read"
+	InvalidDownloadType          = "invalid_download_type"
+	StaleReadMarker              = "stale_read_marker"
+	InvalidReadMarker            = "invalid_read_marker"
+	ExceededMaxOffsetValue       = "exceeded_max_offset_value"
+	NegativeOffsetResultantValue = "negative_offset_resultant_value"
+	InvalidWhenceValue           = "invalid_whence_value"
 )
 
 //errors
@@ -120,12 +123,34 @@ type StreamDownload struct {
 	fileSize int64
 }
 
-func (sd *StreamDownload) Close() {
+func (sd *StreamDownload) Close() error {
 	sd.open = false
+	return nil
 }
 
-func (sd *StreamDownload) SetOffset(offset int64) {
-	sd.offset = offset
+func (sd *StreamDownload) Seek(offset int64, whence int) (int64, error) {
+	switch whence {
+	case io.SeekStart:
+		if offset > sd.fileSize {
+			return 0, errors.New(ExceededMaxOffsetValue, "")
+		}
+		sd.offset = offset
+	case io.SeekCurrent:
+		if sd.offset+offset >= sd.fileSize {
+			return 0, errors.New(ExceededMaxOffsetValue, "")
+		}
+		sd.offset += offset
+	case io.SeekEnd:
+		newOffset := sd.fileSize - offset
+		if newOffset < 0 {
+			return 0, errors.New(NegativeOffsetResultantValue, "")
+		}
+		sd.offset = offset
+	default:
+		return 0, errors.New(InvalidWhenceValue,
+			fmt.Sprintf("expected 0, 1 or 2, provided %d", whence))
+	}
+	return sd.offset, nil
 }
 
 func (sd *StreamDownload) getStartAndEndIndex(wantsize int64) (int64, int64) {
@@ -190,7 +215,7 @@ func (sd *StreamDownload) Read(b []byte) (int, error) {
 }
 
 // GetDStorageFileReader Get a reader that provides io.Reader interface
-func GetDStorageFileReader(alloc *Allocation, ref *ORef, sdo *StreamDownloadOption) (*StreamDownload, error) {
+func GetDStorageFileReader(alloc *Allocation, ref *ORef, sdo *StreamDownloadOption) (io.ReadSeekCloser, error) {
 
 	sd := &StreamDownload{
 		DownloadRequest: &DownloadRequest{
