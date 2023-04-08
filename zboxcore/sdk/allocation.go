@@ -27,6 +27,7 @@ import (
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -673,7 +674,7 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 }
 
 // GetRefsWithAuthTicket get refs that are children of shared remote path.
-func (a *Allocation) GetRefsWithAuthTicket(authToken, path, pathHash, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
+func (a *Allocation) GetRefsWithAuthTicket(authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
 	if authToken == "" {
 		return nil, errors.New("empty_auth_token", "auth token cannot be empty")
 	}
@@ -688,7 +689,7 @@ func (a *Allocation) GetRefsWithAuthTicket(authToken, path, pathHash, offsetPath
 	}
 
 	at, _ := json.Marshal(authTicket)
-	return a.getRefs(path, pathHash, string(at), offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
+	return a.getRefs("", authTicket.FilePathHash, string(at), offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
 }
 
 //This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
@@ -1211,7 +1212,7 @@ func (a *Allocation) CancelDownload(remotepath string) error {
 
 func (a *Allocation) DownloadFromReader(
 	remotePath, localPath, pathHash, authToken, contentMode string,
-	verifyDownload bool, retry int, blocksPerMarker uint) error {
+	verifyDownload bool, blocksPerMarker uint) error {
 
 	finfo, err := os.Stat(localPath)
 	if err != nil {
@@ -1222,12 +1223,12 @@ func (a *Allocation) DownloadFromReader(
 	}
 
 	sd, err := a.GetStreamDownloader(
-		remotePath, pathHash, authToken, contentMode, verifyDownload, retry, blocksPerMarker)
+		remotePath, pathHash, authToken, contentMode, verifyDownload, blocksPerMarker)
 	if err != nil {
 		return err
 	}
 
-	fileName := filepath.Base(remotePath)
+	fileName := filepath.Base(sd.remotefilepath)
 	var localFPath string
 	if contentMode == DOWNLOAD_CONTENT_THUMB {
 		localFPath = filepath.Join(localPath, fileName, ".thumb")
@@ -1250,7 +1251,23 @@ func (a *Allocation) DownloadFromReader(
 	}
 	defer f.Close()
 
-	_, err = io.Copy(f, sd)
+	buf := make([]byte, 1024*KB)
+	for {
+		n, err := sd.Read(buf)
+		if err != nil && errors.Is(err, io.EOF) {
+			_, err = f.Write(buf[:n])
+			if err != nil {
+				return err
+			}
+			break
+		}
+		_, err = f.Write(buf[:n])
+		if err != nil {
+			return err
+		}
+	}
+	logger.Logger.Info("Buffer length: ", fmt.Sprint(len(buf)))
+	_, err = io.CopyBuffer(f, sd, buf)
 	if err != nil {
 		return err
 	}
@@ -1263,7 +1280,6 @@ func (a *Allocation) GetStreamDownloader(
 	authToken,
 	contentMode string,
 	verifyDownload bool,
-	retry int,
 	blocksPerMarker uint) (*StreamDownload, error) {
 
 	if !a.isInitialized() {
@@ -1275,7 +1291,7 @@ func (a *Allocation) GetStreamDownloader(
 	var err error
 	switch {
 	case authToken != "":
-		res, err = a.GetRefsWithAuthTicket(authToken, remotePath, pathHash, "", "", "", "", "regular", 0, 1)
+		res, err = a.GetRefsWithAuthTicket(authToken, "", "", "", "", "regular", 0, 1)
 	case remotePath != "":
 		res, err = a.GetRefs(remotePath, "", "", "", "", "regular", 0, 1)
 	case pathHash != "":
@@ -1300,7 +1316,6 @@ func (a *Allocation) GetStreamDownloader(
 		ContentMode:     contentMode,
 		AuthTicket:      authToken,
 		VerifyDownload:  verifyDownload,
-		Retry:           retry,
 		BlocksPerMarker: blocksPerMarker,
 	}
 

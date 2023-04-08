@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"sync"
 	"time"
 
 	"github.com/0chain/errors"
@@ -108,7 +109,6 @@ const (
 type StreamDownloadOption struct {
 	ContentMode     string
 	AuthTicket      string
-	Retry           int
 	BlocksPerMarker uint // Number of blocks to download per request
 	VerifyDownload  bool // Verify downloaded data against ValidaitonRoot.
 }
@@ -133,7 +133,7 @@ func (sd *StreamDownload) getStartAndEndIndex(wantsize int64) (int64, int64) {
 	totalBlocksPerBlobber := (sizePerBlobber + int64(sd.effectiveBlockSize) - 1) / int64(sd.effectiveBlockSize)
 
 	effectiveChunkSize := sd.effectiveBlockSize * sd.datashards
-	startInd := sd.offset / int64(sd.effectiveBlockSize)
+	startInd := sd.offset / int64(effectiveChunkSize)
 	endInd := (sd.offset + wantsize + int64(effectiveChunkSize) - 1) / int64(effectiveChunkSize)
 	if endInd > totalBlocksPerBlobber {
 		endInd = totalBlocksPerBlobber
@@ -160,12 +160,13 @@ func (sd *StreamDownload) Read(b []byte) (int, error) {
 	if sd.numBlocks > 0 {
 		numBlocks = sd.numBlocks
 	} else {
-		numBlocks = endInd - startInd + 1 // startInd and endInd are inclusive
+		numBlocks = endInd - startInd
 		if numBlocks > BlocksFor10MB {
 			numBlocks = BlocksFor10MB
 		}
 	}
 
+	effectiveChunkSize := sd.effectiveBlockSize * sd.datashards
 	n := 0
 	for startInd < endInd {
 		if startInd+numBlocks > endInd {
@@ -177,7 +178,10 @@ func (sd *StreamDownload) Read(b []byte) (int, error) {
 			return 0, err
 		}
 
-		n += copy(b[n:], data)
+		offset := sd.offset % int64(effectiveChunkSize)
+		n += copy(b[n:wantSize], data[offset:])
+
+		startInd += numBlocks
 	}
 
 	sd.offset += int64(n)
@@ -207,6 +211,8 @@ func GetDStorageFileReader(alloc *Allocation, ref *ORef, sdo *StreamDownloadOpti
 			blobbers:           alloc.Blobbers,
 			downloadMask:       zboxutil.NewUint128(1).Lsh(uint64(len(alloc.Blobbers))).Sub64(1),
 			effectiveBlockSize: BlockSize,
+			chunkSize:          BlockSize,
+			maskMu:             &sync.Mutex{},
 		},
 		open: true,
 	}
@@ -238,12 +244,13 @@ func GetDStorageFileReader(alloc *Allocation, ref *ORef, sdo *StreamDownloadOpti
 		return nil, err
 	}
 
-	if sdo.ContentMode == DOWNLOAD_CONTENT_FULL && ref.EncryptedKey != "" {
+	if ref.EncryptedKey != "" {
+		sd.effectiveBlockSize = BlockSize - EncryptionOverHead
+		sd.encryptedKey = ref.EncryptedKey
 		err = sd.initEncryption()
 		if err != nil {
 			return nil, err
 		}
-		sd.effectiveBlockSize = BlockSize - EncryptionOverHead
 	}
 
 	return sd, err
