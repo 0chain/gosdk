@@ -23,6 +23,7 @@ import (
 var bridge *zcnbridge.BridgeClient
 
 func initBridge(
+	blockWorker string,
 	ethereumAddress string,
 	bridgeAddress string,
 	authorizersAddress string,
@@ -45,6 +46,7 @@ func initBridge(
 	//	75.0,
 	//)
 	//
+
 	cfg := zcnbridge.BridgeClientYaml{
 		Password:           "",
 		EthereumAddress:    ethereumAddress,
@@ -55,6 +57,7 @@ func initBridge(
 		GasLimit:           gasLimit,
 		Value:              value,
 		ConsensusThreshold: consensusThreshold,
+		BlockWorker:        blockWorker,
 	}
 
 	wallet := zcncore.GetWalletRaw()

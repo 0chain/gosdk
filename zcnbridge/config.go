@@ -91,20 +91,13 @@ func ReadClientConfigFromCmd() *BridgeSDKConfig {
 	return cmd
 }
 
-func CreateBridgeOwner(cfg *viper.Viper, walletFile ...string) *BridgeOwner {
-	chainConfig := cfg.Get("config.yaml")
-	if chainConfig == nil {
-		ExitWithError("CreateBridgeOwner: can't read chain config file")
-	}
-
-	blockWorder := cfg.GetString("block_worker")
-
-	owner := cfg.Get(OwnerConfigKeyName)
+func CreateBridgeOwner(bridgeCfg, chainCfg *viper.Viper, walletFile ...string) *BridgeOwner {
+	owner := bridgeCfg.Get(OwnerConfigKeyName)
 	if owner == nil {
 		ExitWithError("CreateBridgeOwner: can't read config with `owner` key")
 	}
 
-	fileUsed := cfg.ConfigFileUsed()
+	fileUsed := bridgeCfg.ConfigFileUsed()
 	homedir := path.Dir(fileUsed)
 	if homedir == "" {
 		ExitWithError("CreateBridgeOwner: homedir is required")
@@ -118,19 +111,19 @@ func CreateBridgeOwner(cfg *viper.Viper, walletFile ...string) *BridgeOwner {
 	return &BridgeOwner{
 		BridgeClientConfig: &BridgeClientConfig{
 			ContractsRegistry: ContractsRegistry{
-				BridgeAddress:      cfg.GetString(fmt.Sprintf("%s.BridgeAddress", OwnerConfigKeyName)),
-				WzcnAddress:        cfg.GetString(fmt.Sprintf("%s.WzcnAddress", OwnerConfigKeyName)),
-				AuthorizersAddress: cfg.GetString(fmt.Sprintf("%s.AuthorizersAddress", OwnerConfigKeyName)),
+				BridgeAddress:      bridgeCfg.GetString(fmt.Sprintf("%s.BridgeAddress", OwnerConfigKeyName)),
+				WzcnAddress:        bridgeCfg.GetString(fmt.Sprintf("%s.WzcnAddress", OwnerConfigKeyName)),
+				AuthorizersAddress: bridgeCfg.GetString(fmt.Sprintf("%s.AuthorizersAddress", OwnerConfigKeyName)),
 			},
 			EthereumConfig: EthereumConfig{
-				EthereumNodeURL: cfg.GetString(fmt.Sprintf("%s.EthereumNodeURL", OwnerConfigKeyName)),
-				GasLimit:        cfg.GetUint64(fmt.Sprintf("%s.GasLimit", OwnerConfigKeyName)),
-				Value:           cfg.GetInt64(fmt.Sprintf("%s.Value", OwnerConfigKeyName)),
+				EthereumNodeURL: bridgeCfg.GetString(fmt.Sprintf("%s.EthereumNodeURL", OwnerConfigKeyName)),
+				GasLimit:        bridgeCfg.GetUint64(fmt.Sprintf("%s.GasLimit", OwnerConfigKeyName)),
+				Value:           bridgeCfg.GetInt64(fmt.Sprintf("%s.Value", OwnerConfigKeyName)),
 			},
-			EthereumAddress: cfg.GetString(fmt.Sprintf("%s.EthereumAddress", OwnerConfigKeyName)),
-			Password:        cfg.GetString(fmt.Sprintf("%s.Password", OwnerConfigKeyName)),
+			EthereumAddress: bridgeCfg.GetString(fmt.Sprintf("%s.EthereumAddress", OwnerConfigKeyName)),
+			Password:        bridgeCfg.GetString(fmt.Sprintf("%s.Password", OwnerConfigKeyName)),
 			Homedir:         homedir,
-			BlockWorker:     blockWorder,
+			BlockWorker:     chainCfg.GetString("block_worker"),
 		},
 		Instance: &Instance{
 			startTime: common.Now(),
@@ -139,21 +132,14 @@ func CreateBridgeOwner(cfg *viper.Viper, walletFile ...string) *BridgeOwner {
 	}
 }
 
-func CreateBridgeClient(cfg *viper.Viper, walletFile ...string) *BridgeClient {
-	chainConfig := cfg.Get("config.yaml")
-	if chainConfig == nil {
-		ExitWithError("CreateBridgeOwner: can't read chain config file")
-	}
-
-	blockWorder := cfg.GetString("block_worker")
-
-	fileUsed := cfg.ConfigFileUsed()
+func CreateBridgeClient(bridgeCfg, chainCfg *viper.Viper, walletFile ...string) *BridgeClient {
+	fileUsed := bridgeCfg.ConfigFileUsed()
 	homedir := path.Dir(fileUsed)
 	if homedir == "" {
 		ExitWithError("homedir is required")
 	}
 
-	bridge := cfg.Get(ClientConfigKeyName)
+	bridge := bridgeCfg.Get(ClientConfigKeyName)
 	if bridge == nil {
 		ExitWithError(fmt.Sprintf("Can't read config with '%s' key", ClientConfigKeyName))
 	}
@@ -166,22 +152,22 @@ func CreateBridgeClient(cfg *viper.Viper, walletFile ...string) *BridgeClient {
 	return &BridgeClient{
 		BridgeClientConfig: &BridgeClientConfig{
 			ContractsRegistry: ContractsRegistry{
-				BridgeAddress:      cfg.GetString(fmt.Sprintf("%s.BridgeAddress", ClientConfigKeyName)),
-				WzcnAddress:        cfg.GetString(fmt.Sprintf("%s.WzcnAddress", ClientConfigKeyName)),
-				AuthorizersAddress: cfg.GetString(fmt.Sprintf("%s.AuthorizersAddress", ClientConfigKeyName)),
+				BridgeAddress:      bridgeCfg.GetString(fmt.Sprintf("%s.BridgeAddress", ClientConfigKeyName)),
+				WzcnAddress:        bridgeCfg.GetString(fmt.Sprintf("%s.WzcnAddress", ClientConfigKeyName)),
+				AuthorizersAddress: bridgeCfg.GetString(fmt.Sprintf("%s.AuthorizersAddress", ClientConfigKeyName)),
 			},
 			EthereumConfig: EthereumConfig{
-				EthereumNodeURL: cfg.GetString(fmt.Sprintf("%s.EthereumNodeURL", ClientConfigKeyName)),
-				GasLimit:        cfg.GetUint64(fmt.Sprintf("%s.GasLimit", ClientConfigKeyName)),
-				Value:           cfg.GetInt64(fmt.Sprintf("%s.Value", ClientConfigKeyName)),
+				EthereumNodeURL: bridgeCfg.GetString(fmt.Sprintf("%s.EthereumNodeURL", ClientConfigKeyName)),
+				GasLimit:        bridgeCfg.GetUint64(fmt.Sprintf("%s.GasLimit", ClientConfigKeyName)),
+				Value:           bridgeCfg.GetInt64(fmt.Sprintf("%s.Value", ClientConfigKeyName)),
 			},
-			EthereumAddress: cfg.GetString(fmt.Sprintf("%s.EthereumAddress", ClientConfigKeyName)),
-			Password:        cfg.GetString(fmt.Sprintf("%s.Password", ClientConfigKeyName)),
+			EthereumAddress: bridgeCfg.GetString(fmt.Sprintf("%s.EthereumAddress", ClientConfigKeyName)),
+			Password:        bridgeCfg.GetString(fmt.Sprintf("%s.Password", ClientConfigKeyName)),
 			Homedir:         homedir,
-			BlockWorker:     blockWorder,
+			BlockWorker:     chainCfg.GetString("block_worker"),
 		},
 		BridgeConfig: &BridgeConfig{
-			ConsensusThreshold: cfg.GetFloat64(fmt.Sprintf("%s.ConsensusThreshold", ClientConfigKeyName)),
+			ConsensusThreshold: bridgeCfg.GetFloat64(fmt.Sprintf("%s.ConsensusThreshold", ClientConfigKeyName)),
 		},
 		Instance: &Instance{
 			startTime: common.Now(),
@@ -200,6 +186,7 @@ type BridgeClientYaml struct {
 	GasLimit           uint64
 	Value              int64
 	ConsensusThreshold float64
+	BlockWorker        string
 }
 
 func CreateBridgeClientWithConfig(cfg BridgeClientYaml, wallet *zcncrypto.Wallet) *BridgeClient {
@@ -218,6 +205,7 @@ func CreateBridgeClientWithConfig(cfg BridgeClientYaml, wallet *zcncrypto.Wallet
 			EthereumAddress: cfg.EthereumAddress,
 			Password:        cfg.Password,
 			Homedir:         ".",
+			BlockWorker:     cfg.BlockWorker,
 		},
 		BridgeConfig: &BridgeConfig{
 			ConsensusThreshold: cfg.ConsensusThreshold,
@@ -241,7 +229,7 @@ func (b *BridgeOwner) ClientID() string {
 // 0Chain SDK initialization is required
 func SetupBridgeClientSDK(cfg *BridgeSDKConfig, walletFile ...string) *BridgeClient {
 	log.InitLogging(*cfg.Development, *cfg.LogPath, *cfg.LogLevel)
-	bridgeClient := CreateBridgeClient(initBridgeConfig(cfg), walletFile...)
+	bridgeClient := CreateBridgeClient(initBridgeConfig(cfg), initChainConfig(cfg), walletFile...)
 	return bridgeClient
 }
 
@@ -249,7 +237,7 @@ func SetupBridgeClientSDK(cfg *BridgeSDKConfig, walletFile ...string) *BridgeCli
 // 0Chain SDK initialization is not required in this case
 func SetupBridgeOwnerSDK(cfg *BridgeSDKConfig, walletFile ...string) *BridgeOwner {
 	log.InitLogging(*cfg.Development, *cfg.LogPath, *cfg.LogLevel)
-	bridgeOwner := CreateBridgeOwner(initBridgeConfig(cfg), walletFile...)
+	bridgeOwner := CreateBridgeOwner(initBridgeConfig(cfg), initChainConfig(cfg), walletFile...)
 	return bridgeOwner
 }
 

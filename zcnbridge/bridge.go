@@ -333,8 +333,9 @@ func (b *BridgeClient) GetNotProcessedWZCNBurnTickets(ctx context.Context, mintN
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
 	}
 
-	var graphQlClientURL url.URL
-	if _, err := graphQlClientURL.Parse(b.BlockWorker); err != nil {
+	graphQlClientURL := new(url.URL)
+	graphQlClientURL, err := graphQlClientURL.Parse(b.BlockWorker)
+	if err != nil {
 		return nil, err
 	}
 
@@ -353,7 +354,7 @@ func (b *BridgeClient) GetNotProcessedWZCNBurnTickets(ctx context.Context, mintN
 	}`, string(clientID), b.EthereumAddress, mintNonce))
 
 	var queryResult zcnsc.BurnEvent
-	err := graphQlClient.Run(ctx, query, &queryResult)
+	err = graphQlClient.Run(ctx, query, &queryResult)
 	if err != nil {
 		return nil, err
 	}
