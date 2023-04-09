@@ -10,7 +10,6 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zcnbridge/log"
-	"github.com/machinebox/graphql"
 
 	"github.com/spf13/viper"
 )
@@ -52,6 +51,7 @@ type BridgeClientConfig struct {
 	EthereumAddress string
 	Password        string
 	Homedir         string
+	BlockWorker     string
 }
 
 type Instance struct {
@@ -59,15 +59,10 @@ type Instance struct {
 	startTime common.Timestamp
 }
 
-type StandaloneClientsSet struct {
-	graphQlClient *graphql.Client
-}
-
 type BridgeClient struct {
 	*BridgeConfig
 	*BridgeClientConfig
 	*Instance
-	*StandaloneClientsSet
 }
 
 type BridgeOwner struct {
@@ -97,6 +92,13 @@ func ReadClientConfigFromCmd() *BridgeSDKConfig {
 }
 
 func CreateBridgeOwner(cfg *viper.Viper, walletFile ...string) *BridgeOwner {
+	chainConfig := cfg.Get("config.yaml")
+	if chainConfig == nil {
+		ExitWithError("CreateBridgeOwner: can't read chain config file")
+	}
+
+	blockWorder := cfg.GetString("block_worker")
+
 	owner := cfg.Get(OwnerConfigKeyName)
 	if owner == nil {
 		ExitWithError("CreateBridgeOwner: can't read config with `owner` key")
@@ -128,6 +130,7 @@ func CreateBridgeOwner(cfg *viper.Viper, walletFile ...string) *BridgeOwner {
 			EthereumAddress: cfg.GetString(fmt.Sprintf("%s.EthereumAddress", OwnerConfigKeyName)),
 			Password:        cfg.GetString(fmt.Sprintf("%s.Password", OwnerConfigKeyName)),
 			Homedir:         homedir,
+			BlockWorker:     blockWorder,
 		},
 		Instance: &Instance{
 			startTime: common.Now(),
@@ -137,6 +140,13 @@ func CreateBridgeOwner(cfg *viper.Viper, walletFile ...string) *BridgeOwner {
 }
 
 func CreateBridgeClient(cfg *viper.Viper, walletFile ...string) *BridgeClient {
+	chainConfig := cfg.Get("config.yaml")
+	if chainConfig == nil {
+		ExitWithError("CreateBridgeOwner: can't read chain config file")
+	}
+
+	blockWorder := cfg.GetString("block_worker")
+
 	fileUsed := cfg.ConfigFileUsed()
 	homedir := path.Dir(fileUsed)
 	if homedir == "" {
@@ -168,6 +178,7 @@ func CreateBridgeClient(cfg *viper.Viper, walletFile ...string) *BridgeClient {
 			EthereumAddress: cfg.GetString(fmt.Sprintf("%s.EthereumAddress", ClientConfigKeyName)),
 			Password:        cfg.GetString(fmt.Sprintf("%s.Password", ClientConfigKeyName)),
 			Homedir:         homedir,
+			BlockWorker:     blockWorder,
 		},
 		BridgeConfig: &BridgeConfig{
 			ConsensusThreshold: cfg.GetFloat64(fmt.Sprintf("%s.ConsensusThreshold", ClientConfigKeyName)),
@@ -175,9 +186,6 @@ func CreateBridgeClient(cfg *viper.Viper, walletFile ...string) *BridgeClient {
 		Instance: &Instance{
 			startTime: common.Now(),
 			zcnWallet: wallet,
-		},
-		StandaloneClientsSet: &StandaloneClientsSet{
-			graphQlClient: graphql.NewClient(cfg.GetString(fmt.Sprintf("%s.SubgraphAPIURL", ClientConfigKeyName))),
 		},
 	}
 }
