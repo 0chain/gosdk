@@ -78,6 +78,10 @@ func (req *ShareRequest) getAuthTicket(clientID, encPublicKey string) (*marker.A
 
 		at.ReEncryptionKey = reKey
 		at.Encrypted = true
+	} else {
+		if clientID != "" {
+			return nil, errors.New("", "Sharing unencrypted files privately disabled!")
+		}
 	}
 
 	if err := at.Sign(); err != nil {
