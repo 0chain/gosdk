@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"errors"
@@ -440,7 +441,7 @@ func (su *ChunkedUpload) Start() error {
 		// chunk, err := su.chunkReader.Next()
 		if err != nil {
 			if su.statusCallback != nil {
-				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, su.opCode, err)
+				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 			}
 			return err
 		}
@@ -453,7 +454,7 @@ func (su *ChunkedUpload) Start() error {
 			su.fileMeta.ActualHash, err = su.fileHasher.GetFileHash()
 			if err != nil {
 				if su.statusCallback != nil {
-					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, su.opCode, err)
+					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 				}
 				return err
 			}
@@ -473,7 +474,7 @@ func (su *ChunkedUpload) Start() error {
 			)
 			if err != nil {
 				if su.statusCallback != nil {
-					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, su.opCode, err)
+					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 				}
 				return err
 			}
@@ -509,7 +510,7 @@ func (su *ChunkedUpload) Start() error {
 
 	if err != nil {
 		if su.statusCallback != nil {
-			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.Path, su.opCode, err)
+			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 		}
 		return err
 	}
@@ -587,6 +588,8 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		encryptedKey = su.fileEncscheme.GetEncryptedKey()
 	}
 
+	var errCount int32
+
 	wgErrors := make(chan error)
 	wgDone := make(chan bool)
 
@@ -619,11 +622,12 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 			defer wg.Done()
 			err = b.sendUploadRequest(ctx, su, chunkEndIndex, isFinal, encryptedKey, body, formData, pos)
 			if err != nil {
-				select {
-					case wgErrors <- err:
-					default:
-				}
 				logger.Logger.Error("error during sendUploadRequest", err)
+				errC := atomic.AddInt32(&errCount, 1)
+				if errC > int32(su.allocationObj.ParityShards-1) { // If atleast data shards + 1 number of blobbers can process the upload, it can be repaired later
+					wgErrors <- err
+				}
+
 			}
 		}(blobber, body, formData, pos)
 	}
@@ -632,12 +636,12 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 		wg.Wait()
 		close(wgDone)
 	}()
-	
+
 	select {
-		case <-wgDone:
-			break
-		case err := <-wgErrors:
-			return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
+	case <-wgDone:
+		break
+	case err := <-wgErrors:
+		return thrown.New("upload_failed", fmt.Sprintf("Upload failed. %s", err))
 	}
 
 	if !su.consensus.isConsensusOk() {

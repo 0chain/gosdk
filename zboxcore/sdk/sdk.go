@@ -368,7 +368,7 @@ func StakePoolLock(providerType ProviderType, providerID string, value, fee uint
 	return
 }
 
-// StakePoolUnlockUnstake is stake pool unlock response in case where tokens
+// stakePoolLock is stake pool unlock response in case where tokens
 // can't be unlocked due to opened offers.
 type stakePoolLock struct {
 	Client       string       `json:"client"`
@@ -569,21 +569,27 @@ type Blobber struct {
 	TotalOffers              int64                        `json:"total_offers"`
 	TotalServiceCharge       int64                        `json:"total_service_charge"`
 	UncollectedServiceCharge int64                        `json:"uncollected_service_charge"`
+	IsKilled                 bool                         `json:"is_killed"`
+	IsShutdown               bool                         `json:"is_shutdown"`
+	IsAvailable              bool                         `json:"is_available"`
 }
 
 type Validator struct {
-	ID                       common.Key     `json:"validator_id"`
-	BaseURL                  string         `json:"url"`
-	PublicKey                string         `json:"-"`
-	DelegateWallet           string         `json:"delegate_wallet"`
-	MinStake                 common.Balance `json:"min_stake"`
-	MaxStake                 common.Balance `json:"max_stake"`
-	NumDelegates             int            `json:"num_delegates"`
-	ServiceCharge            float64        `json:"service_charge"`
-	StakeTotal               int64          `json:"stake_total"`
-	UnstakeTotal             int64          `json:"unstake_total"`
-	TotalServiceCharge       int64          `json:"total_service_charge"`
-	UncollectedServiceCharge int64          `json:"uncollected_service_charge"`
+	ID                       common.Key       `json:"validator_id"`
+	BaseURL                  string           `json:"url"`
+	PublicKey                string           `json:"-"`
+	DelegateWallet           string           `json:"delegate_wallet"`
+	MinStake                 common.Balance   `json:"min_stake"`
+	MaxStake                 common.Balance   `json:"max_stake"`
+	NumDelegates             int              `json:"num_delegates"`
+	ServiceCharge            float64          `json:"service_charge"`
+	StakeTotal               int64            `json:"stake_total"`
+	UnstakeTotal             int64            `json:"unstake_total"`
+	TotalServiceCharge       int64            `json:"total_service_charge"`
+	UncollectedServiceCharge int64            `json:"uncollected_service_charge"`
+	LastHealthCheck          common.Timestamp `json:"last_health_check"`
+	IsKilled                 bool             `json:"is_killed"`
+	IsShutdown               bool             `json:"is_shutdown"`
 }
 
 func (v *Validator) ConvertToValidationNode() *blockchain.ValidationNode {
@@ -833,12 +839,11 @@ func GetAllocations() ([]*Allocation, error) {
 	return GetAllocationsForClient(client.GetClientID())
 }
 
-func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
-	if !sdkInitialized {
-		return nil, sdkNotInitialized
-	}
+func getAllocationsInternal(clientID string, limit, offset int) ([]*Allocation, error) {
 	params := make(map[string]string)
 	params["client"] = clientID
+	params["limit"] = fmt.Sprint(limit)
+	params["offset"] = fmt.Sprint(offset)
 	allocationsBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocations", params, nil)
 	if err != nil {
 		return nil, errors.New("allocations_fetch_error", "Error fetching the allocations."+err.Error())
@@ -849,6 +854,38 @@ func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
 		return nil, errors.New("allocations_decode_error", "Error decoding the allocations."+err.Error())
 	}
 	return allocations, nil
+}
+
+// get paginated results
+func GetAllocationsForClient(clientID string) ([]*Allocation, error) {
+	if !sdkInitialized {
+		return nil, sdkNotInitialized
+	}
+	limit, offset := 20, 0
+
+	allocations, err := getAllocationsInternal(clientID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	var allocationsFin []*Allocation
+	allocationsFin = append(allocationsFin, allocations...)
+	for {
+		// if the len of output returned is less than the limit it means this is the last round of pagination
+		if len(allocations) < limit {
+			break
+		}
+
+		// get the next set of blobbers
+		offset += 20
+		allocations, err = getAllocationsInternal(clientID, limit, offset)
+		if err != nil {
+			return allocations, err
+		}
+		allocationsFin = append(allocationsFin, allocations...)
+
+	}
+	return allocationsFin, nil
 }
 
 type FileOptionParam struct {
@@ -1193,6 +1230,50 @@ const (
 	ProviderAuthorizer
 )
 
+func KillProvider(providerId string, providerType ProviderType) (string, int64, error) {
+	if !sdkInitialized {
+		return "", 0, sdkNotInitialized
+	}
+
+	var input = map[string]interface{}{
+		"provider_id": providerId,
+	}
+	var sn = transaction.SmartContractTxnData{
+		InputArgs: input,
+	}
+	switch providerType {
+	case ProviderBlobber:
+		sn.Name = transaction.STORAGESC_KILL_BLOBBER
+	case ProviderValidator:
+		sn.Name = transaction.STORAGESC_KILL_VALIDATOR
+	default:
+		return "", 0, fmt.Errorf("kill provider type %v not implimented", providerType)
+	}
+	hash, _, n, _, err := smartContractTxn(sn)
+	return hash, n, err
+}
+
+func ShutdownProvider(providerType ProviderType) (string, int64, error) {
+	if !sdkInitialized {
+		return "", 0, sdkNotInitialized
+	}
+
+	var input = map[string]interface{}{}
+	var sn = transaction.SmartContractTxnData{
+		InputArgs: input,
+	}
+	switch providerType {
+	case ProviderBlobber:
+		sn.Name = transaction.STORAGESC_SHUTDOWN_BLOBBER
+	case ProviderValidator:
+		sn.Name = transaction.STORAGESC_SHUTDOWN_VALIDATOR
+	default:
+		return "", 0, fmt.Errorf("shutdown provider type %v not implimented", providerType)
+	}
+	hash, _, n, _, err := smartContractTxn(sn)
+	return hash, n, err
+}
+
 func CollectRewards(providerId string, providerType ProviderType) (string, int64, error) {
 	if !sdkInitialized {
 		return "", 0, sdkNotInitialized
@@ -1292,10 +1373,10 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 		return
 	}
 
-	nonce = client.GetClient().Nonce
-	if nonce != 0 {
-		nonce++
-	}
+	//nonce = client.GetClient().Nonce
+	//if nonce != 0 {
+	//	nonce++
+	//}
 	txn := transaction.NewTransactionEntity(client.GetClientID(),
 		blockchain.GetChainID(), client.GetClientPublicKey(), nonce)
 
