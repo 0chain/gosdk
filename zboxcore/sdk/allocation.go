@@ -1476,9 +1476,10 @@ func (a *Allocation) UpdateWithRepair(
 	l.Logger.Info(fmt.Sprintf("allocation updated with hash: %s", hash))
 
 	if addBlobberId != "" {
-		l.Logger.Info("waiting for the blobber to be added to network")
+		l.Logger.Info("waiting for a minute for the blobber to be added to network")
 
-		for {
+		deadline := time.Now().Add(1 * time.Minute)
+		for time.Now().Before(deadline) {
 			alloc, err := GetAllocation(a.ID)
 			if err != nil {
 				l.Logger.Error("failed to get allocation")
@@ -1495,6 +1496,7 @@ func (a *Allocation) UpdateWithRepair(
 			time.Sleep(1 * time.Second)
 		}
 	}
+	return "", errors.New("", "new blobber not found in the updated allocation")
 
 repair:
 	l.Logger.Info("starting repair")
