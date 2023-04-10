@@ -114,6 +114,7 @@ type TransactionCommon interface {
 	MinerSCLock(providerId string, providerType Provider, lock uint64) error
 	MinerSCUnlock(providerId string, providerType Provider) error
 	MinerSCCollectReward(providerID string, providerType Provider) error
+	MinerSCKill(providerID string, providerType Provider) error
 
 	StorageSCCollectReward(providerID string, providerType Provider) error
 
@@ -370,6 +371,30 @@ func (t *Transaction) MinerSCCollectReward(providerId string, providerType Provi
 	}
 	err := t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		logging.Error(err)
+		return err
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return err
+}
+
+func (t *Transaction) MinerSCKill(providerId string, providerType Provider) error {
+	pr := &scCollectReward{
+		ProviderId:   providerId,
+		ProviderType: int(providerType),
+	}
+	var name string
+	switch providerType {
+	case ProviderBlobber:
+		name = transaction.MINERSC_KILL_MINER
+	case ProviderValidator:
+		name = transaction.MINERSC_KILL_SHARDER
+	default:
+		return fmt.Errorf("kill provider type %v not implimented", providerType)
+	}
+
+	err := t.createSmartContractTxn(MinerSmartContractAddress, name, pr, 0)
 	if err != nil {
 		logging.Error(err)
 		return err

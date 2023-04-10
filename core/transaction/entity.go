@@ -149,6 +149,8 @@ const (
 	MINERSC_MINER_DELETE     = "delete_miner"
 	MINERSC_SHARDER_DELETE   = "delete_sharder"
 	MINERSC_COLLECT_REWARD   = "collect_reward"
+	MINERSC_KILL_MINER       = "kill_miner"
+	MINERSC_KILL_SHARDER     = "kill_sharder"
 
 	// Faucet SC
 	FAUCETSC_UPDATE_SETTINGS = "update-settings"
