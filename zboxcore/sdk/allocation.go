@@ -1473,25 +1473,27 @@ func (a *Allocation) UpdateWithRepair(
 	if err != nil {
 		return "", err
 	}
-
 	l.Logger.Info(fmt.Sprintf("allocation updated with hash: %s", hash))
-	l.Logger.Info("waiting for the blobber to be added to network")
 
-	for {
-		alloc, err := GetAllocation(a.ID)
-		if err != nil {
-			l.Logger.Error("failed to get allocation")
-			return hash, err
-		}
+	if addBlobberId != "" {
+		l.Logger.Info("waiting for the blobber to be added to network")
 
-		for _, blobber := range alloc.Blobbers {
-			if addBlobberId == blobber.ID {
-				l.Logger.Info("allocation updated successfully")
-				a = alloc
-				goto repair
+		for {
+			alloc, err := GetAllocation(a.ID)
+			if err != nil {
+				l.Logger.Error("failed to get allocation")
+				return hash, err
 			}
+
+			for _, blobber := range alloc.Blobbers {
+				if addBlobberId == blobber.ID {
+					l.Logger.Info("allocation updated successfully")
+					a = alloc
+					goto repair
+				}
+			}
+			time.Sleep(1 * time.Second)
 		}
-		time.Sleep(1 * time.Second)
 	}
 
 repair:
