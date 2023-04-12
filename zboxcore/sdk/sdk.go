@@ -1500,7 +1500,7 @@ func GetAllocationMinLock(
 	datashards, parityshards int,
 	size, expiry int64,
 	readPrice, writePrice PriceRange,
-) (int64, error) {
+) (float64, error) {
 	preferredBlobberIds, err := GetBlobberIds(blockchain.GetPreferredBlobbers())
 	if err != nil {
 		return -1, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
@@ -1520,7 +1520,7 @@ func GetAllocationMinLock(
 		return 0, errors.New("allocation_min_lock_fetch_error", "Error fetching the allocation min lock."+err.Error())
 	}
 
-	var response = make(map[string]int64)
+	var response = make(map[string]float64)
 	err = json.Unmarshal(allocationsBytes, &response)
 	if err != nil {
 		return 0, errors.New("allocation_min_lock_decode_error", "Error decoding the response."+err.Error())
