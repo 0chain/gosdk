@@ -386,9 +386,9 @@ func (t *Transaction) MinerSCKill(providerId string, providerType Provider) erro
 	}
 	var name string
 	switch providerType {
-	case ProviderBlobber:
+	case ProviderMiner:
 		name = transaction.MINERSC_KILL_MINER
-	case ProviderValidator:
+	case ProviderSharder:
 		name = transaction.MINERSC_KILL_SHARDER
 	default:
 		return fmt.Errorf("kill provider type %v not implimented", providerType)
