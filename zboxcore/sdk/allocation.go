@@ -931,6 +931,12 @@ func (a *Allocation) MoveObject(srcPath string, destPath string) error {
 	return req.ProcessMove()
 }
 
+func (a *Allocation) DoMultiOperation([]interface{}) {
+	err := operation.Verify() //
+	process := operation.Build()
+	change, err = process.Process() //
+}
+
 func (a *Allocation) CopyObject(path string, destPath string) error {
 	if !a.isInitialized() {
 		return notInitialized

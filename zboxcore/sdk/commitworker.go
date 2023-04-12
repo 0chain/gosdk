@@ -45,7 +45,7 @@ func SuccessCommitResult() *CommitResult {
 }
 
 type CommitRequest struct {
-	change       allocationchange.AllocationChange
+	changes      []allocationchange.AllocationChange
 	blobber      *blockchain.StorageNode
 	allocationID string
 	allocationTx string
