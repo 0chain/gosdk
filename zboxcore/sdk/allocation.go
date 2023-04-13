@@ -1495,8 +1495,8 @@ func (a *Allocation) UpdateWithRepair(
 			}
 			time.Sleep(1 * time.Second)
 		}
+		return "", errors.New("", "new blobber not found in the updated allocation")
 	}
-	return "", errors.New("", "new blobber not found in the updated allocation")
 
 repair:
 	l.Logger.Info("starting repair")
