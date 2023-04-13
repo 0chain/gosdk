@@ -468,9 +468,6 @@ func (t *Transaction) createSmartContractTxn(address, methodName string, input i
 		return err
 	}
 
-	logger.Logger.Info("estimate txn fee",
-		zap.Uint64("fee", minFee),
-		zap.Any("txn", t.txn.Hash))
 	t.txn.TransactionFee = minFee
 
 	return nil
