@@ -899,6 +899,51 @@ func TestAllocation_downloadFile(t *testing.T) {
 	}
 }
 
+func TestAllocation_GetRefs(t *testing.T) {
+	const (
+		mockType       = "f"
+		mockActualHash = "mockActualHash"
+	)
+
+	var mockClient = mocks.HttpClient{}
+	zboxutil.Client = &mockClient
+
+	client := zclient.GetClient()
+	client.Wallet = &zcncrypto.Wallet{
+		ClientID:  mockClientId,
+		ClientKey: mockClientKey,
+	}
+	functionName := "TestAllocation_GetRefs"
+	t.Run("Test_Get_Refs_Returns_Slice_Of_Length_0_When_File_Not_Present", func(t *testing.T) {
+		a := &Allocation{
+			DataShards:   2,
+			ParityShards: 2,
+		}
+		testCaseName := "Test_Get_Refs_Returns_Slice_Of_Length_0_When_File_Not_Present"
+		a.InitAllocation()
+		sdkInitialized = true
+		for i := 0; i < numBlobbers; i++ {
+			a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
+				ID:      testCaseName + mockBlobberId + strconv.Itoa(i),
+				Baseurl: functionName + testCaseName + mockBlobberUrl + strconv.Itoa(i),
+			})
+		}
+		for i := 0; i < numBlobbers; i++ {
+			body, err := json.Marshal(map[string]string{
+				"code":  "invalid_path",
+				"error": "invalid_path: ",
+			})
+			require.NoError(t, err)
+			setupMockHttpResponse(t, &mockClient, functionName, testCaseName, a, http.MethodGet, http.StatusBadRequest, body)
+		}
+		path := "/any_random_path.txt"
+		otr, err := a.GetRefs(path, "", "", "", "f", "regular", 0, 5)
+		require.NoError(t, err)
+		require.Equal(t, true, len(otr.Refs) == 0)
+
+	})
+}
+
 func TestAllocation_GetFileMeta(t *testing.T) {
 	const (
 		mockType       = "f"
