@@ -1404,6 +1404,9 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 				zap.Any("txn", txn))
 			return
 		}
+		l.Logger.Info("estimate txn fee",
+			zap.Uint64("fee", fee),
+			zap.Any("txn", txn))
 		txn.TransactionFee = fee
 	}
 
