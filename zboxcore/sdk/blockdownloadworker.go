@@ -108,8 +108,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.New("invalid_request", "Invalid number of blocks for download")}
 		return
 	}
-	fmt.Println("inside downloadBlobberBlock")
-	fmt.Println(req.blobber)
 	retry := 0
 	var err error
 	for retry < 3 {
