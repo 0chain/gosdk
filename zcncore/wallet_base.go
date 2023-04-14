@@ -30,7 +30,6 @@ import (
 )
 
 const (
-	REGISTER_CLIENT                  = `/v1/client/put`
 	GET_CLIENT                       = `/v1/client/get`
 	PUT_TRANSACTION                  = `/v1/transaction/put`
 	TXN_VERIFY_URL                   = `/v1/transaction/get/confirmation?hash=`
@@ -375,12 +374,7 @@ func CreateWallet(statusCb WalletCallback) error {
 	}
 	go func() {
 		sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
-		wallet, err := sigScheme.GenerateKeys()
-		if err != nil {
-			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
-			return
-		}
-		err = registerToMiners(wallet, statusCb)
+		_, err := sigScheme.GenerateKeys()
 		if err != nil {
 			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
@@ -401,67 +395,6 @@ func CreateWalletOffline() (string, error) {
 		return "", errors.Wrap(err, "wallet encoding failed")
 	}
 	return w, nil
-}
-
-// registerToMiners can be used to register the wallet.
-func registerToMiners(wallet *zcncrypto.Wallet, statusCb WalletCallback) error {
-	result := make(chan *util.PostResponse)
-	defer close(result)
-	for _, miner := range _config.chain.Miners {
-		go func(minerurl string) {
-			url := minerurl + REGISTER_CLIENT
-			logging.Info(url)
-			regData := map[string]string{
-				"id":         wallet.ClientID,
-				"public_key": wallet.ClientKey,
-			}
-			req, err := util.NewHTTPPostRequest(url, regData)
-			if err != nil {
-				logging.Error(minerurl, "new post request failed. ", err.Error())
-				return
-			}
-			res, err := req.Post()
-			if err != nil {
-				logging.Error(minerurl, "send error. ", err.Error())
-			}
-			result <- res
-		}(miner)
-	}
-
-	var cwData string
-
-	consensus := float32(0)
-	for range _config.chain.Miners {
-		rsp := <-result
-		logging.Debug(rsp.Url, "Status: ", rsp.Status)
-
-		if rsp.StatusCode == http.StatusOK {
-			consensus++
-			cwData = rsp.Body
-		} else {
-			logging.Debug(rsp.Body)
-		}
-
-	}
-	rate := consensus * 100 / float32(len(_config.chain.Miners))
-	if rate < consensusThresh {
-		statusCb.OnWalletCreateComplete(StatusError, "", "rate is less than consensus")
-		return fmt.Errorf("Register consensus not met. Consensus: %f, Expected: %v", rate, consensusThresh)
-	}
-
-	cw := &GetClientResponse{}
-	if err := json.Unmarshal([]byte(cwData), cw); err == nil {
-		wallet.Version = cw.Version
-		wallet.DateCreated = strconv.Itoa(cw.CreationDate)
-	}
-
-	w, err := wallet.Marshal()
-	if err != nil {
-		statusCb.OnWalletCreateComplete(StatusError, w, err.Error())
-		return errors.Wrap(err, "wallet encoding failed")
-	}
-	statusCb.OnWalletCreateComplete(StatusSuccess, w, "")
-	return nil
 }
 
 // RecoverOfflineWallet recovers the previously generated wallet using the mnemonic.
@@ -492,18 +425,11 @@ func RecoverWallet(mnemonic string, statusCb WalletCallback) error {
 	}
 	go func() {
 		sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
-		wallet, err := sigScheme.RecoverKeys(mnemonic)
+		_, err := sigScheme.RecoverKeys(mnemonic)
 		if err != nil {
 			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return
 		}
-
-		err = registerToMiners(wallet, statusCb)
-		if err != nil {
-			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
-			return
-		}
-
 	}()
 	return nil
 }

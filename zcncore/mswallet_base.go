@@ -5,7 +5,6 @@ package zcncore
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -74,23 +73,6 @@ func CreateMSWallet(t, n int) (string, string, []string, error) {
 	}
 	return smsw, groupClientID, wallets, nil
 
-}
-
-//RegisterWallet registers multisig related wallets
-func RegisterWallet(walletString string, cb WalletCallback) {
-	var w zcncrypto.Wallet
-	err := json.Unmarshal([]byte(walletString), &w)
-
-	if err != nil {
-		cb.OnWalletCreateComplete(StatusError, walletString, err.Error())
-	}
-
-	//We do not want to send private key to blockchain
-	w.Keys[0].PrivateKey = ""
-	err = RegisterToMiners(&w, cb)
-	if err != nil {
-		cb.OnWalletCreateComplete(StatusError, "", err.Error())
-	}
 }
 
 func getWallets(msw MSWallet) ([]string, error) {
