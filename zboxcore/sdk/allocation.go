@@ -462,7 +462,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 
 	ChunkedUpload, err := CreateChunkedUpload(workdir,
 		a, fileMeta, fileReader,
-		isUpdate, isRepair,
+		isUpdate, isRepair,"ad",
 		options...)
 	if err != nil {
 		return err
@@ -496,6 +496,97 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, 
 
 func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDownload bool, status StatusCallback) error {
 	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload, status)
+}
+
+
+func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
+	// err := op.Verify() //
+	// process := operation.Build()
+	// change, err = process.Process() //
+	if len(operations) == 0 {
+		return nil
+	}
+	var mo MultiOperation;
+	mo.allocationObj = a;
+	mo.allocationID = a.ID
+	mo.allocationTx = a.Tx;
+	mo.blobbers = a.Blobbers
+	mo.operationMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	mo.maskMU = &sync.Mutex{}
+	mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
+	mo.Consensus = Consensus{
+		consensusThresh: a.consensusThreshold,
+		fullconsensus:   a.fullconsensus,
+	}
+	mo.connectionID = zboxutil.NewConnectionId()
+	for _, op := range(operations) {
+		switch op.OperationType {
+			
+		case constants.FileOperationRename: 
+			renameOp := &RenameOperation{}
+			renameOp.build(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+			err := renameOp.Verify(a)
+			if err != nil {
+				return err
+			}
+			mo.operations = append(mo.operations, renameOp)
+
+		case constants.FileOperationCopy:
+			copyOp := &CopyOperation{}
+			copyOp.build(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+			err := copyOp.Verify(a)
+			if err != nil {
+				return err
+			}
+			mo.operations = append(mo.operations, copyOp)
+
+			
+		case constants.FileOperationMove: 
+			moveOp := &MoveOperation{}
+			moveOp.build(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+			err := moveOp.Verify(a)
+			if err != nil {
+				return err
+			}
+			mo.operations = append(mo.operations, moveOp)
+			
+		case constants.FileOperationInsert: 
+			uploadOp := &UploadOperation{}
+			uploadOp.build(op.Workdir, op.FileMeta, op.FileReader, false, op.Opts...)
+			err := uploadOp.Verify(a)
+			if err != nil {
+				return err
+			}
+			mo.operations = append(mo.operations, uploadOp)
+		
+		case constants.FileOperationDelete:
+			deleteOP := &DeleteOperation{}	
+			deleteOP.build(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+			err := deleteOP.Verify(a)
+			if err != nil {
+				return err
+			}
+			mo.operations = append(mo.operations, deleteOP)
+		
+		case constants.FileOperationUpdate:
+			updateOp := &UploadOperation{}
+			updateOp.build(op.Workdir, op.FileMeta, op.FileReader, true, op.Opts...)
+			err := updateOp.Verify(a)
+			if err != nil {
+				return err
+			}
+			mo.operations = append(mo.operations, updateOp)
+			
+			
+		default: 
+			return errors.New("invalid_operation", "Operation is not valid");
+
+		}
+	}
+
+	return mo.Process()
+
+
 }
 
 func (a *Allocation) DownloadFileByBlock(
@@ -1512,3 +1603,5 @@ repair:
 
 	return hash, nil
 }
+
+

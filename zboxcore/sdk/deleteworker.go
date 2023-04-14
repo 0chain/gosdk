@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	thrown "github.com/0chain/errors"
+	"github.com/google/uuid"
 
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
@@ -235,7 +237,8 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 			connectionID: req.connectionID,
 			wg:           wg,
 		}
-		commitReq.change = newChange
+		// commitReq.change = newChange
+		commitReq.changes = append(commitReq.changes, newChange)
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
 		c++
@@ -259,6 +262,123 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 		return errors.New("consensus_not_met",
 			fmt.Sprintf("Consensus on commit not met. Required %d, got %d",
 				req.consensus.consensusThresh, req.consensus.getConsensus()))
+	}
+	return nil
+}
+
+
+
+
+type DeleteOperation struct {
+	remotefilepath string
+	ctx            context.Context
+	ctxCncl        context.CancelFunc
+	wg             *sync.WaitGroup
+	deleteMask     zboxutil.Uint128
+	maskMu         *sync.Mutex
+	consensus      Consensus
+}
+
+func (dop *DeleteOperation) Process(allocDetails AllocationDetails,connectionID string, blobbers []*blockchain.StorageNode) ([]fileref.RefEntity, error){
+	l.Logger.Info("Started Delete Process with Connection Id", connectionID);
+	// make renameRequest object
+	deleteReq := &DeleteRequest{
+		allocationObj: allocDetails.allocationObj, 
+		allocationID: allocDetails.allocationID,
+		allocationTx: allocDetails.allocationTx,
+		connectionID: connectionID,
+		blobbers: blobbers,
+		remotefilepath: dop.remotefilepath,
+		ctx: dop.ctx,
+		ctxCncl: dop.ctxCncl,
+		deleteMask: dop.deleteMask,
+		maskMu: dop.maskMu,
+		wg: &sync.WaitGroup{},
+		
+	}
+	deleteReq.consensus.fullconsensus = dop.consensus.fullconsensus;
+	deleteReq.consensus.consensusThresh = dop.consensus.consensusThresh;
+
+	numList := len(deleteReq.blobbers)
+	objectTreeRefs := make([]fileref.RefEntity, numList)
+	blobberErrors := make([]error, numList)
+	
+	var pos uint64
+
+	for i := deleteReq.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		deleteReq.wg.Add(1)
+		go func(blobberIdx int) {
+			refEntity, err := deleteReq.getObjectTreeFromBlobber(pos);
+			if errors.Is(err, constants.ErrNotFound) {
+				deleteReq.consensus.Done()
+				return
+			} else if err != nil {
+				blobberErrors[blobberIdx] = err
+				l.Logger.Error(err.Error())
+				return
+			} 
+			deleteReq.deleteBlobberFile(deleteReq.blobbers[blobberIdx], blobberIdx)
+			objectTreeRefs[blobberIdx] = refEntity
+		}(int(pos))
+	}
+	deleteReq.wg.Wait()
+
+	if !deleteReq.consensus.isConsensusOk() {
+		err := zboxutil.MajorError(blobberErrors)
+		if err != nil {
+			return nil, thrown.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
+		}
+		
+		return nil, thrown.New("consensus_not_met",
+			fmt.Sprintf("Rename failed. Required consensus %d, got %d",
+				deleteReq.consensus.consensusThresh, deleteReq.consensus.consensus))
+	}
+	l.Logger.Info("Delete Processs Ended ");
+	return objectTreeRefs, nil;
+}
+
+func (do *DeleteOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
+	
+	changes := make([]allocationchange.AllocationChange, len(refs))
+	for idx, ref := range refs {
+		newChange := &allocationchange.DeleteFileChange{}
+		newChange.ObjectTree = ref
+		newChange.NumBlocks = ref.GetNumBlocks()
+		newChange.Operation = constants.FileOperationDelete
+		newChange.Size = ref.GetSize()
+		changes[idx] = newChange
+	}
+	return changes
+}
+
+
+func (dop *DeleteOperation) build(remotePath string, deleteMask zboxutil.Uint128, maskMu *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) {
+
+	dop.remotefilepath = zboxutil.RemoteClean(remotePath)
+	dop.deleteMask = deleteMask
+	dop.maskMu = maskMu
+	dop.consensus.consensusThresh = consensusTh
+	dop.consensus.fullconsensus = fullConsensus
+
+	dop.ctx, dop.ctxCncl =  context.WithCancel(ctx)
+}
+
+func (dop *DeleteOperation) Verify(a *Allocation) error {
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	if !a.CanDelete() {
+		return constants.ErrFileOptionNotPermitted
+	}
+
+	if len(dop.remotefilepath) == 0 {
+		return errors.New("invalid_path", "Invalid path for the list")
+	}
+	isabs := zboxutil.IsRemoteAbs(dop.remotefilepath)
+	if !isabs {
+		return errors.New("invalid_path", "Path should be valid and absolute")
 	}
 	return nil
 }

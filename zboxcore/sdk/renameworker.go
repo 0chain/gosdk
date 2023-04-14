@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
+	thrown "github.com/0chain/errors"
+	"github.com/google/uuid"
 
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -154,7 +156,7 @@ func (req *RenameRequest) ProcessRename() error {
 	req.wg.Add(numList)
 
 	for i := 0; i < numList; i++ {
-		go func(blobberIdx int) {
+		func(blobberIdx int) {
 			defer req.wg.Done()
 			refEntity, err := req.renameBlobberObject(req.blobbers[blobberIdx], blobberIdx)
 			if err != nil {
@@ -217,10 +219,11 @@ func (req *RenameRequest) ProcessRename() error {
 			connectionID: req.connectionID,
 			wg:           wg,
 		}
-		commitReq.change = newChange
+		// commitReq.change = newChange
+		commitReq.changes = append(commitReq.changes, newChange)
 		commitReqs[c] = commitReq
 
-		go AddCommitRequest(commitReq)
+		AddCommitRequest(commitReq)
 
 		c++
 	}
@@ -247,5 +250,135 @@ func (req *RenameRequest) ProcessRename() error {
 			fmt.Sprintf("Required consensus %d got %d. Error: %s",
 				req.consensus.consensusThresh, req.consensus.consensus, errMessages))
 	}
+	return nil
+}
+
+
+type RenameOperation struct {
+	remotefilepath string
+	ctx            context.Context
+	ctxCncl        context.CancelFunc
+	renameMask     zboxutil.Uint128
+	newName		   string
+	maskMU         *sync.Mutex
+
+	consensus 		Consensus
+}
+
+func (ro *RenameOperation) Process(allocDetails AllocationDetails,connectionID string, blobbers []*blockchain.StorageNode) ([]fileref.RefEntity, error){
+
+	l.Logger.Info("Started Rename Process with Connection Id", connectionID);
+	// make renameRequest object
+	rR := &RenameRequest{
+		allocationObj: allocDetails.allocationObj, 
+		allocationID: allocDetails.allocationID,
+		allocationTx: allocDetails.allocationTx,
+		connectionID: connectionID,
+		blobbers: blobbers,
+		remotefilepath: ro.remotefilepath,
+		newName: ro.newName,
+		ctx: ro.ctx,
+		ctxCncl: ro.ctxCncl,
+		renameMask: ro.renameMask,
+		maskMU: ro.maskMU,
+	}
+	rR.consensus.fullconsensus = ro.consensus.fullconsensus;
+	rR.consensus.consensusThresh = ro.consensus.consensusThresh;
+
+	numList := len(rR.blobbers)
+	objectTreeRefs := make([]fileref.RefEntity, numList)
+	blobberErrors := make([]error, numList)
+	
+	wg := &sync.WaitGroup{}
+	var pos uint64
+
+	for i := rR.renameMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		wg.Add(1)
+		// here also goroutine
+		go func(blobberIdx int) {
+			defer wg.Done()
+			refEntity, err := rR.renameBlobberObject(rR.blobbers[blobberIdx], blobberIdx)
+			if err != nil {
+				blobberErrors[blobberIdx] = err
+				l.Logger.Error(err.Error())
+				return
+			}
+			objectTreeRefs[blobberIdx] = refEntity
+		}(int(pos))
+	}
+	wg.Wait()
+
+	if !rR.consensus.isConsensusOk() {
+		err := zboxutil.MajorError(blobberErrors)
+		if err != nil {
+			return nil, thrown.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
+		}
+		
+		return nil, thrown.New("consensus_not_met",
+			fmt.Sprintf("Rename failed. Required consensus %d, got %d",
+				rR.consensus.consensusThresh, rR.consensus.consensus))
+	}
+	l.Logger.Info("Rename Processs Ended ");
+	fmt.Println("Object Tree Ref");
+	return objectTreeRefs, nil;
+}
+
+func (ro *RenameOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
+	changes := make([]allocationchange.AllocationChange, len(refs))
+
+	for idx, ref := range refs {
+		newChange := &allocationchange.RenameFileChange{
+			NewName:   ro.newName,
+			ObjectTree: ref,
+		}
+	
+		newChange.Operation = constants.FileOperationRename
+		newChange.Size = 0
+		changes[idx] = newChange
+	}
+	return changes
+}
+
+func (ro *RenameOperation) build(remotePath string, destName string, renameMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) {
+
+	ro.remotefilepath = zboxutil.RemoteClean(remotePath)
+	ro.newName = destName
+	ro.renameMask = renameMask
+	ro.maskMU = maskMU
+	ro.consensus.consensusThresh = consensusTh
+	ro.consensus.fullconsensus = fullConsensus
+	ro.ctx, ro.ctxCncl =  context.WithCancel(ctx)
+}
+
+func (ro *RenameOperation) Verify(a *Allocation) error {
+	
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	if !a.CanRename() {
+		return constants.ErrFileOptionNotPermitted
+	}
+
+	if ro.remotefilepath == "" {
+		return errors.New("invalid_path", "Invalid path for the list")
+	}
+
+	if ro.remotefilepath == "/" {
+		return errors.New("invalid_operation", "cannot rename root path")
+	}
+
+	isabs := zboxutil.IsRemoteAbs(ro.remotefilepath)
+	if !isabs {
+		return errors.New("invalid_path", "Path should be valid and absolute")
+	}
+
+	err := ValidateRemoteFileName(ro.newName)
+	if err != nil {
+		return err
+	}
+
+
 	return nil
 }

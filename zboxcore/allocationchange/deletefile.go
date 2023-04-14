@@ -13,7 +13,7 @@ type DeleteFileChange struct {
 	ObjectTree fileref.RefEntity
 }
 
-func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref) (commitParams CommitParams, err error) {
+func (ch *DeleteFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[string]string) (commitParams CommitParams, err error) {
 
 	if ch.ObjectTree.GetPath() == "/" {
 		rootRef.Children = nil

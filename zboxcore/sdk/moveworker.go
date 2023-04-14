@@ -7,10 +7,13 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/0chain/errors"
+	thrown "github.com/0chain/errors"
+	"github.com/google/uuid"
 
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -70,6 +73,7 @@ func (req *MoveRequest) moveBlobberObject(
 			formWriter.WriteField("connection_id", req.connectionID)
 			formWriter.WriteField("path", req.remotefilepath)
 			formWriter.WriteField("dest", req.destPath)
+			l.Logger.Info("destination path is: ", req.destPath);
 			formWriter.Close()
 
 			var (
@@ -215,7 +219,8 @@ func (req *MoveRequest) ProcessMove() error {
 			connectionID: req.connectionID,
 			wg:           wg,
 		}
-		commitReq.change = moveChange
+		// commitReq.change = moveChange
+		commitReq.changes = append(commitReq.changes, moveChange)
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
 		c++
@@ -242,3 +247,128 @@ func (req *MoveRequest) ProcessMove() error {
 	}
 	return nil
 }
+
+
+
+
+type MoveOperation struct {
+	remotefilepath string
+	destPath       string
+	ctx            context.Context
+	ctxCncl        context.CancelFunc
+	moveMask       zboxutil.Uint128
+	maskMU         *sync.Mutex
+	consensus      Consensus
+}
+
+func (mo *MoveOperation) Process(allocDetails AllocationDetails,connectionID string, blobbers []*blockchain.StorageNode) ([]fileref.RefEntity, error){
+	l.Logger.Info("Started Rename Process with Connection Id", connectionID);
+	// make renameRequest object
+	mR := &MoveRequest{
+		allocationObj: allocDetails.allocationObj, 
+		allocationID: allocDetails.allocationID,
+		allocationTx: allocDetails.allocationTx,
+		connectionID: connectionID,
+		blobbers: blobbers,
+		remotefilepath: mo.remotefilepath,
+		ctx: mo.ctx,
+		ctxCncl: mo.ctxCncl,
+		moveMask: mo.moveMask,
+		maskMU: mo.maskMU,
+		destPath: mo.destPath,
+	}
+	mR.Consensus.fullconsensus = mo.consensus.fullconsensus;
+	mR.Consensus.consensusThresh = mo.consensus.consensusThresh;
+	numList := len(mR.blobbers)
+	objectTreeRefs := make([]fileref.RefEntity, numList)
+	blobberErrors := make([]error, numList)
+	
+	wg := &sync.WaitGroup{}
+	var pos uint64
+
+	for i := mR.moveMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		wg.Add(1)
+		go func(blobberIdx int) {
+			defer wg.Done()
+			refEntity, err := mR.moveBlobberObject(mR.blobbers[blobberIdx], blobberIdx)
+			if err != nil {
+				blobberErrors[blobberIdx] = err
+				l.Logger.Error(err.Error())
+				return
+			}
+			objectTreeRefs[blobberIdx] = refEntity
+		}(int(pos))
+	}
+	wg.Wait()
+
+	if !mR.Consensus.isConsensusOk() {
+		err := zboxutil.MajorError(blobberErrors)
+		if err != nil {
+			return nil, thrown.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
+		}
+		
+		return nil, thrown.New("consensus_not_met",
+			fmt.Sprintf("Rename failed. Required consensus %d, got %d",
+				mR.Consensus.consensusThresh, mR.Consensus.consensus))
+	}
+	l.Logger.Info("Rename Processs Ended ");
+	return objectTreeRefs, nil;
+}
+
+func (mo *MoveOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
+
+	changes := make([]allocationchange.AllocationChange, len(refs))
+	for idx, ref := range refs {
+		moveChange := &allocationchange.MoveFileChange{
+			DestPath:   mo.destPath,
+			ObjectTree: ref,
+		}
+		moveChange.NumBlocks = 0
+		moveChange.Operation = constants.FileOperationMove
+		moveChange.Size = 0
+		changes[idx] = moveChange
+	}
+	return changes
+}
+
+
+
+func (mo *MoveOperation) build(remotePath string, destPath string, moveMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) {
+	mo.remotefilepath = zboxutil.RemoteClean(remotePath)
+	if destPath != "/" {
+		destPath = strings.TrimSuffix(destPath, "/")
+	}
+	mo.destPath = destPath
+	mo.moveMask = moveMask
+	mo.maskMU = maskMU
+	mo.consensus.consensusThresh = consensusTh
+	mo.consensus.fullconsensus = fullConsensus
+	mo.ctx, mo.ctxCncl =  context.WithCancel(ctx)
+}
+
+func (mo *MoveOperation) Verify(a *Allocation) error {
+	if !a.isInitialized() {
+		return notInitialized
+	}
+
+	if !a.CanMove() {
+		return constants.ErrFileOptionNotPermitted
+	}
+
+	if len(mo.remotefilepath) == 0 || len(mo.destPath) == 0 {
+		return errors.New("invalid_path", "Invalid path for copy")
+	}
+	isabs := zboxutil.IsRemoteAbs(mo.remotefilepath)
+	if !isabs {
+		return errors.New("invalid_path", "Path should be valid and absolute")
+	}
+
+	err := ValidateRemoteFileName(mo.destPath)
+
+	if err != nil {
+		return err
+	}
+	return nil
+}
+

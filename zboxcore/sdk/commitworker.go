@@ -45,7 +45,7 @@ func SuccessCommitResult() *CommitResult {
 }
 
 type CommitRequest struct {
-	change       allocationchange.AllocationChange
+	changes       []allocationchange.AllocationChange
 	blobber      *blockchain.StorageNode
 	allocationID string
 	allocationTx string
@@ -92,7 +92,9 @@ func (commitreq *CommitRequest) processCommit() {
 
 	l.Logger.Info("received a commit request")
 	paths := make([]string, 0)
-	paths = append(paths, commitreq.change.GetAffectedPath()...)
+	for _, change := range commitreq.changes {
+		paths = append(paths, change.GetAffectedPath()...)
+	}
 	var req *http.Request
 	var lR ReferencePathResult
 	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
@@ -161,13 +163,18 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 
 	var size int64
-	commitParams, err := commitreq.change.ProcessChange(rootRef)
-
-	if err != nil {
-		commitreq.result = ErrorCommitResult(err.Error())
-		return
+	fileIDMeta := make(map[string]string)
+	commitParams := allocationchange.CommitParams{}
+	for _, change := range commitreq.changes {
+		commitParams, err = change.ProcessChange(rootRef, fileIDMeta)
+		if err != nil {
+			commitreq.result = ErrorCommitResult(err.Error())
+			return
+		}
+		size += change.GetSize()
+		//fileIDMeta = commitParams.FileIDMeta;   // Need to think here
 	}
-	size += commitreq.change.GetSize()
+
 	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size, &commitParams)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
@@ -245,7 +252,7 @@ func (req *CommitRequest) commitBlobber(
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
-			l.Logger.Error(req.blobber.Baseurl, " Commit response:", string(resp_body))
+			l.Logger.Error(req.blobber.Baseurl,"--- ",string(wm.AllocationRoot), "-- Commit response:", string(resp_body))
 			return errors.New("commit_error", string(resp_body))
 		}
 		return nil

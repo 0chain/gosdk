@@ -16,7 +16,7 @@ type MoveFileChange struct {
 	DestPath   string
 }
 
-func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref) (
+func (ch *MoveFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[string]string) (
 	commitParam CommitParams, err error) {
 
 	fields, err := common.GetPathFields(ch.DestPath)

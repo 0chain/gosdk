@@ -1,6 +1,9 @@
 package zboxutil
 
-import "math/bits"
+import (
+	"fmt"
+	"math/bits"
+)
 
 type Uint128 struct {
 	high uint64
@@ -10,6 +13,10 @@ type Uint128 struct {
 func NewUint128(x uint64) Uint128 {
 	return Uint128{low: x}
 }
+
+func (x Uint128) Print() {
+	fmt.Printf("Mask is: %b%b", x.high, x.low);
+} 
 
 // Add returns x+y.
 func (x Uint128) Add(y Uint128) Uint128 {

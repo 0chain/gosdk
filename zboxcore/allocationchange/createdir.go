@@ -17,8 +17,8 @@ type DirCreateChange struct {
 	Uuid       uuid.UUID
 }
 
-func (d *DirCreateChange) ProcessChange(rootRef *fileref.Ref) (commitParams CommitParams, err error) {
-	inodesMeta := make(map[string]string)
+func (d *DirCreateChange) ProcessChange(rootRef *fileref.Ref, inodesMeta map[string]string) (commitParams CommitParams, err error) {
+	// inodesMeta := make(map[string]string)
 	fields, err := common.GetPathFields(d.RemotePath)
 	if err != nil {
 		return

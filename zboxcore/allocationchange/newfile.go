@@ -21,10 +21,9 @@ type NewFileChange struct {
 	Uuid uuid.UUID
 }
 
-func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref) (
+func (ch *NewFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[string]string) (
 	commitParams CommitParams, err error) {
 
-	fileIDMeta := make(map[string]string)
 	fields, err := common.GetPathFields(pathutil.Dir(ch.File.Path))
 	if err != nil {
 		return

@@ -16,7 +16,7 @@ type UpdateFileChange struct {
 	NewFile *fileref.FileRef
 }
 
-func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) (
+func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[string]string) (
 	commitParams CommitParams, err error) {
 
 	if ch.NewFile.ActualFileHash == "" {

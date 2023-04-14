@@ -116,7 +116,8 @@ func (req *DirRequest) commitRequest(existingDirCount int) error {
 			Timestamp:  timestamp,
 		}
 
-		commitReq.change = newChange
+		// commitReq.change = newChange
+		commitReq.changes = append(commitReq.changes, newChange)
 		commitReq.connectionID = req.connectionID
 		commitReq.wg = wg
 		commitReqs[c] = commitReq

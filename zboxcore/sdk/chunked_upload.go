@@ -88,6 +88,7 @@ func CreateChunkedUpload(
 	workdir string, allocationObj *Allocation,
 	fileMeta FileMeta, fileReader io.Reader,
 	isUpdate, isRepair bool,
+	connectionId string,
 	opts ...ChunkedUploadOption,
 ) (*ChunkedUpload, error) {
 
@@ -220,7 +221,7 @@ func CreateChunkedUpload(
 	// encrypt option has been chaned.upload it from scratch
 	// chunkSize has been changed. upload it from scratch
 	if su.progress.EncryptOnUpload != su.encryptOnUpload || su.progress.ChunkSize != su.chunkSize {
-		su.progress = su.createUploadProgress()
+		su.progress = su.createUploadProgress(connectionId)
 	}
 
 	su.fileErasureEncoder, err = reedsolomon.New(
@@ -383,8 +384,8 @@ func (su *ChunkedUpload) removeProgress() {
 }
 
 // createUploadProgress create a new UploadProgress
-func (su *ChunkedUpload) createUploadProgress() UploadProgress {
-	progress := UploadProgress{ConnectionID: zboxutil.NewConnectionId(),
+func (su *ChunkedUpload) createUploadProgress(connectionId string) UploadProgress {
+	progress := UploadProgress{ConnectionID: connectionId,
 		ChunkIndex:   -1,
 		ChunkSize:    su.chunkSize,
 		UploadLength: 0,
@@ -426,13 +427,10 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 	return encscheme
 }
 
-// Start start/resume upload
-func (su *ChunkedUpload) Start() error {
-
+func (su *ChunkedUpload) process() error {
 	if su.statusCallback != nil {
 		su.statusCallback.Started(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.fileMeta.ActualSize)+int(su.fileMeta.ActualThumbnailSize))
 	}
-	defer su.ctxCncl()
 
 	for {
 
@@ -443,6 +441,7 @@ func (su *ChunkedUpload) Start() error {
 			if su.statusCallback != nil {
 				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 			}
+			su.ctxCncl()
 			return err
 		}
 		//logger.Logger.Debug("Read chunk #", chunk.Index)
@@ -456,6 +455,7 @@ func (su *ChunkedUpload) Start() error {
 				if su.statusCallback != nil {
 					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 				}
+				su.ctxCncl()
 				return err
 			}
 
@@ -476,6 +476,7 @@ func (su *ChunkedUpload) Start() error {
 				if su.statusCallback != nil {
 					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 				}
+				su.ctxCncl()
 				return err
 			}
 		}
@@ -495,7 +496,18 @@ func (su *ChunkedUpload) Start() error {
 			break
 		}
 	}
+	return nil
+}
 
+// Start start/resume upload
+func (su *ChunkedUpload) Start() error {
+
+	defer su.ctxCncl()
+
+	err := su.process()
+	if err != nil {
+		return err
+	}
 	logger.Logger.Info("Completed the upload. Submitting for commit")
 
 	blobbers := make([]*blockchain.StorageNode, len(su.blobbers))
@@ -503,7 +515,7 @@ func (su *ChunkedUpload) Start() error {
 		blobbers[i] = b.blobber
 	}
 
-	err := su.writeMarkerMutex.Lock(
+	err = su.writeMarkerMutex.Lock(
 		su.ctx, &su.uploadMask, su.maskMu,
 		blobbers, &su.consensus, 0, su.uploadTimeOut,
 		su.progress.ConnectionID)
@@ -595,9 +607,10 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	wg := &sync.WaitGroup{}
 	var pos uint64
+	su.uploadMask.Print()
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
-
+		logger.Logger.Info("Pos is ", pos);
 		blobber := su.blobbers[pos]
 		blobber.progress.UploadLength += uploadLength
 
@@ -628,6 +641,9 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 					wgErrors <- err
 				}
 
+			} else {
+
+				logger.Logger.Info("Uploaded to blobber ", b.blobber.Baseurl)
 			}
 		}(blobber, body, formData, pos)
 	}
@@ -676,7 +692,7 @@ func (su *ChunkedUpload) processCommit() error {
 			su.buildChange(blobber.fileRef, uid, timestamp))
 
 		wg.Add(1)
-		go func(b *ChunkedUploadBlobber, pos uint64) {
+		func(b *ChunkedUploadBlobber, pos uint64) {
 			defer wg.Done()
 			err := b.processCommit(context.TODO(), su, pos)
 			if err != nil {

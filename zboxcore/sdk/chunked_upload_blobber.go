@@ -375,13 +375,15 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 
 	var size int64
 	var commitParams allocationchange.CommitParams
+	fileIDMeta := make(map[string]string)
 	for _, change := range sb.commitChanges {
-		commitParams, err = change.ProcessChange(rootRef)
+		commitParams, err = change.ProcessChange(rootRef, fileIDMeta)
 		if err != nil {
 			logger.Logger.Error(err)
 			return nil, nil, 0, nil, err
 		}
 		size += change.GetSize()
+		fileIDMeta = commitParams.FileIDMeta
 	}
 
 	return rootRef, lR.LatestWM, size, &commitParams, nil

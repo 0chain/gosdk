@@ -17,7 +17,7 @@ type change struct {
 }
 
 type AllocationChange interface {
-	ProcessChange(rootRef *fileref.Ref) (CommitParams, error)
+	ProcessChange(rootRef *fileref.Ref, fileIDMeta map[string]string) (CommitParams, error)
 	GetAffectedPath() []string
 	GetSize() int64
 }
