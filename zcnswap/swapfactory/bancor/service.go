@@ -134,10 +134,6 @@ func (s *swapService) Approve(spender, fromToken, fromAddress cmn.Address, amoun
 func (s *swapService) IncreaseAllowance(spender, fromToken, fromAddress cmn.Address, addedValue *big.Int) error {
 	l.Logger.Info("IncreaseAllowance called", zap.Any("fromToken", fromToken.Hex()))
 
-	if addedValue.Int64() == 0 {
-		return errors.New("500", "Value should be greater than 0")
-	}
-
 	abi, err := contractErc20.ERC20MetaData.GetAbi()
 	if err != nil {
 		return err

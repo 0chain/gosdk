@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 
+	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/logger"
 
 	//"github.com/0chain/gosdk/core/zcncrypto"
@@ -74,6 +75,10 @@ var (
 //
 //nolint:funlen
 func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei Wei) (*types.Transaction, error) {
+	if amountWei <= 0 {
+		return nil, errors.New("500", "amount must be greater than zero")
+	}
+
 	etherClient, err := b.CreateEthClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create etherClient")
