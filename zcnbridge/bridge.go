@@ -333,13 +333,12 @@ func (b *BridgeClient) GetNotProcessedWZCNBurnTickets(ctx context.Context, mintN
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
 	}
 
-	graphQlClientURL := new(url.URL)
-	graphQlClientURL, err := graphQlClientURL.Parse(b.BlockWorker)
+	graphQlClientURL, err := url.Parse(b.BlockWorker)
 	if err != nil {
 		return nil, err
 	}
 
-	graphQlClientURL.Host = fmt.Sprintf("%s.%s", "graphnode", graphQlClientURL.Host)
+	graphQlClientURL.Host = fmt.Sprintf("graphnode.%s", graphQlClientURL.Host)
 	graphQlClientURL.Path = "/subgraphs/name/dex_subgraph"
 
 	graphQlClient := graphql.NewClient(graphQlClientURL.String())
