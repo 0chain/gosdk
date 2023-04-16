@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/sys"
@@ -188,9 +189,8 @@ func (req *DownloadRequest) downloadBlock(
 
 	}
 
-	var failed int
+	var failed int32
 	downloadErrors := make([]string, requiredDownloads)
-	failedMu := &sync.Mutex{}
 	wg := &sync.WaitGroup{}
 	for i := 0; i < requiredDownloads; i++ {
 		result := <-rspCh
@@ -200,9 +200,7 @@ func (req *DownloadRequest) downloadBlock(
 			var err error
 			defer func() {
 				if err != nil {
-					failedMu.Lock()
-					failed++
-					failedMu.Unlock()
+					atomic.AddInt32(&failed, 1)
 					req.removeFromMask(uint64(result.idx))
 					downloadErrors[i] = fmt.Sprintf("Error %s from %s",
 						err.Error(), req.blobbers[result.idx].Baseurl)
@@ -219,7 +217,7 @@ func (req *DownloadRequest) downloadBlock(
 	}
 
 	wg.Wait()
-	return remainingMask, failed, downloadErrors, nil
+	return remainingMask, int(failed), downloadErrors, nil
 }
 
 // decodeEC will reconstruct shards and verify it
