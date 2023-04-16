@@ -29,7 +29,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/google/uuid"
 	"github.com/klauspost/reedsolomon"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -427,10 +426,6 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 	return encscheme
 }
 
-const (
-	concurrentUploads = 4
-)
-
 // Start start/resume upload
 func (su *ChunkedUpload) Start() error {
 
@@ -439,17 +434,18 @@ func (su *ChunkedUpload) Start() error {
 	}
 	defer su.ctxCncl()
 
-	sem := make(chan struct{}, concurrentUploads)
-	eg, _ := errgroup.WithContext(su.ctx)
-
 	for {
+
 		chunks, err := su.readChunks(su.chunkNumber)
+
+		// chunk, err := su.chunkReader.Next()
 		if err != nil {
 			if su.statusCallback != nil {
 				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 			}
 			return err
 		}
+		//logger.Logger.Debug("Read chunk #", chunk.Index)
 
 		su.shardUploadedSize += chunks.totalFragmentSize
 		su.progress.UploadLength += chunks.totalReadSize
@@ -468,46 +464,36 @@ func (su *ChunkedUpload) Start() error {
 			}
 		}
 
-		// chunk has not been uploaded yet
+		//chunk has not be uploaded yet
 		if chunks.chunkEndIndex > su.progress.ChunkIndex {
-			sem <- struct{}{} // Acquire a semaphore
-			eg.Go(func() error {
-				defer func() {
-					<-sem // Release semaphore
-				}()
 
-				err := su.processUpload(
-					chunks.chunkStartIndex, chunks.chunkEndIndex,
-					chunks.fileShards, chunks.thumbnailShards,
-					chunks.isFinal, chunks.totalReadSize,
-				)
-				if err != nil {
-					return err
+			err = su.processUpload(
+				chunks.chunkStartIndex, chunks.chunkEndIndex,
+				chunks.fileShards, chunks.thumbnailShards,
+				chunks.isFinal, chunks.totalReadSize,
+			)
+			if err != nil {
+				if su.statusCallback != nil {
+					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 				}
+				return err
+			}
+		}
 
-				if chunks.totalReadSize > 0 {
-					su.progress.ChunkIndex = chunks.chunkEndIndex
-					su.saveProgress()
+		// last chunk might 0 with io.EOF
+		// https://stackoverflow.com/questions/41208359/how-to-test-eof-on-io-reader-in-go
+		if chunks.totalReadSize > 0 {
+			su.progress.ChunkIndex = chunks.chunkEndIndex
+			su.saveProgress()
 
-					if su.statusCallback != nil {
-						su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.progress.UploadLength), nil)
-					}
-				}
-
-				return nil
-			})
+			if su.statusCallback != nil {
+				su.statusCallback.InProgress(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.progress.UploadLength), nil)
+			}
 		}
 
 		if chunks.isFinal {
 			break
 		}
-	}
-
-	if err := eg.Wait(); err != nil {
-		if su.statusCallback != nil {
-			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
-		}
-		return err
 	}
 
 	logger.Logger.Info("Completed the upload. Submitting for commit")
@@ -521,6 +507,7 @@ func (su *ChunkedUpload) Start() error {
 		su.ctx, &su.uploadMask, su.maskMu,
 		blobbers, &su.consensus, 0, su.uploadTimeOut,
 		su.progress.ConnectionID)
+
 	if err != nil {
 		if su.statusCallback != nil {
 			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
