@@ -94,7 +94,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 				return
 			}
 
-			if resp != nil && resp.Body != nil {
+			if resp.Body != nil {
 				defer resp.Body.Close()
 			}
 			var r UploadResult
