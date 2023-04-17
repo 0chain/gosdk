@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -192,6 +193,21 @@ type Allocation struct {
 	// conseususes
 	consensusThreshold int
 	fullconsensus      int
+}
+
+type OperationRequest struct {
+	OperationType string
+	LocalPath string
+	RemotePath string
+	DestName string  // Required only for rename operation
+	DestPath string // Required for copy operation
+
+	// Required for uploads
+	Workdir string
+	FileMeta FileMeta 
+	FileReader io.Reader 
+	Opts []ChunkedUploadOption
+
 }
 
 func (a *Allocation) GetStats() *AllocationStats {

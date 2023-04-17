@@ -124,7 +124,7 @@ func BenchmarkChunkedUpload(b *testing.B) {
 					RemotePath: "/test.txt",
 				}
 
-				chunkedUpload, err := CreateChunkedUpload("/tmp", a, fileMeta, reader, false, false)
+				chunkedUpload, err := CreateChunkedUpload("/tmp", a, fileMeta, reader, false, false, "f")
 				if err != nil {
 					b.Fatal(err)
 					return

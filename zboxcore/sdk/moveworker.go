@@ -262,8 +262,7 @@ type MoveOperation struct {
 }
 
 func (mo *MoveOperation) Process(allocDetails AllocationDetails,connectionID string, blobbers []*blockchain.StorageNode) ([]fileref.RefEntity, error){
-	l.Logger.Info("Started Rename Process with Connection Id", connectionID);
-	// make renameRequest object
+	// l.Logger.Info("Started Rename Process with Connection Id", connectionID);
 	mR := &MoveRequest{
 		allocationObj: allocDetails.allocationObj, 
 		allocationID: allocDetails.allocationID,
@@ -312,7 +311,6 @@ func (mo *MoveOperation) Process(allocDetails AllocationDetails,connectionID str
 			fmt.Sprintf("Rename failed. Required consensus %d, got %d",
 				mR.Consensus.consensusThresh, mR.Consensus.consensus))
 	}
-	l.Logger.Info("Rename Processs Ended ");
 	return objectTreeRefs, nil;
 }
 

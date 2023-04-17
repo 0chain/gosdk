@@ -137,6 +137,7 @@ func (commitreq *CommitRequest) processCommit() {
 		return
 	}
 	rootRef, err := lR.GetDirTree(commitreq.allocationID)
+
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
@@ -165,17 +166,21 @@ func (commitreq *CommitRequest) processCommit() {
 	var size int64
 	fileIDMeta := make(map[string]string)
 	commitParams := allocationchange.CommitParams{}
+	// timestamp := int64(55555555)  // for debugging
+	timestamp := int64(common.Now())
+
 	for _, change := range commitreq.changes {
 		commitParams, err = change.ProcessChange(rootRef, fileIDMeta)
 		if err != nil {
 			commitreq.result = ErrorCommitResult(err.Error())
 			return
 		}
+		fmt.Println("Allocation root is : ", encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10)));
+		fmt.Println("rootref hash: ", rootRef.Hash," timestamp: ", timestamp);
 		size += change.GetSize()
-		//fileIDMeta = commitParams.FileIDMeta;   // Need to think here
+		commitParams.FileIDMeta = fileIDMeta
 	}
-
-	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size, &commitParams)
+	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size, &commitParams, timestamp)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
@@ -185,7 +190,7 @@ func (commitreq *CommitRequest) processCommit() {
 
 func (req *CommitRequest) commitBlobber(
 	rootRef *fileref.Ref, latestWM *marker.WriteMarker, size int64,
-	commitParams *allocationchange.CommitParams) error {
+	commitParams *allocationchange.CommitParams, timestamp int64) error {
 
 	fileIDMetaData, err := json.Marshal(commitParams.FileIDMeta)
 	if err != nil {
@@ -194,7 +199,7 @@ func (req *CommitRequest) commitBlobber(
 	}
 
 	wm := &marker.WriteMarker{}
-	timestamp := int64(common.Now())
+	// timestamp = int64(common.Now())
 	wm.AllocationRoot = encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10))
 	if latestWM != nil {
 		wm.PreviousAllocationRoot = latestWM.AllocationRoot
@@ -224,6 +229,8 @@ func (req *CommitRequest) commitBlobber(
 	formWriter.WriteField("write_marker", string(wmData))
 	formWriter.WriteField("file_id_meta", string(fileIDMetaData))
 
+	fmt.Println("File id meta is : : ", commitParams.FileIDMeta);
+	
 	formWriter.Close()
 
 	httpreq, err := zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationTx, body)
@@ -252,8 +259,9 @@ func (req *CommitRequest) commitBlobber(
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
-			l.Logger.Error(req.blobber.Baseurl,"--- ",string(wm.AllocationRoot), "-- Commit response:", string(resp_body))
-			return errors.New("commit_error", string(resp_body))
+			
+			l.Logger.Error(req.blobber.Baseurl,"--- ",string(wm.AllocationRoot), "-- Commit response:", string(resp_body), " with rootref.hash is : ", string(rootRef.Hash))
+			return errors.New("commit_error", string(resp_body), )
 		}
 		return nil
 	})
