@@ -17,6 +17,7 @@ import (
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/sys"
+	"go.uber.org/zap"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
@@ -81,13 +82,20 @@ func GetLogger() *logger.Logger {
 	return &l.Logger
 }
 
-func InitStorageSDK(walletJSON string, blockWorker, chainID, signatureScheme string, preferredBlobbers []string, nonce int64) error {
-
+func InitStorageSDK(walletJSON string,
+	blockWorker, chainID, signatureScheme string,
+	preferredBlobbers []string,
+	nonce int64,
+	fee ...uint64) error {
 	err := client.PopulateClient(walletJSON, signatureScheme)
 	if err != nil {
 		return err
 	}
+
 	client.SetClientNonce(nonce)
+	if len(fee) > 0 {
+		client.SetTxnFee(fee[0])
+	}
 
 	blockchain.SetChainID(chainID)
 	blockchain.SetPreferredBlobbers(preferredBlobbers)
@@ -1364,7 +1372,8 @@ func smartContractTxn(sn transaction.SmartContractTxnData) (
 func smartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
-	return smartContractTxnValueFee(sn, value, 0)
+	// Fee is set during sdk initialization.
+	return smartContractTxnValueFee(sn, value, client.TxnFee())
 }
 
 func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
@@ -1387,6 +1396,22 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	txn.Value = value
 	txn.TransactionFee = fee
 	txn.TransactionType = transaction.TxnTypeSmartContract
+
+	// adjust fees if not set
+	if fee == 0 {
+		fee, err = transaction.EstimateFee(txn, blockchain.GetMiners(), 0.2)
+		if err != nil {
+			l.Logger.Error("failed to estimate txn fee",
+				zap.Error(err),
+				zap.Any("txn", txn))
+			return
+		}
+		l.Logger.Info("estimate txn fee",
+			zap.Uint64("fee", fee),
+			zap.Any("txn", txn))
+		txn.TransactionFee = fee
+	}
+
 	if txn.TransactionNonce == 0 {
 		txn.TransactionNonce = transaction.Cache.GetNextNonce(txn.ClientID)
 	}
