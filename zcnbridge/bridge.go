@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
-	"net/url"
 	"os"
 	"path"
 
@@ -333,15 +332,10 @@ func (b *BridgeClient) GetNotProcessedWZCNBurnTickets(ctx context.Context, mintN
 		return nil, errors.New("DefaultClientIDEncoder must be setup")
 	}
 
-	graphQlClientURL, err := url.Parse(b.BlockWorker)
+	graphQlClient, err := b.CreateSubgraphClient()
 	if err != nil {
 		return nil, err
 	}
-
-	graphQlClientURL.Host = fmt.Sprintf("graphnode.%s", graphQlClientURL.Host)
-	graphQlClientURL.Path = "/subgraphs/name/dex_subgraph"
-
-	graphQlClient := graphql.NewClient(graphQlClientURL.String())
 
 	clientID := DefaultClientIDEncoder(b.ClientID())
 
