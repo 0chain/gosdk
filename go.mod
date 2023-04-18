@@ -32,6 +32,7 @@ require (
 	go.dedis.ch/kyber/v3 v3.1.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.6.0
+	golang.org/x/image v0.0.0-20190802002840-cff245a6509b
 	google.golang.org/grpc v1.53.0
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1

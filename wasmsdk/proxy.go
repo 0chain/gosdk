@@ -156,6 +156,7 @@ func main() {
 				"getUSDRate":             getUSDRate,
 				"isWalletID":             isWalletID,
 				"getLookupHash":          getLookupHash,
+				"createThumbnail":        createThumbnail,
 
 				//blobber
 				"delete":                Delete,
