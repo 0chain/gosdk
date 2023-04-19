@@ -3,7 +3,7 @@ module github.com/0chain/gosdk
 go 1.18
 
 require (
-	github.com/0chain/common v0.0.6-0.20221123040931-4a3feacdb97c
+	github.com/0chain/common v0.0.6-0.20230127095721-8df4d1d72565
 	github.com/0chain/errors v1.0.3
 	github.com/Luzifer/go-openssl/v3 v3.1.0
 	github.com/btcsuite/btcd v0.23.4
@@ -32,6 +32,7 @@ require (
 	go.dedis.ch/kyber/v3 v3.1.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.6.0
+	golang.org/x/image v0.0.0-20190802002840-cff245a6509b
 	google.golang.org/grpc v1.53.0
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
