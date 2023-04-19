@@ -3,7 +3,6 @@ package sdk
 import (
 	"context"
 	"fmt"
-	// "io"
 	"sync"
 	"time"
 
@@ -12,7 +11,6 @@ import (
 
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
-	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	l "github.com/0chain/gosdk/zboxcore/logger"
@@ -21,23 +19,15 @@ import (
 	"github.com/google/uuid"
 )
 
-type AllocationDetails struct {
-	allocationObj *Allocation
-	allocationID string
-	allocationTx string
-}
 type Operationer interface {
-	Process(allocDetails AllocationDetails,connectionID string, blobbers []*blockchain.StorageNode) ([]fileref.RefEntity, error)
-	buildChange(refs []fileref.RefEntity, uid uuid.UUID ) []allocationchange.AllocationChange
+	Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, error)
+	buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange
 }
-
-
 
 type MultiOperation struct {
 	connectionID  string
 	operations    []Operationer
-	AllocationDetails
-	blobbers      []*blockchain.StorageNode
+	allocationObj *Allocation
 	ctx           context.Context
 	ctxCncl       context.CancelFunc
 	operationMask zboxutil.Uint128
@@ -48,7 +38,7 @@ type MultiOperation struct {
 }
 
 func (mo *MultiOperation) Process() error {
-	l.Logger.Info("MultiOperation Process start");
+	l.Logger.Info("MultiOperation Process start")
 	wg := &sync.WaitGroup{}
 	mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
 	l.Logger.Info("len of mo.oper: ", len(mo.operations))
@@ -58,7 +48,6 @@ func (mo *MultiOperation) Process() error {
 	uid := util.GetNewUUID()
 	for idx, op := range mo.operations {
 		wg.Add(1)
-		allocDetails := AllocationDetails{allocationObj: mo.allocationObj, allocationID: mo.allocationID, allocationTx: mo.allocationTx}
 		// Here make it goroutine
 		func(op Operationer, idx int) {
 			defer wg.Done()
@@ -70,10 +59,10 @@ func (mo *MultiOperation) Process() error {
 			default:
 			}
 
-			refs, err := op.Process(allocDetails, mo.connectionID, mo.blobbers) // Process with each blobber
+			refs, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
 
 			if err != nil {
-				l.Logger.Error(err);
+				l.Logger.Error(err)
 
 				select {
 				case errs <- thrown.New("", err.Error()):
@@ -81,7 +70,7 @@ func (mo *MultiOperation) Process() error {
 				}
 				ctxCncl()
 
-				return 
+				return
 			}
 			// Temporary comment for debugging
 			changes := op.buildChange(refs, uid)
@@ -95,32 +84,31 @@ func (mo *MultiOperation) Process() error {
 	if ctx.Err() != nil {
 		return <-errs
 	}
-	l.Logger.Info("Individual Operation process done");
+	l.Logger.Info("Individual Operation process done")
 
 	// Take transpose of mo.change because it will be easier to iterate mo if it contains blobber changes
 	// in row instead of column. Currently mo.change[0] contains allocationChange for operation 1 and so on.
-	// But we want mo.changes[0] to have allocationChange for blobber 1 and mo.changes[1] to have allocationChange for 
-	// blobber 2 and so on. 
+	// But we want mo.changes[0] to have allocationChange for blobber 1 and mo.changes[1] to have allocationChange for
+	// blobber 2 and so on.
 	mo.changes = zboxutil.Transpose(mo.changes)
 
 	// var commitIdMeta map[string]string // be careful as it would create two uuid for same path
 	// var rootRef *fileref.Ref
 	// Get the fileref from the blobber
 
-
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), mo.allocationObj)
 	if err != nil {
 		return fmt.Errorf("Operation failed: %s", err.Error())
 	}
 
-	l.Logger.Info("Trying to lock write marker.....");
+	l.Logger.Info("Trying to lock write marker.....")
 	err = writeMarkerMutex.Lock(mo.ctx, &mo.operationMask, mo.maskMU,
-		mo.blobbers, &mo.Consensus, 0, time.Minute, mo.connectionID)
+		mo.allocationObj.Blobbers, &mo.Consensus, 0, time.Minute, mo.connectionID)
 	if err != nil {
 		return fmt.Errorf("Operation failed: %s", err.Error())
 	}
-	l.Logger.Info("WriteMarker locked");
-	defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+	l.Logger.Info("WriteMarker locked")
+	defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
 
 	mo.Consensus.Reset()
 	activeBlobbers := mo.operationMask.CountOnes()
@@ -132,21 +120,22 @@ func (mo *MultiOperation) Process() error {
 	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		commitReq := &CommitRequest{
-			allocationID: mo.allocationID,
-			allocationTx: mo.allocationTx,
-			blobber:      mo.blobbers[pos],
+			allocationID: mo.allocationObj.ID,
+			allocationTx: mo.allocationObj.Tx,
+			blobber:      mo.allocationObj.Blobbers[pos],
 			connectionID: mo.connectionID,
 			wg:           wg,
 		}
+		// Check here if mo.changes[pos] is available
 		for _, change := range mo.changes[pos] {
 			commitReq.changes = append(commitReq.changes, change)
 		}
-		commitReqs[cntr] = commitReq;
-		l.Logger.Info("Commit request sending to blobber ", commitReq.blobber.Baseurl);
+		commitReqs[cntr] = commitReq
+		l.Logger.Info("Commit request sending to blobber ", commitReq.blobber.Baseurl)
 		// Here this should be goroutine
-		AddCommitRequest(commitReq)
+		go AddCommitRequest(commitReq)
 		// time.Sleep( 20 * time.Second)
-		cntr++;
+		cntr++
 	}
 	wg.Wait()
 
@@ -169,31 +158,9 @@ func (mo *MultiOperation) Process() error {
 				mo.Consensus.consensusThresh, mo.Consensus.consensus))
 	}
 
-	return nil;
+	return nil
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // type DownloadOperation struct {
 // 	*DownloadRequest

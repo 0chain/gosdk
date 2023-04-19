@@ -266,9 +266,6 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 	return nil
 }
 
-
-
-
 type DeleteOperation struct {
 	remotefilepath string
 	ctx            context.Context
@@ -279,37 +276,36 @@ type DeleteOperation struct {
 	consensus      Consensus
 }
 
-func (dop *DeleteOperation) Process(allocDetails AllocationDetails,connectionID string, blobbers []*blockchain.StorageNode) ([]fileref.RefEntity, error){
-	l.Logger.Info("Started Delete Process with Connection Id", connectionID);
+func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, error) {
+	l.Logger.Info("Started Delete Process with Connection Id", connectionID)
 	// make renameRequest object
 	deleteReq := &DeleteRequest{
-		allocationObj: allocDetails.allocationObj, 
-		allocationID: allocDetails.allocationID,
-		allocationTx: allocDetails.allocationTx,
-		connectionID: connectionID,
-		blobbers: blobbers,
+		allocationObj:  allocObj,
+		allocationID:   allocObj.ID,
+		allocationTx:   allocObj.Tx,
+		connectionID:   connectionID,
+		blobbers:       allocObj.Blobbers,
 		remotefilepath: dop.remotefilepath,
-		ctx: dop.ctx,
-		ctxCncl: dop.ctxCncl,
-		deleteMask: dop.deleteMask,
-		maskMu: dop.maskMu,
-		wg: &sync.WaitGroup{},
-		
+		ctx:            dop.ctx,
+		ctxCncl:        dop.ctxCncl,
+		deleteMask:     dop.deleteMask,
+		maskMu:         dop.maskMu,
+		wg:             &sync.WaitGroup{},
 	}
-	deleteReq.consensus.fullconsensus = dop.consensus.fullconsensus;
-	deleteReq.consensus.consensusThresh = dop.consensus.consensusThresh;
+	deleteReq.consensus.fullconsensus = dop.consensus.fullconsensus
+	deleteReq.consensus.consensusThresh = dop.consensus.consensusThresh
 
 	numList := len(deleteReq.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	blobberErrors := make([]error, numList)
-	
+
 	var pos uint64
 
 	for i := deleteReq.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		deleteReq.wg.Add(1)
 		go func(blobberIdx int) {
-			refEntity, err := deleteReq.getObjectTreeFromBlobber(pos);
+			refEntity, err := deleteReq.getObjectTreeFromBlobber(pos)
 			if errors.Is(err, constants.ErrNotFound) {
 				deleteReq.consensus.Done()
 				return
@@ -317,7 +313,7 @@ func (dop *DeleteOperation) Process(allocDetails AllocationDetails,connectionID 
 				blobberErrors[blobberIdx] = err
 				l.Logger.Error(err.Error())
 				return
-			} 
+			}
 			deleteReq.deleteBlobberFile(deleteReq.blobbers[blobberIdx], blobberIdx)
 			objectTreeRefs[blobberIdx] = refEntity
 		}(int(pos))
@@ -327,19 +323,19 @@ func (dop *DeleteOperation) Process(allocDetails AllocationDetails,connectionID 
 	if !deleteReq.consensus.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
-			return nil, thrown.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
+			return nil, thrown.New("delete_falied", fmt.Sprintf("Delete failed. %s", err.Error()))
 		}
-		
+
 		return nil, thrown.New("consensus_not_met",
 			fmt.Sprintf("Rename failed. Required consensus %d, got %d",
 				deleteReq.consensus.consensusThresh, deleteReq.consensus.consensus))
 	}
-	l.Logger.Info("Delete Processs Ended ");
-	return objectTreeRefs, nil;
+	l.Logger.Info("Delete Processs Ended ")
+	return objectTreeRefs, nil
 }
 
 func (do *DeleteOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
-	
+
 	changes := make([]allocationchange.AllocationChange, len(refs))
 	for idx, ref := range refs {
 		newChange := &allocationchange.DeleteFileChange{}
@@ -352,7 +348,6 @@ func (do *DeleteOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) 
 	return changes
 }
 
-
 func (dop *DeleteOperation) build(remotePath string, deleteMask zboxutil.Uint128, maskMu *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) {
 
 	dop.remotefilepath = zboxutil.RemoteClean(remotePath)
@@ -360,8 +355,7 @@ func (dop *DeleteOperation) build(remotePath string, deleteMask zboxutil.Uint128
 	dop.maskMu = maskMu
 	dop.consensus.consensusThresh = consensusTh
 	dop.consensus.fullconsensus = fullConsensus
-
-	dop.ctx, dop.ctxCncl =  context.WithCancel(ctx)
+	dop.ctx, dop.ctxCncl = context.WithCancel(ctx)
 }
 
 func (dop *DeleteOperation) Verify(a *Allocation) error {

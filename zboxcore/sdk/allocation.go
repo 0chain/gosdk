@@ -197,17 +197,16 @@ type Allocation struct {
 
 type OperationRequest struct {
 	OperationType string
-	LocalPath string
-	RemotePath string
-	DestName string  // Required only for rename operation
-	DestPath string // Required for copy operation
+	LocalPath     string
+	RemotePath    string
+	DestName      string // Required only for rename operation
+	DestPath      string // Required for copy operation
 
 	// Required for uploads
-	Workdir string
-	FileMeta FileMeta 
-	FileReader io.Reader 
-	Opts []ChunkedUploadOption
-
+	Workdir    string
+	FileMeta   FileMeta
+	FileReader io.Reader
+	Opts       []ChunkedUploadOption
 }
 
 func (a *Allocation) GetStats() *AllocationStats {
@@ -476,9 +475,10 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 		options = append(options, WithThumbnail(buf))
 	}
 
+	connectionId := zboxutil.NewConnectionId()
 	ChunkedUpload, err := CreateChunkedUpload(workdir,
 		a, fileMeta, fileReader,
-		isUpdate, isRepair,"ad",
+		isUpdate, isRepair, connectionId,
 		options...)
 	if err != nil {
 		return err
@@ -514,19 +514,12 @@ func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDow
 	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload, status)
 }
 
-
 func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
-	// err := op.Verify() //
-	// process := operation.Build()
-	// change, err = process.Process() //
 	if len(operations) == 0 {
 		return nil
 	}
-	var mo MultiOperation;
-	mo.allocationObj = a;
-	mo.allocationID = a.ID
-	mo.allocationTx = a.Tx;
-	mo.blobbers = a.Blobbers
+	var mo MultiOperation
+	mo.allocationObj = a
 	mo.operationMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	mo.maskMU = &sync.Mutex{}
 	mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
@@ -535,10 +528,10 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		fullconsensus:   a.fullconsensus,
 	}
 	mo.connectionID = zboxutil.NewConnectionId()
-	for _, op := range(operations) {
+	for _, op := range operations {
 		switch op.OperationType {
-			
-		case constants.FileOperationRename: 
+
+		case constants.FileOperationRename:
 			renameOp := &RenameOperation{}
 			renameOp.build(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 			err := renameOp.Verify(a)
@@ -556,8 +549,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			}
 			mo.operations = append(mo.operations, copyOp)
 
-			
-		case constants.FileOperationMove: 
+		case constants.FileOperationMove:
 			moveOp := &MoveOperation{}
 			moveOp.build(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 			err := moveOp.Verify(a)
@@ -565,8 +557,8 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				return err
 			}
 			mo.operations = append(mo.operations, moveOp)
-			
-		case constants.FileOperationInsert: 
+
+		case constants.FileOperationInsert:
 			uploadOp := &UploadOperation{}
 			uploadOp.build(op.Workdir, op.FileMeta, op.FileReader, false, op.Opts...)
 			err := uploadOp.Verify(a)
@@ -574,16 +566,16 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				return err
 			}
 			mo.operations = append(mo.operations, uploadOp)
-		
+
 		case constants.FileOperationDelete:
-			deleteOP := &DeleteOperation{}	
+			deleteOP := &DeleteOperation{}
 			deleteOP.build(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 			err := deleteOP.Verify(a)
 			if err != nil {
 				return err
 			}
 			mo.operations = append(mo.operations, deleteOP)
-		
+
 		case constants.FileOperationUpdate:
 			updateOp := &UploadOperation{}
 			updateOp.build(op.Workdir, op.FileMeta, op.FileReader, true, op.Opts...)
@@ -592,16 +584,14 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				return err
 			}
 			mo.operations = append(mo.operations, updateOp)
-			
-			
-		default: 
-			return errors.New("invalid_operation", "Operation is not valid");
+
+		default:
+			return errors.New("invalid_operation", "Operation is not valid")
 
 		}
 	}
 
 	return mo.Process()
-
 
 }
 
@@ -1619,5 +1609,3 @@ repair:
 
 	return hash, nil
 }
-
-

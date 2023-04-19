@@ -260,20 +260,20 @@ type CopyOperation struct {
 	Consensus
 }
 
-func (co *CopyOperation) Process(allocDetails AllocationDetails, connectionID string, blobbers []*blockchain.StorageNode) ([]fileref.RefEntity, error) {
+func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, error) {
 	// make copyRequest object
 	cR := &CopyRequest{
-		allocationObj:  allocDetails.allocationObj,
-		allocationID:   allocDetails.allocationID,
-		allocationTx:   allocDetails.allocationTx,
+		allocationObj:  allocObj,
+		allocationID:   allocObj.ID,
+		allocationTx:   allocObj.Tx,
 		connectionID:   connectionID,
-		blobbers:       blobbers,
+		blobbers:       allocObj.Blobbers,
 		remotefilepath: co.remotefilepath,
 		destPath:       co.destPath,
 		ctx:            co.ctx,
 		ctxCncl:        co.ctxCncl,
 		copyMask:       co.copyMask,
-		maskMU: co.maskMU,
+		maskMU:         co.maskMU,
 	}
 	cR.consensusThresh = co.consensusThresh
 	cR.fullconsensus = co.fullconsensus
@@ -329,7 +329,6 @@ func (co *CopyOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []
 	return changes
 }
 
-
 func (co *CopyOperation) build(remotePath string, destPath string, copyMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) {
 
 	co.remotefilepath = zboxutil.RemoteClean(remotePath)
@@ -341,7 +340,7 @@ func (co *CopyOperation) build(remotePath string, destPath string, copyMask zbox
 		destPath = strings.TrimSuffix(destPath, "/")
 	}
 	co.destPath = destPath
-	co.ctx, co.ctxCncl =  context.WithCancel(ctx)
+	co.ctx, co.ctxCncl = context.WithCancel(ctx)
 }
 
 func (co *CopyOperation) Verify(a *Allocation) error {

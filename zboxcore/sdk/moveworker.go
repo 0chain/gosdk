@@ -73,7 +73,7 @@ func (req *MoveRequest) moveBlobberObject(
 			formWriter.WriteField("connection_id", req.connectionID)
 			formWriter.WriteField("path", req.remotefilepath)
 			formWriter.WriteField("dest", req.destPath)
-			l.Logger.Info("destination path is: ", req.destPath);
+			l.Logger.Info("destination path is: ", req.destPath)
 			formWriter.Close()
 
 			var (
@@ -174,13 +174,13 @@ func (req *MoveRequest) ProcessMove() error {
 		}(int(pos))
 	}
 	wg.Wait()
-	
+
 	if !req.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
 			return errors.New("move_failed", fmt.Sprintf("Move failed. %s", err.Error()))
 		}
-		
+
 		return errors.New("consensus_not_met",
 			fmt.Sprintf("Move failed. Required consensus %d, got %d",
 				req.Consensus.consensusThresh, req.Consensus.consensus))
@@ -248,9 +248,6 @@ func (req *MoveRequest) ProcessMove() error {
 	return nil
 }
 
-
-
-
 type MoveOperation struct {
 	remotefilepath string
 	destPath       string
@@ -261,27 +258,26 @@ type MoveOperation struct {
 	consensus      Consensus
 }
 
-func (mo *MoveOperation) Process(allocDetails AllocationDetails,connectionID string, blobbers []*blockchain.StorageNode) ([]fileref.RefEntity, error){
-	// l.Logger.Info("Started Rename Process with Connection Id", connectionID);
+func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, error) {
 	mR := &MoveRequest{
-		allocationObj: allocDetails.allocationObj, 
-		allocationID: allocDetails.allocationID,
-		allocationTx: allocDetails.allocationTx,
-		connectionID: connectionID,
-		blobbers: blobbers,
+		allocationObj:  allocObj,
+		allocationID:   allocObj.ID,
+		allocationTx:   allocObj.Tx,
+		connectionID:   connectionID,
+		blobbers:       allocObj.Blobbers,
 		remotefilepath: mo.remotefilepath,
-		ctx: mo.ctx,
-		ctxCncl: mo.ctxCncl,
-		moveMask: mo.moveMask,
-		maskMU: mo.maskMU,
-		destPath: mo.destPath,
+		ctx:            mo.ctx,
+		ctxCncl:        mo.ctxCncl,
+		moveMask:       mo.moveMask,
+		maskMU:         mo.maskMU,
+		destPath:       mo.destPath,
 	}
-	mR.Consensus.fullconsensus = mo.consensus.fullconsensus;
-	mR.Consensus.consensusThresh = mo.consensus.consensusThresh;
+	mR.Consensus.fullconsensus = mo.consensus.fullconsensus
+	mR.Consensus.consensusThresh = mo.consensus.consensusThresh
 	numList := len(mR.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	blobberErrors := make([]error, numList)
-	
+
 	wg := &sync.WaitGroup{}
 	var pos uint64
 
@@ -306,12 +302,12 @@ func (mo *MoveOperation) Process(allocDetails AllocationDetails,connectionID str
 		if err != nil {
 			return nil, thrown.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
 		}
-		
+
 		return nil, thrown.New("consensus_not_met",
 			fmt.Sprintf("Rename failed. Required consensus %d, got %d",
 				mR.Consensus.consensusThresh, mR.Consensus.consensus))
 	}
-	return objectTreeRefs, nil;
+	return objectTreeRefs, nil
 }
 
 func (mo *MoveOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
@@ -330,8 +326,6 @@ func (mo *MoveOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []
 	return changes
 }
 
-
-
 func (mo *MoveOperation) build(remotePath string, destPath string, moveMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) {
 	mo.remotefilepath = zboxutil.RemoteClean(remotePath)
 	if destPath != "/" {
@@ -342,7 +336,7 @@ func (mo *MoveOperation) build(remotePath string, destPath string, moveMask zbox
 	mo.maskMU = maskMU
 	mo.consensus.consensusThresh = consensusTh
 	mo.consensus.fullconsensus = fullConsensus
-	mo.ctx, mo.ctxCncl =  context.WithCancel(ctx)
+	mo.ctx, mo.ctxCncl = context.WithCancel(ctx)
 }
 
 func (mo *MoveOperation) Verify(a *Allocation) error {
@@ -369,4 +363,3 @@ func (mo *MoveOperation) Verify(a *Allocation) error {
 	}
 	return nil
 }
-

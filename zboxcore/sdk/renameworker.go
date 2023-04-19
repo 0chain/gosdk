@@ -174,10 +174,10 @@ func (req *RenameRequest) ProcessRename() error {
 	if !req.consensus.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
-			return errors.New("rename_failed", 
+			return errors.New("rename_failed",
 				fmt.Sprintf("Rename failed. %s", err.Error()))
 		}
-		
+
 		return errors.New("consensus_not_met",
 			fmt.Sprintf("Rename failed. Required consensus %d got %d",
 				req.consensus.consensusThresh, req.consensus.getConsensus()))
@@ -253,42 +253,41 @@ func (req *RenameRequest) ProcessRename() error {
 	return nil
 }
 
-
 type RenameOperation struct {
 	remotefilepath string
 	ctx            context.Context
 	ctxCncl        context.CancelFunc
 	renameMask     zboxutil.Uint128
-	newName		   string
+	newName        string
 	maskMU         *sync.Mutex
 
-	consensus 		Consensus
+	consensus Consensus
 }
 
-func (ro *RenameOperation) Process(allocDetails AllocationDetails,connectionID string, blobbers []*blockchain.StorageNode) ([]fileref.RefEntity, error){
+func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, error) {
 
-	l.Logger.Info("Started Rename Process with Connection Id", connectionID);
+	l.Logger.Info("Started Rename Process with Connection Id", connectionID)
 	// make renameRequest object
 	rR := &RenameRequest{
-		allocationObj: allocDetails.allocationObj, 
-		allocationID: allocDetails.allocationID,
-		allocationTx: allocDetails.allocationTx,
-		connectionID: connectionID,
-		blobbers: blobbers,
+		allocationObj:  allocObj,
+		allocationID:   allocObj.ID,
+		allocationTx:   allocObj.Tx,
+		connectionID:   connectionID,
+		blobbers:       allocObj.Blobbers,
 		remotefilepath: ro.remotefilepath,
-		newName: ro.newName,
-		ctx: ro.ctx,
-		ctxCncl: ro.ctxCncl,
-		renameMask: ro.renameMask,
-		maskMU: ro.maskMU,
+		newName:        ro.newName,
+		ctx:            ro.ctx,
+		ctxCncl:        ro.ctxCncl,
+		renameMask:     ro.renameMask,
+		maskMU:         ro.maskMU,
 	}
-	rR.consensus.fullconsensus = ro.consensus.fullconsensus;
-	rR.consensus.consensusThresh = ro.consensus.consensusThresh;
+	rR.consensus.fullconsensus = ro.consensus.fullconsensus
+	rR.consensus.consensusThresh = ro.consensus.consensusThresh
 
 	numList := len(rR.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	blobberErrors := make([]error, numList)
-	
+
 	wg := &sync.WaitGroup{}
 	var pos uint64
 
@@ -314,14 +313,14 @@ func (ro *RenameOperation) Process(allocDetails AllocationDetails,connectionID s
 		if err != nil {
 			return nil, thrown.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
 		}
-		
+
 		return nil, thrown.New("consensus_not_met",
 			fmt.Sprintf("Rename failed. Required consensus %d, got %d",
 				rR.consensus.consensusThresh, rR.consensus.consensus))
 	}
-	l.Logger.Info("Rename Processs Ended ");
-	fmt.Println("Object Tree Ref");
-	return objectTreeRefs, nil;
+	l.Logger.Info("Rename Processs Ended ")
+	fmt.Println("Object Tree Ref")
+	return objectTreeRefs, nil
 }
 
 func (ro *RenameOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
@@ -329,10 +328,10 @@ func (ro *RenameOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) 
 
 	for idx, ref := range refs {
 		newChange := &allocationchange.RenameFileChange{
-			NewName:   ro.newName,
+			NewName:    ro.newName,
 			ObjectTree: ref,
 		}
-	
+
 		newChange.Operation = constants.FileOperationRename
 		newChange.Size = 0
 		changes[idx] = newChange
@@ -348,11 +347,11 @@ func (ro *RenameOperation) build(remotePath string, destName string, renameMask 
 	ro.maskMU = maskMU
 	ro.consensus.consensusThresh = consensusTh
 	ro.consensus.fullconsensus = fullConsensus
-	ro.ctx, ro.ctxCncl =  context.WithCancel(ctx)
+	ro.ctx, ro.ctxCncl = context.WithCancel(ctx)
 }
 
 func (ro *RenameOperation) Verify(a *Allocation) error {
-	
+
 	if !a.isInitialized() {
 		return notInitialized
 	}
@@ -378,7 +377,6 @@ func (ro *RenameOperation) Verify(a *Allocation) error {
 	if err != nil {
 		return err
 	}
-
 
 	return nil
 }
