@@ -592,9 +592,16 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 		return nil, err
 	}
 
+	a, err := GetAllocation(allocationID)
+	if err != nil {
+		return nil, err
+	}
+
 	ctx := context.Background()
 	listReq := &ListRequest{}
-	listReq.allocationID = allocationID
+
+	listReq.allocationID = a.ID
+	listReq.allocationTx = a.Tx
 	listReq.blobbers = []*blockchain.StorageNode{
 		{ID: string(blobber.ID), Baseurl: blobber.BaseURL},
 	}
@@ -604,6 +611,7 @@ func GetFileRefFromBlobber(allocationID, blobberId, remotePath string) (fRef *fi
 	listReq.remotefilepath = remotePath
 
 	listReq.wg = &sync.WaitGroup{}
+	listReq.wg.Add(1)
 	rspCh := make(chan *fileMetaResponse, 1)
 	go listReq.getFileMetaInfoFromBlobber(listReq.blobbers[0], 0, rspCh)
 	listReq.wg.Wait()
