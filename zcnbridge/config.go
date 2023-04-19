@@ -45,14 +45,9 @@ type EthereumConfig struct {
 	Value int64
 }
 
-type SubgraphConfig struct {
-	BlockWorker string
-}
-
 type BridgeClientConfig struct {
 	ContractsRegistry
 	EthereumConfig
-	SubgraphConfig
 	EthereumAddress string
 	Password        string
 	Homedir         string
@@ -124,9 +119,6 @@ func CreateBridgeOwner(bridgeCfg, chainCfg *viper.Viper, walletFile ...string) *
 				GasLimit:        bridgeCfg.GetUint64(fmt.Sprintf("%s.GasLimit", OwnerConfigKeyName)),
 				Value:           bridgeCfg.GetInt64(fmt.Sprintf("%s.Value", OwnerConfigKeyName)),
 			},
-			SubgraphConfig: SubgraphConfig{
-				BlockWorker: chainCfg.GetString("block_worker"),
-			},
 			EthereumAddress: bridgeCfg.GetString(fmt.Sprintf("%s.EthereumAddress", OwnerConfigKeyName)),
 			Password:        bridgeCfg.GetString(fmt.Sprintf("%s.Password", OwnerConfigKeyName)),
 			Homedir:         homedir,
@@ -167,9 +159,6 @@ func CreateBridgeClient(bridgeCfg, chainCfg *viper.Viper, walletFile ...string) 
 				GasLimit:        bridgeCfg.GetUint64(fmt.Sprintf("%s.GasLimit", ClientConfigKeyName)),
 				Value:           bridgeCfg.GetInt64(fmt.Sprintf("%s.Value", ClientConfigKeyName)),
 			},
-			SubgraphConfig: SubgraphConfig{
-				BlockWorker: chainCfg.GetString("block_worker"),
-			},
 			EthereumAddress: bridgeCfg.GetString(fmt.Sprintf("%s.EthereumAddress", ClientConfigKeyName)),
 			Password:        bridgeCfg.GetString(fmt.Sprintf("%s.Password", ClientConfigKeyName)),
 			Homedir:         homedir,
@@ -194,7 +183,6 @@ type BridgeClientYaml struct {
 	GasLimit           uint64
 	Value              int64
 	ConsensusThreshold float64
-	BlockWorker        string
 }
 
 func CreateBridgeClientWithConfig(cfg BridgeClientYaml, wallet *zcncrypto.Wallet) *BridgeClient {
@@ -209,9 +197,6 @@ func CreateBridgeClientWithConfig(cfg BridgeClientYaml, wallet *zcncrypto.Wallet
 				EthereumNodeURL: cfg.EthereumNodeURL,
 				GasLimit:        cfg.GasLimit,
 				Value:           cfg.Value,
-			},
-			SubgraphConfig: SubgraphConfig{
-				BlockWorker: cfg.BlockWorker,
 			},
 			EthereumAddress: cfg.EthereumAddress,
 			Password:        cfg.Password,
