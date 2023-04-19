@@ -29,7 +29,7 @@ func initSDKs(chainID, blockWorker, signatureScheme string,
 		return err
 	}
 
-	err = zcncore.InitZCNSDK(blockWorker, signatureScheme,
+	err = zcncore.InitZCNSDK(blockWorker, signature Scheme,
 		zcncore.WithChainID(chainID),
 		zcncore.WithMinConfirmation(minConfirmation),
 		zcncore.WithMinSubmit(minSubmit),
