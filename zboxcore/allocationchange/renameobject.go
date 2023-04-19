@@ -2,10 +2,10 @@ package allocationchange
 
 import (
 	"path"
-	"path/filepath"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/core/pathutil"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
@@ -51,7 +51,7 @@ func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) (
 				affectedRef = ch.ObjectTree.(*fileref.Ref)
 			}
 
-			affectedRef.Path = filepath.Join(parentPath, ch.NewName)
+			affectedRef.Path = pathutil.Join(parentPath, ch.NewName)
 			affectedRef.Name = ch.NewName
 
 			dirRef.AddChild(ch.ObjectTree)
@@ -77,7 +77,7 @@ func (ch *RenameFileChange) processChildren(curRef *fileref.Ref) {
 		} else {
 			childRef = childRefEntity.(*fileref.Ref)
 		}
-		childRef.Path = filepath.Join(curRef.Path, childRef.Name)
+		childRef.Path = pathutil.Join(curRef.Path, childRef.Name)
 		if childRefEntity.GetType() == fileref.DIRECTORY {
 			ch.processChildren(childRef)
 		}

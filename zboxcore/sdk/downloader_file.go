@@ -5,10 +5,10 @@ type fileDownloader struct {
 }
 
 func (d *fileDownloader) Start(status StatusCallback) error {
-	if d.options.isViewer {
-		return d.options.allocationObj.DownloadFromAuthTicket(d.options.localPath,
-			d.options.authTicket, d.options.lookupHash, d.options.fileName, status)
+	if d.isViewer {
+		return d.allocationObj.DownloadFromAuthTicket(d.localPath,
+			d.authTicket, d.lookupHash, d.fileName, d.verifyDownload, status)
 	}
 
-	return d.options.allocationObj.DownloadFile(d.options.localPath, d.options.remotePath, status)
+	return d.allocationObj.DownloadFile(d.localPath, d.remotePath, d.verifyDownload, status)
 }

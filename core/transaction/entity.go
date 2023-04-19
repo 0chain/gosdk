@@ -3,6 +3,7 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/0chain/errors"
@@ -21,7 +22,7 @@ const (
 	TxnFail            = 3 // Indicates a transaction has failed to update the state or smart contract
 )
 
-//Transaction entity that encapsulates the transaction related data and meta data
+// Transaction entity that encapsulates the transaction related data and meta data
 type Transaction struct {
 	Hash              string `json:"hash,omitempty"`
 	Version           string `json:"version,omitempty"`
@@ -41,7 +42,7 @@ type Transaction struct {
 	Status            int    `json:"transaction_status"`
 }
 
-//TxnReceipt - a transaction receipt is a processed transaction that contains the output
+// TxnReceipt - a transaction receipt is a processed transaction that contains the output
 type TxnReceipt struct {
 	Transaction *Transaction
 }
@@ -133,11 +134,12 @@ const (
 	STORAGESC_UPDATE_ALLOCATION         = "update_allocation_request"
 	STORAGESC_WRITE_POOL_LOCK           = "write_pool_lock"
 	STORAGESC_WRITE_POOL_UNLOCK         = "write_pool_unlock"
-	STORAGESC_ADD_CURATOR               = "add_curator"
-	STORAGESC_REMOVE_CURATOR            = "remove_curator"
-	STORAGESC_CURATOR_TRANSFER          = "curator_transfer_allocation"
 	STORAGESC_UPDATE_SETTINGS           = "update_settings"
 	STORAGESC_COLLECT_REWARD            = "collect_reward"
+	STORAGESC_KILL_BLOBBER              = "kill_blobber"
+	STORAGESC_KILL_VALIDATOR            = "kill_validator"
+	STORAGESC_SHUTDOWN_BLOBBER          = "shutdown_blobber"
+	STORAGESC_SHUTDOWN_VALIDATOR        = "shutdown_validator"
 
 	MINERSC_LOCK             = "addToDelegatePool"
 	MINERSC_UNLOCK           = "deleteFromDelegatePool"
@@ -157,7 +159,10 @@ const (
 	ZCNSC_UPDATE_GLOBAL_CONFIG     = "update-global-config"
 	ZCNSC_UPDATE_AUTHORIZER_CONFIG = "update-authorizer-config"
 	ZCNSC_ADD_AUTHORIZER           = "add-authorizer"
+	ZCNSC_AUTHORIZER_HEALTH_CHECK  = "authorizer-health-check"
 	ZCNSC_DELETE_AUTHORIZER        = "delete-authorizer"
+
+	ESTIMATE_TRANSACTION_COST = `/v1/estimate_txn_fee`
 )
 
 type SignFunc = func(msg string) (string, error)
@@ -209,7 +214,7 @@ func (t *Transaction) DebugJSON() []byte {
 	return jsonByte
 }
 
-//GetHash - implement interface
+// GetHash - implement interface
 func (rh *TxnReceipt) GetHash() string {
 	return rh.Transaction.OutputHash
 }
@@ -219,7 +224,7 @@ func (rh *TxnReceipt) GetHashBytes() []byte {
 	return util.HashStringToBytes(rh.Transaction.OutputHash)
 }
 
-//NewTransactionReceipt - create a new transaction receipt
+// NewTransactionReceipt - create a new transaction receipt
 func NewTransactionReceipt(t *Transaction) *TxnReceipt {
 	return &TxnReceipt{Transaction: t}
 }
@@ -258,4 +263,90 @@ func sendTransactionToURL(url string, txn *Transaction, wg *sync.WaitGroup) ([]b
 		return []byte(postResponse.Body), nil
 	}
 	return nil, errors.Wrap(err, errors.New("transaction_send_error", postResponse.Body))
+}
+
+// EstimateFee estimates transaction fee
+func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint64, error) {
+	const minReqNum = 3
+	var reqN int
+
+	if len(reqPercent) > 0 {
+		reqN = int(reqPercent[0] * float32(len(miners)))
+	}
+
+	reqN = util.MaxInt(minReqNum, reqN)
+	reqN = util.MinInt(reqN, len(miners))
+	randomMiners := util.Shuffle(miners)[:reqN]
+
+	var (
+		feeC = make(chan uint64, reqN)
+		errC = make(chan error, reqN)
+	)
+
+	wg := &sync.WaitGroup{}
+	wg.Add(len(randomMiners))
+
+	for _, miner := range randomMiners {
+		go func(minerUrl string) {
+			defer wg.Done()
+
+			url := minerUrl + ESTIMATE_TRANSACTION_COST
+			req, err := util.NewHTTPPostRequest(url, txn)
+			if err != nil {
+				errC <- fmt.Errorf("ceate request failed, url: %s, err: %v", url, err)
+				return
+			}
+
+			res, err := req.Post()
+			if err != nil {
+				errC <- fmt.Errorf("request failed, url: %s, err: %v", url, err)
+				return
+			}
+
+			rspFee := struct {
+				Fee uint64 `json:"fee"`
+			}{}
+
+			if err := json.Unmarshal([]byte(res.Body), &rspFee); err != nil {
+				errC <- fmt.Errorf("decode response failed, url: %s, err: %v", url, err)
+				return
+			}
+
+			feeC <- rspFee.Fee
+		}(miner)
+	}
+
+	// wait for requests to complete
+	wg.Wait()
+	close(feeC)
+	close(errC)
+
+	feesCount := make(map[uint64]int, reqN)
+	for fee := range feeC {
+		feesCount[fee]++
+	}
+
+	if len(feesCount) > 0 {
+		// return the fee with the highest count, if all has the same count, then return the first one
+		var (
+			max int
+			fee uint64
+		)
+
+		for f, count := range feesCount {
+			if count > max {
+				max = count
+				fee = f
+			}
+		}
+
+		return fee, nil
+	}
+
+	errs := make([]string, 0, reqN)
+	for err := range errC {
+		errs = append(errs, err.Error())
+	}
+
+	return 0, errors.New("failed to estimate transaction fee", strings.Join(errs, ","))
 }

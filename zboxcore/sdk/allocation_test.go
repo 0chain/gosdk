@@ -3,7 +3,6 @@ package sdk
 import (
 	"bytes"
 	"context"
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"io"
@@ -18,6 +17,7 @@ import (
 	"github.com/0chain/gosdk/dev/blobber"
 	"github.com/0chain/gosdk/dev/blobber/model"
 	"github.com/0chain/gosdk/zboxcore/encryption"
+	"golang.org/x/crypto/sha3"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
@@ -116,7 +116,7 @@ func setupMockFile(t *testing.T, path string) (teardown func(t *testing.T)) {
 
 func setupMockFileAndReferencePathResult(t *testing.T, allocationID, name string) (teardown func(t *testing.T)) {
 	var buf = []byte("mockActualHash")
-	h := sha256.New()
+	h := sha3.New256()
 	f, _ := os.Create(name)
 	w := io.MultiWriter(h, f)
 	//nolint: errcheck
@@ -243,75 +243,6 @@ func newBlobbersDetails() (blobbers []*BlobberAllocation) {
 	return blobberDetails
 }
 
-func TestThrowErrorWhenBlobbersRequiredGreaterThanImplicitLimit128(t *testing.T) {
-	setupMocks()
-
-	var maxNumOfBlobbers = 129
-
-	var allocation = &Allocation{}
-	var blobbers = make([]*blockchain.StorageNode, maxNumOfBlobbers)
-	allocation.initialized = true
-	sdkInitialized = true
-	allocation.Blobbers = blobbers
-	allocation.DataShards = 64
-	allocation.ParityShards = 65
-	allocation.fullconsensus, allocation.consensusThreshold = allocation.getConsensuses()
-
-	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false)
-
-	var expectedErr = "allocation requires [129] blobbers, which is greater than the maximum permitted number of [128]. reduce number of data or parity shards and try again"
-	if err == nil {
-		t.Errorf("uploadOrUpdateFile() = expected error  but was %v", nil)
-	} else if errors.Top(err) != expectedErr {
-		t.Errorf("uploadOrUpdateFile() = expected error message to be %v  but was %v", expectedErr, errors.Top(err))
-	}
-}
-
-func TestThrowErrorWhenBlobbersRequiredGreaterThanExplicitLimit(t *testing.T) {
-	setupMocks()
-
-	var maxNumOfBlobbers = 10
-
-	var allocation = &Allocation{}
-	var blobbers = make([]*blockchain.StorageNode, maxNumOfBlobbers)
-	allocation.initialized = true
-	sdkInitialized = true
-	allocation.Blobbers = blobbers
-	allocation.DataShards = 5
-	allocation.ParityShards = 6
-	allocation.fullconsensus, allocation.consensusThreshold = allocation.getConsensuses()
-
-	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false)
-
-	var expectedErr = "allocation requires [11] blobbers, which is greater than the maximum permitted number of [10]. reduce number of data or parity shards and try again"
-	if err == nil {
-		t.Errorf("uploadOrUpdateFile() = expected error  but was %v", nil)
-	} else if errors.Top(err) != expectedErr {
-		t.Errorf("uploadOrUpdateFile() = expected error message to be %v  but was %v", expectedErr, errors.Top(err))
-	}
-}
-
-func TestDoNotThrowErrorWhenBlobbersRequiredLessThanLimit(t *testing.T) {
-	setupMocks()
-
-	var maxNumOfBlobbers = 10
-
-	var allocation = &Allocation{}
-	var blobbers = make([]*blockchain.StorageNode, maxNumOfBlobbers)
-	allocation.initialized = true
-	sdkInitialized = true
-	allocation.Blobbers = blobbers
-	allocation.DataShards = 5
-	allocation.ParityShards = 4
-	allocation.fullconsensus, allocation.consensusThreshold = allocation.getConsensuses()
-
-	err := allocation.uploadOrUpdateFile("", "/", nil, false, "", false, false)
-
-	if err != nil {
-		t.Errorf("uploadOrUpdateFile() = expected no error but was %v", err)
-	}
-}
-
 func setupMocks() {
 	GetFileInfo = func(localpath string) (os.FileInfo, error) {
 		return new(MockFile), nil
@@ -386,7 +317,7 @@ func TestAllocation_InitAllocation(t *testing.T) {
 }
 
 func TestAllocation_dispatchWork(t *testing.T) {
-	a := Allocation{DataShards: 2, ParityShards: 2, uploadChan: make(chan *UploadRequest), downloadChan: make(chan *DownloadRequest), repairChan: make(chan *RepairRequest)}
+	a := Allocation{DataShards: 2, ParityShards: 2, downloadChan: make(chan *DownloadRequest), repairChan: make(chan *RepairRequest)}
 	t.Run("Test_Cover_Context_Canceled", func(t *testing.T) {
 		ctx, cancelFn := context.WithCancel(context.Background())
 		go a.dispatchWork(ctx)
@@ -399,6 +330,7 @@ func TestAllocation_dispatchWork(t *testing.T) {
 			filemeta:  &UploadFileMeta{},
 			Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	})
+
 	t.Run("Test_Cover_Download_Request", func(t *testing.T) {
 		ctx, ctxCncl := context.WithCancel(context.Background())
 		go a.dispatchWork(context.Background())
@@ -742,7 +674,7 @@ func TestAllocation_DownloadFile(t *testing.T) {
 			Baseurl: mockBlobberUrl + strconv.Itoa(i),
 		})
 	}
-	err := a.DownloadFile(mockLocalPath, "/", nil)
+	err := a.DownloadFile(mockLocalPath, "/", true, nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -772,7 +704,7 @@ func TestAllocation_DownloadFileByBlock(t *testing.T) {
 			Baseurl: mockBlobberUrl + strconv.Itoa(i),
 		})
 	}
-	err := a.DownloadFileByBlock(mockLocalPath, "/", 1, 0, numBlockDownloads, nil)
+	err := a.DownloadFileByBlock(mockLocalPath, "/", 1, 0, numBlockDownloads, true, nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -790,7 +722,7 @@ func TestAllocation_DownloadThumbnail(t *testing.T) {
 			Baseurl: "TestAllocation_DownloadThumbnail" + mockBlobberUrl + strconv.Itoa(i),
 		})
 	}
-	err := a.DownloadThumbnail(mockLocalPath, "/", nil)
+	err := a.DownloadThumbnail(mockLocalPath, "/", true, nil)
 	require.NoErrorf(err, "Unexpected error %v", err)
 }
 
@@ -940,11 +872,9 @@ func TestAllocation_downloadFile(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			a := &Allocation{}
-			a.uploadChan = make(chan *UploadRequest, 10)
 			a.downloadChan = make(chan *DownloadRequest, 10)
 			a.repairChan = make(chan *RepairRequest, 1)
 			a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
-			a.uploadProgressMap = make(map[string]*UploadRequest)
 			a.downloadProgressMap = make(map[string]*DownloadRequest)
 			a.mutex = &sync.Mutex{}
 			a.initialized = true
@@ -961,7 +891,11 @@ func TestAllocation_downloadFile(t *testing.T) {
 					defer teardown(t)
 				}
 			}
-			err := a.downloadFile(tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.contentMode, tt.parameters.startBlock, tt.parameters.endBlock, tt.parameters.numBlocks, tt.parameters.statusCallback)
+			err := a.downloadFile(
+				tt.parameters.localPath, tt.parameters.remotePath, tt.parameters.contentMode,
+				tt.parameters.startBlock, tt.parameters.endBlock, tt.parameters.numBlocks,
+				true, tt.parameters.statusCallback)
+
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))
@@ -970,6 +904,51 @@ func TestAllocation_downloadFile(t *testing.T) {
 			require.NoErrorf(err, "Unexpected error: %v", err)
 		})
 	}
+}
+
+func TestAllocation_GetRefs(t *testing.T) {
+	const (
+		mockType       = "f"
+		mockActualHash = "mockActualHash"
+	)
+
+	var mockClient = mocks.HttpClient{}
+	zboxutil.Client = &mockClient
+
+	client := zclient.GetClient()
+	client.Wallet = &zcncrypto.Wallet{
+		ClientID:  mockClientId,
+		ClientKey: mockClientKey,
+	}
+	functionName := "TestAllocation_GetRefs"
+	t.Run("Test_Get_Refs_Returns_Slice_Of_Length_0_When_File_Not_Present", func(t *testing.T) {
+		a := &Allocation{
+			DataShards:   2,
+			ParityShards: 2,
+		}
+		testCaseName := "Test_Get_Refs_Returns_Slice_Of_Length_0_When_File_Not_Present"
+		a.InitAllocation()
+		sdkInitialized = true
+		for i := 0; i < numBlobbers; i++ {
+			a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{
+				ID:      testCaseName + mockBlobberId + strconv.Itoa(i),
+				Baseurl: functionName + testCaseName + mockBlobberUrl + strconv.Itoa(i),
+			})
+		}
+		for i := 0; i < numBlobbers; i++ {
+			body, err := json.Marshal(map[string]string{
+				"code":  "invalid_path",
+				"error": "invalid_path: ",
+			})
+			require.NoError(t, err)
+			setupMockHttpResponse(t, &mockClient, functionName, testCaseName, a, http.MethodGet, http.StatusBadRequest, body)
+		}
+		path := "/any_random_path.txt"
+		otr, err := a.GetRefs(path, "", "", "", "f", "regular", 0, 5)
+		require.NoError(t, err)
+		require.Equal(t, true, len(otr.Refs) == 0)
+
+	})
 }
 
 func TestAllocation_GetFileMeta(t *testing.T) {
@@ -1077,7 +1056,7 @@ func TestAllocation_GetFileMeta(t *testing.T) {
 }
 
 func TestAllocation_GetAuthTicketForShare(t *testing.T) {
-	const mockContentHash = "mock content hash"
+	const mockValidationRoot = "mock validation root"
 	const numberBlobbers = 10
 
 	var mockClient = mocks.HttpClient{}
@@ -1088,7 +1067,7 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 				Ref: fileref.Ref{
 					Name: mockFileRefName,
 				},
-				ContentHash: mockContentHash,
+				ValidationRoot: mockValidationRoot,
 			})
 			require.NoError(t, err)
 			return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
@@ -1143,7 +1122,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							Ref: fileref.Ref{
 								Name: mockFileRefName,
 							},
-							ContentHash: "mock content hash",
+							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
 						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
@@ -1175,7 +1154,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							Ref: fileref.Ref{
 								Name: mockFileRefName,
 							},
-							ContentHash: "mock content hash",
+							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
 						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
@@ -1219,7 +1198,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							Ref: fileref.Ref{
 								Name: mockFileRefName,
 							},
-							ContentHash: "mock content hash",
+							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
 						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
@@ -1252,7 +1231,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 							Ref: fileref.Ref{
 								Name: mockFileRefName,
 							},
-							ContentHash: "mock content hash",
+							ValidationRoot: "mock validation root",
 						})
 						require.NoError(t, err)
 						return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
@@ -1310,7 +1289,7 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 					Baseurl: "TestAllocation_GetAuthTicket" + tt.name + mockBlobberUrl + strconv.Itoa(i),
 				})
 			}
-			const mockContentHash = "mock content hash"
+			const mockValidationRoot = "mock validation root"
 			const numberBlobbers = 10
 
 			zboxutil.Client = &mockClient
@@ -1328,56 +1307,6 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 			}
 			require.NoErrorf(err, "unexpected error: %v", err)
 			require.NotEmptyf(at, "unexpected empty auth ticket")
-		})
-	}
-}
-
-func TestAllocation_CancelUpload(t *testing.T) {
-	const localPath = "alloc"
-	type parameters struct {
-		localpath string
-	}
-	tests := []struct {
-		name       string
-		parameters parameters
-		setup      func(*testing.T, *Allocation) (teardown func(*testing.T))
-		wantErr    bool
-		errMsg     string
-	}{
-		{
-			name:    "Test_Failed",
-			wantErr: true,
-			errMsg:  "local_path_not_found: Invalid path. No upload in progress for the path",
-		},
-		{
-			name: "Test_Success",
-			parameters: parameters{
-				localpath: localPath,
-			},
-			setup: func(t *testing.T, a *Allocation) (teardown func(t *testing.T)) {
-				a.uploadProgressMap[localPath] = &UploadRequest{}
-				return nil
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require := require.New(t)
-			a := &Allocation{FileOptions: 63}
-			a.InitAllocation()
-			sdkInitialized = true
-			if tt.setup != nil {
-				if teardown := tt.setup(t, a); teardown != nil {
-					defer teardown(t)
-				}
-			}
-			err := a.CancelUpload(tt.parameters.localpath)
-			require.EqualValues(tt.wantErr, err != nil)
-			if err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(err))
-				return
-			}
-			require.NoErrorf(err, "unexpected error: %v", err)
 		})
 	}
 }
@@ -1749,7 +1678,10 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 					defer teardown(t)
 				}
 			}
-			err := a.downloadFromAuthTicket(tt.parameters.localPath, tt.parameters.authTicket, tt.parameters.lookupHash, tt.parameters.startBlock, tt.parameters.endBlock, tt.parameters.numBlocks, tt.parameters.remoteFilename, tt.parameters.contentMode, tt.parameters.statusCallback)
+			err := a.downloadFromAuthTicket(
+				tt.parameters.localPath, tt.parameters.authTicket, tt.parameters.lookupHash,
+				tt.parameters.startBlock, tt.parameters.endBlock, tt.parameters.numBlocks,
+				tt.parameters.remoteFilename, tt.parameters.contentMode, true, tt.parameters.statusCallback)
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {
 				require.EqualValues(tt.errMsg, errors.Top(err))
@@ -2047,7 +1979,7 @@ func TestAllocation_DownloadThumbnailFromAuthTicket(t *testing.T) {
 	require.NoError(err)
 	setupMockHttpResponse(t, &mockClient, "TestAllocation_DownloadThumbnailFromAuthTicket", "", a, http.MethodGet, http.StatusOK, body)
 
-	err = a.DownloadThumbnailFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, nil)
+	err = a.DownloadThumbnailFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, true, nil)
 	defer os.Remove("alloc/1.txt")
 	require.NoErrorf(err, "unexpected error: %v", err)
 }
@@ -2082,7 +2014,7 @@ func TestAllocation_DownloadFromAuthTicket(t *testing.T) {
 
 	var authTicket = getMockAuthTicket(t)
 
-	err := a.DownloadFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, nil)
+	err := a.DownloadFromAuthTicket(mockLocalPath, authTicket, mockLookupHash, mockRemoteFilePath, true, nil)
 	defer os.Remove("alloc/1.txt")
 	require.NoErrorf(err, "unexpected error: %v", err)
 }
@@ -2119,7 +2051,8 @@ func TestAllocation_DownloadFromAuthTicketByBlocks(t *testing.T) {
 
 	setupMockHttpResponse(t, &mockClient, "TestAllocation_DownloadFromAuthTicketByBlocks", "", a, http.MethodPost, http.StatusBadRequest, []byte(""))
 
-	err := a.DownloadFromAuthTicketByBlocks(mockLocalPath, authTicket, 1, 0, numBlockDownloads, mockLookupHash, mockRemoteFilePath, nil)
+	err := a.DownloadFromAuthTicketByBlocks(
+		mockLocalPath, authTicket, 1, 0, numBlockDownloads, mockLookupHash, mockRemoteFilePath, true, nil)
 	defer os.Remove("alloc/1.txt")
 	require.NoErrorf(err, "unexpected error: %v", err)
 }
@@ -2254,11 +2187,9 @@ func TestAllocation_CancelRepair(t *testing.T) {
 }
 
 func setupMockAllocation(t *testing.T, a *Allocation) {
-	a.uploadChan = make(chan *UploadRequest, 10)
 	a.downloadChan = make(chan *DownloadRequest, 10)
 	a.repairChan = make(chan *RepairRequest, 1)
 	a.ctx, a.ctxCancelF = context.WithCancel(context.Background())
-	a.uploadProgressMap = make(map[string]*UploadRequest)
 	a.downloadProgressMap = make(map[string]*DownloadRequest)
 	a.mutex = &sync.Mutex{}
 	a.FileOptions = uint16(63) // 0011 1111 All allowed
@@ -2274,17 +2205,6 @@ func setupMockAllocation(t *testing.T, a *Allocation) {
 			case <-a.ctx.Done():
 				t.Log("Upload cancelled by the parent")
 				return
-			case uploadReq := <-a.uploadChan:
-				if uploadReq.completedCallback != nil {
-					uploadReq.completedCallback(uploadReq.filepath)
-				}
-				if uploadReq.statusCallback != nil {
-					uploadReq.statusCallback.Completed(a.ID, uploadReq.filepath, uploadReq.filemeta.Name, uploadReq.filemeta.MimeType, int(uploadReq.filemeta.Size), OpUpload)
-				}
-				if uploadReq.wg != nil {
-					uploadReq.wg.Done()
-				}
-				t.Logf("received a upload request for %v %v\n", uploadReq.filepath, uploadReq.remotefilepath)
 			case downloadReq := <-a.downloadChan:
 				if downloadReq.completedCallback != nil {
 					downloadReq.completedCallback(downloadReq.remotefilepath, downloadReq.remotefilepathhash)
@@ -2314,7 +2234,7 @@ func setupMockGetFileInfoResponse(t *testing.T, mockClient *mocks.HttpClient) {
 				Ref: fileref.Ref{
 					Name: mockFileRefName,
 				},
-				ContentHash: "mock content hash",
+				ValidationRoot: "mock validation root",
 			})
 			require.NoError(t, err)
 			return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))
@@ -2358,7 +2278,7 @@ func getMockAuthTicket(t *testing.T) string {
 				Ref: fileref.Ref{
 					Name: mockFileRefName,
 				},
-				ContentHash: "mock content hash",
+				ValidationRoot: "mock validation root",
 			})
 			require.NoError(t, err)
 			return ioutil.NopCloser(bytes.NewReader([]byte(jsonFR)))

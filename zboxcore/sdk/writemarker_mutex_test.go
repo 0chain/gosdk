@@ -21,8 +21,13 @@ import (
 )
 
 func TestWriteMarkerMutext_Should_Lock(t *testing.T) {
+	rawClient := zboxutil.Client
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
+
+	defer func() {
+		zboxutil.Client = rawClient
+	}()
 
 	a := &Allocation{
 		ID:           "TestWriteMarkerMutext",
@@ -85,7 +90,13 @@ func TestWriteMarkerMutext_Should_Lock(t *testing.T) {
 
 func TestWriteMarkerMutext_Some_Blobbers_Down_Should_Lock(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
+	rawClient := zboxutil.Client
 	zboxutil.Client = &mockClient
+
+	defer func() {
+		zboxutil.Client = rawClient
+	}()
+
 	a := &Allocation{
 		ID:           "TestWriteMarkerMutext",
 		Tx:           "TestWriteMarkerMutext",
@@ -147,7 +158,13 @@ func TestWriteMarkerMutext_Some_Blobbers_Down_Should_Lock(t *testing.T) {
 
 func TestWriteMarkerMutext_Too_Less_Blobbers_Response_Should_Not_Lock(t *testing.T) {
 	var mockClient = mocks.HttpClient{}
+
+	rawClient := zboxutil.Client
 	zboxutil.Client = &mockClient
+
+	defer func() {
+		zboxutil.Client = rawClient
+	}()
 
 	a := &Allocation{
 		ID:           "TestWriteMarkerMutext",

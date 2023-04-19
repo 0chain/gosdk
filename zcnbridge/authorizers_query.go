@@ -48,7 +48,7 @@ var (
 // zchainBurnHash - Ethereum burn transaction hash
 func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereum.MintPayload, error) {
 	client = h.CleanClient()
-	authorizers, err := getAuthorizers()
+	authorizers, err := getAuthorizers(true)
 
 	if err != nil || len(authorizers) == 0 {
 		return nil, errors.Wrap("get_authorizers", "failed to get authorizers", err)
@@ -111,7 +111,7 @@ func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereu
 // ethBurnHash - Ethereum burn transaction hash
 func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPayload, error) {
 	client = h.CleanClient()
-	authorizers, err := getAuthorizers()
+	authorizers, err := getAuthorizers(true)
 	log.Logger.Info("Got authorizers", zap.Int("amount", len(authorizers)))
 
 	if err != nil || len(authorizers) == 0 {

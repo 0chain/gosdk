@@ -3,8 +3,9 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"fmt"
-	"io"
+	"hash"
 	"math"
 	"os"
 	"strings"
@@ -17,10 +18,12 @@ import (
 	"github.com/0chain/gosdk/zboxcore/encryption"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/klauspost/reedsolomon"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
+	"golang.org/x/crypto/sha3"
 )
 
 const (
@@ -32,6 +35,7 @@ type DownloadRequest struct {
 	allocationID       string
 	allocationTx       string
 	allocOwnerID       string
+	allocOwnerPubKey   string
 	blobbers           []*blockchain.StorageNode
 	datashards         int
 	parityshards       int
@@ -42,6 +46,7 @@ type DownloadRequest struct {
 	endBlock           int64
 	chunkSize          int
 	numBlocks          int64
+	validationRootMap  map[string]*blobberFile
 	statusCallback     StatusCallback
 	ctx                context.Context
 	ctxCncl            context.CancelFunc
@@ -56,6 +61,7 @@ type DownloadRequest struct {
 	ecEncoder          reedsolomon.Encoder
 	maskMu             *sync.Mutex
 	encScheme          encryption.EncryptionScheme
+	shouldVerify       bool
 }
 
 func (req *DownloadRequest) removeFromMask(pos uint64) {
@@ -166,7 +172,11 @@ func (req *DownloadRequest) downloadBlock(
 			remotefilepathhash: req.remotefilepathhash,
 			numBlocks:          totalBlock,
 			encryptedKey:       req.encryptedKey,
+			shouldVerify:       req.shouldVerify,
 		}
+
+		bf := req.validationRootMap[blockDownloadReq.blobber.ID]
+		blockDownloadReq.blobberFile = bf
 
 		go AddBlockDownloadReq(blockDownloadReq)
 		c++
@@ -317,6 +327,14 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if remotePathCB == "" {
 		remotePathCB = req.remotefilepathhash
 	}
+
+	if req.startBlock < 0 || req.endBlock < 0 {
+		req.errorCB(
+			fmt.Errorf("start block or end block or both cannot be negative."), remotePathCB,
+		)
+		return
+	}
+
 	var op = OpDownload
 	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
 		op = opThumbnailDownload
@@ -331,7 +349,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 
-	size, chunksPerShard, actualPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
+	size, chunkPerShard, actualPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
 	if err != nil {
 		logger.Logger.Error(err.Error())
 		req.errorCB(
@@ -355,16 +373,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 	defer f.Close()
 
-	var isFullDownload bool
-	fileHasher := createDownloadHasher(req.chunkSize, req.datashards, fRef.EncryptedKey != "")
-	var mW io.Writer
-	if req.startBlock == 0 && req.endBlock == chunksPerShard {
-		isFullDownload = true
-		mW = io.MultiWriter(fileHasher, f)
-	} else {
-		mW = io.MultiWriter(f)
-	}
-
 	err = req.initEC()
 	if err != nil {
 		logger.Logger.Error(err)
@@ -374,7 +382,13 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 	if req.encryptedKey != "" {
-		req.initEncryption()
+		err = req.initEncryption()
+		if err != nil {
+			req.errorCB(
+				fmt.Errorf("Error while initializing encryption"), remotePathCB,
+			)
+			return
+		}
 	}
 
 	var downloaded int
@@ -397,13 +411,25 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		req.statusCallback.Started(req.allocationID, remotePathCB, op, int(size))
 	}
 
+	if req.shouldVerify {
+		if req.authTicket != nil && req.encryptedKey != "" {
+			req.shouldVerify = false
+		}
+	}
+	var actualFileHasher hash.Hash
+	var isPREAndWholeFile bool
+	if !req.shouldVerify && (startBlock == 0 && endBlock == chunkPerShard) {
+		actualFileHasher = sha3.New256()
+		isPREAndWholeFile = true
+	}
+
 	for startBlock < endBlock {
 		if startBlock+numBlocks > endBlock {
 			numBlocks = endBlock - startBlock
 		}
-		logger.Logger.Info("Downloading block ", startBlock+1, " - ", startBlock+numBlocks)
+		logger.Logger.Info("Downloading block ", startBlock, " - ", startBlock+numBlocks)
 
-		data, err := req.getBlocksData(startBlock+1, numBlocks)
+		data, err := req.getBlocksData(startBlock, numBlocks)
 		if err != nil {
 			req.errorCB(errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+1)), remotePathCB)
 			return
@@ -414,12 +440,16 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		}
 
 		n := int64(math.Min(float64(remainingSize), float64(len(data))))
-		_, err = mW.Write(data[:n])
+		_, err = f.Write(data[:n])
 
 		if err != nil {
 			req.errorCB(errors.Wrap(err, "Write file failed"), remotePathCB)
 			return
 		}
+		if isPREAndWholeFile {
+			actualFileHasher.Write(data[:n])
+		}
+
 		downloaded = downloaded + int(n)
 		remainingSize -= n
 
@@ -433,18 +463,23 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		}
 	}
 
-	if isFullDownload {
-		err := req.checkContentHash(fRef, fileHasher, remotePathCB)
-		if err != nil {
-			logger.Logger.Error(err)
-			req.errorCB(
-				fmt.Errorf("Error while checking content hash. Error: %v",
-					err), remotePathCB)
+	f.Sync()
+
+	if isPREAndWholeFile {
+		calculatedFileHash := hex.EncodeToString(actualFileHasher.Sum(nil))
+		var actualHash string
+		if req.contentMode == DOWNLOAD_CONTENT_THUMB {
+			actualHash = fRef.ActualThumbnailHash
+		} else {
+			actualHash = fRef.ActualFileHash
+		}
+
+		if calculatedFileHash != actualHash {
+			req.errorCB(fmt.Errorf("Expected actual file hash %s, calculated file hash %s",
+				fRef.ActualFileHash, calculatedFileHash), remotePathCB)
 			return
 		}
 	}
-
-	f.Sync()
 
 	if req.statusCallback != nil {
 		req.statusCallback.Completed(
@@ -465,10 +500,24 @@ func (req *DownloadRequest) initEC() error {
 	return nil
 }
 
-func (req *DownloadRequest) initEncryption() {
+func (req *DownloadRequest) initEncryption() error {
 	req.encScheme = encryption.NewEncryptionScheme()
-	req.encScheme.Initialize(client.GetClient().Mnemonic)
+	mnemonic := client.GetClient().Mnemonic
+	if mnemonic != "" {
+		_, err := req.encScheme.Initialize(client.GetClient().Mnemonic)
+		if err != nil {
+			return err
+		}
+	} else {
+		key, err := hex.DecodeString(client.GetClientPrivateKey())
+		if err != nil {
+			return err
+		}
+		req.encScheme.InitializeWithPrivateKey(key)
+	}
+
 	req.encScheme.InitForDecryption("filetype:audio", req.encryptedKey)
+	return nil
 }
 
 func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
@@ -482,22 +531,6 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 			req.allocationID, remotePathCB, op, err)
 	}
 	return
-}
-
-func (req *DownloadRequest) checkContentHash(
-	fRef *fileref.FileRef, fileHasher *downloadHasher, remotepathCB string) (err error) {
-
-	hash := fileHasher.GetHash()
-	expectedHash := fRef.ActualFileHash
-	if req.contentMode == DOWNLOAD_CONTENT_THUMB {
-		expectedHash = fRef.ActualThumbnailHash
-	}
-
-	if expectedHash != hash {
-		err = errors.New("merkle_root_mismatch", "File content didn't match with uploaded file")
-		return
-	}
-	return nil
 }
 
 func (req *DownloadRequest) openFile() (sys.File, error) {
@@ -546,6 +579,11 @@ func (req *DownloadRequest) calculateShardsParams(
 	return
 }
 
+type blobberFile struct {
+	validationRoot []byte
+	size           int64
+}
+
 func (req *DownloadRequest) getFileRef(remotePathCB string) (fRef *fileref.FileRef, err error) {
 	listReq := &ListRequest{
 		remotefilepath:     req.remotefilepath,
@@ -562,22 +600,103 @@ func (req *DownloadRequest) getFileRef(remotePathCB string) (fRef *fileref.FileR
 		ctx: req.ctx,
 	}
 
-	req.downloadMask, fRef, _ = listReq.getFileConsensusFromBlobbers()
-	if req.downloadMask.Equals64(0) || fRef == nil {
-		err = errors.New("consensus_not_met", "No minimum consensus for file meta data of file")
+	fMetaResp := listReq.getFileMetaFromBlobbers()
+
+	fRef, err = req.getFileMetaConsensus(fMetaResp)
+	if err != nil {
 		return
 	}
 
 	if fRef.Type == fileref.DIRECTORY {
 		err = errors.New("invalid_operation", "cannot downoad directory")
-		return
+		return nil, err
 	}
-
-	// the ChunkSize value can't be less than 0kb
-	if fRef.ChunkSize <= 0 {
-		err = errors.New("invalid_chunk_size", "File ChunkSize value is not permitted")
-		return
-	}
-
 	return
+}
+
+// getFileMetaConsensus will verify actual file hash signature and take consensus in it.
+// Then it will use the signature to calculation validation root signature and verify signature
+// of validation root send by the blobber.
+func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) (*fileref.FileRef, error) {
+	var selected *fileMetaResponse
+	foundMask := zboxutil.NewUint128(0)
+	req.consensus = 0
+	retMap := make(map[string]int)
+	for _, fmr := range fMetaResp {
+		if fmr.err != nil || fmr.fileref == nil {
+			continue
+		}
+		actualHash := fmr.fileref.ActualFileHash
+		actualFileHashSignature := fmr.fileref.ActualFileHashSignature
+
+		isValid, err := sys.VerifyWith(
+			req.allocOwnerPubKey,
+			actualFileHashSignature,
+			actualHash,
+		)
+		if err != nil {
+			l.Logger.Error(err)
+			continue
+		}
+		if !isValid {
+			l.Logger.Error("invalid signature")
+			continue
+		}
+
+		retMap[actualFileHashSignature]++
+		if retMap[actualFileHashSignature] > req.consensus {
+			req.consensus = retMap[actualFileHashSignature]
+		}
+		if req.isConsensusOk() {
+			selected = fmr
+			break
+		}
+	}
+
+	if selected == nil {
+		l.Logger.Error("File consensus not found for ", req.remotefilepath)
+		return nil, errors.New("consensus_not_met", "")
+	}
+
+	req.validationRootMap = make(map[string]*blobberFile)
+	for i := 0; i < len(fMetaResp); i++ {
+		fmr := fMetaResp[i]
+		if fmr.err != nil || fmr.fileref == nil {
+			continue
+		}
+		fRef := fmr.fileref
+
+		if selected.fileref.ActualFileHashSignature != fRef.ActualFileHashSignature {
+			continue
+		}
+
+		isValid, err := sys.VerifyWith(
+			req.allocOwnerPubKey,
+			fRef.ValidationRootSignature,
+			fRef.ActualFileHashSignature+fRef.ValidationRoot,
+		)
+		if err != nil {
+			l.Logger.Error(err)
+			continue
+		}
+		if !isValid {
+			l.Logger.Error("invalid validation root signature")
+			continue
+		}
+
+		blobber := req.blobbers[fmr.blobberIdx]
+		vr, _ := hex.DecodeString(fmr.fileref.ValidationRoot)
+		req.validationRootMap[blobber.ID] = &blobberFile{
+			size:           fmr.fileref.Size,
+			validationRoot: vr,
+		}
+		shift := zboxutil.NewUint128(1).Lsh(uint64(fmr.blobberIdx))
+		foundMask = foundMask.Or(shift)
+	}
+	req.consensus = foundMask.CountOnes()
+	if !req.isConsensusOk() {
+		return nil, fmt.Errorf("consensus_not_met")
+	}
+	req.downloadMask = foundMask
+	return selected.fileref, nil
 }

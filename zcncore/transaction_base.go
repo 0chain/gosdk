@@ -12,6 +12,8 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/zboxcore/logger"
+	"go.uber.org/zap"
 
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
@@ -42,7 +44,6 @@ var (
 // Note: to be buildable on MacOSX all arguments should have names.
 type TransactionScheme interface {
 	TransactionCommon
-
 	// SetTransactionCallback implements storing the callback
 	// used to call after the transaction or verification is completed
 	SetTransactionCallback(cb TransactionCallback) error
@@ -330,15 +331,13 @@ func (t *Transaction) submitTxn() {
 		}
 	}
 
-
 	var (
 		randomMiners = util.GetRandom(_config.chain.Miners, getMinMinersSubmit())
-		minersN     = len(randomMiners)
-		failedCount int32
-		failC       = make(chan struct{})
-		resultC = make(chan *util.PostResponse, minersN)
+		minersN      = len(randomMiners)
+		failedCount  int32
+		failC        = make(chan struct{})
+		resultC      = make(chan *util.PostResponse, minersN)
 	)
-
 
 	for _, miner := range randomMiners {
 		go func(minerurl string) {
@@ -373,7 +372,7 @@ func (t *Transaction) submitTxn() {
 		t.completeTxn(StatusError, "", fmt.Errorf("failed to submit transaction to all miners"))
 		return
 	case ret := <-resultC:
-			logging.Debug("finish txn submitting, ", ret.Url, ", Status: ", ret.Status, ", output:", ret.Body)
+		logging.Debug("finish txn submitting, ", ret.Url, ", Status: ", ret.Status, ", output:", ret.Body)
 		if ret.StatusCode == http.StatusOK {
 			t.completeTxn(StatusSuccess, ret.Body, nil)
 		} else {
@@ -388,8 +387,8 @@ func newTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (*Transa
 	t.txn = transaction.NewTransactionEntity(_config.wallet.ClientID, _config.chain.ChainID, _config.wallet.ClientKey, nonce)
 	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
 	t.txnCb = cb
-	t.txn.TransactionFee = txnFee
 	t.txn.TransactionNonce = nonce
+	t.txn.TransactionFee = txnFee
 	return t, nil
 }
 
@@ -418,16 +417,59 @@ func (t *Transaction) StoreData(data string) error {
 	return nil
 }
 
-func (t *Transaction) createSmartContractTxn(address, methodName string, input interface{}, value uint64) error {
+type txnFeeOption struct {
+	// stop estimate txn fee, usually if txn fee was 0, the createSmartContractTxn method would
+	// estimate the txn fee by calling API from 0chain network. With this option, we could force
+	// the txn to have zero fee for those exempt transactions.
+	noEstimateFee bool
+}
+
+// FeeOption represents txn fee related option type
+type FeeOption func(*txnFeeOption)
+
+// WithNoEstimateFee would prevent txn fee estimation from remote
+func WithNoEstimateFee() FeeOption {
+	return func(o *txnFeeOption) {
+		o.noEstimateFee = true
+	}
+}
+
+func (t *Transaction) createSmartContractTxn(address, methodName string, input interface{}, value uint64, opts ...FeeOption) error {
 	sn := transaction.SmartContractTxnData{Name: methodName, InputArgs: input}
 	snBytes, err := json.Marshal(sn)
 	if err != nil {
-		return errors.Wrap(err, "create smart contract failed due to invalid data.")
+		return errors.Wrap(err, "create smart contract failed due to invalid data")
 	}
+
 	t.txn.TransactionType = transaction.TxnTypeSmartContract
 	t.txn.ToClientID = address
 	t.txn.TransactionData = string(snBytes)
 	t.txn.Value = value
+
+	if t.txn.TransactionFee > 0 {
+		return nil
+	}
+
+	tf := &txnFeeOption{}
+	for _, opt := range opts {
+		opt(tf)
+	}
+
+	if tf.noEstimateFee {
+		return nil
+	}
+
+	// TODO: check if transaction is exempt to avoid unnecessary fee estimation
+	minFee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
+	if err != nil {
+		logger.Logger.Error("failed estimate txn fee",
+			zap.Any("txn", t.txn.Hash),
+			zap.Error(err))
+		return err
+	}
+
+	t.txn.TransactionFee = minFee
+
 	return nil
 }
 
@@ -506,7 +548,7 @@ func queryFromSharders(numSharders int, query string,
 func queryFromShardersContext(ctx context.Context, numSharders int,
 	query string, result chan *util.GetResponse) {
 
-	for _, sharder := range util.Shuffle(_config.chain.Sharders) {
+	for _, sharder := range util.Shuffle(_config.chain.Sharders)[:numSharders] {
 		go func(sharderurl string) {
 			logging.Info("Query from ", sharderurl+query)
 			url := fmt.Sprintf("%v%v", sharderurl, query)
@@ -522,6 +564,28 @@ func queryFromShardersContext(ctx context.Context, numSharders int,
 			result <- res
 		}(sharder)
 	}
+}
+
+func queryFromMinersContext(ctx context.Context, numMiners int, query string, result chan *util.GetResponse) {
+
+	randomMiners := util.Shuffle(_config.chain.Miners)[:numMiners]
+	for _, miner := range randomMiners {
+		go func(minerurl string) {
+			logging.Info("Query from ", minerurl+query)
+			url := fmt.Sprintf("%v%v", minerurl, query)
+			req, err := util.NewHTTPGetRequestContext(ctx, url)
+			if err != nil {
+				logging.Error(minerurl, " new get request failed. ", err.Error())
+				return
+			}
+			res, err := req.Get()
+			if err != nil {
+				logging.Error(minerurl, " get error. ", err.Error())
+			}
+			result <- res
+		}(miner)
+	}
+
 }
 
 func getBlockHeaderFromTransactionConfirmation(txnHash string, cfmBlock map[string]json.RawMessage) (*blockHeader, error) {
@@ -620,10 +684,10 @@ func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHe
 	resultC := make(chan *util.GetResponse, numSharders)
 	queryFromSharders(numSharders, fmt.Sprintf("%vround=%v&content=%v", GET_BLOCK_INFO, round, content), resultC)
 	var (
-		maxConsensus int
+		maxConsensus   int
 		roundConsensus = make(map[string]int)
-		waitTime = time.NewTimer(10 * time.Second)
-		failedCount int
+		waitTime       = time.NewTimer(10 * time.Second)
+		failedCount    int
 	)
 
 	type blockRound struct {
@@ -636,14 +700,14 @@ func getBlockInfoByRound(numSharders int, round int64, content string) (*blockHe
 			return nil, stdErrors.New("failed to get block info by round with consensus, timeout")
 		case rsp := <-resultC:
 			logging.Debug(rsp.Url, rsp.Status)
-			if failedCount * 100 / numSharders > 100 - consensusThresh {
+			if failedCount*100/numSharders > 100-consensusThresh {
 				return nil, stdErrors.New("failed to get block info by round with consensus, too many failures")
 			}
 
 			if rsp.StatusCode != http.StatusOK {
 				logging.Debug(rsp.Url, "no round confirmation. Resp:", rsp.Body)
 				failedCount++
-                continue
+				continue
 			}
 
 			var br blockRound

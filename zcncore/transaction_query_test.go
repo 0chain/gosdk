@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/stretchr/testify/require"
 	"log"
 	"math/rand"
 	"net"
@@ -13,6 +12,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
 )
 
 const (
@@ -49,7 +50,7 @@ func TestMain(m *testing.M) {
 
 func TestGetRandomSharder(t *testing.T) {
 	var err error
-	tq, err = NewTransactionQuery(sharders)
+	tq, err = NewTransactionQuery(sharders, []string{})
 	if err != nil {
 		t.Fatalf("Failed to create new transaction query: %v", err)
 	}
@@ -122,7 +123,7 @@ func TestGetRandomSharder(t *testing.T) {
 // Maybe replace this with the standard go benchmark later on
 func TestGetRandomSharderAndBenchmark(t *testing.T) {
 	var err error
-	tq, err = NewTransactionQuery(sharders)
+	tq, err = NewTransactionQuery(sharders, []string{})
 	if err != nil {
 		t.Fatalf("Failed to create new transaction query: %v", err)
 	}

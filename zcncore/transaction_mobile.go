@@ -57,18 +57,18 @@ type TransactionCommon interface {
 	MinerSCCollectReward(providerId string, providerType int) error
 	StorageSCCollectReward(providerId string, providerType int) error
 
-	FinalizeAllocation(allocID string, fee string) error
-	CancelAllocation(allocID string, fee string) error
-	CreateAllocation(car *CreateAllocationRequest, lock, fee string) error //
-	CreateReadPool(fee string) error
-	ReadPoolLock(allocID string, blobberID string, duration int64, lock, fee string) error
-	ReadPoolUnlock(fee string) error
-	StakePoolLock(providerId string, providerType int, lock string, fee string) error
-	StakePoolUnlock(providerId string, providerType int, fee string) error
-	UpdateBlobberSettings(blobber Blobber, fee string) error
-	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock, fee string) error
-	WritePoolLock(allocID string, lock, fee string) error
-	WritePoolUnlock(allocID string, fee string) error
+	FinalizeAllocation(allocID string) error
+	CancelAllocation(allocID string) error
+	CreateAllocation(car *CreateAllocationRequest, lock string) error //
+	CreateReadPool() error
+	ReadPoolLock(allocID string, blobberID string, duration int64, lock string) error
+	ReadPoolUnlock() error
+	StakePoolLock(providerId string, providerType int, lock string) error
+	StakePoolUnlock(providerId string, providerType int) error
+	UpdateBlobberSettings(blobber Blobber) error
+	UpdateAllocation(allocID string, sizeDiff int64, expirationDiff int64, lock string) error
+	WritePoolLock(allocID string, lock string) error
+	WritePoolUnlock(allocID string) error
 
 	VestingUpdateConfig(InputMap) error
 	MinerScUpdateConfig(InputMap) error
@@ -160,6 +160,7 @@ type Terms struct {
 type Blobber interface {
 	SetTerms(readPrice int64, writePrice int64, minLockDemand float64, maxOfferDuration int64)
 	SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64)
+	SetAvailable(bool)
 }
 
 func NewBlobber(id, baseUrl string, capacity, allocated, lastHealthCheck int64) Blobber {
@@ -180,6 +181,7 @@ type blobber struct {
 	LastHealthCheck   int64             `json:"last_health_check"`
 	Terms             Terms             `json:"terms"`
 	StakePoolSettings StakePoolSettings `json:"stake_pool_settings"`
+	IsAvailable       bool              `json:"is_available"`
 }
 
 func (b *blobber) SetStakePoolSettings(delegateWallet string, minStake int64, maxStake int64, numDelegates int, serviceCharge float64) {
@@ -199,6 +201,10 @@ func (b *blobber) SetTerms(readPrice int64, writePrice int64, minLockDemand floa
 		MinLockDemand:    minLockDemand,
 		MaxOfferDuration: maxOfferDuration,
 	}
+}
+
+func (b *blobber) SetAvailable(availability bool) {
+	b.IsAvailable = availability
 }
 
 type Validator interface {
@@ -253,6 +259,10 @@ func (a *addAuthorizerPayload) SetStakePoolSettings(delegateWallet string, minSt
 		NumDelegates:   numDelegates,
 		ServiceCharge:  serviceCharge,
 	}
+}
+
+type AuthorizerHealthCheckPayload struct {
+	ID string `json:"id"` // authorizer ID
 }
 
 type AuthorizerStakePoolSettings struct {
@@ -515,13 +525,7 @@ func (t *Transaction) StorageSCCollectReward(providerId string, providerType int
 }
 
 // FinalizeAllocation transaction.
-func (t *Transaction) FinalizeAllocation(allocID string, fee string) (
-	err error) {
-	v, err := parseCoinStr(fee)
-	if err != nil {
-		return err
-	}
-
+func (t *Transaction) FinalizeAllocation(allocID string) (err error) {
 	type finiRequest struct {
 		AllocationID string `json:"allocation_id"`
 	}
@@ -533,22 +537,16 @@ func (t *Transaction) FinalizeAllocation(allocID string, fee string) (
 		logging.Error(err)
 		return
 	}
-	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return
 }
 
 // CancelAllocation transaction.
-func (t *Transaction) CancelAllocation(allocID string, fee string) error {
-	v, err := parseCoinStr(fee)
-	if err != nil {
-		return err
-	}
-
+func (t *Transaction) CancelAllocation(allocID string) error {
 	type cancelRequest struct {
 		AllocationID string `json:"allocation_id"`
 	}
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
+	err := t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_CANCEL_ALLOCATION, &cancelRequest{
 			AllocationID: allocID,
 		}, 0)
@@ -556,19 +554,13 @@ func (t *Transaction) CancelAllocation(allocID string, fee string) error {
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
 // CreateAllocation transaction.
-func (t *Transaction) CreateAllocation(car *CreateAllocationRequest, lock, fee string) error {
+func (t *Transaction) CreateAllocation(car *CreateAllocationRequest, lock string) error {
 	lv, err := parseCoinStr(lock)
-	if err != nil {
-		return err
-	}
-
-	fv, err := parseCoinStr(fee)
 	if err != nil {
 		return err
 	}
@@ -579,25 +571,18 @@ func (t *Transaction) CreateAllocation(car *CreateAllocationRequest, lock, fee s
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
 // CreateReadPool for current user.
-func (t *Transaction) CreateReadPool(fee string) error {
-	v, err := parseCoinStr(fee)
-	if err != nil {
-		return err
-	}
-
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
+func (t *Transaction) CreateReadPool() error {
+	err := t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_CREATE_READ_POOL, nil, 0)
 	if err != nil {
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
@@ -606,13 +591,8 @@ func (t *Transaction) CreateReadPool(fee string) error {
 // duration. If blobberID is not empty, then tokens will be locked for given
 // allocation->blobber only.
 func (t *Transaction) ReadPoolLock(allocID, blobberID string,
-	duration int64, lock, fee string) error {
+	duration int64, lock string) error {
 	lv, err := parseCoinStr(lock)
-	if err != nil {
-		return err
-	}
-
-	fv, err := parseCoinStr(fee)
 	if err != nil {
 		return err
 	}
@@ -634,40 +614,29 @@ func (t *Transaction) ReadPoolLock(allocID, blobberID string,
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
 // ReadPoolUnlock for current user and given pool.
-func (t *Transaction) ReadPoolUnlock(fee string) error {
-	v, err := parseCoinStr(fee)
-	if err != nil {
-		return err
-	}
-
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
+func (t *Transaction) ReadPoolUnlock() error {
+	err := t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_READ_POOL_UNLOCK, nil, 0)
 	if err != nil {
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
 // StakePoolLock used to lock tokens in a stake pool of a blobber.
-func (t *Transaction) StakePoolLock(providerId string, providerType int, lock, fee string) error {
+func (t *Transaction) StakePoolLock(providerId string, providerType int, lock string) error {
 	lv, err := parseCoinStr(lock)
 	if err != nil {
 		return err
 	}
 
-	fv, err := parseCoinStr(fee)
-	if err != nil {
-		return err
-	}
 	spr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerId,
@@ -679,60 +648,42 @@ func (t *Transaction) StakePoolLock(providerId string, providerType int, lock, f
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
 // StakePoolUnlock by blobberID
-func (t *Transaction) StakePoolUnlock(providerId string, providerType int, fee string) error {
-	v, err := parseCoinStr(fee)
-	if err != nil {
-		return err
-	}
-
+func (t *Transaction) StakePoolUnlock(providerId string, providerType int) error {
 	spr := stakePoolRequest{
 		ProviderType: providerType,
 		ProviderID:   providerId,
 	}
 
-	err = t.createSmartContractTxn(StorageSmartContractAddress, transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
+	err := t.createSmartContractTxn(StorageSmartContractAddress, transaction.STORAGESC_STAKE_POOL_UNLOCK, &spr, 0)
 	if err != nil {
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
 // UpdateBlobberSettings update settings of a blobber.
-func (t *Transaction) UpdateBlobberSettings(b Blobber, fee string) error {
-	v, err := parseCoinStr(fee)
-	if err != nil {
-		return err
-	}
-
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
+func (t *Transaction) UpdateBlobberSettings(b Blobber) error {
+	err := t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_UPDATE_BLOBBER_SETTINGS, b, 0)
 	if err != nil {
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
 // UpdateAllocation transaction.
 func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
-	expirationDiff int64, lock, fee string) error {
+	expirationDiff int64, lock string) error {
 	lv, err := parseCoinStr(lock)
-	if err != nil {
-		return err
-	}
-
-	fv, err := parseCoinStr(fee)
 	if err != nil {
 		return err
 	}
@@ -754,7 +705,6 @@ func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
@@ -762,13 +712,8 @@ func (t *Transaction) UpdateAllocation(allocID string, sizeDiff int64,
 // WritePoolLock locks tokens for current user and given allocation, using given
 // duration. If blobberID is not empty, then tokens will be locked for given
 // allocation->blobber only.
-func (t *Transaction) WritePoolLock(allocID, lock, fee string) error {
+func (t *Transaction) WritePoolLock(allocID, lock string) error {
 	lv, err := parseCoinStr(lock)
-	if err != nil {
-		return err
-	}
-
-	fv, err := parseCoinStr(fee)
 	if err != nil {
 		return err
 	}
@@ -785,31 +730,24 @@ func (t *Transaction) WritePoolLock(allocID, lock, fee string) error {
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(fv)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
 
 // WritePoolUnlock for current user and given pool.
-func (t *Transaction) WritePoolUnlock(allocID string, fee string) error {
-	v, err := parseCoinStr(fee)
-	if err != nil {
-		return err
-	}
-
+func (t *Transaction) WritePoolUnlock(allocID string) error {
 	var ur = struct {
 		AllocationID string `json:"allocation_id"`
 	}{
 		AllocationID: allocID,
 	}
 
-	err = t.createSmartContractTxn(StorageSmartContractAddress,
+	err := t.createSmartContractTxn(StorageSmartContractAddress,
 		transaction.STORAGESC_WRITE_POOL_UNLOCK, &ur, 0)
 	if err != nil {
 		logging.Error(err)
 		return err
 	}
-	t.setTransactionFee(v)
 	go func() { t.setNonceAndSubmit() }()
 	return nil
 }
@@ -1118,7 +1056,7 @@ func (t *Transaction) ZCNSCAddAuthorizer(ip AddAuthorizerPayload) (err error) {
 // # Inputs
 //   - token: ZCN tokens
 func ConvertTokenToSAS(token float64) uint64 {
-	return uint64(token * float64(TOKEN_UNIT))
+	return uint64(token * common.TokenUnit)
 }
 
 // ConvertToValue converts ZCN tokens to SAS tokens with string format
@@ -1263,6 +1201,53 @@ func GetChainStats(timeout RequestTimeout) ([]byte, error) {
 		rsp = x
 	}
 
+	if rsp == nil {
+		return nil, errors.New("http_request_failed", "Request failed with status not 200")
+	}
+
+	if err = json.Unmarshal([]byte(rsp.Body), &b); err != nil {
+		return nil, err
+	}
+
+	return []byte(rsp.Body), nil
+}
+
+func GetFeeStats(timeout RequestTimeout) ([]byte, error) {
+
+	var numMiners = 4
+
+	if numMiners > len(_config.chain.Miners) {
+		numMiners = len(_config.chain.Miners)
+	}
+
+	var result = make(chan *util.GetResponse, numMiners)
+
+	ctx, cancel := makeTimeoutContext(timeout)
+	defer cancel()
+
+	var (
+		b   *block.FeeStats
+		err error
+	)
+
+	queryFromMinersContext(ctx, numMiners, GET_FEE_STATS, result)
+	var rsp *util.GetResponse
+
+loop:
+	for i := 0; i < numMiners; i++ {
+		select {
+		case x := <-result:
+			if x.StatusCode != http.StatusOK {
+				continue
+			}
+			rsp = x
+			if rsp != nil {
+				break loop
+			}
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
 	if rsp == nil {
 		return nil, errors.New("http_request_failed", "Request failed with status not 200")
 	}

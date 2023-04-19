@@ -42,7 +42,11 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 	)
 
 	var mockClient = mocks.HttpClient{}
+	rawClient := zboxutil.Client
 	zboxutil.Client = &mockClient
+	defer func() {
+		zboxutil.Client = rawClient
+	}()
 
 	client := zclient.GetClient()
 	client.Wallet = &zcncrypto.Wallet{
@@ -67,7 +71,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			name:    "Test_Error_New_HTTP_Failed_By_Containing_" + string([]byte{0x7f, 0, 0}),
 			setup:   func(t *testing.T, testName string, p parameters) {},
 			wantErr: true,
-			errMsg:  `parse "Test_Error_New_HTTP_Failed_By_Containing_\u007f\x00\x00": net/url: invalid control character in URL`,
+			errMsg:  `net/url: invalid control character in URL`,
 		},
 		{
 			name: "Test_Error_Get_Object_Tree_From_Blobber_Failed",
@@ -220,7 +224,7 @@ func TestRenameRequest_renameBlobberObject(t *testing.T) {
 			_, err := req.renameBlobberObject(req.blobbers[0], 0)
 			require.EqualValues(tt.wantErr, err != nil, "Error: ", err)
 			if err != nil {
-				require.EqualValues(tt.errMsg, errors.Top(err))
+				require.Contains(errors.Top(err), tt.errMsg)
 				return
 			}
 			require.NoErrorf(err, "expected no error but got %v", err)
@@ -245,19 +249,18 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 		mockNewName        = "mock new name"
 	)
 
-	rawClient := zboxutil.Client
-
 	var mockClient = mocks.HttpClient{}
+	rawClient := zboxutil.Client
 	zboxutil.Client = &mockClient
+	defer func() {
+		zboxutil.Client = rawClient
+	}()
 
 	client := zclient.GetClient()
 	client.Wallet = &zcncrypto.Wallet{
 		ClientID:  mockClientId,
 		ClientKey: mockClientKey,
 	}
-	defer func() {
-		zboxutil.Client = rawClient
-	}()
 
 	setupHttpResponses := func(t *testing.T, testName string, numBlobbers int, numCorrect int, req *RenameRequest) {
 		for i := 0; i < numBlobbers; i++ {
@@ -292,33 +295,35 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 				Body: ioutil.NopCloser(bytes.NewReader([]byte(""))),
 			}, nil)
 
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return req.Method == "POST" &&
-					strings.Contains(req.URL.String(), zboxutil.WM_LOCK_ENDPOINT) &&
-					strings.Contains(req.URL.String(), testName+url)
-			})).Return(&http.Response{
-				StatusCode: func() int {
-					if i < numCorrect {
-						return http.StatusOK
-					}
-					return http.StatusBadRequest
-				}(),
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
-			}, nil)
+			if i < numCorrect {
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return req.Method == "POST" &&
+						strings.Contains(req.URL.String(), zboxutil.WM_LOCK_ENDPOINT) &&
+						strings.Contains(req.URL.String(), testName+url)
+				})).Return(&http.Response{
+					StatusCode: func() int {
+						if i < numCorrect {
+							return http.StatusOK
+						}
+						return http.StatusBadRequest
+					}(),
+					Body: ioutil.NopCloser(bytes.NewReader([]byte(`{"status":2}`))),
+				}, nil)
 
-			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
-				return req.Method == "POST" &&
-					strings.Contains(req.URL.String(), zboxutil.COMMIT_ENDPOINT) &&
-					strings.Contains(req.URL.String(), testName+url)
-			})).Return(&http.Response{
-				StatusCode: func() int {
-					if i < numCorrect {
-						return http.StatusOK
-					}
-					return http.StatusBadRequest
-				}(),
-				Body: ioutil.NopCloser(bytes.NewReader([]byte(""))),
-			}, nil)
+				mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+					return req.Method == "POST" &&
+						strings.Contains(req.URL.String(), zboxutil.COMMIT_ENDPOINT) &&
+						strings.Contains(req.URL.String(), testName+url)
+				})).Return(&http.Response{
+					StatusCode: func() int {
+						if i < numCorrect {
+							return http.StatusOK
+						}
+						return http.StatusBadRequest
+					}(),
+					Body: ioutil.NopCloser(bytes.NewReader([]byte(""))),
+				}, nil)
+			}
 
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 				return req.Method == "DELETE" &&
@@ -416,7 +421,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			numCorrect:  2,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "consensus_not_met",
+			errMsg:      "rename_failed",
 		},
 		{
 			name:        "Test_All_Blobber_Error_On_Rename_Failure",
@@ -424,7 +429,7 @@ func TestRenameRequest_ProcessRename(t *testing.T) {
 			numCorrect:  0,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "consensus_not_met",
+			errMsg:      "rename_failed",
 		},
 	}
 	for _, tt := range tests {
