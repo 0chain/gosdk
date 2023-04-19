@@ -1496,6 +1496,8 @@ func (a *Allocation) UpdateWithRepair(
 			time.Sleep(1 * time.Second)
 		}
 		return "", errors.New("", "new blobber not found in the updated allocation")
+	} else {
+		statusCB.Completed(a.ID, "", "", "", 0, 0)
 	}
 
 repair:
