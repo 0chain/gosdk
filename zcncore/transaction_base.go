@@ -12,6 +12,8 @@ import (
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/sys"
+	"github.com/0chain/gosdk/zboxcore/logger"
+	"go.uber.org/zap"
 
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/encryption"
@@ -42,7 +44,6 @@ var (
 // Note: to be buildable on MacOSX all arguments should have names.
 type TransactionScheme interface {
 	TransactionCommon
-
 	// SetTransactionCallback implements storing the callback
 	// used to call after the transaction or verification is completed
 	SetTransactionCallback(cb TransactionCallback) error
@@ -386,8 +387,8 @@ func newTransaction(cb TransactionCallback, txnFee uint64, nonce int64) (*Transa
 	t.txn = transaction.NewTransactionEntity(_config.wallet.ClientID, _config.chain.ChainID, _config.wallet.ClientKey, nonce)
 	t.txnStatus, t.verifyStatus = StatusUnknown, StatusUnknown
 	t.txnCb = cb
-	t.txn.TransactionFee = txnFee
 	t.txn.TransactionNonce = nonce
+	t.txn.TransactionFee = txnFee
 	return t, nil
 }
 
@@ -416,16 +417,59 @@ func (t *Transaction) StoreData(data string) error {
 	return nil
 }
 
-func (t *Transaction) createSmartContractTxn(address, methodName string, input interface{}, value uint64) error {
+type txnFeeOption struct {
+	// stop estimate txn fee, usually if txn fee was 0, the createSmartContractTxn method would
+	// estimate the txn fee by calling API from 0chain network. With this option, we could force
+	// the txn to have zero fee for those exempt transactions.
+	noEstimateFee bool
+}
+
+// FeeOption represents txn fee related option type
+type FeeOption func(*txnFeeOption)
+
+// WithNoEstimateFee would prevent txn fee estimation from remote
+func WithNoEstimateFee() FeeOption {
+	return func(o *txnFeeOption) {
+		o.noEstimateFee = true
+	}
+}
+
+func (t *Transaction) createSmartContractTxn(address, methodName string, input interface{}, value uint64, opts ...FeeOption) error {
 	sn := transaction.SmartContractTxnData{Name: methodName, InputArgs: input}
 	snBytes, err := json.Marshal(sn)
 	if err != nil {
-		return errors.Wrap(err, "create smart contract failed due to invalid data.")
+		return errors.Wrap(err, "create smart contract failed due to invalid data")
 	}
+
 	t.txn.TransactionType = transaction.TxnTypeSmartContract
 	t.txn.ToClientID = address
 	t.txn.TransactionData = string(snBytes)
 	t.txn.Value = value
+
+	if t.txn.TransactionFee > 0 {
+		return nil
+	}
+
+	tf := &txnFeeOption{}
+	for _, opt := range opts {
+		opt(tf)
+	}
+
+	if tf.noEstimateFee {
+		return nil
+	}
+
+	// TODO: check if transaction is exempt to avoid unnecessary fee estimation
+	minFee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
+	if err != nil {
+		logger.Logger.Error("failed estimate txn fee",
+			zap.Any("txn", t.txn.Hash),
+			zap.Error(err))
+		return err
+	}
+
+	t.txn.TransactionFee = minFee
+
 	return nil
 }
 
