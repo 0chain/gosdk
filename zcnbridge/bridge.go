@@ -72,6 +72,10 @@ var (
 //
 //nolint:funlen
 func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei Wei) (*types.Transaction, error) {
+	if amountWei <= 0 {
+		return nil, errors.New("amount must be greater than zero")
+	}
+
 	etherClient, err := b.CreateEthClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create etherClient")
