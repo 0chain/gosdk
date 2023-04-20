@@ -737,6 +737,9 @@ func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
 
 	rate := consensusMaps.MaxConsensus * 100 / len(_config.chain.Sharders)
 	if rate < consensusThresh {
+		if strings.TrimSpace(consensusMaps.WinError) == `{"error":"value not present"}` {
+			return 0, consensusMaps.WinError, nil
+		}
 		return 0, consensusMaps.WinError, errors.New("", "get balance failed. consensus not reached")
 	}
 
@@ -757,7 +760,7 @@ func getBalanceFieldFromSharders(clientID, name string) (int64, string, error) {
 // # Inputs
 //   - token: SAS tokens
 func ConvertToToken(token int64) float64 {
-	return float64(token) / float64(TOKEN_UNIT)
+	return float64(token) / float64(common.TokenUnit)
 }
 
 func ConvertTokenToUSD(token float64) (float64, error) {
