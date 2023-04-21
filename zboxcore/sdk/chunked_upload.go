@@ -609,7 +609,6 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	var pos uint64
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
-		logger.Logger.Info("Pos is ", pos);
 		blobber := su.blobbers[pos]
 		blobber.progress.UploadLength += uploadLength
 
