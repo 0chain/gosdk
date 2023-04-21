@@ -434,6 +434,9 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
 			}
 			res[j], err = req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
+			if req.isDownloadCanceled {
+				return errors.New("download_abort", "Download aborted by user")
+			}
 			if err != nil {
 				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+1))
 			}
@@ -446,11 +449,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 
 	for _, data := range res {
-		if req.isDownloadCanceled {
-			req.errorCB(errors.New("download_abort", "Download aborted by user"), remotePathCB)
-			return
-		}
-
 		n := int64(math.Min(float64(remainingSize), float64(len(data))))
 		_, err = f.Write(data[:n])
 
