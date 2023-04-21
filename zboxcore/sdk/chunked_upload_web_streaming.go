@@ -3,7 +3,6 @@ package sdk
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"io"
 	"os/exec"
 	"path"
@@ -15,19 +14,12 @@ import (
 
 // Converting the video file to fmp4 format for web streaming
 func TranscodeWebStreaming(fileReader io.Reader, fileMeta FileMeta) (io.Reader, *FileMeta, error) {
-
-	mimeTypeSlice := strings.Split(fileMeta.MimeType, "/")
-	if mimeTypeSlice[0] != "video" {
-		return nil, nil, thrown.New("Transcoding Failed", fmt.Sprintf("Format Invalid %s", fileMeta.MimeType))
-	}
-
 	var stdOut bytes.Buffer
 	var stdErr bytes.Buffer
 
-	args := []string{"-i", "-", "-g", "30", "-f", "mp4", "-movflags", "frag_keyframe+empty_moov", "pipe:1"}
+	args := []string{"-i", fileMeta.Path, "-g", "30", "-f", "mp4", "-movflags", "frag_keyframe+empty_moov", "pipe:1"}
 	cmdFfmpeg := exec.Command("ffmpeg", args...)
 
-	cmdFfmpeg.Stdin = fileReader
 	cmdFfmpeg.Stdout = bufio.NewWriter(&stdOut)
 	cmdFfmpeg.Stderr = bufio.NewWriter(&stdErr)
 
@@ -35,7 +27,7 @@ func TranscodeWebStreaming(fileReader io.Reader, fileMeta FileMeta) (io.Reader, 
 
 	if err != nil {
 		logger.Logger.Error(err)
-		return nil, nil, err
+		return nil, nil, thrown.New("Transcoding Failed: ", err.Error())
 	}
 
 	trascodedBufSlice := stdOut.Bytes()
@@ -65,8 +57,7 @@ func getRemoteNameAndRemotePath(remoteName string, remotePath string) (string, s
 		newRemoteNameSlice = newRemoteNameSlice[:len(newRemoteNameSlice)-1]
 	}
 	newRemoteNameWithoutType := strings.Join(newRemoteNameSlice, ".")
-	newRemoteName = "raw." + newRemoteNameWithoutType + ".fmp4"
+	newRemoteName = "raw." + newRemoteNameWithoutType + ".mp4"
 	newRemotePath = newRemotePath + newRemoteName
 	return newRemoteName, newRemotePath
 }
-
