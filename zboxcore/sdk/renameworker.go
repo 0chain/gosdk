@@ -294,7 +294,6 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 	for i := rR.renameMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		wg.Add(1)
-		// here also goroutine
 		go func(blobberIdx int) {
 			defer wg.Done()
 			refEntity, err := rR.renameBlobberObject(rR.blobbers[blobberIdx], blobberIdx)

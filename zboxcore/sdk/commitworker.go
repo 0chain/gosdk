@@ -166,8 +166,6 @@ func (commitreq *CommitRequest) processCommit() {
 	var size int64
 	fileIDMeta := make(map[string]string)
 	commitParams := allocationchange.CommitParams{}
-	// timestamp := int64(55555555)  // for debugging
-	timestamp := int64(common.Now())
 
 	for _, change := range commitreq.changes {
 		commitParams, err = change.ProcessChange(rootRef, fileIDMeta)
@@ -197,7 +195,7 @@ func (req *CommitRequest) commitBlobber(
 	}
 
 	wm := &marker.WriteMarker{}
-	timestamp = int64(common.Now())
+	timestamp := int64(common.Now())
 	wm.AllocationRoot = encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10))
 	if latestWM != nil {
 		wm.PreviousAllocationRoot = latestWM.AllocationRoot
