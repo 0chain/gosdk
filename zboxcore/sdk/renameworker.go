@@ -156,7 +156,7 @@ func (req *RenameRequest) ProcessRename() error {
 	req.wg.Add(numList)
 
 	for i := 0; i < numList; i++ {
-		func(blobberIdx int) {
+		go func(blobberIdx int) {
 			defer req.wg.Done()
 			refEntity, err := req.renameBlobberObject(req.blobbers[blobberIdx], blobberIdx)
 			if err != nil {
@@ -223,7 +223,7 @@ func (req *RenameRequest) ProcessRename() error {
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReqs[c] = commitReq
 
-		AddCommitRequest(commitReq)
+		go AddCommitRequest(commitReq)
 
 		c++
 	}
