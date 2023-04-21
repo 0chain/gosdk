@@ -607,7 +607,6 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 
 	wg := &sync.WaitGroup{}
 	var pos uint64
-	su.uploadMask.Print()
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		logger.Logger.Info("Pos is ", pos);
