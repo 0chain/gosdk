@@ -178,7 +178,7 @@ func (commitreq *CommitRequest) processCommit() {
 		size += change.GetSize()
 		commitParams.FileIDMeta = fileIDMeta
 	}
-	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size, &commitParams, timestamp)
+	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size, &commitParams)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
@@ -188,7 +188,7 @@ func (commitreq *CommitRequest) processCommit() {
 
 func (req *CommitRequest) commitBlobber(
 	rootRef *fileref.Ref, latestWM *marker.WriteMarker, size int64,
-	commitParams *allocationchange.CommitParams, timestamp int64) error {
+	commitParams *allocationchange.CommitParams) error {
 
 	fileIDMetaData, err := json.Marshal(commitParams.FileIDMeta)
 	if err != nil {
@@ -197,7 +197,7 @@ func (req *CommitRequest) commitBlobber(
 	}
 
 	wm := &marker.WriteMarker{}
-	// timestamp = int64(common.Now())
+	timestamp = int64(common.Now())
 	wm.AllocationRoot = encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10))
 	if latestWM != nil {
 		wm.PreviousAllocationRoot = latestWM.AllocationRoot
