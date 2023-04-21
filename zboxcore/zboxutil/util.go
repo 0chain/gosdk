@@ -353,23 +353,22 @@ func GetErrorMessageCode(errorMsg string) (string, error) {
 
 }
 
-
 // Returns transpose of 2-D slice
 // Example: Given matrix [[a, b], [c, d], [e, f]] returns [[a, b, c], [d, e, f]]
 func Transpose(matrix [][]allocationchange.AllocationChange) [][]allocationchange.AllocationChange {
 	rowLength := len(matrix)
 	if rowLength == 0 {
-		return matrix;
+		return matrix
 	}
 	columnLength := len(matrix[0])
-    transposedMatrix := make([][]allocationchange.AllocationChange, columnLength)
-    for i := range transposedMatrix {
-        transposedMatrix[i] = make([]allocationchange.AllocationChange, rowLength)
-    }
-    for i := 0; i < columnLength; i++ {
-        for j := 0; j < rowLength; j++ {
-            transposedMatrix[i][j] = matrix[j][i]
-        }
-    }
-    return transposedMatrix
+	transposedMatrix := make([][]allocationchange.AllocationChange, columnLength)
+	for i := range transposedMatrix {
+		transposedMatrix[i] = make([]allocationchange.AllocationChange, rowLength)
+	}
+	for i := 0; i < columnLength; i++ {
+		for j := 0; j < rowLength; j++ {
+			transposedMatrix[i][j] = matrix[j][i]
+		}
+	}
+	return transposedMatrix
 }
