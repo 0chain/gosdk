@@ -300,11 +300,11 @@ func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]f
 	if !mR.Consensus.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
-			return nil, thrown.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
+			return nil, thrown.New("move_failed", fmt.Sprintf("Move failed. %s", err.Error()))
 		}
 
 		return nil, thrown.New("consensus_not_met",
-			fmt.Sprintf("Rename failed. Required consensus %d, got %d",
+			fmt.Sprintf("Move failed. Required consensus %d, got %d",
 				mR.Consensus.consensusThresh, mR.Consensus.consensus))
 	}
 	return objectTreeRefs, nil
@@ -340,15 +340,13 @@ func (mo *MoveOperation) build(remotePath string, destPath string, moveMask zbox
 }
 
 func (mo *MoveOperation) Verify(a *Allocation) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
+
 
 	if !a.CanMove() {
 		return constants.ErrFileOptionNotPermitted
 	}
 
-	if len(mo.remotefilepath) == 0 || len(mo.destPath) == 0 {
+	if mo.remotefilepath == "" || mo.destPath == "" {
 		return errors.New("invalid_path", "Invalid path for copy")
 	}
 	isabs := zboxutil.IsRemoteAbs(mo.remotefilepath)

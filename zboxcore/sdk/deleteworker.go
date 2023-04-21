@@ -327,7 +327,7 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 		}
 
 		return nil, thrown.New("consensus_not_met",
-			fmt.Sprintf("Rename failed. Required consensus %d, got %d",
+			fmt.Sprintf("Delete failed. Required consensus %d, got %d",
 				deleteReq.consensus.consensusThresh, deleteReq.consensus.consensus))
 	}
 	l.Logger.Info("Delete Processs Ended ")
@@ -359,15 +359,12 @@ func (dop *DeleteOperation) build(remotePath string, deleteMask zboxutil.Uint128
 }
 
 func (dop *DeleteOperation) Verify(a *Allocation) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
 
 	if !a.CanDelete() {
 		return constants.ErrFileOptionNotPermitted
 	}
 
-	if len(dop.remotefilepath) == 0 {
+	if dop.remotefilepath == "" {
 		return errors.New("invalid_path", "Invalid path for the list")
 	}
 	isabs := zboxutil.IsRemoteAbs(dop.remotefilepath)

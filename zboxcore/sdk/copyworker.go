@@ -344,15 +344,12 @@ func (co *CopyOperation) build(remotePath string, destPath string, copyMask zbox
 }
 
 func (co *CopyOperation) Verify(a *Allocation) error {
-	if !a.isInitialized() {
-		return notInitialized
-	}
 
 	if !a.CanCopy() {
 		return constants.ErrFileOptionNotPermitted
 	}
 
-	if len(co.remotefilepath) == 0 || len(co.destPath) == 0 {
+	if co.remotefilepath == "" || co.destPath == "" {
 		return errors.New("invalid_path", "Invalid path for copy")
 	}
 	isabs := zboxutil.IsRemoteAbs(co.remotefilepath)

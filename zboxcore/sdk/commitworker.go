@@ -175,8 +175,6 @@ func (commitreq *CommitRequest) processCommit() {
 			commitreq.result = ErrorCommitResult(err.Error())
 			return
 		}
-		fmt.Println("Allocation root is : ", encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10)));
-		fmt.Println("rootref hash: ", rootRef.Hash," timestamp: ", timestamp);
 		size += change.GetSize()
 		commitParams.FileIDMeta = fileIDMeta
 	}

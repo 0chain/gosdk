@@ -311,7 +311,7 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 	if !rR.consensus.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
-			return nil, thrown.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
+			return nil, thrown.New("rename_failed", fmt.Sprintf("Renamed failed. %s", err.Error()))
 		}
 
 		return nil, thrown.New("consensus_not_met",
@@ -319,7 +319,6 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 				rR.consensus.consensusThresh, rR.consensus.consensus))
 	}
 	l.Logger.Info("Rename Processs Ended ")
-	fmt.Println("Object Tree Ref")
 	return objectTreeRefs, nil
 }
 
@@ -351,10 +350,6 @@ func (ro *RenameOperation) build(remotePath string, destName string, renameMask 
 }
 
 func (ro *RenameOperation) Verify(a *Allocation) error {
-
-	if !a.isInitialized() {
-		return notInitialized
-	}
 
 	if !a.CanRename() {
 		return constants.ErrFileOptionNotPermitted

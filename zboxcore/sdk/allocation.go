@@ -518,6 +518,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 	if len(operations) == 0 {
 		return nil
 	}
+	if !a.isInitialized() {
+		return notInitialized
+	}
 	var mo MultiOperation
 	mo.allocationObj = a
 	mo.operationMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)

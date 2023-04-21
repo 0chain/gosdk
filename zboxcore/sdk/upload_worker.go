@@ -28,12 +28,6 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 		return nil, err
 	}
 	err = cu.process()
-
-	if err != nil {
-		l.Logger.Info("temporaray start is giving error: ", err)
-		return nil, nil
-	}
-
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +45,6 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 	}
 
 	l.Logger.Info("Completed the upload")
-	// return objectTreeRefsEntity, nil
 	return objectTreeRefsEntity, nil
 }
 

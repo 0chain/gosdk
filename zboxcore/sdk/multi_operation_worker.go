@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	thrown "github.com/0chain/errors"
+	"github.com/0chain/errors"
 	// "github.com/0chain/gosdk/constants"
 
 	"github.com/0chain/gosdk/core/util"
@@ -48,8 +48,7 @@ func (mo *MultiOperation) Process() error {
 	uid := util.GetNewUUID()
 	for idx, op := range mo.operations {
 		wg.Add(1)
-		// Here make it goroutine
-		func(op Operationer, idx int) {
+		go func(op Operationer, idx int) {
 			defer wg.Done()
 
 			// Check for other goroutines signal
@@ -65,26 +64,22 @@ func (mo *MultiOperation) Process() error {
 				l.Logger.Error(err)
 
 				select {
-				case errs <- thrown.New("", err.Error()):
+				case errs <- errors.New("", err.Error()):
 				default:
 				}
 				ctxCncl()
 
 				return
 			}
-			// Temporary comment for debugging
 			changes := op.buildChange(refs, uid)
 
-			// change := op.buildChange(refs, uid)
 			mo.changes[idx] = changes
-			// mo.changes = append(mo.changes, change)
 		}(op, idx)
 	}
 	wg.Wait()
 	if ctx.Err() != nil {
 		return <-errs
 	}
-	l.Logger.Info("Individual Operation process done")
 
 	// Take transpose of mo.change because it will be easier to iterate mo if it contains blobber changes
 	// in row instead of column. Currently mo.change[0] contains allocationChange for operation 1 and so on.
@@ -92,9 +87,6 @@ func (mo *MultiOperation) Process() error {
 	// blobber 2 and so on.
 	mo.changes = zboxutil.Transpose(mo.changes)
 
-	// var commitIdMeta map[string]string // be careful as it would create two uuid for same path
-	// var rootRef *fileref.Ref
-	// Get the fileref from the blobber
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), mo.allocationObj)
 	if err != nil {
@@ -132,9 +124,7 @@ func (mo *MultiOperation) Process() error {
 		}
 		commitReqs[cntr] = commitReq
 		l.Logger.Info("Commit request sending to blobber ", commitReq.blobber.Baseurl)
-		// Here this should be goroutine
 		go AddCommitRequest(commitReq)
-		// time.Sleep( 20 * time.Second)
 		cntr++
 	}
 	wg.Wait()
@@ -153,7 +143,7 @@ func (mo *MultiOperation) Process() error {
 	}
 
 	if !mo.isConsensusOk() {
-		return thrown.New("consensus_not_met",
+		return errors.New("consensus_not_met",
 			fmt.Sprintf("Commit failed. Required consensus %d, got %d",
 				mo.Consensus.consensusThresh, mo.Consensus.consensus))
 	}
@@ -161,20 +151,3 @@ func (mo *MultiOperation) Process() error {
 	return nil
 
 }
-
-// type DownloadOperation struct {
-// 	*DownloadRequest
-// }
-
-// func (do *DownloadOperation) Process() {
-// 	// do.downloadBlock(0)
-// 	// do.processDownload()
-// }
-// func (do *DownloadOperation) buildChange(ref *fileref.FileRef, uid uuid.UUID) allocationchange.AllocationChange {
-// 	newChange := &allocationchange.DeleteFileChange{}
-// 	newChange.ObjectTree = ref
-// 	newChange.NumBlocks = ref.GetNumBlocks()
-// 	newChange.Operation = constants.FileOperationDelete
-// 	newChange.Size = ref.GetSize()
-// 	return newChange
-// }
