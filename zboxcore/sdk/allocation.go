@@ -19,6 +19,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/common/core/currency"
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
@@ -195,6 +196,7 @@ type Allocation struct {
 	fullconsensus      int
 }
 
+
 type OperationRequest struct {
 	OperationType string
 	LocalPath     string
@@ -207,6 +209,38 @@ type OperationRequest struct {
 	FileMeta   FileMeta
 	FileReader io.Reader
 	Opts       []ChunkedUploadOption
+}
+func GetReadPriceRange() (PriceRange, error) {
+	return getPriceRange("max_read_price")
+}
+func GetWritePriceRange() (PriceRange, error) {
+	return getPriceRange("max_write_price")
+}
+
+func getPriceRange(name string) (PriceRange, error) {
+	conf, err := GetStorageSCConfig()
+	if err != nil {
+		return PriceRange{}, err
+	}
+	f := conf.Fields[name]
+	fStr, ok := f.(string)
+	if !ok {
+		return PriceRange{}, fmt.Errorf("type is wrong")
+	}
+	mrp, err := strconv.ParseFloat(fStr, 64)
+	if err != nil {
+		return PriceRange{}, err
+	}
+	coin, err := currency.ParseZCN(mrp)
+	if err != nil {
+		return PriceRange{}, err
+	}
+	max, err := coin.Int64()
+	if err != nil {
+		return PriceRange{}, err
+	}
+	return PriceRange{0, uint64(max)}, err
+
 }
 
 func (a *Allocation) GetStats() *AllocationStats {
@@ -1595,8 +1629,8 @@ func (a *Allocation) UpdateWithRepair(
 			}
 			time.Sleep(1 * time.Second)
 		}
+		return "", errors.New("", "new blobber not found in the updated allocation")
 	}
-	return "", errors.New("", "new blobber not found in the updated allocation")
 
 repair:
 	l.Logger.Info("starting repair")
