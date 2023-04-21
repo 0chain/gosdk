@@ -256,7 +256,7 @@ func (req *CommitRequest) commitBlobber(
 		}
 		if resp.StatusCode != http.StatusOK {
 			
-			l.Logger.Error(req.blobber.Baseurl,"--- ",string(wm.AllocationRoot), "-- Commit response:", string(resp_body), " with rootref.hash is : ", string(rootRef.Hash))
+			l.Logger.Error(req.blobber.Baseurl, " Commit response:", string(resp_body))
 			return errors.New("commit_error", string(resp_body), )
 		}
 		return nil
