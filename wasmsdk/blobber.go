@@ -493,7 +493,7 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 		numBlocks = 100
 	}
 
-	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair,
+	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, zboxutil.NewConnectionId(),
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
@@ -572,7 +572,7 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 		numBlocks = 100
 	}
 
-	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair,
+	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, zboxutil.NewConnectionId(),
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
