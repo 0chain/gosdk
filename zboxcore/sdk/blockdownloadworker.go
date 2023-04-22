@@ -104,17 +104,17 @@ func (wp *workerPool) startWorkers(numWorkers int) {
 	}
 }
 
-// func StopBlockDownloadWorkers() {
-// 	initDownloadMutex.Lock()
-// 	defer initDownloadMutex.Unlock()
+func StopBlockDownloadWorkers() {
+	initDownloadMutex.Lock()
+	defer initDownloadMutex.Unlock()
 
-// 	for _, pool := range downloadBlockPools {
-// 		close(pool.jobs)
-// 		pool.wg.Wait()
-// 	}
+	for _, pool := range downloadBlockPools {
+		close(pool.jobs)
+		pool.wg.Wait()
+	}
 
-// 	downloadBlockPools = nil
-// }
+	downloadBlockPools = nil
+}
 
 func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
 	var chunk []byte
