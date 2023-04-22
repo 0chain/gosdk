@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/common/core/currency"
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
@@ -192,6 +193,38 @@ type Allocation struct {
 	// conseususes
 	consensusThreshold int
 	fullconsensus      int
+}
+
+func GetReadPriceRange() (PriceRange, error) {
+	return getPriceRange("max_read_price")
+}
+func GetWritePriceRange() (PriceRange, error) {
+	return getPriceRange("max_write_price")
+}
+
+func getPriceRange(name string) (PriceRange, error) {
+	conf, err := GetStorageSCConfig()
+	if err != nil {
+		return PriceRange{}, err
+	}
+	f := conf.Fields[name]
+	fStr, ok := f.(string)
+	if !ok {
+		return PriceRange{}, fmt.Errorf("type is wrong")
+	}
+	mrp, err := strconv.ParseFloat(fStr, 64)
+	if err != nil {
+		return PriceRange{}, err
+	}
+	coin, err := currency.ParseZCN(mrp)
+	if err != nil {
+		return PriceRange{}, err
+	}
+	max, err := coin.Int64()
+	if err != nil {
+		return PriceRange{}, err
+	}
+	return PriceRange{0, uint64(max)}, err
 }
 
 func (a *Allocation) GetStats() *AllocationStats {
