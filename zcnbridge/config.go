@@ -10,7 +10,6 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/zcncrypto"
 	"github.com/0chain/gosdk/zcnbridge/log"
-	"github.com/machinebox/graphql"
 
 	"github.com/spf13/viper"
 )
@@ -59,15 +58,10 @@ type Instance struct {
 	startTime common.Timestamp
 }
 
-type StandaloneClientsSet struct {
-	graphQlClient *graphql.Client
-}
-
 type BridgeClient struct {
 	*BridgeConfig
 	*BridgeClientConfig
 	*Instance
-	*StandaloneClientsSet
 }
 
 type BridgeOwner struct {
@@ -175,9 +169,6 @@ func CreateBridgeClient(cfg *viper.Viper, walletFile ...string) *BridgeClient {
 		Instance: &Instance{
 			startTime: common.Now(),
 			zcnWallet: wallet,
-		},
-		StandaloneClientsSet: &StandaloneClientsSet{
-			graphQlClient: graphql.NewClient(cfg.GetString(fmt.Sprintf("%s.SubgraphAPIURL", ClientConfigKeyName))),
 		},
 	}
 }

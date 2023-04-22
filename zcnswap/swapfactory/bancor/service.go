@@ -3,6 +3,9 @@ package bancor
 import (
 	"context"
 	"crypto/ecdsa"
+	"math/big"
+	"time"
+
 	"github.com/0chain/errors"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	contractErc20 "github.com/0chain/gosdk/zcnbridge/ethereum/erc20"
@@ -15,8 +18,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"go.uber.org/zap"
-	"math/big"
-	"time"
 )
 
 type ISwapService interface {
@@ -32,7 +33,7 @@ type swapService struct {
 	PrivateKey *ecdsa.PrivateKey
 }
 
-//func SwapWithConversionPath(path *[]cmn.Address, from string, amountIn, amountOut *big.Int, privateKey *ecdsa.PrivateKey, client *ethclient.Client) (*types.Transaction, error) {
+// func SwapWithConversionPath(path *[]cmn.Address, from string, amountIn, amountOut *big.Int, privateKey *ecdsa.PrivateKey, client *ethclient.Client) (*types.Transaction, error) {
 func (s *swapService) SwapWithConversionPath(pair *swapfactory.ExchangePair, from string) (*types.Transaction, error) {
 	var affiliateAccount = cmn.HexToAddress("0x0000000000000000000000000000000000000000")
 
@@ -222,7 +223,7 @@ func (s *swapService) EstimateRate(from, to string, amount *big.Int) (*swapfacto
 	}, nil
 }
 
-//NewSwapService - creating repository
+// NewSwapService - creating repository
 func NewSwapService(client *ethclient.Client, privateKey *ecdsa.PrivateKey) ISwapService {
 	return &swapService{
 		Client:     client,

@@ -2,6 +2,11 @@ package ethereum
 
 import "encoding/json"
 
+type BurnEvent struct {
+	Nonce           int64  `json:"nonce"`
+	TransactionHash string `json:"transaction_hash"`
+}
+
 // MintPayload Payload to submit to the ethereum bridge contract
 type MintPayload struct {
 	ZCNTxnID   string                 `json:"zcn_txn_id"`

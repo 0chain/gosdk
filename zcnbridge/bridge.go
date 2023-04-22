@@ -31,8 +31,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
-
-	"github.com/machinebox/graphql"
 )
 
 type (
@@ -74,6 +72,10 @@ var (
 //
 //nolint:funlen
 func (b *BridgeClient) IncreaseBurnerAllowance(ctx context.Context, amountWei Wei) (*types.Transaction, error) {
+	if amountWei <= 0 {
+		return nil, errors.New("amount must be greater than zero")
+	}
+
 	etherClient, err := b.CreateEthClient()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create etherClient")
@@ -324,31 +326,6 @@ func (b *BridgeClient) BurnWZCN(ctx context.Context, amountTokens uint64) (*type
 	)
 
 	return tran, err
-}
-
-// GetNotProcessedWZCNBurnTickets returns all not processed WZCN burn tickets burned for ethereum address given as a param
-func (b *BridgeClient) GetNotProcessedWZCNBurnTickets(ctx context.Context, mintNonce int64) ([]zcnsc.BurnTicket, error) {
-	if DefaultClientIDEncoder == nil {
-		return nil, errors.New("DefaultClientIDEncoder must be setup")
-	}
-
-	clientID := DefaultClientIDEncoder(b.ClientID())
-
-	query := graphql.NewRequest(fmt.Sprintf(`query {
-		burneds(where: {clientId: "%x", from: "%s", nonce_gt: %d}) {
-	  	transactionHash
-	  	nonce
-		}
-	}`, string(clientID), b.EthereumAddress, mintNonce))
-
-	var queryResult zcnsc.BurnEvent
-
-	err := b.graphQlClient.Run(ctx, query, &queryResult)
-	if err != nil {
-		return nil, err
-	}
-
-	return queryResult.Burneds, nil
 }
 
 // MintZCN mints ZCN tokens after receiving proof-of-burn of WZCN tokens
