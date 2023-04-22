@@ -61,34 +61,60 @@ type downloadBlock struct {
 	err         error
 }
 
-var downloadBlockChan map[string]chan *BlockDownloadRequest
-var initDownloadMutex sync.Mutex
+type workerPool struct {
+	wg   sync.WaitGroup
+	jobs chan *BlockDownloadRequest
+}
 
-func InitBlockDownloader(blobbers []*blockchain.StorageNode) {
+var (
+	downloadBlockPools map[string]*workerPool
+	initDownloadMutex  sync.Mutex
+)
+
+func InitBlockDownloader(blobbers []*blockchain.StorageNode, numWorkers int) {
 	initDownloadMutex.Lock()
 	defer initDownloadMutex.Unlock()
-	if downloadBlockChan == nil {
-		downloadBlockChan = make(map[string]chan *BlockDownloadRequest)
+
+	if downloadBlockPools == nil {
+		downloadBlockPools = make(map[string]*workerPool)
 	}
 
 	for _, blobber := range blobbers {
-		if _, ok := downloadBlockChan[blobber.ID]; !ok {
-			downloadBlockChan[blobber.ID] = make(chan *BlockDownloadRequest, 1)
-			blobberChan := downloadBlockChan[blobber.ID]
-			go startBlockDownloadWorker(blobberChan)
+		if _, ok := downloadBlockPools[blobber.ID]; !ok {
+			pool := &workerPool{
+				jobs: make(chan *BlockDownloadRequest),
+			}
+			downloadBlockPools[blobber.ID] = pool
+			pool.startWorkers(numWorkers)
 		}
 	}
 }
 
-func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest) {
-	for {
-		blockDownloadReq, open := <-blobberChan
-		if !open {
-			break
-		}
-		blockDownloadReq.downloadBlobberBlock()
+func (wp *workerPool) startWorkers(numWorkers int) {
+	wp.wg.Add(numWorkers)
+
+	for i := 0; i < numWorkers; i++ {
+		go func() {
+			defer wp.wg.Done()
+
+			for job := range wp.jobs {
+				job.downloadBlobberBlock()
+			}
+		}()
 	}
 }
+
+// func StopBlockDownloadWorkers() {
+// 	initDownloadMutex.Lock()
+// 	defer initDownloadMutex.Unlock()
+
+// 	for _, pool := range downloadBlockPools {
+// 		close(pool.jobs)
+// 		pool.wg.Wait()
+// 	}
+
+// 	downloadBlockPools = nil
+// }
 
 func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
 	var chunk []byte
@@ -284,5 +310,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 }
 
 func AddBlockDownloadReq(req *BlockDownloadRequest) {
-	downloadBlockChan[req.blobber.ID] <- req
+	pool := downloadBlockPools[req.blobber.ID]
+	pool.jobs <- req
 }

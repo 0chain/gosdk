@@ -257,7 +257,8 @@ func (a *Allocation) InitAllocation() {
 	a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
-	InitBlockDownloader(a.Blobbers)
+	numWorkers := 4
+	InitBlockDownloader(a.Blobbers, numWorkers)
 	a.initialized = true
 }
 
