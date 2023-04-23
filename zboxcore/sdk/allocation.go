@@ -1006,11 +1006,11 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	return req.ProcessCopy()
 }
 
-func (a *Allocation) GetAuthTicketForShare(
+func (a *Allocation) GetAuthTicketForShare( // we should remove refereeClientID
 	path, filename, referenceType, refereeClientID string) (string, error) {
 
 	now := time.Now()
-	return a.GetAuthTicket(path, filename, referenceType, refereeClientID, "", 0, &now)
+	return a.GetAuthTicket(path, filename, referenceType, "", "", 0, &now)
 }
 
 func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
