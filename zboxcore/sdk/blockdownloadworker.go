@@ -61,59 +61,33 @@ type downloadBlock struct {
 	err         error
 }
 
-type workerPool struct {
-	wg   sync.WaitGroup
-	jobs chan *BlockDownloadRequest
-}
+var downloadBlockChan map[string]chan *BlockDownloadRequest
+var initDownloadMutex sync.Mutex
 
-var (
-	downloadBlockPools map[string]*workerPool
-	initDownloadMutex  sync.Mutex
-)
-
-func InitBlockDownloader(blobbers []*blockchain.StorageNode, numWorkers int) {
+func InitBlockDownloader(blobbers []*blockchain.StorageNode) {
 	initDownloadMutex.Lock()
 	defer initDownloadMutex.Unlock()
-
-	if downloadBlockPools == nil {
-		downloadBlockPools = make(map[string]*workerPool)
+	if downloadBlockChan == nil {
+		downloadBlockChan = make(map[string]chan *BlockDownloadRequest)
 	}
 
 	for _, blobber := range blobbers {
-		if _, ok := downloadBlockPools[blobber.ID]; !ok {
-			pool := &workerPool{
-				jobs: make(chan *BlockDownloadRequest),
-			}
-			downloadBlockPools[blobber.ID] = pool
-			pool.startWorkers(numWorkers)
+		if _, ok := downloadBlockChan[blobber.ID]; !ok {
+			downloadBlockChan[blobber.ID] = make(chan *BlockDownloadRequest, 1)
+			blobberChan := downloadBlockChan[blobber.ID]
+			go startBlockDownloadWorker(blobberChan)
 		}
 	}
 }
 
-func (wp *workerPool) startWorkers(numWorkers int) {
-	wp.wg.Add(numWorkers)
-
-	for i := 0; i < numWorkers; i++ {
-		go func() {
-			defer wp.wg.Done()
-
-			for job := range wp.jobs {
-				job.downloadBlobberBlock()
-			}
-		}()
+func startBlockDownloadWorker(blobberChan chan *BlockDownloadRequest) {
+	for {
+		blockDownloadReq, open := <-blobberChan
+		if !open {
+			break
+		}
+		blockDownloadReq.downloadBlobberBlock()
 	}
-}
-
-func StopBlockDownloadWorkers() {
-	initDownloadMutex.Lock()
-	defer initDownloadMutex.Unlock()
-
-	for _, pool := range downloadBlockPools {
-		close(pool.jobs)
-		pool.wg.Wait()
-	}
-
-	downloadBlockPools = nil
 }
 
 func (req *BlockDownloadRequest) splitData(buf []byte, lim int) [][]byte {
@@ -310,6 +284,5 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 }
 
 func AddBlockDownloadReq(req *BlockDownloadRequest) {
-	pool := downloadBlockPools[req.blobber.ID]
-	pool.jobs <- req
+	downloadBlockChan[req.blobber.ID] <- req
 }
