@@ -3,7 +3,6 @@ package tokenrate
 import (
 	"context"
 	"errors"
-	"log"
 	"strconv"
 	"strings"
 
@@ -82,7 +81,7 @@ func (qq *uniswapQuoteQuery) getUSD(ctx context.Context, symbol string) (float64
 	// run it and capture the response
 	q := &Query{}
 	if err := hql.Run(ctx, req, q); err != nil {
-		log.Fatal(err)
+		return 0, err
 	}
 
 	switch strings.ToUpper(symbol) {
