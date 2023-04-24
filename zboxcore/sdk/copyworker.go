@@ -363,3 +363,11 @@ func (co *CopyOperation) Verify(a *Allocation) error {
 	}
 	return nil
 }
+
+func (co *CopyOperation) Completed(allocObj *Allocation) {
+
+}
+
+func (co *CopyOperation) Error(allocObj *Allocation, consensus int, err error) {
+	
+}

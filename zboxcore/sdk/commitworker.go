@@ -225,8 +225,6 @@ func (req *CommitRequest) commitBlobber(
 	formWriter.WriteField("write_marker", string(wmData))
 	formWriter.WriteField("file_id_meta", string(fileIDMetaData))
 
-	fmt.Println("File id meta is : : ", commitParams.FileIDMeta);
-	
 	formWriter.Close()
 
 	httpreq, err := zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationTx, body)

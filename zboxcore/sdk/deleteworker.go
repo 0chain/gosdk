@@ -373,3 +373,11 @@ func (dop *DeleteOperation) Verify(a *Allocation) error {
 	}
 	return nil
 }
+
+func (dop *DeleteOperation) Completed(allocObj *Allocation) {
+
+}
+
+func (dop *DeleteOperation) Error(allocObj *Allocation, consensus int, err error) {
+	
+}

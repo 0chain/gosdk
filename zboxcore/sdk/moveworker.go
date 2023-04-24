@@ -361,3 +361,11 @@ func (mo *MoveOperation) Verify(a *Allocation) error {
 	}
 	return nil
 }
+
+func (mo *MoveOperation) Completed(allocObj *Allocation) {
+
+}
+
+func (mo *MoveOperation) Error(allocObj *Allocation, consensus int, err error) {
+	
+}

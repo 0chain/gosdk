@@ -20,10 +20,14 @@ type UploadOperation struct {
 	opts       []ChunkedUploadOption
 	refs       []fileref.FileRef
 	isUpdate   bool
+	statusCallback StatusCallback
+	opCode int
 }
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, error) {
 	cu, err := CreateChunkedUpload(uo.workdir, allocObj, uo.fileMeta, uo.fileReader, uo.isUpdate, false, connectionID, uo.opts...)
+	uo.statusCallback = cu.statusCallback;
+	uo.opCode = cu.opCode;
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +74,6 @@ func (uo *UploadOperation) buildChange(dummyRefs []fileref.RefEntity, uid uuid.U
 		newChange.Uuid = uid
 		changes[idx] = newChange
 	}
-	fmt.Println("The length of uo.refs is ", len(uo.refs))
 	return changes
 
 }
@@ -122,5 +125,20 @@ func (uo *UploadOperation) Verify(allocationObj *Allocation) error {
 		}
 	}
 	return nil
+}
 
+func (uo *UploadOperation) Completed(allocObj *Allocation) {
+	if uo.statusCallback != nil {
+		uo.statusCallback.Completed(allocObj.ID, uo.fileMeta.Path, uo.fileMeta.RemoteName, uo.fileMeta.MimeType, int(uo.fileMeta.ActualSize), uo.opCode)
+	}
+}
+
+func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error) {
+	if consensus != 0 {
+		l.Logger.Info("Commit consensus failed, Deleting remote file....")
+		allocObj.deleteFile(uo.fileMeta.RemotePath, consensus, consensus) //nolint
+	}
+	if uo.statusCallback != nil {
+		uo.statusCallback.Error(allocObj.ID, uo.fileMeta.RemotePath, uo.opCode, err)
+	}
 }

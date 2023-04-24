@@ -22,6 +22,8 @@ import (
 type Operationer interface {
 	Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, error)
 	buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange
+	Completed(allocObj *Allocation)
+	Error(allocObj *Allocation, consensus int, err error)	
 }
 
 type MultiOperation struct {
@@ -142,9 +144,18 @@ func (mo *MultiOperation) Process() error {
 	}
 
 	if !mo.isConsensusOk() {
-		return errors.New("consensus_not_met",
-			fmt.Sprintf("Commit failed. Required consensus %d, got %d",
-				mo.Consensus.consensusThresh, mo.Consensus.consensus))
+		err := errors.New("consensus_not_met",
+		fmt.Sprintf("Commit failed. Required consensus %d, got %d",
+			mo.Consensus.consensusThresh, mo.Consensus.consensus));
+		if mo.getConsensus() != 0 {
+			for _, op := range mo.operations {
+				op.Error(mo.allocationObj, mo.getConsensus(), err);
+			}
+		}
+		return err
+	}
+	for _, op := range mo.operations {
+		op.Completed(mo.allocationObj);
 	}
 
 	return nil

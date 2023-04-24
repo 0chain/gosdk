@@ -374,3 +374,11 @@ func (ro *RenameOperation) Verify(a *Allocation) error {
 
 	return nil
 }
+
+func (ro *RenameOperation) Completed(allocObj *Allocation) {
+
+}
+
+func (ro *RenameOperation) Error(allocObj *Allocation, consensus int, err error) {
+
+}
