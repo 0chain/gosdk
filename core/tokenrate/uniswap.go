@@ -3,6 +3,7 @@ package tokenrate
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -77,10 +78,12 @@ func (qq *uniswapQuoteQuery) getUSD(ctx context.Context, symbol string) (float64
 
 	// set header fields
 	// req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Add("js.fetch:mode", "cors")
 
 	// run it and capture the response
 	q := &Query{}
 	if err := hql.Run(ctx, req, q); err != nil {
+		fmt.Println("uniswap: ", err)
 		return 0, err
 	}
 

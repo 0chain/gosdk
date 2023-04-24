@@ -37,7 +37,9 @@ func (qq *bancorQuoteQuery) getUSD(ctx context.Context, symbol string) (float64,
 		dltId = id
 	}
 
-	r := resty.New()
+	r := resty.New(resty.WithHeader(map[string]string{
+		"js.fetch:mode": "cors",
+	}))
 	r.DoGet(ctx, "https://api-v3.bancor.network/tokens?dlt_id="+dltId).
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 

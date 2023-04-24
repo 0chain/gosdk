@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/0chain/gosdk/core/resty"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/0chain/gosdk/core/resty"
 )
 
 type coingeckoQuoteQuery struct {
@@ -37,7 +38,9 @@ func (qq *coingeckoQuoteQuery) getUSD(ctx context.Context, symbol string) (float
 
 	}
 
-	r := resty.New()
+	r := resty.New(resty.WithHeader(map[string]string{
+		"js.fetch:mode": "no-cors",
+	}))
 	r.DoGet(ctx, "https://api.coingecko.com/api/v3/coins/"+coinID+"?localization=false").
 		Then(func(req *http.Request, resp *http.Response, respBody []byte, cf context.CancelFunc, err error) error {
 
