@@ -366,23 +366,6 @@ func InitSignatureScheme(scheme string) {
 	_config.chain.SignatureScheme = scheme
 }
 
-// CreateWallet creates the wallet for to configure signature scheme.
-// It also registers the wallet again to blockchain.
-func CreateWallet(statusCb WalletCallback) error {
-	if len(_config.chain.Miners) < 1 || len(_config.chain.Sharders) < 1 {
-		return errors.New("", "SDK not initialized")
-	}
-	go func() {
-		sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
-		_, err := sigScheme.GenerateKeys()
-		if err != nil {
-			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
-			return
-		}
-	}()
-	return nil
-}
-
 // CreateWalletOffline creates the wallet for the config signature scheme.
 func CreateWalletOffline() (string, error) {
 	sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
