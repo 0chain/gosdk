@@ -365,7 +365,7 @@ func (ta *TransactionWithAuth) MinerSCKill(providerId string, providerType Provi
 	default:
 		return fmt.Errorf("kill provider type %v not implimented", providerType)
 	}
-	err := ta.t.createSmartContractTxn(MinerSmartContractAddress, name, pr, 0)
+	err := ta.createSmartContractTxn(MinerSmartContractAddress, name, pr, 0)
 	if err != nil {
 		logging.Error(err)
 		return err
