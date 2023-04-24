@@ -13,7 +13,9 @@ var quotes []quoteQuery
 
 func init() {
 
+	//uniswap -> bancor -> coingecko -> coinmarketcap
 	quotes = []quoteQuery{
+		&uniswapQuoteQuery{},
 		&bancorQuoteQuery{},
 		&coingeckoQuoteQuery{},
 		createCoinmarketcapQuoteQuery(),
