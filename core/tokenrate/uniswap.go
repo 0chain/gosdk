@@ -76,7 +76,7 @@ func (qq *uniswapQuoteQuery) getUSD(ctx context.Context, symbol string) (float64
 `)
 
 	// set header fields
-	req.Header.Set("Cache-Control", "no-cache")
+	// req.Header.Set("Cache-Control", "no-cache")
 
 	// run it and capture the response
 	q := &Query{}
