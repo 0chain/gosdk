@@ -38,7 +38,6 @@ func (qq *coinmarketcapQuoteQuery) getUSD(ctx context.Context, symbol string) (f
 
 	r := resty.New(resty.WithHeader(map[string]string{
 		"X-CMC_PRO_API_KEY": qq.APIKey,
-		"js.fetch:mode":     "cors",
 	}))
 
 	s := strings.ToUpper(symbol)

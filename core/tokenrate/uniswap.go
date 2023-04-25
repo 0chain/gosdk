@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/0chain/gosdk/core/resty"
 	"github.com/machinebox/graphql"
 )
 
@@ -76,9 +77,9 @@ func (qq *uniswapQuoteQuery) getUSD(ctx context.Context, symbol string) (float64
 	}
 `)
 
-	// set header fields
-	// req.Header.Set("Cache-Control", "no-cache")
-	req.Header.Add("js.fetch:mode", "cors")
+	for k, v := range resty.DefaultHeader {
+		req.Header.Add(k, v)
+	}
 
 	// run it and capture the response
 	q := &Query{}
