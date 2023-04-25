@@ -25,7 +25,7 @@ const (
 	WMLockStatusPending
 	WMLockStatusOK
 )
-const WMLockWaitTime = 5 * time.Second
+const WMLockWaitTime = 2 * time.Second
 
 type WMLockResult struct {
 	Status    WMLockStatus `json:"status,omitempty"`
@@ -316,6 +316,7 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 						b.Baseurl, "with connection id: ", connID, " Retrying again")
 					time.Sleep(WMLockWaitTime)
 					shouldContinue = true
+					retry--
 					return
 				}
 				err = fmt.Errorf("Lock acquiring failed")
@@ -326,6 +327,7 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 				logger.Logger.Info(b.Baseurl, connID, " lock pending. Retrying again")
 				time.Sleep(WMLockWaitTime)
 				shouldContinue = true
+				retry--
 				return
 			}
 
