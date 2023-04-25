@@ -27,10 +27,12 @@ import (
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/mitchellh/go-homedir"
+	"go.uber.org/zap"
 )
 
 var (
@@ -502,6 +504,95 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	}
 
 	return ChunkedUpload.Start()
+}
+
+func (a *Allocation) GetCurrentVersion() (bool, error) {
+	//get versions from blobbers
+	wg := &sync.WaitGroup{}
+	markerChan := make(chan *RollbackBlobber, len(a.Blobbers))
+	for _, blobber := range a.Blobbers {
+
+		wg.Add(1)
+		go func(blobber *blockchain.StorageNode) {
+
+			defer wg.Done()
+			wr, err := GetWritemarker(a.Tx, blobber.ID, blobber.Baseurl)
+			if err != nil {
+				markerChan <- nil
+				logger.Logger.Error("error during getWritemarke", zap.Error(err))
+			} else {
+				markerChan <- &RollbackBlobber{
+					blobber:      blobber,
+					lpm:          wr,
+					commitResult: &CommitResult{},
+				}
+			}
+		}(blobber)
+
+	}
+
+	wg.Wait()
+	close(markerChan)
+
+	versionMap := make(map[int64][]*RollbackBlobber)
+	errCnt := 0
+
+	for rb := range markerChan {
+
+		if rb == nil {
+			errCnt++
+			continue
+		}
+
+		if _, ok := versionMap[rb.lpm.LatestWM.Timestamp]; !ok {
+			versionMap[rb.lpm.LatestWM.Timestamp] = make([]*RollbackBlobber, 0)
+		}
+
+		versionMap[rb.lpm.LatestWM.Timestamp] = append(versionMap[rb.lpm.LatestWM.Timestamp], rb)
+
+		if len(versionMap) > 2 {
+			return false, fmt.Errorf("more than 2 versions found")
+		}
+
+	}
+	// TODO: check how many blobbers can be down
+	if errCnt > 0 {
+		return false, fmt.Errorf("error in getting writemarker from %v blobbers", errCnt)
+	}
+
+	// TODO:return if len(versionMap) == 1
+
+	var prevVersion int64
+	var latestVersion int64
+
+	for version := range versionMap {
+		if prevVersion == 0 {
+			prevVersion = version
+		} else {
+			latestVersion = version
+		}
+	}
+
+	if prevVersion > latestVersion {
+		prevVersion, latestVersion = latestVersion, prevVersion
+	}
+
+	// TODO: Check if allocation can be repaired
+
+	// var rollbackErrCnt int32
+
+	// rollback to prev version
+	for _, rb := range versionMap[latestVersion] {
+
+		wg.Add(1)
+		go func(rb *RollbackBlobber) {
+			defer wg.Done()
+			rb.processRollback(context.TODO(), a.Tx)
+		}(rb)
+
+	}
+
+	return true, nil
 }
 
 func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, *fileref.FileRef, error) {

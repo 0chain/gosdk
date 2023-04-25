@@ -41,30 +41,32 @@ type HttpClient interface {
 var Client HttpClient
 
 const (
-	ALLOCATION_ENDPOINT      = "/allocation"
-	UPLOAD_ENDPOINT          = "/v1/file/upload/"
-	RENAME_ENDPOINT          = "/v1/file/rename/"
-	COPY_ENDPOINT            = "/v1/file/copy/"
-	MOVE_ENDPOINT            = "/v1/file/move/"
-	LIST_ENDPOINT            = "/v1/file/list/"
-	REFERENCE_ENDPOINT       = "/v1/file/referencepath/"
-	CONNECTION_ENDPOINT      = "/v1/connection/details/"
-	COMMIT_ENDPOINT          = "/v1/connection/commit/"
-	DOWNLOAD_ENDPOINT        = "/v1/file/download/"
-	LATEST_READ_MARKER       = "/v1/readmarker/latest"
-	FILE_META_ENDPOINT       = "/v1/file/meta/"
-	FILE_STATS_ENDPOINT      = "/v1/file/stats/"
-	OBJECT_TREE_ENDPOINT     = "/v1/file/objecttree/"
-	REFS_ENDPOINT            = "/v1/file/refs/"
-	RECENT_REFS_ENDPOINT     = "/v1/file/refs/recent/"
-	COMMIT_META_TXN_ENDPOINT = "/v1/file/commitmetatxn/"
-	COLLABORATOR_ENDPOINT    = "/v1/file/collaborator/"
-	CALCULATE_HASH_ENDPOINT  = "/v1/file/calculatehash/"
-	SHARE_ENDPOINT           = "/v1/marketplace/shareinfo/"
-	DIR_ENDPOINT             = "/v1/dir/"
-	PLAYLIST_LATEST_ENDPOINT = "/v1/playlist/latest/"
-	PLAYLIST_FILE_ENDPOINT   = "/v1/playlist/file/"
-	WM_LOCK_ENDPOINT         = "/v1/writemarker/lock/"
+	ALLOCATION_ENDPOINT          = "/allocation"
+	UPLOAD_ENDPOINT              = "/v1/file/upload/"
+	RENAME_ENDPOINT              = "/v1/file/rename/"
+	COPY_ENDPOINT                = "/v1/file/copy/"
+	MOVE_ENDPOINT                = "/v1/file/move/"
+	LIST_ENDPOINT                = "/v1/file/list/"
+	REFERENCE_ENDPOINT           = "/v1/file/referencepath/"
+	CONNECTION_ENDPOINT          = "/v1/connection/details/"
+	COMMIT_ENDPOINT              = "/v1/connection/commit/"
+	DOWNLOAD_ENDPOINT            = "/v1/file/download/"
+	LATEST_READ_MARKER           = "/v1/readmarker/latest"
+	FILE_META_ENDPOINT           = "/v1/file/meta/"
+	FILE_STATS_ENDPOINT          = "/v1/file/stats/"
+	OBJECT_TREE_ENDPOINT         = "/v1/file/objecttree/"
+	REFS_ENDPOINT                = "/v1/file/refs/"
+	RECENT_REFS_ENDPOINT         = "/v1/file/refs/recent/"
+	COMMIT_META_TXN_ENDPOINT     = "/v1/file/commitmetatxn/"
+	COLLABORATOR_ENDPOINT        = "/v1/file/collaborator/"
+	CALCULATE_HASH_ENDPOINT      = "/v1/file/calculatehash/"
+	SHARE_ENDPOINT               = "/v1/marketplace/shareinfo/"
+	DIR_ENDPOINT                 = "/v1/dir/"
+	PLAYLIST_LATEST_ENDPOINT     = "/v1/playlist/latest/"
+	PLAYLIST_FILE_ENDPOINT       = "/v1/playlist/file/"
+	WM_LOCK_ENDPOINT             = "/v1/writemarker/lock/"
+	LATEST_WRITE_MARKER_ENDPOINT = "/v1/file/latestwritemarker/"
+	ROLLBACK_ENDPOINT            = "/v1/connection/rollback/"
 
 	// CLIENT_SIGNATURE_HEADER represents http request header contains signature.
 	CLIENT_SIGNATURE_HEADER = "X-App-Client-Signature"
@@ -657,6 +659,38 @@ func NewRevokeShareRequest(baseUrl, allocation string, query *url.Values) (*http
 		return nil, err
 	}
 
+	return req, nil
+}
+
+func NewWritemarkerRequest(baseUrl, allocation string) (*http.Request, error) {
+
+	nurl, err := joinUrl(baseUrl, LATEST_WRITE_MARKER_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, nurl.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+	return req, nil
+}
+
+func NewRollbackRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
+	u, err := joinUrl(baseUrl, ROLLBACK_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, u.String(), body)
+	if err != nil {
+		return nil, err
+	}
+	setClientInfo(req)
 	return req, nil
 }
 
