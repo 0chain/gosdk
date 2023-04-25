@@ -45,7 +45,7 @@ on:
         required: true
 jobs:
   system-tests:
-    uses: 0chain/actions/.github/workflows/manual_system_tests.yml@master
+    uses: 0chain/actions/.github/workflows/manual_system_tests.yml@wasm_cypress
     with:
       gosdk_branch: ${{ github.ref_name }}
       system_tests_branch: ${{ github.event.inputs.system_tests_branch }}
