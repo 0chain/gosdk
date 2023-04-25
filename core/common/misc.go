@@ -12,6 +12,8 @@ import (
 
 const (
 	ZCNExponent = 10
+	// TokenUnit represents the minimum token unit (sas)
+ 	TokenUnit = 1e10
 )
 
 var (
