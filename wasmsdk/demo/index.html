@@ -203,7 +203,7 @@
     })
 
     onClick('btnSetWallet', async () => {
-      const { clientID, privateKey, publicKey,mnemonic } = getWallet()
+      const { clientID, privateKey, publicKey, mnemonic } = getWallet()
       await goWasm.setWallet(bls, clientID, privateKey, publicKey, mnemonic)
     })
 

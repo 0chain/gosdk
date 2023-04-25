@@ -1,24 +1,40 @@
 describe('wallet',   () => {
+  it('Create wallet',async () => {
+    cy.intercept('POST', 'http://127.0.0.1:8080/wallet').as('createWallet');
+    cy.intercept('GET', 'https://dev.zus.network/dns/network').as('getDNS');
 
-  const wallet = {}
-  
-  it("create wallet", ()=>{
-     cy.request('POST','http://127.0.0.1:8080/wallet').then(response =>{
-      const w = JSON.parse(response.body)
+    cy.visit('http://127.0.0.1:8080')
+    cy.wait('@getDNS').its('response.statusCode').should('eq', 200)
+
+    cy.window().then(async win=>{
+      const resp = await win.fetch('http://127.0.0.1:8080/wallet', {
+        method: 'POST',
+      })
+
+      const w = await resp.json()
+      const wallet = {} 
       wallet.client_id = w.client_id
       wallet.mnemonics = w.mnemonics
       w.keys.forEach(it=>{
         wallet.public_key = it.public_key
         wallet.private_key = it.private_key
-      }) 
+      })
+
+      cy.get('#clientId').invoke('val', wallet.client_id)
+      cy.get('#publicKey').invoke('val', wallet.public_key)
+      cy.get('#privateKey').invoke('val', wallet.private_key)
+      cy.get('#mnemonic').invoke('val',wallet.mnemonics)
     })
-  })
-
-  it('Set wallet',async () => {
-    await cy.visit('http://127.0.0.1:8080')
 
 
-    cy.log("wallet:",wallet);
+    cy.wait('@createWallet').its('response.statusCode').should('eq', 200)
+    cy.wait(1500)
+
+    cy.get('#btnShowLogs').click()
+    cy.get('#btnSetWallet').click()
+    cy.wait(1500)
+    cy.get("#btnSendMeTokens").click()
+
   })
 
 })
