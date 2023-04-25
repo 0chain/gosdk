@@ -579,7 +579,7 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 
 	// TODO: Check if allocation can be repaired
 
-	// var rollbackErrCnt int32
+	success := true
 
 	// rollback to prev version
 	for _, rb := range versionMap[latestVersion] {
@@ -587,12 +587,18 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 		wg.Add(1)
 		go func(rb *RollbackBlobber) {
 			defer wg.Done()
-			rb.processRollback(context.TODO(), a.Tx)
+			err := rb.processRollback(context.TODO(), a.Tx)
+			if err != nil {
+				success = false
+			}
 		}(rb)
-
 	}
 
-	return true, nil
+	if !success {
+		return false, fmt.Errorf("error in rollback")
+	}
+
+	return success, nil
 }
 
 func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, *fileref.FileRef, error) {
