@@ -36,6 +36,7 @@ type CopyRequest struct {
 	copyMask       zboxutil.Uint128
 	maskMU         *sync.Mutex
 	connectionID   string
+	timestamp      int64
 	Consensus
 }
 
@@ -150,7 +151,7 @@ func (req *CopyRequest) ProcessCopy() error {
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	blobberErrors := make([]error, numList)
-	
+
 	wg := &sync.WaitGroup{}
 	var pos uint64
 
@@ -175,7 +176,7 @@ func (req *CopyRequest) ProcessCopy() error {
 		if err != nil {
 			return errors.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
 		}
-		
+
 		return errors.New("consensus_not_met",
 			fmt.Sprintf("Copy failed. Required consensus %d, got %d",
 				req.Consensus.consensusThresh, req.Consensus.consensus))
@@ -216,6 +217,7 @@ func (req *CopyRequest) ProcessCopy() error {
 			blobber:      req.blobbers[pos],
 			connectionID: req.connectionID,
 			wg:           wg,
+			timestamp:    req.timestamp,
 		}
 		commitReq.change = newChange
 		commitReqs[c] = commitReq

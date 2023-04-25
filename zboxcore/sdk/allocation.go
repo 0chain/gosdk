@@ -971,6 +971,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int)
 	req.connectionID = zboxutil.NewConnectionId()
 	req.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMu = &sync.Mutex{}
+	req.timestamp = int64(common.Now())
 	err := req.ProcessDelete()
 	return err
 }
@@ -1016,6 +1017,7 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	req.renameMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
+	req.timestamp = int64(common.Now())
 	return req.ProcessRename()
 }
 
@@ -1058,6 +1060,7 @@ func (a *Allocation) MoveObject(srcPath string, destPath string) error {
 	req.moveMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
+	req.timestamp = int64(common.Now())
 	return req.ProcessMove()
 }
 
@@ -1100,6 +1103,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	req.copyMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
+	req.timestamp = int64(common.Now())
 	return req.ProcessCopy()
 }
 

@@ -35,6 +35,7 @@ type MoveRequest struct {
 	moveMask       zboxutil.Uint128
 	maskMU         *sync.Mutex
 	connectionID   string
+	timestamp      int64
 	Consensus
 }
 
@@ -170,13 +171,13 @@ func (req *MoveRequest) ProcessMove() error {
 		}(int(pos))
 	}
 	wg.Wait()
-	
+
 	if !req.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
 			return errors.New("move_failed", fmt.Sprintf("Move failed. %s", err.Error()))
 		}
-		
+
 		return errors.New("consensus_not_met",
 			fmt.Sprintf("Move failed. Required consensus %d, got %d",
 				req.Consensus.consensusThresh, req.Consensus.consensus))
@@ -214,6 +215,7 @@ func (req *MoveRequest) ProcessMove() error {
 			blobber:      req.blobbers[pos],
 			connectionID: req.connectionID,
 			wg:           wg,
+			timestamp:    req.timestamp,
 		}
 		commitReq.change = moveChange
 		commitReqs[c] = commitReq

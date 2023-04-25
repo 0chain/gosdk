@@ -37,6 +37,7 @@ type RenameRequest struct {
 	maskMU         *sync.Mutex
 	connectionID   string
 	consensus      Consensus
+	timestamp      int64
 }
 
 func (req *RenameRequest) getObjectTreeFromBlobber(blobber *blockchain.StorageNode) (fileref.RefEntity, error) {
@@ -172,10 +173,10 @@ func (req *RenameRequest) ProcessRename() error {
 	if !req.consensus.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
-			return errors.New("rename_failed", 
+			return errors.New("rename_failed",
 				fmt.Sprintf("Rename failed. %s", err.Error()))
 		}
-		
+
 		return errors.New("consensus_not_met",
 			fmt.Sprintf("Rename failed. Required consensus %d got %d",
 				req.consensus.consensusThresh, req.consensus.getConsensus()))
@@ -216,6 +217,7 @@ func (req *RenameRequest) ProcessRename() error {
 			blobber:      req.blobbers[pos],
 			connectionID: req.connectionID,
 			wg:           wg,
+			timestamp:    req.timestamp,
 		}
 		commitReq.change = newChange
 		commitReqs[c] = commitReq

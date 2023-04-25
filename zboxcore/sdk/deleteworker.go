@@ -34,6 +34,7 @@ type DeleteRequest struct {
 	maskMu         *sync.Mutex
 	connectionID   string
 	consensus      Consensus
+	timestamp      int64
 }
 
 func (req *DeleteRequest) deleteBlobberFile(
@@ -234,6 +235,7 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 			blobber:      req.blobbers[pos],
 			connectionID: req.connectionID,
 			wg:           wg,
+			timestamp:    req.timestamp,
 		}
 		commitReq.change = newChange
 		commitReqs[c] = commitReq

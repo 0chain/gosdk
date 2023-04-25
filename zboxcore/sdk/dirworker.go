@@ -119,12 +119,13 @@ func (req *DirRequest) commitRequest(existingDirCount int) error {
 		commitReq.change = newChange
 		commitReq.connectionID = req.connectionID
 		commitReq.wg = wg
+		commitReq.timestamp = int64(timestamp)
 		commitReqs[c] = commitReq
 		c++
 		go AddCommitRequest(commitReq)
 	}
 	wg.Wait()
-	
+
 	for _, commitReq := range commitReqs {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
