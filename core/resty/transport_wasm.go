@@ -21,7 +21,7 @@ var DefaultTransport = &http.Transport{
 	ForceAttemptHTTP2:     true,
 }
 
-func () init() {
+func init() {
 	DefaultHeader = make(map[string]string)
 	DefaultHeader["js.fetch:mode"] = "cors"
 }
