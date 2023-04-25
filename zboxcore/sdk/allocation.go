@@ -341,6 +341,7 @@ func (a *Allocation) CreateDir(remotePath string) error {
 	}
 
 	remotePath = zboxutil.RemoteClean(remotePath)
+	timestamp := int64(common.Now())
 	req := DirRequest{
 		allocationID: a.ID,
 		allocationTx: a.Tx,
@@ -350,6 +351,7 @@ func (a *Allocation) CreateDir(remotePath string) error {
 		connectionID: zboxutil.NewConnectionId(),
 		remotePath:   remotePath,
 		wg:           &sync.WaitGroup{},
+		timestamp:    timestamp,
 		Consensus: Consensus{
 			consensusThresh: a.consensusThreshold,
 			fullconsensus:   a.fullconsensus,

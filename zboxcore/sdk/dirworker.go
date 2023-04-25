@@ -37,6 +37,7 @@ type DirRequest struct {
 	dirMask      zboxutil.Uint128
 	mu           *sync.Mutex
 	connectionID string
+	timestamp    int64
 	Consensus
 }
 
@@ -100,7 +101,6 @@ func (req *DirRequest) commitRequest(existingDirCount int) error {
 	var pos uint64
 	var c int
 
-	timestamp := common.Now()
 	uid := util.GetNewUUID()
 
 	for i := req.dirMask; !i.Equals(zboxutil.NewUint128(0)); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -113,13 +113,13 @@ func (req *DirRequest) commitRequest(existingDirCount int) error {
 		newChange := &allocationchange.DirCreateChange{
 			RemotePath: req.remotePath,
 			Uuid:       uid,
-			Timestamp:  timestamp,
+			Timestamp:  common.Timestamp(req.timestamp),
 		}
 
 		commitReq.change = newChange
 		commitReq.connectionID = req.connectionID
 		commitReq.wg = wg
-		commitReq.timestamp = int64(timestamp)
+		commitReq.timestamp = req.timestamp
 		commitReqs[c] = commitReq
 		c++
 		go AddCommitRequest(commitReq)
