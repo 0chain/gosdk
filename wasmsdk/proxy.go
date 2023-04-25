@@ -156,6 +156,7 @@ func main() {
 				"getUSDRate":             getUSDRate,
 				"isWalletID":             isWalletID,
 				"getLookupHash":          getLookupHash,
+				"createThumbnail":        createThumbnail,
 
 				//blobber
 				"delete":                Delete,
@@ -204,14 +205,14 @@ func main() {
 				"faucet":               faucet,
 
 				//swap
-				"setSwapWallets":                 setSwapWallets,
-				"swapToken":                      swapToken,
-				"initBridge":                     initBridge,
-				"burnZCN":                        burnZCN,
-				"mintZCN":                        mintZCN,
-				"getMintWZCNPayload":             getMintWZCNPayload,
-				"getNotProcessedWZCNBurnTickets": getNotProcessedWZCNBurnTickets,
-				"getNotProcessedZCNBurnTickets":  getNotProcessedZCNBurnTickets,
+				"setSwapWallets":                setSwapWallets,
+				"swapToken":                     swapToken,
+				"initBridge":                    initBridge,
+				"burnZCN":                       burnZCN,
+				"mintZCN":                       mintZCN,
+				"getMintWZCNPayload":            getMintWZCNPayload,
+				"getNotProcessedWZCNBurnEvents": getNotProcessedWZCNBurnEvents,
+				"getNotProcessedZCNBurnTickets": getNotProcessedZCNBurnTickets,
 
 				//zcn
 				"getWalletBalance": getWalletBalance,

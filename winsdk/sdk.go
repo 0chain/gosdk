@@ -83,6 +83,7 @@ func InitSDK(configJson *C.char, clientJson *C.char) *C.char {
 		l.Logger.Error(err, configJs, clientJs)
 		return WithJSON(false, err)
 	}
+
 	l.Logger.Info("InitZCNSDK success")
 	l.Logger.Info(configObj.BlockWorker)
 	l.Logger.Info(configObj.ChainID)
