@@ -28,3 +28,4 @@ _sdkver/*.wasm
 zcnbridge/example/logs/
 *.log
 winsdk/zcn.windows.h
+wasmsdk/cypress/node_modules/
