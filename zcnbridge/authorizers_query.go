@@ -215,7 +215,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 		payload := &zcnsc.MintPayload{
 			EthereumTxnID:     burnTicket.TxnID,
 			Amount:            common.Balance(burnTicket.Amount),
-			Nonce:             burnTicket.Amount,
+			Nonce:             burnTicket.Nonce,
 			Signatures:        sigs,
 			ReceivingClientID: burnTicket.ReceivingClientID,
 		}
