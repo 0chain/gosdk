@@ -1,16 +1,27 @@
 # 0chain/gosdk
+
 The 0chain client SDK is written in Go programming language.
+
+- [GoSDK - a Go based SDK for 0Chain dStorage]()
+  - [Installation](#installation)
+  - [Mobile Builds(iOS and Android)](#mobile-builds)
+  - [Exposing a gosdk function to mobilesdk](#expose-a-gosdk-function-to-mobilesdk)
+  - [Export a gosdk function to WebAssembly](#export-a-gosdk-function-to-webassembly)
+  - [Running Unit Tests](#running-unit-tests)
+  - [FAQ](#faq)
+    
+## Installation
+
+### Supported Platforms
 This repository currently supports the following platforms:
-- OSX Mojave 10.14.5
-- LINUX (Ubuntu/bionic).
-  - This includes all Ubuntu 18+ platforms, so Ubuntu 19, Linux Mint 19 etc. (apt based package installer)
-- LINUX (RHEL/CENTOS 7+)
-  - All Releases based on RHEL 7+, Centos 7+, Fedora 30 etc. (yum based package installer)
+ - Mac OSX Mojave 10.14.5 or Above
+ - Linux (Ubuntu/bionic): This includes all Ubuntu 18+ platforms, so Ubuntu 19, Linux Mint 19 etc. (apt based package installer)
+ - Linux (RHEL/CENTOS 7+): All Releases based on RHEL 7+, Centos 7+, Fedora 30 etc. (yum based package installer)
 
-It is possible to support the sdk for other variations of Linux as well.
+ ### Instructions
+  - Go is required to build gosdk code.Instructions can be found [here](https://go.dev/doc/install)
 
-## Usage
-- Save below code as sdkversion.go
+ 1. Save below code as sdkversion.go
 
         package main
 
@@ -24,35 +35,38 @@ It is possible to support the sdk for other variations of Linux as well.
             fmt.Println("gosdk version: ", zcncore.GetVersion())
         }
 
-- Run below command: (if you don't have gosdk already in your GOPATH)
+2. Run below command: (if you don't have gosdk already in your GOPATH)
 
         go get github.com/0chain/gosdk
-- Build the sample application sdkversion
+3. Build the sample application sdkversion
 
         go build -o sdkversion sdkversion.go
-- Run the executable
+4. Run the executable
 
         ./sdkversion
-- If it prints the gosdk version installed then setup is complete.
+5. If it prints the gosdk version installed then setup is complete.
 
 
-## Mobile Builds (iOS and Android) ##
+## Mobile Builds
 - gosdk can be build to use on Mobile platforms iOS and Android using gomobile.
 - Xcode Command Line Tools is required to build SDK for iOS.
-- Android studio with NDK is required to build SDK for Android
-- Run below command for the first time to setup gomobile environment
+- Android studio with NDK is required to build SDK for Android.
+- See [FAQ](#faq) for installing Go, gomobile Xcode or Android Studio.
+
+Steps: 
+1. Run below command for the first time to setup gomobile environment
 
         make setup-gomobile
-- Incase Go package not found in golang.org/x/mobile/bind, run the command
-        go get golang.org/x/mobile/bind
-- Use below commands in the root folder of the repo to build Mobile SDK
+2. Incase Go package not found in golang.org/x/mobile/bind, run the command
+        `go get golang.org/x/mobile/bind`
+3. Use below commands in the root folder of the repo to build Mobile SDK
 
         For iOS only:
                 make build-ios
         For Android only:
                 make build-android
 
-## How to expose a gosdk function to mobilesdk ##
+## Expose a gosdk function to mobilesdk 
 Examples:
 * `mobilesdk/sdk/common.go` which exports the functions in `core/encryption/hash.go`.
 
@@ -65,7 +79,7 @@ Steps:
 
 2. Build the Mobile SDK as mentioned in the 'Mobile Builds' section of this file to build the aar file used in the mobile application you are developing.
 
-## How to export a gosdk function to WebAssembly ##
+## Export a gosdk function to WebAssembly 
 
 Examples:
 * `wasmsdk/ethwallet.go` which exports the functions in `zcncore/ethwallet.go`.
@@ -123,7 +137,7 @@ func InitZCNSDK(this js.Value, p []js.Value) interface{} {
 }
 ```
 
-## How to run unit test ##
+## Running Unit Tests
 
 ### BLS unit test
 

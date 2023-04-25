@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/0chain/common/core/currency"
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
@@ -192,6 +193,38 @@ type Allocation struct {
 	// conseususes
 	consensusThreshold int
 	fullconsensus      int
+}
+
+func GetReadPriceRange() (PriceRange, error) {
+	return getPriceRange("max_read_price")
+}
+func GetWritePriceRange() (PriceRange, error) {
+	return getPriceRange("max_write_price")
+}
+
+func getPriceRange(name string) (PriceRange, error) {
+	conf, err := GetStorageSCConfig()
+	if err != nil {
+		return PriceRange{}, err
+	}
+	f := conf.Fields[name]
+	fStr, ok := f.(string)
+	if !ok {
+		return PriceRange{}, fmt.Errorf("type is wrong")
+	}
+	mrp, err := strconv.ParseFloat(fStr, 64)
+	if err != nil {
+		return PriceRange{}, err
+	}
+	coin, err := currency.ParseZCN(mrp)
+	if err != nil {
+		return PriceRange{}, err
+	}
+	max, err := coin.Int64()
+	if err != nil {
+		return PriceRange{}, err
+	}
+	return PriceRange{0, uint64(max)}, err
 }
 
 func (a *Allocation) GetStats() *AllocationStats {
@@ -1301,6 +1334,16 @@ func (a *Allocation) StartRepair(localRootPath, pathToRepair string, statusCB St
 	return nil
 }
 
+// RepairAlloc repairs all the files in allocation
+func (a *Allocation) RepairAlloc(statusCB StatusCallback) error {
+	// todo: will this work in wasm?
+	dir, err := os.Getwd()
+	if err != nil {
+		return err
+	}
+	return a.StartRepair(dir, "/", statusCB)
+}
+
 func (a *Allocation) CancelUpload(localpath string) error {
 	return nil
 }
@@ -1447,4 +1490,58 @@ func (a *Allocation) getConsensuses() (fullConsensus, consensusThreshold int) {
 	}
 
 	return a.DataShards + a.ParityShards, a.DataShards + 1
+}
+
+func (a *Allocation) UpdateWithRepair(
+	size, expiry int64,
+	lock uint64,
+	updateTerms bool,
+	addBlobberId, removeBlobberId string,
+	setThirdPartyExtendable bool, fileOptionsParams *FileOptionsParameters,
+	statusCB StatusCallback,
+) (string, error) {
+
+	l.Logger.Info("Uploadating allocation")
+	hash, _, err := UpdateAllocation(size, expiry, a.ID, lock, updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
+	if err != nil {
+		return "", err
+	}
+	l.Logger.Info(fmt.Sprintf("allocation updated with hash: %s", hash))
+
+	if addBlobberId != "" {
+		l.Logger.Info("waiting for a minute for the blobber to be added to network")
+
+		deadline := time.Now().Add(1 * time.Minute)
+		for time.Now().Before(deadline) {
+			alloc, err := GetAllocation(a.ID)
+			if err != nil {
+				l.Logger.Error("failed to get allocation")
+				return hash, err
+			}
+
+			for _, blobber := range alloc.Blobbers {
+				if addBlobberId == blobber.ID {
+					l.Logger.Info("allocation updated successfully")
+					a = alloc
+					goto repair
+				}
+			}
+			time.Sleep(1 * time.Second)
+		}
+		return "", errors.New("", "new blobber not found in the updated allocation")
+	}
+
+repair:
+	l.Logger.Info("starting repair")
+
+	shouldRepair := false
+	if addBlobberId != "" {
+		shouldRepair = true
+	}
+
+	if shouldRepair {
+		a.RepairAlloc(statusCB)
+	}
+
+	return hash, nil
 }

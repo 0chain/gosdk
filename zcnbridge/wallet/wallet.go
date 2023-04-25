@@ -12,6 +12,7 @@ const (
 	MintFunc                  = "mint"
 	BurnFunc                  = "burn"
 	BurnWzcnTicketPath        = "/v1/ether/burnticket/"
+	BurnWzcnBurnEventsPath    = "/v1/ether/burnevents/"
 	BurnNativeTicketPath      = "/v1/0chain/burnticket/"
 )
 
