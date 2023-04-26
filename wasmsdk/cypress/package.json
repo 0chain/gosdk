@@ -1,8 +1,13 @@
 {
   "scripts": {
-    "start": "cypress open"
+    "start": "concurrently \"yarn start:demo\" \"yarn start:cypress\"",
+    "start:cypress": "cypress open",
+    "start:demo": "./demo.sh"
   },
   "devDependencies": {
     "cypress": "^12.10.0"
+  },
+  "dependencies": {
+    "concurrently": "^8.0.1"
   }
 }
