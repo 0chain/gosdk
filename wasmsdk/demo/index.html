@@ -179,7 +179,11 @@
       minSubmit: 50,
       confirmationChainLength: 3,
     }
-    const blockWorker = 'https://dev.zus.network/dns';
+
+    const query = new URLSearchParams(window.location.search);
+    const network = (query.get('network') && query.get('network') != 'undefined') || "dev.zus.network"
+
+    const blockWorker = 'https://'+network+'/dns';
     const config = [
       networkConfig.chainId,
       blockWorker,
@@ -187,7 +191,7 @@
       networkConfig.minConfirmation,
       networkConfig.minSubmit,
       networkConfig.confirmationChainLength,
-      'https://0box.dev.zus.network', //zboxHost
+      'https://0box.'+network, //zboxHost
       'vult', //zboxAppType
     ]
 
