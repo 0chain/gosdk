@@ -36,3 +36,7 @@ else
   echo "!!! WASM DEMO SERVER IS DOWN !!!"
   exit 1
 fi
+
+echo 
+echo "> 3.cypress open"
+cd ./cypress && cypress open
