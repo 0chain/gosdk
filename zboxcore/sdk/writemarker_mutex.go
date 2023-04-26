@@ -186,7 +186,6 @@ func (wmMu *WriteMarkerMutex) Lock(
 	wg := &sync.WaitGroup{}
 	var pos uint64
 	requestTime := time.Now()
-	rT := strconv.FormatInt(requestTime.Unix(), 10)
 
 	for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
@@ -194,7 +193,7 @@ func (wmMu *WriteMarkerMutex) Lock(
 		blobber := blobbers[pos]
 
 		wg.Add(1)
-		go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, &rT, timeOut, wg)
+		go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, &requestTime, timeOut, wg)
 	}
 
 	wg.Wait()
@@ -222,7 +221,6 @@ func (wmMu *WriteMarkerMutex) Lock(
 
 			wg := &sync.WaitGroup{}
 			requestTime = time.Now()
-			rT = strconv.FormatInt(requestTime.Unix(), 10)
 
 			for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 				pos = uint64(i.TrailingZeros())
@@ -230,7 +228,7 @@ func (wmMu *WriteMarkerMutex) Lock(
 				blobber := blobbers[pos]
 
 				wg.Add(1)
-				go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, &rT, timeOut, wg)
+				go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, &requestTime, timeOut, wg)
 			}
 
 			wg.Wait()
@@ -243,7 +241,7 @@ func (wmMu *WriteMarkerMutex) Lock(
 func (wmMu *WriteMarkerMutex) lockBlobber(
 	ctx context.Context, mask *zboxutil.Uint128, maskMu *sync.Mutex,
 	consensus *Consensus, b *blockchain.StorageNode, pos uint64, connID string,
-	requestTime *string, timeOut time.Duration, wg *sync.WaitGroup) {
+	requestTime *time.Time, timeOut time.Duration, wg *sync.WaitGroup) {
 
 	defer wg.Done()
 
@@ -275,9 +273,10 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 	var resp *http.Response
 	var shouldContinue bool
 	for retry := 0; retry < 3; retry++ {
-		*requestTime = strconv.FormatInt(time.Now().Unix(), 10)
+		*requestTime = time.Now();
+		rT := strconv.FormatInt(requestTime.Unix(), 10)
 		req, err = zboxutil.NewWriteMarkerLockRequest(
-			b.Baseurl, wmMu.allocationObj.Tx, connID, *requestTime)
+			b.Baseurl, wmMu.allocationObj.Tx, connID, rT)
 	
 		if err != nil {
 			return
