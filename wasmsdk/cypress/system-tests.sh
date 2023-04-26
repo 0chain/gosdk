@@ -42,4 +42,4 @@ echo
 echo "> 3.cypress open"
 cd ./cypress 
 yarn install
-CYPRESS_NETWORK_URL=$NETWORK_URL cypress open
+CYPRESS_NETWORK_URL=$NETWORK_URL yarn start
