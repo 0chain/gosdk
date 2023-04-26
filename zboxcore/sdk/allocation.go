@@ -613,6 +613,8 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 		}(rb)
 	}
 
+	wg.Wait()
+
 	if !success {
 		return false, fmt.Errorf("error in rollback")
 	}
