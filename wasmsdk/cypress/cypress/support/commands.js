@@ -12,12 +12,17 @@
 
 
 Cypress.Commands.add('createWallet', () => { 
+
+  const n = Cypress.env("NETWORK_URL") || "dev.zus.network"
+
+  cy.log("network: ",n)
+
   cy.intercept('POST', 'http://127.0.0.1:8080/wallet').as('createWallet');
-  cy.intercept('GET', 'https://dev.zus.network/dns/network').as('getDNS');
+  cy.intercept('GET', 'https://'+n+'/dns/network').as('getDNS');
   cy.intercept('GET','**/v1/block/get?round=*').as('faucet')
   cy.intercept('GET','**/v1/client/get/balance?client_id=*').as("getBalance")
 
-  cy.visit('http://127.0.0.1:8080?network='+Cypress.env("NETWORK_URL"))
+  cy.visit('http://127.0.0.1:8080?network='+n)
   cy.wait('@getDNS').its('response.statusCode').should('eq', 200)
 
   cy.wait(1500)
