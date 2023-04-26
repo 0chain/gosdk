@@ -12,6 +12,7 @@ echo "======================================================"
 
 echo 
 echo "> 1.build zcn.wasm"
+export LIBVA_DRIVER_NAME=iHD
 cd ..
 CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -o ./demo/zcn.wasm  .
 
