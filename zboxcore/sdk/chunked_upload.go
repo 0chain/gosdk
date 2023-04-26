@@ -675,11 +675,10 @@ func (su *ChunkedUpload) processCommit() error {
 		blobber.commitChanges = append(blobber.commitChanges,
 			su.buildChange(blobber.fileRef, uid, timestamp))
 
-		timestamp := int64(common.Now())
 		wg.Add(1)
 		go func(b *ChunkedUploadBlobber, pos uint64) {
 			defer wg.Done()
-			err := b.processCommit(context.TODO(), su, pos, timestamp)
+			err := b.processCommit(context.TODO(), su, pos, int64(timestamp))
 			if err != nil {
 				b.commitResult = ErrorCommitResult(err.Error())
 			}
