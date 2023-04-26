@@ -510,6 +510,11 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 
 func (a *Allocation) GetCurrentVersion() (bool, error) {
 	//get versions from blobbers
+
+	if len(a.Blobbers) == 0 {
+		return false, fmt.Errorf("no blobbers found for allocation %v", a.ID)
+	}
+
 	wg := &sync.WaitGroup{}
 	markerChan := make(chan *RollbackBlobber, len(a.Blobbers))
 	for _, blobber := range a.Blobbers {
@@ -535,6 +540,10 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 
 	wg.Wait()
 	close(markerChan)
+
+	if len(markerChan) == 0 {
+		return false, fmt.Errorf("chan lenght is 0")
+	}
 
 	versionMap := make(map[int64][]*RollbackBlobber)
 	errCnt := 0
@@ -564,6 +573,10 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 
 	// TODO:return if len(versionMap) == 1
 
+	if len(versionMap) == 0 {
+		return false, fmt.Errorf("no version found")
+	}
+
 	var prevVersion int64
 	var latestVersion int64
 
@@ -577,6 +590,10 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 
 	if prevVersion > latestVersion {
 		prevVersion, latestVersion = latestVersion, prevVersion
+	}
+
+	if len(versionMap[latestVersion]) == 0 {
+		return false, fmt.Errorf("no blobbers found for latest version")
 	}
 
 	// TODO: Check if allocation can be repaired
