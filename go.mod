@@ -21,6 +21,7 @@ require (
 	github.com/klauspost/reedsolomon v1.11.7
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/lithammer/shortuuid/v3 v3.0.7
+	github.com/machinebox/graphql v0.2.2
 	github.com/magma/augmented-networks/accounting/protos v0.1.1
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.5.0
@@ -85,6 +86,7 @@ require (
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
+	github.com/matryer/is v1.4.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
