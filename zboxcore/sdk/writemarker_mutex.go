@@ -194,7 +194,7 @@ func (wmMu *WriteMarkerMutex) Lock(
 		blobber := blobbers[pos]
 
 		wg.Add(1)
-		go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, rT, timeOut, wg)
+		go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, &rT, timeOut, wg)
 	}
 
 	wg.Wait()
@@ -230,7 +230,7 @@ func (wmMu *WriteMarkerMutex) Lock(
 				blobber := blobbers[pos]
 
 				wg.Add(1)
-				go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, rT, timeOut, wg)
+				go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, &rT, timeOut, wg)
 			}
 
 			wg.Wait()
@@ -243,7 +243,7 @@ func (wmMu *WriteMarkerMutex) Lock(
 func (wmMu *WriteMarkerMutex) lockBlobber(
 	ctx context.Context, mask *zboxutil.Uint128, maskMu *sync.Mutex,
 	consensus *Consensus, b *blockchain.StorageNode, pos uint64, connID string,
-	requestTime string, timeOut time.Duration, wg *sync.WaitGroup) {
+	requestTime *string, timeOut time.Duration, wg *sync.WaitGroup) {
 
 	defer wg.Done()
 
@@ -272,16 +272,16 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 
 	var req *http.Request
 
-	req, err = zboxutil.NewWriteMarkerLockRequest(
-		b.Baseurl, wmMu.allocationObj.Tx, connID, requestTime)
-
-	if err != nil {
-		return
-	}
-
 	var resp *http.Response
 	var shouldContinue bool
 	for retry := 0; retry < 3; retry++ {
+		*requestTime = strconv.FormatInt(time.Now().Unix(), 10)
+		req, err = zboxutil.NewWriteMarkerLockRequest(
+			b.Baseurl, wmMu.allocationObj.Tx, connID, *requestTime)
+	
+		if err != nil {
+			return
+		}
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, timeOut)
 			resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))
@@ -320,14 +320,6 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 					return
 				}
 				err = fmt.Errorf("Lock acquiring failed")
-				return
-			}
-
-			if resp.StatusCode == http.StatusAccepted { // accepted but pending
-				logger.Logger.Info(b.Baseurl, connID, " lock pending. Retrying again")
-				time.Sleep(WMLockWaitTime)
-				shouldContinue = true
-				retry--
 				return
 			}
 
