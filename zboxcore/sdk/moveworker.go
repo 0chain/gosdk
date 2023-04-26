@@ -258,7 +258,7 @@ type MoveOperation struct {
 	consensus      Consensus
 }
 
-func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, error) {
+func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string, totalOperation int) ([]fileref.RefEntity, error) {
 	mR := &MoveRequest{
 		allocationObj:  allocObj,
 		allocationID:   allocObj.ID,

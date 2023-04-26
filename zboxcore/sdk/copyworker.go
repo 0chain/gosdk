@@ -260,7 +260,7 @@ type CopyOperation struct {
 	Consensus
 }
 
-func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, error) {
+func (co *CopyOperation) Process(allocObj *Allocation, connectionID string, totalOperation int) ([]fileref.RefEntity, error) {
 	// make copyRequest object
 	cR := &CopyRequest{
 		allocationObj:  allocObj,

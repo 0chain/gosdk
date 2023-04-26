@@ -20,7 +20,7 @@ import (
 )
 
 type Operationer interface {
-	Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, error)
+	Process(allocObj *Allocation, connectionID string, totalOperation int) ([]fileref.RefEntity, error)
 	buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange
 	Completed(allocObj *Allocation)
 	Error(allocObj *Allocation, consensus int, err error)	
@@ -53,7 +53,7 @@ func (mo *MultiOperation) Process() error {
 		// sent multiple goroutine together, blobber will try to create multiple allocations for same allocation id
 		// and eventually throw error.
 		if idx == 0 {
-			refs, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
+			refs, err := op.Process(mo.allocationObj, mo.connectionID, len(mo.operations)) // Process with each blobber
 			if err != nil {
 				return err;
 			}
@@ -72,7 +72,7 @@ func (mo *MultiOperation) Process() error {
 			default:
 			}
 
-			refs, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
+			refs, err := op.Process(mo.allocationObj, mo.connectionID, len(mo.operations)) // Process with each blobber
 
 			if err != nil {
 				l.Logger.Error(err)

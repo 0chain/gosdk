@@ -276,9 +276,8 @@ type DeleteOperation struct {
 	consensus      Consensus
 }
 
-func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, error) {
+func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string, totalOperation int) ([]fileref.RefEntity, error) {
 	l.Logger.Info("Started Delete Process with Connection Id", connectionID)
-	// make renameRequest object
 	deleteReq := &DeleteRequest{
 		allocationObj:  allocObj,
 		allocationID:   allocObj.ID,

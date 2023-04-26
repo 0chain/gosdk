@@ -3,6 +3,7 @@ package sdk
 import (
 	"fmt"
 	"io"
+	"time"
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
@@ -24,13 +25,14 @@ type UploadOperation struct {
 	opCode int
 }
 
-func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, error) {
+func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string, totalOperation int) ([]fileref.RefEntity, error) {
 	cu, err := CreateChunkedUpload(uo.workdir, allocObj, uo.fileMeta, uo.fileReader, uo.isUpdate, false, connectionID, uo.opts...)
 	uo.statusCallback = cu.statusCallback;
 	uo.opCode = cu.opCode;
 	if err != nil {
 		return nil, err
 	}
+	cu.uploadTimeOut = DefaultUploadTimeOut * time.Duration(totalOperation); 
 	err = cu.process()
 	if err != nil {
 		return nil, err

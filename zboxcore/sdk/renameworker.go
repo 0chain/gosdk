@@ -264,7 +264,7 @@ type RenameOperation struct {
 	consensus Consensus
 }
 
-func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, error) {
+func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string, totalOperation int) ([]fileref.RefEntity, error) {
 
 	l.Logger.Info("Started Rename Process with Connection Id", connectionID)
 	// make renameRequest object
