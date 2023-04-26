@@ -17,6 +17,7 @@ if test $HTTPCODE -eq 200; then
 fi
 echo $(pwd)
 cd ../demo 
+ls ./
 ./demo &
 sleep 3
 cd ../
