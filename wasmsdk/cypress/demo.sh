@@ -18,7 +18,7 @@ fi
 echo $(pwd)
 cd ../demo 
 echo $(pwd)
-tree ./
+ls
 ./demo &
 sleep 3
 cd ../
