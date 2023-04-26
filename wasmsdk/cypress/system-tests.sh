@@ -40,4 +40,4 @@ fi
 
 echo 
 echo "> 3.cypress open"
-cd ./cypress && cypress open
+cd ./cypress && CYPRESS_NETWORK_URL=$NETWORK_URL cypress open
