@@ -187,8 +187,9 @@ type GetBalanceCallback interface {
 
 // BurnTicket model used for deserialization of the response received from sharders
 type BurnTicket struct {
-	Hash  string `json:"hash"`
-	Nonce int64  `json:"nonce"`
+	Hash   string `json:"hash"`
+	Amount int64  `json:"amount"`
+	Nonce  int64  `json:"nonce"`
 }
 
 // GetNonceCallback needs to be implemented by the caller of GetNonce() to get the status

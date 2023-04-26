@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+var DefaultHeader = make(map[string]string)
+
 // Run the HTTP request in a goroutine and pass the response to f.
 var DefaultTransport = &http.Transport{
 	Proxy:                 http.ProxyFromEnvironment,
