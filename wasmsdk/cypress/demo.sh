@@ -10,15 +10,21 @@ echo "======================================================"
 echo "STARTING WASM DEMO SERVER:"
 echo "======================================================"
 
+echo 
+echo "> 1.build zcn.wasm"
+cd ..
+CGO_ENABLED=0 GOOS=js GOARCH=wasm go build -o ./demo/zcn.wasm  .
+
+echo
+
+echo "> 2.build & start demo server"
 HTTPCODE=$(curl -s -o /dev/null -w "%{http_code}"  http://127.0.0.1:8080)
 if test $HTTPCODE -eq 200; then
     echo "WASM: shutdown staled demo server"
     curl --silent http://127.0.0.1:8080/shutdown
 fi
-echo $(pwd)
-cd ../demo 
-echo $(pwd)
-ls
+
+cd ./demo && go build -o demo .
 ./demo &
 sleep 3
 cd ../
