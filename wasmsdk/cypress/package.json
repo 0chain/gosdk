@@ -1,13 +1,14 @@
 {
   "scripts": {
     "start": "concurrently \"yarn start:demo\" \"yarn start:cypress\"",
-    "start:cypress": "cypress open",
+    "start:cypress": "wait-on tcp:8080 && cypress open",
     "start:demo": "./demo.sh"
   },
   "devDependencies": {
     "cypress": "^12.10.0"
   },
   "dependencies": {
-    "concurrently": "^8.0.1"
+    "concurrently": "^8.0.1",
+    "wait-on": "^7.0.1"
   }
 }
