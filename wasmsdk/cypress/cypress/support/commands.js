@@ -17,7 +17,7 @@ Cypress.Commands.add('createWallet', () => {
   cy.intercept('GET','**/v1/block/get?round=*').as('faucet')
   cy.intercept('GET','**/v1/client/get/balance?client_id=*').as("getBalance")
 
-  cy.visit('http://127.0.0.1:8080')
+  cy.visit('http://127.0.0.1:8080?network='+Cypress.env("NETWORK_URL"))
   cy.wait('@getDNS').its('response.statusCode').should('eq', 200)
 
   cy.wait(1500)
@@ -69,5 +69,5 @@ Cypress.Commands.add('createWallet', () => {
  })
 
  Cypress.Commands.add('createAllocation', () => { 
-
+   cy.get('#btnCreateAllocation').click()
  })
