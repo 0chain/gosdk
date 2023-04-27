@@ -17,7 +17,7 @@ type DirCreateChange struct {
 	Uuid       uuid.UUID
 }
 
-func (d *DirCreateChange) ProcessChange(rootRef *fileref.Ref, inodesMeta map[string]string) (commitParams CommitParams, err error) {
+func (d *DirCreateChange) ProcessChange(rootRef *fileref.Ref, FileIDMeta map[string]string) (err error) {
 	fields, err := common.GetPathFields(d.RemotePath)
 	if err != nil {
 		return
@@ -53,14 +53,13 @@ func (d *DirCreateChange) ProcessChange(rootRef *fileref.Ref, inodesMeta map[str
 				Name:         fields[i],
 				FileID:       uid.String(),
 			}
-			inodesMeta[newRef.Path] = newRef.FileID
+			FileIDMeta[newRef.Path] = newRef.FileID
 			newRef.HashToBeComputed = true
 			dirRef.AddChild(newRef)
 			dirRef = newRef
 		}
 	}
 
-	commitParams.FileIDMeta = inodesMeta
 	rootRef.CalculateHash()
 	return
 }

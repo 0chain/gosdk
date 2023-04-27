@@ -18,8 +18,7 @@ type CopyFileChange struct {
 	Uuid       uuid.UUID
 }
 
-func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[string]string) (
-	commitParam CommitParams, err error) {
+func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[string]string) (err error) {
 
 	var fields []string
 	fields, err = common.GetPathFields(ch.DestPath)
@@ -78,7 +77,6 @@ func (ch *CopyFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[str
 	dirRef.AddChild(ch.ObjectTree)
 
 	rootRef.CalculateHash()
-	commitParam.FileIDMeta = fileIDMeta
 	return
 }
 

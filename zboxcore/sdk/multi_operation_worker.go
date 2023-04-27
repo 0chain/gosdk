@@ -20,7 +20,7 @@ import (
 )
 
 type Operationer interface {
-	Process(allocObj *Allocation, connectionID string, totalOperation int) ([]fileref.RefEntity, error)
+	Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error)
 	buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange
 	Completed(allocObj *Allocation)
 	Error(allocObj *Allocation, consensus int, err error)	
@@ -43,7 +43,8 @@ func (mo *MultiOperation) Process() error {
 	l.Logger.Info("MultiOperation Process start")
 	wg := &sync.WaitGroup{}
 	mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
-	ctx, ctxCncl := context.WithCancel(context.Background())
+	ctx := mo.allocationObj.ctx
+	ctxCncl := mo.allocationObj.ctxCancelF;
 	defer ctxCncl()
 	errs := make(chan error, 1)
 	uid := util.GetNewUUID()
@@ -53,7 +54,8 @@ func (mo *MultiOperation) Process() error {
 		// sent multiple goroutine together, blobber will try to create multiple allocations for same allocation id
 		// and eventually throw error.
 		if idx == 0 {
-			refs, err := op.Process(mo.allocationObj, mo.connectionID, len(mo.operations)) // Process with each blobber
+			refs, mask, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
+			mo.operationMask.And(mask);
 			if err != nil {
 				return err;
 			}
@@ -72,19 +74,19 @@ func (mo *MultiOperation) Process() error {
 			default:
 			}
 
-			refs, err := op.Process(mo.allocationObj, mo.connectionID, len(mo.operations)) // Process with each blobber
-
+			refs, mask, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
 			if err != nil {
 				l.Logger.Error(err)
-
+				
 				select {
 				case errs <- errors.New("", err.Error()):
 				default:
 				}
 				ctxCncl()
-
+				
 				return
 			}
+			mo.operationMask.And(mask);
 			changes := op.buildChange(refs, uid)
 
 			mo.changes[idx] = changes
@@ -122,7 +124,7 @@ func (mo *MultiOperation) Process() error {
 
 	wg.Add(activeBlobbers)
 	var pos uint64 = 0
-	var cntr = 0
+	var counter = 0
 	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		commitReq := &CommitRequest{
@@ -132,14 +134,14 @@ func (mo *MultiOperation) Process() error {
 			connectionID: mo.connectionID,
 			wg:           wg,
 		}
-		// Check here if mo.changes[pos] is available
+		
 		for _, change := range mo.changes[pos] {
 			commitReq.changes = append(commitReq.changes, change)
 		}
-		commitReqs[cntr] = commitReq
+		commitReqs[counter] = commitReq
 		l.Logger.Info("Commit request sending to blobber ", commitReq.blobber.Baseurl)
 		go AddCommitRequest(commitReq)
-		cntr++
+		counter++
 	}
 	wg.Wait()
 

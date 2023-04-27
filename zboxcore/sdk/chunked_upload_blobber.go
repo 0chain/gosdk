@@ -191,7 +191,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 		}
 	}()
 
-	rootRef, latestWM, size, commitParams, err := sb.processWriteMarker(ctx, su)
+	rootRef, latestWM, size, fileIDMeta, err := sb.processWriteMarker(ctx, su)
 
 	if err != nil {
 		logger.Logger.Error(err)
@@ -227,13 +227,13 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 		return err
 	}
 
-	fileIDMeta, err := json.Marshal(commitParams.FileIDMeta)
+	fileIDMetaData, err := json.Marshal(fileIDMeta)
 	if err != nil {
 		logger.Logger.Error("Error marshalling file ID Meta: ", err)
 		return err
 	}
 
-	formWriter.WriteField("file_id_meta", string(fileIDMeta))
+	formWriter.WriteField("file_id_meta", string(fileIDMetaData))
 	formWriter.WriteField("connection_id", su.progress.ConnectionID)
 	formWriter.WriteField("write_marker", string(wmData))
 
@@ -317,7 +317,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 func (sb *ChunkedUploadBlobber) processWriteMarker(
 	ctx context.Context, su *ChunkedUpload) (
-	*fileref.Ref, *marker.WriteMarker, int64, *allocationchange.CommitParams, error) {
+	*fileref.Ref, *marker.WriteMarker, int64, map[string]string, error) {
 
 	logger.Logger.Info("received a commit request")
 	paths := make([]string, 0)
@@ -375,17 +375,15 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 	}
 
 	var size int64
-	var commitParams allocationchange.CommitParams
 	fileIDMeta := make(map[string]string)
 	for _, change := range sb.commitChanges {
-		commitParams, err = change.ProcessChange(rootRef, fileIDMeta)
+		err = change.ProcessChange(rootRef, fileIDMeta)
 		if err != nil {
 			logger.Logger.Error(err)
 			return nil, nil, 0, nil, err
 		}
 		size += change.GetSize()
-		fileIDMeta = commitParams.FileIDMeta
 	}
 
-	return rootRef, lR.LatestWM, size, &commitParams, nil
+	return rootRef, lR.LatestWM, size, fileIDMeta, nil
 }

@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
-	thrown "github.com/0chain/errors"
 	"github.com/google/uuid"
 
 	"github.com/0chain/gosdk/constants"
@@ -147,16 +146,12 @@ func (req *CopyRequest) copyBlobberObject(
 		fmt.Sprintf("last status code: %d, last response message: %s", latestStatusCode, latestRespMsg))
 }
 
-func (req *CopyRequest) ProcessCopy() error {
-	defer req.ctxCncl()
-
+func (req *CopyRequest) ProcessWithBlobbers() ( []fileref.RefEntity,  []error) {
+	var pos uint64
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	blobberErrors := make([]error, numList)
-
 	wg := &sync.WaitGroup{}
-	var pos uint64
-
 	for i := req.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		wg.Add(1)
@@ -172,6 +167,16 @@ func (req *CopyRequest) ProcessCopy() error {
 		}(int(pos))
 	}
 	wg.Wait()
+	return objectTreeRefs, blobberErrors;
+}
+
+func (req *CopyRequest) ProcessCopy() error {
+	defer req.ctxCncl()
+
+	wg := &sync.WaitGroup{}
+	var pos uint64
+
+	objectTreeRefs, blobberErrors := req.ProcessWithBlobbers();
 
 	if !req.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
@@ -220,7 +225,6 @@ func (req *CopyRequest) ProcessCopy() error {
 			connectionID: req.connectionID,
 			wg:           wg,
 		}
-		// commitReq.change = newChange
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
@@ -260,7 +264,7 @@ type CopyOperation struct {
 	Consensus
 }
 
-func (co *CopyOperation) Process(allocObj *Allocation, connectionID string, totalOperation int) ([]fileref.RefEntity, error) {
+func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	// make copyRequest object
 	cR := &CopyRequest{
 		allocationObj:  allocObj,
@@ -277,40 +281,20 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string, tota
 	}
 	cR.consensusThresh = co.consensusThresh
 	cR.fullconsensus = co.fullconsensus
-	numList := len(cR.blobbers)
-	objectTreeRefs := make([]fileref.RefEntity, numList)
-	blobberErrors := make([]error, numList)
 
-	wg := &sync.WaitGroup{}
-	var pos uint64
-
-	for i := cR.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
-		pos = uint64(i.TrailingZeros())
-		wg.Add(1)
-		go func(blobberIdx int) {
-			defer wg.Done()
-			refEntity, err := cR.copyBlobberObject(cR.blobbers[blobberIdx], blobberIdx)
-			if err != nil {
-				blobberErrors[blobberIdx] = err
-				l.Logger.Error(err.Error())
-				return
-			}
-			objectTreeRefs[blobberIdx] = refEntity
-		}(int(pos))
-	}
-	wg.Wait()
+	objectTreeRefs, blobberErrors := cR.ProcessWithBlobbers();
 
 	if !cR.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
-			return nil, thrown.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
+			return nil, cR.copyMask,errors.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
 		}
 
-		return nil, thrown.New("consensus_not_met",
+		return nil, cR.copyMask, errors.New("consensus_not_met",
 			fmt.Sprintf("Copy failed. Required consensus %d, got %d",
 				cR.Consensus.consensusThresh, cR.Consensus.consensus))
 	}
-	return objectTreeRefs, nil
+	return objectTreeRefs, cR.copyMask,nil
 
 }
 

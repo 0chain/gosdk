@@ -441,7 +441,6 @@ func (su *ChunkedUpload) process() error {
 			if su.statusCallback != nil {
 				su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 			}
-			su.ctxCncl()
 			return err
 		}
 		//logger.Logger.Debug("Read chunk #", chunk.Index)
@@ -455,7 +454,6 @@ func (su *ChunkedUpload) process() error {
 				if su.statusCallback != nil {
 					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 				}
-				su.ctxCncl()
 				return err
 			}
 
@@ -476,7 +474,6 @@ func (su *ChunkedUpload) process() error {
 				if su.statusCallback != nil {
 					su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 				}
-				su.ctxCncl()
 				return err
 			}
 		}

@@ -237,7 +237,6 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 			connectionID: req.connectionID,
 			wg:           wg,
 		}
-		// commitReq.change = newChange
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
@@ -276,7 +275,7 @@ type DeleteOperation struct {
 	consensus      Consensus
 }
 
-func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string, totalOperation int) ([]fileref.RefEntity, error) {
+func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	l.Logger.Info("Started Delete Process with Connection Id", connectionID)
 	deleteReq := &DeleteRequest{
 		allocationObj:  allocObj,
@@ -322,15 +321,15 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string, t
 	if !deleteReq.consensus.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
-			return nil, thrown.New("delete_falied", fmt.Sprintf("Delete failed. %s", err.Error()))
+			return nil, deleteReq.deleteMask, thrown.New("delete_falied", fmt.Sprintf("Delete failed. %s", err.Error()))
 		}
 
-		return nil, thrown.New("consensus_not_met",
+		return nil, deleteReq.deleteMask, thrown.New("consensus_not_met",
 			fmt.Sprintf("Delete failed. Required consensus %d, got %d",
 				deleteReq.consensus.consensusThresh, deleteReq.consensus.consensus))
 	}
 	l.Logger.Info("Delete Processs Ended ")
-	return objectTreeRefs, nil
+	return objectTreeRefs, deleteReq.deleteMask, nil
 }
 
 func (do *DeleteOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {

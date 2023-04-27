@@ -165,18 +165,16 @@ func (commitreq *CommitRequest) processCommit() {
 
 	var size int64
 	fileIDMeta := make(map[string]string)
-	commitParams := allocationchange.CommitParams{}
 
 	for _, change := range commitreq.changes {
-		commitParams, err = change.ProcessChange(rootRef, fileIDMeta)
+		err = change.ProcessChange(rootRef, fileIDMeta)
 		if err != nil {
 			commitreq.result = ErrorCommitResult(err.Error())
 			return
 		}
 		size += change.GetSize()
-		commitParams.FileIDMeta = fileIDMeta
 	}
-	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size, &commitParams)
+	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size, fileIDMeta)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
@@ -186,9 +184,9 @@ func (commitreq *CommitRequest) processCommit() {
 
 func (req *CommitRequest) commitBlobber(
 	rootRef *fileref.Ref, latestWM *marker.WriteMarker, size int64,
-	commitParams *allocationchange.CommitParams) error {
+	fileIDMeta map[string]string) error {
 
-	fileIDMetaData, err := json.Marshal(commitParams.FileIDMeta)
+	fileIDMetaData, err := json.Marshal(fileIDMeta)
 	if err != nil {
 		l.Logger.Error("Marshalling inode metadata failed: ", err)
 		return err

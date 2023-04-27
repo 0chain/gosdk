@@ -3,7 +3,6 @@ package sdk
 import (
 	"fmt"
 	"io"
-	"time"
 
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
@@ -25,36 +24,34 @@ type UploadOperation struct {
 	opCode int
 }
 
-func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string, totalOperation int) ([]fileref.RefEntity, error) {
+func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	cu, err := CreateChunkedUpload(uo.workdir, allocObj, uo.fileMeta, uo.fileReader, uo.isUpdate, false, connectionID, uo.opts...)
 	uo.statusCallback = cu.statusCallback;
 	uo.opCode = cu.opCode;
 	if err != nil {
-		return nil, err
+		return nil, cu.uploadMask, err
 	}
-	cu.uploadTimeOut = DefaultUploadTimeOut * time.Duration(totalOperation); 
 	err = cu.process()
 	if err != nil {
-		return nil, err
+		cu.ctxCncl();
+		return nil, cu.uploadMask, err
 	}
 
 	var pos uint64
 	numList := len(cu.blobbers)
-	objectTreeRefsEntity := make([]fileref.RefEntity, numList)
 	uo.refs = make([]fileref.FileRef, numList)
 	for i := cu.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
-		objectTreeRefsEntity[pos] = cu.blobbers[pos].fileRef
 		uo.refs[pos] = *cu.blobbers[pos].fileRef
 		uo.refs[pos].NumBlocks = int64(cu.progress.ChunkIndex + 1)
 		uo.refs[pos].ChunkSize = cu.chunkSize
 	}
 
 	l.Logger.Info("Completed the upload")
-	return objectTreeRefsEntity, nil
+	return nil, cu.uploadMask, nil
 }
 
-func (uo *UploadOperation) buildChange(dummyRefs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
+func (uo *UploadOperation) buildChange(_ []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
 	changes := make([]allocationchange.AllocationChange, len(uo.refs))
 	for idx, ref := range uo.refs {
 		ref := ref

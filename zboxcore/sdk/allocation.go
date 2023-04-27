@@ -202,7 +202,7 @@ type OperationRequest struct {
 	LocalPath     string
 	RemotePath    string
 	DestName      string // Required only for rename operation
-	DestPath      string // Required for copy operation
+	DestPath      string // Required for copy and move operation
 
 	// Required for uploads
 	Workdir    string
@@ -621,6 +621,15 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				return err
 			}
 			mo.operations = append(mo.operations, updateOp)
+		
+		case constants.FileOperationCreateDir:
+			directoryOp := &DirOperation{}
+			directoryOp.build(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx);
+			err := directoryOp.Verify(a);
+			if err != nil {
+				return err
+			}
+			mo.operations = append(mo.operations, directoryOp)
 
 		default:
 			return errors.New("invalid_operation", "Operation is not valid")

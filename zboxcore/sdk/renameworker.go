@@ -145,17 +145,14 @@ func (req *RenameRequest) renameBlobberObject(
 	return
 }
 
-func (req *RenameRequest) ProcessRename() error {
-	defer req.ctxCncl()
-
+func (req *RenameRequest) ProcessWithBlobbers() ( []fileref.RefEntity,  []error) {
+	var pos uint64
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	blobberErrors := make([]error, numList)
-
-	req.wg = &sync.WaitGroup{}
-	req.wg.Add(numList)
-
-	for i := 0; i < numList; i++ {
+	for i := req.renameMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		req.wg.Add(1)
 		go func(blobberIdx int) {
 			defer req.wg.Done()
 			refEntity, err := req.renameBlobberObject(req.blobbers[blobberIdx], blobberIdx)
@@ -164,12 +161,17 @@ func (req *RenameRequest) ProcessRename() error {
 				l.Logger.Error(err.Error())
 				return
 			}
-			req.maskMU.Lock()
 			objectTreeRefs[blobberIdx] = refEntity
-			req.maskMU.Unlock()
-		}(i)
+		}(int(pos))
 	}
 	req.wg.Wait()
+	return objectTreeRefs, blobberErrors;
+}
+
+func (req *RenameRequest) ProcessRename() error {
+	defer req.ctxCncl()
+
+	objectTreeRefs, blobberErrors := req.ProcessWithBlobbers();
 
 	if !req.consensus.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
@@ -201,7 +203,7 @@ func (req *RenameRequest) ProcessRename() error {
 	wg.Add(activeBlobbers)
 	commitReqs := make([]*CommitRequest, activeBlobbers)
 	var pos uint64
-	var c int
+	var counter int
 	for i := req.renameMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 
@@ -219,13 +221,12 @@ func (req *RenameRequest) ProcessRename() error {
 			connectionID: req.connectionID,
 			wg:           wg,
 		}
-		// commitReq.change = newChange
 		commitReq.changes = append(commitReq.changes, newChange)
-		commitReqs[c] = commitReq
+		commitReqs[counter] = commitReq
 
 		go AddCommitRequest(commitReq)
 
-		c++
+		counter++
 	}
 
 	wg.Wait()
@@ -264,7 +265,7 @@ type RenameOperation struct {
 	consensus Consensus
 }
 
-func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string, totalOperation int) ([]fileref.RefEntity, error) {
+func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 
 	l.Logger.Info("Started Rename Process with Connection Id", connectionID)
 	// make renameRequest object
@@ -284,41 +285,20 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string, to
 	rR.consensus.fullconsensus = ro.consensus.fullconsensus
 	rR.consensus.consensusThresh = ro.consensus.consensusThresh
 
-	numList := len(rR.blobbers)
-	objectTreeRefs := make([]fileref.RefEntity, numList)
-	blobberErrors := make([]error, numList)
-
-	wg := &sync.WaitGroup{}
-	var pos uint64
-
-	for i := rR.renameMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
-		pos = uint64(i.TrailingZeros())
-		wg.Add(1)
-		go func(blobberIdx int) {
-			defer wg.Done()
-			refEntity, err := rR.renameBlobberObject(rR.blobbers[blobberIdx], blobberIdx)
-			if err != nil {
-				blobberErrors[blobberIdx] = err
-				l.Logger.Error(err.Error())
-				return
-			}
-			objectTreeRefs[blobberIdx] = refEntity
-		}(int(pos))
-	}
-	wg.Wait()
+	objectTreeRefs, blobberErrors := rR.ProcessWithBlobbers();
 
 	if !rR.consensus.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
-			return nil, thrown.New("rename_failed", fmt.Sprintf("Renamed failed. %s", err.Error()))
+			return nil, rR.renameMask,thrown.New("rename_failed", fmt.Sprintf("Renamed failed. %s", err.Error()))
 		}
 
-		return nil, thrown.New("consensus_not_met",
+		return nil, rR.renameMask,thrown.New("consensus_not_met",
 			fmt.Sprintf("Rename failed. Required consensus %d, got %d",
 				rR.consensus.consensusThresh, rR.consensus.consensus))
 	}
 	l.Logger.Info("Rename Processs Ended ")
-	return objectTreeRefs, nil
+	return objectTreeRefs, rR.renameMask, nil
 }
 
 func (ro *RenameOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
