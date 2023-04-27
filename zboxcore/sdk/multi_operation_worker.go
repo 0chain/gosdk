@@ -47,8 +47,8 @@ func (mo *MultiOperation) Process() error {
 	ctxCncl := mo.allocationObj.ctxCancelF
 	defer ctxCncl()
 	errs := make(chan error, 1)
-	uid := util.GetNewUUID()
 	for idx, op := range mo.operations {
+		uid := util.GetNewUUID()
 		// Don't use goroutine for the first operation because in blobber code we try to fetch the allocation
 		// from the postgress and sharders, if not found blobber try to create it. This is done without lock, so if we
 		// sent multiple goroutine together, blobber will try to create multiple allocations for same allocation id
