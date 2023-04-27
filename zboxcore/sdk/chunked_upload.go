@@ -690,7 +690,7 @@ func (su *ChunkedUpload) processCommit() error {
 			su.buildChange(blobber.fileRef, uid, timestamp))
 
 		wg.Add(1)
-		func(b *ChunkedUploadBlobber, pos uint64) {
+		go func(b *ChunkedUploadBlobber, pos uint64) {
 			defer wg.Done()
 			err := b.processCommit(context.TODO(), su, pos)
 			if err != nil {

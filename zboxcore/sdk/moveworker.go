@@ -73,7 +73,6 @@ func (req *MoveRequest) moveBlobberObject(
 			formWriter.WriteField("connection_id", req.connectionID)
 			formWriter.WriteField("path", req.remotefilepath)
 			formWriter.WriteField("dest", req.destPath)
-			l.Logger.Info("destination path is: ", req.destPath)
 			formWriter.Close()
 
 			var (
