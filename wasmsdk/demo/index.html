@@ -11,7 +11,7 @@
   <script src="dom.js"></script>
 
   <!-- for player.js -->
-  <script src="https://github.com/videojs/mux.js/releases/latest/download/mux.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mux.js@6.3.0/dist/mux.js"></script>
   <script src="EBML.js"></script>
   <script src="player.js"></script>
 
@@ -50,6 +50,8 @@
     <button id="btnSetWallet">Change Wallet</button>
     <button id="btnSendMeTokens">Send Me Tokens</button>
     <button id="btnGetBalance">Get Balance</button>
+
+    <button id="btnGetUSDRate">Get USD Rate</button>
   </fieldset>
 
   <fieldset>
@@ -179,7 +181,15 @@
       minSubmit: 50,
       confirmationChainLength: 3,
     }
-    const blockWorker = 'https://dev.zus.network/dns';
+
+    const query = new URLSearchParams(window.location.search);
+    
+    let network = query.get('network') 
+    if (!network || network == 'undefined') {
+      network = "dev.zus.network"
+    }
+  
+    const blockWorker = 'https://'+network+'/dns';
     const config = [
       networkConfig.chainId,
       blockWorker,
@@ -187,7 +197,7 @@
       networkConfig.minConfirmation,
       networkConfig.minSubmit,
       networkConfig.confirmationChainLength,
-      'https://0box.dev.zus.network', //zboxHost
+      'https://0box.'+network, //zboxHost
       'vult', //zboxAppType
     ]
 
@@ -203,7 +213,7 @@
     })
 
     onClick('btnSetWallet', async () => {
-      const { clientID, privateKey, publicKey,mnemonic } = getWallet()
+      const { clientID, privateKey, publicKey, mnemonic } = getWallet()
       await goWasm.setWallet(bls, clientID, privateKey, publicKey, mnemonic)
     })
 
@@ -615,6 +625,12 @@
         const allocationId = getSelectedAllocation()
         await goWasm.sdk.delete(allocationId, file?.path)
       }
+    })
+
+    onClick('btnGetUSDRate', async () => {
+
+      const rate = await goWasm.sdk.getUSDRate("zcn")
+      txtOutput.innerHTML = rate
     })
 
 
