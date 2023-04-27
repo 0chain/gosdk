@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 
 	"github.com/0chain/gosdk/core/zcncrypto"
-	"github.com/0chain/gosdk/zcncore"
 	"github.com/0chain/gosdk/zmagmacore/crypto"
-	"github.com/0chain/gosdk/zmagmacore/errors"
 )
 
 type (
@@ -57,22 +55,4 @@ func (w *Wallet) StringJSON() (string, error) {
 	}
 
 	return string(byt), err
-}
-
-// RegisterToMiners registers wallet to the miners by executing zcncore.RegisterToMiners.
-func (w *Wallet) RegisterToMiners() error {
-	const errCode = "register_wallet"
-
-	walletStr, err := w.StringJSON()
-	if err != nil {
-		return errors.Wrap(errCode, "error while marshalling wallet", err)
-	}
-	if err := zcncore.SetWalletInfo(walletStr, false); err != nil {
-		return errors.Wrap(errCode, "error while init wallet", err)
-	}
-
-	if err = zcncore.RegisterToMiners(w.ZCNWallet, new(walletCallback)); err != nil {
-		return errors.Wrap(errCode, "error while registering wallet to miners", err)
-	}
-	return nil
 }
