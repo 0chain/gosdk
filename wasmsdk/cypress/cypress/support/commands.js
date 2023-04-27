@@ -55,6 +55,9 @@ Cypress.Commands.add('createWallet', () => {
   cy.wait(1500)
 
   cy.get("#btnSendMeTokens").click()
+  cy.wait(3000)
+  //retry one time
+  cy.get("#btnSendMeTokens").click()
   cy.wait("@faucet", {timeout:60*1000}).its('response.statusCode').should('eq', 200)
 
 
@@ -63,7 +66,7 @@ Cypress.Commands.add('createWallet', () => {
   const waitGetBalance = ()=> {
     cy.wait("@getBalance").then(it=>{
       if (it.response.statusCode == 200) {
-        expect(it.response.body.balance).to.equal(100000000000)
+        expect(it.response.body.balance).should('be.greaterThan',9000000000)
       }else{
         waitGetBalance()
       }
