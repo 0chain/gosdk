@@ -743,7 +743,21 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f func(*http.Response, error) error) error {
 	// Run the HTTP request in a goroutine and pass the response to f.
 	c := make(chan error, 1)
-	go func() { c <- f(Client.Do(req.WithContext(ctx))) }()
+	go func() {
+		var err error
+		// indefinitely try if io.EOF error occurs. As per some research over google
+		// it occurs when client http tries to send byte stream in connection that is
+		// closed by the server
+		for {
+			err = f(Client.Do(req.WithContext(ctx)))
+			if errors.Is(err, io.EOF) {
+				continue
+			}
+			break
+		}
+		c <- err
+	}()
+
 	// TODO: Check cncl context required in any case
 	// defer cncl()
 	select {

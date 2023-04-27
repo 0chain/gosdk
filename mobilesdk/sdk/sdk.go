@@ -110,11 +110,16 @@ func InitStorageSDK(clientJson string, configJson string) (*StorageSDK, error) {
 	l.Logger.Info(configObj.ChainID)
 	l.Logger.Info(configObj.SignatureScheme)
 	l.Logger.Info(configObj.PreferredBlobbers)
-	err = sdk.InitStorageSDK(clientJson, configObj.BlockWorker, configObj.ChainID, configObj.SignatureScheme, configObj.PreferredBlobbers, 0)
-	if err != nil {
+	if err = sdk.InitStorageSDK(clientJson,
+		configObj.BlockWorker,
+		configObj.ChainID,
+		configObj.SignatureScheme,
+		configObj.PreferredBlobbers,
+		0); err != nil {
 		l.Logger.Error(err)
 		return nil, err
 	}
+
 	l.Logger.Info("InitStorageSDK success")
 
 	if configObj.ZboxHost != "" && configObj.ZboxAppType != "" {

@@ -20,7 +20,7 @@ func New(opts ...Option) *Resty {
 		// or the context's timeout is longer than DefaultRequestTimeout.
 		timeout: DefaultRequestTimeout,
 		retry:   DefaultRetry,
-		header:  make(map[string]string),
+		header:  DefaultHeader,
 	}
 
 	for _, option := range opts {

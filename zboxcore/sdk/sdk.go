@@ -6,15 +6,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"net/http"
 	"os"
 	"strconv"
 	"time"
 
+	"github.com/0chain/common/core/currency"
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/conf"
 	"github.com/0chain/gosdk/core/logger"
 	"github.com/0chain/gosdk/core/sys"
+	"go.uber.org/zap"
 
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/transaction"
@@ -79,13 +82,20 @@ func GetLogger() *logger.Logger {
 	return &l.Logger
 }
 
-func InitStorageSDK(walletJSON string, blockWorker, chainID, signatureScheme string, preferredBlobbers []string, nonce int64) error {
-
+func InitStorageSDK(walletJSON string,
+	blockWorker, chainID, signatureScheme string,
+	preferredBlobbers []string,
+	nonce int64,
+	fee ...uint64) error {
 	err := client.PopulateClient(walletJSON, signatureScheme)
 	if err != nil {
 		return err
 	}
+
 	client.SetClientNonce(nonce)
+	if len(fee) > 0 {
+		client.SetTxnFee(fee[0])
+	}
 
 	blockchain.SetChainID(chainID)
 	blockchain.SetPreferredBlobbers(preferredBlobbers)
@@ -1362,7 +1372,8 @@ func smartContractTxn(sn transaction.SmartContractTxnData) (
 func smartContractTxnValue(sn transaction.SmartContractTxnData, value uint64) (
 	hash, out string, nonce int64, txn *transaction.Transaction, err error) {
 
-	return smartContractTxnValueFee(sn, value, 0)
+	// Fee is set during sdk initialization.
+	return smartContractTxnValueFee(sn, value, client.TxnFee())
 }
 
 func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
@@ -1385,6 +1396,22 @@ func smartContractTxnValueFee(sn transaction.SmartContractTxnData,
 	txn.Value = value
 	txn.TransactionFee = fee
 	txn.TransactionType = transaction.TxnTypeSmartContract
+
+	// adjust fees if not set
+	if fee == 0 {
+		fee, err = transaction.EstimateFee(txn, blockchain.GetMiners(), 0.2)
+		if err != nil {
+			l.Logger.Error("failed to estimate txn fee",
+				zap.Error(err),
+				zap.Any("txn", txn))
+			return
+		}
+		l.Logger.Info("estimate txn fee",
+			zap.Uint64("fee", fee),
+			zap.Any("txn", txn))
+		txn.TransactionFee = fee
+	}
+
 	if txn.TransactionNonce == 0 {
 		txn.TransactionNonce = transaction.Cache.GetNextNonce(txn.ClientID)
 	}
@@ -1496,36 +1523,44 @@ func CommitToFabric(metaTxnData, fabricConfigJSON string) (string, error) {
 	return fabricResponse, err
 }
 
+// expire in milliseconds
 func GetAllocationMinLock(
 	datashards, parityshards int,
 	size, expiry int64,
 	readPrice, writePrice PriceRange,
 ) (int64, error) {
-	preferredBlobberIds, err := GetBlobberIds(blockchain.GetPreferredBlobbers())
+	baSize := int64(math.Ceil(float64(size) / float64(datashards)))
+	totalSize := baSize * int64(datashards+parityshards)
+	config, err := GetStorageSCConfig()
 	if err != nil {
-		return -1, errors.New("failed_get_blobber_ids", "failed to get preferred blobber ids: "+err.Error())
+		return 0, err
+	}
+	t := config.Fields["time_unit"]
+	timeunitStr, ok := t.(string)
+	if !ok {
+		return 0, fmt.Errorf("bad time_unit type")
+	}
+	timeunit, err := time.ParseDuration(timeunitStr)
+	if err != nil {
+		return 0, fmt.Errorf("bad time_unit format")
 	}
 
-	allocationRequestData, err := getNewAllocationBlobbers(
-		datashards, parityshards, size, expiry, readPrice, writePrice, preferredBlobberIds)
-	if err != nil {
-		return -1, errors.New("failed_get_allocation_blobbers", "failed to get blobbers for allocation: "+err.Error())
-	}
-	allocationRequest, _ := json.Marshal(allocationRequestData)
-	params := make(map[string]string)
-	params["allocation_data"] = string(allocationRequest)
-
-	allocationsBytes, err := zboxutil.MakeSCRestAPICall(STORAGE_SCADDRESS, "/allocation_min_lock", params, nil)
-	if err != nil {
-		return 0, errors.New("allocation_min_lock_fetch_error", "Error fetching the allocation min lock."+err.Error())
+	duration := expiry / timeunit.Milliseconds()
+	if expiry%timeunit.Milliseconds() != 0 {
+		duration++
 	}
 
-	var response = make(map[string]int64)
-	err = json.Unmarshal(allocationsBytes, &response)
+	sizeInGB := float64(totalSize) / GB
+	cost := float64(duration) * (sizeInGB*float64(writePrice.Max) + sizeInGB*float64(readPrice.Max))
+	coin, err := currency.Float64ToCoin(cost)
 	if err != nil {
-		return 0, errors.New("allocation_min_lock_decode_error", "Error decoding the response."+err.Error())
+		return 0, err
 	}
-	return response["min_lock_demand"], nil
+	i, err := coin.Int64()
+	if err != nil {
+		return 0, err
+	}
+	return i, nil
 }
 
 // calculateAllocationFileOptions calculates the FileOptions 16-bit mask given the user input
