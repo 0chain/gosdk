@@ -66,7 +66,7 @@ Cypress.Commands.add('createWallet', () => {
   const waitGetBalance = ()=> {
     cy.wait("@getBalance").then(it=>{
       if (it.response.statusCode == 200) {
-        expect(it.response.body.balance).should('be.greaterThan',9000000000)
+        expect(it.response.body.balance).to.greaterThan(9000000000)
       }else{
         waitGetBalance()
       }
