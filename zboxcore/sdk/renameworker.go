@@ -145,7 +145,7 @@ func (req *RenameRequest) renameBlobberObject(
 	return
 }
 
-func (req *RenameRequest) ProcessWithBlobbers() ( []fileref.RefEntity,  []error) {
+func (req *RenameRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error) {
 	var pos uint64
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
@@ -165,13 +165,13 @@ func (req *RenameRequest) ProcessWithBlobbers() ( []fileref.RefEntity,  []error)
 		}(int(pos))
 	}
 	req.wg.Wait()
-	return objectTreeRefs, blobberErrors;
+	return objectTreeRefs, blobberErrors
 }
 
 func (req *RenameRequest) ProcessRename() error {
 	defer req.ctxCncl()
 
-	objectTreeRefs, blobberErrors := req.ProcessWithBlobbers();
+	objectTreeRefs, blobberErrors := req.ProcessWithBlobbers()
 
 	if !req.consensus.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
@@ -285,15 +285,15 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 	rR.consensus.fullconsensus = ro.consensus.fullconsensus
 	rR.consensus.consensusThresh = ro.consensus.consensusThresh
 
-	objectTreeRefs, blobberErrors := rR.ProcessWithBlobbers();
+	objectTreeRefs, blobberErrors := rR.ProcessWithBlobbers()
 
 	if !rR.consensus.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
-			return nil, rR.renameMask,thrown.New("rename_failed", fmt.Sprintf("Renamed failed. %s", err.Error()))
+			return nil, rR.renameMask, thrown.New("rename_failed", fmt.Sprintf("Renamed failed. %s", err.Error()))
 		}
 
-		return nil, rR.renameMask,thrown.New("consensus_not_met",
+		return nil, rR.renameMask, thrown.New("consensus_not_met",
 			fmt.Sprintf("Rename failed. Required consensus %d, got %d",
 				rR.consensus.consensusThresh, rR.consensus.consensus))
 	}

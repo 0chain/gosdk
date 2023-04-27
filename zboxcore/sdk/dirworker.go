@@ -43,8 +43,7 @@ type DirRequest struct {
 	Consensus
 }
 
-
-func (req *DirRequest) ProcessWithBlobbers(a *Allocation) (int) {
+func (req *DirRequest) ProcessWithBlobbers(a *Allocation) int {
 	var pos uint64
 	var existingDirCount int
 	countMu := &sync.Mutex{}
@@ -69,15 +68,14 @@ func (req *DirRequest) ProcessWithBlobbers(a *Allocation) (int) {
 	}
 
 	req.wg.Wait()
-	return existingDirCount;
+	return existingDirCount
 }
 
 func (req *DirRequest) ProcessDir(a *Allocation) error {
 	l.Logger.Info("Start creating dir for blobbers")
 
 	defer req.ctxCncl()
-	existingDirCount := req.ProcessWithBlobbers(a);
-	
+	existingDirCount := req.ProcessWithBlobbers(a)
 
 	if !req.isConsensusOk() {
 		return errors.New("consensus_not_met", "directory creation failed due to consensus not met")
@@ -134,7 +132,7 @@ func (req *DirRequest) commitRequest(existingDirCount int) error {
 		go AddCommitRequest(commitReq)
 	}
 	wg.Wait()
-	
+
 	for _, commitReq := range commitReqs {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
@@ -260,36 +258,34 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 			"latest message: %s", latestStatusCode, latestRespMsg)), false
 }
 
-
-
 type DirOperation struct {
-	remotePath 	   string
-	ctx            context.Context
-	ctxCncl        context.CancelFunc
-	dirMask        zboxutil.Uint128
-	maskMU         *sync.Mutex
+	remotePath string
+	ctx        context.Context
+	ctxCncl    context.CancelFunc
+	dirMask    zboxutil.Uint128
+	maskMU     *sync.Mutex
 
 	Consensus
 }
 
 func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
-	refs := make([]fileref.RefEntity, len(allocObj.Blobbers));
+	refs := make([]fileref.RefEntity, len(allocObj.Blobbers))
 	dR := &DirRequest{
-		allocationID:   allocObj.ID,
-		allocationTx:   allocObj.Tx,
-		connectionID:   connectionID,
-		blobbers:       allocObj.Blobbers,
-		remotePath: 	dirOp.remotePath,
-		ctx:            dirOp.ctx,
-		ctxCncl:        dirOp.ctxCncl,
-		dirMask:       	dirOp.dirMask,
-		mu:         	dirOp.maskMU,
-		wg:      		&sync.WaitGroup{},
+		allocationID: allocObj.ID,
+		allocationTx: allocObj.Tx,
+		connectionID: connectionID,
+		blobbers:     allocObj.Blobbers,
+		remotePath:   dirOp.remotePath,
+		ctx:          dirOp.ctx,
+		ctxCncl:      dirOp.ctxCncl,
+		dirMask:      dirOp.dirMask,
+		mu:           dirOp.maskMU,
+		wg:           &sync.WaitGroup{},
 	}
 	dR.consensusThresh = dirOp.consensusThresh
 	dR.fullconsensus = dirOp.fullconsensus
 
-	_ = dR.ProcessWithBlobbers(allocObj);
+	_ = dR.ProcessWithBlobbers(allocObj)
 
 	if !dR.isConsensusOk() {
 		return nil, dR.dirMask, errors.New("consensus_not_met", "directory creation failed due to consensus not met")
@@ -340,5 +336,5 @@ func (co *DirOperation) Completed(allocObj *Allocation) {
 }
 
 func (co *DirOperation) Error(allocObj *Allocation, consensus int, err error) {
-	
+
 }

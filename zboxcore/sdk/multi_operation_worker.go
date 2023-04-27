@@ -23,7 +23,7 @@ type Operationer interface {
 	Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error)
 	buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange
 	Completed(allocObj *Allocation)
-	Error(allocObj *Allocation, consensus int, err error)	
+	Error(allocObj *Allocation, consensus int, err error)
 }
 
 type MultiOperation struct {
@@ -44,24 +44,24 @@ func (mo *MultiOperation) Process() error {
 	wg := &sync.WaitGroup{}
 	mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
 	ctx := mo.allocationObj.ctx
-	ctxCncl := mo.allocationObj.ctxCancelF;
+	ctxCncl := mo.allocationObj.ctxCancelF
 	defer ctxCncl()
 	errs := make(chan error, 1)
 	uid := util.GetNewUUID()
 	for idx, op := range mo.operations {
 		// Don't use goroutine for the first operation because in blobber code we try to fetch the allocation
-		// from the postgress and sharders, if not found blobber try to create it. This is done without lock, so if we 
+		// from the postgress and sharders, if not found blobber try to create it. This is done without lock, so if we
 		// sent multiple goroutine together, blobber will try to create multiple allocations for same allocation id
 		// and eventually throw error.
 		if idx == 0 {
 			refs, mask, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
-			mo.operationMask.And(mask);
+			mo.operationMask.And(mask)
 			if err != nil {
-				return err;
+				return err
 			}
 			changes := op.buildChange(refs, uid)
 			mo.changes[idx] = changes
-			continue;
+			continue
 		}
 		wg.Add(1)
 		go func(op Operationer, idx int) {
@@ -77,16 +77,16 @@ func (mo *MultiOperation) Process() error {
 			refs, mask, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
 			if err != nil {
 				l.Logger.Error(err)
-				
+
 				select {
 				case errs <- errors.New("", err.Error()):
 				default:
 				}
 				ctxCncl()
-				
+
 				return
 			}
-			mo.operationMask.And(mask);
+			mo.operationMask.And(mask)
 			changes := op.buildChange(refs, uid)
 
 			mo.changes[idx] = changes
@@ -102,7 +102,6 @@ func (mo *MultiOperation) Process() error {
 	// But we want mo.changes[0] to have allocationChange for blobber 1 and mo.changes[1] to have allocationChange for
 	// blobber 2 and so on.
 	mo.changes = zboxutil.Transpose(mo.changes)
-
 
 	writeMarkerMutex, err := CreateWriteMarkerMutex(client.GetClient(), mo.allocationObj)
 	if err != nil {
@@ -134,7 +133,7 @@ func (mo *MultiOperation) Process() error {
 			connectionID: mo.connectionID,
 			wg:           wg,
 		}
-		
+
 		for _, change := range mo.changes[pos] {
 			commitReq.changes = append(commitReq.changes, change)
 		}
@@ -160,17 +159,17 @@ func (mo *MultiOperation) Process() error {
 
 	if !mo.isConsensusOk() {
 		err := errors.New("consensus_not_met",
-		fmt.Sprintf("Commit failed. Required consensus %d, got %d",
-			mo.Consensus.consensusThresh, mo.Consensus.consensus));
+			fmt.Sprintf("Commit failed. Required consensus %d, got %d",
+				mo.Consensus.consensusThresh, mo.Consensus.consensus))
 		if mo.getConsensus() != 0 {
 			for _, op := range mo.operations {
-				op.Error(mo.allocationObj, mo.getConsensus(), err);
+				op.Error(mo.allocationObj, mo.getConsensus(), err)
 			}
 		}
 		return err
 	}
 	for _, op := range mo.operations {
-		op.Completed(mo.allocationObj);
+		op.Completed(mo.allocationObj)
 	}
 
 	return nil

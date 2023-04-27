@@ -14,26 +14,26 @@ import (
 )
 
 type UploadOperation struct {
-	workdir    string
-	fileMeta   FileMeta
-	fileReader io.Reader
-	opts       []ChunkedUploadOption
-	refs       []fileref.FileRef
-	isUpdate   bool
+	workdir        string
+	fileMeta       FileMeta
+	fileReader     io.Reader
+	opts           []ChunkedUploadOption
+	refs           []fileref.FileRef
+	isUpdate       bool
 	statusCallback StatusCallback
-	opCode int
+	opCode         int
 }
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
 	cu, err := CreateChunkedUpload(uo.workdir, allocObj, uo.fileMeta, uo.fileReader, uo.isUpdate, false, connectionID, uo.opts...)
-	uo.statusCallback = cu.statusCallback;
-	uo.opCode = cu.opCode;
+	uo.statusCallback = cu.statusCallback
+	uo.opCode = cu.opCode
 	if err != nil {
 		return nil, cu.uploadMask, err
 	}
 	err = cu.process()
 	if err != nil {
-		cu.ctxCncl();
+		cu.ctxCncl()
 		return nil, cu.uploadMask, err
 	}
 

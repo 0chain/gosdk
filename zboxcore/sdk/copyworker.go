@@ -146,7 +146,7 @@ func (req *CopyRequest) copyBlobberObject(
 		fmt.Sprintf("last status code: %d, last response message: %s", latestStatusCode, latestRespMsg))
 }
 
-func (req *CopyRequest) ProcessWithBlobbers() ( []fileref.RefEntity,  []error) {
+func (req *CopyRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error) {
 	var pos uint64
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
@@ -167,7 +167,7 @@ func (req *CopyRequest) ProcessWithBlobbers() ( []fileref.RefEntity,  []error) {
 		}(int(pos))
 	}
 	wg.Wait()
-	return objectTreeRefs, blobberErrors;
+	return objectTreeRefs, blobberErrors
 }
 
 func (req *CopyRequest) ProcessCopy() error {
@@ -176,7 +176,7 @@ func (req *CopyRequest) ProcessCopy() error {
 	wg := &sync.WaitGroup{}
 	var pos uint64
 
-	objectTreeRefs, blobberErrors := req.ProcessWithBlobbers();
+	objectTreeRefs, blobberErrors := req.ProcessWithBlobbers()
 
 	if !req.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
@@ -282,19 +282,19 @@ func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]f
 	cR.consensusThresh = co.consensusThresh
 	cR.fullconsensus = co.fullconsensus
 
-	objectTreeRefs, blobberErrors := cR.ProcessWithBlobbers();
+	objectTreeRefs, blobberErrors := cR.ProcessWithBlobbers()
 
 	if !cR.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
-			return nil, cR.copyMask,errors.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
+			return nil, cR.copyMask, errors.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
 		}
 
 		return nil, cR.copyMask, errors.New("consensus_not_met",
 			fmt.Sprintf("Copy failed. Required consensus %d, got %d",
 				cR.Consensus.consensusThresh, cR.Consensus.consensus))
 	}
-	return objectTreeRefs, cR.copyMask,nil
+	return objectTreeRefs, cR.copyMask, nil
 
 }
 
@@ -353,5 +353,5 @@ func (co *CopyOperation) Completed(allocObj *Allocation) {
 }
 
 func (co *CopyOperation) Error(allocObj *Allocation, consensus int, err error) {
-	
+
 }

@@ -377,5 +377,5 @@ func (dop *DeleteOperation) Completed(allocObj *Allocation) {
 }
 
 func (dop *DeleteOperation) Error(allocObj *Allocation, consensus int, err error) {
-	
+
 }

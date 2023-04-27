@@ -146,7 +146,7 @@ func (req *MoveRequest) moveBlobberObject(
 		fmt.Sprintf("last status code: %d, last response message: %s", latestStatusCode, latestRespMsg))
 }
 
-func (req *MoveRequest) ProcessWithBlobbers() ( []fileref.RefEntity,  []error) {
+func (req *MoveRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error) {
 	var pos uint64
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
@@ -167,7 +167,7 @@ func (req *MoveRequest) ProcessWithBlobbers() ( []fileref.RefEntity,  []error) {
 		}(int(pos))
 	}
 	wg.Wait()
-	return objectTreeRefs, blobberErrors;
+	return objectTreeRefs, blobberErrors
 }
 
 func (req *MoveRequest) ProcessMove() error {
@@ -176,7 +176,7 @@ func (req *MoveRequest) ProcessMove() error {
 	wg := &sync.WaitGroup{}
 	var pos uint64
 
-	objectTreeRefs, blobberErrors := req.ProcessWithBlobbers();
+	objectTreeRefs, blobberErrors := req.ProcessWithBlobbers()
 
 	if !req.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
@@ -277,8 +277,8 @@ func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]f
 	}
 	mR.Consensus.fullconsensus = mo.consensus.fullconsensus
 	mR.Consensus.consensusThresh = mo.consensus.consensusThresh
-	
-	objectTreeRefs, blobberErrors := mR.ProcessWithBlobbers();
+
+	objectTreeRefs, blobberErrors := mR.ProcessWithBlobbers()
 
 	if !mR.Consensus.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
@@ -324,7 +324,6 @@ func (mo *MoveOperation) build(remotePath string, destPath string, moveMask zbox
 
 func (mo *MoveOperation) Verify(a *Allocation) error {
 
-
 	if !a.CanMove() {
 		return constants.ErrFileOptionNotPermitted
 	}
@@ -350,5 +349,5 @@ func (mo *MoveOperation) Completed(allocObj *Allocation) {
 }
 
 func (mo *MoveOperation) Error(allocObj *Allocation, consensus int, err error) {
-	
+
 }

@@ -196,7 +196,6 @@ type Allocation struct {
 	fullconsensus      int
 }
 
-
 type OperationRequest struct {
 	OperationType string
 	LocalPath     string
@@ -210,6 +209,7 @@ type OperationRequest struct {
 	FileReader io.Reader
 	Opts       []ChunkedUploadOption
 }
+
 func GetReadPriceRange() (PriceRange, error) {
 	return getPriceRange("max_read_price")
 }
@@ -621,11 +621,11 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 				return err
 			}
 			mo.operations = append(mo.operations, updateOp)
-		
+
 		case constants.FileOperationCreateDir:
 			directoryOp := &DirOperation{}
-			directoryOp.build(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx);
-			err := directoryOp.Verify(a);
+			directoryOp.build(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+			err := directoryOp.Verify(a)
 			if err != nil {
 				return err
 			}

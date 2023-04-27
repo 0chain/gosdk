@@ -45,7 +45,7 @@ func SuccessCommitResult() *CommitResult {
 }
 
 type CommitRequest struct {
-	changes       []allocationchange.AllocationChange
+	changes      []allocationchange.AllocationChange
 	blobber      *blockchain.StorageNode
 	allocationID string
 	allocationTx string
@@ -251,9 +251,9 @@ func (req *CommitRequest) commitBlobber(
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
-			
+
 			l.Logger.Error(req.blobber.Baseurl, " Commit response:", string(resp_body))
-			return errors.New("commit_error", string(resp_body), )
+			return errors.New("commit_error", string(resp_body))
 		}
 		return nil
 	})
