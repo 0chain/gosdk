@@ -354,7 +354,7 @@ func GetErrorMessageCode(errorMsg string) (string, error) {
 }
 
 // Returns transpose of 2-D slice
-// Example: Given matrix [[a, b], [c, d], [e, f]] returns [[a, b, c], [d, e, f]]
+// Example: Given matrix [[a, b], [c, d], [e, f]] returns [[a, c, e], [b, d, f]]
 func Transpose(matrix [][]allocationchange.AllocationChange) [][]allocationchange.AllocationChange {
 	rowLength := len(matrix)
 	if rowLength == 0 {
