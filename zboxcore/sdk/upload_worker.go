@@ -43,7 +43,6 @@ func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([
 	for i := cu.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		uo.refs[pos] = *cu.blobbers[pos].fileRef
-		uo.refs[pos].NumBlocks = int64(cu.progress.ChunkIndex + 1)
 		uo.refs[pos].ChunkSize = cu.chunkSize
 	}
 
@@ -58,7 +57,6 @@ func (uo *UploadOperation) buildChange(_ []fileref.RefEntity, uid uuid.UUID) []a
 		if uo.isUpdate {
 			change := &allocationchange.UpdateFileChange{}
 			change.NewFile = &ref
-			change.NumBlocks = ref.NumBlocks
 			change.Operation = constants.FileOperationUpdate
 			change.Size = ref.Size
 			changes[idx] = change
@@ -66,7 +64,6 @@ func (uo *UploadOperation) buildChange(_ []fileref.RefEntity, uid uuid.UUID) []a
 		}
 		newChange := &allocationchange.NewFileChange{}
 		newChange.File = &ref
-		newChange.NumBlocks = ref.NumBlocks
 
 		newChange.Operation = constants.FileOperationInsert
 		newChange.Size = ref.Size
