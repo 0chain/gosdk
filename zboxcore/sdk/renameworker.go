@@ -281,6 +281,7 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 		ctxCncl:        ro.ctxCncl,
 		renameMask:     ro.renameMask,
 		maskMU:         ro.maskMU,
+		wg:             &sync.WaitGroup{},
 	}
 	rR.consensus.fullconsensus = ro.consensus.fullconsensus
 	rR.consensus.consensusThresh = ro.consensus.consensusThresh
