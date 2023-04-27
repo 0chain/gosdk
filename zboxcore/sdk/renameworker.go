@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
-	thrown "github.com/0chain/errors"
 	"github.com/google/uuid"
 
 	"github.com/0chain/gosdk/constants"
@@ -150,6 +149,7 @@ func (req *RenameRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error) {
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	blobberErrors := make([]error, numList)
+	req.wg = &sync.WaitGroup{}
 	for i := req.renameMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		req.wg.Add(1)
@@ -291,10 +291,10 @@ func (ro *RenameOperation) Process(allocObj *Allocation, connectionID string) ([
 	if !rR.consensus.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
-			return nil, rR.renameMask, thrown.New("rename_failed", fmt.Sprintf("Renamed failed. %s", err.Error()))
+			return nil, rR.renameMask, errors.New("rename_failed", fmt.Sprintf("Renamed failed. %s", err.Error()))
 		}
 
-		return nil, rR.renameMask, thrown.New("consensus_not_met",
+		return nil, rR.renameMask, errors.New("consensus_not_met",
 			fmt.Sprintf("Rename failed. Required consensus %d, got %d",
 				rR.consensus.consensusThresh, rR.consensus.consensus))
 	}
