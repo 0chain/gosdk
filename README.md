@@ -19,7 +19,7 @@ This repository currently supports the following platforms:
  - Linux (RHEL/CENTOS 7+): All Releases based on RHEL 7+, Centos 7+, Fedora 30 etc. (yum based package installer)
 
  ### Instructions
-  - Go is required to build gosdk code.Instructions can be found [here](https://go.dev/doc/install)
+  - Go is required to build gosdk code. Instructions can be found [here](https://go.dev/doc/install)
 
  1. Save below code as sdkversion.go
 
@@ -57,7 +57,7 @@ Steps:
 1. Run below command for the first time to setup gomobile environment
 
         make setup-gomobile
-2. Incase Go package not found in golang.org/x/mobile/bind, run the command
+2. In case Go package not found in golang.org/x/mobile/bind, run the command
         `go get golang.org/x/mobile/bind`
 3. Use below commands in the root folder of the repo to build Mobile SDK
 
@@ -105,7 +105,7 @@ Steps:
     $ GOOS=js CGO_ENABLED=0 GOARCH=wasm go build -o <any_name>.wasm github.com/0chain/gosdk/wasmsdk
     ```
 
-### An important note regarding export of a async function
+### An important note regarding export of an async function
 
 If your golang function requires to be run asynchronously, you need to add more wrapper code where you are returning a Promise object.
 
@@ -166,7 +166,7 @@ $ go tool cover -html=coverage.out
 
 2. Add `/path/to/go/misc/wasm` to your `$PATH` environment variable (so that "go test" can find "go_js_wasm_exec"). For example in ubuntu, run `$export PATH=$PATH:/usr/local/go/misc/wasm/`.
 
-3. You can then run the test by following the [BLS unit test](#bls-unit-test) above with adding the prefix environment `GOOS=js CGO_ENABLED=0 GOARCH=wasm`:
+3. You can then run the test by following the [BLS unit test](#bls-unit-test) above by adding the prefix environment `GOOS=js CGO_ENABLED=0 GOARCH=wasm`:
     ```
     go test -tags test -v github.com/0chain/gosdk/wasmsdk
     ```
@@ -185,7 +185,7 @@ $ go tool cover -html=coverage.out
 
 6. To test the function you exported, it's probably as simple as calling "HelloWorld()". It should be a 1-liner.
 
-### How to install `ffmepg` 
+### How to install `ffmpeg` 
 
 ### On linux ubuntu
 
