@@ -342,10 +342,6 @@ func (s *StorageSDK) GetBlobbersList() (string, error) {
 	return string(retBytes), nil
 }
 
-func RegisterToMiners(clientId, pubKey string, callback zcncore.WalletCallback) error {
-	return zcncore.RegisterToMiners(clientId, pubKey, callback)
-}
-
 // GetAllocations return back list of allocations for the wallet
 // Extracted from main method, bcz of class fields
 func GetAllocations() (string, error) {
