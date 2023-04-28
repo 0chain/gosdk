@@ -1134,10 +1134,9 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 		{
 			name: "Test_Success_File_Type_Directory",
 			parameters: parameters{
-				path:            "/",
-				filename:        "1.txt",
-				referenceType:   fileref.DIRECTORY,
-				refereeClientID: mockClientId,
+				path:          "/",
+				filename:      "1.txt",
+				referenceType: fileref.DIRECTORY,
 			},
 			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
 				httpResponse := &http.Response{
@@ -1213,7 +1212,6 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 				path:                       "/1.txt",
 				filename:                   "1.txt",
 				referenceType:              fileref.FILE,
-				refereeClientID:            mockClientId,
 				refereeEncryptionPublicKey: "",
 			},
 			setup: func(t *testing.T, testCaseName string, a *Allocation, mockClient *mocks.HttpClient) (teardown func(t *testing.T)) {
@@ -2286,7 +2284,7 @@ func getMockAuthTicket(t *testing.T) string {
 			return strings.HasPrefix(req.URL.Path, "TestAllocation_getMockAuthTicket")
 		})).Return(httpResponse, nil)
 	}
-	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, mockClientId, "", 0, nil)
+	var authTicket, err = a.GetAuthTicket("/1.txt", "1.txt", fileref.FILE, "", "", 0, nil)
 	require.NoErrorf(t, err, "unexpected get auth ticket error: %v", err)
 	require.NotEmptyf(t, authTicket, "unexpected empty auth ticket")
 	return authTicket
