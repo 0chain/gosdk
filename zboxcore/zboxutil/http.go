@@ -24,7 +24,6 @@ import (
 )
 
 const SC_REST_API_URL = "v1/screst/"
-const REGISTER_CLIENT = "v1/client/put"
 
 const MAX_RETRIES = 5
 const SLEEP_BETWEEN_RETRIES = 5

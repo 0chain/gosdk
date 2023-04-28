@@ -163,12 +163,7 @@ func CreateWalletFromEthMnemonic(mnemonic, password string, statusCb WalletCallb
 	}
 	go func() {
 		sigScheme := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
-		wallet, err := sigScheme.GenerateKeysWithEth(mnemonic, password)
-		if err != nil {
-			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
-			return
-		}
-		err = registerToMiners(wallet, statusCb)
+		_, err := sigScheme.GenerateKeysWithEth(mnemonic, password)
 		if err != nil {
 			statusCb.OnWalletCreateComplete(StatusError, "", err.Error())
 			return

@@ -143,11 +143,11 @@ func (a *Allocation) DownloadThumbnail(remotePath, localPath string, statusCb St
 //   - thumbnailPath: the local full path of thumbnail
 //   - encrypt: the file should be ecnrypted or not on uploading
 //   - statusCb: callback of status
-func (a *Allocation) RepairFile(workdir, localPath, remotePath, thumbnailPath string, encrypt bool, statusCb StatusCallbackMocked) error {
+func (a *Allocation) RepairFile(workdir, localPath, remotePath, thumbnailPath string, encrypt bool, webStreaming bool, statusCb StatusCallbackMocked) error {
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
 	}
-	return a.sdkAllocation.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, true, true, thumbnailPath, encrypt)
+	return a.sdkAllocation.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, true, true, thumbnailPath, encrypt, webStreaming)
 }
 
 // UploadFile - upload file/thumbnail from local path to remote path
@@ -158,11 +158,11 @@ func (a *Allocation) RepairFile(workdir, localPath, remotePath, thumbnailPath st
 //   - thumbnailPath: the local full path of thumbnail
 //   - encrypt: the file should be ecnrypted or not on uploading
 //   - statusCb: callback of status
-func (a *Allocation) UploadFile(workdir, localPath, remotePath, thumbnailPath string, encrypt bool, statusCb StatusCallbackMocked) error {
+func (a *Allocation) UploadFile(workdir, localPath, remotePath, thumbnailPath string, encrypt bool, webStreaming bool, statusCb StatusCallbackMocked) error {
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
 	}
-	return a.sdkAllocation.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, false, false, thumbnailPath, encrypt)
+	return a.sdkAllocation.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, false, false, thumbnailPath, encrypt, webStreaming)
 }
 
 // UploadFile - update file/thumbnail from local path to remote path
@@ -173,12 +173,12 @@ func (a *Allocation) UploadFile(workdir, localPath, remotePath, thumbnailPath st
 //   - thumbnailPath: the local full path of thumbnail
 //   - encrypt: the file should be ecnrypted or not on uploading
 //   - statusCb: callback of status
-func (a *Allocation) UpdateFile(workdir, localPath, remotePath, thumbnailPath string, encrypt bool, statusCb StatusCallbackMocked) error {
+func (a *Allocation) UpdateFile(workdir, localPath, remotePath, thumbnailPath string, encrypt bool, webStreaming bool, statusCb StatusCallbackMocked) error {
 	if a == nil || a.sdkAllocation == nil {
 		return ErrInvalidAllocation
 	}
 
-	return a.sdkAllocation.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, true, false, thumbnailPath, encrypt)
+	return a.sdkAllocation.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, true, false, thumbnailPath, encrypt, webStreaming)
 }
 
 // DeleteFile - delete file from remote path
