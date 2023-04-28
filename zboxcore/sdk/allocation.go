@@ -599,6 +599,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 		delete(a.downloadProgressMap, remotepath)
 	}
 	downloadReq.contentMode = contentMode
+	downloadReq.blobberReadCounters = make(map[string]int64)
 	go func() {
 		a.downloadChan <- downloadReq
 		a.mutex.Lock()

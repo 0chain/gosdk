@@ -8,6 +8,7 @@ import (
 
 // DownloadRequestHeader download request header
 type DownloadRequestHeader struct {
+	ClientID       string
 	PathHash       string
 	Path           string
 	BlockNum       int64
@@ -16,10 +17,15 @@ type DownloadRequestHeader struct {
 	AuthToken      []byte
 	DownloadMode   string
 	VerifyDownload bool
+	SubmitRM       bool
 }
 
 // ToHeader update header
 func (h *DownloadRequestHeader) ToHeader(req *http.Request) {
+
+	if h.ClientID != "" {
+		req.Header.Set("X-Client-ID", string(h.ClientID))
+	}
 
 	if h.Path != "" {
 		req.Header.Set("X-Path", h.Path)
@@ -50,5 +56,6 @@ func (h *DownloadRequestHeader) ToHeader(req *http.Request) {
 	}
 
 	req.Header.Set("X-Verify-Download", fmt.Sprint(h.VerifyDownload))
+	req.Header.Set("X-Submit-RM", fmt.Sprint(h.SubmitRM))
 
 }
