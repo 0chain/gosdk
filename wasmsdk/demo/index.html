@@ -376,6 +376,7 @@
             file: file,
             thumbnailBytes: await readBytes(file),//only for demo, don't upload original file as thumbnail in production
             encrypt: false,
+            webstreaming: false,
             isUpdate: false,
             isRepair: false,
             numBlocks: 100,
@@ -435,6 +436,7 @@
             file: file,
             thumbnailBytes: await readBytes(file),//only for demo, don't upload original file as thumbnail in production
             encrypt: true,
+            webstreaming: false,
             isUpdate: false,
             isRepair: false,
             numBlocks: 100,

@@ -88,7 +88,7 @@ func CreateChunkedUpload(
 	workdir string, allocationObj *Allocation,
 	fileMeta FileMeta, fileReader io.Reader,
 	isUpdate, isRepair bool,
-	connectionId string,
+	webStreaming bool, connectionId string, 
 	opts ...ChunkedUploadOption,
 ) (*ChunkedUpload, error) {
 
@@ -98,6 +98,15 @@ func CreateChunkedUpload(
 
 	if !isUpdate && !allocationObj.CanUpload() || isUpdate && !allocationObj.CanUpdate() {
 		return nil, thrown.Throw(constants.ErrFileOptionNotPermitted, "file_option_not_permitted ")
+	}
+
+	if webStreaming {
+		newFileReader, newFileMeta, err := TranscodeWebStreaming(fileReader, fileMeta)
+		if err != nil {
+			return nil, thrown.New("upload_failed", err.Error())
+		}
+		fileMeta = *newFileMeta
+		fileReader = newFileReader
 	}
 
 	err := ValidateRemoteFileName(fileMeta.RemoteName)
@@ -157,6 +166,7 @@ func CreateChunkedUpload(
 		chunkSize:       DefaultChunkSize,
 		chunkNumber:     1,
 		encryptOnUpload: false,
+		webStreaming:    false,
 
 		consensus:     consensus,
 		uploadTimeOut: DefaultUploadTimeOut,
@@ -218,7 +228,7 @@ func CreateChunkedUpload(
 
 	su.fileHasher = CreateHasher(getShardSize(su.fileMeta.ActualSize, su.allocationObj.DataShards, su.encryptOnUpload))
 
-	// encrypt option has been chaned.upload it from scratch
+	// encrypt option has been changed. upload it from scratch
 	// chunkSize has been changed. upload it from scratch
 	if su.progress.EncryptOnUpload != su.encryptOnUpload || su.progress.ChunkSize != su.chunkSize {
 		su.progress = su.createUploadProgress(connectionId)
@@ -319,6 +329,8 @@ type ChunkedUpload struct {
 
 	// encryptOnUpload encrypt data on upload or not.
 	encryptOnUpload bool
+	// webStreaming whether data has to be encoded.
+	webStreaming bool
 	// chunkSize how much bytes a chunk has. 64KB is default value.
 	chunkSize int64
 	// chunkNumber the number of chunks in a http upload request. 1 is default value

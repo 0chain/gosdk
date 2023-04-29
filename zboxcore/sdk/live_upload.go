@@ -79,7 +79,7 @@ func (lu *LiveUpload) createClipsUpload(clipsIndex int, reader LiveUploadReader)
 		RemotePath: lu.liveMeta.RemotePath + "/" + reader.GetClipsFileName(clipsIndex),
 	}
 
-	return CreateChunkedUpload(lu.homedir, lu.allocationObj, fileMeta, reader, false, false, zboxutil.NewConnectionId(),
+	return CreateChunkedUpload(lu.homedir, lu.allocationObj, fileMeta, reader, false, false, false, zboxutil.NewConnectionId(),
 		WithEncrypt(lu.encryptOnUpload),
 		WithStatusCallback(lu.statusCallback()))
 }

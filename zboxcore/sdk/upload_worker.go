@@ -25,7 +25,7 @@ type UploadOperation struct {
 }
 
 func (uo *UploadOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
-	cu, err := CreateChunkedUpload(uo.workdir, allocObj, uo.fileMeta, uo.fileReader, uo.isUpdate, false, connectionID, uo.opts...)
+	cu, err := CreateChunkedUpload(uo.workdir, allocObj, uo.fileMeta, uo.fileReader, uo.isUpdate, false, false, connectionID, uo.opts...)
 	uo.statusCallback = cu.statusCallback
 	uo.opCode = cu.opCode
 	if err != nil {
