@@ -200,7 +200,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 	wm := &marker.WriteMarker{}
 	timestamp := int64(common.Now())
-	wm.AllocationRoot = encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10))
+	wm.AllocationRoot = rootRef.Hash
 	if latestWM != nil {
 		wm.PreviousAllocationRoot = latestWM.AllocationRoot
 	} else {
