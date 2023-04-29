@@ -1,13 +1,9 @@
 //go:build mobile
 // +build mobile
 
-package zcn
+package transaction
 
-import (
-	"encoding/json"
-
-	"github.com/0chain/gosdk/core/transaction"
-)
+import "encoding/json"
 
 // EstimateFee estimates transaction fee
 // jsonTxn:
@@ -29,12 +25,12 @@ import (
 //		TransactionNonce  int    `json:"transaction_nonce"`
 //	}
 func EstimateFee(jsonTxn string, miners []string, reqPercent float32) (int64, error) {
-	txn := &transaction.Transaction{}
+	txn := &Transaction{}
 	err := json.Unmarshal([]byte(jsonTxn), txn)
 	if err != nil {
 		return 0, err
 	}
-	fee, err := transaction.EstimateFee(txn, miners, reqPercent)
+	fee, err := estimateFee(txn, miners, reqPercent)
 	if err != nil {
 		return 0, err
 	}
