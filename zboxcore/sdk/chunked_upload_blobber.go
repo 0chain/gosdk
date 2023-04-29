@@ -8,14 +8,12 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -364,7 +362,7 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 
 	if lR.LatestWM != nil {
 		rootRef.CalculateHash()
-		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
+		prevAllocationRoot := rootRef.Hash
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
 			logger.Logger.Info("Allocation root from latest writemarker mismatch. Expected: " +
 				prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
