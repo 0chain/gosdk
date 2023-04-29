@@ -574,11 +574,8 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, w
 		numBlocks = 100
 	}
 
-<<<<<<< HEAD
-	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, zboxutil.NewConnectionId(),
-=======
 	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming,
->>>>>>> staging
+		zboxutil.NewConnectionId(),
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
