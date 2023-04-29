@@ -43,8 +43,8 @@ func (mo *MultiOperation) Process() error {
 	l.Logger.Info("MultiOperation Process start")
 	wg := &sync.WaitGroup{}
 	mo.changes = make([][]allocationchange.AllocationChange, len(mo.operations))
-	ctx := mo.allocationObj.ctx
-	ctxCncl := mo.allocationObj.ctxCancelF
+	ctx := mo.ctx
+	ctxCncl := mo.ctxCncl
 	defer ctxCncl()
 	errs := make(chan error, 1)
 	for idx, op := range mo.operations {
