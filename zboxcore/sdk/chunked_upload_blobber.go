@@ -69,7 +69,8 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 		return nil
 	}
 
-	req, err := zboxutil.NewUploadRequestWithMethod(sb.blobber.Baseurl, su.allocationObj.Tx, body, su.httpMethod)
+	req, err := zboxutil.NewUploadRequestWithMethod(
+		sb.blobber.Baseurl, su.allocationObj.Tx, body, su.httpMethod)
 	if err != nil {
 		return err
 	}
@@ -91,7 +92,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 
 			if err != nil {
 				logger.Logger.Error("Upload : ", err)
-				return
+				return fmt.Errorf("Error while doing reqeust. Error %s", err), false
 			}
 
 			if resp.Body != nil {
@@ -103,7 +104,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 			respbody, err = ioutil.ReadAll(resp.Body)
 			if err != nil {
 				logger.Logger.Error("Error: Resp ", err)
-				return
+				return fmt.Errorf("Error while reading body. Error %s", err), false
 			}
 
 			latestRespMsg = string(respbody)

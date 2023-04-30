@@ -107,6 +107,61 @@ func (b *BridgeClient) QueryEthereumMintPayload(zchainBurnHash string) (*ethereu
 	return nil, errors.New("get_burn_ticket", text)
 }
 
+// QueryEthereumBurnEvents gets ethereum burn events
+func (b *BridgeClient) QueryEthereumBurnEvents(startNonce string) ([]*ethereum.BurnEvent, error) {
+	client = h.CleanClient()
+	authorizers, err := getAuthorizers(true)
+
+	if err != nil || len(authorizers) == 0 {
+		return nil, errors.Wrap("get_authorizers", "failed to get authorizers", err)
+	}
+
+	var (
+		totalWorkers = len(authorizers)
+		values       = map[string]string{
+			"clientid":        b.ClientID(),
+			"ethereumaddress": b.EthereumAddress,
+			"startnonce":      startNonce,
+		}
+	)
+
+	handler := &requestHandler{
+		path:   wallet.BurnWzcnBurnEventsPath,
+		values: values,
+		bodyDecoder: func(body []byte) (JobResult, error) {
+			ev := &EthereumBurnEvents{}
+			err := json.Unmarshal(body, ev)
+			return ev, err
+		},
+	}
+
+	thresh := b.ConsensusThreshold
+	results := queryAllAuthorizers(authorizers, handler)
+	numSuccess := len(results)
+	quorum := math.Ceil((float64(numSuccess) * 100) / float64(totalWorkers))
+
+	if numSuccess > 0 && quorum >= thresh {
+		burnEvents, ok := results[0].(*EthereumBurnEvents)
+		if !ok {
+			return nil, errors.Wrap("type_cast", "failed to convert to *ethereumBurnEvents", err)
+		}
+
+		var result []*ethereum.BurnEvent
+
+		for _, burnEvent := range burnEvents.BurnEvents {
+			result = append(result, &ethereum.BurnEvent{
+				Nonce:           burnEvent.Nonce,
+				TransactionHash: burnEvent.TransactionHash,
+			})
+		}
+
+		return result, nil
+	}
+
+	text := fmt.Sprintf("failed to reach the quorum. #Success: %d from #Total: %d", numSuccess, totalWorkers)
+	return nil, errors.New("get_burn_events", text)
+}
+
 // QueryZChainMintPayload gets burn ticket and creates mint payload to be minted in the ZChain
 // ethBurnHash - Ethereum burn transaction hash
 func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPayload, error) {
@@ -160,7 +215,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 		payload := &zcnsc.MintPayload{
 			EthereumTxnID:     burnTicket.TxnID,
 			Amount:            common.Balance(burnTicket.Amount),
-			Nonce:             burnTicket.Amount,
+			Nonce:             burnTicket.Nonce,
 			Signatures:        sigs,
 			ReceivingClientID: burnTicket.ReceivingClientID,
 		}

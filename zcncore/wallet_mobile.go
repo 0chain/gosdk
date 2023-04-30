@@ -31,8 +31,3 @@ func GetWalletBalance(id string) (int64, error) {
 	}
 	return int64(balance), nil
 }
-
-func RegisterToMiners(clientId, pubKey string, callback WalletCallback) error {
-	wallet := zcncrypto.Wallet{ClientID: clientId, ClientKey: pubKey}
-	return registerToMiners(&wallet, callback)
-}
