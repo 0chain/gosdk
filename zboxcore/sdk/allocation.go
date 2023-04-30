@@ -576,9 +576,16 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 		return noBLOBBERS
 	}
 
-	_, maxR, err := a.GetMaxWriteRead()
-	if err != nil {
-		return err
+	var (
+		maxR float64
+		err  error
+	)
+
+	if len(a.BlobberDetails) > 0 {
+		_, maxR, err = a.GetMaxWriteRead()
+		if err != nil {
+			return err
+		}
 	}
 
 	downloadReq := &DownloadRequest{}
