@@ -151,7 +151,7 @@ func (b *BridgeClient) QueryEthereumBurnEvents(startNonce string) ([]*ethereum.B
 		for _, burnEvent := range burnEvents.BurnEvents {
 			result = append(result, &ethereum.BurnEvent{
 				Nonce: burnEvent.Nonce,
-				Hash:  burnEvent.TransactionHash,
+				TransactionHash:  burnEvent.TransactionHash,
 			})
 		}
 
