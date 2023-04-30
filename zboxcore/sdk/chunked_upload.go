@@ -243,6 +243,7 @@ func CreateChunkedUpload(
 	}
 
 	if su.encryptOnUpload {
+
 		su.fileEncscheme = su.createEncscheme()
 
 		if su.chunkSize <= EncryptionHeaderSize+EncryptedDataPaddingSize {
@@ -416,21 +417,20 @@ func (su *ChunkedUpload) createUploadProgress() UploadProgress {
 func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 	encscheme := encryption.NewEncryptionScheme()
 
-	if len(su.progress.EncryptPrivateKey) > 0 {
-
-		privateKey, _ := hex.DecodeString(su.progress.EncryptPrivateKey)
-
-		err := encscheme.InitializeWithPrivateKey(privateKey)
+	privateKey := client.GetClientPrivateKey()
+	if privateKey != "" {
+		privateKeyB, _ := hex.DecodeString(privateKey)
+		err := encscheme.InitializeWithPrivateKey(privateKeyB)
 		if err != nil {
 			return nil
 		}
 	} else {
-		privateKey, err := encscheme.Initialize(client.GetClient().Mnemonic)
+		privateKeyB, err := encscheme.Initialize(client.GetClient().Mnemonic)
 		if err != nil {
 			return nil
 		}
 
-		su.progress.EncryptPrivateKey = hex.EncodeToString(privateKey)
+		su.progress.EncryptPrivateKey = hex.EncodeToString(privateKeyB)
 	}
 
 	encscheme.InitForEncryption("filetype:audio")

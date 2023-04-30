@@ -502,18 +502,21 @@ func (req *DownloadRequest) initEC() error {
 
 func (req *DownloadRequest) initEncryption() error {
 	req.encScheme = encryption.NewEncryptionScheme()
-	mnemonic := client.GetClient().Mnemonic
-	if mnemonic != "" {
-		_, err := req.encScheme.Initialize(client.GetClient().Mnemonic)
-		if err != nil {
-			return err
-		}
-	} else {
-		key, err := hex.DecodeString(client.GetClientPrivateKey())
+
+	privateKey := client.GetClientPrivateKey()
+	if privateKey != "" {
+		key, err := hex.DecodeString(privateKey)
 		if err != nil {
 			return err
 		}
 		req.encScheme.InitializeWithPrivateKey(key)
+
+	} else {
+		mnemonic := client.GetClient().Mnemonic
+		_, err := req.encScheme.Initialize(mnemonic)
+		if err != nil {
+			return err
+		}
 	}
 
 	req.encScheme.InitForDecryption("filetype:audio", req.encryptedKey)
