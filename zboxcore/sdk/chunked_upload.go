@@ -526,6 +526,23 @@ func (su *ChunkedUpload) Start() error {
 		}
 		return err
 	}
+
+	//Check if the allocation is to be repaired or rolled back
+	stats, err := su.allocationObj.CheckAllocStatus()
+	if err != nil {
+		if su.statusCallback != nil {
+			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
+		}
+		return err
+	}
+
+	if stats == Repair {
+		err = su.allocationObj.RepairAlloc(su.statusCallback)
+		if err != nil {
+			return err
+		}
+	}
+
 	defer su.writeMarkerMutex.Unlock(
 		su.ctx, su.uploadMask, blobbers, su.uploadTimeOut, su.progress.ConnectionID) //nolint: errcheck
 

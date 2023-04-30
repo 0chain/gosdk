@@ -7,22 +7,35 @@ import (
 	"fmt"
 	"io/ioutil"
 	"mime/multipart"
+	"sync"
+	"sync/atomic"
 	"time"
 
 	"net/http"
 
+	"github.com/0chain/common/core/common"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/logger"
+	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"go.uber.org/zap"
 )
 
 type LatestPrevWriteMarker struct {
 	LatestWM *marker.WriteMarker `json:"latest_write_marker"`
 	PrevWM   *marker.WriteMarker `json:"prev_write_marker"`
 }
+
+type AllocStatus byte
+
+const (
+	Commit AllocStatus = iota
+	Repair
+	Broken
+)
 
 type RollbackBlobber struct {
 	blobber      *blockchain.StorageNode
@@ -75,14 +88,14 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	}
 	err := wm.Sign()
 	if err != nil {
-		logger.Logger.Error("Signing writemarker failed: ", err)
+		l.Logger.Error("Signing writemarker failed: ", err)
 		return err
 	}
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
 	wmData, err := json.Marshal(wm)
 	if err != nil {
-		logger.Logger.Error("Creating writemarker failed: ", err)
+		l.Logger.Error("Creating writemarker failed: ", err)
 		return err
 	}
 	connID := zboxutil.NewConnectionId()
@@ -92,12 +105,12 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 
 	req, err := zboxutil.NewRollbackRequest(rb.blobber.Baseurl, tx, body)
 	if err != nil {
-		logger.Logger.Error("Creating rollback request failed: ", err)
+		l.Logger.Error("Creating rollback request failed: ", err)
 		return err
 	}
 	req.Header.Add("Content-Type", formWriter.FormDataContentType())
 
-	logger.Logger.Info("Sending Rollback request to blobber: ", rb.blobber.Baseurl)
+	l.Logger.Info("Sending Rollback request to blobber: ", rb.blobber.Baseurl)
 
 	var (
 		resp           *http.Response
@@ -110,7 +123,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 			resp, err := zboxutil.Client.Do(req.WithContext(reqCtx))
 			defer ctxCncl()
 			if err != nil {
-				logger.Logger.Error("Rollback request failed: ", err)
+				l.Logger.Error("Rollback request failed: ", err)
 				return
 			}
 
@@ -120,7 +133,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 
 			var respBody []byte
 			if resp.StatusCode == http.StatusOK {
-				logger.Logger.Info(rb.blobber.Baseurl, connID, "rollbacked")
+				l.Logger.Info(rb.blobber.Baseurl, connID, "rollbacked")
 				return
 			}
 
@@ -129,7 +142,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 				var r int
 				r, err = zboxutil.GetRateLimitValue(resp)
 				if err != nil {
-					logger.Logger.Error(err)
+					l.Logger.Error(err)
 					return
 				}
 
@@ -140,7 +153,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 
 			respBody, err = ioutil.ReadAll(resp.Body)
 			if err != nil {
-				logger.Logger.Error("Response read: ", err)
+				l.Logger.Error("Response read: ", err)
 				return
 			}
 
@@ -161,4 +174,111 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 	}
 
 	return thrown.New("rolback_error", fmt.Sprintf("Rollback failed with response status %d", resp.StatusCode))
+}
+
+func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
+
+	wg := &sync.WaitGroup{}
+	markerChan := make(chan *RollbackBlobber, len(a.Blobbers))
+	var errCnt int32
+
+	for _, blobber := range a.Blobbers {
+
+		wg.Add(1)
+		go func(blobber *blockchain.StorageNode) {
+
+			defer wg.Done()
+			wr, err := GetWritemarker(a.Tx, blobber.ID, blobber.Baseurl)
+			if err != nil {
+				atomic.AddInt32(&errCnt, 1)
+				l.Logger.Error("error during getWritemarker", zap.Error(err))
+			}
+			if wr == nil {
+				markerChan <- nil
+			} else {
+				markerChan <- &RollbackBlobber{
+					blobber:      blobber,
+					lpm:          wr,
+					commitResult: &CommitResult{},
+				}
+			}
+		}(blobber)
+
+	}
+	wg.Wait()
+	close(markerChan)
+
+	if errCnt > 0 {
+		return Commit, common.NewError("check_alloc_status_failed", "Error during check allocation status")
+	}
+
+	versionMap := make(map[int64][]*RollbackBlobber)
+
+	var prevVersion int64
+	var latestVersion int64
+
+	for rb := range markerChan {
+
+		if rb == nil {
+			continue
+		}
+
+		version := rb.lpm.LatestWM.Timestamp
+
+		if prevVersion == 0 {
+			prevVersion = version
+		} else {
+			latestVersion = version
+		}
+
+		if _, ok := versionMap[version]; !ok {
+			versionMap[version] = make([]*RollbackBlobber, 0)
+		}
+
+		versionMap[version] = append(versionMap[version], rb)
+	}
+
+	if len(versionMap) < 2 {
+		return Commit, nil
+	}
+
+	if prevVersion > latestVersion {
+		prevVersion, latestVersion = latestVersion, prevVersion
+	}
+
+	req := a.DataShards
+
+	if len(versionMap[prevVersion]) > req || len(versionMap[latestVersion]) > req {
+		return Repair, nil
+	}
+	errCnt = 0
+	// rollback to previous version
+	l.Logger.Info("Rolling back to previous version")
+	fullConsensus := len(versionMap[latestVersion])
+
+	for _, rb := range versionMap[latestVersion] {
+
+		wg.Add(1)
+		go func(rb *RollbackBlobber) {
+			defer wg.Done()
+			err := rb.processRollback(context.TODO(), a.Tx)
+			if err != nil {
+				atomic.AddInt32(&errCnt, 1)
+				rb.commitResult = ErrorCommitResult(err.Error())
+				l.Logger.Error("error during rollback", zap.Error(err))
+			} else {
+				rb.commitResult = SuccessCommitResult()
+			}
+		}(rb)
+	}
+
+	if errCnt == int32(fullConsensus) {
+		return Broken, common.NewError("rollback_failed", "Rollback failed")
+	}
+
+	if errCnt > 0 {
+		return Repair, nil
+	}
+
+	return Commit, nil
 }

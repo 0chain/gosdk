@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/0chain/common/core/currency"
@@ -512,12 +513,9 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 func (a *Allocation) GetCurrentVersion() (bool, error) {
 	//get versions from blobbers
 
-	if len(a.Blobbers) == 0 {
-		return false, fmt.Errorf("no blobbers found for allocation %v", a.ID)
-	}
-
 	wg := &sync.WaitGroup{}
 	markerChan := make(chan *RollbackBlobber, len(a.Blobbers))
+	var errCnt int32
 	for _, blobber := range a.Blobbers {
 
 		wg.Add(1)
@@ -526,8 +524,11 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 			defer wg.Done()
 			wr, err := GetWritemarker(a.Tx, blobber.ID, blobber.Baseurl)
 			if err != nil {
-				markerChan <- nil
+				atomic.AddInt32(&errCnt, 1)
 				logger.Logger.Error("error during getWritemarke", zap.Error(err))
+			}
+			if wr == nil {
+				markerChan <- nil
 			} else {
 				markerChan <- &RollbackBlobber{
 					blobber:      blobber,
@@ -542,17 +543,11 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 	wg.Wait()
 	close(markerChan)
 
-	if len(markerChan) == 0 {
-		return false, fmt.Errorf("chan lenght is 0")
-	}
-
 	versionMap := make(map[int64][]*RollbackBlobber)
-	errCnt := 0
 
 	for rb := range markerChan {
 
 		if rb == nil {
-			errCnt++
 			continue
 		}
 
@@ -572,11 +567,11 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 		return false, fmt.Errorf("error in getting writemarker from %v blobbers", errCnt)
 	}
 
-	// TODO:return if len(versionMap) == 1
-
 	if len(versionMap) == 0 {
-		return false, fmt.Errorf("no version found")
+		return false, nil
 	}
+
+	// TODO:return if len(versionMap) == 1
 
 	var prevVersion int64
 	var latestVersion int64
@@ -591,10 +586,6 @@ func (a *Allocation) GetCurrentVersion() (bool, error) {
 
 	if prevVersion > latestVersion {
 		prevVersion, latestVersion = latestVersion, prevVersion
-	}
-
-	if len(versionMap[latestVersion]) == 0 {
-		return false, fmt.Errorf("no blobbers found for latest version")
 	}
 
 	// TODO: Check if allocation can be repaired
