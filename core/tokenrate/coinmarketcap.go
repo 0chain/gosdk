@@ -5,17 +5,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/0chain/gosdk/core/resty"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/0chain/gosdk/core/resty"
 )
 
 type coinmarketcapQuoteQuery struct {
 	APIKey string
 }
 
+// js call is unsupported for coinmarketcap api due to core issue
+// https://coinmarketcap.com/api/documentation/v1/#section/Quick-Start-Guide
+// Note: Making HTTP requests on the client side with Javascript is currently prohibited through CORS configuration. This is to protect your API Key which should not be visible to users of your application so your API Key is not stolen. Secure your API Key by routing calls through your own backend service.
 func createCoinmarketcapQuoteQuery() quoteQuery {
 
 	coinmarketcapAPIKEY, ok := os.LookupEnv("COINMARKETCAP_API_KEY")

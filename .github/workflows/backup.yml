@@ -25,11 +25,13 @@ jobs:
       - name: Create backup
         if: steps.get_info.outputs.GIT_COMMIT_DATE == steps.get_info.outputs.YESTERDAY_DATE
         run: |
-          github-backup -O 0chain -P -t ${{ secrets.ACCESS_TOKEN }} --output-directory=/github-backup/gosdk --all -O -R gosdk
+          sudo apt update && sudo apt install python3-pip -y
+          sudo pip3 install github-backup
+          sudo github-backup -O 0chain -P -t ${{ secrets.ACCESS_TOKEN }} --output-directory=/github-backup/gosdk --all -O -R gosdk
           
       - name: Create zip
         if: steps.get_info.outputs.GIT_COMMIT_DATE == steps.get_info.outputs.YESTERDAY_DATE
-        run: zip -r gosdk.zip /github-backup/gosdk
+        run: sudo zip -r gosdk.zip /github-backup/gosdk
         
       - name: Set AWS credentials
         if: steps.get_info.outputs.GIT_COMMIT_DATE == steps.get_info.outputs.YESTERDAY_DATE
@@ -42,4 +44,4 @@ jobs:
       - name: Backup to s3
         if: steps.get_info.outputs.GIT_COMMIT_DATE == steps.get_info.outputs.YESTERDAY_DATE
         run: |
-          aws s3 cp gosdk.zip s3://${{ secrets.MIRROR_TARGET }}/gosdk.zip
+          sudo aws s3 cp gosdk.zip s3://${{ secrets.MIRROR_TARGET }}/gosdk.zip
