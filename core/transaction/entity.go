@@ -1,6 +1,3 @@
-//go:build !mobile
-// +build !mobile
-
 package transaction
 
 // EstimateFee estimates transaction fee
