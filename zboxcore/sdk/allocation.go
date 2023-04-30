@@ -573,6 +573,11 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 		return noBLOBBERS
 	}
 
+	_, maxR, err := a.GetMaxWriteRead()
+	if err != nil {
+		return err
+	}
+
 	downloadReq := &DownloadRequest{}
 	downloadReq.maskMu = &sync.Mutex{}
 	downloadReq.allocationID = a.ID
@@ -600,6 +605,7 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	}
 	downloadReq.contentMode = contentMode
 	downloadReq.blobberReadCounters = make(map[string]int64)
+	downloadReq.maxReadPrice = maxR
 	go func() {
 		a.downloadChan <- downloadReq
 		a.mutex.Lock()
@@ -1268,6 +1274,11 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 		return noBLOBBERS
 	}
 
+	_, maxR, err := a.GetMaxWriteRead()
+	if err != nil {
+		return err
+	}
+
 	downloadReq := &DownloadRequest{}
 	downloadReq.maskMu = &sync.Mutex{}
 	downloadReq.allocationID = a.ID
@@ -1290,6 +1301,8 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.shouldVerify = verifyDownload
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
+	downloadReq.blobberReadCounters = make(map[string]int64)
+	downloadReq.maxReadPrice = maxR
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {
 		a.mutex.Lock()
 		defer a.mutex.Unlock()

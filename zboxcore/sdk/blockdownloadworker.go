@@ -116,26 +116,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			return
 		}
 
-		// rm := &marker.ReadMarker{}
-		// rm.ClientID = client.GetClientID()
-		// rm.ClientPublicKey = client.GetClientPublicKey()
-		// rm.BlobberID = req.blobber.ID
-		// rm.AllocationID = req.allocationID
-		// rm.OwnerID = req.allocOwnerID
-		// rm.Timestamp = common.Now()
-		// rm.ReadCounter = getBlobberReadCtr(req.allocationID, req.blobber.ID) + req.numBlocks
-		// setBlobberReadCtr(req.allocationID, req.blobber.ID, rm.ReadCounter)
-		// err = rm.Sign()
-		// if err != nil {
-		// 	req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error: Signing readmarker failed")}
-		// 	return
-		// }
-		// var rmData []byte
-		// rmData, err = json.Marshal(rm)
-		// if err != nil {
-		// 	req.result <- &downloadBlock{Success: false, idx: req.blobberIdx, err: errors.Wrap(err, "Error creating readmarker")}
-		// 	return
-		// }
 		if len(req.remotefilepath) > 0 {
 			req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 		}
@@ -165,8 +145,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		shouldRetry := false
 
 		header.ToHeader(httpreq)
-
-		// lastBlobberReadCounter := getBlobberReadCtr(req.allocationID, req.blobber.ID)
 
 		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 			if err != nil {

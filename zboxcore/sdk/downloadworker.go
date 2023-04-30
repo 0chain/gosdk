@@ -72,6 +72,7 @@ type DownloadRequest struct {
 	shouldVerify        bool
 	readCountersMutex   sync.Mutex
 	blobberReadCounters map[string]int64
+	maxReadPrice        float64
 }
 
 func (req *DownloadRequest) removeFromMask(pos uint64) {
@@ -409,6 +410,23 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		req.errorCB(
 			fmt.Errorf("Size to download is %d. Nothing to download", remainingSize), remotePathCB,
 		)
+		return
+	}
+
+	rp, err := GetReadPoolInfo(req.authTicket.ClientID)
+	if err != nil {
+		logger.Logger.Error(err)
+		req.errorCB(
+			fmt.Errorf("Error while getting client readpool. Error: %v",
+				err), remotePathCB)
+		return
+	}
+
+	sizeInGB := float64(remainingSize) / GB
+	if float64(rp.Balance) < (sizeInGB * req.maxReadPrice) {
+		logger.Logger.Error("Not enough tokens for download. ClientID:", req.authTicket.ClientID, "Readpool Balance:", float64(rp.Balance), "Required:", (sizeInGB * req.maxReadPrice))
+		req.errorCB(
+			fmt.Errorf("not enough tokens"), remotePathCB)
 		return
 	}
 
