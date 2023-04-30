@@ -69,11 +69,12 @@ func GetWritemarker(allocID, id, baseUrl string) (*LatestPrevWriteMarker, error)
 			time.Sleep(time.Duration(r) * time.Second)
 			continue
 		}
-		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("writemarker error response %d", resp.StatusCode)
-		}
 		body, err := ioutil.ReadAll(resp.Body)
 		defer resp.Body.Close()
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("writemarker error response %s with status %d", body, resp.StatusCode)
+		}
+
 		if err != nil {
 			return nil, err
 		}
@@ -195,7 +196,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 	wg := &sync.WaitGroup{}
 	markerChan := make(chan *RollbackBlobber, len(a.Blobbers))
 	var errCnt int32
-
+	var markerError error
 	for _, blobber := range a.Blobbers {
 
 		wg.Add(1)
@@ -205,6 +206,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 			wr, err := GetWritemarker(a.Tx, blobber.ID, blobber.Baseurl)
 			if err != nil {
 				atomic.AddInt32(&errCnt, 1)
+				markerError = err
 				l.Logger.Error("error during getWritemarker", zap.Error(err))
 			}
 			if wr == nil {
@@ -223,7 +225,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 	close(markerChan)
 
 	if errCnt > 0 {
-		return Commit, common.NewError("check_alloc_status_failed", "Error during check allocation status")
+		return Commit, common.NewError("check_alloc_status_failed", markerError.Error())
 	}
 
 	versionMap := make(map[int64][]*RollbackBlobber)
