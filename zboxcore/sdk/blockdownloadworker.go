@@ -63,7 +63,7 @@ type downloadBlock struct {
 var downloadBlockChan map[string]chan *BlockDownloadRequest
 var initDownloadMutex sync.Mutex
 
-func InitBlockDownloader(blobbers []*blockchain.StorageNode) {
+func InitBlockDownloader(blobbers []*blockchain.StorageNode, workerCount int) {
 	initDownloadMutex.Lock()
 	defer initDownloadMutex.Unlock()
 	if downloadBlockChan == nil {
@@ -72,9 +72,11 @@ func InitBlockDownloader(blobbers []*blockchain.StorageNode) {
 
 	for _, blobber := range blobbers {
 		if _, ok := downloadBlockChan[blobber.ID]; !ok {
-			downloadBlockChan[blobber.ID] = make(chan *BlockDownloadRequest, 1)
-			blobberChan := downloadBlockChan[blobber.ID]
-			go startBlockDownloadWorker(blobberChan)
+			downloadBlockChan[blobber.ID] = make(chan *BlockDownloadRequest, workerCount)
+			for i := 0; i < workerCount; i++ {
+				blobberChan := downloadBlockChan[blobber.ID]
+				go startBlockDownloadWorker(blobberChan)
+			}
 		}
 	}
 }

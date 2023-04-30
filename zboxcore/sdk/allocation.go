@@ -248,6 +248,8 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 	return result
 }
 
+const downloadWorkerCount = 4
+
 func (a *Allocation) InitAllocation() {
 	a.downloadChan = make(chan *DownloadRequest, 10)
 	a.repairChan = make(chan *RepairRequest, 1)
@@ -257,7 +259,7 @@ func (a *Allocation) InitAllocation() {
 	a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
-	InitBlockDownloader(a.Blobbers)
+	InitBlockDownloader(a.Blobbers, downloadWorkerCount)
 	a.initialized = true
 }
 
