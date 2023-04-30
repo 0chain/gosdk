@@ -4,7 +4,7 @@ import "encoding/json"
 
 type BurnEvent struct {
 	Nonce int64  `json:"nonce"`
-	Hash  string `json:"hash"`
+	TransactionHash  string `json:"hash"`
 }
 
 // MintPayload Payload to submit to the ethereum bridge contract
