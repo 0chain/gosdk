@@ -530,6 +530,7 @@ func (su *ChunkedUpload) Start() error {
 	//Check if the allocation is to be repaired or rolled back
 	stats, err := su.allocationObj.CheckAllocStatus()
 	if err != nil {
+		logger.Logger.Error("Error checking allocation status", err)
 		if su.statusCallback != nil {
 			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
 		}
@@ -537,6 +538,7 @@ func (su *ChunkedUpload) Start() error {
 	}
 
 	if stats == Repair {
+		logger.Logger.Info("Repairing allocation")
 		err = su.allocationObj.RepairAlloc(su.statusCallback)
 		if err != nil {
 			return err

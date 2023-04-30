@@ -219,7 +219,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 
 	for rb := range markerChan {
 
-		if rb == nil {
+		if rb == nil || rb.lpm.LatestWM == nil {
 			continue
 		}
 
