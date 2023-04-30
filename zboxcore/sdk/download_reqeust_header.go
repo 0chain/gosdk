@@ -22,11 +22,6 @@ type DownloadRequestHeader struct {
 
 // ToHeader update header
 func (h *DownloadRequestHeader) ToHeader(req *http.Request) {
-
-	if h.ClientID != "" {
-		req.Header.Set("X-Client-ID", string(h.ClientID))
-	}
-
 	if h.Path != "" {
 		req.Header.Set("X-Path", h.Path)
 	}

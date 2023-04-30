@@ -13,7 +13,6 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
-	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	zlogger "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -130,7 +129,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		}
 
 		header := &DownloadRequestHeader{}
-		header.ClientID = client.GetClientID()
 		header.PathHash = req.remotefilepathhash
 		header.BlockNum = req.blockNum
 		header.NumBlocks = req.numBlocks

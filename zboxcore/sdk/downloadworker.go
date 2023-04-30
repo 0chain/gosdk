@@ -543,6 +543,7 @@ func (req *DownloadRequest) submitReadMarker(blobberID string, readCount int64) 
 		OwnerID:         req.allocOwnerID,
 		Timestamp:       common.Now(),
 		ReadCounter:     getBlobberReadCtr(req.allocationID, blobberID) + readCount,
+		SessionRC:       readCount,
 	}
 	setBlobberReadCtr(req.allocationID, blobberID, rm.ReadCounter)
 	err := rm.Sign()
@@ -593,6 +594,8 @@ func (req *DownloadRequest) submitReadMarker(blobberID string, readCount int64) 
 
 		header.ToHeader(httpreq)
 
+		lastBlobberReadCounter := getBlobberReadCtr(req.allocationID, blobberID)
+
 		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 			if err != nil {
 				return err
@@ -608,7 +611,20 @@ func (req *DownloadRequest) submitReadMarker(blobberID string, readCount int64) 
 				return err
 			}
 			if resp.StatusCode != http.StatusOK {
-				if err = json.Unmarshal(respBody, &rspData); err == nil {
+				if err = json.Unmarshal(respBody, &rspData); err == nil && rspData.LatestRM != nil {
+					if err := rm.ValidateWithOtherRM(rspData.LatestRM); err != nil {
+						shouldRetry = false
+						return err
+					}
+
+					if rspData.LatestRM.ReadCounter != lastBlobberReadCounter {
+						logger.Logger.Info("Will be retrying download")
+						setBlobberReadCtr(req.allocationID, blobberID, rspData.LatestRM.ReadCounter)
+						lastBlobberReadCounter = rspData.LatestRM.ReadCounter
+						shouldRetry = true
+						return errors.New("stale_read_marker",
+							fmt.Sprintf("readmarker counter is not in sync with latest counter. Last blobber read counter: %d", lastBlobberReadCounter))
+					}
 					return errors.New("download_error", fmt.Sprintf("Response status: %d", resp.StatusCode))
 				}
 
