@@ -213,7 +213,6 @@ func (req *DownloadRequest) downloadBlock(
 				return
 			}
 			err = req.fillShards(shards, result)
-			return
 		}(i)
 	}
 
