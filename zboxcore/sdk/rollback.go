@@ -52,25 +52,39 @@ func GetWritemarker(allocID, id, baseUrl string) (*LatestPrevWriteMarker, error)
 		return nil, err
 	}
 
-	resp, err := zboxutil.Client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("writemarker error response %d", resp.StatusCode)
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
+	for retries := 0; retries < 3; retries++ {
 
-	err = json.Unmarshal(body, &lpm)
-	if err != nil {
-		return nil, err
-	}
+		resp, err := zboxutil.Client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		if resp.StatusCode == http.StatusTooManyRequests {
+			logger.Logger.Info(baseUrl, "got too many requests, retrying")
+			var r int
+			r, err = zboxutil.GetRateLimitValue(resp)
+			if err != nil {
+				l.Logger.Error(err)
+				return nil, err
+			}
+			time.Sleep(time.Duration(r) * time.Second)
+			continue
+		}
+		if resp.StatusCode != http.StatusOK {
+			return nil, fmt.Errorf("writemarker error response %d", resp.StatusCode)
+		}
+		body, err := ioutil.ReadAll(resp.Body)
+		defer resp.Body.Close()
+		if err != nil {
+			return nil, err
+		}
+		err = json.Unmarshal(body, &lpm)
+		if err != nil {
+			return nil, err
+		}
 
-	return &lpm, nil
+		return &lpm, nil
+	}
+	return nil, fmt.Errorf("writemarker error response %d", http.StatusTooManyRequests)
 }
 
 func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error {
