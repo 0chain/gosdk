@@ -1284,9 +1284,15 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 		return noBLOBBERS
 	}
 
-	_, maxR, err := a.GetMaxWriteRead()
-	if err != nil {
-		return err
+	var (
+		maxR float64
+	)
+
+	if len(a.BlobberDetails) > 0 {
+		_, maxR, err = a.GetMaxWriteRead()
+		if err != nil {
+			return err
+		}
 	}
 
 	downloadReq := &DownloadRequest{}
