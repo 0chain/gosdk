@@ -132,6 +132,10 @@ func getNotProcessedWZCNBurnEvents() string {
 		return errors.Wrap("getNotProcessedWZCNBurnEvents", "failed to retreive last ZCN processed mint nonce", err).Error()
 	}
 
+	if !cb.Success {
+		return errors.New("getNotProcessedWZCNBurnEvents", "failed to retreive last ZCN processed mint nonce").Error()
+	}
+
 	burnEvents, err := bridge.QueryEthereumBurnEvents(strconv.Itoa(int(mintNonce)))
 	if err != nil {
 		return errors.Wrap("getNotProcessedWZCNBurnEvents", "failed to retreive WZCN burn events", err).Error()
@@ -164,6 +168,10 @@ func getNotProcessedZCNBurnTickets() string {
 
 	if err := cb.Wait(); err != nil {
 		return errors.Wrap("getNotProcessedZCNBurnTickets", "failed to retreive ZCN burn tickets", err).Error()
+	}
+
+	if !cb.Success {
+		return errors.New("getNotProcessedZCNBurnTickets", "failed to retreive ZCN burn tickets").Error()
 	}
 
 	var result []byte
