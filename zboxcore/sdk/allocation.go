@@ -567,75 +567,40 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 	}
 	mo.connectionID = zboxutil.NewConnectionId()
 	for _, op := range operations {
+		var operation Operationer
 		switch op.OperationType {
 
 		case constants.FileOperationRename:
-			renameOp := &RenameOperation{}
-			renameOp.build(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-			err := renameOp.Verify(a)
-			if err != nil {
-				return err
-			}
-			mo.operations = append(mo.operations, renameOp)
+			operation = NewRenameOperation(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 		case constants.FileOperationCopy:
-			copyOp := &CopyOperation{}
-			copyOp.build(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-			err := copyOp.Verify(a)
-			if err != nil {
-				return err
-			}
-			mo.operations = append(mo.operations, copyOp)
+			operation = NewCopyOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 		case constants.FileOperationMove:
-			moveOp := &MoveOperation{}
-			moveOp.build(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-			err := moveOp.Verify(a)
-			if err != nil {
-				return err
-			}
-			mo.operations = append(mo.operations, moveOp)
+			operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 		case constants.FileOperationInsert:
-			uploadOp := &UploadOperation{}
-			uploadOp.build(op.Workdir, op.FileMeta, op.FileReader, false, op.Opts...)
-			err := uploadOp.Verify(a)
-			if err != nil {
-				return err
-			}
-			mo.operations = append(mo.operations, uploadOp)
+			operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, false, op.Opts...)
 
 		case constants.FileOperationDelete:
-			deleteOP := &DeleteOperation{}
-			deleteOP.build(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-			err := deleteOP.Verify(a)
-			if err != nil {
-				return err
-			}
-			mo.operations = append(mo.operations, deleteOP)
+			operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 		case constants.FileOperationUpdate:
-			updateOp := &UploadOperation{}
-			updateOp.build(op.Workdir, op.FileMeta, op.FileReader, true, op.Opts...)
-			err := updateOp.Verify(a)
-			if err != nil {
-				return err
-			}
-			mo.operations = append(mo.operations, updateOp)
+			operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, true, op.Opts...)
 
 		case constants.FileOperationCreateDir:
-			directoryOp := &DirOperation{}
-			directoryOp.build(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
-			err := directoryOp.Verify(a)
-			if err != nil {
-				return err
-			}
-			mo.operations = append(mo.operations, directoryOp)
+			operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 		default:
 			return errors.New("invalid_operation", "Operation is not valid")
 
 		}
+		err := operation.Verify(a)
+		if err != nil {
+			return err
+		}
+		mo.operations = append(mo.operations, operation)
+
 	}
 
 	return mo.Process()

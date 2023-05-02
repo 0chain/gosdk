@@ -313,20 +313,6 @@ func (co *CopyOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []
 	return changes
 }
 
-func (co *CopyOperation) build(remotePath string, destPath string, copyMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) {
-
-	co.remotefilepath = zboxutil.RemoteClean(remotePath)
-	co.copyMask = copyMask
-	co.maskMU = maskMU
-	co.consensusThresh = consensusTh
-	co.fullconsensus = fullConsensus
-	if destPath != "/" {
-		destPath = strings.TrimSuffix(destPath, "/")
-	}
-	co.destPath = destPath
-	co.ctx, co.ctxCncl = context.WithCancel(ctx)
-}
-
 func (co *CopyOperation) Verify(a *Allocation) error {
 
 	if !a.CanCopy() {
@@ -353,5 +339,21 @@ func (co *CopyOperation) Completed(allocObj *Allocation) {
 }
 
 func (co *CopyOperation) Error(allocObj *Allocation, consensus int, err error) {
+
+}
+
+func NewCopyOperation(remotePath string, destPath string, copyMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *CopyOperation {
+	co := &CopyOperation{}
+	co.remotefilepath = zboxutil.RemoteClean(remotePath)
+	co.copyMask = copyMask
+	co.maskMU = maskMU
+	co.consensusThresh = consensusTh
+	co.fullconsensus = fullConsensus
+	if destPath != "/" {
+		destPath = strings.TrimSuffix(destPath, "/")
+	}
+	co.destPath = destPath
+	co.ctx, co.ctxCncl = context.WithCancel(ctx)
+	return co
 
 }

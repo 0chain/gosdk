@@ -309,19 +309,6 @@ func (mo *MoveOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []
 	return changes
 }
 
-func (mo *MoveOperation) build(remotePath string, destPath string, moveMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) {
-	mo.remotefilepath = zboxutil.RemoteClean(remotePath)
-	if destPath != "/" {
-		destPath = strings.TrimSuffix(destPath, "/")
-	}
-	mo.destPath = destPath
-	mo.moveMask = moveMask
-	mo.maskMU = maskMU
-	mo.consensus.consensusThresh = consensusTh
-	mo.consensus.fullconsensus = fullConsensus
-	mo.ctx, mo.ctxCncl = context.WithCancel(ctx)
-}
-
 func (mo *MoveOperation) Verify(a *Allocation) error {
 
 	if !a.CanMove() {
@@ -350,4 +337,19 @@ func (mo *MoveOperation) Completed(allocObj *Allocation) {
 
 func (mo *MoveOperation) Error(allocObj *Allocation, consensus int, err error) {
 
+}
+
+func NewMoveOperation(remotePath string, destPath string, moveMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *MoveOperation {
+	mo := &MoveOperation{}
+	mo.remotefilepath = zboxutil.RemoteClean(remotePath)
+	if destPath != "/" {
+		destPath = strings.TrimSuffix(destPath, "/")
+	}
+	mo.destPath = destPath
+	mo.moveMask = moveMask
+	mo.maskMU = maskMU
+	mo.consensus.consensusThresh = consensusTh
+	mo.consensus.fullconsensus = fullConsensus
+	mo.ctx, mo.ctxCncl = context.WithCancel(ctx)
+	return mo
 }

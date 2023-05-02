@@ -310,16 +310,6 @@ func (dirOp *DirOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) 
 	return changes
 }
 
-func (dirOp *DirOperation) build(remotePath string, dirMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) {
-
-	dirOp.remotePath = zboxutil.RemoteClean(remotePath)
-	dirOp.dirMask = dirMask
-	dirOp.maskMU = maskMU
-	dirOp.consensusThresh = consensusTh
-	dirOp.fullconsensus = fullConsensus
-	dirOp.ctx, dirOp.ctxCncl = context.WithCancel(ctx)
-}
-
 func (dirOp *DirOperation) Verify(a *Allocation) error {
 	if dirOp.remotePath == "" {
 		return errors.New("invalid_name", "Invalid name for dir")
@@ -331,10 +321,21 @@ func (dirOp *DirOperation) Verify(a *Allocation) error {
 	return nil
 }
 
-func (co *DirOperation) Completed(allocObj *Allocation) {
+func (dirOp *DirOperation) Completed(allocObj *Allocation) {
 
 }
 
-func (co *DirOperation) Error(allocObj *Allocation, consensus int, err error) {
+func (dirOp *DirOperation) Error(allocObj *Allocation, consensus int, err error) {
 
+}
+
+func NewDirOperation(remotePath string, dirMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *DirOperation {
+	dirOp := &DirOperation{}
+	dirOp.remotePath = zboxutil.RemoteClean(remotePath)
+	dirOp.dirMask = dirMask
+	dirOp.maskMU = maskMU
+	dirOp.consensusThresh = consensusTh
+	dirOp.fullconsensus = fullConsensus
+	dirOp.ctx, dirOp.ctxCncl = context.WithCancel(ctx)
+	return dirOp
 }

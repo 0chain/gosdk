@@ -22,6 +22,7 @@ import (
 type Operationer interface {
 	Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error)
 	buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange
+	Verify(allocObj *Allocation) error
 	Completed(allocObj *Allocation)
 	Error(allocObj *Allocation, consensus int, err error)
 }

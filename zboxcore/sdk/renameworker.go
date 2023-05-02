@@ -318,17 +318,6 @@ func (ro *RenameOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) 
 	return changes
 }
 
-func (ro *RenameOperation) build(remotePath string, destName string, renameMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) {
-
-	ro.remotefilepath = zboxutil.RemoteClean(remotePath)
-	ro.newName = destName
-	ro.renameMask = renameMask
-	ro.maskMU = maskMU
-	ro.consensus.consensusThresh = consensusTh
-	ro.consensus.fullconsensus = fullConsensus
-	ro.ctx, ro.ctxCncl = context.WithCancel(ctx)
-}
-
 func (ro *RenameOperation) Verify(a *Allocation) error {
 
 	if !a.CanRename() {
@@ -361,5 +350,18 @@ func (ro *RenameOperation) Completed(allocObj *Allocation) {
 }
 
 func (ro *RenameOperation) Error(allocObj *Allocation, consensus int, err error) {
+
+}
+
+func NewRenameOperation(remotePath string, destName string, renameMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *RenameOperation {
+	ro := &RenameOperation{}
+	ro.remotefilepath = zboxutil.RemoteClean(remotePath)
+	ro.newName = destName
+	ro.renameMask = renameMask
+	ro.maskMU = maskMU
+	ro.consensus.consensusThresh = consensusTh
+	ro.consensus.fullconsensus = fullConsensus
+	ro.ctx, ro.ctxCncl = context.WithCancel(ctx)
+	return ro
 
 }

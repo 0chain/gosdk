@@ -346,16 +346,6 @@ func (do *DeleteOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) 
 	return changes
 }
 
-func (dop *DeleteOperation) build(remotePath string, deleteMask zboxutil.Uint128, maskMu *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) {
-
-	dop.remotefilepath = zboxutil.RemoteClean(remotePath)
-	dop.deleteMask = deleteMask
-	dop.maskMu = maskMu
-	dop.consensus.consensusThresh = consensusTh
-	dop.consensus.fullconsensus = fullConsensus
-	dop.ctx, dop.ctxCncl = context.WithCancel(ctx)
-}
-
 func (dop *DeleteOperation) Verify(a *Allocation) error {
 
 	if !a.CanDelete() {
@@ -378,4 +368,15 @@ func (dop *DeleteOperation) Completed(allocObj *Allocation) {
 
 func (dop *DeleteOperation) Error(allocObj *Allocation, consensus int, err error) {
 
+}
+
+func NewDeleteOperation(remotePath string, deleteMask zboxutil.Uint128, maskMu *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *DeleteOperation {
+	dop := &DeleteOperation{}
+	dop.remotefilepath = zboxutil.RemoteClean(remotePath)
+	dop.deleteMask = deleteMask
+	dop.maskMu = maskMu
+	dop.consensus.consensusThresh = consensusTh
+	dop.consensus.fullconsensus = fullConsensus
+	dop.ctx, dop.ctxCncl = context.WithCancel(ctx)
+	return dop
 }

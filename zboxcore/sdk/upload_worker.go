@@ -74,14 +74,6 @@ func (uo *UploadOperation) buildChange(_ []fileref.RefEntity, uid uuid.UUID) []a
 
 }
 
-func (uo *UploadOperation) build(workdir string, fileMeta FileMeta, fileReader io.Reader, isUpdate bool, opts ...ChunkedUploadOption) {
-	uo.workdir = workdir
-	uo.fileMeta = fileMeta
-	uo.fileReader = fileReader
-	uo.opts = opts
-	uo.isUpdate = isUpdate
-}
-
 func (uo *UploadOperation) Verify(allocationObj *Allocation) error {
 	if allocationObj == nil {
 		return thrown.Throw(constants.ErrInvalidParameter, "allocationObj")
@@ -137,4 +129,14 @@ func (uo *UploadOperation) Error(allocObj *Allocation, consensus int, err error)
 	if uo.statusCallback != nil {
 		uo.statusCallback.Error(allocObj.ID, uo.fileMeta.RemotePath, uo.opCode, err)
 	}
+}
+
+func NewUploadOperation(workdir string, fileMeta FileMeta, fileReader io.Reader, isUpdate bool, opts ...ChunkedUploadOption) *UploadOperation {
+	uo := &UploadOperation{}
+	uo.workdir = workdir
+	uo.fileMeta = fileMeta
+	uo.fileReader = fileReader
+	uo.opts = opts
+	uo.isUpdate = isUpdate
+	return uo
 }
