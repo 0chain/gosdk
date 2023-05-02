@@ -20,8 +20,7 @@ import (
 )
 
 const (
-	NotEnoughTokens = "not_enough_tokens"
-	LockExists      = "lock_exists"
+	LockExists = "lock_exists"
 )
 
 type BlockDownloadRequest struct {
