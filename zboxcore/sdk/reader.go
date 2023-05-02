@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"math"
+	"sort"
 	"sync"
 
 	"github.com/0chain/errors"
@@ -34,7 +35,7 @@ const (
 	InvalidWhenceValue           = "invalid_whence_value"
 )
 
-//errors
+// errors
 var (
 	ErrInvalidRead       = errors.New(InvalidRead, "want_size is <= 0")
 	ErrInvalidReadMarker = errors.New(InvalidReadMarker, "")
@@ -123,6 +124,8 @@ func (sd *StreamDownload) Read(b []byte) (int, error) {
 		return 0, ErrInvalidRead
 	}
 
+	totalReqBlocks := int64(math.Ceil(float64(wantSize) / CHUNK_SIZE))
+
 	startInd, endInd := sd.getStartAndEndIndex(wantSize)
 	var numBlocks int64
 	if sd.numBlocks > 0 {
@@ -143,7 +146,7 @@ func (sd *StreamDownload) Read(b []byte) (int, error) {
 			numBlocks = endInd - startInd
 		}
 
-		data, err := sd.getBlocksData(startInd, numBlocks)
+		data, err := sd.getBlocksData(startInd, numBlocks, totalReqBlocks)
 		if err != nil {
 			return 0, err
 		}
@@ -159,6 +162,21 @@ func (sd *StreamDownload) Read(b []byte) (int, error) {
 	}
 
 	sd.offset += int64(n)
+
+	// After the successful download, submit the ReadMarker to each blobber.
+	var sortedBlobberIDs []string
+	for blobberID := range sd.blobberReadCounters {
+		sortedBlobberIDs = append(sortedBlobberIDs, blobberID)
+	}
+	sort.Strings(sortedBlobberIDs)
+	for _, blobberID := range sortedBlobberIDs {
+		readCount := sd.blobberReadCounters[blobberID]
+		err := sd.submitReadMarker(blobberID, readCount, totalReqBlocks)
+		if err != nil {
+			sd.errorCB(errors.Wrap(err, "Submit readmarker failed"), sd.remotefilepath)
+			return 0, err
+		}
+	}
 
 	return n, nil
 }

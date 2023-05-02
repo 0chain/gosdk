@@ -413,7 +413,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 
-	totalReqBlocks := int64(math.Ceil(float64(remainingSize / CHUNK_SIZE)))
+	totalReqBlocks := int64(math.Ceil(float64(remainingSize) / CHUNK_SIZE))
 
 	if req.statusCallback != nil {
 		// Started will also initialize progress bar. So without calling this function
