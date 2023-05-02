@@ -42,6 +42,7 @@ type BlockDownloadRequest struct {
 	result             chan *downloadBlock
 	shouldVerify       bool
 	downReq            *DownloadRequest
+	totalReqBlocks     int64
 }
 
 type downloadResponse struct {
@@ -132,6 +133,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		header.BlockNum = req.blockNum
 		header.NumBlocks = req.numBlocks
 		header.VerifyDownload = req.shouldVerify
+		header.TotalReqBlocks = req.totalReqBlocks
 
 		if req.authTicket != nil {
 			header.AuthToken, _ = json.Marshal(req.authTicket) //nolint: errcheck

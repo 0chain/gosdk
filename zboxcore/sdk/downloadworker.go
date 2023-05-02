@@ -72,7 +72,6 @@ type DownloadRequest struct {
 	shouldVerify        bool
 	readCountersMutex   sync.Mutex
 	blobberReadCounters map[string]int64
-	maxReadPrice        float64
 }
 
 func (req *DownloadRequest) removeFromMask(pos uint64) {
@@ -83,7 +82,7 @@ func (req *DownloadRequest) removeFromMask(pos uint64) {
 
 // getBlocksData will get data blocks for some interval from minimal blobers and aggregate them and
 // return to the caller
-func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte, error) {
+func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64, totalReqBlocks int64) ([]byte, error) {
 
 	shards := make([][][]byte, totalBlock)
 	for i := range shards {
@@ -102,7 +101,7 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte,
 	curReqDownloads := requiredDownloads
 	for {
 		remainingMask, failed, downloadErrors, err = req.downloadBlock(
-			startBlock, totalBlock, mask, curReqDownloads, shards)
+			startBlock, totalBlock, mask, curReqDownloads, shards, totalReqBlocks)
 		if err != nil {
 			return nil, err
 		}
@@ -151,7 +150,7 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte,
 func (req *DownloadRequest) downloadBlock(
 	startBlock, totalBlock int64,
 	mask zboxutil.Uint128, requiredDownloads int,
-	shards [][][]byte) (zboxutil.Uint128, int, []string, error) {
+	shards [][][]byte, totalReqBlocks int64) (zboxutil.Uint128, int, []string, error) {
 
 	var remainingMask zboxutil.Uint128
 	activeBlobbers := mask.CountOnes()
@@ -185,6 +184,7 @@ func (req *DownloadRequest) downloadBlock(
 			encryptedKey:       req.encryptedKey,
 			shouldVerify:       req.shouldVerify,
 			downReq:            req,
+			totalReqBlocks:     totalReqBlocks,
 		}
 
 		bf := req.validationRootMap[blockDownloadReq.blobber.ID]
@@ -413,6 +413,8 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 
+	totalReqBlocks := int64(math.Ceil(float64(remainingSize / CHUNK_SIZE)))
+
 	if req.statusCallback != nil {
 		// Started will also initialize progress bar. So without calling this function
 		// other callback's call will panic
@@ -443,7 +445,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
 				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
 			}
-			res[j], err = req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
+			res[j], err = req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload, totalReqBlocks)
 			if req.isDownloadCanceled {
 				return errors.New("download_abort", "Download aborted by user")
 			}
@@ -466,7 +468,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	sort.Strings(sortedBlobberIDs)
 	for _, blobberID := range sortedBlobberIDs {
 		readCount := req.blobberReadCounters[blobberID]
-		err = req.submitReadMarker(blobberID, readCount)
+		err = req.submitReadMarker(blobberID, readCount, totalReqBlocks)
 		if err != nil {
 			req.errorCB(errors.Wrap(err, "Submit readmarker failed"), remotePathCB)
 			return
@@ -517,7 +519,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 }
 
-func (req *DownloadRequest) submitReadMarker(blobberID string, readCount int64) error {
+func (req *DownloadRequest) submitReadMarker(blobberID string, readCount int64, totalReqBlocks int64) error {
 	rm := &marker.ReadMarker{
 		ClientID:        client.GetClientID(),
 		ClientPublicKey: client.GetClientPublicKey(),
@@ -568,8 +570,8 @@ func (req *DownloadRequest) submitReadMarker(blobberID string, readCount int64) 
 
 		header := &DownloadRequestHeader{}
 		header.ClientID = client.GetClientID()
-		header.Path = req.remotefilepath
 		header.PathHash = req.remotefilepathhash
+		header.TotalReqBlocks = totalReqBlocks
 		header.ReadMarker = rmData
 		header.SubmitRM = true
 

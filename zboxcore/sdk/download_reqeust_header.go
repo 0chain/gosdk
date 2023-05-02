@@ -18,6 +18,7 @@ type DownloadRequestHeader struct {
 	DownloadMode   string
 	VerifyDownload bool
 	SubmitRM       bool
+	TotalReqBlocks int64
 }
 
 // ToHeader update header
@@ -52,5 +53,9 @@ func (h *DownloadRequestHeader) ToHeader(req *http.Request) {
 
 	req.Header.Set("X-Verify-Download", fmt.Sprint(h.VerifyDownload))
 	req.Header.Set("X-Submit-RM", fmt.Sprint(h.SubmitRM))
+
+	if h.TotalReqBlocks > 0 {
+		req.Header.Set("X-Total-Req-Blocks", strconv.FormatInt(h.TotalReqBlocks, 10))
+	}
 
 }
