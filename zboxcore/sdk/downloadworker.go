@@ -65,7 +65,7 @@ type DownloadRequest struct {
 	completedCallback  func(remotepath string, remotepathhash string)
 	contentMode        string
 	Consensus
-	effectiveBlockSize int // blocksize - encryptionOverHead
+	effectiveBlockSize  int // blocksize - encryptionOverHead
 	ecEncoder           reedsolomon.Encoder
 	maskMu              *sync.Mutex
 	encScheme           encryption.EncryptionScheme

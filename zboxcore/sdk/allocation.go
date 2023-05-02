@@ -577,18 +577,6 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 		return noBLOBBERS
 	}
 
-	var (
-		maxR float64
-		err  error
-	)
-
-	if len(a.BlobberDetails) > 0 {
-		_, maxR, err = a.GetMaxWriteRead()
-		if err != nil {
-			return err
-		}
-	}
-
 	downloadReq := &DownloadRequest{}
 	downloadReq.maskMu = &sync.Mutex{}
 	downloadReq.allocationID = a.ID
@@ -616,7 +604,6 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 	}
 	downloadReq.contentMode = contentMode
 	downloadReq.blobberReadCounters = make(map[string]int64)
-	downloadReq.maxReadPrice = maxR
 	go func() {
 		a.downloadChan <- downloadReq
 		a.mutex.Lock()
@@ -741,7 +728,7 @@ func (a *Allocation) GetRefsWithAuthTicket(authToken, offsetPath, updatedDate, o
 	return a.getRefs("", authTicket.FilePathHash, string(at), offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
 }
 
-//This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
+// This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
 func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
 	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
 		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
@@ -1431,17 +1418,6 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 		return noBLOBBERS
 	}
 
-	var (
-		maxR float64
-	)
-
-	if len(a.BlobberDetails) > 0 {
-		_, maxR, err = a.GetMaxWriteRead()
-		if err != nil {
-			return err
-		}
-	}
-
 	downloadReq := &DownloadRequest{}
 	downloadReq.maskMu = &sync.Mutex{}
 	downloadReq.allocationID = a.ID
@@ -1465,7 +1441,6 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
 	downloadReq.blobberReadCounters = make(map[string]int64)
-	downloadReq.maxReadPrice = maxR
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
