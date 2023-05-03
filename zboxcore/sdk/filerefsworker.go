@@ -31,6 +31,8 @@ type ObjectTreeRequest struct {
 	allocationID   string
 	allocationTx   string
 	blobbers       []*blockchain.StorageNode
+	authToken      string
+	pathHash       string
 	remotefilepath string
 	pageLimit      int // numbers of refs that will be returned by blobber at max
 	level          int
@@ -111,7 +113,20 @@ func (o *ObjectTreeRequest) GetRefs() (*ObjectTreeResult, error) {
 
 func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 	defer o.wg.Done()
-	oReq, err := zboxutil.NewRefsRequest(bUrl, o.allocationID, o.remotefilepath, o.offsetPath, o.updatedDate, o.offsetDate, o.fileType, o.refType, o.level, o.pageLimit)
+	oReq, err := zboxutil.NewRefsRequest(
+		bUrl,
+		o.allocationID,
+		o.remotefilepath,
+		o.pathHash,
+		o.authToken,
+		o.offsetPath,
+		o.updatedDate,
+		o.offsetDate,
+		o.fileType,
+		o.refType,
+		o.level,
+		o.pageLimit,
+	)
 	if err != nil {
 		oTR.err = err
 		return
@@ -151,27 +166,29 @@ func (o *ObjectTreeRequest) getFileRefs(oTR *oTreeResponse, bUrl string) {
 // i.e. we cannot calculate hash of response and have consensus on it
 type ORef struct {
 	SimilarField
-	ID int64 `json:"id"`
+	ID        int64            `json:"id"`
+	CreatedAt common.Timestamp `json:"created_at"`
+	UpdatedAt common.Timestamp `json:"updated_at"`
 }
 
 type SimilarField struct {
-	FileID              string           `json:"file_id"`
-	Type                string           `json:"type"`
-	AllocationID        string           `json:"allocation_id"`
-	LookupHash          string           `json:"lookup_hash"`
-	Name                string           `json:"name"`
-	Path                string           `json:"path"`
-	PathHash            string           `json:"path_hash"`
-	ParentPath          string           `json:"parent_path"`
-	PathLevel           int              `json:"level"`
-	Size                int64            `json:"size"`
-	ActualFileSize      int64            `json:"actual_file_size"`
-	ActualFileHash      string           `json:"actual_file_hash"`
-	MimeType            string           `json:"mimetype"`
-	ActualThumbnailSize int64            `json:"actual_thumbnail_size"`
-	ActualThumbnailHash string           `json:"actual_thumbnail_hash"`
-	CreatedAt           common.Timestamp `json:"created_at"`
-	UpdatedAt           common.Timestamp `json:"updated_at"`
+	FileID              string `json:"file_id"`
+	FileMetaHash        string `json:"file_meta_hash"`
+	Type                string `json:"type"`
+	AllocationID        string `json:"allocation_id"`
+	LookupHash          string `json:"lookup_hash"`
+	Name                string `json:"name"`
+	Path                string `json:"path"`
+	PathHash            string `json:"path_hash"`
+	ParentPath          string `json:"parent_path"`
+	PathLevel           int    `json:"level"`
+	Size                int64  `json:"size"`
+	EncryptedKey        string `json:"encrypted_key"`
+	ActualFileSize      int64  `json:"actual_file_size"`
+	ActualFileHash      string `json:"actual_file_hash"`
+	MimeType            string `json:"mimetype"`
+	ActualThumbnailSize int64  `json:"actual_thumbnail_size"`
+	ActualThumbnailHash string `json:"actual_thumbnail_hash"`
 }
 
 type RecentlyAddedRefRequest struct {
