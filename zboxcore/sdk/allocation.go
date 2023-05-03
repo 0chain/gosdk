@@ -566,7 +566,9 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 		fullconsensus:   a.fullconsensus,
 	}
 	mo.connectionID = zboxutil.NewConnectionId()
+	allFiles := make(map[string]bool)
 	for _, op := range operations {
+		remotePath := op.RemotePath
 		var operation Operationer
 		switch op.OperationType {
 
@@ -580,12 +582,14 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 		case constants.FileOperationInsert:
+			remotePath = op.FileMeta.RemotePath
 			operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, false, op.Opts...)
 
 		case constants.FileOperationDelete:
 			operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
 
 		case constants.FileOperationUpdate:
+			remotePath = op.FileMeta.RemotePath
 			operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, true, op.Opts...)
 
 		case constants.FileOperationCreateDir:
@@ -595,11 +599,15 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 			return errors.New("invalid_operation", "Operation is not valid")
 
 		}
+		if _, ok := allFiles[remotePath]; ok {
+			return errors.New("conflicting_operatoin", "Conflicting operations are not allowed")
+		}
 		err := operation.Verify(a)
 		if err != nil {
 			return err
 		}
 		mo.operations = append(mo.operations, operation)
+		allFiles[remotePath] = true
 
 	}
 
