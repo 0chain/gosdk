@@ -648,9 +648,6 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 					wgErrors <- err
 				}
 
-			} else {
-
-				logger.Logger.Info("Uploaded to blobber ", b.blobber.Baseurl)
 			}
 		}(blobber, body, formData, pos)
 	}

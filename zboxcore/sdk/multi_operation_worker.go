@@ -50,10 +50,12 @@ func (mo *MultiOperation) Process() error {
 	errs := make(chan error, 1)
 	for idx, op := range mo.operations {
 		uid := util.GetNewUUID()
-		// Don't use goroutine for the first operation because in blobber code we try to fetch the allocation
+		// Don't use goroutine for the first operation because: 
+		// 1. In blobber code we try to fetch the allocation
 		// from the postgress and sharders, if not found blobber try to create it. This is done without lock, so if we
 		// sent multiple goroutine together, blobber will try to create multiple allocations for same allocation id
 		// and eventually throw error.
+		// 2. Blobber will create entry connectionID entry in allocation_connections table for the first op only.
 		if idx == 0 {
 			refs, mask, err := op.Process(mo.allocationObj, mo.connectionID) // Process with each blobber
 			mo.operationMask.And(mask)
