@@ -27,17 +27,18 @@ const (
 )
 
 type DirRequest struct {
-	allocationID string
-	allocationTx string
-	remotePath   string
-	blobbers     []*blockchain.StorageNode
-	ctx          context.Context
-	ctxCncl      context.CancelFunc
-	wg           *sync.WaitGroup
-	dirMask      zboxutil.Uint128
-	mu           *sync.Mutex
-	connectionID string
-	timestamp    int64
+	allocationObj *Allocation
+	allocationID  string
+	allocationTx  string
+	remotePath    string
+	blobbers      []*blockchain.StorageNode
+	ctx           context.Context
+	ctxCncl       context.CancelFunc
+	wg            *sync.WaitGroup
+	dirMask       zboxutil.Uint128
+	mu            *sync.Mutex
+	connectionID  string
+	timestamp     int64
 	Consensus
 }
 
@@ -83,6 +84,21 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 		req.blobbers, &req.Consensus, existingDirCount, time.Minute, req.connectionID)
 	if err != nil {
 		return fmt.Errorf("directory creation failed. Err: %s", err.Error())
+	}
+	//Check if the allocation is to be repaired or rolled back
+	status, err := req.allocationObj.CheckAllocStatus()
+	if err != nil {
+		logger.Logger.Error("Error checking allocation status: ", err)
+		return fmt.Errorf("directory creation failed: %s", err.Error())
+	}
+
+	if status == Repair {
+		logger.Logger.Info("Repairing allocation")
+		//TODO: Need status callback to call repair allocation
+		// err = req.allocationObj.RepairAlloc()
+		// if err != nil {
+		// 	return err
+		// }
 	}
 	defer writeMarkerMU.Unlock(req.ctx, req.dirMask,
 		a.Blobbers, time.Minute, req.connectionID) //nolint: errcheck

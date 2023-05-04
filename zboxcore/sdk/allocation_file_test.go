@@ -41,6 +41,8 @@ func setupHttpResponses(
 		wmBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.WM_LOCK_ENDPOINT
 		commitBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.COMMIT_ENDPOINT
 		refPathBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.REFERENCE_ENDPOINT
+		latestMarkerBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.LATEST_WRITE_MARKER_ENDPOINT
+		rollbackBlobberBase := t.Name() + "/" + mockBlobberUrl + strconv.Itoa(i) + zboxutil.ROLLBACK_ENDPOINT
 
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return req.Method == "POST" &&
@@ -124,8 +126,37 @@ func setupHttpResponses(
 		}, nil)
 
 		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return req.Method == "GET" &&
+				strings.Contains(req.URL.String(), latestMarkerBlobberBase)
+		})).Return(&http.Response{
+			StatusCode: func() int {
+				if i < numCorrect {
+					return http.StatusOK
+				}
+				return http.StatusBadRequest
+			}(),
+			Body: func() io.ReadCloser {
+				s := `{"latest_write_marker":null,"prev_write_marker":null}`
+				return ioutil.NopCloser(bytes.NewReader([]byte(s)))
+			}(),
+		}, nil)
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 			return req.Method == "POST" &&
 				strings.Contains(req.URL.String(), commitBlobberBase)
+		})).Return(&http.Response{
+			StatusCode: func() int {
+				if i < numCorrect {
+					return http.StatusOK
+				}
+				return http.StatusBadRequest
+			}(),
+			Body: ioutil.NopCloser(bytes.NewReader(nil)),
+		}, nil)
+
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return req.Method == "POST" &&
+				strings.Contains(req.URL.String(), rollbackBlobberBase)
 		})).Return(&http.Response{
 			StatusCode: func() int {
 				if i < numCorrect {

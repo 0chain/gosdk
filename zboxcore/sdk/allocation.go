@@ -345,15 +345,16 @@ func (a *Allocation) CreateDir(remotePath string) error {
 	remotePath = zboxutil.RemoteClean(remotePath)
 	timestamp := int64(common.Now())
 	req := DirRequest{
-		allocationID: a.ID,
-		allocationTx: a.Tx,
-		blobbers:     a.Blobbers,
-		mu:           &sync.Mutex{},
-		dirMask:      zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
-		connectionID: zboxutil.NewConnectionId(),
-		remotePath:   remotePath,
-		wg:           &sync.WaitGroup{},
-		timestamp:    timestamp,
+		allocationObj: a,
+		allocationID:  a.ID,
+		allocationTx:  a.Tx,
+		blobbers:      a.Blobbers,
+		mu:            &sync.Mutex{},
+		dirMask:       zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
+		connectionID:  zboxutil.NewConnectionId(),
+		remotePath:    remotePath,
+		wg:            &sync.WaitGroup{},
+		timestamp:     timestamp,
 		Consensus: Consensus{
 			consensusThresh: a.consensusThreshold,
 			fullconsensus:   a.fullconsensus,
@@ -834,7 +835,7 @@ func (a *Allocation) GetRefsWithAuthTicket(authToken, offsetPath, updatedDate, o
 	return a.getRefs("", authTicket.FilePathHash, string(at), offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
 }
 
-//This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
+// This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
 func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
 	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
 		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
