@@ -13,6 +13,15 @@ import (
 	"github.com/0chain/gosdk/core/sys"
 )
 
+func clone(m map[string]string) map[string]string {
+	cl := make(map[string]string, len(m))
+	for k, v := range m {
+		cl[k] = v
+	}
+
+	return cl
+}
+
 // New create a Resty instance.
 func New(opts ...Option) *Resty {
 	r := &Resty{
@@ -20,7 +29,7 @@ func New(opts ...Option) *Resty {
 		// or the context's timeout is longer than DefaultRequestTimeout.
 		timeout: DefaultRequestTimeout,
 		retry:   DefaultRetry,
-		header:  DefaultHeader,
+		header:  clone(DefaultHeader),
 	}
 
 	for _, option := range opts {
