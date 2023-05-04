@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/0chain/gosdk/core/resty"
 	"net/http"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/0chain/gosdk/core/resty"
 )
 
 type coingeckoQuoteQuery struct {

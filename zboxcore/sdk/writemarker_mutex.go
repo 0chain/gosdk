@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
@@ -185,7 +184,6 @@ func (wmMu *WriteMarkerMutex) Lock(
 	consensus.consensus = addConsensus
 	wg := &sync.WaitGroup{}
 	var pos uint64
-	requestTime := time.Now()
 
 	for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
@@ -193,7 +191,7 @@ func (wmMu *WriteMarkerMutex) Lock(
 		blobber := blobbers[pos]
 
 		wg.Add(1)
-		go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, &requestTime, timeOut, wg)
+		go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, timeOut, wg)
 	}
 
 	wg.Wait()
@@ -210,6 +208,7 @@ func (wmMu *WriteMarkerMutex) Lock(
 		This goroutine will refresh lock after 20 seconds have passed. It will only complete if context is
 		completed, that is why, the caller should make proper use of context and cancel it when work is done.
 	*/
+	requestTime := time.Now()
 	go func() {
 		for {
 			<-time.After(time.Second*20 - time.Since(requestTime))
@@ -220,15 +219,13 @@ func (wmMu *WriteMarkerMutex) Lock(
 			}
 
 			wg := &sync.WaitGroup{}
-			requestTime = time.Now()
-
 			for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 				pos = uint64(i.TrailingZeros())
 
 				blobber := blobbers[pos]
 
 				wg.Add(1)
-				go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, &requestTime, timeOut, wg)
+				go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, timeOut, wg)
 			}
 
 			wg.Wait()
@@ -241,7 +238,7 @@ func (wmMu *WriteMarkerMutex) Lock(
 func (wmMu *WriteMarkerMutex) lockBlobber(
 	ctx context.Context, mask *zboxutil.Uint128, maskMu *sync.Mutex,
 	consensus *Consensus, b *blockchain.StorageNode, pos uint64, connID string,
-	requestTime *time.Time, timeOut time.Duration, wg *sync.WaitGroup) {
+	timeOut time.Duration, wg *sync.WaitGroup) {
 
 	defer wg.Done()
 
@@ -270,17 +267,16 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 
 	var req *http.Request
 
+	req, err = zboxutil.NewWriteMarkerLockRequest(
+		b.Baseurl, wmMu.allocationObj.Tx, connID)
+
+	if err != nil {
+		return
+	}
+
 	var resp *http.Response
 	var shouldContinue bool
 	for retry := 0; retry < 3; retry++ {
-		*requestTime = time.Now();
-		rT := strconv.FormatInt(requestTime.Unix(), 10)
-		req, err = zboxutil.NewWriteMarkerLockRequest(
-			b.Baseurl, wmMu.allocationObj.Tx, connID, rT)
-	
-		if err != nil {
-			return
-		}
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, timeOut)
 			resp, err = zboxutil.Client.Do(req.WithContext(reqCtx))

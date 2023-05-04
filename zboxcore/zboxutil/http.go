@@ -24,7 +24,6 @@ import (
 )
 
 const SC_REST_API_URL = "v1/screst/"
-const REGISTER_CLIENT = "v1/client/put"
 
 const MAX_RETRIES = 5
 const SLEEP_BETWEEN_RETRIES = 5
@@ -240,13 +239,15 @@ func NewObjectTreeRequest(baseUrl, allocation string, path string) (*http.Reques
 	return req, nil
 }
 
-func NewRefsRequest(baseUrl, allocationID, path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*http.Request, error) {
+func NewRefsRequest(baseUrl, allocationID, path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*http.Request, error) {
 	nUrl, err := joinUrl(baseUrl, REFS_ENDPOINT, allocationID)
 	if err != nil {
 		return nil, err
 	}
 	params := url.Values{}
 	params.Add("path", path)
+	params.Add("path_hash", pathHash)
+	params.Add("auth_token", authToken)
 	params.Add("offsetPath", offsetPath)
 	params.Add("pageLimit", strconv.Itoa(pageLimit))
 	params.Add("updatedDate", updatedDate)
@@ -450,7 +451,7 @@ func NewUploadRequestWithMethod(baseURL, allocation string, body io.Reader, meth
 }
 
 func NewWriteMarkerLockRequest(
-	baseURL, allocation, connID, requestTime string) (*http.Request, error) {
+	baseURL, allocation, connID string) (*http.Request, error) {
 
 	u, err := joinUrl(baseURL, WM_LOCK_ENDPOINT, allocation)
 	if err != nil {
@@ -459,7 +460,6 @@ func NewWriteMarkerLockRequest(
 
 	params := url.Values{}
 	params.Add("connection_id", connID)
-	params.Add("request_time", requestTime)
 	u.RawQuery = params.Encode() // Escape Query Parameters
 
 	req, err := http.NewRequest(http.MethodPost, u.String(), nil)
