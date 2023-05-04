@@ -44,14 +44,15 @@ async function startPlay({
   if (isFragmented && MediaSource.isTypeSupported(mimeCodecs)) {
     return playChunks({goWasm, videoElement, buf, mimeCodecs});
   }
-
   goWasm.sdk.stop();
   // allocationID, remotePath, authTicket, lookupHash string,
   // downloadThumbnailOnly, autoCommit bool
-  const {url} = await goWasm.sdk.download(
-      allocationId, remotePath, authTicket, lookupHash, false, false);
+  window.downloadCallback = function (totalBytes, completedBytes, error) {
+    console.log("download: " + completedBytes + "/" + totalBytes + " err:" + error)
+  }
 
-  videoElement.src = url;
+  const file = await goWasm.sdk.download(allocationId, remotePath, authTicket, lookupHash, false, 10, "downloadCallback")
+  videoElement.src = file.url;
   videoElement.crossOrigin = 'anonymous';
   videoElement.play();
 }
