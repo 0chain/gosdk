@@ -2,6 +2,7 @@ package sdk
 
 import (
 	"context"
+	"encoding/hex"
 
 	"github.com/0chain/errors"
 
@@ -67,10 +68,18 @@ func (req *ShareRequest) getAuthTicket(clientID, encPublicKey string) (*marker.A
 
 	if encPublicKey != "" { // file is encrypted
 		encScheme := encryption.NewEncryptionScheme()
-		if _, err := encScheme.Initialize((client.GetClient().Mnemonic)); err != nil {
-			return nil, err
+		privateKey := client.GetClientPrivateKey()
+		if privateKey != "" {
+			key, err := hex.DecodeString(privateKey)
+			if err != nil {
+				return nil, err
+			}
+			encScheme.InitializeWithPrivateKey(key)
+		} else {
+			if _, err := encScheme.Initialize((client.GetClient().Mnemonic)); err != nil {
+				return nil, err
+			}
 		}
-
 		reKey, err := encScheme.GetReGenKey(encPublicKey, "filetype:audio")
 		if err != nil {
 			return nil, err
