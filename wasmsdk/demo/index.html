@@ -125,7 +125,9 @@
   <fieldset>
     <legend>Media WebPlayer</legend>
 
-    <video id='player' preload="metadata" controls></video>
+    <div id="container">
+      <video id='player' preload="metadata" controls></video>
+    </div>
     <div className="controls">
       [ <button id="btnPlay">Play</button> | <button id="btnPlayShared">Play with auth ticket</button> ]
       <button id="btnPause">Pause</button>
@@ -537,6 +539,7 @@
           startPlay({
             goWasm,
             allocationId,
+            containerElement: get('container'),
             videoElement: player,
             remotePath: file?.path,
             authTicket: '',
