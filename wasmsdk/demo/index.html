@@ -183,13 +183,13 @@
     }
 
     const query = new URLSearchParams(window.location.search);
-    
-    let network = query.get('network') 
+
+    let network = query.get('network')
     if (!network || network == 'undefined') {
       network = "dev.zus.network"
     }
-  
-    const blockWorker = 'https://'+network+'/dns';
+
+    const blockWorker = 'http://100.78.70.98:9091';
     const config = [
       networkConfig.chainId,
       blockWorker,

@@ -417,20 +417,36 @@ func (su *ChunkedUpload) createUploadProgress() UploadProgress {
 func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 	encscheme := encryption.NewEncryptionScheme()
 
-	privateKey := client.GetClientPrivateKey()
-	if privateKey != "" {
-		privateKeyB, _ := hex.DecodeString(privateKey)
-		err := encscheme.InitializeWithPrivateKey(privateKeyB)
+	if len(su.progress.EncryptPrivateKey) > 0 {
+
+		privateKey, _ := hex.DecodeString(su.progress.EncryptPrivateKey)
+
+		err := encscheme.InitializeWithPrivateKey(privateKey)
 		if err != nil {
 			return nil
 		}
 	} else {
-		privateKeyB, err := encscheme.Initialize(client.GetClient().Mnemonic)
+		// privKey := client.GetClientPrivateKey()
+		// if privKey != "" {
+		// 	privateKey, _ := hex.DecodeString(privKey)
+		// 	err := encscheme.InitializeWithPrivateKey(privateKey)
+		// 	if err != nil {
+		// 		return nil
+		// 	}
+		// 	su.progress.EncryptPrivateKey = privKey
+		// } else {
+		// 	privateKey, err := encscheme.Initialize(client.GetClient().Mnemonic)
+		// 	if err != nil {
+		// 		return nil
+		// 	}
+		// 	su.progress.EncryptPrivateKey = hex.EncodeToString(privateKey)
+		// }
+		privateKey, err := encscheme.Initialize(client.GetClient().Mnemonic)
 		if err != nil {
 			return nil
 		}
 
-		su.progress.EncryptPrivateKey = hex.EncodeToString(privateKeyB)
+		su.progress.EncryptPrivateKey = hex.EncodeToString(privateKey)
 	}
 
 	encscheme.InitForEncryption("filetype:audio")
