@@ -1053,8 +1053,9 @@ func (t *Transaction) ZCNSCAddAuthorizer(ip AddAuthorizerPayload) (err error) {
 }
 
 // EstimateFee estimates transaction fee
-func (t *Transaction) EstimateFee(reqPercent float32) (uint64, error) {
-	return transaction.EstimateFee(t.txn, _config.chain.Miners, reqPercent)
+func (t *Transaction) EstimateFee(reqPercent float32) (int64, error) {
+	fee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, reqPercent)
+	return int64(fee), err
 }
 
 // ConvertTokenToSAS converts ZCN tokens to SAS tokens
