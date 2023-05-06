@@ -669,7 +669,7 @@ func NewWritemarkerRequest(baseUrl, allocation string) (*http.Request, error) {
 		return nil, err
 	}
 
-	req, err := http.NewRequest(http.MethodPost, nurl.String(), nil)
+	req, err := http.NewRequest(http.MethodGet, nurl.String(), nil)
 	if err != nil {
 		return nil, err
 	}

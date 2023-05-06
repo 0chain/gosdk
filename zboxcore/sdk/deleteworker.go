@@ -12,6 +12,7 @@ import (
 	"github.com/0chain/errors"
 
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -233,6 +234,7 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 	defer writeMarkerMutex.Unlock(req.ctx, req.deleteMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	req.consensus.consensus = removedNum
+	req.timestamp = int64(common.Now())
 	wg := &sync.WaitGroup{}
 	activeBlobbers := req.deleteMask.CountOnes()
 	wg.Add(activeBlobbers)

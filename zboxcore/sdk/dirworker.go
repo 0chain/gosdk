@@ -108,6 +108,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 
 func (req *DirRequest) commitRequest(existingDirCount int) error {
 	req.Consensus.Reset()
+	req.timestamp = int64(common.Now())
 	req.consensus = existingDirCount
 	wg := &sync.WaitGroup{}
 	activeBlobbersNum := req.dirMask.CountOnes()

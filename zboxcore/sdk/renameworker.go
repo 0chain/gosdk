@@ -13,6 +13,7 @@ import (
 	"github.com/0chain/errors"
 
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
@@ -212,6 +213,7 @@ func (req *RenameRequest) ProcessRename() error {
 	defer writeMarkerMutex.Unlock(req.ctx, req.renameMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	req.consensus.Reset()
+	req.timestamp = int64(common.Now())
 	activeBlobbers := req.renameMask.CountOnes()
 	wg := &sync.WaitGroup{}
 	wg.Add(activeBlobbers)
