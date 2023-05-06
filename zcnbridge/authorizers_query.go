@@ -150,8 +150,8 @@ func (b *BridgeClient) QueryEthereumBurnEvents(startNonce string) ([]*ethereum.B
 
 		for _, burnEvent := range burnEvents.BurnEvents {
 			result = append(result, &ethereum.BurnEvent{
-				Nonce:           burnEvent.Nonce,
-				TransactionHash: burnEvent.TransactionHash,
+				Nonce: burnEvent.Nonce,
+				TransactionHash:  burnEvent.TransactionHash,
 			})
 		}
 
@@ -215,7 +215,7 @@ func (b *BridgeClient) QueryZChainMintPayload(ethBurnHash string) (*zcnsc.MintPa
 		payload := &zcnsc.MintPayload{
 			EthereumTxnID:     burnTicket.TxnID,
 			Amount:            common.Balance(burnTicket.Amount),
-			Nonce:             burnTicket.Amount,
+			Nonce:             burnTicket.Nonce,
 			Signatures:        sigs,
 			ReceivingClientID: burnTicket.ReceivingClientID,
 		}

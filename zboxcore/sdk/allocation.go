@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -315,14 +316,14 @@ func (a *Allocation) CanRename() bool {
 func (a *Allocation) UpdateFile(workdir, localpath string, remotepath string,
 	status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false, "", false)
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false, "", false, false)
 }
 
 // UploadFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) UploadFile(workdir, localpath string, remotepath string,
 	status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", false)
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", false, false)
 }
 
 func (a *Allocation) CreateDir(remotePath string) error {
@@ -364,7 +365,7 @@ func (a *Allocation) RepairFile(localpath string, remotepath string,
 
 	idr, _ := homedir.Dir()
 	return a.StartChunkedUpload(idr, localpath, remotepath, status, false, true,
-		"", false)
+		"", false, false)
 }
 
 // UpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
@@ -372,7 +373,7 @@ func (a *Allocation) UpdateFileWithThumbnail(workdir, localpath string, remotepa
 	thumbnailpath string, status StatusCallback) error {
 
 	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false,
-		thumbnailpath, false)
+		thumbnailpath, false, false)
 }
 
 // UploadFileWithThumbnail [Deprecated]please use CreateChunkedUpload
@@ -381,21 +382,21 @@ func (a *Allocation) UploadFileWithThumbnail(workdir string, localpath string,
 	status StatusCallback) error {
 
 	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false,
-		thumbnailpath, false)
+		thumbnailpath, false, false)
 }
 
 // EncryptAndUpdateFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUpdateFile(workdir string, localpath string, remotepath string,
 	status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false, "", true)
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false, "", true, false)
 }
 
 // EncryptAndUploadFile [Deprecated]please use CreateChunkedUpload
 func (a *Allocation) EncryptAndUploadFile(workdir string, localpath string, remotepath string,
 	status StatusCallback) error {
 
-	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", true)
+	return a.StartChunkedUpload(workdir, localpath, remotepath, status, false, false, "", true, false)
 }
 
 // EncryptAndUpdateFileWithThumbnail [Deprecated]please use CreateChunkedUpload
@@ -403,7 +404,7 @@ func (a *Allocation) EncryptAndUpdateFileWithThumbnail(workdir string, localpath
 	remotepath string, thumbnailpath string, status StatusCallback) error {
 
 	return a.StartChunkedUpload(workdir, localpath, remotepath, status, true, false,
-		thumbnailpath, true)
+		thumbnailpath, true, false)
 }
 
 // EncryptAndUploadFileWithThumbnail [Deprecated]please use CreateChunkedUpload
@@ -424,6 +425,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 		false,
 		thumbnailpath,
 		true,
+		false,
 	)
 }
 
@@ -434,7 +436,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	isRepair bool,
 	thumbnailPath string,
 	encryption bool,
-
+	webStreaming bool,
 ) error {
 
 	if !a.isInitialized() {
@@ -496,7 +498,7 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	ChunkedUpload, err := CreateChunkedUpload(workdir,
 		a, fileMeta, fileReader,
 		isUpdate, isRepair,
-		options...)
+		webStreaming, options...)
 	if err != nil {
 		return err
 	}
@@ -677,19 +679,17 @@ func (a *Allocation) ListDir(path string) (*ListResult, error) {
 	return nil, errors.New("list_request_failed", "Failed to get list response from the blobbers")
 }
 
-// This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
-// TODO use allocation context
-func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
-	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
-		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
-	}
+func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
 	if !a.isInitialized() {
 		return nil, notInitialized
 	}
+
 	oTreeReq := &ObjectTreeRequest{
 		allocationID:   a.ID,
 		allocationTx:   a.Tx,
 		blobbers:       a.Blobbers,
+		authToken:      authToken,
+		pathHash:       pathHash,
 		remotefilepath: path,
 		pageLimit:      pageLimit,
 		level:          level,
@@ -703,8 +703,44 @@ func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType
 	}
 	oTreeReq.fullconsensus = a.fullconsensus
 	oTreeReq.consensusThresh = a.consensusThreshold
-
 	return oTreeReq.GetRefs()
+}
+
+// GetRefsWithAuthTicket get refs that are children of shared remote path.
+func (a *Allocation) GetRefsWithAuthTicket(authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
+	if authToken == "" {
+		return nil, errors.New("empty_auth_token", "auth token cannot be empty")
+	}
+	sEnc, err := base64.StdEncoding.DecodeString(authToken)
+	if err != nil {
+		return nil, errors.New("auth_ticket_decode_error", "Error decoding the auth ticket."+err.Error())
+	}
+
+	authTicket := new(marker.AuthTicket)
+	if err := json.Unmarshal(sEnc, authTicket); err != nil {
+		return nil, errors.New("json_unmarshall_error", err.Error())
+	}
+
+	at, _ := json.Marshal(authTicket)
+	return a.getRefs("", authTicket.FilePathHash, string(at), offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
+}
+
+//This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
+func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
+	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
+		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
+	}
+
+	return a.getRefs(path, "", "", offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
+}
+
+func (a *Allocation) GetRefsFromLookupHash(pathHash, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
+	if pathHash == "" {
+		return nil, errors.New("invalid_lookup_hash", "lookup hash cannot be empty")
+	}
+
+	return a.getRefs("", pathHash, "", offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
+
 }
 
 func (a *Allocation) GetRecentlyAddedRefs(page int, fromDate int64, pageLimit int) (*RecentlyAddedRefResult, error) {
@@ -1205,6 +1241,118 @@ func (a *Allocation) CancelDownload(remotepath string) error {
 		return nil
 	}
 	return errors.New("remote_path_not_found", "Invalid path. No download in progress for the path "+remotepath)
+}
+
+func (a *Allocation) DownloadFromReader(
+	remotePath, localPath, pathHash, authToken, contentMode string,
+	verifyDownload bool, blocksPerMarker uint) error {
+
+	finfo, err := os.Stat(localPath)
+	if err != nil {
+		return err
+	}
+	if !finfo.IsDir() {
+		return errors.New("invalid_path", "local path must be directory")
+	}
+
+	r, err := a.GetAllocationFileReader(
+		remotePath, pathHash, authToken, contentMode, verifyDownload, blocksPerMarker)
+	if err != nil {
+		return err
+	}
+
+	sd := r.(*StreamDownload)
+
+	fileName := filepath.Base(sd.remotefilepath)
+	var localFPath string
+	if contentMode == DOWNLOAD_CONTENT_THUMB {
+		localFPath = filepath.Join(localPath, fileName, ".thumb")
+	} else {
+		localFPath = filepath.Join(localPath, fileName)
+	}
+
+	finfo, err = os.Stat(localFPath)
+
+	var f *os.File
+	if errors.Is(err, os.ErrNotExist) {
+		f, err = os.Create(localFPath)
+	} else {
+		r.Seek(finfo.Size(), io.SeekStart)
+		f, err = os.OpenFile(localFPath, os.O_WRONLY|os.O_APPEND, 0644)
+	}
+
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	buf := make([]byte, 1024*KB)
+	for {
+		n, err := r.Read(buf)
+		if err != nil && errors.Is(err, io.EOF) {
+			_, err = f.Write(buf[:n])
+			if err != nil {
+				return err
+			}
+			break
+		}
+		_, err = f.Write(buf[:n])
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// GetStreamDownloader will check file ref existence and returns an instance that provides
+// io.ReadSeekerCloser interface
+func (a *Allocation) GetAllocationFileReader(
+	remotePath,
+	pathHash,
+	authToken,
+	contentMode string,
+	verifyDownload bool,
+	blocksPerMarker uint) (io.ReadSeekCloser, error) {
+
+	if !a.isInitialized() {
+		return nil, notInitialized
+	}
+	//Remove content mode option
+	remotePath = filepath.Clean(remotePath)
+	var res *ObjectTreeResult
+	var err error
+	switch {
+	case authToken != "":
+		res, err = a.GetRefsWithAuthTicket(authToken, "", "", "", "", "regular", 0, 1)
+	case remotePath != "":
+		res, err = a.GetRefs(remotePath, "", "", "", "", "regular", 0, 1)
+	case pathHash != "":
+		res, err = a.GetRefsFromLookupHash(pathHash, "", "", "", "", "regular", 0, 1) //
+	default:
+		return nil, errors.New("invalid_path", "remote path or authticket is required")
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(res.Refs) == 0 {
+		return nil, errors.New("file_does_not_exist", "")
+	}
+	ref := &res.Refs[0]
+	if ref.Type != fileref.FILE {
+		return nil, errors.New("operation_not_supported", "downloading other than file is not supported")
+	}
+
+	sdo := &StreamDownloadOption{
+		ContentMode:     contentMode,
+		AuthTicket:      authToken,
+		VerifyDownload:  verifyDownload,
+		BlocksPerMarker: blocksPerMarker,
+	}
+
+	return GetDStorageFileReader(a, ref, sdo)
 }
 
 func (a *Allocation) DownloadThumbnailFromAuthTicket(localPath string,

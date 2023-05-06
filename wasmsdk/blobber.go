@@ -373,6 +373,7 @@ type BulkUploadOption struct {
 
 	ThumbnailBytes jsbridge.Bytes `json:"thumbnailBytes,omitempty"`
 	Encrypt        bool           `json:"encrypt,omitempty"`
+	webstreaming   bool           `json:"webstreaming,omitempty"`
 	IsUpdate       bool           `json:"isUpdate,omitempty"`
 	IsRepair       bool           `json:"isRepair,omitempty"`
 
@@ -409,6 +410,7 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 				o.ReadChunkFuncName,
 				o.FileSize,
 				o.ThumbnailBytes.Buffer,
+				o.webstreaming,
 				o.Encrypt,
 				o.IsUpdate,
 				o.IsRepair,
@@ -433,7 +435,7 @@ func bulkUpload(jsonBulkUploadOptions string) ([]BulkUploadResult, error) {
 	return results, nil
 }
 
-func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string, fileSize int64, thumbnailBytes []byte, encrypt, isUpdate, isRepair bool, numBlocks int, callbackFuncName string) (bool, error) {
+func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string, fileSize int64, thumbnailBytes []byte, webStreaming, encrypt, isUpdate, isRepair bool, numBlocks int, callbackFuncName string) (bool, error) {
 
 	if len(allocationID) == 0 {
 		return false, RequiredArg("allocationID")
@@ -493,7 +495,7 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 		numBlocks = 100
 	}
 
-	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair,
+	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming,
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
@@ -519,7 +521,7 @@ func uploadWithJsFuncs(allocationID, remotePath string, readChunkFuncName string
 }
 
 // upload upload file
-func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, encrypt, isUpdate, isRepair bool, numBlocks int) (*FileCommandResponse, error) {
+func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, webStreaming, encrypt, isUpdate, isRepair bool, numBlocks int) (*FileCommandResponse, error) {
 	if len(allocationID) == 0 {
 		return nil, RequiredArg("allocationID")
 	}
@@ -572,7 +574,7 @@ func upload(allocationID, remotePath string, fileBytes, thumbnailBytes []byte, e
 		numBlocks = 100
 	}
 
-	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair,
+	ChunkedUpload, err := sdk.CreateChunkedUpload("/", allocationObj, fileMeta, fileReader, isUpdate, isRepair, webStreaming,
 		sdk.WithThumbnail(thumbnailBytes),
 		sdk.WithEncrypt(encrypt),
 		sdk.WithStatusCallback(statusBar),
