@@ -441,12 +441,6 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 			}
 			su.progress.EncryptPrivateKey = hex.EncodeToString(privateKey)
 		}
-		privateKey, err := encscheme.Initialize(client.GetClient().Mnemonic)
-		if err != nil {
-			return nil
-		}
-
-		su.progress.EncryptPrivateKey = hex.EncodeToString(privateKey)
 	}
 
 	encscheme.InitForEncryption("filetype:audio")
