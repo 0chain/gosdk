@@ -426,21 +426,21 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 			return nil
 		}
 	} else {
-		// privKey := client.GetClientPrivateKey()
-		// if privKey != "" {
-		// 	privateKey, _ := hex.DecodeString(privKey)
-		// 	err := encscheme.InitializeWithPrivateKey(privateKey)
-		// 	if err != nil {
-		// 		return nil
-		// 	}
-		// 	su.progress.EncryptPrivateKey = privKey
-		// } else {
-		// 	privateKey, err := encscheme.Initialize(client.GetClient().Mnemonic)
-		// 	if err != nil {
-		// 		return nil
-		// 	}
-		// 	su.progress.EncryptPrivateKey = hex.EncodeToString(privateKey)
-		// }
+		privKey := client.GetClientPrivateKey()
+		if privKey != "" {
+			privateKey, _ := hex.DecodeString(privKey)
+			err := encscheme.InitializeWithPrivateKey(privateKey)
+			if err != nil {
+				return nil
+			}
+			su.progress.EncryptPrivateKey = privKey
+		} else {
+			privateKey, err := encscheme.Initialize(client.GetClient().Mnemonic)
+			if err != nil {
+				return nil
+			}
+			su.progress.EncryptPrivateKey = hex.EncodeToString(privateKey)
+		}
 		privateKey, err := encscheme.Initialize(client.GetClient().Mnemonic)
 		if err != nil {
 			return nil

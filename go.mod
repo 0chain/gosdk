@@ -30,7 +30,6 @@ require (
 	github.com/spf13/viper v1.15.0
 	github.com/stretchr/testify v1.8.1
 	github.com/tyler-smith/go-bip39 v1.1.0
-	github.com/uptrace/bunrouter v1.0.20
 	go.dedis.ch/kyber/v3 v3.1.0
 	go.uber.org/zap v1.24.0
 	golang.org/x/crypto v0.6.0
