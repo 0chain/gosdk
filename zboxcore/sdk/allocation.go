@@ -600,7 +600,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 
 		}
 		if _, ok := allFiles[remotePath]; ok {
-			return errors.New("conflicting_operatoin", "Conflicting operations are not allowed")
+			return errors.New("conflicting_operation", "Conflicting operations are not allowed")
 		}
 		err := operation.Verify(a)
 		if err != nil {

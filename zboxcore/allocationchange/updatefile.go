@@ -16,7 +16,7 @@ type UpdateFileChange struct {
 	NewFile *fileref.FileRef
 }
 
-func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref, fileIDMeta map[string]string) (err error) {
+func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]string) (err error) {
 
 	if ch.NewFile.ActualFileHash == "" {
 		err = fmt.Errorf("empty actual file hash field")
