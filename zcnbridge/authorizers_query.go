@@ -146,12 +146,12 @@ func (b *BridgeClient) QueryEthereumBurnEvents(startNonce string) ([]*ethereum.B
 			return nil, errors.Wrap("type_cast", "failed to convert to *ethereumBurnEvents", err)
 		}
 
-		var result []*ethereum.BurnEvent
+		result := make([]*ethereum.BurnEvent, 0)
 
 		for _, burnEvent := range burnEvents.BurnEvents {
 			result = append(result, &ethereum.BurnEvent{
-				Nonce: burnEvent.Nonce,
-				TransactionHash:  burnEvent.TransactionHash,
+				Nonce:           burnEvent.Nonce,
+				TransactionHash: burnEvent.TransactionHash,
 			})
 		}
 
