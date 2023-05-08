@@ -114,6 +114,33 @@ func setupMockFile(t *testing.T, path string) (teardown func(t *testing.T)) {
 	}
 }
 
+func setupMockRollback(a *Allocation, mockClient *mocks.HttpClient) {
+
+	for _, blobber := range a.Blobbers {
+		url := blobber.Baseurl + zboxutil.LATEST_WRITE_MARKER_ENDPOINT
+		url = strings.TrimRight(url, "/")
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return strings.Contains(req.URL.String(), url)
+		})).Return(&http.Response{
+			StatusCode: http.StatusOK,
+			Body: func() io.ReadCloser {
+				s := `{"latest_write_marker":null,"prev_write_marker":null}`
+				return ioutil.NopCloser(bytes.NewReader([]byte(s)))
+			}(),
+		}, nil)
+
+		newUrl := blobber.Baseurl + zboxutil.ROLLBACK_ENDPOINT
+		newUrl = strings.TrimRight(newUrl, "/")
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return strings.Contains(req.URL.String(), newUrl)
+		})).Return(&http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewReader(nil)),
+		}, nil)
+	}
+
+}
+
 func setupMockFileAndReferencePathResult(t *testing.T, allocationID, name string) (teardown func(t *testing.T)) {
 	var buf = []byte("mockActualHash")
 	h := sha3.New256()

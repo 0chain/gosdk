@@ -17,7 +17,6 @@ import (
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
-	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
@@ -59,7 +58,7 @@ func GetWritemarker(allocID, id, baseUrl string) (*LatestPrevWriteMarker, error)
 			return nil, err
 		}
 		if resp.StatusCode == http.StatusTooManyRequests {
-			logger.Logger.Info(baseUrl, "got too many requests, retrying")
+			l.Logger.Info(baseUrl, "got too many requests, retrying")
 			var r int
 			r, err = zboxutil.GetRateLimitValue(resp)
 			if err != nil {
@@ -153,7 +152,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 			}
 
 			if resp.StatusCode == http.StatusTooManyRequests {
-				logger.Logger.Info(rb.blobber.Baseurl, connID, "got too many request error. Retrying")
+				l.Logger.Info(rb.blobber.Baseurl, connID, "got too many request error. Retrying")
 				var r int
 				r, err = zboxutil.GetRateLimitValue(resp)
 				if err != nil {
@@ -178,7 +177,7 @@ func (rb *RollbackBlobber) processRollback(ctx context.Context, tx string) error
 			return
 		}()
 		if err != nil {
-			logger.Logger.Error(err)
+			l.Logger.Error(err)
 			return err
 		}
 		if shouldContinue {

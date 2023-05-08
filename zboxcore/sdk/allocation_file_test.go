@@ -717,6 +717,25 @@ func TestAllocation_RepairFile(t *testing.T) {
 				}(frName, hash),
 			}, nil)
 
+			urlLatestWritemarker := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/latestwritemarker"
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.HasPrefix(req.URL.String(), urlLatestWritemarker)
+			})).Return(&http.Response{
+				StatusCode: http.StatusOK,
+				Body: func() io.ReadCloser {
+					s := `{"latest_write_marker":null,"prev_write_marker":null}`
+					return ioutil.NopCloser(bytes.NewReader([]byte(s)))
+				}(),
+			}, nil)
+
+			urlRollback := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/connection/rollback"
+			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+				return strings.HasPrefix(req.URL.String(), urlRollback)
+			})).Return(&http.Response{
+				StatusCode: http.StatusOK,
+				Body:       ioutil.NopCloser(bytes.NewReader(nil)),
+			}, nil)
+
 			urlFilePath := "http://TestAllocation_RepairFile" + testName + mockBlobberUrl + strconv.Itoa(i) + "/v1/file/referencepath"
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
 				return strings.HasPrefix(req.URL.String(), urlFilePath)
