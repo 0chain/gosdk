@@ -41,8 +41,6 @@ type BlockDownloadRequest struct {
 	ctx                context.Context
 	result             chan *downloadBlock
 	shouldVerify       bool
-	downReq            *DownloadRequest
-	totalReqBlocks     int64
 }
 
 type downloadResponse struct {
@@ -133,7 +131,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		header.BlockNum = req.blockNum
 		header.NumBlocks = req.numBlocks
 		header.VerifyDownload = req.shouldVerify
-		header.TotalReqBlocks = req.totalReqBlocks
 
 		if req.authTicket != nil {
 			header.AuthToken, _ = json.Marshal(req.authTicket) //nolint: errcheck
@@ -191,10 +188,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 			rspData.idx = req.blobberIdx
 			rspData.Success = true
-
-			req.downReq.readCountersMutex.Lock()
-			req.downReq.blobberReadCounters[req.blobber.ID] += req.numBlocks
-			req.downReq.readCountersMutex.Unlock()
 
 			if req.encryptedKey != "" {
 				if req.authTicket != nil {

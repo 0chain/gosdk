@@ -11,7 +11,6 @@ import (
 	"math"
 	"net/http"
 	"os"
-	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -65,13 +64,13 @@ type DownloadRequest struct {
 	completedCallback  func(remotepath string, remotepathhash string)
 	contentMode        string
 	Consensus
-	effectiveBlockSize  int // blocksize - encryptionOverHead
-	ecEncoder           reedsolomon.Encoder
-	maskMu              *sync.Mutex
-	encScheme           encryption.EncryptionScheme
-	shouldVerify        bool
-	readCountersMutex   sync.Mutex
-	blobberReadCounters map[string]int64
+	effectiveBlockSize int // blocksize - encryptionOverHead
+	ecEncoder          reedsolomon.Encoder
+	maskMu             *sync.Mutex
+	encScheme          encryption.EncryptionScheme
+	shouldVerify       bool
+	chunksPerShard     int64
+	prepaidBlobbers    map[string]bool
 }
 
 func (req *DownloadRequest) removeFromMask(pos uint64) {
@@ -82,7 +81,7 @@ func (req *DownloadRequest) removeFromMask(pos uint64) {
 
 // getBlocksData will get data blocks for some interval from minimal blobers and aggregate them and
 // return to the caller
-func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64, totalReqBlocks int64) ([]byte, error) {
+func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte, error) {
 
 	shards := make([][][]byte, totalBlock)
 	for i := range shards {
@@ -101,7 +100,7 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64, totalReq
 	curReqDownloads := requiredDownloads
 	for {
 		remainingMask, failed, downloadErrors, err = req.downloadBlock(
-			startBlock, totalBlock, mask, curReqDownloads, shards, totalReqBlocks)
+			startBlock, totalBlock, mask, curReqDownloads, shards)
 		if err != nil {
 			return nil, err
 		}
@@ -150,7 +149,7 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64, totalReq
 func (req *DownloadRequest) downloadBlock(
 	startBlock, totalBlock int64,
 	mask zboxutil.Uint128, requiredDownloads int,
-	shards [][][]byte, totalReqBlocks int64) (zboxutil.Uint128, int, []string, error) {
+	shards [][][]byte) (zboxutil.Uint128, int, []string, error) {
 
 	var remainingMask zboxutil.Uint128
 	activeBlobbers := mask.CountOnes()
@@ -183,12 +182,23 @@ func (req *DownloadRequest) downloadBlock(
 			numBlocks:          totalBlock,
 			encryptedKey:       req.encryptedKey,
 			shouldVerify:       req.shouldVerify,
-			downReq:            req,
-			totalReqBlocks:     totalReqBlocks,
 		}
 
 		bf := req.validationRootMap[blockDownloadReq.blobber.ID]
 		blockDownloadReq.blobberFile = bf
+
+		if paid := req.prepaidBlobbers[blockDownloadReq.blobber.ID]; !paid {
+			err := req.submitReadMarker(blockDownloadReq.blobber, req.chunksPerShard)
+			if err != nil {
+				wrappedErr := errors.Wrap(err, "Submit readmarker failed")
+				blockDownloadReq.result <- &downloadBlock{
+					Success: false,
+					idx:     int(pos),
+					err:     wrappedErr,
+				}
+				continue
+			}
+		}
 
 		go AddBlockDownloadReq(blockDownloadReq)
 		c++
@@ -358,7 +368,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 
-	size, chunkPerShard, actualPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
+	size, chunksPerShard, actualPerShard, err := req.calculateShardsParams(fRef, remotePathCB)
 	if err != nil {
 		logger.Logger.Error(err.Error())
 		req.errorCB(
@@ -366,6 +376,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				err), remotePathCB)
 		return
 	}
+	req.chunksPerShard = chunksPerShard
 
 	logger.Logger.Info(
 		fmt.Sprintf("Downloading file with size: %d from start block: %d and end block: %d. "+
@@ -413,8 +424,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 
-	totalReqBlocks := int64(math.Ceil(float64(remainingSize) / CHUNK_SIZE))
-
 	if req.statusCallback != nil {
 		// Started will also initialize progress bar. So without calling this function
 		// other callback's call will panic
@@ -429,7 +438,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 	var actualFileHasher hash.Hash
 	var isPREAndWholeFile bool
-	if !req.shouldVerify && (startBlock == 0 && endBlock == chunkPerShard) {
+	if !req.shouldVerify && (startBlock == 0 && endBlock == chunksPerShard) {
 		actualFileHasher = sha3.New256()
 		isPREAndWholeFile = true
 	}
@@ -445,7 +454,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
 				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
 			}
-			res[j], err = req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload, totalReqBlocks)
+			res[j], err = req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
 			if req.isDownloadCanceled {
 				return errors.New("download_abort", "Download aborted by user")
 			}
@@ -458,21 +467,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	if err := eg.Wait(); err != nil {
 		req.errorCB(err, remotePathCB)
 		return
-	}
-
-	// After the successful download, submit the ReadMarker to each blobber.
-	var sortedBlobberIDs []string
-	for blobberID := range req.blobberReadCounters {
-		sortedBlobberIDs = append(sortedBlobberIDs, blobberID)
-	}
-	sort.Strings(sortedBlobberIDs)
-	for _, blobberID := range sortedBlobberIDs {
-		readCount := req.blobberReadCounters[blobberID]
-		err = req.submitReadMarker(blobberID, readCount, totalReqBlocks)
-		if err != nil {
-			req.errorCB(errors.Wrap(err, "Submit readmarker failed"), remotePathCB)
-			return
-		}
 	}
 
 	for _, data := range res {
@@ -519,18 +513,18 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 }
 
-func (req *DownloadRequest) submitReadMarker(blobberID string, readCount int64, totalReqBlocks int64) error {
+func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, readCount int64) error {
 	rm := &marker.ReadMarker{
 		ClientID:        client.GetClientID(),
 		ClientPublicKey: client.GetClientPublicKey(),
-		BlobberID:       blobberID,
+		BlobberID:       blobber.ID,
 		AllocationID:    req.allocationID,
 		OwnerID:         req.allocOwnerID,
 		Timestamp:       common.Now(),
-		ReadCounter:     getBlobberReadCtr(req.allocationID, blobberID) + readCount,
+		ReadCounter:     getBlobberReadCtr(req.allocationID, blobber.ID) + readCount,
 		SessionRC:       readCount,
 	}
-	setBlobberReadCtr(req.allocationID, blobberID, rm.ReadCounter)
+	setBlobberReadCtr(req.allocationID, blobber.ID, rm.ReadCounter)
 	err := rm.Sign()
 	if err != nil {
 		logger.Logger.Error("Error signing read marker:", err, "ClientID:", rm.ClientID, "BlobberID:", rm.BlobberID, "AllocationID:", rm.AllocationID)
@@ -541,20 +535,6 @@ func (req *DownloadRequest) submitReadMarker(blobberID string, readCount int64, 
 	if err != nil {
 		logger.Logger.Error("Error marshaling read marker:", err, "ClientID:", rm.ClientID, "BlobberID:", rm.BlobberID, "AllocationID:", rm.AllocationID)
 		return err
-	}
-
-	// Find the corresponding blobber
-	var blobber *blockchain.StorageNode
-	for _, b := range req.blobbers {
-		if b.ID == blobberID {
-			blobber = b
-			break
-		}
-	}
-
-	if blobber == nil {
-		logger.Logger.Error("Error finding blobber:", "ClientID:", rm.ClientID, "BlobberID:", rm.BlobberID, "AllocationID:", rm.AllocationID)
-		return fmt.Errorf("Error finding blobber %v", rm.BlobberID)
 	}
 
 	shouldRetry := true
@@ -571,7 +551,6 @@ func (req *DownloadRequest) submitReadMarker(blobberID string, readCount int64, 
 		header := &DownloadRequestHeader{}
 		header.ClientID = client.GetClientID()
 		header.PathHash = req.remotefilepathhash
-		header.TotalReqBlocks = totalReqBlocks
 		header.ReadMarker = rmData
 		header.SubmitRM = true
 
@@ -579,7 +558,7 @@ func (req *DownloadRequest) submitReadMarker(blobberID string, readCount int64, 
 
 		header.ToHeader(httpreq)
 
-		lastBlobberReadCounter := getBlobberReadCtr(req.allocationID, blobberID)
+		lastBlobberReadCounter := getBlobberReadCtr(req.allocationID, blobber.ID)
 
 		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 			if err != nil {
@@ -604,7 +583,7 @@ func (req *DownloadRequest) submitReadMarker(blobberID string, readCount int64, 
 
 					if rspData.LatestRM.ReadCounter != lastBlobberReadCounter {
 						logger.Logger.Info("Will be retrying download")
-						setBlobberReadCtr(req.allocationID, blobberID, rspData.LatestRM.ReadCounter)
+						setBlobberReadCtr(req.allocationID, blobber.ID, rspData.LatestRM.ReadCounter)
 						lastBlobberReadCounter = rspData.LatestRM.ReadCounter
 						shouldRetry = true
 						return errors.New("stale_read_marker",
@@ -615,6 +594,7 @@ func (req *DownloadRequest) submitReadMarker(blobberID string, readCount int64, 
 
 				if bytes.Contains(respBody, []byte(NotEnoughTokens)) {
 					shouldRetry = false
+					blobber.SetSkip(true)
 					return errors.New(NotEnoughTokens, "")
 				}
 
@@ -635,6 +615,9 @@ func (req *DownloadRequest) submitReadMarker(blobberID string, readCount int64, 
 			shouldRetry = false
 		}
 	}
+	req.maskMu.Lock()
+	req.prepaidBlobbers[blobber.ID] = true
+	req.maskMu.Unlock()
 	return nil
 }
 

@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"math"
-	"sort"
 	"sync"
 
 	"github.com/0chain/errors"
@@ -124,8 +123,6 @@ func (sd *StreamDownload) Read(b []byte) (int, error) {
 		return 0, ErrInvalidRead
 	}
 
-	totalReqBlocks := int64(math.Ceil(float64(wantSize) / CHUNK_SIZE))
-
 	startInd, endInd := sd.getStartAndEndIndex(wantSize)
 	var numBlocks int64
 	if sd.numBlocks > 0 {
@@ -138,6 +135,11 @@ func (sd *StreamDownload) Read(b []byte) (int, error) {
 	}
 
 	effectiveChunkSize := sd.effectiveBlockSize * sd.datashards
+	effectivePerShardSize := (wantSize + int64(sd.datashards) - 1) / int64(sd.datashards)
+	chunksPerShard := (effectivePerShardSize + int64(sd.effectiveBlockSize) - 1) / int64(sd.effectiveBlockSize)
+	sd.chunksPerShard = chunksPerShard
+	sd.prepaidBlobbers = make(map[string]bool)
+
 	n := 0
 	for startInd < endInd {
 		if startInd+numBlocks > endInd {
@@ -146,7 +148,7 @@ func (sd *StreamDownload) Read(b []byte) (int, error) {
 			numBlocks = endInd - startInd
 		}
 
-		data, err := sd.getBlocksData(startInd, numBlocks, totalReqBlocks)
+		data, err := sd.getBlocksData(startInd, numBlocks)
 		if err != nil {
 			return 0, err
 		}
@@ -161,23 +163,8 @@ func (sd *StreamDownload) Read(b []byte) (int, error) {
 		startInd += numBlocks
 	}
 
+	sd.prepaidBlobbers = nil
 	sd.offset += int64(n)
-
-	// After the successful download, submit the ReadMarker to each blobber.
-	var sortedBlobberIDs []string
-	for blobberID := range sd.blobberReadCounters {
-		sortedBlobberIDs = append(sortedBlobberIDs, blobberID)
-	}
-	sort.Strings(sortedBlobberIDs)
-	for _, blobberID := range sortedBlobberIDs {
-		readCount := sd.blobberReadCounters[blobberID]
-		err := sd.submitReadMarker(blobberID, readCount, totalReqBlocks)
-		if err != nil {
-			sd.errorCB(errors.Wrap(err, "Submit readmarker failed"), sd.remotefilepath)
-			return 0, err
-		}
-	}
-
 	return n, nil
 }
 
