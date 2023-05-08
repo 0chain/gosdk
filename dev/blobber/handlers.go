@@ -80,3 +80,12 @@ func mockRespone(w http.ResponseWriter, req *http.Request, statusCode int, respB
 
 	w.WriteHeader(statusCode)
 }
+
+func rollback(w http.ResponseWriter, req *http.Request) {
+	mockRespone(w, req, http.StatusOK, nil)
+}
+
+func latestWriteMarker(w http.ResponseWriter, req *http.Request) {
+	latestByte := `{"latest_write_marker":null,"prev_write_marker":null}`
+	mockRespone(w, req, http.StatusOK, []byte(latestByte))
+}
