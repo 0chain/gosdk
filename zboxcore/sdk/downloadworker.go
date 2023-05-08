@@ -552,7 +552,6 @@ func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, re
 		header.ClientID = client.GetClientID()
 		header.PathHash = req.remotefilepathhash
 		header.ReadMarker = rmData
-		header.SubmitRM = true
 
 		ctx, cncl := context.WithTimeout(req.ctx, (time.Second * 30))
 

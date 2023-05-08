@@ -17,7 +17,6 @@ type DownloadRequestHeader struct {
 	AuthToken      []byte
 	DownloadMode   string
 	VerifyDownload bool
-	SubmitRM       bool
 }
 
 // ToHeader update header
@@ -51,6 +50,4 @@ func (h *DownloadRequestHeader) ToHeader(req *http.Request) {
 	}
 
 	req.Header.Set("X-Verify-Download", fmt.Sprint(h.VerifyDownload))
-	req.Header.Set("X-Submit-RM", fmt.Sprint(h.SubmitRM))
-
 }
