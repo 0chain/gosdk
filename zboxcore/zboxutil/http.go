@@ -583,7 +583,6 @@ func NewDownloadRequest(baseUrl, allocation string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
-	setClientInfo(req)
 	return req, nil
 }
 
