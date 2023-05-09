@@ -6,10 +6,6 @@ import (
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
-type CommitParams struct {
-	FileIDMeta map[string]string
-}
-
 type change struct {
 	Size      int64  `json:"size"`
 	NumBlocks int64  `json:"num_of_blocks"`
@@ -17,7 +13,7 @@ type change struct {
 }
 
 type AllocationChange interface {
-	ProcessChange(rootRef *fileref.Ref) (CommitParams, error)
+	ProcessChange(rootRef *fileref.Ref, fileIDMeta map[string]string) error
 	GetAffectedPath() []string
 	GetSize() int64
 }

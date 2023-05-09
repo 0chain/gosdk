@@ -18,6 +18,7 @@ import (
 	"errors"
 
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/h2non/filetype"
 	"github.com/lithammer/shortuuid/v3"
@@ -350,4 +351,24 @@ func GetErrorMessageCode(errorMsg string) (string, error) {
 	}
 	return a["code"], nil
 
+}
+
+// Returns transpose of 2-D slice
+// Example: Given matrix [[a, b], [c, d], [e, f]] returns [[a, c, e], [b, d, f]]
+func Transpose(matrix [][]allocationchange.AllocationChange) [][]allocationchange.AllocationChange {
+	rowLength := len(matrix)
+	if rowLength == 0 {
+		return matrix
+	}
+	columnLength := len(matrix[0])
+	transposedMatrix := make([][]allocationchange.AllocationChange, columnLength)
+	for i := range transposedMatrix {
+		transposedMatrix[i] = make([]allocationchange.AllocationChange, rowLength)
+	}
+	for i := 0; i < columnLength; i++ {
+		for j := 0; j < rowLength; j++ {
+			transposedMatrix[i][j] = matrix[j][i]
+		}
+	}
+	return transposedMatrix
 }

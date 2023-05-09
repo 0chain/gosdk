@@ -15,8 +15,7 @@ type RenameFileChange struct {
 	NewName    string
 }
 
-func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref) (
-	commitParams CommitParams, err error) {
+func (ch *RenameFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]string) (err error) {
 
 	parentPath := path.Dir(ch.ObjectTree.GetPath())
 	fields, err := common.GetPathFields(parentPath)
