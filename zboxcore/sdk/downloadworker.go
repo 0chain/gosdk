@@ -427,6 +427,8 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	blocksPerShard := (remainingSizePerShard + int64(req.effectiveBlockSize) - 1) / int64(req.effectiveBlockSize)
 	req.blocksPerShard = blocksPerShard
 
+	logger.Logger.Debug(fmt.Sprintf("remainingSize: %d remainingSizePerShard: %d blocksPerShard: %d", remainingSize, remainingSizePerShard, blocksPerShard))
+
 	if req.statusCallback != nil {
 		// Started will also initialize progress bar. So without calling this function
 		// other callback's call will panic
@@ -540,6 +542,10 @@ func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, re
 		return err
 	}
 
+	logger.Logger.Info(
+		fmt.Sprintf("Submitting readmarker => RC: %d SessionRC: %d BlobberID: %v", rm.ReadCounter, rm.SessionRC, rm.BlobberID),
+	)
+
 	shouldRetry := true
 	retryCount := 3
 
@@ -577,6 +583,8 @@ func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, re
 			if err != nil {
 				return err
 			}
+
+			logger.Logger.Debug(fmt.Sprintf("Submit readmarker response: %v", string(respBody)))
 			if resp.StatusCode != http.StatusOK {
 				if err = json.Unmarshal(respBody, &rspData); err == nil && rspData.LatestRM != nil {
 					if err := rm.ValidateWithOtherRM(rspData.LatestRM); err != nil {
