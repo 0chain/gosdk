@@ -550,6 +550,7 @@ func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, re
 
 		header := &DownloadRequestHeader{}
 		header.ClientID = client.GetClientID()
+		header.Path = req.remotefilepath
 		header.PathHash = req.remotefilepathhash
 		header.ReadMarker = rmData
 
