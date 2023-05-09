@@ -287,7 +287,7 @@ func (t *Transaction) Send(toClientID string, val uint64, desc string) error {
 	t.txn.Value = val
 	t.txn.TransactionData = string(txnData)
 	if t.txn.TransactionFee == 0 {
-		fee, err := transaction.EstimateFee(t.txn,_config.chain.Miners, 0.2)
+		fee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
 		if err != nil {
 			return err
 		}
@@ -313,7 +313,7 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val uint64, desc 
 	t.txn.Signature = sig
 	t.txn.CreationDate = CreationDate
 	if t.txn.TransactionFee == 0 {
-		fee, err := transaction.EstimateFee(t.txn,_config.chain.Miners, 0.2)
+		fee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
 		if err != nil {
 			return err
 		}
@@ -774,6 +774,14 @@ func (t *Transaction) RegisterMultiSig(walletstr string, mswallet string) error 
 		}
 		t.txn.TransactionNonce = nonce
 
+		if t.txn.TransactionFee == 0 {
+			fee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
+			if err != nil {
+				return
+			}
+			t.txn.TransactionFee = fee
+		}
+
 		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
 		t.submitTxn()
 	}()
@@ -826,6 +834,15 @@ func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error 
 			transaction.Cache.Set(t.txn.ClientID, nonce)
 		}
 		t.txn.TransactionNonce = nonce
+
+		if t.txn.TransactionFee == 0 {
+			fee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
+			if err != nil {
+				return
+			}
+			t.txn.TransactionFee = fee
+		}
+
 		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
 		t.submitTxn()
 	}()
