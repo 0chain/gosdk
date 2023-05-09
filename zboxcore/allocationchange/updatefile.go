@@ -84,11 +84,9 @@ func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 	}
 
 	ch.NewFile.HashToBeComputed = true
+	ch.NewFile.FileID = ch.OldFile.FileID
 	dirRef.Children[idx] = ch.NewFile
-	hash := rootRef.CalculateHash()
-	if hash == "" {
-		return errors.New("invalid_reference_path", "Empty FileID found")
-	}
+	rootRef.CalculateHash()
 	return
 }
 
