@@ -1571,3 +1571,19 @@ func GetMagicBlockByNumber(numSharders int, number int64, timeout RequestTimeout
 
 	return ret, nil
 }
+
+// GetFeesTable get fee tables
+func GetFeesTable(reqPercent ...float32) (string, error) {
+
+	fees, err := transaction.GetFeesTable(_config.chain.Miners, reqPercent...)
+	if err != nil {
+		return "", err
+	}
+
+	js, err := json.Marshal(fees)
+	if err != nil {
+		return "", err
+	}
+
+	return string(js), nil
+}
