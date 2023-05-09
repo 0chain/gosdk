@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -17,9 +18,11 @@ import (
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
+	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/google/uuid"
 )
 
 const (
@@ -40,10 +43,7 @@ type DirRequest struct {
 	Consensus
 }
 
-func (req *DirRequest) ProcessDir(a *Allocation) error {
-	l.Logger.Info("Start creating dir for blobbers")
-
-	defer req.ctxCncl()
+func (req *DirRequest) ProcessWithBlobbers(a *Allocation) int {
 	var pos uint64
 	var existingDirCount int
 	countMu := &sync.Mutex{}
@@ -68,6 +68,14 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 	}
 
 	req.wg.Wait()
+	return existingDirCount
+}
+
+func (req *DirRequest) ProcessDir(a *Allocation) error {
+	l.Logger.Info("Start creating dir for blobbers")
+
+	defer req.ctxCncl()
+	existingDirCount := req.ProcessWithBlobbers(a)
 
 	if !req.isConsensusOk() {
 		return errors.New("consensus_not_met", "directory creation failed due to consensus not met")
@@ -116,7 +124,7 @@ func (req *DirRequest) commitRequest(existingDirCount int) error {
 			Timestamp:  timestamp,
 		}
 
-		commitReq.change = newChange
+		commitReq.changes = append(commitReq.changes, newChange)
 		commitReq.connectionID = req.connectionID
 		commitReq.wg = wg
 		commitReqs[c] = commitReq
@@ -124,7 +132,7 @@ func (req *DirRequest) commitRequest(existingDirCount int) error {
 		go AddCommitRequest(commitReq)
 	}
 	wg.Wait()
-	
+
 	for _, commitReq := range commitReqs {
 		if commitReq.result != nil {
 			if commitReq.result.Success {
@@ -248,4 +256,86 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 	return errors.New("dir_creation_failed",
 		fmt.Sprintf("Directory creation failed with latest status: %d and "+
 			"latest message: %s", latestStatusCode, latestRespMsg)), false
+}
+
+type DirOperation struct {
+	remotePath string
+	ctx        context.Context
+	ctxCncl    context.CancelFunc
+	dirMask    zboxutil.Uint128
+	maskMU     *sync.Mutex
+
+	Consensus
+}
+
+func (dirOp *DirOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
+	refs := make([]fileref.RefEntity, len(allocObj.Blobbers))
+	dR := &DirRequest{
+		allocationID: allocObj.ID,
+		allocationTx: allocObj.Tx,
+		connectionID: connectionID,
+		blobbers:     allocObj.Blobbers,
+		remotePath:   dirOp.remotePath,
+		ctx:          dirOp.ctx,
+		ctxCncl:      dirOp.ctxCncl,
+		dirMask:      dirOp.dirMask,
+		mu:           dirOp.maskMU,
+		wg:           &sync.WaitGroup{},
+	}
+	dR.consensusThresh = dirOp.consensusThresh
+	dR.fullconsensus = dirOp.fullconsensus
+
+	_ = dR.ProcessWithBlobbers(allocObj)
+
+	if !dR.isConsensusOk() {
+		return nil, dR.dirMask, errors.New("consensus_not_met", "directory creation failed due to consensus not met")
+	}
+	return refs, dR.dirMask, nil
+
+}
+
+func (dirOp *DirOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
+
+	var pos uint64
+	changes := make([]allocationchange.AllocationChange, len(refs))
+	for i := dirOp.dirMask; !i.Equals(zboxutil.NewUint128(0)); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		newChange := &allocationchange.DirCreateChange{
+			RemotePath: dirOp.remotePath,
+			Uuid:       uid,
+			Timestamp:  common.Now(),
+		}
+		changes[pos] = newChange
+	}
+	return changes
+}
+
+func (dirOp *DirOperation) Verify(a *Allocation) error {
+	if dirOp.remotePath == "" {
+		return errors.New("invalid_name", "Invalid name for dir")
+	}
+
+	if !path.IsAbs(dirOp.remotePath) {
+		return errors.New("invalid_path", "Path is not absolute")
+	}
+	return nil
+}
+
+func (dirOp *DirOperation) Completed(allocObj *Allocation) {
+
+}
+
+func (dirOp *DirOperation) Error(allocObj *Allocation, consensus int, err error) {
+
+}
+
+func NewDirOperation(remotePath string, dirMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *DirOperation {
+	dirOp := &DirOperation{}
+	dirOp.remotePath = zboxutil.RemoteClean(remotePath)
+	dirOp.dirMask = dirMask
+	dirOp.maskMU = maskMU
+	dirOp.consensusThresh = consensusTh
+	dirOp.fullconsensus = fullConsensus
+	dirOp.ctx, dirOp.ctxCncl = context.WithCancel(ctx)
+	return dirOp
 }
