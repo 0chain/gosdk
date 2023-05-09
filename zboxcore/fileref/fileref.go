@@ -104,9 +104,6 @@ func (r *Ref) CalculateHash() string {
 	for index, childRef := range r.Children {
 		childRef.CalculateHash()
 		childFileMetaHashes[index] = childRef.GetFileMetaHash()
-		if childRef.GetFileID() == "" {
-			return ""
-		}
 		childHashes[index] = childRef.GetHash()
 		childPaths[index] = childRef.GetPath()
 		refNumBlocks += childRef.GetNumBlocks()
