@@ -69,7 +69,7 @@ type DownloadRequest struct {
 	maskMu             *sync.Mutex
 	encScheme          encryption.EncryptionScheme
 	shouldVerify       bool
-	chunksPerShard     int64
+	blocksPerShard     int64
 	prepaidBlobbers    map[string]bool
 }
 
@@ -188,7 +188,7 @@ func (req *DownloadRequest) downloadBlock(
 		blockDownloadReq.blobberFile = bf
 
 		if paid := req.prepaidBlobbers[blockDownloadReq.blobber.ID]; !paid {
-			err := req.submitReadMarker(blockDownloadReq.blobber, req.chunksPerShard)
+			err := req.submitReadMarker(blockDownloadReq.blobber, req.blocksPerShard)
 			if err != nil {
 				wrappedErr := errors.Wrap(err, "Submit readmarker failed")
 				blockDownloadReq.result <- &downloadBlock{
@@ -376,7 +376,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 				err), remotePathCB)
 		return
 	}
-	req.chunksPerShard = chunksPerShard
 
 	logger.Logger.Info(
 		fmt.Sprintf("Downloading file with size: %d from start block: %d and end block: %d. "+
@@ -423,6 +422,10 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		)
 		return
 	}
+
+	remainingSizePerShard := (remainingSize + int64(req.datashards) - 1) / int64(req.datashards)
+	blocksPerShard := (remainingSizePerShard + int64(req.effectiveBlockSize) - 1) / int64(req.effectiveBlockSize)
+	req.blocksPerShard = blocksPerShard
 
 	if req.statusCallback != nil {
 		// Started will also initialize progress bar. So without calling this function

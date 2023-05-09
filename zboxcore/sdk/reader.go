@@ -134,12 +134,12 @@ func (sd *StreamDownload) Read(b []byte) (int, error) {
 		}
 	}
 
-	effectiveChunkSize := sd.effectiveBlockSize * sd.datashards
-	effectivePerShardSize := (wantSize + int64(sd.datashards) - 1) / int64(sd.datashards)
-	chunksPerShard := (effectivePerShardSize + int64(sd.effectiveBlockSize) - 1) / int64(sd.effectiveBlockSize)
-	sd.chunksPerShard = chunksPerShard
+	wantSizePerShard := (wantSize + int64(sd.datashards) - 1) / int64(sd.datashards)
+	wantBlocksPerShard := (wantSizePerShard + int64(sd.effectiveBlockSize) - 1) / int64(sd.effectiveBlockSize)
+	sd.blocksPerShard = wantBlocksPerShard
 	sd.prepaidBlobbers = make(map[string]bool)
 
+	effectiveChunkSize := sd.effectiveBlockSize * sd.datashards
 	n := 0
 	for startInd < endInd {
 		if startInd+numBlocks > endInd {
