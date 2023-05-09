@@ -162,8 +162,6 @@ func (sd *StreamDownload) Read(b []byte) (int, error) {
 
 		startInd += numBlocks
 	}
-
-	sd.prepaidBlobbers = nil
 	sd.offset += int64(n)
 	return n, nil
 }
