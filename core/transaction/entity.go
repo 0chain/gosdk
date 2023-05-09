@@ -297,7 +297,7 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 			url := minerUrl + ESTIMATE_TRANSACTION_COST
 			req, err := util.NewHTTPPostRequest(url, txn)
 			if err != nil {
-				errC <- fmt.Errorf("ceate request failed, url: %s, err: %v", url, err)
+				errC <- fmt.Errorf("create request failed, url: %s, err: %v", url, err)
 				return
 			}
 
@@ -331,7 +331,6 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 	}
 
 	if len(feesCount) > 0 {
-		// return the fee with the highest count, if all has the same count, then return the first one
 		var (
 			max int
 			fee uint64
@@ -369,8 +368,8 @@ func GetFeesTable(miners []string, reqPercent ...float32) (map[string]map[string
 	randomMiners := util.Shuffle(miners)[:reqN]
 
 	var (
-		feeC = make(chan string, reqN)
-		errC = make(chan error, reqN)
+		feesC = make(chan string, reqN)
+		errC  = make(chan error, reqN)
 	)
 
 	wg := &sync.WaitGroup{}
@@ -394,27 +393,26 @@ func GetFeesTable(miners []string, reqPercent ...float32) (map[string]map[string
 			}
 
 			if res.StatusCode == http.StatusOK {
-				feeC <- res.Body
+				feesC <- res.Body
 				return
 			}
 
-			feeC <- ""
+			feesC <- ""
 
 		}(miner)
 	}
 
 	// wait for requests to complete
 	wg.Wait()
-	close(feeC)
+	close(feesC)
 	close(errC)
 
 	feesCount := make(map[string]int, reqN)
-	for fee := range feeC {
-		feesCount[fee]++
+	for f := range feesC {
+		feesCount[f]++
 	}
 
 	if len(feesCount) > 0 {
-		// return the fee with the highest count, if all has the same count, then return the first one
 		var (
 			max  int
 			fees string
