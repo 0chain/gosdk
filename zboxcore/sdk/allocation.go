@@ -199,6 +199,20 @@ type Allocation struct {
 	fullconsensus      int
 }
 
+type OperationRequest struct {
+	OperationType string
+	LocalPath     string
+	RemotePath    string
+	DestName      string // Required only for rename operation
+	DestPath      string // Required for copy and move operation
+
+	// Required for uploads
+	Workdir    string
+	FileMeta   FileMeta
+	FileReader io.Reader
+	Opts       []ChunkedUploadOption
+}
+
 func GetReadPriceRange() (PriceRange, error) {
 	return getPriceRange("max_read_price")
 }
@@ -229,6 +243,7 @@ func getPriceRange(name string) (PriceRange, error) {
 		return PriceRange{}, err
 	}
 	return PriceRange{0, uint64(max)}, err
+
 }
 
 func (a *Allocation) GetStats() *AllocationStats {
@@ -501,10 +516,11 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 		options = append(options, WithThumbnail(buf))
 	}
 
+	connectionId := zboxutil.NewConnectionId()
 	ChunkedUpload, err := CreateChunkedUpload(workdir,
 		a, fileMeta, fileReader,
-		isUpdate, isRepair,
-		webStreaming, options...)
+		isUpdate, isRepair, webStreaming, connectionId,
+		options...)
 	if err != nil {
 		return err
 	}
@@ -641,6 +657,72 @@ func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, 
 
 func (a *Allocation) DownloadFile(localPath string, remotePath string, verifyDownload bool, status StatusCallback) error {
 	return a.downloadFile(localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload, status)
+}
+
+func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
+	if len(operations) == 0 {
+		return nil
+	}
+	if !a.isInitialized() {
+		return notInitialized
+	}
+	var mo MultiOperation
+	mo.allocationObj = a
+	mo.operationMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
+	mo.maskMU = &sync.Mutex{}
+	mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
+	mo.Consensus = Consensus{
+		consensusThresh: a.consensusThreshold,
+		fullconsensus:   a.fullconsensus,
+	}
+	mo.connectionID = zboxutil.NewConnectionId()
+	allFiles := make(map[string]bool)
+	for _, op := range operations {
+		remotePath := op.RemotePath
+		var operation Operationer
+		switch op.OperationType {
+
+		case constants.FileOperationRename:
+			operation = NewRenameOperation(op.RemotePath, op.DestName, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+
+		case constants.FileOperationCopy:
+			operation = NewCopyOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+
+		case constants.FileOperationMove:
+			operation = NewMoveOperation(op.RemotePath, op.DestPath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+
+		case constants.FileOperationInsert:
+			remotePath = op.FileMeta.RemotePath
+			operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, false, op.Opts...)
+
+		case constants.FileOperationDelete:
+			operation = NewDeleteOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+
+		case constants.FileOperationUpdate:
+			remotePath = op.FileMeta.RemotePath
+			operation = NewUploadOperation(op.Workdir, op.FileMeta, op.FileReader, true, op.Opts...)
+
+		case constants.FileOperationCreateDir:
+			operation = NewDirOperation(op.RemotePath, mo.operationMask, mo.maskMU, mo.consensusThresh, mo.fullconsensus, mo.ctx)
+
+		default:
+			return errors.New("invalid_operation", "Operation is not valid")
+
+		}
+		if _, ok := allFiles[remotePath]; ok {
+			return errors.New("conflicting_operation", "Conflicting operations are not allowed")
+		}
+		err := operation.Verify(a)
+		if err != nil {
+			return err
+		}
+		mo.operations = append(mo.operations, operation)
+		allFiles[remotePath] = true
+
+	}
+
+	return mo.Process()
+
 }
 
 func (a *Allocation) DownloadFileByBlock(

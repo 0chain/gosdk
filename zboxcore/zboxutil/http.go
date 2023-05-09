@@ -64,6 +64,7 @@ const (
 	PLAYLIST_LATEST_ENDPOINT     = "/v1/playlist/latest/"
 	PLAYLIST_FILE_ENDPOINT       = "/v1/playlist/file/"
 	WM_LOCK_ENDPOINT             = "/v1/writemarker/lock/"
+	CREATE_CONNECTION_ENDPOINT   = "/v1/connection/create/"
 	LATEST_WRITE_MARKER_ENDPOINT = "/v1/file/latestwritemarker/"
 	ROLLBACK_ENDPOINT            = "/v1/connection/rollback/"
 
@@ -508,6 +509,23 @@ func NewUploadRequest(baseUrl, allocation string, body io.Reader, update bool) (
 	} else {
 		req, err = http.NewRequest(http.MethodPost, u.String(), body)
 	}
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+func NewConnectionRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
+	u, err := joinUrl(baseUrl, CREATE_CONNECTION_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(http.MethodPost, u.String(), body)
 	if err != nil {
 		return nil, err
 	}
