@@ -585,14 +585,14 @@ func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, re
 					}
 
 					if rspData.LatestRM.ReadCounter != lastBlobberReadCounter {
-						logger.Logger.Info("Will be retrying download")
+						logger.Logger.Info("Will be retrying submitting readmarker")
 						setBlobberReadCtr(req.allocationID, blobber.ID, rspData.LatestRM.ReadCounter)
 						lastBlobberReadCounter = rspData.LatestRM.ReadCounter
 						shouldRetry = true
 						return errors.New("stale_read_marker",
 							fmt.Sprintf("readmarker counter is not in sync with latest counter. Last blobber read counter: %d", lastBlobberReadCounter))
 					}
-					return errors.New("download_error", fmt.Sprintf("Response status: %d", resp.StatusCode))
+					return errors.New("download_error", fmt.Sprintf("Response status: %d, Error: %v,", resp.StatusCode, rspData.err))
 				}
 
 				if bytes.Contains(respBody, []byte(NotEnoughTokens)) {

@@ -161,7 +161,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			}
 			if resp.StatusCode != http.StatusOK {
 				if err = json.Unmarshal(respBody, &rspData); err == nil {
-					return errors.New("download_error", fmt.Sprintf("Response status: %d", resp.StatusCode))
+					return errors.New("download_error", fmt.Sprintf("Response status: %d, Error: %v,", resp.StatusCode, rspData.err))
 				}
 
 				return errors.New("response_error", string(respBody))
