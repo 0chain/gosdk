@@ -569,6 +569,7 @@ func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, re
 	var retryCount = 3
 	for retryCount > 0 {
 		if err = req.attemptSubmitReadMarker(blobber, rm); err != nil {
+			logger.Logger.Error(fmt.Sprintf("Error while attempting to submit readmarker %v, retry: %d", err, retryCount))
 			if errors.Is(err, fmt.Errorf(NotEnoughTokens)) {
 				return err
 			}
@@ -581,6 +582,7 @@ func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, re
 }
 
 func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageNode, rm *marker.ReadMarker) error {
+	logger.Logger.Debug(fmt.Sprintf("Attempting to submit RM: ReadCounter: %d, SessionRC: %d, BlobberID: %v", rm.ReadCounter, rm.SessionRC, rm.BlobberID))
 	rmData, err := json.Marshal(rm)
 	if err != nil {
 		return fmt.Errorf("error marshaling read marker: %w", err)
@@ -627,6 +629,8 @@ func (req *DownloadRequest) handleReadMarkerError(resp *http.Response, blobber *
 	if err != nil {
 		return err
 	}
+
+	logger.Logger.Error(string(respBody))
 
 	var rspData downloadBlock
 	if err = json.Unmarshal(respBody, &rspData); err == nil && rspData.LatestRM != nil {
