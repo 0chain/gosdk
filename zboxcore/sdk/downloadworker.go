@@ -378,7 +378,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	logger.Logger.Info(
 		fmt.Sprintf("Downloading file with size: %d from start block: %d and end block: %d. "+
-			"Actual size per blobber: %d Chunks per blobber %d", size, req.startBlock, req.endBlock, actualPerShard, chunksPerShard),
+			"Actual size per blobber: %d Chunks per blobber: %d", size, req.startBlock, req.endBlock, actualPerShard, chunksPerShard),
 	)
 
 	f, err := req.openFile()
@@ -446,23 +446,6 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		actualFileHasher = sha3.New256()
 		isPREAndWholeFile = true
 	}
-
-	// // Pre-pay to blobbers
-	// activeBlobbers := req.downloadMask.CountOnes()
-	// if activeBlobbers < req.consensusThresh {
-	// 	req.errorCB(errors.New("insufficient_blobbers", fmt.Sprintf("Required downloads %d, remaining active blobber %d", req.consensusThresh, activeBlobbers)), remotePathCB)
-	// 	return
-	// }
-	// var pos uint64
-	// for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
-	// 	pos = uint64(i.TrailingZeros())
-	// 	if paid := req.prepaidBlobbers[req.blobbers[pos].ID]; !paid {
-	// 		err := req.submitReadMarker(req.blobbers[pos], req.blocksPerShard)
-	// 		if err != nil {
-	// 			continue
-	// 		}
-	// 	}
-	// }
 
 	n := int((endBlock - startBlock + numBlocks - 1) / numBlocks)
 	res := make([][]byte, n)
