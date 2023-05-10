@@ -378,7 +378,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	logger.Logger.Info(
 		fmt.Sprintf("Downloading file with size: %d from start block: %d and end block: %d. "+
-			"Actual size per blobber: %d", size, req.startBlock, req.endBlock, actualPerShard),
+			"Actual size per blobber: %d Chunks per blobber %d", size, req.startBlock, req.endBlock, actualPerShard, chunksPerShard),
 	)
 
 	f, err := req.openFile()
