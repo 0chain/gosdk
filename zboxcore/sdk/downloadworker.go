@@ -596,6 +596,9 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 		PathHash:   req.remotefilepathhash,
 		ReadMarker: rmData,
 	}
+	if req.authTicket != nil {
+		header.AuthToken, _ = json.Marshal(req.authTicket) //nolint: errcheck
+	}
 	header.ToHeader(httpreq)
 
 	ctx, cancel := context.WithTimeout(req.ctx, 30*time.Second)
