@@ -186,6 +186,14 @@ func RepairFile(allocationID, workdir, localPath, remotePath, thumbnailPath stri
 	return a.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, true, true, thumbnailPath, encrypt, webStreaming)
 }
 
+func MultiOperation(allocationID string, operations []sdk.OperationRequest) error {
+	a, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	return a.DoMultiOperation(operations)
+}
+
 // UploadFile - upload file/thumbnail from local path to remote path
 // ## Inputs
 //   - allocationID
