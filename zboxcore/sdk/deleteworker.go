@@ -338,7 +338,10 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 				l.Logger.Error(err.Error())
 				return
 			}
-			deleteReq.deleteBlobberFile(deleteReq.blobbers[blobberIdx], blobberIdx)
+			err = deleteReq.deleteBlobberFile(deleteReq.blobbers[blobberIdx], blobberIdx)
+			if err != nil {
+				blobberErrors[blobberIdx] = err
+			}
 			objectTreeRefs[blobberIdx] = refEntity
 		}(int(pos))
 	}
