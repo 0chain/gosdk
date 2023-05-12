@@ -349,7 +349,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			numCorrect:  2,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "consensus_not_met",
+			errMsg:      "delete_failed",
 		},
 		{
 			name:        "Test_All_Blobber_Error_On_Delete_Attribute_Failure",
@@ -357,7 +357,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			numCorrect:  0,
 			setup:       setupHttpResponses,
 			wantErr:     true,
-			errMsg:      "consensus_not_met",
+			errMsg:      "delete_failed",
 		},
 	}
 	for _, tt := range tests {
