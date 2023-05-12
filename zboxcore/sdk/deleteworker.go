@@ -42,8 +42,6 @@ type DeleteRequest struct {
 func (req *DeleteRequest) deleteBlobberFile(
 	blobber *blockchain.StorageNode, blobberIdx int) error {
 
-	defer req.wg.Done()
-
 	var err error
 
 	defer func() {
@@ -161,10 +159,10 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 	var deleteMutex sync.Mutex
 	removedNum := 0
 	req.wg = &sync.WaitGroup{}
-	req.wg.Add(num)
 
 	var pos uint64
 	for i := req.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		req.wg.Add(1)
 		pos = uint64(i.TrailingZeros())
 		go func(blobberIdx uint64) {
 			defer req.wg.Done()
@@ -189,15 +187,13 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 	req.wg.Wait()
 
 	req.consensus.consensus = removedNum
-	numDeletes := req.deleteMask.CountOnes()
-
-	req.wg.Add(numDeletes)
 
 	var errCount int32
 	wgErrors := make(chan error)
 	wgDone := make(chan bool)
 
 	for i := req.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		req.wg.Add(1)
 		pos = uint64(i.TrailingZeros())
 		go func(blobberIdx uint64) {
 			defer req.wg.Done()
@@ -329,6 +325,7 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 		pos = uint64(i.TrailingZeros())
 		deleteReq.wg.Add(1)
 		go func(blobberIdx int) {
+			defer deleteReq.wg.Done()
 			refEntity, err := deleteReq.getObjectTreeFromBlobber(pos)
 			if errors.Is(err, constants.ErrNotFound) {
 				deleteReq.consensus.Done()
