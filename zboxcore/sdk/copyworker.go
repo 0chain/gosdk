@@ -7,10 +7,12 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/0chain/errors"
+	"github.com/google/uuid"
 
 	"github.com/0chain/gosdk/constants"
 	"github.com/0chain/gosdk/core/util"
@@ -144,16 +146,12 @@ func (req *CopyRequest) copyBlobberObject(
 		fmt.Sprintf("last status code: %d, last response message: %s", latestStatusCode, latestRespMsg))
 }
 
-func (req *CopyRequest) ProcessCopy() error {
-	defer req.ctxCncl()
-
+func (req *CopyRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error) {
+	var pos uint64
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	blobberErrors := make([]error, numList)
-	
 	wg := &sync.WaitGroup{}
-	var pos uint64
-
 	for i := req.copyMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		wg.Add(1)
@@ -169,13 +167,23 @@ func (req *CopyRequest) ProcessCopy() error {
 		}(int(pos))
 	}
 	wg.Wait()
+	return objectTreeRefs, blobberErrors
+}
+
+func (req *CopyRequest) ProcessCopy() error {
+	defer req.ctxCncl()
+
+	wg := &sync.WaitGroup{}
+	var pos uint64
+
+	objectTreeRefs, blobberErrors := req.ProcessWithBlobbers()
 
 	if !req.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
 			return errors.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
 		}
-		
+
 		return errors.New("consensus_not_met",
 			fmt.Sprintf("Copy failed. Required consensus %d, got %d",
 				req.Consensus.consensusThresh, req.Consensus.consensus))
@@ -217,7 +225,7 @@ func (req *CopyRequest) ProcessCopy() error {
 			connectionID: req.connectionID,
 			wg:           wg,
 		}
-		commitReq.change = newChange
+		commitReq.changes = append(commitReq.changes, newChange)
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
 		c++
@@ -243,4 +251,109 @@ func (req *CopyRequest) ProcessCopy() error {
 				req.Consensus.consensusThresh, req.Consensus.consensus))
 	}
 	return nil
+}
+
+type CopyOperation struct {
+	remotefilepath string
+	destPath       string
+	ctx            context.Context
+	ctxCncl        context.CancelFunc
+	copyMask       zboxutil.Uint128
+	maskMU         *sync.Mutex
+
+	Consensus
+}
+
+func (co *CopyOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
+	// make copyRequest object
+	cR := &CopyRequest{
+		allocationObj:  allocObj,
+		allocationID:   allocObj.ID,
+		allocationTx:   allocObj.Tx,
+		connectionID:   connectionID,
+		blobbers:       allocObj.Blobbers,
+		remotefilepath: co.remotefilepath,
+		destPath:       co.destPath,
+		ctx:            co.ctx,
+		ctxCncl:        co.ctxCncl,
+		copyMask:       co.copyMask,
+		maskMU:         co.maskMU,
+	}
+	cR.consensusThresh = co.consensusThresh
+	cR.fullconsensus = co.fullconsensus
+
+	objectTreeRefs, blobberErrors := cR.ProcessWithBlobbers()
+
+	if !cR.isConsensusOk() {
+		err := zboxutil.MajorError(blobberErrors)
+		if err != nil {
+			return nil, cR.copyMask, errors.New("copy_failed", fmt.Sprintf("Copy failed. %s", err.Error()))
+		}
+
+		return nil, cR.copyMask, errors.New("consensus_not_met",
+			fmt.Sprintf("Copy failed. Required consensus %d, got %d",
+				cR.Consensus.consensusThresh, cR.Consensus.consensus))
+	}
+	return objectTreeRefs, cR.copyMask, nil
+
+}
+
+func (co *CopyOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
+
+	changes := make([]allocationchange.AllocationChange, len(refs))
+
+	for idx, ref := range refs {
+		newChange := &allocationchange.CopyFileChange{
+			DestPath:   co.destPath,
+			Uuid:       uid,
+			ObjectTree: ref,
+		}
+		changes[idx] = newChange
+	}
+	return changes
+}
+
+func (co *CopyOperation) Verify(a *Allocation) error {
+
+	if !a.CanCopy() {
+		return constants.ErrFileOptionNotPermitted
+	}
+
+	if co.remotefilepath == "" || co.destPath == "" {
+		return errors.New("invalid_path", "Invalid path for copy")
+	}
+	isabs := zboxutil.IsRemoteAbs(co.remotefilepath)
+	if !isabs {
+		return errors.New("invalid_path", "Path should be valid and absolute")
+	}
+
+	err := ValidateRemoteFileName(co.destPath)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (co *CopyOperation) Completed(allocObj *Allocation) {
+
+}
+
+func (co *CopyOperation) Error(allocObj *Allocation, consensus int, err error) {
+
+}
+
+func NewCopyOperation(remotePath string, destPath string, copyMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *CopyOperation {
+	co := &CopyOperation{}
+	co.remotefilepath = zboxutil.RemoteClean(remotePath)
+	co.copyMask = copyMask
+	co.maskMU = maskMU
+	co.consensusThresh = consensusTh
+	co.fullconsensus = fullConsensus
+	if destPath != "/" {
+		destPath = strings.TrimSuffix(destPath, "/")
+	}
+	co.destPath = destPath
+	co.ctx, co.ctxCncl = context.WithCancel(ctx)
+	return co
+
 }

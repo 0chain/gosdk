@@ -33,6 +33,12 @@ jobs:
         if: steps.get_info.outputs.GIT_COMMIT_DATE == steps.get_info.outputs.YESTERDAY_DATE
         run: sudo zip -r gosdk.zip /github-backup/gosdk
         
+      - name: Install AWS
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install
+        
       - name: Set AWS credentials
         if: steps.get_info.outputs.GIT_COMMIT_DATE == steps.get_info.outputs.YESTERDAY_DATE
         uses: aws-actions/configure-aws-credentials@v1
@@ -44,4 +50,4 @@ jobs:
       - name: Backup to s3
         if: steps.get_info.outputs.GIT_COMMIT_DATE == steps.get_info.outputs.YESTERDAY_DATE
         run: |
-          sudo aws s3 cp gosdk.zip s3://${{ secrets.MIRROR_TARGET }}/gosdk.zip
+          aws s3 cp gosdk.zip s3://${{ secrets.MIRROR_TARGET }}/gosdk.zip
