@@ -532,7 +532,23 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 }
 
-func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, readCount int64) error {
+func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, readCount int64) (err error) {
+	var retryCount = 3
+	for retryCount > 0 {
+		if err = req.attemptSubmitReadMarker(blobber, readCount); err != nil {
+			logger.Logger.Error(fmt.Sprintf("Error while attempting to submit readmarker %v, retry: %d", err, retryCount))
+			if errors.Is(err, fmt.Errorf(NotEnoughTokens)) {
+				return err
+			}
+			retryCount--
+		} else {
+			return nil
+		}
+	}
+	return fmt.Errorf("submit read marker failed after retries: %w", err)
+}
+
+func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageNode, readCount int64) error {
 	rm := &marker.ReadMarker{
 		ClientID:        client.GetClientID(),
 		ClientPublicKey: client.GetClientPublicKey(),
@@ -548,23 +564,6 @@ func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, re
 	if err != nil {
 		return fmt.Errorf("error signing read marker: %w", err)
 	}
-
-	var retryCount = 3
-	for retryCount > 0 {
-		if err = req.attemptSubmitReadMarker(blobber, rm); err != nil {
-			logger.Logger.Error(fmt.Sprintf("Error while attempting to submit readmarker %v, retry: %d", err, retryCount))
-			if errors.Is(err, fmt.Errorf(NotEnoughTokens)) {
-				return err
-			}
-			retryCount--
-		} else {
-			return nil
-		}
-	}
-	return fmt.Errorf("submit read marker failed after retries: %w", err)
-}
-
-func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageNode, rm *marker.ReadMarker) error {
 	logger.Logger.Debug(fmt.Sprintf("Attempting to submit RM: ReadCounter: %d, SessionRC: %d, BlobberID: %v", rm.ReadCounter, rm.SessionRC, rm.BlobberID))
 	rmData, err := json.Marshal(rm)
 	if err != nil {
