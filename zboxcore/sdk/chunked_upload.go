@@ -88,7 +88,7 @@ func CreateChunkedUpload(
 	workdir string, allocationObj *Allocation,
 	fileMeta FileMeta, fileReader io.Reader,
 	isUpdate, isRepair bool,
-	webStreaming bool, connectionId string, 
+	webStreaming bool, connectionId string,
 	opts ...ChunkedUploadOption,
 ) (*ChunkedUpload, error) {
 
@@ -157,10 +157,8 @@ func CreateChunkedUpload(
 
 	su := &ChunkedUpload{
 		allocationObj: allocationObj,
-		client:        zboxutil.Client,
-
-		fileMeta:   fileMeta,
-		fileReader: fileReader,
+		fileMeta:      fileMeta,
+		fileReader:    fileReader,
 
 		uploadMask:      uploadMask,
 		chunkSize:       DefaultChunkSize,
@@ -306,7 +304,6 @@ type ChunkedUpload struct {
 	allocationObj  *Allocation
 	progress       UploadProgress
 	progressStorer ChunkedUploadProgressStorer
-	client         zboxutil.HttpClient
 
 	uploadMask zboxutil.Uint128
 

@@ -78,7 +78,6 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	req.Header.Add("Content-Type", formData.ContentType)
 
 	var (
-		resp             *http.Response
 		shouldContinue   bool
 		latestRespMsg    string
 		latestStatusCode int
@@ -87,7 +86,11 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 	for i := 0; i < 3; i++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, su.uploadTimeOut)
-			resp, err = su.client.Do(req.WithContext(reqCtx))
+			var resp *http.Response
+			err = zboxutil.HttpDo(reqCtx, ctxCncl, req, func(r *http.Response, err error) error {
+				resp = r
+				return err
+			})
 			defer ctxCncl()
 
 			if err != nil {
@@ -256,7 +259,11 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	for retries := 0; retries < 3; retries++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
 			reqCtx, ctxCncl := context.WithTimeout(ctx, su.commitTimeOut)
-			resp, err = su.client.Do(req.WithContext(reqCtx))
+			var resp *http.Response
+			err = zboxutil.HttpDo(reqCtx, ctxCncl, req, func(r *http.Response, err error) error {
+				resp = r
+				return err
+			})
 			defer ctxCncl()
 
 			if err != nil {
@@ -332,7 +339,7 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 		return nil, nil, 0, nil, err
 	}
 
-	resp, err := su.client.Do(req)
+	resp, err := zboxutil.Client.Do(req)
 
 	if err != nil {
 		logger.Logger.Error("Ref path error:", err)

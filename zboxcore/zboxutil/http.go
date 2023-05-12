@@ -765,10 +765,12 @@ func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f f
 		// it occurs when client http tries to send byte stream in connection that is
 		// closed by the server
 		for {
-			err = f(Client.Do(req.WithContext(ctx)))
+			resp, err := Client.Do(req.WithContext(ctx))
 			if errors.Is(err, io.EOF) {
 				continue
 			}
+
+			err = f(resp, err)
 			break
 		}
 		c <- err
