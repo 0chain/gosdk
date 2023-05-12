@@ -805,7 +805,7 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 
 func (a *Allocation) getDownloadMaskForBlobber(blobberID string) (zboxutil.Uint128, []*blockchain.StorageNode, error) {
 
-	x := zboxutil.NewUint128(1).Lsh(uint64(1)).Sub64(1)
+	x := zboxutil.NewUint128(1)
 	blobberIdx := 0
 	found := false
 	for idx, b := range a.Blobbers {
@@ -855,10 +855,6 @@ func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string
 	}
 
 	downloadReq.numBlocks = fRef.NumBlocks
-
-	if err != nil {
-		return err
-	}
 	_, err = downloadReq.getBlocksDataFromBlobbers(
 		downloadReq.startBlock,
 		downloadReq.numBlocks,
@@ -885,7 +881,7 @@ func (a *Allocation) GetRefsWithAuthTicket(authToken, offsetPath, updatedDate, o
 	return a.getRefs("", authTicket.FilePathHash, string(at), offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
 }
 
-//This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
+// This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
 func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
 	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
 		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
