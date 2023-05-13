@@ -33,30 +33,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup go 1.18
-        uses: actions/setup-go@v2
-        with:
-          go-version: '1.18' # The Go version to download (if necessary) and use.
-
-      - uses: actions/setup-node@v2
-        with:
-          node-version: '14'
-
       - name: Install deps
         run: |
-          codename=$(lsb_release -c | awk '{print $2}')
-          echo "deb http://mirror.genesisadaptive.com/ubuntu/ $codename main" > ./gitaction.list
-          echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
-          echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
-          sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
-
           sudo apt-get update -y && sudo apt-get install build-essential wget containerd docker.io -y
 
-      - name: Install herumi's libraries
-        run: sudo make install-herumi-ubuntu
-
       - name: Run Unit Test
-        # run: LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH make gosdk-test
         run: docker run --rm -v $PWD:/gosdk --workdir=/gosdk golang:1.20.4 make gosdk-test
 
   system-test:
