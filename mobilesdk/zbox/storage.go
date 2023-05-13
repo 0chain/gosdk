@@ -93,14 +93,24 @@ func GetFileMeta(allocationID, path string) (string, error) {
 //   - the json string of sdk.ConsolidatedFileMeta
 //   - error
 func GetFileMetaFromAuthTicket(allocationID, authTicket string, lookupHash string) (string, error) {
-	a, err := getAllocation(allocationID)
+	allocationObj, err := sdk.GetAllocationFromAuthTicket(authTicket)
 	if err != nil {
 		return "", err
 	}
-	fileMetaData, err := a.GetFileMetaFromAuthTicket(authTicket, lookupHash)
+
+	at := sdk.InitAuthTicket(authTicket)
+	if len(lookupHash) == 0 {
+		lookupHash, err = at.GetLookupHash()
+		if err != nil {
+			return "", err
+		}
+	}
+
+	fileMetaData, err := allocationObj.GetFileMetaFromAuthTicket(authTicket, lookupHash)
 	if err != nil {
 		return "", err
 	}
+
 	retBytes, err := json.Marshal(fileMetaData)
 	if err != nil {
 		return "", err
