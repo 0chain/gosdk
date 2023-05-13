@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
@@ -350,10 +351,32 @@ func GetAuthToken(allocationID, path string, filename string, referenceType stri
 //	- remoteFilename
 //	- status: callback of status
 func DownloadFromAuthTicket(allocationID, localPath string, authTicket string, remoteLookupHash string, remoteFilename string, status StatusCallbackMocked) error {
-	a, err := getAllocation(allocationID)
+	// a, err := getAllocation(allocationID)
+	// if err != nil {
+	// 	return err
+	// }
+
+	at, err := sdk.InitAuthTicket(authTicket).Unmarshall()
 	if err != nil {
 		return err
 	}
+
+	a, err := sdk.GetAllocationFromAuthTicket(authTicket)
+	if err != nil {
+		return err
+	}
+
+	if at.RefType == fileref.FILE {
+		remoteFilename = at.FileName
+		remoteLookupHash = at.FilePathHash
+	} else if len(remoteLookupHash) > 0 {
+		fileMeta, err := a.GetFileMetaFromAuthTicket(authTicket, remoteLookupHash)
+		if err != nil {
+			return err
+		}
+		remoteFilename = fileMeta.Name
+	}
+
 	return a.DownloadFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status})
 }
 
