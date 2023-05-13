@@ -50,11 +50,12 @@ type downloadResponse struct {
 }
 
 type downloadBlock struct {
-	BlockChunks [][]byte
-	Success     bool               `json:"success"`
-	LatestRM    *marker.ReadMarker `json:"latest_rm"`
-	idx         int
-	err         error
+	BlockChunks    [][]byte
+	Success        bool               `json:"success"`
+	LatestRM       *marker.ReadMarker `json:"latest_rm"`
+	AvailableQuota int64              `json:"quota"`
+	idx            int
+	err            error
 }
 
 var downloadBlockChan map[string]chan *BlockDownloadRequest
