@@ -227,12 +227,15 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 			childResult.Hash = (child.(*fileref.FileRef)).ActualFileHash
 			childResult.MimeType = (child.(*fileref.FileRef)).MimeType
 			childResult.EncryptionKey = (child.(*fileref.FileRef)).EncryptedKey
+			childResult.ActualSize = (child.(*fileref.FileRef)).ActualFileSize
+		} else {
+			childResult.ActualSize = (child.(*fileref.Ref)).ActualSize
 		}
 		childResult.Size = child.GetSize()
 		if childResult.Size > 0 {
 			childResult.NumBlocks = calculateNumBlocks(childResult.Size)
 		}
-		childResult.ActualSize = (child.(*fileref.FileRef)).ActualFileSize
+
 		if childResult.ActualSize > 0 {
 			childResult.ActualNumBlocks = calculateNumBlocks(childResult.ActualSize)
 		}
