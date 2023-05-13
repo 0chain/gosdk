@@ -178,16 +178,11 @@ func (req *ListRequest) GetListFromBlobbers() (*ListResult, error) {
 
 			for _, child := range result.Children {
 				result.Size += child.Size
+				result.NumBlocks += child.NumBlocks
 				result.ActualSize += child.ActualSize
+				result.ActualNumBlocks += child.ActualNumBlocks
 			}
 		}
-		if result.Size > 0 {
-			result.NumBlocks = calculateNumBlocks(result.Size)
-		}
-		if result.ActualSize > 0 {
-			result.ActualNumBlocks = calculateNumBlocks(result.ActualSize)
-		}
-
 	}
 
 	if errNum == len(lR) {
@@ -228,17 +223,17 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 			childResult.MimeType = (child.(*fileref.FileRef)).MimeType
 			childResult.EncryptionKey = (child.(*fileref.FileRef)).EncryptedKey
 			childResult.ActualSize = (child.(*fileref.FileRef)).ActualFileSize
+			if childResult.ActualSize > 0 {
+				childResult.ActualNumBlocks = childResult.ActualSize / CHUNK_SIZE
+			}
 		} else {
 			childResult.ActualSize = (child.(*fileref.Ref)).ActualSize
+			if childResult.ActualSize > 0 {
+				childResult.ActualNumBlocks = childResult.ActualSize / CHUNK_SIZE
+			}
 		}
 		childResult.Size = child.GetSize()
-		if childResult.Size > 0 {
-			childResult.NumBlocks = calculateNumBlocks(childResult.Size)
-		}
-
-		if childResult.ActualSize > 0 {
-			childResult.ActualNumBlocks = calculateNumBlocks(childResult.ActualSize)
-		}
+		childResult.NumBlocks += child.GetNumBlocks()
 
 		if childResult.isConsensusOk() {
 			if _, ok := selected[child.GetLookupHash()]; !ok {
@@ -247,8 +242,4 @@ func (lr *ListResult) populateChildren(children []fileref.RefEntity, childResult
 			}
 		}
 	}
-}
-
-func calculateNumBlocks(size int64) int64 {
-	return (size + CHUNK_SIZE - 1) / CHUNK_SIZE
 }
