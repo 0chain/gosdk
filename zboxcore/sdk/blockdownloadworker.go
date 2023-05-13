@@ -13,6 +13,7 @@ import (
 	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
+	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	zlogger "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
@@ -50,12 +51,11 @@ type downloadResponse struct {
 }
 
 type downloadBlock struct {
-	BlockChunks    [][]byte
-	Success        bool               `json:"success"`
-	LatestRM       *marker.ReadMarker `json:"latest_rm"`
-	AvailableQuota int64              `json:"quota"`
-	idx            int
-	err            error
+	BlockChunks [][]byte
+	Success     bool               `json:"success"`
+	LatestRM    *marker.ReadMarker `json:"latest_rm"`
+	idx         int
+	err         error
 }
 
 var downloadBlockChan map[string]chan *BlockDownloadRequest
@@ -145,6 +145,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		shouldRetry := false
 
 		header.ToHeader(httpreq)
+
+		zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock - blobberID: %v, clientID: %v", req.blobber.ID, client.GetClientID()))
 
 		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 			if err != nil {

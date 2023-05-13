@@ -575,7 +575,6 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 	}
 
 	header := &DownloadRequestHeader{
-		ClientID:   client.GetClientID(),
 		Path:       req.remotefilepath,
 		PathHash:   req.remotefilepathhash,
 		ReadMarker: rmData,
@@ -598,12 +597,7 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 			return req.handleReadMarkerError(resp, blobber, rm)
 		}
 
-		respBody, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-
-		logger.Logger.Debug("Submit readmarker 200 OK: " + string(respBody))
+		logger.Logger.Debug("Submit readmarker 200 OK")
 
 		req.maskMu.Lock()
 		req.prepaidBlobbers[blobber.ID] = true
