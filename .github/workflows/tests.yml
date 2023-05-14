@@ -14,9 +14,7 @@ env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
 
 jobs:
-
   golangci:
-    if: github.event_name == 'push'
     name: "lint"
     runs-on: [ arc-runner ]
     steps:
