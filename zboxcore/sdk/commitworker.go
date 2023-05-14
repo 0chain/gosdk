@@ -219,9 +219,20 @@ func (req *CommitRequest) commitBlobber(
 		l.Logger.Error("Creating writemarker failed: ", err)
 		return err
 	}
-	formWriter.WriteField("connection_id", req.connectionID)
-	formWriter.WriteField("write_marker", string(wmData))
-	formWriter.WriteField("file_id_meta", string(fileIDMetaData))
+	err = formWriter.WriteField("connection_id", req.connectionID)
+	if err != nil {
+		return err
+	}
+
+	err = formWriter.WriteField("write_marker", string(wmData))
+	if err != nil {
+		return err
+	}
+
+	err = formWriter.WriteField("file_id_meta", string(fileIDMetaData))
+	if err != nil {
+		return err
+	}
 
 	formWriter.Close()
 
@@ -264,7 +275,7 @@ func AddCommitRequest(req *CommitRequest) {
 	commitChan[req.blobber.ID] <- req
 }
 
-func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths []string) error {
+func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths []string) error { //nolint
 	var req *http.Request
 	req, err := zboxutil.NewCalculateHashRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
 	if err != nil || len(paths) == 0 {

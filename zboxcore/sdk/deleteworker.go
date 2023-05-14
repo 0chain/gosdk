@@ -291,7 +291,6 @@ type DeleteOperation struct {
 	remotefilepath string
 	ctx            context.Context
 	ctxCncl        context.CancelFunc
-	wg             *sync.WaitGroup
 	deleteMask     zboxutil.Uint128
 	maskMu         *sync.Mutex
 	consensus      Consensus

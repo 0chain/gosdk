@@ -55,8 +55,6 @@ const (
 )
 
 // Expected success rate is calculated (NumDataShards)*100/(NumDataShards+NumParityShards)
-// Additional success percentage on top of expected success rate
-const additionalSuccessRate = (10)
 
 var GetFileInfo = func(localpath string) (os.FileInfo, error) {
 	return sys.Files.Stat(localpath)
@@ -807,7 +805,7 @@ func (a *Allocation) GetRefsWithAuthTicket(authToken, offsetPath, updatedDate, o
 	return a.getRefs("", authTicket.FilePathHash, string(at), offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
 }
 
-//This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
+// This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
 func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
 	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
 		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
@@ -1359,7 +1357,10 @@ func (a *Allocation) DownloadFromReader(
 	if errors.Is(err, os.ErrNotExist) {
 		f, err = os.Create(localFPath)
 	} else {
-		r.Seek(finfo.Size(), io.SeekStart)
+		_, err = r.Seek(finfo.Size(), io.SeekStart)
+		if err != nil {
+			return err
+		}
 		f, err = os.OpenFile(localFPath, os.O_WRONLY|os.O_APPEND, 0644)
 	}
 
@@ -1770,7 +1771,10 @@ repair:
 	}
 
 	if shouldRepair {
-		a.RepairAlloc(statusCB)
+		err := a.RepairAlloc(statusCB)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	return hash, nil

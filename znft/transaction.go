@@ -9,7 +9,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (app *Znft) createTransactionWithGasPrice(ctx context.Context, address string, pack []byte) (*bind.TransactOpts, error) {
+func (app *Znft) createTransactionWithGasPrice(ctx context.Context, address string, pack []byte) (*bind.TransactOpts, error) { //nolint
 	gasLimitUnits, err := app.estimateGas(ctx, address, pack)
 	if err != nil {
 		return nil, err
@@ -26,7 +26,7 @@ func (app *Znft) createTransaction(ctx context.Context) (*bind.TransactOpts, err
 	return transactOpts, err
 }
 
-func (app *Znft) estimateGas(ctx context.Context, address string, pack []byte) (uint64, error) {
+func (app *Znft) estimateGas(ctx context.Context, address string, pack []byte) (uint64, error) { //nolint
 	etherClient, err := CreateEthClient(app.cfg.EthereumNodeURL)
 	if err != nil {
 		return 0, errors.Wrap(err, "failed to create etherClient")

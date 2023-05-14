@@ -86,10 +86,10 @@ func (m *MediaPlaylist) flush() {
 		return
 	}
 
-	m.Writer.Truncate(0)
-	m.Writer.Seek(0, 0)
-	m.Writer.Write(m.Encode())
-	m.Writer.Sync()
+	m.Writer.Truncate(0) //nolint
+	m.Writer.Seek(0, 0) //nolint
+	m.Writer.Write(m.Encode()) //nolint
+	m.Writer.Sync() //nolint
 }
 
 // Encode encode m3u8

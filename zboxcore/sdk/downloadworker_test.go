@@ -242,7 +242,7 @@ func TestFillShards(t *testing.T) {
 
 func getDummyData(size int) ([]byte, error) {
 	b := make([]byte, size)
-	_, err := rand.Read(b)
+	_, err := rand.Read(b) //nolint
 	if err != nil {
 		return nil, err
 	}

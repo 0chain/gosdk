@@ -3,7 +3,6 @@ package sdk
 import (
 	"bytes"
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -14,10 +13,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/0chain/gosdk/dev/blobber"
-	"github.com/0chain/gosdk/dev/blobber/model"
 	"github.com/0chain/gosdk/zboxcore/encryption"
-	"golang.org/x/crypto/sha3"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
@@ -107,46 +103,12 @@ func setupMockWriteLockRequest(a *Allocation, mockClient *mocks.HttpClient) {
 }
 
 func setupMockFile(t *testing.T, path string) (teardown func(t *testing.T)) {
-	os.Create(path)
-	ioutil.WriteFile(path, []byte("mockActualHash"), os.ModePerm)
+	_, err := os.Create(path)
+	require.Nil(t, err)
+	err = ioutil.WriteFile(path, []byte("mockActualHash"), os.ModePerm)
+	require.Nil(t, err)
 	return func(t *testing.T) {
 		os.Remove(path)
-	}
-}
-
-func setupMockFileAndReferencePathResult(t *testing.T, allocationID, name string) (teardown func(t *testing.T)) {
-	var buf = []byte("mockActualHash")
-	h := sha3.New256()
-	f, _ := os.Create(name)
-	w := io.MultiWriter(h, f)
-	//nolint: errcheck
-	w.Write(buf)
-
-	cancel := blobber.MockReferencePathResult(allocationID, &model.Ref{
-		AllocationID: allocationID,
-		Type:         model.DIRECTORY,
-		Name:         "/",
-		Path:         "/",
-		PathLevel:    1,
-		ParentPath:   "",
-		Children: []*model.Ref{
-			{
-				AllocationID:   allocationID,
-				Name:           name,
-				Type:           model.FILE,
-				Path:           "/" + name,
-				ActualFileSize: int64(len(buf)),
-				ActualFileHash: hex.EncodeToString(h.Sum(nil)),
-				ChunkSize:      CHUNK_SIZE,
-				PathLevel:      2,
-				ParentPath:     "/",
-			},
-		},
-	})
-
-	return func(t *testing.T) {
-		cancel()
-		os.Remove(name)
 	}
 }
 
@@ -243,15 +205,8 @@ func newBlobbersDetails() (blobbers []*BlobberAllocation) {
 	return blobberDetails
 }
 
-func setupMocks() {
-	GetFileInfo = func(localpath string) (os.FileInfo, error) {
-		return new(MockFile), nil
-	}
-}
-
 type MockFile struct {
 	os.FileInfo
-	size int64
 }
 
 func (m MockFile) Size() int64 { return 10 }
@@ -777,9 +732,11 @@ func TestAllocation_downloadFile(t *testing.T) {
 				statusCallback: nil,
 			},
 			setup: func(t *testing.T, testCaseName string, p parameters, a *Allocation) (teardown func(t *testing.T)) {
-				os.Create(p.localPath)
+				_, err := os.Create(p.localPath)
+				require.Nil(t, err)
 				return func(t *testing.T) {
-					os.Remove(p.localPath)
+					err = os.Remove(p.localPath)
+					require.Nil(t, err)
 				}
 			},
 			wantErr: true,
@@ -797,8 +754,10 @@ func TestAllocation_downloadFile(t *testing.T) {
 				statusCallback: nil,
 			},
 			setup: func(t *testing.T, testCaseName string, p parameters, a *Allocation) (teardown func(t *testing.T)) {
-				os.Mkdir(p.localPath, 0755)
-				os.Create(p.localPath + "/" + p.remotePath)
+				err := os.Mkdir(p.localPath, 0755)
+				require.Nil(t, err)
+				_, err = os.Create(p.localPath + "/" + p.remotePath)
+				require.Nil(t, err)
 				return func(t *testing.T) {
 					os.RemoveAll(p.localPath + "/" + p.remotePath)
 					os.RemoveAll(p.localPath)
@@ -900,10 +859,6 @@ func TestAllocation_downloadFile(t *testing.T) {
 }
 
 func TestAllocation_GetRefs(t *testing.T) {
-	const (
-		mockType       = "f"
-		mockActualHash = "mockActualHash"
-	)
 
 	var mockClient = mocks.HttpClient{}
 	zboxutil.Client = &mockClient
@@ -1171,7 +1126,8 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 				refereeEncryptionPublicKey: func() string {
 					client_mnemonic := "travel twenty hen negative fresh sentence hen flat swift embody increase juice eternal satisfy want vessel matter honey video begin dutch trigger romance assault"
 					client_encscheme := encryption.NewEncryptionScheme()
-					client_encscheme.Initialize(client_mnemonic)
+					_, err := client_encscheme.Initialize(client_mnemonic)
+					require.Nil(t, err)
 					client_encscheme.InitForEncryption("filetype:audio")
 					client_enc_pub_key, err := client_encscheme.GetPublicKey()
 					require.NoError(t, err)
@@ -1282,8 +1238,6 @@ func TestAllocation_GetAuthTicket(t *testing.T) {
 					Baseurl: "TestAllocation_GetAuthTicket" + tt.name + mockBlobberUrl + strconv.Itoa(i),
 				})
 			}
-			const mockValidationRoot = "mock validation root"
-			const numberBlobbers = 10
 
 			zboxutil.Client = &mockClient
 
@@ -1591,9 +1545,11 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 				authTicket: authTicket,
 			},
 			setup: func(t *testing.T, testCaseName string, p parameters) (teardown func(t *testing.T)) {
-				os.Create(p.localPath)
+				_, err := os.Create(p.localPath)
+				require.Nil(t, err)
 				return func(t *testing.T) {
-					os.Remove(p.localPath)
+					err := os.Remove(p.localPath)
+					require.Nil(t, err)
 				}
 			},
 			wantErr: true,
@@ -1607,8 +1563,12 @@ func TestAllocation_downloadFromAuthTicket(t *testing.T) {
 				remoteFilename: mockRemoteFileName,
 			},
 			setup: func(t *testing.T, testCaseName string, p parameters) (teardown func(t *testing.T)) {
-				os.Mkdir(p.localPath, 0755)
-				os.Create(p.localPath + "/" + p.remoteFilename)
+				err := os.Mkdir(p.localPath, 0755)
+				require.Nil(t, err)
+
+				_, err = os.Create(p.localPath + "/" + p.remoteFilename)
+				require.Nil(t, err)
+
 				return func(t *testing.T) {
 					os.RemoveAll(p.localPath + "/" + p.remoteFilename)
 					os.RemoveAll(p.localPath)

@@ -70,10 +70,25 @@ func (req *CopyRequest) copyBlobberObject(
 			body := new(bytes.Buffer)
 			formWriter := multipart.NewWriter(body)
 
-			formWriter.WriteField("connection_id", req.connectionID)
-			formWriter.WriteField("path", req.remotefilepath)
-			formWriter.WriteField("dest", req.destPath)
-			formWriter.Close()
+			err = formWriter.WriteField("connection_id", req.connectionID)
+			if err != nil {
+				return err, false
+			}
+
+			err = formWriter.WriteField("path", req.remotefilepath)
+			if err != nil {
+				return err, false
+			}
+
+			err = formWriter.WriteField("dest", req.destPath)
+			if err != nil {
+				return err, false
+			}
+
+			err = formWriter.Close()
+			if err != nil {
+				return err, false
+			}
 
 			var (
 				httpreq  *http.Request
