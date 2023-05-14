@@ -42,6 +42,7 @@ type BlockDownloadRequest struct {
 	ctx                context.Context
 	result             chan *downloadBlock
 	shouldVerify       bool
+	connectionID       string
 }
 
 type downloadResponse struct {
@@ -133,6 +134,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 		header.BlockNum = req.blockNum
 		header.NumBlocks = req.numBlocks
 		header.VerifyDownload = req.shouldVerify
+		header.ConnectionID = req.connectionID
 
 		if req.authTicket != nil {
 			header.AuthToken, _ = json.Marshal(req.authTicket) //nolint: errcheck

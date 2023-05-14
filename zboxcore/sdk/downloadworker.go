@@ -70,6 +70,7 @@ type DownloadRequest struct {
 	shouldVerify       bool
 	blocksPerShard     int64
 	prepaidBlobbers    map[string]bool
+	connectionID       string
 }
 
 func (req *DownloadRequest) removeFromMask(pos uint64) {
@@ -181,6 +182,7 @@ func (req *DownloadRequest) downloadBlock(
 			numBlocks:          totalBlock,
 			encryptedKey:       req.encryptedKey,
 			shouldVerify:       req.shouldVerify,
+			connectionID:       req.connectionID,
 		}
 
 		bf := req.validationRootMap[blockDownloadReq.blobber.ID]
@@ -575,9 +577,10 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 	}
 
 	header := &DownloadRequestHeader{
-		Path:       req.remotefilepath,
-		PathHash:   req.remotefilepathhash,
-		ReadMarker: rmData,
+		Path:         req.remotefilepath,
+		PathHash:     req.remotefilepathhash,
+		ReadMarker:   rmData,
+		ConnectionID: req.connectionID,
 	}
 	if req.authTicket != nil {
 		header.AuthToken, _ = json.Marshal(req.authTicket) //nolint: errcheck
