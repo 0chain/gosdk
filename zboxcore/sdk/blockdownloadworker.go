@@ -146,7 +146,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 
 		header.ToHeader(httpreq)
 
-		zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock - blobberID: %v, clientID: %v", req.blobber.ID, client.GetClientID()))
+		zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock - blobberID: %v, clientID: %v, blockNum: %d", req.blobber.ID, client.GetClientID(), header.BlockNum))
 
 		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
 			if err != nil {
@@ -163,6 +163,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				return err
 			}
 			if resp.StatusCode != http.StatusOK {
+				zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, retry, string(respBody)))
 				if err = json.Unmarshal(respBody, &rspData); err == nil {
 					return errors.New("download_error", fmt.Sprintf("Response status: %d, Error: %v,", resp.StatusCode, rspData.err))
 				}
@@ -203,6 +204,8 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			} else {
 				rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
 			}
+
+			zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock 200 OK: blobberID: %v, clientID: %v, blockNum: %d", req.blobber.ID, client.GetClientID(), header.BlockNum))
 
 			req.result <- &rspData
 			return nil
