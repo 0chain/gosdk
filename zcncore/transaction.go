@@ -122,6 +122,7 @@ type TransactionCommon interface {
 	MinerSCLock(providerId string, providerType Provider, lock uint64) error
 	MinerSCUnlock(providerId string, providerType Provider) error
 	MinerSCCollectReward(providerID string, providerType Provider) error
+	MinerSCKill(providerID string, providerType Provider) error
 
 	StorageSCCollectReward(providerID string, providerType Provider) error
 
@@ -286,7 +287,7 @@ func (t *Transaction) Send(toClientID string, val uint64, desc string) error {
 	t.txn.Value = val
 	t.txn.TransactionData = string(txnData)
 	if t.txn.TransactionFee == 0 {
-		fee, err := transaction.EstimateFee(t.txn,_config.chain.Miners, 0.2)
+		fee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
 		if err != nil {
 			return err
 		}
@@ -312,7 +313,7 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val uint64, desc 
 	t.txn.Signature = sig
 	t.txn.CreationDate = CreationDate
 	if t.txn.TransactionFee == 0 {
-		fee, err := transaction.EstimateFee(t.txn,_config.chain.Miners, 0.2)
+		fee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
 		if err != nil {
 			return err
 		}
@@ -386,6 +387,30 @@ func (t *Transaction) MinerSCCollectReward(providerId string, providerType Provi
 	}
 	err := t.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		logging.Error(err)
+		return err
+	}
+	go func() { t.setNonceAndSubmit() }()
+	return err
+}
+
+func (t *Transaction) MinerSCKill(providerId string, providerType Provider) error {
+	pr := &scCollectReward{
+		ProviderId:   providerId,
+		ProviderType: int(providerType),
+	}
+	var name string
+	switch providerType {
+	case ProviderMiner:
+		name = transaction.MINERSC_KILL_MINER
+	case ProviderSharder:
+		name = transaction.MINERSC_KILL_SHARDER
+	default:
+		return fmt.Errorf("kill provider type %v not implimented", providerType)
+	}
+
+	err := t.createSmartContractTxn(MinerSmartContractAddress, name, pr, 0)
 	if err != nil {
 		logging.Error(err)
 		return err
@@ -749,6 +774,14 @@ func (t *Transaction) RegisterMultiSig(walletstr string, mswallet string) error 
 		}
 		t.txn.TransactionNonce = nonce
 
+		if t.txn.TransactionFee == 0 {
+			fee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
+			if err != nil {
+				return
+			}
+			t.txn.TransactionFee = fee
+		}
+
 		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
 		t.submitTxn()
 	}()
@@ -801,6 +834,15 @@ func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error 
 			transaction.Cache.Set(t.txn.ClientID, nonce)
 		}
 		t.txn.TransactionNonce = nonce
+
+		if t.txn.TransactionFee == 0 {
+			fee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
+			if err != nil {
+				return
+			}
+			t.txn.TransactionFee = fee
+		}
+
 		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
 		t.submitTxn()
 	}()

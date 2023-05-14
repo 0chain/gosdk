@@ -3,6 +3,7 @@ package transaction
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 
@@ -150,6 +151,8 @@ const (
 	MINERSC_MINER_DELETE     = "delete_miner"
 	MINERSC_SHARDER_DELETE   = "delete_sharder"
 	MINERSC_COLLECT_REWARD   = "collect_reward"
+	MINERSC_KILL_MINER       = "kill_miner"
+	MINERSC_KILL_SHARDER     = "kill_sharder"
 
 	// Faucet SC
 	FAUCETSC_UPDATE_SETTINGS = "update-settings"
@@ -163,6 +166,7 @@ const (
 	ZCNSC_DELETE_AUTHORIZER        = "delete-authorizer"
 
 	ESTIMATE_TRANSACTION_COST = `/v1/estimate_txn_fee`
+	FEES_TABLE                = `/v1/fees_table`
 )
 
 type SignFunc = func(msg string) (string, error)
@@ -293,7 +297,7 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 			url := minerUrl + ESTIMATE_TRANSACTION_COST
 			req, err := util.NewHTTPPostRequest(url, txn)
 			if err != nil {
-				errC <- fmt.Errorf("ceate request failed, url: %s, err: %v", url, err)
+				errC <- fmt.Errorf("create request failed, url: %s, err: %v", url, err)
 				return
 			}
 
@@ -327,7 +331,6 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 	}
 
 	if len(feesCount) > 0 {
-		// return the fee with the highest count, if all has the same count, then return the first one
 		var (
 			max int
 			fee uint64
@@ -349,4 +352,92 @@ func EstimateFee(txn *Transaction, miners []string, reqPercent ...float32) (uint
 	}
 
 	return 0, errors.New("failed to estimate transaction fee", strings.Join(errs, ","))
+}
+
+// GetFeesTable get fee tables
+func GetFeesTable(miners []string, reqPercent ...float32) (map[string]map[string]int64, error) {
+	const minReqNum = 3
+	var reqN int
+
+	if len(reqPercent) > 0 {
+		reqN = int(reqPercent[0] * float32(len(miners)))
+	}
+
+	reqN = util.MaxInt(minReqNum, reqN)
+	reqN = util.MinInt(reqN, len(miners))
+	randomMiners := util.Shuffle(miners)[:reqN]
+
+	var (
+		feesC = make(chan string, reqN)
+		errC  = make(chan error, reqN)
+	)
+
+	wg := &sync.WaitGroup{}
+	wg.Add(len(randomMiners))
+
+	for _, miner := range randomMiners {
+		go func(minerUrl string) {
+			defer wg.Done()
+
+			url := minerUrl + FEES_TABLE
+			req, err := util.NewHTTPGetRequest(url)
+			if err != nil {
+				errC <- fmt.Errorf("create request failed, url: %s, err: %v", url, err)
+				return
+			}
+
+			res, err := req.Get()
+			if err != nil {
+				errC <- fmt.Errorf("request failed, url: %s, err: %v", url, err)
+				return
+			}
+
+			if res.StatusCode == http.StatusOK {
+				feesC <- res.Body
+				return
+			}
+
+			feesC <- ""
+
+		}(miner)
+	}
+
+	// wait for requests to complete
+	wg.Wait()
+	close(feesC)
+	close(errC)
+
+	feesCount := make(map[string]int, reqN)
+	for f := range feesC {
+		feesCount[f]++
+	}
+
+	if len(feesCount) > 0 {
+		var (
+			max  int
+			fees string
+		)
+
+		for f, count := range feesCount {
+			if f != "" && count > max {
+				max = count
+				fees = f
+			}
+		}
+
+		feesTable := make(map[string]map[string]int64)
+		err := json.Unmarshal([]byte(fees), &feesTable)
+		if err != nil {
+			return nil, errors.New("failed to get fees table", err.Error())
+		}
+
+		return feesTable, nil
+	}
+
+	errs := make([]string, 0, reqN)
+	for err := range errC {
+		errs = append(errs, err.Error())
+	}
+
+	return nil, errors.New("failed to get fees table", strings.Join(errs, ","))
 }

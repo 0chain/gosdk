@@ -1,5 +1,7 @@
 package sdk
 
+import "github.com/0chain/gosdk/zboxcore/zboxutil"
+
 // LiveUpload live streaming video upload manager
 type LiveUpload struct {
 	allocationObj *Allocation
@@ -77,7 +79,7 @@ func (lu *LiveUpload) createClipsUpload(clipsIndex int, reader LiveUploadReader)
 		RemotePath: lu.liveMeta.RemotePath + "/" + reader.GetClipsFileName(clipsIndex),
 	}
 
-	return CreateChunkedUpload(lu.homedir, lu.allocationObj, fileMeta, reader, false, false,
+	return CreateChunkedUpload(lu.homedir, lu.allocationObj, fileMeta, reader, false, false, false, zboxutil.NewConnectionId(),
 		WithEncrypt(lu.encryptOnUpload),
 		WithStatusCallback(lu.statusCallback()))
 }

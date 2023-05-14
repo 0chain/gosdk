@@ -24,7 +24,6 @@ import (
 )
 
 const SC_REST_API_URL = "v1/screst/"
-const REGISTER_CLIENT = "v1/client/put"
 
 const MAX_RETRIES = 5
 const SLEEP_BETWEEN_RETRIES = 5
@@ -41,30 +40,31 @@ type HttpClient interface {
 var Client HttpClient
 
 const (
-	ALLOCATION_ENDPOINT      = "/allocation"
-	UPLOAD_ENDPOINT          = "/v1/file/upload/"
-	RENAME_ENDPOINT          = "/v1/file/rename/"
-	COPY_ENDPOINT            = "/v1/file/copy/"
-	MOVE_ENDPOINT            = "/v1/file/move/"
-	LIST_ENDPOINT            = "/v1/file/list/"
-	REFERENCE_ENDPOINT       = "/v1/file/referencepath/"
-	CONNECTION_ENDPOINT      = "/v1/connection/details/"
-	COMMIT_ENDPOINT          = "/v1/connection/commit/"
-	DOWNLOAD_ENDPOINT        = "/v1/file/download/"
-	LATEST_READ_MARKER       = "/v1/readmarker/latest"
-	FILE_META_ENDPOINT       = "/v1/file/meta/"
-	FILE_STATS_ENDPOINT      = "/v1/file/stats/"
-	OBJECT_TREE_ENDPOINT     = "/v1/file/objecttree/"
-	REFS_ENDPOINT            = "/v1/file/refs/"
-	RECENT_REFS_ENDPOINT     = "/v1/file/refs/recent/"
-	COMMIT_META_TXN_ENDPOINT = "/v1/file/commitmetatxn/"
-	COLLABORATOR_ENDPOINT    = "/v1/file/collaborator/"
-	CALCULATE_HASH_ENDPOINT  = "/v1/file/calculatehash/"
-	SHARE_ENDPOINT           = "/v1/marketplace/shareinfo/"
-	DIR_ENDPOINT             = "/v1/dir/"
-	PLAYLIST_LATEST_ENDPOINT = "/v1/playlist/latest/"
-	PLAYLIST_FILE_ENDPOINT   = "/v1/playlist/file/"
-	WM_LOCK_ENDPOINT         = "/v1/writemarker/lock/"
+	ALLOCATION_ENDPOINT        = "/allocation"
+	UPLOAD_ENDPOINT            = "/v1/file/upload/"
+	RENAME_ENDPOINT            = "/v1/file/rename/"
+	COPY_ENDPOINT              = "/v1/file/copy/"
+	MOVE_ENDPOINT              = "/v1/file/move/"
+	LIST_ENDPOINT              = "/v1/file/list/"
+	REFERENCE_ENDPOINT         = "/v1/file/referencepath/"
+	CONNECTION_ENDPOINT        = "/v1/connection/details/"
+	COMMIT_ENDPOINT            = "/v1/connection/commit/"
+	DOWNLOAD_ENDPOINT          = "/v1/file/download/"
+	LATEST_READ_MARKER         = "/v1/readmarker/latest"
+	FILE_META_ENDPOINT         = "/v1/file/meta/"
+	FILE_STATS_ENDPOINT        = "/v1/file/stats/"
+	OBJECT_TREE_ENDPOINT       = "/v1/file/objecttree/"
+	REFS_ENDPOINT              = "/v1/file/refs/"
+	RECENT_REFS_ENDPOINT       = "/v1/file/refs/recent/"
+	COMMIT_META_TXN_ENDPOINT   = "/v1/file/commitmetatxn/"
+	COLLABORATOR_ENDPOINT      = "/v1/file/collaborator/"
+	CALCULATE_HASH_ENDPOINT    = "/v1/file/calculatehash/"
+	SHARE_ENDPOINT             = "/v1/marketplace/shareinfo/"
+	DIR_ENDPOINT               = "/v1/dir/"
+	PLAYLIST_LATEST_ENDPOINT   = "/v1/playlist/latest/"
+	PLAYLIST_FILE_ENDPOINT     = "/v1/playlist/file/"
+	WM_LOCK_ENDPOINT           = "/v1/writemarker/lock/"
+	CREATE_CONNECTION_ENDPOINT = "/v1/connection/create/"
 
 	// CLIENT_SIGNATURE_HEADER represents http request header contains signature.
 	CLIENT_SIGNATURE_HEADER = "X-App-Client-Signature"
@@ -240,13 +240,15 @@ func NewObjectTreeRequest(baseUrl, allocation string, path string) (*http.Reques
 	return req, nil
 }
 
-func NewRefsRequest(baseUrl, allocationID, path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*http.Request, error) {
+func NewRefsRequest(baseUrl, allocationID, path, pathHash, authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*http.Request, error) {
 	nUrl, err := joinUrl(baseUrl, REFS_ENDPOINT, allocationID)
 	if err != nil {
 		return nil, err
 	}
 	params := url.Values{}
 	params.Add("path", path)
+	params.Add("path_hash", pathHash)
+	params.Add("auth_token", authToken)
 	params.Add("offsetPath", offsetPath)
 	params.Add("pageLimit", strconv.Itoa(pageLimit))
 	params.Add("updatedDate", updatedDate)
@@ -450,7 +452,7 @@ func NewUploadRequestWithMethod(baseURL, allocation string, body io.Reader, meth
 }
 
 func NewWriteMarkerLockRequest(
-	baseURL, allocation, connID, requestTime string) (*http.Request, error) {
+	baseURL, allocation, connID string) (*http.Request, error) {
 
 	u, err := joinUrl(baseURL, WM_LOCK_ENDPOINT, allocation)
 	if err != nil {
@@ -459,7 +461,6 @@ func NewWriteMarkerLockRequest(
 
 	params := url.Values{}
 	params.Add("connection_id", connID)
-	params.Add("request_time", requestTime)
 	u.RawQuery = params.Encode() // Escape Query Parameters
 
 	req, err := http.NewRequest(http.MethodPost, u.String(), nil)
@@ -506,6 +507,23 @@ func NewUploadRequest(baseUrl, allocation string, body io.Reader, update bool) (
 	} else {
 		req, err = http.NewRequest(http.MethodPost, u.String(), body)
 	}
+	if err != nil {
+		return nil, err
+	}
+
+	if err := setClientInfoWithSign(req, allocation); err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+func NewConnectionRequest(baseUrl, allocation string, body io.Reader) (*http.Request, error) {
+	u, err := joinUrl(baseUrl, CREATE_CONNECTION_ENDPOINT, allocation)
+	if err != nil {
+		return nil, err
+	}
+	req, err := http.NewRequest(http.MethodPost, u.String(), body)
 	if err != nil {
 		return nil, err
 	}
@@ -741,7 +759,21 @@ func MakeSCRestAPICall(scAddress string, relativePath string, params map[string]
 func HttpDo(ctx context.Context, cncl context.CancelFunc, req *http.Request, f func(*http.Response, error) error) error {
 	// Run the HTTP request in a goroutine and pass the response to f.
 	c := make(chan error, 1)
-	go func() { c <- f(Client.Do(req.WithContext(ctx))) }()
+	go func() {
+		var err error
+		// indefinitely try if io.EOF error occurs. As per some research over google
+		// it occurs when client http tries to send byte stream in connection that is
+		// closed by the server
+		for {
+			err = f(Client.Do(req.WithContext(ctx)))
+			if errors.Is(err, io.EOF) {
+				continue
+			}
+			break
+		}
+		c <- err
+	}()
+
 	// TODO: Check cncl context required in any case
 	// defer cncl()
 	select {

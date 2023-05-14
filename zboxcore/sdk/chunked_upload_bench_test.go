@@ -11,6 +11,7 @@ import (
 	"github.com/0chain/gosdk/dev"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/logger"
+	"github.com/0chain/gosdk/zboxcore/zboxutil"
 )
 
 type nopeChunkedUploadProgressStorer struct {
@@ -124,7 +125,7 @@ func BenchmarkChunkedUpload(b *testing.B) {
 					RemotePath: "/test.txt",
 				}
 
-				chunkedUpload, err := CreateChunkedUpload("/tmp", a, fileMeta, reader, false, false)
+				chunkedUpload, err := CreateChunkedUpload("/tmp", a, fileMeta, reader, false, false, false, zboxutil.NewConnectionId())
 				if err != nil {
 					b.Fatal(err)
 					return

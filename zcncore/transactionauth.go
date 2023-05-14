@@ -5,6 +5,7 @@ package zcncore
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/0chain/errors"
@@ -342,6 +343,29 @@ func (ta *TransactionWithAuth) MinerSCCollectReward(providerId string, providerT
 	}
 	err := ta.createSmartContractTxn(MinerSmartContractAddress,
 		transaction.MINERSC_COLLECT_REWARD, pr, 0)
+	if err != nil {
+		logging.Error(err)
+		return err
+	}
+	go ta.submitTxn()
+	return err
+}
+
+func (ta *TransactionWithAuth) MinerSCKill(providerId string, providerType Provider) error {
+	pr := &scCollectReward{
+		ProviderId:   providerId,
+		ProviderType: int(providerType),
+	}
+	var name string
+	switch providerType {
+	case ProviderMiner:
+		name = transaction.MINERSC_KILL_MINER
+	case ProviderSharder:
+		name = transaction.MINERSC_KILL_SHARDER
+	default:
+		return fmt.Errorf("kill provider type %v not implimented", providerType)
+	}
+	err := ta.createSmartContractTxn(MinerSmartContractAddress, name, pr, 0)
 	if err != nil {
 		logging.Error(err)
 		return err

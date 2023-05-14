@@ -88,6 +88,7 @@ func CreateChunkedUpload(
 	workdir string, allocationObj *Allocation,
 	fileMeta FileMeta, fileReader io.Reader,
 	isUpdate, isRepair bool,
+	webStreaming bool, connectionId string, 
 	opts ...ChunkedUploadOption,
 ) (*ChunkedUpload, error) {
 
@@ -97,6 +98,15 @@ func CreateChunkedUpload(
 
 	if !isUpdate && !allocationObj.CanUpload() || isUpdate && !allocationObj.CanUpdate() {
 		return nil, thrown.Throw(constants.ErrFileOptionNotPermitted, "file_option_not_permitted ")
+	}
+
+	if webStreaming {
+		newFileReader, newFileMeta, err := TranscodeWebStreaming(fileReader, fileMeta)
+		if err != nil {
+			return nil, thrown.New("upload_failed", err.Error())
+		}
+		fileMeta = *newFileMeta
+		fileReader = newFileReader
 	}
 
 	err := ValidateRemoteFileName(fileMeta.RemoteName)
@@ -157,6 +167,7 @@ func CreateChunkedUpload(
 		chunkSize:       DefaultChunkSize,
 		chunkNumber:     1,
 		encryptOnUpload: false,
+		webStreaming:    false,
 
 		consensus:     consensus,
 		uploadTimeOut: DefaultUploadTimeOut,
@@ -218,10 +229,10 @@ func CreateChunkedUpload(
 
 	su.fileHasher = CreateHasher(getShardSize(su.fileMeta.ActualSize, su.allocationObj.DataShards, su.encryptOnUpload))
 
-	// encrypt option has been chaned.upload it from scratch
+	// encrypt option has been changed. upload it from scratch
 	// chunkSize has been changed. upload it from scratch
 	if su.progress.EncryptOnUpload != su.encryptOnUpload || su.progress.ChunkSize != su.chunkSize {
-		su.progress = su.createUploadProgress()
+		su.progress = su.createUploadProgress(connectionId)
 	}
 
 	su.fileErasureEncoder, err = reedsolomon.New(
@@ -319,6 +330,8 @@ type ChunkedUpload struct {
 
 	// encryptOnUpload encrypt data on upload or not.
 	encryptOnUpload bool
+	// webStreaming whether data has to be encoded.
+	webStreaming bool
 	// chunkSize how much bytes a chunk has. 64KB is default value.
 	chunkSize int64
 	// chunkNumber the number of chunks in a http upload request. 1 is default value
@@ -384,8 +397,8 @@ func (su *ChunkedUpload) removeProgress() {
 }
 
 // createUploadProgress create a new UploadProgress
-func (su *ChunkedUpload) createUploadProgress() UploadProgress {
-	progress := UploadProgress{ConnectionID: zboxutil.NewConnectionId(),
+func (su *ChunkedUpload) createUploadProgress(connectionId string) UploadProgress {
+	progress := UploadProgress{ConnectionID: connectionId,
 		ChunkIndex:   -1,
 		ChunkSize:    su.chunkSize,
 		UploadLength: 0,
@@ -427,13 +440,10 @@ func (su *ChunkedUpload) createEncscheme() encryption.EncryptionScheme {
 	return encscheme
 }
 
-// Start start/resume upload
-func (su *ChunkedUpload) Start() error {
-
+func (su *ChunkedUpload) process() error {
 	if su.statusCallback != nil {
 		su.statusCallback.Started(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, int(su.fileMeta.ActualSize)+int(su.fileMeta.ActualThumbnailSize))
 	}
-	defer su.ctxCncl()
 
 	for {
 
@@ -496,7 +506,18 @@ func (su *ChunkedUpload) Start() error {
 			break
 		}
 	}
+	return nil
+}
 
+// Start start/resume upload
+func (su *ChunkedUpload) Start() error {
+
+	defer su.ctxCncl()
+
+	err := su.process()
+	if err != nil {
+		return err
+	}
 	logger.Logger.Info("Completed the upload. Submitting for commit")
 
 	blobbers := make([]*blockchain.StorageNode, len(su.blobbers))
@@ -504,7 +525,7 @@ func (su *ChunkedUpload) Start() error {
 		blobbers[i] = b.blobber
 	}
 
-	err := su.writeMarkerMutex.Lock(
+	err = su.writeMarkerMutex.Lock(
 		su.ctx, &su.uploadMask, su.maskMu,
 		blobbers, &su.consensus, 0, su.uploadTimeOut,
 		su.progress.ConnectionID)
@@ -598,7 +619,6 @@ func (su *ChunkedUpload) processUpload(chunkStartIndex, chunkEndIndex int,
 	var pos uint64
 	for i := su.uploadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
-
 		blobber := su.blobbers[pos]
 		blobber.progress.UploadLength += uploadLength
 

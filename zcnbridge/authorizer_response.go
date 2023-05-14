@@ -24,6 +24,15 @@ type (
 		error
 	}
 
+	// EthereumBurnEvents represents burn events returned by authorizers
+	EthereumBurnEvents struct {
+		AuthorizerID string `json:"authorizer_id,omitempty"`
+		BurnEvents   []struct {
+			Nonce           int64  `json:"nonce"`
+			TransactionHash string `json:"transaction_hash"`
+		} `json:"burn_events"`
+	}
+
 	// ProofEthereumBurn Authorizer returns this type for Ethereum transaction
 	ProofEthereumBurn struct {
 		TxnID             string `json:"ethereum_txn_id"`
@@ -79,6 +88,22 @@ func (r *WZCNBurnEvent) Error() error {
 
 func (r *WZCNBurnEvent) Data() interface{} {
 	return r.BurnTicket
+}
+
+func (r *EthereumBurnEvents) GetAuthorizerID() string {
+	return r.AuthorizerID
+}
+
+func (r *EthereumBurnEvents) SetAuthorizerID(id string) {
+	r.AuthorizerID = id
+}
+
+func (r *EthereumBurnEvents) Error() error {
+	return nil
+}
+
+func (r *EthereumBurnEvents) Data() interface{} {
+	return r
 }
 
 func (r *ProofZCNBurn) GetAuthorizerID() string {

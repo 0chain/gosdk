@@ -177,13 +177,21 @@ func DownloadThumbnail(allocationID, remotePath, localPath string, statusCb Stat
 //
 // ## Outputs
 //   - error
-func RepairFile(allocationID, workdir, localPath, remotePath, thumbnailPath string, encrypt bool, statusCb StatusCallbackMocked) error {
+func RepairFile(allocationID, workdir, localPath, remotePath, thumbnailPath string, encrypt bool, webStreaming bool, statusCb StatusCallbackMocked) error {
 	a, err := getAllocation(allocationID)
 	if err != nil {
 		return err
 
 	}
-	return a.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, true, true, thumbnailPath, encrypt)
+	return a.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, true, true, thumbnailPath, encrypt, webStreaming)
+}
+
+func MultiOperation(allocationID string, operations []sdk.OperationRequest) error {
+	a, err := getAllocation(allocationID)
+	if err != nil {
+		return err
+	}
+	return a.DoMultiOperation(operations)
 }
 
 // UploadFile - upload file/thumbnail from local path to remote path
@@ -198,12 +206,12 @@ func RepairFile(allocationID, workdir, localPath, remotePath, thumbnailPath stri
 //
 // ## Outputs
 //   - error
-func UploadFile(allocationID, workdir, localPath, remotePath, thumbnailPath string, encrypt bool, statusCb StatusCallbackMocked) error {
+func UploadFile(allocationID, workdir, localPath, remotePath, thumbnailPath string, encrypt bool, webStreaming bool, statusCb StatusCallbackMocked) error {
 	a, err := getAllocation(allocationID)
 	if err != nil {
 		return err
 	}
-	return a.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, false, false, thumbnailPath, encrypt)
+	return a.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, false, false, thumbnailPath, encrypt, webStreaming)
 }
 
 // UploadFile - update file/thumbnail from local path to remote path
@@ -217,14 +225,14 @@ func UploadFile(allocationID, workdir, localPath, remotePath, thumbnailPath stri
 //
 // ## Ouputs
 //   - error
-func UpdateFile(allocationID, workdir, localPath, remotePath, thumbnailPath string, encrypt bool, statusCb StatusCallbackMocked) error {
+func UpdateFile(allocationID, workdir, localPath, remotePath, thumbnailPath string, encrypt bool, webStreaming bool, statusCb StatusCallbackMocked) error {
 	a, err := getAllocation(allocationID)
 
 	if err != nil {
 		return err
 	}
 
-	return a.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, true, false, thumbnailPath, encrypt)
+	return a.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, true, false, thumbnailPath, encrypt, webStreaming)
 }
 
 // DeleteFile - delete file from remote path
