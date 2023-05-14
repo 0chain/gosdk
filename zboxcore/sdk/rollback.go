@@ -257,11 +257,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		prevVersion, latestVersion = latestVersion, prevVersion
 	}
 
-	if len(versionMap) == 0 {
-		return Commit, nil
-	}
-
-	if len(versionMap) == 1 && len(versionMap[latestVersion]) == a.DataShards+a.ParityShards {
+	if len(versionMap) < 2 {
 		return Commit, nil
 	}
 
@@ -269,10 +265,6 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 
 	if len(versionMap[prevVersion]) > req || len(versionMap[latestVersion]) > req {
 		return Repair, nil
-	}
-
-	if len(versionMap) == 1 {
-		return Commit, a.DeleteFile("/")
 	}
 
 	errCnt = 0
