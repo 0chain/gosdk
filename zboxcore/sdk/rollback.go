@@ -253,12 +253,16 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		versionMap[version] = append(versionMap[version], rb)
 	}
 
-	if len(versionMap) < 2 {
+	if prevVersion > latestVersion {
+		prevVersion, latestVersion = latestVersion, prevVersion
+	}
+
+	if len(versionMap) == 0 {
 		return Commit, nil
 	}
 
-	if prevVersion > latestVersion {
-		prevVersion, latestVersion = latestVersion, prevVersion
+	if len(versionMap) == 1 && len(versionMap[latestVersion]) == a.DataShards+a.ParityShards {
+		return Commit, nil
 	}
 
 	req := a.DataShards
@@ -266,10 +270,15 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 	if len(versionMap[prevVersion]) > req || len(versionMap[latestVersion]) > req {
 		return Repair, nil
 	}
+
+	if len(versionMap) == 1 {
+		return Commit, a.DeleteFile("/")
+	}
+
 	errCnt = 0
 	// rollback to previous version
 	l.Logger.Info("Rolling back to previous version")
-	fullConsensus := len(versionMap[latestVersion])
+	fullConsensus := len(versionMap[latestVersion]) - (req - len(versionMap[prevVersion]))
 
 	for _, rb := range versionMap[latestVersion] {
 
@@ -287,7 +296,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		}(rb)
 	}
 
-	if errCnt == int32(fullConsensus) {
+	if errCnt > int32(fullConsensus) {
 		return Broken, common.NewError("rollback_failed", "Rollback failed")
 	}
 
