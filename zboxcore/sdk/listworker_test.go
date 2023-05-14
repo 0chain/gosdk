@@ -66,7 +66,7 @@ func TestListRequest_getListInfoFromBlobber(t *testing.T) {
 			},
 			setup:   func(t *testing.T, name string, p parameters, errMsg string) {},
 			wantErr: true,
-			errMsg:  `parse "Test_Error_New_HTTP_Failed_By_Containing_\x7f\x00\x00": net/url: invalid control character in URL`,
+			errMsg:  `parse "Test_Error_New_HTTP_Failed_By_Containing_\u007f\x00\x00": net/url: invalid control character in URL`,
 		},
 		{
 			name: "Test_HTTP_Error",
