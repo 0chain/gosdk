@@ -14,20 +14,29 @@ env:
   ACTIONS_ALLOW_UNSECURE_COMMANDS: true
 
 jobs:
-  #lint:
-  #  runs-on: ubuntu-20.04
-  #  steps:
-  #  - name: Install Go
-  #    uses: actions/setup-go@v2
-  #    with:
-  #      go-version: 1.16.x
-  #  - uses: actions/checkout@v2
-  #  - name: Install golangci-lint
-  #    run: |
-  #      go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.42.0
-  #      golangci-lint --version
-  #  - name: Lint
-  #    run: make lint
+
+  golangci:
+    if: github.event_name == 'push'
+    name: "lint"
+    runs-on: [ arc-runner ]
+    steps:
+      - name: Install Packages
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install build-essential nghttp2 libnghttp2-dev libssl-dev
+      - uses: actions/setup-go@v3
+        with:
+          go-version: '1.18'
+      - uses: actions/checkout@v3
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: v1.50
+          skip-build-cache: true
+          skip-pkg-cache: true
+          only-new-issues: true
+
+
   go-test:
     runs-on: [self-hosted, build]
     steps:
@@ -41,7 +50,7 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: '14'
-      
+
       - name: Install deps
         run: |
           codename=$(lsb_release -c | awk '{print $2}')
@@ -49,7 +58,7 @@ jobs:
           echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
           echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
           sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
-      
+
           sudo apt-get update -y && sudo apt-get install build-essential wget -y
 
       - name: Install herumi's libraries
@@ -158,7 +167,7 @@ jobs:
 
       - name: Setup PATH for wasm
         run: echo "${{env.GOROOT}}/misc/wasm" >> $GITHUB_PATH
-      
+
       - name: Install deps
         run: |
           codename=$(lsb_release -c | awk '{print $2}')
@@ -166,7 +175,7 @@ jobs:
           echo "deb http://mirror.math.princeton.edu/pub/ubuntu/ $codename main" ./gitaction.list
           echo "deb http://mirror.pit.teraswitch.com/ubuntu/ $codename main" >> ./gitaction.list
           sudo mv -f ./gitaction.list /etc/apt/sources.list.d/
-      
+
           sudo apt-get update -y && sudo apt-get install build-essential wget -y
 
       - name: Install herumi's libraries
