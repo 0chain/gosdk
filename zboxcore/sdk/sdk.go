@@ -579,6 +579,7 @@ type Blobber struct {
 	TotalOffers              int64                        `json:"total_offers"`
 	TotalServiceCharge       int64                        `json:"total_service_charge"`
 	UncollectedServiceCharge int64                        `json:"uncollected_service_charge"`
+	UnstakeTotal             int64                        `json:"unstake_total"`
 	IsKilled                 bool                         `json:"is_killed"`
 	IsShutdown               bool                         `json:"is_shutdown"`
 	IsAvailable              bool                         `json:"is_available"`
@@ -594,7 +595,6 @@ type Validator struct {
 	NumDelegates             int              `json:"num_delegates"`
 	ServiceCharge            float64          `json:"service_charge"`
 	StakeTotal               int64            `json:"stake_total"`
-	UnstakeTotal             int64            `json:"unstake_total"`
 	TotalServiceCharge       int64            `json:"total_service_charge"`
 	UncollectedServiceCharge int64            `json:"uncollected_service_charge"`
 	LastHealthCheck          common.Timestamp `json:"last_health_check"`
