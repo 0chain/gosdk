@@ -258,15 +258,12 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 		PrintError("Error in getting information about the object." + err.Error())
 		return "", err
 	}
-	isFile := false
+
 	for _, v := range statsMap {
 		if v != nil {
-			isFile = true
+			refType = fileref.FILE
 			break
 		}
-	}
-	if isFile {
-		refType = fileref.FILE
 	}
 
 	var fileName string
