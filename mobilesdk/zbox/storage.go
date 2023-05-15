@@ -43,10 +43,19 @@ func ListDir(allocationID, remotePath string) (string, error) {
 //   - the json string of sdk.ListResult
 //   - error
 func ListDirFromAuthTicket(allocationID, authTicket string, lookupHash string) (string, error) {
-	a, err := getAllocation(allocationID)
+	a, err := sdk.GetAllocationFromAuthTicket(authTicket)
 	if err != nil {
 		return "", err
 	}
+
+	at := sdk.InitAuthTicket(authTicket)
+	if len(lookupHash) == 0 {
+		lookupHash, err = at.GetLookupHash()
+		if err != nil {
+			return "", err
+		}
+	}
+
 	listResult, err := a.ListDirFromAuthTicket(authTicket, lookupHash)
 	if err != nil {
 		return "", err
