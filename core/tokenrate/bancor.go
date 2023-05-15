@@ -132,7 +132,7 @@ func (s *Float64) UnmarshalJSON(data []byte) error {
 
 	js := strings.Trim(string(data), "\"")
 
-	v, err := strconv.ParseFloat(js, 32)
+	v, err := strconv.ParseFloat(js, 64)
 	if err != nil {
 		return err
 	}
