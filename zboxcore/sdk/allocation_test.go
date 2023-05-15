@@ -1102,7 +1102,7 @@ func TestAllocation_GetAuthTicketForShare(t *testing.T) {
 		a.Blobbers = append(a.Blobbers, &blockchain.StorageNode{})
 	}
 	sdkInitialized = true
-	at, err := a.GetAuthTicketForShare("/1.txt", "1.txt", fileref.FILE, mockClientId)
+	at, err := a.GetAuthTicketForShare("/1.txt", "1.txt", fileref.FILE, "")
 	require.NotEmptyf(at, "unexpected empty auth ticket")
 	require.NoErrorf(err, "unexpected error: %v", err)
 }
