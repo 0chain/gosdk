@@ -170,7 +170,7 @@ func BenchmarkEncrypt(t *testing.B) {
 	encscheme.InitForEncryption("filetype:audio")
 	for i := 0; i < 10000; i++ {
 		dataToEncrypt := make([]byte, fileref.CHUNK_SIZE)
-		rand.Read(dataToEncrypt) //nolint
+		rand.Read(dataToEncrypt)
 		_, err := encscheme.Encrypt(dataToEncrypt)
 		require.Nil(t, err)
 		require.Equal(t, len(dataToEncrypt), fileref.CHUNK_SIZE)

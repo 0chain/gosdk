@@ -90,25 +90,25 @@ func (l *Logger) SetLogFile(logFile io.Writer, verbose bool) {
 
 func (l *Logger) Debug(v ...interface{}) {
 	if l.lvl >= DEBUG {
-		l.logDebug.Output(2, fmt.Sprint(v...)) //nolint
+		l.logDebug.Output(2, fmt.Sprint(v...))
 	}
 }
 
 func (l *Logger) Info(v ...interface{}) {
 	if l.lvl >= INFO {
-		l.logInfo.Output(2, fmt.Sprint(v...)) //nolint
+		l.logInfo.Output(2, fmt.Sprint(v...))
 	}
 }
 
 func (l *Logger) Error(v ...interface{}) {
 	if l.lvl >= ERROR {
-		l.logError.Output(2, fmt.Sprint(v...)+cReset) //nolint
+		l.logError.Output(2, fmt.Sprint(v...)+cReset)
 	}
 }
 
 func (l *Logger) Fatal(v ...interface{}) {
 	if l.lvl >= FATAL {
-		l.logFatal.Output(2, fmt.Sprint(v...)+cReset) //nolint
+		l.logFatal.Output(2, fmt.Sprint(v...)+cReset)
 	}
 }
 
