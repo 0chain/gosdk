@@ -561,7 +561,6 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 		ReadCounter:     getBlobberReadCtr(req.allocationID, blobber.ID) + readCount,
 		SessionRC:       readCount,
 	}
-	setBlobberReadCtr(req.allocationID, blobber.ID, rm.ReadCounter)
 	err := rm.Sign()
 	if err != nil {
 		return fmt.Errorf("error signing read marker: %w", err)
@@ -599,6 +598,7 @@ func (req *DownloadRequest) attemptSubmitReadMarker(blobber *blockchain.StorageN
 		if resp.StatusCode != http.StatusOK {
 			return req.handleReadMarkerError(resp, blobber, rm)
 		}
+		setBlobberReadCtr(req.allocationID, blobber.ID, rm.ReadCounter)
 
 		logger.Logger.Debug("Submit readmarker 200 OK")
 
@@ -619,7 +619,7 @@ func (req *DownloadRequest) handleReadMarkerError(resp *http.Response, blobber *
 	logger.Logger.Error(string(respBody))
 
 	var rspData downloadBlock
-	var rspError ErrorResponse
+	var rspError errors.Error
 	if err = json.Unmarshal(respBody, &rspData); err == nil && rspData.LatestRM != nil {
 		if err := rm.ValidateWithOtherRM(rspData.LatestRM); err != nil {
 			return err
@@ -635,18 +635,22 @@ func (req *DownloadRequest) handleReadMarkerError(resp *http.Response, blobber *
 
 	if err = json.Unmarshal(respBody, &rspError); err == nil {
 		if rspError.Code == NotEnoughTokens {
+			logger.Logger.Debug(fmt.Sprintf("NotEnoughTokens - blobberID: %v", blobber.ID))
 			blobber.SetSkip(true)
 			return errors.New(NotEnoughTokens, rspError.Msg)
 		}
 		if rspError.Code == InvalidAuthTicket {
+			logger.Logger.Debug(fmt.Sprintf("InvalidAuthTicket - blobberID: %v", blobber.ID))
 			blobber.SetSkip(true)
 			return errors.New(InvalidAuthTicket, rspError.Msg)
 		}
 		if rspError.Code == InvalidShare {
+			logger.Logger.Debug(fmt.Sprintf("InvalidShare - blobberID: %v", blobber.ID))
 			blobber.SetSkip(true)
 			return errors.New(InvalidShare, rspError.Msg)
 		}
 		if rspError.Code == LockExists {
+			logger.Logger.Debug(fmt.Sprintf("LockExists - blobberID: %v", blobber.ID))
 			blobber.SetSkip(true)
 			time.Sleep(time.Second * 1)
 			return errors.New(LockExists, rspError.Msg)

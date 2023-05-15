@@ -59,11 +59,6 @@ type downloadBlock struct {
 	err         error
 }
 
-type ErrorResponse struct {
-	Code string `json:"code,omitempty"`
-	Msg  string `json:"msg"`
-}
-
 var downloadBlockChan map[string]chan *BlockDownloadRequest
 var initDownloadMutex sync.Mutex
 
@@ -164,7 +159,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			}
 
 			var rspData downloadBlock
-			var rspError ErrorResponse
+			var rspError errors.Error
 
 			respBody, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
