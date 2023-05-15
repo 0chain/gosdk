@@ -85,6 +85,9 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 	if err != nil {
 		return fmt.Errorf("directory creation failed. Err: %s", err.Error())
 	}
+
+	l.Logger.Info("jayash test 1")
+
 	err = writeMarkerMU.Lock(
 		req.ctx, &req.dirMask, req.mu,
 		req.blobbers, &req.Consensus, existingDirCount, time.Minute, req.connectionID)
@@ -203,6 +206,8 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 			if resp.StatusCode == http.StatusOK {
 				l.Logger.Info("Successfully created directory ", req.remotePath)
 				req.Consensus.Done()
+
+				l.Logger.Info("Reached Here : ")
 				return
 			}
 
