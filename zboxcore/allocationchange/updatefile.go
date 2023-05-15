@@ -84,6 +84,7 @@ func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]str
 	}
 
 	ch.NewFile.HashToBeComputed = true
+	ch.NewFile.FileID = ch.OldFile.FileID
 	dirRef.Children[idx] = ch.NewFile
 	rootRef.CalculateHash()
 	return
