@@ -1264,6 +1264,8 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 	return errors.New("", "consensus not reached")
 }
 
+var ErrInvalidPrivateShare = errors.New("invalid_private_share", "private sharing is only available for encrypted file")
+
 func (a *Allocation) GetAuthTicket(path, filename string,
 	referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration int64, availableAfter *time.Time) (string, error) {
 
@@ -1279,6 +1281,18 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 	isabs := zboxutil.IsRemoteAbs(path)
 	if !isabs {
 		return "", errors.New("invalid_path", "Path should be valid and absolute")
+	}
+
+	if referenceType == fileref.FILE && refereeClientID != "" {
+		fileMeta, err := a.GetFileMeta(path)
+		if err != nil {
+			return "", err
+		}
+
+		// private sharing is only available for encrypted file
+		if fileMeta.EncryptedKey == "" {
+			return "", ErrInvalidPrivateShare
+		}
 	}
 
 	shareReq := &ShareRequest{
