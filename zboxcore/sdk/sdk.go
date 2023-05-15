@@ -796,8 +796,8 @@ func GetAllocation(allocationID string) (*Allocation, error) {
 		return nil, errors.New("allocation_decode_error", "Error decoding the allocation."+err.Error())
 	}
 
-	if allocationObj.Canceled {
-		return nil, errors.New("allocation_fetch_error", "allocation cancelled")
+	if allocationObj.Finalized {
+		return nil, errors.New("allocation_fetch_error", "allocation is finalised")
 	}
 
 	allocationObj.numBlockDownloads = numBlockDownloads
