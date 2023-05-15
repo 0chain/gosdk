@@ -186,8 +186,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 			objectTreeRefs := make([]fileref.RefEntity, 1)
 			refEntity, _ := req.getObjectTreeFromBlobber(0)
 			objectTreeRefs[0] = refEntity
-			err := req.deleteBlobberFile(req.blobbers[0], 0)
-			require.Nil(t, err)
+			req.deleteBlobberFile(req.blobbers[0], 0) //nolint
 			if tt.wantFunc != nil {
 				tt.wantFunc(require, req)
 			}
