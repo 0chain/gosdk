@@ -807,7 +807,7 @@ func (a *Allocation) GetRefsWithAuthTicket(authToken, offsetPath, updatedDate, o
 	return a.getRefs("", authTicket.FilePathHash, string(at), offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
 }
 
-//This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
+// This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
 func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
 	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
 		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
@@ -1190,6 +1190,7 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 	return errors.New("", "consensus not reached")
 }
 
+var ErrInvalidPrivateShare = stdErrors.New("private sharing is only available for encrypted file")
 func (a *Allocation) GetAuthTicket(path, filename string,
 	referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration int64, availableAfter *time.Time) (string, error) {
 
@@ -1205,6 +1206,19 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 	isabs := zboxutil.IsRemoteAbs(path)
 	if !isabs {
 		return "", errors.New("invalid_path", "Path should be valid and absolute")
+	}
+
+	if referenceType == fileref.FILE && refereeClientID != "" {
+		fileMeta, err := a.GetFileMeta(path)
+		if err != nil {
+			return "", err
+		}
+
+		// private sharing is only available for encrypted file
+		if  fileMeta.EncryptedKey == ""  {
+				return "", ErrInvalidPrivateShare
+			}
+		}
 	}
 
 	shareReq := &ShareRequest{

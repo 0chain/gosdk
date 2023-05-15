@@ -267,19 +267,6 @@ func Share(allocationID, remotePath, clientID, encryptionPublicKey string, expir
 	}
 	if isFile {
 		refType = fileref.FILE
-		fileMeta, err := allocationObj.GetFileMeta(remotePath)
-		if err != nil {
-			return "", err
-		}
-
-		// private sharing is only available for encrypted file
-		if clientID != "" && !revoke {
-			if fileMeta.EncryptedKey == "" {
-				PrintError("private sharing is only available for encrypted file")
-				return "", errors.New("private sharing is only available for encrypted file")
-			}
-		}
-
 	}
 
 	var fileName string
