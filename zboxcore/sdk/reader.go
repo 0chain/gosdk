@@ -27,18 +27,16 @@ const (
 // error codes
 const (
 	NotEnoughTokens              = "not_enough_tokens"
+	InvalidAuthTicket            = "invalid_authticket"
+	InvalidShare                 = "invalid_share"
 	InvalidRead                  = "invalid_read"
-	InvalidReadMarker            = "invalid_read_marker"
 	ExceededMaxOffsetValue       = "exceeded_max_offset_value"
 	NegativeOffsetResultantValue = "negative_offset_resultant_value"
 	InvalidWhenceValue           = "invalid_whence_value"
 )
 
 // errors
-var (
-	ErrInvalidRead       = errors.New(InvalidRead, "want_size is <= 0")
-	ErrInvalidReadMarker = errors.New(InvalidReadMarker, "")
-)
+var ErrInvalidRead = errors.New(InvalidRead, "want_size is <= 0")
 
 const (
 	// BlocksFor10MB is number of blocks required for to make 10MB data.

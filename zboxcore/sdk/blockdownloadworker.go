@@ -59,6 +59,11 @@ type downloadBlock struct {
 	err         error
 }
 
+type ErrorResponse struct {
+	Code string `json:"code,omitempty"`
+	Msg  string `json:"msg"`
+}
+
 var downloadBlockChan map[string]chan *BlockDownloadRequest
 var initDownloadMutex sync.Mutex
 
@@ -159,6 +164,7 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			}
 
 			var rspData downloadBlock
+			var rspError ErrorResponse
 
 			respBody, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
@@ -168,6 +174,9 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				zlogger.Logger.Debug(fmt.Sprintf("downloadBlobberBlock FAIL - blobberID: %v, clientID: %v, blockNum: %d, retry: %d, response: %v", req.blobber.ID, client.GetClientID(), header.BlockNum, retry, string(respBody)))
 				if err = json.Unmarshal(respBody, &rspData); err == nil {
 					return errors.New("download_error", fmt.Sprintf("Response status: %d, Error: %v,", resp.StatusCode, rspData.err))
+				}
+				if err = json.Unmarshal(respBody, &rspError); err == nil {
+					return errors.New(rspError.Code, rspError.Msg)
 				}
 
 				return errors.New("response_error", string(respBody))

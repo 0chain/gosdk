@@ -539,7 +539,7 @@ func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, re
 	for retryCount > 0 {
 		if err = req.attemptSubmitReadMarker(blobber, readCount); err != nil {
 			logger.Logger.Error(fmt.Sprintf("Error while attempting to submit readmarker %v, retry: %d", err, retryCount))
-			if errors.Is(err, fmt.Errorf(NotEnoughTokens)) {
+			if errors.Is(err, fmt.Errorf(NotEnoughTokens)) || errors.Is(err, fmt.Errorf(InvalidAuthTicket)) || errors.Is(err, fmt.Errorf(InvalidShare)) {
 				return err
 			}
 			retryCount--
@@ -619,6 +619,7 @@ func (req *DownloadRequest) handleReadMarkerError(resp *http.Response, blobber *
 	logger.Logger.Error(string(respBody))
 
 	var rspData downloadBlock
+	var rspError ErrorResponse
 	if err = json.Unmarshal(respBody, &rspData); err == nil && rspData.LatestRM != nil {
 		if err := rm.ValidateWithOtherRM(rspData.LatestRM); err != nil {
 			return err
@@ -632,14 +633,25 @@ func (req *DownloadRequest) handleReadMarkerError(resp *http.Response, blobber *
 		return fmt.Errorf("download_error: response status: %d, error: %v", resp.StatusCode, rspData.err)
 	}
 
-	if bytes.Contains(respBody, []byte(NotEnoughTokens)) {
-		blobber.SetSkip(true)
-		return fmt.Errorf("%s", NotEnoughTokens)
-	}
+	if err = json.Unmarshal(respBody, &rspError); err == nil {
+		if rspError.Code == NotEnoughTokens {
+			blobber.SetSkip(true)
+			return errors.New(NotEnoughTokens, rspError.Msg)
+		}
+		if rspError.Code == InvalidAuthTicket {
+			blobber.SetSkip(true)
+			return errors.New(InvalidAuthTicket, rspError.Msg)
+		}
+		if rspError.Code == InvalidShare {
+			blobber.SetSkip(true)
+			return errors.New(InvalidShare, rspError.Msg)
+		}
+		if rspError.Code == LockExists {
+			blobber.SetSkip(true)
+			time.Sleep(time.Second * 1)
+			return errors.New(LockExists, rspError.Msg)
+		}
 
-	if bytes.Contains(respBody, []byte(LockExists)) {
-		time.Sleep(time.Second * 1)
-		return fmt.Errorf("%s: %s", LockExists, string(respBody))
 	}
 
 	return fmt.Errorf("response_error: %s", string(respBody))
