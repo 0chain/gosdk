@@ -5,10 +5,11 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"math/big"
 	"os"
 	"sync"
+
+	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 
 	"github.com/btcsuite/btcd/chaincfg"
 	ethereum "github.com/ethereum/go-ethereum"
@@ -507,7 +508,7 @@ func (w *Wallet) derivePrivateKey(path accounts.DerivationPath) (*ecdsa.PrivateK
 		if w.fixIssue172 && key.IsAffectedByIssue172() {
 			key, err = key.Derive(n)
 		} else {
-			key, err = key.DeriveNonStandard(n)
+			key, err = key.DeriveNonStandard(n) //nolint
 		}
 		if err != nil {
 			return nil, err

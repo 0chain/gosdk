@@ -50,7 +50,7 @@ func GetRandom(in []string, n int) []string {
 	n = MinInt(len(in), n)
 	out := make([]string, 0)
 
-	rand.Seed(time.Now().UnixNano())
+	rand.Seed(time.Now().UnixNano()) //nolint
 	perm := rand.Perm(len(in))
 	for i := 0; i < n; i++ {
 		out = append(out, in[perm[i]])

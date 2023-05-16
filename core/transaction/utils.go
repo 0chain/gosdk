@@ -102,6 +102,9 @@ func (v *OptimisticVerifier) VerifyTransactionOptimistic(txnHash string) (*Trans
 
 		txn = &Transaction{}
 		err = json.Unmarshal(txnRawJSON, txn)
+		if err != nil {
+			return err
+		}
 
 		b := &RoundBlockHeader{}
 		err = json.Unmarshal(respBody, b)
@@ -113,7 +116,7 @@ func (v *OptimisticVerifier) VerifyTransactionOptimistic(txnHash string) (*Trans
 			return err
 		}
 
-		err = verifyMerklePath(err, merklePathRawJSON, txn.Hash, b.MerkleTreeRoot)
+		err = verifyMerklePath(merklePathRawJSON, txn.Hash, b.MerkleTreeRoot)
 		if err != nil {
 			return err
 		}
@@ -128,15 +131,13 @@ func (v *OptimisticVerifier) VerifyTransactionOptimistic(txnHash string) (*Trans
 L:
 	//loop query confirmation
 	for retries < retriesCount {
-		select {
-		case <-ticker.C:
-			retries++
-			r.DoGet(context.TODO(), urls...)
-			//need single valid confirmation
-			errs := r.First()
-			if len(errs) == 0 {
-				break L
-			}
+		<-ticker.C
+		retries++
+		r.DoGet(context.TODO(), urls...)
+		//need single valid confirmation
+		errs := r.First()
+		if len(errs) == 0 {
+			break L
 		}
 	}
 
@@ -242,9 +243,12 @@ func (v *OptimisticVerifier) checkConfirmation(chain []*RoundBlockHeader) error 
 	return nil
 }
 
-func verifyMerklePath(err error, merklePathRawJSON json.RawMessage, txnHash string, merkleRoot string) error {
+func verifyMerklePath(merklePathRawJSON json.RawMessage, txnHash string, merkleRoot string) error {
 	merklePath := &util.MTPath{}
-	err = json.Unmarshal(merklePathRawJSON, merklePath)
+	err := json.Unmarshal(merklePathRawJSON, merklePath)
+	if err != nil {
+		return err
+	}
 	if !util.VerifyMerklePath(txnHash, merklePath, merkleRoot) {
 		return errors.New("handle_response", "invalid merkle path")
 	}
