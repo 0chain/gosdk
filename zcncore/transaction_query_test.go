@@ -34,11 +34,9 @@ type SharderHealthStatus struct {
 
 func TestMain(m *testing.M) {
 	numSharders = 10
-	var sharderPorts []string
 	sharders = make([]string, 0)
 	for i := 0; i < numSharders; i++ {
 		port := fmt.Sprintf(":600%d", i)
-		sharderPorts = append(sharderPorts, port)
 		sharders = append(sharders, addrPrefix+port)
 	}
 	startMockSharderServers(sharders)
@@ -135,7 +133,7 @@ func TestGetRandomSharderAndBenchmark(t *testing.T) {
 }
 
 func startMockSharderServers(sharders []string) {
-	for i, _ := range sharders {
+	for i := range sharders {
 		url := fmt.Sprintf(":600%d", i)
 		go func(url string) {
 			ctx, cancel := context.WithCancel(context.Background())
@@ -145,7 +143,7 @@ func startMockSharderServers(sharders []string) {
 				Addr:    url,
 				Handler: mx,
 				BaseContext: func(l net.Listener) context.Context {
-					ctx := context.WithValue(ctx, keyServerAddr, url)
+					ctx := context.WithValue(ctx, keyServerAddr, url) // nolint
 					return ctx
 				},
 			}
@@ -197,9 +195,7 @@ func startAndStopShardersRandomly(done chan struct{}) {
 			// mark a random sharder online every 3ms
 			randGen := rand.New(rand.NewSource(time.Now().UnixNano()))
 			randomSharder := tq.sharders[randGen.Intn(numSharders)]
-			if _, ok := tq.offline[randomSharder]; ok {
-				delete(tq.offline, randomSharder)
-			}
+			delete(tq.offline, randomSharder)
 			tq.Unlock()
 
 		case <-time.After(5 * time.Second):

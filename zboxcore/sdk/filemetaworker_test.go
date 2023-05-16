@@ -272,7 +272,7 @@ func TestListRequest_getFileConsensusFromBlobbers(t *testing.T) {
 			setup:      setupHttpResponses,
 		},
 	}
-	for _, tt := range tests {
+	for _, tt := range tests { //nolint
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect)
 			req := &ListRequest{
@@ -281,7 +281,7 @@ func TestListRequest_getFileConsensusFromBlobbers(t *testing.T) {
 				ctx:          context.TODO(),
 				blobbers:     []*blockchain.StorageNode{},
 				wg:           &sync.WaitGroup{},
-				Consensus:    tt.consensus,
+				Consensus:    tt.consensus, //nolint
 			}
 			for i := 0; i < tt.numBlobbers; i++ {
 				req.blobbers = append(req.blobbers, &blockchain.StorageNode{

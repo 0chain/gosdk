@@ -55,8 +55,6 @@ const (
 )
 
 // Expected success rate is calculated (NumDataShards)*100/(NumDataShards+NumParityShards)
-// Additional success percentage on top of expected success rate
-const additionalSuccessRate = (10)
 
 var GetFileInfo = func(localpath string) (os.FileInfo, error) {
 	return sys.Files.Stat(localpath)
@@ -1450,7 +1448,10 @@ func (a *Allocation) DownloadFromReader(
 	if errors.Is(err, os.ErrNotExist) {
 		f, err = os.Create(localFPath)
 	} else {
-		r.Seek(finfo.Size(), io.SeekStart)
+		_, err = r.Seek(finfo.Size(), io.SeekStart)
+		if err != nil {
+			return err
+		}
 		f, err = os.OpenFile(localFPath, os.O_WRONLY|os.O_APPEND, 0644)
 	}
 
@@ -1861,7 +1862,10 @@ repair:
 	}
 
 	if shouldRepair {
-		a.RepairAlloc(statusCB)
+		err := a.RepairAlloc(statusCB)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	return hash, nil

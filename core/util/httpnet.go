@@ -88,8 +88,8 @@ func httpDo(req *http.Request, ctx context.Context, cncl context.CancelFunc, f f
 	defer cncl()
 	select {
 	case <-ctx.Done():
-		transport.CancelRequest(req)
-		<-c // Wait for f to return.
+		transport.CancelRequest(req) //nolint
+		<-c                          // Wait for f to return.
 		return ctx.Err()
 	case err := <-c:
 		return err

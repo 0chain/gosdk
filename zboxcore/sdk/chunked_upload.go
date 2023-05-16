@@ -88,7 +88,7 @@ func CreateChunkedUpload(
 	workdir string, allocationObj *Allocation,
 	fileMeta FileMeta, fileReader io.Reader,
 	isUpdate, isRepair bool,
-	webStreaming bool, connectionId string, 
+	webStreaming bool, connectionId string,
 	opts ...ChunkedUploadOption,
 ) (*ChunkedUpload, error) {
 
@@ -169,7 +169,7 @@ func CreateChunkedUpload(
 		encryptOnUpload: false,
 		webStreaming:    false,
 
-		consensus:     consensus,
+		consensus:     consensus, //nolint
 		uploadTimeOut: DefaultUploadTimeOut,
 		commitTimeOut: DefaultUploadTimeOut,
 		maskMu:        &sync.Mutex{},

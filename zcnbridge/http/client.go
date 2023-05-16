@@ -11,15 +11,6 @@ import (
 const (
 	RetryWaitMax = 120 * time.Second
 	RetryMax     = 60
-
-	// clientTimeout represents default http.Client timeout.
-	clientTimeout = 120 * time.Second
-
-	// tlsHandshakeTimeout represents default http.Transport TLS handshake timeout.
-	tlsHandshakeTimeout = 10 * time.Second
-
-	// dialTimeout represents default net.Dialer timeout.
-	dialTimeout = 5 * time.Second
 )
 
 // NewClient creates default http.Client with timeouts.

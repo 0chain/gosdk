@@ -51,10 +51,10 @@ func NewMediaPlaylist(delay int, dir string, writer M3u8Writer) *MediaPlaylist {
 		writer: writer,
 	}
 
-	m3u8.writer.Write([]byte("#EXTM3U\n"))
-	m3u8.writer.Write([]byte("#EXT-X-VERSION:3\n"))
-	m3u8.writer.Write([]byte("#EXT-X-TARGETDURATION:" + strconv.Itoa(delay) + "\n"))
-	m3u8.writer.Sync()
+	m3u8.writer.Write([]byte("#EXTM3U\n"))                                           //nolint
+	m3u8.writer.Write([]byte("#EXT-X-VERSION:3\n"))                                  //nolint
+	m3u8.writer.Write([]byte("#EXT-X-TARGETDURATION:" + strconv.Itoa(delay) + "\n")) //nolint
+	m3u8.writer.Sync()                                                               //nolint
 	go m3u8.Play()
 
 	return m3u8
@@ -95,10 +95,10 @@ func (m *MediaPlaylist) Play() {
 // flush try flush new ts file into playlist. return true if list is full
 func (m *MediaPlaylist) flush() {
 
-	m.writer.Truncate(0)
-	m.writer.Seek(0, 0)
-	m.writer.Write(m.Encode())
-	m.writer.Sync()
+	m.writer.Truncate(0)       //nolint
+	m.writer.Seek(0, 0)        //nolint
+	m.writer.Write(m.Encode()) //nolint
+	m.writer.Sync()            //nolint
 
 }
 

@@ -248,7 +248,7 @@ func SendTransactionSync(txn *Transaction, miners []string) {
 	wg.Add(len(miners))
 	for _, miner := range miners {
 		url := fmt.Sprintf("%v/%v", miner, TXN_SUBMIT_URL)
-		go sendTransactionToURL(url, txn, &wg)
+		go sendTransactionToURL(url, txn, &wg) //nolint
 	}
 	wg.Wait()
 }
