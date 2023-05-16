@@ -1,6 +1,9 @@
 package model
 
-import "github.com/0chain/gosdk/core/common"
+import (
+	"github.com/0chain/gosdk/core/common"
+	"github.com/0chain/gosdk/zboxcore/marker"
+)
 
 type WriteMarker struct {
 	AllocationRoot         string           `gorm:"column:allocation_root;primary_key" json:"allocation_root"`
@@ -11,4 +14,9 @@ type WriteMarker struct {
 	Timestamp              common.Timestamp `gorm:"column:timestamp" json:"timestamp"`
 	ClientID               string           `gorm:"column:client_id" json:"client_id"`
 	Signature              string           `gorm:"column:signature" json:"signature"`
+}
+
+type LatestPrevWriteMarker struct {
+	LatestWM *marker.WriteMarker `json:"latest_write_marker"`
+	PrevWM   *marker.WriteMarker `json:"prev_write_marker"`
 }

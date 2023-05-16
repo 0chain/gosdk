@@ -87,6 +87,7 @@ func TestAllocation_MoveObject(t *testing.T) {
 				setupMockHttpResponse(t, &mockClient, "TestAllocation_MoveObject", testCaseName, a, http.MethodDelete, http.StatusOK, []byte(""))
 				setupMockHttpResponse(t, &mockClient, "TestAllocation_MoveObject", testCaseName, a, http.MethodDelete, http.StatusOK, []byte(""))
 				setupMockCommitRequest(a)
+				setupMockRollback(a, &mockClient)
 				return nil
 			},
 		},

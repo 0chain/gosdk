@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/0chain/common/core/currency"
@@ -28,10 +29,12 @@ import (
 	"github.com/0chain/gosdk/core/sys"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/fileref"
+	"github.com/0chain/gosdk/zboxcore/logger"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
 	"github.com/mitchellh/go-homedir"
+	"go.uber.org/zap"
 )
 
 var (
@@ -355,15 +358,18 @@ func (a *Allocation) CreateDir(remotePath string) error {
 	}
 
 	remotePath = zboxutil.RemoteClean(remotePath)
+	timestamp := int64(common.Now())
 	req := DirRequest{
-		allocationID: a.ID,
-		allocationTx: a.Tx,
-		blobbers:     a.Blobbers,
-		mu:           &sync.Mutex{},
-		dirMask:      zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
-		connectionID: zboxutil.NewConnectionId(),
-		remotePath:   remotePath,
-		wg:           &sync.WaitGroup{},
+		allocationObj: a,
+		allocationID:  a.ID,
+		allocationTx:  a.Tx,
+		blobbers:      a.Blobbers,
+		mu:            &sync.Mutex{},
+		dirMask:       zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1),
+		connectionID:  zboxutil.NewConnectionId(),
+		remotePath:    remotePath,
+		wg:            &sync.WaitGroup{},
+		timestamp:     timestamp,
 		Consensus: Consensus{
 			consensusThresh: a.consensusThreshold,
 			fullconsensus:   a.fullconsensus,
@@ -520,6 +526,110 @@ func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	}
 
 	return ChunkedUpload.Start()
+}
+
+func (a *Allocation) GetCurrentVersion() (bool, error) {
+	//get versions from blobbers
+
+	wg := &sync.WaitGroup{}
+	markerChan := make(chan *RollbackBlobber, len(a.Blobbers))
+	var errCnt int32
+	for _, blobber := range a.Blobbers {
+
+		wg.Add(1)
+		go func(blobber *blockchain.StorageNode) {
+
+			defer wg.Done()
+			wr, err := GetWritemarker(a.Tx, blobber.ID, blobber.Baseurl)
+			if err != nil {
+				atomic.AddInt32(&errCnt, 1)
+				logger.Logger.Error("error during getWritemarke", zap.Error(err))
+			}
+			if wr == nil {
+				markerChan <- nil
+			} else {
+				markerChan <- &RollbackBlobber{
+					blobber:      blobber,
+					lpm:          wr,
+					commitResult: &CommitResult{},
+				}
+			}
+		}(blobber)
+
+	}
+
+	wg.Wait()
+	close(markerChan)
+
+	versionMap := make(map[int64][]*RollbackBlobber)
+
+	for rb := range markerChan {
+
+		if rb == nil {
+			continue
+		}
+
+		if _, ok := versionMap[rb.lpm.LatestWM.Timestamp]; !ok {
+			versionMap[rb.lpm.LatestWM.Timestamp] = make([]*RollbackBlobber, 0)
+		}
+
+		versionMap[rb.lpm.LatestWM.Timestamp] = append(versionMap[rb.lpm.LatestWM.Timestamp], rb)
+
+		if len(versionMap) > 2 {
+			return false, fmt.Errorf("more than 2 versions found")
+		}
+
+	}
+	// TODO: check how many blobbers can be down
+	if errCnt > 0 {
+		return false, fmt.Errorf("error in getting writemarker from %v blobbers", errCnt)
+	}
+
+	if len(versionMap) == 0 {
+		return false, nil
+	}
+
+	// TODO:return if len(versionMap) == 1
+
+	var prevVersion int64
+	var latestVersion int64
+
+	for version := range versionMap {
+		if prevVersion == 0 {
+			prevVersion = version
+		} else {
+			latestVersion = version
+		}
+	}
+
+	if prevVersion > latestVersion {
+		prevVersion, latestVersion = latestVersion, prevVersion
+	}
+
+	// TODO: Check if allocation can be repaired
+
+	success := true
+
+	// rollback to prev version
+	for _, rb := range versionMap[latestVersion] {
+
+		wg.Add(1)
+		go func(rb *RollbackBlobber) {
+			defer wg.Done()
+			err := rb.processRollback(context.TODO(), a.Tx)
+			if err != nil {
+				success = false
+			}
+		}(rb)
+	}
+
+	wg.Wait()
+
+	if !success {
+		return false, fmt.Errorf("error in rollback")
+	}
+
+	return success, nil
 }
 
 func (a *Allocation) RepairRequired(remotepath string) (zboxutil.Uint128, bool, *fileref.FileRef, error) {
@@ -1069,6 +1179,7 @@ func (a *Allocation) deleteFile(path string, threshConsensus, fullConsensus int)
 	req.connectionID = zboxutil.NewConnectionId()
 	req.deleteMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMu = &sync.Mutex{}
+	req.timestamp = int64(common.Now())
 	err := req.ProcessDelete()
 	return err
 }
@@ -1114,6 +1225,7 @@ func (a *Allocation) RenameObject(path string, destName string) error {
 	req.renameMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
+	req.timestamp = int64(common.Now())
 	return req.ProcessRename()
 }
 
@@ -1156,6 +1268,7 @@ func (a *Allocation) MoveObject(srcPath string, destPath string) error {
 	req.moveMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
+	req.timestamp = int64(common.Now())
 	return req.ProcessMove()
 }
 
@@ -1198,6 +1311,7 @@ func (a *Allocation) CopyObject(path string, destPath string) error {
 	req.copyMask = zboxutil.NewUint128(1).Lsh(uint64(len(a.Blobbers))).Sub64(1)
 	req.maskMU = &sync.Mutex{}
 	req.connectionID = zboxutil.NewConnectionId()
+	req.timestamp = int64(common.Now())
 	return req.ProcessCopy()
 }
 
