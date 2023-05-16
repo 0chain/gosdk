@@ -310,6 +310,7 @@ func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) (
 		deleteMask:     dop.deleteMask,
 		maskMu:         dop.maskMu,
 		wg:             &sync.WaitGroup{},
+		consensus:      Consensus{RWMutex: &sync.RWMutex{}},
 	}
 	deleteReq.consensus.fullconsensus = dop.consensus.fullconsensus
 	deleteReq.consensus.consensusThresh = dop.consensus.consensusThresh

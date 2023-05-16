@@ -286,6 +286,7 @@ func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]f
 		moveMask:       mo.moveMask,
 		maskMU:         mo.maskMU,
 		destPath:       mo.destPath,
+		Consensus: Consensus{RWMutex: &sync.RWMutex{}},
 	}
 	mR.Consensus.fullconsensus = mo.consensus.fullconsensus
 	mR.Consensus.consensusThresh = mo.consensus.consensusThresh

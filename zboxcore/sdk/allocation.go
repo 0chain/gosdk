@@ -561,6 +561,7 @@ func (a *Allocation) DoMultiOperation(operations []OperationRequest) error {
 	mo.maskMU = &sync.Mutex{}
 	mo.ctx, mo.ctxCncl = context.WithCancel(a.ctx)
 	mo.Consensus = Consensus{
+		RWMutex:         &sync.RWMutex{},
 		consensusThresh: a.consensusThreshold,
 		fullconsensus:   a.fullconsensus,
 	}
@@ -1589,7 +1590,7 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 		return noBLOBBERS
 	}
 
-	downloadReq := &DownloadRequest{}
+	downloadReq := &DownloadRequest{Consensus: Consensus{RWMutex: &sync.RWMutex{}}}
 	downloadReq.maskMu = &sync.Mutex{}
 	downloadReq.allocationID = a.ID
 	downloadReq.allocationTx = a.Tx
