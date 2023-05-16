@@ -1,8 +1,6 @@
 package allocationchange
 
 import (
-	"strings"
-
 	"github.com/0chain/gosdk/zboxcore/fileref"
 )
 
@@ -16,15 +14,4 @@ type AllocationChange interface {
 	ProcessChange(rootRef *fileref.Ref, fileIDMeta map[string]string) error
 	GetAffectedPath() []string
 	GetSize() int64
-}
-
-func getSubDirs(p string) []string {
-	subDirs := strings.Split(p, "/")
-	tSubDirs := make([]string, 0)
-	for _, s := range subDirs {
-		if s != "" {
-			tSubDirs = append(tSubDirs, s)
-		}
-	}
-	return tSubDirs
 }

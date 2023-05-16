@@ -86,35 +86,35 @@ func getBalanceFieldFromSharders(clientID, name string, sharders []string) (int6
 	waitTimeC := time.After(10 * time.Second)
 	for i := 0; i < numSharders; i++ {
 		select {
-		case <- waitTimeC:
+		case <-waitTimeC:
 			return 0, "", stdErrors.New("get balance failed. consensus not reached")
 		case rsp := <-result:
-				if rsp.StatusCode != http.StatusOK {
-					continue
-				}
+			if rsp.StatusCode != http.StatusOK {
+				continue
+			}
 
-				var objmap map[string]json.RawMessage
-				err := json.Unmarshal([]byte(rsp.Body), &objmap)
+			var objmap map[string]json.RawMessage
+			err := json.Unmarshal([]byte(rsp.Body), &objmap)
+			if err != nil {
+				continue
+			}
+			if v, ok := objmap[name]; ok {
+				bal, err := strconv.ParseInt(string(v), 10, 64)
 				if err != nil {
 					continue
 				}
-				if v, ok := objmap[name]; ok {
-					bal, err := strconv.ParseInt(string(v), 10, 64)
-					if err != nil {
-						continue
-					}
-					balMap[bal]++
-					if balMap[bal] > consensus {
-						consensus = balMap[bal]
-						nonce = bal
-						winInfo = rsp.Body
+				balMap[bal]++
+				if balMap[bal] > consensus {
+					consensus = balMap[bal]
+					nonce = bal
+					winInfo = rsp.Body
 
-						rate := consensus * 100 / float32(len(sharders))
-						if rate >= consensusThresh {
-							return nonce, winInfo, nil
-						}
+					rate := consensus * 100 / float32(len(sharders))
+					if rate >= consensusThresh {
+						return nonce, winInfo, nil
 					}
 				}
+			}
 		}
 	}
 
@@ -136,6 +136,7 @@ func queryFromShardersContext(ctx context.Context, sharders []string,
 			res, err := req.Get()
 			if err != nil {
 				//Logger.Error(sharderurl, " get error. ", err.Error())
+				return
 			}
 			result <- res
 		}(sharder)

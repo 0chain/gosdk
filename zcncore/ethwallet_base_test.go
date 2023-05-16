@@ -74,7 +74,8 @@ func TestValidEthAddress(t *testing.T) {
 		defer client.Close()
 
 		realClient := ethclient.NewClient(client)
-		sendTransaction(realClient)
+		err := sendTransaction(realClient)
+		require.Nil(t, err)
 
 		getEthClient = func() (*ethclient.Client, error) {
 			return realClient, nil
@@ -129,7 +130,8 @@ func TestGetEthBalance(t *testing.T) {
 		defer client.Close()
 
 		realClient := ethclient.NewClient(client)
-		sendTransaction(realClient)
+		err := sendTransaction(realClient)
+		require.Nil(t, err)
 
 		getEthClient = func() (*ethclient.Client, error) {
 			return realClient, nil
@@ -138,7 +140,7 @@ func TestGetEthBalance(t *testing.T) {
 		tcb := &MockBalanceCallback{}
 		tcb.wg = &sync.WaitGroup{}
 		tcb.wg.Add(1)
-		err := GetEthBalance(testAddr.String(), tcb)
+		err = GetEthBalance(testAddr.String(), tcb)
 		if err != nil {
 			tcb.wg.Done()
 		}
@@ -160,7 +162,8 @@ func TestCheckEthHashStatus(t *testing.T) {
 		defer client.Close()
 
 		realClient := ethclient.NewClient(client)
-		sendTransaction(realClient)
+		err := sendTransaction(realClient)
+		require.Nil(t, err)
 
 		getEthClient = func() (*ethclient.Client, error) {
 			return realClient, nil

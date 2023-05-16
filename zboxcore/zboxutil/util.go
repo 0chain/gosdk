@@ -67,7 +67,7 @@ func (b *lazybuf) string() string {
 func GetFileContentType(out io.ReadSeeker) (string, error) {
 	buffer := make([]byte, 261)
 	_, err := out.Read(buffer)
-	defer out.Seek(0, 0)
+	defer out.Seek(0, 0) //nolint
 
 	if err != nil {
 		return "", err
@@ -204,10 +204,6 @@ func Decrypt(key, text []byte) ([]byte, error) {
 	return data, nil
 }
 
-func calculateMinRequired(minRequired, percent float64) int {
-	return int(math.Ceil(minRequired * percent))
-}
-
 func GetRefsHash(r []byte) string {
 	hash := sha3.New256()
 	hash.Write(r)
@@ -342,7 +338,7 @@ func GetErrorMessageCode(errorMsg string) (string, error) {
 
 	}
 	var a = make(map[string]string)
-	if idx + 5 >= len(errorMsg) {
+	if idx+5 >= len(errorMsg) {
 		return "", thrown.New("invalid_format", "err field is not proper json")
 	}
 	err := json.Unmarshal([]byte(errorMsg[idx+5:]), &a)
