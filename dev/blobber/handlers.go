@@ -76,6 +76,15 @@ func commitWrite(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func mockRespone(w http.ResponseWriter, req *http.Request, statusCode int, respBody []byte) {
+	w.Header().Set("Content-Type", "application/json")
+	if respBody != nil {
+		w.Write(respBody)
+	}
+
+	w.WriteHeader(statusCode)
+}
+
 func rollback(w http.ResponseWriter, req *http.Request) {
 	mockRespone(w, req, http.StatusOK, nil)
 }
