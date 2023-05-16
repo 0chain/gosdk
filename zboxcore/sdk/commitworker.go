@@ -13,8 +13,6 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -52,6 +50,7 @@ type CommitRequest struct {
 	connectionID string
 	wg           *sync.WaitGroup
 	result       *CommitResult
+	timestamp    int64
 }
 
 var commitChan map[string]chan *CommitRequest
@@ -152,7 +151,7 @@ func (commitreq *CommitRequest) processCommit() {
 		}
 
 		rootRef.CalculateHash()
-		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
+		prevAllocationRoot := rootRef.Hash
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
 			l.Logger.Info("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
 			errMsg := fmt.Sprintf(
@@ -193,8 +192,7 @@ func (req *CommitRequest) commitBlobber(
 	}
 
 	wm := &marker.WriteMarker{}
-	timestamp := int64(common.Now())
-	wm.AllocationRoot = encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10))
+	wm.AllocationRoot = rootRef.Hash
 	if latestWM != nil {
 		wm.PreviousAllocationRoot = latestWM.AllocationRoot
 	} else {
@@ -205,7 +203,7 @@ func (req *CommitRequest) commitBlobber(
 	wm.AllocationID = req.allocationID
 	wm.Size = size
 	wm.BlobberID = req.blobber.ID
-	wm.Timestamp = timestamp
+	wm.Timestamp = req.timestamp
 	wm.ClientID = client.GetClientID()
 	err = wm.Sign()
 	if err != nil {
@@ -264,7 +262,7 @@ func (req *CommitRequest) commitBlobber(
 		if resp.StatusCode != http.StatusOK {
 
 			l.Logger.Error(req.blobber.Baseurl, " Commit response:", string(resp_body))
-			return errors.New("commit_error", string(resp_body))
+			return errors.New("commit_error", string(resp_body)+" "+string(wmData))
 		}
 		return nil
 	})
