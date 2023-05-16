@@ -13,7 +13,7 @@ import (
 const (
 	ZCNExponent = 10
 	// TokenUnit represents the minimum token unit (sas)
- 	TokenUnit = 1e10
+	TokenUnit = 1e10
 )
 
 var (
@@ -94,7 +94,7 @@ func (b Balance) Format(unit BalanceUnit) (string, error) {
 	case ZCN:
 		v /= 1e10
 	default:
-		return "", errors.New(fmt.Sprintf("undefined balance unit: %d", unit))
+		return "", fmt.Errorf("undefined balance unit: %d", unit)
 	}
 	return fmt.Sprintf("%.3f %v", v, unit), nil
 }
@@ -238,7 +238,10 @@ func FormatStatic(amount int64, unit string) (string, error) {
 	token := Balance(amount)
 
 	var unitB BalanceUnit
-	unitB.Parse(unit)
+	err := unitB.Parse(unit)
+	if err != nil {
+		return "", err
+	}
 
 	return token.Format(unitB)
 }

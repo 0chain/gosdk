@@ -72,7 +72,10 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			body := new(bytes.Buffer)
 			formWriter := multipart.NewWriter(body)
 
-			formWriter.WriteField("connection_id", mo.connectionID)
+			err = formWriter.WriteField("connection_id", mo.connectionID)
+			if err != nil {
+				return err, false
+			}
 			formWriter.Close()
 
 			var httpreq *http.Request
@@ -237,7 +240,7 @@ func (mo *MultiOperation) Process() error {
 	commitReqs := make([]*CommitRequest, activeBlobbers)
 
 	wg.Add(activeBlobbers)
-	var pos uint64 = 0
+	var pos uint64
 	var counter = 0
 	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
@@ -249,9 +252,7 @@ func (mo *MultiOperation) Process() error {
 			wg:           wg,
 		}
 
-		for _, change := range mo.changes[pos] {
-			commitReq.changes = append(commitReq.changes, change)
-		}
+		commitReq.changes = append(commitReq.changes, mo.changes[pos]...)
 		commitReqs[counter] = commitReq
 		l.Logger.Info("Commit request sending to blobber ", commitReq.blobber.Baseurl)
 		go AddCommitRequest(commitReq)
