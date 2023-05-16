@@ -30,6 +30,7 @@ import (
 	"github.com/klauspost/reedsolomon"
 	"go.dedis.ch/kyber/v3/group/edwards25519"
 	"golang.org/x/crypto/sha3"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -423,7 +424,13 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	startBlock, endBlock, numBlocks := req.startBlock, req.endBlock, req.numBlocks
 	// remainingSize should be calculated based on startBlock number
 	// otherwise end data will have null bytes.
-	remainingSize := size - startBlock*int64(req.effectiveBlockSize)
+	var remainingSize int64
+	if endBlock*int64(req.effectiveBlockSize) < size {
+		remainingSize = endBlock*int64(req.effectiveBlockSize) - startBlock*int64(req.effectiveBlockSize)
+	} else {
+		remainingSize = size - startBlock*int64(req.effectiveBlockSize)
+	}
+
 	if remainingSize <= 0 {
 		logger.Logger.Error("Nothing to download")
 		req.errorCB(
@@ -432,16 +439,12 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 
-	remainingSizePerShard := (remainingSize + int64(req.datashards) - 1) / int64(req.datashards)
-	blocksPerShard := (remainingSizePerShard + int64(req.effectiveBlockSize) - 1) / int64(req.effectiveBlockSize)
+	blocksPerShard := (remainingSize + int64(req.effectiveBlockSize) - 1) / int64(req.effectiveBlockSize)
 	req.blocksPerShard = blocksPerShard
-
-	logger.Logger.Debug(fmt.Sprintf("remainingSize: %d remainingSizePerShard: %d blocksPerShard: %d", remainingSize, remainingSizePerShard, blocksPerShard))
 
 	if req.statusCallback != nil {
 		// Started will also initialize progress bar. So without calling this function
 		// other callback's call will panic
-
 		req.statusCallback.Started(req.allocationID, remotePathCB, op, int(size))
 	}
 
@@ -459,43 +462,43 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 
 	n := int((endBlock - startBlock + numBlocks - 1) / numBlocks)
 	res := make([][]byte, n)
-	// eg, _ := errgroup.WithContext(ctx)
-	// for i := 0; i < n; i++ {
-	// 	j := i
-	// 	eg.Go(func() error {
-	// 		blocksToDownload := numBlocks
-	// 		if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
-	// 			blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
-	// 		}
-	// 		res[j], err = req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
-	// 		if req.isDownloadCanceled {
-	// 			return errors.New("download_abort", "Download aborted by user")
-	// 		}
-	// 		if err != nil {
-	// 			return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+1))
-	// 		}
-	// 		return nil
-	// 	})
-	// }
-	// if err := eg.Wait(); err != nil {
-	// 	req.errorCB(err, remotePathCB)
-	// 	return
-	// }
 
-	for i := 0; i < n; i++ {
-		blocksToDownload := numBlocks
-		if startBlock+int64(i)*numBlocks+numBlocks > endBlock {
-			blocksToDownload = endBlock - (startBlock + int64(i)*numBlocks)
-		}
-		res[i], err = req.getBlocksData(startBlock+int64(i)*numBlocks, blocksToDownload)
-		if req.isDownloadCanceled {
-			req.errorCB(errors.New("download_abort", "Download aborted by user"), remotePathCB)
-			return
-		}
-		if err != nil {
-			req.errorCB(errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+int64(i)*numBlocks)), remotePathCB)
-			return
-		}
+	// Initiate download of first blocks sequentially to allow readmarkers to be properly submitted, then proceed to download in parallel
+	blocksToDownload := numBlocks
+	if startBlock+numBlocks > endBlock {
+		blocksToDownload = endBlock - startBlock
+	}
+	res[0], err = req.getBlocksData(startBlock, blocksToDownload)
+	if req.isDownloadCanceled {
+		req.errorCB(errors.New("download_abort", "Download aborted by user"), remotePathCB)
+		return
+	}
+	if err != nil {
+		req.errorCB(errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock)), remotePathCB)
+		return
+	}
+
+	eg, _ := errgroup.WithContext(ctx)
+	for i := 1; i < n; i++ {
+		j := i
+		eg.Go(func() error {
+			blocksToDownload := numBlocks
+			if startBlock+int64(j)*numBlocks+numBlocks > endBlock {
+				blocksToDownload = endBlock - (startBlock + int64(j)*numBlocks)
+			}
+			res[j], err = req.getBlocksData(startBlock+int64(j)*numBlocks, blocksToDownload)
+			if req.isDownloadCanceled {
+				return errors.New("download_abort", "Download aborted by user")
+			}
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("Download failed for block %d. ", startBlock+int64(j)*numBlocks))
+			}
+			return nil
+		})
+	}
+	if err := eg.Wait(); err != nil {
+		req.errorCB(err, remotePathCB)
+		return
 	}
 
 	for _, data := range res {
