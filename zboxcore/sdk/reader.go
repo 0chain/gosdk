@@ -132,8 +132,7 @@ func (sd *StreamDownload) Read(b []byte) (int, error) {
 		}
 	}
 
-	wantSizePerShard := (wantSize + int64(sd.datashards) - 1) / int64(sd.datashards)
-	wantBlocksPerShard := (wantSizePerShard + int64(sd.effectiveBlockSize) - 1) / int64(sd.effectiveBlockSize)
+	wantBlocksPerShard := (wantSize + int64(sd.effectiveBlockSize) - 1) / int64(sd.effectiveBlockSize)
 	sd.blocksPerShard = wantBlocksPerShard
 	sd.prepaidBlobbers = make(map[string]bool)
 
@@ -189,6 +188,7 @@ func GetDStorageFileReader(alloc *Allocation, ref *ORef, sdo *StreamDownloadOpti
 			effectiveBlockSize: BlockSize,
 			chunkSize:          BlockSize,
 			maskMu:             &sync.Mutex{},
+			connectionID:       zboxutil.NewConnectionId(),
 		},
 		open: true,
 	}
