@@ -70,10 +70,7 @@ func (req *DownloadRequest) removeFromMask(pos uint64) {
 	req.maskMu.Unlock()
 }
 
-// getBlocksData will get data blocks for some interval from minimal blobers and aggregate them and
-// return to the caller
-func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte, error) {
-
+func (req *DownloadRequest) getBlocksDataFromBlobbers(startBlock, totalBlock int64) ([][][]byte, error) {
 	shards := make([][][]byte, totalBlock)
 	for i := range shards {
 		shards[i] = make([][]byte, len(req.blobbers))
@@ -108,6 +105,17 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte,
 
 		curReqDownloads = failed
 		mask = remainingMask
+	}
+	return shards, err
+}
+
+// getBlocksData will get data blocks for some interval from minimal blobers and aggregate them and
+// return to the caller
+func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte, error) {
+
+	shards, err := req.getBlocksDataFromBlobbers(startBlock, totalBlock)
+	if err != nil {
+		return nil, err
 	}
 
 	// erasure decoding

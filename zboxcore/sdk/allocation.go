@@ -629,32 +629,32 @@ func (a *Allocation) DownloadThumbnail(localPath string, remotePath string, veri
 		numBlockDownloads, verifyDownload, status)
 }
 
-func (a *Allocation) downloadFile(localPath string, remotePath string, contentMode string,
+func (a *Allocation) generateDownloadRequest(localPath string, remotePath string, contentMode string,
 	startBlock int64, endBlock int64, numBlocks int, verifyDownload bool,
-	status StatusCallback) error {
+	status StatusCallback) (*DownloadRequest, error) {
 	if !a.isInitialized() {
-		return notInitialized
+		return nil, notInitialized
 	}
 	if stat, err := sys.Files.Stat(localPath); err == nil {
 		if !stat.IsDir() {
-			return fmt.Errorf("Local path is not a directory '%s'", localPath)
+			return nil, fmt.Errorf("Local path is not a directory '%s'", localPath)
 		}
 		localPath = strings.TrimRight(localPath, "/")
 		_, rFile := pathutil.Split(remotePath)
 		localPath = fmt.Sprintf("%s/%s", localPath, rFile)
 		if _, err := sys.Files.Stat(localPath); err == nil {
-			return fmt.Errorf("Local file already exists '%s'", localPath)
+			return nil, fmt.Errorf("Local file already exists '%s'", localPath)
 		}
 	}
 	dir, _ := filepath.Split(localPath)
 	if dir != "" {
 		if err := sys.Files.MkdirAll(dir, 0744); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	if len(a.Blobbers) == 0 {
-		return noBLOBBERS
+		return nil, noBLOBBERS
 	}
 
 	downloadReq := &DownloadRequest{}
@@ -683,6 +683,21 @@ func (a *Allocation) downloadFile(localPath string, remotePath string, contentMo
 		delete(a.downloadProgressMap, remotepath)
 	}
 	downloadReq.contentMode = contentMode
+	return downloadReq, nil
+}
+
+func (a *Allocation) downloadFile(localPath string, remotePath string, contentMode string,
+	startBlock int64, endBlock int64, numBlocks int, verifyDownload bool,
+	status StatusCallback) error {
+
+	downloadReq, err := a.generateDownloadRequest(
+		localPath, remotePath, contentMode,
+		startBlock, endBlock, numBlocks, verifyDownload, status,
+	)
+
+	if err != nil {
+		return err
+	}
 	go func() {
 		a.downloadChan <- downloadReq
 		a.mutex.Lock()
@@ -788,6 +803,65 @@ func (a *Allocation) getRefs(path, pathHash, authToken, offsetPath, updatedDate,
 	return oTreeReq.GetRefs()
 }
 
+func (a *Allocation) getDownloadMaskForBlobber(blobberID string) (zboxutil.Uint128, []*blockchain.StorageNode, error) {
+
+	x := zboxutil.NewUint128(1)
+	blobberIdx := 0
+	found := false
+	for idx, b := range a.Blobbers {
+		if b.ID == blobberID {
+			found = true
+			blobberIdx = idx
+		}
+	}
+
+	if !found {
+		return x, nil, fmt.Errorf("no blobber found with the given ID")
+	}
+
+	return x, a.Blobbers[blobberIdx : blobberIdx+1], nil
+}
+
+func (a *Allocation) DownloadFromBlobber(blobberID, localPath, remotePath string, status StatusCallback) error {
+
+	mask, blobbers, err := a.getDownloadMaskForBlobber(blobberID)
+	if err != nil {
+		l.Logger.Error(err)
+		return err
+	}
+
+	verifyDownload := false // should be set to false
+	downloadReq, err := a.generateDownloadRequest(
+		localPath, remotePath, DOWNLOAD_CONTENT_FULL, 1, 0, numBlockDownloads, verifyDownload, status,
+	)
+	if err != nil {
+		l.Logger.Error(err)
+		return err
+	}
+
+	downloadReq.downloadMask = mask
+	downloadReq.blobbers = blobbers
+	downloadReq.fullconsensus = 1
+	downloadReq.consensusThresh = 1
+
+	fRef, err := downloadReq.getFileRef(remotePath)
+	if err != nil {
+		l.Logger.Error(err.Error())
+		downloadReq.errorCB(
+			fmt.Errorf("Error while getting file ref. Error: %v",
+				err), remotePath)
+
+		return err
+	}
+
+	downloadReq.numBlocks = fRef.NumBlocks
+	_, err = downloadReq.getBlocksDataFromBlobbers(
+		downloadReq.startBlock,
+		downloadReq.numBlocks,
+	)
+	return err
+}
+
 // GetRefsWithAuthTicket get refs that are children of shared remote path.
 func (a *Allocation) GetRefsWithAuthTicket(authToken, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
 	if authToken == "" {
@@ -807,7 +881,7 @@ func (a *Allocation) GetRefsWithAuthTicket(authToken, offsetPath, updatedDate, o
 	return a.getRefs("", authTicket.FilePathHash, string(at), offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
 }
 
-//This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
+// This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
 func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
 	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
 		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))
@@ -1190,6 +1264,8 @@ func (a *Allocation) RevokeShare(path string, refereeClientID string) error {
 	return errors.New("", "consensus not reached")
 }
 
+var ErrInvalidPrivateShare = errors.New("invalid_private_share", "private sharing is only available for encrypted file")
+
 func (a *Allocation) GetAuthTicket(path, filename string,
 	referenceType, refereeClientID, refereeEncryptionPublicKey string, expiration int64, availableAfter *time.Time) (string, error) {
 
@@ -1205,6 +1281,18 @@ func (a *Allocation) GetAuthTicket(path, filename string,
 	isabs := zboxutil.IsRemoteAbs(path)
 	if !isabs {
 		return "", errors.New("invalid_path", "Path should be valid and absolute")
+	}
+
+	if referenceType == fileref.FILE && refereeClientID != "" {
+		fileMeta, err := a.GetFileMeta(path)
+		if err != nil {
+			return "", err
+		}
+
+		// private sharing is only available for encrypted file
+		if fileMeta.EncryptedKey == "" {
+			return "", ErrInvalidPrivateShare
+		}
 	}
 
 	shareReq := &ShareRequest{
