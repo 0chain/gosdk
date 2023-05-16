@@ -8,7 +8,7 @@ type ReferencePathResult struct {
 }
 
 func BuildReferencePathResult(rootRef *Ref) *ReferencePathResult {
-	rootRef.CalculateHash(context.TODO())
+	rootRef.CalculateHash(context.TODO()) //nolint
 
 	refPath := &ReferencePath{Ref: rootRef}
 

@@ -80,16 +80,16 @@ func (ta *TransactionWithAuth) completeTxn(status int, out string, err error) {
 			status = StatusAuthTimeout
 		}
 	}
-	ta.completeTxn(status, out, err)
-}
-
-func (ta *TransactionWithAuth) SetTransactionCallback(cb TransactionCallback) error {
-	return ta.SetTransactionCallback(cb)
+	ta.completeTxn(status, out, err) //nolint
 }
 
 func verifyFn(signature, msgHash, publicKey string) (bool, error) {
 	v := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
-	v.SetPublicKey(publicKey)
+	err := v.SetPublicKey(publicKey)
+	if err != nil {
+		return false, err
+	}
+
 	ok, err := v.Verify(signature, msgHash)
 	if err != nil || !ok {
 		return false, errors.New("", `{"error": "signature_mismatch"}`)
@@ -100,9 +100,13 @@ func verifyFn(signature, msgHash, publicKey string) (bool, error) {
 func (ta *TransactionWithAuth) sign(otherSig string) error {
 	ta.txn.ComputeHashData()
 	sig := zcncrypto.NewSignatureScheme(_config.chain.SignatureScheme)
-	sig.SetPrivateKey(_config.wallet.Keys[0].PrivateKey)
 
 	var err error
+	err = sig.SetPrivateKey(_config.wallet.Keys[0].PrivateKey)
+	if err != nil {
+		return err
+	}
+
 	ta.txn.Signature, err = sig.Add(otherSig, ta.txn.Hash)
 	return err
 }
@@ -158,7 +162,10 @@ func (ta *TransactionWithAuth) ExecuteFaucetSCWallet(walletStr string, methodNam
 			transaction.Cache.Set(ta.txn.ClientID, nonce)
 		}
 		ta.txn.TransactionNonce = nonce
-		ta.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
+		err = ta.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
+		if err != nil {
+			return
+		}
 		ta.submitTxn()
 	}()
 	return nil

@@ -181,9 +181,15 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
-	formWriter.WriteField("connection_id", req.connectionID)
+	err = formWriter.WriteField("connection_id", req.connectionID)
+	if err != nil {
+		return err, false
+	}
 
-	formWriter.WriteField("dir_path", req.remotePath)
+	err = formWriter.WriteField("dir_path", req.remotePath)
+	if err != nil {
+		return err, false
+	}
 
 	formWriter.Close()
 	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, body)

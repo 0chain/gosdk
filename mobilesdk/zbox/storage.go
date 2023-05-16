@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"time"
 
+	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
@@ -42,10 +43,19 @@ func ListDir(allocationID, remotePath string) (string, error) {
 //   - the json string of sdk.ListResult
 //   - error
 func ListDirFromAuthTicket(allocationID, authTicket string, lookupHash string) (string, error) {
-	a, err := getAllocation(allocationID)
+	a, err := sdk.GetAllocationFromAuthTicket(authTicket)
 	if err != nil {
 		return "", err
 	}
+
+	at := sdk.InitAuthTicket(authTicket)
+	if len(lookupHash) == 0 {
+		lookupHash, err = at.GetLookupHash()
+		if err != nil {
+			return "", err
+		}
+	}
+
 	listResult, err := a.ListDirFromAuthTicket(authTicket, lookupHash)
 	if err != nil {
 		return "", err
@@ -93,14 +103,24 @@ func GetFileMeta(allocationID, path string) (string, error) {
 //   - the json string of sdk.ConsolidatedFileMeta
 //   - error
 func GetFileMetaFromAuthTicket(allocationID, authTicket string, lookupHash string) (string, error) {
-	a, err := getAllocation(allocationID)
+	allocationObj, err := sdk.GetAllocationFromAuthTicket(authTicket)
 	if err != nil {
 		return "", err
 	}
-	fileMetaData, err := a.GetFileMetaFromAuthTicket(authTicket, lookupHash)
+
+	at := sdk.InitAuthTicket(authTicket)
+	if len(lookupHash) == 0 {
+		lookupHash, err = at.GetLookupHash()
+		if err != nil {
+			return "", err
+		}
+	}
+
+	fileMetaData, err := allocationObj.GetFileMetaFromAuthTicket(authTicket, lookupHash)
 	if err != nil {
 		return "", err
 	}
+
 	retBytes, err := json.Marshal(fileMetaData)
 	if err != nil {
 		return "", err
@@ -340,10 +360,27 @@ func GetAuthToken(allocationID, path string, filename string, referenceType stri
 //	- remoteFilename
 //	- status: callback of status
 func DownloadFromAuthTicket(allocationID, localPath string, authTicket string, remoteLookupHash string, remoteFilename string, status StatusCallbackMocked) error {
-	a, err := getAllocation(allocationID)
+	at, err := sdk.InitAuthTicket(authTicket).Unmarshall()
 	if err != nil {
 		return err
 	}
+
+	a, err := sdk.GetAllocationFromAuthTicket(authTicket)
+	if err != nil {
+		return err
+	}
+
+	if at.RefType == fileref.FILE {
+		remoteFilename = at.FileName
+		remoteLookupHash = at.FilePathHash
+	} else if len(remoteLookupHash) > 0 {
+		fileMeta, err := a.GetFileMetaFromAuthTicket(authTicket, remoteLookupHash)
+		if err != nil {
+			return err
+		}
+		remoteFilename = fileMeta.Name
+	}
+
 	return a.DownloadFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status})
 }
 
@@ -375,10 +412,27 @@ func DownloadFromAuthTicketByBlocks(allocationID, localPath string, authTicket s
 //   - remoteFilename
 //   - status: callback of status
 func DownloadThumbnailFromAuthTicket(allocationID, localPath string, authTicket string, remoteLookupHash string, remoteFilename string, status StatusCallbackMocked) error {
-	a, err := getAllocation(allocationID)
+	at, err := sdk.InitAuthTicket(authTicket).Unmarshall()
 	if err != nil {
 		return err
 	}
+
+	a, err := sdk.GetAllocationFromAuthTicket(authTicket)
+	if err != nil {
+		return err
+	}
+
+	if at.RefType == fileref.FILE {
+		remoteFilename = at.FileName
+		remoteLookupHash = at.FilePathHash
+	} else if len(remoteLookupHash) > 0 {
+		fileMeta, err := a.GetFileMetaFromAuthTicket(authTicket, remoteLookupHash)
+		if err != nil {
+			return err
+		}
+		remoteFilename = fileMeta.Name
+	}
+
 	return a.DownloadThumbnailFromAuthTicket(localPath, authTicket, remoteLookupHash, remoteFilename, false, &StatusCallbackWrapped{Callback: status})
 }
 

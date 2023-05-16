@@ -229,9 +229,20 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 		return err
 	}
 
-	formWriter.WriteField("file_id_meta", string(fileIDMetaData))
-	formWriter.WriteField("connection_id", su.progress.ConnectionID)
-	formWriter.WriteField("write_marker", string(wmData))
+	err = formWriter.WriteField("file_id_meta", string(fileIDMetaData))
+	if err != nil {
+		return err
+	}
+
+	err = formWriter.WriteField("connection_id", su.progress.ConnectionID)
+	if err != nil {
+		return err
+	}
+
+	err = formWriter.WriteField("write_marker", string(wmData))
+	if err != nil {
+		return err
+	}
 
 	formWriter.Close()
 

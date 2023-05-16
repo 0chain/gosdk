@@ -73,6 +73,10 @@ func (s *swapService) SwapWithConversionPath(pair *swapfactory.ExchangePair, fro
 	}
 
 	convertPayload, err := s.PackConvert(pair.ConversionPath, pair.AmountIn, pair.AmountOut, affiliateAccount)
+	if err != nil {
+		l.Logger.Error("error in PackConvert", zap.Error(err))
+		return nil, err
+	}
 
 	if !aCheckAllowanceResult.IsSatisfied {
 		err := s.Approve(spender, fromToken, fromAddress, pair.AmountIn)

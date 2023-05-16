@@ -72,9 +72,21 @@ func (req *MoveRequest) moveBlobberObject(
 			body := new(bytes.Buffer)
 			formWriter := multipart.NewWriter(body)
 
-			formWriter.WriteField("connection_id", req.connectionID)
-			formWriter.WriteField("path", req.remotefilepath)
-			formWriter.WriteField("dest", req.destPath)
+			err = formWriter.WriteField("connection_id", req.connectionID)
+			if err != nil {
+				return err, false
+			}
+
+			err = formWriter.WriteField("path", req.remotefilepath)
+			if err != nil {
+				return err, false
+			}
+
+			err = formWriter.WriteField("dest", req.destPath)
+			if err != nil {
+				return err, false
+			}
+
 			formWriter.Close()
 
 			var (

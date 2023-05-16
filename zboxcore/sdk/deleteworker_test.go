@@ -186,7 +186,7 @@ func TestDeleteRequest_deleteBlobberFile(t *testing.T) {
 			objectTreeRefs := make([]fileref.RefEntity, 1)
 			refEntity, _ := req.getObjectTreeFromBlobber(0)
 			objectTreeRefs[0] = refEntity
-			req.deleteBlobberFile(req.blobbers[0], 0)
+			req.deleteBlobberFile(req.blobbers[0], 0) //nolint
 			if tt.wantFunc != nil {
 				tt.wantFunc(require, req)
 			}
@@ -229,7 +229,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 		resty.CreateClient = createClient
 	}()
 
-	setupHttpResponses := func(t *testing.T, testName string, numBlobbers int, numCorrect int, req DeleteRequest) {
+	setupHttpResponses := func(t *testing.T, testName string, numBlobbers int, numCorrect int, req DeleteRequest) { //nolint
 		for i := 0; i < numBlobbers; i++ {
 			url := mockBlobberUrl + strconv.Itoa(i)
 			mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
@@ -395,7 +395,7 @@ func TestDeleteRequest_ProcessDelete(t *testing.T) {
 			req.allocationObj = a
 			req.blobbers = a.Blobbers
 
-			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect, *req)
+			tt.setup(t, tt.name, tt.numBlobbers, tt.numCorrect, *req) //nolint
 			err := req.ProcessDelete()
 			require.EqualValues(tt.wantErr, err != nil)
 			if err != nil {

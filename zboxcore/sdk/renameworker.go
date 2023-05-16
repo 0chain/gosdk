@@ -74,9 +74,21 @@ func (req *RenameRequest) renameBlobberObject(
 			body := new(bytes.Buffer)
 			formWriter := multipart.NewWriter(body)
 
-			formWriter.WriteField("connection_id", req.connectionID)
-			formWriter.WriteField("path", req.remotefilepath)
-			formWriter.WriteField("new_name", req.newName)
+			err = formWriter.WriteField("connection_id", req.connectionID)
+			if err != nil {
+				return err, false
+			}
+
+			err = formWriter.WriteField("path", req.remotefilepath)
+			if err != nil {
+				return err, false
+			}
+
+			err = formWriter.WriteField("new_name", req.newName)
+			if err != nil {
+				return err, false
+			}
+
 			formWriter.Close()
 
 			var httpreq *http.Request

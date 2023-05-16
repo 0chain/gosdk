@@ -64,7 +64,11 @@ func (req *ListRequest) getFileStatsInfoFromBlobber(blobber *blockchain.StorageN
 	if len(req.remotefilepath) > 0 {
 		req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 	}
-	formWriter.WriteField("path_hash", req.remotefilepathhash)
+	err = formWriter.WriteField("path_hash", req.remotefilepathhash)
+	if err != nil {
+		l.Logger.Error("File meta info request error: ", err.Error())
+		return
+	}
 
 	formWriter.Close()
 	httpreq, err := zboxutil.NewFileStatsRequest(blobber.Baseurl, req.allocationTx, body)
