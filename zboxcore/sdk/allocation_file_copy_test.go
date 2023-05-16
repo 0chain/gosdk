@@ -100,6 +100,7 @@ func TestAllocation_CopyObject(t *testing.T) {
 				require.NoError(t, err)
 				setupMockHttpResponse(t, &mockClient, "TestAllocation_CopyObject", testCaseName, a, http.MethodGet, http.StatusOK, body)
 				setupMockHttpResponse(t, &mockClient, "TestAllocation_CopyObject", testCaseName, a, http.MethodPost, http.StatusOK, []byte(""))
+				setupMockRollback(a, &mockClient)
 				setupMockCommitRequest(a)
 				setupMockWriteLockRequest(a, &mockClient)
 				return nil
@@ -110,7 +111,7 @@ func TestAllocation_CopyObject(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			require := require.New(t)
 			a := &Allocation{
-				DataShards: numBlobbers,
+				DataShards:  numBlobbers,
 				FileOptions: 63,
 			}
 			a.InitAllocation()

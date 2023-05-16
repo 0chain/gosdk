@@ -100,6 +100,7 @@ func TestAllocation_RenameObject(t *testing.T) {
 				setupMockHttpResponse(t, &mockClient, "TestAllocation_RenameObject", testCaseName, a, http.MethodGet, http.StatusOK, body)
 				setupMockHttpResponse(t, &mockClient, "TestAllocation_RenameObject", testCaseName, a, http.MethodPost, http.StatusOK, []byte(""))
 				setupMockCommitRequest(a)
+				setupMockRollback(a, &mockClient)
 				setupMockWriteLockRequest(a, &mockClient)
 				return nil
 			},

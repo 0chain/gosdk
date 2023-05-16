@@ -3,6 +3,7 @@ package sdk
 import (
 	"bytes"
 	"context"
+	"encoding/hex"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -14,7 +15,10 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/0chain/gosdk/dev/blobber"
+	"github.com/0chain/gosdk/dev/blobber/model"
 	"github.com/0chain/gosdk/zboxcore/encryption"
+	"golang.org/x/crypto/sha3"
 
 	"github.com/0chain/errors"
 	"github.com/0chain/gosdk/core/common"
@@ -128,6 +132,69 @@ func setupMockFile(t *testing.T, path string) (teardown func(t *testing.T)) {
 	require.Nil(t, err)
 	return func(t *testing.T) {
 		os.Remove(path)
+	}
+}
+
+func setupMockRollback(a *Allocation, mockClient *mocks.HttpClient) {
+
+	for _, blobber := range a.Blobbers {
+		url := blobber.Baseurl + zboxutil.LATEST_WRITE_MARKER_ENDPOINT
+		url = strings.TrimRight(url, "/")
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return strings.Contains(req.URL.String(), url)
+		})).Return(&http.Response{
+			StatusCode: http.StatusOK,
+			Body: func() io.ReadCloser {
+				s := `{"latest_write_marker":null,"prev_write_marker":null}`
+				return ioutil.NopCloser(bytes.NewReader([]byte(s)))
+			}(),
+		}, nil)
+
+		newUrl := blobber.Baseurl + zboxutil.ROLLBACK_ENDPOINT
+		newUrl = strings.TrimRight(newUrl, "/")
+		mockClient.On("Do", mock.MatchedBy(func(req *http.Request) bool {
+			return strings.Contains(req.URL.String(), newUrl)
+		})).Return(&http.Response{
+			StatusCode: http.StatusOK,
+			Body:       ioutil.NopCloser(bytes.NewReader(nil)),
+		}, nil)
+	}
+
+}
+
+func setupMockFileAndReferencePathResult(t *testing.T, allocationID, name string) (teardown func(t *testing.T)) {
+	var buf = []byte("mockActualHash")
+	h := sha3.New256()
+	f, _ := os.Create(name)
+	w := io.MultiWriter(h, f)
+	//nolint: errcheck
+	w.Write(buf)
+
+	cancel := blobber.MockReferencePathResult(allocationID, &model.Ref{
+		AllocationID: allocationID,
+		Type:         model.DIRECTORY,
+		Name:         "/",
+		Path:         "/",
+		PathLevel:    1,
+		ParentPath:   "",
+		Children: []*model.Ref{
+			{
+				AllocationID:   allocationID,
+				Name:           name,
+				Type:           model.FILE,
+				Path:           "/" + name,
+				ActualFileSize: int64(len(buf)),
+				ActualFileHash: hex.EncodeToString(h.Sum(nil)),
+				ChunkSize:      CHUNK_SIZE,
+				PathLevel:      2,
+				ParentPath:     "/",
+			},
+		},
+	})
+
+	return func(t *testing.T) {
+		cancel()
+		os.Remove(name)
 	}
 }
 

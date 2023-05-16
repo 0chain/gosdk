@@ -438,8 +438,8 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 			require := require.New(t)
 
 			a := &Allocation{
-				Tx:         "TestCopyRequest_ProcessCopy",
-				DataShards: numBlobbers,
+				Tx:          "TestCopyRequest_ProcessCopy",
+				DataShards:  numBlobbers,
 				FileOptions: 63,
 			}
 			a.InitAllocation()
@@ -469,6 +469,8 @@ func TestCopyRequest_ProcessCopy(t *testing.T) {
 					Baseurl: server.URL + path,
 				})
 			}
+
+			setupMockRollback(a, &mockClient)
 
 			req := &CopyRequest{
 				allocationObj:  a,
