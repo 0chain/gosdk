@@ -12,7 +12,7 @@ type Timestamp int64
 
 // Now - current datetime
 func Now() Timestamp {
-	return Timestamp(time.Now().UnixMilli())
+	return Timestamp(time.Now().Unix())
 }
 
 // Within ensures a given timestamp is within certain number of seconds
