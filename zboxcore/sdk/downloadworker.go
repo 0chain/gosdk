@@ -57,7 +57,7 @@ type DownloadRequest struct {
 	completedCallback  func(remotepath string, remotepathhash string)
 	contentMode        string
 	Consensus
-	effectiveChunkSize int
+	effectiveBlockSize int // blocksize - encryptionOverHead
 	ecEncoder          reedsolomon.Encoder
 	maskMu             *sync.Mutex
 	encScheme          encryption.EncryptionScheme
@@ -70,10 +70,7 @@ func (req *DownloadRequest) removeFromMask(pos uint64) {
 	req.maskMu.Unlock()
 }
 
-// getBlocksData will get data blocks for some interval from minimal blobers and aggregate them and
-// return to the caller
-func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte, error) {
-
+func (req *DownloadRequest) getBlocksDataFromBlobbers(startBlock, totalBlock int64) ([][][]byte, error) {
 	shards := make([][][]byte, totalBlock)
 	for i := range shards {
 		shards[i] = make([][]byte, len(req.blobbers))
@@ -109,11 +106,22 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte,
 		curReqDownloads = failed
 		mask = remainingMask
 	}
+	return shards, err
+}
+
+// getBlocksData will get data blocks for some interval from minimal blobers and aggregate them and
+// return to the caller
+func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte, error) {
+
+	shards, err := req.getBlocksDataFromBlobbers(startBlock, totalBlock)
+	if err != nil {
+		return nil, err
+	}
 
 	// erasure decoding
 	// Can we benefit from goroutine for erasure decoding??
-	c := req.datashards * req.effectiveChunkSize
-	data := make([]byte, req.datashards*req.effectiveChunkSize*int(totalBlock))
+	c := req.datashards * req.effectiveBlockSize
+	data := make([]byte, req.datashards*req.effectiveBlockSize*int(totalBlock))
 	var isValid bool
 	for i := range shards {
 		var d []byte
@@ -213,7 +221,6 @@ func (req *DownloadRequest) downloadBlock(
 				return
 			}
 			err = req.fillShards(shards, result)
-			return
 		}(i)
 	}
 
@@ -395,7 +402,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	startBlock, endBlock, numBlocks := req.startBlock, req.endBlock, req.numBlocks
 	// remainingSize should be calculated based on startBlock number
 	// otherwise end data will have null bytes.
-	remainingSize := size - startBlock*int64(req.effectiveChunkSize)
+	remainingSize := size - startBlock*int64(req.effectiveBlockSize)
 	if remainingSize <= 0 {
 		logger.Logger.Error("Nothing to download")
 		req.errorCB(
@@ -463,7 +470,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		}
 	}
 
-	f.Sync()
+	f.Sync() //nolint
 
 	if isPREAndWholeFile {
 		calculatedFileHash := hex.EncodeToString(actualFileHasher.Sum(nil))
@@ -487,11 +494,12 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	}
 }
 
+// initEC will initialize erasure encoder/decoder
 func (req *DownloadRequest) initEC() error {
 	var err error
 	req.ecEncoder, err = reedsolomon.New(
 		req.datashards, req.parityshards,
-		reedsolomon.WithAutoGoroutines(int(req.effectiveChunkSize)))
+		reedsolomon.WithAutoGoroutines(int(req.effectiveBlockSize)))
 
 	if err != nil {
 		return errors.New("init_ec",
@@ -500,11 +508,12 @@ func (req *DownloadRequest) initEC() error {
 	return nil
 }
 
-func (req *DownloadRequest) initEncryption() error {
+// initEncryption will initialize encScheme with client's keys
+func (req *DownloadRequest) initEncryption() (err error) {
 	req.encScheme = encryption.NewEncryptionScheme()
 	mnemonic := client.GetClient().Mnemonic
 	if mnemonic != "" {
-		_, err := req.encScheme.Initialize(client.GetClient().Mnemonic)
+		_, err = req.encScheme.Initialize(client.GetClient().Mnemonic)
 		if err != nil {
 			return err
 		}
@@ -513,10 +522,16 @@ func (req *DownloadRequest) initEncryption() error {
 		if err != nil {
 			return err
 		}
-		req.encScheme.InitializeWithPrivateKey(key)
+		err = req.encScheme.InitializeWithPrivateKey(key)
+		if err != nil {
+			return err
+		}
 	}
 
-	req.encScheme.InitForDecryption("filetype:audio", req.encryptedKey)
+	err = req.encScheme.InitForDecryption("filetype:audio", req.encryptedKey)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -530,7 +545,6 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 		req.statusCallback.Error(
 			req.allocationID, remotePathCB, op, err)
 	}
-	return
 }
 
 func (req *DownloadRequest) openFile() (sys.File, error) {
@@ -558,14 +572,14 @@ func (req *DownloadRequest) calculateShardsParams(
 	// fRef.ActualFileSize is size of file that does not include encryption bytes.
 	// that is why, actualPerShard will have different value for encrypted file.
 	effectivePerShardSize := (size + int64(req.datashards) - 1) / int64(req.datashards)
-	effectiveChunkSize := fRef.ChunkSize
+	effectiveBlockSize := fRef.ChunkSize
 	if fRef.EncryptedKey != "" {
-		effectiveChunkSize -= EncryptionHeaderSize + EncryptedDataPaddingSize
+		effectiveBlockSize -= EncryptionHeaderSize + EncryptedDataPaddingSize
 	}
 
-	req.effectiveChunkSize = int(effectiveChunkSize)
+	req.effectiveBlockSize = int(effectiveBlockSize)
 
-	chunksPerShard = (effectivePerShardSize + effectiveChunkSize - 1) / effectiveChunkSize
+	chunksPerShard = (effectivePerShardSize + effectiveBlockSize - 1) / effectiveBlockSize
 	actualPerShard = chunksPerShard * fRef.ChunkSize
 	if req.endBlock == 0 || req.endBlock > chunksPerShard {
 		req.endBlock = chunksPerShard

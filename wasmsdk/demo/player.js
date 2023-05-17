@@ -13,6 +13,7 @@ async function stopPlay({goWasm, videoElement}){
 async function startPlay({
   goWasm,
   allocationId,
+  containerElement,
   videoElement,
   remotePath,
   authTicket = '',
@@ -49,11 +50,36 @@ async function startPlay({
   // allocationID, remotePath, authTicket, lookupHash string,
   // downloadThumbnailOnly, autoCommit bool
   const {url} = await goWasm.sdk.download(
-      allocationId, remotePath, authTicket, lookupHash, false, false);
+      allocationId, remotePath, authTicket, lookupHash, false,10,"");
+      videoElement.crossOrigin = 'anonymous';
+      videoElement.src = url
 
-  videoElement.src = url;
-  videoElement.crossOrigin = 'anonymous';
-  videoElement.play();
+  var promise = videoElement.play();
+  if (promise !== undefined) {
+      promise.catch(err => {
+        // Auto-play was prevented
+        while (videoElement.lastElementChild) {
+          videoElement.removeChild(videoElement.lastElementChild);
+        }
+        videoElement.removeAttribute("src")
+
+        const source = document.createElement("source")
+        source.setAttribute("src", url)
+        source.setAttribute("type", mimeType)
+        videoElement.appendChild(source)
+
+        videoElement.setAttribute("muted",true)
+        videoElement.setAttribute("autoplay",true)
+        videoElement.setAttribute("playsinline",true)
+        videoElement.setAttribute("loop",true)
+        setTimeout(function() {
+              // weird fix for safari
+              containerElement.innerHTML = videoElement.outerHTML;
+        }, 100);
+      }).then(() => {
+          // Auto-play started
+      });
+  } 
 }
 
 

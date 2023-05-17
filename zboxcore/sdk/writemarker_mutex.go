@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
@@ -25,6 +24,7 @@ const (
 	WMLockStatusPending
 	WMLockStatusOK
 )
+const WMLockWaitTime = 2 * time.Second
 
 type WMLockResult struct {
 	Status    WMLockStatus `json:"status,omitempty"`
@@ -184,8 +184,6 @@ func (wmMu *WriteMarkerMutex) Lock(
 	consensus.consensus = addConsensus
 	wg := &sync.WaitGroup{}
 	var pos uint64
-	requestTime := time.Now()
-	rT := strconv.FormatInt(requestTime.Unix(), 10)
 
 	for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
@@ -193,7 +191,7 @@ func (wmMu *WriteMarkerMutex) Lock(
 		blobber := blobbers[pos]
 
 		wg.Add(1)
-		go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, rT, timeOut, wg)
+		go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, timeOut, wg)
 	}
 
 	wg.Wait()
@@ -210,6 +208,7 @@ func (wmMu *WriteMarkerMutex) Lock(
 		This goroutine will refresh lock after 20 seconds have passed. It will only complete if context is
 		completed, that is why, the caller should make proper use of context and cancel it when work is done.
 	*/
+	requestTime := time.Now()
 	go func() {
 		for {
 			<-time.After(time.Second*20 - time.Since(requestTime))
@@ -220,16 +219,13 @@ func (wmMu *WriteMarkerMutex) Lock(
 			}
 
 			wg := &sync.WaitGroup{}
-			requestTime = time.Now()
-			rT = strconv.FormatInt(requestTime.Unix(), 10)
-
 			for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 				pos = uint64(i.TrailingZeros())
 
 				blobber := blobbers[pos]
 
 				wg.Add(1)
-				go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, rT, timeOut, wg)
+				go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, timeOut, wg)
 			}
 
 			wg.Wait()
@@ -242,7 +238,7 @@ func (wmMu *WriteMarkerMutex) Lock(
 func (wmMu *WriteMarkerMutex) lockBlobber(
 	ctx context.Context, mask *zboxutil.Uint128, maskMu *sync.Mutex,
 	consensus *Consensus, b *blockchain.StorageNode, pos uint64, connID string,
-	requestTime string, timeOut time.Duration, wg *sync.WaitGroup) {
+	timeOut time.Duration, wg *sync.WaitGroup) {
 
 	defer wg.Done()
 
@@ -272,7 +268,7 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 	var req *http.Request
 
 	req, err = zboxutil.NewWriteMarkerLockRequest(
-		b.Baseurl, wmMu.allocationObj.Tx, connID, requestTime)
+		b.Baseurl, wmMu.allocationObj.Tx, connID)
 
 	if err != nil {
 		return
@@ -313,18 +309,12 @@ func (wmMu *WriteMarkerMutex) lockBlobber(
 				if wmLockRes.Status == WMLockStatusPending {
 					logger.Logger.Info("Lock pending for blobber ",
 						b.Baseurl, "with connection id: ", connID, " Retrying again")
-					time.Sleep(timeOut * 2)
+					time.Sleep(WMLockWaitTime)
 					shouldContinue = true
+					retry--
 					return
 				}
 				err = fmt.Errorf("Lock acquiring failed")
-				return
-			}
-
-			if resp.StatusCode == http.StatusAccepted { // accepted but pending
-				logger.Logger.Info(b.Baseurl, connID, " lock pending. Retrying again")
-				time.Sleep(timeOut * 2) // wait twice the time of timeout
-				shouldContinue = true
 				return
 			}
 

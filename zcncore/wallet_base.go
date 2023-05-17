@@ -882,8 +882,6 @@ func getMinersInternal(cb GetInfoCallback, active bool, limit, offset int) {
 	})
 
 	go GetInfoFromSharders(url, 0, cb)
-
-	return
 }
 
 // GetSharders obtains list of all active sharders.
@@ -908,8 +906,6 @@ func getShardersInternal(cb GetInfoCallback, active bool, limit, offset int) {
 	})
 
 	go GetInfoFromSharders(url, 0, cb)
-
-	return
 }
 
 func withParams(uri string, params Params) string {
@@ -1198,7 +1194,6 @@ func getBlobbersInternal(cb GetInfoCallback, active bool, limit, offset int) {
 	})
 
 	go GetInfoFromSharders(url, OpStorageSCGetBlobbers, cb)
-	return
 }
 
 // GetBlobber obtains blobber information.

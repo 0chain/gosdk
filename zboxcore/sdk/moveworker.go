@@ -7,12 +7,16 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/0chain/errors"
+	thrown "github.com/0chain/errors"
+	"github.com/google/uuid"
 
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/client"
 	"github.com/0chain/gosdk/zboxcore/fileref"
 	"github.com/0chain/gosdk/zboxcore/logger"
@@ -35,6 +39,7 @@ type MoveRequest struct {
 	moveMask       zboxutil.Uint128
 	maskMU         *sync.Mutex
 	connectionID   string
+	timestamp      int64
 	Consensus
 }
 
@@ -67,9 +72,21 @@ func (req *MoveRequest) moveBlobberObject(
 			body := new(bytes.Buffer)
 			formWriter := multipart.NewWriter(body)
 
-			formWriter.WriteField("connection_id", req.connectionID)
-			formWriter.WriteField("path", req.remotefilepath)
-			formWriter.WriteField("dest", req.destPath)
+			err = formWriter.WriteField("connection_id", req.connectionID)
+			if err != nil {
+				return err, false
+			}
+
+			err = formWriter.WriteField("path", req.remotefilepath)
+			if err != nil {
+				return err, false
+			}
+
+			err = formWriter.WriteField("dest", req.destPath)
+			if err != nil {
+				return err, false
+			}
+
 			formWriter.Close()
 
 			var (
@@ -143,40 +160,44 @@ func (req *MoveRequest) moveBlobberObject(
 		fmt.Sprintf("last status code: %d, last response message: %s", latestStatusCode, latestRespMsg))
 }
 
-func (req *MoveRequest) ProcessMove() error {
-	defer req.ctxCncl()
-
+func (req *MoveRequest) ProcessWithBlobbers() ([]fileref.RefEntity, []error) {
+	var pos uint64
 	numList := len(req.blobbers)
 	objectTreeRefs := make([]fileref.RefEntity, numList)
 	blobberErrors := make([]error, numList)
-
 	wg := &sync.WaitGroup{}
-	var pos uint64
-
 	for i := req.moveMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		wg.Add(1)
 		go func(blobberIdx int) {
 			defer wg.Done()
 			refEntity, err := req.moveBlobberObject(req.blobbers[blobberIdx], blobberIdx)
-
 			if err != nil {
 				blobberErrors[blobberIdx] = err
 				l.Logger.Error(err.Error())
 				return
 			}
 			objectTreeRefs[blobberIdx] = refEntity
-
 		}(int(pos))
 	}
 	wg.Wait()
-	
+	return objectTreeRefs, blobberErrors
+}
+
+func (req *MoveRequest) ProcessMove() error {
+	defer req.ctxCncl()
+
+	wg := &sync.WaitGroup{}
+	var pos uint64
+
+	objectTreeRefs, blobberErrors := req.ProcessWithBlobbers()
+
 	if !req.isConsensusOk() {
 		err := zboxutil.MajorError(blobberErrors)
 		if err != nil {
 			return errors.New("move_failed", fmt.Sprintf("Move failed. %s", err.Error()))
 		}
-		
+
 		return errors.New("consensus_not_met",
 			fmt.Sprintf("Move failed. Required consensus %d, got %d",
 				req.Consensus.consensusThresh, req.Consensus.consensus))
@@ -191,9 +212,27 @@ func (req *MoveRequest) ProcessMove() error {
 	if err != nil {
 		return fmt.Errorf("Move failed: %s", err.Error())
 	}
+
+	//Check if the allocation is to be repaired or rolled back
+	status, err := req.allocationObj.CheckAllocStatus()
+	if err != nil {
+		logger.Logger.Error("Error checking allocation status: ", err)
+		return fmt.Errorf("Move failed: %s", err.Error())
+	}
+
+	if status == Repair {
+		logger.Logger.Info("Repairing allocation")
+		//TODO: Need status callback to call repair allocation
+		// err = req.allocationObj.RepairAlloc()
+		// if err != nil {
+		// 	return err
+		// }
+	}
+
 	defer writeMarkerMutex.Unlock(req.ctx, req.moveMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	req.Consensus.Reset()
+	req.timestamp = int64(common.Now())
 	activeBlobbers := req.moveMask.CountOnes()
 	wg.Add(activeBlobbers)
 	commitReqs := make([]*CommitRequest, activeBlobbers)
@@ -214,8 +253,10 @@ func (req *MoveRequest) ProcessMove() error {
 			blobber:      req.blobbers[pos],
 			connectionID: req.connectionID,
 			wg:           wg,
+			timestamp:    req.timestamp,
 		}
-		commitReq.change = moveChange
+		// commitReq.change = moveChange
+		commitReq.changes = append(commitReq.changes, moveChange)
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
 		c++
@@ -241,4 +282,107 @@ func (req *MoveRequest) ProcessMove() error {
 				req.Consensus.consensusThresh, req.Consensus.consensus))
 	}
 	return nil
+}
+
+type MoveOperation struct {
+	remotefilepath string
+	destPath       string
+	ctx            context.Context
+	ctxCncl        context.CancelFunc
+	moveMask       zboxutil.Uint128
+	maskMU         *sync.Mutex
+	consensus      Consensus
+}
+
+func (mo *MoveOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
+	mR := &MoveRequest{
+		allocationObj:  allocObj,
+		allocationID:   allocObj.ID,
+		allocationTx:   allocObj.Tx,
+		connectionID:   connectionID,
+		blobbers:       allocObj.Blobbers,
+		remotefilepath: mo.remotefilepath,
+		ctx:            mo.ctx,
+		ctxCncl:        mo.ctxCncl,
+		moveMask:       mo.moveMask,
+		maskMU:         mo.maskMU,
+		destPath:       mo.destPath,
+	}
+	mR.Consensus.fullconsensus = mo.consensus.fullconsensus
+	mR.Consensus.consensusThresh = mo.consensus.consensusThresh
+
+	objectTreeRefs, blobberErrors := mR.ProcessWithBlobbers()
+
+	if !mR.Consensus.isConsensusOk() {
+		err := zboxutil.MajorError(blobberErrors)
+		if err != nil {
+			return nil, mR.moveMask, thrown.New("move_failed", fmt.Sprintf("Move failed. %s", err.Error()))
+		}
+
+		return nil, mR.moveMask, thrown.New("consensus_not_met",
+			fmt.Sprintf("Move failed. Required consensus %d, got %d",
+				mR.Consensus.consensusThresh, mR.Consensus.consensus))
+	}
+	return objectTreeRefs, mR.moveMask, nil
+}
+
+func (mo *MoveOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
+
+	changes := make([]allocationchange.AllocationChange, len(refs))
+	for idx, ref := range refs {
+		moveChange := &allocationchange.MoveFileChange{
+			DestPath:   mo.destPath,
+			ObjectTree: ref,
+		}
+		moveChange.NumBlocks = 0
+		moveChange.Operation = constants.FileOperationMove
+		moveChange.Size = 0
+		changes[idx] = moveChange
+	}
+	return changes
+}
+
+func (mo *MoveOperation) Verify(a *Allocation) error {
+
+	if !a.CanMove() {
+		return constants.ErrFileOptionNotPermitted
+	}
+
+	if mo.remotefilepath == "" || mo.destPath == "" {
+		return errors.New("invalid_path", "Invalid path for copy")
+	}
+	isabs := zboxutil.IsRemoteAbs(mo.remotefilepath)
+	if !isabs {
+		return errors.New("invalid_path", "Path should be valid and absolute")
+	}
+
+	err := ValidateRemoteFileName(mo.destPath)
+
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (mo *MoveOperation) Completed(allocObj *Allocation) {
+
+}
+
+func (mo *MoveOperation) Error(allocObj *Allocation, consensus int, err error) {
+
+}
+
+func NewMoveOperation(remotePath string, destPath string, moveMask zboxutil.Uint128, maskMU *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *MoveOperation {
+	mo := &MoveOperation{}
+	mo.remotefilepath = zboxutil.RemoteClean(remotePath)
+	if destPath != "/" {
+		destPath = strings.TrimSuffix(destPath, "/")
+	}
+	mo.destPath = destPath
+	mo.moveMask = moveMask
+	mo.maskMU = maskMU
+	mo.consensus.consensusThresh = consensusTh
+	mo.consensus.fullconsensus = fullConsensus
+	mo.ctx, mo.ctxCncl = context.WithCancel(ctx)
+	return mo
 }

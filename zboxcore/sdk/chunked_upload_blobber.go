@@ -13,7 +13,6 @@ import (
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -179,7 +178,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 
 }
 
-func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUpload, pos uint64) (err error) {
+func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUpload, pos uint64, timestamp int64) (err error) {
 	defer func() {
 		if err != nil {
 
@@ -189,7 +188,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 		}
 	}()
 
-	rootRef, latestWM, size, commitParams, err := sb.processWriteMarker(ctx, su)
+	rootRef, latestWM, size, fileIDMeta, err := sb.processWriteMarker(ctx, su)
 
 	if err != nil {
 		logger.Logger.Error(err)
@@ -197,7 +196,6 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	}
 
 	wm := &marker.WriteMarker{}
-	timestamp := int64(common.Now())
 	wm.AllocationRoot = rootRef.Hash
 	if latestWM != nil {
 		wm.PreviousAllocationRoot = latestWM.AllocationRoot
@@ -225,15 +223,26 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 		return err
 	}
 
-	fileIDMeta, err := json.Marshal(commitParams.FileIDMeta)
+	fileIDMetaData, err := json.Marshal(fileIDMeta)
 	if err != nil {
 		logger.Logger.Error("Error marshalling file ID Meta: ", err)
 		return err
 	}
 
-	formWriter.WriteField("file_id_meta", string(fileIDMeta))
-	formWriter.WriteField("connection_id", su.progress.ConnectionID)
-	formWriter.WriteField("write_marker", string(wmData))
+	err = formWriter.WriteField("file_id_meta", string(fileIDMetaData))
+	if err != nil {
+		return err
+	}
+
+	err = formWriter.WriteField("connection_id", su.progress.ConnectionID)
+	if err != nil {
+		return err
+	}
+
+	err = formWriter.WriteField("write_marker", string(wmData))
+	if err != nil {
+		return err
+	}
 
 	formWriter.Close()
 
@@ -315,7 +324,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 func (sb *ChunkedUploadBlobber) processWriteMarker(
 	ctx context.Context, su *ChunkedUpload) (
-	*fileref.Ref, *marker.WriteMarker, int64, *allocationchange.CommitParams, error) {
+	*fileref.Ref, *marker.WriteMarker, int64, map[string]string, error) {
 
 	logger.Logger.Info("received a commit request")
 	paths := make([]string, 0)
@@ -373,9 +382,9 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 	}
 
 	var size int64
-	var commitParams allocationchange.CommitParams
+	fileIDMeta := make(map[string]string)
 	for _, change := range sb.commitChanges {
-		commitParams, err = change.ProcessChange(rootRef)
+		err = change.ProcessChange(rootRef, fileIDMeta)
 		if err != nil {
 			logger.Logger.Error(err)
 			return nil, nil, 0, nil, err
@@ -383,5 +392,5 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 		size += change.GetSize()
 	}
 
-	return rootRef, lR.LatestWM, size, &commitParams, nil
+	return rootRef, lR.LatestWM, size, fileIDMeta, nil
 }

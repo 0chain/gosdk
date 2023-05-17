@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -44,13 +43,14 @@ func SuccessCommitResult() *CommitResult {
 }
 
 type CommitRequest struct {
-	change       allocationchange.AllocationChange
+	changes      []allocationchange.AllocationChange
 	blobber      *blockchain.StorageNode
 	allocationID string
 	allocationTx string
 	connectionID string
 	wg           *sync.WaitGroup
 	result       *CommitResult
+	timestamp    int64
 }
 
 var commitChan map[string]chan *CommitRequest
@@ -91,7 +91,9 @@ func (commitreq *CommitRequest) processCommit() {
 
 	l.Logger.Info("received a commit request")
 	paths := make([]string, 0)
-	paths = append(paths, commitreq.change.GetAffectedPath()...)
+	for _, change := range commitreq.changes {
+		paths = append(paths, change.GetAffectedPath()...)
+	}
 	var req *http.Request
 	var lR ReferencePathResult
 	req, err := zboxutil.NewReferencePathRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
@@ -134,6 +136,7 @@ func (commitreq *CommitRequest) processCommit() {
 		return
 	}
 	rootRef, err := lR.GetDirTree(commitreq.allocationID)
+
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
@@ -165,14 +168,17 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 
 	var size int64
-	commitParams, err := commitreq.change.ProcessChange(rootRef)
+	fileIDMeta := make(map[string]string)
 
-	if err != nil {
-		commitreq.result = ErrorCommitResult(err.Error())
-		return
+	for _, change := range commitreq.changes {
+		err = change.ProcessChange(rootRef, fileIDMeta)
+		if err != nil {
+			commitreq.result = ErrorCommitResult(err.Error())
+			return
+		}
+		size += change.GetSize()
 	}
-	size += commitreq.change.GetSize()
-	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size, &commitParams)
+	err = commitreq.commitBlobber(rootRef, lR.LatestWM, size, fileIDMeta)
 	if err != nil {
 		commitreq.result = ErrorCommitResult(err.Error())
 		return
@@ -182,16 +188,15 @@ func (commitreq *CommitRequest) processCommit() {
 
 func (req *CommitRequest) commitBlobber(
 	rootRef *fileref.Ref, latestWM *marker.WriteMarker, size int64,
-	commitParams *allocationchange.CommitParams) error {
+	fileIDMeta map[string]string) error {
 
-	fileIDMetaData, err := json.Marshal(commitParams.FileIDMeta)
+	fileIDMetaData, err := json.Marshal(fileIDMeta)
 	if err != nil {
 		l.Logger.Error("Marshalling inode metadata failed: ", err)
 		return err
 	}
 
 	wm := &marker.WriteMarker{}
-	timestamp := int64(common.Now())
 	wm.AllocationRoot = rootRef.Hash
 	if latestWM != nil {
 		wm.PreviousAllocationRoot = latestWM.AllocationRoot
@@ -203,7 +208,7 @@ func (req *CommitRequest) commitBlobber(
 	wm.AllocationID = req.allocationID
 	wm.Size = size
 	wm.BlobberID = req.blobber.ID
-	wm.Timestamp = timestamp
+	wm.Timestamp = req.timestamp
 	wm.ClientID = client.GetClientID()
 	err = wm.Sign()
 	if err != nil {
@@ -217,9 +222,20 @@ func (req *CommitRequest) commitBlobber(
 		l.Logger.Error("Creating writemarker failed: ", err)
 		return err
 	}
-	formWriter.WriteField("connection_id", req.connectionID)
-	formWriter.WriteField("write_marker", string(wmData))
-	formWriter.WriteField("file_id_meta", string(fileIDMetaData))
+	err = formWriter.WriteField("connection_id", req.connectionID)
+	if err != nil {
+		return err
+	}
+
+	err = formWriter.WriteField("write_marker", string(wmData))
+	if err != nil {
+		return err
+	}
+
+	err = formWriter.WriteField("file_id_meta", string(fileIDMetaData))
+	if err != nil {
+		return err
+	}
 
 	formWriter.Close()
 
@@ -249,8 +265,9 @@ func (req *CommitRequest) commitBlobber(
 			return err
 		}
 		if resp.StatusCode != http.StatusOK {
+
 			l.Logger.Error(req.blobber.Baseurl, " Commit response:", string(resp_body))
-			return errors.New("commit_error", string(resp_body))
+			return errors.New("commit_error", string(resp_body)+" "+string(wmData))
 		}
 		return nil
 	})
@@ -261,7 +278,7 @@ func AddCommitRequest(req *CommitRequest) {
 	commitChan[req.blobber.ID] <- req
 }
 
-func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths []string) error {
+func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths []string) error { //nolint
 	var req *http.Request
 	req, err := zboxutil.NewCalculateHashRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
 	if err != nil || len(paths) == 0 {

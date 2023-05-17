@@ -16,8 +16,7 @@ type UpdateFileChange struct {
 	NewFile *fileref.FileRef
 }
 
-func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) (
-	commitParams CommitParams, err error) {
+func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref, _ map[string]string) (err error) {
 
 	if ch.NewFile.ActualFileHash == "" {
 		err = fmt.Errorf("empty actual file hash field")
@@ -85,6 +84,7 @@ func (ch *UpdateFileChange) ProcessChange(rootRef *fileref.Ref) (
 	}
 
 	ch.NewFile.HashToBeComputed = true
+	ch.NewFile.FileID = ch.OldFile.FileID
 	dirRef.Children[idx] = ch.NewFile
 	rootRef.CalculateHash()
 	return

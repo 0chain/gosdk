@@ -18,6 +18,7 @@ import (
 	"errors"
 
 	thrown "github.com/0chain/errors"
+	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/h2non/filetype"
 	"github.com/lithammer/shortuuid/v3"
@@ -66,7 +67,7 @@ func (b *lazybuf) string() string {
 func GetFileContentType(out io.ReadSeeker) (string, error) {
 	buffer := make([]byte, 261)
 	_, err := out.Read(buffer)
-	defer out.Seek(0, 0)
+	defer out.Seek(0, 0) //nolint
 
 	if err != nil {
 		return "", err
@@ -203,10 +204,6 @@ func Decrypt(key, text []byte) ([]byte, error) {
 	return data, nil
 }
 
-func calculateMinRequired(minRequired, percent float64) int {
-	return int(math.Ceil(minRequired * percent))
-}
-
 func GetRefsHash(r []byte) string {
 	hash := sha3.New256()
 	hash.Write(r)
@@ -341,7 +338,7 @@ func GetErrorMessageCode(errorMsg string) (string, error) {
 
 	}
 	var a = make(map[string]string)
-	if idx + 5 >= len(errorMsg) {
+	if idx+5 >= len(errorMsg) {
 		return "", thrown.New("invalid_format", "err field is not proper json")
 	}
 	err := json.Unmarshal([]byte(errorMsg[idx+5:]), &a)
@@ -350,4 +347,24 @@ func GetErrorMessageCode(errorMsg string) (string, error) {
 	}
 	return a["code"], nil
 
+}
+
+// Returns transpose of 2-D slice
+// Example: Given matrix [[a, b], [c, d], [e, f]] returns [[a, c, e], [b, d, f]]
+func Transpose(matrix [][]allocationchange.AllocationChange) [][]allocationchange.AllocationChange {
+	rowLength := len(matrix)
+	if rowLength == 0 {
+		return matrix
+	}
+	columnLength := len(matrix[0])
+	transposedMatrix := make([][]allocationchange.AllocationChange, columnLength)
+	for i := range transposedMatrix {
+		transposedMatrix[i] = make([]allocationchange.AllocationChange, rowLength)
+	}
+	for i := 0; i < columnLength; i++ {
+		for j := 0; j < rowLength; j++ {
+			transposedMatrix[i][j] = matrix[j][i]
+		}
+	}
+	return transposedMatrix
 }

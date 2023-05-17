@@ -7,11 +7,15 @@ import (
 	"net/http"
 	"net/url"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/0chain/errors"
+	thrown "github.com/0chain/errors"
+	"github.com/google/uuid"
 
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -34,12 +38,11 @@ type DeleteRequest struct {
 	maskMu         *sync.Mutex
 	connectionID   string
 	consensus      Consensus
+	timestamp      int64
 }
 
 func (req *DeleteRequest) deleteBlobberFile(
-	blobber *blockchain.StorageNode, blobberIdx int) {
-
-	defer req.wg.Done()
+	blobber *blockchain.StorageNode, blobberIdx int) error {
 
 	var err error
 
@@ -60,7 +63,7 @@ func (req *DeleteRequest) deleteBlobberFile(
 	httpreq, err := zboxutil.NewDeleteRequest(blobber.Baseurl, req.allocationTx, query)
 	if err != nil {
 		l.Logger.Error(blobber.Baseurl, "Error creating delete request", err)
-		return
+		return err
 	}
 
 	var (
@@ -121,15 +124,15 @@ func (req *DeleteRequest) deleteBlobberFile(
 		}()
 
 		if err != nil {
-			return
+			return err
 		}
 
 		if shouldContinue {
 			continue
 		}
-		return
+		return nil
 	}
-	err = errors.New("unknown_issue",
+	return errors.New("unknown_issue",
 		fmt.Sprintf("latest response code: %d", resp.StatusCode))
 }
 
@@ -158,10 +161,10 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 	var deleteMutex sync.Mutex
 	removedNum := 0
 	req.wg = &sync.WaitGroup{}
-	req.wg.Add(num)
 
 	var pos uint64
 	for i := req.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		req.wg.Add(1)
 		pos = uint64(i.TrailingZeros())
 		go func(blobberIdx uint64) {
 			defer req.wg.Done()
@@ -186,15 +189,38 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 	req.wg.Wait()
 
 	req.consensus.consensus = removedNum
-	numDeletes := req.deleteMask.CountOnes()
 
-	req.wg.Add(numDeletes)
+	var errCount int32
+	wgErrors := make(chan error)
+	wgDone := make(chan bool)
 
 	for i := req.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		req.wg.Add(1)
 		pos = uint64(i.TrailingZeros())
-		go req.deleteBlobberFile(req.blobbers[pos], int(pos))
+		go func(blobberIdx uint64) {
+			defer req.wg.Done()
+			err = req.deleteBlobberFile(req.blobbers[blobberIdx], int(blobberIdx))
+			if err != nil {
+				logger.Logger.Error("error during deleteBlobberFile", err)
+				errC := atomic.AddInt32(&errCount, 1)
+				if errC > int32(req.consensus.fullconsensus-req.consensus.consensusThresh) {
+					wgErrors <- err
+				}
+			}
+		}(pos)
 	}
-	req.wg.Wait()
+
+	go func() {
+		req.wg.Wait()
+		close(wgDone)
+	}()
+
+	select {
+	case <-wgDone:
+		break
+	case err := <-wgErrors:
+		return thrown.New("delete_failed", fmt.Sprintf("Delete failed. %s", err.Error()))
+	}
 
 	if !req.consensus.isConsensusOk() {
 		return errors.New("consensus_not_met",
@@ -213,9 +239,26 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 	if err != nil {
 		return fmt.Errorf("Delete failed: %s", err.Error())
 	}
+	//Check if the allocation is to be repaired or rolled back
+	status, err := req.allocationObj.CheckAllocStatus()
+	if err != nil {
+		logger.Logger.Error("Error checking allocation status: ", err)
+		return fmt.Errorf("Delete failed: %s", err.Error())
+	}
+
+	if status == Repair {
+		logger.Logger.Info("Repairing allocation")
+		//TODO: Need status callback to call repair allocation
+		// err = req.allocationObj.RepairAlloc()
+		// if err != nil {
+		// 	return err
+		// }
+	}
+
 	defer writeMarkerMutex.Unlock(req.ctx, req.deleteMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	req.consensus.consensus = removedNum
+	req.timestamp = int64(common.Now())
 	wg := &sync.WaitGroup{}
 	activeBlobbers := req.deleteMask.CountOnes()
 	wg.Add(activeBlobbers)
@@ -234,8 +277,9 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 			blobber:      req.blobbers[pos],
 			connectionID: req.connectionID,
 			wg:           wg,
+			timestamp:    req.timestamp,
 		}
-		commitReq.change = newChange
+		commitReq.changes = append(commitReq.changes, newChange)
 		commitReqs[c] = commitReq
 		go AddCommitRequest(commitReq)
 		c++
@@ -261,4 +305,123 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 				req.consensus.consensusThresh, req.consensus.getConsensus()))
 	}
 	return nil
+}
+
+type DeleteOperation struct {
+	remotefilepath string
+	ctx            context.Context
+	ctxCncl        context.CancelFunc
+	deleteMask     zboxutil.Uint128
+	maskMu         *sync.Mutex
+	consensus      Consensus
+}
+
+func (dop *DeleteOperation) Process(allocObj *Allocation, connectionID string) ([]fileref.RefEntity, zboxutil.Uint128, error) {
+	l.Logger.Info("Started Delete Process with Connection Id", connectionID)
+	deleteReq := &DeleteRequest{
+		allocationObj:  allocObj,
+		allocationID:   allocObj.ID,
+		allocationTx:   allocObj.Tx,
+		connectionID:   connectionID,
+		blobbers:       allocObj.Blobbers,
+		remotefilepath: dop.remotefilepath,
+		ctx:            dop.ctx,
+		ctxCncl:        dop.ctxCncl,
+		deleteMask:     dop.deleteMask,
+		maskMu:         dop.maskMu,
+		wg:             &sync.WaitGroup{},
+	}
+	deleteReq.consensus.fullconsensus = dop.consensus.fullconsensus
+	deleteReq.consensus.consensusThresh = dop.consensus.consensusThresh
+
+	numList := len(deleteReq.blobbers)
+	objectTreeRefs := make([]fileref.RefEntity, numList)
+	blobberErrors := make([]error, numList)
+
+	var pos uint64
+
+	for i := deleteReq.deleteMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
+		pos = uint64(i.TrailingZeros())
+		deleteReq.wg.Add(1)
+		go func(blobberIdx int) {
+			defer deleteReq.wg.Done()
+			refEntity, err := deleteReq.getObjectTreeFromBlobber(pos)
+			if errors.Is(err, constants.ErrNotFound) {
+				deleteReq.consensus.Done()
+				return
+			} else if err != nil {
+				blobberErrors[blobberIdx] = err
+				l.Logger.Error(err.Error())
+				return
+			}
+			err = deleteReq.deleteBlobberFile(deleteReq.blobbers[blobberIdx], blobberIdx)
+			if err != nil {
+				blobberErrors[blobberIdx] = err
+			}
+			objectTreeRefs[blobberIdx] = refEntity
+		}(int(pos))
+	}
+	deleteReq.wg.Wait()
+
+	if !deleteReq.consensus.isConsensusOk() {
+		err := zboxutil.MajorError(blobberErrors)
+		if err != nil {
+			return nil, deleteReq.deleteMask, thrown.New("delete_failed", fmt.Sprintf("Delete failed. %s", err.Error()))
+		}
+
+		return nil, deleteReq.deleteMask, thrown.New("consensus_not_met",
+			fmt.Sprintf("Delete failed. Required consensus %d, got %d",
+				deleteReq.consensus.consensusThresh, deleteReq.consensus.consensus))
+	}
+	l.Logger.Info("Delete Processs Ended ")
+	return objectTreeRefs, deleteReq.deleteMask, nil
+}
+
+func (do *DeleteOperation) buildChange(refs []fileref.RefEntity, uid uuid.UUID) []allocationchange.AllocationChange {
+
+	changes := make([]allocationchange.AllocationChange, len(refs))
+	for idx, ref := range refs {
+		newChange := &allocationchange.DeleteFileChange{}
+		newChange.ObjectTree = ref
+		newChange.NumBlocks = ref.GetNumBlocks()
+		newChange.Operation = constants.FileOperationDelete
+		newChange.Size = ref.GetSize()
+		changes[idx] = newChange
+	}
+	return changes
+}
+
+func (dop *DeleteOperation) Verify(a *Allocation) error {
+
+	if !a.CanDelete() {
+		return constants.ErrFileOptionNotPermitted
+	}
+
+	if dop.remotefilepath == "" {
+		return errors.New("invalid_path", "Invalid path for the list")
+	}
+	isabs := zboxutil.IsRemoteAbs(dop.remotefilepath)
+	if !isabs {
+		return errors.New("invalid_path", "Path should be valid and absolute")
+	}
+	return nil
+}
+
+func (dop *DeleteOperation) Completed(allocObj *Allocation) {
+
+}
+
+func (dop *DeleteOperation) Error(allocObj *Allocation, consensus int, err error) {
+
+}
+
+func NewDeleteOperation(remotePath string, deleteMask zboxutil.Uint128, maskMu *sync.Mutex, consensusTh int, fullConsensus int, ctx context.Context) *DeleteOperation {
+	dop := &DeleteOperation{}
+	dop.remotefilepath = zboxutil.RemoteClean(remotePath)
+	dop.deleteMask = deleteMask
+	dop.maskMu = maskMu
+	dop.consensus.consensusThresh = consensusTh
+	dop.consensus.fullconsensus = fullConsensus
+	dop.ctx, dop.ctxCncl = context.WithCancel(ctx)
+	return dop
 }

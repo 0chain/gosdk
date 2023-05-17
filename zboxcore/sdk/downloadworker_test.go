@@ -51,7 +51,7 @@ func TestDecodeEC(t *testing.T) {
 				req := DownloadRequest{}
 				req.datashards = 4
 				req.parityshards = 2
-				req.effectiveChunkSize = 64 * 1024
+				req.effectiveBlockSize = 64 * 1024
 
 				err := req.initEC()
 				require.NoError(t, err)
@@ -79,7 +79,7 @@ func TestDecodeEC(t *testing.T) {
 				req := DownloadRequest{}
 				req.datashards = 4
 				req.parityshards = 2
-				req.effectiveChunkSize = 64 * 1024
+				req.effectiveBlockSize = 64 * 1024
 
 				err := req.initEC()
 				require.NoError(t, err)
@@ -107,7 +107,7 @@ func TestDecodeEC(t *testing.T) {
 				req := DownloadRequest{}
 				req.datashards = 4
 				req.parityshards = 2
-				req.effectiveChunkSize = 64 * 1024
+				req.effectiveBlockSize = 64 * 1024
 
 				err := req.initEC()
 				require.NoError(t, err)
@@ -242,7 +242,7 @@ func TestFillShards(t *testing.T) {
 
 func getDummyData(size int) ([]byte, error) {
 	b := make([]byte, size)
-	_, err := rand.Read(b)
+	_, err := rand.Read(b) //nolint
 	if err != nil {
 		return nil, err
 	}

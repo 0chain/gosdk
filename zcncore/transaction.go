@@ -287,7 +287,7 @@ func (t *Transaction) Send(toClientID string, val uint64, desc string) error {
 	t.txn.Value = val
 	t.txn.TransactionData = string(txnData)
 	if t.txn.TransactionFee == 0 {
-		fee, err := transaction.EstimateFee(t.txn,_config.chain.Miners, 0.2)
+		fee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
 		if err != nil {
 			return err
 		}
@@ -313,7 +313,7 @@ func (t *Transaction) SendWithSignatureHash(toClientID string, val uint64, desc 
 	t.txn.Signature = sig
 	t.txn.CreationDate = CreationDate
 	if t.txn.TransactionFee == 0 {
-		fee, err := transaction.EstimateFee(t.txn,_config.chain.Miners, 0.2)
+		fee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
 		if err != nil {
 			return err
 		}
@@ -774,7 +774,18 @@ func (t *Transaction) RegisterMultiSig(walletstr string, mswallet string) error 
 		}
 		t.txn.TransactionNonce = nonce
 
-		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
+		if t.txn.TransactionFee == 0 {
+			fee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
+			if err != nil {
+				return
+			}
+			t.txn.TransactionFee = fee
+		}
+
+		err = t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
+		if err != nil {
+			return
+		}
 		t.submitTxn()
 	}()
 	return nil
@@ -826,7 +837,19 @@ func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error 
 			transaction.Cache.Set(t.txn.ClientID, nonce)
 		}
 		t.txn.TransactionNonce = nonce
-		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
+
+		if t.txn.TransactionFee == 0 {
+			fee, err := transaction.EstimateFee(t.txn, _config.chain.Miners, 0.2)
+			if err != nil {
+				return
+			}
+			t.txn.TransactionFee = fee
+		}
+
+		err = t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
+		if err != nil {
+			return
+		}
 		t.submitTxn()
 	}()
 	return nil
@@ -1301,7 +1324,8 @@ func (nc *NonceCache) GetNextNonce(clientId string) int64 {
 			return 0
 		}
 
-		timeout, _ := context.WithTimeout(context.Background(), time.Second)
+		timeout, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
 		select {
 		case n := <-back.nonceCh:
 			if back.err != nil {
