@@ -76,6 +76,18 @@ func commitWrite(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
+func mockRespone(w http.ResponseWriter, req *http.Request, statusCode int, respBody []byte) {
+	w.Header().Set("Content-Type", "application/json")
+	if respBody != nil {
+		_, err := w.Write(respBody)
+		if err != nil {
+			statusCode = http.StatusInternalServerError
+		}
+	}
+
+	w.WriteHeader(statusCode)
+}
+
 func rollback(w http.ResponseWriter, req *http.Request) {
 	mockRespone(w, req, http.StatusOK, nil)
 }

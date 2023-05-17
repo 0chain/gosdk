@@ -222,9 +222,12 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 	}
 	wg.Wait()
 	close(markerChan)
-
-	if errCnt > 0 {
+	onlyRepair := false
+	if errCnt > int32(a.ParityShards-1) {
 		return Commit, common.NewError("check_alloc_status_failed", markerError.Error())
+	}
+	if errCnt > 0 {
+		onlyRepair = true
 	}
 
 	versionMap := make(map[int64][]*RollbackBlobber)
@@ -261,16 +264,16 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		return Commit, nil
 	}
 
-	req := a.DataShards
+	req := a.DataShards + 1
 
 	if len(versionMap[prevVersion]) > req || len(versionMap[latestVersion]) > req {
 		return Repair, nil
 	}
 
-	errCnt = 0
 	// rollback to previous version
 	l.Logger.Info("Rolling back to previous version")
 	fullConsensus := len(versionMap[latestVersion]) - (req - len(versionMap[prevVersion]))
+	errCnt = 0
 
 	for _, rb := range versionMap[latestVersion] {
 
@@ -292,7 +295,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		return Broken, common.NewError("rollback_failed", "Rollback failed")
 	}
 
-	if errCnt > 0 {
+	if errCnt > 0 || onlyRepair {
 		return Repair, nil
 	}
 
