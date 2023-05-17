@@ -423,11 +423,13 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 	startBlock, endBlock, numBlocks := req.startBlock, req.endBlock, req.numBlocks
 	// remainingSize should be calculated based on startBlock number
 	// otherwise end data will have null bytes.
-	var remainingSize int64
+	remainingSize := size - startBlock*int64(req.effectiveBlockSize)
+
+	var wantSize int64
 	if endBlock*int64(req.effectiveBlockSize) < size {
-		remainingSize = endBlock*int64(req.effectiveBlockSize) - startBlock*int64(req.effectiveBlockSize)
+		wantSize = endBlock*int64(req.effectiveBlockSize) - startBlock*int64(req.effectiveBlockSize)
 	} else {
-		remainingSize = size - startBlock*int64(req.effectiveBlockSize)
+		wantSize = remainingSize
 	}
 
 	if remainingSize <= 0 {
@@ -438,7 +440,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		return
 	}
 
-	blocksPerShard := (remainingSize + int64(req.effectiveBlockSize) - 1) / int64(req.effectiveBlockSize)
+	blocksPerShard := (wantSize + int64(req.effectiveBlockSize) - 1) / int64(req.effectiveBlockSize)
 	req.blocksPerShard = blocksPerShard
 
 	if req.statusCallback != nil {
