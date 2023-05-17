@@ -112,7 +112,10 @@ func (fmt *FixedMerkleTree) writeToLeaves(b []byte) error {
 			j = len(b)
 		}
 
-		fmt.Leaves[leafInd].Write(b[i:j])
+		_, err := fmt.Leaves[leafInd].Write(b[i:j])
+		if err != nil {
+			return err
+		}
 		leafInd++
 	}
 

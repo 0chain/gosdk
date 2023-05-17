@@ -457,7 +457,7 @@ func (ta *TransactionWithAuth) ZCNSCUpdateGlobalConfig(ip *InputMap) (err error)
 }
 
 func (ta *TransactionWithAuth) GetVerifyConfirmationStatus() ConfirmationStatus {
-	return ta.GetVerifyConfirmationStatus()
+	return ta.GetVerifyConfirmationStatus() //nolint
 }
 
 func (ta *TransactionWithAuth) MinerSCMinerSettings(info *MinerSCMinerInfo) (

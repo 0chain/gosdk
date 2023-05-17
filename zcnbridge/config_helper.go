@@ -10,16 +10,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-func initChainConfig(sdkConfig *BridgeSDKConfig) *viper.Viper {
-	cfg := readConfig(sdkConfig, func() string {
-		return *sdkConfig.ConfigChainFile
-	})
-
-	log.Logger.Info(fmt.Sprintf("Chain config has been initialized from %s", cfg.ConfigFileUsed()))
-
-	return cfg
-}
-
 func initBridgeConfig(sdkConfig *BridgeSDKConfig) *viper.Viper {
 	cfg := readConfig(sdkConfig, func() string {
 		return *sdkConfig.ConfigBridgeFile

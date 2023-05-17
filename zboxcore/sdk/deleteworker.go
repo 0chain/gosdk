@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/0chain/gosdk/constants"
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -37,6 +38,7 @@ type DeleteRequest struct {
 	maskMu         *sync.Mutex
 	connectionID   string
 	consensus      Consensus
+	timestamp      int64
 }
 
 func (req *DeleteRequest) deleteBlobberFile(
@@ -237,9 +239,26 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 	if err != nil {
 		return fmt.Errorf("Delete failed: %s", err.Error())
 	}
+	//Check if the allocation is to be repaired or rolled back
+	status, err := req.allocationObj.CheckAllocStatus()
+	if err != nil {
+		logger.Logger.Error("Error checking allocation status: ", err)
+		return fmt.Errorf("Delete failed: %s", err.Error())
+	}
+
+	if status == Repair {
+		logger.Logger.Info("Repairing allocation")
+		//TODO: Need status callback to call repair allocation
+		// err = req.allocationObj.RepairAlloc()
+		// if err != nil {
+		// 	return err
+		// }
+	}
+
 	defer writeMarkerMutex.Unlock(req.ctx, req.deleteMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	req.consensus.consensus = removedNum
+	req.timestamp = int64(common.Now())
 	wg := &sync.WaitGroup{}
 	activeBlobbers := req.deleteMask.CountOnes()
 	wg.Add(activeBlobbers)
@@ -258,6 +277,7 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 			blobber:      req.blobbers[pos],
 			connectionID: req.connectionID,
 			wg:           wg,
+			timestamp:    req.timestamp,
 		}
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReqs[c] = commitReq
@@ -291,7 +311,6 @@ type DeleteOperation struct {
 	remotefilepath string
 	ctx            context.Context
 	ctxCncl        context.CancelFunc
-	wg             *sync.WaitGroup
 	deleteMask     zboxutil.Uint128
 	maskMu         *sync.Mutex
 	consensus      Consensus

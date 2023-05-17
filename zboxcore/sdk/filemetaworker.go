@@ -41,7 +41,11 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 	if len(req.remotefilepath) > 0 {
 		req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 	}
-	formWriter.WriteField("path_hash", req.remotefilepathhash)
+	err = formWriter.WriteField("path_hash", req.remotefilepathhash)
+	if err != nil {
+		l.Logger.Error("File meta info request error: ", err.Error())
+		return
+	}
 
 	if req.authToken != nil {
 		authTokenBytes, err := json.Marshal(req.authToken)
@@ -49,7 +53,11 @@ func (req *ListRequest) getFileMetaInfoFromBlobber(blobber *blockchain.StorageNo
 			l.Logger.Error(blobber.Baseurl, " creating auth token bytes", err)
 			return
 		}
-		formWriter.WriteField("auth_token", string(authTokenBytes))
+		err = formWriter.WriteField("auth_token", string(authTokenBytes))
+		if err != nil {
+			l.Logger.Error(blobber.Baseurl, "error writing field", err)
+			return
+		}
 	}
 
 	formWriter.Close()
