@@ -399,7 +399,7 @@ func (a *Allocation) GetMinWriteRead() (string, error) {
 	minMaxCost.minR = minR
 	minMaxCost.minW = minW
 
-	retBytes, err := json.Marshal(minMaxCost)
+	retBytes, err := json.Marshal(minMaxCost) //nolint
 	if err != nil {
 		return "", fmt.Errorf("failed to convert JSON. %v", err)
 	}

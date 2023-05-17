@@ -250,6 +250,9 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 					rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
 				}
 			} else {
+				if req.chunkSize == 0 {
+					req.chunkSize = CHUNK_SIZE
+				}
 				rspData.BlockChunks = req.splitData(dR.Data, req.chunkSize)
 			}
 

@@ -76,7 +76,7 @@ func (app *Znft) createSignedTransactionFromKeyStore(ctx context.Context) (*bind
 	return opts, nil
 }
 
-func (app *Znft) createSignedTransactionFromKeyStoreWithGasPrice(ctx context.Context, gasLimitUnits uint64) (*bind.TransactOpts, error) {
+func (app *Znft) createSignedTransactionFromKeyStoreWithGasPrice(ctx context.Context, gasLimitUnits uint64) (*bind.TransactOpts, error) { //nolint
 	client, err := CreateEthClient(app.cfg.EthereumNodeURL)
 	if err != nil {
 		err := errors.Wrap(err, "failed to create ethereum client")
