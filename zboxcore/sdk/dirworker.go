@@ -99,6 +99,8 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 		logger.Logger.Error("Error checking allocation status: ", err)
 		return fmt.Errorf("directory creation failed: %s", err.Error())
 	}
+	defer writeMarkerMU.Unlock(req.ctx, req.dirMask,
+		a.Blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	if status == Repair {
 		logger.Logger.Info("Repairing allocation")
@@ -108,8 +110,9 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 		// 	return err
 		// }
 	}
-	defer writeMarkerMU.Unlock(req.ctx, req.dirMask,
-		a.Blobbers, time.Minute, req.connectionID) //nolint: errcheck
+	if status != Commit {
+		return RetryOperation
+	}
 
 	return req.commitRequest(existingDirCount)
 }

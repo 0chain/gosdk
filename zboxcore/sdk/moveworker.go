@@ -219,6 +219,7 @@ func (req *MoveRequest) ProcessMove() error {
 		logger.Logger.Error("Error checking allocation status: ", err)
 		return fmt.Errorf("Move failed: %s", err.Error())
 	}
+	defer writeMarkerMutex.Unlock(req.ctx, req.moveMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	if status == Repair {
 		logger.Logger.Info("Repairing allocation")
@@ -228,8 +229,9 @@ func (req *MoveRequest) ProcessMove() error {
 		// 	return err
 		// }
 	}
-
-	defer writeMarkerMutex.Unlock(req.ctx, req.moveMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
+	if status != Commit {
+		return RetryOperation
+	}
 
 	req.Consensus.Reset()
 	req.timestamp = int64(common.Now())

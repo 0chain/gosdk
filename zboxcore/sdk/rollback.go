@@ -20,6 +20,7 @@ import (
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
+	"github.com/0chain/gosdk/zcnbridge/errors"
 	"go.uber.org/zap"
 )
 
@@ -34,7 +35,10 @@ const (
 	Commit AllocStatus = iota
 	Repair
 	Broken
+	Rollback
 )
+
+var RetryOperation = errors.New("alloc_status", "retry_operation")
 
 type RollbackBlobber struct {
 	blobber      *blockchain.StorageNode
@@ -291,6 +295,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		}(rb)
 	}
 
+	wg.Wait()
 	if errCnt > int32(fullConsensus) {
 		return Broken, common.NewError("rollback_failed", "Rollback failed")
 	}
@@ -299,5 +304,5 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		return Repair, nil
 	}
 
-	return Commit, nil
+	return Rollback, nil
 }

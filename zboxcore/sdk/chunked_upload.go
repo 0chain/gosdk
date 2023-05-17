@@ -536,6 +536,9 @@ func (su *ChunkedUpload) Start() error {
 		return err
 	}
 
+	defer su.writeMarkerMutex.Unlock(
+		su.ctx, su.uploadMask, blobbers, su.uploadTimeOut, su.progress.ConnectionID) //nolint: errcheck
+
 	//Check if the allocation is to be repaired or rolled back
 	status, err := su.allocationObj.CheckAllocStatus()
 	if err != nil {
@@ -553,9 +556,9 @@ func (su *ChunkedUpload) Start() error {
 			return err
 		}
 	}
-
-	defer su.writeMarkerMutex.Unlock(
-		su.ctx, su.uploadMask, blobbers, su.uploadTimeOut, su.progress.ConnectionID) //nolint: errcheck
+	if status != Commit {
+		return RetryOperation
+	}
 
 	return su.processCommit()
 }
