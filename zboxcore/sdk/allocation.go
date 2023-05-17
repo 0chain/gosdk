@@ -444,6 +444,64 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	)
 }
 
+func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, remotePath string) error {
+	totalOperations := len(localPaths)
+	if totalOperations == 0 {
+		return nil
+	}
+	operationRequests := make([]OperationRequest, totalOperations)
+	for idx, localPath := range localPaths {
+		fileReader, err := os.Open(localPath)
+		if err != nil {
+			return err
+		}
+		defer fileReader.Close()
+
+		fileInfo, err := fileReader.Stat()
+		if err != nil {
+			return err
+		}
+
+		mimeType, err := zboxutil.GetFileContentType(fileReader)
+		if err != nil {
+			return err
+		}
+
+		remotePath = zboxutil.RemoteClean(remotePath)
+		isabs := zboxutil.IsRemoteAbs(remotePath)
+		if !isabs {
+			err = thrown.New("invalid_path", "Path should be valid and absolute")
+			return err
+		}
+		remotePath = zboxutil.GetFullRemotePath(localPath, remotePath)
+
+		_, fileName := pathutil.Split(remotePath)
+		if err != nil {
+			return err
+		}
+
+		fileMeta := FileMeta{
+			Path:       localPath,
+			ActualSize: fileInfo.Size(),
+			MimeType:   mimeType,
+			RemoteName: fileName,
+			RemotePath: remotePath,
+		}
+		operationRequests[idx] = OperationRequest{
+			FileMeta:      fileMeta,
+			FileReader:    fileReader,
+			OperationType: constants.FileOperationInsert,
+		}
+
+	}
+
+	err := a.DoMultiOperation(operationRequests)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (a *Allocation) StartChunkedUpload(workdir, localPath string,
 	remotePath string,
 	status StatusCallback,
@@ -807,7 +865,7 @@ func (a *Allocation) GetRefsWithAuthTicket(authToken, offsetPath, updatedDate, o
 	return a.getRefs("", authTicket.FilePathHash, string(at), offsetPath, updatedDate, offsetDate, fileType, refType, level, pageLimit)
 }
 
-//This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
+// This function will retrieve paginated objectTree and will handle concensus; Required tree should be made in application side.
 func (a *Allocation) GetRefs(path, offsetPath, updatedDate, offsetDate, fileType, refType string, level, pageLimit int) (*ObjectTreeResult, error) {
 	if len(path) == 0 || !zboxutil.IsRemoteAbs(path) {
 		return nil, errors.New("invalid_path", fmt.Sprintf("Absolute path required. Path provided: %v", path))

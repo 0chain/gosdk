@@ -2,6 +2,7 @@ package zbox
 
 import (
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/0chain/gosdk/zboxcore/sdk"
@@ -186,12 +187,23 @@ func RepairFile(allocationID, workdir, localPath, remotePath, thumbnailPath stri
 	return a.StartChunkedUpload(workdir, localPath, remotePath, &StatusCallbackWrapped{Callback: statusCb}, true, true, thumbnailPath, encrypt, webStreaming)
 }
 
-func MultiOperation(allocationID string, operations []sdk.OperationRequest) error {
+// MultiUploadFile - upload files from local path to remote path
+// ## Inputs
+//   - allocationID
+//   - workdir: set a workdir as ~/.zcn on mobile apps
+//   - filePathString: space seperated  local full path of files. eg "/usr/local/files/f1.txt /usr/local/files/f2.txt"
+//   - remotePath:
+//
+// ## Outputs
+//   - error
+func MultiUpload(allocationID string, workdir string, filePathString string, remotePath string) error {
+	filePaths := strings.Fields(filePathString)
 	a, err := getAllocation(allocationID)
 	if err != nil {
 		return err
 	}
-	return a.DoMultiOperation(operations)
+	return a.StartMultiUpload(workdir, filePaths, remotePath)
+
 }
 
 // UploadFile - upload file/thumbnail from local path to remote path
