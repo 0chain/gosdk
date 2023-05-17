@@ -551,7 +551,7 @@ func (req *DownloadRequest) submitReadMarker(blobber *blockchain.StorageNode, re
 	for retryCount > 0 {
 		if err = req.attemptSubmitReadMarker(blobber, readCount); err != nil {
 			logger.Logger.Error(fmt.Sprintf("Error while attempting to submit readmarker %v, retry: %d", err, retryCount))
-			if errors.Is(err, fmt.Errorf(NotEnoughTokens)) || errors.Is(err, fmt.Errorf(InvalidAuthTicket)) || errors.Is(err, fmt.Errorf(InvalidShare)) {
+			if IsErrCode(err, NotEnoughTokens) || IsErrCode(err, InvalidAuthTicket) || IsErrCode(err, InvalidShare) {
 				return err
 			}
 			retryCount--
@@ -891,4 +891,11 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 	}
 	req.downloadMask = foundMask
 	return selected.fileref, nil
+}
+
+func IsErrCode(err error, code string) bool {
+	if e, ok := err.(*errors.Error); ok && e.Code == code {
+		return true
+	}
+	return false
 }
