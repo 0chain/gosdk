@@ -251,7 +251,7 @@ func (mo *MultiOperation) Process() error {
 		// }
 	}
 	if status != Commit {
-		return RetryOperation
+		return ErrRetryOperation
 	}
 
 	mo.Consensus.Reset()

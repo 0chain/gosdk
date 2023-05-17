@@ -256,7 +256,7 @@ func (req *DeleteRequest) ProcessDelete() (err error) {
 		// }
 	}
 	if status != Commit {
-		return RetryOperation
+		return ErrRetryOperation
 	}
 
 	req.consensus.consensus = removedNum

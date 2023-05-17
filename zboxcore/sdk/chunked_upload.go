@@ -557,7 +557,7 @@ func (su *ChunkedUpload) Start() error {
 		}
 	}
 	if status != Commit {
-		return RetryOperation
+		return ErrRetryOperation
 	}
 
 	return su.processCommit()

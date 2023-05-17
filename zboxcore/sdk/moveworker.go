@@ -230,7 +230,7 @@ func (req *MoveRequest) ProcessMove() error {
 		// }
 	}
 	if status != Commit {
-		return RetryOperation
+		return ErrRetryOperation
 	}
 
 	req.Consensus.Reset()

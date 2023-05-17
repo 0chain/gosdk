@@ -227,7 +227,7 @@ func (req *RenameRequest) ProcessRename() error {
 		// }
 	}
 	if status != Commit {
-		return RetryOperation
+		return ErrRetryOperation
 	}
 
 	req.consensus.Reset()

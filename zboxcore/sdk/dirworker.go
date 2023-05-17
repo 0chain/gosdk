@@ -111,7 +111,7 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 		// }
 	}
 	if status != Commit {
-		return RetryOperation
+		return ErrRetryOperation
 	}
 
 	return req.commitRequest(existingDirCount)

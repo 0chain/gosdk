@@ -13,6 +13,8 @@ import (
 
 	"net/http"
 
+	"errors"
+
 	"github.com/0chain/common/core/common"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -20,7 +22,6 @@ import (
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zboxcore/marker"
 	"github.com/0chain/gosdk/zboxcore/zboxutil"
-	"github.com/0chain/gosdk/zcnbridge/errors"
 	"go.uber.org/zap"
 )
 
@@ -38,7 +39,7 @@ const (
 	Rollback
 )
 
-var RetryOperation = errors.New("alloc_status", "retry_operation")
+var ErrRetryOperation = errors.New("retry_operation")
 
 type RollbackBlobber struct {
 	blobber      *blockchain.StorageNode
