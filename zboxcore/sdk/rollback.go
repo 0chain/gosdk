@@ -238,8 +238,6 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 	wg.Wait()
 	close(markerChan)
 	onlyRepair := false
-	fmt.Println("errCnt", errCnt, "a.ParityShards")
-
 	if a.ParityShards > 0 && errCnt > int32(a.ParityShards-1) {
 		return Broken, common.NewError("check_alloc_status_failed", markerError.Error())
 	}
