@@ -631,7 +631,6 @@ func (req *DownloadRequest) handleReadMarkerError(resp *http.Response, blobber *
 	logger.Logger.Error(string(respBody))
 
 	var rspData downloadBlock
-	var rspError errors.Error
 	if err = json.Unmarshal(respBody, &rspData); err == nil && rspData.LatestRM != nil {
 		if err := rm.ValidateWithOtherRM(rspData.LatestRM); err != nil {
 			return err
@@ -644,33 +643,39 @@ func (req *DownloadRequest) handleReadMarkerError(resp *http.Response, blobber *
 		}
 		return fmt.Errorf("download_error: response status: %d, error: %v", resp.StatusCode, rspData.err)
 	}
-
-	if err = json.Unmarshal(respBody, &rspError); err == nil {
-		if rspError.Code == NotEnoughTokens {
-			logger.Logger.Debug(fmt.Sprintf("NotEnoughTokens - blobberID: %v", blobber.ID))
-			blobber.SetSkip(true)
-			return errors.New(NotEnoughTokens, rspError.Msg)
-		}
-		if rspError.Code == InvalidAuthTicket {
-			logger.Logger.Debug(fmt.Sprintf("InvalidAuthTicket - blobberID: %v", blobber.ID))
-			blobber.SetSkip(true)
-			return errors.New(InvalidAuthTicket, rspError.Msg)
-		}
-		if rspError.Code == InvalidShare {
-			logger.Logger.Debug(fmt.Sprintf("InvalidShare - blobberID: %v", blobber.ID))
-			blobber.SetSkip(true)
-			return errors.New(InvalidShare, rspError.Msg)
-		}
-		if rspError.Code == LockExists {
-			logger.Logger.Debug(fmt.Sprintf("LockExists - blobberID: %v", blobber.ID))
-			blobber.SetSkip(true)
-			time.Sleep(time.Second * 1)
-			return errors.New(LockExists, rspError.Msg)
-		}
-
+	if bytes.Contains(respBody, []byte(NotEnoughTokens)) {
+		logger.Logger.Debug(fmt.Sprintf("NotEnoughTokens - blobberID: %v", blobber.ID))
+		blobber.SetSkip(true)
+		return errors.New(NotEnoughTokens, string(respBody))
+	}
+	if bytes.Contains(respBody, []byte(InvalidAuthTicket)) {
+		logger.Logger.Debug(fmt.Sprintf("InvalidAuthTicket - blobberID: %v", blobber.ID))
+		blobber.SetSkip(true)
+		return errors.New(InvalidAuthTicket, string(respBody))
+	}
+	if bytes.Contains(respBody, []byte(InvalidShare)) {
+		logger.Logger.Debug(fmt.Sprintf("InvalidShare - blobberID: %v", blobber.ID))
+		blobber.SetSkip(true)
+		return errors.New(InvalidShare, string(respBody))
+	}
+	if bytes.Contains(respBody, []byte(LockExists)) {
+		logger.Logger.Debug(fmt.Sprintf("LockExists - blobberID: %v", blobber.ID))
+		blobber.SetSkip(true)
+		time.Sleep(time.Second * 1)
+		return errors.New(LockExists, string(respBody))
 	}
 
 	return fmt.Errorf("response_error: %s", string(respBody))
+}
+
+func IsErrCode(err error, code string) bool {
+	if err == nil {
+		return false
+	}
+	if e, ok := err.(*errors.Error); ok && e.Code == code {
+		return true
+	}
+	return strings.Contains(err.Error(), code)
 }
 
 // initEC will initialize erasure encoder/decoder
@@ -891,11 +896,4 @@ func (req *DownloadRequest) getFileMetaConsensus(fMetaResp []*fileMetaResponse) 
 	}
 	req.downloadMask = foundMask
 	return selected.fileref, nil
-}
-
-func IsErrCode(err error, code string) bool {
-	if e, ok := err.(*errors.Error); ok && e.Code == code {
-		return true
-	}
-	return false
 }
