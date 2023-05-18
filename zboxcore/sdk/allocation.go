@@ -1935,7 +1935,7 @@ func (a *Allocation) UpdateWithRepair(
 ) (string, error) {
 
 	l.Logger.Info("Uploadating allocation")
-	hash, _, err := UpdateAllocation(size, expiry, a.ID, lock, updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
+	hash, _, err := UpdateAllocation(size, a.ID, lock, updateTerms, addBlobberId, removeBlobberId, setThirdPartyExtendable, fileOptionsParams)
 	if err != nil {
 		return "", err
 	}

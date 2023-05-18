@@ -106,7 +106,6 @@ func freezeAllocation(allocationID string) (string, error) {
 
 	hash, _, err := sdk.UpdateAllocation(
 		0,            //size,
-		0,            //int64(expiry/time.Second),
 		allocationID, // allocID,
 		0,            //lock,
 		false,        //updateTerms,
@@ -146,7 +145,7 @@ func updateAllocation(allocationID string,
 	lock int64,
 	updateTerms bool,
 	addBlobberId, removeBlobberId string) (string, error) {
-	hash, _, err := sdk.UpdateAllocation(size, expiry, allocationID, uint64(lock), updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{})
+	hash, _, err := sdk.UpdateAllocation(size, allocationID, uint64(lock), updateTerms, addBlobberId, removeBlobberId, false, &sdk.FileOptionsParameters{})
 
 	if err == nil {
 		clearAllocation(allocationID)
