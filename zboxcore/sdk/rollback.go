@@ -93,7 +93,9 @@ func GetWritemarker(allocID, id, baseUrl string) (*LatestPrevWriteMarker, error)
 			}
 			if lpm.PrevWM != nil {
 				err = lpm.PrevWM.VerifySignature(client.GetClientPublicKey())
-				return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
+				if err != nil {
+					return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
+				}
 			}
 		}
 		return &lpm, nil
@@ -237,12 +239,8 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 	}
 	wg.Wait()
 	close(markerChan)
-	onlyRepair := false
-	if a.ParityShards > 0 && errCnt > int32(a.ParityShards-1) {
+	if a.ParityShards > 0 && errCnt > int32(a.ParityShards) {
 		return Broken, common.NewError("check_alloc_status_failed", markerError.Error())
-	}
-	if errCnt > 0 {
-		onlyRepair = true
 	}
 
 	versionMap := make(map[int64][]*RollbackBlobber)
@@ -291,7 +289,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 
 	// rollback to previous version
 	l.Logger.Info("Rolling back to previous version")
-	fullConsensus := len(versionMap[latestVersion]) - (req - len(versionMap[prevVersion]) + 1)
+	fullConsensus := len(versionMap[latestVersion]) - (req - len(versionMap[prevVersion]))
 	errCnt = 0
 
 	for _, rb := range versionMap[latestVersion] {
@@ -315,7 +313,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		return Broken, common.NewError("rollback_failed", "Rollback failed")
 	}
 
-	if errCnt > 0 || onlyRepair {
+	if errCnt == int32(fullConsensus) {
 		return Repair, nil
 	}
 
