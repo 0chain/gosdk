@@ -86,9 +86,19 @@ func GetWritemarker(allocID, id, baseUrl string) (*LatestPrevWriteMarker, error)
 		if err != nil {
 			return nil, err
 		}
-
+		if lpm.LatestWM != nil {
+			err = lpm.LatestWM.VerifySignature(client.GetClientPublicKey())
+			if err != nil {
+				return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
+			}
+			if lpm.PrevWM != nil {
+				err = lpm.PrevWM.VerifySignature(client.GetClientPublicKey())
+				return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
+			}
+		}
 		return &lpm, nil
 	}
+
 	return nil, fmt.Errorf("writemarker error response %d", http.StatusTooManyRequests)
 }
 
