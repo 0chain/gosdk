@@ -782,7 +782,10 @@ func (t *Transaction) RegisterMultiSig(walletstr string, mswallet string) error 
 			t.txn.TransactionFee = fee
 		}
 
-		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
+		err = t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
+		if err != nil {
+			return
+		}
 		t.submitTxn()
 	}()
 	return nil
@@ -843,7 +846,10 @@ func (t *Transaction) RegisterVote(signerwalletstr string, msvstr string) error 
 			t.txn.TransactionFee = fee
 		}
 
-		t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
+		err = t.txn.ComputeHashAndSignWithWallet(signWithWallet, w)
+		if err != nil {
+			return
+		}
 		t.submitTxn()
 	}()
 	return nil
@@ -1318,7 +1324,8 @@ func (nc *NonceCache) GetNextNonce(clientId string) int64 {
 			return 0
 		}
 
-		timeout, _ := context.WithTimeout(context.Background(), time.Second)
+		timeout, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
 		select {
 		case n := <-back.nonceCh:
 			if back.err != nil {

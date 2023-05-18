@@ -114,14 +114,20 @@ func (r *liveUploadReaderBase) Read(p []byte) (int, error) {
 }
 
 // Close implements io.Closer
-func (r *liveUploadReaderBase) Close() error {
+func (r *liveUploadReaderBase) Close() (err error) {
 	if r != nil {
 		if r.cmd != nil {
-			r.cmd.Process.Kill()
+			err = r.cmd.Process.Kill()
+			if err != nil {
+				return
+			}
 		}
 
 		if r.clipsReader != nil {
-			r.clipsReader.Close()
+			err = r.clipsReader.Close()
+			if err != nil {
+				return
+			}
 		}
 	}
 

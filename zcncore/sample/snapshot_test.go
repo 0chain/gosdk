@@ -42,20 +42,6 @@ const ChainConfig = `
 	 }
 `
 
-var w = `
-{
-	"client_id":"0bc96a0980170045863d826f9eb579d8144013210602e88426408e9f83c236f6",
-"client_key":"a4e58c66b072d27288b650db9a476fe66a1a4f69e0f8fb11499f9ec3a579e21e5dc0298b8c5ae5baa205730d06bc04b07a31943ab3bd620e8427c15d5c413b9e",
-"keys":[
-	{
-		"public_key":"a4e58c66b072d27288b650db9a476fe66a1a4f69e0f8fb11499f9ec3a579e21e5dc0298b8c5ae5baa205730d06bc04b07a31943ab3bd620e8427c15d5c413b9e",
-		"private_key":"c0f3a3100241888ea9c2cc5c7300e3e510a8e7190c2c20b03f80e3937a91530d"
-	}],
-"mnemonics":"snake mixed bird cream cotton trouble small fee finger catalog measure spoon private second canal pact unable close predict dream mask delay path inflict",
-"version":"1.0",
-"date_created":"2019-06-19 13:37:50.466889 -0700 PDT m=+0.023873276"
-}`
-
 func TestGetAggregates(t *testing.T) {
 	t.Skip("learning test")
 	err := zcncore.Init(ChainConfig)
@@ -63,6 +49,21 @@ func TestGetAggregates(t *testing.T) {
 		fmt.Println("Init failed")
 		return
 	}
+
+	var w = `
+	{
+		"client_id":"0bc96a0980170045863d826f9eb579d8144013210602e88426408e9f83c236f6",
+	"client_key":"a4e58c66b072d27288b650db9a476fe66a1a4f69e0f8fb11499f9ec3a579e21e5dc0298b8c5ae5baa205730d06bc04b07a31943ab3bd620e8427c15d5c413b9e",
+	"keys":[
+		{
+			"public_key":"a4e58c66b072d27288b650db9a476fe66a1a4f69e0f8fb11499f9ec3a579e21e5dc0298b8c5ae5baa205730d06bc04b07a31943ab3bd620e8427c15d5c413b9e",
+			"private_key":"c0f3a3100241888ea9c2cc5c7300e3e510a8e7190c2c20b03f80e3937a91530d"
+		}],
+	"mnemonics":"snake mixed bird cream cotton trouble small fee finger catalog measure spoon private second canal pact unable close predict dream mask delay path inflict",
+	"version":"1.0",
+	"date_created":"2019-06-19 13:37:50.466889 -0700 PDT m=+0.023873276"
+	}`
+
 	err = zcncore.SetWalletInfo(w, false)
 	if err != nil {
 		fmt.Println("set wallet info failed: ", err)
