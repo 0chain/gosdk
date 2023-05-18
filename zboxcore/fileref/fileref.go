@@ -129,7 +129,7 @@ func (r *Ref) GetHash() string {
 }
 
 func (r *Ref) GetHashData() string {
-	return fmt.Sprintf("%s:%s", r.AllocationID, r.Path)
+	return fmt.Sprintf("%s:%s:%s", r.AllocationID, r.Path, r.FileID)
 }
 
 func (r *Ref) GetType() string {

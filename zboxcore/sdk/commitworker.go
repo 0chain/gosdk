@@ -143,11 +143,6 @@ func (commitreq *CommitRequest) processCommit() {
 	}
 
 	if lR.LatestWM != nil {
-		if lR.LatestWM.ClientID != client.GetClientID() {
-			e := errors.New("invalid_client_id", fmt.Sprintf("client id mismatch. expected: %s got: %s", client.GetClientID(), lR.LatestWM.ClientID))
-			commitreq.result = ErrorCommitResult(e.Error())
-			return
-		}
 		err = lR.LatestWM.VerifySignature(client.GetClientPublicKey())
 		if err != nil {
 			e := errors.New("signature_verification_failed", err.Error())
