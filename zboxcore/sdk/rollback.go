@@ -281,13 +281,17 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 
 	req := a.DataShards
 
-	if len(versionMap[prevVersion]) >= req || len(versionMap[latestVersion]) >= req {
+	if len(versionMap[latestVersion]) > req {
+		return Commit, nil
+	}
+
+	if len(versionMap[latestVersion]) >= req || len(versionMap[prevVersion]) >= req {
 		return Repair, nil
 	}
 
 	// rollback to previous version
 	l.Logger.Info("Rolling back to previous version")
-	fullConsensus := len(versionMap[latestVersion]) - (req - len(versionMap[prevVersion]))
+	fullConsensus := len(versionMap[latestVersion]) - (req - len(versionMap[prevVersion]) + 1)
 	errCnt = 0
 
 	for _, rb := range versionMap[latestVersion] {
