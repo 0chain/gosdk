@@ -281,9 +281,9 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		return Commit, nil
 	}
 
-	req := a.DataShards + 1
+	req := a.DataShards
 
-	if len(versionMap[prevVersion]) > req || len(versionMap[latestVersion]) > req {
+	if len(versionMap[prevVersion]) >= req || len(versionMap[latestVersion]) >= req {
 		return Repair, nil
 	}
 
