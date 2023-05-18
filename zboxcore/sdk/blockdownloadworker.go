@@ -159,8 +159,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 			}
 
 			var rspData downloadBlock
-			var rspError errors.Error
-
 			respBody, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
 				return err
@@ -170,10 +168,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 				if err = json.Unmarshal(respBody, &rspData); err == nil {
 					return errors.New("download_error", fmt.Sprintf("Response status: %d, Error: %v,", resp.StatusCode, rspData.err))
 				}
-				if err = json.Unmarshal(respBody, &rspError); err == nil {
-					return errors.New(rspError.Code, rspError.Msg)
-				}
-
 				return errors.New("response_error", string(respBody))
 			}
 
