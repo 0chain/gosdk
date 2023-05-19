@@ -272,7 +272,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 	if prevVersion > latestVersion {
 		prevVersion, latestVersion = latestVersion, prevVersion
 	}
-
+	l.Logger.Info("versionMap", zap.Any("versionMap", versionMap))
 	if len(versionMap) < 2 {
 		return Commit, nil
 	}
