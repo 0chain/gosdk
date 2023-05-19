@@ -638,6 +638,32 @@ func (req *DownloadRequest) handleReadMarkerError(resp *http.Response, blobber *
 
 	logger.Logger.Error(string(respBody))
 
+	appErrorCode := resp.Header.Get("X-App-Error-Code")
+
+	if appErrorCode != "" {
+		if appErrorCode == NotEnoughTokens {
+			logger.Logger.Debug(fmt.Sprintf("NotEnoughTokens - blobberID: %v", blobber.ID))
+			blobber.SetSkip(true)
+			return errors.New(NotEnoughTokens, string(respBody))
+		}
+		if appErrorCode == InvalidAuthTicket {
+			logger.Logger.Debug(fmt.Sprintf("InvalidAuthTicket - blobberID: %v", blobber.ID))
+			blobber.SetSkip(true)
+			return errors.New(InvalidAuthTicket, string(respBody))
+		}
+		if appErrorCode == InvalidShare {
+			logger.Logger.Debug(fmt.Sprintf("InvalidShare - blobberID: %v", blobber.ID))
+			blobber.SetSkip(true)
+			return errors.New(InvalidShare, string(respBody))
+		}
+		if appErrorCode == LockExists {
+			logger.Logger.Debug(fmt.Sprintf("LockExists - blobberID: %v", blobber.ID))
+			blobber.SetSkip(true)
+			time.Sleep(time.Second * 1)
+			return errors.New(LockExists, string(respBody))
+		}
+	}
+
 	var rspData downloadBlock
 	if err = json.Unmarshal(respBody, &rspData); err == nil && rspData.LatestRM != nil {
 		if err := rm.ValidateWithOtherRM(rspData.LatestRM); err != nil {
@@ -650,27 +676,6 @@ func (req *DownloadRequest) handleReadMarkerError(resp *http.Response, blobber *
 			return fmt.Errorf("stale_read_marker: readmarker counter is not in sync with latest counter. Last blobber read counter: %d, but readmarker's counter was: %d", rspData.LatestRM.ReadCounter, lastBlobberReadCounter)
 		}
 		return fmt.Errorf("download_error: response status: %d, error: %v", resp.StatusCode, rspData.err)
-	}
-	if bytes.Contains(respBody, []byte(NotEnoughTokens)) {
-		logger.Logger.Debug(fmt.Sprintf("NotEnoughTokens - blobberID: %v", blobber.ID))
-		blobber.SetSkip(true)
-		return errors.New(NotEnoughTokens, string(respBody))
-	}
-	if bytes.Contains(respBody, []byte(InvalidAuthTicket)) {
-		logger.Logger.Debug(fmt.Sprintf("InvalidAuthTicket - blobberID: %v", blobber.ID))
-		blobber.SetSkip(true)
-		return errors.New(InvalidAuthTicket, string(respBody))
-	}
-	if bytes.Contains(respBody, []byte(InvalidShare)) {
-		logger.Logger.Debug(fmt.Sprintf("InvalidShare - blobberID: %v", blobber.ID))
-		blobber.SetSkip(true)
-		return errors.New(InvalidShare, string(respBody))
-	}
-	if bytes.Contains(respBody, []byte(LockExists)) {
-		logger.Logger.Debug(fmt.Sprintf("LockExists - blobberID: %v", blobber.ID))
-		blobber.SetSkip(true)
-		time.Sleep(time.Second * 1)
-		return errors.New(LockExists, string(respBody))
 	}
 
 	return fmt.Errorf("response_error: %s", string(respBody))
