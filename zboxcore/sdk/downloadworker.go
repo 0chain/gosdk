@@ -169,8 +169,11 @@ func (req *DownloadRequest) downloadBlock(
 	}
 	rspCh := make(chan *downloadBlock, requiredDownloads)
 
-	var pos uint64
-	var c int
+	var (
+		pos          uint64
+		c            int
+		skipDownload bool
+	)
 
 	for i := req.downloadMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
@@ -194,15 +197,12 @@ func (req *DownloadRequest) downloadBlock(
 			connectionID:       req.connectionID,
 		}
 
-		bf := req.validationRootMap[blockDownloadReq.blobber.ID]
-		blockDownloadReq.blobberFile = bf
-
 		if blockDownloadReq.blobber.IsSkip() {
 			rspCh <- &downloadBlock{
 				Success: false,
 				idx:     blockDownloadReq.blobberIdx,
 				err:     errors.New("", "skip blobber by previous errors")}
-			continue
+			skipDownload = true
 		}
 
 		if paid := req.prepaidBlobbers[blockDownloadReq.blobber.ID]; !paid {
@@ -214,11 +214,16 @@ func (req *DownloadRequest) downloadBlock(
 					idx:     blockDownloadReq.blobberIdx,
 					err:     wrappedErr,
 				}
-				continue
+				skipDownload = true
 			}
 		}
 
-		go AddBlockDownloadReq(blockDownloadReq)
+		if !skipDownload {
+			bf := req.validationRootMap[blockDownloadReq.blobber.ID]
+			blockDownloadReq.blobberFile = bf
+			go AddBlockDownloadReq(blockDownloadReq)
+		}
+
 		c++
 		if c == requiredDownloads {
 			remainingMask = i
