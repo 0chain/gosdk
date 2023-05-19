@@ -197,13 +197,21 @@ func (req *DownloadRequest) downloadBlock(
 		bf := req.validationRootMap[blockDownloadReq.blobber.ID]
 		blockDownloadReq.blobberFile = bf
 
+		if blockDownloadReq.blobber.IsSkip() {
+			rspCh <- &downloadBlock{
+				Success: false,
+				idx:     blockDownloadReq.blobberIdx,
+				err:     errors.New("", "skip blobber by previous errors")}
+			continue
+		}
+
 		if paid := req.prepaidBlobbers[blockDownloadReq.blobber.ID]; !paid {
 			err := req.submitReadMarker(blockDownloadReq.blobber, req.blocksPerShard)
 			if err != nil {
 				wrappedErr := errors.Wrap(err, "Submit readmarker failed")
-				blockDownloadReq.result <- &downloadBlock{
+				rspCh <- &downloadBlock{
 					Success: false,
-					idx:     int(pos),
+					idx:     blockDownloadReq.blobberIdx,
 					err:     wrappedErr,
 				}
 				continue

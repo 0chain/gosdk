@@ -111,12 +111,6 @@ func (req *BlockDownloadRequest) downloadBlobberBlock() {
 	retry := 0
 	var err error
 	for retry < 3 {
-		if req.blobber.IsSkip() {
-			req.result <- &downloadBlock{Success: false, idx: req.blobberIdx,
-				err: errors.New("", "skip blobber by previous errors")}
-			return
-		}
-
 		if len(req.remotefilepath) > 0 {
 			req.remotefilepathhash = fileref.GetReferenceLookup(req.allocationID, req.remotefilepath)
 		}
