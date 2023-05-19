@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/0chain/errors"
@@ -311,6 +312,10 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 		if err != nil {
 			logger.Logger.Error(err)
+			if strings.Contains(err.Error(), "pending_markers") {
+				time.Sleep(time.Second * 5)
+				shouldContinue = true
+			}
 			return
 		}
 		if shouldContinue {
