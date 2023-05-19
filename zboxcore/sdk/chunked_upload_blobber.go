@@ -314,9 +314,8 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 			logger.Logger.Error(err)
 			if strings.Contains(err.Error(), "pending_markers") {
 				time.Sleep(time.Second * 5)
-				shouldContinue = true
+				continue
 			}
-			return
 		}
 		if shouldContinue {
 			continue
