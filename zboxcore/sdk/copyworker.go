@@ -216,6 +216,7 @@ func (req *CopyRequest) ProcessCopy() error {
 	if err != nil {
 		return fmt.Errorf("Copy failed: %s", err.Error())
 	}
+	defer writeMarkerMutex.Unlock(req.ctx, req.copyMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
 
 	//Check if the allocation is to be repaired or rolled back
 	status, err := req.allocationObj.CheckAllocStatus()
@@ -232,8 +233,9 @@ func (req *CopyRequest) ProcessCopy() error {
 		// 	return err
 		// }
 	}
-
-	defer writeMarkerMutex.Unlock(req.ctx, req.copyMask, req.blobbers, time.Minute, req.connectionID) //nolint: errcheck
+	if status != Commit {
+		return ErrRetryOperation
+	}
 
 	req.Consensus.Reset()
 	activeBlobbers := req.copyMask.CountOnes()
