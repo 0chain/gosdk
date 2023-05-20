@@ -13,6 +13,8 @@ import (
 
 	"net/http"
 
+	"errors"
+
 	"github.com/0chain/common/core/common"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
@@ -34,7 +36,10 @@ const (
 	Commit AllocStatus = iota
 	Repair
 	Broken
+	Rollback
 )
+
+var ErrRetryOperation = errors.New("retry_operation")
 
 type RollbackBlobber struct {
 	blobber      *blockchain.StorageNode
@@ -81,9 +86,21 @@ func GetWritemarker(allocID, id, baseUrl string) (*LatestPrevWriteMarker, error)
 		if err != nil {
 			return nil, err
 		}
-
+		if lpm.LatestWM != nil {
+			err = lpm.LatestWM.VerifySignature(client.GetClientPublicKey())
+			if err != nil {
+				return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
+			}
+			if lpm.PrevWM != nil {
+				err = lpm.PrevWM.VerifySignature(client.GetClientPublicKey())
+				if err != nil {
+					return nil, fmt.Errorf("signature verification failed for latest writemarker: %s", err.Error())
+				}
+			}
+		}
 		return &lpm, nil
 	}
+
 	return nil, fmt.Errorf("writemarker error response %d", http.StatusTooManyRequests)
 }
 
@@ -222,12 +239,8 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 	}
 	wg.Wait()
 	close(markerChan)
-	onlyRepair := false
-	if errCnt > int32(a.ParityShards-1) {
-		return Commit, common.NewError("check_alloc_status_failed", markerError.Error())
-	}
-	if errCnt > 0 {
-		onlyRepair = true
+	if a.ParityShards > 0 && errCnt > int32(a.ParityShards) {
+		return Broken, common.NewError("check_alloc_status_failed", markerError.Error())
 	}
 
 	versionMap := make(map[int64][]*RollbackBlobber)
@@ -259,14 +272,18 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 	if prevVersion > latestVersion {
 		prevVersion, latestVersion = latestVersion, prevVersion
 	}
-
+	l.Logger.Info("versionMap", zap.Any("versionMap", versionMap))
 	if len(versionMap) < 2 {
 		return Commit, nil
 	}
 
-	req := a.DataShards + 1
+	req := a.DataShards
 
-	if len(versionMap[prevVersion]) > req || len(versionMap[latestVersion]) > req {
+	if len(versionMap[latestVersion]) > req {
+		return Commit, nil
+	}
+
+	if len(versionMap[latestVersion]) >= req || len(versionMap[prevVersion]) >= req {
 		return Repair, nil
 	}
 
@@ -291,13 +308,14 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 		}(rb)
 	}
 
+	wg.Wait()
 	if errCnt > int32(fullConsensus) {
 		return Broken, common.NewError("rollback_failed", "Rollback failed")
 	}
 
-	if errCnt > 0 || onlyRepair {
+	if errCnt == int32(fullConsensus) {
 		return Repair, nil
 	}
 
-	return Commit, nil
+	return Rollback, nil
 }
