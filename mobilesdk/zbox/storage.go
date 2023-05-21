@@ -554,3 +554,18 @@ func CreateDir(allocationID, dirName string) error {
 	}
 	return a.CreateDir(dirName)
 }
+
+// RevokeShare revoke authTicket
+//
+//  ## Inputs
+//  - allocationID
+//  - path
+//  - refereeClientID
+func RevokeShare(allocationID, path, refereeClientID string) error {
+  a, err := getAllocation(allocationID)
+  if err != nil {
+    return err
+  }
+  return a.RevokeShare(path, refereeClientID)
+}
+
