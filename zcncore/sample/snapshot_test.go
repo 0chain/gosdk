@@ -13,14 +13,13 @@ type BlobberAggregate struct {
 	BlobberID string `json:"blobber_id" gorm:"index:idx_blobber_aggregate,unique"`
 	Round     int64  `json:"round" gorm:"index:idx_blobber_aggregate,unique"`
 
-	WritePrice   uint64 `json:"write_price"`
-	Capacity     int64  `json:"capacity"`  // total blobber capacity
-	Allocated    int64  `json:"allocated"` // allocated capacity
-	SavedData    int64  `json:"saved_data"`
-	ReadData     int64  `json:"read_data"`
-	OffersTotal  uint64 `json:"offers_total"`
-	UnstakeTotal uint64 `json:"unstake_total"`
-	TotalStake   uint64 `json:"total_stake"`
+	WritePrice  uint64 `json:"write_price"`
+	Capacity    int64  `json:"capacity"`  // total blobber capacity
+	Allocated   int64  `json:"allocated"` // allocated capacity
+	SavedData   int64  `json:"saved_data"`
+	ReadData    int64  `json:"read_data"`
+	OffersTotal uint64 `json:"offers_total"`
+	TotalStake  uint64 `json:"total_stake"`
 
 	TotalServiceCharge  uint64  `json:"total_service_charge"`
 	ChallengesPassed    uint64  `json:"challenges_passed"`
