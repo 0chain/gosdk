@@ -22,6 +22,7 @@ func init() {
 }
 
 func GetUSD(ctx context.Context, symbol string) (float64, error) {
+	var err error
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer func() {
@@ -29,17 +30,20 @@ func GetUSD(ctx context.Context, symbol string) (float64, error) {
 	}()
 
 	for _, q := range quotes {
-
 		val, err := q.getUSD(ctx, symbol)
 
 		if err != nil {
-			return 0, err
+			continue
 		}
 
 		if val > 0 {
 			return val, nil
 		}
+	}
 
+	// All conversion APIs failed
+	if err != nil {
+		return 0, err
 	}
 
 	return 0, ErrNoAvailableQuoteQuery
