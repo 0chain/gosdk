@@ -12,6 +12,7 @@ import (
 
 	"github.com/0chain/errors"
 
+	"github.com/0chain/gosdk/core/common"
 	"github.com/0chain/gosdk/core/util"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -72,7 +73,10 @@ func (mo *MultiOperation) createConnectionObj(blobberIdx int) (err error) {
 			body := new(bytes.Buffer)
 			formWriter := multipart.NewWriter(body)
 
-			formWriter.WriteField("connection_id", mo.connectionID)
+			err = formWriter.WriteField("connection_id", mo.connectionID)
+			if err != nil {
+				return err, false
+			}
 			formWriter.Close()
 
 			var httpreq *http.Request
@@ -229,16 +233,35 @@ func (mo *MultiOperation) Process() error {
 	if err != nil {
 		return fmt.Errorf("Operation failed: %s", err.Error())
 	}
+
+	status, err := mo.allocationObj.CheckAllocStatus()
+	if err != nil {
+		logger.Logger.Error("Error checking allocation status", err)
+		return fmt.Errorf("Check allocation status failed: %s", err.Error())
+	}
 	l.Logger.Info("WriteMarker locked")
 	defer writeMarkerMutex.Unlock(mo.ctx, mo.operationMask, mo.allocationObj.Blobbers, time.Minute, mo.connectionID) //nolint: errcheck
+
+	if status == Repair {
+		logger.Logger.Info("Repairing allocation")
+		// TODO: Need status callback
+		// err = su.allocationObj.RepairAlloc(su.statusCallback)
+		// if err != nil {
+		// 	return err
+		// }
+	}
+	if status != Commit {
+		return ErrRetryOperation
+	}
 
 	mo.Consensus.Reset()
 	activeBlobbers := mo.operationMask.CountOnes()
 	commitReqs := make([]*CommitRequest, activeBlobbers)
 
 	wg.Add(activeBlobbers)
-	var pos uint64 = 0
+	var pos uint64
 	var counter = 0
+	timestamp := int64(common.Now())
 	for i := mo.operationMask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 		pos = uint64(i.TrailingZeros())
 		commitReq := &CommitRequest{
@@ -247,11 +270,10 @@ func (mo *MultiOperation) Process() error {
 			blobber:      mo.allocationObj.Blobbers[pos],
 			connectionID: mo.connectionID,
 			wg:           wg,
+			timestamp:    timestamp,
 		}
 
-		for _, change := range mo.changes[pos] {
-			commitReq.changes = append(commitReq.changes, change)
-		}
+		commitReq.changes = append(commitReq.changes, mo.changes[pos]...)
 		commitReqs[counter] = commitReq
 		l.Logger.Info("Commit request sending to blobber ", commitReq.blobber.Baseurl)
 		go AddCommitRequest(commitReq)

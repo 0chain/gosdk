@@ -9,12 +9,11 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/0chain/errors"
-	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -52,6 +51,7 @@ type CommitRequest struct {
 	connectionID string
 	wg           *sync.WaitGroup
 	result       *CommitResult
+	timestamp    int64
 }
 
 var commitChan map[string]chan *CommitRequest
@@ -152,7 +152,7 @@ func (commitreq *CommitRequest) processCommit() {
 		}
 
 		rootRef.CalculateHash()
-		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
+		prevAllocationRoot := rootRef.Hash
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
 			l.Logger.Info("Allocation root from latest writemarker mismatch. Expected: " + prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)
 			errMsg := fmt.Sprintf(
@@ -193,8 +193,7 @@ func (req *CommitRequest) commitBlobber(
 	}
 
 	wm := &marker.WriteMarker{}
-	timestamp := int64(common.Now())
-	wm.AllocationRoot = encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10))
+	wm.AllocationRoot = rootRef.Hash
 	if latestWM != nil {
 		wm.PreviousAllocationRoot = latestWM.AllocationRoot
 	} else {
@@ -205,7 +204,7 @@ func (req *CommitRequest) commitBlobber(
 	wm.AllocationID = req.allocationID
 	wm.Size = size
 	wm.BlobberID = req.blobber.ID
-	wm.Timestamp = timestamp
+	wm.Timestamp = req.timestamp
 	wm.ClientID = client.GetClientID()
 	err = wm.Sign()
 	if err != nil {
@@ -219,9 +218,20 @@ func (req *CommitRequest) commitBlobber(
 		l.Logger.Error("Creating writemarker failed: ", err)
 		return err
 	}
-	formWriter.WriteField("connection_id", req.connectionID)
-	formWriter.WriteField("write_marker", string(wmData))
-	formWriter.WriteField("file_id_meta", string(fileIDMetaData))
+	err = formWriter.WriteField("connection_id", req.connectionID)
+	if err != nil {
+		return err
+	}
+
+	err = formWriter.WriteField("write_marker", string(wmData))
+	if err != nil {
+		return err
+	}
+
+	err = formWriter.WriteField("file_id_meta", string(fileIDMetaData))
+	if err != nil {
+		return err
+	}
 
 	formWriter.Close()
 
@@ -232,39 +242,49 @@ func (req *CommitRequest) commitBlobber(
 	}
 	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
 	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 60))
+	defer cncl()
 	l.Logger.Info("Committing to blobber." + req.blobber.Baseurl)
-	err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
-		if err != nil {
-			l.Logger.Error("Commit: ", err)
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == http.StatusOK {
-			l.Logger.Info(req.blobber.Baseurl, req.connectionID, " committed")
-		} else {
-			l.Logger.Error("Commit response: ", resp.StatusCode)
-		}
+	for retries := 0; retries < 3; retries++ {
+		err = zboxutil.HttpDo(ctx, cncl, httpreq, func(resp *http.Response, err error) error {
+			if err != nil {
+				l.Logger.Error("Commit: ", err)
+				return err
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				l.Logger.Info(req.blobber.Baseurl, req.connectionID, " committed")
+			} else {
+				l.Logger.Error("Commit response: ", resp.StatusCode)
+			}
 
-		resp_body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			l.Logger.Error("Response read: ", err)
-			return err
-		}
-		if resp.StatusCode != http.StatusOK {
+			resp_body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				l.Logger.Error("Response read: ", err)
+				return err
+			}
+			if resp.StatusCode != http.StatusOK {
 
-			l.Logger.Error(req.blobber.Baseurl, " Commit response:", string(resp_body))
-			return errors.New("commit_error", string(resp_body))
+				l.Logger.Error(req.blobber.Baseurl, " Commit response:", string(resp_body))
+				return errors.New("commit_error", string(resp_body))
+			}
+			return nil
+		})
+		if err != nil {
+			if strings.Contains(err.Error(), "pending_markers") {
+				time.Sleep(time.Second * 5)
+				continue
+			}
 		}
-		return nil
-	})
-	return err
+		return err
+	}
+	return nil
 }
 
 func AddCommitRequest(req *CommitRequest) {
 	commitChan[req.blobber.ID] <- req
 }
 
-func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths []string) error {
+func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths []string) error { //nolint
 	var req *http.Request
 	req, err := zboxutil.NewCalculateHashRequest(commitreq.blobber.Baseurl, commitreq.allocationTx, paths)
 	if err != nil || len(paths) == 0 {

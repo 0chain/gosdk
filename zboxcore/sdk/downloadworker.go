@@ -70,10 +70,7 @@ func (req *DownloadRequest) removeFromMask(pos uint64) {
 	req.maskMu.Unlock()
 }
 
-// getBlocksData will get data blocks for some interval from minimal blobers and aggregate them and
-// return to the caller
-func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte, error) {
-
+func (req *DownloadRequest) getBlocksDataFromBlobbers(startBlock, totalBlock int64) ([][][]byte, error) {
 	shards := make([][][]byte, totalBlock)
 	for i := range shards {
 		shards[i] = make([][]byte, len(req.blobbers))
@@ -108,6 +105,17 @@ func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte,
 
 		curReqDownloads = failed
 		mask = remainingMask
+	}
+	return shards, err
+}
+
+// getBlocksData will get data blocks for some interval from minimal blobers and aggregate them and
+// return to the caller
+func (req *DownloadRequest) getBlocksData(startBlock, totalBlock int64) ([]byte, error) {
+
+	shards, err := req.getBlocksDataFromBlobbers(startBlock, totalBlock)
+	if err != nil {
+		return nil, err
 	}
 
 	// erasure decoding
@@ -213,7 +221,6 @@ func (req *DownloadRequest) downloadBlock(
 				return
 			}
 			err = req.fillShards(shards, result)
-			return
 		}(i)
 	}
 
@@ -463,7 +470,7 @@ func (req *DownloadRequest) processDownload(ctx context.Context) {
 		}
 	}
 
-	f.Sync()
+	f.Sync() //nolint
 
 	if isPREAndWholeFile {
 		calculatedFileHash := hex.EncodeToString(actualFileHasher.Sum(nil))
@@ -502,11 +509,11 @@ func (req *DownloadRequest) initEC() error {
 }
 
 // initEncryption will initialize encScheme with client's keys
-func (req *DownloadRequest) initEncryption() error {
+func (req *DownloadRequest) initEncryption() (err error) {
 	req.encScheme = encryption.NewEncryptionScheme()
 	mnemonic := client.GetClient().Mnemonic
 	if mnemonic != "" {
-		_, err := req.encScheme.Initialize(client.GetClient().Mnemonic)
+		_, err = req.encScheme.Initialize(client.GetClient().Mnemonic)
 		if err != nil {
 			return err
 		}
@@ -515,10 +522,16 @@ func (req *DownloadRequest) initEncryption() error {
 		if err != nil {
 			return err
 		}
-		req.encScheme.InitializeWithPrivateKey(key)
+		err = req.encScheme.InitializeWithPrivateKey(key)
+		if err != nil {
+			return err
+		}
 	}
 
-	req.encScheme.InitForDecryption("filetype:audio", req.encryptedKey)
+	err = req.encScheme.InitForDecryption("filetype:audio", req.encryptedKey)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -532,7 +545,6 @@ func (req *DownloadRequest) errorCB(err error, remotePathCB string) {
 		req.statusCallback.Error(
 			req.allocationID, remotePathCB, op, err)
 	}
-	return
 }
 
 func (req *DownloadRequest) openFile() (sys.File, error) {

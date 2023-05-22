@@ -8,14 +8,12 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
-	"strconv"
+	"strings"
 	"time"
 
 	"github.com/0chain/errors"
 	thrown "github.com/0chain/errors"
 	"github.com/0chain/gosdk/constants"
-	"github.com/0chain/gosdk/core/common"
-	"github.com/0chain/gosdk/core/encryption"
 	"github.com/0chain/gosdk/zboxcore/allocationchange"
 	"github.com/0chain/gosdk/zboxcore/blockchain"
 	"github.com/0chain/gosdk/zboxcore/client"
@@ -181,7 +179,7 @@ func (sb *ChunkedUploadBlobber) sendUploadRequest(
 
 }
 
-func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUpload, pos uint64) (err error) {
+func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUpload, pos uint64, timestamp int64) (err error) {
 	defer func() {
 		if err != nil {
 
@@ -199,8 +197,7 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 	}
 
 	wm := &marker.WriteMarker{}
-	timestamp := int64(common.Now())
-	wm.AllocationRoot = encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(timestamp, 10))
+	wm.AllocationRoot = rootRef.Hash
 	if latestWM != nil {
 		wm.PreviousAllocationRoot = latestWM.AllocationRoot
 	} else {
@@ -233,9 +230,20 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 		return err
 	}
 
-	formWriter.WriteField("file_id_meta", string(fileIDMetaData))
-	formWriter.WriteField("connection_id", su.progress.ConnectionID)
-	formWriter.WriteField("write_marker", string(wmData))
+	err = formWriter.WriteField("file_id_meta", string(fileIDMetaData))
+	if err != nil {
+		return err
+	}
+
+	err = formWriter.WriteField("connection_id", su.progress.ConnectionID)
+	if err != nil {
+		return err
+	}
+
+	err = formWriter.WriteField("write_marker", string(wmData))
+	if err != nil {
+		return err
+	}
 
 	formWriter.Close()
 
@@ -304,7 +312,10 @@ func (sb *ChunkedUploadBlobber) processCommit(ctx context.Context, su *ChunkedUp
 
 		if err != nil {
 			logger.Logger.Error(err)
-			return
+			if strings.Contains(err.Error(), "pending_markers") {
+				time.Sleep(time.Second * 5)
+				continue
+			}
 		}
 		if shouldContinue {
 			continue
@@ -364,7 +375,7 @@ func (sb *ChunkedUploadBlobber) processWriteMarker(
 
 	if lR.LatestWM != nil {
 		rootRef.CalculateHash()
-		prevAllocationRoot := encryption.Hash(rootRef.Hash + ":" + strconv.FormatInt(lR.LatestWM.Timestamp, 10))
+		prevAllocationRoot := rootRef.Hash
 		if prevAllocationRoot != lR.LatestWM.AllocationRoot {
 			logger.Logger.Info("Allocation root from latest writemarker mismatch. Expected: " +
 				prevAllocationRoot + " got: " + lR.LatestWM.AllocationRoot)

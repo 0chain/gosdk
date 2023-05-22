@@ -3,6 +3,9 @@ package utils
 import (
 	"context"
 	"crypto/ecdsa"
+	"math/big"
+	"time"
+
 	"github.com/0chain/errors"
 	l "github.com/0chain/gosdk/zboxcore/logger"
 	"github.com/0chain/gosdk/zcnbridge"
@@ -15,8 +18,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/tyler-smith/go-bip39"
 	"go.uber.org/zap"
-	"math/big"
-	"time"
 )
 
 const (
@@ -64,6 +65,9 @@ func NewSignedTransaction(pack []byte, from, to string, value *big.Int, privateK
 		To:   &toAddress,
 		Data: pack,
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	nonce, err := client.PendingNonceAt(context.Background(), fromAddress)
 	if err != nil {
