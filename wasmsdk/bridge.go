@@ -27,7 +27,7 @@ func initBridge(
 	ethereumAddress string,
 	bridgeAddress string,
 	authorizersAddress string,
-	wzcnAddress string,
+	TokenAddress string,
 	ethereumNodeURL string,
 	gasLimit uint64,
 	value int64,
@@ -47,24 +47,22 @@ func initBridge(
 	//)
 	//
 
-	cfg := zcnbridge.BridgeClientYaml{
-		Password:           "",
-		EthereumAddress:    ethereumAddress,
-		BridgeAddress:      bridgeAddress,
-		AuthorizersAddress: authorizersAddress,
-		WzcnAddress:        wzcnAddress,
-		EthereumNodeURL:    ethereumNodeURL,
-		GasLimit:           gasLimit,
-		Value:              value,
-		ConsensusThreshold: consensusThreshold,
-	}
-
 	wallet := zcncore.GetWalletRaw()
 	if len(wallet.ClientID) == 0 {
 		return errors.New("wallet_error", "wallet is not set")
 	}
 
-	bridge = zcnbridge.CreateBridgeClientWithConfig(cfg, &wallet)
+	bridge = &zcnbridge.BridgeClient{
+		Password:           "",
+		EthereumAddress:    ethereumAddress,
+		BridgeAddress:      bridgeAddress,
+		AuthorizersAddress: authorizersAddress,
+		TokenAddress:       TokenAddress,
+		EthereumNodeURL:    ethereumNodeURL,
+		GasLimit:           gasLimit,
+		ConsensusThreshold: consensusThreshold,
+		Homedir:            ".",
+	}
 
 	return nil
 }
