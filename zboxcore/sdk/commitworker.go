@@ -213,38 +213,12 @@ func (req *CommitRequest) commitBlobber(
 		l.Logger.Error("Signing writemarker failed: ", err)
 		return err
 	}
-	body := new(bytes.Buffer)
-	formWriter := multipart.NewWriter(body)
 	wmData, err := json.Marshal(wm)
 	if err != nil {
 		l.Logger.Error("Creating writemarker failed: ", err)
 		return err
 	}
-	err = formWriter.WriteField("connection_id", req.connectionID)
-	if err != nil {
-		return err
-	}
 
-	err = formWriter.WriteField("write_marker", string(wmData))
-	if err != nil {
-		return err
-	}
-
-	err = formWriter.WriteField("file_id_meta", string(fileIDMetaData))
-	if err != nil {
-		return err
-	}
-
-	formWriter.Close()
-
-	httpreq, err := zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationTx, body)
-	if err != nil {
-		l.Logger.Error("Error creating commit req: ", err)
-		return err
-	}
-	httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
-	ctx, cncl := context.WithTimeout(context.Background(), (time.Second * 60))
-	defer cncl()
 	l.Logger.Info("Committing to blobber." + req.blobber.Baseurl)
 	var (
 		resp           *http.Response
@@ -252,7 +226,19 @@ func (req *CommitRequest) commitBlobber(
 	)
 	for retries := 0; retries < 3; retries++ {
 		err, shouldContinue = func() (err error, shouldContinue bool) {
-			reqCtx, ctxCncl := context.WithTimeout(ctx, time.Second*60)
+			body := new(bytes.Buffer)
+			formWriter, err := getFormWritter(req.connectionID, wmData, fileIDMetaData, body)
+			if err != nil {
+				l.Logger.Error("Creating form writer failed: ", err)
+				return
+			}
+			httpreq, err := zboxutil.NewCommitRequest(req.blobber.Baseurl, req.allocationTx, body)
+			if err != nil {
+				l.Logger.Error("Error creating commit req: ", err)
+				return
+			}
+			httpreq.Header.Add("Content-Type", formWriter.FormDataContentType())
+			reqCtx, ctxCncl := context.WithTimeout(context.Background(), time.Second*60)
 			resp, err = zboxutil.Client.Do(httpreq.WithContext(reqCtx))
 			defer ctxCncl()
 
@@ -295,7 +281,7 @@ func (req *CommitRequest) commitBlobber(
 
 			if strings.Contains(string(respBody), "pending_markers:") {
 				logger.Logger.Info("Commit pending for blobber ",
-					req.blobber.Baseurl, " Retrying again")
+					req.blobber.Baseurl, " Retrying")
 				time.Sleep(5 * time.Second)
 				shouldContinue = true
 				return
@@ -345,4 +331,24 @@ func (commitreq *CommitRequest) calculateHashRequest(ctx context.Context, paths 
 		return nil
 	})
 	return err
+}
+
+func getFormWritter(connectionID string, wmData, fileIDMetaData []byte, body *bytes.Buffer) (*multipart.Writer, error) {
+	formWriter := multipart.NewWriter(body)
+	err := formWriter.WriteField("connection_id", connectionID)
+	if err != nil {
+		return nil, err
+	}
+
+	err = formWriter.WriteField("write_marker", string(wmData))
+	if err != nil {
+		return nil, err
+	}
+
+	err = formWriter.WriteField("file_id_meta", string(fileIDMetaData))
+	if err != nil {
+		return nil, err
+	}
+	formWriter.Close()
+	return formWriter, nil
 }
