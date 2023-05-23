@@ -265,6 +265,8 @@ func (a *Allocation) GetBlobberStats() map[string]*BlobberAllocationStats {
 	return result
 }
 
+const downloadWorkerCount = 10
+
 func (a *Allocation) InitAllocation() {
 	a.downloadChan = make(chan *DownloadRequest, 10)
 	a.repairChan = make(chan *RepairRequest, 1)
@@ -274,7 +276,7 @@ func (a *Allocation) InitAllocation() {
 	a.fullconsensus, a.consensusThreshold = a.getConsensuses()
 	a.startWorker(a.ctx)
 	InitCommitWorker(a.Blobbers)
-	InitBlockDownloader(a.Blobbers)
+	InitBlockDownloader(a.Blobbers, downloadWorkerCount)
 	a.initialized = true
 }
 
@@ -791,6 +793,9 @@ func (a *Allocation) generateDownloadRequest(localPath string, remotePath string
 		delete(a.downloadProgressMap, remotepath)
 	}
 	downloadReq.contentMode = contentMode
+	downloadReq.prepaidBlobbers = make(map[string]bool)
+	downloadReq.connectionID = zboxutil.NewConnectionId()
+  
 	return downloadReq, nil
 }
 
@@ -1722,6 +1727,8 @@ func (a *Allocation) downloadFromAuthTicket(localPath string, authTicket string,
 	downloadReq.shouldVerify = verifyDownload
 	downloadReq.fullconsensus = a.fullconsensus
 	downloadReq.consensusThresh = a.consensusThreshold
+	downloadReq.prepaidBlobbers = make(map[string]bool)
+	downloadReq.connectionID = zboxutil.NewConnectionId()
 	downloadReq.completedCallback = func(remotepath string, remotepathHash string) {
 		a.mutex.Lock()
 		defer a.mutex.Unlock()
