@@ -9,6 +9,8 @@ import (
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
+const SPACE string = " "
+
 // ListDir - listing files from path
 // ## Inputs
 //   - allocatonID
@@ -212,17 +214,20 @@ func RepairFile(allocationID, workdir, localPath, remotePath, thumbnailPath stri
 //   - allocationID
 //   - workdir: set a workdir as ~/.zcn on mobile apps
 //   - filePathString: space seperated  local full path of files. eg "/usr/local/files/f1.txt /usr/local/files/f2.txt"
+//	 - thumbnailPathString: space seperated path for thumbnails. eg "full_path1  full_path3", here there are two spaces 
+//     between path1 and path3 because file2 doesn't have thumbnail.
 //   - remotePath:
 //
 // ## Outputs
 //   - error
-func MultiUpload(allocationID string, workdir string, filePathString string, remotePath string) error {
-	filePaths := strings.Fields(filePathString)
+func MultiUpload(allocationID string, workdir string, filePathString string, thumbnailPathString string, remotePath string) error {
+	filePaths := strings.Split(filePathString, SPACE)
+	thumbnailPaths := strings.Split(thumbnailPathString, SPACE)
 	a, err := getAllocation(allocationID)
 	if err != nil {
 		return err
 	}
-	return a.StartMultiUpload(workdir, filePaths, remotePath)
+	return a.StartMultiUpload(workdir, filePaths, thumbnailPaths, remotePath)
 
 }
 

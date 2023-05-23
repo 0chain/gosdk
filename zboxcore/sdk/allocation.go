@@ -448,7 +448,7 @@ func (a *Allocation) EncryptAndUploadFileWithThumbnail(
 	)
 }
 
-func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, remotePath string) error {
+func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, thumbnailPaths []string, remotePath string) error {
 	totalOperations := len(localPaths)
 	if totalOperations == 0 {
 		return nil
@@ -456,6 +456,7 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, remot
 	operationRequests := make([]OperationRequest, totalOperations)
 	for idx, localPath := range localPaths {
 		fileReader, err := os.Open(localPath)
+		thumbnailPath := thumbnailPaths[idx]
 		if err != nil {
 			return err
 		}
@@ -491,10 +492,20 @@ func (a *Allocation) StartMultiUpload(workdir string, localPaths []string, remot
 			RemoteName: fileName,
 			RemotePath: remotePath,
 		}
+		options := []ChunkedUploadOption{}
+		if thumbnailPath != "" {
+			buf, err := sys.Files.ReadFile(thumbnailPath)
+			if err != nil {
+				return err
+			}
+
+			options = append(options, WithThumbnail(buf))
+		}
 		operationRequests[idx] = OperationRequest{
 			FileMeta:      fileMeta,
 			FileReader:    fileReader,
 			OperationType: constants.FileOperationInsert,
+			Opts:          options,
 		}
 
 	}
