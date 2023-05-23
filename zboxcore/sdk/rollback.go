@@ -258,7 +258,7 @@ func (a *Allocation) CheckAllocStatus() (AllocStatus, error) {
 
 		if prevVersion == "" {
 			prevVersion = version
-		} else {
+		} else if prevVersion != version && latestVersion == "" {
 			latestVersion = version
 		}
 
