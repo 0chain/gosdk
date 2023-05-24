@@ -100,6 +100,8 @@ func CreateChunkedUpload(
 		return nil, thrown.Throw(constants.ErrFileOptionNotPermitted, "file_option_not_permitted ")
 	}
 
+	webStreaming = true
+
 	if webStreaming {
 		newFileReader, newFileMeta, err := TranscodeWebStreaming(fileReader, fileMeta)
 		if err != nil {

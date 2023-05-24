@@ -161,7 +161,7 @@ async function bulkUpload(options) {
       fileSize: obj.file.size,
       thumbnailBytes:obj.thumbnailBytes?obj.thumbnailBytes.toString():"",
       encrypt:obj.encrypt,
-      webstreaming:obj.webstreaming,
+      webstreaming:true,
       isUpdate:obj.isUpdate,
       isRepair:obj.isRepair,
       numBlocks:obj.numBlocks,
