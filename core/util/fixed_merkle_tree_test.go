@@ -26,7 +26,7 @@ func TestFixedMerkleTreeWrite(t *testing.T) {
 		t.Run(fmt.Sprintf("Fmt test with dataSize: %d", n), func(t *testing.T) {
 
 			b := make([]byte, n)
-			rand.Read(b)
+			rand.Read(b) //nolint
 
 			leaves := make([]Hashable, FixedMerkleLeaves)
 			for i := 0; i < len(leaves); i++ {

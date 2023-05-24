@@ -14,13 +14,13 @@ import (
 	"github.com/0chain/gosdk/zboxcore/sdk"
 )
 
-//StreamingService - holder for streaming service
+// StreamingService - holder for streaming service
 type StreamingService struct {
 	allocation *Allocation
 	downloader *M3u8Downloader
 }
 
-//StreamingService - implementation of streaming service
+// StreamingService - implementation of streaming service
 type StreamingImpl interface {
 	GetFirstSegment(localPath, remotePath, tmpPath string, delay, maxSegments int) (string, error)
 	PlayStreaming(localPath, remotePath, authTicket, lookupHash, initSegment string, delay int, statusCb StatusCallbackWrapped) error
@@ -28,7 +28,7 @@ type StreamingImpl interface {
 	GetCurrentManifest() string
 }
 
-//CreateStreamingService - creating streaming service instance
+// CreateStreamingService - creating streaming service instance
 func CreateStreamingService(allocation *Allocation) StreamingImpl {
 	return &StreamingService{
 		allocation: allocation,
@@ -106,10 +106,25 @@ func (s *StreamingService) GetFirstSegment(localPath, remotePath, tmpPath string
 	}
 	downloader.Unlock()
 
-	downloader.playlist.Writer.Truncate(0)
-	downloader.playlist.Writer.Seek(0, 0)
-	downloader.playlist.Writer.Write(downloader.playlist.Encode())
-	downloader.playlist.Writer.Sync()
+	err = downloader.playlist.Writer.Truncate(0)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = downloader.playlist.Writer.Seek(0, 0)
+	if err != nil {
+		return "", err
+	}
+
+	_, err = downloader.playlist.Writer.Write(downloader.playlist.Encode())
+	if err != nil {
+		return "", err
+	}
+
+	err = downloader.playlist.Writer.Sync()
+	if err != nil {
+		return "", err
+	}
 
 	return latestItem, nil
 }
@@ -124,7 +139,7 @@ func (s *StreamingService) PlayStreaming(localPath, remotePath, authTicket, look
 	downloader.status = statusCb
 	s.downloader = downloader
 
-	go downloader.start()
+	go downloader.start() //nolint
 	return nil
 }
 

@@ -30,16 +30,18 @@ const (
 )
 
 type DirRequest struct {
-	allocationID string
-	allocationTx string
-	remotePath   string
-	blobbers     []*blockchain.StorageNode
-	ctx          context.Context
-	ctxCncl      context.CancelFunc
-	wg           *sync.WaitGroup
-	dirMask      zboxutil.Uint128
-	mu           *sync.Mutex
-	connectionID string
+	allocationObj *Allocation
+	allocationID  string
+	allocationTx  string
+	remotePath    string
+	blobbers      []*blockchain.StorageNode
+	ctx           context.Context
+	ctxCncl       context.CancelFunc
+	wg            *sync.WaitGroup
+	dirMask       zboxutil.Uint128
+	mu            *sync.Mutex
+	connectionID  string
+	timestamp     int64
 	Consensus
 }
 
@@ -93,12 +95,32 @@ func (req *DirRequest) ProcessDir(a *Allocation) error {
 	}
 	defer writeMarkerMU.Unlock(req.ctx, req.dirMask,
 		a.Blobbers, time.Minute, req.connectionID) //nolint: errcheck
+	//Check if the allocation is to be repaired or rolled back
+	status, err := req.allocationObj.CheckAllocStatus()
+	l.Logger.Info("Allocation status: ", status)
+	if err != nil {
+		l.Logger.Error("Error checking allocation status: ", err)
+		return fmt.Errorf("directory creation failed: %s", err.Error())
+	}
+
+	if status == Repair {
+		l.Logger.Info("Repairing allocation")
+		//TODO: Need status callback to call repair allocation
+		// err = req.allocationObj.RepairAlloc()
+		// if err != nil {
+		// 	return err
+		// }
+	}
+	if status != Commit {
+		return ErrRetryOperation
+	}
 
 	return req.commitRequest(existingDirCount)
 }
 
 func (req *DirRequest) commitRequest(existingDirCount int) error {
 	req.Consensus.Reset()
+	req.timestamp = int64(common.Now())
 	req.consensus = existingDirCount
 	wg := &sync.WaitGroup{}
 	activeBlobbersNum := req.dirMask.CountOnes()
@@ -108,7 +130,6 @@ func (req *DirRequest) commitRequest(existingDirCount int) error {
 	var pos uint64
 	var c int
 
-	timestamp := common.Now()
 	uid := util.GetNewUUID()
 
 	for i := req.dirMask; !i.Equals(zboxutil.NewUint128(0)); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
@@ -121,12 +142,13 @@ func (req *DirRequest) commitRequest(existingDirCount int) error {
 		newChange := &allocationchange.DirCreateChange{
 			RemotePath: req.remotePath,
 			Uuid:       uid,
-			Timestamp:  timestamp,
+			Timestamp:  common.Timestamp(req.timestamp),
 		}
 
 		commitReq.changes = append(commitReq.changes, newChange)
 		commitReq.connectionID = req.connectionID
 		commitReq.wg = wg
+		commitReq.timestamp = req.timestamp
 		commitReqs[c] = commitReq
 		c++
 		go AddCommitRequest(commitReq)
@@ -163,9 +185,15 @@ func (req *DirRequest) createDirInBlobber(blobber *blockchain.StorageNode, pos u
 
 	body := new(bytes.Buffer)
 	formWriter := multipart.NewWriter(body)
-	formWriter.WriteField("connection_id", req.connectionID)
+	err = formWriter.WriteField("connection_id", req.connectionID)
+	if err != nil {
+		return err, false
+	}
 
-	formWriter.WriteField("dir_path", req.remotePath)
+	err = formWriter.WriteField("dir_path", req.remotePath)
+	if err != nil {
+		return err, false
+	}
 
 	formWriter.Close()
 	httpreq, err := zboxutil.NewCreateDirRequest(blobber.Baseurl, req.allocationID, body)

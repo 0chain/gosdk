@@ -166,7 +166,7 @@ func CreateChunkedUpload(
 		encryptOnUpload: false,
 		webStreaming:    false,
 
-		consensus:     consensus,
+		consensus:     consensus, //nolint
 		uploadTimeOut: DefaultUploadTimeOut,
 		commitTimeOut: DefaultUploadTimeOut,
 		maskMu:        &sync.Mutex{},
@@ -532,8 +532,30 @@ func (su *ChunkedUpload) Start() error {
 		}
 		return err
 	}
+
 	defer su.writeMarkerMutex.Unlock(
 		su.ctx, su.uploadMask, blobbers, su.uploadTimeOut, su.progress.ConnectionID) //nolint: errcheck
+
+	//Check if the allocation is to be repaired or rolled back
+	status, err := su.allocationObj.CheckAllocStatus()
+	if err != nil {
+		logger.Logger.Error("Error checking allocation status", err)
+		if su.statusCallback != nil {
+			su.statusCallback.Error(su.allocationObj.ID, su.fileMeta.RemotePath, su.opCode, err)
+		}
+		return err
+	}
+
+	if status == Repair {
+		logger.Logger.Info("Repairing allocation")
+		// err = su.allocationObj.RepairAlloc(su.statusCallback)
+		// if err != nil {
+		// 	return err
+		// }
+	}
+	if status != Commit {
+		return ErrRetryOperation
+	}
 
 	return su.processCommit()
 }
@@ -695,7 +717,7 @@ func (su *ChunkedUpload) processCommit() error {
 		wg.Add(1)
 		go func(b *ChunkedUploadBlobber, pos uint64) {
 			defer wg.Done()
-			err := b.processCommit(context.TODO(), su, pos)
+			err := b.processCommit(context.TODO(), su, pos, int64(timestamp))
 			if err != nil {
 				b.commitResult = ErrorCommitResult(err.Error())
 			}

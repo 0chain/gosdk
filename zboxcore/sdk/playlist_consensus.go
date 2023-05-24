@@ -103,12 +103,3 @@ func (c *playlistConsensus) GetConsensusResult() []PlaylistFile {
 
 	return files
 }
-
-type playlistFileConsensus struct {
-	files       map[string]PlaylistFile
-	consensuses map[string]*Consensus
-
-	threshConsensus float32
-	fullConsensus   float32
-	consensusOK     float32
-}
