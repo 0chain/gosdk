@@ -551,10 +551,10 @@ func (su *ChunkedUpload) Start() error {
 
 	if status == Repair {
 		logger.Logger.Info("Repairing allocation")
-		err = su.allocationObj.RepairAlloc(su.statusCallback)
-		if err != nil {
-			return err
-		}
+		// err = su.allocationObj.RepairAlloc(su.statusCallback)
+		// if err != nil {
+		// 	return err
+		// }
 	}
 	if status != Commit {
 		return ErrRetryOperation

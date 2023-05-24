@@ -205,13 +205,12 @@ func (wmMu *WriteMarkerMutex) Lock(
 	}
 
 	/*
-		This goroutine will refresh lock after 20 seconds have passed. It will only complete if context is
+		This goroutine will refresh lock after 30 seconds have passed. It will only complete if context is
 		completed, that is why, the caller should make proper use of context and cancel it when work is done.
 	*/
-	requestTime := time.Now()
 	go func() {
 		for {
-			<-time.After(time.Second*20 - time.Since(requestTime))
+			<-time.NewTimer(30 * time.Second).C
 			select {
 			case <-ctx.Done():
 				return
@@ -219,13 +218,14 @@ func (wmMu *WriteMarkerMutex) Lock(
 			}
 
 			wg := &sync.WaitGroup{}
+			cons := &Consensus{}
 			for i := *mask; !i.Equals64(0); i = i.And(zboxutil.NewUint128(1).Lsh(pos).Not()) {
 				pos = uint64(i.TrailingZeros())
 
 				blobber := blobbers[pos]
 
 				wg.Add(1)
-				go wmMu.lockBlobber(ctx, mask, maskMu, consensus, blobber, pos, connID, timeOut, wg)
+				go wmMu.lockBlobber(ctx, mask, maskMu, cons, blobber, pos, connID, timeOut, wg)
 			}
 
 			wg.Wait()
